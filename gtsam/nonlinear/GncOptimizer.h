@@ -65,10 +65,6 @@ class GncOptimizer {
 
     // make sure all noiseModels are Gaussian or convert to Gaussian
     nfg_.resize(graph.size());
-    barcSq_ = Vector::Ones(graph.size());
-
-    double alpha = 0.99; // with this (default) probability, inlier residuals are smaller than barcSq_
-
     for (size_t i = 0; i < graph.size(); i++) {
       if (graph[i]) {
         NoiseModelFactor::shared_ptr factor = boost::dynamic_pointer_cast<
@@ -77,9 +73,12 @@ class GncOptimizer {
             noiseModel::Robust>(factor->noiseModel());
         // if the factor has a robust loss, we remove the robust loss
         nfg_[i] = robust ? factor-> cloneWithNewNoiseModel(robust->noise()) : factor;
-        barcSq_[i] = 0.5 * Chi2inv(alpha, nfg_[i]->dim()); // 0.5 derives from the error definition in gtsam
       }
     }
+
+    // set default barcSq_ (inlier threshold)
+    double alpha = 0.99; // with this (default) probability, inlier residuals are smaller than barcSq_
+    setInlierCostThresholdsAtProbability(alpha);
   }
 
   /** Set the maximum weighted residual error for an inlier (same for all factors). For a factor in the form f(x) = 0.5 * || r(x) ||^2_Omega,
@@ -100,6 +99,18 @@ class GncOptimizer {
    * */
   void setInlierCostThresholds(const Vector& inthVec) {
     barcSq_ = inthVec;
+  }
+
+  /** Set the maximum weighted residual error threshold by specifying the probability
+   * alpha that the inlier residuals are smaller than that threshold
+   * */
+  void setInlierCostThresholdsAtProbability(const double alpha) {
+    barcSq_  = Vector::Ones(nfg_.size());
+    for (size_t k = 0; k < nfg_.size(); k++) {
+      if (nfg_[k]) {
+        barcSq_[k] = 0.5 * Chi2inv(alpha, nfg_[k]->dim()); // 0.5 derives from the error definition in gtsam
+      }
+    }
   }
 
   /// Access a copy of the internal factor graph.

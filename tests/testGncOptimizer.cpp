@@ -33,6 +33,9 @@
 #include <gtsam/slam/dataset.h>
 #include <tests/smallExample.h>
 
+#include <gtsam/sam/BearingFactor.h>
+#include <gtsam/geometry/Pose2.h>
+
 using namespace std;
 using namespace gtsam;
 
@@ -601,6 +604,59 @@ TEST(GncOptimizer, optimizeWithKnownInliers) {
     DOUBLES_EQUAL(1.0, finalWeights[2], tol);
     DOUBLES_EQUAL(1.0, finalWeights[3], tol);
   }
+}
+
+/* ************************************************************************* */
+TEST(GncOptimizer, chi2inv) {
+  DOUBLES_EQUAL(8.807468393511950, Chi2inv(0.997, 1), tol); // from MATLAB: chi2inv(0.997, 1) = 8.807468393511950
+  DOUBLES_EQUAL(13.931422665512077, Chi2inv(0.997, 3), tol); // from MATLAB: chi2inv(0.997, 3) = 13.931422665512077
+}
+
+/* ************************************************************************* */
+TEST(GncOptimizer, barcsq) {
+  auto fg = example::sharedNonRobustFactorGraphWithOutliers();
+
+  Point2 p0(1, 0);
+  Values initial;
+  initial.insert(X(1), p0);
+
+  std::vector<size_t> knownInliers;
+  knownInliers.push_back(0);
+  knownInliers.push_back(1);
+  knownInliers.push_back(2);
+
+  GncParams<GaussNewtonParams> gncParams;
+  gncParams.setKnownInliers(knownInliers);
+  gncParams.setLossType(GncLossType::GM);
+  //gncParams.setVerbosityGNC(GncParams<GaussNewtonParams>::Verbosity::SUMMARY);
+  auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial,
+      gncParams);
+  // expected: chi2inv(0.99, 2)/2
+  CHECK(assert_equal(4.605170185988091 * Vector::Ones(fg.size()), gnc.getInlierCostThresholds(), 1e-3));
+}
+
+/* ************************************************************************* */
+TEST(GncOptimizer, barcsq_heterogeneousFactors) {
+  NonlinearFactorGraph fg;
+  // specify noise model, otherwise it segfault if we leave default noise model
+   SharedNoiseModel model3D(noiseModel::Isotropic::Sigma(3, 0.5));
+   fg.add( PriorFactor<Pose2>(  0, Pose2(0.0, 0.0, 0.0) , model3D )); // size 3
+  SharedNoiseModel model2D(noiseModel::Isotropic::Sigma(2, 0.5));
+  fg.add( PriorFactor<Point2>(  1, Point2(0.0,0.0), model2D )); // size 2
+  SharedNoiseModel model1D(noiseModel::Isotropic::Sigma(1, 0.5));
+  fg.add( BearingFactor<Pose2, Point2>(  0, 1, 1.0, model1D) ); // size 1
+
+  Values initial;
+  initial.insert(0, Pose2(0.0, 0.0, 0.0));
+  initial.insert(1, Point2(0.0,0.0));
+
+  auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial);
+  CHECK(assert_equal(Vector3(5.672433365072185, 4.605170185988091, 3.317448300510607),
+                     gnc.getInlierCostThresholds(), 1e-3));
+
+  // extra test:
+  // fg.add( PriorFactor<Pose2>(  0, Pose2(0.0, 0.0, 0.0) )); // works if we add model3D as noise model
+  // std::cout <<  "fg[3]->dim() " << fg[3]->dim() << std::endl; // this segfaults?
 }
 
 /* ************************************************************************* */
