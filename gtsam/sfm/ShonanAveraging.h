@@ -91,7 +91,8 @@ struct GTSAM_EXPORT ShonanAveragingParameters {
   bool getCertifyOptimality() const { return certifyOptimality; }
 
   /// Print the parameters and flags used for rotation averaging.
-  void print() const {
+  void print(const std::string &s = "") const {
+    std::cout << (s.empty() ? s : s + " ");
     std::cout << " ShonanAveragingParameters: " << std::endl;
     std::cout << " alpha: " << alpha << std::endl;
     std::cout << " beta: " << beta << std::endl;

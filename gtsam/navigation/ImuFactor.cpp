@@ -130,7 +130,7 @@ std::ostream& operator<<(std::ostream& os, const ImuFactor& f) {
 
 //------------------------------------------------------------------------------
 void ImuFactor::print(const string& s, const KeyFormatter& keyFormatter) const {
-  cout << (s == "" ? s : s + "\n") << "ImuFactor(" << keyFormatter(this->key1())
+  cout << (s.empty() ? s : s + "\n") << "ImuFactor(" << keyFormatter(this->key1())
        << "," << keyFormatter(this->key2()) << "," << keyFormatter(this->key3())
        << "," << keyFormatter(this->key4()) << "," << keyFormatter(this->key5())
        << ")\n";
@@ -226,7 +226,7 @@ std::ostream& operator<<(std::ostream& os, const ImuFactor2& f) {
 //------------------------------------------------------------------------------
 void ImuFactor2::print(const string& s,
     const KeyFormatter& keyFormatter) const {
-  cout << (s == "" ? s : s + "\n") << "ImuFactor2("
+  cout << (s.empty() ? s : s + "\n") << "ImuFactor2("
        << keyFormatter(this->key1()) << "," << keyFormatter(this->key2()) << ","
        << keyFormatter(this->key3()) << ")\n";
   cout << *this << endl;
