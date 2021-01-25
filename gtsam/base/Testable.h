@@ -72,10 +72,10 @@ namespace gtsam {
   }; // \ Testable
 
   inline void print(float v, const std::string& s = "") {
-    std::cout << (s == "" ? s : s + " ") << v << std::endl;
+    std::cout << (s.empty() ? s : s + " ") << v << std::endl;
   }
   inline void print(double v, const std::string& s = "") {
-    std::cout << (s == "" ? s : s + " ") << v << std::endl;
+    std::cout << (s.empty() ? s : s + " ") << v << std::endl;
   }
 
   /** Call equal on the object */
