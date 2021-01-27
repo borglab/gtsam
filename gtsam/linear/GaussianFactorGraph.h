@@ -185,7 +185,7 @@ namespace gtsam {
      * Jacobian matrix, where i(k) and j(k) are the base 0 row and column
      * indices, s(k) a double.
      * The standard deviations are baked into A and b
-     * @return the sparse matrix in one of the 4 forms above
+     * @return the sparse matrix as a std::vector of boost tuples
      */
     std::vector<boost::tuple<size_t, size_t, double>> sparseJacobian() const;
 
@@ -387,7 +387,7 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     }
 
-   public:
+  public:
 
     /** \deprecated */
     VectorValues optimize(boost::none_t,
