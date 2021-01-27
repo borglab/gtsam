@@ -174,40 +174,20 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  using BoostTriplets = GaussianFactorGraph::SparseMatrixBoostTriplets;
-  BoostTriplets GaussianFactorGraph::sparseJacobian(
-      const Ordering& ordering, size_t& nrows, size_t& ncols) const {
+  using BoostTriplets = std::vector<boost::tuple<size_t, size_t, double>>;
+  BoostTriplets GaussianFactorGraph::sparseJacobian() const {
     BoostTriplets entries;
     entries.reserve(60 * size());
-    sparseJacobianInPlace(entries, ordering, nrows, ncols);
+    size_t nrows, ncols;
+    sparseJacobianInPlace(entries, Ordering(this->keys()), nrows, ncols);
     return entries;
   }
 
   /* ************************************************************************* */
-  BoostTriplets GaussianFactorGraph::sparseJacobian(
-      const Ordering& ordering) const {
-    size_t dummy1, dummy2;
-    return sparseJacobian(ordering, dummy1, dummy2);
-  }
-
-  /* ************************************************************************* */
-  BoostTriplets GaussianFactorGraph::sparseJacobian(
-      size_t& nrows, size_t& ncols) const {
-    return sparseJacobian(Ordering(this->keys()), nrows, ncols);
-  }
-
-  /* ************************************************************************* */
-  BoostTriplets GaussianFactorGraph::sparseJacobian() const {
-    size_t dummy1, dummy2;
-    return sparseJacobian(dummy1, dummy2);
-  }
-
-  /* ************************************************************************* */
-  Matrix GaussianFactorGraph::sparseJacobian_(
-      const Ordering& ordering, size_t& nrows, size_t& ncols) const {
+  Matrix GaussianFactorGraph::sparseJacobian_() const {
     gttic_(GaussianFactorGraph_sparseJacobian_matrix);
     // call sparseJacobian
-    auto result = sparseJacobian(ordering, nrows, ncols);
+    auto result = sparseJacobian();
 
     // translate to base 1 matrix
     size_t nzmax = result.size();
@@ -222,51 +202,13 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Matrix GaussianFactorGraph::sparseJacobian_(
-      const Ordering& ordering) const {
-    size_t dummy1, dummy2;
-    return sparseJacobian_(ordering, dummy1, dummy2);
-  }
-
-  /* ************************************************************************* */
-  Matrix GaussianFactorGraph::sparseJacobian_(
-      size_t& nrows, size_t& ncols) const {
-    return sparseJacobian_(Ordering(this->keys()), nrows, ncols);
-  }
-
-  /* ************************************************************************* */
-  Matrix GaussianFactorGraph::sparseJacobian_() const {
-    size_t dummy1, dummy2;
-    return sparseJacobian_(dummy1, dummy2);
-  }
-
-  /* ************************************************************************* */
-  using GtsamTriplets = GaussianFactorGraph::SparseMatrixGtsamTriplets;
+  using GtsamTriplets = std::vector<std::tuple<int, int, double>>;
   GtsamTriplets GaussianFactorGraph::sparseJacobianFast(
       const Ordering& ordering, size_t& nrows, size_t& ncols) const {
     GtsamTriplets entries;
     entries.reserve(60 * size());
     sparseJacobianInPlace(entries, ordering, nrows, ncols);
     return entries;
-  }
-
-  /* ************************************************************************* */
-  GtsamTriplets GaussianFactorGraph::sparseJacobianFast(
-      const Ordering& ordering) const {
-    size_t dummy1, dummy2;
-    return sparseJacobianFast(ordering, dummy1, dummy2);
-  }
-
-  /* ************************************************************************* */
-  GtsamTriplets GaussianFactorGraph::sparseJacobianFast(
-      size_t& nrows, size_t& ncols) const {
-    return sparseJacobianFast(Ordering(this->keys()), nrows, ncols);
-  }
-
-  /* ************************************************************************* */
-  GtsamTriplets GaussianFactorGraph::sparseJacobianFast() const {
-    size_t dummy1, dummy2;
-    return sparseJacobianFast(dummy1, dummy2);
   }
 
   /* ************************************************************************* */

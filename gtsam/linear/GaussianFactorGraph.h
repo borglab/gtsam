@@ -180,38 +180,14 @@ namespace gtsam {
     ///@name Linear Algebra
     ///@{
 
-    /// Sparse matrix representation as vector of tuples.
-    typedef std::vector<boost::tuple<size_t, size_t, double>>
-        SparseMatrixBoostTriplets;
-    /// Sparse matrix representation as vector of slightly more efficient
-    /// tuples.
-    typedef std::vector<std::tuple<int, int, double>> SparseMatrixGtsamTriplets;
-
     /**
      * Return vector of i, j, and s to generate an m-by-n sparse augmented
      * Jacobian matrix, where i(k) and j(k) are the base 0 row and column
      * indices, s(k) a double.
      * The standard deviations are baked into A and b
-     * @param ordering the column ordering
-     * @param[out] nrows The number of rows in the Jacobian
-     * @param[out] ncols The number of columns in the Jacobian
      * @return the sparse matrix in one of the 4 forms above
      */
-    SparseMatrixBoostTriplets sparseJacobian(const Ordering& ordering,
-                                             size_t& nrows,
-                                             size_t& ncols) const;
-
-    /** Returns a sparse augmented Jacobian without outputting its dimensions */
-    SparseMatrixBoostTriplets sparseJacobian(
-        const Ordering& ordering) const;
-
-    /** Returns a sparse augmented Jacobian with default Ordering */
-    SparseMatrixBoostTriplets sparseJacobian(size_t& nrows,
-                                             size_t& ncols) const;
-
-    /** Returns a sparse augmented Jacobian without with default ordering and
-     * outputting its dimensions */
-    SparseMatrixBoostTriplets sparseJacobian() const;
+    std::vector<boost::tuple<size_t, size_t, double>> sparseJacobian() const;
 
     /**
      * Matrix version of sparseJacobian: generates a 3*m matrix with [i,j,s]
@@ -219,44 +195,16 @@ namespace gtsam {
      * sparse.  Note: i, j are 1-indexed.
      * The standard deviations are baked into A and b
      */
-    Matrix sparseJacobian_(const Ordering& ordering, size_t& nrows,
-                           size_t& ncols) const;
-
-    /** Returns a matrix-form sparse augmented Jacobian without outputting its
-     * dimensions
-     */
-    Matrix sparseJacobian_(const Ordering& ordering) const;
-
-    /** Returns a matrix-form sparse augmented Jacobian with default Ordering
-     * @param[out] nrows The number of rows in the Jacobian
-     * @param[out] ncols The number of columns in the Jacobian
-     */
-    Matrix sparseJacobian_(size_t& nrows, size_t& ncols) const;
-
-    /** Returns a matrix-form sparse augmented Jacobian with default ordering
-     * and without outputting its dimensions */
     Matrix sparseJacobian_() const;
 
     /** Returns a sparse matrix with `int` indices instead of `size_t` for
-     * slightly faster performance */
-    SparseMatrixGtsamTriplets sparseJacobianFast(const Ordering& ordering,
-                                                 size_t& nrows,
-                                                 size_t& ncols) const;
-
-    /** Returns an int-indexed sparse matrix  without outputting its dimensions
-     */
-    SparseMatrixGtsamTriplets sparseJacobianFast(const Ordering& ordering) const;
-
-    /** Returns an int-indexed sparse matrix with default ordering
+     * slightly faster performance
+     * @param ordering the column ordering
      * @param[out] nrows The number of rows in the Jacobian
      * @param[out] ncols The number of columns in the Jacobian
      */
-    SparseMatrixGtsamTriplets sparseJacobianFast(size_t& nrows,
-                                                 size_t& ncols) const;
-
-    /** Returns an int-indexed sparse matrix with default ordering and without
-     * outputting its dimensions */
-    SparseMatrixGtsamTriplets sparseJacobianFast() const;
+    std::vector<std::tuple<int, int, double>> sparseJacobianFast(
+        const Ordering& ordering, size_t& nrows, size_t& ncols) const;
 
     /**
      * Return a dense \f$ [ \;A\;b\; ] \in \mathbb{R}^{m \times n+1} \f$
