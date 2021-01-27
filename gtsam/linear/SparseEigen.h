@@ -41,7 +41,7 @@ SparseEigen sparseJacobianEigen(
   // intermediate `entries` vector is kind of unavoidable due to how expensive
   // factor->rows() is, which prevents us from populating SparseEigen directly.
   size_t nrows, ncols;
-  auto entries = gfg.sparseJacobianFast(ordering, nrows, ncols);
+  auto entries = gfg.sparseJacobian(ordering, nrows, ncols);
   // declare sparse matrix
   SparseEigen Ab(nrows, ncols);
   // See Eigen::set_from_triplets.  This is about 5% faster.
