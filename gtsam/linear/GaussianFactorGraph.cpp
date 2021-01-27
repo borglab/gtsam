@@ -100,24 +100,15 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  /** Performs in-place population of a sparse jacobian.  Contains the
-   * common functionality amongst different sparseJacobian functions.
-   * @param graph the factor graph to get the Jacobian from
-   * @param entries a container of triplets that supports
-   * `emplace_back(size_t, size_t, double)
-   * @param ordering the variable ordering
-   * @param[out] nrows the nurmber of rows in the Jacobian
-   * @param[out] ncols the number of columns in the Jacobian
-   */
-  template <typename T>
-  void sparseJacobianInPlace(const GaussianFactorGraph& graph, T& entries,
-                             const Ordering& ordering, size_t& nrows,
-                             size_t& ncols) {
-    gttic_(GaussianFactorGraph_sparseJacobianInPlace);
+  using SparseTriplets = std::vector<std::tuple<int, int, double> >;
+  SparseTriplets GaussianFactorGraph::sparseJacobian(const Ordering& ordering,
+                                                     size_t& nrows,
+                                                     size_t& ncols) const {
+    gttic_(GaussianFactorGraph_sparseJacobian);
     // First find dimensions of each variable
     typedef std::map<Key, size_t> KeySizeMap;
     KeySizeMap dims;
-    for (const auto& factor : graph) {
+    for (const auto& factor : *this) {
       if (!static_cast<bool>(factor)) continue;
 
       for (auto it = factor->begin(); it != factor->end(); ++it) {
@@ -134,8 +125,10 @@ namespace gtsam {
     }
 
     // Iterate over all factors, adding sparse scalar entries
+    SparseTriplets entries;
+    entries.reserve(60 * size());
     nrows = 0;
-    for (const auto& factor : graph) {
+    for (const auto& factor : *this) {
       if (!static_cast<bool>(factor)) continue;
 
       // Convert to JacobianFactor if necessary
@@ -179,16 +172,13 @@ namespace gtsam {
     }
 
     ncols++;  // +1 for b-column
+    return entries;
   }
 
   /* ************************************************************************* */
-  using BoostTriplets = std::vector<boost::tuple<size_t, size_t, double> >;
-  BoostTriplets GaussianFactorGraph::sparseJacobian() const {
-    BoostTriplets entries;
-    entries.reserve(60 * size());
+  SparseTriplets GaussianFactorGraph::sparseJacobian() const {
     size_t nrows, ncols;
-    sparseJacobianInPlace(*this, entries, Ordering(this->keys()), nrows, ncols);
-    return entries;
+    return sparseJacobian(Ordering(this->keys()), nrows, ncols);
   }
 
   /* ************************************************************************* */
@@ -202,21 +192,11 @@ namespace gtsam {
     Matrix IJS(3, nzmax);
     for (size_t k = 0; k < result.size(); k++) {
       const auto& entry = result[k];
-      IJS(0, k) = double(entry.get<0>() + 1);
-      IJS(1, k) = double(entry.get<1>() + 1);
-      IJS(2, k) = entry.get<2>();
+      IJS(0, k) = double(std::get<0>(entry) + 1);
+      IJS(1, k) = double(std::get<1>(entry) + 1);
+      IJS(2, k) = std::get<2>(entry);
     }
     return IJS;
-  }
-
-  /* ************************************************************************* */
-  using GtsamTriplets = std::vector<std::tuple<int, int, double> >;
-  GtsamTriplets GaussianFactorGraph::sparseJacobianFast(
-      const Ordering& ordering, size_t& nrows, size_t& ncols) const {
-    GtsamTriplets entries;
-    entries.reserve(60 * size());
-    sparseJacobianInPlace(*this, entries, ordering, nrows, ncols);
-    return entries;
   }
 
   /* ************************************************************************* */

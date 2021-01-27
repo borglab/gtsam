@@ -36,16 +36,16 @@ using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 
-typedef boost::tuple<size_t, size_t, double> BoostTriplet;
-bool triplet_equal(BoostTriplet a, BoostTriplet b) {
-  if (a.get<0>() == b.get<0>() && a.get<1>() == b.get<1>() &&
-      a.get<2>() == b.get<2>()) return true;
+typedef std::tuple<size_t, size_t, double> SparseTriplet;
+bool triplet_equal(SparseTriplet a, SparseTriplet b) {
+  if (get<0>(a) == get<0>(b) && get<1>(a) == get<1>(b) &&
+      get<2>(a) == get<2>(b)) return true;
 
   cout << "not equal:" << endl;
   cout << "\texpected: "
-      "(" << a.get<0>() << ", " << a.get<1>() << ") = " << a.get<2>() << endl;
+      "(" << get<0>(a) << ", " << get<1>(a) << ") = " << get<2>(a) << endl;
   cout << "\tactual:   "
-      "(" << b.get<0>() << ", " << b.get<1>() << ") = " << b.get<2>() << endl;
+      "(" << get<0>(b) << ", " << get<1>(b) << ") = " << get<2>(b) << endl;
   return false;
 }
 
@@ -119,14 +119,14 @@ TEST(GaussianFactorGraph, sparseJacobian) {
 
   EXPECT(assert_equal(expectedMatlab, actual));
 
-  // BoostTriplets
+  // SparseTriplets
   auto boostActual = gfg.sparseJacobian();
   // check the triplets size...
   EXPECT_LONGS_EQUAL(16, boostActual.size());
   // check content
   for (int i = 0; i < 16; i++) {
     EXPECT(triplet_equal(
-        BoostTriplet(expected(i, 0) - 1, expected(i, 1) - 1, expected(i, 2)),
+        SparseTriplet(expected(i, 0) - 1, expected(i, 1) - 1, expected(i, 2)),
         boostActual.at(i)));
   }
 }
