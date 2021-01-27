@@ -380,14 +380,6 @@ namespace gtsam {
     /// @}
 
   private:
-    /** Performs in-place population of a sparse jacobian.  Contains the
-     * common functionality amongst different sparseJacobian functions.
-     * @param entries a container of triplets that supports
-     * `emplace_back(size_t, size_t, double)`*/
-    template <typename T>
-    void sparseJacobianInPlace(T& entries, const Ordering& ordering,
-                               size_t& nrows, size_t& ncols) const;
-
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>

@@ -100,16 +100,24 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  /** Performs in-place population of a sparse jacobian.  Contains the
+   * common functionality amongst different sparseJacobian functions.
+   * @param graph the factor graph to get the Jacobian from
+   * @param entries a container of triplets that supports
+   * `emplace_back(size_t, size_t, double)
+   * @param ordering the variable ordering
+   * @param[out] nrows the nurmber of rows in the Jacobian
+   * @param[out] ncols the number of columns in the Jacobian
+   */
   template <typename T>
-  void GaussianFactorGraph::sparseJacobianInPlace(T& entries,
-                                                  const Ordering& ordering,
-                                                  size_t& nrows,
-                                                  size_t& ncols) const {
+  void sparseJacobianInPlace(const GaussianFactorGraph& graph, T& entries,
+                             const Ordering& ordering, size_t& nrows,
+                             size_t& ncols) {
     gttic_(GaussianFactorGraph_sparseJacobianInPlace);
     // First find dimensions of each variable
     typedef std::map<Key, size_t> KeySizeMap;
     KeySizeMap dims;
-    for (const sharedFactor& factor : *this) {
+    for (const auto& factor : graph) {
       if (!static_cast<bool>(factor)) continue;
 
       for (auto it = factor->begin(); it != factor->end(); ++it) {
@@ -127,7 +135,7 @@ namespace gtsam {
 
     // Iterate over all factors, adding sparse scalar entries
     nrows = 0;
-    for (const sharedFactor& factor : *this) {
+    for (const auto& factor : graph) {
       if (!static_cast<bool>(factor)) continue;
 
       // Convert to JacobianFactor if necessary
@@ -179,7 +187,7 @@ namespace gtsam {
     BoostTriplets entries;
     entries.reserve(60 * size());
     size_t nrows, ncols;
-    sparseJacobianInPlace(entries, Ordering(this->keys()), nrows, ncols);
+    sparseJacobianInPlace(*this, entries, Ordering(this->keys()), nrows, ncols);
     return entries;
   }
 
@@ -207,7 +215,7 @@ namespace gtsam {
       const Ordering& ordering, size_t& nrows, size_t& ncols) const {
     GtsamTriplets entries;
     entries.reserve(60 * size());
-    sparseJacobianInPlace(entries, ordering, nrows, ncols);
+    sparseJacobianInPlace(*this, entries, ordering, nrows, ncols);
     return entries;
   }
 
