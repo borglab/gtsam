@@ -182,7 +182,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  using BoostTriplets = std::vector<boost::tuple<size_t, size_t, double>>;
+  using BoostTriplets = std::vector<boost::tuple<size_t, size_t, double> >;
   BoostTriplets GaussianFactorGraph::sparseJacobian() const {
     BoostTriplets entries;
     entries.reserve(60 * size());
@@ -210,7 +210,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  using GtsamTriplets = std::vector<std::tuple<int, int, double>>;
+  using GtsamTriplets = std::vector<std::tuple<int, int, double> >;
   GtsamTriplets GaussianFactorGraph::sparseJacobianFast(
       const Ordering& ordering, size_t& nrows, size_t& ncols) const {
     GtsamTriplets entries;
