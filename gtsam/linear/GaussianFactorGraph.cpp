@@ -126,7 +126,7 @@ namespace gtsam {
 
     // Iterate over all factors, adding sparse scalar entries
     SparseTriplets entries;
-    entries.reserve(60 * size());
+    entries.reserve(30 * size());
     nrows = 0;
     for (const auto& factor : *this) {
       if (!static_cast<bool>(factor)) continue;
@@ -148,8 +148,7 @@ namespace gtsam {
       // Whiten the factor and add entries for it
       // iterate over all variables in the factor
       const JacobianFactor whitened(jacobianFactor->whiten());
-      for (JacobianFactor::const_iterator key = whitened.begin();
-           key < whitened.end(); ++key) {
+      for (auto key = whitened.begin(); key < whitened.end(); ++key) {
         JacobianFactor::constABlock whitenedA = whitened.getA(key);
         // find first column index for this key
         size_t column_start = columnIndices[*key];
