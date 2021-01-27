@@ -187,7 +187,7 @@ namespace gtsam {
      * The standard deviations are baked into A and b
      * @return the sparse matrix as a std::vector of boost tuples
      */
-    std::vector<boost::tuple<size_t, size_t, double>> sparseJacobian() const;
+    std::vector<boost::tuple<size_t, size_t, double> > sparseJacobian() const;
 
     /**
      * Matrix version of sparseJacobian: generates a 3*m matrix with [i,j,s]
@@ -203,7 +203,7 @@ namespace gtsam {
      * @param[out] nrows The number of rows in the Jacobian
      * @param[out] ncols The number of columns in the Jacobian
      */
-    std::vector<std::tuple<int, int, double>> sparseJacobianFast(
+    std::vector<std::tuple<int, int, double> > sparseJacobianFast(
         const Ordering& ordering, size_t& nrows, size_t& ncols) const;
 
     /**
