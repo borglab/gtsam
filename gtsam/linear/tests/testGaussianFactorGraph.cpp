@@ -36,16 +36,16 @@ using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 
-typedef boost::tuple<size_t, size_t, double> BoostTriplet;
-bool triplet_equal(BoostTriplet a, BoostTriplet b) {
-  if (a.get<0>() == b.get<0>() && a.get<1>() == b.get<1>() &&
-      a.get<2>() == b.get<2>()) return true;
+typedef std::tuple<size_t, size_t, double> SparseTriplet;
+bool triplet_equal(SparseTriplet a, SparseTriplet b) {
+  if (get<0>(a) == get<0>(b) && get<1>(a) == get<1>(b) &&
+      get<2>(a) == get<2>(b)) return true;
 
   cout << "not equal:" << endl;
   cout << "\texpected: "
-      "(" << a.get<0>() << ", " << a.get<1>() << ") = " << a.get<2>() << endl;
+      "(" << get<0>(a) << ", " << get<1>(a) << ") = " << get<2>(a) << endl;
   cout << "\tactual:   "
-      "(" << b.get<0>() << ", " << b.get<1>() << ") = " << b.get<2>() << endl;
+      "(" << get<0>(b) << ", " << get<1>(b) << ") = " << get<2>(b) << endl;
   return false;
 }
 
@@ -66,10 +66,11 @@ TEST(GaussianFactorGraph, initialization) {
   // Test sparse, which takes a vector and returns a matrix, used in MATLAB
   // Note that this the augmented vector and the RHS is in column 7
   Matrix expectedIJS =
-      (Matrix(3, 22) << 1., 2., 1., 2., 3., 4., 3., 4., 3., 4., 5., 6., 5., 6., 5., 6., 7., 8., 7.,
-       8., 7., 8., 1., 2., 7., 7., 1., 2., 3., 4., 7., 7., 1., 2., 5., 6., 7., 7., 3., 4., 5., 6.,
-       7., 7., 10., 10., -1., -1., -10., -10., 10., 10., 2., -1., -5., -5., 5., 5., 0., 1., -5.,
-       -5., 5., 5., -1., 1.5).finished();
+      (Matrix(3, 21) <<
+      1., 2., 1., 2., 3., 4., 3., 4., 3., 4., 5., 6., 5., 6., 6., 7., 8., 7., 8., 7., 8.,
+      1., 2., 7., 7., 1., 2., 3., 4., 7., 7., 1., 2., 5., 6., 7., 3., 4., 5., 6., 7., 7.,
+      10., 10., -1., -1., -10., -10., 10., 10., 2., -1., -5., -5., 5., 5.,
+        1., -5., -5., 5., 5., -1., 1.5).finished();
   Matrix actualIJS = fg.sparseJacobian_();
   EQUALITY(expectedIJS, actualIJS);
 }
@@ -118,14 +119,14 @@ TEST(GaussianFactorGraph, sparseJacobian) {
 
   EXPECT(assert_equal(expectedMatlab, actual));
 
-  // BoostTriplets
+  // SparseTriplets
   auto boostActual = gfg.sparseJacobian();
   // check the triplets size...
   EXPECT_LONGS_EQUAL(16, boostActual.size());
   // check content
   for (int i = 0; i < 16; i++) {
     EXPECT(triplet_equal(
-        BoostTriplet(expected(i, 0) - 1, expected(i, 1) - 1, expected(i, 2)),
+        SparseTriplet(expected(i, 0) - 1, expected(i, 1) - 1, expected(i, 2)),
         boostActual.at(i)));
   }
 }
