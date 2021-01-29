@@ -49,7 +49,7 @@ public:
   : Base(model, key), measured_(pose_z.translation()) {
   }
 
-  virtual ~PoseTranslationPrior() {}
+  ~PoseTranslationPrior() override {}
 
   const Translation& measured() const { return measured_; }
 

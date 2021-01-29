@@ -129,7 +129,7 @@ class GTSAM_EXPORT Null : public Base {
   typedef boost::shared_ptr<Null> shared_ptr;
 
   Null(const ReweightScheme reweight = Block) : Base(reweight) {}
-  ~Null() {}
+  ~Null() override {}
   double weight(double /*error*/) const override { return 1.0; }
   double loss(double distance) const override { return 0.5 * distance * distance; }
   void print(const std::string &s) const override;
@@ -286,7 +286,7 @@ class GTSAM_EXPORT GemanMcClure : public Base {
   typedef boost::shared_ptr<GemanMcClure> shared_ptr;
 
   GemanMcClure(double c = 1.0, const ReweightScheme reweight = Block);
-  ~GemanMcClure() {}
+  ~GemanMcClure() override {}
   double weight(double distance) const override;
   double loss(double distance) const override;
   void print(const std::string &s) const override;
@@ -316,7 +316,7 @@ class GTSAM_EXPORT DCS : public Base {
   typedef boost::shared_ptr<DCS> shared_ptr;
 
   DCS(double c = 1.0, const ReweightScheme reweight = Block);
-  ~DCS() {}
+  ~DCS() override {}
   double weight(double distance) const override;
   double loss(double distance) const override;
   void print(const std::string &s) const override;

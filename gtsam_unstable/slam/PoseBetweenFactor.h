@@ -56,7 +56,7 @@ namespace gtsam {
       Base(model, key1, key2), measured_(measured), body_P_sensor_(body_P_sensor) {
     }
 
-    virtual ~PoseBetweenFactor() {}
+    ~PoseBetweenFactor() override {}
 
     /// @return a deep copy of this factor
     gtsam::NonlinearFactor::shared_ptr clone() const override {

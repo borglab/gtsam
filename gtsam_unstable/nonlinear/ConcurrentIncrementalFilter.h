@@ -64,7 +64,7 @@ public:
   ConcurrentIncrementalFilter(const ISAM2Params& parameters = ISAM2Params()) : isam2_(parameters) {};
 
   /** Default destructor */
-  virtual ~ConcurrentIncrementalFilter() {};
+  ~ConcurrentIncrementalFilter() override {};
 
   /** Implement a GTSAM standard 'print' function */
   void print(const std::string& s = "Concurrent Incremental Filter:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;

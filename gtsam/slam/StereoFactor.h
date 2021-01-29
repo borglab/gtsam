@@ -88,7 +88,7 @@ public:
     throwCheirality_(throwCheirality), verboseCheirality_(verboseCheirality) {}
 
   /** Virtual destructor */
-  virtual ~GenericStereoFactor() {}
+  ~GenericStereoFactor() override {}
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {

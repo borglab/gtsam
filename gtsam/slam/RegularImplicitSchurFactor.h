@@ -59,7 +59,7 @@ public:
   }
 
   /// Destructor
-  virtual ~RegularImplicitSchurFactor() {
+  ~RegularImplicitSchurFactor() override {
   }
 
   std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD> >& FBlocks() const {

@@ -352,7 +352,7 @@ public:
   /// @name Standard Interface
   /// @{
 
-  virtual ~PinholePose() {
+  ~PinholePose() override {
   }
 
   /// return shared pointer to calibration

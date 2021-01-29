@@ -71,7 +71,7 @@ class SmartStereoProjectionPoseFactor : public SmartStereoProjectionFactor {
       const boost::optional<Pose3>& body_P_sensor = boost::none);
 
   /** Virtual destructor */
-  virtual ~SmartStereoProjectionPoseFactor() = default;
+  ~SmartStereoProjectionPoseFactor() override = default;
 
   /**
    * add a new measurement and pose key

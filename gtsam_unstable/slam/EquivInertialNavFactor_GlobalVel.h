@@ -128,7 +128,7 @@ public:
         dt12_(dt12), world_g_(world_g), world_rho_(world_rho), world_omega_earth_(world_omega_earth), Jacobian_wrt_t0_Overall_(Jacobian_wrt_t0_Overall),
         Bias_initial_(Bias_initial), body_P_sensor_(body_P_sensor) {  }
 
-  virtual ~EquivInertialNavFactor_GlobalVel() {}
+  ~EquivInertialNavFactor_GlobalVel() override {}
 
   /** implement functions needed for Testable */
 

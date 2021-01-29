@@ -66,7 +66,7 @@ public:
         Base(calcDiscreteNoiseModel(model, delta_t), key1, key2), dt_(delta_t), tau_(tau) {
   }
 
-  virtual ~GaussMarkov1stOrderFactor() {}
+  ~GaussMarkov1stOrderFactor() override {}
 
   /** implement functions needed for Testable */
 

@@ -67,7 +67,7 @@ public:
       const Values& initialValues, const Parameters& params = Parameters());
 
   /// Destructor
-  virtual ~NonlinearConjugateGradientOptimizer() {
+  ~NonlinearConjugateGradientOptimizer() override {
   }
 
   /** 
