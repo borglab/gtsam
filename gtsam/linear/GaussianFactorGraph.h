@@ -181,15 +181,25 @@ namespace gtsam {
     ///@{
 
     /**
-     * Return vector of i, j, and s to generate an m-by-n sparse Jacobian matrix,
-     * where i(k) and j(k) are the base 0 row and column indices, s(k) a double.
+     * Returns a sparse augmented Jacbian matrix as a vector of i, j, and s,
+     * where i(k) and j(k) are the base 0 row and column indices, and s(k) is
+     * the entry as a double.
      * The standard deviations are baked into A and b
+     * @return the sparse matrix as a std::vector of std::tuples
+     * @param ordering the column ordering
+     * @param[out] nrows The number of rows in the augmented Jacobian
+     * @param[out] ncols The number of columns in the augmented Jacobian
      */
-    std::vector<boost::tuple<size_t, size_t, double> > sparseJacobian() const;
+    std::vector<std::tuple<int, int, double> > sparseJacobian(
+        const Ordering& ordering, size_t& nrows, size_t& ncols) const;
+
+    /** Returns a sparse augmented Jacobian matrix with default ordering */
+    std::vector<std::tuple<int, int, double> > sparseJacobian() const;
 
     /**
-     * Matrix version of sparseJacobian: generates a 3*m matrix with [i,j,s] entries
-     * such that S(i(k),j(k)) = s(k), which can be given to MATLAB's sparse.
+     * Matrix version of sparseJacobian: generates a 3*m matrix with [i,j,s]
+     * entries such that S(i(k),j(k)) = s(k), which can be given to MATLAB's
+     * sparse.  Note: i, j are 1-indexed.
      * The standard deviations are baked into A and b
      */
     Matrix sparseJacobian_() const;

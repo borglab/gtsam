@@ -41,11 +41,6 @@ $ make install
     - MacOS 10.6 - 10.14
     - Windows 7, 8, 8.1, 10
 
-    Known issues:
-
-    - MSVC 2013 is not yet supported because it cannot build the serialization module
-      of Boost 1.55 (or earlier).
-
 2. GTSAM makes extensive use of debug assertions, and we highly recommend you work
 in Debug mode while developing (enabled by default). Likewise, it is imperative
 that you switch to release mode when running finished code and for timing. GTSAM
@@ -69,6 +64,13 @@ execute commands as follows for an out-of-source build:
 
   This will build the library and unit tests, run all of the unit tests,
   and then install the library itself.
+
+## Known Issues
+
+- When using `GTSAM_BUILD_WITH_MARCH_NATIVE=ON`, you may encounter issues in running tests which we are still investigating:
+  - Use of a version of GCC < 7.5 results in an "Indeterminant Linear System" error for `testSmartProjectionFactor`.
+  - Use of Boost version < 1.67 with clang will give a segfault for mulitple test cases.
+- MSVC 2013 is not yet supported because it cannot build the serialization module of Boost 1.55 (or earlier).
 
 # Windows Installation
 
