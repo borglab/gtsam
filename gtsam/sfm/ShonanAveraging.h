@@ -26,6 +26,8 @@
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/sfm/BinaryMeasurement.h>
+#include <gtsam/linear/PowerMethod.h>
+#include <gtsam/linear/AcceleratedPowerMethod.h>
 #include <gtsam/slam/dataset.h>
 
 #include <Eigen/Sparse>
@@ -89,7 +91,8 @@ struct GTSAM_EXPORT ShonanAveragingParameters {
   bool getCertifyOptimality() const { return certifyOptimality; }
 
   /// Print the parameters and flags used for rotation averaging.
-  void print() const {
+  void print(const std::string &s = "") const {
+    std::cout << (s.empty() ? s : s + " ");
     std::cout << " ShonanAveragingParameters: " << std::endl;
     std::cout << " alpha: " << alpha << std::endl;
     std::cout << " beta: " << beta << std::endl;
@@ -249,6 +252,13 @@ class GTSAM_EXPORT ShonanAveraging {
    */
   double computeMinEigenValue(const Values &values,
                               Vector *minEigenVector = nullptr) const;
+
+  /**
+   * Compute minimum eigenvalue with accelerated power method.
+   * @param values: should be of type SOn
+   */
+  double computeMinEigenValueAP(const Values &values,
+                                Vector *minEigenVector = nullptr) const;
 
   /// Project pxdN Stiefel manifold matrix S to Rot3^N
   Values roundSolutionS(const Matrix &S) const;

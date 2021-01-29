@@ -287,6 +287,10 @@ public:
    */
   static std::pair<size_t, size_t> rotationInterval() { return std::make_pair(2, 2); }
 
+  /// Output stream operator
+  GTSAM_EXPORT
+  friend std::ostream &operator<<(std::ostream &os, const Pose2& p);
+
   /// @}
 
  private:
