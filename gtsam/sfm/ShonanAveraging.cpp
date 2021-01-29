@@ -17,6 +17,7 @@
  */
 
 #include <SymEigsSolver.h>
+#include <cmath>
 #include <gtsam/linear/PCGSolver.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
@@ -488,7 +489,87 @@ Sparse ShonanAveraging<d>::computeA(const Values &values) const {
 }
 
 /* ************************************************************************* */
+template <size_t d>
+Sparse ShonanAveraging<d>::computeA(const Matrix &S) const {
+  auto Lambda = computeLambda(S);
+  return Lambda - Q_;
+}
+
+/* ************************************************************************* */
+// Perturb the initial initialVector by adding a spherically-uniformly
+// distributed random vector with 0.03*||initialVector||_2 magnitude to
+// initialVector
+// ref : Part III. C, Rosen, D. and Carlone, L., 2017, September. Computational
+// enhancements for certifiably correct SLAM. In Proceedings of the
+// International Conference on Intelligent Robots and Systems.
+static Vector perturb(const Vector &initialVector) {
+  // generate a 0.03*||x_0||_2 as stated in David's paper
+  int n = initialVector.rows();
+  Vector disturb = Vector::Random(n);
+  disturb.normalize();
+
+  double magnitude = initialVector.norm();
+  Vector perturbedVector = initialVector + 0.03 * magnitude * disturb;
+  perturbedVector.normalize();
+  return perturbedVector;
+}
+
+/* ************************************************************************* */
 /// MINIMUM EIGENVALUE COMPUTATIONS
+// Alg.6 from paper Distributed Certifiably Correct Pose-Graph Optimization,
+// it takes in the certificate matrix A as input, the maxIterations and the
+// minEigenvalueNonnegativityTolerance is set to 1000 and 10e-4 ad default,
+// there are two parts
+// in this algorithm:
+// (1) compute the maximum eigenpair (\lamda_dom, \vect{v}_dom) of A by power
+// method. if \lamda_dom is less than zero, then return the eigenpair. (2)
+// compute the maximum eigenpair (\theta, \vect{v}) of C = \lamda_dom * I - A by
+// accelerated power method. Then return (\lamda_dom - \theta, \vect{v}).
+static bool PowerMinimumEigenValue(
+    const Sparse &A, const Matrix &S, double &minEigenValue,
+    Vector *minEigenVector = 0, size_t *numIterations = 0,
+    size_t maxIterations = 1000,
+    double minEigenvalueNonnegativityTolerance = 10e-4) {
+
+  // a. Compute dominant eigenpair of S using power method
+  PowerMethod<Sparse> pmOperator(A);
+
+  const bool pmConverged = pmOperator.compute(
+      maxIterations, 1e-5);
+
+  // Check convergence and bail out if necessary
+  if (!pmConverged) return false;
+
+  const double pmEigenValue = pmOperator.eigenvalue();
+
+  if (pmEigenValue < 0) {
+    // The largest-magnitude eigenvalue is negative, and therefore also the
+    // minimum eigenvalue, so just return this solution
+    minEigenValue = pmEigenValue;
+    if (minEigenVector) {
+      *minEigenVector = pmOperator.eigenvector();
+      minEigenVector->normalize();  // Ensure that this is a unit vector
+    }
+    return true;
+  }
+
+  const Sparse C = pmEigenValue * Matrix::Identity(A.rows(), A.cols()) - A;
+  const boost::optional<Vector> initial = perturb(S.row(0));
+  AcceleratedPowerMethod<Sparse> apmShiftedOperator(C, initial);
+
+  const bool minConverged = apmShiftedOperator.compute(
+      maxIterations, minEigenvalueNonnegativityTolerance / pmEigenValue);
+
+  if (!minConverged) return false;
+
+  minEigenValue = pmEigenValue - apmShiftedOperator.eigenvalue();
+  if (minEigenVector) {
+    *minEigenVector = apmShiftedOperator.eigenvector();
+    minEigenVector->normalize();  // Ensure that this is a unit vector
+  }
+  if (numIterations) *numIterations = apmShiftedOperator.nrIterations();
+  return true;
+}
 
 /** This is a lightweight struct used in conjunction with Spectra to compute
  * the minimum eigenvalue and eigenvector of a sparse matrix A; it has a single
@@ -636,13 +717,6 @@ static bool SparseMinimumEigenValue(
 
 /* ************************************************************************* */
 template <size_t d>
-Sparse ShonanAveraging<d>::computeA(const Matrix &S) const {
-  auto Lambda = computeLambda(S);
-  return Lambda - Q_;
-}
-
-/* ************************************************************************* */
-template <size_t d>
 double ShonanAveraging<d>::computeMinEigenValue(const Values &values,
                                                 Vector *minEigenVector) const {
   assert(values.size() == nrUnknowns());
@@ -654,6 +728,23 @@ double ShonanAveraging<d>::computeMinEigenValue(const Values &values,
   if (!success) {
     throw std::runtime_error(
         "SparseMinimumEigenValue failed to compute minimum eigenvalue.");
+  }
+  return minEigenValue;
+}
+
+/* ************************************************************************* */
+template <size_t d>
+double ShonanAveraging<d>::computeMinEigenValueAP(const Values &values,
+                                                Vector *minEigenVector) const {
+  assert(values.size() == nrUnknowns());
+  const Matrix S = StiefelElementMatrix(values);
+  auto A = computeA(S);
+
+  double minEigenValue = 0;
+  bool success = PowerMinimumEigenValue(A, S, minEigenValue, minEigenVector);
+  if (!success) {
+    throw std::runtime_error(
+        "PowerMinimumEigenValue failed to compute minimum eigenvalue.");
   }
   return minEigenValue;
 }

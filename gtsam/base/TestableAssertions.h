@@ -372,16 +372,19 @@ bool assert_stdout_equal(const std::string& expected, const V& actual) {
 
 /**
  * Capture print function output and compare against string.
+ *
+ * @param s: Optional string to pass to the print() method.
  */
-template<class V>
-bool assert_print_equal(const std::string& expected, const V& actual) {
+template <class V>
+bool assert_print_equal(const std::string& expected, const V& actual,
+                        const std::string& s = "") {
   // Redirect output to buffer so we can compare
   std::stringstream buffer;
   // Save the original output stream so we can reset later
   std::streambuf* old = std::cout.rdbuf(buffer.rdbuf());
 
   // We test against actual std::cout for faithful reproduction
-  actual.print();
+  actual.print(s);
 
   // Get output string and reset stdout
   std::string actual_ = buffer.str();

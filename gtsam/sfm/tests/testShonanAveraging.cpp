@@ -188,9 +188,14 @@ TEST(ShonanAveraging3, CheckWithEigen) {
   for (int i = 1; i < lambdas.size(); i++)
       minEigenValue = min(lambdas(i), minEigenValue);
 
+  // Compute Eigenvalue with Accelerated Power method
+  double lambdaAP = kShonan.computeMinEigenValueAP(Qstar3);
+
   // Actual check
   EXPECT_DOUBLES_EQUAL(0, lambda, 1e-11);
   EXPECT_DOUBLES_EQUAL(0, minEigenValue, 1e-11);
+  EXPECT_DOUBLES_EQUAL(0, lambdaAP, 1e-11);
+
 
   // Construct test descent direction (as minEigenVector is not predictable
   // across platforms, being one from a basically flat 3d- subspace)
