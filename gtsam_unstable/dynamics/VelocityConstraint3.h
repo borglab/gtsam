@@ -28,7 +28,7 @@ public:
   ///TODO: comment
   VelocityConstraint3(Key key1, Key key2, Key velKey, double dt, double mu = 1000.0)
   : Base(noiseModel::Constrained::All(1, std::abs(mu)), key1, key2, velKey), dt_(dt) {}
-  virtual ~VelocityConstraint3() {}
+  ~VelocityConstraint3() override {}
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {

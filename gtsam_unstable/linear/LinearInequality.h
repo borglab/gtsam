@@ -96,7 +96,7 @@ public:
   }
 
   /** Virtual destructor */
-  virtual ~LinearInequality() {
+  ~LinearInequality() override {
   }
 
   /** equals */

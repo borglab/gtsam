@@ -34,7 +34,7 @@ struct DtorTestBase {
 
 struct DtorTestDerived : public DtorTestBase {
   DtorTestDerived() { cout << "  DtorTestDerived" << endl; }
-  virtual ~DtorTestDerived() { cout << "  ~DtorTestDerived" << endl; }
+  ~DtorTestDerived() override { cout << "  ~DtorTestDerived" << endl; }
 };
 
 
@@ -47,8 +47,8 @@ struct VirtualBase {
 struct VirtualDerived : public VirtualBase {
   double data;
   VirtualDerived() { data = rand(); }
-  virtual void method() { data = rand(); }
-  virtual ~VirtualDerived() { }
+  void method() override { data = rand(); }
+  ~VirtualDerived() override { }
 };
 
 struct NonVirtualBase {

@@ -25,7 +25,7 @@ class InfeasibleOrUnboundedProblem: public ThreadsafeException<
 public:
   InfeasibleOrUnboundedProblem() {
   }
-  virtual ~InfeasibleOrUnboundedProblem() noexcept {
+  ~InfeasibleOrUnboundedProblem() noexcept override {
   }
 
   const char* what() const noexcept override {

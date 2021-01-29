@@ -29,7 +29,7 @@ namespace gtsam {
   class InconsistentEliminationRequested : public std::exception {
   public:
     InconsistentEliminationRequested() noexcept {}
-    virtual ~InconsistentEliminationRequested() noexcept {}
+    ~InconsistentEliminationRequested() noexcept override {}
     const char* what() const noexcept override {
       return
         "An inference algorithm was called with inconsistent arguments.  The\n"

@@ -88,7 +88,7 @@ namespace gtsam {
           throwCheirality_(throwCheirality), verboseCheirality_(verboseCheirality) {}
 
     /** Virtual destructor */
-    virtual ~ProjectionFactorPPPC() {}
+    ~ProjectionFactorPPPC() override {}
 
     /// @return a deep copy of this factor
     NonlinearFactor::shared_ptr clone() const override {

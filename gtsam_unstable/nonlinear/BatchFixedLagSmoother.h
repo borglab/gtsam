@@ -38,7 +38,7 @@ public:
     FixedLagSmoother(smootherLag), parameters_(parameters), enforceConsistency_(enforceConsistency) { };
 
   /** destructor */
-  virtual ~BatchFixedLagSmoother() { };
+  ~BatchFixedLagSmoother() override { };
 
   /** Print the factor for debugging and testing (implementing Testable) */
   void print(const std::string& s = "BatchFixedLagSmoother:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;

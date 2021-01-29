@@ -18,7 +18,7 @@ class ImuMeasurement : public Measurement {
   ImuMeasurement()
       : Measurement("ImuMeasurement"), I_a_WI{0, 0, 0}, I_w_WI{0, 0, 0} {}
 
-  virtual ~ImuMeasurement() override {}
+  ~ImuMeasurement() override {}
 
   friend std::ostream& operator<<(std::ostream& stream,
                                   const ImuMeasurement& meas);

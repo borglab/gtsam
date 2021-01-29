@@ -79,7 +79,7 @@ class GTSAM_EXPORT FunctorizedFactor : public NoiseModelFactor1<T> {
                     const std::function<R(T, boost::optional<Matrix &>)> func)
       : Base(model, key), measured_(z), noiseModel_(model), func_(func) {}
 
-  virtual ~FunctorizedFactor() {}
+  ~FunctorizedFactor() override {}
 
   /// @return a deep copy of this factor
   NonlinearFactor::shared_ptr clone() const override {
@@ -183,7 +183,7 @@ class GTSAM_EXPORT FunctorizedFactor2 : public NoiseModelFactor2<T1, T2> {
         noiseModel_(model),
         func_(func) {}
 
-  virtual ~FunctorizedFactor2() {}
+  ~FunctorizedFactor2() override {}
 
   /// @return a deep copy of this factor
   NonlinearFactor::shared_ptr clone() const override {

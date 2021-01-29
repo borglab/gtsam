@@ -78,7 +78,7 @@ class UnaryFactor: public NoiseModelFactor1<Pose2> {
   UnaryFactor(Key j, double x, double y, const SharedNoiseModel& model):
     NoiseModelFactor1<Pose2>(model, j), mx_(x), my_(y) {}
 
-  virtual ~UnaryFactor() {}
+  ~UnaryFactor() override {}
 
   // Using the NoiseModelFactor1 base class there are two functions that must be overridden.
   // The first is the 'evaluateError' function. This function implements the desired measurement

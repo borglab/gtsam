@@ -442,7 +442,7 @@ namespace gtsam {
     ValuesKeyAlreadyExists(Key key) noexcept :
       key_(key) {}
 
-    virtual ~ValuesKeyAlreadyExists() noexcept {}
+    ~ValuesKeyAlreadyExists() noexcept override {}
 
     /// The duplicate key that was attempted to be added
     Key key() const noexcept { return key_; }
@@ -465,7 +465,7 @@ namespace gtsam {
     ValuesKeyDoesNotExist(const char* operation, Key key) noexcept :
       operation_(operation), key_(key) {}
 
-    virtual ~ValuesKeyDoesNotExist() noexcept {}
+    ~ValuesKeyDoesNotExist() noexcept override {}
 
     /// The key that was attempted to be accessed that does not exist
     Key key() const noexcept { return key_; }
@@ -490,7 +490,7 @@ namespace gtsam {
         const std::type_info& storedTypeId, const std::type_info& requestedTypeId) noexcept :
       key_(key), storedTypeId_(storedTypeId), requestedTypeId_(requestedTypeId) {}
 
-    virtual ~ValuesIncorrectType() noexcept {}
+    ~ValuesIncorrectType() noexcept override {}
 
     /// The key that was attempted to be accessed that does not exist
     Key key() const noexcept { return key_; }
@@ -511,7 +511,7 @@ namespace gtsam {
   public:
     DynamicValuesMismatched() noexcept {}
 
-    virtual ~DynamicValuesMismatched() noexcept {}
+    ~DynamicValuesMismatched() noexcept override {}
 
     const char* what() const noexcept override {
       return "The Values 'this' and the argument passed to Values::localCoordinates have mismatched keys and values";
@@ -533,7 +533,7 @@ namespace gtsam {
         M1_(M1), N1_(N1), M2_(M2), N2_(N2) {
     }
 
-    virtual ~NoMatchFoundForFixed() noexcept {
+    ~NoMatchFoundForFixed() noexcept override {
     }
 
     GTSAM_EXPORT const char* what() const noexcept override;

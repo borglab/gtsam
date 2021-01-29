@@ -70,7 +70,7 @@ public:
   /// @{
 
   /** Virtual destructor */
-  virtual ~GaussNewtonOptimizer() {}
+  ~GaussNewtonOptimizer() override {}
 
   /** 
    * Perform a single iteration, returning GaussianFactorGraph corresponding to 

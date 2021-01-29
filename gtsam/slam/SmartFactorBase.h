@@ -112,7 +112,7 @@ protected:
   }
 
   /// Virtual destructor, subclasses from NonlinearFactor
-  virtual ~SmartFactorBase() {
+  ~SmartFactorBase() override {
   }
 
   /**

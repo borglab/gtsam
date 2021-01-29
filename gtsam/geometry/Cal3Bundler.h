@@ -60,7 +60,7 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
               double tol = 1e-5)
       : Cal3(f, f, 0, u0, v0), k1_(k1), k2_(k2), tol_(tol) {}
 
-  virtual ~Cal3Bundler() {}
+  ~Cal3Bundler() override {}
 
   /// @}
   /// @name Testable
@@ -141,7 +141,7 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
   /// @{
 
   /// return DOF, dimensionality of tangent space
-  virtual size_t dim() const override { return Dim(); }
+  size_t dim() const override { return Dim(); }
 
   /// return DOF, dimensionality of tangent space
   inline static size_t Dim() { return dimension; }

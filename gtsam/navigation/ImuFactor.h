@@ -107,7 +107,7 @@ public:
   }
 
   /// Virtual destructor
-  virtual ~PreintegratedImuMeasurements() {
+  ~PreintegratedImuMeasurements() override {
   }
 
   /// print
@@ -196,7 +196,7 @@ public:
   ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
       const PreintegratedImuMeasurements& preintegratedMeasurements);
 
-  virtual ~ImuFactor() {
+  ~ImuFactor() override {
   }
 
   /// @return a deep copy of this factor
@@ -274,7 +274,7 @@ public:
   ImuFactor2(Key state_i, Key state_j, Key bias,
              const PreintegratedImuMeasurements& preintegratedMeasurements);
 
-  virtual ~ImuFactor2() {
+  ~ImuFactor2() override {
   }
 
   /// @return a deep copy of this factor

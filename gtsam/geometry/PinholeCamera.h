@@ -157,7 +157,7 @@ public:
   /// @name Standard Interface
   /// @{
 
-  virtual ~PinholeCamera() {
+  ~PinholeCamera() override {
   }
 
   /// return pose

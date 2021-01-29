@@ -92,7 +92,7 @@ public:
   Rot3AttitudeFactor() {
   }
 
-  virtual ~Rot3AttitudeFactor() {
+  ~Rot3AttitudeFactor() override {
   }
 
   /**
@@ -166,7 +166,7 @@ public:
   Pose3AttitudeFactor() {
   }
 
-  virtual ~Pose3AttitudeFactor() {
+  ~Pose3AttitudeFactor() override {
   }
 
   /**
