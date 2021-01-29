@@ -50,7 +50,7 @@ namespace gtsam {
       Base(model, posekey, biaskey), measured_(measured) {
     }
 
-    virtual ~BiasedGPSFactor() {}
+    ~BiasedGPSFactor() override {}
 
     /** implement functions needed for Testable */
 

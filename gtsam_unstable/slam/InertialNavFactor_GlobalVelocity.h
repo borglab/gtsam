@@ -109,7 +109,7 @@ public:
             Pose1, Vel1, IMUBias1, Pose2, Vel2), measurement_acc_(measurement_acc), measurement_gyro_(measurement_gyro),
             dt_(measurement_dt), world_g_(world_g), world_rho_(world_rho), world_omega_earth_(world_omega_earth), body_P_sensor_(body_P_sensor) {  }
 
-  virtual ~InertialNavFactor_GlobalVelocity() {}
+  ~InertialNavFactor_GlobalVelocity() override {}
 
   /** implement functions needed for Testable */
 

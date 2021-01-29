@@ -100,7 +100,7 @@ namespace gtsam {
     /// @{
 
     /// Destructor
-    virtual ~WhiteNoiseFactor() {
+    ~WhiteNoiseFactor() override {
     }
 
     /// @}

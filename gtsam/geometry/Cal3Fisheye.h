@@ -73,7 +73,7 @@ class GTSAM_EXPORT Cal3Fisheye : public Cal3 {
         k4_(k4),
         tol_(tol) {}
 
-  virtual ~Cal3Fisheye() {}
+  ~Cal3Fisheye() override {}
 
   /// @}
   /// @name Advanced Constructors
@@ -142,7 +142,7 @@ class GTSAM_EXPORT Cal3Fisheye : public Cal3 {
                                                const Cal3Fisheye& cal);
 
   /// print with optional string
-  virtual void print(const std::string& s = "") const override;
+  void print(const std::string& s = "") const override;
 
   /// assert equality up to a tolerance
   bool equals(const Cal3Fisheye& K, double tol = 10e-9) const;
@@ -152,7 +152,7 @@ class GTSAM_EXPORT Cal3Fisheye : public Cal3 {
   /// @{
 
   /// Return dimensions of calibration manifold object
-  virtual size_t dim() const override { return Dim(); }
+  size_t dim() const override { return Dim(); }
 
   /// Return dimensions of calibration manifold object
   inline static size_t Dim() { return dimension; }

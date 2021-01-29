@@ -143,7 +143,7 @@ namespace simulated2D {
       return (prior(x, H) - measured_);
     }
 
-    virtual ~GenericPrior() {}
+    ~GenericPrior() override {}
 
     /// @return a deep copy of this factor
     gtsam::NonlinearFactor::shared_ptr clone() const override {
@@ -189,7 +189,7 @@ namespace simulated2D {
       return (odo(x1, x2, H1, H2) - measured_);
     }
 
-    virtual ~GenericOdometry() {}
+    ~GenericOdometry() override {}
 
     /// @return a deep copy of this factor
     gtsam::NonlinearFactor::shared_ptr clone() const override {
@@ -236,7 +236,7 @@ namespace simulated2D {
       return (mea(x1, x2, H1, H2) - measured_);
     }
 
-    virtual ~GenericMeasurement() {}
+    ~GenericMeasurement() override {}
 
     /// @return a deep copy of this factor
     gtsam::NonlinearFactor::shared_ptr clone() const override {

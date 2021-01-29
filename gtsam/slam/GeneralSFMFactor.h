@@ -96,7 +96,7 @@ public:
   ///< constructor that takes doubles x,y to make a Point2
   GeneralSFMFactor(double x, double y) : measured_(x, y) {}
 
-  virtual ~GeneralSFMFactor() {} ///< destructor
+  ~GeneralSFMFactor() override {} ///< destructor
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
@@ -230,7 +230,7 @@ public:
   Base(model, poseKey, landmarkKey, calibKey), measured_(measured) {}
   GeneralSFMFactor2():measured_(0.0,0.0) {} ///< default constructor
 
-  virtual ~GeneralSFMFactor2() {} ///< destructor
+  ~GeneralSFMFactor2() override {} ///< destructor
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {

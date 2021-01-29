@@ -155,7 +155,7 @@ namespace gtsam {
 
   public:
 
-    virtual ~Choice() {
+    ~Choice() override {
 #ifdef DT_DEBUG_MEMORY
         std::std::cout << Node::nrNodes << " destructing (Choice) " << this->id() << std::std::endl;
 #endif

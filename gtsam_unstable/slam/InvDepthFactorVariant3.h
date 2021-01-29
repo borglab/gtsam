@@ -60,7 +60,7 @@ public:
         Base(model, poseKey, landmarkKey), measured_(measured), K_(K) {}
 
   /** Virtual destructor */
-  virtual ~InvDepthFactorVariant3a() {}
+  ~InvDepthFactorVariant3a() override {}
 
   /**
    * print
@@ -180,7 +180,7 @@ public:
         Base(model, poseKey1, poseKey2, landmarkKey), measured_(measured), K_(K) {}
 
   /** Virtual destructor */
-  virtual ~InvDepthFactorVariant3b() {}
+  ~InvDepthFactorVariant3b() override {}
 
   /**
    * print

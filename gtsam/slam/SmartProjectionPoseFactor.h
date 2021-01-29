@@ -94,7 +94,7 @@ public:
   }
 
   /** Virtual destructor */
-  virtual ~SmartProjectionPoseFactor() {
+  ~SmartProjectionPoseFactor() override {
   }
 
   /**

@@ -41,7 +41,7 @@ public:
       double dt, const Key& key1, const Key& key2, const SharedNoiseModel& model)
   : Base(model, key1, key2), accel_(imu_vector.head(3)), gyro_(imu_vector.tail(3)), dt_(dt) {}
 
-  virtual ~IMUFactor() {}
+  ~IMUFactor() override {}
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {

@@ -122,7 +122,7 @@ public:
     return params;
   }
 
-  virtual ~LevenbergMarquardtParams() {}
+  ~LevenbergMarquardtParams() override {}
   void print(const std::string& str = "") const override;
 
   /// @name Getters/Setters, mainly for wrappers. Use fields above in C++.

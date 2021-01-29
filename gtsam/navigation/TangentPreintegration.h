@@ -54,7 +54,7 @@ public:
       const imuBias::ConstantBias& biasHat = imuBias::ConstantBias());
 
   /// Virtual destructor
-  virtual ~TangentPreintegration() {
+  ~TangentPreintegration() override {
   }
 
   /// @}

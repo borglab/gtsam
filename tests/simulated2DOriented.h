@@ -114,7 +114,7 @@ namespace simulated2DOriented {
           NoiseModelFactor2<VALUE, VALUE>(model, i1, i2), measured_(measured) {
     }
 
-    virtual ~GenericOdometry() {}
+    ~GenericOdometry() override {}
 
     /// Evaluate error and optionally derivative
     Vector evaluateError(const VALUE& x1, const VALUE& x2,

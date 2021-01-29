@@ -70,7 +70,7 @@ public:
   VelocityConstraint(Key key1, Key key2, double dt, const gtsam::SharedNoiseModel& model)
   : Base(model, key1, key2), dt_(dt), integration_mode_(dynamics::TRAPEZOIDAL) {}
 
-  virtual ~VelocityConstraint() {}
+  ~VelocityConstraint() override {}
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {

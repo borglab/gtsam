@@ -29,7 +29,7 @@ public:
   /** standard binary constructor */
   DummyFactor(const Key& key1, size_t dim1, const Key& key2, size_t dim2);
 
-  virtual ~DummyFactor() {}
+  ~DummyFactor() override {}
 
   // testable
 

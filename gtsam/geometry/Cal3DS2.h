@@ -47,7 +47,7 @@ class GTSAM_EXPORT Cal3DS2 : public Cal3DS2_Base {
           double k2, double p1 = 0.0, double p2 = 0.0, double tol = 1e-5)
       : Base(fx, fy, s, u0, v0, k1, k2, p1, p2, tol) {}
 
-  virtual ~Cal3DS2() {}
+  ~Cal3DS2() override {}
 
   /// @}
   /// @name Advanced Constructors
@@ -80,7 +80,7 @@ class GTSAM_EXPORT Cal3DS2 : public Cal3DS2_Base {
   Vector localCoordinates(const Cal3DS2& T2) const;
 
   /// Return dimensions of calibration manifold object
-  virtual size_t dim() const override { return Dim(); }
+  size_t dim() const override { return Dim(); }
 
   /// Return dimensions of calibration manifold object
   inline static size_t Dim() { return dimension; }

@@ -173,7 +173,7 @@ public:
   }
 
   /// Virtual destructor
-  virtual ~PreintegratedCombinedMeasurements() {}
+  ~PreintegratedCombinedMeasurements() override {}
 
   /// @}
 
@@ -291,7 +291,7 @@ public:
       Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias_i, Key bias_j,
       const PreintegratedCombinedMeasurements& preintegratedMeasurements);
 
-  virtual ~CombinedImuFactor() {}
+  ~CombinedImuFactor() override {}
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override;

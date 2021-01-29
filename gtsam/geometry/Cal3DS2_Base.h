@@ -62,7 +62,7 @@ class GTSAM_EXPORT Cal3DS2_Base : public Cal3 {
         p2_(p2),
         tol_(tol) {}
 
-  virtual ~Cal3DS2_Base() {}
+  ~Cal3DS2_Base() override {}
 
   /// @}
   /// @name Advanced Constructors
@@ -132,7 +132,7 @@ class GTSAM_EXPORT Cal3DS2_Base : public Cal3 {
   Matrix29 D2d_calibration(const Point2& p) const;
 
   /// return DOF, dimensionality of tangent space
-  virtual size_t dim() const override { return Dim(); }
+  size_t dim() const override { return Dim(); }
 
   /// return DOF, dimensionality of tangent space
   inline static size_t Dim() { return dimension; }
