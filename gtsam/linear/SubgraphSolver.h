@@ -111,7 +111,7 @@ class GTSAM_EXPORT SubgraphSolver : public IterativeSolver {
                  const Parameters &parameters);
 
   /// Destructor
-  virtual ~SubgraphSolver() {}
+  ~SubgraphSolver() override {}
 
   /// @}
   /// @name Implement interface

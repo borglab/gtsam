@@ -33,7 +33,7 @@ public:
     Base(noiseModel::Constrained::All(6, std::abs(mu)), gKey1, gKey,
         xiKey), h_(h) {
   }
-  virtual ~Reconstruction() {}
+  ~Reconstruction() override {}
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
@@ -95,7 +95,7 @@ public:
         Base(noiseModel::Constrained::All(6, std::abs(mu)), xiKey1, xiKey_1, gKey),
         h_(h), Inertia_(Inertia), Fu_(Fu), m_(m) {
   }
-  virtual ~DiscreteEulerPoincareHelicopter() {}
+  ~DiscreteEulerPoincareHelicopter() override {}
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {

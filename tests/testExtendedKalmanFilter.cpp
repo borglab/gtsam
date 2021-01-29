@@ -120,7 +120,7 @@ public:
     Q_invsqrt_ = inverse_square_root(Q_);
   }
 
-  virtual ~NonlinearMotionModel() {}
+  ~NonlinearMotionModel() override {}
 
   // Calculate the next state prediction using the nonlinear function f()
   Point2 f(const Point2& x_t0) const {
@@ -255,7 +255,7 @@ public:
     R_invsqrt_ = inverse_square_root(R_);
   }
 
-  virtual ~NonlinearMeasurementModel() {}
+  ~NonlinearMeasurementModel() override {}
 
   // Calculate the predicted measurement using the nonlinear function h()
   // Byproduct: updates Jacobian H, and noiseModel (R)

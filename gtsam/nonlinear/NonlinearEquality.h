@@ -77,7 +77,7 @@ public:
   NonlinearEquality() {
   }
 
-  virtual ~NonlinearEquality() {
+  ~NonlinearEquality() override {
   }
 
   /// @name Standard Constructors
@@ -238,7 +238,7 @@ public:
               std::abs(mu)), key), value_(value) {
   }
 
-  virtual ~NonlinearEquality1() {
+  ~NonlinearEquality1() override {
   }
 
   /// @return a deep copy of this factor
@@ -313,7 +313,7 @@ public:
   NonlinearEquality2(Key key1, Key key2, double mu = 1000.0) :
       Base(noiseModel::Constrained::All(traits<X>::dimension, std::abs(mu)), key1, key2) {
   }
-  virtual ~NonlinearEquality2() {
+  ~NonlinearEquality2() override {
   }
 
   /// @return a deep copy of this factor

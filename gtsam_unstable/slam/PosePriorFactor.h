@@ -47,7 +47,7 @@ namespace gtsam {
     /** default constructor - only use for serialization */
     PosePriorFactor() {}
 
-    virtual ~PosePriorFactor() {}
+    ~PosePriorFactor() override {}
 
     /** Constructor */
     PosePriorFactor(Key key, const POSE& prior, const SharedNoiseModel& model,

@@ -43,7 +43,7 @@ public:
   DoglegParams() :
     deltaInitial(1.0), verbosityDL(SILENT) {}
 
-  virtual ~DoglegParams() {}
+  ~DoglegParams() override {}
 
   void print(const std::string& str = "") const override {
     NonlinearOptimizerParams::print(str);
@@ -103,7 +103,7 @@ public:
   /// @{
 
   /** Virtual destructor */
-  virtual ~DoglegOptimizer() {}
+  ~DoglegOptimizer() override {}
 
   /** 
    * Perform a single iteration, returning GaussianFactorGraph corresponding to 
@@ -121,7 +121,7 @@ public:
 
 protected:
   /** Access the parameters (base class version) */
-  virtual const NonlinearOptimizerParams& _params() const override { return params_; }
+  const NonlinearOptimizerParams& _params() const override { return params_; }
 
   /** Internal function for computing a COLAMD ordering if no ordering is specified */
   DoglegParams ensureHasOrdering(DoglegParams params, const NonlinearFactorGraph& graph) const;

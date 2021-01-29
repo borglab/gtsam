@@ -47,7 +47,7 @@ public:
   PoseRotationPrior(Key key, const POSE& pose_z, const SharedNoiseModel& model)
   : Base(model, key), measured_(pose_z.rotation()) {}
 
-  virtual ~PoseRotationPrior() {}
+  ~PoseRotationPrior() override {}
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {

@@ -63,7 +63,7 @@ public:
                     boost::optional<double> beta = boost::none);
 
   /// Destructor
-  virtual ~KarcherMeanFactor() {}
+  ~KarcherMeanFactor() override {}
 
   /// Calculate the error of the factor: always zero
   double error(const Values &c) const override { return 0; }

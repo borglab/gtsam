@@ -44,7 +44,7 @@ struct BoundingConstraint1: public NoiseModelFactor1<VALUE> {
         threshold_(threshold), isGreaterThan_(isGreaterThan) {
   }
 
-  virtual ~BoundingConstraint1() {}
+  ~BoundingConstraint1() override {}
 
   inline double threshold() const { return threshold_; }
   inline bool isGreaterThan() const { return isGreaterThan_; }
@@ -112,7 +112,7 @@ struct BoundingConstraint2: public NoiseModelFactor2<VALUE1, VALUE2> {
   : Base(noiseModel::Constrained::All(1, mu), key1, key2),
     threshold_(threshold), isGreaterThan_(isGreaterThan) {}
 
-  virtual ~BoundingConstraint2() {}
+  ~BoundingConstraint2() override {}
 
   inline double threshold() const { return threshold_; }
   inline bool isGreaterThan() const { return isGreaterThan_; }

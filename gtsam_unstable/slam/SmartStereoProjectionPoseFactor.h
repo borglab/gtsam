@@ -71,7 +71,7 @@ class SmartStereoProjectionPoseFactor : public SmartStereoProjectionFactor {
       const boost::optional<Pose3>& body_P_sensor = boost::none);
 
   /** Virtual destructor */
-  virtual ~SmartStereoProjectionPoseFactor() = default;
+  ~SmartStereoProjectionPoseFactor() override = default;
 
   /**
    * add a new measurement and pose key
@@ -118,8 +118,7 @@ class SmartStereoProjectionPoseFactor : public SmartStereoProjectionFactor {
                                             DefaultKeyFormatter) const override;
 
   /// equals
-  virtual bool equals(const NonlinearFactor& p,
-                      double tol = 1e-9) const override;
+  bool equals(const NonlinearFactor& p, double tol = 1e-9) const override;
 
   /**
    * error calculates the error of the factor.

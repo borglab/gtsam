@@ -66,7 +66,7 @@ namespace gtsam {
 
   public:
 
-    virtual ~PartialPriorFactor() {}
+    ~PartialPriorFactor() override {}
 
     /** Single Element Constructor: acts on a single parameter specified by idx */
     PartialPriorFactor(Key key, size_t idx, double prior, const SharedNoiseModel& model) :

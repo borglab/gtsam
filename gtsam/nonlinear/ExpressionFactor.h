@@ -71,7 +71,7 @@ protected:
   }
 
   /// Destructor
-  virtual ~ExpressionFactor() {}
+  ~ExpressionFactor() override {}
 
   /** return the measurement */
   const T& measured() const { return measured_; }
@@ -245,7 +245,7 @@ public:
   using ArrayNKeys = std::array<Key, NARY_EXPRESSION_SIZE>;
 
   /// Destructor
-  virtual ~ExpressionFactorN() = default;
+  ~ExpressionFactorN() override = default;
 
   // Don't provide backward compatible evaluateVector(), due to its problematic
   // variable length of optional Jacobian arguments. Vector evaluateError(const
@@ -330,7 +330,7 @@ public:
     throw std::runtime_error(
         "ExpressionFactor2::expression not provided: cannot deserialize.");
   }
-  virtual Expression<T>
+  Expression<T>
   expression(const typename ExpressionFactorN<T, A1, A2>::ArrayNKeys &keys)
       const override {
     return expression(keys[0], keys[1]);

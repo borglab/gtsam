@@ -61,7 +61,7 @@ public:
         Base(model, poseKey, landmarkKey), measured_(measured), K_(K), referencePoint_(referencePoint) {}
 
   /** Virtual destructor */
-  virtual ~InvDepthFactorVariant2() {}
+  ~InvDepthFactorVariant2() override {}
 
   /**
    * print
