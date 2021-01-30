@@ -28,8 +28,6 @@
 
 #include <gtsam/nonlinear/GncParams.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-
-//#include <boost/math/distributions/inverse_chi_squared.hpp>
 #include <boost/math/distributions/chi_squared.hpp>
 
 namespace gtsam {
