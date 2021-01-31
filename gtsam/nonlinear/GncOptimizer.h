@@ -237,7 +237,7 @@ class GncOptimizer {
                 std::min(mu_init, barcSq_[k] / (2 * rk - barcSq_[k]) ) : mu_init;
           }
         }
-        return mu_init > 0 && !isinf(mu_init) ? mu_init : -1; // if mu <= 0 or mu = inf, return -1,
+        return mu_init > 0 && !std::isinf(mu_init) ? mu_init : -1; // if mu <= 0 or mu = inf, return -1,
         // which leads to termination of the main gnc loop. In this case, all residuals are already below the threshold
         // and there is no need to robustify (TLS = least squares)
       default:
