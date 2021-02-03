@@ -29,7 +29,7 @@
 #include <gtsam/slam/FrobeniusFactor.h>
 #include <gtsam/slam/KarcherMeanFactor-inl.h>
 
-#include <Eigen/Eigenvalues>
+#include <eigen3/Eigen/Eigenvalues>
 #include <algorithm>
 #include <complex>
 #include <iostream>
@@ -553,7 +553,7 @@ static bool PowerMinimumEigenValue(
     return true;
   }
 
-  const Sparse C = pmEigenValue * Matrix::Identity(A.rows(), A.cols()) - A;
+  const Sparse C = pmEigenValue * Matrix::Identity(A.rows(), A.cols()).sparseView() - A;
   const boost::optional<Vector> initial = perturb(S.row(0));
   AcceleratedPowerMethod<Sparse> apmShiftedOperator(C, initial);
 
