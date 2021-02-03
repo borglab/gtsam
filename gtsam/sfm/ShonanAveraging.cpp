@@ -29,7 +29,7 @@
 #include <gtsam/slam/FrobeniusFactor.h>
 #include <gtsam/slam/KarcherMeanFactor-inl.h>
 
-#include <eigen3/Eigen/Eigenvalues>
+#include <Eigen/Eigenvalues>
 #include <algorithm>
 #include <complex>
 #include <iostream>
