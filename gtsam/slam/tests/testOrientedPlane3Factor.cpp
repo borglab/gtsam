@@ -215,7 +215,7 @@ TEST(OrientedPlane3Factor, Issue561Simplified) {
   auto x0_noise = noiseModel::Isotropic::Sigma(6, 0.01);
   graph.addPrior<Pose3>(X(0), x0, x0_noise);
 
-  // Two horizontal planes with different heights.
+  // Two horizontal planes with different heights, in the world frame.
   const Plane p1(0,0,1,1), p2(0,0,1,2);
 
   auto p1_noise = noiseModel::Diagonal::Sigmas(Vector3{1, 1, 5});
@@ -226,13 +226,13 @@ TEST(OrientedPlane3Factor, Issue561Simplified) {
   graph.addPrior<Plane>(P(2), p2, p2_noise);
 
   // First plane factor
-  auto p1_measured_from_x0 = p1.transform(x0);
+  auto p1_measured_from_x0 = p1.transform(x0); // transform p1 to pose x0 as a measurement
   const auto x0_p1_noise = noiseModel::Isotropic::Sigma(3, 0.05);
   graph.emplace_shared<OrientedPlane3Factor>(
       p1_measured_from_x0.planeCoefficients(), x0_p1_noise, X(0), P(1));
 
   // Second plane factor
-  auto p2_measured_from_x0 = p2.transform(x0);
+  auto p2_measured_from_x0 = p2.transform(x0); // transform p2 to pose x0 as a measurement
   const auto x0_p2_noise = noiseModel::Isotropic::Sigma(3, 0.05);
   graph.emplace_shared<OrientedPlane3Factor>(
       p2_measured_from_x0.planeCoefficients(), x0_p2_noise, X(0), P(2));
