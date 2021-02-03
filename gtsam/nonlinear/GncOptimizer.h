@@ -28,8 +28,17 @@
 
 #include <gtsam/nonlinear/GncParams.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <boost/math/distributions/chi_squared.hpp>
 
 namespace gtsam {
+/*
+ * Quantile of chi-squared distribution with given degrees of freedom at probability alpha.
+ * Equivalent to chi2inv in Matlab.
+ */
+static double Chi2inv(const double alpha, const size_t dofs) {
+  boost::math::chi_squared_distribution<double> chi2(dofs);
+  return boost::math::quantile(chi2, alpha);
+}
 
 /* ************************************************************************* */
 template<class GncParameters>
@@ -43,6 +52,7 @@ class GncOptimizer {
   Values state_; ///< Initial values to be used at each iteration by GNC.
   GncParameters params_; ///< GNC parameters.
   Vector weights_;  ///< Weights associated to each factor in GNC (this could be a local variable in optimize, but it is useful to make it accessible from outside).
+  Vector barcSq_;  ///< Inlier thresholds. A factor is considered an inlier if factor.error() < barcSq_[i] (where i is the position of the factor in the factor graph. Note that factor.error() whitens by the covariance.
 
  public:
   /// Constructor.
@@ -63,6 +73,40 @@ class GncOptimizer {
         nfg_[i] = robust ? factor-> cloneWithNewNoiseModel(robust->noise()) : factor;
       }
     }
+
+    // set default barcSq_ (inlier threshold)
+    double alpha = 0.99; // with this (default) probability, inlier residuals are smaller than barcSq_
+    setInlierCostThresholdsAtProbability(alpha);
+  }
+
+  /** Set the maximum weighted residual error for an inlier (same for all factors). For a factor in the form f(x) = 0.5 * || r(x) ||^2_Omega,
+   * the inlier threshold is the largest value of f(x) for the corresponding measurement to be considered an inlier.
+   * In other words, an inlier at x is such that 0.5 * || r(x) ||^2_Omega <= barcSq.
+   * Assuming an isotropic measurement covariance sigma^2 * Identity, the cost becomes: 0.5 * 1/sigma^2 || r(x) ||^2 <= barcSq.
+   * Hence || r(x) ||^2 <= 2 * barcSq * sigma^2.
+   * */
+  void setInlierCostThresholds(const double inth) {
+    barcSq_ = inth * Vector::Ones(nfg_.size());
+  }
+
+  /** Set the maximum weighted residual error for an inlier (one for each factor). For a factor in the form f(x) = 0.5 * || r(x) ||^2_Omega,
+   * the inlier threshold is the largest value of f(x) for the corresponding measurement to be considered an inlier.
+   * In other words, an inlier at x is such that 0.5 * || r(x) ||^2_Omega <= barcSq.
+   * */
+  void setInlierCostThresholds(const Vector& inthVec) {
+    barcSq_ = inthVec;
+  }
+
+  /** Set the maximum weighted residual error threshold by specifying the probability
+   * alpha that the inlier residuals are smaller than that threshold
+   * */
+  void setInlierCostThresholdsAtProbability(const double alpha) {
+    barcSq_  = Vector::Ones(nfg_.size()); // initialize
+    for (size_t k = 0; k < nfg_.size(); k++) {
+      if (nfg_[k]) {
+        barcSq_[k] = 0.5 * Chi2inv(alpha, nfg_[k]->dim()); // 0.5 derives from the error definition in gtsam
+      }
+    }
   }
 
   /// Access a copy of the internal factor graph.
@@ -76,6 +120,17 @@ class GncOptimizer {
 
   /// Access a copy of the GNC weights.
   const Vector& getWeights() const { return weights_;}
+
+  /// Get the inlier threshold.
+  const Vector& getInlierCostThresholds() const {return barcSq_;}
+
+  /// Equals.
+  bool equals(const GncOptimizer& other, double tol = 1e-9) const {
+    return nfg_.equals(other.getFactors())
+        && equal(weights_, other.getWeights())
+        && params_.equals(other.getParams())
+        && equal(barcSq_, other.getInlierCostThresholds());
+  }
 
   /// Compute optimal solution using graduated non-convexity.
   Values optimize() {
@@ -153,28 +208,38 @@ class GncOptimizer {
 
   /// Initialize the gnc parameter mu such that loss is approximately convex (remark 5 in GNC paper).
   double initializeMu() const {
-    // compute largest error across all factors
-    double rmax_sq = 0.0;
-    for (size_t i = 0; i < nfg_.size(); i++) {
-      if (nfg_[i]) {
-        rmax_sq = std::max(rmax_sq, nfg_[i]->error(state_));
-      }
-    }
-    // set initial mu
+
+    double mu_init = 0.0;
+    // initialize mu to the value specified in Remark 5 in GNC paper.
     switch (params_.lossType) {
       case GncLossType::GM:
-        // surrogate cost is convex for large mu
-        return 2 * rmax_sq / params_.barcSq;  // initial mu
+        /* surrogate cost is convex for large mu. initialize as in remark 5 in GNC paper.
+         Since barcSq_ can be different for each factor, we compute the max of the quantity in remark 5 in GNC paper
+         */
+        for (size_t k = 0; k < nfg_.size(); k++) {
+          if (nfg_[k]) {
+            mu_init = std::max(mu_init, 2 * nfg_[k]->error(state_) / barcSq_[k]);
+          }
+        }
+        return mu_init;  // initial mu
       case GncLossType::TLS:
-        /* initialize mu to the value specified in Remark 5 in GNC paper.
-         surrogate cost is convex for mu close to zero
+        /* surrogate cost is convex for mu close to zero. initialize as in remark 5 in GNC paper.
          degenerate case: 2 * rmax_sq - params_.barcSq < 0 (handled in the main loop)
          according to remark mu = params_.barcSq / (2 * rmax_sq - params_.barcSq) = params_.barcSq/ excessResidual
-         however, if the denominator is 0 or negative, we return mu = -1 which leads to termination of the main GNC loop
+         however, if the denominator is 0 or negative, we return mu = -1 which leads to termination of the main GNC loop.
+         Since barcSq_ can be different for each factor, we look for the minimimum (positive) quantity in remark 5 in GNC paper
          */
-        return
-            (2 * rmax_sq - params_.barcSq) > 0 ?
-                params_.barcSq / (2 * rmax_sq - params_.barcSq) : -1;
+        mu_init = std::numeric_limits<double>::infinity();
+        for (size_t k = 0; k < nfg_.size(); k++) {
+          if (nfg_[k]) {
+            double rk = nfg_[k]->error(state_);
+            mu_init = (2 * rk - barcSq_[k]) > 0 ? // if positive, update mu, otherwise keep same
+                std::min(mu_init, barcSq_[k] / (2 * rk - barcSq_[k]) ) : mu_init;
+          }
+        }
+        return mu_init > 0 && !std::isinf(mu_init) ? mu_init : -1; // if mu <= 0 or mu = inf, return -1,
+        // which leads to termination of the main gnc loop. In this case, all residuals are already below the threshold
+        // and there is no need to robustify (TLS = least squares)
       default:
         throw std::runtime_error(
             "GncOptimizer::initializeMu: called with unknown loss type.");
@@ -305,14 +370,14 @@ class GncOptimizer {
           if (nfg_[k]) {
             double u2_k = nfg_[k]->error(currentEstimate);  // squared (and whitened) residual
             weights[k] = std::pow(
-                (mu * params_.barcSq) / (u2_k + mu * params_.barcSq), 2);
+                (mu * barcSq_[k]) / (u2_k + mu * barcSq_[k]), 2);
           }
         }
         return weights;
       }
       case GncLossType::TLS: {  // use eq (14) in GNC paper
-        double upperbound = (mu + 1) / mu * params_.barcSq;
-        double lowerbound = mu / (mu + 1) * params_.barcSq;
+        double upperbound = (mu + 1) / mu * barcSq_.maxCoeff();
+        double lowerbound = mu / (mu + 1) * barcSq_.minCoeff();
         for (size_t k : unknownWeights) {
           if (nfg_[k]) {
             double u2_k = nfg_[k]->error(currentEstimate);  // squared (and whitened) residual
@@ -321,7 +386,7 @@ class GncOptimizer {
             } else if (u2_k <= lowerbound) {
               weights[k] = 1;
             } else {
-              weights[k] = std::sqrt(params_.barcSq * mu * (mu + 1) / u2_k)
+              weights[k] = std::sqrt(barcSq_[k] * mu * (mu + 1) / u2_k)
                   - mu;
             }
           }
