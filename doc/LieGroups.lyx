@@ -2452,7 +2452,7 @@ First transform
 , and then rotate back:
 \begin_inset Formula 
 \[
-q=Re^{\Skew{\omega}}R^{T}
+q=Re^{\Skew{\omega}}R^{T}p
 \]
 
 \end_inset
