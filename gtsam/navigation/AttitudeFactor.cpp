@@ -29,13 +29,13 @@ Vector AttitudeFactor::attitudeError(const Rot3& nRb,
     Matrix23 D_nRef_R;
     Matrix22 D_e_nRef;
     Unit3 nRef = nRb.rotate(bRef_, D_nRef_R);
-    Vector e = nZ_.error(nRef, D_e_nRef);
+    Vector e = nZ_.errorVector(nRef, boost::none, D_e_nRef);
 
     (*H) = D_e_nRef * D_nRef_R;
     return e;
   } else {
     Unit3 nRef = nRb * bRef_;
-    return nZ_.error(nRef);
+    return nZ_.errorVector(nRef);
   }
 }
 
