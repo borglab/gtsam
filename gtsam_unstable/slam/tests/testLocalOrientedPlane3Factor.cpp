@@ -111,31 +111,12 @@ TEST (LocalOrientedPlane3Factor, lm_rotation_error) {
   ISAM2 isam2;
   isam2.update(graph, values);
   Values result_values = isam2.calculateEstimate();
+  isam2.getDelta().print();
+
   auto optimized_plane_landmark = result_values.at<OrientedPlane3>(P(0));
 
   values.print();
   result_values.print();
-
-  // HessianFactor::shared_ptr hessianFactor = graph.linearizeToHessianFactor(values);
-  // const auto hessian = hessianFactor->hessianBlockDiagonal();
-
-  // Matrix hessianP0 = hessian.at(P(0)), hessianX0 = hessian.at(X(0));
-
-  // Eigen::JacobiSVD<Matrix> svdP0(hessianP0, Eigen::ComputeThinU),
-  //                          svdX0(hessianX0, Eigen::ComputeThinU);
-
-  // double conditionNumberP0 = svdP0.singularValues()[0] / svdP0.singularValues()[2],
-  //        conditionNumberX0 = svdX0.singularValues()[0] / svdX0.singularValues()[5];
-
-  // std::cout << "Hessian P0:\n" << hessianP0 << "\n"
-  //     << "Condition number:\n" << conditionNumberP0 << "\n"
-  //     << "Singular values:\n" << svdP0.singularValues().transpose() << "\n"
-  //     << "SVD U:\n" << svdP0.matrixU() << "\n" << std::endl;
-
-  // std::cout << "Hessian X0:\n" << hessianX0 << "\n"
-  //     << "Condition number:\n" << conditionNumberX0 << "\n"
-  //     << "Singular values:\n" << svdX0.singularValues().transpose() << "\n"
-  //     << "SVD U:\n" << svdX0.matrixU() << "\n" << std::endl;
 
   // Given two noisy measurements of equal weight, expect result between the two
   OrientedPlane3 expected_plane_landmark(-sqrt(2.0) / 2.0, -sqrt(2.0) / 2.0,
