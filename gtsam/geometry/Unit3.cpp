@@ -188,16 +188,6 @@ double Unit3::dot(const Unit3& q, OptionalJacobian<1, 2> H_p,
 }
 
 /* ************************************************************************* */
-Vector2 Unit3::error(const Unit3& q, OptionalJacobian<2, 2> H_q) const {
-  // 2D error is equal to B'*q, as B is 3x2 matrix and q is 3x1
-  const Vector2 xi = basis().transpose() * q.p_;
-  if (H_q) {
-    *H_q = basis().transpose() * q.basis();
-  }
-  return xi;
-}
-
-/* ************************************************************************* */
 Vector2 Unit3::errorVector(const Unit3& q, OptionalJacobian<2, 2> H_p,
                            OptionalJacobian<2, 2> H_q) const {
   // Get the point3 of this, and the derivative.
@@ -236,7 +226,7 @@ Vector2 Unit3::errorVector(const Unit3& q, OptionalJacobian<2, 2> H_p,
 /* ************************************************************************* */
 double Unit3::distance(const Unit3& q, OptionalJacobian<1, 2> H) const {
   Matrix2 H_xi_q;
-  const Vector2 xi = error(q, H ? &H_xi_q : nullptr);
+  const Vector2 xi = errorVector(q, boost::none, H ? &H_xi_q : nullptr);
   const double theta = xi.norm();
   if (H)
     *H = (xi.transpose() / theta) * H_xi_q;

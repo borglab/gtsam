@@ -146,30 +146,6 @@ TEST(Unit3, dot) {
 }
 
 //*******************************************************************************
-TEST(Unit3, error) {
-  Unit3 p(1, 0, 0), q = p.retract(Vector2(0.5, 0)), //
-  r = p.retract(Vector2(0.8, 0));
-  EXPECT(assert_equal((Vector)(Vector2(0, 0)), p.error(p), 1e-5));
-  EXPECT(assert_equal((Vector)(Vector2(0.479426, 0)), p.error(q), 1e-5));
-  EXPECT(assert_equal((Vector)(Vector2(0.717356, 0)), p.error(r), 1e-5));
-
-  Matrix actual, expected;
-  // Use numerical derivatives to calculate the expected Jacobian
-  {
-    expected = numericalDerivative11<Vector2,Unit3>(
-        boost::bind(&Unit3::error, &p, _1, boost::none), q);
-    p.error(q, actual);
-    EXPECT(assert_equal(expected.transpose(), actual, 1e-5));
-  }
-  {
-    expected = numericalDerivative11<Vector2,Unit3>(
-        boost::bind(&Unit3::error, &p, _1, boost::none), r);
-    p.error(r, actual);
-    EXPECT(assert_equal(expected.transpose(), actual, 1e-5));
-  }
-}
-
-//*******************************************************************************
 TEST(Unit3, error2) {
   Unit3 p(0.1, -0.2, 0.8);
   Unit3 q = p.retract(Vector2(0.2, -0.1));
@@ -487,10 +463,10 @@ TEST(Unit3, ErrorBetweenFactor) {
 TEST(Unit3, CopyAssign) {
   Unit3 p{1, 0.2, 0.3};
 
-  EXPECT(p.error(p).isZero());
+  EXPECT(p.errorVector(p).isZero());
 
   p = Unit3{-1, 2, 8};
-  EXPECT(p.error(p).isZero());
+  EXPECT(p.errorVector(p).isZero());
 }
 
 /* ************************************************************************* */
