@@ -22,59 +22,41 @@ void LocalOrientedPlane3Factor::print(const string& s,
 }
 
 //***************************************************************************
-Vector LocalOrientedPlane3Factor::evaluateError(const Pose3& basePose,
-    const Pose3& anchorPose, const OrientedPlane3& plane,
+Vector LocalOrientedPlane3Factor::evaluateError(const Pose3& wTwi, 
+    const Pose3& wTwa, const OrientedPlane3& a_plane,
     boost::optional<Matrix&> H1, boost::optional<Matrix&> H2,
     boost::optional<Matrix&> H3) const {
 
-  Matrix66 pose_H_anchorPose, pose_H_basePose;
-  Matrix36 predicted_H_pose;
+  Matrix66 aTai_H_wTwa, aTai_H_wTwi;
+  Matrix36 predicted_H_aTai;
   Matrix33 predicted_H_plane, error_H_predicted;
 
-  // T_LB = inv(T_WL) * T_WB
-  const Pose3 relativePose = anchorPose.transformPoseTo(basePose,
-      H2 ? &pose_H_anchorPose : nullptr,
-      H1 ? &pose_H_basePose : nullptr);
+  // Find the relative transform from anchor to sensor frame.
+  const Pose3 aTai = wTwa.transformPoseTo(wTwi,
+      H2 ? &aTai_H_wTwa : nullptr,
+      H1 ? &aTai_H_wTwi : nullptr);
 
-  const OrientedPlane3 predicted_plane = plane.transform(relativePose,
+  // Transform the plane measurement into sensor frame.
+  const OrientedPlane3 i_plane = a_plane.transform(aTai,
       H2 ? &predicted_H_plane : nullptr,
-      (H1 || H3) ? &predicted_H_pose  : nullptr);
+      (H1 || H3) ? &predicted_H_aTai  : nullptr);
 
-  const Vector3 err = measured_p_.error(predicted_plane,
+  // Calculate the error between measured and estimated planes in sensor frame.
+  const Vector3 err = measured_p_.errorVector(i_plane,
     boost::none, (H1 || H2 || H3) ? &error_H_predicted : nullptr);
-
-  // const Vector3 err = predicted_plane.errorVector(measured_p_,
-  //   (H1 || H2 || H3) ? &error_H_predicted : nullptr);
 
   // Apply the chain rule to calculate the derivatives.
   if (H1) {
-    *H1 = error_H_predicted * predicted_H_pose * pose_H_basePose;
-    // std::cout << "H1:\n" << *H1 << std::endl;
+    *H1 = error_H_predicted * predicted_H_aTai * aTai_H_wTwi;
   }
 
   if (H2) {
-    *H2 = error_H_predicted * predicted_H_pose * pose_H_anchorPose;
-    // std::cout << "H2:\n" << *H2 << std::endl;
+    *H2 = error_H_predicted * predicted_H_aTai * aTai_H_wTwa;
   }
 
   if (H3) {
     *H3 = error_H_predicted * predicted_H_plane;
-    // std::cout << "H3:\n" << *H3 << std::endl;
-
-    // measured_p_.print();
-    // predicted_plane.print();
-
-    // std::cout << "pose_H_anchorPose:\n" << pose_H_anchorPose << std::endl;
-    // std::cout << "pose_H_basePose:\n" << pose_H_basePose << std::endl;
-    // std::cout << "predicted_H_pose:\n" << predicted_H_pose << std::endl;
-    // std::cout << "error_H_predicted:\n" << error_H_predicted << std::endl;
-    // std::cout << "predicted_H_plane:\n" << predicted_H_plane << std::endl;
-
-    std::cout << "H3^T x error:\n" << (*H3).transpose() * err << std::endl;
-    // std::cout << "H3:\n" << *H3 << std::endl;
   }
-
-  // std::cout << "Error: " << err.transpose() << std::endl;
 
   return err;
 }

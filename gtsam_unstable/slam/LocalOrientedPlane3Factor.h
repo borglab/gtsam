@@ -39,7 +39,8 @@ public:
    * @param z measured plane (a,b,c,d) coefficients as 4D vector
    * @param noiseModel noiseModel Gaussian noise model
    * @param poseKey Key or symbol for unknown pose
-   * @param anchorPoseKey Key or symbol for the plane's linearization point.
+   * @param anchorPoseKey Key or symbol for the plane's linearization point,
+                          (called the "anchor pose").
    * @param landmarkKey Key or symbol for unknown planar landmark
    *
    * Note: The anchorPoseKey can simply be chosen as the first pose a plane
@@ -57,9 +58,19 @@ public:
   void print(const std::string& s = "LocalOrientedPlane3Factor",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
 
-  /// evaluateError
-  Vector evaluateError(
-      const Pose3& basePose, const Pose3& anchorPose, const OrientedPlane3& plane,
+  /***
+    * Vector of errors
+    * @brief Error = measured_plane_.error(a_plane.transform(inv(wTwa) * wTwi))
+    * 
+    * This is the error of the measured and predicted plane in the current
+    * sensor frame, i. The plane is represented in the anchor pose, a.
+    *
+    * @param wTwi The pose of the sensor in world coordinates
+    * @param wTwa The pose of the anchor frame in world coordinates
+    * @param a_plane The estimated plane in anchor frame.
+    */
+  Vector evaluateError(const Pose3& wTwi, const Pose3& wTwa,
+      const OrientedPlane3& a_plane,
       boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none,
       boost::optional<Matrix&> H3 = boost::none) const override;
