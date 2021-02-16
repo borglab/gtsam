@@ -153,6 +153,10 @@ public:
                              OptionalJacobian<1,2> H2 = boost::none) const;
 
   /// Signed, vector-valued error between two directions
+  /// @deprecated, errorVector has the proper derivatives, this confusingly has only the second.
+  GTSAM_EXPORT Vector2 error(const Unit3& q, OptionalJacobian<2, 2> H_q = boost::none) const;
+
+  /// Signed, vector-valued error between two directions
   /// NOTE(hayk): This method has zero derivatives if this (p) and q are orthogonal.
   GTSAM_EXPORT Vector2 errorVector(const Unit3& q, OptionalJacobian<2, 2> H_p = boost::none, //
                       OptionalJacobian<2, 2> H_q = boost::none) const;
