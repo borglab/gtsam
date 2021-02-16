@@ -27,6 +27,7 @@ Vector OrientedPlane3Factor::evaluateError(const Pose3& pose,
     boost::optional<Matrix&> H2) const {
   Matrix36 predicted_H_pose;
   Matrix33 predicted_H_plane, error_H_predicted;
+
   OrientedPlane3 predicted_plane = plane.transform(pose,
     H2 ? &predicted_H_plane : nullptr, H1 ? &predicted_H_pose  : nullptr);
 

@@ -22,19 +22,19 @@
 
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/geometry/Pose3.h>
+#include <string>
 
 namespace gtsam {
 
 /**
- * @brief Represents an infinite plane in 3D, which is composed of a planar normal and its
- *  perpendicular distance to the origin.
- * Currently it provides a transform of the plane, and a norm 1 differencing of two planes.
+ * @brief Represents an infinite plane in 3D, which is composed of a planar
+ * normal and its perpendicular distance to the origin.
+ * Currently it provides a transform of the plane, and a norm 1 differencing of
+ * two planes.
  * Refer to Trevor12iros for more math details.
  */
 class GTSAM_EXPORT OrientedPlane3 {
-
 private:
-
   Unit3 n_;     ///< The direction of the planar normal
   double d_;    ///< The perpendicular distance to this plane
 
@@ -91,12 +91,14 @@ public:
                            OptionalJacobian<3, 6> Hr = boost::none) const;
 
   /** Computes the error between the two planes, with derivatives.
-   *  This uses Unit3::errorVector, as opposed to the other .error() in this class, which uses
-   *  Unit3::localCoordinates. This one has correct derivatives.
+   *  This uses Unit3::errorVector, as opposed to the other .error() in this
+   *  class, which uses Unit3::localCoordinates. This one has correct
+   *  derivatives.
    *  NOTE(hayk): The derivatives are zero when normals are exactly orthogonal.
    * @param other the other plane
    */
-  Vector3 errorVector(const OrientedPlane3& other, OptionalJacobian<3, 3> H1 = boost::none, //
+  Vector3 errorVector(const OrientedPlane3& other,
+                      OptionalJacobian<3, 3> H1 = boost::none,
                       OptionalJacobian<3, 3> H2 = boost::none) const;
 
   /// Dimensionality of tangent space = 3 DOF
@@ -110,7 +112,8 @@ public:
   }
 
   /// The retract function
-  OrientedPlane3 retract(const Vector3& v, OptionalJacobian<3,3> H = boost::none) const;
+  OrientedPlane3 retract(const Vector3& v,
+                        OptionalJacobian<3, 3> H = boost::none) const;
 
   /// The local coordinates function
   Vector3 localCoordinates(const OrientedPlane3& s) const;
@@ -142,5 +145,5 @@ template<> struct traits<const OrientedPlane3> : public internal::Manifold<
 OrientedPlane3> {
 };
 
-} // namespace gtsam
+}  // namespace gtsam
 
