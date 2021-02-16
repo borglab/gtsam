@@ -31,7 +31,7 @@ GTSAM_CONCEPT_TESTABLE_INST(OrientedPlane3)
 GTSAM_CONCEPT_MANIFOLD_INST(OrientedPlane3)
 
 //*******************************************************************************
-TEST (OrientedPlane3, getMethods) {
+TEST(OrientedPlane3, getMethods) {
   Vector4 c;
   c << -1, 0, 0, 5;
   OrientedPlane3 plane1(c);
@@ -92,7 +92,6 @@ inline static Vector randomVector(const Vector& minLimits,
 
 //*******************************************************************************
 TEST(OrientedPlane3, localCoordinates_retract) {
-
   size_t numIterations = 10000;
   Vector4 minPlaneLimit, maxPlaneLimit;
   minPlaneLimit << -1.0, -1.0, -1.0, 0.01;
@@ -102,7 +101,6 @@ TEST(OrientedPlane3, localCoordinates_retract) {
   minXiLimit << -M_PI, -M_PI, -10.0;
   maxXiLimit << M_PI, M_PI, 10.0;
   for (size_t i = 0; i < numIterations; i++) {
-
     // Create a Plane
     OrientedPlane3 p1(randomVector(minPlaneLimit, maxPlaneLimit));
     Vector v12 = randomVector(minXiLimit, maxXiLimit);
@@ -121,22 +119,24 @@ TEST(OrientedPlane3, localCoordinates_retract) {
 }
 
 //*******************************************************************************
-TEST (OrientedPlane3, errorVector) {
+TEST(OrientedPlane3, errorVector) {
   OrientedPlane3 plane1(-1, 0.1, 0.2, 5);
   OrientedPlane3 plane2(-1.1, 0.2, 0.3, 5.4);
 
   // Hard-coded regression values, to ensure the result doesn't change.
   EXPECT(assert_equal((Vector) Z_3x1, plane1.errorVector(plane1), 1e-8));
-  EXPECT(assert_equal(Vector3(-0.0677674148, -0.0760543588, -0.4), plane1.errorVector(plane2), 1e-5));
+  EXPECT(assert_equal(Vector3(-0.0677674148, -0.0760543588, -0.4),
+                      plane1.errorVector(plane2), 1e-5));
 
   // Test the jacobians of transform
   Matrix33 actualH1, expectedH1, actualH2, expectedH2;
 
   Vector3 actual = plane1.errorVector(plane2, actualH1, actualH2);
-  EXPECT(assert_equal(plane1.normal().errorVector(plane2.normal()), Vector2(actual[0], actual[1])));
+  EXPECT(assert_equal(plane1.normal().errorVector(plane2.normal()),
+                      Vector2(actual[0], actual[1])));
   EXPECT(assert_equal(plane1.distance() - plane2.distance(), actual[2]));
 
-  boost::function<Vector3(const OrientedPlane3&, const OrientedPlane3&)> f = //
+  boost::function<Vector3(const OrientedPlane3&, const OrientedPlane3&)> f =
       boost::bind(&OrientedPlane3::errorVector, _1, _2, boost::none, boost::none);
   expectedH1 = numericalDerivative21(f, plane1, plane2);
   expectedH2 = numericalDerivative22(f, plane1, plane2);
@@ -145,19 +145,19 @@ TEST (OrientedPlane3, errorVector) {
 }
 
 //*******************************************************************************
-TEST (OrientedPlane3, jacobian_retract) {
+TEST(OrientedPlane3, jacobian_retract) {
   OrientedPlane3 plane(-1, 0.1, 0.2, 5);
   Matrix33 H_actual;
   boost::function<OrientedPlane3(const Vector3&)> f =
       boost::bind(&OrientedPlane3::retract, plane, _1, boost::none);
   {
-      Vector3 v (-0.1, 0.2, 0.3);
+      Vector3 v(-0.1, 0.2, 0.3);
       plane.retract(v, H_actual);
       Matrix H_expected_numerical = numericalDerivative11(f, v);
       EXPECT(assert_equal(H_expected_numerical, H_actual, 1e-5));
   }
   {
-      Vector3 v (0, 0, 0);
+      Vector3 v(0, 0, 0);
       plane.retract(v, H_actual);
       Matrix H_expected_numerical = numericalDerivative11(f, v);
       EXPECT(assert_equal(H_expected_numerical, H_actual, 1e-5));

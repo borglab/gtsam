@@ -9,6 +9,7 @@
 
 #include <gtsam/geometry/OrientedPlane3.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <string>
 
 namespace gtsam {
 
@@ -21,11 +22,18 @@ namespace gtsam {
  * M. Kaess, "Simultaneous Localization and Mapping with Infinite Planes",
  * IEEE International Conference on Robotics and Automation, 2015.
  * 
- * Note: This uses the retraction from the OrientedPlane3, not the quaternion-
- * based representation proposed by Kaess.
+ *
+ * The main purpose of this factor is to improve the numerical stability of the
+ * optimization, especially compared to gtsam::OrientedPlane3Factor. This
+ * is especially relevant when the sensor is far from the origin (and thus
+ * the derivatives associated to transforming the plane are large).
+ *
+ * x0 is the current sensor pose, and x1 is the local "anchor pose" - i.e.
+ * a local linearisation point for the plane. The plane is representated and
+ * optimized in x1 frame in the optimization.
  */
-class LocalOrientedPlane3Factor: public NoiseModelFactor3<Pose3, Pose3, 
-                                                         OrientedPlane3> {
+class LocalOrientedPlane3Factor: public NoiseModelFactor3<Pose3, Pose3,
+                                                          OrientedPlane3> {
 protected:
   OrientedPlane3 measured_p_;
   typedef NoiseModelFactor3<Pose3, Pose3, OrientedPlane3> Base;
@@ -50,8 +58,9 @@ public:
                             Key poseKey, Key anchorPoseKey, Key landmarkKey)
       : Base(noiseModel, poseKey, anchorPoseKey, landmarkKey), measured_p_(z) {}
 
-  LocalOrientedPlane3Factor(const OrientedPlane3& z, const SharedGaussian& noiseModel,
-                          Key poseKey, Key anchorPoseKey, Key landmarkKey)
+  LocalOrientedPlane3Factor(const OrientedPlane3& z,
+                            const SharedGaussian& noiseModel,
+                            Key poseKey, Key anchorPoseKey, Key landmarkKey)
     : Base(noiseModel, poseKey, anchorPoseKey, landmarkKey), measured_p_(z) {}
 
   /// print
@@ -68,6 +77,9 @@ public:
     * @param wTwi The pose of the sensor in world coordinates
     * @param wTwa The pose of the anchor frame in world coordinates
     * @param a_plane The estimated plane in anchor frame.
+    *
+    * Note: The optimized plane is represented in anchor frame, a, not the
+    * world frame.
     */
   Vector evaluateError(const Pose3& wTwi, const Pose3& wTwa,
       const OrientedPlane3& a_plane,
@@ -76,5 +88,5 @@ public:
       boost::optional<Matrix&> H3 = boost::none) const override;
 };
 
-} // gtsam
+}  // namespace gtsam
 

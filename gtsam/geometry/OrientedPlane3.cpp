@@ -79,9 +79,9 @@ Vector3 OrientedPlane3::errorVector(const OrientedPlane3& other,
 
 /* ************************************************************************* */
 OrientedPlane3 OrientedPlane3::retract(const Vector3& v,
-                                       OptionalJacobian<3,3> H) const {
+                                       OptionalJacobian<3, 3> H) const {
   Matrix22 H_n;
-  Unit3 n_retract (n_.retract(Vector2(v(0), v(1)), H? &H_n : nullptr));
+  Unit3 n_retract(n_.retract(Vector2(v(0), v(1)), H? &H_n : nullptr));
   if (H) {
     *H << H_n, Z_2x1, 0, 0, 1;
   }
@@ -95,4 +95,4 @@ Vector3 OrientedPlane3::localCoordinates(const OrientedPlane3& y) const {
   return Vector3(n_local(0), n_local(1), -d_local);
 }
 
-}
+}  // namespace gtsam
