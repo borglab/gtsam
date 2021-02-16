@@ -14,6 +14,14 @@ if(GTSAM_INSTALL_MATLAB_TOOLBOX)
     endif()
 endif()
 
+# Fixup the Python paths
+if(GTWRAP_DIR)
+	# packaged
+	set(GTWRAP_PACKAGE_DIR ${GTWRAP_DIR})
+else()
+	set(GTWRAP_PACKAGE_DIR ${CMAKE_SOURCE_DIR}/wrap)
+endif()
+
 # Set up cache options
 option(GTSAM_MEX_BUILD_STATIC_MODULE "Build MATLAB wrapper statically (increases build time)" OFF)
 set(GTSAM_BUILD_MEX_BINARY_FLAGS "" CACHE STRING "Extra flags for running Matlab MEX compilation")
@@ -239,7 +247,10 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
 
 
 	set(_ignore gtsam::Point2
-			gtsam::Point3)
+			gtsam::Point3
+			gtsam::BearingRangeFactor
+			gtsam::BearingRangeFactor2D
+			gtsam::BearingRangeFactorPose2)
 
     # set the matlab wrapping script variable
     set(MATLAB_WRAP_SCRIPT "${GTSAM_SOURCE_DIR}/wrap/scripts/matlab_wrap.py")
@@ -247,7 +258,7 @@ function(wrap_library_internal interfaceHeader linkLibraries extraIncludeDirs ex
     add_custom_command(
 		OUTPUT ${generated_cpp_file}
 		DEPENDS ${interfaceHeader} ${module_library_target} ${otherLibraryTargets} ${otherSourcesAndObjects}
-        COMMAND
+        COMMAND ${CMAKE_COMMAND} -E env "PYTHONPATH=${GTWRAP_PACKAGE_DIR}${GTWRAP_PATH_SEPARATOR}$ENV{PYTHONPATH}"
 			${PYTHON_EXECUTABLE}
 			${MATLAB_WRAP_SCRIPT}
             --src ${interfaceHeader}
