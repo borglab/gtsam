@@ -104,7 +104,7 @@ public:
   /// vector of errors returns 2D vector
   Vector evaluateError(const Rot3& iRc, boost::optional<Matrix&> H = boost::none) const override {
     Unit3 i_q = iRc * c_z_;
-    Vector error = i_p_.errorVector(i_q, boost::none, H);
+    Vector error = i_p_.error(i_q, H);
     if (H) {
       Matrix DR;
       iRc.rotate(c_z_, DR);
