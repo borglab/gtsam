@@ -20,12 +20,8 @@
 
 #pragma once
 
-#include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/geometry/Pose3.h>
-
-#include <algorithm>
-#include <string>
 
 namespace gtsam {
 
@@ -93,14 +89,6 @@ public:
   OrientedPlane3 transform(const Pose3& xr,
                            OptionalJacobian<3, 3> Hp = boost::none,
                            OptionalJacobian<3, 6> Hr = boost::none) const;
-
-  /** Computes the error between two planes.
-   *  The error is a norm 1 difference in tangent space.
-   * @param other The other plane
-   */
-  Vector3 error(const OrientedPlane3& other,
-                OptionalJacobian<3, 3> H1 = boost::none,
-                OptionalJacobian<3, 3> H2 = boost::none) const;
 
   /** Computes the error between the two planes, with derivatives.
    *  This uses Unit3::errorVector, as opposed to the other .error() in this class, which uses

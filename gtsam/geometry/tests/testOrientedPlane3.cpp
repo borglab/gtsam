@@ -145,27 +145,6 @@ TEST (OrientedPlane3, errorVector) {
 }
 
 //*******************************************************************************
-TEST (OrientedPlane3, error) {
-  // Hard-coded regression values, to ensure the result doesn't change.
-  OrientedPlane3 plane1(-1, 0.1, 0.2, 5);
-  OrientedPlane3 plane2(-1.1, 0.2, 0.3, 5.4);
-
-  // Test the jacobians of transform
-  Matrix33 actualH1, expectedH1, actualH2, expectedH2;
-  Vector3 actual = plane1.error(plane2, actualH1, actualH2);
-
-  EXPECT(assert_equal((Vector) Z_3x1, plane1.error(plane1), 1e-8));
-  EXPECT(assert_equal(Vector3(0.0678852, 0.0761865, -0.4), actual, 1e-5));
-
-  boost::function<Vector3(const OrientedPlane3&, const OrientedPlane3&)> f = //
-      boost::bind(&OrientedPlane3::error, _1, _2, boost::none, boost::none);
-  expectedH1 = numericalDerivative21(f, plane1, plane2);
-  expectedH2 = numericalDerivative22(f, plane1, plane2);
-  EXPECT(assert_equal(expectedH1, actualH1, 1e-5));
-  EXPECT(assert_equal(expectedH2, actualH2, 1e-5));
-}
-
-//*******************************************************************************
 TEST (OrientedPlane3, jacobian_retract) {
   OrientedPlane3 plane(-1, 0.1, 0.2, 5);
   Matrix33 H_actual;
