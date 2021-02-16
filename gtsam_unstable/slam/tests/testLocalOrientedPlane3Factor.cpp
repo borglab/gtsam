@@ -10,28 +10,22 @@
  * -------------------------------------------------------------------------- */
 
 /*
- * @file testOrientedPlane3Factor.cpp
- * @date Dec 19, 2012
- * @author Alex Trevor
- * @brief Tests the OrientedPlane3Factor class
+ * @file testLocalOrientedPlane3Factor.cpp
+ * @date Feb 12, 2021
+ * @author David Wisth
+ * @brief Tests the LocalOrientedPlane3Factor class
  */
 
 #include <gtsam_unstable/slam/LocalOrientedPlane3Factor.h>
 
-#include <gtsam/slam/OrientedPlane3Factor.h>
-
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/inference/Symbol.h>
-#include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/ISAM2.h>
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/assign/std/vector.hpp>
-#include <boost/assign/std.hpp>
 #include <boost/bind.hpp>
 
-using namespace boost::assign;
 using namespace gtsam;
 using namespace std;
 
@@ -52,21 +46,24 @@ TEST(LocalOrientedPlane3Factor, lm_translation_error) {
   // Init pose and prior.  Pose Prior is needed since a single plane measurement
   // does not fully constrain the pose
   Pose3 init_pose = Pose3::identity();
+  Pose3 anchor_pose = Pose3::identity();
   graph.addPrior(X(0), init_pose, noiseModel::Isotropic::Sigma(6, 0.001));
+  graph.addPrior(X(1), anchor_pose, noiseModel::Isotropic::Sigma(6, 0.001));
 
   // Add two landmark measurements, differing in range
-  Vector4 measurement0 {-1.0, 0.0, 0.0, 3.0};
-  Vector4 measurement1 {-1.0, 0.0, 0.0, 1.0};
+  Vector4 measurement0(-1.0, 0.0, 0.0, 3.0);
+  Vector4 measurement1(-1.0, 0.0, 0.0, 1.0);
   LocalOrientedPlane3Factor factor0(
-      measurement0, noiseModel::Isotropic::Sigma(3, 0.1), X(0), X(0), P(0));
+      measurement0, noiseModel::Isotropic::Sigma(3, 0.1), X(0), X(1), P(0));
   LocalOrientedPlane3Factor factor1(
-      measurement1, noiseModel::Isotropic::Sigma(3, 0.1), X(0), X(0), P(0));
+      measurement1, noiseModel::Isotropic::Sigma(3, 0.1), X(0), X(1), P(0));
   graph.add(factor0);
   graph.add(factor1);
 
   // Initial Estimate
   Values values;
   values.insert(X(0), init_pose);
+  values.insert(X(1), anchor_pose);
   values.insert(P(0), test_lm0);
 
   // Optimize
@@ -94,8 +91,8 @@ TEST (LocalOrientedPlane3Factor, lm_rotation_error) {
   graph.addPrior(X(0), init_pose, noiseModel::Isotropic::Sigma(6, 0.001));
 
   // Add two landmark measurements, differing in angle
-  Vector4 measurement0 {-1.0, 0.0, 0.0, 3.0};
-  Vector4 measurement1 {0.0, -1.0, 0.0, 3.0};
+  Vector4 measurement0(-1.0, 0.0, 0.0, 3.0);
+  Vector4 measurement1(0.0, -1.0, 0.0, 3.0);
   LocalOrientedPlane3Factor factor0(measurement0,
       noiseModel::Isotropic::Sigma(3, 0.1), X(0), X(0), P(0));
   LocalOrientedPlane3Factor factor1(measurement1,
@@ -220,8 +217,9 @@ TEST(LocalOrientedPlane3Factor, Issue561Simplified) {
 
   // Optimize
   try {
-    GaussNewtonOptimizer optimizer(graph, initialEstimate);
-    Values result = optimizer.optimize();
+    ISAM2 isam2;
+    isam2.update(graph, initialEstimate);
+    Values result = isam2.calculateEstimate();
     EXPECT_DOUBLES_EQUAL(0, graph.error(result), 0.1);
     EXPECT(x0.equals(result.at<Pose3>(X(0))));
     EXPECT(p1_in_x1.equals(result.at<Plane>(P(1))));
