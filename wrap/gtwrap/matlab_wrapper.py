@@ -1010,7 +1010,8 @@ class MatlabWrapper(object):
         file_name = self._clean_class_name(instantiated_class)
         namespace_file_name = namespace_name + file_name
 
-        if instantiated_class.cpp_class() in self.ignore_classes:
+        uninstantiated_name = "::".join(instantiated_class.namespaces()[1:]) + "::" + instantiated_class.name
+        if uninstantiated_name in self.ignore_classes:
             return None
 
         # Class comment
@@ -1518,7 +1519,11 @@ class MatlabWrapper(object):
         ptr_ctor_frag = ''
 
         for cls in self.classes:
-            if cls.cpp_class().strip() in self.ignore_classes:
+            uninstantiated_name = "::".join(cls.namespaces()[1:]) + "::" + cls.name
+            self._debug("Cls: {} -> {}".format(cls.name, uninstantiated_name))
+
+            if uninstantiated_name in self.ignore_classes:
+                self._debug("Ignoring: {} -> {}".format(cls.name, uninstantiated_name))
                 continue
 
             def _has_serialization(cls):

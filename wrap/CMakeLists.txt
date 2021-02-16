@@ -26,34 +26,15 @@ install(FILES cmake/gtwrapConfig.cmake cmake/PybindWrap.cmake
               cmake/GtwrapUtils.cmake
         DESTINATION "${SCRIPT_INSTALL_DIR}/gtwrap")
 
+include(GNUInstallDirs)
+# Install the gtwrap python package as a directory so it can be found for
+# wrapping.
+install(DIRECTORY gtwrap DESTINATION "${CMAKE_INSTALL_DATADIR}/gtwrap")
+
 # Install wrapping scripts as binaries to `CMAKE_INSTALL_PREFIX/bin` so they can
 # be invoked for wrapping.
-# We use DESTINATION (instead of TYPE) so we can support older CMake versions.
-install(PROGRAMS scripts/pybind_wrap.py scripts/matlab_wrap.py
-        DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(PROGRAMS scripts/pybind_wrap.py scripts/matlab_wrap.py TYPE BIN)
 
 # Install pybind11 directory to `CMAKE_INSTALL_PREFIX/lib/pybind11` This will
 # allow the gtwrapConfig.cmake file to load it later.
-# We use DESTINATION (instead of TYPE) so we can support older CMake versions.
-install(DIRECTORY pybind11
-        DESTINATION ${CMAKE_INSTALL_LIBDIR})
-
-# ##############################################################################
-# Install the Python package
-find_package(
-  Python ${WRAP_PYTHON_VERSION}
-  COMPONENTS Interpreter
-  EXACT)
-
-# Detect virtualenv and set Pip args accordingly
-# https://www.scivision.dev/cmake-install-python-package/
-if(DEFINED ENV{VIRTUAL_ENV} OR DEFINED ENV{CONDA_PREFIX})
-  set(_pip_args)
-else()
-  set(_pip_args "--user")
-endif()
-#TODO add correct flags for virtualenv
-
-# Finally install the gtwrap python package.
-execute_process(COMMAND ${Python_EXECUTABLE} -m pip install . ${_pip_args}
-                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+install(DIRECTORY pybind11 DESTINATION "${CMAKE_INSTALL_LIBDIR}/gtwrap")
