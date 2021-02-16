@@ -17,9 +17,7 @@
  * @brief  A plane, represented by a normal direction and perpendicular distance
  */
 
-#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/OrientedPlane3.h>
-#include <gtsam/geometry/Point2.h>
 
 #include <iostream>
 
@@ -57,24 +55,6 @@ OrientedPlane3 OrientedPlane3::transform(const Pose3& xr,
   }
 
   return OrientedPlane3(unit_vec(0), unit_vec(1), unit_vec(2), pred_d);
-}
-
-/* ************************************************************************* */
-Vector3 OrientedPlane3::error(const OrientedPlane3& other,
-                              OptionalJacobian<3, 3> H1,
-                              OptionalJacobian<3, 3> H2) const {
-  Vector2 n_error = -n_.localCoordinates(other.n_);
-  
-  const auto f = boost::bind(&Unit3::localCoordinates, _1, _2);
-  if (H1) {
-    Matrix2 H_n_error_this = -numericalDerivative21<Vector2, Unit3, Unit3>(f, n_, other.n_);
-    *H1 << H_n_error_this, Z_2x1, 0, 0, 1;
-  }
-  if (H2) {
-    Matrix H_n_error_other = -numericalDerivative22<Vector2, Unit3, Unit3>(f, n_, other.n_);
-    *H2 << H_n_error_other, Z_2x1, 0, 0, -1;
-  }
-  return Vector3(n_error(0), n_error(1), d_ - other.d_);
 }
 
 /* ************************************************************************* */
