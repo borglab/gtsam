@@ -163,6 +163,15 @@ class BearingS2 {
   void serializable() const; // enabling serialization functionality
 };
 
+#include <gtsam_unstable/geometry/Similarity3.h>
+class Similarity3 {
+  Similarity3();
+  Similarity3(double s);
+  Similarity3(const gtsam::Rot3& R, const gtsam::Point3& t, double s);
+  Similarity3(const Matrix& R, const Vector& t, double s);
+  Similarity3(const Matrix& T);
+};
+  
 #include <gtsam_unstable/geometry/SimWall2D.h>
 class SimWall2D {
   SimWall2D();
