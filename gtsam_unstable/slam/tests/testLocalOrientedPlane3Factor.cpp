@@ -78,6 +78,8 @@ TEST(LocalOrientedPlane3Factor, lm_translation_error) {
 }
 
 // *************************************************************************
+// TODO As described in PR #564 after correcting the derivatives in
+// OrientedPlane3Factor this test fails. It should be debugged and re-enabled.
 /*
 TEST (LocalOrientedPlane3Factor, lm_rotation_error) {
   // Tests one pose, two measurements of the landmark that differ in angle only.
@@ -86,7 +88,8 @@ TEST (LocalOrientedPlane3Factor, lm_rotation_error) {
 
   NonlinearFactorGraph graph;
 
-  // Init pose and prior.  Pose Prior is needed since a single plane measurement does not fully constrain the pose
+  // Init pose and prior.  Pose Prior is needed since a single plane measurement
+  // does not fully constrain the pose
   Pose3 init_pose = Pose3::identity();
   graph.addPrior(X(0), init_pose, noiseModel::Isotropic::Sigma(6, 0.001));
 

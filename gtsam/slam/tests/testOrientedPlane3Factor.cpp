@@ -82,7 +82,9 @@ TEST(OrientedPlane3Factor, lm_translation_error) {
   EXPECT(assert_equal(optimized_plane_landmark, expected_plane_landmark));
 }
 
-// // *************************************************************************
+// *************************************************************************
+// TODO As described in PR #564 after correcting the derivatives in
+// OrientedPlane3Factor this test fails. It should be debugged and re-enabled.
 /*
 TEST (OrientedPlane3Factor, lm_rotation_error) {
   // Tests one pose, two measurements of the landmark that differ in angle only.
