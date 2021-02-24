@@ -15,7 +15,7 @@
  * @author Paul Drews
  */
 
-#include <gtsam_unstable/geometry/Similarity3.h>
+#include <gtsam/geometry/Similarity3.h>
 
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/Manifold.h>
