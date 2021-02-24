@@ -24,7 +24,7 @@
 namespace gtsam {
 
 using std::vector;
-typedef PointPairs = vector<Point3Pair>;
+typedef vector<Point3Pair> PointPairs;
 
 namespace {
 /// Subtract centroids from point pairs.
