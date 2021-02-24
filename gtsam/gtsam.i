@@ -1058,6 +1058,29 @@ class PinholeCamera {
   void serialize() const;
 };
 
+
+#include <gtsam/geometry/Similarity3.h>
+class PointPairs
+{
+  PointPairs();
+  size_t size() const;
+  bool empty() const;
+  gtsam::Point3Pair at(size_t n) const;
+  void push_back(const gtsam::Point3Pair& point_pair);
+};
+
+class Similarity3 {
+  Similarity3();
+  Similarity3(double s);
+  Similarity3(const gtsam::Rot3& R, const gtsam::Point3& t, double s);
+  Similarity3(const Matrix& R, const Vector& t, double s);
+  Similarity3(const Matrix& T);
+
+  static Similarity3 Align(const gtsam::PointPairs & abPointPairs);
+};
+
+
+
 // Forward declaration of PinholeCameraCalX is defined here.
 #include <gtsam/geometry/SimpleCamera.h>
 // Some typedefs for common camera types
