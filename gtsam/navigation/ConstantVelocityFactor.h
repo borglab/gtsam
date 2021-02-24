@@ -4,12 +4,7 @@
 #include <gtsam/navigation/NavState.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
-using gtsam::Key;
-using gtsam::NavState;
-using gtsam::NoiseModelFactor2;
-using gtsam::Point3;
-using gtsam::SharedNoiseModel;
-using gtsam::Velocity3;
+namespace gtsam {
 
 class ConstantVelocityFactor : public NoiseModelFactor2<NavState, NavState> {
     double dt_;
@@ -57,3 +52,4 @@ class ConstantVelocityFactor : public NoiseModelFactor2<NavState, NavState> {
     }
 };
 
+}  // namespace gtsam
