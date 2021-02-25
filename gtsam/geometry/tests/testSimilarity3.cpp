@@ -16,7 +16,7 @@
  * @author Zhaoyang Lv
  */
 
-#include <gtsam_unstable/geometry/Similarity3.h>
+#include <gtsam/geometry/Similarity3.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/ExpressionFactorGraph.h>
