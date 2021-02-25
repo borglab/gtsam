@@ -30,6 +30,8 @@ namespace gtsam {
 // Forward declarations
 class Pose3;
 
+typedef std::vector<Point3Pair> PointPairs;
+
 /**
  * 3D similarity transform
  */
