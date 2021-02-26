@@ -1087,6 +1087,7 @@ class Similarity3 {
   Similarity3(const Matrix& R, const Vector& t, double s);
   Similarity3(const Matrix& T);
 
+  gtsam::Pose3 transformFrom(const gtsam::Pose3& T);
   static Similarity3 Align(const gtsam::PointPairs & abPointPairs);
   static Similarity3 Align(const gtsam::Pose3Pairs & abPosePairs);
 
