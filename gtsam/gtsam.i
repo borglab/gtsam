@@ -766,6 +766,16 @@ class Pose3 {
   void serialize() const;
 };
 
+#include <gtsam/geometry/Pose3.h>
+class Pose3Pairs
+{
+  Pose3Pairs();
+  size_t size() const;
+  bool empty() const;
+  gtsam::Pose3Pair at(size_t n) const;
+  void push_back(const gtsam::Pose3Pair& pose_pair);
+};
+
 // std::vector<gtsam::Pose3>
 #include <gtsam/geometry/Pose3.h>
 class Pose3Vector
@@ -1077,6 +1087,9 @@ class Similarity3 {
   Similarity3(const Matrix& T);
 
   static Similarity3 Align(const gtsam::PointPairs & abPointPairs);
+  static Similarity3 Align(const gtsam::Pose3Pairs & abPosePairs);
+
+
 };
 
 
