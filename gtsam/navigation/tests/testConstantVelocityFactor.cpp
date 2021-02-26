@@ -49,7 +49,7 @@ TEST(ConstantVelocityFactor, VelocityFactor) {
     const auto state2 = NavState{Pose3{Rot3::Yaw(0), Point3{0.0, 0.0, 2.0}}, Velocity3{0.0, 0.0, 1.0}};
 
     const double mu{1000};
-    const auto noise_model = noiseModel::Constrained::All(3, mu);
+    const auto noise_model = noiseModel::Constrained::All(9, mu);
 
     const auto factor = ConstantVelocityFactor(x1, x2, dt, noise_model);
 
