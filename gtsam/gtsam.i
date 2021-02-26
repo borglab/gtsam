@@ -1080,6 +1080,7 @@ class PointPairs
 };
 
 class Similarity3 {
+  // Standard Constructors
   Similarity3();
   Similarity3(double s);
   Similarity3(const gtsam::Rot3& R, const gtsam::Point3& t, double s);
@@ -1089,7 +1090,11 @@ class Similarity3 {
   static Similarity3 Align(const gtsam::PointPairs & abPointPairs);
   static Similarity3 Align(const gtsam::Pose3Pairs & abPosePairs);
 
-
+  // Standard Interface
+  const Matrix matrix() const;
+  const gtsam::Rot3& rotation();
+  const gtsam::Point3& translation();
+  double scale() const;
 };
 
 
