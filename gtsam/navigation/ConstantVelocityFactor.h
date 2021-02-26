@@ -35,8 +35,8 @@ class ConstantVelocityFactor : public NoiseModelFactor2<NavState, NavState> {
                                 boost::optional<gtsam::Matrix &> H1 = boost::none,
                                 boost::optional<gtsam::Matrix &> H2 = boost::none) const override {
         // only used to use update() below
-        const Vector3 b_accel{0.0, 0.0, 0.0};
-        const Vector3 b_omega{0.0, 0.0, 0.0};
+        static const Vector3 b_accel{0.0, 0.0, 0.0};
+        static const Vector3 b_omega{0.0, 0.0, 0.0};
 
         Matrix predicted_H_x1;
         NavState predicted = x1.update(b_accel, b_omega, dt_, predicted_H_x1, {}, {});
