@@ -6,6 +6,10 @@
 
 namespace gtsam {
 
+/**
+ * Binary factor for applying a constant velocity model to a moving body represented as a NavState.
+ * The only measurement is dt, the time delta between the states.
+ */
 class ConstantVelocityFactor : public NoiseModelFactor2<NavState, NavState> {
     double dt_;
 
@@ -17,36 +21,33 @@ class ConstantVelocityFactor : public NoiseModelFactor2<NavState, NavState> {
         : NoiseModelFactor2<NavState, NavState>(model, i, j), dt_(dt) {}
     ~ConstantVelocityFactor() override{};
 
+    /**
+     * @brief Caclulate error: (x2 - x1.update(dt)))
+     * where X1 and X1 are NavStates and dt is
+     * the time difference in seconds between the states.
+     * @param x1 NavState for key a
+     * @param x2 NavState for key b
+     * @param H1 optional jacobian in x1
+     * @param H2 optional jacobian in x2
+     * @return * Vector
+     */
     gtsam::Vector evaluateError(const NavState &x1, const NavState &x2,
                                 boost::optional<gtsam::Matrix &> H1 = boost::none,
                                 boost::optional<gtsam::Matrix &> H2 = boost::none) const override {
-        // so we can reuse this calculation below
-        auto evaluateErrorInner = [dt = dt_](const NavState &x1, const NavState &x2) -> gtsam::Vector {
-            const Velocity3 &v1 = x1.v();
-            const Velocity3 &v2 = x2.v();
-            const Point3 &p1 = x1.t();
-            const Point3 &p2 = x2.t();
+        // only used to use update() below
+        const Vector3 b_accel{0.0, 0.0, 0.0};
+        const Vector3 b_omega{0.0, 0.0, 0.0};
 
-            // trapezoidal integration constant accelleration
-            // const Point3 hx = p1 + Point3((v1 + v2) * dt / 2.0);
+        Matrix predicted_H_x1;
+        NavState predicted = x1.update(b_accel, b_omega, dt_, predicted_H_x1, {}, {});
 
-            // euler start
-            // const Point3 hx = p1 + Point3(v1 * dt);
-
-            // euler end
-            const Point3 hx = p1 + Point3(v2 * dt);
-
-            return p2 - hx;
-        };
+        Matrix error_H_predicted;
+        Vector9 error = predicted.localCoordinates(x2, error_H_predicted, H2);
 
         if (H1) {
-            (*H1) = numericalDerivative21<gtsam::Vector, NavState, NavState>(evaluateErrorInner, x1, x2, 1e-5);
+            *H1 = error_H_predicted * predicted_H_x1;
         }
-        if (H2) {
-            (*H2) = numericalDerivative22<gtsam::Vector, NavState, NavState>(evaluateErrorInner, x1, x2, 1e-5);
-        }
-
-        return evaluateErrorInner(x1, x2);
+        return error;
     }
 };
 
