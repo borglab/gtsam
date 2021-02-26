@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    NonlinearFactor.h
- * @brief   Non-linear factor base classes
+ * @file    ConstantVelocityFactor.h
+ * @brief   Maintain a constant velocity motion model between two NavStates
  * @author  Asa Hammond
  */
 
