@@ -53,17 +53,46 @@ TEST(ConstantVelocityFactor, VelocityFactor) {
 
     const auto factor = ConstantVelocityFactor(x1, x2, dt, noise_model);
 
-    // positions are the same, secondary state has velocity 1.0 ,
-    EXPECT(assert_equal(Unit3{0.0, 0.0, -1.0}.unitVector(), factor.evaluateError(origin, state0), tol));
+    // TODO make these tests way less verbose!
+    // ideally I could find an initializer for Vector9 like: Vector9{0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}'
+    // positions are the same, secondary state has velocity 1.0 in z,
+    const auto state0_err_origin = factor.evaluateError(origin, state0);
+    EXPECT(assert_equal(0.0, NavState::dP(state0_err_origin).x(), tol));
+    EXPECT(assert_equal(0.0, NavState::dP(state0_err_origin).y(), tol));
+    EXPECT(assert_equal(0.0, NavState::dP(state0_err_origin).z(), tol));
+    EXPECT(assert_equal(0.0, NavState::dR(state0_err_origin).x(), tol));
+    EXPECT(assert_equal(0.0, NavState::dR(state0_err_origin).y(), tol));
+    EXPECT(assert_equal(0.0, NavState::dR(state0_err_origin).z(), tol));
+    EXPECT(assert_equal(0.0, NavState::dV(state0_err_origin).x(), tol));
+    EXPECT(assert_equal(0.0, NavState::dV(state0_err_origin).y(), tol));
+    EXPECT(assert_equal(1.0, NavState::dV(state0_err_origin).z(), tol));
 
     // same velocities, different position
     // second state agrees with initial state + velocity * dt
-    EXPECT(assert_equal(Unit3{0.0, 0.0, 0.0}.unitVector(), factor.evaluateError(state0, state1), tol));
+    const auto state1_err_state0 = factor.evaluateError(state0, state1);
+    EXPECT(assert_equal(0.0, NavState::dP(state1_err_state0).x(), tol));
+    EXPECT(assert_equal(0.0, NavState::dP(state1_err_state0).y(), tol));
+    EXPECT(assert_equal(0.0, NavState::dP(state1_err_state0).z(), tol));
+    EXPECT(assert_equal(0.0, NavState::dR(state1_err_state0).x(), tol));
+    EXPECT(assert_equal(0.0, NavState::dR(state1_err_state0).y(), tol));
+    EXPECT(assert_equal(0.0, NavState::dR(state1_err_state0).z(), tol));
+    EXPECT(assert_equal(0.0, NavState::dV(state1_err_state0).x(), tol));
+    EXPECT(assert_equal(0.0, NavState::dV(state1_err_state0).y(), tol));
+    EXPECT(assert_equal(0.0, NavState::dV(state1_err_state0).z(), tol));
 
     // both bodies have the same velocity,
-    // but state2.pose() != state0.pose() + state0.velocity * dt
+    // but state2.pose() does not agree with .update()
     // error comes from this pose difference
-    EXPECT(assert_equal(Unit3{0.0, 0.0, 1.0}.unitVector(), factor.evaluateError(state0, state2), tol));
+    const auto state2_err_state0 = factor.evaluateError(state0, state2);
+    EXPECT(assert_equal(0.0, NavState::dP(state2_err_state0).x(), tol));
+    EXPECT(assert_equal(0.0, NavState::dP(state2_err_state0).y(), tol));
+    EXPECT(assert_equal(1.0, NavState::dP(state2_err_state0).z(), tol));
+    EXPECT(assert_equal(0.0, NavState::dR(state2_err_state0).x(), tol));
+    EXPECT(assert_equal(0.0, NavState::dR(state2_err_state0).y(), tol));
+    EXPECT(assert_equal(0.0, NavState::dR(state2_err_state0).z(), tol));
+    EXPECT(assert_equal(0.0, NavState::dV(state2_err_state0).x(), tol));
+    EXPECT(assert_equal(0.0, NavState::dV(state2_err_state0).y(), tol));
+    EXPECT(assert_equal(0.0, NavState::dV(state2_err_state0).z(), tol));
 }
 
 /* ************************************************************************* */
