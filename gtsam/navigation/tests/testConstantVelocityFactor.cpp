@@ -32,13 +32,12 @@
 TEST(ConstantVelocityFactor, VelocityFactor) {
     using namespace gtsam;
 
-    const auto tol = double{1e-5};
+    const double tol{1e-5};
 
-    const auto x1 = Key{1};
-    const auto x2 = Key{2};
+    const Key x1 = Key{1};
+    const Key x2 = Key{2};
 
-    const auto dt = double{1.0};
-    const auto mu = double{1000};
+    const double dt{1.0};
 
     // moving upward with groundtruth velocity"
     const auto origin = NavState{Pose3{Rot3::Yaw(0), Point3{0.0, 0.0, 0.0}}, Velocity3{0.0, 0.0, 0.0}};
@@ -49,6 +48,7 @@ TEST(ConstantVelocityFactor, VelocityFactor) {
 
     const auto state2 = NavState{Pose3{Rot3::Yaw(0), Point3{0.0, 0.0, 2.0}}, Velocity3{0.0, 0.0, 1.0}};
 
+    const double mu{1000};
     const auto noise_model = noiseModel::Constrained::All(3, mu);
 
     const auto factor = ConstantVelocityFactor(x1, x2, dt, noise_model);
