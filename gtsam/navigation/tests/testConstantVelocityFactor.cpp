@@ -12,20 +12,15 @@
 /**
  * @file    testConstantVelocityFactor.cpp
  * @brief   Unit test for ConstantVelocityFactor
- * @author  Alex Cunningham
  * @author  Asa Hammond
  */
 
 #include <gtsam/base/TestableAssertions.h>
-#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/navigation/ConstantVelocityFactor.h>
-#include <gtsam/nonlinear/Values.h>
 
 #include <CppUnitLite/TestHarness.h>
-
-#include <boost/bind.hpp>
 #include <list>
 
 /* ************************************************************************* */
