@@ -30,8 +30,6 @@ namespace gtsam {
 // Forward declarations
 class Pose3;
 
-typedef std::vector<Point3Pair> PointPairs;
-
 /**
  * 3D similarity transform
  */
@@ -128,6 +126,7 @@ public:
   
   /**
    *  Create Similarity3 by aligning at least two pose pairs
+   * 
    */
   GTSAM_UNSTABLE_EXPORT static Similarity3 Align(const std::vector<Pose3Pair>& abPosePairs);
 
