@@ -23,7 +23,14 @@ class TestSim3(GtsamTestCase):
     """Test selected Sim3 methods."""
 
     def test_align_poses_along_straight_line(self):
-        """Test Align Pose3Pairs method."""
+        """Test Align Pose3Pairs method.
+
+        Scenario:
+           3 camera frames
+           same scale (no gauge ambiguity)
+           world frame 2 (w2) has poses rotated about x-axis (90 degree roll)
+           world frames translated by 15 meters
+        """
 
         Rx90 = Rot3.Rx(np.deg2rad(90))
 
@@ -46,6 +53,42 @@ class TestSim3(GtsamTestCase):
 
         for w1Ti, w2Ti in zip(w1Ti_list, w2Ti_list):
             self.gtsamAssertEquals(w2Ti, w2Sw1.transformFrom(w1Ti))
+
+
+
+    def test_align_poses_along_straight_line_gauge(self):
+        """Test Align Pose3Pairs method.
+
+        Scenario:
+           3 camera frames
+           with gauge ambiguity (2x scale)
+           world frame 2 (w2) has poses rotated about z-axis (90 degree yaw)
+           world frames translated by 10 meters
+        """
+
+        Rz90 = Rot3.Rz(np.deg2rad(90))
+
+        w1Ti0 = Pose3(Rot3(), np.array([1, 0, 0]))
+        w1Ti1 = Pose3(Rot3(), np.array([2, 0, 0]))
+        w1Ti2 = Pose3(Rot3(), np.array([4, 0, 0]))
+
+        w1Ti_list = [w1Ti0, w1Ti1, w1Ti2]
+
+        w2Ti0 = Pose3(Rz90, np.array([12, 0, 0]))
+        w2Ti1 = Pose3(Rz90, np.array([14, 0, 0]))
+        w2Ti2 = Pose3(Rz90, np.array([18, 0, 0]))
+
+        w2Ti_list = [w2Ti0, w2Ti1, w2Ti2]
+
+        pairs = list(zip(w2Ti_list, w1Ti_list))
+        pose_pairs = Pose3Pairs(pairs)
+
+        w2Sw1 = Similarity3.Align(pose_pairs)
+
+        for w1Ti, w2Ti in zip(w1Ti_list, w2Ti_list):
+            self.gtsamAssertEquals(w2Ti, w2Sw1.transformFrom(w1Ti))
+
+
 
 
 if __name__ == "__main__":
