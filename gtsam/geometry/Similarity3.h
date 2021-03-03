@@ -13,6 +13,7 @@
  * @file   Similarity3.h
  * @brief  Implementation of Similarity3 transform
  * @author Paul Drews
+ * @author John Lambert
  */
 
 #pragma once

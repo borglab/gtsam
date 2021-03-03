@@ -13,6 +13,7 @@
  * @file   Similarity3.cpp
  * @brief  Implementation of Similarity3 transform
  * @author Paul Drews
+ * @author John Lambert
  */
 
 #include <gtsam/geometry/Similarity3.h>
