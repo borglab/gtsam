@@ -125,8 +125,10 @@ public:
   GTSAM_UNSTABLE_EXPORT static Similarity3 Align(const std::vector<Point3Pair>& abPointPairs);
   
   /**
-   *  Create Similarity3 by aligning at least two pose pairs
-   * 
+   * Create Similarity3 by aligning at least two pose pairs
+   * Given a list of pairs in world frame w1, and a list of pairs in another world
+   * frame w2, will compute the best-fit Similarity3 transformation to align them.
+   * `w2Sw1` will returned for pairs [ (w2Ti1,w1Ti1), (w2Ti2,w1Ti2), (w2Ti3,w1Ti3) ]
    */
   GTSAM_UNSTABLE_EXPORT static Similarity3 Align(const std::vector<Pose3Pair>& abPosePairs);
 
