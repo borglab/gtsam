@@ -179,12 +179,13 @@ Similarity3 Similarity3::Align(const vector<Pose3Pair> &abPosePairs) {
   Pose3 wTa, wTb;
   for (const Pose3Pair &abPair : abPosePairs) {
     std::tie(wTa, wTb) = abPair;
-    rotations.emplace_back(wTa.rotation().compose(wTb.rotation().inverse()));
+    Rot3 aRb = wTa.rotation().between(wTb.rotation());
+    rotations.emplace_back(aRb);
     abPointPairs.emplace_back(wTa.translation(), wTb.translation());
   }
-  const Rot3 aRb = FindKarcherMean<Rot3>(rotations);
+  const Rot3 aRb_estimate = FindKarcherMean<Rot3>(rotations);
 
-  return alignGivenR(abPointPairs, aRb);
+  return alignGivenR(abPointPairs, aRb_estimate);
 }
 
 Matrix4 Similarity3::wedge(const Vector7 &xi) {
