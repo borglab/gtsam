@@ -448,6 +448,16 @@ class Point3 {
   void serialize() const;
 };
 
+#include <gtsam/geometry/Point3.h>
+class Point3Pairs
+{
+  Point3Pairs();
+  size_t size() const;
+  bool empty() const;
+  gtsam::Point3Pair at(size_t n) const;
+  void push_back(const gtsam::Point3Pair& point_pair);
+};
+
 #include <gtsam/geometry/Rot2.h>
 class Rot2 {
   // Standard Constructors and Named Constructors
@@ -1070,15 +1080,6 @@ class PinholeCamera {
 
 
 #include <gtsam/geometry/Similarity3.h>
-class Point3Pairs
-{
-  Point3Pairs();
-  size_t size() const;
-  bool empty() const;
-  gtsam::Point3Pair at(size_t n) const;
-  void push_back(const gtsam::Point3Pair& point_pair);
-};
-
 class Similarity3 {
   // Standard Constructors
   Similarity3();
