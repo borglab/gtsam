@@ -346,7 +346,7 @@ TEST(Similarity3, AlignPoint3_3) {
 //******************************************************************************
 // Align with Pose3 Pairs
 TEST(Similarity3, AlignPose3) {
-  Similarity3 expected_aSb(Rot3::Ry(180 * degree), Point3(2, 3, 5), 2.0);
+  Similarity3 expected_bSa(Rot3::Ry(180 * degree), Point3(2, 3, 5), 2.0);
 
   // Create source poses
   Pose3 Ta1(Rot3(), Point3(0, 0, 0));
@@ -364,8 +364,8 @@ TEST(Similarity3, AlignPose3) {
   // Cayley transform cannot accommodate 180 degree rotations,
   // hence we only test for Expmap
 #ifdef GTSAM_ROT3_EXPMAP
-  Similarity3 actual_aSb = Similarity3::Align(correspondences);
-  EXPECT(assert_equal(expected_aSb, actual_aSb));
+  Similarity3 actual_bSa = Similarity3::Align(correspondences);
+  EXPECT(assert_equal(expected_bSa, actual_bSa));
 #endif
 }
 
