@@ -27,9 +27,9 @@ using std::vector;
 
 namespace {
 /// Subtract centroids from point pairs.
-static PointPairs subtractCentroids(const PointPairs &abPointPairs,
+static Point3Pairs subtractCentroids(const Point3Pairs &abPointPairs,
                                     const Point3Pair &centroids) {
-  PointPairs d_abPointPairs;
+  Point3Pairs d_abPointPairs;
   for (const Point3Pair& abPair : abPointPairs) {
     Point3 da = abPair.first - centroids.first;
     Point3 db = abPair.second - centroids.second;
@@ -39,7 +39,7 @@ static PointPairs subtractCentroids(const PointPairs &abPointPairs,
 }
 
 /// Form inner products x and y and calculate scale.
-static const double calculateScale(const PointPairs &d_abPointPairs,
+static const double calculateScale(const Point3Pairs &d_abPointPairs,
                                    const Rot3 &aRb) {
   double x = 0, y = 0;
   Point3 da, db;
@@ -54,7 +54,7 @@ static const double calculateScale(const PointPairs &d_abPointPairs,
 }
 
 /// Form outer product H.
-static Matrix3 calculateH(const PointPairs &d_abPointPairs) {
+static Matrix3 calculateH(const Point3Pairs &d_abPointPairs) {
   Matrix3 H = Z_3x3;
   for (const Point3Pair& d_abPair : d_abPointPairs) {
     H += d_abPair.first * d_abPair.second.transpose();
@@ -63,7 +63,7 @@ static Matrix3 calculateH(const PointPairs &d_abPointPairs) {
 }
 
 /// This method estimates the similarity transform from differences point pairs, given a known or estimated rotation and point centroids.
-static Similarity3 align(const PointPairs &d_abPointPairs, const Rot3 &aRb,
+static Similarity3 align(const Point3Pairs &d_abPointPairs, const Rot3 &aRb,
                          const Point3Pair &centroids) {
   const double s = calculateScale(d_abPointPairs, aRb);
   const Point3 aTb = (centroids.first - s * (aRb * centroids.second)) / s;
@@ -72,7 +72,7 @@ static Similarity3 align(const PointPairs &d_abPointPairs, const Rot3 &aRb,
 
 /// This method estimates the similarity transform from point pairs, given a known or estimated rotation.
 // Refer to: http://www5.informatik.uni-erlangen.de/Forschung/Publikationen/2005/Zinsser05-PSR.pdf Chapter 3
-static Similarity3 alignGivenR(const PointPairs &abPointPairs,
+static Similarity3 alignGivenR(const Point3Pairs &abPointPairs,
                                const Rot3 &aRb) {
   auto centroids = means(abPointPairs);
   auto d_abPointPairs = subtractCentroids(abPointPairs, centroids);
@@ -153,7 +153,7 @@ Point3 Similarity3::operator*(const Point3& p) const {
   return transformFrom(p);
 }
 
-Similarity3 Similarity3::Align(const PointPairs &abPointPairs) {
+Similarity3 Similarity3::Align(const Point3Pairs &abPointPairs) {
   // Refer to Chapter 3 of
   // http://www5.informatik.uni-erlangen.de/Forschung/Publikationen/2005/Zinsser05-PSR.pdf
   if (abPointPairs.size() < 3)
@@ -173,7 +173,7 @@ Similarity3 Similarity3::Align(const vector<Pose3Pair> &abPosePairs) {
 
   // calculate rotation
   vector<Rot3> rotations;
-  PointPairs abPointPairs;
+  Point3Pairs abPointPairs;
   rotations.reserve(n);
   abPointPairs.reserve(n);
   Pose3 wTa, wTb;

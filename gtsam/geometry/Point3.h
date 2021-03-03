@@ -38,6 +38,8 @@ typedef Vector3 Point3;
 typedef std::pair<Point3, Point3> Point3Pair;
 GTSAM_EXPORT std::ostream &operator<<(std::ostream &os, const gtsam::Point3Pair &p);
 
+using Point3Pairs = std::vector<Point3Pair>;
+
 /// distance between two points
 GTSAM_EXPORT double distance3(const Point3& p1, const Point3& q,
 	                          OptionalJacobian<1, 3> H1 = boost::none,
