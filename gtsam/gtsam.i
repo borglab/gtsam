@@ -1070,9 +1070,9 @@ class PinholeCamera {
 
 
 #include <gtsam/geometry/Similarity3.h>
-class PointPairs
+class Point3Pairs
 {
-  PointPairs();
+  Point3Pairs();
   size_t size() const;
   bool empty() const;
   gtsam::Point3Pair at(size_t n) const;
@@ -1088,7 +1088,7 @@ class Similarity3 {
   Similarity3(const Matrix& T);
 
   gtsam::Pose3 transformFrom(const gtsam::Pose3& T);
-  static Similarity3 Align(const gtsam::PointPairs & abPointPairs);
+  static Similarity3 Align(const gtsam::Point3Pairs & abPointPairs);
   static Similarity3 Align(const gtsam::Pose3Pairs & abPosePairs);
 
   // Standard Interface
