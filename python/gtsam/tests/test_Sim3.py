@@ -49,10 +49,10 @@ class TestSim3(GtsamTestCase):
 
         wToi_list = [wTo0, wTo1, wTo2]
 
-        wTe_pairs = Pose3Pairs(list(zip(wToi_list, eToi_list)))
+        we_pairs = Pose3Pairs(list(zip(wToi_list, eToi_list)))
 
         # Recover the transformation wSe (i.e. world_S_egovehicle)
-        wSe = Similarity3.Align(wTe_pairs)
+        wSe = Similarity3.Align(we_pairs)
 
         for wToi, eToi in zip(wToi_list, eToi_list):
             self.gtsamAssertEquals(wToi, wSe.transformFrom(eToi))
@@ -85,10 +85,10 @@ class TestSim3(GtsamTestCase):
 
         wToi_list = [wTo0, wTo1, wTo2]
 
-        wTe_pairs = Pose3Pairs(list(zip(wToi_list, eToi_list)))
+        we_pairs = Pose3Pairs(list(zip(wToi_list, eToi_list)))
 
         # Recover the transformation wSe (i.e. world_S_egovehicle)
-        wSe = Similarity3.Align(wTe_pairs)
+        wSe = Similarity3.Align(we_pairs)
 
         for wToi, eToi in zip(wToi_list, eToi_list):
             self.gtsamAssertEquals(wToi, wSe.transformFrom(eToi))
