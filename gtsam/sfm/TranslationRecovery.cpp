@@ -81,7 +81,7 @@ void TranslationRecovery::addPrior(
     const double scale, NonlinearFactorGraph *graph,
     const SharedNoiseModel &priorNoiseModel) const {
   auto edge = relativeTranslations_.begin();
-  if(edge == relativeTranslations_.end()) return;
+  if (edge == relativeTranslations_.end()) return;
   graph->emplace_shared<PriorFactor<Point3> >(edge->key1(), Point3(0, 0, 0),
                                               priorNoiseModel);
   graph->emplace_shared<PriorFactor<Point3> >(
@@ -104,10 +104,10 @@ Values TranslationRecovery::initalizeRandomly() const {
     insert(edge.key2());
   }
 
-  // If there are no valid edges, but zero-distance edges exist, initialize one of 
-  // the nodes in a connected component of zero-distance edges. 
-  if(initial.empty() && !sameTranslationNodes_.empty()){
-    for(const auto &optimizedAndDuplicateKeys : sameTranslationNodes_) {
+  // If there are no valid edges, but zero-distance edges exist, initialize one
+  // of the nodes in a connected component of zero-distance edges.
+  if (initial.empty() && !sameTranslationNodes_.empty()) {
+    for (const auto &optimizedAndDuplicateKeys : sameTranslationNodes_) {
       Key optimizedKey = optimizedAndDuplicateKeys.first;
       initial.insert<Point3>(optimizedKey, Point3(0, 0, 0));
     }
