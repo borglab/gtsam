@@ -177,10 +177,10 @@ Similarity3 Similarity3::Align(const vector<Pose3Pair> &abPosePairs) {
   Point3Pairs abPointPairs;
   rotations.reserve(n);
   abPointPairs.reserve(n);
-  Pose3 wTa, wTb;
+  Pose3 aTi, bTi;
   for (const Pose3Pair &abPair : abPosePairs) {
-    std::tie(wTa, wTb) = abPair;
-    Rot3 aRb = wTa.rotation().between(wTb.rotation());
+    std::tie(aTi, bTi) = abPair;
+    Rot3 aRb = aTi.rotation().compose(bTi.rotation().inverse());
     rotations.emplace_back(aRb);
     abPointPairs.emplace_back(wTa.translation(), wTb.translation());
   }
