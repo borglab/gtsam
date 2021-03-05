@@ -182,7 +182,7 @@ Similarity3 Similarity3::Align(const vector<Pose3Pair> &abPosePairs) {
     std::tie(aTi, bTi) = abPair;
     Rot3 aRb = aTi.rotation().compose(bTi.rotation().inverse());
     rotations.emplace_back(aRb);
-    abPointPairs.emplace_back(wTa.translation(), wTb.translation());
+    abPointPairs.emplace_back(aTi.translation(), bTi.translation());
   }
   const Rot3 aRb_estimate = FindKarcherMean<Rot3>(rotations);
 
