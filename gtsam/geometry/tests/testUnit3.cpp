@@ -501,6 +501,7 @@ TEST(actualH, Serialization) {
   EXPECT(serializationTestHelpers::equalsBinary(p));
 }
 
+
 /* ************************************************************************* */
 int main() {
   srand(time(nullptr));
