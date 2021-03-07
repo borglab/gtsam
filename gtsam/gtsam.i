@@ -797,6 +797,12 @@ class Unit3 {
   size_t dim() const;
   gtsam::Unit3 retract(Vector v) const;
   Vector localCoordinates(const gtsam::Unit3& s) const;
+
+  // enabling serialization functionality
+  void serialize() const;
+
+  // enabling function to compare objects
+  bool equals(const gtsam::Unit3& expected, double tol) const;
 };
 
 #include <gtsam/geometry/EssentialMatrix.h>
