@@ -305,10 +305,10 @@ class PybindWrapper(object):
         """
         if cpp_class not in [
             "gtsam::Cal3Bundler",
-            "gtsam::PinholeCameraCal3Bundler", 
+            "gtsam::PinholeCamera<gtsam::Cal3Bundler>", 
             "gtsam::Pose3", 
             "gtsam::Rot3", 
-            "gtsam::SfmTrack"
+            "gtsam::SfmTrack",
             "gtsam::Unit3", 
         ]:
             # TODO: fix this check by just checking if serialization is supported.
