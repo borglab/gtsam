@@ -47,6 +47,16 @@ PYBIND11_MODULE(geometry_py, m_) {
     [](gtsam::Point2* self, string serialized){
         gtsam::deserialize(serialized, *self);
     }, py::arg("serialized"))
+.def(py::pickle(
+    [](const gtsam::Point2 &a){ // __getstate__
+        /* Returns a string that encodes the state of the object */
+        return py::make_tuple(gtsam::serialize(a));
+    },
+    [](py::tuple t){ // __setstate__
+        gtsam::Point2 obj;
+        gtsam::deserialize(t[0].cast<std::string>(), obj);
+        return obj;
+    }))
 ;
 
     py::class_<gtsam::Point3, std::shared_ptr<gtsam::Point3>>(m_gtsam, "Point3")
@@ -61,6 +71,16 @@ PYBIND11_MODULE(geometry_py, m_) {
     [](gtsam::Point3* self, string serialized){
         gtsam::deserialize(serialized, *self);
     }, py::arg("serialized"))
+.def(py::pickle(
+    [](const gtsam::Point3 &a){ // __getstate__
+        /* Returns a string that encodes the state of the object */
+        return py::make_tuple(gtsam::serialize(a));
+    },
+    [](py::tuple t){ // __setstate__
+        gtsam::Point3 obj;
+        gtsam::deserialize(t[0].cast<std::string>(), obj);
+        return obj;
+    }))
 
         .def_static("staticFunction",[](){return gtsam::Point3::staticFunction();})
         .def_static("StaticFunctionRet",[]( double z){return gtsam::Point3::StaticFunctionRet(z);}, py::arg("z"));
