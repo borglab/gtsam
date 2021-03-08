@@ -192,7 +192,6 @@ class PybindWrapper(object):
                 '{wrapped_ctors}'
                 '{wrapped_methods}'
                 '{wrapped_static_methods}'
-                '{wrapped_pickle}'
                 '{wrapped_properties};\n'.format(
                     shared_ptr_type=('boost' if self.use_boost else 'std'),
                     cpp_class=cpp_class,
@@ -203,7 +202,6 @@ class PybindWrapper(object):
                     wrapped_ctors=self.wrap_ctors(instantiated_class),
                     wrapped_methods=self.wrap_methods(instantiated_class.methods, cpp_class),
                     wrapped_static_methods=self.wrap_methods(instantiated_class.static_methods, cpp_class),
-                    wrapped_pickle=self.wrap_pickle(cpp_class),
                     wrapped_properties=self.wrap_properties(instantiated_class.properties, cpp_class),
                 ))
 
@@ -218,7 +216,6 @@ class PybindWrapper(object):
                 '{wrapped_ctors}'
                 '{wrapped_methods}'
                 '{wrapped_static_methods}'
-                '{wrapped_pickle}'
                 '{wrapped_properties};\n'.format(
                     shared_ptr_type=('boost' if self.use_boost else 'std'),
                     cpp_class=cpp_class,
@@ -228,7 +225,6 @@ class PybindWrapper(object):
                     wrapped_ctors=self.wrap_ctors(stl_class),
                     wrapped_methods=self.wrap_methods(stl_class.methods, cpp_class),
                     wrapped_static_methods=self.wrap_methods(stl_class.static_methods, cpp_class),
-                    wrapped_pickle=self.wrap_pickle(cpp_class),
                     wrapped_properties=self.wrap_properties(stl_class.properties, cpp_class),
                 ))
 
@@ -305,37 +301,6 @@ class PybindWrapper(object):
                 suffix=';',
             )
         return wrapped, includes
-
-    def wrap_pickle(self, cpp_class):
-        """Wrap to enable pickling on the generated Python class.
-        
-        Pickling is supported by reusing the serialization functionality already build in to many GTSAM types.
-
-        Ref: https://pybind11.readthedocs.io/en/stable/advanced/classes.html#pickling-support
-        """
-        if cpp_class not in [
-            "gtsam::Cal3Bundler",
-            "gtsam::PinholeCamera<gtsam::Cal3Bundler>", 
-            "gtsam::Pose3", 
-            "gtsam::Rot3", 
-            "gtsam::SfmTrack",
-            "gtsam::Unit3", 
-        ]:
-            # TODO: fix this check by just checking if serialization is supported.
-            return ""
-        return textwrap.dedent('''
-                .def(py::pickle(
-                    [](const {cpp_class} &a){{ // __getstate__
-                        /* Returns a string that encodes the state of the object */
-                        return py::make_tuple(gtsam::serialize(a));
-                    }},
-                    [](py::tuple t){{ // __setstate__
-                        {cpp_class} obj;
-                        gtsam::deserialize(t[0].cast<std::string>(), obj);
-                        return obj;
-                    }}
-                ))
-                ''').format(cpp_class=cpp_class)
 
     def wrap(self):
         wrapped_namespace, includes = self.wrap_namespace(self.module)
