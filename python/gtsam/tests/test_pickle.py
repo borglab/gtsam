@@ -44,5 +44,3 @@ class TestPickle(GtsamTestCase):
     def test_unit3_roundtrip(self):
         obj = Unit3(Point3(1, 1, 0))
         self.assertEqualityOnPickleRoundtrip(obj)
-
-    

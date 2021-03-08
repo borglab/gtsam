@@ -328,4 +328,3 @@ class PybindWrapper(object):
             wrapped_namespace=wrapped_namespace,
             boost_class_export=boost_class_export,
         )
-
