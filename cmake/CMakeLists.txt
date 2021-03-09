@@ -22,5 +22,3 @@ install(FILES
   FindNumPy.cmake
   README.html
   DESTINATION "${SCRIPT_INSTALL_DIR}/GTSAMCMakeTools")
-
-
