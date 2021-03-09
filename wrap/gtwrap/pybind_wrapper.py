@@ -75,6 +75,11 @@ class PybindWrapper(object):
                         []({class_inst} self, string serialized){{
                             gtsam::deserialize(serialized, *self);
                         }}, py::arg("serialized"))
+                    '''.format(class_inst=cpp_class + '*'))
+        if cpp_method == "pickle":
+            if not cpp_class in self._serializing_classes:
+                raise ValueError("Cannot pickle a class which is not serializable")
+            return textwrap.dedent('''
                     .def(py::pickle(
                         [](const {cpp_class} &a){{ // __getstate__
                             /* Returns a string that encodes the state of the object */
@@ -85,7 +90,7 @@ class PybindWrapper(object):
                             gtsam::deserialize(t[0].cast<std::string>(), obj);
                             return obj;
                         }}))
-                    '''.format(class_inst=cpp_class + '*', cpp_class=cpp_class))
+                    '''.format(cpp_class=cpp_class))
 
         is_method = isinstance(method, instantiator.InstantiatedMethod)
         is_static = isinstance(method, parser.StaticMethod)
