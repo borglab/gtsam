@@ -49,6 +49,8 @@ class MatlabWrapper(object):
     }
     """Methods that should not be wrapped directly"""
     whitelist = ['serializable', 'serialize']
+    """Methods that should be ignored"""
+    ignore_methods = ['pickle']
     """Datatypes that do not need to be checked in methods"""
     not_check_type = []
     """Data types that are primitive types"""
@@ -563,6 +565,8 @@ class MatlabWrapper(object):
         for method in methods:
             if method.name in self.whitelist:
                 continue
+            if method.name in self.ignore_methods:
+                continue
 
             comment += '%{name}({args})'.format(name=method.name, args=self._wrap_args(method.args))
 
@@ -612,6 +616,9 @@ class MatlabWrapper(object):
         methods = self._group_methods(methods)
 
         for method in methods:
+            if method in self.ignore_methods:
+                continue
+
             if globals:
                 self._debug("[wrap_methods] wrapping: {}..{}={}".format(method[0].parent.name, method[0].name,
                                                                         type(method[0].parent.name)))
@@ -861,6 +868,8 @@ class MatlabWrapper(object):
             method_name = method[0].name
             if method_name in self.whitelist and method_name != 'serialize':
                 continue
+            if method_name in self.ignore_methods:
+                continue
 
             if method_name == 'serialize':
                 serialize[0] = True
@@ -931,6 +940,9 @@ class MatlabWrapper(object):
         for static_method in static_methods:
             format_name = list(static_method[0].name)
             format_name[0] = format_name[0].upper()
+
+            if static_method[0].name in self.ignore_methods:
+                continue
 
             method_text += textwrap.indent(textwrap.dedent('''\
                     function varargout = {name}(varargin)
