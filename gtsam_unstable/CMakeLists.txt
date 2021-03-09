@@ -107,22 +107,6 @@ install(
 list(APPEND GTSAM_EXPORTED_TARGETS gtsam_unstable)
 set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
 
-# Wrap version for gtsam_unstable
-if (GTSAM_UNSTABLE_INSTALL_MATLAB_TOOLBOX)
-    # Set up codegen
-    include(GtsamMatlabWrap)
-
-    # Generate, build and install toolbox
-    set(mexFlags "${GTSAM_BUILD_MEX_BINARY_FLAGS}")
-        if(NOT BUILD_SHARED_LIBS)
-                list(APPEND mexFlags -DGTSAM_IMPORT_STATIC)
-        endif()
-
-    # Wrap
-    wrap_and_install_library(gtsam_unstable.i "gtsam" "" "${mexFlags}")
-endif(GTSAM_UNSTABLE_INSTALL_MATLAB_TOOLBOX)
-
-
 # Build examples
 add_subdirectory(examples)
 

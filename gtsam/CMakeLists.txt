@@ -204,18 +204,3 @@ else()
     set_source_files_properties(${3rdparty_srcs} PROPERTIES COMPILE_FLAGS "-Wno-error")
   endif()
 endif()
-
-# Create the matlab toolbox for the gtsam library
-if (GTSAM_INSTALL_MATLAB_TOOLBOX)
-    # Set up codegen
-    include(GtsamMatlabWrap)
-
-    # Generate, build and install toolbox
-    set(mexFlags "${GTSAM_BUILD_MEX_BINARY_FLAGS}")
-        if(NOT BUILD_SHARED_LIBS)
-                list(APPEND mexFlags -DGTSAM_IMPORT_STATIC)
-        endif()
-
-    # Wrap
-    wrap_and_install_library(gtsam.i "${GTSAM_ADDITIONAL_LIBRARIES}" "" "${mexFlags}")
-endif ()
