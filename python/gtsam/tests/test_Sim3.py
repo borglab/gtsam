@@ -9,7 +9,6 @@ Sim3 unit tests.
 Author: John Lambert
 """
 # pylint: disable=no-name-in-module
-import math
 import unittest
 
 import numpy as np
@@ -79,9 +78,9 @@ class TestSim3(GtsamTestCase):
 
         # Create destination poses
         # (same three objects, but instead living in the world/city "w" frame)
-        wTo0 = Pose3(Rz90, np.array([12, 0, 0]))
-        wTo1 = Pose3(Rz90, np.array([14, 0, 0]))
-        wTo2 = Pose3(Rz90, np.array([18, 0, 0]))
+        wTo0 = Pose3(Rz90, np.array([0, 12, 0]))
+        wTo1 = Pose3(Rz90, np.array([0, 14, 0]))
+        wTo2 = Pose3(Rz90, np.array([0, 18, 0]))
 
         wToi_list = [wTo0, wTo1, wTo2]
 
@@ -92,6 +91,45 @@ class TestSim3(GtsamTestCase):
 
         for wToi, eToi in zip(wToi_list, eToi_list):
             self.gtsamAssertEquals(wToi, wSe.transformFrom(eToi))
+
+
+    def test_align_poses_scaled_squares(self):
+        """Test if Align Pose3Pairs method can account for gauge ambiguity.
+
+        Make sure a big and small square can be aligned.
+        The u's represent a big square (10x10), and v's represents a small square (4x4).
+
+        Scenario:
+           4 object poses
+           with gauge ambiguity (2.5x scale)
+        """
+        # 0, 90, 180, and 270 degrees yaw
+        R0 = Rot3.Rz(np.deg2rad(0))
+        R90 = Rot3.Rz(np.deg2rad(90))
+        R180 = Rot3.Rz(np.deg2rad(180))
+        R270 = Rot3.Rz(np.deg2rad(270))
+
+        aTi0 = Pose3(R0, np.array([2, 3, 0]))
+        aTi1 = Pose3(R90, np.array([12, 3, 0]))
+        aTi2 = Pose3(R180, np.array([12, 13, 0]))
+        aTi3 = Pose3(R270, np.array([2, 13, 0]))
+
+        aTi_list = [aTi0, aTi1, aTi2, aTi3]
+
+        bTi0 = Pose3(R0, np.array([4, 3, 0]))
+        bTi1 = Pose3(R90, np.array([8, 3, 0]))
+        bTi2 = Pose3(R180, np.array([8, 7, 0]))
+        bTi3 = Pose3(R270, np.array([4, 7, 0]))
+
+        bTi_list = [bTi0, bTi1, bTi2, bTi3]
+
+        ab_pairs = Pose3Pairs(list(zip(aTi_list, bTi_list)))
+
+        # Recover the transformation wSe (i.e. world_S_egovehicle)
+        aSb = Similarity3.Align(ab_pairs)
+
+        for aTi, bTi in zip(aTi_list, bTi_list):
+            self.gtsamAssertEquals(aTi, aSb.transformFrom(bTi))
 
 
 if __name__ == "__main__":

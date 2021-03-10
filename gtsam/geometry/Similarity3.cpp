@@ -63,10 +63,13 @@ static Matrix3 calculateH(const Point3Pairs &d_abPointPairs) {
   return H;
 }
 
-/// This method estimates the similarity transform from differences point pairs, given a known or estimated rotation and point centroids.
+/// This method estimates the similarity transform from differences point pairs,
+// given a known or estimated rotation and point centroids.
 static Similarity3 align(const Point3Pairs &d_abPointPairs, const Rot3 &aRb,
                          const Point3Pair &centroids) {
   const double s = calculateScale(d_abPointPairs, aRb);
+  // dividing aTb by s is required because the registration cost function
+  // minimizes ||a - sRb - t||, whereas Sim(3) computes s(Rb + t)
   const Point3 aTb = (centroids.first - s * (aRb * centroids.second)) / s;
   return Similarity3(aRb, aTb, s);
 }
