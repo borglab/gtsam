@@ -126,10 +126,14 @@ public:
   GTSAM_UNSTABLE_EXPORT static Similarity3 Align(const std::vector<Point3Pair>& abPointPairs);
   
   /**
-   * Create Similarity3 by aligning at least two pose pairs
-   * Given a list of pairs in world frame w1, and a list of pairs in another world
-   * frame w2, will compute the best-fit Similarity3 transformation to align them.
-   * `w2Sw1` will returned for pairs [ (w2Ti1,w1Ti1), (w2Ti2,w1Ti2), (w2Ti3,w1Ti3) ]
+   * Create the Similarity3 object that aligns at least two pose pairs.
+   * Each pair is of the form (aTi, bTi).
+   * Given a list of pairs in frame a, and a list of pairs in frame b, Align()
+   * will compute the best-fit Similarity3 aSb transformation to align them.
+   * First, the rotation aRb will be computed as the average (Karcher mean) of
+   * many estimates aRb (from each pair). Afterwards, the scale factor will be computed
+   * using the algorithm described here:
+   * http://www5.informatik.uni-erlangen.de/Forschung/Publikationen/2005/Zinsser05-PSR.pdf
    */
   GTSAM_UNSTABLE_EXPORT static Similarity3 Align(const std::vector<Pose3Pair>& abPosePairs);
 
