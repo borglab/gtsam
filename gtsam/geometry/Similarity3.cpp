@@ -180,7 +180,7 @@ Similarity3 Similarity3::Align(const vector<Pose3Pair> &abPosePairs) {
   Point3Pairs abPointPairs;
   rotations.reserve(n);
   abPointPairs.reserve(n);
-  // note that frame "i" is the i'th object/camera/etc body frame
+  // Below denotes the pose of the i'th object/camera/etc in frame "a" or frame "b"
   Pose3 aTi, bTi;
   for (const Pose3Pair &abPair : abPosePairs) {
     std::tie(aTi, bTi) = abPair;
