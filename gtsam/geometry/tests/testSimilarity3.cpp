@@ -259,6 +259,10 @@ TEST(Similarity3, GroupAction) {
 
 //******************************************************************************
 // Group action on Pose3
+// Estimate Sim(3) object "aSb" from pose pairs {(aTi, bTi)}
+// In the example below, let the "a" frame be the "world" frame below,
+// and let the "b" frame be the "egovehicle" frame.
+// Suppose within the egovehicle frame, we know the poses of two objects "o1" and "o2"
 TEST(Similarity3, GroupActionPose3) {
   // Suppose we know the pose of the egovehicle in the world frame
   Similarity3 wSe(Rot3::Ry(180 * degree), Point3(2, 3, 5), 2.0);
