@@ -1791,6 +1791,8 @@ virtual class GaussianBayesNet {
   gtsam::KeySet keys() const;
   bool exists(size_t idx) const;
 
+  void saveGraph(const string& s) const;
+
   gtsam::GaussianConditional* front() const;
   gtsam::GaussianConditional* back() const;
   void push_back(gtsam::GaussianConditional* conditional);
