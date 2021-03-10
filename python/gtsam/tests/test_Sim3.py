@@ -56,7 +56,6 @@ class TestSim3(GtsamTestCase):
         for wToi, eToi in zip(wToi_list, eToi_list):
             self.gtsamAssertEquals(wToi, wSe.transformFrom(eToi))
 
-
     def test_align_poses_along_straight_line_gauge(self):
         """Test if Align Pose3Pairs method can account for gauge ambiguity.
 
@@ -91,7 +90,6 @@ class TestSim3(GtsamTestCase):
 
         for wToi, eToi in zip(wToi_list, eToi_list):
             self.gtsamAssertEquals(wToi, wSe.transformFrom(eToi))
-
 
     def test_align_poses_scaled_squares(self):
         """Test if Align Pose3Pairs method can account for gauge ambiguity.
