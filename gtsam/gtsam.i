@@ -470,8 +470,7 @@ class Point3 {
 };
 
 #include <gtsam/geometry/Point3.h>
-class Point3Pairs
-{
+class Point3Pairs {
   Point3Pairs();
   size_t size() const;
   bool empty() const;
@@ -810,8 +809,7 @@ class Pose3 {
 };
 
 #include <gtsam/geometry/Pose3.h>
-class Pose3Pairs
-{
+class Pose3Pairs {
   Pose3Pairs();
   size_t size() const;
   bool empty() const;
