@@ -469,6 +469,15 @@ class Point3 {
   void pickle() const;
 };
 
+#include <gtsam/geometry/Point3.h>
+class Point3Pairs {
+  Point3Pairs();
+  size_t size() const;
+  bool empty() const;
+  gtsam::Point3Pair at(size_t n) const;
+  void push_back(const gtsam::Point3Pair& point_pair);
+};
+
 #include <gtsam/geometry/Rot2.h>
 class Rot2 {
   // Standard Constructors and Named Constructors
@@ -799,6 +808,15 @@ class Pose3 {
   void pickle() const;
 };
 
+#include <gtsam/geometry/Pose3.h>
+class Pose3Pairs {
+  Pose3Pairs();
+  size_t size() const;
+  bool empty() const;
+  gtsam::Pose3Pair at(size_t n) const;
+  void push_back(const gtsam::Pose3Pair& pose_pair);
+};
+
 // std::vector<gtsam::Pose3>
 #include <gtsam/geometry/Pose3.h>
 class Pose3Vector
@@ -1120,6 +1138,29 @@ class PinholeCamera {
   // enable pickling in python
   void pickle() const;
 };
+
+
+#include <gtsam/geometry/Similarity3.h>
+class Similarity3 {
+  // Standard Constructors
+  Similarity3();
+  Similarity3(double s);
+  Similarity3(const gtsam::Rot3& R, const gtsam::Point3& t, double s);
+  Similarity3(const Matrix& R, const Vector& t, double s);
+  Similarity3(const Matrix& T);
+
+  gtsam::Pose3 transformFrom(const gtsam::Pose3& T);
+  static Similarity3 Align(const gtsam::Point3Pairs & abPointPairs);
+  static Similarity3 Align(const gtsam::Pose3Pairs & abPosePairs);
+
+  // Standard Interface
+  const Matrix matrix() const;
+  const gtsam::Rot3& rotation();
+  const gtsam::Point3& translation();
+  double scale() const;
+};
+
+
 
 // Forward declaration of PinholeCameraCalX is defined here.
 #include <gtsam/geometry/SimpleCamera.h>

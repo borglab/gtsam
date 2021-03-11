@@ -16,7 +16,7 @@
  * @author Zhaoyang Lv
  */
 
-#include <gtsam_unstable/geometry/Similarity3.h>
+#include <gtsam/geometry/Similarity3.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/ExpressionFactorGraph.h>
@@ -259,19 +259,27 @@ TEST(Similarity3, GroupAction) {
 
 //******************************************************************************
 // Group action on Pose3
+// Estimate Sim(3) object "aSb" from pose pairs {(aTi, bTi)}
+// In the example below, let the "a" frame be the "world" frame below,
+// and let the "b" frame be the "egovehicle" frame.
+// Suppose within the egovehicle frame, we know the poses of two objects "o1" and "o2"
 TEST(Similarity3, GroupActionPose3) {
-  Similarity3 bSa(Rot3::Ry(180 * degree), Point3(2, 3, 5), 2.0);
+  // Suppose we know the pose of the egovehicle in the world frame
+  Similarity3 wSe(Rot3::Ry(180 * degree), Point3(2, 3, 5), 2.0);
 
-  // Create source poses
-  Pose3 Ta1(Rot3(), Point3(0, 0, 0));
-  Pose3 Ta2(Rot3(-1, 0, 0, 0, -1, 0, 0, 0, 1), Point3(4, 0, 0));
+  // Create source poses (two objects o1 and o2 living in the egovehicle "e" frame)
+  // Suppose they are 3d cuboids detected by onboard sensor, in the egovehicle frame
+  Pose3 eTo1(Rot3(), Point3(0, 0, 0));
+  Pose3 eTo2(Rot3(-1, 0, 0, 0, -1, 0, 0, 0, 1), Point3(4, 0, 0));
 
-  // Create destination poses
-  Pose3 expected_Tb1(Rot3(-1, 0, 0, 0, 1, 0, 0, 0, -1), Point3(4, 6, 10));
-  Pose3 expected_Tb2(Rot3(1, 0, 0, 0, -1, 0, 0, 0, -1), Point3(-4, 6, 10));
+  // Create destination poses (two objects now living in the world/city "w" frame)
+  // Desired to place the objects into the world frame for tracking
+  Pose3 expected_wTo1(Rot3(-1, 0, 0, 0, 1, 0, 0, 0, -1), Point3(4, 6, 10));
+  Pose3 expected_wTo2(Rot3(1, 0, 0, 0, -1, 0, 0, 0, -1), Point3(-4, 6, 10));
 
-  EXPECT(assert_equal(expected_Tb1, bSa.transformFrom(Ta1)));
-  EXPECT(assert_equal(expected_Tb2, bSa.transformFrom(Ta2)));
+  // objects now live in the world frame, instead of in the egovehicle frame
+  EXPECT(assert_equal(expected_wTo1, wSe.transformFrom(eTo1)));
+  EXPECT(assert_equal(expected_wTo2, wSe.transformFrom(eTo2)));
 }
 
 // Test left group action compatibility.
@@ -346,26 +354,28 @@ TEST(Similarity3, AlignPoint3_3) {
 //******************************************************************************
 // Align with Pose3 Pairs
 TEST(Similarity3, AlignPose3) {
-  Similarity3 expected_aSb(Rot3::Ry(180 * degree), Point3(2, 3, 5), 2.0);
+  Similarity3 expected_wSe(Rot3::Ry(180 * degree), Point3(2, 3, 5), 2.0);
 
-  // Create source poses
-  Pose3 Ta1(Rot3(), Point3(0, 0, 0));
-  Pose3 Ta2(Rot3(-1, 0, 0, 0, -1, 0, 0, 0, 1), Point3(4, 0, 0));
+  // Create source poses (two objects o1 and o2 living in the egovehicle "e" frame)
+  // Suppose they are 3d cuboids detected by an onboard sensor in the egovehicle frame
+  Pose3 eTo1(Rot3(), Point3(0, 0, 0));
+  Pose3 eTo2(Rot3(-1, 0, 0, 0, -1, 0, 0, 0, 1), Point3(4, 0, 0));
 
-  // Create destination poses
-  Pose3 Tb1(Rot3(-1, 0, 0, 0, 1, 0, 0, 0, -1), Point3(4, 6, 10));
-  Pose3 Tb2(Rot3(1, 0, 0, 0, -1, 0, 0, 0, -1), Point3(-4, 6, 10));
+  // Create destination poses (same two objects, but instead living in the world/city "w" frame)
+  Pose3 wTo1(Rot3(-1, 0, 0, 0, 1, 0, 0, 0, -1), Point3(4, 6, 10));
+  Pose3 wTo2(Rot3(1, 0, 0, 0, -1, 0, 0, 0, -1), Point3(-4, 6, 10));
 
-  Pose3Pair bTa1(make_pair(Tb1, Ta1));
-  Pose3Pair bTa2(make_pair(Tb2, Ta2));
+  Pose3Pair wTe1(make_pair(wTo1, eTo1));
+  Pose3Pair wTe2(make_pair(wTo2, eTo2));
 
-  vector<Pose3Pair> correspondences{bTa1, bTa2};
+  vector<Pose3Pair> correspondences{wTe1, wTe2};
 
   // Cayley transform cannot accommodate 180 degree rotations,
   // hence we only test for Expmap
 #ifdef GTSAM_ROT3_EXPMAP
-  Similarity3 actual_aSb = Similarity3::Align(correspondences);
-  EXPECT(assert_equal(expected_aSb, actual_aSb));
+  // Recover the transformation wSe (i.e. world_S_egovehicle)
+  Similarity3 actual_wSe = Similarity3::Align(correspondences);
+  EXPECT(assert_equal(expected_wSe, actual_wSe));
 #endif
 }
 
