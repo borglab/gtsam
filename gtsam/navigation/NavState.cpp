@@ -136,12 +136,12 @@ Vector9 NavState::localCoordinates(const NavState& g, //
     OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2) const {
   Matrix3 D_dR_R, D_dt_R, D_dv_R;
   const Rot3 dR = R_.between(g.R_, H1 ? &D_dR_R : 0);
-  const Point3 dt = R_.unrotate(g.t_ - t_, H1 ? &D_dt_R : 0);
-  const Vector dv = R_.unrotate(g.v_ - v_, H1 ? &D_dv_R : 0);
+  const Point3 dP = R_.unrotate(g.t_ - t_, H1 ? &D_dt_R : 0);
+  const Vector dV = R_.unrotate(g.v_ - v_, H1 ? &D_dv_R : 0);
 
   Vector9 xi;
   Matrix3 D_xi_R;
-  xi << Rot3::Logmap(dR, (H1 || H2) ? &D_xi_R : 0), dt, dv;
+  xi << Rot3::Logmap(dR, (H1 || H2) ? &D_xi_R : 0), dP, dV;
   if (H1) {
     *H1 << D_xi_R * D_dR_R, Z_3x3, Z_3x3, //
     D_dt_R, -I_3x3, Z_3x3, //
