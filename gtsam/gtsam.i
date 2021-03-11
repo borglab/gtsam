@@ -1809,7 +1809,7 @@ class GaussianFactorGraph {
 };
 
 #include <gtsam/linear/GaussianConditional.h>
-virtual class GaussianConditional : gtsam::GaussianFactor {
+virtual class GaussianConditional : gtsam::JacobianFactor {
   //Constructors
   GaussianConditional(size_t key, Vector d, Matrix R, const gtsam::noiseModel::Diagonal* sigmas);
   GaussianConditional(size_t key, Vector d, Matrix R, size_t name1, Matrix S,
