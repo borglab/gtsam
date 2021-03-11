@@ -13,6 +13,7 @@
  * @file   Similarity3.h
  * @brief  Implementation of Similarity3 transform
  * @author Paul Drews
+ * @author John Lambert
  */
 
 #pragma once
@@ -125,7 +126,14 @@ public:
   GTSAM_UNSTABLE_EXPORT static Similarity3 Align(const std::vector<Point3Pair>& abPointPairs);
   
   /**
-   *  Create Similarity3 by aligning at least two pose pairs
+   * Create the Similarity3 object that aligns at least two pose pairs.
+   * Each pair is of the form (aTi, bTi).
+   * Given a list of pairs in frame a, and a list of pairs in frame b, Align()
+   * will compute the best-fit Similarity3 aSb transformation to align them.
+   * First, the rotation aRb will be computed as the average (Karcher mean) of
+   * many estimates aRb (from each pair). Afterwards, the scale factor will be computed
+   * using the algorithm described here:
+   * http://www5.informatik.uni-erlangen.de/Forschung/Publikationen/2005/Zinsser05-PSR.pdf
    */
   GTSAM_UNSTABLE_EXPORT static Similarity3 Align(const std::vector<Pose3Pair>& abPosePairs);
 
