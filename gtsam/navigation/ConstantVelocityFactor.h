@@ -52,11 +52,20 @@ class ConstantVelocityFactor : public NoiseModelFactor2<NavState, NavState> {
         static const Vector3 b_accel{0.0, 0.0, 0.0};
         static const Vector3 b_omega{0.0, 0.0, 0.0};
 
+        NavState predicted;
         Matrix predicted_H_x1;
-        NavState predicted = x1.update(b_accel, b_omega, dt_, predicted_H_x1, {}, {});
+
+        if (H1)
+            predicted = x1.update(b_accel, b_omega, dt_, predicted_H_x1, {}, {});
+        else
+            predicted = x1.update(b_accel, b_omega, dt_, boost::none, {}, {});
 
         Matrix error_H_predicted;
-        Vector9 error = predicted.localCoordinates(x2, error_H_predicted, H2);
+        Vector9 error;
+        if (H1)
+            error = predicted.localCoordinates(x2, error_H_predicted, H2);
+        else
+            error = predicted.localCoordinates(x2, boost::none, H2);
 
         if (H1) {
             *H1 = error_H_predicted * predicted_H_x1;
