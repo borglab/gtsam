@@ -23,6 +23,7 @@
 
 #include <boost/serialization/nvp.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/serialization/version.hpp>
 
 #include <vector>
 
