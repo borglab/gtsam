@@ -78,7 +78,7 @@ bool SmartStereoProjectionFactorPP::equals(const NonlinearFactor& p,
       dynamic_cast<const SmartStereoProjectionFactorPP*>(&p);
 
   return e && Base::equals(p, tol) &&
-      body_P_cam_keys_ == p.getExtrinsicPoseKeys();
+      body_P_cam_keys_ == e->getExtrinsicPoseKeys();
 }
 
 double SmartStereoProjectionFactorPP::error(const Values& values) const {
@@ -97,7 +97,7 @@ SmartStereoProjectionFactorPP::cameras(const Values& values) const {
   for (size_t i = 0; i < keys_.size(); i++) {
     Pose3 w_P_body = values.at<Pose3>(keys_[i]);
     Pose3 body_P_cam = values.at<Pose3>(body_P_cam_keys_[i]);
-    w_P_cam = w_P_body.compose(body_P_cam);
+    Pose3 w_P_cam = w_P_body.compose(body_P_cam);
     cameras.push_back(StereoCamera(w_P_cam, K_all_[i]));
   }
   return cameras;
