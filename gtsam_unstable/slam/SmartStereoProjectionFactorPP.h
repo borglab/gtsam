@@ -119,7 +119,7 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
   bool equals(const NonlinearFactor& p, double tol = 1e-9) const override;
 
   /// equals
-  KeyVector& getExtrinsicPoseKeys() const {return body_P_cam_keys_;};
+  const KeyVector& getExtrinsicPoseKeys() const {return body_P_cam_keys_;};
 
   /**
    * error calculates the error of the factor.
