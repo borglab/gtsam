@@ -1,0 +1,167 @@
+## Wrap Module Definition
+
+### Important
+
+The python wrapper supports keyword arguments for functions/methods. Hence, the argument names matter. An implementation restriction is that in overloaded methods or functions, arguments of different types *have* to have different names.
+
+### Requirements
+
+- Classes must start with an uppercase letter.
+    - The wrapper can wrap a typedef, e.g. `typedef TemplatedClass<Arg> EasyName;`.
+
+- Only one Method/Constructor per line, though methods/constructors can extend across multiple lines.
+
+- Methods can return
+    - Eigen types: `Matrix`, `Vector`.
+    - C/C++ basic types: `string`, `bool`, `size_t`, `int`, `double`, `char`, `unsigned char`.
+    - `void`
+    - Any class with which be copied with `boost::make_shared()`.
+    - `boost::shared_ptr` of any object type.
+
+- Constructors
+    - Overloads are supported, but arguments of different types *have* to have different names.
+    - A class with no constructors can be returned from other functions but not allocated directly in MATLAB.
+
+- Methods
+    - Constness has no effect.
+    - Specify by-value (not reference) return types, even if C++ method returns reference.
+    - Must start with a letter (upper or lowercase).
+    - Overloads are supported.
+
+- Static methods
+    - Must start with a letter (upper or lowercase) and use the "static" keyword, e.g. `static void func()`.
+    - The first letter will be made uppercase in the generated MATLAB interface.
+    - Overloads are supported, but arguments of different types *have* to have different names.
+
+- Arguments to functions can be any of
+    - Eigen types: `Matrix`, `Vector`.
+    - Eigen types and classes as an optionally const reference.
+    - C/C++ basic types: `string`, `bool`, `size_t`, `size_t`, `double`, `char`, `unsigned char`.
+    - Any class with which be copied with `boost::make_shared()` (except Eigen).
+    - `boost::shared_ptr` of any object type (except Eigen).
+
+- Properties or Variables
+    - You can specify class variables in the interface file as long as they are in the `public` scope, e.g.
+
+    ```cpp
+    class Sample {
+        double seed;
+    };
+    ```
+
+    - Class variables are read-write so they can be updated directly in Python.
+
+- Pointer types
+    - To declare a pointer type (including shared pointers), simply add an asterisk (i.e. `*`) to the class name.
+    - E.g. `gtsam::noiseModel::Base*` to define the wrapping for the `Base` noise model shared pointer.
+
+- Comments can use either C++ or C style, with multiple lines.
+
+- Namespace definitions
+    - Names of namespaces must start with a lowercase letter.
+    - Start a namespace with `namespace example_ns {`, where `example_ns` is the namespace name.
+    - End a namespace with exactly `}`
+    - Namespaces can be nested.
+
+- Namespace usage
+     - Namespaces can be specified for classes in arguments and return values.
+     - In each case, the namespace must be fully specified, e.g., `namespace1::namespace2::ClassName`.
+
+- Includes in C++ wrappers
+    - All includes will be collected and added in a single file.
+    - All namespaces must have angle brackets, e.g. `#include <path>`.
+    - No default includes will be added.
+
+- Global/Namespace functions
+    - Functions specified outside of a class are **global**.
+    - Can be overloaded with different arguments.
+    - Can have multiple functions of the same name in different namespaces.
+
+- Using classes defined in other modules
+    - If you are using a class `OtherClass` not wrapped in an interface file, add `class OtherClass;` as a forward declaration to avoid a dependency error.
+
+- Virtual inheritance
+    - Specify fully-qualified base classes, i.e. `virtual class Derived : ns::Base {` where `ns` is the namespace.
+    - Mark with `virtual` keyword, e.g. `virtual class Base {`, and also `virtual class Derived : ns::Base {`.
+    - Forward declarations must also be marked virtual, e.g. `virtual class ns::Base;` and
+      also `virtual class ns::Derived;`.
+    - Pure virtual (abstract) classes should list no constructors in the interface file.
+    - Virtual classes must have a `clone()` function in C++ (though it does not have to be included
+      in the interface file). `clone()` will be called whenever an object copy is needed, instead
+      of using the copy constructor (which is used for non-virtual objects).
+    - Signature of clone function - `clone()` will be called virtually, so must appear at least at the top of the inheritance tree
+
+        ```cpp
+        virtual boost::shared_ptr<CLASS_NAME> clone() const;
+        ```
+
+- Class Templates
+    - Basic templates are supported either with an explicit list of types to instantiate,
+      e.g.
+
+      ```cpp
+      template<T = {gtsam::Pose2, gtsam::Rot2, gtsam::Point3}> class Class1 { ... };
+      ```
+
+      or with typedefs, e.g.
+
+      ```cpp
+      template<T, U> class Class2 { ... };
+      typedef Class2<Type1, Type2> MyInstantiatedClass;
+      ```
+
+    - In the class definition, appearances of the template argument(s) will be replaced with their
+      instantiated types, e.g. `void setValue(const T& value);`.
+    - To refer to the instantiation of the template class itself, use `This`, i.e. `static This Create();`.
+    - To create new instantiations in other modules, you must copy-and-paste the whole class definition
+      into the new module, but use only your new instantiation types.
+    - When forward-declaring template instantiations, use the generated/typedefed name, e.g.
+
+      ```cpp
+      class gtsam::Class1Pose2;
+      class gtsam::MyInstantiatedClass;
+      ```
+
+- `Boost.serialization` within the wrapper:
+    - You need to mark classes as being serializable in the markup file (see `gtsam.i` for examples).
+    - There are two options currently, depending on the class.  To "mark" a class as serializable,
+      add a function with a particular signature so that `wrap` will catch it.
+       - Add `void serialize()` to a class to create serialization functions for a class.
+         Adding this flag subsumes the `serializable()` flag below.
+         
+         Requirements:
+            - A default constructor must be publicly accessible.
+            - Must not be an abstract base class.
+            - The class must have an actual boost.serialization `serialize()` function.
+
+       - Add `void serializable()` to a class if you only want the class to be serialized as a
+         part of a container (such as `noiseModel`). This version does not require a publicly
+         accessible default constructor.
+
+- Forward declarations and class definitions for **Pybind**:
+    - Need to specify the base class (both this forward class and base class are declared in an external Pybind header)
+      This is so that Pybind can generate proper inheritance.
+
+      Example when wrapping a gtsam-based project:
+
+        ```cpp
+         // forward declarations
+         virtual class gtsam::NonlinearFactor
+         virtual class gtsam::NoiseModelFactor : gtsam::NonlinearFactor
+         // class definition
+         #include <MyFactor.h>
+         virtual class MyFactor : gtsam::NoiseModelFactor {...};
+         ```
+
+   - **DO NOT** re-define an overriden function already declared in the external (forward-declared) base class
+       - This will cause an ambiguity problem in Pybind header file.
+
+
+### TODO
+- Default values for arguments.
+    - WORKAROUND: make multiple versions of the same function for different configurations of default arguments.
+- Handle `gtsam::Rot3M` conversions to quaternions.
+- Parse return of const ref arguments.
+- Parse `std::string` variants and convert directly to special string.
+- Add enum support.
+- Add generalized serialization support via `boost.serialization` with hooks to MATLAB save/load.

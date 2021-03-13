@@ -115,7 +115,8 @@ PYBIND11_MODULE(geometry_py, m_) {
                         gtsam::RedirectCout redirect;
                         a.print();
                         return redirect.str();
-                    });
+                    })
+        .def_readwrite("model_ptr", &Test::model_ptr);
 
     py::class_<MyBase, std::shared_ptr<MyBase>>(m_, "MyBase");
 
@@ -149,7 +150,7 @@ PYBIND11_MODULE(geometry_py, m_) {
         .def("return_ptrs",[](MyTemplate<gtsam::Matrix>* self,const std::shared_ptr<gtsam::Matrix>& p1,const std::shared_ptr<gtsam::Matrix>& p2){return self->return_ptrs(p1, p2);}, py::arg("p1"), py::arg("p2"))
         .def_static("Level",[](const gtsam::Matrix& K){return MyTemplate<gtsam::Matrix>::Level(K);}, py::arg("K"));
 
-    py::class_<PrimitiveRef<double>, std::shared_ptr<PrimitiveRef<double>>>(m_, "PrimitiveRefdouble")
+    py::class_<PrimitiveRef<double>, std::shared_ptr<PrimitiveRef<double>>>(m_, "PrimitiveRefDouble")
         .def(py::init<>())
         .def_static("Brutal",[](const double& t){return PrimitiveRef<double>::Brutal(t);}, py::arg("t"));
 
@@ -158,6 +159,10 @@ PYBIND11_MODULE(geometry_py, m_) {
 
     py::class_<MyVector<12>, std::shared_ptr<MyVector<12>>>(m_, "MyVector12")
         .def(py::init<>());
+
+    py::class_<MultipleTemplates<int, double>, std::shared_ptr<MultipleTemplates<int, double>>>(m_, "MultipleTemplatesIntDouble");
+
+    py::class_<MultipleTemplates<int, float>, std::shared_ptr<MultipleTemplates<int, float>>>(m_, "MultipleTemplatesIntFloat");
 
     py::class_<MyFactor<gtsam::Pose2, gtsam::Matrix>, std::shared_ptr<MyFactor<gtsam::Pose2, gtsam::Matrix>>>(m_, "MyFactorPosePoint2")
         .def(py::init< size_t,  size_t,  double, const std::shared_ptr<gtsam::noiseModel::Base>&>(), py::arg("key1"), py::arg("key2"), py::arg("measured"), py::arg("noiseModel"));

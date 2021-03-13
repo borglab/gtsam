@@ -11,7 +11,7 @@
 
 {boost_class_export}
 
-{hoder_type}
+{holder_type}
 
 using namespace std;
 
