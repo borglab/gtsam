@@ -133,7 +133,7 @@ TEST( SmartStereoProjectionFactorPP, Constructor4) {
   factor1.add(measurement1, poseKey1, poseExtrinsicKey1, K);
 }
 
-/* ************************************************************************* *
+/* ************************************************************************* */
 TEST( SmartStereoProjectionFactorPP, Equals ) {
   SmartStereoProjectionFactorPP::shared_ptr factor1(new SmartStereoProjectionFactorPP(model));
   factor1->add(measurement1, poseKey1, poseExtrinsicKey1, K);
@@ -141,17 +141,17 @@ TEST( SmartStereoProjectionFactorPP, Equals ) {
   SmartStereoProjectionFactorPP::shared_ptr factor2(new SmartStereoProjectionFactorPP(model));
   factor2->add(measurement1, poseKey1, poseExtrinsicKey1, K);
   // check these are equal
-  CHECK(assert_equal(*factor1, *factor2));
+  EXPECT(assert_equal(*factor1, *factor2));
 
   SmartStereoProjectionFactorPP::shared_ptr factor3(new SmartStereoProjectionFactorPP(model));
   factor3->add(measurement2, poseKey1, poseExtrinsicKey1, K);
   // check these are different
-  CHECK(!assert_equal(*factor1, *factor3));
+  EXPECT(!factor1->equals(*factor3));
 
   SmartStereoProjectionFactorPP::shared_ptr factor4(new SmartStereoProjectionFactorPP(model));
-  factor3->add(measurement1, poseKey1, poseExtrinsicKey2, K);
+  factor4->add(measurement1, poseKey1, poseExtrinsicKey2, K);
   // check these are different
-  CHECK(!assert_equal(*factor1, *factor4));
+  EXPECT(!factor1->equals(*factor4));
 }
 
 /* *************************************************************************
