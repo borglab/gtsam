@@ -124,9 +124,14 @@ def instantiate_name(original_name, instantiations):
     namespaces, but I find that too verbose.
     """
     inst_name = ''
+    instantiated_names = []
+    for inst in instantiations:
+        # Ensure the first character of the type is capitalized
+        name = inst.instantiated_name()
+        # Using `capitalize` on the complete causes other caps to be lower case
+        instantiated_names.append(name.replace(name[0], name[0].capitalize()))
 
-    return "{}{}".format(original_name, "".join(
-        [inst.instantiated_name().capitalize() for inst in instantiations]))
+    return "{}{}".format(original_name, "".join(instantiated_names))
 
 
 class InstantiatedMethod(parser.Method):
