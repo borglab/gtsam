@@ -3,12 +3,14 @@
 The wrap library wraps the GTSAM library into a Python library or MATLAB toolbox.
 It was designed to be more general than just wrapping GTSAM. For notes on creating a wrap interface, see `gtsam.h` for what features can be wrapped into a toolbox, as well as the current state of the toolbox for GTSAM.
 
-## Prerequisites: Pybind11 and pyparsing
+## Prerequisites
+
+`Pybind11` and `pyparsing`
 
 1. This library uses `pybind11`, which is included as a subdirectory in GTSAM.
 2. The `interface_parser.py` in this library uses `pyparsing` to parse the interface file `gtsam.h`. Please install it first in your current Python environment before attempting the build.
 
-```
+```sh
 python3 -m pip install pyparsing
 ```
 
@@ -42,6 +44,10 @@ pybind_wrap(${PROJECT_NAME}_py # target
 
 For more information, please follow our [tutorial](https://github.com/borglab/gtsam-project-python).
 
+## Documentation
+
+Documentation for wrapping C++ code can be found [here](https://github.com/borglab/wrap/blob/master/DOCS.md).
+
 ## Python Wrapper
 
 **WARNING: On macOS, you have to statically build GTSAM to use the wrapper.**
@@ -51,13 +57,13 @@ For more information, please follow our [tutorial](https://github.com/borglab/gt
 
    1. Just run python then import GTSAM and play around:
 
-      ```
+      ```python
       import gtsam
       gtsam.__dir__()
       ```
 
    1. Run the unittests:
-      ```
+      ```sh
       python -m unittest discover
       ```
    1. Edit the unittests in `python/gtsam/*.py` and simply rerun the test.
@@ -66,11 +72,11 @@ For more information, please follow our [tutorial](https://github.com/borglab/gt
 
 1. Do `make install` and `cd <gtsam_install_folder>/python`. Here, you can:
    1. Run the unittests:
-      ```
+      ```sh
       python setup.py test
       ```
    2. Install `gtsam` to your current Python environment.
-      ```
+      ```sh
       python setup.py install
       ```
       - NOTE: It's a good idea to create a virtual environment otherwise it will be installed in your system Python's site-packages.
