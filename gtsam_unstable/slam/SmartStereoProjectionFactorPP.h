@@ -43,6 +43,9 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
   /// shared pointer to calibration object (one for each camera)
   std::vector<boost::shared_ptr<Cal3_S2Stereo>> K_all_;
 
+  /// The keys corresponding to the extrinsic pose calibration for each view
+  KeyVector body_P_cam_keys_;
+
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -114,6 +117,9 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
 
   /// equals
   bool equals(const NonlinearFactor& p, double tol = 1e-9) const override;
+
+  /// equals
+  KeyVector& getExtrinsicPoseKeys() const {return body_P_cam_keys_;};
 
   /**
    * error calculates the error of the factor.
