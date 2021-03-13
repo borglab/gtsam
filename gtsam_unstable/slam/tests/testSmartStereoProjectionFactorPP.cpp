@@ -154,7 +154,7 @@ TEST( SmartStereoProjectionFactorPP, Equals ) {
   EXPECT(!factor1->equals(*factor4));
 }
 
-/* *************************************************************************
+/* *************************************************************************/
 TEST_UNSAFE( SmartStereoProjectionFactorPP, noiseless ) {
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   Pose3 level_pose = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2),
@@ -175,10 +175,12 @@ TEST_UNSAFE( SmartStereoProjectionFactorPP, noiseless ) {
   Values values;
   values.insert(x1, level_pose);
   values.insert(x2, level_pose_right);
+  values.insert(body_P_sensor1_sym, Pose3::identity());
+  values.insert(body_P_sensor2_sym, Pose3::identity());
 
   SmartStereoProjectionFactorPP factor1(model);
-  factor1.add(level_uv, x1, K2);
-  factor1.add(level_uv_right, x2, K2);
+  factor1.add(level_uv, x1, body_P_sensor1_sym, K2);
+  factor1.add(level_uv_right, x2, body_P_sensor2_sym, K2);
 
   double actualError = factor1.error(values);
   double expectedError = 0.0;
@@ -187,10 +189,50 @@ TEST_UNSAFE( SmartStereoProjectionFactorPP, noiseless ) {
   SmartStereoProjectionFactorPP::Cameras cameras = factor1.cameras(values);
   double actualError2 = factor1.totalReprojectionError(cameras);
   EXPECT_DOUBLES_EQUAL(expectedError, actualError2, 1e-7);
+}
 
-  // test vector of errors
-  //Vector actual = factor1.unwhitenedError(values);
-  //EXPECT(assert_equal(zero(4),actual,1e-8));
+/* *************************************************************************/
+TEST_UNSAFE( SmartStereoProjectionFactorPP, noiselessNonidenticalExtrinsics ) {
+  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
+  Pose3 w_Pose_cam1 = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2),
+      Point3(0, 0, 1));
+  StereoCamera w_Camera_cam1(w_Pose_cam1, K2);
+
+  // create second camera 1 meter to the right of first camera
+  Pose3 w_Pose_cam2 = w_Pose_cam1 * Pose3(Rot3(), Point3(1, 0, 0));
+  StereoCamera w_Camera_cam2(w_Pose_cam2, K2);
+
+  // landmark ~5 meters infront of camera
+  Point3 landmark(5, 0.5, 1.2);
+
+  // 1. Project two landmarks into two cameras and triangulate
+  StereoPoint2 level_uv = w_Camera_cam1.project(landmark);
+  StereoPoint2 level_uv_right = w_Camera_cam2.project(landmark);
+
+  Pose3 body_Pose_cam1 = Pose3(Rot3::Ypr(-M_PI / 2, 0., 0.0),
+        Point3(0, 1, 0));
+  Pose3 body_Pose_cam2 = Pose3(Rot3::Ypr(-M_PI / 4, 0., 0.0),
+          Point3(1, 1, 0));
+  Pose3 w_Pose_body1 = w_Pose_cam1.compose(body_Pose_cam1.inverse());
+  Pose3 w_Pose_body2 = w_Pose_cam2.compose(body_Pose_cam2.inverse());
+
+  Values values;
+  values.insert(x1, w_Pose_body1);
+  values.insert(x2, w_Pose_body2);
+  values.insert(body_P_sensor1_sym, body_Pose_cam1);
+  values.insert(body_P_sensor2_sym, body_Pose_cam2);
+
+  SmartStereoProjectionFactorPP factor1(model);
+  factor1.add(level_uv, x1, body_P_sensor1_sym, K2);
+  factor1.add(level_uv_right, x2, body_P_sensor2_sym, K2);
+
+  double actualError = factor1.error(values);
+  double expectedError = 0.0;
+  EXPECT_DOUBLES_EQUAL(expectedError, actualError, 1e-7);
+
+  SmartStereoProjectionFactorPP::Cameras cameras = factor1.cameras(values);
+  double actualError2 = factor1.totalReprojectionError(cameras);
+  EXPECT_DOUBLES_EQUAL(expectedError, actualError2, 1e-7);
 }
 
 ///* *************************************************************************/
