@@ -126,7 +126,7 @@ def instantiate_name(original_name, instantiations):
     inst_name = ''
 
     return "{}{}".format(original_name, "".join(
-        [inst.instantiated_name().capitalize().replace('_', '') for inst in instantiations]))
+        [inst.instantiated_name().capitalize() for inst in instantiations]))
 
 
 class InstantiatedMethod(parser.Method):

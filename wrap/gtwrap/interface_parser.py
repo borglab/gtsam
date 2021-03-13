@@ -11,12 +11,32 @@ Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellae
 
 # pylint: disable=unnecessary-lambda, unused-import, expression-not-assigned, no-else-return, protected-access, too-few-public-methods, too-many-arguments
 
+import sys
 import typing
 
+import pyparsing
 from pyparsing import (CharsNotIn, Forward, Group, Keyword, Literal, OneOrMore,
                        Optional, Or, ParseException, ParserElement, Suppress,
                        Word, ZeroOrMore, alphanums, alphas, cppStyleComment,
                        delimitedList, empty, nums, stringEnd)
+
+# Fix deepcopy issue with pyparsing
+# Can remove once https://github.com/pyparsing/pyparsing/issues/208 is resolved.
+if sys.version_info >= (3, 8):
+    def fixed_get_attr(self, item):
+        """
+        Fix for monkey-patching issue with deepcopy in pyparsing.ParseResults
+        """
+        if item == '__deepcopy__':
+            raise AttributeError(item)
+        try:
+            return self[item]
+        except KeyError:
+            return ""
+
+    # apply the monkey-patch
+    pyparsing.ParseResults.__getattr__ = fixed_get_attr
+
 
 ParserElement.enablePackrat()
 
