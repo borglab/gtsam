@@ -58,8 +58,7 @@ if(NOT BUILD_SHARED_LIBS)
   list(APPEND mexFlags -DGTSAM_IMPORT_STATIC)
 endif()
 
-set(ignore gtsam::Point2 gtsam::Point3 gtsam::BearingRangeFactor
-            gtsam::BearingRangeFactor2D gtsam::BearingRangeFactorPose2)
+set(ignore gtsam::Point2 gtsam::Point3)
 
 # Wrap
 matlab_wrap(${GTSAM_SOURCE_DIR}/gtsam/gtsam.i "${GTSAM_ADDITIONAL_LIBRARIES}"
