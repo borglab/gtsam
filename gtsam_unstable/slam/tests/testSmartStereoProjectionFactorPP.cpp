@@ -157,30 +157,30 @@ TEST( SmartStereoProjectionFactorPP, Equals ) {
 /* *************************************************************************/
 TEST_UNSAFE( SmartStereoProjectionFactorPP, noiseless ) {
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 level_pose = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2),
+  Pose3 w_Pose_cam1 = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2),
       Point3(0, 0, 1));
-  StereoCamera level_camera(level_pose, K2);
+  StereoCamera w_Camera_cam1(w_Pose_cam1, K2);
 
   // create second camera 1 meter to the right of first camera
-  Pose3 level_pose_right = level_pose * Pose3(Rot3(), Point3(1, 0, 0));
-  StereoCamera level_camera_right(level_pose_right, K2);
+  Pose3 w_Pose_cam2 = w_Pose_cam1 * Pose3(Rot3(), Point3(1, 0, 0));
+  StereoCamera w_Camera_cam2(w_Pose_cam2, K2);
 
   // landmark ~5 meters infront of camera
   Point3 landmark(5, 0.5, 1.2);
 
   // 1. Project two landmarks into two cameras and triangulate
-  StereoPoint2 level_uv = level_camera.project(landmark);
-  StereoPoint2 level_uv_right = level_camera_right.project(landmark);
+  StereoPoint2 cam1_uv = w_Camera_cam1.project(landmark);
+  StereoPoint2 cam2_uv = w_Camera_cam2.project(landmark);
 
   Values values;
-  values.insert(x1, level_pose);
-  values.insert(x2, level_pose_right);
+  values.insert(x1, w_Pose_cam1);
+  values.insert(x2, w_Pose_cam2);
   values.insert(body_P_cam1_key, Pose3::identity());
   values.insert(body_P_cam2_key, Pose3::identity());
 
   SmartStereoProjectionFactorPP factor1(model);
-  factor1.add(level_uv, x1, body_P_cam1_key, K2);
-  factor1.add(level_uv_right, x2, body_P_cam2_key, K2);
+  factor1.add(cam1_uv, x1, body_P_cam1_key, K2);
+  factor1.add(cam2_uv, x2, body_P_cam2_key, K2);
 
   double actualError = factor1.error(values);
   double expectedError = 0.0;
@@ -206,8 +206,8 @@ TEST_UNSAFE( SmartStereoProjectionFactorPP, noiselessNonidenticalExtrinsics ) {
   Point3 landmark(5, 0.5, 1.2);
 
   // 1. Project two landmarks into two cameras and triangulate
-  StereoPoint2 level_uv = w_Camera_cam1.project(landmark);
-  StereoPoint2 level_uv_right = w_Camera_cam2.project(landmark);
+  StereoPoint2 cam1_uv = w_Camera_cam1.project(landmark);
+  StereoPoint2 cam2_uv = w_Camera_cam2.project(landmark);
 
   Pose3 body_Pose_cam1 = Pose3(Rot3::Ypr(-M_PI / 2, 0., 0.0),
         Point3(0, 1, 0));
@@ -223,8 +223,8 @@ TEST_UNSAFE( SmartStereoProjectionFactorPP, noiselessNonidenticalExtrinsics ) {
   values.insert(body_P_cam2_key, body_Pose_cam2);
 
   SmartStereoProjectionFactorPP factor1(model);
-  factor1.add(level_uv, x1, body_P_cam1_key, K2);
-  factor1.add(level_uv_right, x2, body_P_cam2_key, K2);
+  factor1.add(cam1_uv, x1, body_P_cam1_key, K2);
+  factor1.add(cam2_uv, x2, body_P_cam2_key, K2);
 
   double actualError = factor1.error(values);
   double expectedError = 0.0;
@@ -300,55 +300,70 @@ TEST( SmartProjectionPoseFactor, noiselessWithMissingMeasurements ) {
    EXPECT(assert_equal(landmark, *result, 1e-7));
 }
 
-/* *************************************************************************
+/* *************************************************************************/
 TEST( SmartStereoProjectionFactorPP, noisy ) {
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 level_pose = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2),
+  Pose3 w_Pose_cam1 = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2),
       Point3(0, 0, 1));
-  StereoCamera level_camera(level_pose, K2);
+  StereoCamera w_Camera_cam1(w_Pose_cam1, K2);
 
   // create second camera 1 meter to the right of first camera
-  Pose3 level_pose_right = level_pose * Pose3(Rot3(), Point3(1, 0, 0));
-  StereoCamera level_camera_right(level_pose_right, K2);
+  Pose3 w_Pose_cam2 = w_Pose_cam1 * Pose3(Rot3(), Point3(1, 0, 0));
+  StereoCamera w_Camera_cam2(w_Pose_cam2, K2);
 
   // landmark ~5 meters infront of camera
   Point3 landmark(5, 0.5, 1.2);
 
   // 1. Project two landmarks into two cameras and triangulate
   StereoPoint2 pixelError(0.2, 0.2, 0);
-  StereoPoint2 level_uv = level_camera.project(landmark) + pixelError;
-  StereoPoint2 level_uv_right = level_camera_right.project(landmark);
+  StereoPoint2 cam1_uv = w_Camera_cam1.project(landmark) + pixelError;
+  StereoPoint2 cam2_uv = w_Camera_cam2.project(landmark);
+
+  // fake extrinsic calibration
+  Pose3 body_Pose_cam1 = Pose3(Rot3::Ypr(-M_PI, 1., 0.1),
+        Point3(0, 1, 0));
+  Pose3 body_Pose_cam2 = Pose3(Rot3::Ypr(-M_PI / 4, 0.1, 1.0),
+          Point3(1, 1, 1));
+  Pose3 w_Pose_body1 = w_Pose_cam1.compose(body_Pose_cam1.inverse());
+  Pose3 w_Pose_body2 = w_Pose_cam2.compose(body_Pose_cam2.inverse());
 
   Values values;
-  values.insert(x1, level_pose);
+  values.insert(x1, w_Pose_body1);
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 10, 0., -M_PI / 10),
-      Point3(0.5, 0.1, 0.3));
-  values.insert(x2, level_pose_right.compose(noise_pose));
+        Point3(0.5, 0.1, 0.3));
+  values.insert(x2, w_Pose_body2.compose(noise_pose));
+  values.insert(body_P_cam1_key, body_Pose_cam1);
+  values.insert(body_P_cam2_key, body_Pose_cam2);
 
   SmartStereoProjectionFactorPP::shared_ptr factor1(new SmartStereoProjectionFactorPP(model));
-  factor1->add(level_uv, x1, K);
-  factor1->add(level_uv_right, x2, K);
+  factor1->add(cam1_uv, x1, body_P_cam1_key, K);
+  factor1->add(cam2_uv, x2, body_P_cam2_key, K);
 
   double actualError1 = factor1->error(values);
 
   SmartStereoProjectionFactorPP::shared_ptr factor2(new SmartStereoProjectionFactorPP(model));
   vector<StereoPoint2> measurements;
-  measurements.push_back(level_uv);
-  measurements.push_back(level_uv_right);
+  measurements.push_back(cam1_uv);
+  measurements.push_back(cam2_uv);
 
   vector<boost::shared_ptr<Cal3_S2Stereo> > Ks; ///< shared pointer to calibration object (one for each camera)
   Ks.push_back(K);
   Ks.push_back(K);
 
-  KeyVector views;
-  views.push_back(x1);
-  views.push_back(x2);
+  KeyVector poseKeys;
+  poseKeys.push_back(x1);
+  poseKeys.push_back(x2);
 
-  factor2->add(measurements, views, Ks);
+  KeyVector extrinsicKeys;
+  extrinsicKeys.push_back(body_P_cam1_key);
+  extrinsicKeys.push_back(body_P_cam2_key);
+
+  factor2->add(measurements, poseKeys, extrinsicKeys, Ks);
 
   double actualError2 = factor2->error(values);
 
   DOUBLES_EQUAL(actualError1, actualError2, 1e-7);
+  DOUBLES_EQUAL(actualError1, 5381978, 1); // value freeze
 }
 
 /* *************************************************************************
