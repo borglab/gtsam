@@ -2719,7 +2719,7 @@ virtual class BearingRangeFactor : gtsam::NoiseModelFactor {
       const BEARING& measuredBearing, const RANGE& measuredRange,
       const gtsam::noiseModel::Base* noiseModel);
 
-  BearingRange<POSE, POINT, BEARING, RANGE> measured() const;
+  gtsam::BearingRange<POSE, POINT, BEARING, RANGE> measured() const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -2859,8 +2859,8 @@ class SfmTrack {
   double r;
   double g;
   double b;
-  // TODO Need to close wrap#10 to allow this to work.
-  // std::vector<pair<size_t, gtsam::Point2>> measurements;
+
+  std::vector<pair<size_t, gtsam::Point2>> measurements;
 
   size_t number_measurements() const;
   pair<size_t, gtsam::Point2> measurement(size_t idx) const;
