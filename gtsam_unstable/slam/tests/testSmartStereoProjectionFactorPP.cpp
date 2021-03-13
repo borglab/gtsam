@@ -51,13 +51,13 @@ using symbol_shorthand::L;
 static Symbol x1('X', 1);
 static Symbol x2('X', 2);
 static Symbol x3('X', 3);
-static Symbol body_P_sensor1_sym('P', 1);
-static Symbol body_P_sensor2_sym('P', 2);
-static Symbol body_P_sensor3_sym('P', 3);
+static Symbol body_P_cam1_key('P', 1);
+static Symbol body_P_cam2_key('P', 2);
+static Symbol body_P_cam3_key('P', 3);
 
 static Key poseKey1(x1);
-static Key poseExtrinsicKey1(body_P_sensor1_sym);
-static Key poseExtrinsicKey2(body_P_sensor2_sym);
+static Key poseExtrinsicKey1(body_P_cam1_key);
+static Key poseExtrinsicKey2(body_P_cam2_key);
 static StereoPoint2 measurement1(323.0, 300.0, 240.0); //potentially use more reasonable measurement value?
 static StereoPoint2 measurement2(350.0, 200.0, 240.0); //potentially use more reasonable measurement value?
 static Pose3 body_P_sensor1(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2),
@@ -175,12 +175,12 @@ TEST_UNSAFE( SmartStereoProjectionFactorPP, noiseless ) {
   Values values;
   values.insert(x1, level_pose);
   values.insert(x2, level_pose_right);
-  values.insert(body_P_sensor1_sym, Pose3::identity());
-  values.insert(body_P_sensor2_sym, Pose3::identity());
+  values.insert(body_P_cam1_key, Pose3::identity());
+  values.insert(body_P_cam2_key, Pose3::identity());
 
   SmartStereoProjectionFactorPP factor1(model);
-  factor1.add(level_uv, x1, body_P_sensor1_sym, K2);
-  factor1.add(level_uv_right, x2, body_P_sensor2_sym, K2);
+  factor1.add(level_uv, x1, body_P_cam1_key, K2);
+  factor1.add(level_uv_right, x2, body_P_cam2_key, K2);
 
   double actualError = factor1.error(values);
   double expectedError = 0.0;
@@ -219,12 +219,12 @@ TEST_UNSAFE( SmartStereoProjectionFactorPP, noiselessNonidenticalExtrinsics ) {
   Values values;
   values.insert(x1, w_Pose_body1);
   values.insert(x2, w_Pose_body2);
-  values.insert(body_P_sensor1_sym, body_Pose_cam1);
-  values.insert(body_P_sensor2_sym, body_Pose_cam2);
+  values.insert(body_P_cam1_key, body_Pose_cam1);
+  values.insert(body_P_cam2_key, body_Pose_cam2);
 
   SmartStereoProjectionFactorPP factor1(model);
-  factor1.add(level_uv, x1, body_P_sensor1_sym, K2);
-  factor1.add(level_uv_right, x2, body_P_sensor2_sym, K2);
+  factor1.add(level_uv, x1, body_P_cam1_key, K2);
+  factor1.add(level_uv_right, x2, body_P_cam2_key, K2);
 
   double actualError = factor1.error(values);
   double expectedError = 0.0;
@@ -235,33 +235,43 @@ TEST_UNSAFE( SmartStereoProjectionFactorPP, noiselessNonidenticalExtrinsics ) {
   EXPECT_DOUBLES_EQUAL(expectedError, actualError2, 1e-7);
 }
 
-/* *************************************************************************
+/* *************************************************************************/
 TEST( SmartProjectionPoseFactor, noiselessWithMissingMeasurements ) {
 
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-   Pose3 level_pose = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2),
+   Pose3 w_Pose_cam1 = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2),
        Point3(0, 0, 1));
-   StereoCamera level_camera(level_pose, K2);
+   StereoCamera w_Camera_cam1(w_Pose_cam1, K2);
 
    // create second camera 1 meter to the right of first camera
-   Pose3 level_pose_right = level_pose * Pose3(Rot3(), Point3(1, 0, 0));
-   StereoCamera level_camera_right(level_pose_right, K2);
+   Pose3 w_Pose_cam2 = w_Pose_cam1 * Pose3(Rot3(), Point3(1, 0, 0));
+   StereoCamera w_Camera_cam2(w_Pose_cam2, K2);
 
    // landmark ~5 meters in front of camera
    Point3 landmark(5, 0.5, 1.2);
 
    // 1. Project two landmarks into two cameras and triangulate
-   StereoPoint2 level_uv = level_camera.project(landmark);
-   StereoPoint2 level_uv_right = level_camera_right.project(landmark);
-   StereoPoint2 level_uv_right_missing(level_uv_right.uL(),missing_uR,level_uv_right.v());
+   StereoPoint2 cam1_uv = w_Camera_cam1.project(landmark);
+   StereoPoint2 cam2_uv = w_Camera_cam2.project(landmark);
+   StereoPoint2 cam2_uv_right_missing(cam2_uv.uL(),missing_uR,cam2_uv.v());
+
+   // fake extrinsic calibration
+   Pose3 body_Pose_cam1 = Pose3(Rot3::Ypr(-M_PI, 1., 0.1),
+         Point3(0, 1, 0));
+   Pose3 body_Pose_cam2 = Pose3(Rot3::Ypr(-M_PI / 4, 0.1, 1.0),
+           Point3(1, 1, 1));
+   Pose3 w_Pose_body1 = w_Pose_cam1.compose(body_Pose_cam1.inverse());
+   Pose3 w_Pose_body2 = w_Pose_cam2.compose(body_Pose_cam2.inverse());
 
    Values values;
-   values.insert(x1, level_pose);
-   values.insert(x2, level_pose_right);
+   values.insert(x1, w_Pose_body1);
+   values.insert(x2, w_Pose_body2);
+   values.insert(body_P_cam1_key, body_Pose_cam1);
+   values.insert(body_P_cam2_key, body_Pose_cam2);
 
    SmartStereoProjectionFactorPP factor1(model);
-   factor1.add(level_uv, x1, K2);
-   factor1.add(level_uv_right_missing, x2, K2);
+   factor1.add(cam1_uv, x1, body_P_cam1_key, K2);
+   factor1.add(cam2_uv_right_missing, x2, body_P_cam2_key, K2);
 
    double actualError = factor1.error(values);
    double expectedError = 0.0;
@@ -272,18 +282,19 @@ TEST( SmartProjectionPoseFactor, noiselessWithMissingMeasurements ) {
    double actualError2 = factor1.totalReprojectionError(cameras);
    EXPECT_DOUBLES_EQUAL(expectedError, actualError2, 1e-7);
 
+   // The following are generically exercising the triangulation
    CameraSet<StereoCamera> cams;
-   cams += level_camera;
-   cams += level_camera_right;
+   cams += w_Camera_cam1;
+   cams += w_Camera_cam2;
    TriangulationResult result = factor1.triangulateSafe(cams);
    CHECK(result);
    EXPECT(assert_equal(landmark, *result, 1e-7));
 
    // TEST TRIANGULATION WITH MISSING VALUES: ii) right pixels of both cameras are missing:
    SmartStereoProjectionFactorPP factor2(model);
-   StereoPoint2 level_uv_missing(level_uv.uL(),missing_uR,level_uv.v());
-   factor2.add(level_uv_missing, x1, K2);
-   factor2.add(level_uv_right_missing, x2, K2);
+   StereoPoint2 cam1_uv_right_missing(cam1_uv.uL(),missing_uR,cam1_uv.v());
+   factor2.add(cam1_uv_right_missing, x1, body_P_cam1_key, K2);
+   factor2.add(cam2_uv_right_missing, x2, body_P_cam2_key, K2);
    result = factor2.triangulateSafe(cams);
    CHECK(result);
    EXPECT(assert_equal(landmark, *result, 1e-7));
