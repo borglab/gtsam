@@ -1,27 +1,29 @@
 """
 Unit test for Pybind wrap program
-Author: Matthew Sklar
+Author: Matthew Sklar, Varun Agrawal
 Date: February 2019
 """
 
+# pylint: disable=import-error, wrong-import-position, too-many-branches
+
+import filecmp
 import os
+import os.path as path
 import sys
 import unittest
-import filecmp
-
-import os.path as path
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(os.path.normpath(os.path.abspath(os.path.join(__file__, '../../../build/wrap'))))
 
-from gtwrap.pybind_wrapper import PybindWrapper
 import gtwrap.interface_parser as parser
 import gtwrap.template_instantiator as instantiator
+from gtwrap.pybind_wrapper import PybindWrapper
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 class TestWrap(unittest.TestCase):
+    """Tests for Python wrapper based on Pybind11."""
     TEST_DIR = os.path.dirname(os.path.realpath(__file__)) + "/"
 
     def test_geometry_python(self):
@@ -39,7 +41,7 @@ class TestWrap(unittest.TestCase):
 
         with open(self.TEST_DIR + "pybind_wrapper.tpl") as template_file:
             module_template = template_file.read()
-        
+
         # Create Pybind wrapper instance
         wrapper = PybindWrapper(
             module=module,

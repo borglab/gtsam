@@ -7,8 +7,11 @@ All Rights Reserved
 See LICENSE for the license information
 
 Code generator for wrapping a C++ module with Pybind11
-Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar and Frank Dellaert
+Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellaert
 """
+
+# pylint: disable=too-many-arguments, too-many-instance-attributes, no-self-use, no-else-return, too-many-arguments, unused-format-string-argument
+
 import re
 import textwrap
 
@@ -16,13 +19,16 @@ import gtwrap.interface_parser as parser
 import gtwrap.template_instantiator as instantiator
 
 
-class PybindWrapper(object):
+class PybindWrapper:
+    """
+    Class to generate binding code for Pybind11 specifically.
+    """
     def __init__(self,
                  module,
                  module_name,
                  top_module_namespaces='',
                  use_boost=False,
-                 ignore_classes=[],
+                 ignore_classes=(),
                  module_template=""):
         self.module = module
         self.module_name = module_name
@@ -34,6 +40,7 @@ class PybindWrapper(object):
         self.python_keywords = ['print', 'lambda']
 
     def _py_args_names(self, args_list):
+        """Set the argument names in Pybind11 format."""
         names = args_list.args_names()
         if names:
             py_args = ['py::arg("{}")'.format(name) for name in names]
@@ -42,6 +49,7 @@ class PybindWrapper(object):
             return ''
 
     def _method_args_signature_with_names(self, args_list):
+        """Define the method signature types with the argument names."""
         cpp_types = args_list.to_cpp(self.use_boost)
         names = args_list.args_names()
         types_names = ["{} {}".format(ctype, name) for ctype, name in zip(cpp_types, names)]
@@ -49,6 +57,7 @@ class PybindWrapper(object):
         return ','.join(types_names)
 
     def wrap_ctors(self, my_class):
+        """Wrap the constructors."""
         res = ""
         for ctor in my_class.ctors:
             res += ('\n' + ' ' * 8 + '.def(py::init<{args_cpp_types}>()'
@@ -115,8 +124,10 @@ class PybindWrapper(object):
                '{py_args_names}){suffix}'.format(
                    prefix=prefix,
                    cdef="def_static" if is_static else "def",
-                   py_method=py_method if not py_method in self.python_keywords else py_method + "_",
-                   opt_self="{cpp_class}* self".format(cpp_class=cpp_class) if is_method else "",
+                   py_method=py_method if not py_method in self.python_keywords
+                   else py_method + "_",
+                   opt_self="{cpp_class}* self".format(
+                       cpp_class=cpp_class) if is_method else "",
                    cpp_class=cpp_class,
                    cpp_method=cpp_method,
                    opt_comma=',' if is_method and args_names else '',
@@ -152,6 +163,7 @@ class PybindWrapper(object):
         return ret
 
     def wrap_methods(self, methods, cpp_class, prefix='\n' + ' ' * 8, suffix=''):
+        """Wrap all the methods in the `cpp_class`."""
         res = ""
         for method in methods:
 
@@ -176,6 +188,7 @@ class PybindWrapper(object):
         return res
 
     def wrap_properties(self, properties, cpp_class, prefix='\n' + ' ' * 8):
+        """Wrap all the properties in the `cpp_class`."""
         res = ""
         for prop in properties:
             res += ('{prefix}.def_{property}("{property_name}", '
@@ -188,50 +201,61 @@ class PybindWrapper(object):
         return res
 
     def wrap_instantiated_class(self, instantiated_class):
+        """Wrap the class."""
         module_var = self._gen_module_var(instantiated_class.namespaces())
         cpp_class = instantiated_class.cpp_class()
         if cpp_class in self.ignore_classes:
             return ""
-        return ('\n    py::class_<{cpp_class}, {class_parent}'
-                '{shared_ptr_type}::shared_ptr<{cpp_class}>>({module_var}, "{class_name}")'
-                '{wrapped_ctors}'
-                '{wrapped_methods}'
-                '{wrapped_static_methods}'
-                '{wrapped_properties};\n'.format(
-                    shared_ptr_type=('boost' if self.use_boost else 'std'),
-                    cpp_class=cpp_class,
-                    class_name=instantiated_class.name,
-                    class_parent=str(instantiated_class.parent_class) +
-                    (', ' if instantiated_class.parent_class else ''),
-                    module_var=module_var,
-                    wrapped_ctors=self.wrap_ctors(instantiated_class),
-                    wrapped_methods=self.wrap_methods(instantiated_class.methods, cpp_class),
-                    wrapped_static_methods=self.wrap_methods(instantiated_class.static_methods, cpp_class),
-                    wrapped_properties=self.wrap_properties(instantiated_class.properties, cpp_class),
-                ))
+        return (
+            '\n    py::class_<{cpp_class}, {class_parent}'
+            '{shared_ptr_type}::shared_ptr<{cpp_class}>>({module_var}, "{class_name}")'
+            '{wrapped_ctors}'
+            '{wrapped_methods}'
+            '{wrapped_static_methods}'
+            '{wrapped_properties};\n'.format(
+                shared_ptr_type=('boost' if self.use_boost else 'std'),
+                cpp_class=cpp_class,
+                class_name=instantiated_class.name,
+                class_parent=str(instantiated_class.parent_class) +
+                (', ' if instantiated_class.parent_class else ''),
+                module_var=module_var,
+                wrapped_ctors=self.wrap_ctors(instantiated_class),
+                wrapped_methods=self.wrap_methods(instantiated_class.methods,
+                                                  cpp_class),
+                wrapped_static_methods=self.wrap_methods(
+                    instantiated_class.static_methods, cpp_class),
+                wrapped_properties=self.wrap_properties(
+                    instantiated_class.properties, cpp_class),
+            ))
 
     def wrap_stl_class(self, stl_class):
+        """Wrap STL containers."""
         module_var = self._gen_module_var(stl_class.namespaces())
         cpp_class = stl_class.cpp_class()
         if cpp_class in self.ignore_classes:
             return ""
 
-        return ('\n    py::class_<{cpp_class}, {class_parent}'
-                '{shared_ptr_type}::shared_ptr<{cpp_class}>>({module_var}, "{class_name}")'
-                '{wrapped_ctors}'
-                '{wrapped_methods}'
-                '{wrapped_static_methods}'
-                '{wrapped_properties};\n'.format(
-                    shared_ptr_type=('boost' if self.use_boost else 'std'),
-                    cpp_class=cpp_class,
-                    class_name=stl_class.name,
-                    class_parent=str(stl_class.parent_class) + (', ' if stl_class.parent_class else ''),
-                    module_var=module_var,
-                    wrapped_ctors=self.wrap_ctors(stl_class),
-                    wrapped_methods=self.wrap_methods(stl_class.methods, cpp_class),
-                    wrapped_static_methods=self.wrap_methods(stl_class.static_methods, cpp_class),
-                    wrapped_properties=self.wrap_properties(stl_class.properties, cpp_class),
-                ))
+        return (
+            '\n    py::class_<{cpp_class}, {class_parent}'
+            '{shared_ptr_type}::shared_ptr<{cpp_class}>>({module_var}, "{class_name}")'
+            '{wrapped_ctors}'
+            '{wrapped_methods}'
+            '{wrapped_static_methods}'
+            '{wrapped_properties};\n'.format(
+                shared_ptr_type=('boost' if self.use_boost else 'std'),
+                cpp_class=cpp_class,
+                class_name=stl_class.name,
+                class_parent=str(stl_class.parent_class) +
+                (', ' if stl_class.parent_class else ''),
+                module_var=module_var,
+                wrapped_ctors=self.wrap_ctors(stl_class),
+                wrapped_methods=self.wrap_methods(stl_class.methods,
+                                                  cpp_class),
+                wrapped_static_methods=self.wrap_methods(
+                    stl_class.static_methods, cpp_class),
+                wrapped_properties=self.wrap_properties(
+                    stl_class.properties, cpp_class),
+            ))
 
     def _partial_match(self, namespaces1, namespaces2):
         for i in range(min(len(namespaces1), len(namespaces2))):
@@ -252,6 +276,7 @@ class PybindWrapper(object):
             return name
 
     def wrap_namespace(self, namespace):
+        """Wrap the complete `namespace`."""
         wrapped = ""
         includes = ""
 
@@ -298,7 +323,10 @@ class PybindWrapper(object):
                     wrapped += self.wrap_instantiated_class(element)
 
             # Global functions.
-            all_funcs = [func for func in namespace.content if isinstance(func, parser.GlobalFunction)]
+            all_funcs = [
+                func for func in namespace.content
+                if isinstance(func, parser.GlobalFunction)
+            ]
             wrapped += self.wrap_methods(
                 all_funcs,
                 self._add_namespaces('', namespaces)[:-2],
@@ -308,6 +336,7 @@ class PybindWrapper(object):
         return wrapped, includes
 
     def wrap(self):
+        """Wrap the code in the interface file."""
         wrapped_namespace, includes = self.wrap_namespace(self.module)
 
         # Export classes for serialization.
@@ -323,14 +352,16 @@ class PybindWrapper(object):
                 )
             boost_class_export += "BOOST_CLASS_EXPORT({new_name})\n".format(new_name=new_name, )
 
+        holder_type = "PYBIND11_DECLARE_HOLDER_TYPE(TYPE_PLACEHOLDER_DONOTUSE, " \
+                      "{shared_ptr_type}::shared_ptr<TYPE_PLACEHOLDER_DONOTUSE>);"
+        include_boost = "#include <boost/shared_ptr.hpp>" if self.use_boost else ""
+
         return self.module_template.format(
-            include_boost="#include <boost/shared_ptr.hpp>" if self.use_boost else "",
+            include_boost=include_boost,
             module_name=self.module_name,
             includes=includes,
-            hoder_type=
-            "PYBIND11_DECLARE_HOLDER_TYPE(TYPE_PLACEHOLDER_DONOTUSE, {shared_ptr_type}::shared_ptr<TYPE_PLACEHOLDER_DONOTUSE>);"
-            .format(shared_ptr_type=('boost' if self.use_boost else 'std')) if self.use_boost else "",
+            holder_type=holder_type.format(shared_ptr_type=('boost' if self.use_boost else 'std'))
+            if self.use_boost else "",
             wrapped_namespace=wrapped_namespace,
             boost_class_export=boost_class_export,
         )
-
