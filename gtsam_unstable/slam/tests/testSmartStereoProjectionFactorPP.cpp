@@ -51,10 +51,15 @@ using symbol_shorthand::L;
 static Symbol x1('X', 1);
 static Symbol x2('X', 2);
 static Symbol x3('X', 3);
-static Symbol body_P_sensor1_sym('P', 0);
+static Symbol body_P_sensor1_sym('P', 1);
+static Symbol body_P_sensor2_sym('P', 2);
+static Symbol body_P_sensor3_sym('P', 3);
 
 static Key poseKey1(x1);
+static Key poseExtrinsicKey1(body_P_sensor1_sym);
+static Key poseExtrinsicKey2(body_P_sensor2_sym);
 static StereoPoint2 measurement1(323.0, 300.0, 240.0); //potentially use more reasonable measurement value?
+static StereoPoint2 measurement2(350.0, 200.0, 240.0); //potentially use more reasonable measurement value?
 static Pose3 body_P_sensor1(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2),
     Point3(0.25, -0.10, 1.0));
 
@@ -77,7 +82,7 @@ vector<StereoPoint2> stereo_projectToMultipleCameras(const StereoCamera& cam1,
 
 LevenbergMarquardtParams lm_params;
 
-/* ************************************************************************* *
+/* ************************************************************************* */
 TEST( SmartStereoProjectionFactorPP, params) {
   SmartStereoProjectionParams p;
 
@@ -111,32 +116,42 @@ TEST( SmartStereoProjectionFactorPP, Constructor) {
   SmartStereoProjectionFactorPP::shared_ptr factor1(new SmartStereoProjectionFactorPP(model));
 }
 
-/* ************************************************************************* *
+/* ************************************************************************* */
 TEST( SmartStereoProjectionFactorPP, Constructor2) {
   SmartStereoProjectionFactorPP factor1(model, params);
 }
 
-/* ************************************************************************* *
+/* ************************************************************************* */
 TEST( SmartStereoProjectionFactorPP, Constructor3) {
   SmartStereoProjectionFactorPP::shared_ptr factor1(new SmartStereoProjectionFactorPP(model));
-  factor1->add(measurement1, poseKey1, K);
+  factor1->add(measurement1, poseKey1, poseExtrinsicKey1, K);
 }
 
-/* ************************************************************************* *
+/* ************************************************************************* */
 TEST( SmartStereoProjectionFactorPP, Constructor4) {
   SmartStereoProjectionFactorPP factor1(model, params);
-  factor1.add(measurement1, poseKey1, K);
+  factor1.add(measurement1, poseKey1, poseExtrinsicKey1, K);
 }
 
 /* ************************************************************************* *
 TEST( SmartStereoProjectionFactorPP, Equals ) {
   SmartStereoProjectionFactorPP::shared_ptr factor1(new SmartStereoProjectionFactorPP(model));
-  factor1->add(measurement1, poseKey1, K);
+  factor1->add(measurement1, poseKey1, poseExtrinsicKey1, K);
 
   SmartStereoProjectionFactorPP::shared_ptr factor2(new SmartStereoProjectionFactorPP(model));
-  factor2->add(measurement1, poseKey1, K);
-
+  factor2->add(measurement1, poseKey1, poseExtrinsicKey1, K);
+  // check these are equal
   CHECK(assert_equal(*factor1, *factor2));
+
+  SmartStereoProjectionFactorPP::shared_ptr factor3(new SmartStereoProjectionFactorPP(model));
+  factor3->add(measurement2, poseKey1, poseExtrinsicKey1, K);
+  // check these are different
+  CHECK(!assert_equal(*factor1, *factor3));
+
+  SmartStereoProjectionFactorPP::shared_ptr factor4(new SmartStereoProjectionFactorPP(model));
+  factor3->add(measurement1, poseKey1, poseExtrinsicKey2, K);
+  // check these are different
+  CHECK(!assert_equal(*factor1, *factor4));
 }
 
 /* *************************************************************************
