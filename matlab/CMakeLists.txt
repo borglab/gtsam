@@ -61,21 +61,7 @@ endif()
 # ignoring the non-concrete types (type aliases)
 set(ignore
     gtsam::Point2
-    gtsam::Point3
-    gtsam::LieVector
-    gtsam::LieMatrix
-    gtsam::ISAM2ThresholdMapValue
-    gtsam::FactorIndices
-    gtsam::FactorIndexSet
-    gtsam::IndexPairSetMap
-    gtsam::IndexPairVector
-    gtsam::BetweenFactorPose2s
-    gtsam::BetweenFactorPose3s
-    gtsam::Point2Vector
-    gtsam::Pose3Vector
-    gtsam::KeyVector
-    gtsam::BinaryMeasurementsUnit3
-    gtsam::KeyPairDoubleMap)
+    gtsam::Point3)
 
 # Wrap
 matlab_wrap(${GTSAM_SOURCE_DIR}/gtsam/gtsam.i "${GTSAM_ADDITIONAL_LIBRARIES}"
