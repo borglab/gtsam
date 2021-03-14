@@ -462,15 +462,15 @@ TEST( SmartStereoProjectionFactorPP, 3poses_smart_projection_factor ) {
   Point3 landmark2_smart = *smartFactor2->point();
   Point3 landmark3_smart = *smartFactor3->point();
 
-//  Values result;
-//  gttic_(SmartStereoProjectionFactorPP);
-//  LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
-//  result = optimizer.optimize();
-//  gttoc_(SmartStereoProjectionFactorPP);
-//  tictoc_finishedIteration_();
-//
-//  //  cout << std::setprecision(10) << "SmartStereoFactor graph optimized error: " << graph.error(result) << endl;
-//  EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-5);
+  Values result;
+  gttic_(SmartStereoProjectionFactorPP);
+  LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
+  result = optimizer.optimize();
+  gttoc_(SmartStereoProjectionFactorPP);
+  tictoc_finishedIteration_();
+
+  //  cout << std::setprecision(10) << "SmartStereoFactor graph optimized error: " << graph.error(result) << endl;
+  EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-5);
 
 //  GaussianFactorGraph::shared_ptr GFG = graph.linearize(result);
 //  VectorValues delta = GFG->optimize();

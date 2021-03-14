@@ -154,28 +154,18 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
     if (!result_) {
       throw ("computeJacobiansWithTriangulatedPoint");
     } else {
-//      Matrix H0, H02;
-//      PinholeCamera<CALIBRATION> camera(pose.compose(transform, H0, H02), *K_);
-//      Point2 reprojectionError(camera.project(point, H1, H3, boost::none) - measured_);
-//      *H2 = *H1 * H02;
-//      *H1 = *H1 * H0;
-
       // valid result: compute jacobians
-//      const Pose3 sensor_P_body = body_P_sensor_->inverse();
-//      constexpr int camera_dim = traits<CAMERA>::dimension;
-//      constexpr int pose_dim = traits<Pose3>::dimension;
-//
-//      for (size_t i = 0; i < Fs->size(); i++) {
-//        const Pose3 world_P_body = cameras[i].pose() * sensor_P_body;
-//        Eigen::Matrix<double, camera_dim, camera_dim> J;
-//        J.setZero();
-//        Eigen::Matrix<double, pose_dim, pose_dim> H;
-//        // Call compose to compute Jacobian for camera extrinsics
-//        world_P_body.compose(*body_P_sensor_, H);
-//        // Assign extrinsics part of the Jacobian
-//        J.template block<pose_dim, pose_dim>(0, 0) = H;
-//        Fs->at(i) = Fs->at(i) * J;
-//      }
+      Matrix H0,H1,H3,H02;
+      for (size_t i = 0; i < keys_.size(); i++) { // for each camera/measurement
+        Pose3 w_P_body = values.at<Pose3>(keys_.at(i));
+        Pose3 body_P_cam = values.at<Pose3>(body_P_cam_keys_.at(i));
+        StereoCamera camera(w_P_body.compose(body_P_cam, H0, H02), K_all_[i]);
+        StereoPoint2 reprojectionError = StereoPoint2(camera.project(*result_, H1, H3) - measured_.at(i));
+        Eigen::Matrix<double, ZDim, Dim> J; // 3 x 12
+        J.block<ZDim,6>(0,0) = H1 * H0;
+        J.block<ZDim,6>(0,6) = H1 * H02;
+        Fs.at(i) = J;
+      }
     }
   }
 
@@ -197,6 +187,7 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
           "measured_.size() inconsistent with input");
 
     triangulateSafe(cameras(values));
+    std::cout <<"passed triangulateSafe!!!!!!!!!!1" << std::endl;
 
     if (params_.degeneracyMode == ZERO_ON_DEGENERACY && !result_) {
       // failed: return"empty" Hessian
@@ -212,6 +203,7 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
     FBlocks Fs;
     Matrix F, E;
     Vector b;
+    std::cout <<"before computeJacobiansWithTriangulatedPoint!!!!!!!!!!1" << std::endl;
     computeJacobiansWithTriangulatedPoint(Fs, E, b, values);
     std::cout << Fs.at(0) << std::endl;
 
@@ -227,6 +219,28 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
     return boost::make_shared<RegularHessianFactor<Dim> >(this->keys_,
                                                                       Gs, gs, 0.0);
   }
+
+  /**
+    * Linearize to Gaussian Factor
+    * @param values Values structure which must contain camera poses and extrinsic pose for this factor
+    * @return a Gaussian factor
+    */
+   boost::shared_ptr<GaussianFactor> linearizeDamped(const Values& values,
+       const double lambda = 0.0) const {
+     // depending on flag set on construction we may linearize to different linear factors
+     switch (params_.linearizationMode) {
+     case HESSIAN:
+       return createHessianFactor(values, lambda);
+     default:
+       throw std::runtime_error("SmartStereoFactorlinearize: unknown mode");
+     }
+   }
+
+   /// linearize
+   boost::shared_ptr<GaussianFactor> linearize(
+       const Values& values) const override {
+     return linearizeDamped(values);
+   }
 
  private:
   /// Serialization function
