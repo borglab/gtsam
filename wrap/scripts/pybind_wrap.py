@@ -6,6 +6,8 @@ This script is installed via CMake to the user's binary directory
 and invoked during the wrapping by CMake.
 """
 
+# pylint: disable=import-error
+
 import argparse
 
 import gtwrap.interface_parser as parser
@@ -68,13 +70,16 @@ def main():
     if top_module_namespaces[0]:
         top_module_namespaces = [''] + top_module_namespaces
 
+    # Read in the complete interface (.i) file
     with open(args.src, "r") as f:
         content = f.read()
+
     module = parser.Module.parseString(content)
     instantiator.instantiate_namespace_inplace(module)
 
     with open(args.template, "r") as f:
         template_content = f.read()
+
     wrapper = PybindWrapper(
         module=module,
         module_name=args.module_name,
@@ -84,7 +89,10 @@ def main():
         module_template=template_content,
     )
 
+    # Wrap the code and get back the cpp/cc code.
     cc_content = wrapper.wrap()
+
+    # Generate the C++ code which Pybind11 will use.
     with open(args.out, "w") as f:
         f.write(cc_content)
 

@@ -591,7 +591,7 @@ class MatlabWrapper(object):
         file_name = self._wrapper_name() + '.cpp'
 
         wrapper_file = textwrap.dedent('''\
-            # include <wrap/matlab.h>
+            # include <gtwrap/matlab.h>
             # include <map>
         ''')
 
@@ -1476,7 +1476,7 @@ class MatlabWrapper(object):
         """Generate the c++ wrapper."""
         # Includes
         wrapper_file = textwrap.dedent('''\
-            #include <wrap/matlab.h>
+            #include <gtwrap/matlab.h>
             #include <map>\n
             #include <boost/archive/text_iarchive.hpp>
             #include <boost/archive/text_oarchive.hpp>
@@ -1485,7 +1485,16 @@ class MatlabWrapper(object):
 
         includes_list = sorted(list(self.includes.keys()), key=lambda include: include.header)
 
-        wrapper_file += reduce(lambda x, y: str(x) + '\n' + str(y), includes_list) + '\n'
+        # Check the number of includes.
+        # If no includes, do nothing, if 1 then just append newline.
+        # if more than one, concatenate them with newlines.
+        if len(includes_list) == 0:
+            pass
+        elif len(includes_list) == 1:
+            wrapper_file += (str(includes_list[0]) + '\n')
+        else:
+            wrapper_file += reduce(lambda x, y: str(x) + '\n' + str(y), includes_list)
+        wrapper_file += '\n'
 
         typedef_instances = '\n'
         typedef_collectors = ''
