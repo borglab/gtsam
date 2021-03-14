@@ -154,6 +154,12 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
     if (!result_) {
       throw ("computeJacobiansWithTriangulatedPoint");
     } else {
+//      Matrix H0, H02;
+//      PinholeCamera<CALIBRATION> camera(pose.compose(transform, H0, H02), *K_);
+//      Point2 reprojectionError(camera.project(point, H1, H3, boost::none) - measured_);
+//      *H2 = *H1 * H02;
+//      *H1 = *H1 * H0;
+
       // valid result: compute jacobians
 //      const Pose3 sensor_P_body = body_P_sensor_->inverse();
 //      constexpr int camera_dim = traits<CAMERA>::dimension;
