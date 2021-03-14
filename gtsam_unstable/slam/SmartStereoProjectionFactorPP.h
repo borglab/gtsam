@@ -161,10 +161,17 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
         Pose3 body_P_cam = values.at<Pose3>(body_P_cam_keys_.at(i));
         StereoCamera camera(w_P_body.compose(body_P_cam, H0, H02), K_all_[i]);
         StereoPoint2 reprojectionError = StereoPoint2(camera.project(*result_, H1, H3) - measured_.at(i));
+        std::cout << "H0 \n" << H0 << std::endl;
+        std::cout << "H1 \n" << H1 << std::endl;
+        std::cout << "H3 \n" << H3 << std::endl;
+        std::cout << "H02 \n" << H02 << std::endl;
         Eigen::Matrix<double, ZDim, Dim> J; // 3 x 12
-        J.block<ZDim,6>(0,0) = H1 * H0;
-        J.block<ZDim,6>(0,6) = H1 * H02;
-        Fs.at(i) = J;
+        std::cout << "H1 * H0 \n" << H1 * H0 << std::endl;
+        std::cout << "H1 * H02 \n" << H1 * H02 << std::endl;
+        J.block<ZDim,6>(0,0) = H1 * H0; // (3x6) * (6x6)
+        J.block<ZDim,6>(0,6) = H1 * H02; // (3x6) * (6x6)
+        std::cout << "J \n" << J << std::endl;
+        Fs.push_back(J);
       }
     }
   }
@@ -205,7 +212,7 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
     Vector b;
     std::cout <<"before computeJacobiansWithTriangulatedPoint!!!!!!!!!!1" << std::endl;
     computeJacobiansWithTriangulatedPoint(Fs, E, b, values);
-    std::cout << Fs.at(0) << std::endl;
+    std::cout << "Fs.at(0) \n"<< Fs.at(0) << std::endl;
 
 //    // Whiten using noise model
 //    Base::whitenJacobians(Fs, E, b);
