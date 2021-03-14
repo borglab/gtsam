@@ -1,21 +1,26 @@
 """
-Unit test for Matlab wrap program
-Author: Matthew Sklar
+Unit tests for Matlab wrap program
+Author: Matthew Sklar, Varun Agrawal
 Date: March 2019
 """
+# pylint: disable=import-error, wrong-import-position, too-many-branches
+
+import filecmp
 import os
 import sys
 import unittest
-import filecmp
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import gtwrap.template_instantiator as instantiator
 import gtwrap.interface_parser as parser
+import gtwrap.template_instantiator as instantiator
 from gtwrap.matlab_wrapper import MatlabWrapper
 
 
 class TestWrap(unittest.TestCase):
+    """
+    Test the Matlab wrapper
+    """
     TEST_DIR = os.path.dirname(os.path.realpath(__file__)) + "/"
     MATLAB_TEST_DIR = TEST_DIR + "expected-matlab/"
     MATLAB_ACTUAL_DIR = TEST_DIR + "actual-matlab/"
@@ -31,11 +36,11 @@ class TestWrap(unittest.TestCase):
         """
         if path == '':
             path = self.MATLAB_ACTUAL_DIR
+
         for c in cc_content:
-            if type(c) == list:
+            if isinstance(c, list):
                 if len(c) == 0:
                     continue
-                import sys
                 print("c object: {}".format(c[0][0]), file=sys.stderr)
                 path_to_folder = path + '/' + c[0][0]
 
@@ -46,13 +51,12 @@ class TestWrap(unittest.TestCase):
                         pass
 
                 for sub_content in c:
-                    import sys
                     print("sub object: {}".format(sub_content[1][0][0]), file=sys.stderr)
                     self.generate_content(sub_content[1], path_to_folder)
-            elif type(c[1]) == list:
+
+            elif isinstance(c[1], list):
                 path_to_folder = path + '/' + c[0]
 
-                import sys
                 print("[generate_content_global]: {}".format(path_to_folder), file=sys.stderr)
                 if not os.path.isdir(path_to_folder):
                     try:
@@ -60,15 +64,14 @@ class TestWrap(unittest.TestCase):
                     except OSError:
                         pass
                 for sub_content in c[1]:
-                    import sys
                     path_to_file = path_to_folder + '/' + sub_content[0]
                     print("[generate_global_method]: {}".format(path_to_file), file=sys.stderr)
                     with open(path_to_file, 'w') as f:
                         f.write(sub_content[1])
+
             else:
                 path_to_file = path + '/' + c[0]
 
-                import sys
                 print("[generate_content]: {}".format(path_to_file), file=sys.stderr)
                 if not os.path.isdir(path_to_file):
                     try:
@@ -80,7 +83,8 @@ class TestWrap(unittest.TestCase):
                     f.write(c[1])
 
     def test_geometry_matlab(self):
-        """ Check generation of matlab geometry wrapper.
+        """
+        Check generation of matlab geometry wrapper.
         python3 wrap/matlab_wrapper.py --src wrap/tests/geometry.h
             --module_name geometry --out wrap/tests/actual-matlab
         """

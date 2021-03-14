@@ -5,120 +5,7 @@
  * These are the current classes available through the matlab and python wrappers,
  * add more functions/classes as they are available.
  *
- * IMPORTANT: the python wrapper supports keyword arguments for functions/methods. Hence, the
- *            argument names matter. An implementation restriction is that in overloaded methods
- *            or functions, arguments of different types *have* to have different names.
- *
- * Requirements:
- *   Classes must start with an uppercase letter
- *      - Can wrap a typedef
- *   Only one Method/Constructor per line, though methods/constructors can extend across multiple lines
- *   Methods can return
- *     - Eigen types:       Matrix, Vector
- *     - C/C++ basic types: string, bool, size_t, int, double, char, unsigned char
- *     - void
- *     - Any class with which be copied with boost::make_shared()
- *     - boost::shared_ptr of any object type
- *   Constructors
- *     - Overloads are supported, but arguments of different types *have* to have different names
- *     - A class with no constructors can be returned from other functions but not allocated directly in MATLAB
- *   Methods
- *     - Constness has no effect
- *     - Specify by-value (not reference) return types, even if C++ method returns reference
- *     - Must start with a letter (upper or lowercase)
- *     - Overloads are supported
- *   Static methods
- *     - Must start with a letter (upper or lowercase) and use the "static" keyword
- *     - The first letter will be made uppercase in the generated MATLAB interface
- *     - Overloads are supported, but arguments of different types *have* to have different names
- *   Arguments to functions any of
- *      - Eigen types:       Matrix, Vector
- *      - Eigen types and classes as an optionally const reference
- *     - C/C++ basic types: string, bool, size_t, size_t, double, char, unsigned char
- *     - Any class with which be copied with boost::make_shared() (except Eigen)
- *     - boost::shared_ptr of any object type (except Eigen)
- *   Comments can use either C++ or C style, with multiple lines
- *   Namespace definitions
- *     - Names of namespaces must start with a lowercase letter
- *      - start a namespace with "namespace {"
- *      - end a namespace with exactly "}"
- *      - Namespaces can be nested
- *   Namespace usage
- *      - Namespaces can be specified for classes in arguments and return values
- *      - In each case, the namespace must be fully specified, e.g., "namespace1::namespace2::ClassName"
- *   Includes in C++ wrappers
- *     - All includes will be collected and added in a single file
- *     - All namespaces must have angle brackets: <path>
- *     - No default includes will be added
- *   Global/Namespace functions
- *     - Functions specified outside of a class are global
- *     - Can be overloaded with different arguments
- *     - Can have multiple functions of the same name in different namespaces
- *   Using classes defined in other modules
- *     - If you are using a class 'OtherClass' not wrapped in this definition file, add "class OtherClass;" to avoid a dependency error
- *   Virtual inheritance
- *     - Specify fully-qualified base classes, i.e. "virtual class Derived : ns::Base {" where "ns" is the namespace
- *     - Mark with 'virtual' keyword, e.g. "virtual class Base {", and also "virtual class Derived : ns::Base {"
- *     - Forward declarations must also be marked virtual, e.g. "virtual class ns::Base;" and
- *       also "virtual class ns::Derived;"
- *     - Pure virtual (abstract) classes should list no constructors in this interface file
- *     - Virtual classes must have a clone() function in C++ (though it does not have to be included
- *       in the MATLAB interface).  clone() will be called whenever an object copy is needed, instead
- *       of using the copy constructor (which is used for non-virtual objects).
- *     - Signature of clone function - will be called virtually, so must appear at least at the top of the inheritance tree
- *           virtual boost::shared_ptr<CLASS_NAME> clone() const;
- *   Class Templates
- *     - Basic templates are supported either with an explicit list of types to instantiate,
- *       e.g. template<T = {gtsam::Pose2, gtsam::Rot2, gtsam::Point3}> class Class1 { ... };
- *       or with typedefs, e.g.
- *       template<T, U> class Class2 { ... };
- *       typedef Class2<Type1, Type2> MyInstantiatedClass;
- *     - In the class definition, appearances of the template argument(s) will be replaced with their
- *       instantiated types, e.g. 'void setValue(const T& value);'.
- *     - To refer to the instantiation of the template class itself, use 'This', i.e. 'static This Create();'
- *     - To create new instantiations in other modules, you must copy-and-paste the whole class definition
- *       into the new module, but use only your new instantiation types.
- *     - When forward-declaring template instantiations, use the generated/typedefed name, e.g.
- *       class gtsam::Class1Pose2;
- *       class gtsam::MyInstantiatedClass;
- *   Boost.serialization within Matlab:
- *     - you need to mark classes as being serializable in the markup file (see this file for an example).
- *     - There are two options currently, depending on the class.  To "mark" a class as serializable,
- *       add a function with a particular signature so that wrap will catch it.
- *        - Add "void serialize()" to a class to create serialization functions for a class.
- *          Adding this flag subsumes the serializable() flag below. Requirements:
- *             - A default constructor must be publicly accessible
- *             - Must not be an abstract base class
- *             - The class must have an actual boost.serialization serialize() function.
- *        - Add "void serializable()" to a class if you only want the class to be serialized as a
- *          part of a container (such as noisemodel). This version does not require a publicly
- *          accessible default constructor.
- *   Forward declarations and class definitions for Pybind:
- *     - Need to specify the base class (both this forward class and base class are declared in an external Pybind header)
- *       This is so Pybind can generate proper inheritance.
- *       Example when wrapping a gtsam-based project:
- *          // forward declarations
- *          virtual class gtsam::NonlinearFactor
- *          virtual class gtsam::NoiseModelFactor : gtsam::NonlinearFactor
- *          // class definition
- *          #include <MyFactor.h>
- *          virtual class MyFactor : gtsam::NoiseModelFactor {...};
- *    - *DO NOT* re-define overriden function already declared in the external (forward-declared) base class
- *        - This will cause an ambiguity problem in Pybind header file
- *   Pickle support in Python:
- *    - Add "void pickle()" to a class to enable pickling via gtwrap. In the current implementation, "void serialize()"
- *      and a public constructor with no-arguments in needed for successful build.
- */
-
-/**
- * Status:
- *  - TODO: default values for arguments
- *    - WORKAROUND: make multiple versions of the same function for different configurations of default arguments
- *  - TODO: Handle gtsam::Rot3M conversions to quaternions
- *  - TODO: Parse return of const ref arguments
- *  - TODO: Parse std::string variants and convert directly to special string
- *  - TODO: Add enum support
- *  - TODO: Add generalized serialization support via boost.serialization with hooks to matlab save/load
+ * Please refer to the wrapping docs: https://github.com/borglab/wrap/blob/master/README.md
  */
 
 namespace gtsam {
@@ -1910,6 +1797,8 @@ virtual class GaussianBayesNet {
   gtsam::KeySet keys() const;
   bool exists(size_t idx) const;
 
+  void saveGraph(const string& s) const;
+
   gtsam::GaussianConditional* front() const;
   gtsam::GaussianConditional* back() const;
   void push_back(gtsam::GaussianConditional* conditional);
@@ -2758,7 +2647,7 @@ virtual class BearingRangeFactor : gtsam::NoiseModelFactor {
       const BEARING& measuredBearing, const RANGE& measuredRange,
       const gtsam::noiseModel::Base* noiseModel);
 
-  BearingRange<POSE, POINT, BEARING, RANGE> measured() const;
+  gtsam::BearingRange<POSE, POINT, BEARING, RANGE> measured() const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -2898,8 +2787,8 @@ class SfmTrack {
   double r;
   double g;
   double b;
-  // TODO Need to close wrap#10 to allow this to work.
-  // std::vector<pair<size_t, gtsam::Point2>> measurements;
+
+  std::vector<pair<size_t, gtsam::Point2>> measurements;
 
   size_t number_measurements() const;
   pair<size_t, gtsam::Point2> measurement(size_t idx) const;
