@@ -58,6 +58,11 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
   /// shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<This> shared_ptr;
 
+  static const int Dim = 12; ///< Camera dimension
+  static const int ZDim = 3; ///< Measurement dimension
+  typedef Eigen::Matrix<double, ZDim, Dim> MatrixZD; // F blocks (derivatives wrpt camera)
+  typedef std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD> > FBlocks; // vector of F blocks
+
   /**
    * Constructor
    * @param Isotropic measurement noise
@@ -139,6 +144,83 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
    * @return vector of Values
    */
   Base::Cameras cameras(const Values& values) const override;
+
+  /// Compute F, E only (called below in both vanilla and SVD versions)
+  /// Assumes the point has been computed
+  /// Note E can be 2m*3 or 2m*2, in case point is degenerate
+  void computeJacobiansWithTriangulatedPoint(
+      FBlocks& Fs,
+      Matrix& E, Vector& b, const Values& values) const {
+    if (!result_) {
+      throw ("computeJacobiansWithTriangulatedPoint");
+    } else {
+      // valid result: compute jacobians
+//      const Pose3 sensor_P_body = body_P_sensor_->inverse();
+//      constexpr int camera_dim = traits<CAMERA>::dimension;
+//      constexpr int pose_dim = traits<Pose3>::dimension;
+//
+//      for (size_t i = 0; i < Fs->size(); i++) {
+//        const Pose3 world_P_body = cameras[i].pose() * sensor_P_body;
+//        Eigen::Matrix<double, camera_dim, camera_dim> J;
+//        J.setZero();
+//        Eigen::Matrix<double, pose_dim, pose_dim> H;
+//        // Call compose to compute Jacobian for camera extrinsics
+//        world_P_body.compose(*body_P_sensor_, H);
+//        // Assign extrinsics part of the Jacobian
+//        J.template block<pose_dim, pose_dim>(0, 0) = H;
+//        Fs->at(i) = Fs->at(i) * J;
+//      }
+    }
+  }
+
+  /// linearize returns a Hessianfactor that is an approximation of error(p)
+  boost::shared_ptr<RegularHessianFactor<Dim> > createHessianFactor(
+      const Values& values, const double lambda = 0.0,  bool diagonalDamping =
+          false) const {
+
+    size_t numKeys = this->keys_.size();
+    // Create structures for Hessian Factors
+    KeyVector js;
+    std::vector<Matrix> Gs(numKeys * (numKeys + 1) / 2);
+    std::vector<Vector> gs(numKeys);
+
+    std::cout <<"using my hessian!!!!!!!!!!1" << std::endl;
+
+    if (this->measured_.size() != cameras(values).size())
+      throw std::runtime_error("SmartStereoProjectionHessianFactor: this->"
+          "measured_.size() inconsistent with input");
+
+    triangulateSafe(cameras(values));
+
+    if (params_.degeneracyMode == ZERO_ON_DEGENERACY && !result_) {
+      // failed: return"empty" Hessian
+      for(Matrix& m: Gs)
+        m = Matrix::Zero(Dim,Dim);
+      for(Vector& v: gs)
+        v = Vector::Zero(Dim);
+      return boost::make_shared<RegularHessianFactor<Dim> >(this->keys_,
+                                                                  Gs, gs, 0.0);
+    }
+
+    // Jacobian could be 3D Point3 OR 2D Unit3, difference is E.cols().
+    FBlocks Fs;
+    Matrix F, E;
+    Vector b;
+    computeJacobiansWithTriangulatedPoint(Fs, E, b, values);
+    std::cout << Fs.at(0) << std::endl;
+
+//    // Whiten using noise model
+//    Base::whitenJacobians(Fs, E, b);
+//
+//    // build augmented hessian
+//    SymmetricBlockMatrix augmentedHessian = //
+//        Cameras::SchurComplement(Fs, E, b, lambda, diagonalDamping);
+//
+//    return boost::make_shared<RegularHessianFactor<Dim> >(this->keys_,
+//                                                                augmentedHessian);
+    return boost::make_shared<RegularHessianFactor<Dim> >(this->keys_,
+                                                                      Gs, gs, 0.0);
+  }
 
  private:
   /// Serialization function
