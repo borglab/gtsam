@@ -146,13 +146,14 @@ public:
      * Fixed size version
      */
     template<int N, int ND> // N = 2 or 3, ND is the camera dimension
-    static SymmetricBlockMatrix SchurComplement(const FBlocks& Fs,
+    static SymmetricBlockMatrix SchurComplement(
+        const std::vector< Eigen::Matrix<double, ZDim, ND>, Eigen::aligned_allocator< Eigen::Matrix<double, ZDim, ND> > >& Fs,
         const Matrix& E, const Eigen::Matrix<double, N, N>& P, const Vector& b) {
 
       // a single point is observed in m cameras
       size_t m = Fs.size();
 
-      // Create a SymmetricBlockMatrix
+      // Create a SymmetricBlockMatrix (augmented hessian, with extra row/column with info vector)
       size_t M1 = ND * m + 1;
       std::vector<DenseIndex> dims(m + 1); // this also includes the b term
       std::fill(dims.begin(), dims.end() - 1, ND);
@@ -162,7 +163,7 @@ public:
       // Blockwise Schur complement
       for (size_t i = 0; i < m; i++) { // for each camera
 
-        const MatrixZD& Fi = Fs[i];
+        const Eigen::Matrix<double, ZDim, ND>& Fi = Fs[i];
         const auto FiT = Fi.transpose();
         const Eigen::Matrix<double, ZDim, N> Ei_P = //
             E.block(ZDim * i, 0, ZDim, N) * P;
@@ -177,7 +178,7 @@ public:
 
         // upper triangular part of the hessian
         for (size_t j = i + 1; j < m; j++) { // for each camera
-          const MatrixZD& Fj = Fs[j];
+          const Eigen::Matrix<double, ZDim, ND>& Fj = Fs[j];
 
           // (DxD) = (Dx2) * ( (2x2) * (2xD) )
           augmentedHessian.setOffDiagonalBlock(i, j, -FiT

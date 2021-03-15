@@ -181,7 +181,14 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
       const Values& values, const double lambda = 0.0,  bool diagonalDamping =
           false) const {
 
-    size_t numKeys = this->keys_.size();
+    KeyVector allKeys; // includes body poses and *unique* extrinsic poses
+    allKeys.insert(allKeys.end(), this->keys_.begin(), this->keys_.end());
+    KeyVector sorted_body_P_cam_keys(body_P_cam_keys_); // make a copy that we can edit
+    std::sort(sorted_body_P_cam_keys.begin(), sorted_body_P_cam_keys.end()); // required by unique
+    std::unique(sorted_body_P_cam_keys.begin(), sorted_body_P_cam_keys.end());
+    allKeys.insert(allKeys.end(), sorted_body_P_cam_keys.begin(), sorted_body_P_cam_keys.end());
+    size_t numKeys = allKeys.size();
+
     // Create structures for Hessian Factors
     KeyVector js;
     std::vector<Matrix> Gs(numKeys * (numKeys + 1) / 2);
@@ -202,7 +209,7 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
         m = Matrix::Zero(Dim,Dim);
       for(Vector& v: gs)
         v = Vector::Zero(Dim);
-      return boost::make_shared<RegularHessianFactor<Dim> >(this->keys_,
+      return boost::make_shared<RegularHessianFactor<Dim> >(allKeys,
                                                                   Gs, gs, 0.0);
     }
 
@@ -214,17 +221,22 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
     computeJacobiansWithTriangulatedPoint(Fs, E, b, values);
     std::cout << "Fs.at(0) \n"<< Fs.at(0) << std::endl;
 
-//    // Whiten using noise model
-//    Base::whitenJacobians(Fs, E, b);
-//
-//    // build augmented hessian
-//    SymmetricBlockMatrix augmentedHessian = //
-//        Cameras::SchurComplement(Fs, E, b, lambda, diagonalDamping);
-//
-//    return boost::make_shared<RegularHessianFactor<Dim> >(this->keys_,
-//                                                                augmentedHessian);
-    return boost::make_shared<RegularHessianFactor<Dim> >(this->keys_,
-                                                                      Gs, gs, 0.0);
+    std::cout << "Dim "<< Dim << std::endl;
+    std::cout << "numKeys "<< numKeys << std::endl;
+
+    // Whiten using noise model
+    noiseModel_->WhitenSystem(E, b);
+    for (size_t i = 0; i < Fs.size(); i++)
+      Fs[i] = noiseModel_->Whiten(Fs[i]);
+
+    // build augmented hessian
+    Matrix3 P;
+    Cameras::ComputePointCovariance<3>(P, E, lambda, diagonalDamping);
+    SymmetricBlockMatrix augmentedHessian = //
+        Cameras::SchurComplement<3,Dim>(Fs, E, P, b);
+
+    return boost::make_shared<RegularHessianFactor<Dim> >(allKeys,
+                                                                augmentedHessian);
   }
 
   /**
