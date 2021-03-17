@@ -12,6 +12,7 @@ jobs:
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
       GTSAM_BUILD_UNSTABLE: ON
+      BOOST_VERSION: 1.67.0
 
     strategy:
       fail-fast: false
@@ -56,7 +57,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@master
+        uses: actions/checkout@v2
 
       - name: Install (Linux)
         if: runner.os == 'Linux'
@@ -69,10 +70,7 @@ jobs:
           fi
           sudo apt-get -y update
 
-          sudo apt install cmake build-essential pkg-config libpython-dev python-numpy
-
-          echo "BOOST_ROOT=$(echo $BOOST_ROOT_1_72_0)" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH=$(echo $BOOST_ROOT_1_72_0/lib)" >> $GITHUB_ENV
+          sudo apt install cmake build-essential pkg-config libpython-dev python-numpy libicu-dev
 
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
             sudo apt-get install -y g++-${{ matrix.version }} g++-${{ matrix.version }}-multilib
@@ -83,6 +81,11 @@ jobs:
             echo "CC=clang-${{ matrix.version }}" >> $GITHUB_ENV
             echo "CXX=clang++-${{ matrix.version }}" >> $GITHUB_ENV
           fi
+
+      - name: Install Boost
+        if: runner.os == 'Linux'
+        run: |
+          bash .github/scripts/boost.sh
 
       - name: Install (macOS)
         if: runner.os == 'macOS'
