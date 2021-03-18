@@ -52,6 +52,7 @@ jobs:
             compiler: clang
             version: "9"
             build_type: Debug
+            python_version: "3"
 
           - name: macOS-10.15-xcode-11.3.1
             os: macOS-10.15
