@@ -26,6 +26,7 @@ jobs:
           # ubuntu-18.04-gcc-5-tbb,
         ]
 
+        #TODO update wrapper to prevent OOM
         # build_type: [Debug, Release]
         build_type: [Release]
         python_version: [3]
@@ -44,6 +45,13 @@ jobs:
             os: ubuntu-18.04
             compiler: clang
             version: "9"
+
+          #NOTE temporarily added this as it is a required check.
+          - name: ubuntu-18.04-clang-9
+            os: ubuntu-18.04
+            compiler: clang
+            version: "9"
+            build_type: Debug
 
           - name: macOS-10.15-xcode-11.3.1
             os: macOS-10.15
