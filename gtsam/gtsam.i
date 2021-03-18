@@ -1037,8 +1037,8 @@ class Similarity3 {
   Similarity3(const Matrix& T);
 
   gtsam::Pose3 transformFrom(const gtsam::Pose3& T);
-  static Similarity3 Align(const gtsam::Point3Pairs & abPointPairs);
-  static Similarity3 Align(const gtsam::Pose3Pairs & abPosePairs);
+  static gtsam::Similarity3 Align(const gtsam::Point3Pairs & abPointPairs);
+  static gtsam::Similarity3 Align(const gtsam::Pose3Pairs & abPosePairs);
 
   // Standard Interface
   const Matrix matrix() const;
