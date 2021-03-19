@@ -37,6 +37,8 @@ LevenbergMarquardtParams::VerbosityLM LevenbergMarquardtParams::verbosityLMTrans
     return LevenbergMarquardtParams::SILENT;
   if (s == "SUMMARY")
     return LevenbergMarquardtParams::SUMMARY;
+  if (s == "TERMINATION")
+    return LevenbergMarquardtParams::TERMINATION;
   if (s == "LAMBDA")
     return LevenbergMarquardtParams::LAMBDA;
   if (s == "TRYLAMBDA")
