@@ -38,6 +38,32 @@ struct traits<TestPartialPriorFactor> : public Testable<TestPartialPriorFactor> 
 };
 }
 
+
+/* ************************************************************************* */
+TEST(PartialPriorFactor, JacobianAtIdentity)
+{
+  Key poseKey(1);
+  Pose3 measurement = Pose3::identity();
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(1, 0.25);
+
+  TestPartialPriorFactor factor(poseKey, kIndexTy, measurement.translation().x(), model);
+
+  // Create a linearization point at the zero-error point
+  Pose3 pose = Pose3::identity();
+
+  // Calculate numerical derivatives.
+  Matrix expectedH1 = numericalDerivative11<Vector, Pose3>(
+      boost::bind(&TestPartialPriorFactor::evaluateError, &factor, _1, boost::none), pose);
+
+  // Use the factor to calculate the derivative.
+  Matrix actualH1;
+  factor.evaluateError(pose, actualH1);
+
+  // Verify we get the expected error.
+  CHECK(assert_equal(expectedH1, actualH1, 1e-5));
+}
+
+
 /* ************************************************************************* */
 TEST(PartialPriorFactor, JacobianPartialTranslation) {
   Key poseKey(1);
