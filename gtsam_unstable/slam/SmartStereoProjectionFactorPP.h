@@ -195,6 +195,9 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
     std::vector<Vector> gs(numKeys);
 
     std::cout <<"using my hessian!!!!!!!!!!1" << std::endl;
+    for(size_t i=0; i<numKeys;i++){
+      std::cout <<"key: " << DefaultKeyFormatter(allKeys[i]) << std::endl;
+    }
 
     if (this->measured_.size() != cameras(values).size())
       throw std::runtime_error("SmartStereoProjectionHessianFactor: this->"
@@ -235,8 +238,13 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
     SymmetricBlockMatrix augmentedHessian = //
         Cameras::SchurComplement<3,Dim>(Fs, E, P, b);
 
+    std::vector<DenseIndex> dims(numKeys + 1); // this also includes the b term
+    std::fill(dims.begin(), dims.end() - 1, 6);
+    dims.back() = 1;
+    SymmetricBlockMatrix augmentedHessianPP(dims, augmentedHessian.full());
+
     return boost::make_shared<RegularHessianFactor<Dim> >(allKeys,
-                                                                augmentedHessian);
+                                                          augmentedHessianPP);
   }
 
   /**
