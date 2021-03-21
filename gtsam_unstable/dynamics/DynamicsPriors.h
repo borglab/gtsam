@@ -50,16 +50,7 @@ struct DRollPrior : public gtsam::PartialPriorFactor<PoseRTV> {
 struct VelocityPrior : public gtsam::PartialPriorFactor<PoseRTV> {
   typedef gtsam::PartialPriorFactor<PoseRTV> Base;
   VelocityPrior(Key key, const gtsam::Vector& vel, const gtsam::SharedNoiseModel& model)
-  : Base(key, model) {
-    this->prior_ = vel;
-    assert(vel.size() == 3);
-    this->mask_.resize(3);
-    this->mask_[0] = 6;
-    this->mask_[1] = 7;
-    this->mask_[2] = 8;
-    this->H_ = Matrix::Zero(3, 9);
-    this->fillH();
-  }
+      : Base(key, {6, 7, 8}, vel, model) {}
 };
 
 /**
@@ -74,31 +65,14 @@ struct DGroundConstraint : public gtsam::PartialPriorFactor<PoseRTV> {
    * Primary constructor allows for variable height of the "floor"
    */
   DGroundConstraint(Key key, double height, const gtsam::SharedNoiseModel& model)
-  : Base(key, model) {
-    this->prior_ = Vector::Unit(4,0)*height; // [z, vz, roll, pitch]
-    this->mask_.resize(4);
-    this->mask_[0] = 5; // z = height
-    this->mask_[1] = 8; // vz
-    this->mask_[2] = 0; // roll
-    this->mask_[3] = 1; // pitch
-    this->H_ = Matrix::Zero(3, 9);
-    this->fillH();
-  }
+      : Base(key, {5, 8, 0, 1}, Vector::Unit(4,0)*height, model) {}
 
   /**
    * Fully specify vector - use only for debugging
    */
   DGroundConstraint(Key key, const Vector& constraint, const gtsam::SharedNoiseModel& model)
-  : Base(key, model) {
+  : Base(key, {5, 8, 0, 1}, constraint, model) {
     assert(constraint.size() == 4);
-    this->prior_ = constraint; // [z, vz, roll, pitch]
-    this->mask_.resize(4);
-    this->mask_[0] = 5; // z = height
-    this->mask_[1] = 8; // vz
-    this->mask_[2] = 0; // roll
-    this->mask_[3] = 1; // pitch
-    this->H_ = Matrix::Zero(3, 9);
-    this->fillH();
   }
 };
 
