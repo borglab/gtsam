@@ -103,11 +103,11 @@ double SmartStereoProjectionFactorPP::error(const Values& values) const {
 
 SmartStereoProjectionFactorPP::Base::Cameras
 SmartStereoProjectionFactorPP::cameras(const Values& values) const {
-  assert(keys_.size() == K_all_.size());
-  assert(keys_.size() == body_P_cam_keys_.size());
+  assert(w_P_body_keys_.size() == K_all_.size());
+  assert(w_P_body_keys_.size() == body_P_cam_keys_.size());
   Base::Cameras cameras;
-  for (size_t i = 0; i < keys_.size(); i++) {
-    Pose3 w_P_body = values.at<Pose3>(keys_[i]);
+  for (size_t i = 0; i < w_P_body_keys_.size(); i++) {
+    Pose3 w_P_body = values.at<Pose3>(w_P_body_keys_[i]);
     Pose3 body_P_cam = values.at<Pose3>(body_P_cam_keys_[i]);
     Pose3 w_P_cam = w_P_body.compose(body_P_cam);
     cameras.push_back(StereoCamera(w_P_cam, K_all_[i]));
