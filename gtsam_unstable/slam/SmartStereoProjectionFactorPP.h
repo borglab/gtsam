@@ -43,6 +43,9 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
   /// shared pointer to calibration object (one for each camera)
   std::vector<boost::shared_ptr<Cal3_S2Stereo>> K_all_;
 
+  /// The keys corresponding to the pose of the body for each view
+  KeyVector w_P_body_keys_;
+
   /// The keys corresponding to the extrinsic pose calibration for each view
   KeyVector body_P_cam_keys_;
 
@@ -59,6 +62,7 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
   typedef boost::shared_ptr<This> shared_ptr;
 
   static const int Dim = 12; ///< Camera dimension
+  static const int DimPose = 6; ///< Camera dimension
   static const int ZDim = 3; ///< Measurement dimension
   typedef Eigen::Matrix<double, ZDim, Dim> MatrixZD; // F blocks (derivatives wrpt camera)
   typedef std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD> > FBlocks; // vector of F blocks
@@ -154,39 +158,46 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
     if (!result_) {
       throw ("computeJacobiansWithTriangulatedPoint");
     } else {
+      size_t numViews = measured_.size();
+      E = Matrix::Zero(3*numViews,3); // a StereoPoint2 for each view
+      b = Vector::Zero(3*numViews); // a StereoPoint2 for each view
       // valid result: compute jacobians
-      Matrix H0,H1,H3,H02;
-      for (size_t i = 0; i < keys_.size(); i++) { // for each camera/measurement
-        Pose3 w_P_body = values.at<Pose3>(keys_.at(i));
+      Matrix dPoseCam_dPoseBody,dPoseCam_dPoseExt, dProject_dPoseCam,Ei;
+
+      for (size_t i = 0; i < numViews; i++) { // for each camera/measurement
+        Pose3 w_P_body = values.at<Pose3>(w_P_body_keys_.at(i));
         Pose3 body_P_cam = values.at<Pose3>(body_P_cam_keys_.at(i));
-        StereoCamera camera(w_P_body.compose(body_P_cam, H0, H02), K_all_[i]);
-        StereoPoint2 reprojectionError = StereoPoint2(camera.project(*result_, H1, H3) - measured_.at(i));
-        std::cout << "H0 \n" << H0 << std::endl;
-        std::cout << "H1 \n" << H1 << std::endl;
-        std::cout << "H3 \n" << H3 << std::endl;
-        std::cout << "H02 \n" << H02 << std::endl;
+        StereoCamera camera(w_P_body.compose(body_P_cam, dPoseCam_dPoseBody, dPoseCam_dPoseExt), K_all_[i]);
+        StereoPoint2 reprojectionError = StereoPoint2(camera.project(*result_, dProject_dPoseCam, Ei) - measured_.at(i));
+        std::cout << "H0 \n" << dPoseCam_dPoseBody << std::endl;
+        std::cout << "H1 \n" << dProject_dPoseCam << std::endl;
+        std::cout << "H3 \n" << Ei << std::endl;
+        std::cout << "H02 \n" << dPoseCam_dPoseExt << std::endl;
         Eigen::Matrix<double, ZDim, Dim> J; // 3 x 12
-        std::cout << "H1 * H0 \n" << H1 * H0 << std::endl;
-        std::cout << "H1 * H02 \n" << H1 * H02 << std::endl;
-        J.block<ZDim,6>(0,0) = H1 * H0; // (3x6) * (6x6)
-        J.block<ZDim,6>(0,6) = H1 * H02; // (3x6) * (6x6)
+        std::cout << "H1 * H0 \n" << dProject_dPoseCam * dPoseCam_dPoseBody << std::endl;
+        std::cout << "H1 * H02 \n" << dProject_dPoseCam * dPoseCam_dPoseExt << std::endl;
+        J.block<ZDim,6>(0,0) = dProject_dPoseCam * dPoseCam_dPoseBody; // (3x6) * (6x6)
+        J.block<ZDim,6>(0,6) = dProject_dPoseCam * dPoseCam_dPoseExt; // (3x6) * (6x6)
         std::cout << "J \n" << J << std::endl;
         Fs.push_back(J);
+        size_t row = 3*i;
+        b.segment<ZDim>(row) = - reprojectionError.vector();
+        E.block<3,3>(row,0) = Ei;
       }
     }
   }
 
   /// linearize returns a Hessianfactor that is an approximation of error(p)
-  boost::shared_ptr<RegularHessianFactor<Dim> > createHessianFactor(
+  boost::shared_ptr<RegularHessianFactor<DimPose> > createHessianFactor(
       const Values& values, const double lambda = 0.0,  bool diagonalDamping =
           false) const {
 
     KeyVector allKeys; // includes body poses and *unique* extrinsic poses
-    allKeys.insert(allKeys.end(), this->keys_.begin(), this->keys_.end());
-    KeyVector sorted_body_P_cam_keys(body_P_cam_keys_); // make a copy that we can edit
-    std::sort(sorted_body_P_cam_keys.begin(), sorted_body_P_cam_keys.end()); // required by unique
-    std::unique(sorted_body_P_cam_keys.begin(), sorted_body_P_cam_keys.end());
-    allKeys.insert(allKeys.end(), sorted_body_P_cam_keys.begin(), sorted_body_P_cam_keys.end());
+    allKeys.insert(allKeys.end(), keys_.begin(), keys_.end());
+//    KeyVector sorted_body_P_cam_keys(body_P_cam_keys_); // make a copy that we can edit
+//    std::sort(sorted_body_P_cam_keys.begin(), sorted_body_P_cam_keys.end()); // required by unique
+//    std::unique(sorted_body_P_cam_keys.begin(), sorted_body_P_cam_keys.end());
+//    allKeys.insert(allKeys.end(), sorted_body_P_cam_keys.begin(), sorted_body_P_cam_keys.end());
     size_t numKeys = allKeys.size();
 
     // Create structures for Hessian Factors
@@ -209,10 +220,10 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
     if (params_.degeneracyMode == ZERO_ON_DEGENERACY && !result_) {
       // failed: return"empty" Hessian
       for(Matrix& m: Gs)
-        m = Matrix::Zero(Dim,Dim);
+        m = Matrix::Zero(DimPose,DimPose);
       for(Vector& v: gs)
-        v = Vector::Zero(Dim);
-      return boost::make_shared<RegularHessianFactor<Dim> >(allKeys,
+        v = Vector::Zero(DimPose);
+      return boost::make_shared<RegularHessianFactor<DimPose> >(allKeys,
                                                                   Gs, gs, 0.0);
     }
 
@@ -227,23 +238,38 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
     std::cout << "Dim "<< Dim << std::endl;
     std::cout << "numKeys "<< numKeys << std::endl;
 
+    std::cout << "Fs.size()  = " << Fs.size() << std::endl;
+    std::cout << "E  = " << E << std::endl;
+    std::cout << "b  = " << b << std::endl;
+
     // Whiten using noise model
+    std::cout << "noise model1  \n " << std::endl;
     noiseModel_->WhitenSystem(E, b);
+    std::cout << "noise model2  \n " << std::endl;
     for (size_t i = 0; i < Fs.size(); i++)
       Fs[i] = noiseModel_->Whiten(Fs[i]);
 
+    std::cout << "noise model3  \n " << std::endl;
     // build augmented hessian
     Matrix3 P;
     Cameras::ComputePointCovariance<3>(P, E, lambda, diagonalDamping);
+
+    std::cout << "ComputePointCovariance done!!!  \n " << std::endl;
+    std::cout << "Fs.size()  = " << Fs.size() << std::endl;
+    std::cout << "E  = " << E << std::endl;
+    std::cout << "P  = " << P << std::endl;
+    std::cout << "b  = " << b << std::endl;
     SymmetricBlockMatrix augmentedHessian = //
         Cameras::SchurComplement<3,Dim>(Fs, E, P, b);
+
+    std::cout << "Repackaging!!!  \n " << std::endl;
 
     std::vector<DenseIndex> dims(numKeys + 1); // this also includes the b term
     std::fill(dims.begin(), dims.end() - 1, 6);
     dims.back() = 1;
-    SymmetricBlockMatrix augmentedHessianPP(dims, augmentedHessian.full());
+    SymmetricBlockMatrix augmentedHessianPP(dims, Matrix(augmentedHessian.selfadjointView()));
 
-    return boost::make_shared<RegularHessianFactor<Dim> >(allKeys,
+    return boost::make_shared<RegularHessianFactor<DimPose> >(allKeys,
                                                           augmentedHessianPP);
   }
 

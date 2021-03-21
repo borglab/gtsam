@@ -32,7 +32,10 @@ void SmartStereoProjectionFactorPP::add(
   // we index by cameras..
   Base::add(measured, w_P_body_key);
   // but we also store the extrinsic calibration keys in the same order
+  w_P_body_keys_.push_back(w_P_body_key);
   body_P_cam_keys_.push_back(body_P_cam_key);
+
+  keys_.push_back(body_P_cam_key);
   K_all_.push_back(K);
 }
 
@@ -43,11 +46,15 @@ void SmartStereoProjectionFactorPP::add(
   assert(measurements.size() == poseKeys.size());
   assert(w_P_body_keys.size() == body_P_cam_keys.size());
   assert(w_P_body_keys.size() == Ks.size());
-  // we index by cameras..
-  Base::add(measurements, w_P_body_keys);
-  // but we also store the extrinsic calibration keys in the same order
-  body_P_cam_keys_.insert(body_P_cam_keys_.end(), body_P_cam_keys.begin(), body_P_cam_keys.end());
-  K_all_.insert(K_all_.end(), Ks.begin(), Ks.end());
+  for (size_t i = 0; i < measurements.size(); i++) {
+      Base::add(measurements[i], w_P_body_keys[i]);
+      keys_.push_back(body_P_cam_keys[i]);
+
+      w_P_body_keys_.push_back(w_P_body_keys[i]);
+      body_P_cam_keys_.push_back(body_P_cam_keys[i]);
+
+      K_all_.push_back(Ks[i]);
+    }
 }
 
 void SmartStereoProjectionFactorPP::add(
@@ -58,16 +65,21 @@ void SmartStereoProjectionFactorPP::add(
   assert(w_P_body_keys.size() == body_P_cam_keys.size());
   for (size_t i = 0; i < measurements.size(); i++) {
     Base::add(measurements[i], w_P_body_keys[i]);
+    keys_.push_back(body_P_cam_keys[i]);
+
+    w_P_body_keys_.push_back(w_P_body_keys[i]);
     body_P_cam_keys_.push_back(body_P_cam_keys[i]);
+
     K_all_.push_back(K);
   }
 }
+
 void SmartStereoProjectionFactorPP::print(
     const std::string& s, const KeyFormatter& keyFormatter) const {
   std::cout << s << "SmartStereoProjectionFactorPP, z = \n ";
   for (size_t i = 0; i < K_all_.size(); i++) {
     K_all_[i]->print("calibration = ");
-    std::cout << " extrinsic pose key: " << keyFormatter(body_P_cam_keys_[i]);
+    std::cout << " extrinsic pose key: " << keyFormatter(body_P_cam_keys_[i]) << std::endl;
   }
   Base::print("", keyFormatter);
 }
