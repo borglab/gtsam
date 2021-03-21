@@ -18,6 +18,7 @@
 
 #include <gtsam/slam/tests/smartFactorScenarios.h>
 #include <gtsam_unstable/slam/SmartStereoProjectionFactorPP.h>
+#include <gtsam_unstable/slam/ProjectionFactorPPP.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/slam/PoseTranslationPrior.h>
 #include <gtsam/slam/ProjectionFactor.h>
@@ -455,76 +456,76 @@ TEST( SmartStereoProjectionFactorPP, 3poses_smart_projection_factor ) {
               Point3(0.1, -0.1, 1.9)), values.at<Pose3>(x3) * values.at<Pose3>(body_P_cam3_key)));
 
   //  cout << std::setprecision(10) << "\n----SmartStereoFactor graph initial error: " << graph.error(values) << endl;
-  EXPECT_DOUBLES_EQUAL(833953.92789459578, graph.error(values), 1e-7); // initial error
+  EXPECT_DOUBLES_EQUAL(833953.92789459578, graph.error(values), 1e-7); // initial error (note  - this also matches error below)
 
   // get triangulated landmarks from smart factors
   Point3 landmark1_smart = *smartFactor1->point();
   Point3 landmark2_smart = *smartFactor2->point();
   Point3 landmark3_smart = *smartFactor3->point();
 
+  // cost is large before optimization
+  EXPECT_DOUBLES_EQUAL(833953.92789459461, graph.error(values), 1e-5);
+
   Values result;
   gttic_(SmartStereoProjectionFactorPP);
-  graph.print("/n ==== /n");
-//  LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
-//  result = optimizer.optimize();
-//  gttoc_(SmartStereoProjectionFactorPP);
-//  tictoc_finishedIteration_();
-//
-//  //  cout << std::setprecision(10) << "SmartStereoFactor graph optimized error: " << graph.error(result) << endl;
-//  EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-5);
+  LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
+  result = optimizer.optimize();
+  gttoc_(SmartStereoProjectionFactorPP);
+  tictoc_finishedIteration_();
 
-//  GaussianFactorGraph::shared_ptr GFG = graph.linearize(result);
-//  VectorValues delta = GFG->optimize();
-//  VectorValues expected = VectorValues::Zero(delta);
-//  EXPECT(assert_equal(expected, delta, 1e-6));
-//
-//  // result.print("results of 3 camera, 3 landmark optimization \n");
-//  EXPECT(assert_equal(w_Pose_cam3, result.at<Pose3>(x3)));
-//
-//  // ***************************************************************
-//  // Same problem with regular Stereo factors, expect same error!
-//  // ****************************************************************
-//
-////  landmark1_smart.print("landmark1_smart");
-////  landmark2_smart.print("landmark2_smart");
-////  landmark3_smart.print("landmark3_smart");
-//
-//  // add landmarks to values
-//  values.insert(L(1), landmark1_smart);
-//  values.insert(L(2), landmark2_smart);
-//  values.insert(L(3), landmark3_smart);
-//
-//  // add factors
-//  NonlinearFactorGraph graph2;
-//
-//  graph2.addPrior(x1, w_Pose_cam1, noisePrior);
-//  graph2.addPrior(x2, w_Pose_cam2, noisePrior);
-//
-//  typedef GenericStereoFactor<Pose3, Point3> ProjectionFactor;
-//
-//  bool verboseCheirality = true;
-//
-//  graph2.push_back(ProjectionFactor(measurements_l1[0], model, x1, L(1), K2, false, verboseCheirality));
-//  graph2.push_back(ProjectionFactor(measurements_l1[1], model, x2, L(1), K2, false, verboseCheirality));
-//  graph2.push_back(ProjectionFactor(measurements_l1[2], model, x3, L(1), K2, false, verboseCheirality));
-//
-//  graph2.push_back(ProjectionFactor(measurements_l2[0], model, x1, L(2), K2, false, verboseCheirality));
-//  graph2.push_back(ProjectionFactor(measurements_l2[1], model, x2, L(2), K2, false, verboseCheirality));
-//  graph2.push_back(ProjectionFactor(measurements_l2[2], model, x3, L(2), K2, false, verboseCheirality));
-//
-//  graph2.push_back(ProjectionFactor(measurements_l3[0], model, x1, L(3), K2, false, verboseCheirality));
-//  graph2.push_back(ProjectionFactor(measurements_l3[1], model, x2, L(3), K2, false, verboseCheirality));
-//  graph2.push_back(ProjectionFactor(measurements_l3[2], model, x3, L(3), K2, false, verboseCheirality));
-//
-////  cout << std::setprecision(10) << "\n----StereoFactor graph initial error: " << graph2.error(values) << endl;
-//  EXPECT_DOUBLES_EQUAL(833953.92789459578, graph2.error(values), 1e-7);
-//
-//  LevenbergMarquardtOptimizer optimizer2(graph2, values, lm_params);
-//  Values result2 = optimizer2.optimize();
-//  EXPECT_DOUBLES_EQUAL(0, graph2.error(result2), 1e-5);
-//
-////  cout << std::setprecision(10) << "StereoFactor graph optimized error: " << graph2.error(result2) << endl;
+  //  cout << std::setprecision(10) << "SmartStereoFactor graph optimized error: " << graph.error(result) << endl;
+  EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-5);
 
+  GaussianFactorGraph::shared_ptr GFG = graph.linearize(result);
+  VectorValues delta = GFG->optimize();
+  VectorValues expected = VectorValues::Zero(delta);
+  EXPECT(assert_equal(expected, delta, 1e-6));
+
+  // result.print("results of 3 camera, 3 landmark optimization \n");
+  EXPECT(assert_equal(body_Pose_cam3, result.at<Pose3>(body_P_cam3_key)));
+
+  // ***************************************************************
+  // Same problem with regular Stereo factors, expect same error!
+  // ****************************************************************
+
+  // add landmarks to values
+  values.insert(L(1), landmark1_smart);
+  values.insert(L(2), landmark2_smart);
+  values.insert(L(3), landmark3_smart);
+
+  // add factors
+  NonlinearFactorGraph graph2;
+  graph2.addPrior(x1, w_Pose_body1, noisePrior);
+  graph2.addPrior(x2, w_Pose_body2, noisePrior);
+  graph2.addPrior(x3, w_Pose_body3, noisePrior);
+  // we might need some prior on the calibration too
+  graph2.addPrior(body_P_cam1_key, body_Pose_cam1, noisePrior);
+  graph2.addPrior(body_P_cam2_key, body_Pose_cam2, noisePrior);
+
+  typedef ProjectionFactorPPP<Pose3, Point3, Cal3_S2Stereo> ProjectionFactorPPP;
+
+  bool verboseCheirality = true;
+
+  graph2.push_back(ProjectionFactorPPP(measurements_l1[0], model, x1, body_P_cam1_key, L(1), K2));
+  graph2.push_back(ProjectionFactorPPP(measurements_l1[1], model, x2, body_P_cam2_key, L(1), K2));
+  graph2.push_back(ProjectionFactorPPP(measurements_l1[2], model, x3, body_P_cam3_key, L(1), K2));
+
+  graph2.push_back(ProjectionFactorPPP(measurements_l2[0], model, x1, body_P_cam1_key, L(2), K2));
+  graph2.push_back(ProjectionFactorPPP(measurements_l2[1], model, x2, body_P_cam2_key, L(2), K2));
+  graph2.push_back(ProjectionFactorPPP(measurements_l2[2], model, x3, body_P_cam3_key, L(2), K2));
+
+  graph2.push_back(ProjectionFactorPPP(measurements_l3[0], model, x1, body_P_cam1_key, L(3), K2));
+  graph2.push_back(ProjectionFactorPPP(measurements_l3[1], model, x2, body_P_cam2_key, L(3), K2));
+  graph2.push_back(ProjectionFactorPPP(measurements_l3[2], model, x3, body_P_cam3_key, L(3), K2));
+
+//  cout << std::setprecision(10) << "\n----StereoFactor graph initial error: " << graph2.error(values) << endl;
+  EXPECT_DOUBLES_EQUAL(833953.92789459578, graph2.error(values), 1e-7);
+
+  LevenbergMarquardtOptimizer optimizer2(graph2, values, lm_params);
+  Values result2 = optimizer2.optimize();
+  EXPECT_DOUBLES_EQUAL(0, graph2.error(result2), 1e-5);
+
+//  cout << std::setprecision(10) << "StereoFactor graph optimized error: " << graph2.error(result2) << endl;
 }
 /* *************************************************************************
 TEST( SmartStereoProjectionFactorPP, body_P_sensor ) {
