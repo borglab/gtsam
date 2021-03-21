@@ -31,11 +31,9 @@ namespace gtsam {
    *
    * The prior vector used in this factor is stored in compressed form, such that
    * it only contains values for measurements that are to be compared, and they are in
-   * the same order as VALUE::Logmap().  The mask will determine which components to extract
-   * in the error function.
+   * the same order as VALUE::Logmap(). The provided indices will determine which components to
+   * extract in the error function.
    *
-   * For practical use, it would be good to subclass this factor and have the class type
-   * construct the mask.
    * @tparam VALUE is the type of variable the prior effects
    */
   template<class VALUE>
@@ -51,8 +49,8 @@ namespace gtsam {
     typedef NoiseModelFactor1<VALUE> Base;
     typedef PartialPriorFactor<VALUE> This;
 
-    Vector prior_;                        ///< Measurement on tangent space parameters, in compressed form.
-    std::vector<size_t> mask_;            ///< Indices of the measured tangent space parameters.
+    Vector prior_;                 ///< Measurement on tangent space parameters, in compressed form.
+    std::vector<size_t> indices_;  ///< Indices of the measured tangent space parameters.
 
     /** default constructor - only use for serialization */
     PartialPriorFactor() {}
@@ -72,7 +70,7 @@ namespace gtsam {
     PartialPriorFactor(Key key, size_t idx, double prior, const SharedNoiseModel& model) :
       Base(model, key),
       prior_((Vector(1) << prior).finished()),
-      mask_(1, idx) {
+      indices_(1, idx) {
       assert(model->dim() == 1);
     }
 
@@ -81,8 +79,8 @@ namespace gtsam {
         const SharedNoiseModel& model) :
         Base(model, key),
         prior_(prior),
-        mask_(indices) {
-      assert((size_t)prior_.size() == mask_.size());
+        indices_(indices) {
+      assert((size_t)prior_.size() == indices_.size());
       assert(model->dim() == (size_t)prior.size());
     }
 
@@ -104,7 +102,7 @@ namespace gtsam {
       const This *e = dynamic_cast<const This*> (&expected);
       return e != nullptr && Base::equals(*e, tol) &&
           gtsam::equal_with_abs_tol(this->prior_, e->prior_, tol) &&
-          this->mask_ == e->mask_;
+          this->indices_ == e->indices_;
     }
 
     /** implement functions needed to derive from Factor */
@@ -114,17 +112,17 @@ namespace gtsam {
       if (H) {
         Matrix H_logmap;
         T::Logmap(p, H_logmap);
-        (*H) = Matrix::Zero(mask_.size(), T::dimension);
-        for (size_t i = 0; i < mask_.size(); ++i) {
-          (*H).row(i) = H_logmap.row(mask_.at(i));
+        (*H) = Matrix::Zero(indices_.size(), T::dimension);
+        for (size_t i = 0; i < indices_.size(); ++i) {
+          (*H).row(i) = H_logmap.row(indices_.at(i));
         }
       }
       // FIXME: this was originally the generic retraction - may not produce same results.
-      // Compute the tangent vector representation of T, and optionally get the Jacobian.
+      // Compute the tangent vector representation of T.
       const Vector& full_logmap = T::Logmap(p);
       Vector partial_logmap = Vector::Zero(T::dimension);
-      for (size_t i = 0; i < mask_.size(); ++i) {
-        partial_logmap(i) = full_logmap(mask_.at(i));
+      for (size_t i = 0; i < indices_.size(); ++i) {
+        partial_logmap(i) = full_logmap(indices_.at(i));
       }
 
       return partial_logmap - prior_;
@@ -132,7 +130,7 @@ namespace gtsam {
 
     // access
     const Vector& prior() const { return prior_; }
-    const std::vector<size_t>& mask() const { return mask_; }
+    const std::vector<size_t>& indices() const { return indices_; }
 
   private:
     /** Serialization function */
@@ -142,7 +140,7 @@ namespace gtsam {
       ar & boost::serialization::make_nvp("NoiseModelFactor1",
           boost::serialization::base_object<Base>(*this));
       ar & BOOST_SERIALIZATION_NVP(prior_);
-      ar & BOOST_SERIALIZATION_NVP(mask_);
+      ar & BOOST_SERIALIZATION_NVP(indices_);
       // ar & BOOST_SERIALIZATION_NVP(H_);
     }
   }; // \class PartialPriorFactor
