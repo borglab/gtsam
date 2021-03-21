@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <Eigen/Core>
+
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/base/Lie.h>
 
@@ -43,16 +45,14 @@ namespace gtsam {
     typedef VALUE T;
 
   protected:
-
     // Concept checks on the variable type - currently requires Lie
     GTSAM_CONCEPT_LIE_TYPE(VALUE)
 
     typedef NoiseModelFactor1<VALUE> Base;
     typedef PartialPriorFactor<VALUE> This;
 
-    Vector prior_;             ///< measurement on tangent space parameters, in compressed form
-    std::vector<size_t> mask_; ///< indices of values to constrain in compressed prior vector
-    Matrix H_;                  ///< Constant Jacobian - computed at creation
+    Vector prior_;                        ///< Measurement on tangent space parameters, in compressed form.
+    std::vector<size_t> mask_;            ///< Indices of the measured tangent space parameters.
 
     /** default constructor - only use for serialization */
     PartialPriorFactor() {}
@@ -68,20 +68,22 @@ namespace gtsam {
 
     ~PartialPriorFactor() override {}
 
-    /** Single Element Constructor: acts on a single parameter specified by idx */
+    /** Single Element Constructor: Prior on a single parameter at index 'idx' in the tangent vector.*/
     PartialPriorFactor(Key key, size_t idx, double prior, const SharedNoiseModel& model) :
-      Base(model, key), prior_((Vector(1) << prior).finished()), mask_(1, idx), H_(Matrix::Zero(1, T::dimension)) {
+      Base(model, key),
+      prior_((Vector(1) << prior).finished()),
+      mask_(1, idx) {
       assert(model->dim() == 1);
-      this->fillH();
     }
 
-    /** Indices Constructor: specify the mask with a set of indices */
-    PartialPriorFactor(Key key, const std::vector<size_t>& mask, const Vector& prior,
+    /** Indices Constructor: Specify the relevant measured indices in the tangent vector.*/
+    PartialPriorFactor(Key key, const std::vector<size_t>& indices, const Vector& prior,
         const SharedNoiseModel& model) :
-      Base(model, key), prior_(prior), mask_(mask), H_(Matrix::Zero(mask.size(), T::dimension)) {
-      assert((size_t)prior_.size() == mask.size());
-      assert(model->dim() == (size_t) prior.size());
-      this->fillH();
+        Base(model, key),
+        prior_(prior),
+        mask_(indices) {
+      assert((size_t)prior_.size() == mask_.size());
+      assert(model->dim() == (size_t)prior.size());
     }
 
     /// @return a deep copy of this factor
@@ -107,30 +109,30 @@ namespace gtsam {
 
     /** implement functions needed to derive from Factor */
 
-    /** vector of errors */
+    /** Returns a vector of errors for the measured tangent parameters.  */
     Vector evaluateError(const T& p, boost::optional<Matrix&> H = boost::none) const override {
-      if (H) (*H) = H_;
-      // FIXME: this was originally the generic retraction - may not produce same results
-      Vector full_logmap = T::Logmap(p);
-//      Vector full_logmap = T::identity().localCoordinates(p); // Alternate implementation
-      Vector masked_logmap = Vector::Zero(this->dim());
-      for (size_t i=0; i<mask_.size(); ++i)
-        masked_logmap(i) = full_logmap(mask_[i]);
-      return masked_logmap - prior_;
+      if (H) {
+        Matrix H_logmap;
+        T::Logmap(p, H_logmap);
+        (*H) = Matrix::Zero(mask_.size(), T::dimension);
+        for (size_t i = 0; i < mask_.size(); ++i) {
+          (*H).row(i) = H_logmap.row(mask_.at(i));
+        }
+      }
+      // FIXME: this was originally the generic retraction - may not produce same results.
+      // Compute the tangent vector representation of T, and optionally get the Jacobian.
+      const Vector& full_logmap = T::Logmap(p);
+      Vector partial_logmap = Vector::Zero(T::dimension);
+      for (size_t i = 0; i < mask_.size(); ++i) {
+        partial_logmap(i) = full_logmap(mask_.at(i));
+      }
+
+      return partial_logmap - prior_;
     }
 
     // access
     const Vector& prior() const { return prior_; }
-    const std::vector<size_t>& mask() const { return  mask_; }
-    const Matrix& H() const { return H_; }
-
-  protected:
-
-    /** Constructs the jacobian matrix in place */
-    void fillH() {
-      for (size_t i=0; i<mask_.size(); ++i)
-        H_(i, mask_[i]) = 1.0;
-    }
+    const std::vector<size_t>& mask() const { return mask_; }
 
   private:
     /** Serialization function */
@@ -141,7 +143,7 @@ namespace gtsam {
           boost::serialization::base_object<Base>(*this));
       ar & BOOST_SERIALIZATION_NVP(prior_);
       ar & BOOST_SERIALIZATION_NVP(mask_);
-      ar & BOOST_SERIALIZATION_NVP(H_);
+      // ar & BOOST_SERIALIZATION_NVP(H_);
     }
   }; // \class PartialPriorFactor
 
