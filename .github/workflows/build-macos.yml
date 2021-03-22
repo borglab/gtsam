@@ -12,6 +12,7 @@ jobs:
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
       GTSAM_BUILD_UNSTABLE: ${{ matrix.build_unstable }}
+
     strategy:
       fail-fast: false
       matrix:
@@ -31,7 +32,8 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@master
+        uses: actions/checkout@v2
+
       - name: Install (macOS)
         if: runner.os == 'macOS'
         run: |
