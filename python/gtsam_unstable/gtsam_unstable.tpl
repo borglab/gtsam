@@ -22,7 +22,7 @@
 
 {boost_class_export}
 
-{hoder_type}
+{holder_type}
 
 #include "python/gtsam_unstable/preamble.h"
 

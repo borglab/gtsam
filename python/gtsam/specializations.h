@@ -6,6 +6,8 @@ py::bind_vector<std::vector<gtsam::Key, tbb::tbb_allocator<gtsam::Key> > >(m_, "
 py::bind_vector<std::vector<gtsam::Key> >(m_, "KeyVector");
 #endif
 py::bind_vector<std::vector<gtsam::Point2, Eigen::aligned_allocator<gtsam::Point2> > >(m_, "Point2Vector");
+py::bind_vector<std::vector<gtsam::Point3Pair> >(m_, "Point3Pairs");
+py::bind_vector<std::vector<gtsam::Pose3Pair> >(m_, "Pose3Pairs");
 py::bind_vector<std::vector<gtsam::Pose3> >(m_, "Pose3Vector");
 py::bind_vector<std::vector<boost::shared_ptr<gtsam::BetweenFactor<gtsam::Pose3> > > >(m_, "BetweenFactorPose3s");
 py::bind_vector<std::vector<boost::shared_ptr<gtsam::BetweenFactor<gtsam::Pose2> > > >(m_, "BetweenFactorPose2s");

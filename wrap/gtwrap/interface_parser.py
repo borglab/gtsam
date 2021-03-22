@@ -6,37 +6,43 @@ All Rights Reserved
 See LICENSE for the license information
 
 Parser to get the interface of a C++ source file
-Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar and Frank Dellaert
+Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellaert
 """
-import os
-import sys
 
-from pyparsing import (
-    alphas,
-    alphanums,
-    cppStyleComment,
-    delimitedList,
-    empty,
-    nums,
-    stringEnd,
-    CharsNotIn,
-    Forward,
-    Group,
-    Keyword,
-    Literal,
-    OneOrMore,
-    Optional,
-    Or,
-    ParseException,
-    ParserElement,
-    Suppress,
-    Word,
-    ZeroOrMore,
-)
+# pylint: disable=unnecessary-lambda, unused-import, expression-not-assigned, no-else-return, protected-access, too-few-public-methods, too-many-arguments
+
+import sys
+import typing
+
+import pyparsing
+from pyparsing import (CharsNotIn, Forward, Group, Keyword, Literal, OneOrMore,
+                       Optional, Or, ParseException, ParserElement, Suppress,
+                       Word, ZeroOrMore, alphanums, alphas, cppStyleComment,
+                       delimitedList, empty, nums, stringEnd)
+
+# Fix deepcopy issue with pyparsing
+# Can remove once https://github.com/pyparsing/pyparsing/issues/208 is resolved.
+if sys.version_info >= (3, 8):
+    def fixed_get_attr(self, item):
+        """
+        Fix for monkey-patching issue with deepcopy in pyparsing.ParseResults
+        """
+        if item == '__deepcopy__':
+            raise AttributeError(item)
+        try:
+            return self[item]
+        except KeyError:
+            return ""
+
+    # apply the monkey-patch
+    pyparsing.ParseResults.__getattr__ = fixed_get_attr
+
 
 ParserElement.enablePackrat()
 
+# rule for identifiers (e.g. variable names)
 IDENT = Word(alphas + '_', alphanums + '_') ^ Word(nums)
+
 POINTER, REF = map(Literal, "*&")
 LPAREN, RPAREN, LBRACE, RBRACE, COLON, SEMI_COLON = map(Suppress, "(){}:;")
 LOPBRACK, ROPBRACK, COMMA, EQUAL = map(Suppress, "<>,=")
@@ -70,9 +76,9 @@ BASIS_TYPES = map(
 )
 
 
-class Typename(object):
+class Typename:
     """
-    Type's name with full namespaces.
+    Type's name with full namespaces, used in Type class.
     """
 
     namespaces_name_rule = delimitedList(IDENT, "::")
@@ -86,34 +92,38 @@ class Typename(object):
         )
     ).setParseAction(lambda t: Typename(t.namespaces_name, t.instantiations))
 
-    def __init__(self, namespaces_name, instantiations=[]):
+    def __init__(self, namespaces_name, instantiations=()):
         self.namespaces = namespaces_name[:-1]
         self.name = namespaces_name[-1]
 
         if instantiations:
-            if not isinstance(instantiations, list):
+            if not isinstance(instantiations, typing.Iterable):
                 self.instantiations = instantiations.asList()
             else:
                 self.instantiations = instantiations
         else:
             self.instantiations = []
+
         if self.name in ["Matrix", "Vector"] and not self.namespaces:
             self.namespaces = ["gtsam"]
 
     @staticmethod
     def from_parse_result(parse_result):
+        """Return the typename from the parsed result."""
         return parse_result[0]
 
     def __repr__(self):
         return self.to_cpp()
 
     def instantiated_name(self):
+        """Get the instantiated name of the type."""
         res = self.name
         for instantiation in self.instantiations:
             res += instantiation.instantiated_name()
         return res
 
     def to_cpp(self):
+        """Generate the C++ code for wrapping."""
         idx = 1 if self.namespaces and not self.namespaces[0] else 0
         if self.instantiations:
             cpp_name = self.name + "<{}>".format(
@@ -140,8 +150,11 @@ class Typename(object):
         return not res
 
 
-class Type(object):
-    class _QualifiedType(object):
+class Type:
+    """
+    The type value that is parsed, e.g. void, string, size_t.
+    """
+    class _QualifiedType:
         """
         Type with qualifiers.
         """
@@ -165,7 +178,7 @@ class Type(object):
             self.is_ptr = is_ptr
             self.is_ref = is_ref
 
-    class _BasisType(object):
+    class _BasisType:
         """
         Basis types don't have qualifiers and only allow copy-by-value.
         """
@@ -185,6 +198,7 @@ class Type(object):
 
     @staticmethod
     def from_parse_result(t):
+        """Return the resulting Type from parsing the source."""
         if t.basis:
             return Type(
                 typename=t.basis,
@@ -211,6 +225,8 @@ class Type(object):
 
     def to_cpp(self, use_boost):
         """
+        Generate the C++ code for wrapping.
+
         Treat all pointers as "const shared_ptr<T>&"
         Treat Matrix and Vector as "const Matrix&" and "const Vector&" resp.
         """
@@ -237,7 +253,15 @@ class Type(object):
         )
 
 
-class Argument(object):
+class Argument:
+    """
+    The type and name of a function/method argument.
+
+    E.g.
+    ```
+    void sayHello(/*s is the method argument with type `const string&`*/ const string& s);
+    ```
+    """
     rule = (Type.rule("ctype") + IDENT("name")).setParseAction(
         lambda t: Argument(t.ctype, t.name)
     )
@@ -250,7 +274,10 @@ class Argument(object):
         return '{} {}'.format(self.ctype.__repr__(), self.name)
 
 
-class ArgumentList(object):
+class ArgumentList:
+    """
+    List of Argument objects for all arguments in a function.
+    """
     rule = Optional(delimitedList(Argument.rule)("args_list")).setParseAction(
         lambda t: ArgumentList.from_parse_result(t.args_list)
     )
@@ -262,6 +289,7 @@ class ArgumentList(object):
 
     @staticmethod
     def from_parse_result(parse_result):
+        """Return the result of parsing."""
         if parse_result:
             return ArgumentList(parse_result.asList())
         else:
@@ -271,13 +299,20 @@ class ArgumentList(object):
         return self.args_list.__repr__()
 
     def args_names(self):
+        """Return a list of the names of all the arguments."""
         return [arg.name for arg in self.args_list]
 
     def to_cpp(self, use_boost):
+        """Generate the C++ code for wrapping."""
         return [arg.ctype.to_cpp(use_boost) for arg in self.args_list]
 
 
-class ReturnType(object):
+class ReturnType:
+    """
+    Rule to parse the return type.
+
+    The return type can either be a single type or a pair such as <type1, type2>.
+    """
     _pair = (
         PAIR.suppress()
         + LOPBRACK
@@ -295,6 +330,9 @@ class ReturnType(object):
         self.type2 = type2
 
     def is_void(self):
+        """
+        Check if the return type is void.
+        """
         return self.type1.typename.name == "void" and not self.type2
 
     def __repr__(self):
@@ -303,6 +341,7 @@ class ReturnType(object):
         )
 
     def to_cpp(self):
+        """Generate the C++ code for wrapping."""
         if self.type2:
             return "std::pair<{type1},{type2}>".format(
                 type1=self.type1.to_cpp(), type2=self.type2.to_cpp()
@@ -311,8 +350,20 @@ class ReturnType(object):
             return self.type1.to_cpp()
 
 
-class Template(object):
-    class TypenameAndInstantiations(object):
+class Template:
+    """
+    Rule to parse templated values in the interface file.
+
+    E.g.
+    template<POSE>  // this is the Template.
+    class Camera { ... };
+    """
+    class TypenameAndInstantiations:
+        """
+        Rule to parse the template parameters.
+
+        template<typename POSE>  // POSE is the Instantiation.
+        """
         rule = (
             IDENT("typename")
             + Optional(
@@ -351,8 +402,21 @@ class Template(object):
         self.typenames = [ti.typename for ti in ti_list]
         self.instantiations = [ti.instantiations for ti in ti_list]
 
+    def __repr__(self):
+        return "<{0}>".format(", ".join(self.typenames))
 
-class Method(object):
+
+class Method:
+    """
+    Rule to parse a method in a class.
+
+    E.g.
+    ```
+    class Hello {
+        void sayHello() const;
+    };
+    ```
+    """
     rule = (
         Optional(Template.rule("template"))
         + ReturnType.rule("return_type")
@@ -387,7 +451,17 @@ class Method(object):
         )
 
 
-class StaticMethod(object):
+class StaticMethod:
+    """
+    Rule to parse all the static methods in a class.
+
+    E.g.
+    ```
+    class Hello {
+        static void changeGreeting();
+    };
+    ```
+    """
     rule = (
         STATIC
         + ReturnType.rule("return_type")
@@ -411,10 +485,15 @@ class StaticMethod(object):
         return "static {} {}{}".format(self.return_type, self.name, self.args)
 
     def to_cpp(self):
+        """Generate the C++ code for wrapping."""
         return self.name
 
 
-class Constructor(object):
+class Constructor:
+    """
+    Rule to parse the class constructor.
+    Can have 0 or more arguments.
+    """
     rule = (
         IDENT("name")
         + LPAREN
@@ -433,7 +512,17 @@ class Constructor(object):
         return "Constructor: {}".format(self.name)
 
 
-class Property(object):
+class Property:
+    """
+    Rule to parse the variable members of a class.
+
+    E.g.
+    ```
+    class Hello {
+        string name;  // This is a property.
+    };
+    ````
+    """
     rule = (Type.rule("ctype") + IDENT("name") + SEMI_COLON).setParseAction(
         lambda t: Property(t.ctype, t.name)
     )
@@ -441,10 +530,6 @@ class Property(object):
     def __init__(self, ctype, name, parent=''):
         self.ctype = ctype
         self.name = name
-        # Check type constraints: no pointer, no ref.
-        if self.ctype.is_ptr or self.ctype.is_ref:
-            raise ValueError("Can't deal with pointer/ref class properties.")
-
         self.parent = parent
 
     def __repr__(self):
@@ -452,6 +537,7 @@ class Property(object):
 
 
 def collect_namespaces(obj):
+    """Get the chain of namespaces from the lowest to highest for the given object."""
     namespaces = []
     ancestor = obj.parent
     while ancestor and ancestor.name:
@@ -460,8 +546,21 @@ def collect_namespaces(obj):
     return [''] + namespaces
 
 
-class Class(object):
-    class MethodsAndProperties(object):
+class Class:
+    """
+    Rule to parse a class defined in the interface file.
+
+    E.g.
+    ```
+    class Hello {
+        ...
+    };
+    ```
+    """
+    class MethodsAndProperties:
+        """
+        Rule for all the methods and properties within a class.
+        """
         rule = ZeroOrMore(
             Constructor.rule ^ StaticMethod.rule ^ Method.rule ^ Property.rule
         ).setParseAction(lambda t: Class.MethodsAndProperties(t.asList()))
@@ -549,10 +648,19 @@ class Class(object):
             _property.parent = self
 
     def namespaces(self):
+        """Get the namespaces which this class is nested under as a list."""
         return collect_namespaces(self)
 
 
-class TypedefTemplateInstantiation(object):
+class TypedefTemplateInstantiation:
+    """
+    Rule for parsing typedefs (with templates) within the interface file.
+
+    E.g.
+    ```
+    typedef SuperComplexName<Arg1, Arg2, Arg3> EasierName;
+    ```
+    """
     rule = (
         TYPEDEF + Typename.rule("typename") + IDENT("new_name") + SEMI_COLON
     ).setParseAction(
@@ -567,7 +675,10 @@ class TypedefTemplateInstantiation(object):
         self.parent = parent
 
 
-class Include(object):
+class Include:
+    """
+    Rule to parse #include directives.
+    """
     rule = (
         INCLUDE + LOPBRACK + CharsNotIn('>')("header") + ROPBRACK
     ).setParseAction(lambda t: Include(t.header))
@@ -580,7 +691,10 @@ class Include(object):
         return "#include <{}>".format(self.header)
 
 
-class ForwardDeclaration(object):
+class ForwardDeclaration:
+    """
+    Rule to parse forward declarations in the interface file.
+    """
     rule = (
         Optional(VIRTUAL("is_virtual"))
         + CLASS
@@ -606,7 +720,10 @@ class ForwardDeclaration(object):
         )
 
 
-class GlobalFunction(object):
+class GlobalFunction:
+    """
+    Rule to parse functions defined in the global scope.
+    """
     rule = (
         ReturnType.rule("return_type")
         + IDENT("name")
@@ -634,10 +751,18 @@ class GlobalFunction(object):
         )
 
     def to_cpp(self):
+        """Generate the C++ code for wrapping."""
         return self.name
 
 
 def find_sub_namespace(namespace, str_namespaces):
+    """
+    Get the namespaces nested under `namespace`, filtered by a list of namespace strings.
+
+    Args:
+        namespace: The top-level namespace under which to find sub-namespaces.
+        str_namespaces: The list of namespace strings to filter against.
+    """
     if not str_namespaces:
         return [namespace]
 
@@ -659,7 +784,8 @@ def find_sub_namespace(namespace, str_namespaces):
     return res
 
 
-class Namespace(object):
+class Namespace:
+    """Rule for parsing a namespace in the interface file."""
     rule = Forward()
     rule << (
         NAMESPACE
@@ -687,6 +813,7 @@ class Namespace(object):
 
     @staticmethod
     def from_parse_result(t):
+        """Return the result of parsing."""
         if t.content:
             content = t.content.asList()
         else:
@@ -717,6 +844,7 @@ class Namespace(object):
             return res[0]
 
     def top_level(self):
+        """Return the top leve namespace."""
         if self.name == '' or self.parent == '':
             return self
         else:
@@ -726,15 +854,23 @@ class Namespace(object):
         return "Namespace: {}\n\t{}".format(self.name, self.content)
 
     def full_namespaces(self):
+        """Get the full namespace list."""
         ancestors = collect_namespaces(self)
         if self.name:
             ancestors.append(self.name)
         return ancestors
 
 
-class Module(object):
+class Module:
     """
     Module is just a global namespace.
+
+    E.g.
+    ```
+    namespace gtsam {
+        ...
+    }
+    ```
     """
 
     rule = (
@@ -752,5 +888,6 @@ class Module(object):
     rule.ignore(cppStyleComment)
 
     @staticmethod
-    def parseString(str):
-        return Module.rule.parseString(str)[0]
+    def parseString(s: str):
+        """Parse the source string and apply the rules."""
+        return Module.rule.parseString(s)[0]

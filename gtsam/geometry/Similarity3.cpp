@@ -13,9 +13,10 @@
  * @file   Similarity3.cpp
  * @brief  Implementation of Similarity3 transform
  * @author Paul Drews
+ * @author John Lambert
  */
 
-#include <gtsam_unstable/geometry/Similarity3.h>
+#include <gtsam/geometry/Similarity3.h>
 
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/Manifold.h>
@@ -24,13 +25,12 @@
 namespace gtsam {
 
 using std::vector;
-using PointPairs = vector<Point3Pair>;
 
 namespace {
 /// Subtract centroids from point pairs.
-static PointPairs subtractCentroids(const PointPairs &abPointPairs,
+static Point3Pairs subtractCentroids(const Point3Pairs &abPointPairs,
                                     const Point3Pair &centroids) {
-  PointPairs d_abPointPairs;
+  Point3Pairs d_abPointPairs;
   for (const Point3Pair& abPair : abPointPairs) {
     Point3 da = abPair.first - centroids.first;
     Point3 db = abPair.second - centroids.second;
@@ -40,7 +40,7 @@ static PointPairs subtractCentroids(const PointPairs &abPointPairs,
 }
 
 /// Form inner products x and y and calculate scale.
-static const double calculateScale(const PointPairs &d_abPointPairs,
+static const double calculateScale(const Point3Pairs &d_abPointPairs,
                                    const Rot3 &aRb) {
   double x = 0, y = 0;
   Point3 da, db;
@@ -55,7 +55,7 @@ static const double calculateScale(const PointPairs &d_abPointPairs,
 }
 
 /// Form outer product H.
-static Matrix3 calculateH(const PointPairs &d_abPointPairs) {
+static Matrix3 calculateH(const Point3Pairs &d_abPointPairs) {
   Matrix3 H = Z_3x3;
   for (const Point3Pair& d_abPair : d_abPointPairs) {
     H += d_abPair.first * d_abPair.second.transpose();
@@ -63,17 +63,20 @@ static Matrix3 calculateH(const PointPairs &d_abPointPairs) {
   return H;
 }
 
-/// This method estimates the similarity transform from differences point pairs, given a known or estimated rotation and point centroids.
-static Similarity3 align(const PointPairs &d_abPointPairs, const Rot3 &aRb,
+/// This method estimates the similarity transform from differences point pairs,
+// given a known or estimated rotation and point centroids.
+static Similarity3 align(const Point3Pairs &d_abPointPairs, const Rot3 &aRb,
                          const Point3Pair &centroids) {
   const double s = calculateScale(d_abPointPairs, aRb);
+  // dividing aTb by s is required because the registration cost function
+  // minimizes ||a - sRb - t||, whereas Sim(3) computes s(Rb + t)
   const Point3 aTb = (centroids.first - s * (aRb * centroids.second)) / s;
   return Similarity3(aRb, aTb, s);
 }
 
 /// This method estimates the similarity transform from point pairs, given a known or estimated rotation.
 // Refer to: http://www5.informatik.uni-erlangen.de/Forschung/Publikationen/2005/Zinsser05-PSR.pdf Chapter 3
-static Similarity3 alignGivenR(const PointPairs &abPointPairs,
+static Similarity3 alignGivenR(const Point3Pairs &abPointPairs,
                                const Rot3 &aRb) {
   auto centroids = means(abPointPairs);
   auto d_abPointPairs = subtractCentroids(abPointPairs, centroids);
@@ -154,7 +157,7 @@ Point3 Similarity3::operator*(const Point3& p) const {
   return transformFrom(p);
 }
 
-Similarity3 Similarity3::Align(const PointPairs &abPointPairs) {
+Similarity3 Similarity3::Align(const Point3Pairs &abPointPairs) {
   // Refer to Chapter 3 of
   // http://www5.informatik.uni-erlangen.de/Forschung/Publikationen/2005/Zinsser05-PSR.pdf
   if (abPointPairs.size() < 3)
@@ -174,18 +177,20 @@ Similarity3 Similarity3::Align(const vector<Pose3Pair> &abPosePairs) {
 
   // calculate rotation
   vector<Rot3> rotations;
-  PointPairs abPointPairs;
+  Point3Pairs abPointPairs;
   rotations.reserve(n);
   abPointPairs.reserve(n);
-  Pose3 wTa, wTb;
+  // Below denotes the pose of the i'th object/camera/etc in frame "a" or frame "b"
+  Pose3 aTi, bTi;
   for (const Pose3Pair &abPair : abPosePairs) {
-    std::tie(wTa, wTb) = abPair;
-    rotations.emplace_back(wTa.rotation().compose(wTb.rotation().inverse()));
-    abPointPairs.emplace_back(wTa.translation(), wTb.translation());
+    std::tie(aTi, bTi) = abPair;
+    const Rot3 aRb = aTi.rotation().compose(bTi.rotation().inverse());
+    rotations.emplace_back(aRb);
+    abPointPairs.emplace_back(aTi.translation(), bTi.translation());
   }
-  const Rot3 aRb = FindKarcherMean<Rot3>(rotations);
+  const Rot3 aRb_estimate = FindKarcherMean<Rot3>(rotations);
 
-  return alignGivenR(abPointPairs, aRb);
+  return alignGivenR(abPointPairs, aRb_estimate);
 }
 
 Matrix4 Similarity3::wedge(const Vector7 &xi) {

@@ -163,6 +163,7 @@ class BearingS2 {
   void serializable() const; // enabling serialization functionality
 };
 
+  
 #include <gtsam_unstable/geometry/SimWall2D.h>
 class SimWall2D {
   SimWall2D();

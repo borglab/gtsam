@@ -21,39 +21,27 @@ else()
   set(SCRIPT_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib/cmake")
 endif()
 
-# Install scripts to the standard CMake script directory.
-install(FILES cmake/gtwrapConfig.cmake cmake/PybindWrap.cmake
-              cmake/GtwrapUtils.cmake
+# Install CMake scripts to the standard CMake script directory.
+install(FILES cmake/gtwrapConfig.cmake cmake/MatlabWrap.cmake
+              cmake/PybindWrap.cmake cmake/GtwrapUtils.cmake
         DESTINATION "${SCRIPT_INSTALL_DIR}/gtwrap")
 
+# Needed for the CMAKE_INSTALL_X variables used below.
+include(GNUInstallDirs)
+
+# Install the gtwrap python package as a directory so it can be found  by CMake
+# for wrapping.
+install(DIRECTORY gtwrap DESTINATION "${CMAKE_INSTALL_DATADIR}/gtwrap")
+
 # Install wrapping scripts as binaries to `CMAKE_INSTALL_PREFIX/bin` so they can
-# be invoked for wrapping.
-# We use DESTINATION (instead of TYPE) so we can support older CMake versions.
+# be invoked for wrapping. We use DESTINATION (instead of TYPE) so we can
+# support older CMake versions.
 install(PROGRAMS scripts/pybind_wrap.py scripts/matlab_wrap.py
         DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-# Install pybind11 directory to `CMAKE_INSTALL_PREFIX/lib/pybind11` This will
-# allow the gtwrapConfig.cmake file to load it later.
-# We use DESTINATION (instead of TYPE) so we can support older CMake versions.
-install(DIRECTORY pybind11
-        DESTINATION ${CMAKE_INSTALL_LIBDIR})
+# Install pybind11 directory to `CMAKE_INSTALL_PREFIX/lib/gtwrap/pybind11` This
+# will allow the gtwrapConfig.cmake file to load it later.
+install(DIRECTORY pybind11 DESTINATION "${CMAKE_INSTALL_LIBDIR}/gtwrap")
 
-# ##############################################################################
-# Install the Python package
-find_package(
-  Python ${WRAP_PYTHON_VERSION}
-  COMPONENTS Interpreter
-  EXACT)
-
-# Detect virtualenv and set Pip args accordingly
-# https://www.scivision.dev/cmake-install-python-package/
-if(DEFINED ENV{VIRTUAL_ENV} OR DEFINED ENV{CONDA_PREFIX})
-  set(_pip_args)
-else()
-  set(_pip_args "--user")
-endif()
-#TODO add correct flags for virtualenv
-
-# Finally install the gtwrap python package.
-execute_process(COMMAND ${Python_EXECUTABLE} -m pip install . ${_pip_args}
-                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+# Install the matlab.h file to `CMAKE_INSTALL_PREFIX/lib/gtwrap/matlab.h`.
+install(FILES matlab.h DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/gtwrap")

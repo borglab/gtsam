@@ -22,6 +22,9 @@ class Point2 {
  VectorNotEigen vectorConfusion();
 
  void serializable() const; // Sets flag and creates export, but does not make serialization functions
+
+ // enable pickling in python
+ void pickle() const;
 };
 
 #include <gtsam/geometry/Point3.h>
@@ -35,6 +38,9 @@ class Point3 {
 
   // enabling serialization functionality
   void serialize() const; // Just triggers a flag internally and removes actual function
+
+  // enable pickling in python
+  void pickle() const;
 };
 
 }
@@ -54,6 +60,9 @@ class Test {
   /* a comment! */
   // another comment
   Test();
+
+  // Test a shared ptr property
+  gtsam::noiseModel::Base* model_ptr;
 
   pair<Vector,Matrix> return_pair (Vector v, Matrix A) const; // intentionally the first method
   pair<Vector,Matrix> return_pair (Vector v) const; // overload
@@ -154,3 +163,7 @@ class MyVector {
 // comments at the end!
 
 // even more comments at the end!
+
+// Class with multiple instantiated templates
+template<T = {int}, U = {double, float}>
+class MultipleTemplates {};

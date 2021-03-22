@@ -12,6 +12,7 @@ jobs:
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
       PYTHON_VERSION: ${{ matrix.python_version }}
+
     strategy:
       fail-fast: false
       matrix:
@@ -22,10 +23,12 @@ jobs:
           ubuntu-18.04-gcc-9,
           ubuntu-18.04-clang-9,
           macOS-10.15-xcode-11.3.1,
-          ubuntu-18.04-gcc-5-tbb,
+          # ubuntu-18.04-gcc-5-tbb,
         ]
 
-        build_type: [Debug, Release]
+        #TODO update wrapper to prevent OOM
+        # build_type: [Debug, Release]
+        build_type: [Release]
         python_version: [3]
         include:
           - name: ubuntu-18.04-gcc-5
@@ -43,20 +46,28 @@ jobs:
             compiler: clang
             version: "9"
 
+          #NOTE temporarily added this as it is a required check.
+          - name: ubuntu-18.04-clang-9
+            os: ubuntu-18.04
+            compiler: clang
+            version: "9"
+            build_type: Debug
+            python_version: "3"
+
           - name: macOS-10.15-xcode-11.3.1
             os: macOS-10.15
             compiler: xcode
             version: "11.3.1"
 
-          - name: ubuntu-18.04-gcc-5-tbb
-            os: ubuntu-18.04
-            compiler: gcc
-            version: "5"
-            flag: tbb
+          # - name: ubuntu-18.04-gcc-5-tbb
+          #   os: ubuntu-18.04
+          #   compiler: gcc
+          #   version: "5"
+          #   flag: tbb
 
     steps:
       - name: Checkout
-        uses: actions/checkout@master
+        uses: actions/checkout@v2
       - name: Install (Linux)
         if: runner.os == 'Linux'
         run: |
@@ -88,7 +99,7 @@ jobs:
         run: |
           brew tap ProfFan/robotics
           brew install cmake ninja
-          brew install ProfFan/robotics/boost
+          brew install boost
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
             brew install gcc@${{ matrix.version }}
             echo "CC=gcc-${{ matrix.version }}" >> $GITHUB_ENV
