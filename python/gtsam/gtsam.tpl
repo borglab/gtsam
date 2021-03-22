@@ -25,7 +25,7 @@
 {boost_class_export}
 
 // Holder type for pybind11
-{hoder_type}
+{holder_type}
 
 // Preamble for STL classes
 // TODO(fan): make this automatic

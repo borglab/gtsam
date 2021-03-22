@@ -17,7 +17,6 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
-
 #include <gtsam/sfm/TranslationRecovery.h>
 #include <gtsam/slam/dataset.h>
 
@@ -185,7 +184,7 @@ TEST(TranslationRecovery, ThreePosesIncludingZeroTranslation) {
   TranslationRecovery algorithm(relativeTranslations);
   const auto graph = algorithm.buildGraph();
   // There is only 1 non-zero translation edge.
-  EXPECT_LONGS_EQUAL(1, graph.size()); 
+  EXPECT_LONGS_EQUAL(1, graph.size());
 
   // Run translation recovery
   const auto result = algorithm.run(/*scale=*/3.0);
@@ -236,6 +235,35 @@ TEST(TranslationRecovery, FourPosesIncludingZeroTranslation) {
   EXPECT(assert_equal(Point3(4, 0, 0), result.at<Point3>(1)));
   EXPECT(assert_equal(Point3(4, 0, 0), result.at<Point3>(2)));
   EXPECT(assert_equal(Point3(2, -2, 0), result.at<Point3>(3)));
+}
+
+TEST(TranslationRecovery, ThreePosesWithZeroTranslation) {
+  Values poses;
+  poses.insert<Pose3>(0, Pose3(Rot3::RzRyRx(-M_PI / 6, 0, 0), Point3(0, 0, 0)));
+  poses.insert<Pose3>(1, Pose3(Rot3(), Point3(0, 0, 0)));
+  poses.insert<Pose3>(2, Pose3(Rot3::RzRyRx(M_PI / 6, 0, 0), Point3(0, 0, 0)));
+
+  auto relativeTranslations = TranslationRecovery::SimulateMeasurements(
+      poses, {{0, 1}, {1, 2}, {2, 0}});
+
+  // Check simulated measurements.
+  for (auto& unitTranslation : relativeTranslations) {
+    EXPECT(assert_equal(GetDirectionFromPoses(poses, unitTranslation),
+                        unitTranslation.measured()));
+  }
+
+  TranslationRecovery algorithm(relativeTranslations);
+  const auto graph = algorithm.buildGraph();
+  // Graph size will be zero as there no 'non-zero distance' edges.
+  EXPECT_LONGS_EQUAL(0, graph.size());
+
+  // Run translation recovery
+  const auto result = algorithm.run(/*scale=*/4.0);
+
+  // Check result
+  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0)));
+  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(1)));
+  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(2)));
 }
 
 /* ************************************************************************* */

@@ -1,5 +1,12 @@
 set(PYBIND11_PYTHON_VERSION ${WRAP_PYTHON_VERSION})
 
+if(GTWRAP_PYTHON_PACKAGE_DIR)
+  # packaged
+  set(GTWRAP_PACKAGE_DIR "${GTWRAP_PYTHON_PACKAGE_DIR}")
+else()
+  set(GTWRAP_PACKAGE_DIR ${CMAKE_CURRENT_LIST_DIR}/..)
+endif()
+
 # User-friendly Pybind11 wrapping and installing function.
 # Builds a Pybind11 module from the provided interface_header.
 # For example, for the interface header gtsam.h, this will
@@ -35,9 +42,16 @@ function(pybind_wrap
   else(USE_BOOST)
     set(_WRAP_BOOST_ARG "")
   endif(USE_BOOST)
-  
+
+  if (UNIX)
+    set(GTWRAP_PATH_SEPARATOR ":")
+  else()
+    set(GTWRAP_PATH_SEPARATOR ";")
+  endif()
+
   add_custom_command(OUTPUT ${generated_cpp}
-                     COMMAND ${PYTHON_EXECUTABLE}
+          COMMAND ${CMAKE_COMMAND} -E env "PYTHONPATH=${GTWRAP_PACKAGE_DIR}${GTWRAP_PATH_SEPARATOR}$ENV{PYTHONPATH}"
+          ${PYTHON_EXECUTABLE}
                              ${PYBIND_WRAP_SCRIPT}
                              --src
                              ${interface_header}

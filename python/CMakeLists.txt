@@ -13,6 +13,8 @@ configure_file(${PROJECT_SOURCE_DIR}/python/setup.py.in
 file(COPY ${PROJECT_SOURCE_DIR}/python/MANIFEST.in
      DESTINATION ${GTSAM_PYTHON_BUILD_DIRECTORY})
 
+set(WRAP_BUILD_TYPE_POSTFIXES ${GTSAM_BUILD_TYPE_POSTFIXES})
+
 include(PybindWrap)
 
 ############################################################
@@ -41,6 +43,8 @@ set(ignore
     gtsam::BetweenFactorPose2s
     gtsam::BetweenFactorPose3s
     gtsam::Point2Vector
+    gtsam::Point3Pairs
+    gtsam::Pose3Pairs
     gtsam::Pose3Vector
     gtsam::KeyVector
     gtsam::BinaryMeasurementsUnit3
