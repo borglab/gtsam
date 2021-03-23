@@ -1168,6 +1168,26 @@ void overloadedGlobalFunction_101(int nargout, mxArray *out[], int nargin, const
   double b = unwrap< double >(in[1]);
   out[0] = wrap< Vector >(overloadedGlobalFunction(a,b));
 }
+void MultiTemplatedFunctionStringSize_tDouble_102(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("MultiTemplatedFunctionStringSize_tDouble",nargout,nargin,2);
+  T& x = *unwrap_shared_ptr< T >(in[0], "ptr_T");
+  size_t y = unwrap< size_t >(in[1]);
+  out[0] = wrap< double >(MultiTemplatedFunctionStringSize_tDouble(x,y));
+}
+void MultiTemplatedFunctionDoubleSize_tDouble_103(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("MultiTemplatedFunctionDoubleSize_tDouble",nargout,nargin,2);
+  T& x = *unwrap_shared_ptr< T >(in[0], "ptr_T");
+  size_t y = unwrap< size_t >(in[1]);
+  out[0] = wrap< double >(MultiTemplatedFunctionDoubleSize_tDouble(x,y));
+}
+void TemplatedFunctionRot3_104(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("TemplatedFunctionRot3",nargout,nargin,1);
+  gtsam::Rot3& t = *unwrap_shared_ptr< gtsam::Rot3 >(in[0], "ptr_gtsamRot3");
+  TemplatedFunctionRot3(t);
+}
 
 void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
@@ -1485,6 +1505,15 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
       break;
     case 101:
       overloadedGlobalFunction_101(nargout, out, nargin-1, in+1);
+      break;
+    case 102:
+      MultiTemplatedFunctionStringSize_tDouble_102(nargout, out, nargin-1, in+1);
+      break;
+    case 103:
+      MultiTemplatedFunctionDoubleSize_tDouble_103(nargout, out, nargin-1, in+1);
+      break;
+    case 104:
+      TemplatedFunctionRot3_104(nargout, out, nargin-1, in+1);
       break;
     }
   } catch(const std::exception& e) {

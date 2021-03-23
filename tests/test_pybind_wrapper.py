@@ -26,15 +26,10 @@ class TestWrap(unittest.TestCase):
     """Tests for Python wrapper based on Pybind11."""
     TEST_DIR = os.path.dirname(os.path.realpath(__file__)) + "/"
 
-    def test_geometry_python(self):
+    def wrap_content(self, content, module_name, output_dir):
         """
-        Check generation of python geometry wrapper.
-        python3 ../pybind_wrapper.py --src geometry.h --module_name
-            geometry_py --out output/geometry_py.cc"
+        Common function to wrap content.
         """
-        with open(os.path.join(self.TEST_DIR, 'geometry.h'), 'r') as f:
-            content = f.read()
-
         module = parser.Module.parseString(content)
 
         instantiator.instantiate_namespace_inplace(module)
@@ -45,7 +40,7 @@ class TestWrap(unittest.TestCase):
         # Create Pybind wrapper instance
         wrapper = PybindWrapper(
             module=module,
-            module_name='geometry_py',
+            module_name=module_name,
             use_boost=False,
             top_module_namespaces=[''],
             ignore_classes=[''],
@@ -54,15 +49,46 @@ class TestWrap(unittest.TestCase):
 
         cc_content = wrapper.wrap()
 
-        output = path.join(self.TEST_DIR, 'actual-python/geometry_py.cpp')
+        output = path.join(self.TEST_DIR, output_dir, module_name + ".cpp")
 
-        if not path.exists(path.join(self.TEST_DIR, 'actual-python')):
-            os.mkdir(path.join(self.TEST_DIR, 'actual-python'))
+        if not path.exists(path.join(self.TEST_DIR, output_dir)):
+            os.mkdir(path.join(self.TEST_DIR, output_dir))
 
         with open(output, 'w') as f:
             f.write(cc_content)
 
+        return output
+
+    def test_geometry_python(self):
+        """
+        Check generation of python geometry wrapper.
+        python3 ../pybind_wrapper.py --src geometry.h --module_name
+            geometry_py --out output/geometry_py.cc
+        """
+        with open(os.path.join(self.TEST_DIR, 'geometry.h'), 'r') as f:
+            content = f.read()
+
+        output = self.wrap_content(content, 'geometry_py', 'actual-python')
+
         expected = path.join(self.TEST_DIR, 'expected-python/geometry_pybind.cpp')
+        success = filecmp.cmp(output, expected)
+
+        if not success:
+            os.system("diff {} {}".format(output, expected))
+        self.assertTrue(success)
+
+    def test_namespaces(self):
+        """
+        Check generation of python geometry wrapper.
+        python3 ../pybind_wrapper.py --src testNamespaces.h --module_name
+            testNamespaces_py --out output/testNamespaces_py.cc
+        """
+        with open(os.path.join(self.TEST_DIR, 'testNamespaces.h'), 'r') as f:
+            content = f.read()
+
+        output = self.wrap_content(content, 'testNamespaces_py', 'actual-python')
+
+        expected = path.join(self.TEST_DIR, 'expected-python/testNamespaces_py.cpp')
         success = filecmp.cmp(output, expected)
 
         if not success:
