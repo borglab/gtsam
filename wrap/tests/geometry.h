@@ -87,7 +87,7 @@ class Test {
 
   bool return_field(const Test& t) const;
 
-  Test* return_TestPtr(Test* value) const;
+  Test* return_TestPtr(const Test* value) const;
   Test  return_Test(Test* value) const;
 
   gtsam::Point2* return_Point2Ptr(bool value) const;
@@ -104,8 +104,8 @@ class Test {
 };
 
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename, Test* model, int maxID, bool addNoise, bool smart);
-pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename, gtsam::noiseModel::Diagonal* model, int maxID, bool addNoise, bool smart);
-pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename, gtsam::noiseModel::Diagonal* model);
+pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename, const gtsam::noiseModel::Diagonal* model, int maxID, bool addNoise, bool smart);
+pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename, gtsam::noiseModel::Diagonal@ model);
 
 Vector aGlobalFunction();
 
@@ -130,7 +130,7 @@ virtual class MyTemplate : MyBase {
   void accept_T(const T& value) const;
   void accept_Tptr(T* value) const;
   T* return_Tptr(T* value) const;
-  T  return_T(T* value) const;
+  T  return_T(T@ value) const;
   pair<T*,T*> create_ptrs () const;
   pair<T ,T*> create_MixedPtrs () const;
   pair<T*,T*> return_ptrs (T* p1, T* p2) const;
@@ -167,3 +167,13 @@ class MyVector {
 // Class with multiple instantiated templates
 template<T = {int}, U = {double, float}>
 class MultipleTemplates {};
+
+// A templated free/global function. Multiple templates supported.
+template<T1 = {string, double}, T2 = {size_t}, R = {double}>
+R MultiTemplatedFunction(const T& x, T2 y);
+
+// Check if we can typedef the templated function
+template<T>
+void TemplatedFunction(const T& t);
+
+typedef TemplatedFunction<gtsam::Rot3> TemplatedFunctionRot3;

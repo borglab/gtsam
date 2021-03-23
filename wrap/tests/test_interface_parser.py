@@ -245,14 +245,14 @@ print("Found namespace:", sub_namespace[0].name)
 print(find_sub_namespace(module, ['one', 'two_test', 'three']))
 print(find_sub_namespace(module, ['one', 'two']))
 
-found_class = module.find_class(
+found_class = module.find_class_or_function(
     Typename(namespaces_name=['one', 'two', 'three', 'Class123']))
 print(found_class)
 
-found_class = module.find_class(
+found_class = module.find_class_or_function(
     Typename(namespaces_name=['one', 'two', 'Class12b']))
 print(found_class.name)
 
-found_class = module.find_class(
+found_class = module.find_class_or_function(
     Typename(namespaces_name=['one', 'two', 'Class12a']))
 print(found_class.name)

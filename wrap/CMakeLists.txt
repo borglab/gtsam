@@ -31,17 +31,17 @@ include(GNUInstallDirs)
 
 # Install the gtwrap python package as a directory so it can be found  by CMake
 # for wrapping.
-install(DIRECTORY gtwrap DESTINATION "${CMAKE_INSTALL_DATADIR}/gtwrap")
+install(DIRECTORY gtwrap DESTINATION "${CMAKE_INSTALL_FULL_LIBDIR}/gtwrap")
 
 # Install wrapping scripts as binaries to `CMAKE_INSTALL_PREFIX/bin` so they can
 # be invoked for wrapping. We use DESTINATION (instead of TYPE) so we can
 # support older CMake versions.
 install(PROGRAMS scripts/pybind_wrap.py scripts/matlab_wrap.py
-        DESTINATION ${CMAKE_INSTALL_BINDIR})
+        DESTINATION ${CMAKE_INSTALL_FULL_BINDIR})
 
 # Install pybind11 directory to `CMAKE_INSTALL_PREFIX/lib/gtwrap/pybind11` This
 # will allow the gtwrapConfig.cmake file to load it later.
-install(DIRECTORY pybind11 DESTINATION "${CMAKE_INSTALL_LIBDIR}/gtwrap")
+install(DIRECTORY pybind11 DESTINATION "${CMAKE_INSTALL_FULL_LIBDIR}/gtwrap")
 
 # Install the matlab.h file to `CMAKE_INSTALL_PREFIX/lib/gtwrap/matlab.h`.
-install(FILES matlab.h DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/gtwrap")
+install(FILES matlab.h DESTINATION "${CMAKE_INSTALL_FULL_INCLUDEDIR}/gtwrap")
