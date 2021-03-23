@@ -8,7 +8,11 @@ public:
   Vector evaluateError(const Pose2& q,
                        boost::optional<Matrix&> H = boost::none) const
   {
-    if (H) (*H) = (Matrix(2,3)<< 1.0,0.0,0.0, 0.0,1.0,0.0).finished();
+    const double cosTheta = cos(q.theta());
+    const double sinTheta = sin(q.theta());
+    if (H) (*H) = (gtsam::Matrix(2, 3) <<
+            cosTheta, -sinTheta, 0.0, 
+            sinTheta, cosTheta, 0.0).finished();
     return (Vector(2) << q.x() - mx_, q.y() - my_).finished();
   }
 };
