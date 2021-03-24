@@ -6,3 +6,5 @@ __pycache__/
 
 # Files related to code coverage stats
 **/.coverage
+
+gtwrap/matlab_wrapper.tpl

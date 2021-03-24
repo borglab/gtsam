@@ -21,6 +21,13 @@ else()
   set(SCRIPT_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib/cmake")
 endif()
 
+# Configure the include directory for matlab.h
+# This allows the #include to be either gtwrap/matlab.h, wrap/matlab.h or something custom.
+if(NOT DEFINED GTWRAP_INCLUDE_NAME)
+  set(GTWRAP_INCLUDE_NAME "gtwrap" CACHE INTERNAL "Directory name for Matlab includes")
+endif()
+configure_file(${PROJECT_SOURCE_DIR}/templates/matlab_wrapper.tpl.in ${PROJECT_SOURCE_DIR}/gtwrap/matlab_wrapper.tpl)
+
 # Install CMake scripts to the standard CMake script directory.
 install(FILES cmake/gtwrapConfig.cmake cmake/MatlabWrap.cmake
               cmake/PybindWrap.cmake cmake/GtwrapUtils.cmake

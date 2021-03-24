@@ -13,7 +13,9 @@ import sys
 import unittest
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.append(os.path.normpath(os.path.abspath(os.path.join(__file__, '../../../build/wrap'))))
+sys.path.append(
+    os.path.normpath(
+        os.path.abspath(os.path.join(__file__, '../../../build/wrap'))))
 
 import gtwrap.interface_parser as parser
 import gtwrap.template_instantiator as instantiator
@@ -38,14 +40,12 @@ class TestWrap(unittest.TestCase):
             module_template = template_file.read()
 
         # Create Pybind wrapper instance
-        wrapper = PybindWrapper(
-            module=module,
-            module_name=module_name,
-            use_boost=False,
-            top_module_namespaces=[''],
-            ignore_classes=[''],
-            module_template=module_template
-        )
+        wrapper = PybindWrapper(module=module,
+                                module_name=module_name,
+                                use_boost=False,
+                                top_module_namespaces=[''],
+                                ignore_classes=[''],
+                                module_template=module_template)
 
         cc_content = wrapper.wrap()
 
@@ -70,7 +70,8 @@ class TestWrap(unittest.TestCase):
 
         output = self.wrap_content(content, 'geometry_py', 'actual-python')
 
-        expected = path.join(self.TEST_DIR, 'expected-python/geometry_pybind.cpp')
+        expected = path.join(self.TEST_DIR,
+                             'expected-python/geometry_pybind.cpp')
         success = filecmp.cmp(output, expected)
 
         if not success:
@@ -86,14 +87,17 @@ class TestWrap(unittest.TestCase):
         with open(os.path.join(self.TEST_DIR, 'testNamespaces.h'), 'r') as f:
             content = f.read()
 
-        output = self.wrap_content(content, 'testNamespaces_py', 'actual-python')
+        output = self.wrap_content(content, 'testNamespaces_py',
+                                   'actual-python')
 
-        expected = path.join(self.TEST_DIR, 'expected-python/testNamespaces_py.cpp')
+        expected = path.join(self.TEST_DIR,
+                             'expected-python/testNamespaces_py.cpp')
         success = filecmp.cmp(output, expected)
 
         if not success:
             os.system("diff {} {}".format(output, expected))
         self.assertTrue(success)
+
 
 if __name__ == '__main__':
     unittest.main()
