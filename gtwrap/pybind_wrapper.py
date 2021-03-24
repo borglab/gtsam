@@ -13,7 +13,6 @@ Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellae
 # pylint: disable=too-many-arguments, too-many-instance-attributes, no-self-use, no-else-return, too-many-arguments, unused-format-string-argument, line-too-long
 
 import re
-import textwrap
 
 import gtwrap.interface_parser as parser
 import gtwrap.template_instantiator as instantiator

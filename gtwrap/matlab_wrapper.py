@@ -76,6 +76,10 @@ class MatlabWrapper(object):
     # Files and their content
     content: List[str] = []
 
+    # Ensure the template file is always picked up from the correct directory.
+    dir_path = osp.dirname(osp.realpath(__file__))
+    wrapper_file_template = osp.join(dir_path, "matlab_wrapper.tpl")
+
     def __init__(self,
                  module,
                  module_name,
@@ -664,10 +668,8 @@ class MatlabWrapper(object):
         """Generate the C++ file for the wrapper."""
         file_name = self._wrapper_name() + '.cpp'
 
-        wrapper_file = textwrap.dedent('''\
-            # include <gtwrap/matlab.h>
-            # include <map>
-        ''')
+        with open(self.wrapper_file_template) as f:
+            wrapper_file = f.read()
 
         return file_name, wrapper_file
 

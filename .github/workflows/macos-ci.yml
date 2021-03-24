@@ -31,6 +31,8 @@ jobs:
 
       - name: Build and Test
         run: |
+          cmake .
           cd tests
           # Use Pytest to run all the tests.
           pytest
+
