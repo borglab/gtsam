@@ -3,3 +3,6 @@ __pycache__/
 *build*
 *dist*
 *.egg-info
+
+# Files related to code coverage stats
+**/.coverage

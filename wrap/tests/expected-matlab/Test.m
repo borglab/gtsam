@@ -35,11 +35,11 @@ classdef Test < handle
     function obj = Test(varargin)
       if nargin == 2 && isa(varargin{1}, 'uint64') && varargin{1} == uint64(5139824614673773682)
         my_ptr = varargin{2};
-        geometry_wrapper(20, my_ptr);
+        geometry_wrapper(26, my_ptr);
       elseif nargin == 0
-        my_ptr = geometry_wrapper(21);
+        my_ptr = geometry_wrapper(27);
       elseif nargin == 2 && isa(varargin{1},'double') && isa(varargin{2},'double')
-        my_ptr = geometry_wrapper(22, varargin{1}, varargin{2});
+        my_ptr = geometry_wrapper(28, varargin{1}, varargin{2});
       else
         error('Arguments do not match any overload of Test constructor');
       end
@@ -47,7 +47,7 @@ classdef Test < handle
     end
 
     function delete(obj)
-      geometry_wrapper(23, obj.ptr_Test);
+      geometry_wrapper(29, obj.ptr_Test);
     end
 
     function display(obj), obj.print(''); end
@@ -58,7 +58,7 @@ classdef Test < handle
       % ARG_EIGENCONSTREF usage: arg_EigenConstRef(Matrix value) : returns void
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 1 && isa(varargin{1},'double')
-        geometry_wrapper(24, this, varargin{:});
+        geometry_wrapper(30, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function Test.arg_EigenConstRef');
@@ -68,7 +68,7 @@ classdef Test < handle
       % CREATE_MIXEDPTRS usage: create_MixedPtrs() : returns pair< Test, Test >
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 0
-        [ varargout{1} varargout{2} ] = geometry_wrapper(25, this, varargin{:});
+        [ varargout{1} varargout{2} ] = geometry_wrapper(31, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function Test.create_MixedPtrs');
@@ -78,7 +78,7 @@ classdef Test < handle
       % CREATE_PTRS usage: create_ptrs() : returns pair< Test, Test >
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 0
-        [ varargout{1} varargout{2} ] = geometry_wrapper(26, this, varargin{:});
+        [ varargout{1} varargout{2} ] = geometry_wrapper(32, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function Test.create_ptrs');
@@ -88,7 +88,7 @@ classdef Test < handle
       % PRINT usage: print() : returns void
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 0
-        geometry_wrapper(27, this, varargin{:});
+        geometry_wrapper(33, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function Test.print');
@@ -98,7 +98,7 @@ classdef Test < handle
       % RETURN_POINT2PTR usage: return_Point2Ptr(bool value) : returns Point2
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 1 && isa(varargin{1},'logical')
-        varargout{1} = geometry_wrapper(28, this, varargin{:});
+        varargout{1} = geometry_wrapper(34, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function Test.return_Point2Ptr');
@@ -108,7 +108,7 @@ classdef Test < handle
       % RETURN_TEST usage: return_Test(Test value) : returns Test
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 1 && isa(varargin{1},'Test')
-        varargout{1} = geometry_wrapper(29, this, varargin{:});
+        varargout{1} = geometry_wrapper(35, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function Test.return_Test');
@@ -118,7 +118,7 @@ classdef Test < handle
       % RETURN_TESTPTR usage: return_TestPtr(Test value) : returns Test
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 1 && isa(varargin{1},'Test')
-        varargout{1} = geometry_wrapper(30, this, varargin{:});
+        varargout{1} = geometry_wrapper(36, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function Test.return_TestPtr');
@@ -128,7 +128,7 @@ classdef Test < handle
       % RETURN_BOOL usage: return_bool(bool value) : returns bool
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 1 && isa(varargin{1},'logical')
-        varargout{1} = geometry_wrapper(31, this, varargin{:});
+        varargout{1} = geometry_wrapper(37, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function Test.return_bool');
@@ -138,7 +138,7 @@ classdef Test < handle
       % RETURN_DOUBLE usage: return_double(double value) : returns double
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 1 && isa(varargin{1},'double')
-        varargout{1} = geometry_wrapper(32, this, varargin{:});
+        varargout{1} = geometry_wrapper(38, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function Test.return_double');
@@ -148,7 +148,7 @@ classdef Test < handle
       % RETURN_FIELD usage: return_field(Test t) : returns bool
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 1 && isa(varargin{1},'Test')
-        varargout{1} = geometry_wrapper(33, this, varargin{:});
+        varargout{1} = geometry_wrapper(39, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function Test.return_field');
@@ -158,7 +158,7 @@ classdef Test < handle
       % RETURN_INT usage: return_int(int value) : returns int
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 1 && isa(varargin{1},'numeric')
-        varargout{1} = geometry_wrapper(34, this, varargin{:});
+        varargout{1} = geometry_wrapper(40, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function Test.return_int');
@@ -168,7 +168,7 @@ classdef Test < handle
       % RETURN_MATRIX1 usage: return_matrix1(Matrix value) : returns Matrix
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 1 && isa(varargin{1},'double')
-        varargout{1} = geometry_wrapper(35, this, varargin{:});
+        varargout{1} = geometry_wrapper(41, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function Test.return_matrix1');
@@ -178,7 +178,7 @@ classdef Test < handle
       % RETURN_MATRIX2 usage: return_matrix2(Matrix value) : returns Matrix
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 1 && isa(varargin{1},'double')
-        varargout{1} = geometry_wrapper(36, this, varargin{:});
+        varargout{1} = geometry_wrapper(42, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function Test.return_matrix2');
@@ -188,13 +188,13 @@ classdef Test < handle
       % RETURN_PAIR usage: return_pair(Vector v, Matrix A) : returns pair< Vector, Matrix >
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 2 && isa(varargin{1},'double') && size(varargin{1},2)==1 && isa(varargin{2},'double')
-        [ varargout{1} varargout{2} ] = geometry_wrapper(37, this, varargin{:});
+        [ varargout{1} varargout{2} ] = geometry_wrapper(43, this, varargin{:});
         return
       end
       % RETURN_PAIR usage: return_pair(Vector v) : returns pair< Vector, Matrix >
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 1 && isa(varargin{1},'double') && size(varargin{1},2)==1
-        [ varargout{1} varargout{2} ] = geometry_wrapper(38, this, varargin{:});
+        [ varargout{1} varargout{2} ] = geometry_wrapper(44, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function Test.return_pair');
@@ -204,7 +204,7 @@ classdef Test < handle
       % RETURN_PTRS usage: return_ptrs(Test p1, Test p2) : returns pair< Test, Test >
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 2 && isa(varargin{1},'Test') && isa(varargin{2},'Test')
-        [ varargout{1} varargout{2} ] = geometry_wrapper(39, this, varargin{:});
+        [ varargout{1} varargout{2} ] = geometry_wrapper(45, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function Test.return_ptrs');
@@ -214,7 +214,7 @@ classdef Test < handle
       % RETURN_SIZE_T usage: return_size_t(size_t value) : returns size_t
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 1 && isa(varargin{1},'numeric')
-        varargout{1} = geometry_wrapper(40, this, varargin{:});
+        varargout{1} = geometry_wrapper(46, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function Test.return_size_t');
@@ -224,7 +224,7 @@ classdef Test < handle
       % RETURN_STRING usage: return_string(string value) : returns string
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 1 && isa(varargin{1},'char')
-        varargout{1} = geometry_wrapper(41, this, varargin{:});
+        varargout{1} = geometry_wrapper(47, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function Test.return_string');
@@ -234,7 +234,7 @@ classdef Test < handle
       % RETURN_VECTOR1 usage: return_vector1(Vector value) : returns Vector
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 1 && isa(varargin{1},'double') && size(varargin{1},2)==1
-        varargout{1} = geometry_wrapper(42, this, varargin{:});
+        varargout{1} = geometry_wrapper(48, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function Test.return_vector1');
@@ -244,7 +244,7 @@ classdef Test < handle
       % RETURN_VECTOR2 usage: return_vector2(Vector value) : returns Vector
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 1 && isa(varargin{1},'double') && size(varargin{1},2)==1
-        varargout{1} = geometry_wrapper(43, this, varargin{:});
+        varargout{1} = geometry_wrapper(49, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function Test.return_vector2');
