@@ -10,6 +10,8 @@ import os
 import sys
 import unittest
 
+from loguru import logger
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import gtwrap.interface_parser as parser
@@ -24,6 +26,10 @@ class TestWrap(unittest.TestCase):
     TEST_DIR = os.path.dirname(os.path.realpath(__file__)) + "/"
     MATLAB_TEST_DIR = TEST_DIR + "expected-matlab/"
     MATLAB_ACTUAL_DIR = TEST_DIR + "actual-matlab/"
+
+    # set the log level to INFO by default
+    logger.remove()  # remove the default sink
+    logger.add(sys.stderr, format="{time} {level} {message}", level="INFO")
 
     def generate_content(self, cc_content, path=''):
         """Generate files and folders from matlab wrapper content.
@@ -41,7 +47,7 @@ class TestWrap(unittest.TestCase):
             if isinstance(c, list):
                 if len(c) == 0:
                     continue
-                print("c object: {}".format(c[0][0]), file=sys.stderr)
+                logger.debug("c object: {}".format(c[0][0]))
                 path_to_folder = path + '/' + c[0][0]
 
                 if not os.path.isdir(path_to_folder):
@@ -51,13 +57,13 @@ class TestWrap(unittest.TestCase):
                         pass
 
                 for sub_content in c:
-                    print("sub object: {}".format(sub_content[1][0][0]), file=sys.stderr)
+                    logger.debug("sub object: {}".format(sub_content[1][0][0]))
                     self.generate_content(sub_content[1], path_to_folder)
 
             elif isinstance(c[1], list):
                 path_to_folder = path + '/' + c[0]
 
-                print("[generate_content_global]: {}".format(path_to_folder), file=sys.stderr)
+                logger.debug("[generate_content_global]: {}".format(path_to_folder))
                 if not os.path.isdir(path_to_folder):
                     try:
                         os.makedirs(path_to_folder, exist_ok=True)
@@ -65,14 +71,15 @@ class TestWrap(unittest.TestCase):
                         pass
                 for sub_content in c[1]:
                     path_to_file = path_to_folder + '/' + sub_content[0]
-                    print("[generate_global_method]: {}".format(path_to_file), file=sys.stderr)
+                    logger.debug(
+                        "[generate_global_method]: {}".format(path_to_file))
                     with open(path_to_file, 'w') as f:
                         f.write(sub_content[1])
 
             else:
                 path_to_file = path + '/' + c[0]
 
-                print("[generate_content]: {}".format(path_to_file), file=sys.stderr)
+                logger.debug("[generate_content]: {}".format(path_to_file))
                 if not os.path.isdir(path_to_file):
                     try:
                         os.mkdir(path)
@@ -122,23 +129,16 @@ class TestWrap(unittest.TestCase):
         self.assertTrue(os.path.isdir(self.MATLAB_ACTUAL_DIR + '+gtsam'))
 
         files = [
-            '+gtsam/Point2.m',
-            '+gtsam/Point3.m',
-            'Test.m',
-            'MyBase.m',
-            'load2D.m',
-            'MyTemplatePoint2.m',
-            'MyTemplateMatrix.m',
-            'MyVector3.m',
-            'MyVector12.m',
-            'MyFactorPosePoint2.m',
-            'aGlobalFunction.m',
-            'overloadedGlobalFunction.m',
+            '+gtsam/Point2.m', '+gtsam/Point3.m', 'Test.m', 'MyBase.m',
+            'load2D.m', 'MyTemplatePoint2.m', 'MyTemplateMatrix.m',
+            'MyVector3.m', 'MyVector12.m', 'MyFactorPosePoint2.m',
+            'aGlobalFunction.m', 'overloadedGlobalFunction.m',
             'geometry_wrapper.cpp'
         ]
 
         for file in files:
             compare_and_diff(file)
+
 
 if __name__ == '__main__':
     unittest.main()

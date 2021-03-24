@@ -7,6 +7,12 @@
 %
 %-------Methods-------
 %argChar(char a) : returns void
+%argChar(char a) : returns void
+%argChar(char a) : returns void
+%argChar(char a) : returns void
+%argChar(char a) : returns void
+%argChar(char a) : returns void
+%argChar(char a) : returns void
 %argUChar(unsigned char a) : returns void
 %dim() : returns int
 %eigenArguments(Vector v, Matrix m) : returns void
@@ -49,6 +55,42 @@ classdef Point2 < handle
         geometry_wrapper(4, this, varargin{:});
         return
       end
+      % ARGCHAR usage: argChar(char a) : returns void
+      % Doxygen can be found at https://gtsam.org/doxygen/
+      if length(varargin) == 1 && isa(varargin{1},'char')
+        geometry_wrapper(5, this, varargin{:});
+        return
+      end
+      % ARGCHAR usage: argChar(char a) : returns void
+      % Doxygen can be found at https://gtsam.org/doxygen/
+      if length(varargin) == 1 && isa(varargin{1},'char')
+        geometry_wrapper(6, this, varargin{:});
+        return
+      end
+      % ARGCHAR usage: argChar(char a) : returns void
+      % Doxygen can be found at https://gtsam.org/doxygen/
+      if length(varargin) == 1 && isa(varargin{1},'char')
+        geometry_wrapper(7, this, varargin{:});
+        return
+      end
+      % ARGCHAR usage: argChar(char a) : returns void
+      % Doxygen can be found at https://gtsam.org/doxygen/
+      if length(varargin) == 1 && isa(varargin{1},'char')
+        geometry_wrapper(8, this, varargin{:});
+        return
+      end
+      % ARGCHAR usage: argChar(char a) : returns void
+      % Doxygen can be found at https://gtsam.org/doxygen/
+      if length(varargin) == 1 && isa(varargin{1},'char')
+        geometry_wrapper(9, this, varargin{:});
+        return
+      end
+      % ARGCHAR usage: argChar(char a) : returns void
+      % Doxygen can be found at https://gtsam.org/doxygen/
+      if length(varargin) == 1 && isa(varargin{1},'char')
+        geometry_wrapper(10, this, varargin{:});
+        return
+      end
       error('Arguments do not match any overload of function gtsam.Point2.argChar');
     end
 
@@ -56,7 +98,7 @@ classdef Point2 < handle
       % ARGUCHAR usage: argUChar(unsigned char a) : returns void
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 1 && isa(varargin{1},'unsigned char')
-        geometry_wrapper(5, this, varargin{:});
+        geometry_wrapper(11, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function gtsam.Point2.argUChar');
@@ -66,7 +108,7 @@ classdef Point2 < handle
       % DIM usage: dim() : returns int
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 0
-        varargout{1} = geometry_wrapper(6, this, varargin{:});
+        varargout{1} = geometry_wrapper(12, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function gtsam.Point2.dim');
@@ -76,7 +118,7 @@ classdef Point2 < handle
       % EIGENARGUMENTS usage: eigenArguments(Vector v, Matrix m) : returns void
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 2 && isa(varargin{1},'double') && size(varargin{1},2)==1 && isa(varargin{2},'double')
-        geometry_wrapper(7, this, varargin{:});
+        geometry_wrapper(13, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function gtsam.Point2.eigenArguments');
@@ -86,7 +128,7 @@ classdef Point2 < handle
       % RETURNCHAR usage: returnChar() : returns char
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 0
-        varargout{1} = geometry_wrapper(8, this, varargin{:});
+        varargout{1} = geometry_wrapper(14, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function gtsam.Point2.returnChar');
@@ -96,7 +138,7 @@ classdef Point2 < handle
       % VECTORCONFUSION usage: vectorConfusion() : returns VectorNotEigen
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 0
-        varargout{1} = geometry_wrapper(9, this, varargin{:});
+        varargout{1} = geometry_wrapper(15, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function gtsam.Point2.vectorConfusion');
@@ -106,7 +148,7 @@ classdef Point2 < handle
       % X usage: x() : returns double
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 0
-        varargout{1} = geometry_wrapper(10, this, varargin{:});
+        varargout{1} = geometry_wrapper(16, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function gtsam.Point2.x');
@@ -116,7 +158,7 @@ classdef Point2 < handle
       % Y usage: y() : returns double
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 0
-        varargout{1} = geometry_wrapper(11, this, varargin{:});
+        varargout{1} = geometry_wrapper(17, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function gtsam.Point2.y');
