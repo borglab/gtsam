@@ -19,7 +19,7 @@ from gtsam.utils import plot
 
 def vector6(x, y, z, a, b, c):
     """Create 6d double numpy array."""
-    return np.array([x, y, z, a, b, c], dtype=np.float)
+    return np.array([x, y, z, a, b, c], dtype=float)
 
 
 parser = argparse.ArgumentParser(
