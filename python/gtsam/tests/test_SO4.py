@@ -32,13 +32,13 @@ class TestSO4(unittest.TestCase):
 
     def test_retract(self):
         """Test retraction to manifold."""
-        v = np.zeros((6,), np.float)
+        v = np.zeros((6,), float)
         actual = I4.retract(v)
         self.assertTrue(actual.equals(I4, 1e-9))
 
     def test_local(self):
         """Check localCoordinates for trivial case."""
-        v0 = np.zeros((6,), np.float)
+        v0 = np.zeros((6,), float)
         actual = I4.localCoordinates(I4)
         np.testing.assert_array_almost_equal(actual, v0)
 
