@@ -16,16 +16,13 @@ import os
 import sys
 import unittest
 
-from pyparsing import ParseException
-
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from gtwrap.interface_parser import (ArgumentList, Class, Constructor,
                                      ForwardDeclaration, GlobalFunction,
                                      Include, Method, Module, Namespace,
                                      ReturnType, StaticMethod, Type,
-                                     TypedefTemplateInstantiation, Typename,
-                                     find_sub_namespace)
+                                     TypedefTemplateInstantiation, Typename)
 
 
 class TestInterfaceParser(unittest.TestCase):
@@ -35,7 +32,8 @@ class TestInterfaceParser(unittest.TestCase):
         typename = Typename.rule.parseString("size_t")[0]
         self.assertEqual("size_t", typename.name)
 
-        typename = Typename.rule.parseString("gtsam::PinholeCamera<gtsam::Cal3S2>")[0]
+        typename = Typename.rule.parseString(
+            "gtsam::PinholeCamera<gtsam::Cal3S2>")[0]
         self.assertEqual("PinholeCamera", typename.name)
         self.assertEqual(["gtsam"], typename.namespaces)
         self.assertEqual("Cal3S2", typename.instantiations[0].name)
