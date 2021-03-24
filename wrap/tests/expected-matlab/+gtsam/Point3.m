@@ -23,9 +23,9 @@ classdef Point3 < handle
     function obj = Point3(varargin)
       if nargin == 2 && isa(varargin{1}, 'uint64') && varargin{1} == uint64(5139824614673773682)
         my_ptr = varargin{2};
-        geometry_wrapper(12, my_ptr);
+        geometry_wrapper(18, my_ptr);
       elseif nargin == 3 && isa(varargin{1},'double') && isa(varargin{2},'double') && isa(varargin{3},'double')
-        my_ptr = geometry_wrapper(13, varargin{1}, varargin{2}, varargin{3});
+        my_ptr = geometry_wrapper(19, varargin{1}, varargin{2}, varargin{3});
       else
         error('Arguments do not match any overload of gtsam.Point3 constructor');
       end
@@ -33,7 +33,7 @@ classdef Point3 < handle
     end
 
     function delete(obj)
-      geometry_wrapper(14, obj.ptr_gtsamPoint3);
+      geometry_wrapper(20, obj.ptr_gtsamPoint3);
     end
 
     function display(obj), obj.print(''); end
@@ -44,7 +44,7 @@ classdef Point3 < handle
       % NORM usage: norm() : returns double
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 0
-        varargout{1} = geometry_wrapper(15, this, varargin{:});
+        varargout{1} = geometry_wrapper(21, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function gtsam.Point3.norm');
@@ -54,7 +54,7 @@ classdef Point3 < handle
       % STRING_SERIALIZE usage: string_serialize() : returns string
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 0
-        varargout{1} = geometry_wrapper(16, this, varargin{:});
+        varargout{1} = geometry_wrapper(22, this, varargin{:});
       else
         error('Arguments do not match any overload of function gtsam.Point3.string_serialize');
       end
@@ -71,7 +71,7 @@ classdef Point3 < handle
       % STATICFUNCTIONRET usage: StaticFunctionRet(double z) : returns Point3
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 1 && isa(varargin{1},'double')
-        varargout{1} = geometry_wrapper(17, varargin{:});
+        varargout{1} = geometry_wrapper(23, varargin{:});
         return
       end
 
@@ -82,7 +82,7 @@ classdef Point3 < handle
       % STATICFUNCTION usage: staticFunction() : returns double
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 0
-        varargout{1} = geometry_wrapper(18, varargin{:});
+        varargout{1} = geometry_wrapper(24, varargin{:});
         return
       end
 
@@ -93,7 +93,7 @@ classdef Point3 < handle
       % STRING_DESERIALIZE usage: string_deserialize() : returns gtsam.Point3
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 1
-        varargout{1} = geometry_wrapper(19, varargin{:});
+        varargout{1} = geometry_wrapper(25, varargin{:});
       else
         error('Arguments do not match any overload of function gtsam.Point3.string_deserialize');
       end

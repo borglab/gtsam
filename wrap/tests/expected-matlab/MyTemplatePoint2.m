@@ -34,11 +34,11 @@ classdef MyTemplatePoint2 < MyBase
         if nargin == 2
           my_ptr = varargin{2};
         else
-          my_ptr = geometry_wrapper(48, varargin{2});
+          my_ptr = geometry_wrapper(54, varargin{2});
         end
-        base_ptr = geometry_wrapper(47, my_ptr);
+        base_ptr = geometry_wrapper(53, my_ptr);
       elseif nargin == 0
-        [ my_ptr, base_ptr ] = geometry_wrapper(49);
+        [ my_ptr, base_ptr ] = geometry_wrapper(55);
       else
         error('Arguments do not match any overload of MyTemplatePoint2 constructor');
       end
@@ -47,7 +47,7 @@ classdef MyTemplatePoint2 < MyBase
     end
 
     function delete(obj)
-      geometry_wrapper(50, obj.ptr_MyTemplatePoint2);
+      geometry_wrapper(56, obj.ptr_MyTemplatePoint2);
     end
 
     function display(obj), obj.print(''); end
@@ -58,7 +58,7 @@ classdef MyTemplatePoint2 < MyBase
       % ACCEPT_T usage: accept_T(Point2 value) : returns void
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 1 && isa(varargin{1},'double') && size(varargin{1},1)==2 && size(varargin{1},2)==1
-        geometry_wrapper(51, this, varargin{:});
+        geometry_wrapper(57, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function MyTemplatePoint2.accept_T');
@@ -68,7 +68,7 @@ classdef MyTemplatePoint2 < MyBase
       % ACCEPT_TPTR usage: accept_Tptr(Point2 value) : returns void
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 1 && isa(varargin{1},'double') && size(varargin{1},1)==2 && size(varargin{1},2)==1
-        geometry_wrapper(52, this, varargin{:});
+        geometry_wrapper(58, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function MyTemplatePoint2.accept_Tptr');
@@ -78,7 +78,7 @@ classdef MyTemplatePoint2 < MyBase
       % CREATE_MIXEDPTRS usage: create_MixedPtrs() : returns pair< Point2, Point2 >
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 0
-        [ varargout{1} varargout{2} ] = geometry_wrapper(53, this, varargin{:});
+        [ varargout{1} varargout{2} ] = geometry_wrapper(59, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function MyTemplatePoint2.create_MixedPtrs');
@@ -88,7 +88,7 @@ classdef MyTemplatePoint2 < MyBase
       % CREATE_PTRS usage: create_ptrs() : returns pair< Point2, Point2 >
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 0
-        [ varargout{1} varargout{2} ] = geometry_wrapper(54, this, varargin{:});
+        [ varargout{1} varargout{2} ] = geometry_wrapper(60, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function MyTemplatePoint2.create_ptrs');
@@ -98,7 +98,7 @@ classdef MyTemplatePoint2 < MyBase
       % RETURN_T usage: return_T(Point2 value) : returns Point2
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 1 && isa(varargin{1},'double') && size(varargin{1},1)==2 && size(varargin{1},2)==1
-        varargout{1} = geometry_wrapper(55, this, varargin{:});
+        varargout{1} = geometry_wrapper(61, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function MyTemplatePoint2.return_T');
@@ -108,7 +108,7 @@ classdef MyTemplatePoint2 < MyBase
       % RETURN_TPTR usage: return_Tptr(Point2 value) : returns Point2
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 1 && isa(varargin{1},'double') && size(varargin{1},1)==2 && size(varargin{1},2)==1
-        varargout{1} = geometry_wrapper(56, this, varargin{:});
+        varargout{1} = geometry_wrapper(62, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function MyTemplatePoint2.return_Tptr');
@@ -118,7 +118,7 @@ classdef MyTemplatePoint2 < MyBase
       % RETURN_PTRS usage: return_ptrs(Point2 p1, Point2 p2) : returns pair< Point2, Point2 >
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 2 && isa(varargin{1},'double') && size(varargin{1},1)==2 && size(varargin{1},2)==1 && isa(varargin{2},'double') && size(varargin{2},1)==2 && size(varargin{2},2)==1
-        [ varargout{1} varargout{2} ] = geometry_wrapper(57, this, varargin{:});
+        [ varargout{1} varargout{2} ] = geometry_wrapper(63, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function MyTemplatePoint2.return_ptrs');
@@ -128,7 +128,7 @@ classdef MyTemplatePoint2 < MyBase
       % TEMPLATEDMETHODMATRIX usage: templatedMethodMatrix(Matrix t) : returns Matrix
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 1 && isa(varargin{1},'double')
-        varargout{1} = geometry_wrapper(58, this, varargin{:});
+        varargout{1} = geometry_wrapper(64, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function MyTemplatePoint2.templatedMethodMatrix');
@@ -138,7 +138,7 @@ classdef MyTemplatePoint2 < MyBase
       % TEMPLATEDMETHODPOINT2 usage: templatedMethodPoint2(Point2 t) : returns Point2
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 1 && isa(varargin{1},'double') && size(varargin{1},1)==2 && size(varargin{1},2)==1
-        varargout{1} = geometry_wrapper(59, this, varargin{:});
+        varargout{1} = geometry_wrapper(65, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function MyTemplatePoint2.templatedMethodPoint2');
@@ -148,7 +148,7 @@ classdef MyTemplatePoint2 < MyBase
       % TEMPLATEDMETHODPOINT3 usage: templatedMethodPoint3(Point3 t) : returns Point3
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 1 && isa(varargin{1},'double') && size(varargin{1},1)==3 && size(varargin{1},2)==1
-        varargout{1} = geometry_wrapper(60, this, varargin{:});
+        varargout{1} = geometry_wrapper(66, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function MyTemplatePoint2.templatedMethodPoint3');
@@ -158,7 +158,7 @@ classdef MyTemplatePoint2 < MyBase
       % TEMPLATEDMETHODVECTOR usage: templatedMethodVector(Vector t) : returns Vector
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 1 && isa(varargin{1},'double') && size(varargin{1},2)==1
-        varargout{1} = geometry_wrapper(61, this, varargin{:});
+        varargout{1} = geometry_wrapper(67, this, varargin{:});
         return
       end
       error('Arguments do not match any overload of function MyTemplatePoint2.templatedMethodVector');
@@ -171,7 +171,7 @@ classdef MyTemplatePoint2 < MyBase
       % LEVEL usage: Level(Point2 K) : returns MyTemplatePoint2
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 1 && isa(varargin{1},'double') && size(varargin{1},1)==2 && size(varargin{1},2)==1
-        varargout{1} = geometry_wrapper(62, varargin{:});
+        varargout{1} = geometry_wrapper(68, varargin{:});
         return
       end
 
