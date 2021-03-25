@@ -2,10 +2,11 @@
 %at https://gtsam.org/doxygen/
 %
 %-------Methods-------
-%dhamaalString(double d, string t) : returns Fun<double>
+%multiTemplatedMethodStringSize_t(double d, string t, size_t u) : returns Fun<double>
+%templatedMethodString(double d, string t) : returns Fun<double>
 %
 %-------Static Methods-------
-%divertido() : returns Fun<double>
+%staticMethodWithThis() : returns Fun<double>
 %
 %-------Serialization Interface-------
 %string_serialize() : returns string
@@ -34,28 +35,38 @@ classdef FunDouble < handle
     %DISPLAY Calls print on the object
     function disp(obj), obj.display; end
     %DISP Calls print on the object
-    function varargout = dhamaalString(this, varargin)
-      % DHAMAALSTRING usage: dhamaalString(double d, string t) : returns Fun<double>
+    function varargout = multiTemplatedMethodStringSize_t(this, varargin)
+      % MULTITEMPLATEDMETHODSTRINGSIZE_T usage: multiTemplatedMethodStringSize_t(double d, string t, size_t u) : returns Fun<double>
       % Doxygen can be found at https://gtsam.org/doxygen/
-      if length(varargin) == 2 && isa(varargin{1},'double') && isa(varargin{2},'char')
+      if length(varargin) == 3 && isa(varargin{1},'double') && isa(varargin{2},'char') && isa(varargin{3},'numeric')
         varargout{1} = class_wrapper(7, this, varargin{:});
         return
       end
-      error('Arguments do not match any overload of function FunDouble.dhamaalString');
+      error('Arguments do not match any overload of function FunDouble.multiTemplatedMethodStringSize_t');
+    end
+
+    function varargout = templatedMethodString(this, varargin)
+      % TEMPLATEDMETHODSTRING usage: templatedMethodString(double d, string t) : returns Fun<double>
+      % Doxygen can be found at https://gtsam.org/doxygen/
+      if length(varargin) == 2 && isa(varargin{1},'double') && isa(varargin{2},'char')
+        varargout{1} = class_wrapper(8, this, varargin{:});
+        return
+      end
+      error('Arguments do not match any overload of function FunDouble.templatedMethodString');
     end
 
   end
 
   methods(Static = true)
-    function varargout = Divertido(varargin)
-      % DIVERTIDO usage: divertido() : returns Fundouble
+    function varargout = StaticMethodWithThis(varargin)
+      % STATICMETHODWITHTHIS usage: staticMethodWithThis() : returns Fundouble
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 0
-        varargout{1} = class_wrapper(8, varargin{:});
+        varargout{1} = class_wrapper(9, varargin{:});
         return
       end
 
-      error('Arguments do not match any overload of function FunDouble.divertido');
+      error('Arguments do not match any overload of function FunDouble.staticMethodWithThis');
     end
 
   end

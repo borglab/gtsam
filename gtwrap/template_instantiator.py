@@ -206,40 +206,35 @@ class InstantiatedMethod(parser.Method):
     """
     We can only instantiate template methods with a single template parameter.
     """
-    def __init__(self, original, instantiation=''):
+    def __init__(self, original, instantiations=''):
         self.original = original
-        self.instantiation = instantiation
+        self.instantiations = instantiations
         self.template = ''
         self.is_const = original.is_const
         self.parent = original.parent
 
-        if not original.template:
-            self.name = original.name
-            self.return_type = original.return_type
-            self.args = original.args
-        else:
-            #TODO(Varun) enable multiple templates for methods
-            if len(self.original.template.typenames) > 1:
-                raise ValueError("Can only instantiate template method with "
-                                 "single template parameter.")
-            self.name = instantiate_name(original.name, [self.instantiation])
-            self.return_type = instantiate_return_type(
-                original.return_type,
-                [self.original.template.typenames[0]],
-                [self.instantiation],
-                # Keyword type name `This` should already be replaced in the
-                # previous class template instantiation round.
-                cpp_typename='',
-            )
-            instantiated_args = instantiate_args_list(
-                original.args.args_list,
-                [self.original.template.typenames[0]],
-                [self.instantiation],
-                # Keyword type name `This` should already be replaced in the
-                # previous class template instantiation round.
-                cpp_typename='',
-            )
-            self.args = parser.ArgumentList(instantiated_args)
+        # Check for typenames if templated.
+        # This way, we can gracefully handle bot templated and non-templated methois.
+        typenames = self.original.template.typenames if self.original.template else []
+        self.name = instantiate_name(original.name, self.instantiations)
+        self.return_type = instantiate_return_type(
+            original.return_type,
+            typenames,
+            self.instantiations,
+            # Keyword type name `This` should already be replaced in the
+            # previous class template instantiation round.
+            cpp_typename='',
+        )
+
+        instantiated_args = instantiate_args_list(
+            original.args.args_list,
+            typenames,
+            self.instantiations,
+            # Keyword type name `This` should already be replaced in the
+            # previous class template instantiation round.
+            cpp_typename='',
+        )
+        self.args = parser.ArgumentList(instantiated_args)
 
         super().__init__(self.template,
                          self.name,
@@ -251,7 +246,13 @@ class InstantiatedMethod(parser.Method):
     def to_cpp(self):
         """Generate the C++ code for wrapping."""
         if self.original.template:
-            ret = "{}<{}>".format(self.original.name, self.instantiation)
+            instantiation_list = [
+                # Get the fully qualified name
+                "::".join(x.namespaces + [x.name])
+                for x in self.instantiations
+            ]
+            ret = "{}<{}>".format(self.original.name,
+                                  ",".join(instantiation_list))
         else:
             ret = self.original.name
         return ret
@@ -293,12 +294,13 @@ class InstantiatedClass(parser.Class):
         # This will allow the `This` keyword to be used in both templated and non-templated classes.
         typenames = self.original.template.typenames if self.original.template else []
 
-        # Instantiate the constructors, static methods, properties and instance methods, respectively.
+        # Instantiate the constructors, static methods, properties
+        # and instance methods, respectively.
         self.ctors = self.instantiate_ctors(typenames)
         self.static_methods = self.instantiate_static_methods(typenames)
         self.properties = self.instantiate_properties(typenames)
-        instantiated_methods = self.instantiate_class_templates_in_methods(
-            typenames)
+        instantiated_methods = \
+            self.instantiate_class_templates_in_methods(typenames)
 
         # Second instantiation round to instantiate templated methods.
         # This is done in case both the class and the method are templated.
@@ -307,11 +309,12 @@ class InstantiatedClass(parser.Class):
             if not method.template:
                 self.methods.append(InstantiatedMethod(method, ''))
             else:
-                assert len(
-                    method.template.typenames) == 1, ""\
-                    "Can only instantiate single template methods"
-                for inst in method.template.instantiations[0]:
-                    self.methods.append(InstantiatedMethod(method, inst))
+                instantiations = []
+                # Get all combinations of template parameters
+                for instantiations in itertools.product(
+                        *method.template.instantiations):
+                    self.methods.append(
+                        InstantiatedMethod(method, instantiations))
 
         super().__init__(
             self.template,
