@@ -29,7 +29,7 @@ jobs:
         #TODO update wrapper to prevent OOM
         # build_type: [Debug, Release]
         build_type: [Release]
-        python_version: [3.6]
+        python_version: [3]
         include:
           - name: ubuntu-18.04-gcc-5
             os: ubuntu-18.04
