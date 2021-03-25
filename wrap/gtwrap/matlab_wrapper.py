@@ -348,7 +348,7 @@ class MatlabWrapper(object):
 
             method += instance_method.parent.name + separator
             method += instance_method.original.name
-            method += "<" + instance_method.instantiation.to_cpp() + ">"
+            method += "<" + instance_method.instantiations.to_cpp() + ">"
 
         return method[2 * len(separator):]
 
@@ -1337,9 +1337,9 @@ class MatlabWrapper(object):
             method_name = method.to_cpp()
             obj_start = 'obj->'
 
-            if method.instantiation:
+            if method.instantiations:
                 # method_name += '<{}>'.format(
-                #     self._format_type_name(method.instantiation))
+                #     self._format_type_name(method.instantiations))
                 # method_name = self._format_instance_method(method, '::')
                 method = method.to_cpp()
 

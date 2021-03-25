@@ -15,16 +15,16 @@ macro(get_python_version)
 
     set(Python_VERSION_MAJOR
         ${PYTHON_VERSION_MAJOR}
-        PARENT_SCOPE)
+        CACHE INTERNAL "")
     set(Python_VERSION_MINOR
         ${PYTHON_VERSION_MINOR}
-        PARENT_SCOPE)
+        CACHE INTERNAL "")
     set(Python_VERSION_PATCH
         ${PYTHON_VERSION_PATCH}
-        PARENT_SCOPE)
+        CACHE INTERNAL "")
     set(Python_EXECUTABLE
         ${PYTHON_EXECUTABLE}
-        PARENT_SCOPE)
+        CACHE INTERNAL "")
 
   else()
     # Get info about the Python interpreter
@@ -36,6 +36,20 @@ macro(get_python_version)
         FATAL_ERROR
           "Cannot find Python interpreter. Please install Python>=3.5.")
     endif()
+
+    # Set both sets of variables
+    set(PYTHON_VERSION_MAJOR
+        ${Python_VERSION_MAJOR}
+        CACHE INTERNAL "")
+    set(PYTHON_VERSION_MINOR
+        ${Python_VERSION_MINOR}
+        CACHE INTERNAL "")
+    set(PYTHON_VERSION_PATCH
+        ${Python_VERSION_PATCH}
+        CACHE INTERNAL "")
+    set(PYTHON_EXECUTABLE
+        ${Python_EXECUTABLE}
+        CACHE INTERNAL "")
 
   endif()
 endmacro()
