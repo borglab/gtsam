@@ -28,8 +28,9 @@ PYBIND11_MODULE(class_py, m_) {
         .def_static("create",[](){return FunRange::create();});
 
     py::class_<Fun<double>, std::shared_ptr<Fun<double>>>(m_, "FunDouble")
-        .def("dhamaalString",[](Fun<double>* self, double d, string t){return self->dhamaal<string>(d, t);}, py::arg("d"), py::arg("t"))
-        .def_static("divertido",[](){return Fun<double>::divertido();});
+        .def("templatedMethodString",[](Fun<double>* self, double d, string t){return self->templatedMethod<string>(d, t);}, py::arg("d"), py::arg("t"))
+        .def("multiTemplatedMethodStringSize_t",[](Fun<double>* self, double d, string t, size_t u){return self->multiTemplatedMethod<string,size_t>(d, t, u);}, py::arg("d"), py::arg("t"), py::arg("u"))
+        .def_static("staticMethodWithThis",[](){return Fun<double>::staticMethodWithThis();});
 
     py::class_<Test, std::shared_ptr<Test>>(m_, "Test")
         .def(py::init<>())

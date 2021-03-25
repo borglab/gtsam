@@ -7,13 +7,13 @@ class FunRange {
 
 template<M={double}>
 class Fun {
-  static This divertido();
+  static This staticMethodWithThis();
 
   template<T={string}>
-  This dhamaal(double d, T t);
+  This templatedMethod(double d, T t);
 
-  // template<T={string}, U={size_t}>
-  // This pret(double d, T t, U u);
+  template<T={string}, U={size_t}>
+  This multiTemplatedMethod(double d, T t, U u);
 };
 
 
