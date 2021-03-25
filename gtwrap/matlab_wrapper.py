@@ -78,7 +78,8 @@ class MatlabWrapper(object):
 
     # Ensure the template file is always picked up from the correct directory.
     dir_path = osp.dirname(osp.realpath(__file__))
-    wrapper_file_template = osp.join(dir_path, "matlab_wrapper.tpl")
+    with open(osp.join(dir_path, "matlab_wrapper.tpl")) as f:
+        wrapper_file_header = f.read()
 
     def __init__(self,
                  module,
@@ -668,8 +669,7 @@ class MatlabWrapper(object):
         """Generate the C++ file for the wrapper."""
         file_name = self._wrapper_name() + '.cpp'
 
-        with open(self.wrapper_file_template) as f:
-            wrapper_file = f.read()
+        wrapper_file = self.wrapper_file_header
 
         return file_name, wrapper_file
 
@@ -1630,13 +1630,11 @@ class MatlabWrapper(object):
     def generate_wrapper(self, namespace):
         """Generate the c++ wrapper."""
         # Includes
-        wrapper_file = textwrap.dedent('''\
-            #include <gtwrap/matlab.h>
-            #include <map>\n
+        wrapper_file = self.wrapper_file_header + textwrap.dedent("""
             #include <boost/archive/text_iarchive.hpp>
             #include <boost/archive/text_oarchive.hpp>
             #include <boost/serialization/export.hpp>\n
-        ''')
+        """)
 
         assert namespace
 

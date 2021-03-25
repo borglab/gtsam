@@ -8,25 +8,30 @@ Date: February 2019
 
 import filecmp
 import os
-import os.path as path
+import os.path as osp
 import sys
 import unittest
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
 sys.path.append(
-    os.path.normpath(
-        os.path.abspath(os.path.join(__file__, '../../../build/wrap'))))
+    osp.normpath(osp.abspath(osp.join(__file__, '../../../build/wrap'))))
 
 import gtwrap.interface_parser as parser
 import gtwrap.template_instantiator as instantiator
 from gtwrap.pybind_wrapper import PybindWrapper
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
 
 
 class TestWrap(unittest.TestCase):
     """Tests for Python wrapper based on Pybind11."""
-    TEST_DIR = os.path.dirname(os.path.realpath(__file__)) + "/"
+    TEST_DIR = osp.dirname(osp.realpath(__file__))
+    INTERFACE_DIR = osp.join(TEST_DIR, 'fixtures')
+    PYTHON_TEST_DIR = osp.join(TEST_DIR, 'expected', 'python')
+    PYTHON_ACTUAL_DIR = osp.join(TEST_DIR, "actual", "python")
+
+    # Create the `actual/python` directory
+    os.makedirs(PYTHON_ACTUAL_DIR, exist_ok=True)
 
     def wrap_content(self, content, module_name, output_dir):
         """
@@ -36,7 +41,8 @@ class TestWrap(unittest.TestCase):
 
         instantiator.instantiate_namespace_inplace(module)
 
-        with open(self.TEST_DIR + "pybind_wrapper.tpl") as template_file:
+        with open(osp.join(self.TEST_DIR,
+                           "pybind_wrapper.tpl")) as template_file:
             module_template = template_file.read()
 
         # Create Pybind wrapper instance
@@ -49,54 +55,84 @@ class TestWrap(unittest.TestCase):
 
         cc_content = wrapper.wrap()
 
-        output = path.join(self.TEST_DIR, output_dir, module_name + ".cpp")
+        output = osp.join(self.TEST_DIR, output_dir, module_name + ".cpp")
 
-        if not path.exists(path.join(self.TEST_DIR, output_dir)):
-            os.mkdir(path.join(self.TEST_DIR, output_dir))
+        if not osp.exists(osp.join(self.TEST_DIR, output_dir)):
+            os.mkdir(osp.join(self.TEST_DIR, output_dir))
 
         with open(output, 'w') as f:
             f.write(cc_content)
 
         return output
 
-    def test_geometry_python(self):
+    def compare_and_diff(self, file, actual):
+        """
+        Compute the comparison between the expected and actual file,
+        and assert if diff is zero.
+        """
+        expected = osp.join(self.PYTHON_TEST_DIR, file)
+        success = filecmp.cmp(actual, expected)
+
+        if not success:
+            os.system("diff {} {}".format(actual, expected))
+        self.assertTrue(success, "Mismatch for file {0}".format(file))
+
+    def test_geometry(self):
         """
         Check generation of python geometry wrapper.
         python3 ../pybind_wrapper.py --src geometry.h --module_name
             geometry_py --out output/geometry_py.cc
         """
-        with open(os.path.join(self.TEST_DIR, 'geometry.h'), 'r') as f:
+        with open(osp.join(self.INTERFACE_DIR, 'geometry.i'), 'r') as f:
             content = f.read()
 
-        output = self.wrap_content(content, 'geometry_py', 'actual-python')
+        output = self.wrap_content(content, 'geometry_py',
+                                   self.PYTHON_ACTUAL_DIR)
 
-        expected = path.join(self.TEST_DIR,
-                             'expected-python/geometry_pybind.cpp')
-        success = filecmp.cmp(output, expected)
+        self.compare_and_diff('geometry_pybind.cpp', output)
 
-        if not success:
-            os.system("diff {} {}".format(output, expected))
-        self.assertTrue(success)
+    def test_functions(self):
+        """Test interface file with function info."""
+        with open(osp.join(self.INTERFACE_DIR, 'functions.i'), 'r') as f:
+            content = f.read()
+
+        output = self.wrap_content(content, 'functions_py',
+                                   self.PYTHON_ACTUAL_DIR)
+
+        self.compare_and_diff('functions_pybind.cpp', output)
+
+    def test_class(self):
+        """Test interface file with only class info."""
+        with open(osp.join(self.INTERFACE_DIR, 'class.i'), 'r') as f:
+            content = f.read()
+
+        output = self.wrap_content(content, 'class_py', self.PYTHON_ACTUAL_DIR)
+
+        self.compare_and_diff('class_pybind.cpp', output)
+
+    def test_inheritance(self):
+        """Test interface file with class inheritance definitions."""
+        with open(osp.join(self.INTERFACE_DIR, 'inheritance.i'), 'r') as f:
+            content = f.read()
+
+        output = self.wrap_content(content, 'inheritance_py',
+                                   self.PYTHON_ACTUAL_DIR)
+
+        self.compare_and_diff('inheritance_pybind.cpp', output)
 
     def test_namespaces(self):
         """
-        Check generation of python geometry wrapper.
-        python3 ../pybind_wrapper.py --src testNamespaces.h --module_name
-            testNamespaces_py --out output/testNamespaces_py.cc
+        Check generation of python wrapper for full namespace definition.
+        python3 ../pybind_wrapper.py --src namespaces.i --module_name
+            namespaces_py --out output/namespaces_py.cpp
         """
-        with open(os.path.join(self.TEST_DIR, 'testNamespaces.h'), 'r') as f:
+        with open(osp.join(self.INTERFACE_DIR, 'namespaces.i'), 'r') as f:
             content = f.read()
 
-        output = self.wrap_content(content, 'testNamespaces_py',
-                                   'actual-python')
+        output = self.wrap_content(content, 'namespaces_py',
+                                   self.PYTHON_ACTUAL_DIR)
 
-        expected = path.join(self.TEST_DIR,
-                             'expected-python/testNamespaces_py.cpp')
-        success = filecmp.cmp(output, expected)
-
-        if not success:
-            os.system("diff {} {}".format(output, expected))
-        self.assertTrue(success)
+        self.compare_and_diff('namespaces_pybind.cpp', output)
 
 
 if __name__ == '__main__':
