@@ -107,16 +107,23 @@ namespace gtsam {
 
     /** Returns a vector of errors for the measured tangent parameters.  */
     Vector evaluateError(const T& p, boost::optional<Matrix&> H = boost::none) const override {
+      Eigen::Matrix<double, T::dimension, T::dimension> H_local;
+
+      // If the Rot3 Cayley map is used, Rot3::LocalCoordinates will throw a runtime error
+      // when asked to compute the Jacobian matrix (see Rot3M.cpp).
+      #ifdef GTSAM_ROT3_EXPMAP
+      const Vector full_tangent = T::LocalCoordinates(p, H ? &H_local : nullptr);
+      #else
+      const Vector full_tangent = T::Logmap(p, H ? &H_local : nullptr);
+      #endif
+
       if (H) {
-        Matrix H_local;
-        T::LocalCoordinates(p, H_local);
         (*H) = Matrix::Zero(indices_.size(), T::dimension);
         for (size_t i = 0; i < indices_.size(); ++i) {
           (*H).row(i) = H_local.row(indices_.at(i));
         }
       }
-      // Compute the tangent vector representation of T and select relevant parameters.
-      const Vector& full_tangent = T::LocalCoordinates(p);
+      // Select relevant parameters from the tangent vector.
       Vector partial_tangent = Vector::Zero(indices_.size());
       for (size_t i = 0; i < indices_.size(); ++i) {
         partial_tangent(i) = full_tangent(indices_.at(i));
