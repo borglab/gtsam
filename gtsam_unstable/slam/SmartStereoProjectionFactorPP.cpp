@@ -76,7 +76,7 @@ void SmartStereoProjectionFactorPP::add(
 
 void SmartStereoProjectionFactorPP::print(
     const std::string& s, const KeyFormatter& keyFormatter) const {
-  std::cout << s << "SmartStereoProjectionFactorPP, z = \n ";
+  std::cout << s << "SmartStereoProjectionFactorPP: \n ";
   for (size_t i = 0; i < K_all_.size(); i++) {
     K_all_[i]->print("calibration = ");
     std::cout << " extrinsic pose key: " << keyFormatter(body_P_cam_keys_[i]) << std::endl;
