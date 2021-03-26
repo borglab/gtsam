@@ -30,7 +30,6 @@ static const int kIndexTx = 3;
 static const int kIndexTy = 4;
 static const int kIndexTz = 5;
 
-
 typedef PartialPriorFactor<Pose2> TestPartialPriorFactor2;
 typedef PartialPriorFactor<Pose3> TestPartialPriorFactor3;
 typedef std::vector<size_t> Indices;
