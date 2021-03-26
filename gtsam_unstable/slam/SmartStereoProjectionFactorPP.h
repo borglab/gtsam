@@ -194,10 +194,6 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
 
     KeyVector allKeys; // includes body poses and *unique* extrinsic poses
     allKeys.insert(allKeys.end(), keys_.begin(), keys_.end());
-//    KeyVector sorted_body_P_cam_keys(body_P_cam_keys_); // make a copy that we can edit
-//    std::sort(sorted_body_P_cam_keys.begin(), sorted_body_P_cam_keys.end()); // required by unique
-//    std::unique(sorted_body_P_cam_keys.begin(), sorted_body_P_cam_keys.end());
-//    allKeys.insert(allKeys.end(), sorted_body_P_cam_keys.begin(), sorted_body_P_cam_keys.end());
     size_t numKeys = allKeys.size();
 
     // Create structures for Hessian Factors
@@ -225,6 +221,7 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
       return boost::make_shared<RegularHessianFactor<DimPose> >(allKeys,
                                                                   Gs, gs, 0.0);
     }
+
 //    std::cout << "result_" << *result_ << std::endl;
 //    std::cout << "result_2" << result_ << std::endl;
     // Jacobian could be 3D Point3 OR 2D Unit3, difference is E.cols().
@@ -260,14 +257,46 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
     SymmetricBlockMatrix augmentedHessian = //
         Cameras::SchurComplement<3,Dim>(Fs, E, P, b);
 
+    //    KeyVector sorted_body_P_cam_keys(body_P_cam_keys_); // make a copy that we can edit
+    //    std::sort(sorted_body_P_cam_keys.begin(), sorted_body_P_cam_keys.end()); // required by unique
+    //    std::unique(sorted_body_P_cam_keys.begin(), sorted_body_P_cam_keys.end());
+    //    allKeys.insert(allKeys.end(), sorted_body_P_cam_keys.begin(), sorted_body_P_cam_keys.end());
+
     std::vector<DenseIndex> dims(numKeys + 1); // this also includes the b term
     std::fill(dims.begin(), dims.end() - 1, 6);
     dims.back() = 1;
-    SymmetricBlockMatrix augmentedHessianPP(dims, Matrix(augmentedHessian.selfadjointView()));
-    //std::cout << "Matrix(augmentedHessian.selfadjointView()) \n" << Matrix(augmentedHessian.selfadjointView()) <<std::endl;
+    size_t nrKeysNonUnique = w_P_body_keys_.size() + body_P_cam_keys_.size();
+    if ( numKeys == nrKeysNonUnique ){ // 1 calibration per camera
+      SymmetricBlockMatrix augmentedHessianPP = SymmetricBlockMatrix(dims, Matrix(augmentedHessian.selfadjointView()));
+      return boost::make_shared<RegularHessianFactor<DimPose> >(allKeys,
+                                                                augmentedHessianPP);
+    }else{
+      Matrix augmentedHessianMatrixPP = Matrix(augmentedHessian.selfadjointView());
+      Matrix associationMatrix = Matrix::Zero( numKeys, nrKeysNonUnique ); // association from unique keys to vector with potentially repeated keys
+      std::cout << "Linearize" << std::endl;
 
-    return boost::make_shared<RegularHessianFactor<DimPose> >(allKeys,
-                                                          augmentedHessianPP);
+      for(size_t i=0; i<numKeys;i++){
+        for(size_t j=0; j<nrKeysNonUnique;k++){
+          if ( keys_[i] ==  )
+          // std::cout <<"key: " << DefaultKeyFormatter(allKeys[i]) << std::endl;
+        }
+      }
+
+      for (size_t i=0; i < w_P_body_keys_.size() + body_P_cam_keys_.size(); i++){
+        // create map of unique keys
+      }
+
+      std::vector<Matrix> Gs(numKeys * (numKeys + 1) / 2);
+      std::vector<Vector> gs(numKeys);
+      for(Matrix& m: Gs)
+        m = Matrix::Zero(DimPose,DimPose);
+      for(Vector& v: gs)
+        v = Vector::Zero(DimPose);
+      double e = augmentedHessianMatrixPP( augmentedHessianMatrixPP.rows()-1, augmentedHessianMatrixPP.cols()-1 );
+      return boost::make_shared<RegularHessianFactor<DimPose> >(allKeys,
+                                                                Gs, gs, e);
+    }
+    //std::cout << "Matrix(augmentedHessian.selfadjointView()) \n" << Matrix(augmentedHessian.selfadjointView()) <<std::endl;
   }
 
   /**

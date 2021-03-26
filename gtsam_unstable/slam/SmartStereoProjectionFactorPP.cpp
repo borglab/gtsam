@@ -35,7 +35,10 @@ void SmartStereoProjectionFactorPP::add(
   w_P_body_keys_.push_back(w_P_body_key);
   body_P_cam_keys_.push_back(body_P_cam_key);
 
-  keys_.push_back(body_P_cam_key);
+  // pose keys are assumed to be unique (1 observation per time stamp), but calibration can be shared
+  if(std::find(keys_.begin(), keys_.end(), body_P_cam_key) == keys_.end())
+      keys_.push_back(body_P_cam_key); // add only unique keys
+
   K_all_.push_back(K);
 }
 
@@ -48,7 +51,9 @@ void SmartStereoProjectionFactorPP::add(
   assert(w_P_body_keys.size() == Ks.size());
   for (size_t i = 0; i < measurements.size(); i++) {
       Base::add(measurements[i], w_P_body_keys[i]);
-      keys_.push_back(body_P_cam_keys[i]);
+      // pose keys are assumed to be unique (1 observation per time stamp), but calibration can be shared
+      if(std::find(keys_.begin(), keys_.end(), body_P_cam_keys[i]) == keys_.end())
+          keys_.push_back(body_P_cam_keys[i]); // add only unique keys
 
       w_P_body_keys_.push_back(w_P_body_keys[i]);
       body_P_cam_keys_.push_back(body_P_cam_keys[i]);
@@ -65,7 +70,9 @@ void SmartStereoProjectionFactorPP::add(
   assert(w_P_body_keys.size() == body_P_cam_keys.size());
   for (size_t i = 0; i < measurements.size(); i++) {
     Base::add(measurements[i], w_P_body_keys[i]);
-    keys_.push_back(body_P_cam_keys[i]);
+    // pose keys are assumed to be unique (1 observation per time stamp), but calibration can be shared
+    if(std::find(keys_.begin(), keys_.end(), body_P_cam_keys[i]) == keys_.end())
+      keys_.push_back(body_P_cam_keys[i]); // add only unique keys
 
     w_P_body_keys_.push_back(w_P_body_keys[i]);
     body_P_cam_keys_.push_back(body_P_cam_keys[i]);
