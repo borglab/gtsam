@@ -58,7 +58,6 @@ PATH=$PATH:$($PYTHON -c "import site; print(site.USER_BASE)")/bin
 
 
 BUILD_PYBIND="ON"
-TYPEDEF_POINTS_TO_VECTORS="ON"
 
 sudo $PYTHON -m pip install -r $GITHUB_WORKSPACE/python/requirements.txt
 
