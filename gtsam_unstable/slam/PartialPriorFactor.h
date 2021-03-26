@@ -111,14 +111,14 @@ namespace gtsam {
     Vector evaluateError(const T& p, boost::optional<Matrix&> H = boost::none) const override {
       if (H) {
         Matrix H_logmap;
-        p.localCoordinates(T::identity(), H_logmap);
+        T::Logmap(p, H_logmap);
         (*H) = Matrix::Zero(indices_.size(), T::dimension);
         for (size_t i = 0; i < indices_.size(); ++i) {
           (*H).row(i) = H_logmap.row(indices_.at(i));
         }
       }
       // Compute the tangent vector representation of T and select relevant parameters.
-      const Vector& full_logmap = p.localCoordinates(T::identity());
+      const Vector& full_logmap = T::Logmap(p);
       Vector partial_logmap = Vector::Zero(T::dimension);
       for (size_t i = 0; i < indices_.size(); ++i) {
         partial_logmap(i) = full_logmap(indices_.at(i));
