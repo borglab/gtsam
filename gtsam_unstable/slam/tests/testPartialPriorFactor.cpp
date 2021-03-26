@@ -38,7 +38,6 @@ struct traits<TestPartialPriorFactor> : public Testable<TestPartialPriorFactor> 
 };
 }
 
-
 /* ************************************************************************* */
 TEST(PartialPriorFactor, JacobianAtIdentity)
 {
@@ -46,7 +45,7 @@ TEST(PartialPriorFactor, JacobianAtIdentity)
   Pose3 measurement = Pose3::identity();
   SharedNoiseModel model = noiseModel::Isotropic::Sigma(1, 0.25);
 
-  TestPartialPriorFactor factor(poseKey, kIndexTy, measurement.translation().x(), model);
+  TestPartialPriorFactor factor(poseKey, kIndexTy, measurement.translation().y(), model);
 
   // Create a linearization point at the zero-error point
   Pose3 pose = Pose3::identity();
@@ -63,14 +62,13 @@ TEST(PartialPriorFactor, JacobianAtIdentity)
   CHECK(assert_equal(expectedH1, actualH1, 1e-5));
 }
 
-
 /* ************************************************************************* */
 TEST(PartialPriorFactor, JacobianPartialTranslation) {
   Key poseKey(1);
   Pose3 measurement(Rot3::RzRyRx(0.15, -0.30, 0.45), Point3(-5.0, 8.0, -11.0));
   SharedNoiseModel model = noiseModel::Isotropic::Sigma(1, 0.25);
 
-  TestPartialPriorFactor factor(poseKey, kIndexTy, measurement.translation().x(), model);
+  TestPartialPriorFactor factor(poseKey, kIndexTy, measurement.translation().y(), model);
 
   // Create a linearization point at the zero-error point
   Pose3 pose(Rot3::RzRyRx(0.15, -0.30, 0.45), Point3(-5.0, 8.0, -11.0));
