@@ -7,10 +7,10 @@ endif()
 
 # Get the Python version
 include(GtwrapUtils)
-message(status "Checking Python Version")
+message(STATUS "Checking Python Version")
 gtwrap_get_python_version(${WRAP_PYTHON_VERSION})
 
-message(status "Setting Python version for wrapper")
+message(STATUS "Setting Python version for wrapper")
 set(PYBIND11_PYTHON_VERSION ${WRAP_PYTHON_VERSION})
 
 # User-friendly Pybind11 wrapping and installing function.
