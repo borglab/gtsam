@@ -36,7 +36,7 @@ class TestWrap(unittest.TestCase):
     logger.remove()  # remove the default sink
     logger.add(sys.stderr, format="{time} {level} {message}", level="INFO")
 
-    def generate_content(self, cc_content, path=''):
+    def generate_content(self, cc_content, path=MATLAB_ACTUAL_DIR):
         """Generate files and folders from matlab wrapper content.
 
         Keyword arguments:
@@ -45,9 +45,6 @@ class TestWrap(unittest.TestCase):
             (folder_name, [(file_name, file_content)])
         path -- the path to the files parent folder within the main folder
         """
-        if path == '':
-            path = self.MATLAB_ACTUAL_DIR
-
         for c in cc_content:
             if isinstance(c, list):
                 if len(c) == 0:
@@ -275,6 +272,39 @@ class TestWrap(unittest.TestCase):
         for file in files:
             self.compare_and_diff(file)
 
+    def test_special_cases(self):
+        """
+        Tests for some unique, non-trivial features.
+        """
+        with open(osp.join(self.INTERFACE_DIR, 'special_cases.i'), 'r') as f:
+            content = f.read()
+
+        if not osp.exists(self.MATLAB_ACTUAL_DIR):
+            os.mkdir(self.MATLAB_ACTUAL_DIR)
+
+        module = parser.Module.parseString(content)
+
+        instantiator.instantiate_namespace_inplace(module)
+
+        wrapper = MatlabWrapper(
+            module=module,
+            module_name='special_cases',
+            top_module_namespace=['gtsam'],
+            ignore_classes=[''],
+        )
+
+        cc_content = wrapper.wrap()
+
+        self.generate_content(cc_content)
+
+        files = [
+            'special_cases_wrapper.cpp',
+            '+gtsam/PinholeCameraCal3Bundler.m',
+            '+gtsam/NonlinearFactorGraph.m', 
+        ]
+
+        for file in files:
+            self.compare_and_diff(file)
 
 if __name__ == '__main__':
     unittest.main()

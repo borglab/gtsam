@@ -134,6 +134,18 @@ class TestWrap(unittest.TestCase):
 
         self.compare_and_diff('namespaces_pybind.cpp', output)
 
+    def test_special_cases(self):
+        """
+        Tests for some unique, non-trivial features.
+        """
+        with open(osp.join(self.INTERFACE_DIR, 'special_cases.i'), 'r') as f:
+            content = f.read()
+
+        output = self.wrap_content(content, 'special_cases_py',
+                                   self.PYTHON_ACTUAL_DIR)
+
+        self.compare_and_diff('special_cases_pybind.cpp', output)
+
 
 if __name__ == '__main__':
     unittest.main()
