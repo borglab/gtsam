@@ -659,22 +659,14 @@ TEST( SmartStereoProjectionFactorPP, 3poses_smart_projection_factor_optimization
   SmartStereoProjectionFactorPP::shared_ptr smartFactor3(new SmartStereoProjectionFactorPP(model, smart_params));
   smartFactor3->add(measurements_l3, poseKeys, extrinsicKeys, K2);
 
-  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
-
-  // Values
+  // relevant poses:
   Pose3 body_Pose_cam = Pose3(Rot3::Ypr(-M_PI, 1., 0.1),Point3(0, 1, 0));
   Pose3 w_Pose_body1 = w_Pose_cam1.compose(body_Pose_cam.inverse());
   Pose3 w_Pose_body2 = w_Pose_cam2.compose(body_Pose_cam.inverse());
   Pose3 w_Pose_body3 = w_Pose_cam3.compose(body_Pose_cam.inverse());
 
-  Values values;
-  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100), Point3(0.01, 0.01, 0.01)); // smaller noise
-  values.insert(x1, w_Pose_body1);
-  values.insert(x2, w_Pose_body2);
-  values.insert(x3, w_Pose_body3);
-  values.insert(body_P_cam_key, body_Pose_cam*noise_pose);
-
   // Graph
+  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
   NonlinearFactorGraph graph;
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
@@ -683,7 +675,15 @@ TEST( SmartStereoProjectionFactorPP, 3poses_smart_projection_factor_optimization
   graph.addPrior(x2, w_Pose_body2, noisePrior);
   graph.addPrior(x3, w_Pose_body3, noisePrior);
   // we might need some prior on the calibration too
-  // graph.addPrior(body_P_cam_key, body_Pose_cam, noisePrior); // no need! the measurements will fix this!
+  graph.addPrior(body_P_cam_key, body_Pose_cam, noisePrior); // no need! the measurements will fix this!
+
+  // Values
+  Values values;
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100), Point3(0.01, 0.01, 0.01)); // smaller noise
+  values.insert(x1, w_Pose_body1);
+  values.insert(x2, w_Pose_body2);
+  values.insert(x3, w_Pose_body3);
+  values.insert(body_P_cam_key, body_Pose_cam*noise_pose);
 
   // cost is large before optimization
   double initialErrorSmart = graph.error(values);
@@ -697,6 +697,12 @@ TEST( SmartStereoProjectionFactorPP, 3poses_smart_projection_factor_optimization
   tictoc_finishedIteration_();
 
   EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-5);
+
+  GaussianFactorGraph::shared_ptr GFG = graph.linearize(result);
+  GFG->print("GFG \n");
+  VectorValues delta = GFG->optimize();
+  VectorValues expected = VectorValues::Zero(delta);
+  EXPECT(assert_equal(expected, delta, 1e-6));
 }
 
 /* *************************************************************************
