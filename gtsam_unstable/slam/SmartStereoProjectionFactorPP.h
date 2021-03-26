@@ -205,9 +205,9 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
     std::vector<Matrix> Gs(numKeys * (numKeys + 1) / 2);
     std::vector<Vector> gs(numKeys);
 
-    for(size_t i=0; i<numKeys;i++){
-      std::cout <<"key: " << DefaultKeyFormatter(allKeys[i]) << std::endl;
-    }
+//    for(size_t i=0; i<numKeys;i++){
+//      std::cout <<"key: " << DefaultKeyFormatter(allKeys[i]) << std::endl;
+//    }
 
     if (this->measured_.size() != cameras(values).size())
       throw std::runtime_error("SmartStereoProjectionHessianFactor: this->"
@@ -264,7 +264,7 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
     std::fill(dims.begin(), dims.end() - 1, 6);
     dims.back() = 1;
     SymmetricBlockMatrix augmentedHessianPP(dims, Matrix(augmentedHessian.selfadjointView()));
-    std::cout << "Matrix(augmentedHessian.selfadjointView()) \n" << Matrix(augmentedHessian.selfadjointView()) <<std::endl;
+    //std::cout << "Matrix(augmentedHessian.selfadjointView()) \n" << Matrix(augmentedHessian.selfadjointView()) <<std::endl;
 
     return boost::make_shared<RegularHessianFactor<DimPose> >(allKeys,
                                                           augmentedHessianPP);

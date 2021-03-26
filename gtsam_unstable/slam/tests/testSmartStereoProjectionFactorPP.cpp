@@ -698,11 +698,11 @@ TEST( SmartStereoProjectionFactorPP, 3poses_smart_projection_factor_optimization
 
   EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-5);
 
-  GaussianFactorGraph::shared_ptr GFG = graph.linearize(result);
-  GFG->print("GFG \n");
-  VectorValues delta = GFG->optimize();
-  VectorValues expected = VectorValues::Zero(delta);
-  EXPECT(assert_equal(expected, delta, 1e-6));
+//  GaussianFactorGraph::shared_ptr GFG = graph.linearize(result);
+//  // GFG->print("GFG \n");
+//  VectorValues delta = GFG->optimize();
+//  VectorValues expected = VectorValues::Zero(delta);
+//  EXPECT(assert_equal(expected, delta, 1e-6));
 }
 
 /* *************************************************************************
