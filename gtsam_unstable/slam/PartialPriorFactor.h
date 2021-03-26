@@ -119,7 +119,7 @@ namespace gtsam {
       }
       // Compute the tangent vector representation of T and select relevant parameters.
       const Vector& full_logmap = T::Logmap(p);
-      Vector partial_logmap = Vector::Zero(T::dimension);
+      Vector partial_logmap = Vector::Zero(indices_.size());
       for (size_t i = 0; i < indices_.size(); ++i) {
         partial_logmap(i) = full_logmap(indices_.at(i));
       }
