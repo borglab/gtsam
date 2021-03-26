@@ -17,8 +17,6 @@
 
 #pragma once
 
-#include <Eigen/Core>
-
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/base/Lie.h>
 
@@ -110,21 +108,21 @@ namespace gtsam {
     /** Returns a vector of errors for the measured tangent parameters.  */
     Vector evaluateError(const T& p, boost::optional<Matrix&> H = boost::none) const override {
       if (H) {
-        Matrix H_logmap;
-        T::Logmap(p, H_logmap);
+        Matrix H_local;
+        T::LocalCoordinates(p, H_local);
         (*H) = Matrix::Zero(indices_.size(), T::dimension);
         for (size_t i = 0; i < indices_.size(); ++i) {
-          (*H).row(i) = H_logmap.row(indices_.at(i));
+          (*H).row(i) = H_local.row(indices_.at(i));
         }
       }
       // Compute the tangent vector representation of T and select relevant parameters.
-      const Vector& full_logmap = T::Logmap(p);
-      Vector partial_logmap = Vector::Zero(indices_.size());
+      const Vector& full_tangent = T::LocalCoordinates(p);
+      Vector partial_tangent = Vector::Zero(indices_.size());
       for (size_t i = 0; i < indices_.size(); ++i) {
-        partial_logmap(i) = full_logmap(indices_.at(i));
+        partial_tangent(i) = full_tangent(indices_.at(i));
       }
 
-      return partial_logmap - prior_;
+      return partial_tangent - prior_;
     }
 
     // access
