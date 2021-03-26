@@ -1,5 +1,6 @@
 # Utilities to help with wrapping.
 
+# Use CMake's find_package to find the version of Python installed.
 macro(get_python_version)
   if(${CMAKE_VERSION} VERSION_LESS "3.12.0")
     # Use older version of cmake's find_python
@@ -13,19 +14,6 @@ macro(get_python_version)
 
     find_package(PythonLibs ${PYTHON_VERSION_STRING})
 
-    set(Python_VERSION_MAJOR
-        ${PYTHON_VERSION_MAJOR}
-        CACHE INTERNAL "")
-    set(Python_VERSION_MINOR
-        ${PYTHON_VERSION_MINOR}
-        CACHE INTERNAL "")
-    set(Python_VERSION_PATCH
-        ${PYTHON_VERSION_PATCH}
-        CACHE INTERNAL "")
-    set(Python_EXECUTABLE
-        ${PYTHON_EXECUTABLE}
-        CACHE INTERNAL "")
-
   else()
     # Get info about the Python interpreter
     # https://cmake.org/cmake/help/latest/module/FindPython.html#module:FindPython
@@ -37,6 +25,26 @@ macro(get_python_version)
           "Cannot find Python interpreter. Please install Python>=3.5.")
     endif()
 
+  endif()
+endmacro()
+
+# Depending on the version of CMake, ensure all the appropriate variables are set.
+macro(configure_python_variables)
+  if(${CMAKE_VERSION} VERSION_LESS "3.12.0")
+    set(Python_VERSION_MAJOR
+        ${PYTHON_VERSION_MAJOR}
+        CACHE INTERNAL "")
+    set(Python_VERSION_MINOR
+        ${PYTHON_VERSION_MINOR}
+        CACHE INTERNAL "")
+    set(Python_VERSION_PATCH
+        ${PYTHON_VERSION_PATCH}
+        CACHE INTERNAL "")
+    set(Python_EXECUTABLE
+        ${PYTHON_EXECUTABLE}
+        CACHE PATH "")
+
+  else()
     # Set both sets of variables
     set(PYTHON_VERSION_MAJOR
         ${Python_VERSION_MAJOR}
@@ -49,7 +57,7 @@ macro(get_python_version)
         CACHE INTERNAL "")
     set(PYTHON_EXECUTABLE
         ${Python_EXECUTABLE}
-        CACHE INTERNAL "")
+        CACHE PATH "")
 
   endif()
 endmacro()
@@ -84,5 +92,8 @@ macro(gtwrap_get_python_version WRAP_PYTHON_VERSION)
       COMPONENTS Interpreter Development
       EXACT)
   endif()
+
+  # (Always) Configure the variables once we find the python package
+  configure_python_variables()
 
 endmacro()
