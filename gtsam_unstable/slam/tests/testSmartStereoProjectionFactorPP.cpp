@@ -746,6 +746,54 @@ TEST( SmartStereoProjectionFactorPP, 3poses_smart_projection_factor_error_sameEx
 }
 
 /* *************************************************************************/
+//TEST( SmartStereoProjectionFactorPP, smart_projection_factor_linearize_sameExtrinsicKey ) {
+//
+//  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
+//  Pose3 w_Pose_cam1 = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
+//  StereoCamera cam1(w_Pose_cam1, K2);
+//
+//  // create second camera 1 meter to the right of first camera
+//  Pose3 w_Pose_cam2 = w_Pose_cam1 * Pose3(Rot3(), Point3(1, 0, 0));
+//  StereoCamera cam2(w_Pose_cam2, K2);
+//
+//  // create third camera 1 meter above the first camera
+//  Pose3 w_Pose_cam3 = w_Pose_cam1 * Pose3(Rot3(), Point3(0, -1, 0));
+//  StereoCamera cam3(w_Pose_cam3, K2);
+//
+//  // three landmarks ~5 meters infront of camera
+//  Point3 landmark1(5, 0.5, 1.2);
+//
+//  // 1. Project three landmarks into three cameras and triangulate
+//  vector<StereoPoint2> measurements_l1 = stereo_projectToMultipleCameras(cam1,
+//      cam2, cam3, landmark1);
+//
+//  KeyVector poseKeys;
+//  poseKeys.push_back(x1);
+//  poseKeys.push_back(x2);
+//  poseKeys.push_back(x3);
+//
+//  Symbol body_P_cam_key('P', 0);
+//  KeyVector extrinsicKeys;
+//  extrinsicKeys.push_back(body_P_cam_key);
+//  extrinsicKeys.push_back(body_P_cam_key);
+//  extrinsicKeys.push_back(body_P_cam_key);
+//
+//  SmartStereoProjectionParams smart_params;
+//  smart_params.triangulation.enableEPI = true;
+//  SmartStereoProjectionFactorPP::shared_ptr smartFactor1(new SmartStereoProjectionFactorPP(model, smart_params));
+//  smartFactor1->add(measurements_l1, poseKeys, extrinsicKeys, K2);
+//
+//  // relevant poses:
+//  Pose3 body_Pose_cam = Pose3(Rot3::Ypr(-M_PI, 1., 0.1),Point3(0, 1, 0));
+//  Pose3 w_Pose_body1 = w_Pose_cam1.compose(body_Pose_cam.inverse());
+//  Pose3 w_Pose_body2 = w_Pose_cam2.compose(body_Pose_cam.inverse());
+//  Pose3 w_Pose_body3 = w_Pose_cam3.compose(body_Pose_cam.inverse());
+//
+//  // Hessian
+//
+//}
+
+/* *************************************************************************/
 TEST( SmartStereoProjectionFactorPP, 3poses_smart_projection_factor_optimization_sameExtrinsicKey ) {
 
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
@@ -823,7 +871,7 @@ TEST( SmartStereoProjectionFactorPP, 3poses_smart_projection_factor_optimization
 
   // cost is large before optimization
   double initialErrorSmart = graph.error(values);
-  EXPECT_DOUBLES_EQUAL(31986.961831653316, initialErrorSmart, 1e-5); // initial guess is noisy, so nonzero error
+  EXPECT_DOUBLES_EQUAL(31987.075556114589, initialErrorSmart, 1e-5); // initial guess is noisy, so nonzero error
 
   std::cout << " 1: " << smartFactor1->error(values) <<std::endl;
   std::cout << " 2: " << smartFactor2->error(values) <<std::endl;

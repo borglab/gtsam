@@ -273,6 +273,24 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
 //        std::cout <<"  key slot: " << keyToSlotMap[nonuniqueKeys[i]] << std::endl;
 //      }
 
+      /////////////////////////////////////////////////////////////////
+      // PROTOTYPING
+      size_t numMeasurements = measured_.size();
+      Matrix F = Matrix::Zero(3*numMeasurements, 6 * nrUniqueKeys);
+      for(size_t k=0; k<numMeasurements; k++){
+        Key key_body = w_P_body_keys_.at(k);
+        Key key_cal = body_P_cam_keys_.at(k);
+        F.block<3,6>( 3*k , 6*keyToSlotMap[key_body] ) = Fs[k].block<3,6>(0,0);
+        F.block<3,6>( 3*k , 6*keyToSlotMap[key_cal] ) = Fs[k].block<3,6>(0,6);
+      }
+      Matrix augH = Matrix::Zero(6*nrUniqueKeys+1,6*nrUniqueKeys+1);
+      augH.block(0,0,6*nrUniqueKeys,6*nrUniqueKeys) = F.transpose() * F - F.transpose() * E * P * E.transpose() * F;
+      Matrix infoVec = F.transpose() * b - F.transpose() * E * P * E.transpose() * b;
+      augH.block(0,6*nrUniqueKeys,6*nrUniqueKeys,1) = infoVec;
+      augH.block(6*nrUniqueKeys,0,1,6*nrUniqueKeys) = infoVec.transpose();
+      augH(6*nrUniqueKeys,6*nrUniqueKeys) = b.squaredNorm();
+      /////////////////////////////////////////////////////////////////
+
       // initialize matrix to zero
       augmentedHessianUniqueKeys = SymmetricBlockMatrix(dims, Matrix::Zero(6*nrUniqueKeys+1,6*nrUniqueKeys+1));
 
@@ -301,8 +319,13 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
       }
       augmentedHessianUniqueKeys.updateDiagonalBlock(nrUniqueKeys, augmentedHessian.diagonalBlock(nrNonuniqueKeys));
 
-      std::cout << "MAtrix \n " << Matrix(augmentedHessianUniqueKeys.selfadjointView()) <<std::endl;
-      std::cout << "sq norm " << b.squaredNorm() << std::endl;
+      //std::cout << "Matrix \n " << Matrix(augmentedHessianUniqueKeys.selfadjointView()) <<std::endl;
+      //std::cout << "sq norm " << b.squaredNorm() << std::endl;
+
+//      std::cout << "norm diff: "<< Matrix(augH - Matrix(augmentedHessianUniqueKeys.selfadjointView())) << std::endl;
+//
+//      std::cout << "TEST MATRIX:" << std::endl;
+      augmentedHessianUniqueKeys = SymmetricBlockMatrix(dims, augH);
     }
 
     return boost::make_shared<RegularHessianFactor<DimPose> >(keys_, augmentedHessianUniqueKeys);
