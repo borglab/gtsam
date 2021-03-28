@@ -746,54 +746,6 @@ TEST( SmartStereoProjectionFactorPP, 3poses_smart_projection_factor_error_sameEx
 }
 
 /* *************************************************************************/
-//TEST( SmartStereoProjectionFactorPP, smart_projection_factor_linearize_sameExtrinsicKey ) {
-//
-//  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-//  Pose3 w_Pose_cam1 = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
-//  StereoCamera cam1(w_Pose_cam1, K2);
-//
-//  // create second camera 1 meter to the right of first camera
-//  Pose3 w_Pose_cam2 = w_Pose_cam1 * Pose3(Rot3(), Point3(1, 0, 0));
-//  StereoCamera cam2(w_Pose_cam2, K2);
-//
-//  // create third camera 1 meter above the first camera
-//  Pose3 w_Pose_cam3 = w_Pose_cam1 * Pose3(Rot3(), Point3(0, -1, 0));
-//  StereoCamera cam3(w_Pose_cam3, K2);
-//
-//  // three landmarks ~5 meters infront of camera
-//  Point3 landmark1(5, 0.5, 1.2);
-//
-//  // 1. Project three landmarks into three cameras and triangulate
-//  vector<StereoPoint2> measurements_l1 = stereo_projectToMultipleCameras(cam1,
-//      cam2, cam3, landmark1);
-//
-//  KeyVector poseKeys;
-//  poseKeys.push_back(x1);
-//  poseKeys.push_back(x2);
-//  poseKeys.push_back(x3);
-//
-//  Symbol body_P_cam_key('P', 0);
-//  KeyVector extrinsicKeys;
-//  extrinsicKeys.push_back(body_P_cam_key);
-//  extrinsicKeys.push_back(body_P_cam_key);
-//  extrinsicKeys.push_back(body_P_cam_key);
-//
-//  SmartStereoProjectionParams smart_params;
-//  smart_params.triangulation.enableEPI = true;
-//  SmartStereoProjectionFactorPP::shared_ptr smartFactor1(new SmartStereoProjectionFactorPP(model, smart_params));
-//  smartFactor1->add(measurements_l1, poseKeys, extrinsicKeys, K2);
-//
-//  // relevant poses:
-//  Pose3 body_Pose_cam = Pose3(Rot3::Ypr(-M_PI, 1., 0.1),Point3(0, 1, 0));
-//  Pose3 w_Pose_body1 = w_Pose_cam1.compose(body_Pose_cam.inverse());
-//  Pose3 w_Pose_body2 = w_Pose_cam2.compose(body_Pose_cam.inverse());
-//  Pose3 w_Pose_body3 = w_Pose_cam3.compose(body_Pose_cam.inverse());
-//
-//  // Hessian
-//
-//}
-
-/* *************************************************************************/
 TEST( SmartStereoProjectionFactorPP, 3poses_smart_projection_factor_optimization_sameExtrinsicKey ) {
 
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
@@ -859,7 +811,7 @@ TEST( SmartStereoProjectionFactorPP, 3poses_smart_projection_factor_optimization
   graph.addPrior(x2, w_Pose_body2, noisePrior);
   graph.addPrior(x3, w_Pose_body3, noisePrior);
   // we might need some prior on the calibration too
-  graph.addPrior(body_P_cam_key, body_Pose_cam, noisePrior); // no need! the measurements will fix this!
+  // graph.addPrior(body_P_cam_key, body_Pose_cam, noisePrior); // no need! the measurements will fix this!
 
   // Values
   Values values;
@@ -871,7 +823,7 @@ TEST( SmartStereoProjectionFactorPP, 3poses_smart_projection_factor_optimization
 
   // cost is large before optimization
   double initialErrorSmart = graph.error(values);
-  EXPECT_DOUBLES_EQUAL(31987.075556114589, initialErrorSmart, 1e-5); // initial guess is noisy, so nonzero error
+  EXPECT_DOUBLES_EQUAL(31986.961831653316, initialErrorSmart, 1e-5); // initial guess is noisy, so nonzero error
 
   std::cout << " 1: " << smartFactor1->error(values) <<std::endl;
   std::cout << " 2: " << smartFactor2->error(values) <<std::endl;
@@ -886,11 +838,10 @@ TEST( SmartStereoProjectionFactorPP, 3poses_smart_projection_factor_optimization
 
   EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-5);
 
-//  GaussianFactorGraph::shared_ptr GFG = graph.linearize(result);
-//  // GFG->print("GFG \n");
-//  VectorValues delta = GFG->optimize();
-//  VectorValues expected = VectorValues::Zero(delta);
-//  EXPECT(assert_equal(expected, delta, 1e-6));
+  GaussianFactorGraph::shared_ptr GFG = graph.linearize(result);
+  VectorValues delta = GFG->optimize();
+  VectorValues expected = VectorValues::Zero(delta);
+  EXPECT(assert_equal(expected, delta, 1e-4));
 }
 
 /* *************************************************************************
@@ -1160,94 +1111,6 @@ TEST( SmartStereoProjectionFactorPP, dynamicOutlierRejection ) {
   LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
   result = optimizer.optimize();
   EXPECT(assert_equal(pose3, result.at<Pose3>(x3)));
-}
-
-/* *************************************************************************
-TEST( SmartStereoProjectionFactorPP, CheckHessian) {
-
-  KeyVector views;
-  views.push_back(x1);
-  views.push_back(x2);
-  views.push_back(x3);
-
-  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 pose1 = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
-  StereoCamera cam1(pose1, K);
-
-  // create second camera
-  Pose3 pose2 = pose1 * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
-  StereoCamera cam2(pose2, K);
-
-  // create third camera
-  Pose3 pose3 = pose2 * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
-  StereoCamera cam3(pose3, K);
-
-  // three landmarks ~5 meters infront of camera
-  Point3 landmark1(5, 0.5, 1.2);
-  Point3 landmark2(5, -0.5, 1.2);
-  Point3 landmark3(3, 0, 3.0);
-
-  // Project three landmarks into three cameras and triangulate
-  vector<StereoPoint2> measurements_cam1 = stereo_projectToMultipleCameras(cam1,
-      cam2, cam3, landmark1);
-  vector<StereoPoint2> measurements_cam2 = stereo_projectToMultipleCameras(cam1,
-      cam2, cam3, landmark2);
-  vector<StereoPoint2> measurements_cam3 = stereo_projectToMultipleCameras(cam1,
-      cam2, cam3, landmark3);
-
-  SmartStereoProjectionParams params;
-  params.setRankTolerance(10);
-
-  SmartStereoProjectionFactorPP::shared_ptr smartFactor1(new SmartStereoProjectionFactorPP(model, params));
-  smartFactor1->add(measurements_cam1, views, K);
-
-  SmartStereoProjectionFactorPP::shared_ptr smartFactor2(new SmartStereoProjectionFactorPP(model, params));
-  smartFactor2->add(measurements_cam2, views, K);
-
-  SmartStereoProjectionFactorPP::shared_ptr smartFactor3(new SmartStereoProjectionFactorPP(model, params));
-  smartFactor3->add(measurements_cam3, views, K);
-
-  // Create graph to optimize
-  NonlinearFactorGraph graph;
-  graph.push_back(smartFactor1);
-  graph.push_back(smartFactor2);
-  graph.push_back(smartFactor3);
-
-  Values values;
-  values.insert(x1, pose1);
-  values.insert(x2, pose2);
-  // initialize third pose with some noise, we expect it to move back to original pose3
-  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
-      Point3(0.1, 0.1, 0.1)); // smaller noise
-  values.insert(x3, pose3 * noise_pose);
-
-  // TODO: next line throws Cheirality exception on Mac
-  boost::shared_ptr<GaussianFactor> hessianFactor1 = smartFactor1->linearize(
-      values);
-  boost::shared_ptr<GaussianFactor> hessianFactor2 = smartFactor2->linearize(
-      values);
-  boost::shared_ptr<GaussianFactor> hessianFactor3 = smartFactor3->linearize(
-      values);
-
-  Matrix CumulativeInformation = hessianFactor1->information()
-      + hessianFactor2->information() + hessianFactor3->information();
-
-  boost::shared_ptr<GaussianFactorGraph> GaussianGraph = graph.linearize(
-      values);
-  Matrix GraphInformation = GaussianGraph->hessian().first;
-
-  // Check Hessian
-  EXPECT(assert_equal(GraphInformation, CumulativeInformation, 1e-8));
-
-  Matrix AugInformationMatrix = hessianFactor1->augmentedInformation()
-      + hessianFactor2->augmentedInformation()
-      + hessianFactor3->augmentedInformation();
-
-  // Check Information vector
-  Vector InfoVector = AugInformationMatrix.block(0, 18, 18, 1); // 18x18 Hessian + information vector
-
-  // Check Hessian
-  EXPECT(assert_equal(InfoVector, GaussianGraph->hessian().second, 1e-8));
 }
 
 /* ************************************************************************* */
