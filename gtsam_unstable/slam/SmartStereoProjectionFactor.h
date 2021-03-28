@@ -449,10 +449,10 @@ public:
   /**
    * This corrects the Jacobians and error vector for the case in which the right pixel in the monocular camera is missing (nan)
    */
+  template<int D, int ZD> // D: camera dim, ZD: measurement dim
   void correctForMissingMeasurements(const Cameras& cameras, Vector& ue,
       boost::optional<typename Cameras::FBlocks&> Fs = boost::none,
-      boost::optional<Matrix&> E = boost::none) const override
-  {
+      boost::optional<Matrix&> E = boost::none) const {
     // when using stereo cameras, some of the measurements might be missing:
     for(size_t i=0; i < cameras.size(); i++){
       const StereoPoint2& z = measured_.at(i);
@@ -460,16 +460,26 @@ public:
       {
         if(Fs){ // delete influence of right point on jacobian Fs
           MatrixZD& Fi = Fs->at(i);
-          for(size_t ii=0; ii<Dim; ii++)
+          for(size_t ii=0; ii<D; ii++)
             Fi(1,ii) = 0.0;
         }
         if(E) // delete influence of right point on jacobian E
-          E->row(ZDim * i + 1) = Matrix::Zero(1, E->cols());
+          E->row(ZD * i + 1) = Matrix::Zero(1, E->cols());
 
         // set the corresponding entry of vector ue to zero
-        ue(ZDim * i + 1) = 0.0;
+        ue(ZD * i + 1) = 0.0;
       }
     }
+  }
+
+  /**
+   * This corrects the Jacobians and error vector for the case in which the right pixel in the monocular camera is missing (nan)
+   * This is class implementation that directly uses the measurement and camera size without templates.
+   */
+  void correctForMissingMeasurements(const Cameras& cameras, Vector& ue,
+      boost::optional<typename Cameras::FBlocks&> Fs = boost::none,
+      boost::optional<Matrix&> E = boost::none) const override {
+    correctForMissingMeasurements<Dim,ZDim>(cameras, ue, Fs, E);
   }
 
   /** return the landmark */
