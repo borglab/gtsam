@@ -1051,7 +1051,6 @@ TEST( SmartStereoProjectionFactorPP, landmarkDistance ) {
   values.insert(x3, pose3 * noise_pose);
   values.insert(body_P_cam_key, Pose3::identity());
 
-  std::cout << "optimization " << std::endl;
   // All smart factors are disabled and pose should remain where it is
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
@@ -1060,13 +1059,19 @@ TEST( SmartStereoProjectionFactorPP, landmarkDistance ) {
   EXPECT_DOUBLES_EQUAL(graph.error(values), graph.error(result), 1e-5);
 }
 
-/* *************************************************************************
+/* *************************************************************************/
 TEST( SmartStereoProjectionFactorPP, dynamicOutlierRejection ) {
 
   KeyVector views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
+
+  Symbol body_P_cam_key('P', 0);
+  KeyVector extrinsicKeys;
+  extrinsicKeys.push_back(body_P_cam_key);
+  extrinsicKeys.push_back(body_P_cam_key);
+  extrinsicKeys.push_back(body_P_cam_key);
 
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   Pose3 pose1 = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
@@ -1097,25 +1102,24 @@ TEST( SmartStereoProjectionFactorPP, dynamicOutlierRejection ) {
   measurements_cam4.at(0) = measurements_cam4.at(0) + StereoPoint2(10, 10, 1); // add outlier
 
   SmartStereoProjectionParams params;
-  params.setLinearizationMode(JACOBIAN_SVD);
+  params.setLinearizationMode(HESSIAN);
   params.setDynamicOutlierRejectionThreshold(1);
 
-
   SmartStereoProjectionFactorPP::shared_ptr smartFactor1(new SmartStereoProjectionFactorPP(model, params));
-  smartFactor1->add(measurements_cam1, views, K);
+  smartFactor1->add(measurements_cam1, views, extrinsicKeys, K);
 
   SmartStereoProjectionFactorPP::shared_ptr smartFactor2(new SmartStereoProjectionFactorPP(model, params));
-  smartFactor2->add(measurements_cam2, views, K);
+  smartFactor2->add(measurements_cam2, views, extrinsicKeys, K);
 
   SmartStereoProjectionFactorPP::shared_ptr smartFactor3(new SmartStereoProjectionFactorPP(model, params));
-  smartFactor3->add(measurements_cam3, views, K);
+  smartFactor3->add(measurements_cam3, views, extrinsicKeys, K);
 
   SmartStereoProjectionFactorPP::shared_ptr smartFactor4(new SmartStereoProjectionFactorPP(model, params));
-  smartFactor4->add(measurements_cam4, views, K);
+  smartFactor4->add(measurements_cam4, views, extrinsicKeys, K);
 
   // same as factor 4, but dynamic outlier rejection is off
   SmartStereoProjectionFactorPP::shared_ptr smartFactor4b(new SmartStereoProjectionFactorPP(model));
-  smartFactor4b->add(measurements_cam4, views, K);
+  smartFactor4b->add(measurements_cam4, views, extrinsicKeys, K);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
 
@@ -1126,6 +1130,7 @@ TEST( SmartStereoProjectionFactorPP, dynamicOutlierRejection ) {
   graph.push_back(smartFactor4);
   graph.addPrior(x1, pose1, noisePrior);
   graph.addPrior(x2, pose2, noisePrior);
+  graph.addPrior(x3, pose3, noisePrior);
 
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
@@ -1133,6 +1138,7 @@ TEST( SmartStereoProjectionFactorPP, dynamicOutlierRejection ) {
   values.insert(x1, pose1);
   values.insert(x2, pose2);
   values.insert(x3, pose3);
+  values.insert(body_P_cam_key, Pose3::identity());
 
   EXPECT_DOUBLES_EQUAL(0, smartFactor1->error(values), 1e-9);
   EXPECT_DOUBLES_EQUAL(0, smartFactor2->error(values), 1e-9);
@@ -1154,7 +1160,7 @@ TEST( SmartStereoProjectionFactorPP, dynamicOutlierRejection ) {
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
   result = optimizer.optimize();
-  EXPECT(assert_equal(pose3, result.at<Pose3>(x3)));
+  EXPECT(assert_equal(Pose3::identity(), result.at<Pose3>(body_P_cam_key)));
 }
 
 /* ************************************************************************* */
