@@ -156,7 +156,7 @@ TEST( SmartStereoProjectionFactorPP, Equals ) {
 }
 
 /* *************************************************************************/
-TEST_UNSAFE( SmartStereoProjectionFactorPP, noiseless ) {
+TEST_UNSAFE( SmartStereoProjectionFactorPP, noiseless_error_identityExtrinsics ) {
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   Pose3 w_Pose_cam1 = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2),
       Point3(0, 0, 1));
@@ -193,7 +193,7 @@ TEST_UNSAFE( SmartStereoProjectionFactorPP, noiseless ) {
 }
 
 /* *************************************************************************/
-TEST_UNSAFE( SmartStereoProjectionFactorPP, noiselessNonidenticalExtrinsics ) {
+TEST_UNSAFE( SmartStereoProjectionFactorPP, noiseless_error_multipleExtrinsics ) {
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   Pose3 w_Pose_cam1 = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2),
       Point3(0, 0, 1));
@@ -237,7 +237,7 @@ TEST_UNSAFE( SmartStereoProjectionFactorPP, noiselessNonidenticalExtrinsics ) {
 }
 
 /* *************************************************************************/
-TEST( SmartProjectionPoseFactor, noiselessWithMissingMeasurements ) {
+TEST( SmartProjectionPoseFactor, noiseless_error_multipleExtrinsics_missingMeasurements ) {
 
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
    Pose3 w_Pose_cam1 = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2),
@@ -302,7 +302,7 @@ TEST( SmartProjectionPoseFactor, noiselessWithMissingMeasurements ) {
 }
 
 /* *************************************************************************/
-TEST( SmartStereoProjectionFactorPP, noisy ) {
+TEST( SmartStereoProjectionFactorPP, noisy_error_multipleExtrinsics ) {
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   Pose3 w_Pose_cam1 = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2),
       Point3(0, 0, 1));
@@ -368,7 +368,7 @@ TEST( SmartStereoProjectionFactorPP, noisy ) {
 }
 
 /* *************************************************************************/
-TEST( SmartStereoProjectionFactorPP, 3poses_smart_projection_factor_optimization ) {
+TEST( SmartStereoProjectionFactorPP, 3poses_optimization_multipleExtrinsics ) {
 
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   Pose3 w_Pose_cam1 = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
@@ -531,7 +531,7 @@ TEST( SmartStereoProjectionFactorPP, 3poses_smart_projection_factor_optimization
 }
 
 /* *************************************************************************/
-TEST( SmartStereoProjectionFactorPP, 3poses_smart_projection_factor_error_sameExtrinsicKey ) {
+TEST( SmartStereoProjectionFactorPP, 3poses_error_sameExtrinsicKey ) {
 
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   Pose3 w_Pose_cam1 = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
@@ -610,7 +610,7 @@ TEST( SmartStereoProjectionFactorPP, 3poses_smart_projection_factor_error_sameEx
 }
 
 /* *************************************************************************/
-TEST( SmartStereoProjectionFactorPP, 3poses_smart_projection_factor_error_sameExtrinsicKey_error_noisy ) {
+TEST( SmartStereoProjectionFactorPP, 3poses_noisy_error_sameExtrinsicKey ) {
 
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   Pose3 w_Pose_cam1 = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
@@ -741,12 +741,12 @@ TEST( SmartStereoProjectionFactorPP, 3poses_smart_projection_factor_error_sameEx
     initialError_actual = graph.error(values);
   }
 
-  std::cout << " initialError_expected " << initialError_expected << std::endl;
+  //std::cout << " initialError_expected " << initialError_expected << std::endl;
   EXPECT_DOUBLES_EQUAL(initialError_expected, initialError_actual, 1e-7);
 }
 
 /* *************************************************************************/
-TEST( SmartStereoProjectionFactorPP, 3poses_smart_projection_factor_optimization_sameExtrinsicKey ) {
+TEST( SmartStereoProjectionFactorPP, 3poses_optimization_sameExtrinsicKey ) {
 
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   Pose3 w_Pose_cam1 = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
@@ -825,9 +825,27 @@ TEST( SmartStereoProjectionFactorPP, 3poses_smart_projection_factor_optimization
   double initialErrorSmart = graph.error(values);
   EXPECT_DOUBLES_EQUAL(31986.961831653316, initialErrorSmart, 1e-5); // initial guess is noisy, so nonzero error
 
-  std::cout << " 1: " << smartFactor1->error(values) <<std::endl;
-  std::cout << " 2: " << smartFactor2->error(values) <<std::endl;
-  std::cout << " 3: " << smartFactor3->error(values) <<std::endl;
+  /////////////////////////////////////////////////////////////////
+  // What the factor is doing is the following Schur complement math (this matches augmentedHessianPP in code):
+  //  size_t numMeasurements = measured_.size();
+  //  Matrix F = Matrix::Zero(3*numMeasurements, 6 * nrUniqueKeys);
+  //  for(size_t k=0; k<numMeasurements; k++){
+  //    Key key_body = w_P_body_keys_.at(k);
+  //    Key key_cal = body_P_cam_keys_.at(k);
+  //    F.block<3,6>( 3*k , 6*keyToSlotMap[key_body] ) = Fs[k].block<3,6>(0,0);
+  //    F.block<3,6>( 3*k , 6*keyToSlotMap[key_cal] ) = Fs[k].block<3,6>(0,6);
+  //  }
+  //  Matrix augH = Matrix::Zero(6*nrUniqueKeys+1,6*nrUniqueKeys+1);
+  //  augH.block(0,0,6*nrUniqueKeys,6*nrUniqueKeys) = F.transpose() * F - F.transpose() * E * P * E.transpose() * F;
+  //  Matrix infoVec = F.transpose() * b - F.transpose() * E * P * E.transpose() * b;
+  //  augH.block(0,6*nrUniqueKeys,6*nrUniqueKeys,1) = infoVec;
+  //  augH.block(6*nrUniqueKeys,0,1,6*nrUniqueKeys) = infoVec.transpose();
+  //  augH(6*nrUniqueKeys,6*nrUniqueKeys) = b.squaredNorm();
+  // // The following is close to zero:
+  // std::cout << "norm diff: \n"<< Matrix(augH - Matrix(augmentedHessianUniqueKeys.selfadjointView())).lpNorm<Eigen::Infinity>() << std::endl;
+  // std::cout << "TEST MATRIX:" << std::endl;
+  // augmentedHessianUniqueKeys = SymmetricBlockMatrix(dims, augH);
+  /////////////////////////////////////////////////////////////////
 
   Values result;
   gttic_(SmartStereoProjectionFactorPP);
@@ -845,7 +863,7 @@ TEST( SmartStereoProjectionFactorPP, 3poses_smart_projection_factor_optimization
 }
 
 /* *************************************************************************
-TEST( SmartStereoProjectionFactorPP, body_P_sensor_monocular ){
+TEST( SmartStereoProjectionFactorPP, monocular_multipleExtrinsicKeys ){
   // make a realistic calibration matrix
   double fov = 60; // degrees
   size_t w=640,h=480;
@@ -881,12 +899,6 @@ TEST( SmartStereoProjectionFactorPP, body_P_sensor_monocular ){
   projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
 
-  // Create smart factors
-  KeyVector views;
-  views.push_back(x1);
-  views.push_back(x2);
-  views.push_back(x3);
-
   // convert measurement to (degenerate) stereoPoint2 (with right pixel being NaN)
   vector<StereoPoint2> measurements_cam1_stereo, measurements_cam2_stereo, measurements_cam3_stereo;
   for(size_t k=0; k<measurements_cam1.size();k++)
@@ -898,63 +910,80 @@ TEST( SmartStereoProjectionFactorPP, body_P_sensor_monocular ){
   for(size_t k=0; k<measurements_cam3.size();k++)
     measurements_cam3_stereo.push_back(StereoPoint2(measurements_cam3[k].x() , missing_uR , measurements_cam3[k].y()));
 
-  SmartStereoProjectionParams params;
-  params.setRankTolerance(1.0);
-  params.setDegeneracyMode(gtsam::IGNORE_DEGENERACY);
-  params.setEnableEPI(false);
+  KeyVector poseKeys;
+  poseKeys.push_back(x1);
+  poseKeys.push_back(x2);
+  poseKeys.push_back(x3);
+
+  Symbol body_P_cam_key('P', 0);
+  KeyVector extrinsicKeys;
+  extrinsicKeys.push_back(body_P_cam_key);
+  extrinsicKeys.push_back(body_P_cam_key);
+  extrinsicKeys.push_back(body_P_cam_key);
+
+  SmartStereoProjectionParams smart_params;
+  smart_params.setRankTolerance(1.0);
+  smart_params.setDegeneracyMode(gtsam::IGNORE_DEGENERACY);
+  smart_params.setEnableEPI(false);
 
   Cal3_S2Stereo::shared_ptr Kmono(new Cal3_S2Stereo(fov,w,h,b));
-  SmartStereoProjectionFactorPP smartFactor1(model, params, sensor_to_body);
-  smartFactor1.add(measurements_cam1_stereo, views, Kmono);
 
-  SmartStereoProjectionFactorPP smartFactor2(model, params, sensor_to_body);
-  smartFactor2.add(measurements_cam2_stereo, views, Kmono);
+  SmartStereoProjectionFactorPP smartFactor1(model, smart_params);
+  smartFactor1.add(measurements_cam1_stereo, poseKeys, extrinsicKeys, Kmono);
 
-  SmartStereoProjectionFactorPP smartFactor3(model, params, sensor_to_body);
-  smartFactor3.add(measurements_cam3_stereo, views, Kmono);
+  SmartStereoProjectionFactorPP smartFactor2(model, smart_params);
+  smartFactor2.add(measurements_cam2_stereo, poseKeys, extrinsicKeys, Kmono);
 
+  SmartStereoProjectionFactorPP smartFactor3(model, smart_params);
+  smartFactor3.add(measurements_cam3_stereo, poseKeys, extrinsicKeys, Kmono);
+
+  // Graph
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
-
-  // Put all factors in factor graph, adding priors
   NonlinearFactorGraph graph;
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
   graph.addPrior(x1, bodyPose1, noisePrior);
   graph.addPrior(x2, bodyPose2, noisePrior);
+  graph.addPrior(x3, bodyPose3, noisePrior);
+  // we might need some prior on the calibration too
+  // graph.addPrior(body_P_cam_key, body_Pose_cam, noisePrior); // no need! the measurements will fix this!
 
   // Check errors at ground truth poses
   Values gtValues;
   gtValues.insert(x1, bodyPose1);
   gtValues.insert(x2, bodyPose2);
   gtValues.insert(x3, bodyPose3);
+  gtValues.insert(body_P_cam_key, sensor_to_body);
   double actualError = graph.error(gtValues);
   double expectedError = 0.0;
   DOUBLES_EQUAL(expectedError, actualError, 1e-7)
 
-  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/100, 0., -M_PI/100), gtsam::Point3(0.1,0.1,0.1));
+  // noisy values
   Values values;
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100), Point3(0.01, 0.01, 0.01)); // smaller noise
   values.insert(x1, bodyPose1);
   values.insert(x2, bodyPose2);
-  // initialize third pose with some noise, we expect it to move back to original pose3
-  values.insert(x3, bodyPose3*noise_pose);
+  values.insert(x3, bodyPose3);
+  values.insert(body_P_cam_key, sensor_to_body*noise_pose);
 
-  LevenbergMarquardtParams lmParams;
+  // cost is large before optimization
+  double initialErrorSmart = graph.error(values);
+  EXPECT_DOUBLES_EQUAL(2379.0012816261642, initialErrorSmart, 1e-5); // freeze value
+
   Values result;
-  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
+  gttic_(SmartStereoProjectionFactorPP);
+  LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
   result = optimizer.optimize();
-  EXPECT(assert_equal(bodyPose3,result.at<Pose3>(x3)));
+  gttoc_(SmartStereoProjectionFactorPP);
+  tictoc_finishedIteration_();
+
+  EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-5);
+  EXPECT(assert_equal(sensor_to_body,result.at<Pose3>(body_P_cam_key)));
 }
 
-/* *************************************************************************
+/* *************************************************************************/
 TEST( SmartStereoProjectionFactorPP, landmarkDistance ) {
-
-//  double excludeLandmarksFutherThanDist = 2;
-
-  KeyVector views;
-  views.push_back(x1);
-  views.push_back(x2);
-  views.push_back(x3);
 
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   Pose3 pose1 = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
@@ -965,6 +994,17 @@ TEST( SmartStereoProjectionFactorPP, landmarkDistance ) {
   // create third camera 1 meter above the first camera
   Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0, -1, 0));
   StereoCamera cam3(pose3, K);
+
+  KeyVector views;
+  views.push_back(x1);
+  views.push_back(x2);
+  views.push_back(x3);
+
+  Symbol body_P_cam_key('P', 0);
+  KeyVector extrinsicKeys;
+  extrinsicKeys.push_back(body_P_cam_key);
+  extrinsicKeys.push_back(body_P_cam_key);
+  extrinsicKeys.push_back(body_P_cam_key);
 
   // three landmarks ~5 meters infront of camera
   Point3 landmark1(5, 0.5, 1.2);
@@ -980,26 +1020,27 @@ TEST( SmartStereoProjectionFactorPP, landmarkDistance ) {
       cam2, cam3, landmark3);
 
   SmartStereoProjectionParams params;
-  params.setLinearizationMode(JACOBIAN_SVD);
+  params.setLinearizationMode(HESSIAN);
   params.setLandmarkDistanceThreshold(2);
 
   SmartStereoProjectionFactorPP::shared_ptr smartFactor1(new SmartStereoProjectionFactorPP(model, params));
-  smartFactor1->add(measurements_cam1, views, K);
+  smartFactor1->add(measurements_cam1, views, extrinsicKeys, K);
 
   SmartStereoProjectionFactorPP::shared_ptr smartFactor2(new SmartStereoProjectionFactorPP(model, params));
-  smartFactor2->add(measurements_cam2, views, K);
+  smartFactor2->add(measurements_cam2, views, extrinsicKeys, K);
 
   SmartStereoProjectionFactorPP::shared_ptr smartFactor3(new SmartStereoProjectionFactorPP(model, params));
-  smartFactor3->add(measurements_cam3, views, K);
+  smartFactor3->add(measurements_cam3, views, extrinsicKeys, K);
 
+  // create graph
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
-
   NonlinearFactorGraph graph;
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
   graph.addPrior(x1, pose1, noisePrior);
   graph.addPrior(x2, pose2, noisePrior);
+  graph.addPrior(body_P_cam_key, Pose3::identity(), noisePrior);
 
   //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
@@ -1008,12 +1049,15 @@ TEST( SmartStereoProjectionFactorPP, landmarkDistance ) {
   values.insert(x1, pose1);
   values.insert(x2, pose2);
   values.insert(x3, pose3 * noise_pose);
+  values.insert(body_P_cam_key, Pose3::identity());
 
-  // All factors are disabled and pose should remain where it is
+  std::cout << "optimization " << std::endl;
+  // All smart factors are disabled and pose should remain where it is
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
   result = optimizer.optimize();
-  EXPECT(assert_equal(values.at<Pose3>(x3), result.at<Pose3>(x3)));
+  EXPECT(assert_equal(values.at<Pose3>(x3), result.at<Pose3>(x3), 1e-5));
+  EXPECT_DOUBLES_EQUAL(graph.error(values), graph.error(result), 1e-5);
 }
 
 /* *************************************************************************
