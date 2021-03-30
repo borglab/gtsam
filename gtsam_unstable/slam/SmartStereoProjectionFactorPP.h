@@ -152,7 +152,7 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
   /// Compute F, E only (called below in both vanilla and SVD versions)
   /// Assumes the point has been computed
   /// Note E can be 2m*3 or 2m*2, in case point is degenerate
-  void computeJacobiansWithTriangulatedPoint(
+  void computeJacobiansAndCorrectForMissingMeasurements(
       FBlocks& Fs,
       Matrix& E, Vector& b, const Values& values) const {
     if (!result_) {
@@ -168,23 +168,20 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
         Pose3 body_P_cam = values.at<Pose3>(body_P_cam_keys_.at(i));
         StereoCamera camera(w_P_body.compose(body_P_cam, dPoseCam_dPoseBody, dPoseCam_dPoseExt), K_all_[i]);
         StereoPoint2 reprojectionError = StereoPoint2(camera.project(*result_, dProject_dPoseCam, Ei) - measured_.at(i));
-//        std::cout << "H0 \n" << dPoseCam_dPoseBody << std::endl;
-//        std::cout << "H1 \n" << dProject_dPoseCam << std::endl;
-//        std::cout << "H3 \n" << Ei << std::endl;
-//        std::cout << "H02 \n" << dPoseCam_dPoseExt << std::endl;
         Eigen::Matrix<double, ZDim, Dim> J; // 3 x 12
-//        std::cout << "H1 * H0 \n" << dProject_dPoseCam * dPoseCam_dPoseBody << std::endl;
-//        std::cout << "H1 * H02 \n" << dProject_dPoseCam * dPoseCam_dPoseExt << std::endl;
         J.block<ZDim,6>(0,0) = dProject_dPoseCam * dPoseCam_dPoseBody; // (3x6) * (6x6)
         J.block<ZDim,6>(0,6) = dProject_dPoseCam * dPoseCam_dPoseExt; // (3x6) * (6x6)
-//        std::cout << "J \n" << J << std::endl;
+        if(std::isnan(measured_.at(i).uR())) // if the right pixel is invalid
+        {
+          J.block<1,12>(1,0) = Matrix::Zero(1,12);
+          Ei.block<1,3>(1,0) = Matrix::Zero(1,3);
+          reprojectionError = StereoPoint2(reprojectionError.uL(), 0.0, reprojectionError.v() );
+        }
         Fs.push_back(J);
         size_t row = 3*i;
         b.segment<ZDim>(row) = - reprojectionError.vector();
         E.block<3,3>(row,0) = Ei;
       }
-      // correct for monocular measurements, where the right pixel measurement is nan
-      //Base::CorrectForMissingMeasurements(measured_, cameras, b, Fs, E);
     }
   }
 
@@ -204,11 +201,9 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
       throw std::runtime_error("SmartStereoProjectionHessianFactor: this->"
           "measured_.size() inconsistent with input");
 
-    std::cout << "triangulate" << std::endl;
     triangulateSafe(cameras(values));
 
     if (!result_) {
-      std::cout << "degenerate" << std::endl;
       // failed: return"empty" Hessian
       for(Matrix& m: Gs)
         m = Matrix::Zero(DimPose,DimPose);
@@ -218,12 +213,11 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
                                                                   Gs, gs, 0.0);
     }
 
-    std::cout << "params_.degeneracyMode" << params_.degeneracyMode <<  std::endl;
     // Jacobian could be 3D Point3 OR 2D Unit3, difference is E.cols().
     FBlocks Fs;
     Matrix F, E;
     Vector b;
-    computeJacobiansWithTriangulatedPoint(Fs, E, b, values);
+    computeJacobiansAndCorrectForMissingMeasurements(Fs, E, b, values);
 
     // Whiten using noise model
     noiseModel_->WhitenSystem(E, b);
@@ -266,16 +260,6 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
         keyToSlotMap[keys_[k]] = k;
       }
 
-      std::cout << "linearize" << std::endl;
-//      for(size_t i=0; i<nrUniqueKeys;i++){
-//        std::cout <<"key: " << DefaultKeyFormatter(keys_[i]);
-//        std::cout <<"  key slot: " << keyToSlotMap[keys_[i]] << std::endl;
-//      }
-//      for(size_t i=0; i<nrNonuniqueKeys;i++){
-//        std::cout <<"key: " << DefaultKeyFormatter(nonuniqueKeys[i]);
-//        std::cout <<"  key slot: " << keyToSlotMap[nonuniqueKeys[i]] << std::endl;
-//      }
-
       // initialize matrix to zero
       augmentedHessianUniqueKeys = SymmetricBlockMatrix(dims, Matrix::Zero(6*nrUniqueKeys+1,6*nrUniqueKeys+1));
 
@@ -309,13 +293,9 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
         }
       }
       augmentedHessianUniqueKeys.updateDiagonalBlock(nrUniqueKeys, augmentedHessian.diagonalBlock(nrNonuniqueKeys));
-
-      //std::cout << "Matrix \n " << Matrix(augmentedHessianUniqueKeys.selfadjointView()) <<std::endl;
-      //std::cout << "sq norm " << b.squaredNorm() << std::endl;
     }
 
     return boost::make_shared<RegularHessianFactor<DimPose> >(keys_, augmentedHessianUniqueKeys);
-    //std::cout << "Matrix(augmentedHessian.selfadjointView()) \n" << Matrix(augmentedHessian.selfadjointView()) <<std::endl;
   }
 
   /**

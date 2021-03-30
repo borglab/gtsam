@@ -862,7 +862,7 @@ TEST( SmartStereoProjectionFactorPP, 3poses_optimization_sameExtrinsicKey ) {
   EXPECT(assert_equal(expected, delta, 1e-4));
 }
 
-/* *************************************************************************
+/* *************************************************************************/
 TEST( SmartStereoProjectionFactorPP, monocular_multipleExtrinsicKeys ){
   // make a realistic calibration matrix
   double fov = 60; // degrees
@@ -979,7 +979,7 @@ TEST( SmartStereoProjectionFactorPP, monocular_multipleExtrinsicKeys ){
   tictoc_finishedIteration_();
 
   EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-5);
-  EXPECT(assert_equal(sensor_to_body,result.at<Pose3>(body_P_cam_key)));
+  EXPECT(assert_equal(sensor_to_body,result.at<Pose3>(body_P_cam_key), 1e-1));
 }
 
 /* *************************************************************************/
