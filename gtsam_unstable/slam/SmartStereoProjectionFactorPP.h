@@ -276,7 +276,7 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
           Key key_j = nonuniqueKeys.at(j);
           if(i==j){
             augmentedHessianUniqueKeys.updateDiagonalBlock( keyToSlotMap[key_i] , augmentedHessian.diagonalBlock(i));
-          }else if(i < j){
+          }else{ // (i < j)
             if( keyToSlotMap[key_i] != keyToSlotMap[key_j] ){
               augmentedHessianUniqueKeys.updateOffDiagonalBlock( keyToSlotMap[key_i] , keyToSlotMap[key_j],
                                                                  augmentedHessian.aboveDiagonalBlock(i,j));
@@ -285,10 +285,6 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
                                                               augmentedHessian.aboveDiagonalBlock(i,j) +
                                                               augmentedHessian.aboveDiagonalBlock(i,j).transpose());
             }
-          }
-          else{ //TODO: remove else
-            augmentedHessianUniqueKeys.updateOffDiagonalBlock( keyToSlotMap[key_i] , keyToSlotMap[key_j],
-                                                       augmentedHessian.aboveDiagonalBlock(j,i).transpose());
           }
         }
       }
