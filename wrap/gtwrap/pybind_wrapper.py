@@ -10,10 +10,9 @@ Code generator for wrapping a C++ module with Pybind11
 Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellaert
 """
 
-# pylint: disable=too-many-arguments, too-many-instance-attributes, no-self-use, no-else-return, too-many-arguments, unused-format-string-argument
+# pylint: disable=too-many-arguments, too-many-instance-attributes, no-self-use, no-else-return, too-many-arguments, unused-format-string-argument, line-too-long
 
 import re
-import textwrap
 
 import gtwrap.interface_parser as parser
 import gtwrap.template_instantiator as instantiator
@@ -39,6 +38,9 @@ class PybindWrapper:
         self.module_template = module_template
         self.python_keywords = ['print', 'lambda']
 
+        # amount of indentation to add before each function/method declaration.
+        self.method_indent = '\n' + (' ' * 8)
+
     def _py_args_names(self, args_list):
         """Set the argument names in Pybind11 format."""
         names = args_list.args_names()
@@ -54,13 +56,13 @@ class PybindWrapper:
         names = args_list.args_names()
         types_names = ["{} {}".format(ctype, name) for ctype, name in zip(cpp_types, names)]
 
-        return ','.join(types_names)
+        return ', '.join(types_names)
 
     def wrap_ctors(self, my_class):
         """Wrap the constructors."""
         res = ""
         for ctor in my_class.ctors:
-            res += ('\n' + ' ' * 8 + '.def(py::init<{args_cpp_types}>()'
+            res += (self.method_indent + '.def(py::init<{args_cpp_types}>()'
                     '{py_args_names})'.format(
                         args_cpp_types=", ".join(ctor.args.to_cpp(self.use_boost)),
                         py_args_names=self._py_args_names(ctor.args),
@@ -74,32 +76,19 @@ class PybindWrapper:
         if cpp_method in ["serialize", "serializable"]:
             if not cpp_class in self._serializing_classes:
                 self._serializing_classes.append(cpp_class)
-            return textwrap.dedent('''
-                    .def("serialize",
-                        []({class_inst} self){{
-                            return gtsam::serialize(*self);
-                        }}
-                    )
-                    .def("deserialize",
-                        []({class_inst} self, string serialized){{
-                            gtsam::deserialize(serialized, *self);
-                        }}, py::arg("serialized"))
-                    '''.format(class_inst=cpp_class + '*'))
+            serialize_method = self.method_indent + \
+                ".def(\"serialize\", []({class_inst} self){{ return gtsam::serialize(*self); }})".format(class_inst=cpp_class + '*')
+            deserialize_method = self.method_indent + \
+                     ".def(\"deserialize\", []({class_inst} self, string serialized){{ gtsam::deserialize(serialized, *self); }}, py::arg(\"serialized\"))" \
+                       .format(class_inst=cpp_class + '*')
+            return serialize_method + deserialize_method
+
         if cpp_method == "pickle":
             if not cpp_class in self._serializing_classes:
                 raise ValueError("Cannot pickle a class which is not serializable")
-            return textwrap.dedent('''
-                    .def(py::pickle(
-                        [](const {cpp_class} &a){{ // __getstate__
-                            /* Returns a string that encodes the state of the object */
-                            return py::make_tuple(gtsam::serialize(a));
-                        }},
-                        [](py::tuple t){{ // __setstate__
-                            {cpp_class} obj;
-                            gtsam::deserialize(t[0].cast<std::string>(), obj);
-                            return obj;
-                        }}))
-                    '''.format(cpp_class=cpp_class))
+            pickle_method = self.method_indent + \
+                ".def(py::pickle({indent}    [](const {cpp_class} &a){{ /* __getstate__: Returns a string that encodes the state of the object */ return py::make_tuple(gtsam::serialize(a)); }},{indent}    [](py::tuple t){{ /* __setstate__ */ {cpp_class} obj; gtsam::deserialize(t[0].cast<std::string>(), obj); return obj; }}))"
+            return pickle_method.format(cpp_class=cpp_class, indent=self.method_indent)
 
         is_method = isinstance(method, instantiator.InstantiatedMethod)
         is_static = isinstance(method, parser.StaticMethod)
@@ -128,14 +117,13 @@ class PybindWrapper:
                    else py_method + "_",
                    opt_self="{cpp_class}* self".format(
                        cpp_class=cpp_class) if is_method else "",
-                   cpp_class=cpp_class,
-                   cpp_method=cpp_method,
-                   opt_comma=',' if is_method and args_names else '',
+                   opt_comma=', ' if is_method and args_names else '',
                    args_signature_with_names=args_signature_with_names,
                    function_call=function_call,
                    py_args_names=py_args_names,
                    suffix=suffix,
                ))
+
         if method.name == 'print':
             type_list = method.args.to_cpp(self.use_boost)
             if len(type_list) > 0 and type_list[0].strip() == 'string':
@@ -163,7 +151,11 @@ class PybindWrapper:
         return ret
 
     def wrap_methods(self, methods, cpp_class, prefix='\n' + ' ' * 8, suffix=''):
-        """Wrap all the methods in the `cpp_class`."""
+        """
+        Wrap all the methods in the `cpp_class`.
+
+        This function is also used to wrap global functions.
+        """
         res = ""
         for method in methods:
 
@@ -185,6 +177,7 @@ class PybindWrapper:
                 prefix=prefix,
                 suffix=suffix,
             )
+
         return res
 
     def wrap_properties(self, properties, cpp_class, prefix='\n' + ' ' * 8):
@@ -325,7 +318,8 @@ class PybindWrapper:
             # Global functions.
             all_funcs = [
                 func for func in namespace.content
-                if isinstance(func, parser.GlobalFunction)
+                if isinstance(func, (parser.GlobalFunction,
+                                     instantiator.InstantiatedGlobalFunction))
             ]
             wrapped += self.wrap_methods(
                 all_funcs,

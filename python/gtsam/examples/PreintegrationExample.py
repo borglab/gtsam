@@ -29,11 +29,11 @@ class PreintegrationExample(object):
         kGyroSigma = math.radians(0.5) / 60  # 0.5 degree ARW
         kAccelSigma = 0.1 / 60  # 10 cm VRW
         params.setGyroscopeCovariance(
-            kGyroSigma ** 2 * np.identity(3, np.float))
+            kGyroSigma ** 2 * np.identity(3, float))
         params.setAccelerometerCovariance(
-            kAccelSigma ** 2 * np.identity(3, np.float))
+            kAccelSigma ** 2 * np.identity(3, float))
         params.setIntegrationCovariance(
-            0.0000001 ** 2 * np.identity(3, np.float))
+            0.0000001 ** 2 * np.identity(3, float))
         return params
 
     def __init__(self, twist=None, bias=None, dt=1e-2):
