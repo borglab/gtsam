@@ -161,6 +161,9 @@ public:
     }
     return v;
   }
+  static TangentVector LocalCoordinates(const ProductLieGroup& p, ChartJacobian Hp = boost::none) {
+    return Logmap(p, Hp);
+  }
   ProductLieGroup expmap(const TangentVector& v) const {
     return compose(ProductLieGroup::Expmap(v));
   }

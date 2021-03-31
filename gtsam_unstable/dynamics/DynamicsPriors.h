@@ -9,20 +9,28 @@
 
 #pragma once
 
-#include <gtsam_unstable/slam/PartialPriorFactor.h>
-
 #include <gtsam_unstable/dynamics/PoseRTV.h>
+#include <gtsam_unstable/slam/PartialPriorFactor.h>
 
 namespace gtsam {
 
+// Indices of relevant variables in the PoseRTV tangent vector:
+// [ rx ry rz tx ty tz vx vy vz ]
+static const size_t kRollIndex = 0;
+static const size_t kPitchIndex = 1;
+static const size_t kHeightIndex = 5;
+static const size_t kVelocityZIndex = 8;
+static const std::vector<size_t> kVelocityIndices = { 6, 7, 8 };
+
 /**
- * Forces the value of the height in a PoseRTV to a specific value
+ * Forces the value of the height (z) in a PoseRTV to a specific value.
  * Dim: 1
  */
 struct DHeightPrior : public gtsam::PartialPriorFactor<PoseRTV> {
   typedef gtsam::PartialPriorFactor<PoseRTV> Base;
+
   DHeightPrior(Key key, double height, const gtsam::SharedNoiseModel& model)
-  : Base(key, 5, height, model)  {  }
+  : Base(key, kHeightIndex, height, model)  {}
 };
 
 /**
@@ -35,11 +43,11 @@ struct DRollPrior : public gtsam::PartialPriorFactor<PoseRTV> {
 
   /** allows for explicit roll parameterization - uses canonical coordinate */
   DRollPrior(Key key, double wx, const gtsam::SharedNoiseModel& model)
-  : Base(key, 0, wx, model)  {  }
+      : Base(key, kRollIndex, wx, model)  {  }
 
   /** Forces roll to zero */
   DRollPrior(Key key, const gtsam::SharedNoiseModel& model)
-  : Base(key, 0, 0.0, model)  {  }
+      : Base(key, kRollIndex, 0.0, model)  {  }
 };
 
 /**
@@ -49,17 +57,9 @@ struct DRollPrior : public gtsam::PartialPriorFactor<PoseRTV> {
  */
 struct VelocityPrior : public gtsam::PartialPriorFactor<PoseRTV> {
   typedef gtsam::PartialPriorFactor<PoseRTV> Base;
+
   VelocityPrior(Key key, const gtsam::Vector& vel, const gtsam::SharedNoiseModel& model)
-  : Base(key, model) {
-    this->prior_ = vel;
-    assert(vel.size() == 3);
-    this->mask_.resize(3);
-    this->mask_[0] = 6;
-    this->mask_[1] = 7;
-    this->mask_[2] = 8;
-    this->H_ = Matrix::Zero(3, 9);
-    this->fillH();
-  }
+      : Base(key, kVelocityIndices, vel, model) {}
 };
 
 /**
@@ -74,31 +74,15 @@ struct DGroundConstraint : public gtsam::PartialPriorFactor<PoseRTV> {
    * Primary constructor allows for variable height of the "floor"
    */
   DGroundConstraint(Key key, double height, const gtsam::SharedNoiseModel& model)
-  : Base(key, model) {
-    this->prior_ = Vector::Unit(4,0)*height; // [z, vz, roll, pitch]
-    this->mask_.resize(4);
-    this->mask_[0] = 5; // z = height
-    this->mask_[1] = 8; // vz
-    this->mask_[2] = 0; // roll
-    this->mask_[3] = 1; // pitch
-    this->H_ = Matrix::Zero(3, 9);
-    this->fillH();
-  }
+      : Base(key, { kHeightIndex, kVelocityZIndex, kRollIndex, kPitchIndex },
+             Vector::Unit(4, 0)*height, model) {}
 
   /**
    * Fully specify vector - use only for debugging
    */
   DGroundConstraint(Key key, const Vector& constraint, const gtsam::SharedNoiseModel& model)
-  : Base(key, model) {
+  : Base(key, { kHeightIndex, kVelocityZIndex, kRollIndex, kPitchIndex }, constraint, model) {
     assert(constraint.size() == 4);
-    this->prior_ = constraint; // [z, vz, roll, pitch]
-    this->mask_.resize(4);
-    this->mask_[0] = 5; // z = height
-    this->mask_[1] = 8; // vz
-    this->mask_[2] = 0; // roll
-    this->mask_[3] = 1; // pitch
-    this->H_ = Matrix::Zero(3, 9);
-    this->fillH();
   }
 };
 

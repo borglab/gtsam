@@ -82,6 +82,8 @@ if(GTSAM_BUILD_PYTHON OR GTSAM_INSTALL_MATLAB_TOOLBOX)
     # Need to set this for the wrap package so we don't use the default value.
     set(WRAP_PYTHON_VERSION ${GTSAM_PYTHON_VERSION}
         CACHE STRING "The Python version to use for wrapping")
+    # Set the include directory for matlab.h
+    set(GTWRAP_INCLUDE_NAME "wrap")
     add_subdirectory(wrap)
     list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/wrap/cmake")
 endif()
