@@ -51,6 +51,17 @@ The python wrapper supports keyword arguments for functions/methods. Hence, the 
 
     - Class variables are read-write so they can be updated directly in Python.
 
+- Operator Overloading (Python only)
+    - You can overload operators just like in C++.
+
+    ```cpp
+    class Overload {
+        Overload operator*(const Overload& other) const;
+    };
+    ```
+    - Supported operators are the intersection of those supported in C++ and in Python.
+    - Operator overloading definitions have to be marked as `const` methods.
+
 - Pointer types
     - To declare a simple/raw pointer, simply add an `@` to the class name, e.g.`Pose3@`.
     - To declare a shared pointer (e.g. `gtsam::noiseModel::Base::shared_ptr`), use an asterisk (i.e. `*`). E.g. `gtsam::noiseModel::Base*` to define the wrapping for the `Base` noise model shared pointer.
@@ -78,7 +89,7 @@ The python wrapper supports keyword arguments for functions/methods. Hence, the 
     - Can have multiple functions of the same name in different namespaces.
     - Functions can be templated and have multiple template arguments, e.g.
         ```cpp
-        template<T, >
+        template<T, R, S>
         ```
 
 - Using classes defined in other modules
@@ -99,7 +110,7 @@ The python wrapper supports keyword arguments for functions/methods. Hence, the 
         virtual boost::shared_ptr<CLASS_NAME> clone() const;
         ```
 
-- Class Templates
+- Templates
     - Basic templates are supported either with an explicit list of types to instantiate,
       e.g.
 
@@ -113,17 +124,30 @@ The python wrapper supports keyword arguments for functions/methods. Hence, the 
       template<T, U> class Class2 { ... };
       typedef Class2<Type1, Type2> MyInstantiatedClass;
       ```
-
+    - Templates can also be defined for methods, properties and static methods.
     - In the class definition, appearances of the template argument(s) will be replaced with their
       instantiated types, e.g. `void setValue(const T& value);`.
     - To refer to the instantiation of the template class itself, use `This`, i.e. `static This Create();`.
     - To create new instantiations in other modules, you must copy-and-paste the whole class definition
       into the new module, but use only your new instantiation types.
-    - When forward-declaring template instantiations, use the generated/typedefed name, e.g.
+    - When forward-declaring template instantiations, use the generated/typedef'd name, e.g.
 
       ```cpp
       class gtsam::Class1Pose2;
       class gtsam::MyInstantiatedClass;
+      ```
+    - Template arguments can be templates themselves, e.g.
+
+      ```cpp
+      // Typedef'd PinholeCamera
+      template<CALIBRATION>
+      class PinholeCamera { ... };
+      typedef gtsam::PinholeCamera<gtsam::Cal3_S2> PinholeCameraCal3_S2;
+
+      template<CAMERA>
+      class SfmFactor { ... };
+      // This is valid.
+      typedef gtsam::SfmFactor<gtsam::PinholeCamera<gtsam::Cal3_S2>> BasicSfmFactor;
       ```
 
 - `Boost.serialization` within the wrapper:
