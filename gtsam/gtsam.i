@@ -308,6 +308,9 @@ class StereoPoint2 {
   gtsam::StereoPoint2 compose(const gtsam::StereoPoint2& p2) const;
   gtsam::StereoPoint2 between(const gtsam::StereoPoint2& p2) const;
 
+  // Operator Overloads
+  gtsam::StereoPoint2 operator*(const gtsam::StereoPoint2& p2) const;
+
   // Manifold
   gtsam::StereoPoint2 retract(Vector v) const;
   Vector localCoordinates(const gtsam::StereoPoint2& p) const;
@@ -384,6 +387,9 @@ class Rot2 {
   gtsam::Rot2 compose(const gtsam::Rot2& p2) const;
   gtsam::Rot2 between(const gtsam::Rot2& p2) const;
 
+  // Operator Overloads
+  gtsam::Rot2 operator*(const gtsam::Rot2& p2) const;
+
   // Manifold
   gtsam::Rot2 retract(Vector v) const;
   Vector localCoordinates(const gtsam::Rot2& p) const;
@@ -432,6 +438,9 @@ class SO3 {
   gtsam::SO3 between(const gtsam::SO3& R) const;
   gtsam::SO3 compose(const gtsam::SO3& R) const;
 
+  // Operator Overloads
+  gtsam::SO3 operator*(const gtsam::SO3& R) const;
+
   // Manifold
   gtsam::SO3 retract(Vector v) const;
   Vector localCoordinates(const gtsam::SO3& R) const;
@@ -459,6 +468,9 @@ class SO4 {
   gtsam::SO4 between(const gtsam::SO4& Q) const;
   gtsam::SO4 compose(const gtsam::SO4& Q) const;
 
+  // Operator Overloads
+  gtsam::SO4 operator*(const gtsam::SO4& Q) const;
+
   // Manifold
   gtsam::SO4 retract(Vector v) const;
   Vector localCoordinates(const gtsam::SO4& Q) const;
@@ -485,6 +497,9 @@ class SOn {
   gtsam::SOn inverse() const;
   gtsam::SOn between(const gtsam::SOn& Q) const;
   gtsam::SOn compose(const gtsam::SOn& Q) const;
+
+  // Operator Overloads
+  gtsam::SOn operator*(const gtsam::SOn& Q) const;
 
   // Manifold
   gtsam::SOn retract(Vector v) const;
@@ -540,9 +555,12 @@ class Rot3 {
 
   // Group
   static gtsam::Rot3 identity();
-    gtsam::Rot3 inverse() const;
+  gtsam::Rot3 inverse() const;
   gtsam::Rot3 compose(const gtsam::Rot3& p2) const;
   gtsam::Rot3 between(const gtsam::Rot3& p2) const;
+
+  // Operator Overloads
+  gtsam::Rot3 operator*(const gtsam::Rot3& p2) const;
 
   // Manifold
   //gtsam::Rot3 retractCayley(Vector v) const; // TODO, does not exist in both Matrix and Quaternion options
@@ -597,6 +615,9 @@ class Pose2 {
   gtsam::Pose2 inverse() const;
   gtsam::Pose2 compose(const gtsam::Pose2& p2) const;
   gtsam::Pose2 between(const gtsam::Pose2& p2) const;
+
+    // Operator Overloads
+  gtsam::Pose2 operator*(const gtsam::Pose2& p2) const;
 
   // Manifold
   gtsam::Pose2 retract(Vector v) const;
@@ -654,6 +675,9 @@ class Pose3 {
   gtsam::Pose3 inverse() const;
   gtsam::Pose3 compose(const gtsam::Pose3& pose) const;
   gtsam::Pose3 between(const gtsam::Pose3& pose) const;
+
+  // Operator Overloads
+  gtsam::Pose3 operator*(const gtsam::Pose3& pose) const;
 
   // Manifold
   gtsam::Pose3 retract(Vector v) const;
@@ -3131,6 +3155,9 @@ class ConstantBias {
   gtsam::imuBias::ConstantBias inverse() const;
   gtsam::imuBias::ConstantBias compose(const gtsam::imuBias::ConstantBias& b) const;
   gtsam::imuBias::ConstantBias between(const gtsam::imuBias::ConstantBias& b) const;
+
+  // Operator Overloads
+  gtsam::imuBias::ConstantBias operator*(const gtsam::imuBias::ConstantBias& b) const;
 
   // Manifold
   gtsam::imuBias::ConstantBias retract(Vector v) const;
