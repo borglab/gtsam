@@ -25,6 +25,7 @@ typedef MyFactor<gtsam::Pose2, gtsam::Matrix> MyFactorPosePoint2;
 typedef MyTemplate<gtsam::Point2> MyTemplatePoint2;
 typedef MyTemplate<gtsam::Matrix> MyTemplateMatrix;
 typedef gtsam::PinholeCamera<gtsam::Cal3Bundler> PinholeCameraCal3Bundler;
+typedef gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3> GeneralSFMFactorCal3Bundler;
 
 BOOST_CLASS_EXPORT_GUID(gtsam::Point2, "gtsamPoint2");
 BOOST_CLASS_EXPORT_GUID(gtsam::Point3, "gtsamPoint3");
@@ -71,8 +72,12 @@ typedef std::set<boost::shared_ptr<ClassD>*> Collector_ClassD;
 static Collector_ClassD collector_ClassD;
 typedef std::set<boost::shared_ptr<gtsam::NonlinearFactorGraph>*> Collector_gtsamNonlinearFactorGraph;
 static Collector_gtsamNonlinearFactorGraph collector_gtsamNonlinearFactorGraph;
+typedef std::set<boost::shared_ptr<gtsam::SfmTrack>*> Collector_gtsamSfmTrack;
+static Collector_gtsamSfmTrack collector_gtsamSfmTrack;
 typedef std::set<boost::shared_ptr<PinholeCameraCal3Bundler>*> Collector_gtsamPinholeCameraCal3Bundler;
 static Collector_gtsamPinholeCameraCal3Bundler collector_gtsamPinholeCameraCal3Bundler;
+typedef std::set<boost::shared_ptr<GeneralSFMFactorCal3Bundler>*> Collector_gtsamGeneralSFMFactorCal3Bundler;
+static Collector_gtsamGeneralSFMFactorCal3Bundler collector_gtsamGeneralSFMFactorCal3Bundler;
 
 void _deleteAllObjects()
 {
@@ -206,10 +211,22 @@ void _deleteAllObjects()
     collector_gtsamNonlinearFactorGraph.erase(iter++);
     anyDeleted = true;
   } }
+  { for(Collector_gtsamSfmTrack::iterator iter = collector_gtsamSfmTrack.begin();
+      iter != collector_gtsamSfmTrack.end(); ) {
+    delete *iter;
+    collector_gtsamSfmTrack.erase(iter++);
+    anyDeleted = true;
+  } }
   { for(Collector_gtsamPinholeCameraCal3Bundler::iterator iter = collector_gtsamPinholeCameraCal3Bundler.begin();
       iter != collector_gtsamPinholeCameraCal3Bundler.end(); ) {
     delete *iter;
     collector_gtsamPinholeCameraCal3Bundler.erase(iter++);
+    anyDeleted = true;
+  } }
+  { for(Collector_gtsamGeneralSFMFactorCal3Bundler::iterator iter = collector_gtsamGeneralSFMFactorCal3Bundler.begin();
+      iter != collector_gtsamGeneralSFMFactorCal3Bundler.end(); ) {
+    delete *iter;
+    collector_gtsamGeneralSFMFactorCal3Bundler.erase(iter++);
     anyDeleted = true;
   } }
   if(anyDeleted)
@@ -282,7 +299,29 @@ void gtsamNonlinearFactorGraph_addPrior_2(int nargout, mxArray *out[], int nargi
   obj->addPrior<gtsam::PinholeCamera<gtsam::Cal3Bundler>>(key,prior,noiseModel);
 }
 
-void gtsamPinholeCameraCal3Bundler_collectorInsertAndMakeBase_3(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void gtsamSfmTrack_collectorInsertAndMakeBase_3(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  mexAtExit(&_deleteAllObjects);
+  typedef boost::shared_ptr<gtsam::SfmTrack> Shared;
+
+  Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
+  collector_gtsamSfmTrack.insert(self);
+}
+
+void gtsamSfmTrack_deconstructor_4(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  typedef boost::shared_ptr<gtsam::SfmTrack> Shared;
+  checkArguments("delete_gtsamSfmTrack",nargout,nargin,1);
+  Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
+  Collector_gtsamSfmTrack::iterator item;
+  item = collector_gtsamSfmTrack.find(self);
+  if(item != collector_gtsamSfmTrack.end()) {
+    delete self;
+    collector_gtsamSfmTrack.erase(item);
+  }
+}
+
+void gtsamPinholeCameraCal3Bundler_collectorInsertAndMakeBase_5(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
   typedef boost::shared_ptr<gtsam::PinholeCamera<gtsam::Cal3Bundler>> Shared;
@@ -291,7 +330,7 @@ void gtsamPinholeCameraCal3Bundler_collectorInsertAndMakeBase_3(int nargout, mxA
   collector_gtsamPinholeCameraCal3Bundler.insert(self);
 }
 
-void gtsamPinholeCameraCal3Bundler_deconstructor_4(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void gtsamPinholeCameraCal3Bundler_deconstructor_6(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   typedef boost::shared_ptr<gtsam::PinholeCamera<gtsam::Cal3Bundler>> Shared;
   checkArguments("delete_gtsamPinholeCameraCal3Bundler",nargout,nargin,1);
@@ -301,6 +340,28 @@ void gtsamPinholeCameraCal3Bundler_deconstructor_4(int nargout, mxArray *out[], 
   if(item != collector_gtsamPinholeCameraCal3Bundler.end()) {
     delete self;
     collector_gtsamPinholeCameraCal3Bundler.erase(item);
+  }
+}
+
+void gtsamGeneralSFMFactorCal3Bundler_collectorInsertAndMakeBase_7(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  mexAtExit(&_deleteAllObjects);
+  typedef boost::shared_ptr<gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3>> Shared;
+
+  Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
+  collector_gtsamGeneralSFMFactorCal3Bundler.insert(self);
+}
+
+void gtsamGeneralSFMFactorCal3Bundler_deconstructor_8(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  typedef boost::shared_ptr<gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3>> Shared;
+  checkArguments("delete_gtsamGeneralSFMFactorCal3Bundler",nargout,nargin,1);
+  Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
+  Collector_gtsamGeneralSFMFactorCal3Bundler::iterator item;
+  item = collector_gtsamGeneralSFMFactorCal3Bundler.find(self);
+  if(item != collector_gtsamGeneralSFMFactorCal3Bundler.end()) {
+    delete self;
+    collector_gtsamGeneralSFMFactorCal3Bundler.erase(item);
   }
 }
 
@@ -326,10 +387,22 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
       gtsamNonlinearFactorGraph_addPrior_2(nargout, out, nargin-1, in+1);
       break;
     case 3:
-      gtsamPinholeCameraCal3Bundler_collectorInsertAndMakeBase_3(nargout, out, nargin-1, in+1);
+      gtsamSfmTrack_collectorInsertAndMakeBase_3(nargout, out, nargin-1, in+1);
       break;
     case 4:
-      gtsamPinholeCameraCal3Bundler_deconstructor_4(nargout, out, nargin-1, in+1);
+      gtsamSfmTrack_deconstructor_4(nargout, out, nargin-1, in+1);
+      break;
+    case 5:
+      gtsamPinholeCameraCal3Bundler_collectorInsertAndMakeBase_5(nargout, out, nargin-1, in+1);
+      break;
+    case 6:
+      gtsamPinholeCameraCal3Bundler_deconstructor_6(nargout, out, nargin-1, in+1);
+      break;
+    case 7:
+      gtsamGeneralSFMFactorCal3Bundler_collectorInsertAndMakeBase_7(nargout, out, nargin-1, in+1);
+      break;
+    case 8:
+      gtsamGeneralSFMFactorCal3Bundler_deconstructor_8(nargout, out, nargin-1, in+1);
       break;
     }
   } catch(const std::exception& e) {
