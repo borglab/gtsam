@@ -10,14 +10,14 @@ Parser classes and rules for parsing C++ functions.
 Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellaert
 """
 
-from typing import List, Union
+from typing import Iterable, List, Union
 
 from pyparsing import Optional, ParseResults, delimitedList
 
 from .template import Template
 from .tokens import (COMMA, IDENT, LOPBRACK, LPAREN, PAIR, ROPBRACK, RPAREN,
                      SEMI_COLON)
-from .type import Type
+from .type import TemplatedType, Type
 
 
 class Argument:
@@ -29,16 +29,23 @@ class Argument:
     void sayHello(/*`s` is the method argument with type `const string&`*/ const string& s);
     ```
     """
-    rule = (Type.rule("ctype") +
+    rule = ((Type.rule ^ TemplatedType.rule)("ctype") +
             IDENT("name")).setParseAction(lambda t: Argument(t.ctype, t.name))
 
-    def __init__(self, ctype: Type, name: str):
-        self.ctype = ctype
+    def __init__(self, ctype: Union[Type, TemplatedType], name: str):
+        if isinstance(ctype, Iterable):
+            self.ctype = ctype[0]
+        else:
+            self.ctype = ctype
         self.name = name
         self.parent: Union[ArgumentList, None] = None
 
     def __repr__(self) -> str:
-        return '{} {}'.format(self.ctype.__repr__(), self.name)
+        return self.to_cpp()
+
+    def to_cpp(self) -> str:
+        """Return full C++ representation of argument."""
+        return '{} {}'.format(repr(self.ctype), self.name)
 
 
 class ArgumentList:
@@ -93,11 +100,13 @@ class ReturnType:
         + Type.rule("type2")  #
         + ROPBRACK  #
     )
-    rule = (_pair ^ Type.rule("type1")).setParseAction(  # BR
-        lambda t: ReturnType(t.type1, t.type2))
+    rule = (_pair ^
+            (Type.rule ^ TemplatedType.rule)("type1")).setParseAction(  # BR
+                lambda t: ReturnType(t.type1, t.type2))
 
-    def __init__(self, type1: Type, type2: Type):
-        self.type1 = type1
+    def __init__(self, type1: Union[Type, TemplatedType], type2: Type):
+        # If a TemplatedType, the return is a ParseResults, so we extract out the type.
+        self.type1 = type1[0] if isinstance(type1, ParseResults) else type1
         self.type2 = type2
         # The parent object which contains the return type
         # E.g. Method, StaticMethod, Template, Constructor, GlobalFunction
