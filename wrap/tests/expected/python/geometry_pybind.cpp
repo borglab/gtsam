@@ -3,6 +3,7 @@
 #include <pybind11/eigen.h>
 #include <pybind11/stl_bind.h>
 #include <pybind11/pybind11.h>
+#include <pybind11/operators.h>
 #include "gtsam/nonlinear/utilities.h"  // for RedirectCout.
 
 #include "gtsam/geometry/Point2.h"
@@ -34,10 +35,10 @@ PYBIND11_MODULE(geometry_py, m_) {
         .def("dim",[](gtsam::Point2* self){return self->dim();})
         .def("returnChar",[](gtsam::Point2* self){return self->returnChar();})
         .def("argChar",[](gtsam::Point2* self, char a){ self->argChar(a);}, py::arg("a"))
-        .def("argChar",[](gtsam::Point2* self, std::shared_ptr<char>& a){ self->argChar(a);}, py::arg("a"))
+        .def("argChar",[](gtsam::Point2* self, std::shared_ptr<char> a){ self->argChar(a);}, py::arg("a"))
         .def("argChar",[](gtsam::Point2* self, char& a){ self->argChar(a);}, py::arg("a"))
         .def("argChar",[](gtsam::Point2* self, char* a){ self->argChar(a);}, py::arg("a"))
-        .def("argChar",[](gtsam::Point2* self, const std::shared_ptr<char>& a){ self->argChar(a);}, py::arg("a"))
+        .def("argChar",[](gtsam::Point2* self, const std::shared_ptr<char> a){ self->argChar(a);}, py::arg("a"))
         .def("argChar",[](gtsam::Point2* self, const char& a){ self->argChar(a);}, py::arg("a"))
         .def("argChar",[](gtsam::Point2* self, const char* a){ self->argChar(a);}, py::arg("a"))
         .def("argUChar",[](gtsam::Point2* self, unsigned char a){ self->argUChar(a);}, py::arg("a"))
