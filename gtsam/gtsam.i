@@ -266,7 +266,6 @@ class Point2 {
 };
 
 // std::vector<gtsam::Point2>
-#include <gtsam/geometry/Point2.h>
 class Point2Vector
 {
   // Constructors
@@ -309,7 +308,10 @@ class StereoPoint2 {
   gtsam::StereoPoint2 between(const gtsam::StereoPoint2& p2) const;
 
   // Operator Overloads
-  gtsam::StereoPoint2 operator*(const gtsam::StereoPoint2& p2) const;
+  gtsam::StereoPoint2 operator-() const;
+  // gtsam::StereoPoint2 operator+(Vector b) const;  //TODO Mixed types not yet supported
+  gtsam::StereoPoint2 operator+(const gtsam::StereoPoint2& p2) const;
+  gtsam::StereoPoint2 operator-(const gtsam::StereoPoint2& p2) const;
 
   // Manifold
   gtsam::StereoPoint2 retract(Vector v) const;
@@ -359,7 +361,6 @@ class Point3 {
   void pickle() const;
 };
 
-#include <gtsam/geometry/Point3.h>
 class Point3Pairs {
   Point3Pairs();
   size_t size() const;
@@ -555,7 +556,7 @@ class Rot3 {
 
   // Group
   static gtsam::Rot3 identity();
-  gtsam::Rot3 inverse() const;
+    gtsam::Rot3 inverse() const;
   gtsam::Rot3 compose(const gtsam::Rot3& p2) const;
   gtsam::Rot3 between(const gtsam::Rot3& p2) const;
 
@@ -616,7 +617,7 @@ class Pose2 {
   gtsam::Pose2 compose(const gtsam::Pose2& p2) const;
   gtsam::Pose2 between(const gtsam::Pose2& p2) const;
 
-    // Operator Overloads
+  // Operator Overloads
   gtsam::Pose2 operator*(const gtsam::Pose2& p2) const;
 
   // Manifold
@@ -719,7 +720,6 @@ class Pose3 {
   void pickle() const;
 };
 
-#include <gtsam/geometry/Pose3.h>
 class Pose3Pairs {
   Pose3Pairs();
   size_t size() const;
@@ -728,8 +728,6 @@ class Pose3Pairs {
   void push_back(const gtsam::Pose3Pair& pose_pair);
 };
 
-// std::vector<gtsam::Pose3>
-#include <gtsam/geometry/Pose3.h>
 class Pose3Vector
 {
   Pose3Vector();
@@ -1000,7 +998,9 @@ class CalibratedCamera {
 
   // Standard Interface
   gtsam::Pose3 pose() const;
-  double range(const gtsam::Point3& p) const; // TODO: Other overloaded range methods
+  double range(const gtsam::Point3& point) const;
+  double range(const gtsam::Pose3& pose) const;
+  double range(const gtsam::CalibratedCamera& camera) const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -1070,7 +1070,6 @@ class Similarity3 {
   const gtsam::Point3& translation();
   double scale() const;
 };
-
 
 
 // Forward declaration of PinholeCameraCalX is defined here.
@@ -1275,9 +1274,9 @@ class SymbolicBayesTree {
 };
 
 // class SymbolicBayesTreeClique {
-//   BayesTreeClique();
-//   BayesTreeClique(CONDITIONAL* conditional);
-// //  BayesTreeClique(const pair<typename ConditionalType::shared_ptr, typename ConditionalType::FactorType::shared_ptr>& result) : Base(result) {}
+//   SymbolicBayesTreeClique();
+//   SymbolicBayesTreeClique(CONDITIONAL* conditional);
+//   SymbolicBayesTreeClique(const pair<typename ConditionalType::shared_ptr, typename ConditionalType::FactorType::shared_ptr>& result) : Base(result) {}
 //
 //   bool equals(const This& other, double tol) const;
 //   void print(string s) const;
@@ -1288,13 +1287,13 @@ class SymbolicBayesTree {
 //   CONDITIONAL* conditional() const;
 //   bool isRoot() const;
 //   size_t treeSize() const;
-// //  const std::list<derived_ptr>& children() const { return children_; }
-// //  derived_ptr parent() const { return parent_.lock(); }
+//  const std::list<derived_ptr>& children() const { return children_; }
+//  derived_ptr parent() const { return parent_.lock(); }
 //
 //   // TODO: need wrapped versions graphs, BayesNet
-// //  BayesNet<ConditionalType> shortcut(derived_ptr root, Eliminate function) const;
-// //  FactorGraph<FactorType> marginal(derived_ptr root, Eliminate function) const;
-// //  FactorGraph<FactorType> joint(derived_ptr C2, derived_ptr root, Eliminate function) const;
+//  BayesNet<ConditionalType> shortcut(derived_ptr root, Eliminate function) const;
+//  FactorGraph<FactorType> marginal(derived_ptr root, Eliminate function) const;
+//  FactorGraph<FactorType> joint(derived_ptr C2, derived_ptr root, Eliminate function) const;
 //
 //   void deleteCachedShortcuts();
 // };
@@ -2758,7 +2757,7 @@ virtual class SmartProjectionPoseFactor: gtsam::NonlinearFactor {
   void add(const gtsam::Point2& measured_i, size_t poseKey_i);
 
   // enabling serialization functionality
-  //void serialize() const;
+  void serialize() const;
 };
 
 typedef gtsam::SmartProjectionPoseFactor<gtsam::Cal3_S2> SmartProjectionPose3Factor;
@@ -3064,7 +3063,7 @@ class ShonanAveraging3 {
   ShonanAveraging3(string g2oFile);
   ShonanAveraging3(string g2oFile,
                    const gtsam::ShonanAveragingParameters3 &parameters);
-  
+
   // TODO(frank): deprecate once we land pybind wrapper
   ShonanAveraging3(const gtsam::BetweenFactorPose3s &factors);
   ShonanAveraging3(const gtsam::BetweenFactorPose3s &factors,
@@ -3157,7 +3156,9 @@ class ConstantBias {
   gtsam::imuBias::ConstantBias between(const gtsam::imuBias::ConstantBias& b) const;
 
   // Operator Overloads
-  gtsam::imuBias::ConstantBias operator*(const gtsam::imuBias::ConstantBias& b) const;
+  gtsam::imuBias::ConstantBias operator-() const;
+  gtsam::imuBias::ConstantBias operator+(const gtsam::imuBias::ConstantBias& b) const;
+  gtsam::imuBias::ConstantBias operator-(const gtsam::imuBias::ConstantBias& b) const;
 
   // Manifold
   gtsam::imuBias::ConstantBias retract(Vector v) const;
@@ -3209,9 +3210,8 @@ virtual class PreintegratedRotationParams {
 
   Matrix getGyroscopeCovariance() const;
 
-  // TODO(frank): allow optional
-  //  boost::optional<Vector> getOmegaCoriolis() const;
-  //  boost::optional<Pose3>   getBodyPSensor()   const;
+  boost::optional<Vector> getOmegaCoriolis() const;
+  boost::optional<gtsam::Pose3> getBodyPSensor() const;
 };
 
 #include <gtsam/navigation/PreintegrationParams.h>
