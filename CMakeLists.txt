@@ -1,54 +1,83 @@
 cmake_minimum_required(VERSION 3.9)
 
 # Set the project name and version
-project(GTwrap VERSION 1.0)
+project(gtwrap VERSION 1.0)
 
 # ##############################################################################
 # General configuration
 
-set(WRAP_PYTHON_VERSION
-    "Default"
-    CACHE STRING "The Python version to use for wrapping")
-
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/GtwrapUtils.cmake)
 gtwrap_get_python_version(${WRAP_PYTHON_VERSION})
 
-# ##############################################################################
-# Install the CMake file to be used by other projects
+# Set the variables to be used for the cmake config file.
 if(WIN32 AND NOT CYGWIN)
-  set(SCRIPT_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/CMake")
+  set(INSTALL_CMAKE_DIR CMake/${PROJECT_NAME})
 else()
-  set(SCRIPT_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib/cmake")
+  set(INSTALL_CMAKE_DIR lib/cmake/${PROJECT_NAME})
 endif()
 
-# Configure the include directory for matlab.h
-# This allows the #include to be either gtwrap/matlab.h, wrap/matlab.h or something custom.
-if(NOT DEFINED GTWRAP_INCLUDE_NAME)
-  set(GTWRAP_INCLUDE_NAME "gtwrap" CACHE INTERNAL "Directory name for Matlab includes")
-endif()
-configure_file(${PROJECT_SOURCE_DIR}/templates/matlab_wrapper.tpl.in ${PROJECT_SOURCE_DIR}/gtwrap/matlab_wrapper.tpl)
+set(INSTALL_LIB_DIR lib/${PROJECT_NAME})
+set(INSTALL_BIN_DIR bin/${PROJECT_NAME})
+set(INSTALL_INCLUDE_DIR include/${PROJECT_NAME})
 
+# ##############################################################################
+# Package Configuration
+
+# Helper functions for generating the gtwrapConfig.cmake file correctly.
+include(CMakePackageConfigHelpers)
+
+# Configure the config file which is used for `find_package`.
+configure_package_config_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/gtwrapConfig.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/cmake/gtwrapConfig.cmake
+  INSTALL_DESTINATION "${INSTALL_CMAKE_DIR}"
+  PATH_VARS INSTALL_CMAKE_DIR INSTALL_LIB_DIR INSTALL_BIN_DIR
+            INSTALL_INCLUDE_DIR
+  INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
+
+message(STATUS "Package config  : ${CMAKE_INSTALL_PREFIX}/${INSTALL_CMAKE_DIR}")
+
+# ##############################################################################
+# Install the package
+
+message(STATUS "CMake           : ${CMAKE_INSTALL_PREFIX}/${INSTALL_CMAKE_DIR}")
 # Install CMake scripts to the standard CMake script directory.
-install(FILES cmake/gtwrapConfig.cmake cmake/MatlabWrap.cmake
-              cmake/PybindWrap.cmake cmake/GtwrapUtils.cmake
-        DESTINATION "${SCRIPT_INSTALL_DIR}/gtwrap")
+install(
+  FILES ${CMAKE_CURRENT_BINARY_DIR}/cmake/gtwrapConfig.cmake
+        cmake/MatlabWrap.cmake cmake/PybindWrap.cmake cmake/GtwrapUtils.cmake
+  DESTINATION "${CMAKE_INSTALL_PREFIX}/${INSTALL_CMAKE_DIR}")
 
-# Needed for the CMAKE_INSTALL_X variables used below.
-include(GNUInstallDirs)
+# Configure the include directory for matlab.h This allows the #include to be
+# either gtwrap/matlab.h, wrap/matlab.h or something custom.
+if(NOT DEFINED GTWRAP_INCLUDE_NAME)
+  set(GTWRAP_INCLUDE_NAME
+      "gtwrap"
+      CACHE INTERNAL "Directory name for Matlab includes")
+endif()
+
+configure_file(${PROJECT_SOURCE_DIR}/templates/matlab_wrapper.tpl.in
+               ${PROJECT_SOURCE_DIR}/gtwrap/matlab_wrapper.tpl)
 
 # Install the gtwrap python package as a directory so it can be found  by CMake
 # for wrapping.
-install(DIRECTORY gtwrap DESTINATION "${CMAKE_INSTALL_FULL_LIBDIR}/gtwrap")
+message(STATUS "Lib path        : ${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}")
+install(DIRECTORY gtwrap
+        DESTINATION "${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}")
+
+# Install pybind11 directory to `CMAKE_INSTALL_PREFIX/lib/gtwrap/pybind11` This
+# will allow the gtwrapConfig.cmake file to load it later.
+install(DIRECTORY pybind11
+        DESTINATION "${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}")
 
 # Install wrapping scripts as binaries to `CMAKE_INSTALL_PREFIX/bin` so they can
 # be invoked for wrapping. We use DESTINATION (instead of TYPE) so we can
 # support older CMake versions.
+message(STATUS "Bin path        : ${CMAKE_INSTALL_PREFIX}/${INSTALL_BIN_DIR}")
 install(PROGRAMS scripts/pybind_wrap.py scripts/matlab_wrap.py
-        DESTINATION ${CMAKE_INSTALL_FULL_BINDIR})
-
-# Install pybind11 directory to `CMAKE_INSTALL_PREFIX/lib/gtwrap/pybind11` This
-# will allow the gtwrapConfig.cmake file to load it later.
-install(DIRECTORY pybind11 DESTINATION "${CMAKE_INSTALL_FULL_LIBDIR}/gtwrap")
+        DESTINATION "${CMAKE_INSTALL_PREFIX}/${INSTALL_BIN_DIR}")
 
 # Install the matlab.h file to `CMAKE_INSTALL_PREFIX/lib/gtwrap/matlab.h`.
-install(FILES matlab.h DESTINATION "${CMAKE_INSTALL_FULL_INCLUDEDIR}/gtwrap")
+message(
+  STATUS "Header path     : ${CMAKE_INSTALL_PREFIX}/${INSTALL_INCLUDE_DIR}")
+install(FILES matlab.h
+        DESTINATION "${CMAKE_INSTALL_PREFIX}/${INSTALL_INCLUDE_DIR}")

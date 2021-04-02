@@ -63,6 +63,11 @@ class Test {
 
   void print() const;
 
+  void set_container(std::vector<testing::Test> container);
+  void set_container(std::vector<testing::Test*> container);
+  void set_container(std::vector<testing::Test&> container);
+  std::vector<testing::Test*> get_container() const;
+
   // comments at the end!
 
   // even more comments at the end!

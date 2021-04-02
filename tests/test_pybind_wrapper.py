@@ -134,6 +134,18 @@ class TestWrap(unittest.TestCase):
 
         self.compare_and_diff('namespaces_pybind.cpp', output)
 
+    def test_operator_overload(self):
+        """
+        Tests for operator overloading.
+        """
+        with open(osp.join(self.INTERFACE_DIR, 'operator.i'), 'r') as f:
+            content = f.read()
+
+        output = self.wrap_content(content, 'operator_py',
+                                   self.PYTHON_ACTUAL_DIR)
+
+        self.compare_and_diff('operator_pybind.cpp', output)
+
     def test_special_cases(self):
         """
         Tests for some unique, non-trivial features.

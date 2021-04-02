@@ -10,7 +10,7 @@ All the token definitions.
 Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellaert
 """
 
-from pyparsing import Keyword, Literal, Suppress, Word, alphanums, alphas, nums
+from pyparsing import Keyword, Literal, Suppress, Word, alphanums, alphas, nums, Or
 
 # rule for identifiers (e.g. variable names)
 IDENT = Word(alphas + '_', alphanums + '_') ^ Word(nums)
@@ -46,3 +46,42 @@ BASIS_TYPES = map(
         "float",
     ],
 )
+
+OPERATOR = Or(
+    map(
+        Literal,
+        [
+            '+',  # __add__, __pos__
+            '-',  # __sub__, __neg__
+            '*',  # __mul__
+            '/',  # __truediv__
+            '%',  # __mod__
+            '^',  # __xor__
+            '&',  # __and__
+            '|',  # __or__
+            # '~',  # __invert__
+            '+=',  # __iadd__
+            '-=',  # __isub__
+            '*=',  # __imul__
+            '/=',  # __itruediv__
+            '%=',  # __imod__
+            '^=',  # __ixor__
+            '&=',  # __iand__
+            '|=',  # __ior__
+            '<<',  # __lshift__
+            '<<=',  # __ilshift__
+            '>>',  # __rshift__
+            '>>=',  # __irshift__
+            '==',  # __eq__
+            '!=',  # __ne__
+            '<',  # __lt__
+            '>',  # __gt__
+            '<=',  # __le__
+            '>=',  # __ge__
+            # '!',  # Use `not` in python
+            # '&&',  # Use `and` in python
+            # '||',  # Use `or` in python
+            '()',  # __call__
+            '[]',  # __getitem__
+        ],
+    ))

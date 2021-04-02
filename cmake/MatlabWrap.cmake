@@ -1,59 +1,70 @@
-find_package(
-  Matlab
-  COMPONENTS MEX_COMPILER
-  REQUIRED)
-
-if(NOT Matlab_MEX_COMPILER)
-  message(
-    FATAL_ERROR
-      "Cannot find MEX compiler binary. Please check your Matlab installation and ensure MEX in installed as well."
-  )
+if(GTWRAP_PYTHON_PACKAGE_DIR)
+  # packaged
+  set(GTWRAP_PACKAGE_DIR "${GTWRAP_PYTHON_PACKAGE_DIR}")
+else()
+  set(GTWRAP_PACKAGE_DIR ${CMAKE_CURRENT_LIST_DIR}/..)
 endif()
 
-if(WRAP_BUILD_TYPE_POSTFIXES)
-    set(CURRENT_POSTFIX ${CMAKE_${CMAKE_BUILD_TYPE_UPPER}_POSTFIX})
-endif()
+# Macro which finds and configure Matlab before we do any wrapping.
+macro(find_and_configure_matlab)
+  find_package(
+    Matlab
+    COMPONENTS MEX_COMPILER
+    REQUIRED)
 
-# WRAP_MEX_BUILD_STATIC_MODULE is not for Windows - on Windows any static
-# are already compiled into the library by the linker
-if(WRAP_MEX_BUILD_STATIC_MODULE AND WIN32)
-    message(FATAL_ERROR "WRAP_MEX_BUILD_STATIC_MODULE should not be set on Windows - the linker already automatically compiles in any dependent static libraries. To create a standalone toolbox pacakge, simply ensure that CMake finds the static versions of all dependent libraries (Boost, etc).")
-endif()
-
-set(MEX_COMMAND ${Matlab_MEX_COMPILER} CACHE PATH "Path to MATLAB MEX compiler")
-set(MATLAB_ROOT ${Matlab_ROOT_DIR} CACHE PATH "Path to MATLAB installation root (e.g. /usr/local/MATLAB/R2012a)")
-
-# Try to automatically configure mex path from provided custom `bin` path.
-if(WRAP_CUSTOM_MATLAB_PATH)
-  set(matlab_bin_directory ${WRAP_CUSTOM_MATLAB_PATH})
-
-  if(WIN32)
-    set(mex_program_name "mex.bat")
-  else()
-    set(mex_program_name "mex")
+  if(NOT Matlab_MEX_COMPILER)
+    message(
+      FATAL_ERROR
+        "Cannot find MEX compiler binary. Please check your Matlab installation and ensure MEX in installed as well."
+    )
   endif()
 
-  # Run find_program explicitly putting $PATH after our predefined program
-  # directories using 'ENV PATH' and 'NO_SYSTEM_ENVIRONMENT_PATH' - this prevents
-  # finding the LaTeX mex program (totally unrelated to MATLAB Mex) when LaTeX is
-  # on the system path.
-  find_program(MEX_COMMAND ${mex_program_name}
-     PATHS ${matlab_bin_directory} ENV PATH
-     NO_DEFAULT_PATH)
-  mark_as_advanced(FORCE MEX_COMMAND)
-  # Now that we have mex, trace back to find the Matlab installation root
-  get_filename_component(MEX_COMMAND "${MEX_COMMAND}" REALPATH)
-  get_filename_component(mex_path "${MEX_COMMAND}" PATH)
-  if(mex_path MATCHES ".*/win64$")
-     get_filename_component(MATLAB_ROOT "${mex_path}/../.." ABSOLUTE)
-  else()
-     get_filename_component(MATLAB_ROOT "${mex_path}/.." ABSOLUTE)
+  if(WRAP_BUILD_TYPE_POSTFIXES)
+      set(CURRENT_POSTFIX ${CMAKE_${CMAKE_BUILD_TYPE_UPPER}_POSTFIX})
   endif()
-endif()
+
+  # WRAP_MEX_BUILD_STATIC_MODULE is not for Windows - on Windows any static
+  # are already compiled into the library by the linker
+  if(WRAP_MEX_BUILD_STATIC_MODULE AND WIN32)
+      message(FATAL_ERROR "WRAP_MEX_BUILD_STATIC_MODULE should not be set on Windows - the linker already automatically compiles in any dependent static libraries. To create a standalone toolbox pacakge, simply ensure that CMake finds the static versions of all dependent libraries (Boost, etc).")
+  endif()
+
+  set(MEX_COMMAND ${Matlab_MEX_COMPILER} CACHE PATH "Path to MATLAB MEX compiler")
+  set(MATLAB_ROOT ${Matlab_ROOT_DIR} CACHE PATH "Path to MATLAB installation root (e.g. /usr/local/MATLAB/R2012a)")
+
+  # Try to automatically configure mex path from provided custom `bin` path.
+  if(WRAP_CUSTOM_MATLAB_PATH)
+    set(matlab_bin_directory ${WRAP_CUSTOM_MATLAB_PATH})
+
+    if(WIN32)
+      set(mex_program_name "mex.bat")
+    else()
+      set(mex_program_name "mex")
+    endif()
+
+    # Run find_program explicitly putting $PATH after our predefined program
+    # directories using 'ENV PATH' and 'NO_SYSTEM_ENVIRONMENT_PATH' - this prevents
+    # finding the LaTeX mex program (totally unrelated to MATLAB Mex) when LaTeX is
+    # on the system path.
+    find_program(MEX_COMMAND ${mex_program_name}
+      PATHS ${matlab_bin_directory} ENV PATH
+      NO_DEFAULT_PATH)
+    mark_as_advanced(FORCE MEX_COMMAND)
+    # Now that we have mex, trace back to find the Matlab installation root
+    get_filename_component(MEX_COMMAND "${MEX_COMMAND}" REALPATH)
+    get_filename_component(mex_path "${MEX_COMMAND}" PATH)
+    if(mex_path MATCHES ".*/win64$")
+      get_filename_component(MATLAB_ROOT "${mex_path}/../.." ABSOLUTE)
+    else()
+      get_filename_component(MATLAB_ROOT "${mex_path}/.." ABSOLUTE)
+    endif()
+  endif()
+endmacro()
 
 # Consistent and user-friendly wrap function
 function(matlab_wrap interfaceHeader linkLibraries
          extraIncludeDirs extraMexFlags ignore_classes)
+  find_and_configure_matlab()
   wrap_and_install_library("${interfaceHeader}" "${linkLibraries}"
                            "${extraIncludeDirs}" "${extraMexFlags}"
                            "${ignore_classes}")

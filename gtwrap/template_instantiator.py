@@ -48,7 +48,7 @@ def instantiate_type(ctype: parser.Type,
             is_shared_ptr=ctype.is_shared_ptr,
             is_ptr=ctype.is_ptr,
             is_ref=ctype.is_ref,
-            is_basis=ctype.is_basis,
+            is_basic=ctype.is_basic,
         )
     elif str_arg_typename == 'This':
         if instantiated_class:
@@ -68,7 +68,7 @@ def instantiate_type(ctype: parser.Type,
             is_shared_ptr=ctype.is_shared_ptr,
             is_ptr=ctype.is_ptr,
             is_ref=ctype.is_ref,
-            is_basis=ctype.is_basis,
+            is_basic=ctype.is_basic,
         )
     else:
         return ctype
@@ -206,7 +206,7 @@ class InstantiatedMethod(parser.Method):
     """
     We can only instantiate template methods with a single template parameter.
     """
-    def __init__(self, original, instantiations: List[parser.Typename]=''):
+    def __init__(self, original, instantiations: List[parser.Typename] = ''):
         self.original = original
         self.instantiations = instantiations
         self.template = ''
@@ -292,11 +292,15 @@ class InstantiatedClass(parser.Class):
         # This will allow the `This` keyword to be used in both templated and non-templated classes.
         typenames = self.original.template.typenames if self.original.template else []
 
-        # Instantiate the constructors, static methods, properties
-        # and instance methods, respectively.
+        # Instantiate the constructors, static methods, properties, respectively.
         self.ctors = self.instantiate_ctors(typenames)
         self.static_methods = self.instantiate_static_methods(typenames)
         self.properties = self.instantiate_properties(typenames)
+
+        # Instantiate all operator overloads
+        self.operators = self.instantiate_operators(typenames)
+
+        # Instantiate all instance methods
         instantiated_methods = \
             self.instantiate_class_templates_in_methods(typenames)
 
@@ -323,6 +327,7 @@ class InstantiatedClass(parser.Class):
             self.methods,
             self.static_methods,
             self.properties,
+            self.operators,
             parent=self.parent,
         )
 
@@ -333,10 +338,11 @@ class InstantiatedClass(parser.Class):
                name=self.name,
                cpp_class=self.cpp_class(),
                parent_class=self.parent,
-               ctors="\n".join([ctor.__repr__() for ctor in self.ctors]),
-               methods="\n".join([m.__repr__() for m in self.methods]),
-               static_methods="\n".join([m.__repr__()
+               ctors="\n".join([repr(ctor) for ctor in self.ctors]),
+               methods="\n".join([repr(m) for m in self.methods]),
+               static_methods="\n".join([repr(m)
                                          for m in self.static_methods]),
+               operators="\n".join([repr(op) for op in self.operators])
             )
 
     def instantiate_ctors(self, typenames):
@@ -434,6 +440,39 @@ class InstantiatedClass(parser.Class):
                     parent=self,
                 ))
         return class_instantiated_methods
+
+    def instantiate_operators(self, typenames):
+        """
+        Instantiate the class-level template in the operator overload.
+
+        Args:
+            typenames: List of template types to instantiate.
+
+        Return: List of methods instantiated with provided template args on the class.
+        """
+        instantiated_operators = []
+        for operator in self.original.operators:
+            instantiated_args = instantiate_args_list(
+                operator.args.args_list,
+                typenames,
+                self.instantiations,
+                self.cpp_typename(),
+            )
+            instantiated_operators.append(
+                parser.Operator(
+                    name=operator.name,
+                    operator=operator.operator,
+                    return_type=instantiate_return_type(
+                        operator.return_type,
+                        typenames,
+                        self.instantiations,
+                        self.cpp_typename(),
+                    ),
+                    args=parser.ArgumentList(instantiated_args),
+                    is_const=operator.is_const,
+                    parent=self,
+                ))
+        return instantiated_operators
 
     def instantiate_properties(self, typenames):
         """
