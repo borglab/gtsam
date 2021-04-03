@@ -34,8 +34,8 @@ namespace gtsam {
 
 /**
  * This factor optimizes the pose of the body as well as the extrinsic camera calibration (pose of camera wrt body).
- * Each camera has its own extrinsic calibration.
- * This factor requires that values contain the involved poses and extrinsics (both Pose3).
+ * Each camera may have its own extrinsic calibration or the same calibration can be shared by multiple cameras.
+ * This factor requires that values contain the involved poses and extrinsics (both are Pose3 variables).
  * @addtogroup SLAM
  */
 class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
@@ -43,10 +43,10 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
   /// shared pointer to calibration object (one for each camera)
   std::vector<boost::shared_ptr<Cal3_S2Stereo>> K_all_;
 
-  /// The keys corresponding to the pose of the body for each view
-  KeyVector w_P_body_keys_;
+  /// The keys corresponding to the pose of the body (with respect to an external world frame) for each view
+  KeyVector world_P_body_keys_;
 
-  /// The keys corresponding to the extrinsic pose calibration for each view
+  /// The keys corresponding to the extrinsic pose calibration for each view (pose that transform from camera to body)
   KeyVector body_P_cam_keys_;
 
  public:
@@ -61,10 +61,10 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
   /// shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<This> shared_ptr;
 
-  static const int Dim = 12;  ///< Camera dimension
-  static const int DimPose = 6;  ///< Camera dimension
-  static const int ZDim = 3;  ///< Measurement dimension
-  typedef Eigen::Matrix<double, ZDim, Dim> MatrixZD;  // F blocks (derivatives wrpt camera)
+  static const int Dim = 12;  ///< Camera dimension: 6 for body pose, 6 for extrinsic pose
+  static const int DimPose = 6;  ///< Pose3 dimension
+  static const int ZDim = 3;  ///< Measurement dimension (for a StereoPoint2 measurement)
+  typedef Eigen::Matrix<double, ZDim, Dim> MatrixZD;  // F blocks (derivatives wrt camera)
   typedef std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD> > FBlocks;  // vector of F blocks
 
   /**
@@ -82,22 +82,23 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
   /**
    * add a new measurement, with a pose key, and an extrinsic pose key
    * @param measured is the 3-dimensional location of the projection of a
-   * single landmark in the a single view (the measurement)
-   * @param w_P_body_key is key corresponding to the camera observing the same landmark
-   * @param body_P_cam_key is key corresponding to the camera observing the same landmark
-   * @param K is the (fixed) camera calibration
+   * single landmark in the a single (stereo) view (the measurement)
+   * @param world_P_body_key is the key corresponding to the body poses observing the same landmark
+   * @param body_P_cam_key is the key corresponding to the extrinsic camera-to-body pose calibration
+   * @param K is the (fixed) camera intrinsic calibration
    */
-  void add(const StereoPoint2& measured, const Key& w_P_body_key,
+  void add(const StereoPoint2& measured, const Key& world_P_body_key,
            const Key& body_P_cam_key,
            const boost::shared_ptr<Cal3_S2Stereo>& K);
 
   /**
    *  Variant of the previous one in which we include a set of measurements
-   * @param measurements vector of the 2m dimensional location of the projection
-   * of a single landmark in the m view (the measurements)
-   * @param w_P_body_keys are the ordered keys corresponding to the camera observing the same landmark
-   * @param body_P_cam_keys are the ordered keys corresponding to the camera observing the same landmark
-   * @param Ks vector of calibration objects
+   * @param measurements vector of the 3m dimensional location of the projection
+   * of a single landmark in the m (stereo) view (the measurements)
+   * @param w_P_body_keys are the ordered keys corresponding to the body poses observing the same landmark
+   * @param body_P_cam_keys are the ordered keys corresponding to the extrinsic camera-to-body poses calibration
+   * (note: elements of this vector do not need to be unique: 2 camera views can share the same calibration)
+   * @param Ks vector of intrinsic calibration objects
    */
   void add(const std::vector<StereoPoint2>& measurements,
            const KeyVector& w_P_body_keys, const KeyVector& body_P_cam_keys,
@@ -106,10 +107,11 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
   /**
    * Variant of the previous one in which we include a set of measurements with
    * the same noise and calibration
-   * @param measurements vector of the 2m dimensional location of the projection
-   * of a single landmark in the m view (the measurement)
-   * @param w_P_body_keys are the ordered keys corresponding to the camera observing the same landmark
-   * @param body_P_cam_keys are the ordered keys corresponding to the camera observing the same landmark
+   * @param measurements vector of the 3m dimensional location of the projection
+   * of a single landmark in the m (stereo) view (the measurements)
+   * @param w_P_body_keys are the ordered keys corresponding to the body poses observing the same landmark
+   * @param body_P_cam_keys are the ordered keys corresponding to the extrinsic camera-to-body poses calibration
+   * (note: elements of this vector do not need to be unique: 2 camera views can share the same calibration)
    * @param K the (known) camera calibration (same for all measurements)
    */
   void add(const std::vector<StereoPoint2>& measurements,
@@ -131,7 +133,6 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
   const KeyVector& getExtrinsicPoseKeys() const {
     return body_P_cam_keys_;
   }
-  ;
 
   /**
    * error calculates the error of the factor.
@@ -166,7 +167,7 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
       Matrix dPoseCam_dPoseBody, dPoseCam_dPoseExt, dProject_dPoseCam, Ei;
 
       for (size_t i = 0; i < numViews; i++) {  // for each camera/measurement
-        Pose3 w_P_body = values.at<Pose3>(w_P_body_keys_.at(i));
+        Pose3 w_P_body = values.at<Pose3>(world_P_body_keys_.at(i));
         Pose3 body_P_cam = values.at<Pose3>(body_P_cam_keys_.at(i));
         StereoCamera camera(
             w_P_body.compose(body_P_cam, dPoseCam_dPoseBody, dPoseCam_dPoseExt),
@@ -243,7 +244,8 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
     std::fill(dims.begin(), dims.end() - 1, 6);
     dims.back() = 1;
 
-    size_t nrNonuniqueKeys = w_P_body_keys_.size() + body_P_cam_keys_.size();
+    size_t nrNonuniqueKeys = world_P_body_keys_.size()
+        + body_P_cam_keys_.size();
     SymmetricBlockMatrix augmentedHessianUniqueKeys;
     if (nrUniqueKeys == nrNonuniqueKeys) {  // if there is 1 calibration key per camera
       augmentedHessianUniqueKeys = SymmetricBlockMatrix(
@@ -257,8 +259,8 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
 
       // these are the keys that correspond to the blocks in augmentedHessian (output of SchurComplement)
       KeyVector nonuniqueKeys;
-      for (size_t i = 0; i < w_P_body_keys_.size(); i++) {
-        nonuniqueKeys.push_back(w_P_body_keys_.at(i));
+      for (size_t i = 0; i < world_P_body_keys_.size(); i++) {
+        nonuniqueKeys.push_back(world_P_body_keys_.at(i));
         nonuniqueKeys.push_back(body_P_cam_keys_.at(i));
       }
 
