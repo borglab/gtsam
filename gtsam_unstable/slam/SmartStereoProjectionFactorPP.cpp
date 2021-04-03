@@ -44,18 +44,18 @@ void SmartStereoProjectionFactorPP::add(
 
 void SmartStereoProjectionFactorPP::add(
     const std::vector<StereoPoint2>& measurements,
-    const KeyVector& w_P_body_keys, const KeyVector& body_P_cam_keys,
+    const KeyVector& world_P_body_keys, const KeyVector& body_P_cam_keys,
     const std::vector<boost::shared_ptr<Cal3_S2Stereo>>& Ks) {
-  assert(measurements.size() == poseKeys.size());
-  assert(w_P_body_keys.size() == body_P_cam_keys.size());
-  assert(w_P_body_keys.size() == Ks.size());
+  assert(world_P_body_keys.size() == measurements.size());
+  assert(world_P_body_keys.size() == body_P_cam_keys.size());
+  assert(world_P_body_keys.size() == Ks.size());
   for (size_t i = 0; i < measurements.size(); i++) {
-      Base::add(measurements[i], w_P_body_keys[i]);
+      Base::add(measurements[i], world_P_body_keys[i]);
       // pose keys are assumed to be unique (1 observation per time stamp), but calibration can be shared
       if(std::find(keys_.begin(), keys_.end(), body_P_cam_keys[i]) == keys_.end())
           keys_.push_back(body_P_cam_keys[i]); // add only unique keys
 
-      world_P_body_keys_.push_back(w_P_body_keys[i]);
+      world_P_body_keys_.push_back(world_P_body_keys[i]);
       body_P_cam_keys_.push_back(body_P_cam_keys[i]);
 
       K_all_.push_back(Ks[i]);
@@ -64,17 +64,17 @@ void SmartStereoProjectionFactorPP::add(
 
 void SmartStereoProjectionFactorPP::add(
     const std::vector<StereoPoint2>& measurements,
-    const KeyVector& w_P_body_keys, const KeyVector& body_P_cam_keys,
+    const KeyVector& world_P_body_keys, const KeyVector& body_P_cam_keys,
     const boost::shared_ptr<Cal3_S2Stereo>& K) {
-  assert(poseKeys.size() == measurements.size());
-  assert(w_P_body_keys.size() == body_P_cam_keys.size());
+  assert(world_P_body_keys.size() == measurements.size());
+  assert(world_P_body_keys.size() == body_P_cam_keys.size());
   for (size_t i = 0; i < measurements.size(); i++) {
-    Base::add(measurements[i], w_P_body_keys[i]);
+    Base::add(measurements[i], world_P_body_keys[i]);
     // pose keys are assumed to be unique (1 observation per time stamp), but calibration can be shared
     if(std::find(keys_.begin(), keys_.end(), body_P_cam_keys[i]) == keys_.end())
       keys_.push_back(body_P_cam_keys[i]); // add only unique keys
 
-    world_P_body_keys_.push_back(w_P_body_keys[i]);
+    world_P_body_keys_.push_back(world_P_body_keys[i]);
     body_P_cam_keys_.push_back(body_P_cam_keys[i]);
 
     K_all_.push_back(K);
