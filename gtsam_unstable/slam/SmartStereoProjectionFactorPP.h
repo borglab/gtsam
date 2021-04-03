@@ -153,51 +153,64 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
    */
   Base::Cameras cameras(const Values& values) const override;
 
-  /// Compute F, E only (called below in both vanilla and SVD versions)
-  /// Assumes the point has been computed
-  /// Note E can be 2m*3 or 2m*2, in case point is degenerate
+  /**
+   * Compute jacobian F, E and error vector at a given linearization point
+   * @param values Values structure which must contain camera poses
+   * corresponding to keys involved in this factor
+   * @return Return arguments are the camera jacobians Fs (including the jacobian with
+   * respect to both the body pose and extrinsic pose), the point Jacobian E,
+   * and the error vector b. Note that the jacobians are computed for a given point.
+   */
   void computeJacobiansAndCorrectForMissingMeasurements(
       FBlocks& Fs, Matrix& E, Vector& b, const Values& values) const {
     if (!result_) {
       throw("computeJacobiansWithTriangulatedPoint");
     } else {  // valid result: compute jacobians
       size_t numViews = measured_.size();
-      E = Matrix::Zero(3 * numViews, 3);  // a StereoPoint2 for each view
+      E = Matrix::Zero(3 * numViews, 3); // a StereoPoint2 for each view (point jacobian)
       b = Vector::Zero(3 * numViews);  // a StereoPoint2 for each view
-      Matrix dPoseCam_dPoseBody, dPoseCam_dPoseExt, dProject_dPoseCam, Ei;
+      Matrix dPoseCam_dPoseBody_i, dPoseCam_dPoseExt_i, dProject_dPoseCam_i, Ei;
 
       for (size_t i = 0; i < numViews; i++) {  // for each camera/measurement
         Pose3 w_P_body = values.at<Pose3>(world_P_body_keys_.at(i));
         Pose3 body_P_cam = values.at<Pose3>(body_P_cam_keys_.at(i));
         StereoCamera camera(
-            w_P_body.compose(body_P_cam, dPoseCam_dPoseBody, dPoseCam_dPoseExt),
+            w_P_body.compose(body_P_cam, dPoseCam_dPoseBody_i, dPoseCam_dPoseExt_i),
             K_all_[i]);
-        StereoPoint2 reprojectionError = StereoPoint2(
-            camera.project(*result_, dProject_dPoseCam, Ei) - measured_.at(i));
+        // get jacobians and error vector for current measurement
+        StereoPoint2 reprojectionError_i = StereoPoint2(
+            camera.project(*result_, dProject_dPoseCam_i, Ei) - measured_.at(i));
         Eigen::Matrix<double, ZDim, Dim> J;  // 3 x 12
-        J.block<ZDim, 6>(0, 0) = dProject_dPoseCam * dPoseCam_dPoseBody;  // (3x6) * (6x6)
-        J.block<ZDim, 6>(0, 6) = dProject_dPoseCam * dPoseCam_dPoseExt;  // (3x6) * (6x6)
-        if (std::isnan(measured_.at(i).uR()))  // if the right pixel is invalid
-            {
+        J.block<ZDim, 6>(0, 0) = dProject_dPoseCam_i * dPoseCam_dPoseBody_i;  // (3x6) * (6x6)
+        J.block<ZDim, 6>(0, 6) = dProject_dPoseCam_i * dPoseCam_dPoseExt_i;  // (3x6) * (6x6)
+        // if the right pixel is invalid, fix jacobians
+        if (std::isnan(measured_.at(i).uR()))
+        {
           J.block<1, 12>(1, 0) = Matrix::Zero(1, 12);
           Ei.block<1, 3>(1, 0) = Matrix::Zero(1, 3);
-          reprojectionError = StereoPoint2(reprojectionError.uL(), 0.0,
-                                           reprojectionError.v());
+          reprojectionError_i = StereoPoint2(reprojectionError_i.uL(), 0.0,
+                                           reprojectionError_i.v());
         }
+        // fit into the output structures
         Fs.push_back(J);
         size_t row = 3 * i;
-        b.segment<ZDim>(row) = -reprojectionError.vector();
+        b.segment<ZDim>(row) = -reprojectionError_i.vector();
         E.block<3, 3>(row, 0) = Ei;
       }
     }
   }
 
-  /// linearize returns a Hessianfactor that is an approximation of error(p)
+  /// linearize and return a Hessianfactor that is an approximation of error(p)
   boost::shared_ptr<RegularHessianFactor<DimPose> > createHessianFactor(
       const Values& values, const double lambda = 0.0, bool diagonalDamping =
           false) const {
 
+    // we may have multiple cameras sharing the same extrinsic cals, hence the number
+    // of keys may be smaller than 2 * nrMeasurements (which is the upper bound where we
+    // have a body key and an extrinsic calibration key for each measurement)
     size_t nrUniqueKeys = keys_.size();
+    size_t nrNonuniqueKeys = world_P_body_keys_.size()
+        + body_P_cam_keys_.size();
 
     // Create structures for Hessian Factors
     KeyVector js;
@@ -208,10 +221,10 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
       throw std::runtime_error("SmartStereoProjectionHessianFactor: this->"
                                "measured_.size() inconsistent with input");
 
+    // triangulate 3D point at given linearization point
     triangulateSafe(cameras(values));
 
-    if (!result_) {
-      // failed: return"empty" Hessian
+    if (!result_) { // failed: return "empty/zero" Hessian
       for (Matrix& m : Gs)
         m = Matrix::Zero(DimPose, DimPose);
       for (Vector& v : gs)
@@ -220,7 +233,7 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
           > (keys_, Gs, gs, 0.0);
     }
 
-    // Jacobian could be 3D Point3 OR 2D Unit3, difference is E.cols().
+    // compute Jacobian given triangulated 3D Point
     FBlocks Fs;
     Matrix F, E;
     Vector b;
@@ -231,26 +244,26 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
     for (size_t i = 0; i < Fs.size(); i++)
       Fs[i] = noiseModel_->Whiten(Fs[i]);
 
-    // build augmented hessian
+    // build augmented Hessian (with last row/column being the information vector)
     Matrix3 P;
     Cameras::ComputePointCovariance<3>(P, E, lambda, diagonalDamping);
 
-    // marginalize point
-    SymmetricBlockMatrix augmentedHessian =  //
+    // marginalize point: note - we reuse the standard SchurComplement function
+    SymmetricBlockMatrix augmentedHessian =
         Cameras::SchurComplement<3, Dim>(Fs, E, P, b);
 
     // now pack into an Hessian factor
     std::vector<DenseIndex> dims(nrUniqueKeys + 1);  // this also includes the b term
     std::fill(dims.begin(), dims.end() - 1, 6);
     dims.back() = 1;
-
-    size_t nrNonuniqueKeys = world_P_body_keys_.size()
-        + body_P_cam_keys_.size();
     SymmetricBlockMatrix augmentedHessianUniqueKeys;
+
+    // here we have to deal with the fact that some cameras may share the same extrinsic key
     if (nrUniqueKeys == nrNonuniqueKeys) {  // if there is 1 calibration key per camera
       augmentedHessianUniqueKeys = SymmetricBlockMatrix(
           dims, Matrix(augmentedHessian.selfadjointView()));
-    } else {  // if multiple cameras share a calibration
+    } else {  // if multiple cameras share a calibration we have to rearrange
+      // the results of the Schur complement matrix
       std::vector<DenseIndex> nonuniqueDims(nrNonuniqueKeys + 1);  // this also includes the b term
       std::fill(nonuniqueDims.begin(), nonuniqueDims.end() - 1, 6);
       nonuniqueDims.back() = 1;
@@ -275,6 +288,7 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
           dims, Matrix::Zero(6 * nrUniqueKeys + 1, 6 * nrUniqueKeys + 1));
 
       // add contributions for each key: note this loops over the hessian with nonUnique keys (augmentedHessian)
+      // and populates an Hessian that only includes the unique keys (that is what we want to return)
       for (size_t i = 0; i < nrNonuniqueKeys; i++) {  // rows
         Key key_i = nonuniqueKeys.at(i);
 
@@ -303,10 +317,10 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
           }
         }
       }
+      // update bottom right element of the matrix
       augmentedHessianUniqueKeys.updateDiagonalBlock(
           nrUniqueKeys, augmentedHessian.diagonalBlock(nrNonuniqueKeys));
     }
-
     return boost::make_shared < RegularHessianFactor<DimPose>
         > (keys_, augmentedHessianUniqueKeys);
   }
