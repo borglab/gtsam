@@ -863,6 +863,103 @@ TEST( SmartStereoProjectionFactorPP, 3poses_optimization_sameExtrinsicKey ) {
 }
 
 /* *************************************************************************/
+TEST( SmartStereoProjectionFactorPP, 3poses_optimization_2ExtrinsicKeys ) {
+
+  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
+  Pose3 w_Pose_cam1 = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
+  StereoCamera cam1(w_Pose_cam1, K2);
+
+  // create second camera 1 meter to the right of first camera
+  Pose3 w_Pose_cam2 = w_Pose_cam1 * Pose3(Rot3(), Point3(1, 0, 0));
+  StereoCamera cam2(w_Pose_cam2, K2);
+
+  // create third camera 1 meter above the first camera
+  Pose3 w_Pose_cam3 = w_Pose_cam1 * Pose3(Rot3(), Point3(0, -1, 0));
+  StereoCamera cam3(w_Pose_cam3, K2);
+
+  // three landmarks ~5 meters infront of camera
+  Point3 landmark1(5, 0.5, 1.2);
+  Point3 landmark2(5, -0.5, 1.2);
+  Point3 landmark3(3, 0, 3.0);
+
+  // 1. Project three landmarks into three cameras and triangulate
+  vector<StereoPoint2> measurements_l1 = stereo_projectToMultipleCameras(cam1,
+      cam2, cam3, landmark1);
+  vector<StereoPoint2> measurements_l2 = stereo_projectToMultipleCameras(cam1,
+      cam2, cam3, landmark2);
+  vector<StereoPoint2> measurements_l3 = stereo_projectToMultipleCameras(cam1,
+      cam2, cam3, landmark3);
+
+  KeyVector poseKeys;
+  poseKeys.push_back(x1);
+  poseKeys.push_back(x2);
+  poseKeys.push_back(x3);
+
+  KeyVector extrinsicKeys;
+  extrinsicKeys.push_back(body_P_cam1_key);
+  extrinsicKeys.push_back(body_P_cam1_key);
+  extrinsicKeys.push_back(body_P_cam3_key);
+
+  SmartStereoProjectionParams smart_params;
+  smart_params.triangulation.enableEPI = true;
+  SmartStereoProjectionFactorPP::shared_ptr smartFactor1(new SmartStereoProjectionFactorPP(model, smart_params));
+  smartFactor1->add(measurements_l1, poseKeys, extrinsicKeys, K2);
+
+  SmartStereoProjectionFactorPP::shared_ptr smartFactor2(new SmartStereoProjectionFactorPP(model, smart_params));
+  smartFactor2->add(measurements_l2, poseKeys, extrinsicKeys, K2);
+
+  SmartStereoProjectionFactorPP::shared_ptr smartFactor3(new SmartStereoProjectionFactorPP(model, smart_params));
+  smartFactor3->add(measurements_l3, poseKeys, extrinsicKeys, K2);
+
+  // relevant poses:
+  Pose3 body_Pose_cam = Pose3(Rot3::Ypr(-M_PI, 1., 0.1),Point3(0, 1, 0));
+  Pose3 w_Pose_body1 = w_Pose_cam1.compose(body_Pose_cam.inverse());
+  Pose3 w_Pose_body2 = w_Pose_cam2.compose(body_Pose_cam.inverse());
+  Pose3 w_Pose_body3 = w_Pose_cam3.compose(body_Pose_cam.inverse());
+
+  // Graph
+  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
+  NonlinearFactorGraph graph;
+  graph.push_back(smartFactor1);
+  graph.push_back(smartFactor2);
+  graph.push_back(smartFactor3);
+  graph.addPrior(x1, w_Pose_body1, noisePrior);
+  graph.addPrior(x2, w_Pose_body2, noisePrior);
+  graph.addPrior(x3, w_Pose_body3, noisePrior);
+  // graph.addPrior(body_P_cam1_key, body_Pose_cam, noisePrior);
+  // we might need some prior on the calibration too
+  // graph.addPrior(body_P_cam_key, body_Pose_cam, noisePrior); // no need! the measurements will fix this!
+
+  // Values
+  Values values;
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100), Point3(0.01, 0.01, 0.01)); // smaller noise
+  values.insert(x1, w_Pose_body1);
+  values.insert(x2, w_Pose_body2);
+  values.insert(x3, w_Pose_body3);
+  values.insert(body_P_cam1_key, body_Pose_cam*noise_pose);
+  values.insert(body_P_cam3_key, body_Pose_cam*noise_pose);
+
+  // cost is large before optimization
+  double initialErrorSmart = graph.error(values);
+  EXPECT_DOUBLES_EQUAL(31986.961831653316, initialErrorSmart, 1e-5); // initial guess is noisy, so nonzero error
+
+  Values result;
+  gttic_(SmartStereoProjectionFactorPP);
+  LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
+  result = optimizer.optimize();
+  gttoc_(SmartStereoProjectionFactorPP);
+  tictoc_finishedIteration_();
+
+  EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-5);
+
+  //  NOTE: the following would fail since the problem is underconstrained (while LM above works just fine!)
+  //  GaussianFactorGraph::shared_ptr GFG = graph.linearize(result);
+  //  VectorValues delta = GFG->optimize();
+  //  VectorValues expected = VectorValues::Zero(delta);
+  //  EXPECT(assert_equal(expected, delta, 1e-4));
+}
+
+/* *************************************************************************/
 TEST( SmartStereoProjectionFactorPP, monocular_multipleExtrinsicKeys ){
   // make a realistic calibration matrix
   double fov = 60; // degrees

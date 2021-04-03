@@ -306,7 +306,7 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
      case HESSIAN:
        return createHessianFactor(values, lambda);
      default:
-       throw std::runtime_error("SmartStereoFactorlinearize: unknown mode");
+       throw std::runtime_error("SmartStereoProjectionFactorPP: unknown linearization mode");
      }
    }
 
