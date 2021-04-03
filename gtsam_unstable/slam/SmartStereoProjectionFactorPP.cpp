@@ -32,7 +32,7 @@ void SmartStereoProjectionFactorPP::add(
   // we index by cameras..
   Base::add(measured, w_P_body_key);
   // but we also store the extrinsic calibration keys in the same order
-  w_P_body_keys_.push_back(w_P_body_key);
+  world_P_body_keys_.push_back(w_P_body_key);
   body_P_cam_keys_.push_back(body_P_cam_key);
 
   // pose keys are assumed to be unique (1 observation per time stamp), but calibration can be shared
@@ -55,7 +55,7 @@ void SmartStereoProjectionFactorPP::add(
       if(std::find(keys_.begin(), keys_.end(), body_P_cam_keys[i]) == keys_.end())
           keys_.push_back(body_P_cam_keys[i]); // add only unique keys
 
-      w_P_body_keys_.push_back(w_P_body_keys[i]);
+      world_P_body_keys_.push_back(w_P_body_keys[i]);
       body_P_cam_keys_.push_back(body_P_cam_keys[i]);
 
       K_all_.push_back(Ks[i]);
@@ -74,7 +74,7 @@ void SmartStereoProjectionFactorPP::add(
     if(std::find(keys_.begin(), keys_.end(), body_P_cam_keys[i]) == keys_.end())
       keys_.push_back(body_P_cam_keys[i]); // add only unique keys
 
-    w_P_body_keys_.push_back(w_P_body_keys[i]);
+    world_P_body_keys_.push_back(w_P_body_keys[i]);
     body_P_cam_keys_.push_back(body_P_cam_keys[i]);
 
     K_all_.push_back(K);
@@ -110,11 +110,11 @@ double SmartStereoProjectionFactorPP::error(const Values& values) const {
 
 SmartStereoProjectionFactorPP::Base::Cameras
 SmartStereoProjectionFactorPP::cameras(const Values& values) const {
-  assert(w_P_body_keys_.size() == K_all_.size());
-  assert(w_P_body_keys_.size() == body_P_cam_keys_.size());
+  assert(world_P_body_keys_.size() == K_all_.size());
+  assert(world_P_body_keys_.size() == body_P_cam_keys_.size());
   Base::Cameras cameras;
-  for (size_t i = 0; i < w_P_body_keys_.size(); i++) {
-    Pose3 w_P_body = values.at<Pose3>(w_P_body_keys_[i]);
+  for (size_t i = 0; i < world_P_body_keys_.size(); i++) {
+    Pose3 w_P_body = values.at<Pose3>(world_P_body_keys_[i]);
     Pose3 body_P_cam = values.at<Pose3>(body_P_cam_keys_[i]);
     Pose3 w_P_cam = w_P_body.compose(body_P_cam);
     cameras.push_back(StereoCamera(w_P_cam, K_all_[i]));
