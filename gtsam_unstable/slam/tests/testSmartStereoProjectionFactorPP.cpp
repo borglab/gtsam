@@ -857,6 +857,7 @@ TEST( SmartStereoProjectionFactorPP, 3poses_optimization_sameExtrinsicKey ) {
   EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-5);
 
   // This passes on my machine but gets and indeterminant linear system exception in CI.
+  // This is a very redundant test, so it's not a problem to omit.
   //  GaussianFactorGraph::shared_ptr GFG = graph.linearize(result);
   //  Matrix H = GFG->hessian().first;
   //  double det = H.determinant();
