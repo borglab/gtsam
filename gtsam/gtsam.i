@@ -2091,7 +2091,7 @@ class NonlinearFactorGraph {
   gtsam::KeySet keys() const;
   gtsam::KeyVector keyVector() const;
 
-  template<T = {Vector, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2,gtsam::CalibratedCamera, gtsam::PinholeCameraCal3_S2, gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::imuBias::ConstantBias}>
+  template<T = {double, Vector, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2,gtsam::CalibratedCamera, gtsam::PinholeCameraCal3_S2, gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::imuBias::ConstantBias}>
   void addPrior(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
 
   // NonlinearFactorGraph
