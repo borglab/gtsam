@@ -3497,6 +3497,7 @@ namespace utilities {
   Matrix extractPose2(const gtsam::Values& values);
   gtsam::Values allPose3s(gtsam::Values& values);
   Matrix extractPose3(const gtsam::Values& values);
+  Vector extractVector(const gtsam::Values& values);
   void perturbPoint2(gtsam::Values& values, double sigma, int seed);
   void perturbPose2 (gtsam::Values& values, double sigmaT, double sigmaR, int seed);
   void perturbPoint3(gtsam::Values& values, double sigma, int seed);

@@ -20,6 +20,7 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/slam/ProjectionFactor.h>
 #include <gtsam/linear/Sampler.h>
+#include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/Values.h>
@@ -140,6 +141,16 @@ Matrix extractPose3(const Values& values) {
     j++;
   }
   return result;
+}
+
+/// Extract all Pose3 values into a single matrix [r11 r12 r13 r21 r22 r23 r31 r32 r33 x y z]
+Vector extractVector(const Values& values) {
+  Values::ConstFiltered<Vector> vectors = values.filter<Vector>();
+  VectorValues vv = VectorValues();
+  for (const auto &kv : vectors) {
+    vv.insert(kv.key, kv.value);
+  }
+  return vv.vector();
 }
 
 /// Perturb all Point2 values using normally distributed noise
