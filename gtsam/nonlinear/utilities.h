@@ -143,14 +143,20 @@ Matrix extractPose3(const Values& values) {
   return result;
 }
 
-/// Extract all Pose3 values into a single matrix [r11 r12 r13 r21 r22 r23 r31 r32 r33 x y z]
+/// Extract all Vector values into a single tall vector
 Vector extractVector(const Values& values) {
   Values::ConstFiltered<Vector> vectors = values.filter<Vector>();
-  VectorValues vv = VectorValues();
-  for (const auto &kv : vectors) {
-    vv.insert(kv.key, kv.value);
+  // Count dimensions
+  DenseIndex totalDim = 0;
+  for (const auto& kv : vectors) totalDim += kv.value.size();
+  // Copy vectors
+  Vector result(totalDim);
+  DenseIndex pos = 0;
+  for (const auto& kv : vectors) {
+    result.segment(pos, kv.value.size()) = kv.value;
+    pos += kv.value.size();
   }
-  return vv.vector();
+  return result;
 }
 
 /// Perturb all Point2 values using normally distributed noise

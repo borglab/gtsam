@@ -46,10 +46,11 @@ CHECK('size==3', actual.size==3);
 CHECK('actual.count(x1)', actual.count(x1));
 
 % test extractVector
-values = Values()
-values.insertVector(0, (1:6)');
-values.insertVector(1, (7:12)');
-values.insertVector(2, (13:18)');
+values = Values();
+values.insert(0, (1:6)');
+values.insert(1, (7:12)');
+values.insert(2, (13:15)');
+values.insert(7, Pose3());
 actual = utilities.extractVector(values);
-expected = (1:18)';
-CHECK('extractVector', all(actual == expected, 'all'))
+expected = (1:15)';
+CHECK('extractVector', all(actual == expected, 'all'));
