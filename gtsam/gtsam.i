@@ -2091,8 +2091,14 @@ class NonlinearFactorGraph {
   gtsam::KeySet keys() const;
   gtsam::KeyVector keyVector() const;
 
-  template<T = {double, Vector, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2,gtsam::CalibratedCamera, gtsam::PinholeCameraCal3_S2, gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::imuBias::ConstantBias}>
-  void addPrior(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
+  template <T = {double, Vector, gtsam::Point2, gtsam::StereoPoint2,
+                 gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4,
+                 gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2,
+                 gtsam::CalibratedCamera, gtsam::PinholeCameraCal3_S2,
+                 gtsam::PinholeCamera<gtsam::Cal3Bundler>,
+                 gtsam::imuBias::ConstantBias}>
+  void addPrior(size_t key, const T& prior,
+                const gtsam::noiseModel::Base* noiseModel);
 
   // NonlinearFactorGraph
   void printErrors(const gtsam::Values& values) const;
@@ -2561,7 +2567,26 @@ class NonlinearISAM {
 #include <gtsam/geometry/StereoPoint2.h>
 
 #include <gtsam/nonlinear/PriorFactor.h>
-template<T = {Vector, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Unit3, gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler, gtsam::CalibratedCamera, gtsam::PinholeCameraCal3_S2, gtsam::imuBias::ConstantBias, gtsam::PinholeCamera<gtsam::Cal3Bundler>}>
+template <T = {double,
+               Vector,
+               gtsam::Point2,
+               gtsam::StereoPoint2,
+               gtsam::Point3,
+               gtsam::Rot2,
+               gtsam::SO3,
+               gtsam::SO4,
+               gtsam::SOn,
+               gtsam::Rot3,
+               gtsam::Pose2,
+               gtsam::Pose3,
+               gtsam::Unit3,
+               gtsam::Cal3_S2,
+               gtsam::Cal3DS2,
+               gtsam::Cal3Bundler,
+               gtsam::CalibratedCamera,
+               gtsam::PinholeCameraCal3_S2,
+               gtsam::imuBias::ConstantBias,
+               gtsam::PinholeCamera<gtsam::Cal3Bundler>}>
 virtual class PriorFactor : gtsam::NoiseModelFactor {
   PriorFactor(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
   T prior() const;
@@ -2572,7 +2597,6 @@ virtual class PriorFactor : gtsam::NoiseModelFactor {
   // enable pickling in python
   void pickle() const;
 };
-
 
 #include <gtsam/slam/BetweenFactor.h>
 template<T = {Vector, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::imuBias::ConstantBias}>
@@ -3194,6 +3218,9 @@ class NavState {
   gtsam::Point3 position() const;
   Vector velocity() const;
   gtsam::Pose3 pose() const;
+
+  gtsam::NavState retract(const Vector& x) const;
+  Vector localCoordinates(const gtsam::NavState& g) const;
 };
 
 #include <gtsam/navigation/PreintegratedRotation.h>
