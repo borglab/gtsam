@@ -10,8 +10,19 @@ class PinholeCamera {};
 typedef gtsam::PinholeCamera<gtsam::Cal3Bundler> PinholeCameraCal3Bundler;
 
 class NonlinearFactorGraph {
-  template<T = {gtsam::PinholeCamera<gtsam::Cal3Bundler>}>
-  void addPrior(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
+  template <T = {gtsam::PinholeCamera<gtsam::Cal3Bundler>}>
+  void addPrior(size_t key, const T& prior,
+                const gtsam::noiseModel::Base* noiseModel);
 };
 
-}
+// Typedef with template as template arg.
+template<CALIBRATION, POINT>
+class GeneralSFMFactor {};
+typedef gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3> GeneralSFMFactorCal3Bundler;
+
+// Template as template arg for class property.
+class SfmTrack {
+  std::vector<std::pair<size_t, gtsam::Point2>> measurements;
+};
+
+}  // namespace gtsam

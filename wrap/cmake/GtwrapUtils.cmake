@@ -63,9 +63,10 @@ macro(configure_python_variables)
 endmacro()
 
 # Set the Python version for the wrapper and set the paths to the executable and
-# include/library directories. WRAP_PYTHON_VERSION can be "Default" or a
+# include/library directories.
+# WRAP_PYTHON_VERSION (optionally) can be "Default" or a
 # specific major.minor version.
-macro(gtwrap_get_python_version WRAP_PYTHON_VERSION)
+macro(gtwrap_get_python_version)
   # Unset these cached variables to avoid surprises when the python in the
   # current environment are different from the cached!
   unset(Python_EXECUTABLE CACHE)
@@ -73,6 +74,11 @@ macro(gtwrap_get_python_version WRAP_PYTHON_VERSION)
   unset(Python_VERSION_MAJOR CACHE)
   unset(Python_VERSION_MINOR CACHE)
   unset(Python_VERSION_PATCH CACHE)
+
+  # Set default value if the parameter is not passed in
+  if(NOT WRAP_PYTHON_VERSION)
+    set(WRAP_PYTHON_VERSION "Default")
+  endif()
 
   # Allow override
   if(${WRAP_PYTHON_VERSION} STREQUAL "Default")

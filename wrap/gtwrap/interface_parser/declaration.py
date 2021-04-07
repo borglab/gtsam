@@ -48,7 +48,7 @@ class ForwardDeclaration:
                  parent: str = ''):
         self.name = name
         if parent_type:
-            self.parent_type = Typename.from_parse_result(parent_type)
+            self.parent_type = parent_type
         else:
             self.parent_type = ''
 
