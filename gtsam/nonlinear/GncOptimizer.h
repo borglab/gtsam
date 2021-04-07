@@ -298,7 +298,7 @@ class GncOptimizer {
         break;
       case GncLossType::TLS:
         weightsConverged = true;
-        for (size_t i = 0; i < weights.size(); i++) {
+        for (int i = 0; i < weights.size(); i++) {
           if (std::fabs(weights[i] - std::round(weights[i]))
               > params_.weightsTol) {
             weightsConverged = false;
