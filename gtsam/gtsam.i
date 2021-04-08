@@ -379,7 +379,7 @@ class Rot2 {
   static gtsam::Rot2 fromCosSin(double c, double s);
 
   // Testable
-  void print(string s = "") const;
+  void print(string s = "theta") const;
   bool equals(const gtsam::Rot2& rot, double tol) const;
 
   // Group
@@ -799,7 +799,7 @@ class Cal3_S2 {
   Cal3_S2(double fov, int w, int h);
 
   // Testable
-  void print(string s = "") const;
+  void print(string s = "Cal3_S2") const;
   bool equals(const gtsam::Cal3_S2& rhs, double tol) const;
 
   // Manifold
@@ -983,7 +983,7 @@ class CalibratedCamera {
   static gtsam::CalibratedCamera Level(const gtsam::Pose2& pose2, double height);
 
   // Testable
-  void print(string s = "") const;
+  void print(string s = "PinholeBase") const;
   bool equals(const gtsam::CalibratedCamera& camera, double tol) const;
 
   // Manifold
@@ -1022,7 +1022,7 @@ class PinholeCamera {
       const gtsam::Point3& upVector, const CALIBRATION& K);
 
   // Testable
-  void print(string s = "") const;
+  void print(string s = "PinholeCamera") const;
   bool equals(const This& camera, double tol) const;
 
   // Standard Interface
@@ -1160,7 +1160,7 @@ virtual class SymbolicFactor {
 
   // From Factor
   size_t size() const;
-  void print(string s = "",
+  void print(string s = "Factor",
              gtsam::KeyFormatter keyFormatter = gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::SymbolicFactor& other, double tol) const;
   gtsam::KeyVector keys();
@@ -1174,7 +1174,7 @@ virtual class SymbolicFactorGraph {
 
   // From FactorGraph
   void push_back(gtsam::SymbolicFactor* factor);
-  void print(string s = "",
+  void print(string s = "FactorGraph",
              gtsam::KeyFormatter keyFormatter = gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::SymbolicFactorGraph& rhs, double tol) const;
   size_t size() const;
@@ -1225,7 +1225,7 @@ virtual class SymbolicConditional : gtsam::SymbolicFactor {
   static gtsam::SymbolicConditional FromKeys(const gtsam::KeyVector& keys, size_t nrFrontals);
 
   // Testable
-  void print(string s = "",
+  void print(string s = "Factor",
              gtsam::KeyFormatter keyFormatter = gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::SymbolicConditional& other, double tol) const;
 
@@ -1239,7 +1239,7 @@ class SymbolicBayesNet {
   SymbolicBayesNet();
   SymbolicBayesNet(const gtsam::SymbolicBayesNet& other);
   // Testable
-  void print(string s = "",
+  void print(string s = "BayesNet",
              gtsam::KeyFormatter keyFormatter = gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::SymbolicBayesNet& other, double tol) const;
 
@@ -1319,7 +1319,7 @@ class VariableIndex {
 
   // Testable
   bool equals(const gtsam::VariableIndex& other, double tol) const;
-  void print(string s = "",
+  void print(string s = "VariableIndex: ",
              gtsam::KeyFormatter keyFormatter = gtsam::DefaultKeyFormatter) const;
 
   // Standard interface
@@ -1558,7 +1558,7 @@ class VectorValues {
   size_t size() const;
   size_t dim(size_t j) const;
   bool exists(size_t j) const;
-  void print(string s = "",
+  void print(string s = "VectorValues",
              gtsam::KeyFormatter keyFormatter = gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::VectorValues& expected, double tol) const;
   void insert(size_t j, Vector value);
@@ -1590,7 +1590,7 @@ class VectorValues {
 #include <gtsam/linear/GaussianFactor.h>
 virtual class GaussianFactor {
   gtsam::KeyVector keys() const;
-  void print(string s = "",
+  void print(string s = "Factor",
              gtsam::KeyFormatter keyFormatter = gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::GaussianFactor& lf, double tol) const;
   double error(const gtsam::VectorValues& c) const;
@@ -1619,7 +1619,7 @@ virtual class JacobianFactor : gtsam::GaussianFactor {
   JacobianFactor(const gtsam::GaussianFactorGraph& graph);
 
   //Testable
-  void print(string s = "",
+  void print(string s = "Factor",
              gtsam::KeyFormatter keyFormatter = gtsam::DefaultKeyFormatter) const;
   void printKeys(string s) const;
   bool equals(const gtsam::GaussianFactor& lf, double tol) const;
@@ -1669,7 +1669,7 @@ virtual class HessianFactor : gtsam::GaussianFactor {
 
   //Testable
   size_t size() const;
-  void print(string s = "",
+  void print(string s = "Factor",
              gtsam::KeyFormatter keyFormatter = gtsam::DefaultKeyFormatter) const;
   void printKeys(string s) const;
   bool equals(const gtsam::GaussianFactor& lf, double tol) const;
@@ -1695,7 +1695,7 @@ class GaussianFactorGraph {
   GaussianFactorGraph(const gtsam::GaussianBayesTree& bayesTree);
 
   // From FactorGraph
-  void print(string s = "",
+  void print(string s = "FactorGraph",
              gtsam::KeyFormatter keyFormatter = gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::GaussianFactorGraph& lfgraph, double tol) const;
   size_t size() const;
@@ -1787,7 +1787,7 @@ virtual class GaussianConditional : gtsam::JacobianFactor {
         size_t name2, Matrix T);
 
   //Standard Interface
-  void print(string s = "",
+  void print(string s = "GaussianConditional",
              gtsam::KeyFormatter keyFormatter = gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::GaussianConditional &cg, double tol) const;
 
@@ -1810,7 +1810,7 @@ virtual class GaussianDensity : gtsam::GaussianConditional {
   GaussianDensity(size_t key, Vector d, Matrix R, const gtsam::noiseModel::Diagonal* sigmas);
 
   //Standard Interface
-  void print(string s = "",
+  void print(string s = "GaussianDensity",
              gtsam::KeyFormatter keyFormatter = gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::GaussianDensity &cg, double tol) const;
   Vector mean() const;
@@ -1824,7 +1824,7 @@ virtual class GaussianBayesNet {
   GaussianBayesNet(const gtsam::GaussianConditional* conditional);
 
   // Testable
-  void print(string s = "",
+  void print(string s = "BayesNet",
              gtsam::KeyFormatter keyFormatter = gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::GaussianBayesNet& other, double tol) const;
   size_t size() const;
@@ -2089,7 +2089,7 @@ class NonlinearFactorGraph {
   NonlinearFactorGraph(const gtsam::NonlinearFactorGraph& graph);
 
   // FactorGraph
-  void print(string s = "",
+  void print(string s = "NonlinearFactorGraph: ",
              gtsam::KeyFormatter keyFormatter = gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::NonlinearFactorGraph& fg, double tol) const;
   size_t size() const;
@@ -2138,9 +2138,9 @@ virtual class NonlinearFactor {
   // Factor base class
   size_t size() const;
   gtsam::KeyVector keys() const;
-  void print(string s = "",
+  void print(string s = "Factor",
              gtsam::KeyFormatter keyFormatter = gtsam::DefaultKeyFormatter) const;
-  void printKeys(string s) const;
+  void printKeys(string s = "Factor") const;
   // NonlinearFactor
   bool equals(const gtsam::NonlinearFactor& other, double tol) const;
   double error(const gtsam::Values& c) const;
@@ -2259,7 +2259,7 @@ class Marginals {
   Marginals(const gtsam::GaussianFactorGraph& gfgraph,
       const gtsam::VectorValues& solutionvec);
 
-  void print(string s = "",
+  void print(string s = "Marginals: ",
              gtsam::KeyFormatter keyFormatter = gtsam::DefaultKeyFormatter) const;
   Matrix marginalCovariance(size_t variable) const;
   Matrix marginalInformation(size_t variable) const;
@@ -3351,7 +3351,7 @@ class PreintegratedCombinedMeasurements {
   PreintegratedCombinedMeasurements(const gtsam::PreintegrationCombinedParams* params,
 				    const gtsam::imuBias::ConstantBias& bias);
   // Testable
-  void print(string s = "") const;
+  void print(string s = "Preintegrated Measurements:") const;
   bool equals(const gtsam::PreintegratedCombinedMeasurements& expected,
       double tol);
 
@@ -3392,7 +3392,7 @@ class PreintegratedAhrsMeasurements {
   PreintegratedAhrsMeasurements(const gtsam::PreintegratedAhrsMeasurements& rhs);
 
   // Testable
-  void print(string s = "") const;
+  void print(string s = "Preintegrated Measurements: ") const;
   bool equals(const gtsam::PreintegratedAhrsMeasurements& expected, double tol);
 
   // get Data
@@ -3445,7 +3445,7 @@ virtual class Pose3AttitudeFactor : gtsam::NonlinearFactor {
   Pose3AttitudeFactor(size_t key, const gtsam::Unit3& nZ,
                       const gtsam::noiseModel::Diagonal* model);
   Pose3AttitudeFactor();
-  void print(string s = "",
+  void print(string s = "Factor",
              gtsam::KeyFormatter keyFormatter = gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::NonlinearFactor& expected, double tol) const;
   gtsam::Unit3 nZ() const;
@@ -3471,7 +3471,7 @@ virtual class GPSFactor2 : gtsam::NonlinearFactor {
             const gtsam::noiseModel::Base* model);
 
   // Testable
-  void print(string s = "",
+  void print(string s = "Factor",
              gtsam::KeyFormatter keyFormatter = gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::GPSFactor2& expected, double tol);
 
