@@ -21,6 +21,7 @@
 #include <gtsam/inference/Key.h>
 #include <gtsam/base/Testable.h>
 #include <boost/serialization/nvp.hpp>
+#include <boost/function.hpp>
 #include <cstdint>
 
 namespace gtsam {
