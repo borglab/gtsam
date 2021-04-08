@@ -192,6 +192,8 @@ public:
    * @param pose_j Current pose key
    * @param vel_j  Current velocity key
    * @param bias   Previous bias key
+   * @param preintegratedMeasurements The preintegreated measurements since the
+   * last pose.
    */
   ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
       const PreintegratedImuMeasurements& preintegratedMeasurements);
