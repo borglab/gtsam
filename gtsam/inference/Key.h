@@ -25,7 +25,6 @@
 #include <gtsam/base/types.h>
 #include <gtsam/dllexport.h>
 
-#include <boost/function.hpp>
 #include <functional>
 
 #include <iosfwd>
