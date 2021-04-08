@@ -20,6 +20,7 @@
 #pragma once
 
 #include <gtsam/inference/Symbol.h>
+#include <boost/function.hpp>
 
 namespace gtsam {
 
