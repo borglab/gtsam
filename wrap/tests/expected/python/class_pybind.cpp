@@ -55,7 +55,7 @@ PYBIND11_MODULE(class_py, m_) {
         .def("create_ptrs",[](Test* self){return self->create_ptrs();})
         .def("create_MixedPtrs",[](Test* self){return self->create_MixedPtrs();})
         .def("return_ptrs",[](Test* self, std::shared_ptr<Test> p1, std::shared_ptr<Test> p2){return self->return_ptrs(p1, p2);}, py::arg("p1"), py::arg("p2"))
-        .def("print_",[](Test* self){ self->print();})
+        .def("print_",[](Test* self){ py::scoped_ostream_redirect output; self->print();})
         .def("__repr__",
                     [](const Test &a) {
                         gtsam::RedirectCout redirect;

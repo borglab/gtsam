@@ -125,6 +125,11 @@ class PybindWrapper:
                ))
 
         if method.name == 'print':
+            # Redirect stdout - see pybind docs for why this is a good idea:
+            # https://pybind11.readthedocs.io/en/stable/advanced/pycpp/utilities.html#capturing-standard-output-from-ostream
+            ret = ret.replace('self->', 'py::scoped_ostream_redirect output; self->')
+
+            # __repr__() uses print's implementation:
             type_list = method.args.to_cpp(self.use_boost)
             if len(type_list) > 0 and type_list[0].strip() == 'string':
                 ret += '''{prefix}.def("__repr__",

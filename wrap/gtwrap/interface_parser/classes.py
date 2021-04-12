@@ -279,7 +279,7 @@ class Class:
                 elif isinstance(m, Operator):
                     self.operators.append(m)
 
-    _parent = COLON + Typename.rule("parent_class")
+    _parent = COLON + (TemplatedType.rule ^ Typename.rule)("parent_class")
     rule = (
         Optional(Template.rule("template"))  #
         + Optional(VIRTUAL("is_virtual"))  #
@@ -319,11 +319,16 @@ class Class:
         self.is_virtual = is_virtual
         self.name = name
         if parent_class:
+            # If it is in an iterable, extract the parent class.
             if isinstance(parent_class, Iterable):
-                self.parent_class = parent_class[0]
-            else:
-                self.parent_class = parent_class
+                parent_class = parent_class[0]
 
+            # If the base class is a TemplatedType,
+            # we want the instantiated Typename
+            if isinstance(parent_class, TemplatedType):
+                parent_class = parent_class.typename
+
+            self.parent_class = parent_class
         else:
             self.parent_class = ''
 
