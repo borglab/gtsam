@@ -103,3 +103,37 @@ macro(gtwrap_get_python_version)
   configure_python_variables()
 
 endmacro()
+
+# Concatenate multiple wrapper interface headers into one.
+# The concatenation will be (re)performed if and only if any interface files
+# change.
+#
+# Arguments:
+# ~~~
+# destination: The concatenated master interface header file will be placed here.
+# inputs (optional): All the input interface header files
+function(combine_interface_headers
+         destination
+         #inputs
+         )
+  # check if any interface headers changed
+  foreach(INTERFACE_FILE ${ARGN})
+    if(NOT EXISTS ${destination} OR
+      ${INTERFACE_FILE} IS_NEWER_THAN ${destination})
+      set(UPDATE_INTERFACE TRUE)
+    endif()
+    # trigger cmake on file change
+    set_property(DIRECTORY
+                 APPEND
+                 PROPERTY CMAKE_CONFIGURE_DEPENDS ${INTERFACE_FILE})
+  endforeach()
+  # if so, then update the overall interface file
+  if (UPDATE_INTERFACE)
+    file(WRITE ${destination} "")
+    # append additional interface headers to end of gtdynamics.i
+    foreach(INTERFACE_FILE ${ARGN})
+      file(READ ${INTERFACE_FILE} interface_contents)
+      file(APPEND ${destination} "${interface_contents}")
+    endforeach()
+  endif()
+endfunction()
