@@ -54,6 +54,8 @@ PYBIND11_MODULE(inheritance_py, m_) {
         .def("return_ptrs",[](MyTemplate<gtsam::Matrix>* self, const std::shared_ptr<gtsam::Matrix> p1, const std::shared_ptr<gtsam::Matrix> p2){return self->return_ptrs(p1, p2);}, py::arg("p1"), py::arg("p2"))
         .def_static("Level",[](const gtsam::Matrix& K){return MyTemplate<gtsam::Matrix>::Level(K);}, py::arg("K"));
 
+    py::class_<ForwardKinematicsFactor, gtsam::BetweenFactor<gtsam::Pose3>, std::shared_ptr<ForwardKinematicsFactor>>(m_, "ForwardKinematicsFactor");
+
 
 #include "python/specializations.h"
 

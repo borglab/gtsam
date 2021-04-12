@@ -50,6 +50,8 @@ typedef std::set<boost::shared_ptr<MyTemplatePoint2>*> Collector_MyTemplatePoint
 static Collector_MyTemplatePoint2 collector_MyTemplatePoint2;
 typedef std::set<boost::shared_ptr<MyTemplateMatrix>*> Collector_MyTemplateMatrix;
 static Collector_MyTemplateMatrix collector_MyTemplateMatrix;
+typedef std::set<boost::shared_ptr<ForwardKinematicsFactor>*> Collector_ForwardKinematicsFactor;
+static Collector_ForwardKinematicsFactor collector_ForwardKinematicsFactor;
 
 void _deleteAllObjects()
 {
@@ -141,6 +143,12 @@ void _deleteAllObjects()
     collector_MyTemplateMatrix.erase(iter++);
     anyDeleted = true;
   } }
+  { for(Collector_ForwardKinematicsFactor::iterator iter = collector_ForwardKinematicsFactor.begin();
+      iter != collector_ForwardKinematicsFactor.end(); ) {
+    delete *iter;
+    collector_ForwardKinematicsFactor.erase(iter++);
+    anyDeleted = true;
+  } }
   if(anyDeleted)
     cout <<
       "WARNING:  Wrap modules with variables in the workspace have been reloaded due to\n"
@@ -156,6 +164,7 @@ void _inheritance_RTTIRegister() {
     types.insert(std::make_pair(typeid(MyBase).name(), "MyBase"));
     types.insert(std::make_pair(typeid(MyTemplatePoint2).name(), "MyTemplatePoint2"));
     types.insert(std::make_pair(typeid(MyTemplateMatrix).name(), "MyTemplateMatrix"));
+    types.insert(std::make_pair(typeid(ForwardKinematicsFactor).name(), "ForwardKinematicsFactor"));
 
     mxArray *registry = mexGetVariable("global", "gtsamwrap_rttiRegistry");
     if(!registry)
@@ -555,6 +564,40 @@ void MyTemplateMatrix_Level_34(int nargout, mxArray *out[], int nargin, const mx
   out[0] = wrap_shared_ptr(boost::make_shared<MyTemplate<Matrix>>(MyTemplate<gtsam::Matrix>::Level(K)),"MyTemplateMatrix", false);
 }
 
+void Test_set_container_35(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("set_container",nargout,nargin-1,1);
+  auto obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
+  boost::shared_ptr<std::vector<testing::Test>> container = unwrap_shared_ptr< std::vector<testing::Test> >(in[1], "ptr_stdvectorTest");
+  obj->set_container(*container);
+}
+
+void ForwardKinematicsFactor_collectorInsertAndMakeBase_35(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  mexAtExit(&_deleteAllObjects);
+  typedef boost::shared_ptr<ForwardKinematicsFactor> Shared;
+
+  Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
+  collector_ForwardKinematicsFactor.insert(self);
+
+  typedef boost::shared_ptr<gtsam::BetweenFactor<gtsam::Pose3>> SharedBase;
+  out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
+  *reinterpret_cast<SharedBase**>(mxGetData(out[0])) = new SharedBase(*self);
+}
+
+void ForwardKinematicsFactor_deconstructor_37(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  typedef boost::shared_ptr<ForwardKinematicsFactor> Shared;
+  checkArguments("delete_ForwardKinematicsFactor",nargout,nargin,1);
+  Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
+  Collector_ForwardKinematicsFactor::iterator item;
+  item = collector_ForwardKinematicsFactor.find(self);
+  if(item != collector_ForwardKinematicsFactor.end()) {
+    delete self;
+    collector_ForwardKinematicsFactor.erase(item);
+  }
+}
+
 
 void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
@@ -671,6 +714,15 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
       break;
     case 34:
       MyTemplateMatrix_Level_34(nargout, out, nargin-1, in+1);
+      break;
+    case 35:
+      Test_set_container_35(nargout, out, nargin-1, in+1);
+      break;
+    case 36:
+      ForwardKinematicsFactor_collectorInsertAndMakeBase_35(nargout, out, nargin-1, in+1);
+      break;
+    case 37:
+      ForwardKinematicsFactor_deconstructor_37(nargout, out, nargin-1, in+1);
       break;
     }
   } catch(const std::exception& e) {

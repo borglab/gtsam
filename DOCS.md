@@ -98,6 +98,7 @@ The python wrapper supports keyword arguments for functions/methods. Hence, the 
 - Virtual inheritance
     - Specify fully-qualified base classes, i.e. `virtual class Derived : ns::Base {` where `ns` is the namespace.
     - Mark with `virtual` keyword, e.g. `virtual class Base {`, and also `virtual class Derived : ns::Base {`.
+    - Base classes can be templated, e.g. `virtual class Dog: ns::Animal<Pet> {};`. This is useful when you want to inherit from specialized classes.
     - Forward declarations must also be marked virtual, e.g. `virtual class ns::Base;` and
       also `virtual class ns::Derived;`.
     - Pure virtual (abstract) classes should list no constructors in the interface file.
