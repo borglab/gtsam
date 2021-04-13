@@ -388,6 +388,15 @@ class TestInterfaceParser(unittest.TestCase):
                          ret.parent_class.namespaces)
         self.assertTrue(ret.is_virtual)
 
+        ret = Class.rule.parseString(
+            "class ForwardKinematicsFactor : gtsam::BetweenFactor<gtsam::Pose3> {};"
+        )[0]
+        self.assertEqual("ForwardKinematicsFactor", ret.name)
+        self.assertEqual("BetweenFactor", ret.parent_class.name)
+        self.assertEqual(["gtsam"], ret.parent_class.namespaces)
+        self.assertEqual("Pose3", ret.parent_class.instantiations[0].name)
+        self.assertEqual(["gtsam"], ret.parent_class.instantiations[0].namespaces)
+
     def test_include(self):
         """Test for include statements."""
         include = Include.rule.parseString(
