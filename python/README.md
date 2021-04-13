@@ -4,6 +4,8 @@
 
 This is the Python wrapper around the GTSAM C++ library. We use our custom [wrap library](https://github.com/borglab/wrap) to generate the bindings to the underlying C++ code.
 
+For instructions on updating the version of the [wrap library](https://github.com/borglab/wrap) included in GTSAM to the latest version, please refer to the [wrap README](https://github.com/borglab/wrap/blob/master/README.md#git-subtree-and-contributing)
+
 ## Requirements
 
 - If you want to build the GTSAM python library for a specific python version (eg 3.6),
