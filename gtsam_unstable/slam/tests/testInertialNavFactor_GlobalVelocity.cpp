@@ -455,7 +455,8 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   CHECK(assert_equal((Vector)expectedVel2, actualVel2, 1e-5));
 }
 
-/* ************************************************************************* */TEST( InertialNavFactor_GlobalVelocity, ErrorPosVelWithTransform) {
+/* ************************************************************************* */
+TEST( InertialNavFactor_GlobalVelocity, ErrorPosVelWithTransform) {
   Key PoseKey1(11);
   Key PoseKey2(12);
   Key VelKey1(21);

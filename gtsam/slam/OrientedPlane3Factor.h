@@ -1,4 +1,4 @@
-/*
+/**
  * @file OrientedPlane3Factor.cpp
  * @brief OrientedPlane3 Factor class
  * @author Alex Trevor
@@ -22,8 +22,9 @@ class OrientedPlane3Factor: public NoiseModelFactor2<Pose3, OrientedPlane3> {
 
  public:
   /// Constructor
-  OrientedPlane3Factor() {
-  }
+  OrientedPlane3Factor() {}
+
+  /// Destructor
   ~OrientedPlane3Factor() override {}
 
   /** Constructor with measured plane (a,b,c,d) coefficients
