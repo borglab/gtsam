@@ -562,6 +562,8 @@ class Rot3 {
 
   // Operator Overloads
   gtsam::Rot3 operator*(const gtsam::Rot3& p2) const;
+  Point3 operator*(const Point3& p) const;
+  Unit3 operator*(const Unit3& p) const;
 
   // Manifold
   //gtsam::Rot3 retractCayley(Vector v) const; // TODO, does not exist in both Matrix and Quaternion options
@@ -1069,6 +1071,8 @@ class Similarity3 {
   const gtsam::Rot3& rotation();
   const gtsam::Point3& translation();
   double scale() const;
+
+  gtsam::Similarity3 operator*(const gtsam::Similarity3& S) const;
 };
 
 
@@ -3217,6 +3221,8 @@ class NavState {
   gtsam::Rot3 attitude() const;
   gtsam::Point3 position() const;
   Vector velocity() const;
+  gtsam::Rot3 rotation() const;
+  gtsam::Point3 translation() const;
   gtsam::Pose3 pose() const;
 
   gtsam::NavState retract(const Vector& x) const;
