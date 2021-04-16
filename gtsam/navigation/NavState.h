@@ -83,6 +83,14 @@ public:
   const Point3& position(OptionalJacobian<3, 9> H = boost::none) const;
   const Velocity3& velocity(OptionalJacobian<3, 9> H = boost::none) const;
 
+  ///< Syntactic sugar
+  const Rot3& rotation(OptionalJacobian<3, 9> H = boost::none) const {
+    return attitude(H);
+  }
+  const Point3& translation(OptionalJacobian<3, 9> H = boost::none) const {
+    return position(H);
+  }
+
   const Pose3 pose() const {
     return Pose3(attitude(), position());
   }
