@@ -1,7 +1,9 @@
-#LyX 2.1 created this file. For more info see http://www.lyx.org/
-\lyxformat 474
+#LyX 2.2 created this file. For more info see http://www.lyx.org/
+\lyxformat 508
 \begin_document
 \begin_header
+\save_transient_properties true
+\origin unavailable
 \textclass article
 \begin_preamble
 \usepackage{times}
@@ -50,16 +52,16 @@
 \language_package default
 \inputencoding auto
 \fontencoding T1
-\font_roman ae
-\font_sans default
-\font_typewriter default
-\font_math auto
+\font_roman "ae" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
 \font_default_family rmdefault
 \use_non_tex_fonts false
 \font_sc false
 \font_osf false
-\font_sf_scale 100
-\font_tt_scale 100
+\font_sf_scale 100 100
+\font_tt_scale 100 100
 \graphics default
 \default_output_format default
 \output_sync 0
@@ -1061,7 +1063,7 @@ noindent
 \begin_layout Subsection
 \begin_inset CommandInset label
 LatexCommand label
-name "sub:Full-Posterior-Inference"
+name "subsec:Full-Posterior-Inference"
 
 \end_inset
 
@@ -1272,7 +1274,7 @@ ing to odometry measurements.
  (see Section 
 \begin_inset CommandInset ref
 LatexCommand ref
-reference "sub:Full-Posterior-Inference"
+reference "subsec:Full-Posterior-Inference"
 
 \end_inset
 
@@ -1469,7 +1471,7 @@ GPS-like
 \begin_inset CommandInset include
 LatexCommand lstinputlisting
 filename "Code/LocalizationFactor.cpp"
-lstparams "aboveskip=10pt,basicstyle={\\ttfamily\\small},caption={Excerpt from examples/LocalizationExample.cpp},captionpos=b,frame=single,identifierstyle={\\bfseries},label={listing:LocalizationFactor},language={C++},numbers=left"
+lstparams "aboveskip=10pt,basicstyle={\\ttfamily\\small},captionpos=b,frame=single,identifierstyle={\\bfseries},language={C++},numbers=left,caption={Excerpt from examples/LocalizationExample.cpp},label={listing:LocalizationFactor}"
 
 \end_inset
 
@@ -1590,15 +1592,15 @@ q_{y}
 \begin_inset Formula $2\times3$
 \end_inset
 
- matrix:
+ matrix in tangent space which is the same the as the rotation matrix:
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
 \[
 H=\left[\begin{array}{ccc}
-1 & 0 & 0\\
-0 & 1 & 0
+\cos(q_{\theta}) & -\sin(q_{\theta}) & 0\\
+\sin(q_{\theta}) & \cos(q_{\theta}) & 0
 \end{array}\right]
 \]
 
@@ -1750,7 +1752,7 @@ global
  The marginals can be recovered exactly as in Section 
 \begin_inset CommandInset ref
 LatexCommand ref
-reference "sub:Full-Posterior-Inference"
+reference "subsec:Full-Posterior-Inference"
 
 \end_inset
 
@@ -1770,7 +1772,7 @@ filename "Code/LocalizationOutput5.txt"
 Comparing this with the covariance matrices in Section 
 \begin_inset CommandInset ref
 LatexCommand ref
-reference "sub:Full-Posterior-Inference"
+reference "subsec:Full-Posterior-Inference"
 
 \end_inset
 
