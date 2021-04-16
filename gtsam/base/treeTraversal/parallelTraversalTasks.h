@@ -22,7 +22,7 @@
 #include <boost/make_shared.hpp>
 
 #ifdef GTSAM_USE_TBB
-#include <tbb/task.h>               // tbb::task, tbb::task_list
+#include <tbb/task_group.h>         // tbb::task_group
 #include <tbb/scalable_allocator.h> // tbb::scalable_allocator
 
 namespace gtsam {
@@ -34,7 +34,7 @@ namespace gtsam {
 
       /* ************************************************************************* */
       template<typename NODE, typename DATA, typename VISITOR_PRE, typename VISITOR_POST>
-      class PreOrderTask : public tbb::task
+      class PreOrderTask
       {
       public:
         const boost::shared_ptr<NODE>& treeNode;
@@ -57,81 +57,63 @@ namespace gtsam {
               makeNewTasks(makeNewTasks),
               isPostOrderPhase(false) {}
 
-        tbb::task* execute() override
-        {
-          if(isPostOrderPhase)
-          {
-            // Run the post-order visitor since this task was recycled to run the post-order visitor
-            (void) visitorPost(treeNode, *myData);
-            return nullptr;
-          }
-          else
-          {
-            if(makeNewTasks)
-            {
-              if(!treeNode->children.empty())
-              {
-                // Allocate post-order task as a continuation
-                isPostOrderPhase = true;
-                recycle_as_continuation();
+        void operator()() const {
+          if (isPostOrderPhase) {
+            // Run the post-order visitor since this task was recycled to run
+            // the post-order visitor
+            (void)visitorPost(treeNode, *myData);
+          } else {
+            if (makeNewTasks) {
+              if (!treeNode->children.empty()) {
+                // Allocate post-order task
+                // isPostOrderPhase = true;
 
-                bool overThreshold = (treeNode->problemSize() >= problemSizeThreshold);
+                bool overThreshold =
+                    (treeNode->problemSize() >= problemSizeThreshold);
 
-                tbb::task* firstChild = 0;
-                tbb::task_list childTasks;
-                for(const boost::shared_ptr<NODE>& child: treeNode->children)
-                {
-                  // Process child in a subtask.  Important:  Run visitorPre before calling
-                  // allocate_child so that if visitorPre throws an exception, we will not have
-                  // allocated an extra child, this causes a TBB error.
-                  boost::shared_ptr<DATA> childData = boost::allocate_shared<DATA>(
-                      tbb::scalable_allocator<DATA>(), visitorPre(child, *myData));
-                  tbb::task* childTask =
-                      new (allocate_child()) PreOrderTask(child, childData, visitorPre, visitorPost,
-                                                          problemSizeThreshold, overThreshold);
-                  if (firstChild)
-                    childTasks.push_back(*childTask);
-                  else
-                    firstChild = childTask;
+                tbb::task_group tg;
+                for (const boost::shared_ptr<NODE>& child :
+                     treeNode->children) {
+                  // Process child in a subtask.  Important:  Run visitorPre
+                  // before calling allocate_child so that if visitorPre throws
+                  // an exception, we will not have allocated an extra child,
+                  // this causes a TBB error.
+                  boost::shared_ptr<DATA> childData =
+                      boost::allocate_shared<DATA>(
+                          tbb::scalable_allocator<DATA>(),
+                          visitorPre(child, *myData));
+                  PreOrderTask task(child, childData, visitorPre, visitorPost,
+                                    problemSizeThreshold, overThreshold);
+                  tg.run(task);
                 }
-
-                // If we have child tasks, start subtasks and wait for them to complete
-                set_ref_count((int)treeNode->children.size());
-                spawn(childTasks);
-                return firstChild;
+                tg.wait();
+              } else {
+                // Run the post-order visitor in this task if we have no
+                // children
+                (void)visitorPost(treeNode, *myData);
               }
-              else
-              {
-                // Run the post-order visitor in this task if we have no children
-                (void) visitorPost(treeNode, *myData);
-                return nullptr;
-              }
-            }
-            else
-            {
+            } else {
               // Process this node and its children in this task
               processNodeRecursively(treeNode, *myData);
-              return nullptr;
             }
           }
         }
 
-        void processNodeRecursively(const boost::shared_ptr<NODE>& node, DATA& myData)
-        {
-          for(const boost::shared_ptr<NODE>& child: node->children)
-          {
+        void processNodeRecursively(const boost::shared_ptr<NODE>& node,
+                                    DATA& myData) const {
+          for (const boost::shared_ptr<NODE>& child : node->children) {
             DATA childData = visitorPre(child, myData);
             processNodeRecursively(child, childData);
           }
 
           // Run the post-order visitor
-          (void) visitorPost(node, myData);
+          (void)visitorPost(node, myData);
         }
       };
 
       /* ************************************************************************* */
       template<typename ROOTS, typename NODE, typename DATA, typename VISITOR_PRE, typename VISITOR_POST>
-      class RootTask : public tbb::task
+      class RootTask
       {
       public:
         const ROOTS& roots;
@@ -144,32 +126,31 @@ namespace gtsam {
           roots(roots), myData(myData), visitorPre(visitorPre), visitorPost(visitorPost),
           problemSizeThreshold(problemSizeThreshold) {}
 
-        tbb::task* execute() override
-        {
-          typedef PreOrderTask<NODE, DATA, VISITOR_PRE, VISITOR_POST> PreOrderTask;
+        void operator()() const {
+          typedef PreOrderTask<NODE, DATA, VISITOR_PRE, VISITOR_POST>
+              PreOrderTask;
           // Create data and tasks for our children
-          tbb::task_list tasks;
-          for(const boost::shared_ptr<NODE>& root: roots)
-          {
-            boost::shared_ptr<DATA> rootData = boost::allocate_shared<DATA>(tbb::scalable_allocator<DATA>(), visitorPre(root, myData));
-            tasks.push_back(*new(allocate_child())
-              PreOrderTask(root, rootData, visitorPre, visitorPost, problemSizeThreshold));
+          tbb::task_group tg;
+          for (const boost::shared_ptr<NODE>& root : roots) {
+            boost::shared_ptr<DATA> rootData = boost::allocate_shared<DATA>(
+                tbb::scalable_allocator<DATA>(), visitorPre(root, myData));
+            PreOrderTask task(root, rootData, visitorPre, visitorPost,
+                              problemSizeThreshold);
+
+            tg.run(task);
           }
-          // Set TBB ref count
-          set_ref_count(1 + (int) roots.size());
-          // Spawn tasks
-          spawn_and_wait_for_all(tasks);
-          // Return nullptr
-          return nullptr;
+          tg.wait();
         }
       };
 
       template<typename NODE, typename ROOTS, typename DATA, typename VISITOR_PRE, typename VISITOR_POST>
-      RootTask<ROOTS, NODE, DATA, VISITOR_PRE, VISITOR_POST>&
-        CreateRootTask(const ROOTS& roots, DATA& rootData, VISITOR_PRE& visitorPre, VISITOR_POST& visitorPost, int problemSizeThreshold)
+        void CreateRootTask(const ROOTS& roots, DATA& rootData, VISITOR_PRE& visitorPre, VISITOR_POST& visitorPost, int problemSizeThreshold)
       {
           typedef RootTask<ROOTS, NODE, DATA, VISITOR_PRE, VISITOR_POST> RootTask;
-          return *new(tbb::task::allocate_root()) RootTask(roots, rootData, visitorPre, visitorPost, problemSizeThreshold);
+          tbb::task_group tg;
+
+          RootTask root_task(roots, rootData, visitorPre, visitorPost, problemSizeThreshold);
+          tg.run_and_wait(root_task);
         }
 
     }
