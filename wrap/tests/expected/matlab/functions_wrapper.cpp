@@ -196,7 +196,25 @@ void MultiTemplatedFunctionDoubleSize_tDouble_7(int nargout, mxArray *out[], int
   size_t y = unwrap< size_t >(in[1]);
   out[0] = wrap< double >(MultiTemplatedFunctionDoubleSize_tDouble(x,y));
 }
-void TemplatedFunctionRot3_8(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void DefaultFuncInt_8(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("DefaultFuncInt",nargout,nargin,1);
+  int a = unwrap< int >(in[0]);
+  DefaultFuncInt(a);
+}
+void DefaultFuncString_9(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("DefaultFuncString",nargout,nargin,1);
+  string& s = *unwrap_shared_ptr< string >(in[0], "ptr_string");
+  DefaultFuncString(s);
+}
+void DefaultFuncObj_10(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("DefaultFuncObj",nargout,nargin,1);
+  gtsam::KeyFormatter& keyFormatter = *unwrap_shared_ptr< gtsam::KeyFormatter >(in[0], "ptr_gtsamKeyFormatter");
+  DefaultFuncObj(keyFormatter);
+}
+void TemplatedFunctionRot3_11(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   checkArguments("TemplatedFunctionRot3",nargout,nargin,1);
   gtsam::Rot3& t = *unwrap_shared_ptr< gtsam::Rot3 >(in[0], "ptr_gtsamRot3");
@@ -239,7 +257,16 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
       MultiTemplatedFunctionDoubleSize_tDouble_7(nargout, out, nargin-1, in+1);
       break;
     case 8:
-      TemplatedFunctionRot3_8(nargout, out, nargin-1, in+1);
+      DefaultFuncInt_8(nargout, out, nargin-1, in+1);
+      break;
+    case 9:
+      DefaultFuncString_9(nargout, out, nargin-1, in+1);
+      break;
+    case 10:
+      DefaultFuncObj_10(nargout, out, nargin-1, in+1);
+      break;
+    case 11:
+      TemplatedFunctionRot3_11(nargout, out, nargin-1, in+1);
       break;
     }
   } catch(const std::exception& e) {
