@@ -203,9 +203,12 @@ class Type:
             raise ValueError("Parse result is not a Type")
 
     def __repr__(self) -> str:
-        return "{self.is_const} {self.typename} " \
-            "{self.is_shared_ptr}{self.is_ptr}{self.is_ref}".format(
-            self=self)
+        is_ptr_or_ref = "{0}{1}{2}".format(self.is_shared_ptr, self.is_ptr,
+                                           self.is_ref)
+        return "{is_const}{self.typename}{is_ptr_or_ref}".format(
+            self=self,
+            is_const="const " if self.is_const else "",
+            is_ptr_or_ref=" " + is_ptr_or_ref if is_ptr_or_ref else "")
 
     def to_cpp(self, use_boost: bool) -> str:
         """

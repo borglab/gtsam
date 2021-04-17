@@ -45,7 +45,14 @@ class PybindWrapper:
         """Set the argument names in Pybind11 format."""
         names = args_list.args_names()
         if names:
-            py_args = ['py::arg("{}")'.format(name) for name in names]
+            py_args = []
+            for arg in args_list.args_list:
+                if arg.default and isinstance(arg.default, str):
+                    arg.default = "\"{arg.default}\"".format(arg=arg)
+                argument = 'py::arg("{name}"){default}'.format(
+                    name=arg.name,
+                    default=' = {0}'.format(arg.default) if arg.default else '')
+                py_args.append(argument)
             return ", " + ", ".join(py_args)
         else:
             return ''
@@ -124,35 +131,29 @@ class PybindWrapper:
                    suffix=suffix,
                ))
 
+        # Create __repr__ override
+        # We allow all arguments to .print() and let the compiler handle type mismatches.
         if method.name == 'print':
             # Redirect stdout - see pybind docs for why this is a good idea:
             # https://pybind11.readthedocs.io/en/stable/advanced/pycpp/utilities.html#capturing-standard-output-from-ostream
-            ret = ret.replace('self->', 'py::scoped_ostream_redirect output; self->')
+            ret = ret.replace('self->print', 'py::scoped_ostream_redirect output; self->print')
 
-            # __repr__() uses print's implementation:
-            type_list = method.args.to_cpp(self.use_boost)
-            if len(type_list) > 0 and type_list[0].strip() == 'string':
-                ret += '''{prefix}.def("__repr__",
-                    [](const {cpp_class} &a) {{
+            # Make __repr__() call print() internally
+            ret += '''{prefix}.def("__repr__",
+                    [](const {cpp_class}& self{opt_comma}{args_signature_with_names}){{
                         gtsam::RedirectCout redirect;
-                        a.print("");
+                        self.{method_name}({method_args});
                         return redirect.str();
-                    }}){suffix}'''.format(
-                    prefix=prefix,
-                    cpp_class=cpp_class,
-                    suffix=suffix,
-                )
-            else:
-                ret += '''{prefix}.def("__repr__",
-                    [](const {cpp_class} &a) {{
-                        gtsam::RedirectCout redirect;
-                        a.print();
-                        return redirect.str();
-                    }}){suffix}'''.format(
-                    prefix=prefix,
-                    cpp_class=cpp_class,
-                    suffix=suffix,
-                )
+                    }}{py_args_names}){suffix}'''.format(
+                prefix=prefix,
+                cpp_class=cpp_class,
+                opt_comma=', ' if args_names else '',
+                args_signature_with_names=args_signature_with_names,
+                method_name=method.name,
+                method_args=", ".join(args_names) if args_names else '',
+                py_args_names=py_args_names,
+                suffix=suffix)
+
         return ret
 
     def wrap_methods(self, methods, cpp_class, prefix='\n' + ' ' * 8, suffix=''):

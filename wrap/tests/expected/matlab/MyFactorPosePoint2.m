@@ -4,6 +4,9 @@
 %-------Constructors-------
 %MyFactorPosePoint2(size_t key1, size_t key2, double measured, Base noiseModel)
 %
+%-------Methods-------
+%print(string s, KeyFormatter keyFormatter) : returns void
+%
 classdef MyFactorPosePoint2 < handle
   properties
     ptr_MyFactorPosePoint2 = 0
@@ -29,6 +32,16 @@ classdef MyFactorPosePoint2 < handle
     %DISPLAY Calls print on the object
     function disp(obj), obj.display; end
     %DISP Calls print on the object
+    function varargout = print(this, varargin)
+      % PRINT usage: print(string s, KeyFormatter keyFormatter) : returns void
+      % Doxygen can be found at https://gtsam.org/doxygen/
+      if length(varargin) == 2 && isa(varargin{1},'char') && isa(varargin{2},'gtsam.KeyFormatter')
+        class_wrapper(55, this, varargin{:});
+        return
+      end
+      error('Arguments do not match any overload of function MyFactorPosePoint2.print');
+    end
+
   end
 
   methods(Static = true)
