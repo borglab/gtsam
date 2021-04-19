@@ -2563,9 +2563,6 @@ class NonlinearISAM {
 //*************************************************************************
 // Nonlinear factor types
 //*************************************************************************
-#include <gtsam/geometry/CalibratedCamera.h>
-#include <gtsam/geometry/StereoPoint2.h>
-
 #include <gtsam/nonlinear/PriorFactor.h>
 template <T = {double,
                Vector,
