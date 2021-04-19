@@ -186,6 +186,16 @@ class PybindWrapper:
 
         return res
 
+    def wrap_variable(self, module, module_var, variable, prefix='\n' + ' ' * 8):
+        """Wrap a variable that's not part of a class (i.e. global)
+        """
+        return '{prefix}{module_var}.attr("{variable_name}") = {module}{variable_name};'.format(
+            prefix=prefix,
+            module=module,
+            module_var=module_var,
+            variable_name=variable.name
+        )
+
     def wrap_properties(self, properties, cpp_class, prefix='\n' + ' ' * 8):
         """Wrap all the properties in the `cpp_class`."""
         res = ""
@@ -341,6 +351,13 @@ class PybindWrapper:
                     includes += includes_namespace
                 elif isinstance(element, instantiator.InstantiatedClass):
                     wrapped += self.wrap_instantiated_class(element)
+                elif isinstance(element, parser.Variable):
+                    wrapped += self.wrap_variable(
+                        module=self._add_namespaces('', namespaces),
+                        module_var=module_var,
+                        variable=element,
+                        prefix='\n' + ' ' * 4
+                    )
 
             # Global functions.
             all_funcs = [

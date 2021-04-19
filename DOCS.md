@@ -91,6 +91,13 @@ The python wrapper supports keyword arguments for functions/methods. Hence, the 
         ```cpp
         template<T, R, S>
         ```
+- Global variables
+    - Similar to global functions, the wrapper supports global variables as well.
+    - Currently we only support primitive types, such as `double`, `int`, `string`, etc.
+    - E.g.
+        ```cpp
+        const double kGravity = -9.81;
+        ```
 
 - Using classes defined in other modules
     - If you are using a class `OtherClass` not wrapped in an interface file, add `class OtherClass;` as a forward declaration to avoid a dependency error. `OtherClass` should be in the same project.
