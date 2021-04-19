@@ -23,6 +23,7 @@ from .declaration import ForwardDeclaration, Include
 from .function import GlobalFunction
 from .namespace import Namespace
 from .template import TypedefTemplateInstantiation
+from .variable import Variable
 
 
 class Module:
@@ -43,6 +44,7 @@ class Module:
                    ^ Class.rule  #
                    ^ TypedefTemplateInstantiation.rule  #
                    ^ GlobalFunction.rule  #
+                   ^ Variable.rule #
                    ^ Namespace.rule  #
                    ).setParseAction(lambda t: Namespace('', t.asList())) +
         stringEnd)
