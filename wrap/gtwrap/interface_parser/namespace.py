@@ -22,6 +22,7 @@ from .function import GlobalFunction
 from .template import TypedefTemplateInstantiation
 from .tokens import IDENT, LBRACE, NAMESPACE, RBRACE
 from .type import Typename
+from .variable import Variable
 
 
 def find_sub_namespace(namespace: "Namespace",
@@ -67,6 +68,7 @@ class Namespace:
             ^ Class.rule  #
             ^ TypedefTemplateInstantiation.rule  #
             ^ GlobalFunction.rule  #
+            ^ Variable.rule #
             ^ rule  #
         )("content")  # BR
         + RBRACE  #

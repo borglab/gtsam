@@ -18,12 +18,10 @@ import unittest
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from gtwrap.interface_parser import (ArgumentList, Class, Constructor,
-                                     ForwardDeclaration, GlobalFunction,
-                                     Include, Method, Module, Namespace,
-                                     Operator, ReturnType, StaticMethod,
-                                     TemplatedType, Type,
-                                     TypedefTemplateInstantiation, Typename)
+from gtwrap.interface_parser import (
+    ArgumentList, Class, Constructor, ForwardDeclaration, GlobalFunction,
+    Include, Method, Module, Namespace, Operator, ReturnType, StaticMethod,
+    TemplatedType, Type, TypedefTemplateInstantiation, Typename, Variable)
 
 
 class TestInterfaceParser(unittest.TestCase):
@@ -178,6 +176,34 @@ class TestInterfaceParser(unittest.TestCase):
                          args_list[1].ctype.to_cpp(False))
         self.assertEqual("vector<boost::shared_ptr<T>>",
                          args_list[1].ctype.to_cpp(True))
+
+    def test_default_arguments(self):
+        """Tests any expression that is a valid default argument"""
+        args = ArgumentList.rule.parseString(
+            "string s=\"hello\", int a=3, "
+            "int b, double pi = 3.1415, "
+            "gtsam::KeyFormatter kf = gtsam::DefaultKeyFormatter, "
+            "std::vector<size_t> p = std::vector<size_t>(), "
+            "std::vector<size_t> l = (1, 2, 'name', \"random\", 3.1415)"
+        )[0].args_list
+
+        # Test for basic types
+        self.assertEqual(args[0].default, "hello")
+        self.assertEqual(args[1].default, 3)
+        # '' is falsy so we can check against it
+        self.assertEqual(args[2].default, '')
+        self.assertFalse(args[2].default)
+
+        self.assertEqual(args[3].default, 3.1415)
+
+        # Test non-basic type
+        self.assertEqual(repr(args[4].default.typename),
+                         'gtsam::DefaultKeyFormatter')
+        # Test templated type
+        self.assertEqual(repr(args[5].default.typename), 'std::vector<size_t>')
+        # Test for allowing list as default argument
+        print(args)
+        self.assertEqual(args[6].default, (1, 2, 'name', "random", 3.1415))
 
     def test_return_type(self):
         """Test ReturnType"""
@@ -388,6 +414,16 @@ class TestInterfaceParser(unittest.TestCase):
                          ret.parent_class.namespaces)
         self.assertTrue(ret.is_virtual)
 
+        ret = Class.rule.parseString(
+            "class ForwardKinematicsFactor : gtsam::BetweenFactor<gtsam::Pose3> {};"
+        )[0]
+        self.assertEqual("ForwardKinematicsFactor", ret.name)
+        self.assertEqual("BetweenFactor", ret.parent_class.name)
+        self.assertEqual(["gtsam"], ret.parent_class.namespaces)
+        self.assertEqual("Pose3", ret.parent_class.instantiations[0].name)
+        self.assertEqual(["gtsam"],
+                         ret.parent_class.instantiations[0].namespaces)
+
     def test_include(self):
         """Test for include statements."""
         include = Include.rule.parseString(
@@ -412,6 +448,23 @@ class TestInterfaceParser(unittest.TestCase):
         self.assertEqual("localToWorld", func.name)
         self.assertEqual("Values", func.return_type.type1.typename.name)
         self.assertEqual(3, len(func.args))
+
+    def test_global_variable(self):
+        """Test for global variable."""
+        variable = Variable.rule.parseString("string kGravity;")[0]
+        self.assertEqual(variable.name, "kGravity")
+        self.assertEqual(variable.ctype.typename.name, "string")
+
+        variable = Variable.rule.parseString("string kGravity = 9.81;")[0]
+        self.assertEqual(variable.name, "kGravity")
+        self.assertEqual(variable.ctype.typename.name, "string")
+        self.assertEqual(variable.default, 9.81)
+
+        variable = Variable.rule.parseString("const string kGravity = 9.81;")[0]
+        self.assertEqual(variable.name, "kGravity")
+        self.assertEqual(variable.ctype.typename.name, "string")
+        self.assertTrue(variable.ctype.is_const)
+        self.assertEqual(variable.default, 9.81)
 
     def test_namespace(self):
         """Test for namespace parsing."""
@@ -469,16 +522,19 @@ class TestInterfaceParser(unittest.TestCase):
 
                 };
             }
+            int oneVar;
         }
 
         class Global{
         };
+        int globalVar;
         """)
 
         # print("module: ", module)
         # print(dir(module.content[0].name))
-        self.assertEqual(["one", "Global"], [x.name for x in module.content])
-        self.assertEqual(["two", "two_dummy", "two"],
+        self.assertEqual(["one", "Global", "globalVar"],
+                         [x.name for x in module.content])
+        self.assertEqual(["two", "two_dummy", "two", "oneVar"],
                          [x.name for x in module.content[0].content])
 
 

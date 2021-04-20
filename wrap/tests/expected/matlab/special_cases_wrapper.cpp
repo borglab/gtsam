@@ -58,6 +58,8 @@ typedef std::set<boost::shared_ptr<MyTemplatePoint2>*> Collector_MyTemplatePoint
 static Collector_MyTemplatePoint2 collector_MyTemplatePoint2;
 typedef std::set<boost::shared_ptr<MyTemplateMatrix>*> Collector_MyTemplateMatrix;
 static Collector_MyTemplateMatrix collector_MyTemplateMatrix;
+typedef std::set<boost::shared_ptr<ForwardKinematicsFactor>*> Collector_ForwardKinematicsFactor;
+static Collector_ForwardKinematicsFactor collector_ForwardKinematicsFactor;
 typedef std::set<boost::shared_ptr<ns1::ClassA>*> Collector_ns1ClassA;
 static Collector_ns1ClassA collector_ns1ClassA;
 typedef std::set<boost::shared_ptr<ns1::ClassB>*> Collector_ns1ClassB;
@@ -169,6 +171,12 @@ void _deleteAllObjects()
     collector_MyTemplateMatrix.erase(iter++);
     anyDeleted = true;
   } }
+  { for(Collector_ForwardKinematicsFactor::iterator iter = collector_ForwardKinematicsFactor.begin();
+      iter != collector_ForwardKinematicsFactor.end(); ) {
+    delete *iter;
+    collector_ForwardKinematicsFactor.erase(iter++);
+    anyDeleted = true;
+  } }
   { for(Collector_ns1ClassA::iterator iter = collector_ns1ClassA.begin();
       iter != collector_ns1ClassA.end(); ) {
     delete *iter;
@@ -244,6 +252,7 @@ void _special_cases_RTTIRegister() {
     types.insert(std::make_pair(typeid(MyBase).name(), "MyBase"));
     types.insert(std::make_pair(typeid(MyTemplatePoint2).name(), "MyTemplatePoint2"));
     types.insert(std::make_pair(typeid(MyTemplateMatrix).name(), "MyTemplateMatrix"));
+    types.insert(std::make_pair(typeid(ForwardKinematicsFactor).name(), "ForwardKinematicsFactor"));
 
     mxArray *registry = mexGetVariable("global", "gtsamwrap_rttiRegistry");
     if(!registry)

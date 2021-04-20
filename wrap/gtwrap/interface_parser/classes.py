@@ -19,6 +19,7 @@ from .template import Template
 from .tokens import (CLASS, COLON, CONST, IDENT, LBRACE, LPAREN, RBRACE,
                      RPAREN, SEMI_COLON, STATIC, VIRTUAL, OPERATOR)
 from .type import TemplatedType, Type, Typename
+from .variable import Variable
 
 
 class Method:
@@ -136,32 +137,6 @@ class Constructor:
         return "Constructor: {}".format(self.name)
 
 
-class Property:
-    """
-    Rule to parse the variable members of a class.
-
-    E.g.
-    ```
-    class Hello {
-        string name;  // This is a property.
-    };
-    ````
-    """
-    rule = (
-        (Type.rule ^ TemplatedType.rule)("ctype")  #
-        + IDENT("name")  #
-        + SEMI_COLON  #
-    ).setParseAction(lambda t: Property(t.ctype, t.name))
-
-    def __init__(self, ctype: Type, name: str, parent=''):
-        self.ctype = ctype[0]  # ParseResult is a list
-        self.name = name
-        self.parent = parent
-
-    def __repr__(self) -> str:
-        return '{} {}'.format(self.ctype.__repr__(), self.name)
-
-
 class Operator:
     """
     Rule for parsing operator overloads.
@@ -256,12 +231,12 @@ class Class:
         Rule for all the members within a class.
         """
         rule = ZeroOrMore(Constructor.rule ^ StaticMethod.rule ^ Method.rule
-                          ^ Property.rule ^ Operator.rule).setParseAction(
+                          ^ Variable.rule ^ Operator.rule).setParseAction(
                               lambda t: Class.Members(t.asList()))
 
         def __init__(self,
                      members: List[Union[Constructor, Method, StaticMethod,
-                                         Property, Operator]]):
+                                         Variable, Operator]]):
             self.ctors = []
             self.methods = []
             self.static_methods = []
@@ -274,12 +249,12 @@ class Class:
                     self.methods.append(m)
                 elif isinstance(m, StaticMethod):
                     self.static_methods.append(m)
-                elif isinstance(m, Property):
+                elif isinstance(m, Variable):
                     self.properties.append(m)
                 elif isinstance(m, Operator):
                     self.operators.append(m)
 
-    _parent = COLON + Typename.rule("parent_class")
+    _parent = COLON + (TemplatedType.rule ^ Typename.rule)("parent_class")
     rule = (
         Optional(Template.rule("template"))  #
         + Optional(VIRTUAL("is_virtual"))  #
@@ -311,7 +286,7 @@ class Class:
         ctors: List[Constructor],
         methods: List[Method],
         static_methods: List[StaticMethod],
-        properties: List[Property],
+        properties: List[Variable],
         operators: List[Operator],
         parent: str = '',
     ):
@@ -319,11 +294,16 @@ class Class:
         self.is_virtual = is_virtual
         self.name = name
         if parent_class:
+            # If it is in an iterable, extract the parent class.
             if isinstance(parent_class, Iterable):
-                self.parent_class = parent_class[0]
-            else:
-                self.parent_class = parent_class
+                parent_class = parent_class[0]
 
+            # If the base class is a TemplatedType,
+            # we want the instantiated Typename
+            if isinstance(parent_class, TemplatedType):
+                parent_class = parent_class.typename
+
+            self.parent_class = parent_class
         else:
             self.parent_class = ''
 
