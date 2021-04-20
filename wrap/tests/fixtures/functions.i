@@ -29,5 +29,5 @@ typedef TemplatedFunction<gtsam::Rot3> TemplatedFunctionRot3;
 
 // Check default arguments
 void DefaultFuncInt(int a = 123);
-void DefaultFuncString(const string& s = "hello");
+void DefaultFuncString(const string& s = "hello", const string& name = "");
 void DefaultFuncObj(const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter);
