@@ -661,6 +661,15 @@ void MyFactorPosePoint2_deconstructor_54(int nargout, mxArray *out[], int nargin
   }
 }
 
+void MyFactorPosePoint2_print_55(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("print",nargout,nargin-1,2);
+  auto obj = unwrap_shared_ptr<MyFactor<gtsam::Pose2, gtsam::Matrix>>(in[0], "ptr_MyFactorPosePoint2");
+  string& s = *unwrap_shared_ptr< string >(in[1], "ptr_string");
+  gtsam::KeyFormatter& keyFormatter = *unwrap_shared_ptr< gtsam::KeyFormatter >(in[2], "ptr_gtsamKeyFormatter");
+  obj->print(s,keyFormatter);
+}
+
 
 void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
@@ -837,6 +846,9 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
       break;
     case 54:
       MyFactorPosePoint2_deconstructor_54(nargout, out, nargin-1, in+1);
+      break;
+    case 55:
+      MyFactorPosePoint2_print_55(nargout, out, nargin-1, in+1);
       break;
     }
   } catch(const std::exception& e) {

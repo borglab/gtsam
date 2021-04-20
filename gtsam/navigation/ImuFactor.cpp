@@ -106,6 +106,7 @@ void PreintegratedImuMeasurements::mergeWith(const PreintegratedImuMeasurements&
   preintMeasCov_ = P + *H2 * pim12.preintMeasCov_ * H2->transpose();
 }
 #endif
+
 //------------------------------------------------------------------------------
 // ImuFactor methods
 //------------------------------------------------------------------------------

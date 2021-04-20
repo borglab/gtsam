@@ -91,6 +91,13 @@ The python wrapper supports keyword arguments for functions/methods. Hence, the 
         ```cpp
         template<T, R, S>
         ```
+- Global variables
+    - Similar to global functions, the wrapper supports global variables as well.
+    - Currently we only support primitive types, such as `double`, `int`, `string`, etc.
+    - E.g.
+        ```cpp
+        const double kGravity = -9.81;
+        ```
 
 - Using classes defined in other modules
     - If you are using a class `OtherClass` not wrapped in an interface file, add `class OtherClass;` as a forward declaration to avoid a dependency error. `OtherClass` should be in the same project.
@@ -98,6 +105,7 @@ The python wrapper supports keyword arguments for functions/methods. Hence, the 
 - Virtual inheritance
     - Specify fully-qualified base classes, i.e. `virtual class Derived : ns::Base {` where `ns` is the namespace.
     - Mark with `virtual` keyword, e.g. `virtual class Base {`, and also `virtual class Derived : ns::Base {`.
+    - Base classes can be templated, e.g. `virtual class Dog: ns::Animal<Pet> {};`. This is useful when you want to inherit from specialized classes.
     - Forward declarations must also be marked virtual, e.g. `virtual class ns::Base;` and
       also `virtual class ns::Derived;`.
     - Pure virtual (abstract) classes should list no constructors in the interface file.

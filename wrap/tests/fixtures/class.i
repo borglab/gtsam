@@ -79,6 +79,8 @@ virtual class ns::OtherClass;
 template<POSE, POINT>
 class MyFactor {
   MyFactor(size_t key1, size_t key2, double measured, const gtsam::noiseModel::Base* noiseModel);
+  void print(const string &s = "factor: ",
+             const gtsam::KeyFormatter &keyFormatter = gtsam::DefaultKeyFormatter);
 };
 
 // and a typedef specializing it

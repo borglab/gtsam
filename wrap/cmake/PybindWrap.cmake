@@ -72,6 +72,7 @@ function(pybind_wrap
                              --template
                              ${module_template}
                              ${_WRAP_BOOST_ARG}
+                     DEPENDS ${interface_header} ${module_template}
                      VERBATIM)
   add_custom_target(pybind_wrap_${module_name} ALL DEPENDS ${generated_cpp})
 
