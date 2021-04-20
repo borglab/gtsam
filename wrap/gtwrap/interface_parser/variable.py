@@ -46,6 +46,8 @@ class Variable:
         self.name = name
         if default:
             self.default = default[0]
+        else:
+            self.default = None
 
         self.parent = parent
 
