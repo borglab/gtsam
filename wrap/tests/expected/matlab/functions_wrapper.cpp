@@ -204,9 +204,10 @@ void DefaultFuncInt_8(int nargout, mxArray *out[], int nargin, const mxArray *in
 }
 void DefaultFuncString_9(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  checkArguments("DefaultFuncString",nargout,nargin,1);
+  checkArguments("DefaultFuncString",nargout,nargin,2);
   string& s = *unwrap_shared_ptr< string >(in[0], "ptr_string");
-  DefaultFuncString(s);
+  string& name = *unwrap_shared_ptr< string >(in[1], "ptr_string");
+  DefaultFuncString(s,name);
 }
 void DefaultFuncObj_10(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
