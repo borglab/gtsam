@@ -47,11 +47,15 @@ class PybindWrapper:
         if names:
             py_args = []
             for arg in args_list.args_list:
-                if arg.default and isinstance(arg.default, str):
-                    arg.default = "\"{arg.default}\"".format(arg=arg)
+                if isinstance(arg.default, str) and arg.default is not None:
+                    # string default arg
+                    arg.default = ' = "{arg.default}"'.format(arg=arg)
+                elif arg.default:  # Other types
+                    arg.default = ' = {arg.default}'.format(arg=arg)
+                else:
+                    arg.default = ''
                 argument = 'py::arg("{name}"){default}'.format(
-                    name=arg.name,
-                    default=' = {0}'.format(arg.default) if arg.default else '')
+                    name=arg.name, default='{0}'.format(arg.default))
                 py_args.append(argument)
             return ", " + ", ".join(py_args)
         else:
@@ -61,7 +65,10 @@ class PybindWrapper:
         """Define the method signature types with the argument names."""
         cpp_types = args_list.to_cpp(self.use_boost)
         names = args_list.args_names()
-        types_names = ["{} {}".format(ctype, name) for ctype, name in zip(cpp_types, names)]
+        types_names = [
+            "{} {}".format(ctype, name)
+            for ctype, name in zip(cpp_types, names)
+        ]
 
         return ', '.join(types_names)
 
@@ -69,14 +76,20 @@ class PybindWrapper:
         """Wrap the constructors."""
         res = ""
         for ctor in my_class.ctors:
-            res += (self.method_indent + '.def(py::init<{args_cpp_types}>()'
-                    '{py_args_names})'.format(
-                        args_cpp_types=", ".join(ctor.args.to_cpp(self.use_boost)),
-                        py_args_names=self._py_args_names(ctor.args),
-                    ))
+            res += (
+                self.method_indent + '.def(py::init<{args_cpp_types}>()'
+                '{py_args_names})'.format(
+                    args_cpp_types=", ".join(ctor.args.to_cpp(self.use_boost)),
+                    py_args_names=self._py_args_names(ctor.args),
+                ))
         return res
 
-    def _wrap_method(self, method, cpp_class, prefix, suffix, method_suffix=""):
+    def _wrap_method(self,
+                     method,
+                     cpp_class,
+                     prefix,
+                     suffix,
+                     method_suffix=""):
         py_method = method.name + method_suffix
         cpp_method = method.to_cpp()
 
@@ -92,17 +105,20 @@ class PybindWrapper:
 
         if cpp_method == "pickle":
             if not cpp_class in self._serializing_classes:
-                raise ValueError("Cannot pickle a class which is not serializable")
+                raise ValueError(
+                    "Cannot pickle a class which is not serializable")
             pickle_method = self.method_indent + \
                 ".def(py::pickle({indent}    [](const {cpp_class} &a){{ /* __getstate__: Returns a string that encodes the state of the object */ return py::make_tuple(gtsam::serialize(a)); }},{indent}    [](py::tuple t){{ /* __setstate__ */ {cpp_class} obj; gtsam::deserialize(t[0].cast<std::string>(), obj); return obj; }}))"
-            return pickle_method.format(cpp_class=cpp_class, indent=self.method_indent)
+            return pickle_method.format(cpp_class=cpp_class,
+                                        indent=self.method_indent)
 
         is_method = isinstance(method, instantiator.InstantiatedMethod)
         is_static = isinstance(method, parser.StaticMethod)
         return_void = method.return_type.is_void()
         args_names = method.args.args_names()
         py_args_names = self._py_args_names(method.args)
-        args_signature_with_names = self._method_args_signature_with_names(method.args)
+        args_signature_with_names = self._method_args_signature_with_names(
+            method.args)
 
         caller = cpp_class + "::" if not is_method else "self->"
         function_call = ('{opt_return} {caller}{function_name}'
@@ -136,7 +152,9 @@ class PybindWrapper:
         if method.name == 'print':
             # Redirect stdout - see pybind docs for why this is a good idea:
             # https://pybind11.readthedocs.io/en/stable/advanced/pycpp/utilities.html#capturing-standard-output-from-ostream
-            ret = ret.replace('self->print', 'py::scoped_ostream_redirect output; self->print')
+            ret = ret.replace(
+                'self->print',
+                'py::scoped_ostream_redirect output; self->print')
 
             # Make __repr__() call print() internally
             ret += '''{prefix}.def("__repr__",
@@ -156,7 +174,11 @@ class PybindWrapper:
 
         return ret
 
-    def wrap_methods(self, methods, cpp_class, prefix='\n' + ' ' * 8, suffix=''):
+    def wrap_methods(self,
+                     methods,
+                     cpp_class,
+                     prefix='\n' + ' ' * 8,
+                     suffix=''):
         """
         Wrap all the methods in the `cpp_class`.
 
@@ -169,7 +191,8 @@ class PybindWrapper:
             if method.name == 'insert' and cpp_class == 'gtsam::Values':
                 name_list = method.args.args_names()
                 type_list = method.args.to_cpp(self.use_boost)
-                if type_list[0].strip() == 'size_t':  # inserting non-wrapped value types
+                # inserting non-wrapped value types
+                if type_list[0].strip() == 'size_t':
                     method_suffix = '_' + name_list[1].strip()
                     res += self._wrap_method(method=method,
                                              cpp_class=cpp_class,
@@ -186,15 +209,18 @@ class PybindWrapper:
 
         return res
 
-    def wrap_variable(self, module, module_var, variable, prefix='\n' + ' ' * 8):
+    def wrap_variable(self,
+                      module,
+                      module_var,
+                      variable,
+                      prefix='\n' + ' ' * 8):
         """Wrap a variable that's not part of a class (i.e. global)
         """
         return '{prefix}{module_var}.attr("{variable_name}") = {module}{variable_name};'.format(
             prefix=prefix,
             module=module,
             module_var=module_var,
-            variable_name=variable.name
-        )
+            variable_name=variable.name)
 
     def wrap_properties(self, properties, cpp_class, prefix='\n' + ' ' * 8):
         """Wrap all the properties in the `cpp_class`."""
@@ -203,7 +229,8 @@ class PybindWrapper:
             res += ('{prefix}.def_{property}("{property_name}", '
                     '&{cpp_class}::{property_name})'.format(
                         prefix=prefix,
-                        property="readonly" if prop.ctype.is_const else "readwrite",
+                        property="readonly"
+                        if prop.ctype.is_const else "readwrite",
                         cpp_class=cpp_class,
                         property_name=prop.name,
                     ))
@@ -227,7 +254,8 @@ class PybindWrapper:
                     op.operator))
         return res
 
-    def wrap_instantiated_class(self, instantiated_class):
+    def wrap_instantiated_class(
+            self, instantiated_class: instantiator.InstantiatedClass):
         """Wrap the class."""
         module_var = self._gen_module_var(instantiated_class.namespaces())
         cpp_class = instantiated_class.cpp_class()
@@ -287,6 +315,18 @@ class PybindWrapper:
                     stl_class.properties, cpp_class),
             ))
 
+    def wrap_enum(self, enum, prefix='\n' + ' ' * 8):
+        """Wrap an enum."""
+        module_var = self._gen_module_var(enum.namespaces())
+        cpp_class = enum.cpp_typename().to_cpp()
+        res = '\n    py::enum_<{cpp_class}>({module_var}, "{enum.name}", py::arithmetic())'.format(
+            module_var=module_var, enum=enum, cpp_class=cpp_class)
+        for enumerator in enum.enumerators:
+            res += '{prefix}.value("{enumerator.name}", {cpp_class}::{enumerator.name})'.format(
+                prefix=prefix, enumerator=enumerator, cpp_class=cpp_class)
+        res += ";\n\n"
+        return res
+
     def _partial_match(self, namespaces1, namespaces2):
         for i in range(min(len(namespaces1), len(namespaces2))):
             if namespaces1[i] != namespaces2[i]:
@@ -294,6 +334,8 @@ class PybindWrapper:
         return True
 
     def _gen_module_var(self, namespaces):
+        """Get the Pybind11 module name from the namespaces."""
+        # We skip the first value in namespaces since it is empty
         sub_module_namespaces = namespaces[len(self.top_module_namespaces):]
         return "m_{}".format('_'.join(sub_module_namespaces))
 
@@ -317,7 +359,10 @@ class PybindWrapper:
         if len(namespaces) < len(self.top_module_namespaces):
             for element in namespace.content:
                 if isinstance(element, parser.Include):
-                    includes += ("{}\n".format(element).replace('<', '"').replace('>', '"'))
+                    include = "{}\n".format(element)
+                    # replace the angle brackets with quotes
+                    include = include.replace('<', '"').replace('>', '"')
+                    includes += include
                 if isinstance(element, parser.Namespace):
                     (
                         wrapped_namespace,
@@ -330,34 +375,40 @@ class PybindWrapper:
             module_var = self._gen_module_var(namespaces)
 
             if len(namespaces) > len(self.top_module_namespaces):
-                wrapped += (' ' * 4 + 'pybind11::module {module_var} = '
-                            '{parent_module_var}.def_submodule("{namespace}", "'
-                            '{namespace} submodule");\n'.format(
-                                module_var=module_var,
-                                namespace=namespace.name,
-                                parent_module_var=self._gen_module_var(namespaces[:-1]),
-                            ))
+                wrapped += (
+                    ' ' * 4 + 'pybind11::module {module_var} = '
+                    '{parent_module_var}.def_submodule("{namespace}", "'
+                    '{namespace} submodule");\n'.format(
+                        module_var=module_var,
+                        namespace=namespace.name,
+                        parent_module_var=self._gen_module_var(
+                            namespaces[:-1]),
+                    ))
 
+            # Wrap an include statement, namespace, class or enum
             for element in namespace.content:
                 if isinstance(element, parser.Include):
-                    includes += ("{}\n".format(element).replace('<', '"').replace('>', '"'))
+                    include = "{}\n".format(element)
+                    # replace the angle brackets with quotes
+                    include = include.replace('<', '"').replace('>', '"')
+                    includes += include
                 elif isinstance(element, parser.Namespace):
-                    (
-                        wrapped_namespace,
-                        includes_namespace,
-                    ) = self.wrap_namespace(  # noqa
+                    wrapped_namespace, includes_namespace = self.wrap_namespace(
                         element)
                     wrapped += wrapped_namespace
                     includes += includes_namespace
+
                 elif isinstance(element, instantiator.InstantiatedClass):
                     wrapped += self.wrap_instantiated_class(element)
                 elif isinstance(element, parser.Variable):
-                    wrapped += self.wrap_variable(
-                        module=self._add_namespaces('', namespaces),
-                        module_var=module_var,
-                        variable=element,
-                        prefix='\n' + ' ' * 4
-                    )
+                    module = self._add_namespaces('', namespaces)
+                    wrapped += self.wrap_variable(module=module,
+                                                  module_var=module_var,
+                                                  variable=element,
+                                                  prefix='\n' + ' ' * 4)
+
+                elif isinstance(element, parser.Enum):
+                    wrapped += self.wrap_enum(element)
 
             # Global functions.
             all_funcs = [
@@ -388,7 +439,8 @@ class PybindWrapper:
                     cpp_class=cpp_class,
                     new_name=new_name,
                 )
-            boost_class_export += "BOOST_CLASS_EXPORT({new_name})\n".format(new_name=new_name, )
+            boost_class_export += "BOOST_CLASS_EXPORT({new_name})\n".format(
+                new_name=new_name, )
 
         holder_type = "PYBIND11_DECLARE_HOLDER_TYPE(TYPE_PLACEHOLDER_DONOTUSE, " \
                       "{shared_ptr_type}::shared_ptr<TYPE_PLACEHOLDER_DONOTUSE>);"
@@ -398,7 +450,8 @@ class PybindWrapper:
             include_boost=include_boost,
             module_name=self.module_name,
             includes=includes,
-            holder_type=holder_type.format(shared_ptr_type=('boost' if self.use_boost else 'std'))
+            holder_type=holder_type.format(
+                shared_ptr_type=('boost' if self.use_boost else 'std'))
             if self.use_boost else "",
             wrapped_namespace=wrapped_namespace,
             boost_class_export=boost_class_export,
