@@ -1,4 +1,13 @@
-enum Kind { Dog, Cat };
+enum Color { Red, Green, Blue };
+
+class Pet {
+  enum Kind { Dog, Cat };
+
+  Pet(const string &name, Kind type);
+
+  string name;
+  Kind type;
+};
 
 namespace gtsam {
 enum VerbosityLM {
@@ -12,12 +21,25 @@ enum VerbosityLM {
   TRYDELTA
 };
 
-class Pet {
-  enum Kind { Dog, Cat };
+class MCU {
+  MCU();
 
-  Pet(const string &name, Kind type);
+  enum Avengers {
+    CaptainAmerica,
+    IronMan,
+    Hulk,
+    Hawkeye,
+    Thor
+  };
 
-  string name;
-  Kind type;
+  enum GotG {
+    Starlord,
+    Gamorra,
+    Rocket,
+    Drax,
+    Groot
+  };
+
 };
+
 }  // namespace gtsam
