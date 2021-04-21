@@ -50,6 +50,9 @@ class Argument:
         # This means a tuple has been passed so we convert accordingly
         elif len(default) > 1:
             default = tuple(default.asList())
+        else:
+            # set to None explicitly so we can support empty strings
+            default = None
         self.default = default
 
         self.parent: Union[ArgumentList, None] = None

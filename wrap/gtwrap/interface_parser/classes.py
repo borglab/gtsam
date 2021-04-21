@@ -12,13 +12,15 @@ Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellae
 
 from typing import Iterable, List, Union
 
-from pyparsing import Optional, ZeroOrMore, Literal
+from pyparsing import Literal, Optional, ZeroOrMore
 
+from .enum import Enum
 from .function import ArgumentList, ReturnType
 from .template import Template
-from .tokens import (CLASS, COLON, CONST, IDENT, LBRACE, LPAREN, RBRACE,
-                     RPAREN, SEMI_COLON, STATIC, VIRTUAL, OPERATOR)
-from .type import TemplatedType, Type, Typename
+from .tokens import (CLASS, COLON, CONST, IDENT, LBRACE, LPAREN, OPERATOR,
+                     RBRACE, RPAREN, SEMI_COLON, STATIC, VIRTUAL)
+from .type import TemplatedType, Typename
+from .utils import collect_namespaces
 from .variable import Variable
 
 
@@ -200,21 +202,6 @@ class Operator:
         )
 
 
-def collect_namespaces(obj):
-    """
-    Get the chain of namespaces from the lowest to highest for the given object.
-
-    Args:
-        obj: Object of type Namespace, Class or InstantiatedClass.
-    """
-    namespaces = []
-    ancestor = obj.parent
-    while ancestor and ancestor.name:
-        namespaces = [ancestor.name] + namespaces
-        ancestor = ancestor.parent
-    return [''] + namespaces
-
-
 class Class:
     """
     Rule to parse a class defined in the interface file.
@@ -230,9 +217,13 @@ class Class:
         """
         Rule for all the members within a class.
         """
-        rule = ZeroOrMore(Constructor.rule ^ StaticMethod.rule ^ Method.rule
-                          ^ Variable.rule ^ Operator.rule).setParseAction(
-                              lambda t: Class.Members(t.asList()))
+        rule = ZeroOrMore(Constructor.rule  #
+                          ^ StaticMethod.rule  #
+                          ^ Method.rule  #
+                          ^ Variable.rule  #
+                          ^ Operator.rule  #
+                          ^ Enum.rule  #
+                          ).setParseAction(lambda t: Class.Members(t.asList()))
 
         def __init__(self,
                      members: List[Union[Constructor, Method, StaticMethod,
@@ -242,6 +233,7 @@ class Class:
             self.static_methods = []
             self.properties = []
             self.operators = []
+            self.enums = []
             for m in members:
                 if isinstance(m, Constructor):
                     self.ctors.append(m)
@@ -253,6 +245,8 @@ class Class:
                     self.properties.append(m)
                 elif isinstance(m, Operator):
                     self.operators.append(m)
+                elif isinstance(m, Enum):
+                    self.enums.append(m)
 
     _parent = COLON + (TemplatedType.rule ^ Typename.rule)("parent_class")
     rule = (
@@ -275,6 +269,7 @@ class Class:
         t.members.static_methods,
         t.members.properties,
         t.members.operators,
+        t.members.enums
     ))
 
     def __init__(
@@ -288,6 +283,7 @@ class Class:
         static_methods: List[StaticMethod],
         properties: List[Variable],
         operators: List[Operator],
+        enums: List[Enum],
         parent: str = '',
     ):
         self.template = template
@@ -312,6 +308,8 @@ class Class:
         self.static_methods = static_methods
         self.properties = properties
         self.operators = operators
+        self.enums = enums
+
         self.parent = parent
 
         # Make sure ctors' names and class name are the same.

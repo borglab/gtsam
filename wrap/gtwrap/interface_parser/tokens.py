@@ -46,6 +46,7 @@ CONST, VIRTUAL, CLASS, STATIC, PAIR, TEMPLATE, TYPEDEF, INCLUDE = map(
         "#include",
     ],
 )
+ENUM = Keyword("enum") ^ Keyword("enum class") ^ Keyword("enum struct")
 NAMESPACE = Keyword("namespace")
 BASIS_TYPES = map(
     Keyword,
