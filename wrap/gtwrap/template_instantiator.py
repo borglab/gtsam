@@ -266,7 +266,7 @@ class InstantiatedClass(parser.Class):
     """
     Instantiate the class defined in the interface file.
     """
-    def __init__(self, original, instantiations=(), new_name=''):
+    def __init__(self, original: parser.Class, instantiations=(), new_name=''):
         """
         Template <T, U>
         Instantiations: [T1, U1]
@@ -302,6 +302,9 @@ class InstantiatedClass(parser.Class):
         # Instantiate all operator overloads
         self.operators = self.instantiate_operators(typenames)
 
+        # Set enums
+        self.enums = original.enums
+
         # Instantiate all instance methods
         instantiated_methods = \
             self.instantiate_class_templates_in_methods(typenames)
@@ -330,6 +333,7 @@ class InstantiatedClass(parser.Class):
             self.static_methods,
             self.properties,
             self.operators,
+            self.enums,
             parent=self.parent,
         )
 

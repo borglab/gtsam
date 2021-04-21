@@ -11,10 +11,12 @@ Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellae
 """
 
 import sys
+
 import pyparsing
 
 from .classes import *
 from .declaration import *
+from .enum import *
 from .function import *
 from .module import *
 from .namespace import *

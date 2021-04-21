@@ -26,3 +26,11 @@ class SfmTrack {
 };
 
 }  // namespace gtsam
+
+
+// class VariableIndex {
+// VariableIndex();
+//   // template<T = {gtsam::SymbolicFactorGraph, gtsam::GaussianFactorGraph, gtsam::NonlinearFactorGraph, gtsam::FactorGraph}>
+//   VariableIndex(const T& graph);
+//   VariableIndex(const T& graph, size_t nVariables);
+// };

@@ -158,6 +158,17 @@ class TestWrap(unittest.TestCase):
 
         self.compare_and_diff('special_cases_pybind.cpp', output)
 
+    def test_enum(self):
+        """
+        Test if enum generation is correct.
+        """
+        with open(osp.join(self.INTERFACE_DIR, 'enum.i'), 'r') as f:
+            content = f.read()
+
+        output = self.wrap_content(content, 'enum_py',
+                                   self.PYTHON_ACTUAL_DIR)
+
+        self.compare_and_diff('enum_pybind.cpp', output)
 
 if __name__ == '__main__':
     unittest.main()

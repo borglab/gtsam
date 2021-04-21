@@ -19,9 +19,10 @@ import unittest
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from gtwrap.interface_parser import (
-    ArgumentList, Class, Constructor, ForwardDeclaration, GlobalFunction,
-    Include, Method, Module, Namespace, Operator, ReturnType, StaticMethod,
-    TemplatedType, Type, TypedefTemplateInstantiation, Typename, Variable)
+    ArgumentList, Class, Constructor, Enum, Enumerator, ForwardDeclaration,
+    GlobalFunction, Include, Method, Module, Namespace, Operator, ReturnType,
+    StaticMethod, TemplatedType, Type, TypedefTemplateInstantiation, Typename,
+    Variable)
 
 
 class TestInterfaceParser(unittest.TestCase):
@@ -180,7 +181,7 @@ class TestInterfaceParser(unittest.TestCase):
     def test_default_arguments(self):
         """Tests any expression that is a valid default argument"""
         args = ArgumentList.rule.parseString(
-            "string s=\"hello\", int a=3, "
+            "string c = \"\", string s=\"hello\", int a=3, "
             "int b, double pi = 3.1415, "
             "gtsam::KeyFormatter kf = gtsam::DefaultKeyFormatter, "
             "std::vector<size_t> p = std::vector<size_t>(), "
@@ -188,22 +189,21 @@ class TestInterfaceParser(unittest.TestCase):
         )[0].args_list
 
         # Test for basic types
-        self.assertEqual(args[0].default, "hello")
-        self.assertEqual(args[1].default, 3)
-        # '' is falsy so we can check against it
-        self.assertEqual(args[2].default, '')
-        self.assertFalse(args[2].default)
+        self.assertEqual(args[0].default, "")
+        self.assertEqual(args[1].default, "hello")
+        self.assertEqual(args[2].default, 3)
+        # No default argument should set `default` to None
+        self.assertIsNone(args[3].default)
 
-        self.assertEqual(args[3].default, 3.1415)
+        self.assertEqual(args[4].default, 3.1415)
 
         # Test non-basic type
-        self.assertEqual(repr(args[4].default.typename),
+        self.assertEqual(repr(args[5].default.typename),
                          'gtsam::DefaultKeyFormatter')
         # Test templated type
-        self.assertEqual(repr(args[5].default.typename), 'std::vector<size_t>')
+        self.assertEqual(repr(args[6].default.typename), 'std::vector<size_t>')
         # Test for allowing list as default argument
-        print(args)
-        self.assertEqual(args[6].default, (1, 2, 'name', "random", 3.1415))
+        self.assertEqual(args[7].default, (1, 2, 'name', "random", 3.1415))
 
     def test_return_type(self):
         """Test ReturnType"""
@@ -424,6 +424,17 @@ class TestInterfaceParser(unittest.TestCase):
         self.assertEqual(["gtsam"],
                          ret.parent_class.instantiations[0].namespaces)
 
+    def test_class_with_enum(self):
+        """Test for class with nested enum."""
+        ret = Class.rule.parseString("""
+        class Pet {
+            Pet(const string &name, Kind type);
+            enum Kind { Dog, Cat };
+        };
+        """)[0]
+        self.assertEqual(ret.name, "Pet")
+        self.assertEqual(ret.enums[0].name, "Kind")
+
     def test_include(self):
         """Test for include statements."""
         include = Include.rule.parseString(
@@ -460,11 +471,32 @@ class TestInterfaceParser(unittest.TestCase):
         self.assertEqual(variable.ctype.typename.name, "string")
         self.assertEqual(variable.default, 9.81)
 
-        variable = Variable.rule.parseString("const string kGravity = 9.81;")[0]
+        variable = Variable.rule.parseString(
+            "const string kGravity = 9.81;")[0]
         self.assertEqual(variable.name, "kGravity")
         self.assertEqual(variable.ctype.typename.name, "string")
         self.assertTrue(variable.ctype.is_const)
         self.assertEqual(variable.default, 9.81)
+
+    def test_enumerator(self):
+        """Test for enumerator."""
+        enumerator = Enumerator.rule.parseString("Dog")[0]
+        self.assertEqual(enumerator.name, "Dog")
+
+        enumerator = Enumerator.rule.parseString("Cat")[0]
+        self.assertEqual(enumerator.name, "Cat")
+
+    def test_enum(self):
+        """Test for enums."""
+        enum = Enum.rule.parseString("""
+        enum Kind {
+            Dog,
+            Cat
+        };
+        """)[0]
+        self.assertEqual(enum.name, "Kind")
+        self.assertEqual(enum.enumerators[0].name, "Dog")
+        self.assertEqual(enum.enumerators[1].name, "Cat")
 
     def test_namespace(self):
         """Test for namespace parsing."""
