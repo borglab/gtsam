@@ -109,3 +109,15 @@ Arguments:
   include_directories. Again, normally, leave this empty.
 - `extraMexFlags`: Any _additional_ flags to pass to the compiler when building
   the wrap code. Normally, leave this empty.
+
+## Git subtree and Contributing
+
+**\*WARNING\*: Running the ./update_wrap.sh script from the GTSAM repo creates 2 new commits in GTSAM.  Be sure to _NOT_ push these directly to master/develop.  Preferably, open up a new PR with these updates (see below).**
+
+The [wrap library](https://github.com/borglab/wrap) is included in GTSAM as a git subtree.  This means that sometimes the wrap library can have new features or changes that are not yet reflected in GTSAM.  There are two options to get the most up-to-date versions of wrap:
+  1. Clone and install the [wrap repository](https://github.com/borglab/wrap).  For external projects, make sure cmake is using the external `wrap` rather than the one pre-packaged with GTSAM.
+  2. Run `./update_wrap.sh` from the root of GTSAM's repository to pull in the newest version of wrap to your local GTSAM installation.  See the warning above about this script automatically creating commits.
+
+To make a PR on GTSAM with the most recent wrap updates, create a new branch/fork then pull in the most recent wrap changes using `./update_wrap.sh`.  You should find that two new commits have been made: a squash and a merge from master.  You can push these (to the non-develop branch) and open a PR.
+
+For any code contributions to the wrap project, please make them on the [wrap repository](https://github.com/borglab/wrap).
