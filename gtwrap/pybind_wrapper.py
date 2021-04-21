@@ -210,17 +210,24 @@ class PybindWrapper:
         return res
 
     def wrap_variable(self,
-                      module,
+                      namespace,
                       module_var,
                       variable,
                       prefix='\n' + ' ' * 8):
         """Wrap a variable that's not part of a class (i.e. global)
         """
-        return '{prefix}{module_var}.attr("{variable_name}") = {module}{variable_name};'.format(
+        variable_value = ""
+        if variable.default is None:
+            variable_value = variable.name
+        else:
+            variable_value = variable.default
+
+        return '{prefix}{module_var}.attr("{variable_name}") = {namespace}{variable_value};'.format(
             prefix=prefix,
-            module=module,
             module_var=module_var,
-            variable_name=variable.name)
+            variable_name=variable.name,
+            namespace=namespace,
+            variable_value=variable_value)
 
     def wrap_properties(self, properties, cpp_class, prefix='\n' + ' ' * 8):
         """Wrap all the properties in the `cpp_class`."""
@@ -254,6 +261,45 @@ class PybindWrapper:
                     op.operator))
         return res
 
+    def wrap_enum(self, enum, class_name='', module=None, prefix=' ' * 4):
+        """
+        Wrap an enum.
+
+        Args:
+            enum: The parsed enum to wrap.
+            class_name: The class under which the enum is defined.
+            prefix: The amount of indentation.
+        """
+        if module is None:
+            module = self._gen_module_var(enum.namespaces())
+
+        cpp_class = enum.cpp_typename().to_cpp()
+        if class_name:
+            # If class_name is provided, add that as the namespace
+            cpp_class = class_name + "::" + cpp_class
+
+        res = '{prefix}py::enum_<{cpp_class}>({module}, "{enum.name}", py::arithmetic())'.format(
+            prefix=prefix, module=module, enum=enum, cpp_class=cpp_class)
+        for enumerator in enum.enumerators:
+            res += '\n{prefix}    .value("{enumerator.name}", {cpp_class}::{enumerator.name})'.format(
+                prefix=prefix, enumerator=enumerator, cpp_class=cpp_class)
+        res += ";\n\n"
+        return res
+
+    def wrap_enums(self, enums, instantiated_class, prefix=' ' * 4):
+        """Wrap multiple enums defined in a class."""
+        cpp_class = instantiated_class.cpp_class()
+        module_var = instantiated_class.name.lower()
+        res = ''
+
+        for enum in enums:
+            res += "\n" + self.wrap_enum(
+                enum,
+                class_name=cpp_class,
+                module=module_var,
+                prefix=prefix)
+        return res
+
     def wrap_instantiated_class(
             self, instantiated_class: instantiator.InstantiatedClass):
         """Wrap the class."""
@@ -261,30 +307,54 @@ class PybindWrapper:
         cpp_class = instantiated_class.cpp_class()
         if cpp_class in self.ignore_classes:
             return ""
-        return (
-            '\n    py::class_<{cpp_class}, {class_parent}'
-            '{shared_ptr_type}::shared_ptr<{cpp_class}>>({module_var}, "{class_name}")'
-            '{wrapped_ctors}'
-            '{wrapped_methods}'
-            '{wrapped_static_methods}'
-            '{wrapped_properties}'
-            '{wrapped_operators};\n'.format(
-                shared_ptr_type=('boost' if self.use_boost else 'std'),
-                cpp_class=cpp_class,
-                class_name=instantiated_class.name,
-                class_parent="{instantiated_class.parent_class}, ".format(
-                    instantiated_class=instantiated_class)
-                if instantiated_class.parent_class else '',
-                module_var=module_var,
-                wrapped_ctors=self.wrap_ctors(instantiated_class),
-                wrapped_methods=self.wrap_methods(instantiated_class.methods,
-                                                  cpp_class),
-                wrapped_static_methods=self.wrap_methods(
-                    instantiated_class.static_methods, cpp_class),
-                wrapped_properties=self.wrap_properties(
-                    instantiated_class.properties, cpp_class),
-                wrapped_operators=self.wrap_operators(
-                    instantiated_class.operators, cpp_class)))
+        if instantiated_class.parent_class:
+            class_parent = "{instantiated_class.parent_class}, ".format(
+                instantiated_class=instantiated_class)
+        else:
+            class_parent = ''
+
+        if instantiated_class.enums:
+            # If class has enums, define an instance and set module_var to the instance
+            instance_name = instantiated_class.name.lower()
+            class_declaration = (
+                '\n    py::class_<{cpp_class}, {class_parent}'
+                '{shared_ptr_type}::shared_ptr<{cpp_class}>> '
+                '{instance_name}({module_var}, "{class_name}");'
+                '\n    {instance_name}').format(
+                    shared_ptr_type=('boost' if self.use_boost else 'std'),
+                    cpp_class=cpp_class,
+                    class_name=instantiated_class.name,
+                    class_parent=class_parent,
+                    instance_name=instance_name,
+                    module_var=module_var)
+            module_var = instance_name
+
+        else:
+            class_declaration = (
+                '\n    py::class_<{cpp_class}, {class_parent}'
+                '{shared_ptr_type}::shared_ptr<{cpp_class}>>({module_var}, "{class_name}")'
+            ).format(shared_ptr_type=('boost' if self.use_boost else 'std'),
+                     cpp_class=cpp_class,
+                     class_name=instantiated_class.name,
+                     class_parent=class_parent,
+                     module_var=module_var)
+
+        return ('{class_declaration}'
+                '{wrapped_ctors}'
+                '{wrapped_methods}'
+                '{wrapped_static_methods}'
+                '{wrapped_properties}'
+                '{wrapped_operators};\n'.format(
+                    class_declaration=class_declaration,
+                    wrapped_ctors=self.wrap_ctors(instantiated_class),
+                    wrapped_methods=self.wrap_methods(
+                        instantiated_class.methods, cpp_class),
+                    wrapped_static_methods=self.wrap_methods(
+                        instantiated_class.static_methods, cpp_class),
+                    wrapped_properties=self.wrap_properties(
+                        instantiated_class.properties, cpp_class),
+                    wrapped_operators=self.wrap_operators(
+                        instantiated_class.operators, cpp_class)))
 
     def wrap_stl_class(self, stl_class):
         """Wrap STL containers."""
@@ -314,18 +384,6 @@ class PybindWrapper:
                 wrapped_properties=self.wrap_properties(
                     stl_class.properties, cpp_class),
             ))
-
-    def wrap_enum(self, enum, prefix='\n' + ' ' * 8):
-        """Wrap an enum."""
-        module_var = self._gen_module_var(enum.namespaces())
-        cpp_class = enum.cpp_typename().to_cpp()
-        res = '\n    py::enum_<{cpp_class}>({module_var}, "{enum.name}", py::arithmetic())'.format(
-            module_var=module_var, enum=enum, cpp_class=cpp_class)
-        for enumerator in enum.enumerators:
-            res += '{prefix}.value("{enumerator.name}", {cpp_class}::{enumerator.name})'.format(
-                prefix=prefix, enumerator=enumerator, cpp_class=cpp_class)
-        res += ";\n\n"
-        return res
 
     def _partial_match(self, namespaces1, namespaces2):
         for i in range(min(len(namespaces1), len(namespaces2))):
@@ -400,9 +458,11 @@ class PybindWrapper:
 
                 elif isinstance(element, instantiator.InstantiatedClass):
                     wrapped += self.wrap_instantiated_class(element)
+                    wrapped += self.wrap_enums(element.enums, element)
+
                 elif isinstance(element, parser.Variable):
-                    module = self._add_namespaces('', namespaces)
-                    wrapped += self.wrap_variable(module=module,
+                    variable_namespace = self._add_namespaces('', namespaces)
+                    wrapped += self.wrap_variable(namespace=variable_namespace,
                                                   module_var=module_var,
                                                   variable=element,
                                                   prefix='\n' + ' ' * 4)
