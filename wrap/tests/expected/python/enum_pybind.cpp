@@ -21,13 +21,23 @@ namespace py = pybind11;
 PYBIND11_MODULE(enum_py, m_) {
     m_.doc() = "pybind11 wrapper of enum_py";
 
+    py::enum_<Color>(m_, "Color", py::arithmetic())
+        .value("Red", Color::Red)
+        .value("Green", Color::Green)
+        .value("Blue", Color::Blue);
 
-    py::enum_<Kind>(m_, "Kind", py::arithmetic())
-        .value("Dog", Kind::Dog)
-        .value("Cat", Kind::Cat);
+
+    py::class_<Pet, std::shared_ptr<Pet>> pet(m_, "Pet");
+    pet
+        .def(py::init<const string&, Kind>(), py::arg("name"), py::arg("type"))
+        .def_readwrite("name", &Pet::name)
+        .def_readwrite("type", &Pet::type);
+
+    py::enum_<Pet::Kind>(pet, "Kind", py::arithmetic())
+        .value("Dog", Pet::Kind::Dog)
+        .value("Cat", Pet::Kind::Cat);
 
     pybind11::module m_gtsam = m_.def_submodule("gtsam", "gtsam submodule");
-
     py::enum_<gtsam::VerbosityLM>(m_gtsam, "VerbosityLM", py::arithmetic())
         .value("SILENT", gtsam::VerbosityLM::SILENT)
         .value("SUMMARY", gtsam::VerbosityLM::SUMMARY)
@@ -39,10 +49,25 @@ PYBIND11_MODULE(enum_py, m_) {
         .value("TRYDELTA", gtsam::VerbosityLM::TRYDELTA);
 
 
-    py::class_<gtsam::Pet, std::shared_ptr<gtsam::Pet>>(m_gtsam, "Pet")
-        .def(py::init<const string&, Kind>(), py::arg("name"), py::arg("type"))
-        .def_readwrite("name", &gtsam::Pet::name)
-        .def_readwrite("type", &gtsam::Pet::type);
+    py::class_<gtsam::MCU, std::shared_ptr<gtsam::MCU>> mcu(m_gtsam, "MCU");
+    mcu
+        .def(py::init<>());
+
+    py::enum_<gtsam::MCU::Avengers>(mcu, "Avengers", py::arithmetic())
+        .value("CaptainAmerica", gtsam::MCU::Avengers::CaptainAmerica)
+        .value("IronMan", gtsam::MCU::Avengers::IronMan)
+        .value("Hulk", gtsam::MCU::Avengers::Hulk)
+        .value("Hawkeye", gtsam::MCU::Avengers::Hawkeye)
+        .value("Thor", gtsam::MCU::Avengers::Thor);
+
+
+    py::enum_<gtsam::MCU::GotG>(mcu, "GotG", py::arithmetic())
+        .value("Starlord", gtsam::MCU::GotG::Starlord)
+        .value("Gamorra", gtsam::MCU::GotG::Gamorra)
+        .value("Rocket", gtsam::MCU::GotG::Rocket)
+        .value("Drax", gtsam::MCU::GotG::Drax)
+        .value("Groot", gtsam::MCU::GotG::Groot);
+
 
 
 #include "python/specializations.h"
