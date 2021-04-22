@@ -319,11 +319,30 @@ T expm(const Vector& x, int K=7) {
 }
 
 /**
- * Linear interpolation between X and Y by coefficient t in [0, 1].
+ * Linear interpolation and some extrapolation between X and Y by coefficient t in [0, 1.5], optinal jacobians calculations.
  */
-template <typename T>
-T interpolate(const T& X, const T& Y, double t) {
-  assert(t >= 0 && t <= 1);
+template <typename T, int N>
+T interpolate(const T& X, const T& Y, double t, OptionalJacobian<N, N> Hx = boost::none, OptionalJacobian<N, N> Hy = boost::none) {
+  assert(t >= 0 && t <= 1.5);
+  if (Hx && Hy) {
+    typedef Eigen::Matrix<double, N, N> Jacobian;
+    typename traits<T>::TangentVector tres;
+    T tres1;
+    Jacobian d1;
+    Jacobian d2;
+
+    tres1 = traits<T>::Between(X, Y, Hx, Hy);
+    tres = traits<T>::Logmap(tres1, d1);
+    *Hx = d1 * (*Hx);
+    *Hy = d1 * (*Hy);
+    tres1 = traits<T>::Expmap(t * tres, d1);
+    *Hx = t * d1 * (*Hx);
+    *Hy = t * d1 * (*Hy);
+    tres1 = traits<T>::Compose(X, tres1, d1, d2);
+    *Hx = d1 + d2 * (*Hx);
+    *Hy = d2 * (*Hy);
+    return tres1;
+  }
   return traits<T>::Compose(X, traits<T>::Expmap(t * traits<T>::Logmap(traits<T>::Between(X, Y))));
 }
 
