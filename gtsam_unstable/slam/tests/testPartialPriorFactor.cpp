@@ -84,9 +84,10 @@ TEST(PartialPriorFactor, JacobianPartialTranslation2) {
 
   // Use the factor to calculate the derivative.
   Matrix actualH1;
-  factor.evaluateError(pose, actualH1);
+  Vector e = factor.evaluateError(pose, actualH1);
 
-  // Verify we get the expected error.
+  // Make sure we get the correct error and Jacobian.
+  CHECK(assert_equal(Vector1::Zero(), e, 1e-5));
   CHECK(assert_equal(expectedH1, actualH1, 1e-5));
 }
 
@@ -106,9 +107,8 @@ TEST(PartialPriorFactor, JacobianFullTranslation2) {
 
   // Use the factor to calculate the derivative.
   Matrix actualH1;
-  factor.evaluateError(pose, actualH1);
-
-  // Verify we get the expected error.
+  Vector e = factor.evaluateError(pose, actualH1);
+  CHECK(assert_equal(Vector2::Zero(), e, 1e-5));
   CHECK(assert_equal(expectedH1, actualH1, 1e-5));
 }
 
@@ -128,9 +128,8 @@ TEST(PartialPriorFactor, JacobianTheta) {
 
   // Use the factor to calculate the derivative.
   Matrix actualH1;
-  factor.evaluateError(pose, actualH1);
-
-  // Verify we get the expected error.
+  Vector e = factor.evaluateError(pose, actualH1);
+  CHECK(assert_equal(Vector1::Zero(), e, 1e-5));
   CHECK(assert_equal(expectedH1, actualH1, 1e-5));
 }
 
@@ -179,9 +178,8 @@ TEST(PartialPriorFactor, JacobianAtIdentity3) {
 
   // Use the factor to calculate the derivative.
   Matrix actualH1;
-  factor.evaluateError(pose, actualH1);
-
-  // Verify we get the expected error.
+  Vector e = factor.evaluateError(pose, actualH1);
+  CHECK(assert_equal(Vector1::Zero(), e, 1e-5));
   CHECK(assert_equal(expectedH1, actualH1, 1e-5));
 }
 
@@ -201,9 +199,8 @@ TEST(PartialPriorFactor, JacobianPartialTranslation3) {
 
   // Use the factor to calculate the derivative.
   Matrix actualH1;
-  factor.evaluateError(pose, actualH1);
-
-  // Verify we get the expected error.
+  Vector e = factor.evaluateError(pose, actualH1);
+  CHECK(assert_equal(Vector1::Zero(), e, 1e-5));
   CHECK(assert_equal(expectedH1, actualH1, 1e-5));
 }
 
@@ -225,9 +222,8 @@ TEST(PartialPriorFactor, JacobianFullTranslation3) {
 
   // Use the factor to calculate the derivative.
   Matrix actualH1;
-  factor.evaluateError(pose, actualH1);
-
-  // Verify we get the expected error.
+  Vector e = factor.evaluateError(pose, actualH1);
+  CHECK(assert_equal(Vector3::Zero(), e, 1e-5));
   CHECK(assert_equal(expectedH1, actualH1, 1e-5));
 }
 
@@ -249,9 +245,8 @@ TEST(PartialPriorFactor, JacobianTxTz3) {
 
   // Use the factor to calculate the derivative.
   Matrix actualH1;
-  factor.evaluateError(pose, actualH1);
-
-  // Verify we get the expected error.
+  Vector e = factor.evaluateError(pose, actualH1);
+  CHECK(assert_equal(Vector2::Zero(), e, 1e-5));
   CHECK(assert_equal(expectedH1, actualH1, 1e-5));
 }
 
@@ -272,9 +267,8 @@ TEST(PartialPriorFactor, JacobianFullRotation3) {
 
   // Use the factor to calculate the derivative.
   Matrix actualH1;
-  factor.evaluateError(pose, actualH1);
-
-  // Verify we get the expected error.
+  Vector e = factor.evaluateError(pose, actualH1);
+  CHECK(assert_equal(Vector3::Zero(), e, 1e-5));
   CHECK(assert_equal(expectedH1, actualH1, 1e-5));
 }
 
