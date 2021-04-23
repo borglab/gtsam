@@ -19,7 +19,8 @@ namespace gtsam {
 /**
  * Factor to estimate rotation of a Pose2 or Pose3 given a magnetometer reading.
  * This version uses the measurement model bM = scale * bRn * direction + bias,
- * and assumes scale, direction, and the bias are known.
+ * where bRn is the rotation of the body in the nav frame, and scale, direction,
+ * and bias are assumed to be known.
  */
 template <class POSE>
 class MagPoseFactor: public NoiseModelFactor1<POSE> {
@@ -29,9 +30,9 @@ class MagPoseFactor: public NoiseModelFactor1<POSE> {
   typedef typename POSE::Translation Point;   // Could be a Vector2 or Vector3 depending on POSE.
   typedef typename POSE::Rotation Rot;
 
-  const Point measured_;   ///< The measured magnetometer data.
-  const Point nM_;         ///< Local magnetic field (in mag output units).
-  const Point bias_;       ///< The bias vector (in mag output units).
+  const Point measured_;   ///< The measured magnetometer data in the body frame.
+  const Point nM_;         ///< Local magnetic field (mag output units) in the nav frame.
+  const Point bias_;       ///< The bias vector (mag output units) in the body frame.
   boost::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame.
 
   static const int MeasDim = Point::RowsAtCompileTime;
@@ -53,7 +54,7 @@ class MagPoseFactor: public NoiseModelFactor1<POSE> {
 
   /**
    * @param pose_key of the unknown pose nav_P_body in the factor graph.
-   * @param measurement magnetometer reading, a 2D or 3D vector
+   * @param measurement magnetometer reading in the sensor frame, a 2D or 3D vector
    * @param scale by which a unit vector is scaled to yield a magnetometer reading
    * @param direction of the local magnetic field, see e.g. http://www.ngdc.noaa.gov/geomag-web/#igrfwmm
    * @param bias of the magnetometer, modeled as purely additive (after scaling)
@@ -68,9 +69,9 @@ class MagPoseFactor: public NoiseModelFactor1<POSE> {
                 const SharedNoiseModel& model,
                 const boost::optional<POSE>& body_P_sensor)
       : Base(model, pose_key),
-        measured_(measured),
+        measured_(body_P_sensor ? body_P_sensor->rotation() * measured : measured),
         nM_(scale * direction.normalized()),
-        bias_(bias),
+        bias_(body_P_sensor ? body_P_sensor->rotation() * bias : bias),
         body_P_sensor_(body_P_sensor) {}
 
   /// @return a deep copy of this factor.
@@ -82,11 +83,11 @@ class MagPoseFactor: public NoiseModelFactor1<POSE> {
   /** Implement functions needed for Testable */
 
   /** print */
-  void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
+  void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     Base::print(s, keyFormatter);
-    // gtsam::print(measured_, "measured");
-    // gtsam::print(nM_, "nM");
-    // gtsam::print(bias_, "bias");
+    gtsam::print(Vector(nM_), "local field (nM): ");
+    gtsam::print(Vector(measured_), "measured field (bM): ");
+    gtsam::print(Vector(bias_), "magnetometer bias: ");
   }
 
   /** equals */
@@ -102,18 +103,16 @@ class MagPoseFactor: public NoiseModelFactor1<POSE> {
 
   /** Return the factor's error h(x) - z, and the optional Jacobian. */
   Vector evaluateError(const POSE& nPb, boost::optional<Matrix&> H = boost::none) const override {
-    // Get rotation of the nav frame in the sensor frame.
-    const Rot nRs = body_P_sensor_ ? nPb.rotation() * body_P_sensor_->rotation() : nPb.rotation();
-
-    // Predict the measured magnetic field h(x) in the sensor frame.
+    // Predict the measured magnetic field h(x) in the *body* frame.
+    // If body_P_sensor was given, bias_ will have been rotated into the body frame.
     Matrix H_rot = Matrix::Zero(MeasDim, RotDim);
-    const Point hx = nRs.unrotate(nM_, H_rot, boost::none) + bias_;
+    const Point hx = nPb.rotation().unrotate(nM_, H_rot, boost::none) + bias_;
 
     if (H) {
       // Fill in the relevant part of the Jacobian (just rotation columns).
       *H = Matrix::Zero(MeasDim, PoseDim);
-      const size_t rot0 = nPb.rotationInterval().first;
-      (*H).block(0, rot0, MeasDim, RotDim) = H_rot;
+      const size_t rot_col0 = nPb.rotationInterval().first;
+      (*H).block(0, rot_col0, MeasDim, RotDim) = H_rot;
     }
 
     return (hx - measured_);
