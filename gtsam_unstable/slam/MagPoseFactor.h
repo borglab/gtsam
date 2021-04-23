@@ -20,7 +20,9 @@ namespace gtsam {
  * Factor to estimate rotation of a Pose2 or Pose3 given a magnetometer reading.
  * This version uses the measurement model bM = scale * bRn * direction + bias,
  * where bRn is the rotation of the body in the nav frame, and scale, direction,
- * and bias are assumed to be known.
+ * and bias are assumed to be known. If the factor is constructed with a
+ * body_P_sensor, then the magnetometer measurements and bias should be
+ * expressed in the sensor frame.
  */
 template <class POSE>
 class MagPoseFactor: public NoiseModelFactor1<POSE> {
@@ -30,9 +32,9 @@ class MagPoseFactor: public NoiseModelFactor1<POSE> {
   typedef typename POSE::Translation Point;   // Could be a Vector2 or Vector3 depending on POSE.
   typedef typename POSE::Rotation Rot;
 
-  const Point measured_;   ///< The measured magnetometer data in the body frame.
-  const Point nM_;         ///< Local magnetic field (mag output units) in the nav frame.
-  const Point bias_;       ///< The bias vector (mag output units) in the body frame.
+  const Point measured_; ///< The measured magnetometer data in the body frame.
+  const Point nM_; ///< Local magnetic field (mag output units) in the nav frame.
+  const Point bias_; ///< The bias vector (mag output units) in the body frame.
   boost::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame.
 
   static const int MeasDim = Point::RowsAtCompileTime;
@@ -53,8 +55,9 @@ class MagPoseFactor: public NoiseModelFactor1<POSE> {
   MagPoseFactor() {}
 
   /**
-   * @param pose_key of the unknown pose nav_P_body in the factor graph.
-   * @param measurement magnetometer reading in the sensor frame, a 2D or 3D vector
+   * Construct the factor.
+   * @param pose_key of the unknown pose nPb in the factor graph
+   * @param measurement magnetometer reading, a Point2 or Point3
    * @param scale by which a unit vector is scaled to yield a magnetometer reading
    * @param direction of the local magnetic field, see e.g. http://www.ngdc.noaa.gov/geomag-web/#igrfwmm
    * @param bias of the magnetometer, modeled as purely additive (after scaling)
@@ -101,7 +104,9 @@ class MagPoseFactor: public NoiseModelFactor1<POSE> {
 
   /** Implement functions needed to derive from Factor. */
 
-  /** Return the factor's error h(x) - z, and the optional Jacobian. */
+  /** Return the factor's error h(x) - z, and the optional Jacobian. Note that
+   * the measurement error is expressed in the body frame.
+   */
   Vector evaluateError(const POSE& nPb, boost::optional<Matrix&> H = boost::none) const override {
     // Predict the measured magnetic field h(x) in the *body* frame.
     // If body_P_sensor was given, bias_ will have been rotated into the body frame.
