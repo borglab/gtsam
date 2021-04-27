@@ -7,10 +7,10 @@
 
 #pragma once
 
-#include <gtsam/base/Manifold.h>
-#include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Unit3.h>
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/base/Manifold.h>
 
 #include <iosfwd>
 #include <string>
@@ -31,11 +31,7 @@ class EssentialMatrix {
 
  public:
   /// Static function to convert Point2 to homogeneous coordinates
-  static Vector3 Homogeneous(const Point2& p,
-                             OptionalJacobian<3, 2> H = boost::none) {
-    if (H) {
-      H->setIdentity();
-    }
+  static Vector3 Homogeneous(const Point2& p) {
     return Vector3(p.x(), p.y(), 1);
   }
 
