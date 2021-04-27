@@ -241,6 +241,18 @@ TEST (EssentialMatrix, epipoles) {
   EXPECT(assert_equal(e2, E.epipole_b()));
 }
 
+//*************************************************************************
+TEST(EssentialMatrix, Homogeneous) {
+  Point2 input(5.0, 1.3);
+  Vector3 expected(5.0, 1.3, 1.0);
+  Matrix32 expectedH;
+  expectedH << 1.0, 0.0, 0.0, 1.0, 0.0, 0.0;
+  Matrix32 actualH;
+  Vector3 actual = EssentialMatrix::Homogeneous(input, actualH);
+  EXPECT(assert_equal(actual, expected));
+  EXPECT(assert_equal(actualH, expectedH));
+}
+
 /* ************************************************************************* */
 int main() {
   TestResult tr;

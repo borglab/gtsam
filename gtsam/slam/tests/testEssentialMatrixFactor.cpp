@@ -39,7 +39,9 @@ SfmData data;
 bool readOK = readBAL(filename, data);
 Rot3 c1Rc2 = data.cameras[1].pose().rotation();
 Point3 c1Tc2 = data.cameras[1].pose().translation();
-PinholeCamera<Cal3_S2> camera2(data.cameras[1].pose(), Cal3_S2());
+// TODO: maybe default value not good; assert with 0th
+Cal3_S2 trueK = Cal3_S2();
+PinholeCamera<Cal3_S2> camera2(data.cameras[1].pose(), trueK);
 Rot3 trueRotation(c1Rc2);
 Unit3 trueDirection(c1Tc2);
 EssentialMatrix trueE(trueRotation, trueDirection);
@@ -351,7 +353,112 @@ TEST (EssentialMatrixFactor3, minimization) {
   EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-4);
 }
 
-} // namespace example1
+//*************************************************************************
+TEST(EssentialMatrixFactor4, factor) {
+  Key keyE(1);
+  Key keyK(1);
+  for (size_t i = 0; i < 5; i++) {
+    EssentialMatrixFactor4<Cal3_S2> factor(keyE, keyK, pA(i), pB(i), model1);
+
+    // Check evaluation
+    Vector1 expected;
+    expected << 0;
+    Matrix HEactual;
+    Matrix HKactual;
+    Vector actual = factor.evaluateError(trueE, trueK, HEactual, HKactual);
+    EXPECT(assert_equal(expected, actual, 1e-7));
+
+    // Use numerical derivatives to calculate the expected Jacobian
+    Matrix HEexpected;
+    Matrix HKexpected;
+    typedef Eigen::Matrix<double, 1, 1> Vector1;
+    boost::function<Vector(const EssentialMatrix &, const Cal3_S2 &)> f =
+        boost::bind(&EssentialMatrixFactor4<Cal3_S2>::evaluateError, factor, _1,
+                    _2, boost::none, boost::none);
+    HEexpected = numericalDerivative21<Vector1, EssentialMatrix, Cal3_S2>(
+        f, trueE, trueK);
+    HKexpected = numericalDerivative22<Vector1, EssentialMatrix, Cal3_S2>(
+        f, trueE, trueK);
+
+    // Verify the Jacobian is correct
+    EXPECT(assert_equal(HEexpected, HEactual, 1e-8));
+    EXPECT(assert_equal(HKexpected, HKactual, 1e-8));
+  }
+}
+
+//*************************************************************************
+TEST(EssentialMatrixFactor4, evaluateErrorJacobians) {
+  Key keyE(1);
+  Key keyK(2);
+  // initialize essential matrix
+  Rot3 r = Rot3::Expmap(Vector3(M_PI / 6, M_PI / 3, M_PI / 9));
+  Unit3 t(Point3(2, -1, 0.5));
+  EssentialMatrix E = EssentialMatrix::FromRotationAndDirection(r, t);
+  Cal3_S2 K(200, 1, 1, 10, 10);
+  Values val;
+  val.insert(keyE, E);
+  val.insert(keyK, K);
+
+  Point2 pA(10.0, 20.0);
+  Point2 pB(12.0, 15.0);
+
+  EssentialMatrixFactor4<Cal3_S2> f(keyE, keyK, pA, pB, model1);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(f, val, 1e-5, 1e-6);
+}
+
+//*************************************************************************
+TEST(EssentialMatrixFactor4, minimization) {
+  // As before, we start with a factor graph and add constraints to it
+  NonlinearFactorGraph graph;
+  for (size_t i = 0; i < 5; i++)
+    graph.emplace_shared<EssentialMatrixFactor4<Cal3_S2>>(1, 2, pA(i), pB(i),
+                                                          model1);
+
+  // Check error at ground truth
+  Values truth;
+  truth.insert(1, trueE);
+  truth.insert(2, trueK);
+  EXPECT_DOUBLES_EQUAL(0, graph.error(truth), 1e-8);
+
+  // Check error at initial estimate
+  Values initial;
+  EssentialMatrix initialE =
+      trueE.retract((Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1).finished());
+  Cal3_S2 initialK =
+      trueK.retract((Vector(5) << 0.1, -0.1, 0.03, -0.2, 0.2).finished());
+  initial.insert(1, initialE);
+  initial.insert(2, trueK);
+#if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
+  EXPECT_DOUBLES_EQUAL(643.26, graph.error(initial), 1e-2);
+#else
+  EXPECT_DOUBLES_EQUAL(639.84, graph.error(initial),
+                       1e-2);  // TODO: update this value too
+#endif
+
+  // Optimize
+  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtOptimizer optimizer(graph, initial, parameters);
+  Values result = optimizer.optimize();
+
+  // Check result
+  EssentialMatrix actualE = result.at<EssentialMatrix>(1);
+  Cal3_S2 actualK = result.at<Cal3_S2>(2);
+  EXPECT(assert_equal(trueE, actualE, 1e-1)); // TODO: fix the tolerance
+  EXPECT(assert_equal(trueK, actualK, 1e-1)); // TODO: fix the tolerance
+
+  // Check error at result
+  EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-4);
+
+  // Check errors individually
+  for (size_t i = 0; i < 5; i++)
+    EXPECT_DOUBLES_EQUAL(
+        0,
+        actualE.error(EssentialMatrix::Homogeneous(actualK.calibrate(pA(i))),
+                      EssentialMatrix::Homogeneous(actualK.calibrate(pB(i)))),
+        1e-6);
+}
+
+}  // namespace example1
 
 //*************************************************************************
 
@@ -373,21 +480,21 @@ Point2 pB(size_t i) {
   return data.tracks[i].measurements[1].second;
 }
 
-boost::shared_ptr<Cal3Bundler> //
-K = boost::make_shared<Cal3Bundler>(500, 0, 0);
-PinholeCamera<Cal3Bundler> camera2(data.cameras[1].pose(), *K);
+Cal3Bundler trueK = Cal3Bundler(500, 0, 0);
+boost::shared_ptr<Cal3Bundler> K = boost::make_shared<Cal3Bundler>(trueK);
+PinholeCamera<Cal3Bundler> camera2(data.cameras[1].pose(), trueK);
 
 Vector vA(size_t i) {
-  Point2 xy = K->calibrate(pA(i));
+  Point2 xy = trueK.calibrate(pA(i));
   return EssentialMatrix::Homogeneous(xy);
 }
 Vector vB(size_t i) {
-  Point2 xy = K->calibrate(pB(i));
+  Point2 xy = trueK.calibrate(pB(i));
   return EssentialMatrix::Homogeneous(xy);
 }
 
 //*************************************************************************
-TEST (EssentialMatrixFactor, extraMinimization) {
+TEST(EssentialMatrixFactor, extraMinimization) {
   // Additional test with camera moving in positive X direction
 
   NonlinearFactorGraph graph;
@@ -526,7 +633,59 @@ TEST (EssentialMatrixFactor3, extraTest) {
   }
 }
 
-} // namespace example2
+TEST(EssentialMatrixFactor4, extraMinimization) {
+  // Additional test with camera moving in positive X direction
+
+  NonlinearFactorGraph graph;
+  for (size_t i = 0; i < 5; i++)
+    graph.emplace_shared<EssentialMatrixFactor4<Cal3Bundler>>(1, 2, pA(i),
+                                                              pB(i), model1);
+
+  // Check error at ground truth
+  Values truth;
+  truth.insert(1, trueE);
+  truth.insert(2, trueK);
+  EXPECT_DOUBLES_EQUAL(0, graph.error(truth), 1e-8);
+
+  // Check error at initial estimate
+  Values initial;
+  EssentialMatrix initialE =
+      trueE.retract((Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1).finished());
+  Cal3Bundler initialK =
+      trueK.retract((Vector(3) << 0.1, -0.02, 0.03).finished());
+  initial.insert(1, initialE);
+  initial.insert(2, initialK);
+
+#if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
+  EXPECT_DOUBLES_EQUAL(633.71, graph.error(initial), 1e-2);
+#else
+  EXPECT_DOUBLES_EQUAL(639.84, graph.error(initial), 1e-2); // TODO: fix this
+#endif
+
+  // Optimize
+  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtOptimizer optimizer(graph, initial, parameters);
+  Values result = optimizer.optimize();
+
+  // Check result
+  EssentialMatrix actualE = result.at<EssentialMatrix>(1);
+  Cal3Bundler actualK = result.at<Cal3Bundler>(2);
+  EXPECT(assert_equal(trueE, actualE, 1e-1)); // TODO: tighten tolerance
+  EXPECT(assert_equal(trueK, actualK, 1e-1)); // TODO: tighten tolerance
+
+  // Check error at result
+  EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-4);
+
+  // Check errors individually
+  for (size_t i = 0; i < 5; i++)
+    EXPECT_DOUBLES_EQUAL(
+        0,
+        actualE.error(EssentialMatrix::Homogeneous(actualK.calibrate(pA(i))),
+                      EssentialMatrix::Homogeneous(actualK.calibrate(pB(i)))),
+        1e-6);
+}
+
+}  // namespace example2
 
 /* ************************************************************************* */
 int main() {
