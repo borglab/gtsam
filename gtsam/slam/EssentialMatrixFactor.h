@@ -354,17 +354,15 @@ class EssentialMatrixFactor4
       const EssentialMatrix& E, const CALIBRATION& K,
       boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none) const override {
-    Vector error(1);
     // converting from pixel coordinates to normalized coordinates cA and cB
     JacobianCalibration cA_H_K;  // dcA/dK
     JacobianCalibration cB_H_K;  // dcB/dK
     Point2 cA = K.calibrate(pA_, H2 ? &cA_H_K : 0);
     Point2 cB = K.calibrate(pB_, H2 ? &cB_H_K : 0);
 
-    // Homogeneous the coordinates
-    Matrix32 vA_H_cA, vB_H_cB;
-    Vector3 vA = EssentialMatrix::Homogeneous(cA, H2 ? &vA_H_cA : 0);
-    Vector3 vB = EssentialMatrix::Homogeneous(cB, H2 ? &vB_H_cB : 0);
+    // convert to homogeneous coordinates
+    Vector3 vA = EssentialMatrix::Homogeneous(cA);
+    Vector3 vB = EssentialMatrix::Homogeneous(cB);
 
     if (H2) {
       // compute the jacobian of error w.r.t K
@@ -372,10 +370,12 @@ class EssentialMatrixFactor4
       // error function f = vA.T * E * vB
       // H2 = df/dK = vB.T * E.T * dvA/dK + vA.T * E * dvB/dK
       // where dvA/dK = dvA/dcA * dcA/dK, dVB/dK = dvB/dcB * dcB/dK
-      *H2 = vB.transpose() * E.matrix().transpose() * vA_H_cA * cA_H_K +
-            vA.transpose() * E.matrix() * vB_H_cB * cB_H_K;
+      // and dvA/dcA = dvB/dcB = [[1, 0], [0, 1], [0, 0]]
+      *H2 = vB.transpose() * E.matrix().transpose().leftCols<2>() * cA_H_K +
+            vA.transpose() * E.matrix().leftCols<2>() * cB_H_K;
     }
 
+    Vector error(1);
     error << E.error(vA, vB, H1);
 
     return error;
