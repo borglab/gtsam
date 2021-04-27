@@ -341,15 +341,14 @@ class EssentialMatrixFactor4
               << std::endl;
   }
 
-  /// vector of errors returns 1D vector
   /**
    * @brief Calculate the algebraic epipolar error p' (K^-1)' E K p.
    *
    * @param E essential matrix for key keyE
    * @param K calibration (common for both images) for key keyK
-   * @param H1 optional jacobian in E
-   * @param H2 optional jacobian in K
-   * @return * Vector
+   * @param H1 optional jacobian of error w.r.t E
+   * @param H2 optional jacobian of error w.r.t K
+   * @return * Vector 1D vector of algebraic error
    */
   Vector evaluateError(
       const EssentialMatrix& E, const CALIBRATION& K,
@@ -370,12 +369,9 @@ class EssentialMatrixFactor4
     if (H2) {
       // compute the jacobian of error w.r.t K
 
-      // using dvA/dK = dvA/dcA * dcA/dK and dVB/dK = dvB/dcB * dcB/dK
-      // Matrix vA_H_K = vA_H_cA * cA_H_K;
-      // Matrix vB_H_K = vB_H_cB * cB_H_K;
-
       // error function f = vA.T * E * vB
       // H2 = df/dK = vB.T * E.T * dvA/dK + vA.T * E * dvB/dK
+      // where dvA/dK = dvA/dcA * dcA/dK, dVB/dK = dvB/dcB * dcB/dK
       *H2 = vB.transpose() * E.matrix().transpose() * vA_H_cA * cA_H_K +
             vA.transpose() * E.matrix() * vB_H_cB * cB_H_K;
     }
