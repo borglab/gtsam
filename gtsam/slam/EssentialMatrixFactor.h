@@ -313,17 +313,17 @@ class EssentialMatrixFactor4
  public:
   /**
    *  Constructor
-   *  @param essentialMatrixKey Essential Matrix variable key
-   *  @param calibrationKey Calibration variable key
+   *  @param keyE Essential Matrix variable key
+   *  @param keyK Calibration variable key
    *  @param pA point in first camera, in pixel coordinates
    *  @param pB point in second camera, in pixel coordinates
    *  @param model noise model is about dot product in ideal, homogeneous
    * coordinates
    */
-  EssentialMatrixFactor4(Key essentialMatrixKey, Key calibrationKey,
+  EssentialMatrixFactor4(Key keyE, Key keyK,
                          const Point2& pA, const Point2& pB,
                          const SharedNoiseModel& model)
-      : Base(model, essentialMatrixKey, calibrationKey), pA_(pA), pB_(pB) {}
+      : Base(model, keyE, keyK), pA_(pA), pB_(pB) {}
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
@@ -345,8 +345,8 @@ class EssentialMatrixFactor4
   /**
    * @brief Calculate the algebraic epipolar error p' (K^-1)' E K p.
    *
-   * @param E essential matrix for key essentialMatrixKey
-   * @param K calibration (common for both images) for key calibrationKey
+   * @param E essential matrix for key keyE
+   * @param K calibration (common for both images) for key keyK
    * @param H1 optional jacobian in E
    * @param H2 optional jacobian in K
    * @return * Vector
