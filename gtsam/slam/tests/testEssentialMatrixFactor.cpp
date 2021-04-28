@@ -425,15 +425,20 @@ TEST(EssentialMatrixFactor4, minimization) {
   EssentialMatrix initialE =
       trueE.retract((Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1).finished());
   Cal3_S2 initialK =
-      trueK.retract((Vector(5) << 0.1, -0.1, 0.03, -0.2, 0.2).finished());
+      trueK.retract((Vector(5) << 0.1, -0.08, 0.01, -0.05, 0.06).finished());
   initial.insert(1, initialE);
-  initial.insert(2, trueK);
+  initial.insert(2, initialK);
 #if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
   EXPECT_DOUBLES_EQUAL(643.26, graph.error(initial), 1e-2);
 #else
   EXPECT_DOUBLES_EQUAL(639.84, graph.error(initial),
                        1e-2);  // TODO: update this value too
 #endif
+
+  // add prior factor for calibration
+  Vector5 priorNoiseModelSigma;
+  priorNoiseModelSigma << 0.1, 0.1, 0.01, 0.1, 0.1;
+  graph.emplace_shared<PriorFactor<Cal3_S2>>(2, initialK, noiseModel::Diagonal::Sigmas(priorNoiseModelSigma));
 
   // Optimize
   LevenbergMarquardtParams parameters;
@@ -444,7 +449,7 @@ TEST(EssentialMatrixFactor4, minimization) {
   EssentialMatrix actualE = result.at<EssentialMatrix>(1);
   Cal3_S2 actualK = result.at<Cal3_S2>(2);
   EXPECT(assert_equal(trueE, actualE, 1e-1)); // TODO: fix the tolerance
-  EXPECT(assert_equal(trueK, actualK, 1e-1)); // TODO: fix the tolerance
+  EXPECT(assert_equal(trueK, actualK, 1e-2)); // TODO: fix the tolerance
 
   // Check error at result
   EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-4);
@@ -652,15 +657,20 @@ TEST(EssentialMatrixFactor4, extraMinimization) {
   EssentialMatrix initialE =
       trueE.retract((Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1).finished());
   Cal3Bundler initialK =
-      trueK.retract((Vector(3) << 0.1, -0.02, 0.03).finished());
+      trueK.retract((Vector(3) << 0.1, -0.01, 0.01).finished());
   initial.insert(1, initialE);
   initial.insert(2, initialK);
 
 #if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
-  EXPECT_DOUBLES_EQUAL(633.71, graph.error(initial), 1e-2);
+  EXPECT_DOUBLES_EQUAL(643.62, graph.error(initial), 1e-2);
 #else
   EXPECT_DOUBLES_EQUAL(639.84, graph.error(initial), 1e-2); // TODO: fix this
 #endif
+
+  // add prior factor on calibration
+  Vector3 priorNoiseModelSigma;
+  priorNoiseModelSigma << 0.3, 0.03, 0.03;
+  graph.emplace_shared<PriorFactor<Cal3Bundler>>(2, initialK, noiseModel::Diagonal::Sigmas(priorNoiseModelSigma));
 
   // Optimize
   LevenbergMarquardtParams parameters;
