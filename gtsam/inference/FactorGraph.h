@@ -355,7 +355,7 @@ class FactorGraph {
 
   /** delete factor without re-arranging indexes by inserting a nullptr pointer
    */
-  void remove(size_t i) { factors_[i].reset(); }
+  void remove(size_t i) { factors_.at(i).reset(); }
 
   /** replace a factor by index */
   void replace(size_t index, sharedFactor factor) { at(index) = factor; }
