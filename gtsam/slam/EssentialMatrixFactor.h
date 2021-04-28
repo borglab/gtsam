@@ -297,6 +297,9 @@ class EssentialMatrixFactor3 : public EssentialMatrixFactor2 {
  * Factor that evaluates algebraic epipolar error (K^-1 p)'E (K^-1 p) for given
  * essential matrix and calibration. The calibration is shared between two
  * images.
+ * 
+ * Note: as correspondences between 2d coordinates can only recover 7 DoF, 
+ * this factor should always be used with a prior factor on calibration.
  */
 template <class CALIBRATION>
 class EssentialMatrixFactor4
@@ -357,8 +360,8 @@ class EssentialMatrixFactor4
     // converting from pixel coordinates to normalized coordinates cA and cB
     JacobianCalibration cA_H_K;  // dcA/dK
     JacobianCalibration cB_H_K;  // dcB/dK
-    Point2 cA = K.calibrate(pA_, H2 ? &cA_H_K : 0);
-    Point2 cB = K.calibrate(pB_, H2 ? &cB_H_K : 0);
+    Point2 cA = K.calibrate(pA_, H2 ? &cA_H_K : 0, boost::none);
+    Point2 cB = K.calibrate(pB_, H2 ? &cB_H_K : 0, boost::none);
 
     // convert to homogeneous coordinates
     Vector3 vA = EssentialMatrix::Homogeneous(cA);
