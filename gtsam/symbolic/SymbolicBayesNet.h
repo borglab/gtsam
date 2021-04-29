@@ -63,6 +63,13 @@ namespace gtsam {
     /** Check equality */
     GTSAM_EXPORT bool equals(const This& bn, double tol = 1e-9) const;
 
+    /// print
+    GTSAM_EXPORT void print(
+        const std::string& s = "SymbolicBayesNet",
+        const KeyFormatter& formatter = DefaultKeyFormatter) const override {
+      Base::print(s, formatter);
+    }
+
     /// @}
 
     /// @name Standard Interface

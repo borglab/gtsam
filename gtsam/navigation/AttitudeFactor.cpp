@@ -42,7 +42,8 @@ Vector AttitudeFactor::attitudeError(const Rot3& nRb,
 //***************************************************************************
 void Rot3AttitudeFactor::print(const string& s,
     const KeyFormatter& keyFormatter) const {
-  cout << s << "Rot3AttitudeFactor on " << keyFormatter(this->key()) << "\n";
+  cout << (s.empty() ? "" : s + " ") << "Rot3AttitudeFactor on "
+       << keyFormatter(this->key()) << "\n";
   nZ_.print("  measured direction in nav frame: ");
   bRef_.print("  reference direction in body frame: ");
   this->noiseModel_->print("  noise model: ");

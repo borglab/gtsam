@@ -986,7 +986,7 @@ class CalibratedCamera {
   static gtsam::CalibratedCamera Level(const gtsam::Pose2& pose2, double height);
 
   // Testable
-  void print(string s = "") const;
+  void print(string s = "CalibratedCamera") const;
   bool equals(const gtsam::CalibratedCamera& camera, double tol) const;
 
   // Manifold
@@ -1163,8 +1163,9 @@ virtual class SymbolicFactor {
 
   // From Factor
   size_t size() const;
-  void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
-                                gtsam::DefaultKeyFormatter) const;
+  void print(string s = "SymbolicFactor",
+             const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::SymbolicFactor& other, double tol) const;
   gtsam::KeyVector keys();
 };
@@ -1177,8 +1178,9 @@ virtual class SymbolicFactorGraph {
 
   // From FactorGraph
   void push_back(gtsam::SymbolicFactor* factor);
-  void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
-                                gtsam::DefaultKeyFormatter) const;
+  void print(string s = "SymbolicFactorGraph",
+             const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::SymbolicFactorGraph& rhs, double tol) const;
   size_t size() const;
   bool exists(size_t idx) const;
@@ -1242,8 +1244,9 @@ class SymbolicBayesNet {
   SymbolicBayesNet();
   SymbolicBayesNet(const gtsam::SymbolicBayesNet& other);
   // Testable
-  void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
-                                gtsam::DefaultKeyFormatter) const;
+  void print(string s = "SymbolicBayesNet",
+             const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::SymbolicBayesNet& other, double tol) const;
 
   // Standard interface
@@ -2097,8 +2100,9 @@ class NonlinearFactorGraph {
   NonlinearFactorGraph(const gtsam::NonlinearFactorGraph& graph);
 
   // FactorGraph
-  void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
-                                gtsam::DefaultKeyFormatter) const;
+  void print(string s = "NonlinearFactorGraph: ",
+             const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::NonlinearFactorGraph& fg, double tol) const;
   size_t size() const;
   bool empty() const;

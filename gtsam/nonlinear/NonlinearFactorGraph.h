@@ -99,8 +99,9 @@ namespace gtsam {
     NonlinearFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph) : Base(graph) {}
 
     /** print */
-    void print(const std::string& str = "NonlinearFactorGraph: ",
-               const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+    void print(
+        const std::string& str = "NonlinearFactorGraph: ",
+        const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
 
     /** print errors along with factors*/
     void printErrors(const Values& values, const std::string& str = "NonlinearFactorGraph: ",
