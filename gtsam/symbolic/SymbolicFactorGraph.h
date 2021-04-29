@@ -88,6 +88,13 @@ namespace gtsam {
 
     bool equals(const This& fg, double tol = 1e-9) const;
 
+    /// print
+    void print(
+        const std::string& s = "SymbolicFactorGraph",
+        const KeyFormatter& formatter = DefaultKeyFormatter) const override {
+      Base::print(s, formatter);
+    }
+
     /// @}
 
     /// @name Standard Interface

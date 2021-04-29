@@ -144,7 +144,7 @@ public:
   bool equals(const PinholeBase &camera, double tol = 1e-9) const;
 
   /// print
-  void print(const std::string& s = "PinholeBase") const;
+  virtual void print(const std::string& s = "PinholeBase") const;
 
   /// @}
   /// @name Standard Interface
@@ -323,6 +323,11 @@ public:
 
   /// Return canonical coordinate
   Vector localCoordinates(const CalibratedCamera& T2) const;
+
+  /// print
+  void print(const std::string& s = "CalibratedCamera") const override {
+    PinholeBase::print(s);
+  }
 
   /// @deprecated
   inline size_t dim() const {
