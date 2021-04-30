@@ -92,6 +92,20 @@ namespace gtsam {
 
     bool equals(const This& other, double tol = 1e-9) const;
 
+    /// print
+    void print(
+        const std::string& s = "SymbolicFactor",
+        const KeyFormatter& formatter = DefaultKeyFormatter) const override {
+      Base::print(s, formatter);
+    }
+
+    /// print only keys
+    void printKeys(
+        const std::string& s = "SymbolicFactor",
+        const KeyFormatter& formatter = DefaultKeyFormatter) const override {
+      Base::printKeys(s, formatter);
+    }
+
     /// @}
 
     /// @name Advanced Constructors

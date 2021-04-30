@@ -81,12 +81,22 @@ namespace gtsam {
     template<class DERIVEDFACTOR>
     SymbolicFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph) : Base(graph) {}
 
+    /// Destructor
+    virtual ~SymbolicFactorGraph() {}
+
     /// @}
 
     /// @name Testable
     /// @{
 
     bool equals(const This& fg, double tol = 1e-9) const;
+
+    /// print
+    void print(
+        const std::string& s = "SymbolicFactorGraph",
+        const KeyFormatter& formatter = DefaultKeyFormatter) const override {
+      Base::print(s, formatter);
+    }
 
     /// @}
 

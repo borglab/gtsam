@@ -135,10 +135,14 @@ typedef FastSet<FactorIndex> FactorIndexSet;
     /// @{
 
     /// print
-    void print(const std::string& s = "Factor", const KeyFormatter& formatter = DefaultKeyFormatter) const;
+    virtual void print(
+        const std::string& s = "Factor",
+        const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
     /// print only keys
-    void printKeys(const std::string& s = "Factor", const KeyFormatter& formatter = DefaultKeyFormatter) const;
+    virtual void printKeys(
+        const std::string& s = "Factor",
+        const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
   protected:
     /// check equality
