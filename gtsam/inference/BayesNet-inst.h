@@ -26,30 +26,30 @@
 
 namespace gtsam {
 
-  /* ************************************************************************* */
-  template<class CONDITIONAL>
-  void BayesNet<CONDITIONAL>::print(const std::string& s, const KeyFormatter& formatter) const
-  {
-    Base::print(s, formatter);
-  }
-
-  /* ************************************************************************* */
-  template<class CONDITIONAL>
-  void BayesNet<CONDITIONAL>::saveGraph(const std::string &s, const KeyFormatter& keyFormatter) const
-  {
-    std::ofstream of(s.c_str());
-    of << "digraph G{\n";
-
-    for (auto conditional: boost::adaptors::reverse(*this)) {
-      typename CONDITIONAL::Frontals frontals = conditional->frontals();
-      Key me = frontals.front();
-      typename CONDITIONAL::Parents parents = conditional->parents();
-      for(Key p: parents)
-        of << keyFormatter(p) << "->" << keyFormatter(me) << std::endl;
-    }
-
-    of << "}";
-    of.close();
-  }
-
+/* ************************************************************************* */
+template <class CONDITIONAL>
+void BayesNet<CONDITIONAL>::print(
+    const std::string& s, const KeyFormatter& formatter) const {
+  Base::print(s, formatter);
 }
+
+/* ************************************************************************* */
+template <class CONDITIONAL>
+void BayesNet<CONDITIONAL>::saveGraph(const std::string& s,
+                                      const KeyFormatter& keyFormatter) const {
+  std::ofstream of(s.c_str());
+  of << "digraph G{\n";
+
+  for (auto conditional : boost::adaptors::reverse(*this)) {
+    typename CONDITIONAL::Frontals frontals = conditional->frontals();
+    Key me = frontals.front();
+    typename CONDITIONAL::Parents parents = conditional->parents();
+    for (Key p : parents)
+      of << keyFormatter(p) << "->" << keyFormatter(me) << std::endl;
+  }
+
+  of << "}";
+  of.close();
+}
+
+}  // namespace gtsam
