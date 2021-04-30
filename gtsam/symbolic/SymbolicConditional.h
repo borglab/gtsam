@@ -105,7 +105,7 @@ namespace gtsam {
     /// @name Testable
 
     /** Print with optional formatter */
-    virtual void print(
+    void print(
         const std::string& str = "",
         const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
 

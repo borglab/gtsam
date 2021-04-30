@@ -81,6 +81,9 @@ namespace gtsam {
     template<class DERIVEDFACTOR>
     SymbolicFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph) : Base(graph) {}
 
+    /// Destructor
+    virtual ~SymbolicFactorGraph() {}
+
     /// @}
 
     /// @name Testable

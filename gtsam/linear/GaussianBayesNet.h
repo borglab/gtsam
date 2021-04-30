@@ -55,6 +55,9 @@ namespace gtsam {
     template<class DERIVEDCONDITIONAL>
     GaussianBayesNet(const FactorGraph<DERIVEDCONDITIONAL>& graph) : Base(graph) {}
 
+    /// Destructor
+    virtual ~GaussianBayesNet() {}
+
     /// @}
 
     /// @name Testable
@@ -178,7 +181,7 @@ namespace gtsam {
     VectorValues backSubstituteTranspose(const VectorValues& gx) const;
 
     /// print graph
-    virtual void print(
+    void print(
         const std::string& s = "",
         const KeyFormatter& formatter = DefaultKeyFormatter) const override {
       Base::print(s, formatter);

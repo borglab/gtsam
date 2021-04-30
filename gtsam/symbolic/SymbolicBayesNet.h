@@ -55,6 +55,9 @@ namespace gtsam {
     template<class DERIVEDCONDITIONAL>
     SymbolicBayesNet(const FactorGraph<DERIVEDCONDITIONAL>& graph) : Base(graph) {}
 
+    /// Destructor
+    virtual ~SymbolicBayesNet() {}
+
     /// @}
 
     /// @name Testable
