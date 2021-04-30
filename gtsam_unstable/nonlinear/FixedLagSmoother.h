@@ -69,7 +69,9 @@ public:
   virtual ~FixedLagSmoother() { }
 
   /** Print the factor for debugging and testing (implementing Testable) */
-  virtual void print(const std::string& s = "FixedLagSmoother:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+  virtual void print(
+      const std::string& s = "FixedLagSmoother:\n",
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
   /** Check if two IncrementalFixedLagSmoother Objects are equal */
   virtual bool equals(const FixedLagSmoother& rhs, double tol = 1e-9) const;

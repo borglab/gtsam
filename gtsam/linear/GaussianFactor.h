@@ -56,7 +56,7 @@ namespace gtsam {
     // Implementing Testable interface
 
     /// print
-    virtual void print(
+    void print(
         const std::string& s = "",
         const KeyFormatter& formatter = DefaultKeyFormatter) const override = 0;
 

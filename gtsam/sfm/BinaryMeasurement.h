@@ -52,6 +52,9 @@ private:
         measured_(measured),
         noiseModel_(model) {}
 
+  /// Destructor
+  virtual ~BinaryMeasurement() {}
+
   /// @name Standard Interface
   /// @{
 

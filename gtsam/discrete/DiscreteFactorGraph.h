@@ -91,6 +91,9 @@ public:
   template<class DERIVEDFACTOR>
   DiscreteFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph) : Base(graph) {}
 
+  /// Destructor
+  virtual ~DiscreteFactorGraph() {}
+
   /// @name Testable
   /// @{
 

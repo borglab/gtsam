@@ -78,7 +78,7 @@ public:
   virtual bool equals(const DiscreteFactor& lf, double tol = 1e-9) const = 0;
 
   /// print
-  virtual void print(
+  void print(
       const std::string& s = "DiscreteFactor\n",
       const KeyFormatter& formatter = DefaultKeyFormatter) const override {
     Base::print(s, formatter);
