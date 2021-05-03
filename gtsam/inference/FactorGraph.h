@@ -148,6 +148,10 @@ class FactorGraph {
   /// @}
 
  public:
+  /// Default destructor
+  // Public and virtual so boost serialization can call it.
+  virtual ~FactorGraph() = default;
+
   /// @name Adding Single Factors
   /// @{
 
