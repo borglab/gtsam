@@ -48,7 +48,7 @@ protected:
 
 public:
 
-  /// Default constructor only for Cython wrapper
+  /// Default constructor only for wrappers
   Marginals(){}
 
   /** Construct a marginals class from a nonlinear factor graph.
@@ -156,7 +156,7 @@ protected:
   FastMap<Key, size_t> indices_;
 
 public:
-  /// Default constructor only for Cython wrapper
+  /// Default constructor only for wrappers
   JointMarginal() {}
 
   /** Access a block, corresponding to a pair of variables, of the joint

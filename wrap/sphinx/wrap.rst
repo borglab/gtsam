@@ -1,0 +1,1 @@
+.. automodule:: python_example

@@ -169,7 +169,7 @@ public:
   NoiseModelFactor() {}
 
   /** Destructor */
-  virtual ~NoiseModelFactor() {}
+  ~NoiseModelFactor() override {}
 
   /**
    * Constructor
@@ -244,6 +244,12 @@ public:
    */
   boost::shared_ptr<GaussianFactor> linearize(const Values& x) const override;
 
+  /**
+   * Creates a shared_ptr clone of the
+   * factor with a new noise model
+   */
+  shared_ptr cloneWithNewNoiseModel(const SharedNoiseModel newNoise) const;
+
  private:
   /** Serialization function */
   friend class boost::serialization::access;
@@ -287,7 +293,7 @@ public:
   /** Default constructor for I/O only */
   NoiseModelFactor1() {}
 
-  virtual ~NoiseModelFactor1() {}
+  ~NoiseModelFactor1() override {}
 
   inline Key key() const { return keys_[0]; }
 
@@ -381,7 +387,7 @@ public:
   NoiseModelFactor2(const SharedNoiseModel& noiseModel, Key j1, Key j2) :
     Base(noiseModel, cref_list_of<2>(j1)(j2)) {}
 
-  virtual ~NoiseModelFactor2() {}
+  ~NoiseModelFactor2() override {}
 
   /** methods to retrieve both keys */
   inline Key key1() const { return keys_[0];  }
@@ -458,7 +464,7 @@ public:
   NoiseModelFactor3(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3) :
     Base(noiseModel, cref_list_of<3>(j1)(j2)(j3)) {}
 
-  virtual ~NoiseModelFactor3() {}
+  ~NoiseModelFactor3() override {}
 
   /** methods to retrieve keys */
   inline Key key1() const { return keys_[0]; }
@@ -537,7 +543,7 @@ public:
   NoiseModelFactor4(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3, Key j4) :
     Base(noiseModel, cref_list_of<4>(j1)(j2)(j3)(j4)) {}
 
-  virtual ~NoiseModelFactor4() {}
+  ~NoiseModelFactor4() override {}
 
   /** methods to retrieve keys */
   inline Key key1() const { return keys_[0]; }
@@ -620,7 +626,7 @@ public:
   NoiseModelFactor5(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3, Key j4, Key j5) :
     Base(noiseModel, cref_list_of<5>(j1)(j2)(j3)(j4)(j5)) {}
 
-  virtual ~NoiseModelFactor5() {}
+  ~NoiseModelFactor5() override {}
 
   /** methods to retrieve keys */
   inline Key key1() const { return keys_[0]; }
@@ -707,7 +713,7 @@ public:
   NoiseModelFactor6(const SharedNoiseModel& noiseModel, Key j1, Key j2, Key j3, Key j4, Key j5, Key j6) :
     Base(noiseModel, cref_list_of<6>(j1)(j2)(j3)(j4)(j5)(j6)) {}
 
-  virtual ~NoiseModelFactor6() {}
+  ~NoiseModelFactor6() override {}
 
   /** methods to retrieve keys */
   inline Key key1() const { return keys_[0]; }

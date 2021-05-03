@@ -22,47 +22,6 @@ using namespace std;
 
 namespace gtsam {
 
-#ifndef GTSAM_TYPEDEF_POINTS_TO_VECTORS
-bool Point3::equals(const Point3 &q, double tol) const {
-  return (std::abs(x() - q.x()) < tol && std::abs(y() - q.y()) < tol &&
-          std::abs(z() - q.z()) < tol);
-}
-
-void Point3::print(const string& s) const {
-  cout << s << *this << endl;
-}
-
-/* ************************************************************************* */
-double Point3::distance(const Point3 &q, OptionalJacobian<1, 3> H1,
-                        OptionalJacobian<1, 3> H2) const {
-  return gtsam::distance3(*this,q,H1,H2);
-}
-
-double Point3::norm(OptionalJacobian<1,3> H) const {
-  return gtsam::norm3(*this, H);
-}
-
-Point3 Point3::normalized(OptionalJacobian<3,3> H) const {
-  return gtsam::normalize(*this, H);
-}
-
-Point3 Point3::cross(const Point3 &q, OptionalJacobian<3, 3> H1,
-                     OptionalJacobian<3, 3> H2) const {
-  return gtsam::cross(*this, q, H1, H2);
-}
-
-double Point3::dot(const Point3 &q, OptionalJacobian<1, 3> H1,
-                   OptionalJacobian<1, 3> H2) const {
-  return gtsam::dot(*this, q, H1, H2);
-}
-
-/* ************************************************************************* */
-ostream &operator<<(ostream &os, const Point3& p) {
-  os << '[' << p.x() << ", " << p.y() << ", " << p.z() << "]'";
-  return os;
-}
-
-#endif
 /* ************************************************************************* */
 double distance3(const Point3 &p1, const Point3 &q, OptionalJacobian<1, 3> H1,
                  OptionalJacobian<1, 3> H2) {
@@ -114,6 +73,18 @@ double dot(const Point3 &p, const Point3 &q, OptionalJacobian<1, 3> H1,
   if (H1) *H1 << q.x(), q.y(), q.z();
   if (H2) *H2 << p.x(), p.y(), p.z();
   return p.x() * q.x() + p.y() * q.y() + p.z() * q.z();
+}
+
+Point3Pair means(const std::vector<Point3Pair> &abPointPairs) {
+  const size_t n = abPointPairs.size();
+  if (n == 0) throw std::invalid_argument("Point3::mean input Point3Pair vector is empty");
+  Point3 aSum(0, 0, 0), bSum(0, 0, 0);
+  for (const Point3Pair &abPair : abPointPairs) {
+    aSum += abPair.first;
+    bSum += abPair.second;
+  }
+  const double f = 1.0 / n;
+  return {aSum * f, bSum * f};
 }
 
 /* ************************************************************************* */

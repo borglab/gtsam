@@ -47,8 +47,13 @@
 #    endif
 #  endif
 #else
+#ifdef __APPLE__
+#  define @library_name@_EXPORT __attribute__((visibility("default")))
+#  define @library_name@_EXTERN_EXPORT extern
+#else
 #  define @library_name@_EXPORT
 #  define @library_name@_EXTERN_EXPORT extern
+#endif
 #endif
 
 #undef BUILD_SHARED_LIBS

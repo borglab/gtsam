@@ -21,6 +21,14 @@
 #include <gtsam/base/Lie.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
+#ifdef _WIN32
+#define BETWEENFACTOR_VISIBILITY
+#else
+// This will trigger a LNKxxxx on MSVC, so disable for MSVC build
+// Please refer to https://github.com/borglab/gtsam/blob/develop/Using-GTSAM-EXPORT.md
+#define BETWEENFACTOR_VISIBILITY GTSAM_EXPORT
+#endif
+
 namespace gtsam {
 
   /**
@@ -60,7 +68,7 @@ namespace gtsam {
       Base(model, key1, key2), measured_(measured) {
     }
 
-    virtual ~BetweenFactor() {}
+    ~BetweenFactor() override {}
 
     /// @return a deep copy of this factor
     gtsam::NonlinearFactor::shared_ptr clone() const override {

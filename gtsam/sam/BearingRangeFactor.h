@@ -42,17 +42,24 @@ class BearingRangeFactor
  public:
   typedef boost::shared_ptr<This> shared_ptr;
 
-  /// default constructor
+  /// Default constructor
   BearingRangeFactor() {}
 
-  /// primary constructor
-  BearingRangeFactor(Key key1, Key key2, const B& measuredBearing,
-                     const R& measuredRange, const SharedNoiseModel& model)
-      : Base({key1, key2}, model, T(measuredBearing, measuredRange)) {
-    this->initialize(expression({key1, key2}));
+  /// Construct from BearingRange instance
+  BearingRangeFactor(Key key1, Key key2, const T &bearingRange,
+                     const SharedNoiseModel &model)
+      : Base({{key1, key2}}, model, T(bearingRange)) {
+    this->initialize(expression({{key1, key2}}));
   }
 
-  virtual ~BearingRangeFactor() {}
+  /// Construct from separate bearing and range
+  BearingRangeFactor(Key key1, Key key2, const B &measuredBearing,
+                     const R &measuredRange, const SharedNoiseModel &model)
+      : Base({{key1, key2}}, model, T(measuredBearing, measuredRange)) {
+    this->initialize(expression({{key1, key2}}));
+  }
+
+  ~BearingRangeFactor() override {}
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {

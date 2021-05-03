@@ -48,7 +48,7 @@ function plot_m_estimator(x, model, plot_title, fig_id, filename)
     rho = zeros(size(x));
     for i = 1:size(x, 2)
         w(i) = model.weight(x(i));
-        rho(i) = model.residual(x(i));
+        rho(i) = model.loss(x(i));
     end
 
     psi = w .* x;

@@ -67,7 +67,7 @@ public:
       const Values& initialValues, const Parameters& params = Parameters());
 
   /// Destructor
-  virtual ~NonlinearConjugateGradientOptimizer() {
+  ~NonlinearConjugateGradientOptimizer() override {
   }
 
   /** 
@@ -199,6 +199,10 @@ boost::tuple<V, int> nonlinearConjugateGradient(const S &system,
 
     currentValues = system.advance(prevValues, alpha, direction);
     currentError = system.error(currentValues);
+
+    // User hook:
+    if (params.iterationHook)
+      params.iterationHook(iteration, prevError, currentError);
 
     // Maybe show output
     if (params.verbosity >= NonlinearOptimizerParams::ERROR)

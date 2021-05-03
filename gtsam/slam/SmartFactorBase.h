@@ -13,6 +13,7 @@
  * @file   SmartFactorBase.h
  * @brief  Base class to create smart factors on poses or cameras
  * @author Luca Carlone
+ * @author Antoni Rosinol
  * @author Zsolt Kira
  * @author Frank Dellaert
  * @author Chris Beall
@@ -111,7 +112,7 @@ protected:
   }
 
   /// Virtual destructor, subclasses from NonlinearFactor
-  virtual ~SmartFactorBase() {
+  ~SmartFactorBase() override {
   }
 
   /**
@@ -131,9 +132,10 @@ protected:
   /**
    * Add a bunch of measurements, together with the camera keys
    */
-  void add(ZVector& measurements, KeyVector& cameraKeys) {
+  void add(const ZVector& measurements, const KeyVector& cameraKeys) {
+    assert(measurements.size() == cameraKeys.size());
     for (size_t i = 0; i < measurements.size(); i++) {
-      this->add(measurements.at(i), cameraKeys.at(i));
+      this->add(measurements[i], cameraKeys[i]);
     }
   }
 

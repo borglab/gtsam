@@ -48,7 +48,7 @@ public:
     assert(model->dim() == 9);
   }
 
-  virtual ~FullIMUFactor() {}
+  ~FullIMUFactor() override {}
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {

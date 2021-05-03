@@ -1,0 +1,103 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.8.11">
+  <compounddef id="JacobianFactorQ_8h" kind="file" language="C++">
+    <compoundname>JacobianFactorQ.h</compoundname>
+    <includes local="no">gtsam/linear/RegularJacobianFactor.h</includes>
+    <incdepgraph>
+      <node id="10">
+        <label>gtsam/linear/RegularJacobianFactor.h</label>
+      </node>
+      <node id="9">
+        <label>tests/doc-test-files/JacobianFactorQ.h</label>
+        <link refid="JacobianFactorQ.h"/>
+        <childnode refid="10" relation="include">
+        </childnode>
+      </node>
+    </incdepgraph>
+    <innerclass refid="classgtsam_1_1JacobianFactorQ" prot="public">gtsam::JacobianFactorQ</innerclass>
+    <innerclass refid="structgtsam_1_1traits_3_01JacobianFactorQ_3_01D_00_01ZDim_01_4_01_4" prot="public">gtsam::traits&lt; JacobianFactorQ&lt; D, ZDim &gt; &gt;</innerclass>
+    <innernamespace refid="namespacegtsam">gtsam</innernamespace>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <programlisting>
+<codeline lineno="1"><highlight class="comment">/*<sp/>----------------------------------------------------------------------------</highlight></codeline>
+<codeline lineno="2"><highlight class="comment"></highlight></codeline>
+<codeline lineno="3"><highlight class="comment"><sp/>*<sp/>GTSAM<sp/>Copyright<sp/>2010,<sp/>Georgia<sp/>Tech<sp/>Research<sp/>Corporation,</highlight></codeline>
+<codeline lineno="4"><highlight class="comment"><sp/>*<sp/>Atlanta,<sp/>Georgia<sp/>30332-0415</highlight></codeline>
+<codeline lineno="5"><highlight class="comment"><sp/>*<sp/>All<sp/>Rights<sp/>Reserved</highlight></codeline>
+<codeline lineno="6"><highlight class="comment"><sp/>*<sp/>Authors:<sp/>Frank<sp/>Dellaert,<sp/>et<sp/>al.<sp/>(see<sp/>THANKS<sp/>for<sp/>the<sp/>full<sp/>author<sp/>list)</highlight></codeline>
+<codeline lineno="7"><highlight class="comment"></highlight></codeline>
+<codeline lineno="8"><highlight class="comment"><sp/>*<sp/>See<sp/>LICENSE<sp/>for<sp/>the<sp/>license<sp/>information</highlight></codeline>
+<codeline lineno="9"><highlight class="comment"></highlight></codeline>
+<codeline lineno="10"><highlight class="comment"><sp/>*<sp/>--------------------------------------------------------------------------<sp/>*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="11"><highlight class="normal"></highlight></codeline>
+<codeline lineno="12"><highlight class="normal"></highlight><highlight class="comment">/*</highlight></codeline>
+<codeline lineno="13"><highlight class="comment"><sp/>*<sp/>@file<sp/><sp/>JacobianFactorQ.h</highlight></codeline>
+<codeline lineno="14"><highlight class="comment"><sp/>*<sp/>@date<sp/><sp/>Oct<sp/>27,<sp/>2013</highlight></codeline>
+<codeline lineno="15"><highlight class="comment"><sp/>*<sp/>@uthor<sp/>Frank<sp/>Dellaert</highlight></codeline>
+<codeline lineno="16"><highlight class="comment"><sp/>*/</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="17"><highlight class="normal"></highlight></codeline>
+<codeline lineno="18"><highlight class="normal"></highlight><highlight class="preprocessor">#pragma<sp/>once</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="19"><highlight class="normal"></highlight></codeline>
+<codeline lineno="20"><highlight class="normal"></highlight><highlight class="preprocessor">#include<sp/>&lt;gtsam/linear/RegularJacobianFactor.h&gt;</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="21"><highlight class="normal"></highlight></codeline>
+<codeline lineno="22"><highlight class="normal"></highlight><highlight class="keyword">namespace<sp/></highlight><highlight class="normal"><ref refid="namespacegtsam" kindref="compound">gtsam</ref><sp/>{</highlight></codeline>
+<codeline lineno="26"><highlight class="keyword">template</highlight><highlight class="normal">&lt;</highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal"><sp/>D,<sp/></highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal"><sp/>ZDim&gt;</highlight></codeline>
+<codeline lineno="27" refid="classgtsam_1_1JacobianFactorQ" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">class<sp/></highlight><highlight class="normal"><ref refid="classgtsam_1_1JacobianFactorQ" kindref="compound">JacobianFactorQ</ref>:<sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal"><sp/>RegularJacobianFactor&lt;D&gt;<sp/>{</highlight></codeline>
+<codeline lineno="28"><highlight class="normal"></highlight></codeline>
+<codeline lineno="29"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">typedef</highlight><highlight class="normal"><sp/>RegularJacobianFactor&lt;D&gt;<sp/>Base;</highlight></codeline>
+<codeline lineno="30"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">typedef</highlight><highlight class="normal"><sp/>Eigen::Matrix&lt;double,<sp/>ZDim,<sp/>D&gt;<sp/>MatrixZD;</highlight></codeline>
+<codeline lineno="31"><highlight class="normal"><sp/><sp/></highlight><highlight class="keyword">typedef</highlight><highlight class="normal"><sp/>std::pair&lt;Key,<sp/>Matrix&gt;<sp/>KeyMatrix;</highlight></codeline>
+<codeline lineno="32"><highlight class="normal"></highlight></codeline>
+<codeline lineno="33"><highlight class="normal"></highlight><highlight class="keyword">public</highlight><highlight class="normal">:</highlight></codeline>
+<codeline lineno="34"><highlight class="normal"></highlight></codeline>
+<codeline lineno="36" refid="classgtsam_1_1JacobianFactorQ_1a4dd3fbba46a6dff75bcf902931a3b769" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="classgtsam_1_1JacobianFactorQ_1a4dd3fbba46a6dff75bcf902931a3b769" kindref="member">JacobianFactorQ</ref>()<sp/>{</highlight></codeline>
+<codeline lineno="37"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="38"><highlight class="normal"></highlight></codeline>
+<codeline lineno="40" refid="classgtsam_1_1JacobianFactorQ_1abfb38e58b5b2d1293cf374b7eca2b2d4" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="classgtsam_1_1JacobianFactorQ_1abfb38e58b5b2d1293cf374b7eca2b2d4" kindref="member">JacobianFactorQ</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>KeyVector&amp;<sp/>keys,<sp/></highlight><highlight class="comment">//</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="41"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>SharedDiagonal&amp;<sp/>model<sp/>=<sp/>SharedDiagonal())<sp/>:</highlight></codeline>
+<codeline lineno="42"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>Base()<sp/>{</highlight></codeline>
+<codeline lineno="43"><highlight class="normal"><sp/><sp/><sp/><sp/>Matrix<sp/>zeroMatrix<sp/>=<sp/>Matrix::Zero(0,<sp/>D);</highlight></codeline>
+<codeline lineno="44"><highlight class="normal"><sp/><sp/><sp/><sp/>Vector<sp/>zeroVector<sp/>=<sp/>Vector::Zero(0);</highlight></codeline>
+<codeline lineno="45"><highlight class="normal"><sp/><sp/><sp/><sp/>std::vector&lt;KeyMatrix&gt;<sp/>QF;</highlight></codeline>
+<codeline lineno="46"><highlight class="normal"><sp/><sp/><sp/><sp/>QF.reserve(keys.size());</highlight></codeline>
+<codeline lineno="47"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal">(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>Key&amp;<sp/>key:<sp/>keys)</highlight></codeline>
+<codeline lineno="48"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>QF.push_back(KeyMatrix(key,<sp/>zeroMatrix));</highlight></codeline>
+<codeline lineno="49"><highlight class="normal"><sp/><sp/><sp/><sp/>JacobianFactor::fillTerms(QF,<sp/>zeroVector,<sp/>model);</highlight></codeline>
+<codeline lineno="50"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="51"><highlight class="normal"></highlight></codeline>
+<codeline lineno="53" refid="classgtsam_1_1JacobianFactorQ_1a549fef1272025c45472f2e4294bd319e" refkind="member"><highlight class="normal"><sp/><sp/><ref refid="classgtsam_1_1JacobianFactorQ_1a549fef1272025c45472f2e4294bd319e" kindref="member">JacobianFactorQ</ref>(</highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>KeyVector&amp;<sp/>keys,</highlight></codeline>
+<codeline lineno="54"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>std::vector&lt;MatrixZD,<sp/>Eigen::aligned_allocator&lt;MatrixZD&gt;<sp/>&gt;&amp;<sp/>FBlocks,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>Matrix&amp;<sp/>E,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>Matrix3&amp;<sp/>P,</highlight></codeline>
+<codeline lineno="55"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>Vector&amp;<sp/>b,<sp/></highlight><highlight class="keyword">const</highlight><highlight class="normal"><sp/>SharedDiagonal&amp;<sp/>model<sp/>=<sp/>SharedDiagonal())<sp/>:</highlight></codeline>
+<codeline lineno="56"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>Base()<sp/>{</highlight></codeline>
+<codeline lineno="57"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal"><sp/>j<sp/>=<sp/>0,<sp/>m2<sp/>=<sp/>E.rows(),<sp/>m<sp/>=<sp/>m2<sp/>/<sp/>ZDim;</highlight></codeline>
+<codeline lineno="58"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>Calculate<sp/>projector<sp/>Q</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="59"><highlight class="normal"><sp/><sp/><sp/><sp/>Matrix<sp/>Q<sp/>=<sp/>Matrix::Identity(m2,m2)<sp/>-<sp/>E<sp/>*<sp/>P<sp/>*<sp/>E.transpose();</highlight></codeline>
+<codeline lineno="60"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>Calculate<sp/>pre-computed<sp/>Jacobian<sp/>matrices</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="61"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>TODO:<sp/>can<sp/>we<sp/>do<sp/>better<sp/>?</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="62"><highlight class="normal"><sp/><sp/><sp/><sp/>std::vector&lt;KeyMatrix&gt;<sp/>QF;</highlight></codeline>
+<codeline lineno="63"><highlight class="normal"><sp/><sp/><sp/><sp/>QF.reserve(m);</highlight></codeline>
+<codeline lineno="64"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>Below,<sp/>we<sp/>compute<sp/>each<sp/>mZDim*D<sp/>block<sp/>A_j<sp/>=<sp/>Q_j<sp/>*<sp/>F_j<sp/>=<sp/>(mZDim*ZDim)<sp/>*<sp/>(Zdim*D)</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="65"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="keywordflow">for</highlight><highlight class="normal"><sp/>(</highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal"><sp/>k<sp/>=<sp/>0;<sp/>k<sp/>&lt;<sp/>FBlocks.size();<sp/>++k)<sp/>{</highlight></codeline>
+<codeline lineno="66"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>Key<sp/>key<sp/>=<sp/>keys[k];</highlight></codeline>
+<codeline lineno="67"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/>QF.push_back(</highlight></codeline>
+<codeline lineno="68"><highlight class="normal"><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/><sp/>KeyMatrix(key,<sp/>-<sp/>Q.block(0,<sp/>ZDim<sp/>*<sp/>j++,<sp/>m2,<sp/>ZDim)<sp/>*<sp/>FBlocks[k]));</highlight></codeline>
+<codeline lineno="69"><highlight class="normal"><sp/><sp/><sp/><sp/>}</highlight></codeline>
+<codeline lineno="70"><highlight class="normal"><sp/><sp/><sp/><sp/></highlight><highlight class="comment">//<sp/>Which<sp/>is<sp/>then<sp/>passed<sp/>to<sp/>the<sp/>normal<sp/>JacobianFactor<sp/>constructor</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="71"><highlight class="normal"><sp/><sp/><sp/><sp/>JacobianFactor::fillTerms(QF,<sp/>-<sp/>Q<sp/>*<sp/>b,<sp/>model);</highlight></codeline>
+<codeline lineno="72"><highlight class="normal"><sp/><sp/>}</highlight></codeline>
+<codeline lineno="73"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="74"><highlight class="normal"></highlight><highlight class="comment">//<sp/>end<sp/>class<sp/>JacobianFactorQ</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="75"><highlight class="normal"></highlight></codeline>
+<codeline lineno="76"><highlight class="normal"></highlight><highlight class="comment">//<sp/>traits</highlight><highlight class="normal"></highlight></codeline>
+<codeline lineno="77" refid="structgtsam_1_1traits_3_01JacobianFactorQ_3_01D_00_01ZDim_01_4_01_4" refkind="compound"><highlight class="normal"></highlight><highlight class="keyword">template</highlight><highlight class="normal">&lt;</highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal"><sp/>D,<sp/></highlight><highlight class="keywordtype">size_t</highlight><highlight class="normal"><sp/>ZDim&gt;<sp/></highlight><highlight class="keyword">struct<sp/></highlight><highlight class="normal">traits&lt;<ref refid="classgtsam_1_1JacobianFactorQ" kindref="compound">JacobianFactorQ</ref>&lt;D,<sp/>ZDim&gt;<sp/>&gt;<sp/>:<sp/></highlight><highlight class="keyword">public</highlight><highlight class="normal"><sp/>Testable&lt;</highlight></codeline>
+<codeline lineno="78"><highlight class="normal"><sp/><sp/><sp/><sp/>JacobianFactorQ&lt;D,<sp/>ZDim&gt;<sp/>&gt;<sp/>{</highlight></codeline>
+<codeline lineno="79"><highlight class="normal">};</highlight></codeline>
+<codeline lineno="80"><highlight class="normal"></highlight></codeline>
+<codeline lineno="81"><highlight class="normal">}</highlight></codeline>
+    </programlisting>
+    <location file="tests/doc-test-files/JacobianFactorQ.h"/>
+  </compounddef>
+</doxygen>

@@ -42,7 +42,7 @@ class GTSAM_EXPORT PreintegratedAhrsMeasurements : public PreintegratedRotation 
 
  public:
 
-  /// Default constructor, only for serialization and Cython wrapper
+  /// Default constructor, only for serialization and wrappers
   PreintegratedAhrsMeasurements() {}
 
   /**
@@ -154,7 +154,7 @@ public:
   AHRSFactor(Key rot_i, Key rot_j, Key bias,
       const PreintegratedAhrsMeasurements& preintegratedMeasurements);
 
-  virtual ~AHRSFactor() {
+  ~AHRSFactor() override {
   }
 
   /// @return a deep copy of this factor

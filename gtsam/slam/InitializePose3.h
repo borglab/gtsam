@@ -26,6 +26,9 @@
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
+#include <map>
+#include <vector>
+
 namespace gtsam {
 
 typedef std::map<Key, std::vector<size_t> > KeyVectorMap;
@@ -50,9 +53,9 @@ struct GTSAM_EXPORT InitializePose3 {
       const NonlinearFactorGraph& pose3Graph, const Values& givenGuess,
       size_t maxIter = 10000, const bool setRefFrame = true);
 
-  static void createSymbolicGraph(KeyVectorMap& adjEdgesMap,
-                                  KeyRotMap& factorId2RotMap,
-                                  const NonlinearFactorGraph& pose3Graph);
+  static void createSymbolicGraph(const NonlinearFactorGraph& pose3Graph,
+                                  KeyVectorMap* adjEdgesMap,
+                                  KeyRotMap* factorId2RotMap);
 
   static Vector3 gradientTron(const Rot3& R1, const Rot3& R2, const double a,
                               const double b);
@@ -64,8 +67,12 @@ struct GTSAM_EXPORT InitializePose3 {
   static NonlinearFactorGraph buildPose3graph(
       const NonlinearFactorGraph& graph);
 
-  static Values computePoses(NonlinearFactorGraph& pose3graph,
-                             Values& initialRot);
+  /**
+   * Use Gauss-Newton optimizer to optimize for poses given rotation estimates
+   */
+  static Values computePoses(const Values& initialRot,
+                             NonlinearFactorGraph* poseGraph,
+                             bool singleIter = true);
 
   /**
    * "extract" the Pose3 subgraph of the original graph, get orientations from

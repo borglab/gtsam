@@ -154,12 +154,23 @@ namespace gtsam {
     static Rot3 Rz(double t);
 
     /// Rotations around Z, Y, then X axes as in http://en.wikipedia.org/wiki/Rotation_matrix, counterclockwise when looking from unchanging axis.
-    static Rot3 RzRyRx(double x, double y, double z);
+    static Rot3 RzRyRx(double x, double y, double z,
+                       OptionalJacobian<3, 1> Hx = boost::none,
+                       OptionalJacobian<3, 1> Hy = boost::none,
+                       OptionalJacobian<3, 1> Hz = boost::none);
 
     /// Rotations around Z, Y, then X axes as in http://en.wikipedia.org/wiki/Rotation_matrix, counterclockwise when looking from unchanging axis.
-    inline static Rot3 RzRyRx(const Vector& xyz) {
+    inline static Rot3 RzRyRx(const Vector& xyz,
+                              OptionalJacobian<3, 3> H = boost::none) {
       assert(xyz.size() == 3);
-      return RzRyRx(xyz(0), xyz(1), xyz(2));
+      Rot3 out;
+      if (H) {
+        Vector3 Hx, Hy, Hz;
+        out = RzRyRx(xyz(0), xyz(1), xyz(2), Hx, Hy, Hz);
+        (*H) << Hx, Hy, Hz;
+      } else
+        out = RzRyRx(xyz(0), xyz(1), xyz(2));
+      return out;
     }
 
     /// Positive yaw is to right (as in aircraft heading). See ypr
@@ -185,7 +196,12 @@ namespace gtsam {
      * Positive pitch is down (decreasing aircraft altitude).
      * Positive roll is to right (decreasing yaw in aircraft).
      */
-    static Rot3 Ypr(double y, double p, double r) { return RzRyRx(r,p,y);}
+    static Rot3 Ypr(double y, double p, double r,
+                    OptionalJacobian<3, 1> Hy = boost::none,
+                    OptionalJacobian<3, 1> Hp = boost::none,
+                    OptionalJacobian<3, 1> Hr = boost::none) {
+      return RzRyRx(r, p, y, Hr, Hp, Hy);
+    }
 
     /** Create from Quaternion coefficients */
     static Rot3 Quaternion(double w, double x, double y, double z) {
@@ -246,8 +262,28 @@ namespace gtsam {
     static Rot3 AlignTwoPairs(const Unit3& a_p, const Unit3& b_p,  //
                               const Unit3& a_q, const Unit3& b_q);
 
-    /// Static, named constructor that finds Rot3 element closest to M in Frobenius norm.
+    /**
+     * Static, named constructor that finds Rot3 element closest to M in Frobenius norm.
+     * 
+     * Uses Full SVD to compute the orthogonal matrix, thus is highly accurate and robust.
+     * 
+     * N. J. Higham. Matrix nearness problems and applications.
+     * In M. J. C. Gover and S. Barnett, editors, Applications of Matrix Theory, pages 1–27.
+     * Oxford University Press, 1989.
+     */
     static Rot3 ClosestTo(const Matrix3& M) { return Rot3(SO3::ClosestTo(M)); }
+
+    /**
+     * Normalize rotation so that its determinant is 1.
+     * This means either re-orthogonalizing the Matrix representation or
+     * normalizing the quaternion representation.
+     *
+     * This method is akin to `ClosestTo` but uses a computationally cheaper
+     * algorithm.
+     * 
+     * Ref: https://drive.google.com/file/d/0B9rLLz1XQKmaZTlQdV81QjNoZTA/view
+     */
+    Rot3 normalized() const;
 
     /// @}
     /// @name Testable
@@ -425,19 +461,19 @@ namespace gtsam {
      * Use RQ to calculate xyz angle representation
      * @return a vector containing x,y,z s.t. R = Rot3::RzRyRx(x,y,z)
      */
-    Vector3 xyz() const;
+    Vector3 xyz(OptionalJacobian<3, 3> H = boost::none) const;
 
     /**
      * Use RQ to calculate yaw-pitch-roll angle representation
      * @return a vector containing ypr s.t. R = Rot3::Ypr(y,p,r)
      */
-    Vector3 ypr() const;
+    Vector3 ypr(OptionalJacobian<3, 3> H = boost::none) const;
 
     /**
      * Use RQ to calculate roll-pitch-yaw angle representation
      * @return a vector containing rpy s.t. R = Rot3::Ypr(y,p,r)
      */
-    Vector3 rpy() const;
+    Vector3 rpy(OptionalJacobian<3, 3> H = boost::none) const;
 
     /**
      * Accessor to get to component of angle representations
@@ -445,7 +481,7 @@ namespace gtsam {
      * you should instead use xyz() or ypr()
      * TODO: make this more efficient
      */
-    inline double roll() const  { return xyz()(0); }
+    double roll(OptionalJacobian<1, 3> H = boost::none) const;
 
     /**
      * Accessor to get to component of angle representations
@@ -453,7 +489,7 @@ namespace gtsam {
      * you should instead use xyz() or ypr()
      * TODO: make this more efficient
      */
-    inline double pitch() const { return xyz()(1); }
+    double pitch(OptionalJacobian<1, 3> H = boost::none) const;
 
     /**
      * Accessor to get to component of angle representations
@@ -461,7 +497,7 @@ namespace gtsam {
      * you should instead use xyz() or ypr()
      * TODO: make this more efficient
      */
-    inline double yaw() const   { return xyz()(2); }
+    double yaw(OptionalJacobian<1, 3> H = boost::none) const;
 
     /// @}
     /// @name Advanced Interface
@@ -490,7 +526,7 @@ namespace gtsam {
 
     /**
      * @brief Spherical Linear intERPolation between *this and other
-     * @param s a value between 0 and 1
+     * @param t a value between 0 and 1
      * @param other final point of iterpolation geodesic on manifold
      */
     Rot3 slerp(double t, const Rot3& other) const;
@@ -541,7 +577,8 @@ namespace gtsam {
    * @return an upper triangular matrix R
    * @return a vector [thetax, thetay, thetaz] in radians.
    */
-  GTSAM_EXPORT std::pair<Matrix3,Vector3> RQ(const Matrix3& A);
+  GTSAM_EXPORT std::pair<Matrix3, Vector3> RQ(
+      const Matrix3& A, OptionalJacobian<3, 9> H = boost::none);
 
   template<>
   struct traits<Rot3> : public internal::LieGroup<Rot3> {};

@@ -80,7 +80,7 @@ namespace gtsam {
     SubgraphPreconditioner(const sharedFG& Ab2, const sharedBayesNet& Rc1, const sharedValues& xbar,
                            const SubgraphPreconditionerParameters &p = SubgraphPreconditionerParameters());
 
-    virtual ~SubgraphPreconditioner() {}
+    ~SubgraphPreconditioner() override {}
 
     /** print the object */
     void print(const std::string& s = "SubgraphPreconditioner") const;

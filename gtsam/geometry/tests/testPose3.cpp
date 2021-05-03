@@ -18,6 +18,7 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/base/testLie.h>
 #include <gtsam/base/lieProxies.h>
+#include <gtsam/base/TestableAssertions.h>
 
 #include <boost/assign/std/vector.hpp> // for operator +=
 using namespace boost::assign;
@@ -807,6 +808,17 @@ TEST(Pose3, ExpmapDerivative2) {
   }
 }
 
+TEST( Pose3, ExpmapDerivativeQr) {
+  Vector6 w = Vector6::Random();
+  w.head<3>().normalize();
+  w.head<3>() = w.head<3>() * 0.9e-2;
+  Matrix3 actualQr = Pose3::ComputeQforExpmapDerivative(w, 0.01);
+  Matrix expectedH = numericalDerivative21<Pose3, Vector6,
+      OptionalJacobian<6, 6> >(&Pose3::Expmap, w, boost::none);
+  Matrix3 expectedQr = expectedH.bottomLeftCorner<3, 3>();
+  EXPECT(assert_equal(expectedQr, actualQr, 1e-6));
+}
+
 /* ************************************************************************* */
 TEST( Pose3, LogmapDerivative) {
   Matrix6 actualH;
@@ -857,19 +869,11 @@ TEST( Pose3, adjointTranspose) {
 }
 
 /* ************************************************************************* */
-TEST( Pose3, stream)
-{
-  Pose3 T;
+TEST( Pose3, stream) {
   std::ostringstream os;
-  os << T;
+  os << Pose3();
 
-  string expected;
-#ifdef GTSAM_TYPEDEF_POINTS_TO_VECTORS
-  expected = "R: [\n\t1, 0, 0;\n\t0, 1, 0;\n\t0, 0, 1\n]\nt: 0\n0\n0";;
-#else
-  expected = "R: [\n\t1, 0, 0;\n\t0, 1, 0;\n\t0, 0, 1\n]\nt: [0, 0, 0]'";
-#endif
-
+  string expected = "R: [\n\t1, 0, 0;\n\t0, 1, 0;\n\t0, 0, 1\n]\nt: 0 0 0";
   EXPECT(os.str() == expected);
 }
 
@@ -903,9 +907,9 @@ TEST(Pose3 , ChartDerivatives) {
   Pose3 id;
   if (ROT3_DEFAULT_COORDINATES_MODE == Rot3::EXPMAP) {
     CHECK_CHART_DERIVATIVES(id,id);
-//    CHECK_CHART_DERIVATIVES(id,T2);
-//    CHECK_CHART_DERIVATIVES(T2,id);
-//    CHECK_CHART_DERIVATIVES(T2,T3);
+    CHECK_CHART_DERIVATIVES(id,T2);
+    CHECK_CHART_DERIVATIVES(T2,id);
+    CHECK_CHART_DERIVATIVES(T2,T3);
   }
 }
 
@@ -1012,6 +1016,33 @@ TEST(Pose3, TransformCovariance6) {
 TEST(Pose3, interpolate) {
   EXPECT(assert_equal(T2, interpolate(T2,T3, 0.0)));
   EXPECT(assert_equal(T3, interpolate(T2,T3, 1.0)));
+
+  // Trivial example: start at origin and move to (1, 0, 0) while rotating pi/2
+  // about z-axis.
+  Pose3 start;
+  Pose3 end(Rot3::Rz(M_PI_2), Point3(1, 0, 0));
+  // This interpolation is easy to calculate by hand.
+  double t = 0.5;
+  Pose3 expected0(Rot3::Rz(M_PI_4), Point3(0.5, 0, 0));
+  EXPECT(assert_equal(expected0, start.interpolateRt(end, t)));
+
+  // Example from Peter Corke
+  // https://robotacademy.net.au/lesson/interpolating-pose-in-3d/
+  t = 0.0759;  // corresponds to the 10th element when calling `ctraj` in
+               // the video
+  Pose3 O;
+  Pose3 F(Rot3::Roll(0.6).compose(Rot3::Pitch(0.8)).compose(Rot3::Yaw(1.4)),
+          Point3(1, 2, 3));
+
+  // The expected answer matches the result presented in the video.
+  Pose3 expected1(interpolate(O.rotation(), F.rotation(), t),
+                  interpolate(O.translation(), F.translation(), t));
+  EXPECT(assert_equal(expected1, O.interpolateRt(F, t)));
+
+  // Non-trivial interpolation, translation value taken from output.
+  Pose3 expected2(interpolate(T2.rotation(), T3.rotation(), t),
+                  interpolate(T2.translation(), T3.translation(), t));
+  EXPECT(assert_equal(expected2, T2.interpolateRt(T3, t)));
 }
 
 /* ************************************************************************* */
@@ -1025,39 +1056,13 @@ TEST(Pose3, Create) {
 }
 
 /* ************************************************************************* */
-TEST(Pose3, print) {
-  std::stringstream redirectStream;
-  std::streambuf* ssbuf = redirectStream.rdbuf();
-  std::streambuf* oldbuf  = std::cout.rdbuf();
-  // redirect cout to redirectStream
-  std::cout.rdbuf(ssbuf);
-
+TEST(Pose3, Print) {
   Pose3 pose(Rot3::identity(), Point3(1, 2, 3));
-  // output is captured to redirectStream
-  pose.print();
 
   // Generate the expected output
-  std::stringstream expected;
-  Point3 translation(1, 2, 3);
+  std::string expected = "R: [\n\t1, 0, 0;\n\t0, 1, 0;\n\t0, 0, 1\n]\nt: 1 2 3\n";
 
-  // Add expected rotation
-  expected << "R: [\n\t1, 0, 0;\n\t0, 1, 0;\n\t0, 0, 1\n]\n";
-
-#ifdef GTSAM_TYPEDEF_POINTS_TO_VECTORS
-  expected << "t: 1\n"
-              "2\n"
-              "3\n";
-#else
-  expected << "t: [" << translation.x() << ", " << translation.y() << ", " << translation.z() << "]'\n";
-#endif
-
-  // reset cout to the original stream
-  std::cout.rdbuf(oldbuf);
-
-  // Get substring corresponding to translation part
-  std::string actual = redirectStream.str();
-
-  CHECK_EQUAL(expected.str(), actual);
+  EXPECT(assert_print_equal(expected, pose));
 }
 
 /* ************************************************************************* */

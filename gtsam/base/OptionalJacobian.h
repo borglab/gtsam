@@ -112,7 +112,7 @@ public:
   //  template <typename Derived, bool InnerPanel>
   //  OptionalJacobian(Eigen::Block<Derived,Rows,Cols,InnerPanel> block) : map_(nullptr) { ?? }
 
-  /// Return true is allocated, false if default constructor was used
+  /// Return true if allocated, false if default constructor was used
   operator bool() const {
     return map_.data() != nullptr;
   }
@@ -197,7 +197,7 @@ public:
 
 #endif
 
-  /// Return true is allocated, false if default constructor was used
+  /// Return true if allocated, false if default constructor was used
   operator bool() const {
     return pointer_!=nullptr;
   }

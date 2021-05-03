@@ -78,7 +78,7 @@ public:
           flag_bump_up_near_zero_probs) {
   }
 
-  virtual ~BetweenFactorEM() {
+  ~BetweenFactorEM() override {
   }
 
   /** implement functions needed for Testable */
@@ -114,7 +114,7 @@ public:
   /** implement functions needed to derive from Factor */
 
   /* ************************************************************************* */
-  virtual double error(const Values& x) const {
+  double error(const Values &x) const override {
     return whitenedError(x).squaredNorm();
   }
 
@@ -125,8 +125,7 @@ public:
    * Hence \f$ b = z - h(x) = - \mathtt{error\_vector}(x) \f$
    */
   /* This version of linearize recalculates the noise model each time */
-  virtual boost::shared_ptr<GaussianFactor> linearize(
-      const Values& x) const {
+  boost::shared_ptr<GaussianFactor> linearize(const Values &x) const override {
     // Only linearize if the factor is active
     if (!this->active(x))
       return boost::shared_ptr<JacobianFactor>();

@@ -153,7 +153,7 @@ const Eigen::IOFormat& matlabFormat() {
 /* ************************************************************************* */
 //3 argument call
 void print(const Matrix& A, const string &s, ostream& stream) {
-  cout << s << A.format(matlabFormat()) << endl;
+  stream << s << A.format(matlabFormat()) << endl;
 }
 
 /* ************************************************************************* */

@@ -1,6 +1,10 @@
 # README - Georgia Tech Smoothing and Mapping Library
 
-**As of August 1, develop is officially in "Pre 4.1" mode, and features deprecated in 4.0 were removed. Use the last 4.0.3 release if you need those features. However, most are easily converted and can be tracked down (in 4.0.3) by disabling the cmake flag GTSAM_ALLOW_DEPRECATED_SINCE_V4**
+**Important Note**
+
+As of August 1 2020, the `develop` branch is officially in "Pre 4.1" mode, and features deprecated in 4.0 have been removed. Please use the last [4.0.3 release](https://github.com/borglab/gtsam/releases/tag/4.0.3) if you need those features. 
+
+However, most are easily converted and can be tracked down (in 4.0.3) by disabling the cmake flag `GTSAM_ALLOW_DEPRECATED_SINCE_V4`.
 
 ## What is GTSAM?
 
@@ -9,13 +13,16 @@ mapping (SAM) in robotics and vision, using Factor Graphs and Bayes
 Networks as the underlying computing paradigm rather than sparse
 matrices.
 
-| Platform  | Build Status  |
-|:---------:|:-------------:|
-| gcc/clang | [![Build Status](https://travis-ci.com/borglab/gtsam.svg?branch=develop)](https://travis-ci.com/borglab/gtsam/) |
-| MSVC      | [![Build status](https://ci.appveyor.com/api/projects/status/3enllitj52jsxwfg/branch/develop?svg=true)](https://ci.appveyor.com/project/dellaert/gtsam) |
+The current support matrix is:
+
+| Platform     | Compiler  | Build Status  |
+|:------------:|:---------:|:-------------:|
+| Ubuntu 18.04 | gcc/clang | ![Linux CI](https://github.com/borglab/gtsam/workflows/Linux%20CI/badge.svg) |
+| macOS        | clang     | ![macOS CI](https://github.com/borglab/gtsam/workflows/macOS%20CI/badge.svg) |
+| Windows      | MSVC      | ![Windows CI](https://github.com/borglab/gtsam/workflows/Windows%20CI/badge.svg) |
 
 
-On top of the C++ library, GTSAM includes [wrappers for MATLAB & Python](##Wrappers).
+On top of the C++ library, GTSAM includes [wrappers for MATLAB & Python](#wrappers).
 
 
 ## Quickstart
@@ -33,7 +40,7 @@ $ make install
 
 Prerequisites:
 
-- [Boost](http://www.boost.org/users/download/) >= 1.43 (Ubuntu: `sudo apt-get install libboost-all-dev`)
+- [Boost](http://www.boost.org/users/download/) >= 1.58 (Ubuntu: `sudo apt-get install libboost-all-dev`)
 - [CMake](http://www.cmake.org/cmake/resources/software.html) >= 3.0 (Ubuntu: `sudo apt-get install cmake`)
 - A modern compiler, i.e., at least gcc 4.7.3 on Linux.
 
@@ -55,7 +62,7 @@ GTSAM 4.1 added a new pybind wrapper, and **removed** the deprecated functionali
 
 ## Wrappers
 
-We provide support for [MATLAB](matlab/README.md) and [Python](cython/README.md) wrappers for GTSAM. Please refer to the linked documents for more details.
+We provide support for [MATLAB](matlab/README.md) and [Python](python/README.md) wrappers for GTSAM. Please refer to the linked documents for more details.
 
 ## The Preintegrated IMU Factor
 

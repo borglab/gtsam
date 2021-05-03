@@ -167,7 +167,7 @@ gtsam::NonlinearFactor::shared_ptr CombinedImuFactor::clone() const {
 //------------------------------------------------------------------------------
 void CombinedImuFactor::print(const string& s,
     const KeyFormatter& keyFormatter) const {
-  cout << (s == "" ? s : s + "\n") << "CombinedImuFactor("
+  cout << (s.empty() ? s : s + "\n") << "CombinedImuFactor("
        << keyFormatter(this->key1()) << "," << keyFormatter(this->key2()) << ","
        << keyFormatter(this->key3()) << "," << keyFormatter(this->key4()) << ","
        << keyFormatter(this->key5()) << "," << keyFormatter(this->key6())

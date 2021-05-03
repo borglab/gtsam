@@ -93,7 +93,7 @@ public:
   }
 
   /** Virtual destructor */
-  virtual ~SmartStereoProjectionFactor() {
+  ~SmartStereoProjectionFactor() override {
   }
 
   /**

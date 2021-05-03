@@ -57,7 +57,7 @@ public:
   ConcurrentBatchSmoother(const LevenbergMarquardtParams& parameters = LevenbergMarquardtParams()) : parameters_(parameters) {};
 
   /** Default destructor */
-  virtual ~ConcurrentBatchSmoother() {};
+  ~ConcurrentBatchSmoother() override {};
 
   /** Implement a GTSAM standard 'print' function */
   void print(const std::string& s = "Concurrent Batch Smoother:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
@@ -124,7 +124,7 @@ public:
    * Perform any required operations before the synchronization process starts.
    * Called by 'synchronize'
    */
-  virtual void presync() override;
+  void presync() override;
 
   /**
    * Populate the provided containers with factors that constitute the smoother branch summarization
@@ -150,7 +150,7 @@ public:
    * Perform any required operations after the synchronization process finishes.
    * Called by 'synchronize'
    */
-  virtual void postsync() override;
+  void postsync() override;
 
 protected:
 

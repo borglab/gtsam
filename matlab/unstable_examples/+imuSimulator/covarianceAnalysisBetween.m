@@ -151,14 +151,14 @@ hold on;
 if options.includeCameraFactors
   b = [-1000 2000 -2000 2000 -30 30];
   for i = 1:size(metadata.camera.gtLandmarkPoints,2)
-      p = metadata.camera.gtLandmarkPoints(i).vector;
+      p = metadata.camera.gtLandmarkPoints(i);
       if(p(1) > b(1) && p(1) < b(2) && p(2) > b(3) && p(2) < b(4) && p(3) > b(5) && p(3) < b(6))
           plot3(p(1), p(2), p(3), 'k+');
       end
   end
   pointsToPlot = metadata.camera.gtLandmarkPoints(find(projectionFactorSeenBy > 0));
   for i = 1:length(pointsToPlot)
-      p = pointsToPlot(i).vector;
+      p = pointsToPlot(i);
       plot3(p(1), p(2), p(3), 'gs', 'MarkerSize', 10);
   end
 end
@@ -233,9 +233,9 @@ for k=1:numMonteCarloRuns
   for i=0:options.trajectoryLength
     % compute estimation errors
     currentPoseKey = symbol('x', i);
-    gtPosition  = gtValues.at(currentPoseKey).translation.vector;
-    estPosition = estimate.at(currentPoseKey).translation.vector;
-    estR = estimate.at(currentPoseKey).rotation.matrix;
+    gtPosition  = gtValues.atPose3(currentPoseKey).translation;
+    estPosition = estimate.atPose3(currentPoseKey).translation;
+    estR = estimate.atPose3(currentPoseKey).rotation.matrix;
     errPosition = estPosition - gtPosition;
     
     % compute covariances:

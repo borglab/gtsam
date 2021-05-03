@@ -177,6 +177,16 @@ namespace gtsam {
      */
     VectorValues backSubstituteTranspose(const VectorValues& gx) const;
 
+    /**
+     * @brief Save the GaussianBayesNet as an image. Requires `dot` to be
+     * installed.
+     *
+     * @param s The name of the figure.
+     * @param keyFormatter Formatter to use for styling keys in the graph.
+     */
+    void saveGraph(const std::string& s, const KeyFormatter& keyFormatter =
+                                             DefaultKeyFormatter) const;
+
     /// @}
 
   private:

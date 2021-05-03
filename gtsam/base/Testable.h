@@ -33,9 +33,9 @@
 
 #pragma once
 
-#include <boost/shared_ptr.hpp>
 #include <boost/concept_check.hpp>
-#include <stdio.h>
+#include <boost/shared_ptr.hpp>
+#include <iostream>
 #include <string>
 
 #define GTSAM_PRINT(x)((x).print(#x))
@@ -72,10 +72,10 @@ namespace gtsam {
   }; // \ Testable
 
   inline void print(float v, const std::string& s = "") {
-    printf("%s%f\n",s.c_str(),v);
+    std::cout << (s.empty() ? s : s + " ") << v << std::endl;
   }
   inline void print(double v, const std::string& s = "") {
-    printf("%s%lf\n",s.c_str(),v);
+    std::cout << (s.empty() ? s : s + " ") << v << std::endl;
   }
 
   /** Call equal on the object */

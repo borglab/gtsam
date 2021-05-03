@@ -134,6 +134,18 @@ endif()
 # paths so that the compiler uses GTSAM headers in our source directory instead
 # of any previously installed GTSAM headers.
 target_include_directories(gtsam BEFORE PUBLIC
+  # main gtsam includes:
+  $<BUILD_INTERFACE:${GTSAM_SOURCE_DIR}>
+  $<INSTALL_INTERFACE:include/>
+  # config.h
+  $<BUILD_INTERFACE:${GTSAM_BINARY_DIR}>
+  # unit tests:
+  $<BUILD_INTERFACE:${GTSAM_SOURCE_DIR}/CppUnitLite>
+)
+# 3rdparty libraries: use the "system" flag so they are included via "-isystem"
+# and warnings (and warnings-considered-errors) in those headers are not
+# reported as warnings/errors in our targets:
+target_include_directories(gtsam SYSTEM BEFORE PUBLIC
   # SuiteSparse_config
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/SuiteSparse_config>
   $<INSTALL_INTERFACE:include/gtsam/3rdparty/SuiteSparse_config>
@@ -142,19 +154,12 @@ target_include_directories(gtsam BEFORE PUBLIC
   # CCOLAMD
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/CCOLAMD/Include>
   $<INSTALL_INTERFACE:include/gtsam/3rdparty/CCOLAMD>
-  # main gtsam includes:
-  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
-  $<INSTALL_INTERFACE:include/>
-  # config.h
-  $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
-  # unit tests:
-  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/CppUnitLite>
 )
 if(GTSAM_SUPPORT_NESTED_DISSECTION)
   target_include_directories(gtsam BEFORE PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/gtsam/3rdparty/metis/include>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/gtsam/3rdparty/metis/libmetis>
-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/gtsam/3rdparty/metis/GKlib>
+    $<BUILD_INTERFACE:${GTSAM_SOURCE_DIR}/gtsam/3rdparty/metis/include>
+    $<BUILD_INTERFACE:${GTSAM_SOURCE_DIR}/gtsam/3rdparty/metis/libmetis>
+    $<BUILD_INTERFACE:${GTSAM_SOURCE_DIR}/gtsam/3rdparty/metis/GKlib>
     $<INSTALL_INTERFACE:include/gtsam/3rdparty/metis/>
   )
 endif()
@@ -195,23 +200,8 @@ if(WIN32)
 else()
   if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
     # Suppress all warnings from 3rd party sources.
-    set_source_files_properties(${3rdparty_srcs} PROPERTIES COMPILE_FLAGS "-w")
+    set_source_files_properties(${3rdparty_srcs} PROPERTIES COMPILE_FLAGS "-w -Wno-everything")
   else()
     set_source_files_properties(${3rdparty_srcs} PROPERTIES COMPILE_FLAGS "-Wno-error")
   endif()
 endif()
-
-# Create the matlab toolbox for the gtsam library
-if (GTSAM_INSTALL_MATLAB_TOOLBOX)
-    # Set up codegen
-    include(GtsamMatlabWrap)
-
-    # Generate, build and install toolbox
-    set(mexFlags "${GTSAM_BUILD_MEX_BINARY_FLAGS}")
-        if(NOT BUILD_SHARED_LIBS)
-                list(APPEND mexFlags -DGTSAM_IMPORT_STATIC)
-        endif()
-
-    # Wrap
-    wrap_and_install_library(../gtsam.h "${GTSAM_ADDITIONAL_LIBRARIES}" "" "${mexFlags}")
-endif ()

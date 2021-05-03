@@ -112,6 +112,25 @@ public:
     return Pose3(R_ * T.R_, t_ + R_ * T.t_);
   }
 
+  /**
+   * Interpolate between two poses via individual rotation and translation
+   * interpolation.
+   *
+   * The default "interpolate" method defined in Lie.h minimizes the geodesic
+   * distance on the manifold, leading to a screw motion interpolation in
+   * Cartesian space, which might not be what is expected.
+   * In contrast, this method executes a straight line interpolation for the
+   * translation, while still using interpolate (aka "slerp") for the rotational
+   * component. This might be more intuitive in many applications.
+   *
+   * @param T End point of interpolation.
+   * @param t A value in [0, 1].
+   */
+  Pose3 interpolateRt(const Pose3& T, double t) const {
+    return Pose3(interpolate<Rot3>(R_, T.R_, t),
+                 interpolate<Point3>(t_, T.t_, t));
+  }
+
   /// @}
   /// @name Lie Group
   /// @{
@@ -180,6 +199,18 @@ public:
     static Pose3 Retract(const Vector6& xi, ChartJacobian Hxi = boost::none);
     static Vector6 Local(const Pose3& pose, ChartJacobian Hpose = boost::none);
   };
+
+  /**
+  * Compute the 3x3 bottom-left block Q of SE3 Expmap right derivative matrix
+  *  J_r(xi) = [J_(w) Z_3x3;
+  *             Q_r   J_(w)]
+  *  where J_(w) is the SO3 Expmap right derivative.
+  *  (see Chirikjian11book2, pg 44, eq 10.95.
+  *  The closed-form formula is identical to formula 102 in Barfoot14tro where
+  *  Q_l of the SE3 Expmap left derivative matrix is given.
+  */
+  static Matrix3 ComputeQforExpmapDerivative(
+      const Vector6& xi, double nearZeroThreshold = 1e-5);
 
   using LieGroup<Pose3, 6>::inverse; // version with derivative
 
@@ -355,6 +386,10 @@ template<>
 inline Matrix wedge<Pose3>(const Vector& xi) {
   return Pose3::wedge(xi(0), xi(1), xi(2), xi(3), xi(4), xi(5));
 }
+
+// Convenience typedef
+using Pose3Pair = std::pair<Pose3, Pose3>;
+using Pose3Pairs = std::vector<std::pair<Pose3, Pose3> >;
 
 // For MATLAB wrapper
 typedef std::vector<Pose3> Pose3Vector;

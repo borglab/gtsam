@@ -57,7 +57,7 @@ namespace simulated2D {
       typedef boost::shared_ptr<ScalarCoordConstraint1<VALUE, IDX> > shared_ptr; ///< boost::shared_ptr convenience typedef
       typedef VALUE Point; ///< Constrained variable type
 
-      virtual ~ScalarCoordConstraint1() {}
+      ~ScalarCoordConstraint1() override {}
 
       /// @return a deep copy of this factor
       gtsam::NonlinearFactor::shared_ptr clone() const override {
@@ -125,7 +125,7 @@ namespace simulated2D {
       typedef MaxDistanceConstraint<VALUE> This;  ///< This class for factor
       typedef VALUE Point; ///< Type of variable constrained
 
-      virtual ~MaxDistanceConstraint() {}
+      ~MaxDistanceConstraint() override {}
 
       /// @return a deep copy of this factor
       gtsam::NonlinearFactor::shared_ptr clone() const override {
@@ -174,7 +174,7 @@ namespace simulated2D {
       typedef POSE Pose; ///< Type of pose variable constrained
       typedef POINT Point; ///< Type of point variable constrained
 
-      virtual ~MinDistanceConstraint() {}
+      ~MinDistanceConstraint() override {}
 
       /// @return a deep copy of this factor
       gtsam::NonlinearFactor::shared_ptr clone() const override {

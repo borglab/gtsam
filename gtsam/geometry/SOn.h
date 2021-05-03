@@ -98,8 +98,8 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   template <typename Derived, int N_ = N, typename = IsDynamic<N_>>
   static SO Lift(size_t n, const Eigen::MatrixBase<Derived> &R) {
     Matrix Q = Matrix::Identity(n, n);
-    size_t p = R.rows();
-    assert(p < n && R.cols() == p);
+    const int p = R.rows();
+    assert(p >= 0 && p <= static_cast<int>(n) && R.cols() == p);
     Q.topLeftCorner(p, p) = R;
     return SO(Q);
   }
@@ -208,7 +208,7 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
 
   // Calculate run-time dimensionality of manifold.
   // Available as dimension or Dim() for fixed N.
-  size_t dim() const { return Dimension(matrix_.rows()); }
+  size_t dim() const { return Dimension(static_cast<size_t>(matrix_.rows())); }
 
   /**
    * Hat operator creates Lie algebra element corresponding to d-vector, where d
@@ -227,9 +227,10 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
    */
   static MatrixNN Hat(const TangentVector& xi);
 
-  /**
-   * Inverse of Hat. See note about xi element order in Hat.
-   */
+  /// In-place version of Hat (see details there), implements recursion.
+  static void Hat(const Vector &xi, Eigen::Ref<MatrixNN> X);
+
+  /// Inverse of Hat. See note about xi element order in Hat.
   static TangentVector Vee(const MatrixNN& X);
 
   // Chart at origin
@@ -295,10 +296,10 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   template <int N_ = N, typename = IsFixed<N_>>
   static Matrix VectorizedGenerators() {
     constexpr size_t N2 = static_cast<size_t>(N * N);
-    Matrix G(N2, dimension);
+    Eigen::Matrix<double, N2, dimension> G;
     for (size_t j = 0; j < dimension; j++) {
       const auto X = Hat(Vector::Unit(dimension, j));
-      G.col(j) = Eigen::Map<const Matrix>(X.data(), N2, 1);
+      G.col(j) = Eigen::Map<const VectorN2>(X.data());
     }
     return G;
   }
@@ -361,6 +362,11 @@ SOn LieGroup<SOn, Eigen::Dynamic>::compose(const SOn& g, DynamicJacobian H1,
 template <>
 SOn LieGroup<SOn, Eigen::Dynamic>::between(const SOn& g, DynamicJacobian H1,
                                            DynamicJacobian H2) const;
+
+/*
+ * Specialize dynamic vec.
+ */
+template <> typename SOn::VectorN2 SOn::vec(DynamicJacobian H) const;
 
 /** Serialization function */
 template<class Archive>

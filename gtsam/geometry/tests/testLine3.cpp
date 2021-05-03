@@ -14,6 +14,16 @@ GTSAM_CONCEPT_MANIFOLD_INST(Line3)
 
 static const Line3 l(Rot3(), 1, 1);
 
+// Testing getters
+TEST(Line3, getMethods) {
+  const double a = 5, b = 10;
+  const Rot3 R = Rot3::Expmap(Vector3(0.1, 0.2, 0.3));
+  const Line3 line(R, a, b);
+  EXPECT_DOUBLES_EQUAL(a, line.a(), 1e-8);
+  EXPECT_DOUBLES_EQUAL(b, line.b(), 1e-8);
+  EXPECT(assert_equal(R, line.R(), 1e-8));
+}
+
 // Testing equals function of Line3
 TEST(Line3, equals) {
   Line3 l_same = l;

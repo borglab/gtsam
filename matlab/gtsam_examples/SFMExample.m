@@ -58,7 +58,7 @@ for i=1:size(truth.cameras,2)
     initialEstimate.insert(symbol('x',i), pose_i);
 end
 for j=1:size(truth.points,2)
-    point_j = Point3(truth.points{j}.vector() + 0.1*randn(3,1));
+    point_j = Point3(truth.points{j} + 0.1*randn(3,1));
     initialEstimate.insert(symbol('p',j), point_j);
 end
 initialEstimate.print(sprintf('\nInitial estimate:\n  '));

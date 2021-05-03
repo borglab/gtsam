@@ -30,44 +30,51 @@ namespace gtsam {
  * PriorFactors.
  */
 template <class T>
-T FindKarcherMean(const std::vector<T, Eigen::aligned_allocator<T>>& rotations);
+T FindKarcherMean(const std::vector<T, Eigen::aligned_allocator<T>> &rotations);
 
-template <class T>
-T FindKarcherMean(std::initializer_list<T>&& rotations);
+template <class T> T FindKarcherMean(std::initializer_list<T> &&rotations);
 
 /**
  * The KarcherMeanFactor creates a constraint on all SO(n) variables with
  * given keys that the Karcher mean (see above) will stay the same. Note the
  * mean itself is irrelevant to the constraint and is not a parameter: the
  * constraint is implemented as enforcing that the sum of local updates is
- * equal to zero, hence creating a rank-dim constraint. Note it is implemented as
- * a soft constraint, as typically it is used to fix a gauge freedom.
+ * equal to zero, hence creating a rank-dim constraint. Note it is implemented
+ * as a soft constraint, as typically it is used to fix a gauge freedom.
  * */
-template <class T>
-class KarcherMeanFactor : public NonlinearFactor {
+template <class T> class KarcherMeanFactor : public NonlinearFactor {
+  // Compile time dimension: can be -1
+  enum { D = traits<T>::dimension };
+
+  // Runtime dimension: always >=0
+  size_t d_;
+
   /// Constant Jacobian made of d*d identity matrices
-  boost::shared_ptr<JacobianFactor> jacobian_;
+  boost::shared_ptr<JacobianFactor> whitenedJacobian_;
 
-  enum {D = traits<T>::dimension};
-
- public:
-  /// Construct from given keys.
+public:
+  /**
+   * Construct from given keys.
+   * If parameter beta is given, it acts as a precision = 1/sigma^2, and
+   * the Jacobian will be multiplied with 1/sigma = sqrt(beta).
+   */
   template <typename CONTAINER>
-  KarcherMeanFactor(const CONTAINER& keys, int d=D);
+  KarcherMeanFactor(const CONTAINER &keys, int d = D,
+                    boost::optional<double> beta = boost::none);
 
   /// Destructor
-  virtual ~KarcherMeanFactor() {}
+  ~KarcherMeanFactor() override {}
 
   /// Calculate the error of the factor: always zero
-  double error(const Values& c) const override { return 0; }
+  double error(const Values &c) const override { return 0; }
 
   /// get the dimension of the factor (number of rows on linearization)
-  size_t dim() const override { return D; }
+  size_t dim() const override { return d_; }
 
   /// linearize to a GaussianFactor
-  boost::shared_ptr<GaussianFactor> linearize(const Values& c) const override {
-    return jacobian_;
+  boost::shared_ptr<GaussianFactor> linearize(const Values &c) const override {
+    return whitenedJacobian_;
   }
 };
 // \KarcherMeanFactor
-}  // namespace gtsam
+} // namespace gtsam

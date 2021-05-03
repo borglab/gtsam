@@ -175,10 +175,11 @@ TEST(Values, basic_functions)
 {
   Values values;
   const Values& values_c = values;
-  values.insert(2, Vector3());
-  values.insert(4, Vector3());
-  values.insert(6, Matrix23());
-  values.insert(8, Matrix23());
+  Matrix23 M1 = Matrix23::Zero(), M2 = Matrix23::Zero();
+  values.insert(2, Vector3(0, 0, 0));
+  values.insert(4, Vector3(0, 0, 0));
+  values.insert(6, M1);
+  values.insert(8, M2);
 
   // find
   EXPECT_LONGS_EQUAL(4, values.find(4)->key);
@@ -335,7 +336,7 @@ TEST(Values, filter) {
   int i = 0;
   Values::Filtered<Value> filtered = values.filter(boost::bind(std::greater_equal<Key>(), _1, 2));
   EXPECT_LONGS_EQUAL(2, (long)filtered.size());
-  for(const Values::Filtered<>::KeyValuePair& key_value: filtered) {
+  for(const auto key_value: filtered) {
     if(i == 0) {
       LONGS_EQUAL(2, (long)key_value.key);
       try {key_value.value.cast<Pose2>();} catch (const std::bad_cast& e) { FAIL("can't cast Value to Pose2");}
@@ -370,7 +371,7 @@ TEST(Values, filter) {
   i = 0;
   Values::ConstFiltered<Pose3> pose_filtered = values.filter<Pose3>();
   EXPECT_LONGS_EQUAL(2, (long)pose_filtered.size());
-  for(const Values::ConstFiltered<Pose3>::KeyValuePair& key_value: pose_filtered) {
+  for(const auto key_value: pose_filtered) {
     if(i == 0) {
       EXPECT_LONGS_EQUAL(1, (long)key_value.key);
       EXPECT(assert_equal(pose1, key_value.value));
@@ -408,7 +409,7 @@ TEST(Values, Symbol_filter) {
   values.insert(Symbol('y', 3), pose3);
 
   int i = 0;
-  for(const Values::Filtered<Value>::KeyValuePair& key_value: values.filter(Symbol::ChrTest('y'))) {
+  for(const auto key_value: values.filter(Symbol::ChrTest('y'))) {
     if(i == 0) {
       LONGS_EQUAL(Symbol('y', 1), (long)key_value.key);
       EXPECT(assert_equal(pose1, key_value.value.cast<Pose3>()));
@@ -595,15 +596,7 @@ TEST(Values, Demangle) {
   values.insert(key1, v);
   string expected = "Values with 1 values:\nValue v1: (Eigen::Matrix<double, 1, 3, 1, 1, 3>)\n[\n	5, 6, 7\n]\n\n";
 
-  stringstream buffer;
-  streambuf * old = cout.rdbuf(buffer.rdbuf());
-
-  values.print();
-
-  string actual = buffer.str();
-  cout.rdbuf(old);
-
-  EXPECT(assert_equal(expected, actual));
+  EXPECT(assert_print_equal(expected, values));
 }
 
 /* ************************************************************************* */

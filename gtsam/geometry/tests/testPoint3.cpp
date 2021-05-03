@@ -153,16 +153,6 @@ TEST( Point3, cross2) {
   }
 }
 
-/* ************************************************************************* */
-#ifndef GTSAM_TYPEDEF_POINTS_TO_VECTORS
-TEST( Point3, stream) {
-  Point3 p(1, 2, -3);
-  std::ostringstream os;
-  os << p;
-  EXPECT(os.str() == "[1, 2, -3]'");
-}
-#endif
-
 //*************************************************************************
 TEST (Point3, normalize) {
   Matrix actualH;
@@ -172,6 +162,26 @@ TEST (Point3, normalize) {
   Matrix expectedH = numericalDerivative11<Point3, Point3>(
       boost::bind(gtsam::normalize, _1, boost::none), point);
   EXPECT(assert_equal(expectedH, actualH, 1e-8));
+}
+
+//*************************************************************************
+TEST(Point3, mean) {
+  Point3 expected(2, 2, 2);
+  Point3 a1(0, 0, 0), a2(1, 2, 3), a3(5, 4, 3);
+  std::vector<Point3> a_points{a1, a2, a3};
+  Point3 actual = mean(a_points);
+  EXPECT(assert_equal(expected, actual));
+}
+
+TEST(Point3, mean_pair) {
+  Point3 a_mean(2, 2, 2), b_mean(-1, 1, 0);
+  Point3Pair expected = std::make_pair(a_mean, b_mean);
+  Point3 a1(0, 0, 0), a2(1, 2, 3), a3(5, 4, 3);
+  Point3 b1(-1, 0, 0), b2(-2, 4, 0), b3(0, -1, 0);
+  std::vector<Point3Pair> point_pairs{{a1, b1}, {a2, b2}, {a3, b3}};
+  Point3Pair actual = means(point_pairs);
+  EXPECT(assert_equal(expected.first, actual.first));
+  EXPECT(assert_equal(expected.second, actual.second));
 }
 
 //*************************************************************************

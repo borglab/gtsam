@@ -109,7 +109,7 @@ typename Eigen::Matrix<double, N, 1> numericalGradient(
  * @param delta increment for numerical derivative
  * Class Y is the output argument
  * Class X is the input argument
- * int N is the dimension of the X input value if variable dimension type but known at test time
+ * @tparam int N is the dimension of the X input value if variable dimension type but known at test time
  * @return m*n Jacobian computed via central differencing
  */
 
@@ -167,15 +167,16 @@ typename internal::FixedSizeMatrix<Y,X>::type numericalDerivative11(Y (*h)(const
  * @param x2 second argument value
  * @param delta increment for numerical derivative
  * @return m*n Jacobian computed via central differencing
+ * @tparam int N is the dimension of the X1 input value if variable dimension type but known at test time
  */
-template<class Y, class X1, class X2>
+template<class Y, class X1, class X2, int N = traits<X1>::dimension>
 typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative21(const boost::function<Y(const X1&, const X2&)>& h,
     const X1& x1, const X2& x2, double delta = 1e-5) {
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
       "Template argument Y must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
-  return numericalDerivative11<Y, X1>(boost::bind(h, _1, boost::cref(x2)), x1, delta);
+  return numericalDerivative11<Y, X1, N>(boost::bind(h, _1, boost::cref(x2)), x1, delta);
 }
 
 /** use a raw C++ function pointer */
@@ -192,15 +193,16 @@ typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative21(Y (*h)(cons
  * @param x2 n-dimensional second argument value
  * @param delta increment for numerical derivative
  * @return m*n Jacobian computed via central differencing
+ * @tparam int N is the dimension of the X2 input value if variable dimension type but known at test time
  */
-template<class Y, class X1, class X2>
+template<class Y, class X1, class X2, int N = traits<X2>::dimension>
 typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative22(boost::function<Y(const X1&, const X2&)> h,
     const X1& x1, const X2& x2, double delta = 1e-5) {
 //  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
 //       "Template argument X1 must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X2>::structure_category>::value),
        "Template argument X2 must be a manifold type.");
-  return numericalDerivative11<Y, X2>(boost::bind(h, boost::cref(x1), _1), x2, delta);
+  return numericalDerivative11<Y, X2, N>(boost::bind(h, boost::cref(x1), _1), x2, delta);
 }
 
 /** use a raw C++ function pointer */
@@ -219,8 +221,9 @@ typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative22(Y (*h)(cons
  * @param delta increment for numerical derivative
  * @return m*n Jacobian computed via central differencing
  * All classes Y,X1,X2,X3 need dim, expmap, logmap
+ * @tparam int N is the dimension of the X1 input value if variable dimension type but known at test time
  */
-template<class Y, class X1, class X2, class X3>
+template<class Y, class X1, class X2, class X3, int N = traits<X1>::dimension>
 typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative31(
     boost::function<Y(const X1&, const X2&, const X3&)> h, const X1& x1,
     const X2& x2, const X3& x3, double delta = 1e-5) {
@@ -228,7 +231,7 @@ typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative31(
       "Template argument Y must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
-  return numericalDerivative11<Y, X1>(boost::bind(h, _1, boost::cref(x2), boost::cref(x3)), x1, delta);
+  return numericalDerivative11<Y, X1, N>(boost::bind(h, _1, boost::cref(x2), boost::cref(x3)), x1, delta);
 }
 
 template<class Y, class X1, class X2, class X3>
@@ -247,8 +250,9 @@ typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative31(Y (*h)(cons
  * @param delta increment for numerical derivative
  * @return m*n Jacobian computed via central differencing
  * All classes Y,X1,X2,X3 need dim, expmap, logmap
+ * @tparam int N is the dimension of the X2 input value if variable dimension type but known at test time
  */
-template<class Y, class X1, class X2, class X3>
+template<class Y, class X1, class X2, class X3, int N = traits<X2>::dimension>
 typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative32(
     boost::function<Y(const X1&, const X2&, const X3&)> h, const X1& x1,
     const X2& x2, const X3& x3, double delta = 1e-5) {
@@ -256,7 +260,7 @@ typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative32(
       "Template argument Y must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X2>::structure_category>::value),
       "Template argument X2 must be a manifold type.");
-  return numericalDerivative11<Y, X2>(boost::bind(h, boost::cref(x1), _1, boost::cref(x3)), x2, delta);
+  return numericalDerivative11<Y, X2, N>(boost::bind(h, boost::cref(x1), _1, boost::cref(x3)), x2, delta);
 }
 
 template<class Y, class X1, class X2, class X3>
@@ -275,8 +279,9 @@ inline typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative32(Y (*
  * @param delta increment for numerical derivative
  * @return m*n Jacobian computed via central differencing
  * All classes Y,X1,X2,X3 need dim, expmap, logmap
+ * @tparam int N is the dimension of the X3 input value if variable dimension type but known at test time
  */
-template<class Y, class X1, class X2, class X3>
+template<class Y, class X1, class X2, class X3, int N = traits<X3>::dimension>
 typename internal::FixedSizeMatrix<Y,X3>::type numericalDerivative33(
     boost::function<Y(const X1&, const X2&, const X3&)> h, const X1& x1,
     const X2& x2, const X3& x3, double delta = 1e-5) {
@@ -284,7 +289,7 @@ typename internal::FixedSizeMatrix<Y,X3>::type numericalDerivative33(
       "Template argument Y must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X3>::structure_category>::value),
       "Template argument X3 must be a manifold type.");
-  return numericalDerivative11<Y, X3>(boost::bind(h, boost::cref(x1), boost::cref(x2), _1), x3, delta);
+  return numericalDerivative11<Y, X3, N>(boost::bind(h, boost::cref(x1), boost::cref(x2), _1), x3, delta);
 }
 
 template<class Y, class X1, class X2, class X3>
@@ -303,8 +308,9 @@ inline typename internal::FixedSizeMatrix<Y,X3>::type numericalDerivative33(Y (*
  * @param x4 fourth argument value
  * @param delta increment for numerical derivative
  * @return m*n Jacobian computed via central differencing
+ * @tparam int N is the dimension of the X1 input value if variable dimension type but known at test time
  */
-template<class Y, class X1, class X2, class X3, class X4>
+template<class Y, class X1, class X2, class X3, class X4, int N = traits<X1>::dimension>
 typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative41(
     boost::function<Y(const X1&, const X2&, const X3&, const X4&)> h, const X1& x1,
     const X2& x2, const X3& x3, const X4& x4, double delta = 1e-5) {
@@ -312,7 +318,7 @@ typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative41(
       "Template argument Y must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
-  return numericalDerivative11<Y, X1>(boost::bind(h, _1, boost::cref(x2), boost::cref(x3), boost::cref(x4)), x1, delta);
+  return numericalDerivative11<Y, X1, N>(boost::bind(h, _1, boost::cref(x2), boost::cref(x3), boost::cref(x4)), x1, delta);
 }
 
 template<class Y, class X1, class X2, class X3, class X4>
@@ -330,8 +336,9 @@ inline typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative41(Y (*
  * @param x4 fourth argument value
  * @param delta increment for numerical derivative
  * @return m*n Jacobian computed via central differencing
+ * @tparam int N is the dimension of the X2 input value if variable dimension type but known at test time
  */
-template<class Y, class X1, class X2, class X3, class X4>
+template<class Y, class X1, class X2, class X3, class X4, int N = traits<X2>::dimension>
 typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative42(
     boost::function<Y(const X1&, const X2&, const X3&, const X4&)> h, const X1& x1,
     const X2& x2, const X3& x3, const X4& x4, double delta = 1e-5) {
@@ -339,7 +346,7 @@ typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative42(
       "Template argument Y must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X2>::structure_category>::value),
       "Template argument X2 must be a manifold type.");
-  return numericalDerivative11<Y, X2>(boost::bind(h, boost::cref(x1), _1, boost::cref(x3), boost::cref(x4)), x2, delta);
+  return numericalDerivative11<Y, X2, N>(boost::bind(h, boost::cref(x1), _1, boost::cref(x3), boost::cref(x4)), x2, delta);
 }
 
 template<class Y, class X1, class X2, class X3, class X4>
@@ -357,8 +364,9 @@ inline typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative42(Y (*
  * @param x4 fourth argument value
  * @param delta increment for numerical derivative
  * @return m*n Jacobian computed via central differencing
+ * @tparam int N is the dimension of the X3 input value if variable dimension type but known at test time
  */
-template<class Y, class X1, class X2, class X3, class X4>
+template<class Y, class X1, class X2, class X3, class X4, int N = traits<X3>::dimension>
 typename internal::FixedSizeMatrix<Y,X3>::type numericalDerivative43(
     boost::function<Y(const X1&, const X2&, const X3&, const X4&)> h, const X1& x1,
     const X2& x2, const X3& x3, const X4& x4, double delta = 1e-5) {
@@ -366,7 +374,7 @@ typename internal::FixedSizeMatrix<Y,X3>::type numericalDerivative43(
       "Template argument Y must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X3>::structure_category>::value),
       "Template argument X3 must be a manifold type.");
-  return numericalDerivative11<Y, X3>(boost::bind(h, boost::cref(x1), boost::cref(x2), _1, boost::cref(x4)), x3, delta);
+  return numericalDerivative11<Y, X3, N>(boost::bind(h, boost::cref(x1), boost::cref(x2), _1, boost::cref(x4)), x3, delta);
 }
 
 template<class Y, class X1, class X2, class X3, class X4>
@@ -384,8 +392,9 @@ inline typename internal::FixedSizeMatrix<Y,X3>::type numericalDerivative43(Y (*
  * @param x4 n-dimensional fourth argument value
  * @param delta increment for numerical derivative
  * @return m*n Jacobian computed via central differencing
+ * @tparam int N is the dimension of the X4 input value if variable dimension type but known at test time
  */
-template<class Y, class X1, class X2, class X3, class X4>
+template<class Y, class X1, class X2, class X3, class X4, int N = traits<X4>::dimension>
 typename internal::FixedSizeMatrix<Y,X4>::type numericalDerivative44(
     boost::function<Y(const X1&, const X2&, const X3&, const X4&)> h, const X1& x1,
     const X2& x2, const X3& x3, const X4& x4, double delta = 1e-5) {
@@ -393,7 +402,7 @@ typename internal::FixedSizeMatrix<Y,X4>::type numericalDerivative44(
       "Template argument Y must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X4>::structure_category>::value),
       "Template argument X4 must be a manifold type.");
-  return numericalDerivative11<Y, X4>(boost::bind(h, boost::cref(x1), boost::cref(x2), boost::cref(x3), _1), x4, delta);
+  return numericalDerivative11<Y, X4, N>(boost::bind(h, boost::cref(x1), boost::cref(x2), boost::cref(x3), _1), x4, delta);
 }
 
 template<class Y, class X1, class X2, class X3, class X4>
@@ -412,8 +421,9 @@ inline typename internal::FixedSizeMatrix<Y,X4>::type numericalDerivative44(Y (*
  * @param x5 fifth argument value
  * @param delta increment for numerical derivative
  * @return m*n Jacobian computed via central differencing
+ * @tparam int N is the dimension of the X1 input value if variable dimension type but known at test time
  */
-template<class Y, class X1, class X2, class X3, class X4, class X5>
+template<class Y, class X1, class X2, class X3, class X4, class X5, int N = traits<X1>::dimension>
 typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative51(
     boost::function<Y(const X1&, const X2&, const X3&, const X4&, const X5&)> h, const X1& x1,
     const X2& x2, const X3& x3, const X4& x4, const X5& x5, double delta = 1e-5) {
@@ -421,7 +431,7 @@ typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative51(
       "Template argument Y must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
-  return numericalDerivative11<Y, X1>(boost::bind(h, _1, boost::cref(x2), boost::cref(x3), boost::cref(x4), boost::cref(x5)), x1, delta);
+  return numericalDerivative11<Y, X1, N>(boost::bind(h, _1, boost::cref(x2), boost::cref(x3), boost::cref(x4), boost::cref(x5)), x1, delta);
 }
 
 template<class Y, class X1, class X2, class X3, class X4, class X5>
@@ -440,8 +450,9 @@ inline typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative51(Y (*
  * @param x5 fifth argument value
  * @param delta increment for numerical derivative
  * @return m*n Jacobian computed via central differencing
+ * @tparam int N is the dimension of the X2 input value if variable dimension type but known at test time
  */
-template<class Y, class X1, class X2, class X3, class X4, class X5>
+template<class Y, class X1, class X2, class X3, class X4, class X5, int N = traits<X2>::dimension>
 typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative52(
     boost::function<Y(const X1&, const X2&, const X3&, const X4&, const X5&)> h, const X1& x1,
     const X2& x2, const X3& x3, const X4& x4, const X5& x5, double delta = 1e-5) {
@@ -449,7 +460,7 @@ typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative52(
       "Template argument Y must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
-  return numericalDerivative11<Y, X2>(boost::bind(h, boost::cref(x1), _1, boost::cref(x3), boost::cref(x4), boost::cref(x5)), x2, delta);
+  return numericalDerivative11<Y, X2, N>(boost::bind(h, boost::cref(x1), _1, boost::cref(x3), boost::cref(x4), boost::cref(x5)), x2, delta);
 }
 
 template<class Y, class X1, class X2, class X3, class X4, class X5>
@@ -468,8 +479,9 @@ inline typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative52(Y (*
  * @param x5 fifth argument value
  * @param delta increment for numerical derivative
  * @return m*n Jacobian computed via central differencing
+ * @tparam int N is the dimension of the X3 input value if variable dimension type but known at test time
  */
-template<class Y, class X1, class X2, class X3, class X4, class X5>
+template<class Y, class X1, class X2, class X3, class X4, class X5, int N = traits<X3>::dimension>
 typename internal::FixedSizeMatrix<Y,X3>::type numericalDerivative53(
     boost::function<Y(const X1&, const X2&, const X3&, const X4&, const X5&)> h, const X1& x1,
     const X2& x2, const X3& x3, const X4& x4, const X5& x5, double delta = 1e-5) {
@@ -477,7 +489,7 @@ typename internal::FixedSizeMatrix<Y,X3>::type numericalDerivative53(
       "Template argument Y must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
-  return numericalDerivative11<Y, X3>(boost::bind(h, boost::cref(x1), boost::cref(x2), _1, boost::cref(x4), boost::cref(x5)), x3, delta);
+  return numericalDerivative11<Y, X3, N>(boost::bind(h, boost::cref(x1), boost::cref(x2), _1, boost::cref(x4), boost::cref(x5)), x3, delta);
 }
 
 template<class Y, class X1, class X2, class X3, class X4, class X5>
@@ -496,8 +508,9 @@ inline typename internal::FixedSizeMatrix<Y,X3>::type numericalDerivative53(Y (*
  * @param x5 fifth argument value
  * @param delta increment for numerical derivative
  * @return m*n Jacobian computed via central differencing
+ * @tparam int N is the dimension of the X4 input value if variable dimension type but known at test time
  */
-template<class Y, class X1, class X2, class X3, class X4, class X5>
+template<class Y, class X1, class X2, class X3, class X4, class X5, int N = traits<X4>::dimension>
 typename internal::FixedSizeMatrix<Y,X4>::type numericalDerivative54(
     boost::function<Y(const X1&, const X2&, const X3&, const X4&, const X5&)> h, const X1& x1,
     const X2& x2, const X3& x3, const X4& x4, const X5& x5, double delta = 1e-5) {
@@ -505,7 +518,7 @@ typename internal::FixedSizeMatrix<Y,X4>::type numericalDerivative54(
       "Template argument Y must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
-  return numericalDerivative11<Y, X4>(boost::bind(h, boost::cref(x1), boost::cref(x2), boost::cref(x3), _1, boost::cref(x5)), x4, delta);
+  return numericalDerivative11<Y, X4, N>(boost::bind(h, boost::cref(x1), boost::cref(x2), boost::cref(x3), _1, boost::cref(x5)), x4, delta);
 }
 
 template<class Y, class X1, class X2, class X3, class X4, class X5>
@@ -524,8 +537,9 @@ inline typename internal::FixedSizeMatrix<Y,X4>::type numericalDerivative54(Y (*
  * @param x5 fifth argument value
  * @param delta increment for numerical derivative
  * @return m*n Jacobian computed via central differencing
+ * @tparam int N is the dimension of the X5 input value if variable dimension type but known at test time
  */
-template<class Y, class X1, class X2, class X3, class X4, class X5>
+template<class Y, class X1, class X2, class X3, class X4, class X5, int N = traits<X5>::dimension>
 typename internal::FixedSizeMatrix<Y,X5>::type numericalDerivative55(
     boost::function<Y(const X1&, const X2&, const X3&, const X4&, const X5&)> h, const X1& x1,
     const X2& x2, const X3& x3, const X4& x4, const X5& x5, double delta = 1e-5) {
@@ -533,7 +547,7 @@ typename internal::FixedSizeMatrix<Y,X5>::type numericalDerivative55(
       "Template argument Y must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
-  return numericalDerivative11<Y, X5>(boost::bind(h, boost::cref(x1), boost::cref(x2), boost::cref(x3), boost::cref(x4), _1), x5, delta);
+  return numericalDerivative11<Y, X5, N>(boost::bind(h, boost::cref(x1), boost::cref(x2), boost::cref(x3), boost::cref(x4), _1), x5, delta);
 }
 
 template<class Y, class X1, class X2, class X3, class X4, class X5>
@@ -553,8 +567,9 @@ inline typename internal::FixedSizeMatrix<Y,X5>::type numericalDerivative55(Y (*
  * @param x6 sixth argument value
  * @param delta increment for numerical derivative
  * @return m*n Jacobian computed via central differencing
+ * @tparam int N is the dimension of the X1 input value if variable dimension type but known at test time
  */
-template<class Y, class X1, class X2, class X3, class X4, class X5, class X6>
+template<class Y, class X1, class X2, class X3, class X4, class X5, class X6, int N = traits<X1>::dimension>
 typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative61(
     boost::function<Y(const X1&, const X2&, const X3&, const X4&, const X5&, const X6&)> h, const X1& x1,
     const X2& x2, const X3& x3, const X4& x4, const X5& x5, const X6& x6, double delta = 1e-5) {
@@ -562,7 +577,7 @@ typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative61(
       "Template argument Y must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
-  return numericalDerivative11<Y, X1>(boost::bind(h, _1, boost::cref(x2), boost::cref(x3), boost::cref(x4), boost::cref(x5), boost::cref(x6)), x1, delta);
+  return numericalDerivative11<Y, X1, N>(boost::bind(h, _1, boost::cref(x2), boost::cref(x3), boost::cref(x4), boost::cref(x5), boost::cref(x6)), x1, delta);
 }
 
 template<class Y, class X1, class X2, class X3, class X4, class X5, class X6>
@@ -582,8 +597,9 @@ inline typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative61(Y (*
  * @param x6 sixth argument value
  * @param delta increment for numerical derivative
  * @return m*n Jacobian computed via central differencing
+ * @tparam int N is the dimension of the X2 input value if variable dimension type but known at test time
  */
-template<class Y, class X1, class X2, class X3, class X4, class X5, class X6>
+template<class Y, class X1, class X2, class X3, class X4, class X5, class X6, int N = traits<X2>::dimension>
 typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative62(
     boost::function<Y(const X1&, const X2&, const X3&, const X4&, const X5&, const X6&)> h, const X1& x1,
     const X2& x2, const X3& x3, const X4& x4, const X5& x5, const X6& x6, double delta = 1e-5) {
@@ -591,7 +607,7 @@ typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative62(
       "Template argument Y must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
-  return numericalDerivative11<Y, X2>(boost::bind(h, boost::cref(x1), _1, boost::cref(x3), boost::cref(x4), boost::cref(x5), boost::cref(x6)), x2, delta);
+  return numericalDerivative11<Y, X2, N>(boost::bind(h, boost::cref(x1), _1, boost::cref(x3), boost::cref(x4), boost::cref(x5), boost::cref(x6)), x2, delta);
 }
 
 template<class Y, class X1, class X2, class X3, class X4, class X5, class X6>
@@ -608,11 +624,12 @@ inline typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative62(Y (*
  * @param x3 third argument value
  * @param x4 fourth argument value
  * @param x5 fifth argument value
- *  @param x6 sixth argument value
+ * @param x6 sixth argument value
  * @param delta increment for numerical derivative
  * @return m*n Jacobian computed via central differencing
+ * @tparam int N is the dimension of the X3 input value if variable dimension type but known at test time
  */
-template<class Y, class X1, class X2, class X3, class X4, class X5, class X6>
+template<class Y, class X1, class X2, class X3, class X4, class X5, class X6, int N = traits<X3>::dimension>
 typename internal::FixedSizeMatrix<Y,X3>::type numericalDerivative63(
     boost::function<Y(const X1&, const X2&, const X3&, const X4&, const X5&, const X6&)> h, const X1& x1,
     const X2& x2, const X3& x3, const X4& x4, const X5& x5, const X6& x6, double delta = 1e-5) {
@@ -620,7 +637,7 @@ typename internal::FixedSizeMatrix<Y,X3>::type numericalDerivative63(
       "Template argument Y must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
-  return numericalDerivative11<Y, X3>(boost::bind(h, boost::cref(x1), boost::cref(x2), _1, boost::cref(x4), boost::cref(x5), boost::cref(x6)), x3, delta);
+  return numericalDerivative11<Y, X3, N>(boost::bind(h, boost::cref(x1), boost::cref(x2), _1, boost::cref(x4), boost::cref(x5), boost::cref(x6)), x3, delta);
 }
 
 template<class Y, class X1, class X2, class X3, class X4, class X5, class X6>
@@ -640,8 +657,9 @@ inline typename internal::FixedSizeMatrix<Y,X3>::type numericalDerivative63(Y (*
  * @param x6 sixth argument value
  * @param delta increment for numerical derivative
  * @return m*n Jacobian computed via central differencing
+ * @tparam int N is the dimension of the X4 input value if variable dimension type but known at test time
  */
-template<class Y, class X1, class X2, class X3, class X4, class X5, class X6>
+template<class Y, class X1, class X2, class X3, class X4, class X5, class X6, int N = traits<X4>::dimension>
 typename internal::FixedSizeMatrix<Y,X4>::type numericalDerivative64(
     boost::function<Y(const X1&, const X2&, const X3&, const X4&, const X5&, const X6&)> h, const X1& x1,
     const X2& x2, const X3& x3, const X4& x4, const X5& x5, const X6& x6, double delta = 1e-5) {
@@ -649,7 +667,7 @@ typename internal::FixedSizeMatrix<Y,X4>::type numericalDerivative64(
       "Template argument Y must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
-  return numericalDerivative11<Y, X4>(boost::bind(h, boost::cref(x1), boost::cref(x2), boost::cref(x3), _1, boost::cref(x5), boost::cref(x6)), x4, delta);
+  return numericalDerivative11<Y, X4, N>(boost::bind(h, boost::cref(x1), boost::cref(x2), boost::cref(x3), _1, boost::cref(x5), boost::cref(x6)), x4, delta);
 }
 
 template<class Y, class X1, class X2, class X3, class X4, class X5, class X6>
@@ -669,8 +687,9 @@ inline typename internal::FixedSizeMatrix<Y,X4>::type numericalDerivative64(Y (*
  * @param x6 sixth argument value
  * @param delta increment for numerical derivative
  * @return m*n Jacobian computed via central differencing
+ * @tparam int N is the dimension of the X5 input value if variable dimension type but known at test time
  */
-template<class Y, class X1, class X2, class X3, class X4, class X5, class X6>
+template<class Y, class X1, class X2, class X3, class X4, class X5, class X6, int N = traits<X5>::dimension>
 typename internal::FixedSizeMatrix<Y,X5>::type numericalDerivative65(
     boost::function<Y(const X1&, const X2&, const X3&, const X4&, const X5&, const X6&)> h, const X1& x1,
     const X2& x2, const X3& x3, const X4& x4, const X5& x5, const X6& x6, double delta = 1e-5) {
@@ -678,7 +697,7 @@ typename internal::FixedSizeMatrix<Y,X5>::type numericalDerivative65(
       "Template argument Y must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
-  return numericalDerivative11<Y, X5>(boost::bind(h, boost::cref(x1), boost::cref(x2), boost::cref(x3), boost::cref(x4), _1, boost::cref(x6)), x5, delta);
+  return numericalDerivative11<Y, X5, N>(boost::bind(h, boost::cref(x1), boost::cref(x2), boost::cref(x3), boost::cref(x4), _1, boost::cref(x6)), x5, delta);
 }
 
 template<class Y, class X1, class X2, class X3, class X4, class X5, class X6>
@@ -698,16 +717,18 @@ inline typename internal::FixedSizeMatrix<Y,X5>::type numericalDerivative65(Y (*
  * @param x6 sixth argument value
  * @param delta increment for numerical derivative
  * @return m*n Jacobian computed via central differencing
+ * @tparam int N is the dimension of the X6 input value if variable dimension type but known at test time
  */
-template<class Y, class X1, class X2, class X3, class X4, class X5, class X6>
-typename internal::FixedSizeMatrix<Y,X5>::type numericalDerivative66(
-    boost::function<Y(const X1&, const X2&, const X3&, const X4&, const X5&, const X6&)> h, const X1& x1,
-    const X2& x2, const X3& x3, const X4& x4, const X5& x5, const X6& x6, double delta = 1e-5) {
+template<class Y, class X1, class X2, class X3, class X4, class X5, class X6, int N = traits<X6>::dimension>
+typename internal::FixedSizeMatrix<Y, X6>::type numericalDerivative66(
+    boost::function<Y(const X1&, const X2&, const X3&, const X4&, const X5&, const X6&)> h,
+    const X1& x1, const X2& x2, const X3& x3, const X4& x4, const X5& x5, const X6& x6,
+    double delta = 1e-5) {
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
       "Template argument Y must be a manifold type.");
   BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
       "Template argument X1 must be a manifold type.");
-  return numericalDerivative11<Y, X6>(boost::bind(h, boost::cref(x1), boost::cref(x2), boost::cref(x3), boost::cref(x4), boost::cref(x5), _1), x6, delta);
+  return numericalDerivative11<Y, X6, N>(boost::bind(h, boost::cref(x1), boost::cref(x2), boost::cref(x3), boost::cref(x4), boost::cref(x5), _1), x6, delta);
 }
 
 template<class Y, class X1, class X2, class X3, class X4, class X5, class X6>

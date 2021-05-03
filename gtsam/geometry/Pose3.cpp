@@ -24,9 +24,10 @@
 #include <limits>
 #include <string>
 
-using namespace std;
-
 namespace gtsam {
+
+using std::vector;
+using Point3Pairs = vector<Point3Pair>;
 
 /** instantiate concept checks */
 GTSAM_CONCEPT_POSE_INST(Pose3);
@@ -105,8 +106,8 @@ Vector6 Pose3::adjointTranspose(const Vector6& xi, const Vector6& y,
 }
 
 /* ************************************************************************* */
-void Pose3::print(const string& s) const {
-  cout << (s.empty() ? s : s + " ") << *this << endl;
+void Pose3::print(const std::string& s) const {
+  std::cout << (s.empty() ? s : s + " ") << *this << std::endl;
 }
 
 /* ************************************************************************* */
@@ -190,15 +191,7 @@ Vector6 Pose3::ChartAtOrigin::Local(const Pose3& pose, ChartJacobian Hpose) {
 }
 
 /* ************************************************************************* */
-/**
- * Compute the 3x3 bottom-left block Q of the SE3 Expmap derivative matrix
- *  J(xi) = [J_(w) Z_3x3;
- *             Q   J_(w)]
- *  where J_(w) is the SO3 Expmap derivative.
- *  (see Chirikjian11book2, pg 44, eq 10.95.
- *  The closed-form formula is similar to formula 102 in Barfoot14tro)
- */
-static Matrix3 computeQforExpmapDerivative(const Vector6& xi) {
+Matrix3 Pose3::ComputeQforExpmapDerivative(const Vector6& xi, double nearZeroThreshold) {
   const auto w = xi.head<3>();
   const auto v = xi.tail<3>();
   const Matrix3 V = skewSymmetric(v);
@@ -220,18 +213,20 @@ static Matrix3 computeQforExpmapDerivative(const Vector6& xi) {
 #else
   // The closed-form formula in Barfoot14tro eq. (102)
   double phi = w.norm();
-  if (std::abs(phi)>1e-5) {
-    const double sinPhi = sin(phi), cosPhi = cos(phi);
-    const double phi2 = phi * phi, phi3 = phi2 * phi, phi4 = phi3 * phi, phi5 = phi4 * phi;
+  const Matrix3 WVW = W * V * W;
+  if (std::abs(phi) > nearZeroThreshold) {
+    const double s = sin(phi), c = cos(phi);
+    const double phi2 = phi * phi, phi3 = phi2 * phi, phi4 = phi3 * phi,
+                 phi5 = phi4 * phi;
     // Invert the sign of odd-order terms to have the right Jacobian
-    Q = -0.5*V + (phi-sinPhi)/phi3*(W*V + V*W - W*V*W)
-            + (1-phi2/2-cosPhi)/phi4*(W*W*V + V*W*W - 3*W*V*W)
-            - 0.5*((1-phi2/2-cosPhi)/phi4 - 3*(phi-sinPhi-phi3/6.)/phi5)*(W*V*W*W + W*W*V*W);
-  }
-  else {
-    Q = -0.5*V + 1./6.*(W*V + V*W - W*V*W)
-        + 1./24.*(W*W*V + V*W*W - 3*W*V*W)
-        - 0.5*(1./24. + 3./120.)*(W*V*W*W + W*W*V*W);
+    Q = -0.5 * V + (phi - s) / phi3 * (W * V + V * W - WVW) +
+        (1 - phi2 / 2 - c) / phi4 * (W * W * V + V * W * W - 3 * WVW) -
+        0.5 * ((1 - phi2 / 2 - c) / phi4 - 3 * (phi - s - phi3 / 6.) / phi5) *
+            (WVW * W + W * WVW);
+  } else {
+    Q = -0.5 * V + 1. / 6. * (W * V + V * W - WVW) -
+        1. / 24. * (W * W * V + V * W * W - 3 * WVW) +
+        1. / 120. * (WVW * W + W * WVW);
   }
 #endif
 
@@ -242,7 +237,7 @@ static Matrix3 computeQforExpmapDerivative(const Vector6& xi) {
 Matrix6 Pose3::ExpmapDerivative(const Vector6& xi) {
   const Vector3 w = xi.head<3>();
   const Matrix3 Jw = Rot3::ExpmapDerivative(w);
-  const Matrix3 Q = computeQforExpmapDerivative(xi);
+  const Matrix3 Q = ComputeQforExpmapDerivative(xi);
   Matrix6 J;
   J << Jw, Z_3x3, Q, Jw;
   return J;
@@ -253,7 +248,7 @@ Matrix6 Pose3::LogmapDerivative(const Pose3& pose) {
   const Vector6 xi = Logmap(pose);
   const Vector3 w = xi.head<3>();
   const Matrix3 Jw = Rot3::LogmapDerivative(w);
-  const Matrix3 Q = computeQforExpmapDerivative(xi);
+  const Matrix3 Q = ComputeQforExpmapDerivative(xi);
   const Matrix3 Q2 = -Jw*Q*Jw;
   Matrix6 J;
   J << Jw, Z_3x3, Q2, Jw;
@@ -389,39 +384,33 @@ Unit3 Pose3::bearing(const Pose3& pose, OptionalJacobian<2, 6> Hself,
 }
 
 /* ************************************************************************* */
-boost::optional<Pose3> Pose3::Align(const std::vector<Point3Pair>& abPointPairs) {
+boost::optional<Pose3> Pose3::Align(const Point3Pairs &abPointPairs) {
   const size_t n = abPointPairs.size();
-  if (n < 3)
-    return boost::none;  // we need at least three pairs
+  if (n < 3) {
+    return boost::none; // we need at least three pairs
+  }
 
   // calculate centroids
-  Point3 aCentroid(0,0,0), bCentroid(0,0,0);
-  for(const Point3Pair& abPair: abPointPairs) {
-    aCentroid += abPair.first;
-    bCentroid += abPair.second;
-  }
-  double f = 1.0 / n;
-  aCentroid *= f;
-  bCentroid *= f;
+  const auto centroids = means(abPointPairs);
 
   // Add to form H matrix
   Matrix3 H = Z_3x3;
-  for(const Point3Pair& abPair: abPointPairs) {
-    Point3 da = abPair.first - aCentroid;
-    Point3 db = abPair.second - bCentroid;
+  for (const Point3Pair &abPair : abPointPairs) {
+    const Point3 da = abPair.first - centroids.first;
+    const Point3 db = abPair.second - centroids.second;
     H += da * db.transpose();
-    }
+  }
 
   // ClosestTo finds rotation matrix closest to H in Frobenius sense
-  Rot3 aRb = Rot3::ClosestTo(H);
-  Point3 aTb = Point3(aCentroid) - aRb * Point3(bCentroid);
+  const Rot3 aRb = Rot3::ClosestTo(H);
+  const Point3 aTb = centroids.first - aRb * centroids.second;
   return Pose3(aRb, aTb);
 }
 
-boost::optional<Pose3> align(const vector<Point3Pair>& baPointPairs) {
-  vector<Point3Pair> abPointPairs;
-  for (const Point3Pair& baPair: baPointPairs) {
-    abPointPairs.push_back(make_pair(baPair.second, baPair.first));
+boost::optional<Pose3> align(const Point3Pairs &baPointPairs) {
+  Point3Pairs abPointPairs;
+  for (const Point3Pair &baPair : baPointPairs) {
+    abPointPairs.emplace_back(baPair.second, baPair.first);
   }
   return Pose3::Align(abPointPairs);
 }
@@ -430,7 +419,7 @@ boost::optional<Pose3> align(const vector<Point3Pair>& baPointPairs) {
 std::ostream &operator<<(std::ostream &os, const Pose3& pose) {
   // Both Rot3 and Point3 have ostream definitions so we use them.
   os << "R: " << pose.rotation() << "\n";
-  os << "t: " << pose.translation();
+  os << "t: " << pose.translation().transpose();
   return os;
 }
 

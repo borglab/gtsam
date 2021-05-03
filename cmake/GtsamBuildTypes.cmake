@@ -1,3 +1,5 @@
+include(CheckCXXCompilerFlag) # for check_cxx_compiler_flag()
+
 # Set cmake policy to recognize the AppleClang compiler
 # independently from the Clang compiler.
 if(POLICY CMP0025)
@@ -57,10 +59,10 @@ endif()
 option(GTSAM_BUILD_TYPE_POSTFIXES        "Enable/Disable appending the build type to the name of compiled libraries" ON)
 
 # Define all cache variables, to be populated below depending on the OS/compiler:
-set(GTSAM_COMPILE_OPTIONS_PRIVATE        "" CACHE STRING "(Do not edit) Private compiler flags for all build configurations." FORCE)
-set(GTSAM_COMPILE_OPTIONS_PUBLIC         "" CACHE STRING "(Do not edit) Public compiler flags (exported to user projects) for all build configurations."  FORCE)
-set(GTSAM_COMPILE_DEFINITIONS_PRIVATE    "" CACHE STRING "(Do not edit) Private preprocessor macros for all build configurations." FORCE)
-set(GTSAM_COMPILE_DEFINITIONS_PUBLIC     "" CACHE STRING "(Do not edit) Public preprocessor macros for all build configurations." FORCE)
+set(GTSAM_COMPILE_OPTIONS_PRIVATE        "" CACHE INTERNAL "(Do not edit) Private compiler flags for all build configurations." FORCE)
+set(GTSAM_COMPILE_OPTIONS_PUBLIC         "" CACHE INTERNAL "(Do not edit) Public compiler flags (exported to user projects) for all build configurations."  FORCE)
+set(GTSAM_COMPILE_DEFINITIONS_PRIVATE    "" CACHE INTERNAL "(Do not edit) Private preprocessor macros for all build configurations." FORCE)
+set(GTSAM_COMPILE_DEFINITIONS_PUBLIC     "" CACHE INTERNAL "(Do not edit) Public preprocessor macros for all build configurations." FORCE)
 mark_as_advanced(GTSAM_COMPILE_OPTIONS_PRIVATE)
 mark_as_advanced(GTSAM_COMPILE_OPTIONS_PUBLIC)
 mark_as_advanced(GTSAM_COMPILE_DEFINITIONS_PRIVATE)
@@ -69,7 +71,7 @@ mark_as_advanced(GTSAM_COMPILE_DEFINITIONS_PUBLIC)
 foreach(build_type ${GTSAM_CMAKE_CONFIGURATION_TYPES})
   string(TOUPPER "${build_type}" build_type_toupper)
 
-  # Define empty cache variables for "public". "private" are creaed below.
+  # Define empty cache variables for "public". "private" are created below.
   set(GTSAM_COMPILE_OPTIONS_PUBLIC_${build_type_toupper}      "" CACHE STRING "(User editable) Public compiler flags (exported to user projects) for `${build_type_toupper}` configuration.")
   set(GTSAM_COMPILE_DEFINITIONS_PUBLIC_${build_type_toupper}  "" CACHE STRING "(User editable) Public preprocessor macros for `${build_type_toupper}` configuration.")
 endforeach()
@@ -105,11 +107,14 @@ if(MSVC)
 else()
   # Common to all configurations, next for each configuration:
 
-  if (
-      ((CMAKE_CXX_COMPILER_ID MATCHES "Clang") AND (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 12.0.0)) OR
-      (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-     )
-    set(flag_override_ -Wsuggest-override) # -Werror=suggest-override: Add again someday
+  if (NOT MSVC)
+    check_cxx_compiler_flag(-Wsuggest-override COMPILER_HAS_WSUGGEST_OVERRIDE)
+    check_cxx_compiler_flag(-Wmissing COMPILER_HAS_WMISSING_OVERRIDE)
+    if (COMPILER_HAS_WSUGGEST_OVERRIDE)
+      set(flag_override_ -Wsuggest-override) # -Werror=suggest-override: Add again someday
+    elseif(COMPILER_HAS_WMISSING_OVERRIDE)
+      set(flag_override_ -Wmissing-override) # -Werror=missing-override: Add again someday
+    endif()
   endif()
 
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON
@@ -199,9 +204,9 @@ endif()
 
 # Make common binary output directory when on Windows
 if(WIN32)
-  set(RUNTIME_OUTPUT_PATH "${CMAKE_BINARY_DIR}/bin")
-  set(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}/bin")
-  set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}/lib")
+  set(RUNTIME_OUTPUT_PATH "${GTSAM_BINARY_DIR}/bin")
+  set(EXECUTABLE_OUTPUT_PATH "${GTSAM_BINARY_DIR}/bin")
+  set(LIBRARY_OUTPUT_PATH "${GTSAM_BINARY_DIR}/lib")
 endif()
 
 # Set up build type list for cmake-gui
@@ -263,3 +268,17 @@ function(gtsam_apply_build_flags target_name_)
   target_compile_options(${target_name_} PRIVATE ${GTSAM_COMPILE_OPTIONS_PRIVATE})
 
 endfunction(gtsam_apply_build_flags)
+
+
+if(NOT MSVC AND NOT XCODE_VERSION)
+  # Set the build type to upper case for downstream use
+  string(TOUPPER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_UPPER)
+
+  # Set the GTSAM_BUILD_TAG variable.
+  # If build type is Release, set to blank (""), else set to the build type.
+  if(${CMAKE_BUILD_TYPE_UPPER} STREQUAL "RELEASE")
+   set(GTSAM_BUILD_TAG "") # Don't create release mode tag on installed directory
+  else()
+   set(GTSAM_BUILD_TAG "${CMAKE_BUILD_TYPE}")
+  endif()
+endif()

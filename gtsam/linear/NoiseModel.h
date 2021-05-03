@@ -188,7 +188,7 @@ namespace gtsam {
 
       typedef boost::shared_ptr<Gaussian> shared_ptr;
 
-      virtual ~Gaussian() {}
+      ~Gaussian() override {}
 
       /**
        * A Gaussian noise model created by specifying a square root information matrix.
@@ -300,7 +300,7 @@ namespace gtsam {
 
       typedef boost::shared_ptr<Diagonal> shared_ptr;
 
-      virtual ~Diagonal() {}
+      ~Diagonal() override {}
 
       /**
        * A diagonal noise model created by specifying a Vector of sigmas, i.e.
@@ -406,7 +406,7 @@ namespace gtsam {
 
       typedef boost::shared_ptr<Constrained> shared_ptr;
 
-      ~Constrained() {}
+      ~Constrained() override {}
 
       /// true if a constrained noise mode, saves slow/clumsy dynamic casting
       bool isConstrained() const override { return true; }
@@ -536,7 +536,7 @@ namespace gtsam {
 
     public:
 
-      virtual ~Isotropic() {}
+      ~Isotropic() override {}
 
       typedef boost::shared_ptr<Isotropic> shared_ptr;
 
@@ -600,7 +600,7 @@ namespace gtsam {
 
       typedef boost::shared_ptr<Unit> shared_ptr;
 
-      ~Unit() {}
+      ~Unit() override {}
 
       /**
        * Create a unit covariance noise model
@@ -671,7 +671,7 @@ namespace gtsam {
       : Base(noise->dim()), robust_(robust), noise_(noise) {}
 
       /// Destructor
-      ~Robust() {}
+      ~Robust() override {}
 
       void print(const std::string& name) const override;
       bool equals(const Base& expected, double tol=1e-9) const override;

@@ -80,7 +80,7 @@ protected:
 
 public:
 
-  /// Default constructor for serialization and Cython wrapper
+  /// Default constructor for serialization and wrappers
   PreintegratedImuMeasurements() {
     preintMeasCov_.setZero();
   }
@@ -107,7 +107,7 @@ public:
   }
 
   /// Virtual destructor
-  virtual ~PreintegratedImuMeasurements() {
+  ~PreintegratedImuMeasurements() override {
   }
 
   /// print
@@ -192,11 +192,13 @@ public:
    * @param pose_j Current pose key
    * @param vel_j  Current velocity key
    * @param bias   Previous bias key
+   * @param preintegratedMeasurements The preintegreated measurements since the
+   * last pose.
    */
   ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
       const PreintegratedImuMeasurements& preintegratedMeasurements);
 
-  virtual ~ImuFactor() {
+  ~ImuFactor() override {
   }
 
   /// @return a deep copy of this factor
@@ -274,7 +276,7 @@ public:
   ImuFactor2(Key state_i, Key state_j, Key bias,
              const PreintegratedImuMeasurements& preintegratedMeasurements);
 
-  virtual ~ImuFactor2() {
+  ~ImuFactor2() override {
   }
 
   /// @return a deep copy of this factor

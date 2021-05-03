@@ -88,36 +88,36 @@ enable_testing()
 
 option(GTSAM_BUILD_TESTS                 "Enable/Disable building of tests"          ON)
 option(GTSAM_BUILD_EXAMPLES_ALWAYS       "Build examples with 'make all' (build with 'make examples' if not)"       ON)
-	option(GTSAM_BUILD_TIMING_ALWAYS         "Build timing scripts with 'make all' (build with 'make timing' if not"    OFF)
+option(GTSAM_BUILD_TIMING_ALWAYS         "Build timing scripts with 'make all' (build with 'make timing' if not"    OFF)
 
-		# Add option for combining unit tests
-		if(MSVC OR XCODE_VERSION)
-			option(GTSAM_SINGLE_TEST_EXE "Combine unit tests into single executable (faster compile)" ON)
-		else()
-			option(GTSAM_SINGLE_TEST_EXE "Combine unit tests into single executable (faster compile)" OFF)
-		endif()
-		mark_as_advanced(GTSAM_SINGLE_TEST_EXE)
+# Add option for combining unit tests
+if(MSVC OR XCODE_VERSION)
+	option(GTSAM_SINGLE_TEST_EXE "Combine unit tests into single executable (faster compile)" ON)
+else()
+	option(GTSAM_SINGLE_TEST_EXE "Combine unit tests into single executable (faster compile)" OFF)
+endif()
+mark_as_advanced(GTSAM_SINGLE_TEST_EXE)
 
-		# Enable make check (http://www.cmake.org/Wiki/CMakeEmulateMakeCheck)
-		if(GTSAM_BUILD_TESTS)
-			add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> --output-on-failure)
-			# Also add alternative checks using valgrind.
-			# We don't look for valgrind being installed in the system, since these
-			# targets are not invoked unless directly instructed by the user.
-			if (UNIX)
-				# Run all tests using valgrind:
-				add_custom_target(check_valgrind)
-			endif()
+# Enable make check (http://www.cmake.org/Wiki/CMakeEmulateMakeCheck)
+if(GTSAM_BUILD_TESTS)
+	add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> --output-on-failure)
+	# Also add alternative checks using valgrind.
+	# We don't look for valgrind being installed in the system, since these
+	# targets are not invoked unless directly instructed by the user.
+	if (UNIX)
+		# Run all tests using valgrind:
+		add_custom_target(check_valgrind)
+	endif()
 
-			# Add target to build tests without running
-			add_custom_target(all.tests)
-		endif()
+	# Add target to build tests without running
+	add_custom_target(all.tests)
+endif()
 
-		# Add examples target
-		add_custom_target(examples)
+# Add examples target
+add_custom_target(examples)
 
-		# Add timing target
-		add_custom_target(timing)
+# Add timing target
+add_custom_target(timing)
 
 
 # Implementations of this file's macros:

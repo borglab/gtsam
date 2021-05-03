@@ -99,11 +99,8 @@ if(NOT TBB_FOUND)
   ##################################
 
   if(NOT DEFINED TBB_USE_DEBUG_BUILD)
-    if(CMAKE_BUILD_TYPE MATCHES "(Debug|DEBUG|debug|RelWithDebInfo|RELWITHDEBINFO|relwithdebinfo)")
-      set(TBB_BUILD_TYPE DEBUG)
-    else()
-      set(TBB_BUILD_TYPE RELEASE)
-    endif()
+    # Set build type to RELEASE by default for optimization.
+    set(TBB_BUILD_TYPE RELEASE)
   elseif(TBB_USE_DEBUG_BUILD)
     set(TBB_BUILD_TYPE DEBUG)
   else()

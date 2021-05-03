@@ -51,5 +51,5 @@ end
 
 for j=1:size(truth.points,2)
     point_j = result.atPoint3(symbol('l',j));
-    CHECK('point_j.equals(truth.points{j},1e-5)',point_j.equals(truth.points{j},1e-5))
+    CHECK('point_j.equals(truth.points{j},1e-5)',norm(point_j - truth.points{j}) < 1e-5)
 end

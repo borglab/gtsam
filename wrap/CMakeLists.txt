@@ -1,45 +1,87 @@
-# Build/install Wrap
+cmake_minimum_required(VERSION 3.9)
 
-set(WRAP_BOOST_LIBRARIES
-  Boost::system
-  Boost::filesystem
-  Boost::thread
-)
+# Set the project name and version
+project(gtwrap VERSION 1.0)
 
-# Allow for disabling serialization to handle errors related to Clang's linker
-option(GTSAM_WRAP_SERIALIZATION "If enabled, allows for wrapped objects to be saved via boost.serialization" ON)
+# ##############################################################################
+# General configuration
 
-# Build the executable itself
-file(GLOB wrap_srcs "*.cpp")
-file(GLOB wrap_headers "*.h")
-list(REMOVE_ITEM wrap_srcs ${CMAKE_CURRENT_SOURCE_DIR}/wrap.cpp)
-add_library(wrap_lib STATIC ${wrap_srcs} ${wrap_headers})
-target_include_directories(wrap_lib PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
-)
-if (NOT GTSAM_WRAP_SERIALIZATION)
-  target_compile_definitions(wrap_lib PUBLIC -DWRAP_DISABLE_SERIALIZE)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/GtwrapUtils.cmake)
+gtwrap_get_python_version(${WRAP_PYTHON_VERSION})
+
+# Set the variables to be used for the cmake config file.
+if(WIN32 AND NOT CYGWIN)
+  set(INSTALL_CMAKE_DIR CMake/${PROJECT_NAME})
+else()
+  set(INSTALL_CMAKE_DIR lib/cmake/${PROJECT_NAME})
 endif()
 
-# Apply build flags:
-gtsam_apply_build_flags(wrap_lib)
+set(INSTALL_LIB_DIR lib/${PROJECT_NAME})
+set(INSTALL_BIN_DIR bin/${PROJECT_NAME})
+set(INSTALL_INCLUDE_DIR include/${PROJECT_NAME})
 
-target_link_libraries(wrap_lib ${WRAP_BOOST_LIBRARIES})
-gtsam_assign_source_folders(${wrap_srcs} ${wrap_headers})
-add_executable(wrap wrap.cpp)
-target_link_libraries(wrap PRIVATE wrap_lib)
+# ##############################################################################
+# Package Configuration
 
-# Set folder in Visual Studio
-file(RELATIVE_PATH relative_path "${PROJECT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}")
-set_target_properties(wrap_lib wrap PROPERTIES FOLDER "${relative_path}")
+# Helper functions for generating the gtwrapConfig.cmake file correctly.
+include(CMakePackageConfigHelpers)
 
-# Install wrap binary and export target
-install(TARGETS wrap EXPORT GTSAM-exports DESTINATION ${CMAKE_INSTALL_BINDIR})
-list(APPEND GTSAM_EXPORTED_TARGETS wrap)
-set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
+# Configure the config file which is used for `find_package`.
+configure_package_config_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/gtwrapConfig.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/cmake/gtwrapConfig.cmake
+  INSTALL_DESTINATION "${INSTALL_CMAKE_DIR}"
+  PATH_VARS INSTALL_CMAKE_DIR INSTALL_LIB_DIR INSTALL_BIN_DIR
+            INSTALL_INCLUDE_DIR
+  INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
 
-# Install matlab header
-install(FILES matlab.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/wrap)
+# Set all the install paths
+set(GTWRAP_CMAKE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/${INSTALL_CMAKE_DIR})
+set(GTWRAP_LIB_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR})
+set(GTWRAP_BIN_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/${INSTALL_BIN_DIR})
+set(GTWRAP_INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/${INSTALL_INCLUDE_DIR})
 
-# Build tests
-add_subdirectory(tests)
+# ##############################################################################
+# Install the package
+
+# Install CMake scripts to the standard CMake script directory.
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cmake/gtwrapConfig.cmake
+              cmake/MatlabWrap.cmake cmake/PybindWrap.cmake
+              cmake/GtwrapUtils.cmake DESTINATION "${GTWRAP_CMAKE_INSTALL_DIR}")
+
+# Configure the include directory for matlab.h This allows the #include to be
+# either gtwrap/matlab.h, wrap/matlab.h or something custom.
+if(NOT DEFINED GTWRAP_INCLUDE_NAME)
+  set(GTWRAP_INCLUDE_NAME
+      "gtwrap"
+      CACHE INTERNAL "Directory name for Matlab includes")
+endif()
+
+configure_file(${PROJECT_SOURCE_DIR}/templates/matlab_wrapper.tpl.in
+               ${PROJECT_SOURCE_DIR}/gtwrap/matlab_wrapper.tpl)
+
+# Install the gtwrap python package as a directory so it can be found  by CMake
+# for wrapping.
+install(DIRECTORY gtwrap DESTINATION "${GTWRAP_LIB_INSTALL_DIR}")
+
+# Install pybind11 directory to `CMAKE_INSTALL_PREFIX/lib/gtwrap/pybind11` This
+# will allow the gtwrapConfig.cmake file to load it later.
+install(DIRECTORY pybind11 DESTINATION "${GTWRAP_LIB_INSTALL_DIR}")
+
+# Install wrapping scripts as binaries to `CMAKE_INSTALL_PREFIX/bin` so they can
+# be invoked for wrapping. We use DESTINATION (instead of TYPE) so we can
+# support older CMake versions.
+install(PROGRAMS scripts/pybind_wrap.py scripts/matlab_wrap.py
+        DESTINATION "${GTWRAP_BIN_INSTALL_DIR}")
+
+# Install the matlab.h file to `CMAKE_INSTALL_PREFIX/lib/gtwrap/matlab.h`.
+install(FILES matlab.h DESTINATION "${GTWRAP_INCLUDE_INSTALL_DIR}")
+
+string(ASCII 27 Esc)
+set(gtwrap "${Esc}[1;36mgtwrap${Esc}[m")
+message(STATUS "${gtwrap} Package config : ${GTWRAP_CMAKE_INSTALL_DIR}")
+message(STATUS "${gtwrap} version        : ${PROJECT_VERSION}")
+message(STATUS "${gtwrap} CMake path     : ${GTWRAP_CMAKE_INSTALL_DIR}")
+message(STATUS "${gtwrap} library path   : ${GTWRAP_LIB_INSTALL_DIR}")
+message(STATUS "${gtwrap} binary path    : ${GTWRAP_BIN_INSTALL_DIR}")
+message(STATUS "${gtwrap} header path    : ${GTWRAP_INCLUDE_INSTALL_DIR}")

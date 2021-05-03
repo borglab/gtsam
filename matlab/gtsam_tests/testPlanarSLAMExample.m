@@ -66,4 +66,4 @@ CHECK('pose_1.equals(Pose2,1e-4)',pose_1.equals(Pose2,1e-4));
 
 point_1 = result.atPoint2(symbol('l',1));
 marginals.marginalCovariance(symbol('l',1));
-CHECK('point_1.equals(Point2(2,2),1e-4)',point_1.equals(Point2(2,2),1e-4));
+CHECK('point_1.equals(Point2(2,2),1e-4)',norm(point_1 - Point2(2,2)) < 1e-4);

@@ -1,0 +1,355 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.8.11">
+  <compounddef id="classgtsam_1_1NoiseModelFactor2" kind="class" language="C++" prot="public" abstract="yes">
+    <compoundname>gtsam::NoiseModelFactor2</compoundname>
+    <basecompoundref refid="classgtsam_1_1NoiseModelFactor" prot="public" virt="non-virtual">gtsam::NoiseModelFactor</basecompoundref>
+    <includes refid="NonlinearFactor_8h" local="no">NonlinearFactor.h</includes>
+    <templateparamlist>
+      <param>
+        <type>class VALUE1</type>
+      </param>
+      <param>
+        <type>class VALUE2</type>
+      </param>
+    </templateparamlist>
+      <sectiondef kind="public-type">
+      <memberdef kind="typedef" id="classgtsam_1_1NoiseModelFactor2_1a5fb0fe8b056bad2171f84922c5184ef1" prot="public" static="no">
+        <type>VALUE1</type>
+        <definition>typedef VALUE1 gtsam::NoiseModelFactor2&lt; VALUE1, VALUE2 &gt;::X1</definition>
+        <argsstring></argsstring>
+        <name>X1</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="tests/doc-test-files/NonlinearFactor.h" line="350" column="1" bodyfile="tests/doc-test-files/NonlinearFactor.h" bodystart="350" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="classgtsam_1_1NoiseModelFactor2_1a3b3777f359b34892f33784d73cb62234" prot="public" static="no">
+        <type>VALUE2</type>
+        <definition>typedef VALUE2 gtsam::NoiseModelFactor2&lt; VALUE1, VALUE2 &gt;::X2</definition>
+        <argsstring></argsstring>
+        <name>X2</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="tests/doc-test-files/NonlinearFactor.h" line="351" column="1" bodyfile="tests/doc-test-files/NonlinearFactor.h" bodystart="351" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="protected-type">
+      <memberdef kind="typedef" id="classgtsam_1_1NoiseModelFactor2_1a8c2961991a7f2b253874612fc8124c09" prot="protected" static="no">
+        <type><ref refid="classgtsam_1_1NoiseModelFactor" kindref="compound">NoiseModelFactor</ref></type>
+        <definition>typedef NoiseModelFactor gtsam::NoiseModelFactor2&lt; VALUE1, VALUE2 &gt;::Base</definition>
+        <argsstring></argsstring>
+        <name>Base</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="tests/doc-test-files/NonlinearFactor.h" line="355" column="1" bodyfile="tests/doc-test-files/NonlinearFactor.h" bodystart="355" bodyend="-1"/>
+      </memberdef>
+      <memberdef kind="typedef" id="classgtsam_1_1NoiseModelFactor2_1a2743c4c486e80127e8eca591ee3ffbed" prot="protected" static="no">
+        <type><ref refid="classgtsam_1_1NoiseModelFactor2" kindref="compound">NoiseModelFactor2</ref>&lt; VALUE1, VALUE2 &gt;</type>
+        <definition>typedef NoiseModelFactor2&lt;VALUE1, VALUE2&gt; gtsam::NoiseModelFactor2&lt; VALUE1, VALUE2 &gt;::This</definition>
+        <argsstring></argsstring>
+        <name>This</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="tests/doc-test-files/NonlinearFactor.h" line="356" column="1" bodyfile="tests/doc-test-files/NonlinearFactor.h" bodystart="356" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="friend">
+      <memberdef kind="friend" id="classgtsam_1_1NoiseModelFactor2_1ac98d07dd8f7b70e16ccb9a01abf56b9c" prot="public" static="no" const="no" explicit="no" inline="no" virt="non-virtual">
+        <type>friend class</type>
+        <definition>friend class boost::serialization::access</definition>
+        <argsstring></argsstring>
+        <name>boost::serialization::access</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para>Serialization function </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="tests/doc-test-files/NonlinearFactor.h" line="408" column="1" bodyfile="tests/doc-test-files/NonlinearFactor.h" bodystart="408" bodyend="-1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="public-func">
+      <memberdef kind="function" id="classgtsam_1_1NoiseModelFactor2_1a04f5873776c784cafd55b4ac05b4b757" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>gtsam::NoiseModelFactor2&lt; VALUE1, VALUE2 &gt;::NoiseModelFactor2</definition>
+        <argsstring>()</argsstring>
+        <name>NoiseModelFactor2</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para>Default Constructor for I/O </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="tests/doc-test-files/NonlinearFactor.h" line="363" column="1" bodyfile="tests/doc-test-files/NonlinearFactor.h" bodystart="363" bodyend="363"/>
+      </memberdef>
+      <memberdef kind="function" id="classgtsam_1_1NoiseModelFactor2_1a35453b054509f5679a29a06b59340cf1" prot="public" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <type></type>
+        <definition>gtsam::NoiseModelFactor2&lt; VALUE1, VALUE2 &gt;::NoiseModelFactor2</definition>
+        <argsstring>(const SharedNoiseModel &amp;noiseModel, Key j1, Key j2)</argsstring>
+        <name>NoiseModelFactor2</name>
+        <param>
+          <type>const SharedNoiseModel &amp;</type>
+          <declname>noiseModel</declname>
+        </param>
+        <param>
+          <type>Key</type>
+          <declname>j1</declname>
+        </param>
+        <param>
+          <type>Key</type>
+          <declname>j2</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para>Constructor <parameterlist kind="param"><parameteritem>
+<parameternamelist>
+<parametername>noiseModel</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>shared pointer to noise model </para></parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>j1</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>key of the first variable </para></parameterdescription>
+</parameteritem>
+<parameteritem>
+<parameternamelist>
+<parametername>j2</parametername>
+</parameternamelist>
+<parameterdescription>
+<para>key of the second variable </para></parameterdescription>
+</parameteritem>
+</parameterlist>
+</para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="tests/doc-test-files/NonlinearFactor.h" line="371" column="1" bodyfile="tests/doc-test-files/NonlinearFactor.h" bodystart="371" bodyend="372"/>
+      </memberdef>
+      <memberdef kind="function" id="classgtsam_1_1NoiseModelFactor2_1ab629a5dc71461efe61d68faaf5a659f3" prot="public" static="no" const="no" explicit="no" inline="yes" virt="virtual">
+        <type></type>
+        <definition>virtual gtsam::NoiseModelFactor2&lt; VALUE1, VALUE2 &gt;::~NoiseModelFactor2</definition>
+        <argsstring>()</argsstring>
+        <name>~NoiseModelFactor2</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="tests/doc-test-files/NonlinearFactor.h" line="374" column="1" bodyfile="tests/doc-test-files/NonlinearFactor.h" bodystart="374" bodyend="374"/>
+      </memberdef>
+      <memberdef kind="function" id="classgtsam_1_1NoiseModelFactor2_1ae3b88b40b4ee6e9af9eefcde77bf9768" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>Key</type>
+        <definition>Key gtsam::NoiseModelFactor2&lt; VALUE1, VALUE2 &gt;::key1</definition>
+        <argsstring>() const </argsstring>
+        <name>key1</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para>methods to retrieve both keys </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="tests/doc-test-files/NonlinearFactor.h" line="377" column="1" bodyfile="tests/doc-test-files/NonlinearFactor.h" bodystart="377" bodyend="377"/>
+      </memberdef>
+      <memberdef kind="function" id="classgtsam_1_1NoiseModelFactor2_1a4d27f5d0beaa35e1e4a5f0ef8974c5a6" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="non-virtual">
+        <type>Key</type>
+        <definition>Key gtsam::NoiseModelFactor2&lt; VALUE1, VALUE2 &gt;::key2</definition>
+        <argsstring>() const </argsstring>
+        <name>key2</name>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="tests/doc-test-files/NonlinearFactor.h" line="378" column="1" bodyfile="tests/doc-test-files/NonlinearFactor.h" bodystart="378" bodyend="378"/>
+      </memberdef>
+      <memberdef kind="function" id="classgtsam_1_1NoiseModelFactor2_1a9640bbbb433383f0b40b5c2d9439415e" prot="public" static="no" const="yes" explicit="no" inline="yes" virt="virtual">
+        <type>Vector</type>
+        <definition>virtual Vector gtsam::NoiseModelFactor2&lt; VALUE1, VALUE2 &gt;::unwhitenedError</definition>
+        <argsstring>(const Values &amp;x, boost::optional&lt; std::vector&lt; Matrix &gt; &amp; &gt; H=boost::none) const </argsstring>
+        <name>unwhitenedError</name>
+        <reimplements refid="classgtsam_1_1NoiseModelFactor_1afd61874915a8076bf83f9d8311fc0e26">unwhitenedError</reimplements>
+        <param>
+          <type>const Values &amp;</type>
+          <declname>x</declname>
+        </param>
+        <param>
+          <type>boost::optional&lt; std::vector&lt; Matrix &gt; &amp; &gt;</type>
+          <declname>H</declname>
+          <defval>boost::none</defval>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para>Calls the 2-key specific version of evaluateError, which is pure virtual so must be implemented in the derived class. </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="tests/doc-test-files/NonlinearFactor.h" line="382" column="1" bodyfile="tests/doc-test-files/NonlinearFactor.h" bodystart="382" bodyend="394"/>
+      </memberdef>
+      <memberdef kind="function" id="classgtsam_1_1NoiseModelFactor2_1a9aa6dcd7db6734479e2212213b021ec1" prot="public" static="no" const="yes" explicit="no" inline="no" virt="pure-virtual">
+        <type>Vector</type>
+        <definition>virtual Vector gtsam::NoiseModelFactor2&lt; VALUE1, VALUE2 &gt;::evaluateError</definition>
+        <argsstring>(const X1 &amp;, const X2 &amp;, boost::optional&lt; Matrix &amp; &gt; H1=boost::none, boost::optional&lt; Matrix &amp; &gt; H2=boost::none) const =0</argsstring>
+        <name>evaluateError</name>
+        <param>
+          <type>const X1 &amp;</type>
+        </param>
+        <param>
+          <type>const X2 &amp;</type>
+        </param>
+        <param>
+          <type>boost::optional&lt; Matrix &amp; &gt;</type>
+          <declname>H1</declname>
+          <defval>boost::none</defval>
+        </param>
+        <param>
+          <type>boost::optional&lt; Matrix &amp; &gt;</type>
+          <declname>H2</declname>
+          <defval>boost::none</defval>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+<para>Override this method to finish implementing a binary factor. If any of the optional Matrix reference arguments are specified, it should compute both the function evaluation and its derivative(s) in X1 (and/or X2). </para>        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="tests/doc-test-files/NonlinearFactor.h" line="402" column="1"/>
+      </memberdef>
+      </sectiondef>
+      <sectiondef kind="private-func">
+      <memberdef kind="function" id="classgtsam_1_1NoiseModelFactor2_1ae600c15f59be175aca5b059e488d7166" prot="private" static="no" const="no" explicit="no" inline="yes" virt="non-virtual">
+        <templateparamlist>
+          <param>
+            <type>class ARCHIVE</type>
+          </param>
+        </templateparamlist>
+        <type>void</type>
+        <definition>void gtsam::NoiseModelFactor2&lt; VALUE1, VALUE2 &gt;::serialize</definition>
+        <argsstring>(ARCHIVE &amp;ar, const unsigned int)</argsstring>
+        <name>serialize</name>
+        <param>
+          <type>ARCHIVE &amp;</type>
+          <declname>ar</declname>
+        </param>
+        <param>
+          <type>const unsigned</type>
+          <declname>int</declname>
+        </param>
+        <briefdescription>
+        </briefdescription>
+        <detaileddescription>
+        </detaileddescription>
+        <inbodydescription>
+        </inbodydescription>
+        <location file="tests/doc-test-files/NonlinearFactor.h" line="410" column="1" bodyfile="tests/doc-test-files/NonlinearFactor.h" bodystart="410" bodyend="413"/>
+      </memberdef>
+      </sectiondef>
+    <briefdescription>
+    </briefdescription>
+    <detaileddescription>
+<para>A convenient base class for creating your own <ref refid="classgtsam_1_1NoiseModelFactor" kindref="compound">NoiseModelFactor</ref> with 2 variables. To derive from this class, implement <ref refid="classgtsam_1_1NoiseModelFactor2_1a9aa6dcd7db6734479e2212213b021ec1" kindref="member">evaluateError()</ref>. </para>    </detaileddescription>
+    <inheritancegraph>
+      <node id="110">
+        <label>Factor</label>
+      </node>
+      <node id="109">
+        <label>gtsam::NonlinearFactor</label>
+        <link refid="classgtsam_1_1NonlinearFactor"/>
+        <childnode refid="110" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="108">
+        <label>gtsam::NoiseModelFactor</label>
+        <link refid="classgtsam_1_1NoiseModelFactor"/>
+        <childnode refid="109" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="107">
+        <label>gtsam::NoiseModelFactor2&lt; VALUE1, VALUE2 &gt;</label>
+        <link refid="classgtsam_1_1NoiseModelFactor2"/>
+        <childnode refid="108" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="114">
+        <label>Factor</label>
+      </node>
+      <node id="113">
+        <label>gtsam::NonlinearFactor</label>
+        <link refid="classgtsam_1_1NonlinearFactor"/>
+        <childnode refid="114" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="112">
+        <label>gtsam::NoiseModelFactor</label>
+        <link refid="classgtsam_1_1NoiseModelFactor"/>
+        <childnode refid="113" relation="public-inheritance">
+        </childnode>
+      </node>
+      <node id="111">
+        <label>gtsam::NoiseModelFactor2&lt; VALUE1, VALUE2 &gt;</label>
+        <link refid="classgtsam_1_1NoiseModelFactor2"/>
+        <childnode refid="112" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="tests/doc-test-files/NonlinearFactor.h" line="345" column="1" bodyfile="tests/doc-test-files/NonlinearFactor.h" bodystart="345" bodyend="414"/>
+    <listofallmembers>
+      <member refid="classgtsam_1_1NonlinearFactor_1a1968f471dc3ea33aaf0226ff7be5ae8c" prot="public" virt="virtual"><scope>gtsam::NoiseModelFactor2</scope><name>active</name></member>
+      <member refid="classgtsam_1_1NoiseModelFactor2_1a8c2961991a7f2b253874612fc8124c09" prot="protected" virt="non-virtual"><scope>gtsam::NoiseModelFactor2</scope><name>Base</name></member>
+      <member refid="classgtsam_1_1NoiseModelFactor2_1ac98d07dd8f7b70e16ccb9a01abf56b9c" prot="public" virt="non-virtual"><scope>gtsam::NoiseModelFactor2</scope><name>boost::serialization::access</name></member>
+      <member refid="classgtsam_1_1NonlinearFactor_1aa98a30a78ade8489214ce2e5b8302777" prot="public" virt="virtual"><scope>gtsam::NoiseModelFactor2</scope><name>clone</name></member>
+      <member refid="classgtsam_1_1NoiseModelFactor_1af4f62b52fff1a0527ecdb279de023728" prot="public" virt="virtual"><scope>gtsam::NoiseModelFactor2</scope><name>dim</name></member>
+      <member refid="classgtsam_1_1NoiseModelFactor_1a616d0335db512e9c333cab83b1923399" prot="public" virt="virtual"><scope>gtsam::NoiseModelFactor2</scope><name>equals</name></member>
+      <member refid="classgtsam_1_1NoiseModelFactor_1af6147aff3a33f734435601f6dcafeaf9" prot="public" virt="virtual"><scope>gtsam::NoiseModelFactor2</scope><name>error</name></member>
+      <member refid="classgtsam_1_1NoiseModelFactor2_1a9aa6dcd7db6734479e2212213b021ec1" prot="public" virt="pure-virtual"><scope>gtsam::NoiseModelFactor2</scope><name>evaluateError</name></member>
+      <member refid="classgtsam_1_1NoiseModelFactor_1a16a8a23069ce6ae664f516edc8f36254" prot="public" virt="non-virtual"><scope>gtsam::NoiseModelFactor2</scope><name>get_noiseModel</name></member>
+      <member refid="classgtsam_1_1NoiseModelFactor2_1ae3b88b40b4ee6e9af9eefcde77bf9768" prot="public" virt="non-virtual"><scope>gtsam::NoiseModelFactor2</scope><name>key1</name></member>
+      <member refid="classgtsam_1_1NoiseModelFactor2_1a4d27f5d0beaa35e1e4a5f0ef8974c5a6" prot="public" virt="non-virtual"><scope>gtsam::NoiseModelFactor2</scope><name>key2</name></member>
+      <member refid="classgtsam_1_1NoiseModelFactor_1a0c83582a0bd04e112e4c0a17cd4ed324" prot="public" virt="virtual"><scope>gtsam::NoiseModelFactor2</scope><name>linearize</name></member>
+      <member refid="classgtsam_1_1NoiseModelFactor_1a123e5729d70b4acd6d7e1f70b1a7ced4" prot="public" virt="non-virtual"><scope>gtsam::NoiseModelFactor2</scope><name>noiseModel</name></member>
+      <member refid="classgtsam_1_1NoiseModelFactor_1a2263eabbefe0eede8c9d10486f61bb4d" prot="protected" virt="non-virtual"><scope>gtsam::NoiseModelFactor2</scope><name>noiseModel_</name></member>
+      <member refid="classgtsam_1_1NoiseModelFactor_1ad6e8ef3348e042d598617d1d55f20300" prot="public" virt="non-virtual"><scope>gtsam::NoiseModelFactor2</scope><name>NoiseModelFactor</name></member>
+      <member refid="classgtsam_1_1NoiseModelFactor_1a02cea97db30d27b51feaf1f0444d743c" prot="public" virt="non-virtual"><scope>gtsam::NoiseModelFactor2</scope><name>NoiseModelFactor</name></member>
+      <member refid="classgtsam_1_1NoiseModelFactor_1a4605224417029e9dc58c5267efa9a46d" prot="protected" virt="non-virtual"><scope>gtsam::NoiseModelFactor2</scope><name>NoiseModelFactor</name></member>
+      <member refid="classgtsam_1_1NoiseModelFactor2_1a04f5873776c784cafd55b4ac05b4b757" prot="public" virt="non-virtual"><scope>gtsam::NoiseModelFactor2</scope><name>NoiseModelFactor2</name></member>
+      <member refid="classgtsam_1_1NoiseModelFactor2_1a35453b054509f5679a29a06b59340cf1" prot="public" virt="non-virtual"><scope>gtsam::NoiseModelFactor2</scope><name>NoiseModelFactor2</name></member>
+      <member refid="classgtsam_1_1NonlinearFactor_1a7c719ae67f222f66569ccb3b526cb9cb" prot="public" virt="non-virtual"><scope>gtsam::NoiseModelFactor2</scope><name>NonlinearFactor</name></member>
+      <member refid="classgtsam_1_1NonlinearFactor_1a8a7610dba7e9a6f878268c2769ea0e04" prot="public" virt="non-virtual"><scope>gtsam::NoiseModelFactor2</scope><name>NonlinearFactor</name></member>
+      <member refid="classgtsam_1_1NoiseModelFactor_1a682e0bbaf0c9638b7d0d96148082d1d7" prot="public" virt="virtual"><scope>gtsam::NoiseModelFactor2</scope><name>print</name></member>
+      <member refid="classgtsam_1_1NonlinearFactor_1a95f4d57e8646b6df634496aaabb683b5" prot="public" virt="non-virtual"><scope>gtsam::NoiseModelFactor2</scope><name>rekey</name></member>
+      <member refid="classgtsam_1_1NonlinearFactor_1a5f760600e8608ef15c825a0f8d1d1855" prot="public" virt="non-virtual"><scope>gtsam::NoiseModelFactor2</scope><name>rekey</name></member>
+      <member refid="classgtsam_1_1NoiseModelFactor2_1ae600c15f59be175aca5b059e488d7166" prot="private" virt="non-virtual"><scope>gtsam::NoiseModelFactor2</scope><name>serialize</name></member>
+      <member refid="classgtsam_1_1NoiseModelFactor_1a57d98d52fb6f91ebc54d74746aeb90e4" prot="public" virt="non-virtual"><scope>gtsam::NoiseModelFactor2</scope><name>shared_ptr</name></member>
+      <member refid="classgtsam_1_1NoiseModelFactor2_1a2743c4c486e80127e8eca591ee3ffbed" prot="protected" virt="non-virtual"><scope>gtsam::NoiseModelFactor2</scope><name>This</name></member>
+      <member refid="classgtsam_1_1NoiseModelFactor2_1a9640bbbb433383f0b40b5c2d9439415e" prot="public" virt="virtual"><scope>gtsam::NoiseModelFactor2</scope><name>unwhitenedError</name></member>
+      <member refid="classgtsam_1_1NoiseModelFactor_1a1b3ea51380315bfd63f60d8d9195b0c1" prot="public" virt="non-virtual"><scope>gtsam::NoiseModelFactor2</scope><name>whitenedError</name></member>
+      <member refid="classgtsam_1_1NoiseModelFactor2_1a5fb0fe8b056bad2171f84922c5184ef1" prot="public" virt="non-virtual"><scope>gtsam::NoiseModelFactor2</scope><name>X1</name></member>
+      <member refid="classgtsam_1_1NoiseModelFactor2_1a3b3777f359b34892f33784d73cb62234" prot="public" virt="non-virtual"><scope>gtsam::NoiseModelFactor2</scope><name>X2</name></member>
+      <member refid="classgtsam_1_1NoiseModelFactor_1ae1ed5e0fa6c471b57172f7ebaf552187" prot="public" virt="virtual"><scope>gtsam::NoiseModelFactor2</scope><name>~NoiseModelFactor</name></member>
+      <member refid="classgtsam_1_1NoiseModelFactor2_1ab629a5dc71461efe61d68faaf5a659f3" prot="public" virt="virtual"><scope>gtsam::NoiseModelFactor2</scope><name>~NoiseModelFactor2</name></member>
+      <member refid="classgtsam_1_1NonlinearFactor_1ac457810c504de58732d51d61f715c2de" prot="public" virt="virtual"><scope>gtsam::NoiseModelFactor2</scope><name>~NonlinearFactor</name></member>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

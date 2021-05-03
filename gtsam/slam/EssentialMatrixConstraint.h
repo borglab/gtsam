@@ -57,7 +57,7 @@ public:
       Base(model, key1, key2), measuredE_(measuredE) {
   }
 
-  virtual ~EssentialMatrixConstraint() {
+  ~EssentialMatrixConstraint() override {
   }
 
   /// @return a deep copy of this factor

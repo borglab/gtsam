@@ -34,6 +34,7 @@
 #endif
 
 #include <cmath>
+#include <fstream>
 #include <limits>
 
 using namespace std;
@@ -205,48 +206,65 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
     // Create factors and variable connections
     for(size_t i = 0; i < size(); ++i) {
       const NonlinearFactor::shared_ptr& factor = at(i);
-      if(formatting.plotFactorPoints) {
+      // If null pointer, move on to the next
+      if (!factor) {
+        continue;
+      }
+
+      if (formatting.plotFactorPoints) {
         const KeyVector& keys = factor->keys();
-        if (formatting.binaryEdges && keys.size()==2) {
-          stm << "  var" << keys[0] << "--" << "var" << keys[1] << ";\n";
+        if (formatting.binaryEdges && keys.size() == 2) {
+          stm << "  var" << keys[0] << "--"
+              << "var" << keys[1] << ";\n";
         } else {
           // Make each factor a dot
           stm << "  factor" << i << "[label=\"\", shape=point";
           {
-            map<size_t, Point2>::const_iterator pos = formatting.factorPositions.find(i);
-            if(pos != formatting.factorPositions.end())
-              stm << ", pos=\"" << formatting.scale*(pos->second.x() - minX) << ","
-                  << formatting.scale*(pos->second.y() - minY) << "!\"";
+            map<size_t, Point2>::const_iterator pos =
+                formatting.factorPositions.find(i);
+            if (pos != formatting.factorPositions.end())
+              stm << ", pos=\"" << formatting.scale * (pos->second.x() - minX)
+                  << "," << formatting.scale * (pos->second.y() - minY)
+                  << "!\"";
           }
           stm << "];\n";
 
           // Make factor-variable connections
-          if(formatting.connectKeysToFactor && factor) {
-            for(Key key: *factor) {
-              stm << "  var" << key << "--" << "factor" << i << ";\n";
+          if (formatting.connectKeysToFactor && factor) {
+            for (Key key : *factor) {
+              stm << "  var" << key << "--"
+                  << "factor" << i << ";\n";
             }
           }
         }
-      }
-      else {
-        if(factor) {
-          Key k;
-          bool firstTime = true;
-          for(Key key: *this->at(i)) {
-            if(firstTime) {
-              k = key;
-              firstTime = false;
-              continue;
-            }
-            stm << "  var" << key << "--" << "var" << k << ";\n";
+      } else {
+        Key k;
+        bool firstTime = true;
+        for (Key key : *this->at(i)) {
+          if (firstTime) {
             k = key;
+            firstTime = false;
+            continue;
           }
+          stm << "  var" << key << "--"
+              << "var" << k << ";\n";
+          k = key;
         }
       }
     }
   }
 
   stm << "}\n";
+}
+
+/* ************************************************************************* */
+void NonlinearFactorGraph::saveGraph(
+    const std::string& file, const Values& values,
+    const GraphvizFormatting& graphvizFormatting,
+    const KeyFormatter& keyFormatter) const {
+  std::ofstream of(file);
+  saveGraph(of, values, graphvizFormatting, keyFormatter);
+  of.close();
 }
 
 /* ************************************************************************* */
@@ -358,7 +376,7 @@ static Scatter scatterFromValues(const Values& values) {
   scatter.reserve(values.size());
 
   // use "natural" ordering with keys taken from the initial values
-  for (const auto& key_value : values) {
+  for (const auto key_value : values) {
     scatter.add(key_value.key, key_value.value.dim());
   }
 
