@@ -102,47 +102,52 @@ typedef FastSet<FactorIndex> FactorIndexSet;
     /// @}
 
   public:
-    /// @name Standard Interface
-    /// @{
+   /// Default destructor
+   // public since it is required for boost serialization and static methods.
+   // virtual since it is public.
+   // http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Rc-dtor-virtual
+   virtual ~Factor() = default;
 
-    /// First key
-    Key front() const { return keys_.front(); }
+   /// @name Standard Interface
+   /// @{
 
-    /// Last key
-    Key back() const { return keys_.back(); }
+   /// First key
+   Key front() const { return keys_.front(); }
 
-    /// find
-    const_iterator find(Key key) const { return std::find(begin(), end(), key); }
+   /// Last key
+   Key back() const { return keys_.back(); }
 
-    /// Access the factor's involved variable keys
-    const KeyVector& keys() const { return keys_; }
+   /// find
+   const_iterator find(Key key) const { return std::find(begin(), end(), key); }
 
-    /** Iterator at beginning of involved variable keys */
-    const_iterator begin() const { return keys_.begin(); }
+   /// Access the factor's involved variable keys
+   const KeyVector& keys() const { return keys_; }
 
-    /** Iterator at end of involved variable keys */
-    const_iterator end() const { return keys_.end(); }
+   /** Iterator at beginning of involved variable keys */
+   const_iterator begin() const { return keys_.begin(); }
 
-    /**
+   /** Iterator at end of involved variable keys */
+   const_iterator end() const { return keys_.end(); }
+
+   /**
     * @return the number of variables involved in this factor
     */
-    size_t size() const { return keys_.size(); }
+   size_t size() const { return keys_.size(); }
 
-    /// @}
+   /// @}
 
+   /// @name Testable
+   /// @{
 
-    /// @name Testable
-    /// @{
+   /// print
+   virtual void print(
+       const std::string& s = "Factor",
+       const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
-    /// print
-    virtual void print(
-        const std::string& s = "Factor",
-        const KeyFormatter& formatter = DefaultKeyFormatter) const;
-
-    /// print only keys
-    virtual void printKeys(
-        const std::string& s = "Factor",
-        const KeyFormatter& formatter = DefaultKeyFormatter) const;
+   /// print only keys
+   virtual void printKeys(
+       const std::string& s = "Factor",
+       const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
   protected:
     /// check equality
