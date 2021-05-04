@@ -2,7 +2,7 @@
 BOOST_FOLDER=boost_${BOOST_VERSION//./_}
 
 # Download Boost
-wget https://dl.bintray.com/boostorg/release/${BOOST_VERSION}/source/${BOOST_FOLDER}.tar.gz
+wget https://boostorg.jfrog.io/artifactory/main/release/${BOOST_VERSION}/source/${BOOST_FOLDER}.tar.gz
 
 # Unzip
 tar -zxf ${BOOST_FOLDER}.tar.gz
