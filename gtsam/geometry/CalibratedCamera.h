@@ -119,22 +119,20 @@ public:
   /// @name Standard Constructors
   /// @{
 
-  /** default constructor */
-  PinholeBase() {
-  }
+  /// Default constructor
+  PinholeBase() {}
 
-  /** constructor with pose */
-  explicit PinholeBase(const Pose3& pose) :
-      pose_(pose) {
-  }
+  /// Constructor with pose
+  explicit PinholeBase(const Pose3& pose) : pose_(pose) {}
 
   /// @}
   /// @name Advanced Constructors
   /// @{
 
-  explicit PinholeBase(const Vector &v) :
-      pose_(Pose3::Expmap(v)) {
-  }
+  explicit PinholeBase(const Vector& v) : pose_(Pose3::Expmap(v)) {}
+
+  /// Default destructor
+  virtual ~PinholeBase() = default;
 
   /// @}
   /// @name Testable
