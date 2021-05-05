@@ -10,11 +10,11 @@
 
 namespace gtsam {
 
-// Actually a FastList<Key>
 #include <gtsam/inference/Key.h>
 
 const KeyFormatter DefaultKeyFormatter;
 
+// Actually a FastList<Key>
 class KeyList {
   KeyList();
   KeyList(const gtsam::KeyList& other);
@@ -1284,31 +1284,26 @@ class SymbolicBayesTree {
   gtsam::SymbolicBayesNet* jointBayesNet(size_t key1, size_t key2) const;
 };
 
-// class SymbolicBayesTreeClique {
-//   SymbolicBayesTreeClique();
-//   SymbolicBayesTreeClique(CONDITIONAL* conditional);
-//   SymbolicBayesTreeClique(const pair<typename ConditionalType::shared_ptr, typename ConditionalType::FactorType::shared_ptr>& result) : Base(result) {}
-//
-//   bool equals(const This& other, double tol) const;
-//   void print(string s = "",
-//              const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter) const;
-//   void printTree() const; // Default indent of ""
-//   void printTree(string indent) const;
-//   size_t numCachedSeparatorMarginals() const;
-//
-//   CONDITIONAL* conditional() const;
-//   bool isRoot() const;
-//   size_t treeSize() const;
-//  const std::list<derived_ptr>& children() const { return children_; }
-//  derived_ptr parent() const { return parent_.lock(); }
-//
+class SymbolicBayesTreeClique {
+  SymbolicBayesTreeClique();
+  // SymbolicBayesTreeClique(gtsam::sharedConditional* conditional);
+
+  bool equals(const gtsam::SymbolicBayesTreeClique& other, double tol) const;
+  void print(string s = "",
+             const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter) const;
+  size_t numCachedSeparatorMarginals() const;
+  // gtsam::sharedConditional* conditional() const;
+  bool isRoot() const;
+  size_t treeSize() const;
+  gtsam::SymbolicBayesTreeClique* parent() const;
+
 //   // TODO: need wrapped versions graphs, BayesNet
 //  BayesNet<ConditionalType> shortcut(derived_ptr root, Eliminate function) const;
 //  FactorGraph<FactorType> marginal(derived_ptr root, Eliminate function) const;
 //  FactorGraph<FactorType> joint(derived_ptr C2, derived_ptr root, Eliminate function) const;
 //
-//   void deleteCachedShortcuts();
-// };
+  void deleteCachedShortcuts();
+};
 
 #include <gtsam/inference/VariableIndex.h>
 class VariableIndex {
@@ -1554,7 +1549,7 @@ class Sampler {
 
 #include <gtsam/linear/VectorValues.h>
 class VectorValues {
-    //Constructors
+  //Constructors
   VectorValues();
   VectorValues(const gtsam::VectorValues& other);
 
@@ -2160,7 +2155,7 @@ virtual class NonlinearFactor {
   bool active(const gtsam::Values& c) const;
   gtsam::GaussianFactor* linearize(const gtsam::Values& c) const;
   gtsam::NonlinearFactor* clone() const;
-  // gtsam::NonlinearFactor* rekey(const gtsam::KeyVector& newKeys) const; //TODO: Conversion from KeyVector to std::vector does not happen
+  gtsam::NonlinearFactor* rekey(const gtsam::KeyVector& newKeys) const;
 };
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
@@ -2778,11 +2773,17 @@ virtual class GeneralSFMFactor2 : gtsam::NoiseModelFactor {
 };
 
 #include <gtsam/slam/SmartProjectionFactor.h>
+
+/// Linearization mode: what factor to linearize to
+enum LinearizationMode { HESSIAN, IMPLICIT_SCHUR, JACOBIAN_Q, JACOBIAN_SVD };
+
+/// How to manage degeneracy
+enum DegeneracyMode { IGNORE_DEGENERACY, ZERO_ON_DEGENERACY, HANDLE_INFINITY };
+
 class SmartProjectionParams {
   SmartProjectionParams();
-  // TODO(frank): make these work:
-  //  void setLinearizationMode(LinearizationMode linMode);
-  //  void setDegeneracyMode(DegeneracyMode degMode);
+  void setLinearizationMode(gtsam::LinearizationMode linMode);
+  void setDegeneracyMode(gtsam::DegeneracyMode degMode);
   void setRankTolerance(double rankTol);
   void setEnableEPI(bool enableEPI);
   void setLandmarkDistanceThreshold(bool landmarkDistanceThreshold);
