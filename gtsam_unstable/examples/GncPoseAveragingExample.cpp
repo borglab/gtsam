@@ -46,14 +46,18 @@ int main(int argc, char** argv){
   // Seed random number generator
   random_device rd;
   mt19937 rng(rd());
-  uniform_real_distribution<double> uniformOutliers(-10, 10);
+  uniform_real_distribution<double> uniform(-10, 10);
   normal_distribution<double> normalInliers(0.0, 0.05);
 
   Values initial;
   initial.insert(0, Pose3::identity()); // identity pose as initialization
 
   // create ground truth pose
-  Pose3 gtPose = Pose3( Rot3::Ypr(3.0, 1.5, 0.8), Point3(4,1,3) );
+  Vector6 poseGtVector;
+  for(size_t i = 0; i < 6; ++i){
+    poseGtVector(i) = uniform(rng);
+  }
+  Pose3 gtPose = Pose3::Expmap(poseGtVector); // Pose3( Rot3::Ypr(3.0, 1.5, 0.8), Point3(4,1,3) );
 
   NonlinearFactorGraph graph;
   const noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(6,0.05);
@@ -71,7 +75,7 @@ int main(int argc, char** argv){
   for(size_t i=0; i<nrOutliers; i++){
     Vector6 poseNoise;
     for(size_t i = 0; i < 6; ++i){
-      poseNoise(i) = uniformOutliers(rng);
+      poseNoise(i) = uniform(rng);
     }
     Pose3 poseMeasurement = gtPose.retract(poseNoise);
     graph.add(gtsam::PriorFactor<gtsam::Pose3>(0,poseMeasurement,model));
