@@ -74,6 +74,32 @@ class GncOptimizer {
       }
     }
 
+    // check that known inliers and outliers make sense:
+    std::vector<size_t> incorrectlySpecifiedWeights; // measurements the user has incorrectly specified
+    // to be BOTH known inliers and known outliers
+    std::set_intersection(params.knownInliers.begin(),params.knownInliers.end(),
+                        params.knownOutliers.begin(),
+                        params.knownOutliers.end(),
+                        std::inserter(incorrectlySpecifiedWeights, incorrectlySpecifiedWeights.begin()));
+    if(incorrectlySpecifiedWeights.size() > 0){
+      params.print("params\n");
+      throw std::runtime_error("GncOptimizer::constructor: the user has selected one or more measurements"
+          " to be both a known inlier and a known outlier.");
+    }
+    // check that known inliers are in the graph
+    for (size_t i = 0; i < params.knownInliers.size(); i++){
+      if( params.knownInliers[i] > nfg_.size()-1 ){
+        throw std::runtime_error("GncOptimizer::constructor: the user has selected one or more measurements"
+                  "that are not in the factor graph to be known inliers.");
+      }
+    }
+    // check that known outliers are in the graph
+    for (size_t i = 0; i < params.knownOutliers.size(); i++){
+      if( params.knownOutliers[i] > nfg_.size()-1 ){
+        throw std::runtime_error("GncOptimizer::constructor: the user has selected one or more measurements"
+                  "that are not in the factor graph to be known outliers.");
+      }
+    }
     // set default barcSq_ (inlier threshold)
     double alpha = 0.99; // with this (default) probability, inlier residuals are smaller than barcSq_
     setInlierCostThresholdsAtProbability(alpha);
@@ -132,10 +158,18 @@ class GncOptimizer {
         && equal(barcSq_, other.getInlierCostThresholds());
   }
 
+  Vector initializeWeightsFromKnownInliersAndOutliers() const{
+    Vector weights = Vector::Ones(nfg_.size());
+    for (size_t i = 0; i < params_.knownOutliers.size(); i++){
+      weights[ params_.knownOutliers[i] ] = 0.0;
+    }
+    return weights;
+  }
+
   /// Compute optimal solution using graduated non-convexity.
   Values optimize() {
     // start by assuming all measurements are inliers
-    weights_ = Vector::Ones(nfg_.size());
+    weights_ = initializeWeightsFromKnownInliersAndOutliers();
     BaseOptimizer baseOptimizer(nfg_, state_);
     Values result = baseOptimizer.optimize();
     double mu = initializeMu();
@@ -146,10 +180,16 @@ class GncOptimizer {
     // maximum residual errors at initialization
     // For GM: if residual error is small, mu -> 0
     // For TLS: if residual error is small, mu -> -1
-    if (mu <= 0) {
-      if (params_.verbosity >= GncParameters::Verbosity::SUMMARY) {
+    int nrUnknownInOrOut = nfg_.size() - ( params_.knownInliers.size() + params_.knownOutliers.size() );
+    // ^^ number of measurements that are not known to be inliers or outliers
+    if (mu <= 0 || nrUnknownInOrOut == 0) {
+      if (mu <= 0 && params_.verbosity >= GncParameters::Verbosity::SUMMARY) {
         std::cout << "GNC Optimizer stopped because maximum residual at "
                   "initialization is small."
+                  << std::endl;
+      }
+      if (nrUnknownInOrOut==0 && params_.verbosity >= GncParameters::Verbosity::SUMMARY) {
+        std::cout << "GNC Optimizer stopped because all measurements are already known to be inliers or outliers"
                   << std::endl;
       }
       if (params_.verbosity >= GncParameters::Verbosity::VALUES) {
@@ -350,7 +390,7 @@ class GncOptimizer {
 
   /// Calculate gnc weights.
   Vector calculateWeights(const Values& currentEstimate, const double mu) {
-    Vector weights = Vector::Ones(nfg_.size());
+    Vector weights = initializeWeightsFromKnownInliersAndOutliers();
 
     // do not update the weights that the user has decided are known inliers
     std::vector<size_t> allWeights;
@@ -362,6 +402,10 @@ class GncOptimizer {
                         params_.knownInliers.begin(),
                         params_.knownInliers.end(),
                         std::inserter(unknownWeights, unknownWeights.begin()));
+    std::set_difference(unknownWeights.begin(), unknownWeights.end(),
+                            params_.knownOutliers.begin(),
+                            params_.knownOutliers.end(),
+                            std::inserter(unknownWeights, unknownWeights.begin()));
 
     // update weights of known inlier/outlier measurements
     switch (params_.lossType) {
