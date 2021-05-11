@@ -99,6 +99,10 @@ class GncOptimizer {
                   "that are not in the factor graph to be known outliers.");
       }
     }
+    // initialize weights (if we don't have prior knowledge of inliers/outliers
+    // the weights are all initialized to 1.
+    weights_ = initializeWeightsFromKnownInliersAndOutliers();
+
     // set default barcSq_ (inlier threshold)
     double alpha = 0.99; // with this (default) probability, inlier residuals are smaller than barcSq_
     setInlierCostThresholdsAtProbability(alpha);
@@ -134,6 +138,17 @@ class GncOptimizer {
     }
   }
 
+  /** Set weights for each factor. This is typically not needed, but
+   * provides an extra interface for the user to initialize the weightst
+   * */
+  void setWeights(const Vector w) {
+    if(w.size() != nfg_.size()){
+      throw std::runtime_error("GncOptimizer::setWeights: the number of specified weights"
+          " does not match the size of the factor graph.");
+    }
+    weights_ = w;
+  }
+
   /// Access a copy of the internal factor graph.
   const NonlinearFactorGraph& getFactors() const { return nfg_; }
 
@@ -167,8 +182,6 @@ class GncOptimizer {
 
   /// Compute optimal solution using graduated non-convexity.
   Values optimize() {
-    // start by assuming all measurements are inliers
-    weights_ = initializeWeightsFromKnownInliersAndOutliers();
     NonlinearFactorGraph graph_initial = this->makeWeightedGraph(weights_);
     BaseOptimizer baseOptimizer(graph_initial, state_);
     Values result = baseOptimizer.optimize();
