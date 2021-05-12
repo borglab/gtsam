@@ -12,6 +12,9 @@
 /**
  * @file GncPoseAveragingExample.cpp
  * @brief example of GNC estimating a single pose from pose priors possibly corrupted with outliers
+ * You can run this example using: /GncPoseAveragingExample nrInliers nrOutliers
+ * e.g.,: /GncPoseAveragingExample 10 5  (if the numbers are not specified, default
+ * values nrInliers = 10 and nrOutliers = 10 are used)
  * @date May 8, 2021
  * @author Luca Carlone
  */
