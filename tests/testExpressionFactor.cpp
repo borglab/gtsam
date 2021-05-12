@@ -73,7 +73,7 @@ TEST(ExpressionFactor, Leaf) {
 }
 
 /* ************************************************************************* */
-// Test leaf expression with noise model of differnt variance.
+// Test leaf expression with noise model of different variance.
 TEST(ExpressionFactor, Model) {
   using namespace leaf;
 
