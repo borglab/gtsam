@@ -203,7 +203,7 @@ TEST(Expression, BinaryDimensions) {
 }
 
 /* ************************************************************************* */
-// Check dimensions by calling `traceSize` method.
+// Check dimensions of execution trace.
 TEST(Expression, BinaryTraceSize) {
   typedef internal::BinaryExpression<Point3, Pose3, Point3> Binary;
   size_t expectedTraceSize = sizeof(Binary::Record);
@@ -470,7 +470,6 @@ TEST(Expression, UnaryOfSum) {
 /* ************************************************************************* */
 TEST(Expression, WeightedSum) {
   const Key key1(42), key2(67);
-  const Point3 point1(1, 0, 0), point2(0, 1, 0);
   const Point3_ weighted_sum_ = 17 * Point3_(key1) + 23 * Point3_(key2);
 
   map<Key, int> actual_dims, expected_dims = map_list_of<Key, int>(key1, 3)(key2, 3);
@@ -478,6 +477,7 @@ TEST(Expression, WeightedSum) {
   EXPECT(actual_dims == expected_dims);
 
   Values values;
+  const Point3 point1(1, 0, 0), point2(0, 1, 0);
   values.insert<Point3>(key1, point1);
   values.insert<Point3>(key2, point2);
 
