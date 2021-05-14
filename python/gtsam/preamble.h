@@ -6,9 +6,17 @@ PYBIND11_MAKE_OPAQUE(std::vector<gtsam::Key, tbb::tbb_allocator<gtsam::Key>>);
 PYBIND11_MAKE_OPAQUE(std::vector<gtsam::Key>);
 #endif
 PYBIND11_MAKE_OPAQUE(std::vector<gtsam::Point2, Eigen::aligned_allocator<gtsam::Point2> >);
+PYBIND11_MAKE_OPAQUE(gtsam::Point3Pairs);
+PYBIND11_MAKE_OPAQUE(gtsam::Pose3Pairs);
 PYBIND11_MAKE_OPAQUE(std::vector<gtsam::Pose3>);
 PYBIND11_MAKE_OPAQUE(std::vector<boost::shared_ptr<gtsam::BetweenFactor<gtsam::Pose3> > >);
 PYBIND11_MAKE_OPAQUE(std::vector<boost::shared_ptr<gtsam::BetweenFactor<gtsam::Pose2> > >);
 PYBIND11_MAKE_OPAQUE(std::vector<gtsam::IndexPair>);
 PYBIND11_MAKE_OPAQUE(gtsam::CameraSet<gtsam::PinholeCamera<gtsam::Cal3Bundler> >);
 PYBIND11_MAKE_OPAQUE(gtsam::CameraSet<gtsam::PinholeCamera<gtsam::Cal3_S2> >);
+PYBIND11_MAKE_OPAQUE(std::vector<gtsam::Matrix>); // JacobianVector
+
+// TODO(fan): This is to fix the Argument-dependent lookup (ADL) of std::pair. We should find a way to NOT do this.
+namespace std {
+  using gtsam::operator<<;
+}
