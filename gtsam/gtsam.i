@@ -2166,6 +2166,12 @@ virtual class NoiseModelFactor: gtsam::NonlinearFactor {
   Vector whitenedError(const gtsam::Values& x) const;
 };
 
+#include <gtsam/nonlinear/CustomFactor.h>
+virtual class CustomFactor: gtsam::NoiseModelFactor {
+  CustomFactor();
+  CustomFactor(const gtsam::SharedNoiseModel& noiseModel, const gtsam::KeyVector& keys, const gtsam::CustomErrorFunction& errorFunction);
+};
+
 #include <gtsam/nonlinear/Values.h>
 class Values {
   Values();
