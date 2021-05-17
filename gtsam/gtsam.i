@@ -2185,7 +2185,10 @@ virtual class CustomFactor: gtsam::NoiseModelFactor {
    * cf = CustomFactor(noise_model, keys, error_func)
    * ```
    */
-  CustomFactor(const gtsam::SharedNoiseModel& noiseModel, const gtsam::KeyVector& keys, const gtsam::CustomErrorFunction& errorFunction);
+  CustomFactor(const gtsam::SharedNoiseModel& noiseModel, const gtsam::KeyVector& keys,
+               const gtsam::CustomErrorFunction& errorFunction);
+
+  void print(string s = "", gtsam::KeyFormatter keyFormatter = gtsam::DefaultKeyFormatter);
 };
 
 #include <gtsam/nonlinear/Values.h>

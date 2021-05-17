@@ -23,7 +23,7 @@ using namespace gtsam;
 
 namespace gtsam {
 
-typedef std::vector<Matrix> JacobianVector;
+using JacobianVector = std::vector<Matrix>;
 
 class CustomFactor;
 
@@ -35,7 +35,7 @@ class CustomFactor;
  * This is safe because this is passing a const pointer, and pybind11 will maintain the `std::vector` memory layout.
  * Thus the pointer will never be invalidated.
  */
-typedef std::function<Vector(const CustomFactor&, const Values&, const JacobianVector*)> CustomErrorFunction;
+using CustomErrorFunction = std::function<Vector(const CustomFactor&, const Values&, const JacobianVector*)>;
 
 /**
  * @brief Custom factor that takes a std::function as the error
@@ -73,10 +73,31 @@ public:
 
   ~CustomFactor() override = default;
 
-  /** Calls the errorFunction closure, which is a std::function object
+  /**
+    * Calls the errorFunction closure, which is a std::function object
     * One can check if a derivative is needed in the errorFunction by checking the length of Jacobian array
-  */
-  Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const override;
+    */
+  Vector unwhitenedError(const Values &x, boost::optional<std::vector<Matrix> &> H = boost::none) const override;
+
+  /** print */
+  void print(const std::string& s,
+             const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
+    std::cout << s << "CustomFactor on ";
+    auto keys_ = this->keys();
+    bool f = false;
+    for (const Key& k: keys_) {
+      if (f)
+        std::cout << ", ";
+      std::cout << keyFormatter(k);
+      f = true;
+    }
+    std::cout << "\n";
+    if (this->noiseModel_)
+      this->noiseModel_->print("  noise model: ");
+    else
+      std::cout << "no noise model" << std::endl;
+  }
+
 
 private:
 
