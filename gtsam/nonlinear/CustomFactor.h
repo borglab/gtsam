@@ -27,6 +27,14 @@ typedef std::vector<Matrix> JacobianVector;
 
 class CustomFactor;
 
+/*
+ * NOTE
+ * ==========
+ * pybind11 will invoke a copy if this is `JacobianVector &`, and modifications in Python will not be reflected.
+ *
+ * This is safe because this is passing a const pointer, and pybind11 will maintain the `std::vector` memory layout.
+ * Thus the pointer will never be invalidated.
+ */
 typedef std::function<Vector(const CustomFactor&, const Values&, const JacobianVector*)> CustomErrorFunction;
 
 /**
