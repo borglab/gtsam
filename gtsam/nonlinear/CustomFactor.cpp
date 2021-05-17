@@ -19,13 +19,36 @@
 
 namespace gtsam {
 
+/*
+ * Calculates the unwhitened error by invoking the callback functor (i.e. from Python).
+ */
 Vector CustomFactor::unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H) const {
   if(this->active(x)) {
     if(H) {
+      /*
+       * In this case, we pass the raw pointer to the `std::vector<Matrix>` object directly to pybind.
+       * As the type `std::vector<Matrix>` has been marked as opaque in `preamble.h`, any changes in
+       * Python will be immediately reflected on the C++ side.
+       *
+       * Example:
+       * ```
+       * def error_func(this: CustomFactor, v: gtsam.Values, H: List[np.ndarray]):
+       *    <calculated error>
+       *    if not H is None:
+       *        <calculate the Jacobian>
+       *        H[0] = J1
+       *        H[1] = J2
+       *        ...
+       *    return error
+       * ```
+       */
       return this->errorFunction(*this, x, H.get_ptr());
     } else {
-      JacobianVector dummy;
-      return this->errorFunction(*this, x, &dummy);
+      /*
+       * In this case, we pass the a `nullptr` to pybind, and it will translated to `None` in Python.
+       * Users can check for `None` in their callback to determine if the Jacobian is requested.
+       */
+      return this->errorFunction(*this, x, nullptr);
     }
   } else {
     return Vector::Zero(this->dim());
