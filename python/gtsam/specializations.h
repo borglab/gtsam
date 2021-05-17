@@ -2,9 +2,12 @@
 // These are required to save one copy operation on Python calls
 #ifdef GTSAM_ALLOCATOR_TBB
 py::bind_vector<std::vector<gtsam::Key, tbb::tbb_allocator<gtsam::Key> > >(m_, "KeyVector");
+py::implicitly_convertible<py::list, std::vector<gtsam::Key, tbb::tbb_allocator<gtsam::Key> > >();
 #else
 py::bind_vector<std::vector<gtsam::Key> >(m_, "KeyVector");
+py::implicitly_convertible<py::list, std::vector<gtsam::Key> >();
 #endif
+
 py::bind_vector<std::vector<gtsam::Point2, Eigen::aligned_allocator<gtsam::Point2> > >(m_, "Point2Vector");
 py::bind_vector<std::vector<gtsam::Point3Pair> >(m_, "Point3Pairs");
 py::bind_vector<std::vector<gtsam::Pose3Pair> >(m_, "Pose3Pairs");

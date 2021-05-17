@@ -2168,6 +2168,7 @@ virtual class NoiseModelFactor: gtsam::NonlinearFactor {
 
 #include <gtsam/nonlinear/CustomFactor.h>
 virtual class CustomFactor: gtsam::NoiseModelFactor {
+  // Note CustomFactor will not be wrapped for MATLAB, as there is no supporting machinery there.
   CustomFactor();
   CustomFactor(const gtsam::SharedNoiseModel& noiseModel, const gtsam::KeyVector& keys, const gtsam::CustomErrorFunction& errorFunction);
 };

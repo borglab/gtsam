@@ -36,7 +36,7 @@ class TestCustomFactor(GtsamTestCase):
             return error
         
         noise_model = gtsam.noiseModel.Unit.Create(3)
-        cf = CustomFactor(noise_model, gtsam.KeyVector([0]), error_func)
+        cf = CustomFactor(noise_model, [0], error_func)
         v = Values()
         v.insert(0, Pose2(1, 0, 0))
         e = cf.error(v)
