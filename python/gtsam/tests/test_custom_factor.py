@@ -126,8 +126,6 @@ class TestCustomFactor(GtsamTestCase):
         expected = Pose2(2, 2, np.pi / 2)
 
         def error_func(this: CustomFactor, v: gtsam.Values, H: List[np.ndarray]):
-            # print(f"{this = },\n{v = },\n{len(H) = }")
-
             key0 = this.keys()[0]
             key1 = this.keys()[1]
             gT1, gT2 = v.atPose2(key0), v.atPose2(key1)
