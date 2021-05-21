@@ -2,11 +2,6 @@
 
 One now can build factors purely in Python using the `CustomFactor` factor.
 
-## Theory
-
-`CustomFactor` is a `NonlinearFactor` that has a `std::function` as its callback.
-This callback can be translated to a Python function call, thanks to `pybind11`'s functional support.
-
 ## Usage
 
 In order to use a Python-based factor, one needs to have a Python function with the following signature:
@@ -76,3 +71,40 @@ In general, the Python-based factor works just like their C++ counterparts.
 Because of the `pybind11`-based translation, the performance of `CustomFactor` is not guaranteed.
 Also, because `pybind11` needs to lock the Python GIL lock for evaluation of each factor, parallel
 evaluation of `CustomFactor` is not possible.
+
+## Implementation
+
+`CustomFactor` is a `NonlinearFactor` that has a `std::function` as its callback.
+This callback can be translated to a Python function call, thanks to `pybind11`'s functional support.
+
+The constructor of `CustomFactor` is
+```c++
+/**
+* Constructor
+* @param noiseModel shared pointer to noise model
+* @param keys keys of the variables
+* @param errorFunction the error functional
+*/
+CustomFactor(const SharedNoiseModel& noiseModel, const KeyVector& keys, const CustomErrorFunction& errorFunction) :
+  Base(noiseModel, keys) {
+  this->error_function_ = errorFunction;
+}
+```
+
+At construction time, `pybind11` will pass the handle to the Python callback function as a `std::function` object.
+
+Something worth special mention is this:
+```c++
+/*
+ * NOTE
+ * ==========
+ * pybind11 will invoke a copy if this is `JacobianVector &`, and modifications in Python will not be reflected.
+ *
+ * This is safe because this is passing a const pointer, and pybind11 will maintain the `std::vector` memory layout.
+ * Thus the pointer will never be invalidated.
+ */
+using CustomErrorFunction = std::function<Vector(const CustomFactor&, const Values&, const JacobianVector*)>;
+```
+
+which is not documented in `pybind11` docs. One needs to be aware of this if they wanted to implement similar
+"mutable" arguments going across the Python-C++ boundary.

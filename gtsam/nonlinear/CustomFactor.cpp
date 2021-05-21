@@ -42,17 +42,34 @@ Vector CustomFactor::unwhitenedError(const Values& x, boost::optional<std::vecto
        *    return error
        * ```
        */
-      return this->errorFunction(*this, x, H.get_ptr());
+      return this->error_function_(*this, x, H.get_ptr());
     } else {
       /*
        * In this case, we pass the a `nullptr` to pybind, and it will translated to `None` in Python.
        * Users can check for `None` in their callback to determine if the Jacobian is requested.
        */
-      return this->errorFunction(*this, x, nullptr);
+      return this->error_function_(*this, x, nullptr);
     }
   } else {
     return Vector::Zero(this->dim());
   }
+}
+
+void CustomFactor::print(const std::string &s, const KeyFormatter &keyFormatter) const {
+  std::cout << s << "CustomFactor on ";
+  auto keys_ = this->keys();
+  bool f = false;
+  for (const Key &k: keys_) {
+    if (f)
+      std::cout << ", ";
+    std::cout << keyFormatter(k);
+    f = true;
+  }
+  std::cout << "\n";
+  if (this->noiseModel_)
+    this->noiseModel_->print("  noise model: ");
+  else
+    std::cout << "no noise model" << std::endl;
 }
 
 }
