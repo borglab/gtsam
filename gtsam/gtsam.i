@@ -2168,7 +2168,10 @@ virtual class NoiseModelFactor: gtsam::NonlinearFactor {
 
 #include <gtsam/nonlinear/CustomFactor.h>
 virtual class CustomFactor: gtsam::NoiseModelFactor {
-  // Note CustomFactor will not be wrapped for MATLAB, as there is no supporting machinery there.
+  /*
+   * Note CustomFactor will not be wrapped for MATLAB, as there is no supporting machinery there.
+   * This is achieved by adding `gtsam::CustomFactor` to the ignore list in `matlab/CMakeLists.txt`.
+   */
   CustomFactor();
   /*
    * Example:

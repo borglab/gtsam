@@ -23,6 +23,7 @@ class TestCustomFactor(GtsamTestCase):
         """Test the creation of a new CustomFactor"""
 
         def error_func(this: CustomFactor, v: gtsam.Values, H: List[np.ndarray]):
+            """Minimal error function stub"""
             return np.array([1, 0, 0])
 
         noise_model = gtsam.noiseModel.Unit.Create(3)
@@ -32,6 +33,7 @@ class TestCustomFactor(GtsamTestCase):
         """Test the creation of a new CustomFactor"""
 
         def error_func(this: CustomFactor, v: gtsam.Values, H: List[np.ndarray]):
+            """Minimal error function stub"""
             return np.array([1, 0, 0])
 
         noise_model = gtsam.noiseModel.Unit.Create(3)
@@ -42,6 +44,7 @@ class TestCustomFactor(GtsamTestCase):
         expected_pose = Pose2(1, 1, 0)
 
         def error_func(this: CustomFactor, v: gtsam.Values, H: List[np.ndarray]) -> np.ndarray:
+            """Minimal error function with no Jacobian"""
             key0 = this.keys()[0]
             error = -v.atPose2(key0).localCoordinates(expected_pose)
             return error
@@ -102,11 +105,8 @@ class TestCustomFactor(GtsamTestCase):
         gT2 = Pose2(-1, 4, np.pi)
 
         def error_func(this: CustomFactor, v: gtsam.Values, _: List[np.ndarray]):
-            key0 = this.keys()[0]
-            key1 = this.keys()[1]
-            gT1, gT2 = v.atPose2(key0), v.atPose2(key1)
-            error = Pose2(0, 0, 0).localCoordinates(gT1.between(gT2))
-            return error
+            """Minimal error function stub"""
+            return np.array([1, 0, 0])
 
         noise_model = gtsam.noiseModel.Unit.Create(3)
         from gtsam.symbol_shorthand import X
@@ -126,6 +126,13 @@ class TestCustomFactor(GtsamTestCase):
         expected = Pose2(2, 2, np.pi / 2)
 
         def error_func(this: CustomFactor, v: gtsam.Values, H: List[np.ndarray]):
+            """
+            Error function that mimics a BetweenFactor
+            :param this: reference to the current CustomFactor being evaluated
+            :param v: Values object
+            :param H: list of references to the Jacobian arrays
+            :return: the non-linear error
+            """
             key0 = this.keys()[0]
             key1 = this.keys()[1]
             gT1, gT2 = v.atPose2(key0), v.atPose2(key1)

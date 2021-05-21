@@ -45,13 +45,13 @@ using CustomErrorFunction = std::function<Vector(const CustomFactor&, const Valu
  * This factor is mainly for creating a custom factor in Python.
  */
 class CustomFactor: public NoiseModelFactor {
-public:
-   CustomErrorFunction errorFunction;
+protected:
+   CustomErrorFunction error_function_;
 
 protected:
 
-  typedef NoiseModelFactor Base;
-  typedef CustomFactor This;
+  using Base = NoiseModelFactor;
+  using This = CustomFactor;
 
 public:
 
@@ -68,7 +68,7 @@ public:
    */
   CustomFactor(const SharedNoiseModel& noiseModel, const KeyVector& keys, const CustomErrorFunction& errorFunction) :
       Base(noiseModel, keys) {
-    this->errorFunction = errorFunction;
+    this->error_function_ = errorFunction;
   }
 
   ~CustomFactor() override = default;
@@ -81,22 +81,7 @@ public:
 
   /** print */
   void print(const std::string& s,
-             const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
-    std::cout << s << "CustomFactor on ";
-    auto keys_ = this->keys();
-    bool f = false;
-    for (const Key& k: keys_) {
-      if (f)
-        std::cout << ", ";
-      std::cout << keyFormatter(k);
-      f = true;
-    }
-    std::cout << "\n";
-    if (this->noiseModel_)
-      this->noiseModel_->print("  noise model: ");
-    else
-      std::cout << "no noise model" << std::endl;
-  }
+             const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
 
 
 private:
