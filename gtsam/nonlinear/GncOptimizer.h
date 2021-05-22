@@ -424,7 +424,7 @@ class GncOptimizer {
     switch (params_.lossType) {
       case GncLossType::GM: {  // use eq (12) in GNC paper
         for (size_t k : unknownWeights) {
-           if (nfg_[k]) {
+          if (nfg_[k]) {
             double u2_k = nfg_[k]->error(currentEstimate);  // squared (and whitened) residual
             weights[k] = std::pow(
                 (mu * barcSq_[k]) / (u2_k + mu * barcSq_[k]), 2);
