@@ -20,18 +20,17 @@
 
 namespace gtsam {
 
-  using namespace std;
+using namespace std;
 
-  /* ************************************************************************* */
-  void SymbolicConditional::print(const std::string& str, const KeyFormatter& keyFormatter) const
-  {
-    BaseConditional::print(str, keyFormatter);
-  }
-
-  /* ************************************************************************* */
-  bool SymbolicConditional::equals(const This& c, double tol) const
-  {
-    return BaseFactor::equals(c) && BaseConditional::equals(c);
-  }
-
+/* ************************************************************************* */
+void SymbolicConditional::print(const std::string& str,
+                                const KeyFormatter& keyFormatter) const {
+  BaseConditional::print(str, keyFormatter);
 }
+
+/* ************************************************************************* */
+bool SymbolicConditional::equals(const This& c, double tol) const {
+  return BaseFactor::equals(c) && BaseConditional::equals(c);
+}
+
+}  // namespace gtsam

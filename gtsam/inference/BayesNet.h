@@ -57,16 +57,18 @@ namespace gtsam {
     /// @name Testable
     /// @{
 
-    /** print out graph */
-    void print(const std::string& s = "BayesNet",
-      const KeyFormatter& formatter = DefaultKeyFormatter) const;
+   /** print out graph */
+   void print(
+       const std::string& s = "BayesNet",
+       const KeyFormatter& formatter = DefaultKeyFormatter) const override;
 
-    /// @}
+   /// @}
 
-    /// @name Standard Interface
-    /// @{
+   /// @name Standard Interface
+   /// @{
 
-    void saveGraph(const std::string &s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+   void saveGraph(const std::string& s,
+                  const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
   };
 
 }
