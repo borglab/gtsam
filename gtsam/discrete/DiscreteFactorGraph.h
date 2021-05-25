@@ -91,6 +91,9 @@ public:
   template<class DERIVEDFACTOR>
   DiscreteFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph) : Base(graph) {}
 
+  /// Destructor
+  virtual ~DiscreteFactorGraph() {}
+
   /// @name Testable
   /// @{
 
@@ -129,8 +132,9 @@ public:
   double operator()(const DiscreteFactor::Values & values) const;
 
   /// print
-  void print(const std::string& s = "DiscreteFactorGraph",
-      const KeyFormatter& formatter =DefaultKeyFormatter) const;
+  void print(
+      const std::string& s = "DiscreteFactorGraph",
+      const KeyFormatter& formatter = DefaultKeyFormatter) const override;
 
   /** Solve the factor graph by performing variable elimination in COLAMD order using
    *  the dense elimination function specified in \c function,

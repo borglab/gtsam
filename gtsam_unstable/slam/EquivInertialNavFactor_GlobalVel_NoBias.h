@@ -132,7 +132,9 @@ public:
   /** implement functions needed for Testable */
 
   /** print */
-  virtual void print(const std::string& s = "EquivInertialNavFactor_GlobalVel_NoBias", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+  virtual void print(
+      const std::string& s = "EquivInertialNavFactor_GlobalVel_NoBias",
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     std::cout << s << "("
         << keyFormatter(this->key1()) << ","
         << keyFormatter(this->key2()) << ","

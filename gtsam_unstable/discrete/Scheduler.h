@@ -66,15 +66,17 @@ namespace gtsam {
 
     /**
      * Constructor
-     * WE need to know the number of students in advance for ordering keys.
+     * We need to know the number of students in advance for ordering keys.
      * then add faculty, slots, areas, availability, students, in that order
      */
-    Scheduler(size_t maxNrStudents):maxNrStudents_(maxNrStudents) {
-    }
+   Scheduler(size_t maxNrStudents) : maxNrStudents_(maxNrStudents) {}
 
-    void addFaculty(const std::string& facultyName) {
-      facultyIndex_[facultyName] = nrFaculty();
-      facultyName_.push_back(facultyName);
+   /// Destructor
+   virtual ~Scheduler() {}
+
+   void addFaculty(const std::string& facultyName) {
+     facultyIndex_[facultyName] = nrFaculty();
+     facultyName_.push_back(facultyName);
     }
 
     size_t nrFaculty() const {
@@ -140,7 +142,9 @@ namespace gtsam {
     void buildGraph(size_t mutexBound = 7);
 
     /** print */
-    void print(const std::string& s = "Scheduler") const;
+    void print(
+        const std::string& s = "Scheduler",
+        const KeyFormatter& formatter = DefaultKeyFormatter) const override;
 
     /** Print readable form of assignment */
     void printAssignment(sharedValues assignment) const;

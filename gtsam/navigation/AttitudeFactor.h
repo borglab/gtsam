@@ -114,8 +114,8 @@ public:
   }
 
   /** print */
-  void print(const std::string& s, const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) const override;
+  void print(const std::string& s = "", const KeyFormatter& keyFormatter =
+                                            DefaultKeyFormatter) const override;
 
   /** equals */
   bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
@@ -188,8 +188,8 @@ public:
   }
 
   /** print */
-  void print(const std::string& s, const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) const override;
+  void print(const std::string& s = "", const KeyFormatter& keyFormatter =
+                                            DefaultKeyFormatter) const override;
 
   /** equals */
   bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
