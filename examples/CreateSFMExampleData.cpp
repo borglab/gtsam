@@ -81,6 +81,26 @@ void create5PointExample1() {
 
 /* ************************************************************************* */
 
+void create8PointExample1() {
+
+  // Create two cameras poses
+  Rot3 aRb = Rot3::Yaw(M_PI_2);
+  Point3 aTb(0.1, 0, 0);
+  Pose3 pose1, pose2(aRb, aTb);
+
+  // Create test data, we need at least 8 points
+  vector<Point3> P;
+  P += Point3(0, 0, 1), Point3(-0.1, 0, 1), Point3(0.1, 0, 1), //
+  Point3(0, 0.5, 0.5), Point3(0, -0.5, 0.5), Point3(0, 1, 0), 
+  Point3(-0.5, 0.5, 0), Point3(0.5, 0.5, 0);
+
+  // Assumes example is run in ${GTSAM_TOP}/build/examples
+  const string filename = "../../examples/data/8pointExample1.txt";
+  createExampleBALFile(filename, P, pose1, pose2);
+}
+
+/* ************************************************************************* */
+
 void create5PointExample2() {
 
   // Create two cameras poses

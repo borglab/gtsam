@@ -17,8 +17,14 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/linear/linearExceptions.h>
+#include <gtsam/nonlinear/LevenbergMarquardtParams.h>
+#include <gtsam/nonlinear/Marginals.h>
 #include <gtsam/sfm/TranslationRecovery.h>
 #include <gtsam/slam/dataset.h>
+
 
 using namespace std;
 using namespace gtsam;
@@ -264,6 +270,51 @@ TEST(TranslationRecovery, ThreePosesWithZeroTranslation) {
   EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0)));
   EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(1)));
   EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(2)));
+}
+
+
+TEST(TranslationRecovery, FourPosesSquareWithTwoEdges) {
+  Values poses;
+  float radius = 40;
+  float height = 10.0;
+  for(int i = 0; i < 4; i++) {
+   poses.insert<Pose3>(i, Pose3(Rot3::RzRyRx(0, 0, 0), 
+			  Point3(radius*cos(i * M_PI/2), radius*sin(i * M_PI/2), height)));
+  }
+  auto relativeTranslations = TranslationRecovery::SimulateMeasurements(
+		  poses, {{1, 0}, {2, 1}, {3, 2}, {0, 3}});
+
+  for (auto& unitTranslation : relativeTranslations) {
+    EXPECT(assert_equal(GetDirectionFromPoses(poses, unitTranslation), 
+			    unitTranslation.measured()));
+  }
+
+  LevenbergMarquardtParams params;
+  params.setVerbosityLM("summary");
+  TranslationRecovery algorithm(relativeTranslations, params);
+  const auto graph = algorithm.buildGraph();
+  const auto result = algorithm.run(2.8284);
+
+  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0)));
+  EXPECT(assert_equal(Point3(-2, 2, 0), result.at<Point3>(1)));
+  std::cout.precision(2);
+  Ordering ordering = Ordering::Colamd(graph);
+  try {
+    Marginals marginals(graph, result, ordering);
+  } catch (const IndeterminantLinearSystemException& e) {
+    std::cout << "ILS Error caught at " << e.nearbyVariable() << std::endl;
+    for(const Key k : ordering) {
+      if(k == e.nearbyVariable()) break;
+      std::cout << k << " has a good solution" << std::endl;
+    }
+  }
+
+
+/*  std::cout << "x0 covariance:\n" << marginals.marginalInformation(0) << std::endl;  
+  std::cout << "x1 covariance:\n" << marginals.marginalInformation(1) << std::endl;
+/*  std::cout << "x2 covariance:\n" << marginals.marginalInformation(2) << std::endl;
+  std::cout << "x3 covariance:\n" << marginals.marginalInformation(3) << std::endl;  
+*/
 }
 
 /* ************************************************************************* */
