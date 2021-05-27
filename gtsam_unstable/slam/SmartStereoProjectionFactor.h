@@ -450,8 +450,8 @@ public:
    * This corrects the Jacobians and error vector for the case in which the right pixel in the monocular camera is missing (nan)
    */
   void correctForMissingMeasurements(const Cameras& cameras, Vector& ue,
-      boost::optional<typename Cameras::FBlocks&> Fs = boost::none,
-      boost::optional<Matrix&> E = boost::none) const override
+                                     boost::optional<typename Cameras::FBlocks&> Fs = boost::none,
+                                     boost::optional<Matrix&> E = boost::none) const override
   {
     // when using stereo cameras, some of the measurements might be missing:
     for(size_t i=0; i < cameras.size(); i++){
