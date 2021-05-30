@@ -126,13 +126,13 @@ public:
    * factor with different keys using
    * a map from old->new keys
    */
-  shared_ptr rekey(const std::map<Key,Key>& rekey_mapping) const;
+  virtual shared_ptr rekey(const std::map<Key,Key>& rekey_mapping) const;
 
   /**
    * Clones a factor and fully replaces its keys
    * @param new_keys is the full replacement set of keys
    */
-  shared_ptr rekey(const KeyVector& new_keys) const;
+  virtual shared_ptr rekey(const KeyVector& new_keys) const;
 
 }; // \class NonlinearFactor
 
