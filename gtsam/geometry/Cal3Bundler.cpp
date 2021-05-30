@@ -99,18 +99,19 @@ Point2 Cal3Bundler::calibrate(const Point2& pi, OptionalJacobian<2, 3> Dcal,
   double x = (pi.x() - u0_) / fx_, y = (pi.y() - v0_) / fx_;
   const Point2 invKPi(x, y);
 
-  // initialize by ignoring the distortion at all, might be problematic for
-  // pixels around boundary
-  Point2 pn(x, y);
-
+  // initialize pn with distortion included
+  double px = pi.x(), py = pi.y(), rr = px * px + py * py;
+  double g = (1 + k1_ * rr + k2_ * rr * rr);
+  Point2 pn = invKPi / g;
+  
   // iterate until the uncalibrate is close to the actual pixel coordinate
   const int maxIterations = 10;
   int iteration;
   for (iteration = 0; iteration < maxIterations; ++iteration) {
     if (distance2(uncalibrate(pn), pi) <= tol_) break;
-    const double px = pn.x(), py = pn.y(), xx = px * px, yy = py * py;
-    const double rr = xx + yy;
-    const double g = (1 + k1_ * rr + k2_ * rr * rr);
+    px = pn.x(), py = pn.y();
+    rr = (px * px) + (py * py);
+    double g = (1 + k1_ * rr + k2_ * rr * rr);
     pn = invKPi / g;
   }
 
