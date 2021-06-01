@@ -27,10 +27,10 @@ namespace gtsam {
 template <class POSE>
 class MagPoseFactor: public NoiseModelFactor1<POSE> {
  private:
-  typedef MagPoseFactor<POSE> This;
-  typedef NoiseModelFactor1<POSE> Base;
-  typedef typename POSE::Translation Point;   // Could be a Vector2 or Vector3 depending on POSE.
-  typedef typename POSE::Rotation Rot;
+  using This = MagPoseFactor<POSE>;
+  using Base = NoiseModelFactor1<POSE>;
+  using Point = typename POSE::Translation; ///< Could be a Vector2 or Vector3 depending on POSE.
+  using Rot = typename POSE::Rotation;
 
   const Point measured_; ///< The measured magnetometer data in the body frame.
   const Point nM_; ///< Local magnetic field (mag output units) in the nav frame.
@@ -42,22 +42,22 @@ class MagPoseFactor: public NoiseModelFactor1<POSE> {
   static const int RotDim = traits<Rot>::dimension;
 
   /// Shorthand for a smart pointer to a factor.
-  typedef typename boost::shared_ptr<MagPoseFactor<POSE>> shared_ptr;
+  using shared_ptr = boost::shared_ptr<MagPoseFactor<POSE>>;
 
-  /** Concept check by type. */
+  /// Concept check by type.
   GTSAM_CONCEPT_TESTABLE_TYPE(POSE)
   GTSAM_CONCEPT_POSE_TYPE(POSE)
 
  public:
   ~MagPoseFactor() override {}
 
-  /** Default constructor - only use for serialization. */
+  /// Default constructor - only use for serialization.
   MagPoseFactor() {}
 
   /**
    * Construct the factor.
    * @param pose_key of the unknown pose nPb in the factor graph
-   * @param measurement magnetometer reading, a Point2 or Point3
+   * @param measured magnetometer reading, a Point2 or Point3
    * @param scale by which a unit vector is scaled to yield a magnetometer reading
    * @param direction of the local magnetic field, see e.g. http://www.ngdc.noaa.gov/geomag-web/#igrfwmm
    * @param bias of the magnetometer, modeled as purely additive (after scaling)
@@ -83,9 +83,9 @@ class MagPoseFactor: public NoiseModelFactor1<POSE> {
         NonlinearFactor::shared_ptr(new This(*this)));
   }
 
-  /** Implement functions needed for Testable */
+  /// Implement functions needed for Testable.
 
-  /** print */
+  // Print out the factor.
   void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     Base::print(s, keyFormatter);
     gtsam::print(Vector(nM_), "local field (nM): ");
@@ -93,7 +93,7 @@ class MagPoseFactor: public NoiseModelFactor1<POSE> {
     gtsam::print(Vector(bias_), "magnetometer bias: ");
   }
 
-  /** equals */
+  /// Equals function.
   bool equals(const NonlinearFactor& expected, double tol=1e-9) const override {
     const This *e = dynamic_cast<const This*> (&expected);
     return e != nullptr && Base::equals(*e, tol) &&
@@ -102,9 +102,10 @@ class MagPoseFactor: public NoiseModelFactor1<POSE> {
         gtsam::equal_with_abs_tol(this->bias_, e->bias_, tol);
   }
 
-  /** Implement functions needed to derive from Factor. */
+  /// Implement functions needed to derive from Factor.
 
-  /** Return the factor's error h(x) - z, and the optional Jacobian. Note that
+  /**
+   * Return the factor's error h(x) - z, and the optional Jacobian. Note that
    * the measurement error is expressed in the body frame.
    */
   Vector evaluateError(const POSE& nPb, boost::optional<Matrix&> H = boost::none) const override {
@@ -124,7 +125,7 @@ class MagPoseFactor: public NoiseModelFactor1<POSE> {
   }
 
  private:
-  /** Serialization function */
+  /// Serialization function.
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
