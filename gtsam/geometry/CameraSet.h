@@ -69,9 +69,12 @@ protected:
 
 public:
 
+  /// Destructor
+  virtual ~CameraSet() = default;
+
   /// Definitions for blocks of F
-  typedef Eigen::Matrix<double, ZDim, D> MatrixZD;
-  typedef std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD> > FBlocks;
+  using MatrixZD = Eigen::Matrix<double, ZDim, D>;
+  using FBlocks = std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD>>;
 
   /**
    * print
