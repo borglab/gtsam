@@ -99,21 +99,26 @@ Point2 Cal3Bundler::calibrate(const Point2& pi, OptionalJacobian<2, 3> Dcal,
   double x = (pi.x() - u0_) / fx_, y = (pi.y() - v0_) / fx_;
   const Point2 invKPi(x, y);
 
-  // initialize pn with distortion included
-  double px = pi.x(), py = pi.y(), rr = px * px + py * py;
-  double g = (1 + k1_ * rr + k2_ * rr * rr);
-  Point2 pn = invKPi / g;
-  
+  Point2 pn;
+  double px = pi.x(), py = pi.y();
+
   // iterate until the uncalibrate is close to the actual pixel coordinate
   const int maxIterations = 10;
-  int iteration;
-  for (iteration = 0; iteration < maxIterations; ++iteration) {
-    if (distance2(uncalibrate(pn), pi) <= tol_) break;
-    px = pn.x(), py = pn.y();
-    rr = (px * px) + (py * py);
+  int iteration = 0;
+  do {
+    // initialize pn with distortion included
+    double rr = (px * px) + (py * py);
     double g = (1 + k1_ * rr + k2_ * rr * rr);
     pn = invKPi / g;
-  }
+
+    if (distance2(uncalibrate(pn), pi) <= tol_) break;
+
+    // Set px and py using intrinsic coordinates since that is where radial
+    // distortion correction is done.
+    px = pn.x(), py = pn.y();
+    iteration++;
+
+  } while (iteration < maxIterations);
 
   if (iteration >= maxIterations)
     throw std::runtime_error(
@@ -149,4 +154,4 @@ Matrix25 Cal3Bundler::D2d_intrinsic_calibration(const Point2& p) const {
   return H;
 }
 
-}  // \ namespace gtsam
+}  // namespace gtsam
