@@ -105,8 +105,8 @@ Point2 Cal3Bundler::calibrate(const Point2& pi, OptionalJacobian<2, 3> Dcal,
   int iteration = 0;
   do {
     // initialize pn with distortion included
-    double rr = (px * px) + (py * py);
-    double g = (1 + k1_ * rr + k2_ * rr * rr);
+    const double rr = (px * px) + (py * py);
+    const double g = (1 + k1_ * rr + k2_ * rr * rr);
     pn = invKPi / g;
 
     if (distance2(uncalibrate(pn), pi) <= tol_) break;
