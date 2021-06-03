@@ -74,6 +74,35 @@ class GncOptimizer {
       }
     }
 
+    // check that known inliers and outliers make sense:
+    std::vector<size_t> inconsistentlySpecifiedWeights; // measurements the user has incorrectly specified
+    // to be BOTH known inliers and known outliers
+    std::set_intersection(params.knownInliers.begin(),params.knownInliers.end(),
+                        params.knownOutliers.begin(),params.knownOutliers.end(),
+                        std::inserter(inconsistentlySpecifiedWeights, inconsistentlySpecifiedWeights.begin()));
+    if(inconsistentlySpecifiedWeights.size() > 0){ // if we have inconsistently specified weights, we throw an exception
+      params.print("params\n");
+      throw std::runtime_error("GncOptimizer::constructor: the user has selected one or more measurements"
+          " to be BOTH a known inlier and a known outlier.");
+    }
+    // check that known inliers are in the graph
+    for (size_t i = 0; i < params.knownInliers.size(); i++){
+      if( params.knownInliers[i] > nfg_.size()-1 ){ // outside graph
+        throw std::runtime_error("GncOptimizer::constructor: the user has selected one or more measurements"
+                  "that are not in the factor graph to be known inliers.");
+      }
+    }
+    // check that known outliers are in the graph
+    for (size_t i = 0; i < params.knownOutliers.size(); i++){
+      if( params.knownOutliers[i] > nfg_.size()-1 ){ // outside graph
+        throw std::runtime_error("GncOptimizer::constructor: the user has selected one or more measurements"
+                  "that are not in the factor graph to be known outliers.");
+      }
+    }
+    // initialize weights (if we don't have prior knowledge of inliers/outliers
+    // the weights are all initialized to 1.
+    weights_ = initializeWeightsFromKnownInliersAndOutliers();
+
     // set default barcSq_ (inlier threshold)
     double alpha = 0.99; // with this (default) probability, inlier residuals are smaller than barcSq_
     setInlierCostThresholdsAtProbability(alpha);
@@ -109,6 +138,17 @@ class GncOptimizer {
     }
   }
 
+  /** Set weights for each factor. This is typically not needed, but
+   * provides an extra interface for the user to initialize the weightst
+   * */
+  void setWeights(const Vector w) {
+    if(w.size() != nfg_.size()){
+      throw std::runtime_error("GncOptimizer::setWeights: the number of specified weights"
+          " does not match the size of the factor graph.");
+    }
+    weights_ = w;
+  }
+
   /// Access a copy of the internal factor graph.
   const NonlinearFactorGraph& getFactors() const { return nfg_; }
 
@@ -132,24 +172,37 @@ class GncOptimizer {
         && equal(barcSq_, other.getInlierCostThresholds());
   }
 
+  Vector initializeWeightsFromKnownInliersAndOutliers() const{
+    Vector weights = Vector::Ones(nfg_.size());
+    for (size_t i = 0; i < params_.knownOutliers.size(); i++){
+      weights[ params_.knownOutliers[i] ] = 0.0; // known to be outliers
+    }
+    return weights;
+  }
+
   /// Compute optimal solution using graduated non-convexity.
   Values optimize() {
-    // start by assuming all measurements are inliers
-    weights_ = Vector::Ones(nfg_.size());
-    BaseOptimizer baseOptimizer(nfg_, state_);
+    NonlinearFactorGraph graph_initial = this->makeWeightedGraph(weights_);
+    BaseOptimizer baseOptimizer(graph_initial, state_);
     Values result = baseOptimizer.optimize();
     double mu = initializeMu();
-    double prev_cost = nfg_.error(result);
+    double prev_cost = graph_initial.error(result);
     double cost = 0.0;  // this will be updated in the main loop
 
     // handle the degenerate case that corresponds to small
     // maximum residual errors at initialization
     // For GM: if residual error is small, mu -> 0
     // For TLS: if residual error is small, mu -> -1
-    if (mu <= 0) {
-      if (params_.verbosity >= GncParameters::Verbosity::SUMMARY) {
+    int nrUnknownInOrOut = nfg_.size() - ( params_.knownInliers.size() + params_.knownOutliers.size() );
+    // ^^ number of measurements that are not known to be inliers or outliers (GNC will need to figure them out)
+    if (mu <= 0 || nrUnknownInOrOut == 0) { // no need to even call GNC in this case
+      if (mu <= 0 && params_.verbosity >= GncParameters::Verbosity::SUMMARY) {
         std::cout << "GNC Optimizer stopped because maximum residual at "
                   "initialization is small."
+                  << std::endl;
+      }
+      if (nrUnknownInOrOut==0 && params_.verbosity >= GncParameters::Verbosity::SUMMARY) {
+        std::cout << "GNC Optimizer stopped because all measurements are already known to be inliers or outliers"
                   << std::endl;
       }
       if (params_.verbosity >= GncParameters::Verbosity::VALUES) {
@@ -350,17 +403,21 @@ class GncOptimizer {
 
   /// Calculate gnc weights.
   Vector calculateWeights(const Values& currentEstimate, const double mu) {
-    Vector weights = Vector::Ones(nfg_.size());
+    Vector weights = initializeWeightsFromKnownInliersAndOutliers();
 
     // do not update the weights that the user has decided are known inliers
     std::vector<size_t> allWeights;
     for (size_t k = 0; k < nfg_.size(); k++) {
       allWeights.push_back(k);
     }
+    std::vector<size_t> knownWeights;
+    std::set_union(params_.knownInliers.begin(), params_.knownInliers.end(),
+                   params_.knownOutliers.begin(), params_.knownOutliers.end(),
+                   std::inserter(knownWeights, knownWeights.begin()));
+
     std::vector<size_t> unknownWeights;
     std::set_difference(allWeights.begin(), allWeights.end(),
-                        params_.knownInliers.begin(),
-                        params_.knownInliers.end(),
+                        knownWeights.begin(), knownWeights.end(),
                         std::inserter(unknownWeights, unknownWeights.begin()));
 
     // update weights of known inlier/outlier measurements

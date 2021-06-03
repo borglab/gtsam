@@ -148,7 +148,7 @@ public:
   }
 
   /// print
-  void print(const std::string& s = "PinholeCamera") const {
+  void print(const std::string& s = "PinholeCamera") const override {
     Base::print(s);
     K_.print(s + ".calibration");
   }

@@ -24,7 +24,8 @@ namespace gtsam {
 
 //***************************************************************************
 void GPSFactor::print(const string& s, const KeyFormatter& keyFormatter) const {
-  cout << s << "GPSFactor on " << keyFormatter(key()) << "\n";
+  cout << (s.empty() ? "" : s + " ") << "GPSFactor on " << keyFormatter(key())
+       << "\n";
   cout << "  GPS measurement: " << nT_ << "\n";
   noiseModel_->print("  noise model: ");
 }
