@@ -90,6 +90,33 @@ TEST(Cal3Bundler, DcalibrateDefault) {
 }
 
 /* ************************************************************************* */
+TEST(Cal3Bundler, DuncalibratePrincipalPoint) {
+  Cal3Bundler K(5, 0, 0, 2, 2);
+  Matrix Dcal, Dp;
+  Point2 actual = K.uncalibrate(p, Dcal, Dp);
+  Point2 expected(12, 17);
+  CHECK(assert_equal(expected, actual, 1e-7));
+  Matrix numerical1 = numericalDerivative21(uncalibrate_, K, p);
+  Matrix numerical2 = numericalDerivative22(uncalibrate_, K, p);
+  CHECK(assert_equal(numerical1, Dcal, 1e-7));
+  CHECK(assert_equal(numerical2, Dp, 1e-7));
+}
+
+/* ************************************************************************* */
+TEST(Cal3Bundler, DcalibratePrincipalPoint) {
+  Cal3Bundler K(2, 0, 0, 2, 2);
+  Matrix Dcal, Dp;
+  Point2 pn(0.5, 0.5);
+  Point2 pi = K.uncalibrate(pn);
+  Point2 actual = K.calibrate(pi, Dcal, Dp);
+  CHECK(assert_equal(pn, actual, 1e-7));
+  Matrix numerical1 = numericalDerivative21(calibrate_, K, pi);
+  Matrix numerical2 = numericalDerivative22(calibrate_, K, pi);
+  CHECK(assert_equal(numerical1, Dcal, 1e-5));
+  CHECK(assert_equal(numerical2, Dp, 1e-5));
+}
+
+/* ************************************************************************* */
 TEST(Cal3Bundler, Duncalibrate) {
   Matrix Dcal, Dp;
   Point2 actual = K.uncalibrate(p, Dcal, Dp);

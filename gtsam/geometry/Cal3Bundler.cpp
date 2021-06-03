@@ -96,11 +96,9 @@ Point2 Cal3Bundler::calibrate(const Point2& pi, OptionalJacobian<2, 3> Dcal,
                               OptionalJacobian<2, 2> Dp) const {
   // Copied from Cal3DS2
   // but specialized with k1, k2 non-zero only and fx=fy and s=0
-  double x = (pi.x() - u0_) / fx_, y = (pi.y() - v0_) / fx_;
-  const Point2 invKPi(x, y);
-
+  double px = (pi.x() - u0_) / fx_, py = (pi.y() - v0_) / fx_;
+  const Point2 invKPi(px, py);
   Point2 pn;
-  double px = pi.x(), py = pi.y();
 
   // iterate until the uncalibrate is close to the actual pixel coordinate
   const int maxIterations = 10;
