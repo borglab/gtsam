@@ -82,5 +82,18 @@ GTSAM_EXPORT std::list<Point2> circleCircleIntersection(Point2 c1, Point2 c2, bo
 GTSAM_EXPORT std::list<Point2> circleCircleIntersection(Point2 c1, double r1,
     Point2 c2, double r2, double tol = 1e-9);
 
+template <typename A1, typename A2>
+struct Range;
+
+template <>
+struct Range<Point2, Point2> {
+  typedef double result_type;
+  double operator()(const Point2& p, const Point2& q,
+                    OptionalJacobian<1, 2> H1 = boost::none,
+                    OptionalJacobian<1, 2> H2 = boost::none) {
+    return distance2(p, q, H1, H2);
+  }
+};
+
 } // \ namespace gtsam
 
