@@ -18,74 +18,204 @@
 
 #include <gtsam/nonlinear/FunctorizedFactor.h>
 
+#include <gtsam/basis/Basis.h>
+
 namespace gtsam {
 
 /**
- * Factor for BASIS evaluation.
+ * Factor for scalar BASIS evaluation.
  * @param BASIS: The basis class to use e.g. Chebyshev2
  */
 template <class BASIS>
-using PredictFactor =
-    FunctorizedFactor<typename BASIS::EvaluationFunctor::return_type,
-                      typename BASIS::EvaluationFunctor::argument_type>;
+class EvaluationFactor : public FunctorizedFactor<double, Vector> {
+ private:
+  using Base = FunctorizedFactor<double, Vector>;
+
+ public:
+  EvaluationFactor() {}
+
+  EvaluationFactor(Key key, const double &z, const SharedNoiseModel &model,
+                   const size_t N, double x)
+      : Base(key, z, model, typename BASIS::EvaluationFunctor(N, x)) {}
+
+  EvaluationFactor(Key key, const double &z, const SharedNoiseModel &model,
+                   const size_t N, double x, double a, double b)
+      : Base(key, z, model, typename BASIS::EvaluationFunctor(N, x, a, b)) {}
+
+  virtual ~EvaluationFactor() {}
+};
 
 /**
- * Factor for BASIS derivative evaluation.
- * @param BASIS: The basis class to use e.g. Chebyshev2
- */
-template <class BASIS>
-using DerivativeFactor =
-    FunctorizedFactor<typename BASIS::DerivativeFunctor::return_type,
-                      typename BASIS::DerivativeFunctor::argument_type>;
-
-/**
- * Prior factor for BASIS vector evaluation on Matrix of size (M, N_ORDER).
+ * Prior factor for BASIS vector evaluation on ParameterMatrix of size (M,N).
  * @param BASIS: The basis class to use e.g. Chebyshev2
  * @param M: Size of the evaluated state vector.
  */
 template <class BASIS, int M>
-using VectorPrior = FunctorizedFactor<
-    typename BASIS::template VectorEvaluationFunctor<M>::return_type,
-    typename BASIS::template VectorEvaluationFunctor<M>::argument_type>;
+class VectorEvaluationFactor
+    : public FunctorizedFactor<Vector, ParameterMatrix<M>> {
+ private:
+  using Base = FunctorizedFactor<Vector, ParameterMatrix<M>>;
+
+ public:
+  VectorEvaluationFactor() {}
+
+  VectorEvaluationFactor(Key key, const Vector &z,
+                         const SharedNoiseModel &model, const size_t N,
+                         double x)
+      : Base(key, z, model,
+             typename BASIS::template VectorEvaluationFunctor<M>(N, x)) {}
+
+  VectorEvaluationFactor(Key key, const Vector &z,
+                         const SharedNoiseModel &model, const size_t N,
+                         double x, double a, double b)
+      : Base(key, z, model,
+             typename BASIS::template VectorEvaluationFunctor<M>(N, x, a, b)) {}
+
+  virtual ~VectorEvaluationFactor() {}
+};
+
+/**
+ * Create a measurement on any scalar entry (chosen in the constructor) of a
+ * P-dimensional vector computed by a basis parameterization.
+ * @param BASIS: The basis class to use e.g. Chebyshev2
+ * @param P: Size of the fixed-size vector.
+ *
+ * Example:
+ *  VectorComponentFactor<BASIS, P> controlPrior(key, measured, model,
+ *                                               N, i, t, a, b);
+ *  where N is the degree and i is the component index.
+ */
+template <class BASIS, size_t P>
+class VectorComponentFactor
+    : public FunctorizedFactor<double, ParameterMatrix<P>> {
+ private:
+  using Base = FunctorizedFactor<double, ParameterMatrix<P>>;
+
+ public:
+  VectorComponentFactor() {}
+
+  VectorComponentFactor(Key key, const double &z, const SharedNoiseModel &model,
+                        const size_t N, size_t i, double x)
+      : Base(key, z, model,
+             typename BASIS::template VectorComponentFunctor<P>(N, i, x)) {}
+
+  VectorComponentFactor(Key key, const double &z, const SharedNoiseModel &model,
+                        const size_t N, size_t i, double x, double a, double b)
+      : Base(
+            key, z, model,
+            typename BASIS::template VectorComponentFunctor<P>(N, i, x, a, b)) {
+  }
+
+  virtual ~VectorComponentFactor() {}
+};
 
 /**
  * Prior factor for BASIS Manifold evaluation on type T.
  * @param BASIS: The basis class to use e.g. Chebyshev2
  * @param T: Object type which is synthesized by the functor.
  */
-template <typename BASIS, typename T>
-using TypePrior = FunctorizedFactor<
-    typename BASIS::template ManifoldEvaluationFunctor<T>::return_type,
-    typename BASIS::template ManifoldEvaluationFunctor<T>::argument_type>;
+template <class BASIS, typename T>
+class ManifoldEvaluationFactor
+    : public FunctorizedFactor<T, ParameterMatrix<traits<T>::dimension>> {
+ private:
+  using Base = FunctorizedFactor<T, ParameterMatrix<traits<T>::dimension>>;
+
+ public:
+  ManifoldEvaluationFactor() {}
+
+  ManifoldEvaluationFactor(Key key, const T &z, const SharedNoiseModel &model,
+                           const size_t N, double x)
+      : Base(key, z, model,
+             typename BASIS::template ManifoldEvaluationFunctor<T>(N, x)) {}
+
+  ManifoldEvaluationFactor(Key key, const T &z, const SharedNoiseModel &model,
+                           const size_t N, double x, double a, double b)
+      : Base(
+            key, z, model,
+            typename BASIS::template ManifoldEvaluationFunctor<T>(N, x, a, b)) {
+  }
+
+  virtual ~ManifoldEvaluationFactor() {}
+};
 
 /**
- * Prior factor for BASIS component evaluation on Matrix of size (M, N_ORDER).
+ * Factor for scalar BASIS derivative evaluation.
  * @param BASIS: The basis class to use e.g. Chebyshev2
- * @param P: Size of the component.
  */
-template <typename BASIS, size_t P>
-using ComponentPrior = FunctorizedFactor<
-    typename BASIS::template ComponentEvaluationFunctor<P>::return_type,
-    typename BASIS::template ComponentEvaluationFunctor<P>::argument_type>;
+template <class BASIS>
+class DerivativeFactor
+    : public FunctorizedFactor<double, typename BASIS::Parameters> {
+ private:
+  using Base = FunctorizedFactor<double, typename BASIS::Parameters>;
+
+ public:
+  DerivativeFactor() {}
+
+  DerivativeFactor(Key key, const double &z, const SharedNoiseModel &model,
+                   const size_t N, double x)
+      : Base(key, z, model, typename BASIS::DerivativeFunctor(N, x)) {}
+
+  DerivativeFactor(Key key, const double &z, const SharedNoiseModel &model,
+                   const size_t N, double x, double a, double b)
+      : Base(key, z, model, typename BASIS::DerivativeFunctor(N, x, a, b)) {}
+
+  virtual ~DerivativeFactor() {}
+};
 
 /**
- * Prior factor for BASIS vector derivative on Matrix of size (M, N_ORDER).
+ * Prior factor for BASIS vector derivative on ParameterMatrix of size (M,N).
  * @param BASIS: The basis class to use e.g. Chebyshev2
  * @param M: Size of the evaluated state vector derivative.
  */
-template <typename BASIS, int M>
-using VectorDerivativePrior = FunctorizedFactor<
-    typename BASIS::template VectorDerivativeFunctor<M>::return_type,
-    typename BASIS::template VectorDerivativeFunctor<M>::argument_type>;
+template <class BASIS, int M>
+class VectorDerivativeFactor
+    : public FunctorizedFactor<Vector, ParameterMatrix<M>> {
+ private:
+  using Base = FunctorizedFactor<Vector, ParameterMatrix<M>>;
+  using Func = typename BASIS::template VectorDerivativeFunctor<M>;
+
+ public:
+  VectorDerivativeFactor() {}
+
+  VectorDerivativeFactor(Key key, const Vector &z,
+                         const SharedNoiseModel &model, const size_t N,
+                         double x)
+      : Base(key, z, model, Func(N, x)) {}
+
+  VectorDerivativeFactor(Key key, const Vector &z,
+                         const SharedNoiseModel &model, const size_t N,
+                         double x, double a, double b)
+      : Base(key, z, model, Func(N, x, a, b)) {}
+
+  virtual ~VectorDerivativeFactor() {}
+};
 
 /**
- * Prior factor for BASIS component derivative on Matrix of size (M, N_ORDER).
+ * Prior factor for BASIS component derivative on ParameterMatrix of size (M,N).
  * @param BASIS: The basis class to use e.g. Chebyshev2
- * @param P: Size of the component derivative.
+ * @param P: Size of the control component derivative.
  */
-template <typename BASIS, int P>
-using ComponentDerivativePrior = FunctorizedFactor<
-    typename BASIS::template ComponentDerivativeFunctor<P>::return_type,
-    typename BASIS::template ComponentDerivativeFunctor<P>::argument_type>;
+template <class BASIS, int P>
+class ComponentDerivativeFactor
+    : public FunctorizedFactor<double, ParameterMatrix<P>> {
+ private:
+  using Base = FunctorizedFactor<double, ParameterMatrix<P>>;
+  using Func = typename BASIS::template ComponentDerivativeFunctor<P>;
+
+ public:
+  ComponentDerivativeFactor() {}
+
+  ComponentDerivativeFactor(Key key, const double &z,
+                            const SharedNoiseModel &model, const size_t N,
+                            size_t i, double x)
+      : Base(key, z, model, Func(N, i, x)) {}
+
+  ComponentDerivativeFactor(Key key, const double &z,
+                            const SharedNoiseModel &model, const size_t N,
+                            size_t i, double x, double a, double b)
+      : Base(key, z, model, Func(N, i, x, a, b)) {}
+
+  virtual ~ComponentDerivativeFactor() {}
+};
 
 }  // namespace gtsam

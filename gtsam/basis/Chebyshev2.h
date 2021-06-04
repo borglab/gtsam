@@ -1,3 +1,14 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
  * @file Chebyshev2.h
  * @brief Chebyshev parameterizations on Chebyshev points of second kind.
@@ -24,27 +35,13 @@ namespace gtsam {
  * Note that N here, the #points, is one less than N from Trefethen00book
  * (pg.42)
  */
-class Chebyshev2 : public Basis<Chebyshev2> {
+struct Chebyshev2 : public Basis<Chebyshev2> {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
- public:
   using Base = Basis<Chebyshev2>;
   using Weights = Eigen::Matrix<double, /*1xN*/ 1, -1>;
   using Parameters = Eigen::Matrix<double, /*Nx1*/ -1, 1>;
   using DiffMatrix = Eigen::Matrix<double, /*NxN*/ -1, -1>;
-
-  /**
-   * A matrix of M*N values at the Chebyshev points, where M is the dimension of
-   * T template argument T: the type you would like to EvaluationFunctor using
-   * polynomial interpolation template argument N: the number of Chebyshev
-   * points of the second kind
-   */
-  template <typename T>
-  struct ParameterMatrix {
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    // First dimension is: traits<T>::dimension
-    typedef Eigen::Matrix<double, /*TxN*/ -1, -1> type;
-  };
 
   /// Specific Chebyshev point
   static double Point(size_t N, int j) {
@@ -85,14 +82,13 @@ class Chebyshev2 : public Basis<Chebyshev2> {
    * values of the function f at the Chebyshev points. As such, for a given x we
    * obtain a linear map from parameter vectors f to interpolated values f(x).
    * Optional [a,b] interval can be specified as well.
-   *
-   * Please refer to Trefethen13chapters p 35, formula 5.13
    */
   static Weights CalculateWeights(size_t N, double x, double a = -1,
                                   double b = 1);
 
   /**
    *  Evaluate derivative of barycentric weights.
+   *  This is easy and efficient via the DifferentiationMatrix.
    */
   static Weights DerivativeWeights(size_t N, double x, double a = -1,
                                    double b = 1);
@@ -128,14 +124,14 @@ class Chebyshev2 : public Basis<Chebyshev2> {
    * Create matrix of values at Chebyshev points given vector-valued function.
    */
   template <size_t M>
-  static Matrix matrix(
-      boost::function<Eigen::Matrix<double, M, 1>(double)> f,  //
-      size_t N, double a = -1, double b = 1) {
+  static Matrix matrix(boost::function<Eigen::Matrix<double, M, 1>(double)> f,
+                       size_t N, double a = -1, double b = 1) {
     Matrix Xmat(M, N);
-    for (size_t j = 0; j < N; j++) Xmat.col(j) = f(Point(N, j, a, b));
+    for (size_t j = 0; j < N; j++) {
+      Xmat.col(j) = f(Point(N, j, a, b));
+    }
     return Xmat;
   }
-};
-// \ Chebyshev2
+};  // \ Chebyshev2
 
 }  // namespace gtsam

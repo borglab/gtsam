@@ -12,8 +12,8 @@
 /**
  * @file testFourier.cpp
  * @date July 4, 2020
- * @author Frank Dellaert
- * @brief unit tests for Fourier Basis Decompositions
+ * @author Frank Dellaert, Varun Agrawal
+ * @brief Unit tests for Fourier Basis Decompositions with Expressions
  */
 
 #include <CppUnitLite/TestHarness.h>
@@ -83,8 +83,8 @@ TEST(Basis, Manual) {
     graph.add(linearFactor);
 
     // Create factor to predict value at x
-    PredictFactor<FourierBasis> predictFactor(
-        key, desiredValue, model, FourierBasis::EvaluationFunctor(N, x));
+    EvaluationFactor<FourierBasis> predictFactor(key, desiredValue, model, N,
+                                                 x);
 
     // Check expression Jacobians
     EXPECT_CORRECT_FACTOR_JACOBIANS(predictFactor, values, 1e-5, 1e-9);
@@ -102,7 +102,7 @@ TEST(Basis, Manual) {
 }
 
 //******************************************************************************
-TEST(Basis, PredictFactor) {
+TEST(Basis, EvaluationFactor) {
   // Check fitting a function with a 7-parameter Fourier basis
 
   // Create linear factor graph
@@ -110,8 +110,8 @@ TEST(Basis, PredictFactor) {
   Key key(1);
   for (size_t i = 0; i < 16; i++) {
     double x = i * M_PI / 8, desiredValue = TestFunction(x);
-    graph.emplace_shared<PredictFactor<FourierBasis>>(
-        key, desiredValue, model, FourierBasis::EvaluationFunctor(7, x));
+    graph.emplace_shared<EvaluationFactor<FourierBasis>>(key, desiredValue,
+                                                         model, 7, x);
   }
 
   // Solve FourierFactorGraph
@@ -184,9 +184,10 @@ TEST(Basis, VecDerivativeFunctor) {
   double h = 2 * M_PI / 16;
   Vector2 dotShape(0.5556, -0.8315);  // at h/2
   DotShape dotShapeFunction(N, h / 2);
-  Matrix23 theta = (Matrix32() << 0, 0, 0.7071, 0.7071, 0.7071, -0.7071)
-                       .finished()
-                       .transpose();
+  Matrix23 theta_mat = (Matrix32() << 0, 0, 0.7071, 0.7071, 0.7071, -0.7071)
+                           .finished()
+                           .transpose();
+  ParameterMatrix<2> theta(theta_mat);
   EXPECT(assert_equal(Vector(dotShape), dotShapeFunction(theta), 1e-4));
 }
 
@@ -202,45 +203,45 @@ TEST(Basis, VecDerivativeFunctor) {
 // we can simply express the coefficents c as c=inv(W(X))*f, which is a
 // generalized Fourier transform. That also means we can create factors with the
 // unknown f-values, as done manually below.
-// TEST(Basis, PseudoSpectral) {
-//   // We will create a linear factor graph
-//   GaussianFactorGraph graph;
+TEST(Basis, PseudoSpectral) {
+  // We will create a linear factor graph
+  GaussianFactorGraph graph;
 
-//   const size_t N = 3;
-//   const Key key(1);
+  const size_t N = 3;
+  const Key key(1);
 
-//   // The correct values at X = {0.1,0.2,0.3} are simply W*c
-//   const Vector X = (Vector3() << 0.1, 0.2, 0.3).finished();
-//   const Matrix W = FourierBasis::WeightMatrix(N, X);
-//   const Vector expected = W * k3Coefficients;
+  // The correct values at X = {0.1,0.2,0.3} are simply W*c
+  const Vector X = (Vector3() << 0.1, 0.2, 0.3).finished();
+  const Matrix W = FourierBasis::WeightMatrix(N, X);
+  const Vector expected = W * k3Coefficients;
 
-//   // Check those values are indeed correct values of Fourier approximation
-//   using Eval = FourierBasis::EvaluationFunctor;
-//   EXPECT_DOUBLES_EQUAL(Eval(N, 0.1)(k3Coefficients), expected(0), 1e-9);
-//   EXPECT_DOUBLES_EQUAL(Eval(N, 0.2)(k3Coefficients), expected(1), 1e-9);
-//   EXPECT_DOUBLES_EQUAL(Eval(N, 0.3)(k3Coefficients), expected(2), 1e-9);
+  // Check those values are indeed correct values of Fourier approximation
+  using Eval = FourierBasis::EvaluationFunctor;
+  EXPECT_DOUBLES_EQUAL(Eval(N, 0.1)(k3Coefficients), expected(0), 1e-9);
+  EXPECT_DOUBLES_EQUAL(Eval(N, 0.2)(k3Coefficients), expected(1), 1e-9);
+  EXPECT_DOUBLES_EQUAL(Eval(N, 0.3)(k3Coefficients), expected(2), 1e-9);
 
-//   // Calculate "inverse Fourier transform" matrix
-//   const Matrix invW = W.inverse();
+  // Calculate "inverse Fourier transform" matrix
+  const Matrix invW = W.inverse();
 
-//   // At 16 different samples points x, add a factor on fExpr
-//   for (size_t i = 0; i < 16; i++) {
-//     const double x = i * M_PI / 8;
-//     const double desiredValue = TestFunction(x);
+  // At 16 different samples points x, add a factor on fExpr
+  for (size_t i = 0; i < 16; i++) {
+    const double x = i * M_PI / 8;
+    const double desiredValue = TestFunction(x);
 
-//     // Manual JacobianFactor
-//     Matrix A(1, 3);
-//     A << 1, cos(x), sin(x);
-//     Vector b(1);
-//     b << desiredValue;
-//     JacobianFactor linearFactor(key, A * invW, b);
-//     graph.add(linearFactor);
-//   }
+    // Manual JacobianFactor
+    Matrix A(1, 3);
+    A << 1, cos(x), sin(x);
+    Vector b(1);
+    b << desiredValue;
+    JacobianFactor linearFactor(key, A * invW, b);
+    graph.add(linearFactor);
+  }
 
-//   // Solve linear graph
-//   VectorValues actual = graph.optimize();
-//   EXPECT(assert_equal((Vector)expected, actual.at(key), 1e-4));
-// }
+  // Solve linear graph
+  VectorValues actual = graph.optimize();
+  EXPECT(assert_equal((Vector)expected, actual.at(key), 1e-4));
+}
 
 //******************************************************************************
 int main() {

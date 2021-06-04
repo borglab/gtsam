@@ -24,17 +24,16 @@
 
 #pragma once
 
+#include <gtsam/basis/Basis.h>
+#include <gtsam/basis/BasisFactors.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
-#include "Basis.h"
-#include "BasisFactors.h"
-
 namespace gtsam {
 
 /// For now, this is our sequence representation
-typedef std::map<double, double> Sequence;
+using Sequence = std::map<double, double>;
 
 /**
  * Class that does Fourier Decomposition via least squares
@@ -42,8 +41,8 @@ typedef std::map<double, double> Sequence;
 template <class Basis>
 class FitBasis {
  public:
-  typedef std::pair<double, double> Sample;
-  typedef typename Basis::Parameters Parameters;
+  using Sample = std::pair<double, double>;
+  using Parameters = typename Basis::Parameters;
 
  private:
   Parameters parameters_;
@@ -55,9 +54,8 @@ class FitBasis {
                                              size_t N) {
     NonlinearFactorGraph graph;
     for (const Sample sample : sequence) {
-      auto functor = typename Basis::EvaluationFunctor(N, sample.first);
-      graph.emplace_shared<PredictFactor<Basis>>(0, sample.second, model,
-                                                 functor);
+      graph.emplace_shared<EvaluationFactor<Basis>>(
+          0, sample.second, model, N, sample.first);
     }
     return graph;
   }

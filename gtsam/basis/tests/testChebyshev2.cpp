@@ -28,6 +28,8 @@ using namespace gtsam;
 
 noiseModel::Diagonal::shared_ptr model = noiseModel::Unit::Create(1);
 
+const size_t N = 32;
+
 //******************************************************************************
 TEST(Chebyshev2, Point) {
   static const int N = 5;
@@ -99,20 +101,22 @@ TEST(Chebyshev2, InterpolateVector) {
   double t = 30, a = 0, b = 100;
   const size_t N = 3;
   // Create 2x3 matrix with Vectors at Chebyshev points
-  Matrix X = Matrix::Zero(2, 3);
-  X.row(0) = Chebyshev2::Points(N, a, b);  // slope 1 ramp
+  ParameterMatrix<2> X(N);
+  X.setRow(0, Chebyshev2::Points(N, a, b));  // slope 1 ramp
 
   // Check value
   Vector expected(2);
   expected << t, 0;
   Eigen::Matrix<double, /*2x2N*/ -1, -1> actualH(2, 2 * N);
+
   Chebyshev2::VectorEvaluationFunctor<2> fx(N, t, a, b);
   EXPECT(assert_equal(expected, fx(X, actualH), 1e-9));
 
   // Check derivative
-  boost::function<Vector2(Matrix23)> f = boost::bind(
+  boost::function<Vector2(ParameterMatrix<2>)> f = boost::bind(
       &Chebyshev2::VectorEvaluationFunctor<2>::operator(), fx, _1, boost::none);
-  Matrix numericalH = numericalDerivative11<Vector2, Matrix23>(f, X);
+  Matrix numericalH =
+      numericalDerivative11<Vector2, ParameterMatrix<2>, 2 * N>(f, X);
   EXPECT(assert_equal(numericalH, actualH, 1e-9));
 }
 
@@ -184,7 +188,6 @@ double fprime(double x) {
 
 //******************************************************************************
 TEST(Chebyshev2, CalculateWeights) {
-  const size_t N = 32;
   Eigen::Matrix<double, -1, 1> fvals(N);
   for (size_t i = 0; i < N; i++) {
     fvals(i) = f(Chebyshev2::Point(N, i));
@@ -197,7 +200,6 @@ TEST(Chebyshev2, CalculateWeights) {
 }
 
 TEST(Chebyshev2, CalculateWeights2) {
-  const size_t N = 32;
   double a = 0, b = 10, x1 = 7, x2 = 4.12;
 
   Eigen::Matrix<double, -1, 1> fvals(N);
@@ -209,33 +211,33 @@ TEST(Chebyshev2, CalculateWeights2) {
   EXPECT_DOUBLES_EQUAL(f(x1), weights1 * fvals, 1e-8);
 
   Chebyshev2::Weights weights2 = Chebyshev2::CalculateWeights(N, x2, a, b);
-  double expected2 = 185.454784;
+  double expected2 = f(x2);  // 185.454784
   double actual2 = weights2 * fvals;
   EXPECT_DOUBLES_EQUAL(expected2, actual2, 1e-8);
 }
 
 TEST(Chebyshev2, DerivativeWeights) {
-  const size_t N = 32;
-
   Eigen::Matrix<double, -1, 1> fvals(N);
   for (size_t i = 0; i < N; i++) {
     fvals(i) = f(Chebyshev2::Point(N, i));
   }
-  double x1 = 0.7, x2 = -0.376;
+  double x1 = 0.7, x2 = -0.376, x3 = 0.0;
   Chebyshev2::Weights dWeights1 = Chebyshev2::DerivativeWeights(N, x1);
-  EXPECT_DOUBLES_EQUAL(fprime(x1), dWeights1 * fvals, 1e-8);
+  EXPECT_DOUBLES_EQUAL(fprime(x1), dWeights1 * fvals, 1e-9);
 
   Chebyshev2::Weights dWeights2 = Chebyshev2::DerivativeWeights(N, x2);
-  EXPECT_DOUBLES_EQUAL(fprime(x2), dWeights2 * fvals, 1e-8);
+  EXPECT_DOUBLES_EQUAL(fprime(x2), dWeights2 * fvals, 1e-9);
+
+  Chebyshev2::Weights dWeights3 = Chebyshev2::DerivativeWeights(N, x3);
+  EXPECT_DOUBLES_EQUAL(fprime(x3), dWeights3 * fvals, 1e-9);
 
   // test if derivative calculation and cheb point is correct
-  double x3 = Chebyshev2::Point(N, 3);
-  Chebyshev2::Weights dWeights3 = Chebyshev2::DerivativeWeights(N, x3);
-  EXPECT_DOUBLES_EQUAL(fprime(x3), dWeights3 * fvals, 1e-8);
+  double x4 = Chebyshev2::Point(N, 3);
+  Chebyshev2::Weights dWeights4 = Chebyshev2::DerivativeWeights(N, x4);
+  EXPECT_DOUBLES_EQUAL(fprime(x4), dWeights4 * fvals, 1e-9);
 }
 
 TEST(Chebyshev2, DerivativeWeights2) {
-  const size_t N = 32;
   double x1 = 5, x2 = 4.12, a = 0, b = 10;
 
   Eigen::Matrix<double, -1, 1> fvals(N);
@@ -263,14 +265,14 @@ TEST(Chebyshev2, DerivativeWeightsDifferentiationMatrix) {
   Matrix D6 = Chebyshev2::DifferentiationMatrix(N6);
   Chebyshev2::Weights expected = Chebyshev2::CalculateWeights(N6, x1) * D6;
   Chebyshev2::Weights actual = Chebyshev2::DerivativeWeights(N6, x1);
-  EXPECT(assert_equal(expected, actual, 1e-4));
+  EXPECT(assert_equal(expected, actual, 1e-12));
 
   double a = -3, b = 8, x2 = 5.05;
   Matrix D6_2 = Chebyshev2::DifferentiationMatrix(N6, a, b);
   Chebyshev2::Weights expected1 =
       Chebyshev2::CalculateWeights(N6, x2, a, b) * D6_2;
   Chebyshev2::Weights actual1 = Chebyshev2::DerivativeWeights(N6, x2, a, b);
-  EXPECT(assert_equal(expected1, actual1, 1e-4));
+  EXPECT(assert_equal(expected1, actual1, 1e-12));
 }
 
 //******************************************************************************
@@ -345,28 +347,63 @@ TEST(Chebyshev2, Derivative6_03) {
 TEST(Chebyshev2, VectorDerivativeFunctor) {
   const size_t N = 3, M = 2;
   const double x = 0.2;
-  typedef Chebyshev2::VectorDerivativeFunctor<M> VecD;
+  using VecD = Chebyshev2::VectorDerivativeFunctor<M>;
   VecD fx(N, x, 0, 3);
-  Matrix X = Matrix::Zero(M, N);
+  ParameterMatrix<M> X(N);
   Matrix actualH(M, M * N);
   EXPECT(assert_equal(Vector::Zero(M), (Vector)fx(X, actualH), 1e-8));
-  Matrix expectedH = numericalDerivative11<Vector2, Matrix23>(
+
+  // Test Jacobian
+  Matrix expectedH = numericalDerivative11<Vector2, ParameterMatrix<M>, M * N>(
       boost::bind(&VecD::operator(), fx, _1, boost::none), X);
   EXPECT(assert_equal(expectedH, actualH, 1e-7));
 }
 
 //******************************************************************************
+// Test VectorDerivativeFunctor with polynomial function
+TEST(Chebyshev2, VectorDerivativeFunctor2) {
+  const size_t N = 64, M = 1, T = 15;
+  using VecD = Chebyshev2::VectorDerivativeFunctor<M>;
+
+  const Vector points = Chebyshev2::Points(N, 0, T);
+
+  // Assign the parameter matrix
+  Vector values(N);
+  for (size_t i = 0; i < N; ++i) {
+    values(i) = f(points(i));
+  }
+  ParameterMatrix<M> X(values);
+
+  // Evaluate the derivative at the chebyshev points using
+  // VectorDerivativeFunctor.
+  for (size_t i = 0; i < N; ++i) {
+    VecD d(N, points(i), 0, T);
+    Vector1 Dx = d(X);
+    EXPECT_DOUBLES_EQUAL(fprime(points(i)), Dx(0), 1e-6);
+  }
+
+  // Test Jacobian at the first chebyshev point.
+  Matrix actualH(M, M * N);
+  VecD vecd(N, points(0), 0, T);
+  vecd(X, actualH);
+  Matrix expectedH = numericalDerivative11<Vector1, ParameterMatrix<M>, M * N>(
+      boost::bind(&VecD::operator(), vecd, _1, boost::none), X);
+  EXPECT(assert_equal(expectedH, actualH, 1e-6));
+}
+
+//******************************************************************************
 // Test ComponentDerivativeFunctor
 TEST(Chebyshev2, ComponentDerivativeFunctor) {
-  const size_t N = 7, M = 3;
+  const size_t N = 6, M = 2;
   const double x = 0.2;
-  typedef Chebyshev2::ComponentDerivativeFunctor<M> CompFunc;
+  using CompFunc = Chebyshev2::ComponentDerivativeFunctor<M>;
   size_t row = 1;
   CompFunc fx(N, row, x, 0, 3);
-  Matrix X = Matrix::Zero(M, 7);
+  ParameterMatrix<M> X(N);
   Matrix actualH(1, M * N);
   EXPECT_DOUBLES_EQUAL(0, fx(X, actualH), 1e-8);
-  Matrix expectedH = numericalDerivative11<double, Matrix37>(
+
+  Matrix expectedH = numericalDerivative11<double, ParameterMatrix<M>, M * N>(
       boost::bind(&CompFunc::operator(), fx, _1, boost::none), X);
   EXPECT(assert_equal(expectedH, actualH, 1e-7));
 }

@@ -237,6 +237,137 @@ virtual class GenericValue : gtsam::Value {
 };
 
 //*************************************************************************
+// basis
+//*************************************************************************
+
+#include <gtsam/basis/Fourier.h>
+
+class FourierBasis {
+  static Vector CalculateWeights(size_t N, double x);
+  static Matrix WeightMatrix(size_t N, Vector x);
+
+  static Matrix DifferentiationMatrix(size_t N);
+  static Vector DerivativeWeights(size_t N, double x);
+};
+
+#include <gtsam/basis/Chebyshev.h>
+
+class Chebyshev1Basis {
+  static Matrix CalculateWeights(size_t N, double x);
+  static Matrix WeightMatrix(size_t N, Vector X);
+
+  // TODO need support for nested classes
+  // class Derivative {
+  //   Derivative(size_t N, double x);
+  // };
+};
+
+class Chebyshev2Basis {
+  static Matrix CalculateWeights(size_t N, double x);
+  static Matrix WeightMatrix(size_t N, Vector x);
+};
+
+#include <gtsam/basis/Chebyshev2.h>
+class Chebyshev2 {
+  static double Point(size_t N, int j);
+  static double Point(size_t N, int j, double a, double b);
+
+  static Vector Points(size_t N);
+  static Vector Points(size_t N, double a, double b);
+
+  static Matrix WeightMatrix(size_t N, Vector X);
+  static Matrix WeightMatrix(size_t N, Vector X, double a, double b);
+
+  static Matrix CalculateWeights(size_t N, double x, double a, double b);
+  static Matrix DerivativeWeights(size_t N, double x, double a, double b);
+  static Matrix IntegrationWeights(size_t N, double a, double b);
+  static Matrix DifferentiationMatrix(size_t N, double a, double b);
+
+  // TODO Needs OptionalJacobian
+  // static double Derivative(double x, Vector f);
+};
+
+#include <gtsam/basis/ParameterMatrix.h>
+
+template <M>
+class ParameterMatrix {
+  ParameterMatrix(const size_t N);
+  ParameterMatrix(const Matrix& matrix);
+
+  MatrixType matrix() const;
+
+  void print(const string& s="") const;
+};
+
+typedef gtsam::ParameterMatrix<1> StateVector;
+typedef gtsam::ParameterMatrix<2> BicycleControlMatrix;
+typedef gtsam::ParameterMatrix<3> PlanarStateMatrix;
+typedef gtsam::ParameterMatrix<4> QuadControlMatrix;
+typedef gtsam::ParameterMatrix<6> ControlMatrix;
+typedef gtsam::ParameterMatrix<12> StateMatrix;
+
+#include <gtsam/basis/BasisFactors.h>
+
+template <BASIS = {gtsam::Chebyshev2}>
+class EvaluationFactor : gtsam::NonlinearFactor {
+  EvaluationFactor();
+  EvaluationFactor(gtsam::Key key, const double z,
+                   const gtsam::noiseModel::Base* model, const size_t N,
+                   double x);
+  EvaluationFactor(gtsam::Key key, const double z,
+                   const gtsam::noiseModel::Base* model, const size_t N,
+                   double x, double a, double b);
+};
+
+template <BASIS, M>
+class VectorEvaluationFactor : gtsam::NonlinearFactor {
+  VectorEvaluationFactor();
+  VectorEvaluationFactor(gtsam::Key key, const Vector& z,
+                         const gtsam::noiseModel::Base* model, const size_t N,
+                         double x);
+  VectorEvaluationFactor(gtsam::Key key, const Vector& z,
+                         const gtsam::noiseModel::Base* model, const size_t N,
+                         double x, double a, double b);
+};
+
+typedef gtsam::VectorEvaluationFactor<gtsam::Chebyshev2, 3>
+    VectorEvaluationFactorChebyshev2D3;
+typedef gtsam::VectorEvaluationFactor<gtsam::Chebyshev2, 4>
+    VectorEvaluationFactorChebyshev2D4;
+typedef gtsam::VectorEvaluationFactor<gtsam::Chebyshev2, 12>
+    VectorEvaluationFactorChebyshev2D12;
+
+template <BASIS, P>
+class VectorComponentFactor : gtsam::NonlinearFactor {
+  VectorComponentFactor();
+  VectorComponentFactor(gtsam::Key key, const double z,
+                        const gtsam::noiseModel::Base* model, const size_t N,
+                        size_t i, double x);
+  VectorComponentFactor(gtsam::Key key, const double z,
+                        const gtsam::noiseModel::Base* model, const size_t N,
+                        size_t i, double x, double a, double b);
+};
+
+typedef gtsam::VectorComponentFactor<gtsam::Chebyshev2, 3>
+    VectorComponentFactorChebyshev2D3;
+typedef gtsam::VectorComponentFactor<gtsam::Chebyshev2, 4>
+    VectorComponentFactorChebyshev2D4;
+typedef gtsam::VectorComponentFactor<gtsam::Chebyshev2, 12>
+    VectorComponentFactorChebyshev2D12;
+
+template <BASIS, T>
+class ManifoldEvaluationFactor : gtsam::NonlinearFactor {
+  ManifoldEvaluationFactor();
+  ManifoldEvaluationFactor(gtsam::Key key, const T& z,
+                           const gtsam::noiseModel::Base* model, const size_t N,
+                           double x);
+  ManifoldEvaluationFactor(gtsam::Key key, const T& z,
+                           const gtsam::noiseModel::Base* model, const size_t N,
+                           double x, double a, double b);
+};
+
+
+//*************************************************************************
 // geometry
 //*************************************************************************
 

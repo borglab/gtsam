@@ -31,7 +31,7 @@ const size_t N = 3;
 
 //******************************************************************************
 TEST(Chebyshev, Chebyshev1) {
-  typedef Chebyshev1Basis::EvaluationFunctor Synth;
+  using Synth = Chebyshev1Basis::EvaluationFunctor;
   Vector c(N);
   double x;
   c << 12, 3, 1;
@@ -45,7 +45,7 @@ TEST(Chebyshev, Chebyshev1) {
 
 //******************************************************************************
 TEST(Chebyshev, Chebyshev2) {
-  typedef Chebyshev2Basis::EvaluationFunctor Synth;
+  using Synth = Chebyshev2Basis::EvaluationFunctor;
   Vector c(N);
   double x;
   c << 12, 3, 1;
@@ -58,7 +58,7 @@ TEST(Chebyshev, Chebyshev2) {
 }
 
 //******************************************************************************
-TEST(Chebyshev, Prediction) {
+TEST(Chebyshev, Evaluation) {
   Chebyshev1Basis::EvaluationFunctor fx(N, 0.5);
   Vector c(N);
   c << 3, 5, -12;
@@ -82,9 +82,8 @@ TEST(Chebyshev, Expression) {
   x << -0.7, -0.4, 0.1, 0.3, 0.7, 0.9;
 
   for (size_t i = 0; i < m; i++) {
-    auto functor = Chebyshev1Basis::EvaluationFunctor(N, t(i));
-    graph.emplace_shared<PredictFactor<Chebyshev1Basis>>(key, x(i), model,
-                                                         functor);
+    graph.emplace_shared<EvaluationFactor<Chebyshev1Basis>>(key, x(i), model, N,
+                                                            t(i));
   }
 
   // Solve
@@ -141,12 +140,13 @@ TEST(Chebyshev, Decomposition) {
 
 //******************************************************************************
 TEST(Chebyshev1, Derivative) {
-  typedef Chebyshev1Basis::Derivative D;
+  using D = Chebyshev1Basis::Derivative;
+
   Vector c(N);
-  double x;
   c << 12, 3, 1;
-  // D[12 + 3*x + 2*x*x-1,x] = 3 + 4*x
-  x = -1.0;
+
+  // The derivative should be D(12 + 3*x + 2*x*x-1, x) = 3 + 4*x
+  double x = -1.0;
   EXPECT_DOUBLES_EQUAL(3 + 4 * x, D(N, x)(c), 1e-9);
   x = -0.5;
   EXPECT_DOUBLES_EQUAL(3 + 4 * x, D(N, x)(c), 1e-9);
