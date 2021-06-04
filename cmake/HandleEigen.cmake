@@ -6,7 +6,7 @@ option(GTSAM_USE_SYSTEM_EIGEN "Find and use system-installed Eigen. If 'off', us
 if(NOT GTSAM_USE_SYSTEM_EIGEN)
   # This option only makes sense if using the embedded copy of Eigen, it is
   # used to decide whether to *install* the "unsupported" module:
-  option(GTSAM_WITH_EIGEN_UNSUPPORTED "Install Eigen's unsupported modules" OFF)
+  option(GTSAM_WITH_EIGEN_UNSUPPORTED "Install Eigen's unsupported modules" ON)
 endif()
 
 # Switch for using system Eigen or GTSAM-bundled Eigen
