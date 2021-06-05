@@ -75,7 +75,7 @@ class TestCustomFactor(GtsamTestCase):
             key0 = this.keys()[0]
             key1 = this.keys()[1]
             gT1, gT2 = v.atPose2(key0), v.atPose2(key1)
-            error = Pose2(0, 0, 0).localCoordinates(gT1.between(gT2))
+            error = expected.localCoordinates(gT1.between(gT2))
 
             if H is not None:
                 result = gT1.between(gT2)
@@ -89,7 +89,7 @@ class TestCustomFactor(GtsamTestCase):
         v.insert(0, gT1)
         v.insert(1, gT2)
 
-        bf = gtsam.BetweenFactorPose2(0, 1, Pose2(0, 0, 0), noise_model)
+        bf = gtsam.BetweenFactorPose2(0, 1, expected, noise_model)
 
         gf = cf.linearize(v)
         gf_b = bf.linearize(v)
@@ -136,7 +136,7 @@ class TestCustomFactor(GtsamTestCase):
             key0 = this.keys()[0]
             key1 = this.keys()[1]
             gT1, gT2 = v.atPose2(key0), v.atPose2(key1)
-            error = Pose2(0, 0, 0).localCoordinates(gT1.between(gT2))
+            error = expected.localCoordinates(gT1.between(gT2))
 
             self.assertTrue(H is None)  # Should be true if we only request the error
 
@@ -152,11 +152,55 @@ class TestCustomFactor(GtsamTestCase):
         v.insert(0, gT1)
         v.insert(1, gT2)
 
-        bf = gtsam.BetweenFactorPose2(0, 1, Pose2(0, 0, 0), noise_model)
+        bf = gtsam.BetweenFactorPose2(0, 1, expected, noise_model)
 
         e_cf = cf.error(v)
         e_bf = bf.error(v)
         np.testing.assert_allclose(e_cf, e_bf)
+
+    def test_optimization(self):
+        """Tests if a factor graph with a CustomFactor can be properly optimized"""
+        gT1 = Pose2(1, 2, np.pi / 2)
+        gT2 = Pose2(-1, 4, np.pi)
+
+        expected = Pose2(2, 2, np.pi / 2)
+
+        def error_func(this: CustomFactor, v: gtsam.Values, H: List[np.ndarray]):
+            """
+            Error function that mimics a BetweenFactor
+            :param this: reference to the current CustomFactor being evaluated
+            :param v: Values object
+            :param H: list of references to the Jacobian arrays
+            :return: the non-linear error
+            """
+            key0 = this.keys()[0]
+            key1 = this.keys()[1]
+            gT1, gT2 = v.atPose2(key0), v.atPose2(key1)
+            error = expected.localCoordinates(gT1.between(gT2))
+
+            if H is not None:
+                result = gT1.between(gT2)
+                H[0] = -result.inverse().AdjointMap()
+                H[1] = np.eye(3)
+            return error
+
+        noise_model = gtsam.noiseModel.Unit.Create(3)
+        cf = CustomFactor(noise_model, [0, 1], error_func)
+
+        fg = gtsam.NonlinearFactorGraph()
+        fg.add(cf)
+        fg.add(gtsam.PriorFactorPose2(0, gT1, noise_model))
+
+        v = Values()
+        v.insert(0, Pose2(0, 0, 0))
+        v.insert(1, Pose2(0, 0, 0))
+
+        params = gtsam.LevenbergMarquardtParams()
+        optimizer = gtsam.LevenbergMarquardtOptimizer(fg, v, params)
+        result = optimizer.optimize()
+
+        self.gtsamAssertEquals(result.atPose2(0), gT1, tol=1e-5)
+        self.gtsamAssertEquals(result.atPose2(1), gT2, tol=1e-5)
 
 
 if __name__ == "__main__":
