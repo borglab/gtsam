@@ -1,0 +1,75 @@
+import gtsam
+import numpy as np
+
+from typing import List, Optional
+from functools import partial
+
+# Simulate a car for one second
+x0 = 0
+dt = 0.25  # 4 Hz, typical GPS
+v = 144 * 1000 / 3600  # 144 km/hour = 90mph, pretty fast
+x = [x0 + v * dt * i for i in range(5)]
+print(x)
+
+# %%
+add_noise = True  # set this to False to run with "perfect" measurements
+
+# GPS measurements
+sigma_gps = 3.0  # assume GPS is +/- 3m
+g = [x[k] + (np.random.normal(scale=sigma_gps) if add_noise else 0)
+     for k in range(5)]
+
+# Odometry measurements
+sigma_odo = 0.1  # assume Odometry is 10cm accurate at 4Hz
+o = [x[k + 1] - x[k] + (np.random.normal(scale=sigma_odo) if add_noise else 0)
+     for k in range(4)]
+
+# Landmark measurements:
+sigma_lm = 1  # assume landmark measurement is accurate up to 1m
+
+# Assume first landmark is at x=5, we measure it at time k=0
+lm_0 = 5.0
+z_0 = x[0] - lm_0 + (np.random.normal(scale=sigma_lm) if add_noise else 0)
+
+# Assume other landmark is at x=28, we measure it at time k=3
+lm_3 = 28.0
+z_3 = x[3] - lm_3 + (np.random.normal(scale=sigma_lm) if add_noise else 0)
+
+unknown = [gtsam.symbol('x', k) for k in range(5)]
+
+print("unknowns = ", list(map(gtsam.DefaultKeyFormatter, unknown)))
+
+# We now can use nonlinear factor graphs
+factor_graph = gtsam.NonlinearFactorGraph()
+
+# Add factors for GPS measurements
+I = np.eye(1)
+gps_model = gtsam.noiseModel.Isotropic.Sigma(1, sigma_gps)
+
+
+def error_gps(this: gtsam.CustomFactor, values, jacobians: Optional[List[np.ndarray]], measurement: np.ndarray):
+    key = this.keys()[0]
+    estimate = values.atVector(key)
+    error = measurement - estimate
+    if jacobians is not None:
+        jacobians[0] = -I
+
+    return error
+
+
+for k in range(5):
+    factor_graph.add(gtsam.CustomFactor(gps_model, [unknown[k]], partial(error_gps, measurement=np.array([g[k]]))))
+
+v = gtsam.Values()
+
+for i in range(5):
+    v.insert(unknown[i], np.array([0.0]))
+
+linearized: gtsam.GaussianFactorGraph = factor_graph.linearize(v)
+print(linearized.at(1))
+
+params = gtsam.GaussNewtonParams()
+optimizer = gtsam.GaussNewtonOptimizer(factor_graph, v, params)
+
+result = optimizer.optimize()
+print(result)

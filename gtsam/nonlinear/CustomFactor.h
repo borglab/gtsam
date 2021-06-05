@@ -35,7 +35,7 @@ class CustomFactor;
  * This is safe because this is passing a const pointer, and pybind11 will maintain the `std::vector` memory layout.
  * Thus the pointer will never be invalidated.
  */
-using CustomErrorFunction = std::function<Vector(const CustomFactor&, const Values&, const JacobianVector*)>;
+using CustomErrorFunction = std::function<Vector(const CustomFactor &, const Values &, const JacobianVector *)>;
 
 /**
  * @brief Custom factor that takes a std::function as the error
@@ -46,7 +46,7 @@ using CustomErrorFunction = std::function<Vector(const CustomFactor&, const Valu
  */
 class CustomFactor: public NoiseModelFactor {
 protected:
-   CustomErrorFunction error_function_;
+  CustomErrorFunction error_function_;
 
 protected:
 
@@ -66,7 +66,7 @@ public:
    * @param keys keys of the variables
    * @param errorFunction the error functional
    */
-  CustomFactor(const SharedNoiseModel& noiseModel, const KeyVector& keys, const CustomErrorFunction& errorFunction) :
+  CustomFactor(const SharedNoiseModel &noiseModel, const KeyVector &keys, const CustomErrorFunction &errorFunction) :
       Base(noiseModel, keys) {
     this->error_function_ = errorFunction;
   }
@@ -80,16 +80,22 @@ public:
   Vector unwhitenedError(const Values &x, boost::optional<std::vector<Matrix> &> H = boost::none) const override;
 
   /** print */
-  void print(const std::string& s,
-             const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
+  void print(const std::string &s,
+             const KeyFormatter &keyFormatter = DefaultKeyFormatter) const override;
 
+  /**
+   * Mark not sendable
+   */
+  bool sendable() const override {
+    return false;
+  }
 
 private:
 
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+  void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
     ar & boost::serialization::make_nvp("CustomFactor",
                                         boost::serialization::base_object<Base>(*this));
   }
