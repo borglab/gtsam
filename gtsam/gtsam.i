@@ -289,7 +289,7 @@ class Chebyshev2 {
 
 #include <gtsam/basis/ParameterMatrix.h>
 
-template <M>
+template <M = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}>
 class ParameterMatrix {
   ParameterMatrix(const size_t N);
   ParameterMatrix(const Matrix& matrix);
@@ -298,74 +298,6 @@ class ParameterMatrix {
 
   void print(const string& s="") const;
 };
-
-typedef gtsam::ParameterMatrix<1> StateVector;
-typedef gtsam::ParameterMatrix<2> BicycleControlMatrix;
-typedef gtsam::ParameterMatrix<3> PlanarStateMatrix;
-typedef gtsam::ParameterMatrix<4> QuadControlMatrix;
-typedef gtsam::ParameterMatrix<6> ControlMatrix;
-typedef gtsam::ParameterMatrix<12> StateMatrix;
-
-#include <gtsam/basis/BasisFactors.h>
-
-template <BASIS = {gtsam::Chebyshev2}>
-class EvaluationFactor : gtsam::NonlinearFactor {
-  EvaluationFactor();
-  EvaluationFactor(gtsam::Key key, const double z,
-                   const gtsam::noiseModel::Base* model, const size_t N,
-                   double x);
-  EvaluationFactor(gtsam::Key key, const double z,
-                   const gtsam::noiseModel::Base* model, const size_t N,
-                   double x, double a, double b);
-};
-
-template <BASIS, M>
-class VectorEvaluationFactor : gtsam::NonlinearFactor {
-  VectorEvaluationFactor();
-  VectorEvaluationFactor(gtsam::Key key, const Vector& z,
-                         const gtsam::noiseModel::Base* model, const size_t N,
-                         double x);
-  VectorEvaluationFactor(gtsam::Key key, const Vector& z,
-                         const gtsam::noiseModel::Base* model, const size_t N,
-                         double x, double a, double b);
-};
-
-typedef gtsam::VectorEvaluationFactor<gtsam::Chebyshev2, 3>
-    VectorEvaluationFactorChebyshev2D3;
-typedef gtsam::VectorEvaluationFactor<gtsam::Chebyshev2, 4>
-    VectorEvaluationFactorChebyshev2D4;
-typedef gtsam::VectorEvaluationFactor<gtsam::Chebyshev2, 12>
-    VectorEvaluationFactorChebyshev2D12;
-
-template <BASIS, P>
-class VectorComponentFactor : gtsam::NonlinearFactor {
-  VectorComponentFactor();
-  VectorComponentFactor(gtsam::Key key, const double z,
-                        const gtsam::noiseModel::Base* model, const size_t N,
-                        size_t i, double x);
-  VectorComponentFactor(gtsam::Key key, const double z,
-                        const gtsam::noiseModel::Base* model, const size_t N,
-                        size_t i, double x, double a, double b);
-};
-
-typedef gtsam::VectorComponentFactor<gtsam::Chebyshev2, 3>
-    VectorComponentFactorChebyshev2D3;
-typedef gtsam::VectorComponentFactor<gtsam::Chebyshev2, 4>
-    VectorComponentFactorChebyshev2D4;
-typedef gtsam::VectorComponentFactor<gtsam::Chebyshev2, 12>
-    VectorComponentFactorChebyshev2D12;
-
-template <BASIS, T>
-class ManifoldEvaluationFactor : gtsam::NonlinearFactor {
-  ManifoldEvaluationFactor();
-  ManifoldEvaluationFactor(gtsam::Key key, const T& z,
-                           const gtsam::noiseModel::Base* model, const size_t N,
-                           double x);
-  ManifoldEvaluationFactor(gtsam::Key key, const T& z,
-                           const gtsam::noiseModel::Base* model, const size_t N,
-                           double x, double a, double b);
-};
-
 
 //*************************************************************************
 // geometry
@@ -3666,6 +3598,68 @@ class ScenarioRunner {
       const gtsam::imuBias::ConstantBias& estimatedBias) const;
   Matrix estimateNoiseCovariance(size_t N) const;
 };
+
+
+#include <gtsam/basis/BasisFactors.h>
+
+template <BASIS = {gtsam::Chebyshev2}>
+class EvaluationFactor : gtsam::NoiseModelFactor {
+  EvaluationFactor();
+  EvaluationFactor(gtsam::Key key, const double z,
+                   const gtsam::noiseModel::Base* model, const size_t N,
+                   double x);
+  EvaluationFactor(gtsam::Key key, const double z,
+                   const gtsam::noiseModel::Base* model, const size_t N,
+                   double x, double a, double b);
+};
+
+template <BASIS, M>
+class VectorEvaluationFactor : gtsam::NoiseModelFactor {
+  VectorEvaluationFactor();
+  VectorEvaluationFactor(gtsam::Key key, const Vector& z,
+                         const gtsam::noiseModel::Base* model, const size_t N,
+                         double x);
+  VectorEvaluationFactor(gtsam::Key key, const Vector& z,
+                         const gtsam::noiseModel::Base* model, const size_t N,
+                         double x, double a, double b);
+};
+
+typedef gtsam::VectorEvaluationFactor<gtsam::Chebyshev2, 3>
+    VectorEvaluationFactorChebyshev2D3;
+typedef gtsam::VectorEvaluationFactor<gtsam::Chebyshev2, 4>
+    VectorEvaluationFactorChebyshev2D4;
+typedef gtsam::VectorEvaluationFactor<gtsam::Chebyshev2, 12>
+    VectorEvaluationFactorChebyshev2D12;
+
+template <BASIS, P>
+class VectorComponentFactor : gtsam::NoiseModelFactor {
+  VectorComponentFactor();
+  VectorComponentFactor(gtsam::Key key, const double z,
+                        const gtsam::noiseModel::Base* model, const size_t N,
+                        size_t i, double x);
+  VectorComponentFactor(gtsam::Key key, const double z,
+                        const gtsam::noiseModel::Base* model, const size_t N,
+                        size_t i, double x, double a, double b);
+};
+
+typedef gtsam::VectorComponentFactor<gtsam::Chebyshev2, 3>
+    VectorComponentFactorChebyshev2D3;
+typedef gtsam::VectorComponentFactor<gtsam::Chebyshev2, 4>
+    VectorComponentFactorChebyshev2D4;
+typedef gtsam::VectorComponentFactor<gtsam::Chebyshev2, 12>
+    VectorComponentFactorChebyshev2D12;
+
+template <BASIS, T>
+class ManifoldEvaluationFactor : gtsam::NoiseModelFactor {
+  ManifoldEvaluationFactor();
+  ManifoldEvaluationFactor(gtsam::Key key, const T& z,
+                           const gtsam::noiseModel::Base* model, const size_t N,
+                           double x);
+  ManifoldEvaluationFactor(gtsam::Key key, const T& z,
+                           const gtsam::noiseModel::Base* model, const size_t N,
+                           double x, double a, double b);
+};
+
 
 //*************************************************************************
 // Utilities
