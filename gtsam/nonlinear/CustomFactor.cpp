@@ -24,6 +24,7 @@ namespace gtsam {
  */
 Vector CustomFactor::unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H) const {
   if(this->active(x)) {
+
     if(H) {
       /*
        * In this case, we pass the raw pointer to the `std::vector<Matrix>` object directly to pybind.
@@ -45,7 +46,7 @@ Vector CustomFactor::unwhitenedError(const Values& x, boost::optional<std::vecto
       return this->error_function_(*this, x, H.get_ptr());
     } else {
       /*
-       * In this case, we pass the a `nullptr` to pybind, and it will translated to `None` in Python.
+       * In this case, we pass the a `nullptr` to pybind, and it will translate to `None` in Python.
        * Users can check for `None` in their callback to determine if the Jacobian is requested.
        */
       return this->error_function_(*this, x, nullptr);
