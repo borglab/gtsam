@@ -1,15 +1,33 @@
+"""
+GTSAM Copyright 2010-2019, Georgia Tech Research Corporation,
+Atlanta, Georgia 30332-0415
+All Rights Reserved
+
+See LICENSE for the license information
+
+CustomFactor demo that simulates a 1-D sensor fusion task.
+Author: Fan Jiang, Frank Dellaert
+"""
+
 import gtsam
 import numpy as np
 
 from typing import List, Optional
 from functools import partial
 
-# Simulate a car for one second
-x0 = 0
-dt = 0.25  # 4 Hz, typical GPS
-v = 144 * 1000 / 3600  # 144 km/hour = 90mph, pretty fast
-x = [x0 + v * dt * i for i in range(5)]
-print(x)
+
+def simulate_car():
+    # Simulate a car for one second
+    x0 = 0
+    dt = 0.25  # 4 Hz, typical GPS
+    v = 144 * 1000 / 3600  # 144 km/hour = 90mph, pretty fast
+    x = [x0 + v * dt * i for i in range(5)]
+
+    return x
+
+
+x = simulate_car()
+print(f"Simulated car trajectory: {x}")
 
 # %%
 add_noise = True  # set this to False to run with "perfect" measurements
@@ -47,12 +65,12 @@ I = np.eye(1)
 gps_model = gtsam.noiseModel.Isotropic.Sigma(1, sigma_gps)
 
 
-def error_gps(this: gtsam.CustomFactor, values, jacobians: Optional[List[np.ndarray]], measurement: np.ndarray):
+def error_gps(measurement: np.ndarray, this: gtsam.CustomFactor, values, jacobians: Optional[List[np.ndarray]]):
     """GPS Factor error function
+    :param measurement: GPS measurement, to be filled with `partial`
     :param this: gtsam.CustomFactor handle
     :param values: gtsam.Values
     :param jacobians: Optional list of Jacobians
-    :param measurement: GPS measurement, to be filled with `partial`
     :return: the unwhitened error
     """
     key = this.keys()[0]
@@ -64,19 +82,26 @@ def error_gps(this: gtsam.CustomFactor, values, jacobians: Optional[List[np.ndar
     return error
 
 
+# Add the GPS factors
 for k in range(5):
-    factor_graph.add(gtsam.CustomFactor(gps_model, [unknown[k]], partial(error_gps, measurement=np.array([g[k]]))))
+    gf = gtsam.CustomFactor(gps_model, [unknown[k]], partial(error_gps, np.array([g[k]])))
+    factor_graph.add(gf)
 
+# New Values container
 v = gtsam.Values()
 
+# Add initial estimates to the Values container
 for i in range(5):
     v.insert(unknown[i], np.array([0.0]))
 
+# Initialize optimizer
 params = gtsam.GaussNewtonParams()
 optimizer = gtsam.GaussNewtonOptimizer(factor_graph, v, params)
 
+# Optimize the factor graph
 result = optimizer.optimize()
 
+# calculate the error from ground truth
 error = np.array([(result.atVector(unknown[k]) - x[k])[0] for k in range(5)])
 
 print("Result with only GPS")
@@ -86,12 +111,12 @@ print(result, np.round(error, 2), f"\nJ(X)={0.5 * np.sum(np.square(error))}")
 odo_model = gtsam.noiseModel.Isotropic.Sigma(1, sigma_odo)
 
 
-def error_odom(this: gtsam.CustomFactor, values, jacobians: Optional[List[np.ndarray]], measurement: np.ndarray):
+def error_odom(measurement: np.ndarray, this: gtsam.CustomFactor, values, jacobians: Optional[List[np.ndarray]]):
     """Odometry Factor error function
+    :param measurement: Odometry measurement, to be filled with `partial`
     :param this: gtsam.CustomFactor handle
     :param values: gtsam.Values
     :param jacobians: Optional list of Jacobians
-    :param measurement: Odometry measurement, to be filled with `partial`
     :return: the unwhitened error
     """
     key1 = this.keys()[0]
@@ -106,8 +131,8 @@ def error_odom(this: gtsam.CustomFactor, values, jacobians: Optional[List[np.nda
 
 
 for k in range(4):
-    factor_graph.add(
-        gtsam.CustomFactor(odo_model, [unknown[k], unknown[k + 1]], partial(error_odom, measurement=np.array([o[k]]))))
+    odof = gtsam.CustomFactor(odo_model, [unknown[k], unknown[k + 1]], partial(error_odom, np.array([o[k]])))
+    factor_graph.add(odof)
 
 params = gtsam.GaussNewtonParams()
 optimizer = gtsam.GaussNewtonOptimizer(factor_graph, v, params)
@@ -123,12 +148,12 @@ print(result, np.round(error, 2), f"\nJ(X)={0.5 * np.sum(np.square(error))}")
 lm_model = gtsam.noiseModel.Isotropic.Sigma(1, sigma_lm)
 
 
-def error_lm(this: gtsam.CustomFactor, values, jacobians: Optional[List[np.ndarray]], measurement: np.ndarray):
+def error_lm(measurement: np.ndarray, this: gtsam.CustomFactor, values, jacobians: Optional[List[np.ndarray]]):
     """Landmark Factor error function
+    :param measurement: Landmark measurement, to be filled with `partial`
     :param this: gtsam.CustomFactor handle
     :param values: gtsam.Values
     :param jacobians: Optional list of Jacobians
-    :param measurement: Landmark measurement, to be filled with `partial`
     :return: the unwhitened error
     """
     key = this.keys()[0]
@@ -140,8 +165,8 @@ def error_lm(this: gtsam.CustomFactor, values, jacobians: Optional[List[np.ndarr
     return error
 
 
-factor_graph.add(gtsam.CustomFactor(lm_model, [unknown[0]], partial(error_lm, measurement=np.array([lm_0 + z_0]))))
-factor_graph.add(gtsam.CustomFactor(lm_model, [unknown[3]], partial(error_lm, measurement=np.array([lm_3 + z_3]))))
+factor_graph.add(gtsam.CustomFactor(lm_model, [unknown[0]], partial(error_lm, np.array([lm_0 + z_0]))))
+factor_graph.add(gtsam.CustomFactor(lm_model, [unknown[3]], partial(error_lm, np.array([lm_3 + z_3]))))
 
 params = gtsam.GaussNewtonParams()
 optimizer = gtsam.GaussNewtonOptimizer(factor_graph, v, params)
