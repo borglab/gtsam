@@ -48,11 +48,18 @@ gps_model = gtsam.noiseModel.Isotropic.Sigma(1, sigma_gps)
 
 
 def error_gps(this: gtsam.CustomFactor, values, jacobians: Optional[List[np.ndarray]], measurement: np.ndarray):
+    """GPS Factor error function
+    :param this: gtsam.CustomFactor handle
+    :param values: gtsam.Values
+    :param jacobians: Optional list of Jacobians
+    :param measurement: GPS measurement, to be filled with `partial`
+    :return: the unwhitened error
+    """
     key = this.keys()[0]
     estimate = values.atVector(key)
-    error = measurement - estimate
+    error = estimate - measurement
     if jacobians is not None:
-        jacobians[0] = -I
+        jacobians[0] = I
 
     return error
 
@@ -65,11 +72,83 @@ v = gtsam.Values()
 for i in range(5):
     v.insert(unknown[i], np.array([0.0]))
 
-linearized: gtsam.GaussianFactorGraph = factor_graph.linearize(v)
-print(linearized.at(1))
+params = gtsam.GaussNewtonParams()
+optimizer = gtsam.GaussNewtonOptimizer(factor_graph, v, params)
+
+result = optimizer.optimize()
+
+error = np.array([(result.atVector(unknown[k]) - x[k])[0] for k in range(5)])
+
+print("Result with only GPS")
+print(result, np.round(error, 2), f"\nJ(X)={0.5 * np.sum(np.square(error))}")
+
+# Adding odometry will improve things a lot
+odo_model = gtsam.noiseModel.Isotropic.Sigma(1, sigma_odo)
+
+
+def error_odom(this: gtsam.CustomFactor, values, jacobians: Optional[List[np.ndarray]], measurement: np.ndarray):
+    """Odometry Factor error function
+    :param this: gtsam.CustomFactor handle
+    :param values: gtsam.Values
+    :param jacobians: Optional list of Jacobians
+    :param measurement: Odometry measurement, to be filled with `partial`
+    :return: the unwhitened error
+    """
+    key1 = this.keys()[0]
+    key2 = this.keys()[1]
+    pos1, pos2 = values.atVector(key1), values.atVector(key2)
+    error = measurement - (pos1 - pos2)
+    if jacobians is not None:
+        jacobians[0] = I
+        jacobians[1] = -I
+
+    return error
+
+
+for k in range(4):
+    factor_graph.add(
+        gtsam.CustomFactor(odo_model, [unknown[k], unknown[k + 1]], partial(error_odom, measurement=np.array([o[k]]))))
 
 params = gtsam.GaussNewtonParams()
 optimizer = gtsam.GaussNewtonOptimizer(factor_graph, v, params)
 
 result = optimizer.optimize()
-print(result)
+
+error = np.array([(result.atVector(unknown[k]) - x[k])[0] for k in range(5)])
+
+print("Result with GPS+Odometry")
+print(result, np.round(error, 2), f"\nJ(X)={0.5 * np.sum(np.square(error))}")
+
+# This is great, but GPS noise is still apparent, so now we add the two landmarks
+lm_model = gtsam.noiseModel.Isotropic.Sigma(1, sigma_lm)
+
+
+def error_lm(this: gtsam.CustomFactor, values, jacobians: Optional[List[np.ndarray]], measurement: np.ndarray):
+    """Landmark Factor error function
+    :param this: gtsam.CustomFactor handle
+    :param values: gtsam.Values
+    :param jacobians: Optional list of Jacobians
+    :param measurement: Landmark measurement, to be filled with `partial`
+    :return: the unwhitened error
+    """
+    key = this.keys()[0]
+    pos = values.atVector(key)
+    error = pos - measurement
+    if jacobians is not None:
+        jacobians[0] = I
+
+    return error
+
+
+factor_graph.add(gtsam.CustomFactor(lm_model, [unknown[0]], partial(error_lm, measurement=np.array([lm_0 + z_0]))))
+factor_graph.add(gtsam.CustomFactor(lm_model, [unknown[3]], partial(error_lm, measurement=np.array([lm_3 + z_3]))))
+
+params = gtsam.GaussNewtonParams()
+optimizer = gtsam.GaussNewtonOptimizer(factor_graph, v, params)
+
+result = optimizer.optimize()
+
+error = np.array([(result.atVector(unknown[k]) - x[k])[0] for k in range(5)])
+
+print("Result with GPS+Odometry+Landmark")
+print(result, np.round(error, 2), f"\nJ(X)={0.5 * np.sum(np.square(error))}")
