@@ -326,13 +326,13 @@ TEST(TestLinearContainerFactor, Rekey) {
   // Make an example factor
   auto nonlinear_factor =
       boost::make_shared<gtsam::BetweenFactor<gtsam::Point3>>(
-          gtsam::Symbol('x', 0), gtsam::Symbol('l', 0), gtsam::Point3(),
+          gtsam::Symbol('x', 0), gtsam::Symbol('l', 0), gtsam::Point3(0, 0, 0),
           gtsam::noiseModel::Isotropic::Sigma(3, 1));
 
   // Linearize and create an LCF
   gtsam::Values linearization_pt;
-  linearization_pt.insert(gtsam::Symbol('x', 0), gtsam::Point3());
-  linearization_pt.insert(gtsam::Symbol('l', 0), gtsam::Point3());
+  linearization_pt.insert(gtsam::Symbol('x', 0), gtsam::Point3(0, 0, 0));
+  linearization_pt.insert(gtsam::Symbol('l', 0), gtsam::Point3(0, 0, 0));
 
   LinearContainerFactor lcf_factor(
       nonlinear_factor->linearize(linearization_pt), linearization_pt);
