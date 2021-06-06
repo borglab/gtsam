@@ -175,9 +175,10 @@ NonlinearFactor::shared_ptr LinearContainerFactor::rekey(
   Values newLinearizationPoint;
   for (size_t i = 0; i < factor_->size(); ++i) {
     auto mapping = rekey_mapping.find(factor_->keys()[i]);
-    if (mapping != rekey_mapping.end())
+    if (mapping != rekey_mapping.end()) {
       new_factor->factor_->keys()[i] = mapping->second;
       newLinearizationPoint.insert(mapping->second, linearizationPoint_->at(mapping->first));
+    }
   }
   new_factor->linearizationPoint_ = newLinearizationPoint;
 
