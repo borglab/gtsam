@@ -95,7 +95,7 @@ public:
 
   /**
    * Checks whether a factor should be used based on a set of values.
-   * This is primarily used to implment inequality constraints that
+   * This is primarily used to implement inequality constraints that
    * require a variable active set. For all others, the default implementation
    * returning true solves this problem.
    *
@@ -133,6 +133,14 @@ public:
    * @param new_keys is the full replacement set of keys
    */
   virtual shared_ptr rekey(const KeyVector& new_keys) const;
+
+  /**
+   * Should the factor be evaluated in the same thread as the caller
+   * This is to enable factors that has shared states (like the Python GIL lock)
+   */
+   virtual bool sendable() const {
+    return true;
+  }
 
 }; // \class NonlinearFactor
 
