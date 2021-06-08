@@ -12,6 +12,7 @@
 #include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/geometry/CalibratedCamera.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/base/Testable.h>
@@ -34,7 +35,7 @@ gtsam::Rot3 cRb = gtsam::Rot3(bX, bZ, -bY).inverse();
 
 namespace example1 {
 
-const string filename = findExampleDataFile("5pointExample1.txt");
+const string filename = findExampleDataFile("18pointExample1.txt");
 SfmData data;
 bool readOK = readBAL(filename, data);
 Rot3 c1Rc2 = data.cameras[1].pose().rotation();
@@ -72,13 +73,13 @@ TEST (EssentialMatrixFactor, testData) {
   EXPECT(assert_equal(expected, aEb_matrix, 1e-8));
 
   // Check some projections
-  EXPECT(assert_equal(Point2(0, 0), pA(0), 1e-8));
-  EXPECT(assert_equal(Point2(0, 0.1), pB(0), 1e-8));
-  EXPECT(assert_equal(Point2(0, -1), pA(4), 1e-8));
-  EXPECT(assert_equal(Point2(-1, 0.2), pB(4), 1e-8));
+  EXPECT(assert_equal(Point2(-0.1, -0.5), pA(0), 1e-8));
+  EXPECT(assert_equal(Point2(-0.5, 0.2), pB(0), 1e-8));
+  EXPECT(assert_equal(Point2(0, 0), pA(4), 1e-8));
+  EXPECT(assert_equal(Point2(0, 0.1), pB(4), 1e-8));
 
   // Check homogeneous version
-  EXPECT(assert_equal(Vector3(-1, 0.2, 1), vB(4), 1e-8));
+  EXPECT(assert_equal(Vector3(0, 0.1, 1), vB(4), 1e-8));
 
   // Check epipolar constraint
   for (size_t i = 0; i < 5; i++)
@@ -194,7 +195,7 @@ TEST (EssentialMatrixFactor, minimization) {
       (Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1).finished());
   initial.insert(1, initialE);
 #if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
-  EXPECT_DOUBLES_EQUAL(643.26, graph.error(initial), 1e-2);
+  EXPECT_DOUBLES_EQUAL(419.07, graph.error(initial), 1e-2);
 #else
   EXPECT_DOUBLES_EQUAL(639.84, graph.error(initial), 1e-2);
 #endif
