@@ -9,13 +9,13 @@
 
  * -------------------------------------------------------------------------- */
 
-#include <gtsam/inference/Symbol.h>
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/geometry/Pose3.h>
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/TestableAssertions.h>
-#include <gtsam_unstable/slam/MagPoseFactor.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/inference/Symbol.h>
+#include <gtsam/navigation/MagPoseFactor.h>
 
 using namespace gtsam;
 
