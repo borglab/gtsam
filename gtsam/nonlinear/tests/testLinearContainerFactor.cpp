@@ -326,13 +326,13 @@ TEST(TestLinearContainerFactor, Rekey) {
   // Make an example factor
   auto nonlinear_factor =
       boost::make_shared<gtsam::BetweenFactor<gtsam::Point3>>(
-          gtsam::Symbol('x', 0), gtsam::Symbol('l', 0), gtsam::Point3(),
+          gtsam::Symbol('x', 0), gtsam::Symbol('l', 0), gtsam::Point3(0, 0, 0),
           gtsam::noiseModel::Isotropic::Sigma(3, 1));
 
   // Linearize and create an LCF
   gtsam::Values linearization_pt;
-  linearization_pt.insert(gtsam::Symbol('x', 0), gtsam::Point3());
-  linearization_pt.insert(gtsam::Symbol('l', 0), gtsam::Point3());
+  linearization_pt.insert(gtsam::Symbol('x', 0), gtsam::Point3(0, 0, 0));
+  linearization_pt.insert(gtsam::Symbol('l', 0), gtsam::Point3(0, 0, 0));
 
   LinearContainerFactor lcf_factor(
       nonlinear_factor->linearize(linearization_pt), linearization_pt);
@@ -361,6 +361,34 @@ TEST(TestLinearContainerFactor, Rekey) {
   // The keys are just in the reverse order wrt the other container
   CHECK(assert_equal(linearization_pt_rekeyed.keys()[1], lcf_factor_rekey_ptr->keys()[0]));
   CHECK(assert_equal(linearization_pt_rekeyed.keys()[0], lcf_factor_rekey_ptr->keys()[1]));
+}
+
+/* ************************************************************************* */
+TEST(TestLinearContainerFactor, Rekey2) {
+  // Make an example factor
+  auto nonlinear_factor =
+      boost::make_shared<gtsam::BetweenFactor<gtsam::Point3>>(
+          gtsam::Symbol('x', 0), gtsam::Symbol('l', 0), gtsam::Point3(0, 0, 0),
+          gtsam::noiseModel::Isotropic::Sigma(3, 1));
+
+  // Linearize and create an LCF
+  gtsam::Values linearization_pt;
+  linearization_pt.insert(gtsam::Symbol('x', 0), gtsam::Point3(0, 0, 0));
+  linearization_pt.insert(gtsam::Symbol('l', 0), gtsam::Point3(0, 0, 0));
+
+  LinearContainerFactor lcf_factor(
+      nonlinear_factor->linearize(linearization_pt), linearization_pt);
+
+  // Define a key mapping with only a single key remapped.
+  // This should throw an exception if there is a bug.
+  std::map<gtsam::Key, gtsam::Key> key_map;
+  key_map[gtsam::Symbol('x', 0)] = gtsam::Symbol('x', 4);
+
+  // Cast back to LCF ptr
+  LinearContainerFactor::shared_ptr lcf_factor_rekey_ptr =
+      boost::static_pointer_cast<LinearContainerFactor>(
+          lcf_factor.rekey(key_map));
+  CHECK(lcf_factor_rekey_ptr);
 }
 
 /* ************************************************************************* */
