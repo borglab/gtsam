@@ -61,7 +61,8 @@ endif()
 # ignoring the non-concrete types (type aliases)
 set(ignore
     gtsam::Point2
-    gtsam::Point3)
+    gtsam::Point3
+    gtsam::CustomFactor)
 
 # Wrap
 matlab_wrap(${GTSAM_SOURCE_DIR}/gtsam/gtsam.i "${GTSAM_ADDITIONAL_LIBRARIES}"
