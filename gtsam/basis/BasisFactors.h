@@ -16,9 +16,8 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/FunctorizedFactor.h>
-
 #include <gtsam/basis/Basis.h>
+#include <gtsam/nonlinear/FunctorizedFactor.h>
 
 namespace gtsam {
 
@@ -34,10 +33,30 @@ class EvaluationFactor : public FunctorizedFactor<double, Vector> {
  public:
   EvaluationFactor() {}
 
+  /**
+   * @brief Construct a new EvaluationFactor object
+   *
+   * @param key Symbol for value to optimize.
+   * @param z The result of the functional evaluation.
+   * @param model Noise model
+   * @param N The degree of the polynomial.
+   * @param x The point at which to evaluate the polynomial.
+   */
   EvaluationFactor(Key key, const double &z, const SharedNoiseModel &model,
                    const size_t N, double x)
       : Base(key, z, model, typename BASIS::EvaluationFunctor(N, x)) {}
 
+  /**
+   * @brief Construct a new EvaluationFactor object
+   *
+   * @param key Symbol for value to optimize.
+   * @param z The result of the functional evaluation.
+   * @param model Noise model
+   * @param N The degree of the polynomial.
+   * @param x The point at which to evaluate the polynomial.
+   * @param a Lower bound for the polynomial.
+   * @param b Upper bound for the polynomial.
+   */
   EvaluationFactor(Key key, const double &z, const SharedNoiseModel &model,
                    const size_t N, double x, double a, double b)
       : Base(key, z, model, typename BASIS::EvaluationFunctor(N, x, a, b)) {}

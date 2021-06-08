@@ -13,7 +13,7 @@
  * @file ParamaterMatrix.h
  * @brief Define ParameterMatrix class which is used to store values at
  * interpolation points.
- * @author Varun Agrawal
+ * @author Varun Agrawal, Frank Dellaert
  * @date September 21, 2020
  */
 

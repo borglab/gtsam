@@ -1,8 +1,19 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
  * @file Fourier.h
  * @brief Fourier decomposition, see e.g.
- * http://mathworld.wolfram.com/FourierSeries.html
- * @author Varun Agrawal
+ *        http://mathworld.wolfram.com/FourierSeries.html
+ * @author Varun Agrawal, Frank Dellaert
  * @date July 4, 2020
  */
 

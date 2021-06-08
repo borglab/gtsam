@@ -193,8 +193,8 @@ TEST(Chebyshev2, CalculateWeights) {
     fvals(i) = f(Chebyshev2::Point(N, i));
   }
   double x1 = 0.7, x2 = -0.376;
-  Chebyshev2::Weights weights1 = Chebyshev2::CalculateWeights(N, x1);
-  Chebyshev2::Weights weights2 = Chebyshev2::CalculateWeights(N, x2);
+  Weights weights1 = Chebyshev2::CalculateWeights(N, x1);
+  Weights weights2 = Chebyshev2::CalculateWeights(N, x2);
   EXPECT_DOUBLES_EQUAL(f(x1), weights1 * fvals, 1e-8);
   EXPECT_DOUBLES_EQUAL(f(x2), weights2 * fvals, 1e-8);
 }
@@ -207,10 +207,10 @@ TEST(Chebyshev2, CalculateWeights2) {
     fvals(i) = f(Chebyshev2::Point(N, i, a, b));
   }
 
-  Chebyshev2::Weights weights1 = Chebyshev2::CalculateWeights(N, x1, a, b);
+  Weights weights1 = Chebyshev2::CalculateWeights(N, x1, a, b);
   EXPECT_DOUBLES_EQUAL(f(x1), weights1 * fvals, 1e-8);
 
-  Chebyshev2::Weights weights2 = Chebyshev2::CalculateWeights(N, x2, a, b);
+  Weights weights2 = Chebyshev2::CalculateWeights(N, x2, a, b);
   double expected2 = f(x2);  // 185.454784
   double actual2 = weights2 * fvals;
   EXPECT_DOUBLES_EQUAL(expected2, actual2, 1e-8);
@@ -222,18 +222,18 @@ TEST(Chebyshev2, DerivativeWeights) {
     fvals(i) = f(Chebyshev2::Point(N, i));
   }
   double x1 = 0.7, x2 = -0.376, x3 = 0.0;
-  Chebyshev2::Weights dWeights1 = Chebyshev2::DerivativeWeights(N, x1);
+  Weights dWeights1 = Chebyshev2::DerivativeWeights(N, x1);
   EXPECT_DOUBLES_EQUAL(fprime(x1), dWeights1 * fvals, 1e-9);
 
-  Chebyshev2::Weights dWeights2 = Chebyshev2::DerivativeWeights(N, x2);
+  Weights dWeights2 = Chebyshev2::DerivativeWeights(N, x2);
   EXPECT_DOUBLES_EQUAL(fprime(x2), dWeights2 * fvals, 1e-9);
 
-  Chebyshev2::Weights dWeights3 = Chebyshev2::DerivativeWeights(N, x3);
+  Weights dWeights3 = Chebyshev2::DerivativeWeights(N, x3);
   EXPECT_DOUBLES_EQUAL(fprime(x3), dWeights3 * fvals, 1e-9);
 
   // test if derivative calculation and cheb point is correct
   double x4 = Chebyshev2::Point(N, 3);
-  Chebyshev2::Weights dWeights4 = Chebyshev2::DerivativeWeights(N, x4);
+  Weights dWeights4 = Chebyshev2::DerivativeWeights(N, x4);
   EXPECT_DOUBLES_EQUAL(fprime(x4), dWeights4 * fvals, 1e-9);
 }
 
@@ -245,15 +245,15 @@ TEST(Chebyshev2, DerivativeWeights2) {
     fvals(i) = f(Chebyshev2::Point(N, i, a, b));
   }
 
-  Chebyshev2::Weights dWeights1 = Chebyshev2::DerivativeWeights(N, x1, a, b);
+  Weights dWeights1 = Chebyshev2::DerivativeWeights(N, x1, a, b);
   EXPECT_DOUBLES_EQUAL(fprime(x1), dWeights1 * fvals, 1e-8);
 
-  Chebyshev2::Weights dWeights2 = Chebyshev2::DerivativeWeights(N, x2, a, b);
+  Weights dWeights2 = Chebyshev2::DerivativeWeights(N, x2, a, b);
   EXPECT_DOUBLES_EQUAL(fprime(x2), dWeights2 * fvals, 1e-8);
 
   // test if derivative calculation and cheb point is correct
   double x3 = Chebyshev2::Point(N, 3, a, b);
-  Chebyshev2::Weights dWeights3 = Chebyshev2::DerivativeWeights(N, x3, a, b);
+  Weights dWeights3 = Chebyshev2::DerivativeWeights(N, x3, a, b);
   EXPECT_DOUBLES_EQUAL(fprime(x3), dWeights3 * fvals, 1e-8);
 }
 
@@ -263,15 +263,14 @@ TEST(Chebyshev2, DerivativeWeightsDifferentiationMatrix) {
   const size_t N6 = 6;
   double x1 = 0.311;
   Matrix D6 = Chebyshev2::DifferentiationMatrix(N6);
-  Chebyshev2::Weights expected = Chebyshev2::CalculateWeights(N6, x1) * D6;
-  Chebyshev2::Weights actual = Chebyshev2::DerivativeWeights(N6, x1);
+  Weights expected = Chebyshev2::CalculateWeights(N6, x1) * D6;
+  Weights actual = Chebyshev2::DerivativeWeights(N6, x1);
   EXPECT(assert_equal(expected, actual, 1e-12));
 
   double a = -3, b = 8, x2 = 5.05;
   Matrix D6_2 = Chebyshev2::DifferentiationMatrix(N6, a, b);
-  Chebyshev2::Weights expected1 =
-      Chebyshev2::CalculateWeights(N6, x2, a, b) * D6_2;
-  Chebyshev2::Weights actual1 = Chebyshev2::DerivativeWeights(N6, x2, a, b);
+  Weights expected1 = Chebyshev2::CalculateWeights(N6, x2, a, b) * D6_2;
+  Weights actual1 = Chebyshev2::DerivativeWeights(N6, x2, a, b);
   EXPECT(assert_equal(expected1, actual1, 1e-12));
 }
 

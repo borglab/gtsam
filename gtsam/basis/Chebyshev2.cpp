@@ -1,7 +1,18 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
  * @file Chebyshev2.cpp
  * @brief Chebyshev parameterizations on Chebyshev points of second kind
- * @author Varun Agrawal
+ * @author Varun Agrawal, Frank Dellaert
  * @date July 4, 2020
  */
 
@@ -9,8 +20,7 @@
 
 namespace gtsam {
 
-Chebyshev2::Weights Chebyshev2::CalculateWeights(size_t N, double x, double a,
-                                                 double b) {
+Weights Chebyshev2::CalculateWeights(size_t N, double x, double a, double b) {
   // Allocate space for weights
   Weights weights(N);
 
@@ -49,8 +59,7 @@ Chebyshev2::Weights Chebyshev2::CalculateWeights(size_t N, double x, double a,
   return weights / d;
 }
 
-Chebyshev2::Weights Chebyshev2::DerivativeWeights(size_t N, double x, double a,
-                                                  double b) {
+Weights Chebyshev2::DerivativeWeights(size_t N, double x, double a, double b) {
   // Allocate space for weights
   Weights weightDerivatives(N);
 
@@ -171,8 +180,7 @@ Chebyshev2::DiffMatrix Chebyshev2::DifferentiationMatrix(size_t N, double a,
   return D / ((b - a) / 2.0);
 }
 
-Chebyshev2::Weights Chebyshev2::IntegrationWeights(size_t N, double a,
-                                                   double b) {
+Weights Chebyshev2::IntegrationWeights(size_t N, double a, double b) {
   // Allocate space for weights
   Weights weights(N);
   size_t K = N - 1,  // number of intervals between N points

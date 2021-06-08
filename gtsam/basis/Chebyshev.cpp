@@ -12,7 +12,7 @@
 /**
  * @file Chebyshev.cpp
  * @brief Chebyshev basis decompositions
- * @author Varun Agrawal
+ * @author Varun Agrawal, Frank Dellaert
  * @date July 4, 2020
  */
 
@@ -20,7 +20,7 @@
 
 namespace gtsam {
 
-Chebyshev2Basis::Weights Chebyshev2Basis::CalculateWeights(size_t N, double x) {
+Weights Chebyshev2Basis::CalculateWeights(size_t N, double x) {
   Weights Ux(N);
   Ux(0) = 1;
   Ux(1) = 2 * x;
@@ -31,7 +31,7 @@ Chebyshev2Basis::Weights Chebyshev2Basis::CalculateWeights(size_t N, double x) {
   return Ux;
 }
 
-Chebyshev1Basis::Weights Chebyshev1Basis::CalculateWeights(size_t N, double x) {
+Weights Chebyshev1Basis::CalculateWeights(size_t N, double x) {
   Weights Tx(1, N);
   Tx(0) = 1;
   Tx(1) = x;

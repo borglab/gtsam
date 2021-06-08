@@ -12,7 +12,7 @@
 /**
  * @file Chebyshev.h
  * @brief Chebyshev basis decompositions
- * @author Varun Agrawal
+ * @author Varun Agrawal, Frank Dellaert
  * @date July 4, 2020
  */
 
@@ -21,7 +21,7 @@
 #include <gtsam/base/Manifold.h>
 #include <gtsam/basis/Basis.h>
 
-#include <gtsam/3rdparty/Eigen/unsupported/Eigen/KroneckerProduct>
+#include <unsupported/Eigen/KroneckerProduct>
 
 namespace gtsam {
 
@@ -36,7 +36,6 @@ namespace gtsam {
  * basis.
  */
 struct Chebyshev2Basis : Basis<Chebyshev2Basis> {
-  using Weights = Eigen::Matrix<double, 1, -1 /*1xN*/>;
   using Parameters = Eigen::Matrix<double, -1, 1 /*Nx1*/>;
 
   /**
@@ -53,7 +52,6 @@ struct Chebyshev2Basis : Basis<Chebyshev2Basis> {
  * The parameter N is the number of coefficients, i.e., N = n+1.
  */
 struct Chebyshev1Basis : Basis<Chebyshev1Basis> {
-  using Weights = Eigen::Matrix<double, 1, -1 /*1xN*/>;
   using Parameters = Eigen::Matrix<double, -1, 1 /*Nx1*/>;
 
   /**
@@ -68,7 +66,7 @@ struct Chebyshev1Basis : Basis<Chebyshev1Basis> {
     // I.e. the derivative fo a first kind cheb is just a second kind cheb
     // So, we define a second kind basis here of order N-1
     // Note that it has one less weight:
-    typename Chebyshev2Basis::Weights weights_;
+    Weights weights_;
 
     size_t N_;
 

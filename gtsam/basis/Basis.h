@@ -12,7 +12,7 @@
 /**
  * @file Basis.h
  * @brief Compute an interpolating basis
- * @author Varun Agrawal
+ * @author Varun Agrawal, Frank Dellaert
  * @date July 4, 2020
  */
 
@@ -22,23 +22,49 @@
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/basis/ParameterMatrix.h>
 
-#include <gtsam/3rdparty/Eigen/unsupported/Eigen/KroneckerProduct>
 #include <iostream>
+#include <unsupported/Eigen/KroneckerProduct>
 
 /**
- *  Concept of a Basis:
- *    - type Weights, Parameters
- *    - CalculateWeights(size_t N, double a=default, double b=default)
+ * This file supports creating continuous functions `f(x;p)` as a linear
+ * combination of `basis functions` such as the Fourier basis on SO(2) or a set
+ * of Chebyshev polynomials on [-1,1].
+ * In the expression `f(x;p)` the variable `x` is
+ * the continuous argument at which teh function is evaluated, and `p` are
+ * parameters, e.g., coefficients used to weight the different basis functions.
+ * However, different parameterizations are also possible.
+
+ * The `Basis` class below defines a number of functors that can be used to
+ * evaluate `f(x;p)` at a given `x`, and these functors also calculate
+ * the Jacobian of `f(x;p)` with respect to the parameters `p`.
+ * This is actually the most important calculation, as it will allow GTSAM
+ * to optimize over the parameters `p`.
+
+ * This functionality is implemented using the `CRTP` or "Curiously recurring
+ * template pattern" C++ idiom, which is a meta-programming technique in which
+ * the derived class is passed as a template argument to `Basis<DERIVED>`.
+ * The DERIVED class is assumed to satisfy a C++ concept,
+ * i.e., we expect it to define the following types and methods:
+
+  - type `Parameters`: the parameters `p` in f(x;p)
+  - type `Weights`: vector of partial derivatives of `f(x;p)` wrt `p`
+  - `CalculateWeights(size_t N, double x, double a=default, double b=default)`
+  - `DerivativeWeights(size_t N, double x, double a=default, double b=default)`
  */
 
 namespace gtsam {
+
+using Weights = Eigen::Matrix<double, 1, -1>; /* 1xN vector */
 
 /// CRTP Base class for function bases
 template <typename DERIVED>
 class Basis {
  public:
-  /// Call weights for all x in vector, returns M*N matrix where M is the size
-  /// of the vector X.
+  /**
+   * Call weights for all x in vector X.
+   * Returns M*N matrix where M is the size of the vector X,
+   * and N is the number of basis function.
+   */
   static Matrix WeightMatrix(size_t N, const Vector& X) {
     Matrix W(X.size(), N);
     for (int i = 0; i < X.size(); i++)
@@ -46,8 +72,11 @@ class Basis {
     return W;
   }
 
-  /// Call weights for all x in vector, with interval [a,b]
-  /// Returns M*N matrix where M is the size of the vector X.
+  /**
+   * Call weights for all x in vector X, with interval [a,b].
+   * Returns M*N matrix where M is the size of the vector X,
+   * and N is the number of basis function.
+   */
   static Matrix WeightMatrix(size_t N, const Vector& X, double a, double b) {
     Matrix W(X.size(), N);
     for (int i = 0; i < X.size(); i++)
@@ -56,14 +85,15 @@ class Basis {
   }
 
   /**
-   * EvaluationFunctor at a given x, applied to Parameters.
-   * This functor is used to evaluate a parameterized function at a given scalar
-   * value x. When given a specific N*1 vector of Parameters, returns the scalar
-   * value of the function at x, possibly with Jacobian wrpt the parameters.
+   * EvaluationFunctor calculate f(x;p) at a given `x`, applied to Parameters
+   * `p`. This functor is used to evaluate a parameterized function at a given
+   * scalar value x. When given a specific N*1 vector of Parameters, returns the
+   * scalar value of the function at x, possibly with Jacobian wrpt the
+   * parameters.
    */
   class EvaluationFunctor {
    protected:
-    typename DERIVED::Weights weights_;
+    Weights weights_;
 
    public:
     /// For serialization
@@ -132,21 +162,21 @@ class Basis {
 
     /// M-dimensional evaluation
     VectorM apply(const ParameterMatrix<M>& F,
-                  OptionalJacobian</*M*N*/ -1, -1> H = boost::none) const {
+                  OptionalJacobian</*MxN*/ -1, -1> H = boost::none) const {
       if (H) *H = H_;
       return F.matrix() * this->weights_.transpose();
     }
 
     /// c++ sugar
     VectorM operator()(const ParameterMatrix<M>& F,
-                       OptionalJacobian</*M*N*/ -1, -1> H = boost::none) const {
+                       OptionalJacobian</*MxN*/ -1, -1> H = boost::none) const {
       return apply(F, H);
     }
   };
 
   /**
-   * Given M*N Matrix of M-vectors at N Chebyshev points, predict component for
-   * given row i, with 0<i<M.
+   * Given M*N Matrix of M-vectors at N Chebyshev points, predict component of
+   * row vector at given i, with 0<i<M.
    */
   template <int M>
   class VectorComponentFunctor : public EvaluationFunctor {
@@ -235,7 +265,7 @@ class Basis {
 
     /// c++ sugar
     T operator()(const ParameterMatrix<M>& F,
-                 OptionalJacobian</*M*N*/ -1, -1> H = boost::none) const {
+                 OptionalJacobian</*MxN*/ -1, -1> H = boost::none) const {
       return apply(F, H);  // might call apply in derived
     }
   };
@@ -243,7 +273,7 @@ class Basis {
   /// Base class for functors below that calculate derivative weights
   class DerivativeFunctorBase {
    protected:
-    typename DERIVED::Weights weights_;
+    Weights weights_;
 
    public:
     /// For serialization

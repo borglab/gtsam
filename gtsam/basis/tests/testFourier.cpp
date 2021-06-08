@@ -53,6 +53,9 @@ TEST(Basis, BasisEvaluationFunctorDerivative) {
   FourierBasis::EvaluationFunctor fx(3, 0);
   EXPECT_DOUBLES_EQUAL(k3Coefficients[0] + k3Coefficients[1],
                        fx(k3Coefficients, H), 1e-9);
+
+  Matrix13 expectedH(1, 1, 0);
+  EXPECT(assert_equal(expectedH, H));
 }
 
 //******************************************************************************
@@ -89,11 +92,11 @@ TEST(Basis, Manual) {
     // Check expression Jacobians
     EXPECT_CORRECT_FACTOR_JACOBIANS(predictFactor, values, 1e-5, 1e-9);
 
-    auto gaussianFactor = predictFactor.linearize(values);
-    auto jacobianFactor =
-        boost::dynamic_pointer_cast<JacobianFactor>(gaussianFactor);
-    CHECK(jacobianFactor);  // makes sure it's indeed a JacobianFactor
-    EXPECT(assert_equal(linearFactor, *jacobianFactor, 1e-9));
+    auto linearizedFactor = predictFactor.linearize(values);
+    auto linearizedJacobianFactor =
+        boost::dynamic_pointer_cast<JacobianFactor>(linearizedFactor);
+    CHECK(linearizedJacobianFactor);  // makes sure it's indeed a JacobianFactor
+    EXPECT(assert_equal(linearFactor, *linearizedJacobianFactor, 1e-9));
   }
 
   // Solve linear graph
@@ -160,11 +163,11 @@ double proxy(double x) {
 TEST(Basis, Derivative7) {
   // Check Derivative evaluation at point x=0.2
 
-  // calculate expected values by numerical derivative of synthesis
+  // Calculate expected values by numerical derivative of proxy.
   const double x = 0.2;
   Matrix numeric_dTdx = numericalDerivative11<double, double>(proxy, x);
 
-  // Calculate derivatives at Chebyshev points using D3, interpolate
+  // Calculate derivatives at Chebyshev points using D7, interpolate
   Matrix D7 = FourierBasis::DifferentiationMatrix(7);
   Vector derivativeCoefficients = D7 * k7Coefficients;
   FourierBasis::EvaluationFunctor fx(7, x);

@@ -12,7 +12,7 @@
 /**
  * @file testParameterMatrix.cpp
  * @date Sep 22, 2020
- * @author Varun Agrawal
+ * @author Varun Agrawal, Frank Dellaert
  * @brief Unit tests for ParameterMatrix.h
  */
 

@@ -12,7 +12,7 @@
 /**
  * @file FitBasis.h
  * @date July 4, 2020
- * @author Varun Agrawal
+ * @author Varun Agrawal, Frank Dellaert
  * @brief Fit a Basis using least-squares
  */
 
@@ -32,7 +32,7 @@
 
 namespace gtsam {
 
-/// For now, this is our sequence representation
+/// Our sequence representation is a map of {x: y} values where y = f(x)
 using Sequence = std::map<double, double>;
 
 /**
@@ -54,8 +54,8 @@ class FitBasis {
                                              size_t N) {
     NonlinearFactorGraph graph;
     for (const Sample sample : sequence) {
-      graph.emplace_shared<EvaluationFactor<Basis>>(
-          0, sample.second, model, N, sample.first);
+      graph.emplace_shared<EvaluationFactor<Basis>>(0, sample.second, model, N,
+                                                    sample.first);
     }
     return graph;
   }

@@ -16,7 +16,7 @@
  *        pseudo-spectral optimization, i.e. we don't decompose into basis
  *        functions, rather estimate function parameters that enforce function
  *        nodes at Chebyshev points.
- * @author Varun Agrawal
+ * @author Varun Agrawal, Frank Dellaert
  * @date July 4, 2020
  */
 
@@ -39,7 +39,6 @@ struct Chebyshev2 : public Basis<Chebyshev2> {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   using Base = Basis<Chebyshev2>;
-  using Weights = Eigen::Matrix<double, /*1xN*/ 1, -1>;
   using Parameters = Eigen::Matrix<double, /*Nx1*/ -1, 1>;
   using DiffMatrix = Eigen::Matrix<double, /*NxN*/ -1, -1>;
 
