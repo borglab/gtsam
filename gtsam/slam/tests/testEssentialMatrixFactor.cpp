@@ -24,7 +24,7 @@ using namespace gtsam;
 
 // Noise model for first type of factor is evaluating algebraic error
 noiseModel::Isotropic::shared_ptr model1 = noiseModel::Isotropic::Sigma(1,
-    0.01);
+    1e-4);
 // Noise model for second type of factor is evaluating pixel coordinates
 noiseModel::Unit::shared_ptr model2 = noiseModel::Unit::Create(2);
 
@@ -196,9 +196,9 @@ TEST (EssentialMatrixFactor, minimization) {
       (Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1).finished());
   initial.insert(1, initialE);
 #if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
-  EXPECT_DOUBLES_EQUAL(313.85, graph.error(initial), 1e-2);
+  EXPECT_DOUBLES_EQUAL(59403.51, graph.error(initial), 1e-2);
 #else
-  EXPECT_DOUBLES_EQUAL(639.84, graph.error(initial), 1e-2);
+  EXPECT_DOUBLES_EQUAL(639.84, graph.error(initial), 1e-2); # TODO: redo this error
 #endif
 
   // Optimize
@@ -410,7 +410,7 @@ TEST (EssentialMatrixFactor, extraMinimization) {
   initial.insert(1, initialE);
 
 #if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
-  EXPECT_DOUBLES_EQUAL(313.85, graph.error(initial), 1e-2);
+  EXPECT_DOUBLES_EQUAL(59403.51, graph.error(initial), 1e-2);
 #else
   EXPECT_DOUBLES_EQUAL(639.84, graph.error(initial), 1e-2);
 #endif
