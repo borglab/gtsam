@@ -241,6 +241,62 @@ TEST (EssentialMatrix, epipoles) {
   EXPECT(assert_equal(e2, E.epipole_b()));
 }
 
+//*************************************************************************
+TEST (EssentialMatrix, errorValue) {
+  // Use two points to get error
+  Point3 a(1, -2, 1);
+  Point3 b(3, 1, 1);
+
+  // compute the expected error
+  // E = [0, 0, 0; 0, 0, -1; 1, 0, 0]
+  // line for b = [0, -1, 3]
+  // line for a = [1, 0, 2]
+  // algebraic error = 5
+  // norm of line for b = 1
+  // norm of line for a = 1
+  // sampson error = 5 / sqrt(1^2 + 1^2) 
+  double expected = 3.535533906;
+
+  // check the error
+  double actual = trueE.error(a, b);
+  EXPECT(assert_equal(expected, actual, 1e-6));
+}
+
+//*************************************************************************
+double error_(const Rot3& R, const Unit3& t){
+  // Use two points to get error
+  Point3 a(1, -2, 1);
+  Point3 b(3, 1, 1);
+
+  EssentialMatrix E = EssentialMatrix::FromRotationAndDirection(R, t);
+  return E.error(a, b);
+}
+TEST (EssentialMatrix, errorJacobians) {
+  // Use two points to get error
+  Point3 a(1, -2, 1);
+  Point3 b(3, 1, 1);
+
+  Rot3 c1Rc2 = Rot3::Ypr(0.1, -0.2, 0.3);
+  Point3 c1Tc2(0.4, 0.5, 0.6);
+  EssentialMatrix E(c1Rc2, Unit3(c1Tc2));
+
+  // Use numerical derivatives to calculate the expected Jacobian
+  Matrix13 HRexpected;
+  Matrix12 HDexpected;
+  HRexpected = numericalDerivative21<double, Rot3, Unit3>(
+      error_, E.rotation(), E.direction(), 1e-8);
+  HDexpected = numericalDerivative22<double, Rot3, Unit3>(
+      error_, E.rotation(), E.direction(), 1e-8);
+  Matrix15 HEexpected;
+  HEexpected << HRexpected, HDexpected;
+
+  Matrix15 HEactual;
+  E.error(a, b, HEactual);
+
+  // Verify the Jacobian is correct
+  EXPECT(assert_equal(HEexpected, HEactual, 1e-8));
+}
+
 /* ************************************************************************* */
 int main() {
   TestResult tr;

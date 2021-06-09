@@ -159,7 +159,7 @@ class EssentialMatrix {
     return E.rotate(cRb);
   }
 
-  /// epipolar error, algebraic
+  /// epipolar error, sampson
   GTSAM_EXPORT double error(const Vector3& vA, const Vector3& vB,
       OptionalJacobian<1, 5> H = boost::none) const;
 

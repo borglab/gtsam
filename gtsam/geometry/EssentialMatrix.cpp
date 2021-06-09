@@ -103,14 +103,57 @@ EssentialMatrix EssentialMatrix::rotate(const Rot3& cRb,
 /* ************************************************************************* */
 double EssentialMatrix::error(const Vector3& vA, const Vector3& vB, //
     OptionalJacobian<1, 5> H) const {
+
+  // compute the epipolar lines
+  Point3 lB = E_ * vB;
+  Point3 lA = E_.transpose() * vA;
+
+
+  // compute the algebraic error as a simple dot product.
+  double algebraic_error = dot(vA, lB); 
+  
+  // compute the line-norms for the two lines
+  Matrix23 I;
+  I.setIdentity();
+  Matrix21 nA = I * lA;
+  Matrix21 nB = I * lB;
+  double nA_sq_norm = nA.squaredNorm();
+  double nB_sq_norm = nB.squaredNorm();
+
+  // compute the normalizing denominator and finally the sampson error
+  double denominator = sqrt(nA_sq_norm + nB_sq_norm);
+  double sampson_error = algebraic_error / denominator;
+
   if (H) {
     // See math.lyx
-    Matrix13 HR = vA.transpose() * E_ * skewSymmetric(-vB);
-    Matrix12 HD = vA.transpose() * skewSymmetric(-rotation().matrix() * vB)
+    // computing the derivatives of the numerator w.r.t. E
+    Matrix13 numerator_H_R = vA.transpose() * E_ * skewSymmetric(-vB);
+    Matrix12 numerator_H_D = vA.transpose() * skewSymmetric(-rotation().matrix() * vB)
         * direction().basis();
-    *H << HR, HD;
+
+
+    // computing the derivatives of the denominator w.r.t. E
+    Matrix12 denominator_H_nA = nA.transpose() / denominator;
+    Matrix12 denominator_H_nB = nB.transpose() / denominator;
+    Matrix13 denominator_H_lA = denominator_H_nA * I;
+    Matrix13 denominator_H_lB = denominator_H_nB * I;
+    Matrix33 lB_H_R = E_ * skewSymmetric(-vB);
+    Matrix32 lB_H_D = skewSymmetric(-rotation().matrix() * vB) * direction().basis();
+    Matrix33 lA_H_R = skewSymmetric(E_.matrix().transpose() * vA) * 
+      rotation().matrix().transpose();
+    Matrix32 lA_H_D = rotation().inverse().matrix() * skewSymmetric(vA) * direction().basis();
+
+    Matrix13 denominator_H_R = denominator_H_lA * lA_H_R + denominator_H_lB * lB_H_R;
+    Matrix12 denominator_H_D = denominator_H_lA * lA_H_D + denominator_H_lB * lB_H_D;
+
+    Matrix15 denominator_H;
+    denominator_H << denominator_H_R, denominator_H_D;
+    Matrix15 numerator_H;
+    numerator_H << numerator_H_R, numerator_H_D;
+
+    *H  = numerator_H / denominator - algebraic_error * denominator_H / (denominator * denominator);
   }
-  return dot(vA, E_ * vB);
+  return sampson_error;
 }
 
 /* ************************************************************************* */
