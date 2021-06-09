@@ -154,25 +154,27 @@ double EssentialMatrix::error(const Vector3& vA, const Vector3& vB,
     Matrix15 numerator_H;
     numerator_H << numerator_H_R, numerator_H_D;
 
-    *HE = numerator_H / denominator -
-         algebraic_error * denominator_H / (denominator * denominator);
+    *HE = 2 * sampson_error * (numerator_H / denominator -
+         algebraic_error * denominator_H / (denominator * denominator));
   }
 
   if (HvA){
     Matrix13 numerator_H_vA = vB.transpose() * matrix().transpose();
     Matrix13 denominator_H_vA = nA.transpose() * I * matrix().transpose() / denominator;
 
-    *HvA = numerator_H_vA / denominator - algebraic_error * denominator_H_vA / (denominator * denominator);
+    *HvA = 2 * sampson_error * (numerator_H_vA / denominator - 
+        algebraic_error * denominator_H_vA / (denominator * denominator));
   }
 
   if (HvB){
     Matrix13 numerator_H_vB = vA.transpose() * matrix();
     Matrix13 denominator_H_vB = nB.transpose() * I * matrix() / denominator;
 
-    *HvB = numerator_H_vB / denominator - algebraic_error * denominator_H_vB / (denominator * denominator);
+    *HvB = 2 * sampson_error * (numerator_H_vB / denominator - 
+        algebraic_error * denominator_H_vB / (denominator * denominator));
   }
 
-  return sampson_error;
+  return sampson_error * sampson_error;
 }
 
 /* ************************************************************************* */
