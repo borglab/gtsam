@@ -242,7 +242,7 @@ TEST (EssentialMatrix, epipoles) {
 }
 
 //*************************************************************************
-TEST (EssentialMatrix, errorValue) {
+TEST(EssentialMatrix, errorValue) {
   // Use two points to get error
   Point3 a(1, -2, 1);
   Point3 b(3, 1, 1);
@@ -254,7 +254,7 @@ TEST (EssentialMatrix, errorValue) {
   // algebraic error = 5
   // norm of line for b = 1
   // norm of line for a = 1
-  // sampson error = 5 / sqrt(1^2 + 1^2) 
+  // sampson error = 5 / sqrt(1^2 + 1^2)
   double expected = 3.535533906;
 
   // check the error
@@ -263,7 +263,7 @@ TEST (EssentialMatrix, errorValue) {
 }
 
 //*************************************************************************
-double error_(const Rot3& R, const Unit3& t){
+double error_(const Rot3& R, const Unit3& t) {
   // Use two points to get error
   Point3 a(1, -2, 1);
   Point3 b(3, 1, 1);
@@ -271,7 +271,7 @@ double error_(const Rot3& R, const Unit3& t){
   EssentialMatrix E = EssentialMatrix::FromRotationAndDirection(R, t);
   return E.error(a, b);
 }
-TEST (EssentialMatrix, errorJacobians) {
+TEST(EssentialMatrix, errorJacobians) {
   // Use two points to get error
   Point3 a(1, -2, 1);
   Point3 b(3, 1, 1);
@@ -283,10 +283,10 @@ TEST (EssentialMatrix, errorJacobians) {
   // Use numerical derivatives to calculate the expected Jacobian
   Matrix13 HRexpected;
   Matrix12 HDexpected;
-  HRexpected = numericalDerivative21<double, Rot3, Unit3>(
-      error_, E.rotation(), E.direction(), 1e-8);
-  HDexpected = numericalDerivative22<double, Rot3, Unit3>(
-      error_, E.rotation(), E.direction(), 1e-8);
+  HRexpected = numericalDerivative21<double, Rot3, Unit3>(error_, E.rotation(),
+                                                          E.direction());
+  HDexpected = numericalDerivative22<double, Rot3, Unit3>(error_, E.rotation(),
+                                                          E.direction());
   Matrix15 HEexpected;
   HEexpected << HRexpected, HDexpected;
 
@@ -294,7 +294,7 @@ TEST (EssentialMatrix, errorJacobians) {
   E.error(a, b, HEactual);
 
   // Verify the Jacobian is correct
-  EXPECT(assert_equal(HEexpected, HEactual, 1e-8));
+  EXPECT(assert_equal(HEexpected, HEactual, 1e-5));
 }
 
 /* ************************************************************************* */
@@ -303,4 +303,3 @@ int main() {
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-
