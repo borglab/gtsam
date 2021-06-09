@@ -25,7 +25,7 @@ using namespace gtsam;
 
 // Noise model for first type of factor is evaluating algebraic error
 noiseModel::Isotropic::shared_ptr model1 = noiseModel::Isotropic::Sigma(1,
-    0.01);
+    1e-4);
 // Noise model for second type of factor is evaluating pixel coordinates
 noiseModel::Unit::shared_ptr model2 = noiseModel::Unit::Create(2);
 
@@ -120,7 +120,8 @@ TEST(EssentialMatrixFactor, ExpressionFactor) {
   Key key(1);
   for (size_t i = 0; i < 5; i++) {
     boost::function<double(const EssentialMatrix&, OptionalJacobian<1, 5>)> f =
-        boost::bind(&EssentialMatrix::error, _1, vA(i), vB(i), _2);
+        boost::bind(&EssentialMatrix::error, _1, vA(i), vB(i), _2, boost::none,
+                    boost::none);
     Expression<EssentialMatrix> E_(key); // leaf expression
     Expression<double> expr(f, E_); // unary expression
 
@@ -146,9 +147,12 @@ TEST(EssentialMatrixFactor, ExpressionFactorRotationOnly) {
   Key key(1);
   for (size_t i = 0; i < 5; i++) {
     boost::function<double(const EssentialMatrix&, OptionalJacobian<1, 5>)> f =
-        boost::bind(&EssentialMatrix::error, _1, vA(i), vB(i), _2);
-    boost::function<EssentialMatrix(const Rot3&, const Unit3&, OptionalJacobian<5, 3>,
-                                    OptionalJacobian<5, 2>)> g;
+        boost::bind(&EssentialMatrix::error, _1, vA(i), vB(i), _2, boost::none,
+                    boost::none);
+    boost::function<EssentialMatrix(const Rot3&, const Unit3&,
+                                    OptionalJacobian<5, 3>,
+                                    OptionalJacobian<5, 2>)>
+        g;
     Expression<Rot3> R_(key);
     Expression<Unit3> d_(trueDirection);
     Expression<EssentialMatrix> E_(&EssentialMatrix::FromRotationAndDirection, R_, d_);
@@ -195,9 +199,9 @@ TEST (EssentialMatrixFactor, minimization) {
       (Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1).finished());
   initial.insert(1, initialE);
 #if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
-  EXPECT_DOUBLES_EQUAL(419.07, graph.error(initial), 1e-2);
+  EXPECT_DOUBLES_EQUAL(59403.51, graph.error(initial), 1e-2);
 #else
-  EXPECT_DOUBLES_EQUAL(639.84, graph.error(initial), 1e-2);
+  EXPECT_DOUBLES_EQUAL(639.84, graph.error(initial), 1e-2); # TODO: redo this error
 #endif
 
   // Optimize
@@ -519,7 +523,7 @@ TEST(EssentialMatrixFactor, extraMinimization) {
   initial.insert(1, initialE);
 
 #if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
-  EXPECT_DOUBLES_EQUAL(313.85, graph.error(initial), 1e-2);
+  EXPECT_DOUBLES_EQUAL(59403.51, graph.error(initial), 1e-2);
 #else
   EXPECT_DOUBLES_EQUAL(639.84, graph.error(initial), 1e-2);
 #endif
