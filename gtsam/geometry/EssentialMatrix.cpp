@@ -101,17 +101,15 @@ EssentialMatrix EssentialMatrix::rotate(const Rot3& cRb,
 }
 
 /* ************************************************************************* */
-double EssentialMatrix::error(const Vector3& vA, const Vector3& vB, //
-    OptionalJacobian<1, 5> H) const {
-
+double EssentialMatrix::error(const Vector3& vA, const Vector3& vB,  //
+                              OptionalJacobian<1, 5> H) const {
   // compute the epipolar lines
   Point3 lB = E_ * vB;
   Point3 lA = E_.transpose() * vA;
 
-
   // compute the algebraic error as a simple dot product.
-  double algebraic_error = dot(vA, lB); 
-  
+  double algebraic_error = dot(vA, lB);
+
   // compute the line-norms for the two lines
   Matrix23 I;
   I.setIdentity();
@@ -128,9 +126,9 @@ double EssentialMatrix::error(const Vector3& vA, const Vector3& vB, //
     // See math.lyx
     // computing the derivatives of the numerator w.r.t. E
     Matrix13 numerator_H_R = vA.transpose() * E_ * skewSymmetric(-vB);
-    Matrix12 numerator_H_D = vA.transpose() * skewSymmetric(-rotation().matrix() * vB)
-        * direction().basis();
-
+    Matrix12 numerator_H_D = vA.transpose() *
+                             skewSymmetric(-rotation().matrix() * vB) *
+                             direction().basis();
 
     // computing the derivatives of the denominator w.r.t. E
     Matrix12 denominator_H_nA = nA.transpose() / denominator;
@@ -138,20 +136,24 @@ double EssentialMatrix::error(const Vector3& vA, const Vector3& vB, //
     Matrix13 denominator_H_lA = denominator_H_nA * I;
     Matrix13 denominator_H_lB = denominator_H_nB * I;
     Matrix33 lB_H_R = E_ * skewSymmetric(-vB);
-    Matrix32 lB_H_D = skewSymmetric(-rotation().matrix() * vB) * direction().basis();
-    Matrix33 lA_H_R = skewSymmetric(E_.matrix().transpose() * vA) * 
-      rotation().matrix().transpose();
-    Matrix32 lA_H_D = rotation().inverse().matrix() * skewSymmetric(vA) * direction().basis();
+    Matrix32 lB_H_D =
+        skewSymmetric(-rotation().matrix() * vB) * direction().basis();
+    Matrix33 lA_H_R = skewSymmetric(E_.matrix().transpose() * vA);
+    Matrix32 lA_H_D =
+        rotation().inverse().matrix() * skewSymmetric(vA) * direction().basis();
 
-    Matrix13 denominator_H_R = denominator_H_lA * lA_H_R + denominator_H_lB * lB_H_R;
-    Matrix12 denominator_H_D = denominator_H_lA * lA_H_D + denominator_H_lB * lB_H_D;
+    Matrix13 denominator_H_R =
+        denominator_H_lA * lA_H_R + denominator_H_lB * lB_H_R;
+    Matrix12 denominator_H_D =
+        denominator_H_lA * lA_H_D + denominator_H_lB * lB_H_D;
 
     Matrix15 denominator_H;
     denominator_H << denominator_H_R, denominator_H_D;
     Matrix15 numerator_H;
     numerator_H << numerator_H_R, numerator_H_D;
 
-    *H  = numerator_H / denominator - algebraic_error * denominator_H / (denominator * denominator);
+    *H = numerator_H / denominator -
+         algebraic_error * denominator_H / (denominator * denominator);
   }
   return sampson_error;
 }
