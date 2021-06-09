@@ -161,7 +161,9 @@ class EssentialMatrix {
 
   /// epipolar error, sampson
   GTSAM_EXPORT double error(const Vector3& vA, const Vector3& vB,
-      OptionalJacobian<1, 5> H = boost::none) const;
+      OptionalJacobian<1, 5> HE = boost::none, 
+      OptionalJacobian<1, 3> HvA = boost::none,
+      OptionalJacobian<1, 3> HvB = boost::none) const;
 
   /// @}
 
