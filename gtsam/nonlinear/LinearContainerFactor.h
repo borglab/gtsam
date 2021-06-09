@@ -120,8 +120,21 @@ public:
     return NonlinearFactor::shared_ptr(new LinearContainerFactor(factor_,linearizationPoint_));
   }
 
-  // casting syntactic sugar
+  /**
+   * Creates a shared_ptr clone of the
+   * factor with different keys using
+   * a map from old->new keys
+   */
+  NonlinearFactor::shared_ptr rekey(
+      const std::map<Key, Key>& rekey_mapping) const override;
 
+  /**
+   * Clones a factor and fully replaces its keys
+   * @param new_keys is the full replacement set of keys
+   */
+  NonlinearFactor::shared_ptr rekey(const KeyVector& new_keys) const override;
+
+  /// Casting syntactic sugar
   inline bool hasLinearizationPoint() const { return linearizationPoint_.is_initialized(); }
 
   /**

@@ -40,9 +40,9 @@ typedef RangeFactorWithTransform<Pose2, Point2> RangeFactorWithTransform2D;
 typedef RangeFactorWithTransform<Pose3, Point3> RangeFactorWithTransform3D;
 
 // Keys are deliberately *not* in sorted order to test that case.
-Key poseKey(2);
-Key pointKey(1);
-double measurement(10.0);
+constexpr Key poseKey(2);
+constexpr Key pointKey(1);
+constexpr double measurement(10.0);
 
 /* ************************************************************************* */
 Vector factorError2D(const Pose2& pose, const Point2& point,
@@ -364,20 +364,37 @@ TEST( RangeFactor, Jacobian3DWithTransform ) {
 }
 
 /* ************************************************************************* */
-// Do a test with Point3
-TEST(RangeFactor, Point3) {
+// Do a test with Point2
+TEST(RangeFactor, Point2) {
   // Create a factor
-  RangeFactor<Point3> factor(poseKey, pointKey, measurement, model);
+  RangeFactor<Point2> factor(11, 22, measurement, model);
 
   // Set the linearization point
-  Point3 pose(1.0, 2.0, 00);
-  Point3 point(-4.0, 11.0, 0);
+  Point2 p11(1.0, 2.0), p22(-4.0, 11.0);
 
-  // The expected error is ||(5.0, 9.0)|| - 10.0 = 0.295630141 meter / UnitCovariance
+  // The expected error is ||(5.0, 9.0)|| - 10.0 = 0.295630141 meter
   Vector expectedError = (Vector(1) << 0.295630141).finished();
 
   // Verify we get the expected error
-  CHECK(assert_equal(expectedError, factor.unwhitenedError({{poseKey, genericValue(pose)}, {pointKey, genericValue(point)}}), 1e-9));
+  Values values {{11, genericValue(p11)}, {22, genericValue(p22)}};
+  CHECK(assert_equal(expectedError, factor.unwhitenedError(values), 1e-9));
+}
+
+/* ************************************************************************* */
+// Do a test with Point3
+TEST(RangeFactor, Point3) {
+  // Create a factor
+  RangeFactor<Point3> factor(11, 22, measurement, model);
+
+  // Set the linearization point
+  Point3 p11(1.0, 2.0, 0.0), p22(-4.0, 11.0, 0);
+
+  // The expected error is ||(5.0, 9.0)|| - 10.0 = 0.295630141 meter
+  Vector expectedError = (Vector(1) << 0.295630141).finished();
+
+  // Verify we get the expected error
+  Values values {{11, genericValue(p11)}, {22, genericValue(p22)}};
+  CHECK(assert_equal(expectedError, factor.unwhitenedError(values), 1e-9));
 }
 
 /* ************************************************************************* */
