@@ -519,7 +519,7 @@ TEST(EssentialMatrixFactor, extraMinimization) {
   initial.insert(1, initialE);
 
 #if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
-  EXPECT_DOUBLES_EQUAL(643.26, graph.error(initial), 1e-2);
+  EXPECT_DOUBLES_EQUAL(313.85, graph.error(initial), 1e-2);
 #else
   EXPECT_DOUBLES_EQUAL(639.84, graph.error(initial), 1e-2);
 #endif
