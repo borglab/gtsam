@@ -117,7 +117,8 @@ TEST(EssentialMatrixFactor, ExpressionFactor) {
   Key key(1);
   for (size_t i = 0; i < 5; i++) {
     boost::function<double(const EssentialMatrix&, OptionalJacobian<1, 5>)> f =
-        boost::bind(&EssentialMatrix::error, _1, vA(i), vB(i), _2);
+        boost::bind(&EssentialMatrix::error, _1, vA(i), vB(i), _2, boost::none,
+                    boost::none);
     Expression<EssentialMatrix> E_(key); // leaf expression
     Expression<double> expr(f, E_); // unary expression
 
@@ -143,9 +144,12 @@ TEST(EssentialMatrixFactor, ExpressionFactorRotationOnly) {
   Key key(1);
   for (size_t i = 0; i < 5; i++) {
     boost::function<double(const EssentialMatrix&, OptionalJacobian<1, 5>)> f =
-        boost::bind(&EssentialMatrix::error, _1, vA(i), vB(i), _2);
-    boost::function<EssentialMatrix(const Rot3&, const Unit3&, OptionalJacobian<5, 3>,
-                                    OptionalJacobian<5, 2>)> g;
+        boost::bind(&EssentialMatrix::error, _1, vA(i), vB(i), _2, boost::none,
+                    boost::none);
+    boost::function<EssentialMatrix(const Rot3&, const Unit3&,
+                                    OptionalJacobian<5, 3>,
+                                    OptionalJacobian<5, 2>)>
+        g;
     Expression<Rot3> R_(key);
     Expression<Unit3> d_(trueDirection);
     Expression<EssentialMatrix> E_(&EssentialMatrix::FromRotationAndDirection, R_, d_);

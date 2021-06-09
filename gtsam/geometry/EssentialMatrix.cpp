@@ -101,8 +101,10 @@ EssentialMatrix EssentialMatrix::rotate(const Rot3& cRb,
 }
 
 /* ************************************************************************* */
-double EssentialMatrix::error(const Vector3& vA, const Vector3& vB,  //
-                              OptionalJacobian<1, 5> H) const {
+double EssentialMatrix::error(const Vector3& vA, const Vector3& vB, 
+                              OptionalJacobian<1, 5> HE,
+                              OptionalJacobian<1, 3> HvA,
+                              OptionalJacobian<1, 3> HvB) const {
   // compute the epipolar lines
   Point3 lB = E_ * vB;
   Point3 lA = E_.transpose() * vA;
@@ -122,7 +124,7 @@ double EssentialMatrix::error(const Vector3& vA, const Vector3& vB,  //
   double denominator = sqrt(nA_sq_norm + nB_sq_norm);
   double sampson_error = algebraic_error / denominator;
 
-  if (H) {
+  if (HE) {
     // See math.lyx
     // computing the derivatives of the numerator w.r.t. E
     Matrix13 numerator_H_R = vA.transpose() * E_ * skewSymmetric(-vB);
@@ -152,9 +154,24 @@ double EssentialMatrix::error(const Vector3& vA, const Vector3& vB,  //
     Matrix15 numerator_H;
     numerator_H << numerator_H_R, numerator_H_D;
 
-    *H = numerator_H / denominator -
+    *HE = numerator_H / denominator -
          algebraic_error * denominator_H / (denominator * denominator);
   }
+
+  if (HvA){
+    Matrix13 numerator_H_vA = vB.transpose() * matrix().transpose();
+    Matrix13 denominator_H_vA = nA.transpose() * I * matrix().transpose() / denominator;
+
+    *HvA = numerator_H_vA / denominator - algebraic_error * denominator_H_vA / (denominator * denominator);
+  }
+
+  if (HvB){
+    Matrix13 numerator_H_vB = vA.transpose() * matrix();
+    Matrix13 denominator_H_vB = nB.transpose() * I * matrix() / denominator;
+
+    *HvB = numerator_H_vB / denominator - algebraic_error * denominator_H_vB / (denominator * denominator);
+  }
+
   return sampson_error;
 }
 
