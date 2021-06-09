@@ -254,8 +254,8 @@ TEST(EssentialMatrix, errorValue) {
   // algebraic error = 5
   // norm of line for b = 1
   // norm of line for a = 1
-  // sampson error = 5 / sqrt(1^2 + 1^2)
-  double expected = 3.535533906;
+  // sampson error = 5^2 / 1^2 + 1^2
+  double expected = 12.5;
 
   // check the error
   double actual = trueE.error(a, b);
