@@ -727,6 +727,39 @@ TEST(ExpressionFactor, variadicTemplate) {
 }
 
 
+TEST(ExpressionFactor, crossProduct) {
+  auto model = noiseModel::Isotropic::Sigma(3, 1);
+
+  // Create expression
+  const auto a = Vector3_(1);
+  const auto b = Vector3_(2);
+  Vector3_ f_expr = cross(a, b);
+
+  // Check derivatives
+  Values values;
+  values.insert(1, Vector3(0.1, 0.2, 0.3));
+  values.insert(2, Vector3(0.4, 0.5, 0.6));
+  ExpressionFactor<Vector3> factor(model, Vector3::Zero(), f_expr);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-5, 1e-5);
+}
+
+TEST(ExpressionFactor, dotProduct) {
+  auto model = noiseModel::Isotropic::Sigma(1, 1);
+
+  // Create expression
+  const auto a = Vector3_(1);
+  const auto b = Vector3_(2);
+  Double_ f_expr = dot(a, b);
+
+  // Check derivatives
+  Values values;
+  values.insert(1, Vector3(0.1, 0.2, 0.3));
+  values.insert(2, Vector3(0.4, 0.5, 0.6));
+  ExpressionFactor<double> factor(model, .0, f_expr);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-5, 1e-5);
+}
+
+
 /* ************************************************************************* */
 int main() {
   TestResult tr;
