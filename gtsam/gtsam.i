@@ -294,7 +294,7 @@ class ParameterMatrix {
   ParameterMatrix(const size_t N);
   ParameterMatrix(const Matrix& matrix);
 
-  MatrixType matrix() const;
+  Matrix matrix() const;
 
   void print(const string& s="") const;
 };
