@@ -35,12 +35,8 @@ For instructions on updating the version of the [wrap library](https://github.co
 ## Unit Tests
 
 The Python toolbox also has a small set of unit tests located in the
-test directory. To run them:
-
-  ```bash
-  cd <GTSAM_SOURCE_DIRECTORY>/python/gtsam/tests
-  python -m unittest discover
-  ```
+test directory.
+To run them, use `make python-test`.
 
 ## Utils
 
