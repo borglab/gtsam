@@ -80,7 +80,7 @@ class EssentialMatrixFactor : public NoiseModelFactor1<EssentialMatrix> {
       const EssentialMatrix& E,
       boost::optional<Matrix&> H = boost::none) const override {
     Vector error(1);
-    error << E.error(vA_, vB_, H, boost::none, boost::none);
+    error << E.error(vA_, vB_, H);
     return error;
   }
 
@@ -367,22 +367,20 @@ class EssentialMatrixFactor4
     Vector3 vA = EssentialMatrix::Homogeneous(cA);
     Vector3 vB = EssentialMatrix::Homogeneous(cB);
 
-
-    Matrix13 error_H_vA, error_H_vB;
-    Vector error(1);
-    error << E.error(vA, vB, H1, H2 ? &error_H_vA : 0, H2 ? &error_H_vB : 0);
-
     if (H2) {
       // compute the jacobian of error w.r.t K
 
-      // error function f
-      // H2 = df/dK = df/dvA * dvA/dK + df/dvB * dvB/dK
+      // error function f = vA.T * E * vB
+      // H2 = df/dK = vB.T * E.T * dvA/dK + vA.T * E * dvB/dK
       // where dvA/dK = dvA/dcA * dcA/dK, dVB/dK = dvB/dcB * dcB/dK
       // and dvA/dcA = dvB/dcB = [[1, 0], [0, 1], [0, 0]]
-      *H2 = error_H_vA.leftCols<2>() * cA_H_K 
-            + error_H_vB.leftCols<2>() * cB_H_K;
+      *H2 = vB.transpose() * E.matrix().transpose().leftCols<2>() * cA_H_K +
+            vA.transpose() * E.matrix().leftCols<2>() * cB_H_K;
     }
-    
+
+    Vector error(1);
+    error << E.error(vA, vB, H1);
+
     return error;
   }
 
