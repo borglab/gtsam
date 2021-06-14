@@ -530,7 +530,7 @@ TEST(EssentialMatrixFactor4, minimizationWithStrongCal3BundlerPrior) {
   for (size_t i = 0; i < 5; i++)
     graph.emplace_shared<EssentialMatrixFactor4<Cal3Bundler>>(1, 2, pA(i), pB(i),
                                                           model1);
-  Cal3Bundler trueK;
+  Cal3Bundler trueK(1, 0, 0, 0, 0, /*tolerance=*/5e-3);
   // Check error at ground truth
   Values truth;
   truth.insert(1, trueE);
