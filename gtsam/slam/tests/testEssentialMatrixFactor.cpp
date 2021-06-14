@@ -547,7 +547,7 @@ TEST(EssentialMatrixFactor4, minimizationWithStrongCal3BundlerPrior) {
 
   // add prior factor for calibration
   Vector3 priorNoiseModelSigma;
-  priorNoiseModelSigma << 1, 1, 1;
+  priorNoiseModelSigma << 0.1, 0.1, 0.1;
   graph.emplace_shared<PriorFactor<Cal3Bundler>>(2, trueK, noiseModel::Diagonal::Sigmas(priorNoiseModelSigma));
   
   LevenbergMarquardtOptimizer optimizer(graph, initial);
