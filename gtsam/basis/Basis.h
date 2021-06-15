@@ -58,7 +58,7 @@ using Weights = Eigen::Matrix<double, 1, -1>; /* 1xN vector */
 
 /// CRTP Base class for function bases
 template <typename DERIVED>
-class Basis {
+class GTSAM_EXPORT Basis {
  public:
   /**
    * Call weights for all x in vector X.

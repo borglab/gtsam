@@ -24,9 +24,8 @@
 namespace gtsam {
 
 /// Fourier basis
-class FourierBasis : public Basis<FourierBasis> {
+class GTSAM_EXPORT FourierBasis : public Basis<FourierBasis> {
  public:
-  using Weights = Eigen::Matrix<double, /*1xN*/ 1, -1>;
   using Parameters = Eigen::Matrix<double, /*Nx1*/ -1, 1>;
   using DiffMatrix = Eigen::Matrix<double, /*NxN*/ -1, -1>;
 

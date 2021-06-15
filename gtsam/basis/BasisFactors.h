@@ -26,7 +26,7 @@ namespace gtsam {
  * @param BASIS: The basis class to use e.g. Chebyshev2
  */
 template <class BASIS>
-class EvaluationFactor : public FunctorizedFactor<double, Vector> {
+class GTSAM_EXPORT EvaluationFactor : public FunctorizedFactor<double, Vector> {
  private:
   using Base = FunctorizedFactor<double, Vector>;
 
@@ -70,7 +70,7 @@ class EvaluationFactor : public FunctorizedFactor<double, Vector> {
  * @param M: Size of the evaluated state vector.
  */
 template <class BASIS, int M>
-class VectorEvaluationFactor
+class GTSAM_EXPORT VectorEvaluationFactor
     : public FunctorizedFactor<Vector, ParameterMatrix<M>> {
  private:
   using Base = FunctorizedFactor<Vector, ParameterMatrix<M>>;
@@ -105,7 +105,7 @@ class VectorEvaluationFactor
  *  where N is the degree and i is the component index.
  */
 template <class BASIS, size_t P>
-class VectorComponentFactor
+class GTSAM_EXPORT VectorComponentFactor
     : public FunctorizedFactor<double, ParameterMatrix<P>> {
  private:
   using Base = FunctorizedFactor<double, ParameterMatrix<P>>;
@@ -134,7 +134,7 @@ class VectorComponentFactor
  * @param T: Object type which is synthesized by the functor.
  */
 template <class BASIS, typename T>
-class ManifoldEvaluationFactor
+class GTSAM_EXPORT ManifoldEvaluationFactor
     : public FunctorizedFactor<T, ParameterMatrix<traits<T>::dimension>> {
  private:
   using Base = FunctorizedFactor<T, ParameterMatrix<traits<T>::dimension>>;
@@ -162,7 +162,7 @@ class ManifoldEvaluationFactor
  * @param BASIS: The basis class to use e.g. Chebyshev2
  */
 template <class BASIS>
-class DerivativeFactor
+class GTSAM_EXPORT DerivativeFactor
     : public FunctorizedFactor<double, typename BASIS::Parameters> {
  private:
   using Base = FunctorizedFactor<double, typename BASIS::Parameters>;
@@ -187,7 +187,7 @@ class DerivativeFactor
  * @param M: Size of the evaluated state vector derivative.
  */
 template <class BASIS, int M>
-class VectorDerivativeFactor
+class GTSAM_EXPORT VectorDerivativeFactor
     : public FunctorizedFactor<Vector, ParameterMatrix<M>> {
  private:
   using Base = FunctorizedFactor<Vector, ParameterMatrix<M>>;
@@ -215,7 +215,7 @@ class VectorDerivativeFactor
  * @param P: Size of the control component derivative.
  */
 template <class BASIS, int P>
-class ComponentDerivativeFactor
+class GTSAM_EXPORT ComponentDerivativeFactor
     : public FunctorizedFactor<double, ParameterMatrix<P>> {
  private:
   using Base = FunctorizedFactor<double, ParameterMatrix<P>>;

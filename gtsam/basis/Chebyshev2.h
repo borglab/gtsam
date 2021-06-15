@@ -35,7 +35,8 @@ namespace gtsam {
  * Note that N here, the #points, is one less than N from Trefethen00book
  * (pg.42)
  */
-struct Chebyshev2 : public Basis<Chebyshev2> {
+class GTSAM_EXPORT Chebyshev2 : public Basis<Chebyshev2> {
+ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   using Base = Basis<Chebyshev2>;
