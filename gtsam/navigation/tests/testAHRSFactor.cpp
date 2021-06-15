@@ -25,9 +25,10 @@
 #include <gtsam/base/debug.h>
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <list>
 
+using namespace boost::placeholders;
 using namespace std;
 using namespace gtsam;
 

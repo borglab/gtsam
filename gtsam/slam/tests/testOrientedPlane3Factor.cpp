@@ -27,9 +27,10 @@
 
 #include <boost/assign/std/vector.hpp>
 #include <boost/assign/std.hpp>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 
 using namespace boost::assign;
+using namespace boost::placeholders;
 using namespace gtsam;
 using namespace std;
 

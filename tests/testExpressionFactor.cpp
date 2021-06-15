@@ -31,6 +31,8 @@
 
 #include <boost/assign/list_of.hpp>
 using boost::assign::list_of;
+#include <boost/bind/bind.hpp>
+using namespace boost::placeholders;
 
 using namespace std;
 using namespace gtsam;

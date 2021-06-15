@@ -17,8 +17,8 @@
 
 #include <iostream>
 
+#include <boost/bind/bind.hpp>
 #include <boost/format.hpp>
-#include <boost/bind.hpp>
 
 #include <boost/lexical_cast.hpp>
 
@@ -110,16 +110,16 @@ bool LabeledSymbol::operator!=(gtsam::Key comp) const {
 static LabeledSymbol make(gtsam::Key key) { return LabeledSymbol(key);}
 
 boost::function<bool(gtsam::Key)> LabeledSymbol::TypeTest(unsigned char c) {
-  return boost::bind(&LabeledSymbol::chr, boost::bind(make, _1)) == c;
+  return boost::bind(&LabeledSymbol::chr, boost::bind(make, boost::placeholders::_1)) == c;
 }
 
 boost::function<bool(gtsam::Key)> LabeledSymbol::LabelTest(unsigned char label) {
-  return boost::bind(&LabeledSymbol::label, boost::bind(make, _1)) == label;
+  return boost::bind(&LabeledSymbol::label, boost::bind(make, boost::placeholders::_1)) == label;
 }
 
 boost::function<bool(gtsam::Key)> LabeledSymbol::TypeLabelTest(unsigned char c, unsigned char label) {
-  return boost::bind(&LabeledSymbol::chr,   boost::bind(make, _1)) == c &&
-      boost::bind(&LabeledSymbol::label, boost::bind(make, _1)) == label;
+  return boost::bind(&LabeledSymbol::chr,   boost::bind(make, boost::placeholders::_1)) == c &&
+      boost::bind(&LabeledSymbol::label, boost::bind(make, boost::placeholders::_1)) == label;
 }
 
 /* ************************************************************************* */

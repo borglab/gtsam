@@ -22,6 +22,8 @@
 
 #include <boost/assign/std/vector.hpp> // for operator +=
 using namespace boost::assign;
+#include <boost/bind/bind.hpp>
+using namespace boost::placeholders;
 
 #include <CppUnitLite/TestHarness.h>
 #include <cmath>

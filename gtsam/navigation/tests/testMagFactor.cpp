@@ -20,10 +20,13 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 
+#include <boost/bind/bind.hpp>
+
 #include <CppUnitLite/TestHarness.h>
 
 #include <GeographicLib/LocalCartesian.hpp>
 
+using namespace boost::placeholders;
 using namespace std;
 using namespace gtsam;
 using namespace GeographicLib;

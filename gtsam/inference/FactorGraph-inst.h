@@ -23,8 +23,6 @@
 
 #include <gtsam/inference/FactorGraph.h>
 
-#include <boost/bind.hpp>
-
 #include <stdio.h>
 #include <algorithm>
 #include <iostream>  // for cout :-(

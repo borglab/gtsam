@@ -9,8 +9,11 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam_unstable/slam/BiasedGPSFactor.h>
+
+#include <boost/bind/bind.hpp>
 #include <CppUnitLite/TestHarness.h>
 
+using namespace boost::placeholders;
 using namespace gtsam;
 using namespace gtsam::symbol_shorthand;
 using namespace gtsam::noiseModel;

@@ -17,6 +17,9 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/navigation/MagPoseFactor.h>
 
+#include <boost/bind/bind.hpp>
+
+using namespace boost::placeholders;
 using namespace gtsam;
 
 // *****************************************************************************

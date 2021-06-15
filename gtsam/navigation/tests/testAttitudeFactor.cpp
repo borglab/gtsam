@@ -21,8 +21,11 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/serialization.h>
 #include <gtsam/base/serializationTestHelpers.h>
+
+#include <boost/bind/bind.hpp>
 #include <CppUnitLite/TestHarness.h>
 
+using namespace boost::placeholders;
 using namespace std;
 using namespace gtsam;
 

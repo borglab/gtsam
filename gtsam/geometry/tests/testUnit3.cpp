@@ -31,13 +31,14 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/bind.hpp>
 #include <boost/assign/std/vector.hpp>
+#include <boost/bind/bind.hpp>
 
 #include <cmath>
 #include <random>
 
 using namespace boost::assign;
+using namespace boost::placeholders;
 using namespace gtsam;
 using namespace std;
 using gtsam::symbol_shorthand::U;

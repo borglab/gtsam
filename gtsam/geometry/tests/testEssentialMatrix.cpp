@@ -9,9 +9,12 @@
 #include <gtsam/geometry/CalibratedCamera.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/Testable.h>
+
+#include <boost/bind/bind.hpp>
 #include <CppUnitLite/TestHarness.h>
 #include <sstream>
 
+using namespace boost::placeholders;
 using namespace std;
 using namespace gtsam;
 

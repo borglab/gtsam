@@ -26,6 +26,8 @@
 #include <boost/assign/list_of.hpp>
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
+#include <boost/bind/bind.hpp>
+using namespace boost::placeholders;
 
 // STL/C++
 #include <iostream>

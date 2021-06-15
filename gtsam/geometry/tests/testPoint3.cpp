@@ -17,8 +17,11 @@
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
+
+#include <boost/bind/bind.hpp>
 #include <CppUnitLite/TestHarness.h>
 
+using namespace boost::placeholders;
 using namespace gtsam;
 
 GTSAM_CONCEPT_TESTABLE_INST(Point3)

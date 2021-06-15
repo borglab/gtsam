@@ -3,12 +3,14 @@
  * @author Duy-Nguyen Ta
  */
 
+#include <boost/bind/bind.hpp>
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam_unstable/dynamics/SimpleHelicopter.h>
 
 /* ************************************************************************* */
+using namespace boost::placeholders;
 using namespace gtsam;
 using namespace gtsam::symbol_shorthand;
 

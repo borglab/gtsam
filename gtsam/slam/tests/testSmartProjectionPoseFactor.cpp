@@ -27,9 +27,11 @@
 #include <gtsam/base/serializationTestHelpers.h>
 #include <CppUnitLite/TestHarness.h>
 #include <boost/assign/std/map.hpp>
+#include <boost/bind/bind.hpp>
 #include <iostream>
 
 using namespace boost::assign;
+using namespace boost::placeholders;
 
 static const double rankTol = 1.0;
 // Create a noise model for the pixel error
