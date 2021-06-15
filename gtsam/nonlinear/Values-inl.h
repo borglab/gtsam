@@ -26,6 +26,8 @@
 
 #include <utility>
 
+#include <boost/bind/bind.hpp>
+
 #include <gtsam/nonlinear/Values.h> // Only so Eclipse finds class definition
 
 namespace gtsam {
@@ -242,7 +244,8 @@ namespace gtsam {
   template<class ValueType>
   Values::Filtered<ValueType>
   Values::filter(const boost::function<bool(Key)>& filterFcn) {
-    return Filtered<ValueType>(boost::bind(&filterHelper<ValueType>, filterFcn, _1), *this);
+    return Filtered<ValueType>(boost::bind(&filterHelper<ValueType>, filterFcn,
+      boost::placeholders::_1), *this);
   }
 
   /* ************************************************************************* */
@@ -255,7 +258,8 @@ namespace gtsam {
   template<class ValueType>
   Values::ConstFiltered<ValueType>
   Values::filter(const boost::function<bool(Key)>& filterFcn) const {
-    return ConstFiltered<ValueType>(boost::bind(&filterHelper<ValueType>, filterFcn, _1), *this);
+    return ConstFiltered<ValueType>(boost::bind(&filterHelper<ValueType>,
+      filterFcn, boost::placeholders::_1), *this);
   }
 
   /* ************************************************************************* */

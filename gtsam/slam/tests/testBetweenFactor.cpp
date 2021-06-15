@@ -9,8 +9,11 @@
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/slam/BetweenFactor.h>
+
+#include <boost/bind/bind.hpp>
 #include <CppUnitLite/TestHarness.h>
 
+using namespace boost::placeholders;
 using namespace gtsam;
 using namespace gtsam::symbol_shorthand;
 using namespace gtsam::noiseModel;

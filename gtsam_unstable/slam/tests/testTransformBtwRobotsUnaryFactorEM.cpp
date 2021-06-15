@@ -18,7 +18,9 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 
+#include <boost/bind/bind.hpp>
 
+using namespace boost::placeholders;
 using namespace std;
 using namespace gtsam;
 

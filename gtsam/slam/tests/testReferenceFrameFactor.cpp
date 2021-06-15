@@ -16,7 +16,7 @@
 
 #include <iostream>
 
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -32,6 +32,7 @@
 
 using namespace std;
 using namespace boost;
+using namespace boost::placeholders;
 using namespace gtsam;
 
 typedef gtsam::ReferenceFrameFactor<gtsam::Point2, gtsam::Pose2> PointReferenceFrameFactor;

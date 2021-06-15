@@ -12,12 +12,13 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/bind.hpp>
 #include <boost/assign/std/vector.hpp>
+#include <boost/bind/bind.hpp>
 #include <vector>
 
 using namespace std;
 using namespace boost::assign;
+using namespace boost::placeholders;
 using namespace gtsam;
 
 static const double kDegree = M_PI / 180;

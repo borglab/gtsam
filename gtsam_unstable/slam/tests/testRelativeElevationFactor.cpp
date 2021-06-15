@@ -5,12 +5,14 @@
  * @author Alex Cunningham
  */
 
+#include <boost/bind/bind.hpp>
 #include <CppUnitLite/TestHarness.h>
 
 #include <gtsam_unstable/slam/RelativeElevationFactor.h>
 
 #include <gtsam/base/numericalDerivative.h>
 
+using namespace boost::placeholders;
 using namespace gtsam;
 
 SharedNoiseModel model1 = noiseModel::Unit::Create(1);
