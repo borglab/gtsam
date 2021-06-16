@@ -95,10 +95,9 @@ def instantiate_args_list(args_list, template_typenames, instantiations,
     for arg in args_list:
         new_type = instantiate_type(arg.ctype, template_typenames,
                                     instantiations, cpp_typename)
-        default = [arg.default] if isinstance(arg, parser.Argument) else ''
-        instantiated_args.append(parser.Argument(name=arg.name,
-                                                 ctype=new_type,
-                                                 default=default))
+        instantiated_args.append(
+            parser.Argument(name=arg.name, ctype=new_type,
+                            default=arg.default))
     return instantiated_args
 
 
@@ -131,7 +130,6 @@ def instantiate_name(original_name, instantiations):
     TODO(duy): To avoid conflicts, we should include the instantiation's
     namespaces, but I find that too verbose.
     """
-    inst_name = ''
     instantiated_names = []
     for inst in instantiations:
         # Ensure the first character of the type is capitalized
@@ -172,7 +170,7 @@ class InstantiatedGlobalFunction(parser.GlobalFunction):
                 cpp_typename='',
             )
             instantiated_args = instantiate_args_list(
-                original.args.args_list,
+                original.args.list(),
                 self.original.template.typenames,
                 self.instantiations,
                 # Keyword type name `This` should already be replaced in the
@@ -206,7 +204,13 @@ class InstantiatedGlobalFunction(parser.GlobalFunction):
 
 class InstantiatedMethod(parser.Method):
     """
-    We can only instantiate template methods with a single template parameter.
+    Instantiate method with template parameters.
+
+    E.g.
+    class A {
+        template<X, Y>
+        void func(X x, Y y);
+    }
     """
     def __init__(self, original, instantiations: List[parser.Typename] = ''):
         self.original = original
@@ -216,7 +220,7 @@ class InstantiatedMethod(parser.Method):
         self.parent = original.parent
 
         # Check for typenames if templated.
-        # This way, we can gracefully handle bot templated and non-templated methois.
+        # This way, we can gracefully handle both templated and non-templated methods.
         typenames = self.original.template.typenames if self.original.template else []
         self.name = instantiate_name(original.name, self.instantiations)
         self.return_type = instantiate_return_type(
@@ -229,7 +233,7 @@ class InstantiatedMethod(parser.Method):
         )
 
         instantiated_args = instantiate_args_list(
-            original.args.args_list,
+            original.args.list(),
             typenames,
             self.instantiations,
             # Keyword type name `This` should already be replaced in the
@@ -342,7 +346,7 @@ class InstantiatedClass(parser.Class):
             "{ctors}\n{static_methods}\n{methods}".format(
                virtual="virtual" if self.is_virtual else '',
                name=self.name,
-               cpp_class=self.cpp_class(),
+               cpp_class=self.to_cpp(),
                parent_class=self.parent,
                ctors="\n".join([repr(ctor) for ctor in self.ctors]),
                methods="\n".join([repr(m) for m in self.methods]),
@@ -364,7 +368,7 @@ class InstantiatedClass(parser.Class):
 
         for ctor in self.original.ctors:
             instantiated_args = instantiate_args_list(
-                ctor.args.args_list,
+                ctor.args.list(),
                 typenames,
                 self.instantiations,
                 self.cpp_typename(),
@@ -389,7 +393,7 @@ class InstantiatedClass(parser.Class):
         instantiated_static_methods = []
         for static_method in self.original.static_methods:
             instantiated_args = instantiate_args_list(
-                static_method.args.args_list, typenames, self.instantiations,
+                static_method.args.list(), typenames, self.instantiations,
                 self.cpp_typename())
             instantiated_static_methods.append(
                 parser.StaticMethod(
@@ -426,7 +430,7 @@ class InstantiatedClass(parser.Class):
         class_instantiated_methods = []
         for method in self.original.methods:
             instantiated_args = instantiate_args_list(
-                method.args.args_list,
+                method.args.list(),
                 typenames,
                 self.instantiations,
                 self.cpp_typename(),
@@ -459,7 +463,7 @@ class InstantiatedClass(parser.Class):
         instantiated_operators = []
         for operator in self.original.operators:
             instantiated_args = instantiate_args_list(
-                operator.args.args_list,
+                operator.args.list(),
                 typenames,
                 self.instantiations,
                 self.cpp_typename(),
@@ -497,10 +501,6 @@ class InstantiatedClass(parser.Class):
         )
         return instantiated_properties
 
-    def cpp_class(self):
-        """Generate the C++ code for wrapping."""
-        return self.cpp_typename().to_cpp()
-
     def cpp_typename(self):
         """
         Return a parser.Typename including namespaces and cpp name of this
@@ -516,8 +516,53 @@ class InstantiatedClass(parser.Class):
         namespaces_name.append(name)
         return parser.Typename(namespaces_name)
 
+    def to_cpp(self):
+        """Generate the C++ code for wrapping."""
+        return self.cpp_typename().to_cpp()
 
-def instantiate_namespace_inplace(namespace):
+
+class InstantiatedDeclaration(parser.ForwardDeclaration):
+    """
+    Instantiate typedefs of forward declarations.
+    This is useful when we wish to typedef a templated class
+    which is not defined in the current project.
+
+    E.g.
+        class FactorFromAnotherMother;
+
+        typedef FactorFromAnotherMother<gtsam::Pose3> FactorWeCanUse;
+    """
+    def __init__(self, original, instantiations=(), new_name=''):
+        super().__init__(original.typename,
+                         original.parent_type,
+                         original.is_virtual,
+                         parent=original.parent)
+
+        self.original = original
+        self.instantiations = instantiations
+        self.parent = original.parent
+
+        self.name = instantiate_name(
+            original.name, instantiations) if not new_name else new_name
+
+    def to_cpp(self):
+        """Generate the C++ code for wrapping."""
+        instantiated_names = [
+            inst.qualified_name() for inst in self.instantiations
+        ]
+        name = "{}<{}>".format(self.original.name,
+                               ",".join(instantiated_names))
+        namespaces_name = self.namespaces()
+        namespaces_name.append(name)
+        # Leverage Typename to generate the fully qualified C++ name
+        return parser.Typename(namespaces_name).to_cpp()
+
+    def __repr__(self):
+        return "Instantiated {}".format(
+            super(InstantiatedDeclaration, self).__repr__())
+
+
+def instantiate_namespace(namespace):
     """
     Instantiate the classes and other elements in the `namespace` content and
     assign it back to the namespace content attribute.
@@ -567,7 +612,8 @@ def instantiate_namespace_inplace(namespace):
             original_element = top_level.find_class_or_function(
                 typedef_inst.typename)
 
-            # Check if element is a typedef'd class or function.
+            # Check if element is a typedef'd class, function or
+            # forward declaration from another project.
             if isinstance(original_element, parser.Class):
                 typedef_content.append(
                     InstantiatedClass(original_element,
@@ -578,12 +624,19 @@ def instantiate_namespace_inplace(namespace):
                     InstantiatedGlobalFunction(
                         original_element, typedef_inst.typename.instantiations,
                         typedef_inst.new_name))
+            elif isinstance(original_element, parser.ForwardDeclaration):
+                typedef_content.append(
+                    InstantiatedDeclaration(
+                        original_element, typedef_inst.typename.instantiations,
+                        typedef_inst.new_name))
 
         elif isinstance(element, parser.Namespace):
-            instantiate_namespace_inplace(element)
+            element = instantiate_namespace(element)
             instantiated_content.append(element)
         else:
             instantiated_content.append(element)
 
     instantiated_content.extend(typedef_content)
     namespace.content = instantiated_content
+
+    return namespace

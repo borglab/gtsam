@@ -8,9 +8,8 @@ and invoked during the wrapping by CMake.
 
 import argparse
 import os
+import sys
 
-import gtwrap.interface_parser as parser
-import gtwrap.template_instantiator as instantiator
 from gtwrap.matlab_wrapper import MatlabWrapper, generate_content
 
 if __name__ == "__main__":
@@ -51,18 +50,11 @@ if __name__ == "__main__":
     if not os.path.exists(args.src):
         os.mkdir(args.src)
 
-    module = parser.Module.parseString(content)
-
-    instantiator.instantiate_namespace_inplace(module)
-
-    import sys
-
     print("Ignoring classes: {}".format(args.ignore), file=sys.stderr)
-    wrapper = MatlabWrapper(module=module,
-                            module_name=args.module_name,
+    wrapper = MatlabWrapper(module_name=args.module_name,
                             top_module_namespace=top_module_namespaces,
                             ignore_classes=args.ignore)
 
-    cc_content = wrapper.wrap()
+    cc_content = wrapper.wrap(content)
 
     generate_content(cc_content, args.out)
