@@ -33,6 +33,8 @@ typedef std::set<boost::shared_ptr<MultipleTemplatesIntDouble>*> Collector_Multi
 static Collector_MultipleTemplatesIntDouble collector_MultipleTemplatesIntDouble;
 typedef std::set<boost::shared_ptr<MultipleTemplatesIntFloat>*> Collector_MultipleTemplatesIntFloat;
 static Collector_MultipleTemplatesIntFloat collector_MultipleTemplatesIntFloat;
+typedef std::set<boost::shared_ptr<ForwardKinematics>*> Collector_ForwardKinematics;
+static Collector_ForwardKinematics collector_ForwardKinematics;
 typedef std::set<boost::shared_ptr<MyFactorPosePoint2>*> Collector_MyFactorPosePoint2;
 static Collector_MyFactorPosePoint2 collector_MyFactorPosePoint2;
 
@@ -88,6 +90,12 @@ void _deleteAllObjects()
       iter != collector_MultipleTemplatesIntFloat.end(); ) {
     delete *iter;
     collector_MultipleTemplatesIntFloat.erase(iter++);
+    anyDeleted = true;
+  } }
+  { for(Collector_ForwardKinematics::iterator iter = collector_ForwardKinematics.begin();
+      iter != collector_ForwardKinematics.end(); ) {
+    delete *iter;
+    collector_ForwardKinematics.erase(iter++);
     anyDeleted = true;
   } }
   { for(Collector_MyFactorPosePoint2::iterator iter = collector_MyFactorPosePoint2.begin();
@@ -198,9 +206,10 @@ void MultiTemplatedFunctionDoubleSize_tDouble_7(int nargout, mxArray *out[], int
 }
 void DefaultFuncInt_8(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  checkArguments("DefaultFuncInt",nargout,nargin,1);
+  checkArguments("DefaultFuncInt",nargout,nargin,2);
   int a = unwrap< int >(in[0]);
-  DefaultFuncInt(a);
+  int b = unwrap< int >(in[1]);
+  DefaultFuncInt(a,b);
 }
 void DefaultFuncString_9(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
@@ -215,7 +224,30 @@ void DefaultFuncObj_10(int nargout, mxArray *out[], int nargin, const mxArray *i
   gtsam::KeyFormatter& keyFormatter = *unwrap_shared_ptr< gtsam::KeyFormatter >(in[0], "ptr_gtsamKeyFormatter");
   DefaultFuncObj(keyFormatter);
 }
-void TemplatedFunctionRot3_11(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void DefaultFuncZero_11(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("DefaultFuncZero",nargout,nargin,5);
+  int a = unwrap< int >(in[0]);
+  int b = unwrap< int >(in[1]);
+  double c = unwrap< double >(in[2]);
+  bool d = unwrap< bool >(in[3]);
+  bool e = unwrap< bool >(in[4]);
+  DefaultFuncZero(a,b,c,d,e);
+}
+void DefaultFuncVector_12(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("DefaultFuncVector",nargout,nargin,2);
+  std::vector<int>& i = *unwrap_shared_ptr< std::vector<int> >(in[0], "ptr_stdvectorint");
+  std::vector<string>& s = *unwrap_shared_ptr< std::vector<string> >(in[1], "ptr_stdvectorstring");
+  DefaultFuncVector(i,s);
+}
+void setPose_13(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("setPose",nargout,nargin,1);
+  gtsam::Pose3& pose = *unwrap_shared_ptr< gtsam::Pose3 >(in[0], "ptr_gtsamPose3");
+  setPose(pose);
+}
+void TemplatedFunctionRot3_14(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   checkArguments("TemplatedFunctionRot3",nargout,nargin,1);
   gtsam::Rot3& t = *unwrap_shared_ptr< gtsam::Rot3 >(in[0], "ptr_gtsamRot3");
@@ -267,7 +299,16 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
       DefaultFuncObj_10(nargout, out, nargin-1, in+1);
       break;
     case 11:
-      TemplatedFunctionRot3_11(nargout, out, nargin-1, in+1);
+      DefaultFuncZero_11(nargout, out, nargin-1, in+1);
+      break;
+    case 12:
+      DefaultFuncVector_12(nargout, out, nargin-1, in+1);
+      break;
+    case 13:
+      setPose_13(nargout, out, nargin-1, in+1);
+      break;
+    case 14:
+      TemplatedFunctionRot3_14(nargout, out, nargin-1, in+1);
       break;
     }
   } catch(const std::exception& e) {
