@@ -57,7 +57,7 @@ class MatlabWrapper(object):
     # Methods that should be ignored
     ignore_methods = ['pickle']
     # Datatypes that do not need to be checked in methods
-    not_check_type: list = []
+    not_check_type = []  # type: list
     # Data types that are primitive types
     not_ptr_type = ['int', 'double', 'bool', 'char', 'unsigned char', 'size_t']
     # Ignore the namespace for these datatypes
@@ -65,16 +65,18 @@ class MatlabWrapper(object):
     # The amount of times the wrapper has created a call to geometry_wrapper
     wrapper_id = 0
     # Map each wrapper id to what its collector function namespace, class, type, and string format
-    wrapper_map: dict = {}
+    wrapper_map = {}
     # Set of all the includes in the namespace
-    includes: Dict[parser.Include, int] = {}
+    includes = {}  # type: Dict[parser.Include, int]
     # Set of all classes in the namespace
-    classes: List[Union[parser.Class, instantiator.InstantiatedClass]] = []
-    classes_elems: Dict[Union[parser.Class, instantiator.InstantiatedClass], int] = {}
+    classes = [
+    ]  # type: List[Union[parser.Class, instantiator.InstantiatedClass]]
+    classes_elems = {
+    }  # type: Dict[Union[parser.Class, instantiator.InstantiatedClass], int]
     # Id for ordering global functions in the wrapper
     global_function_id = 0
     # Files and their content
-    content: List[str] = []
+    content = []  # type: List[str]
 
     # Ensure the template file is always picked up from the correct directory.
     dir_path = osp.dirname(osp.realpath(__file__))
@@ -82,11 +84,9 @@ class MatlabWrapper(object):
         wrapper_file_header = f.read()
 
     def __init__(self,
-                 module,
                  module_name,
                  top_module_namespace='',
                  ignore_classes=()):
-        self.module = module
         self.module_name = module_name
         self.top_module_namespace = top_module_namespace
         self.ignore_classes = ignore_classes
@@ -374,14 +374,14 @@ class MatlabWrapper(object):
         """
         arg_wrap = ''
 
-        for i, arg in enumerate(args.args_list, 1):
+        for i, arg in enumerate(args.list(), 1):
             c_type = self._format_type_name(arg.ctype.typename,
                                             include_namespace=False)
 
             arg_wrap += '{c_type} {arg_name}{comma}'.format(
                 c_type=c_type,
                 arg_name=arg.name,
-                comma='' if i == len(args.args_list) else ', ')
+                comma='' if i == len(args.list()) else ', ')
 
         return arg_wrap
 
@@ -396,7 +396,7 @@ class MatlabWrapper(object):
         """
         var_arg_wrap = ''
 
-        for i, arg in enumerate(args.args_list, 1):
+        for i, arg in enumerate(args.list(), 1):
             name = arg.ctype.typename.name
             if name in self.not_check_type:
                 continue
@@ -442,7 +442,7 @@ class MatlabWrapper(object):
         var_list_wrap = ''
         first = True
 
-        for i in range(1, len(args.args_list) + 1):
+        for i in range(1, len(args.list()) + 1):
             if first:
                 var_list_wrap += 'varargin{{{}}}'.format(i)
                 first = False
@@ -462,9 +462,9 @@ class MatlabWrapper(object):
         if check_statement == '':
             check_statement = \
                 'if length(varargin) == {param_count}'.format(
-                    param_count=len(args.args_list))
+                    param_count=len(args.list()))
 
-        for _, arg in enumerate(args.args_list):
+        for _, arg in enumerate(args.list()):
             name = arg.ctype.typename.name
 
             if name in self.not_check_type:
@@ -516,7 +516,7 @@ class MatlabWrapper(object):
         params = ''
         body_args = ''
 
-        for arg in args.args_list:
+        for arg in args.list():
             if params != '':
                 params += ','
 
@@ -725,10 +725,10 @@ class MatlabWrapper(object):
             param_wrap += '      if' if i == 0 else '      elseif'
             param_wrap += ' length(varargin) == '
 
-            if len(overload.args.args_list) == 0:
+            if len(overload.args.list()) == 0:
                 param_wrap += '0\n'
             else:
-                param_wrap += str(len(overload.args.args_list)) \
+                param_wrap += str(len(overload.args.list())) \
                               + self._wrap_variable_arguments(overload.args, False) + '\n'
 
             # Determine format of return and varargout statements
@@ -825,14 +825,14 @@ class MatlabWrapper(object):
             methods_wrap += textwrap.indent(textwrap.dedent('''\
                 elseif nargin == {len}{varargin}
                   {ptr}{wrapper}({num}{comma}{var_arg});
-            ''').format(len=len(ctor.args.args_list),
+            ''').format(len=len(ctor.args.list()),
                         varargin=self._wrap_variable_arguments(
                             ctor.args, False),
                         ptr=wrapper_return,
                         wrapper=self._wrapper_name(),
                         num=self._update_wrapper_id(
                             (namespace_name, inst_class, 'constructor', ctor)),
-                        comma='' if len(ctor.args.args_list) == 0 else ', ',
+                        comma='' if len(ctor.args.list()) == 0 else ', ',
                         var_arg=self._wrap_list_variable_arguments(ctor.args)),
                                             prefix='    ')
 
@@ -938,7 +938,7 @@ class MatlabWrapper(object):
                            namespace_name,
                            inst_class,
                            methods,
-                           serialize=(False,)):
+                           serialize=(False, )):
         """Wrap the methods in the class.
 
         Args:
@@ -1075,7 +1075,7 @@ class MatlabWrapper(object):
                         static_overload.return_type,
                         include_namespace=True,
                         separator="."),
-                    length=len(static_overload.args.args_list),
+                    length=len(static_overload.args.list()),
                     var_args_list=self._wrap_variable_arguments(
                         static_overload.args),
                     check_statement=check_statement,
@@ -1097,7 +1097,8 @@ class MatlabWrapper(object):
 
             method_text += textwrap.indent(textwrap.dedent("""\
                                     end\n
-                """), prefix="  ")
+                """),
+                                           prefix="  ")
 
         if serialize:
             method_text += textwrap.indent(textwrap.dedent("""\
@@ -1349,14 +1350,14 @@ class MatlabWrapper(object):
 
         else:
             if isinstance(method.parent, instantiator.InstantiatedClass):
-                method_name = method.parent.cpp_class() + "::"
+                method_name = method.parent.to_cpp() + "::"
             else:
                 method_name = self._format_static_method(method, '::')
             method_name += method.name
 
         if "MeasureRange" in method_name:
             self._debug("method: {}, method: {}, inst: {}".format(
-                method_name, method.name, method.parent.cpp_class()))
+                method_name, method.name, method.parent.to_cpp()))
 
         obj = '  ' if return_1_name == 'void' else ''
         obj += '{}{}({})'.format(obj_start, method_name, params)
@@ -1447,7 +1448,7 @@ class MatlabWrapper(object):
             extra = collector_func[4]
 
             class_name = collector_func[0] + collector_func[1].name
-            class_name_separated = collector_func[1].cpp_class()
+            class_name_separated = collector_func[1].to_cpp()
             is_method = isinstance(extra, parser.Method)
             is_static_method = isinstance(extra, parser.StaticMethod)
 
@@ -1510,12 +1511,12 @@ class MatlabWrapper(object):
             elif extra == 'serialize':
                 body += self.wrap_collector_function_serialize(
                     collector_func[1].name,
-                    full_name=collector_func[1].cpp_class(),
+                    full_name=collector_func[1].to_cpp(),
                     namespace=collector_func[0])
             elif extra == 'deserialize':
                 body += self.wrap_collector_function_deserialize(
                     collector_func[1].name,
-                    full_name=collector_func[1].cpp_class(),
+                    full_name=collector_func[1].to_cpp(),
                     namespace=collector_func[0])
             elif is_method or is_static_method:
                 method_name = ''
@@ -1548,7 +1549,7 @@ class MatlabWrapper(object):
                     min1='-1' if is_method else '',
                     shared_obj=shared_obj,
                     method_name=method_name,
-                    num_args=len(extra.args.args_list),
+                    num_args=len(extra.args.list()),
                     body_args=body_args,
                     return_body=return_body)
 
@@ -1565,10 +1566,11 @@ class MatlabWrapper(object):
                   checkArguments("{function_name}",nargout,nargin,{len});
             ''').format(function_name=collector_func[1].name,
                         id=self.global_function_id,
-                        len=len(collector_func[1].args.args_list))
+                        len=len(collector_func[1].args.list()))
 
             body += self._wrapper_unwrap_arguments(collector_func[1].args)[1]
-            body += self.wrap_collector_function_return(collector_func[1]) + '\n}\n'
+            body += self.wrap_collector_function_return(
+                collector_func[1]) + '\n}\n'
 
             collector_function += body
 
@@ -1723,7 +1725,7 @@ class MatlabWrapper(object):
                     cls_insts += self._format_type_name(inst)
 
                 typedef_instances += 'typedef {original_class_name} {class_name_sep};\n' \
-                    .format(original_class_name=cls.cpp_class(),
+                    .format(original_class_name=cls.to_cpp(),
                             class_name_sep=cls.name)
 
                 class_name_sep = cls.name
@@ -1734,7 +1736,7 @@ class MatlabWrapper(object):
                     boost_class_export_guid += 'BOOST_CLASS_EXPORT_GUID({}, "{}");\n'.format(
                         class_name_sep, class_name)
             else:
-                class_name_sep = cls.cpp_class()
+                class_name_sep = cls.to_cpp()
                 class_name = self._format_class_name(cls)
 
                 if len(cls.original.namespaces()) > 1 and _has_serialization(
@@ -1780,7 +1782,7 @@ class MatlabWrapper(object):
 
             if queue_set_next_case:
                 ptr_ctor_frag += self.wrap_collector_function_upcast_from_void(
-                    id_val[1].name, idx, id_val[1].cpp_class())
+                    id_val[1].name, idx, id_val[1].to_cpp())
 
         wrapper_file += textwrap.dedent('''\
             {typedef_instances}
@@ -1872,10 +1874,14 @@ class MatlabWrapper(object):
                     namespace=namespace),
                                prefix='  ')
 
-    def wrap(self):
+    def wrap(self, content):
         """High level function to wrap the project."""
-        self.wrap_namespace(self.module)
-        self.generate_wrapper(self.module)
+        # Parse the contents of the interface file
+        parsed_result = parser.Module.parseString(content)
+        # Instantiate the module
+        module = instantiator.instantiate_namespace(parsed_result)
+        self.wrap_namespace(module)
+        self.generate_wrapper(module)
 
         return self.content
 

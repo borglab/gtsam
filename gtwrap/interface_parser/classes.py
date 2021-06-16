@@ -189,7 +189,7 @@ class Operator:
 
         # Check to ensure arg and return type are the same.
         if len(args) == 1 and self.operator not in ("()", "[]"):
-            assert args.args_list[0].ctype.typename.name == return_type.type1.typename.name, \
+            assert args.list()[0].ctype.typename.name == return_type.type1.typename.name, \
                 "Mixed type overloading not supported. Both arg and return type must be the same."
 
     def __repr__(self) -> str:

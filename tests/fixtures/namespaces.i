@@ -60,3 +60,14 @@ class ClassD {
 };
 
 int aGlobalVar;
+
+namespace gtsam {
+  #include <gtsam/nonlinear/Values.h>
+class Values {
+  Values();
+  Values(const gtsam::Values& other);
+
+  void insert(size_t j, Vector vector);
+  void insert(size_t j, Matrix matrix);
+};
+}
