@@ -102,7 +102,7 @@ class Namespace:
         res = []
         for namespace in found_namespaces:
             classes_and_funcs = (c for c in namespace.content
-                                 if isinstance(c, (Class, GlobalFunction)))
+                                 if isinstance(c, (Class, GlobalFunction, ForwardDeclaration)))
             res += [c for c in classes_and_funcs if c.name == typename.name]
         if not res:
             raise ValueError("Cannot find class {} in module!".format(

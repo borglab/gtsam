@@ -16,8 +16,6 @@ sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
 sys.path.append(
     osp.normpath(osp.abspath(osp.join(__file__, '../../../build/wrap'))))
 
-import gtwrap.interface_parser as parser
-import gtwrap.template_instantiator as instantiator
 from gtwrap.pybind_wrapper import PybindWrapper
 
 sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
@@ -37,23 +35,18 @@ class TestWrap(unittest.TestCase):
         """
         Common function to wrap content.
         """
-        module = parser.Module.parseString(content)
-
-        instantiator.instantiate_namespace_inplace(module)
-
         with open(osp.join(self.TEST_DIR,
                            "pybind_wrapper.tpl")) as template_file:
             module_template = template_file.read()
 
         # Create Pybind wrapper instance
-        wrapper = PybindWrapper(module=module,
-                                module_name=module_name,
+        wrapper = PybindWrapper(module_name=module_name,
                                 use_boost=False,
                                 top_module_namespaces=[''],
                                 ignore_classes=[''],
                                 module_template=module_template)
 
-        cc_content = wrapper.wrap()
+        cc_content = wrapper.wrap(content)
 
         output = osp.join(self.TEST_DIR, output_dir, module_name + ".cpp")
 
@@ -165,10 +158,10 @@ class TestWrap(unittest.TestCase):
         with open(osp.join(self.INTERFACE_DIR, 'enum.i'), 'r') as f:
             content = f.read()
 
-        output = self.wrap_content(content, 'enum_py',
-                                   self.PYTHON_ACTUAL_DIR)
+        output = self.wrap_content(content, 'enum_py', self.PYTHON_ACTUAL_DIR)
 
         self.compare_and_diff('enum_pybind.cpp', output)
+
 
 if __name__ == '__main__':
     unittest.main()
