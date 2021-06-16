@@ -36,6 +36,8 @@ typedef std::set<boost::shared_ptr<MultipleTemplatesIntDouble>*> Collector_Multi
 static Collector_MultipleTemplatesIntDouble collector_MultipleTemplatesIntDouble;
 typedef std::set<boost::shared_ptr<MultipleTemplatesIntFloat>*> Collector_MultipleTemplatesIntFloat;
 static Collector_MultipleTemplatesIntFloat collector_MultipleTemplatesIntFloat;
+typedef std::set<boost::shared_ptr<ForwardKinematics>*> Collector_ForwardKinematics;
+static Collector_ForwardKinematics collector_ForwardKinematics;
 typedef std::set<boost::shared_ptr<MyFactorPosePoint2>*> Collector_MyFactorPosePoint2;
 static Collector_MyFactorPosePoint2 collector_MyFactorPosePoint2;
 typedef std::set<boost::shared_ptr<gtsam::Point2>*> Collector_gtsamPoint2;
@@ -95,6 +97,12 @@ void _deleteAllObjects()
       iter != collector_MultipleTemplatesIntFloat.end(); ) {
     delete *iter;
     collector_MultipleTemplatesIntFloat.erase(iter++);
+    anyDeleted = true;
+  } }
+  { for(Collector_ForwardKinematics::iterator iter = collector_ForwardKinematics.begin();
+      iter != collector_ForwardKinematics.end(); ) {
+    delete *iter;
+    collector_ForwardKinematics.erase(iter++);
     anyDeleted = true;
   } }
   { for(Collector_MyFactorPosePoint2::iterator iter = collector_MyFactorPosePoint2.begin();

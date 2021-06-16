@@ -8,6 +8,7 @@
 #include <folder/path/to/Test.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Point3.h>
+#include <gtsam/nonlinear/Values.h>
 #include <path/to/ns1.h>
 #include <path/to/ns1/ClassB.h>
 #include <path/to/ns2.h>
@@ -43,6 +44,8 @@ typedef std::set<boost::shared_ptr<MultipleTemplatesIntDouble>*> Collector_Multi
 static Collector_MultipleTemplatesIntDouble collector_MultipleTemplatesIntDouble;
 typedef std::set<boost::shared_ptr<MultipleTemplatesIntFloat>*> Collector_MultipleTemplatesIntFloat;
 static Collector_MultipleTemplatesIntFloat collector_MultipleTemplatesIntFloat;
+typedef std::set<boost::shared_ptr<ForwardKinematics>*> Collector_ForwardKinematics;
+static Collector_ForwardKinematics collector_ForwardKinematics;
 typedef std::set<boost::shared_ptr<MyFactorPosePoint2>*> Collector_MyFactorPosePoint2;
 static Collector_MyFactorPosePoint2 collector_MyFactorPosePoint2;
 typedef std::set<boost::shared_ptr<gtsam::Point2>*> Collector_gtsamPoint2;
@@ -69,6 +72,8 @@ typedef std::set<boost::shared_ptr<ns2::ClassC>*> Collector_ns2ClassC;
 static Collector_ns2ClassC collector_ns2ClassC;
 typedef std::set<boost::shared_ptr<ClassD>*> Collector_ClassD;
 static Collector_ClassD collector_ClassD;
+typedef std::set<boost::shared_ptr<gtsam::Values>*> Collector_gtsamValues;
+static Collector_gtsamValues collector_gtsamValues;
 
 void _deleteAllObjects()
 {
@@ -122,6 +127,12 @@ void _deleteAllObjects()
       iter != collector_MultipleTemplatesIntFloat.end(); ) {
     delete *iter;
     collector_MultipleTemplatesIntFloat.erase(iter++);
+    anyDeleted = true;
+  } }
+  { for(Collector_ForwardKinematics::iterator iter = collector_ForwardKinematics.begin();
+      iter != collector_ForwardKinematics.end(); ) {
+    delete *iter;
+    collector_ForwardKinematics.erase(iter++);
     anyDeleted = true;
   } }
   { for(Collector_MyFactorPosePoint2::iterator iter = collector_MyFactorPosePoint2.begin();
@@ -200,6 +211,12 @@ void _deleteAllObjects()
       iter != collector_ClassD.end(); ) {
     delete *iter;
     collector_ClassD.erase(iter++);
+    anyDeleted = true;
+  } }
+  { for(Collector_gtsamValues::iterator iter = collector_gtsamValues.begin();
+      iter != collector_gtsamValues.end(); ) {
+    delete *iter;
+    collector_gtsamValues.erase(iter++);
     anyDeleted = true;
   } }
   if(anyDeleted)
@@ -491,6 +508,69 @@ void ClassD_deconstructor_25(int nargout, mxArray *out[], int nargin, const mxAr
   }
 }
 
+void gtsamValues_collectorInsertAndMakeBase_26(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  mexAtExit(&_deleteAllObjects);
+  typedef boost::shared_ptr<gtsam::Values> Shared;
+
+  Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
+  collector_gtsamValues.insert(self);
+}
+
+void gtsamValues_constructor_27(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  mexAtExit(&_deleteAllObjects);
+  typedef boost::shared_ptr<gtsam::Values> Shared;
+
+  Shared *self = new Shared(new gtsam::Values());
+  collector_gtsamValues.insert(self);
+  out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
+  *reinterpret_cast<Shared**> (mxGetData(out[0])) = self;
+}
+
+void gtsamValues_constructor_28(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  mexAtExit(&_deleteAllObjects);
+  typedef boost::shared_ptr<gtsam::Values> Shared;
+
+  gtsam::Values& other = *unwrap_shared_ptr< gtsam::Values >(in[0], "ptr_gtsamValues");
+  Shared *self = new Shared(new gtsam::Values(other));
+  collector_gtsamValues.insert(self);
+  out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
+  *reinterpret_cast<Shared**> (mxGetData(out[0])) = self;
+}
+
+void gtsamValues_deconstructor_29(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  typedef boost::shared_ptr<gtsam::Values> Shared;
+  checkArguments("delete_gtsamValues",nargout,nargin,1);
+  Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
+  Collector_gtsamValues::iterator item;
+  item = collector_gtsamValues.find(self);
+  if(item != collector_gtsamValues.end()) {
+    delete self;
+    collector_gtsamValues.erase(item);
+  }
+}
+
+void gtsamValues_insert_30(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("insert",nargout,nargin-1,2);
+  auto obj = unwrap_shared_ptr<gtsam::Values>(in[0], "ptr_gtsamValues");
+  size_t j = unwrap< size_t >(in[1]);
+  Vector vector = unwrap< Vector >(in[2]);
+  obj->insert(j,vector);
+}
+
+void gtsamValues_insert_31(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("insert",nargout,nargin-1,2);
+  auto obj = unwrap_shared_ptr<gtsam::Values>(in[0], "ptr_gtsamValues");
+  size_t j = unwrap< size_t >(in[1]);
+  Matrix matrix = unwrap< Matrix >(in[2]);
+  obj->insert(j,matrix);
+}
+
 
 void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
@@ -580,6 +660,24 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
       break;
     case 25:
       ClassD_deconstructor_25(nargout, out, nargin-1, in+1);
+      break;
+    case 26:
+      gtsamValues_collectorInsertAndMakeBase_26(nargout, out, nargin-1, in+1);
+      break;
+    case 27:
+      gtsamValues_constructor_27(nargout, out, nargin-1, in+1);
+      break;
+    case 28:
+      gtsamValues_constructor_28(nargout, out, nargin-1, in+1);
+      break;
+    case 29:
+      gtsamValues_deconstructor_29(nargout, out, nargin-1, in+1);
+      break;
+    case 30:
+      gtsamValues_insert_30(nargout, out, nargin-1, in+1);
+      break;
+    case 31:
+      gtsamValues_insert_31(nargout, out, nargin-1, in+1);
       break;
     }
   } catch(const std::exception& e) {
