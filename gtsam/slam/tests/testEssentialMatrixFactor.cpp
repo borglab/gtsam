@@ -747,63 +747,6 @@ TEST (EssentialMatrixFactor3, extraTest) {
   }
 }
 
-/*
-TEST(EssentialMatrixFactor4, minimizationWithStrongCal3BundlerPrior2) {
-  // Additional test with camera moving in positive X direction
-
-  NonlinearFactorGraph graph;
-  for (size_t i = 0; i < 5; i++)
-    graph.emplace_shared<EssentialMatrixFactor4<Cal3Bundler>>(1, 2, pA(i),
-                                                              pB(i), model1);
-
-  // Check error at ground truth
-  Values truth;
-  truth.insert(1, trueE);
-  truth.insert(2, trueK);
-  EXPECT_DOUBLES_EQUAL(0, graph.error(truth), 1e-8);
-
-  // Check error at initial estimate
-  Values initial;
-  EssentialMatrix initialE =
-      trueE.retract((Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1).finished());
-  Cal3Bundler initialK = trueK.retract((Vector(3) << 0.1, 0.1, 0.1).finished());
-  initial.insert(1, initialE);
-  initial.insert(2, initialK);
-
-#if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
-  EXPECT_DOUBLES_EQUAL(643.62, graph.error(initial), 1e-2);
-#else
-  EXPECT_DOUBLES_EQUAL(639.84, graph.error(initial), 1e-2); // TODO: fix this
-#endif
-
-  // add prior factor on calibration
-  Vector3 priorNoiseModelSigma;
-  priorNoiseModelSigma << 1, 1, 1;
-  graph.emplace_shared<PriorFactor<Cal3Bundler>>(2, trueK, noiseModel::Diagonal::Sigmas(priorNoiseModelSigma));
-
-  // Optimize
-  LevenbergMarquardtOptimizer optimizer(graph, initial);
-  Values result = optimizer.optimize();
-
-  // Check result
-  EssentialMatrix actualE = result.at<EssentialMatrix>(1);
-  Cal3Bundler actualK = result.at<Cal3Bundler>(2);
-  EXPECT(assert_equal(trueE, actualE, 1e-1)); // TODO: tighten tolerance
-  EXPECT(assert_equal(trueK, actualK, 1e-1)); // TODO: tighten tolerance
-
-  // Check error at result
-  EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-4);
-
-  // Check errors individually
-  for (size_t i = 0; i < 5; i++)
-    EXPECT_DOUBLES_EQUAL(
-        0,
-        actualE.error(EssentialMatrix::Homogeneous(actualK.calibrate(pA(i))),
-                      EssentialMatrix::Homogeneous(actualK.calibrate(pB(i)))),
-        1e-6);
-}
-*/
-
 }  // namespace example2
 
 /* ************************************************************************* */
