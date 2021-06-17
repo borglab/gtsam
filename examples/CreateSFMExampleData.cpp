@@ -120,32 +120,11 @@ void create18PointExample1() {
 }
 
 /* ************************************************************************* */
-void create11PointExample1() {
-  // Create two cameras poses
-  Rot3 aRb = Rot3::Yaw(M_PI_2);
-  Point3 aTb(10, 0, 0);
-  Pose3 pose1, pose2(aRb, aTb);
-
-  // Create test data, we need 11 points
-  vector<Point3> P;
-  P += Point3(0, 0, 100), Point3(-10, 0, 100), Point3(10, 0, 100),	//
-      Point3(0, 50, 50), Point3(0, -50, 50), Point3(-20, 0, 80),	// 
-      Point3(20, -50, 80), Point3(0, 0, 100), Point3(0, 0, 100),	//
-      Point3(-10, 50, 50), Point3(10, -50, 50);
-
-  // Assumes example is run in ${GTSAM_TOP}/build/examples
-  const string filename = "../../examples/Data/11pointExample1.txt";
-  Cal3Bundler K(500, 0, 0);
-  createExampleBALFile(filename, P, pose1, pose2, K);
-}
-
-/* ************************************************************************* */
 
 int main(int argc, char* argv[]) {
   create5PointExample1();
   create5PointExample2();
   create18PointExample1();
-  create11PointExample1();
   return 0;
 }
 
