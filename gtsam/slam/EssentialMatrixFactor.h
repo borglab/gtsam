@@ -294,12 +294,17 @@ class EssentialMatrixFactor3 : public EssentialMatrixFactor2 {
 // EssentialMatrixFactor3
 
 /**
- * Factor that evaluates algebraic epipolar error (K^-1 p)'E (K^-1 p) for given
- * essential matrix and calibration. The calibration is shared between two
+ * Binary factor that optimizes for E and calibration K using the algebraic
+ * epipolar error (K^-1 pA)'E (K^-1 pB). The calibration is shared between two
  * images.
- * 
- * Note: as correspondences between 2d coordinates can only recover 7 DoF, 
+ *
+ * Note: As correspondences between 2d coordinates can only recover 7 DoF,
  * this factor should always be used with a prior factor on calibration.
+ * Even with a prior, we can only optimize 2 DoF in the calibration. So the
+ * prior should have a noise model with very low sigma in the remaining
+ * dimensions. This has been tested to work on Cal3_S2. With Cal3Bundler, it
+ * works only with a strong prior (low sigma noisemodel) on all degrees of
+ * freedom.
  */
 template <class CALIBRATION>
 class EssentialMatrixFactor4
@@ -316,15 +321,14 @@ class EssentialMatrixFactor4
  public:
   /**
    *  Constructor
-   *  @param keyE Essential Matrix variable key
-   *  @param keyK Calibration variable key
+   *  @param keyE Essential Matrix (from camera B to A) variable key
+   *  @param keyK Calibration variable key (common for both cameras)
    *  @param pA point in first camera, in pixel coordinates
    *  @param pB point in second camera, in pixel coordinates
    *  @param model noise model is about dot product in ideal, homogeneous
    * coordinates
    */
-  EssentialMatrixFactor4(Key keyE, Key keyK,
-                         const Point2& pA, const Point2& pB,
+  EssentialMatrixFactor4(Key keyE, Key keyK, const Point2& pA, const Point2& pB,
                          const SharedNoiseModel& model)
       : Base(model, keyE, keyK), pA_(pA), pB_(pB) {}
 
@@ -345,7 +349,7 @@ class EssentialMatrixFactor4
   }
 
   /**
-   * @brief Calculate the algebraic epipolar error p' (K^-1)' E K p.
+   * @brief Calculate the algebraic epipolar error pA' (K^-1)' E K pB.
    *
    * @param E essential matrix for key keyE
    * @param K calibration (common for both images) for key keyK
