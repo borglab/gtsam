@@ -5,26 +5,24 @@
  * @date December 17, 2013
  */
 
-#include <gtsam/slam/EssentialMatrixFactor.h>
-
-#include <gtsam/slam/dataset.h>
-#include <gtsam/nonlinear/expressionTesting.h>
-#include <gtsam/nonlinear/ExpressionFactor.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/geometry/CalibratedCamera.h>
-#include <gtsam/geometry/Cal3_S2.h>
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
-
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/CalibratedCamera.h>
+#include <gtsam/nonlinear/ExpressionFactor.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/expressionTesting.h>
+#include <gtsam/slam/EssentialMatrixFactor.h>
+#include <gtsam/slam/dataset.h>
 
 using namespace std;
 using namespace gtsam;
 
 // Noise model for first type of factor is evaluating algebraic error
-noiseModel::Isotropic::shared_ptr model1 = noiseModel::Isotropic::Sigma(1,
-    0.01);
+noiseModel::Isotropic::shared_ptr model1 =
+    noiseModel::Isotropic::Sigma(1, 0.01);
 // Noise model for second type of factor is evaluating pixel coordinates
 noiseModel::Unit::shared_ptr model2 = noiseModel::Unit::Create(2);
 
@@ -45,30 +43,22 @@ PinholeCamera<Cal3_S2> camera2(data.cameras[1].pose(), trueK);
 Rot3 trueRotation(c1Rc2);
 Unit3 trueDirection(c1Tc2);
 EssentialMatrix trueE(trueRotation, trueDirection);
-double baseline = 0.1; // actual baseline of the camera
+double baseline = 0.1;  // actual baseline of the camera
 
-Point2 pA(size_t i) {
-  return data.tracks[i].measurements[0].second;
-}
-Point2 pB(size_t i) {
-  return data.tracks[i].measurements[1].second;
-}
-Vector vA(size_t i) {
-  return EssentialMatrix::Homogeneous(pA(i));
-}
-Vector vB(size_t i) {
-  return EssentialMatrix::Homogeneous(pB(i));
-}
+Point2 pA(size_t i) { return data.tracks[i].measurements[0].second; }
+Point2 pB(size_t i) { return data.tracks[i].measurements[1].second; }
+Vector vA(size_t i) { return EssentialMatrix::Homogeneous(pA(i)); }
+Vector vB(size_t i) { return EssentialMatrix::Homogeneous(pB(i)); }
 
 //*************************************************************************
-TEST (EssentialMatrixFactor, testData) {
+TEST(EssentialMatrixFactor, testData) {
   CHECK(readOK);
 
   // Check E matrix
   Matrix expected(3, 3);
   expected << 0, 0, 0, 0, 0, -0.1, 0.1, 0, 0;
-  Matrix aEb_matrix = skewSymmetric(c1Tc2.x(), c1Tc2.y(), c1Tc2.z())
-      * c1Rc2.matrix();
+  Matrix aEb_matrix =
+      skewSymmetric(c1Tc2.x(), c1Tc2.y(), c1Tc2.z()) * c1Rc2.matrix();
   EXPECT(assert_equal(expected, aEb_matrix, 1e-8));
 
   // Check some projections
@@ -90,7 +80,7 @@ TEST (EssentialMatrixFactor, testData) {
 }
 
 //*************************************************************************
-TEST (EssentialMatrixFactor, factor) {
+TEST(EssentialMatrixFactor, factor) {
   Key key(1);
   for (size_t i = 0; i < 5; i++) {
     EssentialMatrixFactor factor(key, pA(i), pB(i), model1);
@@ -104,10 +94,11 @@ TEST (EssentialMatrixFactor, factor) {
 
     // Use numerical derivatives to calculate the expected Jacobian
     Matrix Hexpected;
-    typedef Eigen::Matrix<double,1,1> Vector1;
+    typedef Eigen::Matrix<double, 1, 1> Vector1;
     Hexpected = numericalDerivative11<Vector1, EssentialMatrix>(
         boost::bind(&EssentialMatrixFactor::evaluateError, &factor, _1,
-            boost::none), trueE);
+                    boost::none),
+        trueE);
 
     // Verify the Jacobian is correct
     EXPECT(assert_equal(Hexpected, Hactual, 1e-8));
@@ -118,10 +109,10 @@ TEST (EssentialMatrixFactor, factor) {
 TEST(EssentialMatrixFactor, ExpressionFactor) {
   Key key(1);
   for (size_t i = 0; i < 5; i++) {
-    boost::function<double(const EssentialMatrix&, OptionalJacobian<1, 5>)> f =
+    boost::function<double(const EssentialMatrix &, OptionalJacobian<1, 5>)> f =
         boost::bind(&EssentialMatrix::error, _1, vA(i), vB(i), _2);
-    Expression<EssentialMatrix> E_(key); // leaf expression
-    Expression<double> expr(f, E_); // unary expression
+    Expression<EssentialMatrix> E_(key);  // leaf expression
+    Expression<double> expr(f, E_);       // unary expression
 
     // Test the derivatives using Paul's magic
     Values values;
@@ -144,13 +135,16 @@ TEST(EssentialMatrixFactor, ExpressionFactor) {
 TEST(EssentialMatrixFactor, ExpressionFactorRotationOnly) {
   Key key(1);
   for (size_t i = 0; i < 5; i++) {
-    boost::function<double(const EssentialMatrix&, OptionalJacobian<1, 5>)> f =
+    boost::function<double(const EssentialMatrix &, OptionalJacobian<1, 5>)> f =
         boost::bind(&EssentialMatrix::error, _1, vA(i), vB(i), _2);
-    boost::function<EssentialMatrix(const Rot3&, const Unit3&, OptionalJacobian<5, 3>,
-                                    OptionalJacobian<5, 2>)> g;
+    boost::function<EssentialMatrix(const Rot3 &, const Unit3 &,
+                                    OptionalJacobian<5, 3>,
+                                    OptionalJacobian<5, 2>)>
+        g;
     Expression<Rot3> R_(key);
     Expression<Unit3> d_(trueDirection);
-    Expression<EssentialMatrix> E_(&EssentialMatrix::FromRotationAndDirection, R_, d_);
+    Expression<EssentialMatrix> E_(&EssentialMatrix::FromRotationAndDirection,
+                                   R_, d_);
     Expression<double> expr(f, E_);
 
     // Test the derivatives using Paul's magic
@@ -171,7 +165,7 @@ TEST(EssentialMatrixFactor, ExpressionFactorRotationOnly) {
 }
 
 //*************************************************************************
-TEST (EssentialMatrixFactor, minimization) {
+TEST(EssentialMatrixFactor, minimization) {
   // Here we want to optimize directly on essential matrix constraints
   // Yi Ma's algorithm (Ma01ijcv) is a bit cumbersome to implement,
   // but GTSAM does the equivalent anyway, provided we give the right
@@ -190,8 +184,8 @@ TEST (EssentialMatrixFactor, minimization) {
 
   // Check error at initial estimate
   Values initial;
-  EssentialMatrix initialE = trueE.retract(
-      (Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1).finished());
+  EssentialMatrix initialE =
+      trueE.retract((Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1).finished());
   initial.insert(1, initialE);
 #if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
   EXPECT_DOUBLES_EQUAL(643.26, graph.error(initial), 1e-2);
@@ -214,11 +208,10 @@ TEST (EssentialMatrixFactor, minimization) {
   // Check errors individually
   for (size_t i = 0; i < 5; i++)
     EXPECT_DOUBLES_EQUAL(0, actual.error(vA(i), vB(i)), 1e-6);
-
 }
 
 //*************************************************************************
-TEST (EssentialMatrixFactor2, factor) {
+TEST(EssentialMatrixFactor2, factor) {
   for (size_t i = 0; i < 5; i++) {
     EssentialMatrixFactor2 factor(100, i, pA(i), pB(i), model2);
 
@@ -234,11 +227,13 @@ TEST (EssentialMatrixFactor2, factor) {
 
     // Use numerical derivatives to calculate the expected Jacobian
     Matrix Hexpected1, Hexpected2;
-    boost::function<Vector(const EssentialMatrix&, double)> f = boost::bind(
-        &EssentialMatrixFactor2::evaluateError, &factor, _1, _2, boost::none,
-        boost::none);
-    Hexpected1 = numericalDerivative21<Vector2, EssentialMatrix, double>(f, trueE, d);
-    Hexpected2 = numericalDerivative22<Vector2, EssentialMatrix, double>(f, trueE, d);
+    boost::function<Vector(const EssentialMatrix &, double)> f =
+        boost::bind(&EssentialMatrixFactor2::evaluateError, &factor, _1, _2,
+                    boost::none, boost::none);
+    Hexpected1 =
+        numericalDerivative21<Vector2, EssentialMatrix, double>(f, trueE, d);
+    Hexpected2 =
+        numericalDerivative22<Vector2, EssentialMatrix, double>(f, trueE, d);
 
     // Verify the Jacobian is correct
     EXPECT(assert_equal(Hexpected1, Hactual1, 1e-8));
@@ -247,7 +242,7 @@ TEST (EssentialMatrixFactor2, factor) {
 }
 
 //*************************************************************************
-TEST (EssentialMatrixFactor2, minimization) {
+TEST(EssentialMatrixFactor2, minimization) {
   // Here we want to optimize for E and inverse depths at the same time
 
   // We start with a factor graph and add constraints to it
@@ -290,8 +285,7 @@ TEST (EssentialMatrixFactor2, minimization) {
 EssentialMatrix bodyE = cRb.inverse() * trueE;
 
 //*************************************************************************
-TEST (EssentialMatrixFactor3, factor) {
-
+TEST(EssentialMatrixFactor3, factor) {
   for (size_t i = 0; i < 5; i++) {
     EssentialMatrixFactor3 factor(100, i, pA(i), pB(i), cRb, model2);
 
@@ -307,11 +301,13 @@ TEST (EssentialMatrixFactor3, factor) {
 
     // Use numerical derivatives to calculate the expected Jacobian
     Matrix Hexpected1, Hexpected2;
-    boost::function<Vector(const EssentialMatrix&, double)> f = boost::bind(
-        &EssentialMatrixFactor3::evaluateError, &factor, _1, _2, boost::none,
-        boost::none);
-    Hexpected1 = numericalDerivative21<Vector2, EssentialMatrix, double>(f, bodyE, d);
-    Hexpected2 = numericalDerivative22<Vector2, EssentialMatrix, double>(f, bodyE, d);
+    boost::function<Vector(const EssentialMatrix &, double)> f =
+        boost::bind(&EssentialMatrixFactor3::evaluateError, &factor, _1, _2,
+                    boost::none, boost::none);
+    Hexpected1 =
+        numericalDerivative21<Vector2, EssentialMatrix, double>(f, bodyE, d);
+    Hexpected2 =
+        numericalDerivative22<Vector2, EssentialMatrix, double>(f, bodyE, d);
 
     // Verify the Jacobian is correct
     EXPECT(assert_equal(Hexpected1, Hactual1, 1e-8));
@@ -320,13 +316,13 @@ TEST (EssentialMatrixFactor3, factor) {
 }
 
 //*************************************************************************
-TEST (EssentialMatrixFactor3, minimization) {
-
+TEST(EssentialMatrixFactor3, minimization) {
   // As before, we start with a factor graph and add constraints to it
   NonlinearFactorGraph graph;
   for (size_t i = 0; i < 5; i++)
     // but now we specify the rotation bRc
-    graph.emplace_shared<EssentialMatrixFactor3>(100, i, pA(i), pB(i), cRb, model2);
+    graph.emplace_shared<EssentialMatrixFactor3>(100, i, pA(i), pB(i), cRb,
+                                                 model2);
 
   // Check error at ground truth
   Values truth;
@@ -367,7 +363,6 @@ TEST(EssentialMatrixFactor4, factor) {
     Matrix HKactual;
     Vector actual = factor.evaluateError(trueE, trueK, HEactual, HKactual);
     EXPECT(assert_equal(expected, actual, 1e-7));
-
 
     // Use numerical derivatives to calculate the expected Jacobian
     Matrix HEexpected;
@@ -445,13 +440,14 @@ TEST(EssentialMatrixFactor4, minimizationWithStrongCal3S2Prior) {
   EssentialMatrix initialE =
       trueE.retract((Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1).finished());
   initial.insert(1, initialE);
-  initial.insert(2, trueK); 
+  initial.insert(2, trueK);
 
   // add prior factor for calibration
   Vector5 priorNoiseModelSigma;
   priorNoiseModelSigma << 10, 10, 10, 10, 10;
-  graph.emplace_shared<PriorFactor<Cal3_S2>>(2, trueK, noiseModel::Diagonal::Sigmas(priorNoiseModelSigma));
-  
+  graph.emplace_shared<PriorFactor<Cal3_S2>>(
+      2, trueK, noiseModel::Diagonal::Sigmas(priorNoiseModelSigma));
+
   LevenbergMarquardtOptimizer optimizer(graph, initial);
   Values result = optimizer.optimize();
 
@@ -476,8 +472,8 @@ TEST(EssentialMatrixFactor4, minimizationWithStrongCal3S2Prior) {
 //*************************************************************************
 TEST(EssentialMatrixFactor4, minimizationWithWeakCal3S2Prior) {
   // We need 7 points here as the prior on the focal length parameters is weak
-  // and the initialization is noisy. So in total we are trying to optimize 7 DOF, 
-  // with a strong prior on the remaining 3 DOF. 
+  // and the initialization is noisy. So in total we are trying to optimize 7
+  // DOF, with a strong prior on the remaining 3 DOF.
   NonlinearFactorGraph graph;
   for (size_t i = 0; i < 7; i++)
     graph.emplace_shared<EssentialMatrixFactor4<Cal3_S2>>(1, 2, pA(i), pB(i),
@@ -501,8 +497,9 @@ TEST(EssentialMatrixFactor4, minimizationWithWeakCal3S2Prior) {
   // add prior factor for calibration
   Vector5 priorNoiseModelSigma;
   priorNoiseModelSigma << 20, 20, 1, 1, 1;
-  graph.emplace_shared<PriorFactor<Cal3_S2>>(2, initialK, noiseModel::Diagonal::Sigmas(priorNoiseModelSigma));
-  
+  graph.emplace_shared<PriorFactor<Cal3_S2>>(
+      2, initialK, noiseModel::Diagonal::Sigmas(priorNoiseModelSigma));
+
   LevenbergMarquardtOptimizer optimizer(graph, initial);
   Values result = optimizer.optimize();
 
@@ -528,8 +525,8 @@ TEST(EssentialMatrixFactor4, minimizationWithWeakCal3S2Prior) {
 TEST(EssentialMatrixFactor4, minimizationWithStrongCal3BundlerPrior) {
   NonlinearFactorGraph graph;
   for (size_t i = 0; i < 5; i++)
-    graph.emplace_shared<EssentialMatrixFactor4<Cal3Bundler>>(1, 2, pA(i), pB(i),
-                                                          model1);
+    graph.emplace_shared<EssentialMatrixFactor4<Cal3Bundler>>(1, 2, pA(i),
+                                                              pB(i), model1);
   Cal3Bundler trueK(1, 0, 0, 0, 0, /*tolerance=*/5e-3);
   // Check error at ground truth
   Values truth;
@@ -548,8 +545,9 @@ TEST(EssentialMatrixFactor4, minimizationWithStrongCal3BundlerPrior) {
   // add prior factor for calibration
   Vector3 priorNoiseModelSigma;
   priorNoiseModelSigma << 0.1, 0.1, 0.1;
-  graph.emplace_shared<PriorFactor<Cal3Bundler>>(2, trueK, noiseModel::Diagonal::Sigmas(priorNoiseModelSigma));
-  
+  graph.emplace_shared<PriorFactor<Cal3Bundler>>(
+      2, trueK, noiseModel::Diagonal::Sigmas(priorNoiseModelSigma));
+
   LevenbergMarquardtOptimizer optimizer(graph, initial);
   Values result = optimizer.optimize();
 
@@ -571,7 +569,6 @@ TEST(EssentialMatrixFactor4, minimizationWithStrongCal3BundlerPrior) {
         1e-6);
 }
 
-
 }  // namespace example1
 
 //*************************************************************************
@@ -585,14 +582,10 @@ Rot3 aRb = data.cameras[1].pose().rotation();
 Point3 aTb = data.cameras[1].pose().translation();
 EssentialMatrix trueE(aRb, Unit3(aTb));
 
-double baseline = 10; // actual baseline of the camera
+double baseline = 10;  // actual baseline of the camera
 
-Point2 pA(size_t i) {
-  return data.tracks[i].measurements[0].second;
-}
-Point2 pB(size_t i) {
-  return data.tracks[i].measurements[1].second;
-}
+Point2 pA(size_t i) { return data.tracks[i].measurements[0].second; }
+Point2 pB(size_t i) { return data.tracks[i].measurements[1].second; }
 
 Cal3Bundler trueK = Cal3Bundler(500, 0, 0);
 boost::shared_ptr<Cal3Bundler> K = boost::make_shared<Cal3Bundler>(trueK);
@@ -622,8 +615,8 @@ TEST(EssentialMatrixFactor, extraMinimization) {
 
   // Check error at initial estimate
   Values initial;
-  EssentialMatrix initialE = trueE.retract(
-      (Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1).finished());
+  EssentialMatrix initialE =
+      trueE.retract((Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1).finished());
   initial.insert(1, initialE);
 
 #if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
@@ -647,11 +640,10 @@ TEST(EssentialMatrixFactor, extraMinimization) {
   // Check errors individually
   for (size_t i = 0; i < 5; i++)
     EXPECT_DOUBLES_EQUAL(0, actual.error(vA(i), vB(i)), 1e-6);
-
 }
 
 //*************************************************************************
-TEST (EssentialMatrixFactor2, extraTest) {
+TEST(EssentialMatrixFactor2, extraTest) {
   for (size_t i = 0; i < 5; i++) {
     EssentialMatrixFactor2 factor(100, i, pA(i), pB(i), model2, K);
 
@@ -667,11 +659,13 @@ TEST (EssentialMatrixFactor2, extraTest) {
 
     // Use numerical derivatives to calculate the expected Jacobian
     Matrix Hexpected1, Hexpected2;
-    boost::function<Vector(const EssentialMatrix&, double)> f = boost::bind(
-        &EssentialMatrixFactor2::evaluateError, &factor, _1, _2, boost::none,
-        boost::none);
-    Hexpected1 = numericalDerivative21<Vector2, EssentialMatrix, double>(f, trueE, d);
-    Hexpected2 = numericalDerivative22<Vector2, EssentialMatrix, double>(f, trueE, d);
+    boost::function<Vector(const EssentialMatrix &, double)> f =
+        boost::bind(&EssentialMatrixFactor2::evaluateError, &factor, _1, _2,
+                    boost::none, boost::none);
+    Hexpected1 =
+        numericalDerivative21<Vector2, EssentialMatrix, double>(f, trueE, d);
+    Hexpected2 =
+        numericalDerivative22<Vector2, EssentialMatrix, double>(f, trueE, d);
 
     // Verify the Jacobian is correct
     EXPECT(assert_equal(Hexpected1, Hactual1, 1e-6));
@@ -680,14 +674,15 @@ TEST (EssentialMatrixFactor2, extraTest) {
 }
 
 //*************************************************************************
-TEST (EssentialMatrixFactor2, extraMinimization) {
+TEST(EssentialMatrixFactor2, extraMinimization) {
   // Additional test with camera moving in positive X direction
 
   // We start with a factor graph and add constraints to it
   // Noise sigma is 1, assuming pixel measurements
   NonlinearFactorGraph graph;
   for (size_t i = 0; i < data.number_tracks(); i++)
-    graph.emplace_shared<EssentialMatrixFactor2>(100, i, pA(i), pB(i), model2, K);
+    graph.emplace_shared<EssentialMatrixFactor2>(100, i, pA(i), pB(i), model2,
+                                                 K);
 
   // Check error at ground truth
   Values truth;
@@ -715,8 +710,7 @@ TEST (EssentialMatrixFactor2, extraMinimization) {
 }
 
 //*************************************************************************
-TEST (EssentialMatrixFactor3, extraTest) {
-
+TEST(EssentialMatrixFactor3, extraTest) {
   // The "true E" in the body frame is
   EssentialMatrix bodyE = cRb.inverse() * trueE;
 
@@ -735,11 +729,13 @@ TEST (EssentialMatrixFactor3, extraTest) {
 
     // Use numerical derivatives to calculate the expected Jacobian
     Matrix Hexpected1, Hexpected2;
-    boost::function<Vector(const EssentialMatrix&, double)> f = boost::bind(
-        &EssentialMatrixFactor3::evaluateError, &factor, _1, _2, boost::none,
-        boost::none);
-    Hexpected1 = numericalDerivative21<Vector2, EssentialMatrix, double>(f, bodyE, d);
-    Hexpected2 = numericalDerivative22<Vector2, EssentialMatrix, double>(f, bodyE, d);
+    boost::function<Vector(const EssentialMatrix &, double)> f =
+        boost::bind(&EssentialMatrixFactor3::evaluateError, &factor, _1, _2,
+                    boost::none, boost::none);
+    Hexpected1 =
+        numericalDerivative21<Vector2, EssentialMatrix, double>(f, bodyE, d);
+    Hexpected2 =
+        numericalDerivative22<Vector2, EssentialMatrix, double>(f, bodyE, d);
 
     // Verify the Jacobian is correct
     EXPECT(assert_equal(Hexpected1, Hactual1, 1e-6));
@@ -755,4 +751,3 @@ int main() {
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-
