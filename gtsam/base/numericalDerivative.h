@@ -176,8 +176,7 @@ typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative21(const boost
 template<class Y, class X1, class X2>
 typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative21(Y (*h)(const X1&, const X2&), const X1& x1,
     const X2& x2, double delta = 1e-5) {
-  using namespace boost::placeholders;
-  return numericalDerivative21<Y, X1, X2>(boost::bind(h, _1, _2), x1, x2, delta);
+  return numericalDerivative21<Y, X1, X2>(boost::bind(h, boost::placeholders::_1, boost::placeholders::_2), x1, x2, delta);
 }
 
 /**
@@ -203,8 +202,7 @@ typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative22(boost::func
 template<class Y, class X1, class X2>
 typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative22(Y (*h)(const X1&, const X2&), const X1& x1,
     const X2& x2, double delta = 1e-5) {
-  using namespace boost::placeholders;
-  return numericalDerivative22<Y, X1, X2>(boost::bind(h, _1, _2), x1, x2, delta);
+  return numericalDerivative22<Y, X1, X2>(boost::bind(h, boost::placeholders::_1, boost::placeholders::_2), x1, x2, delta);
 }
 
 /**
@@ -232,8 +230,7 @@ typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative31(
 template<class Y, class X1, class X2, class X3>
 typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative31(Y (*h)(const X1&, const X2&, const X3&),
     const X1& x1, const X2& x2, const X3& x3, double delta = 1e-5) {
-  using namespace boost::placeholders;
-  return numericalDerivative31<Y, X1, X2, X3>(boost::bind(h, _1, _2, _3), x1,
+  return numericalDerivative31<Y, X1, X2, X3>(boost::bind(h, boost::placeholders::_1, boost::placeholders::_2, boost::placeholders::_3), x1,
       x2, x3, delta);
 }
 
@@ -262,8 +259,7 @@ typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative32(
 template<class Y, class X1, class X2, class X3>
 inline typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative32(Y (*h)(const X1&, const X2&, const X3&),
     const X1& x1, const X2& x2, const X3& x3, double delta = 1e-5) {
-  using namespace boost::placeholders;
-  return numericalDerivative32<Y, X1, X2, X3>(boost::bind(h, _1, _2, _3), x1,
+  return numericalDerivative32<Y, X1, X2, X3>(boost::bind(h, boost::placeholders::_1, boost::placeholders::_2, boost::placeholders::_3), x1,
       x2, x3, delta);
 }
 
@@ -292,8 +288,7 @@ typename internal::FixedSizeMatrix<Y,X3>::type numericalDerivative33(
 template<class Y, class X1, class X2, class X3>
 inline typename internal::FixedSizeMatrix<Y,X3>::type numericalDerivative33(Y (*h)(const X1&, const X2&, const X3&),
     const X1& x1, const X2& x2, const X3& x3, double delta = 1e-5) {
-  using namespace boost::placeholders;
-  return numericalDerivative33<Y, X1, X2, X3>(boost::bind(h, _1, _2, _3), x1,
+  return numericalDerivative33<Y, X1, X2, X3>(boost::bind(h, boost::placeholders::_1, boost::placeholders::_2, boost::placeholders::_3), x1,
       x2, x3, delta);
 }
 
@@ -322,8 +317,7 @@ typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative41(
 template<class Y, class X1, class X2, class X3, class X4>
 inline typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative41(Y (*h)(const X1&, const X2&, const X3&, const X4&),
     const X1& x1, const X2& x2, const X3& x3, const X4& x4, double delta = 1e-5) {
-  using namespace boost::placeholders;
-  return numericalDerivative41<Y, X1, X2, X3, X4>(boost::bind(h, _1, _2, _3, _4), x1, x2, x3, x4);
+  return numericalDerivative41<Y, X1, X2, X3, X4>(boost::bind(h, boost::placeholders::_1, boost::placeholders::_2, boost::placeholders::_3, boost::placeholders::_4), x1, x2, x3, x4);
 }
 
 /**
@@ -351,8 +345,7 @@ typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative42(
 template<class Y, class X1, class X2, class X3, class X4>
 inline typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative42(Y (*h)(const X1&, const X2&, const X3&, const X4&),
   const X1& x1, const X2& x2, const X3& x3, const X4& x4, double delta = 1e-5) {
-  using namespace boost::placeholders;
-  return numericalDerivative42<Y, X1, X2, X3, X4>(boost::bind(h, _1, _2, _3, _4), x1, x2, x3, x4);
+  return numericalDerivative42<Y, X1, X2, X3, X4>(boost::bind(h, boost::placeholders::_1, boost::placeholders::_2, boost::placeholders::_3, boost::placeholders::_4), x1, x2, x3, x4);
 }
 
 /**
@@ -380,8 +373,7 @@ typename internal::FixedSizeMatrix<Y,X3>::type numericalDerivative43(
 template<class Y, class X1, class X2, class X3, class X4>
 inline typename internal::FixedSizeMatrix<Y,X3>::type numericalDerivative43(Y (*h)(const X1&, const X2&, const X3&, const X4&),
     const X1& x1, const X2& x2, const X3& x3, const X4& x4, double delta = 1e-5) {
-  using namespace boost::placeholders;
-  return numericalDerivative43<Y, X1, X2, X3, X4>(boost::bind(h, _1, _2, _3, _4), x1, x2, x3, x4);
+  return numericalDerivative43<Y, X1, X2, X3, X4>(boost::bind(h, boost::placeholders::_1, boost::placeholders::_2, boost::placeholders::_3, boost::placeholders::_4), x1, x2, x3, x4);
 }
 
 /**
@@ -409,8 +401,7 @@ typename internal::FixedSizeMatrix<Y,X4>::type numericalDerivative44(
 template<class Y, class X1, class X2, class X3, class X4>
 inline typename internal::FixedSizeMatrix<Y,X4>::type numericalDerivative44(Y (*h)(const X1&, const X2&, const X3&, const X4&),
   const X1& x1, const X2& x2, const X3& x3, const X4& x4, double delta = 1e-5) {
-  using namespace boost::placeholders;
-  return numericalDerivative44<Y, X1, X2, X3, X4>(boost::bind(h, _1, _2, _3, _4), x1, x2, x3, x4);
+  return numericalDerivative44<Y, X1, X2, X3, X4>(boost::bind(h, boost::placeholders::_1, boost::placeholders::_2, boost::placeholders::_3, boost::placeholders::_4), x1, x2, x3, x4);
 }
 
 /**
@@ -439,8 +430,7 @@ typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative51(
 template<class Y, class X1, class X2, class X3, class X4, class X5>
 inline typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative51(Y (*h)(const X1&, const X2&, const X3&, const X4&, const X5&),
     const X1& x1, const X2& x2, const X3& x3, const X4& x4, const X5& x5, double delta = 1e-5) {
-  using namespace boost::placeholders;
-  return numericalDerivative51<Y, X1, X2, X3, X4, X5>(boost::bind(h, _1, _2, _3, _4, _5), x1, x2, x3, x4, x5);
+  return numericalDerivative51<Y, X1, X2, X3, X4, X5>(boost::bind(h, boost::placeholders::_1, boost::placeholders::_2, boost::placeholders::_3, boost::placeholders::_4, boost::placeholders::_5), x1, x2, x3, x4, x5);
 }
 
 /**
@@ -469,8 +459,7 @@ typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative52(
 template<class Y, class X1, class X2, class X3, class X4, class X5>
 inline typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative52(Y (*h)(const X1&, const X2&, const X3&, const X4&, const X5&),
     const X1& x1, const X2& x2, const X3& x3, const X4& x4, const X5& x5, double delta = 1e-5) {
-  using namespace boost::placeholders;
-  return numericalDerivative52<Y, X1, X2, X3, X4, X5>(boost::bind(h, _1, _2, _3, _4, _5), x1, x2, x3, x4, x5);
+  return numericalDerivative52<Y, X1, X2, X3, X4, X5>(boost::bind(h, boost::placeholders::_1, boost::placeholders::_2, boost::placeholders::_3, boost::placeholders::_4, boost::placeholders::_5), x1, x2, x3, x4, x5);
 }
 
 /**
@@ -499,8 +488,7 @@ typename internal::FixedSizeMatrix<Y,X3>::type numericalDerivative53(
 template<class Y, class X1, class X2, class X3, class X4, class X5>
 inline typename internal::FixedSizeMatrix<Y,X3>::type numericalDerivative53(Y (*h)(const X1&, const X2&, const X3&, const X4&, const X5&),
     const X1& x1, const X2& x2, const X3& x3, const X4& x4, const X5& x5, double delta = 1e-5) {
-  using namespace boost::placeholders;
-  return numericalDerivative53<Y, X1, X2, X3, X4, X5>(boost::bind(h, _1, _2, _3, _4, _5), x1, x2, x3, x4, x5);
+  return numericalDerivative53<Y, X1, X2, X3, X4, X5>(boost::bind(h, boost::placeholders::_1, boost::placeholders::_2, boost::placeholders::_3, boost::placeholders::_4, boost::placeholders::_5), x1, x2, x3, x4, x5);
 }
 
 /**
@@ -529,8 +517,7 @@ typename internal::FixedSizeMatrix<Y,X4>::type numericalDerivative54(
 template<class Y, class X1, class X2, class X3, class X4, class X5>
 inline typename internal::FixedSizeMatrix<Y,X4>::type numericalDerivative54(Y (*h)(const X1&, const X2&, const X3&, const X4&, const X5&),
     const X1& x1, const X2& x2, const X3& x3, const X4& x4, const X5& x5, double delta = 1e-5) {
-  using namespace boost::placeholders;
-  return numericalDerivative54<Y, X1, X2, X3, X4, X5>(boost::bind(h, _1, _2, _3, _4, _5), x1, x2, x3, x4, x5);
+  return numericalDerivative54<Y, X1, X2, X3, X4, X5>(boost::bind(h, boost::placeholders::_1, boost::placeholders::_2, boost::placeholders::_3, boost::placeholders::_4, boost::placeholders::_5), x1, x2, x3, x4, x5);
 }
 
 /**
@@ -559,8 +546,7 @@ typename internal::FixedSizeMatrix<Y,X5>::type numericalDerivative55(
 template<class Y, class X1, class X2, class X3, class X4, class X5>
 inline typename internal::FixedSizeMatrix<Y,X5>::type numericalDerivative55(Y (*h)(const X1&, const X2&, const X3&, const X4&, const X5&),
     const X1& x1, const X2& x2, const X3& x3, const X4& x4, const X5& x5, double delta = 1e-5) {
-  using namespace boost::placeholders;
-  return numericalDerivative55<Y, X1, X2, X3, X4, X5>(boost::bind(h, _1, _2, _3, _4, _5), x1, x2, x3, x4, x5);
+  return numericalDerivative55<Y, X1, X2, X3, X4, X5>(boost::bind(h, boost::placeholders::_1, boost::placeholders::_2, boost::placeholders::_3, boost::placeholders::_4, boost::placeholders::_5), x1, x2, x3, x4, x5);
 }
 
 /**
@@ -590,8 +576,7 @@ typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative61(
 template<class Y, class X1, class X2, class X3, class X4, class X5, class X6>
 inline typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative61(Y (*h)(const X1&, const X2&, const X3&, const X4&, const X5&, const X6&),
     const X1& x1, const X2& x2, const X3& x3, const X4& x4, const X5& x5, const X6& x6, double delta = 1e-5) {
-  using namespace boost::placeholders;
-  return numericalDerivative61<Y, X1, X2, X3, X4, X5, X6>(boost::bind(h, _1, _2, _3, _4, _5, _6), x1, x2, x3, x4, x5, x6);
+  return numericalDerivative61<Y, X1, X2, X3, X4, X5, X6>(boost::bind(h, boost::placeholders::_1, boost::placeholders::_2, boost::placeholders::_3, boost::placeholders::_4, boost::placeholders::_5, boost::placeholders::_6), x1, x2, x3, x4, x5, x6);
 }
 
 /**
@@ -621,8 +606,7 @@ typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative62(
 template<class Y, class X1, class X2, class X3, class X4, class X5, class X6>
 inline typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative62(Y (*h)(const X1&, const X2&, const X3&, const X4&, const X5&, const X6&),
     const X1& x1, const X2& x2, const X3& x3, const X4& x4, const X5& x5, const X6& x6, double delta = 1e-5) {
-  using namespace boost::placeholders;
-  return numericalDerivative62<Y, X1, X2, X3, X4, X5, X6>(boost::bind(h, _1, _2, _3, _4, _5, _6), x1, x2, x3, x4, x5, x6);
+  return numericalDerivative62<Y, X1, X2, X3, X4, X5, X6>(boost::bind(h, boost::placeholders::_1, boost::placeholders::_2, boost::placeholders::_3, boost::placeholders::_4, boost::placeholders::_5, boost::placeholders::_6), x1, x2, x3, x4, x5, x6);
 }
 
 /**
@@ -652,8 +636,7 @@ typename internal::FixedSizeMatrix<Y,X3>::type numericalDerivative63(
 template<class Y, class X1, class X2, class X3, class X4, class X5, class X6>
 inline typename internal::FixedSizeMatrix<Y,X3>::type numericalDerivative63(Y (*h)(const X1&, const X2&, const X3&, const X4&, const X5&, const X6&),
     const X1& x1, const X2& x2, const X3& x3, const X4& x4, const X5& x5, const X6& x6, double delta = 1e-5) {
-  using namespace boost::placeholders;
-  return numericalDerivative63<Y, X1, X2, X3, X4, X5, X6>(boost::bind(h, _1, _2, _3, _4, _5, _6), x1, x2, x3, x4, x5, x6);
+  return numericalDerivative63<Y, X1, X2, X3, X4, X5, X6>(boost::bind(h, boost::placeholders::_1, boost::placeholders::_2, boost::placeholders::_3, boost::placeholders::_4, boost::placeholders::_5, boost::placeholders::_6), x1, x2, x3, x4, x5, x6);
 }
 
 /**
@@ -683,8 +666,7 @@ typename internal::FixedSizeMatrix<Y,X4>::type numericalDerivative64(
 template<class Y, class X1, class X2, class X3, class X4, class X5, class X6>
 inline typename internal::FixedSizeMatrix<Y,X4>::type numericalDerivative64(Y (*h)(const X1&, const X2&, const X3&, const X4&, const X5&, const X6&),
     const X1& x1, const X2& x2, const X3& x3, const X4& x4, const X5& x5, const X6& x6, double delta = 1e-5) {
-  using namespace boost::placeholders;
-  return numericalDerivative64<Y, X1, X2, X3, X4, X5>(boost::bind(h, _1, _2, _3, _4, _5, _6), x1, x2, x3, x4, x5, x6);
+  return numericalDerivative64<Y, X1, X2, X3, X4, X5>(boost::bind(h, boost::placeholders::_1, boost::placeholders::_2, boost::placeholders::_3, boost::placeholders::_4, boost::placeholders::_5, boost::placeholders::_6), x1, x2, x3, x4, x5, x6);
 }
 
 /**
@@ -714,8 +696,7 @@ typename internal::FixedSizeMatrix<Y,X5>::type numericalDerivative65(
 template<class Y, class X1, class X2, class X3, class X4, class X5, class X6>
 inline typename internal::FixedSizeMatrix<Y,X5>::type numericalDerivative65(Y (*h)(const X1&, const X2&, const X3&, const X4&, const X5&, const X6&),
     const X1& x1, const X2& x2, const X3& x3, const X4& x4, const X5& x5, const X6& x6, double delta = 1e-5) {
-  using namespace boost::placeholders;
-  return numericalDerivative65<Y, X1, X2, X3, X4, X5, X6>(boost::bind(h, _1, _2, _3, _4, _5, _6), x1, x2, x3, x4, x5, x6);
+  return numericalDerivative65<Y, X1, X2, X3, X4, X5, X6>(boost::bind(h, boost::placeholders::_1, boost::placeholders::_2, boost::placeholders::_3, boost::placeholders::_4, boost::placeholders::_5, boost::placeholders::_6), x1, x2, x3, x4, x5, x6);
 }
 
 /**
@@ -746,8 +727,7 @@ typename internal::FixedSizeMatrix<Y, X6>::type numericalDerivative66(
 template<class Y, class X1, class X2, class X3, class X4, class X5, class X6>
 inline typename internal::FixedSizeMatrix<Y,X6>::type numericalDerivative66(Y (*h)(const X1&, const X2&, const X3&, const X4&, const X5&, const X6&),
     const X1& x1, const X2& x2, const X3& x3, const X4& x4, const X5& x5, const X6& x6, double delta = 1e-5) {
-  using namespace boost::placeholders;
-  return numericalDerivative66<Y, X1, X2, X3, X4, X5, X6>(boost::bind(h, _1, _2, _3, _4, _5, _6), x1, x2, x3, x4, x5, x6);
+  return numericalDerivative66<Y, X1, X2, X3, X4, X5, X6>(boost::bind(h, boost::placeholders::_1, boost::placeholders::_2, boost::placeholders::_3, boost::placeholders::_4, boost::placeholders::_5, boost::placeholders::_6), x1, x2, x3, x4, x5, x6);
 }
 
 /**
@@ -820,15 +800,14 @@ inline typename internal::FixedSizeMatrix<X1,X1>::type numericalHessian211(
     boost::function<double(const X1&, const X2&)> f, const X1& x1, const X2& x2,
     double delta = 1e-5) {
 
-  using namespace boost::placeholders;
   typedef typename internal::FixedSizeMatrix<X1>::type Vector;
 
   Vector (*numGrad)(boost::function<double(const X1&)>, const X1&,
       double) = &numericalGradient<X1>;
-  boost::function<double(const X1&)> f2(boost::bind(f, _1, boost::cref(x2)));
+  boost::function<double(const X1&)> f2(boost::bind(f, boost::placeholders::_1, boost::cref(x2)));
 
   return numericalDerivative11<Vector, X1>(
-      boost::function<Vector(const X1&)>(boost::bind(numGrad, f2, _1, delta)),
+      boost::function<Vector(const X1&)>(boost::bind(numGrad, f2, boost::placeholders::_1, delta)),
       x1, delta);
 }
 
@@ -843,14 +822,13 @@ template<class X1, class X2>
 inline typename internal::FixedSizeMatrix<X2,X2>::type numericalHessian222(
     boost::function<double(const X1&, const X2&)> f, const X1& x1, const X2& x2,
     double delta = 1e-5) {
-  using namespace boost::placeholders;
   typedef typename internal::FixedSizeMatrix<X2>::type Vector;
   Vector (*numGrad)(boost::function<double(const X2&)>, const X2&,
       double) = &numericalGradient<X2>;
-  boost::function<double(const X2&)> f2(boost::bind(f, boost::cref(x1), _1));
+  boost::function<double(const X2&)> f2(boost::bind(f, boost::cref(x1), boost::placeholders::_1));
 
   return numericalDerivative11<Vector, X2>(
-      boost::function<Vector(const X2&)>(boost::bind(numGrad, f2, _1, delta)),
+      boost::function<Vector(const X2&)>(boost::bind(numGrad, f2, boost::placeholders::_1, delta)),
       x2, delta);
 }
 
@@ -869,14 +847,13 @@ template<class X1, class X2, class X3>
 inline typename internal::FixedSizeMatrix<X1,X1>::type numericalHessian311(
     boost::function<double(const X1&, const X2&, const X3&)> f, const X1& x1,
     const X2& x2, const X3& x3, double delta = 1e-5) {
-  using namespace boost::placeholders;
   typedef typename internal::FixedSizeMatrix<X1>::type Vector;
   Vector (*numGrad)(boost::function<double(const X1&)>, const X1&,
       double) = &numericalGradient<X1>;
-  boost::function<double(const X1&)> f2(boost::bind(f, _1, boost::cref(x2), boost::cref(x3)));
+  boost::function<double(const X1&)> f2(boost::bind(f, boost::placeholders::_1, boost::cref(x2), boost::cref(x3)));
 
   return numericalDerivative11<Vector, X1>(
-      boost::function<Vector(const X1&)>(boost::bind(numGrad, f2, _1, delta)),
+      boost::function<Vector(const X1&)>(boost::bind(numGrad, f2, boost::placeholders::_1, delta)),
       x1, delta);
 }
 
@@ -893,14 +870,13 @@ template<class X1, class X2, class X3>
 inline typename internal::FixedSizeMatrix<X2,X2>::type numericalHessian322(
     boost::function<double(const X1&, const X2&, const X3&)> f, const X1& x1,
     const X2& x2, const X3& x3, double delta = 1e-5) {
-  using namespace boost::placeholders;
   typedef typename internal::FixedSizeMatrix<X2>::type Vector;
   Vector (*numGrad)(boost::function<double(const X2&)>, const X2&,
       double) = &numericalGradient<X2>;
-  boost::function<double(const X2&)> f2(boost::bind(f, boost::cref(x1), _1, boost::cref(x3)));
+  boost::function<double(const X2&)> f2(boost::bind(f, boost::cref(x1), boost::placeholders::_1, boost::cref(x3)));
 
   return numericalDerivative11<Vector, X2>(
-      boost::function<Vector(const X2&)>(boost::bind(numGrad, f2, _1, delta)),
+      boost::function<Vector(const X2&)>(boost::bind(numGrad, f2, boost::placeholders::_1, delta)),
       x2, delta);
 }
 
@@ -917,14 +893,13 @@ template<class X1, class X2, class X3>
 inline typename internal::FixedSizeMatrix<X3,X3>::type numericalHessian333(
     boost::function<double(const X1&, const X2&, const X3&)> f, const X1& x1,
     const X2& x2, const X3& x3, double delta = 1e-5) {
-  using namespace boost::placeholders;
   typedef typename internal::FixedSizeMatrix<X3>::type Vector;
   Vector (*numGrad)(boost::function<double(const X3&)>, const X3&,
       double) = &numericalGradient<X3>;
-  boost::function<double(const X3&)> f2(boost::bind(f, boost::cref(x1), boost::cref(x2), _1));
+  boost::function<double(const X3&)> f2(boost::bind(f, boost::cref(x1), boost::cref(x2), boost::placeholders::_1));
 
   return numericalDerivative11<Vector, X3>(
-      boost::function<Vector(const X3&)>(boost::bind(numGrad, f2, _1, delta)),
+      boost::function<Vector(const X3&)>(boost::bind(numGrad, f2, boost::placeholders::_1, delta)),
       x3, delta);
 }
 
@@ -941,9 +916,8 @@ template<class X1, class X2, class X3>
 inline typename internal::FixedSizeMatrix<X1,X2>::type numericalHessian312(
     boost::function<double(const X1&, const X2&, const X3&)> f, const X1& x1,
     const X2& x2, const X3& x3, double delta = 1e-5) {
-  using namespace boost::placeholders;
   return numericalHessian212<X1, X2>(
-      boost::function<double(const X1&, const X2&)>(boost::bind(f, _1, _2, boost::cref(x3))),
+      boost::function<double(const X1&, const X2&)>(boost::bind(f, boost::placeholders::_1, boost::placeholders::_2, boost::cref(x3))),
       x1, x2, delta);
 }
 
@@ -951,9 +925,8 @@ template<class X1, class X2, class X3>
 inline typename internal::FixedSizeMatrix<X1,X3>::type numericalHessian313(
     boost::function<double(const X1&, const X2&, const X3&)> f, const X1& x1,
     const X2& x2, const X3& x3, double delta = 1e-5) {
-  using namespace boost::placeholders;
   return numericalHessian212<X1, X3>(
-      boost::function<double(const X1&, const X3&)>(boost::bind(f, _1, boost::cref(x2), _2)),
+      boost::function<double(const X1&, const X3&)>(boost::bind(f, boost::placeholders::_1, boost::cref(x2), boost::placeholders::_2)),
       x1, x3, delta);
 }
 
@@ -961,9 +934,8 @@ template<class X1, class X2, class X3>
 inline typename internal::FixedSizeMatrix<X2,X3>::type numericalHessian323(
     boost::function<double(const X1&, const X2&, const X3&)> f, const X1& x1,
     const X2& x2, const X3& x3, double delta = 1e-5) {
-  using namespace boost::placeholders;
   return numericalHessian212<X2, X3>(
-      boost::function<double(const X2&, const X3&)>(boost::bind(f, boost::cref(x1), _1, _2)),
+      boost::function<double(const X2&, const X3&)>(boost::bind(f, boost::cref(x1), boost::placeholders::_1, boost::placeholders::_2)),
       x2, x3, delta);
 }
 
