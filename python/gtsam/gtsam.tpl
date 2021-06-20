@@ -18,7 +18,7 @@
 #include <pybind11/iostream.h>
 #include "gtsam/config.h"
 #include "gtsam/base/serialization.h"
-#include "gtsam/nonlinear/utilities.h"  // for RedirectCout.
+#include "gtsam/base/utilities.h"  // for RedirectCout.
 
 // These are the included headers listed in `gtsam.i`
 {includes}
@@ -32,20 +32,24 @@
 
 // Preamble for STL classes
 // TODO(fan): make this automatic
-#include "python/gtsam/preamble.h"
+#include "python/gtsam/preamble/{module_name}.h"
 
 using namespace std;
 
 namespace py = pybind11;
 
-PYBIND11_MODULE({module_name}, m_) {{
+{submodules}
+
+{module_def} {{
     m_.doc() = "pybind11 wrapper of {module_name}";
+
+{submodules_init}
 
 {wrapped_namespace}
 
 // Specializations for STL classes
 // TODO(fan): make this automatic
-#include "python/gtsam/specializations.h"
+#include "python/gtsam/specializations/{module_name}.h"
 
 }}
 
