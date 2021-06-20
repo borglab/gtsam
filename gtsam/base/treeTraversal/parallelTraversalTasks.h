@@ -45,6 +45,7 @@ namespace gtsam {
         tbb::task_group& tg;
         bool makeNewTasks;
 
+        // Keep track of order phase across multiple calls to the same functor
         mutable bool isPostOrderPhase;
 
         PreOrderTask(const boost::shared_ptr<NODE>& treeNode, const boost::shared_ptr<DATA>& myData,
