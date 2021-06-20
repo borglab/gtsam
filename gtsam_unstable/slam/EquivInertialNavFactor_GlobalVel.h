@@ -305,8 +305,6 @@ public:
       boost::optional<Matrix&> H4 = boost::none,
       boost::optional<Matrix&> H5 = boost::none) const override {
 
-    using namespace boost::placeholders;
-
     // TODO: Write analytical derivative calculations
     // Jacobian w.r.t. Pose1
     if (H1){
@@ -422,8 +420,6 @@ public:
       boost::optional<POSE> p_body_P_sensor = boost::none){
     // Note: all delta terms refer to an IMU\sensor system at t0
     // Note: Earth-related terms are not accounted here but are incorporated in predict functions.
-
-    using namespace boost::placeholders;
 
     POSE body_P_sensor = POSE();
     bool flag_use_body_P_sensor = false;
