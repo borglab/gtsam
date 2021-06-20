@@ -108,8 +108,9 @@ public:
 
     if (H1) {
       (*H1) = numericalDerivative11<Vector, Pose3>(
-          boost::bind(&InvDepthFactorVariant1::inverseDepthError, this, boost::placeholders::_1,
-              landmark), pose);
+          boost::bind(&InvDepthFactorVariant1::inverseDepthError, this,
+                      boost::placeholders::_1, landmark),
+          pose);
     }
     if (H2) {
       (*H2) = numericalDerivative11<Vector, Vector6>(
