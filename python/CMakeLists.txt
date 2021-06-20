@@ -50,8 +50,22 @@ set(ignore
     gtsam::BinaryMeasurementsUnit3
     gtsam::KeyPairDoubleMap)
 
+set(interface_headers
+    ${PROJECT_SOURCE_DIR}/gtsam/gtsam.i
+    ${PROJECT_SOURCE_DIR}/gtsam/base/base.i
+    ${PROJECT_SOURCE_DIR}/gtsam/geometry/geometry.i
+    ${PROJECT_SOURCE_DIR}/gtsam/linear/linear.i
+    ${PROJECT_SOURCE_DIR}/gtsam/nonlinear/nonlinear.i
+    ${PROJECT_SOURCE_DIR}/gtsam/symbolic/symbolic.i
+    ${PROJECT_SOURCE_DIR}/gtsam/sam/sam.i
+    ${PROJECT_SOURCE_DIR}/gtsam/slam/slam.i
+    ${PROJECT_SOURCE_DIR}/gtsam/sfm/sfm.i
+    ${PROJECT_SOURCE_DIR}/gtsam/navigation/navigation.i
+)
+
+
 pybind_wrap(gtsam_py # target
-            ${PROJECT_SOURCE_DIR}/gtsam/gtsam.i # interface_header
+            "${interface_headers}" # interface_headers
             "gtsam.cpp" # generated_cpp
             "gtsam" # module_name
             "gtsam" # top_namespace
