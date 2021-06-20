@@ -26,6 +26,8 @@
 
 #include "imuFactorTesting.h"
 
+using namespace boost::placeholders;
+
 static const double kDt = 0.1;
 
 Vector9 f(const Vector9& zeta, const Vector3& a, const Vector3& w) {
@@ -105,9 +107,7 @@ TEST(TangentPreintegration, computeError) {
   pim.computeError(x1, x2, bias, aH1, aH2, aH3);
   boost::function<Vector9(const NavState&, const NavState&,
                           const imuBias::ConstantBias&)> f =
-      boost::bind(&TangentPreintegration::computeError, pim,
-                  boost::placeholders::_1, boost::placeholders::_2,
-                  boost::placeholders::_3,
+      boost::bind(&TangentPreintegration::computeError, pim, _1, _2, _3,
                   boost::none, boost::none, boost::none);
   // NOTE(frank): tolerance of 1e-3 on H1 because approximate away from 0
   EXPECT(assert_equal(numericalDerivative31(f, x1, x2, bias), aH1, 1e-9));
