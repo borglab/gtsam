@@ -26,6 +26,8 @@
 
 #include "imuFactorTesting.h"
 
+using namespace boost::placeholders;
+
 namespace testing {
 // Create default parameters with Z-down and above noise parameters
 static boost::shared_ptr<PreintegrationParams> Params() {
@@ -98,9 +100,7 @@ TEST(ManifoldPreintegration, computeError) {
   pim.computeError(x1, x2, bias, aH1, aH2, aH3);
   boost::function<Vector9(const NavState&, const NavState&,
                           const imuBias::ConstantBias&)> f =
-      boost::bind(&ManifoldPreintegration::computeError, pim,
-                  boost::placeholders::_1, boost::placeholders::_2,
-                  boost::placeholders::_3,
+      boost::bind(&ManifoldPreintegration::computeError, pim, _1, _2, _3,
                   boost::none, boost::none, boost::none);
   // NOTE(frank): tolerance of 1e-3 on H1 because approximate away from 0
   EXPECT(assert_equal(numericalDerivative31(f, x1, x2, bias), aH1, 1e-9));
