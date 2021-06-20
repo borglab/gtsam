@@ -88,7 +88,7 @@ public:
    */
   NonlinearEquality(Key j, const T& feasible,
       const CompareFunction &_compare = boost::bind(traits<T>::Equals,
-          boost::placeholders::_1,boost::placeholders::_2,1e-9)) :
+          boost::placeholders::_1, boost::placeholders::_2, 1e-9)) :
       Base(noiseModel::Constrained::All(traits<T>::GetDimension(feasible)),
           j), feasible_(feasible), allow_error_(false), error_gain_(0.0), //
       compare_(_compare) {
@@ -99,7 +99,7 @@ public:
    */
   NonlinearEquality(Key j, const T& feasible, double error_gain,
       const CompareFunction &_compare = boost::bind(traits<T>::Equals,
-          boost::placeholders::_1,boost::placeholders::_2,1e-9)) :
+          boost::placeholders::_1, boost::placeholders::_2, 1e-9)) :
       Base(noiseModel::Constrained::All(traits<T>::GetDimension(feasible)),
           j), feasible_(feasible), allow_error_(true), error_gain_(error_gain), //
       compare_(_compare) {
@@ -361,4 +361,3 @@ struct traits<NonlinearEquality2<VALUE> > : Testable<NonlinearEquality2<VALUE> >
 
 
 }// namespace gtsam
-
