@@ -315,7 +315,7 @@ class EssentialMatrixFactor4
   typedef NoiseModelFactor2<EssentialMatrix, CALIBRATION> Base;
   typedef EssentialMatrixFactor4 This;
 
-  static const int DimK = FixedDimension<CALIBRATION>::value;
+  static constexpr int DimK = FixedDimension<CALIBRATION>::value;
   typedef Eigen::Matrix<double, 2, DimK> JacobianCalibration;
 
  public:
