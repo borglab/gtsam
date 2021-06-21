@@ -63,8 +63,8 @@ void create5PointExample1() {
   Pose3 pose1, pose2(aRb, aTb);
 
   // Create test data, we need at least 5 points
-  vector<Point3> points = {{0, 0, 1}, {-0.1, 0, 1}, {0.1, 0, 1},  //
-      {0, 0.5, 0.5}, {0, -0.5, 0.5}};
+  vector<Point3> points = {
+      {0, 0, 1}, {-0.1, 0, 1}, {0.1, 0, 1}, {0, 0.5, 0.5}, {0, -0.5, 0.5}};
 
   // Assumes example is run in ${GTSAM_TOP}/build/examples
   const string filename = "../../examples/Data/5pointExample1.txt";
@@ -80,9 +80,9 @@ void create5PointExample2() {
   Pose3 pose1, pose2(aRb, aTb);
 
   // Create test data, we need at least 5 points
-  vector<Point3> points = {{0, 0, 100}, {-10, 0, 100}, {10, 0, 100},  //
-	  {0, 50, 50}, {0, -50, 50}, {-20, 0, 80},
-          {20, -50, 80}};
+  vector<Point3> points = {{0, 0, 100},  {-10, 0, 100}, {10, 0, 100},  //
+                           {0, 50, 50},  {0, -50, 50},  {-20, 0, 80},  //
+                           {20, -50, 80}};
 
   // Assumes example is run in ${GTSAM_TOP}/build/examples
   const string filename = "../../examples/Data/5pointExample2.txt";
@@ -99,12 +99,13 @@ void create18PointExample1() {
   Pose3 pose1, pose2(aRb, aTb);
 
   // Create test data, we need 15 points
-  vector<Point3> points = {{0, 0, 1}, {-0.1, 0, 1}, {0.1, 0, 1},              //
-	  {0, 0.5, 0.5}, {0, -0.5, 0.5}, {-1, -0.5, 2},       //
-          {-1, 0.5, 2}, {0.25, -0.5, 1.5}, {0.25, 0.5, 1.5},  //
-          {-0.1, -0.5, 0.5}, {0.1, -0.5, 1}, {0.1, 0.5, 1},   //
-          {-0.1, 0, 0.5}, {-0.1, 0.5, 0.5}, {0, 0, 0.5},      //
-          {0.1, -0.5, 0.5}, {0.1, 0, 0.5}, {0.1, 0.5, 0.5}};
+  vector<Point3> points = {
+      {0, 0, 1},         {-0.1, 0, 1},      {0.1, 0, 1},       //
+      {0, 0.5, 0.5},     {0, -0.5, 0.5},    {-1, -0.5, 2},     //
+      {-1, 0.5, 2},      {0.25, -0.5, 1.5}, {0.25, 0.5, 1.5},  //
+      {-0.1, -0.5, 0.5}, {0.1, -0.5, 1},    {0.1, 0.5, 1},     //
+      {-0.1, 0, 0.5},    {-0.1, 0.5, 0.5},  {0, 0, 0.5},       //
+      {0.1, -0.5, 0.5},  {0.1, 0, 0.5},     {0.1, 0.5, 0.5}};
 
   // Assumes example is run in ${GTSAM_TOP}/build/examples
   const string filename = "../../examples/Data/18pointExample1.txt";
