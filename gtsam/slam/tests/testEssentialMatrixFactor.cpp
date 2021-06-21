@@ -7,7 +7,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
-#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/CalibratedCamera.h>
 #include <gtsam/nonlinear/ExpressionFactor.h>
@@ -89,20 +88,12 @@ TEST(EssentialMatrixFactor, factor) {
     // Check evaluation
     Vector expected(1);
     expected << 0;
-    Matrix Hactual;
-    Vector actual = factor.evaluateError(trueE, Hactual);
+    Vector actual = factor.evaluateError(trueE);
     EXPECT(assert_equal(expected, actual, 1e-7));
 
-    // Use numerical derivatives to calculate the expected Jacobian
-    Matrix Hexpected;
-    typedef Eigen::Matrix<double, 1, 1> Vector1;
-    Hexpected = numericalDerivative11<Vector1, EssentialMatrix>(
-        boost::bind(&EssentialMatrixFactor::evaluateError, &factor, _1,
-                    boost::none),
-        trueE);
-
-    // Verify the Jacobian is correct
-    EXPECT(assert_equal(Hexpected, Hactual, 1e-8));
+    Values val;
+    val.insert(key, trueE);
+    EXPECT_CORRECT_FACTOR_JACOBIANS(factor, val, 1e-5, 1e-7);
   }
 }
 
@@ -226,19 +217,10 @@ TEST(EssentialMatrixFactor2, factor) {
     Vector actual = factor.evaluateError(trueE, d, Hactual1, Hactual2);
     EXPECT(assert_equal(expected, actual, 1e-7));
 
-    // Use numerical derivatives to calculate the expected Jacobian
-    Matrix Hexpected1, Hexpected2;
-    boost::function<Vector(const EssentialMatrix &, double)> f =
-        boost::bind(&EssentialMatrixFactor2::evaluateError, &factor, _1, _2,
-                    boost::none, boost::none);
-    Hexpected1 =
-        numericalDerivative21<Vector2, EssentialMatrix, double>(f, trueE, d);
-    Hexpected2 =
-        numericalDerivative22<Vector2, EssentialMatrix, double>(f, trueE, d);
-
-    // Verify the Jacobian is correct
-    EXPECT(assert_equal(Hexpected1, Hactual1, 1e-8));
-    EXPECT(assert_equal(Hexpected2, Hactual2, 1e-8));
+    Values val;
+    val.insert(100, trueE);
+    val.insert(i, d);
+    EXPECT_CORRECT_FACTOR_JACOBIANS(factor, val, 1e-5, 1e-7);
   }
 }
 
@@ -300,19 +282,10 @@ TEST(EssentialMatrixFactor3, factor) {
     Vector actual = factor.evaluateError(bodyE, d, Hactual1, Hactual2);
     EXPECT(assert_equal(expected, actual, 1e-7));
 
-    // Use numerical derivatives to calculate the expected Jacobian
-    Matrix Hexpected1, Hexpected2;
-    boost::function<Vector(const EssentialMatrix &, double)> f =
-        boost::bind(&EssentialMatrixFactor3::evaluateError, &factor, _1, _2,
-                    boost::none, boost::none);
-    Hexpected1 =
-        numericalDerivative21<Vector2, EssentialMatrix, double>(f, bodyE, d);
-    Hexpected2 =
-        numericalDerivative22<Vector2, EssentialMatrix, double>(f, bodyE, d);
-
-    // Verify the Jacobian is correct
-    EXPECT(assert_equal(Hexpected1, Hactual1, 1e-8));
-    EXPECT(assert_equal(Hexpected2, Hactual2, 1e-8));
+    Values val;
+    val.insert(100, bodyE);
+    val.insert(i, d);
+    EXPECT_CORRECT_FACTOR_JACOBIANS(factor, val, 1e-6, 1e-7);
   }
 }
 
@@ -640,24 +613,14 @@ TEST(EssentialMatrixFactor2, extraTest) {
     const Point2 pi = camera2.project(P1);
     Point2 expected(pi - pB(i));
 
-    Matrix Hactual1, Hactual2;
     double d(baseline / P1.z());
-    Vector actual = factor.evaluateError(trueE, d, Hactual1, Hactual2);
+    Vector actual = factor.evaluateError(trueE, d);
     EXPECT(assert_equal(expected, actual, 1e-7));
 
-    // Use numerical derivatives to calculate the expected Jacobian
-    Matrix Hexpected1, Hexpected2;
-    boost::function<Vector(const EssentialMatrix &, double)> f =
-        boost::bind(&EssentialMatrixFactor2::evaluateError, &factor, _1, _2,
-                    boost::none, boost::none);
-    Hexpected1 =
-        numericalDerivative21<Vector2, EssentialMatrix, double>(f, trueE, d);
-    Hexpected2 =
-        numericalDerivative22<Vector2, EssentialMatrix, double>(f, trueE, d);
-
-    // Verify the Jacobian is correct
-    EXPECT(assert_equal(Hexpected1, Hactual1, 1e-6));
-    EXPECT(assert_equal(Hexpected2, Hactual2, 1e-8));
+    Values val;
+    val.insert(100, trueE);
+    val.insert(i, d);
+    EXPECT_CORRECT_FACTOR_JACOBIANS(factor, val, 1e-5, 1e-6);
   }
 }
 
@@ -710,24 +673,14 @@ TEST(EssentialMatrixFactor3, extraTest) {
     const Point2 pi = camera2.project(P1);
     Point2 expected(pi - pB(i));
 
-    Matrix Hactual1, Hactual2;
     double d(baseline / P1.z());
-    Vector actual = factor.evaluateError(bodyE, d, Hactual1, Hactual2);
+    Vector actual = factor.evaluateError(bodyE, d);
     EXPECT(assert_equal(expected, actual, 1e-7));
 
-    // Use numerical derivatives to calculate the expected Jacobian
-    Matrix Hexpected1, Hexpected2;
-    boost::function<Vector(const EssentialMatrix &, double)> f =
-        boost::bind(&EssentialMatrixFactor3::evaluateError, &factor, _1, _2,
-                    boost::none, boost::none);
-    Hexpected1 =
-        numericalDerivative21<Vector2, EssentialMatrix, double>(f, bodyE, d);
-    Hexpected2 =
-        numericalDerivative22<Vector2, EssentialMatrix, double>(f, bodyE, d);
-
-    // Verify the Jacobian is correct
-    EXPECT(assert_equal(Hexpected1, Hactual1, 1e-6));
-    EXPECT(assert_equal(Hexpected2, Hactual2, 1e-8));
+    Values val;
+    val.insert(100, bodyE);
+    val.insert(i, d);
+    EXPECT_CORRECT_FACTOR_JACOBIANS(factor, val, 1e-5, 1e-6);
   }
 }
 
