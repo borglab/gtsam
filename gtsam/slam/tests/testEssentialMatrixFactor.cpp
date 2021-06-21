@@ -14,6 +14,7 @@
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/expressionTesting.h>
+#include <gtsam/nonlinear/factorTesting.h>
 #include <gtsam/slam/EssentialMatrixFactor.h>
 #include <gtsam/slam/dataset.h>
 
@@ -359,26 +360,13 @@ TEST(EssentialMatrixFactor4, factor) {
     // Check evaluation
     Vector1 expected;
     expected << 0;
-    Matrix HEactual;
-    Matrix HKactual;
-    Vector actual = factor.evaluateError(trueE, trueK, HEactual, HKactual);
+    Vector actual = factor.evaluateError(trueE, trueK);
     EXPECT(assert_equal(expected, actual, 1e-7));
 
-    // Use numerical derivatives to calculate the expected Jacobian
-    Matrix HEexpected;
-    Matrix HKexpected;
-    typedef Eigen::Matrix<double, 1, 1> Vector1;
-    boost::function<Vector(const EssentialMatrix &, const Cal3_S2 &)> f =
-        boost::bind(&EssentialMatrixFactor4<Cal3_S2>::evaluateError, factor, _1,
-                    _2, boost::none, boost::none);
-    HEexpected = numericalDerivative21<Vector1, EssentialMatrix, Cal3_S2>(
-        f, trueE, trueK);
-    HKexpected = numericalDerivative22<Vector1, EssentialMatrix, Cal3_S2>(
-        f, trueE, trueK);
-
-    // Verify the Jacobian is correct
-    EXPECT(assert_equal(HEexpected, HEactual, 1e-8));
-    EXPECT(assert_equal(HKexpected, HKactual, 1e-8));
+    Values truth;
+    truth.insert(keyE, trueE);
+    truth.insert(keyK, trueK);
+    EXPECT_CORRECT_FACTOR_JACOBIANS(factor, truth, 1e-6, 1e-7);
   }
 }
 
