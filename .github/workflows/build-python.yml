@@ -77,7 +77,7 @@ jobs:
             # 15CF4D18AF4F7421 is the GPG key for the LLVM apt repository
             # This key is not in the keystore by default for Ubuntu so we need to add it.
             LLVM_KEY=15CF4D18AF4F7421
-            gpg --keyserver ipv4.pool.sks-keyservers.net --recv-key $LLVM_KEY || gpg --keyserver ha.pool.sks-keyservers.net --recv-key $LLVM_KEY
+            gpg --keyserver keyserver.ubuntu.com --recv-key $LLVM_KEY || gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-key $LLVM_KEY
             gpg -a --export $LLVM_KEY | sudo apt-key add -
             sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
           fi
