@@ -142,3 +142,13 @@ add_custom_target(${GTSAM_PYTHON_INSTALL_TARGET}
         COMMAND ${PYTHON_EXECUTABLE} ${GTSAM_PYTHON_BUILD_DIRECTORY}/setup.py install
         DEPENDS ${GTSAM_PYTHON_DEPENDENCIES}
         WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY})
+
+# Custom make command to run all GTSAM Python tests
+add_custom_target(
+        python-test
+        COMMAND
+          ${CMAKE_COMMAND} -E env # add package to python path so no need to install
+          "PYTHONPATH=${GTSAM_PYTHON_BUILD_DIRECTORY}/$ENV{PYTHONPATH}"
+          ${PYTHON_EXECUTABLE} -m unittest discover
+          DEPENDS ${GTSAM_PYTHON_DEPENDENCIES}
+        WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam/tests)

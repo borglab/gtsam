@@ -100,7 +100,8 @@ The python wrapper supports keyword arguments for functions/methods. Hence, the 
         ```
 
 - Using classes defined in other modules
-    - If you are using a class `OtherClass` not wrapped in an interface file, add `class OtherClass;` as a forward declaration to avoid a dependency error. `OtherClass` should be in the same project.
+    - If you are using a class `OtherClass` not wrapped in an interface file, add `class OtherClass;` as a forward declaration to avoid a dependency error.
+    - `OtherClass` may not be in the same project. If this is the case, include the header for the appropriate project `#include <other_project/OtherClass.h>`.
 
 - Virtual inheritance
     - Specify fully-qualified base classes, i.e. `virtual class Derived : ns::Base {` where `ns` is the namespace.

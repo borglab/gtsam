@@ -15,8 +15,6 @@ from loguru import logger
 
 sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
 
-import gtwrap.interface_parser as parser
-import gtwrap.template_instantiator as instantiator
 from gtwrap.matlab_wrapper import MatlabWrapper
 
 
@@ -117,19 +115,14 @@ class TestWrap(unittest.TestCase):
         if not osp.exists(self.MATLAB_ACTUAL_DIR):
             os.mkdir(self.MATLAB_ACTUAL_DIR)
 
-        module = parser.Module.parseString(content)
-
-        instantiator.instantiate_namespace_inplace(module)
-
         # Create MATLAB wrapper instance
         wrapper = MatlabWrapper(
-            module=module,
             module_name='geometry',
             top_module_namespace=['gtsam'],
             ignore_classes=[''],
         )
 
-        cc_content = wrapper.wrap()
+        cc_content = wrapper.wrap(content)
 
         self.generate_content(cc_content)
 
@@ -148,18 +141,13 @@ class TestWrap(unittest.TestCase):
         if not osp.exists(self.MATLAB_ACTUAL_DIR):
             os.mkdir(self.MATLAB_ACTUAL_DIR)
 
-        module = parser.Module.parseString(content)
-
-        instantiator.instantiate_namespace_inplace(module)
-
         wrapper = MatlabWrapper(
-            module=module,
             module_name='functions',
             top_module_namespace=['gtsam'],
             ignore_classes=[''],
         )
 
-        cc_content = wrapper.wrap()
+        cc_content = wrapper.wrap(content)
 
         self.generate_content(cc_content)
 
@@ -181,18 +169,13 @@ class TestWrap(unittest.TestCase):
         if not osp.exists(self.MATLAB_ACTUAL_DIR):
             os.mkdir(self.MATLAB_ACTUAL_DIR)
 
-        module = parser.Module.parseString(content)
-
-        instantiator.instantiate_namespace_inplace(module)
-
         wrapper = MatlabWrapper(
-            module=module,
             module_name='class',
             top_module_namespace=['gtsam'],
             ignore_classes=[''],
         )
 
-        cc_content = wrapper.wrap()
+        cc_content = wrapper.wrap(content)
 
         self.generate_content(cc_content)
 
@@ -214,18 +197,13 @@ class TestWrap(unittest.TestCase):
         if not osp.exists(self.MATLAB_ACTUAL_DIR):
             os.mkdir(self.MATLAB_ACTUAL_DIR)
 
-        module = parser.Module.parseString(content)
-
-        instantiator.instantiate_namespace_inplace(module)
-
         wrapper = MatlabWrapper(
-            module=module,
             module_name='inheritance',
             top_module_namespace=['gtsam'],
             ignore_classes=[''],
         )
 
-        cc_content = wrapper.wrap()
+        cc_content = wrapper.wrap(content)
 
         self.generate_content(cc_content)
 
@@ -237,7 +215,7 @@ class TestWrap(unittest.TestCase):
         for file in files:
             self.compare_and_diff(file)
 
-    def test_namspaces(self):
+    def test_namespaces(self):
         """
         Test interface file with full namespace definition.
         """
@@ -247,18 +225,13 @@ class TestWrap(unittest.TestCase):
         if not osp.exists(self.MATLAB_ACTUAL_DIR):
             os.mkdir(self.MATLAB_ACTUAL_DIR)
 
-        module = parser.Module.parseString(content)
-
-        instantiator.instantiate_namespace_inplace(module)
-
         wrapper = MatlabWrapper(
-            module=module,
             module_name='namespaces',
             top_module_namespace=['gtsam'],
             ignore_classes=[''],
         )
 
-        cc_content = wrapper.wrap()
+        cc_content = wrapper.wrap(content)
 
         self.generate_content(cc_content)
 
@@ -282,29 +255,25 @@ class TestWrap(unittest.TestCase):
         if not osp.exists(self.MATLAB_ACTUAL_DIR):
             os.mkdir(self.MATLAB_ACTUAL_DIR)
 
-        module = parser.Module.parseString(content)
-
-        instantiator.instantiate_namespace_inplace(module)
-
         wrapper = MatlabWrapper(
-            module=module,
             module_name='special_cases',
             top_module_namespace=['gtsam'],
             ignore_classes=[''],
         )
 
-        cc_content = wrapper.wrap()
+        cc_content = wrapper.wrap(content)
 
         self.generate_content(cc_content)
 
         files = [
             'special_cases_wrapper.cpp',
             '+gtsam/PinholeCameraCal3Bundler.m',
-            '+gtsam/NonlinearFactorGraph.m', 
+            '+gtsam/NonlinearFactorGraph.m',
         ]
 
         for file in files:
             self.compare_and_diff(file)
+
 
 if __name__ == '__main__':
     unittest.main()

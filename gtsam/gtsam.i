@@ -2257,6 +2257,7 @@ class Values {
   void insert(size_t j, const gtsam::PinholeCamera<gtsam::Cal3Bundler>& camera);
   void insert(size_t j, const gtsam::imuBias::ConstantBias& constant_bias);
   void insert(size_t j, const gtsam::NavState& nav_state);
+  void insert(size_t j, double c);
 
   void update(size_t j, const gtsam::Point2& point2);
   void update(size_t j, const gtsam::Point3& point3);
@@ -2278,13 +2279,31 @@ class Values {
   void update(size_t j, const gtsam::NavState& nav_state);
   void update(size_t j, Vector vector);
   void update(size_t j, Matrix matrix);
+  void update(size_t j, double c);
 
-  template<T = {gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Pose2, gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose3, gtsam::Unit3, gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler, gtsam::EssentialMatrix, gtsam::PinholeCameraCal3_S2, gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::imuBias::ConstantBias, gtsam::NavState, Vector, Matrix}>
+  template <T = {gtsam::Point2,
+                 gtsam::Point3,
+                 gtsam::Rot2,
+                 gtsam::Pose2,
+                 gtsam::SO3,
+                 gtsam::SO4,
+                 gtsam::SOn,
+                 gtsam::Rot3,
+                 gtsam::Pose3,
+                 gtsam::Unit3,
+                 gtsam::Cal3_S2,
+                 gtsam::Cal3DS2,
+                 gtsam::Cal3Bundler,
+                 gtsam::EssentialMatrix,
+                 gtsam::PinholeCameraCal3_S2,
+                 gtsam::PinholeCamera<gtsam::Cal3Bundler>,
+                 gtsam::imuBias::ConstantBias,
+                 gtsam::NavState,
+                 Vector,
+                 Matrix,
+                 double}>
   T at(size_t j);
 
-  /// version for double
-  void insertDouble(size_t j, double c);
-  double atDouble(size_t j) const;
 };
 
 #include <gtsam/nonlinear/Marginals.h>
