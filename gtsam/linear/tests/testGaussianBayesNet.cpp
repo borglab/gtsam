@@ -25,12 +25,14 @@
 #include <boost/tuple/tuple.hpp>
 #include <boost/assign/list_of.hpp>
 #include <boost/assign/std/list.hpp> // for operator +=
-using namespace boost::assign;
+#include <boost/bind/bind.hpp>
 
 // STL/C++
 #include <iostream>
 #include <sstream>
 
+using namespace boost::assign;
+using namespace boost::placeholders;
 using namespace std;
 using namespace gtsam;
 

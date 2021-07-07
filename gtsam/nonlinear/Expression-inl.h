@@ -21,6 +21,7 @@
 
 #include <gtsam/nonlinear/internal/ExpressionNode.h>
 
+#include <boost/bind/bind.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/range/adaptor/map.hpp>
 #include <boost/range/algorithm.hpp>
@@ -82,7 +83,8 @@ template<typename A>
 Expression<T>::Expression(const Expression<A>& expression,
     T (A::*method)(typename MakeOptionalJacobian<T, A>::type) const) :
     root_(
-        new internal::UnaryExpression<T, A>(boost::bind(method, _1, _2),
+        new internal::UnaryExpression<T, A>(boost::bind(method,
+                boost::placeholders::_1, boost::placeholders::_2),
             expression)) {
 }
 
@@ -95,7 +97,10 @@ Expression<T>::Expression(const Expression<A1>& expression1,
     const Expression<A2>& expression2) :
     root_(
         new internal::BinaryExpression<T, A1, A2>(
-            boost::bind(method, _1, _2, _3, _4), expression1, expression2)) {
+            boost::bind(method, boost::placeholders::_1,
+                boost::placeholders::_2, boost::placeholders::_3,
+                boost::placeholders::_4),
+            expression1, expression2)) {
 }
 
 /// Construct a binary method expression
@@ -109,8 +114,11 @@ Expression<T>::Expression(const Expression<A1>& expression1,
     const Expression<A2>& expression2, const Expression<A3>& expression3) :
     root_(
         new internal::TernaryExpression<T, A1, A2, A3>(
-            boost::bind(method, _1, _2, _3, _4, _5, _6), expression1,
-            expression2, expression3)) {
+            boost::bind(method, boost::placeholders::_1,
+                boost::placeholders::_2, boost::placeholders::_3,
+                boost::placeholders::_4, boost::placeholders::_5,
+                boost::placeholders::_6),
+            expression1, expression2, expression3)) {
 }
 
 template<typename T>
@@ -247,8 +255,10 @@ template<typename T>
 Expression<T> operator*(const Expression<T>& expression1,
     const Expression<T>& expression2) {
   return Expression<T>(
-      boost::bind(internal::apply_compose<T>(), _1, _2, _3, _4), expression1,
-      expression2);
+      boost::bind(internal::apply_compose<T>(), boost::placeholders::_1,
+          boost::placeholders::_2, boost::placeholders::_3,
+          boost::placeholders::_4),
+      expression1, expression2);
 }
 
 /// Construct an array of leaves

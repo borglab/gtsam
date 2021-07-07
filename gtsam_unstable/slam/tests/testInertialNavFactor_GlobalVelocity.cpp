@@ -16,6 +16,7 @@
  */
 
 #include <iostream>
+#include <boost/bind/bind.hpp>
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/navigation/ImuBias.h>
 #include <gtsam_unstable/slam/InertialNavFactor_GlobalVelocity.h>
@@ -25,6 +26,7 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/TestableAssertions.h>
 
+using namespace boost::placeholders;
 using namespace std;
 using namespace gtsam;
 

@@ -21,10 +21,12 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 
+#include <boost/bind/bind.hpp>
 #include <CppUnitLite/TestHarness.h>
 
 #include <iostream>
 
+using namespace boost::placeholders;
 using namespace gtsam;
 
 // Convenience for named keys

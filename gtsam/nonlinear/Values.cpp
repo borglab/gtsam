@@ -25,14 +25,6 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/linear/VectorValues.h>
 
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-variable"
-#endif
-#include <boost/bind.hpp>
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
 #include <boost/iterator/transform_iterator.hpp>
 
 #include <list>

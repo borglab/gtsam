@@ -10,6 +10,8 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam_unstable/dynamics/PoseRTV.h>
 
+#include <boost/bind/bind.hpp>
+
 namespace gtsam {
 
 /**
@@ -79,9 +81,9 @@ public:
       boost::optional<Matrix&> H2 = boost::none) const override {
     const Vector6 meas = z();
     if (H1) *H1 = numericalDerivative21<Vector6, PoseRTV, PoseRTV>(
-        boost::bind(This::predict_proxy, _1, _2, dt_, meas), x1, x2, 1e-5);
+        boost::bind(This::predict_proxy, boost::placeholders::_1, boost::placeholders::_2, dt_, meas), x1, x2, 1e-5);
     if (H2) *H2 = numericalDerivative22<Vector6, PoseRTV, PoseRTV>(
-        boost::bind(This::predict_proxy, _1, _2, dt_, meas), x1, x2, 1e-5);
+        boost::bind(This::predict_proxy, boost::placeholders::_1, boost::placeholders::_2, dt_, meas), x1, x2, 1e-5);
     return predict_proxy(x1, x2, dt_, meas);
   }
 

@@ -30,9 +30,10 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#include <boost/bind/bind.hpp>
 #include <boost/function.hpp>
-#include <boost/bind.hpp>
 
+using namespace boost::placeholders;
 using namespace gtsam;
 using namespace std;
 using symbol_shorthand::X;

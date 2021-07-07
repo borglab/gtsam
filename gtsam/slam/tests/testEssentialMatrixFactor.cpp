@@ -17,6 +17,9 @@
 #include <gtsam/slam/EssentialMatrixFactor.h>
 #include <gtsam/slam/dataset.h>
 
+#include <boost/bind/bind.hpp>
+
+using namespace boost::placeholders;
 using namespace std;
 using namespace gtsam;
 

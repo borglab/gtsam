@@ -27,10 +27,12 @@
 
 #include <boost/assign.hpp>
 #include <boost/assign/std/vector.hpp>
+#include <boost/bind/bind.hpp>
 
 using namespace std;
 using namespace gtsam;
 using namespace boost::assign;
+using namespace boost::placeholders;
 
 // Some common constants
 static const boost::shared_ptr<Cal3_S2> sharedCal = //

@@ -29,15 +29,6 @@
 #include <gtsam/inference/Key.h>
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/iterator/filter_iterator.hpp>
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-variable"
-#pragma GCC diagnostic ignored "-Wunused-local-typedefs"
-#endif
-#include <boost/bind.hpp>
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
 #include <boost/ptr_container/serialize_ptr_map.hpp>
 #include <boost/shared_ptr.hpp>
 

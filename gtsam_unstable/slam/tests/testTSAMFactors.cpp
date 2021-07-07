@@ -18,8 +18,11 @@
 
 #include <gtsam_unstable/slam/TSAMFactors.h>
 #include <gtsam/base/numericalDerivative.h>
+
+#include <boost/bind/bind.hpp>
 #include <CppUnitLite/TestHarness.h>
 
+using namespace boost::placeholders;
 using namespace std;
 using namespace gtsam;
 
