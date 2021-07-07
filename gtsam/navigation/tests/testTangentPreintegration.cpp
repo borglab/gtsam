@@ -22,9 +22,11 @@
 #include <gtsam/nonlinear/expressionTesting.h>
 
 #include <CppUnitLite/TestHarness.h>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 
 #include "imuFactorTesting.h"
+
+using namespace boost::placeholders;
 
 static const double kDt = 0.1;
 

@@ -28,11 +28,13 @@
 #include <boost/assign/std/list.hpp> // for operator +=
 #include <boost/assign/std/vector.hpp>
 #include <boost/assign/list_of.hpp>
-using namespace boost::assign;
+#include <boost/bind/bind.hpp>
 #include <stdexcept>
 #include <limits>
 #include <type_traits>
 
+using namespace boost::assign;
+using namespace boost::placeholders;
 using namespace gtsam;
 using namespace std;
 static double inf = std::numeric_limits<double>::infinity();

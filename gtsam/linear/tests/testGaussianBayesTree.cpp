@@ -21,7 +21,7 @@
 #include <boost/assign/list_of.hpp>
 #include <boost/assign/std/list.hpp> // for operator +=
 #include <boost/assign/std/set.hpp> // for operator +=
-using namespace boost::assign;
+#include <boost/bind/bind.hpp>
 
 #include <gtsam/base/debug.h>
 #include <gtsam/base/numericalDerivative.h>
@@ -29,6 +29,8 @@ using namespace boost::assign;
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/GaussianConditional.h>
 
+using namespace boost::assign;
+using namespace boost::placeholders;
 using namespace std;
 using namespace gtsam;
 

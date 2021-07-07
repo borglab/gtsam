@@ -24,6 +24,7 @@
 #include <gtsam_unstable/linear/QPSParser.h>
 #include <gtsam_unstable/linear/QPSParserException.h>
 
+#include <boost/bind/bind.hpp>
 #include <boost/fusion/include/vector.hpp>
 #include <boost/fusion/sequence.hpp>
 #include <boost/lambda/lambda.hpp>
@@ -39,6 +40,7 @@
 #include <vector>
 
 using boost::fusion::at_c;
+using namespace boost::placeholders;
 using namespace std;
 
 namespace bf = boost::fusion;

@@ -24,7 +24,6 @@
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/VectorSpace.h>
 
-#include <boost/bind.hpp>
 #include <boost/make_shared.hpp>
 #include <map>
 

@@ -22,8 +22,11 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/TestableAssertions.h>
+
+#include <boost/bind/bind.hpp>
 #include <CppUnitLite/TestHarness.h>
 
+using namespace boost::placeholders;
 using namespace std;
 using namespace gtsam;
 
