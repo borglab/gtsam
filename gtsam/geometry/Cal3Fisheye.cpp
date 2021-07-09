@@ -110,7 +110,9 @@ Point2 Cal3Fisheye::calibrate(const Point2& uv, OptionalJacobian<2, 9> Dcal,
   const double u = uv.x(), v = uv.y();
   const double yd = (v - v0_) / fy_;
   const double xd = (u - s_ * yd - u0_) / fx_;
-  Point2 pi(xd, yd);
+  const double theta = sqrt(xd * xd + yd * yd);
+  const double scale = (theta > 0) ? tan(theta) / theta;
+  Point2 pi(scale * xd, scale * yd);
 
   // Perform newtons method, break when solution converges past tol_,
   // throw exception if max iterations are reached
