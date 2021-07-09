@@ -5,8 +5,9 @@ All Rights Reserved
 
 See LICENSE for the license information
 
-Cal3Unified unit tests.
+Cal3Fisheye unit tests.
 Author: Frank Dellaert & Duy Nguyen Ta (Python)
+Refactored: Roderick Koehle
 """
 import unittest
 
@@ -14,78 +15,80 @@ import numpy as np
 
 import gtsam
 from gtsam.utils.test_case import GtsamTestCase
-
+from gtsam.symbol_shorthand import K, L, P
 
 class TestCal3Fisheye(GtsamTestCase):
-
+    
+    @classmethod
+    def setUpClass(cls):
+        """
+        Equidistant fisheye projection
+        
+        An equidistant fisheye projection with focal length f is defined
+        as the relation r/f = tan(theta), with r being the radius in the 
+        image plane and theta the incident angle of the object point.
+        """
+        x, y, z = 1.0, 0.0, 1.0
+        # x, y, z = 0.5, 0.0, 2.0 <== Note: this example fails!
+        u, v = np.arctan2(x, z), 0.0
+        cls.obj_point = np.array([x, y, z])
+        cls.img_point = np.array([u, v])
+        
     def test_Cal3Fisheye(self):
         K = gtsam.Cal3Fisheye()
         self.assertEqual(K.fx(), 1.)
         self.assertEqual(K.fy(), 1.)
 
     def test_distortion(self):
-        "Equidistant fisheye model of focal length f, defined as r/f = tan(theta)"
+        """Fisheye distortion and rectification"""
         equidistant = gtsam.Cal3Fisheye()
-        x, y, z = 1, 0, 1
-        u, v = equidistant.uncalibrate([x, y])
-        x2, y2 = equidistant.calibrate([u, v])
-        self.assertAlmostEqual(u, np.arctan2(x, z))
-        self.assertAlmostEqual(v, 0)
-        self.assertAlmostEqual(x2, x)
-        self.assertAlmostEqual(y2, 0)
+        perspective_pt = self.obj_point[0:2]/self.obj_point[2]
+        distorted_pt = equidistant.uncalibrate(perspective_pt)
+        rectified_pt = equidistant.calibrate(distorted_pt)
+        self.gtsamAssertEquals(distorted_pt, self.img_point)
+        self.gtsamAssertEquals(rectified_pt, perspective_pt)
 
     def test_pinhole(self):
-        "Spatial equidistant camera projection"
-        x, y, z = 1.0, 0.0, 1.0
-        u, v = np.arctan2(x, z), 0.0
+        """Spatial equidistant camera projection"""
         camera = gtsam.PinholeCameraCal3Fisheye()
-
-        pt1 = camera.Project([x, y, z])
+        pt1 = camera.Project(self.obj_point) # Perspective projection
+        pt2 = camera.project(self.obj_point) # Equidistant projection
+        x, y, z = self.obj_point
+        obj1 = camera.backproject(self.img_point, z)
+        r1 = camera.range(self.obj_point)
+        r = np.linalg.norm(self.obj_point)
         self.gtsamAssertEquals(pt1, np.array([x/z, y/z]))
-
-        pt2 = camera.project([x, y, z])
-        self.gtsamAssertEquals(pt2, np.array([u, v]))
-
-        obj1 = camera.backproject([u, v], z)
-        self.gtsamAssertEquals(obj1, np.array([x, y, z]))
-
-        r1 = camera.range(np.array([x, y, z]))
-        self.assertEqual(r1, np.linalg.norm([x, y, z]))
+        self.gtsamAssertEquals(pt2, self.img_point)
+        self.gtsamAssertEquals(obj1, self.obj_point)
+        self.assertEqual(r1, r)
 
     def test_generic_factor(self):
-        "Evaluate residual using pose and point as state variables"
-        objPoint = np.array([1, 0, 1])
-        imgPoint = np.array([np.arctan2(objPoint[0], objPoint[2]), 0])
+        """Evaluate residual using pose and point as state variables"""
         graph = gtsam.NonlinearFactorGraph()
         state = gtsam.Values()
-        measured = imgPoint
-        noiseModel = gtsam.noiseModel.Isotropic.Sigma(2, 1)
-        poseKey = gtsam.symbol_shorthand.P(0)
-        pointKey = gtsam.symbol_shorthand.L(0)
+        measured = self.img_point
+        noise_model = gtsam.noiseModel.Isotropic.Sigma(2, 1)
+        pose_key, point_key = P(0), L(0)
         k = gtsam.Cal3Fisheye()
-        state.insert_pose3(poseKey, gtsam.Pose3())
-        state.insert_point3(pointKey, gtsam.Point3(objPoint))
-        factor = gtsam.GenericProjectionFactorCal3Fisheye(measured, noiseModel, poseKey, pointKey, k)
+        state.insert_pose3(pose_key, gtsam.Pose3())
+        state.insert_point3(point_key, self.obj_point)
+        factor = gtsam.GenericProjectionFactorCal3Fisheye(measured, noise_model, pose_key, point_key, k)
         graph.add(factor)
         score = graph.error(state)
         self.assertAlmostEqual(score, 0)
 
     def test_sfm_factor2(self):
-        "Evaluate residual with camera, pose and point as state variables"
-        objPoint = np.array([1, 0, 1])
-        imgPoint = np.array([np.arctan2(objPoint[0], objPoint[2]), 0])
+        """Evaluate residual with camera, pose and point as state variables"""
         graph = gtsam.NonlinearFactorGraph()
         state = gtsam.Values()
-        measured = imgPoint
-        noiseModel = gtsam.noiseModel.Isotropic.Sigma(2, 1)
-        cameraKey = gtsam.symbol_shorthand.K(0)
-        poseKey = gtsam.symbol_shorthand.P(0)
-        landmarkKey = gtsam.symbol_shorthand.L(0)
+        measured = self.img_point
+        noise_model = gtsam.noiseModel.Isotropic.Sigma(2, 1)
+        camera_key, pose_key, landmark_key = K(0), P(0), L(0)
         k = gtsam.Cal3Fisheye()
-        state.insert_cal3fisheye(cameraKey, k)
-        state.insert_pose3(poseKey, gtsam.Pose3())
-        state.insert_point3(landmarkKey, gtsam.Point3(objPoint))
-        factor = gtsam.GeneralSFMFactor2Cal3Fisheye(measured, noiseModel, poseKey, landmarkKey, cameraKey)
+        state.insert_cal3fisheye(camera_key, k)
+        state.insert_pose3(pose_key, gtsam.Pose3())
+        state.insert_point3(landmark_key, gtsam.Point3(self.obj_point))
+        factor = gtsam.GeneralSFMFactor2Cal3Fisheye(measured, noise_model, pose_key, landmark_key, camera_key)
         graph.add(factor)
         score = graph.error(state)
         self.assertAlmostEqual(score, 0)
@@ -93,12 +96,12 @@ class TestCal3Fisheye(GtsamTestCase):
     def test_retract(self):
         expected = gtsam.Cal3Fisheye(100 + 2, 105 + 3, 0.0 + 4, 320 + 5, 240 + 6,
                                      1e-3 + 7, 2.0*1e-3 + 8, 3.0*1e-3 + 9, 4.0*1e-3 + 10)
-        K = gtsam.Cal3Fisheye(100, 105, 0.0, 320, 240,
+        k = gtsam.Cal3Fisheye(100, 105, 0.0, 320, 240,
                               1e-3, 2.0*1e-3, 3.0*1e-3, 4.0*1e-3)
         d = np.array([2, 3, 4, 5, 6, 7, 8, 9, 10], order='F')
-        actual = K.retract(d)
+        actual = k.retract(d)
         self.gtsamAssertEquals(actual, expected)
-        np.testing.assert_allclose(d, K.localCoordinates(actual))
+        np.testing.assert_allclose(d, k.localCoordinates(actual))
 
 
 if __name__ == "__main__":
