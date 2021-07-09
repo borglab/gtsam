@@ -954,7 +954,7 @@ static ShonanAveraging2::Measurements extractRot2Measurements(
 
 ShonanAveraging2::ShonanAveraging2(const BetweenFactorPose2s &factors,
                                    const Parameters &parameters)
-    : ShonanAveraging<3>(maybeRobust(extractRot2Measurements(factors),
+    : ShonanAveraging<2>(maybeRobust(extractRot2Measurements(factors),
                                      parameters.getUseHuber()),
                          parameters) {}    
     
