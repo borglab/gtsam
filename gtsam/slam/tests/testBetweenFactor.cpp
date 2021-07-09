@@ -52,31 +52,31 @@ TEST(BetweenFactor, Rot3) {
 // Constructor scalar
 TEST(BetweenFactor, ConstructorScalar) {
   SharedNoiseModel model;
-  double measured_value = 0.0;
-  BetweenFactor<double> factor(1, 2, measured_value, model);
+  double measured = 0.0;
+  BetweenFactor<double> factor(1, 2, measured, model);
 }
 
 /* ************************************************************************* */
 // Constructor vector3
 TEST(BetweenFactor, ConstructorVector3) {
   SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 1.0);
-  Vector3 measured_value(1, 2, 3);
-  BetweenFactor<Vector3> factor(1, 2, measured_value, model);
+  Vector3 measured(1, 2, 3);
+  BetweenFactor<Vector3> factor(1, 2, measured, model);
 }
 
 /* ************************************************************************* */
 // Constructor dynamic sized vector
 TEST(BetweenFactor, ConstructorDynamicSizeVector) {
   SharedNoiseModel model = noiseModel::Isotropic::Sigma(5, 1.0);
-  Vector measured_value(5); measured_value << 1, 2, 3, 4, 5;
-  BetweenFactor<Vector> factor(1, 2, measured_value, model);
+  Vector measured(5); measured << 1, 2, 3, 4, 5;
+  BetweenFactor<Vector> factor(1, 2, measured, model);
 }
 
 /* ************************************************************************* */
 TEST(BetweenFactor, Point3Jacobians) {
   SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 1.0);
-  Point3 measured_value(1, 2, 3);
-  BetweenFactor<Point3> factor(1, 2, measured_value, model);
+  Point3 measured(1, 2, 3);
+  BetweenFactor<Point3> factor(1, 2, measured, model);
   
   Values values;
   values.insert(1, Point3(0, 0, 0));
@@ -89,8 +89,8 @@ TEST(BetweenFactor, Point3Jacobians) {
 /* ************************************************************************* */
 TEST(BetweenFactor, Rot3Jacobians) {
   SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 1.0);
-  Rot3 measured_value = Rot3::Ry(M_PI_2);
-  BetweenFactor<Rot3> factor(1, 2, measured_value, model);
+  Rot3 measured = Rot3::Ry(M_PI_2);
+  BetweenFactor<Rot3> factor(1, 2, measured, model);
   
   Values values;
   values.insert(1, Rot3());
@@ -103,13 +103,14 @@ TEST(BetweenFactor, Rot3Jacobians) {
 /* ************************************************************************* */
 TEST(BetweenFactor, Pose3Jacobians) {
   SharedNoiseModel model = noiseModel::Isotropic::Sigma(6, 1.0);
-  Pose3 measured_value(Rot3(), Point3(1, 2, 3));
-  BetweenFactor<Pose3> factor(1, 2, measured_value, model);
+  Pose3 measured(Rot3(), Point3(1, 2, 3));
+  BetweenFactor<Pose3> factor(1, 2, measured, model);
 
+  Pose3 pose1, pose2(Rot3(), Point3(1, 2, 3));
   Values values;
-  values.insert(1, Pose3());
-  values.insert(2, Pose3(Rot3(), Point3(1, 2, 3)));
-  Vector3 error = factor.evaluateError(Pose3(), Pose3(Rot3(), Point3(1, 2, 3)));
+  values.insert(1, pose1);
+  values.insert(2, pose2);
+  Vector3 error = factor.evaluateError(pose1, pose2);
   EXPECT(assert_equal<Vector3>(Vector3::Zero(), error, 1e-9));
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
 }
