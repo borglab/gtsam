@@ -954,7 +954,7 @@ static BinaryMeasurement<Rot2> convertPose2ToBinaryMeasurementRot2(
     throw std::invalid_argument(
         "parseMeasurements<Rot2> can only convert Pose2 measurements "
         "with Gaussian noise models.");
-  const Matrix6 M = gaussian->covariance();
+  const Matrix3 M = gaussian->covariance();
   auto model = noiseModel::Gaussian::Covariance(M.block<2, 2>(2, 2));
   return BinaryMeasurement<Rot2>(f->key1(), f->key2(), f->measured().rotation(),
                                  model);
