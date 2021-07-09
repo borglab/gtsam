@@ -944,6 +944,20 @@ ShonanAveraging2::ShonanAveraging2(string g2oFile, const Parameters &parameters)
                                      parameters.getUseHuber()),
                          parameters) {}
 
+static ShonanAveraging2::Measurements extractRot2Measurements(
+    const BetweenFactorPose2s &factors) {
+  ShonanAveraging2::Measurements result;
+  result.reserve(factors.size());
+  for (auto f : factors) result.push_back(convert(f));
+  return result;
+}
+
+ShonanAveraging2::ShonanAveraging2(const BetweenFactorPose2s &factors,
+                                   const Parameters &parameters)
+    : ShonanAveraging<3>(maybeRobust(extractRot2Measurements(factors),
+                                     parameters.getUseHuber()),
+                         parameters) {}    
+    
 /* ************************************************************************* */
 // Explicit instantiation for d=3
 template class ShonanAveraging<3>;
