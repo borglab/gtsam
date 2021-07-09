@@ -110,8 +110,8 @@ TEST(BetweenFactor, Pose3Jacobians) {
   Values values;
   values.insert(1, pose1);
   values.insert(2, pose2);
-  Vector3 error = factor.evaluateError(pose1, pose2);
-  EXPECT(assert_equal<Vector3>(Vector3::Zero(), error, 1e-9));
+  Vector6 error = factor.evaluateError(pose1, pose2);
+  EXPECT(assert_equal<Vector6>(Vector6::Zero(), error, 1e-9));
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
 }
 
