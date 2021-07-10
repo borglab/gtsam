@@ -32,4 +32,6 @@ py::bind_vector<gtsam::IndexPairVector>(m_, "IndexPairVector");
 py::bind_map<gtsam::KeyPairDoubleMap>(m_, "KeyPairDoubleMap");
 py::bind_vector<gtsam::CameraSet<gtsam::PinholeCamera<gtsam::Cal3_S2> > >(m_, "CameraSetCal3_S2");
 py::bind_vector<gtsam::CameraSet<gtsam::PinholeCamera<gtsam::Cal3Bundler> > >(m_, "CameraSetCal3Bundler");
+py::bind_vector<gtsam::CameraSet<gtsam::PinholeCamera<gtsam::Cal3Unified> > >(m_, "CameraSetCal3Unified");
+py::bind_vector<gtsam::CameraSet<gtsam::PinholeCamera<gtsam::Cal3Fisheye> > >(m_, "CameraSetCal3Fisheye");
 py::bind_vector<std::vector<gtsam::Matrix> >(m_, "JacobianVector");
