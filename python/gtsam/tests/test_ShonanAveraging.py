@@ -148,6 +148,7 @@ class TestShonanAveraging(GtsamTestCase):
     
     def test_constructorBetweenFactorPose2s(self) -> None:
         """Check if ShonanAveraging2 constructor works when not initialized from g2o file."""
+        num_images = 11
         # map (i1,i2) pair to theta in degrees that parameterizes Rot2 object i2Ri1
         i2Ri1_dict = {
             (1, 2):  -43.86342,
@@ -192,9 +193,9 @@ class TestShonanAveraging(GtsamTestCase):
         
         obj = ShonanAveraging2(between_factors, shonan_params)
         initial = obj.initializeRandomly()
-        result_values, _ = obj.run(initial, p_min, self._p_max)
+        result_values, _ = obj.run(initial, min_p=2, max_p=10)
         
-        for i in range(11):
+        for i in range(num_images):
             wRi = result_values.atRot2(i)
 
 
