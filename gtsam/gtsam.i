@@ -910,6 +910,12 @@ virtual class Cal3Unified : gtsam::Cal3DS2_Base {
   gtsam::Cal3Unified retract(Vector v) const;
   Vector localCoordinates(const gtsam::Cal3Unified& c) const;
 
+  // Action on Point2
+  // Note: the signature of this functions differ from the functions
+  // with equal name in the base class.
+  gtsam::Point2 calibrate(const gtsam::Point2& p) const;
+  gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
+
   // enabling serialization functionality
   void serialize() const;
 
