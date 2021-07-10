@@ -102,6 +102,8 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             gtsam::BinaryMeasurementsUnit3
             gtsam::CameraSetCal3_S2
             gtsam::CameraSetCal3Bundler
+            gtsam::CameraSetCal3Unified
+            gtsam::CameraSetCal3Fisheye
             gtsam::KeyPairDoubleMap)
             
     pybind_wrap(gtsam_unstable_py # target
