@@ -13,6 +13,7 @@ Author: Frank Dellaert
 import unittest
 
 import gtsam
+import numpy as np
 from gtsam import (
     BetweenFactorPose2,
     LevenbergMarquardtParams,
