@@ -24,6 +24,7 @@ For instructions on updating the version of the [wrap library](https://github.co
   ```bash
   cmake .. -DGTSAM_BUILD_PYTHON=1 -DGTSAM_PYTHON_VERSION=3.6.10
   ```
+  If you do not have TBB installed, you should also provide the argument `-DGTSAM_WITH_TBB=OFF`.
 - Build GTSAM and the wrapper with `make` (or `ninja` if you use `-GNinja`).
 
 - To install, simply run `make python-install` (`ninja python-install`).
