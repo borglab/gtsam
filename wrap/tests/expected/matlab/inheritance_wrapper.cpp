@@ -5,47 +5,11 @@
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/serialization/export.hpp>
 
-#include <folder/path/to/Test.h>
-#include <gtsam/geometry/Point2.h>
-#include <gtsam/geometry/Point3.h>
 
-typedef Fun<double> FunDouble;
-typedef PrimitiveRef<double> PrimitiveRefDouble;
-typedef MyVector<3> MyVector3;
-typedef MyVector<12> MyVector12;
-typedef MultipleTemplates<int, double> MultipleTemplatesIntDouble;
-typedef MultipleTemplates<int, float> MultipleTemplatesIntFloat;
-typedef MyFactor<gtsam::Pose2, gtsam::Matrix> MyFactorPosePoint2;
+
 typedef MyTemplate<gtsam::Point2> MyTemplatePoint2;
 typedef MyTemplate<gtsam::Matrix> MyTemplateMatrix;
 
-BOOST_CLASS_EXPORT_GUID(gtsam::Point2, "gtsamPoint2");
-BOOST_CLASS_EXPORT_GUID(gtsam::Point3, "gtsamPoint3");
-
-typedef std::set<boost::shared_ptr<FunRange>*> Collector_FunRange;
-static Collector_FunRange collector_FunRange;
-typedef std::set<boost::shared_ptr<FunDouble>*> Collector_FunDouble;
-static Collector_FunDouble collector_FunDouble;
-typedef std::set<boost::shared_ptr<Test>*> Collector_Test;
-static Collector_Test collector_Test;
-typedef std::set<boost::shared_ptr<PrimitiveRefDouble>*> Collector_PrimitiveRefDouble;
-static Collector_PrimitiveRefDouble collector_PrimitiveRefDouble;
-typedef std::set<boost::shared_ptr<MyVector3>*> Collector_MyVector3;
-static Collector_MyVector3 collector_MyVector3;
-typedef std::set<boost::shared_ptr<MyVector12>*> Collector_MyVector12;
-static Collector_MyVector12 collector_MyVector12;
-typedef std::set<boost::shared_ptr<MultipleTemplatesIntDouble>*> Collector_MultipleTemplatesIntDouble;
-static Collector_MultipleTemplatesIntDouble collector_MultipleTemplatesIntDouble;
-typedef std::set<boost::shared_ptr<MultipleTemplatesIntFloat>*> Collector_MultipleTemplatesIntFloat;
-static Collector_MultipleTemplatesIntFloat collector_MultipleTemplatesIntFloat;
-typedef std::set<boost::shared_ptr<ForwardKinematics>*> Collector_ForwardKinematics;
-static Collector_ForwardKinematics collector_ForwardKinematics;
-typedef std::set<boost::shared_ptr<MyFactorPosePoint2>*> Collector_MyFactorPosePoint2;
-static Collector_MyFactorPosePoint2 collector_MyFactorPosePoint2;
-typedef std::set<boost::shared_ptr<gtsam::Point2>*> Collector_gtsamPoint2;
-static Collector_gtsamPoint2 collector_gtsamPoint2;
-typedef std::set<boost::shared_ptr<gtsam::Point3>*> Collector_gtsamPoint3;
-static Collector_gtsamPoint3 collector_gtsamPoint3;
 typedef std::set<boost::shared_ptr<MyBase>*> Collector_MyBase;
 static Collector_MyBase collector_MyBase;
 typedef std::set<boost::shared_ptr<MyTemplatePoint2>*> Collector_MyTemplatePoint2;
@@ -55,84 +19,13 @@ static Collector_MyTemplateMatrix collector_MyTemplateMatrix;
 typedef std::set<boost::shared_ptr<ForwardKinematicsFactor>*> Collector_ForwardKinematicsFactor;
 static Collector_ForwardKinematicsFactor collector_ForwardKinematicsFactor;
 
+
 void _deleteAllObjects()
 {
   mstream mout;
   std::streambuf *outbuf = std::cout.rdbuf(&mout);
 
   bool anyDeleted = false;
-  { for(Collector_FunRange::iterator iter = collector_FunRange.begin();
-      iter != collector_FunRange.end(); ) {
-    delete *iter;
-    collector_FunRange.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_FunDouble::iterator iter = collector_FunDouble.begin();
-      iter != collector_FunDouble.end(); ) {
-    delete *iter;
-    collector_FunDouble.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_Test::iterator iter = collector_Test.begin();
-      iter != collector_Test.end(); ) {
-    delete *iter;
-    collector_Test.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_PrimitiveRefDouble::iterator iter = collector_PrimitiveRefDouble.begin();
-      iter != collector_PrimitiveRefDouble.end(); ) {
-    delete *iter;
-    collector_PrimitiveRefDouble.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_MyVector3::iterator iter = collector_MyVector3.begin();
-      iter != collector_MyVector3.end(); ) {
-    delete *iter;
-    collector_MyVector3.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_MyVector12::iterator iter = collector_MyVector12.begin();
-      iter != collector_MyVector12.end(); ) {
-    delete *iter;
-    collector_MyVector12.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_MultipleTemplatesIntDouble::iterator iter = collector_MultipleTemplatesIntDouble.begin();
-      iter != collector_MultipleTemplatesIntDouble.end(); ) {
-    delete *iter;
-    collector_MultipleTemplatesIntDouble.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_MultipleTemplatesIntFloat::iterator iter = collector_MultipleTemplatesIntFloat.begin();
-      iter != collector_MultipleTemplatesIntFloat.end(); ) {
-    delete *iter;
-    collector_MultipleTemplatesIntFloat.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_ForwardKinematics::iterator iter = collector_ForwardKinematics.begin();
-      iter != collector_ForwardKinematics.end(); ) {
-    delete *iter;
-    collector_ForwardKinematics.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_MyFactorPosePoint2::iterator iter = collector_MyFactorPosePoint2.begin();
-      iter != collector_MyFactorPosePoint2.end(); ) {
-    delete *iter;
-    collector_MyFactorPosePoint2.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_gtsamPoint2::iterator iter = collector_gtsamPoint2.begin();
-      iter != collector_gtsamPoint2.end(); ) {
-    delete *iter;
-    collector_gtsamPoint2.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_gtsamPoint3::iterator iter = collector_gtsamPoint3.begin();
-      iter != collector_gtsamPoint3.end(); ) {
-    delete *iter;
-    collector_gtsamPoint3.erase(iter++);
-    anyDeleted = true;
-  } }
   { for(Collector_MyBase::iterator iter = collector_MyBase.begin();
       iter != collector_MyBase.end(); ) {
     delete *iter;
@@ -157,6 +50,7 @@ void _deleteAllObjects()
     collector_ForwardKinematicsFactor.erase(iter++);
     anyDeleted = true;
   } }
+
   if(anyDeleted)
     cout <<
       "WARNING:  Wrap modules with variables in the workspace have been reloaded due to\n"
@@ -169,10 +63,12 @@ void _inheritance_RTTIRegister() {
   const mxArray *alreadyCreated = mexGetVariablePtr("global", "gtsam_inheritance_rttiRegistry_created");
   if(!alreadyCreated) {
     std::map<std::string, std::string> types;
+
     types.insert(std::make_pair(typeid(MyBase).name(), "MyBase"));
     types.insert(std::make_pair(typeid(MyTemplatePoint2).name(), "MyTemplatePoint2"));
     types.insert(std::make_pair(typeid(MyTemplateMatrix).name(), "MyTemplateMatrix"));
     types.insert(std::make_pair(typeid(ForwardKinematicsFactor).name(), "ForwardKinematicsFactor"));
+
 
     mxArray *registry = mexGetVariable("global", "gtsamwrap_rttiRegistry");
     if(!registry)
@@ -180,29 +76,23 @@ void _inheritance_RTTIRegister() {
     typedef std::pair<std::string, std::string> StringPair;
     for(const StringPair& rtti_matlab: types) {
       int fieldId = mxAddField(registry, rtti_matlab.first.c_str());
-      if(fieldId < 0)
+      if(fieldId < 0) {
         mexErrMsgTxt("gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly");
+      }
       mxArray *matlabName = mxCreateString(rtti_matlab.second.c_str());
       mxSetFieldByNumber(registry, 0, fieldId, matlabName);
     }
-    if(mexPutVariable("global", "gtsamwrap_rttiRegistry", registry) != 0)
+    if(mexPutVariable("global", "gtsamwrap_rttiRegistry", registry) != 0) {
       mexErrMsgTxt("gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly");
+    }
     mxDestroyArray(registry);
-    
+
     mxArray *newAlreadyCreated = mxCreateNumericMatrix(0, 0, mxINT8_CLASS, mxREAL);
-    if(mexPutVariable("global", "gtsam_geometry_rttiRegistry_created", newAlreadyCreated) != 0)
+    if(mexPutVariable("global", "gtsam_geometry_rttiRegistry_created", newAlreadyCreated) != 0) {
       mexErrMsgTxt("gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly");
+    }
     mxDestroyArray(newAlreadyCreated);
   }
-}
-
-void gtsamPoint2_collectorInsertAndMakeBase_0(int nargout, mxArray *out[], int nargin, const mxArray *in[])
-{
-  mexAtExit(&_deleteAllObjects);
-  typedef boost::shared_ptr<gtsam::Point2> Shared;
-
-  Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
-  collector_gtsamPoint2.insert(self);
 }
 
 void MyBase_collectorInsertAndMakeBase_0(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -212,6 +102,15 @@ void MyBase_collectorInsertAndMakeBase_0(int nargout, mxArray *out[], int nargin
 
   Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
   collector_MyBase.insert(self);
+}
+
+void MyBase_upcastFromVoid_1(int nargout, mxArray *out[], int nargin, const mxArray *in[]) {
+  mexAtExit(&_deleteAllObjects);
+  typedef boost::shared_ptr<MyBase> Shared;
+  boost::shared_ptr<void> *asVoid = *reinterpret_cast<boost::shared_ptr<void>**> (mxGetData(in[0]));
+  out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
+  Shared *self = new Shared(boost::static_pointer_cast<MyBase>(*asVoid));
+  *reinterpret_cast<Shared**>(mxGetData(out[0])) = self;
 }
 
 void MyBase_deconstructor_2(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -227,19 +126,6 @@ void MyBase_deconstructor_2(int nargout, mxArray *out[], int nargin, const mxArr
   }
 }
 
-void gtsamPoint2_deconstructor_3(int nargout, mxArray *out[], int nargin, const mxArray *in[])
-{
-  typedef boost::shared_ptr<gtsam::Point2> Shared;
-  checkArguments("delete_gtsamPoint2",nargout,nargin,1);
-  Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
-  Collector_gtsamPoint2::iterator item;
-  item = collector_gtsamPoint2.find(self);
-  if(item != collector_gtsamPoint2.end()) {
-    delete self;
-    collector_gtsamPoint2.erase(item);
-  }
-}
-
 void MyTemplatePoint2_collectorInsertAndMakeBase_3(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
@@ -251,6 +137,15 @@ void MyTemplatePoint2_collectorInsertAndMakeBase_3(int nargout, mxArray *out[], 
   typedef boost::shared_ptr<MyBase> SharedBase;
   out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
   *reinterpret_cast<SharedBase**>(mxGetData(out[0])) = new SharedBase(*self);
+}
+
+void MyTemplatePoint2_upcastFromVoid_4(int nargout, mxArray *out[], int nargin, const mxArray *in[]) {
+  mexAtExit(&_deleteAllObjects);
+  typedef boost::shared_ptr<MyTemplate<gtsam::Point2>> Shared;
+  boost::shared_ptr<void> *asVoid = *reinterpret_cast<boost::shared_ptr<void>**> (mxGetData(in[0]));
+  out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
+  Shared *self = new Shared(boost::static_pointer_cast<MyTemplate<gtsam::Point2>>(*asVoid));
+  *reinterpret_cast<Shared**>(mxGetData(out[0])) = self;
 }
 
 void MyTemplatePoint2_constructor_5(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -399,20 +294,6 @@ void MyTemplatePoint2_Level_18(int nargout, mxArray *out[], int nargin, const mx
   out[0] = wrap_shared_ptr(boost::make_shared<MyTemplate<Point2>>(MyTemplate<gtsam::Point2>::Level(K)),"MyTemplatePoint2", false);
 }
 
-void gtsamPoint3_constructor_19(int nargout, mxArray *out[], int nargin, const mxArray *in[])
-{
-  mexAtExit(&_deleteAllObjects);
-  typedef boost::shared_ptr<gtsam::Point3> Shared;
-
-  double x = unwrap< double >(in[0]);
-  double y = unwrap< double >(in[1]);
-  double z = unwrap< double >(in[2]);
-  Shared *self = new Shared(new gtsam::Point3(x,y,z));
-  collector_gtsamPoint3.insert(self);
-  out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
-  *reinterpret_cast<Shared**> (mxGetData(out[0])) = self;
-}
-
 void MyTemplateMatrix_collectorInsertAndMakeBase_19(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
@@ -424,6 +305,15 @@ void MyTemplateMatrix_collectorInsertAndMakeBase_19(int nargout, mxArray *out[],
   typedef boost::shared_ptr<MyBase> SharedBase;
   out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
   *reinterpret_cast<SharedBase**>(mxGetData(out[0])) = new SharedBase(*self);
+}
+
+void MyTemplateMatrix_upcastFromVoid_20(int nargout, mxArray *out[], int nargin, const mxArray *in[]) {
+  mexAtExit(&_deleteAllObjects);
+  typedef boost::shared_ptr<MyTemplate<gtsam::Matrix>> Shared;
+  boost::shared_ptr<void> *asVoid = *reinterpret_cast<boost::shared_ptr<void>**> (mxGetData(in[0]));
+  out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
+  Shared *self = new Shared(boost::static_pointer_cast<MyTemplate<gtsam::Matrix>>(*asVoid));
+  *reinterpret_cast<Shared**>(mxGetData(out[0])) = self;
 }
 
 void MyTemplateMatrix_constructor_21(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -572,14 +462,6 @@ void MyTemplateMatrix_Level_34(int nargout, mxArray *out[], int nargin, const mx
   out[0] = wrap_shared_ptr(boost::make_shared<MyTemplate<Matrix>>(MyTemplate<gtsam::Matrix>::Level(K)),"MyTemplateMatrix", false);
 }
 
-void Test_return_vector2_35(int nargout, mxArray *out[], int nargin, const mxArray *in[])
-{
-  checkArguments("return_vector2",nargout,nargin-1,1);
-  auto obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
-  Vector value = unwrap< Vector >(in[1]);
-  out[0] = wrap< Vector >(obj->return_vector2(value));
-}
-
 void ForwardKinematicsFactor_collectorInsertAndMakeBase_35(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
@@ -591,6 +473,15 @@ void ForwardKinematicsFactor_collectorInsertAndMakeBase_35(int nargout, mxArray 
   typedef boost::shared_ptr<gtsam::BetweenFactor<gtsam::Pose3>> SharedBase;
   out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
   *reinterpret_cast<SharedBase**>(mxGetData(out[0])) = new SharedBase(*self);
+}
+
+void ForwardKinematicsFactor_upcastFromVoid_36(int nargout, mxArray *out[], int nargin, const mxArray *in[]) {
+  mexAtExit(&_deleteAllObjects);
+  typedef boost::shared_ptr<ForwardKinematicsFactor> Shared;
+  boost::shared_ptr<void> *asVoid = *reinterpret_cast<boost::shared_ptr<void>**> (mxGetData(in[0]));
+  out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
+  Shared *self = new Shared(boost::static_pointer_cast<ForwardKinematicsFactor>(*asVoid));
+  *reinterpret_cast<Shared**>(mxGetData(out[0])) = self;
 }
 
 void ForwardKinematicsFactor_deconstructor_37(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -619,19 +510,19 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
   try {
     switch(id) {
     case 0:
-      gtsamPoint2_collectorInsertAndMakeBase_0(nargout, out, nargin-1, in+1);
+      MyBase_collectorInsertAndMakeBase_0(nargout, out, nargin-1, in+1);
       break;
     case 1:
-      MyBase_collectorInsertAndMakeBase_0(nargout, out, nargin-1, in+1);
+      MyBase_upcastFromVoid_1(nargout, out, nargin-1, in+1);
       break;
     case 2:
       MyBase_deconstructor_2(nargout, out, nargin-1, in+1);
       break;
     case 3:
-      gtsamPoint2_deconstructor_3(nargout, out, nargin-1, in+1);
+      MyTemplatePoint2_collectorInsertAndMakeBase_3(nargout, out, nargin-1, in+1);
       break;
     case 4:
-      MyTemplatePoint2_collectorInsertAndMakeBase_3(nargout, out, nargin-1, in+1);
+      MyTemplatePoint2_upcastFromVoid_4(nargout, out, nargin-1, in+1);
       break;
     case 5:
       MyTemplatePoint2_constructor_5(nargout, out, nargin-1, in+1);
@@ -676,10 +567,10 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
       MyTemplatePoint2_Level_18(nargout, out, nargin-1, in+1);
       break;
     case 19:
-      gtsamPoint3_constructor_19(nargout, out, nargin-1, in+1);
+      MyTemplateMatrix_collectorInsertAndMakeBase_19(nargout, out, nargin-1, in+1);
       break;
     case 20:
-      MyTemplateMatrix_collectorInsertAndMakeBase_19(nargout, out, nargin-1, in+1);
+      MyTemplateMatrix_upcastFromVoid_20(nargout, out, nargin-1, in+1);
       break;
     case 21:
       MyTemplateMatrix_constructor_21(nargout, out, nargin-1, in+1);
@@ -724,10 +615,10 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
       MyTemplateMatrix_Level_34(nargout, out, nargin-1, in+1);
       break;
     case 35:
-      Test_return_vector2_35(nargout, out, nargin-1, in+1);
+      ForwardKinematicsFactor_collectorInsertAndMakeBase_35(nargout, out, nargin-1, in+1);
       break;
     case 36:
-      ForwardKinematicsFactor_collectorInsertAndMakeBase_35(nargout, out, nargin-1, in+1);
+      ForwardKinematicsFactor_upcastFromVoid_36(nargout, out, nargin-1, in+1);
       break;
     case 37:
       ForwardKinematicsFactor_deconstructor_37(nargout, out, nargin-1, in+1);
