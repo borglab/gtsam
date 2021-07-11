@@ -14,7 +14,7 @@
 #include <gtsam/nonlinear/factorTesting.h>
 #include <gtsam/slam/BetweenFactor.h>
 
-using namespace boost::placeholders;
+using namespace std::placeholders;
 using namespace gtsam;
 using namespace gtsam::symbol_shorthand;
 using namespace gtsam::noiseModel;
@@ -35,15 +35,16 @@ TEST(BetweenFactor, Rot3) {
   Vector expected = Rot3::Logmap(measured.inverse() * R1.between(R2));
   EXPECT(assert_equal(expected,actual/*, 1e-100*/)); // Uncomment to make unit test fail
 
-  Matrix numericalH1 = numericalDerivative21<Vector3,Rot3,Rot3>(
-      boost::function<Vector(const Rot3&, const Rot3&)>(boost::bind(
-          &BetweenFactor<Rot3>::evaluateError, factor, _1, _2, boost::none,
-          boost::none)), R1, R2, 1e-5);
+  Matrix numericalH1 = numericalDerivative21<Vector3, Rot3, Rot3>(
+      std::function<Vector(const Rot3&, const Rot3&)>(std::bind(
+          &BetweenFactor<Rot3>::evaluateError, factor, std::placeholders::_1,
+          std::placeholders::_2, boost::none, boost::none)),
+      R1, R2, 1e-5);
   EXPECT(assert_equal(numericalH1,actualH1, 1E-5));
 
   Matrix numericalH2 = numericalDerivative22<Vector3,Rot3,Rot3>(
-      boost::function<Vector(const Rot3&, const Rot3&)>(boost::bind(
-          &BetweenFactor<Rot3>::evaluateError, factor, _1, _2, boost::none,
+      std::function<Vector(const Rot3&, const Rot3&)>(std::bind(
+          &BetweenFactor<Rot3>::evaluateError, factor, std::placeholders::_1, std::placeholders::_2, boost::none,
           boost::none)), R1, R2, 1e-5);
   EXPECT(assert_equal(numericalH2,actualH2, 1E-5));
 }
