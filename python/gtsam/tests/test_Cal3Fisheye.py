@@ -29,7 +29,7 @@ class TestCal3Fisheye(GtsamTestCase):
         image plane and theta the incident angle of the object point.
         """
         x, y, z = 1.0, 0.0, 1.0
-        # x, y, z = 0.5, 0.0, 2.0 <== Note: this example fails!
+        # x, y, z = 0.5, 0.0, 2.0
         u, v = np.arctan2(x, z), 0.0
         cls.obj_point = np.array([x, y, z])
         cls.img_point = np.array([u, v])
@@ -92,6 +92,44 @@ class TestCal3Fisheye(GtsamTestCase):
         graph.add(factor)
         score = graph.error(state)
         self.assertAlmostEqual(score, 0)
+
+    @unittest.skip("triangulatePoint3 currently seems to require perspective projections.")
+    def test_triangulation_skipped(self):
+        """Estimate spatial point from image measurements"""
+        p1 = [-1.0, 0.0, -1.0]
+        p2 = [ 1.0, 0.0, -1.0]
+        q1 = gtsam.Rot3(1.0, 0.0, 0.0, 0.0)
+        q2 = gtsam.Rot3(1.0, 0.0, 0.0, 0.0)
+        obj_point = np.array([0.0, 0.0, 0.0])
+        pose1 = gtsam.Pose3(q1, p1)
+        pose2 = gtsam.Pose3(q2, p2)
+        camera1 = gtsam.PinholeCameraCal3Fisheye(pose1)
+        camera2 = gtsam.PinholeCameraCal3Fisheye(pose2)
+        cameras = gtsam.CameraSetCal3Fisheye([camera1, camera2])
+        measurements = gtsam.Point2Vector([k.project(obj_point) for k in cameras])
+        triangulated = gtsam.triangulatePoint3(cameras, measurements, rank_tol=1e-9, optimize=True)
+        self.gtsamAssertEquals(measurements[0], self.img_point)
+        self.gtsamAssertEquals(triangulated, obj_point)
+
+    def test_triangulation_rectify(self):
+        """Estimate spatial point from image measurements using rectification"""
+        p1 = [-1.0, 0.0, -1.0]
+        p2 = [ 1.0, 0.0, -1.0]
+        q1 = gtsam.Rot3(1.0, 0.0, 0.0, 0.0)
+        q2 = gtsam.Rot3(1.0, 0.0, 0.0, 0.0)
+        obj_point = np.array([0.0, 0.0, 0.0])
+        pose1 = gtsam.Pose3(q1, p1)
+        pose2 = gtsam.Pose3(q2, p2)
+        camera1 = gtsam.PinholeCameraCal3Fisheye(pose1)
+        camera2 = gtsam.PinholeCameraCal3Fisheye(pose2)
+        cameras = gtsam.CameraSetCal3Fisheye([camera1, camera2])
+        measurements = gtsam.Point2Vector([k.project(obj_point) for k in cameras])
+        rectified = gtsam.Point2Vector([k.calibration().calibrate(pt) for k, pt in zip(cameras, measurements)])
+        shared_cal = gtsam.Cal3_S2()
+        poses = gtsam.Pose3Vector([pose1, pose2])
+        triangulated = gtsam.triangulatePoint3(poses, shared_cal, rectified, rank_tol=1e-9, optimize=False)
+        self.gtsamAssertEquals(measurements[0], self.img_point)
+        self.gtsamAssertEquals(triangulated, obj_point)
 
     def test_retract(self):
         expected = gtsam.Cal3Fisheye(100 + 2, 105 + 3, 0.0 + 4, 320 + 5, 240 + 6,
