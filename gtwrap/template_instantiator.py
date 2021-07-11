@@ -4,7 +4,7 @@
 
 import itertools
 from copy import deepcopy
-from typing import List
+from typing import Iterable, List
 
 import gtwrap.interface_parser as parser
 
@@ -29,12 +29,13 @@ def instantiate_type(ctype: parser.Type,
     ctype = deepcopy(ctype)
 
     # Check if the return type has template parameters
-    if len(ctype.typename.instantiations) > 0:
+    if ctype.typename.instantiations:
         for idx, instantiation in enumerate(ctype.typename.instantiations):
             if instantiation.name in template_typenames:
                 template_idx = template_typenames.index(instantiation.name)
-                ctype.typename.instantiations[idx] = instantiations[
-                    template_idx]
+                ctype.typename.instantiations[
+                    idx] = instantiations[  # type: ignore
+                        template_idx]
 
         return ctype
 
@@ -212,7 +213,9 @@ class InstantiatedMethod(parser.Method):
         void func(X x, Y y);
     }
     """
-    def __init__(self, original, instantiations: List[parser.Typename] = ''):
+    def __init__(self,
+                 original,
+                 instantiations: Iterable[parser.Typename] = ()):
         self.original = original
         self.instantiations = instantiations
         self.template = ''
@@ -278,7 +281,7 @@ class InstantiatedClass(parser.Class):
         self.original = original
         self.instantiations = instantiations
 
-        self.template = ''
+        self.template = None
         self.is_virtual = original.is_virtual
         self.parent_class = original.parent_class
         self.parent = original.parent
@@ -318,7 +321,7 @@ class InstantiatedClass(parser.Class):
         self.methods = []
         for method in instantiated_methods:
             if not method.template:
-                self.methods.append(InstantiatedMethod(method, ''))
+                self.methods.append(InstantiatedMethod(method, ()))
             else:
                 instantiations = []
                 # Get all combinations of template parameters
@@ -342,9 +345,9 @@ class InstantiatedClass(parser.Class):
         )
 
     def __repr__(self):
-        return "{virtual} class {name} [{cpp_class}]: {parent_class}\n"\
-            "{ctors}\n{static_methods}\n{methods}".format(
-               virtual="virtual" if self.is_virtual else '',
+        return "{virtual}Class {cpp_class} : {parent_class}\n"\
+            "{ctors}\n{static_methods}\n{methods}\n{operators}".format(
+               virtual="virtual " if self.is_virtual else '',
                name=self.name,
                cpp_class=self.to_cpp(),
                parent_class=self.parent,
