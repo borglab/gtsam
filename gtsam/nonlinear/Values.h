@@ -108,19 +108,19 @@ namespace gtsam {
 
     /// Mutable forward iterator, with value type KeyValuePair
     typedef boost::transform_iterator<
-        boost::function1<KeyValuePair, const KeyValuePtrPair&>, KeyValueMap::iterator> iterator;
+        std::function<KeyValuePair(const KeyValuePtrPair&)>, KeyValueMap::iterator> iterator;
 
     /// Const forward iterator, with value type ConstKeyValuePair
     typedef boost::transform_iterator<
-        boost::function1<ConstKeyValuePair, const ConstKeyValuePtrPair&>, KeyValueMap::const_iterator> const_iterator;
+        std::function<ConstKeyValuePair(const ConstKeyValuePtrPair&)>, KeyValueMap::const_iterator> const_iterator;
 
     /// Mutable reverse iterator, with value type KeyValuePair
     typedef boost::transform_iterator<
-        boost::function1<KeyValuePair, const KeyValuePtrPair&>, KeyValueMap::reverse_iterator> reverse_iterator;
+        std::function<KeyValuePair(const KeyValuePtrPair&)>, KeyValueMap::reverse_iterator> reverse_iterator;
 
     /// Const reverse iterator, with value type ConstKeyValuePair
     typedef boost::transform_iterator<
-        boost::function1<ConstKeyValuePair, const ConstKeyValuePtrPair&>, KeyValueMap::const_reverse_iterator> const_reverse_iterator;
+        std::function<ConstKeyValuePair(const ConstKeyValuePtrPair&)>, KeyValueMap::const_reverse_iterator> const_reverse_iterator;
 
     typedef KeyValuePair value_type;
 
@@ -321,7 +321,7 @@ namespace gtsam {
      * the original Values class.
      */
     Filtered<Value>
-    filter(const boost::function<bool(Key)>& filterFcn);
+    filter(const std::function<bool(Key)>& filterFcn);
 
     /**
      * Return a filtered view of this Values class, without copying any data.
@@ -344,7 +344,7 @@ namespace gtsam {
      */
     template<class ValueType>
     Filtered<ValueType>
-    filter(const boost::function<bool(Key)>& filterFcn = &_truePredicate<Key>);
+    filter(const std::function<bool(Key)>& filterFcn = &_truePredicate<Key>);
 
     /**
      * Return a filtered view of this Values class, without copying any data.
@@ -360,7 +360,7 @@ namespace gtsam {
      * the original Values class.
      */
     ConstFiltered<Value>
-    filter(const boost::function<bool(Key)>& filterFcn) const;
+    filter(const std::function<bool(Key)>& filterFcn) const;
 
     /**
      * Return a filtered view of this Values class, without copying any data.
@@ -382,7 +382,7 @@ namespace gtsam {
      */
     template<class ValueType>
     ConstFiltered<ValueType>
-    filter(const boost::function<bool(Key)>& filterFcn = &_truePredicate<Key>) const;
+    filter(const std::function<bool(Key)>& filterFcn = &_truePredicate<Key>) const;
 
     // Count values of given type \c ValueType
     template<class ValueType>
@@ -399,7 +399,7 @@ namespace gtsam {
     // Filters based on ValueType (if not Value) and also based on the user-
     // supplied \c filter function.
     template<class ValueType>
-    static bool filterHelper(const boost::function<bool(Key)> filter, const ConstKeyValuePair& key_value) {
+    static bool filterHelper(const std::function<bool(Key)> filter, const ConstKeyValuePair& key_value) {
       BOOST_STATIC_ASSERT((!boost::is_same<ValueType, Value>::value));
       // Filter and check the type
       return filter(key_value.key) && (dynamic_cast<const GenericValue<ValueType>*>(&key_value.value));
