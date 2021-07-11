@@ -12,7 +12,7 @@ Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellae
 
 import sys
 
-import pyparsing
+import pyparsing  # type: ignore
 
 from .classes import *
 from .declaration import *

@@ -14,7 +14,7 @@ Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellae
 
 from typing import List, Union
 
-from pyparsing import Forward, ParseResults, ZeroOrMore
+from pyparsing import Forward, ParseResults, ZeroOrMore  # type: ignore
 
 from .classes import Class, collect_namespaces
 from .declaration import ForwardDeclaration, Include
@@ -93,7 +93,7 @@ class Namespace:
         return Namespace(t.name, content)
 
     def find_class_or_function(
-            self, typename: Typename) -> Union[Class, GlobalFunction]:
+            self, typename: Typename) -> Union[Class, GlobalFunction, ForwardDeclaration]:
         """
         Find the Class or GlobalFunction object given its typename.
         We have to traverse the tree of namespaces.
@@ -115,7 +115,7 @@ class Namespace:
             return res[0]
 
     def top_level(self) -> "Namespace":
-        """Return the top leve namespace."""
+        """Return the top level namespace."""
         if self.name == '' or self.parent == '':
             return self
         else:
