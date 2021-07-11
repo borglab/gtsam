@@ -103,7 +103,7 @@ namespace gtsam {
       boost::transform_iterator<
       KeyValuePair(*)(Values::KeyValuePair),
       boost::filter_iterator<
-      boost::function<bool(const Values::ConstKeyValuePair&)>,
+      std::function<bool(const Values::ConstKeyValuePair&)>,
       Values::iterator> >
       iterator;
 
@@ -113,7 +113,7 @@ namespace gtsam {
       boost::transform_iterator<
       ConstKeyValuePair(*)(Values::ConstKeyValuePair),
       boost::filter_iterator<
-      boost::function<bool(const Values::ConstKeyValuePair&)>,
+      std::function<bool(const Values::ConstKeyValuePair&)>,
       Values::const_iterator> >
       const_const_iterator;
 
@@ -134,7 +134,7 @@ namespace gtsam {
 
   private:
     Filtered(
-        const boost::function<bool(const Values::ConstKeyValuePair&)>& filter,
+        const std::function<bool(const Values::ConstKeyValuePair&)>& filter,
         Values& values) :
         begin_(
             boost::make_transform_iterator(
@@ -205,7 +205,7 @@ namespace gtsam {
     const_iterator begin_;
     const_iterator end_;
     ConstFiltered(
-        const boost::function<bool(const Values::ConstKeyValuePair&)>& filter,
+        const std::function<bool(const Values::ConstKeyValuePair&)>& filter,
         const Values& values) {
       // We remove the const from values to create a non-const Filtered
       // view, then pull the const_iterators out of it.
@@ -236,35 +236,35 @@ namespace gtsam {
 
   /* ************************************************************************* */
   Values::Filtered<Value>
-  inline Values::filter(const boost::function<bool(Key)>& filterFcn) {
+  inline Values::filter(const std::function<bool(Key)>& filterFcn) {
     return filter<Value>(filterFcn);
   }
 
   /* ************************************************************************* */
   template<class ValueType>
   Values::Filtered<ValueType>
-  Values::filter(const boost::function<bool(Key)>& filterFcn) {
-    return Filtered<ValueType>(boost::bind(&filterHelper<ValueType>, filterFcn,
-      boost::placeholders::_1), *this);
+  Values::filter(const std::function<bool(Key)>& filterFcn) {
+    return Filtered<ValueType>(std::bind(&filterHelper<ValueType>, filterFcn,
+      std::placeholders::_1), *this);
   }
 
   /* ************************************************************************* */
   Values::ConstFiltered<Value>
-  inline Values::filter(const boost::function<bool(Key)>& filterFcn) const {
+  inline Values::filter(const std::function<bool(Key)>& filterFcn) const {
     return filter<Value>(filterFcn);
   }
 
   /* ************************************************************************* */
   template<class ValueType>
   Values::ConstFiltered<ValueType>
-  Values::filter(const boost::function<bool(Key)>& filterFcn) const {
-    return ConstFiltered<ValueType>(boost::bind(&filterHelper<ValueType>,
-      filterFcn, boost::placeholders::_1), *this);
+  Values::filter(const std::function<bool(Key)>& filterFcn) const {
+    return ConstFiltered<ValueType>(std::bind(&filterHelper<ValueType>,
+      filterFcn, std::placeholders::_1), *this);
   }
 
   /* ************************************************************************* */
    template<>
-   inline bool Values::filterHelper<Value>(const boost::function<bool(Key)> filter,
+   inline bool Values::filterHelper<Value>(const std::function<bool(Key)> filter,
        const ConstKeyValuePair& key_value) {
      // Filter and check the type
      return filter(key_value.key);

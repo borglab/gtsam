@@ -19,9 +19,8 @@
 #include <gtsam/base/numericalDerivative.h>
 
 #include <CppUnitLite/TestHarness.h>
-#include <boost/bind/bind.hpp>
 
-using namespace boost::placeholders;
+using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 
@@ -128,8 +127,9 @@ TEST(ImuBias, operatorSubB) {
 TEST(ImuBias, Correct1) {
   Matrix aH1, aH2;
   const Vector3 measurement(1, 2, 3);
-  boost::function<Vector3(const Bias&, const Vector3&)> f = boost::bind(
-      &Bias::correctAccelerometer, _1, _2, boost::none, boost::none);
+  std::function<Vector3(const Bias&, const Vector3&)> f =
+      std::bind(&Bias::correctAccelerometer, std::placeholders::_1,
+                std::placeholders::_2, boost::none, boost::none);
   bias1.correctAccelerometer(measurement, aH1, aH2);
   EXPECT(assert_equal(numericalDerivative21(f, bias1, measurement), aH1));
   EXPECT(assert_equal(numericalDerivative22(f, bias1, measurement), aH2));
@@ -139,8 +139,9 @@ TEST(ImuBias, Correct1) {
 TEST(ImuBias, Correct2) {
   Matrix aH1, aH2;
   const Vector3 measurement(1, 2, 3);
-  boost::function<Vector3(const Bias&, const Vector3&)> f =
-      boost::bind(&Bias::correctGyroscope, _1, _2, boost::none, boost::none);
+  std::function<Vector3(const Bias&, const Vector3&)> f =
+      std::bind(&Bias::correctGyroscope, std::placeholders::_1,
+                std::placeholders::_2, boost::none, boost::none);
   bias1.correctGyroscope(measurement, aH1, aH2);
   EXPECT(assert_equal(numericalDerivative21(f, bias1, measurement), aH1));
   EXPECT(assert_equal(numericalDerivative22(f, bias1, measurement), aH2));

@@ -26,7 +26,7 @@
 #include <CppUnitLite/TestHarness.h>
 #include <iostream>
 
-using namespace boost::placeholders;
+using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 

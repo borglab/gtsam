@@ -25,10 +25,9 @@
 #include <gtsam/base/debug.h>
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/bind/bind.hpp>
 #include <list>
 
-using namespace boost::placeholders;
+using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 
@@ -175,17 +174,17 @@ TEST(AHRSFactor, Error) {
 
   // Expected Jacobians
   Matrix H1e = numericalDerivative11<Vector3, Rot3>(
-      boost::bind(&callEvaluateError, factor, _1, x2, bias), x1);
+      std::bind(&callEvaluateError, factor, std::placeholders::_1, x2, bias), x1);
   Matrix H2e = numericalDerivative11<Vector3, Rot3>(
-      boost::bind(&callEvaluateError, factor, x1, _1, bias), x2);
+      std::bind(&callEvaluateError, factor, x1, std::placeholders::_1, bias), x2);
   Matrix H3e = numericalDerivative11<Vector3, Vector3>(
-      boost::bind(&callEvaluateError, factor, x1, x2, _1), bias);
+      std::bind(&callEvaluateError, factor, x1, x2, std::placeholders::_1), bias);
 
   // Check rotation Jacobians
   Matrix RH1e = numericalDerivative11<Rot3, Rot3>(
-      boost::bind(&evaluateRotationError, factor, _1, x2, bias), x1);
+      std::bind(&evaluateRotationError, factor, std::placeholders::_1, x2, bias), x1);
   Matrix RH2e = numericalDerivative11<Rot3, Rot3>(
-      boost::bind(&evaluateRotationError, factor, x1, _1, bias), x2);
+      std::bind(&evaluateRotationError, factor, x1, std::placeholders::_1, bias), x2);
 
   // Actual Jacobians
   Matrix H1a, H2a, H3a;
@@ -234,19 +233,19 @@ TEST(AHRSFactor, ErrorWithBiases) {
 
   // Expected Jacobians
   Matrix H1e = numericalDerivative11<Vector, Rot3>(
-      boost::bind(&callEvaluateError, factor, _1, x2, bias), x1);
+      std::bind(&callEvaluateError, factor, std::placeholders::_1, x2, bias), x1);
   Matrix H2e = numericalDerivative11<Vector, Rot3>(
-      boost::bind(&callEvaluateError, factor, x1, _1, bias), x2);
+      std::bind(&callEvaluateError, factor, x1, std::placeholders::_1, bias), x2);
   Matrix H3e = numericalDerivative11<Vector, Vector3>(
-      boost::bind(&callEvaluateError, factor, x1, x2, _1), bias);
+      std::bind(&callEvaluateError, factor, x1, x2, std::placeholders::_1), bias);
 
   // Check rotation Jacobians
   Matrix RH1e = numericalDerivative11<Rot3, Rot3>(
-      boost::bind(&evaluateRotationError, factor, _1, x2, bias), x1);
+      std::bind(&evaluateRotationError, factor, std::placeholders::_1, x2, bias), x1);
   Matrix RH2e = numericalDerivative11<Rot3, Rot3>(
-      boost::bind(&evaluateRotationError, factor, x1, _1, bias), x2);
+      std::bind(&evaluateRotationError, factor, x1, std::placeholders::_1, bias), x2);
   Matrix RH3e = numericalDerivative11<Rot3, Vector3>(
-      boost::bind(&evaluateRotationError, factor, x1, x2, _1), bias);
+      std::bind(&evaluateRotationError, factor, x1, x2, std::placeholders::_1), bias);
 
   // Actual Jacobians
   Matrix H1a, H2a, H3a;
@@ -269,7 +268,7 @@ TEST( AHRSFactor, PartialDerivativeExpmap ) {
 
   // Compute numerical derivatives
   Matrix expectedDelRdelBiasOmega = numericalDerivative11<Rot3, Vector3>(
-      boost::bind(&evaluateRotation, measuredOmega, _1, deltaT), biasOmega);
+      std::bind(&evaluateRotation, measuredOmega, std::placeholders::_1, deltaT), biasOmega);
 
   const Matrix3 Jr = Rot3::ExpmapDerivative(
       (measuredOmega - biasOmega) * deltaT);
@@ -294,7 +293,7 @@ TEST( AHRSFactor, PartialDerivativeLogmap ) {
 
   // Compute numerical derivatives
   Matrix expectedDelFdeltheta = numericalDerivative11<Vector3, Vector3>(
-      boost::bind(&evaluateLogRotation, thetahat, _1), deltatheta);
+      std::bind(&evaluateLogRotation, thetahat, std::placeholders::_1), deltatheta);
 
   const Vector3 x = thetahat; // parametrization of so(3)
   const Matrix3 X = skewSymmetric(x); // element of Lie algebra so(3): X = x^
@@ -368,7 +367,7 @@ TEST( AHRSFactor, FirstOrderPreIntegratedMeasurements ) {
   // Compute numerical derivatives
   Matrix expectedDelRdelBias =
       numericalDerivative11<Rot3, Vector3>(
-          boost::bind(&evaluatePreintegratedMeasurementsRotation, _1,
+          std::bind(&evaluatePreintegratedMeasurementsRotation, std::placeholders::_1,
               measuredOmegas, deltaTs, Vector3(M_PI / 100.0, 0.0, 0.0)), bias);
   Matrix expectedDelRdelBiasOmega = expectedDelRdelBias.rightCols(3);
 
@@ -410,19 +409,19 @@ TEST( AHRSFactor, ErrorWithBiasesAndSensorBodyDisplacement ) {
 
   // Expected Jacobians
   Matrix H1e = numericalDerivative11<Vector, Rot3>(
-      boost::bind(&callEvaluateError, factor, _1, x2, bias), x1);
+      std::bind(&callEvaluateError, factor, std::placeholders::_1, x2, bias), x1);
   Matrix H2e = numericalDerivative11<Vector, Rot3>(
-      boost::bind(&callEvaluateError, factor, x1, _1, bias), x2);
+      std::bind(&callEvaluateError, factor, x1, std::placeholders::_1, bias), x2);
   Matrix H3e = numericalDerivative11<Vector, Vector3>(
-      boost::bind(&callEvaluateError, factor, x1, x2, _1), bias);
+      std::bind(&callEvaluateError, factor, x1, x2, std::placeholders::_1), bias);
 
   // Check rotation Jacobians
   Matrix RH1e = numericalDerivative11<Rot3, Rot3>(
-      boost::bind(&evaluateRotationError, factor, _1, x2, bias), x1);
+      std::bind(&evaluateRotationError, factor, std::placeholders::_1, x2, bias), x1);
   Matrix RH2e = numericalDerivative11<Rot3, Rot3>(
-      boost::bind(&evaluateRotationError, factor, x1, _1, bias), x2);
+      std::bind(&evaluateRotationError, factor, x1, std::placeholders::_1, bias), x2);
   Matrix RH3e = numericalDerivative11<Rot3, Vector3>(
-      boost::bind(&evaluateRotationError, factor, x1, x2, _1), bias);
+      std::bind(&evaluateRotationError, factor, x1, x2, std::placeholders::_1), bias);
 
   // Actual Jacobians
   Matrix H1a, H2a, H3a;
@@ -459,8 +458,8 @@ TEST (AHRSFactor, predictTest) {
 
   // AHRSFactor::PreintegratedMeasurements::predict
   Matrix expectedH = numericalDerivative11<Vector3, Vector3>(
-      boost::bind(&AHRSFactor::PreintegratedMeasurements::predict,
-          &pim, _1, boost::none), bias);
+      std::bind(&AHRSFactor::PreintegratedMeasurements::predict,
+          &pim, std::placeholders::_1, boost::none), bias);
 
   // Actual Jacobians
   Matrix H;
