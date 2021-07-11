@@ -22,8 +22,7 @@
 
 #include <boost/assign/std/vector.hpp> // for operator +=
 using namespace boost::assign;
-#include <boost/bind/bind.hpp>
-using namespace boost::placeholders;
+using namespace std::placeholders;
 
 #include <CppUnitLite/TestHarness.h>
 #include <cmath>
@@ -215,7 +214,7 @@ TEST(Pose3, translation) {
   EXPECT(assert_equal(Point3(3.5, -8.2, 4.2), T.translation(actualH), 1e-8));
 
   Matrix numericalH = numericalDerivative11<Point3, Pose3>(
-      boost::bind(&Pose3::translation, _1, boost::none), T);
+      std::bind(&Pose3::translation, std::placeholders::_1, boost::none), T);
   EXPECT(assert_equal(numericalH, actualH, 1e-6));
 }
 
@@ -226,7 +225,7 @@ TEST(Pose3, rotation) {
   EXPECT(assert_equal(R, T.rotation(actualH), 1e-8));
 
   Matrix numericalH = numericalDerivative11<Rot3, Pose3>(
-      boost::bind(&Pose3::rotation, _1, boost::none), T);
+      std::bind(&Pose3::rotation, std::placeholders::_1, boost::none), T);
   EXPECT(assert_equal(numericalH, actualH, 1e-6));
 }
 
@@ -1052,7 +1051,9 @@ TEST(Pose3, Create) {
   Matrix63 actualH1, actualH2;
   Pose3 actual = Pose3::Create(R, P2, actualH1, actualH2);
   EXPECT(assert_equal(T, actual));
-  boost::function<Pose3(Rot3,Point3)> create = boost::bind(Pose3::Create,_1,_2,boost::none,boost::none);
+  std::function<Pose3(Rot3, Point3)> create =
+      std::bind(Pose3::Create, std::placeholders::_1, std::placeholders::_2,
+                boost::none, boost::none);
   EXPECT(assert_equal(numericalDerivative21<Pose3,Rot3,Point3>(create, R, P2), actualH1, 1e-9));
   EXPECT(assert_equal(numericalDerivative22<Pose3,Rot3,Point3>(create, R, P2), actualH2, 1e-9));
 }

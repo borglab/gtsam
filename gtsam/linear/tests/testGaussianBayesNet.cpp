@@ -32,7 +32,7 @@
 #include <sstream>
 
 using namespace boost::assign;
-using namespace boost::placeholders;
+using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 
@@ -270,11 +270,11 @@ TEST(GaussianBayesNet, ComputeSteepestDescentPoint) {
 
   // Compute the Hessian numerically
   Matrix hessian = numericalHessian<Vector10>(
-      boost::bind(&computeError, gbn, _1), Vector10::Zero());
+      std::bind(&computeError, gbn, std::placeholders::_1), Vector10::Zero());
 
   // Compute the gradient numerically
   Vector gradient = numericalGradient<Vector10>(
-      boost::bind(&computeError, gbn, _1), Vector10::Zero());
+      std::bind(&computeError, gbn, std::placeholders::_1), Vector10::Zero());
 
   // Compute the gradient using dense matrices
   Matrix augmentedHessian = GaussianFactorGraph(gbn).augmentedHessian();

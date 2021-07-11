@@ -26,7 +26,7 @@
 
 #include <GeographicLib/LocalCartesian.hpp>
 
-using namespace boost::placeholders;
+using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 using namespace GeographicLib;
@@ -64,7 +64,7 @@ TEST( MagFactor, unrotate ) {
   Point3 expected(22735.5, 314.502, 44202.5);
   EXPECT( assert_equal(expected, MagFactor::unrotate(theta,nM,H),1e-1));
   EXPECT( assert_equal(numericalDerivative11<Point3,Rot2> //
-      (boost::bind(&MagFactor::unrotate, _1, nM, none), theta), H, 1e-6));
+      (std::bind(&MagFactor::unrotate, _1, nM, none), theta), H, 1e-6));
 }
 
 // *************************************************************************
@@ -76,35 +76,35 @@ TEST( MagFactor, Factors ) {
   MagFactor f(1, measured, s, dir, bias, model);
   EXPECT( assert_equal(Z_3x1,f.evaluateError(theta,H1),1e-5));
   EXPECT( assert_equal((Matrix)numericalDerivative11<Vector,Rot2> //
-      (boost::bind(&MagFactor::evaluateError, &f, _1, none), theta), H1, 1e-7));
+      (std::bind(&MagFactor::evaluateError, &f, _1, none), theta), H1, 1e-7));
 
 // MagFactor1
   MagFactor1 f1(1, measured, s, dir, bias, model);
   EXPECT( assert_equal(Z_3x1,f1.evaluateError(nRb,H1),1e-5));
   EXPECT( assert_equal(numericalDerivative11<Vector,Rot3> //
-      (boost::bind(&MagFactor1::evaluateError, &f1, _1, none), nRb), H1, 1e-7));
+      (std::bind(&MagFactor1::evaluateError, &f1, _1, none), nRb), H1, 1e-7));
 
 // MagFactor2
   MagFactor2 f2(1, 2, measured, nRb, model);
   EXPECT( assert_equal(Z_3x1,f2.evaluateError(scaled,bias,H1,H2),1e-5));
   EXPECT( assert_equal(numericalDerivative11<Vector,Point3> //
-      (boost::bind(&MagFactor2::evaluateError, &f2, _1, bias, none, none), scaled),//
+      (std::bind(&MagFactor2::evaluateError, &f2, _1, bias, none, none), scaled),//
       H1, 1e-7));
   EXPECT( assert_equal(numericalDerivative11<Vector,Point3> //
-      (boost::bind(&MagFactor2::evaluateError, &f2, scaled, _1, none, none), bias),//
+      (std::bind(&MagFactor2::evaluateError, &f2, scaled, _1, none, none), bias),//
       H2, 1e-7));
 
 // MagFactor2
   MagFactor3 f3(1, 2, 3, measured, nRb, model);
   EXPECT(assert_equal(Z_3x1,f3.evaluateError(s,dir,bias,H1,H2,H3),1e-5));
   EXPECT(assert_equal((Matrix)numericalDerivative11<Vector,double> //
-      (boost::bind(&MagFactor3::evaluateError, &f3, _1, dir, bias, none, none, none), s),//
+      (std::bind(&MagFactor3::evaluateError, &f3, _1, dir, bias, none, none, none), s),//
       H1, 1e-7));
   EXPECT(assert_equal(numericalDerivative11<Vector,Unit3> //
-      (boost::bind(&MagFactor3::evaluateError, &f3, s, _1, bias, none, none, none), dir),//
+      (std::bind(&MagFactor3::evaluateError, &f3, s, _1, bias, none, none, none), dir),//
       H2, 1e-7));
   EXPECT(assert_equal(numericalDerivative11<Vector,Point3> //
-      (boost::bind(&MagFactor3::evaluateError, &f3, s, dir, _1, none, none, none), bias),//
+      (std::bind(&MagFactor3::evaluateError, &f3, s, dir, _1, none, none, none), bias),//
       H3, 1e-7));
 }
 
