@@ -20,6 +20,7 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/slam/ProjectionFactor.h>
 #include <gtsam/linear/Sampler.h>
+#include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/Values.h>
@@ -138,6 +139,22 @@ Matrix extractPose3(const Values& values) {
     result.row(j).segment(6, 3) << key_value.value.rotation().matrix().row(2);
     result.row(j).tail(3) = key_value.value.translation();
     j++;
+  }
+  return result;
+}
+
+/// Extract all Vector values into a single tall vector
+Vector extractVector(const Values& values) {
+  Values::ConstFiltered<Vector> vectors = values.filter<Vector>();
+  // Count dimensions
+  DenseIndex totalDim = 0;
+  for (const auto& kv : vectors) totalDim += kv.value.size();
+  // Copy vectors
+  Vector result(totalDim);
+  DenseIndex pos = 0;
+  for (const auto& kv : vectors) {
+    result.segment(pos, kv.value.size()) = kv.value;
+    pos += kv.value.size();
   }
   return result;
 }
