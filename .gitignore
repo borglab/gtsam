@@ -16,3 +16,4 @@
 # for QtCreator:
 CMakeLists.txt.user*
 xcode/
+docs/build
