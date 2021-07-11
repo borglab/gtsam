@@ -110,7 +110,7 @@ class GTSAM_EXPORT FunctorizedFactor : public NoiseModelFactor1<T> {
   bool equals(const NonlinearFactor &other, double tol = 1e-9) const override {
     const FunctorizedFactor<R, T> *e =
         dynamic_cast<const FunctorizedFactor<R, T> *>(&other);
-    return e && Base::equals(other, tol) &&
+    return e != nullptr && Base::equals(other, tol) &&
            traits<R>::Equals(this->measured_, e->measured_, tol);
   }
   /// @}
