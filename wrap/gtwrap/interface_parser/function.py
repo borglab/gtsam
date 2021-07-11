@@ -10,9 +10,9 @@ Parser classes and rules for parsing C++ functions.
 Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellaert
 """
 
-from typing import Iterable, List, Union
+from typing import Any, Iterable, List, Union
 
-from pyparsing import Optional, ParseResults, delimitedList
+from pyparsing import Optional, ParseResults, delimitedList  # type: ignore
 
 from .template import Template
 from .tokens import (COMMA, DEFAULT_ARG, EQUAL, IDENT, LOPBRACK, LPAREN, PAIR,
@@ -42,12 +42,12 @@ class Argument:
                  name: str,
                  default: ParseResults = None):
         if isinstance(ctype, Iterable):
-            self.ctype = ctype[0]
+            self.ctype = ctype[0]  # type: ignore
         else:
             self.ctype = ctype
         self.name = name
         self.default = default
-        self.parent = None  # type: Union[ArgumentList, None]
+        self.parent: Union[ArgumentList, None] = None
 
     def __repr__(self) -> str:
         return self.to_cpp()
@@ -70,7 +70,7 @@ class ArgumentList:
             arg.parent = self
         # The parent object which contains the argument list
         # E.g. Method, StaticMethod, Template, Constructor, GlobalFunction
-        self.parent = None
+        self.parent: Any = None
 
     @staticmethod
     def from_parse_result(parse_result: ParseResults):
@@ -123,7 +123,7 @@ class ReturnType:
         self.type2 = type2
         # The parent object which contains the return type
         # E.g. Method, StaticMethod, Template, Constructor, GlobalFunction
-        self.parent = None
+        self.parent: Any = None
 
     def is_void(self) -> bool:
         """
