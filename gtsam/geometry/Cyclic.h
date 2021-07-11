@@ -17,7 +17,9 @@
 
 #include <gtsam/base/Group.h>
 #include <gtsam/base/Testable.h>
-#include <iostream> // for cout :-(
+
+#include <cassert>
+#include <iostream>  // for cout :-(
 
 namespace gtsam {
 
