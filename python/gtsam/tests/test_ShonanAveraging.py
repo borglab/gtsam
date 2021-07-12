@@ -193,7 +193,8 @@ class TestShonanAveraging(GtsamTestCase):
         
         obj = ShonanAveraging2(between_factors, shonan_params)
         initial = obj.initializeRandomly()
-        result_values, _ = obj.run(initial, min_p=2, max_p=10)
+        min
+        result_values, _ = obj.run(initial, min_p=2, max_p=40)
         
         for i in range(num_images):
             wRi = result_values.atRot2(i)
