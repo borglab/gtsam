@@ -17,22 +17,19 @@
  * @brief unit tests for Block Automatic Differentiation
  */
 
-#include <gtsam/slam/expressions.h>
-#include <gtsam/slam/GeneralSFMFactor.h>
-#include <gtsam/slam/ProjectionFactor.h>
-#include <gtsam/nonlinear/PriorFactor.h>
-#include <gtsam/nonlinear/expressionTesting.h>
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Testable.h>
 #include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/nonlinear/expressionTesting.h>
-#include <gtsam/base/Testable.h>
-
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/slam/GeneralSFMFactor.h>
+#include <gtsam/slam/ProjectionFactor.h>
+#include <gtsam/slam/expressions.h>
 
 #include <boost/assign/list_of.hpp>
 using boost::assign::list_of;
-#include <boost/bind/bind.hpp>
-using namespace boost::placeholders;
+using namespace std::placeholders;
 
 using namespace std;
 using namespace gtsam;
@@ -621,9 +618,10 @@ TEST(ExpressionFactor, MultiplyWithInverseFunction) {
   Matrix3 A;
   const Vector Ab = f(a, b, H1, A);
   CHECK(assert_equal(A * b, Ab));
-  CHECK(assert_equal(numericalDerivative11<Vector3, Point2>(
-                         boost::bind(f, _1, b, boost::none, boost::none), a),
-                     H1));
+  CHECK(assert_equal(
+      numericalDerivative11<Vector3, Point2>(
+          std::bind(f, std::placeholders::_1, b, boost::none, boost::none), a),
+      H1));
 
   Values values;
   values.insert<Point2>(0, a);

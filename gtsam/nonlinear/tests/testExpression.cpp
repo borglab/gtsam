@@ -495,7 +495,7 @@ TEST(Expression, Subtract) {
 /* ************************************************************************* */
 TEST(Expression, LinearExpression) {
   const Key key(67);
-  const boost::function<Vector3(Point3)> f = [](const Point3& p) { return (Vector3)p; };
+  const std::function<Vector3(Point3)> f = [](const Point3& p) { return (Vector3)p; };
   const Matrix3 kIdentity = I_3x3;
   const Expression<Vector3> linear_ = linearExpression(f, Point3_(key), kIdentity);
 
