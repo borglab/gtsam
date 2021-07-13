@@ -196,11 +196,13 @@ class TestShonanAveraging(GtsamTestCase):
 
         wRi_list = [result_values.atRot2(i) for i in range(num_images)]
         thetas_deg = np.array([wRi.degrees() for wRi in wRi_list])
-        thetas_deg -= max(thetas_deg)
+        
         # map all angles to [0,360)
         thetas_deg = thetas_deg % 360
+        thetas_deg -= max(thetas_deg)
+        
         expected_thetas_deg = np.array([0.0, 90.0, 0.0])
-        np.testing.assert_allclose(thetas_deg, expected_thetas_deg)
+        np.testing.assert_allclose(thetas_deg, expected_thetas_deg, atol=0.1)
 
 
 if __name__ == "__main__":
