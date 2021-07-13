@@ -122,7 +122,7 @@ public:
   }
 
   // maps f over all keys, must be invertible
-  DSF map(boost::function<KEY(const KEY&)> func) const {
+  DSF map(std::function<KEY(const KEY&)> func) const {
     DSF t;
     for(const KeyLabel& pair: (Tree)*this)
       t = t.add(func(pair.first), func(pair.second));

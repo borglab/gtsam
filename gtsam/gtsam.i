@@ -690,6 +690,7 @@ class Pose3 {
   // Lie Group
   static gtsam::Pose3 Expmap(Vector v);
   static Vector Logmap(const gtsam::Pose3& pose);
+  gtsam::Pose3 expmap(Vector v);
   Vector logmap(const gtsam::Pose3& pose);
   Matrix AdjointMap() const;
   Vector Adjoint(Vector xi) const;
