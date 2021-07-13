@@ -3124,6 +3124,8 @@ class ShonanAveraging2 {
   ShonanAveraging2(string g2oFile);
   ShonanAveraging2(string g2oFile,
                    const gtsam::ShonanAveragingParameters2 &parameters);
+  ShonanAveraging2(const gtsam::BetweenFactorPose2s &factors,
+                   const gtsam::ShonanAveragingParameters2 &parameters);
 
   // Query properties
   size_t nrUnknowns() const;
