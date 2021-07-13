@@ -122,7 +122,6 @@ class TestCal3Unified(GtsamTestCase):
     def test_triangulation(self):
         """Estimate spatial point from image measurements"""
         triangulated = gtsam.triangulatePoint3(self.cameras, self.measurements, rank_tol=1e-9, optimize=True)
-        self.gtsamAssertEquals(measurements[0], self.img_point)
         self.gtsamAssertEquals(triangulated, self.origin)
 
     def test_triangulation_rectify(self):
@@ -130,7 +129,6 @@ class TestCal3Unified(GtsamTestCase):
         rectified = gtsam.Point2Vector([k.calibration().calibrate(pt) for k, pt in zip(self.cameras, self.measurements)])
         shared_cal = gtsam.Cal3_S2()
         triangulated = gtsam.triangulatePoint3(self.poses, shared_cal, rectified, rank_tol=1e-9, optimize=False)
-        self.gtsamAssertEquals(measurements[0], self.img_point)
         self.gtsamAssertEquals(triangulated, self.origin)
 
     def test_retract(self):
