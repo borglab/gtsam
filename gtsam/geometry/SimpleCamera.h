@@ -35,7 +35,7 @@ namespace gtsam {
   using PinholeCameraCal3DS2 = gtsam::PinholeCamera<gtsam::Cal3DS2>;
   using PinholeCameraCal3Unified = gtsam::PinholeCamera<gtsam::Cal3Unified>;
   using PinholeCameraCal3Fisheye = gtsam::PinholeCamera<gtsam::Cal3Fisheye>;
-  
+
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
 /**
  * @deprecated: SimpleCamera for backwards compatability with GTSAM 3.x
