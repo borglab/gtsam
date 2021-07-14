@@ -31,7 +31,6 @@ class TestCal3Unified(GtsamTestCase):
         x, y, z = 1.0, 0.0, 1.0
         r = np.linalg.norm([x, y, z])
         u, v = 2*x/(z+r), 0.0
-        #u, v = 2*np.tan(np.arctan2(x, z)/2), 0.0
         cls.obj_point = np.array([x, y, z])
         cls.img_point = np.array([u, v])
 
