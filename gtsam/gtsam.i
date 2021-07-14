@@ -231,7 +231,7 @@ virtual class Value {
 };
 
 #include <gtsam/base/GenericValue.h>
-template<T = {Vector, Matrix, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::StereoPoint2, gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler, gtsam::EssentialMatrix, gtsam::CalibratedCamera, gtsam::imuBias::ConstantBias}>
+template<T = {Vector, Matrix, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::StereoPoint2, gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler, gtsam::Cal3Fisheye, gtsam::Cal3Unified, gtsam::EssentialMatrix, gtsam::CalibratedCamera, gtsam::imuBias::ConstantBias}>
 virtual class GenericValue : gtsam::Value {
   void serializable() const;
 };
@@ -911,6 +911,12 @@ virtual class Cal3Unified : gtsam::Cal3DS2_Base {
   gtsam::Cal3Unified retract(Vector v) const;
   Vector localCoordinates(const gtsam::Cal3Unified& c) const;
 
+  // Action on Point2
+  // Note: the signature of this functions differ from the functions
+  // with equal name in the base class.
+  gtsam::Point2 calibrate(const gtsam::Point2& p) const;
+  gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
+
   // enabling serialization functionality
   void serialize() const;
 
@@ -977,6 +983,52 @@ class Cal3Bundler {
   // enable pickling in python
   void pickle() const;
 };
+
+#include <gtsam/geometry/Cal3Fisheye.h>
+class Cal3Fisheye {
+  // Standard Constructors
+  Cal3Fisheye();
+  Cal3Fisheye(double fx, double fy, double s, double u0, double v0, double k1, double k2, double k3, double k4);
+  Cal3Fisheye(double fx, double fy, double s, double u0, double v0, double k1, double k2, double k3, double k4, double tol);
+  Cal3Fisheye(Vector v);
+
+  // Testable
+  void print(string s = "Cal3Fisheye") const;
+  bool equals(const gtsam::Cal3Fisheye& rhs, double tol) const;
+
+  // Manifold
+  static size_t Dim();
+  size_t dim() const;
+  gtsam::Cal3Fisheye retract(Vector v) const;
+  Vector localCoordinates(const gtsam::Cal3Fisheye& c) const;
+
+  // Action on Point2
+  gtsam::Point2 calibrate(const gtsam::Point2& p) const;
+  gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
+
+  // Standard Interface
+  double fx() const;
+  double fy() const;
+  double skew() const;
+  double k1() const;
+  double k2() const;
+  double k3() const;
+  double k4() const;
+  double px() const;
+  double py() const;
+  gtsam::Point2 principalPoint() const;
+  Vector vector() const;
+  Vector k() const;
+  Matrix K() const;
+  Matrix inverse() const;
+
+  // enabling serialization functionality
+  void serialize() const;
+
+  // enable pickling in python
+  void pickle() const;
+};
+
 
 #include <gtsam/geometry/CalibratedCamera.h>
 class CalibratedCamera {
@@ -1086,6 +1138,7 @@ typedef gtsam::PinholeCamera<gtsam::Cal3_S2> PinholeCameraCal3_S2;
 typedef gtsam::PinholeCamera<gtsam::Cal3DS2> PinholeCameraCal3DS2;
 typedef gtsam::PinholeCamera<gtsam::Cal3Unified> PinholeCameraCal3Unified;
 typedef gtsam::PinholeCamera<gtsam::Cal3Bundler> PinholeCameraCal3Bundler;
+typedef gtsam::PinholeCamera<gtsam::Cal3Fisheye> PinholeCameraCal3Fisheye;
 
 template<T>
 class CameraSet {
@@ -1146,7 +1199,13 @@ gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3_S2& cameras,
 gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3Bundler& cameras,
     const gtsam::Point2Vector& measurements, double rank_tol,
     bool optimize);
-    
+gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3Fisheye& cameras,
+    const gtsam::Point2Vector& measurements, double rank_tol,
+    bool optimize);
+gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3Unified& cameras,
+    const gtsam::Point2Vector& measurements, double rank_tol,
+    bool optimize);
+
 //*************************************************************************
 // Symbolic
 //*************************************************************************
@@ -2119,8 +2178,11 @@ class NonlinearFactorGraph {
   template <T = {double, Vector, gtsam::Point2, gtsam::StereoPoint2,
                  gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4,
                  gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2,
+                 gtsam::Cal3Fisheye, gtsam::Cal3Unified,
                  gtsam::CalibratedCamera, gtsam::PinholeCameraCal3_S2,
-                 gtsam::PinholeCamera<gtsam::Cal3Bundler>,
+                 gtsam::PinholeCameraCal3Bundler,
+                 gtsam::PinholeCameraCal3Fisheye,
+                 gtsam::PinholeCameraCal3Unified,
                  gtsam::imuBias::ConstantBias}>
   void addPrior(size_t key, const T& prior,
                 const gtsam::noiseModel::Base* noiseModel);
@@ -2253,9 +2315,13 @@ class Values {
   void insert(size_t j, const gtsam::Cal3_S2& cal3_s2);
   void insert(size_t j, const gtsam::Cal3DS2& cal3ds2);
   void insert(size_t j, const gtsam::Cal3Bundler& cal3bundler);
+  void insert(size_t j, const gtsam::Cal3Fisheye& cal3fisheye);
+  void insert(size_t j, const gtsam::Cal3Unified& cal3unified);
   void insert(size_t j, const gtsam::EssentialMatrix& essential_matrix);
   void insert(size_t j, const gtsam::PinholeCameraCal3_S2& simple_camera);
-  void insert(size_t j, const gtsam::PinholeCamera<gtsam::Cal3Bundler>& camera);
+  void insert(size_t j, const gtsam::PinholeCameraCal3Bundler& camera);
+  void insert(size_t j, const gtsam::PinholeCameraCal3Fisheye& camera);
+  void insert(size_t j, const gtsam::PinholeCameraCal3Unified& camera);
   void insert(size_t j, const gtsam::imuBias::ConstantBias& constant_bias);
   void insert(size_t j, const gtsam::NavState& nav_state);
   void insert(size_t j, double c);
@@ -2273,9 +2339,13 @@ class Values {
   void update(size_t j, const gtsam::Cal3_S2& cal3_s2);
   void update(size_t j, const gtsam::Cal3DS2& cal3ds2);
   void update(size_t j, const gtsam::Cal3Bundler& cal3bundler);
+  void update(size_t j, const gtsam::Cal3Fisheye& cal3fisheye);
+  void update(size_t j, const gtsam::Cal3Unified& cal3unified);
   void update(size_t j, const gtsam::EssentialMatrix& essential_matrix);
   void update(size_t j, const gtsam::PinholeCameraCal3_S2& simple_camera);
-  void update(size_t j, const gtsam::PinholeCamera<gtsam::Cal3Bundler>& camera);
+  void update(size_t j, const gtsam::PinholeCameraCal3Bundler& camera);
+  void update(size_t j, const gtsam::PinholeCameraCal3Fisheye& camera);
+  void update(size_t j, const gtsam::PinholeCameraCal3Unified& camera);
   void update(size_t j, const gtsam::imuBias::ConstantBias& constant_bias);
   void update(size_t j, const gtsam::NavState& nav_state);
   void update(size_t j, Vector vector);
@@ -2295,9 +2365,13 @@ class Values {
                  gtsam::Cal3_S2,
                  gtsam::Cal3DS2,
                  gtsam::Cal3Bundler,
+                 gtsam::Cal3Fisheye,
+                 gtsam::Cal3Unified,
                  gtsam::EssentialMatrix,
                  gtsam::PinholeCameraCal3_S2,
-                 gtsam::PinholeCamera<gtsam::Cal3Bundler>,
+                 gtsam::PinholeCameraCal3Bundler,
+                 gtsam::PinholeCameraCal3Fisheye,
+                 gtsam::PinholeCameraCal3Unified,
                  gtsam::imuBias::ConstantBias,
                  gtsam::NavState,
                  Vector,
@@ -2604,7 +2678,9 @@ class ISAM2 {
   template <VALUE = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3,
                      gtsam::Rot3, gtsam::Pose3, gtsam::Cal3_S2, gtsam::Cal3DS2,
                      gtsam::Cal3Bundler, gtsam::EssentialMatrix,
-                     gtsam::PinholeCameraCal3_S2, gtsam::PinholeCamera<gtsam::Cal3Bundler>, 
+                     gtsam::PinholeCameraCal3_S2, gtsam::PinholeCameraCal3Bundler,
+                     gtsam::Cal3Fisheye, gtsam::Cal3Unified,
+                     gtsam::PinholeCameraCal3Fisheye, gtsam::PinholeCameraCal3Unified,
                      Vector, Matrix}>
   VALUE calculateEstimate(size_t key) const;
   gtsam::Values calculateBestEstimate() const;
@@ -2656,10 +2732,14 @@ template <T = {double,
                gtsam::Cal3_S2,
                gtsam::Cal3DS2,
                gtsam::Cal3Bundler,
+               gtsam::Cal3Fisheye,
+               gtsam::Cal3Unified,
                gtsam::CalibratedCamera,
                gtsam::PinholeCameraCal3_S2,
                gtsam::imuBias::ConstantBias,
-               gtsam::PinholeCamera<gtsam::Cal3Bundler>}>
+               gtsam::PinholeCameraCal3Bundler,
+               gtsam::PinholeCameraCal3Fisheye,
+               gtsam::PinholeCameraCal3Unified}>
 virtual class PriorFactor : gtsam::NoiseModelFactor {
   PriorFactor(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
   T prior() const;
@@ -2801,6 +2881,8 @@ virtual class GenericProjectionFactor : gtsam::NoiseModelFactor {
 };
 typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> GenericProjectionFactorCal3_S2;
 typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2> GenericProjectionFactorCal3DS2;
+typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3Fisheye> GenericProjectionFactorCal3Fisheye;
+typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3Unified> GenericProjectionFactorCal3Unified;
 
 
 #include <gtsam/slam/GeneralSFMFactor.h>
@@ -2811,9 +2893,11 @@ virtual class GeneralSFMFactor : gtsam::NoiseModelFactor {
 };
 typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3_S2, gtsam::Point3> GeneralSFMFactorCal3_S2;
 typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3DS2, gtsam::Point3> GeneralSFMFactorCal3DS2;
-typedef gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3> GeneralSFMFactorCal3Bundler;
+typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3Bundler, gtsam::Point3> GeneralSFMFactorCal3Bundler;
+typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3Fisheye, gtsam::Point3> GeneralSFMFactorCal3Fisheye;
+typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3Unified, gtsam::Point3> GeneralSFMFactorCal3Unified;
 
-template<CALIBRATION = {gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler}>
+template<CALIBRATION = {gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler, gtsam::Cal3Fisheye, gtsam::Cal3Unified}>
 virtual class GeneralSFMFactor2 : gtsam::NoiseModelFactor {
   GeneralSFMFactor2(const gtsam::Point2& measured, const gtsam::noiseModel::Base* model, size_t poseKey, size_t landmarkKey, size_t calibKey);
   gtsam::Point2 measured() const;
