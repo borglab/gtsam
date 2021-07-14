@@ -29,7 +29,6 @@ class TestCal3Fisheye(GtsamTestCase):
         image plane and theta the incident angle of the object point.
         """
         x, y, z = 1.0, 0.0, 1.0
-        # x, y, z = 0.5, 0.0, 2.0
         u, v = np.arctan2(x, z), 0.0
         cls.obj_point = np.array([x, y, z])
         cls.img_point = np.array([u, v])
