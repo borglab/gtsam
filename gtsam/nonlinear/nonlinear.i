@@ -6,6 +6,8 @@ namespace gtsam {
 
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/Cal3DS2.h>
+#include <gtsam/geometry/Cal3Fisheye.h>
+#include <gtsam/geometry/Cal3Unified.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/CalibratedCamera.h>
 #include <gtsam/geometry/EssentialMatrix.h>
@@ -151,11 +153,25 @@ class NonlinearFactorGraph {
   gtsam::KeySet keys() const;
   gtsam::KeyVector keyVector() const;
 
-  template <T = {double, Vector, gtsam::Point2, gtsam::StereoPoint2,
-                 gtsam::Point3, gtsam::Rot2, gtsam::SO3, gtsam::SO4,
-                 gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2,
-                 gtsam::CalibratedCamera, gtsam::PinholeCamera<gtsam::Cal3_S2>,
+  template <T = {double,
+                 Vector,
+                 gtsam::Point2,
+                 gtsam::StereoPoint2,
+                 gtsam::Point3,
+                 gtsam::Rot2,
+                 gtsam::SO3,
+                 gtsam::SO4,
+                 gtsam::Rot3,
+                 gtsam::Pose2,
+                 gtsam::Pose3,
+                 gtsam::Cal3_S2,
+                 gtsam::Cal3Fisheye,
+                 gtsam::Cal3Unified,
+                 gtsam::CalibratedCamera,
+                 gtsam::PinholeCamera<gtsam::Cal3_S2>,
                  gtsam::PinholeCamera<gtsam::Cal3Bundler>,
+                 gtsam::PinholeCamera<gtsam::Cal3Fisheye>,
+                 gtsam::PinholeCamera<gtsam::Cal3Unified>,
                  gtsam::imuBias::ConstantBias}>
   void addPrior(size_t key, const T& prior,
                 const gtsam::noiseModel::Base* noiseModel);
@@ -291,10 +307,13 @@ class Values {
   void insert(size_t j, const gtsam::Cal3_S2& cal3_s2);
   void insert(size_t j, const gtsam::Cal3DS2& cal3ds2);
   void insert(size_t j, const gtsam::Cal3Bundler& cal3bundler);
+  void insert(size_t j, const gtsam::Cal3Fisheye& cal3fisheye);
+  void insert(size_t j, const gtsam::Cal3Unified& cal3unified);
   void insert(size_t j, const gtsam::EssentialMatrix& essential_matrix);
-  void insert(size_t j,
-              const gtsam::PinholeCamera<gtsam::Cal3_S2>& simple_camera);
+  void insert(size_t j, const gtsam::PinholeCamera<gtsam::Cal3_S2>& camera);
   void insert(size_t j, const gtsam::PinholeCamera<gtsam::Cal3Bundler>& camera);
+  void insert(size_t j, const gtsam::PinholeCamera<gtsam::Cal3Fisheye>& camera);
+  void insert(size_t j, const gtsam::PinholeCamera<gtsam::Cal3Unified>& camera);
   void insert(size_t j, const gtsam::imuBias::ConstantBias& constant_bias);
   void insert(size_t j, const gtsam::NavState& nav_state);
   void insert(size_t j, double c);
@@ -312,10 +331,13 @@ class Values {
   void update(size_t j, const gtsam::Cal3_S2& cal3_s2);
   void update(size_t j, const gtsam::Cal3DS2& cal3ds2);
   void update(size_t j, const gtsam::Cal3Bundler& cal3bundler);
+  void update(size_t j, const gtsam::Cal3Fisheye& cal3fisheye);
+  void update(size_t j, const gtsam::Cal3Unified& cal3unified);
   void update(size_t j, const gtsam::EssentialMatrix& essential_matrix);
-  void update(size_t j,
-              const gtsam::PinholeCamera<gtsam::Cal3_S2>& simple_camera);
+  void update(size_t j, const gtsam::PinholeCamera<gtsam::Cal3_S2>& camera);
   void update(size_t j, const gtsam::PinholeCamera<gtsam::Cal3Bundler>& camera);
+  void update(size_t j, const gtsam::PinholeCamera<gtsam::Cal3Fisheye>& camera);
+  void update(size_t j, const gtsam::PinholeCamera<gtsam::Cal3Unified>& camera);
   void update(size_t j, const gtsam::imuBias::ConstantBias& constant_bias);
   void update(size_t j, const gtsam::NavState& nav_state);
   void update(size_t j, Vector vector);
@@ -335,9 +357,13 @@ class Values {
                  gtsam::Cal3_S2,
                  gtsam::Cal3DS2,
                  gtsam::Cal3Bundler,
+                 gtsam::Cal3Fisheye,
+                 gtsam::Cal3Unified,
                  gtsam::EssentialMatrix,
                  gtsam::PinholeCamera<gtsam::Cal3_S2>,
                  gtsam::PinholeCamera<gtsam::Cal3Bundler>,
+                 gtsam::PinholeCamera<gtsam::Cal3Fisheye>,
+                 gtsam::PinholeCamera<gtsam::Cal3Unified>,
                  gtsam::imuBias::ConstantBias,
                  gtsam::NavState,
                  Vector,
@@ -681,7 +707,9 @@ class ISAM2 {
                      gtsam::Rot3, gtsam::Pose3, gtsam::Cal3_S2, gtsam::Cal3DS2,
                      gtsam::Cal3Bundler, gtsam::EssentialMatrix,
                      gtsam::PinholeCamera<gtsam::Cal3_S2>,
-                     gtsam::PinholeCamera<gtsam::Cal3Bundler>, Vector, Matrix}>
+                     gtsam::PinholeCamera<gtsam::Cal3Bundler>,
+                     gtsam::PinholeCamera<gtsam::Cal3Fisheye>,
+                     gtsam::PinholeCamera<gtsam::Cal3Unified>, Vector, Matrix}>
   VALUE calculateEstimate(size_t key) const;
   gtsam::Values calculateBestEstimate() const;
   Matrix marginalCovariance(size_t key) const;
@@ -734,10 +762,14 @@ template <T = {double,
                gtsam::Cal3_S2,
                gtsam::Cal3DS2,
                gtsam::Cal3Bundler,
+               gtsam::Cal3Fisheye,
+               gtsam::Cal3Unified,
                gtsam::CalibratedCamera,
                gtsam::PinholeCamera<gtsam::Cal3_S2>,
-               gtsam::imuBias::ConstantBias,
-               gtsam::PinholeCamera<gtsam::Cal3Bundler>}>
+               gtsam::PinholeCamera<gtsam::Cal3Bundler>,
+               gtsam::PinholeCamera<gtsam::Cal3Fisheye>,
+               gtsam::PinholeCamera<gtsam::Cal3Unified>,
+               gtsam::imuBias::ConstantBias}>
 virtual class PriorFactor : gtsam::NoiseModelFactor {
   PriorFactor(size_t key, const T& prior,
               const gtsam::noiseModel::Base* noiseModel);
@@ -755,6 +787,9 @@ template <T = {gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2,
                gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose2,
                gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera,
                gtsam::PinholeCamera<gtsam::Cal3_S2>,
+               gtsam::PinholeCamera<gtsam::Cal3Bundler>,
+               gtsam::PinholeCamera<gtsam::Cal3Fisheye>,
+               gtsam::PinholeCamera<gtsam::Cal3Unified>,
                gtsam::imuBias::ConstantBias}>
 virtual class NonlinearEquality : gtsam::NoiseModelFactor {
   // Constructor - forces exact evaluation

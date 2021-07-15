@@ -684,6 +684,57 @@ virtual class Cal3Unified : gtsam::Cal3DS2_Base {
   gtsam::Cal3Unified retract(Vector v) const;
   Vector localCoordinates(const gtsam::Cal3Unified& c) const;
 
+  // Action on Point2
+  // Note: the signature of this functions differ from the functions
+  // with equal name in the base class.
+  gtsam::Point2 calibrate(const gtsam::Point2& p) const;
+  gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
+
+  // enabling serialization functionality
+  void serialize() const;
+
+  // enable pickling in python
+  void pickle() const;
+};
+
+#include <gtsam/geometry/Cal3Fisheye.h>
+class Cal3Fisheye {
+  // Standard Constructors
+  Cal3Fisheye();
+  Cal3Fisheye(double fx, double fy, double s, double u0, double v0, double k1,
+              double k2, double k3, double k4, double tol = 1e-5);
+  Cal3Fisheye(Vector v);
+
+  // Testable
+  void print(string s = "Cal3Fisheye") const;
+  bool equals(const gtsam::Cal3Fisheye& rhs, double tol) const;
+
+  // Manifold
+  static size_t Dim();
+  size_t dim() const;
+  gtsam::Cal3Fisheye retract(Vector v) const;
+  Vector localCoordinates(const gtsam::Cal3Fisheye& c) const;
+
+  // Action on Point2
+  gtsam::Point2 calibrate(const gtsam::Point2& p) const;
+  gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
+
+  // Standard Interface
+  double fx() const;
+  double fy() const;
+  double skew() const;
+  double k1() const;
+  double k2() const;
+  double k3() const;
+  double k4() const;
+  double px() const;
+  double py() const;
+  gtsam::Point2 principalPoint() const;
+  Vector vector() const;
+  Vector k() const;
+  Matrix K() const;
+  Matrix inverse() const;
+
   // enabling serialization functionality
   void serialize() const;
 
@@ -860,6 +911,7 @@ typedef gtsam::PinholeCamera<gtsam::Cal3_S2> PinholeCameraCal3_S2;
 typedef gtsam::PinholeCamera<gtsam::Cal3DS2> PinholeCameraCal3DS2;
 typedef gtsam::PinholeCamera<gtsam::Cal3Unified> PinholeCameraCal3Unified;
 typedef gtsam::PinholeCamera<gtsam::Cal3Bundler> PinholeCameraCal3Bundler;
+typedef gtsam::PinholeCamera<gtsam::Cal3Fisheye> PinholeCameraCal3Fisheye;
 
 template <T>
 class CameraSet {
@@ -922,6 +974,12 @@ gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3_S2& cameras,
                                 const gtsam::Point2Vector& measurements,
                                 double rank_tol, bool optimize);
 gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3Bundler& cameras,
+                                const gtsam::Point2Vector& measurements,
+                                double rank_tol, bool optimize);
+gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3Fisheye& cameras,
+                                const gtsam::Point2Vector& measurements,
+                                double rank_tol, bool optimize);
+gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3Unified& cameras,
                                 const gtsam::Point2Vector& measurements,
                                 double rank_tol, bool optimize);
 
