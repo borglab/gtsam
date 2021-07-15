@@ -278,29 +278,29 @@ public:
     // TODO: Write analytical derivative calculations
     // Jacobian w.r.t. Pose1
     if (H1){
-      Matrix H1_Pose = numericalDerivative11<POSE, POSE>(boost::bind(&EquivInertialNavFactor_GlobalVel_NoBias::evaluatePoseError, this, _1, Vel1, Pose2, Vel2), Pose1);
-      Matrix H1_Vel = numericalDerivative11<VELOCITY, POSE>(boost::bind(&EquivInertialNavFactor_GlobalVel_NoBias::evaluateVelocityError, this, _1, Vel1, Pose2, Vel2), Pose1);
+      Matrix H1_Pose = numericalDerivative11<POSE, POSE>(std::bind(&EquivInertialNavFactor_GlobalVel_NoBias::evaluatePoseError, this, _1, Vel1, Pose2, Vel2), Pose1);
+      Matrix H1_Vel = numericalDerivative11<VELOCITY, POSE>(std::bind(&EquivInertialNavFactor_GlobalVel_NoBias::evaluateVelocityError, this, _1, Vel1, Pose2, Vel2), Pose1);
       *H1 = stack(2, &H1_Pose, &H1_Vel);
     }
 
     // Jacobian w.r.t. Vel1
     if (H2){
-      Matrix H2_Pose = numericalDerivative11<POSE, VELOCITY>(boost::bind(&EquivInertialNavFactor_GlobalVel_NoBias::evaluatePoseError, this, Pose1, _1, Pose2, Vel2), Vel1);
-      Matrix H2_Vel = numericalDerivative11<VELOCITY, VELOCITY>(boost::bind(&EquivInertialNavFactor_GlobalVel_NoBias::evaluateVelocityError, this, Pose1, _1, Pose2, Vel2), Vel1);
+      Matrix H2_Pose = numericalDerivative11<POSE, VELOCITY>(std::bind(&EquivInertialNavFactor_GlobalVel_NoBias::evaluatePoseError, this, Pose1, _1, Pose2, Vel2), Vel1);
+      Matrix H2_Vel = numericalDerivative11<VELOCITY, VELOCITY>(std::bind(&EquivInertialNavFactor_GlobalVel_NoBias::evaluateVelocityError, this, Pose1, _1, Pose2, Vel2), Vel1);
       *H2 = stack(2, &H2_Pose, &H2_Vel);
     }
 
     // Jacobian w.r.t. Pose2
     if (H3){
-      Matrix H3_Pose = numericalDerivative11<POSE, POSE>(boost::bind(&EquivInertialNavFactor_GlobalVel_NoBias::evaluatePoseError, this, Pose1, Vel1, _1, Vel2), Pose2);
-      Matrix H3_Vel = numericalDerivative11<VELOCITY, POSE>(boost::bind(&EquivInertialNavFactor_GlobalVel_NoBias::evaluateVelocityError, this, Pose1, Vel1, _1, Vel2), Pose2);
+      Matrix H3_Pose = numericalDerivative11<POSE, POSE>(std::bind(&EquivInertialNavFactor_GlobalVel_NoBias::evaluatePoseError, this, Pose1, Vel1, _1, Vel2), Pose2);
+      Matrix H3_Vel = numericalDerivative11<VELOCITY, POSE>(std::bind(&EquivInertialNavFactor_GlobalVel_NoBias::evaluateVelocityError, this, Pose1, Vel1, _1, Vel2), Pose2);
       *H3 = stack(2, &H3_Pose, &H3_Vel);
     }
 
     // Jacobian w.r.t. Vel2
     if (H4){
-      Matrix H4_Pose = numericalDerivative11<POSE, VELOCITY>(boost::bind(&EquivInertialNavFactor_GlobalVel_NoBias::evaluatePoseError, this, Pose1, Vel1, Pose2, _1), Vel2);
-      Matrix H4_Vel = numericalDerivative11<VELOCITY, VELOCITY>(boost::bind(&EquivInertialNavFactor_GlobalVel_NoBias::evaluateVelocityError, this, Pose1, Vel1, Pose2, _1), Vel2);
+      Matrix H4_Pose = numericalDerivative11<POSE, VELOCITY>(std::bind(&EquivInertialNavFactor_GlobalVel_NoBias::evaluatePoseError, this, Pose1, Vel1, Pose2, _1), Vel2);
+      Matrix H4_Vel = numericalDerivative11<VELOCITY, VELOCITY>(std::bind(&EquivInertialNavFactor_GlobalVel_NoBias::evaluateVelocityError, this, Pose1, Vel1, Pose2, _1), Vel2);
       *H4 = stack(2, &H4_Pose, &H4_Vel);
     }
 
@@ -372,15 +372,15 @@ public:
     Matrix Z_3x3 = Z_3x3;
     Matrix I_3x3 = I_3x3;
 
-    Matrix H_pos_pos = numericalDerivative11<LieVector, LieVector>(boost::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, _1, delta_vel_in_t0), delta_pos_in_t0);
-    Matrix H_pos_vel = numericalDerivative11<LieVector, LieVector>(boost::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, delta_pos_in_t0, _1), delta_vel_in_t0);
+    Matrix H_pos_pos = numericalDerivative11<LieVector, LieVector>(std::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, _1, delta_vel_in_t0), delta_pos_in_t0);
+    Matrix H_pos_vel = numericalDerivative11<LieVector, LieVector>(std::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, delta_pos_in_t0, _1), delta_vel_in_t0);
     Matrix H_pos_angles = Z_3x3;
 
-    Matrix H_vel_vel = numericalDerivative11<LieVector, LieVector>(boost::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t, msr_acc_t, msr_dt, delta_angles, _1, flag_use_body_P_sensor, body_P_sensor), delta_vel_in_t0);
-    Matrix H_vel_angles = numericalDerivative11<LieVector, LieVector>(boost::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t, msr_acc_t, msr_dt, _1, delta_vel_in_t0, flag_use_body_P_sensor, body_P_sensor), delta_angles);
+    Matrix H_vel_vel = numericalDerivative11<LieVector, LieVector>(std::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t, msr_acc_t, msr_dt, delta_angles, _1, flag_use_body_P_sensor, body_P_sensor), delta_vel_in_t0);
+    Matrix H_vel_angles = numericalDerivative11<LieVector, LieVector>(std::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t, msr_acc_t, msr_dt, _1, delta_vel_in_t0, flag_use_body_P_sensor, body_P_sensor), delta_angles);
     Matrix H_vel_pos = Z_3x3;
 
-    Matrix H_angles_angles = numericalDerivative11<LieVector, LieVector>(boost::bind(&PreIntegrateIMUObservations_delta_angles, msr_gyro_t, msr_dt, _1, flag_use_body_P_sensor, body_P_sensor), delta_angles);
+    Matrix H_angles_angles = numericalDerivative11<LieVector, LieVector>(std::bind(&PreIntegrateIMUObservations_delta_angles, msr_gyro_t, msr_dt, _1, flag_use_body_P_sensor, body_P_sensor), delta_angles);
     Matrix H_angles_pos = Z_3x3;
     Matrix H_angles_vel = Z_3x3;
 

@@ -111,14 +111,14 @@ public:
 
     if(H1) {
       (*H1) = numericalDerivative11<Vector, Pose3>(
-          boost::bind(&InvDepthFactorVariant3a::inverseDepthError, this,
-                      boost::placeholders::_1, landmark),
+          std::bind(&InvDepthFactorVariant3a::inverseDepthError, this,
+                      std::placeholders::_1, landmark),
           pose);
     }
     if(H2) {
       (*H2) = numericalDerivative11<Vector, Vector3>(
-          boost::bind(&InvDepthFactorVariant3a::inverseDepthError, this, pose,
-                      boost::placeholders::_1),
+          std::bind(&InvDepthFactorVariant3a::inverseDepthError, this, pose,
+                      std::placeholders::_1),
           landmark);
     }
 
@@ -238,20 +238,20 @@ public:
 
     if(H1)
       (*H1) = numericalDerivative11<Vector, Pose3>(
-          boost::bind(&InvDepthFactorVariant3b::inverseDepthError, this,
-                      boost::placeholders::_1, pose2, landmark),
+          std::bind(&InvDepthFactorVariant3b::inverseDepthError, this,
+                      std::placeholders::_1, pose2, landmark),
           pose1);
 
     if(H2)
       (*H2) = numericalDerivative11<Vector, Pose3>(
-          boost::bind(&InvDepthFactorVariant3b::inverseDepthError, this, pose1,
-                      boost::placeholders::_1, landmark),
+          std::bind(&InvDepthFactorVariant3b::inverseDepthError, this, pose1,
+                      std::placeholders::_1, landmark),
           pose2);
 
     if(H3)
       (*H3) = numericalDerivative11<Vector, Vector3>(
-          boost::bind(&InvDepthFactorVariant3b::inverseDepthError, this, pose1,
-                      pose2, boost::placeholders::_1),
+          std::bind(&InvDepthFactorVariant3b::inverseDepthError, this, pose1,
+                      pose2, std::placeholders::_1),
           landmark);
 
     return inverseDepthError(pose1, pose2, landmark);
