@@ -6,6 +6,8 @@ namespace gtsam {
 
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/Cal3DS2.h>
+#include <gtsam/geometry/Cal3Fisheye.h>
+#include <gtsam/geometry/Cal3Unified.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/CalibratedCamera.h>
 #include <gtsam/geometry/EssentialMatrix.h>
@@ -104,8 +106,8 @@ virtual class Value {
 template <T = {Vector, Matrix, gtsam::Point2, gtsam::Point3, gtsam::Rot2,
                gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::StereoPoint2,
                gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler,
-               gtsam::EssentialMatrix, gtsam::CalibratedCamera,
-               gtsam::imuBias::ConstantBias}>
+               gtsam::Cal3Fisheye, gtsam::Cal3Unified, gtsam::EssentialMatrix,
+               gtsam::CalibratedCamera, gtsam::imuBias::ConstantBias}>
 virtual class GenericValue : gtsam::Value {
   void serializable() const;
 };

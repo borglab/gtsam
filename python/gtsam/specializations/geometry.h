@@ -21,3 +21,7 @@ py::bind_vector<gtsam::CameraSet<gtsam::PinholeCamera<gtsam::Cal3_S2>>>(
     m_, "CameraSetCal3_S2");
 py::bind_vector<gtsam::CameraSet<gtsam::PinholeCamera<gtsam::Cal3Bundler>>>(
     m_, "CameraSetCal3Bundler");
+py::bind_vector<gtsam::CameraSet<gtsam::PinholeCamera<gtsam::Cal3Unified>>>(
+    m_, "CameraSetCal3Unified");
+py::bind_vector<gtsam::CameraSet<gtsam::PinholeCamera<gtsam::Cal3Fisheye>>>(
+    m_, "CameraSetCal3Fisheye");

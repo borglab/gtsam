@@ -62,6 +62,12 @@ typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3,
 typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3,
                                        gtsam::Cal3DS2>
     GenericProjectionFactorCal3DS2;
+typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3,
+                                       gtsam::Cal3Fisheye>
+    GenericProjectionFactorCal3Fisheye;
+typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3,
+                                       gtsam::Cal3Unified>
+    GenericProjectionFactorCal3Unified;
 
 #include <gtsam/slam/GeneralSFMFactor.h>
 template <CAMERA, LANDMARK>
@@ -80,8 +86,15 @@ typedef gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3DS2>,
 typedef gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>,
                                 gtsam::Point3>
     GeneralSFMFactorCal3Bundler;
+typedef gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Fisheye>,
+                                gtsam::Point3>
+    GeneralSFMFactorCal3Fisheye;
+typedef gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Unified>,
+                                gtsam::Point3>
+    GeneralSFMFactorCal3Unified;
 
-template <CALIBRATION = {gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler}>
+template <CALIBRATION = {gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler,
+                         gtsam::Cal3Fisheye, gtsam::Cal3Unified}>
 virtual class GeneralSFMFactor2 : gtsam::NoiseModelFactor {
   GeneralSFMFactor2(const gtsam::Point2& measured,
                     const gtsam::noiseModel::Base* model, size_t poseKey,
