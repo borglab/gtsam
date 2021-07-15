@@ -31,9 +31,9 @@ class TestWrap(unittest.TestCase):
     # Create the `actual/python` directory
     os.makedirs(PYTHON_ACTUAL_DIR, exist_ok=True)
 
-    def wrap_content(self, content, module_name, output_dir):
+    def wrap_content(self, sources, module_name, output_dir):
         """
-        Common function to wrap content.
+        Common function to wrap content in `sources`.
         """
         with open(osp.join(self.TEST_DIR,
                            "pybind_wrapper.tpl")) as template_file:
@@ -46,15 +46,12 @@ class TestWrap(unittest.TestCase):
                                 ignore_classes=[''],
                                 module_template=module_template)
 
-        cc_content = wrapper.wrap(content)
-
         output = osp.join(self.TEST_DIR, output_dir, module_name + ".cpp")
 
         if not osp.exists(osp.join(self.TEST_DIR, output_dir)):
             os.mkdir(osp.join(self.TEST_DIR, output_dir))
 
-        with open(output, 'w') as f:
-            f.write(cc_content)
+        wrapper.wrap(sources, output)
 
         return output
 
@@ -76,39 +73,32 @@ class TestWrap(unittest.TestCase):
         python3 ../pybind_wrapper.py --src geometry.h --module_name
             geometry_py --out output/geometry_py.cc
         """
-        with open(osp.join(self.INTERFACE_DIR, 'geometry.i'), 'r') as f:
-            content = f.read()
-
-        output = self.wrap_content(content, 'geometry_py',
+        source = osp.join(self.INTERFACE_DIR, 'geometry.i')
+        output = self.wrap_content([source], 'geometry_py',
                                    self.PYTHON_ACTUAL_DIR)
 
         self.compare_and_diff('geometry_pybind.cpp', output)
 
     def test_functions(self):
         """Test interface file with function info."""
-        with open(osp.join(self.INTERFACE_DIR, 'functions.i'), 'r') as f:
-            content = f.read()
-
-        output = self.wrap_content(content, 'functions_py',
+        source = osp.join(self.INTERFACE_DIR, 'functions.i')
+        output = self.wrap_content([source], 'functions_py',
                                    self.PYTHON_ACTUAL_DIR)
 
         self.compare_and_diff('functions_pybind.cpp', output)
 
     def test_class(self):
         """Test interface file with only class info."""
-        with open(osp.join(self.INTERFACE_DIR, 'class.i'), 'r') as f:
-            content = f.read()
-
-        output = self.wrap_content(content, 'class_py', self.PYTHON_ACTUAL_DIR)
+        source = osp.join(self.INTERFACE_DIR, 'class.i')
+        output = self.wrap_content([source], 'class_py',
+                                   self.PYTHON_ACTUAL_DIR)
 
         self.compare_and_diff('class_pybind.cpp', output)
 
     def test_inheritance(self):
         """Test interface file with class inheritance definitions."""
-        with open(osp.join(self.INTERFACE_DIR, 'inheritance.i'), 'r') as f:
-            content = f.read()
-
-        output = self.wrap_content(content, 'inheritance_py',
+        source = osp.join(self.INTERFACE_DIR, 'inheritance.i')
+        output = self.wrap_content([source], 'inheritance_py',
                                    self.PYTHON_ACTUAL_DIR)
 
         self.compare_and_diff('inheritance_pybind.cpp', output)
@@ -119,10 +109,8 @@ class TestWrap(unittest.TestCase):
         python3 ../pybind_wrapper.py --src namespaces.i --module_name
             namespaces_py --out output/namespaces_py.cpp
         """
-        with open(osp.join(self.INTERFACE_DIR, 'namespaces.i'), 'r') as f:
-            content = f.read()
-
-        output = self.wrap_content(content, 'namespaces_py',
+        source = osp.join(self.INTERFACE_DIR, 'namespaces.i')
+        output = self.wrap_content([source], 'namespaces_py',
                                    self.PYTHON_ACTUAL_DIR)
 
         self.compare_and_diff('namespaces_pybind.cpp', output)
@@ -131,10 +119,8 @@ class TestWrap(unittest.TestCase):
         """
         Tests for operator overloading.
         """
-        with open(osp.join(self.INTERFACE_DIR, 'operator.i'), 'r') as f:
-            content = f.read()
-
-        output = self.wrap_content(content, 'operator_py',
+        source = osp.join(self.INTERFACE_DIR, 'operator.i')
+        output = self.wrap_content([source], 'operator_py',
                                    self.PYTHON_ACTUAL_DIR)
 
         self.compare_and_diff('operator_pybind.cpp', output)
@@ -143,10 +129,8 @@ class TestWrap(unittest.TestCase):
         """
         Tests for some unique, non-trivial features.
         """
-        with open(osp.join(self.INTERFACE_DIR, 'special_cases.i'), 'r') as f:
-            content = f.read()
-
-        output = self.wrap_content(content, 'special_cases_py',
+        source = osp.join(self.INTERFACE_DIR, 'special_cases.i')
+        output = self.wrap_content([source], 'special_cases_py',
                                    self.PYTHON_ACTUAL_DIR)
 
         self.compare_and_diff('special_cases_pybind.cpp', output)
@@ -155,10 +139,8 @@ class TestWrap(unittest.TestCase):
         """
         Test if enum generation is correct.
         """
-        with open(osp.join(self.INTERFACE_DIR, 'enum.i'), 'r') as f:
-            content = f.read()
-
-        output = self.wrap_content(content, 'enum_py', self.PYTHON_ACTUAL_DIR)
+        source = osp.join(self.INTERFACE_DIR, 'enum.i')
+        output = self.wrap_content([source], 'enum_py', self.PYTHON_ACTUAL_DIR)
 
         self.compare_and_diff('enum_pybind.cpp', output)
 

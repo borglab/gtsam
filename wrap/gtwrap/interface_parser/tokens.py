@@ -10,9 +10,9 @@ All the token definitions.
 Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellaert
 """
 
-from pyparsing import (Keyword, Literal, OneOrMore, Or, QuotedString, Suppress,
-                       Word, alphanums, alphas, nestedExpr, nums,
-                       originalTextFor, printables)
+from pyparsing import (Keyword, Literal, OneOrMore, Or,  # type: ignore
+                       QuotedString, Suppress, Word, alphanums, alphas,
+                       nestedExpr, nums, originalTextFor, printables)
 
 # rule for identifiers (e.g. variable names)
 IDENT = Word(alphas + '_', alphanums + '_') ^ Word(nums)

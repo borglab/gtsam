@@ -18,16 +18,16 @@
 
 #pragma once
 
-#include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/Cal3Fisheye.h>
 #include <gtsam/geometry/Cal3Unified.h>
+#include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/CameraSet.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Pose2.h>
-#include <gtsam/slam/TriangulationFactor.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/slam/TriangulationFactor.h>
 
 namespace gtsam {
 
