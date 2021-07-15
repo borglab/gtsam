@@ -69,7 +69,7 @@ public:
   /**
    * Function that compares two values
    */
-  typedef boost::function<bool(const T&, const T&)> CompareFunction;
+  typedef std::function<bool(const T&, const T&)> CompareFunction;
   CompareFunction compare_;
 //  bool (*compare_)(const T& a, const T& b);
 
@@ -87,8 +87,8 @@ public:
    * Constructor - forces exact evaluation
    */
   NonlinearEquality(Key j, const T& feasible,
-      const CompareFunction &_compare = boost::bind(traits<T>::Equals,
-          boost::placeholders::_1, boost::placeholders::_2, 1e-9)) :
+      const CompareFunction &_compare = std::bind(traits<T>::Equals,
+          std::placeholders::_1, std::placeholders::_2, 1e-9)) :
       Base(noiseModel::Constrained::All(traits<T>::GetDimension(feasible)),
           j), feasible_(feasible), allow_error_(false), error_gain_(0.0), //
       compare_(_compare) {
@@ -98,8 +98,8 @@ public:
    * Constructor - allows inexact evaluation
    */
   NonlinearEquality(Key j, const T& feasible, double error_gain,
-      const CompareFunction &_compare = boost::bind(traits<T>::Equals,
-          boost::placeholders::_1, boost::placeholders::_2, 1e-9)) :
+      const CompareFunction &_compare = std::bind(traits<T>::Equals,
+          std::placeholders::_1, std::placeholders::_2, 1e-9)) :
       Base(noiseModel::Constrained::All(traits<T>::GetDimension(feasible)),
           j), feasible_(feasible), allow_error_(true), error_gain_(error_gain), //
       compare_(_compare) {

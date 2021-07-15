@@ -23,6 +23,7 @@
 #include <gtsam/geometry/Cal3DS2.h>
 #include <gtsam/geometry/Cal3Fisheye.h>
 #include <gtsam/geometry/Cal3Unified.h>
+#include <gtsam/geometry/Cal3Fisheye.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/PinholeCamera.h>
 

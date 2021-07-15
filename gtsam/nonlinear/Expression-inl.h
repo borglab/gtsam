@@ -83,8 +83,8 @@ template<typename A>
 Expression<T>::Expression(const Expression<A>& expression,
     T (A::*method)(typename MakeOptionalJacobian<T, A>::type) const) :
     root_(
-        new internal::UnaryExpression<T, A>(boost::bind(method,
-                boost::placeholders::_1, boost::placeholders::_2),
+        new internal::UnaryExpression<T, A>(std::bind(method,
+                std::placeholders::_1, std::placeholders::_2),
             expression)) {
 }
 
@@ -97,9 +97,9 @@ Expression<T>::Expression(const Expression<A1>& expression1,
     const Expression<A2>& expression2) :
     root_(
         new internal::BinaryExpression<T, A1, A2>(
-            boost::bind(method, boost::placeholders::_1,
-                boost::placeholders::_2, boost::placeholders::_3,
-                boost::placeholders::_4),
+            std::bind(method, std::placeholders::_1,
+                std::placeholders::_2, std::placeholders::_3,
+                std::placeholders::_4),
             expression1, expression2)) {
 }
 
@@ -114,10 +114,10 @@ Expression<T>::Expression(const Expression<A1>& expression1,
     const Expression<A2>& expression2, const Expression<A3>& expression3) :
     root_(
         new internal::TernaryExpression<T, A1, A2, A3>(
-            boost::bind(method, boost::placeholders::_1,
-                boost::placeholders::_2, boost::placeholders::_3,
-                boost::placeholders::_4, boost::placeholders::_5,
-                boost::placeholders::_6),
+            std::bind(method, std::placeholders::_1,
+                std::placeholders::_2, std::placeholders::_3,
+                std::placeholders::_4, std::placeholders::_5,
+                std::placeholders::_6),
             expression1, expression2, expression3)) {
 }
 
@@ -255,9 +255,9 @@ template<typename T>
 Expression<T> operator*(const Expression<T>& expression1,
     const Expression<T>& expression2) {
   return Expression<T>(
-      boost::bind(internal::apply_compose<T>(), boost::placeholders::_1,
-          boost::placeholders::_2, boost::placeholders::_3,
-          boost::placeholders::_4),
+      std::bind(internal::apply_compose<T>(), std::placeholders::_1,
+          std::placeholders::_2, std::placeholders::_3,
+          std::placeholders::_4),
       expression1, expression2);
 }
 
