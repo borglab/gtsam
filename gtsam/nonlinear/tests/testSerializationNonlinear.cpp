@@ -126,7 +126,8 @@ TEST(Serialization, ISAM2) {
   graph.add(gtsam::PriorFactor<gtsam::Pose3>(symbol0, pose0, noiseModel));
   initialValues.insert(symbol0, pose0);
 
-  solver.update(graph, initialValues, gtsam::FastVector<size_t>());
+  solver.update(graph, initialValues,
+                gtsam::FastVector<gtsam::FactorIndex>());
 
   std::string binaryPath = "saved_solver.dat";
   try {
