@@ -71,6 +71,7 @@ class GncParams {
   double weightsTol = 1e-4;  ///< If the weights are within weightsTol from being binary, stop iterating (only for TLS)
   Verbosity verbosity = SILENT;  ///< Verbosity level
   std::vector<size_t> knownInliers = std::vector<size_t>();  ///< Slots in the factor graph corresponding to measurements that we know are inliers
+  std::vector<size_t> knownOutliers = std::vector<size_t>();  ///< Slots in the factor graph corresponding to measurements that we know are outliers
 
   /// Set the robust loss function to be used in GNC (chosen among the ones in GncLossType).
   void setLossType(const GncLossType type) {
@@ -112,8 +113,21 @@ class GncParams {
    * only apply GNC to prune outliers from the loop closures.
    * */
   void setKnownInliers(const std::vector<size_t>& knownIn) {
-    for (size_t i = 0; i < knownIn.size(); i++)
+    for (size_t i = 0; i < knownIn.size(); i++){
       knownInliers.push_back(knownIn[i]);
+    }
+    std::sort(knownInliers.begin(), knownInliers.end());
+  }
+
+  /** (Optional) Provide a vector of measurements that must be considered outliers. The enties in the vector
+   * corresponds to the slots in the factor graph. For instance, if you have a nonlinear factor graph nfg,
+   * and you provide  knownOut = {0, 2, 15}, GNC will not apply outlier rejection to nfg[0], nfg[2], and nfg[15].
+   * */
+  void setKnownOutliers(const std::vector<size_t>& knownOut) {
+    for (size_t i = 0; i < knownOut.size(); i++){
+      knownOutliers.push_back(knownOut[i]);
+    }
+    std::sort(knownOutliers.begin(), knownOutliers.end());
   }
 
   /// Equals.
@@ -121,7 +135,8 @@ class GncParams {
     return baseOptimizerParams.equals(other.baseOptimizerParams)
         && lossType == other.lossType && maxIterations == other.maxIterations
         && std::fabs(muStep - other.muStep) <= tol
-        && verbosity == other.verbosity && knownInliers == other.knownInliers;
+        && verbosity == other.verbosity && knownInliers == other.knownInliers
+        && knownOutliers == other.knownOutliers;
   }
 
   /// Print.
@@ -144,6 +159,8 @@ class GncParams {
     std::cout << "verbosity: " << verbosity << "\n";
     for (size_t i = 0; i < knownInliers.size(); i++)
       std::cout << "knownInliers: " << knownInliers[i] << "\n";
+    for (size_t i = 0; i < knownOutliers.size(); i++)
+      std::cout << "knownOutliers: " << knownOutliers[i] << "\n";
     baseOptimizerParams.print(str);
   }
 };

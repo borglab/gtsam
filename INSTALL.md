@@ -20,9 +20,10 @@ $ make install
     Optional dependent libraries:
      - If TBB is installed and detectable by CMake GTSAM will use it automatically.
        Ensure that CMake prints "Use Intel TBB : Yes".  To disable the use of TBB,
-       disable the CMake flag GTSAM_WITH_TBB (enabled by default).  On Ubuntu, TBB
-       may be installed from the Ubuntu repositories, and for other platforms it
-       may be downloaded from https://www.threadingbuildingblocks.org/
+       disable the CMake flag `GTSAM_WITH_TBB` (enabled by default) by providing
+       the argument `-DGTSAM_WITH_TBB=OFF` to `cmake`.  On Ubuntu, TBB may be
+       installed from the Ubuntu repositories, and for other platforms it may be
+       downloaded from https://www.threadingbuildingblocks.org/
      - GTSAM may be configured to use MKL by toggling `GTSAM_WITH_EIGEN_MKL` and
        `GTSAM_WITH_EIGEN_MKL_OPENMP` to `ON`; however, best performance is usually
        achieved with MKL disabled. We therefore advise you to benchmark your problem 

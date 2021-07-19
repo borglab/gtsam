@@ -340,7 +340,7 @@ public:
   }
 
   /// print
-  void print(const std::string& s = "PinholePose") const {
+  void print(const std::string& s = "PinholePose") const override {
     Base::print(s);
     if (!K_)
       std::cout << "s No calibration given" << std::endl;

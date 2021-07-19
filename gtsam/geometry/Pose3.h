@@ -142,7 +142,7 @@ public:
   static Vector6 Logmap(const Pose3& pose, OptionalJacobian<6, 6> Hpose = boost::none);
 
   /**
-   * Calculate Adjoint map, transforming a twist in the this pose's (i.e, body) frame to the world spatial frame
+   * Calculate Adjoint map, transforming a twist in this pose's (i.e, body) frame to the world spatial frame
    * Ad_pose is 6*6 matrix that when applied to twist xi \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$, returns Ad_pose(xi)
    */
   Matrix6 AdjointMap() const; /// FIXME Not tested - marked as incorrect

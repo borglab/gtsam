@@ -26,8 +26,9 @@
 #include <gtsam/base/TestableAssertions.h>
 
 #include <CppUnitLite/TestHarness.h>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 
+using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 
@@ -40,9 +41,9 @@ typedef RangeFactorWithTransform<Pose2, Point2> RangeFactorWithTransform2D;
 typedef RangeFactorWithTransform<Pose3, Point3> RangeFactorWithTransform3D;
 
 // Keys are deliberately *not* in sorted order to test that case.
-Key poseKey(2);
-Key pointKey(1);
-double measurement(10.0);
+constexpr Key poseKey(2);
+constexpr Key pointKey(1);
+constexpr double measurement(10.0);
 
 /* ************************************************************************* */
 Vector factorError2D(const Pose2& pose, const Point2& point,
@@ -264,9 +265,9 @@ TEST( RangeFactor, Jacobian2D ) {
   // Use numerical derivatives to calculate the Jacobians
   Matrix H1Expected, H2Expected;
   H1Expected = numericalDerivative11<Vector, Pose2>(
-      boost::bind(&factorError2D, _1, point, factor), pose);
+      std::bind(&factorError2D, std::placeholders::_1, point, factor), pose);
   H2Expected = numericalDerivative11<Vector, Point2>(
-      boost::bind(&factorError2D, pose, _1, factor), point);
+      std::bind(&factorError2D, pose, std::placeholders::_1, factor), point);
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(H1Expected, H1Actual, 1e-9));
@@ -295,9 +296,9 @@ TEST( RangeFactor, Jacobian2DWithTransform ) {
   // Use numerical derivatives to calculate the Jacobians
   Matrix H1Expected, H2Expected;
   H1Expected = numericalDerivative11<Vector, Pose2>(
-      boost::bind(&factorErrorWithTransform2D, _1, point, factor), pose);
+      std::bind(&factorErrorWithTransform2D, std::placeholders::_1, point, factor), pose);
   H2Expected = numericalDerivative11<Vector, Point2>(
-      boost::bind(&factorErrorWithTransform2D, pose, _1, factor), point);
+      std::bind(&factorErrorWithTransform2D, pose, std::placeholders::_1, factor), point);
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(H1Expected, H1Actual, 1e-9));
@@ -322,9 +323,9 @@ TEST( RangeFactor, Jacobian3D ) {
   // Use numerical derivatives to calculate the Jacobians
   Matrix H1Expected, H2Expected;
   H1Expected = numericalDerivative11<Vector, Pose3>(
-      boost::bind(&factorError3D, _1, point, factor), pose);
+      std::bind(&factorError3D, std::placeholders::_1, point, factor), pose);
   H2Expected = numericalDerivative11<Vector, Point3>(
-      boost::bind(&factorError3D, pose, _1, factor), point);
+      std::bind(&factorError3D, pose, std::placeholders::_1, factor), point);
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(H1Expected, H1Actual, 1e-9));
@@ -354,9 +355,9 @@ TEST( RangeFactor, Jacobian3DWithTransform ) {
   // Use numerical derivatives to calculate the Jacobians
   Matrix H1Expected, H2Expected;
   H1Expected = numericalDerivative11<Vector, Pose3>(
-      boost::bind(&factorErrorWithTransform3D, _1, point, factor), pose);
+      std::bind(&factorErrorWithTransform3D, std::placeholders::_1, point, factor), pose);
   H2Expected = numericalDerivative11<Vector, Point3>(
-      boost::bind(&factorErrorWithTransform3D, pose, _1, factor), point);
+      std::bind(&factorErrorWithTransform3D, pose, std::placeholders::_1, factor), point);
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(H1Expected, H1Actual, 1e-9));
@@ -364,20 +365,37 @@ TEST( RangeFactor, Jacobian3DWithTransform ) {
 }
 
 /* ************************************************************************* */
-// Do a test with Point3
-TEST(RangeFactor, Point3) {
+// Do a test with Point2
+TEST(RangeFactor, Point2) {
   // Create a factor
-  RangeFactor<Point3> factor(poseKey, pointKey, measurement, model);
+  RangeFactor<Point2> factor(11, 22, measurement, model);
 
   // Set the linearization point
-  Point3 pose(1.0, 2.0, 00);
-  Point3 point(-4.0, 11.0, 0);
+  Point2 p11(1.0, 2.0), p22(-4.0, 11.0);
 
-  // The expected error is ||(5.0, 9.0)|| - 10.0 = 0.295630141 meter / UnitCovariance
+  // The expected error is ||(5.0, 9.0)|| - 10.0 = 0.295630141 meter
   Vector expectedError = (Vector(1) << 0.295630141).finished();
 
   // Verify we get the expected error
-  CHECK(assert_equal(expectedError, factor.unwhitenedError({{poseKey, genericValue(pose)}, {pointKey, genericValue(point)}}), 1e-9));
+  Values values {{11, genericValue(p11)}, {22, genericValue(p22)}};
+  CHECK(assert_equal(expectedError, factor.unwhitenedError(values), 1e-9));
+}
+
+/* ************************************************************************* */
+// Do a test with Point3
+TEST(RangeFactor, Point3) {
+  // Create a factor
+  RangeFactor<Point3> factor(11, 22, measurement, model);
+
+  // Set the linearization point
+  Point3 p11(1.0, 2.0, 0.0), p22(-4.0, 11.0, 0);
+
+  // The expected error is ||(5.0, 9.0)|| - 10.0 = 0.295630141 meter
+  Vector expectedError = (Vector(1) << 0.295630141).finished();
+
+  // Verify we get the expected error
+  Values values {{11, genericValue(p11)}, {22, genericValue(p22)}};
+  CHECK(assert_equal(expectedError, factor.unwhitenedError(values), 1e-9));
 }
 
 /* ************************************************************************* */

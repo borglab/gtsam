@@ -14,7 +14,8 @@ Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellae
 
 from typing import Iterable, List, Union
 
-from pyparsing import Forward, Optional, Or, ParseResults, delimitedList
+from pyparsing import (Forward, Optional, Or, ParseResults,  # type: ignore
+                       delimitedList)
 
 from .tokens import (BASIS_TYPES, CONST, IDENT, LOPBRACK, RAW_POINTER, REF,
                      ROPBRACK, SHARED_POINTER)
@@ -48,7 +49,7 @@ class Typename:
 
     def __init__(self,
                  t: ParseResults,
-                 instantiations: Union[tuple, list, str, ParseResults] = ()):
+                 instantiations: Iterable[ParseResults] = ()):
         self.name = t[-1]  # the name is the last element in this list
         self.namespaces = t[:-1]
 

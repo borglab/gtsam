@@ -17,20 +17,19 @@
  * @brief unit tests for Block Automatic Differentiation
  */
 
-#include <gtsam/slam/expressions.h>
-#include <gtsam/slam/GeneralSFMFactor.h>
-#include <gtsam/slam/ProjectionFactor.h>
-#include <gtsam/nonlinear/PriorFactor.h>
-#include <gtsam/nonlinear/expressionTesting.h>
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Testable.h>
 #include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/nonlinear/expressionTesting.h>
-#include <gtsam/base/Testable.h>
-
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/slam/GeneralSFMFactor.h>
+#include <gtsam/slam/ProjectionFactor.h>
+#include <gtsam/slam/expressions.h>
 
 #include <boost/assign/list_of.hpp>
 using boost::assign::list_of;
+using namespace std::placeholders;
 
 using namespace std;
 using namespace gtsam;
@@ -624,9 +623,10 @@ TEST(ExpressionFactor, MultiplyWithInverseFunction) {
   Matrix3 A;
   const Vector Ab = f(a, b, H1, A);
   CHECK(assert_equal(A * b, Ab));
-  CHECK(assert_equal(numericalDerivative11<Vector3, Point2>(
-                         boost::bind(f, _1, b, boost::none, boost::none), a),
-                     H1));
+  CHECK(assert_equal(
+      numericalDerivative11<Vector3, Point2>(
+          std::bind(f, std::placeholders::_1, b, boost::none, boost::none), a),
+      H1));
 
   Values values;
   values.insert<Point2>(0, a);
@@ -729,6 +729,39 @@ TEST(ExpressionFactor, variadicTemplate) {
   EXPECT(assert_equal(Eigen::Vector3d(-5.63578115, -4.85353243, -1.4801204), actual, 1e-5));
   
   EXPECT_CORRECT_FACTOR_JACOBIANS(f, values, 1e-8, 1e-5);
+}
+
+
+TEST(ExpressionFactor, crossProduct) {
+  auto model = noiseModel::Isotropic::Sigma(3, 1);
+
+  // Create expression
+  const auto a = Vector3_(1);
+  const auto b = Vector3_(2);
+  Vector3_ f_expr = cross(a, b);
+
+  // Check derivatives
+  Values values;
+  values.insert(1, Vector3(0.1, 0.2, 0.3));
+  values.insert(2, Vector3(0.4, 0.5, 0.6));
+  ExpressionFactor<Vector3> factor(model, Vector3::Zero(), f_expr);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-5, 1e-5);
+}
+
+TEST(ExpressionFactor, dotProduct) {
+  auto model = noiseModel::Isotropic::Sigma(1, 1);
+
+  // Create expression
+  const auto a = Vector3_(1);
+  const auto b = Vector3_(2);
+  Double_ f_expr = dot(a, b);
+
+  // Check derivatives
+  Values values;
+  values.insert(1, Vector3(0.1, 0.2, 0.3));
+  values.insert(2, Vector3(0.4, 0.5, 0.6));
+  ExpressionFactor<double> factor(model, .0, f_expr);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-5, 1e-5);
 }
 
 

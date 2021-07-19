@@ -178,8 +178,7 @@ namespace gtsam {
   } // buildGraph
 
   /** print */
-  void Scheduler::print(const string& s) const {
-
+  void Scheduler::print(const string& s, const KeyFormatter& formatter) const {
     cout << s << " Faculty:" << endl;
     for(const string& name: facultyName_)
             cout << name << '\n';
@@ -210,7 +209,7 @@ namespace gtsam {
 
     CSP::print(s + " Factor graph");
     cout << endl;
-  } // print
+  }  // print
 
   /** Print readable form of assignment */
   void Scheduler::printAssignment(sharedValues assignment) const {

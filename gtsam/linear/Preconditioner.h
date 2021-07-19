@@ -44,9 +44,9 @@ struct GTSAM_EXPORT PreconditionerParameters {
    inline Kernel kernel() const { return kernel_; }
    inline Verbosity verbosity() const { return verbosity_; }
 
-   void print() const ;
+   void print() const;
 
-   virtual void print(std::ostream &os) const ;
+   virtual void print(std::ostream &os) const;
 
    static Kernel kernelTranslator(const std::string &s);
    static Verbosity verbosityTranslator(const std::string &s);
