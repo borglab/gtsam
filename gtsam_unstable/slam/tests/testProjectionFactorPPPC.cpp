@@ -28,8 +28,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/bind.hpp>
-
+using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 
@@ -137,12 +136,16 @@ TEST( ProjectionFactorPPPC, Jacobian ) {
 
   // Verify H2 and H4 with numerical derivatives
   Matrix H2Expected = numericalDerivative11<Vector, Pose3>(
-      boost::bind(&TestProjectionFactor::evaluateError, &factor, pose, _1, point,
-          *K1, boost::none, boost::none, boost::none, boost::none), Pose3());
+      std::bind(&TestProjectionFactor::evaluateError, &factor, pose,
+                std::placeholders::_1, point, *K1, boost::none, boost::none,
+                boost::none, boost::none),
+      Pose3());
 
   Matrix H4Expected = numericalDerivative11<Vector, Cal3_S2>(
-      boost::bind(&TestProjectionFactor::evaluateError, &factor, pose, Pose3(), point,
-          _1, boost::none, boost::none, boost::none, boost::none), *K1);
+      std::bind(&TestProjectionFactor::evaluateError, &factor, pose, Pose3(),
+                point, std::placeholders::_1, boost::none, boost::none,
+                boost::none, boost::none),
+      *K1);
 
   CHECK(assert_equal(H2Expected, H2Actual, 1e-5));
   CHECK(assert_equal(H4Expected, H4Actual, 1e-5));
@@ -173,12 +176,12 @@ TEST( ProjectionFactorPPPC, JacobianWithTransform ) {
 
   // Verify H2 and H4 with numerical derivatives
   Matrix H2Expected = numericalDerivative11<Vector, Pose3>(
-      boost::bind(&TestProjectionFactor::evaluateError, &factor, pose, _1, point,
+      std::bind(&TestProjectionFactor::evaluateError, &factor, pose, std::placeholders::_1, point,
           *K1, boost::none, boost::none, boost::none, boost::none), body_P_sensor);
 
   Matrix H4Expected = numericalDerivative11<Vector, Cal3_S2>(
-      boost::bind(&TestProjectionFactor::evaluateError, &factor, pose, body_P_sensor, point,
-          _1, boost::none, boost::none, boost::none, boost::none), *K1);
+      std::bind(&TestProjectionFactor::evaluateError, &factor, pose, body_P_sensor, point,
+          std::placeholders::_1, boost::none, boost::none, boost::none, boost::none), *K1);
 
   CHECK(assert_equal(H2Expected, H2Actual, 1e-5));
   CHECK(assert_equal(H4Expected, H4Actual, 1e-5));

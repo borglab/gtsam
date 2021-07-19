@@ -29,7 +29,6 @@
 #include <Eigen/Core>  // for Eigen::aligned_allocator
 
 #include <boost/assign/list_inserter.hpp>
-#include <boost/bind.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/vector.hpp>
@@ -148,6 +147,10 @@ class FactorGraph {
   /// @}
 
  public:
+  /// Default destructor
+  // Public and virtual so boost serialization can call it.
+  virtual ~FactorGraph() = default;
+
   /// @name Adding Single Factors
   /// @{
 
@@ -285,9 +288,9 @@ class FactorGraph {
   /// @name Testable
   /// @{
 
-  /** print out graph */
-  void print(const std::string& s = "FactorGraph",
-             const KeyFormatter& formatter = DefaultKeyFormatter) const;
+  /// print out graph
+  virtual void print(const std::string& s = "FactorGraph",
+                     const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
   /** Check equality */
   bool equals(const This& fg, double tol = 1e-9) const;
@@ -355,7 +358,7 @@ class FactorGraph {
 
   /** delete factor without re-arranging indexes by inserting a nullptr pointer
    */
-  void remove(size_t i) { factors_[i].reset(); }
+  void remove(size_t i) { factors_.at(i).reset(); }
 
   /** replace a factor by index */
   void replace(size_t index, sharedFactor factor) { at(index) = factor; }

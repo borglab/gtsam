@@ -28,11 +28,13 @@
 #include <boost/assign/std/list.hpp> // for operator +=
 #include <boost/assign/std/vector.hpp>
 #include <boost/assign/list_of.hpp>
-using namespace boost::assign;
+#include <boost/bind/bind.hpp>
 #include <stdexcept>
 #include <limits>
 #include <type_traits>
 
+using namespace boost::assign;
+using namespace std::placeholders;
 using namespace gtsam;
 using namespace std;
 static double inf = std::numeric_limits<double>::infinity();
@@ -334,7 +336,7 @@ TEST(Values, filter) {
 
   // Filter by key
   int i = 0;
-  Values::Filtered<Value> filtered = values.filter(boost::bind(std::greater_equal<Key>(), _1, 2));
+  Values::Filtered<Value> filtered = values.filter(std::bind(std::greater_equal<Key>(), std::placeholders::_1, 2));
   EXPECT_LONGS_EQUAL(2, (long)filtered.size());
   for(const auto key_value: filtered) {
     if(i == 0) {
@@ -362,7 +364,7 @@ TEST(Values, filter) {
   EXPECT(assert_equal(expectedSubValues1, actualSubValues1));
 
   // ConstFilter by Key
-  Values::ConstFiltered<Value> constfiltered = values.filter(boost::bind(std::greater_equal<Key>(), _1, 2));
+  Values::ConstFiltered<Value> constfiltered = values.filter(std::bind(std::greater_equal<Key>(), std::placeholders::_1, 2));
   EXPECT_LONGS_EQUAL(2, (long)constfiltered.size());
   Values fromconstfiltered(constfiltered);
   EXPECT(assert_equal(expectedSubValues1, fromconstfiltered));

@@ -12,11 +12,11 @@ Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellae
 
 from typing import List
 
-from pyparsing import Optional, ParseResults, delimitedList
+from pyparsing import Optional, ParseResults, delimitedList  # type: ignore
 
 from .tokens import (EQUAL, IDENT, LBRACE, LOPBRACK, RBRACE, ROPBRACK,
                      SEMI_COLON, TEMPLATE, TYPEDEF)
-from .type import Typename, TemplatedType
+from .type import TemplatedType, Typename
 
 
 class Template:

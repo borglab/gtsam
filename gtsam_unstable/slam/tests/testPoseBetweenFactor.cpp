@@ -21,8 +21,10 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/TestableAssertions.h>
+
 #include <CppUnitLite/TestHarness.h>
 
+using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 
@@ -196,8 +198,14 @@ TEST( PoseBetweenFactor, Jacobian ) {
               Point3(-3.37493895, 6.14660244, -8.93650986));
 
   // Calculate numerical derivatives
-  Matrix expectedH1 = numericalDerivative11<Vector,Pose3>(boost::bind(&TestPoseBetweenFactor::evaluateError, &factor, _1, pose2, boost::none, boost::none), pose1);
-  Matrix expectedH2 = numericalDerivative11<Vector,Pose3>(boost::bind(&TestPoseBetweenFactor::evaluateError, &factor, pose1, _1, boost::none, boost::none), pose2);
+  Matrix expectedH1 = numericalDerivative11<Vector, Pose3>(
+      std::bind(&TestPoseBetweenFactor::evaluateError, &factor,
+                std::placeholders::_1, pose2, boost::none, boost::none),
+      pose1);
+  Matrix expectedH2 = numericalDerivative11<Vector, Pose3>(
+      std::bind(&TestPoseBetweenFactor::evaluateError, &factor, pose1,
+                std::placeholders::_1, boost::none, boost::none),
+      pose2);
 
   // Use the factor to calculate the derivative
   Matrix actualH1;
@@ -225,8 +233,14 @@ TEST( PoseBetweenFactor, JacobianWithTransform ) {
               Point3(-3.5257579, 6.02637531, -8.98382384));
 
   // Calculate numerical derivatives
-  Matrix expectedH1 = numericalDerivative11<Vector,Pose3>(boost::bind(&TestPoseBetweenFactor::evaluateError, &factor, _1, pose2, boost::none, boost::none), pose1);
-  Matrix expectedH2 = numericalDerivative11<Vector,Pose3>(boost::bind(&TestPoseBetweenFactor::evaluateError, &factor, pose1, _1, boost::none, boost::none), pose2);
+  Matrix expectedH1 = numericalDerivative11<Vector, Pose3>(
+      std::bind(&TestPoseBetweenFactor::evaluateError, &factor,
+                std::placeholders::_1, pose2, boost::none, boost::none),
+      pose1);
+  Matrix expectedH2 = numericalDerivative11<Vector, Pose3>(
+      std::bind(&TestPoseBetweenFactor::evaluateError, &factor, pose1,
+                std::placeholders::_1, boost::none, boost::none),
+      pose2);
 
   // Use the factor to calculate the derivative
   Matrix actualH1;

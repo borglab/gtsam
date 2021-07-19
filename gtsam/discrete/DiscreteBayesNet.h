@@ -55,6 +55,9 @@ namespace gtsam {
     template<class DERIVEDCONDITIONAL>
     DiscreteBayesNet(const FactorGraph<DERIVEDCONDITIONAL>& graph) : Base(graph) {}
 
+    /// Destructor
+    virtual ~DiscreteBayesNet() {}
+
     /// @}
 
     /// @name Testable
