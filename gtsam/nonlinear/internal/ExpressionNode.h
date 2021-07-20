@@ -57,7 +57,7 @@ T upAligned(T value, unsigned requiredAlignment = TraceAlignment) {
  * Expression node. The superclass for objects that do the heavy lifting
  * An Expression<T> has a pointer to an ExpressionNode<T> underneath
  * allowing Expressions to have polymorphic behaviour even though they
- * are passed by value. This is the same way boost::function works.
+ * are passed by value. This is the same way std::function works.
  * http://loki-lib.sourceforge.net/html/a00652.html
  */
 template<class T>

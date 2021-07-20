@@ -19,7 +19,7 @@
 #pragma once
 
 #include <boost/shared_ptr.hpp>
-#include <boost/function.hpp>
+#include <functional>
 #include <boost/variant.hpp>
 #include <boost/optional.hpp>
 
@@ -86,7 +86,7 @@ namespace gtsam {
     typedef std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<_FactorType> > EliminationResult;
 
     /// The function type that does a single dense elimination step on a subgraph.
-    typedef boost::function<EliminationResult(const FactorGraphType&, const Ordering&)> Eliminate;
+    typedef std::function<EliminationResult(const FactorGraphType&, const Ordering&)> Eliminate;
 
     /// Typedef for an optional variable index as an argument to elimination functions
     typedef boost::optional<const VariableIndex&> OptionalVariableIndex;

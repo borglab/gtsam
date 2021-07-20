@@ -23,8 +23,6 @@
 
 #include <gtsam/inference/FactorGraph.h>
 
-#include <boost/bind.hpp>
-
 #include <stdio.h>
 #include <algorithm>
 #include <iostream>  // for cout :-(
@@ -37,7 +35,7 @@ namespace gtsam {
 template <class FACTOR>
 void FactorGraph<FACTOR>::print(const std::string& s,
                                 const KeyFormatter& formatter) const {
-  std::cout << s << std::endl;
+  std::cout << (s.empty() ? "" : s + " ") << std::endl;
   std::cout << "size: " << size() << std::endl;
   for (size_t i = 0; i < factors_.size(); i++) {
     std::stringstream ss;

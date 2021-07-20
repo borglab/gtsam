@@ -32,14 +32,6 @@
 #include <boost/format.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/tuple/tuple.hpp>
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-variable"
-#endif
-#include <boost/bind.hpp>
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
 #include <boost/assign/list_of.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/adaptor/map.hpp>

@@ -13,14 +13,27 @@ Author: Frank Dellaert
 import unittest
 
 import gtsam
-from gtsam import ShonanAveraging3, ShonanAveragingParameters3
+import numpy as np
+from gtsam import (
+    BetweenFactorPose2,
+    LevenbergMarquardtParams,
+    Rot2,
+    Pose2,
+    ShonanAveraging2,
+    ShonanAveragingParameters2,
+    ShonanAveraging3,
+    ShonanAveragingParameters3,
+)
 from gtsam.utils.test_case import GtsamTestCase
 
 DEFAULT_PARAMS = ShonanAveragingParameters3(
-    gtsam.LevenbergMarquardtParams.CeresDefaults())
+    gtsam.LevenbergMarquardtParams.CeresDefaults()
+)
 
 
-def fromExampleName(name: str, parameters=DEFAULT_PARAMS):
+def fromExampleName(
+    name: str, parameters: ShonanAveragingParameters3 = DEFAULT_PARAMS
+) -> ShonanAveraging3:
     g2oFile = gtsam.findExampleDataFile(name)
     return ShonanAveraging3(g2oFile, parameters)
 
@@ -133,7 +146,64 @@ class TestShonanAveraging(GtsamTestCase):
         self.assertAlmostEqual(3.0756, shonan.cost(initial), places=3)
         result, _lambdaMin = shonan.run(initial, 3, 3)
         self.assertAlmostEqual(0.0015, shonan.cost(result), places=3)
+    
+
+    def test_constructorBetweenFactorPose2s(self) -> None:
+        """Check if ShonanAveraging2 constructor works when not initialized from g2o file.
+
+        GT pose graph:
+
+           | cam 1 = (0,4)
+         --o
+           | .
+           .   .
+           .     .
+           |       |
+           o-- ... o--
+        cam 0       cam 2 = (4,0)
+          (0,0)
+        """
+        num_images = 3
+
+        wTi_list = [
+            Pose2(Rot2.fromDegrees(0), np.array([0, 0])),
+            Pose2(Rot2.fromDegrees(90), np.array([0, 4])),
+            Pose2(Rot2.fromDegrees(0), np.array([4, 0])),
+        ]
+
+        edges = [(0, 1), (1, 2), (0, 2)]
+        i2Ri1_dict = {
+            (i1, i2): wTi_list[i2].inverse().compose(wTi_list[i1]).rotation()
+            for (i1, i2) in edges
+        }
+
+        lm_params = LevenbergMarquardtParams.CeresDefaults()
+        shonan_params = ShonanAveragingParameters2(lm_params)
+        shonan_params.setUseHuber(False)
+        shonan_params.setCertifyOptimality(True)
+
+        noise_model = gtsam.noiseModel.Unit.Create(3)
+        between_factors = gtsam.BetweenFactorPose2s()
+        for (i1, i2), i2Ri1 in i2Ri1_dict.items():
+            i2Ti1 = Pose2(i2Ri1, np.zeros(2))
+            between_factors.append(
+                BetweenFactorPose2(i2, i1, i2Ti1, noise_model)
+            )
+
+        obj = ShonanAveraging2(between_factors, shonan_params)
+        initial = obj.initializeRandomly()
+        result_values, _ = obj.run(initial, min_p=2, max_p=100)
+
+        wRi_list = [result_values.atRot2(i) for i in range(num_images)]
+        thetas_deg = np.array([wRi.degrees() for wRi in wRi_list])
+        
+        # map all angles to [0,360)
+        thetas_deg = thetas_deg % 360
+        thetas_deg -= thetas_deg[0]
+        
+        expected_thetas_deg = np.array([0.0, 90.0, 0.0])
+        np.testing.assert_allclose(thetas_deg, expected_thetas_deg, atol=0.1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

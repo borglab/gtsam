@@ -48,6 +48,18 @@ inline Line3_ transformTo(const Pose3_ &wTc, const Line3_ &wL) {
   return Line3_(f, wTc, wL);
 }
 
+inline Point3_ cross(const Point3_& a, const Point3_& b) {
+  Point3 (*f)(const Point3 &, const Point3 &,
+             OptionalJacobian<3, 3>, OptionalJacobian<3, 3>) = &cross;
+  return Point3_(f, a, b);
+}
+
+inline Double_ dot(const Point3_& a, const Point3_& b) {
+  double (*f)(const Point3 &, const Point3 &,
+             OptionalJacobian<1, 3>, OptionalJacobian<1, 3>) = &dot;
+  return Double_(f, a, b);
+}
+
 namespace internal {
 // define getter that returns value rather than reference
 inline Rot3 rotation(const Pose3& pose, OptionalJacobian<3, 6> H) {

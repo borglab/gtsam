@@ -24,7 +24,6 @@
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/VectorSpace.h>
 
-#include <boost/bind.hpp>
 #include <boost/make_shared.hpp>
 #include <map>
 
@@ -69,20 +68,20 @@ public:
   //   Expression<Point2>::BinaryFunction<PinholeCamera<Cal3_S2>,Point3>::type
   template<class A1>
   struct UnaryFunction {
-    typedef boost::function<
+    typedef std::function<
         T(const A1&, typename MakeOptionalJacobian<T, A1>::type)> type;
   };
 
   template<class A1, class A2>
   struct BinaryFunction {
-    typedef boost::function<
+    typedef std::function<
         T(const A1&, const A2&, typename MakeOptionalJacobian<T, A1>::type,
             typename MakeOptionalJacobian<T, A2>::type)> type;
   };
 
   template<class A1, class A2, class A3>
   struct TernaryFunction {
-    typedef boost::function<
+    typedef std::function<
         T(const A1&, const A2&, const A3&,
             typename MakeOptionalJacobian<T, A1>::type,
             typename MakeOptionalJacobian<T, A2>::type,
@@ -240,7 +239,7 @@ class BinarySumExpression : public Expression<T> {
  */
 template <typename T, typename A>
 Expression<T> linearExpression(
-    const boost::function<T(A)>& f, const Expression<A>& expression,
+    const std::function<T(A)>& f, const Expression<A>& expression,
     const Eigen::Matrix<double, traits<T>::dimension, traits<A>::dimension>& dTdA) {
   // Use lambda to endow f with a linear Jacobian
   typename Expression<T>::template UnaryFunction<A>::type g =

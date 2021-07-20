@@ -450,7 +450,7 @@ namespace gtsam {
   template<typename L, typename Y>
   template<typename M, typename X>
   DecisionTree<L, Y>::DecisionTree(const DecisionTree<M, X>& other,
-      const std::map<M, L>& map, boost::function<Y(const X&)> op)  {
+      const std::map<M, L>& map, std::function<Y(const X&)> op)  {
     root_ = convert(other.root_, map, op);
   }
 
@@ -568,7 +568,7 @@ namespace gtsam {
   template<typename M, typename X>
   typename DecisionTree<L, Y>::NodePtr DecisionTree<L, Y>::convert(
       const typename DecisionTree<M, X>::NodePtr& f, const std::map<M, L>& map,
-      boost::function<Y(const X&)> op) {
+      std::function<Y(const X&)> op) {
 
     typedef DecisionTree<M, X> MX;
     typedef typename MX::Leaf MXLeaf;
