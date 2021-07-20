@@ -320,13 +320,13 @@ T expm(const Vector& x, int K=7) {
 }
 
 /**
- * Linear interpolation between X and Y by coefficient t in [0, 1].
+ * Linear interpolation between X and Y by coefficient t in [0, 1.5] (t>1 implies extrapolation), with optional jacobians.
  */
 template <typename T>
 T interpolate(const T& X, const T& Y, double t,
               OptionalJacobian< traits<T>::dimension, traits<T>::dimension > Hx = boost::none,
               OptionalJacobian< traits<T>::dimension, traits<T>::dimension > Hy = boost::none) {
-  assert(t >= 0.0 && t <= 1.0);
+  assert(t >= 0.0 && t <= 1.5);
   if (Hx || Hy) {
     typedef Eigen::Matrix<double, traits<T>::dimension, traits<T>::dimension> Jacobian;
     typename traits<T>::TangentVector log_Xinv_Y;
