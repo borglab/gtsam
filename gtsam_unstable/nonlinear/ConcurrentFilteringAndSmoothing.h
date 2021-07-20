@@ -47,7 +47,9 @@ public:
   virtual ~ConcurrentFilter() {};
 
   /** Implement a standard 'print' function */
-  virtual void print(const std::string& s = "Concurrent Filter:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const = 0;
+  virtual void print(
+      const std::string& s = "Concurrent Filter:\n",
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const = 0;
 
   /** Check if two Concurrent Smoothers are equal */
   virtual bool equals(const ConcurrentFilter& rhs, double tol = 1e-9) const = 0;
@@ -107,7 +109,9 @@ public:
   virtual ~ConcurrentSmoother() {};
 
   /** Implement a standard 'print' function */
-  virtual void print(const std::string& s = "Concurrent Smoother:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const = 0;
+  virtual void print(
+      const std::string& s = "Concurrent Smoother:\n",
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const = 0;
 
   /** Check if two Concurrent Smoothers are equal */
   virtual bool equals(const ConcurrentSmoother& rhs, double tol = 1e-9) const = 0;

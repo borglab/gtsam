@@ -325,7 +325,7 @@ public:
   // Operator that linearizes a given range of the factors
   void operator()(const tbb::blocked_range<size_t>& blocked_range) const {
     for (size_t i = blocked_range.begin(); i != blocked_range.end(); ++i) {
-      if (nonlinearGraph_[i])
+      if (nonlinearGraph_[i] && nonlinearGraph_[i]->sendable())
         result_[i] = nonlinearGraph_[i]->linearize(linearizationPoint_);
       else
         result_[i] = GaussianFactor::shared_ptr();
@@ -348,8 +348,18 @@ GaussianFactorGraph::shared_ptr NonlinearFactorGraph::linearize(const Values& li
 
   linearFG->resize(size());
   TbbOpenMPMixedScope threadLimiter; // Limits OpenMP threads since we're mixing TBB and OpenMP
+
+  // First linearize all sendable factors
   tbb::parallel_for(tbb::blocked_range<size_t>(0, size()),
     _LinearizeOneFactor(*this, linearizationPoint, *linearFG));
+
+  // Linearize all non-sendable factors
+  for(size_t i = 0; i < size(); i++) {
+    auto& factor = (*this)[i];
+    if(factor && !(factor->sendable())) {
+      (*linearFG)[i] = factor->linearize(linearizationPoint);
+    }
+  }
 
 #else
 

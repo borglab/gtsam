@@ -61,7 +61,10 @@ class Test {
   pair<Test ,Test*> create_MixedPtrs () const;
   pair<Test*,Test*> return_ptrs (Test* p1, Test* p2) const;
 
+  // This should be callable as .print() in python
   void print() const;
+  // Since this is a reserved keyword, it should be updated to `lambda_`
+  void lambda() const;
 
   void set_container(std::vector<testing::Test> container);
   void set_container(std::vector<testing::Test*> container);
@@ -106,3 +109,14 @@ class MyVector {
 // Class with multiple instantiated templates
 template<T = {int}, U = {double, float}>
 class MultipleTemplates {};
+
+// Test for default args in constructor
+class ForwardKinematics {
+  ForwardKinematics(const gtdynamics::Robot& robot,
+                    const string& start_link_name, const string& end_link_name,
+                    const gtsam::Values& joint_angles,
+                    const gtsam::Pose3& l2Tp = gtsam::Pose3());
+};
+
+class SuperCoolFactor;
+typedef SuperCoolFactor<gtsam::Pose3> SuperCoolFactorPose3;

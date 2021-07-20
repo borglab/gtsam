@@ -278,7 +278,8 @@ Vector3 SO3::Logmap(const SO3& Q, ChartJacobian H) {
     } else {
       // when theta near 0, +-2pi, +-4pi, etc. (trace near 3.0)
       // use Taylor expansion: theta \approx 1/2-(t-3)/12 + O((t-3)^2)
-      magnitude = 0.5 - tr_3 * tr_3 / 12.0;
+      // see https://github.com/borglab/gtsam/issues/746 for details
+      magnitude = 0.5 - tr_3 / 12.0;
     }
     omega = magnitude * Vector3(R32 - R23, R13 - R31, R21 - R12);
   }

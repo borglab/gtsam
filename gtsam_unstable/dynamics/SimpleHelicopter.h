@@ -166,24 +166,24 @@ public:
       boost::optional<Matrix&> H3 = boost::none) const {
     if (H1) {
       (*H1) = numericalDerivative31(
-          boost::function<Vector(const Vector6&, const Vector6&, const Pose3&)>(
-              boost::bind(&DiscreteEulerPoincareHelicopter::computeError, *this, _1, _2, _3)
+          std::function<Vector(const Vector6&, const Vector6&, const Pose3&)>(
+              std::bind(&DiscreteEulerPoincareHelicopter::computeError, *this, _1, _2, _3)
           ),
           xik, xik_1, gk, 1e-5
       );
     }
     if (H2) {
       (*H2) = numericalDerivative32(
-          boost::function<Vector(const Vector6&, const Vector6&, const Pose3&)>(
-              boost::bind(&DiscreteEulerPoincareHelicopter::computeError, *this, _1, _2, _3)
+          std::function<Vector(const Vector6&, const Vector6&, const Pose3&)>(
+              std::bind(&DiscreteEulerPoincareHelicopter::computeError, *this, _1, _2, _3)
           ),
           xik, xik_1, gk, 1e-5
       );
     }
     if (H3) {
       (*H3) = numericalDerivative33(
-          boost::function<Vector(const Vector6&, const Vector6&, const Pose3&)>(
-              boost::bind(&DiscreteEulerPoincareHelicopter::computeError, *this, _1, _2, _3)
+          std::function<Vector(const Vector6&, const Vector6&, const Pose3&)>(
+              std::bind(&DiscreteEulerPoincareHelicopter::computeError, *this, _1, _2, _3)
           ),
           xik, xik_1, gk, 1e-5
       );

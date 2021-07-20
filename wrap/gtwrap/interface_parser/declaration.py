@@ -10,11 +10,12 @@ Classes and rules for declarations such as includes and forward declarations.
 Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellaert
 """
 
-from pyparsing import CharsNotIn, Optional
+from pyparsing import CharsNotIn, Optional  # type: ignore
 
 from .tokens import (CLASS, COLON, INCLUDE, LOPBRACK, ROPBRACK, SEMI_COLON,
                      VIRTUAL)
 from .type import Typename
+from .utils import collect_namespaces
 
 
 class Include:
@@ -42,11 +43,12 @@ class ForwardDeclaration:
                 t.name, t.parent_type, t.is_virtual))
 
     def __init__(self,
-                 name: Typename,
+                 typename: Typename,
                  parent_type: str,
                  is_virtual: str,
                  parent: str = ''):
-        self.name = name
+        self.name = typename.name
+        self.typename = typename
         if parent_type:
             self.parent_type = parent_type
         else:
@@ -55,6 +57,9 @@ class ForwardDeclaration:
         self.is_virtual = is_virtual
         self.parent = parent
 
+    def namespaces(self) -> list:
+        """Get the namespaces which this class is nested under as a list."""
+        return collect_namespaces(self)
+
     def __repr__(self) -> str:
-        return "ForwardDeclaration: {} {}({})".format(self.is_virtual,
-                                                      self.name, self.parent)
+        return "ForwardDeclaration: {} {}".format(self.is_virtual, self.name)

@@ -17,6 +17,7 @@
  * @author Frank Dellaert
  * @author Mike Bosse
  * @author Duy Nguyen Ta
+ * @author shteren1
  */
 
 
@@ -319,29 +320,32 @@ T expm(const Vector& x, int K=7) {
 }
 
 /**
- * Linear interpolation and some extrapolation between X and Y by coefficient t in [0, 1.5], optinal jacobians calculations.
+ * Linear interpolation between X and Y by coefficient t in [0, 1.5] (t>1 implies extrapolation), with optional jacobians.
  */
-template <typename T, int N>
-T interpolate(const T& X, const T& Y, double t, OptionalJacobian<N, N> Hx = boost::none, OptionalJacobian<N, N> Hy = boost::none) {
-  assert(t >= 0 && t <= 1.5);
-  if (Hx && Hy) {
-    typedef Eigen::Matrix<double, N, N> Jacobian;
-    typename traits<T>::TangentVector tres;
-    T tres1;
-    Jacobian d1;
-    Jacobian d2;
+template <typename T>
+T interpolate(const T& X, const T& Y, double t,
+              OptionalJacobian< traits<T>::dimension, traits<T>::dimension > Hx = boost::none,
+              OptionalJacobian< traits<T>::dimension, traits<T>::dimension > Hy = boost::none) {
+  assert(t >= 0.0 && t <= 1.5);
+  if (Hx || Hy) {
+    typedef Eigen::Matrix<double, traits<T>::dimension, traits<T>::dimension> Jacobian;
+    typename traits<T>::TangentVector log_Xinv_Y;
+    Jacobian Hx_tmp, Hy_tmp, H1, H2;
 
-    tres1 = traits<T>::Between(X, Y, Hx, Hy);
-    tres = traits<T>::Logmap(tres1, d1);
-    *Hx = d1 * (*Hx);
-    *Hy = d1 * (*Hy);
-    tres1 = traits<T>::Expmap(t * tres, d1);
-    *Hx = t * d1 * (*Hx);
-    *Hy = t * d1 * (*Hy);
-    tres1 = traits<T>::Compose(X, tres1, d1, d2);
-    *Hx = d1 + d2 * (*Hx);
-    *Hy = d2 * (*Hy);
-    return tres1;
+    T Xinv_Y = traits<T>::Between(X, Y, Hx_tmp, Hy_tmp);
+    log_Xinv_Y = traits<T>::Logmap(Xinv_Y, H1);
+    Hx_tmp = H1 * Hx_tmp;
+    Hy_tmp = H1 * Hy_tmp;
+    Xinv_Y = traits<T>::Expmap(t * log_Xinv_Y, H1);
+    Hx_tmp = t * H1 * Hx_tmp;
+    Hy_tmp = t * H1 * Hy_tmp;
+    Xinv_Y = traits<T>::Compose(X, Xinv_Y, H1, H2);
+    Hx_tmp = H1 + H2 * Hx_tmp;
+    Hy_tmp = H2 * Hy_tmp;
+
+    if(Hx) *Hx = Hx_tmp;
+    if(Hy) *Hy = Hy_tmp;
+    return Xinv_Y;
   }
   return traits<T>::Compose(X, traits<T>::Expmap(t * traits<T>::Logmap(traits<T>::Between(X, Y))));
 }
