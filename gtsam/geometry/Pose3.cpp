@@ -423,8 +423,4 @@ std::ostream &operator<<(std::ostream &os, const Pose3& pose) {
   return os;
 }
 
-Pose3 pose3_interp(const Pose3& X, const Pose3& Y, double t, Matrix& Hx, Matrix& Hy) {
-  return X.interp(t, Y, Hx, Hy);
-}
-
 } // namespace gtsam

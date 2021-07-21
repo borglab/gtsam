@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file RollingShutterProjectionFactor.h
- * @brief Basic bearing factor from 2D measurement for rolling shutter cameras
+ * @file ProjectionFactorRollingShutter.h
+ * @brief Basic projection factor for rolling shutter cameras
  * @author Yotam Stern
  */
 
@@ -34,7 +34,7 @@ namespace gtsam {
    * @addtogroup SLAM
    */
 
-  class RollingShutterProjectionFactor: public NoiseModelFactor3<Pose3, Pose3, Point3> {
+  class ProjectionFactorRollingShutter: public NoiseModelFactor3<Pose3, Pose3, Point3> {
   protected:
 
     // Keep a copy of measurement and calibration for I/O
@@ -53,13 +53,13 @@ namespace gtsam {
     typedef NoiseModelFactor3<Pose3, Pose3, Point3> Base;
 
     /// shorthand for this class
-    typedef RollingShutterProjectionFactor This;
+    typedef ProjectionFactorRollingShutter This;
 
     /// shorthand for a smart pointer to a factor
     typedef boost::shared_ptr<This> shared_ptr;
 
     /// Default constructor
-  RollingShutterProjectionFactor() :
+  ProjectionFactorRollingShutter() :
       measured_(0, 0), interp_param_(0), throwCheirality_(false), verboseCheirality_(false) {
   }
 
@@ -74,7 +74,7 @@ namespace gtsam {
      * @param K shared pointer to the constant calibration
      * @param body_P_sensor is the transform from body to sensor frame (default identity)
      */
-    RollingShutterProjectionFactor(const Point2& measured, double interp_param, const SharedNoiseModel& model,
+    ProjectionFactorRollingShutter(const Point2& measured, double interp_param, const SharedNoiseModel& model,
         Key poseKey_a, Key poseKey_b, Key pointKey, const boost::shared_ptr<Cal3_S2>& K,
         boost::optional<Pose3> body_P_sensor = boost::none) :
           Base(model, poseKey_a, poseKey_b, pointKey), measured_(measured), interp_param_(interp_param), K_(K), body_P_sensor_(body_P_sensor),
@@ -93,7 +93,7 @@ namespace gtsam {
      * @param verboseCheirality determines whether exceptions are printed for Cheirality
      * @param body_P_sensor is the transform from body to sensor frame  (default identity)
      */
-    RollingShutterProjectionFactor(const Point2& measured, double interp_param, const SharedNoiseModel& model,
+    ProjectionFactorRollingShutter(const Point2& measured, double interp_param, const SharedNoiseModel& model,
         Key poseKey_a, Key poseKey_b, Key pointKey, const boost::shared_ptr<Cal3_S2>& K,
         bool throwCheirality, bool verboseCheirality,
         boost::optional<Pose3> body_P_sensor = boost::none) :
@@ -101,7 +101,7 @@ namespace gtsam {
           throwCheirality_(throwCheirality), verboseCheirality_(verboseCheirality) {}
 
     /** Virtual destructor */
-    virtual ~RollingShutterProjectionFactor() {}
+    virtual ~ProjectionFactorRollingShutter() {}
 
     /// @return a deep copy of this factor
     virtual gtsam::NonlinearFactor::shared_ptr clone() const {
@@ -114,7 +114,7 @@ namespace gtsam {
      * @param keyFormatter optional formatter useful for printing Symbols
      */
     void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
-      std::cout << s << "RollingShutterProjectionFactor, z = ";
+      std::cout << s << "ProjectionFactorRollingShutter, z = ";
       traits<Point2>::Print(measured_);
       std::cout << " rolling shutter interpolation param = " << interp_param_;
       if(this->body_P_sensor_)
@@ -141,7 +141,7 @@ namespace gtsam {
       gtsam::Matrix Hprj;
 
       //pose = interpolate(pose_a, pose_b, interp_param_, H1, H2);
-      pose = pose_a.interp(interp_param_, pose_b, H1, H2);
+      pose = interpolate<Pose3>(pose_a, pose_b, interp_param_, H1, H2);
       try {
         if(body_P_sensor_) {
           if(H1 && H2) {
