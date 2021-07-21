@@ -56,6 +56,20 @@ static double interp_factor1 = 0.3;
 static double interp_factor2 = 0.4;
 static double interp_factor3 = 0.5;
 
+/* ************************************************************************* */
+// default Cal3_S2 poses with rolling shutter effect
+namespace vanillaPoseRS {
+typedef PinholePose<Cal3_S2> Camera;
+typedef SmartProjectionPoseFactor<Cal3_S2> SmartFactor;
+static Cal3_S2::shared_ptr sharedK(new Cal3_S2(fov, w, h));
+Pose3 interp_pose1 = interpolate<Pose3>(level_pose,pose_right,interp_factor1);
+Pose3 interp_pose2 = interpolate<Pose3>(pose_right,pose_above,interp_factor2);
+Pose3 interp_pose3 = interpolate<Pose3>(pose_above,level_pose,interp_factor3);
+Camera cam1(interp_pose1, sharedK);
+Camera cam2(interp_pose2, sharedK);
+Camera cam3(interp_pose3, sharedK);
+}
+
 LevenbergMarquardtParams lmParams;
 typedef SmartProjectionPoseFactorRollingShutter<Cal3_S2> SmartFactorRS;
 
@@ -154,63 +168,95 @@ TEST( SmartProjectionPoseFactorRollingShutter, Equals ) {
   }
 }
 
-/* *************************************************************************
- TEST( SmartProjectionPoseFactorRollingShutter, noiseless ) {
+/* *************************************************************************/
+TEST( SmartProjectionPoseFactorRollingShutter, noiselessError ) {
 
- using namespace vanillaPose;
+  using namespace vanillaPoseRS;
 
- // Project two landmarks into two cameras
- Point2 level_uv = level_camera.project(landmark1);
- Point2 level_uv_right = level_camera_right.project(landmark1);
+//  // 2 poses such that level_pose_1 = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
+//  // can be interpolated with interp_factor1 = 0.2:
+//  Pose3 level_pose1 = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 5));
+//  Pose3 level_pose2 = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 0));
+//  // 2 poses such that pose_right (Second camera 1 meter to the right of first camera)
+//  // can be interpolated with interp_factor1 = 0.4:
+//  Pose3 pose_right1 = level_pose * Pose3(Rot3(), Point3(1, 0, 0));
+//  Pose3 pose_right2 = level_pose * Pose3(Rot3(), Point3(1, 0, 0));
+//  // 2 poses such that pose_above (Third camera 1 meter above the first camera)
+//  // can be interpolated with interp_factor1 = 0.5:
+//  Pose3 pose_above1 = level_pose * Pose3(Rot3(), Point3(0, -1, 0));
+//  Pose3 pose_above1 = level_pose * Pose3(Rot3(), Point3(0, -1, 0));
+//
+//  // Project two landmarks into two cameras
+//  Point2 level_uv = level_camera.project(landmark1);
+//  Point2 level_uv_right = level_camera_right.project(landmark1);
+//  Pose3 body_P_sensorId = Pose3::identity();
+//
+//  SmartFactor factor(model);
+//  factor.add(level_uv, x1, x2, interp_factor1, sharedK, body_P_sensorId);
+//  factor.add(level_uv_right, x2, x3, interp_factor2, sharedK, body_P_sensorId);
+//
+//  Values values; // it's a pose factor, hence these are poses
+//  values.insert(x1, cam1.pose());
+//  values.insert(x2, cam2.pose());
+//
+//  double actualError = factor.error(values);
+//  double expectedError = 0.0;
+//  EXPECT_DOUBLES_EQUAL(expectedError, actualError, 1e-7);
+}
 
- SmartFactor factor(model, sharedK);
- factor.add(level_uv, x1);
- factor.add(level_uv_right, x2);
+ /* *************************************************************************
+  TEST( SmartProjectionPoseFactorRollingShutter, Jacobians ) {
 
- Values values; // it's a pose factor, hence these are poses
- values.insert(x1, cam1.pose());
- values.insert(x2, cam2.pose());
+  using namespace vanillaPose;
 
- double actualError = factor.error(values);
- double expectedError = 0.0;
- EXPECT_DOUBLES_EQUAL(expectedError, actualError, 1e-7);
+  // Project two landmarks into two cameras
+  Point2 level_uv = level_camera.project(landmark1);
+  Point2 level_uv_right = level_camera_right.project(landmark1);
 
- SmartFactor::Cameras cameras = factor.cameras(values);
- double actualError2 = factor.totalReprojectionError(cameras);
- EXPECT_DOUBLES_EQUAL(expectedError, actualError2, 1e-7);
+  SmartFactor factor(model, sharedK);
+  factor.add(level_uv, x1);
+  factor.add(level_uv_right, x2);
 
- // Calculate expected derivative for point (easiest to check)
- std::function<Vector(Point3)> f = //
- std::bind(&SmartFactor::whitenedError<Point3>, factor, cameras, std::placeholders::_1);
+  Values values; // it's a pose factor, hence these are poses
+  values.insert(x1, cam1.pose());
+  values.insert(x2, cam2.pose());
 
- // Calculate using computeEP
- Matrix actualE;
- factor.triangulateAndComputeE(actualE, values);
+  double actualError = factor.error(values);
+  double expectedError = 0.0;
+  EXPECT_DOUBLES_EQUAL(expectedError, actualError, 1e-7);
 
- // get point
- boost::optional<Point3> point = factor.point();
- CHECK(point);
+  // Calculate expected derivative for point (easiest to check)
+  std::function<Vector(Point3)> f = //
+  std::bind(&SmartFactor::whitenedError<Point3>, factor, cameras, std::placeholders::_1);
 
- // calculate numerical derivative with triangulated point
- Matrix expectedE = sigma * numericalDerivative11<Vector, Point3>(f, *point);
- EXPECT(assert_equal(expectedE, actualE, 1e-7));
+  // Calculate using computeEP
+  Matrix actualE;
+  factor.triangulateAndComputeE(actualE, values);
 
- // Calculate using reprojectionError
- SmartFactor::Cameras::FBlocks F;
- Matrix E;
- Vector actualErrors = factor.unwhitenedError(cameras, *point, F, E);
- EXPECT(assert_equal(expectedE, E, 1e-7));
+  // get point
+  boost::optional<Point3> point = factor.point();
+  CHECK(point);
 
- EXPECT(assert_equal(Z_4x1, actualErrors, 1e-7));
+  // calculate numerical derivative with triangulated point
+  Matrix expectedE = sigma * numericalDerivative11<Vector, Point3>(f, *point);
+  EXPECT(assert_equal(expectedE, actualE, 1e-7));
 
- // Calculate using computeJacobians
- Vector b;
- SmartFactor::FBlocks Fs;
- factor.computeJacobians(Fs, E, b, cameras, *point);
- double actualError3 = b.squaredNorm();
- EXPECT(assert_equal(expectedE, E, 1e-7));
- EXPECT_DOUBLES_EQUAL(expectedError, actualError3, 1e-6);
- }
+  // Calculate using reprojectionError
+  SmartFactor::Cameras::FBlocks F;
+  Matrix E;
+  Vector actualErrors = factor.unwhitenedError(cameras, *point, F, E);
+  EXPECT(assert_equal(expectedE, E, 1e-7));
+
+  EXPECT(assert_equal(Z_4x1, actualErrors, 1e-7));
+
+  // Calculate using computeJacobians
+  Vector b;
+  SmartFactor::FBlocks Fs;
+  factor.computeJacobians(Fs, E, b, cameras, *point);
+  double actualError3 = b.squaredNorm();
+  EXPECT(assert_equal(expectedE, E, 1e-7));
+  EXPECT_DOUBLES_EQUAL(expectedError, actualError3, 1e-6);
+  }
 
  /* *************************************************************************
  TEST( SmartProjectionPoseFactorRollingShutter, noisy ) {
