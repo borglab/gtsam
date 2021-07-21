@@ -248,5 +248,8 @@ class ProjectionFactorRollingShutter : public NoiseModelFactor3<Pose3, Pose3, Po
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
-// rolling shutter projection factor
+
+/// traits
+template<> struct traits<ProjectionFactorRollingShutter> : public Testable<ProjectionFactorRollingShutter> {};
+
 }//namespace gtsam

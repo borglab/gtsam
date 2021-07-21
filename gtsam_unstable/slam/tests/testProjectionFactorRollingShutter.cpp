@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file  testProjectionFactorRollingShutter.cpp
+ *  @file  ProjectionFactorRollingShutterRollingShutter.cpp
  *  @brief Unit tests for ProjectionFactorRollingShutter Class
  *  @author Luca Carlone
  *  @date July 2021
@@ -45,72 +45,77 @@ using symbol_shorthand::X;
 using symbol_shorthand::L;
 using symbol_shorthand::T;
 
-//typedef ProjectionFactorPPP<Pose3, Point3> TestProjectionFactor;
+// Convenience to define common variables across many tests
+static Key poseKey1(X(1));
+static Key poseKey2(X(2));
+static Key pointKey(L(1));
+static double interp_params = 0.5;
+static Point2 measurement(323.0, 240.0);
+static Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
 
-///// traits
-//namespace gtsam {
-//template<>
-//struct traits<TestProjectionFactor> : public Testable<TestProjectionFactor> {
-//};
-//}
-//
+/* ************************************************************************* */
+TEST( ProjectionFactorRollingShutter, Constructor) {
+  ProjectionFactorRollingShutter factor(measurement, interp_params, model, poseKey1, poseKey2, pointKey, K);
+}
+
+/* ************************************************************************* */
+TEST( ProjectionFactorRollingShutter, ConstructorWithTransform) {
+  ProjectionFactorRollingShutter factor(measurement, interp_params, model,
+                                        poseKey1, poseKey2, pointKey, K, body_P_sensor);
+}
+
+/* ************************************************************************* */
+TEST( ProjectionFactorRollingShutter, Equals ) {
+  { // factors are equal
+    ProjectionFactorRollingShutter factor1(measurement, interp_params,
+                                           model, poseKey1, poseKey2, pointKey, K);
+    ProjectionFactorRollingShutter factor2(measurement, interp_params,
+                                           model, poseKey1, poseKey2, pointKey, K);
+    CHECK(assert_equal(factor1, factor2));
+  }
+  { // factors are NOT equal (keys are different)
+    ProjectionFactorRollingShutter factor1(measurement, interp_params,
+                                           model, poseKey1, poseKey2, pointKey, K);
+    ProjectionFactorRollingShutter factor2(measurement, interp_params,
+                                           model, poseKey1, poseKey1, pointKey, K);
+    CHECK(!assert_equal(factor1, factor2)); // not equal
+  }
+  { // factors are NOT equal (different interpolation)
+    ProjectionFactorRollingShutter factor1(measurement, 0.1,
+                                           model, poseKey1, poseKey1, pointKey, K);
+    ProjectionFactorRollingShutter factor2(measurement, 0.5,
+                                           model, poseKey1, poseKey2, pointKey, K);
+    CHECK(!assert_equal(factor1, factor2)); // not equal
+  }
+}
+
+/* ************************************************************************* */
+TEST( ProjectionFactorRollingShutter, EqualsWithTransform ) {
+  { // factors are equal
+    ProjectionFactorRollingShutter factor1(measurement, interp_params, model,
+                                          poseKey1, poseKey2, pointKey, K, body_P_sensor);
+    ProjectionFactorRollingShutter factor2(measurement, interp_params, model,
+                                          poseKey1, poseKey2, pointKey, K, body_P_sensor);
+    CHECK(assert_equal(factor1, factor2));
+  }
+  { // factors are NOT equal
+    ProjectionFactorRollingShutter factor1(measurement, interp_params, model,
+                                          poseKey1, poseKey2, pointKey, K, body_P_sensor);
+    Pose3 body_P_sensor2(Rot3::RzRyRx(0.0, 0.0, 0.0), Point3(0.25, -0.10, 1.0)); // rotation different from body_P_sensor
+    ProjectionFactorRollingShutter factor2(measurement, interp_params, model,
+                                          poseKey1, poseKey2, pointKey, K, body_P_sensor2);
+    CHECK(!assert_equal(factor1, factor2));
+  }
+}
+
 ///* ************************************************************************* */
-//TEST( ProjectionFactorPPP, nonStandard ) {
-//  ProjectionFactorPPP<Pose3, Point3, Cal3DS2> f;
-//}
-//
-///* ************************************************************************* */
-//TEST( ProjectionFactorPPP, Constructor) {
-//  Key poseKey(X(1));
-//  Key transformKey(T(1));
-//  Key pointKey(L(1));
-//
-//  Point2 measurement(323.0, 240.0);
-//
-//  TestProjectionFactor factor(measurement, model, poseKey, transformKey, pointKey, K);
-//}
-//
-///* ************************************************************************* */
-//TEST( ProjectionFactorPPP, ConstructorWithTransform) {
-//  Key poseKey(X(1));
-//  Key transformKey(T(1));
-//  Key pointKey(L(1));
-//
-//  Point2 measurement(323.0, 240.0);
-//  TestProjectionFactor factor(measurement, model, poseKey, transformKey, pointKey, K);
-//}
-//
-///* ************************************************************************* */
-//TEST( ProjectionFactorPPP, Equals ) {
-//  // Create two identical factors and make sure they're equal
-//  Point2 measurement(323.0, 240.0);
-//
-//  TestProjectionFactor factor1(measurement, model, X(1), T(1), L(1), K);
-//  TestProjectionFactor factor2(measurement, model, X(1), T(1), L(1), K);
-//
-//  CHECK(assert_equal(factor1, factor2));
-//}
-//
-///* ************************************************************************* */
-//TEST( ProjectionFactorPPP, EqualsWithTransform ) {
-//  // Create two identical factors and make sure they're equal
-//  Point2 measurement(323.0, 240.0);
-//  Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
-//
-//  TestProjectionFactor factor1(measurement, model, X(1), T(1), L(1), K);
-//  TestProjectionFactor factor2(measurement, model, X(1), T(1), L(1), K);
-//
-//  CHECK(assert_equal(factor1, factor2));
-//}
-//
-///* ************************************************************************* */
-//TEST( ProjectionFactorPPP, Error ) {
+//TEST( ProjectionFactorRollingShutter, Error ) {
 //  // Create the factor with a measurement that is 3 pixels off in x
 //  Key poseKey(X(1));
 //  Key transformKey(T(1));
 //  Key pointKey(L(1));
 //  Point2 measurement(323.0, 240.0);
-//  TestProjectionFactor factor(measurement, model, poseKey, transformKey, pointKey, K);
+//  ProjectionFactorRollingShutter factor(measurement, model, poseKey, transformKey, pointKey, K);
 //
 //  // Set the linearization point
 //  Pose3 pose(Rot3(), Point3(0,0,-6));
@@ -127,14 +132,14 @@ using symbol_shorthand::T;
 //}
 //
 ///* ************************************************************************* */
-//TEST( ProjectionFactorPPP, ErrorWithTransform ) {
+//TEST( ProjectionFactorRollingShutter, ErrorWithTransform ) {
 //  // Create the factor with a measurement that is 3 pixels off in x
 //  Key poseKey(X(1));
 //  Key transformKey(T(1));
 //  Key pointKey(L(1));
 //  Point2 measurement(323.0, 240.0);
 //  Pose3 transform(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
-//  TestProjectionFactor factor(measurement, model, poseKey,transformKey, pointKey, K);
+//  ProjectionFactorRollingShutter factor(measurement, model, poseKey,transformKey, pointKey, K);
 //
 //  // Set the linearization point. The vehicle pose has been selected to put the camera at (-6, 0, 0)
 //  Pose3 pose(Rot3(), Point3(-6.25, 0.10 , -1.0));
@@ -151,13 +156,13 @@ using symbol_shorthand::T;
 //}
 //
 ///* ************************************************************************* */
-//TEST( ProjectionFactorPPP, Jacobian ) {
+//TEST( ProjectionFactorRollingShutter, Jacobian ) {
 //  // Create the factor with a measurement that is 3 pixels off in x
 //  Key poseKey(X(1));
 //  Key transformKey(T(1));
 //  Key pointKey(L(1));
 //  Point2 measurement(323.0, 240.0);
-//  TestProjectionFactor factor(measurement, model, poseKey, transformKey, pointKey, K);
+//  ProjectionFactorRollingShutter factor(measurement, model, poseKey, transformKey, pointKey, K);
 //
 //  // Set the linearization point
 //  Pose3 pose(Rot3(), Point3(0,0,-6));
@@ -178,7 +183,7 @@ using symbol_shorthand::T;
 //  // Verify H2 with numerical derivative
 //  Matrix H2Expected = numericalDerivative32<Vector, Pose3, Pose3, Point3>(
 //      std::function<Vector(const Pose3&, const Pose3&, const Point3&)>(
-//          std::bind(&TestProjectionFactor::evaluateError, &factor,
+//          std::bind(&ProjectionFactorRollingShutter::evaluateError, &factor,
 //                    std::placeholders::_1, std::placeholders::_2,
 //                    std::placeholders::_3, boost::none, boost::none,
 //                    boost::none)),
@@ -188,14 +193,14 @@ using symbol_shorthand::T;
 //}
 //
 ///* ************************************************************************* */
-//TEST( ProjectionFactorPPP, JacobianWithTransform ) {
+//TEST( ProjectionFactorRollingShutter, JacobianWithTransform ) {
 //  // Create the factor with a measurement that is 3 pixels off in x
 //  Key poseKey(X(1));
 //  Key transformKey(T(1));
 //  Key pointKey(L(1));
 //  Point2 measurement(323.0, 240.0);
 //  Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
-//  TestProjectionFactor factor(measurement, model, poseKey, transformKey, pointKey, K);
+//  ProjectionFactorRollingShutter factor(measurement, model, poseKey, transformKey, pointKey, K);
 //
 //  // Set the linearization point. The vehicle pose has been selected to put the camera at (-6, 0, 0)
 //  Pose3 pose(Rot3(), Point3(-6.25, 0.10 , -1.0));
@@ -216,7 +221,7 @@ using symbol_shorthand::T;
 //  // Verify H2 with numerical derivative
 //  Matrix H2Expected = numericalDerivative32<Vector, Pose3, Pose3, Point3>(
 //      std::function<Vector(const Pose3&, const Pose3&, const Point3&)>(
-//          std::bind(&TestProjectionFactor::evaluateError, &factor,
+//          std::bind(&ProjectionFactorRollingShutter::evaluateError, &factor,
 //                    std::placeholders::_1, std::placeholders::_2,
 //                    std::placeholders::_3, boost::none, boost::none,
 //                    boost::none)),
