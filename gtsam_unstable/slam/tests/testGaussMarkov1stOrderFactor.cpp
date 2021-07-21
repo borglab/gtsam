@@ -23,6 +23,7 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/deprecated/LieVector.h>
 
+using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 
@@ -105,9 +106,13 @@ TEST (GaussMarkovFactor, jacobian ) {
   // Calculate the Jacobian matrices H1 and H2 using the numerical derivative function
   Matrix numerical_H1, numerical_H2;
   numerical_H1 = numericalDerivative21<Vector3, Vector3, Vector3>(
-      boost::bind(&predictionError, _1, _2, factor), v1_upd, v2_upd);
+      std::bind(&predictionError, std::placeholders::_1, std::placeholders::_2,
+                factor),
+      v1_upd, v2_upd);
   numerical_H2 = numericalDerivative22<Vector3, Vector3, Vector3>(
-      boost::bind(&predictionError, _1, _2, factor), v1_upd, v2_upd);
+      std::bind(&predictionError, std::placeholders::_1, std::placeholders::_2,
+                factor),
+      v1_upd, v2_upd);
 
   // Verify they are equal for this choice of state
   CHECK( assert_equal(numerical_H1, computed_H1, 1e-9));

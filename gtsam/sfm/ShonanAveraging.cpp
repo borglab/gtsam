@@ -944,6 +944,36 @@ ShonanAveraging2::ShonanAveraging2(string g2oFile, const Parameters &parameters)
                                      parameters.getUseHuber()),
                          parameters) {}
 
+// Extract Rot2 measurement from Pose2 betweenfactors
+// Modeled after similar function in dataset.cpp
+static BinaryMeasurement<Rot2> convertPose2ToBinaryMeasurementRot2(
+    const BetweenFactor<Pose2>::shared_ptr &f) {
+  auto gaussian =
+      boost::dynamic_pointer_cast<noiseModel::Gaussian>(f->noiseModel());
+  if (!gaussian)
+    throw std::invalid_argument(
+        "parseMeasurements<Rot2> can only convert Pose2 measurements "
+        "with Gaussian noise models.");
+  const Matrix3 M = gaussian->covariance();
+  auto model = noiseModel::Gaussian::Covariance(M.block<1, 1>(2, 2));
+  return BinaryMeasurement<Rot2>(f->key1(), f->key2(), f->measured().rotation(),
+                                 model);
+}
+    
+static ShonanAveraging2::Measurements extractRot2Measurements(
+    const BetweenFactorPose2s &factors) {
+  ShonanAveraging2::Measurements result;
+  result.reserve(factors.size());
+  for (auto f : factors) result.push_back(convertPose2ToBinaryMeasurementRot2(f));
+  return result;
+}
+
+ShonanAveraging2::ShonanAveraging2(const BetweenFactorPose2s &factors,
+                                   const Parameters &parameters)
+    : ShonanAveraging<2>(maybeRobust(extractRot2Measurements(factors),
+                                     parameters.getUseHuber()),
+                         parameters) {}    
+    
 /* ************************************************************************* */
 // Explicit instantiation for d=3
 template class ShonanAveraging<3>;
