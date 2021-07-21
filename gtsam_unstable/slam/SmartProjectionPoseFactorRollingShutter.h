@@ -99,8 +99,9 @@ class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<
   void add(const Point2& measured, const Key& world_P_body_key1,
            const Key& world_P_body_key2, const double& gamma,
            const boost::shared_ptr<CALIBRATION>& K, const Pose3 body_P_sensor) {
-    // store measurements in base class (note: we only store the first key there)
-    Base::add(measured, world_P_body_key1);
+    // store measurements in base class (note: we manyally add keys below to make sure they are unique
+    this->measured_.push_back(measured);
+
     // but we also store the extrinsic calibration keys in the same order
     world_P_body_key_pairs_.push_back(
         std::make_pair(world_P_body_key1, world_P_body_key2));
@@ -112,6 +113,9 @@ class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<
     if (std::find(this->keys_.begin(), this->keys_.end(), world_P_body_key2)
         == this->keys_.end())
       this->keys_.push_back(world_P_body_key2);  // add only unique keys
+
+    // store interpolation factors
+    gammas_.push_back(gamma);
 
     // store fixed calibration
     K_all_.push_back(K);
