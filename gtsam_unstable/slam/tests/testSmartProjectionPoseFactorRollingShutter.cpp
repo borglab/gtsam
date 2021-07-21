@@ -60,7 +60,6 @@ static double interp_factor3 = 0.5;
 // default Cal3_S2 poses with rolling shutter effect
 namespace vanillaPoseRS {
 typedef PinholePose<Cal3_S2> Camera;
-typedef SmartProjectionPoseFactor<Cal3_S2> SmartFactor;
 static Cal3_S2::shared_ptr sharedK(new Cal3_S2(fov, w, h));
 Pose3 interp_pose1 = interpolate<Pose3>(level_pose,pose_right,interp_factor1);
 Pose3 interp_pose2 = interpolate<Pose3>(pose_right,pose_above,interp_factor2);
@@ -170,38 +169,26 @@ TEST( SmartProjectionPoseFactorRollingShutter, Equals ) {
 
 /* *************************************************************************/
 TEST( SmartProjectionPoseFactorRollingShutter, noiselessError ) {
-
+  std::cout << "============================== " << std::endl;
   using namespace vanillaPoseRS;
 
-//  // 2 poses such that level_pose_1 = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
-//  // can be interpolated with interp_factor1 = 0.2:
-//  Pose3 level_pose1 = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 5));
-//  Pose3 level_pose2 = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 0));
-//  // 2 poses such that pose_right (Second camera 1 meter to the right of first camera)
-//  // can be interpolated with interp_factor1 = 0.4:
-//  Pose3 pose_right1 = level_pose * Pose3(Rot3(), Point3(1, 0, 0));
-//  Pose3 pose_right2 = level_pose * Pose3(Rot3(), Point3(1, 0, 0));
-//  // 2 poses such that pose_above (Third camera 1 meter above the first camera)
-//  // can be interpolated with interp_factor1 = 0.5:
-//  Pose3 pose_above1 = level_pose * Pose3(Rot3(), Point3(0, -1, 0));
-//  Pose3 pose_above1 = level_pose * Pose3(Rot3(), Point3(0, -1, 0));
-//
-//  // Project two landmarks into two cameras
-//  Point2 level_uv = level_camera.project(landmark1);
-//  Point2 level_uv_right = level_camera_right.project(landmark1);
-//  Pose3 body_P_sensorId = Pose3::identity();
-//
-//  SmartFactor factor(model);
-//  factor.add(level_uv, x1, x2, interp_factor1, sharedK, body_P_sensorId);
-//  factor.add(level_uv_right, x2, x3, interp_factor2, sharedK, body_P_sensorId);
-//
-//  Values values; // it's a pose factor, hence these are poses
-//  values.insert(x1, cam1.pose());
-//  values.insert(x2, cam2.pose());
-//
-//  double actualError = factor.error(values);
-//  double expectedError = 0.0;
-//  EXPECT_DOUBLES_EQUAL(expectedError, actualError, 1e-7);
+  // Project two landmarks into two cameras
+  Point2 level_uv = cam1.project(landmark1);
+  Point2 level_uv_right = cam2.project(landmark1);
+  Pose3 body_P_sensorId = Pose3::identity();
+
+  SmartFactorRS factor(model);
+  factor.add(level_uv, x1, x2, interp_factor1, sharedK, body_P_sensorId);
+  factor.add(level_uv_right, x2, x3, interp_factor2, sharedK, body_P_sensorId);
+
+  Values values; // it's a pose factor, hence these are poses
+  values.insert(x1, level_pose);
+  values.insert(x2, pose_right);
+  values.insert(x3, pose_above);
+
+  double actualError = factor.error(values);
+  double expectedError = 0.0;
+  EXPECT_DOUBLES_EQUAL(expectedError, actualError, 1e-7);
 }
 
  /* *************************************************************************

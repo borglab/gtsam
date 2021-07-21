@@ -39,7 +39,7 @@ namespace gtsam {
  */
 template<class CALIBRATION>
 class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<
-    PinholePose<CALIBRATION> > {
+PinholePose<CALIBRATION> > {
 
  protected:
   /// shared pointer to calibration object (one for each observation)
@@ -81,7 +81,7 @@ class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<
   SmartProjectionPoseFactorRollingShutter(
       const SharedNoiseModel& sharedNoiseModel,
       const SmartProjectionParams& params = SmartProjectionParams())
-      : Base(sharedNoiseModel, params) {
+  : Base(sharedNoiseModel, params) {
   }
 
   /** Virtual destructor */
@@ -108,10 +108,10 @@ class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<
 
     // pose keys are assumed to be unique, so we avoid duplicates here
     if (std::find(this->keys_.begin(), this->keys_.end(), world_P_body_key1)
-        == this->keys_.end())
+    == this->keys_.end())
       this->keys_.push_back(world_P_body_key1);  // add only unique keys
     if (std::find(this->keys_.begin(), this->keys_.end(), world_P_body_key2)
-        == this->keys_.end())
+    == this->keys_.end())
       this->keys_.push_back(world_P_body_key2);  // add only unique keys
 
     // store interpolation factors
@@ -192,7 +192,7 @@ class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<
    * @param keyFormatter optional formatter useful for printing Symbols
    */
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
-                 DefaultKeyFormatter) const override {
+      DefaultKeyFormatter) const override {
     std::cout << s << "SmartProjectionPoseFactorRollingShutter: \n ";
     for (size_t i = 0; i < K_all_.size(); i++) {
       std::cout << "-- Measurement nr " << i << std::endl;
@@ -239,40 +239,6 @@ class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<
   }
 
   /**
-   * error calculates the error of the factor.
-   */
-  double error(const Values& values) const override {
-    if (this->active(values)) {
-      return this->totalReprojectionError(cameras(values));
-    } else {  // else of active flag
-      return 0.0;
-    }
-  }
-
-  /**
-   * Collect all cameras involved in this factor
-   * @param values Values structure which must contain camera poses
-   * corresponding to keys involved in this factor
-   * @return Cameras
-   */
-  typename Base::Cameras cameras(const Values& values) const override {
-    assert(world_P_body_keys_.size() == K_all_.size());
-    assert(world_P_body_keys_.size() == body_P_cam_keys_.size());
-    typename Base::Cameras cameras;
-    for (size_t i = 0; i < world_P_body_key_pairs_.size(); i++) {
-      Pose3 w_P_body1 = values.at<Pose3>(world_P_body_key_pairs_[i].first);
-      Pose3 w_P_body2 = values.at<Pose3>(world_P_body_key_pairs_[i].second);
-      double interpolationFactor = gammas_[i];
-      // get interpolated pose:
-      Pose3 w_P_body = w_P_body1.interpolateRt(w_P_body2, interpolationFactor);
-      Pose3 body_P_cam = body_P_sensors_[i];
-      Pose3 w_P_cam = w_P_body.compose(body_P_cam);
-      cameras.emplace_back(w_P_cam, K_all_[i]);
-    }
-    return cameras;
-  }
-
-  /**
    * Compute jacobian F, E and error vector at a given linearization point
    * @param values Values structure which must contain camera poses
    * corresponding to keys involved in this factor
@@ -290,7 +256,7 @@ class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<
       b = Vector::Zero(2 * numViews);  // a Point2 for each view
       Eigen::Matrix<double, ZDim, DimPose> dProject_dPoseCam;
       Eigen::Matrix<double, DimPose, DimPose> dInterpPose_dPoseBody1,
-          dInterpPose_dPoseBody2, dPoseCam_dInterpPose;
+      dInterpPose_dPoseBody2, dPoseCam_dInterpPose;
       Eigen::Matrix<double, ZDim, 3> Ei;
 
       for (size_t i = 0; i < numViews; i++) {  // for each camera/measurement
@@ -308,7 +274,7 @@ class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<
         // get jacobians and error vector for current measurement
         Point2 reprojectionError_i = Point2(
             camera.project(*this->result_, dProject_dPoseCam, Ei)
-                - this->measured_.at(i));
+            - this->measured_.at(i));
         Eigen::Matrix<double, ZDim, DimBlock> J;  // 2 x 12
         J.block<ZDim, 6>(0, 0) = dProject_dPoseCam * dPoseCam_dInterpPose
             * dInterpPose_dPoseBody1;  // (2x6) * (6x6) * (6x6)
@@ -342,109 +308,146 @@ class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<
 
     if (this->measured_.size() != cameras(values).size())
       throw std::runtime_error("SmartProjectionPoseFactorRollingShutter: "
-                               "measured_.size() inconsistent with input");
+          "measured_.size() inconsistent with input");
 
-//    // triangulate 3D point at given linearization point
-//    triangulateSafe(cameras(values));
-//
-//    if (!this->result_) { // failed: return "empty/zero" Hessian
-//      for (Matrix& m : Gs)
-//        m = Matrix::Zero(DimPose, DimPose);
-//      for (Vector& v : gs)
-//        v = Vector::Zero(DimPose);
-//      return boost::make_shared < RegularHessianFactor<DimPose>
-//          > ( this->keys_, Gs, gs, 0.0);
-//    }
-//
-//    // compute Jacobian given triangulated 3D Point
-//    FBlocks Fs;
-//    Matrix F, E;
-//    Vector b;
-//    computeJacobiansWithTriangulatedPoint(Fs, E, b, values);
-//
-//    // Whiten using noise model
-//    this->noiseModel_->WhitenSystem(E, b);
-//    for (size_t i = 0; i < Fs.size(); i++)
-//      Fs[i] = this->noiseModel_->Whiten(Fs[i]);
-//
-//    // build augmented Hessian (with last row/column being the information vector)
-//    Matrix3 P;
-//    This::Cameras::ComputePointCovariance<3>(P, E, lambda, diagonalDamping);
-//
-//    // marginalize point: note - we reuse the standard SchurComplement function
-//    SymmetricBlockMatrix augmentedHessian = This::Cameras::SchurComplement<2,DimBlock>(Fs, E, P, b);
+    //    // triangulate 3D point at given linearization point
+    //    triangulateSafe(cameras(values));
+    //
+    //    if (!this->result_) { // failed: return "empty/zero" Hessian
+    //      for (Matrix& m : Gs)
+    //        m = Matrix::Zero(DimPose, DimPose);
+    //      for (Vector& v : gs)
+    //        v = Vector::Zero(DimPose);
+    //      return boost::make_shared < RegularHessianFactor<DimPose>
+    //          > ( this->keys_, Gs, gs, 0.0);
+    //    }
+    //
+    //    // compute Jacobian given triangulated 3D Point
+    //    FBlocks Fs;
+    //    Matrix F, E;
+    //    Vector b;
+    //    computeJacobiansWithTriangulatedPoint(Fs, E, b, values);
+    //
+    //    // Whiten using noise model
+    //    this->noiseModel_->WhitenSystem(E, b);
+    //    for (size_t i = 0; i < Fs.size(); i++)
+    //      Fs[i] = this->noiseModel_->Whiten(Fs[i]);
+    //
+    //    // build augmented Hessian (with last row/column being the information vector)
+    //    Matrix3 P;
+    //    This::Cameras::ComputePointCovariance<3>(P, E, lambda, diagonalDamping);
+    //
+    //    // marginalize point: note - we reuse the standard SchurComplement function
+    //    SymmetricBlockMatrix augmentedHessian = This::Cameras::SchurComplement<2,DimBlock>(Fs, E, P, b);
 
-//    // now pack into an Hessian factor
-//    std::vector<DenseIndex> dims(nrUniqueKeys + 1);  // this also includes the b term
-//    std::fill(dims.begin(), dims.end() - 1, 6);
-//    dims.back() = 1;
-//    SymmetricBlockMatrix augmentedHessianUniqueKeys;
-//
-//    // here we have to deal with the fact that some cameras may share the same extrinsic key
-//    if (nrUniqueKeys == nrNonuniqueKeys) {  // if there is 1 calibration key per camera
-//      augmentedHessianUniqueKeys = SymmetricBlockMatrix(
-//          dims, Matrix(augmentedHessian.selfadjointView()));
-//    } else {  // if multiple cameras share a calibration we have to rearrange
-//      // the results of the Schur complement matrix
-//      std::vector<DenseIndex> nonuniqueDims(nrNonuniqueKeys + 1);  // this also includes the b term
-//      std::fill(nonuniqueDims.begin(), nonuniqueDims.end() - 1, 6);
-//      nonuniqueDims.back() = 1;
-//      augmentedHessian = SymmetricBlockMatrix(
-//          nonuniqueDims, Matrix(augmentedHessian.selfadjointView()));
-//
-//      // these are the keys that correspond to the blocks in augmentedHessian (output of SchurComplement)
-//      KeyVector nonuniqueKeys;
-//      for (size_t i = 0; i < world_P_body_key_pairs_.size(); i++) {
-//        nonuniqueKeys.push_back(world_P_body_key_pairs_.at(i));
-//        nonuniqueKeys.push_back(body_P_cam_ this->keys_.at(i));
-//      }
-//
-//      // get map from key to location in the new augmented Hessian matrix (the one including only unique keys)
-//      std::map<Key, size_t> keyToSlotMap;
-//      for (size_t k = 0; k < nrUniqueKeys; k++) {
-//        keyToSlotMap[ this->keys_[k]] = k;
-//      }
-//
-//      // initialize matrix to zero
-//      augmentedHessianUniqueKeys = SymmetricBlockMatrix(
-//          dims, Matrix::Zero(6 * nrUniqueKeys + 1, 6 * nrUniqueKeys + 1));
-//
-//      // add contributions for each key: note this loops over the hessian with nonUnique keys (augmentedHessian)
-//      // and populates an Hessian that only includes the unique keys (that is what we want to return)
-//      for (size_t i = 0; i < nrNonuniqueKeys; i++) {  // rows
-//        Key key_i = nonuniqueKeys.at(i);
-//
-//        // update information vector
-//        augmentedHessianUniqueKeys.updateOffDiagonalBlock(
-//            keyToSlotMap[key_i], nrUniqueKeys,
-//            augmentedHessian.aboveDiagonalBlock(i, nrNonuniqueKeys));
-//
-//        // update blocks
-//        for (size_t j = i; j < nrNonuniqueKeys; j++) {  // cols
-//          Key key_j = nonuniqueKeys.at(j);
-//          if (i == j) {
-//            augmentedHessianUniqueKeys.updateDiagonalBlock(
-//                keyToSlotMap[key_i], augmentedHessian.diagonalBlock(i));
-//          } else {  // (i < j)
-//            if (keyToSlotMap[key_i] != keyToSlotMap[key_j]) {
-//              augmentedHessianUniqueKeys.updateOffDiagonalBlock(
-//                  keyToSlotMap[key_i], keyToSlotMap[key_j],
-//                  augmentedHessian.aboveDiagonalBlock(i, j));
-//            } else {
-//              augmentedHessianUniqueKeys.updateDiagonalBlock(
-//                  keyToSlotMap[key_i],
-//                  augmentedHessian.aboveDiagonalBlock(i, j)
-//                      + augmentedHessian.aboveDiagonalBlock(i, j).transpose());
-//            }
-//          }
-//        }
-//      }
-//      // update bottom right element of the matrix
-//      augmentedHessianUniqueKeys.updateDiagonalBlock(
-//          nrUniqueKeys, augmentedHessian.diagonalBlock(nrNonuniqueKeys));
-//    }
-//    return boost::make_shared < RegularHessianFactor<DimPose>
-//        > ( this->keys_, augmentedHessianUniqueKeys);
+    //    // now pack into an Hessian factor
+    //    std::vector<DenseIndex> dims(nrUniqueKeys + 1);  // this also includes the b term
+    //    std::fill(dims.begin(), dims.end() - 1, 6);
+    //    dims.back() = 1;
+    //    SymmetricBlockMatrix augmentedHessianUniqueKeys;
+    //
+    //    // here we have to deal with the fact that some cameras may share the same extrinsic key
+    //    if (nrUniqueKeys == nrNonuniqueKeys) {  // if there is 1 calibration key per camera
+    //      augmentedHessianUniqueKeys = SymmetricBlockMatrix(
+    //          dims, Matrix(augmentedHessian.selfadjointView()));
+    //    } else {  // if multiple cameras share a calibration we have to rearrange
+    //      // the results of the Schur complement matrix
+    //      std::vector<DenseIndex> nonuniqueDims(nrNonuniqueKeys + 1);  // this also includes the b term
+    //      std::fill(nonuniqueDims.begin(), nonuniqueDims.end() - 1, 6);
+    //      nonuniqueDims.back() = 1;
+    //      augmentedHessian = SymmetricBlockMatrix(
+    //          nonuniqueDims, Matrix(augmentedHessian.selfadjointView()));
+    //
+    //      // these are the keys that correspond to the blocks in augmentedHessian (output of SchurComplement)
+    //      KeyVector nonuniqueKeys;
+    //      for (size_t i = 0; i < world_P_body_key_pairs_.size(); i++) {
+    //        nonuniqueKeys.push_back(world_P_body_key_pairs_.at(i));
+    //        nonuniqueKeys.push_back(body_P_cam_ this->keys_.at(i));
+    //      }
+    //
+    //      // get map from key to location in the new augmented Hessian matrix (the one including only unique keys)
+    //      std::map<Key, size_t> keyToSlotMap;
+    //      for (size_t k = 0; k < nrUniqueKeys; k++) {
+    //        keyToSlotMap[ this->keys_[k]] = k;
+    //      }
+    //
+    //      // initialize matrix to zero
+    //      augmentedHessianUniqueKeys = SymmetricBlockMatrix(
+    //          dims, Matrix::Zero(6 * nrUniqueKeys + 1, 6 * nrUniqueKeys + 1));
+    //
+    //      // add contributions for each key: note this loops over the hessian with nonUnique keys (augmentedHessian)
+    //      // and populates an Hessian that only includes the unique keys (that is what we want to return)
+    //      for (size_t i = 0; i < nrNonuniqueKeys; i++) {  // rows
+    //        Key key_i = nonuniqueKeys.at(i);
+    //
+    //        // update information vector
+    //        augmentedHessianUniqueKeys.updateOffDiagonalBlock(
+    //            keyToSlotMap[key_i], nrUniqueKeys,
+    //            augmentedHessian.aboveDiagonalBlock(i, nrNonuniqueKeys));
+    //
+    //        // update blocks
+    //        for (size_t j = i; j < nrNonuniqueKeys; j++) {  // cols
+    //          Key key_j = nonuniqueKeys.at(j);
+    //          if (i == j) {
+    //            augmentedHessianUniqueKeys.updateDiagonalBlock(
+    //                keyToSlotMap[key_i], augmentedHessian.diagonalBlock(i));
+    //          } else {  // (i < j)
+    //            if (keyToSlotMap[key_i] != keyToSlotMap[key_j]) {
+    //              augmentedHessianUniqueKeys.updateOffDiagonalBlock(
+    //                  keyToSlotMap[key_i], keyToSlotMap[key_j],
+    //                  augmentedHessian.aboveDiagonalBlock(i, j));
+    //            } else {
+    //              augmentedHessianUniqueKeys.updateDiagonalBlock(
+    //                  keyToSlotMap[key_i],
+    //                  augmentedHessian.aboveDiagonalBlock(i, j)
+    //                      + augmentedHessian.aboveDiagonalBlock(i, j).transpose());
+    //            }
+    //          }
+    //        }
+    //      }
+    //      // update bottom right element of the matrix
+    //      augmentedHessianUniqueKeys.updateDiagonalBlock(
+    //          nrUniqueKeys, augmentedHessian.diagonalBlock(nrNonuniqueKeys));
+    //    }
+    //    return boost::make_shared < RegularHessianFactor<DimPose>
+    //        > ( this->keys_, augmentedHessianUniqueKeys);
+  }
+
+  /**
+   * error calculates the error of the factor.
+   */
+  double error(const Values& values) const override {
+    if (this->active(values)) {
+      return this->totalReprojectionError(this->cameras(values));
+    } else { // else of active flag
+      return 0.0;
+    }
+  }
+
+  /**
+   * Collect all cameras involved in this factor
+   * @param values Values structure which must contain camera poses
+   * corresponding to keys involved in this factor
+   * @return Cameras
+   */
+  typename Base::Cameras cameras(const Values& values) const override {
+    size_t numViews = this->measured_.size();
+    assert(world_P_body_keys_.size() == K_all_.size());
+    assert(world_P_body_keys_.size() == body_P_cam_keys_.size());
+
+    typename Base::Cameras cameras;
+    for (size_t i = 0; i < numViews; i++) {  // for each measurement
+      Pose3 w_P_body1 = values.at<Pose3>(world_P_body_key_pairs_[i].first);
+      Pose3 w_P_body2 = values.at<Pose3>(world_P_body_key_pairs_[i].second);
+      double interpolationFactor = gammas_[i];
+      Pose3 w_P_body = interpolate<Pose3>(w_P_body1, w_P_body2, interpolationFactor);
+      Pose3 body_P_cam = body_P_sensors_[i];
+      Pose3 w_P_cam = w_P_body.compose(body_P_cam);
+      std::cout << "id : " << i << std::endl;
+      w_P_cam.print("w_P_cam\n");
+      cameras.emplace_back(w_P_cam, K_all_[i]);
+    }
+    return cameras;
   }
 
   /**
@@ -466,7 +469,7 @@ class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<
 
   /// linearize
   boost::shared_ptr<GaussianFactor> linearize(const Values& values) const
-      override {
+          override {
     return linearizeDamped(values);
   }
 
@@ -485,7 +488,7 @@ class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<
 /// traits
 template<class CALIBRATION>
 struct traits<SmartProjectionPoseFactorRollingShutter<CALIBRATION> > :
-    public Testable<SmartProjectionPoseFactorRollingShutter<CALIBRATION> > {
+public Testable<SmartProjectionPoseFactorRollingShutter<CALIBRATION> > {
 };
 
 }  // namespace gtsam
