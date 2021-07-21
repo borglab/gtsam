@@ -21,6 +21,7 @@
 #include <gtsam/slam/PoseTranslationPrior.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam_unstable/slam/SmartProjectionPoseFactorRollingShutter.h>
+#include <gtsam_unstable/slam/ProjectionFactorRollingShutter.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/serializationTestHelpers.h>
 #include <CppUnitLite/TestHarness.h>
@@ -45,6 +46,7 @@ static Symbol x1('X', 1);
 static Symbol x2('X', 2);
 static Symbol x3('X', 3);
 static Symbol x4('X', 4);
+static Symbol l0('L', 0);
 static Pose3 body_P_sensor = Pose3(Rot3::Ypr(-0.1, 0.2, -0.2),
                                    Point3(0.1, 0.0, 0.0));
 
@@ -167,9 +169,14 @@ TEST( SmartProjectionPoseFactorRollingShutter, Equals ) {
   }
 }
 
+static const int DimBlock = 12;  ///< size of the variable stacking 2 poses from which the observation pose is interpolated
+static const int DimPose = 6;  ///< Pose3 dimension
+static const int ZDim = 2;  ///< Measurement dimension (Point2)
+typedef Eigen::Matrix<double, ZDim, DimBlock> MatrixZD;  // F blocks (derivatives wrt camera)
+typedef std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD> > FBlocks;  // vector of F blocks
+
 /* *************************************************************************/
-TEST( SmartProjectionPoseFactorRollingShutter, noiselessError ) {
-  std::cout << "============================== " << std::endl;
+TEST( SmartProjectionPoseFactorRollingShutter, noiselessErrorAndJacobians ) {
   using namespace vanillaPoseRS;
 
   // Project two landmarks into two cameras
@@ -189,63 +196,42 @@ TEST( SmartProjectionPoseFactorRollingShutter, noiselessError ) {
   double actualError = factor.error(values);
   double expectedError = 0.0;
   EXPECT_DOUBLES_EQUAL(expectedError, actualError, 1e-7);
+
+  // Check triangulation
+  factor.triangulateSafe(factor.cameras(values));
+  TriangulationResult point = factor.point();
+  CHECK(point.valid()); // check triangulated point is valid
+  CHECK(assert_equal(landmark1, *point)); // check triangulation result matches expected 3D landmark
+
+  // Check Jacobians
+  // -- actual Jacobians
+  FBlocks actualFs;
+  Matrix actualE;
+  Vector actualb;
+  factor.computeJacobiansWithTriangulatedPoint(actualFs, actualE, actualb, values);
+  CHECK(actualE.rows() == 4); CHECK(actualE.cols() == 3);
+  CHECK(actualb.rows() == 4); CHECK(actualb.cols() == 1);
+  CHECK(actualFs.size() == 2);
+
+  // -- expected Jacobians from ProjectionFactorsRollingShutter
+  ProjectionFactorRollingShutter factor1(level_uv, interp_factor1, model, x1, x2, l0, sharedK, body_P_sensorId);
+  Matrix expectedF11, expectedF12, expectedE1;
+  Vector expectedb1 = factor1.evaluateError(level_pose, pose_right, landmark1, expectedF11, expectedF12, expectedE1);
+  CHECK(assert_equal( expectedF11, Matrix(actualFs[0].block(0,0,2,6)), 1e-5));
+  CHECK(assert_equal( expectedF12, Matrix(actualFs[0].block(0,6,2,6)), 1e-5));
+  CHECK(assert_equal( expectedE1, Matrix(actualE.block(0,0,2,3)), 1e-5));
+  CHECK(assert_equal( expectedb1, Vector(actualb.segment<2>(0)), 1e-5));
+
+  ProjectionFactorRollingShutter factor2(level_uv_right, interp_factor2, model, x2, x3, l0, sharedK, body_P_sensorId);
+  Matrix expectedF21, expectedF22, expectedE2;
+  Vector expectedb2 = factor2.evaluateError(pose_right, pose_above, landmark1, expectedF21, expectedF22, expectedE2);
+  CHECK(assert_equal( expectedF21, Matrix(actualFs[1].block(0,0,2,6)), 1e-5));
+  CHECK(assert_equal( expectedF22, Matrix(actualFs[1].block(0,6,2,6)), 1e-5));
+  CHECK(assert_equal( expectedE2, Matrix(actualE.block(2,0,2,3)), 1e-5));
+  CHECK(assert_equal( expectedb2, Vector(actualb.segment<2>(2)), 1e-5));
 }
 
- /* *************************************************************************
-  TEST( SmartProjectionPoseFactorRollingShutter, Jacobians ) {
-
-  using namespace vanillaPose;
-
-  // Project two landmarks into two cameras
-  Point2 level_uv = level_camera.project(landmark1);
-  Point2 level_uv_right = level_camera_right.project(landmark1);
-
-  SmartFactor factor(model, sharedK);
-  factor.add(level_uv, x1);
-  factor.add(level_uv_right, x2);
-
-  Values values; // it's a pose factor, hence these are poses
-  values.insert(x1, cam1.pose());
-  values.insert(x2, cam2.pose());
-
-  double actualError = factor.error(values);
-  double expectedError = 0.0;
-  EXPECT_DOUBLES_EQUAL(expectedError, actualError, 1e-7);
-
-  // Calculate expected derivative for point (easiest to check)
-  std::function<Vector(Point3)> f = //
-  std::bind(&SmartFactor::whitenedError<Point3>, factor, cameras, std::placeholders::_1);
-
-  // Calculate using computeEP
-  Matrix actualE;
-  factor.triangulateAndComputeE(actualE, values);
-
-  // get point
-  boost::optional<Point3> point = factor.point();
-  CHECK(point);
-
-  // calculate numerical derivative with triangulated point
-  Matrix expectedE = sigma * numericalDerivative11<Vector, Point3>(f, *point);
-  EXPECT(assert_equal(expectedE, actualE, 1e-7));
-
-  // Calculate using reprojectionError
-  SmartFactor::Cameras::FBlocks F;
-  Matrix E;
-  Vector actualErrors = factor.unwhitenedError(cameras, *point, F, E);
-  EXPECT(assert_equal(expectedE, E, 1e-7));
-
-  EXPECT(assert_equal(Z_4x1, actualErrors, 1e-7));
-
-  // Calculate using computeJacobians
-  Vector b;
-  SmartFactor::FBlocks Fs;
-  factor.computeJacobians(Fs, E, b, cameras, *point);
-  double actualError3 = b.squaredNorm();
-  EXPECT(assert_equal(expectedE, E, 1e-7));
-  EXPECT_DOUBLES_EQUAL(expectedError, actualError3, 1e-6);
-  }
-
- /* *************************************************************************
+/* *************************************************************************
  TEST( SmartProjectionPoseFactorRollingShutter, noisy ) {
 
  using namespace vanillaPose;
