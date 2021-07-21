@@ -67,10 +67,6 @@ def main():
     if top_module_namespaces[0]:
         top_module_namespaces = [''] + top_module_namespaces
 
-    # Read in the complete interface (.i) file
-    with open(args.src, "r") as f:
-        content = f.read()
-
     with open(args.template, "r") as f:
         template_content = f.read()
 
@@ -83,11 +79,8 @@ def main():
     )
 
     # Wrap the code and get back the cpp/cc code.
-    cc_content = wrapper.wrap(content)
-
-    # Generate the C++ code which Pybind11 will use.
-    with open(args.out, "w") as f:
-        f.write(cc_content)
+    sources = args.src.split(';')
+    wrapper.wrap(sources, args.out)
 
 
 if __name__ == "__main__":

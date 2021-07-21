@@ -12,7 +12,7 @@ Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellae
 
 from typing import Iterable, List, Union
 
-from pyparsing import Literal, Optional, ZeroOrMore
+from pyparsing import Literal, Optional, ZeroOrMore  # type: ignore
 
 from .enum import Enum
 from .function import ArgumentList, ReturnType
@@ -233,7 +233,7 @@ class Class:
             self.static_methods = []
             self.properties = []
             self.operators = []
-            self.enums = []
+            self.enums: List[Enum] = []
             for m in members:
                 if isinstance(m, Constructor):
                     self.ctors.append(m)
@@ -274,7 +274,7 @@ class Class:
 
     def __init__(
         self,
-        template: Template,
+        template: Union[Template, None],
         is_virtual: str,
         name: str,
         parent_class: list,
@@ -292,16 +292,16 @@ class Class:
         if parent_class:
             # If it is in an iterable, extract the parent class.
             if isinstance(parent_class, Iterable):
-                parent_class = parent_class[0]
+                parent_class = parent_class[0]  # type: ignore
 
             # If the base class is a TemplatedType,
             # we want the instantiated Typename
             if isinstance(parent_class, TemplatedType):
-                parent_class = parent_class.typename
+                parent_class = parent_class.typename  # type: ignore
 
             self.parent_class = parent_class
         else:
-            self.parent_class = ''
+            self.parent_class = ''  # type: ignore
 
         self.ctors = ctors
         self.methods = methods

@@ -19,22 +19,20 @@ jobs:
         # Github Actions requires a single row to be added to the build matrix.
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
         name: [
-          # ubuntu-18.04-gcc-5,  #TODO Enable once the Python wrapper is optimized for memory
+          ubuntu-18.04-gcc-5,
           ubuntu-18.04-gcc-9,
           ubuntu-18.04-clang-9,
           macOS-10.15-xcode-11.3.1,
-          # ubuntu-18.04-gcc-5-tbb,
+          ubuntu-18.04-gcc-5-tbb,
         ]
 
-        #TODO update wrapper to prevent OOM
-        # build_type: [Debug, Release]
-        build_type: [Release]
+        build_type: [Debug, Release]
         python_version: [3]
         include:
-          # - name: ubuntu-18.04-gcc-5
-          #   os: ubuntu-18.04
-          #   compiler: gcc
-          #   version: "5"
+          - name: ubuntu-18.04-gcc-5
+            os: ubuntu-18.04
+            compiler: gcc
+            version: "5"
 
           - name: ubuntu-18.04-gcc-9
             os: ubuntu-18.04
@@ -46,7 +44,7 @@ jobs:
             compiler: clang
             version: "9"
 
-          #NOTE temporarily added this as it is a required check.
+          # NOTE temporarily added this as it is a required check.
           - name: ubuntu-18.04-clang-9
             os: ubuntu-18.04
             compiler: clang
@@ -59,11 +57,11 @@ jobs:
             compiler: xcode
             version: "11.3.1"
 
-          # - name: ubuntu-18.04-gcc-5-tbb
-          #   os: ubuntu-18.04
-          #   compiler: gcc
-          #   version: "5"
-          #   flag: tbb
+          - name: ubuntu-18.04-gcc-5-tbb
+            os: ubuntu-18.04
+            compiler: gcc
+            version: "5"
+            flag: tbb
 
     steps:
       - name: Checkout

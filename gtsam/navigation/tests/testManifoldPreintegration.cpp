@@ -22,9 +22,10 @@
 #include <gtsam/nonlinear/expressionTesting.h>
 
 #include <CppUnitLite/TestHarness.h>
-#include <boost/bind.hpp>
 
 #include "imuFactorTesting.h"
+
+using namespace std::placeholders;
 
 namespace testing {
 // Create default parameters with Z-down and above noise parameters
@@ -41,21 +42,21 @@ static boost::shared_ptr<PreintegrationParams> Params() {
 TEST(ManifoldPreintegration, BiasCorrectionJacobians) {
   testing::SomeMeasurements measurements;
 
-  boost::function<Rot3(const Vector3&, const Vector3&)> deltaRij =
+  std::function<Rot3(const Vector3&, const Vector3&)> deltaRij =
       [=](const Vector3& a, const Vector3& w) {
         ManifoldPreintegration pim(testing::Params(), Bias(a, w));
         testing::integrateMeasurements(measurements, &pim);
         return pim.deltaRij();
       };
 
-  boost::function<Point3(const Vector3&, const Vector3&)> deltaPij =
+  std::function<Point3(const Vector3&, const Vector3&)> deltaPij =
       [=](const Vector3& a, const Vector3& w) {
         ManifoldPreintegration pim(testing::Params(), Bias(a, w));
         testing::integrateMeasurements(measurements, &pim);
         return pim.deltaPij();
       };
 
-  boost::function<Vector3(const Vector3&, const Vector3&)> deltaVij =
+  std::function<Vector3(const Vector3&, const Vector3&)> deltaVij =
       [=](const Vector3& a, const Vector3& w) {
         ManifoldPreintegration pim(testing::Params(), Bias(a, w));
         testing::integrateMeasurements(measurements, &pim);
@@ -96,10 +97,12 @@ TEST(ManifoldPreintegration, computeError) {
   Matrix9 aH1, aH2;
   Matrix96 aH3;
   pim.computeError(x1, x2, bias, aH1, aH2, aH3);
-  boost::function<Vector9(const NavState&, const NavState&,
-                          const imuBias::ConstantBias&)> f =
-      boost::bind(&ManifoldPreintegration::computeError, pim, _1, _2, _3,
-                  boost::none, boost::none, boost::none);
+  std::function<Vector9(const NavState&, const NavState&,
+                        const imuBias::ConstantBias&)>
+      f = std::bind(&ManifoldPreintegration::computeError, pim,
+                    std::placeholders::_1, std::placeholders::_2,
+                    std::placeholders::_3, boost::none, boost::none,
+                    boost::none);
   // NOTE(frank): tolerance of 1e-3 on H1 because approximate away from 0
   EXPECT(assert_equal(numericalDerivative31(f, x1, x2, bias), aH1, 1e-9));
   EXPECT(assert_equal(numericalDerivative32(f, x1, x2, bias), aH2, 1e-9));
