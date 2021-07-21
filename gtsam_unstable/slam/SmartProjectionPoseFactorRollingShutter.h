@@ -264,28 +264,26 @@ PinholePose<CALIBRATION> > {
         Pose3 w_P_body2 = values.at<Pose3>(world_P_body_key_pairs_[i].second);
         double interpolationFactor = gammas_[i];
         // get interpolated pose:
-        std::cout << "TODO: need to add proper interpolation and Jacobians here" << std::endl;
-        Pose3 w_P_body = w_P_body1.interpolateRt(w_P_body2,
-                                                 interpolationFactor); /*dInterpPose_dPoseBody1, dInterpPose_dPoseBody2  */
+        Pose3 w_P_body = interpolate<Pose3>(w_P_body1, w_P_body2,interpolationFactor, dInterpPose_dPoseBody1, dInterpPose_dPoseBody2);
         Pose3 body_P_cam = body_P_sensors_[i];
         Pose3 w_P_cam = w_P_body.compose(body_P_cam, dPoseCam_dInterpPose);
-        PinholeCamera<CALIBRATION> camera(w_P_cam, K_all_[i]);
+        PinholeCamera<CALIBRATION> camera(w_P_cam, *K_all_[i]);
 
         // get jacobians and error vector for current measurement
         Point2 reprojectionError_i = Point2(
             camera.project(*this->result_, dProject_dPoseCam, Ei)
             - this->measured_.at(i));
         Eigen::Matrix<double, ZDim, DimBlock> J;  // 2 x 12
-        J.block<ZDim, 6>(0, 0) = dProject_dPoseCam * dPoseCam_dInterpPose
+        J.block(0, 0, ZDim, 6) = dProject_dPoseCam * dPoseCam_dInterpPose
             * dInterpPose_dPoseBody1;  // (2x6) * (6x6) * (6x6)
-        J.block<ZDim, 6>(0, 6) = dProject_dPoseCam * dPoseCam_dInterpPose
+        J.block(0, 6, ZDim, 6) = dProject_dPoseCam * dPoseCam_dInterpPose
             * dInterpPose_dPoseBody2;  // (2x6) * (6x6) * (6x6)
 
         // fit into the output structures
         Fs.push_back(J);
         size_t row = 2 * i;
         b.segment<ZDim>(row) = -reprojectionError_i;
-        E.block<3, 3>(row, 0) = Ei;
+        E.block<ZDim, 3>(row, 0) = Ei;
       }
     }
   }
