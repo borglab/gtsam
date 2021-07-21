@@ -167,12 +167,17 @@ class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<
     return K_all_;
   }
 
+  /// return (for each observation) the key of the pair of poses from which we interpolate
+  const std::vector<std::pair<Key, Key>> world_P_body_key_pairs() const {
+    return world_P_body_key_pairs_;
+  }
+
   /// return the interpolation factors gammas
   const std::vector<double> getGammas() const {
     return gammas_;
   }
 
-  /// return the interpolation factors gammas
+  /// return the extrinsic camera calibration body_P_sensors
   const std::vector<Pose3> body_P_sensors() const {
     return body_P_sensors_;
   }
@@ -192,7 +197,8 @@ class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<
       std::cout << " pose2 key: "
           << keyFormatter(world_P_body_key_pairs_[i].second) << std::endl;
       std::cout << " gamma: " << gammas_[i] << std::endl;
-      K_all_[i]->print("calibration = ");
+      body_P_sensors_[i].print("extrinsic calibration:\n");
+      K_all_[i]->print("intrinsic calibration = ");
     }
     Base::print("", keyFormatter);
   }
@@ -202,8 +208,30 @@ class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<
     const SmartProjectionPoseFactorRollingShutter<CALIBRATION>* e =
         dynamic_cast<const SmartProjectionPoseFactorRollingShutter<CALIBRATION>*>(&p);
 
+    double keyPairsEqual = true;
+    if(this->world_P_body_key_pairs_.size() == e->world_P_body_key_pairs().size()){
+      for(size_t k=0; k< this->world_P_body_key_pairs_.size(); k++){
+        const Key key1own = world_P_body_key_pairs_[k].first;
+        const Key key1e = e->world_P_body_key_pairs()[k].first;
+        const Key key2own = world_P_body_key_pairs_[k].second;
+        const Key key2e = e->world_P_body_key_pairs()[k].second;
+        if ( !(key1own == key1e) || !(key2own == key2e) ){
+          keyPairsEqual = false; break;
+        }
+      }
+    }else{ keyPairsEqual = false; }
+
+    double extrinsicCalibrationEqual = true;
+    if(this->body_P_sensors_.size() == e->body_P_sensors().size()){
+      for(size_t i=0; i< this->body_P_sensors_.size(); i++){
+        if (!body_P_sensors_[i].equals(e->body_P_sensors()[i])){
+          extrinsicCalibrationEqual = false; break;
+        }
+      }
+    }else{ extrinsicCalibrationEqual = false; }
+
     return e && Base::equals(p, tol) && K_all_ == e->calibration()
-        && gammas_ == e->getGammas() && body_P_sensors_ == e->body_P_sensors();
+        && gammas_ == e->getGammas() && keyPairsEqual && extrinsicCalibrationEqual;
   }
 
   /**
@@ -249,8 +277,7 @@ class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<
    * and the error vector b. Note that the jacobians are computed for a given point.
    */
   void computeJacobiansWithTriangulatedPoint(FBlocks& Fs, Matrix& E, Vector& b,
-                                             const Values& values) const
-                                                 override {
+                                             const Values& values) const {
     if (!this->result_) {
       throw("computeJacobiansWithTriangulatedPoint");
     } else {  // valid result: compute jacobians
@@ -296,7 +323,7 @@ class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<
   /// linearize and return a Hessianfactor that is an approximation of error(p)
   boost::shared_ptr<RegularHessianFactor<DimBlock> > createHessianFactor(
       const Values& values, const double lambda = 0.0, bool diagonalDamping =
-          false) const override {
+          false) const {
 
     // we may have multiple cameras sharing the same extrinsic cals, hence the number
     // of keys may be smaller than 2 * nrMeasurements (which is the upper bound where we
@@ -313,29 +340,29 @@ class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<
       throw std::runtime_error("SmartProjectionPoseFactorRollingShutter: "
                                "measured_.size() inconsistent with input");
 
-    // triangulate 3D point at given linearization point
-    triangulateSafe(cameras(values));
-
-    if (!this->result_) { // failed: return "empty/zero" Hessian
-      for (Matrix& m : Gs)
-        m = Matrix::Zero(DimPose, DimPose);
-      for (Vector& v : gs)
-        v = Vector::Zero(DimPose);
-      return boost::make_shared < RegularHessianFactor<DimPose>
-          > ( this->keys_, Gs, gs, 0.0);
-    }
-
-    // compute Jacobian given triangulated 3D Point
-    FBlocks Fs;
-    Matrix F, E;
-    Vector b;
-    computeJacobiansWithTriangulatedPoint(Fs, E, b, values);
-
-    // Whiten using noise model
-    this->noiseModel_->WhitenSystem(E, b);
-    for (size_t i = 0; i < Fs.size(); i++)
-      Fs[i] = this->noiseModel_->Whiten(Fs[i]);
-
+//    // triangulate 3D point at given linearization point
+//    triangulateSafe(cameras(values));
+//
+//    if (!this->result_) { // failed: return "empty/zero" Hessian
+//      for (Matrix& m : Gs)
+//        m = Matrix::Zero(DimPose, DimPose);
+//      for (Vector& v : gs)
+//        v = Vector::Zero(DimPose);
+//      return boost::make_shared < RegularHessianFactor<DimPose>
+//          > ( this->keys_, Gs, gs, 0.0);
+//    }
+//
+//    // compute Jacobian given triangulated 3D Point
+//    FBlocks Fs;
+//    Matrix F, E;
+//    Vector b;
+//    computeJacobiansWithTriangulatedPoint(Fs, E, b, values);
+//
+//    // Whiten using noise model
+//    this->noiseModel_->WhitenSystem(E, b);
+//    for (size_t i = 0; i < Fs.size(); i++)
+//      Fs[i] = this->noiseModel_->Whiten(Fs[i]);
+//
 //    // build augmented Hessian (with last row/column being the information vector)
 //    Matrix3 P;
 //    This::Cameras::ComputePointCovariance<3>(P, E, lambda, diagonalDamping);

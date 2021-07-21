@@ -10,13 +10,13 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file  testSmartProjectionPoseFactorRollingShutter.cpp
- *  @brief Unit tests for SmartProjectionPoseFactorRollingShutter Class
+ *  @file  testSmartProjectionPoseFactorRollingShutterRollingShutter.cpp
+ *  @brief Unit tests for SmartProjectionPoseFactorRollingShutterRollingShutter Class
  *  @author Luca Carlone
  *  @date   July 2021
  */
 
-#include "gtsam/slam/tests/smartFactorScenarios.h"
+//#include "gtsam/slam/tests/smartFactorScenarios.h"
 #include <gtsam/slam/ProjectionFactor.h>
 #include <gtsam/slam/PoseTranslationPrior.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
@@ -27,6 +27,7 @@
 #include <boost/assign/std/map.hpp>
 #include <iostream>
 
+using namespace gtsam;
 using namespace boost::assign;
 using namespace std::placeholders;
 
@@ -47,17 +48,15 @@ static Symbol x3('X', 3);
 static Point2 measurement1(323.0, 240.0);
 
 LevenbergMarquardtParams lmParams;
-// Make more verbose like so (in tests):
-// params.verbosityLM = LevenbergMarquardtParams::SUMMARY;
+typedef SmartProjectionPoseFactorRollingShutter<Cal3_S2> SmartFactorRS;
 
-/* ************************************************************************* *
-TEST( SmartProjectionPoseFactor, Constructor) {
-  using namespace vanillaPose;
-  SmartFactor::shared_ptr factor1(new SmartFactor(model, sharedK));
+/* ************************************************************************* */
+TEST( SmartProjectionPoseFactorRollingShutter, Constructor) {
+  SmartFactorRS::shared_ptr factor1(new SmartFactorRS(model));
 }
 
 /* ************************************************************************* *
-TEST( SmartProjectionPoseFactor, Constructor2) {
+TEST( SmartProjectionPoseFactorRollingShutter, Constructor2) {
   using namespace vanillaPose;
   SmartProjectionParams params;
   params.setRankTolerance(rankTol);
@@ -65,14 +64,14 @@ TEST( SmartProjectionPoseFactor, Constructor2) {
 }
 
 /* ************************************************************************* *
-TEST( SmartProjectionPoseFactor, Constructor3) {
+TEST( SmartProjectionPoseFactorRollingShutter, Constructor3) {
   using namespace vanillaPose;
   SmartFactor::shared_ptr factor1(new SmartFactor(model, sharedK));
   factor1->add(measurement1, x1);
 }
 
 /* ************************************************************************* *
-TEST( SmartProjectionPoseFactor, Constructor4) {
+TEST( SmartProjectionPoseFactorRollingShutter, Constructor4) {
   using namespace vanillaPose;
   SmartProjectionParams params;
   params.setRankTolerance(rankTol);
@@ -81,7 +80,7 @@ TEST( SmartProjectionPoseFactor, Constructor4) {
 }
 
 /* ************************************************************************* *
-TEST( SmartProjectionPoseFactor, params) {
+TEST( SmartProjectionPoseFactorRollingShutter, params) {
   using namespace vanillaPose;
   SmartProjectionParams params;
   double rt = params.getRetriangulationThreshold();
@@ -92,7 +91,7 @@ TEST( SmartProjectionPoseFactor, params) {
 }
 
 /* ************************************************************************* *
-TEST( SmartProjectionPoseFactor, Equals ) {
+TEST( SmartProjectionPoseFactorRollingShutter, Equals ) {
   using namespace vanillaPose;
   SmartFactor::shared_ptr factor1(new SmartFactor(model, sharedK));
   factor1->add(measurement1, x1);
@@ -104,7 +103,7 @@ TEST( SmartProjectionPoseFactor, Equals ) {
 }
 
 /* *************************************************************************
-TEST( SmartProjectionPoseFactor, noiseless ) {
+TEST( SmartProjectionPoseFactorRollingShutter, noiseless ) {
 
   using namespace vanillaPose;
 
@@ -162,7 +161,7 @@ TEST( SmartProjectionPoseFactor, noiseless ) {
 }
 
 /* *************************************************************************
-TEST( SmartProjectionPoseFactor, noisy ) {
+TEST( SmartProjectionPoseFactorRollingShutter, noisy ) {
 
   using namespace vanillaPose;
 
@@ -196,7 +195,7 @@ TEST( SmartProjectionPoseFactor, noisy ) {
 }
 
 /* *************************************************************************
-TEST(SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform) {
+TEST(SmartProjectionPoseFactorRollingShutter, smartFactorWithSensorBodyTransform) {
   using namespace vanillaPose;
 
   // create arbitrary body_T_sensor (transforms from sensor to body)
@@ -271,7 +270,7 @@ TEST(SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform) {
 }
 
 /* *************************************************************************
-TEST( SmartProjectionPoseFactor, 3poses_smart_projection_factor ) {
+TEST( SmartProjectionPoseFactorRollingShutter, 3poses_smart_projection_factor ) {
 
   using namespace vanillaPose2;
   Point2Vector measurements_cam1, measurements_cam2, measurements_cam3;
@@ -332,7 +331,7 @@ TEST( SmartProjectionPoseFactor, 3poses_smart_projection_factor ) {
 }
 
 /* *************************************************************************
-TEST( SmartProjectionPoseFactor, Factors ) {
+TEST( SmartProjectionPoseFactorRollingShutter, Factors ) {
 
   using namespace vanillaPose;
 
@@ -496,7 +495,7 @@ TEST( SmartProjectionPoseFactor, Factors ) {
 }
 
 /* *************************************************************************
-TEST( SmartProjectionPoseFactor, 3poses_iterative_smart_projection_factor ) {
+TEST( SmartProjectionPoseFactorRollingShutter, 3poses_iterative_smart_projection_factor ) {
 
   using namespace vanillaPose;
 
@@ -550,7 +549,7 @@ TEST( SmartProjectionPoseFactor, 3poses_iterative_smart_projection_factor ) {
 }
 
 /* *************************************************************************
-TEST( SmartProjectionPoseFactor, jacobianSVD ) {
+TEST( SmartProjectionPoseFactorRollingShutter, jacobianSVD ) {
 
   using namespace vanillaPose;
 
@@ -606,7 +605,7 @@ TEST( SmartProjectionPoseFactor, jacobianSVD ) {
 }
 
 /* *************************************************************************
-TEST( SmartProjectionPoseFactor, landmarkDistance ) {
+TEST( SmartProjectionPoseFactorRollingShutter, landmarkDistance ) {
 
   using namespace vanillaPose;
 
@@ -665,7 +664,7 @@ TEST( SmartProjectionPoseFactor, landmarkDistance ) {
 }
 
 /* *************************************************************************
-TEST( SmartProjectionPoseFactor, dynamicOutlierRejection ) {
+TEST( SmartProjectionPoseFactorRollingShutter, dynamicOutlierRejection ) {
 
   using namespace vanillaPose;
 
@@ -731,7 +730,7 @@ TEST( SmartProjectionPoseFactor, dynamicOutlierRejection ) {
 }
 
 /* *************************************************************************
-TEST( SmartProjectionPoseFactor, 3poses_projection_factor ) {
+TEST( SmartProjectionPoseFactorRollingShutter, 3poses_projection_factor ) {
 
   using namespace vanillaPose2;
 
@@ -778,7 +777,7 @@ TEST( SmartProjectionPoseFactor, 3poses_projection_factor ) {
 }
 
 /* *************************************************************************
-TEST( SmartProjectionPoseFactor, CheckHessian) {
+TEST( SmartProjectionPoseFactorRollingShutter, CheckHessian) {
 
   KeyVector views {x1, x2, x3};
 
@@ -786,7 +785,7 @@ TEST( SmartProjectionPoseFactor, CheckHessian) {
 
   // Two slightly different cameras
   Pose3 pose2 = level_pose
-      * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
+ * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
   Pose3 pose3 = pose2 * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
   Camera cam2(pose2, sharedK);
   Camera cam3(pose3, sharedK);
@@ -860,7 +859,7 @@ TEST( SmartProjectionPoseFactor, CheckHessian) {
 }
 
 /* *************************************************************************
-TEST( SmartProjectionPoseFactor, Hessian ) {
+TEST( SmartProjectionPoseFactorRollingShutter, Hessian ) {
 
   using namespace vanillaPose2;
 
