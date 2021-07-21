@@ -17,7 +17,7 @@
  * @author Frank Dellaert
  * @author Mike Bosse
  * @author Duy Nguyen Ta
- * @author shteren1
+ * @author Yotam Stern
  */
 
 
