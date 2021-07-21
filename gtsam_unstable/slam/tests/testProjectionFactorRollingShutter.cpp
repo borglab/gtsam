@@ -93,144 +93,202 @@ TEST( ProjectionFactorRollingShutter, Equals ) {
 TEST( ProjectionFactorRollingShutter, EqualsWithTransform ) {
   { // factors are equal
     ProjectionFactorRollingShutter factor1(measurement, interp_params, model,
-                                          poseKey1, poseKey2, pointKey, K, body_P_sensor);
+                                           poseKey1, poseKey2, pointKey, K, body_P_sensor);
     ProjectionFactorRollingShutter factor2(measurement, interp_params, model,
-                                          poseKey1, poseKey2, pointKey, K, body_P_sensor);
+                                           poseKey1, poseKey2, pointKey, K, body_P_sensor);
     CHECK(assert_equal(factor1, factor2));
   }
   { // factors are NOT equal
     ProjectionFactorRollingShutter factor1(measurement, interp_params, model,
-                                          poseKey1, poseKey2, pointKey, K, body_P_sensor);
+                                           poseKey1, poseKey2, pointKey, K, body_P_sensor);
     Pose3 body_P_sensor2(Rot3::RzRyRx(0.0, 0.0, 0.0), Point3(0.25, -0.10, 1.0)); // rotation different from body_P_sensor
     ProjectionFactorRollingShutter factor2(measurement, interp_params, model,
-                                          poseKey1, poseKey2, pointKey, K, body_P_sensor2);
+                                           poseKey1, poseKey2, pointKey, K, body_P_sensor2);
     CHECK(!assert_equal(factor1, factor2));
   }
 }
 
-///* ************************************************************************* */
-//TEST( ProjectionFactorRollingShutter, Error ) {
-//  // Create the factor with a measurement that is 3 pixels off in x
-//  Key poseKey(X(1));
-//  Key transformKey(T(1));
-//  Key pointKey(L(1));
-//  Point2 measurement(323.0, 240.0);
-//  ProjectionFactorRollingShutter factor(measurement, model, poseKey, transformKey, pointKey, K);
-//
-//  // Set the linearization point
-//  Pose3 pose(Rot3(), Point3(0,0,-6));
-//  Point3 point(0.0, 0.0, 0.0);
-//
-//  // Use the factor to calculate the error
-//  Vector actualError(factor.evaluateError(pose, Pose3(), point));
-//
-//  // The expected error is (-3.0, 0.0) pixels / UnitCovariance
-//  Vector expectedError = Vector2(-3.0, 0.0);
-//
-//  // Verify we get the expected error
-//  CHECK(assert_equal(expectedError, actualError, 1e-9));
-//}
-//
-///* ************************************************************************* */
-//TEST( ProjectionFactorRollingShutter, ErrorWithTransform ) {
-//  // Create the factor with a measurement that is 3 pixels off in x
-//  Key poseKey(X(1));
-//  Key transformKey(T(1));
-//  Key pointKey(L(1));
-//  Point2 measurement(323.0, 240.0);
-//  Pose3 transform(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
-//  ProjectionFactorRollingShutter factor(measurement, model, poseKey,transformKey, pointKey, K);
-//
-//  // Set the linearization point. The vehicle pose has been selected to put the camera at (-6, 0, 0)
-//  Pose3 pose(Rot3(), Point3(-6.25, 0.10 , -1.0));
-//  Point3 point(0.0, 0.0, 0.0);
-//
-//  // Use the factor to calculate the error
-//  Vector actualError(factor.evaluateError(pose, transform, point));
-//
-//  // The expected error is (-3.0, 0.0) pixels / UnitCovariance
-//  Vector expectedError = Vector2(-3.0, 0.0);
-//
-//  // Verify we get the expected error
-//  CHECK(assert_equal(expectedError, actualError, 1e-9));
-//}
-//
-///* ************************************************************************* */
-//TEST( ProjectionFactorRollingShutter, Jacobian ) {
-//  // Create the factor with a measurement that is 3 pixels off in x
-//  Key poseKey(X(1));
-//  Key transformKey(T(1));
-//  Key pointKey(L(1));
-//  Point2 measurement(323.0, 240.0);
-//  ProjectionFactorRollingShutter factor(measurement, model, poseKey, transformKey, pointKey, K);
-//
-//  // Set the linearization point
-//  Pose3 pose(Rot3(), Point3(0,0,-6));
-//  Point3 point(0.0, 0.0, 0.0);
-//
-//  // Use the factor to calculate the Jacobians
-//  Matrix H1Actual, H2Actual, H3Actual;
-//  factor.evaluateError(pose, Pose3(), point, H1Actual, H2Actual, H3Actual);
-//
-//  // The expected Jacobians
-//  Matrix H1Expected = (Matrix(2, 6) << 0., -554.256, 0., -92.376, 0., 0., 554.256, 0., 0., 0., -92.376, 0.).finished();
-//  Matrix H3Expected = (Matrix(2, 3) << 92.376, 0., 0., 0., 92.376, 0.).finished();
-//
-//  // Verify the Jacobians are correct
-//  CHECK(assert_equal(H1Expected, H1Actual, 1e-3));
-//  CHECK(assert_equal(H3Expected, H3Actual, 1e-3));
-//
-//  // Verify H2 with numerical derivative
-//  Matrix H2Expected = numericalDerivative32<Vector, Pose3, Pose3, Point3>(
-//      std::function<Vector(const Pose3&, const Pose3&, const Point3&)>(
-//          std::bind(&ProjectionFactorRollingShutter::evaluateError, &factor,
-//                    std::placeholders::_1, std::placeholders::_2,
-//                    std::placeholders::_3, boost::none, boost::none,
-//                    boost::none)),
-//      pose, Pose3(), point);
-//
-//  CHECK(assert_equal(H2Expected, H2Actual, 1e-5));
-//}
-//
-///* ************************************************************************* */
-//TEST( ProjectionFactorRollingShutter, JacobianWithTransform ) {
-//  // Create the factor with a measurement that is 3 pixels off in x
-//  Key poseKey(X(1));
-//  Key transformKey(T(1));
-//  Key pointKey(L(1));
-//  Point2 measurement(323.0, 240.0);
-//  Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
-//  ProjectionFactorRollingShutter factor(measurement, model, poseKey, transformKey, pointKey, K);
-//
-//  // Set the linearization point. The vehicle pose has been selected to put the camera at (-6, 0, 0)
-//  Pose3 pose(Rot3(), Point3(-6.25, 0.10 , -1.0));
-//  Point3 point(0.0, 0.0, 0.0);
-//
-//  // Use the factor to calculate the Jacobians
-//  Matrix H1Actual, H2Actual, H3Actual;
-//  factor.evaluateError(pose, body_P_sensor, point, H1Actual, H2Actual, H3Actual);
-//
-//  // The expected Jacobians
-//  Matrix H1Expected = (Matrix(2, 6) << -92.376, 0., 577.350, 0., 92.376, 0., -9.2376, -577.350, 0., 0., 0., 92.376).finished();
-//  Matrix H3Expected = (Matrix(2, 3) << 0., -92.376, 0., 0., 0., -92.376).finished();
-//
-//  // Verify the Jacobians are correct
-//  CHECK(assert_equal(H1Expected, H1Actual, 1e-3));
-//  CHECK(assert_equal(H3Expected, H3Actual, 1e-3));
-//
-//  // Verify H2 with numerical derivative
-//  Matrix H2Expected = numericalDerivative32<Vector, Pose3, Pose3, Point3>(
-//      std::function<Vector(const Pose3&, const Pose3&, const Point3&)>(
-//          std::bind(&ProjectionFactorRollingShutter::evaluateError, &factor,
-//                    std::placeholders::_1, std::placeholders::_2,
-//                    std::placeholders::_3, boost::none, boost::none,
-//                    boost::none)),
-//      pose, body_P_sensor, point);
-//
-//  CHECK(assert_equal(H2Expected, H2Actual, 1e-5));
-//
-//
-//}
+/* ************************************************************************* */
+TEST( ProjectionFactorRollingShutter, Error ) {
+  {
+    // Create the factor with a measurement that is 3 pixels off in x
+    // Camera pose corresponds to the first camera
+    double t = 0.0;
+    ProjectionFactorRollingShutter factor(measurement, t, model, poseKey1, poseKey2, pointKey, K);
+
+    // Set the linearization point
+    Pose3 pose1(Rot3(), Point3(0,0,-6));
+    Pose3 pose2(Rot3(), Point3(0,0,-4));
+    Point3 point(0.0, 0.0, 0.0);
+
+    // Use the factor to calculate the error
+    Vector actualError(factor.evaluateError(pose1, pose2, point));
+
+    // The expected error is (-3.0, 0.0) pixels / UnitCovariance
+    Vector expectedError = Vector2(-3.0, 0.0);
+
+    // Verify we get the expected error
+    CHECK(assert_equal(expectedError, actualError, 1e-9));
+  }
+  {
+    // Create the factor with a measurement that is 3 pixels off in x
+    // Camera pose is actually interpolated now
+    double t = 0.5;
+    ProjectionFactorRollingShutter factor(measurement, t, model, poseKey1, poseKey2, pointKey, K);
+
+    // Set the linearization point
+    Pose3 pose1(Rot3(), Point3(0,0,-8));
+    Pose3 pose2(Rot3(), Point3(0,0,-4));
+    Point3 point(0.0, 0.0, 0.0);
+
+    // Use the factor to calculate the error
+    Vector actualError(factor.evaluateError(pose1, pose2, point));
+
+    // The expected error is (-3.0, 0.0) pixels / UnitCovariance
+    Vector expectedError = Vector2(-3.0, 0.0);
+
+    // Verify we get the expected error
+    CHECK(assert_equal(expectedError, actualError, 1e-9));
+  }
+  {
+    // Create measurement by projecting 3D landmark
+    double t = 0.3;
+    Pose3 pose1(Rot3::RzRyRx(0.1, 0.0, 0.1), Point3(0,0,0));
+    Pose3 pose2(Rot3::RzRyRx(-0.1, -0.1, 0.0), Point3(0,0,1));
+    Pose3 poseInterp = interpolate<Pose3>(pose1, pose2, t);
+    PinholeCamera<Cal3_S2> camera(poseInterp, *K);
+    Point3 point(0.0, 0.0, 5.0); // 5 meters in front of the camera
+    Point2 measured = camera.project(point);
+
+    // create factor
+    ProjectionFactorRollingShutter factor(measured, t, model, poseKey1, poseKey2, pointKey, K);
+
+    // Use the factor to calculate the error
+    Vector actualError(factor.evaluateError(pose1, pose2, point));
+
+    // The expected error is zero
+    Vector expectedError = Vector2(0.0, 0.0);
+
+    // Verify we get the expected error
+    CHECK(assert_equal(expectedError, actualError, 1e-9));
+  }
+}
+
+/* ************************************************************************* */
+TEST( ProjectionFactorRollingShutter, ErrorWithTransform ) {
+  // Create measurement by projecting 3D landmark
+  double t = 0.3;
+  Pose3 pose1(Rot3::RzRyRx(0.1, 0.0, 0.1), Point3(0,0,0));
+  Pose3 pose2(Rot3::RzRyRx(-0.1, -0.1, 0.0), Point3(0,0,1));
+  Pose3 poseInterp = interpolate<Pose3>(pose1, pose2, t);
+  Pose3 body_P_sensor3(Rot3::RzRyRx(-0.1, -0.1, 0.0), Point3(0,0.2,0.1));
+  PinholeCamera<Cal3_S2> camera(poseInterp*body_P_sensor3, *K);
+  Point3 point(0.0, 0.0, 5.0); // 5 meters in front of the camera
+  Point2 measured = camera.project(point);
+
+  // create factor
+  ProjectionFactorRollingShutter factor(measured, t, model, poseKey1, poseKey2, pointKey, K, body_P_sensor3);
+
+  // Use the factor to calculate the error
+  Vector actualError(factor.evaluateError(pose1, pose2, point));
+
+  // The expected error is zero
+  Vector expectedError = Vector2(0.0, 0.0);
+
+  // Verify we get the expected error
+  CHECK(assert_equal(expectedError, actualError, 1e-9));
+}
+
+/* ************************************************************************* */
+TEST( ProjectionFactorRollingShutter, Jacobian ) {
+  // Create measurement by projecting 3D landmark
+  double t = 0.3;
+  Pose3 pose1(Rot3::RzRyRx(0.1, 0.0, 0.1), Point3(0,0,0));
+  Pose3 pose2(Rot3::RzRyRx(-0.1, -0.1, 0.0), Point3(0,0,1));
+  Pose3 poseInterp = interpolate<Pose3>(pose1, pose2, t);
+  PinholeCamera<Cal3_S2> camera(poseInterp, *K);
+  Point3 point(0.0, 0.0, 5.0); // 5 meters in front of the camera
+  Point2 measured = camera.project(point);
+
+  // create factor
+  ProjectionFactorRollingShutter factor(measured, t, model, poseKey1, poseKey2, pointKey, K);
+
+  // Use the factor to calculate the Jacobians
+  Matrix H1Actual, H2Actual, H3Actual;
+  factor.evaluateError(pose1, pose2, point, H1Actual, H2Actual, H3Actual);
+
+  // Expected Jacobians via numerical derivatives
+  Matrix H1Expected = numericalDerivative31<Vector, Pose3, Pose3, Point3>(
+      std::function<Vector(const Pose3&, const Pose3&, const Point3&)>(
+          std::bind(&ProjectionFactorRollingShutter::evaluateError, &factor,
+                    std::placeholders::_1, std::placeholders::_2,
+                    std::placeholders::_3, boost::none, boost::none, boost::none)),
+                    pose1, pose2, point);
+
+  Matrix H2Expected = numericalDerivative32<Vector, Pose3, Pose3, Point3>(
+      std::function<Vector(const Pose3&, const Pose3&, const Point3&)>(
+          std::bind(&ProjectionFactorRollingShutter::evaluateError, &factor,
+                    std::placeholders::_1, std::placeholders::_2,
+                    std::placeholders::_3, boost::none, boost::none, boost::none)),
+                    pose1, pose2, point);
+
+  Matrix H3Expected = numericalDerivative33<Vector, Pose3, Pose3, Point3>(
+      std::function<Vector(const Pose3&, const Pose3&, const Point3&)>(
+          std::bind(&ProjectionFactorRollingShutter::evaluateError, &factor,
+                    std::placeholders::_1, std::placeholders::_2,
+                    std::placeholders::_3, boost::none, boost::none, boost::none)),
+                    pose1, pose2, point);
+
+  CHECK(assert_equal(H1Expected, H1Actual, 1e-5));
+  CHECK(assert_equal(H2Expected, H2Actual, 1e-5));
+  CHECK(assert_equal(H3Expected, H3Actual, 1e-5));
+}
+
+/* ************************************************************************* */
+TEST( ProjectionFactorRollingShutter, JacobianWithTransform ) {
+  // Create measurement by projecting 3D landmark
+  double t = 0.6;
+  Pose3 pose1(Rot3::RzRyRx(0.1, 0.0, 0.1), Point3(0,0,0));
+  Pose3 pose2(Rot3::RzRyRx(-0.1, -0.1, 0.0), Point3(0,0,1));
+  Pose3 poseInterp = interpolate<Pose3>(pose1, pose2, t);
+  Pose3 body_P_sensor3(Rot3::RzRyRx(-0.1, -0.1, 0.0), Point3(0,0.2,0.1));
+  PinholeCamera<Cal3_S2> camera(poseInterp*body_P_sensor3, *K);
+  Point3 point(0.0, 0.0, 5.0); // 5 meters in front of the camera
+  Point2 measured = camera.project(point);
+
+  // create factor
+  ProjectionFactorRollingShutter factor(measured, t, model, poseKey1, poseKey2, pointKey, K, body_P_sensor3);
+
+  // Use the factor to calculate the Jacobians
+  Matrix H1Actual, H2Actual, H3Actual;
+  factor.evaluateError(pose1, pose2, point, H1Actual, H2Actual, H3Actual);
+
+  // Expected Jacobians via numerical derivatives
+  Matrix H1Expected = numericalDerivative31<Vector, Pose3, Pose3, Point3>(
+      std::function<Vector(const Pose3&, const Pose3&, const Point3&)>(
+          std::bind(&ProjectionFactorRollingShutter::evaluateError, &factor,
+                    std::placeholders::_1, std::placeholders::_2,
+                    std::placeholders::_3, boost::none, boost::none, boost::none)),
+                    pose1, pose2, point);
+
+  Matrix H2Expected = numericalDerivative32<Vector, Pose3, Pose3, Point3>(
+      std::function<Vector(const Pose3&, const Pose3&, const Point3&)>(
+          std::bind(&ProjectionFactorRollingShutter::evaluateError, &factor,
+                    std::placeholders::_1, std::placeholders::_2,
+                    std::placeholders::_3, boost::none, boost::none, boost::none)),
+                    pose1, pose2, point);
+
+  Matrix H3Expected = numericalDerivative33<Vector, Pose3, Pose3, Point3>(
+      std::function<Vector(const Pose3&, const Pose3&, const Point3&)>(
+          std::bind(&ProjectionFactorRollingShutter::evaluateError, &factor,
+                    std::placeholders::_1, std::placeholders::_2,
+                    std::placeholders::_3, boost::none, boost::none, boost::none)),
+                    pose1, pose2, point);
+
+  CHECK(assert_equal(H1Expected, H1Actual, 1e-5));
+  CHECK(assert_equal(H2Expected, H2Actual, 1e-5));
+  CHECK(assert_equal(H3Expected, H3Actual, 1e-5));
+}
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
