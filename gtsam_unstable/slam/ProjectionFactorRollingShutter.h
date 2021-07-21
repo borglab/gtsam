@@ -18,7 +18,9 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/geometry/SimpleCamera.h>
+#include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/CalibratedCamera.h>
+#include <gtsam/geometry/Cal3_S2.h>
 #include <boost/optional.hpp>
 
 namespace gtsam {
@@ -189,7 +191,7 @@ class ProjectionFactorRollingShutter : public NoiseModelFactor3<Pose3, Pose3, Po
           *H2 = Hprj * (*H2);
         return reprojectionError;
       }
-    } catch (CheiralityException& e) {
+    } catch( CheiralityException& e) {
       if (H1)
         *H1 = Matrix::Zero(2, 6);
       if (H2)
