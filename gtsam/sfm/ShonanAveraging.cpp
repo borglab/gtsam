@@ -955,6 +955,8 @@ static BinaryMeasurement<Rot2> convertPose2ToBinaryMeasurementRot2(
         "parseMeasurements<Rot2> can only convert Pose2 measurements "
         "with Gaussian noise models.");
   const Matrix3 M = gaussian->covariance();
+  // the (2,2) entry of Pose2's covariance corresponds to Rot2's covariance
+  // because the tangent space of Pose2 is ordered as (vx, vy, w)
   auto model = noiseModel::Isotropic::Variance(1, M(2, 2));
   return BinaryMeasurement<Rot2>(f->key1(), f->key2(), f->measured().rotation(),
                                  model);
@@ -1001,6 +1003,8 @@ static BinaryMeasurement<Rot3> convert(
         "parseMeasurements<Rot3> can only convert Pose3 measurements "
         "with Gaussian noise models.");
   const Matrix6 M = gaussian->covariance();
+  // the upper-left 3x3 sub-block of Pose3's covariance corresponds to Rot3's covariance
+  // because the tangent space of Pose3 is ordered as (w,T) where w and T are both Vector3's
   auto model = noiseModel::Gaussian::Covariance(M.block<3, 3>(0, 0));
   return BinaryMeasurement<Rot3>(f->key1(), f->key2(), f->measured().rotation(),
                                  model);
