@@ -12,7 +12,7 @@ Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellae
 
 # pylint: disable=unnecessary-lambda, expression-not-assigned
 
-from typing import Iterable, List, Union
+from typing import List, Sequence, Union
 
 from pyparsing import (Forward, Optional, Or, ParseResults,  # type: ignore
                        delimitedList)
@@ -49,12 +49,12 @@ class Typename:
 
     def __init__(self,
                  t: ParseResults,
-                 instantiations: Iterable[ParseResults] = ()):
+                 instantiations: Sequence[ParseResults] = ()):
         self.name = t[-1]  # the name is the last element in this list
         self.namespaces = t[:-1]
 
         if instantiations:
-            if isinstance(instantiations, Iterable):
+            if isinstance(instantiations, Sequence):
                 self.instantiations = instantiations  # type: ignore
             else:
                 self.instantiations = instantiations.asList()

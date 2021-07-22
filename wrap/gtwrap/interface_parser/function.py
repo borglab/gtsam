@@ -169,7 +169,7 @@ class GlobalFunction:
                  return_type: ReturnType,
                  args_list: ArgumentList,
                  template: Template,
-                 parent: str = ''):
+                 parent: Any = ''):
         self.name = name
         self.return_type = return_type
         self.args = args_list
