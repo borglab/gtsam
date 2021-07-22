@@ -50,7 +50,7 @@ static Point2 measurement1(323.0, 240.0);
 
 LevenbergMarquardtParams lmParams;
 // Make more verbose like so (in tests):
-// params.verbosityLM = LevenbergMarquardtParams::SUMMARY;
+// lmParams.verbosityLM = LevenbergMarquardtParams::SUMMARY;
 
 /* ************************************************************************* */
 TEST( SmartProjectionPoseFactor, Constructor) {
