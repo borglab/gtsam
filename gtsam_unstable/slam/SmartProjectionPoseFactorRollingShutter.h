@@ -18,6 +18,9 @@
 #pragma once
 
 #include <gtsam/slam/SmartProjectionFactor.h>
+#include <gtsam/slam/SmartFactorBase.h>
+#include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/CameraSet.h>
 
 namespace gtsam {
 /**
@@ -58,6 +61,8 @@ PinholePose<CALIBRATION> > {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   typedef PinholePose<CALIBRATION> Camera;
+  // typedef CameraSet<Camera> Cameras;
+
   /// shorthand for base class type
   typedef SmartProjectionFactor<Camera> Base;
 
@@ -289,13 +294,12 @@ PinholePose<CALIBRATION> > {
   }
 
   /// linearize and return a Hessianfactor that is an approximation of error(p)
-  boost::shared_ptr<RegularHessianFactor<DimBlock> > createHessianFactor(
+  boost::shared_ptr<RegularHessianFactor<DimPose> > createHessianFactor(
       const Values& values, const double lambda = 0.0, bool diagonalDamping =
           false) const {
 
-    // we may have multiple cameras sharing the same extrinsic cals, hence the number
-    // of keys may be smaller than 2 * nrMeasurements (which is the upper bound where we
-    // have a body key and an extrinsic calibration key for each measurement)
+    // we may have multiple observation sharing the same keys (due to the rolling shutter interpolation),
+    // hence the number of unique keys may be smaller than 2 * nrMeasurements
     size_t nrUniqueKeys =  this->keys_.size();
     size_t nrNonuniqueKeys = 2*world_P_body_key_pairs_.size();
 
@@ -304,37 +308,38 @@ PinholePose<CALIBRATION> > {
     std::vector < Matrix > Gs(nrUniqueKeys * (nrUniqueKeys + 1) / 2);
     std::vector<Vector> gs(nrUniqueKeys);
 
-    if (this->measured_.size() != cameras(values).size())
+    if (this->measured_.size() != this->cameras(values).size())
       throw std::runtime_error("SmartProjectionPoseFactorRollingShutter: "
           "measured_.size() inconsistent with input");
 
-    //    // triangulate 3D point at given linearization point
-    //    triangulateSafe(cameras(values));
-    //
-    //    if (!this->result_) { // failed: return "empty/zero" Hessian
-    //      for (Matrix& m : Gs)
-    //        m = Matrix::Zero(DimPose, DimPose);
-    //      for (Vector& v : gs)
-    //        v = Vector::Zero(DimPose);
-    //      return boost::make_shared < RegularHessianFactor<DimPose>
-    //          > ( this->keys_, Gs, gs, 0.0);
-    //    }
-    //
-    //    // compute Jacobian given triangulated 3D Point
-    //    FBlocks Fs;
-    //    Matrix F, E;
-    //    Vector b;
-    //    computeJacobiansWithTriangulatedPoint(Fs, E, b, values);
-    //
-    //    // Whiten using noise model
-    //    this->noiseModel_->WhitenSystem(E, b);
-    //    for (size_t i = 0; i < Fs.size(); i++)
-    //      Fs[i] = this->noiseModel_->Whiten(Fs[i]);
-    //
-    //    // build augmented Hessian (with last row/column being the information vector)
-    //    Matrix3 P;
-    //    This::Cameras::ComputePointCovariance<3>(P, E, lambda, diagonalDamping);
-    //
+    std::cout << "got this far.." << std::endl;
+
+    // triangulate 3D point at given linearization point
+    this->triangulateSafe(this->cameras(values));
+
+    if (!this->result_) { // failed: return "empty/zero" Hessian
+      for (Matrix& m : Gs)
+        m = Matrix::Zero(DimPose, DimPose);
+      for (Vector& v : gs)
+        v = Vector::Zero(DimPose);
+      return boost::make_shared < RegularHessianFactor<DimPose> > ( this->keys_, Gs, gs, 0.0);
+    }
+
+    // compute Jacobian given triangulated 3D Point
+    FBlocks Fs;
+    Matrix F, E;
+    Vector b;
+    this->computeJacobiansWithTriangulatedPoint(Fs, E, b, values);
+
+    // Whiten using noise model
+    this->noiseModel_->WhitenSystem(E, b);
+    for (size_t i = 0; i < Fs.size(); i++)
+      Fs[i] = this->noiseModel_->Whiten(Fs[i]);
+
+    // build augmented Hessian (with last row/column being the information vector)
+    Matrix3 P;
+    Cameras::ComputePointCovariance<3>(P, E, lambda, diagonalDamping);
+
     //    // marginalize point: note - we reuse the standard SchurComplement function
     //    SymmetricBlockMatrix augmentedHessian = This::Cameras::SchurComplement<2,DimBlock>(Fs, E, P, b);
 
@@ -409,6 +414,13 @@ PinholePose<CALIBRATION> > {
     //    }
     //    return boost::make_shared < RegularHessianFactor<DimPose>
     //        > ( this->keys_, augmentedHessianUniqueKeys);
+
+    // TO REMOVE:
+    for (Matrix& m : Gs)
+      m = Matrix::Zero(DimPose, DimPose);
+    for (Vector& v : gs)
+      v = Vector::Zero(DimPose);
+    return boost::make_shared < RegularHessianFactor<DimPose> > ( this->keys_, Gs, gs, 0.0);
   }
 
   /**

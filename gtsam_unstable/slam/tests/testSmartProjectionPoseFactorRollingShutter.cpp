@@ -352,6 +352,12 @@ TEST( SmartProjectionPoseFactorRollingShutter, 3poses_smart_projection_factor ) 
   values.insert(x2, pose_right);
   // initialize third pose with some noise, we expect it to move back to original pose_above
   values.insert(x3, pose_above * noise_pose);
+  EXPECT( // check that the pose is actually noisy
+      assert_equal(
+          Pose3(
+              Rot3(0, -0.0314107591, 0.99950656, -0.99950656, -0.0313952598,
+                   -0.000986635786, 0.0314107591, -0.999013364, -0.0313952598),
+                   Point3(0.1, -0.1, 1.9)), values.at<Pose3>(x3)));
 
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
