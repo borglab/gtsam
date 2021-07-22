@@ -11,8 +11,6 @@ import textwrap
 from functools import partial, reduce
 from typing import Dict, Iterable, List, Union
 
-from loguru import logger
-
 import gtwrap.interface_parser as parser
 import gtwrap.template_instantiator as instantiator
 from gtwrap.matlab_wrapper.mixins import CheckMixin, FormatMixin
@@ -200,7 +198,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                 check_type = self._format_type_name(
                     arg.ctype.typename,
                     separator='.',
-                    constructor=not wrap_datatypes)
+                    is_constructor=not wrap_datatypes)
 
             var_arg_wrap += " && isa(varargin{{{num}}},'{data_type}')".format(
                 num=i, data_type=check_type)
@@ -1090,11 +1088,10 @@ class MatlabWrapper(CheckMixin, FormatMixin):
             if method.instantiations:
                 # method_name += '<{}>'.format(
                 #     self._format_type_name(method.instantiations))
-                # method_name = self._format_instance_method(method, '::')
                 method = method.to_cpp()
 
         elif isinstance(method, parser.GlobalFunction):
-            method_name = self._format_global_method(method, '::')
+            method_name = self._format_global_function(method, '::')
             method_name += method.name
 
         else:
