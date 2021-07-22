@@ -98,7 +98,7 @@ TEST( SmartProjectionPoseFactorRollingShutter, Equals ) {
   using namespace vanillaPose;
 
   // create fake measurements
-  std::vector<Point2> measurements;
+  Point2Vector measurements;
   measurements.push_back(measurement1);
   measurements.push_back(measurement2);
   measurements.push_back(measurement3);
@@ -170,7 +170,6 @@ TEST( SmartProjectionPoseFactorRollingShutter, Equals ) {
 }
 
 static const int DimBlock = 12;  ///< size of the variable stacking 2 poses from which the observation pose is interpolated
-static const int DimPose = 6;  ///< Pose3 dimension
 static const int ZDim = 2;  ///< Measurement dimension (Point2)
 typedef Eigen::Matrix<double, ZDim, DimBlock> MatrixZD;  // F blocks (derivatives wrt camera)
 typedef std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD> > FBlocks;  // vector of F blocks
@@ -298,68 +297,69 @@ TEST( SmartProjectionPoseFactorRollingShutter, noisyErrorAndJacobians ) {
   EXPECT_DOUBLES_EQUAL(expectedError, actualError, 1e-7);
 }
 
- /* *************************************************************************
- TEST( SmartProjectionPoseFactorRollingShutter, 3poses_smart_projection_factor ) {
+/* *************************************************************************/
+TEST( SmartProjectionPoseFactorRollingShutter, 3poses_smart_projection_factor ) {
+  std::cout << "===================" << std::endl;
 
- using namespace vanillaPose2;
- Point2Vector measurements_cam1, measurements_cam2, measurements_cam3;
+  using namespace vanillaPoseRS;
+  Point2Vector measurements_cam1, measurements_cam2, measurements_cam3;
 
- // Project three landmarks into three cameras
- projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
- projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
- projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
+  // Project three landmarks into three cameras
+  projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
+  projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
+  projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
 
- KeyVector views;
- views.push_back(x1);
- views.push_back(x2);
- views.push_back(x3);
+  // create inputs
+  std::vector<std::pair<Key,Key>> key_pairs;
+  key_pairs.push_back(std::make_pair(x1,x2));
+  key_pairs.push_back(std::make_pair(x2,x3));
+  key_pairs.push_back(std::make_pair(x3,x1));
 
- SmartFactor::shared_ptr smartFactor1(new SmartFactor(model, sharedK2));
- smartFactor1->add(measurements_cam1, views);
+  std::vector<double> interp_factors;
+  interp_factors.push_back(interp_factor1);
+  interp_factors.push_back(interp_factor2);
+  interp_factors.push_back(interp_factor3);
 
- SmartFactor::shared_ptr smartFactor2(new SmartFactor(model, sharedK2));
- smartFactor2->add(measurements_cam2, views);
+  SmartFactorRS smartFactor1(model);
+  smartFactor1.add(measurements_cam1, key_pairs, interp_factors, sharedK);
 
- SmartFactor::shared_ptr smartFactor3(new SmartFactor(model, sharedK2));
- smartFactor3->add(measurements_cam3, views);
+  SmartFactorRS smartFactor2(model);
+  smartFactor2.add(measurements_cam2, key_pairs, interp_factors, sharedK);
 
- const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
+  SmartFactorRS smartFactor3(model);
+  smartFactor3.add(measurements_cam3, key_pairs, interp_factors, sharedK);
 
- NonlinearFactorGraph graph;
- graph.push_back(smartFactor1);
- graph.push_back(smartFactor2);
- graph.push_back(smartFactor3);
- graph.addPrior(x1, cam1.pose(), noisePrior);
- graph.addPrior(x2, cam2.pose(), noisePrior);
+  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
 
- Values groundTruth;
- groundTruth.insert(x1, cam1.pose());
- groundTruth.insert(x2, cam2.pose());
- groundTruth.insert(x3, cam3.pose());
- DOUBLES_EQUAL(0, graph.error(groundTruth), 1e-9);
+  NonlinearFactorGraph graph;
+  graph.push_back(smartFactor1);
+  graph.push_back(smartFactor2);
+  graph.push_back(smartFactor3);
+  graph.addPrior(x1, level_pose, noisePrior);
+  graph.addPrior(x2, pose_right, noisePrior);
 
- //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
- Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
- Point3(0.1, 0.1, 0.1)); // smaller noise
- Values values;
- values.insert(x1, cam1.pose());
- values.insert(x2, cam2.pose());
- // initialize third pose with some noise, we expect it to move back to original pose_above
- values.insert(x3, pose_above * noise_pose);
- EXPECT(
- assert_equal(
- Pose3(
- Rot3(0, -0.0314107591, 0.99950656, -0.99950656, -0.0313952598,
- -0.000986635786, 0.0314107591, -0.999013364, -0.0313952598),
- Point3(0.1, -0.1, 1.9)), values.at<Pose3>(x3)));
+  Values groundTruth;
+  groundTruth.insert(x1, level_pose);
+  groundTruth.insert(x2, pose_right);
+  groundTruth.insert(x3, pose_above);
+  DOUBLES_EQUAL(0, graph.error(groundTruth), 1e-9);
 
- Values result;
- LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
- result = optimizer.optimize();
- EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-6));
- }
+  //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
+                           Point3(0.1, 0.1, 0.1)); // smaller noise
+  Values values;
+  values.insert(x1, level_pose);
+  values.insert(x2, pose_right);
+  // initialize third pose with some noise, we expect it to move back to original pose_above
+  values.insert(x3, pose_above * noise_pose);
 
- /* *************************************************************************
+  Values result;
+  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
+  result = optimizer.optimize();
+  EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-6));
+}
+
+/* *************************************************************************
  TEST( SmartProjectionPoseFactorRollingShutter, Factors ) {
 
  using namespace vanillaPose;

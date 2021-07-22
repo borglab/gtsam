@@ -98,7 +98,7 @@ PinholePose<CALIBRATION> > {
    */
   void add(const Point2& measured, const Key& world_P_body_key1,
            const Key& world_P_body_key2, const double& gamma,
-           const boost::shared_ptr<CALIBRATION>& K, const Pose3 body_P_sensor) {
+           const boost::shared_ptr<CALIBRATION>& K, const Pose3 body_P_sensor = Pose3::identity()) {
     // store measurements in base class (note: we manyally add keys below to make sure they are unique
     this->measured_.push_back(measured);
 
@@ -131,7 +131,7 @@ PinholePose<CALIBRATION> > {
    * @param world_P_body_key_pairs vector of  (1 for each view) containing the pair of poses from which each view can be interpolated
    * @param Ks vector of intrinsic calibration objects
    */
-  void add(const std::vector<Point2>& measurements,
+  void add(const Point2Vector& measurements,
            const std::vector<std::pair<Key, Key>>& world_P_body_key_pairs,
            const std::vector<double>& gammas,
            const std::vector<boost::shared_ptr<CALIBRATION>>& Ks,
@@ -154,10 +154,10 @@ PinholePose<CALIBRATION> > {
    * @param world_P_body_key_pairs vector of  (1 for each view) containing the pair of poses from which each view can be interpolated
    * @param K the (known) camera calibration (same for all measurements)
    */
-  void add(const std::vector<Point2>& measurements,
+  void add(const Point2Vector& measurements,
            const std::vector<std::pair<Key, Key>>& world_P_body_key_pairs,
            const std::vector<double>& gammas,
-           const boost::shared_ptr<CALIBRATION>& K, const Pose3 body_P_sensor) {
+           const boost::shared_ptr<CALIBRATION>& K, const Pose3 body_P_sensor = Pose3::identity()) {
     assert(world_P_body_key_pairs.size() == measurements.size());
     assert(world_P_body_key_pairs.size() == gammas.size());
     for (size_t i = 0; i < measurements.size(); i++) {
