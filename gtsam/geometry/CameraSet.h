@@ -142,14 +142,67 @@ public:
     return ErrorVector(project2(point, Fs, E), measured);
   }
 
+  static SymmetricBlockMatrix mySchurComplement(
+        const std::vector< Eigen::Matrix<double, 2, 12>,
+        Eigen::aligned_allocator< Eigen::Matrix<double, 2, 12> > >& Fs,
+        const Matrix& E, const Eigen::Matrix<double, 3, 3>& P, const Vector& b) {
+    return mySchurComplement<2,3,12>(Fs, E, P, b);
+  }
+
+  template<int myZDim, int N, int ND> // N = 2 or 3 (point dimension), ND is the camera dimension
+  static SymmetricBlockMatrix mySchurComplement(
+      const std::vector< Eigen::Matrix<double, myZDim, ND>,
+      Eigen::aligned_allocator< Eigen::Matrix<double, myZDim, ND> > >& Fs,
+      const Matrix& E, const Eigen::Matrix<double, N, N>& P, const Vector& b) {
+
+    // a single point is observed in m cameras
+    size_t m = Fs.size();
+
+    // Create a SymmetricBlockMatrix (augmented hessian, with extra row/column with info vector)
+    size_t M1 = ND * m + 1;
+    std::vector<DenseIndex> dims(m + 1); // this also includes the b term
+    std::fill(dims.begin(), dims.end() - 1, ND);
+    dims.back() = 1;
+    SymmetricBlockMatrix augmentedHessian(dims, Matrix::Zero(M1, M1));
+
+    // Blockwise Schur complement
+    for (size_t i = 0; i < m; i++) { // for each camera
+
+      const Eigen::Matrix<double, myZDim, ND>& Fi = Fs[i];
+      const auto FiT = Fi.transpose();
+      const Eigen::Matrix<double, myZDim, N> Ei_P = //
+          E.block(myZDim * i, 0, myZDim, N) * P;
+
+      // D = (Dx2) * ZDim
+      augmentedHessian.setOffDiagonalBlock(i, m, FiT * b.segment<myZDim>(myZDim * i) // F' * b
+                                           - FiT * (Ei_P * (E.transpose() * b))); // D = (DxZDim) * (ZDimx3) * (N*ZDimm) * (ZDimm x 1)
+
+      // (DxD) = (DxZDim) * ( (ZDimxD) - (ZDimx3) * (3xZDim) * (ZDimxD) )
+      augmentedHessian.setDiagonalBlock(i, FiT
+                                        * (Fi - Ei_P * E.block(myZDim * i, 0, myZDim, N).transpose() * Fi));
+
+      // upper triangular part of the hessian
+      for (size_t j = i + 1; j < m; j++) { // for each camera
+        const Eigen::Matrix<double, myZDim, ND>& Fj = Fs[j];
+
+        // (DxD) = (Dx2) * ( (2x2) * (2xD) )
+        augmentedHessian.setOffDiagonalBlock(i, j, -FiT
+                                             * (Ei_P * E.block(myZDim * j, 0, myZDim, N).transpose() * Fj));
+      }
+    } // end of for over cameras
+
+    augmentedHessian.diagonalBlock(m)(0, 0) += b.squaredNorm();
+    return augmentedHessian;
+  }
+
   /**
      * Do Schur complement, given Jacobian as Fs,E,P, return SymmetricBlockMatrix
      * G = F' * F - F' * E * P * E' * F
      * g = F' * (b - E * P * E' * b)
      * Fixed size version
      */
-    template<int N, int ND> // N = 2 or 3, ND is the camera dimension
-    static SymmetricBlockMatrix SchurComplement(
+    template<int N, int ND> // N = 2 or 3 (point dimension), ND is the camera dimension
+    static SymmetricBlockMatrix SchurComplementWithCustomBlocks(
         const std::vector< Eigen::Matrix<double, ZDim, ND>, Eigen::aligned_allocator< Eigen::Matrix<double, ZDim, ND> > >& Fs,
         const Matrix& E, const Eigen::Matrix<double, N, N>& P, const Vector& b) {
 
@@ -202,11 +255,11 @@ public:
   template<int N> // N = 2 or 3
   static SymmetricBlockMatrix SchurComplement(const FBlocks& Fs,
       const Matrix& E, const Eigen::Matrix<double, N, N>& P, const Vector& b) {
-    return SchurComplement<N,D>(Fs, E, P, b);
+    return SchurComplementWithCustomBlocks<N,D>(Fs, E, P, b);
   }
 
   /// Computes Point Covariance P, with lambda parameter
-  template<int N> // N = 2 or 3
+  template<int N> // N = 2 or 3 (point dimension)
   static void ComputePointCovariance(Eigen::Matrix<double, N, N>& P,
       const Matrix& E, double lambda, bool diagonalDamping = false) {
 
@@ -258,7 +311,7 @@ public:
    * Applies Schur complement (exploiting block structure) to get a smart factor on cameras,
    * and adds the contribution of the smart factor to a pre-allocated augmented Hessian.
    */
-  template<int N> // N = 2 or 3
+  template<int N> // N = 2 or 3 (point dimension)
   static void UpdateSchurComplement(const FBlocks& Fs, const Matrix& E,
       const Eigen::Matrix<double, N, N>& P, const Vector& b,
       const KeyVector& allKeys, const KeyVector& keys,
