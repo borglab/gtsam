@@ -319,14 +319,14 @@ TEST( SmartProjectionPoseFactorRollingShutter, optimization_3poses ) {
   interp_factors.push_back(interp_factor2);
   interp_factors.push_back(interp_factor3);
 
-  SmartFactorRS smartFactor1(model);
-  smartFactor1.add(measurements_cam1, key_pairs, interp_factors, sharedK);
+  SmartFactorRS::shared_ptr smartFactor1(new SmartFactorRS(model));
+  smartFactor1->add(measurements_cam1, key_pairs, interp_factors, sharedK);
 
-  SmartFactorRS smartFactor2(model);
-  smartFactor2.add(measurements_cam2, key_pairs, interp_factors, sharedK);
+  SmartFactorRS::shared_ptr smartFactor2(new SmartFactorRS(model));
+  smartFactor2->add(measurements_cam2, key_pairs, interp_factors, sharedK);
 
-  SmartFactorRS smartFactor3(model);
-  smartFactor3.add(measurements_cam3, key_pairs, interp_factors, sharedK);
+  SmartFactorRS::shared_ptr smartFactor3(new SmartFactorRS(model));
+  smartFactor3->add(measurements_cam3, key_pairs, interp_factors, sharedK);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
 
@@ -457,7 +457,7 @@ TEST( SmartProjectionPoseFactorRollingShutter, hessian_simple_2poses ) {
 }
 
 /* *************************************************************************/
-TEST( SmartProjectionPoseFactorRollingShutter, EPI ) {
+TEST( SmartProjectionPoseFactorRollingShutter, optimization_3poses_EPI ) {
   using namespace vanillaPoseRS;
   Point2Vector measurements_cam1, measurements_cam2, measurements_cam3;
 
@@ -519,7 +519,7 @@ TEST( SmartProjectionPoseFactorRollingShutter, EPI ) {
 }
 
 /* *************************************************************************/
-TEST( SmartProjectionPoseFactorRollingShutter, landmarkDistance ) {
+TEST( SmartProjectionPoseFactorRollingShutter, optimization_3poses_landmarkDistance ) {
   using namespace vanillaPoseRS;
   Point2Vector measurements_cam1, measurements_cam2, measurements_cam3;
 
@@ -581,70 +581,82 @@ TEST( SmartProjectionPoseFactorRollingShutter, landmarkDistance ) {
 }
 
  /* *************************************************************************
- TEST( SmartProjectionPoseFactorRollingShutter, dynamicOutlierRejection ) {
-   std::cout << "===================" << std::endl;
+TEST( SmartProjectionPoseFactorRollingShutter, optimization_3poses_dynamicOutlierRejection ) {
+  std::cout << "===================" << std::endl;
+  using namespace vanillaPoseRS;
+  // add fourth landmark
+  Point3 landmark4(5, -0.5, 1);
 
- using namespace vanillaPose;
+  Point2Vector measurements_cam1, measurements_cam2, measurements_cam3, measurements_cam4;
+  // Project 4 landmarks into cameras
+  projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
+  projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
+  projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
+  projectToMultipleCameras(cam1, cam2, cam3, landmark4, measurements_cam4);
+  measurements_cam4.at(0) = measurements_cam4.at(0) + Point2(10, 10);  // add outlier
 
- double excludeLandmarksFutherThanDist = 1e10;
- double dynamicOutlierRejectionThreshold = 1; // max 1 pixel of average reprojection error
+  // create inputs
+  std::vector<std::pair<Key, Key>> key_pairs;
+  key_pairs.push_back(std::make_pair(x1, x2));
+  key_pairs.push_back(std::make_pair(x2, x3));
+  key_pairs.push_back(std::make_pair(x3, x1));
 
- KeyVector views {x1, x2, x3};
+  std::vector<double> interp_factors;
+  interp_factors.push_back(interp_factor1);
+  interp_factors.push_back(interp_factor2);
+  interp_factors.push_back(interp_factor3);
 
- // add fourth landmark
- Point3 landmark4(5, -0.5, 1);
+  double excludeLandmarksFutherThanDist = 1e10;
+  double dynamicOutlierRejectionThreshold = 1;  // max 1 pixel of average reprojection error
 
- Point2Vector measurements_cam1, measurements_cam2, measurements_cam3,
- measurements_cam4;
+  SmartProjectionParams params;
+  params.setRankTolerance(1.0);
+  params.setLinearizationMode(gtsam::HESSIAN);
+  params.setDegeneracyMode(gtsam::IGNORE_DEGENERACY);
+  params.setLandmarkDistanceThreshold(excludeLandmarksFutherThanDist);
+  params.setDynamicOutlierRejectionThreshold(dynamicOutlierRejectionThreshold);
+  params.setEnableEPI(false);
 
- // Project 4 landmarks into three cameras
- projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
- projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
- projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
- projectToMultipleCameras(cam1, cam2, cam3, landmark4, measurements_cam4);
- measurements_cam4.at(0) = measurements_cam4.at(0) + Point2(10, 10); // add outlier
+  SmartFactorRS smartFactor1(model, params);
+  smartFactor1.add(measurements_cam1, key_pairs, interp_factors, sharedK);
 
- SmartProjectionParams params;
- params.setLinearizationMode(gtsam::JACOBIAN_SVD);
- params.setLandmarkDistanceThreshold(excludeLandmarksFutherThanDist);
- params.setDynamicOutlierRejectionThreshold(dynamicOutlierRejectionThreshold);
+  SmartFactorRS smartFactor2(model, params);
+  smartFactor2.add(measurements_cam2, key_pairs, interp_factors, sharedK);
 
- SmartFactor::shared_ptr smartFactor1(
- new SmartFactor(model, sharedK, params));
- smartFactor1->add(measurements_cam1, views);
+  SmartFactorRS smartFactor3(model, params);
+  smartFactor3.add(measurements_cam3, key_pairs, interp_factors, sharedK);
 
- SmartFactor::shared_ptr smartFactor2(
- new SmartFactor(model, sharedK, params));
- smartFactor2->add(measurements_cam2, views);
+  SmartFactorRS smartFactor4(model, params);
+  smartFactor4.add(measurements_cam4, key_pairs, interp_factors, sharedK);
 
- SmartFactor::shared_ptr smartFactor3(
- new SmartFactor(model, sharedK, params));
- smartFactor3->add(measurements_cam3, views);
+  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
 
- SmartFactor::shared_ptr smartFactor4(
- new SmartFactor(model, sharedK, params));
- smartFactor4->add(measurements_cam4, views);
+  NonlinearFactorGraph graph;
+  graph.push_back(smartFactor1);
+  graph.push_back(smartFactor2);
+  graph.push_back(smartFactor3);
+  graph.push_back(smartFactor4);
+  graph.addPrior(x1, level_pose, noisePrior);
+  graph.addPrior(x2, pose_right, noisePrior);
 
- const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
+  Pose3 noise_pose = Pose3::identity(); // Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
+//                           Point3(0.1, 0.1, 0.1));  // smaller noise
+  Values values;
+  values.insert(x1, level_pose);
+  values.insert(x2, pose_right);
+  // initialize third pose with some noise, we expect it to move back to original pose_above
+  values.insert(x3, pose_above * noise_pose);
 
- NonlinearFactorGraph graph;
- graph.push_back(smartFactor1);
- graph.push_back(smartFactor2);
- graph.push_back(smartFactor3);
- graph.push_back(smartFactor4);
- graph.addPrior(x1, cam1.pose(), noisePrior);
- graph.addPrior(x2, cam2.pose(), noisePrior);
+  // Optimization should correct 3rd pose
+  Values result;
+  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
+  result = optimizer.optimize();
+  EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-6));
 
- Values values;
- values.insert(x1, cam1.pose());
- values.insert(x2, cam2.pose());
- values.insert(x3, cam3.pose());
-
- // All factors are disabled and pose should remain where it is
- Values result;
- LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
- result = optimizer.optimize();
- EXPECT(assert_equal(cam3.pose(), result.at<Pose3>(x3)));
+  smartFactor1.print("smartFactor1");
+  smartFactor2.print("smartFactor2");
+  smartFactor3.print("smartFactor3");
+  smartFactor4.print("smartFactor4");
  }
 
  /* *************************************************************************
