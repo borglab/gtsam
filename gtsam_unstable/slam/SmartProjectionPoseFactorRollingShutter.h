@@ -342,7 +342,7 @@ PinholePose<CALIBRATION> > {
     //     Base::Cameras::SchurComplement(Fs, E, b, lambda,diagonalDamping);
 
     SymmetricBlockMatrix augmentedHessian =
-         Base::Cameras::mySchurComplement(Fs, E, P, b);
+         Base::Cameras::SchurComplement312(Fs, E, P, b);
 
     // now pack into an Hessian factor
     std::vector<DenseIndex> dims(nrUniqueKeys + 1);  // this also includes the b term
@@ -415,13 +415,6 @@ PinholePose<CALIBRATION> > {
     }
     return boost::make_shared < RegularHessianFactor<DimPose>
     > ( this->keys_, augmentedHessianUniqueKeys);
-
-//    // TO REMOVE:
-//    for (Matrix& m : Gs)
-//      m = Matrix::Zero(DimPose, DimPose);
-//    for (Vector& v : gs)
-//      v = Vector::Zero(DimPose);
-//    return boost::make_shared < RegularHessianFactor<DimPose> > ( this->keys_, Gs, gs, 0.0);
   }
 
   /**
