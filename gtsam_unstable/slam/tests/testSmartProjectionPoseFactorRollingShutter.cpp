@@ -457,6 +457,68 @@ TEST( SmartProjectionPoseFactorRollingShutter, hessian_simple_2poses ) {
 }
 
 /* *************************************************************************/
+TEST( SmartProjectionPoseFactorRollingShutter, EPI ) {
+  using namespace vanillaPoseRS;
+  Point2Vector measurements_cam1, measurements_cam2, measurements_cam3;
+
+  // Project three landmarks into three cameras
+  projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
+  projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
+  projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
+
+  // create inputs
+  std::vector<std::pair<Key, Key>> key_pairs;
+  key_pairs.push_back(std::make_pair(x1, x2));
+  key_pairs.push_back(std::make_pair(x2, x3));
+  key_pairs.push_back(std::make_pair(x3, x1));
+
+  std::vector<double> interp_factors;
+  interp_factors.push_back(interp_factor1);
+  interp_factors.push_back(interp_factor2);
+  interp_factors.push_back(interp_factor3);
+
+  double excludeLandmarksFutherThanDist = 1e10; //very large
+  SmartProjectionParams params;
+  params.setRankTolerance(1.0);
+  params.setLinearizationMode(gtsam::HESSIAN);
+  params.setDegeneracyMode(gtsam::IGNORE_DEGENERACY);
+  params.setLandmarkDistanceThreshold(excludeLandmarksFutherThanDist);
+  params.setEnableEPI(true);
+
+  SmartFactorRS smartFactor1(model,params);
+  smartFactor1.add(measurements_cam1, key_pairs, interp_factors, sharedK);
+
+  SmartFactorRS smartFactor2(model,params);
+  smartFactor2.add(measurements_cam2, key_pairs, interp_factors, sharedK);
+
+  SmartFactorRS smartFactor3(model,params);
+  smartFactor3.add(measurements_cam3, key_pairs, interp_factors, sharedK);
+
+  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
+
+  NonlinearFactorGraph graph;
+  graph.push_back(smartFactor1);
+  graph.push_back(smartFactor2);
+  graph.push_back(smartFactor3);
+  graph.addPrior(x1, level_pose, noisePrior);
+  graph.addPrior(x2, pose_right, noisePrior);
+
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
+                           Point3(0.1, 0.1, 0.1));  // smaller noise
+  Values values;
+  values.insert(x1, level_pose);
+  values.insert(x2, pose_right);
+  // initialize third pose with some noise, we expect it to move back to original pose_above
+  values.insert(x3, pose_above * noise_pose);
+
+  // Optimization should correct 3rd pose
+  Values result;
+  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
+  result = optimizer.optimize();
+  EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-6));
+}
+
+/* *************************************************************************/
 TEST( SmartProjectionPoseFactorRollingShutter, landmarkDistance ) {
   using namespace vanillaPoseRS;
   Point2Vector measurements_cam1, measurements_cam2, measurements_cam3;
@@ -511,7 +573,7 @@ TEST( SmartProjectionPoseFactorRollingShutter, landmarkDistance ) {
   // initialize third pose with some noise, we expect it to move back to original pose_above
   values.insert(x3, pose_above * noise_pose);
 
-  // All factors are disabled and pose should remain where it is
+  // All factors are disabled (due to the distance threshold) and pose should remain where it is
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
   result = optimizer.optimize();
