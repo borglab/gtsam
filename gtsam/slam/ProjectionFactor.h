@@ -99,6 +99,17 @@ namespace gtsam {
     /** Virtual destructor */
     ~GenericProjectionFactor() override {}
 
+    /// @return the measured pixel coordinates
+    auto measured() const -> const Point2 & { return measured_; }
+
+    /// @return the camera calibration
+    auto K() const -> const boost::shared_ptr<CALIBRATION> & { return K_; }
+
+    /// @return the (optional) sensor pose with respect to the vehicle frame
+    auto body_P_sensor() const -> const boost::optional<POSE> & {
+      return body_P_sensor_;
+    }
+
     /// @return a deep copy of this factor
     gtsam::NonlinearFactor::shared_ptr clone() const override {
       return boost::static_pointer_cast<gtsam::NonlinearFactor>(
