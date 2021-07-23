@@ -319,7 +319,6 @@ PinholePose<CALIBRATION> > {
       return boost::make_shared < RegularHessianFactor<DimPose>
           > (this->keys_, Gs, gs, 0.0);
     }
-
     // compute Jacobian given triangulated 3D Point
     FBlocks Fs;
     Matrix E;
