@@ -332,10 +332,6 @@ PinholePose<CALIBRATION> > {
       Fs[i] = this->noiseModel_->Whiten(Fs[i]);
 
     Matrix3 P = Base::Cameras::PointCov(E, lambda, diagonalDamping);
-    // the following unfortunately does not seem to work and causes
-    // an "reference to overloaded function could not be resolved; did you mean to call it?" error
-    // Matrix3 P;
-    // Base::Cameras::ComputePointCovariance<3>(P, E, lambda, diagonalDamping);
 
     // build augmented Hessian (with last row/column being the information vector)
     // these are the keys that correspond to the blocks in augmentedHessian (output of SchurComplement)
@@ -348,12 +344,6 @@ PinholePose<CALIBRATION> > {
     SymmetricBlockMatrix augmentedHessianUniqueKeys =
         Base::Cameras::SchurComplementAndRearrangeBlocks_3_12_6(
             Fs, E, P, b, nonuniqueKeys, this->keys_);
-
-    // the following unfortunately does not seem to work and causes
-    // an "reference to overloaded function could not be resolved; did you mean to call it?" error
-    //    SymmetricBlockMatrix augmentedHessianUniqueKeys =
-    //        Base::Cameras::SchurComplementAndRearrangeBlocks<3, DimBlock, DimPose>(
-    //            Fs, E, P, b, nonuniqueKeys, keys_);
 
     return boost::make_shared < RegularHessianFactor<DimPose>
         > (this->keys_, augmentedHessianUniqueKeys);
