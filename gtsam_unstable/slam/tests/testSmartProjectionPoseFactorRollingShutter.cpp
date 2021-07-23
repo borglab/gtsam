@@ -580,9 +580,8 @@ TEST( SmartProjectionPoseFactorRollingShutter, optimization_3poses_landmarkDista
   EXPECT(assert_equal(values.at<Pose3>(x3), result.at<Pose3>(x3)));
 }
 
- /* *************************************************************************
+ /* *************************************************************************/
 TEST( SmartProjectionPoseFactorRollingShutter, optimization_3poses_dynamicOutlierRejection ) {
-  std::cout << "===================" << std::endl;
   using namespace vanillaPoseRS;
   // add fourth landmark
   Point3 landmark4(5, -0.5, 1);
@@ -607,7 +606,7 @@ TEST( SmartProjectionPoseFactorRollingShutter, optimization_3poses_dynamicOutlie
   interp_factors.push_back(interp_factor3);
 
   double excludeLandmarksFutherThanDist = 1e10;
-  double dynamicOutlierRejectionThreshold = 1;  // max 1 pixel of average reprojection error
+  double dynamicOutlierRejectionThreshold = 3;  // max 3 pixel of average reprojection error
 
   SmartProjectionParams params;
   params.setRankTolerance(1.0);
@@ -617,17 +616,17 @@ TEST( SmartProjectionPoseFactorRollingShutter, optimization_3poses_dynamicOutlie
   params.setDynamicOutlierRejectionThreshold(dynamicOutlierRejectionThreshold);
   params.setEnableEPI(false);
 
-  SmartFactorRS smartFactor1(model, params);
-  smartFactor1.add(measurements_cam1, key_pairs, interp_factors, sharedK);
+  SmartFactorRS::shared_ptr smartFactor1(new SmartFactorRS(model,params));
+  smartFactor1->add(measurements_cam1, key_pairs, interp_factors, sharedK);
 
-  SmartFactorRS smartFactor2(model, params);
-  smartFactor2.add(measurements_cam2, key_pairs, interp_factors, sharedK);
+  SmartFactorRS::shared_ptr smartFactor2(new SmartFactorRS(model,params));
+  smartFactor2->add(measurements_cam2, key_pairs, interp_factors, sharedK);
 
-  SmartFactorRS smartFactor3(model, params);
-  smartFactor3.add(measurements_cam3, key_pairs, interp_factors, sharedK);
+  SmartFactorRS::shared_ptr smartFactor3(new SmartFactorRS(model,params));
+  smartFactor3->add(measurements_cam3, key_pairs, interp_factors, sharedK);
 
-  SmartFactorRS smartFactor4(model, params);
-  smartFactor4.add(measurements_cam4, key_pairs, interp_factors, sharedK);
+  SmartFactorRS::shared_ptr smartFactor4(new SmartFactorRS(model,params));
+  smartFactor4->add(measurements_cam4, key_pairs, interp_factors, sharedK);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
 
@@ -639,8 +638,8 @@ TEST( SmartProjectionPoseFactorRollingShutter, optimization_3poses_dynamicOutlie
   graph.addPrior(x1, level_pose, noisePrior);
   graph.addPrior(x2, pose_right, noisePrior);
 
-  Pose3 noise_pose = Pose3::identity(); // Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
-//                           Point3(0.1, 0.1, 0.1));  // smaller noise
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
+                           Point3(0.01, 0.01, 0.01));  // smaller noise, otherwise outlier rejection will kick in
   Values values;
   values.insert(x1, level_pose);
   values.insert(x2, pose_right);
@@ -652,15 +651,11 @@ TEST( SmartProjectionPoseFactorRollingShutter, optimization_3poses_dynamicOutlie
   LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
   result = optimizer.optimize();
   EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-6));
-
-  smartFactor1.print("smartFactor1");
-  smartFactor2.print("smartFactor2");
-  smartFactor3.print("smartFactor3");
-  smartFactor4.print("smartFactor4");
  }
 
  /* *************************************************************************
  TEST( SmartProjectionPoseFactorRollingShutter, 3poses_projection_factor ) {
+   std::cout << "===================" << std::endl;
 
  using namespace vanillaPose2;
 
