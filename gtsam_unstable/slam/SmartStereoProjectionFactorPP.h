@@ -250,7 +250,7 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
 
     // marginalize point: note - we reuse the standard SchurComplement function
     SymmetricBlockMatrix augmentedHessian =
-        Cameras::SchurComplementWithCustomBlocks<3, Dim>(Fs, E, P, b);
+        Cameras::SchurComplement<3, Dim>(Fs, E, P, b);
 
     // now pack into an Hessian factor
     std::vector<DenseIndex> dims(nrUniqueKeys + 1);  // this also includes the b term
