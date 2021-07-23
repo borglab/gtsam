@@ -52,7 +52,7 @@ PinholePose<CALIBRATION> > {
   std::vector<std::pair<Key, Key>> world_P_body_key_pairs_;
 
   /// interpolation factor (one for each observation) to interpolate between pair of consecutive poses
-  std::vector<double> interp_param_;
+  std::vector<double> interp_params_;
 
   /// Pose of the camera in the body frame
   std::vector<Pose3> body_P_sensors_;  ///< Pose of the camera in the body frame
@@ -95,11 +95,11 @@ PinholePose<CALIBRATION> > {
    * single landmark in the a single view (the measurement), interpolated from the 2 poses
    * @param world_P_body_key1 is the key corresponding to the first body poses (time <= time pixel is acquired)
    * @param world_P_body_key2 is the key corresponding to the second body poses (time >= time pixel is acquired)
-   * @param gamma in [0,1] is the interpolation factor, such that if gamma = 0 the interpolated pose is the same as world_P_body_key
+   * @param interp_param in [0,1] is the interpolation factor, such that if interp_param = 0 the interpolated pose is the same as world_P_body_key
    * @param K is the (fixed) camera intrinsic calibration
    */
   void add(const Point2& measured, const Key& world_P_body_key1,
-           const Key& world_P_body_key2, const double& gamma,
+           const Key& world_P_body_key2, const double& interp_param,
            const boost::shared_ptr<CALIBRATION>& K, const Pose3 body_P_sensor = Pose3::identity()) {
     // store measurements in base class (note: we manyally add keys below to make sure they are unique
     this->measured_.push_back(measured);
@@ -117,7 +117,7 @@ PinholePose<CALIBRATION> > {
       this->keys_.push_back(world_P_body_key2);  // add only unique keys
 
     // store interpolation factors
-    interp_param_.push_back(gamma);
+    interp_params_.push_back(interp_param);
 
     // store fixed calibration
     K_all_.push_back(K);
@@ -135,15 +135,15 @@ PinholePose<CALIBRATION> > {
    */
   void add(const Point2Vector& measurements,
            const std::vector<std::pair<Key, Key>>& world_P_body_key_pairs,
-           const std::vector<double>& gammas,
+           const std::vector<double>& interp_params,
            const std::vector<boost::shared_ptr<CALIBRATION>>& Ks,
            const std::vector<Pose3> body_P_sensors) {
     assert(world_P_body_key_pairs.size() == measurements.size());
-    assert(world_P_body_key_pairs.size() == gammas.size());
+    assert(world_P_body_key_pairs.size() == interp_params.size());
     assert(world_P_body_key_pairs.size() == Ks.size());
     for (size_t i = 0; i < measurements.size(); i++) {
       add(measurements[i], world_P_body_key_pairs[i].first,
-          world_P_body_key_pairs[i].second, gammas[i], Ks[i],
+          world_P_body_key_pairs[i].second, interp_params[i], Ks[i],
           body_P_sensors[i]);
     }
   }
@@ -158,13 +158,13 @@ PinholePose<CALIBRATION> > {
    */
   void add(const Point2Vector& measurements,
            const std::vector<std::pair<Key, Key>>& world_P_body_key_pairs,
-           const std::vector<double>& gammas,
+           const std::vector<double>& interp_params,
            const boost::shared_ptr<CALIBRATION>& K, const Pose3 body_P_sensor = Pose3::identity()) {
     assert(world_P_body_key_pairs.size() == measurements.size());
-    assert(world_P_body_key_pairs.size() == gammas.size());
+    assert(world_P_body_key_pairs.size() == interp_params.size());
     for (size_t i = 0; i < measurements.size(); i++) {
       add(measurements[i], world_P_body_key_pairs[i].first,
-          world_P_body_key_pairs[i].second, gammas[i], K, body_P_sensor);
+          world_P_body_key_pairs[i].second, interp_params[i], K, body_P_sensor);
     }
   }
 
@@ -178,9 +178,9 @@ PinholePose<CALIBRATION> > {
     return world_P_body_key_pairs_;
   }
 
-  /// return the interpolation factors gammas
-  const std::vector<double> getGammas() const {
-    return interp_param_;
+  /// return the interpolation factors interp_params
+  const std::vector<double> interp_params() const {
+    return interp_params_;
   }
 
   /// return the extrinsic camera calibration body_P_sensors
@@ -202,7 +202,7 @@ PinholePose<CALIBRATION> > {
           << keyFormatter(world_P_body_key_pairs_[i].first) << std::endl;
       std::cout << " pose2 key: "
           << keyFormatter(world_P_body_key_pairs_[i].second) << std::endl;
-      std::cout << " gamma: " << interp_param_[i] << std::endl;
+      std::cout << " interp_param: " << interp_params_[i] << std::endl;
       body_P_sensors_[i].print("extrinsic calibration:\n");
       K_all_[i]->print("intrinsic calibration = ");
     }
@@ -237,7 +237,7 @@ PinholePose<CALIBRATION> > {
     }else{ extrinsicCalibrationEqual = false; }
 
     return e && Base::equals(p, tol) && K_all_ == e->calibration()
-        && interp_param_ == e->getGammas() && keyPairsEqual && extrinsicCalibrationEqual;
+        && interp_params_ == e->interp_params() && keyPairsEqual && extrinsicCalibrationEqual;
   }
 
   /**
@@ -264,7 +264,7 @@ PinholePose<CALIBRATION> > {
       for (size_t i = 0; i < numViews; i++) {  // for each camera/measurement
         Pose3 w_P_body1 = values.at<Pose3>(world_P_body_key_pairs_[i].first);
         Pose3 w_P_body2 = values.at<Pose3>(world_P_body_key_pairs_[i].second);
-        double interpolationFactor = interp_param_[i];
+        double interpolationFactor = interp_params_[i];
         // get interpolated pose:
         Pose3 w_P_body = interpolate<Pose3>(w_P_body1, w_P_body2,interpolationFactor, dInterpPose_dPoseBody1, dInterpPose_dPoseBody2);
         Pose3 body_P_cam = body_P_sensors_[i];
@@ -368,7 +368,7 @@ PinholePose<CALIBRATION> > {
   typename Base::Cameras cameras(const Values& values) const override {
     size_t numViews = this->measured_.size();
     assert(numViews == K_all_.size());
-    assert(numViews == interp_param_.size());
+    assert(numViews == interp_params_.size());
     assert(numViews == body_P_sensors_.size());
     assert(numViews == world_P_body_key_pairs_.size());
 
@@ -376,7 +376,7 @@ PinholePose<CALIBRATION> > {
     for (size_t i = 0; i < numViews; i++) {  // for each measurement
       Pose3 w_P_body1 = values.at<Pose3>(world_P_body_key_pairs_[i].first);
       Pose3 w_P_body2 = values.at<Pose3>(world_P_body_key_pairs_[i].second);
-      double interpolationFactor = interp_param_[i];
+      double interpolationFactor = interp_params_[i];
       Pose3 w_P_body = interpolate<Pose3>(w_P_body1, w_P_body2, interpolationFactor);
       Pose3 body_P_cam = body_P_sensors_[i];
       Pose3 w_P_cam = w_P_body.compose(body_P_cam);
