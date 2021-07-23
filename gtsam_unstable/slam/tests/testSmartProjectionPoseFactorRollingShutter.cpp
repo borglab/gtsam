@@ -298,8 +298,7 @@ TEST( SmartProjectionPoseFactorRollingShutter, noisyErrorAndJacobians ) {
 }
 
 /* *************************************************************************/
-TEST( SmartProjectionPoseFactorRollingShutter, 3poses_smart_projection_factor ) {
-  std::cout << "===================" << std::endl;
+TEST( SmartProjectionPoseFactorRollingShutter, optimization_3poses ) {
 
   using namespace vanillaPoseRS;
   Point2Vector measurements_cam1, measurements_cam2, measurements_cam3;
@@ -365,173 +364,101 @@ TEST( SmartProjectionPoseFactorRollingShutter, 3poses_smart_projection_factor ) 
   EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-6));
 }
 
-/* *************************************************************************
- TEST( SmartProjectionPoseFactorRollingShutter, Factors ) {
+/* *************************************************************************/
+TEST( SmartProjectionPoseFactorRollingShutter, hessian_simple_2poses ) {
+  // here we replicate a test in SmartProjectionPoseFactor by setting interpolation
+  // factors to 0 and 1 (such that the rollingShutter measurements falls back to standard pixel measurements)
+  // Note: this is a quite extreme test since in typical camera you would not have more than
+  // 1 measurement per landmark at each interpolated pose
+  using namespace vanillaPose;
 
- using namespace vanillaPose;
+  // Default cameras for simple derivatives
+  static Cal3_S2::shared_ptr sharedKSimple(new Cal3_S2(100, 100, 0, 0, 0));
 
- // Default cameras for simple derivatives
- Rot3 R;
- static Cal3_S2::shared_ptr sharedK(new Cal3_S2(100, 100, 0, 0, 0));
- Camera cam1(Pose3(R, Point3(0, 0, 0)), sharedK), cam2(
- Pose3(R, Point3(1, 0, 0)), sharedK);
+  Rot3 R = Rot3::identity();
+  Pose3 pose1 = Pose3(R, Point3(0, 0, 0));
+  Pose3 pose2 = Pose3(R, Point3(1, 0, 0));
+  Camera cam1(pose1, sharedKSimple), cam2(pose2, sharedKSimple);
+  Pose3 body_P_sensorId = Pose3::identity();
 
- // one landmarks 1m in front of camera
- Point3 landmark1(0, 0, 10);
+  // one landmarks 1m in front of camera
+  Point3 landmark1(0, 0, 10);
 
- Point2Vector measurements_cam1;
+  Point2Vector measurements_cam1;
 
- // Project 2 landmarks into 2 cameras
- measurements_cam1.push_back(cam1.project(landmark1));
- measurements_cam1.push_back(cam2.project(landmark1));
+  // Project 2 landmarks into 2 cameras
+  measurements_cam1.push_back(cam1.project(landmark1));
+  measurements_cam1.push_back(cam2.project(landmark1));
 
- // Create smart factors
- KeyVector views {x1, x2};
+  SmartFactorRS::shared_ptr smartFactor1(new SmartFactorRS(model));
+  double interp_factor = 0;  // equivalent to measurement taken at pose 1
+  smartFactor1->add(measurements_cam1[0], x1, x2, interp_factor, sharedKSimple,
+                    body_P_sensorId);
+  interp_factor = 1;  // equivalent to measurement taken at pose 2
+  smartFactor1->add(measurements_cam1[1], x1, x2, interp_factor, sharedKSimple,
+                    body_P_sensorId);
 
- SmartFactor::shared_ptr smartFactor1 = boost::make_shared<SmartFactor>(model, sharedK);
- smartFactor1->add(measurements_cam1, views);
+  SmartFactor::Cameras cameras;
+  cameras.push_back(cam1);
+  cameras.push_back(cam2);
 
- SmartFactor::Cameras cameras;
- cameras.push_back(cam1);
- cameras.push_back(cam2);
+  // Make sure triangulation works
+  CHECK(smartFactor1->triangulateSafe(cameras));
+  CHECK(!smartFactor1->isDegenerate());
+  CHECK(!smartFactor1->isPointBehindCamera());
+  boost::optional<Point3> p = smartFactor1->point();
+  CHECK(p);
+  EXPECT(assert_equal(landmark1, *p));
 
- // Make sure triangulation works
- CHECK(smartFactor1->triangulateSafe(cameras));
- CHECK(!smartFactor1->isDegenerate());
- CHECK(!smartFactor1->isPointBehindCamera());
- boost::optional<Point3> p = smartFactor1->point();
- CHECK(p);
- EXPECT(assert_equal(landmark1, *p));
+  VectorValues zeroDelta;
+  Vector6 delta;
+  delta.setZero();
+  zeroDelta.insert(x1, delta);
+  zeroDelta.insert(x2, delta);
 
- VectorValues zeroDelta;
- Vector6 delta;
- delta.setZero();
- zeroDelta.insert(x1, delta);
- zeroDelta.insert(x2, delta);
+  VectorValues perturbedDelta;
+  delta.setOnes();
+  perturbedDelta.insert(x1, delta);
+  perturbedDelta.insert(x2, delta);
+  double expectedError = 2500;
 
- VectorValues perturbedDelta;
- delta.setOnes();
- perturbedDelta.insert(x1, delta);
- perturbedDelta.insert(x2, delta);
- double expectedError = 2500;
+  // After eliminating the point, A1 and A2 contain 2-rank information on cameras:
+  Matrix16 A1, A2;
+  A1 << -10, 0, 0, 0, 1, 0;
+  A2 << 10, 0, 1, 0, -1, 0;
+  A1 *= 10. / sigma;
+  A2 *= 10. / sigma;
+  Matrix expectedInformation;  // filled below
 
- // After eliminating the point, A1 and A2 contain 2-rank information on cameras:
- Matrix16 A1, A2;
- A1 << -10, 0, 0, 0, 1, 0;
- A2 << 10, 0, 1, 0, -1, 0;
- A1 *= 10. / sigma;
- A2 *= 10. / sigma;
- Matrix expectedInformation; // filled below
- {
- // createHessianFactor
- Matrix66 G11 = 0.5 * A1.transpose() * A1;
- Matrix66 G12 = 0.5 * A1.transpose() * A2;
- Matrix66 G22 = 0.5 * A2.transpose() * A2;
+  // createHessianFactor
+  Matrix66 G11 = 0.5 * A1.transpose() * A1;
+  Matrix66 G12 = 0.5 * A1.transpose() * A2;
+  Matrix66 G22 = 0.5 * A2.transpose() * A2;
 
- Vector6 g1;
- g1.setZero();
- Vector6 g2;
- g2.setZero();
+  Vector6 g1;
+  g1.setZero();
+  Vector6 g2;
+  g2.setZero();
 
- double f = 0;
+  double f = 0;
 
- RegularHessianFactor<6> expected(x1, x2, G11, G12, g1, G22, g2, f);
- expectedInformation = expected.information();
+  RegularHessianFactor<6> expected(x1, x2, G11, G12, g1, G22, g2, f);
+  expectedInformation = expected.information();
 
- boost::shared_ptr<RegularHessianFactor<6> > actual =
- smartFactor1->createHessianFactor(cameras, 0.0);
- EXPECT(assert_equal(expectedInformation, actual->information(), 1e-6));
- EXPECT(assert_equal(expected, *actual, 1e-6));
- EXPECT_DOUBLES_EQUAL(0, actual->error(zeroDelta), 1e-6);
- EXPECT_DOUBLES_EQUAL(expectedError, actual->error(perturbedDelta), 1e-6);
- }
-
- {
- Matrix26 F1;
- F1.setZero();
- F1(0, 1) = -100;
- F1(0, 3) = -10;
- F1(1, 0) = 100;
- F1(1, 4) = -10;
- Matrix26 F2;
- F2.setZero();
- F2(0, 1) = -101;
- F2(0, 3) = -10;
- F2(0, 5) = -1;
- F2(1, 0) = 100;
- F2(1, 2) = 10;
- F2(1, 4) = -10;
- Matrix E(4, 3);
- E.setZero();
- E(0, 0) = 10;
- E(1, 1) = 10;
- E(2, 0) = 10;
- E(2, 2) = 1;
- E(3, 1) = 10;
- SmartFactor::FBlocks Fs = list_of<Matrix>(F1)(F2);
- Vector b(4);
- b.setZero();
-
- // Create smart factors
- KeyVector keys;
- keys.push_back(x1);
- keys.push_back(x2);
-
- // createJacobianQFactor
- SharedIsotropic n = noiseModel::Isotropic::Sigma(4, sigma);
- Matrix3 P = (E.transpose() * E).inverse();
- JacobianFactorQ<6, 2> expectedQ(keys, Fs, E, P, b, n);
- EXPECT(assert_equal(expectedInformation, expectedQ.information(), 1e-6));
-
- boost::shared_ptr<JacobianFactorQ<6, 2> > actualQ =
- smartFactor1->createJacobianQFactor(cameras, 0.0);
- CHECK(actualQ);
- EXPECT(assert_equal(expectedInformation, actualQ->information(), 1e-6));
- EXPECT(assert_equal(expectedQ, *actualQ));
- EXPECT_DOUBLES_EQUAL(0, actualQ->error(zeroDelta), 1e-6);
- EXPECT_DOUBLES_EQUAL(expectedError, actualQ->error(perturbedDelta), 1e-6);
-
- // Whiten for RegularImplicitSchurFactor (does not have noise model)
- model->WhitenSystem(E, b);
- Matrix3 whiteP = (E.transpose() * E).inverse();
- Fs[0] = model->Whiten(Fs[0]);
- Fs[1] = model->Whiten(Fs[1]);
-
- // createRegularImplicitSchurFactor
- RegularImplicitSchurFactor<Camera> expected(keys, Fs, E, whiteP, b);
-
- boost::shared_ptr<RegularImplicitSchurFactor<Camera> > actual =
- smartFactor1->createRegularImplicitSchurFactor(cameras, 0.0);
- CHECK(actual);
- EXPECT(assert_equal(expectedInformation, expected.information(), 1e-6));
- EXPECT(assert_equal(expectedInformation, actual->information(), 1e-6));
- EXPECT(assert_equal(expected, *actual));
- EXPECT_DOUBLES_EQUAL(0, actual->error(zeroDelta), 1e-6);
- EXPECT_DOUBLES_EQUAL(expectedError, actual->error(perturbedDelta), 1e-6);
- }
-
- {
- // createJacobianSVDFactor
- Vector1 b;
- b.setZero();
- double s = sigma * sin(M_PI_4);
- SharedIsotropic n = noiseModel::Isotropic::Sigma(4 - 3, sigma);
- JacobianFactor expected(x1, s * A1, x2, s * A2, b, n);
- EXPECT(assert_equal(expectedInformation, expected.information(), 1e-6));
-
- boost::shared_ptr<JacobianFactor> actual =
- smartFactor1->createJacobianSVDFactor(cameras, 0.0);
- CHECK(actual);
- EXPECT(assert_equal(expectedInformation, actual->information(), 1e-6));
- EXPECT(assert_equal(expected, *actual));
- EXPECT_DOUBLES_EQUAL(0, actual->error(zeroDelta), 1e-6);
- EXPECT_DOUBLES_EQUAL(expectedError, actual->error(perturbedDelta), 1e-6);
- }
- }
+  Values values;
+  values.insert(x1, pose1);
+  values.insert(x2, pose2);
+  boost::shared_ptr < RegularHessianFactor<6> > actual = smartFactor1
+      ->createHessianFactor(values);
+  EXPECT(assert_equal(expectedInformation, actual->information(), 1e-6));
+  EXPECT(assert_equal(expected, *actual, 1e-6));
+  EXPECT_DOUBLES_EQUAL(0, actual->error(zeroDelta), 1e-6);
+  EXPECT_DOUBLES_EQUAL(expectedError, actual->error(perturbedDelta), 1e-6);
+}
 
  /* *************************************************************************
  TEST( SmartProjectionPoseFactorRollingShutter, 3poses_iterative_smart_projection_factor ) {
-
+  std::cout << "===================" << std::endl;
  using namespace vanillaPose;
 
  KeyVector views {x1, x2, x3};
