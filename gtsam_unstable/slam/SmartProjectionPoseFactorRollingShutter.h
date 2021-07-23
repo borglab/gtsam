@@ -368,8 +368,10 @@ PinholePose<CALIBRATION> > {
    */
   typename Base::Cameras cameras(const Values& values) const override {
     size_t numViews = this->measured_.size();
-    assert(world_P_body_keys_.size() == K_all_.size());
-    assert(world_P_body_keys_.size() == body_P_cam_keys_.size());
+    assert(numViews == K_all_.size());
+    assert(numViews == gammas_.size());
+    assert(numViews == body_P_sensors_.size());
+    assert(numViews == world_P_body_key_pairs_.size());
 
     typename Base::Cameras cameras;
     for (size_t i = 0; i < numViews; i++) {  // for each measurement
@@ -379,8 +381,6 @@ PinholePose<CALIBRATION> > {
       Pose3 w_P_body = interpolate<Pose3>(w_P_body1, w_P_body2, interpolationFactor);
       Pose3 body_P_cam = body_P_sensors_[i];
       Pose3 w_P_cam = w_P_body.compose(body_P_cam);
-      std::cout << "id : " << i << std::endl;
-      w_P_cam.print("w_P_cam\n");
       cameras.emplace_back(w_P_cam, K_all_[i]);
     }
     return cameras;
