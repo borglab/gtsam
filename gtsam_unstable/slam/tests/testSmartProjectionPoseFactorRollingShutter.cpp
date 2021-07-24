@@ -138,8 +138,8 @@ TEST( SmartProjectionPoseFactorRollingShutter, Equals ) {
     factor1->add(measurement2, x2, x3, interp_factor2, sharedK, body_P_sensor);
     factor1->add(measurement3, x3, x4, interp_factor3, sharedK, body_P_sensor);
 
-    CHECK(assert_equal(*factor1, *factor2));
-    CHECK(assert_equal(*factor1, *factor3));
+    EXPECT(assert_equal(*factor1, *factor2));
+    EXPECT(assert_equal(*factor1, *factor3));
   }
   { // create slightly different factors (different keys) and show equal returns false
     SmartFactorRS::shared_ptr factor1(new SmartFactorRS(model));
@@ -147,8 +147,8 @@ TEST( SmartProjectionPoseFactorRollingShutter, Equals ) {
     factor1->add(measurement2, x2, x2, interp_factor2, sharedK, body_P_sensor); // different!
     factor1->add(measurement3, x3, x4, interp_factor3, sharedK, body_P_sensor);
 
-    CHECK(!assert_equal(*factor1, *factor2));
-    CHECK(!assert_equal(*factor1, *factor3));
+    EXPECT(!assert_equal(*factor1, *factor2));
+    EXPECT(!assert_equal(*factor1, *factor3));
   }
   { // create slightly different factors (different extrinsics) and show equal returns false
     SmartFactorRS::shared_ptr factor1(new SmartFactorRS(model));
@@ -156,8 +156,8 @@ TEST( SmartProjectionPoseFactorRollingShutter, Equals ) {
     factor1->add(measurement2, x2, x3, interp_factor2, sharedK, body_P_sensor*body_P_sensor); // different!
     factor1->add(measurement3, x3, x4, interp_factor3, sharedK, body_P_sensor);
 
-    CHECK(!assert_equal(*factor1, *factor2));
-    CHECK(!assert_equal(*factor1, *factor3));
+    EXPECT(!assert_equal(*factor1, *factor2));
+    EXPECT(!assert_equal(*factor1, *factor3));
   }
   { // create slightly different factors (different interp factors) and show equal returns false
     SmartFactorRS::shared_ptr factor1(new SmartFactorRS(model));
@@ -165,8 +165,8 @@ TEST( SmartProjectionPoseFactorRollingShutter, Equals ) {
     factor1->add(measurement2, x2, x3, interp_factor1, sharedK, body_P_sensor); // different!
     factor1->add(measurement3, x3, x4, interp_factor3, sharedK, body_P_sensor);
 
-    CHECK(!assert_equal(*factor1, *factor2));
-    CHECK(!assert_equal(*factor1, *factor3));
+    EXPECT(!assert_equal(*factor1, *factor2));
+    EXPECT(!assert_equal(*factor1, *factor3));
   }
 }
 
@@ -200,8 +200,8 @@ TEST( SmartProjectionPoseFactorRollingShutter, noiselessErrorAndJacobians ) {
   // Check triangulation
   factor.triangulateSafe(factor.cameras(values));
   TriangulationResult point = factor.point();
-  CHECK(point.valid()); // check triangulated point is valid
-  CHECK(assert_equal(landmark1, *point)); // check triangulation result matches expected 3D landmark
+  EXPECT(point.valid()); // check triangulated point is valid
+  EXPECT(assert_equal(landmark1, *point)); // check triangulation result matches expected 3D landmark
 
   // Check Jacobians
   // -- actual Jacobians
@@ -209,28 +209,28 @@ TEST( SmartProjectionPoseFactorRollingShutter, noiselessErrorAndJacobians ) {
   Matrix actualE;
   Vector actualb;
   factor.computeJacobiansWithTriangulatedPoint(actualFs, actualE, actualb, values);
-  CHECK(actualE.rows() == 4); CHECK(actualE.cols() == 3);
-  CHECK(actualb.rows() == 4); CHECK(actualb.cols() == 1);
-  CHECK(actualFs.size() == 2);
+  EXPECT(actualE.rows() == 4); EXPECT(actualE.cols() == 3);
+  EXPECT(actualb.rows() == 4); EXPECT(actualb.cols() == 1);
+  EXPECT(actualFs.size() == 2);
 
   // -- expected Jacobians from ProjectionFactorsRollingShutter
   ProjectionFactorRollingShutter factor1(level_uv, interp_factor1, model, x1, x2, l0, sharedK, body_P_sensorId);
   Matrix expectedF11, expectedF12, expectedE1;
   Vector expectedb1 = factor1.evaluateError(level_pose, pose_right, landmark1, expectedF11, expectedF12, expectedE1);
-  CHECK(assert_equal( expectedF11, Matrix(actualFs[0].block(0,0,2,6)), 1e-5));
-  CHECK(assert_equal( expectedF12, Matrix(actualFs[0].block(0,6,2,6)), 1e-5));
-  CHECK(assert_equal( expectedE1, Matrix(actualE.block(0,0,2,3)), 1e-5));
+  EXPECT(assert_equal( expectedF11, Matrix(actualFs[0].block(0,0,2,6)), 1e-5));
+  EXPECT(assert_equal( expectedF12, Matrix(actualFs[0].block(0,6,2,6)), 1e-5));
+  EXPECT(assert_equal( expectedE1, Matrix(actualE.block(0,0,2,3)), 1e-5));
   // by definition computeJacobiansWithTriangulatedPoint returns minus reprojectionError
-  CHECK(assert_equal( expectedb1, -Vector(actualb.segment<2>(0)), 1e-5));
+  EXPECT(assert_equal( expectedb1, -Vector(actualb.segment<2>(0)), 1e-5));
 
   ProjectionFactorRollingShutter factor2(level_uv_right, interp_factor2, model, x2, x3, l0, sharedK, body_P_sensorId);
   Matrix expectedF21, expectedF22, expectedE2;
   Vector expectedb2 = factor2.evaluateError(pose_right, pose_above, landmark1, expectedF21, expectedF22, expectedE2);
-  CHECK(assert_equal( expectedF21, Matrix(actualFs[1].block(0,0,2,6)), 1e-5));
-  CHECK(assert_equal( expectedF22, Matrix(actualFs[1].block(0,6,2,6)), 1e-5));
-  CHECK(assert_equal( expectedE2, Matrix(actualE.block(2,0,2,3)), 1e-5));
+  EXPECT(assert_equal( expectedF21, Matrix(actualFs[1].block(0,0,2,6)), 1e-5));
+  EXPECT(assert_equal( expectedF22, Matrix(actualFs[1].block(0,6,2,6)), 1e-5));
+  EXPECT(assert_equal( expectedE2, Matrix(actualE.block(2,0,2,3)), 1e-5));
   // by definition computeJacobiansWithTriangulatedPoint returns minus reprojectionError
-  CHECK(assert_equal( expectedb2, -Vector(actualb.segment<2>(2)), 1e-5));
+  EXPECT(assert_equal( expectedb2, -Vector(actualb.segment<2>(2)), 1e-5));
 }
 
 /* *************************************************************************/
@@ -256,7 +256,7 @@ TEST( SmartProjectionPoseFactorRollingShutter, noisyErrorAndJacobians ) {
   // Perform triangulation
   factor.triangulateSafe(factor.cameras(values));
   TriangulationResult point = factor.point();
-  CHECK(point.valid()); // check triangulated point is valid
+  EXPECT(point.valid()); // check triangulated point is valid
   Point3 landmarkNoisy = *point;
 
   // Check Jacobians
@@ -265,28 +265,28 @@ TEST( SmartProjectionPoseFactorRollingShutter, noisyErrorAndJacobians ) {
   Matrix actualE;
   Vector actualb;
   factor.computeJacobiansWithTriangulatedPoint(actualFs, actualE, actualb, values);
-  CHECK(actualE.rows() == 4); CHECK(actualE.cols() == 3);
-  CHECK(actualb.rows() == 4); CHECK(actualb.cols() == 1);
-  CHECK(actualFs.size() == 2);
+  EXPECT(actualE.rows() == 4); EXPECT(actualE.cols() == 3);
+  EXPECT(actualb.rows() == 4); EXPECT(actualb.cols() == 1);
+  EXPECT(actualFs.size() == 2);
 
   // -- expected Jacobians from ProjectionFactorsRollingShutter
   ProjectionFactorRollingShutter factor1(level_uv, interp_factor1, model, x1, x2, l0, sharedK, body_P_sensorNonId);
   Matrix expectedF11, expectedF12, expectedE1;
   Vector expectedb1 = factor1.evaluateError(level_pose, pose_right, landmarkNoisy, expectedF11, expectedF12, expectedE1);
-  CHECK(assert_equal( expectedF11, Matrix(actualFs[0].block(0,0,2,6)), 1e-5));
-  CHECK(assert_equal( expectedF12, Matrix(actualFs[0].block(0,6,2,6)), 1e-5));
-  CHECK(assert_equal( expectedE1, Matrix(actualE.block(0,0,2,3)), 1e-5));
+  EXPECT(assert_equal( expectedF11, Matrix(actualFs[0].block(0,0,2,6)), 1e-5));
+  EXPECT(assert_equal( expectedF12, Matrix(actualFs[0].block(0,6,2,6)), 1e-5));
+  EXPECT(assert_equal( expectedE1, Matrix(actualE.block(0,0,2,3)), 1e-5));
   // by definition computeJacobiansWithTriangulatedPoint returns minus reprojectionError
-  CHECK(assert_equal( expectedb1, -Vector(actualb.segment<2>(0)), 1e-5));
+  EXPECT(assert_equal( expectedb1, -Vector(actualb.segment<2>(0)), 1e-5));
 
   ProjectionFactorRollingShutter factor2(level_uv_right, interp_factor2, model, x2, x3, l0, sharedK, body_P_sensorNonId);
   Matrix expectedF21, expectedF22, expectedE2;
   Vector expectedb2 = factor2.evaluateError(pose_right, pose_above, landmarkNoisy, expectedF21, expectedF22, expectedE2);
-  CHECK(assert_equal( expectedF21, Matrix(actualFs[1].block(0,0,2,6)), 1e-5));
-  CHECK(assert_equal( expectedF22, Matrix(actualFs[1].block(0,6,2,6)), 1e-5));
-  CHECK(assert_equal( expectedE2, Matrix(actualE.block(2,0,2,3)), 1e-5));
+  EXPECT(assert_equal( expectedF21, Matrix(actualFs[1].block(0,0,2,6)), 1e-5));
+  EXPECT(assert_equal( expectedF22, Matrix(actualFs[1].block(0,6,2,6)), 1e-5));
+  EXPECT(assert_equal( expectedE2, Matrix(actualE.block(2,0,2,3)), 1e-5));
   // by definition computeJacobiansWithTriangulatedPoint returns minus reprojectionError
-  CHECK(assert_equal( expectedb2, -Vector(actualb.segment<2>(2)), 1e-5));
+  EXPECT(assert_equal( expectedb2, -Vector(actualb.segment<2>(2)), 1e-5));
 
   // Check errors
   double actualError = factor.error(values); // from smart factor
@@ -404,11 +404,11 @@ TEST( SmartProjectionPoseFactorRollingShutter, hessian_simple_2poses ) {
   cameras.push_back(cam2);
 
   // Make sure triangulation works
-  CHECK(smartFactor1->triangulateSafe(cameras));
-  CHECK(!smartFactor1->isDegenerate());
-  CHECK(!smartFactor1->isPointBehindCamera());
+  EXPECT(smartFactor1->triangulateSafe(cameras));
+  EXPECT(!smartFactor1->isDegenerate());
+  EXPECT(!smartFactor1->isPointBehindCamera());
   boost::optional<Point3> p = smartFactor1->point();
-  CHECK(p);
+  EXPECT(p);
   EXPECT(assert_equal(landmark1, *p));
 
   VectorValues zeroDelta;
@@ -703,7 +703,7 @@ TEST( SmartProjectionPoseFactorRollingShutter, hessianComparedToProjFactorsRolli
   // linearization point for the 3D point
   smartFactor1->triangulateSafe(smartFactor1->cameras(values));
   TriangulationResult point = smartFactor1->point();
-  CHECK(point.valid());  // check triangulated point is valid
+  EXPECT(point.valid());  // check triangulated point is valid
 
   // Use the factor to calculate the Jacobians
   Matrix F = Matrix::Zero(2 * 3, 6 * 3);
