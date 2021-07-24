@@ -27,6 +27,7 @@
 #include <CppUnitLite/TestHarness.h>
 #include <boost/assign/std/map.hpp>
 #include <iostream>
+#define DISABLE_TIMING
 
 using namespace gtsam;
 using namespace boost::assign;
@@ -768,6 +769,69 @@ TEST( SmartProjectionPoseFactorRollingShutter, hessianComparedToProjFactorsRolli
   double expectedError = nfg_projFactorsRS.error(values);
   EXPECT_DOUBLES_EQUAL(expectedError, actualError, 1e-7);
 }
+
+#ifndef DISABLE_TIMING
+#include <gtsam/base/timing.h>
+// -Total: 0 CPU (0 times, 0 wall, 0.04 children, min: 0 max: 0)
+//|   -SF RS LINEARIZE: 0.02 CPU (1000 times, 0.017244 wall, 0.02 children, min: 0 max: 0)
+//|   -RS LINEARIZE: 0.02 CPU (1000 times, 0.009035 wall, 0.02 children, min: 0 max: 0)
+/* *************************************************************************/
+TEST( SmartProjectionPoseFactorRollingShutter, timing ) {
+
+  using namespace vanillaPose;
+
+  // Default cameras for simple derivatives
+  static Cal3_S2::shared_ptr sharedKSimple(new Cal3_S2(100, 100, 0, 0, 0));
+
+  Rot3 R = Rot3::identity();
+  Pose3 pose1 = Pose3(R, Point3(0, 0, 0));
+  Pose3 pose2 = Pose3(R, Point3(1, 0, 0));
+  Camera cam1(pose1, sharedKSimple), cam2(pose2, sharedKSimple);
+  Pose3 body_P_sensorId = Pose3::identity();
+
+  // one landmarks 1m in front of camera
+  Point3 landmark1(0, 0, 10);
+
+  Point2Vector measurements_lmk1;
+
+  // Project 2 landmarks into 2 cameras
+  measurements_lmk1.push_back(cam1.project(landmark1));
+  measurements_lmk1.push_back(cam2.project(landmark1));
+
+  size_t nrTests = 1000;
+
+  for(size_t i = 0; i<nrTests; i++){
+    SmartFactorRS::shared_ptr smartFactorRS(new SmartFactorRS(model));
+    double interp_factor = 0;  // equivalent to measurement taken at pose 1
+    smartFactorRS->add(measurements_lmk1[0], x1, x2, interp_factor, sharedKSimple,
+                       body_P_sensorId);
+    interp_factor = 1;  // equivalent to measurement taken at pose 2
+    smartFactorRS->add(measurements_lmk1[1], x1, x2, interp_factor, sharedKSimple,
+                       body_P_sensorId);
+
+    Values values;
+    values.insert(x1, pose1);
+    values.insert(x2, pose2);
+    gttic_(SF_RS_LINEARIZE);
+    smartFactorRS->linearize(values);
+    gttoc_(SF_RS_LINEARIZE);
+  }
+
+  for(size_t i = 0; i<nrTests; i++){
+    SmartFactor::shared_ptr smartFactor(new SmartFactor(model, sharedKSimple));
+    smartFactor->add(measurements_lmk1[0], x1);
+    smartFactor->add(measurements_lmk1[1], x2);
+
+    Values values;
+    values.insert(x1, pose1);
+    values.insert(x2, pose2);
+    gttic_(RS_LINEARIZE);
+    smartFactor->linearize(values);
+    gttoc_(RS_LINEARIZE);
+  }
+  tictoc_print_();
+}
+#endif
 
 /* ************************************************************************* */
 int main() {
