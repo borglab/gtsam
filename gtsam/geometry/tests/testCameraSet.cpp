@@ -128,7 +128,7 @@ TEST(CameraSet, Pinhole) {
 
 /* ************************************************************************* */
 TEST(CameraSet, SchurComplementAndRearrangeBlocks) {
-  typedef PinholePose<Cal3_S2> Camera;
+  typedef PinholePose<Cal3Bundler> Camera;
   typedef CameraSet<Camera> Set;
 
   // this is the (block) Jacobian with respect to the nonuniqueKeys
@@ -185,7 +185,7 @@ TEST(CameraSet, SchurComplementAndRearrangeBlocks) {
 
     // Actual
     SymmetricBlockMatrix augmentedHessianBM =
-        Set::SchurComplementAndRearrangeBlocks<3, 12, 6>(Fs, E, P, b,
+        Set::SchurComplementAndRearrangeBlocks_3_12_6(Fs, E, P, b,
                                                          nonuniqueKeys,
                                                          uniqueKeys);
     Matrix actualAugmentedHessian = augmentedHessianBM.selfadjointView();
