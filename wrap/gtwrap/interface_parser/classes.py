@@ -10,7 +10,7 @@ Parser classes and rules for parsing C++ classes.
 Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellaert
 """
 
-from typing import Iterable, List, Union
+from typing import Any, Iterable, List, Union
 
 from pyparsing import Literal, Optional, ZeroOrMore  # type: ignore
 
@@ -48,12 +48,12 @@ class Method:
                                       args_list, t.is_const))
 
     def __init__(self,
-                 template: str,
+                 template: Union[Template, Any],
                  name: str,
                  return_type: ReturnType,
                  args: ArgumentList,
                  is_const: str,
-                 parent: Union[str, "Class"] = ''):
+                 parent: Union["Class", Any] = ''):
         self.template = template
         self.name = name
         self.return_type = return_type
@@ -98,7 +98,7 @@ class StaticMethod:
                  name: str,
                  return_type: ReturnType,
                  args: ArgumentList,
-                 parent: Union[str, "Class"] = ''):
+                 parent: Union["Class", Any] = ''):
         self.name = name
         self.return_type = return_type
         self.args = args
@@ -129,7 +129,7 @@ class Constructor:
     def __init__(self,
                  name: str,
                  args: ArgumentList,
-                 parent: Union["Class", str] = ''):
+                 parent: Union["Class", Any] = ''):
         self.name = name
         self.args = args
 
@@ -167,7 +167,7 @@ class Operator:
                  return_type: ReturnType,
                  args: ArgumentList,
                  is_const: str,
-                 parent: Union[str, "Class"] = ''):
+                 parent: Union["Class", Any] = ''):
         self.name = name
         self.operator = operator
         self.return_type = return_type
@@ -284,7 +284,7 @@ class Class:
         properties: List[Variable],
         operators: List[Operator],
         enums: List[Enum],
-        parent: str = '',
+        parent: Any = '',
     ):
         self.template = template
         self.is_virtual = is_virtual
