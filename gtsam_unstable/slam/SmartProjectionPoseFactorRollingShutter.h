@@ -17,9 +17,6 @@
 
 #pragma once
 
-#include <gtsam/geometry/CameraSet.h>
-#include <gtsam/geometry/PinholePose.h>
-#include <gtsam/geometry/PinholeSet.h>
 #include <gtsam/slam/SmartProjectionFactor.h>
 
 namespace gtsam {
@@ -35,8 +32,8 @@ namespace gtsam {
  */
 
 /**
- * This factor optimizes the pose of the body assuming a rolling shutter model of the camera with given readout time.
- * This factor requires that values contain (for each pixel observation) consecutive camera poses
+ * This factor optimizes two consecutive poses of the body assuming a rolling shutter model of the camera with given readout time.
+ * The factor requires that values contain (for each pixel observation) two consecutive camera poses
  * from which the pixel observation pose can be interpolated.
  * @addtogroup SLAM
  */
@@ -55,7 +52,7 @@ PinholePose<CALIBRATION> > {
   std::vector<double> interp_params_;
 
   /// Pose of the camera in the body frame
-  std::vector<Pose3> body_P_sensors_;  ///< Pose of the camera in the body frame
+  std::vector<Pose3> body_P_sensors_;
 
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -72,7 +69,7 @@ PinholePose<CALIBRATION> > {
   static const int DimBlock = 12;  ///< size of the variable stacking 2 poses from which the observation pose is interpolated
   static const int DimPose = 6;  ///< Pose3 dimension
   static const int ZDim = 2;  ///< Measurement dimension (Point2)
-  typedef Eigen::Matrix<double, ZDim, DimBlock> MatrixZD;  // F blocks (derivatives wrt camera)
+  typedef Eigen::Matrix<double, ZDim, DimBlock> MatrixZD;  // F blocks (derivatives wrt block of 2 poses)
   typedef std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD> > FBlocks;  // vector of F blocks
 
   /**
@@ -90,48 +87,50 @@ PinholePose<CALIBRATION> > {
   ~SmartProjectionPoseFactorRollingShutter() override = default;
 
   /**
-   * add a new measurement, with 2 pose keys, camera calibration, and observed pixel.
-   * @param measured is the 2-dimensional location of the projection of a
-   * single landmark in the a single view (the measurement), interpolated from the 2 poses
-   * @param world_P_body_key1 is the key corresponding to the first body poses (time <= time pixel is acquired)
-   * @param world_P_body_key2 is the key corresponding to the second body poses (time >= time pixel is acquired)
-   * @param interp_param in [0,1] is the interpolation factor, such that if interp_param = 0 the interpolated pose is the same as world_P_body_key
-   * @param K is the (fixed) camera intrinsic calibration
+   * add a new measurement, with 2 pose keys, interpolation factor, camera (intrinsic and extrinsic) calibration, and observed pixel.
+   * @param measured 2-dimensional location of the projection of a
+   * single landmark in a single view (the measurement), interpolated from the 2 poses
+   * @param world_P_body_key1 key corresponding to the first body poses (time <= time pixel is acquired)
+   * @param world_P_body_key2 key corresponding to the second body poses (time >= time pixel is acquired)
+   * @param interp_param interpolation factor in [0,1], such that if interp_param = 0 the interpolated pose is the same as world_P_body_key1
+   * @param K (fixed) camera intrinsic calibration
+   * @param body_P_sensor (fixed) camera extrinsic calibration
    */
   void add(const Point2& measured, const Key& world_P_body_key1,
            const Key& world_P_body_key2, const double& interp_param,
            const boost::shared_ptr<CALIBRATION>& K, const Pose3 body_P_sensor = Pose3::identity()) {
-    // store measurements in base class (note: we manyally add keys below to make sure they are unique
+    // store measurements in base class
     this->measured_.push_back(measured);
 
-    // but we also store the extrinsic calibration keys in the same order
+    // store the pair of keys for each measurement, in the same order
     world_P_body_key_pairs_.push_back(
         std::make_pair(world_P_body_key1, world_P_body_key2));
 
-    // pose keys are assumed to be unique, so we avoid duplicates here
-    if (std::find(this->keys_.begin(), this->keys_.end(), world_P_body_key1)
-    == this->keys_.end())
+    //  also store keys in the keys_ vector: these keys are assumed to be unique, so we avoid duplicates here
+    if (std::find(this->keys_.begin(), this->keys_.end(), world_P_body_key1) == this->keys_.end())
       this->keys_.push_back(world_P_body_key1);  // add only unique keys
-    if (std::find(this->keys_.begin(), this->keys_.end(), world_P_body_key2)
-    == this->keys_.end())
+    if (std::find(this->keys_.begin(), this->keys_.end(), world_P_body_key2) == this->keys_.end())
       this->keys_.push_back(world_P_body_key2);  // add only unique keys
 
-    // store interpolation factors
+    // store interpolation factor
     interp_params_.push_back(interp_param);
 
-    // store fixed calibration
+    // store fixed intrinsic calibration
     K_all_.push_back(K);
 
-    // store extrinsics of the camera
+    // store fixed extrinsics of the camera
     body_P_sensors_.push_back(body_P_sensor);
   }
 
   /**
-   * Variant of the previous one in which we include a set of measurements
+   * Variant of the previous "add" function in which we include multiple measurements
    * @param measurements vector of the 2m dimensional location of the projection
    * of a single landmark in the m views (the measurements)
-   * @param world_P_body_key_pairs vector of  (1 for each view) containing the pair of poses from which each view can be interpolated
-   * @param Ks vector of intrinsic calibration objects
+   * @param world_P_body_key_pairs vector where the i-th element contains a pair of keys corresponding
+   * to the pair of poses from which the observation pose for the i0-th measurement can be interpolated
+   * @param interp_params vector of interpolation params, one for each measurement (in the same order)
+   * @param Ks vector of (fixed) intrinsic calibration objects
+   * @param body_P_sensors vector of (fixed) extrinsic calibration objects
    */
   void add(const Point2Vector& measurements,
            const std::vector<std::pair<Key, Key>>& world_P_body_key_pairs,
@@ -149,12 +148,15 @@ PinholePose<CALIBRATION> > {
   }
 
   /**
-   * Variant of the previous one in which we include a set of measurements with
-   * the same (intrinsic and extrinsic) calibration
+   * Variant of the previous "add" function in which we include multiple measurements
+   * with the same (intrinsic and extrinsic) calibration
    * @param measurements vector of the 2m dimensional location of the projection
    * of a single landmark in the m views (the measurements)
-   * @param world_P_body_key_pairs vector of  (1 for each view) containing the pair of poses from which each view can be interpolated
-   * @param K the (known) camera calibration (same for all measurements)
+   * @param world_P_body_key_pairs vector where the i-th element contains a pair of keys corresponding
+   * to the pair of poses from which the observation pose for the i0-th measurement can be interpolated
+   * @param interp_params vector of interpolation params, one for each measurement (in the same order)
+   * @param K (fixed) camera intrinsic calibration (same for all measurements)
+   * @param body_P_sensor (fixed) camera extrinsic calibration (same for all measurements)
    */
   void add(const Point2Vector& measurements,
            const std::vector<std::pair<Key, Key>>& world_P_body_key_pairs,
@@ -173,7 +175,7 @@ PinholePose<CALIBRATION> > {
     return K_all_;
   }
 
-  /// return (for each observation) the key of the pair of poses from which we interpolate
+  /// return (for each observation) the keys of the pair of poses from which we interpolate
   const std::vector<std::pair<Key, Key>> world_P_body_key_pairs() const {
     return world_P_body_key_pairs_;
   }
@@ -245,7 +247,7 @@ PinholePose<CALIBRATION> > {
    * @param values Values structure which must contain camera poses
    * corresponding to keys involved in this factor
    * @return Return arguments are the camera jacobians Fs (including the jacobian with
-   * respect to both the body pose and extrinsic pose), the point Jacobian E,
+   * respect to both body poses we interpolate from), the point Jacobian E,
    * and the error vector b. Note that the jacobians are computed for a given point.
    */
   void computeJacobiansWithTriangulatedPoint(FBlocks& Fs, Matrix& E, Vector& b,
@@ -256,19 +258,20 @@ PinholePose<CALIBRATION> > {
       size_t numViews = this->measured_.size();
       E = Matrix::Zero(2 * numViews, 3);  // a Point2 for each view (point jacobian)
       b = Vector::Zero(2 * numViews);  // a Point2 for each view
+      // intermediate Jacobians
       Eigen::Matrix<double, ZDim, DimPose> dProject_dPoseCam;
       Eigen::Matrix<double, DimPose, DimPose> dInterpPose_dPoseBody1,
       dInterpPose_dPoseBody2, dPoseCam_dInterpPose;
       Eigen::Matrix<double, ZDim, 3> Ei;
 
       for (size_t i = 0; i < numViews; i++) {  // for each camera/measurement
-        Pose3 w_P_body1 = values.at<Pose3>(world_P_body_key_pairs_[i].first);
-        Pose3 w_P_body2 = values.at<Pose3>(world_P_body_key_pairs_[i].second);
+        const Pose3& w_P_body1 = values.at<Pose3>(world_P_body_key_pairs_[i].first);
+        const Pose3& w_P_body2 = values.at<Pose3>(world_P_body_key_pairs_[i].second);
         double interpolationFactor = interp_params_[i];
         // get interpolated pose:
-        Pose3 w_P_body = interpolate<Pose3>(w_P_body1, w_P_body2,interpolationFactor, dInterpPose_dPoseBody1, dInterpPose_dPoseBody2);
-        Pose3 body_P_cam = body_P_sensors_[i];
-        Pose3 w_P_cam = w_P_body.compose(body_P_cam, dPoseCam_dInterpPose);
+        const Pose3& w_P_body = interpolate<Pose3>(w_P_body1, w_P_body2,interpolationFactor, dInterpPose_dPoseBody1, dInterpPose_dPoseBody2);
+        const Pose3& body_P_cam = body_P_sensors_[i];
+        const Pose3& w_P_cam = w_P_body.compose(body_P_cam, dPoseCam_dInterpPose);
         PinholeCamera<CALIBRATION> camera(w_P_cam, *K_all_[i]);
 
         // get jacobians and error vector for current measurement
@@ -297,14 +300,14 @@ PinholePose<CALIBRATION> > {
 
     // we may have multiple observation sharing the same keys (due to the rolling shutter interpolation),
     // hence the number of unique keys may be smaller than 2 * nrMeasurements
-    size_t nrUniqueKeys = this->keys_.size();
+    size_t nrUniqueKeys = this->keys_.size(); // note: by construction, keys_ only contains unique keys
 
     // Create structures for Hessian Factors
     KeyVector js;
     std::vector < Matrix > Gs(nrUniqueKeys * (nrUniqueKeys + 1) / 2);
     std::vector < Vector > gs(nrUniqueKeys);
 
-    if (this->measured_.size() != this->cameras(values).size())
+    if (this->measured_.size() != this->cameras(values).size()) // 1 observation per interpolated camera
       throw std::runtime_error("SmartProjectionPoseFactorRollingShutter: "
                                "measured_.size() inconsistent with input");
 
@@ -312,12 +315,17 @@ PinholePose<CALIBRATION> > {
     this->triangulateSafe(this->cameras(values));
 
     if (!this->result_) {  // failed: return "empty/zero" Hessian
-      for (Matrix& m : Gs)
-        m = Matrix::Zero(DimPose, DimPose);
-      for (Vector& v : gs)
-        v = Vector::Zero(DimPose);
-      return boost::make_shared < RegularHessianFactor<DimPose>
-          > (this->keys_, Gs, gs, 0.0);
+      if (this->params_.degeneracyMode == ZERO_ON_DEGENERACY) {
+        for (Matrix& m : Gs)
+          m = Matrix::Zero(DimPose, DimPose);
+        for (Vector& v : gs)
+          v = Vector::Zero(DimPose);
+        return boost::make_shared < RegularHessianFactor<DimPose>
+            > (this->keys_, Gs, gs, 0.0);
+      } else {
+        throw std::runtime_error("SmartProjectionPoseFactorRollingShutter: "
+                                       "only supported degeneracy mode is ZERO_ON_DEGENERACY");
+      }
     }
     // compute Jacobian given triangulated 3D Point
     FBlocks Fs;
@@ -332,14 +340,15 @@ PinholePose<CALIBRATION> > {
 
     Matrix3 P = Base::Cameras::PointCov(E, lambda, diagonalDamping);
 
-    // build augmented Hessian (with last row/column being the information vector)
-    // these are the keys that correspond to the blocks in augmentedHessian (output of SchurComplement)
+    // Collect all the key pairs: these are the keys that correspond to the blocks in Fs (on which we apply the Schur Complement)
     KeyVector nonuniqueKeys;
     for (size_t i = 0; i < world_P_body_key_pairs_.size(); i++) {
       nonuniqueKeys.push_back(world_P_body_key_pairs_.at(i).first);
       nonuniqueKeys.push_back(world_P_body_key_pairs_.at(i).second);
     }
-    // but we need to get the augumented hessian wrt the unique keys in key_
+
+    // Build augmented Hessian (with last row/column being the information vector)
+    // Note: we need to get the augumented hessian wrt the unique keys in key_
     SymmetricBlockMatrix augmentedHessianUniqueKeys =
         Base::Cameras::SchurComplementAndRearrangeBlocks_3_12_6(
             Fs, E, P, b, nonuniqueKeys, this->keys_);
@@ -374,12 +383,12 @@ PinholePose<CALIBRATION> > {
 
     typename Base::Cameras cameras;
     for (size_t i = 0; i < numViews; i++) {  // for each measurement
-      Pose3 w_P_body1 = values.at<Pose3>(world_P_body_key_pairs_[i].first);
-      Pose3 w_P_body2 = values.at<Pose3>(world_P_body_key_pairs_[i].second);
+      const Pose3& w_P_body1 = values.at<Pose3>(world_P_body_key_pairs_[i].first);
+      const Pose3& w_P_body2 = values.at<Pose3>(world_P_body_key_pairs_[i].second);
       double interpolationFactor = interp_params_[i];
-      Pose3 w_P_body = interpolate<Pose3>(w_P_body1, w_P_body2, interpolationFactor);
-      Pose3 body_P_cam = body_P_sensors_[i];
-      Pose3 w_P_cam = w_P_body.compose(body_P_cam);
+      const Pose3& w_P_body = interpolate<Pose3>(w_P_body1, w_P_body2, interpolationFactor);
+      const Pose3& body_P_cam = body_P_sensors_[i];
+      const Pose3& w_P_cam = w_P_body.compose(body_P_cam);
       cameras.emplace_back(w_P_cam, K_all_[i]);
     }
     return cameras;
