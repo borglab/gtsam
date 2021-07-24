@@ -142,13 +142,6 @@ public:
     return ErrorVector(project2(point, Fs, E), measured);
   }
 
-  static SymmetricBlockMatrix SchurComplement312(
-        const std::vector< Eigen::Matrix<double, ZDim, 12>,
-        Eigen::aligned_allocator< Eigen::Matrix<double, ZDim, 12> > >& Fs,
-        const Matrix& E, const Eigen::Matrix<double, 3, 3>& P, const Vector& b) {
-    return SchurComplement<3,12>(Fs, E, P, b);
-  }
-
   /**
      * Do Schur complement, given Jacobian as Fs,E,P, return SymmetricBlockMatrix
      * G = F' * F - F' * E * P * E' * F
