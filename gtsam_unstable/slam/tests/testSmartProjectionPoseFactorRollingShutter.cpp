@@ -481,7 +481,7 @@ TEST( SmartProjectionPoseFactorRollingShutter, optimization_3poses_EPI ) {
   SmartProjectionParams params;
   params.setRankTolerance(1.0);
   params.setLinearizationMode(gtsam::HESSIAN);
-  params.setDegeneracyMode(gtsam::IGNORE_DEGENERACY);
+  params.setDegeneracyMode(gtsam::ZERO_ON_DEGENERACY);
   params.setLandmarkDistanceThreshold(excludeLandmarksFutherThanDist);
   params.setEnableEPI(true);
 
@@ -612,7 +612,7 @@ TEST( SmartProjectionPoseFactorRollingShutter, optimization_3poses_dynamicOutlie
   SmartProjectionParams params;
   params.setRankTolerance(1.0);
   params.setLinearizationMode(gtsam::HESSIAN);
-  params.setDegeneracyMode(gtsam::IGNORE_DEGENERACY);
+  params.setDegeneracyMode(gtsam::ZERO_ON_DEGENERACY);
   params.setLandmarkDistanceThreshold(excludeLandmarksFutherThanDist);
   params.setDynamicOutlierRejectionThreshold(dynamicOutlierRejectionThreshold);
   params.setEnableEPI(false);
