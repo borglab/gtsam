@@ -4,7 +4,7 @@
 
 import itertools
 from copy import deepcopy
-from typing import Iterable, List
+from typing import Any, Iterable, List, Sequence
 
 import gtwrap.interface_parser as parser
 
@@ -214,17 +214,17 @@ class InstantiatedMethod(parser.Method):
     }
     """
     def __init__(self,
-                 original,
+                 original: parser.Method,
                  instantiations: Iterable[parser.Typename] = ()):
         self.original = original
         self.instantiations = instantiations
-        self.template = ''
+        self.template: Any = ''
         self.is_const = original.is_const
         self.parent = original.parent
 
         # Check for typenames if templated.
         # This way, we can gracefully handle both templated and non-templated methods.
-        typenames = self.original.template.typenames if self.original.template else []
+        typenames: Sequence = self.original.template.typenames if self.original.template else []
         self.name = instantiate_name(original.name, self.instantiations)
         self.return_type = instantiate_return_type(
             original.return_type,
@@ -348,13 +348,12 @@ class InstantiatedClass(parser.Class):
         return "{virtual}Class {cpp_class} : {parent_class}\n"\
             "{ctors}\n{static_methods}\n{methods}\n{operators}".format(
                virtual="virtual " if self.is_virtual else '',
-               name=self.name,
                cpp_class=self.to_cpp(),
                parent_class=self.parent,
                ctors="\n".join([repr(ctor) for ctor in self.ctors]),
-               methods="\n".join([repr(m) for m in self.methods]),
                static_methods="\n".join([repr(m)
                                          for m in self.static_methods]),
+                methods="\n".join([repr(m) for m in self.methods]),
                operators="\n".join([repr(op) for op in self.operators])
             )
 
