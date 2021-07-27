@@ -21,11 +21,8 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/serialization.h>
 #include <gtsam/base/serializationTestHelpers.h>
-
-#include <boost/bind/bind.hpp>
 #include <CppUnitLite/TestHarness.h>
 
-using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 
@@ -50,9 +47,8 @@ TEST( Rot3AttitudeFactor, Constructor ) {
   EXPECT(assert_equal((Vector) Z_2x1,factor.evaluateError(nRb),1e-5));
 
   // Calculate numerical derivatives
-  Matrix expectedH = numericalDerivative11<Vector, Rot3>(
-      std::bind(&Rot3AttitudeFactor::evaluateError, &factor,
-                std::placeholders::_1, boost::none),
+  Matrix expectedH = numericalDerivative11<Vector,Rot3>(
+      boost::bind(&Rot3AttitudeFactor::evaluateError, &factor, _1, boost::none),
       nRb);
 
   // Use the factor to calculate the derivative
@@ -118,7 +114,7 @@ TEST( Pose3AttitudeFactor, Constructor ) {
 
   // Calculate numerical derivatives
   Matrix expectedH = numericalDerivative11<Vector,Pose3>(
-      std::bind(&Pose3AttitudeFactor::evaluateError, &factor, std::placeholders::_1,
+      boost::bind(&Pose3AttitudeFactor::evaluateError, &factor, _1,
           boost::none), T);
 
   // Use the factor to calculate the derivative

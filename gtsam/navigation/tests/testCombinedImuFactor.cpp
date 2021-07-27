@@ -29,6 +29,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#include <boost/bind.hpp>
 #include <list>
 
 #include "imuFactorTesting.h"

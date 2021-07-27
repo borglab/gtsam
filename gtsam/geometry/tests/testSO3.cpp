@@ -15,12 +15,13 @@
  * @author Frank Dellaert
  **/
 
-#include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/testLie.h>
 #include <gtsam/geometry/SO3.h>
 
-using namespace std::placeholders;
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/testLie.h>
+
+#include <CppUnitLite/TestHarness.h>
+
 using namespace std;
 using namespace gtsam;
 
@@ -208,7 +209,7 @@ TEST(SO3, ExpmapDerivative) {
 TEST(SO3, ExpmapDerivative2) {
   const Vector3 theta(0.1, 0, 0.1);
   const Matrix Jexpected = numericalDerivative11<SO3, Vector3>(
-      std::bind(&SO3::Expmap, std::placeholders::_1, boost::none), theta);
+      boost::bind(&SO3::Expmap, _1, boost::none), theta);
 
   CHECK(assert_equal(Jexpected, SO3::ExpmapDerivative(theta)));
   CHECK(assert_equal(Matrix3(Jexpected.transpose()),
@@ -219,7 +220,7 @@ TEST(SO3, ExpmapDerivative2) {
 TEST(SO3, ExpmapDerivative3) {
   const Vector3 theta(10, 20, 30);
   const Matrix Jexpected = numericalDerivative11<SO3, Vector3>(
-      std::bind(&SO3::Expmap, std::placeholders::_1, boost::none), theta);
+      boost::bind(&SO3::Expmap, _1, boost::none), theta);
 
   CHECK(assert_equal(Jexpected, SO3::ExpmapDerivative(theta)));
   CHECK(assert_equal(Matrix3(Jexpected.transpose()),
@@ -274,7 +275,7 @@ TEST(SO3, ExpmapDerivative5) {
 TEST(SO3, ExpmapDerivative6) {
   const Vector3 thetahat(0.1, 0, 0.1);
   const Matrix Jexpected = numericalDerivative11<SO3, Vector3>(
-      std::bind(&SO3::Expmap, std::placeholders::_1, boost::none), thetahat);
+      boost::bind(&SO3::Expmap, _1, boost::none), thetahat);
   Matrix3 Jactual;
   SO3::Expmap(thetahat, Jactual);
   EXPECT(assert_equal(Jexpected, Jactual));
@@ -285,7 +286,7 @@ TEST(SO3, LogmapDerivative) {
   const Vector3 thetahat(0.1, 0, 0.1);
   const SO3 R = SO3::Expmap(thetahat);  // some rotation
   const Matrix Jexpected = numericalDerivative11<Vector, SO3>(
-      std::bind(&SO3::Logmap, std::placeholders::_1, boost::none), R);
+      boost::bind(&SO3::Logmap, _1, boost::none), R);
   const Matrix3 Jactual = SO3::LogmapDerivative(thetahat);
   EXPECT(assert_equal(Jexpected, Jactual));
 }
@@ -295,7 +296,7 @@ TEST(SO3, JacobianLogmap) {
   const Vector3 thetahat(0.1, 0, 0.1);
   const SO3 R = SO3::Expmap(thetahat);  // some rotation
   const Matrix Jexpected = numericalDerivative11<Vector, SO3>(
-      std::bind(&SO3::Logmap, std::placeholders::_1, boost::none), R);
+      boost::bind(&SO3::Logmap, _1, boost::none), R);
   Matrix3 Jactual;
   SO3::Logmap(R, Jactual);
   EXPECT(assert_equal(Jexpected, Jactual));
@@ -305,7 +306,7 @@ TEST(SO3, JacobianLogmap) {
 TEST(SO3, ApplyDexp) {
   Matrix aH1, aH2;
   for (bool nearZeroApprox : {true, false}) {
-    std::function<Vector3(const Vector3&, const Vector3&)> f =
+    boost::function<Vector3(const Vector3&, const Vector3&)> f =
         [=](const Vector3& omega, const Vector3& v) {
           return so3::DexpFunctor(omega, nearZeroApprox).applyDexp(v);
         };
@@ -328,7 +329,7 @@ TEST(SO3, ApplyDexp) {
 TEST(SO3, ApplyInvDexp) {
   Matrix aH1, aH2;
   for (bool nearZeroApprox : {true, false}) {
-    std::function<Vector3(const Vector3&, const Vector3&)> f =
+    boost::function<Vector3(const Vector3&, const Vector3&)> f =
         [=](const Vector3& omega, const Vector3& v) {
           return so3::DexpFunctor(omega, nearZeroApprox).applyInvDexp(v);
         };
@@ -354,7 +355,7 @@ TEST(SO3, vec) {
   Matrix actualH;
   const Vector9 actual = R2.vec(actualH);
   CHECK(assert_equal(expected, actual));
-  std::function<Vector9(const SO3&)> f = [](const SO3& Q) { return Q.vec(); };
+  boost::function<Vector9(const SO3&)> f = [](const SO3& Q) { return Q.vec(); };
   const Matrix numericalH = numericalDerivative11(f, R2, 1e-5);
   CHECK(assert_equal(numericalH, actualH));
 }
@@ -368,7 +369,7 @@ TEST(Matrix, compose) {
   Matrix actualH;
   const Matrix3 actual = so3::compose(M, R, actualH);
   CHECK(assert_equal(expected, actual));
-  std::function<Matrix3(const Matrix3&)> f = [R](const Matrix3& M) {
+  boost::function<Matrix3(const Matrix3&)> f = [R](const Matrix3& M) {
     return so3::compose(M, R);
   };
   Matrix numericalH = numericalDerivative11(f, M, 1e-2);

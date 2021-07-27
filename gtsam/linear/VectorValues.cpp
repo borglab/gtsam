@@ -18,7 +18,7 @@
 
 #include <gtsam/linear/VectorValues.h>
 
-#include <boost/bind/bind.hpp>
+#include <boost/bind.hpp>
 #include <boost/range/combine.hpp>
 #include <boost/range/numeric.hpp>
 #include <boost/range/adaptor/transformed.hpp>
@@ -38,8 +38,7 @@ namespace gtsam {
   {
     // Merge using predicate for comparing first of pair
     merge(first.begin(), first.end(), second.begin(), second.end(), inserter(values_, values_.end()),
-      std::bind(&less<Key>::operator(), less<Key>(), std::bind(&KeyValuePair::first, std::placeholders::_1),
-          std::bind(&KeyValuePair::first, std::placeholders::_2)));
+      boost::bind(&less<Key>::operator(), less<Key>(), boost::bind(&KeyValuePair::first, _1), boost::bind(&KeyValuePair::first, _2)));
     if(size() != first.size() + second.size())
       throw invalid_argument("Requested to merge two VectorValues that have one or more variables in common.");
   }

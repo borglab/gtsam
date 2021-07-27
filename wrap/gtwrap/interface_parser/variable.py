@@ -10,11 +10,9 @@ Parser classes and rules for parsing C++ variables.
 Author: Varun Agrawal, Gerry Chen
 """
 
-from typing import List
+from pyparsing import Optional, ParseResults
 
-from pyparsing import Optional, ParseResults  # type: ignore
-
-from .tokens import DEFAULT_ARG, EQUAL, IDENT, SEMI_COLON
+from .tokens import DEFAULT_ARG, EQUAL, IDENT, SEMI_COLON, STATIC
 from .type import TemplatedType, Type
 
 
@@ -34,21 +32,23 @@ class Variable:
     """
     rule = ((Type.rule ^ TemplatedType.rule)("ctype")  #
             + IDENT("name")  #
-            + Optional(EQUAL + DEFAULT_ARG)("default")  #
+            #TODO(Varun) Add support for non-basic types
+            + Optional(EQUAL + (DEFAULT_ARG))("default")  #
             + SEMI_COLON  #
-            ).setParseAction(lambda t: Variable(
-                t.ctype,  #
-                t.name,  #
-                t.default[0] if isinstance(t.default, ParseResults) else None))
+            ).setParseAction(lambda t: Variable(t.ctype, t.name, t.default))
 
     def __init__(self,
-                 ctype: List[Type],
+                 ctype: Type,
                  name: str,
                  default: ParseResults = None,
                  parent=''):
         self.ctype = ctype[0]  # ParseResult is a list
         self.name = name
-        self.default = default
+        if default:
+            self.default = default[0]
+        else:
+            self.default = None
+
         self.parent = parent
 
     def __repr__(self) -> str:

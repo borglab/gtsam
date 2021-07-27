@@ -58,23 +58,22 @@ TEST(Expression, Constant) {
 /* ************************************************************************* */
 // Leaf
 TEST(Expression, Leaf) {
-  const Key key = 100;
-  Rot3_ R(key);
+  Rot3_ R(100);
   Values values;
-  values.insert(key, someR);
+  values.insert(100, someR);
 
   Rot3 actual2 = R.value(values);
   EXPECT(assert_equal(someR, actual2));
 }
 
 /* ************************************************************************* */
-// Test the function `createUnknowns` to create many leaves at once.
+// Many Leaves
 TEST(Expression, Leaves) {
   Values values;
-  const Point3 somePoint(1, 2, 3);
+  Point3 somePoint(1, 2, 3);
   values.insert(Symbol('p', 10), somePoint);
-  std::vector<Point3_> pointExpressions = createUnknowns<Point3>(10, 'p', 1);
-  EXPECT(assert_equal(somePoint, pointExpressions.back().value(values)));
+  std::vector<Point3_> points = createUnknowns<Point3>(10, 'p', 1);
+  EXPECT(assert_equal(somePoint, points.back().value(values)));
 }
 
 /* ************************************************************************* */
@@ -89,34 +88,29 @@ double f2(const Point3& p, OptionalJacobian<1, 3> H) {
 Vector f3(const Point3& p, OptionalJacobian<Eigen::Dynamic, 3> H) {
   return p;
 }
-Point3_ pointExpression(1);
+Point3_ p(1);
 set<Key> expected = list_of(1);
 }  // namespace unary
 
-// Create a unary expression that takes another expression as a single argument.
 TEST(Expression, Unary1) {
   using namespace unary;
-  Expression<Point2> unaryExpression(f1, pointExpression);
-  EXPECT(expected == unaryExpression.keys());
+  Expression<Point2> e(f1, p);
+  EXPECT(expected == e.keys());
 }
-
-// Check that also works with a scalar return value.
 TEST(Expression, Unary2) {
   using namespace unary;
-  Double_ unaryExpression(f2, pointExpression);
-  EXPECT(expected == unaryExpression.keys());
-}
-
-// Unary(Leaf), dynamic
-TEST(Expression, Unary3) {
-  using namespace unary;
-  // TODO(yetongumich): dynamic output arguments do not work yet!
-  // Expression<Vector> unaryExpression(f3, pointExpression);
-  // EXPECT(expected == unaryExpression.keys());
+  Double_ e(f2, p);
+  EXPECT(expected == e.keys());
 }
 
 /* ************************************************************************* */
-// Simple test class that implements the `VectorSpace` protocol.
+// Unary(Leaf), dynamic
+TEST(Expression, Unary3) {
+  using namespace unary;
+  //  Expression<Vector> e(f3, p);
+}
+
+/* ************************************************************************* */
 class Class : public Point3 {
  public:
   enum {dimension = 3};
@@ -139,20 +133,16 @@ template<> struct traits<Class> : public internal::VectorSpace<Class> {};
 // Nullary Method
 TEST(Expression, NullaryMethod) {
   // Create expression
-  const Key key(67);
-  Expression<Class> classExpression(key);
-
-  // Make expression from a class method, note how it differs from the function
-  // expressions by leading with the class expression in the constructor.
-  Expression<double> norm_(classExpression, &Class::norm);
+  Expression<Class> p(67);
+  Expression<double> norm_(p, &Class::norm);
 
   // Create Values
   Values values;
-  values.insert(key, Class(3, 4, 5));
+  values.insert(67, Class(3, 4, 5));
 
   // Check dims as map
   std::map<Key, int> map;
-  norm_.dims(map); // TODO(yetongumich): Change to google style pointer convention.
+  norm_.dims(map);
   LONGS_EQUAL(1, map.size());
 
   // Get value and Jacobians
@@ -160,10 +150,9 @@ TEST(Expression, NullaryMethod) {
   double actual = norm_.value(values, H);
 
   // Check all
-  const double norm = sqrt(3*3 + 4*4 + 5*5);
-  EXPECT(actual == norm);
+  EXPECT(actual == sqrt(50));
   Matrix expected(1, 3);
-  expected << 3.0 / norm, 4.0 / norm, 5.0 / norm;
+  expected << 3.0 / sqrt(50.0), 4.0 / sqrt(50.0), 5.0 / sqrt(50.0);
   EXPECT(assert_equal(expected, H[0]));
 }
 
@@ -181,21 +170,21 @@ Point3_ p_cam(x, &Pose3::transformTo, p);
 }
 
 /* ************************************************************************* */
-// Check that creating an expression to double compiles.
+// Check that creating an expression to double compiles
 TEST(Expression, BinaryToDouble) {
   using namespace binary;
   Double_ p_cam(doubleF, x, p);
 }
 
 /* ************************************************************************* */
-// Check keys of an expression created from class method.
+// keys
 TEST(Expression, BinaryKeys) {
   set<Key> expected = list_of(1)(2);
   EXPECT(expected == binary::p_cam.keys());
 }
 
 /* ************************************************************************* */
-// Check dimensions by calling `dims` method.
+// dimensions
 TEST(Expression, BinaryDimensions) {
   map<Key, int> actual, expected = map_list_of<Key, int>(1, 6)(2, 3);
   binary::p_cam.dims(actual);
@@ -203,7 +192,7 @@ TEST(Expression, BinaryDimensions) {
 }
 
 /* ************************************************************************* */
-// Check dimensions of execution trace.
+// dimensions
 TEST(Expression, BinaryTraceSize) {
   typedef internal::BinaryExpression<Point3, Pose3, Point3> Binary;
   size_t expectedTraceSize = sizeof(Binary::Record);
@@ -258,7 +247,6 @@ TEST(Expression, TreeTraceSize) {
 }
 
 /* ************************************************************************* */
-// Test compose operation with * operator.
 TEST(Expression, compose1) {
   // Create expression
   Rot3_ R1(1), R2(2);
@@ -270,7 +258,7 @@ TEST(Expression, compose1) {
 }
 
 /* ************************************************************************* */
-// Test compose with arguments referring to the same rotation.
+// Test compose with arguments referring to the same rotation
 TEST(Expression, compose2) {
   // Create expression
   Rot3_ R1(1), R2(1);
@@ -282,7 +270,7 @@ TEST(Expression, compose2) {
 }
 
 /* ************************************************************************* */
-// Test compose with one arguments referring to constant rotation.
+// Test compose with one arguments referring to constant rotation
 TEST(Expression, compose3) {
   // Create expression
   Rot3_ R1(Rot3::identity()), R2(3);
@@ -294,7 +282,7 @@ TEST(Expression, compose3) {
 }
 
 /* ************************************************************************* */
-// Test with ternary function.
+// Test with ternary function
 Rot3 composeThree(const Rot3& R1, const Rot3& R2, const Rot3& R3, OptionalJacobian<3, 3> H1,
                   OptionalJacobian<3, 3> H2, OptionalJacobian<3, 3> H3) {
   // return dummy derivatives (not correct, but that's ok for testing here)
@@ -318,7 +306,6 @@ TEST(Expression, ternary) {
 }
 
 /* ************************************************************************* */
-// Test scalar multiplication with * operator.
 TEST(Expression, ScalarMultiply) {
   const Key key(67);
   const Point3_ expr = 23 * Point3_(key);
@@ -349,7 +336,6 @@ TEST(Expression, ScalarMultiply) {
 }
 
 /* ************************************************************************* */
-// Test sum with + operator.
 TEST(Expression, BinarySum) {
   const Key key(67);
   const Point3_ sum_ = Point3_(key) + Point3_(Point3(1, 1, 1));
@@ -380,7 +366,6 @@ TEST(Expression, BinarySum) {
 }
 
 /* ************************************************************************* */
-// Test sum of 3 variables with + operator.
 TEST(Expression, TripleSum) {
   const Key key(67);
   const Point3_ p1_(Point3(1, 1, 1)), p2_(key);
@@ -402,7 +387,6 @@ TEST(Expression, TripleSum) {
 }
 
 /* ************************************************************************* */
-// Test sum with += operator.
 TEST(Expression, PlusEqual) {
   const Key key(67);
   const Point3_ p1_(Point3(1, 1, 1)), p2_(key);
@@ -477,12 +461,11 @@ TEST(Expression, WeightedSum) {
   EXPECT(actual_dims == expected_dims);
 
   Values values;
-  const Point3 point1(1, 0, 0), point2(0, 1, 0);
-  values.insert<Point3>(key1, point1);
-  values.insert<Point3>(key2, point2);
+  values.insert<Point3>(key1, Point3(1, 0, 0));
+  values.insert<Point3>(key2, Point3(0, 1, 0));
 
   // Check value
-  const Point3 expected = 17 * point1 + 23 * point2;
+  const Point3 expected = 17 * Point3(1, 0, 0) + 23 * Point3(0, 1, 0);
   EXPECT(assert_equal(expected, weighted_sum_.value(values)));
 
   // Check value + Jacobians
@@ -512,7 +495,7 @@ TEST(Expression, Subtract) {
 /* ************************************************************************* */
 TEST(Expression, LinearExpression) {
   const Key key(67);
-  const std::function<Vector3(Point3)> f = [](const Point3& p) { return (Vector3)p; };
+  const boost::function<Vector3(Point3)> f = [](const Point3& p) { return (Vector3)p; };
   const Matrix3 kIdentity = I_3x3;
   const Expression<Vector3> linear_ = linearExpression(f, Point3_(key), kIdentity);
 

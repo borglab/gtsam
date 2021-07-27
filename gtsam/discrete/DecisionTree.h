@@ -20,12 +20,10 @@
 #pragma once
 
 #include <gtsam/discrete/Assignment.h>
-
 #include <boost/function.hpp>
-#include <functional>
 #include <iostream>
-#include <map>
 #include <vector>
+#include <map>
 
 namespace gtsam {
 
@@ -40,8 +38,8 @@ namespace gtsam {
   public:
 
     /** Handy typedefs for unary and binary function types */
-    typedef std::function<Y(const Y&)> Unary;
-    typedef std::function<Y(const Y&, const Y&)> Binary;
+    typedef boost::function<Y(const Y&)> Unary;
+    typedef boost::function<Y(const Y&, const Y&)> Binary;
 
     /** A label annotated with cardinality */
     typedef std::pair<L,size_t> LabelC;
@@ -109,7 +107,7 @@ namespace gtsam {
     /** Convert to a different type */
     template<typename M, typename X> NodePtr
     convert(const typename DecisionTree<M, X>::NodePtr& f, const std::map<M,
-        L>& map, std::function<Y(const X&)> op);
+        L>& map, boost::function<Y(const X&)> op);
 
     /** Default constructor */
     DecisionTree();
@@ -145,7 +143,7 @@ namespace gtsam {
     /** Convert from a different type */
     template<typename M, typename X>
     DecisionTree(const DecisionTree<M, X>& other,
-        const std::map<M, L>& map, std::function<Y(const X&)> op);
+        const std::map<M, L>& map, boost::function<Y(const X&)> op);
 
     /// @}
     /// @name Testable

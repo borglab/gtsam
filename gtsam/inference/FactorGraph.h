@@ -29,6 +29,7 @@
 #include <Eigen/Core>  // for Eigen::aligned_allocator
 
 #include <boost/assign/list_inserter.hpp>
+#include <boost/bind.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/vector.hpp>

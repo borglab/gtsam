@@ -354,7 +354,7 @@ GaussianFactorGraph::shared_ptr NonlinearFactorGraph::linearize(const Values& li
     _LinearizeOneFactor(*this, linearizationPoint, *linearFG));
 
   // Linearize all non-sendable factors
-  for(size_t i = 0; i < size(); i++) {
+  for(int i = 0; i < size(); i++) {
     auto& factor = (*this)[i];
     if(factor && !(factor->sendable())) {
       (*linearFG)[i] = factor->linearize(linearizationPoint);

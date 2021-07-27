@@ -29,7 +29,7 @@
 #include <gtsam/config.h>
 
 #include <boost/format.hpp>
-#include <functional>
+#include <boost/function.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/math/special_functions/fpclassify.hpp>
 
@@ -489,7 +489,7 @@ struct MultiplyWithInverseFunction {
 
   // The function phi should calculate f(a)*b, with derivatives in a and b.
   // Naturally, the derivative in b is f(a).
-  typedef std::function<VectorN(
+  typedef boost::function<VectorN(
       const T&, const VectorN&, OptionalJacobian<N, M>, OptionalJacobian<N, N>)>
       Operator;
 

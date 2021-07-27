@@ -17,8 +17,6 @@
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/base/numericalDerivative.h>
 
-#include <boost/bind/bind.hpp>
-
 namespace gtsam {
 
 /**
@@ -108,14 +106,13 @@ public:
 
     if (H1) {
       (*H1) = numericalDerivative11<Vector, Pose3>(
-          std::bind(&InvDepthFactorVariant1::inverseDepthError, this,
-                      std::placeholders::_1, landmark),
-          pose);
+          boost::bind(&InvDepthFactorVariant1::inverseDepthError, this, _1,
+              landmark), pose);
     }
     if (H2) {
       (*H2) = numericalDerivative11<Vector, Vector6>(
-          std::bind(&InvDepthFactorVariant1::inverseDepthError, this, pose,
-              std::placeholders::_1), landmark);
+          boost::bind(&InvDepthFactorVariant1::inverseDepthError, this, pose,
+              _1), landmark);
     }
 
     return inverseDepthError(pose, landmark);

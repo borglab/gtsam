@@ -25,7 +25,6 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/TestableAssertions.h>
 
-using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 
@@ -250,7 +249,7 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
 //
 //  Vector3 v(predictionRq(angles, q));
 //
-//  J_expected = numericalDerivative11<Vector3, Vector3>(std::bind(&predictionRq, std::placeholders::_1, q), angles);
+//  J_expected = numericalDerivative11<Vector3, Vector3>(boost::bind(&predictionRq, _1, q), angles);
 //
 //  cout<<"J_hyp"<<J_hyp<<endl;
 //  cout<<"J_expected"<<J_expected<<endl;
@@ -311,19 +310,19 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   Matrix H1_expectedPose, H2_expectedPose, H3_expectedPose, H4_expectedPose,
       H5_expectedPose;
   H1_expectedPose = numericalDerivative11<Pose3, Pose3>(
-      std::bind(&predictionErrorPose, std::placeholders::_1, Vel1, Bias1, Pose2, Vel2, factor),
+      boost::bind(&predictionErrorPose, _1, Vel1, Bias1, Pose2, Vel2, factor),
       Pose1);
   H2_expectedPose = numericalDerivative11<Pose3, Vector3>(
-      std::bind(&predictionErrorPose, Pose1, std::placeholders::_1, Bias1, Pose2, Vel2, factor),
+      boost::bind(&predictionErrorPose, Pose1, _1, Bias1, Pose2, Vel2, factor),
       Vel1);
   H3_expectedPose = numericalDerivative11<Pose3, imuBias::ConstantBias>(
-      std::bind(&predictionErrorPose, Pose1, Vel1, std::placeholders::_1, Pose2, Vel2, factor),
+      boost::bind(&predictionErrorPose, Pose1, Vel1, _1, Pose2, Vel2, factor),
       Bias1);
   H4_expectedPose = numericalDerivative11<Pose3, Pose3>(
-      std::bind(&predictionErrorPose, Pose1, Vel1, Bias1, std::placeholders::_1, Vel2, factor),
+      boost::bind(&predictionErrorPose, Pose1, Vel1, Bias1, _1, Vel2, factor),
       Pose2);
   H5_expectedPose = numericalDerivative11<Pose3, Vector3>(
-      std::bind(&predictionErrorPose, Pose1, Vel1, Bias1, Pose2, std::placeholders::_1, factor),
+      boost::bind(&predictionErrorPose, Pose1, Vel1, Bias1, Pose2, _1, factor),
       Vel2);
 
   // Verify they are equal for this choice of state
@@ -345,19 +344,19 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   Matrix H1_expectedVel, H2_expectedVel, H3_expectedVel, H4_expectedVel,
       H5_expectedVel;
   H1_expectedVel = numericalDerivative11<Vector, Pose3>(
-      std::bind(&predictionErrorVel, std::placeholders::_1, Vel1, Bias1, Pose2, Vel2, factor),
+      boost::bind(&predictionErrorVel, _1, Vel1, Bias1, Pose2, Vel2, factor),
       Pose1);
   H2_expectedVel = numericalDerivative11<Vector, Vector3>(
-      std::bind(&predictionErrorVel, Pose1, std::placeholders::_1, Bias1, Pose2, Vel2, factor),
+      boost::bind(&predictionErrorVel, Pose1, _1, Bias1, Pose2, Vel2, factor),
       Vel1);
   H3_expectedVel = numericalDerivative11<Vector, imuBias::ConstantBias>(
-      std::bind(&predictionErrorVel, Pose1, Vel1, std::placeholders::_1, Pose2, Vel2, factor),
+      boost::bind(&predictionErrorVel, Pose1, Vel1, _1, Pose2, Vel2, factor),
       Bias1);
   H4_expectedVel = numericalDerivative11<Vector, Pose3>(
-      std::bind(&predictionErrorVel, Pose1, Vel1, Bias1, std::placeholders::_1, Vel2, factor),
+      boost::bind(&predictionErrorVel, Pose1, Vel1, Bias1, _1, Vel2, factor),
       Pose2);
   H5_expectedVel = numericalDerivative11<Vector, Vector3>(
-      std::bind(&predictionErrorVel, Pose1, Vel1, Bias1, Pose2, std::placeholders::_1, factor),
+      boost::bind(&predictionErrorVel, Pose1, Vel1, Bias1, Pose2, _1, factor),
       Vel2);
 
   // Verify they are equal for this choice of state
@@ -643,19 +642,19 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   Matrix H1_expectedPose, H2_expectedPose, H3_expectedPose, H4_expectedPose,
       H5_expectedPose;
   H1_expectedPose = numericalDerivative11<Pose3, Pose3>(
-      std::bind(&predictionErrorPose, std::placeholders::_1, Vel1, Bias1, Pose2, Vel2, factor),
+      boost::bind(&predictionErrorPose, _1, Vel1, Bias1, Pose2, Vel2, factor),
       Pose1);
   H2_expectedPose = numericalDerivative11<Pose3, Vector3>(
-      std::bind(&predictionErrorPose, Pose1, std::placeholders::_1, Bias1, Pose2, Vel2, factor),
+      boost::bind(&predictionErrorPose, Pose1, _1, Bias1, Pose2, Vel2, factor),
       Vel1);
   H3_expectedPose = numericalDerivative11<Pose3, imuBias::ConstantBias>(
-      std::bind(&predictionErrorPose, Pose1, Vel1, std::placeholders::_1, Pose2, Vel2, factor),
+      boost::bind(&predictionErrorPose, Pose1, Vel1, _1, Pose2, Vel2, factor),
       Bias1);
   H4_expectedPose = numericalDerivative11<Pose3, Pose3>(
-      std::bind(&predictionErrorPose, Pose1, Vel1, Bias1, std::placeholders::_1, Vel2, factor),
+      boost::bind(&predictionErrorPose, Pose1, Vel1, Bias1, _1, Vel2, factor),
       Pose2);
   H5_expectedPose = numericalDerivative11<Pose3, Vector3>(
-      std::bind(&predictionErrorPose, Pose1, Vel1, Bias1, Pose2, std::placeholders::_1, factor),
+      boost::bind(&predictionErrorPose, Pose1, Vel1, Bias1, Pose2, _1, factor),
       Vel2);
 
   // Verify they are equal for this choice of state
@@ -677,19 +676,19 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   Matrix H1_expectedVel, H2_expectedVel, H3_expectedVel, H4_expectedVel,
       H5_expectedVel;
   H1_expectedVel = numericalDerivative11<Vector, Pose3>(
-      std::bind(&predictionErrorVel, std::placeholders::_1, Vel1, Bias1, Pose2, Vel2, factor),
+      boost::bind(&predictionErrorVel, _1, Vel1, Bias1, Pose2, Vel2, factor),
       Pose1);
   H2_expectedVel = numericalDerivative11<Vector, Vector3>(
-      std::bind(&predictionErrorVel, Pose1, std::placeholders::_1, Bias1, Pose2, Vel2, factor),
+      boost::bind(&predictionErrorVel, Pose1, _1, Bias1, Pose2, Vel2, factor),
       Vel1);
   H3_expectedVel = numericalDerivative11<Vector, imuBias::ConstantBias>(
-      std::bind(&predictionErrorVel, Pose1, Vel1, std::placeholders::_1, Pose2, Vel2, factor),
+      boost::bind(&predictionErrorVel, Pose1, Vel1, _1, Pose2, Vel2, factor),
       Bias1);
   H4_expectedVel = numericalDerivative11<Vector, Pose3>(
-      std::bind(&predictionErrorVel, Pose1, Vel1, Bias1, std::placeholders::_1, Vel2, factor),
+      boost::bind(&predictionErrorVel, Pose1, Vel1, Bias1, _1, Vel2, factor),
       Pose2);
   H5_expectedVel = numericalDerivative11<Vector, Vector3>(
-      std::bind(&predictionErrorVel, Pose1, Vel1, Bias1, Pose2, std::placeholders::_1, factor),
+      boost::bind(&predictionErrorVel, Pose1, Vel1, Bias1, Pose2, _1, factor),
       Vel2);
 
   // Verify they are equal for this choice of state

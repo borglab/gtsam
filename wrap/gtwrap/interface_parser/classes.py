@@ -10,9 +10,9 @@ Parser classes and rules for parsing C++ classes.
 Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellaert
 """
 
-from typing import Any, Iterable, List, Union
+from typing import Iterable, List, Union
 
-from pyparsing import Literal, Optional, ZeroOrMore  # type: ignore
+from pyparsing import Literal, Optional, ZeroOrMore
 
 from .enum import Enum
 from .function import ArgumentList, ReturnType
@@ -48,12 +48,12 @@ class Method:
                                       args_list, t.is_const))
 
     def __init__(self,
-                 template: Union[Template, Any],
+                 template: str,
                  name: str,
                  return_type: ReturnType,
                  args: ArgumentList,
                  is_const: str,
-                 parent: Union["Class", Any] = ''):
+                 parent: Union[str, "Class"] = ''):
         self.template = template
         self.name = name
         self.return_type = return_type
@@ -98,7 +98,7 @@ class StaticMethod:
                  name: str,
                  return_type: ReturnType,
                  args: ArgumentList,
-                 parent: Union["Class", Any] = ''):
+                 parent: Union[str, "Class"] = ''):
         self.name = name
         self.return_type = return_type
         self.args = args
@@ -129,7 +129,7 @@ class Constructor:
     def __init__(self,
                  name: str,
                  args: ArgumentList,
-                 parent: Union["Class", Any] = ''):
+                 parent: Union["Class", str] = ''):
         self.name = name
         self.args = args
 
@@ -167,7 +167,7 @@ class Operator:
                  return_type: ReturnType,
                  args: ArgumentList,
                  is_const: str,
-                 parent: Union["Class", Any] = ''):
+                 parent: Union[str, "Class"] = ''):
         self.name = name
         self.operator = operator
         self.return_type = return_type
@@ -189,7 +189,7 @@ class Operator:
 
         # Check to ensure arg and return type are the same.
         if len(args) == 1 and self.operator not in ("()", "[]"):
-            assert args.list()[0].ctype.typename.name == return_type.type1.typename.name, \
+            assert args.args_list[0].ctype.typename.name == return_type.type1.typename.name, \
                 "Mixed type overloading not supported. Both arg and return type must be the same."
 
     def __repr__(self) -> str:
@@ -233,7 +233,7 @@ class Class:
             self.static_methods = []
             self.properties = []
             self.operators = []
-            self.enums: List[Enum] = []
+            self.enums = []
             for m in members:
                 if isinstance(m, Constructor):
                     self.ctors.append(m)
@@ -274,7 +274,7 @@ class Class:
 
     def __init__(
         self,
-        template: Union[Template, None],
+        template: Template,
         is_virtual: str,
         name: str,
         parent_class: list,
@@ -284,7 +284,7 @@ class Class:
         properties: List[Variable],
         operators: List[Operator],
         enums: List[Enum],
-        parent: Any = '',
+        parent: str = '',
     ):
         self.template = template
         self.is_virtual = is_virtual
@@ -292,16 +292,16 @@ class Class:
         if parent_class:
             # If it is in an iterable, extract the parent class.
             if isinstance(parent_class, Iterable):
-                parent_class = parent_class[0]  # type: ignore
+                parent_class = parent_class[0]
 
             # If the base class is a TemplatedType,
             # we want the instantiated Typename
             if isinstance(parent_class, TemplatedType):
-                parent_class = parent_class.typename  # type: ignore
+                parent_class = parent_class.typename
 
             self.parent_class = parent_class
         else:
-            self.parent_class = ''  # type: ignore
+            self.parent_class = ''
 
         self.ctors = ctors
         self.methods = methods

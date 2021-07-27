@@ -30,7 +30,6 @@
 #include <iostream>
 
 using namespace boost::assign;
-using namespace std::placeholders;
 
 static const double rankTol = 1.0;
 // Create a noise model for the pixel error
@@ -131,8 +130,8 @@ TEST( SmartProjectionPoseFactor, noiseless ) {
   EXPECT_DOUBLES_EQUAL(expectedError, actualError2, 1e-7);
 
   // Calculate expected derivative for point (easiest to check)
-  std::function<Vector(Point3)> f = //
-      std::bind(&SmartFactor::whitenedError<Point3>, factor, cameras, std::placeholders::_1);
+  boost::function<Vector(Point3)> f = //
+      boost::bind(&SmartFactor::whitenedError<Point3>, factor, cameras, _1);
 
   // Calculate using computeEP
   Matrix actualE;

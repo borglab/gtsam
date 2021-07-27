@@ -24,7 +24,8 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-using namespace std::placeholders;
+#include <boost/bind.hpp>
+
 using namespace gtsam;
 using namespace std;
 
@@ -141,10 +142,8 @@ TEST(LocalOrientedPlane3Factor, Derivatives) {
   LocalOrientedPlane3Factor factor(p, noise, poseKey, anchorPoseKey, planeKey);
 
   // Calculate numerical derivatives
-  auto f =
-      std::bind(&LocalOrientedPlane3Factor::evaluateError, factor,
-                std::placeholders::_1, std::placeholders::_2,
-                std::placeholders::_3, boost::none, boost::none, boost::none);
+  auto f = boost::bind(&LocalOrientedPlane3Factor::evaluateError, factor,
+    _1, _2, _3, boost::none, boost::none, boost::none);
   Matrix numericalH1 = numericalDerivative31<Vector3, Pose3, Pose3,
     OrientedPlane3>(f, poseLin, anchorPoseLin, pLin);
   Matrix numericalH2 = numericalDerivative32<Vector3, Pose3, Pose3,

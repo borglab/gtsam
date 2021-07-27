@@ -26,9 +26,8 @@
 #include <gtsam/base/TestableAssertions.h>
 
 #include <CppUnitLite/TestHarness.h>
-#include <boost/bind/bind.hpp>
+#include <boost/bind.hpp>
 
-using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 
@@ -265,9 +264,9 @@ TEST( RangeFactor, Jacobian2D ) {
   // Use numerical derivatives to calculate the Jacobians
   Matrix H1Expected, H2Expected;
   H1Expected = numericalDerivative11<Vector, Pose2>(
-      std::bind(&factorError2D, std::placeholders::_1, point, factor), pose);
+      boost::bind(&factorError2D, _1, point, factor), pose);
   H2Expected = numericalDerivative11<Vector, Point2>(
-      std::bind(&factorError2D, pose, std::placeholders::_1, factor), point);
+      boost::bind(&factorError2D, pose, _1, factor), point);
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(H1Expected, H1Actual, 1e-9));
@@ -296,9 +295,9 @@ TEST( RangeFactor, Jacobian2DWithTransform ) {
   // Use numerical derivatives to calculate the Jacobians
   Matrix H1Expected, H2Expected;
   H1Expected = numericalDerivative11<Vector, Pose2>(
-      std::bind(&factorErrorWithTransform2D, std::placeholders::_1, point, factor), pose);
+      boost::bind(&factorErrorWithTransform2D, _1, point, factor), pose);
   H2Expected = numericalDerivative11<Vector, Point2>(
-      std::bind(&factorErrorWithTransform2D, pose, std::placeholders::_1, factor), point);
+      boost::bind(&factorErrorWithTransform2D, pose, _1, factor), point);
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(H1Expected, H1Actual, 1e-9));
@@ -323,9 +322,9 @@ TEST( RangeFactor, Jacobian3D ) {
   // Use numerical derivatives to calculate the Jacobians
   Matrix H1Expected, H2Expected;
   H1Expected = numericalDerivative11<Vector, Pose3>(
-      std::bind(&factorError3D, std::placeholders::_1, point, factor), pose);
+      boost::bind(&factorError3D, _1, point, factor), pose);
   H2Expected = numericalDerivative11<Vector, Point3>(
-      std::bind(&factorError3D, pose, std::placeholders::_1, factor), point);
+      boost::bind(&factorError3D, pose, _1, factor), point);
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(H1Expected, H1Actual, 1e-9));
@@ -355,9 +354,9 @@ TEST( RangeFactor, Jacobian3DWithTransform ) {
   // Use numerical derivatives to calculate the Jacobians
   Matrix H1Expected, H2Expected;
   H1Expected = numericalDerivative11<Vector, Pose3>(
-      std::bind(&factorErrorWithTransform3D, std::placeholders::_1, point, factor), pose);
+      boost::bind(&factorErrorWithTransform3D, _1, point, factor), pose);
   H2Expected = numericalDerivative11<Vector, Point3>(
-      std::bind(&factorErrorWithTransform3D, pose, std::placeholders::_1, factor), point);
+      boost::bind(&factorErrorWithTransform3D, pose, _1, factor), point);
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(H1Expected, H1Actual, 1e-9));

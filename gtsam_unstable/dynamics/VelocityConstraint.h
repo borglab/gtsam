@@ -10,8 +10,6 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam_unstable/dynamics/PoseRTV.h>
 
-#include <boost/bind/bind.hpp>
-
 namespace gtsam {
 
 namespace dynamics {
@@ -86,11 +84,9 @@ public:
       boost::optional<gtsam::Matrix&> H1=boost::none,
       boost::optional<gtsam::Matrix&> H2=boost::none) const override {
     if (H1) *H1 = gtsam::numericalDerivative21<gtsam::Vector,PoseRTV,PoseRTV>(
-        std::bind(VelocityConstraint::evaluateError_, std::placeholders::_1,
-            std::placeholders::_2, dt_, integration_mode_), x1, x2, 1e-5);
+        boost::bind(VelocityConstraint::evaluateError_, _1, _2, dt_, integration_mode_), x1, x2, 1e-5);
     if (H2) *H2 = gtsam::numericalDerivative22<gtsam::Vector,PoseRTV,PoseRTV>(
-        std::bind(VelocityConstraint::evaluateError_, std::placeholders::_1,
-            std::placeholders::_2, dt_, integration_mode_), x1, x2, 1e-5);
+        boost::bind(VelocityConstraint::evaluateError_, _1, _2, dt_, integration_mode_), x1, x2, 1e-5);
     return evaluateError_(x1, x2, dt_, integration_mode_);
   }
 

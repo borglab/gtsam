@@ -20,6 +20,7 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
+#include <boost/bind.hpp>
 
 using namespace std;
 using namespace gtsam;

@@ -24,6 +24,7 @@
 #include <gtsam_unstable/geometry/Event.h>
 #include <gtsam_unstable/slam/TOAFactor.h>
 
+#include <boost/bind.hpp>
 #include <boost/format.hpp>
 
 #include <vector>

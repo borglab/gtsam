@@ -26,7 +26,6 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Point3.h>
-#include <gtsam/base/utilities.h>
 
 using gtsam::Vector;
 using gtsam::Matrix;

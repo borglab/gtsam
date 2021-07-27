@@ -22,7 +22,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 
@@ -90,9 +89,9 @@ TEST(TranslationFactor, Jacobian) {
   // Use numerical derivatives to calculate the Jacobians
   Matrix H1Expected, H2Expected;
   H1Expected = numericalDerivative11<Vector, Point3>(
-      std::bind(&factorError, std::placeholders::_1, T2, factor), T1);
+      boost::bind(&factorError, _1, T2, factor), T1);
   H2Expected = numericalDerivative11<Vector, Point3>(
-      std::bind(&factorError, T1, std::placeholders::_1, factor), T2);
+      boost::bind(&factorError, T1, _1, factor), T2);
 
   // Verify the Jacobians are correct
   EXPECT(assert_equal(H1Expected, H1Actual, 1e-9));

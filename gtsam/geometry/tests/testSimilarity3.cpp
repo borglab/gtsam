@@ -16,22 +16,23 @@
  * @author Zhaoyang Lv
  */
 
-#include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/Testable.h>
+#include <gtsam/geometry/Similarity3.h>
+#include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/ExpressionFactorGraph.h>
+#include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/testLie.h>
-#include <gtsam/geometry/Pose3.h>
-#include <gtsam/geometry/Similarity3.h>
-#include <gtsam/inference/Symbol.h>
-#include <gtsam/nonlinear/ExpressionFactorGraph.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/Values.h>
-#include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/base/Testable.h>
 
-#include <functional>
+#include <CppUnitLite/TestHarness.h>
 
-using namespace std::placeholders;
+#include <boost/function.hpp>
+#include <boost/bind.hpp>
+
 using namespace gtsam;
 using namespace std;
 using symbol_shorthand::X;
@@ -241,9 +242,8 @@ TEST(Similarity3, GroupAction) {
   EXPECT(assert_equal(Point3(2, 6, 6), Td.transformFrom(pa)));
 
   // Test derivative
-  // Use lambda to resolve overloaded method
-  std::function<Point3(const Similarity3&, const Point3&)>
-      f = [](const Similarity3& S, const Point3& p){ return S.transformFrom(p); };
+  boost::function<Point3(Similarity3, Point3)> f = boost::bind(
+      &Similarity3::transformFrom, _1, _2, boost::none, boost::none);
 
   Point3 q(1, 2, 3);
   for (const auto& T : { T1, T2, T3, T4, T5, T6 }) {

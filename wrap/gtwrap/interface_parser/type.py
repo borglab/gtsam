@@ -12,10 +12,9 @@ Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellae
 
 # pylint: disable=unnecessary-lambda, expression-not-assigned
 
-from typing import List, Sequence, Union
+from typing import Iterable, List, Union
 
-from pyparsing import (Forward, Optional, Or, ParseResults,  # type: ignore
-                       delimitedList)
+from pyparsing import Forward, Optional, Or, ParseResults, delimitedList
 
 from .tokens import (BASIS_TYPES, CONST, IDENT, LOPBRACK, RAW_POINTER, REF,
                      ROPBRACK, SHARED_POINTER)
@@ -49,12 +48,12 @@ class Typename:
 
     def __init__(self,
                  t: ParseResults,
-                 instantiations: Sequence[ParseResults] = ()):
+                 instantiations: Union[tuple, list, str, ParseResults] = ()):
         self.name = t[-1]  # the name is the last element in this list
         self.namespaces = t[:-1]
 
         if instantiations:
-            if isinstance(instantiations, Sequence):
+            if isinstance(instantiations, Iterable):
                 self.instantiations = instantiations  # type: ignore
             else:
                 self.instantiations = instantiations.asList()
