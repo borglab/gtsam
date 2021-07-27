@@ -430,6 +430,8 @@ class GTSAM_EXPORT ShonanAveraging2 : public ShonanAveraging<2> {
                    const Parameters &parameters = Parameters());
   explicit ShonanAveraging2(std::string g2oFile,
                             const Parameters &parameters = Parameters());
+  ShonanAveraging2(const BetweenFactorPose2s &factors,
+                   const Parameters &parameters = Parameters());
 };
 
 class GTSAM_EXPORT ShonanAveraging3 : public ShonanAveraging<3> {

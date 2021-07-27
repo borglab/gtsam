@@ -182,6 +182,16 @@ protected:
     return item->second; 
   }
 
+private:
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+    ar & BOOST_SERIALIZATION_NVP(index_);
+    ar & BOOST_SERIALIZATION_NVP(nFactors_);
+    ar & BOOST_SERIALIZATION_NVP(nEntries_);
+  }
+
   /// @}
 };
 
