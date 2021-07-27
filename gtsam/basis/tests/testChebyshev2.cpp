@@ -25,6 +25,7 @@
 
 using namespace std;
 using namespace gtsam;
+using namespace boost::placeholders;
 
 noiseModel::Diagonal::shared_ptr model = noiseModel::Unit::Create(1);
 
