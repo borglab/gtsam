@@ -145,7 +145,7 @@ TEST(Chebyshev1, Derivative) {
   Vector c(N);
   c << 12, 3, 1;
 
-  // The derivative should be D(12 + 3*x + 2*x*x-1, x) = 3 + 4*x
+  // The derivative should be D(12 + 3*x + 2*x*x, x) = 3 + 4*x
   double x = -1.0;
   EXPECT_DOUBLES_EQUAL(3 + 4 * x, D(N, x)(c), 1e-9);
   x = -0.5;
