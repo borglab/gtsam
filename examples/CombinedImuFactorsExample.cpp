@@ -23,7 +23,8 @@
  *  A row starting with "i" is the first initial position formatted with
  *  N, E, D, qx, qY, qZ, qW, velN, velE, velD
  *  A row starting with "0" is an imu measurement
- *  linAccN, linAccE, linAccD, angVelN, angVelE, angVelD
+ *  (body frame - Forward, Right, Down)
+ *  linAccX, linAccY, linAccZ, angVelX, angVelY, angVelX
  *  A row starting with "1" is a gps correction formatted with
  *  N, E, D, qX, qY, qZ, qW
  * Note that for GPS correction, we're only using the position not the
