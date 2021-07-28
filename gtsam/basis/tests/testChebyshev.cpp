@@ -140,22 +140,29 @@ TEST(Chebyshev, Decomposition) {
 
 //******************************************************************************
 TEST(Chebyshev1, Derivative) {
-  using D = Chebyshev1Basis::Derivative;
-
   Vector c(N);
-  c << 12, 3, 1;
+  c << 12, 3, 2;
 
-  // The derivative should be D(12 + 3*x + 2*x*x, x) = 3 + 4*x
+  Weights D;
+
   double x = -1.0;
-  EXPECT_DOUBLES_EQUAL(3 + 4 * x, D(N, x)(c), 1e-9);
+  D = Chebyshev1Basis::DerivativeWeights(N, x);
+  // regression
+  EXPECT_DOUBLES_EQUAL(-5, (D * c)(0), 1e-9);
+
   x = -0.5;
-  EXPECT_DOUBLES_EQUAL(3 + 4 * x, D(N, x)(c), 1e-9);
+  D = Chebyshev1Basis::DerivativeWeights(N, x);
+  // regression
+  EXPECT_DOUBLES_EQUAL(-1, (D * c)(0), 1e-9);
+
   x = 0.3;
-  EXPECT_DOUBLES_EQUAL(3 + 4 * x, D(N, x)(c), 1e-9);
+  D = Chebyshev1Basis::DerivativeWeights(N, x);
+  // regression
+  EXPECT_DOUBLES_EQUAL(5.4, (D * c)(0), 1e-9);
 }
 
 //******************************************************************************
-Vector3 f(1, 0, 1);
+Vector3 f(-6, 1, 0.5);
 
 double proxy1(double x, size_t N) {
   return Chebyshev1Basis::EvaluationFunctor(N, x)(Vector(f));
@@ -163,12 +170,62 @@ double proxy1(double x, size_t N) {
 
 TEST(Chebyshev1, Derivative2) {
   const double x = 0.5;
-  Chebyshev1Basis::Derivative dTdx(N, x);
-  double analytic_dTdx = f(1) + 4 * f(2) * x;  // not too hard to do
+  auto D = Chebyshev1Basis::DerivativeWeights(N, x);
+
   Matrix numeric_dTdx =
       numericalDerivative21<double, double, double>(proxy1, x, N);
-  EXPECT_DOUBLES_EQUAL(numeric_dTdx(0, 0), analytic_dTdx, 1e-9);
-  EXPECT_DOUBLES_EQUAL(analytic_dTdx, dTdx(f), 1e-9);
+  // regression
+  EXPECT_DOUBLES_EQUAL(2, numeric_dTdx(0, 0), 1e-9);
+  EXPECT_DOUBLES_EQUAL(2, (D * f)(0), 1e-9);
+}
+
+//******************************************************************************
+TEST(Chebyshev2, Derivative) {
+  Vector c(N);
+  c << 12, 6, 2;
+
+  Weights D;
+
+  double x = -1.0;
+  CHECK_EXCEPTION(Chebyshev2Basis::DerivativeWeights(N, x), std::runtime_error);
+  x = 1.0;
+  CHECK_EXCEPTION(Chebyshev2Basis::DerivativeWeights(N, x), std::runtime_error);
+
+  x = -0.5;
+  D = Chebyshev2Basis::DerivativeWeights(N, x);
+  // regression
+  EXPECT_DOUBLES_EQUAL(4, (D * c)(0), 1e-9);
+
+  x = 0.3;
+  D = Chebyshev2Basis::DerivativeWeights(N, x);
+  // regression
+  EXPECT_DOUBLES_EQUAL(16.8, (D * c)(0), 1e-9);
+
+  x = 0.75;
+  D = Chebyshev2Basis::DerivativeWeights(N, x);
+  // regression
+  EXPECT_DOUBLES_EQUAL(24, (D * c)(0), 1e-9);
+
+  x = 10;
+  D = Chebyshev2Basis::DerivativeWeights(N, x, 0, 20);
+  // regression
+  EXPECT_DOUBLES_EQUAL(12, (D * c)(0), 1e-9);
+}
+
+//******************************************************************************
+double proxy2(double x, size_t N) {
+  return Chebyshev2Basis::EvaluationFunctor(N, x)(Vector(f));
+}
+
+TEST(Chebyshev2, Derivative2) {
+  const double x = 0.5;
+  auto D = Chebyshev2Basis::DerivativeWeights(N, x);
+
+  Matrix numeric_dTdx =
+      numericalDerivative21<double, double, double>(proxy2, x, N);
+  // regression
+  EXPECT_DOUBLES_EQUAL(4, numeric_dTdx(0, 0), 1e-9);
+  EXPECT_DOUBLES_EQUAL(4, (D * f)(0), 1e-9);
 }
 
 //******************************************************************************

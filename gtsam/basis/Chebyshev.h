@@ -39,9 +39,27 @@ struct Chebyshev2Basis : Basis<Chebyshev2Basis> {
   using Parameters = Eigen::Matrix<double, -1, 1 /*Nx1*/>;
 
   /**
-   *  Evaluate Chebyshev Weights on [-1,1] at any x up to order N-1 (N values)
+   *  Evaluate Chebyshev Weights on [-1,1] at any x up to order N-1 (N values).
+   *
+   * @param N Degree of the polynomial.
+   * @param x Point to evaluate polynomial at.
+   * @param a Lower limit of polynomial (default=-1).
+   * @param b Upper limit of polynomial (default=1).
    */
-  static Weights CalculateWeights(size_t N, double x);
+  static Weights CalculateWeights(size_t N, double x, double a = -1,
+                                  double b = 1);
+
+  /**
+   * @brief Evaluate Chebyshev derivative at x.
+   *
+   * @param N Degree of the polynomial.
+   * @param x Point to evaluate polynomial at.
+   * @param a Lower limit of polynomial (default=-1).
+   * @param b Upper limit of polynomial (default=1).
+   * @return Weights
+   */
+  static Weights DerivativeWeights(size_t N, double x, double a = -1,
+                                   double b = 1);
 };
 // Chebyshev2Basis
 
@@ -54,38 +72,39 @@ struct Chebyshev2Basis : Basis<Chebyshev2Basis> {
 struct Chebyshev1Basis : Basis<Chebyshev1Basis> {
   using Parameters = Eigen::Matrix<double, -1, 1 /*Nx1*/>;
 
+  Parameters parameters_;
+
   /**
-   *  Evaluate Chebyshev Weights on [-1,1] at x up to order N-1 (N values)
+   * @brief Evaluate Chebyshev Weights on [-1,1] at x up to order N-1 (N values)
+   *
+   * @param N Degree of the polynomial.
+   * @param x Point to evaluate polynomial at.
+   * @param a Lower limit of polynomial (default=-1).
+   * @param b Upper limit of polynomial (default=1).
    */
-  static Weights CalculateWeights(size_t N, double x);
+  static Weights CalculateWeights(size_t N, double x, double a = -1,
+                                  double b = 1);
 
-  /// Create a Chebyshev derivative function of Parameters
-  class Derivative {
-   protected:
-    // From Wikipedia we have D[T_n(x),x] = n*U_{n-1}(x)
-    // I.e. the derivative fo a first kind cheb is just a second kind cheb
-    // So, we define a second kind basis here of order N-1
-    // Note that it has one less weight:
-    Weights weights_;
-
-    size_t N_;
-
-   public:
-    Derivative(size_t N, double x)
-        : weights_(Chebyshev2Basis::CalculateWeights(N - 1, x)), N_(N) {
-      // after the above init, weights_ contains the U_{n-1} values for n=1..N-1
-      // Note there is no value for n=0. But we need n*U{n-1}, so correct:
-      for (size_t n = 1; n < N; n++) {
-        weights_(n - 1) *= double(n);
-      }
-    }
-
-    double operator()(const Parameters &c) {
-      // The Parameters pertain to 1st kind chebs up to order N-1
-      // But of course the first one (order 0) is constant, so omit that weight
-      return (weights_ * c.block(1, 0, N_ - 1, 1))(0);
-    }
-  };
+  /**
+   * @brief Evaluate Chebyshev derivative at x.
+   * The derivative weights are pre-multiplied to the polynomial Parameters.
+   *
+   * From Wikipedia we have D[T_n(x),x] = n*U_{n-1}(x)
+   * I.e. the derivative fo a first kind cheb is just a second kind cheb
+   * So, we define a second kind basis here of order N-1
+   * Note that it has one less weight.
+   *
+   * The Parameters pertain to 1st kind chebs up to order N-1
+   * But of course the first one (order 0) is constant, so omit that weight.
+   *
+   * @param N Degree of the polynomial.
+   * @param x Point to evaluate polynomial at.
+   * @param a Lower limit of polynomial (default=-1).
+   * @param b Upper limit of polynomial (default=1).
+   * @return Weights
+   */
+  static Weights DerivativeWeights(size_t N, double x, double a = -1,
+                                   double b = 1);
 };
 // Chebyshev1Basis
 
