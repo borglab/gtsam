@@ -58,5 +58,67 @@ class ParameterMatrix {
 
   Matrix matrix() const;
 
-  void print(const string& s="") const;
+  void print(const string& s = "") const;
+};
+
+#include <gtsam/basis/BasisFactors.h>
+
+template <BASIS = {gtsam::Chebyshev2}>
+class EvaluationFactor : gtsam::NoiseModelFactor {
+  EvaluationFactor();
+  EvaluationFactor(gtsam::Key key, const double z,
+                   const gtsam::noiseModel::Base* model, const size_t N,
+                   double x);
+  EvaluationFactor(gtsam::Key key, const double z,
+                   const gtsam::noiseModel::Base* model, const size_t N,
+                   double x, double a, double b);
+};
+
+template <BASIS, M>
+class VectorEvaluationFactor : gtsam::NoiseModelFactor {
+  VectorEvaluationFactor();
+  VectorEvaluationFactor(gtsam::Key key, const Vector& z,
+                         const gtsam::noiseModel::Base* model, const size_t N,
+                         double x);
+  VectorEvaluationFactor(gtsam::Key key, const Vector& z,
+                         const gtsam::noiseModel::Base* model, const size_t N,
+                         double x, double a, double b);
+};
+
+// TODO(Varun) Better way to support arbitrary dimensions?
+// Especially if users mainly do `pip install gtsam` for the Python wrapper.
+typedef gtsam::VectorEvaluationFactor<gtsam::Chebyshev2, 3>
+    VectorEvaluationFactorChebyshev2D3;
+typedef gtsam::VectorEvaluationFactor<gtsam::Chebyshev2, 4>
+    VectorEvaluationFactorChebyshev2D4;
+typedef gtsam::VectorEvaluationFactor<gtsam::Chebyshev2, 12>
+    VectorEvaluationFactorChebyshev2D12;
+
+template <BASIS, P>
+class VectorComponentFactor : gtsam::NoiseModelFactor {
+  VectorComponentFactor();
+  VectorComponentFactor(gtsam::Key key, const double z,
+                        const gtsam::noiseModel::Base* model, const size_t N,
+                        size_t i, double x);
+  VectorComponentFactor(gtsam::Key key, const double z,
+                        const gtsam::noiseModel::Base* model, const size_t N,
+                        size_t i, double x, double a, double b);
+};
+
+typedef gtsam::VectorComponentFactor<gtsam::Chebyshev2, 3>
+    VectorComponentFactorChebyshev2D3;
+typedef gtsam::VectorComponentFactor<gtsam::Chebyshev2, 4>
+    VectorComponentFactorChebyshev2D4;
+typedef gtsam::VectorComponentFactor<gtsam::Chebyshev2, 12>
+    VectorComponentFactorChebyshev2D12;
+
+template <BASIS, T>
+class ManifoldEvaluationFactor : gtsam::NoiseModelFactor {
+  ManifoldEvaluationFactor();
+  ManifoldEvaluationFactor(gtsam::Key key, const T& z,
+                           const gtsam::noiseModel::Base* model, const size_t N,
+                           double x);
+  ManifoldEvaluationFactor(gtsam::Key key, const T& z,
+                           const gtsam::noiseModel::Base* model, const size_t N,
+                           double x, double a, double b);
 };
