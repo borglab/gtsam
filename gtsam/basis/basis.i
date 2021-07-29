@@ -125,4 +125,31 @@ virtual class ManifoldEvaluationFactor : gtsam::NoiseModelFactor {
                            double x, double a, double b);
 };
 
+// TODO(gchen): Add `DerivativeFactor`, `VectorDerivativeFactor`, and
+// `ComponentDerivativeFactor`
+
+#include <gtsam/basis/FitBasis.h>
+// We'll allow transparent binding of python dict to Sequence in this
+// compilation unit using pybind11/stl.h.
+// Another alternative would be making Sequence opaque in
+// python/gtsam/{preamble, specializations}, but std::map<double, double> is
+// common enough that it may cause collisions, and we don't need
+// reference-access anyway.
+#include <pybind11/stl.h>
+
+template <BASIS = {gtsam::FourierBasis, gtsam::Chebyshev1Basis,
+                   gtsam::Chebyshev2Basis, gtsam::Chebyshev2}>
+class FitBasis {
+  FitBasis(size_t N, const gtsam::Sequence& sequence,
+           const gtsam::noiseModel::Base* model);
+
+  static gtsam::NonlinearFactorGraph NonlinearGraph(
+      const gtsam::Sequence& sequence, const gtsam::noiseModel::Base* model,
+      size_t N);
+  static gtsam::GaussianFactorGraph::shared_ptr LinearGraph(
+      const gtsam::Sequence& sequence, const gtsam::noiseModel::Base* model,
+      size_t N);
+  Parameters parameters() const;
+};
+
 }  // namespace gtsam

@@ -38,7 +38,10 @@ using Sequence = std::map<double, double>;
 using Sample = std::pair<double, double>;
 
 /**
- * Class that does Fourier Decomposition via least squares
+ * Class that does regression via least squares
+ * Example usage:
+ *  auto fit = FitBasis<Chebyshev2>(3, data_points, noise_model);
+ *  Vector coefficients = fit.parameters();
  */
 template <class Basis>
 class FitBasis {
