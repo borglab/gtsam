@@ -4,6 +4,8 @@
 
 namespace gtsam {
 
+// TODO(gerry): add all the Functors to the Basis interfaces, e.g. `EvaluationFunctor`
+
 #include <gtsam/basis/Fourier.h>
 
 class FourierBasis {
@@ -125,7 +127,7 @@ virtual class ManifoldEvaluationFactor : gtsam::NoiseModelFactor {
                            double x, double a, double b);
 };
 
-// TODO(gchen): Add `DerivativeFactor`, `VectorDerivativeFactor`, and
+// TODO(gerry): Add `DerivativeFactor`, `VectorDerivativeFactor`, and
 // `ComponentDerivativeFactor`
 
 #include <gtsam/basis/FitBasis.h>
