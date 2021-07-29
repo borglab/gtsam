@@ -87,6 +87,8 @@ virtual class VectorEvaluationFactor : gtsam::NoiseModelFactor {
                          double x, double a, double b);
 };
 
+// TODO(Varun) Better way to support arbitrary dimensions?
+// Especially if users mainly do `pip install gtsam` for the Python wrapper.
 typedef gtsam::VectorEvaluationFactor<gtsam::Chebyshev2, 3>
     VectorEvaluationFactorChebyshev2D3;
 typedef gtsam::VectorEvaluationFactor<gtsam::Chebyshev2, 4>

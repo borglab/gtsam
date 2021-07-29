@@ -34,6 +34,8 @@ namespace gtsam {
 
 /// Our sequence representation is a map of {x: y} values where y = f(x)
 using Sequence = std::map<double, double>;
+/// A sample is a key-value pair from a sequence.
+using Sample = std::pair<double, double>;
 
 /**
  * Class that does Fourier Decomposition via least squares
@@ -41,7 +43,6 @@ using Sequence = std::map<double, double>;
 template <class Basis>
 class FitBasis {
  public:
-  using Sample = std::pair<double, double>;
   using Parameters = typename Basis::Parameters;
 
  private:
@@ -78,7 +79,7 @@ class FitBasis {
   }
 
   /// Return Fourier coefficients
-  Parameters parameters() { return parameters_; }
+  Parameters parameters() const { return parameters_; }
 };
 
 }  // namespace gtsam

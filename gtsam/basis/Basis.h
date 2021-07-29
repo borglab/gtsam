@@ -30,8 +30,9 @@
  * combination of `basis functions` such as the Fourier basis on SO(2) or a set
  * of Chebyshev polynomials on [-1,1].
  * In the expression `f(x;p)` the variable `x` is
- * the continuous argument at which teh function is evaluated, and `p` are
- * parameters, e.g., coefficients used to weight the different basis functions.
+ * the continuous argument at which the function is evaluated, and `p` are
+ * parameter which are coefficients of the different basis functions,
+ * e.g. p = (4, 3, 2) => 4 + 3x + 2x^2 for a polynomial.
  * However, different parameterizations are also possible.
 
  * The `Basis` class below defines a number of functors that can be used to
@@ -47,7 +48,6 @@
  * i.e., we expect it to define the following types and methods:
 
   - type `Parameters`: the parameters `p` in f(x;p)
-  - type `Weights`: vector of partial derivatives of `f(x;p)` wrt `p`
   - `CalculateWeights(size_t N, double x, double a=default, double b=default)`
   - `DerivativeWeights(size_t N, double x, double a=default, double b=default)`
  */

@@ -30,8 +30,7 @@ namespace gtsam {
 /**
  * A matrix abstraction of MxN values at the Basis points.
  * This class serves as a wrapper over an Eigen matrix.
- * @tparam T: the type you would like to evaluate using polynomial
- * interpolation.
+ * @tparam M: The dimension of the type you wish to evaluate.
  * @param N: the number of Basis points (e.g. Chebyshev points of the second
  * kind).
  */
