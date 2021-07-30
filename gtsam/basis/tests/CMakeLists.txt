@@ -1,1 +1,1 @@
-gtsamAddTestsGlob(base "test*.cpp" "" "gtsam")
+gtsamAddTestsGlob(basis "test*.cpp" "" "gtsam")

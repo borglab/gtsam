@@ -2,6 +2,10 @@
 // basis
 //*************************************************************************
 
+namespace gtsam {
+
+// TODO(gerry): add all the Functors to the Basis interfaces, e.g. `EvaluationFunctor`
+
 #include <gtsam/basis/Fourier.h>
 
 class FourierBasis {
@@ -64,7 +68,7 @@ class ParameterMatrix {
 #include <gtsam/basis/BasisFactors.h>
 
 template <BASIS = {gtsam::Chebyshev2}>
-class EvaluationFactor : gtsam::NoiseModelFactor {
+virtual class EvaluationFactor : gtsam::NoiseModelFactor {
   EvaluationFactor();
   EvaluationFactor(gtsam::Key key, const double z,
                    const gtsam::noiseModel::Base* model, const size_t N,
@@ -75,7 +79,7 @@ class EvaluationFactor : gtsam::NoiseModelFactor {
 };
 
 template <BASIS, M>
-class VectorEvaluationFactor : gtsam::NoiseModelFactor {
+virtual class VectorEvaluationFactor : gtsam::NoiseModelFactor {
   VectorEvaluationFactor();
   VectorEvaluationFactor(gtsam::Key key, const Vector& z,
                          const gtsam::noiseModel::Base* model, const size_t N,
@@ -95,7 +99,7 @@ typedef gtsam::VectorEvaluationFactor<gtsam::Chebyshev2, 12>
     VectorEvaluationFactorChebyshev2D12;
 
 template <BASIS, P>
-class VectorComponentFactor : gtsam::NoiseModelFactor {
+virtual class VectorComponentFactor : gtsam::NoiseModelFactor {
   VectorComponentFactor();
   VectorComponentFactor(gtsam::Key key, const double z,
                         const gtsam::noiseModel::Base* model, const size_t N,
@@ -113,7 +117,7 @@ typedef gtsam::VectorComponentFactor<gtsam::Chebyshev2, 12>
     VectorComponentFactorChebyshev2D12;
 
 template <BASIS, T>
-class ManifoldEvaluationFactor : gtsam::NoiseModelFactor {
+virtual class ManifoldEvaluationFactor : gtsam::NoiseModelFactor {
   ManifoldEvaluationFactor();
   ManifoldEvaluationFactor(gtsam::Key key, const T& z,
                            const gtsam::noiseModel::Base* model, const size_t N,
@@ -122,3 +126,32 @@ class ManifoldEvaluationFactor : gtsam::NoiseModelFactor {
                            const gtsam::noiseModel::Base* model, const size_t N,
                            double x, double a, double b);
 };
+
+// TODO(gerry): Add `DerivativeFactor`, `VectorDerivativeFactor`, and
+// `ComponentDerivativeFactor`
+
+#include <gtsam/basis/FitBasis.h>
+// We'll allow transparent binding of python dict to Sequence in this
+// compilation unit using pybind11/stl.h.
+// Another alternative would be making Sequence opaque in
+// python/gtsam/{preamble, specializations}, but std::map<double, double> is
+// common enough that it may cause collisions, and we don't need
+// reference-access anyway.
+#include <pybind11/stl.h>
+
+template <BASIS = {gtsam::FourierBasis, gtsam::Chebyshev1Basis,
+                   gtsam::Chebyshev2Basis, gtsam::Chebyshev2}>
+class FitBasis {
+  FitBasis(size_t N, const gtsam::Sequence& sequence,
+           const gtsam::noiseModel::Base* model);
+
+  static gtsam::NonlinearFactorGraph NonlinearGraph(
+      const gtsam::Sequence& sequence, const gtsam::noiseModel::Base* model,
+      size_t N);
+  static gtsam::GaussianFactorGraph::shared_ptr LinearGraph(
+      const gtsam::Sequence& sequence, const gtsam::noiseModel::Base* model,
+      size_t N);
+  Parameters parameters() const;
+};
+
+}  // namespace gtsam

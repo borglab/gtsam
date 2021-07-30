@@ -61,6 +61,7 @@ set(interface_headers
     ${PROJECT_SOURCE_DIR}/gtsam/slam/slam.i
     ${PROJECT_SOURCE_DIR}/gtsam/sfm/sfm.i
     ${PROJECT_SOURCE_DIR}/gtsam/navigation/navigation.i
+    ${PROJECT_SOURCE_DIR}/gtsam/basis/basis.i
 )
 
 
