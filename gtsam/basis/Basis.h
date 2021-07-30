@@ -23,7 +23,6 @@
 #include <gtsam/basis/ParameterMatrix.h>
 
 #include <iostream>
-#include <unsupported/Eigen/KroneckerProduct>
 
 /**
  * This file supports creating continuous functions `f(x;p)` as a linear
@@ -55,6 +54,26 @@
 namespace gtsam {
 
 using Weights = Eigen::Matrix<double, 1, -1>; /* 1xN vector */
+
+/**
+ * @brief Function for computing the kronecker product of Weight matrix with Identity matrix efficiently.
+ * The primary reason for this is so that we don't need to use the Eigen Unsupported library. 
+ * 
+ * @tparam M 
+ * @param x 
+ * @return Matrix 
+ */
+template<size_t M>
+Matrix kroneckerProductIdentity(const Weights& x) {
+  const auto I = Eigen::Matrix<double, M, M>::Identity();
+  Matrix result(M, x.cols() * M);
+  result.setZero();
+
+  for (int i = 0; i < x.cols(); i++) {
+    result.block(0, i*M, M, M) = x(i) * I;
+  }
+  return result;
+}
 
 /// CRTP Base class for function bases
 template <typename DERIVED>
@@ -140,7 +159,7 @@ class GTSAM_EXPORT Basis {
 
     void calculateJacobian() {
       using MatrixM = Eigen::Matrix<double, M, M>;
-      H_ = Eigen::kroneckerProduct(this->weights_, MatrixM::Identity());
+      H_ = kroneckerProductIdentity<M>(this->weights_);
     }
 
    public:
@@ -323,7 +342,7 @@ class GTSAM_EXPORT Basis {
 
     void calculateJacobian() {
       using MatrixM = Eigen::Matrix<double, M, M>;
-      H_ = Eigen::kroneckerProduct(this->weights_, MatrixM::Identity());
+      H_ = kroneckerProductIdentity<M>(this->weights_);
     }
 
    public:
