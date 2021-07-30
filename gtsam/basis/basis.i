@@ -21,11 +21,6 @@ class FourierBasis {
 class Chebyshev1Basis {
   static Matrix CalculateWeights(size_t N, double x);
   static Matrix WeightMatrix(size_t N, Vector X);
-
-  // TODO need support for nested classes
-  // class Derivative {
-  //   Derivative(size_t N, double x);
-  // };
 };
 
 class Chebyshev2Basis {
@@ -131,13 +126,6 @@ virtual class ManifoldEvaluationFactor : gtsam::NoiseModelFactor {
 // `ComponentDerivativeFactor`
 
 #include <gtsam/basis/FitBasis.h>
-// We'll allow transparent binding of python dict to Sequence in this
-// compilation unit using pybind11/stl.h.
-// Another alternative would be making Sequence opaque in
-// python/gtsam/{preamble, specializations}, but std::map<double, double> is
-// common enough that it may cause collisions, and we don't need
-// reference-access anyway.
-#include <pybind11/stl.h>
 
 template <BASIS = {gtsam::FourierBasis, gtsam::Chebyshev1Basis,
                    gtsam::Chebyshev2Basis, gtsam::Chebyshev2}>
