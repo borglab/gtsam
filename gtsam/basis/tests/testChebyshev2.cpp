@@ -103,7 +103,7 @@ TEST(Chebyshev2, InterpolateVector) {
   const size_t N = 3;
   // Create 2x3 matrix with Vectors at Chebyshev points
   ParameterMatrix<2> X(N);
-  X.setRow(0, Chebyshev2::Points(N, a, b));  // slope 1 ramp
+  X.row(0) = Chebyshev2::Points(N, a, b);  // slope 1 ramp
 
   // Check value
   Vector expected(2);
