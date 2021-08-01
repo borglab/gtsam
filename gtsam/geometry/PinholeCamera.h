@@ -30,7 +30,7 @@ namespace gtsam {
  * \nosubgrouping
  */
 template<typename Calibration>
-class PinholeCamera: public PinholeBaseK<Calibration> {
+class GTSAM_EXPORT PinholeCamera: public PinholeBaseK<Calibration> {
 
 public:
 
