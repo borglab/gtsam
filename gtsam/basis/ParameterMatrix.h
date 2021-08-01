@@ -82,7 +82,7 @@ class ParameterMatrix {
    * Set the matrix row specified by `index`.
    * @param index: The row index to set.
    */
-  auto row(size_t index) {
+  auto row(size_t index) -> Eigen::Block<MatrixType, 1, -1, false> {
     return matrix_.row(index);
   }
 
@@ -98,7 +98,7 @@ class ParameterMatrix {
    * Set the matrix column specified by `index`.
    * @param index: The column index to set.
    */
-  auto col(size_t index) {
+  auto col(size_t index) -> Eigen::Block<MatrixType, M, 1, true> {
     return matrix_.col(index);
   }
 
