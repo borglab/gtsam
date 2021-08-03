@@ -33,60 +33,19 @@ class IndexPair {
   size_t j() const;
 };
 
-// template<KEY = {gtsam::IndexPair}>
-// class DSFMap {
-//   DSFMap();
-//   KEY find(const KEY& key) const;
-//   void merge(const KEY& x, const KEY& y);
-//   std::map<KEY, Set> sets();
-// };
-
-class IndexPairSet {
-  IndexPairSet();
-  // common STL methods
-  size_t size() const;
-  bool empty() const;
-  void clear();
-
-  // structure specific methods
-  void insert(gtsam::IndexPair key);
-  bool erase(gtsam::IndexPair key);        // returns true if value was removed
-  bool count(gtsam::IndexPair key) const;  // returns true if value exists
+template<KEY = {gtsam::IndexPair}>
+class DSFMap {
+  DSFMap();
+  KEY find(const KEY& key) const;
+  void merge(const KEY& x, const KEY& y);
+  std::map<KEY, Set> sets();
 };
 
-class IndexPairVector {
-  IndexPairVector();
-  IndexPairVector(const gtsam::IndexPairVector& other);
-
-  // common STL methods
-  size_t size() const;
-  bool empty() const;
-  void clear();
-
-  // structure specific methods
-  gtsam::IndexPair at(size_t i) const;
-  void push_back(gtsam::IndexPair key) const;
-};
+class IndexPairVector;
+class IndexPairSetMap;
+class IndexPairSet;
 
 gtsam::IndexPairVector IndexPairSetAsArray(gtsam::IndexPairSet& set);
-
-class IndexPairSetMap {
-  IndexPairSetMap();
-  // common STL methods
-  size_t size() const;
-  bool empty() const;
-  void clear();
-
-  // structure specific methods
-  gtsam::IndexPairSet at(gtsam::IndexPair& key);
-};
-
-class DSFMapIndexPair {
-  DSFMapIndexPair();
-  gtsam::IndexPair find(const gtsam::IndexPair& key) const;
-  void merge(const gtsam::IndexPair& x, const gtsam::IndexPair& y);
-  gtsam::IndexPairSetMap sets();
-};
 
 #include <gtsam/base/Matrix.h>
 bool linear_independent(Matrix A, Matrix B, double tol);
