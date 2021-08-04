@@ -125,21 +125,21 @@ virtual class ManifoldEvaluationFactor : gtsam::NoiseModelFactor {
 // TODO(gerry): Add `DerivativeFactor`, `VectorDerivativeFactor`, and
 // `ComponentDerivativeFactor`
 
-#include <gtsam/basis/FitBasis.h>
+// TODO(Varun): Get working
+// #include <gtsam/basis/FitBasis.h>
+// template <BASIS = {gtsam::FourierBasis, gtsam::Chebyshev1Basis,
+//                    gtsam::Chebyshev2Basis, gtsam::Chebyshev2}>
+// class FitBasis {
+//   FitBasis(size_t N, const gtsam::Sequence& sequence,
+//            const gtsam::noiseModel::Base* model);
 
-template <BASIS = {gtsam::FourierBasis, gtsam::Chebyshev1Basis,
-                   gtsam::Chebyshev2Basis, gtsam::Chebyshev2}>
-class FitBasis {
-  FitBasis(size_t N, const gtsam::Sequence& sequence,
-           const gtsam::noiseModel::Base* model);
-
-  static gtsam::NonlinearFactorGraph NonlinearGraph(
-      const gtsam::Sequence& sequence, const gtsam::noiseModel::Base* model,
-      size_t N);
-  static gtsam::GaussianFactorGraph::shared_ptr LinearGraph(
-      const gtsam::Sequence& sequence, const gtsam::noiseModel::Base* model,
-      size_t N);
-  Parameters parameters() const;
-};
+//   static gtsam::NonlinearFactorGraph NonlinearGraph(
+//       const gtsam::Sequence& sequence, const gtsam::noiseModel::Base* model,
+//       size_t N);
+//   static gtsam::GaussianFactorGraph::shared_ptr LinearGraph(
+//       const gtsam::Sequence& sequence, const gtsam::noiseModel::Base* model,
+//       size_t N);
+//   Parameters parameters() const;
+// };
 
 }  // namespace gtsam
