@@ -51,8 +51,18 @@
   - `CalculateWeights(size_t N, double x, double a=default, double b=default)`
   - `DerivativeWeights(size_t N, double x, double a=default, double b=default)`
 
-  where `Weights` is an N*1 row vector which defines the interpolation
- coefficients for the basis functions to interpolate at the specified point `x`.
+  where `Weights` is an N*1 row vector which defines the basis values for the
+ polynomial at the specified point `x`.
+
+ E.g. A Fourier series would give the following:
+  - `CalculateWeights` -> For N=5, the values for the bases:
+        [1, cos(x), sin(x), cos(2x), sin(2x)]
+  - `DerivativeWeights` -> For N=5, these are:
+        [0, -sin(x), cos(x), -2sin(2x), 2cos(x)]
+
+ Note that for a pseudo-spectral basis (as in Chebyshev2), the weights are
+ instead the values for the Barycentric interpolation formula, since the values
+ at the polynomial points (e.g. Chebyshev points) define the bases.
  */
 
 namespace gtsam {

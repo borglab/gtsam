@@ -32,10 +32,10 @@ class GTSAM_EXPORT FourierBasis : public Basis<FourierBasis> {
   /**
    * @brief Evaluate Real Fourier Weights of size N in interval [a, b],
    *        e.g. N=5 yields bases: 1, cos(x), sin(x), cos(2*x), sin(2*x)
-   * 
+   *
    * @param N The degree of the polynomial to use.
    * @param x The point at which to compute the derivaive weights.
-   * @return Weights 
+   * @return Weights
    */
   static Weights CalculateWeights(size_t N, double x) {
     Weights b(N);
@@ -48,18 +48,14 @@ class GTSAM_EXPORT FourierBasis : public Basis<FourierBasis> {
   }
 
   /**
-   *  
-   */
-
-  /**
    * @brief Evaluate Real Fourier Weights of size N in interval [a, b],
    *        e.g. N=5 yields bases: 1, cos(x), sin(x), cos(2*x), sin(2*x)
-   * 
+   *
    * @param N The degree of the polynomial to use.
    * @param x The point at which to compute the weights.
    * @param a Lower bound of interval.
    * @param b Upper bound of interval.
-   * @return Weights 
+   * @return Weights
    */
   static Weights CalculateWeights(size_t N, double x, double a, double b) {
     // TODO(Varun) How do we enforce an interval for Fourier series?
