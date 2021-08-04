@@ -10,3 +10,11 @@
  * Without this they will be automatically converted to a Python object, and all
  * mutations on Python side will not be reflected on C++.
  */
+
+// We'll allow transparent binding of python dict to Sequence in this
+// compilation unit using pybind11/stl.h.
+// Another alternative would be making Sequence opaque in
+// python/gtsam/{preamble, specializations}, but std::map<double, double> is
+// common enough that it may cause collisions, and we don't need
+// reference-access anyway.
+#include <pybind11/stl.h>
