@@ -12,7 +12,7 @@
 /**
  * @file Basis.h
  * @brief Compute an interpolating basis
- * @author Varun Agrawal, Frank Dellaert
+ * @author Varun Agrawal, Jing Dong, Frank Dellaert
  * @date July 4, 2020
  */
 
@@ -28,10 +28,11 @@
  * This file supports creating continuous functions `f(x;p)` as a linear
  * combination of `basis functions` such as the Fourier basis on SO(2) or a set
  * of Chebyshev polynomials on [-1,1].
+ *
  * In the expression `f(x;p)` the variable `x` is
  * the continuous argument at which the function is evaluated, and `p` are
- * parameter which are coefficients of the different basis functions,
- * e.g. p = (4, 3, 2) => 4 + 3x + 2x^2 for a polynomial.
+ * the parameters which are coefficients of the different basis functions,
+ * e.g. p = [4; 3; 2] => 4 + 3x + 2x^2 for a polynomial.
  * However, different parameterizations are also possible.
 
  * The `Basis` class below defines a number of functors that can be used to
@@ -49,6 +50,9 @@
   - type `Parameters`: the parameters `p` in f(x;p)
   - `CalculateWeights(size_t N, double x, double a=default, double b=default)`
   - `DerivativeWeights(size_t N, double x, double a=default, double b=default)`
+
+  where `Weights` is an N*1 row vector which defines the interpolation
+ coefficients for the basis functions to interpolate at the specified point `x`.
  */
 
 namespace gtsam {
@@ -56,21 +60,22 @@ namespace gtsam {
 using Weights = Eigen::Matrix<double, 1, -1>; /* 1xN vector */
 
 /**
- * @brief Function for computing the kronecker product of Weight matrix with
- * Identity matrix efficiently. The primary reason for this is so that we don't
- * need to use the Eigen Unsupported library.
+ * @brief Function for computing the kronecker product of the 1*N Weight vector
+ * `w` with the MxM identity matrix `I` efficiently.
+ * The main reason for this is so we don't need to use Eigen's Unsupported
+ * library.
  *
  * @tparam M Size of the identity matrix.
- * @param x The weights of the polynomial.
- * @return Matrix
+ * @param w The weights of the polynomial.
+ * @return Mx(M*N) kronecker product [w(0)*I, w(1)*I, ..., w(N-1)*I]
  */
 template <size_t M>
-Matrix kroneckerProductIdentity(const Weights& x) {
-  Matrix result(M, x.cols() * M);
+Matrix kroneckerProductIdentity(const Weights& w) {
+  Matrix result(M, w.cols() * M);
   result.setZero();
 
-  for (int i = 0; i < x.cols(); i++) {
-    result.block(0, i * M, M, M).diagonal().array() = x(i);
+  for (int i = 0; i < w.cols(); i++) {
+    result.block(0, i * M, M, M).diagonal().array() = w(i);
   }
   return result;
 }
@@ -80,9 +85,9 @@ template <typename DERIVED>
 class GTSAM_EXPORT Basis {
  public:
   /**
-   * Call weights for all x in vector X.
+   * Calculate weights for all x in vector X.
    * Returns M*N matrix where M is the size of the vector X,
-   * and N is the number of basis function.
+   * and N is the number of basis functions.
    */
   static Matrix WeightMatrix(size_t N, const Vector& X) {
     Matrix W(X.size(), N);
@@ -92,9 +97,13 @@ class GTSAM_EXPORT Basis {
   }
 
   /**
-   * Call weights for all x in vector X, with interval [a,b].
-   * Returns M*N matrix where M is the size of the vector X,
-   * and N is the number of basis function.
+   * @brief Calculate weights for all x in vector X, with interval [a,b].
+   *
+   * @param N The number of basis functions.
+   * @param X The vector for which to compute the weights.
+   * @param a The lower bound for the interval range.
+   * @param b The upper bound for the interval range.
+   * @return Returns M*N matrix where M is the size of the vector X.
    */
   static Matrix WeightMatrix(size_t N, const Vector& X, double a, double b) {
     Matrix W(X.size(), N);
@@ -104,11 +113,11 @@ class GTSAM_EXPORT Basis {
   }
 
   /**
-   * EvaluationFunctor calculate f(x;p) at a given `x`, applied to Parameters
-   * `p`. This functor is used to evaluate a parameterized function at a given
-   * scalar value x. When given a specific N*1 vector of Parameters, returns the
-   * scalar value of the function at x, possibly with Jacobian wrpt the
-   * parameters.
+   * An instance of an EvaluationFunctor calculates f(x;p) at a given `x`,
+   * applied to Parameters `p`.
+   * This functor is used to evaluate a parameterized function at a given scalar
+   * value x. When given a specific N*1 vector of Parameters, returns the scalar
+   * value of the function at x, possibly with Jacobians wrpt the parameters.
    */
   class EvaluationFunctor {
    protected:
@@ -127,16 +136,16 @@ class GTSAM_EXPORT Basis {
         : weights_(DERIVED::CalculateWeights(N, x, a, b)) {}
 
     /// Regular 1D evaluation
-    double apply(const typename DERIVED::Parameters& f,
+    double apply(const typename DERIVED::Parameters& p,
                  OptionalJacobian<-1, -1> H = boost::none) const {
       if (H) *H = weights_;
-      return (weights_ * f)(0);
+      return (weights_ * p)(0);
     }
 
     /// c++ sugar
-    double operator()(const typename DERIVED::Parameters& f,
+    double operator()(const typename DERIVED::Parameters& p,
                       OptionalJacobian<-1, -1> H = boost::none) const {
-      return apply(f, H);  // might call apply in derived
+      return apply(p, H);  // might call apply in derived
     }
 
     void print(const std::string& s = "") const {
@@ -148,7 +157,7 @@ class GTSAM_EXPORT Basis {
    * VectorEvaluationFunctor at a given x, applied to ParameterMatrix<M>.
    * This functor is used to evaluate a parameterized function at a given scalar
    * value x. When given a specific M*N parameters, returns an M-vector the M
-   * corresponding functions at x, possibly with Jacobian wrpt the parameters.
+   * corresponding functions at x, possibly with Jacobians wrpt the parameters.
    */
   template <int M>
   class VectorEvaluationFunctor : protected EvaluationFunctor {
@@ -157,8 +166,15 @@ class GTSAM_EXPORT Basis {
     using Jacobian = Eigen::Matrix<double, /*MxMN*/ M, -1>;
     Jacobian H_;
 
+    /**
+     * Calculate the `M*(M*N)` Jacobian of this functor with respect to
+     * the M*N parameter matrix `P`.
+     * We flatten assuming column-major order, e.g., if N=3 and M=2, we have
+     *      H =[ w(0) 0 w(1)  0 w(2)  0
+     *           0  w(0)  0 w(1)  0 w(2) ]
+     * i.e., the Kronecker product of weights_ with the MxM identity matrix.
+     */
     void calculateJacobian() {
-      using MatrixM = Eigen::Matrix<double, M, M>;
       H_ = kroneckerProductIdentity<M>(this->weights_);
     }
 
@@ -180,22 +196,25 @@ class GTSAM_EXPORT Basis {
     }
 
     /// M-dimensional evaluation
-    VectorM apply(const ParameterMatrix<M>& F,
+    VectorM apply(const ParameterMatrix<M>& P,
                   OptionalJacobian</*MxN*/ -1, -1> H = boost::none) const {
       if (H) *H = H_;
-      return F.matrix() * this->weights_.transpose();
+      return P.matrix() * this->weights_.transpose();
     }
 
     /// c++ sugar
-    VectorM operator()(const ParameterMatrix<M>& F,
+    VectorM operator()(const ParameterMatrix<M>& P,
                        OptionalJacobian</*MxN*/ -1, -1> H = boost::none) const {
-      return apply(F, H);
+      return apply(P, H);
     }
   };
 
   /**
-   * Given M*N Matrix of M-vectors at N Chebyshev points, predict component of
-   * row vector at given i, with 0<i<M.
+   * Given a M*N Matrix of M-vectors at N polynomial points, an instance of
+   * VectorComponentFunctor computes the N-vector value for a specific row
+   * component of the M-vectors at all the polynomial points.
+   *
+   * This component is specified by the row index i, with 0<i<M.
    */
   template <int M>
   class VectorComponentFunctor : public EvaluationFunctor {
@@ -203,6 +222,16 @@ class GTSAM_EXPORT Basis {
     using Jacobian = Eigen::Matrix<double, /*1xMN*/ 1, -1>;
     size_t rowIndex_;
     Jacobian H_;
+
+    /*
+     * Calculate the `1*(M*N)` Jacobian of this functor with respect to
+     * the M*N parameter matrix `P`.
+     * We flatten assuming column-major order, e.g., if N=3 and M=2, we have
+     *      H=[w(0) 0    w(1) 0    w(2) 0]    for rowIndex==0
+     *      H=[0    w(0) 0    w(1) 0    w(2)] for rowIndex==1
+     * i.e., one row of the Kronecker product of weights_ with the
+     * MxM identity matrix. See also VectorEvaluationFunctor.
+     */
     void calculateJacobian(size_t N) {
       H_.setZero(1, M * N);
       for (int j = 0; j < EvaluationFunctor::weights_.size(); j++)
@@ -225,17 +254,17 @@ class GTSAM_EXPORT Basis {
       calculateJacobian(N);
     }
 
-    /// Calculate component of component rowIndex_ of F
-    double apply(const ParameterMatrix<M>& F,
+    /// Calculate component of component rowIndex_ of P
+    double apply(const ParameterMatrix<M>& P,
                  OptionalJacobian</*1xMN*/ -1, -1> H = boost::none) const {
       if (H) *H = H_;
-      return F.row(rowIndex_) * EvaluationFunctor::weights_.transpose();
+      return P.row(rowIndex_) * EvaluationFunctor::weights_.transpose();
     }
 
     /// c++ sugar
-    double operator()(const ParameterMatrix<M>& F,
+    double operator()(const ParameterMatrix<M>& P,
                       OptionalJacobian</*1xMN*/ -1, -1> H = boost::none) const {
-      return apply(F, H);
+      return apply(P, H);
     }
   };
 
@@ -243,9 +272,15 @@ class GTSAM_EXPORT Basis {
    * Manifold EvaluationFunctor at a given x, applied to ParameterMatrix<M>.
    * This functor is used to evaluate a parameterized function at a given scalar
    * value x. When given a specific M*N parameters, returns an M-vector the M
-   * corresponding functions at x, possibly with Jacobian wrpt the parameters.
+   * corresponding functions at x, possibly with Jacobians wrpt the parameters.
+   *
+   * The difference with the VectorEvaluationFunctor is that after computing the
+   * M*1 vector xi=F(x;P), with x a scalar and P the M*N parameter vector, we
+   * also retract xi back to the T manifold.
+   * For example, if T==Rot3, then we first compute a 3-vector xi using x and P,
+   * and then map that 3-vector xi back to the Rot3 manifold, yielding a valid
+   * 3D rotation.
    */
-  /// Manifold interpolation
   template <class T>
   class ManifoldEvaluationFunctor
       : public VectorEvaluationFunctor<traits<T>::dimension> {
@@ -264,10 +299,10 @@ class GTSAM_EXPORT Basis {
         : Base(N, x, a, b) {}
 
     /// Manifold evaluation
-    T apply(const ParameterMatrix<M>& F,
+    T apply(const ParameterMatrix<M>& P,
             OptionalJacobian</*MxMN*/ -1, -1> H = boost::none) const {
       // Interpolate the M-dimensional vector to yield a vector in tangent space
-      Eigen::Matrix<double, M, 1> xi = Base::operator()(F, H);
+      Eigen::Matrix<double, M, 1> xi = Base::operator()(P, H);
 
       // Now call retract with this M-vector, possibly with derivatives
       Eigen::Matrix<double, M, M> D_result_xi;
@@ -283,9 +318,9 @@ class GTSAM_EXPORT Basis {
     }
 
     /// c++ sugar
-    T operator()(const ParameterMatrix<M>& F,
+    T operator()(const ParameterMatrix<M>& P,
                  OptionalJacobian</*MxN*/ -1, -1> H = boost::none) const {
-      return apply(F, H);  // might call apply in derived
+      return apply(P, H);  // might call apply in derived
     }
   };
 
@@ -309,7 +344,13 @@ class GTSAM_EXPORT Basis {
     }
   };
 
-  /// Given values f at the Chebyshev points, predict derivative at x
+  /**
+   * An instance of a DerivativeFunctor calculates f'(x;p) at a given `x`,
+   * applied to Parameters `p`.
+   * When given a scalar value x and a specific N*1 vector of Parameters,
+   * this functor returns the scalar derivative value of the function at x,
+   * possibly with Jacobians wrpt the parameters.
+   */
   class DerivativeFunctor : protected DerivativeFunctorBase {
    public:
     /// For serialization
@@ -320,19 +361,26 @@ class GTSAM_EXPORT Basis {
     DerivativeFunctor(size_t N, double x, double a, double b)
         : DerivativeFunctorBase(N, x, a, b) {}
 
-    double apply(const typename DERIVED::Parameters& f,
+    double apply(const typename DERIVED::Parameters& p,
                  OptionalJacobian</*1xN*/ -1, -1> H = boost::none) const {
       if (H) *H = this->weights_;
-      return (this->weights_ * f)(0);
+      return (this->weights_ * p)(0);
     }
     /// c++ sugar
-    double operator()(const typename DERIVED::Parameters& f,
+    double operator()(const typename DERIVED::Parameters& p,
                       OptionalJacobian</*1xN*/ -1, -1> H = boost::none) const {
-      return apply(f, H);  // might call apply in derived
+      return apply(p, H);  // might call apply in derived
     }
   };
 
-  /// Compute derivative vector of ParameterMatrix at specified point.
+  /**
+   * VectorDerivativeFunctor at a given x, applied to ParameterMatrix<M>.
+   *
+   * This functor is used to evaluate the derivatives of a parameterized
+   * function at a given scalar value x. When given a specific M*N parameters,
+   * returns an M-vector the M corresponding function derivatives at x, possibly
+   * with Jacobians wrpt the parameters.
+   */
   template <int M>
   class VectorDerivativeFunctor : protected DerivativeFunctorBase {
    protected:
@@ -340,8 +388,15 @@ class GTSAM_EXPORT Basis {
     using Jacobian = Eigen::Matrix<double, /*MxMN*/ M, -1>;
     Jacobian H_;
 
+    /**
+     * Calculate the `M*(M*N)` Jacobian of this functor with respect to
+     * the M*N parameter matrix `P`.
+     * We flatten assuming column-major order, e.g., if N=3 and M=2, we have
+     *      H =[ w(0) 0 w(1)  0 w(2)  0
+     *           0  w(0)  0 w(1)  0 w(2) ]
+     * i.e., the Kronecker product of weights_ with the MxM identity matrix.
+     */
     void calculateJacobian() {
-      using MatrixM = Eigen::Matrix<double, M, M>;
       H_ = kroneckerProductIdentity<M>(this->weights_);
     }
 
@@ -362,22 +417,25 @@ class GTSAM_EXPORT Basis {
       calculateJacobian();
     }
 
-    VectorM apply(const ParameterMatrix<M>& F,
+    VectorM apply(const ParameterMatrix<M>& P,
                   OptionalJacobian</*MxMN*/ -1, -1> H = boost::none) const {
       if (H) *H = H_;
-      return F.matrix() * this->weights_.transpose();
+      return P.matrix() * this->weights_.transpose();
     }
     /// c++ sugar
     VectorM operator()(
-        const ParameterMatrix<M>& F,
+        const ParameterMatrix<M>& P,
         OptionalJacobian</*MxMN*/ -1, -1> H = boost::none) const {
-      return apply(F, H);
+      return apply(P, H);
     }
   };
 
   /**
-   * Given M*N Matrix of M-vectors at N Chebyshev points, predict derivative for
-   * given row i, with 0<=i<M.
+   * Given a M*N Matrix of M-vectors at N polynomial points, an instance of
+   * ComponentDerivativeFunctor computes the N-vector derivative for a specific
+   * row component of the M-vectors at all the polynomial points.
+   *
+   * This component is specified by the row index i, with 0<i<M.
    */
   template <int M>
   class ComponentDerivativeFunctor : protected DerivativeFunctorBase {
@@ -386,6 +444,15 @@ class GTSAM_EXPORT Basis {
     size_t rowIndex_;
     Jacobian H_;
 
+    /*
+     * Calculate the `1*(M*N)` Jacobian of this functor with respect to
+     * the M*N parameter matrix `P`.
+     * We flatten assuming column-major order, e.g., if N=3 and M=2, we have
+     *      H=[w(0) 0    w(1) 0    w(2) 0]    for rowIndex==0
+     *      H=[0    w(0) 0    w(1) 0    w(2)] for rowIndex==1
+     * i.e., one row of the Kronecker product of weights_ with the
+     * MxM identity matrix. See also VectorDerivativeFunctor.
+     */
     void calculateJacobian(size_t N) {
       H_.setZero(1, M * N);
       for (int j = 0; j < this->weights_.size(); j++)
@@ -408,22 +475,22 @@ class GTSAM_EXPORT Basis {
       calculateJacobian(N);
     }
     /// Calculate derivative of component rowIndex_ of F
-    double apply(const ParameterMatrix<M>& F,
+    double apply(const ParameterMatrix<M>& P,
                  OptionalJacobian</*1xMN*/ -1, -1> H = boost::none) const {
       if (H) *H = H_;
-      return F.row(rowIndex_) * this->weights_.transpose();
+      return P.row(rowIndex_) * this->weights_.transpose();
     }
     /// c++ sugar
-    double operator()(const ParameterMatrix<M>& F,
+    double operator()(const ParameterMatrix<M>& P,
                       OptionalJacobian</*1xMN*/ -1, -1> H = boost::none) const {
-      return apply(F, H);
+      return apply(P, H);
     }
   };
 
   // Vector version for MATLAB :-(
-  static double Derivative(double x, const Vector& f,  //
+  static double Derivative(double x, const Vector& p,  //
                            OptionalJacobian</*1xN*/ -1, -1> H = boost::none) {
-    return DerivativeFunctor(x)(f.transpose(), H);
+    return DerivativeFunctor(x)(p.transpose(), H);
   }
 };
 

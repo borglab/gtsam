@@ -11,7 +11,9 @@
 
 /**
  *  @file  BasisFactors.h
+ *  @brief Factor definitions for various Basis functors.
  *  @author Varun Agrawal
+ *  @date July 4, 2020
  **/
 
 #pragma once
@@ -22,8 +24,9 @@
 namespace gtsam {
 
 /**
- * Factor for scalar BASIS evaluation.
- * @param BASIS: The basis class to use e.g. Chebyshev2
+ * @brief Factor for scalar BASIS evaluation.
+ *
+ * @tparam BASIS The basis class to use e.g. Chebyshev2
  */
 template <class BASIS>
 class GTSAM_EXPORT EvaluationFactor : public FunctorizedFactor<double, Vector> {
