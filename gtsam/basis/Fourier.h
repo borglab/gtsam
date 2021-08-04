@@ -30,8 +30,12 @@ class GTSAM_EXPORT FourierBasis : public Basis<FourierBasis> {
   using DiffMatrix = Eigen::Matrix<double, /*NxN*/ -1, -1>;
 
   /**
-   *  Evaluate Real Fourier Weights of size N
-   *  e.g. N=5 yields bases: 1, cos(x), sin(x), cos(2*x), sin(2*x)
+   * @brief Evaluate Real Fourier Weights of size N in interval [a, b],
+   *        e.g. N=5 yields bases: 1, cos(x), sin(x), cos(2*x), sin(2*x)
+   * 
+   * @param N The degree of the polynomial to use.
+   * @param x The point at which to compute the derivaive weights.
+   * @return Weights 
    */
   static Weights CalculateWeights(size_t N, double x) {
     Weights b(N);
@@ -41,6 +45,25 @@ class GTSAM_EXPORT FourierBasis : public Basis<FourierBasis> {
       b[i + 1] = sin(n * x);
     }
     return b;
+  }
+
+  /**
+   *  
+   */
+
+  /**
+   * @brief Evaluate Real Fourier Weights of size N in interval [a, b],
+   *        e.g. N=5 yields bases: 1, cos(x), sin(x), cos(2*x), sin(2*x)
+   * 
+   * @param N The degree of the polynomial to use.
+   * @param x The point at which to compute the weights.
+   * @param a Lower bound of interval.
+   * @param b Upper bound of interval.
+   * @return Weights 
+   */
+  static Weights CalculateWeights(size_t N, double x, double a, double b) {
+    // TODO(Varun) How do we enforce an interval for Fourier series?
+    return CalculateWeights(N, x);
   }
 
   /**
@@ -59,9 +82,29 @@ class GTSAM_EXPORT FourierBasis : public Basis<FourierBasis> {
     return D;
   }
 
-  /// Get weights at a given x that calculate the derivative.
+  /**
+   * @brief Get weights at a given x that calculate the derivative.
+   *
+   * @param N The degree of the polynomial to use.
+   * @param x The point at which to compute the derivaive weights.
+   * @return Weights
+   */
   static Weights DerivativeWeights(size_t N, double x) {
     return CalculateWeights(N, x) * DifferentiationMatrix(N);
+  }
+
+  /**
+   * @brief Get derivative weights at a given x that calculate the derivative,
+  in the interval [a, b].
+   *
+   * @param N The degree of the polynomial to use.
+   * @param x The point at which to compute the derivaive weights.
+   * @param a Lower bound of interval.
+   * @param b Upper bound of interval.
+   * @return Weights
+   */
+  static Weights DerivativeWeights(size_t N, double x, double a, double b) {
+    return CalculateWeights(N, x, a, b) * DifferentiationMatrix(N);
   }
 
 };  // FourierBasis
