@@ -21,11 +21,6 @@ class FourierBasis {
 class Chebyshev1Basis {
   static Matrix CalculateWeights(size_t N, double x);
   static Matrix WeightMatrix(size_t N, Vector X);
-
-  // TODO need support for nested classes
-  // class Derivative {
-  //   Derivative(size_t N, double x);
-  // };
 };
 
 class Chebyshev2Basis {

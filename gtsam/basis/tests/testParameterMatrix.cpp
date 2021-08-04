@@ -78,13 +78,13 @@ TEST(ParameterMatrix, Setters) {
   ParameterMatrix<M> params(Matrix::Zero(M, N));
   Matrix expected = Matrix::Zero(M, N);
 
-  // setRow
-  params.setRow(0, Vector::Ones(N));
+  // row
+  params.row(0) = Vector::Ones(N);
   expected.row(0) = Vector::Ones(N);
   EXPECT(assert_equal(expected, params.matrix()));
 
-  // setCol
-  params.setCol(2, Vector::Ones(M));
+  // col
+  params.col(2) = Vector::Ones(M);
   expected.col(2) = Vector::Ones(M);
 
   EXPECT(assert_equal(expected, params.matrix()));

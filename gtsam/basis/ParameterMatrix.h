@@ -79,6 +79,14 @@ class ParameterMatrix {
   }
 
   /**
+   * Set the matrix row specified by `index`.
+   * @param index: The row index to set.
+   */
+  auto row(size_t index) -> Eigen::Block<MatrixType, 1, -1, false> {
+    return matrix_.row(index);
+  }
+
+  /**
    * Get the matrix column specified by `index`.
    * @param index: The column index to retrieve.
    */
@@ -87,21 +95,11 @@ class ParameterMatrix {
   }
 
   /**
-   * Set the matrix row specified by `index`.
-   * @param index: The row index to set.
-   * @param row: The Eigen (row) vector used to set the values.
-   */
-  void setRow(size_t index, const Eigen::Matrix<double, 1, -1>& row) {
-    matrix_.row(index) = row;
-  }
-
-  /**
    * Set the matrix column specified by `index`.
    * @param index: The column index to set.
-   * @param row: The Eigen (column) vector used to set the values.
    */
-  void setCol(size_t index, const Eigen::Matrix<double, M, 1>& col) {
-    matrix_.col(index) = col;
+  auto col(size_t index) -> Eigen::Block<MatrixType, M, 1, true> {
+    return matrix_.col(index);
   }
 
   /**
