@@ -4,7 +4,8 @@
 
 namespace gtsam {
 
-// TODO(gerry): add all the Functors to the Basis interfaces, e.g. `EvaluationFunctor`
+// TODO(gerry): add all the Functors to the Basis interfaces, e.g.
+// `EvaluationFunctor`
 
 #include <gtsam/basis/Fourier.h>
 
@@ -125,21 +126,20 @@ virtual class ManifoldEvaluationFactor : gtsam::NoiseModelFactor {
 // TODO(gerry): Add `DerivativeFactor`, `VectorDerivativeFactor`, and
 // `ComponentDerivativeFactor`
 
-// TODO(Varun): Get working
-// #include <gtsam/basis/FitBasis.h>
-// template <BASIS = {gtsam::FourierBasis, gtsam::Chebyshev1Basis,
-//                    gtsam::Chebyshev2Basis, gtsam::Chebyshev2}>
-// class FitBasis {
-//   FitBasis(size_t N, const gtsam::Sequence& sequence,
-//            const gtsam::noiseModel::Base* model);
+#include <gtsam/basis/FitBasis.h>
+template <BASIS = {gtsam::FourierBasis, gtsam::Chebyshev1Basis,
+                   gtsam::Chebyshev2Basis, gtsam::Chebyshev2}>
+class FitBasis {
+  FitBasis(size_t N, const std::map<double, double>& sequence,
+           const gtsam::noiseModel::Base* model);
 
-//   static gtsam::NonlinearFactorGraph NonlinearGraph(
-//       const gtsam::Sequence& sequence, const gtsam::noiseModel::Base* model,
-//       size_t N);
-//   static gtsam::GaussianFactorGraph::shared_ptr LinearGraph(
-//       const gtsam::Sequence& sequence, const gtsam::noiseModel::Base* model,
-//       size_t N);
-//   Parameters parameters() const;
-// };
+  static gtsam::NonlinearFactorGraph NonlinearGraph(
+      const std::map<double, double>& sequence,
+      const gtsam::noiseModel::Base* model, size_t N);
+  static gtsam::GaussianFactorGraph::shared_ptr LinearGraph(
+      const std::map<double, double>& sequence,
+      const gtsam::noiseModel::Base* model, size_t N);
+  Parameters parameters() const;
+};
 
 }  // namespace gtsam
