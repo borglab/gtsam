@@ -12,6 +12,8 @@ jobs:
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
       GTSAM_BUILD_UNSTABLE: ${{ matrix.build_unstable }}
+      BOOST_ROOT: C:\hostedtoolcache\windows\Boost\1.72.0\x86_64
+
     strategy:
       fail-fast: false
       matrix:
@@ -61,19 +63,18 @@ jobs:
           # Scoop modifies the PATH so we make the modified PATH global.
           echo "$env:PATH" >> $GITHUB_PATH
 
-      - name: Download and install Boost
-        uses: MarkusJx/install-boost@v1.0.1
-        id: install-boost
-        with:
-          boost_version: 1.72.0
-          toolset: msvc14.2
+      - name: Install Boost
+        run: |
+          # Snippet from: https://github.com/actions/virtual-environments/issues/2667
+          # Use the boost_1_72_0-msvc-14.1-64.exe for Windows 2016
+          $Url = "https://sourceforge.net/projects/boost/files/boost-binaries/1.72.0/boost_1_72_0-msvc-14.2-64.exe"
+          (New-Object System.Net.WebClient).DownloadFile($Url, "$env:TEMP\boost.exe")
+          Start-Process -Wait -FilePath "$env:TEMP\boost.exe" "/SILENT","/SP-","/SUPPRESSMSGBOXES","/DIR=C:\hostedtoolcache\windows\Boost\1.72.0\x86_64"
 
       - name: Checkout
         uses: actions/checkout@v2
 
       - name: Build
-        env:
-          BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
         run: |
           cmake -E remove_directory build
           cmake -B build -S . -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DBOOST_ROOT="${env:BOOST_ROOT}" -DBOOST_INCLUDEDIR="${env:BOOST_ROOT}\boost\include" -DBOOST_LIBRARYDIR="${env:BOOST_ROOT}\lib"
