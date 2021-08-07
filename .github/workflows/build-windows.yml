@@ -12,7 +12,7 @@ jobs:
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
       GTSAM_BUILD_UNSTABLE: ${{ matrix.build_unstable }}
-      BOOST_ROOT: C:\hostedtoolcache\windows\Boost\1.72.0\x86_64
+      BOOST_ROOT: C:\hostedtoolcache\windows\Boost\1.67.0\x86_64
 
     strategy:
       fail-fast: false
@@ -66,10 +66,10 @@ jobs:
       - name: Install Boost
         run: |
           # Snippet from: https://github.com/actions/virtual-environments/issues/2667
-          # Use the boost_1_72_0-msvc-14.1-64.exe for Windows 2016
-          $Url = "https://sourceforge.net/projects/boost/files/boost-binaries/1.72.0/boost_1_72_0-msvc-14.2-64.exe"
+          # Use the boost_1_67_0-msvc-14.1-64.exe for Windows 2016
+          $Url = "https://sourceforge.net/projects/boost/files/boost-binaries/1.67.0/boost_1_67_0-msvc-14.1-64.exe"
           (New-Object System.Net.WebClient).DownloadFile($Url, "$env:TEMP\boost.exe")
-          Start-Process -Wait -FilePath "$env:TEMP\boost.exe" "/SILENT","/SP-","/SUPPRESSMSGBOXES","/DIR=C:\hostedtoolcache\windows\Boost\1.72.0\x86_64"
+          Start-Process -Wait -FilePath "$env:TEMP\boost.exe" "/SILENT","/SP-","/SUPPRESSMSGBOXES","/DIR=C:\hostedtoolcache\windows\Boost\1.67.0\x86_64"
 
       - name: Checkout
         uses: actions/checkout@v2
