@@ -12,7 +12,8 @@ jobs:
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
       GTSAM_BUILD_UNSTABLE: ${{ matrix.build_unstable }}
-      BOOST_ROOT: C:\hostedtoolcache\windows\Boost\1.67.0\x86_64
+      BOOST_VERSION: 1.67.0
+      BOOST_EXE: boost_1_67_0-msvc-14.1-64.exe
 
     strategy:
       fail-fast: false
@@ -38,7 +39,7 @@ jobs:
             compiler: cl
 
     steps:
-      - name: Install
+      - name: Install Dependencies
         shell: powershell
         run: |
           Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh')
@@ -57,19 +58,25 @@ jobs:
             echo "CC=clang" >> $GITHUB_ENV
             echo "CXX=clang++" >> $GITHUB_ENV
           } else {
-            echo "CC=${{ matrix.compiler }}" >> $GITHUB_ENV
-            echo "CXX=${{ matrix.compiler }}" >> $GITHUB_ENV
+            echo "CC=${{ matrix.compiler }}" >> $env:GITHUB_ENV
+            echo "CXX=${{ matrix.compiler }}" >> $env:GITHUB_ENV
           }
           # Scoop modifies the PATH so we make the modified PATH global.
-          echo "$env:PATH" >> $GITHUB_PATH
+          echo "$env:PATH" >> $env:GITHUB_PATH
 
       - name: Install Boost
+        shell: powershell
         run: |
           # Snippet from: https://github.com/actions/virtual-environments/issues/2667
-          # Use the boost_1_67_0-msvc-14.1-64.exe for Windows 2016
-          $Url = "https://sourceforge.net/projects/boost/files/boost-binaries/1.67.0/boost_1_67_0-msvc-14.1-64.exe"
-          (New-Object System.Net.WebClient).DownloadFile($Url, "$env:TEMP\boost.exe")
-          Start-Process -Wait -FilePath "$env:TEMP\boost.exe" "/SILENT","/SP-","/SUPPRESSMSGBOXES","/DIR=C:\hostedtoolcache\windows\Boost\1.67.0\x86_64"
+          $BOOST_PATH = "C:\hostedtoolcache\windows\Boost\$env:BOOST_VERSION\x86_64"
+
+          # Use the prebuilt binary for Windows
+          $Url = "https://sourceforge.net/projects/boost/files/boost-binaries/$env:BOOST_VERSION/$env:BOOST_EXE"
+          (New-Object System.Net.WebClient).DownloadFile($Url, "$env:TEMP\boost.exe")
+          Start-Process -Wait -FilePath "$env:TEMP\boost.exe" "/SILENT","/SP-","/SUPPRESSMSGBOXES","/DIR=$BOOST_PATH"
+
+          # Set the BOOST_ROOT variable
+          echo "BOOST_ROOT=$BOOST_PATH" >> $env:GITHUB_ENV
 
       - name: Checkout
         uses: actions/checkout@v2
