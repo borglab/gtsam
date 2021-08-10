@@ -12,8 +12,8 @@ jobs:
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
       GTSAM_BUILD_UNSTABLE: ${{ matrix.build_unstable }}
-      BOOST_VERSION: 1.67.0
-      BOOST_EXE: boost_1_67_0-msvc-14.1
+      BOOST_VERSION: 1.72.0
+      BOOST_EXE: boost_1_72_0-msvc-14.2
 
     strategy:
       fail-fast: false
