@@ -522,6 +522,14 @@ virtual class DoglegParams : gtsam::NonlinearOptimizerParams {
   void setVerbosityDL(string verbosityDL) const;
 };
 
+#include <gtsam/nonlinear/GncParams.h>
+template<class BaseOptimizerParameters>
+class GncParams {
+  GncParams(const BaseOptimizerParameters& baseOptimizerParams);
+  GncParams();
+  void print(const std::string& str) const;
+};
+  
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 virtual class NonlinearOptimizer {
   gtsam::Values optimize();
@@ -550,6 +558,15 @@ virtual class DoglegOptimizer : gtsam::NonlinearOptimizer {
                   const gtsam::Values& initialValues,
                   const gtsam::DoglegParams& params);
   double getDelta() const;
+};
+  
+#include <gtsam/nonlinear/GncOptimizer.h>
+template<class GncParameters>
+class GncOptimizer {
+  GncOptimizer(const gtsam::NonlinearFactorGraph& graph,
+               const gtsam::Values& initialValues,
+               const gtsam::GncParameters& params);
+  gtsam::Values optimize();
 };
 
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
