@@ -527,7 +527,7 @@ template<class BaseOptimizerParameters>
 class GncParams {
   GncParams(const BaseOptimizerParameters& baseOptimizerParams);
   GncParams();
-  void print(const std::string& str) const;
+  void print(const string& str) const;
 };
   
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
