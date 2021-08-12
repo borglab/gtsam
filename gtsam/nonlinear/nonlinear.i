@@ -523,12 +523,15 @@ virtual class DoglegParams : gtsam::NonlinearOptimizerParams {
 };
 
 #include <gtsam/nonlinear/GncParams.h>
-template<PARAMS = {gtsam::GaussNewtonParams, gtsam::LevenbergMarquardtParams}>
+template<PARAMS>
 virtual class GncParams {
   GncParams(const PARAMS& baseOptimizerParams);
   GncParams();
   void print(const string& str) const;
 };
+
+typedef GncParams<gtsam::GaussNewtonParams> GncGaussNewtonParams;
+typedef GncParams<gtsam::LevenbergMarquardtParams> GncLMParams;
   
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 virtual class NonlinearOptimizer {
@@ -561,14 +564,16 @@ virtual class DoglegOptimizer : gtsam::NonlinearOptimizer {
 };
   
 #include <gtsam/nonlinear/GncOptimizer.h>
-template<PARAMS = {gtsam::GncParams<gtsam::GaussNewtonParams>,
-                   gtsam::GncParams<gtsam::LevenbergMarquardtParams>}>
+template<PARAMS>
 virtual class GncOptimizer {
   GncOptimizer(const gtsam::NonlinearFactorGraph& graph,
                const gtsam::Values& initialValues,
                const PARAMS& params);
   gtsam::Values optimize();
 };
+
+typedef gtsam::GncOptimizer<gtsam::GncParams<gtsam::GaussNewtonParams> > GncGaussNewtonOptimizer;
+typedef gtsam::GncOptimizer<gtsam::GncParams<gtsam::LevenbergMarquardtParams> > GncLMOptimizer;
 
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 virtual class LevenbergMarquardtOptimizer : gtsam::NonlinearOptimizer {
