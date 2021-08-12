@@ -17,8 +17,9 @@ import unittest
 import gtsam
 from gtsam import (DoglegOptimizer, DoglegParams,
                    DummyPreconditionerParameters, GaussNewtonOptimizer,
-                   GaussNewtonParams, LevenbergMarquardtOptimizer,
-                   LevenbergMarquardtParams, NonlinearFactorGraph, Ordering,
+                   GaussNewtonParams, GncParams, GncOptimizer,
+                   LevenbergMarquardtOptimizer, LevenbergMarquardtParams,
+                   NonlinearFactorGraph, Ordering,
                    PCGSolverParameters, Point2, PriorFactorPoint2, Values)
 from gtsam.utils.test_case import GtsamTestCase
 
