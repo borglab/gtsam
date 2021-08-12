@@ -42,7 +42,7 @@ static double Chi2inv(const double alpha, const size_t dofs) {
 
 /* ************************************************************************* */
 template<class GncParameters>
-class GncOptimizer {
+class GTSAM_EXPORT GncOptimizer {
  public:
   /// For each parameter, specify the corresponding optimizer: e.g., GaussNewtonParams -> GaussNewtonOptimizer.
   typedef typename GncParameters::OptimizerType BaseOptimizer;
