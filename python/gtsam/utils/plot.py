@@ -312,7 +312,7 @@ def plot_pose3(
     Args:
         fignum: Integer representing the figure number to use for plotting.
         pose (gtsam.Pose3): 3D pose to be plotted.
-        axis_length:
+        axis_length: The length of the camera axes.
         P: Marginal covariance matrix to plot the uncertainty of the estimation.
         axis_labels: List of axis labels to set.
 
