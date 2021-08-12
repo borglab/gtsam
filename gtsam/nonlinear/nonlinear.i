@@ -523,7 +523,7 @@ virtual class DoglegParams : gtsam::NonlinearOptimizerParams {
 };
 
 #include <gtsam/nonlinear/GncParams.h>
-template<PARAMS = {gtsam::DoglegParams, gtsam::GaussNewtonParams, gtsam::LevenbergMarquardtParams}>
+template<PARAMS = {gtsam::GaussNewtonParams, gtsam::LevenbergMarquardtParams}>
 class GncParams {
   GncParams(const PARAMS& baseOptimizerParams);
   GncParams();
@@ -561,7 +561,8 @@ virtual class DoglegOptimizer : gtsam::NonlinearOptimizer {
 };
   
 #include <gtsam/nonlinear/GncOptimizer.h>
-template<PARAMS = {gtsam::GncParameters}>
+template<PARAMS = {gtsam::GncParams<gtsam::GaussNewtonParams>,
+                   gtsam::GncParams<gtsam::LevenbergMarquardtParams>}>
 class GncOptimizer {
   GncOptimizer(const gtsam::NonlinearFactorGraph& graph,
                const gtsam::Values& initialValues,
