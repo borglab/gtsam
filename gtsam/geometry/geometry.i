@@ -982,6 +982,24 @@ gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3Fisheye& cameras,
 gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3Unified& cameras,
                                 const gtsam::Point2Vector& measurements,
                                 double rank_tol, bool optimize);
+gtsam::Point3 triangulateNonlinear(const gtsam::Pose3Vector& poses,
+                                   gtsam::Cal3_S2* sharedCal,
+                                   const gtsam::Point2Vector& measurements,
+                                   const gtsam::Point3& initialEstimate);
+gtsam::Point3 triangulateNonlinear(const gtsam::Pose3Vector& poses,
+                                   gtsam::Cal3DS2* sharedCal,
+                                   const gtsam::Point2Vector& measurements,
+                                   const gtsam::Point3& initialEstimate);
+gtsam::Point3 triangulateNonlinear(const gtsam::Pose3Vector& poses,
+                                   gtsam::Cal3Bundler* sharedCal,
+                                   const gtsam::Point2Vector& measurements,
+                                   const gtsam::Point3& initialEstimate);
+gtsam::Point3 triangulateNonlinear(const gtsam::CameraSetCal3_S2& cameras,
+                                   const gtsam::Point2Vector& measurements,
+                                   const gtsam::Point3& initialEstimate);
+gtsam::Point3 triangulateNonlinear(const gtsam::CameraSetCal3Bundler& cameras,
+                                   const gtsam::Point2Vector& measurements,
+                                   const gtsam::Point3& initialEstimate);
 
 #include <gtsam/geometry/BearingRange.h>
 template <POSE, POINT, BEARING, RANGE>

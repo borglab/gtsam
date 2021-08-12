@@ -11,8 +11,6 @@ import os.path as osp
 import sys
 import unittest
 
-from loguru import logger
-
 sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
 
 from gtwrap.matlab_wrapper import MatlabWrapper
@@ -43,10 +41,6 @@ class TestWrap(unittest.TestCase):
 
         # Create the `actual/matlab` directory
         os.makedirs(self.MATLAB_ACTUAL_DIR, exist_ok=True)
-
-        # set the log level to INFO by default
-        logger.remove()  # remove the default sink
-        logger.add(sys.stderr, format="{time} {level} {message}", level="INFO")
 
     def compare_and_diff(self, file):
         """
