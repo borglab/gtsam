@@ -17,7 +17,7 @@ import unittest
 import gtsam
 from gtsam import (DoglegOptimizer, DoglegParams,
                    DummyPreconditionerParameters, GaussNewtonOptimizer,
-                   GaussNewtonParams, GncParams, GncOptimizer,
+                   GaussNewtonParams, GncLMParams, GncLMOptimizer,
                    LevenbergMarquardtOptimizer, LevenbergMarquardtParams,
                    NonlinearFactorGraph, Ordering,
                    PCGSolverParameters, Point2, PriorFactorPoint2, Values)
@@ -80,8 +80,8 @@ class TestScenario(GtsamTestCase):
         self.assertAlmostEqual(0, fg.error(actual3))
         
         # Graduated Non-Convexity (GNC)
-        gncParams = GncParams()
-        actual4 = GncOptimizer(fg, initial_values, gncParams).optimize()
+        gncParams = GncLMParams()
+        actual4 = GncLMOptimizer(fg, initial_values, gncParams).optimize()
         self.assertAlmostEqual(0, fg.error(actual4))
         
 
