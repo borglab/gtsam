@@ -78,6 +78,12 @@ class TestScenario(GtsamTestCase):
         dlParams.setOrdering(ordering)
         actual3 = DoglegOptimizer(fg, initial_values, dlParams).optimize()
         self.assertAlmostEqual(0, fg.error(actual3))
+        
+        # Graduated Non-Convexity (GNC)
+        gncParams = GncParams()
+        actual4 = GncOptimizer(fg, initial_values, gncParams).optimize()
+        self.assertAlmostEqual(0, fg.error(actual4))
+        
 
 
 if __name__ == "__main__":
