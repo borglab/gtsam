@@ -4,7 +4,7 @@ import numpy as np
 import gtsam
 from gtsam import Values
 
-def circlePose3(numPoses: int = 8, radius: float = 1.0, symbolChar='\0') -> Values:
+def circlePose3(numPoses: int = 8, radius: float = 1.0, symbolChar: str = '\0') -> Values:
     """
     circlePose3 generates a set of poses in a circle. This function
     returns those poses inside a gtsam.Values object, with sequential
