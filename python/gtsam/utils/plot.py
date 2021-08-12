@@ -64,7 +64,7 @@ def ellipsoid(
 
 
 def plot_covariance_ellipse_3d(
-    axes, origin: Point3, P, scale: float = 1, n: int = 8, alpha: float = 0.5
+    axes, origin: Point3, P: np.ndarray, scale: float = 1, n: int = 8, alpha: float = 0.5
 ) -> None:
     """
     Plots a Gaussian as an uncertainty ellipse
@@ -76,7 +76,7 @@ def plot_covariance_ellipse_3d(
     Args:
         axes (matplotlib.axes.Axes): Matplotlib axes.
         origin: The origin in the world frame.
-        P (numpy.ndarray): The marginal covariance matrix of the 3D point
+        P: The marginal covariance matrix of the 3D point
             which will be represented as an ellipse.
         scale: Scaling factor of the radii of the covariance ellipse.
         n: Defines the granularity of the ellipse. Higher values indicate finer ellipses.
@@ -190,8 +190,13 @@ def plot_point3_on_axes(axes, point, linespec, P=None):
         plot_covariance_ellipse_3d(axes, point, P)
 
 
-def plot_point3(fignum: int, point: Point3, linespec: str, P: np.ndarray = None,
-                axis_labels: Iterable[str] = ('X axis', 'Y axis', 'Z axis')) -> plt.Figure:
+def plot_point3(
+    fignum: int,
+    point: Point3,
+    linespec: str,
+    P: np.ndarray = None,
+    axis_labels: Iterable[str] = ("X axis", "Y axis", "Z axis"),
+) -> plt.Figure:
     """
     Plot a 3D point on given figure with given `linespec`.
 
@@ -294,17 +299,22 @@ def plot_pose3_on_axes(axes, pose, axis_length=0.1, P=None, scale=1):
         plot_covariance_ellipse_3d(axes, origin, gPp)
 
 
-def plot_pose3(fignum, pose, axis_length=0.1, P=None,
-               axis_labels=('X axis', 'Y axis', 'Z axis')):
+def plot_pose3(
+    fignum: int,
+    pose: Pose3,
+    axis_length: float = 0.1,
+    P: np.ndarray = None,
+    axis_labels: Iterable[str] = ("X axis", "Y axis", "Z axis"),
+) -> plt.Figure:
     """
     Plot a 3D pose on given figure with given `axis_length`.
 
     Args:
-        fignum (int): Integer representing the figure number to use for plotting.
+        fignum: Integer representing the figure number to use for plotting.
         pose (gtsam.Pose3): 3D pose to be plotted.
-        linespec (string): String representing formatting options for Matplotlib.
-        P (numpy.ndarray): Marginal covariance matrix to plot the uncertainty of the estimation.
-        axis_labels (iterable[string]): List of axis labels to set.
+        axis_length:
+        P: Marginal covariance matrix to plot the uncertainty of the estimation.
+        axis_labels: List of axis labels to set.
 
     Returns:
         fig: The matplotlib figure.
