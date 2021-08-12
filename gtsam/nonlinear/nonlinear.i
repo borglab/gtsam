@@ -530,8 +530,8 @@ virtual class GncParams {
   void print(const string& str) const;
 };
 
-typedef GncParams<gtsam::GaussNewtonParams> GncGaussNewtonParams;
-typedef GncParams<gtsam::LevenbergMarquardtParams> GncLMParams;
+typedef gtsam::GncParams<gtsam::GaussNewtonParams> GncGaussNewtonParams;
+typedef gtsam::GncParams<gtsam::LevenbergMarquardtParams> GncLMParams;
   
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 virtual class NonlinearOptimizer {
