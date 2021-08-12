@@ -58,40 +58,42 @@ Point2_ p(2);
 TEST(ExpressionFactor, Leaf) {
   using namespace leaf;
 
-  // Create old-style factor to create expected value and derivatives
+  // Create old-style factor to create expected value and derivatives.
   PriorFactor<Point2> old(2, Point2(0, 0), model);
 
-  // Concise version
+  // Create the equivalent factor with expression.
   ExpressionFactor<Point2> f(model, Point2(0, 0), p);
+
+  // Check values and derivatives.
   EXPECT_DOUBLES_EQUAL(old.error(values), f.error(values), 1e-9);
   EXPECT_LONGS_EQUAL(2, f.dim());
   boost::shared_ptr<GaussianFactor> gf2 = f.linearize(values);
-  EXPECT( assert_equal(*old.linearize(values), *gf2, 1e-9));
+  EXPECT(assert_equal(*old.linearize(values), *gf2, 1e-9));
 }
 
 /* ************************************************************************* */
-// non-zero noise model
+// Test leaf expression with noise model of different variance.
 TEST(ExpressionFactor, Model) {
   using namespace leaf;
 
   SharedNoiseModel model = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.01));
 
-  // Create old-style factor to create expected value and derivatives
+  // Create old-style factor to create expected value and derivatives.
   PriorFactor<Point2> old(2, Point2(0, 0), model);
 
-  // Concise version
+  // Create the equivalent factor with expression.
   ExpressionFactor<Point2> f(model, Point2(0, 0), p);
 
-  // Check values and derivatives
+  // Check values and derivatives.
   EXPECT_DOUBLES_EQUAL(old.error(values), f.error(values), 1e-9);
   EXPECT_LONGS_EQUAL(2, f.dim());
   boost::shared_ptr<GaussianFactor> gf2 = f.linearize(values);
-  EXPECT( assert_equal(*old.linearize(values), *gf2, 1e-9));
+  EXPECT(assert_equal(*old.linearize(values), *gf2, 1e-9));
   EXPECT_CORRECT_FACTOR_JACOBIANS(f, values, 1e-5, 1e-5); // another way
 }
 
 /* ************************************************************************* */
-// Constrained noise model
+// Test leaf expression with constrained noise model.
 TEST(ExpressionFactor, Constrained) {
   using namespace leaf;
 
@@ -105,7 +107,7 @@ TEST(ExpressionFactor, Constrained) {
   EXPECT_DOUBLES_EQUAL(old.error(values), f.error(values), 1e-9);
   EXPECT_LONGS_EQUAL(2, f.dim());
   boost::shared_ptr<GaussianFactor> gf2 = f.linearize(values);
-  EXPECT( assert_equal(*old.linearize(values), *gf2, 1e-9));
+  EXPECT(assert_equal(*old.linearize(values), *gf2, 1e-9));
 }
 
 /* ************************************************************************* */
@@ -129,7 +131,7 @@ TEST(ExpressionFactor, Unary) {
   boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
   boost::shared_ptr<JacobianFactor> jf = //
       boost::dynamic_pointer_cast<JacobianFactor>(gf);
-  EXPECT( assert_equal(expected, *jf, 1e-9));
+  EXPECT(assert_equal(expected, *jf, 1e-9));
 }
 
 /* ************************************************************************* */
@@ -142,11 +144,13 @@ Vector9 wide(const Point3& p, OptionalJacobian<9,3> H) {
   if (H) *H << I_3x3, I_3x3, I_3x3;
   return v;
 }
+
 typedef Eigen::Matrix<double,9,9> Matrix9;
 Vector9 id9(const Vector9& v, OptionalJacobian<9,9> H) {
   if (H) *H = Matrix9::Identity();
   return v;
 }
+
 TEST(ExpressionFactor, Wide) {
   // Create some values
   Values values;
@@ -207,6 +211,7 @@ TEST(ExpressionFactor, Binary) {
   EXPECT(assert_equal(expected25, (Matrix ) (*r)->dTdA1, 1e-9));
   EXPECT(assert_equal(expected22, (Matrix ) (*r)->dTdA2, 1e-9));
 }
+
 /* ************************************************************************* */
 // Unary(Binary(Leaf,Leaf))
 TEST(ExpressionFactor, Shallow) {
@@ -263,7 +268,7 @@ TEST(ExpressionFactor, Shallow) {
   EXPECT_DOUBLES_EQUAL(expected_error, f2.error(values), 1e-9);
   EXPECT_LONGS_EQUAL(2, f2.dim());
   boost::shared_ptr<GaussianFactor> gf2 = f2.linearize(values);
-  EXPECT( assert_equal(*expected, *gf2, 1e-9));
+  EXPECT(assert_equal(*expected, *gf2, 1e-9));
 }
 
 /* ************************************************************************* */
@@ -296,7 +301,7 @@ TEST(ExpressionFactor, tree) {
   EXPECT_DOUBLES_EQUAL(expected_error, f.error(values), 1e-9);
   EXPECT_LONGS_EQUAL(2, f.dim());
   boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
-  EXPECT( assert_equal(*expected, *gf, 1e-9));
+  EXPECT(assert_equal(*expected, *gf, 1e-9));
 
   // Concise version
   ExpressionFactor<Point2> f2(model, measured,
@@ -304,14 +309,14 @@ TEST(ExpressionFactor, tree) {
   EXPECT_DOUBLES_EQUAL(expected_error, f2.error(values), 1e-9);
   EXPECT_LONGS_EQUAL(2, f2.dim());
   boost::shared_ptr<GaussianFactor> gf2 = f2.linearize(values);
-  EXPECT( assert_equal(*expected, *gf2, 1e-9));
+  EXPECT(assert_equal(*expected, *gf2, 1e-9));
 
   // Try ternary version
   ExpressionFactor<Point2> f3(model, measured, project3(x, p, K));
   EXPECT_DOUBLES_EQUAL(expected_error, f3.error(values), 1e-9);
   EXPECT_LONGS_EQUAL(2, f3.dim());
   boost::shared_ptr<GaussianFactor> gf3 = f3.linearize(values);
-  EXPECT( assert_equal(*expected, *gf3, 1e-9));
+  EXPECT(assert_equal(*expected, *gf3, 1e-9));
 }
 
 /* ************************************************************************* */
@@ -332,15 +337,15 @@ TEST(ExpressionFactor, Compose1) {
   // Check unwhitenedError
   std::vector<Matrix> H(2);
   Vector actual = f.unwhitenedError(values, H);
-  EXPECT( assert_equal(I_3x3, H[0],1e-9));
-  EXPECT( assert_equal(I_3x3, H[1],1e-9));
+  EXPECT(assert_equal(I_3x3, H[0],1e-9));
+  EXPECT(assert_equal(I_3x3, H[1],1e-9));
 
   // Check linearization
   JacobianFactor expected(1, I_3x3, 2, I_3x3, Z_3x1);
   boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
   boost::shared_ptr<JacobianFactor> jf = //
       boost::dynamic_pointer_cast<JacobianFactor>(gf);
-  EXPECT( assert_equal(expected, *jf,1e-9));
+  EXPECT(assert_equal(expected, *jf,1e-9));
 }
 
 /* ************************************************************************* */
@@ -362,14 +367,14 @@ TEST(ExpressionFactor, compose2) {
   std::vector<Matrix> H(1);
   Vector actual = f.unwhitenedError(values, H);
   EXPECT_LONGS_EQUAL(1, H.size());
-  EXPECT( assert_equal(2*I_3x3, H[0],1e-9));
+  EXPECT(assert_equal(2*I_3x3, H[0],1e-9));
 
   // Check linearization
   JacobianFactor expected(1, 2 * I_3x3, Z_3x1);
   boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
   boost::shared_ptr<JacobianFactor> jf = //
       boost::dynamic_pointer_cast<JacobianFactor>(gf);
-  EXPECT( assert_equal(expected, *jf,1e-9));
+  EXPECT(assert_equal(expected, *jf,1e-9));
 }
 
 /* ************************************************************************* */
@@ -391,14 +396,14 @@ TEST(ExpressionFactor, compose3) {
   std::vector<Matrix> H(1);
   Vector actual = f.unwhitenedError(values, H);
   EXPECT_LONGS_EQUAL(1, H.size());
-  EXPECT( assert_equal(I_3x3, H[0],1e-9));
+  EXPECT(assert_equal(I_3x3, H[0],1e-9));
 
   // Check linearization
   JacobianFactor expected(3, I_3x3, Z_3x1);
   boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
   boost::shared_ptr<JacobianFactor> jf = //
       boost::dynamic_pointer_cast<JacobianFactor>(gf);
-  EXPECT( assert_equal(expected, *jf,1e-9));
+  EXPECT(assert_equal(expected, *jf,1e-9));
 }
 
 /* ************************************************************************* */
@@ -434,16 +439,16 @@ TEST(ExpressionFactor, composeTernary) {
   std::vector<Matrix> H(3);
   Vector actual = f.unwhitenedError(values, H);
   EXPECT_LONGS_EQUAL(3, H.size());
-  EXPECT( assert_equal(I_3x3, H[0],1e-9));
-  EXPECT( assert_equal(I_3x3, H[1],1e-9));
-  EXPECT( assert_equal(I_3x3, H[2],1e-9));
+  EXPECT(assert_equal(I_3x3, H[0],1e-9));
+  EXPECT(assert_equal(I_3x3, H[1],1e-9));
+  EXPECT(assert_equal(I_3x3, H[2],1e-9));
 
   // Check linearization
   JacobianFactor expected(1, I_3x3, 2, I_3x3, 3, I_3x3, Z_3x1);
   boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
   boost::shared_ptr<JacobianFactor> jf = //
       boost::dynamic_pointer_cast<JacobianFactor>(gf);
-  EXPECT( assert_equal(expected, *jf,1e-9));
+  EXPECT(assert_equal(expected, *jf,1e-9));
 }
 
 TEST(ExpressionFactor, tree_finite_differences) {
@@ -636,7 +641,7 @@ TEST(ExpressionFactor, MultiplyWithInverseFunction) {
 class TestNaryFactor
     : public gtsam::ExpressionFactorN<gtsam::Point3 /*return type*/,
                                       gtsam::Rot3, gtsam::Point3, 
-                                      gtsam::Rot3,gtsam::Point3> {
+                                      gtsam::Rot3, gtsam::Point3> {
 private:
   using This = TestNaryFactor;
   using Base =

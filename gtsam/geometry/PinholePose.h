@@ -31,7 +31,7 @@ namespace gtsam {
  * \nosubgrouping
  */
 template<typename CALIBRATION>
-class PinholeBaseK: public PinholeBase {
+class GTSAM_EXPORT PinholeBaseK: public PinholeBase {
 
 private:
 

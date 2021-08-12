@@ -1,5 +1,7 @@
 """Mixins for reducing the amount of boilerplate in the main wrapper class."""
 
+from typing import Any, Tuple, Union
+
 import gtwrap.interface_parser as parser
 import gtwrap.template_instantiator as instantiator
 
@@ -7,13 +9,14 @@ import gtwrap.template_instantiator as instantiator
 class CheckMixin:
     """Mixin to provide various checks."""
     # Data types that are primitive types
-    not_ptr_type = ['int', 'double', 'bool', 'char', 'unsigned char', 'size_t']
+    not_ptr_type: Tuple = ('int', 'double', 'bool', 'char', 'unsigned char',
+                           'size_t')
     # Ignore the namespace for these datatypes
-    ignore_namespace = ['Matrix', 'Vector', 'Point2', 'Point3']
+    ignore_namespace: Tuple = ('Matrix', 'Vector', 'Point2', 'Point3')
     # Methods that should be ignored
-    ignore_methods = ['pickle']
+    ignore_methods: Tuple = ('pickle', )
     # Methods that should not be wrapped directly
-    whitelist = ['serializable', 'serialize']
+    whitelist: Tuple = ('serializable', 'serialize')
     # Datatypes that do not need to be checked in methods
     not_check_type: list = []
 
@@ -23,7 +26,7 @@ class CheckMixin:
                 return True
         return False
 
-    def is_shared_ptr(self, arg_type):
+    def is_shared_ptr(self, arg_type: parser.Type):
         """
         Determine if the `interface_parser.Type` should be treated as a
         shared pointer in the wrapper.
@@ -33,7 +36,7 @@ class CheckMixin:
             and arg_type.typename.name not in self.ignore_namespace
             and arg_type.typename.name != 'string')
 
-    def is_ptr(self, arg_type):
+    def is_ptr(self, arg_type: parser.Type):
         """
         Determine if the `interface_parser.Type` should be treated as a
         raw pointer in the wrapper.
@@ -43,7 +46,7 @@ class CheckMixin:
             and arg_type.typename.name not in self.ignore_namespace
             and arg_type.typename.name != 'string')
 
-    def is_ref(self, arg_type):
+    def is_ref(self, arg_type: parser.Type):
         """
         Determine if the `interface_parser.Type` should be treated as a
         reference in the wrapper.
@@ -55,7 +58,14 @@ class CheckMixin:
 
 class FormatMixin:
     """Mixin to provide formatting utilities."""
-    def _clean_class_name(self, instantiated_class):
+
+    ignore_namespace: tuple
+    data_type: Any
+    data_type_param: Any
+    _return_count: Any
+
+    def _clean_class_name(self,
+                          instantiated_class: instantiator.InstantiatedClass):
         """Reformatted the C++ class name to fit Matlab defined naming
         standards
         """
@@ -65,23 +75,23 @@ class FormatMixin:
         return instantiated_class.name
 
     def _format_type_name(self,
-                          type_name,
-                          separator='::',
-                          include_namespace=True,
-                          constructor=False,
-                          method=False):
+                          type_name: parser.Typename,
+                          separator: str = '::',
+                          include_namespace: bool = True,
+                          is_constructor: bool = False,
+                          is_method: bool = False):
         """
         Args:
             type_name: an interface_parser.Typename to reformat
             separator: the statement to add between namespaces and typename
             include_namespace: whether to include namespaces when reformatting
-            constructor: if the typename will be in a constructor
-            method: if the typename will be in a method
+            is_constructor: if the typename will be in a constructor
+            is_method: if the typename will be in a method
 
         Raises:
             constructor and method cannot both be true
         """
-        if constructor and method:
+        if is_constructor and is_method:
             raise ValueError(
                 'Constructor and method parameters cannot both be True')
 
@@ -93,9 +103,9 @@ class FormatMixin:
                 if name not in self.ignore_namespace and namespace != '':
                     formatted_type_name += namespace + separator
 
-        if constructor:
+        if is_constructor:
             formatted_type_name += self.data_type.get(name) or name
-        elif method:
+        elif is_method:
             formatted_type_name += self.data_type_param.get(name) or name
         else:
             formatted_type_name += name
@@ -106,8 +116,8 @@ class FormatMixin:
                 template = '{}'.format(
                     self._format_type_name(type_name.instantiations[idx],
                                            include_namespace=include_namespace,
-                                           constructor=constructor,
-                                           method=method))
+                                           is_constructor=is_constructor,
+                                           is_method=is_method))
                 templates.append(template)
 
             if len(templates) > 0:  # If there are no templates
@@ -119,15 +129,15 @@ class FormatMixin:
                     self._format_type_name(type_name.instantiations[idx],
                                            separator=separator,
                                            include_namespace=False,
-                                           constructor=constructor,
-                                           method=method))
+                                           is_constructor=is_constructor,
+                                           is_method=is_method))
 
         return formatted_type_name
 
     def _format_return_type(self,
-                            return_type,
-                            include_namespace=False,
-                            separator="::"):
+                            return_type: parser.function.ReturnType,
+                            include_namespace: bool = False,
+                            separator: str = "::"):
         """Format return_type.
 
         Args:
@@ -154,18 +164,15 @@ class FormatMixin:
 
         return return_wrap
 
-    def _format_class_name(self, instantiated_class, separator=''):
+    def _format_class_name(self,
+                           instantiated_class: instantiator.InstantiatedClass,
+                           separator: str = ''):
         """Format a template_instantiator.InstantiatedClass name."""
         if instantiated_class.parent == '':
             parent_full_ns = ['']
         else:
             parent_full_ns = instantiated_class.parent.full_namespaces()
-        # class_name = instantiated_class.parent.name
-        #
-        # if class_name != '':
-        #     class_name += separator
-        #
-        # class_name += instantiated_class.name
+
         parentname = "".join([separator + x
                               for x in parent_full_ns]) + separator
 
@@ -175,10 +182,12 @@ class FormatMixin:
 
         return class_name
 
-    def _format_static_method(self, static_method, separator=''):
-        """Example:
-
-                gtsamPoint3.staticFunction
+    def _format_static_method(self,
+                              static_method: parser.StaticMethod,
+                              separator: str = ''):
+        """
+        Example:
+                gtsam.Point3.staticFunction()
         """
         method = ''
 
@@ -188,35 +197,17 @@ class FormatMixin:
 
         return method[2 * len(separator):]
 
-    def _format_instance_method(self, instance_method, separator=''):
+    def _format_global_function(self,
+                                function: Union[parser.GlobalFunction, Any],
+                                separator: str = ''):
         """Example:
 
                 gtsamPoint3.staticFunction
         """
         method = ''
 
-        if isinstance(instance_method, instantiator.InstantiatedMethod):
-            method_list = [
-                separator + x
-                for x in instance_method.parent.parent.full_namespaces()
-            ]
-            method += "".join(method_list) + separator
-
-            method += instance_method.parent.name + separator
-            method += instance_method.original.name
-            method += "<" + instance_method.instantiations.to_cpp() + ">"
-
-        return method[2 * len(separator):]
-
-    def _format_global_method(self, static_method, separator=''):
-        """Example:
-
-                gtsamPoint3.staticFunction
-        """
-        method = ''
-
-        if isinstance(static_method, parser.GlobalFunction):
-            method += "".join([separator + x for x in static_method.parent.full_namespaces()]) + \
+        if isinstance(function, parser.GlobalFunction):
+            method += "".join([separator + x for x in function.parent.full_namespaces()]) + \
                       separator
 
         return method[2 * len(separator):]

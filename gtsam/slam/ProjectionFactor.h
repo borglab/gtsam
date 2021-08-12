@@ -164,8 +164,13 @@ namespace gtsam {
     }
 
     /** return the calibration object */
-    inline const boost::shared_ptr<CALIBRATION> calibration() const {
+    const boost::shared_ptr<CALIBRATION> calibration() const {
       return K_;
+    }
+
+    /** return the (optional) sensor pose with respect to the vehicle frame */
+    const boost::optional<POSE>& body_P_sensor() const {
+      return body_P_sensor_;
     }
 
     /** return verbosity */
