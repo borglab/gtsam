@@ -2,7 +2,7 @@
 
 # pylint: disable=no-member, invalid-name
 
-from typing import Iterable, Tuple
+from typing import Iterable, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -175,15 +175,15 @@ def plot_pose2(
     return fig
 
 
-def plot_point3_on_axes(axes, point, linespec, P=None):
+def plot_point3_on_axes(axes, point: Point3, linespec: str, P: Optional[np.ndarray] = None) -> None:
     """
     Plot a 3D point on given axis `axes` with given `linespec`.
 
     Args:
         axes (matplotlib.axes.Axes): Matplotlib axes.
-        point (gtsam.Point3): The point to be plotted.
-        linespec (string): String representing formatting options for Matplotlib.
-        P (numpy.ndarray): Marginal covariance matrix to plot the uncertainty of the estimation.
+        point: The point to be plotted.
+        linespec: String representing formatting options for Matplotlib.
+        P: Marginal covariance matrix to plot the uncertainty of the estimation.
     """
     axes.plot([point[0]], [point[1]], [point[2]], linespec)
     if P is not None:
@@ -392,7 +392,7 @@ def plot_incremental_trajectory(
     values: Values,
     start: int = 0,
     scale: float = 1,
-    marginals: Marginals = None,
+    marginals: Optional[Marginals] = None,
     time_interval: float = 0.0
 ) -> None:
     """
