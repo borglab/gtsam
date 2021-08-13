@@ -198,8 +198,9 @@ public:
    * G = F' * F - F' * E * P * E' * F
    * g = F' * (b - E * P * E' * b)
    * In this version, we allow for the case where the keys in the Jacobian are organized
-   * differents from the keys in the output SymmetricBlockMatrix
-   * In particular: each block of the Jacobian captures 2 poses (useful for rolling shutter and extrinsic calibration)
+   * differently from the keys in the output SymmetricBlockMatrix
+   * In particular: each diagonal block of the Jacobian F captures 2 poses (useful for rolling shutter and extrinsic calibration)
+   * such that F keeps the block structure that makes the Schur complement trick fast.
    */
   template<int N, int ND, int NDD>  // N = 2 or 3 (point dimension), ND is the Jacobian block dimension, NDD is the Hessian block dimension
   static SymmetricBlockMatrix SchurComplementAndRearrangeBlocks(
