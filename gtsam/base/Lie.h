@@ -324,13 +324,12 @@ T expm(const Vector& x, int K=7) {
  */
 template <typename T>
 T interpolate(const T& X, const T& Y, double t,
-              OptionalJacobian< traits<T>::dimension, traits<T>::dimension > Hx = boost::none,
-              OptionalJacobian< traits<T>::dimension, traits<T>::dimension > Hy = boost::none) {
+              typename MakeOptionalJacobian<T, T>::type Hx = boost::none,
+              typename MakeOptionalJacobian<T, T>::type Hy = boost::none) {
   assert(t >= 0.0 && t <= 1.5);
   if (Hx || Hy) {
-    typedef Eigen::Matrix<double, traits<T>::dimension, traits<T>::dimension> Jacobian;
     typename traits<T>::TangentVector log_Xinv_Y;
-    Jacobian Hx_tmp, Hy_tmp, H1, H2;
+    typename MakeJacobian<T, T>::type Hx_tmp, Hy_tmp, H1, H2;
 
     T Xinv_Y = traits<T>::Between(X, Y, Hx_tmp, Hy_tmp);
     log_Xinv_Y = traits<T>::Logmap(Xinv_Y, H1);
