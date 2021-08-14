@@ -36,7 +36,8 @@ namespace gtsam {
  * @addtogroup SLAM
  */
 
-class ProjectionFactorRollingShutter : public NoiseModelFactor3<Pose3, Pose3, Point3> {
+class ProjectionFactorRollingShutter : public NoiseModelFactor3<Pose3, Pose3,
+    Point3> {
  protected:
 
   // Keep a copy of measurement and calibration for I/O
@@ -80,10 +81,11 @@ class ProjectionFactorRollingShutter : public NoiseModelFactor3<Pose3, Pose3, Po
    * @param body_P_sensor is the transform from body to sensor frame (default identity)
    */
   ProjectionFactorRollingShutter(const Point2& measured, double interp_param,
-                                 const SharedNoiseModel& model,
-                                 Key poseKey_a, Key poseKey_b, Key pointKey,
+                                 const SharedNoiseModel& model, Key poseKey_a,
+                                 Key poseKey_b, Key pointKey,
                                  const boost::shared_ptr<Cal3_S2>& K,
-                                 boost::optional<Pose3> body_P_sensor = boost::none)
+                                 boost::optional<Pose3> body_P_sensor =
+                                     boost::none)
       : Base(model, poseKey_a, poseKey_b, pointKey),
         measured_(measured),
         interp_param_(interp_param),
@@ -107,11 +109,12 @@ class ProjectionFactorRollingShutter : public NoiseModelFactor3<Pose3, Pose3, Po
    * @param body_P_sensor is the transform from body to sensor frame  (default identity)
    */
   ProjectionFactorRollingShutter(const Point2& measured, double interp_param,
-                                 const SharedNoiseModel& model,
-                                 Key poseKey_a, Key poseKey_b, Key pointKey,
+                                 const SharedNoiseModel& model, Key poseKey_a,
+                                 Key poseKey_b, Key pointKey,
                                  const boost::shared_ptr<Cal3_S2>& K,
                                  bool throwCheirality, bool verboseCheirality,
-                                 boost::optional<Pose3> body_P_sensor = boost::none)
+                                 boost::optional<Pose3> body_P_sensor =
+                                     boost::none)
       : Base(model, poseKey_a, poseKey_b, pointKey),
         measured_(measured),
         interp_param_(interp_param),
@@ -160,8 +163,9 @@ class ProjectionFactorRollingShutter : public NoiseModelFactor3<Pose3, Pose3, Po
   }
 
   /// Evaluate error h(x)-z and optionally derivatives
-  Vector evaluateError(const Pose3& pose_a, const Pose3& pose_b, const Point3& point,
-                       boost::optional<Matrix&> H1 = boost::none,
+  Vector evaluateError(const Pose3& pose_a, const Pose3& pose_b,
+                       const Point3& point, boost::optional<Matrix&> H1 =
+                           boost::none,
                        boost::optional<Matrix&> H2 = boost::none,
                        boost::optional<Matrix&> H3 = boost::none) const {
 
@@ -171,8 +175,10 @@ class ProjectionFactorRollingShutter : public NoiseModelFactor3<Pose3, Pose3, Po
       if (body_P_sensor_) {
         if (H1 || H2 || H3) {
           gtsam::Matrix HbodySensor;
-          PinholeCamera<Cal3_S2> camera(pose.compose(*body_P_sensor_, HbodySensor), *K_);
-          Point2 reprojectionError(camera.project(point, Hprj, H3, boost::none) - measured_);
+          PinholeCamera<Cal3_S2> camera(
+              pose.compose(*body_P_sensor_, HbodySensor), *K_);
+          Point2 reprojectionError(
+              camera.project(point, Hprj, H3, boost::none) - measured_);
           if (H1)
             *H1 = Hprj * HbodySensor * (*H1);
           if (H2)
@@ -184,14 +190,15 @@ class ProjectionFactorRollingShutter : public NoiseModelFactor3<Pose3, Pose3, Po
         }
       } else {
         PinholeCamera<Cal3_S2> camera(pose, *K_);
-        Point2 reprojectionError(camera.project(point, Hprj, H3, boost::none) - measured_);
+        Point2 reprojectionError(
+            camera.project(point, Hprj, H3, boost::none) - measured_);
         if (H1)
           *H1 = Hprj * (*H1);
         if (H2)
           *H2 = Hprj * (*H2);
         return reprojectionError;
       }
-    } catch( CheiralityException& e) {
+    } catch (CheiralityException& e) {
       if (H1)
         *H1 = Matrix::Zero(2, 6);
       if (H2)
@@ -252,6 +259,8 @@ class ProjectionFactorRollingShutter : public NoiseModelFactor3<Pose3, Pose3, Po
 };
 
 /// traits
-template<> struct traits<ProjectionFactorRollingShutter> : public Testable<ProjectionFactorRollingShutter> {};
+template<> struct traits<ProjectionFactorRollingShutter> : public Testable<
+    ProjectionFactorRollingShutter> {
+};
 
-}//namespace gtsam
+}  //namespace gtsam
