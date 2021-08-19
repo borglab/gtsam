@@ -572,8 +572,8 @@ virtual class GncOptimizer {
   gtsam::Values optimize();
 };
 
-typedef gtsam::GncOptimizer<gtsam::GncParams<gtsam::GaussNewtonParams> > GncGaussNewtonOptimizer;
-typedef gtsam::GncOptimizer<gtsam::GncParams<gtsam::LevenbergMarquardtParams> > GncLMOptimizer;
+typedef gtsam::GncOptimizer<gtsam::GncParams<gtsam::GaussNewtonParams>> GncGaussNewtonOptimizer;
+typedef gtsam::GncOptimizer<gtsam::GncParams<gtsam::LevenbergMarquardtParams>> GncLMOptimizer;
 
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 virtual class LevenbergMarquardtOptimizer : gtsam::NonlinearOptimizer {
