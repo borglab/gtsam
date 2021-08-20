@@ -89,21 +89,41 @@ KeySet createKeySet(std::string s, const Vector& I) {
 
 /// Extract all Point2 values into a single matrix [x y]
 Matrix extractPoint2(const Values& values) {
+  Values::ConstFiltered<gtsam::Point2> points = values.filter<gtsam::Point2>();
+  // Point2 is aliased as a gtsam::Vector in the wrapper
+  Values::ConstFiltered<gtsam::Vector> points2 = values.filter<gtsam::Vector>();
+
+  Matrix result(points.size() + points2.size(), 2);
+
   size_t j = 0;
-  Values::ConstFiltered<Point2> points = values.filter<Point2>();
-  Matrix result(points.size(), 2);
-  for(const auto& key_value: points)
+  for (const auto& key_value : points) {
     result.row(j++) = key_value.value;
+  }
+  for (const auto& key_value : points2) {
+    if (key_value.value.rows() == 2) {
+      result.row(j++) = key_value.value;
+    }
+  }
   return result;
 }
 
 /// Extract all Point3 values into a single matrix [x y z]
 Matrix extractPoint3(const Values& values) {
-  Values::ConstFiltered<Point3> points = values.filter<Point3>();
-  Matrix result(points.size(), 3);
+  Values::ConstFiltered<gtsam::Point3> points = values.filter<gtsam::Point3>();
+  // Point3 is aliased as a gtsam::Vector in the wrapper
+  Values::ConstFiltered<gtsam::Vector> points2 = values.filter<gtsam::Vector>();
+
+  Matrix result(points.size() + points2.size(), 3);
+
   size_t j = 0;
-  for(const auto& key_value: points)
+  for (const auto& key_value : points) {
     result.row(j++) = key_value.value;
+  }
+  for (const auto& key_value : points2) {
+    if (key_value.value.rows() == 3) {
+      result.row(j++) = key_value.value;
+    }
+  }
   return result;
 }
 
