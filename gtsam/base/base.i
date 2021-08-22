@@ -33,13 +33,13 @@ class IndexPair {
   size_t j() const;
 };
 
-// template<KEY = {gtsam::IndexPair}>
-// class DSFMap {
-//   DSFMap();
-//   KEY find(const KEY& key) const;
-//   void merge(const KEY& x, const KEY& y);
-//   std::map<KEY, Set> sets();
-// };
+template<KEY = {gtsam::IndexPair}>
+class DSFMap {
+  DSFMap();
+  KEY find(const KEY& key) const;
+  void merge(const KEY& x, const KEY& y);
+  std::map<KEY, Set> sets();
+};
 
 class IndexPairSet {
   IndexPairSet();
@@ -79,13 +79,6 @@ class IndexPairSetMap {
 
   // structure specific methods
   gtsam::IndexPairSet at(gtsam::IndexPair& key);
-};
-
-class DSFMapIndexPair {
-  DSFMapIndexPair();
-  gtsam::IndexPair find(const gtsam::IndexPair& key) const;
-  void merge(const gtsam::IndexPair& x, const gtsam::IndexPair& y);
-  gtsam::IndexPairSetMap sets();
 };
 
 #include <gtsam/base/Matrix.h>
