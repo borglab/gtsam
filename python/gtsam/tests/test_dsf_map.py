@@ -39,7 +39,7 @@ class TestDSFMap(GtsamTestCase):
         self.assertEqual(key(dsf.find(pair1)), key(dsf.find(pair2)))
 
     def test_sets(self) -> None:
-        """Ensure that unique keys are merged correctly during Union-Find.
+        """Ensure that pairs are merged correctly during Union-Find.
 
         An IndexPair (i,k) representing a unique key might represent the
         k'th detected keypoint in image i. For the data below, merging such
