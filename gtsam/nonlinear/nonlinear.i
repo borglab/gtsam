@@ -824,4 +824,17 @@ virtual class NonlinearEquality : gtsam::NoiseModelFactor {
   void serialize() const;
 };
 
+template <T = {gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2,
+               gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose2,
+               gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera,
+               gtsam::PinholeCamera<gtsam::Cal3_S2>,
+               gtsam::PinholeCamera<gtsam::Cal3Bundler>,
+               gtsam::PinholeCamera<gtsam::Cal3Fisheye>,
+               gtsam::PinholeCamera<gtsam::Cal3Unified>,
+               gtsam::imuBias::ConstantBias}>
+virtual class NonlinearEquality2 : gtsam::NoiseModelFactor {
+  NonlinearEquality2(Key key1, Key key2, double mu = 1e4);
+  gtsam::Vector evaluateError(const T& x1, const T& x2);
+};
+
 }  // namespace gtsam
