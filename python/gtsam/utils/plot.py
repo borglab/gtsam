@@ -10,7 +10,7 @@ from matplotlib import patches
 from mpl_toolkits.mplot3d import Axes3D  # pylint: disable=unused-import
 
 import gtsam
-from gtsam import Marginals, Point3, Pose2, Values
+from gtsam import Marginals, Point3, Pose2, Pose3, Values
 
 
 def set_axes_equal(fignum: int) -> None:
@@ -39,9 +39,8 @@ def set_axes_equal(fignum: int) -> None:
     ax.set_zlim3d([origin[2] - radius, origin[2] + radius])
 
 
-def ellipsoid(
-    rx: float, ry: float, rz: float, n: int
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def ellipsoid(rx: float, ry: float, rz: float,
+              n: int) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Numpy equivalent of Matlab's ellipsoid function.
 
@@ -54,8 +53,8 @@ def ellipsoid(
     Returns:
         The points in the x, y and z axes to use for the surface plot.
     """
-    u = np.linspace(0, 2*np.pi, n+1)
-    v = np.linspace(0, np.pi, n+1)
+    u = np.linspace(0, 2 * np.pi, n + 1)
+    v = np.linspace(0, np.pi, n + 1)
     x = -rx * np.outer(np.cos(u), np.sin(v)).T
     y = -ry * np.outer(np.sin(u), np.sin(v)).T
     z = -rz * np.outer(np.ones_like(u), np.cos(v)).T
@@ -63,9 +62,12 @@ def ellipsoid(
     return x, y, z
 
 
-def plot_covariance_ellipse_3d(
-    axes, origin: Point3, P: np.ndarray, scale: float = 1, n: int = 8, alpha: float = 0.5
-) -> None:
+def plot_covariance_ellipse_3d(axes,
+                               origin: Point3,
+                               P: np.ndarray,
+                               scale: float = 1,
+                               n: int = 8,
+                               alpha: float = 0.5) -> None:
     """
     Plots a Gaussian as an uncertainty ellipse
 
@@ -97,15 +99,16 @@ def plot_covariance_ellipse_3d(
         np.kron(U[:, 2:3], zc)
     n = data.shape[1]
     x = data[0:n, :] + origin[0]
-    y = data[n:2*n, :] + origin[1]
-    z = data[2*n:, :] + origin[2]
+    y = data[n:2 * n, :] + origin[1]
+    z = data[2 * n:, :] + origin[2]
 
     axes.plot_surface(x, y, z, alpha=alpha, cmap='hot')
 
 
-def plot_pose2_on_axes(
-    axes, pose: Pose2, axis_length: float = 0.1, covariance: np.ndarray = None
-) -> None:
+def plot_pose2_on_axes(axes,
+                       pose: Pose2,
+                       axis_length: float = 0.1,
+                       covariance: np.ndarray = None) -> None:
     """
     Plot a 2D pose on given axis `axes` with given `axis_length`.
 
@@ -140,17 +143,20 @@ def plot_pose2_on_axes(
         k = 5.0
 
         angle = np.arctan2(v[1, 0], v[0, 0])
-        e1 = patches.Ellipse(origin, np.sqrt(w[0]*k), np.sqrt(w[1]*k),
-                             np.rad2deg(angle), fill=False)
+        e1 = patches.Ellipse(origin,
+                             np.sqrt(w[0] * k),
+                             np.sqrt(w[1] * k),
+                             np.rad2deg(angle),
+                             fill=False)
         axes.add_patch(e1)
 
 
 def plot_pose2(
-    fignum: int,
-    pose: Pose2,
-    axis_length: float = 0.1,
-    covariance: np.ndarray = None,
-    axis_labels=("X axis", "Y axis", "Z axis"),
+        fignum: int,
+        pose: Pose2,
+        axis_length: float = 0.1,
+        covariance: np.ndarray = None,
+        axis_labels=("X axis", "Y axis", "Z axis"),
 ) -> plt.Figure:
     """
     Plot a 2D pose on given figure with given `axis_length`.
@@ -166,7 +172,9 @@ def plot_pose2(
     # get figure object
     fig = plt.figure(fignum)
     axes = fig.gca()
-    plot_pose2_on_axes(axes, pose, axis_length=axis_length,
+    plot_pose2_on_axes(axes,
+                       pose,
+                       axis_length=axis_length,
                        covariance=covariance)
 
     axes.set_xlabel(axis_labels[0])
@@ -175,7 +183,10 @@ def plot_pose2(
     return fig
 
 
-def plot_point3_on_axes(axes, point: Point3, linespec: str, P: Optional[np.ndarray] = None) -> None:
+def plot_point3_on_axes(axes,
+                        point: Point3,
+                        linespec: str,
+                        P: Optional[np.ndarray] = None) -> None:
     """
     Plot a 3D point on given axis `axes` with given `linespec`.
 
@@ -222,8 +233,12 @@ def plot_point3(
     return fig
 
 
-def plot_3d_points(fignum, values, linespec="g*", marginals=None,
-                   title="3D Points", axis_labels=('X axis', 'Y axis', 'Z axis')):
+def plot_3d_points(fignum,
+                   values,
+                   linespec="g*",
+                   marginals=None,
+                   title="3D Points",
+                   axis_labels=('X axis', 'Y axis', 'Z axis')):
     """
     Plots the Point3s in `values`, with optional covariances.
     Finds all the Point3 objects in the given Values object and plots them.
@@ -251,7 +266,10 @@ def plot_3d_points(fignum, values, linespec="g*", marginals=None,
             else:
                 covariance = None
 
-            fig = plot_point3(fignum, point, linespec, covariance,
+            fig = plot_point3(fignum,
+                              point,
+                              linespec,
+                              covariance,
                               axis_labels=axis_labels)
 
         except RuntimeError:
@@ -322,8 +340,7 @@ def plot_pose3(
     # get figure object
     fig = plt.figure(fignum)
     axes = fig.gca(projection='3d')
-    plot_pose3_on_axes(axes, pose, P=P,
-                       axis_length=axis_length)
+    plot_pose3_on_axes(axes, pose, P=P, axis_length=axis_length)
 
     axes.set_xlabel(axis_labels[0])
     axes.set_ylabel(axis_labels[1])
@@ -333,12 +350,12 @@ def plot_pose3(
 
 
 def plot_trajectory(
-    fignum: int,
-    values: Values,
-    scale: float = 1,
-    marginals: Marginals = None,
-    title: str = "Plot Trajectory",
-    axis_labels: Iterable[str] = ("X axis", "Y axis", "Z axis"),
+        fignum: int,
+        values: Values,
+        scale: float = 1,
+        marginals: Marginals = None,
+        title: str = "Plot Trajectory",
+        axis_labels: Iterable[str] = ("X axis", "Y axis", "Z axis"),
 ) -> None:
     """
     Plot a complete 2D/3D trajectory using poses in `values`.
@@ -368,7 +385,9 @@ def plot_trajectory(
         else:
             covariance = None
 
-        plot_pose2_on_axes(axes, pose, covariance=covariance,
+        plot_pose2_on_axes(axes,
+                           pose,
+                           covariance=covariance,
                            axis_length=scale)
 
     # Then 3D poses, if any
@@ -380,21 +399,18 @@ def plot_trajectory(
         else:
             covariance = None
 
-        plot_pose3_on_axes(axes, pose, P=covariance,
-                           axis_length=scale)
+        plot_pose3_on_axes(axes, pose, P=covariance, axis_length=scale)
 
     fig.suptitle(title)
     fig.canvas.set_window_title(title.lower())
 
 
-def plot_incremental_trajectory(
-    fignum: int,
-    values: Values,
-    start: int = 0,
-    scale: float = 1,
-    marginals: Optional[Marginals] = None,
-    time_interval: float = 0.0
-) -> None:
+def plot_incremental_trajectory(fignum: int,
+                                values: Values,
+                                start: int = 0,
+                                scale: float = 1,
+                                marginals: Optional[Marginals] = None,
+                                time_interval: float = 0.0) -> None:
     """
     Incrementally plot a complete 3D trajectory using poses in `values`.
 
