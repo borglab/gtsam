@@ -130,7 +130,7 @@ TEST(Chebyshev, Decomposition) {
   }
 
   // Do Chebyshev Decomposition
-  FitBasis<Chebyshev1Basis> actual(N, sequence, model);
+  FitBasis<Chebyshev1Basis> actual(sequence, model, N);
 
   // Check
   Vector expected = Vector::Zero(N);

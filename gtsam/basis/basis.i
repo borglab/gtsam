@@ -63,7 +63,8 @@ class ParameterMatrix {
 
 #include <gtsam/basis/BasisFactors.h>
 
-template <BASIS = {gtsam::Chebyshev2, gtsam::Chebyshev, gtsam::Fourier}>
+template <BASIS = {gtsam::Chebyshev2, gtsam::Chebyshev1Basis,
+                   gtsam::Chebyshev2Basis, gtsam::FourierBasis}>
 virtual class EvaluationFactor : gtsam::NoiseModelFactor {
   EvaluationFactor();
   EvaluationFactor(gtsam::Key key, const double z,

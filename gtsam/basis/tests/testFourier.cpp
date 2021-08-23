@@ -148,7 +148,7 @@ TEST(Basis, Decomposition) {
   }
 
   // Do Fourier Decomposition
-  FitBasis<FourierBasis> actual(3, sequence, model);
+  FitBasis<FourierBasis> actual(sequence, model, 3);
 
   // Check
   EXPECT(assert_equal((Vector)k3Coefficients, actual.parameters(), 1e-4));

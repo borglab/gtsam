@@ -131,7 +131,7 @@ TEST(Chebyshev2, Decomposition) {
   }
 
   // Do Chebyshev Decomposition
-  FitBasis<Chebyshev2> actual(3, sequence, model);
+  FitBasis<Chebyshev2> actual(sequence, model, 3);
 
   // Check
   Vector expected(3);
