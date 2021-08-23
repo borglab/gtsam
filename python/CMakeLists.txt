@@ -165,6 +165,5 @@ add_custom_target(
         COMMAND
           ${CMAKE_COMMAND} -E env # add package to python path so no need to install
           "PYTHONPATH=${GTSAM_PYTHON_BUILD_DIRECTORY}/$ENV{PYTHONPATH}"
-          ${PYTHON_EXECUTABLE} -m unittest discover
-          DEPENDS ${GTSAM_PYTHON_DEPENDENCIES}
-        WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam/tests)
+          ${PYTHON_EXECUTABLE} -m unittest discover -s "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam/tests"
+          DEPENDS ${GTSAM_PYTHON_DEPENDENCIES})
