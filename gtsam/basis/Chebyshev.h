@@ -12,7 +12,7 @@
 /**
  * @file Chebyshev.h
  * @brief Chebyshev basis decompositions
- * @author Varun Agrawal, Frank Dellaert
+ * @author Varun Agrawal, Jing Dong, Frank Dellaert
  * @date July 4, 2020
  */
 
@@ -24,44 +24,6 @@
 #include <unsupported/Eigen/KroneckerProduct>
 
 namespace gtsam {
-
-/**
- * Basis of Chebyshev polynomials of the second kind.
- * https://en.wikipedia.org/wiki/Chebyshev_polynomials#Second_kind
- * These are typically denoted with the symbol U_n, where n is the degree.
- * The parameter N is the number of coefficients, i.e., N = n+1.
- * In contrast to the templates in Chebyshev2, the classes below specify
- * basis functions, weighted combinations of which are used to approximate
- * functions. In this sense, they are like the sines and cosines of the Fourier
- * basis.
- */
-struct Chebyshev2Basis : Basis<Chebyshev2Basis> {
-  using Parameters = Eigen::Matrix<double, -1, 1 /*Nx1*/>;
-
-  /**
-   *  Evaluate Chebyshev Weights on [-1,1] at any x up to order N-1 (N values).
-   *
-   * @param N Degree of the polynomial.
-   * @param x Point to evaluate polynomial at.
-   * @param a Lower limit of polynomial (default=-1).
-   * @param b Upper limit of polynomial (default=1).
-   */
-  static Weights CalculateWeights(size_t N, double x, double a = -1,
-                                  double b = 1);
-
-  /**
-   * @brief Evaluate Chebyshev derivative at x.
-   *
-   * @param N Degree of the polynomial.
-   * @param x Point to evaluate polynomial at.
-   * @param a Lower limit of polynomial (default=-1).
-   * @param b Upper limit of polynomial (default=1).
-   * @return Weights
-   */
-  static Weights DerivativeWeights(size_t N, double x, double a = -1,
-                                   double b = 1);
-};
-// Chebyshev2Basis
 
 /**
  * Basis of Chebyshev polynomials of the first kind
@@ -105,7 +67,43 @@ struct Chebyshev1Basis : Basis<Chebyshev1Basis> {
    */
   static Weights DerivativeWeights(size_t N, double x, double a = -1,
                                    double b = 1);
-};
-// Chebyshev1Basis
+};  // Chebyshev1Basis
+
+/**
+ * Basis of Chebyshev polynomials of the second kind.
+ * https://en.wikipedia.org/wiki/Chebyshev_polynomials#Second_kind
+ * These are typically denoted with the symbol U_n, where n is the degree.
+ * The parameter N is the number of coefficients, i.e., N = n+1.
+ * In contrast to the templates in Chebyshev2, the classes below specify
+ * basis functions, weighted combinations of which are used to approximate
+ * functions. In this sense, they are like the sines and cosines of the Fourier
+ * basis.
+ */
+struct Chebyshev2Basis : Basis<Chebyshev2Basis> {
+  using Parameters = Eigen::Matrix<double, -1, 1 /*Nx1*/>;
+
+  /**
+   *  Evaluate Chebyshev Weights on [-1,1] at any x up to order N-1 (N values).
+   *
+   * @param N Degree of the polynomial.
+   * @param x Point to evaluate polynomial at.
+   * @param a Lower limit of polynomial (default=-1).
+   * @param b Upper limit of polynomial (default=1).
+   */
+  static Weights CalculateWeights(size_t N, double x, double a = -1,
+                                  double b = 1);
+
+  /**
+   * @brief Evaluate Chebyshev derivative at x.
+   *
+   * @param N Degree of the polynomial.
+   * @param x Point to evaluate polynomial at.
+   * @param a Lower limit of polynomial (default=-1).
+   * @param b Upper limit of polynomial (default=1).
+   * @return Weights
+   */
+  static Weights DerivativeWeights(size_t N, double x, double a = -1,
+                                   double b = 1);
+};  // Chebyshev2Basis
 
 }  // namespace gtsam
