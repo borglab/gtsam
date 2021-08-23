@@ -11,12 +11,23 @@
 
 /**
  * @file Chebyshev2.h
- * @brief Chebyshev parameterizations on Chebyshev points of second kind.
- *        This is different from Chebyshev.h since it leverage ideas from
- *        pseudo-spectral optimization, i.e. we don't decompose into basis
- *        functions, rather estimate function parameters that enforce function
- *        nodes at Chebyshev points.
- * @author Varun Agrawal, Frank Dellaert
+ * @brief Pseudo-spectral parameterization for Chebyshev polynomials of the
+ * second kind.
+ *
+ * In a pseudo-spectral case, rather than the parameters acting as
+ * weights for the bases polynomials (as in Chebyshev2Basis), here the
+ * parameters are the *values* at a specific set of points in the interval, the
+ * "Chebyshev points". These values uniquely determine the polynomial that
+ * interpolates them at the Chebyshev points.
+ *
+ * This is different from Chebyshev.h since it leverage ideas from
+ * pseudo-spectral optimization, i.e. we don't decompose into basis functions,
+ * rather estimate function parameters that enforce function nodes at Chebyshev
+ * points.
+ *
+ * Please refer to Agrawal21icra for more details.
+ *
+ * @author Varun Agrawal, Jing Dong, Frank Dellaert
  * @date July 4, 2020
  */
 

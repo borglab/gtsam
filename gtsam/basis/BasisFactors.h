@@ -24,7 +24,13 @@
 namespace gtsam {
 
 /**
- * @brief Factor for scalar BASIS evaluation.
+ * @brief Factor for enforcing the scalar value of a function is the same as
+ * that of polynomial BASIS representation when using a pseudo-spectral
+ * parameterization.
+ *
+ * If we have a scalar-valued function which gives us a value `z`, this factor
+ * enforces the polynomial basis, when evaluated at the same point, gives us the
+ * same value `z`.
  *
  * @tparam BASIS The basis class to use e.g. Chebyshev2
  */
@@ -68,7 +74,14 @@ class GTSAM_EXPORT EvaluationFactor : public FunctorizedFactor<double, Vector> {
 };
 
 /**
- * Prior factor for BASIS vector evaluation on ParameterMatrix of size (M,N).
+ * Unary factor for enforcing BASIS polynomial evaluation on a ParameterMatrix
+ * of size (M, N) is equal to a vector-valued function at the same point, when
+ * using a pseudo-spectral parameterization.
+ *
+ * If we have a vector-valued function which gives us a value `z`, this factor
+ * enforces the polynomial basis used to fit the function, when evaluated at the
+ * same point, gives us the same value `z`.
+ *
  * @param BASIS: The basis class to use e.g. Chebyshev2
  * @param M: Size of the evaluated state vector.
  */
@@ -81,12 +94,34 @@ class GTSAM_EXPORT VectorEvaluationFactor
  public:
   VectorEvaluationFactor() {}
 
+  /**
+   * @brief Construct a new VectorEvaluationFactor object.
+   *
+   * @param key The key to the ParameterMatrix object used to represent the
+   * polynomial.
+   * @param z The vector-value of the function to estimate at the point `x`.
+   * @param model The noise model.
+   * @param N The degree of the polynomial.
+   * @param x The point at which to evaluate the basis polynomial.
+   */
   VectorEvaluationFactor(Key key, const Vector &z,
                          const SharedNoiseModel &model, const size_t N,
                          double x)
       : Base(key, z, model,
              typename BASIS::template VectorEvaluationFunctor<M>(N, x)) {}
 
+  /**
+   * @brief Construct a new VectorEvaluationFactor object.
+   *
+   * @param key The key to the ParameterMatrix object used to represent the
+   * polynomial.
+   * @param z The vector-value of the function to estimate at the point `x`.
+   * @param model The noise model.
+   * @param N The degree of the polynomial.
+   * @param x The point at which to evaluate the basis polynomial.
+   * @param a Lower bound for the polynomial.
+   * @param b Upper bound for the polynomial.
+   */
   VectorEvaluationFactor(Key key, const Vector &z,
                          const SharedNoiseModel &model, const size_t N,
                          double x, double a, double b)
@@ -97,8 +132,14 @@ class GTSAM_EXPORT VectorEvaluationFactor
 };
 
 /**
- * Create a measurement on any scalar entry (chosen in the constructor) of a
- * P-dimensional vector computed by a basis parameterization.
+ * Unary factor for enforcing BASIS polynomial evaluation on a ParameterMatrix
+ * of size (P, N) is equal to a vector-valued function at the same point, when
+ * using a pseudo-spectral parameterization.
+ *
+ * This factor is similar to `VectorEvaluationFactor` with the key difference
+ * being that it only enforces the constraint for a single scalar in the vector,
+ * indexed by `i`.
+ *
  * @param BASIS: The basis class to use e.g. Chebyshev2
  * @param P: Size of the fixed-size vector.
  *
@@ -116,11 +157,39 @@ class GTSAM_EXPORT VectorComponentFactor
  public:
   VectorComponentFactor() {}
 
+  /**
+   * @brief Construct a new VectorComponentFactor object.
+   *
+   * @param key The key to the ParameterMatrix object used to represent the
+   * polynomial.
+   * @param z The scalar value at a specified index `i` of the vector-valued
+   * function to estimate at the point `x`.
+   * @param model The noise model.
+   * @param N The degree of the polynomial.
+   * @param i The index for the evaluated vector to give us the desired scalar
+   * value.
+   * @param x The point at which to evaluate the basis polynomial.
+   */
   VectorComponentFactor(Key key, const double &z, const SharedNoiseModel &model,
                         const size_t N, size_t i, double x)
       : Base(key, z, model,
              typename BASIS::template VectorComponentFunctor<P>(N, i, x)) {}
 
+  /**
+   * @brief Construct a new VectorComponentFactor object.
+   *
+   * @param key The key to the ParameterMatrix object used to represent the
+   * polynomial.
+   * @param z The scalar value at a specified index `i` of the vector-valued
+   * function to estimate at the point `x`.
+   * @param model The noise model.
+   * @param N The degree of the polynomial.
+   * @param i The index for the evaluated vector to give us the desired scalar
+   * value.
+   * @param x The point at which to evaluate 0the basis polynomial.
+   * @param a Lower bound for the polynomial.
+   * @param b Upper bound for the polynomial.
+   */
   VectorComponentFactor(Key key, const double &z, const SharedNoiseModel &model,
                         const size_t N, size_t i, double x, double a, double b)
       : Base(
@@ -132,9 +201,21 @@ class GTSAM_EXPORT VectorComponentFactor
 };
 
 /**
- * Prior factor for BASIS Manifold evaluation on type T.
+ * For a function which evaluates to a type T, this unary factor enforces that
+ * the polynomial basis, when evaluated at the same point, gives us the same
+ * value of T.
+ *
+ * This is done via computations on the tangent space of the
+ * manifold of T.
+ *
  * @param BASIS: The basis class to use e.g. Chebyshev2
- * @param T: Object type which is synthesized by the functor.
+ * @param T: Object type which is synthesized by the provided functor.
+ *
+ * Example:
+ *  ManifoldEvaluationFactor<Chebyshev2, Rot3> rotationFactor(key, measurement,
+ * model, N, x, a, b);
+ *
+ * where `x` is the value (e.g. timestep) at which the rotation was evaluated.
  */
 template <class BASIS, typename T>
 class GTSAM_EXPORT ManifoldEvaluationFactor
@@ -145,11 +226,33 @@ class GTSAM_EXPORT ManifoldEvaluationFactor
  public:
   ManifoldEvaluationFactor() {}
 
+  /**
+   * @brief Construct a new ManifoldEvaluationFactor object.
+   *
+   * @param key Key for the state matrix parameterizing the function to estimate
+   * via the BASIS.
+   * @param z The value of the function to estimate at the point `x`.
+   * @param model
+   * @param N The degree of the polynomial.
+   * @param x The point at which the function is evaluated.
+   */
   ManifoldEvaluationFactor(Key key, const T &z, const SharedNoiseModel &model,
                            const size_t N, double x)
       : Base(key, z, model,
              typename BASIS::template ManifoldEvaluationFunctor<T>(N, x)) {}
 
+  /**
+   * @brief Construct a new ManifoldEvaluationFactor object.
+   *
+   * @param key Key for the state matrix parameterizing the function to estimate
+   * via the BASIS.
+   * @param z The value of the function to estimate at the point `x`.
+   * @param model
+   * @param N The degree of the polynomial.
+   * @param x The point at which the function is evaluated.
+   * @param a Lower bound for the polynomial.
+   * @param b Upper bound for the polynomial.
+   */
   ManifoldEvaluationFactor(Key key, const T &z, const SharedNoiseModel &model,
                            const size_t N, double x, double a, double b)
       : Base(
@@ -161,7 +264,10 @@ class GTSAM_EXPORT ManifoldEvaluationFactor
 };
 
 /**
- * Factor for scalar BASIS derivative evaluation.
+ * A unary factor which enforces the evaluation of the derivative of a BASIS
+ * polynomial is equal to the scalar value of a function at a specified point
+ * `x`.
+ *
  * @param BASIS: The basis class to use e.g. Chebyshev2
  */
 template <class BASIS>
@@ -173,10 +279,32 @@ class GTSAM_EXPORT DerivativeFactor
  public:
   DerivativeFactor() {}
 
+  /**
+   * @brief Construct a new DerivativeFactor object.
+   *
+   * @param key The key to the ParameterMatrix which represents the basis
+   * polynomial.
+   * @param z The result of the function to estimate evaluated at `x`.
+   * @param model The noise model.
+   * @param N The degree of the polynomial.
+   * @param x The point at which to evaluate the basis polynomial.
+   */
   DerivativeFactor(Key key, const double &z, const SharedNoiseModel &model,
                    const size_t N, double x)
       : Base(key, z, model, typename BASIS::DerivativeFunctor(N, x)) {}
 
+  /**
+   * @brief Construct a new DerivativeFactor object.
+   *
+   * @param key The key to the ParameterMatrix which represents the basis
+   * polynomial.
+   * @param z The result of the function to estimate evaluated at `x`.
+   * @param model The noise model.
+   * @param N The degree of the polynomial.
+   * @param x The point at which to evaluate the basis polynomial.
+   * @param a Lower bound for the polynomial.
+   * @param b Upper bound for the polynomial.
+   */
   DerivativeFactor(Key key, const double &z, const SharedNoiseModel &model,
                    const size_t N, double x, double a, double b)
       : Base(key, z, model, typename BASIS::DerivativeFunctor(N, x, a, b)) {}
@@ -185,7 +313,10 @@ class GTSAM_EXPORT DerivativeFactor
 };
 
 /**
- * Prior factor for BASIS vector derivative on ParameterMatrix of size (M,N).
+ * A unary factor which enforces the evaluation of the derivative of a BASIS
+ * polynomial is equal to the vector value of a function at a specified point
+ * `x`.
+ *
  * @param BASIS: The basis class to use e.g. Chebyshev2
  * @param M: Size of the evaluated state vector derivative.
  */
@@ -199,11 +330,33 @@ class GTSAM_EXPORT VectorDerivativeFactor
  public:
   VectorDerivativeFactor() {}
 
+  /**
+   * @brief Construct a new VectorDerivativeFactor object.
+   *
+   * @param key The key to the ParameterMatrix which represents the basis
+   * polynomial.
+   * @param z The vector result of the function to estimate evaluated at `x`.
+   * @param model The noise model.
+   * @param N The degree of the polynomial.
+   * @param x The point at which to evaluate the basis polynomial.
+   */
   VectorDerivativeFactor(Key key, const Vector &z,
                          const SharedNoiseModel &model, const size_t N,
                          double x)
       : Base(key, z, model, Func(N, x)) {}
 
+  /**
+   * @brief Construct a new VectorDerivativeFactor object.
+   *
+   * @param key The key to the ParameterMatrix which represents the basis
+   * polynomial.
+   * @param z The vector result of the function to estimate evaluated at `x`.
+   * @param model The noise model.
+   * @param N The degree of the polynomial.
+   * @param x The point at which to evaluate the basis polynomial.
+   * @param a Lower bound for the polynomial.
+   * @param b Upper bound for the polynomial.
+   */
   VectorDerivativeFactor(Key key, const Vector &z,
                          const SharedNoiseModel &model, const size_t N,
                          double x, double a, double b)
@@ -213,7 +366,10 @@ class GTSAM_EXPORT VectorDerivativeFactor
 };
 
 /**
- * Prior factor for BASIS component derivative on ParameterMatrix of size (M,N).
+ * A unary factor which enforces the evaluation of the derivative of a BASIS
+ * polynomial is equal to the scalar value at a specific index `i` of a
+ * vector-valued function at a specified point `x`.
+ *
  * @param BASIS: The basis class to use e.g. Chebyshev2
  * @param P: Size of the control component derivative.
  */
@@ -227,11 +383,39 @@ class GTSAM_EXPORT ComponentDerivativeFactor
  public:
   ComponentDerivativeFactor() {}
 
+  /**
+   * @brief Construct a new ComponentDerivativeFactor object.
+   *
+   * @param key The key to the ParameterMatrix which represents the basis
+   * polynomial.
+   * @param z The scalar at a specific index `i` of the vector value of the
+   * function to estimate evaluated at `x`.
+   * @param model The degree of the polynomial.
+   * @param N The degree of the polynomial.
+   * @param i The index for the evaluated vector to give us the desired scalar
+   * value.
+   * @param x The point at which to evaluate the basis polynomial.
+   */
   ComponentDerivativeFactor(Key key, const double &z,
                             const SharedNoiseModel &model, const size_t N,
                             size_t i, double x)
       : Base(key, z, model, Func(N, i, x)) {}
 
+  /**
+   * @brief Construct a new ComponentDerivativeFactor object.
+   *
+   * @param key The key to the ParameterMatrix which represents the basis
+   * polynomial.
+   * @param z The scalar at specified index `i` of the vector value of the
+   * function to estimate evaluated at `x`.
+   * @param model The degree of the polynomial.
+   * @param N The degree of the polynomial.
+   * @param i The index for the evaluated vector to give us the desired scalar
+   * value.
+   * @param x The point at which to evaluate the basis polynomial.
+   * @param a Lower bound for the polynomial.
+   * @param b Upper bound for the polynomial.
+   */
   ComponentDerivativeFactor(Key key, const double &z,
                             const SharedNoiseModel &model, const size_t N,
                             size_t i, double x, double a, double b)

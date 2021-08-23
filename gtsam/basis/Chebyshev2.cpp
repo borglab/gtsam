@@ -12,7 +12,7 @@
 /**
  * @file Chebyshev2.cpp
  * @brief Chebyshev parameterizations on Chebyshev points of second kind
- * @author Varun Agrawal, Frank Dellaert
+ * @author Varun Agrawal, Jing Dong, Frank Dellaert
  * @date July 4, 2020
  */
 

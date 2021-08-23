@@ -40,7 +40,7 @@ using Sample = std::pair<double, double>;
 /**
  * Class that does regression via least squares
  * Example usage:
- *  auto fit = FitBasis<Chebyshev2>(3, data_points, noise_model);
+ *  auto fit = FitBasis<Chebyshev2>(data_points, noise_model, 3);
  *  Vector coefficients = fit.parameters();
  */
 template <class Basis>
@@ -74,8 +74,14 @@ class FitBasis {
     return gfg;
   }
 
-  /// Constructor
-  FitBasis(size_t N, const Sequence& sequence, const SharedNoiseModel& model) {
+  /**
+   * @brief Construct a new FitBasis object.
+   *
+   * @param sequence map of x->y values for a function, a.k.a. y = f(x).
+   * @param model The noise model to use.
+   * @param N The degree of the polynomial to fit.
+   */
+  FitBasis(const Sequence& sequence, const SharedNoiseModel& model, size_t N) {
     GaussianFactorGraph::shared_ptr gfg = LinearGraph(sequence, model, N);
     VectorValues solution = gfg->optimize();
     parameters_ = solution.at(0);
