@@ -34,8 +34,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Install (macOS)
-        if: runner.os == 'macOS'
+      - name: Install Dependencies
         run: |
           brew install cmake ninja
           brew install boost
@@ -48,7 +47,5 @@ jobs:
             echo "CC=clang" >> $GITHUB_ENV
             echo "CXX=clang++" >> $GITHUB_ENV
           fi
-      - name: Build and Test (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          bash .github/scripts/unix.sh -t
+      - name: Build and Test
+        run: bash .github/scripts/unix.sh -t

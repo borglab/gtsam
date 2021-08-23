@@ -92,7 +92,11 @@ function build ()
 
   configure
 
-  make -j2
+  if [ "$(uname)" == "Linux" ]; then
+    make -j$(nproc)
+  elif [ "$(uname)" == "Darwin" ]; then
+    make -j$(sysctl -n hw.physicalcpu)
+  fi
 
   finish
 }
@@ -105,8 +109,12 @@ function test ()
 
   configure
 
-  # Actual build:
-  make -j2 check
+  # Actual testing
+  if [ "$(uname)" == "Linux" ]; then
+    make -j$(nproc)
+  elif [ "$(uname)" == "Darwin" ]; then
+    make -j$(sysctl -n hw.physicalcpu)
+  fi
 
   finish
 }

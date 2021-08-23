@@ -66,12 +66,9 @@ private:
 
 public:
 
-  /**
-   * Function that compares two values
-   */
-  typedef std::function<bool(const T&, const T&)> CompareFunction;
+  /// Function that compares two values.
+  using CompareFunction = std::function<bool(const T&, const T&)>;
   CompareFunction compare_;
-//  bool (*compare_)(const T& a, const T& b);
 
   /// Default constructor - only for serialization
   NonlinearEquality() {
@@ -198,9 +195,8 @@ private:
 };
 // \class NonlinearEquality
 
-template<typename VALUE>
-struct traits<NonlinearEquality<VALUE> > : Testable<NonlinearEquality<VALUE> > {
-};
+template <typename VALUE>
+struct traits<NonlinearEquality<VALUE>> : Testable<NonlinearEquality<VALUE>> {};
 
 /* ************************************************************************* */
 /**
@@ -285,9 +281,9 @@ private:
 };
 // \NonlinearEquality1
 
-template<typename VALUE>
-struct traits<NonlinearEquality1<VALUE> > : Testable<NonlinearEquality1<VALUE> > {
-};
+template <typename VALUE>
+struct traits<NonlinearEquality1<VALUE> >
+    : Testable<NonlinearEquality1<VALUE> > {};
 
 /* ************************************************************************* */
 /**
