@@ -130,8 +130,8 @@ virtual class ManifoldEvaluationFactor : gtsam::NoiseModelFactor {
 template <BASIS = {gtsam::FourierBasis, gtsam::Chebyshev1Basis,
                    gtsam::Chebyshev2Basis, gtsam::Chebyshev2}>
 class FitBasis {
-  FitBasis(size_t N, const std::map<double, double>& sequence,
-           const gtsam::noiseModel::Base* model);
+  FitBasis(const std::map<double, double>& sequence,
+           const gtsam::noiseModel::Base* model, size_t N);
 
   static gtsam::NonlinearFactorGraph NonlinearGraph(
       const std::map<double, double>& sequence,
