@@ -40,8 +40,13 @@ using Sample = std::pair<double, double>;
 /**
  * Class that does regression via least squares
  * Example usage:
- *  auto fit = FitBasis<Chebyshev2>(data_points, noise_model, 3);
+ *  size_t N = 3;
+ *  auto fit = FitBasis<Chebyshev2>(data_points, noise_model, N);
  *  Vector coefficients = fit.parameters();
+ *
+ * where `data_points` are a map from `x` to `y` values indicating a function
+ * mapping at specific points, `noise_model` is the gaussian noise model, and
+ * `N` is the degree of the polynomial basis used to fit the function.
  */
 template <class Basis>
 class FitBasis {

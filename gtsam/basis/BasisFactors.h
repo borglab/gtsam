@@ -24,13 +24,9 @@
 namespace gtsam {
 
 /**
- * @brief Factor for enforcing the scalar value of a function is the same as
- * that of polynomial BASIS representation when using a pseudo-spectral
- * parameterization.
- *
- * If we have a scalar-valued function which gives us a value `z`, this factor
- * enforces the polynomial basis, when evaluated at the same point, gives us the
- * same value `z`.
+ * @brief Factor for enforcing the scalar value of the polynomial BASIS
+ * represenation is the same as the measured function value `z` when using a
+ * pseudo-spectral parameterization.
  *
  * @tparam BASIS The basis class to use e.g. Chebyshev2
  */
@@ -78,9 +74,9 @@ class GTSAM_EXPORT EvaluationFactor : public FunctorizedFactor<double, Vector> {
  * of size (M, N) is equal to a vector-valued function at the same point, when
  * using a pseudo-spectral parameterization.
  *
- * If we have a vector-valued function which gives us a value `z`, this factor
- * enforces the polynomial basis used to fit the function, when evaluated at the
- * same point, gives us the same value `z`.
+ * If we have a vector-valued function which gives us a value `z` at input `x`,
+ * this factor enforces the polynomial basis used to approximate the function
+ * gives us the same value `z` at `x`.
  *
  * @param BASIS: The basis class to use e.g. Chebyshev2
  * @param M: Size of the evaluated state vector.
@@ -201,9 +197,8 @@ class GTSAM_EXPORT VectorComponentFactor
 };
 
 /**
- * For a function which evaluates to a type T, this unary factor enforces that
- * the polynomial basis, when evaluated at the same point, gives us the same
- * value of T.
+ * For a function which gives us values of type T i.e. `T z = f(x)`, this unary factor enforces that
+ * the polynomial basis, when evaluated at `x`, gives us the same `z`.
  *
  * This is done via computations on the tangent space of the
  * manifold of T.

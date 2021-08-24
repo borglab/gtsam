@@ -43,8 +43,8 @@ namespace gtsam {
 
 /**
  * Chebyshev Interpolation on Chebyshev points of the second kind
- * Note that N here, the #points, is one less than N from Trefethen00book
- * (pg.42)
+ * Note that N here, the number of points, is one less than N from
+ * 'Approximation Theory and Approximation Practice by L. N. Trefethen (pg.42)'.
  */
 class GTSAM_EXPORT Chebyshev2 : public Basis<Chebyshev2> {
  public:
