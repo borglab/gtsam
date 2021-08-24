@@ -41,7 +41,7 @@ namespace gtsam {
  * If the calibration should be optimized, as well, use SmartProjectionFactor instead!
  * @addtogroup SLAM
  */
-template<class CALIBRATION>
+template<class CAMERA>
 class SmartProjectionPoseFactor: public SmartProjectionFactor<
     PinholePose<CALIBRATION> > {
 
