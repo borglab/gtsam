@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file   SmartProjectionPoseFactor.h
+ * @file   SmartProjectionPoseFactorC.h
  * @brief  Smart factor on poses, assuming camera calibration is fixed
  * @author Luca Carlone
  * @author Chris Beall
@@ -42,13 +42,13 @@ namespace gtsam {
  * @addtogroup SLAM
  */
 template<class CAMERA>
-class SmartProjectionPoseFactor: public SmartProjectionFactor<
-    PinholePose<CALIBRATION> > {
+class SmartProjectionPoseFactorC: public SmartProjectionFactor<CAMERA> {
 
 private:
-  typedef PinholePose<CALIBRATION> Camera;
-  typedef SmartProjectionFactor<Camera> Base;
-  typedef SmartProjectionPoseFactor<CALIBRATION> This;
+  typedef SmartProjectionFactor<CAMERA> Base;
+  typedef SmartProjectionPoseFactorC<CAMERA> This;
+  typedef CAMERA Camera;
+  typedef typename CAMERA::CalibrationType CALIBRATION;
 
 protected:
 
@@ -62,7 +62,7 @@ public:
   /**
    * Default constructor, only for serialization
    */
-  SmartProjectionPoseFactor() {}
+  SmartProjectionPoseFactorC() {}
 
   /**
    * Constructor
@@ -70,7 +70,7 @@ public:
    * @param K (fixed) calibration, assumed to be the same for all cameras
    * @param params parameters for the smart projection factors
    */
-  SmartProjectionPoseFactor(
+  SmartProjectionPoseFactorC(
       const SharedNoiseModel& sharedNoiseModel,
       const boost::shared_ptr<CALIBRATION> K,
       const SmartProjectionParams& params = SmartProjectionParams())
@@ -84,17 +84,17 @@ public:
    * @param body_P_sensor pose of the camera in the body frame (optional)
    * @param params parameters for the smart projection factors
    */
-  SmartProjectionPoseFactor(
+  SmartProjectionPoseFactorC(
       const SharedNoiseModel& sharedNoiseModel,
       const boost::shared_ptr<CALIBRATION> K,
       const boost::optional<Pose3> body_P_sensor,
       const SmartProjectionParams& params = SmartProjectionParams())
-      : SmartProjectionPoseFactor(sharedNoiseModel, K, params) {
+      : SmartProjectionPoseFactorC(sharedNoiseModel, K, params) {
     this->body_P_sensor_ = body_P_sensor;
   }
 
   /** Virtual destructor */
-  ~SmartProjectionPoseFactor() override {
+  ~SmartProjectionPoseFactorC() override {
   }
 
   /**
@@ -104,7 +104,7 @@ public:
    */
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
       DefaultKeyFormatter) const override {
-    std::cout << s << "SmartProjectionPoseFactor, z = \n ";
+    std::cout << s << "SmartProjectionPoseFactorC, z = \n ";
     Base::print("", keyFormatter);
   }
 
@@ -161,9 +161,33 @@ public:
 // end of class declaration
 
 /// traits
-template<class CALIBRATION>
-struct traits<SmartProjectionPoseFactor<CALIBRATION> > : public Testable<
-    SmartProjectionPoseFactor<CALIBRATION> > {
+template<class CAMERA>
+struct traits<SmartProjectionPoseFactorC<CAMERA> > : public Testable<
+    SmartProjectionPoseFactorC<CAMERA> > {
 };
+
+// legacy smart factor class, only templated on calibration and assuming pinhole
+template <class CALIBRATION> using SmartProjectionPoseFactor = SmartProjectionPoseFactorC< PinholePose<CALIBRATION> >;
+
+//template <class CALIBRATION>
+//using SmartProjectionPoseFactor = SmartProjectionPoseFactorC< PinholePose<CALIBRATION> >;
+
+//template<class CALIBRATION>
+//struct SmartProjectionPoseFactor{
+//    typedef SmartProjectionPoseFactorC< PinholePose<CALIBRATION> >;
+//};
+
+//template<class CALIBRATION>
+//class SmartProjectionPoseFactor{
+//    typedef SmartProjectionPoseFactorC< PinholePose<CALIBRATION> >;
+//};
+
+//typedef typename CAMERA::CalibrationType CALIBRATION;
+//template<class CALIBRATION>
+//class SmartProjectionPoseFactor: public SmartProjectionPoseFactorC< <PinholePose<CALIBRATION> > {
+// public:
+// private:
+//};
+// end
 
 } // \ namespace gtsam
