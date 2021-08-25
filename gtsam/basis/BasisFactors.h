@@ -25,7 +25,7 @@ namespace gtsam {
 
 /**
  * @brief Factor for enforcing the scalar value of the polynomial BASIS
- * represenation is the same as the measured function value `z` when using a
+ * represenation at `x` is the same as the measurement `z` when using a
  * pseudo-spectral parameterization.
  *
  * @tparam BASIS The basis class to use e.g. Chebyshev2
@@ -42,7 +42,7 @@ class GTSAM_EXPORT EvaluationFactor : public FunctorizedFactor<double, Vector> {
    * @brief Construct a new EvaluationFactor object
    *
    * @param key Symbol for value to optimize.
-   * @param z The result of the functional evaluation.
+   * @param z The measurement value.
    * @param model Noise model
    * @param N The degree of the polynomial.
    * @param x The point at which to evaluate the polynomial.
@@ -55,7 +55,7 @@ class GTSAM_EXPORT EvaluationFactor : public FunctorizedFactor<double, Vector> {
    * @brief Construct a new EvaluationFactor object
    *
    * @param key Symbol for value to optimize.
-   * @param z The result of the functional evaluation.
+   * @param z The measurement value.
    * @param model Noise model
    * @param N The degree of the polynomial.
    * @param x The point at which to evaluate the polynomial.
@@ -71,12 +71,15 @@ class GTSAM_EXPORT EvaluationFactor : public FunctorizedFactor<double, Vector> {
 
 /**
  * Unary factor for enforcing BASIS polynomial evaluation on a ParameterMatrix
- * of size (M, N) is equal to a vector-valued function at the same point, when
+ * of size (M, N) is equal to a vector-valued measurement at the same point,
+ when
  * using a pseudo-spectral parameterization.
  *
- * If we have a vector-valued function which gives us a value `z` at input `x`,
- * this factor enforces the polynomial basis used to approximate the function
- * gives us the same value `z` at `x`.
+ * This factors tries to enforce the basis function evaluation `f(x;p)` to take
+ * on the value `z` at location `x`, providing a gradient on the parameters p.
+ * In a probabilistic estimation context, `z` is known as a measurement, and the
+ * parameterized basis function can be seen as a
+ * measurement prediction function.
  *
  * @param BASIS: The basis class to use e.g. Chebyshev2
  * @param M: Size of the evaluated state vector.
@@ -95,7 +98,7 @@ class GTSAM_EXPORT VectorEvaluationFactor
    *
    * @param key The key to the ParameterMatrix object used to represent the
    * polynomial.
-   * @param z The vector-value of the function to estimate at the point `x`.
+   * @param z The measurement value.
    * @param model The noise model.
    * @param N The degree of the polynomial.
    * @param x The point at which to evaluate the basis polynomial.
@@ -111,7 +114,7 @@ class GTSAM_EXPORT VectorEvaluationFactor
    *
    * @param key The key to the ParameterMatrix object used to represent the
    * polynomial.
-   * @param z The vector-value of the function to estimate at the point `x`.
+   * @param z The measurement value.
    * @param model The noise model.
    * @param N The degree of the polynomial.
    * @param x The point at which to evaluate the basis polynomial.
@@ -129,7 +132,7 @@ class GTSAM_EXPORT VectorEvaluationFactor
 
 /**
  * Unary factor for enforcing BASIS polynomial evaluation on a ParameterMatrix
- * of size (P, N) is equal to a vector-valued function at the same point, when
+ * of size (P, N) is equal to specified measurement at the same point, when
  * using a pseudo-spectral parameterization.
  *
  * This factor is similar to `VectorEvaluationFactor` with the key difference
@@ -158,8 +161,8 @@ class GTSAM_EXPORT VectorComponentFactor
    *
    * @param key The key to the ParameterMatrix object used to represent the
    * polynomial.
-   * @param z The scalar value at a specified index `i` of the vector-valued
-   * function to estimate at the point `x`.
+   * @param z The scalar value at a specified index `i` of the full measurement
+   * vector.
    * @param model The noise model.
    * @param N The degree of the polynomial.
    * @param i The index for the evaluated vector to give us the desired scalar
@@ -176,8 +179,8 @@ class GTSAM_EXPORT VectorComponentFactor
    *
    * @param key The key to the ParameterMatrix object used to represent the
    * polynomial.
-   * @param z The scalar value at a specified index `i` of the vector-valued
-   * function to estimate at the point `x`.
+   * @param z The scalar value at a specified index `i` of the full measurement
+   * vector.
    * @param model The noise model.
    * @param N The degree of the polynomial.
    * @param i The index for the evaluated vector to give us the desired scalar
@@ -197,8 +200,9 @@ class GTSAM_EXPORT VectorComponentFactor
 };
 
 /**
- * For a function which gives us values of type T i.e. `T z = f(x)`, this unary factor enforces that
- * the polynomial basis, when evaluated at `x`, gives us the same `z`.
+ * For a measurement value of type T i.e. `T z = g(x)`, this unary
+ * factor enforces that the polynomial basis, when evaluated at `x`, gives us
+ * the same `z`, i.e. `T z = g(x) = f(x;p)`.
  *
  * This is done via computations on the tangent space of the
  * manifold of T.
@@ -226,10 +230,10 @@ class GTSAM_EXPORT ManifoldEvaluationFactor
    *
    * @param key Key for the state matrix parameterizing the function to estimate
    * via the BASIS.
-   * @param z The value of the function to estimate at the point `x`.
-   * @param model
+   * @param z The measurement value.
+   * @param model The noise model.
    * @param N The degree of the polynomial.
-   * @param x The point at which the function is evaluated.
+   * @param x The point at which the estimated function is evaluated.
    */
   ManifoldEvaluationFactor(Key key, const T &z, const SharedNoiseModel &model,
                            const size_t N, double x)
@@ -241,10 +245,10 @@ class GTSAM_EXPORT ManifoldEvaluationFactor
    *
    * @param key Key for the state matrix parameterizing the function to estimate
    * via the BASIS.
-   * @param z The value of the function to estimate at the point `x`.
-   * @param model
+   * @param z The measurement value.
+   * @param model The noise model.
    * @param N The degree of the polynomial.
-   * @param x The point at which the function is evaluated.
+   * @param x The point at which the estimated function is evaluated.
    * @param a Lower bound for the polynomial.
    * @param b Upper bound for the polynomial.
    */
@@ -260,8 +264,7 @@ class GTSAM_EXPORT ManifoldEvaluationFactor
 
 /**
  * A unary factor which enforces the evaluation of the derivative of a BASIS
- * polynomial is equal to the scalar value of a function at a specified point
- * `x`.
+ * polynomial at a specified point`x` is equal to the scalar measurement `z`.
  *
  * @param BASIS: The basis class to use e.g. Chebyshev2
  */
@@ -279,7 +282,7 @@ class GTSAM_EXPORT DerivativeFactor
    *
    * @param key The key to the ParameterMatrix which represents the basis
    * polynomial.
-   * @param z The result of the function to estimate evaluated at `x`.
+   * @param z The measurement value.
    * @param model The noise model.
    * @param N The degree of the polynomial.
    * @param x The point at which to evaluate the basis polynomial.
@@ -293,7 +296,7 @@ class GTSAM_EXPORT DerivativeFactor
    *
    * @param key The key to the ParameterMatrix which represents the basis
    * polynomial.
-   * @param z The result of the function to estimate evaluated at `x`.
+   * @param z The measurement value.
    * @param model The noise model.
    * @param N The degree of the polynomial.
    * @param x The point at which to evaluate the basis polynomial.
@@ -309,8 +312,7 @@ class GTSAM_EXPORT DerivativeFactor
 
 /**
  * A unary factor which enforces the evaluation of the derivative of a BASIS
- * polynomial is equal to the vector value of a function at a specified point
- * `x`.
+ * polynomial at a specified point `x` is equal to the vector value `z`.
  *
  * @param BASIS: The basis class to use e.g. Chebyshev2
  * @param M: Size of the evaluated state vector derivative.
@@ -330,7 +332,7 @@ class GTSAM_EXPORT VectorDerivativeFactor
    *
    * @param key The key to the ParameterMatrix which represents the basis
    * polynomial.
-   * @param z The vector result of the function to estimate evaluated at `x`.
+   * @param z The measurement value.
    * @param model The noise model.
    * @param N The degree of the polynomial.
    * @param x The point at which to evaluate the basis polynomial.
@@ -345,7 +347,7 @@ class GTSAM_EXPORT VectorDerivativeFactor
    *
    * @param key The key to the ParameterMatrix which represents the basis
    * polynomial.
-   * @param z The vector result of the function to estimate evaluated at `x`.
+   * @param z The measurement value.
    * @param model The noise model.
    * @param N The degree of the polynomial.
    * @param x The point at which to evaluate the basis polynomial.
@@ -363,7 +365,7 @@ class GTSAM_EXPORT VectorDerivativeFactor
 /**
  * A unary factor which enforces the evaluation of the derivative of a BASIS
  * polynomial is equal to the scalar value at a specific index `i` of a
- * vector-valued function at a specified point `x`.
+ * vector-valued measurement `z`.
  *
  * @param BASIS: The basis class to use e.g. Chebyshev2
  * @param P: Size of the control component derivative.
@@ -383,8 +385,8 @@ class GTSAM_EXPORT ComponentDerivativeFactor
    *
    * @param key The key to the ParameterMatrix which represents the basis
    * polynomial.
-   * @param z The scalar at a specific index `i` of the vector value of the
-   * function to estimate evaluated at `x`.
+   * @param z The scalar measurement value at a specific index `i` of the full
+   * measurement vector.
    * @param model The degree of the polynomial.
    * @param N The degree of the polynomial.
    * @param i The index for the evaluated vector to give us the desired scalar
@@ -401,8 +403,8 @@ class GTSAM_EXPORT ComponentDerivativeFactor
    *
    * @param key The key to the ParameterMatrix which represents the basis
    * polynomial.
-   * @param z The scalar at specified index `i` of the vector value of the
-   * function to estimate evaluated at `x`.
+   * @param z The scalar measurement value at a specific index `i` of the full
+   * measurement vector.
    * @param model The degree of the polynomial.
    * @param N The degree of the polynomial.
    * @param i The index for the evaluated vector to give us the desired scalar
