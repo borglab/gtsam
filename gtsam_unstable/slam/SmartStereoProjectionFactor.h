@@ -11,7 +11,7 @@
 
 /**
  * @file   SmartStereoProjectionFactor.h
- * @brief  Smart stereo factor on StereoCameras (pose + calibration)
+ * @brief  Smart stereo factor on StereoCameras (pose)
  * @author Luca Carlone
  * @author Zsolt Kira
  * @author Frank Dellaert
