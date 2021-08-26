@@ -46,15 +46,15 @@ namespace gtsam {
  * @addtogroup SLAM
  */
 template<class CAMERA>
-class SmartProjectionFactorP: public SmartProjectionFactor<CAMERA> {
+class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
 
-private:
+ private:
   typedef SmartProjectionFactor<CAMERA> Base;
   typedef SmartProjectionFactorP<CAMERA> This;
   typedef CAMERA Camera;
   typedef typename CAMERA::CalibrationType CALIBRATION;
 
-protected:
+ protected:
 
   /// shared pointer to calibration object (one for each observation)
   std::vector<boost::shared_ptr<CALIBRATION> > K_all_;
@@ -62,22 +62,23 @@ protected:
   /// Pose of the camera in the body frame (one for each observation)
   std::vector<Pose3> body_P_sensors_;
 
-public:
+ public:
 
   /// shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<This> shared_ptr;
 
   /// Default constructor, only for serialization
-  SmartProjectionFactorP() {}
+  SmartProjectionFactorP() {
+  }
 
   /**
    * Constructor
    * @param sharedNoiseModel isotropic noise model for the 2D feature measurements
    * @param params parameters for the smart projection factors
    */
-  SmartProjectionFactorP(
-      const SharedNoiseModel& sharedNoiseModel,
-      const SmartProjectionParams& params = SmartProjectionParams())
+  SmartProjectionFactorP(const SharedNoiseModel& sharedNoiseModel,
+                         const SmartProjectionParams& params =
+                             SmartProjectionParams())
       : Base(sharedNoiseModel, params) {
   }
 
@@ -95,7 +96,8 @@ public:
    * @param body_P_sensor (fixed) camera extrinsic calibration
    */
   void add(const Point2& measured, const Key& poseKey,
-           const boost::shared_ptr<CALIBRATION>& K, const Pose3 body_P_sensor = Pose3::identity()) {
+           const boost::shared_ptr<CALIBRATION>& K, const Pose3 body_P_sensor =
+               Pose3::identity()) {
     // store measurement and key
     this->measured_.push_back(measured);
     this->keys_.push_back(poseKey);
@@ -113,15 +115,17 @@ public:
    * @param Ks vector of (fixed) intrinsic calibration objects
    * @param body_P_sensors vector of (fixed) extrinsic calibration objects
    */
-  void add(const Point2Vector& measurements,
-           const std::vector<Key>& poseKeys,
+  void add(const Point2Vector& measurements, const std::vector<Key>& poseKeys,
            const std::vector<boost::shared_ptr<CALIBRATION>>& Ks,
-           const std::vector<Pose3> body_P_sensors) {
+           const std::vector<Pose3> body_P_sensors = std::vector<Pose3>()) {
     assert(poseKeys.size() == measurements.size());
     assert(poseKeys.size() == Ks.size());
-    assert(poseKeys.size() == body_P_sensors.size());
     for (size_t i = 0; i < measurements.size(); i++) {
-      add(measurements[i], poseKeys[i], Ks[i], body_P_sensors[i]);
+      if (poseKeys.size() == body_P_sensors.size()) {
+        add(measurements[i], poseKeys[i], Ks[i], body_P_sensors[i]);
+      } else {
+        add(measurements[i], poseKeys[i], Ks[i]);  // use default extrinsics
+      }
     }
   }
 
@@ -141,7 +145,7 @@ public:
    * @param keyFormatter optional formatter useful for printing Symbols
    */
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) const override {
+                 DefaultKeyFormatter) const override {
     std::cout << s << "SmartProjectionFactorP: \n ";
     for (size_t i = 0; i < K_all_.size(); i++) {
       std::cout << "-- Measurement nr " << i << std::endl;
@@ -155,13 +159,16 @@ public:
   bool equals(const NonlinearFactor& p, double tol = 1e-9) const override {
     const This *e = dynamic_cast<const This*>(&p);
     double extrinsicCalibrationEqual = true;
-    if(this->body_P_sensors_.size() == e->body_P_sensors().size()){
-      for(size_t i=0; i< this->body_P_sensors_.size(); i++){
-        if (!body_P_sensors_[i].equals(e->body_P_sensors()[i])){
-          extrinsicCalibrationEqual = false; break;
+    if (this->body_P_sensors_.size() == e->body_P_sensors().size()) {
+      for (size_t i = 0; i < this->body_P_sensors_.size(); i++) {
+        if (!body_P_sensors_[i].equals(e->body_P_sensors()[i])) {
+          extrinsicCalibrationEqual = false;
+          break;
         }
       }
-    }else{ extrinsicCalibrationEqual = false; }
+    } else {
+      extrinsicCalibrationEqual = false;
+    }
 
     return e && Base::equals(p, tol) && K_all_ == e->calibration()
         && extrinsicCalibrationEqual;
@@ -173,7 +180,7 @@ public:
   double error(const Values& values) const override {
     if (this->active(values)) {
       return this->totalReprojectionError(cameras(values));
-    } else { // else of active flag
+    } else {  // else of active flag
       return 0.0;
     }
   }
@@ -215,4 +222,4 @@ struct traits<SmartProjectionFactorP<CAMERA> > : public Testable<
     SmartProjectionFactorP<CAMERA> > {
 };
 
-} // \ namespace gtsam
+}  // \ namespace gtsam
