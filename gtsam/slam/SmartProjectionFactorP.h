@@ -98,7 +98,7 @@ public:
            const boost::shared_ptr<CALIBRATION>& K, const Pose3 body_P_sensor = Pose3::identity()) {
     // store measurement and key
     this->measured_.push_back(measured);
-    this->keys_.push_back(key);
+    this->keys_.push_back(poseKey);
     // store fixed intrinsic calibration
     K_all_.push_back(K);
     // store fixed extrinsics of the camera
@@ -186,9 +186,9 @@ public:
    */
   typename Base::Cameras cameras(const Values& values) const override {
     typename Base::Cameras cameras;
-    for (const Key& k : this->keys_) {
+    for (const Key& i : this->keys_) {
       const Pose3& body_P_cam = body_P_sensors_[i];
-      const Pose3 world_P_sensor_k = values.at<Pose3>(k) * body_P_cam;
+      const Pose3 world_P_sensor_k = values.at<Pose3>(i) * body_P_cam;
       cameras.emplace_back(world_P_sensor_k, K_all_[i]);
     }
     return cameras;
@@ -201,7 +201,8 @@ public:
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-    ar & BOOST_SERIALIZATION_NVP(K_);
+    ar & BOOST_SERIALIZATION_NVP(K_all_);
+    ar & BOOST_SERIALIZATION_NVP(body_P_sensors_);
   }
 
 };
