@@ -90,6 +90,9 @@ class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
                          const SmartProjectionParams& params =
                              SmartProjectionParams())
       : Base(sharedNoiseModel, params) {
+    // use only configuration that works with this factor
+    Base::params_.degeneracyMode = gtsam::ZERO_ON_DEGENERACY;
+    Base::params_.linearizationMode = gtsam::HESSIAN;
   }
 
   /** Virtual destructor */
