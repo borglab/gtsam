@@ -128,7 +128,7 @@ public:
   /// @{
 
   /// Project a point into the image and check depth
-  std::pair<Point2, bool> projectSafe(const Point3& pw) const;
+  std::pair<Unit3, bool> projectSafe(const Point3& pw) const;
 
   /** Project point into the image
    * (note: there is no CheiralityException for a spherical camera)
@@ -138,19 +138,8 @@ public:
   Unit3 project2(const Point3& point, OptionalJacobian<2, 6> Dpose =
       boost::none, OptionalJacobian<2, 3> Dpoint = boost::none) const;
 
-  /** Project point at infinity into the image
-   * (note: there is no CheiralityException for a spherical camera)
-   * @param point 3D point in world coordinates
-   * @return the intrinsic coordinates of the projected point
-   */
-  Unit3 project2(const Unit3& point,
-      OptionalJacobian<2, 6> Dpose = boost::none,
-      OptionalJacobian<2, 2> Dpoint = boost::none) const;
-
   /// backproject a 2-dimensional point to a 3-dimensional point at given depth
-  static Point3 BackprojectFromCamera(const Point2& p, const double depth,
-                                      OptionalJacobian<3, 2> Dpoint = boost::none,
-                                      OptionalJacobian<3, 1> Ddepth = boost::none);
+  Point3 backproject(const Unit3& p, const double depth) const;
 
   /** Project point into the image
    * (note: there is no CheiralityException for a spherical camera)
@@ -161,6 +150,22 @@ public:
       boost::none, OptionalJacobian<2, 3> Dpoint = boost::none) const;
   /// @}
 
+  /// move a cameras according to d
+  SphericalCamera retract(const Vector6& d) const {
+    return SphericalCamera(pose().retract(d));
+  }
+
+  /// return canonical coordinate
+  Vector6 localCoordinates(const SphericalCamera& p) const {
+    return pose().localCoordinates(p.pose());
+  }
+
+  /// for Canonical
+  static SphericalCamera identity() {
+    return SphericalCamera(Pose3::identity()); // assumes that the default constructor is valid
+  }
+
+
 private:
 
   /** Serialization function */
@@ -170,4 +175,6 @@ private:
     ar & BOOST_SERIALIZATION_NVP(pose_);
   }
 };
-// end of class PinholeBase
+// end of class SphericalCamera
+
+}
