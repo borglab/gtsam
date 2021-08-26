@@ -70,6 +70,7 @@ SmartProjectionParams params;
 namespace vanillaPose {
 typedef PinholePose<Cal3_S2> Camera;
 typedef SmartProjectionPoseFactor<Cal3_S2> SmartFactor;
+typedef SmartProjectionFactorP<Camera> SmartFactorP;
 static Cal3_S2::shared_ptr sharedK(new Cal3_S2(fov, w, h));
 Camera level_camera(level_pose, sharedK);
 Camera level_camera_right(pose_right, sharedK);

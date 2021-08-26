@@ -51,87 +51,76 @@ LevenbergMarquardtParams lmParams;
 // Make more verbose like so (in tests):
 // params.verbosityLM = LevenbergMarquardtParams::SUMMARY;
 
-///* ************************************************************************* */
-//TEST( SmartProjectionPoseFactor, Constructor) {
-//  using namespace vanillaPose;
-//  SmartFactor::shared_ptr factor1(new SmartFactor(model, sharedK));
-//}
-//
-///* ************************************************************************* */
-//TEST( SmartProjectionPoseFactor, Constructor2) {
-//  using namespace vanillaPose;
-//  SmartProjectionParams params;
-//  params.setRankTolerance(rankTol);
-//  SmartFactor factor1(model, sharedK, params);
-//}
-//
-///* ************************************************************************* */
-//TEST( SmartProjectionPoseFactor, Constructor3) {
-//  using namespace vanillaPose;
-//  SmartFactor::shared_ptr factor1(new SmartFactor(model, sharedK));
-//  factor1->add(measurement1, x1);
-//}
-//
-///* ************************************************************************* */
-//TEST( SmartProjectionPoseFactor, Constructor4) {
-//  using namespace vanillaPose;
-//  SmartProjectionParams params;
-//  params.setRankTolerance(rankTol);
-//  SmartFactor factor1(model, sharedK, params);
-//  factor1.add(measurement1, x1);
-//}
-//
-///* ************************************************************************* */
-//TEST( SmartProjectionPoseFactor, params) {
-//  using namespace vanillaPose;
-//  SmartProjectionParams params;
-//  double rt = params.getRetriangulationThreshold();
-//  EXPECT_DOUBLES_EQUAL(1e-5, rt, 1e-7);
-//  params.setRetriangulationThreshold(1e-3);
-//  rt = params.getRetriangulationThreshold();
-//  EXPECT_DOUBLES_EQUAL(1e-3, rt, 1e-7);
-//}
-//
-///* ************************************************************************* */
-//TEST( SmartProjectionPoseFactor, Equals ) {
-//  using namespace vanillaPose;
-//  SmartFactor::shared_ptr factor1(new SmartFactor(model, sharedK));
-//  factor1->add(measurement1, x1);
-//
-//  SmartFactor::shared_ptr factor2(new SmartFactor(model,sharedK));
-//  factor2->add(measurement1, x1);
-//
-//  CHECK(assert_equal(*factor1, *factor2));
-//}
-//
-///* *************************************************************************/
-//TEST( SmartProjectionPoseFactor, noiseless ) {
-//
-//  using namespace vanillaPose;
-//
-//  // Project two landmarks into two cameras
-//  Point2 level_uv = level_camera.project(landmark1);
-//  Point2 level_uv_right = level_camera_right.project(landmark1);
-//
-//  SmartFactor factor(model, sharedK);
-//  factor.add(level_uv, x1);
-//  factor.add(level_uv_right, x2);
-//
-//  Values values; // it's a pose factor, hence these are poses
-//  values.insert(x1, cam1.pose());
-//  values.insert(x2, cam2.pose());
-//
-//  double actualError = factor.error(values);
-//  double expectedError = 0.0;
-//  EXPECT_DOUBLES_EQUAL(expectedError, actualError, 1e-7);
-//
-//  SmartFactor::Cameras cameras = factor.cameras(values);
+/* ************************************************************************* */
+TEST( SmartProjectionFactorP, Constructor) {
+  using namespace vanillaPose;
+  SmartFactorP::shared_ptr factor1(new SmartFactorP(model));
+}
+
+/* ************************************************************************* */
+TEST( SmartProjectionFactorP, Constructor2) {
+  using namespace vanillaPose;
+  SmartProjectionParams params;
+  params.setRankTolerance(rankTol);
+  SmartFactorP factor1(model, params);
+}
+
+/* ************************************************************************* */
+TEST( SmartProjectionFactorP, Constructor3) {
+  using namespace vanillaPose;
+  SmartFactorP::shared_ptr factor1(new SmartFactorP(model));
+  factor1->add(measurement1, x1, sharedK);
+}
+
+/* ************************************************************************* */
+TEST( SmartProjectionFactorP, Constructor4) {
+  using namespace vanillaPose;
+  SmartProjectionParams params;
+  params.setRankTolerance(rankTol);
+  SmartFactorP factor1(model, params);
+  factor1.add(measurement1, x1, sharedK);
+}
+
+/* ************************************************************************* */
+TEST( SmartProjectionFactorP, Equals ) {
+  using namespace vanillaPose;
+  SmartFactorP::shared_ptr factor1(new SmartFactorP(model));
+  factor1->add(measurement1, x1, sharedK);
+
+  SmartFactorP::shared_ptr factor2(new SmartFactorP(model));
+  factor2->add(measurement1, x1, sharedK);
+
+  CHECK(assert_equal(*factor1, *factor2));
+}
+
+/* *************************************************************************/
+TEST( SmartProjectionFactorP, noiseless ) {
+
+  using namespace vanillaPose;
+
+  // Project two landmarks into two cameras
+  Point2 level_uv = level_camera.project(landmark1);
+  Point2 level_uv_right = level_camera_right.project(landmark1);
+
+  SmartFactorP factor(model);
+  factor.add(level_uv, x1, sharedK);
+  factor.add(level_uv_right, x2, sharedK);
+
+  Values values; // it's a pose factor, hence these are poses
+  values.insert(x1, cam1.pose());
+  values.insert(x2, cam2.pose());
+
+  double actualError = factor.error(values);
+  double expectedError = 0.0;
+  EXPECT_DOUBLES_EQUAL(expectedError, actualError, 1e-7);
+
+//  SmartFactorP::Cameras cameras = factor.cameras(values);
 //  double actualError2 = factor.totalReprojectionError(cameras);
 //  EXPECT_DOUBLES_EQUAL(expectedError, actualError2, 1e-7);
 //
 //  // Calculate expected derivative for point (easiest to check)
 //  std::function<Vector(Point3)> f = //
-//      std::bind(&SmartFactor::whitenedError<Point3>, factor, cameras, std::placeholders::_1);
+//      std::bind(&SmartFactorP::whitenedError<Point3>, factor, cameras, std::placeholders::_1);
 //
 //  // Calculate using computeEP
 //  Matrix actualE;
@@ -146,7 +135,7 @@ LevenbergMarquardtParams lmParams;
 //  EXPECT(assert_equal(expectedE, actualE, 1e-7));
 //
 //  // Calculate using reprojectionError
-//  SmartFactor::Cameras::FBlocks F;
+//  SmartFactorP::Cameras::FBlocks F;
 //  Matrix E;
 //  Vector actualErrors = factor.unwhitenedError(cameras, *point, F, E);
 //  EXPECT(assert_equal(expectedE, E, 1e-7));
@@ -155,15 +144,15 @@ LevenbergMarquardtParams lmParams;
 //
 //  // Calculate using computeJacobians
 //  Vector b;
-//  SmartFactor::FBlocks Fs;
+//  SmartFactorP::FBlocks Fs;
 //  factor.computeJacobians(Fs, E, b, cameras, *point);
 //  double actualError3 = b.squaredNorm();
 //  EXPECT(assert_equal(expectedE, E, 1e-7));
 //  EXPECT_DOUBLES_EQUAL(expectedError, actualError3, 1e-6);
-//}
-//
+}
+
 ///* *************************************************************************/
-//TEST( SmartProjectionPoseFactor, noisy ) {
+//TEST( SmartProjectionFactorP, noisy ) {
 //
 //  using namespace vanillaPose;
 //
@@ -178,13 +167,13 @@ LevenbergMarquardtParams lmParams;
 //      Point3(0.5, 0.1, 0.3));
 //  values.insert(x2, pose_right.compose(noise_pose));
 //
-//  SmartFactor::shared_ptr factor(new SmartFactor(model, sharedK));
+//  SmartFactorP::shared_ptr factor(new SmartFactorP(model, sharedK));
 //  factor->add(level_uv, x1);
 //  factor->add(level_uv_right, x2);
 //
 //  double actualError1 = factor->error(values);
 //
-//  SmartFactor::shared_ptr factor2(new SmartFactor(model, sharedK));
+//  SmartFactorP::shared_ptr factor2(new SmartFactorP(model, sharedK));
 //  Point2Vector measurements;
 //  measurements.push_back(level_uv);
 //  measurements.push_back(level_uv_right);
@@ -197,7 +186,7 @@ LevenbergMarquardtParams lmParams;
 //}
 //
 ///* *************************************************************************/
-//TEST(SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform) {
+//TEST(SmartProjectionFactorP, smartFactorWithSensorBodyTransform) {
 //  using namespace vanillaPose;
 //
 //  // create arbitrary body_T_sensor (transforms from sensor to body)
@@ -227,13 +216,13 @@ LevenbergMarquardtParams lmParams;
 //  params.setDegeneracyMode(IGNORE_DEGENERACY);
 //  params.setEnableEPI(false);
 //
-//  SmartFactor smartFactor1(model, sharedK, body_T_sensor, params);
+//  SmartFactorP smartFactor1(model, sharedK, body_T_sensor, params);
 //  smartFactor1.add(measurements_cam1, views);
 //
-//  SmartFactor smartFactor2(model, sharedK, body_T_sensor, params);
+//  SmartFactorP smartFactor2(model, sharedK, body_T_sensor, params);
 //  smartFactor2.add(measurements_cam2, views);
 //
-//  SmartFactor smartFactor3(model, sharedK, body_T_sensor, params);
+//  SmartFactorP smartFactor3(model, sharedK, body_T_sensor, params);
 //  smartFactor3.add(measurements_cam3, views);
 //
 //  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -272,7 +261,7 @@ LevenbergMarquardtParams lmParams;
 //}
 //
 ///* *************************************************************************/
-//TEST( SmartProjectionPoseFactor, 3poses_smart_projection_factor ) {
+//TEST( SmartProjectionFactorP, 3poses_smart_projection_factor ) {
 //
 //  using namespace vanillaPose2;
 //  Point2Vector measurements_cam1, measurements_cam2, measurements_cam3;
@@ -287,13 +276,13 @@ LevenbergMarquardtParams lmParams;
 //  views.push_back(x2);
 //  views.push_back(x3);
 //
-//  SmartFactor::shared_ptr smartFactor1(new SmartFactor(model, sharedK2));
+//  SmartFactorP::shared_ptr smartFactor1(new SmartFactorP(model, sharedK2));
 //  smartFactor1->add(measurements_cam1, views);
 //
-//  SmartFactor::shared_ptr smartFactor2(new SmartFactor(model, sharedK2));
+//  SmartFactorP::shared_ptr smartFactor2(new SmartFactorP(model, sharedK2));
 //  smartFactor2->add(measurements_cam2, views);
 //
-//  SmartFactor::shared_ptr smartFactor3(new SmartFactor(model, sharedK2));
+//  SmartFactorP::shared_ptr smartFactor3(new SmartFactorP(model, sharedK2));
 //  smartFactor3->add(measurements_cam3, views);
 //
 //  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -333,7 +322,7 @@ LevenbergMarquardtParams lmParams;
 //}
 //
 ///* *************************************************************************/
-//TEST( SmartProjectionPoseFactor, Factors ) {
+//TEST( SmartProjectionFactorP, Factors ) {
 //
 //  using namespace vanillaPose;
 //
@@ -355,10 +344,10 @@ LevenbergMarquardtParams lmParams;
 //  // Create smart factors
 //  KeyVector views {x1, x2};
 //
-//  SmartFactor::shared_ptr smartFactor1 = boost::make_shared<SmartFactor>(model, sharedK);
+//  SmartFactorP::shared_ptr smartFactor1 = boost::make_shared<SmartFactorP>(model, sharedK);
 //  smartFactor1->add(measurements_cam1, views);
 //
-//  SmartFactor::Cameras cameras;
+//  SmartFactorP::Cameras cameras;
 //  cameras.push_back(cam1);
 //  cameras.push_back(cam2);
 //
@@ -435,7 +424,7 @@ LevenbergMarquardtParams lmParams;
 //    E(2, 0) = 10;
 //    E(2, 2) = 1;
 //    E(3, 1) = 10;
-//    SmartFactor::FBlocks Fs = list_of<Matrix>(F1)(F2);
+//    SmartFactorP::FBlocks Fs = list_of<Matrix>(F1)(F2);
 //    Vector b(4);
 //    b.setZero();
 //
@@ -497,7 +486,7 @@ LevenbergMarquardtParams lmParams;
 //}
 //
 ///* *************************************************************************/
-//TEST( SmartProjectionPoseFactor, 3poses_iterative_smart_projection_factor ) {
+//TEST( SmartProjectionFactorP, 3poses_iterative_smart_projection_factor ) {
 //
 //  using namespace vanillaPose;
 //
@@ -510,13 +499,13 @@ LevenbergMarquardtParams lmParams;
 //  projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
 //  projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
 //
-//  SmartFactor::shared_ptr smartFactor1(new SmartFactor(model, sharedK));
+//  SmartFactorP::shared_ptr smartFactor1(new SmartFactorP(model, sharedK));
 //  smartFactor1->add(measurements_cam1, views);
 //
-//  SmartFactor::shared_ptr smartFactor2(new SmartFactor(model, sharedK));
+//  SmartFactorP::shared_ptr smartFactor2(new SmartFactorP(model, sharedK));
 //  smartFactor2->add(measurements_cam2, views);
 //
-//  SmartFactor::shared_ptr smartFactor3(new SmartFactor(model, sharedK));
+//  SmartFactorP::shared_ptr smartFactor3(new SmartFactorP(model, sharedK));
 //  smartFactor3->add(measurements_cam3, views);
 //
 //  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -551,7 +540,7 @@ LevenbergMarquardtParams lmParams;
 //}
 //
 ///* *************************************************************************/
-//TEST( SmartProjectionPoseFactor, jacobianSVD ) {
+//TEST( SmartProjectionFactorP, jacobianSVD ) {
 //
 //  using namespace vanillaPose;
 //
@@ -569,18 +558,18 @@ LevenbergMarquardtParams lmParams;
 //  params.setLinearizationMode(gtsam::JACOBIAN_SVD);
 //  params.setDegeneracyMode(gtsam::IGNORE_DEGENERACY);
 //  params.setEnableEPI(false);
-//  SmartFactor factor1(model, sharedK, params);
+//  SmartFactorP factor1(model, sharedK, params);
 //
-//  SmartFactor::shared_ptr smartFactor1(
-//      new SmartFactor(model, sharedK, params));
+//  SmartFactorP::shared_ptr smartFactor1(
+//      new SmartFactorP(model, sharedK, params));
 //  smartFactor1->add(measurements_cam1, views);
 //
-//  SmartFactor::shared_ptr smartFactor2(
-//      new SmartFactor(model, sharedK, params));
+//  SmartFactorP::shared_ptr smartFactor2(
+//      new SmartFactorP(model, sharedK, params));
 //  smartFactor2->add(measurements_cam2, views);
 //
-//  SmartFactor::shared_ptr smartFactor3(
-//      new SmartFactor(model, sharedK, params));
+//  SmartFactorP::shared_ptr smartFactor3(
+//      new SmartFactorP(model, sharedK, params));
 //  smartFactor3->add(measurements_cam3, views);
 //
 //  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -607,7 +596,7 @@ LevenbergMarquardtParams lmParams;
 //}
 //
 ///* *************************************************************************/
-//TEST( SmartProjectionPoseFactor, landmarkDistance ) {
+//TEST( SmartProjectionFactorP, landmarkDistance ) {
 //
 //  using namespace vanillaPose;
 //
@@ -629,16 +618,16 @@ LevenbergMarquardtParams lmParams;
 //  params.setLandmarkDistanceThreshold(excludeLandmarksFutherThanDist);
 //  params.setEnableEPI(false);
 //
-//  SmartFactor::shared_ptr smartFactor1(
-//      new SmartFactor(model, sharedK, params));
+//  SmartFactorP::shared_ptr smartFactor1(
+//      new SmartFactorP(model, sharedK, params));
 //  smartFactor1->add(measurements_cam1, views);
 //
-//  SmartFactor::shared_ptr smartFactor2(
-//      new SmartFactor(model, sharedK, params));
+//  SmartFactorP::shared_ptr smartFactor2(
+//      new SmartFactorP(model, sharedK, params));
 //  smartFactor2->add(measurements_cam2, views);
 //
-//  SmartFactor::shared_ptr smartFactor3(
-//      new SmartFactor(model, sharedK, params));
+//  SmartFactorP::shared_ptr smartFactor3(
+//      new SmartFactorP(model, sharedK, params));
 //  smartFactor3->add(measurements_cam3, views);
 //
 //  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -666,7 +655,7 @@ LevenbergMarquardtParams lmParams;
 //}
 //
 ///* *************************************************************************/
-//TEST( SmartProjectionPoseFactor, dynamicOutlierRejection ) {
+//TEST( SmartProjectionFactorP, dynamicOutlierRejection ) {
 //
 //  using namespace vanillaPose;
 //
@@ -693,20 +682,20 @@ LevenbergMarquardtParams lmParams;
 //  params.setLandmarkDistanceThreshold(excludeLandmarksFutherThanDist);
 //  params.setDynamicOutlierRejectionThreshold(dynamicOutlierRejectionThreshold);
 //
-//  SmartFactor::shared_ptr smartFactor1(
-//      new SmartFactor(model, sharedK, params));
+//  SmartFactorP::shared_ptr smartFactor1(
+//      new SmartFactorP(model, sharedK, params));
 //  smartFactor1->add(measurements_cam1, views);
 //
-//  SmartFactor::shared_ptr smartFactor2(
-//      new SmartFactor(model, sharedK, params));
+//  SmartFactorP::shared_ptr smartFactor2(
+//      new SmartFactorP(model, sharedK, params));
 //  smartFactor2->add(measurements_cam2, views);
 //
-//  SmartFactor::shared_ptr smartFactor3(
-//      new SmartFactor(model, sharedK, params));
+//  SmartFactorP::shared_ptr smartFactor3(
+//      new SmartFactorP(model, sharedK, params));
 //  smartFactor3->add(measurements_cam3, views);
 //
-//  SmartFactor::shared_ptr smartFactor4(
-//      new SmartFactor(model, sharedK, params));
+//  SmartFactorP::shared_ptr smartFactor4(
+//      new SmartFactorP(model, sharedK, params));
 //  smartFactor4->add(measurements_cam4, views);
 //
 //  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -732,7 +721,7 @@ LevenbergMarquardtParams lmParams;
 //}
 //
 ///* *************************************************************************/
-//TEST( SmartProjectionPoseFactor, jacobianQ ) {
+//TEST( SmartProjectionFactorP, jacobianQ ) {
 //
 //  using namespace vanillaPose;
 //
@@ -748,16 +737,16 @@ LevenbergMarquardtParams lmParams;
 //  SmartProjectionParams params;
 //  params.setLinearizationMode(gtsam::JACOBIAN_Q);
 //
-//  SmartFactor::shared_ptr smartFactor1(
-//      new SmartFactor(model, sharedK, params));
+//  SmartFactorP::shared_ptr smartFactor1(
+//      new SmartFactorP(model, sharedK, params));
 //  smartFactor1->add(measurements_cam1, views);
 //
-//  SmartFactor::shared_ptr smartFactor2(
-//      new SmartFactor(model, sharedK, params));
+//  SmartFactorP::shared_ptr smartFactor2(
+//      new SmartFactorP(model, sharedK, params));
 //  smartFactor2->add(measurements_cam2, views);
 //
-//  SmartFactor::shared_ptr smartFactor3(
-//      new SmartFactor(model, sharedK, params));
+//  SmartFactorP::shared_ptr smartFactor3(
+//      new SmartFactorP(model, sharedK, params));
 //  smartFactor3->add(measurements_cam3, views);
 //
 //  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -783,7 +772,7 @@ LevenbergMarquardtParams lmParams;
 //}
 //
 ///* *************************************************************************/
-//TEST( SmartProjectionPoseFactor, 3poses_projection_factor ) {
+//TEST( SmartProjectionFactorP, 3poses_projection_factor ) {
 //
 //  using namespace vanillaPose2;
 //
@@ -830,7 +819,7 @@ LevenbergMarquardtParams lmParams;
 //}
 //
 ///* *************************************************************************/
-//TEST( SmartProjectionPoseFactor, CheckHessian) {
+//TEST( SmartProjectionFactorP, CheckHessian) {
 //
 //  KeyVector views {x1, x2, x3};
 //
@@ -853,16 +842,16 @@ LevenbergMarquardtParams lmParams;
 //  SmartProjectionParams params;
 //  params.setRankTolerance(10);
 //
-//  SmartFactor::shared_ptr smartFactor1(
-//      new SmartFactor(model, sharedK, params)); // HESSIAN, by default
+//  SmartFactorP::shared_ptr smartFactor1(
+//      new SmartFactorP(model, sharedK, params)); // HESSIAN, by default
 //  smartFactor1->add(measurements_cam1, views);
 //
-//  SmartFactor::shared_ptr smartFactor2(
-//      new SmartFactor(model, sharedK, params)); // HESSIAN, by default
+//  SmartFactorP::shared_ptr smartFactor2(
+//      new SmartFactorP(model, sharedK, params)); // HESSIAN, by default
 //  smartFactor2->add(measurements_cam2, views);
 //
-//  SmartFactor::shared_ptr smartFactor3(
-//      new SmartFactor(model, sharedK, params)); // HESSIAN, by default
+//  SmartFactorP::shared_ptr smartFactor3(
+//      new SmartFactorP(model, sharedK, params)); // HESSIAN, by default
 //  smartFactor3->add(measurements_cam3, views);
 //
 //  NonlinearFactorGraph graph;
@@ -912,7 +901,7 @@ LevenbergMarquardtParams lmParams;
 //}
 //
 ///* *************************************************************************/
-//TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_factor ) {
+//TEST( SmartProjectionFactorP, 3poses_2land_rotation_only_smart_projection_factor ) {
 //  using namespace vanillaPose2;
 //
 //  KeyVector views {x1, x2, x3};
@@ -933,12 +922,12 @@ LevenbergMarquardtParams lmParams;
 //  params.setRankTolerance(50);
 //  params.setDegeneracyMode(gtsam::HANDLE_INFINITY);
 //
-//  SmartFactor::shared_ptr smartFactor1(
-//      new SmartFactor(model, sharedK2, params));
+//  SmartFactorP::shared_ptr smartFactor1(
+//      new SmartFactorP(model, sharedK2, params));
 //  smartFactor1->add(measurements_cam1, views);
 //
-//  SmartFactor::shared_ptr smartFactor2(
-//      new SmartFactor(model, sharedK2, params));
+//  SmartFactorP::shared_ptr smartFactor2(
+//      new SmartFactorP(model, sharedK2, params));
 //  smartFactor2->add(measurements_cam2, views);
 //
 //  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -966,7 +955,7 @@ LevenbergMarquardtParams lmParams;
 //}
 //
 ///* *************************************************************************/
-//TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) {
+//TEST( SmartProjectionFactorP, 3poses_rotation_only_smart_projection_factor ) {
 //
 //  // this test considers a condition in which the cheirality constraint is triggered
 //  using namespace vanillaPose;
@@ -991,16 +980,16 @@ LevenbergMarquardtParams lmParams;
 //  params.setRankTolerance(10);
 //  params.setDegeneracyMode(gtsam::ZERO_ON_DEGENERACY);
 //
-//  SmartFactor::shared_ptr smartFactor1(
-//      new SmartFactor(model, sharedK, params));
+//  SmartFactorP::shared_ptr smartFactor1(
+//      new SmartFactorP(model, sharedK, params));
 //  smartFactor1->add(measurements_cam1, views);
 //
-//  SmartFactor::shared_ptr smartFactor2(
-//      new SmartFactor(model, sharedK, params));
+//  SmartFactorP::shared_ptr smartFactor2(
+//      new SmartFactorP(model, sharedK, params));
 //  smartFactor2->add(measurements_cam2, views);
 //
-//  SmartFactor::shared_ptr smartFactor3(
-//      new SmartFactor(model, sharedK, params));
+//  SmartFactorP::shared_ptr smartFactor3(
+//      new SmartFactorP(model, sharedK, params));
 //  smartFactor3->add(measurements_cam3, views);
 //
 //  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -1049,7 +1038,7 @@ LevenbergMarquardtParams lmParams;
 //}
 //
 ///* *************************************************************************/
-//TEST( SmartProjectionPoseFactor, Hessian ) {
+//TEST( SmartProjectionFactorP, Hessian ) {
 //
 //  using namespace vanillaPose2;
 //
@@ -1062,7 +1051,7 @@ LevenbergMarquardtParams lmParams;
 //  measurements_cam1.push_back(cam1_uv1);
 //  measurements_cam1.push_back(cam2_uv1);
 //
-//  SmartFactor::shared_ptr smartFactor1(new SmartFactor(model, sharedK2));
+//  SmartFactorP::shared_ptr smartFactor1(new SmartFactorP(model, sharedK2));
 //  smartFactor1->add(measurements_cam1, views);
 //
 //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 10, 0., -M_PI / 10),
@@ -1080,8 +1069,8 @@ LevenbergMarquardtParams lmParams;
 //}
 //
 ///* *************************************************************************/
-//TEST( SmartProjectionPoseFactor, HessianWithRotation ) {
-//  // cout << " ************************ SmartProjectionPoseFactor: rotated Hessian **********************" << endl;
+//TEST( SmartProjectionFactorP, HessianWithRotation ) {
+//  // cout << " ************************ SmartProjectionFactorP: rotated Hessian **********************" << endl;
 //
 //  using namespace vanillaPose;
 //
@@ -1091,7 +1080,7 @@ LevenbergMarquardtParams lmParams;
 //
 //  projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
 //
-//  SmartFactor::shared_ptr smartFactorInstance(new SmartFactor(model, sharedK));
+//  SmartFactorP::shared_ptr smartFactorInstance(new SmartFactorP(model, sharedK));
 //  smartFactorInstance->add(measurements_cam1, views);
 //
 //  Values values;
@@ -1131,7 +1120,7 @@ LevenbergMarquardtParams lmParams;
 //}
 //
 ///* *************************************************************************/
-//TEST( SmartProjectionPoseFactor, HessianWithRotationDegenerate ) {
+//TEST( SmartProjectionFactorP, HessianWithRotationDegenerate ) {
 //
 //  using namespace vanillaPose2;
 //
@@ -1144,7 +1133,7 @@ LevenbergMarquardtParams lmParams;
 //  Point2Vector measurements_cam1;
 //  projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
 //
-//  SmartFactor::shared_ptr smartFactor(new SmartFactor(model, sharedK2));
+//  SmartFactorP::shared_ptr smartFactor(new SmartFactorP(model, sharedK2));
 //  smartFactor->add(measurements_cam1, views);
 //
 //  Values values;
@@ -1183,16 +1172,16 @@ LevenbergMarquardtParams lmParams;
 //}
 //
 ///* ************************************************************************* */
-//TEST( SmartProjectionPoseFactor, ConstructorWithCal3Bundler) {
+//TEST( SmartProjectionFactorP, ConstructorWithCal3Bundler) {
 //  using namespace bundlerPose;
 //  SmartProjectionParams params;
 //  params.setDegeneracyMode(gtsam::ZERO_ON_DEGENERACY);
-//  SmartFactor factor(model, sharedBundlerK, params);
+//  SmartFactorP factor(model, sharedBundlerK, params);
 //  factor.add(measurement1, x1);
 //}
 //
 ///* *************************************************************************/
-//TEST( SmartProjectionPoseFactor, Cal3Bundler ) {
+//TEST( SmartProjectionFactorP, Cal3Bundler ) {
 //
 //  using namespace bundlerPose;
 //
@@ -1208,13 +1197,13 @@ LevenbergMarquardtParams lmParams;
 //
 //  KeyVector views {x1, x2, x3};
 //
-//  SmartFactor::shared_ptr smartFactor1(new SmartFactor(model, sharedBundlerK));
+//  SmartFactorP::shared_ptr smartFactor1(new SmartFactorP(model, sharedBundlerK));
 //  smartFactor1->add(measurements_cam1, views);
 //
-//  SmartFactor::shared_ptr smartFactor2(new SmartFactor(model, sharedBundlerK));
+//  SmartFactorP::shared_ptr smartFactor2(new SmartFactorP(model, sharedBundlerK));
 //  smartFactor2->add(measurements_cam2, views);
 //
-//  SmartFactor::shared_ptr smartFactor3(new SmartFactor(model, sharedBundlerK));
+//  SmartFactorP::shared_ptr smartFactor3(new SmartFactorP(model, sharedBundlerK));
 //  smartFactor3->add(measurements_cam3, views);
 //
 //  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -1248,7 +1237,7 @@ LevenbergMarquardtParams lmParams;
 //}
 //
 ///* *************************************************************************/
-//TEST( SmartProjectionPoseFactor, Cal3BundlerRotationOnly ) {
+//TEST( SmartProjectionFactorP, Cal3BundlerRotationOnly ) {
 //
 //  using namespace bundlerPose;
 //
@@ -1275,16 +1264,16 @@ LevenbergMarquardtParams lmParams;
 //  params.setRankTolerance(10);
 //  params.setDegeneracyMode(gtsam::ZERO_ON_DEGENERACY);
 //
-//  SmartFactor::shared_ptr smartFactor1(
-//      new SmartFactor(model, sharedBundlerK, params));
+//  SmartFactorP::shared_ptr smartFactor1(
+//      new SmartFactorP(model, sharedBundlerK, params));
 //  smartFactor1->add(measurements_cam1, views);
 //
-//  SmartFactor::shared_ptr smartFactor2(
-//      new SmartFactor(model, sharedBundlerK, params));
+//  SmartFactorP::shared_ptr smartFactor2(
+//      new SmartFactorP(model, sharedBundlerK, params));
 //  smartFactor2->add(measurements_cam2, views);
 //
-//  SmartFactor::shared_ptr smartFactor3(
-//      new SmartFactor(model, sharedBundlerK, params));
+//  SmartFactorP::shared_ptr smartFactor3(
+//      new SmartFactorP(model, sharedBundlerK, params));
 //  smartFactor3->add(measurements_cam3, views);
 //
 //  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -1340,25 +1329,25 @@ LevenbergMarquardtParams lmParams;
 //BOOST_CLASS_EXPORT_GUID(gtsam::SharedNoiseModel, "gtsam_SharedNoiseModel");
 //BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal");
 //
-//TEST(SmartProjectionPoseFactor, serialize) {
+//TEST(SmartProjectionFactorP, serialize) {
 //  using namespace vanillaPose;
 //  using namespace gtsam::serializationTestHelpers;
 //  SmartProjectionParams params;
 //  params.setRankTolerance(rankTol);
-//  SmartFactor factor(model, sharedK, params);
+//  SmartFactorP factor(model, sharedK, params);
 //
 //  EXPECT(equalsObj(factor));
 //  EXPECT(equalsXML(factor));
 //  EXPECT(equalsBinary(factor));
 //}
 //
-//TEST(SmartProjectionPoseFactor, serialize2) {
+//TEST(SmartProjectionFactorP, serialize2) {
 //  using namespace vanillaPose;
 //  using namespace gtsam::serializationTestHelpers;
 //  SmartProjectionParams params;
 //  params.setRankTolerance(rankTol);
 //  Pose3 bts;
-//  SmartFactor factor(model, sharedK, bts, params);
+//  SmartFactorP factor(model, sharedK, bts, params);
 //
 //  // insert some measurments
 //  KeyVector key_view;

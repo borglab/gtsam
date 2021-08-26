@@ -186,10 +186,11 @@ public:
    */
   typename Base::Cameras cameras(const Values& values) const override {
     typename Base::Cameras cameras;
-    for (const Key& i : this->keys_) {
-      const Pose3& body_P_cam = body_P_sensors_[i];
-      const Pose3 world_P_sensor_k = values.at<Pose3>(i) * body_P_cam;
-      cameras.emplace_back(world_P_sensor_k, K_all_[i]);
+    for (size_t i = 0; i < this->keys_.size(); i++) {
+      const Pose3& body_P_cam_i = body_P_sensors_[i];
+      const Pose3 world_P_sensor_i = values.at<Pose3>(this->keys_[i])
+          * body_P_cam_i;
+      cameras.emplace_back(world_P_sensor_i, K_all_[i]);
     }
     return cameras;
   }
