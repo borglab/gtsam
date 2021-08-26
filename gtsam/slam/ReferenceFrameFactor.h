@@ -87,7 +87,7 @@ public:
   : Base(noiseModel::Isotropic::Sigma(traits<POINT>::dimension, sigma),
       globalKey, transKey, localKey) {}
 
-  virtual ~ReferenceFrameFactor(){}
+  ~ReferenceFrameFactor() override{}
 
   NonlinearFactor::shared_ptr clone() const override {
     return boost::static_pointer_cast<NonlinearFactor>(

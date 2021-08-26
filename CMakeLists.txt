@@ -34,7 +34,7 @@ include(GtsamTesting)
 include(GtsamPrinting)
 
 # guard against in-source builds
-if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
+if(${GTSAM_SOURCE_DIR} STREQUAL ${GTSAM_BINARY_DIR})
   message(FATAL_ERROR "In-source builds not allowed. Please make a new directory (called a build directory) and run CMake from there. You may need to remove CMakeCache.txt. ")
 endif()
 
@@ -63,12 +63,6 @@ include(cmake/HandleGlobalBuildFlags.cmake) # Build flags
 # Build CppUnitLite
 add_subdirectory(CppUnitLite)
 
-# This is the new wrapper
-if(GTSAM_BUILD_PYTHON)
-    list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/wrap/cmake")
-    add_subdirectory(python)
-endif()
-
 # Build GTSAM library
 add_subdirectory(gtsam)
 
@@ -86,8 +80,24 @@ if (GTSAM_BUILD_UNSTABLE)
     add_subdirectory(gtsam_unstable)
 endif()
 
+# This is the new wrapper
+if(GTSAM_BUILD_PYTHON OR GTSAM_INSTALL_MATLAB_TOOLBOX)
+    # Need to set this for the wrap package so we don't use the default value.
+    set(WRAP_PYTHON_VERSION ${GTSAM_PYTHON_VERSION}
+        CACHE STRING "The Python version to use for wrapping")
+    # Set the include directory for matlab.h
+    set(GTWRAP_INCLUDE_NAME "wrap")
+    add_subdirectory(wrap)
+    list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/wrap/cmake")
+endif()
+
+# Python toolbox
+if(GTSAM_BUILD_PYTHON)
+    add_subdirectory(python)
+endif()
+
 # Matlab toolbox
-if (GTSAM_INSTALL_MATLAB_TOOLBOX)
+if(GTSAM_INSTALL_MATLAB_TOOLBOX)
     add_subdirectory(matlab)
 endif()
 

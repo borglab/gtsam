@@ -25,6 +25,8 @@
 
 namespace gtsam {
 
+class LevenbergMarquardtOptimizer;
+
 /** Parameters for Levenberg-Marquardt optimization.  Note that this parameters
  * class inherits from NonlinearOptimizerParams, which specifies the parameters
  * common to all nonlinear optimization algorithms.  This class also contains
@@ -40,6 +42,7 @@ public:
 
   static VerbosityLM verbosityLMTranslator(const std::string &s);
   static std::string verbosityLMTranslator(VerbosityLM value);
+  using OptimizerType = LevenbergMarquardtOptimizer;
 
 public:
 
@@ -119,7 +122,7 @@ public:
     return params;
   }
 
-  virtual ~LevenbergMarquardtParams() {}
+  ~LevenbergMarquardtParams() override {}
   void print(const std::string& str = "") const override;
 
   /// @name Getters/Setters, mainly for wrappers. Use fields above in C++.

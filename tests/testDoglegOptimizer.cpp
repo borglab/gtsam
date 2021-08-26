@@ -29,14 +29,6 @@
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/base/numericalDerivative.h>
 
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-variable"
-#endif
-#include <boost/bind.hpp>
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
 #include <boost/assign/list_of.hpp> // for 'list_of()'
 #include <functional>
 #include <boost/iterator/counting_iterator.hpp>

@@ -59,10 +59,10 @@ endif()
 option(GTSAM_BUILD_TYPE_POSTFIXES        "Enable/Disable appending the build type to the name of compiled libraries" ON)
 
 # Define all cache variables, to be populated below depending on the OS/compiler:
-set(GTSAM_COMPILE_OPTIONS_PRIVATE        "" CACHE STRING "(Do not edit) Private compiler flags for all build configurations." FORCE)
-set(GTSAM_COMPILE_OPTIONS_PUBLIC         "" CACHE STRING "(Do not edit) Public compiler flags (exported to user projects) for all build configurations."  FORCE)
-set(GTSAM_COMPILE_DEFINITIONS_PRIVATE    "" CACHE STRING "(Do not edit) Private preprocessor macros for all build configurations." FORCE)
-set(GTSAM_COMPILE_DEFINITIONS_PUBLIC     "" CACHE STRING "(Do not edit) Public preprocessor macros for all build configurations." FORCE)
+set(GTSAM_COMPILE_OPTIONS_PRIVATE        "" CACHE INTERNAL "(Do not edit) Private compiler flags for all build configurations." FORCE)
+set(GTSAM_COMPILE_OPTIONS_PUBLIC         "" CACHE INTERNAL "(Do not edit) Public compiler flags (exported to user projects) for all build configurations."  FORCE)
+set(GTSAM_COMPILE_DEFINITIONS_PRIVATE    "" CACHE INTERNAL "(Do not edit) Private preprocessor macros for all build configurations." FORCE)
+set(GTSAM_COMPILE_DEFINITIONS_PUBLIC     "" CACHE INTERNAL "(Do not edit) Public preprocessor macros for all build configurations." FORCE)
 mark_as_advanced(GTSAM_COMPILE_OPTIONS_PRIVATE)
 mark_as_advanced(GTSAM_COMPILE_OPTIONS_PUBLIC)
 mark_as_advanced(GTSAM_COMPILE_DEFINITIONS_PRIVATE)
@@ -71,7 +71,7 @@ mark_as_advanced(GTSAM_COMPILE_DEFINITIONS_PUBLIC)
 foreach(build_type ${GTSAM_CMAKE_CONFIGURATION_TYPES})
   string(TOUPPER "${build_type}" build_type_toupper)
 
-  # Define empty cache variables for "public". "private" are creaed below.
+  # Define empty cache variables for "public". "private" are created below.
   set(GTSAM_COMPILE_OPTIONS_PUBLIC_${build_type_toupper}      "" CACHE STRING "(User editable) Public compiler flags (exported to user projects) for `${build_type_toupper}` configuration.")
   set(GTSAM_COMPILE_DEFINITIONS_PUBLIC_${build_type_toupper}  "" CACHE STRING "(User editable) Public preprocessor macros for `${build_type_toupper}` configuration.")
 endforeach()
@@ -204,9 +204,9 @@ endif()
 
 # Make common binary output directory when on Windows
 if(WIN32)
-  set(RUNTIME_OUTPUT_PATH "${CMAKE_BINARY_DIR}/bin")
-  set(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}/bin")
-  set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}/lib")
+  set(RUNTIME_OUTPUT_PATH "${GTSAM_BINARY_DIR}/bin")
+  set(EXECUTABLE_OUTPUT_PATH "${GTSAM_BINARY_DIR}/bin")
+  set(LIBRARY_OUTPUT_PATH "${GTSAM_BINARY_DIR}/lib")
 endif()
 
 # Set up build type list for cmake-gui

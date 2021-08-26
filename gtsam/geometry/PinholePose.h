@@ -31,7 +31,7 @@ namespace gtsam {
  * \nosubgrouping
  */
 template<typename CALIBRATION>
-class PinholeBaseK: public PinholeBase {
+class GTSAM_EXPORT PinholeBaseK: public PinholeBase {
 
 private:
 
@@ -340,7 +340,7 @@ public:
   }
 
   /// print
-  void print(const std::string& s = "PinholePose") const {
+  void print(const std::string& s = "PinholePose") const override {
     Base::print(s);
     if (!K_)
       std::cout << "s No calibration given" << std::endl;
@@ -352,7 +352,7 @@ public:
   /// @name Standard Interface
   /// @{
 
-  virtual ~PinholePose() {
+  ~PinholePose() override {
   }
 
   /// return shared pointer to calibration

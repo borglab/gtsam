@@ -25,14 +25,14 @@
 #include <gtsam/base/types.h>
 #include <gtsam/dllexport.h>
 
-#include <boost/function.hpp>
+#include <functional>
 
 #include <iosfwd>
 
 namespace gtsam {
 
 /// Typedef for a function to format a key, i.e. to convert it to a string
-typedef boost::function<std::string(Key)> KeyFormatter;
+typedef std::function<std::string(Key)> KeyFormatter;
 
 // Helper function for DefaultKeyFormatter
 GTSAM_EXPORT std::string _defaultKeyFormatter(Key key);

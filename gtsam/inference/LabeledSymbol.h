@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <functional>
 #include <gtsam/inference/Symbol.h>
 
 namespace gtsam {
@@ -88,13 +89,13 @@ public:
    */
 
   // Checks only the type
-  static boost::function<bool(gtsam::Key)> TypeTest(unsigned char c);
+  static std::function<bool(gtsam::Key)> TypeTest(unsigned char c);
 
   // Checks only the robot ID (label_)
-  static boost::function<bool(gtsam::Key)> LabelTest(unsigned char label);
+  static std::function<bool(gtsam::Key)> LabelTest(unsigned char label);
 
   // Checks both type and the robot ID
-  static boost::function<bool(gtsam::Key)> TypeLabelTest(unsigned char c, unsigned char label);
+  static std::function<bool(gtsam::Key)> TypeLabelTest(unsigned char c, unsigned char label);
 
   // Converts to upper/lower versions of labels
   LabeledSymbol upper() const { return LabeledSymbol(c_, toupper(label_), j_); }

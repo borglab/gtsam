@@ -57,7 +57,7 @@ T upAligned(T value, unsigned requiredAlignment = TraceAlignment) {
  * Expression node. The superclass for objects that do the heavy lifting
  * An Expression<T> has a pointer to an ExpressionNode<T> underneath
  * allowing Expressions to have polymorphic behaviour even though they
- * are passed by value. This is the same way boost::function works.
+ * are passed by value. This is the same way std::function works.
  * http://loki-lib.sourceforge.net/html/a00652.html
  */
 template<class T>
@@ -131,7 +131,7 @@ class ConstantExpression: public ExpressionNode<T> {
 public:
 
   /// Destructor
-  virtual ~ConstantExpression() {
+  ~ConstantExpression() override {
   }
 
   /// Print
@@ -172,7 +172,7 @@ class LeafExpression: public ExpressionNode<T> {
 public:
 
   /// Destructor
-  virtual ~LeafExpression() {
+  ~LeafExpression() override {
   }
 
   /// Print
@@ -244,7 +244,7 @@ class UnaryExpression: public ExpressionNode<T> {
 public:
 
   /// Destructor
-  virtual ~UnaryExpression() {
+  ~UnaryExpression() override {
   }
 
   /// Print
@@ -353,7 +353,7 @@ class BinaryExpression: public ExpressionNode<T> {
 public:
 
   /// Destructor
-  virtual ~BinaryExpression() {
+  ~BinaryExpression() override {
   }
 
   /// Print
@@ -460,7 +460,7 @@ class TernaryExpression: public ExpressionNode<T> {
 public:
 
   /// Destructor
-  virtual ~TernaryExpression() {
+  ~TernaryExpression() override {
   }
 
   /// Print
@@ -571,7 +571,7 @@ class ScalarMultiplyNode : public ExpressionNode<T> {
   }
 
   /// Destructor
-  virtual ~ScalarMultiplyNode() {}
+  ~ScalarMultiplyNode() override {}
 
   /// Print
   void print(const std::string& indent = "") const override {
@@ -659,7 +659,7 @@ class BinarySumNode : public ExpressionNode<T> {
   }
 
   /// Destructor
-  virtual ~BinarySumNode() {}
+  ~BinarySumNode() override {}
 
   /// Print
   void print(const std::string& indent = "") const override {

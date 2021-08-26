@@ -74,7 +74,7 @@ public:
   }
 
   /// Destructor
-  virtual ~GenericValue() {
+  ~GenericValue() override {
   }
 
   /// equals implementing generic Value interface

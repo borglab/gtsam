@@ -44,15 +44,15 @@ optimize = true;
 rank_tol = 1e-9;
 
 triangulated_landmark = triangulatePoint3(poses,sharedCal, measurements, rank_tol, optimize);
-CHECK('triangulated_landmark',landmark.equals(triangulated_landmark,1e-9));
+CHECK('triangulated_landmark', abs(landmark - triangulated_landmark) < 1e-9);
 
 %% 2. Add some noise and try again: result should be ~ (4.995, 0.499167, 1.19814)
 measurements = Point2Vector;
-measurements.push_back(z1.retract([0.1;0.5]));
-measurements.push_back(z2.retract([-0.2;0.3]));
+measurements.push_back(z1 + [0.1;0.5]);
+measurements.push_back(z2 + [-0.2;0.3]);
 
 triangulated_landmark = triangulatePoint3(poses,sharedCal, measurements, rank_tol, optimize);
-CHECK('triangulated_landmark',landmark.equals(triangulated_landmark,1e-2));
+CHECK('triangulated_landmark', abs(landmark - triangulated_landmark) < 1e-2);
 
 %% two Poses with Bundler Calibration
 bundlerCal = Cal3Bundler(1500, 0, 0, 640, 480);
@@ -67,4 +67,4 @@ measurements.push_back(z1);
 measurements.push_back(z2);
 
 triangulated_landmark = triangulatePoint3(poses,bundlerCal, measurements, rank_tol, optimize);
-CHECK('triangulated_landmark',landmark.equals(triangulated_landmark,1e-9));
+CHECK('triangulated_landmark', abs(landmark - triangulated_landmark) < 1e-9);

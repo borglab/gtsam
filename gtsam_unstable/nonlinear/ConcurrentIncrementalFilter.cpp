@@ -69,13 +69,13 @@ ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const No
     int group = 1;
     // Set all existing variables to Group1
     if(isam2_.getLinearizationPoint().size() > 0) {
-      for(const Values::ConstKeyValuePair& key_value: isam2_.getLinearizationPoint()) {
+      for(const auto key_value: isam2_.getLinearizationPoint()) {
         orderingConstraints->operator[](key_value.key) = group;
       }
       ++group;
     }
     // Assign new variables to the root
-    for(const Values::ConstKeyValuePair& key_value: newTheta) {
+    for(const auto key_value: newTheta) {
       orderingConstraints->operator[](key_value.key) = group;
     }
     // Set marginalizable variables to Group0
@@ -201,7 +201,7 @@ void ConcurrentIncrementalFilter::synchronize(const NonlinearFactorGraph& smooth
 
   // Force iSAM2 not to relinearize anything during this iteration
   FastList<Key> noRelinKeys;
-  for(const Values::ConstKeyValuePair& key_value: isam2_.getLinearizationPoint()) {
+  for(const auto key_value: isam2_.getLinearizationPoint()) {
     noRelinKeys.push_back(key_value.key);
   }
 

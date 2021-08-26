@@ -154,7 +154,7 @@ public:
   AHRSFactor(Key rot_i, Key rot_j, Key bias,
       const PreintegratedAhrsMeasurements& preintegratedMeasurements);
 
-  virtual ~AHRSFactor() {
+  ~AHRSFactor() override {
   }
 
   /// @return a deep copy of this factor

@@ -18,6 +18,8 @@
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/base/numericalDerivative.h>
 
+#include <boost/bind/bind.hpp>
+
 namespace gtsam {
 
 /**
@@ -61,7 +63,7 @@ public:
         Base(model, poseKey, landmarkKey), measured_(measured), K_(K), referencePoint_(referencePoint) {}
 
   /** Virtual destructor */
-  virtual ~InvDepthFactorVariant2() {}
+  ~InvDepthFactorVariant2() override {}
 
   /**
    * print
@@ -109,13 +111,13 @@ public:
 
     if (H1) {
       (*H1) = numericalDerivative11<Vector, Pose3>(
-          boost::bind(&InvDepthFactorVariant2::inverseDepthError, this, _1,
-              landmark), pose);
+          std::bind(&InvDepthFactorVariant2::inverseDepthError, this,
+              std::placeholders::_1, landmark), pose);
     }
     if (H2) {
       (*H2) = numericalDerivative11<Vector, Vector3>(
-          boost::bind(&InvDepthFactorVariant2::inverseDepthError, this, pose,
-              _1), landmark);
+          std::bind(&InvDepthFactorVariant2::inverseDepthError, this, pose,
+              std::placeholders::_1), landmark);
     }
 
     return inverseDepthError(pose, landmark);

@@ -13,16 +13,17 @@ $ make install
 ## Important Installation Notes
 
 1. GTSAM requires the following libraries to be installed on your system:
-    - BOOST version 1.58 or greater (install through Linux repositories or MacPorts)
+    - BOOST version 1.65 or greater (install through Linux repositories or MacPorts)
     - Cmake version 3.0 or higher
     - Support for XCode 4.3 command line tools on Mac requires CMake 2.8.8 or higher
 
     Optional dependent libraries:
      - If TBB is installed and detectable by CMake GTSAM will use it automatically.
        Ensure that CMake prints "Use Intel TBB : Yes".  To disable the use of TBB,
-       disable the CMake flag GTSAM_WITH_TBB (enabled by default).  On Ubuntu, TBB
-       may be installed from the Ubuntu repositories, and for other platforms it
-       may be downloaded from https://www.threadingbuildingblocks.org/
+       disable the CMake flag `GTSAM_WITH_TBB` (enabled by default) by providing
+       the argument `-DGTSAM_WITH_TBB=OFF` to `cmake`.  On Ubuntu, TBB may be
+       installed from the Ubuntu repositories, and for other platforms it may be
+       downloaded from https://www.threadingbuildingblocks.org/
      - GTSAM may be configured to use MKL by toggling `GTSAM_WITH_EIGEN_MKL` and
        `GTSAM_WITH_EIGEN_MKL_OPENMP` to `ON`; however, best performance is usually
        achieved with MKL disabled. We therefore advise you to benchmark your problem 
@@ -40,11 +41,6 @@ $ make install
     - Ubuntu 16.04 - 18.04
     - MacOS 10.6 - 10.14
     - Windows 7, 8, 8.1, 10
-
-    Known issues:
-
-    - MSVC 2013 is not yet supported because it cannot build the serialization module
-      of Boost 1.55 (or earlier).
 
 2. GTSAM makes extensive use of debug assertions, and we highly recommend you work
 in Debug mode while developing (enabled by default). Likewise, it is imperative
@@ -70,7 +66,41 @@ execute commands as follows for an out-of-source build:
   This will build the library and unit tests, run all of the unit tests,
   and then install the library itself.
 
-## CMake Configuration Options and Details
+## Known Issues
+
+- When using `GTSAM_BUILD_WITH_MARCH_NATIVE=ON`, you may encounter issues in running tests which we are still investigating:
+  - Use of a version of GCC < 7.5 results in an "Indeterminant Linear System" error for `testSmartProjectionFactor`.
+  - Use of Boost version < 1.65 with clang will give a segfault for mulitple test cases.
+- MSVC 2013 is not yet supported because it cannot build the serialization module of Boost 1.55 (or earlier).
+
+# Windows Installation
+
+This section details how to build a GTSAM `.sln` file using Visual Studio.
+
+### Prerequisites
+
+- Visual Studio with C++ CMake tools for Windows
+- All the other pre-requisites listed above.
+
+### Steps
+
+1. Open Visual Studio.
+2. Select `Open a local folder` and select the GTSAM source directory.
+3. Go to `Project -> CMake Settings`.
+  - (Optional) Set `Configuration name`.
+  - (Optional) Set `Configuration type`.
+  - Set the `Toolset` to `msvc_x64_x64`. If you know what toolset you require, then skip this step.
+  - Update the `Build root` to `${projectDir}\build\${name}`.
+  - You can optionally create a new configuration for a `Release` build.
+  - Set the necessary CMake variables for your use case.
+  - Click on `Show advanced settings`.
+  - For `CMake generator`, select a version which matches `Visual Studio <Version> <Year> Win64`, e.g. `Visual Studio 16 2019 Win64`.
+  - Save the settings (Ctrl + S).
+4. Click on `Project -> Generate Cache`. This will generate the CMake build files (as seen in the Output window).
+5. The last step will generate a `GTSAM.sln` file in the `build` directory. At this point, GTSAM can be used as a regular Visual Studio project.
+
+
+# CMake Configuration Options and Details
 
 GTSAM has a number of options that can be configured, which is best done with
 one of the following:
@@ -78,7 +108,7 @@ one of the following:
   - ccmake      the curses GUI for cmake
   - cmake-gui   a real GUI for cmake
 
-### Important Options:
+## Important Options:
 
 #### CMAKE_BUILD_TYPE
 We support several build configurations for GTSAM (case insensitive)

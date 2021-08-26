@@ -67,7 +67,7 @@ namespace gtsam {
     Constraint();
 
     /// Virtual destructor
-    virtual ~Constraint() {}
+    ~Constraint() override {}
 
     /// @}
     /// @name Standard Interface

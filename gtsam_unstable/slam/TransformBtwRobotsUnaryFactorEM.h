@@ -93,7 +93,7 @@ namespace gtsam {
 
     }
 
-    virtual ~TransformBtwRobotsUnaryFactorEM() {}
+    ~TransformBtwRobotsUnaryFactorEM() override {}
 
 
     /** Clone */

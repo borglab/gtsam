@@ -29,6 +29,8 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/linear/NoiseModel.h>
+#include <gtsam/base/serialization.h>
+#include <gtsam/base/Testable.h>
 #include <gtsam/base/types.h>
 
 #include <boost/smart_ptr/shared_ptr.hpp>
@@ -216,13 +218,17 @@ typedef std::pair<size_t, size_t> SiftIndex;
 
 /// Define the structure for the 3D points
 struct SfmTrack {
-  SfmTrack(): p(0,0,0) {}
-  SfmTrack(const gtsam::Point3& pt) : p(pt) {}
+  SfmTrack(float r = 0, float g = 0, float b = 0): p(0,0,0), r(r), g(g), b(b) {}
+  SfmTrack(const gtsam::Point3& pt, float r = 0, float g = 0, float b = 0) : p(pt), r(r), g(g), b(b) {}
+ 
   Point3 p; ///< 3D position of the point
   float r, g, b; ///< RGB color of the 3D point
   std::vector<SfmMeasurement> measurements; ///< The 2D image projections (id,(u,v))
   std::vector<SiftIndex> siftIndices;
   
+  /// Get RGB values describing 3d point
+  const Point3 rgb() const { return Point3(r, g, b); }
+
   /// Total number of measurements in this track
   size_t number_measurements() const {
     return measurements.size();
@@ -243,6 +249,73 @@ struct SfmTrack {
   void add_measurement(size_t idx, const gtsam::Point2& m) {
     measurements.emplace_back(idx, m);
   }
+
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+    ar & BOOST_SERIALIZATION_NVP(p);
+    ar & BOOST_SERIALIZATION_NVP(r);
+    ar & BOOST_SERIALIZATION_NVP(g);
+    ar & BOOST_SERIALIZATION_NVP(b);
+    ar & BOOST_SERIALIZATION_NVP(measurements);
+    ar & BOOST_SERIALIZATION_NVP(siftIndices);
+  }
+
+  /// assert equality up to a tolerance
+  bool equals(const SfmTrack &sfmTrack, double tol = 1e-9) const {
+    // check the 3D point
+    if (!p.isApprox(sfmTrack.p)) {
+      return false;
+    }
+
+    // check the RGB values
+    if (r!=sfmTrack.r || g!=sfmTrack.g || b!=sfmTrack.b) {
+      return false;
+    }
+
+    // compare size of vectors for measurements and siftIndices
+    if (number_measurements() != sfmTrack.number_measurements() ||
+        siftIndices.size() != sfmTrack.siftIndices.size()) {
+      return false;
+    }
+
+    // compare measurements (order sensitive)
+    for (size_t idx = 0; idx < number_measurements(); ++idx) {
+      SfmMeasurement measurement = measurements[idx];
+      SfmMeasurement otherMeasurement = sfmTrack.measurements[idx];
+
+      if (measurement.first != otherMeasurement.first ||
+          !measurement.second.isApprox(otherMeasurement.second)) {
+        return false;
+      }
+    }
+
+    // compare sift indices (order sensitive)
+    for (size_t idx = 0; idx < siftIndices.size(); ++idx) {
+      SiftIndex index = siftIndices[idx];
+      SiftIndex otherIndex = sfmTrack.siftIndices[idx];
+
+      if (index.first != otherIndex.first ||
+          index.second != otherIndex.second) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /// print
+  void print(const std::string& s = "") const {
+    std::cout << "Track with " << measurements.size();
+    std::cout << " measurements of point " << p << std::endl;
+  }
+};
+
+/* ************************************************************************* */
+/// traits
+template<>
+struct traits<SfmTrack> : public Testable<SfmTrack> {
 };
 
 
@@ -269,13 +342,62 @@ struct SfmData {
     return tracks[idx];
   }
   /// Add a track to SfmData
-  void add_track(const SfmTrack& t)  {
+  void add_track(const SfmTrack& t) {
     tracks.push_back(t);
   }
   /// Add a camera to SfmData
-  void add_camera(const SfmCamera& cam){
+  void add_camera(const SfmCamera& cam) {
     cameras.push_back(cam);
   }
+
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int /*version*/) {
+    ar & BOOST_SERIALIZATION_NVP(cameras);
+    ar & BOOST_SERIALIZATION_NVP(tracks);
+  }
+
+  /// @}
+  /// @name Testable
+  /// @{
+
+  /// assert equality up to a tolerance
+  bool equals(const SfmData &sfmData, double tol = 1e-9) const {
+    // check number of cameras and tracks
+    if (number_cameras() != sfmData.number_cameras() ||
+        number_tracks() != sfmData.number_tracks()) {
+      return false;
+    }
+
+    // check each camera
+    for (size_t i = 0; i < number_cameras(); ++i) {
+      if (!camera(i).equals(sfmData.camera(i), tol)) {
+        return false;
+      }
+    }
+
+    // check each track
+    for (size_t j = 0; j < number_tracks(); ++j) {
+      if (!track(j).equals(sfmData.track(j), tol)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /// print
+  void print(const std::string& s = "") const {
+    std::cout << "Number of cameras = " << number_cameras() << std::endl;
+    std::cout << "Number of tracks = " << number_tracks() << std::endl;
+  }
+};
+
+/* ************************************************************************* */
+/// traits
+template<>
+struct traits<SfmData> : public Testable<SfmData> {
 };
 
 /**

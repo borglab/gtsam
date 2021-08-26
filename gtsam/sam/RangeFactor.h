@@ -118,7 +118,7 @@ class RangeFactorWithTransform : public ExpressionFactorN<T, A1, A2> {
     this->initialize(expression({key1, key2}));
   }
 
-  virtual ~RangeFactorWithTransform() {}
+  ~RangeFactorWithTransform() override {}
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {

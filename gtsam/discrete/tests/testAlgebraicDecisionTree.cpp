@@ -54,7 +54,7 @@ void dot(const T&f, const string& filename) {
 }
 
 /** I can't get this to work !
- class Mul: boost::function<double(const double&, const double&)> {
+ class Mul: std::function<double(const double&, const double&)> {
  inline double operator()(const double& a, const double& b) {
  return a * b;
  }

@@ -28,11 +28,13 @@
 #include <boost/assign/std/list.hpp> // for operator +=
 #include <boost/assign/std/vector.hpp>
 #include <boost/assign/list_of.hpp>
-using namespace boost::assign;
+#include <boost/bind/bind.hpp>
 #include <stdexcept>
 #include <limits>
 #include <type_traits>
 
+using namespace boost::assign;
+using namespace std::placeholders;
 using namespace gtsam;
 using namespace std;
 static double inf = std::numeric_limits<double>::infinity();
@@ -175,10 +177,11 @@ TEST(Values, basic_functions)
 {
   Values values;
   const Values& values_c = values;
-  values.insert(2, Vector3());
-  values.insert(4, Vector3());
-  values.insert(6, Matrix23());
-  values.insert(8, Matrix23());
+  Matrix23 M1 = Matrix23::Zero(), M2 = Matrix23::Zero();
+  values.insert(2, Vector3(0, 0, 0));
+  values.insert(4, Vector3(0, 0, 0));
+  values.insert(6, M1);
+  values.insert(8, M2);
 
   // find
   EXPECT_LONGS_EQUAL(4, values.find(4)->key);
@@ -333,9 +336,9 @@ TEST(Values, filter) {
 
   // Filter by key
   int i = 0;
-  Values::Filtered<Value> filtered = values.filter(boost::bind(std::greater_equal<Key>(), _1, 2));
+  Values::Filtered<Value> filtered = values.filter(std::bind(std::greater_equal<Key>(), std::placeholders::_1, 2));
   EXPECT_LONGS_EQUAL(2, (long)filtered.size());
-  for(const Values::Filtered<>::KeyValuePair& key_value: filtered) {
+  for(const auto key_value: filtered) {
     if(i == 0) {
       LONGS_EQUAL(2, (long)key_value.key);
       try {key_value.value.cast<Pose2>();} catch (const std::bad_cast& e) { FAIL("can't cast Value to Pose2");}
@@ -361,7 +364,7 @@ TEST(Values, filter) {
   EXPECT(assert_equal(expectedSubValues1, actualSubValues1));
 
   // ConstFilter by Key
-  Values::ConstFiltered<Value> constfiltered = values.filter(boost::bind(std::greater_equal<Key>(), _1, 2));
+  Values::ConstFiltered<Value> constfiltered = values.filter(std::bind(std::greater_equal<Key>(), std::placeholders::_1, 2));
   EXPECT_LONGS_EQUAL(2, (long)constfiltered.size());
   Values fromconstfiltered(constfiltered);
   EXPECT(assert_equal(expectedSubValues1, fromconstfiltered));
@@ -370,7 +373,7 @@ TEST(Values, filter) {
   i = 0;
   Values::ConstFiltered<Pose3> pose_filtered = values.filter<Pose3>();
   EXPECT_LONGS_EQUAL(2, (long)pose_filtered.size());
-  for(const Values::ConstFiltered<Pose3>::KeyValuePair& key_value: pose_filtered) {
+  for(const auto key_value: pose_filtered) {
     if(i == 0) {
       EXPECT_LONGS_EQUAL(1, (long)key_value.key);
       EXPECT(assert_equal(pose1, key_value.value));
@@ -408,7 +411,7 @@ TEST(Values, Symbol_filter) {
   values.insert(Symbol('y', 3), pose3);
 
   int i = 0;
-  for(const Values::Filtered<Value>::KeyValuePair& key_value: values.filter(Symbol::ChrTest('y'))) {
+  for(const auto key_value: values.filter(Symbol::ChrTest('y'))) {
     if(i == 0) {
       LONGS_EQUAL(Symbol('y', 1), (long)key_value.key);
       EXPECT(assert_equal(pose1, key_value.value.cast<Pose3>()));
