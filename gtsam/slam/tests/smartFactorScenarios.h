@@ -18,6 +18,7 @@
 
 #pragma once
 #include <gtsam/slam/SmartProjectionPoseFactor.h>
+#include <gtsam/slam/SmartProjectionFactorP.h>
 #include <gtsam/slam/SmartProjectionFactor.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/geometry/Cal3_S2.h>
