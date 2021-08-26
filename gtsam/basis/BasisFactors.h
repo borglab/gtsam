@@ -25,7 +25,7 @@ namespace gtsam {
 
 /**
  * @brief Factor for enforcing the scalar value of the polynomial BASIS
- * represenation at `x` is the same as the measurement `z` when using a
+ * representation at `x` is the same as the measurement `z` when using a
  * pseudo-spectral parameterization.
  *
  * @tparam BASIS The basis class to use e.g. Chebyshev2
