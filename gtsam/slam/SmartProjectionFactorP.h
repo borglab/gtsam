@@ -15,6 +15,7 @@
  *         Same as SmartProjectionPoseFactor, except:
  *         - it is templated on CAMERA (i.e., it allows cameras beyond pinhole)
  *         - it admits a different calibration for each measurement (i.e., it can model a multi-camera system)
+ *         - it allows multiple observations from the same pose/key (again, to model a multi-camera system)
  * @author Luca Carlone
  * @author Chris Beall
  * @author Zsolt Kira
@@ -57,6 +58,9 @@ class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
   static const int ZDim = 2;  ///< Measurement dimension (Point2)
 
  protected:
+
+  /// vector of keys (one for each observation) with potentially repeated keys
+  std::vector<Key> nonUniqueKeys_;
 
   /// shared pointer to calibration object (one for each observation)
   std::vector<boost::shared_ptr<CALIBRATION> > K_all_;
@@ -106,7 +110,12 @@ class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
                Pose3::identity()) {
     // store measurement and key
     this->measured_.push_back(measured);
-    this->keys_.push_back(poseKey);
+    this->nonUniqueKeys_.push_back(poseKey);
+
+    //  also store keys in the keys_ vector: these keys are assumed to be unique, so we avoid duplicates here
+    if (std::find(this->keys_.begin(), this->keys_.end(), poseKey) == this->keys_.end())
+      this->keys_.push_back(poseKey);  // add only unique keys
+
     // store fixed intrinsic calibration
     K_all_.push_back(K);
     // store fixed extrinsics of the camera
@@ -145,6 +154,11 @@ class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
     return body_P_sensors_;
   }
 
+  /// return (for each observation) the (possibly non unique) keys involved in the measurements
+  const std::vector<Key> nonUniqueKeys() const {
+    return nonUniqueKeys_;
+  }
+
   /**
    * print
    * @param s optional string naming the factor
@@ -155,6 +169,7 @@ class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
     std::cout << s << "SmartProjectionFactorP: \n ";
     for (size_t i = 0; i < K_all_.size(); i++) {
       std::cout << "-- Measurement nr " << i << std::endl;
+      std::cout << "key: " << keyFormatter(nonUniqueKeys_[i]) << std::endl;
       body_P_sensors_[i].print("extrinsic calibration:\n");
       K_all_[i]->print("intrinsic calibration = ");
     }
@@ -177,7 +192,7 @@ class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
     }
 
     return e && Base::equals(p, tol) && K_all_ == e->calibration()
-        && extrinsicCalibrationEqual;
+        && nonUniqueKeys_ == e->nonUniqueKeys() && extrinsicCalibrationEqual;
   }
 
   /**
@@ -188,9 +203,9 @@ class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
    */
   typename Base::Cameras cameras(const Values& values) const override {
     typename Base::Cameras cameras;
-    for (size_t i = 0; i < this->keys_.size(); i++) {
+    for (size_t i = 0; i < nonUniqueKeys_.size(); i++) {
       const Pose3& body_P_cam_i = body_P_sensors_[i];
-      const Pose3 world_P_sensor_i = values.at<Pose3>(this->keys_[i])
+      const Pose3 world_P_sensor_i = values.at<Pose3>(nonUniqueKeys_[i])
           * body_P_cam_i;
       cameras.emplace_back(world_P_sensor_i, K_all_[i]);
     }
@@ -237,13 +252,16 @@ class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
       const Values& values, const double lambda = 0.0, bool diagonalDamping =
           false) const {
 
-    size_t nrKeys = this->keys_.size();
+    // we may have multiple observation sharing the same keys (e.g., 2 cameras measuring from the same body pose),
+    // hence the number of unique keys may be smaller than nrMeasurements
+    size_t nrUniqueKeys = this->keys_.size(); // note: by construction, keys_ only contains unique keys
+
     Cameras cameras = this->cameras(values);
 
     // Create structures for Hessian Factors
     KeyVector js;
-    std::vector < Matrix > Gs(nrKeys * (nrKeys + 1) / 2);
-    std::vector < Vector > gs(nrKeys);
+    std::vector < Matrix > Gs(nrUniqueKeys * (nrUniqueKeys + 1) / 2);
+    std::vector < Vector > gs(nrUniqueKeys);
 
     if (this->measured_.size() != this->cameras(values).size())  // 1 observation per camera
       throw std::runtime_error("SmartProjectionFactorP: "
@@ -279,10 +297,16 @@ class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
       Fs[i] = this->noiseModel_->Whiten(Fs[i]);
     }
 
-    // build augmented hessian
-    SymmetricBlockMatrix augmentedHessian = Cameras::SchurComplement(Fs, E, b);
+    Matrix3 P = Base::Cameras::PointCov(E, lambda, diagonalDamping);
+
+    // Build augmented Hessian (with last row/column being the information vector)
+    // Note: we need to get the augumented hessian wrt the unique keys in key_
+    SymmetricBlockMatrix augmentedHessianUniqueKeys =
+        Base::Cameras::SchurComplementAndRearrangeBlocks_3_6_6(
+            Fs, E, P, b, nonUniqueKeys_, this->keys_);
+
     return boost::make_shared < RegularHessianFactor<DimPose>
-        > (this->keys_, augmentedHessian);
+    > (this->keys_, augmentedHessianUniqueKeys);
   }
 
   /**
