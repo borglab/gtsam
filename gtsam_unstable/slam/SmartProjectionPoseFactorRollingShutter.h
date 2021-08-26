@@ -37,9 +37,11 @@ namespace gtsam {
  * from which the pixel observation pose can be interpolated.
  * @addtogroup SLAM
  */
-template<class CALIBRATION>
-class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<
-PinholePose<CALIBRATION> > {
+template<class CAMERA>
+class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<CAMERA> {
+
+ public:
+  typedef typename CAMERA::CalibrationType CALIBRATION;
 
  protected:
   /// shared pointer to calibration object (one for each observation)
@@ -213,8 +215,8 @@ PinholePose<CALIBRATION> > {
 
   /// equals
   bool equals(const NonlinearFactor& p, double tol = 1e-9) const override {
-    const SmartProjectionPoseFactorRollingShutter<CALIBRATION>* e =
-        dynamic_cast<const SmartProjectionPoseFactorRollingShutter<CALIBRATION>*>(&p);
+    const SmartProjectionPoseFactorRollingShutter<CAMERA>* e =
+        dynamic_cast<const SmartProjectionPoseFactorRollingShutter<CAMERA>*>(&p);
 
     double keyPairsEqual = true;
     if(this->world_P_body_key_pairs_.size() == e->world_P_body_key_pairs().size()){
@@ -430,9 +432,9 @@ PinholePose<CALIBRATION> > {
 // end of class declaration
 
 /// traits
-template<class CALIBRATION>
-struct traits<SmartProjectionPoseFactorRollingShutter<CALIBRATION> > :
-public Testable<SmartProjectionPoseFactorRollingShutter<CALIBRATION> > {
+template<class CAMERA>
+struct traits<SmartProjectionPoseFactorRollingShutter<CAMERA> > :
+public Testable<SmartProjectionPoseFactorRollingShutter<CAMERA> > {
 };
 
 }  // namespace gtsam
