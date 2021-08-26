@@ -114,77 +114,85 @@ TEST( SmartProjectionFactorP, noiseless ) {
   double expectedError = 0.0;
   EXPECT_DOUBLES_EQUAL(expectedError, actualError, 1e-7);
 
-//  SmartFactorP::Cameras cameras = factor.cameras(values);
-//  double actualError2 = factor.totalReprojectionError(cameras);
-//  EXPECT_DOUBLES_EQUAL(expectedError, actualError2, 1e-7);
-//
-//  // Calculate expected derivative for point (easiest to check)
-//  std::function<Vector(Point3)> f = //
-//      std::bind(&SmartFactorP::whitenedError<Point3>, factor, cameras, std::placeholders::_1);
-//
-//  // Calculate using computeEP
-//  Matrix actualE;
-//  factor.triangulateAndComputeE(actualE, values);
-//
-//  // get point
-//  boost::optional<Point3> point = factor.point();
-//  CHECK(point);
-//
-//  // calculate numerical derivative with triangulated point
-//  Matrix expectedE = sigma * numericalDerivative11<Vector, Point3>(f, *point);
-//  EXPECT(assert_equal(expectedE, actualE, 1e-7));
-//
-//  // Calculate using reprojectionError
-//  SmartFactorP::Cameras::FBlocks F;
-//  Matrix E;
-//  Vector actualErrors = factor.unwhitenedError(cameras, *point, F, E);
-//  EXPECT(assert_equal(expectedE, E, 1e-7));
-//
-//  EXPECT(assert_equal(Z_4x1, actualErrors, 1e-7));
-//
-//  // Calculate using computeJacobians
-//  Vector b;
-//  SmartFactorP::FBlocks Fs;
-//  factor.computeJacobians(Fs, E, b, cameras, *point);
-//  double actualError3 = b.squaredNorm();
-//  EXPECT(assert_equal(expectedE, E, 1e-7));
-//  EXPECT_DOUBLES_EQUAL(expectedError, actualError3, 1e-6);
+  SmartFactorP::Cameras cameras = factor.cameras(values);
+  double actualError2 = factor.totalReprojectionError(cameras);
+  EXPECT_DOUBLES_EQUAL(expectedError, actualError2, 1e-7);
+
+  // Calculate expected derivative for point (easiest to check)
+  std::function<Vector(Point3)> f = //
+      std::bind(&SmartFactorP::whitenedError<Point3>, factor, cameras, std::placeholders::_1);
+
+  // Calculate using computeEP
+  Matrix actualE;
+  factor.triangulateAndComputeE(actualE, values);
+
+  // get point
+  boost::optional<Point3> point = factor.point();
+  CHECK(point);
+
+  // calculate numerical derivative with triangulated point
+  Matrix expectedE = sigma * numericalDerivative11<Vector, Point3>(f, *point);
+  EXPECT(assert_equal(expectedE, actualE, 1e-7));
+
+  // Calculate using reprojectionError
+  SmartFactorP::Cameras::FBlocks F;
+  Matrix E;
+  Vector actualErrors = factor.unwhitenedError(cameras, *point, F, E);
+  EXPECT(assert_equal(expectedE, E, 1e-7));
+
+  EXPECT(assert_equal(Z_4x1, actualErrors, 1e-7));
+
+  // Calculate using computeJacobians
+  Vector b;
+  SmartFactorP::FBlocks Fs;
+  factor.computeJacobians(Fs, E, b, cameras, *point);
+  double actualError3 = b.squaredNorm();
+  EXPECT(assert_equal(expectedE, E, 1e-7));
+  EXPECT_DOUBLES_EQUAL(expectedError, actualError3, 1e-6);
 }
 
-///* *************************************************************************/
-//TEST( SmartProjectionFactorP, noisy ) {
-//
-//  using namespace vanillaPose;
-//
-//  // Project two landmarks into two cameras
-//  Point2 pixelError(0.2, 0.2);
-//  Point2 level_uv = level_camera.project(landmark1) + pixelError;
-//  Point2 level_uv_right = level_camera_right.project(landmark1);
-//
-//  Values values;
-//  values.insert(x1, cam1.pose());
-//  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 10, 0., -M_PI / 10),
-//      Point3(0.5, 0.1, 0.3));
-//  values.insert(x2, pose_right.compose(noise_pose));
-//
-//  SmartFactorP::shared_ptr factor(new SmartFactorP(model, sharedK));
-//  factor->add(level_uv, x1);
-//  factor->add(level_uv_right, x2);
-//
-//  double actualError1 = factor->error(values);
-//
-//  SmartFactorP::shared_ptr factor2(new SmartFactorP(model, sharedK));
-//  Point2Vector measurements;
-//  measurements.push_back(level_uv);
-//  measurements.push_back(level_uv_right);
-//
-//  KeyVector views {x1, x2};
-//
-//  factor2->add(measurements, views);
-//  double actualError2 = factor2->error(values);
-//  DOUBLES_EQUAL(actualError1, actualError2, 1e-7);
-//}
-//
+/* *************************************************************************/
+TEST( SmartProjectionFactorP, noisy ) {
+
+  using namespace vanillaPose;
+
+  // Project two landmarks into two cameras
+  Point2 pixelError(0.2, 0.2);
+  Point2 level_uv = level_camera.project(landmark1) + pixelError;
+  Point2 level_uv_right = level_camera_right.project(landmark1);
+
+  Values values;
+  values.insert(x1, cam1.pose());
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 10, 0., -M_PI / 10),
+      Point3(0.5, 0.1, 0.3));
+  values.insert(x2, pose_right.compose(noise_pose));
+
+  SmartFactorP::shared_ptr factor(new SmartFactorP(model));
+  factor->add(level_uv, x1, sharedK);
+  factor->add(level_uv_right, x2, sharedK);
+
+  double actualError1 = factor->error(values);
+
+  SmartFactorP::shared_ptr factor2(new SmartFactorP(model));
+  Point2Vector measurements;
+  measurements.push_back(level_uv);
+  measurements.push_back(level_uv_right);
+
+  std::vector<boost::shared_ptr<Cal3_S2>> sharedKs;
+  sharedKs.push_back(sharedK);
+  sharedKs.push_back(sharedK);
+
+  std::vector<Pose3> body_P_sensors;
+  body_P_sensors.push_back(Pose3::identity());
+  body_P_sensors.push_back(Pose3::identity());
+
+  KeyVector views {x1, x2};
+
+  factor2->add(measurements, views, sharedKs, body_P_sensors);
+  double actualError2 = factor2->error(values);
+  DOUBLES_EQUAL(actualError1, actualError2, 1e-7);
+}
+
 ///* *************************************************************************/
 //TEST(SmartProjectionFactorP, smartFactorWithSensorBodyTransform) {
 //  using namespace vanillaPose;
