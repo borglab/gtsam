@@ -148,7 +148,7 @@ public:
      * g = F' * (b - E * P * E' * b)
      * Fixed size version
      */
-    template<int N, int ND> // N = 2 or 3, ND is the camera dimension
+    template<int N, int ND> // N = 2 or 3 (point dimension), ND is the camera dimension
     static SymmetricBlockMatrix SchurComplement(
         const std::vector< Eigen::Matrix<double, ZDim, ND>, Eigen::aligned_allocator< Eigen::Matrix<double, ZDim, ND> > >& Fs,
         const Matrix& E, const Eigen::Matrix<double, N, N>& P, const Vector& b) {
@@ -197,6 +197,106 @@ public:
    * Do Schur complement, given Jacobian as Fs,E,P, return SymmetricBlockMatrix
    * G = F' * F - F' * E * P * E' * F
    * g = F' * (b - E * P * E' * b)
+   * In this version, we allow for the case where the keys in the Jacobian are organized
+   * differently from the keys in the output SymmetricBlockMatrix
+   * In particular: each diagonal block of the Jacobian F captures 2 poses (useful for rolling shutter and extrinsic calibration)
+   * such that F keeps the block structure that makes the Schur complement trick fast.
+   */
+  template<int N, int ND, int NDD>  // N = 2 or 3 (point dimension), ND is the Jacobian block dimension, NDD is the Hessian block dimension
+  static SymmetricBlockMatrix SchurComplementAndRearrangeBlocks(
+      const std::vector<Eigen::Matrix<double, ZDim, ND>,
+          Eigen::aligned_allocator<Eigen::Matrix<double, ZDim, ND> > >& Fs,
+      const Matrix& E, const Eigen::Matrix<double, N, N>& P, const Vector& b,
+      const KeyVector jacobianKeys, const KeyVector hessianKeys) {
+
+    size_t nrNonuniqueKeys = jacobianKeys.size();
+    size_t nrUniqueKeys = hessianKeys.size();
+
+    // marginalize point: note - we reuse the standard SchurComplement function
+    SymmetricBlockMatrix augmentedHessian = SchurComplement<N, ND>(Fs,E,P,b);
+
+    // now pack into an Hessian factor
+    std::vector<DenseIndex> dims(nrUniqueKeys + 1);  // this also includes the b term
+    std::fill(dims.begin(), dims.end() - 1, NDD);
+    dims.back() = 1;
+    SymmetricBlockMatrix augmentedHessianUniqueKeys;
+
+    // here we have to deal with the fact that some blocks may share the same keys
+    if (nrUniqueKeys == nrNonuniqueKeys) {  // if there is 1 calibration key per camera
+      augmentedHessianUniqueKeys = SymmetricBlockMatrix(
+          dims, Matrix(augmentedHessian.selfadjointView()));
+    } else {  // if multiple cameras share a calibration we have to rearrange
+      // the results of the Schur complement matrix
+      std::vector<DenseIndex> nonuniqueDims(nrNonuniqueKeys + 1);  // this also includes the b term
+      std::fill(nonuniqueDims.begin(), nonuniqueDims.end() - 1, NDD);
+      nonuniqueDims.back() = 1;
+      augmentedHessian = SymmetricBlockMatrix(
+          nonuniqueDims, Matrix(augmentedHessian.selfadjointView()));
+
+      // get map from key to location in the new augmented Hessian matrix (the one including only unique keys)
+      std::map<Key, size_t> keyToSlotMap;
+      for (size_t k = 0; k < nrUniqueKeys; k++) {
+        keyToSlotMap[hessianKeys[k]] = k;
+      }
+
+      // initialize matrix to zero
+      augmentedHessianUniqueKeys = SymmetricBlockMatrix(
+          dims, Matrix::Zero(NDD * nrUniqueKeys + 1, NDD * nrUniqueKeys + 1));
+
+      // add contributions for each key: note this loops over the hessian with nonUnique keys (augmentedHessian)
+      // and populates an Hessian that only includes the unique keys (that is what we want to return)
+      for (size_t i = 0; i < nrNonuniqueKeys; i++) {  // rows
+        Key key_i = jacobianKeys.at(i);
+
+        // update information vector
+        augmentedHessianUniqueKeys.updateOffDiagonalBlock(
+            keyToSlotMap[key_i], nrUniqueKeys,
+            augmentedHessian.aboveDiagonalBlock(i, nrNonuniqueKeys));
+
+        // update blocks
+        for (size_t j = i; j < nrNonuniqueKeys; j++) {  // cols
+          Key key_j = jacobianKeys.at(j);
+          if (i == j) {
+            augmentedHessianUniqueKeys.updateDiagonalBlock(
+                keyToSlotMap[key_i], augmentedHessian.diagonalBlock(i));
+          } else {  // (i < j)
+            if (keyToSlotMap[key_i] != keyToSlotMap[key_j]) {
+              augmentedHessianUniqueKeys.updateOffDiagonalBlock(
+                  keyToSlotMap[key_i], keyToSlotMap[key_j],
+                  augmentedHessian.aboveDiagonalBlock(i, j));
+            } else {
+              augmentedHessianUniqueKeys.updateDiagonalBlock(
+                  keyToSlotMap[key_i],
+                  augmentedHessian.aboveDiagonalBlock(i, j)
+                      + augmentedHessian.aboveDiagonalBlock(i, j).transpose());
+            }
+          }
+        }
+      }
+      // update bottom right element of the matrix
+      augmentedHessianUniqueKeys.updateDiagonalBlock(
+          nrUniqueKeys, augmentedHessian.diagonalBlock(nrNonuniqueKeys));
+    }
+    return augmentedHessianUniqueKeys;
+  }
+
+  /**
+   * non-templated version of function above
+   */
+  static SymmetricBlockMatrix SchurComplementAndRearrangeBlocks_3_12_6(
+      const std::vector<Eigen::Matrix<double,ZDim, 12>,
+          Eigen::aligned_allocator<Eigen::Matrix<double,ZDim,12> > >& Fs,
+      const Matrix& E, const Eigen::Matrix<double,3,3>& P, const Vector& b,
+      const KeyVector jacobianKeys, const KeyVector hessianKeys) {
+    return SchurComplementAndRearrangeBlocks<3,12,6>(Fs, E, P, b,
+                                                       jacobianKeys,
+                                                       hessianKeys);
+  }
+
+  /**
+   * Do Schur complement, given Jacobian as Fs,E,P, return SymmetricBlockMatrix
+   * G = F' * F - F' * E * P * E' * F
+   * g = F' * (b - E * P * E' * b)
    * Fixed size version
    */
   template<int N> // N = 2 or 3
@@ -206,7 +306,7 @@ public:
   }
 
   /// Computes Point Covariance P, with lambda parameter
-  template<int N> // N = 2 or 3
+  template<int N> // N = 2 or 3 (point dimension)
   static void ComputePointCovariance(Eigen::Matrix<double, N, N>& P,
       const Matrix& E, double lambda, bool diagonalDamping = false) {
 
@@ -258,7 +358,7 @@ public:
    * Applies Schur complement (exploiting block structure) to get a smart factor on cameras,
    * and adds the contribution of the smart factor to a pre-allocated augmented Hessian.
    */
-  template<int N> // N = 2 or 3
+  template<int N> // N = 2 or 3 (point dimension)
   static void UpdateSchurComplement(const FBlocks& Fs, const Matrix& E,
       const Eigen::Matrix<double, N, N>& P, const Vector& b,
       const KeyVector& allKeys, const KeyVector& keys,
