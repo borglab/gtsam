@@ -271,6 +271,7 @@ TEST(SmartProjectionFactorP, smartFactorWithSensorBodyTransform) {
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
   result = optimizer.optimize();
+//  graph.print("graph\n");
   EXPECT(assert_equal(wTb3, result.at<Pose3>(x3)));
 }
 

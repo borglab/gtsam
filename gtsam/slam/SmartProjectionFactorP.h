@@ -53,6 +53,9 @@ class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
   typedef SmartProjectionFactorP<CAMERA> This;
   typedef typename CAMERA::CalibrationType CALIBRATION;
 
+  static const int DimPose = 6;  ///< Pose3 dimension
+  static const int ZDim = 2;  ///< Measurement dimension (Point2)
+
  protected:
 
   /// shared pointer to calibration object (one for each observation)
@@ -64,6 +67,8 @@ class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
  public:
   typedef CAMERA Camera;
   typedef CameraSet<CAMERA> Cameras;
+  typedef Eigen::Matrix<double, ZDim, DimPose> MatrixZD;  // F blocks
+  typedef std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD> > FBlocks;  // vector of F blocks
 
   /// shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<This> shared_ptr;
@@ -176,17 +181,6 @@ class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
   }
 
   /**
-   * error calculates the error of the factor.
-   */
-  double error(const Values& values) const override {
-    if (this->active(values)) {
-      return this->totalReprojectionError(cameras(values));
-    } else {  // else of active flag
-      return 0.0;
-    }
-  }
-
-  /**
    * Collect all cameras involved in this factor
    * @param values Values structure which must contain camera poses corresponding
    * to keys involved in this factor
@@ -201,6 +195,117 @@ class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
       cameras.emplace_back(world_P_sensor_i, K_all_[i]);
     }
     return cameras;
+  }
+
+  /**
+   * error calculates the error of the factor.
+   */
+  double error(const Values& values) const override {
+    if (this->active(values)) {
+      return this->totalReprojectionError(this->cameras(values));
+    } else {  // else of active flag
+      return 0.0;
+    }
+  }
+
+  /**
+   * Compute jacobian F, E and error vector at a given linearization point
+   * @param values Values structure which must contain camera poses
+   * corresponding to keys involved in this factor
+   * @return Return arguments are the camera jacobians Fs (including the jacobian with
+   * respect to both body poses we interpolate from), the point Jacobian E,
+   * and the error vector b. Note that the jacobians are computed for a given point.
+   */
+  void computeJacobiansWithTriangulatedPoint(FBlocks& Fs, Matrix& E, Vector& b,
+                                             const Cameras& cameras) const {
+    if (!this->result_) {
+      throw("computeJacobiansWithTriangulatedPoint");
+    } else {  // valid result: compute jacobians
+      b = -cameras.reprojectionError(*this->result_, this->measured_, Fs, E);
+      for (size_t i = 0; i < Fs.size(); i++) {
+        const Pose3 sensor_P_body = body_P_sensors_[i].inverse();
+        const Pose3 world_P_body = cameras[i].pose() * sensor_P_body;
+        Eigen::Matrix<double, DimPose, DimPose> H;
+        world_P_body.compose(body_P_sensors_[i], H);
+        Fs.at(i) = Fs.at(i) * H;
+      }
+    }
+  }
+
+  /// linearize and return a Hessianfactor that is an approximation of error(p)
+  boost::shared_ptr<RegularHessianFactor<DimPose> > createHessianFactor(
+      const Values& values, const double lambda = 0.0, bool diagonalDamping =
+          false) const {
+
+    size_t nrKeys = this->keys_.size();
+    Cameras cameras = this->cameras(values);
+
+    // Create structures for Hessian Factors
+    KeyVector js;
+    std::vector < Matrix > Gs(nrKeys * (nrKeys + 1) / 2);
+    std::vector < Vector > gs(nrKeys);
+
+    if (this->measured_.size() != this->cameras(values).size())  // 1 observation per camera
+      throw std::runtime_error("SmartProjectionFactorP: "
+                               "measured_.size() inconsistent with input");
+
+    // triangulate 3D point at given linearization point
+    this->triangulateSafe(cameras);
+
+    if (!this->result_) {  // failed: return "empty/zero" Hessian
+      if (this->params_.degeneracyMode == ZERO_ON_DEGENERACY) {
+        for (Matrix& m : Gs)
+          m = Matrix::Zero(DimPose, DimPose);
+        for (Vector& v : gs)
+          v = Vector::Zero(DimPose);
+        return boost::make_shared < RegularHessianFactor<DimPose>
+            > (this->keys_, Gs, gs, 0.0);
+      } else {
+        throw std::runtime_error(
+            "SmartProjectionFactorP: "
+            "only supported degeneracy mode is ZERO_ON_DEGENERACY");
+      }
+    }
+
+    // compute Jacobian given triangulated 3D Point
+    FBlocks Fs;
+    Matrix E;
+    Vector b;
+    this->computeJacobiansWithTriangulatedPoint(Fs, E, b, cameras);
+
+    // Whiten using noise model
+    this->noiseModel_->WhitenSystem(E, b);
+    for (size_t i = 0; i < Fs.size(); i++){
+      Fs[i] = this->noiseModel_->Whiten(Fs[i]);
+    }
+
+    // build augmented hessian
+    SymmetricBlockMatrix augmentedHessian = Cameras::SchurComplement(Fs, E, b);
+    return boost::make_shared < RegularHessianFactor<DimPose>
+        > (this->keys_, augmentedHessian);
+  }
+
+  /**
+   * Linearize to Gaussian Factor (possibly adding a damping factor Lambda for LM)
+   * @param values Values structure which must contain camera poses and extrinsic pose for this factor
+   * @return a Gaussian factor
+   */
+  boost::shared_ptr<GaussianFactor> linearizeDamped(
+      const Values& values, const double lambda = 0.0) const {
+    // depending on flag set on construction we may linearize to different linear factors
+    switch (this->params_.linearizationMode) {
+      case HESSIAN:
+        return this->createHessianFactor(values, lambda);
+      default:
+        throw std::runtime_error(
+            "SmartProjectioFactorP: unknown linearization mode");
+    }
+  }
+
+  /// linearize
+  boost::shared_ptr<GaussianFactor> linearize(const Values& values) const
+          override {
+    return this->linearizeDamped(values);
   }
 
  private:
