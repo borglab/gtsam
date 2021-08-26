@@ -178,7 +178,7 @@ protected:
       DefaultKeyFormatter) const override {
     std::cout << s << "SmartFactorBase, z = \n";
     for (size_t k = 0; k < measured_.size(); ++k) {
-      std::cout << "measurement, p = " << measured_[k] << "\t";
+      std::cout << "measurement " << k<<", px = \n" << measured_[k] << "\n";
       noiseModel_->print("noise model = ");
     }
     if(body_P_sensor_)
