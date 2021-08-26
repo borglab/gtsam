@@ -393,7 +393,6 @@ protected:
       F.block<ZDim, Dim>(ZDim * i, Dim * i) = Fs.at(i);
   }
 
-
   Pose3 body_P_sensor() const{
     if(body_P_sensor_)
       return *body_P_sensor_;
