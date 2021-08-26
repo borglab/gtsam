@@ -51,7 +51,6 @@ class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
  private:
   typedef SmartProjectionFactor<CAMERA> Base;
   typedef SmartProjectionFactorP<CAMERA> This;
-  typedef CAMERA Camera;
   typedef typename CAMERA::CalibrationType CALIBRATION;
 
  protected:
@@ -63,6 +62,8 @@ class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
   std::vector<Pose3> body_P_sensors_;
 
  public:
+  typedef CAMERA Camera;
+  typedef CameraSet<CAMERA> Cameras;
 
   /// shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<This> shared_ptr;
