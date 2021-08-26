@@ -26,6 +26,8 @@
 
 #include <utility>
 
+#include <boost/bind/bind.hpp>
+
 #include <gtsam/nonlinear/Values.h> // Only so Eclipse finds class definition
 
 namespace gtsam {
@@ -101,7 +103,7 @@ namespace gtsam {
       boost::transform_iterator<
       KeyValuePair(*)(Values::KeyValuePair),
       boost::filter_iterator<
-      boost::function<bool(const Values::ConstKeyValuePair&)>,
+      std::function<bool(const Values::ConstKeyValuePair&)>,
       Values::iterator> >
       iterator;
 
@@ -111,7 +113,7 @@ namespace gtsam {
       boost::transform_iterator<
       ConstKeyValuePair(*)(Values::ConstKeyValuePair),
       boost::filter_iterator<
-      boost::function<bool(const Values::ConstKeyValuePair&)>,
+      std::function<bool(const Values::ConstKeyValuePair&)>,
       Values::const_iterator> >
       const_const_iterator;
 
@@ -132,7 +134,7 @@ namespace gtsam {
 
   private:
     Filtered(
-        const boost::function<bool(const Values::ConstKeyValuePair&)>& filter,
+        const std::function<bool(const Values::ConstKeyValuePair&)>& filter,
         Values& values) :
         begin_(
             boost::make_transform_iterator(
@@ -203,7 +205,7 @@ namespace gtsam {
     const_iterator begin_;
     const_iterator end_;
     ConstFiltered(
-        const boost::function<bool(const Values::ConstKeyValuePair&)>& filter,
+        const std::function<bool(const Values::ConstKeyValuePair&)>& filter,
         const Values& values) {
       // We remove the const from values to create a non-const Filtered
       // view, then pull the const_iterators out of it.
@@ -217,7 +219,7 @@ namespace gtsam {
   /** Constructor from a Filtered view copies out all values */
   template<class ValueType>
   Values::Values(const Values::Filtered<ValueType>& view) {
-    for(const typename Filtered<ValueType>::KeyValuePair& key_value: view) {
+    for(const auto key_value: view) {
       Key key = key_value.key;
       insert(key, static_cast<const ValueType&>(key_value.value));
     }
@@ -226,7 +228,7 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class ValueType>
   Values::Values(const Values::ConstFiltered<ValueType>& view) {
-    for(const typename ConstFiltered<ValueType>::KeyValuePair& key_value: view) {
+    for(const auto key_value: view) {
       Key key = key_value.key;
       insert(key, static_cast<const ValueType&>(key_value.value));
     }
@@ -234,33 +236,35 @@ namespace gtsam {
 
   /* ************************************************************************* */
   Values::Filtered<Value>
-  inline Values::filter(const boost::function<bool(Key)>& filterFcn) {
+  inline Values::filter(const std::function<bool(Key)>& filterFcn) {
     return filter<Value>(filterFcn);
   }
 
   /* ************************************************************************* */
   template<class ValueType>
   Values::Filtered<ValueType>
-  Values::filter(const boost::function<bool(Key)>& filterFcn) {
-    return Filtered<ValueType>(boost::bind(&filterHelper<ValueType>, filterFcn, _1), *this);
+  Values::filter(const std::function<bool(Key)>& filterFcn) {
+    return Filtered<ValueType>(std::bind(&filterHelper<ValueType>, filterFcn,
+      std::placeholders::_1), *this);
   }
 
   /* ************************************************************************* */
   Values::ConstFiltered<Value>
-  inline Values::filter(const boost::function<bool(Key)>& filterFcn) const {
+  inline Values::filter(const std::function<bool(Key)>& filterFcn) const {
     return filter<Value>(filterFcn);
   }
 
   /* ************************************************************************* */
   template<class ValueType>
   Values::ConstFiltered<ValueType>
-  Values::filter(const boost::function<bool(Key)>& filterFcn) const {
-    return ConstFiltered<ValueType>(boost::bind(&filterHelper<ValueType>, filterFcn, _1), *this);
+  Values::filter(const std::function<bool(Key)>& filterFcn) const {
+    return ConstFiltered<ValueType>(std::bind(&filterHelper<ValueType>,
+      filterFcn, std::placeholders::_1), *this);
   }
 
   /* ************************************************************************* */
    template<>
-   inline bool Values::filterHelper<Value>(const boost::function<bool(Key)> filter,
+   inline bool Values::filterHelper<Value>(const std::function<bool(Key)> filter,
        const ConstKeyValuePair& key_value) {
      // Filter and check the type
      return filter(key_value.key);
@@ -338,19 +342,18 @@ namespace gtsam {
    }  // internal
 
    /* ************************************************************************* */
-   template<typename ValueType>
-   ValueType Values::at(Key j) const {
+   template <typename ValueType>
+   const ValueType Values::at(Key j) const {
      // Find the item
      KeyValueMap::const_iterator item = values_.find(j);
 
      // Throw exception if it does not exist
-     if(item == values_.end())
-       throw ValuesKeyDoesNotExist("at", j);
+     if (item == values_.end()) throw ValuesKeyDoesNotExist("at", j);
 
-    // Check the type and throw exception if incorrect
-    // h() split in two lines to avoid internal compiler error (MSVC2017)
-    auto h = internal::handle<ValueType>();
-    return h(j,item->second);
+     // Check the type and throw exception if incorrect
+     // h() split in two lines to avoid internal compiler error (MSVC2017)
+     auto h = internal::handle<ValueType>();
+     return h(j, item->second);
   }
 
   /* ************************************************************************* */

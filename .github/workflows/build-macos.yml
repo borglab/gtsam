@@ -12,6 +12,7 @@ jobs:
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
       GTSAM_BUILD_UNSTABLE: ${{ matrix.build_unstable }}
+
     strategy:
       fail-fast: false
       matrix:
@@ -31,13 +32,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@master
-      - name: Install (macOS)
-        if: runner.os == 'macOS'
+        uses: actions/checkout@v2
+
+      - name: Install Dependencies
         run: |
-          brew tap ProfFan/robotics
           brew install cmake ninja
-          brew install ProfFan/robotics/boost
+          brew install boost
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
             brew install gcc@${{ matrix.version }}
             echo "CC=gcc-${{ matrix.version }}" >> $GITHUB_ENV
@@ -47,7 +47,5 @@ jobs:
             echo "CC=clang" >> $GITHUB_ENV
             echo "CXX=clang++" >> $GITHUB_ENV
           fi
-      - name: Build and Test (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          bash .github/scripts/unix.sh -t
+      - name: Build and Test
+        run: bash .github/scripts/unix.sh -t

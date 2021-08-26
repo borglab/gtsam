@@ -4,7 +4,7 @@ from docs.doc_template import ClassDoc, Doc, Docs, FreeDoc
 import os.path as path
 import xml.etree.ElementTree as ET
 
-DOXYGEN_CONF = 'conf_doxygen.py'
+DOXYGEN_CONF = 'doxygen.conf'
 
 
 def parse(input_path, output_path, quiet=False, generate_xml_flag=True):

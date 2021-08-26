@@ -33,9 +33,10 @@
 
 #pragma once
 
-#include <boost/shared_ptr.hpp>
 #include <boost/concept_check.hpp>
-#include <stdio.h>
+#include <functional>
+#include <iostream>
+#include <memory>
 #include <string>
 
 #define GTSAM_PRINT(x)((x).print(#x))
@@ -72,10 +73,10 @@ namespace gtsam {
   }; // \ Testable
 
   inline void print(float v, const std::string& s = "") {
-    printf("%s%f\n",s.c_str(),v);
+    std::cout << (s.empty() ? s : s + " ") << v << std::endl;
   }
   inline void print(double v, const std::string& s = "") {
-    printf("%s%lf\n",s.c_str(),v);
+    std::cout << (s.empty() ? s : s + " ") << v << std::endl;
   }
 
   /** Call equal on the object */
@@ -119,10 +120,10 @@ namespace gtsam {
    * Binary predicate on shared pointers
    */
   template<class V>
-  struct equals_star : public std::function<bool(const boost::shared_ptr<V>&, const boost::shared_ptr<V>&)> {
+  struct equals_star : public std::function<bool(const std::shared_ptr<V>&, const std::shared_ptr<V>&)> {
     double tol_;
     equals_star(double tol = 1e-9) : tol_(tol) {}
-    bool operator()(const boost::shared_ptr<V>& expected, const boost::shared_ptr<V>& actual) {
+    bool operator()(const std::shared_ptr<V>& expected, const std::shared_ptr<V>& actual) {
       if (!actual && !expected) return true;
       return actual && expected && traits<V>::Equals(*actual,*expected, tol_);
     }

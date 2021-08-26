@@ -183,7 +183,7 @@ namespace gtsam {
       const VariableSlots& p_variableSlots);
 
     /** Virtual destructor */
-    virtual ~JacobianFactor() {}
+    ~JacobianFactor() override {}
 
     /** Clone this JacobianFactor */
     GaussianFactor::shared_ptr clone() const override {

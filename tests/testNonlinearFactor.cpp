@@ -234,6 +234,26 @@ TEST( NonlinearFactor, linearize_constraint2 )
 }
 
 /* ************************************************************************* */
+TEST( NonlinearFactor, cloneWithNewNoiseModel )
+{
+  // create original factor
+  double sigma1 = 0.1;
+  NonlinearFactorGraph nfg = example::nonlinearFactorGraphWithGivenSigma(sigma1);
+
+  // create expected
+  double sigma2 = 10;
+  NonlinearFactorGraph expected = example::nonlinearFactorGraphWithGivenSigma(sigma2);
+
+  // create actual
+  NonlinearFactorGraph actual;
+  SharedNoiseModel noise2 = noiseModel::Isotropic::Sigma(2,sigma2);
+  actual.push_back( boost::dynamic_pointer_cast<NoiseModelFactor>(nfg[0])->cloneWithNewNoiseModel(noise2) );
+
+  // check it's all good
+  CHECK(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
 class TestFactor4 : public NoiseModelFactor4<double, double, double, double> {
 public:
   typedef NoiseModelFactor4<double, double, double, double> Base;

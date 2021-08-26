@@ -49,6 +49,19 @@ using symbol_shorthand::X;
 using symbol_shorthand::L;
 
 /* ************************************************************************* */
+TEST( NonlinearOptimizer, paramsEquals )
+{
+  // default constructors lead to two identical params
+  GaussNewtonParams gnParams1;
+  GaussNewtonParams gnParams2;
+  CHECK(gnParams1.equals(gnParams2));
+
+  // but the params become different if we change something in gnParams2
+  gnParams2.setVerbosity("DELTA");
+  CHECK(!gnParams1.equals(gnParams2));
+}
+
+/* ************************************************************************* */
 TEST( NonlinearOptimizer, iterateLM )
 {
   // really non-linear factor graph

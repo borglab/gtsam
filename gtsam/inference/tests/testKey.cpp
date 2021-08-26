@@ -60,6 +60,12 @@ TEST(Key, SymbolGenerator) {
 }
 
 /* ************************************************************************* */
+TEST(Key, SymbolGeneratorConstexpr) {
+  constexpr auto Z = gtsam::SymbolGenerator('x');
+  EXPECT(assert_equal(Z.chr(), 'x'));
+}
+
+/* ************************************************************************* */
 template<int KeySize>
 Key KeyTestValue();
 

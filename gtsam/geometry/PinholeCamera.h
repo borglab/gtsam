@@ -30,7 +30,7 @@ namespace gtsam {
  * \nosubgrouping
  */
 template<typename Calibration>
-class PinholeCamera: public PinholeBaseK<Calibration> {
+class GTSAM_EXPORT PinholeCamera: public PinholeBaseK<Calibration> {
 
 public:
 
@@ -148,7 +148,7 @@ public:
   }
 
   /// print
-  void print(const std::string& s = "PinholeCamera") const {
+  void print(const std::string& s = "PinholeCamera") const override {
     Base::print(s);
     K_.print(s + ".calibration");
   }
@@ -157,7 +157,7 @@ public:
   /// @name Standard Interface
   /// @{
 
-  virtual ~PinholeCamera() {
+  ~PinholeCamera() override {
   }
 
   /// return pose

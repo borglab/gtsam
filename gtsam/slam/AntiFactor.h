@@ -49,7 +49,7 @@ namespace gtsam {
     /** constructor - Creates the equivalent AntiFactor from an existing factor */
     AntiFactor(NonlinearFactor::shared_ptr factor) : Base(factor->keys()), factor_(factor) {}
 
-    virtual ~AntiFactor() {}
+    ~AntiFactor() override {}
 
     /// @return a deep copy of this factor
     gtsam::NonlinearFactor::shared_ptr clone() const override {

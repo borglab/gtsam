@@ -50,6 +50,9 @@ namespace gtsam {
 
     /** default constructor, zero rotation */
     Rot2() : c_(1.0), s_(0.0) {}
+    
+    /** copy constructor */
+    Rot2(const Rot2& r) : Rot2(r.c_, r.s_) {}
 
     /// Constructor from angle in radians == exponential map at identity
     Rot2(double theta) : c_(cos(theta)), s_(sin(theta)) {}

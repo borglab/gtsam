@@ -10,12 +10,13 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file  testCal3DFisheye.cpp
+ * @file  testCal3Fisheye.cpp
  * @brief Unit tests for fisheye calibration class
  * @author ghaggin
  */
 
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Cal3Fisheye.h>
 #include <gtsam/geometry/Point3.h>
@@ -41,7 +42,11 @@ TEST(Cal3Fisheye, retract) {
   Cal3Fisheye expected(K.fx() + 1, K.fy() + 2, K.skew() + 3, K.px() + 4,
                        K.py() + 5, K.k1() + 6, K.k2() + 7, K.k3() + 8,
                        K.k4() + 9);
-  Vector d(9);
+
+  EXPECT_LONGS_EQUAL(Cal3Fisheye::Dim(), 9);
+  EXPECT_LONGS_EQUAL(expected.dim(), 9);
+
+  Vector9 d;
   d << 1, 2, 3, 4, 5, 6, 7, 8, 9;
   Cal3Fisheye actual = K.retract(d);
   CHECK(assert_equal(expected, actual, 1e-7));
@@ -179,6 +184,33 @@ TEST(Cal3Fisheye, calibrate3) {
   Point2 uv(457.82638130304935, 408.18905848512986);
   auto xi_hat = K.calibrate(uv);
   CHECK(assert_equal(xi_hat, xi));
+}
+
+Point2 calibrate_(const Cal3Fisheye& k, const Point2& pt) {
+  return k.calibrate(pt);
+}
+
+/* ************************************************************************* */
+TEST(Cal3Fisheye, Dcalibrate) {
+  Point2 p(0.5, 0.5);
+  Point2 pi = K.uncalibrate(p);
+  Matrix Dcal, Dp;
+  K.calibrate(pi, Dcal, Dp);
+  Matrix numerical1 = numericalDerivative21(calibrate_, K, pi);
+  CHECK(assert_equal(numerical1, Dcal, 1e-5));
+  Matrix numerical2 = numericalDerivative22(calibrate_, K, pi);
+  CHECK(assert_equal(numerical2, Dp, 1e-5));
+}
+
+/* ************************************************************************* */
+TEST(Cal3Fisheye, Print) {
+  Cal3Fisheye cal(1, 2, 3, 4, 5, 6, 7, 8, 9);
+  std::stringstream os;
+  os << "fx: " << cal.fx() << ", fy: " << cal.fy() << ", s: " << cal.skew()
+     << ", px: " << cal.px() << ", py: " << cal.py() << ", k1: " << cal.k1()
+     << ", k2: " << cal.k2() << ", k3: " << cal.k3() << ", k4: " << cal.k4();
+
+  EXPECT(assert_stdout_equal(os.str(), cal));
 }
 
 /* ************************************************************************* */

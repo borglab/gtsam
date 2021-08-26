@@ -90,7 +90,7 @@ public:
         result_(TriangulationResult::Degenerate()) {}
 
   /** Virtual destructor */
-  virtual ~SmartProjectionFactor() {
+  ~SmartProjectionFactor() override {
   }
 
   /**

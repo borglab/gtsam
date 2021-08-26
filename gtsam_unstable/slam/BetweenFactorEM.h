@@ -78,7 +78,7 @@ public:
           flag_bump_up_near_zero_probs) {
   }
 
-  virtual ~BetweenFactorEM() {
+  ~BetweenFactorEM() override {
   }
 
   /** implement functions needed for Testable */

@@ -19,6 +19,21 @@ from gtsam.utils.test_case import GtsamTestCase
 class TestKalmanFilter(GtsamTestCase):
 
     def test_KalmanFilter(self):
+        """ 
+        Kalman Filter Definitions:
+        F - State Transition Model
+        B - Control Input Model
+        u - Control Vector
+        modelQ - Covariance of the process Noise (input for KalmanFilter object) - sigma as input
+        Q - Covariance of the process Noise (for reference calculation) - sigma^2 as input
+        H - Observation Model
+        z1 - Observation iteration 1
+        z2 - Observation iteration 2
+        z3 - observation iteration 3
+        modelR - Covariance of the observation Noise (input for KalmanFilter object) - sigma as input
+        R - Covariance of the observation Noise (for reference calculation) - sigma^2 as input
+        """
+
         F = np.eye(2)
         B = np.eye(2)
         u = np.array([1.0, 0.0])

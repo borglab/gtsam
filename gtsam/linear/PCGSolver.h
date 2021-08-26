@@ -72,7 +72,7 @@ protected:
 public:
   /* Interface to initialize a solver without a problem */
   PCGSolver(const PCGSolverParameters &p);
-  virtual ~PCGSolver() {
+  ~PCGSolver() override {
   }
 
   using IterativeSolver::optimize;

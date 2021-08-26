@@ -106,8 +106,8 @@ Vector6 Pose3::adjointTranspose(const Vector6& xi, const Vector6& y,
 }
 
 /* ************************************************************************* */
-void Pose3::print(const string& s) const {
-  cout << (s.empty() ? s : s + " ") << *this << endl;
+void Pose3::print(const std::string& s) const {
+  std::cout << (s.empty() ? s : s + " ") << *this << std::endl;
 }
 
 /* ************************************************************************* */

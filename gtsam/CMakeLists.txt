@@ -135,12 +135,12 @@ endif()
 # of any previously installed GTSAM headers.
 target_include_directories(gtsam BEFORE PUBLIC
   # main gtsam includes:
-  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${GTSAM_SOURCE_DIR}>
   $<INSTALL_INTERFACE:include/>
   # config.h
-  $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
+  $<BUILD_INTERFACE:${GTSAM_BINARY_DIR}>
   # unit tests:
-  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/CppUnitLite>
+  $<BUILD_INTERFACE:${GTSAM_SOURCE_DIR}/CppUnitLite>
 )
 # 3rdparty libraries: use the "system" flag so they are included via "-isystem"
 # and warnings (and warnings-considered-errors) in those headers are not
@@ -190,23 +190,8 @@ if(WIN32)
 else()
   if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
     # Suppress all warnings from 3rd party sources.
-    set_source_files_properties(${3rdparty_srcs} PROPERTIES COMPILE_FLAGS "-w")
+    set_source_files_properties(${3rdparty_srcs} PROPERTIES COMPILE_FLAGS "-w -Wno-everything")
   else()
     set_source_files_properties(${3rdparty_srcs} PROPERTIES COMPILE_FLAGS "-Wno-error")
   endif()
 endif()
-
-# Create the matlab toolbox for the gtsam library
-if (GTSAM_INSTALL_MATLAB_TOOLBOX)
-    # Set up codegen
-    include(GtsamMatlabWrap)
-
-    # Generate, build and install toolbox
-    set(mexFlags "${GTSAM_BUILD_MEX_BINARY_FLAGS}")
-        if(NOT BUILD_SHARED_LIBS)
-                list(APPEND mexFlags -DGTSAM_IMPORT_STATIC)
-        endif()
-
-    # Wrap
-    wrap_and_install_library(gtsam.i "${GTSAM_ADDITIONAL_LIBRARIES}" "" "${mexFlags}")
-endif ()

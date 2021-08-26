@@ -173,7 +173,7 @@ public:
   }
 
   /// Virtual destructor
-  virtual ~PreintegratedCombinedMeasurements() {}
+  ~PreintegratedCombinedMeasurements() override {}
 
   /// @}
 
@@ -211,9 +211,7 @@ public:
    * @param measuredAcc Measured acceleration (in body frame, as given by the
    * sensor)
    * @param measuredOmega Measured angular velocity (as given by the sensor)
-   * @param deltaT Time interval between two consecutive IMU measurements
-   * @param body_P_sensor Optional sensor frame (pose of the IMU in the body
-   * frame)
+   * @param dt Time interval between two consecutive IMU measurements
    */
   void integrateMeasurement(const Vector3& measuredAcc,
       const Vector3& measuredOmega, const double dt) override;
@@ -291,7 +289,7 @@ public:
       Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias_i, Key bias_j,
       const PreintegratedCombinedMeasurements& preintegratedMeasurements);
 
-  virtual ~CombinedImuFactor() {}
+  ~CombinedImuFactor() override {}
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override;

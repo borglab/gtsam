@@ -12,6 +12,7 @@ endif()
 if(WIN32)
 		set_target_properties(metis-gtsam PROPERTIES
 			PREFIX ""
+			COMPILE_FLAGS /w
 			RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/../../../bin")
 endif()
 

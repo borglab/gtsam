@@ -53,7 +53,7 @@ public:
    */
   LinearizedGaussianFactor(const GaussianFactor::shared_ptr& gaussian, const Values& lin_points);
 
-  virtual ~LinearizedGaussianFactor() {};
+  ~LinearizedGaussianFactor() override {};
 
   // access functions
   const Values& linearizationPoint() const { return lin_points_; }
@@ -109,7 +109,7 @@ public:
    */
   LinearizedJacobianFactor(const JacobianFactor::shared_ptr& jacobian, const Values& lin_points);
 
-  virtual ~LinearizedJacobianFactor() {}
+  ~LinearizedJacobianFactor() override {}
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
@@ -199,7 +199,7 @@ public:
    */
   LinearizedHessianFactor(const HessianFactor::shared_ptr& hessian, const Values& lin_points);
 
-  virtual ~LinearizedHessianFactor() {}
+  ~LinearizedHessianFactor() override {}
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {

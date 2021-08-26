@@ -52,7 +52,7 @@ namespace gtsam {
     /** default constructor - only use for serialization */
     PriorFactor() {}
 
-    virtual ~PriorFactor() {}
+    ~PriorFactor() override {}
 
     /** Constructor */
     PriorFactor(Key key, const VALUE& prior, const SharedNoiseModel& model = nullptr) :

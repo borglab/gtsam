@@ -112,6 +112,25 @@ public:
     return Pose3(R_ * T.R_, t_ + R_ * T.t_);
   }
 
+  /**
+   * Interpolate between two poses via individual rotation and translation
+   * interpolation.
+   *
+   * The default "interpolate" method defined in Lie.h minimizes the geodesic
+   * distance on the manifold, leading to a screw motion interpolation in
+   * Cartesian space, which might not be what is expected.
+   * In contrast, this method executes a straight line interpolation for the
+   * translation, while still using interpolate (aka "slerp") for the rotational
+   * component. This might be more intuitive in many applications.
+   *
+   * @param T End point of interpolation.
+   * @param t A value in [0, 1].
+   */
+  Pose3 interpolateRt(const Pose3& T, double t) const {
+    return Pose3(interpolate<Rot3>(R_, T.R_, t),
+                 interpolate<Point3>(t_, T.t_, t));
+  }
+
   /// @}
   /// @name Lie Group
   /// @{
@@ -123,7 +142,7 @@ public:
   static Vector6 Logmap(const Pose3& pose, OptionalJacobian<6, 6> Hpose = boost::none);
 
   /**
-   * Calculate Adjoint map, transforming a twist in the this pose's (i.e, body) frame to the world spatial frame
+   * Calculate Adjoint map, transforming a twist in this pose's (i.e, body) frame to the world spatial frame
    * Ad_pose is 6*6 matrix that when applied to twist xi \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$, returns Ad_pose(xi)
    */
   Matrix6 AdjointMap() const; /// FIXME Not tested - marked as incorrect
@@ -370,6 +389,7 @@ inline Matrix wedge<Pose3>(const Vector& xi) {
 
 // Convenience typedef
 using Pose3Pair = std::pair<Pose3, Pose3>;
+using Pose3Pairs = std::vector<std::pair<Pose3, Pose3> >;
 
 // For MATLAB wrapper
 typedef std::vector<Pose3> Pose3Vector;
