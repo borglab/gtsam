@@ -84,6 +84,7 @@ Camera cam3(pose_above, sharedK);
 namespace vanillaPose2 {
 typedef PinholePose<Cal3_S2> Camera;
 typedef SmartProjectionPoseFactor<Cal3_S2> SmartFactor;
+typedef SmartProjectionFactorP<Camera> SmartFactorP;
 static Cal3_S2::shared_ptr sharedK2(new Cal3_S2(1500, 1200, 0, 640, 480));
 Camera level_camera(level_pose, sharedK2);
 Camera level_camera_right(pose_right, sharedK2);
@@ -113,6 +114,7 @@ typedef GeneralSFMFactor<Camera, Point3> SFMFactor;
 namespace bundlerPose {
 typedef PinholePose<Cal3Bundler> Camera;
 typedef SmartProjectionPoseFactor<Cal3Bundler> SmartFactor;
+typedef SmartProjectionFactorP<Camera> SmartFactorP;
 static boost::shared_ptr<Cal3Bundler> sharedBundlerK(
     new Cal3Bundler(500, 1e-3, 1e-3, 1000, 2000));
 Camera level_camera(level_pose, sharedBundlerK);

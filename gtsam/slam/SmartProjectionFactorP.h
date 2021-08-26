@@ -340,6 +340,7 @@ class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar & BOOST_SERIALIZATION_NVP(K_all_);
+    ar & BOOST_SERIALIZATION_NVP(nonUniqueKeys_);
     ar & BOOST_SERIALIZATION_NVP(body_P_sensors_);
   }
 
