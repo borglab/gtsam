@@ -1086,6 +1086,133 @@ TEST( SmartProjectionFactorP, timing ) {
 }
 #endif
 
+/* *************************************************************************/
+TEST( SmartProjectionFactorP, optimization_3poses_sphericalCamera ) {
+
+  using namespace sphericalCamera;
+  Camera::MeasurementVector measurements_lmk1, measurements_lmk2, measurements_lmk3;
+
+  // Project three landmarks into three cameras
+  projectToMultipleCameras<Camera>(cam1, cam2, cam3, landmark1, measurements_lmk1);
+  projectToMultipleCameras<Camera>(cam1, cam2, cam3, landmark2, measurements_lmk2);
+  projectToMultipleCameras<Camera>(cam1, cam2, cam3, landmark3, measurements_lmk3);
+
+  // create inputs
+  std::vector<Key> keys;
+  keys.push_back(x1);
+  keys.push_back(x2);
+  keys.push_back(x3);
+
+  std::vector<EmptyCal::shared_ptr> emptyKs;
+  emptyKs.push_back(emptyK);
+  emptyKs.push_back(emptyK);
+  emptyKs.push_back(emptyK);
+
+  SmartFactorP::shared_ptr smartFactor1(new SmartFactorP(model));
+  smartFactor1->add(measurements_lmk1, keys, emptyKs);
+
+//  SmartFactorP::shared_ptr smartFactor2(new SmartFactorP(model));
+//  smartFactor2->add(measurements_lmk2, keys, sharedKs);
+//
+//  SmartFactorP::shared_ptr smartFactor3(new SmartFactorP(model));
+//  smartFactor3->add(measurements_lmk3, keys, sharedKs);
+//
+//  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
+//
+//  NonlinearFactorGraph graph;
+//  graph.push_back(smartFactor1);
+//  graph.push_back(smartFactor2);
+//  graph.push_back(smartFactor3);
+//  graph.addPrior(x1, level_pose, noisePrior);
+//  graph.addPrior(x2, pose_right, noisePrior);
+//
+//  Values groundTruth;
+//  groundTruth.insert(x1, level_pose);
+//  groundTruth.insert(x2, pose_right);
+//  groundTruth.insert(x3, pose_above);
+//  DOUBLES_EQUAL(0, graph.error(groundTruth), 1e-9);
+//
+//  //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
+//  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
+//                           Point3(0.1, 0.1, 0.1)); // smaller noise
+//  Values values;
+//  values.insert(x1, level_pose);
+//  values.insert(x2, pose_right);
+//  // initialize third pose with some noise, we expect it to move back to original pose_above
+//  values.insert(x3, pose_above * noise_pose);
+//  EXPECT( // check that the pose is actually noisy
+//      assert_equal(
+//          Pose3(
+//              Rot3(0, -0.0314107591, 0.99950656, -0.99950656, -0.0313952598,
+//                   -0.000986635786, 0.0314107591, -0.999013364, -0.0313952598),
+//                   Point3(0.1, -0.1, 1.9)), values.at<Pose3>(x3)));
+//
+//  Values result;
+//  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
+//  result = optimizer.optimize();
+//  EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-5));
+}
+
+//#ifndef DISABLE_TIMING
+//#include <gtsam/base/timing.h>
+//// this factor is actually slightly faster (but comparable) to original SmartProjectionPoseFactor
+////-Total: 0 CPU (0 times, 0 wall, 0.01 children, min: 0 max: 0)
+////|   -SmartFactorP LINEARIZE: 0 CPU (1000 times, 0.005481 wall, 0 children, min: 0 max: 0)
+////|   -SmartPoseFactor LINEARIZE: 0.01 CPU (1000 times, 0.007318 wall, 0.01 children, min: 0 max: 0)
+///* *************************************************************************/
+//TEST( SmartProjectionFactorP, timing ) {
+//
+//  using namespace vanillaPose;
+//
+//  // Default cameras for simple derivatives
+//  static Cal3_S2::shared_ptr sharedKSimple(new Cal3_S2(100, 100, 0, 0, 0));
+//
+//  Rot3 R = Rot3::identity();
+//  Pose3 pose1 = Pose3(R, Point3(0, 0, 0));
+//  Pose3 pose2 = Pose3(R, Point3(1, 0, 0));
+//  Camera cam1(pose1, sharedKSimple), cam2(pose2, sharedKSimple);
+//  Pose3 body_P_sensorId = Pose3::identity();
+//
+//  // one landmarks 1m in front of camera
+//  Point3 landmark1(0, 0, 10);
+//
+//  Point2Vector measurements_lmk1;
+//
+//  // Project 2 landmarks into 2 cameras
+//  measurements_lmk1.push_back(cam1.project(landmark1));
+//  measurements_lmk1.push_back(cam2.project(landmark1));
+//
+//  size_t nrTests = 1000;
+//
+//  for(size_t i = 0; i<nrTests; i++){
+//    SmartFactorP::shared_ptr smartFactorP(new SmartFactorP(model));
+//    smartFactorP->add(measurements_lmk1[0], x1, sharedKSimple, body_P_sensorId);
+//    smartFactorP->add(measurements_lmk1[1], x1, sharedKSimple, body_P_sensorId);
+//
+//    Values values;
+//    values.insert(x1, pose1);
+//    values.insert(x2, pose2);
+//    gttic_(SmartFactorP_LINEARIZE);
+//    smartFactorP->linearize(values);
+//    gttoc_(SmartFactorP_LINEARIZE);
+//  }
+//
+//  for(size_t i = 0; i<nrTests; i++){
+//    SmartFactor::shared_ptr smartFactor(new SmartFactor(model, sharedKSimple));
+//    smartFactor->add(measurements_lmk1[0], x1);
+//    smartFactor->add(measurements_lmk1[1], x2);
+//
+//    Values values;
+//    values.insert(x1, pose1);
+//    values.insert(x2, pose2);
+//    gttic_(SmartPoseFactor_LINEARIZE);
+//    smartFactor->linearize(values);
+//    gttoc_(SmartPoseFactor_LINEARIZE);
+//  }
+//  tictoc_print_();
+//}
+//#endif
+
 /* ************************************************************************* */
 BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Constrained, "gtsam_noiseModel_Constrained");
 BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Diagonal, "gtsam_noiseModel_Diagonal");

@@ -474,8 +474,8 @@ TriangulationResult triangulateSafe(const CameraSet<CAMERA>& cameras,
 #endif
         // Check reprojection error
         if (params.dynamicOutlierRejectionThreshold > 0) {
-          const Point2& zi = measured.at(i);
-          Point2 reprojectionError(camera.project(point) - zi);
+          const typename CAMERA::Measurement& zi = measured.at(i);
+          Point2 reprojectionError = camera.reprojectionError(point, zi);
           maxReprojError = std::max(maxReprojError, reprojectionError.norm());
         }
         i += 1;
