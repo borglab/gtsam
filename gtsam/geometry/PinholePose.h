@@ -166,7 +166,6 @@ public:
     return result;
   }
 
-
   /// backproject a 2-dimensional point to a 3-dimensional point at infinity
   Unit3 backprojectPointAtInfinity(const Point2& p) const {
     const Point2 pn = calibration().calibrate(p);
@@ -415,6 +414,12 @@ public:
   /// for Canonical
   static PinholePose identity() {
     return PinholePose(); // assumes that the default constructor is valid
+  }
+
+  /// for Linear Triangulation
+  Matrix34 getCameraProjectionMatrix() const {
+    Matrix34 P = Matrix34(PinholeBase::pose().inverse().matrix().block(0, 0, 3, 4));
+    return K_->K() * P;
   }
 
   /// @}

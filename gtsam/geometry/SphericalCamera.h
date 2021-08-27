@@ -210,6 +210,11 @@ class GTSAM_EXPORT SphericalCamera {
     return SphericalCamera(Pose3::identity());  // assumes that the default constructor is valid
   }
 
+  /// for Linear Triangulation
+  Matrix34 getCameraProjectionMatrix() const {
+    return Matrix::Zero(3,4);
+  }
+
  private:
 
   /** Serialization function */
