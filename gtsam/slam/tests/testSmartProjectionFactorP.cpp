@@ -1089,27 +1089,27 @@ TEST( SmartProjectionFactorP, timing ) {
 /* *************************************************************************/
 TEST( SmartProjectionFactorP, optimization_3poses_sphericalCamera ) {
 
-  using namespace sphericalCamera;
-  Camera::MeasurementVector measurements_lmk1, measurements_lmk2, measurements_lmk3;
-
-  // Project three landmarks into three cameras
-  projectToMultipleCameras<Camera>(cam1, cam2, cam3, landmark1, measurements_lmk1);
-  projectToMultipleCameras<Camera>(cam1, cam2, cam3, landmark2, measurements_lmk2);
-  projectToMultipleCameras<Camera>(cam1, cam2, cam3, landmark3, measurements_lmk3);
-
-  // create inputs
-  std::vector<Key> keys;
-  keys.push_back(x1);
-  keys.push_back(x2);
-  keys.push_back(x3);
-
-  std::vector<EmptyCal::shared_ptr> emptyKs;
-  emptyKs.push_back(emptyK);
-  emptyKs.push_back(emptyK);
-  emptyKs.push_back(emptyK);
-
-  SmartFactorP::shared_ptr smartFactor1(new SmartFactorP(model));
-  smartFactor1->add(measurements_lmk1, keys, emptyKs);
+//  using namespace sphericalCamera;
+//  Camera::MeasurementVector measurements_lmk1, measurements_lmk2, measurements_lmk3;
+//
+//  // Project three landmarks into three cameras
+//  projectToMultipleCameras<Camera>(cam1, cam2, cam3, landmark1, measurements_lmk1);
+//  projectToMultipleCameras<Camera>(cam1, cam2, cam3, landmark2, measurements_lmk2);
+//  projectToMultipleCameras<Camera>(cam1, cam2, cam3, landmark3, measurements_lmk3);
+//
+//  // create inputs
+//  std::vector<Key> keys;
+//  keys.push_back(x1);
+//  keys.push_back(x2);
+//  keys.push_back(x3);
+//
+//  std::vector<EmptyCal::shared_ptr> emptyKs;
+//  emptyKs.push_back(emptyK);
+//  emptyKs.push_back(emptyK);
+//  emptyKs.push_back(emptyK);
+//
+//  SmartFactorP::shared_ptr smartFactor1(new SmartFactorP(model));
+//  smartFactor1->add(measurements_lmk1, keys, emptyKs);
 
 //  SmartFactorP::shared_ptr smartFactor2(new SmartFactorP(model));
 //  smartFactor2->add(measurements_lmk2, keys, sharedKs);
