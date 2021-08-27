@@ -61,6 +61,21 @@ Unit3 SphericalCamera::project2(const Point3& pw, OptionalJacobian<2, 6> Dpose,
 }
 
 /* ************************************************************************* */
+Unit3 SphericalCamera::project2(const Unit3& pwu, OptionalJacobian<2, 6> Dpose,
+    OptionalJacobian<2, 2> Dpoint) const {
+
+  Matrix23 Dtf_rot;
+  Matrix2 Dtf_point; // calculated by transformTo if needed
+  const Unit3 pu = pose().rotation().unrotate(pwu, Dpose ? &Dtf_rot : 0, Dpoint ? &Dtf_point : 0);
+
+  if (Dpose)
+    *Dpose << Dtf_rot, Matrix::Zero(2,3); //2x6 (translation part is zero)
+  if (Dpoint)
+    *Dpoint = Dtf_point; //2x2
+  return pu;
+}
+
+/* ************************************************************************* */
 Point3 SphericalCamera::backproject(const Unit3& pu, const double depth) const {
   return pose().transformFrom(depth * pu);
 }
