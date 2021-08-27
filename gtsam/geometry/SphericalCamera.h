@@ -31,15 +31,20 @@ namespace gtsam {
 
 class GTSAM_EXPORT EmptyCal {
  protected:
-  double d_ = 0;
+  Matrix3 K_;
  public:
+
   ///< shared pointer to calibration object
   EmptyCal()
-      : d_(0) {
+      : K_(Matrix3::Identity()) {
   }
   /// Default destructor
   virtual ~EmptyCal() = default;
   using shared_ptr = boost::shared_ptr<EmptyCal>;
+  void print(const std::string& s) const {
+    std::cout << "empty calibration: " <<  s << std::endl;
+  }
+  Matrix3 K() const {return K_;}
 };
 
 /**
@@ -158,6 +163,14 @@ class GTSAM_EXPORT SphericalCamera {
    */
   Unit3 project2(const Point3& pw, OptionalJacobian<2, 6> Dpose = boost::none,
                  OptionalJacobian<2, 3> Dpoint = boost::none) const;
+
+  /** Project point into the image
+   * (note: there is no CheiralityException for a spherical camera)
+   * @param point 3D direction in world coordinates
+   * @return the intrinsic coordinates of the projected point
+   */
+  Unit3 project2(const Unit3& pwu, OptionalJacobian<2, 6> Dpose = boost::none,
+                 OptionalJacobian<2, 2> Dpoint = boost::none) const;
 
   /// backproject a 2-dimensional point to a 3-dimensional point at given depth
   Point3 backproject(const Unit3& p, const double depth) const;
