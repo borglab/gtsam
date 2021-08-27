@@ -212,7 +212,7 @@ class GTSAM_EXPORT SphericalCamera {
 
   /// for Linear Triangulation
   Matrix34 getCameraProjectionMatrix() const {
-    return Matrix::Zero(3,4);
+    return Matrix34(pose_.inverse().matrix().block(0, 0, 3, 4));
   }
 
  private:

@@ -72,6 +72,14 @@ GTSAM_EXPORT Point3 triangulateDLT(
     double rank_tol = 1e-9);
 
 /**
+ * overload of previous function to work with Unit3 (projected to canonical camera)
+ */
+GTSAM_EXPORT Point3 triangulateDLT(
+    const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>& projection_matrices,
+    const std::vector<Unit3>& measurements,
+    double rank_tol = 1e-9);
+
+/**
  * Create a factor graph with projection factors from poses and one calibration
  * @param poses Camera poses
  * @param sharedCal shared pointer to single calibration object (monocular only!)

@@ -10,14 +10,16 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * testTriangulation.cpp
- *
- *  Created on: July 30th, 2013
- *      Author: cbeall3
+ * @file testTriangulation.cpp
+ * @brief triangulation utilities
+ * @date July 30th, 2013
+ * @author Chris Beall (cbeall3)
+ * @author Luca Carlone
  */
 
 #include <gtsam/geometry/triangulation.h>
 #include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/SphericalCamera.h>
 #include <gtsam/geometry/StereoCamera.h>
 #include <gtsam/geometry/CameraSet.h>
 #include <gtsam/geometry/Cal3Bundler.h>
@@ -430,6 +432,84 @@ TEST( triangulation, StereotriangulateNonlinear ) {
 
     EXPECT(assert_equal(expected, result.at<Point3>(Symbol('l',1)), 1e-4));
   }
+}
+
+//******************************************************************************
+// Simple test with a well-behaved two camera situation
+TEST( triangulation, twoPoses_sphericalCamera) {
+
+  vector<Pose3> poses;
+  std::vector<Unit3> measurements;
+
+  // Project landmark into two cameras and triangulate
+  SphericalCamera cam1(pose1);
+  SphericalCamera cam2(pose2);
+  Unit3 u1 = cam1.project(landmark);
+  Unit3 u2 = cam2.project(landmark);
+
+  poses += pose1, pose2;
+  measurements += u1, u2;
+
+  CameraSet<SphericalCamera> cameras;
+  cameras.push_back(cam1);
+  cameras.push_back(cam2);
+
+  double rank_tol = 1e-9;
+
+  // construct projection matrices from poses & calibration
+  std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>> projection_matrices =
+      getCameraProjectionMatrices<SphericalCamera>(cameras);
+  Point3 point = triangulateDLT(projection_matrices, measurements, rank_tol);
+  EXPECT(assert_equal(landmark, point, 1e-7));
+
+  static const boost::shared_ptr<Cal3_S2> canCal = //
+      boost::make_shared<Cal3_S2>(1, 1, 0, 0, 0);
+  PinholeCamera<Cal3_S2> canCam1(pose1, *canCal);
+  PinholeCamera<Cal3_S2> canCam2(pose2, *canCal);
+  std::cout << "canCam1.project(landmark);" << canCam1.project(landmark) << std::endl;
+  std::cout << "canCam2.project(landmark);" << canCam2.project(landmark) << std::endl;
+
+  CameraSet< PinholeCamera<Cal3_S2> > canCameras;
+  canCameras.push_back(canCam1);
+  canCameras.push_back(canCam2);
+
+  Point2Vector can_measurements;
+  can_measurements.push_back(canCam1.project(landmark));
+  can_measurements.push_back(canCam2.project(landmark));
+
+  // construct projection matrices from poses & calibration
+  std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>> can_projection_matrices =
+      getCameraProjectionMatrices< PinholeCamera<Cal3_S2> >(canCameras);
+  std::cout <<"can_projection_matrices \n" << can_projection_matrices.at(0) <<std::endl;
+  std::cout <<"can_projection_matrices \n" << can_projection_matrices.at(1) <<std::endl;
+
+  Point3 can_point = triangulateDLT(can_projection_matrices, can_measurements, rank_tol);
+  EXPECT(assert_equal(landmark, can_point, 1e-7));
+  // 1. Test simple DLT, perfect in no noise situation
+//  bool optimize = false;
+//  boost::optional<Point3> actual1 = //
+//      triangulatePoint3<SphericalCamera>(cameras, measurements, rank_tol, optimize);
+//  EXPECT(assert_equal(landmark, *actual1, 1e-7));
+//
+//  // 2. test with optimization on, same answer
+//  optimize = true;
+//  boost::optional<Point3> actual2 = //
+//      triangulatePoint3(poses, sharedCal, measurements, rank_tol, optimize);
+//  EXPECT(assert_equal(landmark, *actual2, 1e-7));
+//
+//  // 3. Add some noise and try again: result should be ~ (4.995, 0.499167, 1.19814)
+//  measurements.at(0) += Point2(0.1, 0.5);
+//  measurements.at(1) += Point2(-0.2, 0.3);
+//  optimize = false;
+//  boost::optional<Point3> actual3 = //
+//      triangulatePoint3(poses, sharedCal, measurements, rank_tol, optimize);
+//  EXPECT(assert_equal(Point3(4.995, 0.499167, 1.19814), *actual3, 1e-4));
+//
+//  // 4. Now with optimization on
+//  optimize = true;
+//  boost::optional<Point3> actual4 = //
+//      triangulatePoint3(poses, sharedCal, measurements, rank_tol, optimize);
+//  EXPECT(assert_equal(Point3(4.995, 0.499167, 1.19814), *actual4, 1e-4));
 }
 
 //******************************************************************************
