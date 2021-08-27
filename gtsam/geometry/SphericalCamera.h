@@ -215,6 +215,11 @@ class GTSAM_EXPORT SphericalCamera {
     return Matrix34(pose_.inverse().matrix().block(0, 0, 3, 4));
   }
 
+  /// for Nonlinear Triangulation
+  Vector defaultErrorWhenTriangulatingBehindCamera() const {
+    return Eigen::Matrix<double,traits<Point2>::dimension,1>::Constant(0.0);
+  }
+
  private:
 
   /** Serialization function */

@@ -69,16 +69,13 @@ Point3 triangulateDLT(
     const std::vector<Unit3>& unit3measurements, double rank_tol) {
 
   Point2Vector measurements;
-  size_t i=0;
   for (const Unit3& pu : unit3measurements) {  // get canonical pixel projection from Unit3
     Point3 p = pu.point3();
+#ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
     if (p.z() <= 0) // TODO: maybe we should handle this more delicately
       throw(TriangulationCheiralityException());
+#endif
     measurements.push_back(Point2(p.x() / p.z(), p.y() / p.z()));
-    std::cout << "px" << Point2(pu.point3().x() / pu.point3().z(),
-                                   pu.point3().y() / pu.point3().z())<< std::endl;
-    std::cout << "projection_matrices \n "<< projection_matrices.at(i)<< std::endl;
-    i++;
   }
   return triangulateDLT(projection_matrices, measurements, rank_tol);
 }
