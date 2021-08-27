@@ -121,6 +121,13 @@ public:
     return _project(pw, Dpose, Dpoint, Dcal);
   }
 
+  /// project a 3D point from world coordinates into the image
+  Point2 reprojectionError(const Point3& pw, const Point2& measured, OptionalJacobian<2, 6> Dpose = boost::none,
+      OptionalJacobian<2, 3> Dpoint = boost::none,
+      OptionalJacobian<2, DimK> Dcal = boost::none) const {
+    return Point2(_project(pw, Dpose, Dpoint, Dcal) - measured);
+  }
+
   /// project a point at infinity from world coordinates into the image
   Point2 project(const Unit3& pw, OptionalJacobian<2, 6> Dpose = boost::none,
       OptionalJacobian<2, 2> Dpoint = boost::none,

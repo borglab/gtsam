@@ -23,6 +23,7 @@
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Cal3Bundler.h>
+#include <gtsam/geometry/SphericalCamera.h>
 
 using namespace std;
 using namespace gtsam;
@@ -123,6 +124,19 @@ Camera cam1(level_pose, sharedBundlerK);
 Camera cam2(pose_right, sharedBundlerK);
 Camera cam3(pose_above, sharedBundlerK);
 }
+
+/* ************************************************************************* */
+// sphericalCamera
+namespace sphericalCamera {
+typedef SphericalCamera Camera;
+typedef SmartProjectionFactorP<Camera> SmartFactorP;
+static EmptyCal::shared_ptr emptyK;
+Camera level_camera(level_pose);
+Camera level_camera_right(pose_right);
+Camera cam1(level_pose);
+Camera cam2(pose_right);
+Camera cam3(pose_above);
+}
 /* *************************************************************************/
 
 template<class CAMERA>
@@ -137,9 +151,9 @@ CAMERA perturbCameraPose(const CAMERA& camera) {
 template<class CAMERA>
 void projectToMultipleCameras(const CAMERA& cam1, const CAMERA& cam2,
     const CAMERA& cam3, Point3 landmark, typename CAMERA::MeasurementVector& measurements_cam) {
-  Point2 cam1_uv1 = cam1.project(landmark);
-  Point2 cam2_uv1 = cam2.project(landmark);
-  Point2 cam3_uv1 = cam3.project(landmark);
+  typename CAMERA::Measurement cam1_uv1 = cam1.project(landmark);
+  typename CAMERA::Measurement cam2_uv1 = cam2.project(landmark);
+  typename CAMERA::Measurement cam3_uv1 = cam3.project(landmark);
   measurements_cam.push_back(cam1_uv1);
   measurements_cam.push_back(cam2_uv1);
   measurements_cam.push_back(cam3_uv1);

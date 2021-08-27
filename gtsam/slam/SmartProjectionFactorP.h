@@ -53,6 +53,8 @@ class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
   typedef SmartProjectionFactor<CAMERA> Base;
   typedef SmartProjectionFactorP<CAMERA> This;
   typedef typename CAMERA::CalibrationType CALIBRATION;
+  typedef typename CAMERA::Measurement MEASUREMENT;
+  typedef typename CAMERA::MeasurementVector MEASUREMENTS;
 
   static const int DimPose = 6;  ///< Pose3 dimension
   static const int ZDim = 2;  ///< Measurement dimension (Point2)
@@ -108,7 +110,7 @@ class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
    * @param K (fixed) camera intrinsic calibration
    * @param body_P_sensor (fixed) camera extrinsic calibration
    */
-  void add(const Point2& measured, const Key& poseKey,
+  void add(const MEASUREMENT& measured, const Key& poseKey,
            const boost::shared_ptr<CALIBRATION>& K, const Pose3 body_P_sensor =
                Pose3::identity()) {
     // store measurement and key
@@ -133,7 +135,7 @@ class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
    * @param Ks vector of (fixed) intrinsic calibration objects
    * @param body_P_sensors vector of (fixed) extrinsic calibration objects
    */
-  void add(const Point2Vector& measurements, const std::vector<Key>& poseKeys,
+  void add(const MEASUREMENTS& measurements, const std::vector<Key>& poseKeys,
            const std::vector<boost::shared_ptr<CALIBRATION>>& Ks,
            const std::vector<Pose3> body_P_sensors = std::vector<Pose3>()) {
     assert(poseKeys.size() == measurements.size());

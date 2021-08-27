@@ -29,6 +29,19 @@
 
 namespace gtsam {
 
+class GTSAM_EXPORT EmptyCal {
+ protected:
+  double d_ = 0;
+ public:
+  ///< shared pointer to calibration object
+  EmptyCal()
+      : d_(0) {
+  }
+  /// Default destructor
+  virtual ~EmptyCal() = default;
+  using shared_ptr = boost::shared_ptr<EmptyCal>;
+};
+
 /**
  * A spherical camera class that has a Pose3 and measures bearing vectors
  * @addtogroup geometry
@@ -36,60 +49,68 @@ namespace gtsam {
  */
 class GTSAM_EXPORT SphericalCamera {
 
-public:
+ public:
 
   enum {
     dimension = 6
   };
 
-  typedef Point2 Measurement;
-  typedef Point2Vector MeasurementVector;
+  typedef Unit3 Measurement;
+  typedef std::vector<Unit3> MeasurementVector;
+  typedef EmptyCal CalibrationType;
 
-private:
+ private:
 
-  Pose3 pose_; ///< 3D pose of camera
+  Pose3 pose_;  ///< 3D pose of camera
 
-protected:
+ protected:
 
-  /// @name Derivatives
-  /// @{
+  EmptyCal::shared_ptr emptyCal_;
 
-//  /**
-//   * Calculate Jacobian with respect to pose
-//   * @param pn projection in normalized coordinates
-//   * @param d disparity (inverse depth)
-//   */
-//  static Matrix26 Dpose(const Point2& pn, double d);
-//
-//  /**
-//   * Calculate Jacobian with respect to point
-//   * @param pn projection in normalized coordinates
-//   * @param d disparity (inverse depth)
-//   * @param Rt transposed rotation matrix
-//   */
-//  static Matrix23 Dpoint(const Point2& pn, double d, const Matrix3& Rt);
-//
-//  /// @}
-
-public:
+ public:
 
   /// @}
   /// @name Standard Constructors
   /// @{
 
   /// Default constructor
-  SphericalCamera() {}
+  SphericalCamera()
+      : pose_(Pose3::identity()),
+        emptyCal_(boost::make_shared<EmptyCal>()) {
+  }
 
   /// Constructor with pose
-  explicit SphericalCamera(const Pose3& pose) : pose_(pose) {}
+  explicit SphericalCamera(const Pose3& pose)
+      : pose_(pose),
+        emptyCal_(boost::make_shared<EmptyCal>()) {
+  }
+
+  /// Constructor with empty intrinsics (needed for smart factors)
+  explicit SphericalCamera(const Pose3& pose,
+                           const boost::shared_ptr<EmptyCal>& cal)
+      : pose_(pose),
+        emptyCal_(boost::make_shared<EmptyCal>()) {
+  }
 
   /// @}
   /// @name Advanced Constructors
   /// @{
-  explicit SphericalCamera(const Vector& v) : pose_(Pose3::Expmap(v)) {}
+  explicit SphericalCamera(const Vector& v)
+      : pose_(Pose3::Expmap(v)) {
+  }
 
   /// Default destructor
   virtual ~SphericalCamera() = default;
+
+  /// return shared pointer to calibration
+  const boost::shared_ptr<EmptyCal>& sharedCalibration() const {
+    return emptyCal_;
+  }
+
+  /// return calibration
+  const EmptyCal& calibration() const {
+    return *emptyCal_;
+  }
 
   /// @}
   /// @name Testable
@@ -120,8 +141,8 @@ public:
     return pose_.translation();
   }
 
-//  /// return pose, with derivative
-//  const Pose3& getPose(OptionalJacobian<6, 6> H) const;
+  //  /// return pose, with derivative
+  //  const Pose3& getPose(OptionalJacobian<6, 6> H) const;
 
   /// @}
   /// @name Transformations and measurement functions
@@ -135,19 +156,30 @@ public:
    * @param point 3D point in world coordinates
    * @return the intrinsic coordinates of the projected point
    */
-  Unit3 project2(const Point3& point, OptionalJacobian<2, 6> Dpose =
-      boost::none, OptionalJacobian<2, 3> Dpoint = boost::none) const;
+  Unit3 project2(const Point3& pw, OptionalJacobian<2, 6> Dpose = boost::none,
+                 OptionalJacobian<2, 3> Dpoint = boost::none) const;
 
   /// backproject a 2-dimensional point to a 3-dimensional point at given depth
   Point3 backproject(const Unit3& p, const double depth) const;
+
+  /// backproject point at infinity
+  Unit3 backprojectPointAtInfinity(const Unit3& p) const;
 
   /** Project point into the image
    * (note: there is no CheiralityException for a spherical camera)
    * @param point 3D point in world coordinates
    * @return the intrinsic coordinates of the projected point
    */
-  Unit3 project(const Point3& point, OptionalJacobian<2, 6> Dpose =
-      boost::none, OptionalJacobian<2, 3> Dpoint = boost::none) const;
+  Unit3 project(const Point3& point, OptionalJacobian<2, 6> Dpose = boost::none,
+                OptionalJacobian<2, 3> Dpoint = boost::none) const;
+
+  /** Compute reprojection error for a given 3D point in world coordinates
+   * @param point 3D point in world coordinates
+   * @return the tangent space error between the projection and the measurement
+   */
+  Vector2 reprojectionError(const Point3& point, const Unit3& measured,
+                            OptionalJacobian<2, 6> Dpose = boost::none,
+                            OptionalJacobian<2, 3> Dpoint = boost::none) const;
   /// @}
 
   /// move a cameras according to d
@@ -162,11 +194,10 @@ public:
 
   /// for Canonical
   static SphericalCamera identity() {
-    return SphericalCamera(Pose3::identity()); // assumes that the default constructor is valid
+    return SphericalCamera(Pose3::identity());  // assumes that the default constructor is valid
   }
 
-
-private:
+ private:
 
   /** Serialization function */
   friend class boost::serialization::access;
@@ -176,5 +207,13 @@ private:
   }
 };
 // end of class SphericalCamera
+
+template<>
+struct traits<SphericalCamera> : public internal::LieGroup<Pose3> {
+};
+
+template<>
+struct traits<const SphericalCamera> : public internal::LieGroup<Pose3> {
+};
 
 }

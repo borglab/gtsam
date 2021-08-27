@@ -66,9 +66,23 @@ Point3 SphericalCamera::backproject(const Unit3& pu, const double depth) const {
 }
 
 /* ************************************************************************* */
+Unit3 SphericalCamera::backprojectPointAtInfinity(const Unit3& p) const {
+  return pose().rotation().rotate(p);
+}
+
+/* ************************************************************************* */
 Unit3 SphericalCamera::project(const Point3& point,
     OptionalJacobian<2, 6> Dcamera, OptionalJacobian<2, 3> Dpoint) const {
   return project2(point, Dcamera, Dpoint);
+}
+
+/* ************************************************************************* */
+Vector2 SphericalCamera::reprojectionError(const Point3& point, const Unit3& measured,
+                                           OptionalJacobian<2, 6> Dpose,
+                                           OptionalJacobian<2, 3> Dpoint) const {
+  // onmanifold version of: camera.project(point) - zi
+  std::cout << "SphericalCam:reprojectionError fix jacobians " << std::endl;
+  return measured.localCoordinates( project2(point, Dpose, Dpoint) );
 }
 
 /* ************************************************************************* */
