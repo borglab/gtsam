@@ -456,36 +456,17 @@ TEST( triangulation, twoPoses_sphericalCamera) {
 
   double rank_tol = 1e-9;
 
-  // construct projection matrices from poses & calibration
+  // 1. Test linear triangulation via DLT
   std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>> projection_matrices =
       getCameraProjectionMatrices<SphericalCamera>(cameras);
   Point3 point = triangulateDLT(projection_matrices, measurements, rank_tol);
   EXPECT(assert_equal(landmark, point, 1e-7));
 
-  static const boost::shared_ptr<Cal3_S2> canCal = //
-      boost::make_shared<Cal3_S2>(1, 1, 0, 0, 0);
-  PinholeCamera<Cal3_S2> canCam1(pose1, *canCal);
-  PinholeCamera<Cal3_S2> canCam2(pose2, *canCal);
-  std::cout << "canCam1.project(landmark);" << canCam1.project(landmark) << std::endl;
-  std::cout << "canCam2.project(landmark);" << canCam2.project(landmark) << std::endl;
+  // 2. Test nonlinear triangulation
+  point = triangulateNonlinear<SphericalCamera>(cameras, measurements, point);
+  EXPECT(assert_equal(landmark, point, 1e-7));
 
-  CameraSet< PinholeCamera<Cal3_S2> > canCameras;
-  canCameras.push_back(canCam1);
-  canCameras.push_back(canCam2);
-
-  Point2Vector can_measurements;
-  can_measurements.push_back(canCam1.project(landmark));
-  can_measurements.push_back(canCam2.project(landmark));
-
-  // construct projection matrices from poses & calibration
-  std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>> can_projection_matrices =
-      getCameraProjectionMatrices< PinholeCamera<Cal3_S2> >(canCameras);
-  std::cout <<"can_projection_matrices \n" << can_projection_matrices.at(0) <<std::endl;
-  std::cout <<"can_projection_matrices \n" << can_projection_matrices.at(1) <<std::endl;
-
-  Point3 can_point = triangulateDLT(can_projection_matrices, can_measurements, rank_tol);
-  EXPECT(assert_equal(landmark, can_point, 1e-7));
-  // 1. Test simple DLT, perfect in no noise situation
+  // 3. Test simple DLT, now within triangulatePoint3
 //  bool optimize = false;
 //  boost::optional<Point3> actual1 = //
 //      triangulatePoint3<SphericalCamera>(cameras, measurements, rank_tol, optimize);
