@@ -25,7 +25,7 @@ class TestBasis(GtsamTestCase):
         noise = gtsam.noiseModel.Unit.Create(1)
         def testBasis(fitter, basis, f=f):
             data = {x: f(x) for x in datax}
-            fit = fitter(N, data, noise)
+            fit = fitter(data, noise, N)
             coeff = fit.parameters()
             interpy = basis.WeightMatrix(N, interpx) @ coeff
             np.testing.assert_almost_equal(interpy, np.array([f(x) for x in interpx]), decimal=7)
