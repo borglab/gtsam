@@ -1148,7 +1148,7 @@ TEST( SmartProjectionFactorP, optimization_3poses_sphericalCamera ) {
                    -0.000986635786, 0.0314107591, -0.999013364, -0.0313952598),
                    Point3(0.1, -0.1, 1.9)), values.at<Pose3>(x3)));
 
-  DOUBLES_EQUAL(0.1584588987292, graph.error(values), 1e-9);
+  DOUBLES_EQUAL(0.15734109864597129, graph.error(values), 1e-9);
 
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);

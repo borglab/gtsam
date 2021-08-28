@@ -484,13 +484,65 @@ TEST( triangulation, twoPoses_sphericalCamera) {
   optimize = false;
   boost::optional<Point3> actual3 = //
       triangulatePoint3<SphericalCamera>(cameras, measurements, rank_tol, optimize);
-  EXPECT(assert_equal(Point3(5.94321,0.654327,1.48029), *actual3, 1e-4));
+  EXPECT(assert_equal(Point3(5.9432, 0.654319, 1.48192), *actual3, 1e-3));
 
   // 6. Now with optimization on
   optimize = true;
   boost::optional<Point3> actual4 = //
       triangulatePoint3<SphericalCamera>(cameras, measurements, rank_tol, optimize);
-  EXPECT(assert_equal(Point3(5.94321,0.654327,1.48029), *actual4, 1e-4));
+  EXPECT(assert_equal(Point3(5.9432, 0.654334, 1.48192), *actual4, 1e-3));
+}
+
+//******************************************************************************
+TEST( triangulation, twoPoses_sphericalCamera_extremeFOV) {
+
+  vector<Pose3> poses;
+  std::vector<Unit3> measurements;
+
+  // Project landmark into two cameras and triangulate
+  Pose3 poseA = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0.0,0.0,0.0)); // with z pointing along x axis of global frame
+  Pose3 poseB = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(2.0,0.0,0.0)); // 2m in front of poseA
+  Point3 landmarkL(1.0,-1.0,0.0);// 1m to the right of both cameras, in front of poseA, behind poseB
+  SphericalCamera cam1(poseA);
+  SphericalCamera cam2(poseB);
+  Unit3 u1 = cam1.project(landmarkL);
+  Unit3 u2 = cam2.project(landmarkL);
+
+  EXPECT(assert_equal(Unit3(Point3(1.0,0.0,1.0)), u1, 1e-7)); // in front and to the right of PoseA
+  EXPECT(assert_equal(Unit3(Point3(1.0,0.0,-1.0)), u2, 1e-7));// behind and to the right of PoseB
+
+  poses += pose1, pose2;
+  measurements += u1, u2;
+
+  CameraSet<SphericalCamera> cameras;
+  cameras.push_back(cam1);
+  cameras.push_back(cam2);
+
+  double rank_tol = 1e-9;
+
+  // 1. Test simple DLT, when 1 point is behind spherical camera
+  bool optimize = false;
+#ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
+  CHECK_EXCEPTION(
+      triangulatePoint3<SphericalCamera>(cameras, measurements, rank_tol,
+                                         optimize), TriangulationCheiralityException);
+#else // otherwise project should not throw the exception
+  boost::optional<Point3> actual1 =  //
+  triangulatePoint3<SphericalCamera>(cameras, measurements, rank_tol, optimize);
+  EXPECT(assert_equal(landmarkL, *actual1, 1e-7));
+#endif
+
+  // 2. test with optimization on, same answer
+  optimize = true;
+#ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
+  CHECK_EXCEPTION(
+      triangulatePoint3<SphericalCamera>(cameras, measurements, rank_tol,
+                                         optimize), TriangulationCheiralityException);
+#else // otherwise project should not throw the exception
+  boost::optional<Point3> actual1 =  //
+  triangulatePoint3<SphericalCamera>(cameras, measurements, rank_tol, optimize);
+  EXPECT(assert_equal(landmarkL, *actual1, 1e-7));
+#endif
 }
 
 //******************************************************************************
