@@ -138,8 +138,8 @@ TEST( SmartProjectionPoseFactorRollingShutter, Equals ) {
     factor1->add(measurement2, x2, x3, interp_factor2, sharedK, body_P_sensor);
     factor1->add(measurement3, x3, x4, interp_factor3, sharedK, body_P_sensor);
 
-    EXPECT(assert_equal(*factor1, *factor2));
-    EXPECT(assert_equal(*factor1, *factor3));
+    EXPECT(factor1->equals(*factor2));
+    EXPECT(factor1->equals(*factor3));
   }
   { // create slightly different factors (different keys) and show equal returns false
     SmartFactorRS::shared_ptr factor1(new SmartFactorRS(model));
@@ -147,8 +147,8 @@ TEST( SmartProjectionPoseFactorRollingShutter, Equals ) {
     factor1->add(measurement2, x2, x2, interp_factor2, sharedK, body_P_sensor); // different!
     factor1->add(measurement3, x3, x4, interp_factor3, sharedK, body_P_sensor);
 
-    EXPECT(!assert_equal(*factor1, *factor2));
-    EXPECT(!assert_equal(*factor1, *factor3));
+    EXPECT(!factor1->equals(*factor2));
+    EXPECT(!factor1->equals(*factor3));
   }
   { // create slightly different factors (different extrinsics) and show equal returns false
     SmartFactorRS::shared_ptr factor1(new SmartFactorRS(model));
@@ -156,8 +156,8 @@ TEST( SmartProjectionPoseFactorRollingShutter, Equals ) {
     factor1->add(measurement2, x2, x3, interp_factor2, sharedK, body_P_sensor*body_P_sensor); // different!
     factor1->add(measurement3, x3, x4, interp_factor3, sharedK, body_P_sensor);
 
-    EXPECT(!assert_equal(*factor1, *factor2));
-    EXPECT(!assert_equal(*factor1, *factor3));
+    EXPECT(!factor1->equals(*factor2));
+    EXPECT(!factor1->equals(*factor3));
   }
   { // create slightly different factors (different interp factors) and show equal returns false
     SmartFactorRS::shared_ptr factor1(new SmartFactorRS(model));
@@ -165,8 +165,8 @@ TEST( SmartProjectionPoseFactorRollingShutter, Equals ) {
     factor1->add(measurement2, x2, x3, interp_factor1, sharedK, body_P_sensor); // different!
     factor1->add(measurement3, x3, x4, interp_factor3, sharedK, body_P_sensor);
 
-    EXPECT(!assert_equal(*factor1, *factor2));
-    EXPECT(!assert_equal(*factor1, *factor3));
+    EXPECT(!factor1->equals(*factor2));
+    EXPECT(!factor1->equals(*factor3));
   }
 }
 
