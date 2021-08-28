@@ -218,48 +218,52 @@ public:
     size_t nrNonuniqueKeys = jacobianKeys.size();
     size_t nrUniqueKeys = hessianKeys.size();
 
-    // marginalize point: note - we reuse the standard SchurComplement function
-    SymmetricBlockMatrix augmentedHessian = SchurComplement<N, ND>(Fs,E,P,b);
+    // Marginalize point: note - we reuse the standard SchurComplement function.
+    SymmetricBlockMatrix augmentedHessian = SchurComplement<N, ND>(Fs, E, P, b);
 
-    // now pack into an Hessian factor
-    std::vector<DenseIndex> dims(nrUniqueKeys + 1);  // this also includes the b term
+    // Pack into an Hessian factor, allow space for b term.
+    std::vector<DenseIndex> dims(nrUniqueKeys + 1);
     std::fill(dims.begin(), dims.end() - 1, NDD);
     dims.back() = 1;
     SymmetricBlockMatrix augmentedHessianUniqueKeys;
 
-    // here we have to deal with the fact that some blocks may share the same keys
-    if (nrUniqueKeys == nrNonuniqueKeys) {  // if there is 1 calibration key per camera
+    // Deal with the fact that some blocks may share the same keys.
+    if (nrUniqueKeys == nrNonuniqueKeys) {
+      // Case when there is 1 calibration key per camera:
       augmentedHessianUniqueKeys = SymmetricBlockMatrix(
           dims, Matrix(augmentedHessian.selfadjointView()));
-    } else {  // if multiple cameras share a calibration we have to rearrange
-      // the results of the Schur complement matrix
-      std::vector<DenseIndex> nonuniqueDims(nrNonuniqueKeys + 1);  // this also includes the b term
+    } else {
+      // When multiple cameras share a calibration we have to rearrange
+      // the results of the Schur complement matrix.
+      std::vector<DenseIndex> nonuniqueDims(nrNonuniqueKeys + 1);  // includes b
       std::fill(nonuniqueDims.begin(), nonuniqueDims.end() - 1, NDD);
       nonuniqueDims.back() = 1;
       augmentedHessian = SymmetricBlockMatrix(
           nonuniqueDims, Matrix(augmentedHessian.selfadjointView()));
 
-      // get map from key to location in the new augmented Hessian matrix (the one including only unique keys)
+      // Get map from key to location in the new augmented Hessian matrix (the
+      // one including only unique keys).
       std::map<Key, size_t> keyToSlotMap;
       for (size_t k = 0; k < nrUniqueKeys; k++) {
         keyToSlotMap[hessianKeys[k]] = k;
       }
 
-      // initialize matrix to zero
+      // Initialize matrix to zero.
       augmentedHessianUniqueKeys = SymmetricBlockMatrix(
           dims, Matrix::Zero(NDD * nrUniqueKeys + 1, NDD * nrUniqueKeys + 1));
 
-      // add contributions for each key: note this loops over the hessian with nonUnique keys (augmentedHessian)
-      // and populates an Hessian that only includes the unique keys (that is what we want to return)
+      // Add contributions for each key: note this loops over the hessian with
+      // nonUnique keys (augmentedHessian) and populates an Hessian that only
+      // includes the unique keys (that is what we want to return).
       for (size_t i = 0; i < nrNonuniqueKeys; i++) {  // rows
         Key key_i = jacobianKeys.at(i);
 
-        // update information vector
+        // Update information vector.
         augmentedHessianUniqueKeys.updateOffDiagonalBlock(
             keyToSlotMap[key_i], nrUniqueKeys,
             augmentedHessian.aboveDiagonalBlock(i, nrNonuniqueKeys));
 
-        // update blocks
+        // Update blocks.
         for (size_t j = i; j < nrNonuniqueKeys; j++) {  // cols
           Key key_j = jacobianKeys.at(j);
           if (i == j) {
@@ -273,13 +277,14 @@ public:
             } else {
               augmentedHessianUniqueKeys.updateDiagonalBlock(
                   keyToSlotMap[key_i],
-                  augmentedHessian.aboveDiagonalBlock(i, j)
-                      + augmentedHessian.aboveDiagonalBlock(i, j).transpose());
+                  augmentedHessian.aboveDiagonalBlock(i, j) +
+                      augmentedHessian.aboveDiagonalBlock(i, j).transpose());
             }
           }
         }
       }
-      // update bottom right element of the matrix
+
+      // Update bottom right element of the matrix.
       augmentedHessianUniqueKeys.updateDiagonalBlock(
           nrUniqueKeys, augmentedHessian.diagonalBlock(nrNonuniqueKeys));
     }
