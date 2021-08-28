@@ -287,19 +287,6 @@ public:
   }
 
   /**
-   * non-templated version of function above
-   */
-  static SymmetricBlockMatrix SchurComplementAndRearrangeBlocks_3_12_6(
-      const std::vector<Eigen::Matrix<double,ZDim, 12>,
-          Eigen::aligned_allocator<Eigen::Matrix<double,ZDim,12> > >& Fs,
-      const Matrix& E, const Eigen::Matrix<double,3,3>& P, const Vector& b,
-      const KeyVector jacobianKeys, const KeyVector hessianKeys) {
-    return SchurComplementAndRearrangeBlocks<3,12,6>(Fs, E, P, b,
-                                                       jacobianKeys,
-                                                       hessianKeys);
-  }
-
-  /**
    * Do Schur complement, given Jacobian as Fs,E,P, return SymmetricBlockMatrix
    * G = F' * F - F' * E * P * E' * F
    * g = F' * (b - E * P * E' * b)
