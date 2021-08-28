@@ -39,17 +39,6 @@ class GTSAM_EXPORT EmptyCal {
   }
 };
 
-//
-//class GTSAM_EXPORT EmptyCal {
-// public:
-//  EmptyCal(){}
-//  virtual ~EmptyCal() = default;
-//  using shared_ptr = boost::shared_ptr<EmptyCal>;
-//  void print(const std::string& s) const {
-//    std::cout << "empty calibration: " <<  s << std::endl;
-//  }
-//};
-
 /**
  * A spherical camera class that has a Pose3 and measures bearing vectors
  * @addtogroup geometry

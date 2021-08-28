@@ -92,12 +92,24 @@ Unit3 SphericalCamera::project(const Point3& point,
 }
 
 /* ************************************************************************* */
-Vector2 SphericalCamera::reprojectionError(const Point3& point, const Unit3& measured,
-                                           OptionalJacobian<2, 6> Dpose,
-                                           OptionalJacobian<2, 3> Dpoint) const {
-  // on-manifold version of: camera.project(point) - zi
-  std::cout << "SphericalCam:reprojectionError fix jacobians " << std::endl;
-  return measured.localCoordinates( project2(point, Dpose, Dpoint) );
+Vector2 SphericalCamera::reprojectionError(
+    const Point3& point, const Unit3& measured, OptionalJacobian<2, 6> Dpose,
+    OptionalJacobian<2, 3> Dpoint) const {
+  // project point
+  if (Dpose || Dpoint) {
+    Matrix26 H_project_pose;
+    Matrix23 H_project_point;
+    Matrix22 H_error;
+    Unit3 projected = project2(point, H_project_pose, H_project_point);
+    Vector2 error = measured.errorVector(projected, boost::none, H_error);
+    if (Dpose)
+      *Dpose = H_error * H_project_pose;
+    if (Dpoint)
+      *Dpoint = H_error * H_project_point;
+    return error;
+  } else {
+    return measured.errorVector(project2(point, Dpose, Dpoint));
+  }
 }
 
 /* ************************************************************************* */
