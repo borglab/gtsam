@@ -549,6 +549,33 @@ TEST( triangulation, twoPoses_sphericalCamera_extremeFOV) {
 }
 
 //******************************************************************************
+TEST( triangulation, reprojectionError_cameraComparison) {
+
+  Pose3 poseA = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0.0,0.0,0.0)); // with z pointing along x axis of global frame
+  Point3 landmarkL(5.0,0.0,0.0);// 1m in front of poseA
+  SphericalCamera sphericalCamera(poseA);
+  Unit3 u = sphericalCamera.project(landmarkL);
+
+  static Cal3_S2::shared_ptr sharedK(new Cal3_S2(60, 640, 480));
+  PinholePose<Cal3_S2> pinholeCamera(poseA,sharedK);
+  Vector2 px = pinholeCamera.project(landmarkL);
+
+  // add perturbation and compare error in both cameras
+  Vector2 px_noise(1.0,1.0); // 1px perturbation vertically and horizontally
+  Vector2 measured_px = px + px_noise;
+  Vector2 measured_px_calibrated = sharedK->calibrate(measured_px);
+  Unit3 measured_u = Unit3(measured_px_calibrated[0],measured_px_calibrated[1],1.0);
+
+  Vector2 actualErrorPinhole = pinholeCamera.reprojectionError(landmarkL,measured_px);
+  Vector2 expectedErrorPinhole = Vector2(-px_noise[0],-px_noise[1]);
+  EXPECT(assert_equal(expectedErrorPinhole, actualErrorPinhole, 1e-7)); //- sign due to definition of error
+
+  Vector2 actualErrorSpherical = sphericalCamera.reprojectionError(landmarkL,measured_u);
+  Vector2 expectedErrorSpherical = Vector2(px_noise[0]/sharedK->fx(),px_noise[1]/sharedK->fy());
+  EXPECT(assert_equal(expectedErrorSpherical, actualErrorSpherical, 1e-7));
+}
+
+//******************************************************************************
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
