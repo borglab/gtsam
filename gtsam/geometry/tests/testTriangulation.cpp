@@ -467,30 +467,30 @@ TEST( triangulation, twoPoses_sphericalCamera) {
   EXPECT(assert_equal(landmark, point, 1e-7));
 
   // 3. Test simple DLT, now within triangulatePoint3
-//  bool optimize = false;
-//  boost::optional<Point3> actual1 = //
-//      triangulatePoint3<SphericalCamera>(cameras, measurements, rank_tol, optimize);
-//  EXPECT(assert_equal(landmark, *actual1, 1e-7));
-//
-//  // 2. test with optimization on, same answer
-//  optimize = true;
-//  boost::optional<Point3> actual2 = //
-//      triangulatePoint3(poses, sharedCal, measurements, rank_tol, optimize);
-//  EXPECT(assert_equal(landmark, *actual2, 1e-7));
-//
-//  // 3. Add some noise and try again: result should be ~ (4.995, 0.499167, 1.19814)
-//  measurements.at(0) += Point2(0.1, 0.5);
-//  measurements.at(1) += Point2(-0.2, 0.3);
-//  optimize = false;
-//  boost::optional<Point3> actual3 = //
-//      triangulatePoint3(poses, sharedCal, measurements, rank_tol, optimize);
-//  EXPECT(assert_equal(Point3(4.995, 0.499167, 1.19814), *actual3, 1e-4));
-//
-//  // 4. Now with optimization on
-//  optimize = true;
-//  boost::optional<Point3> actual4 = //
-//      triangulatePoint3(poses, sharedCal, measurements, rank_tol, optimize);
-//  EXPECT(assert_equal(Point3(4.995, 0.499167, 1.19814), *actual4, 1e-4));
+  bool optimize = false;
+  boost::optional<Point3> actual1 = //
+      triangulatePoint3<SphericalCamera>(cameras, measurements, rank_tol, optimize);
+  EXPECT(assert_equal(landmark, *actual1, 1e-7));
+
+  // 4. test with optimization on, same answer
+  optimize = true;
+  boost::optional<Point3> actual2 = //
+      triangulatePoint3<SphericalCamera>(cameras, measurements, rank_tol, optimize);
+  EXPECT(assert_equal(landmark, *actual2, 1e-7));
+
+  // 5. Add some noise and try again: result should be ~ (4.995, 0.499167, 1.19814)
+  measurements.at(0) = u1.retract(Vector2(0.01, 0.05)); //note: perturbation smaller for Unit3
+  measurements.at(1) = u2.retract(Vector2(-0.02, 0.03));
+  optimize = false;
+  boost::optional<Point3> actual3 = //
+      triangulatePoint3<SphericalCamera>(cameras, measurements, rank_tol, optimize);
+  EXPECT(assert_equal(Point3(5.94321,0.654327,1.48029), *actual3, 1e-4));
+
+  // 6. Now with optimization on
+  optimize = true;
+  boost::optional<Point3> actual4 = //
+      triangulatePoint3<SphericalCamera>(cameras, measurements, rank_tol, optimize);
+  EXPECT(assert_equal(Point3(5.94321,0.654327,1.48029), *actual4, 1e-4));
 }
 
 //******************************************************************************
