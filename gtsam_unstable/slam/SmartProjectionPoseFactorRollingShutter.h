@@ -40,8 +40,16 @@ namespace gtsam {
 template<class CAMERA>
 class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<CAMERA> {
 
- public:
+ private:
+  typedef SmartProjectionFactor<CAMERA> Base;
+  typedef SmartProjectionPoseFactorRollingShutter<CAMERA> This;
   typedef typename CAMERA::CalibrationType CALIBRATION;
+  typedef typename CAMERA::Measurement MEASUREMENT;
+  typedef typename CAMERA::MeasurementVector MEASUREMENTS;
+
+  static const int DimBlock = 12;  ///< size of the variable stacking 2 poses from which the observation pose is interpolated
+  static const int DimPose = 6;  ///< Pose3 dimension
+  static const int ZDim = 2;  ///< Measurement dimension (Point2)
 
  protected:
   /// shared pointer to calibration object (one for each observation)
@@ -57,22 +65,17 @@ class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<CAM
   std::vector<Pose3> body_P_sensors_;
 
  public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
-  /// shorthand for base class type
-  typedef SmartProjectionFactor<PinholePose<CALIBRATION> > Base;
-
-  /// shorthand for this class
-  typedef SmartProjectionPoseFactorRollingShutter This;
+  typedef CAMERA Camera;
+  typedef CameraSet<CAMERA> Cameras;
+  typedef Eigen::Matrix<double, ZDim, DimBlock> MatrixZD;  // F blocks (derivatives wrt block of 2 poses)
+  typedef std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD> > FBlocks;  // vector of F blocks
 
   /// shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<This> shared_ptr;
 
-  static const int DimBlock = 12;  ///< size of the variable stacking 2 poses from which the observation pose is interpolated
-  static const int DimPose = 6;  ///< Pose3 dimension
-  static const int ZDim = 2;  ///< Measurement dimension (Point2)
-  typedef Eigen::Matrix<double, ZDim, DimBlock> MatrixZD;  // F blocks (derivatives wrt block of 2 poses)
-  typedef std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD> > FBlocks;  // vector of F blocks
+  /// Default constructor, only for serialization
+  SmartProjectionPoseFactorRollingShutter() {
+  }
 
   /**
    * Constructor
@@ -83,6 +86,9 @@ class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<CAM
       const SharedNoiseModel& sharedNoiseModel,
       const SmartProjectionParams& params = SmartProjectionParams())
   : Base(sharedNoiseModel, params) {
+    // use only configuration that works with this factor
+    Base::params_.degeneracyMode = gtsam::ZERO_ON_DEGENERACY;
+    Base::params_.linearizationMode = gtsam::HESSIAN;
   }
 
   /** Virtual destructor */
@@ -98,7 +104,7 @@ class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<CAM
    * @param K (fixed) camera intrinsic calibration
    * @param body_P_sensor (fixed) camera extrinsic calibration
    */
-  void add(const Point2& measured, const Key& world_P_body_key1,
+  void add(const MEASUREMENT& measured, const Key& world_P_body_key1,
            const Key& world_P_body_key2, const double& alpha,
            const boost::shared_ptr<CALIBRATION>& K, const Pose3 body_P_sensor = Pose3::identity()) {
     // store measurements in base class
@@ -134,7 +140,7 @@ class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<CAM
    * @param Ks vector of (fixed) intrinsic calibration objects
    * @param body_P_sensors vector of (fixed) extrinsic calibration objects
    */
-  void add(const Point2Vector& measurements,
+  void add(const MEASUREMENTS& measurements,
            const std::vector<std::pair<Key, Key>>& world_P_body_key_pairs,
            const std::vector<double>& alphas,
            const std::vector<boost::shared_ptr<CALIBRATION>>& Ks,
@@ -160,7 +166,7 @@ class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<CAM
    * @param K (fixed) camera intrinsic calibration (same for all measurements)
    * @param body_P_sensor (fixed) camera extrinsic calibration (same for all measurements)
    */
-  void add(const Point2Vector& measurements,
+  void add(const MEASUREMENTS& measurements,
            const std::vector<std::pair<Key, Key>>& world_P_body_key_pairs,
            const std::vector<double>& alphas,
            const boost::shared_ptr<CALIBRATION>& K, const Pose3 body_P_sensor = Pose3::identity()) {
@@ -245,6 +251,43 @@ class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<CAM
   }
 
   /**
+   * Collect all cameras involved in this factor
+   * @param values Values structure which must contain camera poses
+   * corresponding to keys involved in this factor
+   * @return Cameras
+   */
+  typename Base::Cameras cameras(const Values& values) const override {
+    size_t numViews = this->measured_.size();
+    assert(numViews == K_all_.size());
+    assert(numViews == alphas_.size());
+    assert(numViews == body_P_sensors_.size());
+    assert(numViews == world_P_body_key_pairs_.size());
+
+    typename Base::Cameras cameras;
+    for (size_t i = 0; i < numViews; i++) {  // for each measurement
+      const Pose3& w_P_body1 = values.at<Pose3>(world_P_body_key_pairs_[i].first);
+      const Pose3& w_P_body2 = values.at<Pose3>(world_P_body_key_pairs_[i].second);
+      double interpolationFactor = alphas_[i];
+      const Pose3& w_P_body = interpolate<Pose3>(w_P_body1, w_P_body2, interpolationFactor);
+      const Pose3& body_P_cam = body_P_sensors_[i];
+      const Pose3& w_P_cam = w_P_body.compose(body_P_cam);
+      cameras.emplace_back(w_P_cam, K_all_[i]);
+    }
+    return cameras;
+  }
+
+  /**
+   * error calculates the error of the factor.
+   */
+  double error(const Values& values) const override {
+    if (this->active(values)) {
+      return this->totalReprojectionError(this->cameras(values));
+    } else { // else of active flag
+      return 0.0;
+    }
+  }
+
+  /**
    * Compute jacobian F, E and error vector at a given linearization point
    * @param values Values structure which must contain camera poses
    * corresponding to keys involved in this factor
@@ -274,12 +317,11 @@ class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<CAM
         const Pose3& w_P_body = interpolate<Pose3>(w_P_body1, w_P_body2,interpolationFactor, dInterpPose_dPoseBody1, dInterpPose_dPoseBody2);
         const Pose3& body_P_cam = body_P_sensors_[i];
         const Pose3& w_P_cam = w_P_body.compose(body_P_cam, dPoseCam_dInterpPose);
-        PinholeCamera<CALIBRATION> camera(w_P_cam, *K_all_[i]);
+        typename Base::Camera camera(w_P_cam, K_all_[i]);
 
         // get jacobians and error vector for current measurement
-        Point2 reprojectionError_i = Point2(
-            camera.project(*this->result_, dProject_dPoseCam, Ei)
-            - this->measured_.at(i));
+        Point2 reprojectionError_i = camera.reprojectionError(
+            *this->result_, this->measured_.at(i), dProject_dPoseCam, Ei);
         Eigen::Matrix<double, ZDim, DimBlock> J;  // 2 x 12
         J.block(0, 0, ZDim, 6) = dProject_dPoseCam * dPoseCam_dInterpPose
             * dInterpPose_dPoseBody1;  // (2x6) * (6x6) * (6x6)
@@ -340,7 +382,7 @@ class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<CAM
     for (size_t i = 0; i < Fs.size(); i++)
       Fs[i] = this->noiseModel_->Whiten(Fs[i]);
 
-    Matrix3 P = Base::Cameras::PointCov(E, lambda, diagonalDamping);
+    Matrix3 P = Cameras::PointCov(E, lambda, diagonalDamping);
 
     // Collect all the key pairs: these are the keys that correspond to the blocks in Fs (on which we apply the Schur Complement)
     KeyVector nonuniqueKeys;
@@ -352,48 +394,11 @@ class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<CAM
     // Build augmented Hessian (with last row/column being the information vector)
     // Note: we need to get the augumented hessian wrt the unique keys in key_
     SymmetricBlockMatrix augmentedHessianUniqueKeys =
-        Base::Cameras::SchurComplementAndRearrangeBlocks_3_12_6(
+        Cameras::SchurComplementAndRearrangeBlocks_3_12_6(
             Fs, E, P, b, nonuniqueKeys, this->keys_);
 
     return boost::make_shared < RegularHessianFactor<DimPose>
         > (this->keys_, augmentedHessianUniqueKeys);
-  }
-
-  /**
-   * error calculates the error of the factor.
-   */
-  double error(const Values& values) const override {
-    if (this->active(values)) {
-      return this->totalReprojectionError(this->cameras(values));
-    } else { // else of active flag
-      return 0.0;
-    }
-  }
-
-  /**
-   * Collect all cameras involved in this factor
-   * @param values Values structure which must contain camera poses
-   * corresponding to keys involved in this factor
-   * @return Cameras
-   */
-  typename Base::Cameras cameras(const Values& values) const override {
-    size_t numViews = this->measured_.size();
-    assert(numViews == K_all_.size());
-    assert(numViews == alphas_.size());
-    assert(numViews == body_P_sensors_.size());
-    assert(numViews == world_P_body_key_pairs_.size());
-
-    typename Base::Cameras cameras;
-    for (size_t i = 0; i < numViews; i++) {  // for each measurement
-      const Pose3& w_P_body1 = values.at<Pose3>(world_P_body_key_pairs_[i].first);
-      const Pose3& w_P_body2 = values.at<Pose3>(world_P_body_key_pairs_[i].second);
-      double interpolationFactor = alphas_[i];
-      const Pose3& w_P_body = interpolate<Pose3>(w_P_body1, w_P_body2, interpolationFactor);
-      const Pose3& body_P_cam = body_P_sensors_[i];
-      const Pose3& w_P_cam = w_P_body.compose(body_P_cam);
-      cameras.emplace_back(w_P_cam, K_all_[i]);
-    }
-    return cameras;
   }
 
   /**

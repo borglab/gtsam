@@ -30,14 +30,33 @@
 namespace gtsam {
 
 class GTSAM_EXPORT EmptyCal {
+ protected:
+  Matrix3 K_;
  public:
-  EmptyCal(){}
+
+  ///< shared pointer to calibration object
+  EmptyCal()
+      : K_(Matrix3::Identity()) {
+  }
+  /// Default destructor
   virtual ~EmptyCal() = default;
   using shared_ptr = boost::shared_ptr<EmptyCal>;
   void print(const std::string& s) const {
     std::cout << "empty calibration: " <<  s << std::endl;
   }
+  Matrix3 K() const {return K_;}
 };
+
+//
+//class GTSAM_EXPORT EmptyCal {
+// public:
+//  EmptyCal(){}
+//  virtual ~EmptyCal() = default;
+//  using shared_ptr = boost::shared_ptr<EmptyCal>;
+//  void print(const std::string& s) const {
+//    std::cout << "empty calibration: " <<  s << std::endl;
+//  }
+//};
 
 /**
  * A spherical camera class that has a Pose3 and measures bearing vectors

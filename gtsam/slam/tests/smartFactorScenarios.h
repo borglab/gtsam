@@ -110,6 +110,7 @@ Camera cam2(pose_right, K);
 Camera cam3(pose_above, K);
 typedef GeneralSFMFactor<Camera, Point3> SFMFactor;
 }
+
 /* *************************************************************************/
 // Cal3Bundler poses
 namespace bundlerPose {

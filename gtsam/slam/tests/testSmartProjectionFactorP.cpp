@@ -1107,7 +1107,7 @@ TEST( SmartProjectionFactorP, optimization_3poses_sphericalCamera ) {
   emptyKs.push_back(emptyK);
 
   SmartProjectionParams params;
-  params.setRankTolerance(0.01);
+  params.setRankTolerance(0.1);
 
   SmartFactorP::shared_ptr smartFactor1(new SmartFactorP(model,params));
   smartFactor1->add(measurements_lmk1, keys, emptyKs);
