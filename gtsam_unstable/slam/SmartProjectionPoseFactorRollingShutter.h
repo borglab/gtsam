@@ -18,6 +18,7 @@
 #pragma once
 
 #include <gtsam/slam/SmartProjectionFactor.h>
+#include <gtsam/geometry/CameraSet.h>
 
 namespace gtsam {
 /**
@@ -229,7 +230,9 @@ class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<CAM
           keyPairsEqual = false; break;
         }
       }
-    }else{ keyPairsEqual = false; }
+    } else {
+      keyPairsEqual = false;
+    }
 
     double extrinsicCalibrationEqual = true;
     if(this->body_P_sensors_.size() == e->body_P_sensors().size()){
@@ -238,7 +241,9 @@ class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<CAM
           extrinsicCalibrationEqual = false; break;
         }
       }
-    }else{ extrinsicCalibrationEqual = false; }
+    } else {
+      extrinsicCalibrationEqual = false;
+    }
 
     return e && Base::equals(p, tol) && K_all_ == e->calibration()
         && alphas_ == e->alphas() && keyPairsEqual && extrinsicCalibrationEqual;
@@ -248,9 +253,10 @@ class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<CAM
    * Compute jacobian F, E and error vector at a given linearization point
    * @param values Values structure which must contain camera poses
    * corresponding to keys involved in this factor
-   * @return Return arguments are the camera jacobians Fs (including the jacobian with
-   * respect to both body poses we interpolate from), the point Jacobian E,
-   * and the error vector b. Note that the jacobians are computed for a given point.
+   * @return Return arguments are the camera jacobians Fs (including the
+   * jacobian with respect to both body poses we interpolate from), the point
+   * Jacobian E, and the error vector b. Note that the jacobians are computed
+   * for a given point.
    */
   void computeJacobiansWithTriangulatedPoint(FBlocks& Fs, Matrix& E, Vector& b,
                                              const Values& values) const {
@@ -267,13 +273,15 @@ class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<CAM
       Eigen::Matrix<double, ZDim, 3> Ei;
 
       for (size_t i = 0; i < numViews; i++) {  // for each camera/measurement
-        const Pose3& w_P_body1 = values.at<Pose3>(world_P_body_key_pairs_[i].first);
-        const Pose3& w_P_body2 = values.at<Pose3>(world_P_body_key_pairs_[i].second);
+        auto w_P_body1 = values.at<Pose3>(world_P_body_key_pairs_[i].first);
+        auto w_P_body2 = values.at<Pose3>(world_P_body_key_pairs_[i].second);
         double interpolationFactor = alphas_[i];
         // get interpolated pose:
-        const Pose3& w_P_body = interpolate<Pose3>(w_P_body1, w_P_body2,interpolationFactor, dInterpPose_dPoseBody1, dInterpPose_dPoseBody2);
-        const Pose3& body_P_cam = body_P_sensors_[i];
-        const Pose3& w_P_cam = w_P_body.compose(body_P_cam, dPoseCam_dInterpPose);
+        auto w_P_body =
+            interpolate<Pose3>(w_P_body1, w_P_body2, interpolationFactor,
+                               dInterpPose_dPoseBody1, dInterpPose_dPoseBody2);
+        auto body_P_cam = body_P_sensors_[i];
+        auto w_P_cam = w_P_body.compose(body_P_cam, dPoseCam_dInterpPose);
         PinholeCamera<CALIBRATION> camera(w_P_cam, *K_all_[i]);
 
         // get jacobians and error vector for current measurement
@@ -296,37 +304,40 @@ class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<CAM
   }
 
   /// linearize and return a Hessianfactor that is an approximation of error(p)
-  boost::shared_ptr<RegularHessianFactor<DimPose> > createHessianFactor(
-      const Values& values, const double lambda = 0.0, bool diagonalDamping =
-          false) const {
-
-    // we may have multiple observation sharing the same keys (due to the rolling shutter interpolation),
-    // hence the number of unique keys may be smaller than 2 * nrMeasurements
-    size_t nrUniqueKeys = this->keys_.size(); // note: by construction, keys_ only contains unique keys
+  boost::shared_ptr<RegularHessianFactor<DimPose>> createHessianFactor(
+      const Values& values, const double lambda = 0.0,
+      bool diagonalDamping = false) const {
+    // we may have multiple observation sharing the same keys (due to the
+    // rolling shutter interpolation), hence the number of unique keys may be
+    // smaller than 2 * nrMeasurements
+    size_t nrUniqueKeys =
+        this->keys_
+            .size();  // note: by construction, keys_ only contains unique keys
 
     // Create structures for Hessian Factors
     KeyVector js;
-    std::vector < Matrix > Gs(nrUniqueKeys * (nrUniqueKeys + 1) / 2);
-    std::vector < Vector > gs(nrUniqueKeys);
+    std::vector<Matrix> Gs(nrUniqueKeys * (nrUniqueKeys + 1) / 2);
+    std::vector<Vector> gs(nrUniqueKeys);
 
-    if (this->measured_.size() != this->cameras(values).size()) // 1 observation per interpolated camera
-      throw std::runtime_error("SmartProjectionPoseFactorRollingShutter: "
-                               "measured_.size() inconsistent with input");
+    if (this->measured_.size() !=
+        this->cameras(values).size())  // 1 observation per interpolated camera
+      throw std::runtime_error(
+          "SmartProjectionPoseFactorRollingShutter: "
+          "measured_.size() inconsistent with input");
 
     // triangulate 3D point at given linearization point
     this->triangulateSafe(this->cameras(values));
 
     if (!this->result_) {  // failed: return "empty/zero" Hessian
       if (this->params_.degeneracyMode == ZERO_ON_DEGENERACY) {
-        for (Matrix& m : Gs)
-          m = Matrix::Zero(DimPose, DimPose);
-        for (Vector& v : gs)
-          v = Vector::Zero(DimPose);
-        return boost::make_shared < RegularHessianFactor<DimPose>
-            > (this->keys_, Gs, gs, 0.0);
+        for (Matrix& m : Gs) m = Matrix::Zero(DimPose, DimPose);
+        for (Vector& v : gs) v = Vector::Zero(DimPose);
+        return boost::make_shared<RegularHessianFactor<DimPose>>(this->keys_,
+                                                                 Gs, gs, 0.0);
       } else {
-        throw std::runtime_error("SmartProjectionPoseFactorRollingShutter: "
-                                       "only supported degeneracy mode is ZERO_ON_DEGENERACY");
+        throw std::runtime_error(
+            "SmartProjectionPoseFactorRollingShutter: "
+            "only supported degeneracy mode is ZERO_ON_DEGENERACY");
       }
     }
     // compute Jacobian given triangulated 3D Point

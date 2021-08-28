@@ -147,68 +147,74 @@ public:
      * G = F' * F - F' * E * P * E' * F
      * g = F' * (b - E * P * E' * b)
      * Fixed size version
-     */
-    template<int N, int ND> // N = 2 or 3 (point dimension), ND is the camera dimension
-    static SymmetricBlockMatrix SchurComplement(
-        const std::vector< Eigen::Matrix<double, ZDim, ND>, Eigen::aligned_allocator< Eigen::Matrix<double, ZDim, ND> > >& Fs,
-        const Matrix& E, const Eigen::Matrix<double, N, N>& P, const Vector& b) {
+    */
+  template <int N,
+            int ND>  // N = 2 or 3 (point dimension), ND is the camera dimension
+  static SymmetricBlockMatrix SchurComplement(
+      const std::vector<
+          Eigen::Matrix<double, ZDim, ND>,
+          Eigen::aligned_allocator<Eigen::Matrix<double, ZDim, ND>>>& Fs,
+      const Matrix& E, const Eigen::Matrix<double, N, N>& P, const Vector& b) {
+    // a single point is observed in m cameras
+    size_t m = Fs.size();
 
-      // a single point is observed in m cameras
-      size_t m = Fs.size();
+    // Create a SymmetricBlockMatrix (augmented hessian, with extra row/column with info vector)
+    size_t M1 = ND * m + 1;
+    std::vector<DenseIndex> dims(m + 1); // this also includes the b term
+    std::fill(dims.begin(), dims.end() - 1, ND);
+    dims.back() = 1;
+    SymmetricBlockMatrix augmentedHessian(dims, Matrix::Zero(M1, M1));
 
-      // Create a SymmetricBlockMatrix (augmented hessian, with extra row/column with info vector)
-      size_t M1 = ND * m + 1;
-      std::vector<DenseIndex> dims(m + 1); // this also includes the b term
-      std::fill(dims.begin(), dims.end() - 1, ND);
-      dims.back() = 1;
-      SymmetricBlockMatrix augmentedHessian(dims, Matrix::Zero(M1, M1));
+    // Blockwise Schur complement
+    for (size_t i = 0; i < m; i++) { // for each camera
 
-      // Blockwise Schur complement
-      for (size_t i = 0; i < m; i++) { // for each camera
+      const Eigen::Matrix<double, ZDim, ND>& Fi = Fs[i];
+      const auto FiT = Fi.transpose();
+      const Eigen::Matrix<double, ZDim, N> Ei_P = //
+          E.block(ZDim * i, 0, ZDim, N) * P;
 
-        const Eigen::Matrix<double, ZDim, ND>& Fi = Fs[i];
-        const auto FiT = Fi.transpose();
-        const Eigen::Matrix<double, ZDim, N> Ei_P = //
-            E.block(ZDim * i, 0, ZDim, N) * P;
+      // D = (Dx2) * ZDim
+      augmentedHessian.setOffDiagonalBlock(i, m, FiT * b.segment<ZDim>(ZDim * i) // F' * b
+      - FiT * (Ei_P * (E.transpose() * b))); // D = (DxZDim) * (ZDimx3) * (N*ZDimm) * (ZDimm x 1)
 
-        // D = (Dx2) * ZDim
-        augmentedHessian.setOffDiagonalBlock(i, m, FiT * b.segment<ZDim>(ZDim * i) // F' * b
-        - FiT * (Ei_P * (E.transpose() * b))); // D = (DxZDim) * (ZDimx3) * (N*ZDimm) * (ZDimm x 1)
+      // (DxD) = (DxZDim) * ( (ZDimxD) - (ZDimx3) * (3xZDim) * (ZDimxD) )
+      augmentedHessian.setDiagonalBlock(i, FiT
+          * (Fi - Ei_P * E.block(ZDim * i, 0, ZDim, N).transpose() * Fi));
 
-        // (DxD) = (DxZDim) * ( (ZDimxD) - (ZDimx3) * (3xZDim) * (ZDimxD) )
-        augmentedHessian.setDiagonalBlock(i, FiT
-            * (Fi - Ei_P * E.block(ZDim * i, 0, ZDim, N).transpose() * Fi));
+      // upper triangular part of the hessian
+      for (size_t j = i + 1; j < m; j++) { // for each camera
+        const Eigen::Matrix<double, ZDim, ND>& Fj = Fs[j];
 
-        // upper triangular part of the hessian
-        for (size_t j = i + 1; j < m; j++) { // for each camera
-          const Eigen::Matrix<double, ZDim, ND>& Fj = Fs[j];
+        // (DxD) = (Dx2) * ( (2x2) * (2xD) )
+        augmentedHessian.setOffDiagonalBlock(i, j, -FiT
+            * (Ei_P * E.block(ZDim * j, 0, ZDim, N).transpose() * Fj));
+      }
+    } // end of for over cameras
 
-          // (DxD) = (Dx2) * ( (2x2) * (2xD) )
-          augmentedHessian.setOffDiagonalBlock(i, j, -FiT
-              * (Ei_P * E.block(ZDim * j, 0, ZDim, N).transpose() * Fj));
-        }
-      } // end of for over cameras
-
-      augmentedHessian.diagonalBlock(m)(0, 0) += b.squaredNorm();
-      return augmentedHessian;
-    }
+    augmentedHessian.diagonalBlock(m)(0, 0) += b.squaredNorm();
+    return augmentedHessian;
+  }
 
   /**
    * Do Schur complement, given Jacobian as Fs,E,P, return SymmetricBlockMatrix
    * G = F' * F - F' * E * P * E' * F
    * g = F' * (b - E * P * E' * b)
-   * In this version, we allow for the case where the keys in the Jacobian are organized
-   * differently from the keys in the output SymmetricBlockMatrix
-   * In particular: each diagonal block of the Jacobian F captures 2 poses (useful for rolling shutter and extrinsic calibration)
-   * such that F keeps the block structure that makes the Schur complement trick fast.
+   * In this version, we allow for the case where the keys in the Jacobian are
+   * organized differently from the keys in the output SymmetricBlockMatrix In
+   * particular: each diagonal block of the Jacobian F captures 2 poses (useful
+   * for rolling shutter and extrinsic calibration) such that F keeps the block
+   * structure that makes the Schur complement trick fast.
+   *
+   * N = 2 or 3 (point dimension), ND is the Jacobian block dimension, NDD is
+   * the Hessian block dimension
    */
-  template<int N, int ND, int NDD>  // N = 2 or 3 (point dimension), ND is the Jacobian block dimension, NDD is the Hessian block dimension
+  template <int N, int ND, int NDD>
   static SymmetricBlockMatrix SchurComplementAndRearrangeBlocks(
-      const std::vector<Eigen::Matrix<double, ZDim, ND>,
-          Eigen::aligned_allocator<Eigen::Matrix<double, ZDim, ND> > >& Fs,
+      const std::vector<
+          Eigen::Matrix<double, ZDim, ND>,
+          Eigen::aligned_allocator<Eigen::Matrix<double, ZDim, ND>>>& Fs,
       const Matrix& E, const Eigen::Matrix<double, N, N>& P, const Vector& b,
-      const KeyVector jacobianKeys, const KeyVector hessianKeys) {
-
+      const KeyVector& jacobianKeys, const KeyVector& hessianKeys) {
     size_t nrNonuniqueKeys = jacobianKeys.size();
     size_t nrUniqueKeys = hessianKeys.size();
 
