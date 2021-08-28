@@ -1133,22 +1133,16 @@ TEST( SmartProjectionFactorP, optimization_3poses_sphericalCamera ) {
   groundTruth.insert(x3, pose_above);
   DOUBLES_EQUAL(0, graph.error(groundTruth), 1e-9);
 
-  //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
-  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
-                           Point3(0.1, 0.1, 0.1)); // smaller noise
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 10, 0., -M_PI / 10),
+                           Point3(0.5, 0.5, 0.5)); // large noise - still works!
+
   Values values;
   values.insert(x1, level_pose);
   values.insert(x2, pose_right);
   // initialize third pose with some noise, we expect it to move back to original pose_above
   values.insert(x3, pose_above * noise_pose);
-  EXPECT( // check that the pose is actually noisy
-      assert_equal(
-          Pose3(
-              Rot3(0, -0.0314107591, 0.99950656, -0.99950656, -0.0313952598,
-                   -0.000986635786, 0.0314107591, -0.999013364, -0.0313952598),
-                   Point3(0.1, -0.1, 1.9)), values.at<Pose3>(x3)));
 
-  DOUBLES_EQUAL(0.15734109864597129, graph.error(values), 1e-9);
+  DOUBLES_EQUAL(20.37690384646076, graph.error(values), 1e-9);
 
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
@@ -1217,6 +1211,153 @@ TEST( SmartProjectionFactorP, timing_sphericalCamera ) {
   tictoc_print_();
 }
 #endif
+
+/* *************************************************************************/
+TEST( SmartProjectionFactorP, 2poses_rankTol ) {
+  Pose3 poseA = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0.0,0.0,0.0)); // with z pointing along x axis of global frame
+  Pose3 poseB = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0.0,-0.1,0.0)); // 10cm to the right of poseA
+  Point3 landmarkL = Point3(5.0,0.0,0.0); // 5m in front of poseA
+
+  // triangulate from a stereo with 10cm baseline, assuming standard calibration
+  {// default rankTol = 1 gives a valid point (compare with calibrated and spherical cameras below)
+    using namespace vanillaPose; // pinhole with Cal3_S2 calibration
+
+    Camera cam1(poseA,sharedK);
+    Camera cam2(poseB,sharedK);
+
+    SmartProjectionParams params;
+    params.setRankTolerance(1);
+
+    SmartFactorP::shared_ptr smartFactor1(new SmartFactorP(model,params));
+    smartFactor1->add(cam1.project(landmarkL), x1, sharedK);
+    smartFactor1->add(cam2.project(landmarkL), x2, sharedK);
+
+    NonlinearFactorGraph graph;
+    graph.push_back(smartFactor1);
+
+    Values groundTruth;
+    groundTruth.insert(x1, poseA);
+    groundTruth.insert(x2, poseB);
+    DOUBLES_EQUAL(0, graph.error(groundTruth), 1e-9);
+
+    // get point
+    TriangulationResult point = smartFactor1->point();
+    EXPECT(point.valid()); // valid triangulation
+    EXPECT(assert_equal(landmarkL, *point, 1e-7));
+  }
+  // triangulate from a stereo with 10cm baseline, assuming canonical calibration
+  {// default rankTol = 1 or 0.1 gives a degenerate point, which is undesirable for a point 5m away and 10cm baseline
+    using namespace vanillaPose; // pinhole with Cal3_S2 calibration
+    static Cal3_S2::shared_ptr canonicalK(new Cal3_S2(1.0,1.0,0.0,0.0,0.0)); //canonical camera
+
+    Camera cam1(poseA,canonicalK);
+    Camera cam2(poseB,canonicalK);
+
+    SmartProjectionParams params;
+    params.setRankTolerance(0.1);
+
+    SmartFactorP::shared_ptr smartFactor1(new SmartFactorP(model,params));
+    smartFactor1->add(cam1.project(landmarkL), x1, canonicalK);
+    smartFactor1->add(cam2.project(landmarkL), x2, canonicalK);
+
+    NonlinearFactorGraph graph;
+    graph.push_back(smartFactor1);
+
+    Values groundTruth;
+    groundTruth.insert(x1, poseA);
+    groundTruth.insert(x2, poseB);
+    DOUBLES_EQUAL(0, graph.error(groundTruth), 1e-9);
+
+    // get point
+    TriangulationResult point = smartFactor1->point();
+    EXPECT(point.degenerate()); // valid triangulation
+  }
+  // triangulate from a stereo with 10cm baseline, assuming canonical calibration
+  {// smaller rankTol = 0.01 gives a valid point (compare with calibrated and spherical cameras below)
+    using namespace vanillaPose; // pinhole with Cal3_S2 calibration
+    static Cal3_S2::shared_ptr canonicalK(new Cal3_S2(1.0,1.0,0.0,0.0,0.0)); //canonical camera
+
+    Camera cam1(poseA,canonicalK);
+    Camera cam2(poseB,canonicalK);
+
+    SmartProjectionParams params;
+    params.setRankTolerance(0.01);
+
+    SmartFactorP::shared_ptr smartFactor1(new SmartFactorP(model,params));
+    smartFactor1->add(cam1.project(landmarkL), x1, canonicalK);
+    smartFactor1->add(cam2.project(landmarkL), x2, canonicalK);
+
+    NonlinearFactorGraph graph;
+    graph.push_back(smartFactor1);
+
+    Values groundTruth;
+    groundTruth.insert(x1, poseA);
+    groundTruth.insert(x2, poseB);
+    DOUBLES_EQUAL(0, graph.error(groundTruth), 1e-9);
+
+    // get point
+    TriangulationResult point = smartFactor1->point();
+    EXPECT(point.valid()); // valid triangulation
+    EXPECT(assert_equal(landmarkL, *point, 1e-7));
+  }
+}
+
+/* *************************************************************************/
+TEST( SmartProjectionFactorP, 2poses_sphericalCamera_rankTol ) {
+  typedef SphericalCamera Camera;
+  typedef SmartProjectionFactorP<Camera> SmartFactorP;
+  static EmptyCal::shared_ptr emptyK;
+  Pose3 poseA = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0.0,0.0,0.0)); // with z pointing along x axis of global frame
+  Pose3 poseB = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0.0,-0.1,0.0)); // 10cm to the right of poseA
+  Point3 landmarkL = Point3(5.0,0.0,0.0); // 5m in front of poseA
+
+  Camera cam1(poseA);
+  Camera cam2(poseB);
+
+  // TRIANGULATION TEST WITH DEFAULT RANK TOL
+  {// rankTol = 1 or 0.1 gives a degenerate point, which is undesirable for a point 5m away and 10cm baseline
+  SmartProjectionParams params;
+  params.setRankTolerance(0.1);
+
+  SmartFactorP::shared_ptr smartFactor1(new SmartFactorP(model,params));
+  smartFactor1->add(cam1.project(landmarkL), x1, emptyK);
+  smartFactor1->add(cam2.project(landmarkL), x2, emptyK);
+
+  NonlinearFactorGraph graph;
+  graph.push_back(smartFactor1);
+
+  Values groundTruth;
+  groundTruth.insert(x1, poseA);
+  groundTruth.insert(x2, poseB);
+  DOUBLES_EQUAL(0, graph.error(groundTruth), 1e-9);
+
+  // get point
+  TriangulationResult point = smartFactor1->point();
+  EXPECT(point.degenerate()); // not enough parallax
+  }
+  // SAME TEST WITH SMALLER RANK TOL
+  {// rankTol = 0.01 gives a valid point
+  SmartProjectionParams params;
+  params.setRankTolerance(0.01);
+
+  SmartFactorP::shared_ptr smartFactor1(new SmartFactorP(model,params));
+  smartFactor1->add(cam1.project(landmarkL), x1, emptyK);
+  smartFactor1->add(cam2.project(landmarkL), x2, emptyK);
+
+  NonlinearFactorGraph graph;
+  graph.push_back(smartFactor1);
+
+  Values groundTruth;
+  groundTruth.insert(x1, poseA);
+  groundTruth.insert(x2, poseB);
+  DOUBLES_EQUAL(0, graph.error(groundTruth), 1e-9);
+
+  // get point
+  TriangulationResult point = smartFactor1->point();
+  EXPECT(point.valid()); // valid triangulation
+  EXPECT(assert_equal(landmarkL, *point, 1e-7));
+  }
+}
 
 /* ************************************************************************* */
 BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Constrained, "gtsam_noiseModel_Constrained");
