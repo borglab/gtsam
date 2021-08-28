@@ -520,6 +520,7 @@ TEST( triangulation, twoPoses_sphericalCamera_extremeFOV) {
 
   double rank_tol = 1e-9;
 
+  {
   // 1. Test simple DLT, when 1 point is behind spherical camera
   bool optimize = false;
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
@@ -531,9 +532,10 @@ TEST( triangulation, twoPoses_sphericalCamera_extremeFOV) {
   triangulatePoint3<SphericalCamera>(cameras, measurements, rank_tol, optimize);
   EXPECT(assert_equal(landmarkL, *actual1, 1e-7));
 #endif
-
+  }
+  {
   // 2. test with optimization on, same answer
-  optimize = true;
+  bool optimize = true;
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
   CHECK_EXCEPTION(
       triangulatePoint3<SphericalCamera>(cameras, measurements, rank_tol,
@@ -543,6 +545,7 @@ TEST( triangulation, twoPoses_sphericalCamera_extremeFOV) {
   triangulatePoint3<SphericalCamera>(cameras, measurements, rank_tol, optimize);
   EXPECT(assert_equal(landmarkL, *actual1, 1e-7));
 #endif
+  }
 }
 
 //******************************************************************************
