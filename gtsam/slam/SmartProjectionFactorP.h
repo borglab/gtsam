@@ -60,7 +60,6 @@ class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
   static const int ZDim = 2;  ///< Measurement dimension (Point2)
 
  protected:
-
   /// vector of keys (one for each observation) with potentially repeated keys
   std::vector<Key> nonUniqueKeys_;
 
