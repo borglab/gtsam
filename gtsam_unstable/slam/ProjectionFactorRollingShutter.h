@@ -129,7 +129,7 @@ class ProjectionFactorRollingShutter : public NoiseModelFactor3<Pose3, Pose3,
   }
 
   /// @return a deep copy of this factor
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
     return boost::static_pointer_cast < gtsam::NonlinearFactor
         > (gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
@@ -140,7 +140,7 @@ class ProjectionFactorRollingShutter : public NoiseModelFactor3<Pose3, Pose3,
    * @param keyFormatter optional formatter useful for printing Symbols
    */
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
-                 DefaultKeyFormatter) const {
+                 DefaultKeyFormatter) const override {
     std::cout << s << "ProjectionFactorRollingShutter, z = ";
     traits<Point2>::Print(measured_);
     std::cout << " rolling shutter interpolation param = " << alpha_;
@@ -150,7 +150,7 @@ class ProjectionFactorRollingShutter : public NoiseModelFactor3<Pose3, Pose3,
   }
 
   /// equals
-  virtual bool equals(const NonlinearFactor& p, double tol = 1e-9) const {
+  bool equals(const NonlinearFactor& p, double tol = 1e-9) const override {
     const This *e = dynamic_cast<const This*>(&p);
     return e && Base::equals(p, tol) && (alpha_ == e->alpha())
         && traits<Point2>::Equals(this->measured_, e->measured_, tol)
@@ -163,11 +163,11 @@ class ProjectionFactorRollingShutter : public NoiseModelFactor3<Pose3, Pose3,
   }
 
   /// Evaluate error h(x)-z and optionally derivatives
-  Vector evaluateError(const Pose3& pose_a, const Pose3& pose_b,
-                       const Point3& point, boost::optional<Matrix&> H1 =
-                           boost::none,
-                       boost::optional<Matrix&> H2 = boost::none,
-                       boost::optional<Matrix&> H3 = boost::none) const;
+  Vector evaluateError(
+      const Pose3& pose_a, const Pose3& pose_b, const Point3& point,
+      boost::optional<Matrix&> H1 = boost::none,
+      boost::optional<Matrix&> H2 = boost::none,
+      boost::optional<Matrix&> H3 = boost::none) const override;
 
   /** return the measurement */
   const Point2& measured() const {
