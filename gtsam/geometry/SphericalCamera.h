@@ -30,21 +30,13 @@
 namespace gtsam {
 
 class GTSAM_EXPORT EmptyCal {
- protected:
-  Matrix3 K_;
  public:
-
-  ///< shared pointer to calibration object
-  EmptyCal()
-      : K_(Matrix3::Identity()) {
-  }
-  /// Default destructor
+  EmptyCal(){}
   virtual ~EmptyCal() = default;
   using shared_ptr = boost::shared_ptr<EmptyCal>;
   void print(const std::string& s) const {
     std::cout << "empty calibration: " <<  s << std::endl;
   }
-  Matrix3 K() const {return K_;}
 };
 
 /**
