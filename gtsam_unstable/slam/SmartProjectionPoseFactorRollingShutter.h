@@ -363,7 +363,7 @@ class SmartProjectionPoseFactorRollingShutter : public SmartProjectionFactor<CAM
     // Build augmented Hessian (with last row/column being the information vector)
     // Note: we need to get the augumented hessian wrt the unique keys in key_
     SymmetricBlockMatrix augmentedHessianUniqueKeys =
-        Base::Cameras::SchurComplementAndRearrangeBlocks_3_12_6(
+        Base::Cameras::template SchurComplementAndRearrangeBlocks<3, 12, 6>(
             Fs, E, P, b, nonuniqueKeys, this->keys_);
 
     return boost::make_shared < RegularHessianFactor<DimPose>
