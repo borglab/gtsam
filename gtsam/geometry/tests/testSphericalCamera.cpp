@@ -110,6 +110,39 @@ TEST( SphericalCamera, Dproject)
 }
 
 /* ************************************************************************* */
+static Vector2 reprojectionError2(const Pose3& pose, const Point3& point, const Unit3& measured) {
+  return Camera(pose).reprojectionError(point,measured);
+}
+
+/* ************************************************************************* */
+TEST( SphericalCamera, reprojectionError) {
+  Matrix Dpose, Dpoint;
+  Vector2 result = camera.reprojectionError(point1, bearing1, Dpose, Dpoint);
+  Matrix numerical_pose = numericalDerivative31(reprojectionError2, pose,
+                                                point1, bearing1);
+  Matrix numerical_point = numericalDerivative32(reprojectionError2, pose,
+                                                 point1, bearing1);
+  EXPECT(assert_equal(Vector2(0.0, 0.0), result));
+  EXPECT(assert_equal(numerical_pose, Dpose, 1e-7));
+  EXPECT(assert_equal(numerical_point, Dpoint, 1e-7));
+}
+
+/* ************************************************************************* */
+TEST( SphericalCamera, reprojectionError_noisy) {
+  Matrix Dpose, Dpoint;
+  Unit3 bearing_noisy = bearing1.retract(Vector2(0.01, 0.05));
+  Vector2 result = camera.reprojectionError(point1, bearing_noisy, Dpose,
+                                            Dpoint);
+  Matrix numerical_pose = numericalDerivative31(reprojectionError2, pose,
+                                                point1, bearing_noisy);
+  Matrix numerical_point = numericalDerivative32(reprojectionError2, pose,
+                                                 point1, bearing_noisy);
+  EXPECT(assert_equal(Vector2(-0.050282, 0.00833482), result, 1e-5));
+  EXPECT(assert_equal(numerical_pose, Dpose, 1e-7));
+  EXPECT(assert_equal(numerical_point, Dpoint, 1e-7));
+}
+
+/* ************************************************************************* */
 // Add a test with more arbitrary rotation
 TEST( SphericalCamera, Dproject2)
 {
