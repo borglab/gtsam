@@ -42,6 +42,7 @@
 #include <cmath>
 #include <sstream>
 #include <stdexcept>
+#include <typeinfo>
 
 using namespace std;
 using namespace boost::assign;
@@ -57,10 +58,10 @@ JacobianFactor::JacobianFactor() :
 /* ************************************************************************* */
 JacobianFactor::JacobianFactor(const GaussianFactor& gf) {
   // Copy the matrix data depending on what type of factor we're copying from
-  if (const JacobianFactor* asJacobian = dynamic_cast<const JacobianFactor*>(&gf))
-    *this = JacobianFactor(*asJacobian);
-  else if (const HessianFactor* asHessian = dynamic_cast<const HessianFactor*>(&gf))
-    *this = JacobianFactor(*asHessian);
+  if (!strcmp(typeid(gf).name(), typeid(JacobianFactor).name()))
+    *this = JacobianFactor(*static_cast<const JacobianFactor*>(&gf));
+  else if (!strcmp(typeid(gf).name(), typeid(HessianFactor).name()))
+    *this = JacobianFactor(*static_cast<const HessianFactor*>(&gf));
   else
     throw std::invalid_argument(
         "In JacobianFactor(const GaussianFactor& rhs), rhs is neither a JacobianFactor nor a HessianFactor");
@@ -198,13 +199,17 @@ FastVector<JacobianFactor::shared_ptr> _convertOrCastToJacobians(
   gttic(Convert_to_Jacobians);
   FastVector<JacobianFactor::shared_ptr> jacobians;
   jacobians.reserve(factors.size());
-  for(const GaussianFactor::shared_ptr& factor: factors) {
+  for (const GaussianFactor::shared_ptr& factor : factors) {
     if (factor) {
-      if (JacobianFactor::shared_ptr jf = boost::dynamic_pointer_cast<
-          JacobianFactor>(factor))
-        jacobians.push_back(jf);
-      else
+      auto& f = *factor.get();
+      if (!strcmp(typeid(f).name(), typeid(JacobianFactor).name())) {
+        jacobians.push_back(boost::static_pointer_cast<JacobianFactor>(factor));
+      } else if (!strcmp(typeid(f).name(), typeid(HessianFactor).name())) {
         jacobians.push_back(boost::make_shared<JacobianFactor>(*factor));
+      } else {
+        throw std::runtime_error("UNKNOWN FACTOR TYPE " +
+                                 std::string(typeid(f).name()));
+      }
     }
   }
   return jacobians;
