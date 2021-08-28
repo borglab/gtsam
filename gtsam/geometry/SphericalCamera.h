@@ -220,6 +220,16 @@ class GTSAM_EXPORT SphericalCamera {
     return Eigen::Matrix<double,traits<Point2>::dimension,1>::Constant(0.0);
   }
 
+  /// @deprecated
+   size_t dim() const {
+     return 6;
+   }
+
+   /// @deprecated
+   static size_t Dim() {
+     return 6;
+   }
+
  private:
 
   /** Serialization function */
