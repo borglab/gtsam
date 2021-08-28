@@ -18,10 +18,12 @@ from gtsam.symbol_shorthand import B
 
 
 class TestBasis(GtsamTestCase):
-    """Tests Basis module python bindings
+    """
+    Tests Basis module python bindings.
     """
     def test_fit_basis(self):
-        """Tests FitBasis python binding for FourierBasis, Chebyshev1Basis, Chebyshev2Basis, and
+        """
+        Tests FitBasis python binding for FourierBasis, Chebyshev1Basis, Chebyshev2Basis, and
         Chebyshev2.
         It tests FitBasis by fitting to a ground-truth function that can be represented exactly in
         the basis, then checking that the regression (fit result) matches the function.  For the
