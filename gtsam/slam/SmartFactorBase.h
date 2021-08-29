@@ -44,7 +44,7 @@ namespace gtsam {
  * factors. The methods take a CameraSet<CAMERA> argument and the value of a
  * point, which is kept in the derived class.
  *
- * @tparam CAMERA should behave like a set of PinholeCamera.
+ * @tparam CAMERA should behave like a PinholeCamera.
  */
 template<class CAMERA>
 class SmartFactorBase: public NonlinearFactor {
