@@ -85,4 +85,4 @@ make -j2 install
 cd $GITHUB_WORKSPACE/build/python
 $PYTHON setup.py install --user --prefix=
 cd $GITHUB_WORKSPACE/python/gtsam/tests
-$PYTHON -m unittest discover
+$PYTHON -m unittest discover -v
