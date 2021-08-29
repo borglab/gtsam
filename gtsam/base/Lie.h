@@ -320,28 +320,28 @@ T expm(const Vector& x, int K=7) {
 }
 
 /**
- * Linear interpolation between X and Y by coefficient t (typically t \in [0,1],
- * but can also be used to extrapolate before pose X or after pose Y), with optional jacobians.
+ * Linear interpolation between X and Y by coefficient t. Typically t \in [0,1],
+ * but can also be used to extrapolate before pose X or after pose Y.
  */
 template <typename T>
 T interpolate(const T& X, const T& Y, double t,
               typename MakeOptionalJacobian<T, T>::type Hx = boost::none,
               typename MakeOptionalJacobian<T, T>::type Hy = boost::none) {
-
   if (Hx || Hy) {
-    typename traits<T>::TangentVector log_Xinv_Y;
     typename MakeJacobian<T, T>::type between_H_x, log_H, exp_H, compose_H_x;
+    const T between =
+        traits<T>::Between(X, Y, between_H_x);  // between_H_y = identity
+    typename traits<T>::TangentVector delta = traits<T>::Logmap(between, log_H);
+    const T Delta = traits<T>::Expmap(t * delta, exp_H);
+    const T result = traits<T>::Compose(
+        X, Delta, compose_H_x);  // compose_H_xinv_y = identity
 
-    T Xinv_Y = traits<T>::Between(X, Y, between_H_x); // between_H_y = identity
-    log_Xinv_Y = traits<T>::Logmap(Xinv_Y, log_H);
-    Xinv_Y = traits<T>::Expmap(t * log_Xinv_Y, exp_H);
-    Xinv_Y = traits<T>::Compose(X, Xinv_Y, compose_H_x); // compose_H_xinv_y = identity
-
-    if(Hx) *Hx = compose_H_x + t * exp_H * log_H * between_H_x;
-    if(Hy) *Hy = t * exp_H * log_H;
-    return Xinv_Y;
+    if (Hx) *Hx = compose_H_x + t * exp_H * log_H * between_H_x;
+    if (Hy) *Hy = t * exp_H * log_H;
+    return result;
   }
-  return traits<T>::Compose(X, traits<T>::Expmap(t * traits<T>::Logmap(traits<T>::Between(X, Y))));
+  return traits<T>::Compose(
+      X, traits<T>::Expmap(t * traits<T>::Logmap(traits<T>::Between(X, Y))));
 }
 
 /**
