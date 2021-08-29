@@ -40,9 +40,13 @@ class GTSAM_EXPORT FourierBasis : public Basis<FourierBasis> {
   static Weights CalculateWeights(size_t N, double x) {
     Weights b(N);
     b[0] = 1;
-    for (size_t i = 1, n = 1; i < N; i += 2, n++) {
-      b[i] = cos(n * x);
-      b[i + 1] = sin(n * x);
+    for (size_t i = 1, n = 1; i < N; i++) {
+      if (i % 2 == 1) {
+        b[i] = cos(n * x);
+      } else {
+        b[i] = sin(n * x);
+        n++;
+      }
     }
     return b;
   }
