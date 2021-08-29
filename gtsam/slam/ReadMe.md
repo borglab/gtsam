@@ -2,7 +2,7 @@
 
 ## GenericProjectionFactor (defined in ProjectionFactor.h)
 
-Non-linear factor for a constraint derived from a 2D measurement. 
+Non-linear factor that minimizes the re-projection error with respect to a 2D measurement. 
 The calibration is assumed known and passed in the constructor.
 The main building block for visual SLAM.
 
@@ -14,6 +14,7 @@ Templated on
 ## SmartFactors
 
 These are "structure-less" factors, i.e., rather than introducing a new variable for an observed 3D point or landmark, a single factor is created that provides a multi-view constraint on several poses and/or cameras.
+While one typically adds multiple GenericProjectionFactors (one for each observation of a landmark), a SmartFactor collects all measurements for a landmark, i.e., the factor graph contains 1 smart factor per landmark.
 
 ### SmartFactorBase
 
@@ -45,6 +46,11 @@ Same as `SmartProjectionPoseFactor`, except:
 - it allows multiple observations from the same pose/key, again, to model a multi-camera system.
 
 TODO: DimPose and ZDim are hardcoded. Copy/paste from `SmartProjectionPoseFactor`. Unclear what the use case is.
+
+## Linearized Smart Factors
+
+The factors below are less likely to be relevant to the user, but result from using the non-linear smart factors above.
+
 
 ### RegularImplicitSchurFactor
 

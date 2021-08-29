@@ -35,7 +35,8 @@ namespace gtsam {
    * The main building block for visual SLAM.
    * @addtogroup SLAM
    */
-  template<class POSE=Pose3, class LANDMARK=Point3, class CALIBRATION = Cal3_S2>
+  template <class POSE = Pose3, class LANDMARK = Point3,
+            class CALIBRATION = Cal3_S2>
   class GenericProjectionFactor: public NoiseModelFactor2<POSE, LANDMARK> {
   protected:
 
