@@ -305,7 +305,7 @@ class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
     // Build augmented Hessian (with last row/column being the information vector)
     // Note: we need to get the augumented hessian wrt the unique keys in key_
     SymmetricBlockMatrix augmentedHessianUniqueKeys =
-        Base::Cameras::SchurComplementAndRearrangeBlocks_3_6_6(
+        Base::Cameras::template SchurComplementAndRearrangeBlocks<3, 6, 6>(
             Fs, E, P, b, nonUniqueKeys_, this->keys_);
 
     return boost::make_shared < RegularHessianFactor<DimPose>

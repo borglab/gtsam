@@ -185,9 +185,8 @@ TEST(CameraSet, SchurComplementAndRearrangeBlocks) {
 
     // Actual
     SymmetricBlockMatrix augmentedHessianBM =
-        Set::SchurComplementAndRearrangeBlocks_3_12_6(Fs, E, P, b,
-                                                         nonuniqueKeys,
-                                                         uniqueKeys);
+        Set::SchurComplementAndRearrangeBlocks<3, 12, 6>(
+            Fs, E, P, b, nonuniqueKeys, uniqueKeys);
     Matrix actualAugmentedHessian = augmentedHessianBM.selfadjointView();
 
     // Expected
