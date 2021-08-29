@@ -71,8 +71,6 @@ class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
  public:
   typedef CAMERA Camera;
   typedef CameraSet<CAMERA> Cameras;
-  typedef Eigen::Matrix<double, ZDim, DimPose> MatrixZD;  // F blocks
-  typedef std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD> > FBlocks;  // vector of F blocks
 
   /// shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<This> shared_ptr;
@@ -234,7 +232,8 @@ class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
    * respect to both body poses we interpolate from), the point Jacobian E,
    * and the error vector b. Note that the jacobians are computed for a given point.
    */
-  void computeJacobiansWithTriangulatedPoint(FBlocks& Fs, Matrix& E, Vector& b,
+  void computeJacobiansWithTriangulatedPoint(typename Base::FBlocks& Fs,
+                                             Matrix& E, Vector& b,
                                              const Cameras& cameras) const {
     if (!this->result_) {
       throw("computeJacobiansWithTriangulatedPoint");
@@ -289,7 +288,7 @@ class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
     }
 
     // compute Jacobian given triangulated 3D Point
-    FBlocks Fs;
+    typename Base::FBlocks Fs;
     Matrix E;
     Vector b;
     this->computeJacobiansWithTriangulatedPoint(Fs, E, b, cameras);
@@ -300,7 +299,7 @@ class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
       Fs[i] = this->noiseModel_->Whiten(Fs[i]);
     }
 
-    Matrix3 P = Base::Cameras::PointCov(E, lambda, diagonalDamping);
+    const Matrix3 P = Base::Cameras::PointCov(E, lambda, diagonalDamping);
 
     // Build augmented Hessian (with last row/column being the information vector)
     // Note: we need to get the augumented hessian wrt the unique keys in key_
