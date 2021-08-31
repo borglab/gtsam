@@ -13,7 +13,7 @@ import unittest
 import numpy as np
 
 import gtsam
-from gtsam import Pose2
+from gtsam import Point2, Point2Pairs, Pose2
 from gtsam.utils.test_case import GtsamTestCase
 
 
@@ -47,7 +47,7 @@ class TestPose2(GtsamTestCase):
             Point2(3, 1),
             Point2(1, 1),
             Point2(1, 3),
-            Point2(3, 3),
+            Point2(3, 3)
         ]
         pts_b = [
             Point2(1, -3),
