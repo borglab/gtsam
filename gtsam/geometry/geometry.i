@@ -436,9 +436,9 @@ class Pose2 {
 
   // enable pickling in python
   void pickle() const;
-  
-  gtsam::Pose2 align(const gtsam::Point2Pairs& pairs);
 };
+  
+gtsam::Pose2 align(const gtsam::Point2Pairs& pairs);
 
 #include <gtsam/geometry/Pose3.h>
 class Pose3 {
