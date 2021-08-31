@@ -13,7 +13,7 @@ import unittest
 import numpy as np
 
 import gtsam
-from gtsam import align, Point2, Point2Pairs, Pose2
+from gtsam import Point2, Point2Pairs, Pose2
 from gtsam.utils.test_case import GtsamTestCase
 
 
@@ -58,7 +58,7 @@ class TestPose2(GtsamTestCase):
 
         # fmt: on
         ab_pairs = Point2Pairs(list(zip(pts_a, pts_b)))
-        bTa = align(ab_pairs)
+        bTa = gtsam.align(ab_pairs)
         aTb = bTa.inverse()
         assert aTb is not None
 
