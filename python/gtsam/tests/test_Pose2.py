@@ -19,7 +19,6 @@ from gtsam.utils.test_case import GtsamTestCase
 
 class TestPose2(GtsamTestCase):
     """Test selected Pose2 methods."""
-
     def test_adjoint(self) -> None:
         """Test adjoint method."""
         xi = np.array([1, 2, 3])
@@ -29,9 +28,9 @@ class TestPose2(GtsamTestCase):
 
     def test_align(self) -> None:
         """Ensure estimation of the Pose2 element to align two 2d point clouds succeeds.
-        
+
         Two point clouds represent horseshoe-shapes of the same size, just rotated and translated:
-        
+
                 |  X---X
                 |  |
                 |  X---X
@@ -42,18 +41,17 @@ class TestPose2(GtsamTestCase):
               | | |
               O---O
         """
-        # fmt: off
         pts_a = [
             Point2(3, 1),
             Point2(1, 1),
             Point2(1, 3),
-            Point2(3, 3)
+            Point2(3, 3),
         ]
         pts_b = [
             Point2(1, -3),
             Point2(1, -5),
             Point2(-1, -5),
-            Point2(-1, -3)
+            Point2(-1, -3),
         ]
 
         # fmt: on
@@ -65,7 +63,7 @@ class TestPose2(GtsamTestCase):
         for pt_a, pt_b in zip(pts_a, pts_b):
             pt_a_ = aTb.transformFrom(pt_b)
             assert np.allclose(pt_a, pt_a_)
-        
+
 
 if __name__ == "__main__":
     unittest.main()
