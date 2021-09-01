@@ -77,3 +77,6 @@
 
 // Support Metis-based nested dissection
 #cmakedefine GTSAM_TANGENT_PREINTEGRATION
+
+// Toggle switch for BetweenFactor jacobian computation
+#cmakedefine GTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR
