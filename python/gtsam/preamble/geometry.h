@@ -12,7 +12,7 @@
  */
 #include <pybind11/stl.h>
 
-// Support for binding boost::optional types.
+// Support for binding boost::optional types in C++11.
 // https://pybind11.readthedocs.io/en/stable/advanced/cast/stl.html
 namespace pybind11 { namespace detail {
     template <typename T>
