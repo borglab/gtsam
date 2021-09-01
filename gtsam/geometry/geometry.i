@@ -438,7 +438,7 @@ class Pose2 {
   void pickle() const;
 };
   
-gtsam::Pose2 align(const gtsam::Point2Pairs& pairs);
+boost::optional<gtsam::Pose2> align(const gtsam::Point2Pairs& pairs);
 
 #include <gtsam/geometry/Pose3.h>
 class Pose3 {
