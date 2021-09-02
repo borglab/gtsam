@@ -43,6 +43,7 @@ set(ignore
     gtsam::BetweenFactorPose2s
     gtsam::BetweenFactorPose3s
     gtsam::Point2Vector
+    gtsam::Point2Pairs
     gtsam::Point3Pairs
     gtsam::Pose3Pairs
     gtsam::Pose3Vector
