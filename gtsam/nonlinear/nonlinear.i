@@ -527,13 +527,15 @@ template<PARAMS>
 virtual class GncParams {
   GncParams(const PARAMS& baseOptimizerParams);
   GncParams();
-  void setVerbosityGNC(const gtsam::GncParams::Verbosity value);
+  void setVerbosityGNC(const This::Verbosity value);
   void print(const string& str) const;
-};
   
-typedef gtsam::GncParams::Verbosity::SILENT GncVerbositySilent;
-typedef gtsam::GncParams::Verbosity::SUMMARY GncVerbositySummary;
-typedef gtsam::GncParams::Verbosity::VALUES GncVerbosityValues;
+  enum Verbosity {
+    SILENT,
+    SUMMARY,
+    VALUES
+  };
+};
 
 typedef gtsam::GncParams<gtsam::GaussNewtonParams> GncGaussNewtonParams;
 typedef gtsam::GncParams<gtsam::LevenbergMarquardtParams> GncLMParams;
