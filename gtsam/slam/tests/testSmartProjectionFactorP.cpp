@@ -1337,6 +1337,9 @@ TEST( SmartProjectionFactorP, 2poses_sphericalCamera_rankTol ) {
   }
   // SAME TEST WITH SMALLER RANK TOL
   {// rankTol = 0.01 gives a valid point
+  // By playing with this test, we can show we can triangulate also with a baseline of 5cm (even for points
+  // far away, >100m), but the test fails when the baseline becomes 1cm. This suggests using
+  // rankTol = 0.01 and setting a reasonable max landmark distance to obtain best results.
   SmartProjectionParams params;
   params.setRankTolerance(0.01);
 
