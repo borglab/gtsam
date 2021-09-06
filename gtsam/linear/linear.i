@@ -16,9 +16,9 @@ virtual class Base {
 };
 
 virtual class Gaussian : gtsam::noiseModel::Base {
-  static gtsam::noiseModel::Gaussian* Information(Matrix R);
-  static gtsam::noiseModel::Gaussian* SqrtInformation(Matrix R);
-  static gtsam::noiseModel::Gaussian* Covariance(Matrix R);
+  static gtsam::noiseModel::Gaussian* Information(Matrix R, bool smart = true);
+  static gtsam::noiseModel::Gaussian* SqrtInformation(Matrix R, bool smart = true);
+  static gtsam::noiseModel::Gaussian* Covariance(Matrix R, bool smart = true);
 
   bool equals(gtsam::noiseModel::Base& expected, double tol);
 
@@ -37,9 +37,9 @@ virtual class Gaussian : gtsam::noiseModel::Base {
 };
 
 virtual class Diagonal : gtsam::noiseModel::Gaussian {
-  static gtsam::noiseModel::Diagonal* Sigmas(Vector sigmas);
-  static gtsam::noiseModel::Diagonal* Variances(Vector variances);
-  static gtsam::noiseModel::Diagonal* Precisions(Vector precisions);
+  static gtsam::noiseModel::Diagonal* Sigmas(Vector sigmas, bool smart = true);
+  static gtsam::noiseModel::Diagonal* Variances(Vector variances, bool smart = true);
+  static gtsam::noiseModel::Diagonal* Precisions(Vector precisions, bool smart = true);
   Matrix R() const;
 
   // access to noise model
@@ -69,9 +69,9 @@ virtual class Constrained : gtsam::noiseModel::Diagonal {
 };
 
 virtual class Isotropic : gtsam::noiseModel::Diagonal {
-  static gtsam::noiseModel::Isotropic* Sigma(size_t dim, double sigma);
-  static gtsam::noiseModel::Isotropic* Variance(size_t dim, double varianace);
-  static gtsam::noiseModel::Isotropic* Precision(size_t dim, double precision);
+  static gtsam::noiseModel::Isotropic* Sigma(size_t dim, double sigma, bool smart = true);
+  static gtsam::noiseModel::Isotropic* Variance(size_t dim, double varianace, bool smart = true);
+  static gtsam::noiseModel::Isotropic* Precision(size_t dim, double precision, bool smart = true);
 
   // access to noise model
   double sigma() const;
