@@ -47,7 +47,7 @@ sudo apt-get install tigervnc-viewer
 xtigervncviewer :5900
 ```
 ### Mac
-In the finder, in the Go menu, select "Connect to Server...", enter `vnc://127.0.0.1`, and then press "Connect". When prompted for a password, leave blank and press "Sign In".
+The Finder's "Connect to Server..." with `vnc://127.0.0.1` does not work, for some reason. Using the free [VNC Viewer](https://www.realvnc.com/en/connect/download/viewer/), enter `0.0.0.0:5900` as the server.
 
 # Re-building the images locally
 
