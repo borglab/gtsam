@@ -2,4 +2,4 @@
 docker run -it \
     --workdir="/usr/src/gtsam" \
     -p 5900:5900 \
-    dellaert/ubuntu-gtsam-python-vnc:bionic
+    borglab/ubuntu-gtsam-python-vnc:bionic
