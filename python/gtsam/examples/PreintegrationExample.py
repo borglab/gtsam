@@ -5,8 +5,12 @@ All Rights Reserved
 
 See LICENSE for the license information
 
-A script validating the Preintegration of IMU measurements
+A script validating the Preintegration of IMU measurements.
+
+Authors: Frank Dellaert, Varun Agrawal.
 """
+
+# pylint: disable=invalid-name,unused-import,wrong-import-order
 
 import math
 
@@ -21,22 +25,20 @@ POSES_FIG = 2
 
 
 class PreintegrationExample(object):
-
+    """Base class for all preintegration examples."""
     @staticmethod
     def defaultParams(g):
         """Create default parameters with Z *up* and realistic noise parameters"""
         params = gtsam.PreintegrationParams.MakeSharedU(g)
         kGyroSigma = math.radians(0.5) / 60  # 0.5 degree ARW
         kAccelSigma = 0.1 / 60  # 10 cm VRW
-        params.setGyroscopeCovariance(
-            kGyroSigma ** 2 * np.identity(3, float))
-        params.setAccelerometerCovariance(
-            kAccelSigma ** 2 * np.identity(3, float))
-        params.setIntegrationCovariance(
-            0.0000001 ** 2 * np.identity(3, float))
+        params.setGyroscopeCovariance(kGyroSigma**2 * np.identity(3, float))
+        params.setAccelerometerCovariance(kAccelSigma**2 *
+                                          np.identity(3, float))
+        params.setIntegrationCovariance(0.0000001**2 * np.identity(3, float))
         return params
 
-    def __init__(self, twist=None, bias=None, dt=1e-2):
+    def __init__(self, twist=None, bias=None, params=None, dt=1e-2):
         """Initialize with given twist, a pair(angularVelocityVector, velocityVector)."""
 
         # setup interactive plotting
@@ -58,9 +60,11 @@ class PreintegrationExample(object):
         self.labels = list('xyz')
         self.colors = list('rgb')
 
-        # Create runner
-        self.g = 10  # simple gravity constant
-        self.params = self.defaultParams(self.g)
+        if params:
+            self.params = params
+        else:
+            # Default params with simple gravity constant
+            self.params = self.defaultParams(g=10)
 
         if bias is not None:
             self.actualBias = bias
@@ -69,13 +73,15 @@ class PreintegrationExample(object):
             gyroBias = np.array([0, 0, 0])
             self.actualBias = gtsam.imuBias.ConstantBias(accBias, gyroBias)
 
-        self.runner = gtsam.ScenarioRunner(
-            self.scenario, self.params, self.dt, self.actualBias)
+        # Create runner
+        self.runner = gtsam.ScenarioRunner(self.scenario, self.params, self.dt,
+                                           self.actualBias)
 
         fig, self.axes = plt.subplots(4, 3)
         fig.set_tight_layout(True)
 
     def plotImu(self, t, measuredOmega, measuredAcc):
+        """Plot IMU measurements."""
         plt.figure(IMU_FIG)
 
         # plot angular velocity
@@ -109,7 +115,7 @@ class PreintegrationExample(object):
             ax.set_xlabel('specific force ' + label)
 
     def plotGroundTruthPose(self, t, scale=0.3, time_interval=0.01):
-        # plot ground truth pose, as well as prediction from integrated IMU measurements
+        """Plot ground truth pose, as well as prediction from integrated IMU measurements."""
         actualPose = self.scenario.pose(t)
         plot_pose3(POSES_FIG, actualPose, scale)
         t = actualPose.translation()
@@ -122,7 +128,7 @@ class PreintegrationExample(object):
         plt.pause(time_interval)
 
     def run(self, T=12):
-        # simulate the loop
+        """Simulate the loop."""
         for i, t in enumerate(np.arange(0, T, self.dt)):
             measuredOmega = self.runner.measuredAngularVelocity(t)
             measuredAcc = self.runner.measuredSpecificForce(t)
