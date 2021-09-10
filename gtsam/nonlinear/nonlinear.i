@@ -75,12 +75,15 @@ size_t Z(size_t j);
 }  // namespace symbol_shorthand
 
 // Default keyformatter
-void PrintKeyList(const gtsam::KeyList& keys);
-void PrintKeyList(const gtsam::KeyList& keys, string s);
-void PrintKeyVector(const gtsam::KeyVector& keys);
-void PrintKeyVector(const gtsam::KeyVector& keys, string s);
-void PrintKeySet(const gtsam::KeySet& keys);
-void PrintKeySet(const gtsam::KeySet& keys, string s);
+void PrintKeyList(
+    const gtsam::KeyList& keys, const string& s = "",
+    const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter);
+void PrintKeyVector(
+    const gtsam::KeyVector& keys, const string& s = "",
+    const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter);
+void PrintKeySet(
+    const gtsam::KeySet& keys, const string& s = "",
+    const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter);
 
 #include <gtsam/inference/LabeledSymbol.h>
 class LabeledSymbol {

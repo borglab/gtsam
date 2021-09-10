@@ -289,6 +289,13 @@ virtual class JacobianFactor : gtsam::GaussianFactor {
   JacobianFactor(size_t i1, Matrix A1, size_t i2, Matrix A2, size_t i3, Matrix A3,
       Vector b, const gtsam::noiseModel::Diagonal* model);
   JacobianFactor(const gtsam::GaussianFactorGraph& graph);
+  JacobianFactor(const gtsam::GaussianFactorGraph& graph,
+                 const gtsam::VariableSlots& p_variableSlots);
+  JacobianFactor(const gtsam::GaussianFactorGraph& graph,
+                 const gtsam::Ordering& ordering);
+  JacobianFactor(const gtsam::GaussianFactorGraph& graph,
+                 const gtsam::Ordering& ordering,
+                 const gtsam::VariableSlots& p_variableSlots);
 
   //Testable
   void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
