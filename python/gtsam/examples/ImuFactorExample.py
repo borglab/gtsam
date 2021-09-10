@@ -10,20 +10,19 @@ A script validating and demonstrating the ImuFactor inference.
 Author: Frank Dellaert, Varun Agrawal
 """
 
-# pylint: disable=no-name-in-module,unused-import,arguments-differ
+# pylint: disable=no-name-in-module,unused-import,arguments-differ,import-error,wrong-import-order
 
 from __future__ import print_function
 
 import argparse
 import math
 
+import gtsam
 import matplotlib.pyplot as plt
 import numpy as np
-from mpl_toolkits.mplot3d import Axes3D
-
-import gtsam
 from gtsam.symbol_shorthand import B, V, X
 from gtsam.utils.plot import plot_pose3
+from mpl_toolkits.mplot3d import Axes3D
 
 from PreintegrationExample import POSES_FIG, PreintegrationExample
 
@@ -51,12 +50,23 @@ class ImuFactorExample(PreintegrationExample):
         gyroBias = np.array([0.1, 0.3, -0.1])
         bias = gtsam.imuBias.ConstantBias(accBias, gyroBias)
 
+        g = 9.81
+        params = gtsam.PreintegrationParams.MakeSharedU(g)
+
+        # Some arbitrary noise sigmas
+        gyro_sigma = 1e-3
+        accel_sigma = 1e-3
+        I_3x3 = np.eye(3)
+        params.setGyroscopeCovariance(gyro_sigma**2 * I_3x3)
+        params.setAccelerometerCovariance(accel_sigma**2 * I_3x3)
+        params.setIntegrationCovariance(1e-7**2 * I_3x3)
+
         dt = 1e-2
         super(ImuFactorExample, self).__init__(twist_scenarios[twist_scenario],
-                                               bias, dt)
+                                               bias, params, dt)
 
     def addPrior(self, i, graph):
-        """Add priors at time step `i`."""
+        """Add a prior on the navigation state at time `i`."""
         state = self.scenario.navState(i)
         graph.push_back(
             gtsam.PriorFactorPose3(X(i), state.pose(), self.priorNoise))
@@ -71,21 +81,27 @@ class ImuFactorExample(PreintegrationExample):
         result = optimizer.optimize()
         return result
 
-    def plot(self, result):
-        """Plot resulting poses."""
+    def plot(self,
+             values,
+             title="Estimated Trajectory",
+             fignum=POSES_FIG + 1,
+             show=False):
+        """Plot poses in values."""
         i = 0
-        while result.exists(X(i)):
-            pose_i = result.atPose3(X(i))
-            plot_pose3(POSES_FIG + 1, pose_i, 1)
+        while values.exists(X(i)):
+            pose_i = values.atPose3(X(i))
+            plot_pose3(fignum, pose_i, 1)
             i += 1
-        plt.title("Estimated Trajectory")
+        plt.title(title)
 
-        gtsam.utils.plot.set_axes_equal(POSES_FIG + 1)
+        gtsam.utils.plot.set_axes_equal(fignum)
 
-        print("Bias Values", result.atConstantBias(BIAS_KEY))
+        print("Bias Values", values.atConstantBias(BIAS_KEY))
 
         plt.ioff()
-        plt.show()
+
+        if show:
+            plt.show()
 
     def run(self, T=12, compute_covariances=False, verbose=True):
         """Main runner."""
@@ -173,7 +189,7 @@ class ImuFactorExample(PreintegrationExample):
                 print("Covariance on vel {}:\n{}\n".format(
                     i, marginals.marginalCovariance(V(i))))
 
-        self.plot(result)
+        self.plot(result, show=True)
 
 
 if __name__ == '__main__':

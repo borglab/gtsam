@@ -88,6 +88,8 @@ virtual class PreintegratedRotationParams {
 virtual class PreintegrationParams : gtsam::PreintegratedRotationParams {
   PreintegrationParams(Vector n_gravity);
 
+  gtsam::Vector n_gravity;
+
   static gtsam::PreintegrationParams* MakeSharedD(double g);
   static gtsam::PreintegrationParams* MakeSharedU(double g);
   static gtsam::PreintegrationParams* MakeSharedD();  // default g = 9.81
