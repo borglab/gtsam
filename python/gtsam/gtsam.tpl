@@ -1,8 +1,8 @@
 /**
- * @file  gtsam.cpp
+ * @file    {module_name}.cpp
  * @brief   The auto-generated wrapper C++ source code.
- * @author  Duy-Nguyen Ta, Fan Jiang, Matthew Sklar
- * @date  Aug. 18, 2020
+ * @author  Duy-Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal
+ * @date    Aug. 18, 2020
  *
  * ** THIS FILE IS AUTO-GENERATED, DO NOT MODIFY! **
  */
