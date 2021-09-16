@@ -93,6 +93,11 @@ void PreintegratedCombinedMeasurements::resetIntegration() {
 //------------------------------------------------------------------------------
 void PreintegratedCombinedMeasurements::integrateMeasurement(
     const Vector3& measuredAcc, const Vector3& measuredOmega, double dt) {
+  if (dt <= 0) {
+    throw std::runtime_error(
+        "PreintegratedCombinedMeasurements::integrateMeasurement: dt <=0");
+  }
+
   // Update preintegrated measurements.
   Matrix9 A; // overall Jacobian wrt preintegrated measurements (df/dx)
   Matrix93 B, C;
