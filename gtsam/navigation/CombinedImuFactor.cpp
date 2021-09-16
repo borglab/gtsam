@@ -99,7 +99,7 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
   }
 
   // Update preintegrated measurements.
-  Matrix9 A; // overall Jacobian wrt preintegrated measurements (df/dx)
+  Matrix9 A; // Jacobian wrt preintegrated measurements without bias (df/dx)
   Matrix93 B, C;
   PreintegrationType::update(measuredAcc, measuredOmega, dt, &A, &B, &C);
 
@@ -110,8 +110,8 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
   // and preintegrated measurements
 
   // Single Jacobians to propagate covariance
-  // TODO(frank): should we not also account for bias on position?
   Matrix3 theta_H_biasOmega = -C.topRows<3>();
+  Matrix3 pos_H_biasAcc = -B.middleRows<3>(3);
   Matrix3 vel_H_biasAcc = -B.bottomRows<3>();
 
   // overall Jacobian wrt preintegrated measurements (df/dx)
@@ -119,6 +119,7 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
   F.setZero();
   F.block<9, 9>(0, 0) = A;
   F.block<3, 3>(0, 12) = theta_H_biasOmega;
+  F.block<3, 3>(3, 9) = pos_H_biasAcc;
   F.block<3, 3>(6, 9) = vel_H_biasAcc;
   F.block<6, 6>(9, 9) = I_6x6;
 
@@ -129,15 +130,19 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
   const Matrix3& iCov = p().integrationCovariance;
 
   // first order uncertainty propagation
-  // Optimized matrix multiplication   (1/dt) * G * measurementCovariance *
+  // Optimized matrix multiplication:  (1/dt) * G * measurementCovariance *
   // G.transpose()
   Eigen::Matrix<double, 15, 15> G_measCov_Gt;
   G_measCov_Gt.setZero(15, 15);
 
+  Matrix3 aCov_updated = (aCov + p().biasAccOmegaInt.block<3, 3>(0, 0));
+
   // BLOCK DIAGONAL TERMS
-  D_t_t(&G_measCov_Gt) = dt * iCov;
+  D_t_t(&G_measCov_Gt) = ((1 / dt) * pos_H_biasAcc
+      * aCov_updated
+      * (pos_H_biasAcc.transpose())) + (dt * iCov);
   D_v_v(&G_measCov_Gt) = (1 / dt) * vel_H_biasAcc
-      * (aCov + p().biasAccOmegaInt.block<3, 3>(0, 0))
+      * aCov_updated
       * (vel_H_biasAcc.transpose());
   D_R_R(&G_measCov_Gt) = (1 / dt) * theta_H_biasOmega
       * (wCov + p().biasAccOmegaInt.block<3, 3>(3, 3))
@@ -150,6 +155,7 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
       * theta_H_biasOmega.transpose();
   D_v_R(&G_measCov_Gt) = temp;
   D_R_v(&G_measCov_Gt) = temp.transpose();
+
   preintMeasCov_ = F * preintMeasCov_ * F.transpose() + G_measCov_Gt;
 }
 
