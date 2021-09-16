@@ -60,13 +60,14 @@ namespace po = boost::program_options;
 
 po::variables_map parseOptions(int argc, char* argv[]) {
   po::options_description desc;
-  desc.add_options()("help,h", "produce help message")(
-      "data_csv_path", po::value<string>()->default_value("imuAndGPSdata.csv"),
-      "path to the CSV file with the IMU data")(
-      "output_filename",
-      po::value<string>()->default_value("imuFactorExampleResults.csv"),
-      "path to the result file to use")("use_isam", po::bool_switch(),
-                                        "use ISAM as the optimizer");
+  desc.add_options()("help,h", "produce help message")  // help message
+      ("data_csv_path", po::value<string>()->default_value("imuAndGPSdata.csv"),
+       "path to the CSV file with the IMU data")  // path to the data file
+      ("output_filename",
+       po::value<string>()->default_value("imuFactorExampleResults.csv"),
+       "path to the result file to use")  // filename to save results to
+      ("use_isam", po::bool_switch(),
+       "use ISAM as the optimizer");  // flag for ISAM optimizer
 
   po::variables_map vm;
   po::store(po::parse_command_line(argc, argv, desc), vm);
