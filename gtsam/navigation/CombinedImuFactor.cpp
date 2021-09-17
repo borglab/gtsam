@@ -100,7 +100,7 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
 
   // Update preintegrated measurements.
   Matrix9 A; // Jacobian wrt preintegrated measurements without bias (df/dx)
-  Matrix93 B, C;
+  Matrix93 B, C;  // Jacobian of state wrpt accel bias and omega bias respectively.
   PreintegrationType::update(measuredAcc, measuredOmega, dt, &A, &B, &C);
 
   // Update preintegrated measurements covariance: as in [2] we consider a first
