@@ -5,6 +5,10 @@ find_package(TBB 4.4 COMPONENTS tbb tbbmalloc)
 # Set up variables if we're using TBB
 if(TBB_FOUND AND GTSAM_WITH_TBB)
     set(GTSAM_USE_TBB 1)  # This will go into config.h
+    if ((${TBB_VERSION} VERSION_GREATER "2021.1") OR (${TBB_VERSION} VERSION_EQUAL "2021.1"))
+        message(FATAL_ERROR "TBB version greater than 2021.1 (oneTBB API) is not yet supported. Use an older version instead.")
+    endif()
+
     if ((${TBB_VERSION_MAJOR} GREATER 2020) OR (${TBB_VERSION_MAJOR} EQUAL 2020))
         set(TBB_GREATER_EQUAL_2020 1)
     else()
