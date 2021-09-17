@@ -1,7 +1,9 @@
-#LyX 2.0 created this file. For more info see http://www.lyx.org/
-\lyxformat 413
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
 \begin_document
 \begin_header
+\save_transient_properties true
+\origin unavailable
 \textclass article
 \use_default_options true
 \maintain_unincluded_children false
@@ -9,16 +11,18 @@
 \language_package default
 \inputencoding auto
 \fontencoding global
-\font_roman default
-\font_sans default
-\font_typewriter default
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
 \font_default_family default
 \use_non_tex_fonts false
 \font_sc false
 \font_osf false
-\font_sf_scale 100
-\font_tt_scale 100
-
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
 \graphics default
 \default_output_format default
 \output_sync 0
@@ -29,16 +33,26 @@
 \use_hyperref false
 \papersize default
 \use_geometry true
-\use_amsmath 1
-\use_esint 1
-\use_mhchem 1
-\use_mathdots 1
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
 \cite_engine basic
+\cite_engine_type default
+\biblio_style plain
 \use_bibtopic false
 \use_indices false
 \paperorientation portrait
 \suppress_date false
+\justification true
 \use_refstyle 1
+\use_minted 0
 \index Index
 \shortcut idx
 \color #008000
@@ -51,7 +65,10 @@
 \tocdepth 3
 \paragraph_separation indent
 \paragraph_indentation default
-\quotes_language english
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
 \papercolumns 1
 \papersides 1
 \paperpagestyle default
@@ -69,7 +86,7 @@ The new IMU Factor
 \end_layout
 
 \begin_layout Author
-Frank Dellaert
+Frank Dellaert & Varun Agrawal
 \end_layout
 
 \begin_layout Standard
@@ -244,7 +261,7 @@ X(t)=\left\{ R_{0},P_{0}+V_{0}t,V_{0}\right\}
 then the differential equation describing the trajectory is
 \begin_inset Formula 
 \[
-\dot{X}(t)=\left[0_{3x3},V_{0},0_{3x1}\right],\,\,\,\,\, X(0)=\left\{ R_{0},P_{0},V_{0}\right\} 
+\dot{X}(t)=\left[0_{3x3},V_{0},0_{3x1}\right],\,\,\,\,\,X(0)=\left\{ R_{0},P_{0},V_{0}\right\} 
 \]
 
 \end_inset
@@ -592,6 +609,7 @@ Lie Group Methods
 \begin_inset CommandInset citation
 LatexCommand cite
 key "Iserles00an"
+literal "true"
 
 \end_inset
 
@@ -602,7 +620,7 @@ key "Iserles00an"
 ,
 \begin_inset Formula 
 \begin{equation}
-\dot{R}(t)=F(R,t),\,\,\,\, R(0)=R_{0}\label{eq:diffSo3}
+\dot{R}(t)=F(R,t),\,\,\,\,R(0)=R_{0}\label{eq:diffSo3}
 \end{equation}
 
 \end_inset
@@ -947,8 +965,8 @@ Or, as another way to state this, if we solve the differential equations
 \begin_inset Formula 
 \begin{eqnarray*}
 \dot{\theta}(t) & = & H(\theta)^{-1}\,\omega^{b}(t)\\
-\dot{p}(t) & = & R_{0}^{T}\, V_{0}+v(t)\\
-\dot{v}(t) & = & R_{0}^{T}\, g+R_{b}^{0}(t)a^{b}(t)
+\dot{p}(t) & = & R_{0}^{T}\,V_{0}+v(t)\\
+\dot{v}(t) & = & R_{0}^{T}\,g+R_{b}^{0}(t)a^{b}(t)
 \end{eqnarray*}
 
 \end_inset
@@ -1015,7 +1033,7 @@ v(t)=v_{g}(t)+v_{a}(t)
 evolving as
 \begin_inset Formula 
 \begin{eqnarray*}
-\dot{v}_{g}(t) & = & R_{i}^{T}\, g\\
+\dot{v}_{g}(t) & = & R_{i}^{T}\,g\\
 \dot{v}_{a}(t) & = & R_{b}^{i}(t)a^{b}(t)
 \end{eqnarray*}
 
@@ -1041,7 +1059,7 @@ p(t)=p_{i}(t)+p_{g}(t)+p_{v}(t)
 evolving as
 \begin_inset Formula 
 \begin{eqnarray*}
-\dot{p}_{i}(t) & = & R_{i}^{T}\, V_{i}\\
+\dot{p}_{i}(t) & = & R_{i}^{T}\,V_{i}\\
 \dot{p}_{g}(t) & = & v_{g}(t)=R_{i}^{T}gt\\
 \dot{p}_{v}(t) & = & v_{a}(t)
 \end{eqnarray*}
@@ -1096,7 +1114,7 @@ Predict the NavState
  from
 \begin_inset Formula 
 \[
-X_{j}=\mathcal{R}_{X_{i}}(\zeta(t_{ij}))=\left\{ \Phi_{R_{0}}\left(\theta(t_{ij})\right),P_{i}+V_{i}t_{ij}+\frac{gt_{ij}^{2}}{2}+R_{i}\, p_{v}(t_{ij}),V_{i}+gt_{ij}+R_{i}\, v_{a}(t_{ij})\right\} 
+X_{j}=\mathcal{R}_{X_{i}}(\zeta(t_{ij}))=\left\{ \Phi_{R_{0}}\left(\theta(t_{ij})\right),P_{i}+V_{i}t_{ij}+\frac{gt_{ij}^{2}}{2}+R_{i}\,p_{v}(t_{ij}),V_{i}+gt_{ij}+R_{i}\,v_{a}(t_{ij})\right\} 
 \]
 
 \end_inset
@@ -1372,10 +1390,103 @@ B_{k}=\left[\begin{array}{c}
 0_{3\times3}\\
 R_{k}\frac{\Delta_{t}}{2}^{2}\\
 R_{k}\Delta_{t}
-\end{array}\right],\,\,\,\, C_{k}=\left[\begin{array}{c}
+\end{array}\right],\,\,\,\,C_{k}=\left[\begin{array}{c}
 H(\theta_{k})^{-1}\Delta_{t}\\
 0_{3\times3}\\
 0_{3\times3}
+\end{array}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection*
+Combined IMU Factor
+\end_layout
+
+\begin_layout Standard
+We can similarly account for bias drift over time, as is commonly seen in
+ commercial grade IMUs.
+ This is accomplished via the 
+\emph on
+CombinedImuFactor
+\emph default
+ which is a 6-way factor between the previous 
+\emph on
+pose/velocity/bias
+\emph default
+ and the 
+\emph on
+pose/velocity/bias
+\emph default
+ at the next timestep.
+ 
+\end_layout
+
+\begin_layout Standard
+We expand the state vector as 
+\begin_inset Formula $\zeta_{k}=[\theta_{k},p_{k},v_{k},a_{k}^{b}, \omega_{k}^{b}]$
+\end_inset
+
+.
+ For the jacobian 
+\begin_inset Formula $F_{k}$
+\end_inset
+
+ of 
+\begin_inset Formula $f$
+\end_inset
+
+ wrpt this new 
+\begin_inset Formula $\zeta$
+\end_inset
+
+, we get a 
+\begin_inset Formula $15\times15$
+\end_inset
+
+ matrix.
+ The top-left 
+\begin_inset Formula $9\times9$
+\end_inset
+
+ is the same as 
+\begin_inset Formula $A_{k}$
+\end_inset
+
+, thus we only have the jacobians wrpt the biases left to account for.
+\end_layout
+
+\begin_layout Standard
+Conveniently, the jacobians of the pose and velocity wrpt the biases are
+ already computed in the 
+\emph on
+ImuFactor 
+\emph default
+derivation as matrices 
+\begin_inset Formula $B_{k}$
+\end_inset
+
+ and 
+\begin_inset Formula $C_{k}$
+\end_inset
+
+, while they are identity matrices wrpt the biases themselves.
+ Thus, we can easily plug-in the values from the previous section to give
+ us the final result
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+F_{k}=\left[\begin{array}{ccccc}
+I_{3\times3}-\frac{\Delta_{t}}{2}\Skew{\omega_{k}^{b}} &  &  &  & H(\theta_{k})^{-1}\Delta_{t}\\
+R_{k}\Skew{-a_{k}^{b}}H(\theta_{k})\frac{\Delta_{t}}{2}^{2} & I_{3\times3} & I_{3\times3}\Delta_{t} & R_{k}\frac{\Delta_{t}}{2}^{2}\\
+R_{k}\Skew{-a_{k}^{b}}H(\theta_{k})\Delta_{t} &  & I_{3\times3} & R_{k}\Delta_{t}\\
+ &  &  & I_{3\times3}\\
+ &  &  &  & I_{3\times3}
 \end{array}\right]
 \]
 
