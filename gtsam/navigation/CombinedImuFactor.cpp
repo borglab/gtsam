@@ -130,8 +130,7 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
   const Matrix3& iCov = p().integrationCovariance;
 
   // first order uncertainty propagation
-  // Optimized matrix multiplication:  (1/dt) * G * measurementCovariance *
-  // G.transpose()
+  // Optimized matrix mult: (1/dt) * G * measurementCovariance * G.transpose()
   Eigen::Matrix<double, 15, 15> G_measCov_Gt;
   G_measCov_Gt.setZero(15, 15);
 
@@ -144,9 +143,11 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
   D_v_v(&G_measCov_Gt) = (1 / dt) * vel_H_biasAcc
       * aCov_updated
       * (vel_H_biasAcc.transpose());
+
   D_R_R(&G_measCov_Gt) = (1 / dt) * theta_H_biasOmega
       * (wCov + p().biasAccOmegaInt.block<3, 3>(3, 3))
       * (theta_H_biasOmega.transpose());
+
   D_a_a(&G_measCov_Gt) = dt * p().biasAccCovariance;
   D_g_g(&G_measCov_Gt) = dt * p().biasOmegaCovariance;
 
