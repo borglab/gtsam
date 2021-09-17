@@ -204,6 +204,48 @@ TEST(CombinedImuFactor, PredictRotation) {
 }
 
 /* ************************************************************************* */
+// Testing covariance to check if all the jacobians are accounted for.
+TEST(CombinedImuFactor, CheckCovariance) {
+  auto params = PreintegrationCombinedParams::MakeSharedU(9.81);
+
+  params->setAccelerometerCovariance(pow(0.01, 2) * I_3x3);
+  params->setGyroscopeCovariance(pow(1.75e-4, 2) * I_3x3);
+  params->setIntegrationCovariance(pow(0.0, 2) * I_3x3);
+  params->setOmegaCoriolis(Vector3::Zero());
+
+  imuBias::ConstantBias currentBias;
+
+  PreintegratedCombinedMeasurements actual(params, currentBias);
+
+  // Measurements
+  Vector3 measuredAcc(0.1577, -0.8251, 9.6111);
+  Vector3 measuredOmega(-0.0210, 0.0311, 0.0145);
+  double deltaT = 0.01;
+
+  actual.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+
+  Eigen::Matrix<double, 15, 15> expected;
+  expected << 0.01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  //
+      0, 0.01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,          //
+      0, 0, 0.01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,          //
+      0, 0, 0, 2.50025e-07, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   //
+      0, 0, 0, 0, 2.50025e-07, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   //
+      0, 0, 0, 0, 0, 2.50025e-07, 0, 0, 0, 0, 0, 0, 0, 0, 0,   //
+      0, 0, 0, 0, 0, 0, 0.010001, 0, 0, 0, 0, 0, 0, 0, 0,      //
+      0, 0, 0, 0, 0, 0, 0, 0.010001, 0, 0, 0, 0, 0, 0, 0,      //
+      0, 0, 0, 0, 0, 0, 0, 0, 0.010001, 0, 0, 0, 0, 0, 0,      //
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0.01, 0, 0, 0, 0, 0,          //
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.01, 0, 0, 0, 0,          //
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.01, 0, 0, 0,          //
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.01, 0, 0,          //
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.01, 0,          //
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.01;
+
+  // regression
+  EXPECT(assert_equal(expected, actual.preintMeasCov()));
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
