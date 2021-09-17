@@ -110,9 +110,9 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
   // and preintegrated measurements
 
   // Single Jacobians to propagate covariance
-  Matrix3 theta_H_biasOmega = -C.topRows<3>();
-  Matrix3 pos_H_biasAcc = -B.middleRows<3>(3);
-  Matrix3 vel_H_biasAcc = -B.bottomRows<3>();
+  Matrix3 theta_H_biasOmega = C.topRows<3>();
+  Matrix3 pos_H_biasAcc = B.middleRows<3>(3);
+  Matrix3 vel_H_biasAcc = B.bottomRows<3>();
 
   // overall Jacobian wrt preintegrated measurements (df/dx)
   Eigen::Matrix<double, 15, 15> F;
