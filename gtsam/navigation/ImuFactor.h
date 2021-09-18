@@ -44,6 +44,8 @@ typedef ManifoldPreintegration PreintegrationType;
  * C. Forster, L. Carlone, F. Dellaert, D. Scaramuzza, "IMU Preintegration on
  * Manifold for Efficient Visual-Inertial Maximum-a-Posteriori Estimation",
  * Robotics: Science and Systems (RSS), 2015.
+ * 
+ * [3] is available in this repo as "PreintegratedIMUJacobians.pdf".
  *
  * REFERENCES:
  * [1] G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups",
