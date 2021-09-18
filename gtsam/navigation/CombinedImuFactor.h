@@ -42,6 +42,8 @@ typedef ManifoldPreintegration PreintegrationType;
  * L. Carlone, Z. Kira, C. Beall, V. Indelman, F. Dellaert, Eliminating
  * conditionally independent sets in factor graphs: a unifying perspective based
  * on smart factors, Int. Conf. on Robotics and Automation (ICRA), 2014.
+ * 
+ * [3] is available in this repo as "PreintegratedIMUJacobians.pdf".
  *
  * REFERENCES:
  * [1] G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups",
