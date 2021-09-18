@@ -119,24 +119,27 @@ class Constructor:
     Can have 0 or more arguments.
     """
     rule = (
-        IDENT("name")  #
+        Optional(Template.rule("template"))  #
+        + IDENT("name")  #
         + LPAREN  #
         + ArgumentList.rule("args_list")  #
         + RPAREN  #
         + SEMI_COLON  # BR
-    ).setParseAction(lambda t: Constructor(t.name, t.args_list))
+    ).setParseAction(lambda t: Constructor(t.name, t.args_list, t.template))
 
     def __init__(self,
                  name: str,
                  args: ArgumentList,
+                 template: Union[Template, Any],
                  parent: Union["Class", Any] = ''):
         self.name = name
         self.args = args
+        self.template = template
 
         self.parent = parent
 
     def __repr__(self) -> str:
-        return "Constructor: {}".format(self.name)
+        return "Constructor: {}{}".format(self.name, self.args)
 
 
 class Operator:
@@ -260,17 +263,9 @@ class Class:
         + RBRACE  #
         + SEMI_COLON  # BR
     ).setParseAction(lambda t: Class(
-        t.template,
-        t.is_virtual,
-        t.name,
-        t.parent_class,
-        t.members.ctors,
-        t.members.methods,
-        t.members.static_methods,
-        t.members.properties,
-        t.members.operators,
-        t.members.enums
-    ))
+        t.template, t.is_virtual, t.name, t.parent_class, t.members.ctors, t.
+        members.methods, t.members.static_methods, t.members.properties, t.
+        members.operators, t.members.enums))
 
     def __init__(
         self,
