@@ -86,6 +86,12 @@ PYBIND11_MODULE(class_py, m_) {
     py::class_<ForwardKinematics, std::shared_ptr<ForwardKinematics>>(m_, "ForwardKinematics")
         .def(py::init<const gtdynamics::Robot&, const string&, const string&, const gtsam::Values&, const gtsam::Pose3&>(), py::arg("robot"), py::arg("start_link_name"), py::arg("end_link_name"), py::arg("joint_angles"), py::arg("l2Tp") = gtsam::Pose3());
 
+    py::class_<TemplatedConstructor, std::shared_ptr<TemplatedConstructor>>(m_, "TemplatedConstructor")
+        .def(py::init<>())
+        .def(py::init<const string&>(), py::arg("arg"))
+        .def(py::init<const int&>(), py::arg("arg"))
+        .def(py::init<const double&>(), py::arg("arg"));
+
     py::class_<MyFactor<gtsam::Pose2, gtsam::Matrix>, std::shared_ptr<MyFactor<gtsam::Pose2, gtsam::Matrix>>>(m_, "MyFactorPosePoint2")
         .def(py::init<size_t, size_t, double, const std::shared_ptr<gtsam::noiseModel::Base>>(), py::arg("key1"), py::arg("key2"), py::arg("measured"), py::arg("noiseModel"))
         .def("print",[](MyFactor<gtsam::Pose2, gtsam::Matrix>* self, const string& s, const gtsam::KeyFormatter& keyFormatter){ py::scoped_ostream_redirect output; self->print(s, keyFormatter);}, py::arg("s") = "factor: ", py::arg("keyFormatter") = gtsam::DefaultKeyFormatter)
