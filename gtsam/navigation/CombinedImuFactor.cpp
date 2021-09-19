@@ -134,18 +134,19 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
   Eigen::Matrix<double, 15, 15> G_measCov_Gt;
   G_measCov_Gt.setZero(15, 15);
 
-  Matrix3 aCov_updated = (aCov + p().biasAccOmegaInt.block<3, 3>(0, 0));
+  Matrix3 aCov_updated = aCov + p().biasAccOmegaInt.block<3, 3>(0, 0);
+  Matrix3 wCov_updated = wCov + p().biasAccOmegaInt.block<3, 3>(3, 3);
 
   // BLOCK DIAGONAL TERMS
-  D_t_t(&G_measCov_Gt) = ((1 / dt) * pos_H_biasAcc
-      * aCov_updated
-      * (pos_H_biasAcc.transpose())) + (dt * iCov);
+  D_t_t(&G_measCov_Gt) = (pos_H_biasAcc
+      * (aCov / dt)  // aCov_updated / dt
+      * pos_H_biasAcc.transpose()) + (dt * iCov);
   D_v_v(&G_measCov_Gt) = (1 / dt) * vel_H_biasAcc
-      * aCov_updated
+      * (aCov / dt)  // aCov_updated / dt
       * (vel_H_biasAcc.transpose());
 
   D_R_R(&G_measCov_Gt) = (1 / dt) * theta_H_biasOmega
-      * (wCov + p().biasAccOmegaInt.block<3, 3>(3, 3))
+      * (wCov / dt)  // wCov_updated / dt
       * (theta_H_biasOmega.transpose());
 
   D_a_a(&G_measCov_Gt) = dt * p().biasAccCovariance;
@@ -155,7 +156,9 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
   Matrix3 temp = vel_H_biasAcc * p().biasAccOmegaInt.block<3, 3>(3, 0)
       * theta_H_biasOmega.transpose();
   D_v_R(&G_measCov_Gt) = temp;
+  D_v_t(&G_measCov_Gt) = vel_H_biasAcc * (aCov / dt) * pos_H_biasAcc.transpose();
   D_R_v(&G_measCov_Gt) = temp.transpose();
+  D_t_v(&G_measCov_Gt) = pos_H_biasAcc * (aCov / dt) * vel_H_biasAcc.transpose();
 
   preintMeasCov_ = F * preintMeasCov_ * F.transpose() + G_measCov_Gt;
 }
