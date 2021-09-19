@@ -89,7 +89,8 @@ list(APPEND gtsam_srcs "${PROJECT_BINARY_DIR}/config.h" "${PROJECT_BINARY_DIR}/d
 install(FILES "${PROJECT_BINARY_DIR}/config.h" "${PROJECT_BINARY_DIR}/dllexport.h" DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtsam)
 
 if(GTSAM_SUPPORT_NESTED_DISSECTION)
-    list(APPEND GTSAM_ADDITIONAL_LIBRARIES metis-gtsam)
+    # target metis-gtsam-if is defined in both cases: embedded metis or system version:
+    list(APPEND GTSAM_ADDITIONAL_LIBRARIES metis-gtsam-if)
 endif()
 
 # Versions
@@ -155,16 +156,6 @@ target_include_directories(gtsam SYSTEM BEFORE PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/CCOLAMD/Include>
   $<INSTALL_INTERFACE:include/gtsam/3rdparty/CCOLAMD>
 )
-if(GTSAM_SUPPORT_NESTED_DISSECTION)
-  target_include_directories(gtsam BEFORE PUBLIC
-    $<BUILD_INTERFACE:${GTSAM_SOURCE_DIR}/gtsam/3rdparty/metis/include>
-    $<BUILD_INTERFACE:${GTSAM_SOURCE_DIR}/gtsam/3rdparty/metis/libmetis>
-    $<BUILD_INTERFACE:${GTSAM_SOURCE_DIR}/gtsam/3rdparty/metis/GKlib>
-    $<INSTALL_INTERFACE:include/gtsam/3rdparty/metis/>
-  )
-endif()
-
-
 
 if(WIN32) # Add 'lib' prefix to static library to avoid filename collision with shared library
 	if (NOT BUILD_SHARED_LIBS)

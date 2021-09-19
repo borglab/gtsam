@@ -69,6 +69,16 @@ PYBIND11_MODULE(enum_py, m_) {
         .value("Groot", gtsam::MCU::GotG::Groot);
 
 
+    py::class_<gtsam::Optimizer<gtsam::GaussNewtonParams>, std::shared_ptr<gtsam::Optimizer<gtsam::GaussNewtonParams>>> optimizergaussnewtonparams(m_gtsam, "OptimizerGaussNewtonParams");
+    optimizergaussnewtonparams
+        .def("setVerbosity",[](gtsam::Optimizer<gtsam::GaussNewtonParams>* self, const Optimizer<gtsam::GaussNewtonParams>::Verbosity value){ self->setVerbosity(value);}, py::arg("value"));
+
+    py::enum_<gtsam::Optimizer<gtsam::GaussNewtonParams>::Verbosity>(optimizergaussnewtonparams, "Verbosity", py::arithmetic())
+        .value("SILENT", gtsam::Optimizer<gtsam::GaussNewtonParams>::Verbosity::SILENT)
+        .value("SUMMARY", gtsam::Optimizer<gtsam::GaussNewtonParams>::Verbosity::SUMMARY)
+        .value("VERBOSE", gtsam::Optimizer<gtsam::GaussNewtonParams>::Verbosity::VERBOSE);
+
+
 
 #include "python/specializations.h"
 
