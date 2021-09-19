@@ -38,11 +38,14 @@ if(${GTSAM_SOURCE_DIR} STREQUAL ${GTSAM_BINARY_DIR})
   message(FATAL_ERROR "In-source builds not allowed. Please make a new directory (called a build directory) and run CMake from there. You may need to remove CMakeCache.txt. ")
 endif()
 
+include(cmake/HandleGeneralOptions.cmake)   # CMake build options
+
+# Libraries:
 include(cmake/HandleBoost.cmake)            # Boost
 include(cmake/HandleCCache.cmake)           # ccache
 include(cmake/HandleCPack.cmake)            # CPack
 include(cmake/HandleEigen.cmake)            # Eigen3
-include(cmake/HandleGeneralOptions.cmake)  # CMake build options
+include(cmake/HandleMetis.cmake)            # metis
 include(cmake/HandleMKL.cmake)              # MKL
 include(cmake/HandleOpenMP.cmake)           # OpenMP
 include(cmake/HandlePerfTools.cmake)        # Google perftools
