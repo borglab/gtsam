@@ -141,11 +141,11 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
   D_t_t(&G_measCov_Gt) = (pos_H_biasAcc
       * (aCov / dt)  // aCov_updated / dt
       * pos_H_biasAcc.transpose()) + (dt * iCov);
-  D_v_v(&G_measCov_Gt) = (1 / dt) * vel_H_biasAcc
+  D_v_v(&G_measCov_Gt) = vel_H_biasAcc
       * (aCov / dt)  // aCov_updated / dt
       * (vel_H_biasAcc.transpose());
 
-  D_R_R(&G_measCov_Gt) = (1 / dt) * theta_H_biasOmega
+  D_R_R(&G_measCov_Gt) = theta_H_biasOmega
       * (wCov / dt)  // wCov_updated / dt
       * (theta_H_biasOmega.transpose());
 
