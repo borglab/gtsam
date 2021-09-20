@@ -269,27 +269,14 @@ static boost::shared_ptr<PreintegratedCombinedMeasurements::Params> Params() {
 //   EXPECT(assert_equal(expected, actual.preintMeasCov()));
 // }
 
-TEST(CombinedImuFactor, SameCovarianceCombined) {
-  auto params = PreintegrationCombinedParams::MakeSharedU();
-
-  params->setAccelerometerCovariance(pow(0.01, 2) * I_3x3);
-  params->setGyroscopeCovariance(pow(1.75e-4, 2) * I_3x3);
-  params->setIntegrationCovariance(pow(0, 2) * I_3x3);
-  params->setOmegaCoriolis(Vector3::Zero());
-
-  imuBias::ConstantBias currentBias;
-
-  PreintegratedCombinedMeasurements pim(params, currentBias);
+TEST(CombinedImuFactor, SameCovariance) {
 
   Vector3 accMeas(0.1577, -0.8251, 9.6111);
   Vector3 omegaMeas(-0.0210, 0.0311, 0.0145);
   double deltaT = 0.01;
-  pim.integrateMeasurement(accMeas, omegaMeas, deltaT);
 
-  std::cout << pim.preintMeasCov() << std::endl << std::endl;
-}
-
-TEST(CombinedImuFactor, SameCovariance) {
+  imuBias::ConstantBias currentBias;
+  
   auto params = PreintegrationParams::MakeSharedU();
 
   params->setAccelerometerCovariance(pow(0.01, 2) * I_3x3);
@@ -297,16 +284,23 @@ TEST(CombinedImuFactor, SameCovariance) {
   params->setIntegrationCovariance(pow(0, 2) * I_3x3);
   params->setOmegaCoriolis(Vector3::Zero());
 
-  imuBias::ConstantBias currentBias;
-
   PreintegratedImuMeasurements pim(params, currentBias);
-
-  Vector3 accMeas(0.1577, -0.8251, 9.6111);
-  Vector3 omegaMeas(-0.0210, 0.0311, 0.0145);
-  double deltaT = 0.01;
   pim.integrateMeasurement(accMeas, omegaMeas, deltaT);
 
-  std::cout << pim.preintMeasCov() << std::endl << std::endl;
+  // std::cout << pim.preintMeasCov() << std::endl << std::endl;
+
+  auto combined_params = PreintegrationCombinedParams::MakeSharedU();
+
+  combined_params->setAccelerometerCovariance(pow(0.01, 2) * I_3x3);
+  combined_params->setGyroscopeCovariance(pow(1.75e-4, 2) * I_3x3);
+  combined_params->setIntegrationCovariance(pow(0, 2) * I_3x3);
+  combined_params->setOmegaCoriolis(Vector3::Zero());
+
+  PreintegratedCombinedMeasurements cpim(combined_params, currentBias);
+  cpim.integrateMeasurement(accMeas, omegaMeas, deltaT);
+
+  // std::cout << cpim.preintMeasCov() << std::endl << std::endl;
+  EXPECT(assert_equal(pim.preintMeasCov(), cpim.preintMeasCov().block(0, 0, 9, 9)));
 }
 
 
