@@ -314,6 +314,25 @@ class TestInterfaceParser(unittest.TestCase):
         self.assertEqual(5, len(ret.args))
         self.assertEqual("gtsam::Pose3()", ret.args.list()[4].default)
 
+    def test_constructor_templated(self):
+        """Test for templated class constructor."""
+        f = """
+        template<T = {double, int}>
+        Class();
+        """
+        ret = Constructor.rule.parseString(f)[0]
+        self.assertEqual("Class", ret.name)
+        self.assertEqual(0, len(ret.args))
+
+        f = """
+        template<T = {double, int}>
+        Class(const T& name);
+        """
+        ret = Constructor.rule.parseString(f)[0]
+        self.assertEqual("Class", ret.name)
+        self.assertEqual(1, len(ret.args))
+        self.assertEqual("const T & name", ret.args.args_list[0].to_cpp())
+
     def test_operator_overload(self):
         """Test for operator overloading."""
         # Unary operator
