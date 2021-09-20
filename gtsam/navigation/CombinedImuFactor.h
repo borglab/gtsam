@@ -42,8 +42,6 @@ typedef ManifoldPreintegration PreintegrationType;
  * L. Carlone, Z. Kira, C. Beall, V. Indelman, F. Dellaert, Eliminating
  * conditionally independent sets in factor graphs: a unifying perspective based
  * on smart factors, Int. Conf. on Robotics and Automation (ICRA), 2014.
- * 
- * [3] is available in this repo as "PreintegratedIMUJacobians.pdf".
  *
  * REFERENCES:
  * [1] G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups",
@@ -53,6 +51,7 @@ typedef ManifoldPreintegration PreintegrationType;
  *     TRO, 28(1):61-76, 2012.
  * [3] L. Carlone, S. Williams, R. Roberts, "Preintegrated IMU factor:
  *     Computation of the Jacobian Matrices", Tech. Report, 2013.
+ *     Available in this repo as "PreintegratedIMUJacobians.pdf".
  * [4] C. Forster, L. Carlone, F. Dellaert, D. Scaramuzza, IMU Preintegration on
  *     Manifold for Efficient Visual-Inertial Maximum-a-Posteriori Estimation,
  *     Robotics: Science and Systems (RSS), 2015.
