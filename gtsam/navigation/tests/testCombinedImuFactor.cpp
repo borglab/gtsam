@@ -75,16 +75,16 @@ static boost::shared_ptr<PreintegratedCombinedMeasurements::Params> Params() {
 // TEST(CombinedImuFactor, Accelerating) {
 //   const double a = 0.2, v = 50;
 
-//   // Set up body pointing towards y axis, and start at 10,20,0 with velocity going in X
-//   // The body itself has Z axis pointing down
+//   // Set up body pointing towards y axis, and start at 10,20,0 with velocity
+//   // going in X The body itself has Z axis pointing down
 //   const Rot3 nRb(Point3(0, 1, 0), Point3(1, 0, 0), Point3(0, 0, -1));
 //   const Point3 initial_position(10, 20, 0);
 //   const Vector3 initial_velocity(v, 0, 0);
 
 //   const AcceleratingScenario scenario(nRb, initial_position, initial_velocity,
-//       Vector3(a, 0, 0));
+//                                       Vector3(a, 0, 0));
 
-//   const double T = 3.0; // seconds
+//   const double T = 3.0;  // seconds
 //   CombinedScenarioRunner runner(scenario, testing::Params(), T / 10);
 
 //   PreintegratedCombinedMeasurements pim = runner.integrate(T);
@@ -92,7 +92,7 @@ static boost::shared_ptr<PreintegratedCombinedMeasurements::Params> Params() {
 
 //   auto estimatedCov = runner.estimateCovariance(T, 100);
 //   Eigen::Matrix<double, 15, 15> expected = pim.preintMeasCov();
-//   // EXPECT(assert_equal(estimatedCov, expected, 0.1));
+//   EXPECT(assert_equal(estimatedCov, expected, 0.1));
 // }
 
 // /* ************************************************************************* */
@@ -268,38 +268,42 @@ static boost::shared_ptr<PreintegratedCombinedMeasurements::Params> Params() {
 //   // regression
 //   EXPECT(assert_equal(expected, actual.preintMeasCov()));
 // }
-
+// Test that the covariance values for the ImuFactor and the CombinedImuFactor (top-left 9x9) are the same
 TEST(CombinedImuFactor, SameCovariance) {
 
+  // IMU measurements and time delta
   Vector3 accMeas(0.1577, -0.8251, 9.6111);
   Vector3 omegaMeas(-0.0210, 0.0311, 0.0145);
   double deltaT = 0.01;
 
+  // Assume zero bias
   imuBias::ConstantBias currentBias;
   
+  // Define params for ImuFactor
   auto params = PreintegrationParams::MakeSharedU();
-
   params->setAccelerometerCovariance(pow(0.01, 2) * I_3x3);
   params->setGyroscopeCovariance(pow(1.75e-4, 2) * I_3x3);
   params->setIntegrationCovariance(pow(0, 2) * I_3x3);
   params->setOmegaCoriolis(Vector3::Zero());
 
+  // The IMU preintegration object for ImuFactor
   PreintegratedImuMeasurements pim(params, currentBias);
   pim.integrateMeasurement(accMeas, omegaMeas, deltaT);
 
-  // std::cout << pim.preintMeasCov() << std::endl << std::endl;
-
+  // Define params for CombinedImuFactor
   auto combined_params = PreintegrationCombinedParams::MakeSharedU();
-
   combined_params->setAccelerometerCovariance(pow(0.01, 2) * I_3x3);
   combined_params->setGyroscopeCovariance(pow(1.75e-4, 2) * I_3x3);
   combined_params->setIntegrationCovariance(pow(0, 2) * I_3x3);
   combined_params->setOmegaCoriolis(Vector3::Zero());
+  // Set bias integration covariance explicitly to zero
+  combined_params->setBiasAccOmegaInt(Z_6x6);
 
+  // The IMU preintegration object for CombinedImuFactor
   PreintegratedCombinedMeasurements cpim(combined_params, currentBias);
   cpim.integrateMeasurement(accMeas, omegaMeas, deltaT);
 
-  // std::cout << cpim.preintMeasCov() << std::endl << std::endl;
+  // Assert if the noise covariance 
   EXPECT(assert_equal(pim.preintMeasCov(), cpim.preintMeasCov().block(0, 0, 9, 9)));
 }
 
