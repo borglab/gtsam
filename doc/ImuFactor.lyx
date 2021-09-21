@@ -1427,15 +1427,34 @@ pose/velocity/bias
 
 \begin_layout Standard
 We expand the state vector as 
-\begin_inset Formula $\zeta_{k}=[\theta_{k},p_{k},v_{k},a_{k}^{b}, \omega_{k}^{b}]$
+\begin_inset Formula $\zeta_{k}=[\theta_{k},p_{k},v_{k},b_{k}^{a},b_{k}^{\omega}]$
 \end_inset
 
-.
- For the jacobian 
+ to include the bias terms.
+ This gives the noise propagation equation as
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+\Sigma_{k+1}=F_{k}\Sigma_{k}F_{k}^{T}+G_{k}\Sigma_{k}G_{k}\label{eq:prop-combined}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+where 
 \begin_inset Formula $F_{k}$
 \end_inset
 
- of 
+ is the 
+\begin_inset Formula $15\times15$
+\end_inset
+
+ derivative of 
 \begin_inset Formula $f$
 \end_inset
 
@@ -1443,13 +1462,21 @@ We expand the state vector as
 \begin_inset Formula $\zeta$
 \end_inset
 
-, we get a 
+, and 
+\begin_inset Formula $G_{k}$
+\end_inset
+
+ is the 
 \begin_inset Formula $15\times15$
 \end_inset
 
- matrix.
+ matrix for first order uncertainty propagation.
  The top-left 
 \begin_inset Formula $9\times9$
+\end_inset
+
+ of 
+\begin_inset Formula $F_{k}$
 \end_inset
 
  is the same as 
@@ -1481,7 +1508,7 @@ derivation as matrices
 \begin_layout Standard
 \begin_inset Formula 
 \[
-F_{k}=\left[\begin{array}{ccccc}
+F_{k}\approx\left[\begin{array}{ccccc}
 I_{3\times3}-\frac{\Delta_{t}}{2}\Skew{\omega_{k}^{b}} &  &  &  & H(\theta_{k})^{-1}\Delta_{t}\\
 R_{k}\Skew{-a_{k}^{b}}H(\theta_{k})\frac{\Delta_{t}}{2}^{2} & I_{3\times3} & I_{3\times3}\Delta_{t} & R_{k}\frac{\Delta_{t}}{2}^{2}\\
 R_{k}\Skew{-a_{k}^{b}}H(\theta_{k})\Delta_{t} &  & I_{3\times3} & R_{k}\Delta_{t}\\
