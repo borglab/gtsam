@@ -75,16 +75,12 @@ void PreintegratedImuMeasurements::integrateMeasurement(
   // (1/dt) allows to pass from continuous time noise to discrete time noise
   // Update the uncertainty on the state (matrix A in [4]).
   preintMeasCov_ = A * preintMeasCov_ * A.transpose();
-  // std::cout << "A * p * A\n" << preintMeasCov_ << std::endl;
   // These 2 updates account for uncertainty on the IMU measurement (matrix B in [4]).
   preintMeasCov_.noalias() += B * (aCov / dt) * B.transpose();
-  // std::cout << "p + B\n" << preintMeasCov_ << std::endl;
   preintMeasCov_.noalias() += C * (wCov / dt) * C.transpose();
-  // std::cout << "ApA' + B + C\n" << preintMeasCov_ << std::endl;
 
   // NOTE(frank): (Gi*dt)*(C/dt)*(Gi'*dt), with Gi << Z_3x3, I_3x3, Z_3x3 (9x3 matrix)
   preintMeasCov_.block<3, 3>(3, 3).noalias() += iCov * dt;
-  // std::cout << "p + iCov\n" << preintMeasCov_ << std::endl;
 }
 
 //------------------------------------------------------------------------------
