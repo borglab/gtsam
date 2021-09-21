@@ -123,6 +123,9 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
   F.block<3, 3>(6, 9) = vel_H_biasAcc;
   F.block<6, 6>(9, 9) = I_6x6;
 
+  // Update the uncertainty on the state (matrix F in [4]).
+  preintMeasCov_ = F * preintMeasCov_ * F.transpose();
+
   // propagate uncertainty
   // TODO(frank): use noiseModel routine so we can have arbitrary noise models.
   const Matrix3& aCov = p().accelerometerCovariance;
@@ -138,15 +141,15 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
   Matrix3 wCov_updated = wCov + p().biasAccOmegaInt.block<3, 3>(3, 3);
 
   // BLOCK DIAGONAL TERMS
-  D_t_t(&G_measCov_Gt) = (pos_H_biasAcc
-      * (aCov / dt)  // aCov_updated / dt
+  D_t_t(&G_measCov_Gt) = (pos_H_biasAcc  //
+      * (aCov_updated / dt)  //
       * pos_H_biasAcc.transpose()) + (dt * iCov);
-  D_v_v(&G_measCov_Gt) = vel_H_biasAcc
-      * (aCov / dt)  // aCov_updated / dt
+  D_v_v(&G_measCov_Gt) = vel_H_biasAcc  //
+      * (aCov_updated / dt)  //
       * (vel_H_biasAcc.transpose());
 
-  D_R_R(&G_measCov_Gt) = theta_H_biasOmega
-      * (wCov / dt)  // wCov_updated / dt
+  D_R_R(&G_measCov_Gt) = theta_H_biasOmega  //
+      * (wCov_updated / dt)  //
       * (theta_H_biasOmega.transpose());
 
   D_a_a(&G_measCov_Gt) = dt * p().biasAccCovariance;
@@ -160,7 +163,7 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
   D_R_v(&G_measCov_Gt) = temp.transpose();
   D_t_v(&G_measCov_Gt) = pos_H_biasAcc * (aCov / dt) * vel_H_biasAcc.transpose();
 
-  preintMeasCov_ = F * preintMeasCov_ * F.transpose() + G_measCov_Gt;
+  preintMeasCov_.noalias() += G_measCov_Gt;
 }
 
 //------------------------------------------------------------------------------
