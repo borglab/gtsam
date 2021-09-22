@@ -68,13 +68,15 @@ const Vector3& NavState::velocity(OptionalJacobian<3, 9> H) const {
 }
 
 //------------------------------------------------------------------------------
-Vector3 NavState::bodyVelocity(OptionalJacobian<3, 9> H) const {
+Vector3 NavState::bodyVelocity(const Vector3& b_omega,
+                               OptionalJacobian<3, 9> H) const {
   const Rot3& nRb = R_;
-  const Vector3& n_v = v_;
+  // Simplification of the matrix multiplication between adjoint and twist
+  // plus moving terms around.
+  const Vector3& n_v = v_ - (skewSymmetric(t_) * nRb.matrix() * b_omega);
   Matrix3 D_bv_nRb;
   Vector3 b_v = nRb.unrotate(n_v, H ? &D_bv_nRb : 0);
-  if (H)
-    *H << D_bv_nRb, Z_3x3, I_3x3;
+  if (H) *H << D_bv_nRb, Z_3x3, I_3x3;
   return b_v;
 }
 
@@ -174,7 +176,7 @@ NavState NavState::update(const Vector3& b_acceleration, const Vector3& b_omega,
 
   Vector9 xi;
   Matrix39 D_xiP_state;
-  Vector3 b_v = bodyVelocity(F ? &D_xiP_state : 0);
+  Vector3 b_v = bodyVelocity(b_omega, F ? &D_xiP_state : 0);
   double dt22 = 0.5 * dt * dt;
 
   // Integrate on tangent space. TODO(frank): coriolis?
