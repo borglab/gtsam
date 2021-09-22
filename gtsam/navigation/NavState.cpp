@@ -73,7 +73,9 @@ Vector3 NavState::bodyVelocity(const Vector3& b_omega,
   const Rot3& nRb = R_;
   // Simplification of the matrix multiplication between adjoint and twist
   // plus moving terms around.
-  const Vector3& n_v = v_ - (skewSymmetric(t_) * nRb.matrix() * b_omega);
+  //TODO(Varun) Compute correct jacobians
+  Matrix3 t_cross = skewSymmetric(t_);
+  const Vector3& n_v = v_ - (t_cross * nRb.matrix() * b_omega);
   Matrix3 D_bv_nRb;
   Vector3 b_v = nRb.unrotate(n_v, H ? &D_bv_nRb : 0);
   if (H) *H << D_bv_nRb, Z_3x3, I_3x3;
