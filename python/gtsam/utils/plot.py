@@ -23,7 +23,10 @@ def set_axes_equal(fignum: int) -> None:
       fignum: An integer representing the figure number for Matplotlib.
     """
     fig = plt.figure(fignum)
-    ax = fig.gca(projection='3d')
+    if not fig.axes:
+        ax = fig.add_subplot(projection='3d')
+    else:
+        ax = fig.axes[0]
 
     limits = np.array([
         ax.get_xlim3d(),
@@ -339,7 +342,11 @@ def plot_pose3(
     """
     # get figure object
     fig = plt.figure(fignum)
-    axes = fig.gca(projection='3d')
+    if not fig.axes:
+        axes = fig.add_subplot(projection='3d')
+    else:
+        axes = fig.axes[0]
+
     plot_pose3_on_axes(axes, pose, P=P, axis_length=axis_length)
 
     axes.set_xlabel(axis_labels[0])
