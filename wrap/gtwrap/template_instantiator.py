@@ -41,6 +41,8 @@ def instantiate_type(ctype: parser.Type,
 
     str_arg_typename = str(ctype.typename)
 
+    # Instantiate templates which have enumerated instantiations in the template.
+    # E.g. `template<T={double}>`.
     if str_arg_typename in template_typenames:
         idx = template_typenames.index(str_arg_typename)
         return parser.Type(
@@ -51,14 +53,15 @@ def instantiate_type(ctype: parser.Type,
             is_ref=ctype.is_ref,
             is_basic=ctype.is_basic,
         )
+
+    # If a method has the keyword `This`, we replace it with the (instantiated) class.
     elif str_arg_typename == 'This':
+        # Check if the class is template instantiated
+        # so we can replace it with the instantiated version.
         if instantiated_class:
             name = instantiated_class.original.name
             namespaces_name = instantiated_class.namespaces()
             namespaces_name.append(name)
-            # print("INST: {}, {}, CPP: {}, CLS: {}".format(
-            #     ctype, instantiations, cpp_typename, instantiated_class.instantiations
-            # ), file=sys.stderr)
             cpp_typename = parser.Typename(
                 namespaces_name,
                 instantiations=instantiated_class.instantiations)
@@ -71,6 +74,14 @@ def instantiate_type(ctype: parser.Type,
             is_ref=ctype.is_ref,
             is_basic=ctype.is_basic,
         )
+
+    # Case when 'This' is present in the type namespace, e.g `This::Subclass`.
+    elif 'This' in str_arg_typename:
+        # Simply get the index of `This` in the namespace and replace it with the instantiated name.
+        namespace_idx = ctype.typename.namespaces.index('This')
+        ctype.typename.namespaces[namespace_idx] = cpp_typename.name
+        return ctype
+
     else:
         return ctype
 
@@ -368,19 +379,45 @@ class InstantiatedClass(parser.Class):
         """
         instantiated_ctors = []
 
-        for ctor in self.original.ctors:
+        def instantiate(instantiated_ctors, ctor, typenames, instantiations):
             instantiated_args = instantiate_args_list(
                 ctor.args.list(),
                 typenames,
-                self.instantiations,
+                instantiations,
                 self.cpp_typename(),
             )
             instantiated_ctors.append(
                 parser.Constructor(
                     name=self.name,
                     args=parser.ArgumentList(instantiated_args),
+                    template=self.original.template,
                     parent=self,
                 ))
+            return instantiated_ctors
+
+        for ctor in self.original.ctors:
+            # Add constructor templates to the typenames and instantiations
+            if isinstance(ctor.template, parser.template.Template):
+                typenames.extend(ctor.template.typenames)
+
+                # Get all combinations of template args
+                for instantiations in itertools.product(
+                        *ctor.template.instantiations):
+                    instantiations = self.instantiations + list(instantiations)
+
+                    instantiated_ctors = instantiate(
+                        instantiated_ctors,
+                        ctor,
+                        typenames=typenames,
+                        instantiations=instantiations)
+
+            else:
+                # If no constructor level templates, just use the class templates
+                instantiated_ctors = instantiate(
+                    instantiated_ctors,
+                    ctor,
+                    typenames=typenames,
+                    instantiations=self.instantiations)
         return instantiated_ctors
 
     def instantiate_static_methods(self, typenames):
