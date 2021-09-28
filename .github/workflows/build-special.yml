@@ -55,6 +55,12 @@ jobs:
             version: "9"
             flag: cayley
 
+          - name: ubuntu-system-libs
+            os: ubuntu-18.04
+            compiler: gcc
+            version: "9"
+            flag: system-libs
+
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -125,6 +131,12 @@ jobs:
           echo "GTSAM_POSE3_EXPMAP=OFF" >> $GITHUB_ENV
           echo "GTSAM_ROT3_EXPMAP=OFF" >> $GITHUB_ENV
           echo "GTSAM Uses Cayley map for Rot3"
+
+      - name: Use system versions of 3rd party libraries
+        if: matrix.flag == 'system'
+        run: |
+          echo "GTSAM_USE_SYSTEM_EIGEN=ON" >> $GITHUB_ENV
+          echo "GTSAM_USE_SYSTEM_METIS=ON" >> $GITHUB_ENV
 
       - name: Build & Test
         run: |
