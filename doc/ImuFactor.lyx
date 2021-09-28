@@ -1433,7 +1433,7 @@ Given the above solutions to the differential equations, we add noise modeling
 \begin_layout Standard
 \begin_inset Formula 
 \begin{eqnarray}
-\theta_{k+1} & = & \theta_{k}+H(\theta_{k})^{-1}\,(\omega_{k}^{b}+\epsilon_{k}^{\omega} -b_{k}^{\omega}-\epsilon_{init}^{\omega})\Delta_{t}\nonumber \\
+\theta_{k+1} & = & \theta_{k}+H(\theta_{k})^{-1}\,(\omega_{k}^{b}+\epsilon_{k}^{\omega}-b_{k}^{\omega}-\epsilon_{init}^{\omega})\Delta_{t}\nonumber \\
 p_{k+1} & = & p_{k}+v_{k}\Delta_{t}+R_{k}(a_{k}^{b}+\epsilon_{k}^{a}-b_{k}^{a}-\epsilon_{init}^{a})\frac{\Delta_{t}^{2}}{2}+\epsilon_{k}^{int}\label{eq:preintegration}\\
 v_{k+1} & = & v_{k}+R_{k}(a_{k}^{b}+\epsilon_{k}^{a}-b_{k}^{a}-\epsilon_{init}^{a})\Delta_{t}\nonumber \\
 b_{k+1}^{a} & = & b_{k}^{a}+\epsilon_{k}^{b^{a}}\nonumber \\
@@ -1908,13 +1908,13 @@ G_{k}Q_{k}G_{k}^{T}=\left[\begin{array}{ccccccc}
 0 & 0 & 0 & \Sigma^{b^{\omega}} & 0 & 0 & 0
 \end{array}\right]\\
 \left[\begin{array}{ccccc}
-\deriv{\theta}{\epsilon^{\omega}} & 0 & 0 & 0 & 0\\
-0 & \deriv p{\epsilon^{a}} & \deriv v{\epsilon^{a}} & 0 & 0\\
+\deriv{\theta}{\epsilon^{\omega}}^{T} & 0 & 0 & 0 & 0\\
+0 & \deriv p{\epsilon^{a}}^{T} & \deriv v{\epsilon^{a}}^{T} & 0 & 0\\
 0 & 0 & 0 & I_{3\times3} & 0\\
 0 & 0 & 0 & 0 & I_{3\times3}\\
-0 & \deriv p{\epsilon^{int}} & 0 & 0 & 0\\
-0 & \deriv p{\eta_{init}^{b^{a}}} & \deriv v{\eta_{init}^{b^{a}}} & 0 & 0\\
-\deriv{\theta}{\eta_{init}^{b^{\omega}}} & 0 & 0 & 0 & 0
+0 & \deriv p{\epsilon^{int}}^{T} & 0 & 0 & 0\\
+0 & \deriv p{\eta_{init}^{b^{a}}}^{T} & \deriv v{\eta_{init}^{b^{a}}}^{T} & 0 & 0\\
+\deriv{\theta}{\eta_{init}^{b^{\omega}}}^{T} & 0 & 0 & 0 & 0
 \end{array}\right]
 \end{multline*}
 
@@ -1928,10 +1928,10 @@ G_{k}Q_{k}G_{k}^{T}=\left[\begin{array}{ccccccc}
 \begin{multline*}
 =\\
 \left[\begin{array}{ccccc}
-\deriv{\theta}{\epsilon^{\omega}}\Sigma^{\omega}\deriv{\theta}{\epsilon^{\omega}}+\deriv{\theta}{\eta_{init}^{b^{\omega}}}\Sigma^{init_{22}}\deriv{\theta}{\eta_{init}^{b^{\omega}}} & \deriv{\theta}{\eta_{init}^{b^{\omega}}}\Sigma^{init_{21}}\deriv p{\eta_{init}^{b^{a}}} & \deriv{\theta}{\eta_{init}^{b^{\omega}}}\Sigma^{init_{21}}\deriv v{\eta_{init}^{b^{a}}} & 0 & 0\\
-\deriv p{\eta_{init}^{b^{a}}}\Sigma^{init_{12}}\deriv{\theta}{\eta_{init}^{b^{\omega}}} & \deriv p{\epsilon^{a}}\Sigma^{a}\deriv p{\epsilon^{a}}+\deriv p{\epsilon^{int}}\Sigma^{int}\deriv p{\epsilon^{int}}\\
- & +\deriv p{\eta_{init}^{b^{a}}}\Sigma^{init_{11}}\deriv p{\eta_{init}^{b^{a}}} & \deriv p{\epsilon^{a}}\Sigma^{a}\deriv v{\epsilon^{a}}+\deriv p{\eta_{init}^{b^{a}}}\Sigma^{init_{11}}\deriv v{\eta_{init}^{b^{a}}} & 0 & 0\\
-\deriv v{\eta_{init}^{b^{a}}}\Sigma^{init_{12}}\deriv{\theta}{\eta_{init}^{b^{\omega}}} & \deriv v{\epsilon^{a}}\Sigma^{a}\deriv p{\epsilon^{a}}+\deriv v{\eta_{init}^{b^{a}}}\Sigma^{init_{11}}\deriv p{\eta_{init}^{b^{a}}} & \deriv v{\epsilon^{a}}\Sigma^{a}\deriv v{\epsilon^{a}}+\deriv v{\eta_{init}^{b^{a}}}\Sigma^{init_{11}}\deriv v{\eta_{init}^{b^{a}}} & 0 & 0\\
+\deriv{\theta}{\epsilon^{\omega}}\Sigma^{\omega}\deriv{\theta}{\epsilon^{\omega}}^{T}+\deriv{\theta}{\eta_{init}^{b^{\omega}}}\Sigma^{init_{22}}\deriv{\theta}{\eta_{init}^{b^{\omega}}}^{T} & \deriv{\theta}{\eta_{init}^{b^{\omega}}}\Sigma^{init_{21}}\deriv p{\eta_{init}^{b^{a}}}^{T} & \deriv{\theta}{\eta_{init}^{b^{\omega}}}\Sigma^{init_{21}}\deriv v{\eta_{init}^{b^{a}}}^{T} & 0 & 0\\
+\deriv p{\eta_{init}^{b^{a}}}\Sigma^{init_{12}}\deriv{\theta}{\eta_{init}^{b^{\omega}}}^{T} & \deriv p{\epsilon^{a}}\Sigma^{a}\deriv p{\epsilon^{a}}^{T}+\deriv p{\epsilon^{int}}\Sigma^{int}\deriv p{\epsilon^{int}}^{T}\\
+ & +\deriv p{\eta_{init}^{b^{a}}}\Sigma^{init_{11}}\deriv p{\eta_{init}^{b^{a}}}^{T} & \deriv p{\epsilon^{a}}\Sigma^{a}\deriv v{\epsilon^{a}}^{T}+\deriv p{\eta_{init}^{b^{a}}}\Sigma^{init_{11}}\deriv v{\eta_{init}^{b^{a}}}^{T} & 0 & 0\\
+\deriv v{\eta_{init}^{b^{a}}}\Sigma^{init_{12}}\deriv{\theta}{\eta_{init}^{b^{\omega}}}^{T} & \deriv v{\epsilon^{a}}\Sigma^{a}\deriv p{\epsilon^{a}}^{T}+\deriv v{\eta_{init}^{b^{a}}}\Sigma^{init_{11}}\deriv p{\eta_{init}^{b^{a}}}^{T} & \deriv v{\epsilon^{a}}\Sigma^{a}\deriv v{\epsilon^{a}}^{T}+\deriv v{\eta_{init}^{b^{a}}}\Sigma^{init_{11}}\deriv v{\eta_{init}^{b^{a}}}^{T} & 0 & 0\\
 0 & 0 & 0 & \Sigma^{b^{a}} & 0\\
 0 & 0 & 0 & 0 & \Sigma^{b^{\omega}}
 \end{array}\right]
@@ -1952,23 +1952,23 @@ which we can break into 3 matrices for clarity, representing the main diagonal
 \begin{multline*}
 =\\
 \left[\begin{array}{ccccc}
-\deriv{\theta}{\epsilon^{\omega}}\Sigma^{\omega}\deriv{\theta}{\epsilon^{\omega}} & 0 & 0 & 0 & 0\\
-0 & \deriv p{\epsilon^{a}}\Sigma^{a}\deriv p{\epsilon^{a}} & 0 & 0 & 0\\
-0 & 0 & \deriv v{\epsilon^{a}}\Sigma^{a}\deriv v{\epsilon^{a}} & 0 & 0\\
+\deriv{\theta}{\epsilon^{\omega}}\Sigma^{\omega}\deriv{\theta}{\epsilon^{\omega}}^{T} & 0 & 0 & 0 & 0\\
+0 & \deriv p{\epsilon^{a}}\Sigma^{a}\deriv p{\epsilon^{a}}^{T} & 0 & 0 & 0\\
+0 & 0 & \deriv v{\epsilon^{a}}\Sigma^{a}\deriv v{\epsilon^{a}}^{T} & 0 & 0\\
 0 & 0 & 0 & \Sigma^{b^{a}} & 0\\
 0 & 0 & 0 & 0 & \Sigma^{b^{\omega}}
 \end{array}\right]+\\
 \left[\begin{array}{ccccc}
-\deriv{\theta}{\eta_{init}^{b^{\omega}}}\Sigma^{init_{22}}\deriv{\theta}{\eta_{init}^{b^{\omega}}} & 0 & 0 & 0 & 0\\
-0 & \deriv p{\epsilon^{int}}\Sigma^{int}\deriv p{\epsilon^{int}}+\deriv p{\eta_{init}^{b^{a}}}\Sigma^{init_{11}}\deriv p{\eta_{init}^{b^{a}}} & 0 & 0 & 0\\
-0 & 0 & \deriv v{\eta_{init}^{b^{a}}}\Sigma^{init_{11}}\deriv v{\eta_{init}^{b^{a}}} & 0 & 0\\
+\deriv{\theta}{\eta_{init}^{b^{\omega}}}\Sigma^{init_{22}}\deriv{\theta}{\eta_{init}^{b^{\omega}}}^{T} & 0 & 0 & 0 & 0\\
+0 & \deriv p{\epsilon^{int}}\Sigma^{int}\deriv p{\epsilon^{int}}^{T}+\deriv p{\eta_{init}^{b^{a}}}\Sigma^{init_{11}}\deriv p{\eta_{init}^{b^{a}}}^{T} & 0 & 0 & 0\\
+0 & 0 & \deriv v{\eta_{init}^{b^{a}}}\Sigma^{init_{11}}\deriv v{\eta_{init}^{b^{a}}}^{T} & 0 & 0\\
 0 & 0 & 0 & 0 & 0\\
 0 & 0 & 0 & 0 & 0
 \end{array}\right]+\\
 \left[\begin{array}{ccccc}
-0 & \deriv{\theta}{\eta_{init}^{b^{\omega}}}\Sigma^{init_{21}}\deriv p{\eta_{init}^{b^{a}}} & \deriv{\theta}{\eta_{init}^{b^{\omega}}}\Sigma^{init_{21}}\deriv v{\eta_{init}^{b^{a}}} & 0 & 0\\
-\deriv p{\eta_{init}^{b^{a}}}\Sigma^{init_{12}}\deriv{\theta}{\eta_{init}^{b^{\omega}}} & 0 & \deriv p{\epsilon^{a}}\Sigma^{a}\deriv v{\epsilon^{a}}+\deriv p{\eta_{init}^{b^{a}}}\Sigma^{init_{11}}\deriv v{\eta_{init}^{b^{a}}} & 0 & 0\\
-\deriv v{\eta_{init}^{b^{a}}}\Sigma^{init_{12}}\deriv{\theta}{\eta_{init}^{b^{\omega}}} & \deriv v{\epsilon^{a}}\Sigma^{a}\deriv p{\epsilon^{a}}+\deriv v{\eta_{init}^{b^{a}}}\Sigma^{init_{11}}\deriv p{\eta_{init}^{b^{a}}} & 0 & 0 & 0\\
+0 & \deriv{\theta}{\eta_{init}^{b^{\omega}}}\Sigma^{init_{21}}\deriv p{\eta_{init}^{b^{a}}}^{T} & \deriv{\theta}{\eta_{init}^{b^{\omega}}}\Sigma^{init_{21}}\deriv v{\eta_{init}^{b^{a}}}^{T} & 0 & 0\\
+\deriv p{\eta_{init}^{b^{a}}}\Sigma^{init_{12}}\deriv{\theta}{\eta_{init}^{b^{\omega}}}^{T} & 0 & \deriv p{\epsilon^{a}}\Sigma^{a}\deriv v{\epsilon^{a}}^{T}+\deriv p{\eta_{init}^{b^{a}}}\Sigma^{init_{11}}\deriv v{\eta_{init}^{b^{a}}}^{T} & 0 & 0\\
+\deriv v{\eta_{init}^{b^{a}}}\Sigma^{init_{12}}\deriv{\theta}{\eta_{init}^{b^{\omega}}}^{T} & \deriv v{\epsilon^{a}}\Sigma^{a}\deriv p{\epsilon^{a}}^{T}+\deriv v{\eta_{init}^{b^{a}}}\Sigma^{init_{11}}\deriv p{\eta_{init}^{b^{a}}}^{T} & 0 & 0 & 0\\
 0 & 0 & 0 & 0 & 0\\
 0 & 0 & 0 & 0 & 0
 \end{array}\right]
@@ -1977,6 +1977,73 @@ which we can break into 3 matrices for clarity, representing the main diagonal
 \end_inset
 
 
+\end_layout
+
+\begin_layout Subsubsection*
+Covariance Discretization
+\end_layout
+
+\begin_layout Standard
+So far, all the covariances are assumed to be continuous since the state
+ and measurement models are considered to be continuous-time stochastic
+ processes.
+ However, we sample measurements in a discrete-time fashion, necessitating
+ the need to convert the covariances to their discrete time equivalents.
+\end_layout
+
+\begin_layout Standard
+The IMU is modeled as a first order Gauss-Markov process, with a measurement
+ noise and a process noise.
+ Following 
+\begin_inset CommandInset citation
+LatexCommand cite
+after "Alg. 1 Page 57"
+key "Nikolic16thesis"
+literal "false"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset citation
+LatexCommand cite
+after "Eqns 129-130"
+key "Trawny05report_IndirectKF"
+literal "false"
+
+\end_inset
+
+, the measurement noises 
+\begin_inset Formula $[\epsilon^{a},\epsilon^{\omega},\epsilon_{init}]$
+\end_inset
+
+ are simply scaled by 
+\begin_inset Formula $\frac{1}{\Delta t}$
+\end_inset
+
+, and the process noises 
+\begin_inset Formula $[\epsilon^{int},\epsilon^{b^{a}},\epsilon^{b^{\omega}}]$
+\end_inset
+
+ are scaled by 
+\begin_inset Formula $\Delta t$
+\end_inset
+
+ where 
+\begin_inset Formula $\Delta t$
+\end_inset
+
+ is the time interval between 2 consecutive samples.
+ For a thorough explanation of the discretization process, please refer
+ to 
+\begin_inset CommandInset citation
+LatexCommand cite
+after "Section 8.1"
+key "Simon06book"
+literal "false"
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
