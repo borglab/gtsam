@@ -10,28 +10,30 @@ A script validating and demonstrating the ImuFactor inference.
 Author: Frank Dellaert, Varun Agrawal
 """
 
+# pylint: disable=no-name-in-module,unused-import,arguments-differ
+
 from __future__ import print_function
 
 import argparse
 import math
 
-import gtsam
 import matplotlib.pyplot as plt
 import numpy as np
+from mpl_toolkits.mplot3d import Axes3D
+
+import gtsam
 from gtsam.symbol_shorthand import B, V, X
 from gtsam.utils.plot import plot_pose3
-from mpl_toolkits.mplot3d import Axes3D
 
 from PreintegrationExample import POSES_FIG, PreintegrationExample
 
 BIAS_KEY = B(0)
 
-
 np.set_printoptions(precision=3, suppress=True)
 
 
 class ImuFactorExample(PreintegrationExample):
-
+    """Class to run example of the Imu Factor."""
     def __init__(self, twist_scenario="sick_twist"):
         self.velocity = np.array([2, 0, 0])
         self.priorNoise = gtsam.noiseModel.Isotropic.Sigma(6, 0.1)
@@ -42,9 +44,8 @@ class ImuFactorExample(PreintegrationExample):
             zero_twist=(np.zeros(3), np.zeros(3)),
             forward_twist=(np.zeros(3), self.velocity),
             loop_twist=(np.array([0, -math.radians(30), 0]), self.velocity),
-            sick_twist=(np.array([math.radians(30), -math.radians(30), 0]),
-                        self.velocity)
-        )
+            sick_twist=(np.array([math.radians(30), -math.radians(30),
+                                  0]), self.velocity))
 
         accBias = np.array([-0.3, 0.1, 0.2])
         gyroBias = np.array([0.1, 0.3, -0.1])
@@ -55,19 +56,44 @@ class ImuFactorExample(PreintegrationExample):
                                                bias, dt)
 
     def addPrior(self, i, graph):
+        """Add priors at time step `i`."""
         state = self.scenario.navState(i)
-        graph.push_back(gtsam.PriorFactorPose3(
-            X(i), state.pose(), self.priorNoise))
-        graph.push_back(gtsam.PriorFactorVector(
-            V(i), state.velocity(), self.velNoise))
+        graph.push_back(
+            gtsam.PriorFactorPose3(X(i), state.pose(), self.priorNoise))
+        graph.push_back(
+            gtsam.PriorFactorVector(V(i), state.velocity(), self.velNoise))
+
+    def optimize(self, graph, initial):
+        """Optimize using Levenberg-Marquardt optimization."""
+        params = gtsam.LevenbergMarquardtParams()
+        params.setVerbosityLM("SUMMARY")
+        optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initial, params)
+        result = optimizer.optimize()
+        return result
+
+    def plot(self, result):
+        """Plot resulting poses."""
+        i = 0
+        while result.exists(X(i)):
+            pose_i = result.atPose3(X(i))
+            plot_pose3(POSES_FIG + 1, pose_i, 1)
+            i += 1
+        plt.title("Estimated Trajectory")
+
+        gtsam.utils.plot.set_axes_equal(POSES_FIG + 1)
+
+        print("Bias Values", result.atConstantBias(BIAS_KEY))
+
+        plt.ioff()
+        plt.show()
 
     def run(self, T=12, compute_covariances=False, verbose=True):
+        """Main runner."""
         graph = gtsam.NonlinearFactorGraph()
 
         # initialize data structure for pre-integrated IMU measurements
         pim = gtsam.PreintegratedImuMeasurements(self.params, self.actualBias)
 
-        T = 12
         num_poses = T  # assumes 1 factor per second
         initial = gtsam.Values()
         initial.insert(BIAS_KEY, self.actualBias)
@@ -91,14 +117,13 @@ class ImuFactorExample(PreintegrationExample):
             if k % 10 == 0:
                 self.plotImu(t, measuredOmega, measuredAcc)
 
-            if (k+1) % int(1 / self.dt) == 0:
+            if (k + 1) % int(1 / self.dt) == 0:
                 # Plot every second
                 self.plotGroundTruthPose(t, scale=1)
                 plt.title("Ground Truth Trajectory")
 
                 # create IMU factor every second
-                factor = gtsam.ImuFactor(X(i), V(i),
-                                         X(i + 1), V(i + 1),
+                factor = gtsam.ImuFactor(X(i), V(i), X(i + 1), V(i + 1),
                                          BIAS_KEY, pim)
                 graph.push_back(factor)
 
@@ -108,34 +133,34 @@ class ImuFactorExample(PreintegrationExample):
 
                 pim.resetIntegration()
 
-                rotationNoise = gtsam.Rot3.Expmap(np.random.randn(3)*0.1)
-                translationNoise = gtsam.Point3(*np.random.randn(3)*1)
+                rotationNoise = gtsam.Rot3.Expmap(np.random.randn(3) * 0.1)
+                translationNoise = gtsam.Point3(*np.random.randn(3) * 1)
                 poseNoise = gtsam.Pose3(rotationNoise, translationNoise)
 
                 actual_state_i = self.scenario.navState(t + self.dt)
                 print("Actual state at {0}:\n{1}".format(
-                    t+self.dt, actual_state_i))
+                    t + self.dt, actual_state_i))
 
                 noisy_state_i = gtsam.NavState(
                     actual_state_i.pose().compose(poseNoise),
-                    actual_state_i.velocity() + np.random.randn(3)*0.1)
+                    actual_state_i.velocity() + np.random.randn(3) * 0.1)
 
-                initial.insert(X(i+1), noisy_state_i.pose())
-                initial.insert(V(i+1), noisy_state_i.velocity())
+                initial.insert(X(i + 1), noisy_state_i.pose())
+                initial.insert(V(i + 1), noisy_state_i.velocity())
                 i += 1
 
         # add priors on end
         self.addPrior(num_poses - 1, graph)
 
-        initial.print_("Initial values:")
+        initial.print("Initial values:")
 
-        # optimize using Levenberg-Marquardt optimization
-        params = gtsam.LevenbergMarquardtParams()
-        params.setVerbosityLM("SUMMARY")
-        optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initial, params)
-        result = optimizer.optimize()
+        result = self.optimize(graph, initial)
 
-        result.print_("Optimized values:")
+        result.print("Optimized values:")
+        print("------------------")
+        print(graph.error(initial))
+        print(graph.error(result))
+        print("------------------")
 
         if compute_covariances:
             # Calculate and print marginal covariances
@@ -148,33 +173,26 @@ class ImuFactorExample(PreintegrationExample):
                 print("Covariance on vel {}:\n{}\n".format(
                     i, marginals.marginalCovariance(V(i))))
 
-        # Plot resulting poses
-        i = 0
-        while result.exists(X(i)):
-            pose_i = result.atPose3(X(i))
-            plot_pose3(POSES_FIG+1, pose_i, 1)
-            i += 1
-        plt.title("Estimated Trajectory")
-
-        gtsam.utils.plot.set_axes_equal(POSES_FIG+1)
-
-        print("Bias Values", result.atConstantBias(BIAS_KEY))
-
-        plt.ioff()
-        plt.show()
+        self.plot(result)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("ImuFactorExample.py")
     parser.add_argument("--twist_scenario",
                         default="sick_twist",
-                        choices=("zero_twist", "forward_twist", "loop_twist", "sick_twist"))
-    parser.add_argument("--time", "-T", default=12,
-                        type=int, help="Total time in seconds")
+                        choices=("zero_twist", "forward_twist", "loop_twist",
+                                 "sick_twist"))
+    parser.add_argument("--time",
+                        "-T",
+                        default=12,
+                        type=int,
+                        help="Total time in seconds")
     parser.add_argument("--compute_covariances",
-                        default=False, action='store_true')
+                        default=False,
+                        action='store_true')
     parser.add_argument("--verbose", default=False, action='store_true')
     args = parser.parse_args()
 
-    ImuFactorExample(args.twist_scenario).run(
-        args.time, args.compute_covariances, args.verbose)
+    ImuFactorExample(args.twist_scenario).run(args.time,
+                                              args.compute_covariances,
+                                              args.verbose)
