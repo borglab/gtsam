@@ -39,7 +39,7 @@ void PreintegrationCombinedParams::print(const string& s) const {
        << endl;
   cout << "biasOmegaCovariance:\n[\n" << biasOmegaCovariance << "\n]"
        << endl;
-  cout << "biasAccOmegaInt:\n[\n" << biasAccOmegaInt << "\n]"
+  cout << "biasAccOmegaInit:\n[\n" << biasAccOmegaInit << "\n]"
        << endl;
 }
 
@@ -52,7 +52,7 @@ bool PreintegrationCombinedParams::equals(const PreintegratedRotationParams& oth
                             tol) &&
          equal_with_abs_tol(biasOmegaCovariance, e->biasOmegaCovariance,
                             tol) &&
-         equal_with_abs_tol(biasAccOmegaInt, e->biasAccOmegaInt, tol);
+         equal_with_abs_tol(biasAccOmegaInit, e->biasAccOmegaInit, tol);
 }
 
 //------------------------------------------------------------------------------
@@ -137,8 +137,8 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
   Eigen::Matrix<double, 15, 15> G_measCov_Gt;
   G_measCov_Gt.setZero(15, 15);
 
-  Matrix3 aCov_updated = aCov + p().biasAccOmegaInt.block<3, 3>(0, 0);
-  Matrix3 wCov_updated = wCov + p().biasAccOmegaInt.block<3, 3>(3, 3);
+  Matrix3 aCov_updated = aCov + p().biasAccOmegaInit.block<3, 3>(0, 0);
+  Matrix3 wCov_updated = wCov + p().biasAccOmegaInit.block<3, 3>(3, 3);
 
   // BLOCK DIAGONAL TERMS
   D_t_t(&G_measCov_Gt) = (pos_H_biasAcc  //
@@ -156,7 +156,7 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
   D_g_g(&G_measCov_Gt) = dt * p().biasOmegaCovariance;
 
   // OFF BLOCK DIAGONAL TERMS
-  Matrix3 temp = vel_H_biasAcc * p().biasAccOmegaInt.block<3, 3>(3, 0)
+  Matrix3 temp = vel_H_biasAcc * p().biasAccOmegaInit.block<3, 3>(3, 0)
       * theta_H_biasOmega.transpose();
   D_v_R(&G_measCov_Gt) = temp;
   D_v_t(&G_measCov_Gt) = vel_H_biasAcc * (aCov / dt) * pos_H_biasAcc.transpose();
