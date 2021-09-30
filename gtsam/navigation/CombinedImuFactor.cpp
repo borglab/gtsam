@@ -145,9 +145,9 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
 
   // BLOCK DIAGONAL TERMS
   D_R_R(&G_measCov_Gt) =
-      (theta_H_omega * (wCov / dt) * theta_H_omega.transpose()) +  //
-      (theta_H_biasOmegaInit * (bInitCov.block<3, 3>(3, 3) / dt) *
-       theta_H_biasOmegaInit.transpose());
+      (theta_H_omega * (wCov / dt) * theta_H_omega.transpose())  //
+      + (theta_H_biasOmegaInit * (bInitCov.block<3, 3>(3, 3) / dt) *
+         theta_H_biasOmegaInit.transpose());
 
   D_t_t(&G_measCov_Gt) =
       (pos_H_acc * (aCov / dt) * pos_H_acc.transpose())  //
