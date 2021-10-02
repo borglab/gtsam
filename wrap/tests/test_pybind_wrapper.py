@@ -95,6 +95,14 @@ class TestWrap(unittest.TestCase):
 
         self.compare_and_diff('class_pybind.cpp', output)
 
+    def test_templates(self):
+        """Test interface file with templated class."""
+        source = osp.join(self.INTERFACE_DIR, 'templates.i')
+        output = self.wrap_content([source], 'templates_py',
+                                   self.PYTHON_ACTUAL_DIR)
+
+        self.compare_and_diff('templates_pybind.cpp', output)
+
     def test_inheritance(self):
         """Test interface file with class inheritance definitions."""
         source = osp.join(self.INTERFACE_DIR, 'inheritance.i')
