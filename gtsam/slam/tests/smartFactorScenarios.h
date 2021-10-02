@@ -18,11 +18,11 @@
 
 #pragma once
 #include <gtsam/slam/SmartProjectionPoseFactor.h>
-#include <gtsam/slam/SmartProjectionFactorP.h>
 #include <gtsam/slam/SmartProjectionFactor.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Cal3Bundler.h>
+#include "../SmartProjectionRigFactor.h"
 
 using namespace std;
 using namespace gtsam;
@@ -70,7 +70,7 @@ SmartProjectionParams params;
 namespace vanillaPose {
 typedef PinholePose<Cal3_S2> Camera;
 typedef SmartProjectionPoseFactor<Cal3_S2> SmartFactor;
-typedef SmartProjectionFactorP<Camera> SmartFactorP;
+typedef SmartProjectionRigFactor<Camera> SmartFactorP;
 static Cal3_S2::shared_ptr sharedK(new Cal3_S2(fov, w, h));
 Camera level_camera(level_pose, sharedK);
 Camera level_camera_right(pose_right, sharedK);
@@ -84,7 +84,7 @@ Camera cam3(pose_above, sharedK);
 namespace vanillaPose2 {
 typedef PinholePose<Cal3_S2> Camera;
 typedef SmartProjectionPoseFactor<Cal3_S2> SmartFactor;
-typedef SmartProjectionFactorP<Camera> SmartFactorP;
+typedef SmartProjectionRigFactor<Camera> SmartFactorP;
 static Cal3_S2::shared_ptr sharedK2(new Cal3_S2(1500, 1200, 0, 640, 480));
 Camera level_camera(level_pose, sharedK2);
 Camera level_camera_right(pose_right, sharedK2);
@@ -114,7 +114,7 @@ typedef GeneralSFMFactor<Camera, Point3> SFMFactor;
 namespace bundlerPose {
 typedef PinholePose<Cal3Bundler> Camera;
 typedef SmartProjectionPoseFactor<Cal3Bundler> SmartFactor;
-typedef SmartProjectionFactorP<Camera> SmartFactorP;
+typedef SmartProjectionRigFactor<Camera> SmartFactorP;
 static boost::shared_ptr<Cal3Bundler> sharedBundlerK(
     new Cal3Bundler(500, 1e-3, 1e-3, 1000, 2000));
 Camera level_camera(level_pose, sharedBundlerK);
