@@ -123,6 +123,23 @@ class TestWrap(unittest.TestCase):
         for file in files:
             self.compare_and_diff(file)
 
+    def test_templates(self):
+        """Test interface file with template info."""
+        file = osp.join(self.INTERFACE_DIR, 'templates.i')
+
+        wrapper = MatlabWrapper(
+            module_name='template',
+            top_module_namespace=['gtsam'],
+            ignore_classes=[''],
+        )
+
+        wrapper.wrap([file], path=self.MATLAB_ACTUAL_DIR)
+
+        files = ['template_wrapper.cpp']
+
+        for file in files:
+            self.compare_and_diff(file)
+
     def test_inheritance(self):
         """Test interface file with class inheritance definitions."""
         file = osp.join(self.INTERFACE_DIR, 'inheritance.i')
