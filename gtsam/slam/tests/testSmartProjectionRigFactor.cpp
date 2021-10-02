@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file  testSmartProjectionFactorP.cpp
- *  @brief Unit tests for SmartProjectionFactorP Class
+ *  @file  testSmartProjectionRigFactor.cpp
+ *  @brief Unit tests for SmartProjectionRigFactor Class
  *  @author Chris Beall
  *  @author Luca Carlone
  *  @author Zsolt Kira
@@ -52,13 +52,13 @@ LevenbergMarquardtParams lmParams;
 // params.verbosityLM = LevenbergMarquardtParams::SUMMARY;
 
 /* ************************************************************************* */
-TEST( SmartProjectionFactorP, Constructor) {
+TEST( SmartProjectionRigFactor, Constructor) {
   using namespace vanillaPose;
   SmartFactorP::shared_ptr factor1(new SmartFactorP(model));
 }
 
 /* ************************************************************************* */
-TEST( SmartProjectionFactorP, Constructor2) {
+TEST( SmartProjectionRigFactor, Constructor2) {
   using namespace vanillaPose;
   SmartProjectionParams params;
   params.setRankTolerance(rankTol);
@@ -66,14 +66,14 @@ TEST( SmartProjectionFactorP, Constructor2) {
 }
 
 /* ************************************************************************* */
-TEST( SmartProjectionFactorP, Constructor3) {
+TEST( SmartProjectionRigFactor, Constructor3) {
   using namespace vanillaPose;
   SmartFactorP::shared_ptr factor1(new SmartFactorP(model));
   factor1->add(measurement1, x1, sharedK);
 }
 
 /* ************************************************************************* */
-TEST( SmartProjectionFactorP, Constructor4) {
+TEST( SmartProjectionRigFactor, Constructor4) {
   using namespace vanillaPose;
   SmartProjectionParams params;
   params.setRankTolerance(rankTol);
@@ -82,7 +82,7 @@ TEST( SmartProjectionFactorP, Constructor4) {
 }
 
 /* ************************************************************************* */
-TEST( SmartProjectionFactorP, Equals ) {
+TEST( SmartProjectionRigFactor, Equals ) {
   using namespace vanillaPose;
   SmartFactorP::shared_ptr factor1(new SmartFactorP(model));
   factor1->add(measurement1, x1, sharedK);
@@ -94,7 +94,7 @@ TEST( SmartProjectionFactorP, Equals ) {
 }
 
 /* *************************************************************************/
-TEST( SmartProjectionFactorP, noiseless ) {
+TEST( SmartProjectionRigFactor, noiseless ) {
 
   using namespace vanillaPose;
 
@@ -153,7 +153,7 @@ TEST( SmartProjectionFactorP, noiseless ) {
 }
 
 /* *************************************************************************/
-TEST( SmartProjectionFactorP, noisy ) {
+TEST( SmartProjectionRigFactor, noisy ) {
 
   using namespace vanillaPose;
 
@@ -191,7 +191,7 @@ TEST( SmartProjectionFactorP, noisy ) {
 }
 
 /* *************************************************************************/
-TEST(SmartProjectionFactorP, smartFactorWithSensorBodyTransform) {
+TEST(SmartProjectionRigFactor, smartFactorWithSensorBodyTransform) {
   using namespace vanillaPose;
 
   // create arbitrary body_T_sensor (transforms from sensor to body)
@@ -279,7 +279,7 @@ TEST(SmartProjectionFactorP, smartFactorWithSensorBodyTransform) {
 }
 
 /* *************************************************************************/
-TEST( SmartProjectionFactorP, 3poses_smart_projection_factor ) {
+TEST( SmartProjectionRigFactor, 3poses_smart_projection_factor ) {
 
   using namespace vanillaPose2;
   Point2Vector measurements_cam1, measurements_cam2, measurements_cam3;
@@ -346,7 +346,7 @@ TEST( SmartProjectionFactorP, 3poses_smart_projection_factor ) {
 }
 
 /* *************************************************************************/
-TEST( SmartProjectionFactorP, Factors ) {
+TEST( SmartProjectionRigFactor, Factors ) {
 
   using namespace vanillaPose;
 
@@ -437,7 +437,7 @@ TEST( SmartProjectionFactorP, Factors ) {
 }
 
 /* *************************************************************************/
-TEST( SmartProjectionFactorP, 3poses_iterative_smart_projection_factor ) {
+TEST( SmartProjectionRigFactor, 3poses_iterative_smart_projection_factor ) {
 
   using namespace vanillaPose;
 
@@ -497,7 +497,7 @@ TEST( SmartProjectionFactorP, 3poses_iterative_smart_projection_factor ) {
 }
 
 /* *************************************************************************/
-TEST( SmartProjectionFactorP, landmarkDistance ) {
+TEST( SmartProjectionRigFactor, landmarkDistance ) {
 
   using namespace vanillaPose;
 
@@ -558,7 +558,7 @@ TEST( SmartProjectionFactorP, landmarkDistance ) {
 }
 
 /* *************************************************************************/
-TEST( SmartProjectionFactorP, dynamicOutlierRejection ) {
+TEST( SmartProjectionRigFactor, dynamicOutlierRejection ) {
 
   using namespace vanillaPose;
 
@@ -626,7 +626,7 @@ TEST( SmartProjectionFactorP, dynamicOutlierRejection ) {
 }
 
 /* *************************************************************************/
-TEST( SmartProjectionFactorP, CheckHessian) {
+TEST( SmartProjectionRigFactor, CheckHessian) {
 
   KeyVector views { x1, x2, x3 };
 
@@ -711,7 +711,7 @@ TEST( SmartProjectionFactorP, CheckHessian) {
 }
 
 /* *************************************************************************/
-TEST( SmartProjectionFactorP, Hessian ) {
+TEST( SmartProjectionRigFactor, Hessian ) {
 
   using namespace vanillaPose2;
 
@@ -746,7 +746,7 @@ TEST( SmartProjectionFactorP, Hessian ) {
 }
 
 /* ************************************************************************* */
-TEST( SmartProjectionFactorP, ConstructorWithCal3Bundler) {
+TEST( SmartProjectionRigFactor, ConstructorWithCal3Bundler) {
   using namespace bundlerPose;
   SmartProjectionParams params;
   params.setDegeneracyMode(gtsam::ZERO_ON_DEGENERACY);
@@ -755,7 +755,7 @@ TEST( SmartProjectionFactorP, ConstructorWithCal3Bundler) {
 }
 
 /* *************************************************************************/
-TEST( SmartProjectionFactorP, Cal3Bundler ) {
+TEST( SmartProjectionRigFactor, Cal3Bundler ) {
 
   using namespace bundlerPose;
 
@@ -820,7 +820,7 @@ TEST( SmartProjectionFactorP, Cal3Bundler ) {
 typedef GenericProjectionFactor<Pose3, Point3> TestProjectionFactor;
 static Symbol l0('L', 0);
 /* *************************************************************************/
-TEST( SmartProjectionFactorP, hessianComparedToProjFactors_measurementsFromSamePose) {
+TEST( SmartProjectionRigFactor, hessianComparedToProjFactors_measurementsFromSamePose) {
   // in this test we make sure the fact works even if we have multiple pixel measurements of the same landmark
   // at a single pose, a setup that occurs in multi-camera systems
 
@@ -951,7 +951,7 @@ TEST( SmartProjectionFactorP, hessianComparedToProjFactors_measurementsFromSameP
 }
 
 /* *************************************************************************/
-TEST( SmartProjectionFactorP, optimization_3poses_measurementsFromSamePose ) {
+TEST( SmartProjectionRigFactor, optimization_3poses_measurementsFromSamePose ) {
 
   using namespace vanillaPose;
   Point2Vector measurements_lmk1, measurements_lmk2, measurements_lmk3;
@@ -1033,7 +1033,7 @@ TEST( SmartProjectionFactorP, optimization_3poses_measurementsFromSamePose ) {
 //|   -SmartFactorP LINEARIZE: 0 CPU (1000 times, 0.005481 wall, 0 children, min: 0 max: 0)
 //|   -SmartPoseFactor LINEARIZE: 0.01 CPU (1000 times, 0.007318 wall, 0.01 children, min: 0 max: 0)
 /* *************************************************************************/
-TEST( SmartProjectionFactorP, timing ) {
+TEST( SmartProjectionRigFactor, timing ) {
 
   using namespace vanillaPose;
 
@@ -1095,7 +1095,7 @@ BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Isotropic, "gtsam_noiseModel_Isotropi
 BOOST_CLASS_EXPORT_GUID(gtsam::SharedNoiseModel, "gtsam_SharedNoiseModel");
 BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal");
 
-TEST(SmartProjectionFactorP, serialize) {
+TEST(SmartProjectionRigFactor, serialize) {
   using namespace vanillaPose;
   using namespace gtsam::serializationTestHelpers;
   SmartProjectionParams params;
@@ -1108,7 +1108,7 @@ TEST(SmartProjectionFactorP, serialize) {
 }
 
 // SERIALIZATION TEST FAILS: to be fixed
-//TEST(SmartProjectionFactorP, serialize2) {
+//TEST(SmartProjectionRigFactor, serialize2) {
 //  using namespace vanillaPose;
 //  using namespace gtsam::serializationTestHelpers;
 //  SmartProjectionParams params;

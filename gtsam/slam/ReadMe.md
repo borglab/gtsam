@@ -38,7 +38,7 @@ The factor only constrains poses.
 
 If the calibration should be optimized, as well, use `SmartProjectionFactor` instead!
 
-### SmartProjectionFactorP
+### SmartProjectionRigFactor
 
 Same as `SmartProjectionPoseFactor`, except:
 - it is templated on `CAMERA`, i.e., it allows cameras beyond pinhole;

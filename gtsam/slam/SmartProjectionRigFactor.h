@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file   SmartProjectionFactorP.h
+ * @file   SmartProjectionRigFactor.h
  * @brief  Smart factor on poses, assuming camera calibration is fixed.
  *         Same as SmartProjectionPoseFactor, except:
  *         - it is templated on CAMERA (i.e., it allows cameras beyond pinhole)
@@ -47,11 +47,11 @@ namespace gtsam {
  * @addtogroup SLAM
  */
 template<class CAMERA>
-class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
+class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
 
  private:
   typedef SmartProjectionFactor<CAMERA> Base;
-  typedef SmartProjectionFactorP<CAMERA> This;
+  typedef SmartProjectionRigFactor<CAMERA> This;
   typedef typename CAMERA::CalibrationType CALIBRATION;
 
   static const int DimPose = 6;  ///< Pose3 dimension
@@ -76,7 +76,7 @@ class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
   typedef boost::shared_ptr<This> shared_ptr;
 
   /// Default constructor, only for serialization
-  SmartProjectionFactorP() {
+  SmartProjectionRigFactor() {
   }
 
   /**
@@ -84,7 +84,7 @@ class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
    * @param sharedNoiseModel isotropic noise model for the 2D feature measurements
    * @param params parameters for the smart projection factors
    */
-  SmartProjectionFactorP(const SharedNoiseModel& sharedNoiseModel,
+  SmartProjectionRigFactor(const SharedNoiseModel& sharedNoiseModel,
                          const SmartProjectionParams& params =
                              SmartProjectionParams())
       : Base(sharedNoiseModel, params) {
@@ -94,7 +94,7 @@ class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
   }
 
   /** Virtual destructor */
-  ~SmartProjectionFactorP() override {
+  ~SmartProjectionRigFactor() override {
   }
 
   /**
@@ -167,7 +167,7 @@ class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
    */
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
                  DefaultKeyFormatter) const override {
-    std::cout << s << "SmartProjectionFactorP: \n ";
+    std::cout << s << "SmartProjectionRigFactor: \n ";
     for (size_t i = 0; i < K_all_.size(); i++) {
       std::cout << "-- Measurement nr " << i << std::endl;
       std::cout << "key: " << keyFormatter(nonUniqueKeys_[i]) << std::endl;
@@ -266,7 +266,7 @@ class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
     std::vector < Vector > gs(nrUniqueKeys);
 
     if (this->measured_.size() != this->cameras(values).size())  // 1 observation per camera
-      throw std::runtime_error("SmartProjectionFactorP: "
+      throw std::runtime_error("SmartProjectionRigFactor: "
                                "measured_.size() inconsistent with input");
 
     // triangulate 3D point at given linearization point
@@ -282,7 +282,7 @@ class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
             > (this->keys_, Gs, gs, 0.0);
       } else {
         throw std::runtime_error(
-            "SmartProjectionFactorP: "
+            "SmartProjectionRigFactor: "
             "only supported degeneracy mode is ZERO_ON_DEGENERACY");
       }
     }
@@ -351,8 +351,8 @@ class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
 
 /// traits
 template<class CAMERA>
-struct traits<SmartProjectionFactorP<CAMERA> > : public Testable<
-    SmartProjectionFactorP<CAMERA> > {
+struct traits<SmartProjectionRigFactor<CAMERA> > : public Testable<
+    SmartProjectionRigFactor<CAMERA> > {
 };
 
 }  // \ namespace gtsam
