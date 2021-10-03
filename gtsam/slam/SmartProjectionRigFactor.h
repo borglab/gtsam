@@ -58,13 +58,13 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
  protected:
 
   /// vector of keys (one for each observation) with potentially repeated keys
-  FastVector<Key> nonUniqueKeys_;
+  KeyVector nonUniqueKeys_;
 
   /// cameras in the rig (fixed poses wrt body + fixed intrinsics)
   typename Base::Cameras cameraRig_;
 
   /// vector of camera Ids (one for each observation), identifying which camera took the measurement
-  FastVector<Key> cameraIds_;
+  KeyVector cameraIds_;
 
  public:
   typedef CAMERA Camera;
@@ -125,7 +125,7 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
    * @param poseKeys keys corresponding to the body poses of the cameras taking the measurements
    * @param cameraIds IDs of the cameras in the rig taking each measurement (same order as measurements)
    */
-  void add(const Point2Vector& measurements, const FastVector<Key>& poseKeys,
+  void add(const Point2Vector& measurements, const KeyVector& poseKeys,
            const FastVector<size_t>& cameraIds) {
     assert(poseKeys.size() == measurements.size());
     assert(poseKeys.size() == cameraIds.size());
@@ -135,7 +135,7 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
   }
 
   /// return (for each observation) the (possibly non unique) keys involved in the measurements
-  const FastVector<Key> nonUniqueKeys() const {
+  const KeyVector nonUniqueKeys() const {
     return nonUniqueKeys_;
   }
 
@@ -145,7 +145,7 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
   }
 
   /// return the calibration object
-  inline FastVector<size_t> cameraIds() const {
+  inline KeyVector cameraIds() const {
     return cameraIds_;
   }
 
@@ -171,8 +171,8 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
     const This *e = dynamic_cast<const This*>(&p);
     return e && Base::equals(p, tol)
     && nonUniqueKeys_ == e->nonUniqueKeys()
-    && cameraRig_.equals(e->cameraRig());
-//    && cameraIds_ == e->cameraIds();
+    && cameraRig_.equals(e->cameraRig())
+    && std::equal(cameraIds_.begin(), cameraIds_.end(), e->cameraIds().begin());
   }
 
   /**
