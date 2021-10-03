@@ -14,11 +14,10 @@
  * @brief  Smart factor on poses, assuming camera calibration is fixed.
  *         Same as SmartProjectionPoseFactor, except:
  *         - it is templated on CAMERA (i.e., it allows cameras beyond pinhole)
- *         - it admits a different calibration for each measurement (i.e., it can model a multi-camera system)
+ *         - it admits a different calibration for each measurement (i.e., it can model a multi-camera rig system)
  *         - it allows multiple observations from the same pose/key (again, to model a multi-camera system)
  * @author Luca Carlone
- * @author Chris Beall
- * @author Zsolt Kira
+ * @author Frank Dellaert
  */
 
 #pragma once
@@ -34,7 +33,6 @@ namespace gtsam {
  * L. Carlone, Z. Kira, C. Beall, V. Indelman, F. Dellaert, Eliminating conditionally
  * independent sets in factor graphs: a unifying perspective based on smart factors,
  * Int. Conf. on Robotics and Automation (ICRA), 2014.
- *
  */
 
 /**
@@ -60,13 +58,13 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
  protected:
 
   /// vector of keys (one for each observation) with potentially repeated keys
-  std::vector<Key> nonUniqueKeys_;
+  FastVector<Key> nonUniqueKeys_;
 
-  /// shared pointer to calibration object (one for each observation)
-  std::vector<boost::shared_ptr<CALIBRATION> > K_all_;
+  /// cameras in the rig (fixed poses wrt body + fixed intrinsics)
+  typename Base::Cameras cameraRig_;
 
-  /// Pose of the camera in the body frame (one for each observation)
-  std::vector<Pose3> body_P_sensors_;
+  /// vector of camera Ids (one for each observation), identifying which camera took the measurement
+  FastVector<Key> cameraIds_;
 
  public:
   typedef CAMERA Camera;
@@ -82,12 +80,14 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
   /**
    * Constructor
    * @param sharedNoiseModel isotropic noise model for the 2D feature measurements
+   * @param cameraRig set of cameras (fixed poses wrt body and intrinsics) in the camera rig
    * @param params parameters for the smart projection factors
    */
   SmartProjectionRigFactor(const SharedNoiseModel& sharedNoiseModel,
+                         const Cameras& cameraRig,
                          const SmartProjectionParams& params =
                              SmartProjectionParams())
-      : Base(sharedNoiseModel, params) {
+      : Base(sharedNoiseModel, params), cameraRig_(cameraRig) {
     // use only configuration that works with this factor
     Base::params_.degeneracyMode = gtsam::ZERO_ON_DEGENERACY;
     Base::params_.linearizationMode = gtsam::HESSIAN;
@@ -98,17 +98,14 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
   }
 
   /**
-   * add a new measurement, corresponding to an observation from pose "poseKey" whose camera
-   * has intrinsic calibration K and extrinsic calibration body_P_sensor.
+   * add a new measurement, corresponding to an observation from pose "poseKey"
+   * and taken from the camera in the rig identified by "cameraId"
    * @param measured 2-dimensional location of the projection of a
    * single landmark in a single view (the measurement)
    * @param poseKey key corresponding to the body pose of the camera taking the measurement
-   * @param K (fixed) camera intrinsic calibration
-   * @param body_P_sensor (fixed) camera extrinsic calibration
+   * @param cameraId ID of the camera in the rig taking the measurement
    */
-  void add(const Point2& measured, const Key& poseKey,
-           const boost::shared_ptr<CALIBRATION>& K, const Pose3 body_P_sensor =
-               Pose3::identity()) {
+  void add(const Point2& measured, const Key& poseKey, const size_t cameraId) {
     // store measurement and key
     this->measured_.push_back(measured);
     this->nonUniqueKeys_.push_back(poseKey);
@@ -117,10 +114,8 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
     if (std::find(this->keys_.begin(), this->keys_.end(), poseKey) == this->keys_.end())
       this->keys_.push_back(poseKey);  // add only unique keys
 
-    // store fixed intrinsic calibration
-    K_all_.push_back(K);
-    // store fixed extrinsics of the camera
-    body_P_sensors_.push_back(body_P_sensor);
+    // store id of the camera taking the measurement
+    cameraIds_.push_back(cameraId);
   }
 
   /**
@@ -128,36 +123,30 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
    * @param measurements vector of the 2m dimensional location of the projection
    * of a single landmark in the m views (the measurements)
    * @param poseKeys keys corresponding to the body poses of the cameras taking the measurements
-   * @param Ks vector of (fixed) intrinsic calibration objects
-   * @param body_P_sensors vector of (fixed) extrinsic calibration objects
+   * @param cameraIds IDs of the cameras in the rig taking each measurement (same order as measurements)
    */
-  void add(const Point2Vector& measurements, const std::vector<Key>& poseKeys,
-           const std::vector<boost::shared_ptr<CALIBRATION>>& Ks,
-           const std::vector<Pose3> body_P_sensors = std::vector<Pose3>()) {
+  void add(const Point2Vector& measurements, const FastVector<Key>& poseKeys,
+           const FastVector<size_t>& cameraIds) {
     assert(poseKeys.size() == measurements.size());
-    assert(poseKeys.size() == Ks.size());
+    assert(poseKeys.size() == cameraIds.size());
     for (size_t i = 0; i < measurements.size(); i++) {
-      if (poseKeys.size() == body_P_sensors.size()) {
-        add(measurements[i], poseKeys[i], Ks[i], body_P_sensors[i]);
-      } else {
-        add(measurements[i], poseKeys[i], Ks[i]);  // use default extrinsics
-      }
+      add(measurements[i], poseKeys[i], cameraIds[i]);
     }
   }
 
-  /// return the calibration object
-  inline std::vector<boost::shared_ptr<CALIBRATION>> calibration() const {
-    return K_all_;
-  }
-
-  /// return the extrinsic camera calibration body_P_sensors
-  const std::vector<Pose3> body_P_sensors() const {
-    return body_P_sensors_;
-  }
-
   /// return (for each observation) the (possibly non unique) keys involved in the measurements
-  const std::vector<Key> nonUniqueKeys() const {
+  const FastVector<Key> nonUniqueKeys() const {
     return nonUniqueKeys_;
+  }
+
+  /// return the calibration object
+  inline Cameras cameraRig() const {
+    return cameraRig_;
+  }
+
+  /// return the calibration object
+  inline FastVector<size_t> cameraIds() const {
+    return cameraIds_;
   }
 
   /**
@@ -168,11 +157,11 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
                  DefaultKeyFormatter) const override {
     std::cout << s << "SmartProjectionRigFactor: \n ";
-    for (size_t i = 0; i < K_all_.size(); i++) {
+    for (size_t i = 0; i < nonUniqueKeys_.size(); i++) {
       std::cout << "-- Measurement nr " << i << std::endl;
       std::cout << "key: " << keyFormatter(nonUniqueKeys_[i]) << std::endl;
-      body_P_sensors_[i].print("extrinsic calibration:\n");
-      K_all_[i]->print("intrinsic calibration = ");
+      std::cout << "cameraId: " << cameraIds_[i] << std::endl;
+      cameraRig_[ cameraIds_[i] ].print("camera in rig:\n");
     }
     Base::print("", keyFormatter);
   }
@@ -180,35 +169,26 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
   /// equals
   bool equals(const NonlinearFactor& p, double tol = 1e-9) const override {
     const This *e = dynamic_cast<const This*>(&p);
-    double extrinsicCalibrationEqual = true;
-    if (this->body_P_sensors_.size() == e->body_P_sensors().size()) {
-      for (size_t i = 0; i < this->body_P_sensors_.size(); i++) {
-        if (!body_P_sensors_[i].equals(e->body_P_sensors()[i])) {
-          extrinsicCalibrationEqual = false;
-          break;
-        }
-      }
-    } else {
-      extrinsicCalibrationEqual = false;
-    }
-
-    return e && Base::equals(p, tol) && K_all_ == e->calibration()
-        && nonUniqueKeys_ == e->nonUniqueKeys() && extrinsicCalibrationEqual;
+    return e && Base::equals(p, tol)
+    && nonUniqueKeys_ == e->nonUniqueKeys()
+    && cameraRig_.equals(e->cameraRig());
+//    && cameraIds_ == e->cameraIds();
   }
 
   /**
    * Collect all cameras involved in this factor
-   * @param values Values structure which must contain camera poses corresponding
+   * @param values Values structure which must contain body poses corresponding
    * to keys involved in this factor
    * @return vector of cameras
    */
   typename Base::Cameras cameras(const Values& values) const override {
     typename Base::Cameras cameras;
     for (size_t i = 0; i < nonUniqueKeys_.size(); i++) {
-      const Pose3& body_P_cam_i = body_P_sensors_[i];
+      const Pose3& body_P_cam_i = cameraRig_[i].pose();
       const Pose3 world_P_sensor_i = values.at<Pose3>(nonUniqueKeys_[i])
           * body_P_cam_i;
-      cameras.emplace_back(world_P_sensor_i, K_all_[i]);
+      cameras.emplace_back(world_P_sensor_i,
+                           make_shared<typename CAMERA::CalibrationType>(cameraRig_[i].calibration()));
     }
     return cameras;
   }
@@ -240,10 +220,11 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
     } else {  // valid result: compute jacobians
       b = -cameras.reprojectionError(*this->result_, this->measured_, Fs, E);
       for (size_t i = 0; i < Fs.size(); i++) {
-        const Pose3 sensor_P_body = body_P_sensors_[i].inverse();
+        const Pose3 body_P_sensor = cameraRig_[i].pose();
+        const Pose3 sensor_P_body = body_P_sensor.inverse();
         const Pose3 world_P_body = cameras[i].pose() * sensor_P_body;
         Eigen::Matrix<double, DimPose, DimPose> H;
-        world_P_body.compose(body_P_sensors_[i], H);
+        world_P_body.compose(body_P_sensor, H);
         Fs.at(i) = Fs.at(i) * H;
       }
     }
@@ -262,8 +243,8 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
 
     // Create structures for Hessian Factors
     KeyVector js;
-    std::vector < Matrix > Gs(nrUniqueKeys * (nrUniqueKeys + 1) / 2);
-    std::vector < Vector > gs(nrUniqueKeys);
+    FastVector < Matrix > Gs(nrUniqueKeys * (nrUniqueKeys + 1) / 2);
+    FastVector < Vector > gs(nrUniqueKeys);
 
     if (this->measured_.size() != this->cameras(values).size())  // 1 observation per camera
       throw std::runtime_error("SmartProjectionRigFactor: "
@@ -324,7 +305,7 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
         return this->createHessianFactor(values, lambda);
       default:
         throw std::runtime_error(
-            "SmartProjectioFactorP: unknown linearization mode");
+            "SmartProjectionRigFactor: unknown linearization mode");
     }
   }
 
@@ -341,9 +322,9 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-    ar & BOOST_SERIALIZATION_NVP(K_all_);
     ar & BOOST_SERIALIZATION_NVP(nonUniqueKeys_);
-    ar & BOOST_SERIALIZATION_NVP(body_P_sensors_);
+    ar & BOOST_SERIALIZATION_NVP(cameraRig_);
+    ar & BOOST_SERIALIZATION_NVP(cameraIds_);
   }
 
 };
