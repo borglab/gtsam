@@ -289,6 +289,93 @@ TEST(SmartProjectionRigFactor, smartFactorWithSensorBodyTransform) {
 }
 
 /* *************************************************************************/
+TEST(SmartProjectionRigFactor, smartFactorWithMultipleCameras) {
+  using namespace vanillaPose;
+
+  // create arbitrary body_T_sensor (transforms from sensor to body)
+  Pose3 body_T_sensor1 = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2),
+                              Point3(1, 1, 1));
+  Pose3 body_T_sensor2 = Pose3(Rot3::Ypr(-M_PI / 5, 0., -M_PI / 2),
+                              Point3(0, 0, 1));
+  Pose3 body_T_sensor3 = Pose3::identity();
+
+  Cameras cameraRig; // single camera in the rig
+  cameraRig.push_back( Camera(body_T_sensor1, sharedK) );
+  cameraRig.push_back( Camera(body_T_sensor2, sharedK) );
+  cameraRig.push_back( Camera(body_T_sensor3, sharedK) );
+
+  // These are the poses we want to estimate, from camera measurements
+  const Pose3 sensor_T_body1 = body_T_sensor1.inverse();
+  const Pose3 sensor_T_body2 = body_T_sensor2.inverse();
+  const Pose3 sensor_T_body3 = body_T_sensor3.inverse();
+  Pose3 wTb1 = cam1.pose() * sensor_T_body1;
+  Pose3 wTb2 = cam2.pose() * sensor_T_body2;
+  Pose3 wTb3 = cam3.pose() * sensor_T_body3;
+
+  // three landmarks ~5 meters infront of camera
+  Point3 landmark1(5, 0.5, 1.2), landmark2(5, -0.5, 1.2), landmark3(5, 0, 3.0);
+
+  Point2Vector measurements_cam1, measurements_cam2, measurements_cam3;
+
+  // Project three landmarks into three cameras
+  projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
+  projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
+  projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
+
+  // Create smart factors
+  KeyVector views { x1, x2, x3 };
+  FastVector<size_t> cameraIds { 0, 1, 2 };
+
+  SmartProjectionParams params;
+  params.setRankTolerance(1.0);
+  params.setDegeneracyMode(IGNORE_DEGENERACY);
+  params.setEnableEPI(false);
+
+  SmartRigFactor smartFactor1(model, cameraRig, params);
+  smartFactor1.add(measurements_cam1, views, cameraIds);
+
+  SmartRigFactor smartFactor2(model, cameraRig, params);
+  smartFactor2.add(measurements_cam2, views, cameraIds);
+
+  SmartRigFactor smartFactor3(model, cameraRig, params);
+  smartFactor3.add(measurements_cam3, views, cameraIds);
+
+  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
+
+  // Put all factors in factor graph, adding priors
+  NonlinearFactorGraph graph;
+  graph.push_back(smartFactor1);
+  graph.push_back(smartFactor2);
+  graph.push_back(smartFactor3);
+  graph.addPrior(x1, wTb1, noisePrior);
+  graph.addPrior(x2, wTb2, noisePrior);
+
+  // Check errors at ground truth poses
+  Values gtValues;
+  gtValues.insert(x1, wTb1);
+  gtValues.insert(x2, wTb2);
+  gtValues.insert(x3, wTb3);
+  double actualError = graph.error(gtValues);
+  double expectedError = 0.0;
+  DOUBLES_EQUAL(expectedError, actualError, 1e-7)
+
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
+                           Point3(0.1, 0.1, 0.1));
+  Values values;
+  values.insert(x1, wTb1);
+  values.insert(x2, wTb2);
+  // initialize third pose with some noise, we expect it to move back to
+  // original pose3
+  values.insert(x3, wTb3 * noise_pose);
+
+  LevenbergMarquardtParams lmParams;
+  Values result;
+  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
+  result = optimizer.optimize();
+  EXPECT(assert_equal(wTb3, result.at<Pose3>(x3)));
+}
+
+/* *************************************************************************/
 TEST( SmartProjectionRigFactor, 3poses_smart_projection_factor ) {
 
   using namespace vanillaPose2;
