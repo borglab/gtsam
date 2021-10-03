@@ -341,19 +341,21 @@ class SmartProjectionPoseFactorRollingShutter
         this->keys_
             .size();  // note: by construction, keys_ only contains unique keys
 
+    typename Base::Cameras cameras = this->cameras(values);
+
     // Create structures for Hessian Factors
     KeyVector js;
     std::vector<Matrix> Gs(nrUniqueKeys * (nrUniqueKeys + 1) / 2);
     std::vector<Vector> gs(nrUniqueKeys);
 
     if (this->measured_.size() !=
-        this->cameras(values).size())  // 1 observation per interpolated camera
+        cameras.size())  // 1 observation per interpolated camera
       throw std::runtime_error(
           "SmartProjectionPoseFactorRollingShutter: "
           "measured_.size() inconsistent with input");
 
     // triangulate 3D point at given linearization point
-    this->triangulateSafe(this->cameras(values));
+    this->triangulateSafe(cameras);
 
     if (!this->result_) {  // failed: return "empty/zero" Hessian
       if (this->params_.degeneracyMode == ZERO_ON_DEGENERACY) {

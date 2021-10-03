@@ -38,7 +38,7 @@ namespace gtsam {
 /**
  * This factor assumes that camera calibration is fixed (but each camera
  * measurement can have a different extrinsic and intrinsic calibration).
- * The factor only constrains poses (variable dimension is 6).
+ * The factor only constrains poses (variable dimension is 6 for each pose).
  * This factor requires that values contains the involved poses (Pose3).
  * If all measurements share the same calibration (i.e., are from the same camera), use SmartProjectionPoseFactor instead!
  * If the calibration should be optimized, as well, use SmartProjectionFactor instead!
@@ -60,7 +60,7 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
   /// vector of keys (one for each observation) with potentially repeated keys
   KeyVector nonUniqueKeys_;
 
-  /// cameras in the rig (fixed poses wrt body + fixed intrinsics)
+  /// cameras in the rig (fixed poses wrt body + fixed intrinsics, for each camera)
   typename Base::Cameras cameraRig_;
 
   /// vector of camera Ids (one for each observation), identifying which camera took the measurement
@@ -185,13 +185,12 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
    */
   typename Base::Cameras cameras(const Values& values) const override {
     typename Base::Cameras cameras;
+    cameras.reserve(nonUniqueKeys_.size()); // preallocate
     for (size_t i = 0; i < nonUniqueKeys_.size(); i++) {
-      const Key cameraId = cameraIds_[i];
-      const Pose3& body_P_cam_i = cameraRig_[cameraId].pose();
       const Pose3 world_P_sensor_i = values.at<Pose3>(nonUniqueKeys_[i])
-          * body_P_cam_i;
+          * cameraRig_[ cameraIds_[i] ].pose(); // cameraRig_[ cameraIds_[i] ].pose() is body_P_cam_i
       cameras.emplace_back(world_P_sensor_i,
-                           make_shared<typename CAMERA::CalibrationType>(cameraRig_[cameraId].calibration()));
+                           make_shared<typename CAMERA::CalibrationType>(cameraRig_[ cameraIds_[i] ].calibration()));
     }
     return cameras;
   }
@@ -223,10 +222,8 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
     } else {  // valid result: compute jacobians
       b = -cameras.reprojectionError(*this->result_, this->measured_, Fs, E);
       for (size_t i = 0; i < Fs.size(); i++) {
-        const Key cameraId = cameraIds_[i];
-        const Pose3 body_P_sensor = cameraRig_[cameraId].pose();
-        const Pose3 sensor_P_body = body_P_sensor.inverse();
-        const Pose3 world_P_body = cameras[i].pose() * sensor_P_body;
+        const Pose3& body_P_sensor = cameraRig_[ cameraIds_[i] ].pose();
+        const Pose3 world_P_body = cameras[i].pose() * body_P_sensor.inverse();
         Eigen::Matrix<double, DimPose, DimPose> H;
         world_P_body.compose(body_P_sensor, H);
         Fs.at(i) = Fs.at(i) * H;
@@ -246,11 +243,11 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
     Cameras cameras = this->cameras(values);
 
     // Create structures for Hessian Factors
-    FastVector<size_t> js;
-    FastVector < Matrix > Gs(nrUniqueKeys * (nrUniqueKeys + 1) / 2);
-    FastVector < Vector > gs(nrUniqueKeys);
+    std::vector<size_t> js;
+    std::vector < Matrix > Gs(nrUniqueKeys * (nrUniqueKeys + 1) / 2);
+    std::vector < Vector > gs(nrUniqueKeys);
 
-    if (this->measured_.size() != this->cameras(values).size())  // 1 observation per camera
+    if (this->measured_.size() != cameras.size())  // 1 observation per camera
       throw std::runtime_error("SmartProjectionRigFactor: "
                                "measured_.size() inconsistent with input");
 
