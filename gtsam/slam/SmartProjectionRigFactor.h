@@ -64,7 +64,7 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
   typename Base::Cameras cameraRig_;
 
   /// vector of camera Ids (one for each observation), identifying which camera took the measurement
-  KeyVector cameraIds_;
+  FastVector<size_t> cameraIds_;
 
  public:
   typedef CAMERA Camera;
@@ -145,7 +145,7 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
   }
 
   /// return the calibration object
-  inline KeyVector cameraIds() const {
+  inline FastVector<size_t> cameraIds() const {
     return cameraIds_;
   }
 
@@ -184,11 +184,12 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
   typename Base::Cameras cameras(const Values& values) const override {
     typename Base::Cameras cameras;
     for (size_t i = 0; i < nonUniqueKeys_.size(); i++) {
-      const Pose3& body_P_cam_i = cameraRig_[i].pose();
+      const Key cameraId = cameraIds_[i];
+      const Pose3& body_P_cam_i = cameraRig_[cameraId].pose();
       const Pose3 world_P_sensor_i = values.at<Pose3>(nonUniqueKeys_[i])
           * body_P_cam_i;
       cameras.emplace_back(world_P_sensor_i,
-                           make_shared<typename CAMERA::CalibrationType>(cameraRig_[i].calibration()));
+                           make_shared<typename CAMERA::CalibrationType>(cameraRig_[cameraId].calibration()));
     }
     return cameras;
   }
@@ -220,7 +221,8 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
     } else {  // valid result: compute jacobians
       b = -cameras.reprojectionError(*this->result_, this->measured_, Fs, E);
       for (size_t i = 0; i < Fs.size(); i++) {
-        const Pose3 body_P_sensor = cameraRig_[i].pose();
+        const Key cameraId = cameraIds_[i];
+        const Pose3 body_P_sensor = cameraRig_[cameraId].pose();
         const Pose3 sensor_P_body = body_P_sensor.inverse();
         const Pose3 world_P_body = cameras[i].pose() * sensor_P_body;
         Eigen::Matrix<double, DimPose, DimPose> H;
@@ -242,7 +244,7 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
     Cameras cameras = this->cameras(values);
 
     // Create structures for Hessian Factors
-    KeyVector js;
+    FastVector<size_t> js;
     FastVector < Matrix > Gs(nrUniqueKeys * (nrUniqueKeys + 1) / 2);
     FastVector < Vector > gs(nrUniqueKeys);
 
