@@ -351,157 +351,161 @@ TEST( SmartProjectionRigFactor, 3poses_smart_projection_factor ) {
   EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-6));
 }
 
-///* *************************************************************************/
-//TEST( SmartProjectionRigFactor, Factors ) {
-//
-//  using namespace vanillaPose;
-//
-//  // Default cameras for simple derivatives
-//  Rot3 R;
-//  static Cal3_S2::shared_ptr sharedK(new Cal3_S2(100, 100, 0, 0, 0));
-//  Camera cam1(Pose3(R, Point3(0, 0, 0)), sharedK), cam2(
-//      Pose3(R, Point3(1, 0, 0)), sharedK);
-//
-//  // one landmarks 1m in front of camera
-//  Point3 landmark1(0, 0, 10);
-//
-//  Point2Vector measurements_cam1;
-//
-//  // Project 2 landmarks into 2 cameras
-//  measurements_cam1.push_back(cam1.project(landmark1));
-//  measurements_cam1.push_back(cam2.project(landmark1));
-//
-//  // Create smart factors
-//  KeyVector views { x1, x2 };
-//
-//  std::vector < boost::shared_ptr < Cal3_S2 >> sharedKs;
-//  sharedKs.push_back(sharedK);
-//  sharedKs.push_back(sharedK);
-//
-//  SmartFactorP::shared_ptr smartFactor1 = boost::make_shared < SmartFactorP
-//      > (model);
-//  smartFactor1->add(measurements_cam1, views, sharedKs);
-//
-//  SmartFactorP::Cameras cameras;
-//  cameras.push_back(cam1);
-//  cameras.push_back(cam2);
-//
-//  // Make sure triangulation works
-//  CHECK(smartFactor1->triangulateSafe(cameras));
-//  CHECK(!smartFactor1->isDegenerate());
-//  CHECK(!smartFactor1->isPointBehindCamera());
-//  boost::optional<Point3> p = smartFactor1->point();
-//  CHECK(p);
-//  EXPECT(assert_equal(landmark1, *p));
-//
-//  VectorValues zeroDelta;
-//  Vector6 delta;
-//  delta.setZero();
-//  zeroDelta.insert(x1, delta);
-//  zeroDelta.insert(x2, delta);
-//
-//  VectorValues perturbedDelta;
-//  delta.setOnes();
-//  perturbedDelta.insert(x1, delta);
-//  perturbedDelta.insert(x2, delta);
-//  double expectedError = 2500;
-//
-//  // After eliminating the point, A1 and A2 contain 2-rank information on cameras:
-//  Matrix16 A1, A2;
-//  A1 << -10, 0, 0, 0, 1, 0;
-//  A2 << 10, 0, 1, 0, -1, 0;
-//  A1 *= 10. / sigma;
-//  A2 *= 10. / sigma;
-//  Matrix expectedInformation;  // filled below
-//  {
-//    // createHessianFactor
-//    Matrix66 G11 = 0.5 * A1.transpose() * A1;
-//    Matrix66 G12 = 0.5 * A1.transpose() * A2;
-//    Matrix66 G22 = 0.5 * A2.transpose() * A2;
-//
-//    Vector6 g1;
-//    g1.setZero();
-//    Vector6 g2;
-//    g2.setZero();
-//
-//    double f = 0;
-//
-//    RegularHessianFactor<6> expected(x1, x2, G11, G12, g1, G22, g2, f);
-//    expectedInformation = expected.information();
-//
-//    Values values;
-//    values.insert(x1, cam1.pose());
-//    values.insert(x2, cam2.pose());
-//
-//    boost::shared_ptr < RegularHessianFactor<6> > actual = smartFactor1
-//        ->createHessianFactor(values, 0.0);
-//    EXPECT(assert_equal(expectedInformation, actual->information(), 1e-6));
-//    EXPECT(assert_equal(expected, *actual, 1e-6));
-//    EXPECT_DOUBLES_EQUAL(0, actual->error(zeroDelta), 1e-6);
-//    EXPECT_DOUBLES_EQUAL(expectedError, actual->error(perturbedDelta), 1e-6);
-//  }
-//}
-//
-///* *************************************************************************/
-//TEST( SmartProjectionRigFactor, 3poses_iterative_smart_projection_factor ) {
-//
-//  using namespace vanillaPose;
-//
-//  KeyVector views { x1, x2, x3 };
-//
-//  Point2Vector measurements_cam1, measurements_cam2, measurements_cam3;
-//
-//  // Project three landmarks into three cameras
-//  projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
-//  projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
-//  projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
-//
-//  std::vector < boost::shared_ptr < Cal3_S2 >> sharedKs;
-//  sharedKs.push_back(sharedK);
-//  sharedKs.push_back(sharedK);
-//  sharedKs.push_back(sharedK);
-//
-//  SmartFactorP::shared_ptr smartFactor1(new SmartFactorP(model));
-//  smartFactor1->add(measurements_cam1, views, sharedKs);
-//
-//  SmartFactorP::shared_ptr smartFactor2(new SmartFactorP(model));
-//  smartFactor2->add(measurements_cam2, views, sharedKs);
-//
-//  SmartFactorP::shared_ptr smartFactor3(new SmartFactorP(model));
-//  smartFactor3->add(measurements_cam3, views, sharedKs);
-//
-//  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
-//
-//  NonlinearFactorGraph graph;
-//  graph.push_back(smartFactor1);
-//  graph.push_back(smartFactor2);
-//  graph.push_back(smartFactor3);
-//  graph.addPrior(x1, cam1.pose(), noisePrior);
-//  graph.addPrior(x2, cam2.pose(), noisePrior);
-//
-//  //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
-//  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
-//                           Point3(0.1, 0.1, 0.1));  // smaller noise
-//  Values values;
-//  values.insert(x1, cam1.pose());
-//  values.insert(x2, cam2.pose());
-//  // initialize third pose with some noise, we expect it to move back to original pose_above
-//  values.insert(x3, pose_above * noise_pose);
-//  EXPECT(
-//      assert_equal(
-//          Pose3(
-//              Rot3(1.11022302e-16, -0.0314107591, 0.99950656, -0.99950656,
-//                   -0.0313952598, -0.000986635786, 0.0314107591, -0.999013364,
-//                   -0.0313952598),
-//              Point3(0.1, -0.1, 1.9)),
-//          values.at<Pose3>(x3)));
-//
-//  Values result;
-//  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
-//  result = optimizer.optimize();
-//  EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-7));
-//}
-//
+/* *************************************************************************/
+TEST( SmartProjectionRigFactor, Factors ) {
+
+  using namespace vanillaPose;
+
+  // Default cameras for simple derivatives
+  Rot3 R;
+  static Cal3_S2::shared_ptr sharedK(new Cal3_S2(100, 100, 0, 0, 0));
+  Camera cam1(Pose3(R, Point3(0, 0, 0)), sharedK), cam2(
+      Pose3(R, Point3(1, 0, 0)), sharedK);
+
+  // one landmarks 1m in front of camera
+  Point3 landmark1(0, 0, 10);
+
+  Point2Vector measurements_cam1;
+
+  // Project 2 landmarks into 2 cameras
+  measurements_cam1.push_back(cam1.project(landmark1));
+  measurements_cam1.push_back(cam2.project(landmark1));
+
+  // Create smart factors
+  Cameras cameraRig; // single camera in the rig
+  cameraRig.push_back( Camera(Pose3::identity(), sharedK) );
+
+  KeyVector views { x1, x2 };
+  FastVector<size_t> cameraIds { 0, 0 };
+
+  SmartFactorP::shared_ptr smartFactor1 = boost::make_shared < SmartFactorP
+      > (model,cameraRig);
+  smartFactor1->add(measurements_cam1, views, cameraIds);
+
+  SmartFactorP::Cameras cameras;
+  cameras.push_back(cam1);
+  cameras.push_back(cam2);
+
+  // Make sure triangulation works
+  CHECK(smartFactor1->triangulateSafe(cameras));
+  CHECK(!smartFactor1->isDegenerate());
+  CHECK(!smartFactor1->isPointBehindCamera());
+  boost::optional<Point3> p = smartFactor1->point();
+  CHECK(p);
+  EXPECT(assert_equal(landmark1, *p));
+
+  VectorValues zeroDelta;
+  Vector6 delta;
+  delta.setZero();
+  zeroDelta.insert(x1, delta);
+  zeroDelta.insert(x2, delta);
+
+  VectorValues perturbedDelta;
+  delta.setOnes();
+  perturbedDelta.insert(x1, delta);
+  perturbedDelta.insert(x2, delta);
+  double expectedError = 2500;
+
+  // After eliminating the point, A1 and A2 contain 2-rank information on cameras:
+  Matrix16 A1, A2;
+  A1 << -10, 0, 0, 0, 1, 0;
+  A2 << 10, 0, 1, 0, -1, 0;
+  A1 *= 10. / sigma;
+  A2 *= 10. / sigma;
+  Matrix expectedInformation;  // filled below
+  {
+    // createHessianFactor
+    Matrix66 G11 = 0.5 * A1.transpose() * A1;
+    Matrix66 G12 = 0.5 * A1.transpose() * A2;
+    Matrix66 G22 = 0.5 * A2.transpose() * A2;
+
+    Vector6 g1;
+    g1.setZero();
+    Vector6 g2;
+    g2.setZero();
+
+    double f = 0;
+
+    RegularHessianFactor<6> expected(x1, x2, G11, G12, g1, G22, g2, f);
+    expectedInformation = expected.information();
+
+    Values values;
+    values.insert(x1, cam1.pose());
+    values.insert(x2, cam2.pose());
+
+    boost::shared_ptr < RegularHessianFactor<6> > actual = smartFactor1
+        ->createHessianFactor(values, 0.0);
+    EXPECT(assert_equal(expectedInformation, actual->information(), 1e-6));
+    EXPECT(assert_equal(expected, *actual, 1e-6));
+    EXPECT_DOUBLES_EQUAL(0, actual->error(zeroDelta), 1e-6);
+    EXPECT_DOUBLES_EQUAL(expectedError, actual->error(perturbedDelta), 1e-6);
+  }
+}
+
+/* *************************************************************************/
+TEST( SmartProjectionRigFactor, 3poses_iterative_smart_projection_factor ) {
+
+  using namespace vanillaPose;
+
+  KeyVector views { x1, x2, x3 };
+
+  Point2Vector measurements_cam1, measurements_cam2, measurements_cam3;
+
+  // Project three landmarks into three cameras
+  projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
+  projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
+  projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
+
+  std::vector < boost::shared_ptr < Cal3_S2 >> sharedKs;
+  sharedKs.push_back(sharedK);
+  sharedKs.push_back(sharedK);
+  sharedKs.push_back(sharedK);
+
+  // create smart factor
+  Cameras cameraRig; // single camera in the rig
+  cameraRig.push_back( Camera(Pose3::identity(), sharedK) );
+  FastVector<size_t> cameraIds { 0, 0, 0};
+  SmartFactorP::shared_ptr smartFactor1(new SmartFactorP(model, cameraRig));
+  smartFactor1->add(measurements_cam1, views, cameraIds);
+
+  SmartFactorP::shared_ptr smartFactor2(new SmartFactorP(model, cameraRig));
+  smartFactor2->add(measurements_cam2, views, cameraIds);
+
+  SmartFactorP::shared_ptr smartFactor3(new SmartFactorP(model, cameraRig));
+  smartFactor3->add(measurements_cam3, views, cameraIds);
+
+  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
+
+  NonlinearFactorGraph graph;
+  graph.push_back(smartFactor1);
+  graph.push_back(smartFactor2);
+  graph.push_back(smartFactor3);
+  graph.addPrior(x1, cam1.pose(), noisePrior);
+  graph.addPrior(x2, cam2.pose(), noisePrior);
+
+  //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
+                           Point3(0.1, 0.1, 0.1));  // smaller noise
+  Values values;
+  values.insert(x1, cam1.pose());
+  values.insert(x2, cam2.pose());
+  // initialize third pose with some noise, we expect it to move back to original pose_above
+  values.insert(x3, pose_above * noise_pose);
+  EXPECT(
+      assert_equal(
+          Pose3(
+              Rot3(1.11022302e-16, -0.0314107591, 0.99950656, -0.99950656,
+                   -0.0313952598, -0.000986635786, 0.0314107591, -0.999013364,
+                   -0.0313952598),
+              Point3(0.1, -0.1, 1.9)),
+          values.at<Pose3>(x3)));
+
+  Values result;
+  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
+  result = optimizer.optimize();
+  EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-7));
+}
+
 ///* *************************************************************************/
 //TEST( SmartProjectionRigFactor, landmarkDistance ) {
 //
