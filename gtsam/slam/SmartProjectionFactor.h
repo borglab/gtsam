@@ -71,6 +71,7 @@ protected:
   typedef boost::shared_ptr<This> shared_ptr;
 
   /// shorthand for a set of cameras
+  typedef CAMERA Camera;
   typedef CameraSet<CAMERA> Cameras;
 
   /**
