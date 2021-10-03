@@ -127,8 +127,10 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
    */
   void add(const Point2Vector& measurements, const KeyVector& poseKeys,
            const FastVector<size_t>& cameraIds) {
-    assert(poseKeys.size() == measurements.size());
-    assert(poseKeys.size() == cameraIds.size());
+    if(poseKeys.size() != measurements.size() || poseKeys.size() != cameraIds.size()){
+      throw std::runtime_error("SmartProjectionRigFactor: "
+          "trying to add inconsistent inputs");
+    }
     for (size_t i = 0; i < measurements.size(); i++) {
       add(measurements[i], poseKeys[i], cameraIds[i]);
     }
