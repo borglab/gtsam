@@ -84,6 +84,7 @@ Camera cam3(pose_above, sharedK);
 // default Cal3_S2 poses
 namespace vanillaPose2 {
 typedef PinholePose<Cal3_S2> Camera;
+typedef CameraSet<Camera> Cameras;
 typedef SmartProjectionPoseFactor<Cal3_S2> SmartFactor;
 typedef SmartProjectionRigFactor<Camera> SmartFactorP;
 static Cal3_S2::shared_ptr sharedK2(new Cal3_S2(1500, 1200, 0, 640, 480));
