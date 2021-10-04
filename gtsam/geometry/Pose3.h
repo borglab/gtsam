@@ -148,12 +148,14 @@ public:
   Matrix6 AdjointMap() const; /// FIXME Not tested - marked as incorrect
 
   /**
-   * Apply this pose's AdjointMap Ad_g to a twist \f$ \xi_b \f$, i.e. a body-fixed velocity, transforming it to the spatial frame
+   * Apply this pose's AdjointMap Ad_g to a twist \f$ \xi_b \f$, i.e. a
+   * body-fixed velocity, transforming it to the spatial frame
    * \f$ \xi^s = g*\xi^b*g^{-1} = Ad_g * \xi^b \f$
+   * Note that H_xib = AdjointMap()
    */
-  Vector6 Adjoint(const Vector6& xi_b) const {
-    return AdjointMap() * xi_b;
-  } /// FIXME Not tested - marked as incorrect
+  Vector6 Adjoint(const Vector6& xi_b,
+                  OptionalJacobian<6, 6> H_this = boost::none,
+                  OptionalJacobian<6, 6> H_xib = boost::none) const;
 
   /**
    * Compute the [ad(w,v)] operator as defined in [Kobilarov09siggraph], pg 11
