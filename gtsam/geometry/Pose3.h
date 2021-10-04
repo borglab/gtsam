@@ -156,6 +156,11 @@ public:
   Vector6 Adjoint(const Vector6& xi_b,
                   OptionalJacobian<6, 6> H_this = boost::none,
                   OptionalJacobian<6, 6> H_xib = boost::none) const;
+  
+  /// The dual version of Adjoint
+  Vector6 AdjointTranspose(const Vector6& x,
+                           OptionalJacobian<6, 6> H_this = boost::none,
+                           OptionalJacobian<6, 6> H_x = boost::none) const;
 
   /**
    * Compute the [ad(w,v)] operator as defined in [Kobilarov09siggraph], pg 11

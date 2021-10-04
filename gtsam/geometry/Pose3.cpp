@@ -101,6 +101,42 @@ Vector6 Pose3::Adjoint(const Vector6& xi_b, OptionalJacobian<6, 6> H_this,
 }
 
 /* ************************************************************************* */
+/// The dual version of Adjoint
+Vector6 Pose3::AdjointTranspose(const Vector6& x, OptionalJacobian<6, 6> H_this,
+                                OptionalJacobian<6, 6> H_x) const {
+  //  Ad^T   *   xi   =   [ R^T  R^T.[-t]  .  [w
+  //                         0     R^T ]       v]
+  // Declarations and aliases
+  Matrix3 Rw_H_R, Rw_H_w, Rv_H_R, Rv_H_v, tv_H_t, tv_H_v, Rtv_H_R, Rtv_H_tv;
+  Vector6 result;
+  const Vector3 &w = x.head<3>(), &v = x.tail<3>();
+  auto Rv = result.tail<3>();
+
+  // Calculations
+  const Vector3 Rw =
+      R_.unrotate(w, H_this ? &Rw_H_R : nullptr, H_x ? &Rw_H_w : nullptr);
+  Rv = R_.unrotate(v, H_this ? &Rv_H_R : nullptr, H_x ? &Rv_H_v : nullptr);
+  const Vector3 tv = cross(t_, v, tv_H_t, tv_H_v);
+  const Vector3 Rtv = R_.unrotate(tv, Rtv_H_R, Rtv_H_tv);
+  result.head<3>() = Rw - Rtv;
+
+  // Jacobians
+  if (H_this) {
+    *H_this = (Matrix6() << Rw_H_R - Rtv_H_R, Rv_H_R,  // -Rtv_H_tv * tv_H_t
+               /*        */ Rv_H_R, /*     */ Z_3x3)
+                  .finished();
+  }
+  if (H_x) {
+    *H_x = (Matrix6() << Rw_H_w, -Rtv_H_tv * tv_H_v,  //
+            /*        */ Z_3x3, Rv_H_v)
+               .finished();
+  }
+
+  // Return
+  return result;
+}
+
+/* ************************************************************************* */
 Matrix6 Pose3::adjointMap(const Vector6& xi) {
   Matrix3 w_hat = skewSymmetric(xi(0), xi(1), xi(2));
   Matrix3 v_hat = skewSymmetric(xi(3), xi(4), xi(5));
