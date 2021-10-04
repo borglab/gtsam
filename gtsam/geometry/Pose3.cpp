@@ -67,9 +67,8 @@ Matrix6 Pose3::AdjointMap() const {
 // Calculate AdjointMap applied to xi_b, with Jacobians
 Vector6 Pose3::Adjoint(const Vector6& xi_b, OptionalJacobian<6, 6> H_this,
                        OptionalJacobian<6, 6> H_xib) const {
-  //  Ad   *   xi   =   [   R   0    *   [w
-  //                      [t]R  R ]       v]
-
+  //  Ad   *   xi   =   [   R   0    .  [w
+  //                      [t]R  R ]      v]
   // Declarations and aliases
   Matrix3 Rw_H_R, Rw_H_w, Rv_H_R, Rv_H_v, pRw_H_t, pRw_H_Rw;
   Vector6 result;
@@ -77,14 +76,16 @@ Vector6 Pose3::Adjoint(const Vector6& xi_b, OptionalJacobian<6, 6> H_this,
   const Vector3 &w = xi_b.head<3>(), &v = xi_b.tail<3>();
 
   // Calculations
-  Rw = R_.rotate(w, Rw_H_R, Rw_H_w);
-  const Vector3 Rv = R_.rotate(v, Rv_H_R, Rv_H_v);
-  const Vector3 pRw = cross(t_, Rw, pRw_H_t, pRw_H_Rw);
+  Rw = R_.rotate(w, H_this ? &Rw_H_R : nullptr, H_xib ? &Rw_H_w : nullptr);
+  const Vector3 Rv =
+      R_.rotate(v, H_this ? &Rv_H_R : nullptr, H_xib ? &Rv_H_v : nullptr);
+  const Vector3 pRw = cross(t_, Rw, H_this ? &pRw_H_t : nullptr,
+                            H_this || H_xib ? &pRw_H_Rw : nullptr);
   result.tail<3>() = pRw + Rv;
-  pRw_H_t = Rw_H_R;  // This is needed to pass the unit tests for some reason
 
   // Jacobians
   if (H_this) {
+    pRw_H_t = Rw_H_R;  // This is needed to pass the unit tests for some reason
     *H_this = (Matrix6() << Rw_H_R, /*               */ Z_3x3,  //
                /*        */ pRw_H_Rw * Rw_H_R + Rv_H_R, pRw_H_t)
                   .finished();
