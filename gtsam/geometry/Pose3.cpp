@@ -80,7 +80,7 @@ Vector6 Pose3::Adjoint(const Vector6& xi_b, OptionalJacobian<6, 6> H_this,
   const Vector3 Rv =
       R_.rotate(v, H_this ? &Rv_H_R : nullptr, H_xib ? &Rv_H_v : nullptr);
   const Vector3 pRw = cross(t_, Rw, H_this ? &pRw_H_t : nullptr,
-                            H_this || H_xib ? &pRw_H_Rw : nullptr);
+                            (H_this || H_xib) ? &pRw_H_Rw : nullptr);
   result.tail<3>() = pRw + Rv;
 
   // Jacobians
@@ -116,8 +116,10 @@ Vector6 Pose3::AdjointTranspose(const Vector6& x, OptionalJacobian<6, 6> H_this,
   const Vector3 Rw =
       R_.unrotate(w, H_this ? &Rw_H_R : nullptr, H_x ? &Rw_H_w : nullptr);
   Rv = R_.unrotate(v, H_this ? &Rv_H_R : nullptr, H_x ? &Rv_H_v : nullptr);
-  const Vector3 tv = cross(t_, v, tv_H_t, tv_H_v);
-  const Vector3 Rtv = R_.unrotate(tv, Rtv_H_R, Rtv_H_tv);
+  const Vector3 tv =
+      cross(t_, v, H_this ? &tv_H_t : nullptr, H_x ? &tv_H_v : nullptr);
+  const Vector3 Rtv = R_.unrotate(tv, H_this ? &Rtv_H_R : nullptr,
+                                  (H_this || H_x) ? &Rtv_H_tv : nullptr);
   result.head<3>() = Rw - Rtv;
 
   // Jacobians
