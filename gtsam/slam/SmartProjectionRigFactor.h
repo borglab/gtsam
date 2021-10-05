@@ -36,10 +36,10 @@ namespace gtsam {
  */
 
 /**
- * This factor assumes that camera calibration is fixed (but each camera
- * measurement can have a different extrinsic and intrinsic calibration).
- * The factor only constrains poses (variable dimension is 6 for each pose).
- * This factor requires that values contains the involved poses (Pose3).
+ * This factor assumes that camera calibration is fixed (but each measurement
+ * can be taken by a different camera in the rig, hence can have a different
+ * extrinsic and intrinsic calibration). The factor only constrains poses (variable dimension
+ * is 6 for each pose). This factor requires that values contains the involved poses (Pose3).
  * If all measurements share the same calibration (i.e., are from the same camera), use SmartProjectionPoseFactor instead!
  * If the calibration should be optimized, as well, use SmartProjectionFactor instead!
  * @addtogroup SLAM
@@ -53,7 +53,7 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
   typedef typename CAMERA::CalibrationType CALIBRATION;
 
   static const int DimPose = 6;  ///< Pose3 dimension
-  static const int ZDim = 2;  ///< Measurement dimension (Point2)
+  static const int ZDim = 2;  ///< Measurement dimension
 
  protected:
 
@@ -63,7 +63,7 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
   /// cameras in the rig (fixed poses wrt body + fixed intrinsics, for each camera)
   typename Base::Cameras cameraRig_;
 
-  /// vector of camera Ids (one for each observation), identifying which camera took the measurement
+  /// vector of camera Ids (one for each observation, in the same order), identifying which camera took the measurement
   FastVector<size_t> cameraIds_;
 
  public:
@@ -84,10 +84,11 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
    * @param params parameters for the smart projection factors
    */
   SmartProjectionRigFactor(const SharedNoiseModel& sharedNoiseModel,
-                         const Cameras& cameraRig,
-                         const SmartProjectionParams& params =
-                             SmartProjectionParams())
-      : Base(sharedNoiseModel, params), cameraRig_(cameraRig) {
+                           const Cameras& cameraRig,
+                           const SmartProjectionParams& params =
+                               SmartProjectionParams())
+      : Base(sharedNoiseModel, params),
+        cameraRig_(cameraRig) {
     // use only configuration that works with this factor
     Base::params_.degeneracyMode = gtsam::ZERO_ON_DEGENERACY;
     Base::params_.linearizationMode = gtsam::HESSIAN;
@@ -123,7 +124,7 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
    * @param measurements vector of the 2m dimensional location of the projection
    * of a single landmark in the m views (the measurements)
    * @param poseKeys keys corresponding to the body poses of the cameras taking the measurements
-   * @param cameraIds IDs of the cameras in the rig taking each measurement (same order as measurements)
+   * @param cameraIds IDs of the cameras in the rig taking each measurement (same order as the measurements)
    */
   void add(const Point2Vector& measurements, const KeyVector& poseKeys,
            const FastVector<size_t>& cameraIds) {
@@ -185,12 +186,14 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
    */
   typename Base::Cameras cameras(const Values& values) const override {
     typename Base::Cameras cameras;
-    cameras.reserve(nonUniqueKeys_.size()); // preallocate
+    cameras.reserve(nonUniqueKeys_.size());  // preallocate
     for (size_t i = 0; i < nonUniqueKeys_.size(); i++) {
-      const Pose3 world_P_sensor_i = values.at<Pose3>(nonUniqueKeys_[i])
-          * cameraRig_[ cameraIds_[i] ].pose(); // cameraRig_[ cameraIds_[i] ].pose() is body_P_cam_i
-      cameras.emplace_back(world_P_sensor_i,
-                           make_shared<typename CAMERA::CalibrationType>(cameraRig_[ cameraIds_[i] ].calibration()));
+      const Pose3 world_P_sensor_i = values.at<Pose3>(nonUniqueKeys_[i])  // = world_P_body
+      * cameraRig_[cameraIds_[i]].pose();  // = body_P_cam_i
+      cameras.emplace_back(
+          world_P_sensor_i,
+          make_shared<typename CAMERA::CalibrationType>(
+              cameraRig_[cameraIds_[i]].calibration()));
     }
     return cameras;
   }
