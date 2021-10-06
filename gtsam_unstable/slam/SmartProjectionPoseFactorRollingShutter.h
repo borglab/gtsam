@@ -178,7 +178,8 @@ class SmartProjectionPoseFactorRollingShutter
 
     if (world_P_body_key_pairs.size() != measurements.size()
         || world_P_body_key_pairs.size() != alphas.size()
-        || world_P_body_key_pairs.size() != cameraIds.size()) {
+        || (world_P_body_key_pairs.size() != cameraIds.size()
+            && cameraIds.size() != 0)) { // cameraIds.size()=0 is default
       throw std::runtime_error("SmartProjectionPoseFactorRollingShutter: "
                                "trying to add inconsistent inputs");
     }
