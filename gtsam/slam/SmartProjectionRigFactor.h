@@ -94,6 +94,23 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
     Base::params_.linearizationMode = gtsam::HESSIAN;
   }
 
+  /**
+   * Constructor
+   * @param sharedNoiseModel isotropic noise model for the 2D feature measurements
+   * @param camera single camera (fixed poses wrt body and intrinsics)
+   * @param params parameters for the smart projection factors
+   */
+  SmartProjectionRigFactor(const SharedNoiseModel& sharedNoiseModel,
+                           const Camera& camera,
+                           const SmartProjectionParams& params =
+                               SmartProjectionParams())
+      : Base(sharedNoiseModel, params) {
+    // use only configuration that works with this factor
+    Base::params_.degeneracyMode = gtsam::ZERO_ON_DEGENERACY;
+    Base::params_.linearizationMode = gtsam::HESSIAN;
+    cameraRig_.push_back(camera);
+  }
+
   /** Virtual destructor */
   ~SmartProjectionRigFactor() override {
   }
@@ -104,9 +121,9 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
    * @param measured 2-dimensional location of the projection of a
    * single landmark in a single view (the measurement)
    * @param poseKey key corresponding to the body pose of the camera taking the measurement
-   * @param cameraId ID of the camera in the rig taking the measurement
+   * @param cameraId ID of the camera in the rig taking the measurement (default 0)
    */
-  void add(const Point2& measured, const Key& poseKey, const size_t cameraId) {
+  void add(const Point2& measured, const Key& poseKey, const size_t cameraId = 0) {
     // store measurement and key
     this->measured_.push_back(measured);
     this->nonUniqueKeys_.push_back(poseKey);
@@ -127,13 +144,19 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
    * @param cameraIds IDs of the cameras in the rig taking each measurement (same order as the measurements)
    */
   void add(const Point2Vector& measurements, const KeyVector& poseKeys,
-           const FastVector<size_t>& cameraIds) {
-    if(poseKeys.size() != measurements.size() || poseKeys.size() != cameraIds.size()){
+           const FastVector<size_t>& cameraIds = FastVector<size_t>()) {
+    if (poseKeys.size() != measurements.size()
+        || (poseKeys.size() != cameraIds.size() && cameraIds.size() != 0)) {
       throw std::runtime_error("SmartProjectionRigFactor: "
-          "trying to add inconsistent inputs");
+                               "trying to add inconsistent inputs");
+    }
+    if (cameraIds.size() == 0 && cameraRig_.size() > 1) {
+      throw std::runtime_error(
+          "SmartProjectionRigFactor: "
+          "camera rig includes multiple camera but add did not input cameraIds");
     }
     for (size_t i = 0; i < measurements.size(); i++) {
-      add(measurements[i], poseKeys[i], cameraIds[i]);
+      add(measurements[i], poseKeys[i], cameraIds.size() == 0 ? 0 : cameraIds[i]);
     }
   }
 

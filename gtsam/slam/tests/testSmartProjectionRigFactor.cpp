@@ -93,6 +93,15 @@ TEST( SmartProjectionRigFactor, Constructor4) {
 }
 
 /* ************************************************************************* */
+TEST( SmartProjectionRigFactor, Constructor5) {
+  using namespace vanillaPose;
+  SmartProjectionParams params;
+  params.setRankTolerance(rankTol);
+  SmartRigFactor factor1(model, Camera(Pose3::identity(), sharedK), params);
+  factor1.add(measurement1, x1, cameraId1);
+}
+
+/* ************************************************************************* */
 TEST( SmartProjectionRigFactor, Equals ) {
   using namespace vanillaPose;
   Cameras cameraRig; // single camera in the rig
@@ -105,6 +114,11 @@ TEST( SmartProjectionRigFactor, Equals ) {
   factor2->add(measurement1, x1, cameraId1);
 
   CHECK(assert_equal(*factor1, *factor2));
+
+  SmartRigFactor::shared_ptr factor3(new SmartRigFactor(model, Camera(Pose3::identity(), sharedK)));
+  factor3->add(measurement1, x1);   // now use default
+
+  CHECK(assert_equal(*factor1, *factor3));
 }
 
 /* *************************************************************************/
@@ -112,16 +126,13 @@ TEST( SmartProjectionRigFactor, noiseless ) {
 
   using namespace vanillaPose;
 
-  Cameras cameraRig; // single camera in the rig
-  cameraRig.push_back( Camera(Pose3::identity(), sharedK) );
-
   // Project two landmarks into two cameras
   Point2 level_uv = level_camera.project(landmark1);
   Point2 level_uv_right = level_camera_right.project(landmark1);
 
-  SmartRigFactor factor(model, cameraRig);
-  factor.add(level_uv, x1, cameraId1); // both taken from the same camera
-  factor.add(level_uv_right, x2, cameraId1);
+  SmartRigFactor factor(model, Camera(Pose3::identity(), sharedK) );
+  factor.add(level_uv, x1); // both taken from the same camera
+  factor.add(level_uv_right, x2);
 
   Values values;  // it's a pose factor, hence these are poses
   values.insert(x1, cam1.pose());
@@ -245,13 +256,13 @@ TEST(SmartProjectionRigFactor, smartFactorWithSensorBodyTransform) {
   params.setEnableEPI(false);
 
   SmartRigFactor smartFactor1(model, cameraRig, params);
-  smartFactor1.add(measurements_cam1, views, cameraIds);
+  smartFactor1.add(measurements_cam1, views); // use default CameraIds since we have a single camera
 
   SmartRigFactor smartFactor2(model, cameraRig, params);
-  smartFactor2.add(measurements_cam2, views, cameraIds);
+  smartFactor2.add(measurements_cam2, views);
 
   SmartRigFactor smartFactor3(model, cameraRig, params);
-  smartFactor3.add(measurements_cam3, views, cameraIds);
+  smartFactor3.add(measurements_cam3, views);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
 
@@ -459,15 +470,12 @@ TEST( SmartProjectionRigFactor, Factors ) {
   measurements_cam1.push_back(cam2.project(landmark1));
 
   // Create smart factors
-  Cameras cameraRig; // single camera in the rig
-  cameraRig.push_back( Camera(Pose3::identity(), sharedK) );
-
   KeyVector views { x1, x2 };
   FastVector<size_t> cameraIds { 0, 0 };
 
   SmartRigFactor::shared_ptr smartFactor1 = boost::make_shared < SmartRigFactor
-      > (model,cameraRig);
-  smartFactor1->add(measurements_cam1, views, cameraIds);
+      > (model, Camera(Pose3::identity(), sharedK));
+  smartFactor1->add(measurements_cam1, views); // we have a single camera so use default cameraIds
 
   SmartRigFactor::Cameras cameras;
   cameras.push_back(cam1);

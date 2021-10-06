@@ -183,6 +183,11 @@ class SmartProjectionPoseFactorRollingShutter
       throw std::runtime_error("SmartProjectionPoseFactorRollingShutter: "
                                "trying to add inconsistent inputs");
     }
+    if (cameraIds.size() == 0 && cameraRig_.size() > 1) {
+      throw std::runtime_error(
+          "SmartProjectionPoseFactorRollingShutter: "
+          "camera rig includes multiple camera but add did not input cameraIds");
+    }
     for (size_t i = 0; i < measurements.size(); i++) {
       add(measurements[i], world_P_body_key_pairs[i].first,
           world_P_body_key_pairs[i].second, alphas[i],
