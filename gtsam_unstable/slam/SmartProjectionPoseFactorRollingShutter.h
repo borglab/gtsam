@@ -49,9 +49,6 @@ class SmartProjectionPoseFactorRollingShutter
   typedef typename CAMERA::CalibrationType CALIBRATION;
 
  protected:
-  /// shared pointer to calibration object (one for each observation)
-  std::vector<boost::shared_ptr<CALIBRATION>> K_all_;
-
   /// The keys of the pose of the body (with respect to an external world
   /// frame): two consecutive poses for each observation
   std::vector<std::pair<Key, Key>> world_P_body_key_pairs_;
@@ -60,10 +57,10 @@ class SmartProjectionPoseFactorRollingShutter
   /// pair of consecutive poses
   std::vector<double> alphas_;
 
-  /// one or more cameras in the rig (fixed poses wrt body + fixed intrinsics)
+  /// one or more cameras taking observations (fixed poses wrt body + fixed intrinsics)
   typename Base::Cameras cameraRig_;
 
-  /// vector of camera Ids (one for each observation, in the same order), identifying which camera in the rig took the measurement
+  /// vector of camera Ids (one for each observation, in the same order), identifying which camera took the measurement
   FastVector<size_t> cameraIds_;
 
  public:
@@ -87,6 +84,7 @@ class SmartProjectionPoseFactorRollingShutter
   /**
    * Constructor
    * @param Isotropic measurement noise
+   * @param cameraRig set of cameras (fixed poses wrt body and intrinsics) taking the measurements
    * @param params internal parameters of the smart factors
    */
   SmartProjectionPoseFactorRollingShutter(
@@ -102,6 +100,7 @@ class SmartProjectionPoseFactorRollingShutter
   /**
    * Constructor
    * @param Isotropic measurement noise
+   * @param camera single camera (fixed poses wrt body and intrinsics)
    * @param params internal parameters of the smart factors
    */
   SmartProjectionPoseFactorRollingShutter(
@@ -114,13 +113,11 @@ class SmartProjectionPoseFactorRollingShutter
     cameraRig_.push_back(camera);
   }
 
-
   /** Virtual destructor */
   ~SmartProjectionPoseFactorRollingShutter() override = default;
 
   /**
-   * add a new measurement, with 2 pose keys, interpolation factor, camera
-   * (intrinsic and extrinsic) calibration, and observed pixel.
+   * add a new measurement, with 2 pose keys, interpolation factor, and cameraId
    * @param measured 2-dimensional location of the projection of a single
    *  landmark in a single view (the measurement), interpolated from the 2 poses
    * @param world_P_body_key1 key corresponding to the first body poses (time <=
@@ -129,8 +126,7 @@ class SmartProjectionPoseFactorRollingShutter
    *  >= time pixel is acquired)
    * @param alpha interpolation factor in [0,1], such that if alpha = 0 the
    *  interpolated pose is the same as world_P_body_key1
-   * @param K (fixed) camera intrinsic calibration
-   * @param body_P_sensor (fixed) camera extrinsic calibration
+   * @param cameraId ID of the camera taking the measurement (default 0)
    */
   void add(const Point2& measured, const Key& world_P_body_key1,
            const Key& world_P_body_key2, const double& alpha,
@@ -168,8 +164,7 @@ class SmartProjectionPoseFactorRollingShutter
    *  for the i0-th measurement can be interpolated
    * @param alphas vector of interpolation params (in [0,1]), one for each
    * measurement (in the same order)
-   * @param Ks vector of (fixed) intrinsic calibration objects
-   * @param body_P_sensors vector of (fixed) extrinsic calibration objects
+   * @param cameraIds IDs of the cameras taking each measurement (same order as the measurements)
    */
   void add(const Point2Vector& measurements,
            const std::vector<std::pair<Key, Key>>& world_P_body_key_pairs,
@@ -223,7 +218,7 @@ class SmartProjectionPoseFactorRollingShutter
       const std::string& s = "",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     std::cout << s << "SmartProjectionPoseFactorRollingShutter: \n ";
-    for (size_t i = 0; i < K_all_.size(); i++) {
+    for (size_t i = 0; i < cameraIds_.size(); i++) {
       std::cout << "-- Measurement nr " << i << std::endl;
       std::cout << " pose1 key: "
                 << keyFormatter(world_P_body_key_pairs_[i].first) << std::endl;
@@ -409,14 +404,8 @@ class SmartProjectionPoseFactorRollingShutter
    * @return Cameras
    */
   typename Base::Cameras cameras(const Values& values) const override {
-    size_t numViews = this->measured_.size();
-    assert(numViews == K_all_.size());
-    assert(numViews == alphas_.size());
-    assert(numViews == body_P_sensors_.size());
-    assert(numViews == world_P_body_key_pairs_.size());
-
     typename Base::Cameras cameras;
-    for (size_t i = 0; i < numViews; i++) {  // for each measurement
+    for (size_t i = 0; i < this->measured_.size(); i++) {  // for each measurement
       const Pose3& w_P_body1 =
           values.at<Pose3>(world_P_body_key_pairs_[i].first);
       const Pose3& w_P_body2 =
