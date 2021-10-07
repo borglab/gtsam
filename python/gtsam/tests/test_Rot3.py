@@ -33,7 +33,7 @@ class TestRot3(GtsamTestCase):
         
         # get back angle in radians
         _, actual_angle = Rot3(R).axisAngle()
-        expected_angle = 3.1396582; 
+        expected_angle = 3.1396582
         self.gtsamAssertEquals(actual_angle, expected_angle, 1e-7)
 
 
