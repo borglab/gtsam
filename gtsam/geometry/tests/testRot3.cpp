@@ -123,6 +123,21 @@ TEST( Rot3, AxisAngle)
 }
 
 /* ************************************************************************* */
+TEST( Rot3, AxisAngle2)
+{
+  // constructor from a rotation matrix, as doubles in *row-major* order.
+  Rot3 R1(-0.999957, 0.00922903, 0.00203116, 0.00926964, 0.999739, 0.0208927, -0.0018374, 0.0209105, -0.999781);
+  
+  Unit3 actualAxis;
+  double actualAngle;
+  // convert Rot3 to quaternion using GTSAM
+  std::tie(actualAxis, actualAngle) = R1.axisAngle();
+  
+  double expectedAngle = 3.1396582;
+  CHECK(assert_equal(expectedAngle, actualAngle, 1e-7));
+}
+
+/* ************************************************************************* */
 TEST( Rot3, Rodrigues)
 {
   Rot3 R1 = Rot3::Rodrigues(epsilon, 0, 0);
