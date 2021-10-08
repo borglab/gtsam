@@ -31,20 +31,32 @@ from gtsam.utils.test_case import GtsamTestCase
 # using namespace std
 # using namespace gtsam
 
+from gtsam import DiscreteKeys, DiscreteFactorGraph
+
 class TestDiscreteFactorGraph(GtsamTestCase):
     """Tests for Discrete Factor Graphs."""
 
     def test_evaluation(self):
         # Three keys P1 and P2
-        P1=DiscreteKey(0,2)
-        P2=DiscreteKey(1,2)
-        P3=DiscreteKey(2,3)
+        P1 = (0, 2)
+        P2 = (1, 2)
+        P3 = (2, 3)
 
         # Create the DiscreteFactorGraph
         graph = DiscreteFactorGraph()
-#   graph.add(P1, "0.9 0.3")
-#   graph.add(P2, "0.9 0.6")
-#   graph.add(P1 & P2, "4 1 10 4")
+        graph.add(P1, "0.9 0.3")
+        graph.add(P2, "0.9 0.6")
+
+        # NOTE(fan): originally is an operator overload in C++ &
+        def discrete_and(a, b):
+            dks = DiscreteKeys()
+            dks.push_back(a)
+            dks.push_back(b)
+            return dks
+
+        graph.add(discrete_and(P1, P2), "4 1 10 4")
+
+        print(graph)
 
 #   # Instantiate Values
 #   DiscreteFactor::Values values

@@ -49,6 +49,7 @@ set(ignore
     gtsam::Pose3Vector
     gtsam::KeyVector
     gtsam::BinaryMeasurementsUnit3
+    gtsam::DiscreteKey
     gtsam::KeyPairDoubleMap)
 
 set(interface_headers
