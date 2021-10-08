@@ -113,9 +113,9 @@ function test ()
 
   # Actual testing
   if [ "$(uname)" == "Linux" ]; then
-    make -j$(nproc)
+    make -j$(nproc) check
   elif [ "$(uname)" == "Darwin" ]; then
-    make -j$(sysctl -n hw.physicalcpu)
+    make -j$(sysctl -n hw.physicalcpu) check
   fi
 
   finish
