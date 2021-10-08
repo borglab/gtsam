@@ -10,3 +10,6 @@
  * with `PYBIND11_MAKE_OPAQUE` this allows the types to be modified with Python,
  * and saves one copy operation.
  */
+
+// Seems this is not a good idea with inherited stl
+//py::bind_vector<std::vector<gtsam::DiscreteKey>>(m_, "DiscreteKeys");
