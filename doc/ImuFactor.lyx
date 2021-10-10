@@ -227,16 +227,62 @@ preintegrated_
 
 \begin_layout Standard
 The main function of a factor is to calculate an error.
- The easiest case to look at is the NavState variant in ImuFactor2, which
- is given as:
+ This is done exactly the same in both variants: 
 \begin_inset Formula 
 \begin{equation}
-\Delta X_{ij}=X_{j}-\hat{X_{ij}}\label{eq:imu-factor-error}
+e(X_{i},X_{j})=X_{j}\ominus\widehat{X_{j}}\label{eq:imu-factor-error}
 \end{equation}
 
 \end_inset
 
+where the predicted NavState 
+\begin_inset Formula $\widehat{X_{j}}$
+\end_inset
 
+ at time 
+\begin_inset Formula $t_{j}$
+\end_inset
+
+ is a function of the NavState 
+\begin_inset Formula $X_{i}$
+\end_inset
+
+ at time 
+\begin_inset Formula $t_{i}$
+\end_inset
+
+ and the preintegrated measurements 
+\begin_inset Formula $PIM$
+\end_inset
+
+:
+\begin_inset Formula 
+\[
+\widehat{X_{j}}=f(X_{i},PIM)
+\]
+
+\end_inset
+
+The noise model associated with this factor is assumed to be zero-mean Gaussian
+ with a 
+\begin_inset Formula $9\times9$
+\end_inset
+
+ covariance matrix 
+\begin_inset Formula $\Sigma_{ij}$
+\end_inset
+
+, which is defined in the tangent space 
+\begin_inset Formula $T_{X_{j}}\mathcal{N}$
+\end_inset
+
+ of the NavState manifold at the NavState 
+\begin_inset Formula $X_{j}$
+\end_inset
+
+.
+ This covariance matrix is computed in the preintegrated measurement class,
+ of which there are two variants as discussed above.
 \end_layout
 
 \begin_layout Subsubsection*
@@ -283,6 +329,14 @@ Gyroscope Covariance
 \end_layout
 
 \begin_layout Itemize
+Gyroscope Bias Covariance 
+\begin_inset Formula $Q_{\Delta b^{\omega}}$
+\end_inset
+
+ : The covariance associated with the gyroscope bias random walk.
+\end_layout
+
+\begin_layout Itemize
 Accelerometer Covariance 
 \begin_inset Formula $Q_{acc}$
 \end_inset
@@ -296,14 +350,6 @@ Accelerometer Bias Covariance
 \end_inset
 
  : The covariance associated with the accelerometer bias random walk.
-\end_layout
-
-\begin_layout Itemize
-Gyroscope Bias Covariance 
-\begin_inset Formula $Q_{\Delta b^{\omega}}$
-\end_inset
-
- : The covariance associated with the gyroscope bias random walk.
 \end_layout
 
 \begin_layout Itemize
@@ -1469,7 +1515,12 @@ Noise Propagation in IMU Factor
 \end_layout
 
 \begin_layout Standard
-Even when we assume uncorrelated noise on 
+We wish to compute the ImuFactor covariance matrix 
+\begin_inset Formula $\Sigma_{ij}$
+\end_inset
+
+.
+ Even when we assume uncorrelated noise on 
 \begin_inset Formula $\omega^{b}$
 \end_inset
 
@@ -1487,11 +1538,12 @@ Even when we assume uncorrelated noise on
 \end_inset
 
  appear in multiple places.
- To model the noise propagation, let us define 
+ To model the noise propagation, let us define the preintegrated navigation
+ state 
 \begin_inset Formula $\zeta_{k}=[\theta_{k},p_{k},v_{k}]$
 \end_inset
 
- and rewrite Eqns.
+, as a 9D vector on tangent space at and rewrite Eqns.
  (
 \begin_inset CommandInset ref
 LatexCommand ref
