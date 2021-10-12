@@ -261,25 +261,37 @@ Vector3 SO3::Logmap(const SO3& Q, ChartJacobian H) {
 
   // when trace == -1, i.e., when theta = +-pi, +-3pi, +-5pi, etc.
   // we do something special
-  if (tr + 1.0 < 1e-10) {
-    if (std::abs(R33 + 1.0) > 1e-5)
-      omega = (M_PI / sqrt(2.0 + 2.0 * R33)) * Vector3(R13, R23, 1.0 + R33);
-    else if (std::abs(R22 + 1.0) > 1e-5)
-      omega = (M_PI / sqrt(2.0 + 2.0 * R22)) * Vector3(R12, 1.0 + R22, R32);
-    else
+  if (tr + 1.0 < 1e-4) {
+    std::vector<double> diags = {R11, R22, R33};
+    size_t max_elem = std::distance(diags.begin(), std::max_element(diags.begin(), diags.end()));
+    if (max_elem == 2) {
+      const double sgn_w = (R21 - R12) < 0 ? -1.0 : 1.0;
+      const double r = sqrt(2.0 + 2.0 * R33);
+      const double correction = 1.0 - M_1_PI / r * (R21 - R12);
+      omega = sgn_w * correction * (M_PI_2 / sqrt(2.0 + 2.0 * R33)) * Vector3(R31 + R13, R32 + R23, 2.0 + 2.0 * R33);
+    } else if (max_elem == 1) {
+      const double sgn_w = (R13 - R31) < 0 ? -1.0 : 1.0;
+      const double r = sqrt(2.0 + 2.0 * R22);
+      const double correction = 1.0 - M_1_PI / r * (R13 - R31);
+      omega = sgn_w * correction * (M_PI_2 / sqrt(2.0 + 2.0 * R22)) * Vector3(R21 + R12, 2.0 + 2.0 * R22, R23 + R32);
+    } else {
       // if(std::abs(R.r1_.x()+1.0) > 1e-5)  This is implicit
-      omega = (M_PI / sqrt(2.0 + 2.0 * R11)) * Vector3(1.0 + R11, R21, R31);
+      const double sgn_w = (R32 - R23) < 0 ? -1.0 : 1.0;
+      const double r = sqrt(2.0 + 2.0 * R11);
+      const double correction = 1.0 - M_1_PI / r * (R32 - R23);
+      omega = sgn_w * correction * (M_PI_2 / sqrt(2.0 + 2.0 * R11)) * Vector3(2.0 + 2.0 * R11, R12 + R21, R13 + R31);
+    }
   } else {
     double magnitude;
     const double tr_3 = tr - 3.0;  // always negative
-    if (tr_3 < -1e-7) {
+    if (tr_3 < -1e-6) {
       double theta = acos((tr - 1.0) / 2.0);
       magnitude = theta / (2.0 * sin(theta));
     } else {
       // when theta near 0, +-2pi, +-4pi, etc. (trace near 3.0)
       // use Taylor expansion: theta \approx 1/2-(t-3)/12 + O((t-3)^2)
       // see https://github.com/borglab/gtsam/issues/746 for details
-      magnitude = 0.5 - tr_3 / 12.0;
+      magnitude = 0.5 - tr_3 / 12.0 + tr_3*tr_3/60.0;
     }
     omega = magnitude * Vector3(R32 - R23, R13 - R31, R21 - R12);
   }
