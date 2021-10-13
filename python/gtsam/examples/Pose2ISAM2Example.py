@@ -48,6 +48,8 @@ def Pose2SLAM_ISAM2_plot(graph, current_estimate):
 
 
 def Pose2SLAM_ISAM2_example():
+    """
+    """
     plt.ion()
 
     def vector3(x, y, z):
@@ -93,6 +95,7 @@ def Pose2SLAM_ISAM2_example():
         """
         Simple brute force approach which iterates through previous states
         and checks for loop closure.
+        Author: Jerred
         ### Parameters:
         odom: (numpy.ndarray) 1x3 vector representing noisy odometry (x, y, theta)
         measurement in the body frame.
@@ -119,7 +122,7 @@ def Pose2SLAM_ISAM2_example():
 
     current_estimate = None
     for i in range(len(odom_arr)):
-
+        # The "ground truth" change between poses
         odom_x, odom_y, odom_theta = odom_arr[i]
         # Odometry measurement that is received by the robot and corrupted by gaussian noise
         odom = mult_gauss(odom_arr[i], ODOMETRY_NOISE.covariance())
@@ -141,7 +144,7 @@ def Pose2SLAM_ISAM2_example():
         print(current_estimate)
         marginals = Pose2SLAM_ISAM2_plot(graph, current_estimate)
         initial_estimate.clear()
-
+    # Print the final covariance matrix for each pose after completing inference
     for i in range(1, len(odom_arr)+1):
         print(f"X{i} covariance:\n{marginals.marginalCovariance(i)}\n")
     
