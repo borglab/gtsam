@@ -275,7 +275,7 @@ Vector3 SO3::Logmap(const SO3& Q, ChartJacobian H) {
       const double scale = M_PI_2 / r - 0.5 / (r * r) * (R13 - R31);
       omega = sgn_w * scale * Vector3(R21 + R12, 2.0 + 2.0 * R22, R23 + R32);
     } else {
-      // R33 is the largest diagonal
+      // R11 is the largest diagonal
       const double sgn_w = (R32 - R23) < 0 ? -1.0 : 1.0;
       const double r = sqrt(2.0 + 2.0 * R11);
       const double scale = M_PI_2 / r - 0.5 / (r * r) * (R32 - R23);
