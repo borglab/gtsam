@@ -159,7 +159,7 @@ TEST(Pose3, Adjoint_jacobians)
   // Check jacobians
   Matrix6 actualH1, actualH2, expectedH1, expectedH2;
   std::function<Vector6(const Pose3&, const Vector6&)> Adjoint_proxy =
-      [&](const Pose3& T, const Vector6& xi) { return T.AdjointMap() * xi; };
+      [&](const Pose3& T, const Vector6& xi) { return T.Adjoint(xi); };
 
   T.Adjoint(xi, actualH1, actualH2);
   expectedH1 = numericalDerivative21(Adjoint_proxy, T, xi);
@@ -198,7 +198,7 @@ TEST(Pose3, AdjointTranspose)
   Matrix6 actualH1, actualH2, expectedH1, expectedH2;
   std::function<Vector6(const Pose3&, const Vector6&)> AdjointTranspose_proxy =
       [&](const Pose3& T, const Vector6& xi) {
-        return T.AdjointMap().transpose() * xi;
+        return T.AdjointTranspose(xi);
       };
 
   T.AdjointTranspose(xi, actualH1, actualH2);
