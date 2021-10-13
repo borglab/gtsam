@@ -10,6 +10,7 @@ Pose SLAM example using iSAM2 in 3D space.
 Author: Jerred Chen
 Modelled after version by:
     - VisualISAM2Example by: Duy-Nguyen Ta (C++), Frank Dellaert (Python)
+    - Pose2SLAMExample by: Alex Cunningham (C++), Kevin Deng & Frank Dellaert (Python)
 """
 from __future__ import print_function
 import gtsam
@@ -80,6 +81,8 @@ def createPoses():
 
 def Pose3_ISAM2_example():
     """
+    Perform 3D SLAM given ground truth poses as well as simple
+    loop closure detection.
     """
     plt.ion()
 
@@ -87,19 +90,27 @@ def Pose3_ISAM2_example():
         """Create 6d double numpy array."""
         return np.array([x, y, z, a, b, c], dtype=float)
 
+    # Although this example only uses linear measurements and Gaussian noise models, it is important
+    # to note that iSAM2 can be utilized to its full potential during nonlinear optimization. This example
+    # simply showcases how iSAM2 may be applied to a Pose2 SLAM problem.
     PRIOR_NOISE = gtsam.noiseModel.Diagonal.Sigmas(vector6(0.1, 0.1, 0.1, 0.3, 0.3, 0.3))
     ODOMETRY_NOISE = gtsam.noiseModel.Diagonal.Sigmas(vector6(0.1, 0.1, 0.1, 0.2, 0.2, 0.2))
 
+    # Create the ground truth poses of the robot trajectory.
     poses = createPoses()
 
+    # iSAM2 parameters which can adjust the threshold necessary to force relinearization and how many
+    # update calls are required to perform the relinearization.
     parameters = gtsam.ISAM2Params()
     parameters.setRelinearizeThreshold(0.1)
     parameters.setRelinearizeSkip(1)
     isam = gtsam.ISAM2(parameters)
 
+    # Create a Nonlinear factor graph as well as the data structure to hold state estimates.
     graph = gtsam.NonlinearFactorGraph()
-    initial_estimate = gtsam.Values()   
-    # Add prior factor to the first pose
+    initial_estimate = gtsam.Values()
+
+    # Add prior factor to the first pose with intentionally poor initial estimate
     graph.push_back(gtsam.PriorFactorPose3(X(0), poses[0], PRIOR_NOISE))
     initial_estimate.insert(X(0), poses[0].compose(gtsam.Pose3(
         gtsam.Rot3.Rodrigues(-0.1, 0.2, 0.25), gtsam.Point3(0.05, -0.10, 0.20))))
@@ -108,6 +119,7 @@ def Pose3_ISAM2_example():
         """
         Simple brute force approach which iterates through previous states
         and checks for loop closure.
+        Author: Jerred Chen
         ### Parameters:
         odom: (numpy.ndarray) 1x6 vector representing noisy odometry transformation
         measurement in the body frame, [roll, pitch, yaw, x, y, z]
@@ -131,13 +143,14 @@ def Pose3_ISAM2_example():
 
     current_estimate = None
     for i in range(1, len(poses)):
-        # The odometry "ground truth" measurement between poses
+        # The "ground truth" change between poses
         odom_tf = poses[i-1].transformPoseTo(poses[i])
         odom_xyz = odom_tf.x(), odom_tf.y(), odom_tf.z()
         odom_rpy = odom_tf.rotation().rpy()
         # Odometry measurement that is received by the robot and corrupted by gaussian noise
         measurement = mult_gauss(np.hstack((odom_rpy,odom_xyz)), ODOMETRY_NOISE.covariance())
         loop = determine_loop_closure(measurement, current_estimate)
+        # If loop closure is detected, then adds a constraint between existing states in the factor graph
         if loop is not None:
             graph.push_back(gtsam.BetweenFactorPose3(X(i-1), X(loop), gtsam.Pose3(odom_tf), ODOMETRY_NOISE))
         else:
@@ -145,7 +158,9 @@ def Pose3_ISAM2_example():
             # Intentionally insert poor initializations
             initial_estimate.insert(X(i), poses[i].compose(gtsam.Pose3(
                 gtsam.Rot3.Rodrigues(-0.1, 0.2, 0.25), gtsam.Point3(0.05, -0.10, 0.20))))
+        # Performs iSAM2 incremental update based on newly added factors
         isam.update(graph, initial_estimate)
+        # Additional iSAM2 optimization
         isam.update()
         current_estimate = isam.calculateEstimate()
         print("*"*50)
@@ -153,6 +168,7 @@ def Pose3_ISAM2_example():
         print(current_estimate)
         marginals = Pose3SLAM_ISAM2_plot(graph, current_estimate)
         initial_estimate.clear()
+    # Print the final covariance matrix for each pose after completing inference
     i = 0
     while current_estimate.exists(X(i)):
         print(f"X{i} covariance:\n{marginals.marginalCovariance(X(i))}\n")
