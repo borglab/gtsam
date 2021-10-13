@@ -267,19 +267,19 @@ Vector3 SO3::Logmap(const SO3& Q, ChartJacobian H) {
     if (max_elem == 2) {
       const double sgn_w = (R21 - R12) < 0 ? -1.0 : 1.0;
       const double r = sqrt(2.0 + 2.0 * R33);
-      const double correction = 1.0 - M_1_PI / r * (R21 - R12);
-      omega = sgn_w * correction * (M_PI_2 / sqrt(2.0 + 2.0 * R33)) * Vector3(R31 + R13, R32 + R23, 2.0 + 2.0 * R33);
+      const double scale = M_PI_2 / r - 0.5 / (r * r) * (R21 - R12);
+      omega = sgn_w * scale * Vector3(R31 + R13, R32 + R23, 2.0 + 2.0 * R33);
     } else if (max_elem == 1) {
       const double sgn_w = (R13 - R31) < 0 ? -1.0 : 1.0;
       const double r = sqrt(2.0 + 2.0 * R22);
-      const double correction = 1.0 - M_1_PI / r * (R13 - R31);
-      omega = sgn_w * correction * (M_PI_2 / sqrt(2.0 + 2.0 * R22)) * Vector3(R21 + R12, 2.0 + 2.0 * R22, R23 + R32);
+      const double scale = M_PI_2 / r - 0.5 / (r * r) * (R13 - R31);
+      omega = sgn_w * scale * Vector3(R21 + R12, 2.0 + 2.0 * R22, R23 + R32);
     } else {
       // if(std::abs(R.r1_.x()+1.0) > 1e-5)  This is implicit
       const double sgn_w = (R32 - R23) < 0 ? -1.0 : 1.0;
       const double r = sqrt(2.0 + 2.0 * R11);
-      const double correction = 1.0 - M_1_PI / r * (R32 - R23);
-      omega = sgn_w * correction * (M_PI_2 / sqrt(2.0 + 2.0 * R11)) * Vector3(2.0 + 2.0 * R11, R12 + R21, R13 + R31);
+      const double scale = M_PI_2 / r - 0.5 / (r * r) * (R32 - R23);
+      omega = sgn_w * scale * Vector3(2.0 + 2.0 * R11, R12 + R21, R13 + R31);
     }
   } else {
     double magnitude;
