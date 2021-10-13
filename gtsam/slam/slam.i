@@ -68,6 +68,9 @@ typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3,
 typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3,
                                        gtsam::Cal3Unified>
     GenericProjectionFactorCal3Unified;
+typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3,
+                                       gtsam::Cal3Bundler>
+    GenericProjectionFactorCal3Bundler;
 
 #include <gtsam/slam/GeneralSFMFactor.h>
 template <CAMERA, LANDMARK>
