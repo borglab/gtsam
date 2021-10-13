@@ -79,13 +79,19 @@ Vector6 Pose3::Adjoint(const Vector6& xi_b, OptionalJacobian<6, 6> H_this,
   Rw = R_.rotate(w, H_this ? &Rw_H_R : nullptr, H_xib ? &Rw_H_w : nullptr);
   const Vector3 Rv =
       R_.rotate(v, H_this ? &Rv_H_R : nullptr, H_xib ? &Rv_H_v : nullptr);
-  const Vector3 pRw = cross(t_, Rw, H_this ? &pRw_H_t : nullptr,
-                            (H_this || H_xib) ? &pRw_H_Rw : nullptr);
+  // Since we use the Point3 version of cross, the jacobian of pRw wrpt t
+  // (pRw_H_t) needs special treatment as detailed below.
+  const Vector3 pRw =
+      cross(t_, Rw, boost::none, (H_this || H_xib) ? &pRw_H_Rw : nullptr);
   result.tail<3>() = pRw + Rv;
 
   // Jacobians
   if (H_this) {
-    pRw_H_t = Rw_H_R;  // This is needed to pass the unit tests for some reason
+    // By applying the chain rule to the matrix-matrix product of [t]R, we can
+    // compute a simplified derivative which is the same as Rw_H_R. Details:
+    // https://github.com/borglab/gtsam/pull/885#discussion_r726591370
+    pRw_H_t = Rw_H_R;
+
     *H_this = (Matrix6() << Rw_H_R, /*               */ Z_3x3,  //
                /*        */ pRw_H_Rw * Rw_H_R + Rv_H_R, pRw_H_t)
                   .finished();
