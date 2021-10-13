@@ -177,13 +177,9 @@ class SymbolicBayesTreeClique {
 class VariableIndex {
   // Standard Constructors and Named Constructors
   VariableIndex();
-  // TODO: Templetize constructor when wrap supports it
-  // template<T = {gtsam::FactorGraph}>
-  // VariableIndex(const T& factorGraph, size_t nVariables);
-  // VariableIndex(const T& factorGraph);
-  VariableIndex(const gtsam::SymbolicFactorGraph& sfg);
-  VariableIndex(const gtsam::GaussianFactorGraph& gfg);
-  VariableIndex(const gtsam::NonlinearFactorGraph& fg);
+  template <T = {gtsam::FactorGraph<gtsam::Factor>, gtsam::SymbolicFactorGraph,
+                 gtsam::GaussianFactorGraph, gtsam::NonlinearFactorGraph}>
+  VariableIndex(const T& factorGraph);
   VariableIndex(const gtsam::VariableIndex& other);
 
   // Testable
