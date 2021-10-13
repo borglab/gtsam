@@ -204,7 +204,7 @@ TEST(Pose3, AdjointTranspose)
   T.AdjointTranspose(xi, actualH1, actualH2);
   expectedH1 = numericalDerivative21(AdjointTranspose_proxy, T, xi);
   expectedH2 = numericalDerivative22(AdjointTranspose_proxy, T, xi);
-  EXPECT(assert_equal(expectedH1, actualH1));
+  EXPECT(assert_equal(expectedH1, actualH1, 1e-8));
   EXPECT(assert_equal(expectedH2, actualH2));
 
   T2.AdjointTranspose(xi, actualH1, actualH2);
@@ -216,7 +216,7 @@ TEST(Pose3, AdjointTranspose)
   T3.AdjointTranspose(xi, actualH1, actualH2);
   expectedH1 = numericalDerivative21(AdjointTranspose_proxy, T3, xi);
   expectedH2 = numericalDerivative22(AdjointTranspose_proxy, T3, xi);
-  EXPECT(assert_equal(expectedH1, actualH1));
+  EXPECT(assert_equal(expectedH1, actualH1, 1e-8));
   EXPECT(assert_equal(expectedH2, actualH2));
 }
 
