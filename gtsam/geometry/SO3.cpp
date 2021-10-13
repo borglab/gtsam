@@ -262,20 +262,20 @@ Vector3 SO3::Logmap(const SO3& Q, ChartJacobian H) {
   // when trace == -1, i.e., when theta = +-pi, +-3pi, +-5pi, etc.
   // we do something special
   if (tr + 1.0 < 1e-4) {
-    std::vector<double> diags = {R11, R22, R33};
-    size_t max_elem = std::distance(diags.begin(), std::max_element(diags.begin(), diags.end()));
-    if (max_elem == 2) {
+    if (R33 > R22 && R33 > R11) {
+      // R33 is the largest diagonal
       const double sgn_w = (R21 - R12) < 0 ? -1.0 : 1.0;
       const double r = sqrt(2.0 + 2.0 * R33);
       const double scale = M_PI_2 / r - 0.5 / (r * r) * (R21 - R12);
       omega = sgn_w * scale * Vector3(R31 + R13, R32 + R23, 2.0 + 2.0 * R33);
-    } else if (max_elem == 1) {
+    } else if (R22 > R11) {
+      // R22 is the largest diagonal
       const double sgn_w = (R13 - R31) < 0 ? -1.0 : 1.0;
       const double r = sqrt(2.0 + 2.0 * R22);
       const double scale = M_PI_2 / r - 0.5 / (r * r) * (R13 - R31);
       omega = sgn_w * scale * Vector3(R21 + R12, 2.0 + 2.0 * R22, R23 + R32);
     } else {
-      // if(std::abs(R.r1_.x()+1.0) > 1e-5)  This is implicit
+      // R33 is the largest diagonal
       const double sgn_w = (R32 - R23) < 0 ? -1.0 : 1.0;
       const double r = sqrt(2.0 + 2.0 * R11);
       const double scale = M_PI_2 / r - 0.5 / (r * r) * (R32 - R23);
@@ -283,8 +283,9 @@ Vector3 SO3::Logmap(const SO3& Q, ChartJacobian H) {
     }
   } else {
     double magnitude;
-    const double tr_3 = tr - 3.0;  // always negative
+    const double tr_3 = tr - 3.0; // could be non-negative if the matrix is off orthogonal
     if (tr_3 < -1e-6) {
+      // this is the normal case -1 < trace < 3
       double theta = acos((tr - 1.0) / 2.0);
       magnitude = theta / (2.0 * sin(theta));
     } else {
