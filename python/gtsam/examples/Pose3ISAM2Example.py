@@ -24,9 +24,8 @@ import matplotlib.pyplot as plt
 
 
 def Pose3SLAM_ISAM2_plot(graph, current_estimate):
-    """
-    Plots incremental state of the robot for 3D Pose SLAM using iSAM2
-    Author: Jerred Chen
+    """Plots incremental state of the robot for 3D Pose SLAM using iSAM2
+
     Based on version by:
         - Ellon Paiva (Python),
         - Duy Nguyen Ta and Frank Dellaert (MATLAB)
@@ -52,9 +51,7 @@ def Pose3SLAM_ISAM2_plot(graph, current_estimate):
 
 
 def createPoses():
-    """
-    Creates ground truth poses of the robot.
-    """
+    """Creates ground truth poses of the robot."""
     P0 = np.array([[1, 0, 0, 0],
                    [0, 1, 0, 0],
                    [0, 0, 1, 0],
@@ -80,10 +77,8 @@ def createPoses():
     return [Pose3(P0), Pose3(P1), Pose3(P2), Pose3(P3), Pose3(P4), Pose3(P5)]
 
 def Pose3_ISAM2_example():
-    """
-    Perform 3D SLAM given ground truth poses as well as simple
-    loop closure detection.
-    """
+    """Perform 3D SLAM given ground truth poses as well as simple
+    loop closure detection."""
     plt.ion()
 
     def vector6(x, y, z, a, b, c):
@@ -115,20 +110,20 @@ def Pose3_ISAM2_example():
     initial_estimate.insert(X(0), poses[0].compose(gtsam.Pose3(
         gtsam.Rot3.Rodrigues(-0.1, 0.2, 0.25), gtsam.Point3(0.05, -0.10, 0.20))))
 
-    def determine_loop_closure(odom, current_estimate, xyz_tol=0.6, rot_tol=0.3):
-        """
-        Simple brute force approach which iterates through previous states
+    def determine_loop_closure(odom: np.ndarray, current_estimate: gtsam.Values,
+        xyz_tol=0.6, rot_tol=0.3) -> int:
+        """Simple brute force approach which iterates through previous states
         and checks for loop closure.
-        Author: Jerred Chen
-        ### Parameters:
-        odom: (numpy.ndarray) 1x6 vector representing noisy odometry transformation
-        measurement in the body frame, [roll, pitch, yaw, x, y, z]
-        current_estimate: (gtsam.Values) The current estimates computed by iSAM2.
-        xyz_tol: (double) Optional argument for the translational tolerance.
-        rot_tol: (double) Optional argument for the rotational tolerance.
-        ### Returns:
-        k: (int) The key of the state which is helping add the loop closure constraint.
-        If loop closure is not found, then None is returned.
+
+        Args:
+            odom: Vector representing noisy odometry transformation measurement in the body frame,
+                where the vector represents [roll, pitch, yaw, x, y, z].
+            current_estimate: The current estimates computed by iSAM2.
+            xyz_tol: Optional argument for the translational tolerance.
+            rot_tol: Optional argument for the rotational tolerance.
+        Returns:
+            k: The key of the state which is helping add the loop closure constraint.
+                If loop closure is not found, then None is returned.
         """
         if current_estimate:
             rot = Rot3.RzRyRx(odom[:3])
@@ -164,7 +159,7 @@ def Pose3_ISAM2_example():
         isam.update()
         current_estimate = isam.calculateEstimate()
         print("*"*50)
-        print(f"Inference after State {i}:")
+        print(f"Inference after State {i}:\n")
         print(current_estimate)
         marginals = Pose3SLAM_ISAM2_plot(graph, current_estimate)
         initial_estimate.clear()
