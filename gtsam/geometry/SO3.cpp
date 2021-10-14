@@ -261,7 +261,7 @@ Vector3 SO3::Logmap(const SO3& Q, ChartJacobian H) {
 
   // when trace == -1, i.e., when theta = +-pi, +-3pi, +-5pi, etc.
   // we do something special
-  if (tr + 1.0 < 1e-4) {
+  if (tr + 1.0 < 1e-3) {
     if (R33 > R22 && R33 > R11) {
       // R33 is the largest diagonal
       const double sgn_w = (R21 - R12) < 0 ? -1.0 : 1.0;
