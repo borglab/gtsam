@@ -22,9 +22,8 @@ import matplotlib.pyplot as plt
 import gtsam.utils.plot as gtsam_plot
 
 def Pose2SLAM_ISAM2_plot(graph, current_estimate):
-    """
-    Plots incremental state of the robot for 2D Pose SLAM using iSAM2
-    Author: Jerred Chen
+    """Plots incremental state of the robot for 2D Pose SLAM using iSAM2
+
     Based on version by:
         - Ellon Paiva (Python),
         - Duy Nguyen Ta and Frank Dellaert (MATLAB)
@@ -48,7 +47,8 @@ def Pose2SLAM_ISAM2_plot(graph, current_estimate):
 
 
 def Pose2SLAM_ISAM2_example():
-    """
+    """Perform 2D SLAM given the ground truth changes in pose as well as
+    simple loop closure detection.
     """
     plt.ion()
 
@@ -91,20 +91,19 @@ def Pose2SLAM_ISAM2_example():
     graph.push_back(gtsam.PriorFactorPose2(1, gtsam.Pose2(0, 0, 0), PRIOR_NOISE))
     initial_estimate.insert(1, gtsam.Pose2(0.5, 0.0, 0.2))
 
-    def determine_loop_closure(odom, current_estimate, xy_tol=0.6, theta_tol=0.3):
-        """
-        Simple brute force approach which iterates through previous states
+    def determine_loop_closure(odom: np.ndarray, current_estimate: gtsam.Values,
+        xy_tol=0.6, theta_tol=0.3) -> int:
+        """Simple brute force approach which iterates through previous states
         and checks for loop closure.
-        Author: Jerred
-        ### Parameters:
-        odom: (numpy.ndarray) 1x3 vector representing noisy odometry (x, y, theta)
-        measurement in the body frame.
-        current_estimate: (gtsam.Values) The current estimates computed by iSAM2.
-        xy_tol: (double) Optional argument for the x-y measurement tolerance.
-        theta_tol: (double) Optional argument for the theta measurement tolerance.
-        ### Returns:
-        k: (int) The key of the state which is helping add the loop closure constraint.
-        If loop closure is not found, then None is returned.
+
+        Args:
+            odom: Vector representing noisy odometry (x, y, theta) measurement in the body frame.
+            current_estimate: The current estimates computed by iSAM2.
+            xy_tol: Optional argument for the x-y measurement tolerance.
+            theta_tol: Optional argument for the theta measurement tolerance.
+        Returns:
+            k: The key of the state which is helping add the loop closure constraint.
+                If loop closure is not found, then None is returned.
         """
         if current_estimate:
             prev_est = current_estimate.atPose2(i+1)
