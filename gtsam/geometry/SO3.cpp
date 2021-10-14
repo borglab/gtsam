@@ -261,25 +261,46 @@ Vector3 SO3::Logmap(const SO3& Q, ChartJacobian H) {
 
   // when trace == -1, i.e., when theta = +-pi, +-3pi, +-5pi, etc.
   // we do something special
-  if (tr + 1.0 < 1e-4) {
+  if (tr + 1.0 < 1e-3) {
     if (R33 > R22 && R33 > R11) {
-      // R33 is the largest diagonal
-      const double sgn_w = (R21 - R12) < 0 ? -1.0 : 1.0;
-      const double r = sqrt(2.0 + 2.0 * R33);
-      const double scale = M_PI_2 / r - 0.5 / (r * r) * (R21 - R12);
-      omega = sgn_w * scale * Vector3(R31 + R13, R32 + R23, 2.0 + 2.0 * R33);
+      // R33 is the largest diagonal, a=3, b=1, c=2
+      const double W = R21 - R12;
+      const double Q1 = 2.0 + 2.0 * R33;
+      const double Q2 = R31 + R13;
+      const double Q3 = R23 + R32;
+      const double r = sqrt(Q1);
+      const double one_over_r = 1 / r;
+      const double norm = sqrt(Q1*Q1 + Q2*Q2 + Q3*Q3 + W*W);
+      const double sgn_w = W < 0 ? -1.0 : 1.0;
+      const double mag = M_PI - (2 * sgn_w * W) / norm;
+      const double scale = 0.5 * one_over_r * mag;
+      omega = sgn_w * scale * Vector3(Q2, Q3, Q1);
     } else if (R22 > R11) {
-      // R22 is the largest diagonal
-      const double sgn_w = (R13 - R31) < 0 ? -1.0 : 1.0;
-      const double r = sqrt(2.0 + 2.0 * R22);
-      const double scale = M_PI_2 / r - 0.5 / (r * r) * (R13 - R31);
-      omega = sgn_w * scale * Vector3(R21 + R12, 2.0 + 2.0 * R22, R23 + R32);
+      // R22 is the largest diagonal, a=2, b=3, c=1
+      const double W = R13 - R31;
+      const double Q1 = 2.0 + 2.0 * R22;
+      const double Q2 = R23 + R32;
+      const double Q3 = R12 + R21;
+      const double r = sqrt(Q1);
+      const double one_over_r = 1 / r;
+      const double norm = sqrt(Q1*Q1 + Q2*Q2 + Q3*Q3 + W*W);
+      const double sgn_w = W < 0 ? -1.0 : 1.0;
+      const double mag = M_PI - (2 * sgn_w * W) / norm;
+      const double scale = 0.5 * one_over_r * mag;
+      omega = sgn_w * scale * Vector3(Q3, Q1, Q2);
     } else {
-      // R11 is the largest diagonal
-      const double sgn_w = (R32 - R23) < 0 ? -1.0 : 1.0;
-      const double r = sqrt(2.0 + 2.0 * R11);
-      const double scale = M_PI_2 / r - 0.5 / (r * r) * (R32 - R23);
-      omega = sgn_w * scale * Vector3(2.0 + 2.0 * R11, R12 + R21, R13 + R31);
+      // R11 is the largest diagonal, a=1, b=2, c=3
+      const double W = R32 - R23;
+      const double Q1 = 2.0 + 2.0 * R11;
+      const double Q2 = R12 + R21;
+      const double Q3 = R31 + R13;
+      const double r = sqrt(Q1);
+      const double one_over_r = 1 / r;
+      const double norm = sqrt(Q1*Q1 + Q2*Q2 + Q3*Q3 + W*W);
+      const double sgn_w = W < 0 ? -1.0 : 1.0;
+      const double mag = M_PI - (2 * sgn_w * W) / norm;
+      const double scale = 0.5 * one_over_r * mag;
+      omega = sgn_w * scale * Vector3(Q1, Q2, Q3);
     }
   } else {
     double magnitude;

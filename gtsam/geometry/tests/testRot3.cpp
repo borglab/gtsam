@@ -268,7 +268,7 @@ TEST( Rot3, log) {
                       (Vector)Rot3::Logmap(Rlund), 1e-8));
 #else
   // SO3 will be approximate because of the non-orthogonality
-  EXPECT(assert_equal(Vector3(0.264485272, -0.742291088, -3.04136444),
+  EXPECT(assert_equal(Vector3(0.264452, -0.742197708, -3.04098184),
                         (Vector)Rot3::Logmap(Rlund), 1e-8));
 #endif
 }
