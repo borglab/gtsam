@@ -52,16 +52,16 @@ namespace gtsam {
     typedef BayesTreeCliqueBase<DERIVED, FACTORGRAPH> This;
     typedef DERIVED DerivedType;
     typedef EliminationTraits<FACTORGRAPH> EliminationTraitsType;
-    typedef boost::shared_ptr<This> shared_ptr;
-    typedef boost::weak_ptr<This> weak_ptr;
-    typedef boost::shared_ptr<DerivedType> derived_ptr;
-    typedef boost::weak_ptr<DerivedType> derived_weak_ptr;
+    typedef std::shared_ptr<This> shared_ptr;
+    typedef std::weak_ptr<This> weak_ptr;
+    typedef std::shared_ptr<DerivedType> derived_ptr;
+    typedef std::weak_ptr<DerivedType> derived_weak_ptr;
 
   public:
     typedef FACTORGRAPH FactorGraphType;
     typedef typename EliminationTraitsType::BayesNetType BayesNetType;
     typedef typename BayesNetType::ConditionalType ConditionalType;
-    typedef boost::shared_ptr<ConditionalType> sharedConditional;
+    typedef std::shared_ptr<ConditionalType> sharedConditional;
     typedef typename FactorGraphType::FactorType FactorType;
     typedef typename FactorGraphType::Eliminate Eliminate;
 
@@ -200,18 +200,18 @@ namespace gtsam {
   private:
 
     /** Serialization function */
-    friend class boost::serialization::access;
+    friend class cereal::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       if(!parent_.lock()) {
         is_root = true;
       }
-      ar & BOOST_SERIALIZATION_NVP(is_root);
-      ar & BOOST_SERIALIZATION_NVP(conditional_);
+      ar & CEREAL_NVP(is_root);
+      ar & CEREAL_NVP(conditional_);
       if (!is_root) { // TODO(fan): Workaround for boost/serialization #119
-        ar & BOOST_SERIALIZATION_NVP(parent_);
+        ar & CEREAL_NVP(parent_);
       }
-      ar & BOOST_SERIALIZATION_NVP(children);
+      ar & CEREAL_NVP(children);
     }
 
     /// @}

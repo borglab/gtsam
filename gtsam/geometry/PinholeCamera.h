@@ -315,13 +315,13 @@ public:
 private:
 
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int /*version*/) {
     ar
-        & boost::serialization::make_nvp("PinholeBaseK",
-            boost::serialization::base_object<Base>(*this));
-    ar & BOOST_SERIALIZATION_NVP(K_);
+        & cereal::make_nvp("PinholeBaseK",
+            cereal::base_class<Base>(this));
+    ar & CEREAL_NVP(K_);
   }
 
 public:

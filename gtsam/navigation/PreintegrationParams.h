@@ -49,13 +49,13 @@ struct GTSAM_EXPORT PreintegrationParams: PreintegratedRotationParams {
         n_gravity(n_gravity) {}
 
   // Default Params for a Z-down navigation frame, such as NED: gravity points along positive Z-axis
-  static boost::shared_ptr<PreintegrationParams> MakeSharedD(double g = 9.81) {
-    return boost::shared_ptr<PreintegrationParams>(new PreintegrationParams(Vector3(0, 0, g)));
+  static std::shared_ptr<PreintegrationParams> MakeSharedD(double g = 9.81) {
+    return std::shared_ptr<PreintegrationParams>(new PreintegrationParams(Vector3(0, 0, g)));
   }
 
   // Default Params for a Z-up navigation frame, such as ENU: gravity points along negative Z-axis
-  static boost::shared_ptr<PreintegrationParams> MakeSharedU(double g = 9.81) {
-    return boost::shared_ptr<PreintegrationParams>(new PreintegrationParams(Vector3(0, 0, -g)));
+  static std::shared_ptr<PreintegrationParams> MakeSharedU(double g = 9.81) {
+    return std::shared_ptr<PreintegrationParams>(new PreintegrationParams(Vector3(0, 0, -g)));
   }
 
   void print(const std::string& s="") const override;
@@ -73,15 +73,15 @@ struct GTSAM_EXPORT PreintegrationParams: PreintegratedRotationParams {
 protected:
 
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    namespace bs = ::boost::serialization;
-    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegratedRotationParams);
-    ar & BOOST_SERIALIZATION_NVP(accelerometerCovariance);
-    ar & BOOST_SERIALIZATION_NVP(integrationCovariance);
-    ar & BOOST_SERIALIZATION_NVP(use2ndOrderCoriolis);
-    ar & BOOST_SERIALIZATION_NVP(n_gravity);
+    ar & cereal::make_nvp("PreintegratedRotationParams", cereal::base_class<PreintegratedRotationParams>(this));
+
+    ar & CEREAL_NVP(accelerometerCovariance);
+    ar & CEREAL_NVP(integrationCovariance);
+    ar & CEREAL_NVP(use2ndOrderCoriolis);
+    ar & CEREAL_NVP(n_gravity);
   }
 
 #ifdef GTSAM_USE_QUATERNIONS

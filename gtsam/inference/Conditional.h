@@ -140,10 +140,10 @@ namespace gtsam {
     const FACTOR& asFactor() const { return static_cast<const FACTOR&>(static_cast<const DERIVEDCONDITIONAL&>(*this)); }
 
     /** Serialization function */
-    friend class boost::serialization::access;
+    friend class cereal::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      ar & BOOST_SERIALIZATION_NVP(nrFrontals_);
+      ar & CEREAL_NVP(nrFrontals_);
     }
 
     /// @}

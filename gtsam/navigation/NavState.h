@@ -190,12 +190,12 @@ public:
 private:
   /// @{
   /// serialization
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & BOOST_SERIALIZATION_NVP(R_);
-    ar & BOOST_SERIALIZATION_NVP(t_);
-    ar & BOOST_SERIALIZATION_NVP(v_);
+    ar & CEREAL_NVP(R_);
+    ar & CEREAL_NVP(t_);
+    ar & CEREAL_NVP(v_);
   }
   /// @}
 };

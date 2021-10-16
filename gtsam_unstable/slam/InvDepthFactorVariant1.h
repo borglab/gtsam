@@ -40,7 +40,7 @@ public:
   typedef InvDepthFactorVariant1 This;
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
   /// Default constructor
   InvDepthFactorVariant1() :
@@ -134,12 +134,12 @@ public:
 private:
 
   /// Serialization function
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-    ar & BOOST_SERIALIZATION_NVP(measured_);
-    ar & BOOST_SERIALIZATION_NVP(K_);
+    ar & cereal::virtual_base_class<Base>(this);
+    ar & CEREAL_NVP(measured_);
+    ar & CEREAL_NVP(K_);
   }
 };
 

@@ -144,7 +144,7 @@ int main(int argc, char** argv) {
 
   //  initialize smart range factors
   size_t ids[] = { 1, 6, 0, 5 };
-  typedef boost::shared_ptr<SmartRangeFactor> SmartPtr;
+  typedef std::shared_ptr<SmartRangeFactor> SmartPtr;
   map<size_t, SmartPtr> smartFactors;
   if (smart) {
     for(size_t jj: ids) {

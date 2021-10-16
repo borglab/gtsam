@@ -55,7 +55,7 @@ class GTSAM_EXPORT Cal3Fisheye : public Cal3 {
  public:
   enum { dimension = 9 };
   ///< shared pointer to fisheye calibration object
-  using shared_ptr = boost::shared_ptr<Cal3Fisheye>;
+  using shared_ptr = std::shared_ptr<Cal3Fisheye>;
 
   /// @name Standard Constructors
   /// @{
@@ -172,8 +172,8 @@ class GTSAM_EXPORT Cal3Fisheye : public Cal3 {
   /// @{
 
   /// @return a deep copy of this object
-  virtual boost::shared_ptr<Cal3Fisheye> clone() const {
-    return boost::shared_ptr<Cal3Fisheye>(new Cal3Fisheye(*this));
+  virtual std::shared_ptr<Cal3Fisheye> clone() const {
+    return std::shared_ptr<Cal3Fisheye>(new Cal3Fisheye(*this));
   }
 
   /// @}
@@ -183,15 +183,15 @@ class GTSAM_EXPORT Cal3Fisheye : public Cal3 {
   /// @{
 
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template <class Archive>
   void serialize(Archive& ar, const unsigned int /*version*/) {
-    ar& boost::serialization::make_nvp(
-        "Cal3Fisheye", boost::serialization::base_object<Cal3>(*this));
-    ar& BOOST_SERIALIZATION_NVP(k1_);
-    ar& BOOST_SERIALIZATION_NVP(k2_);
-    ar& BOOST_SERIALIZATION_NVP(k3_);
-    ar& BOOST_SERIALIZATION_NVP(k4_);
+    ar& cereal::make_nvp(
+        "Cal3Fisheye", cereal::base_class<Cal3>(this));
+    ar& CEREAL_NVP(k1_);
+    ar& CEREAL_NVP(k2_);
+    ar& CEREAL_NVP(k3_);
+    ar& CEREAL_NVP(k4_);
   }
 
   /// @}

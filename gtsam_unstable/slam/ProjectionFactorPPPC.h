@@ -49,7 +49,7 @@ namespace gtsam {
     typedef ProjectionFactorPPPC<POSE, LANDMARK, CALIBRATION> This;
 
     /// shorthand for a smart pointer to a factor
-    typedef boost::shared_ptr<This> shared_ptr;
+    typedef std::shared_ptr<This> shared_ptr;
 
     /// Default constructor
   ProjectionFactorPPPC() :
@@ -92,7 +92,7 @@ namespace gtsam {
 
     /// @return a deep copy of this factor
     NonlinearFactor::shared_ptr clone() const override {
-      return boost::static_pointer_cast<NonlinearFactor>(
+      return std::static_pointer_cast<NonlinearFactor>(
           NonlinearFactor::shared_ptr(new This(*this))); }
 
     /**
@@ -160,13 +160,13 @@ namespace gtsam {
   private:
 
     /// Serialization function
-    friend class boost::serialization::access;
+    friend class cereal::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-      ar & BOOST_SERIALIZATION_NVP(measured_);
-      ar & BOOST_SERIALIZATION_NVP(throwCheirality_);
-      ar & BOOST_SERIALIZATION_NVP(verboseCheirality_);
+      ar & cereal::virtual_base_class<Base>(this);
+      ar & CEREAL_NVP(measured_);
+      ar & CEREAL_NVP(throwCheirality_);
+      ar & CEREAL_NVP(verboseCheirality_);
     }
   };
 

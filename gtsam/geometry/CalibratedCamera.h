@@ -25,7 +25,7 @@
 #include <gtsam/base/Manifold.h>
 #include <gtsam/base/ThreadsafeException.h>
 #include <gtsam/dllexport.h>
-#include <boost/serialization/nvp.hpp>
+#include <cereal/types/base_class.hpp>
 
 namespace gtsam {
 
@@ -229,10 +229,10 @@ public:
 private:
 
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int /*version*/) {
-    ar & BOOST_SERIALIZATION_NVP(pose_);
+    ar & CEREAL_NVP(pose_);
   }
 };
 // end of class PinholeBase
@@ -413,12 +413,12 @@ private:
   /// @{
 
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int /*version*/) {
     ar
-        & boost::serialization::make_nvp("PinholeBase",
-            boost::serialization::base_object<PinholeBase>(*this));
+        & cereal::make_nvp("PinholeBase",
+            cereal::base_class<PinholeBase>(this));
   }
 
   /// @}

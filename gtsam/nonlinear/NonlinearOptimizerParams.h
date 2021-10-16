@@ -166,7 +166,7 @@ public:
     linearSolverType = linearSolverTranslator(solver);
   }
 
-  void setIterativeParams(const boost::shared_ptr<IterativeOptimizationParameters> params);
+  void setIterativeParams(const std::shared_ptr<IterativeOptimizationParameters> params);
 
   void setOrdering(const Ordering& ordering) {
     this->ordering = ordering;

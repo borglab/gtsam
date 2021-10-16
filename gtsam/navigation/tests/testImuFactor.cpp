@@ -37,7 +37,7 @@
 
 namespace testing {
 // Create default parameters with Z-down and above noise parameters
-static boost::shared_ptr<PreintegrationParams> Params() {
+static std::shared_ptr<PreintegrationParams> Params() {
   auto p = PreintegrationParams::MakeSharedD(kGravity);
   p->gyroscopeCovariance = kGyroSigma * kGyroSigma * I_3x3;
   p->accelerometerCovariance = kAccelSigma * kAccelSigma * I_3x3;
@@ -810,7 +810,7 @@ TEST(ImuFactor, bodyPSensorWithBias) {
 static const double kVelocity = 2.0, kAngularVelocity = M_PI / 6;
 
 struct ImuFactorMergeTest {
-  boost::shared_ptr<PreintegrationParams> p_;
+  std::shared_ptr<PreintegrationParams> p_;
   const ConstantTwistScenario forward_, loop_;
 
   ImuFactorMergeTest()
@@ -853,10 +853,10 @@ struct ImuFactorMergeTest {
     EXPECT(assert_equal(pim02_expected, actual_pim02, tol));
 
     ImuFactor::shared_ptr factor01 =
-        boost::make_shared<ImuFactor>(X(0), V(0), X(1), V(1), B(0), pim01);
+        std::make_shared<ImuFactor>(X(0), V(0), X(1), V(1), B(0), pim01);
     ImuFactor::shared_ptr factor12 =
-        boost::make_shared<ImuFactor>(X(1), V(1), X(2), V(2), B(0), pim12);
-    ImuFactor::shared_ptr factor02_expected = boost::make_shared<ImuFactor>(
+        std::make_shared<ImuFactor>(X(1), V(1), X(2), V(2), B(0), pim12);
+    ImuFactor::shared_ptr factor02_expected = std::make_shared<ImuFactor>(
         X(0), V(0), X(2), V(2), B(0), pim02_expected);
 
     ImuFactor::shared_ptr factor02_merged = ImuFactor::Merge(factor01, factor12);

@@ -50,7 +50,7 @@ public:
    *  @param p    Parameters, typically fixed in a single application
    *  @param bias Current estimate of acceleration and rotation rate biases
    */
-  TangentPreintegration(const boost::shared_ptr<Params>& p,
+  TangentPreintegration(const std::shared_ptr<Params>& p,
       const imuBias::ConstantBias& biasHat = imuBias::ConstantBias());
 
   /// Virtual destructor
@@ -120,22 +120,21 @@ public:
   /// @}
 
   /** Dummy clone for MATLAB */
-  virtual boost::shared_ptr<TangentPreintegration> clone() const {
-    return boost::shared_ptr<TangentPreintegration>();
+  virtual std::shared_ptr<TangentPreintegration> clone() const {
+    return std::shared_ptr<TangentPreintegration>();
   }
 
   /// @}
 
 private:
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    namespace bs = ::boost::serialization;
-    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationBase);
-    ar & BOOST_SERIALIZATION_NVP(preintegrated_);
-    ar & BOOST_SERIALIZATION_NVP(preintegrated_H_biasAcc_);
-    ar & BOOST_SERIALIZATION_NVP(preintegrated_H_biasOmega_);
+    ar & cereal::make_nvp("PreintegrationBase", cereal::base_class<PreintegrationBase>(this));
+    ar & CEREAL_NVP(preintegrated_);
+    ar & CEREAL_NVP(preintegrated_H_biasAcc_);
+    ar & CEREAL_NVP(preintegrated_H_biasOmega_);
   }
 
 public:

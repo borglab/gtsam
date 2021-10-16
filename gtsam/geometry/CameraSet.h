@@ -426,7 +426,7 @@ public:
 private:
 
   /// Serialization function
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & (*this);

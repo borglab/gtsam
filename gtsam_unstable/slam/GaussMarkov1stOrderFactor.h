@@ -55,7 +55,7 @@ private:
 public:
 
   // shorthand for a smart pointer to a factor
-  typedef typename boost::shared_ptr<GaussMarkov1stOrderFactor> shared_ptr;
+  typedef typename std::shared_ptr<GaussMarkov1stOrderFactor> shared_ptr;
 
   /** default constructor - only use for serialization */
   GaussMarkov1stOrderFactor() {}
@@ -112,12 +112,12 @@ public:
 private:
 
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-    ar & BOOST_SERIALIZATION_NVP(dt_);
-    ar & BOOST_SERIALIZATION_NVP(tau_);
+    ar & cereal::virtual_base_class<Base>(this);
+    ar & CEREAL_NVP(dt_);
+    ar & CEREAL_NVP(tau_);
   }
 
   SharedGaussian calcDiscreteNoiseModel(const SharedGaussian& model, double delta_t){
@@ -125,7 +125,7 @@ private:
     /* In practice, square root of the information matrix is represented, so that:
      *  R_d (approx)= R / sqrt(delta_t)
      * */
-    noiseModel::Gaussian::shared_ptr gaussian_model = boost::dynamic_pointer_cast<noiseModel::Gaussian>(model);
+    noiseModel::Gaussian::shared_ptr gaussian_model = std::dynamic_pointer_cast<noiseModel::Gaussian>(model);
     SharedGaussian model_d(noiseModel::Gaussian::SqrtInformation(gaussian_model->R()/sqrt(delta_t)));
     return model_d;
   }

@@ -79,7 +79,7 @@ public:
 template<typename FACTORS>
 static SymbolicEliminationTree::sharedNode MakeNode(Key key, const FACTORS& factors)
 {
-  SymbolicEliminationTree::sharedNode node = boost::make_shared<SymbolicEliminationTree::Node>();
+  SymbolicEliminationTree::sharedNode node = std::make_shared<SymbolicEliminationTree::Node>();
   node->key = key;
   SymbolicFactorGraph factorsAsGraph = factors;
   node->factors.assign(factorsAsGraph.begin(), factorsAsGraph.end());
@@ -89,7 +89,7 @@ static SymbolicEliminationTree::sharedNode MakeNode(Key key, const FACTORS& fact
 template<typename FACTORS, typename CHILDREN>
 static SymbolicEliminationTree::sharedNode MakeNode(Key key, const FACTORS& factors, const CHILDREN& children)
 {
-  SymbolicEliminationTree::sharedNode node = boost::make_shared<SymbolicEliminationTree::Node>();
+  SymbolicEliminationTree::sharedNode node = std::make_shared<SymbolicEliminationTree::Node>();
   node->key = key;
   SymbolicFactorGraph factorsAsGraph = factors;
   node->factors.assign(factorsAsGraph.begin(), factorsAsGraph.end());

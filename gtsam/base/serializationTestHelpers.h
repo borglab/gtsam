@@ -25,8 +25,7 @@
 
 #include <gtsam/base/serialization.h>
 
-#include <boost/serialization/serialization.hpp>
-#include <boost/filesystem.hpp>
+#include <filesystem>
 
 
 // whether to print the serialized text to stdout
@@ -42,10 +41,10 @@ T create() {
 }
 
 // Creates or empties a folder in the build folder and returns the relative path
-boost::filesystem::path resetFilesystem(
-    boost::filesystem::path folder = "actual") {
-  boost::filesystem::remove_all(folder);
-  boost::filesystem::create_directory(folder);
+std::__fs::filesystem::path resetFilesystem(
+    std::__fs::filesystem::path folder = "actual") {
+  std::__fs::filesystem::remove_all(folder);
+  std::__fs::filesystem::create_directory(folder);
   return folder;
 }
 
@@ -60,7 +59,7 @@ void roundtrip(const T& input, T& output) {
 // Templated round-trip serialization using a file
 template<class T>
 void roundtripFile(const T& input, T& output) {
-  boost::filesystem::path path = resetFilesystem()/"graph.dat";
+  std::__fs::filesystem::path path = resetFilesystem()/"graph.dat";
   serializeToFile(input, path.string());
   deserializeFromFile(path.string(), output);
 }
@@ -101,7 +100,7 @@ void roundtripXML(const T& input, T& output) {
 // Templated round-trip serialization using XML File
 template<class T>
 void roundtripXMLFile(const T& input, T& output) {
-  boost::filesystem::path path = resetFilesystem()/"graph.xml";
+  std::__fs::filesystem::path path = resetFilesystem()/"graph.xml";
   serializeToXMLFile(input, path.string());
   deserializeFromXMLFile(path.string(), output);
 }
@@ -142,7 +141,7 @@ void roundtripBinary(const T& input, T& output) {
 // Templated round-trip serialization using Binary file
 template<class T>
 void roundtripBinaryFile(const T& input, T& output) {
-  boost::filesystem::path path = resetFilesystem()/"graph.bin";
+  std::__fs::filesystem::path path = resetFilesystem()/"graph.bin";
   serializeToBinaryFile(input, path.string());
   deserializeFromBinaryFile(path.string(), output);
 }

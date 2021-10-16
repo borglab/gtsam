@@ -75,7 +75,7 @@ pybind_wrap(gtsam_py # target
             ${PROJECT_SOURCE_DIR}/python/gtsam/gtsam.tpl
             gtsam # libs
             "gtsam;gtsam_header" # dependencies
-            ON # use_boost
+            OFF # use_boost
             )
 
 set_target_properties(gtsam_py PROPERTIES
@@ -131,7 +131,7 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             ${PROJECT_SOURCE_DIR}/python/gtsam_unstable/gtsam_unstable.tpl
             gtsam_unstable # libs
             "gtsam_unstable;gtsam_unstable_header" # dependencies
-            ON # use_boost
+            OFF # use_boost
             )
 
     set_target_properties(gtsam_unstable_py PROPERTIES

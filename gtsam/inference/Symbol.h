@@ -21,7 +21,7 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/Key.h>
 
-#include <boost/serialization/nvp.hpp>
+#include <cereal/types/base_class.hpp>
 #include <cstdint>
 #include <functional>
 
@@ -123,11 +123,11 @@ public:
 private:
 
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & BOOST_SERIALIZATION_NVP(c_);
-    ar & BOOST_SERIALIZATION_NVP(j_);
+    ar & CEREAL_NVP(c_);
+    ar & CEREAL_NVP(j_);
   }
 };
 

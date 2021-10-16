@@ -90,8 +90,8 @@ class GTSAM_EXPORT Cal3DS2 : public Cal3DS2_Base {
   /// @{
 
   /// @return a deep copy of this object
-  boost::shared_ptr<Base> clone() const override {
-    return boost::shared_ptr<Base>(new Cal3DS2(*this));
+  std::shared_ptr<Base> clone() const override {
+    return std::shared_ptr<Base>(new Cal3DS2(*this));
   }
 
   /// @}
@@ -101,11 +101,11 @@ class GTSAM_EXPORT Cal3DS2 : public Cal3DS2_Base {
   /// @{
 
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template <class Archive>
   void serialize(Archive& ar, const unsigned int /*version*/) {
-    ar& boost::serialization::make_nvp(
-        "Cal3DS2", boost::serialization::base_object<Cal3DS2_Base>(*this));
+    ar& cereal::make_nvp(
+        "Cal3DS2", cereal::base_class<Cal3DS2_Base>(this));
   }
 
   /// @}

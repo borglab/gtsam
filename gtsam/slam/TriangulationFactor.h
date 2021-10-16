@@ -57,7 +57,7 @@ protected:
 public:
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
   /// Default constructor
   TriangulationFactor() :
@@ -81,7 +81,7 @@ public:
     if (model && model->dim() != traits<Measurement>::dimension)
       throw std::invalid_argument(
           "TriangulationFactor must be created with "
-              + boost::lexical_cast<std::string>((int) traits<Measurement>::dimension)
+              + std::to_string((int) traits<Measurement>::dimension)
               + "-dimensional noise model.");
   }
 
@@ -91,7 +91,7 @@ public:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
@@ -143,10 +143,10 @@ public:
    * \f$ Ax-b \approx h(x+\delta x)-z = h(x) + A \delta x - z \f$
    * Hence \f$ b = z - h(x) = - \mathtt{error\_vector}(x) \f$
    */
-  boost::shared_ptr<GaussianFactor> linearize(const Values& x) const override {
+  std::shared_ptr<GaussianFactor> linearize(const Values& x) const override {
     // Only linearize if the factor is active
     if (!this->active(x))
-      return boost::shared_ptr<JacobianFactor>();
+      return std::shared_ptr<JacobianFactor>();
 
     // Allocate memory for Jacobian factor, do only once
     if (Ab.rows() == 0) {
@@ -165,7 +165,7 @@ public:
     Ab(0) = A;
     Ab(1) = b;
 
-    return boost::make_shared<JacobianFactor>(this->keys_, Ab);
+    return std::make_shared<JacobianFactor>(this->keys_, Ab);
   }
 
   /** return the measurement */
@@ -186,14 +186,14 @@ public:
 private:
 
   /// Serialization function
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-    ar & BOOST_SERIALIZATION_NVP(camera_);
-    ar & BOOST_SERIALIZATION_NVP(measured_);
-    ar & BOOST_SERIALIZATION_NVP(throwCheirality_);
-    ar & BOOST_SERIALIZATION_NVP(verboseCheirality_);
+    ar & cereal::virtual_base_class<Base>(this);
+    ar & CEREAL_NVP(camera_);
+    ar & CEREAL_NVP(measured_);
+    ar & CEREAL_NVP(throwCheirality_);
+    ar & CEREAL_NVP(verboseCheirality_);
   }
 };
 } // \ namespace gtsam

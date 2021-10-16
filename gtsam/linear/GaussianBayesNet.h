@@ -34,8 +34,8 @@ namespace gtsam {
     typedef FactorGraph<GaussianConditional> Base;
     typedef GaussianBayesNet This;
     typedef GaussianConditional ConditionalType;
-    typedef boost::shared_ptr<This> shared_ptr;
-    typedef boost::shared_ptr<ConditionalType> sharedConditional;
+    typedef std::shared_ptr<This> shared_ptr;
+    typedef std::shared_ptr<ConditionalType> sharedConditional;
 
     /// @name Standard Constructors
     /// @{
@@ -201,10 +201,10 @@ namespace gtsam {
 
   private:
     /** Serialization function */
-    friend class boost::serialization::access;
+    friend class cereal::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+      ar & cereal::virtual_base_class<Base>(this);
     }
   };
 

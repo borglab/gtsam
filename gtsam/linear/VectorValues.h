@@ -80,7 +80,7 @@ namespace gtsam {
    public:
     typedef Values::iterator iterator;              ///< Iterator over vector values
     typedef Values::const_iterator const_iterator;  ///< Const iterator over vector values
-    typedef boost::shared_ptr<This> shared_ptr;     ///< shared_ptr to this class
+    typedef std::shared_ptr<This> shared_ptr;     ///< shared_ptr to this class
     typedef Values::value_type value_type;          ///< Typedef to pair<Key, Vector>
     typedef value_type KeyValuePair;                ///< Typedef to pair<Key, Vector>
     typedef std::map<Key, size_t> Dims;             ///< Keyed vector dimensions
@@ -354,10 +354,10 @@ namespace gtsam {
 
   private:
     /** Serialization function */
-    friend class boost::serialization::access;
+    friend class cereal::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      ar & BOOST_SERIALIZATION_NVP(values_);
+      ar & CEREAL_NVP(values_);
     }
   }; // VectorValues definition
 

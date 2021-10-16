@@ -525,12 +525,10 @@ GTSAM_EXPORT Matrix RtR(const Matrix& A);
 GTSAM_EXPORT Vector columnNormSquare(const Matrix &A);
 } // namespace gtsam
 
-#include <boost/serialization/nvp.hpp>
-#include <boost/serialization/array.hpp>
-#include <boost/serialization/split_free.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/array.hpp>
 
-namespace boost {
-  namespace serialization {
+namespace cereal {
 
     /**
      * Ref. https://stackoverflow.com/questions/18382457/eigen-and-boostserialize/22903063#22903063
@@ -548,6 +546,7 @@ namespace boost {
 
     // split version - sends sizes ahead
     template<class Archive,
+             cereal::traits::DisableIf<cereal::traits::is_text_archive<Archive>::value> = cereal::traits::sfinae,
              typename Scalar_,
              int Rows_,
              int Cols_,
@@ -558,12 +557,36 @@ namespace boost {
               const Eigen::Matrix<Scalar_, Rows_, Cols_, Ops_, MaxRows_, MaxCols_> & m,
               const unsigned int /*version*/) {
       const size_t rows = m.rows(), cols = m.cols();
-      ar << BOOST_SERIALIZATION_NVP(rows);
-      ar << BOOST_SERIALIZATION_NVP(cols);
-      ar << make_nvp("data", make_array(m.data(), m.size()));
+      ar << CEREAL_NVP(rows);
+      ar << CEREAL_NVP(cols);
+      ar << make_nvp("data", cereal::binary_data(reinterpret_cast<const uint8_t *>(m.data()),
+                                                 m.size() * sizeof(typename std::remove_pointer<decltype(m.data())>::type)));
+    }
+
+    // split version - sends sizes ahead
+    template<class Archive,
+        cereal::traits::EnableIf<cereal::traits::is_text_archive<Archive>::value> = cereal::traits::sfinae,
+        typename Scalar_,
+        int Rows_,
+        int Cols_,
+        int Ops_,
+        int MaxRows_,
+        int MaxCols_>
+    void save(Archive & ar,
+              const Eigen::Matrix<Scalar_, Rows_, Cols_, Ops_, MaxRows_, MaxCols_> & m,
+              const unsigned int /*version*/) {
+      const size_t rows = m.rows(), cols = m.cols();
+      ar << CEREAL_NVP(rows);
+      ar << CEREAL_NVP(cols);
+
+      using DType = typename std::remove_const<typename std::remove_pointer<decltype(m.data())>::type>::type;;
+      std::vector<DType> mat_data;
+      mat_data.assign(m.data(), m.data() + m.size());
+      ar & cereal::make_nvp("data", mat_data);
     }
 
     template<class Archive,
+             cereal::traits::DisableIf<cereal::traits::is_text_archive<Archive>::value> = cereal::traits::sfinae,
              typename Scalar_,
              int Rows_,
              int Cols_,
@@ -574,31 +597,34 @@ namespace boost {
               Eigen::Matrix<Scalar_, Rows_, Cols_, Ops_, MaxRows_, MaxCols_> & m,
               const unsigned int /*version*/) {
       size_t rows, cols;
-      ar >> BOOST_SERIALIZATION_NVP(rows);
-      ar >> BOOST_SERIALIZATION_NVP(cols);
+      ar >> CEREAL_NVP(rows);
+      ar >> CEREAL_NVP(cols);
       m.resize(rows, cols);
-      ar >> make_nvp("data", make_array(m.data(), m.size()));
+      ar >> cereal::make_nvp("data", cereal::binary_data(reinterpret_cast<uint8_t *>(m.data()),
+                                                         m.size() * sizeof(typename std::remove_pointer<decltype(m.data())>::type)));
     }
 
-    // templated version of BOOST_SERIALIZATION_SPLIT_FREE(Eigen::Matrix);
     template<class Archive,
-             typename Scalar_,
-             int Rows_,
-             int Cols_,
-             int Ops_,
-             int MaxRows_,
-             int MaxCols_>
-    void serialize(Archive & ar,
+        cereal::traits::EnableIf<cereal::traits::is_text_archive<Archive>::value> = cereal::traits::sfinae,
+        typename Scalar_,
+        int Rows_,
+        int Cols_,
+        int Ops_,
+        int MaxRows_,
+        int MaxCols_>
+    void load(Archive & ar,
               Eigen::Matrix<Scalar_, Rows_, Cols_, Ops_, MaxRows_, MaxCols_> & m,
-              const unsigned int version) {
-      split_free(ar, m, version);
+              const unsigned int /*version*/) {
+      size_t rows, cols;
+      ar >> CEREAL_NVP(rows);
+      ar >> CEREAL_NVP(cols);
+      m.resize(rows, cols);
+
+      using DType = typename std::remove_pointer<decltype(m.data())>::type;
+      std::vector<DType> mat_data;
+      ar >> cereal::make_nvp("data", mat_data);
+      std::copy(mat_data.begin(), mat_data.end(), m.data());
     }
 
-    // specialized to Matrix for MATLAB wrapper
-    template <class Archive>
-    void serialize(Archive& ar, gtsam::Matrix& m, const unsigned int version) {
-      split_free(ar, m, version);
-    }
 
-  } // namespace serialization
 } // namespace boost

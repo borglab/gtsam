@@ -19,9 +19,6 @@
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
 
-#include <boost/algorithm/string/replace.hpp>
-#include <boost/format.hpp>
-
 #include <cmath>
 #include <cstddef>
 #include <cassert>
@@ -31,12 +28,16 @@
 #include <stdexcept>
 #include <utility>
 
+#include <regex>
+
+#include <fmt/format.h>
+
 namespace gtsam {
 namespace internal {
 
-GTSAM_EXPORT boost::shared_ptr<TimingOutline> gTimingRoot(
+GTSAM_EXPORT std::shared_ptr<TimingOutline> gTimingRoot(
     new TimingOutline("Total", getTicTocID("Total")));
-GTSAM_EXPORT boost::weak_ptr<TimingOutline> gCurrentTimer(gTimingRoot);
+GTSAM_EXPORT std::weak_ptr<TimingOutline> gCurrentTimer(gTimingRoot);
 
 /* ************************************************************************* */
 // Implementation of TimingOutline
@@ -57,7 +58,7 @@ TimingOutline::TimingOutline(const std::string& label, size_t id) :
     id_(id), t_(0), tWall_(0), t2_(0.0), tIt_(0), tMax_(0), tMin_(0), n_(0), myOrder_(
         0), lastChildOrder_(0), label_(label) {
 #ifdef GTSAM_USING_NEW_BOOST_TIMERS
-  timer_.stop();
+//  timer_.stop();
 #endif
 }
 
@@ -78,12 +79,12 @@ size_t TimingOutline::time() const {
 /* ************************************************************************* */
 void TimingOutline::print(const std::string& outline) const {
   std::string formattedLabel = label_;
-  boost::replace_all(formattedLabel, "_", " ");
+  std::regex_replace(formattedLabel, std::regex("_"), " ");
   std::cout << outline << "-" << formattedLabel << ": " << self() << " CPU ("
       << n_ << " times, " << wall() << " wall, " << secs() << " children, min: "
       << min() << " max: " << max() << ")\n";
   // Order children
-  typedef FastMap<size_t, boost::shared_ptr<TimingOutline> > ChildOrder;
+  typedef FastMap<size_t, std::shared_ptr<TimingOutline> > ChildOrder;
   ChildOrder childOrder;
   for(const ChildMap::value_type& child: children_) {
     childOrder[child.second->myOrder_] = child.second;
@@ -141,10 +142,10 @@ void TimingOutline::print2(const std::string& outline,
 }
 
 /* ************************************************************************* */
-const boost::shared_ptr<TimingOutline>& TimingOutline::child(size_t child,
-    const std::string& label, const boost::weak_ptr<TimingOutline>& thisPtr) {
+const std::shared_ptr<TimingOutline>& TimingOutline::child(size_t child,
+    const std::string& label, const std::weak_ptr<TimingOutline>& thisPtr) {
   assert(thisPtr.lock().get() == this);
-  boost::shared_ptr<TimingOutline>& result = children_[child];
+  std::shared_ptr<TimingOutline>& result = children_[child];
   if (!result) {
     // Create child if necessary
     result.reset(new TimingOutline(label, child));
@@ -159,7 +160,7 @@ const boost::shared_ptr<TimingOutline>& TimingOutline::child(size_t child,
 void TimingOutline::tic() {
 #ifdef GTSAM_USING_NEW_BOOST_TIMERS
   assert(timer_.is_stopped());
-  timer_.start();
+//  timer_.start();
 #else
   assert(!timerActive_);
   timer_.restart();
@@ -175,9 +176,9 @@ void TimingOutline::tic() {
 void TimingOutline::toc() {
 #ifdef GTSAM_USING_NEW_BOOST_TIMERS
 
-  assert(!timer_.is_stopped());
-  timer_.stop();
-  size_t cpuTime = (timer_.elapsed().user + timer_.elapsed().system) / 1000;
+//  assert(!timer_.is_stopped());
+//  timer_.stop();
+//  size_t cpuTime = (timer_.elapsed().user + timer_.elapsed().system) / 1000;
 #  ifndef GTSAM_USE_TBB
   size_t wallTime = timer_.elapsed().wall / 1000;
 #  endif
@@ -199,7 +200,7 @@ void TimingOutline::toc() {
       (tbb::tick_count::now() - tbbTimer_).seconds() * 1e6);
 #endif
 
-  add(cpuTime, wallTime);
+//  add(cpuTime, wallTime);
 }
 
 /* ************************************************************************* */
@@ -236,7 +237,7 @@ size_t getTicTocID(const char *descriptionC) {
 /* ************************************************************************* */
 void tic(size_t id, const char *labelC) {
   const std::string label(labelC);
-  boost::shared_ptr<TimingOutline> node = //
+  std::shared_ptr<TimingOutline> node = //
       gCurrentTimer.lock()->child(id, label, gCurrentTimer);
   gCurrentTimer = node;
   node->tic();
@@ -244,20 +245,20 @@ void tic(size_t id, const char *labelC) {
 
 /* ************************************************************************* */
 void toc(size_t id, const char *label) {
-  boost::shared_ptr<TimingOutline> current(gCurrentTimer.lock());
+  std::shared_ptr<TimingOutline> current(gCurrentTimer.lock());
   if (id != current->id_) {
     gTimingRoot->print();
     throw std::invalid_argument(
-        (boost::format(
-            "gtsam timing:  Mismatched tic/toc: gttoc(\"%s\") called when last tic was \"%s\".")
-            % label % current->label_).str());
+        fmt::format(
+            "gtsam timing:  Mismatched tic/toc: gttoc(\"%s\") called when last tic was \"%s\".",
+            label, current->label_));
   }
   if (!current->parent_.lock()) {
     gTimingRoot->print();
     throw std::invalid_argument(
-        (boost::format(
-            "gtsam timing:  Mismatched tic/toc: extra gttoc(\"%s\"), already at the root")
-            % label).str());
+        fmt::format(
+            "gtsam timing:  Mismatched tic/toc: extra gttoc(\"%s\"), already at the root"
+            , label));
   }
   current->toc();
   gCurrentTimer = current->parent_;

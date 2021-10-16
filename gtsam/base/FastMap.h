@@ -19,8 +19,9 @@
 #pragma once
 
 #include <gtsam/base/FastDefaultAllocator.h>
-#include <boost/serialization/nvp.hpp>
-#include <boost/serialization/map.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/map.hpp>
+#include <cereal/types/base_class.hpp>
 #include <map>
 
 namespace gtsam {
@@ -67,12 +68,12 @@ public:
   bool exists(const KEY& e) const { return this->find(e) != this->end(); }
 
 private:
-  /** Serialization function */
-  friend class boost::serialization::access;
-  template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-  }
+//  /** Serialization function */
+//  friend class cereal::access;
+//  template<class ARCHIVE>
+//  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+//    ar & cereal::virtual_base_class<Base>(this);
+//  }
 };
 
 }

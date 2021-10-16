@@ -112,7 +112,7 @@ private:
 public:
 
   // shorthand for a smart pointer to a factor
-  typedef typename boost::shared_ptr<EquivInertialNavFactor_GlobalVel> shared_ptr;
+  typedef typename std::shared_ptr<EquivInertialNavFactor_GlobalVel> shared_ptr;
 
   /** default constructor - only use for serialization */
   EquivInertialNavFactor_GlobalVel() {}
@@ -708,11 +708,11 @@ public:
 private:
 
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & boost::serialization::make_nvp("NonlinearFactor2",
-        boost::serialization::base_object<Base>(*this));
+    ar & cereal::make_nvp("NonlinearFactor2",
+        cereal::base_class<Base>(this));
   }
 
 

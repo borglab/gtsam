@@ -21,8 +21,8 @@
 #include <gtsam/base/types.h>
 #include <gtsam/dllexport.h>
 
-#include <boost/serialization/version.hpp>
-#include <boost/serialization/nvp.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/vector.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include <vector>
@@ -39,23 +39,29 @@ namespace gtsam {
 class GaussianFactorGraph;
 struct PreconditionerParameters;
 
+struct GTSAM_EXPORT SubgraphEdge {
+  size_t index;  /* edge id */
+  double weight; /* edge weight */
+  inline bool isUnitWeight() const { return (weight == 1.0); }
+  friend std::ostream &operator<<(std::ostream &os, const SubgraphEdge &edge);
+
+  SubgraphEdge() {}
+  SubgraphEdge(size_t index, double weight): index(index), weight(weight) {};
+
+ protected:
+  friend class cereal::access;
+  friend class Subgraph;
+  template <class Archive>
+  void serialize(Archive &ar) {
+    ar(CEREAL_NVP(index), CEREAL_NVP(weight));
+  }
+};
+
+
 /**************************************************************************/
 class GTSAM_EXPORT Subgraph {
  public:
-  struct GTSAM_EXPORT Edge {
-    size_t index;  /* edge id */
-    double weight; /* edge weight */
-    inline bool isUnitWeight() const { return (weight == 1.0); }
-    friend std::ostream &operator<<(std::ostream &os, const Edge &edge);
-
-   private:
-    friend class boost::serialization::access;
-    template <class Archive>
-    void serialize(Archive &ar, const unsigned int /*version*/) {
-      ar &BOOST_SERIALIZATION_NVP(index);
-      ar &BOOST_SERIALIZATION_NVP(weight);
-    }
-  };
+  using Edge = SubgraphEdge;
 
   typedef std::vector<Edge> Edges;
   typedef std::vector<size_t> EdgeIndices;
@@ -80,21 +86,21 @@ class GTSAM_EXPORT Subgraph {
   iterator end() { return edges_.end(); }
   const_iterator end() const { return edges_.end(); }
 
-  void save(const std::string &fn) const;
-  static Subgraph load(const std::string &fn);
+  void save_graph(const std::string &fn) const;
+  static Subgraph load_graph(const std::string &fn);
   friend std::ostream &operator<<(std::ostream &os, const Subgraph &subgraph);
 
  private:
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template <class Archive>
-  void serialize(Archive &ar, const unsigned int /*version*/) {
-    ar &BOOST_SERIALIZATION_NVP(edges_);
+  void serialize(Archive &ar) {
+    ar &CEREAL_NVP(edges_);
   }
 };
 
 /****************************************************************************/
 struct GTSAM_EXPORT SubgraphBuilderParameters {
-  typedef boost::shared_ptr<SubgraphBuilderParameters> shared_ptr;
+  typedef std::shared_ptr<SubgraphBuilderParameters> shared_ptr;
 
   enum Skeleton {
     /* augmented tree */
@@ -172,12 +178,12 @@ class GTSAM_EXPORT SubgraphBuilder {
 };
 
 /** Select the factors in a factor graph according to the subgraph. */
-boost::shared_ptr<GaussianFactorGraph> buildFactorSubgraph(
+std::shared_ptr<GaussianFactorGraph> buildFactorSubgraph(
     const GaussianFactorGraph &gfg, const Subgraph &subgraph, const bool clone);
 
 /** Split the graph into a subgraph and the remaining edges. 
  * Note that the remaining factorgraph has null factors. */
-std::pair<boost::shared_ptr<GaussianFactorGraph>, boost::shared_ptr<GaussianFactorGraph> > 
+std::pair<std::shared_ptr<GaussianFactorGraph>, std::shared_ptr<GaussianFactorGraph> >
 splitFactorGraph(const GaussianFactorGraph &factorGraph, const Subgraph &subgraph);
 
 }  // namespace gtsam

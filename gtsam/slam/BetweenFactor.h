@@ -57,7 +57,7 @@ namespace gtsam {
   public:
 
     // shorthand for a smart pointer to a factor
-    typedef typename boost::shared_ptr<BetweenFactor> shared_ptr;
+    typedef typename std::shared_ptr<BetweenFactor> shared_ptr;
 
     /** default constructor - only use for serialization */
     BetweenFactor() {}
@@ -72,7 +72,7 @@ namespace gtsam {
 
     /// @return a deep copy of this factor
     gtsam::NonlinearFactor::shared_ptr clone() const override {
-      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+      return std::static_pointer_cast<gtsam::NonlinearFactor>(
           gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
     /// @}
@@ -127,12 +127,12 @@ namespace gtsam {
   private:
 
     /** Serialization function */
-    friend class boost::serialization::access;
+    friend class cereal::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      ar & boost::serialization::make_nvp("NoiseModelFactor2",
-          boost::serialization::base_object<Base>(*this));
-      ar & BOOST_SERIALIZATION_NVP(measured_);
+      ar & cereal::make_nvp("NoiseModelFactor2",
+          cereal::base_class<Base>(this));
+      ar & CEREAL_NVP(measured_);
     }
 
 	  // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
@@ -153,7 +153,7 @@ namespace gtsam {
   template<class VALUE>
   class BetweenConstraint : public BetweenFactor<VALUE> {
   public:
-    typedef boost::shared_ptr<BetweenConstraint<VALUE> > shared_ptr;
+    typedef std::shared_ptr<BetweenConstraint<VALUE> > shared_ptr;
 
     /** Syntactic sugar for constrained version */
     BetweenConstraint(const VALUE& measured, Key key1, Key key2, double mu = 1000.0) :
@@ -164,11 +164,11 @@ namespace gtsam {
   private:
 
     /** Serialization function */
-    friend class boost::serialization::access;
+    friend class cereal::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      ar & boost::serialization::make_nvp("BetweenFactor",
-          boost::serialization::base_object<BetweenFactor<VALUE> >(*this));
+      ar & cereal::make_nvp("BetweenFactor",
+          cereal::base_class<BetweenFactor<VALUE> >(this));
     }
   }; // \class BetweenConstraint
 

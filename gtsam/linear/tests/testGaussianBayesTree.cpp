@@ -47,8 +47,8 @@ namespace {
   // Helper functions for below
   GaussianBayesTreeClique::shared_ptr MakeClique(const GaussianConditional& conditional)
   {
-    return boost::make_shared<GaussianBayesTreeClique>(
-      boost::make_shared<GaussianConditional>(conditional));
+    return std::make_shared<GaussianBayesTreeClique>(
+      std::make_shared<GaussianConditional>(conditional));
   }
 
   template<typename CHILDREN>
@@ -56,8 +56,8 @@ namespace {
     const GaussianConditional& conditional, const CHILDREN& children)
   {
     GaussianBayesTreeClique::shared_ptr clique =
-      boost::make_shared<GaussianBayesTreeClique>(
-      boost::make_shared<GaussianConditional>(conditional));
+      std::make_shared<GaussianBayesTreeClique>(
+      std::make_shared<GaussianConditional>(conditional));
     clique->children.assign(children.begin(), children.end());
     for(typename CHILDREN::const_iterator child = children.begin(); child != children.end(); ++child)
       (*child)->parent_ = clique;
@@ -310,7 +310,7 @@ TEST(GaussianBayesTree, determinant_and_smallestEigenvalue) {
   fg += JacobianFactor(x2, -5 * I_2x2, l1, 5 * I_2x2, Vector2(-1.0, 1.5), unit2);
 
   // create corresponding Bayes tree:
-  boost::shared_ptr<gtsam::GaussianBayesTree> bt = fg.eliminateMultifrontal();
+  std::shared_ptr<gtsam::GaussianBayesTree> bt = fg.eliminateMultifrontal();
   Matrix H = fg.hessian().first;
 
   // test determinant

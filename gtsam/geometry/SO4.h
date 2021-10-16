@@ -82,25 +82,25 @@ GTSAM_EXPORT Matrix43 stiefel(const SO4 &Q, OptionalJacobian<12, 6> H = boost::n
 template <class Archive>
 void serialize(Archive &ar, SO4 &Q, const unsigned int /*version*/) {
   Matrix4 &M = Q.matrix_;
-  ar &boost::serialization::make_nvp("Q11", M(0, 0));
-  ar &boost::serialization::make_nvp("Q12", M(0, 1));
-  ar &boost::serialization::make_nvp("Q13", M(0, 2));
-  ar &boost::serialization::make_nvp("Q14", M(0, 3));
+  ar &cereal::make_nvp("Q11", M(0, 0));
+  ar &cereal::make_nvp("Q12", M(0, 1));
+  ar &cereal::make_nvp("Q13", M(0, 2));
+  ar &cereal::make_nvp("Q14", M(0, 3));
 
-  ar &boost::serialization::make_nvp("Q21", M(1, 0));
-  ar &boost::serialization::make_nvp("Q22", M(1, 1));
-  ar &boost::serialization::make_nvp("Q23", M(1, 2));
-  ar &boost::serialization::make_nvp("Q24", M(1, 3));
+  ar &cereal::make_nvp("Q21", M(1, 0));
+  ar &cereal::make_nvp("Q22", M(1, 1));
+  ar &cereal::make_nvp("Q23", M(1, 2));
+  ar &cereal::make_nvp("Q24", M(1, 3));
 
-  ar &boost::serialization::make_nvp("Q31", M(2, 0));
-  ar &boost::serialization::make_nvp("Q32", M(2, 1));
-  ar &boost::serialization::make_nvp("Q33", M(2, 2));
-  ar &boost::serialization::make_nvp("Q34", M(2, 3));
+  ar &cereal::make_nvp("Q31", M(2, 0));
+  ar &cereal::make_nvp("Q32", M(2, 1));
+  ar &cereal::make_nvp("Q33", M(2, 2));
+  ar &cereal::make_nvp("Q34", M(2, 3));
 
-  ar &boost::serialization::make_nvp("Q41", M(3, 0));
-  ar &boost::serialization::make_nvp("Q42", M(3, 1));
-  ar &boost::serialization::make_nvp("Q43", M(3, 2));
-  ar &boost::serialization::make_nvp("Q44", M(3, 3));
+  ar &cereal::make_nvp("Q41", M(3, 0));
+  ar &cereal::make_nvp("Q42", M(3, 1));
+  ar &cereal::make_nvp("Q43", M(3, 2));
+  ar &cereal::make_nvp("Q44", M(3, 3));
 }
 
 /*

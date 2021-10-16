@@ -112,7 +112,7 @@ TEST(SmartProjectionPoseFactorRollingShutter, Equals) {
   key_pairs.push_back(std::make_pair(x2, x3));
   key_pairs.push_back(std::make_pair(x3, x4));
 
-  std::vector<boost::shared_ptr<Cal3_S2>> intrinsicCalibrations;
+  std::vector<std::shared_ptr<Cal3_S2>> intrinsicCalibrations;
   intrinsicCalibrations.push_back(sharedK);
   intrinsicCalibrations.push_back(sharedK);
   intrinsicCalibrations.push_back(sharedK);
@@ -497,7 +497,7 @@ TEST(SmartProjectionPoseFactorRollingShutter, hessian_simple_2poses) {
   Values values;
   values.insert(x1, pose1);
   values.insert(x2, pose2);
-  boost::shared_ptr<RegularHessianFactor<6>> actual =
+  std::shared_ptr<RegularHessianFactor<6>> actual =
       smartFactor1->createHessianFactor(values);
   EXPECT(assert_equal(expectedInformation, actual->information(), 1e-6));
   EXPECT(assert_equal(expected, *actual, 1e-6));
@@ -758,7 +758,7 @@ TEST(SmartProjectionPoseFactorRollingShutter,
 
   // ==== check Hessian of smartFactor1 =====
   // -- compute actual Hessian
-  boost::shared_ptr<GaussianFactor> linearfactor1 =
+  std::shared_ptr<GaussianFactor> linearfactor1 =
       smartFactor1->linearize(values);
   Matrix actualHessian = linearfactor1->information();
 
@@ -896,7 +896,7 @@ TEST(SmartProjectionPoseFactorRollingShutter,
 
   // ==== check Hessian of smartFactor1 =====
   // -- compute actual Hessian
-  boost::shared_ptr<GaussianFactor> linearfactor1 =
+  std::shared_ptr<GaussianFactor> linearfactor1 =
       smartFactor1->linearize(values);
   Matrix actualHessian = linearfactor1->information();
 

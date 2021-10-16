@@ -33,7 +33,7 @@ namespace gtsam {
 
   public:
 
-    typedef boost::shared_ptr<Constraint> shared_ptr;
+    typedef std::shared_ptr<Constraint> shared_ptr;
 
   protected:
 

@@ -74,6 +74,6 @@ KarcherMeanFactor<T>::KarcherMeanFactor(const CONTAINER &keys, int d,
     terms[j] = A;
   }
   whitenedJacobian_ =
-      boost::make_shared<JacobianFactor>(terms, Vector::Zero(d));
+      std::make_shared<JacobianFactor>(terms, Vector::Zero(d));
 }
 }  // namespace gtsam

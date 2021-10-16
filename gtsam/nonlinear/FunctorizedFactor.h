@@ -83,7 +83,7 @@ class GTSAM_EXPORT FunctorizedFactor : public NoiseModelFactor1<T> {
 
   /// @return a deep copy of this factor
   NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<NonlinearFactor>(
+    return std::static_pointer_cast<NonlinearFactor>(
         NonlinearFactor::shared_ptr(new FunctorizedFactor<R, T>(*this)));
   }
 
@@ -117,13 +117,13 @@ class GTSAM_EXPORT FunctorizedFactor : public NoiseModelFactor1<T> {
 
  private:
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
-    ar &boost::serialization::make_nvp(
-        "NoiseModelFactor1", boost::serialization::base_object<Base>(*this));
-    ar &BOOST_SERIALIZATION_NVP(measured_);
-    ar &BOOST_SERIALIZATION_NVP(func_);
+    ar &cereal::make_nvp(
+        "NoiseModelFactor1", cereal::base_class<Base>(this));
+    ar &CEREAL_NVP(measured_);
+    ar &CEREAL_NVP(func_);
   }
 };
 
@@ -187,7 +187,7 @@ class GTSAM_EXPORT FunctorizedFactor2 : public NoiseModelFactor2<T1, T2> {
 
   /// @return a deep copy of this factor
   NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<NonlinearFactor>(
+    return std::static_pointer_cast<NonlinearFactor>(
         NonlinearFactor::shared_ptr(new FunctorizedFactor2<R, T1, T2>(*this)));
   }
 
@@ -224,13 +224,13 @@ class GTSAM_EXPORT FunctorizedFactor2 : public NoiseModelFactor2<T1, T2> {
 
  private:
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
-    ar &boost::serialization::make_nvp(
-        "NoiseModelFactor2", boost::serialization::base_object<Base>(*this));
-    ar &BOOST_SERIALIZATION_NVP(measured_);
-    ar &BOOST_SERIALIZATION_NVP(func_);
+    ar &cereal::make_nvp(
+        "NoiseModelFactor2", cereal::base_class<Base>(this));
+    ar &CEREAL_NVP(measured_);
+    ar &CEREAL_NVP(func_);
   }
 };
 

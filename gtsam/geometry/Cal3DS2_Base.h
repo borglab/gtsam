@@ -142,8 +142,8 @@ class GTSAM_EXPORT Cal3DS2_Base : public Cal3 {
   /// @{
 
   /// @return a deep copy of this object
-  virtual boost::shared_ptr<Cal3DS2_Base> clone() const {
-    return boost::shared_ptr<Cal3DS2_Base>(new Cal3DS2_Base(*this));
+  virtual std::shared_ptr<Cal3DS2_Base> clone() const {
+    return std::shared_ptr<Cal3DS2_Base>(new Cal3DS2_Base(*this));
   }
 
   /// @}
@@ -153,16 +153,16 @@ class GTSAM_EXPORT Cal3DS2_Base : public Cal3 {
   /// @{
 
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template <class Archive>
   void serialize(Archive& ar, const unsigned int /*version*/) {
-    ar& boost::serialization::make_nvp(
-        "Cal3DS2_Base", boost::serialization::base_object<Cal3>(*this));
-    ar& BOOST_SERIALIZATION_NVP(k1_);
-    ar& BOOST_SERIALIZATION_NVP(k2_);
-    ar& BOOST_SERIALIZATION_NVP(p1_);
-    ar& BOOST_SERIALIZATION_NVP(p2_);
-    ar& BOOST_SERIALIZATION_NVP(tol_);
+    ar& cereal::make_nvp(
+        "Cal3DS2_Base", cereal::base_class<Cal3>(this));
+    ar& CEREAL_NVP(k1_);
+    ar& CEREAL_NVP(k2_);
+    ar& CEREAL_NVP(p1_);
+    ar& CEREAL_NVP(p2_);
+    ar& CEREAL_NVP(tol_);
   }
 
   /// @}

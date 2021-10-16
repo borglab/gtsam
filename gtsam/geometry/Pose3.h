@@ -359,11 +359,11 @@ public:
 
  private:
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int /*version*/) {
-    ar & BOOST_SERIALIZATION_NVP(R_);
-    ar & BOOST_SERIALIZATION_NVP(t_);
+    ar & CEREAL_NVP(R_);
+    ar & CEREAL_NVP(t_);
   }
   /// @}
 

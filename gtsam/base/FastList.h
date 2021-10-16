@@ -21,10 +21,8 @@
 #include <gtsam/base/FastDefaultAllocator.h>
 #include <list>
 #include <boost/utility/enable_if.hpp>
-#include <boost/serialization/nvp.hpp>
-#include <boost/serialization/version.hpp>
-#include <boost/serialization/optional.hpp>
-#include <boost/serialization/list.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/list.hpp>
 
 namespace gtsam {
 
@@ -72,13 +70,13 @@ public:
     return std::list<VALUE>(this->begin(), this->end());
   }
 
-private:
-  /** Serialization function */
-  friend class boost::serialization::access;
-  template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-  }
+//private:
+//  /** Serialization function */
+//  friend class cereal::access;
+//  template<class ARCHIVE>
+//  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+//    ar & cereal::virtual_base_class<Base>(this);
+//  }
 
 };
 

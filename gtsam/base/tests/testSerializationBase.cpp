@@ -18,6 +18,8 @@
 
 #include <gtsam/inference/Key.h>
 
+#include <cereal/types/vector.hpp>
+
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/FastList.h>
@@ -27,6 +29,7 @@
 
 #include <gtsam/base/serializationTestHelpers.h>
 #include <CppUnitLite/TestHarness.h>
+
 
 using namespace std;
 using namespace gtsam;
@@ -85,7 +88,7 @@ TEST (Serialization, FastVector) {
 }
 
 /* ************************************************************************* */
-TEST (Serialization, matrix_vector) {
+TEST_UNSAFE(Serialization, matrix_vector) {
   EXPECT(equality<Vector>((Vector(4) << 1.0, 2.0, 3.0, 4.0).finished()));
   EXPECT(equality<Vector2>(Vector2(1.0, 2.0)));
   EXPECT(equality<Vector3>(Vector3(1.0, 2.0, 3.0)));

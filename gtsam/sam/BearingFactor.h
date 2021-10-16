@@ -77,11 +77,11 @@ struct BearingFactor : public ExpressionFactorN<T, A1, A2> {
 
 
  private:
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& boost::serialization::make_nvp(
-        "Base", boost::serialization::base_object<Base>(*this));
+    ar& cereal::make_nvp(
+        "Base", cereal::base_class<Base>(this));
   }
 };  // BearingFactor
 

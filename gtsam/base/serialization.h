@@ -24,21 +24,12 @@
 #include <string>
 
 // includes for standard serialization types
-#include <boost/serialization/optional.hpp>
-#include <boost/serialization/shared_ptr.hpp>
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/map.hpp>
-#include <boost/serialization/list.hpp>
-#include <boost/serialization/deque.hpp>
-#include <boost/serialization/weak_ptr.hpp>
+#include <cereal/types/map.hpp>
+#include <cereal/types/polymorphic.hpp>
 
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
-#include <boost/archive/xml_iarchive.hpp>
-#include <boost/archive/xml_oarchive.hpp>
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/serialization/export.hpp>
+#include <cereal/archives/binary.hpp>
+#include <cereal/archives/xml.hpp>
+#include <cereal/archives/json.hpp>
 
 namespace gtsam {
 
@@ -49,14 +40,14 @@ namespace gtsam {
 /// serializes to a stream
 template <class T>
 void serializeToStream(const T& input, std::ostream& out_archive_stream) {
-  boost::archive::text_oarchive out_archive(out_archive_stream);
+  cereal::JSONOutputArchive out_archive(out_archive_stream);
   out_archive << input;
 }
 
 /// deserializes from a stream
 template <class T>
 void deserializeFromStream(std::istream& in_archive_stream, T& output) {
-  boost::archive::text_iarchive in_archive(in_archive_stream);
+  cereal::JSONInputArchive in_archive(in_archive_stream);
   in_archive >> output;
 }
 
@@ -116,16 +107,16 @@ void deserialize(const std::string& serialized, T& output) {
 template <class T>
 void serializeToXMLStream(const T& input, std::ostream& out_archive_stream,
                   const std::string& name = "data") {
-  boost::archive::xml_oarchive out_archive(out_archive_stream);
-  out_archive << boost::serialization::make_nvp(name.c_str(), input);
+  cereal::XMLOutputArchive out_archive(out_archive_stream);
+  out_archive << cereal::make_nvp(name.c_str(), input);
 }
 
 /// deserializes from a stream in XML
 template <class T>
 void deserializeFromXMLStream(std::istream& in_archive_stream, T& output,
                     const std::string& name = "data") {
-  boost::archive::xml_iarchive in_archive(in_archive_stream);
-  in_archive >> boost::serialization::make_nvp(name.c_str(), output);
+  cereal::XMLInputArchive in_archive(in_archive_stream);
+  in_archive >> cereal::make_nvp(name.c_str(), output);
 }
 
 /// serializes to a string in XML
@@ -190,16 +181,16 @@ void deserializeXML(const std::string& serialized, T& output,
 template <class T>
 void serializeToBinaryStream(const T& input, std::ostream& out_archive_stream,
                      const std::string& name = "data") {
-  boost::archive::binary_oarchive out_archive(out_archive_stream);
-  out_archive << boost::serialization::make_nvp(name.c_str(), input);
+  cereal::BinaryOutputArchive out_archive(out_archive_stream);
+  out_archive << cereal::make_nvp(name.c_str(), input);
 }
 
 /// deserializes from a stream in binary
 template <class T>
 void deserializeFromBinaryStream(std::istream& in_archive_stream, T& output,
                        const std::string& name = "data") {
-  boost::archive::binary_iarchive in_archive(in_archive_stream);
-  in_archive >> boost::serialization::make_nvp(name.c_str(), output);
+  cereal::BinaryInputArchive in_archive(in_archive_stream);
+  in_archive >> cereal::make_nvp(name.c_str(), output);
 }
 
 /// serializes to a string in binary

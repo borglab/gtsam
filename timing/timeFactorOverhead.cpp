@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
         Vector b(blockdim);
         for(size_t j=0; j<blockdim; ++j)
           b(j) = uniform(rng);
-        blockGfgs[trial].push_back(boost::make_shared<JacobianFactor>(key, A, b, noise));
+        blockGfgs[trial].push_back(std::make_shared<JacobianFactor>(key, A, b, noise));
       }
     }
     gttoc_(blockbuild);
@@ -117,7 +117,7 @@ int main(int argc, char *argv[]) {
         for(size_t j=0; j<blockdim; ++j)
           bcomb(blockdim*i+j) = uniform(rng);
       }
-      combGfgs[trial].push_back(boost::make_shared<JacobianFactor>(key, Acomb, bcomb,
+      combGfgs[trial].push_back(std::make_shared<JacobianFactor>(key, Acomb, bcomb,
           noiseModel::Isotropic::Sigma(blockdim*nBlocks, 1.0)));
     }
     gttoc(combbuild);

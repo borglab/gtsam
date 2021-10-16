@@ -82,7 +82,7 @@ GTSAM_EXPORT Point3 triangulateDLT(
  */
 template<class CALIBRATION>
 std::pair<NonlinearFactorGraph, Values> triangulationGraph(
-    const std::vector<Pose3>& poses, boost::shared_ptr<CALIBRATION> sharedCal,
+    const std::vector<Pose3>& poses, std::shared_ptr<CALIBRATION> sharedCal,
     const Point2Vector& measurements, Key landmarkKey,
     const Point3& initialEstimate) {
   Values values;
@@ -147,7 +147,7 @@ GTSAM_EXPORT Point3 optimize(const NonlinearFactorGraph& graph,
  */
 template<class CALIBRATION>
 Point3 triangulateNonlinear(const std::vector<Pose3>& poses,
-    boost::shared_ptr<CALIBRATION> sharedCal,
+    std::shared_ptr<CALIBRATION> sharedCal,
     const Point2Vector& measurements, const Point3& initialEstimate) {
 
   // Create a factor graph and initial values
@@ -215,7 +215,7 @@ public:
  */
 template<class CALIBRATION>
 Point3 triangulatePoint3(const std::vector<Pose3>& poses,
-    boost::shared_ptr<CALIBRATION> sharedCal,
+    std::shared_ptr<CALIBRATION> sharedCal,
     const Point2Vector& measurements, double rank_tol = 1e-9,
     bool optimize = false) {
 
@@ -357,13 +357,13 @@ struct GTSAM_EXPORT TriangulationParameters {
 private:
 
   /// Serialization function
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int version) {
-    ar & BOOST_SERIALIZATION_NVP(rankTolerance);
-    ar & BOOST_SERIALIZATION_NVP(enableEPI);
-    ar & BOOST_SERIALIZATION_NVP(landmarkDistanceThreshold);
-    ar & BOOST_SERIALIZATION_NVP(dynamicOutlierRejectionThreshold);
+    ar & CEREAL_NVP(rankTolerance);
+    ar & CEREAL_NVP(enableEPI);
+    ar & CEREAL_NVP(landmarkDistanceThreshold);
+    ar & CEREAL_NVP(dynamicOutlierRejectionThreshold);
   }
 };
 
@@ -432,10 +432,10 @@ public:
 private:
 
   /// Serialization function
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int version) {
-    ar & BOOST_SERIALIZATION_NVP(status_);
+    ar & CEREAL_NVP(status_);
   }
 };
 

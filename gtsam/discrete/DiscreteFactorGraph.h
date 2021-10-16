@@ -38,7 +38,7 @@ class DiscreteBayesTree;
 class DiscreteJunctionTree;
 
 /** Main elimination function for DiscreteFactorGraph */
-GTSAM_EXPORT std::pair<boost::shared_ptr<DiscreteConditional>, DecisionTreeFactor::shared_ptr>
+GTSAM_EXPORT std::pair<std::shared_ptr<DiscreteConditional>, DecisionTreeFactor::shared_ptr>
 EliminateDiscrete(const DiscreteFactorGraph& factors, const Ordering& keys);
 
 /* ************************************************************************* */
@@ -52,7 +52,7 @@ template<> struct EliminationTraits<DiscreteFactorGraph>
   typedef DiscreteBayesTree BayesTreeType;             ///< Type of Bayes tree
   typedef DiscreteJunctionTree JunctionTreeType;       ///< Type of Junction tree
   /// The default dense elimination function
-  static std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> >
+  static std::pair<std::shared_ptr<ConditionalType>, std::shared_ptr<FactorType> >
   DefaultEliminate(const FactorGraphType& factors, const Ordering& keys) {
     return EliminateDiscrete(factors, keys); }
 };
@@ -69,12 +69,12 @@ public:
   typedef DiscreteFactorGraph This; ///< Typedef to this class
   typedef FactorGraph<DiscreteFactor> Base; ///< Typedef to base factor graph type
   typedef EliminateableFactorGraph<This> BaseEliminateable; ///< Typedef to base elimination class
-  typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
+  typedef std::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
 
   /** A map from keys to values */
   typedef KeyVector Indices;
   typedef Assignment<Key> Values;
-  typedef boost::shared_ptr<Values> sharedValues;
+  typedef std::shared_ptr<Values> sharedValues;
 
   /** Default constructor */
   DiscreteFactorGraph() {}
@@ -105,7 +105,7 @@ public:
   void add(const DiscreteKey& j, SOURCE table) {
     DiscreteKeys keys;
     keys.push_back(j);
-    push_back(boost::make_shared<DecisionTreeFactor>(keys, table));
+    push_back(std::make_shared<DecisionTreeFactor>(keys, table));
   }
 
   template<class SOURCE>
@@ -113,13 +113,13 @@ public:
     DiscreteKeys keys;
     keys.push_back(j1);
     keys.push_back(j2);
-    push_back(boost::make_shared<DecisionTreeFactor>(keys, table));
+    push_back(std::make_shared<DecisionTreeFactor>(keys, table));
   }
 
   /** add shared discreteFactor immediately from arguments */
   template<class SOURCE>
   void add(const DiscreteKeys& keys, SOURCE table) {
-    push_back(boost::make_shared<DecisionTreeFactor>(keys, table));
+    push_back(std::make_shared<DecisionTreeFactor>(keys, table));
   }
 
   /** Return the set of variables involved in the factors (set union) */

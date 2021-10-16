@@ -54,7 +54,7 @@ public:
 
   /// @return a deep copy of this factor
   NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<NonlinearFactor>(
+    return std::static_pointer_cast<NonlinearFactor>(
         NonlinearFactor::shared_ptr(new MagFactor(*this)));
   }
 
@@ -103,7 +103,7 @@ public:
 
   /// @return a deep copy of this factor
   NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<NonlinearFactor>(
+    return std::static_pointer_cast<NonlinearFactor>(
         NonlinearFactor::shared_ptr(new MagFactor1(*this)));
   }
 
@@ -139,7 +139,7 @@ public:
 
   /// @return a deep copy of this factor
   NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<NonlinearFactor>(
+    return std::static_pointer_cast<NonlinearFactor>(
         NonlinearFactor::shared_ptr(new MagFactor2(*this)));
   }
 
@@ -180,7 +180,7 @@ public:
 
   /// @return a deep copy of this factor
   NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<NonlinearFactor>(
+    return std::static_pointer_cast<NonlinearFactor>(
         NonlinearFactor::shared_ptr(new MagFactor3(*this)));
   }
 

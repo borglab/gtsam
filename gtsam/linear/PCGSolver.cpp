@@ -45,7 +45,7 @@ PCGSolver::PCGSolver(const PCGSolverParameters &p) {
   preconditioner_ = createPreconditioner(p.preconditioner_);
 }
 
-void PCGSolverParameters::setPreconditionerParams(const boost::shared_ptr<PreconditionerParameters> preconditioner) {
+void PCGSolverParameters::setPreconditionerParams(const std::shared_ptr<PreconditionerParameters> preconditioner) {
   preconditioner_ = preconditioner;
 }
 

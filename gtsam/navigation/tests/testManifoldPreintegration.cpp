@@ -29,7 +29,7 @@ using namespace std::placeholders;
 
 namespace testing {
 // Create default parameters with Z-down and above noise parameters
-static boost::shared_ptr<PreintegrationParams> Params() {
+static std::shared_ptr<PreintegrationParams> Params() {
   auto p = PreintegrationParams::MakeSharedD(kGravity);
   p->gyroscopeCovariance = kGyroSigma * kGyroSigma * I_3x3;
   p->accelerometerCovariance = kAccelSigma * kAccelSigma * I_3x3;

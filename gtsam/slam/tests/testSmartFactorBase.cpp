@@ -42,9 +42,9 @@ public:
                 size_t expectedNumberCameras = 10)
       : Base(sharedNoiseModel, body_P_sensor, expectedNumberCameras) {}
   double error(const Values& values) const override { return 0.0; }
-  boost::shared_ptr<GaussianFactor> linearize(
+  std::shared_ptr<GaussianFactor> linearize(
       const Values& values) const override {
-    return boost::shared_ptr<GaussianFactor>(new JacobianFactor());
+    return std::shared_ptr<GaussianFactor>(new JacobianFactor());
   }
 };
 
@@ -108,9 +108,9 @@ public:
   double error(const Values& values) const override {
     return 0.0;
   }
-  boost::shared_ptr<GaussianFactor> linearize(
+  std::shared_ptr<GaussianFactor> linearize(
       const Values& values) const override {
-    return boost::shared_ptr<GaussianFactor>(new JacobianFactor());
+    return std::shared_ptr<GaussianFactor>(new JacobianFactor());
   }
 };
 

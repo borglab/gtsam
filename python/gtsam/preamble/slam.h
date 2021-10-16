@@ -12,6 +12,6 @@
  */
 
 PYBIND11_MAKE_OPAQUE(
-    std::vector<boost::shared_ptr<gtsam::BetweenFactor<gtsam::Pose3> > >);
+    std::vector<std::shared_ptr<gtsam::BetweenFactor<gtsam::Pose3> > >);
 PYBIND11_MAKE_OPAQUE(
-    std::vector<boost::shared_ptr<gtsam::BetweenFactor<gtsam::Pose2> > >);
+    std::vector<std::shared_ptr<gtsam::BetweenFactor<gtsam::Pose2> > >);

@@ -42,7 +42,7 @@ class MagPoseFactor: public NoiseModelFactor1<POSE> {
   static const int RotDim = traits<Rot>::dimension;
 
   /// Shorthand for a smart pointer to a factor.
-  using shared_ptr = boost::shared_ptr<MagPoseFactor<POSE>>;
+  using shared_ptr = std::shared_ptr<MagPoseFactor<POSE>>;
 
   /// Concept check by type.
   GTSAM_CONCEPT_TESTABLE_TYPE(POSE)
@@ -79,7 +79,7 @@ class MagPoseFactor: public NoiseModelFactor1<POSE> {
 
   /// @return a deep copy of this factor.
   NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<NonlinearFactor>(
+    return std::static_pointer_cast<NonlinearFactor>(
         NonlinearFactor::shared_ptr(new This(*this)));
   }
 
@@ -126,15 +126,15 @@ class MagPoseFactor: public NoiseModelFactor1<POSE> {
 
  private:
   /// Serialization function.
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & boost::serialization::make_nvp("NoiseModelFactor1",
-         boost::serialization::base_object<Base>(*this));
-    ar & BOOST_SERIALIZATION_NVP(measured_);
-    ar & BOOST_SERIALIZATION_NVP(nM_);
-    ar & BOOST_SERIALIZATION_NVP(bias_);
-    ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);
+    ar & cereal::make_nvp("NoiseModelFactor1",
+         cereal::base_class<Base>(this));
+    ar & CEREAL_NVP(measured_);
+    ar & CEREAL_NVP(nM_);
+    ar & CEREAL_NVP(bias_);
+    ar & CEREAL_NVP(body_P_sensor_);
   }
 };  // \class MagPoseFactor
 

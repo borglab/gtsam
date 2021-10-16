@@ -41,8 +41,8 @@ SubgraphSolver::SubgraphSolver(const GaussianFactorGraph &Ab,
          << " factors" << endl;
 
   auto Rc1 = Ab1->eliminateSequential(ordering, EliminateQR);
-  auto xbar = boost::make_shared<VectorValues>(Rc1->optimize());
-  pc_ = boost::make_shared<SubgraphPreconditioner>(Ab2, Rc1, xbar);
+  auto xbar = std::make_shared<VectorValues>(Rc1->optimize());
+  pc_ = std::make_shared<SubgraphPreconditioner>(Ab2, Rc1, xbar);
 }
 
 /**************************************************************************************************/
@@ -51,8 +51,8 @@ SubgraphSolver::SubgraphSolver(const GaussianBayesNet::shared_ptr &Rc1,
                                const GaussianFactorGraph::shared_ptr &Ab2,
                                const Parameters &parameters)
     : parameters_(parameters) {
-  auto xbar = boost::make_shared<VectorValues>(Rc1->optimize());
-  pc_ = boost::make_shared<SubgraphPreconditioner>(Ab2, Rc1, xbar);
+  auto xbar = std::make_shared<VectorValues>(Rc1->optimize());
+  pc_ = std::make_shared<SubgraphPreconditioner>(Ab2, Rc1, xbar);
 }
 
 /**************************************************************************************************/

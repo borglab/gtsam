@@ -92,7 +92,7 @@ TEST( Iterative, conjugateGradientDescent_hard_constraint )
   graph += NonlinearEquality<Pose2>(X(1), pose1);
   graph += BetweenFactor<Pose2>(X(1),X(2), Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1));
 
-  boost::shared_ptr<GaussianFactorGraph> fg = graph.linearize(config);
+  std::shared_ptr<GaussianFactorGraph> fg = graph.linearize(config);
 
   VectorValues zeros = config.zeroVectors();
 
@@ -119,7 +119,7 @@ TEST( Iterative, conjugateGradientDescent_soft_constraint )
   graph.addPrior(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3, 1e-10));
   graph += BetweenFactor<Pose2>(X(1),X(2), Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1));
 
-  boost::shared_ptr<GaussianFactorGraph> fg = graph.linearize(config);
+  std::shared_ptr<GaussianFactorGraph> fg = graph.linearize(config);
 
   VectorValues zeros = config.zeroVectors();
 

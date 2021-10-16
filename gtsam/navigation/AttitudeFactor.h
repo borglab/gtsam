@@ -64,11 +64,11 @@ public:
   }
 
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & boost::serialization::make_nvp("nZ_",  nZ_);
-    ar & boost::serialization::make_nvp("bRef_", bRef_);
+    ar & cereal::make_nvp("nZ_",  nZ_);
+    ar & cereal::make_nvp("bRef_", bRef_);
   }
 };
 
@@ -83,7 +83,7 @@ class GTSAM_EXPORT Rot3AttitudeFactor: public NoiseModelFactor1<Rot3>, public At
 public:
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<Rot3AttitudeFactor> shared_ptr;
+  typedef std::shared_ptr<Rot3AttitudeFactor> shared_ptr;
 
   /// Typedef to this class
   typedef Rot3AttitudeFactor This;
@@ -109,7 +109,7 @@ public:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
@@ -129,13 +129,13 @@ public:
 private:
 
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & boost::serialization::make_nvp("NoiseModelFactor1",
-        boost::serialization::base_object<Base>(*this));
-    ar & boost::serialization::make_nvp("AttitudeFactor",
-        boost::serialization::base_object<AttitudeFactor>(*this));
+    ar & cereal::make_nvp("NoiseModelFactor1",
+        cereal::base_class<Base>(this));
+    ar & cereal::make_nvp("AttitudeFactor",
+        cereal::base_class<AttitudeFactor>(this));
   }
 
 public:
@@ -157,7 +157,7 @@ class GTSAM_EXPORT Pose3AttitudeFactor: public NoiseModelFactor1<Pose3>,
 public:
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<Pose3AttitudeFactor> shared_ptr;
+  typedef std::shared_ptr<Pose3AttitudeFactor> shared_ptr;
 
   /// Typedef to this class
   typedef Pose3AttitudeFactor This;
@@ -183,7 +183,7 @@ public:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
@@ -209,13 +209,13 @@ public:
 private:
 
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & boost::serialization::make_nvp("NoiseModelFactor1",
-        boost::serialization::base_object<Base>(*this));
-    ar & boost::serialization::make_nvp("AttitudeFactor",
-        boost::serialization::base_object<AttitudeFactor>(*this));
+    ar & cereal::make_nvp("NoiseModelFactor1",
+        cereal::base_class<Base>(this));
+    ar & cereal::make_nvp("AttitudeFactor",
+        cereal::base_class<AttitudeFactor>(this));
   }
 
 public:

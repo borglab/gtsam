@@ -41,7 +41,7 @@ namespace gtsam {
     typedef SymbolicConditional This; /// Typedef to this class
     typedef SymbolicFactor BaseFactor; /// Typedef to the factor base class
     typedef Conditional<BaseFactor, This> BaseConditional; /// Typedef to the conditional base class
-    typedef boost::shared_ptr<This> shared_ptr; /// Boost shared_ptr to this class
+    typedef std::shared_ptr<This> shared_ptr; /// Boost shared_ptr to this class
     typedef BaseFactor::iterator iterator; /// iterator to keys
     typedef BaseFactor::const_iterator const_iterator; /// const_iterator to keys
 
@@ -77,7 +77,7 @@ namespace gtsam {
     template<typename ITERATOR>
     static SymbolicConditional::shared_ptr FromIteratorsShared(ITERATOR firstKey, ITERATOR lastKey, size_t nrFrontals)
     {
-      SymbolicConditional::shared_ptr result = boost::make_shared<SymbolicConditional>();
+      SymbolicConditional::shared_ptr result = std::make_shared<SymbolicConditional>();
       result->keys_.assign(firstKey, lastKey);
       result->nrFrontals_ = nrFrontals;
       return result;
@@ -98,7 +98,7 @@ namespace gtsam {
     ~SymbolicConditional() override {}
 
     /// Copy this object as its actual derived type.
-    SymbolicFactor::shared_ptr clone() const { return boost::make_shared<This>(*this); }
+    SymbolicFactor::shared_ptr clone() const { return std::make_shared<This>(*this); }
 
     /// @}
 
@@ -116,11 +116,11 @@ namespace gtsam {
 
   private:
     /** Serialization function */
-    friend class boost::serialization::access;
+    friend class cereal::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int /*version*/) {
-      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseFactor);
-      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseConditional);
+      ar & cereal::make_nvp("BaseFactor", cereal::base_class<BaseFactor>(this));
+      ar & cereal::make_nvp("BaseConditional", cereal::base_class<BaseConditional>(this));
     }
   };
 

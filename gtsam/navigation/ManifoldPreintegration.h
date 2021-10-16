@@ -59,7 +59,7 @@ public:
    *  @param p    Parameters, typically fixed in a single application
    *  @param bias Current estimate of acceleration and rotation rate biases
    */
-  ManifoldPreintegration(const boost::shared_ptr<Params>& p,
+  ManifoldPreintegration(const std::shared_ptr<Params>& p,
       const imuBias::ConstantBias& biasHat = imuBias::ConstantBias());
 
   /// @}
@@ -106,25 +106,24 @@ public:
       OptionalJacobian<9, 6> H = boost::none) const override;
 
   /** Dummy clone for MATLAB */
-  virtual boost::shared_ptr<ManifoldPreintegration> clone() const {
-    return boost::shared_ptr<ManifoldPreintegration>();
+  virtual std::shared_ptr<ManifoldPreintegration> clone() const {
+    return std::shared_ptr<ManifoldPreintegration>();
   }
 
   /// @}
 
 private:
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    namespace bs = ::boost::serialization;
-    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationBase);
-    ar & BOOST_SERIALIZATION_NVP(deltaXij_);
-    ar & BOOST_SERIALIZATION_NVP(delRdelBiasOmega_);
-    ar & BOOST_SERIALIZATION_NVP(delPdelBiasAcc_);
-    ar & BOOST_SERIALIZATION_NVP(delPdelBiasOmega_);
-    ar & BOOST_SERIALIZATION_NVP(delVdelBiasAcc_);
-    ar & BOOST_SERIALIZATION_NVP(delVdelBiasOmega_);
+    ar & cereal::make_nvp("PreintegrationBase", cereal::base_class<PreintegrationBase>(this));
+    ar & CEREAL_NVP(deltaXij_);
+    ar & CEREAL_NVP(delRdelBiasOmega_);
+    ar & CEREAL_NVP(delPdelBiasAcc_);
+    ar & CEREAL_NVP(delPdelBiasOmega_);
+    ar & CEREAL_NVP(delVdelBiasAcc_);
+    ar & CEREAL_NVP(delVdelBiasOmega_);
   }
 };
 

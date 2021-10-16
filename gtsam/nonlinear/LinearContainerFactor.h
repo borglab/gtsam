@@ -41,7 +41,7 @@ protected:
 
 public:
 
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
   /** Primary constructor: store a linear factor with optional linearization point */
   GTSAM_EXPORT LinearContainerFactor(const JacobianFactor& factor, const Values& linearizationPoint = Values());
@@ -144,10 +144,10 @@ public:
   GTSAM_EXPORT bool isHessian() const;
 
   /** Casts to JacobianFactor */
-  GTSAM_EXPORT boost::shared_ptr<JacobianFactor> toJacobian() const;
+  GTSAM_EXPORT std::shared_ptr<JacobianFactor> toJacobian() const;
 
   /** Casts to HessianFactor */
-  GTSAM_EXPORT boost::shared_ptr<HessianFactor> toHessian() const;
+  GTSAM_EXPORT std::shared_ptr<HessianFactor> toHessian() const;
 
   /**
    * Utility function for converting linear graphs to nonlinear graphs
@@ -162,13 +162,13 @@ public:
 
  private:
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & boost::serialization::make_nvp("NonlinearFactor",
-        boost::serialization::base_object<Base>(*this));
-    ar & BOOST_SERIALIZATION_NVP(factor_);
-    ar & BOOST_SERIALIZATION_NVP(linearizationPoint_);
+    ar & cereal::make_nvp("NonlinearFactor",
+        cereal::base_class<Base>(this));
+    ar & CEREAL_NVP(factor_);
+    ar & CEREAL_NVP(linearizationPoint_);
   }
 
 }; // \class LinearContainerFactor

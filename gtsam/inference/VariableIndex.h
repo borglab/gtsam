@@ -42,7 +42,7 @@ namespace gtsam {
  */
 class GTSAM_EXPORT VariableIndex {
  public:
-  typedef boost::shared_ptr<VariableIndex> shared_ptr;
+  typedef std::shared_ptr<VariableIndex> shared_ptr;
   typedef FactorIndices::iterator Factor_iterator;
   typedef FactorIndices::const_iterator Factor_const_iterator;
 
@@ -184,12 +184,12 @@ protected:
 
 private:
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & BOOST_SERIALIZATION_NVP(index_);
-    ar & BOOST_SERIALIZATION_NVP(nFactors_);
-    ar & BOOST_SERIALIZATION_NVP(nEntries_);
+    ar & CEREAL_NVP(index_);
+    ar & CEREAL_NVP(nFactors_);
+    ar & CEREAL_NVP(nEntries_);
   }
 
   /// @}

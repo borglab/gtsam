@@ -18,13 +18,14 @@
 
 #pragma once
 
-#include <boost/serialization/nvp.hpp>
-#include <boost/serialization/set.hpp>
 #include <gtsam/base/FastDefaultAllocator.h>
 #include <gtsam/base/Testable.h>
 
 #include <functional>
 #include <set>
+
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/set.hpp>
 
 namespace boost {
 namespace serialization {
@@ -122,13 +123,13 @@ public:
     Base::insert(other.begin(), other.end());
   }
 
-private:
-  /** Serialization function */
-  friend class boost::serialization::access;
-  template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-  }
+//private:
+//  /** Serialization function */
+//  friend class cereal::access;
+//  template<class ARCHIVE>
+//  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+//    ar & cereal::virtual_base_class<Base>(this);
+//  }
 };
 
 }

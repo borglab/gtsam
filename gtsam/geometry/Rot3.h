@@ -538,25 +538,25 @@ namespace gtsam {
 
    private:
     /** Serialization function */
-    friend class boost::serialization::access;
+    friend class cereal::access;
     template <class ARCHIVE>
     void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
 #ifndef GTSAM_USE_QUATERNIONS
       Matrix3& M = rot_.matrix_;
-      ar& boost::serialization::make_nvp("rot11", M(0, 0));
-      ar& boost::serialization::make_nvp("rot12", M(0, 1));
-      ar& boost::serialization::make_nvp("rot13", M(0, 2));
-      ar& boost::serialization::make_nvp("rot21", M(1, 0));
-      ar& boost::serialization::make_nvp("rot22", M(1, 1));
-      ar& boost::serialization::make_nvp("rot23", M(1, 2));
-      ar& boost::serialization::make_nvp("rot31", M(2, 0));
-      ar& boost::serialization::make_nvp("rot32", M(2, 1));
-      ar& boost::serialization::make_nvp("rot33", M(2, 2));
+      ar& cereal::make_nvp("rot11", M(0, 0));
+      ar& cereal::make_nvp("rot12", M(0, 1));
+      ar& cereal::make_nvp("rot13", M(0, 2));
+      ar& cereal::make_nvp("rot21", M(1, 0));
+      ar& cereal::make_nvp("rot22", M(1, 1));
+      ar& cereal::make_nvp("rot23", M(1, 2));
+      ar& cereal::make_nvp("rot31", M(2, 0));
+      ar& cereal::make_nvp("rot32", M(2, 1));
+      ar& cereal::make_nvp("rot33", M(2, 2));
 #else
-      ar& boost::serialization::make_nvp("w", quaternion_.w());
-      ar& boost::serialization::make_nvp("x", quaternion_.x());
-      ar& boost::serialization::make_nvp("y", quaternion_.y());
-      ar& boost::serialization::make_nvp("z", quaternion_.z());
+      ar& cereal::make_nvp("w", quaternion_.w());
+      ar& cereal::make_nvp("x", quaternion_.x());
+      ar& cereal::make_nvp("y", quaternion_.y());
+      ar& cereal::make_nvp("z", quaternion_.z());
 #endif
     }
 

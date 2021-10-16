@@ -39,7 +39,7 @@ namespace gtsam {
   {
   public:
     typedef GaussianConditional This; ///< Typedef to this class
-    typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
+    typedef std::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
     typedef JacobianFactor BaseFactor; ///< Typedef to our factor base class
     typedef Conditional<BaseFactor, This> BaseConditional; ///< Typedef to our conditional base class
 
@@ -134,11 +134,11 @@ namespace gtsam {
 
    private:
     /** Serialization function */
-    friend class boost::serialization::access;
+    friend class cereal::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int /*version*/) {
-      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseFactor);
-      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseConditional);
+      ar & cereal::make_nvp("BaseFactor", cereal::base_class<BaseFactor>(this));
+      ar & cereal::make_nvp("BaseConditional", cereal::base_class<BaseConditional>(this));
     }
   }; // GaussianConditional
 

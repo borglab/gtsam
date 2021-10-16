@@ -152,7 +152,7 @@ int main(int argc, char** argv) {
   auto &factorGraph = smootherISAM2.getFactors();
 
   // Linearize to a Gaussian factor graph
-  boost::shared_ptr<GaussianFactorGraph> linearGraph = factorGraph.linearize(result);
+  std::shared_ptr<GaussianFactorGraph> linearGraph = factorGraph.linearize(result);
 
   // Converts the linear graph into a Jacobian factor and extracts the Jacobian matrix
   Matrix jacobian = linearGraph->jacobian().first;

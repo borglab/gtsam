@@ -55,7 +55,7 @@ protected:
 
 
  public:
-  typedef boost::shared_ptr<ExpressionFactor<T> > shared_ptr;
+  typedef std::shared_ptr<ExpressionFactor<T> > shared_ptr;
 
   /**
    * Constructor: creates a factor from a measurement and measurement function
@@ -109,20 +109,20 @@ protected:
     }
   }
 
-  boost::shared_ptr<GaussianFactor> linearize(const Values& x) const override {
+  std::shared_ptr<GaussianFactor> linearize(const Values& x) const override {
     // Only linearize if the factor is active
     if (!active(x))
-      return boost::shared_ptr<JacobianFactor>();
+      return std::shared_ptr<JacobianFactor>();
 
     // In case noise model is constrained, we need to provide a noise model
     SharedDiagonal noiseModel;
     if (noiseModel_ && noiseModel_->isConstrained()) {
-      noiseModel = boost::static_pointer_cast<noiseModel::Constrained>(
+      noiseModel = std::static_pointer_cast<noiseModel::Constrained>(
           noiseModel_)->unit();
     }
 
     // Create a writeable JacobianFactor in advance
-    boost::shared_ptr<JacobianFactor> factor(
+    std::shared_ptr<JacobianFactor> factor(
         new JacobianFactor(keys_, dims_, Dim, noiseModel));
 
     // Wrap keys and VerticalBlockMatrix into structure passed to expression_
@@ -149,7 +149,7 @@ protected:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
@@ -198,23 +198,20 @@ private:
  /// Save to an archive: just saves the base class
  template <class Archive>
  void save(Archive& ar, const unsigned int /*version*/) const {
-   ar << BOOST_SERIALIZATION_BASE_OBJECT_NVP(NoiseModelFactor);
-   ar << boost::serialization::make_nvp("measured_", this->measured_);
+   ar << cereal::make_nvp("NoiseModelFactor", cereal::base_class<NoiseModelFactor>(this));
+   ar << cereal::make_nvp("measured_", this->measured_);
  }
 
  /// Load from an archive, creating a valid expression using the overloaded
  /// [expression] method
  template <class Archive>
  void load(Archive& ar, const unsigned int /*version*/) {
-   ar >> BOOST_SERIALIZATION_BASE_OBJECT_NVP(NoiseModelFactor);
-   ar >> boost::serialization::make_nvp("measured_", this->measured_);
+   ar >> cereal::make_nvp("NoiseModelFactor", cereal::base_class<NoiseModelFactor>(this));
+   ar >> cereal::make_nvp("measured_", this->measured_);
    this->initialize(expression());
  }
 
- // Indicate that we implement save/load separately, and be friendly to boost
- BOOST_SERIALIZATION_SPLIT_MEMBER()
-
- friend class boost::serialization::access;
+ friend class cereal::access;
 
  // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
  enum { NeedsToAlign = (sizeof(T) % 16) == 0 };
@@ -280,12 +277,12 @@ private:
     return expression(keys);
   }
 
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
-    ar &boost::serialization::make_nvp(
+    ar &cereal::make_nvp(
         "ExpressionFactorN",
-        boost::serialization::base_object<ExpressionFactor<T>>(*this));
+        cereal::base_class<ExpressionFactor<T>>(this));
   }
 };
 /// traits

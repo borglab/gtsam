@@ -118,7 +118,7 @@ ImuFactor::ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
 
 //------------------------------------------------------------------------------
 NonlinearFactor::shared_ptr ImuFactor::clone() const {
-  return boost::static_pointer_cast<NonlinearFactor>(
+  return std::static_pointer_cast<NonlinearFactor>(
       NonlinearFactor::shared_ptr(new This(*this)));
 }
 
@@ -193,7 +193,7 @@ ImuFactor::shared_ptr ImuFactor::Merge(const shared_ptr& f01,
   // return new factor
   auto pim02 =
   Merge(f01->preintegratedMeasurements(), f12->preintegratedMeasurements());
-  return boost::make_shared<ImuFactor>(f01->key1(),  // P0
+  return std::make_shared<ImuFactor>(f01->key1(),  // P0
       f01->key2(),  // V0
       f12->key3(),  // P2
       f12->key4(),  // V2
@@ -213,7 +213,7 @@ ImuFactor2::ImuFactor2(Key state_i, Key state_j, Key bias,
 
 //------------------------------------------------------------------------------
 NonlinearFactor::shared_ptr ImuFactor2::clone() const {
-  return boost::static_pointer_cast<NonlinearFactor>(
+  return std::static_pointer_cast<NonlinearFactor>(
       NonlinearFactor::shared_ptr(new This(*this)));
 }
 

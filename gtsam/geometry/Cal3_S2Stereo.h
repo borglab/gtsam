@@ -35,7 +35,7 @@ class GTSAM_EXPORT Cal3_S2Stereo : public Cal3_S2 {
   enum { dimension = 6 };
 
   ///< shared pointer to stereo calibration object
-  using shared_ptr = boost::shared_ptr<Cal3_S2Stereo>;
+  using shared_ptr = std::shared_ptr<Cal3_S2Stereo>;
 
   /// @name Standard Constructors
   /// @
@@ -143,12 +143,12 @@ class GTSAM_EXPORT Cal3_S2Stereo : public Cal3_S2 {
 
  private:
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template <class Archive>
   void serialize(Archive& ar, const unsigned int /*version*/) {
-    ar& boost::serialization::make_nvp(
-        "Cal3_S2", boost::serialization::base_object<Cal3_S2>(*this));
-    ar& BOOST_SERIALIZATION_NVP(b_);
+    ar& cereal::make_nvp(
+        "Cal3_S2", cereal::base_class<Cal3_S2>(this));
+    ar& CEREAL_NVP(b_);
   }
   /// @}
 };

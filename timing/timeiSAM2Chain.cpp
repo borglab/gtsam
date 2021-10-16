@@ -23,7 +23,7 @@
 #include <gtsam/nonlinear/Marginals.h>
 
 #include <fstream>
-#include <boost/archive/binary_oarchive.hpp>
+#include <cereal/archives/binary.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/serialization/export.hpp>
 #include <boost/random/mersenne_twister.hpp>

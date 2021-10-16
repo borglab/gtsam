@@ -149,8 +149,8 @@ public:
   /// @{
 
   /// @return a deep copy of this object
-  boost::shared_ptr<NonlinearOptimizerParams> clone() const {
-    return boost::shared_ptr<NonlinearOptimizerParams>(new LevenbergMarquardtParams(*this));
+  std::shared_ptr<NonlinearOptimizerParams> clone() const {
+    return std::shared_ptr<NonlinearOptimizerParams>(new LevenbergMarquardtParams(*this));
   }
 
   /// @}

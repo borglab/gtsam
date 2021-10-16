@@ -38,7 +38,7 @@ namespace gtsam {
     typedef FactorGraph<CONDITIONAL> Base;
 
   public:
-    typedef typename boost::shared_ptr<CONDITIONAL> sharedConditional; ///< A shared pointer to a conditional
+    typedef typename std::shared_ptr<CONDITIONAL> sharedConditional; ///< A shared pointer to a conditional
 
   protected:
     /// @name Standard Constructors

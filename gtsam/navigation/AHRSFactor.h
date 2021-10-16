@@ -49,7 +49,7 @@ class GTSAM_EXPORT PreintegratedAhrsMeasurements : public PreintegratedRotation 
    *  Default constructor, initialize with no measurements
    *  @param bias Current estimate of acceleration and rotation rate biases
    */
-  PreintegratedAhrsMeasurements(const boost::shared_ptr<Params>& p,
+  PreintegratedAhrsMeasurements(const std::shared_ptr<Params>& p,
       const Vector3& biasHat) :
       PreintegratedRotation(p), biasHat_(biasHat) {
     resetIntegration();
@@ -65,7 +65,7 @@ class GTSAM_EXPORT PreintegratedAhrsMeasurements : public PreintegratedRotation 
    *  @param preint_meas_cov: Pre-integration covariance
    */
   PreintegratedAhrsMeasurements(
-      const boost::shared_ptr<Params>& p,
+      const std::shared_ptr<Params>& p,
       const Vector3& bias_hat,
       double deltaTij,
       const Rot3& deltaRij,
@@ -75,7 +75,7 @@ class GTSAM_EXPORT PreintegratedAhrsMeasurements : public PreintegratedRotation 
       biasHat_(bias_hat),
       preintMeasCov_(preint_meas_cov) {}
 
-  Params& p() const { return *boost::static_pointer_cast<Params>(p_);}
+  Params& p() const { return *std::static_pointer_cast<Params>(p_);}
   const Vector3& biasHat() const { return biasHat_; }
   const Matrix3& preintMeasCov() const { return preintMeasCov_; }
 
@@ -107,7 +107,7 @@ class GTSAM_EXPORT PreintegratedAhrsMeasurements : public PreintegratedRotation 
   /// @deprecated constructor
   PreintegratedAhrsMeasurements(const Vector3& biasHat,
                                 const Matrix3& measuredOmegaCovariance)
-      : PreintegratedRotation(boost::make_shared<Params>()),
+      : PreintegratedRotation(std::make_shared<Params>()),
         biasHat_(biasHat) {
     p_->gyroscopeCovariance = measuredOmegaCovariance;
     resetIntegration();
@@ -116,12 +116,12 @@ class GTSAM_EXPORT PreintegratedAhrsMeasurements : public PreintegratedRotation 
 private:
 
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegratedRotation);
-    ar & BOOST_SERIALIZATION_NVP(p_);
-    ar & BOOST_SERIALIZATION_NVP(biasHat_);
+    ar & cereal::make_nvp("PreintegratedRotation", cereal::base_class<PreintegratedRotation>(this));
+    ar & CEREAL_NVP(p_);
+    ar & CEREAL_NVP(biasHat_);
   }
 };
 
@@ -139,9 +139,9 @@ public:
 
   /** Shorthand for a smart pointer to a factor */
 #if !defined(_MSC_VER) && __GNUC__ == 4 && __GNUC_MINOR__ > 5
-  typedef typename boost::shared_ptr<AHRSFactor> shared_ptr;
+  typedef typename std::shared_ptr<AHRSFactor> shared_ptr;
 #else
-  typedef boost::shared_ptr<AHRSFactor> shared_ptr;
+  typedef std::shared_ptr<AHRSFactor> shared_ptr;
 #endif
 
   /**
@@ -204,13 +204,13 @@ public:
 private:
 
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar
-        & boost::serialization::make_nvp("NoiseModelFactor3",
-            boost::serialization::base_object<Base>(*this));
-    ar & BOOST_SERIALIZATION_NVP(_PIM_);
+        & cereal::make_nvp("NoiseModelFactor3",
+            cereal::base_class<Base>(this));
+    ar & CEREAL_NVP(_PIM_);
   }
 
 };

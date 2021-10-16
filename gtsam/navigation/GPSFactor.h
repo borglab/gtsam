@@ -43,7 +43,7 @@ private:
 public:
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<GPSFactor> shared_ptr;
+  typedef std::shared_ptr<GPSFactor> shared_ptr;
 
   /// Typedef to this class
   typedef GPSFactor This;
@@ -66,7 +66,7 @@ public:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
@@ -96,13 +96,13 @@ public:
 private:
 
   /// Serialization function
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar
-        & boost::serialization::make_nvp("NoiseModelFactor1",
-            boost::serialization::base_object<Base>(*this));
-    ar & BOOST_SERIALIZATION_NVP(nT_);
+        & cereal::make_nvp("NoiseModelFactor1",
+            cereal::base_class<Base>(this));
+    ar & CEREAL_NVP(nT_);
   }
 };
 
@@ -121,7 +121,7 @@ private:
 public:
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<GPSFactor2> shared_ptr;
+  typedef std::shared_ptr<GPSFactor2> shared_ptr;
 
   /// Typedef to this class
   typedef GPSFactor2 This;
@@ -138,7 +138,7 @@ public:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
@@ -160,13 +160,13 @@ public:
 private:
 
   /// Serialization function
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar
-        & boost::serialization::make_nvp("NoiseModelFactor1",
-            boost::serialization::base_object<Base>(*this));
-    ar & BOOST_SERIALIZATION_NVP(nT_);
+        & cereal::make_nvp("NoiseModelFactor1",
+            cereal::base_class<Base>(this));
+    ar & CEREAL_NVP(nT_);
   }
 };
 

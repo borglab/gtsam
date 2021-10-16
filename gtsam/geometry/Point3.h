@@ -25,7 +25,7 @@
 #include <gtsam/base/VectorSpace.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/dllexport.h>
-#include <boost/serialization/nvp.hpp>
+#include <cereal/types/base_class.hpp>
 #include <numeric>
 
 namespace gtsam {

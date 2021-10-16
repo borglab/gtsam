@@ -37,7 +37,7 @@ namespace gtsam {
 
     // Keep a copy of measurement and calibration for I/O
     Vector measured_;                    ///< 2D measurement for each of the n views
-    boost::shared_ptr<CALIBRATION> K_;  ///< shared pointer to calibration object
+    std::shared_ptr<CALIBRATION> K_;  ///< shared pointer to calibration object
     boost::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame
 
 
@@ -54,7 +54,7 @@ namespace gtsam {
     typedef MultiProjectionFactor<POSE, LANDMARK, CALIBRATION> This;
 
     /// shorthand for a smart pointer to a factor
-    typedef boost::shared_ptr<This> shared_ptr;
+    typedef std::shared_ptr<This> shared_ptr;
 
     /// Default constructor
     MultiProjectionFactor() : throwCheirality_(false), verboseCheirality_(false) {}
@@ -70,7 +70,7 @@ namespace gtsam {
      * @param body_P_sensor is the transform from body to sensor frame (default identity)
      */
     MultiProjectionFactor(const Vector& measured, const SharedNoiseModel& model,
-        KeySet poseKeys, Key pointKey, const boost::shared_ptr<CALIBRATION>& K,
+        KeySet poseKeys, Key pointKey, const std::shared_ptr<CALIBRATION>& K,
         boost::optional<POSE> body_P_sensor = boost::none) :
           Base(model), measured_(measured), K_(K), body_P_sensor_(body_P_sensor),
           throwCheirality_(false), verboseCheirality_(false) {
@@ -91,7 +91,7 @@ namespace gtsam {
      * @param body_P_sensor is the transform from body to sensor frame  (default identity)
      */
     MultiProjectionFactor(const Vector& measured, const SharedNoiseModel& model,
-        KeySet poseKeys, Key pointKey, const boost::shared_ptr<CALIBRATION>& K,
+        KeySet poseKeys, Key pointKey, const std::shared_ptr<CALIBRATION>& K,
         bool throwCheirality, bool verboseCheirality,
         boost::optional<POSE> body_P_sensor = boost::none) :
           Base(model), measured_(measured), K_(K), body_P_sensor_(body_P_sensor),
@@ -102,7 +102,7 @@ namespace gtsam {
 
     /// @return a deep copy of this factor
     NonlinearFactor::shared_ptr clone() const override {
-      return boost::static_pointer_cast<NonlinearFactor>(
+      return std::static_pointer_cast<NonlinearFactor>(
           NonlinearFactor::shared_ptr(new This(*this))); }
 
     /**
@@ -201,7 +201,7 @@ namespace gtsam {
     }
 
     /** return the calibration object */
-    inline const boost::shared_ptr<CALIBRATION> calibration() const {
+    inline const std::shared_ptr<CALIBRATION> calibration() const {
       return K_;
     }
 
@@ -214,15 +214,15 @@ namespace gtsam {
   private:
 
     /// Serialization function
-    friend class boost::serialization::access;
+    friend class cereal::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-      ar & BOOST_SERIALIZATION_NVP(measured_);
-      ar & BOOST_SERIALIZATION_NVP(K_);
-      ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);
-      ar & BOOST_SERIALIZATION_NVP(throwCheirality_);
-      ar & BOOST_SERIALIZATION_NVP(verboseCheirality_);
+      ar & cereal::virtual_base_class<Base>(this);
+      ar & CEREAL_NVP(measured_);
+      ar & CEREAL_NVP(K_);
+      ar & CEREAL_NVP(body_P_sensor_);
+      ar & CEREAL_NVP(throwCheirality_);
+      ar & CEREAL_NVP(verboseCheirality_);
     }
   };
 } // \ namespace gtsam

@@ -21,7 +21,6 @@
  **/
 
 #include <gtsam/navigation/CombinedImuFactor.h>
-#include <boost/serialization/export.hpp>
 
 /* External or standard includes */
 #include <ostream>
@@ -160,7 +159,7 @@ CombinedImuFactor::CombinedImuFactor(Key pose_i, Key vel_i, Key pose_j,
 
 //------------------------------------------------------------------------------
 gtsam::NonlinearFactor::shared_ptr CombinedImuFactor::clone() const {
-  return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+  return std::static_pointer_cast<gtsam::NonlinearFactor>(
       gtsam::NonlinearFactor::shared_ptr(new This(*this)));
 }
 
@@ -257,5 +256,5 @@ std::ostream& operator<<(std::ostream& os, const CombinedImuFactor& f) {
  /// namespace gtsam
 
 /// Boost serialization export definition for derived class
-BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::PreintegrationCombinedParams);
+//BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::PreintegrationCombinedParams);
 

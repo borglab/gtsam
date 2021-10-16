@@ -326,7 +326,7 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   friend void load(Archive&, SO&, const unsigned int);
   template <class Archive>
   friend void serialize(Archive&, SO&, const unsigned int);
-  friend class boost::serialization::access;
+  friend class cereal::access;
   friend class Rot3;  // for serialize
 
   /// @}
@@ -375,7 +375,7 @@ void serialize(
   const unsigned int file_version
 ) {
   Matrix& M = Q.matrix_;
-  ar& BOOST_SERIALIZATION_NVP(M);
+  ar& CEREAL_NVP(M);
 }
 
 /*

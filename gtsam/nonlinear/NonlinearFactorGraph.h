@@ -81,7 +81,7 @@ namespace gtsam {
 
     typedef FactorGraph<NonlinearFactor> Base;
     typedef NonlinearFactorGraph This;
-    typedef boost::shared_ptr<This> shared_ptr;
+    typedef std::shared_ptr<This> shared_ptr;
 
     /** Default constructor */
     NonlinearFactorGraph() {}
@@ -139,7 +139,7 @@ namespace gtsam {
     /**
      * Create a symbolic factor graph
      */
-    boost::shared_ptr<SymbolicFactorGraph> symbolic() const;
+    std::shared_ptr<SymbolicFactorGraph> symbolic() const;
 
     /**
      * Compute a fill-reducing ordering using COLAMD.
@@ -157,10 +157,10 @@ namespace gtsam {
     Ordering orderingCOLAMDConstrained(const FastMap<Key, int>& constraints) const;
 
     /// Linearize a nonlinear factor graph
-    boost::shared_ptr<GaussianFactorGraph> linearize(const Values& linearizationPoint) const;
+    std::shared_ptr<GaussianFactorGraph> linearize(const Values& linearizationPoint) const;
 
     /// typdef for dampen functions used below
-    typedef std::function<void(const boost::shared_ptr<HessianFactor>& hessianFactor)> Dampen;
+    typedef std::function<void(const std::shared_ptr<HessianFactor>& hessianFactor)> Dampen;
 
     /**
      * Instead of producing a GaussianFactorGraph, pre-allocate and linearize directly
@@ -169,7 +169,7 @@ namespace gtsam {
      * An optional lambda function can be used to apply damping on the filled Hessian.
      * No parallelism is exploited, because all the factors write in the same memory.
      */
-    boost::shared_ptr<HessianFactor> linearizeToHessianFactor(
+    std::shared_ptr<HessianFactor> linearizeToHessianFactor(
         const Values& values, const Dampen& dampen = nullptr) const;
 
     /**
@@ -180,7 +180,7 @@ namespace gtsam {
      * An optional lambda function can be used to apply damping on the filled Hessian.
      * No parallelism is exploited, because all the factors write in the same memory.
      */
-    boost::shared_ptr<HessianFactor> linearizeToHessianFactor(
+    std::shared_ptr<HessianFactor> linearizeToHessianFactor(
         const Values& values, const Ordering& ordering, const Dampen& dampen = nullptr) const;
 
     /// Linearize and solve in one pass.
@@ -216,7 +216,7 @@ namespace gtsam {
     template<typename T>
     void addExpressionFactor(const SharedNoiseModel& R, const T& z,
                              const Expression<T>& h) {
-      push_back(boost::make_shared<ExpressionFactor<T> >(R, z, h));
+      push_back(std::make_shared<ExpressionFactor<T> >(R, z, h));
     }
 
     /**
@@ -252,21 +252,21 @@ namespace gtsam {
      * Linearize from Scatter rather than from Ordering.  Made private because
      *  it doesn't include gttic.
      */
-    boost::shared_ptr<HessianFactor> linearizeToHessianFactor(
+    std::shared_ptr<HessianFactor> linearizeToHessianFactor(
         const Values& values, const Scatter& scatter, const Dampen& dampen = nullptr) const;
 
     /** Serialization function */
-    friend class boost::serialization::access;
+    friend class cereal::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      ar & boost::serialization::make_nvp("NonlinearFactorGraph",
-                boost::serialization::base_object<Base>(*this));
+      ar & cereal::make_nvp("NonlinearFactorGraph",
+                cereal::base_class<Base>(this));
     }
 
   public:
 
     /** \deprecated */
-    boost::shared_ptr<HessianFactor> linearizeToHessianFactor(
+    std::shared_ptr<HessianFactor> linearizeToHessianFactor(
         const Values& values, boost::none_t, const Dampen& dampen = nullptr) const
       {return linearizeToHessianFactor(values, dampen);}
 

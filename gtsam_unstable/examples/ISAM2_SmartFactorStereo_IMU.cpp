@@ -45,7 +45,7 @@ struct IMUHelper {
     }
 
     // expect IMU to be rotated in image space co-ords
-    auto p = boost::make_shared<PreintegratedCombinedMeasurements::Params>(
+    auto p = std::make_shared<PreintegratedCombinedMeasurements::Params>(
         Vector3(0.0, 9.8, 0.0));
 
     p->accelerometerCovariance =

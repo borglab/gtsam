@@ -24,7 +24,7 @@ namespace gtsam {
     /** A map from keys to values */
     typedef KeyVector Indices;
     typedef Assignment<Key> Values;
-    typedef boost::shared_ptr<Values> sharedValues;
+    typedef std::shared_ptr<Values> sharedValues;
 
   public:
 
@@ -34,20 +34,20 @@ namespace gtsam {
 
     /// Add a unary constraint, allowing only a single value
     void addSingleValue(const DiscreteKey& dkey, size_t value) {
-      boost::shared_ptr<SingleValue> factor(new SingleValue(dkey, value));
+      std::shared_ptr<SingleValue> factor(new SingleValue(dkey, value));
       push_back(factor);
     }
 
     /// Add a binary AllDiff constraint
     void addAllDiff(const DiscreteKey& key1, const DiscreteKey& key2) {
-      boost::shared_ptr<BinaryAllDiff> factor(
+      std::shared_ptr<BinaryAllDiff> factor(
           new BinaryAllDiff(key1, key2));
       push_back(factor);
     }
 
     /// Add a general AllDiff constraint
     void addAllDiff(const DiscreteKeys& dkeys) {
-      boost::shared_ptr<AllDiff> factor(new AllDiff(dkeys));
+      std::shared_ptr<AllDiff> factor(new AllDiff(dkeys));
       push_back(factor);
     }
 

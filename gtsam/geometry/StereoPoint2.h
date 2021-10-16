@@ -20,7 +20,7 @@
 
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/base/VectorSpace.h>
-#include <boost/serialization/nvp.hpp>
+#include <cereal/types/base_class.hpp>
 
 namespace gtsam {
 
@@ -147,12 +147,12 @@ private:
   /// @{
 
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & BOOST_SERIALIZATION_NVP(uL_);
-    ar & BOOST_SERIALIZATION_NVP(uR_);
-    ar & BOOST_SERIALIZATION_NVP(v_);
+    ar & CEREAL_NVP(uL_);
+    ar & CEREAL_NVP(uR_);
+    ar & CEREAL_NVP(v_);
   }
 
   /// @}

@@ -35,7 +35,7 @@ class GTSAM_UNSTABLE_EXPORT IncrementalFixedLagSmoother: public FixedLagSmoother
 public:
 
   /// Typedef for a shared pointer to an Incremental Fixed-Lag Smoother
-  typedef boost::shared_ptr<IncrementalFixedLagSmoother> shared_ptr;
+  typedef std::shared_ptr<IncrementalFixedLagSmoother> shared_ptr;
 
   /** default constructor */
   IncrementalFixedLagSmoother(double smootherLag = 0.0,

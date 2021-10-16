@@ -119,15 +119,15 @@ struct SmartProjectionParams {
 private:
 
   /// Serialization function
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int version) {
-    ar & BOOST_SERIALIZATION_NVP(linearizationMode);
-    ar & BOOST_SERIALIZATION_NVP(degeneracyMode);
-    ar & BOOST_SERIALIZATION_NVP(triangulation);
-    ar & BOOST_SERIALIZATION_NVP(retriangulationThreshold);
-    ar & BOOST_SERIALIZATION_NVP(throwCheirality);
-    ar & BOOST_SERIALIZATION_NVP(verboseCheirality);
+    ar & CEREAL_NVP(linearizationMode);
+    ar & CEREAL_NVP(degeneracyMode);
+    ar & CEREAL_NVP(triangulation);
+    ar & CEREAL_NVP(retriangulationThreshold);
+    ar & CEREAL_NVP(throwCheirality);
+    ar & CEREAL_NVP(verboseCheirality);
   }
 };
 

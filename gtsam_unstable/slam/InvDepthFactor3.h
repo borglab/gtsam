@@ -29,7 +29,7 @@ protected:
 
   // Keep a copy of measurement and calibration for I/O
   Point2 measured_;                ///< 2D measurement
-  boost::shared_ptr<Cal3_S2> K_;  ///< shared pointer to calibration object
+  std::shared_ptr<Cal3_S2> K_;  ///< shared pointer to calibration object
 
 public:
 
@@ -40,7 +40,7 @@ public:
   typedef InvDepthFactor3<POSE, LANDMARK, INVDEPTH> This;
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
   /// Default constructor
   InvDepthFactor3() :
@@ -113,12 +113,12 @@ public:
 private:
 
   /// Serialization function
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-    ar & BOOST_SERIALIZATION_NVP(measured_);
-    ar & BOOST_SERIALIZATION_NVP(K_);
+    ar & cereal::virtual_base_class<Base>(this);
+    ar & CEREAL_NVP(measured_);
+    ar & CEREAL_NVP(K_);
   }
 };
 } // \ namespace gtsam

@@ -48,8 +48,7 @@ using ConcurrentMapBase = gtsam::FastMap<KEY, VALUE>;
 
 #endif
 
-#include <boost/serialization/nvp.hpp>
-#include <boost/serialization/split_member.hpp>
+#include <cereal/types/base_class.hpp>
 #include <boost/static_assert.hpp>
 
 #include <gtsam/base/FastVector.h>
@@ -101,24 +100,23 @@ public:
 
 private:
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class Archive>
   void save(Archive& ar, const unsigned int /*version*/) const
   {
     // Copy to an STL container and serialize that
     FastVector<std::pair<KEY, VALUE> > map(this->size());
     std::copy(this->begin(), this->end(), map.begin());
-    ar & BOOST_SERIALIZATION_NVP(map);
+    ar & CEREAL_NVP(map);
   }
   template<class Archive>
   void load(Archive& ar, const unsigned int /*version*/)
   {
     // Load into STL container and then fill our map
     FastVector<std::pair<KEY, VALUE> > map;
-    ar & BOOST_SERIALIZATION_NVP(map);
+    ar & CEREAL_NVP(map);
     this->insert(map.begin(), map.end());
   }
-  BOOST_SERIALIZATION_SPLIT_MEMBER()
 };
 
 }

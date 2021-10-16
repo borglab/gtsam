@@ -174,11 +174,11 @@ public:
 
 private:
 
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int /*version*/) {
-    ar & BOOST_SERIALIZATION_NVP(leftCamPose_);
-    ar & BOOST_SERIALIZATION_NVP(K_);
+    ar & CEREAL_NVP(leftCamPose_);
+    ar & CEREAL_NVP(K_);
   }
 
 };

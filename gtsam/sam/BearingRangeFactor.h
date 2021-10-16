@@ -40,7 +40,7 @@ class BearingRangeFactor
   typedef BearingRangeFactor<A1, A2> This;
 
  public:
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
   /// Default constructor
   BearingRangeFactor() {}
@@ -63,7 +63,7 @@ class BearingRangeFactor
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
@@ -96,11 +96,11 @@ class BearingRangeFactor
 
 
  private:
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& boost::serialization::make_nvp(
-        "Base", boost::serialization::base_object<Base>(*this));
+    ar& cereal::make_nvp(
+        "Base", cereal::base_class<Base>(this));
   }
 };  // BearingRangeFactor
 

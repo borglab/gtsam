@@ -18,7 +18,7 @@
 #pragma once
 
 #include <gtsam/base/VectorSpace.h>
-#include <boost/serialization/nvp.hpp>
+#include <cereal/types/base_class.hpp>
 
 namespace gtsam {
 

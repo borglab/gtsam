@@ -106,11 +106,11 @@ struct LieVector : public Vector {
 private:
 
   // Serialization function
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int /*version*/) {
-    ar & boost::serialization::make_nvp("Vector",
-       boost::serialization::base_object<Vector>(*this));
+    ar & cereal::make_nvp("Vector",
+       cereal::base_class<Vector>(this));
   }
 };
 

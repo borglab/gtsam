@@ -79,12 +79,12 @@ static void setSubvector(const Vector &src, const KeyInfo &keyInfo,
 // Cholesky)
 static GaussianFactorGraph::shared_ptr convertToJacobianFactors(
     const GaussianFactorGraph &gfg) {
-  auto result = boost::make_shared<GaussianFactorGraph>();
+  auto result = std::make_shared<GaussianFactorGraph>();
   for (const auto &factor : gfg) 
     if (factor) {
-      auto jf = boost::dynamic_pointer_cast<JacobianFactor>(factor);
+      auto jf = std::dynamic_pointer_cast<JacobianFactor>(factor);
       if (!jf) {
-        jf = boost::make_shared<JacobianFactor>(*factor);
+        jf = std::make_shared<JacobianFactor>(*factor);
       }
       result->push_back(jf);
     }

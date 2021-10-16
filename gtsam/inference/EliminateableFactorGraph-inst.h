@@ -26,7 +26,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class FACTORGRAPH>
-  boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesNetType>
+  std::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesNetType>
     EliminateableFactorGraph<FACTORGRAPH>::eliminateSequential(
     OptionalOrderingType orderingType, const Eliminate& function,
     OptionalVariableIndex variableIndex) const {
@@ -53,7 +53,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class FACTORGRAPH>
-  boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesNetType>
+  std::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesNetType>
     EliminateableFactorGraph<FACTORGRAPH>::eliminateSequential(
     const Ordering& ordering, const Eliminate& function,
     OptionalVariableIndex variableIndex) const
@@ -66,8 +66,8 @@ namespace gtsam {
       gttic(eliminateSequential);
       // Do elimination
       EliminationTreeType etree(asDerived(), *variableIndex, ordering);
-      boost::shared_ptr<BayesNetType> bayesNet;
-      boost::shared_ptr<FactorGraphType> factorGraph;
+      std::shared_ptr<BayesNetType> bayesNet;
+      std::shared_ptr<FactorGraphType> factorGraph;
       boost::tie(bayesNet,factorGraph) = etree.eliminate(function);
       // If any factors are remaining, the ordering was incomplete
       if(!factorGraph->empty())
@@ -79,7 +79,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class FACTORGRAPH>
-  boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesTreeType>
+  std::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesTreeType>
     EliminateableFactorGraph<FACTORGRAPH>::eliminateMultifrontal(
     OptionalOrderingType orderingType, const Eliminate& function,
     OptionalVariableIndex variableIndex) const
@@ -107,7 +107,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class FACTORGRAPH>
-  boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesTreeType>
+  std::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesTreeType>
     EliminateableFactorGraph<FACTORGRAPH>::eliminateMultifrontal(
     const Ordering& ordering, const Eliminate& function,
     OptionalVariableIndex variableIndex) const
@@ -121,8 +121,8 @@ namespace gtsam {
       // Do elimination with given ordering
       EliminationTreeType etree(asDerived(), *variableIndex, ordering);
       JunctionTreeType junctionTree(etree);
-      boost::shared_ptr<BayesTreeType> bayesTree;
-      boost::shared_ptr<FactorGraphType> factorGraph;
+      std::shared_ptr<BayesTreeType> bayesTree;
+      std::shared_ptr<FactorGraphType> factorGraph;
       boost::tie(bayesTree,factorGraph) = junctionTree.eliminate(function);
       // If any factors are remaining, the ordering was incomplete
       if(!factorGraph->empty())
@@ -134,7 +134,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class FACTORGRAPH>
-  std::pair<boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesNetType>, boost::shared_ptr<FACTORGRAPH> >
+  std::pair<std::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesNetType>, std::shared_ptr<FACTORGRAPH> >
     EliminateableFactorGraph<FACTORGRAPH>::eliminatePartialSequential(
     const Ordering& ordering, const Eliminate& function, OptionalVariableIndex variableIndex) const
   {
@@ -152,7 +152,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class FACTORGRAPH>
-  std::pair<boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesNetType>, boost::shared_ptr<FACTORGRAPH> >
+  std::pair<std::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesNetType>, std::shared_ptr<FACTORGRAPH> >
     EliminateableFactorGraph<FACTORGRAPH>::eliminatePartialSequential(
     const KeyVector& variables, const Eliminate& function, OptionalVariableIndex variableIndex) const
   {
@@ -173,7 +173,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class FACTORGRAPH>
-  std::pair<boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesTreeType>, boost::shared_ptr<FACTORGRAPH> >
+  std::pair<std::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesTreeType>, std::shared_ptr<FACTORGRAPH> >
     EliminateableFactorGraph<FACTORGRAPH>::eliminatePartialMultifrontal(
     const Ordering& ordering, const Eliminate& function, OptionalVariableIndex variableIndex) const
   {
@@ -192,7 +192,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class FACTORGRAPH>
-  std::pair<boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesTreeType>, boost::shared_ptr<FACTORGRAPH> >
+  std::pair<std::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesTreeType>, std::shared_ptr<FACTORGRAPH> >
     EliminateableFactorGraph<FACTORGRAPH>::eliminatePartialMultifrontal(
     const KeyVector& variables, const Eliminate& function, OptionalVariableIndex variableIndex) const
   {
@@ -213,7 +213,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class FACTORGRAPH>
-  boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesNetType>
+  std::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesNetType>
     EliminateableFactorGraph<FACTORGRAPH>::marginalMultifrontalBayesNet(
     boost::variant<const Ordering&, const KeyVector&> variables,
     const Eliminate& function, OptionalVariableIndex variableIndex) const
@@ -245,7 +245,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class FACTORGRAPH>
-  boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesNetType>
+  std::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesNetType>
     EliminateableFactorGraph<FACTORGRAPH>::marginalMultifrontalBayesNet(
     boost::variant<const Ordering&, const KeyVector&> variables,
     const Ordering& marginalizedVariableOrdering,
@@ -259,8 +259,8 @@ namespace gtsam {
       gttic(marginalMultifrontalBayesNet);
       // An ordering was provided for the marginalized variables, so we can first eliminate them
       // in the order requested.
-      boost::shared_ptr<BayesTreeType> bayesTree;
-      boost::shared_ptr<FactorGraphType> factorGraph;
+      std::shared_ptr<BayesTreeType> bayesTree;
+      std::shared_ptr<FactorGraphType> factorGraph;
       boost::tie(bayesTree,factorGraph) =
         eliminatePartialMultifrontal(marginalizedVariableOrdering, function, *variableIndex);
 
@@ -280,7 +280,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class FACTORGRAPH>
-  boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesTreeType>
+  std::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesTreeType>
     EliminateableFactorGraph<FACTORGRAPH>::marginalMultifrontalBayesTree(
     boost::variant<const Ordering&, const KeyVector&> variables,
     const Eliminate& function, OptionalVariableIndex variableIndex) const
@@ -312,7 +312,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class FACTORGRAPH>
-  boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesTreeType>
+  std::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesTreeType>
     EliminateableFactorGraph<FACTORGRAPH>::marginalMultifrontalBayesTree(
     boost::variant<const Ordering&, const KeyVector&> variables,
     const Ordering& marginalizedVariableOrdering,
@@ -326,8 +326,8 @@ namespace gtsam {
       gttic(marginalMultifrontalBayesTree);
       // An ordering was provided for the marginalized variables, so we can first eliminate them
       // in the order requested.
-      boost::shared_ptr<BayesTreeType> bayesTree;
-      boost::shared_ptr<FactorGraphType> factorGraph;
+      std::shared_ptr<BayesTreeType> bayesTree;
+      std::shared_ptr<FactorGraphType> factorGraph;
       boost::tie(bayesTree,factorGraph) =
         eliminatePartialMultifrontal(marginalizedVariableOrdering, function, *variableIndex);
 
@@ -347,7 +347,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class FACTORGRAPH>
-  boost::shared_ptr<FACTORGRAPH>
+  std::shared_ptr<FACTORGRAPH>
     EliminateableFactorGraph<FACTORGRAPH>::marginal(
     const KeyVector& variables,
     const Eliminate& function, OptionalVariableIndex variableIndex) const

@@ -27,10 +27,6 @@
 #include <gtsam/base/GenericValue.h>
 #include <gtsam/base/VectorSpace.h>
 #include <gtsam/inference/Key.h>
-#include <boost/iterator/transform_iterator.hpp>
-#include <boost/iterator/filter_iterator.hpp>
-#include <boost/ptr_container/serialize_ptr_map.hpp>
-#include <boost/shared_ptr.hpp>
 
 #include <string>
 #include <utility>
@@ -67,12 +63,11 @@ namespace gtsam {
     // below) to clone and deallocate the Value objects, and a boost
     // fast_pool_allocator to allocate map nodes.  In this way, all memory is
     // allocated in a boost memory pool.
-    typedef boost::ptr_map<
+    typedef std::map<
         Key,
         Value,
-        std::less<Key>,
-        ValueCloneAllocator,
-        boost::fast_pool_allocator<std::pair<const Key, void*> > > KeyValueMap;
+        std::less<Key>
+        > KeyValueMap;
 
     // The member to store the values, see just above
     KeyValueMap values_;
@@ -84,10 +79,10 @@ namespace gtsam {
   public:
 
     /// A shared_ptr to this class
-    typedef boost::shared_ptr<Values> shared_ptr;
+    typedef std::shared_ptr<Values> shared_ptr;
 
     /// A const shared_ptr to this class
-    typedef boost::shared_ptr<const Values> const_shared_ptr;
+    typedef std::shared_ptr<const Values> const_shared_ptr;
 
     /// A key-value pair, which you get by dereferencing iterators
     struct GTSAM_EXPORT KeyValuePair {
@@ -107,20 +102,16 @@ namespace gtsam {
     };
 
     /// Mutable forward iterator, with value type KeyValuePair
-    typedef boost::transform_iterator<
-        std::function<KeyValuePair(const KeyValuePtrPair&)>, KeyValueMap::iterator> iterator;
+    typedef KeyValueMap::iterator iterator;
 
     /// Const forward iterator, with value type ConstKeyValuePair
-    typedef boost::transform_iterator<
-        std::function<ConstKeyValuePair(const ConstKeyValuePtrPair&)>, KeyValueMap::const_iterator> const_iterator;
+    typedef KeyValueMap::const_iterator const_iterator;
 
     /// Mutable reverse iterator, with value type KeyValuePair
-    typedef boost::transform_iterator<
-        std::function<KeyValuePair(const KeyValuePtrPair&)>, KeyValueMap::reverse_iterator> reverse_iterator;
+    typedef KeyValueMap::reverse_iterator reverse_iterator;
 
     /// Const reverse iterator, with value type ConstKeyValuePair
-    typedef boost::transform_iterator<
-        std::function<ConstKeyValuePair(const ConstKeyValuePtrPair&)>, KeyValueMap::const_reverse_iterator> const_reverse_iterator;
+    typedef KeyValueMap::const_reverse_iterator const_reverse_iterator;
 
     typedef KeyValuePair value_type;
 
@@ -205,23 +196,23 @@ namespace gtsam {
 
     /** Find an element by key, returning an iterator, or end() if the key was
      * not found. */
-    iterator find(Key j) { return boost::make_transform_iterator(values_.find(j), &make_deref_pair); }
+    iterator find(Key j) { return values_.find(j); }
 
     /** Find an element by key, returning an iterator, or end() if the key was
      * not found. */
-    const_iterator find(Key j) const { return boost::make_transform_iterator(values_.find(j), &make_const_deref_pair); }
+    const_iterator find(Key j) const { return values_.find(j); }
 
     /** Find the element greater than or equal to the specified key. */
-    iterator lower_bound(Key j) { return boost::make_transform_iterator(values_.lower_bound(j), &make_deref_pair); }
+    iterator lower_bound(Key j) { return values_.lower_bound(j); }
 
     /** Find the element greater than or equal to the specified key. */
-    const_iterator lower_bound(Key j) const { return boost::make_transform_iterator(values_.lower_bound(j), &make_const_deref_pair); }
+    const_iterator lower_bound(Key j) const { return values_.lower_bound(j); }
 
     /** Find the lowest-ordered element greater than the specified key. */
-    iterator upper_bound(Key j) { return boost::make_transform_iterator(values_.upper_bound(j), &make_deref_pair); }
+    iterator upper_bound(Key j) { return values_.upper_bound(j); }
 
     /** Find the lowest-ordered element greater than the specified key. */
-    const_iterator upper_bound(Key j) const { return boost::make_transform_iterator(values_.upper_bound(j), &make_const_deref_pair); }
+    const_iterator upper_bound(Key j) const { return values_.upper_bound(j); }
 
     /** The number of variables in this config */
     size_t size() const { return values_.size(); }
@@ -229,14 +220,14 @@ namespace gtsam {
     /** whether the config is empty */
     bool empty() const { return values_.empty(); }
 
-    const_iterator begin() const { return boost::make_transform_iterator(values_.begin(), &make_const_deref_pair); }
-    const_iterator end() const { return boost::make_transform_iterator(values_.end(), &make_const_deref_pair); }
-    iterator begin() { return boost::make_transform_iterator(values_.begin(), &make_deref_pair); }
-    iterator end() { return boost::make_transform_iterator(values_.end(), &make_deref_pair); }
-    const_reverse_iterator rbegin() const { return boost::make_transform_iterator(values_.rbegin(), &make_const_deref_pair); }
-    const_reverse_iterator rend() const { return boost::make_transform_iterator(values_.rend(), &make_const_deref_pair); }
-    reverse_iterator rbegin() { return boost::make_transform_iterator(values_.rbegin(), &make_deref_pair); }
-    reverse_iterator rend() { return boost::make_transform_iterator(values_.rend(), &make_deref_pair); }
+    const_iterator begin() const { return values_.begin(); }
+    const_iterator end() const { return values_.end(); }
+    iterator begin() { return values_.begin(); }
+    iterator end() { return values_.end(); }
+    const_reverse_iterator rbegin() const { return values_.rbegin(); }
+    const_reverse_iterator rend() const { return values_.rend(); }
+    reverse_iterator rbegin() { return values_.rbegin(); }
+    reverse_iterator rend() { return values_.rend(); }
 
     /// @name Manifold Operations
     /// @{
@@ -389,7 +380,7 @@ namespace gtsam {
     size_t count() const {
       size_t i = 0;
       for (const auto key_value : *this) {
-        if (dynamic_cast<const GenericValue<ValueType>*>(&key_value.value))
+        if (dynamic_cast<const GenericValue<ValueType>*>(&key_value.second))
           ++i;
       }
       return i;
@@ -406,10 +397,10 @@ namespace gtsam {
     }
 
     /** Serialization function */
-    friend class boost::serialization::access;
+    friend class cereal::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      ar & BOOST_SERIALIZATION_NVP(values_);
+      ar & CEREAL_NVP(values_);
     }
 
     static ConstKeyValuePair make_const_deref_pair(const KeyValueMap::const_iterator::value_type& key_value) {

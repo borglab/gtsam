@@ -53,7 +53,7 @@ namespace gtsam {
     /** ------------------------ Node base class --------------------------- */
     class Node {
     public:
-      typedef boost::shared_ptr<const Node> Ptr;
+      typedef std::shared_ptr<const Node> Ptr;
 
 #ifdef DT_DEBUG_MEMORY
       static int nrNodes;

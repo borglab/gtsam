@@ -23,7 +23,7 @@ protected:
 
 public:
 
-  typedef boost::shared_ptr<VelocityConstraint3 > shared_ptr;
+  typedef std::shared_ptr<VelocityConstraint3 > shared_ptr;
 
   ///TODO: comment
   VelocityConstraint3(Key key1, Key key2, Key velKey, double dt, double mu = 1000.0)
@@ -32,7 +32,7 @@ public:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new VelocityConstraint3(*this))); }
 
   /** x1 + v*dt - x2 = 0, with optional derivatives */
@@ -50,11 +50,11 @@ public:
 private:
 
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & boost::serialization::make_nvp("NoiseModelFactor3",
-        boost::serialization::base_object<Base>(*this));
+    ar & cereal::make_nvp("NoiseModelFactor3",
+        cereal::base_class<Base>(this));
   }
 }; // \VelocityConstraint3
 

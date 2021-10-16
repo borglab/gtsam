@@ -114,8 +114,8 @@ public:
     /**
      * Clone this value (normal clone on the heap, delete with 'delete' operator)
      */
-    boost::shared_ptr<Value> clone() const override {
-		return boost::allocate_shared<GenericValue>(Eigen::aligned_allocator<GenericValue>(), *this);
+    std::shared_ptr<Value> clone() const override {
+		return std::allocate_shared<GenericValue>(Eigen::aligned_allocator<GenericValue>(), *this);
     }
 
     /// Generic Value interface version of retract
@@ -177,12 +177,12 @@ public:
   private:
 
     /** Serialization function */
-    friend class boost::serialization::access;
+    friend class cereal::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      ar & boost::serialization::make_nvp("GenericValue",
-              boost::serialization::base_object<Value>(*this));
-      ar & boost::serialization::make_nvp("value", value_);
+      ar & cereal::make_nvp("GenericValue",
+              cereal::base_class<Value>(this));
+      ar & cereal::make_nvp("value", value_);
 	}
 
 
@@ -193,7 +193,7 @@ public:
 };
 
 /// use this macro instead of BOOST_CLASS_EXPORT for GenericValues
-#define GTSAM_VALUE_EXPORT(Type) BOOST_CLASS_EXPORT(gtsam::GenericValue<Type>)
+#define GTSAM_VALUE_EXPORT(Type) CEREAL_REGISTER_TYPE(gtsam::GenericValue<Type>)
 
 // traits
 template <typename ValueType>

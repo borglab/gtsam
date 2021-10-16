@@ -23,12 +23,7 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/dllexport.h>
 
-#include <boost/serialization/extended_type_info.hpp>
-#include <boost/serialization/nvp.hpp>
-#include <boost/serialization/version.hpp>
-#include <boost/serialization/optional.hpp>
-#include <boost/serialization/shared_ptr.hpp>
-#include <boost/serialization/singleton.hpp>
+#include <cereal/types/base_class.hpp>
 
 namespace gtsam {
 namespace noiseModel {
@@ -59,7 +54,7 @@ namespace mEstimator {
 class GTSAM_EXPORT Base {
  public:
   enum ReweightScheme { Scalar, Block };
-  typedef boost::shared_ptr<Base> shared_ptr;
+  typedef std::shared_ptr<Base> shared_ptr;
 
  protected:
   /** the rows can be weighted independently according to the error
@@ -117,17 +112,17 @@ class GTSAM_EXPORT Base {
 
  private:
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
-    ar &BOOST_SERIALIZATION_NVP(reweight_);
+    ar &CEREAL_NVP(reweight_);
   }
 };
 
 /// Null class should behave as Gaussian
 class GTSAM_EXPORT Null : public Base {
  public:
-  typedef boost::shared_ptr<Null> shared_ptr;
+  typedef std::shared_ptr<Null> shared_ptr;
 
   Null(const ReweightScheme reweight = Block) : Base(reweight) {}
   ~Null() override {}
@@ -139,10 +134,10 @@ class GTSAM_EXPORT Null : public Base {
 
  private:
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
-    ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    ar &cereal::virtual_base_class<Base>(this);
   }
 };
 
@@ -152,7 +147,7 @@ class GTSAM_EXPORT Fair : public Base {
   double c_;
 
  public:
-  typedef boost::shared_ptr<Fair> shared_ptr;
+  typedef std::shared_ptr<Fair> shared_ptr;
 
   Fair(double c = 1.3998, const ReweightScheme reweight = Block);
   double weight(double distance) const override;
@@ -163,11 +158,11 @@ class GTSAM_EXPORT Fair : public Base {
 
  private:
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
-    ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-    ar &BOOST_SERIALIZATION_NVP(c_);
+    ar &cereal::virtual_base_class<Base>(this);
+    ar &CEREAL_NVP(c_);
   }
 };
 
@@ -177,7 +172,7 @@ class GTSAM_EXPORT Huber : public Base {
   double k_;
 
  public:
-  typedef boost::shared_ptr<Huber> shared_ptr;
+  typedef std::shared_ptr<Huber> shared_ptr;
 
   Huber(double k = 1.345, const ReweightScheme reweight = Block);
   double weight(double distance) const override;
@@ -188,11 +183,11 @@ class GTSAM_EXPORT Huber : public Base {
 
  private:
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
-    ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-    ar &BOOST_SERIALIZATION_NVP(k_);
+    ar &cereal::virtual_base_class<Base>(this);
+    ar &CEREAL_NVP(k_);
   }
 };
 
@@ -207,7 +202,7 @@ class GTSAM_EXPORT Cauchy : public Base {
   double k_, ksquared_;
 
  public:
-  typedef boost::shared_ptr<Cauchy> shared_ptr;
+  typedef std::shared_ptr<Cauchy> shared_ptr;
 
   Cauchy(double k = 0.1, const ReweightScheme reweight = Block);
   double weight(double distance) const override;
@@ -218,11 +213,11 @@ class GTSAM_EXPORT Cauchy : public Base {
 
  private:
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
-    ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-    ar &BOOST_SERIALIZATION_NVP(k_);
+    ar &cereal::virtual_base_class<Base>(this);
+    ar &CEREAL_NVP(k_);
   }
 };
 
@@ -232,7 +227,7 @@ class GTSAM_EXPORT Tukey : public Base {
   double c_, csquared_;
 
  public:
-  typedef boost::shared_ptr<Tukey> shared_ptr;
+  typedef std::shared_ptr<Tukey> shared_ptr;
 
   Tukey(double c = 4.6851, const ReweightScheme reweight = Block);
   double weight(double distance) const override;
@@ -243,11 +238,11 @@ class GTSAM_EXPORT Tukey : public Base {
 
  private:
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
-    ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-    ar &BOOST_SERIALIZATION_NVP(c_);
+    ar &cereal::virtual_base_class<Base>(this);
+    ar &CEREAL_NVP(c_);
   }
 };
 
@@ -257,7 +252,7 @@ class GTSAM_EXPORT Welsch : public Base {
   double c_, csquared_;
 
  public:
-  typedef boost::shared_ptr<Welsch> shared_ptr;
+  typedef std::shared_ptr<Welsch> shared_ptr;
 
   Welsch(double c = 2.9846, const ReweightScheme reweight = Block);
   double weight(double distance) const override;
@@ -268,11 +263,11 @@ class GTSAM_EXPORT Welsch : public Base {
 
  private:
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
-    ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-    ar &BOOST_SERIALIZATION_NVP(c_);
+    ar &cereal::virtual_base_class<Base>(this);
+    ar &CEREAL_NVP(c_);
   }
 };
 
@@ -284,7 +279,7 @@ class GTSAM_EXPORT Welsch : public Base {
 /// the generalized Geman-McClure from (Agarwal15phd).
 class GTSAM_EXPORT GemanMcClure : public Base {
  public:
-  typedef boost::shared_ptr<GemanMcClure> shared_ptr;
+  typedef std::shared_ptr<GemanMcClure> shared_ptr;
 
   GemanMcClure(double c = 1.0, const ReweightScheme reweight = Block);
   ~GemanMcClure() override {}
@@ -299,11 +294,11 @@ class GTSAM_EXPORT GemanMcClure : public Base {
 
  private:
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
-    ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-    ar &BOOST_SERIALIZATION_NVP(c_);
+    ar &cereal::virtual_base_class<Base>(this);
+    ar &CEREAL_NVP(c_);
   }
 };
 
@@ -314,7 +309,7 @@ class GTSAM_EXPORT GemanMcClure : public Base {
 /// forcing the output weight s <= 1.0, DCS is similar to Geman-McClure.
 class GTSAM_EXPORT DCS : public Base {
  public:
-  typedef boost::shared_ptr<DCS> shared_ptr;
+  typedef std::shared_ptr<DCS> shared_ptr;
 
   DCS(double c = 1.0, const ReweightScheme reweight = Block);
   ~DCS() override {}
@@ -329,11 +324,11 @@ class GTSAM_EXPORT DCS : public Base {
 
  private:
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
-    ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-    ar &BOOST_SERIALIZATION_NVP(c_);
+    ar &cereal::virtual_base_class<Base>(this);
+    ar &CEREAL_NVP(c_);
   }
 };
 
@@ -348,7 +343,7 @@ class GTSAM_EXPORT L2WithDeadZone : public Base {
   double k_;
 
  public:
-  typedef boost::shared_ptr<L2WithDeadZone> shared_ptr;
+  typedef std::shared_ptr<L2WithDeadZone> shared_ptr;
 
   L2WithDeadZone(double k = 1.0, const ReweightScheme reweight = Block);
   double weight(double distance) const override;
@@ -359,11 +354,11 @@ class GTSAM_EXPORT L2WithDeadZone : public Base {
 
  private:
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
-    ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-    ar &BOOST_SERIALIZATION_NVP(k_);
+    ar &cereal::virtual_base_class<Base>(this);
+    ar &CEREAL_NVP(k_);
   }
 };
 

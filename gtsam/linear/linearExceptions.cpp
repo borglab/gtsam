@@ -18,8 +18,8 @@
 
 #include <gtsam/linear/linearExceptions.h>
 #include <gtsam/inference/Symbol.h>
-#include <boost/format.hpp>
-#include <boost/lexical_cast.hpp>
+
+#include <fmt/format.h>
 
 namespace gtsam {
 
@@ -29,8 +29,8 @@ namespace gtsam {
     if(!description_) {
       description_ = String(
           "\nIndeterminant linear system detected while working near variable\n"
-          + boost::lexical_cast<String>(j_) +
-          + " (Symbol: " + boost::lexical_cast<String>(
+          + std::to_string(j_) +
+          + " (Symbol: " + std::string(
               gtsam::DefaultKeyFormatter(gtsam::Symbol(j_))) + ").\n"
           "\n\
 Thrown when a linear system is ill-posed.  The most common cause for this\n\
@@ -45,22 +45,22 @@ more information.");
   /* ************************************************************************* */
   const char* InvalidNoiseModel::what() const noexcept {
     if(description_.empty())
-      description_ = (boost::format(
+      description_ = (fmt::format(
       "A JacobianFactor was attempted to be constructed or modified to use a\n"
       "noise model of incompatible dimension.  The JacobianFactor has\n"
       "dimensionality (i.e. length of error vector) %d but the provided noise\n"
-      "model has dimensionality %d.") % factorDims % noiseModelDims).str();
+      "model has dimensionality %d.", factorDims, noiseModelDims));
     return description_.c_str();
   }
 
   /* ************************************************************************* */
   const char* InvalidMatrixBlock::what() const noexcept {
     if(description_.empty())
-      description_ = (boost::format(
+      description_ = (fmt::format(
       "A JacobianFactor was attempted to be constructed with a matrix block of\n"
       "inconsistent dimension.  The JacobianFactor has %d rows (i.e. length of\n"
-      "error vector) but the provided matrix block has %d rows.")
-      % factorRows % blockRows).str();
+      "error vector) but the provided matrix block has %d rows.",
+      factorRows, blockRows));
     return description_.c_str();
   }
 

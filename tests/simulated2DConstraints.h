@@ -54,14 +54,14 @@ namespace simulated2D {
     struct ScalarCoordConstraint1: public BoundingConstraint1<VALUE> {
       typedef BoundingConstraint1<VALUE> Base;  ///< Base class convenience typedef
       typedef ScalarCoordConstraint1<VALUE, IDX> This; ///< This class convenience typedef
-      typedef boost::shared_ptr<ScalarCoordConstraint1<VALUE, IDX> > shared_ptr; ///< boost::shared_ptr convenience typedef
+      typedef std::shared_ptr<ScalarCoordConstraint1<VALUE, IDX> > shared_ptr; ///< std::shared_ptr convenience typedef
       typedef VALUE Point; ///< Constrained variable type
 
       ~ScalarCoordConstraint1() override {}
 
       /// @return a deep copy of this factor
       gtsam::NonlinearFactor::shared_ptr clone() const override {
-        return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+        return std::static_pointer_cast<gtsam::NonlinearFactor>(
             gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
       /**
@@ -129,7 +129,7 @@ namespace simulated2D {
 
       /// @return a deep copy of this factor
       gtsam::NonlinearFactor::shared_ptr clone() const override {
-        return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+        return std::static_pointer_cast<gtsam::NonlinearFactor>(
             gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
       /**
@@ -178,7 +178,7 @@ namespace simulated2D {
 
       /// @return a deep copy of this factor
       gtsam::NonlinearFactor::shared_ptr clone() const override {
-        return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+        return std::static_pointer_cast<gtsam::NonlinearFactor>(
             gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
       /**

@@ -33,7 +33,7 @@ string _defaultKeyFormatter(Key key) {
   if (asSymbol.chr() > 0)
     return (string) asSymbol;
   else
-    return boost::lexical_cast<string>(key);
+    return std::to_string(key);
 }
 
 /* ************************************************************************* */
@@ -51,7 +51,7 @@ string _multirobotKeyFormatter(Key key) {
   if (asLabeledSymbol.chr() > 0)
     return (string) asSymbol;
   else
-    return boost::lexical_cast<string>(key);
+    return std::to_string(key);
 }
 
 /* ************************************************************************* */

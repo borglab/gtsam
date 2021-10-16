@@ -33,7 +33,7 @@ template<class VALUE>
 struct BoundingConstraint1: public NoiseModelFactor1<VALUE> {
   typedef VALUE X;
   typedef NoiseModelFactor1<VALUE> Base;
-  typedef boost::shared_ptr<BoundingConstraint1<VALUE> > shared_ptr;
+  typedef std::shared_ptr<BoundingConstraint1<VALUE> > shared_ptr;
 
   double threshold_;
   bool isGreaterThan_; /// flag for greater/less than
@@ -82,13 +82,13 @@ struct BoundingConstraint1: public NoiseModelFactor1<VALUE> {
 private:
 
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & boost::serialization::make_nvp("NoiseModelFactor1",
-        boost::serialization::base_object<Base>(*this));
-    ar & BOOST_SERIALIZATION_NVP(threshold_);
-    ar & BOOST_SERIALIZATION_NVP(isGreaterThan_);
+    ar & cereal::make_nvp("NoiseModelFactor1",
+        cereal::base_class<Base>(this));
+    ar & CEREAL_NVP(threshold_);
+    ar & CEREAL_NVP(isGreaterThan_);
   }
 };
 
@@ -102,7 +102,7 @@ struct BoundingConstraint2: public NoiseModelFactor2<VALUE1, VALUE2> {
   typedef VALUE2 X2;
 
   typedef NoiseModelFactor2<VALUE1, VALUE2> Base;
-  typedef boost::shared_ptr<BoundingConstraint2<VALUE1, VALUE2> > shared_ptr;
+  typedef std::shared_ptr<BoundingConstraint2<VALUE1, VALUE2> > shared_ptr;
 
   double threshold_;
   bool isGreaterThan_; /// flag for greater/less than
@@ -155,13 +155,13 @@ struct BoundingConstraint2: public NoiseModelFactor2<VALUE1, VALUE2> {
 private:
 
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & boost::serialization::make_nvp("NoiseModelFactor2",
-        boost::serialization::base_object<Base>(*this));
-    ar & BOOST_SERIALIZATION_NVP(threshold_);
-    ar & BOOST_SERIALIZATION_NVP(isGreaterThan_);
+    ar & cereal::make_nvp("NoiseModelFactor2",
+        cereal::base_class<Base>(this));
+    ar & CEREAL_NVP(threshold_);
+    ar & CEREAL_NVP(isGreaterThan_);
   }
 };
 

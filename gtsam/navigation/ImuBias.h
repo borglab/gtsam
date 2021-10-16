@@ -20,7 +20,7 @@
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/VectorSpace.h>
 #include <iosfwd>
-#include <boost/serialization/nvp.hpp>
+#include <cereal/types/base_class.hpp>
 
 namespace gtsam {
 
@@ -162,11 +162,11 @@ private:
   /// @{
 
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & BOOST_SERIALIZATION_NVP(biasAcc_);
-    ar & BOOST_SERIALIZATION_NVP(biasGyro_);
+    ar & CEREAL_NVP(biasAcc_);
+    ar & CEREAL_NVP(biasGyro_);
   }
 
 

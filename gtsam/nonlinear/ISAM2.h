@@ -318,21 +318,21 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
 
  private:
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      ar & boost::serialization::base_object<BayesTree<ISAM2Clique> >(*this);
-      ar & BOOST_SERIALIZATION_NVP(theta_);
-      ar & BOOST_SERIALIZATION_NVP(variableIndex_);
-      ar & BOOST_SERIALIZATION_NVP(delta_);
-      ar & BOOST_SERIALIZATION_NVP(deltaNewton_);
-      ar & BOOST_SERIALIZATION_NVP(RgProd_);
-      ar & BOOST_SERIALIZATION_NVP(deltaReplacedMask_);
-      ar & BOOST_SERIALIZATION_NVP(nonlinearFactors_);
-      ar & BOOST_SERIALIZATION_NVP(linearFactors_);
-      ar & BOOST_SERIALIZATION_NVP(doglegDelta_);
-      ar & BOOST_SERIALIZATION_NVP(fixedVariables_);
-      ar & BOOST_SERIALIZATION_NVP(update_count_);
+      ar & cereal::base_class<BayesTree<ISAM2Clique> >(this);
+      ar & CEREAL_NVP(theta_);
+      ar & CEREAL_NVP(variableIndex_);
+      ar & CEREAL_NVP(delta_);
+      ar & CEREAL_NVP(deltaNewton_);
+      ar & CEREAL_NVP(RgProd_);
+      ar & CEREAL_NVP(deltaReplacedMask_);
+      ar & CEREAL_NVP(nonlinearFactors_);
+      ar & CEREAL_NVP(linearFactors_);
+      ar & CEREAL_NVP(doglegDelta_);
+      ar & CEREAL_NVP(fixedVariables_);
+      ar & CEREAL_NVP(update_count_);
   }
 
 };  // ISAM2

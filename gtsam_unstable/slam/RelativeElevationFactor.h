@@ -44,7 +44,7 @@ public:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
   /** h(x)-z */
@@ -63,12 +63,12 @@ public:
 private:
 
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & boost::serialization::make_nvp("NoiseModelFactor2",
-        boost::serialization::base_object<Base>(*this));
-    ar & BOOST_SERIALIZATION_NVP(measured_);
+    ar & cereal::make_nvp("NoiseModelFactor2",
+        cereal::base_class<Base>(this));
+    ar & CEREAL_NVP(measured_);
   }
 }; // RelativeElevationFactor
 

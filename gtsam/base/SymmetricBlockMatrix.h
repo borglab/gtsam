@@ -21,7 +21,7 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/types.h>
 #include <gtsam/dllexport.h>
-#include <boost/serialization/nvp.hpp>
+#include <cereal/types/base_class.hpp>
 #include <cassert>
 #include <stdexcept>
 #include <array>
@@ -399,16 +399,16 @@ namespace gtsam {
 
   private:
     /** Serialization function */
-    friend class boost::serialization::access;
+    friend class cereal::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       // Fill in the lower triangle part of the matrix, so boost::serialization won't
       // complain about uninitialized data with an input_stream_error exception
       // http://www.boost.org/doc/libs/1_37_0/libs/serialization/doc/exceptions.html#stream_error
       matrix_.triangularView<Eigen::Lower>() = matrix_.triangularView<Eigen::Upper>().transpose();
-      ar & BOOST_SERIALIZATION_NVP(matrix_);
-      ar & BOOST_SERIALIZATION_NVP(variableColOffsets_);
-      ar & BOOST_SERIALIZATION_NVP(blockStart_);
+      ar & CEREAL_NVP(matrix_);
+      ar & CEREAL_NVP(variableColOffsets_);
+      ar & CEREAL_NVP(blockStart_);
     }
   };
 

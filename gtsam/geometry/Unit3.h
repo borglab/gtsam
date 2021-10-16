@@ -27,7 +27,7 @@
 #include <gtsam/dllexport.h>
 
 #include <boost/optional.hpp>
-#include <boost/serialization/nvp.hpp>
+#include <cereal/types/base_class.hpp>
 
 #include <random>
 #include <string>
@@ -207,10 +207,10 @@ private:
   /// @name Advanced Interface
   /// @{
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & BOOST_SERIALIZATION_NVP(p_);
+    ar & CEREAL_NVP(p_);
   }
 
   /// @}

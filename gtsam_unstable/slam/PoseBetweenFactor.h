@@ -45,7 +45,7 @@ namespace gtsam {
   public:
 
     // shorthand for a smart pointer to a factor
-    typedef typename boost::shared_ptr<PoseBetweenFactor> shared_ptr;
+    typedef typename std::shared_ptr<PoseBetweenFactor> shared_ptr;
 
     /** default constructor - only use for serialization */
     PoseBetweenFactor() {}
@@ -60,7 +60,7 @@ namespace gtsam {
 
     /// @return a deep copy of this factor
     gtsam::NonlinearFactor::shared_ptr clone() const override {
-      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+      return std::static_pointer_cast<gtsam::NonlinearFactor>(
           gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
     /** implement functions needed for Testable */
@@ -118,11 +118,11 @@ namespace gtsam {
   private:
 
     /** Serialization function */
-    friend class boost::serialization::access;
+    friend class cereal::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-      ar & BOOST_SERIALIZATION_NVP(measured_);
+      ar & cereal::virtual_base_class<Base>(this);
+      ar & CEREAL_NVP(measured_);
 
     }
   }; // \class PoseBetweenFactor

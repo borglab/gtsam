@@ -90,7 +90,7 @@ public:
   ~ReferenceFrameFactor() override{}
 
   NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<NonlinearFactor>(
+    return std::static_pointer_cast<NonlinearFactor>(
         NonlinearFactor::shared_ptr(new This(*this))); }
 
   /** Combined cost and derivative function using boost::optional */
@@ -120,11 +120,11 @@ public:
 
 private:
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & boost::serialization::make_nvp("NonlinearFactor3",
-        boost::serialization::base_object<Base>(*this));
+    ar & cereal::make_nvp("NonlinearFactor3",
+        cereal::base_class<Base>(this));
   }
 };
 

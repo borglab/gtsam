@@ -151,7 +151,7 @@ namespace gtsam {
     /** incremental allSame */
     size_t allSame_;
 
-    typedef boost::shared_ptr<const Choice> ChoicePtr;
+    typedef std::shared_ptr<const Choice> ChoicePtr;
 
   public:
 
@@ -168,7 +168,7 @@ namespace gtsam {
         assert(f->branches().size() > 0);
         NodePtr f0 = f->branches_[0];
         assert(f0->isLeaf());
-        NodePtr newLeaf(new Leaf(boost::dynamic_pointer_cast<const Leaf>(f0)->constant()));
+        NodePtr newLeaf(new Leaf(std::dynamic_pointer_cast<const Leaf>(f0)->constant()));
         return newLeaf;
       } else
 #endif
@@ -315,7 +315,7 @@ namespace gtsam {
 
     /** apply unary operator */
     NodePtr apply(const Unary& op) const override {
-      boost::shared_ptr<Choice> r(new Choice(label_, *this, op));
+      std::shared_ptr<Choice> r(new Choice(label_, *this, op));
       return Unique(r);
     }
 
@@ -330,7 +330,7 @@ namespace gtsam {
 
     // If second argument of binary op is Leaf node, recurse on branches
     NodePtr apply_g_op_fL(const Leaf& fL, const Binary& op) const override {
-      boost::shared_ptr<Choice> h(new Choice(label(), nrChoices()));
+      std::shared_ptr<Choice> h(new Choice(label(), nrChoices()));
       for(NodePtr branch: branches_)
               h->push_back(fL.apply_f_op_g(*branch, op));
       return Unique(h);
@@ -338,14 +338,14 @@ namespace gtsam {
 
     // If second argument of binary op is Choice, call constructor
     NodePtr apply_g_op_fC(const Choice& fC, const Binary& op) const override {
-      boost::shared_ptr<Choice> h(new Choice(fC, *this, op));
+      std::shared_ptr<Choice> h(new Choice(fC, *this, op));
       return Unique(h);
     }
 
     // If second argument of binary op is Leaf
     template<typename OP>
     NodePtr apply_fC_op_gL(const Leaf& gL, OP op) const {
-      boost::shared_ptr<Choice> h(new Choice(label(), nrChoices()));
+      std::shared_ptr<Choice> h(new Choice(label(), nrChoices()));
       for(const NodePtr& branch: branches_)
               h->push_back(branch->apply_f_op_g(gL, op));
       return Unique(h);
@@ -357,7 +357,7 @@ namespace gtsam {
         return branches_[index]; // choose branch
 
       // second case, not label of interest, just recurse
-      boost::shared_ptr<Choice> r(new Choice(label_, branches_.size()));
+      std::shared_ptr<Choice> r(new Choice(label_, branches_.size()));
       for(const NodePtr& branch: branches_)
               r->push_back(branch->choose(label, index));
       return Unique(r);
@@ -387,7 +387,7 @@ namespace gtsam {
   template<typename L, typename Y>
   DecisionTree<L, Y>::DecisionTree(//
       const L& label, const Y& y1, const Y& y2)  {
-    boost::shared_ptr<Choice> a(new Choice(label, 2));
+    std::shared_ptr<Choice> a(new Choice(label, 2));
     NodePtr l1(new Leaf(y1)), l2(new Leaf(y2));
     a->push_back(l1);
     a->push_back(l2);
@@ -400,7 +400,7 @@ namespace gtsam {
       const LabelC& labelC, const Y& y1, const Y& y2)  {
     if (labelC.second != 2) throw std::invalid_argument(
         "DecisionTree: binary constructor called with non-binary label");
-    boost::shared_ptr<Choice> a(new Choice(labelC.first, 2));
+    std::shared_ptr<Choice> a(new Choice(labelC.first, 2));
     NodePtr l1(new Leaf(y1)), l2(new Leaf(y2));
     a->push_back(l1);
     a->push_back(l2);
@@ -470,8 +470,8 @@ namespace gtsam {
     for (Iterator it = begin; it != end; it++) {
       if (it->root_->isLeaf())
         continue;
-      boost::shared_ptr<const Choice> c =
-          boost::dynamic_pointer_cast<const Choice>(it->root_);
+      std::shared_ptr<const Choice> c =
+          std::dynamic_pointer_cast<const Choice>(it->root_);
       if (!highestLabel || c->label() > *highestLabel) {
         highestLabel.reset(c->label());
         nrChoices = c->nrChoices();
@@ -480,13 +480,13 @@ namespace gtsam {
 
     // if label is already in correct order, just put together a choice on label
     if (!nrChoices || !highestLabel || label > *highestLabel) {
-      boost::shared_ptr<Choice> choiceOnLabel(new Choice(label, end - begin));
+      std::shared_ptr<Choice> choiceOnLabel(new Choice(label, end - begin));
       for (Iterator it = begin; it != end; it++)
         choiceOnLabel->push_back(it->root_);
       return Choice::Unique(choiceOnLabel);
     } else {
       // Set up a new choice on the highest label
-      boost::shared_ptr<Choice> choiceOnHighestLabel(new Choice(*highestLabel, nrChoices));
+      std::shared_ptr<Choice> choiceOnHighestLabel(new Choice(*highestLabel, nrChoices));
       // now, for all possible values of highestLabel
       for (size_t index = 0; index < nrChoices; index++) {
         // make a new set of functions for composing by iterating over the given
@@ -545,7 +545,7 @@ namespace gtsam {
         std::cout << boost::format("DecisionTree::create: expected %d values but got %d instead") % nrChoices % size << std::endl;
         throw std::invalid_argument("DecisionTree::create invalid argument");
       }
-      boost::shared_ptr<Choice> choice(new Choice(begin->first, endY - beginY));
+      std::shared_ptr<Choice> choice(new Choice(begin->first, endY - beginY));
       for (ValueIt y = beginY; y != endY; y++)
         choice->push_back(NodePtr(new Leaf(*y)));
       return Choice::Unique(choice);
@@ -582,7 +582,7 @@ namespace gtsam {
     if (leaf) return NodePtr(new Leaf(op(leaf->constant())));
 
     // Check if Choice
-    boost::shared_ptr<const MXChoice> choice = boost::dynamic_pointer_cast<const MXChoice> (f);
+    std::shared_ptr<const MXChoice> choice = std::dynamic_pointer_cast<const MXChoice> (f);
     if (!choice) throw std::invalid_argument(
         "DecisionTree::Convert: Invalid NodePtr");
 

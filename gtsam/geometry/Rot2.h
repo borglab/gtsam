@@ -211,11 +211,11 @@ namespace gtsam {
 
   private:
     /** Serialization function */
-    friend class boost::serialization::access;
+    friend class cereal::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      ar & BOOST_SERIALIZATION_NVP(c_);
-      ar & BOOST_SERIALIZATION_NVP(s_);
+      ar & CEREAL_NVP(c_);
+      ar & CEREAL_NVP(s_);
     }
 
   };

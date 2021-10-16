@@ -49,7 +49,7 @@ namespace gtsam
         VectorValues collectedResult;
 
         OptimizeData operator()(
-          const boost::shared_ptr<CLIQUE>& clique,
+          const std::shared_ptr<CLIQUE>& clique,
           OptimizeData& parentData)
         {
           OptimizeData myData;

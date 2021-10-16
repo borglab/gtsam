@@ -63,7 +63,7 @@ namespace gtsam {
     Values::const_iterator it = values.find(keys_[0]);
     if (it != values.end() && it->second != value_) throw runtime_error(
         "SingleValue::partiallyApply: unsatisfiable");
-    return boost::make_shared < SingleValue > (keys_[0], cardinality_, value_);
+    return std::make_shared < SingleValue > (keys_[0], cardinality_, value_);
   }
 
   /* ************************************************************************* */
@@ -72,7 +72,7 @@ namespace gtsam {
     const Domain& Dk = domains[keys_[0]];
     if (Dk.isSingleton() && !Dk.contains(value_)) throw runtime_error(
         "SingleValue::partiallyApply: unsatisfiable");
-    return boost::make_shared < SingleValue > (discreteKey(), value_);
+    return std::make_shared < SingleValue > (discreteKey(), value_);
   }
 
 /* ************************************************************************* */

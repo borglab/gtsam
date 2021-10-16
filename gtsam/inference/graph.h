@@ -89,7 +89,7 @@ namespace gtsam {
    * Compose the poses by following the chain specified by the spanning tree
    */
   template<class G, class Factor, class POSE, class KEY>
-  boost::shared_ptr<Values>
+  std::shared_ptr<Values>
     composePoses(const G& graph, const PredecessorMap<KEY>& tree, const POSE& rootPose);
 
 

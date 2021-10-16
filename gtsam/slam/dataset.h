@@ -251,15 +251,15 @@ struct SfmTrack {
   }
 
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & BOOST_SERIALIZATION_NVP(p);
-    ar & BOOST_SERIALIZATION_NVP(r);
-    ar & BOOST_SERIALIZATION_NVP(g);
-    ar & BOOST_SERIALIZATION_NVP(b);
-    ar & BOOST_SERIALIZATION_NVP(measurements);
-    ar & BOOST_SERIALIZATION_NVP(siftIndices);
+    ar & CEREAL_NVP(p);
+    ar & CEREAL_NVP(r);
+    ar & CEREAL_NVP(g);
+    ar & CEREAL_NVP(b);
+    ar & CEREAL_NVP(measurements);
+    ar & CEREAL_NVP(siftIndices);
   }
 
   /// assert equality up to a tolerance
@@ -351,11 +351,11 @@ struct SfmData {
   }
 
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int /*version*/) {
-    ar & BOOST_SERIALIZATION_NVP(cameras);
-    ar & BOOST_SERIALIZATION_NVP(tracks);
+    ar & CEREAL_NVP(cameras);
+    ar & CEREAL_NVP(tracks);
   }
 
   /// @}

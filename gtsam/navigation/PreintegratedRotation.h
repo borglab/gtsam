@@ -59,18 +59,17 @@ struct GTSAM_EXPORT PreintegratedRotationParams {
 
  private:
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    namespace bs = ::boost::serialization;
-    ar & BOOST_SERIALIZATION_NVP(gyroscopeCovariance);
-    ar & BOOST_SERIALIZATION_NVP(body_P_sensor);
+    ar & CEREAL_NVP(gyroscopeCovariance);
+    ar & CEREAL_NVP(body_P_sensor);
 
     // Provide support for Eigen::Matrix in boost::optional
     bool omegaCoriolisFlag = omegaCoriolis.is_initialized();
-    ar & boost::serialization::make_nvp("omegaCoriolisFlag", omegaCoriolisFlag);
+    ar & cereal::make_nvp("omegaCoriolisFlag", omegaCoriolisFlag);
     if (omegaCoriolisFlag) {
-      ar & BOOST_SERIALIZATION_NVP(*omegaCoriolis);
+      ar & CEREAL_NVP(*omegaCoriolis);
     }
   }
 
@@ -92,7 +91,7 @@ class GTSAM_EXPORT PreintegratedRotation {
 
  protected:
   /// Parameters
-  boost::shared_ptr<Params> p_;
+  std::shared_ptr<Params> p_;
 
   double deltaTij_;           ///< Time interval from i to j
   Rot3 deltaRij_;             ///< Preintegrated relative orientation (in frame i)
@@ -106,12 +105,12 @@ class GTSAM_EXPORT PreintegratedRotation {
   /// @{
 
   /// Default constructor, resets integration to zero
-  explicit PreintegratedRotation(const boost::shared_ptr<Params>& p) : p_(p) {
+  explicit PreintegratedRotation(const std::shared_ptr<Params>& p) : p_(p) {
     resetIntegration();
   }
 
   /// Explicit initialization of all class members
-  PreintegratedRotation(const boost::shared_ptr<Params>& p,
+  PreintegratedRotation(const std::shared_ptr<Params>& p,
                         double deltaTij, const Rot3& deltaRij,
                         const Matrix3& delRdelBiasOmega)
       : p_(p), deltaTij_(deltaTij), deltaRij_(deltaRij), delRdelBiasOmega_(delRdelBiasOmega) {}
@@ -132,7 +131,7 @@ class GTSAM_EXPORT PreintegratedRotation {
 
   /// @name Access instance variables
   /// @{
-  const boost::shared_ptr<Params>& params() const {
+  const std::shared_ptr<Params>& params() const {
     return p_;
   }
   const double& deltaTij() const {
@@ -178,13 +177,13 @@ class GTSAM_EXPORT PreintegratedRotation {
 
  private:
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {  // NOLINT
-    ar& BOOST_SERIALIZATION_NVP(p_);
-    ar& BOOST_SERIALIZATION_NVP(deltaTij_);
-    ar& BOOST_SERIALIZATION_NVP(deltaRij_);
-    ar& BOOST_SERIALIZATION_NVP(delRdelBiasOmega_);
+    ar& CEREAL_NVP(p_);
+    ar& CEREAL_NVP(deltaTij_);
+    ar& CEREAL_NVP(deltaRij_);
+    ar& CEREAL_NVP(delRdelBiasOmega_);
   }
 
 #ifdef GTSAM_USE_QUATERNIONS

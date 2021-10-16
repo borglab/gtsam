@@ -20,7 +20,7 @@
 #include <cstdarg>
 
 #include <gtsam/base/VectorSpace.h>
-#include <boost/serialization/nvp.hpp>
+#include <cereal/types/base_class.hpp>
 
 namespace gtsam {
 
@@ -123,11 +123,11 @@ struct LieMatrix : public Matrix {
 private:
 
   // Serialization function
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int /*version*/) {
-    ar & boost::serialization::make_nvp("Matrix",
-       boost::serialization::base_object<Matrix>(*this));
+    ar & cereal::make_nvp("Matrix",
+       cereal::base_class<Matrix>(this));
 
   }
 

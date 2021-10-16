@@ -90,7 +90,7 @@ public:
    *  @param p       Parameters, typically fixed in a single application
    *  @param biasHat Current estimate of acceleration and rotation rate biases
    */
-  PreintegratedImuMeasurements(const boost::shared_ptr<PreintegrationParams>& p,
+  PreintegratedImuMeasurements(const std::shared_ptr<PreintegrationParams>& p,
       const imuBias::ConstantBias& biasHat = imuBias::ConstantBias()) :
       PreintegrationType(p, biasHat) {
     preintMeasCov_.setZero();
@@ -142,12 +142,12 @@ public:
 
  private:
   /// Serialization function
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     namespace bs = ::boost::serialization;
-    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationType);
-    ar & BOOST_SERIALIZATION_NVP(preintMeasCov_);
+    ar & cereal::make_nvp("PreintegrationType", cereal::base_class<PreintegrationType>(this));
+    ar & CEREAL_NVP(preintMeasCov_);
   }
 };
 
@@ -177,9 +177,9 @@ public:
 
   /** Shorthand for a smart pointer to a factor */
 #if !defined(_MSC_VER) && __GNUC__ == 4 && __GNUC_MINOR__ > 5
-  typedef typename boost::shared_ptr<ImuFactor> shared_ptr;
+  typedef typename std::shared_ptr<ImuFactor> shared_ptr;
 #else
-  typedef boost::shared_ptr<ImuFactor> shared_ptr;
+  typedef std::shared_ptr<ImuFactor> shared_ptr;
 #endif
 
   /** Default constructor - only use for serialization */
@@ -240,12 +240,12 @@ public:
 
  private:
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & boost::serialization::make_nvp("NoiseModelFactor5",
-         boost::serialization::base_object<Base>(*this));
-    ar & BOOST_SERIALIZATION_NVP(_PIM_);
+    ar & cereal::make_nvp("NoiseModelFactor5",
+         cereal::base_class<Base>(this));
+    ar & CEREAL_NVP(_PIM_);
   }
 };
 // class ImuFactor
@@ -308,12 +308,12 @@ public:
 private:
 
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & boost::serialization::make_nvp("NoiseModelFactor3",
-         boost::serialization::base_object<Base>(*this));
-    ar & BOOST_SERIALIZATION_NVP(_PIM_);
+    ar & cereal::make_nvp("NoiseModelFactor3",
+         cereal::base_class<Base>(this));
+    ar & CEREAL_NVP(_PIM_);
   }
 };
 // class ImuFactor2

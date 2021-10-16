@@ -31,7 +31,7 @@ namespace br { using namespace boost::adaptors; using namespace boost::range; }
 
 using namespace std;
 using namespace gtsam;
-using boost::shared_ptr;
+using std::shared_ptr;
 
 static const SharedNoiseModel model;
 

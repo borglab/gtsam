@@ -104,10 +104,10 @@ TEST(SymbolicFactorGraph, eliminateFullMultifrontal) {
 TEST(SymbolicFactorGraph, eliminatePartialMultifrontal) {
   SymbolicBayesTree expectedBayesTree;
   SymbolicConditional::shared_ptr root =
-      boost::make_shared<SymbolicConditional>(
+      std::make_shared<SymbolicConditional>(
           SymbolicConditional::FromKeys(list_of(4)(5)(1), 2));
   expectedBayesTree.insertRoot(
-      boost::make_shared<SymbolicBayesTreeClique>(root));
+      std::make_shared<SymbolicBayesTreeClique>(root));
 
   SymbolicFactorGraph expectedFactorGraph =
       list_of(SymbolicFactor(0, 1))(SymbolicFactor(0, 2))(SymbolicFactor(1, 3))(
@@ -123,10 +123,10 @@ TEST(SymbolicFactorGraph, eliminatePartialMultifrontal) {
 
   SymbolicBayesTree expectedBayesTree2;
   SymbolicBayesTreeClique::shared_ptr root2 =
-      boost::make_shared<SymbolicBayesTreeClique>(
-          boost::make_shared<SymbolicConditional>(4, 1));
-  root2->children.push_back(boost::make_shared<SymbolicBayesTreeClique>(
-      boost::make_shared<SymbolicConditional>(5, 4)));
+      std::make_shared<SymbolicBayesTreeClique>(
+          std::make_shared<SymbolicConditional>(4, 1));
+  root2->children.push_back(std::make_shared<SymbolicBayesTreeClique>(
+      std::make_shared<SymbolicConditional>(5, 4)));
   expectedBayesTree2.insertRoot(root2);
 
   SymbolicBayesTree::shared_ptr actualBayesTree2;
@@ -160,11 +160,11 @@ TEST(SymbolicFactorGraph, eliminate_disconnected_graph) {
 
   // create expected Chordal bayes Net
   SymbolicBayesNet expected;
-  expected.push_back(boost::make_shared<SymbolicConditional>(0, 1, 2));
-  expected.push_back(boost::make_shared<SymbolicConditional>(1, 2));
-  expected.push_back(boost::make_shared<SymbolicConditional>(2));
-  expected.push_back(boost::make_shared<SymbolicConditional>(3, 4));
-  expected.push_back(boost::make_shared<SymbolicConditional>(4));
+  expected.push_back(std::make_shared<SymbolicConditional>(0, 1, 2));
+  expected.push_back(std::make_shared<SymbolicConditional>(1, 2));
+  expected.push_back(std::make_shared<SymbolicConditional>(2));
+  expected.push_back(std::make_shared<SymbolicConditional>(3, 4));
+  expected.push_back(std::make_shared<SymbolicConditional>(4));
 
   Ordering order;
   order += 0, 1, 2, 3, 4;

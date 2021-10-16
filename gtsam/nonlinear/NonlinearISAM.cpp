@@ -48,7 +48,7 @@ void NonlinearISAM::update(const NonlinearFactorGraph& newFactors, const Values&
     // TODO: optimize for whole config?
     linPoint_.insert(initialValues);
 
-    boost::shared_ptr<GaussianFactorGraph> linearizedNewFactors = newFactors.linearize(linPoint_);
+    std::shared_ptr<GaussianFactorGraph> linearizedNewFactors = newFactors.linearize(linPoint_);
 
     // Update ISAM
     isam_.update(*linearizedNewFactors, eliminationFunction_);

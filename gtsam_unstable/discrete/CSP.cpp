@@ -55,7 +55,7 @@ namespace gtsam {
           // if not already a singleton
           if (!domains[v].isSingleton()) {
             // get the constraint and call its ensureArcConsistency method
-            Constraint::shared_ptr constraint = boost::dynamic_pointer_cast<Constraint>((*this)[f]);
+            Constraint::shared_ptr constraint = std::dynamic_pointer_cast<Constraint>((*this)[f]);
             if (!constraint) throw runtime_error("CSP:runArcConsistency: non-constraint factor");
             changed[v] = constraint->ensureArcConsistency(v,domains) || changed[v];
           }
@@ -92,7 +92,7 @@ namespace gtsam {
     // KeyOrdering ordering;
     // vector<Index> dkeys;
     for(const DiscreteFactor::shared_ptr& f: factors_) {
-      Constraint::shared_ptr constraint = boost::dynamic_pointer_cast<Constraint>(f);
+      Constraint::shared_ptr constraint = std::dynamic_pointer_cast<Constraint>(f);
       if (!constraint) throw runtime_error("CSP:runArcConsistency: non-constraint factor");
       Constraint::shared_ptr reduced = constraint->partiallyApply(domains);
       if (print) reduced->print();

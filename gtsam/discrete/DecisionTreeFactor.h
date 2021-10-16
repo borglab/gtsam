@@ -42,7 +42,7 @@ namespace gtsam {
     // typedefs needed to play nice with gtsam
     typedef DecisionTreeFactor This;
     typedef DiscreteFactor Base; ///< Typedef to base class
-    typedef boost::shared_ptr<DecisionTreeFactor> shared_ptr;
+    typedef std::shared_ptr<DecisionTreeFactor> shared_ptr;
 
   public:
 

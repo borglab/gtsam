@@ -28,21 +28,18 @@
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/timing.h>
 
-#include <boost/format.hpp>
-#include <boost/optional.hpp>
-#include <boost/range/adaptor/map.hpp>
-
 #include <cmath>
 #include <fstream>
 #include <iostream>
 #include <limits>
 #include <string>
 
+#include <chrono>
+
 using namespace std;
 
 namespace gtsam {
 
-using boost::adaptors::map_values;
 typedef internal::LevenbergMarquardtState State;
 
 /* ************************************************************************* */
@@ -122,8 +119,7 @@ bool LevenbergMarquardtOptimizer::tryLambda(const GaussianFactorGraph& linear,
   bool verbose = (params_.verbosityLM >= LevenbergMarquardtParams::TRYLAMBDA);
 
 #ifdef GTSAM_USING_NEW_BOOST_TIMERS
-  boost::timer::cpu_timer lamda_iteration_timer;
-  lamda_iteration_timer.start();
+  auto lamda_iteration_timer = std::chrono::high_resolution_clock::now();
 #else
   boost::timer lamda_iteration_timer;
   lamda_iteration_timer.restart();
@@ -217,7 +213,8 @@ bool LevenbergMarquardtOptimizer::tryLambda(const GaussianFactorGraph& linear,
   if (params_.verbosityLM == LevenbergMarquardtParams::SUMMARY) {
 // do timing
 #ifdef GTSAM_USING_NEW_BOOST_TIMERS
-    double iterationTime = 1e-9 * lamda_iteration_timer.elapsed().wall;
+    auto now = std::chrono::high_resolution_clock::now();
+    double iterationTime = 1e-9 * std::chrono::duration_cast<std::chrono::milliseconds>(now - lamda_iteration_timer).count();
 #else
     double iterationTime = lamda_iteration_timer.elapsed();
 #endif
@@ -282,7 +279,8 @@ GaussianFactorGraph::shared_ptr LevenbergMarquardtOptimizer::iterate() {
   VectorValues sqrtHessianDiagonal;
   if (params_.diagonalDamping) {
     sqrtHessianDiagonal = linear->hessianDiagonal();
-    for (Vector& v : sqrtHessianDiagonal | map_values) {
+    for (auto & x : sqrtHessianDiagonal) {
+      auto &v = x.second;
       v = v.cwiseMax(params_.minDiagonal).cwiseMin(params_.maxDiagonal).cwiseSqrt();
     }
   }

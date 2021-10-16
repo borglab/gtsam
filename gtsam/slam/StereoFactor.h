@@ -45,7 +45,7 @@ public:
   // shorthand for base class type
   typedef NoiseModelFactor2<POSE, LANDMARK> Base;             ///< typedef for base class
   typedef GenericStereoFactor<POSE, LANDMARK> This;           ///< typedef for this class (with templates)
-  typedef boost::shared_ptr<GenericStereoFactor> shared_ptr;  ///< typedef for shared pointer to this object
+  typedef std::shared_ptr<GenericStereoFactor> shared_ptr;  ///< typedef for shared pointer to this object
   typedef POSE CamPose;                                       ///< typedef for Pose Lie Value type
 
   /**
@@ -92,7 +92,7 @@ public:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
   /**
@@ -167,16 +167,16 @@ public:
 
 private:
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int /*version*/) {
-    ar & boost::serialization::make_nvp("NoiseModelFactor2",
-        boost::serialization::base_object<Base>(*this));
-    ar & BOOST_SERIALIZATION_NVP(measured_);
-    ar & BOOST_SERIALIZATION_NVP(K_);
-    ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);
-    ar & BOOST_SERIALIZATION_NVP(throwCheirality_);
-    ar & BOOST_SERIALIZATION_NVP(verboseCheirality_);
+    ar & cereal::make_nvp("NoiseModelFactor2",
+        cereal::base_class<Base>(this));
+    ar & CEREAL_NVP(measured_);
+    ar & CEREAL_NVP(K_);
+    ar & CEREAL_NVP(body_P_sensor_);
+    ar & CEREAL_NVP(throwCheirality_);
+    ar & CEREAL_NVP(verboseCheirality_);
   }
 };
 

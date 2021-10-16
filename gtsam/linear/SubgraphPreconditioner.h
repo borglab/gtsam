@@ -36,7 +36,7 @@ namespace gtsam {
   class VectorValues;
 
   struct GTSAM_EXPORT SubgraphPreconditionerParameters : public PreconditionerParameters {
-    typedef boost::shared_ptr<SubgraphPreconditionerParameters> shared_ptr;
+    typedef std::shared_ptr<SubgraphPreconditionerParameters> shared_ptr;
     SubgraphPreconditionerParameters(const SubgraphBuilderParameters &p = SubgraphBuilderParameters())
       : builderParams(p) {}
     SubgraphBuilderParameters builderParams;
@@ -52,11 +52,11 @@ namespace gtsam {
   class GTSAM_EXPORT SubgraphPreconditioner : public Preconditioner {
 
   public:
-    typedef boost::shared_ptr<SubgraphPreconditioner> shared_ptr;
-    typedef boost::shared_ptr<const GaussianBayesNet> sharedBayesNet;
-    typedef boost::shared_ptr<const GaussianFactorGraph> sharedFG;
-    typedef boost::shared_ptr<const VectorValues> sharedValues;
-    typedef boost::shared_ptr<const Errors> sharedErrors;
+    typedef std::shared_ptr<SubgraphPreconditioner> shared_ptr;
+    typedef std::shared_ptr<const GaussianBayesNet> sharedBayesNet;
+    typedef std::shared_ptr<const GaussianFactorGraph> sharedFG;
+    typedef std::shared_ptr<const VectorValues> sharedValues;
+    typedef std::shared_ptr<const Errors> sharedErrors;
 
   private:
     sharedFG Ab2_;

@@ -149,11 +149,11 @@ private:
   /// Serialization function
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& boost::serialization::make_nvp("bearing", bearing_);
-    ar& boost::serialization::make_nvp("range", range_);
+    ar& cereal::make_nvp("bearing", bearing_);
+    ar& cereal::make_nvp("range", range_);
   }
 
-  friend class boost::serialization::access;
+  friend class cereal::access;
 
   /// @}
 

@@ -98,7 +98,7 @@ AHRSFactor::AHRSFactor(
 
 gtsam::NonlinearFactor::shared_ptr AHRSFactor::clone() const {
 //------------------------------------------------------------------------------
-  return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+  return std::static_pointer_cast<gtsam::NonlinearFactor>(
       gtsam::NonlinearFactor::shared_ptr(new This(*this)));
 }
 
@@ -189,8 +189,8 @@ AHRSFactor::AHRSFactor(Key rot_i, Key rot_j, Key bias,
                        const boost::optional<Pose3>& body_P_sensor)
     : Base(noiseModel::Gaussian::Covariance(pim.preintMeasCov_), rot_i, rot_j, bias),
       _PIM_(pim) {
-  boost::shared_ptr<PreintegratedMeasurements::Params> p =
-      boost::make_shared<PreintegratedMeasurements::Params>(pim.p());
+  std::shared_ptr<PreintegratedMeasurements::Params> p =
+      std::make_shared<PreintegratedMeasurements::Params>(pim.p());
   p->body_P_sensor = body_P_sensor;
   _PIM_.p_ = p;
 }
@@ -200,8 +200,8 @@ Rot3 AHRSFactor::predict(const Rot3& rot_i, const Vector3& bias,
                          const PreintegratedMeasurements pim,
                          const Vector3& omegaCoriolis,
                          const boost::optional<Pose3>& body_P_sensor) {
-  boost::shared_ptr<PreintegratedMeasurements::Params> p =
-      boost::make_shared<PreintegratedMeasurements::Params>(pim.p());
+  std::shared_ptr<PreintegratedMeasurements::Params> p =
+      std::make_shared<PreintegratedMeasurements::Params>(pim.p());
   p->omegaCoriolis = omegaCoriolis;
   p->body_P_sensor = body_P_sensor;
   PreintegratedMeasurements newPim = pim;

@@ -46,11 +46,10 @@
 #include <gtsam/config.h> // for GTSAM_USE_TBB
 
 #include <boost/archive/binary_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
+#include <cereal/archives/binary.hpp>
 #include <boost/program_options.hpp>
 #include <boost/range/algorithm/set_algorithm.hpp>
 #include <boost/range/adaptor/reversed.hpp>
-#include <boost/serialization/export.hpp>
 
 #include <fstream>
 #include <iostream>
@@ -79,7 +78,7 @@ double chi2_red(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& c
   // the factor graph already includes a factor for the prior/equality constraint.
   //  double dof = graph.size() - config.size();
   int graph_dim = 0;
-  for(const boost::shared_ptr<gtsam::NonlinearFactor>& nlf: graph) {
+  for(const std::shared_ptr<gtsam::NonlinearFactor>& nlf: graph) {
     graph_dim += (int)nlf->dim();
   }
   double dof = double(graph_dim) - double(config.dim()); // kaess: changed to dim
@@ -259,7 +258,7 @@ void runIncremental()
   while(nextMeasurement < datasetMeasurements.size())
   {
     if(BetweenFactor<Pose>::shared_ptr factor =
-      boost::dynamic_pointer_cast<BetweenFactor<Pose> >(datasetMeasurements[nextMeasurement]))
+      std::dynamic_pointer_cast<BetweenFactor<Pose> >(datasetMeasurements[nextMeasurement]))
     {
       Key key1 = factor->key1(), key2 = factor->key2();
       if(((int)key1 >= firstStep && key1 < key2) || ((int)key2 >= firstStep && key2 < key1)) {
@@ -310,7 +309,7 @@ void runIncremental()
       NonlinearFactor::shared_ptr measurementf = datasetMeasurements[nextMeasurement];
 
       if(BetweenFactor<Pose>::shared_ptr factor =
-        boost::dynamic_pointer_cast<BetweenFactor<Pose> >(measurementf))
+        std::dynamic_pointer_cast<BetweenFactor<Pose> >(measurementf))
       {
         // Stop collecting measurements that are for future steps
         if(factor->key1() > step || factor->key2() > step)
@@ -346,7 +345,7 @@ void runIncremental()
         }
       }
       else if(BearingRangeFactor<Pose, Point2>::shared_ptr factor =
-        boost::dynamic_pointer_cast<BearingRangeFactor<Pose, Point2> >(measurementf))
+        std::dynamic_pointer_cast<BearingRangeFactor<Pose, Point2> >(measurementf))
       {
         Key poseKey = factor->keys()[0], lmKey = factor->keys()[1];
 

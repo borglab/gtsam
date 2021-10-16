@@ -73,7 +73,7 @@ namespace gtsam {
 
     // We store a shared pointer to the root of the functional tree
     // composed of Node classes. If root_==nullptr, the tree is empty.
-    typedef boost::shared_ptr<const Node> sharedNode;
+    typedef std::shared_ptr<const Node> sharedNode;
     sharedNode root_;
 
     inline const value_type& keyValue() const { return root_->keyValue_;}

@@ -41,7 +41,7 @@ static const double tol = 1e-5;
 
 typedef PriorFactor<Pose2> PosePrior;
 typedef NonlinearEquality<Pose2> PoseNLE;
-typedef boost::shared_ptr<PoseNLE> shared_poseNLE;
+typedef std::shared_ptr<PoseNLE> shared_poseNLE;
 
 static Symbol key('x', 1);
 
@@ -521,7 +521,7 @@ TEST (testNonlinearEqualityConstraint, stereo_constrained ) {
   static double fov = 60; // degrees
   static int w = 640, h = 480;
   static Cal3_S2 K(fov, w, h);
-  static boost::shared_ptr<Cal3_S2> shK(new Cal3_S2(K));
+  static std::shared_ptr<Cal3_S2> shK(new Cal3_S2(K));
 
   // create initial estimates
   Rot3 faceTowardsY(Point3(1, 0, 0), Point3(0, 0, -1), Point3(0, 1, 0));

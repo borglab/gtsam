@@ -78,13 +78,13 @@ struct GTSAM_EXPORT PreintegrationCombinedParams : PreintegrationParams {
   }
 
   // Default Params for a Z-down navigation frame, such as NED: gravity points along positive Z-axis
-  static boost::shared_ptr<PreintegrationCombinedParams> MakeSharedD(double g = 9.81) {
-    return boost::shared_ptr<PreintegrationCombinedParams>(new PreintegrationCombinedParams(Vector3(0, 0, g)));
+  static std::shared_ptr<PreintegrationCombinedParams> MakeSharedD(double g = 9.81) {
+    return std::shared_ptr<PreintegrationCombinedParams>(new PreintegrationCombinedParams(Vector3(0, 0, g)));
   }
 
   // Default Params for a Z-up navigation frame, such as ENU: gravity points along negative Z-axis
-  static boost::shared_ptr<PreintegrationCombinedParams> MakeSharedU(double g = 9.81) {
-    return boost::shared_ptr<PreintegrationCombinedParams>(new PreintegrationCombinedParams(Vector3(0, 0, -g)));
+  static std::shared_ptr<PreintegrationCombinedParams> MakeSharedU(double g = 9.81) {
+    return std::shared_ptr<PreintegrationCombinedParams>(new PreintegrationCombinedParams(Vector3(0, 0, -g)));
   }
 
   void print(const std::string& s="") const override;
@@ -101,14 +101,14 @@ struct GTSAM_EXPORT PreintegrationCombinedParams : PreintegrationParams {
 private:
 
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template <class ARCHIVE>
-  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+  void serialize(ARCHIVE& ar) {
     namespace bs = ::boost::serialization;
-    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationParams);
-    ar & BOOST_SERIALIZATION_NVP(biasAccCovariance);
-    ar & BOOST_SERIALIZATION_NVP(biasOmegaCovariance);
-    ar & BOOST_SERIALIZATION_NVP(biasAccOmegaInt);
+    ar & cereal::make_nvp("PreintegrationParams", cereal::base_class<PreintegrationParams>(this));
+    ar & CEREAL_NVP(biasAccCovariance);
+    ar & CEREAL_NVP(biasOmegaCovariance);
+    ar & CEREAL_NVP(biasAccOmegaInt);
   }
 
 public:
@@ -156,7 +156,7 @@ public:
    *  @param biasHat Current estimate of acceleration and rotation rate biases
    */
   PreintegratedCombinedMeasurements(
-      const boost::shared_ptr<Params>& p,
+      const std::shared_ptr<Params>& p,
       const imuBias::ConstantBias& biasHat = imuBias::ConstantBias())
       : PreintegrationType(p, biasHat) {
     preintMeasCov_.setZero();
@@ -184,7 +184,7 @@ public:
   void resetIntegration() override;
 
   /// const reference to params, shadows definition in base class
-  Params& p() const { return *boost::static_pointer_cast<Params>(this->p_); }
+  Params& p() const { return *std::static_pointer_cast<Params>(this->p_); }
   /// @}
 
   /// @name Access instance variables
@@ -220,12 +220,12 @@ public:
 
  private:
   /// Serialization function
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
     namespace bs = ::boost::serialization;
-    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationType);
-    ar& BOOST_SERIALIZATION_NVP(preintMeasCov_);
+    ar& cereal::make_nvp("PreintegrationType", cereal::base_class<PreintegrationType>(this));
+    ar& CEREAL_NVP(preintMeasCov_);
   }
 
 public:
@@ -267,9 +267,9 @@ public:
 
   /** Shorthand for a smart pointer to a factor */
 #if !defined(_MSC_VER) && __GNUC__ == 4 && __GNUC_MINOR__ > 5
-  typedef typename boost::shared_ptr<CombinedImuFactor> shared_ptr;
+  typedef typename std::shared_ptr<CombinedImuFactor> shared_ptr;
 #else
-  typedef boost::shared_ptr<CombinedImuFactor> shared_ptr;
+  typedef std::shared_ptr<CombinedImuFactor> shared_ptr;
 #endif
 
   /** Default constructor - only use for serialization */
@@ -327,11 +327,11 @@ public:
 
  private:
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(NoiseModelFactor6);
-    ar& BOOST_SERIALIZATION_NVP(_PIM_);
+    ar& cereal::make_nvp("NoiseModelFactor6", cereal::base_class<NoiseModelFactor6>(this));
+    ar& CEREAL_NVP(_PIM_);
   }
 
 public:
@@ -353,4 +353,4 @@ struct traits<CombinedImuFactor> : public Testable<CombinedImuFactor> {};
 }  // namespace gtsam
 
 /// Add Boost serialization export key (declaration) for derived class
-BOOST_CLASS_EXPORT_KEY(gtsam::PreintegrationCombinedParams);
+//BOOST_CLASS_EXPORT_KEY(gtsam::PreintegrationCombinedParams);

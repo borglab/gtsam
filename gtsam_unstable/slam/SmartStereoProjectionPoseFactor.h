@@ -46,7 +46,7 @@ namespace gtsam {
 class SmartStereoProjectionPoseFactor : public SmartStereoProjectionFactor {
  protected:
   /// shared pointer to calibration object (one for each camera)
-  std::vector<boost::shared_ptr<Cal3_S2Stereo>> K_all_;
+  std::vector<std::shared_ptr<Cal3_S2Stereo>> K_all_;
 
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -58,7 +58,7 @@ class SmartStereoProjectionPoseFactor : public SmartStereoProjectionFactor {
   typedef SmartStereoProjectionPoseFactor This;
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
   /**
    * Constructor
@@ -82,7 +82,7 @@ class SmartStereoProjectionPoseFactor : public SmartStereoProjectionFactor {
    * @param K is the (fixed) camera calibration
    */
   void add(const StereoPoint2& measured, const Key& poseKey,
-           const boost::shared_ptr<Cal3_S2Stereo>& K);
+           const std::shared_ptr<Cal3_S2Stereo>& K);
 
   /**
    *  Variant of the previous one in which we include a set of measurements
@@ -94,7 +94,7 @@ class SmartStereoProjectionPoseFactor : public SmartStereoProjectionFactor {
    */
   void add(const std::vector<StereoPoint2>& measurements,
            const KeyVector& poseKeys,
-           const std::vector<boost::shared_ptr<Cal3_S2Stereo>>& Ks);
+           const std::vector<std::shared_ptr<Cal3_S2Stereo>>& Ks);
 
   /**
    * Variant of the previous one in which we include a set of measurements with
@@ -107,7 +107,7 @@ class SmartStereoProjectionPoseFactor : public SmartStereoProjectionFactor {
    */
   void add(const std::vector<StereoPoint2>& measurements,
            const KeyVector& poseKeys,
-           const boost::shared_ptr<Cal3_S2Stereo>& K);
+           const std::shared_ptr<Cal3_S2Stereo>& K);
 
   /**
    * print
@@ -126,7 +126,7 @@ class SmartStereoProjectionPoseFactor : public SmartStereoProjectionFactor {
   double error(const Values& values) const override;
 
   /** return the calibration object */
-  inline std::vector<boost::shared_ptr<Cal3_S2Stereo>> calibration() const {
+  inline std::vector<std::shared_ptr<Cal3_S2Stereo>> calibration() const {
     return K_all_;
   }
 
@@ -141,11 +141,11 @@ class SmartStereoProjectionPoseFactor : public SmartStereoProjectionFactor {
 
  private:
   /// Serialization function
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-    ar& BOOST_SERIALIZATION_NVP(K_all_);
+    ar& cereal::virtual_base_class<Base>(this);
+    ar& CEREAL_NVP(K_all_);
   }
 
 };  // end of class declaration

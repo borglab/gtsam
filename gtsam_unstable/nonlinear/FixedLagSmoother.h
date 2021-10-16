@@ -35,7 +35,7 @@ class GTSAM_UNSTABLE_EXPORT FixedLagSmoother {
 public:
 
   /// Typedef for a shared pointer to an Incremental Fixed-Lag Smoother
-  typedef boost::shared_ptr<FixedLagSmoother> shared_ptr;
+  typedef std::shared_ptr<FixedLagSmoother> shared_ptr;
 
   /// Typedef for a Key-Timestamp map/database
   typedef std::map<Key, double> KeyTimestampMap;

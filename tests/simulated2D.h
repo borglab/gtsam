@@ -39,7 +39,7 @@ namespace simulated2D {
 
   public:
     typedef gtsam::Values Base;  ///< base class
-    typedef boost::shared_ptr<Point2> sharedPoint;  ///< shortcut to shared Point type
+    typedef std::shared_ptr<Point2> sharedPoint;  ///< shortcut to shared Point type
 
     /// Constructor
     Values() : nrPoses_(0), nrPoints_(0) {
@@ -128,7 +128,7 @@ namespace simulated2D {
   public:
     typedef NoiseModelFactor1<VALUE> Base;  ///< base class
     typedef GenericPrior<VALUE> This;
-    typedef boost::shared_ptr<GenericPrior<VALUE> > shared_ptr;
+    typedef std::shared_ptr<GenericPrior<VALUE> > shared_ptr;
     typedef VALUE Pose; ///< shortcut to Pose type
 
     Pose measured_; ///< prior mean
@@ -147,7 +147,7 @@ namespace simulated2D {
 
     /// @return a deep copy of this factor
     gtsam::NonlinearFactor::shared_ptr clone() const override {
-      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+      return std::static_pointer_cast<gtsam::NonlinearFactor>(
           gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
   private:
@@ -156,11 +156,11 @@ namespace simulated2D {
     GenericPrior() { }
 
     /// Serialization function
-    friend class boost::serialization::access;
+    friend class cereal::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-      ar & BOOST_SERIALIZATION_NVP(measured_);
+      ar & cereal::virtual_base_class<Base>(this);
+      ar & CEREAL_NVP(measured_);
     }
   };
 
@@ -172,7 +172,7 @@ namespace simulated2D {
   public:
     typedef NoiseModelFactor2<VALUE, VALUE> Base; ///< base class
     typedef GenericOdometry<VALUE> This;
-    typedef boost::shared_ptr<GenericOdometry<VALUE> > shared_ptr;
+    typedef std::shared_ptr<GenericOdometry<VALUE> > shared_ptr;
     typedef VALUE Pose; ///< shortcut to Pose type
 
     Pose measured_; ///< odometry measurement
@@ -193,7 +193,7 @@ namespace simulated2D {
 
     /// @return a deep copy of this factor
     gtsam::NonlinearFactor::shared_ptr clone() const override {
-      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+      return std::static_pointer_cast<gtsam::NonlinearFactor>(
           gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
   private:
@@ -202,11 +202,11 @@ namespace simulated2D {
     GenericOdometry() { }
 
     /// Serialization function
-    friend class boost::serialization::access;
+    friend class cereal::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-      ar & BOOST_SERIALIZATION_NVP(measured_);
+      ar & cereal::virtual_base_class<Base>(this);
+      ar & CEREAL_NVP(measured_);
     }
   };
 
@@ -218,7 +218,7 @@ namespace simulated2D {
   public:
     typedef NoiseModelFactor2<POSE, LANDMARK> Base;  ///< base class
     typedef GenericMeasurement<POSE, LANDMARK> This;
-    typedef boost::shared_ptr<GenericMeasurement<POSE, LANDMARK> > shared_ptr;
+    typedef std::shared_ptr<GenericMeasurement<POSE, LANDMARK> > shared_ptr;
     typedef POSE Pose; ///< shortcut to Pose type
     typedef LANDMARK Landmark; ///< shortcut to Landmark type
 
@@ -240,7 +240,7 @@ namespace simulated2D {
 
     /// @return a deep copy of this factor
     gtsam::NonlinearFactor::shared_ptr clone() const override {
-      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+      return std::static_pointer_cast<gtsam::NonlinearFactor>(
           gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
   private:
@@ -249,11 +249,11 @@ namespace simulated2D {
     GenericMeasurement() { }
 
     /// Serialization function
-    friend class boost::serialization::access;
+    friend class cereal::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-      ar & BOOST_SERIALIZATION_NVP(measured_);
+      ar & cereal::virtual_base_class<Base>(this);
+      ar & CEREAL_NVP(measured_);
     }
   };
 

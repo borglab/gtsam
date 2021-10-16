@@ -35,14 +35,14 @@ namespace gtsam
     /** Implementation of dense elimination function for symbolic factors.  This is a templated
      *  version for internally doing symbolic elimination on any factor. */
     template<class FACTOR>
-    std::pair<boost::shared_ptr<SymbolicConditional>, boost::shared_ptr<SymbolicFactor> >
+    std::pair<std::shared_ptr<SymbolicConditional>, std::shared_ptr<SymbolicFactor> >
       EliminateSymbolic(const FactorGraph<FACTOR>& factors, const Ordering& keys)
     {
       gttic(EliminateSymbolic);
 
       // Gather all keys
       KeySet allKeys;
-      for(const boost::shared_ptr<FACTOR>& factor: factors) {
+      for(const std::shared_ptr<FACTOR>& factor: factors) {
         allKeys.insert(factor->begin(), factor->end());
       }
 

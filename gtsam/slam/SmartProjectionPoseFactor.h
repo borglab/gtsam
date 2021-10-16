@@ -52,12 +52,12 @@ private:
 
 protected:
 
-  boost::shared_ptr<CALIBRATION> K_; ///< calibration object (one for all cameras)
+  std::shared_ptr<CALIBRATION> K_; ///< calibration object (one for all cameras)
 
 public:
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
   /**
    * Default constructor, only for serialization
@@ -72,7 +72,7 @@ public:
    */
   SmartProjectionPoseFactor(
       const SharedNoiseModel& sharedNoiseModel,
-      const boost::shared_ptr<CALIBRATION> K,
+      const std::shared_ptr<CALIBRATION> K,
       const SmartProjectionParams& params = SmartProjectionParams())
       : Base(sharedNoiseModel, params), K_(K) {
   }
@@ -86,7 +86,7 @@ public:
    */
   SmartProjectionPoseFactor(
       const SharedNoiseModel& sharedNoiseModel,
-      const boost::shared_ptr<CALIBRATION> K,
+      const std::shared_ptr<CALIBRATION> K,
       const boost::optional<Pose3> body_P_sensor,
       const SmartProjectionParams& params = SmartProjectionParams())
       : SmartProjectionPoseFactor(sharedNoiseModel, K, params) {
@@ -126,7 +126,7 @@ public:
   }
 
   /** return calibration shared pointers */
-  inline const boost::shared_ptr<CALIBRATION> calibration() const {
+  inline const std::shared_ptr<CALIBRATION> calibration() const {
     return K_;
   }
 
@@ -150,11 +150,11 @@ public:
  private:
 
   /// Serialization function
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-    ar & BOOST_SERIALIZATION_NVP(K_);
+    ar & cereal::virtual_base_class<Base>(this);
+    ar & CEREAL_NVP(K_);
   }
 
 };

@@ -96,7 +96,7 @@ TEST( Graph, composePoses )
 
   Pose2 rootPose = p2;
 
-  boost::shared_ptr<Values> actual = composePoses<NonlinearFactorGraph, BetweenFactor<Pose2>, Pose2, Key> (graph, tree, rootPose);
+  std::shared_ptr<Values> actual = composePoses<NonlinearFactorGraph, BetweenFactor<Pose2>, Pose2, Key> (graph, tree, rootPose);
 
   Values expected;
   expected.insert(1, p1);

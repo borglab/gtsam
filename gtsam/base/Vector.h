@@ -264,44 +264,94 @@ GTSAM_EXPORT Vector concatVectors(const std::list<Vector>& vs);
 GTSAM_EXPORT Vector concatVectors(size_t nrVectors, ...);
 } // namespace gtsam
 
-#include <boost/serialization/nvp.hpp>
-#include <boost/serialization/array.hpp>
-#include <boost/serialization/split_free.hpp>
+#include <cereal/types/base_class.hpp>
+#include <cereal/types/array.hpp>
 
-namespace boost {
-  namespace serialization {
+namespace cereal {
 
-    // split version - copies into an STL vector for serialization
-    template<class Archive>
-    void save(Archive & ar, const gtsam::Vector & v, unsigned int /*version*/) {
-      const size_t size = v.size();
-      ar << BOOST_SERIALIZATION_NVP(size);
-      ar << make_nvp("data", make_array(v.data(), v.size()));
-    }
-
-    template<class Archive>
-    void load(Archive & ar, gtsam::Vector & v, unsigned int /*version*/) {
-      size_t size;
-      ar >> BOOST_SERIALIZATION_NVP(size);
-      v.resize(size);
-      ar >> make_nvp("data", make_array(v.data(), v.size()));
-    }
-
-    // split version - copies into an STL vector for serialization
-    template<class Archive, int D>
-    void save(Archive & ar, const Eigen::Matrix<double,D,1> & v, unsigned int /*version*/) {
-      ar << make_nvp("data", make_array(v.data(), v.RowsAtCompileTime));
-    }
-
-    template<class Archive, int D>
-    void load(Archive & ar, Eigen::Matrix<double,D,1> & v, unsigned int /*version*/) {
-      ar >> make_nvp("data", make_array(v.data(), v.RowsAtCompileTime));
-    }
-
-  } // namespace serialization
-} // namespace boost
-
-BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Vector)
-BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Vector2)
-BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Vector3)
-BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Vector6)
+//    // split version - copies into an STL vector for serialization
+//    template<class Archive, cereal::traits::DisableIf<cereal::traits::is_text_archive<Archive>::value>
+//    = cereal::traits::sfinae>
+//    void save(Archive &ar, const gtsam::Vector &v, unsigned int /*version*/) {
+//      const size_t size = v.size();
+//      ar << CEREAL_NVP(size);
+//      ar << cereal::make_nvp("data", cereal::binary_data(
+//          reinterpret_cast<const uint8_t *>(v.data()),
+//          size * sizeof(typename std::remove_pointer<decltype(v.data())>::type))
+//      );
+//    }
+//
+//    template<class Archive, cereal::traits::DisableIf<cereal::traits::is_text_archive<Archive>::value>
+//    = cereal::traits::sfinae>
+//    void load(Archive & ar, gtsam::Vector & v, unsigned int /*version*/) {
+//      size_t size;
+//      ar >> CEREAL_NVP(size);
+//      v.resize(size);
+//      ar >> cereal::make_nvp("data", cereal::binary_data(
+//          reinterpret_cast<uint8_t *>(v.data()),
+//          size * sizeof(typename std::remove_pointer<decltype(v.data())>::type))
+//          );
+//    }
+//
+//    // split version - copies into an STL vector for serialization
+//    template<class Archive, cereal::traits::DisableIf<cereal::traits::is_text_archive<Archive>::value>
+//    = cereal::traits::sfinae, int D>
+//    void save(Archive & ar, const Eigen::Matrix<double,D,1> & v, unsigned int /*version*/) {
+//      ar << make_nvp("data", cereal::binary_data(reinterpret_cast<const uint8_t *>(v.data()),
+//                                                 v.RowsAtCompileTime * sizeof(typename std::remove_pointer<decltype(v.data())>::type)));
+//    }
+//
+//    template<class Archive, cereal::traits::DisableIf<cereal::traits::is_text_archive<Archive>::value>
+//    = cereal::traits::sfinae, int D>
+//    void load(Archive & ar, Eigen::Matrix<double,D,1> & v, unsigned int /*version*/) {
+//      ar >> make_nvp("data", cereal::binary_data(reinterpret_cast<uint8_t *>(v.data()),
+//                                                 v.RowsAtCompileTime * sizeof(typename std::remove_pointer<decltype(v.data())>::type)));
+//    }
+//
+//    //// TEXT version
+//
+//    // split version - copies into an STL vector for serialization
+//    template<class Archive, cereal::traits::EnableIf<cereal::traits::is_text_archive<Archive>::value>
+//    = cereal::traits::sfinae>
+//    void save(Archive &ar, const gtsam::Vector &v, unsigned int /*version*/) {
+//      const size_t size = v.size();
+//      ar << CEREAL_NVP(size);
+//
+//      using DType = typename std::remove_const<typename std::remove_pointer<decltype(v.data())>::type>::type;
+//      std::vector<DType> mat_data;
+//      mat_data.assign(v.data(), v.data() + size);
+//      ar & cereal::make_nvp("data", mat_data);
+//    }
+//
+//    template<class Archive, cereal::traits::EnableIf<cereal::traits::is_text_archive<Archive>::value>
+//    = cereal::traits::sfinae>
+//    void load(Archive & ar, gtsam::Vector & v, unsigned int /*version*/) {
+//      size_t size;
+//      ar >> CEREAL_NVP(size);
+//      v.resize(size);
+//
+//      using DType = typename std::remove_pointer<decltype(v.data())>::type;
+//      std::vector<DType> mat_data;
+//      ar >> cereal::make_nvp("data", mat_data);
+//      std::copy(mat_data.begin(), mat_data.end(), v.data());
+//    }
+//
+//    // split version - copies into an STL vector for serialization
+//    template<class Archive, cereal::traits::EnableIf<cereal::traits::is_text_archive<Archive>::value>
+//    = cereal::traits::sfinae, int D>
+//    void save(Archive & ar, const Eigen::Matrix<double,D,1> & v, unsigned int /*version*/) {
+//      using DType = typename std::remove_const<typename std::remove_pointer<decltype(v.data())>::type>::type;
+//      std::vector<DType> mat_data;
+//      mat_data.assign(v.data(), v.data() + v.RowsAtCompileTime);
+//      ar & cereal::make_nvp("data", mat_data);
+//    }
+//
+//    template<class Archive, cereal::traits::EnableIf<cereal::traits::is_text_archive<Archive>::value>
+//    = cereal::traits::sfinae, int D>
+//    void load(Archive & ar, Eigen::Matrix<double,D,1> & v, unsigned int /*version*/) {
+//      using DType = typename std::remove_pointer<decltype(v.data())>::type;
+//      std::vector<DType> mat_data;
+//      ar >> cereal::make_nvp("data", mat_data);
+//      std::copy(mat_data.begin(), mat_data.end(), v.data());
+//    }
+} // namespace cereal

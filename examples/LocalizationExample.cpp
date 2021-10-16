@@ -72,7 +72,7 @@ class UnaryFactor: public NoiseModelFactor1<Pose2> {
 
  public:
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<UnaryFactor> shared_ptr;
+  typedef std::shared_ptr<UnaryFactor> shared_ptr;
 
   // The constructor requires the variable key, the (X, Y) measurement value, and the noise model
   UnaryFactor(Key j, double x, double y, const SharedNoiseModel& model):
@@ -101,7 +101,7 @@ class UnaryFactor: public NoiseModelFactor1<Pose2> {
   // circumstances, the following code that employs the default copy constructor should
   // work fine.
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new UnaryFactor(*this))); }
 
   // Additionally, we encourage you the use of unit testing your custom factors,

@@ -39,7 +39,7 @@ namespace gtsam {
   {
   public:
     typedef GaussianFactor This; ///< This class
-    typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
+    typedef std::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
     typedef Factor Base; ///< Our base class
 
     /** Default constructor creates empty factor */
@@ -155,10 +155,10 @@ namespace gtsam {
 
   private:
     /** Serialization function */
-    friend class boost::serialization::access;
+    friend class cereal::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+      ar & cereal::virtual_base_class<Base>(this);
     }
 
   }; // GaussianFactor

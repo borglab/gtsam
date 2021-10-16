@@ -26,7 +26,6 @@
 #include <gtsam/inference/Factor.h>
 #include <gtsam/base/OptionalJacobian.h>
 
-#include <boost/serialization/base_object.hpp>
 #include <boost/assign/list_of.hpp>
 
 namespace gtsam {
@@ -50,7 +49,7 @@ protected:
 
 public:
 
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
   /// @name Standard Constructors
   /// @{
@@ -106,7 +105,7 @@ public:
   virtual bool active(const Values& /*c*/) const { return true; }
 
   /** linearize to a GaussianFactor */
-  virtual boost::shared_ptr<GaussianFactor>
+  virtual std::shared_ptr<GaussianFactor>
   linearize(const Values& c) const = 0;
 
   /**
@@ -171,7 +170,7 @@ protected:
 
 public:
 
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
   /** Default constructor for I/O only */
   NoiseModelFactor() {}
@@ -250,7 +249,7 @@ public:
    * \f$ Ax-b \approx h(x+\delta x)-z = h(x) + A \delta x - z \f$
    * Hence \f$ b = z - h(x) = - \mathtt{error\_vector}(x) \f$
    */
-  boost::shared_ptr<GaussianFactor> linearize(const Values& x) const override;
+  std::shared_ptr<GaussianFactor> linearize(const Values& x) const override;
 
   /**
    * Creates a shared_ptr clone of the
@@ -260,12 +259,12 @@ public:
 
  private:
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & boost::serialization::make_nvp("NonlinearFactor",
-         boost::serialization::base_object<Base>(*this));
-    ar & BOOST_SERIALIZATION_NVP(noiseModel_);
+    ar & cereal::make_nvp("NonlinearFactor",
+         cereal::base_class<Base>(this));
+    ar & CEREAL_NVP(noiseModel_);
   }
 
 }; // \class NoiseModelFactor
@@ -353,11 +352,11 @@ public:
 
 private:
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & boost::serialization::make_nvp("NoiseModelFactor",
-        boost::serialization::base_object<Base>(*this));
+    ar & cereal::make_nvp("NoiseModelFactor",
+        cereal::base_class<Base>(this));
   }
 };// \class NoiseModelFactor1
 
@@ -429,11 +428,11 @@ public:
 private:
 
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & boost::serialization::make_nvp("NoiseModelFactor",
-        boost::serialization::base_object<Base>(*this));
+    ar & cereal::make_nvp("NoiseModelFactor",
+        cereal::base_class<Base>(this));
   }
 }; // \class NoiseModelFactor2
 
@@ -506,11 +505,11 @@ public:
 private:
 
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & boost::serialization::make_nvp("NoiseModelFactor",
-        boost::serialization::base_object<Base>(*this));
+    ar & cereal::make_nvp("NoiseModelFactor",
+        cereal::base_class<Base>(this));
   }
 }; // \class NoiseModelFactor3
 
@@ -587,11 +586,11 @@ public:
 private:
 
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & boost::serialization::make_nvp("NoiseModelFactor",
-        boost::serialization::base_object<Base>(*this));
+    ar & cereal::make_nvp("NoiseModelFactor",
+        cereal::base_class<Base>(this));
   }
 }; // \class NoiseModelFactor4
 
@@ -672,11 +671,11 @@ public:
 private:
 
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & boost::serialization::make_nvp("NoiseModelFactor",
-        boost::serialization::base_object<Base>(*this));
+    ar & cereal::make_nvp("NoiseModelFactor",
+        cereal::base_class<Base>(this));
   }
 }; // \class NoiseModelFactor5
 
@@ -761,11 +760,11 @@ public:
 private:
 
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & boost::serialization::make_nvp("NoiseModelFactor",
-        boost::serialization::base_object<Base>(*this));
+    ar & cereal::make_nvp("NoiseModelFactor",
+        cereal::base_class<Base>(this));
   }
 }; // \class NoiseModelFactor6
 

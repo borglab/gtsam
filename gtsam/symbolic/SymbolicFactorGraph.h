@@ -43,7 +43,7 @@ namespace gtsam {
     typedef SymbolicBayesTree BayesTreeType;             ///< Type of Bayes tree
     typedef SymbolicJunctionTree JunctionTreeType;       ///< Type of Junction tree
     /// The default dense elimination function
-    static std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> >
+    static std::pair<std::shared_ptr<ConditionalType>, std::shared_ptr<FactorType> >
       DefaultEliminate(const FactorGraphType& factors, const Ordering& keys) {
         return EliminateSymbolic(factors, keys); }
   };
@@ -61,7 +61,7 @@ namespace gtsam {
     typedef SymbolicFactorGraph This; ///< Typedef to this class
     typedef FactorGraph<SymbolicFactor> Base; ///< Typedef to base factor graph type
     typedef EliminateableFactorGraph<This> BaseEliminateable; ///< Typedef to base elimination class
-    typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
+    typedef std::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
 
     /// @name Standard Constructors
     /// @{
@@ -119,10 +119,10 @@ namespace gtsam {
 
   private:
     /** Serialization function */
-    friend class boost::serialization::access;
+    friend class cereal::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+      ar & cereal::virtual_base_class<Base>(this);
     }
   };
 

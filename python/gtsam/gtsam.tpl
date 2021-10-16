@@ -25,7 +25,7 @@
 #include <boost/serialization/export.hpp>
 
 // Export classes for serialization
-{boost_class_export}
+//{boost_class_export}
 
 // Holder type for pybind11
 {holder_type}

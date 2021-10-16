@@ -25,8 +25,6 @@
 #include <gtsam/inference/VariableSlots.h>
 
 #include <boost/make_shared.hpp>
-#include <boost/serialization/version.hpp>
-#include <boost/serialization/split_member.hpp>
 
 namespace gtsam {
 
@@ -45,7 +43,7 @@ namespace gtsam {
    * variant that handles constraints (zero sigmas). Computation happens in noiseModel::Gaussian::QR
    * Returns a conditional on those keys, and a new factor on the separator.
    */
-  GTSAM_EXPORT std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<JacobianFactor> >
+  GTSAM_EXPORT std::pair<std::shared_ptr<GaussianConditional>, std::shared_ptr<JacobianFactor> >
     EliminateQR(const GaussianFactorGraph& factors, const Ordering& keys);
 
   /**
@@ -93,7 +91,7 @@ namespace gtsam {
 
     typedef JacobianFactor This; ///< Typedef to this class
     typedef GaussianFactor Base; ///< Typedef to base class
-    typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
+    typedef std::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
 
     typedef VerticalBlockMatrix::Block ABlock;
     typedef VerticalBlockMatrix::constBlock constABlock;
@@ -187,8 +185,8 @@ namespace gtsam {
 
     /** Clone this JacobianFactor */
     GaussianFactor::shared_ptr clone() const override {
-      return boost::static_pointer_cast<GaussianFactor>(
-          boost::make_shared<JacobianFactor>(*this));
+      return std::static_pointer_cast<GaussianFactor>(
+          std::make_shared<JacobianFactor>(*this));
     }
 
     // Implementing Testable interface
@@ -352,7 +350,7 @@ namespace gtsam {
     JacobianFactor whiten() const;
 
     /** Eliminate the requested variables. */
-    std::pair<boost::shared_ptr<GaussianConditional>, shared_ptr>
+    std::pair<std::shared_ptr<GaussianConditional>, shared_ptr>
       eliminate(const Ordering& keys);
 
     /** set noiseModel correctly */
@@ -369,7 +367,7 @@ namespace gtsam {
      * @return The conditional and remaining factor
      *
      * \addtogroup LinearSolving */
-    friend GTSAM_EXPORT std::pair<boost::shared_ptr<GaussianConditional>, shared_ptr>
+    friend GTSAM_EXPORT std::pair<std::shared_ptr<GaussianConditional>, shared_ptr>
       EliminateQR(const GaussianFactorGraph& factors, const Ordering& keys);
 
     /**
@@ -379,7 +377,7 @@ namespace gtsam {
      * NOTE: looks at dimension of noise model to determine how many rows to keep.
      * @param nrFrontals number of keys to eliminate
      */
-    boost::shared_ptr<GaussianConditional> splitConditional(size_t nrFrontals);
+    std::shared_ptr<GaussianConditional> splitConditional(size_t nrFrontals);
 
   protected:
 
@@ -413,42 +411,41 @@ namespace gtsam {
     template<typename T> friend class ExpressionFactor;
 
     /** Serialization function */
-    friend class boost::serialization::access;
+    friend class cereal::access;
     template<class ARCHIVE>
     void save(ARCHIVE & ar, const unsigned int version) const {
       // TODO(fan): This is a hack for Boost < 1.66
       // We really need to introduce proper versioning in the archives
       // As otherwise this will not read objects serialized by older
       // versions of GTSAM
-      ar << BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-      ar << BOOST_SERIALIZATION_NVP(Ab_);
+      ar << cereal::virtual_base_class<Base>(this);
+      ar << CEREAL_NVP(Ab_);
       bool model_null = false;
       if(model_.get() == nullptr) {
         model_null = true;
-        ar << boost::serialization::make_nvp("model_null", model_null);
+        ar << cereal::make_nvp("model_null", model_null);
       } else {
-        ar << boost::serialization::make_nvp("model_null", model_null);
-        ar << BOOST_SERIALIZATION_NVP(model_);
+        ar << cereal::make_nvp("model_null", model_null);
+        ar << CEREAL_NVP(model_);
       }
     }
 
     template<class ARCHIVE>
     void load(ARCHIVE & ar, const unsigned int version) {
       // invoke serialization of the base class
-      ar >> BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-      ar >> BOOST_SERIALIZATION_NVP(Ab_);
+      ar >> cereal::virtual_base_class<Base>(this);
+      ar >> CEREAL_NVP(Ab_);
       if (version < 1) {
-        ar >> BOOST_SERIALIZATION_NVP(model_);
+        ar >> CEREAL_NVP(model_);
       } else {
         bool model_null;
-        ar >> BOOST_SERIALIZATION_NVP(model_null);
+        ar >> CEREAL_NVP(model_null);
         if (!model_null) {
-          ar >> BOOST_SERIALIZATION_NVP(model_);
+          ar >> CEREAL_NVP(model_);
         }
       }
     }
 
-    BOOST_SERIALIZATION_SPLIT_MEMBER()
   }; // JacobianFactor
 /// traits
 template<>
@@ -456,8 +453,6 @@ struct traits<JacobianFactor> : public Testable<JacobianFactor> {
 };
 
 } // \ namespace gtsam
-
-BOOST_CLASS_VERSION(gtsam::JacobianFactor, 1)
 
 #include <gtsam/linear/JacobianFactor-inl.h>
 

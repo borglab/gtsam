@@ -34,7 +34,7 @@ namespace gtsam {
 namespace gtsam {
 
   /**
-   * Add our own `make_shared` as a layer of wrapping on `boost::make_shared`
+   * Add our own `make_shared` as a layer of wrapping on `std::make_shared`
    * This solves the problem with the stock `make_shared` that custom alignment is not respected, causing SEGFAULTs
    * at runtime, which is notoriously hard to debug.
    *
@@ -46,22 +46,22 @@ namespace gtsam {
    *
    * This function declaration will only be taken when the above condition is true, so if some object does not need to
    * be aligned, `gtsam::make_shared` will fall back to the next definition, which is a simple wrapper for
-   * `boost::make_shared`.
+   * `std::make_shared`.
    *
    * @tparam T The type of object being constructed
    * @tparam Args Type of the arguments of the constructor
    * @param args Arguments of the constructor
-   * @return The object created as a boost::shared_ptr<T>
+   * @return The object created as a std::shared_ptr<T>
    */
   template<typename T, typename ... Args>
-  gtsam::enable_if_t<needs_eigen_aligned_allocator<T>::value, boost::shared_ptr<T>> make_shared(Args &&... args) {
-    return boost::allocate_shared<T>(Eigen::aligned_allocator<T>(), std::forward<Args>(args)...);
+  gtsam::enable_if_t<needs_eigen_aligned_allocator<T>::value, std::shared_ptr<T>> make_shared(Args &&... args) {
+    return std::allocate_shared<T>(Eigen::aligned_allocator<T>(), std::forward<Args>(args)...);
   }
 
   /// Fall back to the boost version if no need for alignment
   template<typename T, typename ... Args>
-  gtsam::enable_if_t<!needs_eigen_aligned_allocator<T>::value, boost::shared_ptr<T>> make_shared(Args &&... args) {
-    return boost::make_shared<T>(std::forward<Args>(args)...);
+  gtsam::enable_if_t<!needs_eigen_aligned_allocator<T>::value, std::shared_ptr<T>> make_shared(Args &&... args) {
+    return std::make_shared<T>(std::forward<Args>(args)...);
   }
 
 }

@@ -38,14 +38,14 @@ class GTSAM_EXPORT DiscreteConditional: public DecisionTreeFactor,
 public:
   // typedefs needed to play nice with gtsam
   typedef DiscreteConditional This; ///< Typedef to this class
-  typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
+  typedef std::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
   typedef DecisionTreeFactor BaseFactor; ///< Typedef to our factor base class
   typedef Conditional<BaseFactor, This> BaseConditional; ///< Typedef to our conditional base class
 
   /** A map from keys to values..
    * TODO: Again, do we need this??? */
   typedef Assignment<Key> Values;
-  typedef boost::shared_ptr<Values> sharedValues;
+  typedef std::shared_ptr<Values> sharedValues;
 
   /// @name Standard Constructors
   /// @{
@@ -162,7 +162,7 @@ DiscreteConditional::shared_ptr DiscreteConditional::Combine(
     product = (*factor) * product;
   }
   // and then create a new multi-frontal conditional
-  return boost::make_shared<DiscreteConditional>(nrFrontals, product);
+  return std::make_shared<DiscreteConditional>(nrFrontals, product);
 }
 
 } // gtsam

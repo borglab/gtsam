@@ -136,12 +136,12 @@ class GTSAM_EXPORT Cal3Unified : public Cal3DS2_Base {
 
  private:
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template <class Archive>
   void serialize(Archive& ar, const unsigned int /*version*/) {
-    ar& boost::serialization::make_nvp(
-        "Cal3Unified", boost::serialization::base_object<Cal3DS2_Base>(*this));
-    ar& BOOST_SERIALIZATION_NVP(xi_);
+    ar& cereal::make_nvp(
+        "Cal3Unified", cereal::base_class<Cal3DS2_Base>(this));
+    ar& CEREAL_NVP(xi_);
   }
 };
 

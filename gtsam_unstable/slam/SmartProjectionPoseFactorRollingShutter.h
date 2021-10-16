@@ -48,7 +48,7 @@ class SmartProjectionPoseFactorRollingShutter
 
  protected:
   /// shared pointer to calibration object (one for each observation)
-  std::vector<boost::shared_ptr<CALIBRATION>> K_all_;
+  std::vector<std::shared_ptr<CALIBRATION>> K_all_;
 
   /// The keys of the pose of the body (with respect to an external world
   /// frame): two consecutive poses for each observation
@@ -71,7 +71,7 @@ class SmartProjectionPoseFactorRollingShutter
   typedef SmartProjectionPoseFactorRollingShutter This;
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
   static const int DimBlock =
       12;  ///< size of the variable stacking 2 poses from which the observation
@@ -112,7 +112,7 @@ class SmartProjectionPoseFactorRollingShutter
    */
   void add(const Point2& measured, const Key& world_P_body_key1,
            const Key& world_P_body_key2, const double& alpha,
-           const boost::shared_ptr<CALIBRATION>& K,
+           const std::shared_ptr<CALIBRATION>& K,
            const Pose3& body_P_sensor = Pose3::identity()) {
     // store measurements in base class
     this->measured_.push_back(measured);
@@ -156,7 +156,7 @@ class SmartProjectionPoseFactorRollingShutter
   void add(const Point2Vector& measurements,
            const std::vector<std::pair<Key, Key>>& world_P_body_key_pairs,
            const std::vector<double>& alphas,
-           const std::vector<boost::shared_ptr<CALIBRATION>>& Ks,
+           const std::vector<std::shared_ptr<CALIBRATION>>& Ks,
            const std::vector<Pose3>& body_P_sensors) {
     assert(world_P_body_key_pairs.size() == measurements.size());
     assert(world_P_body_key_pairs.size() == alphas.size());
@@ -185,7 +185,7 @@ class SmartProjectionPoseFactorRollingShutter
   void add(const Point2Vector& measurements,
            const std::vector<std::pair<Key, Key>>& world_P_body_key_pairs,
            const std::vector<double>& alphas,
-           const boost::shared_ptr<CALIBRATION>& K,
+           const std::shared_ptr<CALIBRATION>& K,
            const Pose3& body_P_sensor = Pose3::identity()) {
     assert(world_P_body_key_pairs.size() == measurements.size());
     assert(world_P_body_key_pairs.size() == alphas.size());
@@ -196,7 +196,7 @@ class SmartProjectionPoseFactorRollingShutter
   }
 
   /// return the calibration object
-  const std::vector<boost::shared_ptr<CALIBRATION>>& calibration() const {
+  const std::vector<std::shared_ptr<CALIBRATION>>& calibration() const {
     return K_all_;
   }
 
@@ -331,7 +331,7 @@ class SmartProjectionPoseFactorRollingShutter
   }
 
   /// linearize and return a Hessianfactor that is an approximation of error(p)
-  boost::shared_ptr<RegularHessianFactor<DimPose>> createHessianFactor(
+  std::shared_ptr<RegularHessianFactor<DimPose>> createHessianFactor(
       const Values& values, const double lambda = 0.0,
       bool diagonalDamping = false) const {
     // we may have multiple observation sharing the same keys (due to the
@@ -359,7 +359,7 @@ class SmartProjectionPoseFactorRollingShutter
       if (this->params_.degeneracyMode == ZERO_ON_DEGENERACY) {
         for (Matrix& m : Gs) m = Matrix::Zero(DimPose, DimPose);
         for (Vector& v : gs) v = Vector::Zero(DimPose);
-        return boost::make_shared<RegularHessianFactor<DimPose>>(this->keys_,
+        return std::make_shared<RegularHessianFactor<DimPose>>(this->keys_,
                                                                  Gs, gs, 0.0);
       } else {
         throw std::runtime_error(
@@ -395,7 +395,7 @@ class SmartProjectionPoseFactorRollingShutter
         Base::Cameras::template SchurComplementAndRearrangeBlocks<3, 12, 6>(
             Fs, E, P, b, nonuniqueKeys, this->keys_);
 
-    return boost::make_shared<RegularHessianFactor<DimPose>>(
+    return std::make_shared<RegularHessianFactor<DimPose>>(
         this->keys_, augmentedHessianUniqueKeys);
   }
 
@@ -446,7 +446,7 @@ class SmartProjectionPoseFactorRollingShutter
    * extrinsic pose for this factor
    * @return a Gaussian factor
    */
-  boost::shared_ptr<GaussianFactor> linearizeDamped(
+  std::shared_ptr<GaussianFactor> linearizeDamped(
       const Values& values, const double lambda = 0.0) const {
     // depending on flag set on construction we may linearize to different
     // linear factors
@@ -461,18 +461,18 @@ class SmartProjectionPoseFactorRollingShutter
   }
 
   /// linearize
-  boost::shared_ptr<GaussianFactor> linearize(
+  std::shared_ptr<GaussianFactor> linearize(
       const Values& values) const override {
     return this->linearizeDamped(values);
   }
 
  private:
   /// Serialization function
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-    ar& BOOST_SERIALIZATION_NVP(K_all_);
+    ar& cereal::virtual_base_class<Base>(this);
+    ar& CEREAL_NVP(K_all_);
   }
 };
 // end of class declaration

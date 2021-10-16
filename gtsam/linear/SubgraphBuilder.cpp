@@ -25,9 +25,7 @@
 #include <gtsam/linear/SubgraphBuilder.h>
 
 #include <boost/algorithm/string.hpp>
-#include <boost/archive/text_iarchive.hpp>
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/serialization/vector.hpp>
+#include <cereal/archives/json.hpp>
 
 #include <algorithm>
 #include <cmath>
@@ -92,25 +90,25 @@ vector<size_t> Subgraph::edgeIndices() const {
 }
 
 /****************************************************************************/
-void Subgraph::save(const std::string &fn) const {
+void Subgraph::save_graph(const std::string &fn) const {
   std::ofstream os(fn.c_str());
-  boost::archive::text_oarchive oa(os);
-  oa << *this;
+  cereal::JSONOutputArchive oa(os);
+  oa(*this);
   os.close();
 }
 
 /****************************************************************************/
-Subgraph Subgraph::load(const std::string &fn) {
+Subgraph Subgraph::load_graph(const std::string &fn) {
   std::ifstream is(fn.c_str());
-  boost::archive::text_iarchive ia(is);
+  cereal::JSONInputArchive ia(is);
   Subgraph subgraph;
-  ia >> subgraph;
+  ia(subgraph);
   is.close();
   return subgraph;
 }
 
 /****************************************************************************/
-ostream &operator<<(ostream &os, const Subgraph::Edge &edge) {
+ostream &operator<<(ostream &os, const SubgraphEdge &edge) {
   if (edge.weight != 1.0)
     os << edge.index << "(" << std::setprecision(2) << edge.weight << ")";
   else
@@ -415,19 +413,19 @@ SubgraphBuilder::Weights SubgraphBuilder::weights(
         break;
       case SubgraphBuilderParameters::RHS_2NORM: {
         if (JacobianFactor::shared_ptr jf =
-                boost::dynamic_pointer_cast<JacobianFactor>(gf)) {
+                std::dynamic_pointer_cast<JacobianFactor>(gf)) {
           weight.push_back(jf->getb().norm());
         } else if (HessianFactor::shared_ptr hf =
-                       boost::dynamic_pointer_cast<HessianFactor>(gf)) {
+                       std::dynamic_pointer_cast<HessianFactor>(gf)) {
           weight.push_back(hf->linearTerm().norm());
         }
       } break;
       case SubgraphBuilderParameters::LHS_FNORM: {
         if (JacobianFactor::shared_ptr jf =
-                boost::dynamic_pointer_cast<JacobianFactor>(gf)) {
+                std::dynamic_pointer_cast<JacobianFactor>(gf)) {
           weight.push_back(std::sqrt(jf->getA().squaredNorm()));
         } else if (HessianFactor::shared_ptr hf =
-                       boost::dynamic_pointer_cast<HessianFactor>(gf)) {
+                       std::dynamic_pointer_cast<HessianFactor>(gf)) {
           weight.push_back(std::sqrt(hf->information().squaredNorm()));
         }
       } break;
@@ -449,7 +447,7 @@ SubgraphBuilder::Weights SubgraphBuilder::weights(
 GaussianFactorGraph::shared_ptr buildFactorSubgraph(
     const GaussianFactorGraph &gfg, const Subgraph &subgraph,
     const bool clone) {
-  auto subgraphFactors = boost::make_shared<GaussianFactorGraph>();
+  auto subgraphFactors = std::make_shared<GaussianFactorGraph>();
   subgraphFactors->reserve(subgraph.size());
   for (const auto &e : subgraph) {
     const auto factor = gfg[e.index];
@@ -466,7 +464,7 @@ splitFactorGraph(const GaussianFactorGraph &factorGraph,
   auto subgraphFactors = buildFactorSubgraph(factorGraph, subgraph, false);
 
   // Now, copy all factors then set subGraph factors to zero
-  auto remaining = boost::make_shared<GaussianFactorGraph>(factorGraph);
+  auto remaining = std::make_shared<GaussianFactorGraph>(factorGraph);
 
   for (const auto &e : subgraph) {
     remaining->remove(e.index);

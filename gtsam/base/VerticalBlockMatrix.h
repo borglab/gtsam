@@ -219,14 +219,14 @@ namespace gtsam {
 
   private:
     /** Serialization function */
-    friend class boost::serialization::access;
+    friend class cereal::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      ar & BOOST_SERIALIZATION_NVP(matrix_);
-      ar & BOOST_SERIALIZATION_NVP(variableColOffsets_);
-      ar & BOOST_SERIALIZATION_NVP(rowStart_);
-      ar & BOOST_SERIALIZATION_NVP(rowEnd_);
-      ar & BOOST_SERIALIZATION_NVP(blockStart_);
+      ar & CEREAL_NVP(matrix_);
+      ar & CEREAL_NVP(variableColOffsets_);
+      ar & CEREAL_NVP(rowStart_);
+      ar & CEREAL_NVP(rowEnd_);
+      ar & CEREAL_NVP(blockStart_);
     }
   };
 

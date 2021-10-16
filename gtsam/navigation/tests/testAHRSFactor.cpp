@@ -131,7 +131,7 @@ TEST( AHRSFactor, PreintegratedAhrsMeasurementsConstructor ) {
   Matrix3 delRdelBiasOmega = Matrix3::Ones()*0.5;
   Matrix3 preintMeasCov = Matrix3::Ones()*0.2;
   PreintegratedAhrsMeasurements actualPim(
-    boost::make_shared<PreintegratedRotationParams>(params),
+    std::make_shared<PreintegratedRotationParams>(params),
     bias,
     deltaTij,
     deltaRij,

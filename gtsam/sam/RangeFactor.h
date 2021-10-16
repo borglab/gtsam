@@ -48,7 +48,7 @@ class RangeFactor : public ExpressionFactorN<T, A1, A2> {
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
@@ -81,11 +81,11 @@ class RangeFactor : public ExpressionFactorN<T, A1, A2> {
   }
 
  private:
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& boost::serialization::make_nvp(
-        "Base", boost::serialization::base_object<Base>(*this));
+    ar& cereal::make_nvp(
+        "Base", cereal::base_class<Base>(this));
   }
 };  // \ RangeFactor
 
@@ -122,7 +122,7 @@ class RangeFactorWithTransform : public ExpressionFactorN<T, A1, A2> {
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
@@ -160,15 +160,15 @@ class RangeFactorWithTransform : public ExpressionFactorN<T, A1, A2> {
 
  private:
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template <typename ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
     // **IMPORTANT** We need to (de)serialize parameters before the base class,
     // since it calls expression() and we need all parameters ready at that
     // point.
-    ar& BOOST_SERIALIZATION_NVP(body_T_sensor_);
-    ar& boost::serialization::make_nvp(
-        "Base", boost::serialization::base_object<Base>(*this));
+    ar& CEREAL_NVP(body_T_sensor_);
+    ar& cereal::make_nvp(
+        "Base", cereal::base_class<Base>(this));
   }
 };  // \ RangeFactorWithTransform
 

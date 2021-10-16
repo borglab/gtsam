@@ -23,11 +23,7 @@
 #include <gtsam/dllexport.h>
 #include <gtsam/linear/LossFunctions.h>
 
-#include <boost/serialization/nvp.hpp>
-#include <boost/serialization/extended_type_info.hpp>
-#include <boost/serialization/singleton.hpp>
-#include <boost/serialization/shared_ptr.hpp>
-#include <boost/serialization/optional.hpp>
+#include <cereal/types/base_class.hpp>
 
 namespace gtsam {
 
@@ -53,7 +49,7 @@ namespace gtsam {
     class GTSAM_EXPORT Base {
 
     public:
-      typedef boost::shared_ptr<Base> shared_ptr;
+      typedef std::shared_ptr<Base> shared_ptr;
 
     protected:
 
@@ -138,10 +134,10 @@ namespace gtsam {
 
     private:
       /** Serialization function */
-      friend class boost::serialization::access;
+      friend class cereal::access;
       template<class ARCHIVE>
       void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-        ar & BOOST_SERIALIZATION_NVP(dim_);
+        ar & CEREAL_NVP(dim_);
       }
     };
 
@@ -186,7 +182,7 @@ namespace gtsam {
 
     public:
 
-      typedef boost::shared_ptr<Gaussian> shared_ptr;
+      typedef std::shared_ptr<Gaussian> shared_ptr;
 
       ~Gaussian() override {}
 
@@ -250,7 +246,7 @@ namespace gtsam {
        * @param Ab is the m*(n+1) augmented system matrix [A b]
        * @return Empty SharedDiagonal() noise model: R,d are whitened
        */
-      virtual boost::shared_ptr<Diagonal> QR(Matrix& Ab) const;
+      virtual std::shared_ptr<Diagonal> QR(Matrix& Ab) const;
 
       /// Return R itself, but note that Whiten(H) is cheaper than R*H
       virtual Matrix R() const { return thisR();}
@@ -263,11 +259,11 @@ namespace gtsam {
 
     private:
       /** Serialization function */
-      friend class boost::serialization::access;
+      friend class cereal::access;
       template<class ARCHIVE>
       void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-        ar & BOOST_SERIALIZATION_NVP(sqrt_information_);
+        ar & cereal::virtual_base_class<Base>(this);
+        ar & CEREAL_NVP(sqrt_information_);
       }
 
     }; // Gaussian
@@ -298,7 +294,7 @@ namespace gtsam {
 
     public:
 
-      typedef boost::shared_ptr<Diagonal> shared_ptr;
+      typedef std::shared_ptr<Diagonal> shared_ptr;
 
       ~Diagonal() override {}
 
@@ -358,12 +354,12 @@ namespace gtsam {
 
     private:
       /** Serialization function */
-      friend class boost::serialization::access;
+      friend class cereal::access;
       template<class ARCHIVE>
       void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Gaussian);
-        ar & BOOST_SERIALIZATION_NVP(sigmas_);
-        ar & BOOST_SERIALIZATION_NVP(invsigmas_);
+        ar & cereal::make_nvp("Gaussian", cereal::base_class<Gaussian>(this));
+        ar & CEREAL_NVP(sigmas_);
+        ar & CEREAL_NVP(invsigmas_);
       }
     }; // Diagonal
 
@@ -404,7 +400,7 @@ namespace gtsam {
 
     public:
 
-      typedef boost::shared_ptr<Constrained> shared_ptr;
+      typedef std::shared_ptr<Constrained> shared_ptr;
 
       ~Constrained() override {}
 
@@ -508,11 +504,11 @@ namespace gtsam {
 
     private:
       /** Serialization function */
-      friend class boost::serialization::access;
+      friend class cereal::access;
       template<class ARCHIVE>
       void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Diagonal);
-        ar & BOOST_SERIALIZATION_NVP(mu_);
+        ar & cereal::make_nvp("Diagonal", cereal::base_class<Diagonal>(this));
+        ar & CEREAL_NVP(mu_);
       }
 
     }; // Constrained
@@ -538,7 +534,7 @@ namespace gtsam {
 
       ~Isotropic() override {}
 
-      typedef boost::shared_ptr<Isotropic> shared_ptr;
+      typedef std::shared_ptr<Isotropic> shared_ptr;
 
       /**
        * An isotropic noise model created by specifying a standard devation sigma
@@ -576,12 +572,12 @@ namespace gtsam {
 
     private:
       /** Serialization function */
-      friend class boost::serialization::access;
+      friend class cereal::access;
       template<class ARCHIVE>
       void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Diagonal);
-        ar & BOOST_SERIALIZATION_NVP(sigma_);
-        ar & BOOST_SERIALIZATION_NVP(invsigma_);
+        ar & cereal::make_nvp("Diagonal", cereal::base_class<Diagonal>(this));
+        ar & CEREAL_NVP(sigma_);
+        ar & CEREAL_NVP(invsigma_);
       }
 
     };
@@ -598,7 +594,7 @@ namespace gtsam {
 
     public:
 
-      typedef boost::shared_ptr<Unit> shared_ptr;
+      typedef std::shared_ptr<Unit> shared_ptr;
 
       ~Unit() override {}
 
@@ -626,10 +622,10 @@ namespace gtsam {
 
     private:
       /** Serialization function */
-      friend class boost::serialization::access;
+      friend class cereal::access;
       template<class ARCHIVE>
       void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Isotropic);
+        ar & cereal::make_nvp("Isotropic", cereal::base_class<Isotropic>(this));
       }
     };
 
@@ -652,7 +648,7 @@ namespace gtsam {
      */
     class GTSAM_EXPORT Robust : public Base {
     public:
-      typedef boost::shared_ptr<Robust> shared_ptr;
+      typedef std::shared_ptr<Robust> shared_ptr;
 
     protected:
       typedef mEstimator::Base RobustModel;
@@ -714,12 +710,12 @@ namespace gtsam {
 
     private:
       /** Serialization function */
-      friend class boost::serialization::access;
+      friend class cereal::access;
       template<class ARCHIVE>
       void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-        ar & boost::serialization::make_nvp("robust_", const_cast<RobustModel::shared_ptr&>(robust_));
-        ar & boost::serialization::make_nvp("noise_", const_cast<NoiseModel::shared_ptr&>(noise_));
+        ar & cereal::virtual_base_class<Base>(this);
+        ar & cereal::make_nvp("robust_", const_cast<RobustModel::shared_ptr&>(robust_));
+        ar & cereal::make_nvp("noise_", const_cast<NoiseModel::shared_ptr&>(noise_));
       }
     };
 

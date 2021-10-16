@@ -162,14 +162,14 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
   /// @{
 
   /** Serialization function */
-  friend class boost::serialization::access;
+  friend class cereal::access;
   template <class Archive>
   void serialize(Archive& ar, const unsigned int /*version*/) {
-    ar& boost::serialization::make_nvp(
-        "Cal3Bundler", boost::serialization::base_object<Cal3>(*this));
-    ar& BOOST_SERIALIZATION_NVP(k1_);
-    ar& BOOST_SERIALIZATION_NVP(k2_);
-    ar& BOOST_SERIALIZATION_NVP(tol_);
+    ar& cereal::make_nvp(
+        "Cal3Bundler", cereal::base_class<Cal3>(this));
+    ar& CEREAL_NVP(k1_);
+    ar& CEREAL_NVP(k2_);
+    ar& CEREAL_NVP(tol_);
   }
 
   /// @}
