@@ -5085,6 +5085,185 @@ reference "ex:projection"
 \end_layout
 
 \begin_layout Subsection
+Derivative of Adjoint
+\end_layout
+
+\begin_layout Standard
+Consider 
+\begin_inset Formula $f:SE(3)\rightarrow\mathbb{R}^{6}$
+\end_inset
+
+ is defined as 
+\begin_inset Formula $f(T)=Ad_{T}y$
+\end_inset
+
+ for some constant 
+\begin_inset Formula $y=\begin{bmatrix}\omega_{y}\\
+v_{y}
+\end{bmatrix}$
+\end_inset
+
+.
+ Defining 
+\begin_inset Formula $\xi=\begin{bmatrix}\omega\\
+v
+\end{bmatrix}$
+\end_inset
+
+ for the derivative notation (w.r.t.
+ pose 
+\begin_inset Formula $T$
+\end_inset
+
+):
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+f'(T)=\frac{\partial Ad_{T}y}{\partial\xi}=\begin{bmatrix}\frac{\partial f}{\omega} & \frac{\partial f}{v}\end{bmatrix}
+\]
+
+\end_inset
+
+Then we can compute 
+\begin_inset Formula $f'(T)$
+\end_inset
+
+ by considering the rotation and translation separately.
+ To reduce confusion with 
+\begin_inset Formula $\omega_{y},v_{y}$
+\end_inset
+
+, we will use 
+\begin_inset Formula $R,t$
+\end_inset
+
+ to denote the rotation and translation of 
+\begin_inset Formula $T\exp\xi$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial}{\partial\omega}\begin{bmatrix}R & 0\\{}
+[t]_{\times}R & R
+\end{bmatrix}\begin{bmatrix}\omega_{y}\\
+v_{y}
+\end{bmatrix}=\frac{\partial}{\partial\omega}\begin{bmatrix}R\omega_{y}\\{}
+[t]_{\times}R\omega_{y}+Rv_{y}
+\end{bmatrix}=\begin{bmatrix}-R[\omega_{y}]_{\times}\\
+-[t]_{\times}R[w_{y}]_{\times}-R[v_{y}]_{\times}
+\end{bmatrix}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial}{\partial t}\begin{bmatrix}R & 0\\{}
+[t]_{\times}R & R
+\end{bmatrix}\begin{bmatrix}\omega\\
+v
+\end{bmatrix}=\frac{\partial}{\partial t}\begin{bmatrix}R\omega_{y}\\{}
+[t]_{\times}R\omega_{y}+Rv_{y}
+\end{bmatrix}=\begin{bmatrix}0\\
+-[R\omega_{y}]
+\end{bmatrix}
+\]
+
+\end_inset
+
+Applying chain rule for the translation, 
+\begin_inset Formula $\frac{\partial}{\partial v}=\frac{\partial}{\partial t}\frac{\partial t}{\partial v}$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial}{\partial v}\begin{bmatrix}R & 0\\{}
+[t]_{\times}R & R
+\end{bmatrix}\begin{bmatrix}\omega_{y}\\
+v_{y}
+\end{bmatrix}=\begin{bmatrix}0\\
+-[R\omega_{y}]_{\times}
+\end{bmatrix}R=\begin{bmatrix}0\\
+-[R\omega_{y}]_{\times}R
+\end{bmatrix}=\begin{bmatrix}0\\
+-R[\omega_{y}]_{\times}
+\end{bmatrix}
+\]
+
+\end_inset
+
+The simplification 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula $[R\omega_{y}]_{\times}R=R[\omega_{y}]_{\times}$
+\end_inset
+
+ can be derived by considering the result for when 
+\begin_inset Formula $\omega_{y}$
+\end_inset
+
+ is each of the 3 standard basis vectors 
+\begin_inset Formula $\hat{e}_{i}$
+\end_inset
+
+: 
+\begin_inset Formula $-[R\hat{e}_{i}]_{\times}R$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Now putting together the rotation and translation:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+f'(T)=\frac{\partial Ad_{T}y}{\partial\xi}=\begin{bmatrix}\frac{\partial f}{\omega} & \frac{\partial f}{v}\end{bmatrix}=\begin{bmatrix}-R[\omega_{y}]_{\times} & 0\\
+-[t]_{\times}R[w_{y}]_{\times}-R[v_{y}]_{\times} & -R[\omega_{y}]_{\times}
+\end{bmatrix}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We can apply a similar procedure to compute the derivative of 
+\begin_inset Formula $Ad_{T}^{T}y$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
 Instantaneous Velocity
 \end_layout
 
