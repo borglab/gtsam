@@ -69,36 +69,33 @@ Vector6 Pose3::Adjoint(const Vector6& xi_b, OptionalJacobian<6, 6> H_this,
                        OptionalJacobian<6, 6> H_xib) const {
   //  Ad   *   xi   =   [   R   0    .  [w
   //                      [t]R  R ]      v]
-  // Declarations and aliases
-  Matrix3 Rw_H_R, Rw_H_w, Rv_H_R, Rv_H_v, pRw_H_t, pRw_H_Rw;
+  // Declarations, aliases, and intermediate Jacobians easy to compute now
   Vector6 result;
   auto Rw = result.head<3>();
   const Vector3 &w = xi_b.head<3>(), &v = xi_b.tail<3>();
+  Matrix3 Rw_H_R, Rv_H_R;
+  const Matrix3 &Rw_H_w = R_.matrix();
+  const Matrix3 &Rv_H_v = R_.matrix();
+  const Matrix3 pRw_H_Rw = skewSymmetric(t_);
 
   // Calculations
-  Rw = R_.rotate(w, H_this ? &Rw_H_R : nullptr, H_xib ? &Rw_H_w : nullptr);
-  const Vector3 Rv =
-      R_.rotate(v, H_this ? &Rv_H_R : nullptr, H_xib ? &Rv_H_v : nullptr);
-  const Vector3 pRw =
-      cross(t_, Rw, pRw_H_t, (H_this || H_xib) ? &pRw_H_Rw : nullptr);
+  Rw = R_.rotate(w, H_this ? &Rw_H_R : nullptr /*, Rw_H_w */);
+  const Vector3 Rv = R_.rotate(v, H_this ? &Rv_H_R : nullptr /*, Rv_H_v */);
+  const Vector3 pRw = cross(t_, Rw /*, pRw_H_t, pRw_H_Rw */);
   result.tail<3>() = pRw + Rv;
 
   // Jacobians
   if (H_this) {
+    // pRw_H_thisv = pRw_H_t * R = [Rw]x * R = R * [w]x = Rw_H_R
+    //    where [ ]x denotes the skew-symmetric operator.
+    // See docs/math.pdf for more details.
+    const Matrix3 &pRw_H_thisv = Rw_H_R;
     *H_this = (Matrix6() << Rw_H_R, /*               */ Z_3x3,  //
-               /*        */ pRw_H_Rw * Rw_H_R + Rv_H_R, pRw_H_t)
+               /*        */ pRw_H_Rw * Rw_H_R + Rv_H_R, pRw_H_thisv)
                   .finished();
-    /* This is the "full" calculation:
-    Matrix36 R_H_this, t_H_this;
-    rotation(R_H_this);     // I_3x3, Z_3x3
-    translation(t_H_this);  // Z_3x3, R
-    (*H_this) *= (Matrix6() << R_H_this, t_H_this).finished();
-    */
-    // But we can simplify those calculations since it's mostly I and Z:
-    H_this->bottomRightCorner<3, 3>() *= R_.matrix();
   }
   if (H_xib) {
-    *H_xib = (Matrix6() << Rw_H_w, /*      */ Z_3x3,  //
+    *H_xib = (Matrix6() << Rw_H_w, /*      */ Z_3x3,  // note: this is Adjoint
               /*        */ pRw_H_Rw * Rw_H_w, Rv_H_v)
                  .finished();
   }
@@ -113,32 +110,37 @@ Vector6 Pose3::AdjointTranspose(const Vector6& x, OptionalJacobian<6, 6> H_this,
                                 OptionalJacobian<6, 6> H_x) const {
   //  Ad^T   *   xi   =   [ R^T  R^T.[-t]  .  [w
   //                         0     R^T ]       v]
-  // Declarations and aliases
-  Matrix3 Rw_H_R, Rw_H_w, Rv_H_R, Rv_H_v, tv_H_t, tv_H_v, Rtv_H_R, Rtv_H_tv;
+  // Declarations, aliases, and intermediate Jacobians easy to compute now
   Vector6 result;
   const Vector3 &w = x.head<3>(), &v = x.tail<3>();
   auto Rv = result.tail<3>();
+  Matrix3 Rw_H_R, Rv_H_R, Rtv_H_R;
+  const Matrix3 Rtranspose = R_.matrix().transpose();
+  const Matrix3 &Rw_H_w = Rtranspose;
+  const Matrix3 &Rv_H_v = Rtranspose;
+  const Matrix3 &Rtv_H_tv = Rtranspose;
+  const Matrix3 tv_H_v = skewSymmetric(t_);
 
   // Calculations
-  const Vector3 Rw =
-      R_.unrotate(w, H_this ? &Rw_H_R : nullptr, H_x ? &Rw_H_w : nullptr);
-  Rv = R_.unrotate(v, H_this ? &Rv_H_R : nullptr, H_x ? &Rv_H_v : nullptr);
-  const Vector3 tv =
-      cross(t_, v, H_this ? &tv_H_t : nullptr, H_x ? &tv_H_v : nullptr);
-  const Vector3 Rtv = R_.unrotate(tv, H_this ? &Rtv_H_R : nullptr,
-                                  (H_this || H_x) ? &Rtv_H_tv : nullptr);
+  const Vector3 Rw = R_.unrotate(w, H_this ? &Rw_H_R : nullptr /*, Rw_H_w */);
+  Rv = R_.unrotate(v, H_this ? &Rv_H_R : nullptr /*, Rv_H_v */);
+  const Vector3 tv = cross(t_, v /*, tv_H_t, tv_H_v */);
+  const Vector3 Rtv =
+      R_.unrotate(tv, H_this ? &Rtv_H_R : nullptr /*, Rtv_H_tv */);
   result.head<3>() = Rw - Rtv;
 
   // Jacobians
   if (H_this) {
-    *H_this = (Matrix6() << Rw_H_R - Rtv_H_R, -Rtv_H_tv * tv_H_t,
+    // Rtv_H_thisv = -Rtv_H_tv * tv_H_t * R = -R' * -[v]x * R = -[R'v]x = Rv_H_R
+    //    where [ ]x denotes the skew-symmetric operator.
+    // See docs/math.pdf for more details.
+    const Matrix3 &Rtv_H_thisv = Rv_H_R;
+    *H_this = (Matrix6() << Rw_H_R - Rtv_H_R, Rtv_H_thisv,
                /*        */ Rv_H_R, /*     */ Z_3x3)
                   .finished();
-    // See Adjoint(xi) jacobian calculation for why we multiply by R
-    H_this->topRightCorner<3, 3>() *= R_.matrix();
   }
   if (H_x) {
-    *H_x = (Matrix6() << Rw_H_w, -Rtv_H_tv * tv_H_v,  //
+    *H_x = (Matrix6() << Rw_H_w, -Rtv_H_tv * tv_H_v,  // note: this is AdjointT
             /*        */ Z_3x3, Rv_H_v)
                .finished();
   }
