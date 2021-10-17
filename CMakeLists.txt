@@ -1,6 +1,8 @@
 project(GTSAM CXX C)
 cmake_minimum_required(VERSION 3.0)
 
+set(CMAKE_CXX_STANDARD 17)
+
 # new feature to Cmake Version > 2.8.12
 # Mac ONLY. Define Relative Path on Mac OS
 if(NOT DEFINED CMAKE_MACOSX_RPATH)
@@ -43,6 +45,9 @@ list(APPEND GTSAM_ADDITIONAL_LIBRARIES cereal)
 
 find_package(fmt REQUIRED)
 list(APPEND GTSAM_ADDITIONAL_LIBRARIES fmt::fmt)
+
+find_package(range-v3 REQUIRED)
+list(APPEND GTSAM_ADDITIONAL_LIBRARIES range-v3)
 
 #include(cmake/HandleBoost.cmake)            # Boost
 include(cmake/HandleCCache.cmake)           # ccache

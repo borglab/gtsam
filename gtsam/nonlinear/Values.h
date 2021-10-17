@@ -31,10 +31,14 @@
 #include <string>
 #include <utility>
 
+#include <range/v3/view.hpp>
+#include <range/v3/view/facade.hpp>
+
 namespace gtsam {
 
   // Forward declarations / utilities
   class VectorValues;
+  class ValuesView;
   class ValueAutomaticCasting;
   template<typename T> static bool _truePredicate(const T&) { return true; }
 
@@ -65,7 +69,7 @@ namespace gtsam {
     // allocated in a boost memory pool.
     typedef std::map<
         Key,
-        Value,
+        Value&,
         std::less<Key>
         > KeyValueMap;
 
@@ -115,14 +119,6 @@ namespace gtsam {
 
     typedef KeyValuePair value_type;
 
-    /** A filtered view of a Values, returned from Values::filter. */
-    template<class ValueType = Value>
-    class Filtered;
-
-    /** A filtered view of a const Values, returned from Values::filter. */
-    template<class ValueType = Value>
-    class ConstFiltered;
-
     /** Default constructor creates an empty Values class */
     Values() {}
 
@@ -141,14 +137,6 @@ namespace gtsam {
 
     /** Construct from a Values and an update vector: identical to other.retract(delta) */
     Values(const Values& other, const VectorValues& delta);
-
-    /** Constructor from a Filtered view copies out all values */
-    template<class ValueType>
-    Values(const Filtered<ValueType>& view);
-
-    /** Constructor from a Filtered or ConstFiltered view */
-    template<class ValueType>
-    Values(const ConstFiltered<ValueType>& view);
 
     /// @name Testable
     /// @{
@@ -311,69 +299,7 @@ namespace gtsam {
      * @return A filtered view of the original Values class, which references
      * the original Values class.
      */
-    Filtered<Value>
-    filter(const std::function<bool(Key)>& filterFcn);
-
-    /**
-     * Return a filtered view of this Values class, without copying any data.
-     * In this templated version, only key-value pairs whose value matches the
-     * template argument \c ValueType and whose key causes the function argument
-     * \c filterFcn to return true are visited when iterating over the filtered
-     * view.  Because the object Filtered<Value> returned from filter() is only
-     * a <em>view</em> the original Values object must not be deallocated or
-     * go out of scope as long as the view is needed.
-     * @tparam ValueType The type that the value in a key-value pair must match
-     * to be included in the filtered view.  Currently, base classes are not
-     * resolved so the type must match exactly, except if ValueType = Value, in
-     * which case no type filtering is done.
-     * @param filterFcn The function that determines which key-value pairs are
-     * included in the filtered view, for which this function returns \c true
-     * on their keys (default:  always return true so that filter() only
-     * filters by type, matching \c ValueType).
-     * @return A filtered view of the original Values class, which references
-     * the original Values class.
-     */
-    template<class ValueType>
-    Filtered<ValueType>
-    filter(const std::function<bool(Key)>& filterFcn = &_truePredicate<Key>);
-
-    /**
-     * Return a filtered view of this Values class, without copying any data.
-     * When iterating over the filtered view, only the key-value pairs
-     * with a key causing \c filterFcn to return \c true are visited.  Because
-     * the object Filtered<Value> returned from filter() is only a
-     * <em>view</em> the original Values object must not be deallocated or
-     * go out of scope as long as the view is needed.
-     * @param filterFcn The function that determines which key-value pairs are
-     * included in the filtered view, for which this function returns \c true
-     * on their keys.
-     * @return A filtered view of the original Values class, which references
-     * the original Values class.
-     */
-    ConstFiltered<Value>
-    filter(const std::function<bool(Key)>& filterFcn) const;
-
-    /**
-     * Return a filtered view of this Values class, without copying any data.
-     * In this templated version, only key-value pairs whose value matches the
-     * template argument \c ValueType and whose key causes the function argument
-     * \c filterFcn to return true are visited when iterating over the filtered
-     * view.  Because the object Filtered<Value> returned from filter() is only
-     * a <em>view</em> the original Values object must not be deallocated or
-     * go out of scope as long as the view is needed.
-     * @tparam ValueType The type that the value in a key-value pair must match
-     * to be included in the filtered view.  Currently, base classes are not
-     * resolved so the type must match exactly, except if ValueType = Value, in
-     * which case no type filtering is done.
-     * @param filterFcn The function that determines which key-value pairs are
-     * included in the filtered view, for which this function returns \c true
-     * on their keys.
-     * @return A filtered view of the original Values class, which references
-     * the original Values class.
-     */
-    template<class ValueType>
-    ConstFiltered<ValueType>
-    filter(const std::function<bool(Key)>& filterFcn = &_truePredicate<Key>) const;
+     auto filter(const std::function<bool(Key)>& filterFcn);
 
     // Count values of given type \c ValueType
     template<class ValueType>
@@ -387,14 +313,6 @@ namespace gtsam {
     }
 
   private:
-    // Filters based on ValueType (if not Value) and also based on the user-
-    // supplied \c filter function.
-    template<class ValueType>
-    static bool filterHelper(const std::function<bool(Key)> filter, const ConstKeyValuePair& key_value) {
-      BOOST_STATIC_ASSERT((!boost::is_same<ValueType, Value>::value));
-      // Filter and check the type
-      return filter(key_value.key) && (dynamic_cast<const GenericValue<ValueType>*>(&key_value.value));
-    }
 
     /** Serialization function */
     friend class cereal::access;
@@ -404,11 +322,26 @@ namespace gtsam {
     }
 
     static ConstKeyValuePair make_const_deref_pair(const KeyValueMap::const_iterator::value_type& key_value) {
-      return ConstKeyValuePair(key_value.first, *key_value.second); }
+      return ConstKeyValuePair(key_value.first, key_value.second); }
 
     static KeyValuePair make_deref_pair(const KeyValueMap::iterator::value_type& key_value) {
-      return KeyValuePair(key_value.first, *key_value.second); }
+      return KeyValuePair(key_value.first, key_value.second); }
 
+  };
+
+  class ValuesView
+      : public ranges::view_facade<ValuesView>
+  {
+    friend ranges::range_access;
+    Values& v_;
+    Values::iterator it;
+    auto & read() const { return *it; }
+    bool equal(ranges::default_sentinel_t) const { return it == v_.end(); }
+    void next() { ++it; }
+   public:
+    ValuesView() = delete;
+    explicit ValuesView(Values& v) : v_(v), it(v.begin())
+    {}
   };
 
   /* ************************************************************************* */
