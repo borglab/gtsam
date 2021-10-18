@@ -328,6 +328,7 @@ class Rot3 {
   static gtsam::Rot3 Rodrigues(Vector v);
   static gtsam::Rot3 Rodrigues(double wx, double wy, double wz);
   static gtsam::Rot3 ClosestTo(const Matrix M);
+  static gtsam::Rot3 normalized() const;
 
   // Testable
   void print(string s = "") const;
