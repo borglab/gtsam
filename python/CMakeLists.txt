@@ -65,10 +65,10 @@ set(interface_headers
     ${PROJECT_SOURCE_DIR}/gtsam/basis/basis.i
 )
 
-set(GTSAM_TARGET gtsam_py)
-set(GTSAM_UNSTABLE_TARGET gtsam_unstable_py)
+set(GTSAM_PYTHON_TARGET gtsam_py)
+set(GTSAM_PYTHON_UNSTABLE_TARGET gtsam_unstable_py)
 
-pybind_wrap(${GTSAM_TARGET} # target
+pybind_wrap(${GTSAM_PYTHON_TARGET} # target
             "${interface_headers}" # interface_headers
             "gtsam.cpp" # generated_cpp
             "gtsam" # module_name
@@ -80,7 +80,7 @@ pybind_wrap(${GTSAM_TARGET} # target
             ON # use_boost
             )
 
-set_target_properties(${GTSAM_TARGET} PROPERTIES
+set_target_properties(${GTSAM_PYTHON_TARGET} PROPERTIES
     INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib"
     INSTALL_RPATH_USE_LINK_PATH TRUE
     OUTPUT_NAME "gtsam"
@@ -100,7 +100,7 @@ create_symlinks("${CMAKE_CURRENT_SOURCE_DIR}/gtsam"
 file(COPY "${GTSAM_SOURCE_DIR}/examples/Data" DESTINATION "${GTSAM_MODULE_PATH}")
 
 # Add gtsam as a dependency to the install target
-set(GTSAM_PYTHON_DEPENDENCIES ${GTSAM_TARGET})
+set(GTSAM_PYTHON_DEPENDENCIES ${GTSAM_PYTHON_TARGET})
 
 
 if(GTSAM_UNSTABLE_BUILD_PYTHON)
@@ -124,7 +124,7 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             gtsam::CameraSetCal3Fisheye
             gtsam::KeyPairDoubleMap)
             
-    pybind_wrap(${GTSAM_UNSTABLE_TARGET} # target
+    pybind_wrap(${GTSAM_PYTHON_UNSTABLE_TARGET} # target
             ${PROJECT_SOURCE_DIR}/gtsam_unstable/gtsam_unstable.i # interface_header
             "gtsam_unstable.cpp" # generated_cpp
             "gtsam_unstable" # module_name
@@ -136,7 +136,7 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             ON # use_boost
             )
 
-    set_target_properties(${GTSAM_UNSTABLE_TARGET} PROPERTIES
+    set_target_properties(${GTSAM_PYTHON_UNSTABLE_TARGET} PROPERTIES
             INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib"
             INSTALL_RPATH_USE_LINK_PATH TRUE
             OUTPUT_NAME "gtsam_unstable"
@@ -152,7 +152,7 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             "${GTSAM_UNSTABLE_MODULE_PATH}")
 
     # Add gtsam_unstable to the install target
-    list(APPEND GTSAM_PYTHON_DEPENDENCIES ${GTSAM_UNSTABLE_TARGET})
+    list(APPEND GTSAM_PYTHON_DEPENDENCIES ${GTSAM_PYTHON_UNSTABLE_TARGET})
 
 endif()
 
