@@ -58,6 +58,7 @@ TEST(SlamExpressions, unrotate) {
   const Point3_ q_ = unrotate(R_, p_);
 }
 
+/* ************************************************************************* */
 TEST(SlamExpressions, logmap) {
   Pose3_ T1_(0);
   Pose3_ T2_(1);
