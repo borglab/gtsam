@@ -17,6 +17,7 @@
  */
 
 #include <gtsam/geometry/CameraSet.h>
+#include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
@@ -123,6 +124,89 @@ TEST(CameraSet, Pinhole) {
   EXPECT(assert_equal(F1, Fs[0]));
   EXPECT(assert_equal(F1, Fs[1]));
   EXPECT(assert_equal(actualE, E));
+}
+
+/* ************************************************************************* */
+TEST(CameraSet, SchurComplementAndRearrangeBlocks) {
+  typedef PinholePose<Cal3Bundler> Camera;
+  typedef CameraSet<Camera> Set;
+
+  // this is the (block) Jacobian with respect to the nonuniqueKeys
+  std::vector<Eigen::Matrix<double, 2, 12>,
+      Eigen::aligned_allocator<Eigen::Matrix<double, 2, 12> > > Fs;
+  Fs.push_back(1 * Matrix::Ones(2, 12));  // corresponding to key pair (0,1)
+  Fs.push_back(2 * Matrix::Ones(2, 12));  // corresponding to key pair (1,2)
+  Fs.push_back(3 * Matrix::Ones(2, 12));  // corresponding to key pair (2,0)
+  Matrix E = 4 * Matrix::Identity(6, 3) + Matrix::Ones(6, 3);
+  E(0, 0) = 3;
+  E(1, 1) = 2;
+  E(2, 2) = 5;
+  Matrix Et = E.transpose();
+  Matrix P = (Et * E).inverse();
+  Vector b = 5 * Vector::Ones(6);
+
+  {  // SchurComplement
+     // Actual
+    SymmetricBlockMatrix augmentedHessianBM = Set::SchurComplement<3, 12>(Fs, E,
+                                                                          P, b);
+    Matrix actualAugmentedHessian = augmentedHessianBM.selfadjointView();
+
+    // Expected
+    Matrix F = Matrix::Zero(6, 3 * 12);
+    F.block<2, 12>(0, 0) = 1 * Matrix::Ones(2, 12);
+    F.block<2, 12>(2, 12) = 2 * Matrix::Ones(2, 12);
+    F.block<2, 12>(4, 24) = 3 * Matrix::Ones(2, 12);
+
+    Matrix Ft = F.transpose();
+    Matrix H = Ft * F - Ft * E * P * Et * F;
+    Vector v = Ft * (b - E * P * Et * b);
+    Matrix expectedAugmentedHessian = Matrix::Zero(3 * 12 + 1, 3 * 12 + 1);
+    expectedAugmentedHessian.block<36, 36>(0, 0) = H;
+    expectedAugmentedHessian.block<36, 1>(0, 36) = v;
+    expectedAugmentedHessian.block<1, 36>(36, 0) = v.transpose();
+    expectedAugmentedHessian(36, 36) = b.squaredNorm();
+
+    EXPECT(assert_equal(expectedAugmentedHessian, actualAugmentedHessian));
+  }
+
+  {  // SchurComplementAndRearrangeBlocks
+    KeyVector nonuniqueKeys;
+    nonuniqueKeys.push_back(0);
+    nonuniqueKeys.push_back(1);
+    nonuniqueKeys.push_back(1);
+    nonuniqueKeys.push_back(2);
+    nonuniqueKeys.push_back(2);
+    nonuniqueKeys.push_back(0);
+
+    KeyVector uniqueKeys;
+    uniqueKeys.push_back(0);
+    uniqueKeys.push_back(1);
+    uniqueKeys.push_back(2);
+
+    // Actual
+    SymmetricBlockMatrix augmentedHessianBM =
+        Set::SchurComplementAndRearrangeBlocks<3, 12, 6>(
+            Fs, E, P, b, nonuniqueKeys, uniqueKeys);
+    Matrix actualAugmentedHessian = augmentedHessianBM.selfadjointView();
+
+    // Expected
+    // we first need to build the Jacobian F according to unique keys
+    Matrix F = Matrix::Zero(6, 18);
+    F.block<2, 6>(0, 0) = Fs[0].block<2, 6>(0, 0);
+    F.block<2, 6>(0, 6) = Fs[0].block<2, 6>(0, 6);
+    F.block<2, 6>(2, 6) = Fs[1].block<2, 6>(0, 0);
+    F.block<2, 6>(2, 12) = Fs[1].block<2, 6>(0, 6);
+    F.block<2, 6>(4, 12) = Fs[2].block<2, 6>(0, 0);
+    F.block<2, 6>(4, 0) = Fs[2].block<2, 6>(0, 6);
+
+    Matrix Ft = F.transpose();
+    Vector v = Ft * (b - E * P * Et * b);
+    Matrix H = Ft * F - Ft * E * P * Et * F;
+    Matrix expectedAugmentedHessian(19, 19);
+    expectedAugmentedHessian << H, v, v.transpose(), b.squaredNorm();
+
+    EXPECT(assert_equal(expectedAugmentedHessian, actualAugmentedHessian));
+  }
 }
 
 /* ************************************************************************* */

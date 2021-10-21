@@ -39,7 +39,7 @@ enum GncLossType {
 };
 
 template<class BaseOptimizerParameters>
-class GncParams {
+class GTSAM_EXPORT GncParams {
  public:
   /// For each parameter, specify the corresponding optimizer: e.g., GaussNewtonParams -> GaussNewtonOptimizer.
   typedef typename BaseOptimizerParameters::OptimizerType OptimizerType;

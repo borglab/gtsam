@@ -42,4 +42,17 @@ class MCU {
 
 };
 
+template<PARAMS>
+class Optimizer {
+  enum Verbosity {
+    SILENT,
+    SUMMARY,
+    VERBOSE
+  };
+
+  void setVerbosity(const This::Verbosity value);
+};
+
+typedef gtsam::Optimizer<gtsam::GaussNewtonParams> OptimizerGaussNewtonParams;
+
 }  // namespace gtsam

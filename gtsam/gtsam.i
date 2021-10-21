@@ -165,22 +165,17 @@ gtsam::Values allPose2s(gtsam::Values& values);
 Matrix extractPose2(const gtsam::Values& values);
 gtsam::Values allPose3s(gtsam::Values& values);
 Matrix extractPose3(const gtsam::Values& values);
-void perturbPoint2(gtsam::Values& values, double sigma, int seed);
+void perturbPoint2(gtsam::Values& values, double sigma, int seed = 42u);
 void perturbPose2(gtsam::Values& values, double sigmaT, double sigmaR,
-                  int seed);
-void perturbPoint3(gtsam::Values& values, double sigma, int seed);
+                  int seed = 42u);
+void perturbPoint3(gtsam::Values& values, double sigma, int seed = 42u);
 void insertBackprojections(gtsam::Values& values,
                            const gtsam::PinholeCamera<gtsam::Cal3_S2>& c,
                            Vector J, Matrix Z, double depth);
-void insertProjectionFactors(gtsam::NonlinearFactorGraph& graph, size_t i,
-                             Vector J, Matrix Z,
-                             const gtsam::noiseModel::Base* model,
-                             const gtsam::Cal3_S2* K);
-void insertProjectionFactors(gtsam::NonlinearFactorGraph& graph, size_t i,
-                             Vector J, Matrix Z,
-                             const gtsam::noiseModel::Base* model,
-                             const gtsam::Cal3_S2* K,
-                             const gtsam::Pose3& body_P_sensor);
+void insertProjectionFactors(
+    gtsam::NonlinearFactorGraph& graph, size_t i, Vector J, Matrix Z,
+    const gtsam::noiseModel::Base* model, const gtsam::Cal3_S2* K,
+    const gtsam::Pose3& body_P_sensor = gtsam::Pose3());
 Matrix reprojectionErrors(const gtsam::NonlinearFactorGraph& graph,
                           const gtsam::Values& values);
 gtsam::Values localToWorld(const gtsam::Values& local,

@@ -70,16 +70,23 @@ namespace gtsam {
     /// @name Standard Constructors
     /// @{
 
-    /** Default constructor */
+    /// Default constructor
     BayesTreeCliqueBase() : problemSize_(1) {}
 
-    /** Construct from a conditional, leaving parent and child pointers uninitialized */
-    BayesTreeCliqueBase(const sharedConditional& conditional) : conditional_(conditional), problemSize_(1) {}
+    /// Construct from a conditional, leaving parent and child pointers
+    /// uninitialized.
+    BayesTreeCliqueBase(const sharedConditional& conditional)
+        : conditional_(conditional), problemSize_(1) {}
 
-    /** Shallow copy constructor */
-    BayesTreeCliqueBase(const BayesTreeCliqueBase& c) : conditional_(c.conditional_), parent_(c.parent_), children(c.children), problemSize_(c.problemSize_), is_root(c.is_root) {}
+    /// Shallow copy constructor.
+    BayesTreeCliqueBase(const BayesTreeCliqueBase& c)
+        : conditional_(c.conditional_),
+          parent_(c.parent_),
+          children(c.children),
+          problemSize_(c.problemSize_),
+          is_root(c.is_root) {}
 
-    /** Shallow copy assignment constructor */
+    /// Shallow copy assignment constructor
     BayesTreeCliqueBase& operator=(const BayesTreeCliqueBase& c) {
       conditional_ = c.conditional_;
       parent_ = c.parent_;
@@ -88,6 +95,9 @@ namespace gtsam {
       is_root = c.is_root;
       return *this;
     }
+
+    // Virtual destructor.
+    virtual ~BayesTreeCliqueBase() {}
 
     /// @}
 
@@ -119,7 +129,9 @@ namespace gtsam {
     bool equals(const DERIVED& other, double tol = 1e-9) const;
 
     /** print this node */
-    virtual void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+    virtual void print(
+        const std::string& s = "",
+        const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
     /// @}
     /// @name Standard Interface

@@ -17,8 +17,9 @@ import unittest
 import gtsam
 from gtsam import (DoglegOptimizer, DoglegParams,
                    DummyPreconditionerParameters, GaussNewtonOptimizer,
-                   GaussNewtonParams, LevenbergMarquardtOptimizer,
-                   LevenbergMarquardtParams, NonlinearFactorGraph, Ordering,
+                   GaussNewtonParams, GncLMParams, GncLMOptimizer,
+                   LevenbergMarquardtOptimizer, LevenbergMarquardtParams,
+                   NonlinearFactorGraph, Ordering,
                    PCGSolverParameters, Point2, PriorFactorPoint2, Values)
 from gtsam.utils.test_case import GtsamTestCase
 
@@ -77,6 +78,12 @@ class TestScenario(GtsamTestCase):
         dlParams.setOrdering(ordering)
         actual3 = DoglegOptimizer(fg, initial_values, dlParams).optimize()
         self.assertAlmostEqual(0, fg.error(actual3))
+        
+        # Graduated Non-Convexity (GNC)
+        gncParams = GncLMParams()
+        actual4 = GncLMOptimizer(fg, initial_values, gncParams).optimize()
+        self.assertAlmostEqual(0, fg.error(actual4))
+        
 
 
 if __name__ == "__main__":
