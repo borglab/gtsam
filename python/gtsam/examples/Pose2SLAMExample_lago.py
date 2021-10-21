@@ -43,7 +43,7 @@ def run(args: Namespace) -> None:
     # Add prior on the pose having index (key) = 0
     priorModel = gtsam.noiseModel.Diagonal.Variances(vector3(1e-6, 1e-6, 1e-8))
     graph.add(PriorFactorPose2(0, Pose2(), priorModel))
-    graph.print()
+    print(graph)
 
     print("Computing LAGO estimate")
     estimateLago: Values = gtsam.lago.initialize(graph)
@@ -68,4 +68,5 @@ if __name__ == "__main__":
     )
     parser.add_argument("-i", "--input", help="input file g2o format")
     parser.add_argument("-o", "--output", help="the path to the output file with optimized graph")
+    args = parser.parse_args()
     run(args)
