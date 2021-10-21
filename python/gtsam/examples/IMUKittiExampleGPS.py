@@ -124,7 +124,7 @@ def getImuParams(kitti_calibration: KittiCalibration):
 
 
 def save_results(isam: gtsam.ISAM2, output_filename: str, first_gps_pose: int,
-                 gps_measurements: List):
+                 gps_measurements: List[GpsMeasurement]):
     """Write the results from `isam` to `output_filename`."""
     # Save results to file
     print("Writing results to file...")
