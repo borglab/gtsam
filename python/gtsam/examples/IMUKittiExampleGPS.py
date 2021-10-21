@@ -4,12 +4,14 @@ Example of application of ISAM2 for GPS-aided navigation on the KITTI VISION BEN
 Author: Varun Agrawal
 """
 import argparse
-from typing import List
+from typing import List, Tuple
 
 import gtsam
 import numpy as np
-from gtsam import ISAM2, Point3, Pose3, noiseModel
+from gtsam import ISAM2, Pose3, noiseModel
 from gtsam.symbol_shorthand import B, V, X
+
+GRAVITY = 9.8
 
 
 class KittiCalibration:
@@ -46,25 +48,8 @@ class GpsMeasurement:
         self.position = position
 
 
-def loadKittiData(imu_data_file: str = "KittiEquivBiasedImu.txt",
-                  gps_data_file: str = "KittiGps_converted.txt",
-                  imu_metadata_file: str = "KittiEquivBiasedImu_metadata.txt"):
-    """
-    Load the KITTI Dataset.
-    """
-    # Read IMU metadata and compute relative sensor pose transforms
-    # BodyPtx BodyPty BodyPtz BodyPrx BodyPry BodyPrz AccelerometerSigma
-    # GyroscopeSigma IntegrationSigma AccelerometerBiasSigma GyroscopeBiasSigma
-    # AverageDeltaT
-    imu_metadata_file = gtsam.findExampleDataFile(imu_metadata_file)
-    with open(imu_metadata_file, encoding='UTF-8') as imu_metadata:
-        print("-- Reading sensor metadata")
-        line = imu_metadata.readline()  # Ignore the first line
-        line = imu_metadata.readline().strip()
-        data = list(map(float, line.split(' ')))
-        kitti_calibration = KittiCalibration(*data)
-        print("IMU metadata:", data)
-
+def loadImuData(imu_data_file: str) -> List[ImuMeasurement]:
+    """Helper to load the IMU data."""
     # Read IMU data
     # Time dt accelX accelY accelZ omegaX omegaY omegaZ
     imu_data_file = gtsam.findExampleDataFile(imu_data_file)
@@ -81,6 +66,11 @@ def loadKittiData(imu_data_file: str = "KittiEquivBiasedImu.txt",
                 np.asarray([gyro_x, gyro_y, gyro_z]))
             imu_measurements.append(imu_measurement)
 
+    return imu_measurements
+
+
+def loadGpsData(gps_data_file: str) -> List[GpsMeasurement]:
+    """Helper to load the GPS data."""
     # Read GPS data
     # Time,X,Y,Z
     gps_data_file = gtsam.findExampleDataFile(gps_data_file)
@@ -94,12 +84,38 @@ def loadKittiData(imu_data_file: str = "KittiEquivBiasedImu.txt",
             gps_measurement = GpsMeasurement(time, np.asarray([x, y, z]))
             gps_measurements.append(gps_measurement)
 
+    return gps_measurements
+
+
+def loadKittiData(
+    imu_data_file: str = "KittiEquivBiasedImu.txt",
+    gps_data_file: str = "KittiGps_converted.txt",
+    imu_metadata_file: str = "KittiEquivBiasedImu_metadata.txt"
+) -> Tuple[KittiCalibration, List[ImuMeasurement], List[GpsMeasurement]]:
+    """
+    Load the KITTI Dataset.
+    """
+    # Read IMU metadata and compute relative sensor pose transforms
+    # BodyPtx BodyPty BodyPtz BodyPrx BodyPry BodyPrz AccelerometerSigma
+    # GyroscopeSigma IntegrationSigma AccelerometerBiasSigma GyroscopeBiasSigma
+    # AverageDeltaT
+    imu_metadata_file = gtsam.findExampleDataFile(imu_metadata_file)
+    with open(imu_metadata_file, encoding='UTF-8') as imu_metadata:
+        print("-- Reading sensor metadata")
+        line = imu_metadata.readline()  # Ignore the first line
+        line = imu_metadata.readline().strip()
+        data = list(map(float, line.split(' ')))
+        kitti_calibration = KittiCalibration(*data)
+        print("IMU metadata:", data)
+
+    imu_measurements = loadImuData(imu_data_file)
+    gps_measurements = loadGpsData(gps_data_file)
+
     return kitti_calibration, imu_measurements, gps_measurements
 
 
 def getImuParams(kitti_calibration: KittiCalibration):
     """Get the IMU parameters from the KITTI calibration data."""
-    GRAVITY = 9.8
     w_coriolis = np.zeros(3)
 
     # Set IMU preintegration parameters
@@ -156,7 +172,7 @@ def save_results(isam: gtsam.ISAM2, output_filename: str, first_gps_pose: int,
                 gps[0], gps[1], gps[2]))
 
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--output_filename",
@@ -164,24 +180,15 @@ def parse_args():
     return parser.parse_args()
 
 
-def main():
-    """Main runner."""
-    args = parse_args()
-    kitti_calibration, imu_measurements, gps_measurements = loadKittiData()
-
-    if not kitti_calibration.bodyTimu.equals(Pose3(), 1e-8):
-        raise ValueError(
-            "Currently only support IMUinBody is identity, i.e. IMU and body frame are the same"
-        )
-
-    # Configure different variables
-    first_gps_pose = 1
-    gps_skip = 10
-
-    # Configure noise models
-    noise_model_gps = noiseModel.Diagonal.Precisions(
-        np.asarray([0, 0, 0] + [1.0 / 0.07] * 3))
-
+def optimize(gps_measurements: List[GpsMeasurement],
+             imu_measurements: List[ImuMeasurement],
+             sigma_init_x: gtsam.noiseModel.Diagonal,
+             sigma_init_v: gtsam.noiseModel.Diagonal,
+             sigma_init_b: gtsam.noiseModel.Diagonal,
+             noise_model_gps: gtsam.noiseModel.Diagonal,
+             kitti_calibration: KittiCalibration, first_gps_pose: int,
+             gps_skip: int) -> gtsam.ISAM2:
+    """Run ISAM2 optimization on the measurements."""
     # Set initial conditions for the estimated trajectory
     # initial pose is the reference frame (navigation frame)
     current_pose_global = Pose3(gtsam.Rot3(),
@@ -190,12 +197,6 @@ def main():
     # the vehicle is stationary at the beginning at position 0,0,0
     current_velocity_global = np.zeros(3)
     current_bias = gtsam.imuBias.ConstantBias()  # init with zero bias
-
-    sigma_init_x = noiseModel.Diagonal.Precisions(
-        np.asarray([0, 0, 0, 1, 1, 1]))
-    sigma_init_v = noiseModel.Diagonal.Sigmas(np.ones(3) * 1000.0)
-    sigma_init_b = noiseModel.Diagonal.Sigmas(
-        np.asarray([0.1] * 3 + [5.00e-05] * 3))
 
     imu_params = getImuParams(kitti_calibration)
 
@@ -324,6 +325,37 @@ def main():
                 print(f"############ POSE AT TIME {t} ############")
                 current_pose_global.print()
                 print("\n")
+
+    return isam
+
+
+def main():
+    """Main runner."""
+    args = parse_args()
+    kitti_calibration, imu_measurements, gps_measurements = loadKittiData()
+
+    if not kitti_calibration.bodyTimu.equals(Pose3(), 1e-8):
+        raise ValueError(
+            "Currently only support IMUinBody is identity, i.e. IMU and body frame are the same"
+        )
+
+    # Configure different variables
+    first_gps_pose = 1
+    gps_skip = 10
+
+    # Configure noise models
+    noise_model_gps = noiseModel.Diagonal.Precisions(
+        np.asarray([0, 0, 0] + [1.0 / 0.07] * 3))
+
+    sigma_init_x = noiseModel.Diagonal.Precisions(
+        np.asarray([0, 0, 0, 1, 1, 1]))
+    sigma_init_v = noiseModel.Diagonal.Sigmas(np.ones(3) * 1000.0)
+    sigma_init_b = noiseModel.Diagonal.Sigmas(
+        np.asarray([0.1] * 3 + [5.00e-05] * 3))
+
+    isam = optimize(gps_measurements, imu_measurements, sigma_init_x,
+                    sigma_init_v, sigma_init_b, noise_model_gps,
+                    kitti_calibration, first_gps_pose, gps_skip)
 
     save_results(isam, args.output_filename, first_gps_pose, gps_measurements)
 
