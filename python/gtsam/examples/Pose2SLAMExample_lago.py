@@ -46,7 +46,7 @@ def run(args: Namespace) -> None:
     graph.print()
 
     print("Computing LAGO estimate")
-    estimateLago: Values = lago.initialize(graph)
+    estimateLago: Values = gtsam.lago.initialize(graph)
     print("done!")
 
     if args.output is None:
