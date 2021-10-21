@@ -145,10 +145,10 @@ def save_results(isam: gtsam.ISAM2, output_filename: str, first_gps_pose: int,
             pose_quat = pose.rotation().toQuaternion()
             gps = gps_measurements[i].position
 
-            print("State at #{}".format(i))
-            print("Pose:\n", pose)
-            print("Velocity:\n", velocity)
-            print("Bias:\n", bias)
+            print(f"State at #{i}")
+            print(f"Pose:\n{pose}")
+            print(f"Velocity:\n{velocity}")
+            print(f"Bias:\n{bias}")
 
             fp_out.write("{},{},{},{},{},{},{},{},{},{},{}\n".format(
                 gps_measurements[i].time, pose.x(), pose.y(), pose.z(),
@@ -290,9 +290,7 @@ def main():
                                           noise_model_gps)
                 new_values.insert(current_pose_key, gps_pose)
 
-                print(
-                    "################ POSE INCLUDED AT TIME {} ################"
-                    .format(t))
+                print(f"############ POSE INCLUDED AT TIME {t} ############")
                 print(gps_pose.translation(), "\n")
             else:
                 new_values.insert(current_pose_key, current_pose_global)
@@ -307,9 +305,7 @@ def main():
             # We accumulate 2*GPSskip GPS measurements before updating the solver at
             # first so that the heading becomes observable.
             if i > (first_gps_pose + 2 * gps_skip):
-                print(
-                    "################ NEW FACTORS AT TIME {:.6f} ################"
-                    .format(t))
+                print(f"############ NEW FACTORS AT TIME {t:.6f} ############")
                 new_factors.print()
 
                 isam.update(new_factors, new_values)
@@ -325,9 +321,7 @@ def main():
                 current_velocity_global = result.atVector(current_vel_key)
                 current_bias = result.atConstantBias(current_bias_key)
 
-                print(
-                    "################ POSE AT TIME {} ################".format(
-                        t))
+                print(f"############ POSE AT TIME {t} ############")
                 current_pose_global.print()
                 print("\n")
 
