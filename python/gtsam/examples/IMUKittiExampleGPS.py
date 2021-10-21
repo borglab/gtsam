@@ -219,7 +219,10 @@ def optimize(gps_measurements: List[GpsMeasurement],
     # (3) we solve the graph to obtain and optimal estimate of robot trajectory
     print("-- Starting main loop: inference is performed at each time step, "
           "but we plot trajectory every 10 steps")
+
     j = 0
+    included_imu_measurement_count = 0
+
     for i in range(first_gps_pose, len(gps_measurements)):
         # At each non=IMU measurement we initialize a new node in the graph
         current_pose_key = X(i)
@@ -246,7 +249,6 @@ def optimize(gps_measurements: List[GpsMeasurement],
             current_summarized_measurement = gtsam.PreintegratedImuMeasurements(
                 imu_params, current_bias)
 
-            included_imu_measurement_count = 0
             while (j < len(imu_measurements)
                    and imu_measurements[j].time <= t):
                 if imu_measurements[j].time >= t_previous:
