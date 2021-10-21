@@ -241,6 +241,8 @@ int main(int argc, char* argv[]) {
       "-- Starting main loop: inference is performed at each time step, but we "
       "plot trajectory every 10 steps\n");
   size_t j = 0;
+  size_t included_imu_measurement_count = 0;
+
   for (size_t i = first_gps_pose; i < gps_measurements.size() - 1; i++) {
     // At each non=IMU measurement we initialize a new node in the graph
     auto current_pose_key = X(i);
@@ -266,7 +268,7 @@ int main(int argc, char* argv[]) {
       current_summarized_measurement =
           std::make_shared<PreintegratedImuMeasurements>(imu_params,
                                                          current_bias);
-      static size_t included_imu_measurement_count = 0;
+
       while (j < imu_measurements.size() && imu_measurements[j].time <= t) {
         if (imu_measurements[j].time >= t_previous) {
           current_summarized_measurement->integrateMeasurement(
@@ -306,7 +308,7 @@ int main(int argc, char* argv[]) {
             current_pose_key, gps_pose, noise_model_gps);
         new_values.insert(current_pose_key, gps_pose);
 
-        printf("################ POSE INCLUDED AT TIME %lf ################\n",
+        printf("############ POSE INCLUDED AT TIME %.6lf ############\n",
                t);
         cout << gps_pose.translation();
         printf("\n\n");
@@ -324,7 +326,7 @@ int main(int argc, char* argv[]) {
       // We accumulate 2*GPSskip GPS measurements before updating the solver at
       // first so that the heading becomes observable.
       if (i > (first_gps_pose + 2 * gps_skip)) {
-        printf("################ NEW FACTORS AT TIME %lf ################\n",
+        printf("############ NEW FACTORS AT TIME %.6lf ############\n",
                t);
         new_factors.print();
 
@@ -341,7 +343,7 @@ int main(int argc, char* argv[]) {
         current_velocity_global = result.at<Vector3>(current_vel_key);
         current_bias = result.at<imuBias::ConstantBias>(current_bias_key);
 
-        printf("\n################ POSE AT TIME %lf ################\n", t);
+        printf("\n############ POSE AT TIME %lf ############\n", t);
         current_pose_global.print();
         printf("\n\n");
       }
