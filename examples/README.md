@@ -51,13 +51,13 @@ The directory **vSLAMexample** includes 2 simple examples using GTSAM:
 
 See the separate README file there.
 
-##Undirected Graphical Models (UGM)
+## Undirected Graphical Models (UGM)
 The best representation for a Markov Random Field is a factor graph :-) This is illustrated with some discrete examples from the UGM MATLAB toolbox, which
 can be found at <http://www.di.ens.fr/~mschmidt/Software/UGM>
 
 
-##Building and Running
-To build, cd into the directory and do:
+## Building and Running
+To build, cd into the top-level gtsam directory and do:
 
 ```
 mkdir build

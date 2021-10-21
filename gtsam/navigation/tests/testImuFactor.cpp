@@ -819,7 +819,6 @@ struct ImuFactorMergeTest {
         loop_(Vector3(0, -kAngularVelocity, 0), Vector3(kVelocity, 0, 0)) {
     // arbitrary noise values
     p_->gyroscopeCovariance = I_3x3 * 0.01;
-    p_->accelerometerCovariance = I_3x3 * 0.02;
     p_->accelerometerCovariance = I_3x3 * 0.03;
   }
 

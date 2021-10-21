@@ -75,12 +75,15 @@ size_t Z(size_t j);
 }  // namespace symbol_shorthand
 
 // Default keyformatter
-void PrintKeyList(const gtsam::KeyList& keys);
-void PrintKeyList(const gtsam::KeyList& keys, string s);
-void PrintKeyVector(const gtsam::KeyVector& keys);
-void PrintKeyVector(const gtsam::KeyVector& keys, string s);
-void PrintKeySet(const gtsam::KeySet& keys);
-void PrintKeySet(const gtsam::KeySet& keys, string s);
+void PrintKeyList(
+    const gtsam::KeyList& keys, const string& s = "",
+    const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter);
+void PrintKeyVector(
+    const gtsam::KeyVector& keys, const string& s = "",
+    const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter);
+void PrintKeySet(
+    const gtsam::KeySet& keys, const string& s = "",
+    const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter);
 
 #include <gtsam/inference/LabeledSymbol.h>
 class LabeledSymbol {
@@ -522,6 +525,24 @@ virtual class DoglegParams : gtsam::NonlinearOptimizerParams {
   void setVerbosityDL(string verbosityDL) const;
 };
 
+#include <gtsam/nonlinear/GncParams.h>
+template<PARAMS>
+virtual class GncParams {
+  GncParams(const PARAMS& baseOptimizerParams);
+  GncParams();
+  void setVerbosityGNC(const This::Verbosity value);
+  void print(const string& str) const;
+  
+  enum Verbosity {
+    SILENT,
+    SUMMARY,
+    VALUES
+  };
+};
+
+typedef gtsam::GncParams<gtsam::GaussNewtonParams> GncGaussNewtonParams;
+typedef gtsam::GncParams<gtsam::LevenbergMarquardtParams> GncLMParams;
+  
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 virtual class NonlinearOptimizer {
   gtsam::Values optimize();
@@ -551,6 +572,18 @@ virtual class DoglegOptimizer : gtsam::NonlinearOptimizer {
                   const gtsam::DoglegParams& params);
   double getDelta() const;
 };
+  
+#include <gtsam/nonlinear/GncOptimizer.h>
+template<PARAMS>
+virtual class GncOptimizer {
+  GncOptimizer(const gtsam::NonlinearFactorGraph& graph,
+               const gtsam::Values& initialValues,
+               const PARAMS& params);
+  gtsam::Values optimize();
+};
+
+typedef gtsam::GncOptimizer<gtsam::GncParams<gtsam::GaussNewtonParams>> GncGaussNewtonOptimizer;
+typedef gtsam::GncOptimizer<gtsam::GncParams<gtsam::LevenbergMarquardtParams>> GncLMOptimizer;
 
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 virtual class LevenbergMarquardtOptimizer : gtsam::NonlinearOptimizer {
@@ -799,6 +832,19 @@ virtual class NonlinearEquality : gtsam::NoiseModelFactor {
 
   // enabling serialization functionality
   void serialize() const;
+};
+
+template <T = {gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2,
+               gtsam::SO3, gtsam::SO4, gtsam::SOn, gtsam::Rot3, gtsam::Pose2,
+               gtsam::Pose3, gtsam::Cal3_S2, gtsam::CalibratedCamera,
+               gtsam::PinholeCamera<gtsam::Cal3_S2>,
+               gtsam::PinholeCamera<gtsam::Cal3Bundler>,
+               gtsam::PinholeCamera<gtsam::Cal3Fisheye>,
+               gtsam::PinholeCamera<gtsam::Cal3Unified>,
+               gtsam::imuBias::ConstantBias}>
+virtual class NonlinearEquality2 : gtsam::NoiseModelFactor {
+  NonlinearEquality2(Key key1, Key key2, double mu = 1e4);
+  gtsam::Vector evaluateError(const T& x1, const T& x2);
 };
 
 }  // namespace gtsam
