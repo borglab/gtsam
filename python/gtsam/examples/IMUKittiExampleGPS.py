@@ -4,11 +4,11 @@ Example of application of ISAM2 for GPS-aided navigation on the KITTI VISION BEN
 Author: Varun Agrawal
 """
 import argparse
-
-import numpy as np
+from typing import List
 
 import gtsam
-from gtsam import Pose3, noiseModel
+import numpy as np
+from gtsam import ISAM2, Point3, Pose3, noiseModel
 from gtsam.symbol_shorthand import B, V, X
 
 
@@ -31,7 +31,8 @@ class KittiCalibration:
 
 class ImuMeasurement:
     """An instance of an IMU measurement."""
-    def __init__(self, time, dt, accelerometer, gyroscope):
+    def __init__(self, time: float, dt: float, accelerometer: gtsam.Point3,
+                 gyroscope: gtsam.Point3):
         self.time = time
         self.dt = dt
         self.accelerometer = accelerometer
@@ -40,14 +41,14 @@ class ImuMeasurement:
 
 class GpsMeasurement:
     """An instance of a GPS measurement."""
-    def __init__(self, time, position: gtsam.Point3):
+    def __init__(self, time: float, position: gtsam.Point3):
         self.time = time
         self.position = position
 
 
-def loadKittiData(imu_data_file="KittiEquivBiasedImu.txt",
-                  gps_data_file="KittiGps_converted.txt",
-                  imu_metadata_file="KittiEquivBiasedImu_metadata.txt"):
+def loadKittiData(imu_data_file: str = "KittiEquivBiasedImu.txt",
+                  gps_data_file: str = "KittiGps_converted.txt",
+                  imu_metadata_file: str = "KittiEquivBiasedImu_metadata.txt"):
     """
     Load the KITTI Dataset.
     """
@@ -56,7 +57,7 @@ def loadKittiData(imu_data_file="KittiEquivBiasedImu.txt",
     # GyroscopeSigma IntegrationSigma AccelerometerBiasSigma GyroscopeBiasSigma
     # AverageDeltaT
     imu_metadata_file = gtsam.findExampleDataFile(imu_metadata_file)
-    with open(imu_metadata_file) as imu_metadata:
+    with open(imu_metadata_file, encoding='UTF-8') as imu_metadata:
         print("-- Reading sensor metadata")
         line = imu_metadata.readline()  # Ignore the first line
         line = imu_metadata.readline().strip()
@@ -70,7 +71,7 @@ def loadKittiData(imu_data_file="KittiEquivBiasedImu.txt",
     imu_measurements = []
 
     print("-- Reading IMU measurements from file")
-    with open(imu_data_file) as imu_data:
+    with open(imu_data_file, encoding='UTF-8') as imu_data:
         data = imu_data.readlines()
         for i in range(1, len(data)):  # ignore the first line
             time, dt, acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z = map(
@@ -86,7 +87,7 @@ def loadKittiData(imu_data_file="KittiEquivBiasedImu.txt",
     gps_measurements = []
 
     print("-- Reading GPS measurements from file")
-    with open(gps_data_file) as gps_data:
+    with open(gps_data_file, encoding='UTF-8') as gps_data:
         data = gps_data.readlines()
         for i in range(1, len(data)):
             time, x, y, z = map(float, data[i].split(','))
@@ -96,7 +97,7 @@ def loadKittiData(imu_data_file="KittiEquivBiasedImu.txt",
     return kitti_calibration, imu_measurements, gps_measurements
 
 
-def getImuParams(kitti_calibration):
+def getImuParams(kitti_calibration: KittiCalibration):
     """Get the IMU parameters from the KITTI calibration data."""
     GRAVITY = 9.8
     w_coriolis = np.zeros(3)
@@ -122,11 +123,12 @@ def getImuParams(kitti_calibration):
     return imu_params
 
 
-def save_results(isam, output_filename, first_gps_pose, gps_measurements):
+def save_results(isam: gtsam.ISAM2, output_filename: str, first_gps_pose: int,
+                 gps_measurements: List):
     """Write the results from `isam` to `output_filename`."""
     # Save results to file
     print("Writing results to file...")
-    with open(output_filename, 'w') as fp_out:
+    with open(output_filename, 'w', encoding='UTF-8') as fp_out:
         fp_out.write(
             "#time(s),x(m),y(m),z(m),qx,qy,qz,qw,gt_x(m),gt_y(m),gt_z(m)\n")
 
