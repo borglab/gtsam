@@ -337,8 +337,8 @@ virtual class FrobeniusBetweenFactor : gtsam::NoiseModelFactor {
   
 #include <gtsam/slam/lago.h>
 namespace lago {
+  gtsam::Values initialize(const gtsam::NonlinearFactorGraph& graph, bool useOdometricPath = true);
   gtsam::Values initialize(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& initialGuess);
-  gtsam::Values initialize(const gtsam::NonlinearFactorGraph& graph, bool useOdometricPath);
 }
   
 }  // namespace gtsam
