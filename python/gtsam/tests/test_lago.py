@@ -8,6 +8,8 @@ See LICENSE for the license information
 Author: John Lambert (Python)
 """
 
+import unittest
+
 import numpy as np
 
 import gtsam
@@ -19,16 +21,23 @@ def vector3(x: float, y: float, z: float) -> np.ndarray:
     return np.array([x, y, z], dtype=float)
 
 
-def test_lago() -> None:
-    """Smokescreen to ensure LAGO can be imported and run on toy data stored in a g2o file."""
-    g2oFile = gtsam.findExampleDataFile("noisyToyGraph.txt")
+class TestLago(unittest.TestCase):
+    """Test selected LAGO methods."""
 
-    graph = gtsam.NonlinearFactorGraph()
-    graph, initial = gtsam.readG2o(g2oFile)
+    def test_initialize(self) -> None:
+        """Smokescreen to ensure LAGO can be imported and run on toy data stored in a g2o file."""
+        g2oFile = gtsam.findExampleDataFile("noisyToyGraph.txt")
 
-    # Add prior on the pose having index (key) = 0
-    priorModel = gtsam.noiseModel.Diagonal.Variances(vector3(1e-6, 1e-6, 1e-8))
-    graph.add(PriorFactorPose2(0, Pose2(), priorModel))
+        graph = gtsam.NonlinearFactorGraph()
+        graph, initial = gtsam.readG2o(g2oFile)
 
-    estimateLago: Values = gtsam.lago.initialize(graph)
-    assert isinstance(estimateLago, Values)
+        # Add prior on the pose having index (key) = 0
+        priorModel = gtsam.noiseModel.Diagonal.Variances(vector3(1e-6, 1e-6, 1e-8))
+        graph.add(PriorFactorPose2(0, Pose2(), priorModel))
+
+        estimateLago: Values = gtsam.lago.initialize(graph)
+        assert isinstance(estimateLago, Values)
+
+
+if __name__ == "__main__":
+    unittest.main()
