@@ -13,12 +13,7 @@ import unittest
 import numpy as np
 
 import gtsam
-from gtsam import Pose2, PriorFactorPose2, Values
-
-
-def vector3(x: float, y: float, z: float) -> np.ndarray:
-    """Create 3d double numpy array."""
-    return np.array([x, y, z], dtype=float)
+from gtsam import Point3, Pose2, PriorFactorPose2, Values
 
 
 class TestLago(unittest.TestCase):
@@ -32,7 +27,7 @@ class TestLago(unittest.TestCase):
         graph, initial = gtsam.readG2o(g2oFile)
 
         # Add prior on the pose having index (key) = 0
-        priorModel = gtsam.noiseModel.Diagonal.Variances(vector3(1e-6, 1e-6, 1e-8))
+        priorModel = gtsam.noiseModel.Diagonal.Variances(Point3(1e-6, 1e-6, 1e-8))
         graph.add(PriorFactorPose2(0, Pose2(), priorModel))
 
         estimateLago: Values = gtsam.lago.initialize(graph)
