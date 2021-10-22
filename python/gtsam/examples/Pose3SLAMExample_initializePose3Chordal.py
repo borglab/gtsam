@@ -31,7 +31,7 @@ def main():
     firstKey = initial.keys()[0]
     graph.add(gtsam.PriorFactorPose3(0, gtsam.Pose3(), priorModel))
 
-    # Initializing Pose3 - chordal relaxation"
+    # Initializing Pose3 - chordal relaxation
     initialization = gtsam.InitializePose3.initialize(graph)
 
     print(initialization)
