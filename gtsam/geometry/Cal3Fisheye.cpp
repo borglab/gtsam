@@ -106,11 +106,21 @@ Point2 Cal3Fisheye::uncalibrate(const Point2& p, OptionalJacobian<2, 9> H1,
 /* ************************************************************************* */
 Point2 Cal3Fisheye::calibrate(const Point2& uv, OptionalJacobian<2, 9> Dcal,
                               OptionalJacobian<2, 2> Dp) const {
-  // initial gues just inverts the pinhole model
+  // Apply inverse camera matrix to map the pixel coordinate (u, v) 
+  // of the equidistant fisheye image to angular coordinate space (xd, yd)
+  // with radius theta given in radians.
   const double u = uv.x(), v = uv.y();
   const double yd = (v - v0_) / fy_;
   const double xd = (u - s_ * yd - u0_) / fx_;
-  Point2 pi(xd, yd);
+  const double theta = sqrt(xd * xd + yd * yd);
+  
+  // Provide initial guess for the Gauss-Newton search.
+  // The angular coordinates given by (xd, yd) are mapped back to
+  // the focal plane of the perspective undistorted projection pi.
+  // See Cal3Unified.calibrate() using the same pattern for the 
+  // undistortion of omnidirectional fisheye projection.
+  const double scale = (theta > 0) ? tan(theta) / theta : 1.0;
+  Point2 pi(scale * xd, scale * yd);
 
   // Perform newtons method, break when solution converges past tol_,
   // throw exception if max iterations are reached

@@ -101,7 +101,7 @@ public:
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
       DefaultKeyFormatter) const override {
     std::cout << s << "SmartProjectionFactor\n";
-    std::cout << "linearizationMode:\n" << params_.linearizationMode
+    std::cout << "linearizationMode: " << params_.linearizationMode
         << std::endl;
     std::cout << "triangulationParameters:\n" << params_.triangulation
         << std::endl;

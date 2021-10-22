@@ -25,6 +25,12 @@ namespace gtsam {
 /// As of GTSAM 4, in order to make GTSAM more lean,
 /// it is now possible to just typedef Point2 to Vector2
 typedef Vector2 Point2;
+  
+// Convenience typedef
+using Point2Pair = std::pair<Point2, Point2>;
+GTSAM_EXPORT std::ostream &operator<<(std::ostream &os, const gtsam::Point2Pair &p);
+
+using Point2Pairs = std::vector<Point2Pair>;
 
 /// Distance of the point from the origin, with Jacobian
 GTSAM_EXPORT double norm2(const Point2& p, OptionalJacobian<1, 2> H = boost::none);
@@ -33,10 +39,6 @@ GTSAM_EXPORT double norm2(const Point2& p, OptionalJacobian<1, 2> H = boost::non
 GTSAM_EXPORT double distance2(const Point2& p1, const Point2& q,
                  OptionalJacobian<1, 2> H1 = boost::none,
                  OptionalJacobian<1, 2> H2 = boost::none);
-
-// Convenience typedef
-typedef std::pair<Point2, Point2> Point2Pair;
-GTSAM_EXPORT std::ostream &operator<<(std::ostream &os, const gtsam::Point2Pair &p);
 
 // For MATLAB wrapper
 typedef std::vector<Point2, Eigen::aligned_allocator<Point2> > Point2Vector;

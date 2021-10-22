@@ -12,42 +12,46 @@ jobs:
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
       GTSAM_BUILD_UNSTABLE: ${{ matrix.build_unstable }}
+      BOOST_VERSION: 1.72.0
+      BOOST_EXE: boost_1_72_0-msvc-14.2
+
     strategy:
       fail-fast: false
       matrix:
         # Github Actions requires a single row to be added to the build matrix.
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
         name: [
-          #TODO This build keeps timing out, need to understand why.
-          # windows-2016-cl,
-          windows-2019-cl,
-        ]
+            #TODO This build fails, need to understand why.
+            # windows-2016-cl,
+            windows-2019-cl,
+          ]
 
         build_type: [Debug, Release]
         build_unstable: [ON]
         include:
-
-          #TODO This build keeps timing out, need to understand why.
+          #TODO This build fails, need to understand why.
           # - name: windows-2016-cl
           #   os: windows-2016
           #   compiler: cl
+          #   platform: 32
 
           - name: windows-2019-cl
             os: windows-2019
             compiler: cl
+            platform: 64
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Install (Windows)
-        if: runner.os == 'Windows'
+      - name: Install Dependencies
         shell: powershell
         run: |
           Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh')
+          scoop install cmake --global  # So we don't get issues with CMP0074 policy
           scoop install ninja --global
+
           if ("${{ matrix.compiler }}".StartsWith("clang")) {
             scoop install llvm --global
           }
+
           if ("${{ matrix.compiler }}" -eq "gcc") {
             # Chocolatey GCC is broken on the windows-2019 image.
             # See: https://github.com/DaanDeMeyer/doctest/runs/231595515
@@ -55,27 +59,38 @@ jobs:
             scoop install gcc --global
             echo "CC=gcc" >> $GITHUB_ENV
             echo "CXX=g++" >> $GITHUB_ENV
+
           } elseif ("${{ matrix.compiler }}" -eq "clang") {
             echo "CC=clang" >> $GITHUB_ENV
             echo "CXX=clang++" >> $GITHUB_ENV
+
           } else {
-            echo "CC=${{ matrix.compiler }}" >> $GITHUB_ENV
-            echo "CXX=${{ matrix.compiler }}" >> $GITHUB_ENV
+            echo "CC=${{ matrix.compiler }}" >> $env:GITHUB_ENV
+            echo "CXX=${{ matrix.compiler }}" >> $env:GITHUB_ENV
+
           }
+
           # Scoop modifies the PATH so we make the modified PATH global.
-          echo "$env:PATH" >> $GITHUB_PATH
+          echo "$env:PATH" >> $env:GITHUB_PATH
 
-      - name: Download and install Boost
-        uses: MarkusJx/install-boost@v1.0.1
-        id: install-boost
-        with:
-          boost_version: 1.72.0
-          toolset: msvc14.2
+      - name: Install Boost
+        shell: powershell
+        run: |
+          # Snippet from: https://github.com/actions/virtual-environments/issues/2667
+          $BOOST_PATH = "C:\hostedtoolcache\windows\Boost\$env:BOOST_VERSION\x86_64"
 
-      - name: Build (Windows)
-        if: runner.os == 'Windows'
-        env:
-          BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
+          # Use the prebuilt binary for Windows
+          $Url = "https://sourceforge.net/projects/boost/files/boost-binaries/$env:BOOST_VERSION/$env:BOOST_EXE-${{matrix.platform}}.exe"
+          (New-Object System.Net.WebClient).DownloadFile($Url, "$env:TEMP\boost.exe")
+          Start-Process -Wait -FilePath "$env:TEMP\boost.exe" "/SILENT","/SP-","/SUPPRESSMSGBOXES","/DIR=$BOOST_PATH"
+
+          # Set the BOOST_ROOT variable
+          echo "BOOST_ROOT=$BOOST_PATH" >> $env:GITHUB_ENV
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build
         run: |
           cmake -E remove_directory build
           cmake -B build -S . -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DBOOST_ROOT="${env:BOOST_ROOT}" -DBOOST_INCLUDEDIR="${env:BOOST_ROOT}\boost\include" -DBOOST_LIBRARYDIR="${env:BOOST_ROOT}\lib"

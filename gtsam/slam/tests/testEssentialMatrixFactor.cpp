@@ -17,9 +17,7 @@
 #include <gtsam/slam/EssentialMatrixFactor.h>
 #include <gtsam/slam/dataset.h>
 
-#include <boost/bind/bind.hpp>
-
-using namespace boost::placeholders;
+using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 
@@ -104,8 +102,8 @@ TEST(EssentialMatrixFactor, factor) {
 TEST(EssentialMatrixFactor, ExpressionFactor) {
   Key key(1);
   for (size_t i = 0; i < 5; i++) {
-    boost::function<double(const EssentialMatrix &, OptionalJacobian<1, 5>)> f =
-        boost::bind(&EssentialMatrix::error, _1, vA(i), vB(i), _2);
+    std::function<double(const EssentialMatrix &, OptionalJacobian<1, 5>)> f =
+        std::bind(&EssentialMatrix::error, std::placeholders::_1, vA(i), vB(i), std::placeholders::_2);
     Expression<EssentialMatrix> E_(key);  // leaf expression
     Expression<double> expr(f, E_);       // unary expression
 
@@ -130,9 +128,9 @@ TEST(EssentialMatrixFactor, ExpressionFactor) {
 TEST(EssentialMatrixFactor, ExpressionFactorRotationOnly) {
   Key key(1);
   for (size_t i = 0; i < 5; i++) {
-    boost::function<double(const EssentialMatrix &, OptionalJacobian<1, 5>)> f =
-        boost::bind(&EssentialMatrix::error, _1, vA(i), vB(i), _2);
-    boost::function<EssentialMatrix(const Rot3 &, const Unit3 &,
+    std::function<double(const EssentialMatrix &, OptionalJacobian<1, 5>)> f =
+        std::bind(&EssentialMatrix::error, std::placeholders::_1, vA(i), vB(i), std::placeholders::_2);
+    std::function<EssentialMatrix(const Rot3 &, const Unit3 &,
                                     OptionalJacobian<5, 3>,
                                     OptionalJacobian<5, 2>)>
         g;

@@ -13,12 +13,11 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include <boost/assign/std/vector.hpp>
-#include <boost/bind/bind.hpp>
 #include <vector>
 
 using namespace std;
 using namespace boost::assign;
-using namespace boost::placeholders;
+using namespace std::placeholders;
 using namespace gtsam;
 
 static const double kDegree = M_PI / 180;
@@ -73,13 +72,13 @@ TEST (RotateFactor, test) {
   // Use numerical derivatives to calculate the expected Jacobian
   {
     expected = numericalDerivative11<Vector3,Rot3>(
-        boost::bind(&RotateFactor::evaluateError, &f, _1, boost::none), iRc);
+        std::bind(&RotateFactor::evaluateError, &f, std::placeholders::_1, boost::none), iRc);
     f.evaluateError(iRc, actual);
     EXPECT(assert_equal(expected, actual, 1e-9));
   }
   {
     expected = numericalDerivative11<Vector3,Rot3>(
-        boost::bind(&RotateFactor::evaluateError, &f, _1, boost::none), R);
+        std::bind(&RotateFactor::evaluateError, &f, std::placeholders::_1, boost::none), R);
     f.evaluateError(R, actual);
     EXPECT(assert_equal(expected, actual, 1e-9));
   }
@@ -144,14 +143,14 @@ TEST (RotateDirectionsFactor, test) {
   // Use numerical derivatives to calculate the expected Jacobian
   {
     expected = numericalDerivative11<Vector,Rot3>(
-        boost::bind(&RotateDirectionsFactor::evaluateError, &f, _1,
+        std::bind(&RotateDirectionsFactor::evaluateError, &f, std::placeholders::_1,
             boost::none), iRc);
     f.evaluateError(iRc, actual);
     EXPECT(assert_equal(expected, actual, 1e-9));
   }
   {
     expected = numericalDerivative11<Vector,Rot3>(
-        boost::bind(&RotateDirectionsFactor::evaluateError, &f, _1,
+        std::bind(&RotateDirectionsFactor::evaluateError, &f, std::placeholders::_1,
             boost::none), R);
     f.evaluateError(R, actual);
     EXPECT(assert_equal(expected, actual, 1e-9));
