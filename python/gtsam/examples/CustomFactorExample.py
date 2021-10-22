@@ -18,7 +18,7 @@ import numpy as np
 I = np.eye(1)
 
 
-def simulate_car():
+def simulate_car() -> List[float]:
     """Simulate a car for one second"""
     x0 = 0
     dt = 0.25  # 4 Hz, typical GPS
@@ -28,8 +28,9 @@ def simulate_car():
     return x
 
 
-def error_gps(measurement: np.ndarray, this: gtsam.CustomFactor, values,
-              jacobians: Optional[List[np.ndarray]]):
+def error_gps(measurement: np.ndarray, this: gtsam.CustomFactor,
+              values: gtsam.Values,
+              jacobians: Optional[List[np.ndarray]]) -> float:
     """GPS Factor error function
     :param measurement: GPS measurement, to be filled with `partial`
     :param this: gtsam.CustomFactor handle
@@ -46,8 +47,9 @@ def error_gps(measurement: np.ndarray, this: gtsam.CustomFactor, values,
     return error
 
 
-def error_odom(measurement: np.ndarray, this: gtsam.CustomFactor, values,
-               jacobians: Optional[List[np.ndarray]]):
+def error_odom(measurement: np.ndarray, this: gtsam.CustomFactor,
+               values: gtsam.Values,
+               jacobians: Optional[List[np.ndarray]]) -> float:
     """Odometry Factor error function
     :param measurement: Odometry measurement, to be filled with `partial`
     :param this: gtsam.CustomFactor handle
@@ -66,8 +68,9 @@ def error_odom(measurement: np.ndarray, this: gtsam.CustomFactor, values,
     return error
 
 
-def error_lm(measurement: np.ndarray, this: gtsam.CustomFactor, values,
-             jacobians: Optional[List[np.ndarray]]):
+def error_lm(measurement: np.ndarray, this: gtsam.CustomFactor,
+             values: gtsam.Values,
+             jacobians: Optional[List[np.ndarray]]) -> float:
     """Landmark Factor error function
     :param measurement: Landmark measurement, to be filled with `partial`
     :param this: gtsam.CustomFactor handle
