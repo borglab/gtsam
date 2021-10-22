@@ -190,12 +190,12 @@ TEST (BetweenFactorEM, jacobian ) {
 //  CHECK( assert_equal(H2_actual_stnd, H2_actual, 1e-8));
 
   double stepsize = 1.0e-9;
-  Matrix H1_expected = gtsam::numericalDerivative11<LieVector, Pose2>(boost::bind(&predictionError, _1, p2, key1, key2, f), p1, stepsize);
-  Matrix H2_expected = gtsam::numericalDerivative11<LieVector, Pose2>(boost::bind(&predictionError, p1, _1, key1, key2, f), p2, stepsize);
+  Matrix H1_expected = gtsam::numericalDerivative11<LieVector, Pose2>(std::bind(&predictionError, _1, p2, key1, key2, f), p1, stepsize);
+  Matrix H2_expected = gtsam::numericalDerivative11<LieVector, Pose2>(std::bind(&predictionError, p1, _1, key1, key2, f), p2, stepsize);
 
 
   // try to check numerical derivatives of a standard between factor
-  Matrix H1_expected_stnd = gtsam::numericalDerivative11<LieVector, Pose2>(boost::bind(&predictionError_standard, _1, p2, key1, key2, h), p1, stepsize);
+  Matrix H1_expected_stnd = gtsam::numericalDerivative11<LieVector, Pose2>(std::bind(&predictionError_standard, _1, p2, key1, key2, h), p1, stepsize);
 //  CHECK( assert_equal(H1_expected_stnd, H1_actual_stnd, 1e-5));
 //
 //

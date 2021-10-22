@@ -166,7 +166,7 @@ TEST(SO4, vec) {
   Matrix actualH;
   const Vector16 actual = Q2.vec(actualH);
   EXPECT(assert_equal(expected, actual));
-  boost::function<Vector16(const SO4&)> f = [](const SO4& Q) {
+  std::function<Vector16(const SO4&)> f = [](const SO4& Q) {
     return Q.vec();
   };
   const Matrix numericalH = numericalDerivative11(f, Q2, 1e-5);
@@ -179,7 +179,7 @@ TEST(SO4, topLeft) {
   Matrix actualH;
   const Matrix3 actual = topLeft(Q3, actualH);
   EXPECT(assert_equal(expected, actual));
-  boost::function<Matrix3(const SO4&)> f = [](const SO4& Q3) {
+  std::function<Matrix3(const SO4&)> f = [](const SO4& Q3) {
     return topLeft(Q3);
   };
   const Matrix numericalH = numericalDerivative11(f, Q3, 1e-5);
@@ -192,7 +192,7 @@ TEST(SO4, stiefel) {
   Matrix actualH;
   const Matrix43 actual = stiefel(Q3, actualH);
   EXPECT(assert_equal(expected, actual));
-  boost::function<Matrix43(const SO4&)> f = [](const SO4& Q3) {
+  std::function<Matrix43(const SO4&)> f = [](const SO4& Q3) {
     return stiefel(Q3);
   };
   const Matrix numericalH = numericalDerivative11(f, Q3, 1e-5);

@@ -10,7 +10,7 @@ Classes and rules for declarations such as includes and forward declarations.
 Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellaert
 """
 
-from pyparsing import CharsNotIn, Optional
+from pyparsing import CharsNotIn, Optional  # type: ignore
 
 from .tokens import (CLASS, COLON, INCLUDE, LOPBRACK, ROPBRACK, SEMI_COLON,
                      VIRTUAL)

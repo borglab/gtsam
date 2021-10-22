@@ -10,7 +10,9 @@ Parser classes and rules for parsing C++ variables.
 Author: Varun Agrawal, Gerry Chen
 """
 
-from pyparsing import Optional, ParseResults
+from typing import List
+
+from pyparsing import Optional, ParseResults  # type: ignore
 
 from .tokens import DEFAULT_ARG, EQUAL, IDENT, SEMI_COLON
 from .type import TemplatedType, Type
@@ -40,7 +42,7 @@ class Variable:
                 t.default[0] if isinstance(t.default, ParseResults) else None))
 
     def __init__(self,
-                 ctype: Type,
+                 ctype: List[Type],
                  name: str,
                  default: ParseResults = None,
                  parent=''):

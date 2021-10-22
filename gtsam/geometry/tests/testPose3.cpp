@@ -22,8 +22,7 @@
 
 #include <boost/assign/std/vector.hpp> // for operator +=
 using namespace boost::assign;
-#include <boost/bind/bind.hpp>
-using namespace boost::placeholders;
+using namespace std::placeholders;
 
 #include <CppUnitLite/TestHarness.h>
 #include <cmath>
@@ -215,7 +214,7 @@ TEST(Pose3, translation) {
   EXPECT(assert_equal(Point3(3.5, -8.2, 4.2), T.translation(actualH), 1e-8));
 
   Matrix numericalH = numericalDerivative11<Point3, Pose3>(
-      boost::bind(&Pose3::translation, _1, boost::none), T);
+      std::bind(&Pose3::translation, std::placeholders::_1, boost::none), T);
   EXPECT(assert_equal(numericalH, actualH, 1e-6));
 }
 
@@ -226,7 +225,7 @@ TEST(Pose3, rotation) {
   EXPECT(assert_equal(R, T.rotation(actualH), 1e-8));
 
   Matrix numericalH = numericalDerivative11<Rot3, Pose3>(
-      boost::bind(&Pose3::rotation, _1, boost::none), T);
+      std::bind(&Pose3::rotation, std::placeholders::_1, boost::none), T);
   EXPECT(assert_equal(numericalH, actualH, 1e-6));
 }
 
@@ -1048,11 +1047,75 @@ TEST(Pose3, interpolate) {
 }
 
 /* ************************************************************************* */
+Pose3 testing_interpolate(const Pose3& t1, const Pose3& t2, double gamma) { return interpolate(t1,t2,gamma); }
+
+TEST(Pose3, interpolateJacobians) {
+  {
+    Pose3 X = Pose3::identity();
+    Pose3 Y(Rot3::Rz(M_PI_2), Point3(1, 0, 0));
+    double t = 0.5;
+    Pose3 expectedPoseInterp(Rot3::Rz(M_PI_4), Point3(0.5, -0.207107, 0)); // note: different from test above: this is full Pose3 interpolation
+    Matrix actualJacobianX, actualJacobianY;
+    EXPECT(assert_equal(expectedPoseInterp, interpolate(X, Y, t, actualJacobianX, actualJacobianY), 1e-5));
+
+    Matrix expectedJacobianX = numericalDerivative31<Pose3,Pose3,Pose3,double>(testing_interpolate, X, Y, t);
+    EXPECT(assert_equal(expectedJacobianX,actualJacobianX,1e-6));
+
+    Matrix expectedJacobianY = numericalDerivative32<Pose3,Pose3,Pose3,double>(testing_interpolate, X, Y, t);
+    EXPECT(assert_equal(expectedJacobianY,actualJacobianY,1e-6));
+  }
+  {
+    Pose3 X = Pose3::identity();
+    Pose3 Y(Rot3::identity(), Point3(1, 0, 0));
+    double t = 0.3;
+    Pose3 expectedPoseInterp(Rot3::identity(), Point3(0.3, 0, 0));
+    Matrix actualJacobianX, actualJacobianY;
+    EXPECT(assert_equal(expectedPoseInterp, interpolate(X, Y, t, actualJacobianX, actualJacobianY), 1e-5));
+
+    Matrix expectedJacobianX = numericalDerivative31<Pose3,Pose3,Pose3,double>(testing_interpolate, X, Y, t);
+    EXPECT(assert_equal(expectedJacobianX,actualJacobianX,1e-6));
+
+    Matrix expectedJacobianY = numericalDerivative32<Pose3,Pose3,Pose3,double>(testing_interpolate, X, Y, t);
+    EXPECT(assert_equal(expectedJacobianY,actualJacobianY,1e-6));
+  }
+  {
+    Pose3 X = Pose3::identity();
+    Pose3 Y(Rot3::Rz(M_PI_2), Point3(0, 0, 0));
+    double t = 0.5;
+    Pose3 expectedPoseInterp(Rot3::Rz(M_PI_4), Point3(0, 0, 0));
+    Matrix actualJacobianX, actualJacobianY;
+    EXPECT(assert_equal(expectedPoseInterp, interpolate(X, Y, t, actualJacobianX, actualJacobianY), 1e-5));
+
+    Matrix expectedJacobianX = numericalDerivative31<Pose3,Pose3,Pose3,double>(testing_interpolate, X, Y, t);
+    EXPECT(assert_equal(expectedJacobianX,actualJacobianX,1e-6));
+
+    Matrix expectedJacobianY = numericalDerivative32<Pose3,Pose3,Pose3,double>(testing_interpolate, X, Y, t);
+    EXPECT(assert_equal(expectedJacobianY,actualJacobianY,1e-6));
+  }
+  {
+    Pose3 X(Rot3::Ypr(0.1,0.2,0.3), Point3(10, 5, -2));
+    Pose3 Y(Rot3::Ypr(1.1,-2.2,-0.3), Point3(-5, 1, 1));
+    double t = 0.3;
+    Pose3 expectedPoseInterp(Rot3::Rz(M_PI_4), Point3(0, 0, 0));
+    Matrix actualJacobianX, actualJacobianY;
+    interpolate(X, Y, t, actualJacobianX, actualJacobianY);
+
+    Matrix expectedJacobianX = numericalDerivative31<Pose3,Pose3,Pose3,double>(testing_interpolate, X, Y, t);
+    EXPECT(assert_equal(expectedJacobianX,actualJacobianX,1e-6));
+
+    Matrix expectedJacobianY = numericalDerivative32<Pose3,Pose3,Pose3,double>(testing_interpolate, X, Y, t);
+    EXPECT(assert_equal(expectedJacobianY,actualJacobianY,1e-6));
+  }
+}
+
+/* ************************************************************************* */
 TEST(Pose3, Create) {
   Matrix63 actualH1, actualH2;
   Pose3 actual = Pose3::Create(R, P2, actualH1, actualH2);
   EXPECT(assert_equal(T, actual));
-  boost::function<Pose3(Rot3,Point3)> create = boost::bind(Pose3::Create,_1,_2,boost::none,boost::none);
+  std::function<Pose3(Rot3, Point3)> create =
+      std::bind(Pose3::Create, std::placeholders::_1, std::placeholders::_2,
+                boost::none, boost::none);
   EXPECT(assert_equal(numericalDerivative21<Pose3,Rot3,Point3>(create, R, P2), actualH1, 1e-9));
   EXPECT(assert_equal(numericalDerivative22<Pose3,Rot3,Point3>(create, R, P2), actualH2, 1e-9));
 }
