@@ -90,10 +90,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Build
+      - name: Configuration
         run: |
           cmake -E remove_directory build
           cmake -B build -S . -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DBOOST_ROOT="${env:BOOST_ROOT}" -DBOOST_INCLUDEDIR="${env:BOOST_ROOT}\boost\include" -DBOOST_LIBRARYDIR="${env:BOOST_ROOT}\lib"
+
+      - name: Build
+        run: |
           cmake --build build --config ${{ matrix.build_type }} --target gtsam
           cmake --build build --config ${{ matrix.build_type }} --target gtsam_unstable
           cmake --build build --config ${{ matrix.build_type }} --target wrap
