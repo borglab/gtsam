@@ -12,8 +12,10 @@ jobs:
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
       GTSAM_BUILD_UNSTABLE: ${{ matrix.build_unstable }}
-      BOOST_VERSION: 1.72.0
-      BOOST_EXE: boost_1_72_0-msvc-14.2
+      # We need Boost 1.76 for this reason: 
+      # https://stackoverflow.com/questions/66489199/warnings-in-visual-studio2019-compiling-with-boost-1-75
+      BOOST_VERSION: 1.76.0
+      BOOST_EXE: boost_1_76_0-msvc-14.2
 
     strategy:
       fail-fast: false
@@ -93,13 +95,13 @@ jobs:
       - name: Configuration
         run: |
           cmake -E remove_directory build
-          cmake -B build -S . -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DBOOST_ROOT="${env:BOOST_ROOT}" -DBOOST_INCLUDEDIR="${env:BOOST_ROOT}\boost\include" -DBOOST_LIBRARYDIR="${env:BOOST_ROOT}\lib"
+          cmake -B build -S . -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DBOOST_ROOT="${env:BOOST_ROOT}" -DBOOST_INCLUDEDIR="${env:BOOST_ROOT}\boost\include" -DBOOST_LIBRARYDIR="${env:BOOST_ROOT}\lib"
 
       - name: Build
         run: |
-          cmake --build build --config ${{ matrix.build_type }} --target gtsam
-          cmake --build build --config ${{ matrix.build_type }} --target gtsam_unstable
-          cmake --build build --config ${{ matrix.build_type }} --target wrap
-          cmake --build build --config ${{ matrix.build_type }} --target check.base
-          cmake --build build --config ${{ matrix.build_type }} --target check.base_unstable
-          cmake --build build --config ${{ matrix.build_type }} --target check.linear
+          cmake --build build -j 4 --target gtsam
+          cmake --build build -j 4 --target gtsam_unstable
+          cmake --build build -j 4 --target wrap
+          cmake --build build -j 4 --target check.base
+          cmake --build build -j 4 --target check.base_unstable
+          cmake --build build -j 4 --target check.linear
