@@ -92,7 +92,7 @@ set_target_properties(${GTSAM_PYTHON_TARGET} PROPERTIES
 set(GTSAM_MODULE_PATH ${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam)
 
 # Symlink all tests .py files to build folder.
-create_symlinks("${CMAKE_CURRENT_SOURCE_DIR}/gtsam"
+copy_directory("${CMAKE_CURRENT_SOURCE_DIR}/gtsam"
         "${GTSAM_MODULE_PATH}")
 
 # Common directory for data/datasets stored with the package.
@@ -148,7 +148,7 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
     set(GTSAM_UNSTABLE_MODULE_PATH ${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam_unstable)
 
     # Symlink all tests .py files to build folder.
-    create_symlinks("${CMAKE_CURRENT_SOURCE_DIR}/gtsam_unstable"
+    copy_directory("${CMAKE_CURRENT_SOURCE_DIR}/gtsam_unstable"
             "${GTSAM_UNSTABLE_MODULE_PATH}")
 
     # Add gtsam_unstable to the install target
