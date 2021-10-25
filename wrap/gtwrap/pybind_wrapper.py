@@ -119,8 +119,11 @@ class PybindWrapper:
         if py_method in self.python_keywords:
             py_method = py_method + "_"
 
-        is_method = isinstance(method, instantiator.InstantiatedMethod)
-        is_static = isinstance(method, parser.StaticMethod)
+        is_method = isinstance(
+            method, (parser.Method, instantiator.InstantiatedMethod))
+        is_static = isinstance(
+            method,
+            (parser.StaticMethod, instantiator.InstantiatedStaticMethod))
         return_void = method.return_type.is_void()
         args_names = method.args.names()
         py_args_names = self._py_args_names(method.args)
