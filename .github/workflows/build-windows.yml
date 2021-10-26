@@ -99,9 +99,9 @@ jobs:
 
       - name: Build
         run: |
-          cmake --build build -j 4 --target gtsam
-          cmake --build build -j 4 --target gtsam_unstable
-          cmake --build build -j 4 --target wrap
-          cmake --build build -j 4 --target check.base
-          cmake --build build -j 4 --target check.base_unstable
-          cmake --build build -j 4 --target check.linear
+          cmake --build build -j 4 --config ${{ matrix.build_type }} --target gtsam
+          cmake --build build -j 4 --config ${{ matrix.build_type }} --target gtsam_unstable
+          cmake --build build -j 4 --config ${{ matrix.build_type }} --target wrap
+          cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.base
+          cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.base_unstable
+          cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.linear
