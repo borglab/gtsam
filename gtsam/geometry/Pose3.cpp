@@ -67,88 +67,41 @@ Matrix6 Pose3::AdjointMap() const {
 // Calculate AdjointMap applied to xi_b, with Jacobians
 Vector6 Pose3::Adjoint(const Vector6& xi_b, OptionalJacobian<6, 6> H_pose,
                        OptionalJacobian<6, 6> H_xib) const {
-  //  Ad   *   xi   =   [   R   0    .  [w
-  //                      [t]R  R ]      v]
-  // Declarations, aliases, and intermediate Jacobians easy to compute now
-  Vector6 result; // = AdjointMap() * xi
-  auto Rw = result.head<3>();
-  const auto &w = xi_b.head<3>(), &v = xi_b.tail<3>();
-  Matrix3 Rw_H_R, Rv_H_R, pRw_H_Rw;
-  const Matrix3 R = R_.matrix();
-  const Matrix3 &Rw_H_w = R;
-  const Matrix3 &Rv_H_v = R;
-
-  // Calculations
-  Rw = R_.rotate(w, H_pose ? &Rw_H_R : nullptr /*, Rw_H_w */);
-  const Vector3 Rv = R_.rotate(v, H_pose ? &Rv_H_R : nullptr /*, Rv_H_v */);
-  const Vector3 pRw = cross(t_, Rw, boost::none /* pRw_H_t */, pRw_H_Rw);
-  result.tail<3>() = pRw + Rv;
+  const Matrix6 Ad = AdjointMap();
 
   // Jacobians
-  if (H_pose) {
-    // pRw_H_posev = pRw_H_t * R = [Rw]x * R = R * [w]x = Rw_H_R
-    //    where [ ]x denotes the skew-symmetric operator.
-    // See docs/math.pdf for more details.
-    const Matrix3 &pRw_H_posev = Rw_H_R;
-    *H_pose = (Matrix6() << Rw_H_R, /*               */ Z_3x3,  //
-               /*        */ pRw_H_Rw * Rw_H_R + Rv_H_R, pRw_H_posev)
-                  .finished();
-  }
-  if (H_xib) {
-    // This is just equal to AdjointMap() but we can reuse pRw_H_Rw = [t]x
-    *H_xib = (Matrix6() << Rw_H_w, /*      */ Z_3x3,
-              /*        */ pRw_H_Rw * Rw_H_w, Rv_H_v)
-                 .finished();
-  }
+  // D1 Ad_T(xi_b) = D1 Ad_T Ad_I(xi_b) = Ad_T * D1 Ad_I(xi_b) = Ad_T * ad_xi_b
+  // D2 Ad_T(xi_b) = Ad_T
+  // See docs/math.pdf for more details.
+  // In D1 calculation, we could be more efficient by writing it out, but do not
+  // for readability
+  if (H_pose) *H_pose = -Ad * adjointMap(xi_b);
+  if (H_xib) *H_xib = Ad;
 
-  // Return - we computed result manually but it should be = AdjointMap() * xi
-  return result;
+  return Ad * xi_b;
 }
 
 /* ************************************************************************* */
 /// The dual version of Adjoint
 Vector6 Pose3::AdjointTranspose(const Vector6& x, OptionalJacobian<6, 6> H_pose,
                                 OptionalJacobian<6, 6> H_x) const {
-  //  Ad^T   *   xi   =   [ R^T  R^T.[-t]  .  [w
-  //                         0     R^T ]       v]
-  // Declarations, aliases, and intermediate Jacobians easy to compute now
-  Vector6 result; // = AdjointMap().transpose() * x
-  const Vector3 &w = x.head<3>(), &v = x.tail<3>();
-  auto Rv = result.tail<3>();
-  Matrix3 Rw_H_R, Rv_H_R, Rtv_H_R;
-  const Matrix3 Rtranspose = R_.matrix().transpose();
-  const Matrix3 &Rw_H_w = Rtranspose;
-  const Matrix3 &Rv_H_v = Rtranspose;
-  const Matrix3 &Rtv_H_tv = Rtranspose;
-  const Matrix3 tv_H_v = skewSymmetric(t_);
-
-  // Calculations
-  const Vector3 Rw = R_.unrotate(w, H_pose ? &Rw_H_R : nullptr /*, Rw_H_w */);
-  Rv = R_.unrotate(v, H_pose ? &Rv_H_R : nullptr /*, Rv_H_v */);
-  const Vector3 tv = cross(t_, v, boost::none /* tv_H_t */, tv_H_v);
-  const Vector3 Rtv =
-      R_.unrotate(tv, H_pose ? &Rtv_H_R : nullptr /*, Rtv_H_tv */);
-  result.head<3>() = Rw - Rtv;
+  const Matrix6 &AdT = AdjointMap().transpose();
+  const Vector6 &AdTx = AdT * x;
 
   // Jacobians
+  // See docs/math.pdf for more details.
   if (H_pose) {
-    // Rtv_H_posev = -Rtv_H_tv * tv_H_t * R = -R' * -[v]x * R = -[R'v]x = Rv_H_R
-    //    where [ ]x denotes the skew-symmetric operator.
-    // See docs/math.pdf for more details.
-    const Matrix3 &Rtv_H_posev = Rv_H_R;
-    *H_pose = (Matrix6() << Rw_H_R - Rtv_H_R, Rtv_H_posev,
-               /*        */ Rv_H_R, /*     */ Z_3x3)
+    const auto &w_T_hat = skewSymmetric(AdTx.head<3>()),
+               &v_T_hat = skewSymmetric(AdTx.tail<3>());
+    *H_pose = (Matrix6() << w_T_hat, v_T_hat,  //
+               /*        */ v_T_hat, Z_3x3)
                   .finished();
   }
   if (H_x) {
-    // This is just equal to AdjointMap().transpose() but we can reuse [t]x
-    *H_x = (Matrix6() << Rw_H_w, -Rtv_H_tv * tv_H_v,
-            /*        */ Z_3x3, Rv_H_v)
-               .finished();
+    *H_x = AdT;
   }
 
-  // Return - this should be equivalent to AdjointMap().transpose() * xi
-  return result;
+  return AdTx;
 }
 
 /* ************************************************************************* */
