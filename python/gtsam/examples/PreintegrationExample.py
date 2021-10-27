@@ -12,7 +12,7 @@ Authors: Frank Dellaert, Varun Agrawal.
 
 # pylint: disable=invalid-name,unused-import,wrong-import-order
 
-from typing import Sequence
+from typing import Optional, Sequence
 
 import gtsam
 import matplotlib.pyplot as plt
@@ -39,9 +39,9 @@ class PreintegrationExample:
         return params
 
     def __init__(self,
-                 twist: np.ndarray = None,
-                 bias: gtsam.imuBias.ConstantBias = None,
-                 params: gtsam.PreintegrationParams = None,
+                 twist: Optional[np.ndarray] = None,
+                 bias: Optional[gtsam.imuBias.ConstantBias] = None,
+                 params: Optional[gtsam.PreintegrationParams] = None,
                  dt: float = 1e-2):
         """Initialize with given twist, a pair(angularVelocityVector, velocityVector)."""
 
