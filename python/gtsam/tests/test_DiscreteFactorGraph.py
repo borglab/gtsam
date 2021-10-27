@@ -336,10 +336,6 @@ class TestDiscreteFactorGraph(GtsamTestCase):
 # }
 # #endif
 
-# /* ************************************************************************* */
-# int main() {
-# TestResult tr
-# return TestRegistry::runAllTests(tr)
-# }
-# /* ************************************************************************* */
 
+if __name__ == "__main__":
+    unittest.main()
