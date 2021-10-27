@@ -12,10 +12,8 @@ jobs:
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
       GTSAM_BUILD_UNSTABLE: ${{ matrix.build_unstable }}
-      # We need Boost 1.76 for this reason: 
-      # https://stackoverflow.com/questions/66489199/warnings-in-visual-studio2019-compiling-with-boost-1-75
-      BOOST_VERSION: 1.76.0
-      BOOST_EXE: boost_1_76_0-msvc-14.2
+      BOOST_VERSION: 1.72.0
+      BOOST_EXE: boost_1_72_0-msvc-14.2
 
     strategy:
       fail-fast: false
@@ -39,7 +37,7 @@ jobs:
 
           - name: windows-2019-cl
             os: windows-2019
-            compiler: cl
+            compiler: clang
             platform: 64
 
     steps:
@@ -95,7 +93,7 @@ jobs:
       - name: Configuration
         run: |
           cmake -E remove_directory build
-          cmake -B build -S . -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DBOOST_ROOT="${env:BOOST_ROOT}" -DBOOST_INCLUDEDIR="${env:BOOST_ROOT}\boost\include" -DBOOST_LIBRARYDIR="${env:BOOST_ROOT}\lib"
+          cmake -B build -S . -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DBOOST_ROOT="${env:BOOST_ROOT}" -DBOOST_INCLUDEDIR="${env:BOOST_ROOT}\boost\include" -DBOOST_LIBRARYDIR="${env:BOOST_ROOT}\lib"
 
       - name: Build
         run: |
