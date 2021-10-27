@@ -37,7 +37,7 @@ jobs:
 
           - name: windows-2019-cl
             os: windows-2019
-            compiler: clang
+            compiler: cl
             platform: 64
 
     steps:
@@ -93,7 +93,7 @@ jobs:
       - name: Configuration
         run: |
           cmake -E remove_directory build
-          cmake -B build -S . -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DBOOST_ROOT="${env:BOOST_ROOT}" -DBOOST_INCLUDEDIR="${env:BOOST_ROOT}\boost\include" -DBOOST_LIBRARYDIR="${env:BOOST_ROOT}\lib"
+          cmake -B build -S . -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DBOOST_ROOT="${env:BOOST_ROOT}" -DBOOST_INCLUDEDIR="${env:BOOST_ROOT}\boost\include" -DBOOST_LIBRARYDIR="${env:BOOST_ROOT}\lib" -DENABLE_LTO=OFF
 
       - name: Build
         run: |
