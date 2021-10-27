@@ -31,7 +31,7 @@ BIAS_KEY = B(0)
 np.set_printoptions(precision=3, suppress=True)
 
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser("ImuFactorExample.py")
     parser.add_argument("--twist_scenario",
@@ -48,6 +48,7 @@ def parse_args():
                         action='store_true')
     parser.add_argument("--verbose", default=False, action='store_true')
     args = parser.parse_args()
+    return args
 
 
 class ImuFactorExample(PreintegrationExample):
