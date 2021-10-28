@@ -102,7 +102,7 @@ Point2 Cal3Fisheye::uncalibrate(const Point2& p, OptionalJacobian<2, 9> H1,
       const double dxd_dxi = dtd_dr * c2 + s * (1 - c2);
       const double dxd_dyi = (dtd_dr - s) * cs;
       const double dyd_dxi = dxd_dyi;
-      const double dyd_dyi = dtd_dr * c2 + s * (1 - s2);
+      const double dyd_dyi = dtd_dr * s2 + s * (1 - s2);
 
       // Derivatives by depth, for future use to support incident
       // angles above 90 deg.
