@@ -14,12 +14,14 @@ Modeled after:
 """
 
 import math
-import numpy as np
-import gtsam
+
 import matplotlib.pyplot as plt
+import numpy as np
+
+import gtsam
 import gtsam.utils.plot as gtsam_plot
 
-def report_on_progress(graph: gtsam.NonlinearFactorGraph, current_estimate: gtsam.Values, 
+def report_on_progress(graph: gtsam.NonlinearFactorGraph, current_estimate: gtsam.Values,
                         key: int):
     """Print and plot incremental progress of the robot for 2D Pose SLAM using iSAM2."""
 
@@ -94,8 +96,12 @@ def Pose2SLAM_ISAM2_example():
     # Although this example only uses linear measurements and Gaussian noise models, it is important
     # to note that iSAM2 can be utilized to its full potential during nonlinear optimization. This example
     # simply showcases how iSAM2 may be applied to a Pose2 SLAM problem.
-    PRIOR_NOISE = gtsam.noiseModel.Diagonal.Sigmas(np.array([prior_xy_sigma, prior_xy_sigma, prior_theta_sigma*np.pi/180]))
-    ODOMETRY_NOISE = gtsam.noiseModel.Diagonal.Sigmas(np.array([odometry_xy_sigma, odometry_xy_sigma, odometry_theta_sigma*np.pi/180]))
+    PRIOR_NOISE = gtsam.noiseModel.Diagonal.Sigmas(np.array([prior_xy_sigma,
+                                                            prior_xy_sigma,
+                                                            prior_theta_sigma*np.pi/180]))
+    ODOMETRY_NOISE = gtsam.noiseModel.Diagonal.Sigmas(np.array([odometry_xy_sigma,
+                                                                odometry_xy_sigma,
+                                                                odometry_theta_sigma*np.pi/180]))
 
     # Create a Nonlinear factor graph as well as the data structure to hold state estimates.
     graph = gtsam.NonlinearFactorGraph()
@@ -145,7 +151,9 @@ def Pose2SLAM_ISAM2_example():
                 gtsam.Pose2(noisy_odom_x, noisy_odom_y, noisy_odom_theta), ODOMETRY_NOISE))
 
             # Compute and insert the initialization estimate for the current pose using the noisy odometry measurement.
-            computed_estimate = current_estimate.atPose2(i + 1).compose(gtsam.Pose2(noisy_odom_x, noisy_odom_y, noisy_odom_theta))
+            computed_estimate = current_estimate.atPose2(i + 1).compose(gtsam.Pose2(noisy_odom_x,
+                                                                                    noisy_odom_y,
+                                                                                    noisy_odom_theta))
             initial_estimate.insert(i + 2, computed_estimate)
 
         # Perform incremental update to iSAM2's internal Bayes tree, optimizing only the affected variables.
