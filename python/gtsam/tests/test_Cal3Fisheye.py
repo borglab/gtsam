@@ -148,12 +148,12 @@ class TestCal3Fisheye(GtsamTestCase):
         s = np.arctan(r) / r
         self.assertEqual(s, 1.0)
         z = 1
-        s = scaling_factor(r, z)
+        s = self.scaling_factor(r, z)
         self.assertEqual(s, 1.0/z)
         z = 2
-        s = scaling_factor(r, z)
+        s = self.scaling_factor(r, z)
         self.assertEqual(s, 1.0/z)
-        s = scaling_factor(2*r, z)
+        s = self.scaling_factor(2*r, z)
         self.assertEqual(s, 1.0/z)
 
     @staticmethod
