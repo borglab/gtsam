@@ -105,6 +105,11 @@ endif()
 GtsamMakeConfigFile(GTSAM "${CMAKE_CURRENT_SOURCE_DIR}/gtsam_extra.cmake.in")
 export(TARGETS ${GTSAM_EXPORTED_TARGETS} FILE GTSAM-exports.cmake)
 
+if (GTSAM_BUILD_UNSTABLE)
+    GtsamMakeConfigFile(GTSAM_UNSTABLE "${CMAKE_CURRENT_SOURCE_DIR}/gtsam_extra.cmake.in")
+    export(TARGETS ${GTSAM_UNSTABLE_EXPORTED_TARGETS} FILE GTSAM_UNSTABLE-exports.cmake)
+endif()
+
 # Check for doxygen availability - optional dependency
 find_package(Doxygen)
 
