@@ -143,16 +143,23 @@ class TestCal3Fisheye(GtsamTestCase):
         self.gtsamAssertEquals(H @ H.T, 3*np.eye(2))
 
     def test_scaling_factor(self):
-        "Check convergence of atan(r, z)/r for small r"
+        """Check convergence of atan2(r, z)/r ~ 1/z for small r"""
         r = ulp(np.float64)
         s = np.arctan(r) / r
         self.assertEqual(s, 1.0)
         z = 1
-        s = np.arctan2(r, z) / r
-        self.assertEqual(s, 1.0)
+        s = scaling_factor(r, z)
+        self.assertEqual(s, 1.0/z)
         z = 2
-        s = np.arctan2(r, z) / r if r/z != 0 else 1.0
-        self.assertEqual(s, 1.0)
+        s = scaling_factor(r, z)
+        self.assertEqual(s, 1.0/z)
+        s = scaling_factor(2*r, z)
+        self.assertEqual(s, 1.0/z)
+
+    @staticmethod
+    def scaling_factor(r, z):
+        """Projection factor theta/r for equidistant fisheye lens model"""
+        return np.arctan2(r, z) / r if r/z != 0 else 1.0/z
 
     @staticmethod
     def evaluate_jacobian(obj_point, img_point):
