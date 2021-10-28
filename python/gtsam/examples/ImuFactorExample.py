@@ -137,7 +137,14 @@ class ImuFactorExample(PreintegrationExample):
             T: int = 12,
             compute_covariances: bool = False,
             verbose: bool = True):
-        """Main runner."""
+        """
+        Main runner.
+
+        Args:
+            T: Total trajectory time.
+            compute_covariances: Flag indicating whether to compute marginal covariances.
+            verbose: Flag indicating if printing should be verbose.
+        """
         graph = gtsam.NonlinearFactorGraph()
 
         # initialize data structure for pre-integrated IMU measurements
