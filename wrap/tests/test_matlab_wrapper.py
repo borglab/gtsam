@@ -42,17 +42,16 @@ class TestWrap(unittest.TestCase):
         # Create the `actual/matlab` directory
         os.makedirs(self.MATLAB_ACTUAL_DIR, exist_ok=True)
 
-    def compare_and_diff(self, file):
+    def compare_and_diff(self, file, actual):
         """
         Compute the comparison between the expected and actual file,
         and assert if diff is zero.
         """
-        output = osp.join(self.MATLAB_ACTUAL_DIR, file)
         expected = osp.join(self.MATLAB_TEST_DIR, file)
-        success = filecmp.cmp(output, expected)
+        success = filecmp.cmp(actual, expected)
+
         if not success:
-            print("Differ in file: {}".format(file))
-            os.system("diff {} {}".format(output, expected))
+            os.system("diff {} {}".format(actual, expected))
         self.assertTrue(success, "Mismatch for file {0}".format(file))
 
     def test_geometry(self):
@@ -77,7 +76,8 @@ class TestWrap(unittest.TestCase):
         self.assertTrue(osp.isdir(osp.join(self.MATLAB_ACTUAL_DIR, '+gtsam')))
 
         for file in files:
-            self.compare_and_diff(file)
+            actual = osp.join(self.MATLAB_ACTUAL_DIR, file)
+            self.compare_and_diff(file, actual)
 
     def test_functions(self):
         """Test interface file with function info."""
@@ -99,7 +99,8 @@ class TestWrap(unittest.TestCase):
         ]
 
         for file in files:
-            self.compare_and_diff(file)
+            actual = osp.join(self.MATLAB_ACTUAL_DIR, file)
+            self.compare_and_diff(file, actual)
 
     def test_class(self):
         """Test interface file with only class info."""
@@ -121,7 +122,8 @@ class TestWrap(unittest.TestCase):
         ]
 
         for file in files:
-            self.compare_and_diff(file)
+            actual = osp.join(self.MATLAB_ACTUAL_DIR, file)
+            self.compare_and_diff(file, actual)
 
     def test_templates(self):
         """Test interface file with template info."""
@@ -138,7 +140,8 @@ class TestWrap(unittest.TestCase):
         files = ['template_wrapper.cpp']
 
         for file in files:
-            self.compare_and_diff(file)
+            actual = osp.join(self.MATLAB_ACTUAL_DIR, file)
+            self.compare_and_diff(file, actual)
 
     def test_inheritance(self):
         """Test interface file with class inheritance definitions."""
@@ -157,7 +160,8 @@ class TestWrap(unittest.TestCase):
         ]
 
         for file in files:
-            self.compare_and_diff(file)
+            actual = osp.join(self.MATLAB_ACTUAL_DIR, file)
+            self.compare_and_diff(file, actual)
 
     def test_namespaces(self):
         """
@@ -181,7 +185,8 @@ class TestWrap(unittest.TestCase):
         ]
 
         for file in files:
-            self.compare_and_diff(file)
+            actual = osp.join(self.MATLAB_ACTUAL_DIR, file)
+            self.compare_and_diff(file, actual)
 
     def test_special_cases(self):
         """
@@ -203,7 +208,8 @@ class TestWrap(unittest.TestCase):
         ]
 
         for file in files:
-            self.compare_and_diff(file)
+            actual = osp.join(self.MATLAB_ACTUAL_DIR, file)
+            self.compare_and_diff(file, actual)
 
     def test_multiple_files(self):
         """
@@ -228,7 +234,8 @@ class TestWrap(unittest.TestCase):
         ]
 
         for file in files:
-            self.compare_and_diff(file)
+            actual = osp.join(self.MATLAB_ACTUAL_DIR, file)
+            self.compare_and_diff(file, actual)
 
 
 if __name__ == '__main__':

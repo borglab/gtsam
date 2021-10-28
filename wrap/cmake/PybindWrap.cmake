@@ -192,9 +192,9 @@ function(install_python_files source_files dest_directory)
 endfunction()
 
 # ~~~
-# https://stackoverflow.com/questions/13959434/cmake-out-of-source-build-python-files
+# Copy over the directory from source_folder to dest_foler
 # ~~~
-function(create_symlinks source_folder dest_folder)
+function(copy_directory source_folder dest_folder)
   if(${source_folder} STREQUAL ${dest_folder})
     return()
   endif()
@@ -215,31 +215,13 @@ function(create_symlinks source_folder dest_folder)
     # Create REAL folder
     file(MAKE_DIRECTORY "${dest_folder}")
 
-    # Delete symlink if it exists
+    # Delete if it exists
     file(REMOVE "${dest_folder}/${path_file}")
 
-    # Get OS dependent path to use in `execute_process`
-    file(TO_NATIVE_PATH "${dest_folder}/${path_file}" link)
+    # Get OS dependent path to use in copy
     file(TO_NATIVE_PATH "${source_folder}/${path_file}" target)
 
-    # cmake-format: off
-    if(UNIX)
-      set(command ln -s ${target} ${link})
-    else()
-      set(command cmd.exe /c mklink ${link} ${target})
-    endif()
-    # cmake-format: on
-
-    execute_process(
-      COMMAND ${command}
-      RESULT_VARIABLE result
-      ERROR_VARIABLE output)
-
-    if(NOT ${result} EQUAL 0)
-      message(
-        FATAL_ERROR
-          "Could not create symbolic link for: ${target} --> ${output}")
-    endif()
+    file(COPY ${target} DESTINATION ${dest_folder})
 
   endforeach(path_file)
-endfunction(create_symlinks)
+endfunction(copy_directory)
