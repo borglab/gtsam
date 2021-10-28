@@ -45,7 +45,7 @@ namespace gtsam {
  * the value of a point, which is kept in the base class.
  */
 template<class CAMERA>
-class SmartFactorBase: public NonlinearFactor {
+class GTSAM_EXPORT SmartFactorBase: public NonlinearFactor {
 
 private:
   typedef NonlinearFactor Base;
