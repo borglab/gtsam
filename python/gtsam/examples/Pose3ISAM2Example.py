@@ -8,7 +8,7 @@ See LICENSE for the license information
 
 Pose SLAM example using iSAM2 in 3D space.
 Author: Jerred Chen
-Modelled after version by:
+Modeled after version by:
     - VisualISAM2Example by: Duy-Nguyen Ta (C++), Frank Dellaert (Python)
     - Pose2SLAMExample by: Alex Cunningham (C++), Kevin Deng & Frank Dellaert (Python)
 """
@@ -20,12 +20,8 @@ import matplotlib.pyplot as plt
 
 def report_on_progress(graph: gtsam.NonlinearFactorGraph, current_estimate: gtsam.Values,
                         key: int):
-    """Print and plot incremental progress of the robot for 2D Pose SLAM using iSAM2.
+    """Print and plot incremental progress of the robot for 2D Pose SLAM using iSAM2."""
 
-    Based on version by:
-        - Ellon Paiva (Python),
-        - Duy Nguyen Ta and Frank Dellaert (MATLAB)
-    """
     # Print the current estimates computed using iSAM2.
     print("*"*50 + f"\nInference after State {key+1}:\n")
     print(current_estimate)
@@ -48,8 +44,6 @@ def report_on_progress(graph: gtsam.NonlinearFactorGraph, current_estimate: gtsa
     axes.set_ylim3d(-30, 45)
     axes.set_zlim3d(-30, 45)
     plt.pause(1)
-
-    return marginals
 
 def createPoses():
     """Creates ground truth poses of the robot."""
@@ -78,34 +72,27 @@ def createPoses():
     return [gtsam.Pose3(P0), gtsam.Pose3(P1), gtsam.Pose3(P2),
             gtsam.Pose3(P3), gtsam.Pose3(P4), gtsam.Pose3(P5)]
 
-def vector6(x, y, z, a, b, c):
-    """Create a 6D double numpy array."""
-    return np.array([x, y, z, a, b, c], dtype=float)
-
-def determine_loop_closure(odom: np.ndarray, current_estimate: gtsam.Values,
-    key: int, xyz_tol=0.6, rot_tol=0.3) -> int:
+def determine_loop_closure(odom_tf: gtsam.Pose3, current_estimate: gtsam.Values,
+    key: int, xyz_tol=0.6, rot_tol=17) -> int:
     """Simple brute force approach which iterates through previous states
     and checks for loop closure.
 
     Args:
-        odom: Vector representing noisy odometry transformation measurement in the body frame,
-            where the vector represents [roll, pitch, yaw, x, y, z].
+        odom_tf: The noisy odometry transformation measurement in the body frame.
         current_estimate: The current estimates computed by iSAM2.
         key: Key corresponding to the current state estimate of the robot.
-        xyz_tol: Optional argument for the translational tolerance.
-        rot_tol: Optional argument for the rotational tolerance.
+        xyz_tol: Optional argument for the translational tolerance, in meters.
+        rot_tol: Optional argument for the rotational tolerance, in degrees.
     Returns:
         k: The key of the state which is helping add the loop closure constraint.
             If loop closure is not found, then None is returned.
     """
     if current_estimate:
-        rot = gtsam.Rot3.RzRyRx(odom[:3])
-        odom_tf = gtsam.Pose3(rot, odom[3:6].reshape(-1,1))
         prev_est = current_estimate.atPose3(key+1)
-        curr_est = prev_est.transformPoseFrom(odom_tf)
+        curr_est = prev_est.compose(odom_tf)
         for k in range(1, key+1):
             pose = current_estimate.atPose3(k)
-            if (abs(pose.matrix()[:3,:3] - curr_est.matrix()[:3,:3]) <= rot_tol).all() and \
+            if (abs(pose.matrix()[:3,:3] - curr_est.matrix()[:3,:3]) <= rot_tol*np.pi/180).all() and \
                 (abs(pose.matrix()[:3,3] - curr_est.matrix()[:3,3]) <= xyz_tol).all():
                     return k
 
@@ -114,11 +101,33 @@ def Pose3_ISAM2_example():
     loop closure detection."""
     plt.ion()
 
+    # Declare the 3D translational standard deviations of the prior factor's Gaussian model, in meters.
+    prior_xyz_sigma = 0.3
+
+    # Declare the 3D rotational standard deviations of the prior factor's Gaussian model, in degrees.
+    prior_rpy_sigma = 5
+
+    # Declare the 3D translational standard deviations of the odometry factor's Gaussian model, in meters.
+    odometry_xyz_sigma = 0.2
+
+    # Declare the 3D rotational standard deviations of the odometry factor's Gaussian model, in degrees.
+    odometry_rpy_sigma = 5
+
     # Although this example only uses linear measurements and Gaussian noise models, it is important
     # to note that iSAM2 can be utilized to its full potential during nonlinear optimization. This example
     # simply showcases how iSAM2 may be applied to a Pose2 SLAM problem.
-    PRIOR_NOISE = gtsam.noiseModel.Diagonal.Sigmas(vector6(0.1, 0.1, 0.1, 0.3, 0.3, 0.3))
-    ODOMETRY_NOISE = gtsam.noiseModel.Diagonal.Sigmas(vector6(0.1, 0.1, 0.1, 0.2, 0.2, 0.2))
+    PRIOR_NOISE = gtsam.noiseModel.Diagonal.Sigmas(np.array([prior_rpy_sigma*np.pi/180,
+                                                                prior_rpy_sigma*np.pi/180,
+                                                                prior_rpy_sigma*np.pi/180, 
+                                                                prior_xyz_sigma,
+                                                                prior_xyz_sigma,
+                                                                prior_xyz_sigma]))
+    ODOMETRY_NOISE = gtsam.noiseModel.Diagonal.Sigmas(np.array([odometry_rpy_sigma*np.pi/180,
+                                                                odometry_rpy_sigma*np.pi/180,
+                                                                odometry_rpy_sigma*np.pi/180,
+                                                                odometry_xyz_sigma,
+                                                                odometry_xyz_sigma,
+                                                                odometry_xyz_sigma]))
 
     # Create a Nonlinear factor graph as well as the data structure to hold state estimates.
     graph = gtsam.NonlinearFactorGraph()
@@ -154,38 +163,36 @@ def Pose3_ISAM2_example():
     current_estimate = initial_estimate
     for i in range(len(odometry_tf)):
 
-        # Obtain "ground truth" transformation between the current pose and the previous pose.
-        true_odometry = odometry_tf[i]
-
         # Obtain the noisy translation and rotation that is received by the robot and corrupted by gaussian noise.
         noisy_odometry = noisy_measurements[i]
 
+        # Compute the noisy odometry transformation according to the xyz translation and roll-pitch-yaw rotation.
+        noisy_tf = gtsam.Pose3(gtsam.Rot3.RzRyRx(noisy_odometry[:3]), noisy_odometry[3:6].reshape(-1,1))
+
         # Determine if there is loop closure based on the odometry measurement and the previous estimate of the state.
-        loop = determine_loop_closure(noisy_odometry, current_estimate, i)
+        loop = determine_loop_closure(noisy_tf, current_estimate, i, xyz_tol=18, rot_tol=30)
 
         # Add a binary factor in between two existing states if loop closure is detected.
         # Otherwise, add a binary factor between a newly observed state and the previous state.
-        # Note that the true odometry measurement is used in the factor instead of the noisy odometry measurement.
-        # This is only to maintain the example consistent for each run. In practice, the noisy odometry measurement is used.
         if loop:
-            graph.push_back(gtsam.BetweenFactorPose3(i + 1, loop, true_odometry, ODOMETRY_NOISE))
+            graph.push_back(gtsam.BetweenFactorPose3(i + 1, loop, noisy_tf, ODOMETRY_NOISE))
         else:
-            graph.push_back(gtsam.BetweenFactorPose3(i + 1, i + 2, true_odometry, ODOMETRY_NOISE))
+            graph.push_back(gtsam.BetweenFactorPose3(i + 1, i + 2, noisy_tf, ODOMETRY_NOISE))
 
             # Compute and insert the initialization estimate for the current pose using the noisy odometry measurement.
-            noisy_tf = gtsam.Pose3(gtsam.Rot3.RzRyRx(noisy_odometry[:3]), noisy_odometry[3:6].reshape(-1,1))
-            computed_estimate = current_estimate.atPose3(i + 1).compose(noisy_tf)
-            initial_estimate.insert(i + 2, computed_estimate)
+            noisy_estimate = current_estimate.atPose3(i + 1).compose(noisy_tf)
+            initial_estimate.insert(i + 2, noisy_estimate)
 
         # Perform incremental update to iSAM2's internal Bayes tree, optimizing only the affected variables.
         isam.update(graph, initial_estimate)
         current_estimate = isam.calculateEstimate()
 
         # Report all current state estimates from the iSAM2 optimization.
-        marginals = report_on_progress(graph, current_estimate, i)
+        report_on_progress(graph, current_estimate, i)
         initial_estimate.clear()
 
     # Print the final covariance matrix for each pose after completing inference.
+    marginals = gtsam.Marginals(graph, current_estimate)
     i = 1
     while current_estimate.exists(i):
         print(f"X{i} covariance:\n{marginals.marginalCovariance(i)}\n")
