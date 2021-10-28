@@ -17,6 +17,15 @@ import gtsam
 from gtsam.utils.test_case import GtsamTestCase
 from gtsam.symbol_shorthand import K, L, P
 
+
+def ulp(ftype=np.float64):
+    """
+    Unit in the last place of floating point datatypes
+    """
+    f = np.finfo(ftype)
+    return f.tiny / ftype(1 << f.nmant)
+
+
 class TestCal3Fisheye(GtsamTestCase):
     
     @classmethod
@@ -105,27 +114,63 @@ class TestCal3Fisheye(GtsamTestCase):
         score = graph.error(state)
         self.assertAlmostEqual(score, 0)
 
-    def test_jacobian(self):
-        """Evaluate jacobian at optical axis"""
+    def test_jacobian_on_axis(self):
+        """Check of jacobian at optical axis"""
         obj_point_on_axis = np.array([0, 0, 1])
-        img_point = np.array([0.0, 0.0])
+        img_point = np.array([0, 0])
+        f, z, H = self.evaluate_jacobian(obj_point_on_axis, img_point)
+        self.assertAlmostEqual(f, 0)
+        self.gtsamAssertEquals(z, np.zeros(2))
+        self.gtsamAssertEquals(H @ H.T, 3*np.eye(2))
+
+    def test_jacobian_convergence(self):
+        """Test stability of jacobian close to optical axis"""
+        t = ulp(np.float64)
+        obj_point_close_to_axis = np.array([t, 0, 1])
+        img_point = np.array([np.sqrt(t), 0])
+        f, z, H = self.evaluate_jacobian(obj_point_close_to_axis, img_point)
+        self.assertAlmostEqual(f, 0)
+        self.gtsamAssertEquals(z, np.zeros(2))
+        self.gtsamAssertEquals(H @ H.T, 3*np.eye(2))
+
+        # With a height of sqrt(ulp), this may cause an overflow
+        t = ulp(np.float64)
+        obj_point_close_to_axis = np.array([np.sqrt(t), 0, 1])
+        img_point = np.array([np.sqrt(t), 0])
+        f, z, H = self.evaluate_jacobian(obj_point_close_to_axis, img_point)
+        self.assertAlmostEqual(f, 0)
+        self.gtsamAssertEquals(z, np.zeros(2))
+        self.gtsamAssertEquals(H @ H.T, 3*np.eye(2))
+
+    def test_scaling_factor(self):
+        "Check convergence of atan(r, z)/r for small r"
+        r = ulp(np.float64)
+        s = np.arctan(r) / r
+        self.assertEqual(s, 1.0)
+        z = 1
+        s = np.arctan2(r, z) / r
+        self.assertEqual(s, 1.0)
+        z = 2
+        s = np.arctan2(r, z) / r if r/z != 0 else 1.0
+        self.assertEqual(s, 1.0)
+
+    @staticmethod
+    def evaluate_jacobian(obj_point, img_point):
+        """Evaluate jacobian at given object point"""
         pose = gtsam.Pose3()
         camera = gtsam.Cal3Fisheye()
         state = gtsam.Values()
         camera_key, pose_key, landmark_key = K(0), P(0), L(0)
-        state.insert_point3(landmark_key, obj_point_on_axis)
+        state.insert_point3(landmark_key, obj_point)
         state.insert_pose3(pose_key, pose)
-        state.insert_cal3fisheye(camera_key, camera)
         g = gtsam.NonlinearFactorGraph()
         noise_model = gtsam.noiseModel.Unit.Create(2)
-        factor = gtsam.GeneralSFMFactor2Cal3Fisheye(img_point, noise_model, pose_key, landmark_key, camera_key)
+        factor = gtsam.GenericProjectionFactorCal3Fisheye(img_point, noise_model, pose_key, landmark_key, camera)
         g.add(factor)
         f = g.error(state)
         gaussian_factor_graph = g.linearize(state)
         H, z = gaussian_factor_graph.jacobian()
-        self.assertAlmostEqual(f, 0)
-        self.gtsamAssertEquals(z, np.zeros(2))
-        self.gtsamAssertEquals(H @ H.T, 4*np.eye(2))
+        return f, z, H
 
     @unittest.skip("triangulatePoint3 currently seems to require perspective projections.")
     def test_triangulation_skipped(self):
