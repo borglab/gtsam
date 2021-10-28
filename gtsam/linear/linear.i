@@ -221,6 +221,7 @@ class VectorValues {
   //Constructors
   VectorValues();
   VectorValues(const gtsam::VectorValues& other);
+  VectorValues(const gtsam::VectorValues& first, const gtsam::VectorValues& second);
 
   //Named Constructors
   static gtsam::VectorValues Zero(const gtsam::VectorValues& model);
