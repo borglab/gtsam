@@ -46,7 +46,7 @@ double Cal3Fisheye::Scaling(double r) {
 /* ************************************************************************* */
 Point2 Cal3Fisheye::uncalibrate(const Point2& p, OptionalJacobian<2, 9> H1,
                                 OptionalJacobian<2, 2> H2) const {
-  const double xi = p.x(), yi = p.y();
+  const double xi = p.x(), yi = p.y(), zi = 1;
   const double r2 = xi * xi + yi * yi, r = sqrt(r2);
   const double t = atan(r);
   const double t2 = t * t, t4 = t2 * t2, t6 = t2 * t4, t8 = t4 * t4;
@@ -81,22 +81,34 @@ Point2 Cal3Fisheye::uncalibrate(const Point2& p, OptionalJacobian<2, 9> H1,
     } else {
       const double dtd_dt =
           1 + 3 * k1_ * t2 + 5 * k2_ * t4 + 7 * k3_ * t6 + 9 * k4_ * t8;
-      const double dt_dr = 1 / (1 + r2);
+      const double R2 = r2 + zi*zi
+      const double dt_dr = zi / R2;
       const double rinv = 1 / r;
       const double dr_dxi = xi * rinv;
       const double dr_dyi = yi * rinv;
-      const double dtd_dxi = dtd_dt * dt_dr * dr_dxi;
-      const double dtd_dyi = dtd_dt * dt_dr * dr_dyi;
+      const double dtd_dr = dtd_dt * dt_dr
+      // const double dtd_dxi = dtd_dt * dt_dr * dr_dxi;
+      // const double dtd_dyi = dtd_dt * dt_dr * dr_dyi;
+  
+      const double c2 = dr_dxi * dr_dxi
+      const double s2 = dr_dyi * dr_dyi
+      const double cs = dr_dxi * dr_dyi
 
-      const double td = t * K.dot(T);
-      const double rrinv = 1 / r2;
-      const double dxd_dxi =
-          dtd_dxi * dr_dxi + td * rinv - td * xi * rrinv * dr_dxi;
-      const double dxd_dyi = dtd_dyi * dr_dxi - td * xi * rrinv * dr_dyi;
-      const double dyd_dxi = dtd_dxi * dr_dyi - td * yi * rrinv * dr_dxi;
-      const double dyd_dyi =
-          dtd_dyi * dr_dyi + td * rinv - td * yi * rrinv * dr_dyi;
+      // Following refactoring is numerically stable, even for unnormalized radial 
+      // values by avoiding division with the square radius.
+      //
+      // const double td = t * K.dot(T); - note: s = td/r
+      // const double rrinv = 1 / r2; - division by r2 may cause overflow 
+      const double dxd_dxi = dtd_dr * c2 + s * (1 - c2);
+      const double dxd_dyi = (dtd_dr - s) * cs;
+      const double dyd_dxi = dxd_dyi;
+      const double dyd_dyi = dtd_dr * c2 + s * (1 - s2);
 
+      // Derivatives by depth, for future use to support incident
+      // angles above 90 deg.
+      //  const double dxd_dzi = -dtd_dt * x / R2
+      //  const double dyd_dzi = -dtd_dt * y / R2
+      
       Matrix2 DR;
       DR << dxd_dxi, dxd_dyi, dyd_dxi, dyd_dyi;
 
