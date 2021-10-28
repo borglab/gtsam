@@ -93,13 +93,13 @@ jobs:
       - name: Configuration
         run: |
           cmake -E remove_directory build
-          cmake -B build -S . -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DBOOST_ROOT="${env:BOOST_ROOT}" -DBOOST_INCLUDEDIR="${env:BOOST_ROOT}\boost\include" -DBOOST_LIBRARYDIR="${env:BOOST_ROOT}\lib" -DENABLE_LTO=OFF
+          cmake -B build -S . -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DBOOST_ROOT="${env:BOOST_ROOT}" -DBOOST_INCLUDEDIR="${env:BOOST_ROOT}\boost\include" -DBOOST_LIBRARYDIR="${env:BOOST_ROOT}\lib"
 
       - name: Build
         run: |
+          # Since Visual Studio is a multi-generator, we need to use --config
+          # https://stackoverflow.com/a/24470998/1236990
           cmake --build build -j 4 --config ${{ matrix.build_type }} --target gtsam
           cmake --build build -j 4 --config ${{ matrix.build_type }} --target gtsam_unstable
           cmake --build build -j 4 --config ${{ matrix.build_type }} --target wrap
-          cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.base
-          cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.base_unstable
-          cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.linear
+          cmake --build build -j 4 --config ${{ matrix.build_type }} --target check
