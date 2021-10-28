@@ -22,6 +22,7 @@ from mpl_toolkits.mplot3d import Axes3D
 
 IMU_FIG = 1
 POSES_FIG = 2
+GRAVITY = 10
 
 
 class PreintegrationExample:
@@ -68,7 +69,7 @@ class PreintegrationExample:
             self.params = params
         else:
             # Default params with simple gravity constant
-            self.params = self.defaultParams(g=10)
+            self.params = self.defaultParams(g=GRAVITY)
 
         if bias is not None:
             self.actualBias = bias
@@ -86,7 +87,13 @@ class PreintegrationExample:
 
     def plotImu(self, t: float, measuredOmega: Sequence,
                 measuredAcc: Sequence):
-        """Plot IMU measurements."""
+        """
+        Plot IMU measurements.
+        Args:
+            t: The time at which the measurement was recoreded.
+            measuredOmega: Measured angular velocity.
+            measuredAcc: Measured linear acceleration.
+        """
         plt.figure(IMU_FIG)
 
         # plot angular velocity
@@ -123,7 +130,13 @@ class PreintegrationExample:
                             t: float,
                             scale: float = 0.3,
                             time_interval: float = 0.01):
-        """Plot ground truth pose, as well as prediction from integrated IMU measurements."""
+        """
+        Plot ground truth pose, as well as prediction from integrated IMU measurements.
+        Args:
+            t: Time at which the pose was obtained.
+            scale: The scaling factor for the pose axes.
+            time_interval: The time to wait before showing the plot.
+        """
         actualPose = self.scenario.pose(t)
         plot_pose3(POSES_FIG, actualPose, scale)
         translation = actualPose.translation()
