@@ -8,15 +8,18 @@ See LICENSE for the license information
 
 Pose SLAM example using iSAM2 in 3D space.
 Author: Jerred Chen
-Modeled after version by:
+Modeled after:
     - VisualISAM2Example by: Duy-Nguyen Ta (C++), Frank Dellaert (Python)
     - Pose2SLAMExample by: Alex Cunningham (C++), Kevin Deng & Frank Dellaert (Python)
 """
 
+from typing import List
+
+import matplotlib.pyplot as plt
+import numpy as np
+
 import gtsam
 import gtsam.utils.plot as gtsam_plot
-import numpy as np
-import matplotlib.pyplot as plt
 
 def report_on_progress(graph: gtsam.NonlinearFactorGraph, current_estimate: gtsam.Values,
                         key: int):
@@ -45,7 +48,7 @@ def report_on_progress(graph: gtsam.NonlinearFactorGraph, current_estimate: gtsa
     axes.set_zlim3d(-30, 45)
     plt.pause(1)
 
-def createPoses():
+def create_poses() -> List[gtsam.Pose3]:
     """Creates ground truth poses of the robot."""
     P0 = np.array([[1, 0, 0, 0],
                    [0, 1, 0, 0],
@@ -118,7 +121,7 @@ def Pose3_ISAM2_example():
     # simply showcases how iSAM2 may be applied to a Pose2 SLAM problem.
     PRIOR_NOISE = gtsam.noiseModel.Diagonal.Sigmas(np.array([prior_rpy_sigma*np.pi/180,
                                                                 prior_rpy_sigma*np.pi/180,
-                                                                prior_rpy_sigma*np.pi/180, 
+                                                                prior_rpy_sigma*np.pi/180,
                                                                 prior_xyz_sigma,
                                                                 prior_xyz_sigma,
                                                                 prior_xyz_sigma]))
@@ -141,7 +144,7 @@ def Pose3_ISAM2_example():
     isam = gtsam.ISAM2(parameters)
 
     # Create the ground truth poses of the robot trajectory.
-    true_poses = createPoses()
+    true_poses = create_poses()
 
     # Create the ground truth odometry transformations, xyz translations, and roll-pitch-yaw rotations
     # between each robot pose in the trajectory.
@@ -149,9 +152,9 @@ def Pose3_ISAM2_example():
     odometry_xyz = [(odometry_tf[i].x(), odometry_tf[i].y(), odometry_tf[i].z()) for i in range(len(odometry_tf))]
     odometry_rpy = [odometry_tf[i].rotation().rpy() for i in range(len(odometry_tf))]
 
-    # Corrupt the xyz translations and roll-pitch-yaw rotations with gaussian noise to create noisy odometry measurements.
-    noisy_measurements = [np.random.multivariate_normal(np.hstack((odometry_rpy[i],odometry_xyz[i])), ODOMETRY_NOISE.covariance())
-                            for i in range(len(odometry_tf))]
+    # Corrupt xyz translations and roll-pitch-yaw rotations with gaussian noise to create noisy odometry measurements.
+    noisy_measurements = [np.random.multivariate_normal(np.hstack((odometry_rpy[i],odometry_xyz[i])), \
+                                                        ODOMETRY_NOISE.covariance()) for i in range(len(odometry_tf))]
 
     # Add the prior factor to the factor graph, and poorly initialize the prior pose to demonstrate
     # iSAM2 incremental optimization.
@@ -179,7 +182,7 @@ def Pose3_ISAM2_example():
         else:
             graph.push_back(gtsam.BetweenFactorPose3(i + 1, i + 2, noisy_tf, ODOMETRY_NOISE))
 
-            # Compute and insert the initialization estimate for the current pose using the noisy odometry measurement.
+            # Compute and insert the initialization estimate for the current pose using a noisy odometry measurement.
             noisy_estimate = current_estimate.atPose3(i + 1).compose(noisy_tf)
             initial_estimate.insert(i + 2, noisy_estimate)
 
