@@ -27,6 +27,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from PreintegrationExample import POSES_FIG, PreintegrationExample
 
 BIAS_KEY = B(0)
+GRAVITY = 9.81
 
 np.set_printoptions(precision=3, suppress=True)
 
@@ -42,7 +43,7 @@ def parse_args() -> argparse.Namespace:
                         "-T",
                         default=12,
                         type=int,
-                        help="Total time in seconds")
+                        help="Total navigation time in seconds")
     parser.add_argument("--compute_covariances",
                         default=False,
                         action='store_true')
@@ -70,8 +71,7 @@ class ImuFactorExample(PreintegrationExample):
         gyroBias = np.array([0.1, 0.3, -0.1])
         bias = gtsam.imuBias.ConstantBias(accBias, gyroBias)
 
-        g = 9.81
-        params = gtsam.PreintegrationParams.MakeSharedU(g)
+        params = gtsam.PreintegrationParams.MakeSharedU(GRAVITY)
 
         # Some arbitrary noise sigmas
         gyro_sigma = 1e-3
@@ -107,7 +107,16 @@ class ImuFactorExample(PreintegrationExample):
              title: str = "Estimated Trajectory",
              fignum: int = POSES_FIG + 1,
              show: bool = False):
-        """Plot poses in values."""
+        """
+        Plot poses in values.
+
+        Args:
+            values: The values object with the poses to plot.
+            title: The title of the plot.
+            fignum: The matplotlib figure number.
+                POSES_FIG is a value from the PreintegrationExample which we simply increment to generate a new figure.
+            show: Flag indicating whether to display the figure.
+        """
         i = 0
         while values.exists(X(i)):
             pose_i = values.atPose3(X(i))
