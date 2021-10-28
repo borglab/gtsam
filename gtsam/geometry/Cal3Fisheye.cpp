@@ -32,7 +32,7 @@ Vector9 Cal3Fisheye::vector() const {
 }
 
 /* ************************************************************************* */
-double Cal3Fisheye::Scaling(double r, double zi) {
+double Cal3Fisheye::Scaling(double r) {
   static constexpr double threshold = 1e-8;
   if (r > threshold || r < -threshold) {
     return atan(r) / r;
@@ -53,7 +53,7 @@ Point2 Cal3Fisheye::uncalibrate(const Point2& p, OptionalJacobian<2, 9> H1,
   Vector5 K, T;
   K << 1, k1_, k2_, k3_, k4_;
   T << 1, t2, t4, t6, t8;
-  const double scaling = Scaling(r, zi);
+  const double scaling = Scaling(r);
   const double s = scaling * K.dot(T);
   const double xd = s * xi, yd = s * yi;
   Point2 uv(fx_ * xd + s_ * yd + u0_, fy_ * yd + v0_);
