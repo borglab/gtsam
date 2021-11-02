@@ -294,6 +294,19 @@ TEST(Expression, compose3) {
 }
 
 /* ************************************************************************* */
+// Test compose with double type (should be multiplication).
+TEST(Expression, compose4) {
+  // Create expression
+  gtsam::Key key = 1;
+  Double_ R1(key), R2(key);
+  Double_ R3 = R1 * R2;
+
+  // Check keys
+  set<Key> expected = list_of(1);
+  EXPECT(expected == R3.keys());
+}
+
+/* ************************************************************************* */
 // Test with ternary function.
 Rot3 composeThree(const Rot3& R1, const Rot3& R2, const Rot3& R3, OptionalJacobian<3, 3> H1,
                   OptionalJacobian<3, 3> H2, OptionalJacobian<3, 3> H3) {
