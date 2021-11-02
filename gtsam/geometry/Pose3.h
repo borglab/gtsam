@@ -177,13 +177,14 @@ public:
    * and its inverse transpose in the discrete Euler Poincare' (DEP) operator.
    *
    */
-  static Matrix6 adjointMap(const Vector6 &xi);
+  static Matrix6 adjointMap(const Vector6& xi);
 
   /**
    * Action of the adjointMap on a Lie-algebra vector y, with optional derivatives
    */
-  static Vector6 adjoint(const Vector6 &xi, const Vector6 &y,
-      OptionalJacobian<6, 6> Hxi = boost::none);
+  static Vector6 adjoint(const Vector6& xi, const Vector6& y,
+                         OptionalJacobian<6, 6> Hxi = boost::none,
+                         OptionalJacobian<6, 6> H_y = boost::none);
 
   // temporary fix for wrappers until case issue is resolved
   static Matrix6 adjointMap_(const Vector6 &xi) { return adjointMap(xi);}
@@ -193,7 +194,8 @@ public:
    * The dual version of adjoint action, acting on the dual space of the Lie-algebra vector space.
    */
   static Vector6 adjointTranspose(const Vector6& xi, const Vector6& y,
-      OptionalJacobian<6, 6> Hxi = boost::none);
+                                  OptionalJacobian<6, 6> Hxi = boost::none,
+                                  OptionalJacobian<6, 6> H_y = boost::none);
 
   /// Derivative of Expmap
   static Matrix6 ExpmapDerivative(const Vector6& xi);
