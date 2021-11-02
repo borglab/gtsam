@@ -150,6 +150,9 @@ class EssentialMatrix {
   GTSAM_EXPORT EssentialMatrix rotate(const Rot3& cRb, OptionalJacobian<5, 5> HE =
       boost::none, OptionalJacobian<5, 3> HR = boost::none) const;
 
+  GTSAM_EXPORT Vector3 pointToEpipolarLine(const Vector3& p,
+      OptionalJacobian<3, 5> DE = boost::none) const;
+
   /**
    * Given essential matrix E in camera frame B, convert to body frame C
    * @param cRb rotation from body frame to camera frame

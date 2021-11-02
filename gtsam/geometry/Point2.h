@@ -40,6 +40,8 @@ GTSAM_EXPORT double distance2(const Point2& p1, const Point2& q,
                  OptionalJacobian<1, 2> H1 = boost::none,
                  OptionalJacobian<1, 2> H2 = boost::none);
 
+GTSAM_EXPORT Point2 fromHomogeneous(const Vector3& p, OptionalJacobian<2, 3> H1 = boost::none);
+
 // For MATLAB wrapper
 typedef std::vector<Point2, Eigen::aligned_allocator<Point2> > Point2Vector;
 

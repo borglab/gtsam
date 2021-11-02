@@ -393,4 +393,83 @@ class EssentialMatrixFactor4
 };
 // EssentialMatrixFactor4
 
+template <class CALIBRATION>
+class ThreeViewEssentialMatrixFactor
+    : public NoiseModelFactor2<EssentialMatrix, EssentialMatrix> {
+ private:
+  Vector3 vA_, vB_, vC_;  ///< points in normalized homogeneous coordinates
+
+  typedef NoiseModelFactor2<EssentialMatrix, EssentialMatrix> Base;
+  typedef ThreeViewEssentialMatrixFactor This;
+
+ public:
+  /**
+   *  Constructor
+   *  @param keyE Essential Matrix (from camera B to A) variable key
+   *  @param keyK Calibration variable key (common for both cameras)
+   *  @param pA point in first camera, in pixel coordinates
+   *  @param pB point in second camera, in pixel coordinates
+   *  @param pC point in second camera, in pixel coordinates
+   *  @param model noise model is about dot product in ideal, homogeneous
+   * coordinates
+   */
+  ThreeViewEssentialMatrixFactor(Key key_A_E_B, Key key_A_E_C, const Vector3& vA, const Vector3& vB, const Vector3& vC, 
+                         const SharedNoiseModel& model)
+      : Base(model, key_A_E_B, key_A_E_C), vA_(vA), vB_(vB), vC_(vC) {}
+
+  /// @return a deep copy of this factor
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
+    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new This(*this)));
+  }
+
+  /// print
+  void print(
+      const std::string& s = "",
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
+    Base::print(s);
+    std::cout << "  ThreeViewEssentialMatrixFactor with measurements\n  ("
+              << vA_.transpose() << ") and (" << vB_.transpose() << ") and (" << vC_.transpose() << ")"
+              << std::endl;
+  }
+
+  /**
+   * @brief Calculate the algebraic epipolar error pA' (K^-1)' E K pB.
+   *
+   * @param E essential matrix for key keyE
+   * @param K calibration (common for both images) for key keyK
+   * @param H1 optional jacobian of error w.r.t E
+   * @param H2 optional jacobian of error w.r.t K
+   * @return * Vector 1D vector of algebraic error
+   */
+  Vector evaluateError(
+      const EssentialMatrix& A_E_B, const EssentialMatrix& A_E_C, 
+      boost::optional<Matrix&> H1 = boost::none,
+      boost::optional<Matrix&> H2 = boost::none) const override {
+    Matrix AlB_D_EB, AlC_D_EC;
+    Vector3 AlB = A_E_B.pointToEpipolarLine(vB_, H1 ? AlB_D_EB : boost::none);
+    Vector3 AlC = A_E_C.pointToEpipolarLine(vC_, H2 ? AlC_D_EC : boost::none);
+
+    Matrix vA_BC_D_AlB, vA_BC_D_AlC;
+    Vector3 vA_BC = cross(AlB, AlC, H1 ? vA_BC_D_AlB : boost::none, H2 ? vA_BC_D_AlC : boost::none);
+    
+    Matrix p_D_v;
+    Point2 pA_BC = fromHomogeneous(vA_BC, H1 || H2 ? p_D_v : boost::none);
+
+    if (H1) {
+      *H1 = p_D_v * vA_BC_D_AlB * AlB_D_EB;
+    }
+    if (H2) {
+      *H2 = p_D_v * vA_BC_D_AlC * AlC_D_EC;
+    }
+
+    Vector error(2);
+    error << pA_BC.x() - vA_.x(), pA_BC.y() - vA_.y();
+
+    return error;
+  }
+
+ public:
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
+};
 }  // namespace gtsam

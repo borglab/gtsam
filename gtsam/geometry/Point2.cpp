@@ -51,6 +51,19 @@ double distance2(const Point2& p, const Point2& q, OptionalJacobian<1, 2> H1,
 }
 
 /* ************************************************************************* */
+Point2 fromHomogeneous(const Vector3& p, OptionalJacobian<2, 3> H1 = boost::none) {
+  if(H1) {
+    Matrix23 H;
+    H[0][0] = 1 / p.z();
+    H[1][1] = 1 / p.z();
+    H[0][2] = - p.x() / (p.z() * p.z());
+    H[1][2] = - p.y() / (p.z() * p.z());
+    *H1 = H;
+  }
+  return Point2(p.x() / p.z(), p.y() / p.z());
+}
+
+/* ************************************************************************* */
 // Math inspired by http://paulbourke.net/geometry/circlesphere/
 boost::optional<Point2> circleCircleIntersection(double R_d, double r_d,
     double tol) {

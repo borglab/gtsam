@@ -101,6 +101,17 @@ EssentialMatrix EssentialMatrix::rotate(const Rot3& cRb,
 }
 
 /* ************************************************************************* */
+Vector3 EssentialMatrix::pointToEpipolarLine(const Vector3& p, OptionalJacobian<3, 5> DE = boost::none) const {
+  if(DE) {
+    // See math.lyx
+    Matrix3 HR = E_ * skewSymmetric(-vB);
+    Matrix32 HD = skewSymmetric(-rotation().matrix() * vB) * direction().basis();
+    *DE << HR, HD;
+  }
+  return E_ * p;
+}
+
+/* ************************************************************************* */
 double EssentialMatrix::error(const Vector3& vA, const Vector3& vB, //
     OptionalJacobian<1, 5> H) const {
   if (H) {
