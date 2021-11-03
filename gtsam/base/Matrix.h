@@ -46,18 +46,18 @@ typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> M
 // Create handy typedefs and constants for square-size matrices
 // MatrixMN, MatrixN = MatrixNN, I_NxN, and Z_NxN, for M,N=1..9
 #define GTSAM_MAKE_MATRIX_DEFS(N)   \
-typedef Eigen::Matrix<double, N, N> Matrix##N;  \
-typedef Eigen::Matrix<double, 1, N> Matrix1##N;  \
-typedef Eigen::Matrix<double, 2, N> Matrix2##N;  \
-typedef Eigen::Matrix<double, 3, N> Matrix3##N;  \
-typedef Eigen::Matrix<double, 4, N> Matrix4##N;  \
-typedef Eigen::Matrix<double, 5, N> Matrix5##N;  \
-typedef Eigen::Matrix<double, 6, N> Matrix6##N;  \
-typedef Eigen::Matrix<double, 7, N> Matrix7##N;  \
-typedef Eigen::Matrix<double, 8, N> Matrix8##N;  \
-typedef Eigen::Matrix<double, 9, N> Matrix9##N;  \
+using Matrix##N = Eigen::Matrix<double, N, N>;  \
+using Matrix1##N = Eigen::Matrix<double, 1, N>;  \
+using Matrix2##N = Eigen::Matrix<double, 2, N>;  \
+using Matrix3##N = Eigen::Matrix<double, 3, N>;  \
+using Matrix4##N = Eigen::Matrix<double, 4, N>;  \
+using Matrix5##N = Eigen::Matrix<double, 5, N>;  \
+using Matrix6##N = Eigen::Matrix<double, 6, N>;  \
+using Matrix7##N = Eigen::Matrix<double, 7, N>;  \
+using Matrix8##N = Eigen::Matrix<double, 8, N>;  \
+using Matrix9##N = Eigen::Matrix<double, 9, N>;  \
 static const Eigen::MatrixBase<Matrix##N>::IdentityReturnType I_##N##x##N = Matrix##N::Identity(); \
-static const Eigen::MatrixBase<Matrix##N>::ConstantReturnType Z_##N##x##N = Matrix##N::Zero();
+static const Eigen::MatrixBase<Matrix##N>::ConstantReturnType Z_##N##x##N = Matrix##N::Zero()
 
 GTSAM_MAKE_MATRIX_DEFS(1);
 GTSAM_MAKE_MATRIX_DEFS(2);

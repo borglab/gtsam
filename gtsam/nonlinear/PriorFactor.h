@@ -39,7 +39,7 @@ namespace gtsam {
     VALUE prior_; /** The measurement */
 
     /** concept check by type */
-    GTSAM_CONCEPT_TESTABLE_TYPE(T)
+    GTSAM_CONCEPT_TESTABLE_TYPE(T);
 
   public:
 

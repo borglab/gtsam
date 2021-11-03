@@ -37,8 +37,8 @@ namespace gtsam {
     boost::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame
 
     /** concept check by type */
-    GTSAM_CONCEPT_TESTABLE_TYPE(POSE)
-    GTSAM_CONCEPT_POSE_TYPE(POSE)
+    GTSAM_CONCEPT_TESTABLE_TYPE(POSE);
+    GTSAM_CONCEPT_POSE_TYPE(POSE);
   public:
 
     /// shorthand for a smart pointer to a factor
