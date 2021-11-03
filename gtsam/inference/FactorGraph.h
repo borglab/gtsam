@@ -121,7 +121,7 @@ class FactorGraph {
 
  protected:
   /** concept check, makes sure FACTOR defines print and equals */
-  GTSAM_CONCEPT_TESTABLE_TYPE(FACTOR)
+  GTSAM_CONCEPT_TESTABLE_TYPE(FACTOR);
 
   /** Collection of factors */
   FastVector<sharedFactor> factors_;

@@ -55,8 +55,8 @@ namespace gtsam {
     SharedGaussian model_;
 
     /** concept check by type */
-    GTSAM_CONCEPT_LIE_TYPE(T)
-    GTSAM_CONCEPT_TESTABLE_TYPE(T)
+    GTSAM_CONCEPT_LIE_TYPE(T);
+    GTSAM_CONCEPT_TESTABLE_TYPE(T);
 
   public:
 
