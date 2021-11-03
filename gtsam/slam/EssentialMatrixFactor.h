@@ -393,7 +393,7 @@ class EssentialMatrixFactor4
 };
 // EssentialMatrixFactor4
 
-template <class CALIBRATION>
+
 class ThreeViewEssentialMatrixFactor
     : public NoiseModelFactor2<EssentialMatrix, EssentialMatrix> {
  private:
@@ -446,15 +446,15 @@ class ThreeViewEssentialMatrixFactor
       const EssentialMatrix& A_E_B, const EssentialMatrix& A_E_C, 
       boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none) const override {
-    Matrix AlB_D_EB, AlC_D_EC;
-    Vector3 AlB = A_E_B.pointToEpipolarLine(vB_, H1 ? AlB_D_EB : boost::none);
-    Vector3 AlC = A_E_C.pointToEpipolarLine(vC_, H2 ? AlC_D_EC : boost::none);
+    Matrix35 AlB_D_EB, AlC_D_EC;
+    Vector3 AlB = A_E_B.pointToEpipolarLine(vB_, H1 ? &AlB_D_EB : nullptr);
+    Vector3 AlC = A_E_C.pointToEpipolarLine(vC_, H2 ? &AlC_D_EC : nullptr);
 
-    Matrix vA_BC_D_AlB, vA_BC_D_AlC;
-    Vector3 vA_BC = cross(AlB, AlC, H1 ? vA_BC_D_AlB : boost::none, H2 ? vA_BC_D_AlC : boost::none);
+    Matrix3 vA_BC_D_AlB, vA_BC_D_AlC;
+    Vector3 vA_BC = cross(AlB, AlC, H1 ? &vA_BC_D_AlB : nullptr, H2 ? &vA_BC_D_AlC : nullptr);
     
-    Matrix p_D_v;
-    Point2 pA_BC = fromHomogeneous(vA_BC, H1 || H2 ? p_D_v : boost::none);
+    Matrix23 p_D_v;
+    Point2 pA_BC = fromHomogeneous(vA_BC, H1 || H2 ? &p_D_v : nullptr);
 
     if (H1) {
       *H1 = p_D_v * vA_BC_D_AlB * AlB_D_EB;
@@ -472,4 +472,5 @@ class ThreeViewEssentialMatrixFactor
  public:
   GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
+
 }  // namespace gtsam
