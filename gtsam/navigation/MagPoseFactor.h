@@ -45,7 +45,7 @@ class MagPoseFactor: public NoiseModelFactor1<POSE> {
   using shared_ptr = boost::shared_ptr<MagPoseFactor<POSE>>;
 
   /// Concept check by type.
-  GTSAM_CONCEPT_TESTABLE_TYPE(POSE);
+  GTSAM_CONCEPT_TESTABLE_TYPE(POSE)
   GTSAM_CONCEPT_POSE_TYPE(POSE);
 
  public:
