@@ -184,7 +184,7 @@ Similarity2 Similarity2::Align(const vector<Pose3Pair> &abPosePairs) {
 }
 
 std::ostream &operator<<(std::ostream &os, const Similarity2& p) {
-  os << "[" << p.rotation().xyz().transpose() << " "
+  os << "[" << p.rotation().theta() << " "
       << p.translation().transpose() << " " << p.scale() << "]\';";
   return os;
 }
