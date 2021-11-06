@@ -143,7 +143,7 @@ class SmartProjectionPoseFactorRollingShutter
    *  interpolated pose is the same as world_P_body_key1
    * @param cameraId ID of the camera taking the measurement (default 0)
    */
-  void add(const Point2& measured, const Key& world_P_body_key1,
+  void add(const MEASUREMENT& measured, const Key& world_P_body_key1,
            const Key& world_P_body_key2, const double& alpha,
            const size_t& cameraId = 0) {
     // store measurements in base class
@@ -182,7 +182,7 @@ class SmartProjectionPoseFactorRollingShutter
    * @param cameraIds IDs of the cameras taking each measurement (same order as
    * the measurements)
    */
-  void add(const Point2Vector& measurements,
+  void add(const MEASUREMENTS& measurements,
            const std::vector<std::pair<Key, Key>>& world_P_body_key_pairs,
            const std::vector<double>& alphas,
            const FastVector<size_t>& cameraIds = FastVector<size_t>()) {
