@@ -112,7 +112,7 @@ class FormatMixin:
 
         if separator == "::":  # C++
             templates = []
-            for idx in range(len(type_name.instantiations)):
+            for idx, _ in enumerate(type_name.instantiations):
                 template = '{}'.format(
                     self._format_type_name(type_name.instantiations[idx],
                                            include_namespace=include_namespace,
@@ -124,7 +124,7 @@ class FormatMixin:
                 formatted_type_name += '<{}>'.format(','.join(templates))
 
         else:
-            for idx in range(len(type_name.instantiations)):
+            for idx, _ in enumerate(type_name.instantiations):
                 formatted_type_name += '{}'.format(
                     self._format_type_name(type_name.instantiations[idx],
                                            separator=separator,

@@ -18,11 +18,13 @@ import unittest
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from gtwrap.interface_parser import (
-    ArgumentList, Class, Constructor, Enum, Enumerator, ForwardDeclaration,
-    GlobalFunction, Include, Method, Module, Namespace, Operator, ReturnType,
-    StaticMethod, TemplatedType, Type, TypedefTemplateInstantiation, Typename,
-    Variable)
+from gtwrap.interface_parser import (ArgumentList, Class, Constructor, Enum,
+                                     Enumerator, ForwardDeclaration,
+                                     GlobalFunction, Include, Method, Module,
+                                     Namespace, Operator, ReturnType,
+                                     StaticMethod, TemplatedType, Type,
+                                     TypedefTemplateInstantiation, Typename,
+                                     Variable)
 
 
 class TestInterfaceParser(unittest.TestCase):
@@ -266,6 +268,11 @@ class TestInterfaceParser(unittest.TestCase):
         self.assertEqual("char", return_type.type1.typename.name)
         self.assertEqual("int", return_type.type2.typename.name)
 
+        return_type = ReturnType.rule.parseString("pair<Test ,Test*>")[0]
+        self.assertEqual("Test", return_type.type1.typename.name)
+        self.assertEqual("Test", return_type.type2.typename.name)
+        self.assertTrue(return_type.type2.is_shared_ptr)
+
     def test_method(self):
         """Test for a class method."""
         ret = Method.rule.parseString("int f();")[0]
@@ -282,6 +289,13 @@ class TestInterfaceParser(unittest.TestCase):
             "int f(const int x, const Class& c, Class* t) const;")[0]
         self.assertEqual("f", ret.name)
         self.assertEqual(3, len(ret.args))
+
+        ret = Method.rule.parseString(
+            "pair<First ,Second*> create_MixedPtrs();")[0]
+        self.assertEqual("create_MixedPtrs", ret.name)
+        self.assertEqual(0, len(ret.args))
+        self.assertEqual("First", ret.return_type.type1.typename.name)
+        self.assertEqual("Second", ret.return_type.type2.typename.name)
 
     def test_static_method(self):
         """Test for static methods."""

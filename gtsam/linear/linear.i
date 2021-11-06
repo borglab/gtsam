@@ -221,6 +221,7 @@ class VectorValues {
   //Constructors
   VectorValues();
   VectorValues(const gtsam::VectorValues& other);
+  VectorValues(const gtsam::VectorValues& first, const gtsam::VectorValues& second);
 
   //Named Constructors
   static gtsam::VectorValues Zero(const gtsam::VectorValues& model);
@@ -400,6 +401,7 @@ class GaussianFactorGraph {
   // error and probability
   double error(const gtsam::VectorValues& c) const;
   double probPrime(const gtsam::VectorValues& c) const;
+  void printErrors(const gtsam::VectorValues& c, string str = "GaussianFactorGraph: ", const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter) const;
 
   gtsam::GaussianFactorGraph clone() const;
   gtsam::GaussianFactorGraph negate() const;
