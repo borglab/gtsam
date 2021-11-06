@@ -11,7 +11,8 @@
 
 /**
  * @file   SmartProjectionPoseFactorRollingShutter.h
- * @brief  Smart projection factor on poses modeling rolling shutter effect with given readout time
+ * @brief  Smart projection factor on poses modeling rolling shutter effect with
+ * given readout time
  * @author Luca Carlone
  */
 
@@ -42,7 +43,6 @@ namespace gtsam {
 template <class CAMERA>
 class SmartProjectionPoseFactorRollingShutter
     : public SmartProjectionFactor<CAMERA> {
-
  private:
   typedef SmartProjectionFactor<CAMERA> Base;
   typedef SmartProjectionPoseFactorRollingShutter<CAMERA> This;
@@ -57,10 +57,12 @@ class SmartProjectionPoseFactorRollingShutter
   /// pair of consecutive poses
   std::vector<double> alphas_;
 
-  /// one or more cameras taking observations (fixed poses wrt body + fixed intrinsics)
+  /// one or more cameras taking observations (fixed poses wrt body + fixed
+  /// intrinsics)
   typename Base::Cameras cameraRig_;
 
-  /// vector of camera Ids (one for each observation, in the same order), identifying which camera took the measurement
+  /// vector of camera Ids (one for each observation, in the same order),
+  /// identifying which camera took the measurement
   FastVector<size_t> cameraIds_;
 
  public:
@@ -72,8 +74,9 @@ class SmartProjectionPoseFactorRollingShutter
   /// shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<This> shared_ptr;
 
-  static const int DimBlock = 12;  ///< size of the variable stacking 2 poses from which the observation
-                                   ///< pose is interpolated
+  static const int DimBlock =
+      12;  ///< size of the variable stacking 2 poses from which the observation
+           ///< pose is interpolated
   static const int DimPose = 6;  ///< Pose3 dimension
   static const int ZDim = 2;     ///< Measurement dimension (Point2)
   typedef Eigen::Matrix<double, ZDim, DimBlock>
@@ -84,14 +87,14 @@ class SmartProjectionPoseFactorRollingShutter
   /**
    * Constructor
    * @param Isotropic measurement noise
-   * @param cameraRig set of cameras (fixed poses wrt body and intrinsics) taking the measurements
+   * @param cameraRig set of cameras (fixed poses wrt body and intrinsics)
+   * taking the measurements
    * @param params internal parameters of the smart factors
    */
   SmartProjectionPoseFactorRollingShutter(
       const SharedNoiseModel& sharedNoiseModel, const Cameras& cameraRig,
       const SmartProjectionParams& params = SmartProjectionParams())
-      : Base(sharedNoiseModel, params),
-        cameraRig_(cameraRig) {
+      : Base(sharedNoiseModel, params), cameraRig_(cameraRig) {
     // use only configuration that works with this factor
     Base::params_.degeneracyMode = gtsam::ZERO_ON_DEGENERACY;
     Base::params_.linearizationMode = gtsam::HESSIAN;
@@ -130,7 +133,7 @@ class SmartProjectionPoseFactorRollingShutter
    */
   void add(const Point2& measured, const Key& world_P_body_key1,
            const Key& world_P_body_key2, const double& alpha,
-           const size_t cameraId = 0) {
+           const size_t& cameraId = 0) {
     // store measurements in base class
     this->measured_.push_back(measured);
 
@@ -164,29 +167,33 @@ class SmartProjectionPoseFactorRollingShutter
    *  for the i0-th measurement can be interpolated
    * @param alphas vector of interpolation params (in [0,1]), one for each
    * measurement (in the same order)
-   * @param cameraIds IDs of the cameras taking each measurement (same order as the measurements)
+   * @param cameraIds IDs of the cameras taking each measurement (same order as
+   * the measurements)
    */
   void add(const Point2Vector& measurements,
            const std::vector<std::pair<Key, Key>>& world_P_body_key_pairs,
            const std::vector<double>& alphas,
            const FastVector<size_t>& cameraIds = FastVector<size_t>()) {
-
-    if (world_P_body_key_pairs.size() != measurements.size()
-        || world_P_body_key_pairs.size() != alphas.size()
-        || (world_P_body_key_pairs.size() != cameraIds.size()
-            && cameraIds.size() != 0)) { // cameraIds.size()=0 is default
-      throw std::runtime_error("SmartProjectionPoseFactorRollingShutter: "
-                               "trying to add inconsistent inputs");
+    if (world_P_body_key_pairs.size() != measurements.size() ||
+        world_P_body_key_pairs.size() != alphas.size() ||
+        (world_P_body_key_pairs.size() != cameraIds.size() &&
+         cameraIds.size() != 0)) {  // cameraIds.size()=0 is default
+      throw std::runtime_error(
+          "SmartProjectionPoseFactorRollingShutter: "
+          "trying to add inconsistent inputs");
     }
     if (cameraIds.size() == 0 && cameraRig_.size() > 1) {
       throw std::runtime_error(
           "SmartProjectionPoseFactorRollingShutter: "
-          "camera rig includes multiple camera but add did not input cameraIds");
+          "camera rig includes multiple camera but add did not input "
+          "cameraIds");
     }
     for (size_t i = 0; i < measurements.size(); i++) {
       add(measurements[i], world_P_body_key_pairs[i].first,
           world_P_body_key_pairs[i].second, alphas[i],
-          cameraIds.size() == 0 ? 0 : cameraIds[i]);  // use 0 as default if cameraIds was not specified
+          cameraIds.size() == 0 ? 0
+                                : cameraIds[i]);  // use 0 as default if
+                                                  // cameraIds was not specified
     }
   }
 
@@ -200,14 +207,10 @@ class SmartProjectionPoseFactorRollingShutter
   const std::vector<double> alphas() const { return alphas_; }
 
   /// return the calibration object
-  inline Cameras cameraRig() const {
-    return cameraRig_;
-  }
+  inline Cameras cameraRig() const { return cameraRig_; }
 
   /// return the calibration object
-  inline FastVector<size_t> cameraIds() const {
-    return cameraIds_;
-  }
+  inline FastVector<size_t> cameraIds() const { return cameraIds_; }
 
   /**
    * print
@@ -226,7 +229,7 @@ class SmartProjectionPoseFactorRollingShutter
                 << keyFormatter(world_P_body_key_pairs_[i].second) << std::endl;
       std::cout << " alpha: " << alphas_[i] << std::endl;
       std::cout << "cameraId: " << cameraIds_[i] << std::endl;
-      cameraRig_[ cameraIds_[i] ].print("camera in rig:\n");
+      cameraRig_[cameraIds_[i]].print("camera in rig:\n");
     }
     Base::print("", keyFormatter);
   }
@@ -234,7 +237,8 @@ class SmartProjectionPoseFactorRollingShutter
   /// equals
   bool equals(const NonlinearFactor& p, double tol = 1e-9) const override {
     const SmartProjectionPoseFactorRollingShutter<CAMERA>* e =
-        dynamic_cast<const SmartProjectionPoseFactorRollingShutter<CAMERA>*>(&p);
+        dynamic_cast<const SmartProjectionPoseFactorRollingShutter<CAMERA>*>(
+            &p);
 
     double keyPairsEqual = true;
     if (this->world_P_body_key_pairs_.size() ==
@@ -253,9 +257,10 @@ class SmartProjectionPoseFactorRollingShutter
       keyPairsEqual = false;
     }
 
-    return e && Base::equals(p, tol) && alphas_ == e->alphas() && keyPairsEqual
-        && cameraRig_.equals(e->cameraRig())
-        && std::equal(cameraIds_.begin(), cameraIds_.end(), e->cameraIds().begin());
+    return e && Base::equals(p, tol) && alphas_ == e->alphas() &&
+           keyPairsEqual && cameraRig_.equals(e->cameraRig()) &&
+           std::equal(cameraIds_.begin(), cameraIds_.end(),
+                      e->cameraIds().begin());
   }
 
   /**
@@ -292,7 +297,8 @@ class SmartProjectionPoseFactorRollingShutter
                                dInterpPose_dPoseBody1, dInterpPose_dPoseBody2);
         auto body_P_cam = cameraRig_[cameraIds_[i]].pose();
         auto w_P_cam = w_P_body.compose(body_P_cam, dPoseCam_dInterpPose);
-        PinholeCamera<CALIBRATION> camera(w_P_cam, cameraRig_[cameraIds_[i]].calibration());
+        PinholeCamera<CALIBRATION> camera(
+            w_P_cam, cameraRig_[cameraIds_[i]].calibration());
 
         // get jacobians and error vector for current measurement
         Point2 reprojectionError_i =
@@ -317,7 +323,7 @@ class SmartProjectionPoseFactorRollingShutter
 
   /// linearize and return a Hessianfactor that is an approximation of error(p)
   boost::shared_ptr<RegularHessianFactor<DimPose>> createHessianFactor(
-      const Values& values, const double lambda = 0.0,
+      const Values& values, const double& lambda = 0.0,
       bool diagonalDamping = false) const {
     // we may have multiple observation sharing the same keys (due to the
     // rolling shutter interpolation), hence the number of unique keys may be
@@ -405,7 +411,8 @@ class SmartProjectionPoseFactorRollingShutter
    */
   typename Base::Cameras cameras(const Values& values) const override {
     typename Base::Cameras cameras;
-    for (size_t i = 0; i < this->measured_.size(); i++) {  // for each measurement
+    for (size_t i = 0; i < this->measured_.size();
+         i++) {  // for each measurement
       const Pose3& w_P_body1 =
           values.at<Pose3>(world_P_body_key_pairs_[i].first);
       const Pose3& w_P_body2 =
@@ -415,8 +422,9 @@ class SmartProjectionPoseFactorRollingShutter
           interpolate<Pose3>(w_P_body1, w_P_body2, interpolationFactor);
       const Pose3& body_P_cam = cameraRig_[cameraIds_[i]].pose();
       const Pose3& w_P_cam = w_P_body.compose(body_P_cam);
-      cameras.emplace_back(w_P_cam, make_shared<typename CAMERA::CalibrationType>(
-          cameraRig_[cameraIds_[i]].calibration()));
+      cameras.emplace_back(w_P_cam,
+                           make_shared<typename CAMERA::CalibrationType>(
+                               cameraRig_[cameraIds_[i]].calibration()));
     }
     return cameras;
   }
@@ -429,7 +437,7 @@ class SmartProjectionPoseFactorRollingShutter
    * @return a Gaussian factor
    */
   boost::shared_ptr<GaussianFactor> linearizeDamped(
-      const Values& values, const double lambda = 0.0) const {
+      const Values& values, const double& lambda = 0.0) const {
     // depending on flag set on construction we may linearize to different
     // linear factors
     switch (this->params_.linearizationMode) {
