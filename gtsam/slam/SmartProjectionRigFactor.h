@@ -232,12 +232,13 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
     typename Base::Cameras cameras;
     cameras.reserve(nonUniqueKeys_.size());  // preallocate
     for (size_t i = 0; i < nonUniqueKeys_.size(); i++) {
+      const typename Base::Camera& camera_i = cameraRig_[cameraIds_[i]];
       const Pose3 world_P_sensor_i =
           values.at<Pose3>(nonUniqueKeys_[i])  // = world_P_body
-          * cameraRig_[cameraIds_[i]].pose();  // = body_P_cam_i
+          * camera_i.pose();                   // = body_P_cam_i
       cameras.emplace_back(world_P_sensor_i,
                            make_shared<typename CAMERA::CalibrationType>(
-                               cameraRig_[cameraIds_[i]].calibration()));
+                               camera_i.calibration()));
     }
     return cameras;
   }
