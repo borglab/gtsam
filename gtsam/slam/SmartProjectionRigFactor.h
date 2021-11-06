@@ -175,13 +175,13 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
 
   /// return (for each observation) the (possibly non unique) keys involved in
   /// the measurements
-  const KeyVector nonUniqueKeys() const { return nonUniqueKeys_; }
+  const KeyVector& nonUniqueKeys() const { return nonUniqueKeys_; }
 
   /// return the calibration object
-  inline Cameras cameraRig() const { return cameraRig_; }
+  const Cameras& cameraRig() const { return cameraRig_; }
 
   /// return the calibration object
-  inline FastVector<size_t> cameraIds() const { return cameraIds_; }
+  const FastVector<size_t>& cameraIds() const { return cameraIds_; }
 
   /**
    * print

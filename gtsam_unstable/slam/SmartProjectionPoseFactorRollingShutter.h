@@ -199,18 +199,18 @@ class SmartProjectionPoseFactorRollingShutter
 
   /// return (for each observation) the keys of the pair of poses from which we
   /// interpolate
-  const std::vector<std::pair<Key, Key>> world_P_body_key_pairs() const {
+  const std::vector<std::pair<Key, Key>>& world_P_body_key_pairs() const {
     return world_P_body_key_pairs_;
   }
 
   /// return the interpolation factors alphas
-  const std::vector<double> alphas() const { return alphas_; }
+  const std::vector<double>& alphas() const { return alphas_; }
 
   /// return the calibration object
-  inline Cameras cameraRig() const { return cameraRig_; }
+  const Cameras& cameraRig() const { return cameraRig_; }
 
   /// return the calibration object
-  inline FastVector<size_t> cameraIds() const { return cameraIds_; }
+  const FastVector<size_t>& cameraIds() const { return cameraIds_; }
 
   /**
    * print
