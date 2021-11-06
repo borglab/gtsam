@@ -84,7 +84,8 @@ typedef SmartProjectionPoseFactorRollingShutter<PinholePose<Cal3_S2>>
 /* ************************************************************************* */
 TEST(SmartProjectionPoseFactorRollingShutter, Constructor) {
   using namespace vanillaPoseRS;
-  SmartFactorRS::shared_ptr factor1(new SmartFactorRS(model, Camera(Pose3::identity(), sharedK)));
+  SmartFactorRS::shared_ptr factor1(
+      new SmartFactorRS(model, Camera(Pose3::identity(), sharedK)));
 }
 
 /* ************************************************************************* */
@@ -98,7 +99,8 @@ TEST(SmartProjectionPoseFactorRollingShutter, Constructor2) {
 /* ************************************************************************* */
 TEST(SmartProjectionPoseFactorRollingShutter, add) {
   using namespace vanillaPoseRS;
-  SmartFactorRS::shared_ptr factor1(new SmartFactorRS(model, Camera(Pose3::identity(), sharedK)));
+  SmartFactorRS::shared_ptr factor1(
+      new SmartFactorRS(model, Camera(Pose3::identity(), sharedK)));
   factor1->add(measurement1, x1, x2, interp_factor);
 }
 
@@ -122,10 +124,10 @@ TEST(SmartProjectionPoseFactorRollingShutter, Equals) {
   interp_factors.push_back(interp_factor2);
   interp_factors.push_back(interp_factor3);
 
-  std::vector<size_t> cameraIds{0, 0, 0};
+  FastVector<size_t> cameraIds{0, 0, 0};
 
   Cameras cameraRig;
-  cameraRig.push_back( Camera(body_P_sensor, sharedK) );
+  cameraRig.push_back(Camera(body_P_sensor, sharedK));
 
   // create by adding a batch of measurements with a bunch of calibrations
   SmartFactorRS::shared_ptr factor2(new SmartFactorRS(model, cameraRig));
@@ -153,7 +155,7 @@ TEST(SmartProjectionPoseFactorRollingShutter, Equals) {
     EXPECT(factor1->equals(*factor2));
     EXPECT(factor1->equals(*factor3));
   }
-  { // create equal factors and show equal returns true (use default cameraId)
+  {  // create equal factors and show equal returns true (use default cameraId)
     SmartFactorRS::shared_ptr factor1(new SmartFactorRS(model, cameraRig));
     factor1->add(measurements, key_pairs, interp_factors);
 
@@ -164,7 +166,8 @@ TEST(SmartProjectionPoseFactorRollingShutter, Equals) {
      // returns false (use default cameraIds)
     SmartFactorRS::shared_ptr factor1(new SmartFactorRS(model, cameraRig));
     factor1->add(measurement1, x1, x2, interp_factor1, cameraId1);
-    factor1->add(measurement2, x2, x2, interp_factor2, cameraId1);  // different!
+    factor1->add(measurement2, x2, x2, interp_factor2,
+                 cameraId1);  // different!
     factor1->add(measurement3, x3, x4, interp_factor3, cameraId1);
 
     EXPECT(!factor1->equals(*factor2));
@@ -173,10 +176,11 @@ TEST(SmartProjectionPoseFactorRollingShutter, Equals) {
   {  // create slightly different factors (different extrinsics) and show equal
      // returns false
     Cameras cameraRig2;
-    cameraRig2.push_back( Camera(body_P_sensor * body_P_sensor, sharedK) );
+    cameraRig2.push_back(Camera(body_P_sensor * body_P_sensor, sharedK));
     SmartFactorRS::shared_ptr factor1(new SmartFactorRS(model, cameraRig2));
     factor1->add(measurement1, x1, x2, interp_factor1, cameraId1);
-    factor1->add(measurement2, x2, x3, interp_factor2, cameraId1);  // different!
+    factor1->add(measurement2, x2, x3, interp_factor2,
+                 cameraId1);  // different!
     factor1->add(measurement3, x3, x4, interp_factor3, cameraId1);
 
     EXPECT(!factor1->equals(*factor2));
@@ -186,7 +190,8 @@ TEST(SmartProjectionPoseFactorRollingShutter, Equals) {
      // equal returns false
     SmartFactorRS::shared_ptr factor1(new SmartFactorRS(model, cameraRig));
     factor1->add(measurement1, x1, x2, interp_factor1, cameraId1);
-    factor1->add(measurement2, x2, x3, interp_factor1, cameraId1);  // different!
+    factor1->add(measurement2, x2, x3, interp_factor1,
+                 cameraId1);  // different!
     factor1->add(measurement3, x3, x4, interp_factor3, cameraId1);
 
     EXPECT(!factor1->equals(*factor2));
@@ -377,13 +382,16 @@ TEST(SmartProjectionPoseFactorRollingShutter, optimization_3poses) {
   interp_factors.push_back(interp_factor2);
   interp_factors.push_back(interp_factor3);
 
-  SmartFactorRS::shared_ptr smartFactor1(new SmartFactorRS(model, Camera(Pose3::identity(), sharedK)));
+  SmartFactorRS::shared_ptr smartFactor1(
+      new SmartFactorRS(model, Camera(Pose3::identity(), sharedK)));
   smartFactor1->add(measurements_lmk1, key_pairs, interp_factors);
 
-  SmartFactorRS::shared_ptr smartFactor2(new SmartFactorRS(model, Camera(Pose3::identity(), sharedK)));
+  SmartFactorRS::shared_ptr smartFactor2(
+      new SmartFactorRS(model, Camera(Pose3::identity(), sharedK)));
   smartFactor2->add(measurements_lmk2, key_pairs, interp_factors);
 
-  SmartFactorRS::shared_ptr smartFactor3(new SmartFactorRS(model, Camera(Pose3::identity(), sharedK)));
+  SmartFactorRS::shared_ptr smartFactor3(
+      new SmartFactorRS(model, Camera(Pose3::identity(), sharedK)));
   smartFactor3->add(measurements_lmk3, key_pairs, interp_factors);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -450,13 +458,13 @@ TEST(SmartProjectionPoseFactorRollingShutter, optimization_3poses_multiCam) {
   cameraRig.push_back(Camera(Pose3::identity(), sharedK));
 
   SmartFactorRS::shared_ptr smartFactor1(new SmartFactorRS(model, cameraRig));
-  smartFactor1->add(measurements_lmk1, key_pairs, interp_factors, {1,1,1});
+  smartFactor1->add(measurements_lmk1, key_pairs, interp_factors, {1, 1, 1});
 
   SmartFactorRS::shared_ptr smartFactor2(new SmartFactorRS(model, cameraRig));
-  smartFactor2->add(measurements_lmk2, key_pairs, interp_factors, {1,1,1});
+  smartFactor2->add(measurements_lmk2, key_pairs, interp_factors, {1, 1, 1});
 
   SmartFactorRS::shared_ptr smartFactor3(new SmartFactorRS(model, cameraRig));
-  smartFactor3->add(measurements_lmk3, key_pairs, interp_factors, {1,1,1});
+  smartFactor3->add(measurements_lmk3, key_pairs, interp_factors, {1, 1, 1});
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
 
@@ -470,7 +478,7 @@ TEST(SmartProjectionPoseFactorRollingShutter, optimization_3poses_multiCam) {
   Values groundTruth;
   groundTruth.insert(x1, level_pose);
   groundTruth.insert(x2, pose_right);
-  groundTruth.insert(x3, pose_above); // pose above is the pose of the camera
+  groundTruth.insert(x3, pose_above);  // pose above is the pose of the camera
   DOUBLES_EQUAL(0, graph.error(groundTruth), 1e-9);
 
   //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10),
@@ -503,20 +511,21 @@ TEST(SmartProjectionPoseFactorRollingShutter, optimization_3poses_multiCam2) {
   Point2Vector measurements_lmk1, measurements_lmk2, measurements_lmk3;
 
   // create arbitrary body_T_sensor (transforms from sensor to body)
-  Pose3 body_T_sensor1 = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2),
-                              Point3(1, 1, 1));
-  Pose3 body_T_sensor2 = Pose3(Rot3::Ypr(-M_PI / 5, 0., -M_PI / 2),
-                              Point3(0, 0, 1));
-  Pose3 body_T_sensor3 = Pose3::identity();
+  Pose3 body_T_sensor1 = Pose3(Rot3::Ypr(-0.03, 0., 0.01), Point3(1, 1, 1));
+  Pose3 body_T_sensor2 = Pose3(Rot3::Ypr(-0.1, 0., 0.05), Point3(0, 0, 1));
+  Pose3 body_T_sensor3 = Pose3(Rot3::Ypr(-0.3, 0., -0.05), Point3(0, 1, 1));
 
-  Camera camera1(interp_pose1*body_T_sensor1, sharedK);
-  Camera camera2(interp_pose2*body_T_sensor2, sharedK);
-  Camera camera3(interp_pose3*body_T_sensor3, sharedK);
+  Camera camera1(interp_pose1 * body_T_sensor1, sharedK);
+  Camera camera2(interp_pose2 * body_T_sensor2, sharedK);
+  Camera camera3(interp_pose3 * body_T_sensor3, sharedK);
 
   // Project three landmarks into three cameras
-  projectToMultipleCameras(camera1, camera2, camera3, landmark1, measurements_lmk1);
-  projectToMultipleCameras(camera1, camera2, camera3, landmark2, measurements_lmk2);
-  projectToMultipleCameras(camera1, camera2, camera3, landmark3, measurements_lmk3);
+  projectToMultipleCameras(camera1, camera2, camera3, landmark1,
+                           measurements_lmk1);
+  projectToMultipleCameras(camera1, camera2, camera3, landmark2,
+                           measurements_lmk2);
+  projectToMultipleCameras(camera1, camera2, camera3, landmark3,
+                           measurements_lmk3);
 
   // create inputs
   std::vector<std::pair<Key, Key>> key_pairs;
@@ -535,13 +544,13 @@ TEST(SmartProjectionPoseFactorRollingShutter, optimization_3poses_multiCam2) {
   cameraRig.push_back(Camera(body_T_sensor3, sharedK));
 
   SmartFactorRS::shared_ptr smartFactor1(new SmartFactorRS(model, cameraRig));
-  smartFactor1->add(measurements_lmk1, key_pairs, interp_factors, {0,1,2});
+  smartFactor1->add(measurements_lmk1, key_pairs, interp_factors, {0, 1, 2});
 
   SmartFactorRS::shared_ptr smartFactor2(new SmartFactorRS(model, cameraRig));
-  smartFactor2->add(measurements_lmk2, key_pairs, interp_factors, {0,1,2});
+  smartFactor2->add(measurements_lmk2, key_pairs, interp_factors, {0, 1, 2});
 
   SmartFactorRS::shared_ptr smartFactor3(new SmartFactorRS(model, cameraRig));
-  smartFactor3->add(measurements_lmk3, key_pairs, interp_factors, {0,1,2});
+  smartFactor3->add(measurements_lmk3, key_pairs, interp_factors, {0, 1, 2});
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
 
@@ -555,7 +564,7 @@ TEST(SmartProjectionPoseFactorRollingShutter, optimization_3poses_multiCam2) {
   Values groundTruth;
   groundTruth.insert(x1, level_pose);
   groundTruth.insert(x2, pose_right);
-  groundTruth.insert(x3, pose_above); // pose above is the pose of the camera
+  groundTruth.insert(x3, pose_above);  // pose above is the pose of the camera
   DOUBLES_EQUAL(0, graph.error(groundTruth), 1e-9);
 
   //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10),
@@ -608,7 +617,8 @@ TEST(SmartProjectionPoseFactorRollingShutter, hessian_simple_2poses) {
   measurements_lmk1.push_back(cam1.project(landmark1));
   measurements_lmk1.push_back(cam2.project(landmark1));
 
-  SmartFactorRS::shared_ptr smartFactor1(new SmartFactorRS(model, Camera(body_P_sensorId,sharedKSimple)));
+  SmartFactorRS::shared_ptr smartFactor1(
+      new SmartFactorRS(model, Camera(body_P_sensorId, sharedKSimple)));
   double interp_factor = 0;  // equivalent to measurement taken at pose 1
   smartFactor1->add(measurements_lmk1[0], x1, x2, interp_factor);
   interp_factor = 1;  // equivalent to measurement taken at pose 2
@@ -702,13 +712,13 @@ TEST(SmartProjectionPoseFactorRollingShutter, optimization_3poses_EPI) {
   params.setLandmarkDistanceThreshold(excludeLandmarksFutherThanDist);
   params.setEnableEPI(true);
 
-  SmartFactorRS smartFactor1(model, Camera(Pose3::identity(),sharedK), params);
+  SmartFactorRS smartFactor1(model, Camera(Pose3::identity(), sharedK), params);
   smartFactor1.add(measurements_lmk1, key_pairs, interp_factors);
 
-  SmartFactorRS smartFactor2(model, Camera(Pose3::identity(),sharedK), params);
+  SmartFactorRS smartFactor2(model, Camera(Pose3::identity(), sharedK), params);
   smartFactor2.add(measurements_lmk2, key_pairs, interp_factors);
 
-  SmartFactorRS smartFactor3(model, Camera(Pose3::identity(),sharedK), params);
+  SmartFactorRS smartFactor3(model, Camera(Pose3::identity(), sharedK), params);
   smartFactor3.add(measurements_lmk3, key_pairs, interp_factors);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -766,13 +776,13 @@ TEST(SmartProjectionPoseFactorRollingShutter,
   params.setLandmarkDistanceThreshold(excludeLandmarksFutherThanDist);
   params.setEnableEPI(false);
 
-  SmartFactorRS smartFactor1(model, Camera(Pose3::identity(),sharedK), params);
+  SmartFactorRS smartFactor1(model, Camera(Pose3::identity(), sharedK), params);
   smartFactor1.add(measurements_lmk1, key_pairs, interp_factors);
 
-  SmartFactorRS smartFactor2(model, Camera(Pose3::identity(),sharedK), params);
+  SmartFactorRS smartFactor2(model, Camera(Pose3::identity(), sharedK), params);
   smartFactor2.add(measurements_lmk2, key_pairs, interp_factors);
 
-  SmartFactorRS smartFactor3(model, Camera(Pose3::identity(),sharedK), params);
+  SmartFactorRS smartFactor3(model, Camera(Pose3::identity(), sharedK), params);
   smartFactor3.add(measurements_lmk3, key_pairs, interp_factors);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -841,16 +851,20 @@ TEST(SmartProjectionPoseFactorRollingShutter,
   params.setDynamicOutlierRejectionThreshold(dynamicOutlierRejectionThreshold);
   params.setEnableEPI(false);
 
-  SmartFactorRS::shared_ptr smartFactor1(new SmartFactorRS(model, Camera(Pose3::identity(),sharedK), params));
+  SmartFactorRS::shared_ptr smartFactor1(
+      new SmartFactorRS(model, Camera(Pose3::identity(), sharedK), params));
   smartFactor1->add(measurements_lmk1, key_pairs, interp_factors);
 
-  SmartFactorRS::shared_ptr smartFactor2(new SmartFactorRS(model, Camera(Pose3::identity(),sharedK), params));
+  SmartFactorRS::shared_ptr smartFactor2(
+      new SmartFactorRS(model, Camera(Pose3::identity(), sharedK), params));
   smartFactor2->add(measurements_lmk2, key_pairs, interp_factors);
 
-  SmartFactorRS::shared_ptr smartFactor3(new SmartFactorRS(model, Camera(Pose3::identity(),sharedK), params));
+  SmartFactorRS::shared_ptr smartFactor3(
+      new SmartFactorRS(model, Camera(Pose3::identity(), sharedK), params));
   smartFactor3->add(measurements_lmk3, key_pairs, interp_factors);
 
-  SmartFactorRS::shared_ptr smartFactor4(new SmartFactorRS(model, Camera(Pose3::identity(),sharedK), params));
+  SmartFactorRS::shared_ptr smartFactor4(
+      new SmartFactorRS(model, Camera(Pose3::identity(), sharedK), params));
   smartFactor4->add(measurements_lmk4, key_pairs, interp_factors);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -901,7 +915,8 @@ TEST(SmartProjectionPoseFactorRollingShutter,
   interp_factors.push_back(interp_factor2);
   interp_factors.push_back(interp_factor3);
 
-  SmartFactorRS::shared_ptr smartFactor1(new SmartFactorRS(model, Camera(Pose3::identity(),sharedK)));
+  SmartFactorRS::shared_ptr smartFactor1(
+      new SmartFactorRS(model, Camera(Pose3::identity(), sharedK)));
   smartFactor1->add(measurements_lmk1, key_pairs, interp_factors);
 
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
@@ -1038,7 +1053,8 @@ TEST(SmartProjectionPoseFactorRollingShutter,
   interp_factors.push_back(interp_factor3);
   interp_factors.push_back(interp_factor1);
 
-  SmartFactorRS::shared_ptr smartFactor1(new SmartFactorRS(model, Camera(Pose3::identity(),sharedK)));
+  SmartFactorRS::shared_ptr smartFactor1(
+      new SmartFactorRS(model, Camera(Pose3::identity(), sharedK)));
   smartFactor1->add(measurements_lmk1_redundant, key_pairs, interp_factors);
 
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
@@ -1193,14 +1209,17 @@ TEST(SmartProjectionPoseFactorRollingShutter,
   interp_factors_redundant.push_back(
       interp_factors.at(0));  // we readd the first interp factor
 
-  SmartFactorRS::shared_ptr smartFactor1(new SmartFactorRS(model, Camera(Pose3::identity(),sharedK)));
+  SmartFactorRS::shared_ptr smartFactor1(
+      new SmartFactorRS(model, Camera(Pose3::identity(), sharedK)));
   smartFactor1->add(measurements_lmk1_redundant, key_pairs_redundant,
                     interp_factors_redundant);
 
-  SmartFactorRS::shared_ptr smartFactor2(new SmartFactorRS(model, Camera(Pose3::identity(),sharedK)));
+  SmartFactorRS::shared_ptr smartFactor2(
+      new SmartFactorRS(model, Camera(Pose3::identity(), sharedK)));
   smartFactor2->add(measurements_lmk2, key_pairs, interp_factors);
 
-  SmartFactorRS::shared_ptr smartFactor3(new SmartFactorRS(model, Camera(Pose3::identity(),sharedK)));
+  SmartFactorRS::shared_ptr smartFactor3(
+      new SmartFactorRS(model, Camera(Pose3::identity(), sharedK)));
   smartFactor3->add(measurements_lmk3, key_pairs, interp_factors);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -1244,8 +1263,9 @@ TEST(SmartProjectionPoseFactorRollingShutter,
 #ifndef DISABLE_TIMING
 #include <gtsam/base/timing.h>
 //-Total: 0 CPU (0 times, 0 wall, 0.21 children, min: 0 max: 0)
-//|   -SF RS LINEARIZE: 0.15 CPU (10000 times, 0.125521 wall, 0.15 children, min: 0 max: 0)
-//|   -RS LINEARIZE: 0.06 CPU (10000 times, 0.06311 wall, 0.06 children, min: 0 max: 0)
+//|   -SF RS LINEARIZE: 0.15 CPU (10000 times, 0.125521 wall, 0.15 children,
+// min: 0 max: 0) |   -RS LINEARIZE: 0.06 CPU (10000 times, 0.06311 wall, 0.06
+// children, min: 0 max: 0)
 /* *************************************************************************/
 TEST(SmartProjectionPoseFactorRollingShutter, timing) {
   using namespace vanillaPose;
@@ -1271,7 +1291,8 @@ TEST(SmartProjectionPoseFactorRollingShutter, timing) {
   size_t nrTests = 10000;
 
   for (size_t i = 0; i < nrTests; i++) {
-    SmartFactorRS::shared_ptr smartFactorRS(new SmartFactorRS(model, Camera(body_P_sensorId,sharedKSimple)));
+    SmartFactorRS::shared_ptr smartFactorRS(
+        new SmartFactorRS(model, Camera(body_P_sensorId, sharedKSimple)));
     double interp_factor = 0;  // equivalent to measurement taken at pose 1
     smartFactorRS->add(measurements_lmk1[0], x1, x2, interp_factor);
     interp_factor = 1;  // equivalent to measurement taken at pose 2
