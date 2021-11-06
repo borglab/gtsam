@@ -93,9 +93,8 @@ Vector6 Pose3::AdjointTranspose(const Vector6& x, OptionalJacobian<6, 6> H_pose,
   if (H_pose) {
     const auto w_T_hat = skewSymmetric(AdTx.head<3>()),
                v_T_hat = skewSymmetric(AdTx.tail<3>());
-    *H_pose = (Matrix6() << w_T_hat, v_T_hat,  //
-               /*        */ v_T_hat, Z_3x3)
-                  .finished();
+    *H_pose << w_T_hat, v_T_hat,  //
+        /*  */ v_T_hat, Z_3x3;
   }
   if (H_x) {
     *H_x = Ad.transpose();
