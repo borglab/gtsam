@@ -95,9 +95,15 @@ class SmartProjectionPoseFactorRollingShutter
       const SharedNoiseModel& sharedNoiseModel, const Cameras& cameraRig,
       const SmartProjectionParams& params = SmartProjectionParams())
       : Base(sharedNoiseModel, params), cameraRig_(cameraRig) {
-    // use only configuration that works with this factor
-    Base::params_.degeneracyMode = gtsam::ZERO_ON_DEGENERACY;
-    Base::params_.linearizationMode = gtsam::HESSIAN;
+    // throw exception if configuration is not supported by this factor
+    if (Base::params_.degeneracyMode != gtsam::ZERO_ON_DEGENERACY)
+      throw std::runtime_error(
+          "SmartProjectionRigFactor: "
+          "degeneracyMode must be set to ZERO_ON_DEGENERACY");
+    if (Base::params_.linearizationMode != gtsam::HESSIAN)
+      throw std::runtime_error(
+          "SmartProjectionRigFactor: "
+          "linearizationMode must be set to HESSIAN");
   }
 
   /**
@@ -110,9 +116,15 @@ class SmartProjectionPoseFactorRollingShutter
       const SharedNoiseModel& sharedNoiseModel, const Camera& camera,
       const SmartProjectionParams& params = SmartProjectionParams())
       : Base(sharedNoiseModel, params) {
-    // use only configuration that works with this factor
-    Base::params_.degeneracyMode = gtsam::ZERO_ON_DEGENERACY;
-    Base::params_.linearizationMode = gtsam::HESSIAN;
+    // throw exception if configuration is not supported by this factor
+    if (Base::params_.degeneracyMode != gtsam::ZERO_ON_DEGENERACY)
+      throw std::runtime_error(
+          "SmartProjectionRigFactor: "
+          "degeneracyMode must be set to ZERO_ON_DEGENERACY");
+    if (Base::params_.linearizationMode != gtsam::HESSIAN)
+      throw std::runtime_error(
+          "SmartProjectionRigFactor: "
+          "linearizationMode must be set to HESSIAN");
     cameraRig_.push_back(camera);
   }
 

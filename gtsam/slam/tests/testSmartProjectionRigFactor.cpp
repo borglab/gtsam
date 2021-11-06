@@ -58,67 +58,86 @@ LevenbergMarquardtParams lmParams;
 // params.verbosityLM = LevenbergMarquardtParams::SUMMARY;
 
 /* ************************************************************************* */
+// default Cal3_S2 poses with rolling shutter effect
+namespace vanillaRig {
+using namespace vanillaPose;
+SmartProjectionParams params(
+    gtsam::HESSIAN,
+    gtsam::ZERO_ON_DEGENERACY);  // only config that works with rig factors
+}  // namespace vanillaRig
+
+/* ************************************************************************* */
 TEST(SmartProjectionRigFactor, Constructor) {
-  using namespace vanillaPose;
+  using namespace vanillaRig;
   Cameras cameraRig;
   cameraRig.push_back(Camera(Pose3::identity(), sharedK));
-  SmartRigFactor::shared_ptr factor1(new SmartRigFactor(model, cameraRig));
+  SmartRigFactor::shared_ptr factor1(
+      new SmartRigFactor(model, cameraRig, params));
 }
 
 /* ************************************************************************* */
 TEST(SmartProjectionRigFactor, Constructor2) {
-  using namespace vanillaPose;
+  using namespace vanillaRig;
   Cameras cameraRig;
-  SmartProjectionParams params;
-  params.setRankTolerance(rankTol);
-  SmartRigFactor factor1(model, cameraRig, params);
+  SmartProjectionParams params2(
+      gtsam::HESSIAN,
+      gtsam::ZERO_ON_DEGENERACY);  // only config that works with rig factors
+  params2.setRankTolerance(rankTol);
+  SmartRigFactor factor1(model, cameraRig, params2);
 }
 
 /* ************************************************************************* */
 TEST(SmartProjectionRigFactor, Constructor3) {
-  using namespace vanillaPose;
+  using namespace vanillaRig;
   Cameras cameraRig;
   cameraRig.push_back(Camera(Pose3::identity(), sharedK));
-  SmartRigFactor::shared_ptr factor1(new SmartRigFactor(model, cameraRig));
+  SmartRigFactor::shared_ptr factor1(
+      new SmartRigFactor(model, cameraRig, params));
   factor1->add(measurement1, x1, cameraId1);
 }
 
 /* ************************************************************************* */
 TEST(SmartProjectionRigFactor, Constructor4) {
-  using namespace vanillaPose;
+  using namespace vanillaRig;
   Cameras cameraRig;
   cameraRig.push_back(Camera(Pose3::identity(), sharedK));
-  SmartProjectionParams params;
-  params.setRankTolerance(rankTol);
-  SmartRigFactor factor1(model, cameraRig, params);
+  SmartProjectionParams params2(
+      gtsam::HESSIAN,
+      gtsam::ZERO_ON_DEGENERACY);  // only config that works with rig factors
+  params2.setRankTolerance(rankTol);
+  SmartRigFactor factor1(model, cameraRig, params2);
   factor1.add(measurement1, x1, cameraId1);
 }
 
 /* ************************************************************************* */
 TEST(SmartProjectionRigFactor, Constructor5) {
-  using namespace vanillaPose;
-  SmartProjectionParams params;
-  params.setRankTolerance(rankTol);
-  SmartRigFactor factor1(model, Camera(Pose3::identity(), sharedK), params);
+  using namespace vanillaRig;
+  SmartProjectionParams params2(
+      gtsam::HESSIAN,
+      gtsam::ZERO_ON_DEGENERACY);  // only config that works with rig factors
+  params2.setRankTolerance(rankTol);
+  SmartRigFactor factor1(model, Camera(Pose3::identity(), sharedK), params2);
   factor1.add(measurement1, x1, cameraId1);
 }
 
 /* ************************************************************************* */
 TEST(SmartProjectionRigFactor, Equals) {
-  using namespace vanillaPose;
+  using namespace vanillaRig;
   Cameras cameraRig;  // single camera in the rig
   cameraRig.push_back(Camera(Pose3::identity(), sharedK));
 
-  SmartRigFactor::shared_ptr factor1(new SmartRigFactor(model, cameraRig));
+  SmartRigFactor::shared_ptr factor1(
+      new SmartRigFactor(model, cameraRig, params));
   factor1->add(measurement1, x1, cameraId1);
 
-  SmartRigFactor::shared_ptr factor2(new SmartRigFactor(model, cameraRig));
+  SmartRigFactor::shared_ptr factor2(
+      new SmartRigFactor(model, cameraRig, params));
   factor2->add(measurement1, x1, cameraId1);
 
   CHECK(assert_equal(*factor1, *factor2));
 
   SmartRigFactor::shared_ptr factor3(
-      new SmartRigFactor(model, Camera(Pose3::identity(), sharedK)));
+      new SmartRigFactor(model, Camera(Pose3::identity(), sharedK), params));
   factor3->add(measurement1, x1);  // now use default
 
   CHECK(assert_equal(*factor1, *factor3));
@@ -126,13 +145,13 @@ TEST(SmartProjectionRigFactor, Equals) {
 
 /* *************************************************************************/
 TEST(SmartProjectionRigFactor, noiseless) {
-  using namespace vanillaPose;
+  using namespace vanillaRig;
 
   // Project two landmarks into two cameras
   Point2 level_uv = level_camera.project(landmark1);
   Point2 level_uv_right = level_camera_right.project(landmark1);
 
-  SmartRigFactor factor(model, Camera(Pose3::identity(), sharedK));
+  SmartRigFactor factor(model, Camera(Pose3::identity(), sharedK), params);
   factor.add(level_uv, x1);  // both taken from the same camera
   factor.add(level_uv_right, x2);
 
@@ -184,7 +203,7 @@ TEST(SmartProjectionRigFactor, noiseless) {
 
 /* *************************************************************************/
 TEST(SmartProjectionRigFactor, noisy) {
-  using namespace vanillaPose;
+  using namespace vanillaRig;
 
   Cameras cameraRig;  // single camera in the rig
   cameraRig.push_back(Camera(Pose3::identity(), sharedK));
@@ -200,14 +219,16 @@ TEST(SmartProjectionRigFactor, noisy) {
       Pose3(Rot3::Ypr(-M_PI / 10, 0., -M_PI / 10), Point3(0.5, 0.1, 0.3));
   values.insert(x2, pose_right.compose(noise_pose));
 
-  SmartRigFactor::shared_ptr factor(new SmartRigFactor(model, cameraRig));
+  SmartRigFactor::shared_ptr factor(
+      new SmartRigFactor(model, cameraRig, params));
   factor->add(level_uv, x1, cameraId1);
   factor->add(level_uv_right, x2, cameraId1);
 
   double actualError1 = factor->error(values);
 
   // create other factor by passing multiple measurements
-  SmartRigFactor::shared_ptr factor2(new SmartRigFactor(model, cameraRig));
+  SmartRigFactor::shared_ptr factor2(
+      new SmartRigFactor(model, cameraRig, params));
 
   Point2Vector measurements;
   measurements.push_back(level_uv);
@@ -223,7 +244,7 @@ TEST(SmartProjectionRigFactor, noisy) {
 
 /* *************************************************************************/
 TEST(SmartProjectionRigFactor, smartFactorWithSensorBodyTransform) {
-  using namespace vanillaPose;
+  using namespace vanillaRig;
 
   // create arbitrary body_T_sensor (transforms from sensor to body)
   Pose3 body_T_sensor =
@@ -253,7 +274,7 @@ TEST(SmartProjectionRigFactor, smartFactorWithSensorBodyTransform) {
 
   SmartProjectionParams params;
   params.setRankTolerance(1.0);
-  params.setDegeneracyMode(IGNORE_DEGENERACY);
+  params.setDegeneracyMode(ZERO_ON_DEGENERACY);
   params.setEnableEPI(false);
 
   SmartRigFactor smartFactor1(model, cameraRig, params);
@@ -304,7 +325,7 @@ TEST(SmartProjectionRigFactor, smartFactorWithSensorBodyTransform) {
 
 /* *************************************************************************/
 TEST(SmartProjectionRigFactor, smartFactorWithMultipleCameras) {
-  using namespace vanillaPose;
+  using namespace vanillaRig;
 
   // create arbitrary body_T_sensor (transforms from sensor to body)
   Pose3 body_T_sensor1 =
@@ -342,7 +363,7 @@ TEST(SmartProjectionRigFactor, smartFactorWithMultipleCameras) {
 
   SmartProjectionParams params;
   params.setRankTolerance(1.0);
-  params.setDegeneracyMode(IGNORE_DEGENERACY);
+  params.setDegeneracyMode(ZERO_ON_DEGENERACY);
   params.setEnableEPI(false);
 
   SmartRigFactor smartFactor1(model, cameraRig, params);
@@ -406,13 +427,20 @@ TEST(SmartProjectionRigFactor, 3poses_smart_projection_factor) {
   FastVector<size_t> cameraIds{
       0, 0, 0};  // 3 measurements from the same camera in the rig
 
-  SmartRigFactor::shared_ptr smartFactor1(new SmartRigFactor(model, cameraRig));
+  SmartProjectionParams params(
+      gtsam::HESSIAN,
+      gtsam::ZERO_ON_DEGENERACY);  // only config that works with rig factors
+
+  SmartRigFactor::shared_ptr smartFactor1(
+      new SmartRigFactor(model, cameraRig, params));
   smartFactor1->add(measurements_cam1, views, cameraIds);
 
-  SmartRigFactor::shared_ptr smartFactor2(new SmartRigFactor(model, cameraRig));
+  SmartRigFactor::shared_ptr smartFactor2(
+      new SmartRigFactor(model, cameraRig, params));
   smartFactor2->add(measurements_cam2, views, cameraIds);
 
-  SmartRigFactor::shared_ptr smartFactor3(new SmartRigFactor(model, cameraRig));
+  SmartRigFactor::shared_ptr smartFactor3(
+      new SmartRigFactor(model, cameraRig, params));
   smartFactor3->add(measurements_cam3, views, cameraIds);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -454,7 +482,7 @@ TEST(SmartProjectionRigFactor, 3poses_smart_projection_factor) {
 
 /* *************************************************************************/
 TEST(SmartProjectionRigFactor, Factors) {
-  using namespace vanillaPose;
+  using namespace vanillaRig;
 
   // Default cameras for simple derivatives
   Rot3 R;
@@ -476,7 +504,7 @@ TEST(SmartProjectionRigFactor, Factors) {
   FastVector<size_t> cameraIds{0, 0};
 
   SmartRigFactor::shared_ptr smartFactor1 = boost::make_shared<SmartRigFactor>(
-      model, Camera(Pose3::identity(), sharedK));
+      model, Camera(Pose3::identity(), sharedK), params);
   smartFactor1->add(measurements_cam1,
                     views);  // we have a single camera so use default cameraIds
 
@@ -543,7 +571,7 @@ TEST(SmartProjectionRigFactor, Factors) {
 
 /* *************************************************************************/
 TEST(SmartProjectionRigFactor, 3poses_iterative_smart_projection_factor) {
-  using namespace vanillaPose;
+  using namespace vanillaRig;
 
   KeyVector views{x1, x2, x3};
 
@@ -563,13 +591,16 @@ TEST(SmartProjectionRigFactor, 3poses_iterative_smart_projection_factor) {
   Cameras cameraRig;  // single camera in the rig
   cameraRig.push_back(Camera(Pose3::identity(), sharedK));
   FastVector<size_t> cameraIds{0, 0, 0};
-  SmartRigFactor::shared_ptr smartFactor1(new SmartRigFactor(model, cameraRig));
+  SmartRigFactor::shared_ptr smartFactor1(
+      new SmartRigFactor(model, cameraRig, params));
   smartFactor1->add(measurements_cam1, views, cameraIds);
 
-  SmartRigFactor::shared_ptr smartFactor2(new SmartRigFactor(model, cameraRig));
+  SmartRigFactor::shared_ptr smartFactor2(
+      new SmartRigFactor(model, cameraRig, params));
   smartFactor2->add(measurements_cam2, views, cameraIds);
 
-  SmartRigFactor::shared_ptr smartFactor3(new SmartRigFactor(model, cameraRig));
+  SmartRigFactor::shared_ptr smartFactor3(
+      new SmartRigFactor(model, cameraRig, params));
   smartFactor3->add(measurements_cam3, views, cameraIds);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -605,7 +636,7 @@ TEST(SmartProjectionRigFactor, 3poses_iterative_smart_projection_factor) {
 
 /* *************************************************************************/
 TEST(SmartProjectionRigFactor, landmarkDistance) {
-  using namespace vanillaPose;
+  using namespace vanillaRig;
 
   double excludeLandmarksFutherThanDist = 2;
 
@@ -620,8 +651,8 @@ TEST(SmartProjectionRigFactor, landmarkDistance) {
 
   SmartProjectionParams params;
   params.setRankTolerance(1.0);
-  params.setLinearizationMode(gtsam::JACOBIAN_SVD);
-  params.setDegeneracyMode(gtsam::IGNORE_DEGENERACY);
+  params.setLinearizationMode(gtsam::HESSIAN);
+  params.setDegeneracyMode(gtsam::ZERO_ON_DEGENERACY);
   params.setLandmarkDistanceThreshold(excludeLandmarksFutherThanDist);
   params.setEnableEPI(false);
 
@@ -668,7 +699,7 @@ TEST(SmartProjectionRigFactor, landmarkDistance) {
 
 /* *************************************************************************/
 TEST(SmartProjectionRigFactor, dynamicOutlierRejection) {
-  using namespace vanillaPose;
+  using namespace vanillaRig;
 
   double excludeLandmarksFutherThanDist = 1e10;
   double dynamicOutlierRejectionThreshold =
@@ -742,7 +773,7 @@ TEST(SmartProjectionRigFactor, dynamicOutlierRejection) {
 TEST(SmartProjectionRigFactor, CheckHessian) {
   KeyVector views{x1, x2, x3};
 
-  using namespace vanillaPose;
+  using namespace vanillaRig;
 
   // Two slightly different cameras
   Pose3 pose2 =
@@ -842,7 +873,12 @@ TEST(SmartProjectionRigFactor, Hessian) {
   cameraRig.push_back(Camera(Pose3::identity(), sharedK2));
   FastVector<size_t> cameraIds{0, 0};
 
-  SmartRigFactor::shared_ptr smartFactor1(new SmartRigFactor(model, cameraRig));
+  SmartProjectionParams params(
+      gtsam::HESSIAN,
+      gtsam::ZERO_ON_DEGENERACY);  // only config that works with rig factors
+
+  SmartRigFactor::shared_ptr smartFactor1(
+      new SmartRigFactor(model, cameraRig, params));
   smartFactor1->add(measurements_cam1, views, cameraIds);
 
   Pose3 noise_pose =
@@ -875,6 +911,9 @@ TEST(SmartProjectionRigFactor, ConstructorWithCal3Bundler) {
 /* *************************************************************************/
 TEST(SmartProjectionRigFactor, Cal3Bundler) {
   using namespace bundlerPose;
+  SmartProjectionParams params(
+      gtsam::HESSIAN,
+      gtsam::ZERO_ON_DEGENERACY);  // only config that works with rig factors
 
   // three landmarks ~5 meters in front of camera
   Point3 landmark3(3, 0, 3.0);
@@ -892,13 +931,16 @@ TEST(SmartProjectionRigFactor, Cal3Bundler) {
   cameraRig.push_back(Camera(Pose3::identity(), sharedBundlerK));
   FastVector<size_t> cameraIds{0, 0, 0};
 
-  SmartRigFactor::shared_ptr smartFactor1(new SmartRigFactor(model, cameraRig));
+  SmartRigFactor::shared_ptr smartFactor1(
+      new SmartRigFactor(model, cameraRig, params));
   smartFactor1->add(measurements_cam1, views, cameraIds);
 
-  SmartRigFactor::shared_ptr smartFactor2(new SmartRigFactor(model, cameraRig));
+  SmartRigFactor::shared_ptr smartFactor2(
+      new SmartRigFactor(model, cameraRig, params));
   smartFactor2->add(measurements_cam2, views, cameraIds);
 
-  SmartRigFactor::shared_ptr smartFactor3(new SmartRigFactor(model, cameraRig));
+  SmartRigFactor::shared_ptr smartFactor3(
+      new SmartRigFactor(model, cameraRig, params));
   smartFactor3->add(measurements_cam3, views, cameraIds);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -942,7 +984,7 @@ TEST(SmartProjectionRigFactor,
   // measurements of the same landmark at a single pose, a setup that occurs in
   // multi-camera systems
 
-  using namespace vanillaPose;
+  using namespace vanillaRig;
   Point2Vector measurements_lmk1;
 
   // Project three landmarks into three cameras
@@ -960,7 +1002,8 @@ TEST(SmartProjectionRigFactor,
   cameraRig.push_back(Camera(Pose3::identity(), sharedK));
   FastVector<size_t> cameraIds{0, 0, 0, 0};
 
-  SmartRigFactor::shared_ptr smartFactor1(new SmartRigFactor(model, cameraRig));
+  SmartRigFactor::shared_ptr smartFactor1(
+      new SmartRigFactor(model, cameraRig, params));
   smartFactor1->add(measurements_lmk1_redundant, keys, cameraIds);
 
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
@@ -1073,7 +1116,7 @@ TEST(SmartProjectionRigFactor,
 
 /* *************************************************************************/
 TEST(SmartProjectionRigFactor, optimization_3poses_measurementsFromSamePose) {
-  using namespace vanillaPose;
+  using namespace vanillaRig;
   Point2Vector measurements_lmk1, measurements_lmk2, measurements_lmk3;
 
   // Project three landmarks into three cameras
@@ -1097,14 +1140,17 @@ TEST(SmartProjectionRigFactor, optimization_3poses_measurementsFromSamePose) {
   KeyVector keys_redundant = keys;
   keys_redundant.push_back(keys.at(0));  // we readd the first key
 
-  SmartRigFactor::shared_ptr smartFactor1(new SmartRigFactor(model, cameraRig));
+  SmartRigFactor::shared_ptr smartFactor1(
+      new SmartRigFactor(model, cameraRig, params));
   smartFactor1->add(measurements_lmk1_redundant, keys_redundant,
                     cameraIdsRedundant);
 
-  SmartRigFactor::shared_ptr smartFactor2(new SmartRigFactor(model, cameraRig));
+  SmartRigFactor::shared_ptr smartFactor2(
+      new SmartRigFactor(model, cameraRig, params));
   smartFactor2->add(measurements_lmk2, keys, cameraIds);
 
-  SmartRigFactor::shared_ptr smartFactor3(new SmartRigFactor(model, cameraRig));
+  SmartRigFactor::shared_ptr smartFactor3(
+      new SmartRigFactor(model, cameraRig, params));
   smartFactor3->add(measurements_lmk3, keys, cameraIds);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -1150,12 +1196,13 @@ TEST(SmartProjectionRigFactor, optimization_3poses_measurementsFromSamePose) {
 // this factor is slightly slower (but comparable) to original
 // SmartProjectionPoseFactor
 //-Total: 0 CPU (0 times, 0 wall, 0.17 children, min: 0 max: 0)
-//|   -SmartRigFactor LINEARIZE: 0.11 CPU (10000 times, 0.086311 wall, 0.11
-// children, min: 0 max: 0) |   -SmartPoseFactor LINEARIZE: 0.06 CPU (10000
-// times, 0.065103 wall, 0.06 children, min: 0 max: 0)
+//|   -SmartRigFactor LINEARIZE: 0.06 CPU
+//(10000 times, 0.061226 wall, 0.06 children, min: 0 max: 0)
+//|   -SmartPoseFactor LINEARIZE: 0.06 CPU
+//(10000 times, 0.073037 wall, 0.06 children, min: 0 max: 0)
 /* *************************************************************************/
 TEST(SmartProjectionRigFactor, timing) {
-  using namespace vanillaPose;
+  using namespace vanillaRig;
 
   // Default cameras for simple derivatives
   static Cal3_S2::shared_ptr sharedKSimple(new Cal3_S2(100, 100, 0, 0, 0));
@@ -1182,7 +1229,7 @@ TEST(SmartProjectionRigFactor, timing) {
 
   for (size_t i = 0; i < nrTests; i++) {
     SmartRigFactor::shared_ptr smartFactorP(
-        new SmartRigFactor(model, cameraRig));
+        new SmartRigFactor(model, cameraRig, params));
     smartFactorP->add(measurements_lmk1[0], x1, cameraId1);
     smartFactorP->add(measurements_lmk1[1], x1, cameraId1);
 
@@ -1195,7 +1242,8 @@ TEST(SmartProjectionRigFactor, timing) {
   }
 
   for (size_t i = 0; i < nrTests; i++) {
-    SmartFactor::shared_ptr smartFactor(new SmartFactor(model, sharedKSimple));
+    SmartFactor::shared_ptr smartFactor(
+        new SmartFactor(model, sharedKSimple, params));
     smartFactor->add(measurements_lmk1[0], x1);
     smartFactor->add(measurements_lmk1[1], x2);
 
@@ -1225,7 +1273,7 @@ TEST(SmartProjectionRigFactor, timing) {
 // BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal");
 //
 // TEST(SmartProjectionRigFactor, serialize) {
-//  using namespace vanillaPose;
+//  using namespace vanillaRig;
 //  using namespace gtsam::serializationTestHelpers;
 //  SmartProjectionParams params;
 //  params.setRankTolerance(rankTol);
@@ -1242,7 +1290,7 @@ TEST(SmartProjectionRigFactor, timing) {
 //
 //// SERIALIZATION TEST FAILS: to be fixed
 ////TEST(SmartProjectionRigFactor, serialize2) {
-////  using namespace vanillaPose;
+////  using namespace vanillaRig;
 ////  using namespace gtsam::serializationTestHelpers;
 ////  SmartProjectionParams params;
 ////  params.setRankTolerance(rankTol);
