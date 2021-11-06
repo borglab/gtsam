@@ -158,6 +158,8 @@ class Type:
     """
     Parsed datatype, can be either a fundamental type or a custom datatype.
     E.g. void, double, size_t, Matrix.
+    Think of this as a high-level type which encodes the typename and other 
+    characteristics of the type.
 
     The type can optionally be a raw pointer, shared pointer or reference.
     Can also be optionally qualified with a `const`, e.g. `const int`.
@@ -240,6 +242,9 @@ class Type:
              or self.typename.name in ["Matrix", "Vector"]) else "",
             typename=typename))
 
+    def get_typename(self):
+        """Convenience method to get the typename of this type."""
+        return self.typename.name
 
 class TemplatedType:
     """

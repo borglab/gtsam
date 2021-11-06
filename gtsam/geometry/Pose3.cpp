@@ -64,6 +64,47 @@ Matrix6 Pose3::AdjointMap() const {
 }
 
 /* ************************************************************************* */
+// Calculate AdjointMap applied to xi_b, with Jacobians
+Vector6 Pose3::Adjoint(const Vector6& xi_b, OptionalJacobian<6, 6> H_pose,
+                       OptionalJacobian<6, 6> H_xib) const {
+  const Matrix6 Ad = AdjointMap();
+
+  // Jacobians
+  // D1 Ad_T(xi_b) = D1 Ad_T Ad_I(xi_b) = Ad_T * D1 Ad_I(xi_b) = Ad_T * ad_xi_b
+  // D2 Ad_T(xi_b) = Ad_T
+  // See docs/math.pdf for more details.
+  // In D1 calculation, we could be more efficient by writing it out, but do not
+  // for readability
+  if (H_pose) *H_pose = -Ad * adjointMap(xi_b);
+  if (H_xib) *H_xib = Ad;
+
+  return Ad * xi_b;
+}
+
+/* ************************************************************************* */
+/// The dual version of Adjoint
+Vector6 Pose3::AdjointTranspose(const Vector6& x, OptionalJacobian<6, 6> H_pose,
+                                OptionalJacobian<6, 6> H_x) const {
+  const Matrix6 &AdT = AdjointMap().transpose();
+  const Vector6 &AdTx = AdT * x;
+
+  // Jacobians
+  // See docs/math.pdf for more details.
+  if (H_pose) {
+    const auto &w_T_hat = skewSymmetric(AdTx.head<3>()),
+               &v_T_hat = skewSymmetric(AdTx.tail<3>());
+    *H_pose = (Matrix6() << w_T_hat, v_T_hat,  //
+               /*        */ v_T_hat, Z_3x3)
+                  .finished();
+  }
+  if (H_x) {
+    *H_x = AdT;
+  }
+
+  return AdTx;
+}
+
+/* ************************************************************************* */
 Matrix6 Pose3::adjointMap(const Vector6& xi) {
   Matrix3 w_hat = skewSymmetric(xi(0), xi(1), xi(2));
   Matrix3 v_hat = skewSymmetric(xi(3), xi(4), xi(5));
