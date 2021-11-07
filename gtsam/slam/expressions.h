@@ -138,4 +138,21 @@ Point2_ uncalibrate(const Expression<CALIBRATION>& K, const Point2_& xy_hat) {
   return Point2_(K, &CALIBRATION::uncalibrate, xy_hat);
 }
 
+
+/// logmap
+// TODO(dellaert): Should work but fails because of a type deduction conflict.
+// template <typename T>
+// gtsam::Expression<typename gtsam::traits<T>::TangentVector> logmap(
+//     const gtsam::Expression<T> &x1, const gtsam::Expression<T> &x2) {
+//   return gtsam::Expression<typename gtsam::traits<T>::TangentVector>(
+//       x1, &T::logmap, x2);
+// }
+
+template <typename T>
+gtsam::Expression<typename gtsam::traits<T>::TangentVector> logmap(
+    const gtsam::Expression<T> &x1, const gtsam::Expression<T> &x2) {
+  return Expression<typename gtsam::traits<T>::TangentVector>(
+      gtsam::traits<T>::Logmap, between(x1, x2));
+}
+
 }  // \namespace gtsam

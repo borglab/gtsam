@@ -23,7 +23,6 @@ Vector ProjectionFactorRollingShutter::evaluateError(
     const Pose3& pose_a, const Pose3& pose_b, const Point3& point,
     boost::optional<Matrix&> H1, boost::optional<Matrix&> H2,
     boost::optional<Matrix&> H3) const {
-
   try {
     Pose3 pose = interpolate<Pose3>(pose_a, pose_b, alpha_, H1, H2);
     gtsam::Matrix Hprj;
@@ -32,12 +31,10 @@ Vector ProjectionFactorRollingShutter::evaluateError(
         gtsam::Matrix HbodySensor;
         PinholeCamera<Cal3_S2> camera(
             pose.compose(*body_P_sensor_, HbodySensor), *K_);
-        Point2 reprojectionError(
-            camera.project(point, Hprj, H3, boost::none) - measured_);
-        if (H1)
-          *H1 = Hprj * HbodySensor * (*H1);
-        if (H2)
-          *H2 = Hprj * HbodySensor * (*H2);
+        Point2 reprojectionError(camera.project(point, Hprj, H3, boost::none) -
+                                 measured_);
+        if (H1) *H1 = Hprj * HbodySensor * (*H1);
+        if (H2) *H2 = Hprj * HbodySensor * (*H2);
         return reprojectionError;
       } else {
         PinholeCamera<Cal3_S2> camera(pose.compose(*body_P_sensor_), *K_);
@@ -45,29 +42,23 @@ Vector ProjectionFactorRollingShutter::evaluateError(
       }
     } else {
       PinholeCamera<Cal3_S2> camera(pose, *K_);
-      Point2 reprojectionError(
-          camera.project(point, Hprj, H3, boost::none) - measured_);
-      if (H1)
-        *H1 = Hprj * (*H1);
-      if (H2)
-        *H2 = Hprj * (*H2);
+      Point2 reprojectionError(camera.project(point, Hprj, H3, boost::none) -
+                               measured_);
+      if (H1) *H1 = Hprj * (*H1);
+      if (H2) *H2 = Hprj * (*H2);
       return reprojectionError;
     }
   } catch (CheiralityException& e) {
-    if (H1)
-      *H1 = Matrix::Zero(2, 6);
-    if (H2)
-      *H2 = Matrix::Zero(2, 6);
-    if (H3)
-      *H3 = Matrix::Zero(2, 3);
+    if (H1) *H1 = Matrix::Zero(2, 6);
+    if (H2) *H2 = Matrix::Zero(2, 6);
+    if (H3) *H3 = Matrix::Zero(2, 3);
     if (verboseCheirality_)
       std::cout << e.what() << ": Landmark "
-          << DefaultKeyFormatter(this->key2()) << " moved behind camera "
-          << DefaultKeyFormatter(this->key1()) << std::endl;
-    if (throwCheirality_)
-      throw CheiralityException(this->key2());
+                << DefaultKeyFormatter(this->key2()) << " moved behind camera "
+                << DefaultKeyFormatter(this->key1()) << std::endl;
+    if (throwCheirality_) throw CheiralityException(this->key2());
   }
   return Vector2::Constant(2.0 * K_->fx());
 }
 
-}  //namespace gtsam
+}  // namespace gtsam

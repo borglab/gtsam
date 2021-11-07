@@ -31,6 +31,14 @@ class Point2 {
   // enable pickling in python
   void pickle() const;
 };
+  
+class Point2Pairs {
+  Point2Pairs();
+  size_t size() const;
+  bool empty() const;
+  gtsam::Point2Pair at(size_t n) const;
+  void push_back(const gtsam::Point2Pair& point_pair);
+};
 
 // std::vector<gtsam::Point2>
 class Point2Vector {
@@ -429,6 +437,8 @@ class Pose2 {
   // enable pickling in python
   void pickle() const;
 };
+  
+boost::optional<gtsam::Pose2> align(const gtsam::Point2Pairs& pairs);
 
 #include <gtsam/geometry/Pose3.h>
 class Pose3 {

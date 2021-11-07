@@ -1,7 +1,7 @@
 # This GTSAM image connects to the host X-server via VNC to provide a Graphical User Interface for interaction.
 
 # Get the base Ubuntu/GTSAM image from Docker Hub
-FROM dellaert/ubuntu-gtsam-python:bionic
+FROM borglab/ubuntu-gtsam-python:bionic
 
 # Things needed to get a python GUI
 ENV DEBIAN_FRONTEND noninteractive

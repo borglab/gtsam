@@ -510,4 +510,33 @@ namespace gtsam {
       return optimize(function);
   }
 
+  /* ************************************************************************* */
+  void GaussianFactorGraph::printErrors(
+      const VectorValues& values, const std::string& str,
+      const KeyFormatter& keyFormatter,
+      const std::function<bool(const Factor* /*factor*/,
+                               double /*whitenedError*/, size_t /*index*/)>&
+          printCondition) const {
+    cout << str << "size: " << size() << endl << endl;
+    for (size_t i = 0; i < (*this).size(); i++) {
+      const sharedFactor& factor = (*this)[i];
+      const double errorValue =
+          (factor != nullptr ? (*this)[i]->error(values) : .0);
+      if (!printCondition(factor.get(), errorValue, i))
+        continue;  // User-provided filter did not pass
+
+      stringstream ss;
+      ss << "Factor " << i << ": ";
+      if (factor == nullptr) {
+        cout << "nullptr"
+             << "\n";
+      } else {
+        factor->print(ss.str(), keyFormatter);
+        cout << "error = " << errorValue << "\n";
+      }
+      cout << endl;  // only one "endl" at end might be faster, \n for each
+                     // factor
+    }
+  }
+
 } // namespace gtsam
