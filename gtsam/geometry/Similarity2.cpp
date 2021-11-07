@@ -104,7 +104,7 @@ Similarity2::Similarity2(const Matrix3& T) :
 }
 
 bool Similarity2::equals(const Similarity2& other, double tol) const {
-  return R_.equals(other.R_, tol) && traits<Point3>::Equals(t_, other.t_, tol)
+  return R_.equals(other.R_, tol) && traits<Point2>::Equals(t_, other.t_, tol)
       && s_ < (other.s_ + tol) && s_ > (other.s_ - tol);
 }
 
@@ -132,7 +132,7 @@ Similarity2 Similarity2::inverse() const {
   return Similarity2(Rt, sRt, 1.0 / s_);
 }
 
-Point3 Similarity2::transformFrom(const Point2& p) const {
+Point2 Similarity2::transformFrom(const Point2& p) const {
   const Point2 q = R_ * p + t_;
   return s_ * q;
 }
@@ -160,7 +160,7 @@ Similarity2 Similarity2::Align(const Point2Pairs &abPointPairs) {
   return align(d_abPointPairs, aRb, centroids);
 }
 
-Similarity2 Similarity2::Align(const vector<Pose3Pair> &abPosePairs) {
+Similarity2 Similarity2::Align(const vector<Pose2Pair> &abPosePairs) {
   const size_t n = abPosePairs.size();
   if (n < 2)
     throw std::runtime_error("input should have at least 2 pairs of poses");
