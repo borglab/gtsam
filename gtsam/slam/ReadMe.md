@@ -42,10 +42,8 @@ If the calibration should be optimized, as well, use `SmartProjectionFactor` ins
 
 Same as `SmartProjectionPoseFactor`, except:
 - it is templated on `CAMERA`, i.e., it allows cameras beyond pinhole;
-- it admits a different calibration for each measurement, i.e., it can model a multi-camera system;
+- it allows measurements from multiple cameras, each camera with fixed but potentially different intrinsics and extrinsics;
 - it allows multiple observations from the same pose/key, again, to model a multi-camera system.
-
-TODO: DimPose and ZDim are hardcoded. Copy/paste from `SmartProjectionPoseFactor`. Unclear what the use case is.
 
 ## Linearized Smart Factors
 
