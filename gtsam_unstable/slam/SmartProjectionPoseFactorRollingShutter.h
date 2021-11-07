@@ -84,6 +84,9 @@ class SmartProjectionPoseFactorRollingShutter
   typedef std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD>>
       FBlocks;  // vector of F blocks
 
+  /// Default constructor, only for serialization
+  SmartProjectionPoseFactorRollingShutter() {}
+
   /**
    * Constructor
    * @param Isotropic measurement noise
@@ -197,8 +200,8 @@ class SmartProjectionPoseFactorRollingShutter
     if (cameraIds.size() == 0 && cameraRig_.size() > 1) {
       throw std::runtime_error(
           "SmartProjectionPoseFactorRollingShutter: "
-          "camera rig includes multiple camera but add did not input "
-          "cameraIds");
+          "camera rig includes multiple camera "
+          "but add did not input cameraIds");
     }
     for (size_t i = 0; i < measurements.size(); i++) {
       add(measurements[i], world_P_body_key_pairs[i].first,
@@ -273,6 +276,43 @@ class SmartProjectionPoseFactorRollingShutter
            keyPairsEqual && cameraRig_.equals(e->cameraRig()) &&
            std::equal(cameraIds_.begin(), cameraIds_.end(),
                       e->cameraIds().begin());
+  }
+
+  /**
+   * Collect all cameras involved in this factor
+   * @param values Values structure which must contain camera poses
+   * corresponding to keys involved in this factor
+   * @return Cameras
+   */
+  typename Base::Cameras cameras(const Values& values) const override {
+    typename Base::Cameras cameras;
+    for (size_t i = 0; i < this->measured_.size();
+         i++) {  // for each measurement
+      const Pose3& w_P_body1 =
+          values.at<Pose3>(world_P_body_key_pairs_[i].first);
+      const Pose3& w_P_body2 =
+          values.at<Pose3>(world_P_body_key_pairs_[i].second);
+      double interpolationFactor = alphas_[i];
+      const Pose3& w_P_body =
+          interpolate<Pose3>(w_P_body1, w_P_body2, interpolationFactor);
+      const Pose3& body_P_cam = cameraRig_[cameraIds_[i]].pose();
+      const Pose3& w_P_cam = w_P_body.compose(body_P_cam);
+      cameras.emplace_back(w_P_cam,
+                           make_shared<typename CAMERA::CalibrationType>(
+                               cameraRig_[cameraIds_[i]].calibration()));
+    }
+    return cameras;
+  }
+
+  /**
+   * error calculates the error of the factor.
+   */
+  double error(const Values& values) const override {
+    if (this->active(values)) {
+      return this->totalReprojectionError(this->cameras(values));
+    } else {  // else of active flag
+      return 0.0;
+    }
   }
 
   /**
@@ -405,43 +445,6 @@ class SmartProjectionPoseFactorRollingShutter
   }
 
   /**
-   * error calculates the error of the factor.
-   */
-  double error(const Values& values) const override {
-    if (this->active(values)) {
-      return this->totalReprojectionError(this->cameras(values));
-    } else {  // else of active flag
-      return 0.0;
-    }
-  }
-
-  /**
-   * Collect all cameras involved in this factor
-   * @param values Values structure which must contain camera poses
-   * corresponding to keys involved in this factor
-   * @return Cameras
-   */
-  typename Base::Cameras cameras(const Values& values) const override {
-    typename Base::Cameras cameras;
-    for (size_t i = 0; i < this->measured_.size();
-         i++) {  // for each measurement
-      const Pose3& w_P_body1 =
-          values.at<Pose3>(world_P_body_key_pairs_[i].first);
-      const Pose3& w_P_body2 =
-          values.at<Pose3>(world_P_body_key_pairs_[i].second);
-      double interpolationFactor = alphas_[i];
-      const Pose3& w_P_body =
-          interpolate<Pose3>(w_P_body1, w_P_body2, interpolationFactor);
-      const Pose3& body_P_cam = cameraRig_[cameraIds_[i]].pose();
-      const Pose3& w_P_cam = w_P_body.compose(body_P_cam);
-      cameras.emplace_back(w_P_cam,
-                           make_shared<typename CAMERA::CalibrationType>(
-                               cameraRig_[cameraIds_[i]].calibration()));
-    }
-    return cameras;
-  }
-
-  /**
    * Linearize to Gaussian Factor (possibly adding a damping factor Lambda for
    * LM)
    * @param values Values structure which must contain camera poses and
@@ -457,8 +460,8 @@ class SmartProjectionPoseFactorRollingShutter
         return this->createHessianFactor(values, lambda);
       default:
         throw std::runtime_error(
-            "SmartProjectionPoseFactorRollingShutter: unknown linearization "
-            "mode");
+            "SmartProjectionPoseFactorRollingShutter: "
+            "unknown linearization mode");
     }
   }
 
