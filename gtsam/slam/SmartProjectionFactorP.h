@@ -61,7 +61,7 @@ class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
 
  protected:
   /// vector of keys (one for each observation) with potentially repeated keys
-  std::vector<Key> nonUniqueKeys_;
+  KeyVector nonUniqueKeys_;
 
   /// shared pointer to calibration object (one for each observation)
   std::vector<boost::shared_ptr<CALIBRATION> > K_all_;
@@ -134,7 +134,7 @@ class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
    * @param Ks vector of (fixed) intrinsic calibration objects
    * @param body_P_sensors vector of (fixed) extrinsic calibration objects
    */
-  void add(const MEASUREMENTS& measurements, const std::vector<Key>& poseKeys,
+  void add(const MEASUREMENTS& measurements, const KeyVector& poseKeys,
            const std::vector<boost::shared_ptr<CALIBRATION>>& Ks,
            const std::vector<Pose3> body_P_sensors = std::vector<Pose3>()) {
     assert(poseKeys.size() == measurements.size());
@@ -159,7 +159,7 @@ class SmartProjectionFactorP : public SmartProjectionFactor<CAMERA> {
   }
 
   /// return (for each observation) the (possibly non unique) keys involved in the measurements
-  const std::vector<Key> nonUniqueKeys() const {
+  const KeyVector nonUniqueKeys() const {
     return nonUniqueKeys_;
   }
 
