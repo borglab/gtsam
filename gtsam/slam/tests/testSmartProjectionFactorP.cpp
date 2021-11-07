@@ -833,7 +833,7 @@ TEST( SmartProjectionFactorP, hessianComparedToProjFactors_measurementsFromSameP
   measurements_lmk1_redundant.push_back(measurements_lmk1.at(0));  // we readd the first measurement
 
   // create inputs
-  std::vector<Key> keys;
+  KeyVector keys;
   keys.push_back(x1);
   keys.push_back(x2);
   keys.push_back(x3);
@@ -960,7 +960,7 @@ TEST( SmartProjectionFactorP, optimization_3poses_measurementsFromSamePose ) {
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_lmk3);
 
   // create inputs
-  std::vector<Key> keys;
+  KeyVector keys;
   keys.push_back(x1);
   keys.push_back(x2);
   keys.push_back(x3);
@@ -974,7 +974,7 @@ TEST( SmartProjectionFactorP, optimization_3poses_measurementsFromSamePose ) {
   // make sure the redundancy in the keys does not create problems)
   Camera::MeasurementVector& measurements_lmk1_redundant = measurements_lmk1;
   measurements_lmk1_redundant.push_back(measurements_lmk1.at(0)); // we readd the first measurement
-  std::vector<Key> keys_redundant = keys;
+  KeyVector keys_redundant = keys;
   keys_redundant.push_back(keys.at(0)); // we readd the first key
   std::vector < boost::shared_ptr < Cal3_S2 >> sharedKs_redundant = sharedKs;
   sharedKs_redundant.push_back(sharedK);// we readd the first calibration
@@ -1096,7 +1096,7 @@ TEST( SmartProjectionFactorP, optimization_3poses_sphericalCamera ) {
   projectToMultipleCameras<Camera>(cam1, cam2, cam3, landmark3, measurements_lmk3);
 
   // create inputs
-  std::vector<Key> keys;
+  KeyVector keys;
   keys.push_back(x1);
   keys.push_back(x2);
   keys.push_back(x3);
