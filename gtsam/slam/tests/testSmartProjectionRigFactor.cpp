@@ -1229,16 +1229,16 @@ TEST(SmartProjectionRigFactor, timing) {
   size_t nrTests = 10000;
 
   for (size_t i = 0; i < nrTests; i++) {
-    SmartRigFactor::shared_ptr smartFactorP(
+    SmartRigFactor::shared_ptr smartRigFactor(
         new SmartRigFactor(model, cameraRig, params));
-    smartFactorP->add(measurements_lmk1[0], x1, cameraId1);
-    smartFactorP->add(measurements_lmk1[1], x1, cameraId1);
+    smartRigFactor->add(measurements_lmk1[0], x1, cameraId1);
+    smartRigFactor->add(measurements_lmk1[1], x1, cameraId1);
 
     Values values;
     values.insert(x1, pose1);
     values.insert(x2, pose2);
     gttic_(SmartRigFactor_LINEARIZE);
-    smartFactorP->linearize(values);
+    smartRigFactor->linearize(values);
     gttoc_(SmartRigFactor_LINEARIZE);
   }
 
