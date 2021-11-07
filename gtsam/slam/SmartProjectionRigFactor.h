@@ -62,8 +62,7 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
   /// vector of keys (one for each observation) with potentially repeated keys
   KeyVector nonUniqueKeys_;
 
-  /// cameras in the rig (fixed poses wrt body + fixed intrinsics, for each
-  /// camera)
+  /// cameras in the rig (fixed poses wrt body and intrinsics, for each camera)
   typename Base::Cameras cameraRig_;
 
   /// vector of camera Ids (one for each observation, in the same order),
