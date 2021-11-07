@@ -578,11 +578,6 @@ TEST(SmartProjectionRigFactor, 3poses_iterative_smart_projection_factor) {
   projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
 
-  std::vector<boost::shared_ptr<Cal3_S2>> sharedKs;
-  sharedKs.push_back(sharedK);
-  sharedKs.push_back(sharedK);
-  sharedKs.push_back(sharedK);
-
   // create smart factor
   Cameras cameraRig;  // single camera in the rig
   cameraRig.push_back(Camera(Pose3::identity(), sharedK));
@@ -1253,60 +1248,6 @@ TEST(SmartProjectionRigFactor, timing) {
   tictoc_print_();
 }
 #endif
-
-///* **************************************************************************/
-// BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Constrained,
-// "gtsam_noiseModel_Constrained");
-// BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Diagonal,
-// "gtsam_noiseModel_Diagonal");
-// BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Gaussian,
-// "gtsam_noiseModel_Gaussian");
-// BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Unit, "gtsam_noiseModel_Unit");
-// BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Isotropic,
-// "gtsam_noiseModel_Isotropic");
-// BOOST_CLASS_EXPORT_GUID(gtsam::SharedNoiseModel, "gtsam_SharedNoiseModel");
-// BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal");
-//
-// TEST(SmartProjectionRigFactor, serialize) {
-//  using namespace vanillaRig;
-//  using namespace gtsam::serializationTestHelpers;
-//  SmartProjectionParams params(
-//      gtsam::HESSIAN,
-//      gtsam::ZERO_ON_DEGENERACY);  // only config that works with rig factors
-//  params.setRankTolerance(rankTol);
-//
-//  Cameras cameraRig; // single camera in the rig
-//  cameraRig.push_back( Camera(Pose3::identity(), sharedK) );
-//
-//  SmartRigFactor factor(model, cameraRig, params);
-//
-//  EXPECT(equalsObj(factor));
-//  EXPECT(equalsXML(factor));
-//  EXPECT(equalsBinary(factor));
-//}
-//
-//// SERIALIZATION TEST FAILS: to be fixed
-////TEST(SmartProjectionRigFactor, serialize2) {
-////  using namespace vanillaRig;
-////  using namespace gtsam::serializationTestHelpers;
-////  SmartProjectionParams params;
-////  params.setRankTolerance(rankTol);
-////  SmartRigFactor factor(model, params);
-////
-////  // insert some measurements
-////  KeyVector key_view;
-////  Point2Vector meas_view;
-////  std::vector<boost::shared_ptr<Cal3_S2>> sharedKs;
-////
-////  key_view.push_back(Symbol('x', 1));
-////  meas_view.push_back(Point2(10, 10));
-////  sharedKs.push_back(sharedK);
-////  factor.add(meas_view, key_view, sharedKs);
-////
-////  EXPECT(equalsObj(factor));
-////  EXPECT(equalsXML(factor));
-////  EXPECT(equalsBinary(factor));
-////}
 
 /* ************************************************************************* */
 int main() {
