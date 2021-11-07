@@ -29,6 +29,7 @@
 #include <iostream>
 
 #include "smartFactorScenarios.h"
+#define DISABLE_TIMING
 
 using namespace boost::assign;
 using namespace std::placeholders;
