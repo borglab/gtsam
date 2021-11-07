@@ -1133,8 +1133,8 @@ TEST( SmartProjectionFactorP, optimization_3poses_sphericalCamera ) {
   groundTruth.insert(x3, pose_above);
   DOUBLES_EQUAL(0, graph.error(groundTruth), 1e-9);
 
-  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 10, 0., -M_PI / 10),
-                           Point3(0.5, 0.5, 0.5)); // large noise - still works!
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 10, 0., -M_PI / 100),
+                           Point3(0.2, 0.2, 0.2)); // note: larger noise!
 
   Values values;
   values.insert(x1, level_pose);
@@ -1142,11 +1142,12 @@ TEST( SmartProjectionFactorP, optimization_3poses_sphericalCamera ) {
   // initialize third pose with some noise, we expect it to move back to original pose_above
   values.insert(x3, pose_above * noise_pose);
 
-  DOUBLES_EQUAL(20.37690384646076, graph.error(values), 1e-9);
+  DOUBLES_EQUAL(0.94148963675515274, graph.error(values), 1e-9);
 
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
   result = optimizer.optimize();
+
   EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-5));
 }
 
