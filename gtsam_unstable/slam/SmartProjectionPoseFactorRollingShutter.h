@@ -295,11 +295,12 @@ class SmartProjectionPoseFactorRollingShutter
       double interpolationFactor = alphas_[i];
       const Pose3& w_P_body =
           interpolate<Pose3>(w_P_body1, w_P_body2, interpolationFactor);
-      const Pose3& body_P_cam = cameraRig_[cameraIds_[i]].pose();
+      const typename Base::Camera& camera_i = cameraRig_[cameraIds_[i]];
+      const Pose3& body_P_cam = camera_i.pose();
       const Pose3& w_P_cam = w_P_body.compose(body_P_cam);
       cameras.emplace_back(w_P_cam,
                            make_shared<typename CAMERA::CalibrationType>(
-                               cameraRig_[cameraIds_[i]].calibration()));
+                               camera_i.calibration()));
     }
     return cameras;
   }
@@ -347,10 +348,10 @@ class SmartProjectionPoseFactorRollingShutter
         auto w_P_body =
             interpolate<Pose3>(w_P_body1, w_P_body2, interpolationFactor,
                                dInterpPose_dPoseBody1, dInterpPose_dPoseBody2);
-        auto body_P_cam = cameraRig_[cameraIds_[i]].pose();
+        const typename Base::Camera& camera_i = cameraRig_[cameraIds_[i]];
+        auto body_P_cam = camera_i.pose();
         auto w_P_cam = w_P_body.compose(body_P_cam, dPoseCam_dInterpPose);
-        PinholeCamera<CALIBRATION> camera(
-            w_P_cam, cameraRig_[cameraIds_[i]].calibration());
+        PinholeCamera<CALIBRATION> camera(w_P_cam, camera_i.calibration());
 
         // get jacobians and error vector for current measurement
         Point2 reprojectionError_i =
