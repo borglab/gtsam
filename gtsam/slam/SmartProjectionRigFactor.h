@@ -196,7 +196,7 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
   bool equals(const NonlinearFactor& p, double tol = 1e-9) const override {
     const This* e = dynamic_cast<const This*>(&p);
     return e && Base::equals(p, tol) && nonUniqueKeys_ == e->nonUniqueKeys() &&
-           (*cameraRig_).equals(*(e->cameraRig())) &&
+           cameraRig_->equals(*(e->cameraRig())) &&
            std::equal(cameraIds_.begin(), cameraIds_.end(),
                       e->cameraIds().begin());
   }
