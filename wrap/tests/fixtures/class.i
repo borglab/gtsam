@@ -7,7 +7,11 @@ class FunRange {
 
 template<M={double}>
 class Fun {
+
   static This staticMethodWithThis();
+
+  template<T={int}>
+  static double templatedStaticMethod(const T& m);
 
   template<T={string}>
   This templatedMethod(double d, T t);
@@ -117,6 +121,15 @@ class ForwardKinematics {
                     const gtsam::Values& joint_angles,
                     const gtsam::Pose3& l2Tp = gtsam::Pose3());
 };
+
+// Test for templated constructor
+class TemplatedConstructor {
+  TemplatedConstructor();
+
+  template<T={string, int, double}>
+  TemplatedConstructor(const T& arg);
+};
+
 
 class SuperCoolFactor;
 typedef SuperCoolFactor<gtsam::Pose3> SuperCoolFactorPose3;

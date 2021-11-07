@@ -31,6 +31,7 @@ namespace gtsam {
 
 class GTSAM_EXPORT EmptyCal {
  public:
+  enum { dimension = 0 };
   EmptyCal(){}
   virtual ~EmptyCal() = default;
   using shared_ptr = boost::shared_ptr<EmptyCal>;
