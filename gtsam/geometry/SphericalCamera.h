@@ -18,13 +18,14 @@
 
 #pragma once
 
-#include <gtsam/geometry/BearingRange.h>
-#include <gtsam/geometry/Unit3.h>
-#include <gtsam/geometry/Pose3.h>
-#include <gtsam/base/concepts.h>
 #include <gtsam/base/Manifold.h>
 #include <gtsam/base/ThreadsafeException.h>
+#include <gtsam/base/concepts.h>
 #include <gtsam/dllexport.h>
+#include <gtsam/geometry/BearingRange.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/Unit3.h>
+
 #include <boost/serialization/nvp.hpp>
 
 namespace gtsam {
@@ -32,11 +33,11 @@ namespace gtsam {
 class GTSAM_EXPORT EmptyCal {
  public:
   enum { dimension = 0 };
-  EmptyCal(){}
+  EmptyCal() {}
   virtual ~EmptyCal() = default;
   using shared_ptr = boost::shared_ptr<EmptyCal>;
   void print(const std::string& s) const {
-    std::cout << "empty calibration: " <<  s << std::endl;
+    std::cout << "empty calibration: " << s << std::endl;
   }
 };
 
@@ -46,56 +47,41 @@ class GTSAM_EXPORT EmptyCal {
  * \nosubgrouping
  */
 class GTSAM_EXPORT SphericalCamera {
-
  public:
-
-  enum {
-    dimension = 6
-  };
+  enum { dimension = 6 };
 
   typedef Unit3 Measurement;
   typedef std::vector<Unit3> MeasurementVector;
   typedef EmptyCal CalibrationType;
 
  private:
-
   Pose3 pose_;  ///< 3D pose of camera
 
  protected:
-
   EmptyCal::shared_ptr emptyCal_;
 
  public:
-
   /// @}
   /// @name Standard Constructors
   /// @{
 
   /// Default constructor
   SphericalCamera()
-      : pose_(Pose3::identity()),
-        emptyCal_(boost::make_shared<EmptyCal>()) {
-  }
+      : pose_(Pose3::identity()), emptyCal_(boost::make_shared<EmptyCal>()) {}
 
   /// Constructor with pose
   explicit SphericalCamera(const Pose3& pose)
-      : pose_(pose),
-        emptyCal_(boost::make_shared<EmptyCal>()) {
-  }
+      : pose_(pose), emptyCal_(boost::make_shared<EmptyCal>()) {}
 
   /// Constructor with empty intrinsics (needed for smart factors)
   explicit SphericalCamera(const Pose3& pose,
                            const boost::shared_ptr<EmptyCal>& cal)
-      : pose_(pose),
-        emptyCal_(boost::make_shared<EmptyCal>()) {
-  }
+      : pose_(pose), emptyCal_(boost::make_shared<EmptyCal>()) {}
 
   /// @}
   /// @name Advanced Constructors
   /// @{
-  explicit SphericalCamera(const Vector& v)
-      : pose_(Pose3::Expmap(v)) {
-  }
+  explicit SphericalCamera(const Vector& v) : pose_(Pose3::Expmap(v)) {}
 
   /// Default destructor
   virtual ~SphericalCamera() = default;
@@ -106,16 +92,14 @@ class GTSAM_EXPORT SphericalCamera {
   }
 
   /// return calibration
-  const EmptyCal& calibration() const {
-    return *emptyCal_;
-  }
+  const EmptyCal& calibration() const { return *emptyCal_; }
 
   /// @}
   /// @name Testable
   /// @{
 
   /// assert equality up to a tolerance
-  bool equals(const SphericalCamera &camera, double tol = 1e-9) const;
+  bool equals(const SphericalCamera& camera, double tol = 1e-9) const;
 
   /// print
   virtual void print(const std::string& s = "SphericalCamera") const;
@@ -125,19 +109,13 @@ class GTSAM_EXPORT SphericalCamera {
   /// @{
 
   /// return pose, constant version
-  const Pose3& pose() const {
-    return pose_;
-  }
+  const Pose3& pose() const { return pose_; }
 
   /// get rotation
-  const Rot3& rotation() const {
-    return pose_.rotation();
-  }
+  const Rot3& rotation() const { return pose_.rotation(); }
 
   /// get translation
-  const Point3& translation() const {
-    return pose_.translation();
-  }
+  const Point3& translation() const { return pose_.translation(); }
 
   //  /// return pose, with derivative
   //  const Pose3& getPose(OptionalJacobian<6, 6> H) const;
@@ -200,7 +178,8 @@ class GTSAM_EXPORT SphericalCamera {
 
   /// for Canonical
   static SphericalCamera identity() {
-    return SphericalCamera(Pose3::identity());  // assumes that the default constructor is valid
+    return SphericalCamera(
+        Pose3::identity());  // assumes that the default constructor is valid
   }
 
   /// for Linear Triangulation
@@ -210,36 +189,29 @@ class GTSAM_EXPORT SphericalCamera {
 
   /// for Nonlinear Triangulation
   Vector defaultErrorWhenTriangulatingBehindCamera() const {
-    return Eigen::Matrix<double,traits<Point2>::dimension,1>::Constant(0.0);
+    return Eigen::Matrix<double, traits<Point2>::dimension, 1>::Constant(0.0);
   }
 
   /// @deprecated
-   size_t dim() const {
-     return 6;
-   }
+  size_t dim() const { return 6; }
 
-   /// @deprecated
-   static size_t Dim() {
-     return 6;
-   }
+  /// @deprecated
+  static size_t Dim() { return 6; }
 
  private:
-
   /** Serialization function */
   friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive & ar, const unsigned int /*version*/) {
-    ar & BOOST_SERIALIZATION_NVP(pose_);
+  template <class Archive>
+  void serialize(Archive& ar, const unsigned int /*version*/) {
+    ar& BOOST_SERIALIZATION_NVP(pose_);
   }
 };
 // end of class SphericalCamera
 
-template<>
-struct traits<SphericalCamera> : public internal::LieGroup<Pose3> {
-};
+template <>
+struct traits<SphericalCamera> : public internal::LieGroup<Pose3> {};
 
-template<>
-struct traits<const SphericalCamera> : public internal::LieGroup<Pose3> {
-};
+template <>
+struct traits<const SphericalCamera> : public internal::LieGroup<Pose3> {};
 
-}
+}  // namespace gtsam

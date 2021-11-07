@@ -1195,8 +1195,9 @@ TEST(SmartProjectionRigFactor, optimization_3poses_measurementsFromSamePose) {
 // this factor is slightly slower (but comparable) to original
 // SmartProjectionPoseFactor
 //-Total: 0 CPU (0 times, 0 wall, 0.17 children, min: 0 max: 0)
-//|   -SmartRigFactor LINEARIZE: 0.05 CPU (10000 times, 0.057952 wall, 0.05 children, min: 0 max: 0)
-//|   -SmartPoseFactor LINEARIZE: 0.05 CPU (10000 times, 0.069647 wall, 0.05 children, min: 0 max: 0)
+//|   -SmartRigFactor LINEARIZE: 0.05 CPU (10000 times, 0.057952 wall, 0.05
+// children, min: 0 max: 0) |   -SmartPoseFactor LINEARIZE: 0.05 CPU (10000
+// times, 0.069647 wall, 0.05 children, min: 0 max: 0)
 /* *************************************************************************/
 TEST(SmartProjectionRigFactor, timing) {
   using namespace vanillaRig;
@@ -1256,15 +1257,18 @@ TEST(SmartProjectionRigFactor, timing) {
 #endif
 
 /* *************************************************************************/
-TEST( SmartProjectionFactorP, optimization_3poses_sphericalCamera ) {
-
+TEST(SmartProjectionFactorP, optimization_3poses_sphericalCamera) {
   using namespace sphericalCamera;
-  Camera::MeasurementVector measurements_lmk1, measurements_lmk2, measurements_lmk3;
+  Camera::MeasurementVector measurements_lmk1, measurements_lmk2,
+      measurements_lmk3;
 
   // Project three landmarks into three cameras
-  projectToMultipleCameras<Camera>(cam1, cam2, cam3, landmark1, measurements_lmk1);
-  projectToMultipleCameras<Camera>(cam1, cam2, cam3, landmark2, measurements_lmk2);
-  projectToMultipleCameras<Camera>(cam1, cam2, cam3, landmark3, measurements_lmk3);
+  projectToMultipleCameras<Camera>(cam1, cam2, cam3, landmark1,
+                                   measurements_lmk1);
+  projectToMultipleCameras<Camera>(cam1, cam2, cam3, landmark2,
+                                   measurements_lmk2);
+  projectToMultipleCameras<Camera>(cam1, cam2, cam3, landmark3,
+                                   measurements_lmk3);
 
   // create inputs
   KeyVector keys;
@@ -1280,13 +1284,16 @@ TEST( SmartProjectionFactorP, optimization_3poses_sphericalCamera ) {
       gtsam::ZERO_ON_DEGENERACY);  // only config that works with rig factors
   params.setRankTolerance(0.1);
 
-  SmartFactorP::shared_ptr smartFactor1(new SmartFactorP(model, cameraRig, params));
+  SmartFactorP::shared_ptr smartFactor1(
+      new SmartFactorP(model, cameraRig, params));
   smartFactor1->add(measurements_lmk1, keys);
 
-  SmartFactorP::shared_ptr smartFactor2(new SmartFactorP(model, cameraRig, params));
+  SmartFactorP::shared_ptr smartFactor2(
+      new SmartFactorP(model, cameraRig, params));
   smartFactor2->add(measurements_lmk2, keys);
 
-  SmartFactorP::shared_ptr smartFactor3(new SmartFactorP(model, cameraRig, params));
+  SmartFactorP::shared_ptr smartFactor3(
+      new SmartFactorP(model, cameraRig, params));
   smartFactor3->add(measurements_lmk3, keys);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -1305,12 +1312,13 @@ TEST( SmartProjectionFactorP, optimization_3poses_sphericalCamera ) {
   DOUBLES_EQUAL(0, graph.error(groundTruth), 1e-9);
 
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 10, 0., -M_PI / 100),
-                           Point3(0.2, 0.2, 0.2)); // note: larger noise!
+                           Point3(0.2, 0.2, 0.2));  // note: larger noise!
 
   Values values;
   values.insert(x1, level_pose);
   values.insert(x2, pose_right);
-  // initialize third pose with some noise, we expect it to move back to original pose_above
+  // initialize third pose with some noise, we expect it to move back to
+  // original pose_above
   values.insert(x3, pose_above * noise_pose);
 
   DOUBLES_EQUAL(0.94148963675515274, graph.error(values), 1e-9);
@@ -1324,12 +1332,13 @@ TEST( SmartProjectionFactorP, optimization_3poses_sphericalCamera ) {
 
 #ifndef DISABLE_TIMING
 #include <gtsam/base/timing.h>
-// using spherical camera is slightly slower (but comparable) to PinholePose<Cal3_S2>
-//|   -SmartFactorP spherical LINEARIZE: 0.01 CPU (1000 times, 0.008178 wall, 0.01 children, min: 0 max: 0)
-//|   -SmartFactorP pinhole LINEARIZE: 0.01 CPU (1000 times, 0.005717 wall, 0.01 children, min: 0 max: 0)
+// using spherical camera is slightly slower (but comparable) to
+// PinholePose<Cal3_S2>
+//|   -SmartFactorP spherical LINEARIZE: 0.01 CPU (1000 times, 0.008178 wall,
+// 0.01 children, min: 0 max: 0) |   -SmartFactorP pinhole LINEARIZE: 0.01 CPU
+//(1000 times, 0.005717 wall, 0.01 children, min: 0 max: 0)
 /* *************************************************************************/
-TEST( SmartProjectionFactorP, timing_sphericalCamera ) {
-
+TEST(SmartProjectionFactorP, timing_sphericalCamera) {
   // create common data
   Rot3 R = Rot3::identity();
   Pose3 pose1 = Pose3(R, Point3(0, 0, 0));
@@ -1359,7 +1368,7 @@ TEST( SmartProjectionFactorP, timing_sphericalCamera ) {
 
   size_t nrTests = 1000;
 
-  for(size_t i = 0; i<nrTests; i++){
+  for (size_t i = 0; i < nrTests; i++) {
     CameraSet<SphericalCamera> cameraRig;  // single camera in the rig
     cameraRig.push_back(SphericalCamera(body_P_sensorId, emptyK));
 
@@ -1377,13 +1386,13 @@ TEST( SmartProjectionFactorP, timing_sphericalCamera ) {
     gttoc_(SmartFactorP_spherical_LINEARIZE);
   }
 
-  for(size_t i = 0; i<nrTests; i++){
+  for (size_t i = 0; i < nrTests; i++) {
     CameraSet<PinholePose<Cal3_S2>> cameraRig;  // single camera in the rig
     cameraRig.push_back(PinholePose<Cal3_S2>(body_P_sensorId, sharedKSimple));
 
     SmartProjectionRigFactor<PinholePose<Cal3_S2>>::shared_ptr smartFactorP2(
         new SmartProjectionRigFactor<PinholePose<Cal3_S2>>(model, cameraRig,
-                                                         params));
+                                                           params));
     smartFactorP2->add(measurements_lmk1[0], x1);
     smartFactorP2->add(measurements_lmk1[1], x1);
 
@@ -1399,17 +1408,21 @@ TEST( SmartProjectionFactorP, timing_sphericalCamera ) {
 #endif
 
 /* *************************************************************************/
-TEST( SmartProjectionFactorP, 2poses_rankTol ) {
-  Pose3 poseA = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0.0,0.0,0.0)); // with z pointing along x axis of global frame
-  Pose3 poseB = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0.0,-0.1,0.0)); // 10cm to the right of poseA
-  Point3 landmarkL = Point3(5.0,0.0,0.0); // 5m in front of poseA
+TEST(SmartProjectionFactorP, 2poses_rankTol) {
+  Pose3 poseA = Pose3(
+      Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2),
+      Point3(0.0, 0.0, 0.0));  // with z pointing along x axis of global frame
+  Pose3 poseB = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2),
+                      Point3(0.0, -0.1, 0.0));  // 10cm to the right of poseA
+  Point3 landmarkL = Point3(5.0, 0.0, 0.0);     // 5m in front of poseA
 
   // triangulate from a stereo with 10cm baseline, assuming standard calibration
-  {// default rankTol = 1 gives a valid point (compare with calibrated and spherical cameras below)
-    using namespace vanillaPose; // pinhole with Cal3_S2 calibration
+  {  // default rankTol = 1 gives a valid point (compare with calibrated and
+     // spherical cameras below)
+    using namespace vanillaPose;  // pinhole with Cal3_S2 calibration
 
-    Camera cam1(poseA,sharedK);
-    Camera cam2(poseB,sharedK);
+    Camera cam1(poseA, sharedK);
+    Camera cam2(poseB, sharedK);
 
     SmartProjectionParams params(
         gtsam::HESSIAN,
@@ -1419,7 +1432,8 @@ TEST( SmartProjectionFactorP, 2poses_rankTol ) {
     CameraSet<PinholePose<Cal3_S2>> cameraRig;  // single camera in the rig
     cameraRig.push_back(PinholePose<Cal3_S2>(Pose3::identity(), sharedK));
 
-    SmartRigFactor::shared_ptr smartFactor1(new SmartRigFactor(model,cameraRig,params));
+    SmartRigFactor::shared_ptr smartFactor1(
+        new SmartRigFactor(model, cameraRig, params));
     smartFactor1->add(cam1.project(landmarkL), x1);
     smartFactor1->add(cam2.project(landmarkL), x2);
 
@@ -1433,16 +1447,19 @@ TEST( SmartProjectionFactorP, 2poses_rankTol ) {
 
     // get point
     TriangulationResult point = smartFactor1->point();
-    EXPECT(point.valid()); // valid triangulation
+    EXPECT(point.valid());  // valid triangulation
     EXPECT(assert_equal(landmarkL, *point, 1e-7));
   }
-  // triangulate from a stereo with 10cm baseline, assuming canonical calibration
-  {// default rankTol = 1 or 0.1 gives a degenerate point, which is undesirable for a point 5m away and 10cm baseline
-    using namespace vanillaPose; // pinhole with Cal3_S2 calibration
-    static Cal3_S2::shared_ptr canonicalK(new Cal3_S2(1.0,1.0,0.0,0.0,0.0)); //canonical camera
+  // triangulate from a stereo with 10cm baseline, assuming canonical
+  // calibration
+  {  // default rankTol = 1 or 0.1 gives a degenerate point, which is
+     // undesirable for a point 5m away and 10cm baseline
+    using namespace vanillaPose;  // pinhole with Cal3_S2 calibration
+    static Cal3_S2::shared_ptr canonicalK(
+        new Cal3_S2(1.0, 1.0, 0.0, 0.0, 0.0));  // canonical camera
 
-    Camera cam1(poseA,canonicalK);
-    Camera cam2(poseB,canonicalK);
+    Camera cam1(poseA, canonicalK);
+    Camera cam2(poseB, canonicalK);
 
     SmartProjectionParams params(
         gtsam::HESSIAN,
@@ -1452,7 +1469,8 @@ TEST( SmartProjectionFactorP, 2poses_rankTol ) {
     CameraSet<PinholePose<Cal3_S2>> cameraRig;  // single camera in the rig
     cameraRig.push_back(PinholePose<Cal3_S2>(Pose3::identity(), canonicalK));
 
-    SmartRigFactor::shared_ptr smartFactor1(new SmartRigFactor(model,cameraRig,params));
+    SmartRigFactor::shared_ptr smartFactor1(
+        new SmartRigFactor(model, cameraRig, params));
     smartFactor1->add(cam1.project(landmarkL), x1);
     smartFactor1->add(cam2.project(landmarkL), x2);
 
@@ -1466,15 +1484,18 @@ TEST( SmartProjectionFactorP, 2poses_rankTol ) {
 
     // get point
     TriangulationResult point = smartFactor1->point();
-    EXPECT(point.degenerate()); // valid triangulation
+    EXPECT(point.degenerate());  // valid triangulation
   }
-  // triangulate from a stereo with 10cm baseline, assuming canonical calibration
-  {// smaller rankTol = 0.01 gives a valid point (compare with calibrated and spherical cameras below)
-    using namespace vanillaPose; // pinhole with Cal3_S2 calibration
-    static Cal3_S2::shared_ptr canonicalK(new Cal3_S2(1.0,1.0,0.0,0.0,0.0)); //canonical camera
+  // triangulate from a stereo with 10cm baseline, assuming canonical
+  // calibration
+  {  // smaller rankTol = 0.01 gives a valid point (compare with calibrated and
+     // spherical cameras below)
+    using namespace vanillaPose;  // pinhole with Cal3_S2 calibration
+    static Cal3_S2::shared_ptr canonicalK(
+        new Cal3_S2(1.0, 1.0, 0.0, 0.0, 0.0));  // canonical camera
 
-    Camera cam1(poseA,canonicalK);
-    Camera cam2(poseB,canonicalK);
+    Camera cam1(poseA, canonicalK);
+    Camera cam2(poseB, canonicalK);
 
     SmartProjectionParams params(
         gtsam::HESSIAN,
@@ -1484,7 +1505,8 @@ TEST( SmartProjectionFactorP, 2poses_rankTol ) {
     CameraSet<PinholePose<Cal3_S2>> cameraRig;  // single camera in the rig
     cameraRig.push_back(PinholePose<Cal3_S2>(Pose3::identity(), canonicalK));
 
-    SmartRigFactor::shared_ptr smartFactor1(new SmartRigFactor(model,cameraRig,params));
+    SmartRigFactor::shared_ptr smartFactor1(
+        new SmartRigFactor(model, cameraRig, params));
     smartFactor1->add(cam1.project(landmarkL), x1);
     smartFactor1->add(cam2.project(landmarkL), x2);
 
@@ -1498,19 +1520,22 @@ TEST( SmartProjectionFactorP, 2poses_rankTol ) {
 
     // get point
     TriangulationResult point = smartFactor1->point();
-    EXPECT(point.valid()); // valid triangulation
+    EXPECT(point.valid());  // valid triangulation
     EXPECT(assert_equal(landmarkL, *point, 1e-7));
   }
 }
 
 /* *************************************************************************/
-TEST( SmartProjectionFactorP, 2poses_sphericalCamera_rankTol ) {
+TEST(SmartProjectionFactorP, 2poses_sphericalCamera_rankTol) {
   typedef SphericalCamera Camera;
   typedef SmartProjectionRigFactor<Camera> SmartRigFactor;
   static EmptyCal::shared_ptr emptyK;
-  Pose3 poseA = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0.0,0.0,0.0)); // with z pointing along x axis of global frame
-  Pose3 poseB = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0.0,-0.1,0.0)); // 10cm to the right of poseA
-  Point3 landmarkL = Point3(5.0,0.0,0.0); // 5m in front of poseA
+  Pose3 poseA = Pose3(
+      Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2),
+      Point3(0.0, 0.0, 0.0));  // with z pointing along x axis of global frame
+  Pose3 poseB = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2),
+                      Point3(0.0, -0.1, 0.0));  // 10cm to the right of poseA
+  Point3 landmarkL = Point3(5.0, 0.0, 0.0);     // 5m in front of poseA
 
   Camera cam1(poseA);
   Camera cam2(poseB);
@@ -1519,73 +1544,82 @@ TEST( SmartProjectionFactorP, 2poses_sphericalCamera_rankTol ) {
   cameraRig.push_back(SphericalCamera(Pose3::identity(), emptyK));
 
   // TRIANGULATION TEST WITH DEFAULT RANK TOL
-  {// rankTol = 1 or 0.1 gives a degenerate point, which is undesirable for a point 5m away and 10cm baseline
+  {  // rankTol = 1 or 0.1 gives a degenerate point, which is undesirable for a
+     // point 5m away and 10cm baseline
     SmartProjectionParams params(
         gtsam::HESSIAN,
         gtsam::ZERO_ON_DEGENERACY);  // only config that works with rig factors
     params.setRankTolerance(0.1);
 
-  SmartRigFactor::shared_ptr smartFactor1(new SmartRigFactor(model,cameraRig,params));
-  smartFactor1->add(cam1.project(landmarkL), x1);
-  smartFactor1->add(cam2.project(landmarkL), x2);
+    SmartRigFactor::shared_ptr smartFactor1(
+        new SmartRigFactor(model, cameraRig, params));
+    smartFactor1->add(cam1.project(landmarkL), x1);
+    smartFactor1->add(cam2.project(landmarkL), x2);
 
-  NonlinearFactorGraph graph;
-  graph.push_back(smartFactor1);
+    NonlinearFactorGraph graph;
+    graph.push_back(smartFactor1);
 
-  Values groundTruth;
-  groundTruth.insert(x1, poseA);
-  groundTruth.insert(x2, poseB);
-  DOUBLES_EQUAL(0, graph.error(groundTruth), 1e-9);
+    Values groundTruth;
+    groundTruth.insert(x1, poseA);
+    groundTruth.insert(x2, poseB);
+    DOUBLES_EQUAL(0, graph.error(groundTruth), 1e-9);
 
-  // get point
-  TriangulationResult point = smartFactor1->point();
-  EXPECT(point.degenerate()); // not enough parallax
+    // get point
+    TriangulationResult point = smartFactor1->point();
+    EXPECT(point.degenerate());  // not enough parallax
   }
   // SAME TEST WITH SMALLER RANK TOL
-  {// rankTol = 0.01 gives a valid point
-  // By playing with this test, we can show we can triangulate also with a baseline of 5cm (even for points
-  // far away, >100m), but the test fails when the baseline becomes 1cm. This suggests using
-  // rankTol = 0.01 and setting a reasonable max landmark distance to obtain best results.
-  SmartProjectionParams params(
+  {  // rankTol = 0.01 gives a valid point
+    // By playing with this test, we can show we can triangulate also with a
+    // baseline of 5cm (even for points far away, >100m), but the test fails
+    // when the baseline becomes 1cm. This suggests using rankTol = 0.01 and
+    // setting a reasonable max landmark distance to obtain best results.
+    SmartProjectionParams params(
         gtsam::HESSIAN,
         gtsam::ZERO_ON_DEGENERACY);  // only config that works with rig factors
-  params.setRankTolerance(0.01);
+    params.setRankTolerance(0.01);
 
-  SmartRigFactor::shared_ptr smartFactor1(new SmartRigFactor(model,cameraRig,params));
-  smartFactor1->add(cam1.project(landmarkL), x1);
-  smartFactor1->add(cam2.project(landmarkL), x2);
+    SmartRigFactor::shared_ptr smartFactor1(
+        new SmartRigFactor(model, cameraRig, params));
+    smartFactor1->add(cam1.project(landmarkL), x1);
+    smartFactor1->add(cam2.project(landmarkL), x2);
 
-  NonlinearFactorGraph graph;
-  graph.push_back(smartFactor1);
+    NonlinearFactorGraph graph;
+    graph.push_back(smartFactor1);
 
-  Values groundTruth;
-  groundTruth.insert(x1, poseA);
-  groundTruth.insert(x2, poseB);
-  DOUBLES_EQUAL(0, graph.error(groundTruth), 1e-9);
+    Values groundTruth;
+    groundTruth.insert(x1, poseA);
+    groundTruth.insert(x2, poseB);
+    DOUBLES_EQUAL(0, graph.error(groundTruth), 1e-9);
 
-  // get point
-  TriangulationResult point = smartFactor1->point();
-  EXPECT(point.valid()); // valid triangulation
-  EXPECT(assert_equal(landmarkL, *point, 1e-7));
+    // get point
+    TriangulationResult point = smartFactor1->point();
+    EXPECT(point.valid());  // valid triangulation
+    EXPECT(assert_equal(landmarkL, *point, 1e-7));
   }
 }
 
 /* ************************************************************************* */
-//BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Constrained, "gtsam_noiseModel_Constrained");
-//BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Diagonal, "gtsam_noiseModel_Diagonal");
-//BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Gaussian, "gtsam_noiseModel_Gaussian");
-//BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Unit, "gtsam_noiseModel_Unit");
-//BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Isotropic, "gtsam_noiseModel_Isotropic");
-//BOOST_CLASS_EXPORT_GUID(gtsam::SharedNoiseModel, "gtsam_SharedNoiseModel");
-//BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal");
+// BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Constrained,
+// "gtsam_noiseModel_Constrained");
+// BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Diagonal,
+// "gtsam_noiseModel_Diagonal");
+// BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Gaussian,
+// "gtsam_noiseModel_Gaussian");
+// BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Unit, "gtsam_noiseModel_Unit");
+// BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Isotropic,
+// "gtsam_noiseModel_Isotropic");
+// BOOST_CLASS_EXPORT_GUID(gtsam::SharedNoiseModel, "gtsam_SharedNoiseModel");
+// BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal");
 //
 // SERIALIZATION TEST FAILS: to be fixed
-//TEST(SmartProjectionFactorP, serialize) {
+// TEST(SmartProjectionFactorP, serialize) {
 //  using namespace vanillaPose;
 //  using namespace gtsam::serializationTestHelpers;
 //  SmartProjectionParams params(
 //        gtsam::HESSIAN,
-//        gtsam::ZERO_ON_DEGENERACY);  // only config that works with rig factors
+//        gtsam::ZERO_ON_DEGENERACY);  // only config that works with rig
+//        factors
 //  params.setRankTolerance(rankTol);
 //
 //  CameraSet<PinholePose<Cal3_S2>> cameraRig;  // single camera in the rig
@@ -1598,7 +1632,7 @@ TEST( SmartProjectionFactorP, 2poses_sphericalCamera_rankTol ) {
 //  EXPECT(equalsBinary(factor));
 //}
 //
-//TEST(SmartProjectionFactorP, serialize2) {
+// TEST(SmartProjectionFactorP, serialize2) {
 //  using namespace vanillaPose;
 //  using namespace gtsam::serializationTestHelpers;
 //  SmartProjectionParams params(
