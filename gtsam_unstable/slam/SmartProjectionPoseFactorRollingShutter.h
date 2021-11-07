@@ -61,7 +61,7 @@ class SmartProjectionPoseFactorRollingShutter
 
   /// one or more cameras taking observations (fixed poses wrt body + fixed
   /// intrinsics)
-  typename Base::Cameras cameraRig_;
+  boost::shared_ptr<typename Base::Cameras> cameraRig_;
 
   /// vector of camera Ids (one for each observation, in the same order),
   /// identifying which camera took the measurement
@@ -97,7 +97,8 @@ class SmartProjectionPoseFactorRollingShutter
    * @param params internal parameters of the smart factors
    */
   SmartProjectionPoseFactorRollingShutter(
-      const SharedNoiseModel& sharedNoiseModel, const Cameras& cameraRig,
+      const SharedNoiseModel& sharedNoiseModel,
+      const boost::shared_ptr<Cameras>& cameraRig,
       const SmartProjectionParams& params = SmartProjectionParams())
       : Base(sharedNoiseModel, params), cameraRig_(cameraRig) {
     // throw exception if configuration is not supported by this factor
@@ -109,28 +110,6 @@ class SmartProjectionPoseFactorRollingShutter
       throw std::runtime_error(
           "SmartProjectionRigFactor: "
           "linearizationMode must be set to HESSIAN");
-  }
-
-  /**
-   * Constructor
-   * @param Isotropic measurement noise
-   * @param camera single camera (fixed poses wrt body and intrinsics)
-   * @param params internal parameters of the smart factors
-   */
-  SmartProjectionPoseFactorRollingShutter(
-      const SharedNoiseModel& sharedNoiseModel, const Camera& camera,
-      const SmartProjectionParams& params = SmartProjectionParams())
-      : Base(sharedNoiseModel, params) {
-    // throw exception if configuration is not supported by this factor
-    if (Base::params_.degeneracyMode != gtsam::ZERO_ON_DEGENERACY)
-      throw std::runtime_error(
-          "SmartProjectionRigFactor: "
-          "degeneracyMode must be set to ZERO_ON_DEGENERACY");
-    if (Base::params_.linearizationMode != gtsam::HESSIAN)
-      throw std::runtime_error(
-          "SmartProjectionRigFactor: "
-          "linearizationMode must be set to HESSIAN");
-    cameraRig_.push_back(camera);
   }
 
   /** Virtual destructor */
@@ -199,7 +178,7 @@ class SmartProjectionPoseFactorRollingShutter
           "SmartProjectionPoseFactorRollingShutter: "
           "trying to add inconsistent inputs");
     }
-    if (cameraIds.size() == 0 && cameraRig_.size() > 1) {
+    if (cameraIds.size() == 0 && cameraRig_->size() > 1) {
       throw std::runtime_error(
           "SmartProjectionPoseFactorRollingShutter: "
           "camera rig includes multiple camera "
@@ -224,7 +203,7 @@ class SmartProjectionPoseFactorRollingShutter
   const std::vector<double>& alphas() const { return alphas_; }
 
   /// return the calibration object
-  const Cameras& cameraRig() const { return cameraRig_; }
+  const boost::shared_ptr<Cameras>& cameraRig() const { return cameraRig_; }
 
   /// return the calibration object
   const FastVector<size_t>& cameraIds() const { return cameraIds_; }
@@ -246,7 +225,7 @@ class SmartProjectionPoseFactorRollingShutter
                 << keyFormatter(world_P_body_key_pairs_[i].second) << std::endl;
       std::cout << " alpha: " << alphas_[i] << std::endl;
       std::cout << "cameraId: " << cameraIds_[i] << std::endl;
-      cameraRig_[cameraIds_[i]].print("camera in rig:\n");
+      (*cameraRig_)[cameraIds_[i]].print("camera in rig:\n");
     }
     Base::print("", keyFormatter);
   }
@@ -275,7 +254,7 @@ class SmartProjectionPoseFactorRollingShutter
     }
 
     return e && Base::equals(p, tol) && alphas_ == e->alphas() &&
-           keyPairsEqual && cameraRig_.equals(e->cameraRig()) &&
+           keyPairsEqual && cameraRig_->equals(*(e->cameraRig())) &&
            std::equal(cameraIds_.begin(), cameraIds_.end(),
                       e->cameraIds().begin());
   }
@@ -297,7 +276,7 @@ class SmartProjectionPoseFactorRollingShutter
       double interpolationFactor = alphas_[i];
       const Pose3& w_P_body =
           interpolate<Pose3>(w_P_body1, w_P_body2, interpolationFactor);
-      const typename Base::Camera& camera_i = cameraRig_[cameraIds_[i]];
+      const typename Base::Camera& camera_i = (*cameraRig_)[cameraIds_[i]];
       const Pose3& body_P_cam = camera_i.pose();
       const Pose3& w_P_cam = w_P_body.compose(body_P_cam);
       cameras.emplace_back(w_P_cam,
@@ -350,7 +329,7 @@ class SmartProjectionPoseFactorRollingShutter
         auto w_P_body =
             interpolate<Pose3>(w_P_body1, w_P_body2, interpolationFactor,
                                dInterpPose_dPoseBody1, dInterpPose_dPoseBody2);
-        const typename Base::Camera& camera_i = cameraRig_[cameraIds_[i]];
+        const typename Base::Camera& camera_i = (*cameraRig_)[cameraIds_[i]];
         auto body_P_cam = camera_i.pose();
         auto w_P_cam = w_P_body.compose(body_P_cam, dPoseCam_dInterpPose);
         typename Base::Camera camera(
