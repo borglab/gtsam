@@ -73,6 +73,8 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
   FastVector<size_t> cameraIds_;
 
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   typedef CAMERA Camera;
   typedef CameraSet<CAMERA> Cameras;
 
@@ -129,7 +131,7 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
   }
 
   /** Virtual destructor */
-  ~SmartProjectionRigFactor() override {}
+  ~SmartProjectionRigFactor() override = default;
 
   /**
    * add a new measurement, corresponding to an observation from pose "poseKey"
@@ -178,8 +180,8 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
     if (cameraIds.size() == 0 && cameraRig_.size() > 1) {
       throw std::runtime_error(
           "SmartProjectionRigFactor: "
-          "camera rig includes multiple camera but add did not input "
-          "cameraIds");
+          "camera rig includes multiple camera "
+          "but add did not input cameraIds");
     }
     for (size_t i = 0; i < measurements.size(); i++) {
       add(measurements[i], poseKeys[i],
@@ -378,9 +380,9 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
     ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-    ar& BOOST_SERIALIZATION_NVP(nonUniqueKeys_);
-    ar& BOOST_SERIALIZATION_NVP(cameraRig_);
-    ar& BOOST_SERIALIZATION_NVP(cameraIds_);
+    //ar& BOOST_SERIALIZATION_NVP(nonUniqueKeys_);
+    // ar& BOOST_SERIALIZATION_NVP(cameraRig_);
+    //ar& BOOST_SERIALIZATION_NVP(cameraIds_);
   }
 };
 // end of class declaration
