@@ -1259,8 +1259,7 @@ TEST(SmartProjectionRigFactor, timing) {
 }
 #endif
 
-///* *************************************************************************
-///*/
+///* **************************************************************************/
 // BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Constrained,
 // "gtsam_noiseModel_Constrained");
 // BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Diagonal,
@@ -1276,7 +1275,9 @@ TEST(SmartProjectionRigFactor, timing) {
 // TEST(SmartProjectionRigFactor, serialize) {
 //  using namespace vanillaRig;
 //  using namespace gtsam::serializationTestHelpers;
-//  SmartProjectionParams params;
+//  SmartProjectionParams params(
+//      gtsam::HESSIAN,
+//      gtsam::ZERO_ON_DEGENERACY);  // only config that works with rig factors
 //  params.setRankTolerance(rankTol);
 //
 //  Cameras cameraRig; // single camera in the rig
