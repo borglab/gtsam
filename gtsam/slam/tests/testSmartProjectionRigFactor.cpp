@@ -29,7 +29,7 @@
 #include <iostream>
 
 #include "smartFactorScenarios.h"
-#define DISABLE_TIMING
+//#define DISABLE_TIMING
 
 using namespace boost::assign;
 using namespace std::placeholders;
@@ -111,17 +111,6 @@ TEST(SmartProjectionRigFactor, Constructor4) {
 }
 
 /* ************************************************************************* */
-TEST(SmartProjectionRigFactor, Constructor5) {
-  using namespace vanillaRig;
-  SmartProjectionParams params2(
-      gtsam::HESSIAN,
-      gtsam::ZERO_ON_DEGENERACY);  // only config that works with rig factors
-  params2.setRankTolerance(rankTol);
-  SmartRigFactor factor1(model, Camera(Pose3::identity(), sharedK), params2);
-  factor1.add(measurement1, x1, cameraId1);
-}
-
-/* ************************************************************************* */
 TEST(SmartProjectionRigFactor, Equals) {
   using namespace vanillaRig;
   Cameras cameraRig;  // single camera in the rig
@@ -138,8 +127,8 @@ TEST(SmartProjectionRigFactor, Equals) {
   CHECK(assert_equal(*factor1, *factor2));
 
   SmartRigFactor::shared_ptr factor3(
-      new SmartRigFactor(model, Camera(Pose3::identity(), sharedK), params));
-  factor3->add(measurement1, x1);  // now use default
+      new SmartRigFactor(model, cameraRig, params));
+  factor3->add(measurement1, x1);  // now use default camera ID
 
   CHECK(assert_equal(*factor1, *factor3));
 }
@@ -152,7 +141,10 @@ TEST(SmartProjectionRigFactor, noiseless) {
   Point2 level_uv = level_camera.project(landmark1);
   Point2 level_uv_right = level_camera_right.project(landmark1);
 
-  SmartRigFactor factor(model, Camera(Pose3::identity(), sharedK), params);
+  Cameras cameraRig;  // single camera in the rig
+  cameraRig.push_back(Camera(Pose3::identity(), sharedK));
+
+  SmartRigFactor factor(model, cameraRig, params);
   factor.add(level_uv, x1);  // both taken from the same camera
   factor.add(level_uv_right, x2);
 
@@ -504,8 +496,11 @@ TEST(SmartProjectionRigFactor, Factors) {
   KeyVector views{x1, x2};
   FastVector<size_t> cameraIds{0, 0};
 
+  Cameras cameraRig;  // single camera in the rig
+  cameraRig.push_back(Camera(Pose3::identity(), sharedK));
+
   SmartRigFactor::shared_ptr smartFactor1 = boost::make_shared<SmartRigFactor>(
-      model, Camera(Pose3::identity(), sharedK), params);
+      model, cameraRig, params);
   smartFactor1->add(measurements_cam1,
                     views);  // we have a single camera so use default cameraIds
 
