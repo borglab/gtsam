@@ -17,12 +17,13 @@
  */
 
 #pragma once
-#include <gtsam/slam/SmartProjectionPoseFactor.h>
-#include <gtsam/slam/SmartProjectionFactor.h>
-#include <gtsam/slam/GeneralSFMFactor.h>
-#include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Cal3Bundler.h>
+#include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/SphericalCamera.h>
+#include <gtsam/slam/GeneralSFMFactor.h>
+#include <gtsam/slam/SmartProjectionFactor.h>
+#include <gtsam/slam/SmartProjectionPoseFactor.h>
+
 #include "../SmartProjectionRigFactor.h"
 
 using namespace std;
@@ -45,7 +46,7 @@ Pose3 pose_above = level_pose * Pose3(Rot3(), Point3(0, -1, 0));
 // Create a noise unit2 for the pixel error
 static SharedNoiseModel unit2(noiseModel::Unit::Create(2));
 
-static double fov = 60; // degrees
+static double fov = 60;  // degrees
 static size_t w = 640, h = 480;
 
 /* ************************************************************************* */
@@ -64,7 +65,7 @@ Camera cam2(pose_right, K2);
 Camera cam3(pose_above, K2);
 typedef GeneralSFMFactor<Camera, Point3> SFMFactor;
 SmartProjectionParams params;
-}
+}  // namespace vanilla
 
 /* ************************************************************************* */
 // default Cal3_S2 poses
@@ -79,7 +80,7 @@ Camera level_camera_right(pose_right, sharedK);
 Camera cam1(level_pose, sharedK);
 Camera cam2(pose_right, sharedK);
 Camera cam3(pose_above, sharedK);
-}
+}  // namespace vanillaPose
 
 /* ************************************************************************* */
 // default Cal3_S2 poses
@@ -94,7 +95,7 @@ Camera level_camera_right(pose_right, sharedK2);
 Camera cam1(level_pose, sharedK2);
 Camera cam2(pose_right, sharedK2);
 Camera cam3(pose_above, sharedK2);
-}
+}  // namespace vanillaPose2
 
 /* *************************************************************************/
 // Cal3Bundler cameras
@@ -112,7 +113,7 @@ Camera cam1(level_pose, K);
 Camera cam2(pose_right, K);
 Camera cam3(pose_above, K);
 typedef GeneralSFMFactor<Camera, Point3> SFMFactor;
-}
+}  // namespace bundler
 
 /* *************************************************************************/
 // Cal3Bundler poses
@@ -121,14 +122,15 @@ typedef PinholePose<Cal3Bundler> Camera;
 typedef CameraSet<Camera> Cameras;
 typedef SmartProjectionPoseFactor<Cal3Bundler> SmartFactor;
 typedef SmartProjectionRigFactor<Camera> SmartRigFactor;
-static boost::shared_ptr<Cal3Bundler> sharedBundlerK(
-    new Cal3Bundler(500, 1e-3, 1e-3, 1000, 2000));
+static boost::shared_ptr<Cal3Bundler> sharedBundlerK(new Cal3Bundler(500, 1e-3,
+                                                                     1e-3, 1000,
+                                                                     2000));
 Camera level_camera(level_pose, sharedBundlerK);
 Camera level_camera_right(pose_right, sharedBundlerK);
 Camera cam1(level_pose, sharedBundlerK);
 Camera cam2(pose_right, sharedBundlerK);
 Camera cam3(pose_above, sharedBundlerK);
-}
+}  // namespace bundlerPose
 
 /* ************************************************************************* */
 // sphericalCamera
@@ -142,21 +144,22 @@ Camera level_camera_right(pose_right);
 Camera cam1(level_pose);
 Camera cam2(pose_right);
 Camera cam3(pose_above);
-}
+}  // namespace sphericalCamera
 /* *************************************************************************/
 
-template<class CAMERA>
+template <class CAMERA>
 CAMERA perturbCameraPose(const CAMERA& camera) {
-  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 10, 0., -M_PI / 10),
-      Point3(0.5, 0.1, 0.3));
+  Pose3 noise_pose =
+      Pose3(Rot3::Ypr(-M_PI / 10, 0., -M_PI / 10), Point3(0.5, 0.1, 0.3));
   Pose3 cameraPose = camera.pose();
   Pose3 perturbedCameraPose = cameraPose.compose(noise_pose);
   return CAMERA(perturbedCameraPose, camera.calibration());
 }
 
-template<class CAMERA>
-void projectToMultipleCameras(const CAMERA& cam1, const CAMERA& cam2,
-    const CAMERA& cam3, Point3 landmark, typename CAMERA::MeasurementVector& measurements_cam) {
+template <class CAMERA>
+void projectToMultipleCameras(
+    const CAMERA& cam1, const CAMERA& cam2, const CAMERA& cam3, Point3 landmark,
+    typename CAMERA::MeasurementVector& measurements_cam) {
   typename CAMERA::Measurement cam1_uv1 = cam1.project(landmark);
   typename CAMERA::Measurement cam2_uv1 = cam2.project(landmark);
   typename CAMERA::Measurement cam3_uv1 = cam3.project(landmark);
@@ -166,4 +169,3 @@ void projectToMultipleCameras(const CAMERA& cam1, const CAMERA& cam2,
 }
 
 /* ************************************************************************* */
-
