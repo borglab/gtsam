@@ -85,20 +85,19 @@ Vector6 Pose3::Adjoint(const Vector6& xi_b, OptionalJacobian<6, 6> H_pose,
 /// The dual version of Adjoint
 Vector6 Pose3::AdjointTranspose(const Vector6& x, OptionalJacobian<6, 6> H_pose,
                                 OptionalJacobian<6, 6> H_x) const {
-  const Matrix6 &AdT = AdjointMap().transpose();
-  const Vector6 &AdTx = AdT * x;
+  const Matrix6 Ad = AdjointMap();
+  const Vector6 AdTx = Ad.transpose() * x;
 
   // Jacobians
   // See docs/math.pdf for more details.
   if (H_pose) {
-    const auto &w_T_hat = skewSymmetric(AdTx.head<3>()),
-               &v_T_hat = skewSymmetric(AdTx.tail<3>());
-    *H_pose = (Matrix6() << w_T_hat, v_T_hat,  //
-               /*        */ v_T_hat, Z_3x3)
-                  .finished();
+    const auto w_T_hat = skewSymmetric(AdTx.head<3>()),
+               v_T_hat = skewSymmetric(AdTx.tail<3>());
+    *H_pose << w_T_hat, v_T_hat,  //
+        /*  */ v_T_hat, Z_3x3;
   }
   if (H_x) {
-    *H_x = AdT;
+    *H_x = Ad.transpose();
   }
 
   return AdTx;
