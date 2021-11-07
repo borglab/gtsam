@@ -64,9 +64,8 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
   /// vector of keys (one for each observation) with potentially repeated keys
   KeyVector nonUniqueKeys_;
 
-  /// cameras in the rig (fixed poses wrt body + fixed intrinsics, for each
-  /// camera)
-  typename Base::Cameras cameraRig_;
+  /// cameras in the rig (fixed poses wrt body and intrinsics, for each camera)
+  boost::shared_ptr<typename Base::Cameras> cameraRig_;
 
   /// vector of camera Ids (one for each observation, in the same order),
   /// identifying which camera took the measurement
@@ -93,7 +92,8 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
    * @param params parameters for the smart projection factors
    */
   SmartProjectionRigFactor(
-      const SharedNoiseModel& sharedNoiseModel, const Cameras& cameraRig,
+      const SharedNoiseModel& sharedNoiseModel,
+      const boost::shared_ptr<Cameras>& cameraRig,
       const SmartProjectionParams& params = SmartProjectionParams())
       : Base(sharedNoiseModel, params), cameraRig_(cameraRig) {
     // throw exception if configuration is not supported by this factor
@@ -105,29 +105,6 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
       throw std::runtime_error(
           "SmartProjectionRigFactor: "
           "linearizationMode must be set to HESSIAN");
-  }
-
-  /**
-   * Constructor
-   * @param sharedNoiseModel isotropic noise model for the 2D feature
-   * measurements
-   * @param camera single camera (fixed poses wrt body and intrinsics)
-   * @param params parameters for the smart projection factors
-   */
-  SmartProjectionRigFactor(
-      const SharedNoiseModel& sharedNoiseModel, const Camera& camera,
-      const SmartProjectionParams& params = SmartProjectionParams())
-      : Base(sharedNoiseModel, params) {
-    // throw exception if configuration is not supported by this factor
-    if (Base::params_.degeneracyMode != gtsam::ZERO_ON_DEGENERACY)
-      throw std::runtime_error(
-          "SmartProjectionRigFactor: "
-          "degeneracyMode must be set to ZERO_ON_DEGENERACY");
-    if (Base::params_.linearizationMode != gtsam::HESSIAN)
-      throw std::runtime_error(
-          "SmartProjectionRigFactor: "
-          "linearizationMode must be set to HESSIAN");
-    cameraRig_.push_back(camera);
   }
 
   /** Virtual destructor */
@@ -177,7 +154,7 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
           "SmartProjectionRigFactor: "
           "trying to add inconsistent inputs");
     }
-    if (cameraIds.size() == 0 && cameraRig_.size() > 1) {
+    if (cameraIds.size() == 0 && cameraRig_->size() > 1) {
       throw std::runtime_error(
           "SmartProjectionRigFactor: "
           "camera rig includes multiple camera "
@@ -194,7 +171,7 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
   const KeyVector& nonUniqueKeys() const { return nonUniqueKeys_; }
 
   /// return the calibration object
-  const Cameras& cameraRig() const { return cameraRig_; }
+  const boost::shared_ptr<Cameras>& cameraRig() const { return cameraRig_; }
 
   /// return the calibration object
   const FastVector<size_t>& cameraIds() const { return cameraIds_; }
@@ -212,7 +189,7 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
       std::cout << "-- Measurement nr " << i << std::endl;
       std::cout << "key: " << keyFormatter(nonUniqueKeys_[i]) << std::endl;
       std::cout << "cameraId: " << cameraIds_[i] << std::endl;
-      cameraRig_[cameraIds_[i]].print("camera in rig:\n");
+      (*cameraRig_)[cameraIds_[i]].print("camera in rig:\n");
     }
     Base::print("", keyFormatter);
   }
@@ -221,7 +198,7 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
   bool equals(const NonlinearFactor& p, double tol = 1e-9) const override {
     const This* e = dynamic_cast<const This*>(&p);
     return e && Base::equals(p, tol) && nonUniqueKeys_ == e->nonUniqueKeys() &&
-           cameraRig_.equals(e->cameraRig()) &&
+           cameraRig_->equals(*(e->cameraRig())) &&
            std::equal(cameraIds_.begin(), cameraIds_.end(),
                       e->cameraIds().begin());
   }
@@ -236,7 +213,7 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
     typename Base::Cameras cameras;
     cameras.reserve(nonUniqueKeys_.size());  // preallocate
     for (size_t i = 0; i < nonUniqueKeys_.size(); i++) {
-      const typename Base::Camera& camera_i = cameraRig_[cameraIds_[i]];
+      const typename Base::Camera& camera_i = (*cameraRig_)[cameraIds_[i]];
       const Pose3 world_P_sensor_i =
           values.at<Pose3>(nonUniqueKeys_[i])  // = world_P_body
           * camera_i.pose();                   // = body_P_cam_i
@@ -275,7 +252,7 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
     } else {  // valid result: compute jacobians
       b = -cameras.reprojectionError(*this->result_, this->measured_, Fs, E);
       for (size_t i = 0; i < Fs.size(); i++) {
-        const Pose3& body_P_sensor = cameraRig_[cameraIds_[i]].pose();
+        const Pose3& body_P_sensor = (*cameraRig_)[cameraIds_[i]].pose();
         const Pose3 world_P_body = cameras[i].pose() * body_P_sensor.inverse();
         Eigen::Matrix<double, DimPose, DimPose> H;
         world_P_body.compose(body_P_sensor, H);
@@ -380,9 +357,9 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
     ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-    //ar& BOOST_SERIALIZATION_NVP(nonUniqueKeys_);
+    // ar& BOOST_SERIALIZATION_NVP(nonUniqueKeys_);
     // ar& BOOST_SERIALIZATION_NVP(cameraRig_);
-    //ar& BOOST_SERIALIZATION_NVP(cameraIds_);
+    // ar& BOOST_SERIALIZATION_NVP(cameraIds_);
   }
 };
 // end of class declaration
