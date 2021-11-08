@@ -57,17 +57,17 @@ using Matrix7##N = Eigen::Matrix<double, 7, N>;  \
 using Matrix8##N = Eigen::Matrix<double, 8, N>;  \
 using Matrix9##N = Eigen::Matrix<double, 9, N>;  \
 static const Eigen::MatrixBase<Matrix##N>::IdentityReturnType I_##N##x##N = Matrix##N::Identity(); \
-static const Eigen::MatrixBase<Matrix##N>::ConstantReturnType Z_##N##x##N = Matrix##N::Zero()
+static const Eigen::MatrixBase<Matrix##N>::ConstantReturnType Z_##N##x##N = Matrix##N::Zero();
 
-GTSAM_MAKE_MATRIX_DEFS(1);
-GTSAM_MAKE_MATRIX_DEFS(2);
-GTSAM_MAKE_MATRIX_DEFS(3);
-GTSAM_MAKE_MATRIX_DEFS(4);
-GTSAM_MAKE_MATRIX_DEFS(5);
-GTSAM_MAKE_MATRIX_DEFS(6);
-GTSAM_MAKE_MATRIX_DEFS(7);
-GTSAM_MAKE_MATRIX_DEFS(8);
-GTSAM_MAKE_MATRIX_DEFS(9);
+GTSAM_MAKE_MATRIX_DEFS(1)
+GTSAM_MAKE_MATRIX_DEFS(2)
+GTSAM_MAKE_MATRIX_DEFS(3)
+GTSAM_MAKE_MATRIX_DEFS(4)
+GTSAM_MAKE_MATRIX_DEFS(5)
+GTSAM_MAKE_MATRIX_DEFS(6)
+GTSAM_MAKE_MATRIX_DEFS(7)
+GTSAM_MAKE_MATRIX_DEFS(8)
+GTSAM_MAKE_MATRIX_DEFS(9)
 
 // Matrix expressions for accessing parts of matrices
 typedef Eigen::Block<Matrix> SubMatrix;
