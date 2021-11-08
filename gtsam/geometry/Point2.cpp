@@ -116,7 +116,7 @@ list<Point2> circleCircleIntersection(Point2 c1, double r1, Point2 c2,
 Point2Pair means(const std::vector<Point2Pair> &abPointPairs) {
   const size_t n = abPointPairs.size();
   if (n == 0) throw std::invalid_argument("Point2::mean input Point2Pair vector is empty");
-  Point2 aSum(0, 0, 0), bSum(0, 0, 0);
+  Point2 aSum(0, 0), bSum(0, 0);
   for (const Point2Pair &abPair : abPointPairs) {
     aSum += abPair.first;
     bSum += abPair.second;
