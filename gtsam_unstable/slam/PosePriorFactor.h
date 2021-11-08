@@ -38,7 +38,7 @@ namespace gtsam {
 
     /** concept check by type */
     GTSAM_CONCEPT_TESTABLE_TYPE(POSE)
-    GTSAM_CONCEPT_POSE_TYPE(POSE);
+    GTSAM_CONCEPT_POSE_TYPE(POSE)
   public:
 
     /// shorthand for a smart pointer to a factor

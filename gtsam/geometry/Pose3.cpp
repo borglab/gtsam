@@ -30,7 +30,7 @@ using std::vector;
 using Point3Pairs = vector<Point3Pair>;
 
 /** instantiate concept checks */
-GTSAM_CONCEPT_POSE_INST(Pose3);
+GTSAM_CONCEPT_POSE_INST(Pose3)
 
 /* ************************************************************************* */
 Pose3::Pose3(const Pose2& pose2) :
