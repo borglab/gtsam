@@ -288,6 +288,7 @@ namespace gtsam {
     FactorGraphType& asDerived() { return static_cast<FactorGraphType&>(*this); }
 
   public:
+  #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
     /** \deprecated ordering and orderingType shouldn't both be specified */
     boost::shared_ptr<BayesNetType> eliminateSequential(
       const Ordering& ordering,
@@ -339,6 +340,7 @@ namespace gtsam {
       OptionalVariableIndex variableIndex = boost::none) const {
           return marginalMultifrontalBayesTree(variables, function, variableIndex);
       }
+  #endif
   };
 
 }
