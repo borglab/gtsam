@@ -290,10 +290,11 @@ namespace gtsam {
     return blocks;
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   VectorValues GaussianFactorGraph::optimize(const Eliminate& function) const {
     gttic(GaussianFactorGraph_optimize);
-    return BaseEliminateable::eliminateMultifrontal(function)->optimize();
+    return BaseEliminateable::eliminateMultifrontal(Ordering::COLAMD, function)
+        ->optimize();
   }
 
   /* ************************************************************************* */

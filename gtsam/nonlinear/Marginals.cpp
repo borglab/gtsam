@@ -80,11 +80,14 @@ Marginals::Marginals(const GaussianFactorGraph& graph, const VectorValues& solut
 
 /* ************************************************************************* */
 void Marginals::computeBayesTree() {
+  // The default ordering to use.
+  const Ordering ordering = Ordering::COLAMND;
   // Compute BayesTree
-  if(factorization_ == CHOLESKY)
-    bayesTree_ = *graph_.eliminateMultifrontal(EliminatePreferCholesky);
-  else if(factorization_ == QR)
-    bayesTree_ = *graph_.eliminateMultifrontal(EliminateQR);
+  if (factorization_ == CHOLESKY)
+    bayesTree_ =
+        *graph_.eliminateMultifrontal(ordering, EliminatePreferCholesky);
+  else if (factorization_ == QR)
+    bayesTree_ = *graph_.eliminateMultifrontal(ordering, EliminateQR);
 }
 
 /* ************************************************************************* */
