@@ -36,17 +36,17 @@ namespace gtsam {
       // no Ordering is provided.  When removing optional from VariableIndex, create VariableIndex
       // before creating ordering.
       VariableIndex computedVariableIndex(asDerived());
-      return eliminateSequential(function, computedVariableIndex, orderingType);
+      return eliminateSequential(orderingType, function, computedVariableIndex);
     }
     else {
       // Compute an ordering and call this function again.  We are guaranteed to have a 
       // VariableIndex already here because we computed one if needed in the previous 'if' block.
       if (orderingType == Ordering::METIS) {
         Ordering computedOrdering = Ordering::Metis(asDerived());
-        return eliminateSequential(computedOrdering, function, variableIndex, orderingType);
+        return eliminateSequential(computedOrdering, function, variableIndex);
       } else {
         Ordering computedOrdering = Ordering::Colamd(*variableIndex);
-        return eliminateSequential(computedOrdering, function, variableIndex, orderingType);
+        return eliminateSequential(computedOrdering, function, variableIndex);
       }
     }
   }
