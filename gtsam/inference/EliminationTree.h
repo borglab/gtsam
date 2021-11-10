@@ -81,7 +81,7 @@ namespace gtsam {
 
   protected:
     /** concept check */
-    GTSAM_CONCEPT_TESTABLE_TYPE(FactorType);
+    GTSAM_CONCEPT_TESTABLE_TYPE(FactorType)
 
     FastVector<sharedNode> roots_;
     FastVector<sharedFactor> remainingFactors_;
