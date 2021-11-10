@@ -17,8 +17,8 @@ import sys
 import gtsam
 from gtsam import (GeneralSFMFactorCal3Bundler,
                    PriorFactorPinholeCameraCal3Bundler, PriorFactorPoint3)
-from gtsam.symbol_shorthand import C, P
-from gtsam.utils import plot
+from gtsam.symbol_shorthand import C, P  # type: ignore
+from gtsam.utils import plot  # type: ignore
 from matplotlib import pyplot as plt
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
@@ -26,7 +26,7 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 DEFAULT_BAL_DATASET = "dubrovnik-3-7-pre"
 
 
-def plot_scene(scene_data: gtsam.SfmData, result: gtsam.Values):
+def plot_scene(scene_data: gtsam.SfmData, result: gtsam.Values) -> None:
     """Plot the SFM results."""
     plot_vals = gtsam.Values()
     for cam_idx in range(scene_data.number_cameras()):
@@ -41,7 +41,7 @@ def plot_scene(scene_data: gtsam.SfmData, result: gtsam.Values):
     plt.show()
 
 
-def run(args: argparse.Namespace):
+def run(args: argparse.Namespace) -> None:
     """ Run LM optimization with BAL input data and report resulting error """
     input_file = args.input_file
 
@@ -109,7 +109,7 @@ def run(args: argparse.Namespace):
     plot_scene(scene_data, result)
 
 
-def main():
+def main() -> None:
     """Main runner."""
     parser = argparse.ArgumentParser()
     parser.add_argument('-i',
