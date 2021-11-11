@@ -395,9 +395,14 @@ namespace gtsam {
 
   public:
 
-    /** \deprecated */
-    VectorValues optimize(boost::none_t,
-      const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
+   /** \deprecated */
+   VectorValues optimize(boost::none_t,
+                         const Eliminate& function =
+                             EliminationTraitsType::DefaultEliminate) const {
+     return optimize(function);
+   }
+#endif
 
   };
 
