@@ -115,7 +115,7 @@ Matrix6 Pose3::adjointMap(const Vector6& xi) {
 
 /* ************************************************************************* */
 Vector6 Pose3::adjoint(const Vector6& xi, const Vector6& y,
-    OptionalJacobian<6, 6> Hxi) {
+    OptionalJacobian<6, 6> Hxi, OptionalJacobian<6, 6> H_y) {
   if (Hxi) {
     Hxi->setZero();
     for (int i = 0; i < 6; ++i) {
@@ -126,12 +126,14 @@ Vector6 Pose3::adjoint(const Vector6& xi, const Vector6& y,
       Hxi->col(i) = Gi * y;
     }
   }
-  return adjointMap(xi) * y;
+  const Matrix6& ad_xi = adjointMap(xi);
+  if (H_y) *H_y = ad_xi;
+  return ad_xi * y;
 }
 
 /* ************************************************************************* */
 Vector6 Pose3::adjointTranspose(const Vector6& xi, const Vector6& y,
-    OptionalJacobian<6, 6> Hxi) {
+    OptionalJacobian<6, 6> Hxi, OptionalJacobian<6, 6> H_y) {
   if (Hxi) {
     Hxi->setZero();
     for (int i = 0; i < 6; ++i) {
@@ -142,7 +144,9 @@ Vector6 Pose3::adjointTranspose(const Vector6& xi, const Vector6& y,
       Hxi->col(i) = GTi * y;
     }
   }
-  return adjointMap(xi).transpose() * y;
+  const Matrix6& adT_xi = adjointMap(xi).transpose();
+  if (H_y) *H_y = adT_xi;
+  return adT_xi * y;
 }
 
 /* ************************************************************************* */
