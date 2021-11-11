@@ -19,7 +19,6 @@
  */
 
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/GaussianEliminationTree.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
