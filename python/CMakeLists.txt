@@ -89,11 +89,18 @@ set_target_properties(${GTSAM_PYTHON_TARGET} PROPERTIES
     RELWITHDEBINFO_POSTFIX "" # Otherwise you will have a wrong name
     )
 
+# Set the path for the GTSAM python module
 set(GTSAM_MODULE_PATH ${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam)
 
-# Symlink all tests .py files to build folder.
+# Copy all python files to build folder.
 copy_directory("${CMAKE_CURRENT_SOURCE_DIR}/gtsam"
         "${GTSAM_MODULE_PATH}")
+
+# Hack to get python test files copied every time they are modified
+file(GLOB GTSAM_PYTHON_TEST_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gtsam/tests/*.py")
+foreach(test_file ${GTSAM_PYTHON_TEST_FILES})
+        configure_file(${test_file} "${GTSAM_MODULE_PATH}/tests/${test_file}" COPYONLY)
+endforeach()
 
 # Common directory for data/datasets stored with the package.
 # This will store the data in the Python site package directly.
@@ -147,9 +154,15 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
 
     set(GTSAM_UNSTABLE_MODULE_PATH ${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam_unstable)
 
-    # Symlink all tests .py files to build folder.
+    # Copy all python files to build folder.
     copy_directory("${CMAKE_CURRENT_SOURCE_DIR}/gtsam_unstable"
             "${GTSAM_UNSTABLE_MODULE_PATH}")
+
+    # Hack to get python test files copied every time they are modified
+    file(GLOB GTSAM_UNSTABLE_PYTHON_TEST_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gtsam_unstable/tests/*.py")
+    foreach(test_file ${GTSAM_PYTHON_TEST_FILES})
+        configure_file(${test_file} "${GTSAM_UNSTABLE_MODULE_PATH}/tests/${test_file}" COPYONLY)
+    endforeach()
 
     # Add gtsam_unstable to the install target
     list(APPEND GTSAM_PYTHON_DEPENDENCIES ${GTSAM_PYTHON_UNSTABLE_TARGET})
