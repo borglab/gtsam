@@ -505,13 +505,6 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  /** \deprecated */
-  VectorValues GaussianFactorGraph::optimize(boost::none_t,
-    const Eliminate& function) const {
-      return optimize(function);
-  }
-
-  /* ************************************************************************* */
   void GaussianFactorGraph::printErrors(
       const VectorValues& values, const std::string& str,
       const KeyFormatter& keyFormatter,
