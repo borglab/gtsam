@@ -473,6 +473,9 @@ class Pose3 {
   Vector logmap(const gtsam::Pose3& pose);
   Matrix AdjointMap() const;
   Vector Adjoint(Vector xi) const;
+  Vector AdjointTranspose(Vector xi) const;
+  static Matrix adjointMap(Vector xi);
+  static Vector adjoint(Vector xi, Vector y);
   static Matrix adjointMap_(Vector xi);
   static Vector adjoint_(Vector xi, Vector y);
   static Vector adjointTranspose(Vector xi, Vector y);
