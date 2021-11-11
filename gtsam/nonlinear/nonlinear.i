@@ -115,6 +115,10 @@ class Ordering {
   Ordering();
   Ordering(const gtsam::Ordering& other);
 
+  template <FACTOR_GRAPH = {gtsam::NonlinearFactorGraph,
+                            gtsam::GaussianFactorGraph}>
+  static gtsam::Ordering Colamd(const FACTOR_GRAPH& graph);
+
   // Testable
   void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
                                 gtsam::DefaultKeyFormatter) const;
