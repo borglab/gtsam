@@ -30,7 +30,7 @@ TEST(CSP, SingleValue) {
   EXPECT(assert_equal(f1, singleValue.toDecisionTreeFactor()));
 
   // Create domains, laid out as a vector.
-  // TODO(dellaert): should be map??  
+  // TODO(dellaert): should be map??
   vector<Domain> domains;
   domains += Domain(ID), Domain(AZ), Domain(UT);
 

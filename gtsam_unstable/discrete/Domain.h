@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include <gtsam_unstable/discrete/Constraint.h>
 #include <gtsam/discrete/DiscreteKey.h>
+#include <gtsam_unstable/discrete/Constraint.h>
 
 namespace gtsam {
 
@@ -101,6 +101,6 @@ class GTSAM_UNSTABLE_EXPORT Domain : public Constraint {
   /// Partially apply known values, domain version
   Constraint::shared_ptr partiallyApply(
       const std::vector<Domain>& domains) const override;
-  };
+};
 
-} // namespace gtsam
+}  // namespace gtsam
