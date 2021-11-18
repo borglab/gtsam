@@ -5,21 +5,22 @@
  * @author Frank Dellaert
  */
 
-#include <gtsam_unstable/discrete/CSP.h>
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam_unstable/discrete/CSP.h>
+
 #include <boost/assign/std/map.hpp>
 using boost::assign::insert;
+#include <stdarg.h>
+
 #include <iostream>
 #include <sstream>
-#include <stdarg.h>
 
 using namespace std;
 using namespace gtsam;
 
 #define PRINT false
 
-class Sudoku: public CSP {
-
+class Sudoku : public CSP {
   /// sudoku size
   size_t n_;
 
@@ -27,25 +28,21 @@ class Sudoku: public CSP {
   typedef std::pair<size_t, size_t> IJ;
   std::map<IJ, DiscreteKey> dkeys_;
 
-public:
-
+ public:
   /// return DiscreteKey for cell(i,j)
   const DiscreteKey& dkey(size_t i, size_t j) const {
     return dkeys_.at(IJ(i, j));
   }
 
   /// return Key for cell(i,j)
-  Key key(size_t i, size_t j) const {
-    return dkey(i, j).first;
-  }
+  Key key(size_t i, size_t j) const { return dkey(i, j).first; }
 
   /// Constructor
-  Sudoku(size_t n, ...) :
-      n_(n) {
+  Sudoku(size_t n, ...) : n_(n) {
     // Create variables, ordering, and unary constraints
     va_list ap;
     va_start(ap, n);
-    Key k=0;
+    Key k = 0;
     for (size_t i = 0; i < n; ++i) {
       for (size_t j = 0; j < n; ++j, ++k) {
         // create the key
@@ -56,23 +53,21 @@ public:
         // cout << value << " ";
         if (value != 0) addSingleValue(dkeys_[ij], value - 1);
       }
-      //cout << endl;
+      // cout << endl;
     }
     va_end(ap);
 
     // add row constraints
     for (size_t i = 0; i < n; i++) {
       DiscreteKeys dkeys;
-      for (size_t j = 0; j < n; j++)
-        dkeys += dkey(i, j);
+      for (size_t j = 0; j < n; j++) dkeys += dkey(i, j);
       addAllDiff(dkeys);
     }
 
     // add col constraints
     for (size_t j = 0; j < n; j++) {
       DiscreteKeys dkeys;
-      for (size_t i = 0; i < n; i++)
-        dkeys += dkey(i, j);
+      for (size_t i = 0; i < n; i++) dkeys += dkey(i, j);
       addAllDiff(dkeys);
     }
 
@@ -84,8 +79,7 @@ public:
         // Box I,J
         DiscreteKeys dkeys;
         for (size_t i = i0; i < i0 + N; i++)
-          for (size_t j = j0; j < j0 + N; j++)
-            dkeys += dkey(i, j);
+          for (size_t j = j0; j < j0 + N; j++) dkeys += dkey(i, j);
         addAllDiff(dkeys);
         j0 += N;
       }
@@ -109,74 +103,66 @@ public:
     DiscreteFactor::sharedValues MPE = optimalAssignment();
     printAssignment(MPE);
   }
-
 };
 
 /* ************************************************************************* */
-TEST_UNSAFE( Sudoku, small)
-{
-  Sudoku csp(4,
-      1,0, 0,4,
-      0,0, 0,0,
-
-      4,0, 2,0,
-      0,1, 0,0);
+TEST_UNSAFE(Sudoku, small) {
+  Sudoku csp(4,           //
+             1, 0, 0, 4,  //
+             0, 0, 0, 0,  //
+             4, 0, 2, 0,  //
+             0, 1, 0, 0);
 
   // Do BP
-  csp.runArcConsistency(4,10,PRINT);
+  csp.runArcConsistency(4, 10, PRINT);
 
   // optimize and check
   CSP::sharedValues solution = csp.optimalAssignment();
   CSP::Values expected;
-  insert(expected)
-  (csp.key(0,0), 0)(csp.key(0,1), 1)(csp.key(0,2), 2)(csp.key(0,3), 3)
-  (csp.key(1,0), 2)(csp.key(1,1), 3)(csp.key(1,2), 0)(csp.key(1,3), 1)
-  (csp.key(2,0), 3)(csp.key(2,1), 2)(csp.key(2,2), 1)(csp.key(2,3), 0)
-  (csp.key(3,0), 1)(csp.key(3,1), 0)(csp.key(3,2), 3)(csp.key(3,3), 2);
-  EXPECT(assert_equal(expected,*solution));
-  //csp.printAssignment(solution);
+  insert(expected)(csp.key(0, 0), 0)(csp.key(0, 1), 1)(csp.key(0, 2), 2)(
+      csp.key(0, 3), 3)(csp.key(1, 0), 2)(csp.key(1, 1), 3)(csp.key(1, 2), 0)(
+      csp.key(1, 3), 1)(csp.key(2, 0), 3)(csp.key(2, 1), 2)(csp.key(2, 2), 1)(
+      csp.key(2, 3), 0)(csp.key(3, 0), 1)(csp.key(3, 1), 0)(csp.key(3, 2), 3)(
+      csp.key(3, 3), 2);
+  EXPECT(assert_equal(expected, *solution));
+  // csp.printAssignment(solution);
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE( Sudoku, easy)
-{
-  Sudoku sudoku(9,
-      0,0,5, 0,9,0, 0,0,1,
-      0,0,0, 0,0,2, 0,7,3,
-      7,6,0, 0,0,8, 2,0,0,
+TEST_UNSAFE(Sudoku, easy) {
+  Sudoku sudoku(9,                          //
+                0, 0, 5, 0, 9, 0, 0, 0, 1,  //
+                0, 0, 0, 0, 0, 2, 0, 7, 3,  //
+                7, 6, 0, 0, 0, 8, 2, 0, 0,  //
 
-      0,1,2, 0,0,9, 0,0,4,
-      0,0,0, 2,0,3, 0,0,0,
-      3,0,0, 1,0,0, 9,6,0,
+                0, 1, 2, 0, 0, 9, 0, 0, 4,  //
+                0, 0, 0, 2, 0, 3, 0, 0, 0,  //
+                3, 0, 0, 1, 0, 0, 9, 6, 0,  //
 
-      0,0,1, 9,0,0, 0,5,8,
-      9,7,0, 5,0,0, 0,0,0,
-      5,0,0, 0,3,0, 7,0,0);
+                0, 0, 1, 9, 0, 0, 0, 5, 8,  //
+                9, 7, 0, 5, 0, 0, 0, 0, 0,  //
+                5, 0, 0, 0, 3, 0, 7, 0, 0);
 
   // Do BP
-  sudoku.runArcConsistency(4,10,PRINT);
+  sudoku.runArcConsistency(4, 10, PRINT);
 
   // sudoku.printSolution(); // don't do it
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE( Sudoku, extreme)
-{
-  Sudoku sudoku(9,
-      0,0,9, 7,4,8, 0,0,0,
-      7,0,0, 0,0,0, 0,0,0,
-      0,2,0, 1,0,9, 0,0,0,
-
-      0,0,7, 0,0,0, 2,4,0,
-      0,6,4, 0,1,0, 5,9,0,
-      0,9,8, 0,0,0, 3,0,0,
-
-      0,0,0, 8,0,3, 0,2,0,
-      0,0,0, 0,0,0, 0,0,6,
-      0,0,0, 2,7,5, 9,0,0);
+TEST_UNSAFE(Sudoku, extreme) {
+  Sudoku sudoku(9,                             //
+                0, 0, 9, 7, 4, 8, 0, 0, 0, 7,  //
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 2,  //
+                0, 1, 0, 9, 0, 0, 0, 0, 0, 7,  //
+                0, 0, 0, 2, 4, 0, 0, 6, 4, 0,  //
+                1, 0, 5, 9, 0, 0, 9, 8, 0, 0,  //
+                0, 3, 0, 0, 0, 0, 0, 8, 0, 3,  //
+                0, 2, 0, 0, 0, 0, 0, 0, 0, 0,  //
+                0, 6, 0, 0, 0, 2, 7, 5, 9, 0, 0);
 
   // Do BP
-  sudoku.runArcConsistency(9,10,PRINT);
+  sudoku.runArcConsistency(9, 10, PRINT);
 
 #ifdef METIS
   VariableIndexOrdered index(sudoku);
@@ -185,29 +171,28 @@ TEST_UNSAFE( Sudoku, extreme)
   index.outputMetisFormat(os);
 #endif
 
-  //sudoku.printSolution(); // don't do it
+  // sudoku.printSolution(); // don't do it
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE( Sudoku, AJC_3star_Feb8_2012)
-{
-  Sudoku sudoku(9,
-      9,5,0, 0,0,6, 0,0,0,
-      0,8,4, 0,7,0, 0,0,0,
-      6,2,0, 5,0,0, 4,0,0,
+TEST_UNSAFE(Sudoku, AJC_3star_Feb8_2012) {
+  Sudoku sudoku(9,                          //
+                9, 5, 0, 0, 0, 6, 0, 0, 0,  //
+                0, 8, 4, 0, 7, 0, 0, 0, 0,  //
+                6, 2, 0, 5, 0, 0, 4, 0, 0,  //
 
-      0,0,0, 2,9,0, 6,0,0,
-      0,9,0, 0,0,0, 0,2,0,
-      0,0,2, 0,6,3, 0,0,0,
+                0, 0, 0, 2, 9, 0, 6, 0, 0,  //
+                0, 9, 0, 0, 0, 0, 0, 2, 0,  //
+                0, 0, 2, 0, 6, 3, 0, 0, 0,  //
 
-      0,0,9, 0,0,7, 0,6,8,
-      0,0,0, 0,3,0, 2,9,0,
-      0,0,0, 1,0,0, 0,3,7);
+                0, 0, 9, 0, 0, 7, 0, 6, 8,  //
+                0, 0, 0, 0, 3, 0, 2, 9, 0,  //
+                0, 0, 0, 1, 0, 0, 0, 3, 7);
 
   // Do BP
-  sudoku.runArcConsistency(9,10,PRINT);
+  sudoku.runArcConsistency(9, 10, PRINT);
 
-  //sudoku.printSolution(); // don't do it
+  // sudoku.printSolution(); // don't do it
 }
 
 /* ************************************************************************* */
@@ -216,4 +201,3 @@ int main() {
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-
