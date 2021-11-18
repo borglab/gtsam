@@ -56,12 +56,11 @@ void CSP::runArcConsistency(size_t cardinality, size_t nrIterations,
         // if not already a singleton
         if (!domains[v].isSingleton()) {
           // get the constraint and call its ensureArcConsistency method
-          Constraint::shared_ptr constraint =
-              boost::dynamic_pointer_cast<Constraint>((*this)[f]);
+          auto constraint = boost::dynamic_pointer_cast<Constraint>((*this)[f]);
           if (!constraint)
             throw runtime_error("CSP:runArcConsistency: non-constraint factor");
           changed[v] =
-              constraint->ensureArcConsistency(v, domains) || changed[v];
+              constraint->ensureArcConsistency(v, &domains) || changed[v];
         }
       }  // f
       if (changed[v]) anyChange = true;
