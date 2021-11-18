@@ -7,17 +7,22 @@
 
 #pragma once
 
-#include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam_unstable/discrete/Constraint.h>
+#include <gtsam/discrete/DiscreteKey.h>
 
 namespace gtsam {
 
 /**
- * Domain restriction constraint
+ * The Domain class represents a constraint that restricts the possible values a
+ * particular variable, with given key, can take on.
  */
 class GTSAM_UNSTABLE_EXPORT Domain : public Constraint {
   size_t cardinality_;       /// Cardinality
   std::set<size_t> values_;  /// allowed values
+
+  DiscreteKey discreteKey() const {
+    return DiscreteKey(keys_[0], cardinality_);
+  }
 
  public:
   typedef boost::shared_ptr<Domain> shared_ptr;
@@ -35,14 +40,10 @@ class GTSAM_UNSTABLE_EXPORT Domain : public Constraint {
     values_.insert(v);
   }
 
-  /// Constructor
-  Domain(const Domain& other)
-      : Constraint(other.keys_[0]), values_(other.values_) {}
-
-  /// insert a value, non const :-(
+  /// Insert a value, non const :-(
   void insert(size_t value) { values_.insert(value); }
 
-  /// erase a value, non const :-(
+  /// Erase a value, non const :-(
   void erase(size_t value) { values_.erase(value); }
 
   size_t nrValues() const { return values_.size(); }
@@ -82,15 +83,17 @@ class GTSAM_UNSTABLE_EXPORT Domain : public Constraint {
    * @param domains all other domains
    */
   bool ensureArcConsistency(size_t j,
-                            std::vector<Domain>& domains) const override;
+                            std::vector<Domain>* domains) const override;
 
   /**
-   *  Check for a value in domain that does not occur in any other connected
-   * domain. If found, we make this a singleton... Called in
-   * AllDiff::ensureArcConsistency
-   *  @param keys connected domains through alldiff
+   * Check for a value in domain that does not occur in any other connected
+   * domain. If found, return a a new singleton domain...
+   * Called in AllDiff::ensureArcConsistency
+   * @param keys connected domains through alldiff
+   * @param keys other domains
    */
-  bool checkAllDiff(const KeyVector keys, std::vector<Domain>& domains);
+  boost::optional<Domain> checkAllDiff(
+      const KeyVector keys, const std::vector<Domain>& domains) const;
 
   /// Partially apply known values
   Constraint::shared_ptr partiallyApply(const Values& values) const override;
@@ -98,6 +101,6 @@ class GTSAM_UNSTABLE_EXPORT Domain : public Constraint {
   /// Partially apply known values, domain version
   Constraint::shared_ptr partiallyApply(
       const std::vector<Domain>& domains) const override;
-};
+  };
 
-}  // namespace gtsam
+} // namespace gtsam
