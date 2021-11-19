@@ -302,6 +302,7 @@ virtual class JacobianFactor : gtsam::GaussianFactor {
   void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
                                 gtsam::DefaultKeyFormatter) const;
   void printKeys(string s) const;
+  gtsam::KeyVector& keys() const;
   bool equals(const gtsam::GaussianFactor& lf, double tol) const;
   size_t size() const;
   Vector unweighted_error(const gtsam::VectorValues& c) const;
@@ -514,9 +515,9 @@ virtual class GaussianBayesNet {
   size_t size() const;
 
   // FactorGraph derived interface
-  // size_t size() const;
   gtsam::GaussianConditional* at(size_t idx) const;
   gtsam::KeySet keys() const;
+  gtsam::KeyVector keyVector() const;
   bool exists(size_t idx) const;
 
   void saveGraph(const string& s) const;
