@@ -24,6 +24,7 @@
 
 #pragma once
 
+#include <gtsam/base/FastDefaultAllocator.h>
 #include <gtsam/base/GenericValue.h>
 #include <gtsam/base/VectorSpace.h>
 #include <gtsam/inference/Key.h>
@@ -62,17 +63,18 @@ namespace gtsam {
   class GTSAM_EXPORT Values {
 
   private:
-
     // Internally we store a boost ptr_map, with a ValueCloneAllocator (defined
-    // below) to clone and deallocate the Value objects, and a boost
-    // fast_pool_allocator to allocate map nodes.  In this way, all memory is
-    // allocated in a boost memory pool.
+    // below) to clone and deallocate the Value objects, and our compile-flag-
+    // dependent FastDefaultAllocator to allocate map nodes.  In this way, the
+    // user defines the allocation details (i.e. optimize for memory pool/arenas
+    // concurrency).
+    typedef internal::FastDefaultAllocator<typename std::pair<const Key, void*>>::type KeyValuePtrPairAllocator;
     typedef boost::ptr_map<
         Key,
         Value,
         std::less<Key>,
         ValueCloneAllocator,
-        boost::fast_pool_allocator<std::pair<const Key, void*> > > KeyValueMap;
+        KeyValuePtrPairAllocator > KeyValueMap;
 
     // The member to store the values, see just above
     KeyValueMap values_;
