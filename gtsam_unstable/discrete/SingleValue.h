@@ -59,19 +59,19 @@ class GTSAM_UNSTABLE_EXPORT SingleValue : public Constraint {
   DecisionTreeFactor operator*(const DecisionTreeFactor& f) const override;
 
   /*
-   * Ensure Arc-consistency: just sets domain[j] to {value_}
+   * Ensure Arc-consistency: just sets domain[j] to {value_}.
    * @param j domain to be checked
-   * @param domains all other domains
+   * @param (in/out) domains all domains, but only domains->at(j) will be checked.
+   * @return true if domains->at(j) was changed, false otherwise.
    */
-  bool ensureArcConsistency(size_t j,
-                            std::vector<Domain>* domains) const override;
+  bool ensureArcConsistency(Key j, Domains* domains) const override;
 
   /// Partially apply known values
   Constraint::shared_ptr partiallyApply(const Values& values) const override;
 
   /// Partially apply known values, domain version
   Constraint::shared_ptr partiallyApply(
-      const std::vector<Domain>& domains) const override;
+      const Domains& domains) const override;
 };
 
 }  // namespace gtsam

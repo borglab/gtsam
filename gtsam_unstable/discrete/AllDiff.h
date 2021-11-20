@@ -54,21 +54,19 @@ class GTSAM_UNSTABLE_EXPORT AllDiff : public Constraint {
   DecisionTreeFactor operator*(const DecisionTreeFactor& f) const override;
 
   /*
-   * Ensure Arc-consistency
-   * Arc-consistency involves creating binaryAllDiff constraints
-   * In which case the combinatorial hyper-arc explosion disappears.
+   * Ensure Arc-consistency by checking every possible value of domain j.
    * @param j domain to be checked
-   * @param (in/out) domains all other domains
+   * @param (in/out) domains all domains, but only domains->at(j) will be checked.
+   * @return true if domains->at(j) was changed, false otherwise.
    */
-  bool ensureArcConsistency(size_t j,
-                            std::vector<Domain>* domains) const override;
+  bool ensureArcConsistency(Key j, Domains* domains) const override;
 
   /// Partially apply known values
   Constraint::shared_ptr partiallyApply(const Values&) const override;
 
   /// Partially apply known values, domain version
   Constraint::shared_ptr partiallyApply(
-      const std::vector<Domain>&) const override;
+      const Domains&) const override;
 };
 
 }  // namespace gtsam

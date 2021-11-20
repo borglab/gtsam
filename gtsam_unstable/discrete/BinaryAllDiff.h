@@ -70,13 +70,12 @@ class BinaryAllDiff : public Constraint {
   }
 
   /*
-   * Ensure Arc-consistency
+   * Ensure Arc-consistency by checking every possible value of domain j.
    * @param j domain to be checked
-   * @param domains all other domains
+   * @param (in/out) domains all domains, but only domains->at(j) will be checked.
+   * @return true if domains->at(j) was changed, false otherwise.
    */
-  ///
-  bool ensureArcConsistency(size_t j,
-                            std::vector<Domain>* domains) const override {
+  bool ensureArcConsistency(Key j, Domains* domains) const override {
     throw std::runtime_error(
         "BinaryAllDiff::ensureArcConsistency not implemented");
     return false;
@@ -89,7 +88,7 @@ class BinaryAllDiff : public Constraint {
 
   /// Partially apply known values, domain version
   Constraint::shared_ptr partiallyApply(
-      const std::vector<Domain>&) const override {
+      const Domains&) const override {
     throw std::runtime_error("BinaryAllDiff::partiallyApply not implemented");
   }
 };

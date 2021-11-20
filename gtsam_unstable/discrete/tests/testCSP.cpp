@@ -29,16 +29,17 @@ TEST(CSP, SingleValue) {
   DecisionTreeFactor f1(AZ, "0 0 1");
   EXPECT(assert_equal(f1, singleValue.toDecisionTreeFactor()));
 
-  // Create domains, laid out as a vector.
-  // TODO(dellaert): should be map??
-  vector<Domain> domains;
-  domains += Domain(ID), Domain(AZ), Domain(UT);
+  // Create domains
+  Domains domains;
+  domains.emplace(0, Domain(ID));
+  domains.emplace(1, Domain(AZ));
+  domains.emplace(2, Domain(UT));
 
   // Ensure arc-consistency: just wipes out values in AZ domain:
   EXPECT(singleValue.ensureArcConsistency(1, &domains));
-  LONGS_EQUAL(3, domains[0].nrValues());
-  LONGS_EQUAL(1, domains[1].nrValues());
-  LONGS_EQUAL(3, domains[2].nrValues());
+  LONGS_EQUAL(3, domains.at(0).nrValues());
+  LONGS_EQUAL(1, domains.at(1).nrValues());
+  LONGS_EQUAL(3, domains.at(2).nrValues());
 }
 
 /* ************************************************************************* */
@@ -81,8 +82,10 @@ TEST(CSP, AllDiff) {
   EXPECT(assert_equal(f2, actual));
 
   // Create domains.
-  vector<Domain> domains;
-  domains += Domain(ID), Domain(AZ), Domain(UT);
+  Domains domains;
+  domains.emplace(0, Domain(ID));
+  domains.emplace(1, Domain(AZ));
+  domains.emplace(2, Domain(UT));
 
   // First constrict AZ domain:
   SingleValue singleValue(AZ, 2);
@@ -92,9 +95,9 @@ TEST(CSP, AllDiff) {
   EXPECT(alldiff.ensureArcConsistency(0, &domains));
   EXPECT(!alldiff.ensureArcConsistency(1, &domains));
   EXPECT(alldiff.ensureArcConsistency(2, &domains));
-  LONGS_EQUAL(2, domains[0].nrValues());
-  LONGS_EQUAL(1, domains[1].nrValues());
-  LONGS_EQUAL(2, domains[2].nrValues());
+  LONGS_EQUAL(2, domains.at(0).nrValues());
+  LONGS_EQUAL(1, domains.at(1).nrValues());
+  LONGS_EQUAL(2, domains.at(2).nrValues());
 }
 
 /* ************************************************************************* */
@@ -232,17 +235,20 @@ TEST(CSP, ArcConsistency) {
   EXPECT_DOUBLES_EQUAL(1, csp(*mpe), 1e-9);
 
   // ensure arc-consistency, i.e., narrow domains...
-  vector<Domain> domains;
-  domains += Domain(ID), Domain(AZ), Domain(UT);
+  Domains domains;
+  domains.emplace(0, Domain(ID));
+  domains.emplace(1, Domain(AZ));
+  domains.emplace(2, Domain(UT));
+  
   SingleValue singleValue(AZ, 2);
   AllDiff alldiff(dkeys);
   EXPECT(singleValue.ensureArcConsistency(1, &domains));
   EXPECT(alldiff.ensureArcConsistency(0, &domains));
   EXPECT(!alldiff.ensureArcConsistency(1, &domains));
   EXPECT(alldiff.ensureArcConsistency(2, &domains));
-  LONGS_EQUAL(2, domains[0].nrValues());
-  LONGS_EQUAL(1, domains[1].nrValues());
-  LONGS_EQUAL(2, domains[2].nrValues());
+  LONGS_EQUAL(2, domains.at(0).nrValues());
+  LONGS_EQUAL(1, domains.at(1).nrValues());
+  LONGS_EQUAL(2, domains.at(2).nrValues());
 
   // Parial application, version 1
   DiscreteFactor::Values known;
