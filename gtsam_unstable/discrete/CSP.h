@@ -47,10 +47,10 @@ class GTSAM_UNSTABLE_EXPORT CSP : public DiscreteFactorGraph {
   //    }
 
   /// Find the best total assignment - can be expensive.
-  sharedValues optimalAssignment() const;
+  Values optimalAssignment() const;
 
   /// Find the best total assignment, with given ordering - can be expensive.
-  sharedValues optimalAssignment(const Ordering& ordering) const;
+  Values optimalAssignment(const Ordering& ordering) const;
 
   //    /*
   //     * Perform loopy belief propagation

@@ -14,17 +14,15 @@ using namespace std;
 namespace gtsam {
 
 /// Find the best total assignment - can be expensive
-CSP::sharedValues CSP::optimalAssignment() const {
+CSP::Values CSP::optimalAssignment() const {
   DiscreteBayesNet::shared_ptr chordal = this->eliminateSequential();
-  sharedValues mpe = chordal->optimize();
-  return mpe;
+  return chordal->optimize();
 }
 
 /// Find the best total assignment - can be expensive
-CSP::sharedValues CSP::optimalAssignment(const Ordering& ordering) const {
+CSP::Values CSP::optimalAssignment(const Ordering& ordering) const {
   DiscreteBayesNet::shared_ptr chordal = this->eliminateSequential(ordering);
-  sharedValues mpe = chordal->optimize();
-  return mpe;
+  return chordal->optimize();
 }
 
 void CSP::runArcConsistency(size_t cardinality, size_t nrIterations,

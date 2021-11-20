@@ -66,13 +66,13 @@ int main(int argc, char **argv) {
   chordal->print("Eliminated");
 
   // solve
-  DiscreteFactor::sharedValues mpe = chordal->optimize();
+  autompe = chordal->optimize();
   GTSAM_PRINT(*mpe);
 
   // We can also sample from it
   cout << "\n10 samples:" << endl;
   for (size_t k = 0; k < 10; k++) {
-    DiscreteFactor::sharedValues sample = chordal->sample();
+    autosample = chordal->sample();
     GTSAM_PRINT(*sample);
   }
 

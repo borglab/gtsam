@@ -88,11 +88,11 @@ class Sudoku : public CSP {
   }
 
   /// Print readable form of assignment
-  void printAssignment(DiscreteFactor::sharedValues assignment) const {
+  void printAssignment(const DiscreteFactor::Values& assignment) const {
     for (size_t i = 0; i < n_; i++) {
       for (size_t j = 0; j < n_; j++) {
         Key k = key(i, j);
-        cout << 1 + assignment->at(k) << " ";
+        cout << 1 + assignment.at(k) << " ";
       }
       cout << endl;
     }
@@ -100,7 +100,7 @@ class Sudoku : public CSP {
 
   /// solve and print solution
   void printSolution() {
-    DiscreteFactor::sharedValues MPE = optimalAssignment();
+    auto MPE = optimalAssignment();
     printAssignment(MPE);
   }
 };
@@ -117,14 +117,14 @@ TEST_UNSAFE(Sudoku, small) {
   csp.runArcConsistency(4, 10, PRINT);
 
   // optimize and check
-  CSP::sharedValues solution = csp.optimalAssignment();
+  auto solution = csp.optimalAssignment();
   CSP::Values expected;
   insert(expected)(csp.key(0, 0), 0)(csp.key(0, 1), 1)(csp.key(0, 2), 2)(
       csp.key(0, 3), 3)(csp.key(1, 0), 2)(csp.key(1, 1), 3)(csp.key(1, 2), 0)(
       csp.key(1, 3), 1)(csp.key(2, 0), 3)(csp.key(2, 1), 2)(csp.key(2, 2), 1)(
       csp.key(2, 3), 0)(csp.key(3, 0), 1)(csp.key(3, 1), 0)(csp.key(3, 2), 3)(
       csp.key(3, 3), 2);
-  EXPECT(assert_equal(expected, *solution));
+  EXPECT(assert_equal(expected, solution));
   // csp.printAssignment(solution);
 }
 
