@@ -54,20 +54,20 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  DiscreteFactor::sharedValues DiscreteBayesNet::optimize() const {
+  DiscreteFactor::Values DiscreteBayesNet::optimize() const {
     // solve each node in turn in topological sort order (parents first)
-    DiscreteFactor::sharedValues result(new DiscreteFactor::Values());
+    DiscreteFactor::Values result;
     for (auto conditional: boost::adaptors::reverse(*this))
-      conditional->solveInPlace(*result);
+      conditional->solveInPlace(&result);
     return result;
   }
 
   /* ************************************************************************* */
-  DiscreteFactor::sharedValues DiscreteBayesNet::sample() const {
+  DiscreteFactor::Values DiscreteBayesNet::sample() const {
     // sample each node in turn in topological sort order (parents first)
-    DiscreteFactor::sharedValues result(new DiscreteFactor::Values());
+    DiscreteFactor::Values result;
     for (auto conditional: boost::adaptors::reverse(*this))
-      conditional->sampleInPlace(*result);
+      conditional->sampleInPlace(&result);
     return result;
   }
 

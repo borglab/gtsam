@@ -45,7 +45,6 @@ public:
   /** A map from keys to values..
    * TODO: Again, do we need this??? */
   typedef Assignment<Key> Values;
-  typedef boost::shared_ptr<Values> sharedValues;
 
   /// @name Standard Constructors
   /// @{
@@ -133,10 +132,10 @@ public:
   /// @{
 
   /// solve a conditional, in place
-  void solveInPlace(Values& parentsValues) const;
+  void solveInPlace(Values* parentsValues) const;
 
   /// sample in place, stores result in partial solution
-  void sampleInPlace(Values& parentsValues) const;
+  void sampleInPlace(Values* parentsValues) const;
 
   /// @}
 
