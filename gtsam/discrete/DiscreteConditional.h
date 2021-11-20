@@ -45,7 +45,6 @@ public:
   /** A map from keys to values..
    * TODO: Again, do we need this??? */
   typedef Assignment<Key> Values;
-  typedef boost::shared_ptr<Values> sharedValues;
 
   /// @name Standard Constructors
   /// @{

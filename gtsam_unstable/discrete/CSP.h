@@ -22,7 +22,6 @@ class GTSAM_UNSTABLE_EXPORT CSP : public DiscreteFactorGraph {
  public:
   /** A map from keys to values */
   typedef Assignment<Key> Values;
-  typedef boost::shared_ptr<Values> sharedValues;
 
  public:
   /// Add a unary constraint, allowing only a single value
