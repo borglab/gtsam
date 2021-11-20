@@ -122,7 +122,7 @@ void runLargeExample() {
   //  SETDEBUG("timing-verbose", true);
   SETDEBUG("DiscreteConditional::DiscreteConditional", true);
   gttic(large);
-  DiscreteFactor::sharedValues MPE = scheduler.optimalAssignment();
+  autoMPE = scheduler.optimalAssignment();
   gttoc(large);
   tictoc_finishedIteration();
   tictoc_print();
@@ -331,7 +331,7 @@ void accomodateStudent() {
 
   // sample schedules
   for (size_t n = 0; n < 10; n++) {
-    Scheduler::sharedValues sample0 = chordal->sample();
+    auto sample0 = chordal->sample();
     scheduler.printAssignment(sample0);
   }
 }

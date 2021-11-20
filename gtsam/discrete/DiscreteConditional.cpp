@@ -117,9 +117,9 @@ Potentials::ADT DiscreteConditional::choose(const Values& parentsValues) const {
 }
 
 /* ******************************************************************************** */
-void DiscreteConditional::solveInPlace(Values& values) const {
+void DiscreteConditional::solveInPlace(Values* values) const {
   // TODO: Abhijit asks: is this really the fastest way? He thinks it is.
-  ADT pFS = choose(values); // P(F|S=parentsValues)
+  ADT pFS = choose(*values); // P(F|S=parentsValues)
 
   // Initialize
   Values mpe;
@@ -145,16 +145,16 @@ void DiscreteConditional::solveInPlace(Values& values) const {
 
   //set values (inPlace) to mpe
   for(Key j: frontals()) {
-    values[j] = mpe[j];
+    (*values)[j] = mpe[j];
   }
 }
 
 /* ******************************************************************************** */
-void DiscreteConditional::sampleInPlace(Values& values) const {
+void DiscreteConditional::sampleInPlace(Values* values) const {
   assert(nrFrontals() == 1);
   Key j = (firstFrontalKey());
-  size_t sampled = sample(values); // Sample variable
-  values[j] = sampled; // store result in partial solution
+  size_t sampled = sample(*values); // Sample variable given parents
+  (*values)[j] = sampled; // store result in partial solution
 }
 
 /* ******************************************************************************** */
