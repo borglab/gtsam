@@ -169,8 +169,8 @@ TEST( DiscreteFactorGraph, test)
   // Test optimization
   DiscreteFactor::Values expectedValues;
   insert(expectedValues)(0, 0)(1, 0)(2, 0);
-  DiscreteFactor::sharedValues actualValues = graph.optimize();
-  EXPECT(assert_equal(expectedValues, *actualValues));
+  auto actualValues = graph.optimize();
+  EXPECT(assert_equal(expectedValues, actualValues));
 }
 
 /* ************************************************************************* */
@@ -186,11 +186,11 @@ TEST( DiscreteFactorGraph, testMPE)
   //  graph.product().print();
   //  DiscreteSequentialSolver(graph).eliminate()->print();
 
-  DiscreteFactor::sharedValues actualMPE = graph.optimize();
+  auto actualMPE = graph.optimize();
 
   DiscreteFactor::Values expectedMPE;
   insert(expectedMPE)(0, 0)(1, 1)(2, 1);
-  EXPECT(assert_equal(expectedMPE, *actualMPE));
+  EXPECT(assert_equal(expectedMPE, actualMPE));
 }
 
 /* ************************************************************************* */
@@ -216,8 +216,8 @@ TEST( DiscreteFactorGraph, testMPE_Darwiche09book_p244)
 
   // Use the solver machinery.
   DiscreteBayesNet::shared_ptr chordal = graph.eliminateSequential();
-  DiscreteFactor::sharedValues actualMPE = chordal->optimize();
-  EXPECT(assert_equal(expectedMPE, *actualMPE));
+  auto actualMPE = chordal->optimize();
+  EXPECT(assert_equal(expectedMPE, actualMPE));
 //  DiscreteConditional::shared_ptr root = chordal->back();
 //  EXPECT_DOUBLES_EQUAL(0.4, (*root)(*actualMPE), 1e-9);
 
@@ -244,8 +244,8 @@ ETree::shared_ptr eTree = ETree::Create(graph, structure);
 // eliminate normally and check solution
 DiscreteBayesNet::shared_ptr bayesNet = eTree->eliminate(&EliminateDiscrete);
 //  bayesNet->print(">>>>>>>>>>>>>> Bayes Net <<<<<<<<<<<<<<<<<<");
-DiscreteFactor::sharedValues actualMPE = optimize(*bayesNet);
-EXPECT(assert_equal(expectedMPE, *actualMPE));
+auto actualMPE = optimize(*bayesNet);
+EXPECT(assert_equal(expectedMPE, actualMPE));
 
 // Approximate and check solution
 //  DiscreteBayesNet::shared_ptr approximateNet = eTree->approximate();

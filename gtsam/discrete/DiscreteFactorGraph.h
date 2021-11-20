@@ -74,7 +74,6 @@ public:
   /** A map from keys to values */
   typedef KeyVector Indices;
   typedef Assignment<Key> Values;
-  typedef boost::shared_ptr<Values> sharedValues;
 
   /** Default constructor */
   DiscreteFactorGraph() {}
@@ -142,7 +141,7 @@ public:
    *  the dense elimination function specified in \c function,
    *  followed by back-substitution resulting from elimination.  Is equivalent
    *  to calling graph.eliminateSequential()->optimize(). */
-  DiscreteFactor::sharedValues optimize() const;
+  Values optimize() const;
 
 
 //  /** Permute the variables in the factors */
