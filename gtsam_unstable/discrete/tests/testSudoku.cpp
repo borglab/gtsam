@@ -118,7 +118,7 @@ class Sudoku : public CSP {
 };
 
 /* ************************************************************************* */
-TEST_UNSAFE(Sudoku, small) {
+TEST(Sudoku, small) {
   Sudoku csp(4,           //
              1, 0, 0, 4,  //
              0, 0, 0, 0,  //
@@ -148,13 +148,13 @@ TEST_UNSAFE(Sudoku, small) {
   EXPECT_LONGS_EQUAL(16, new_csp.size());
 
   // Check that solution
-  CSP::sharedValues new_solution = new_csp.optimalAssignment();
+  auto new_solution = new_csp.optimalAssignment();
   // csp.printAssignment(new_solution);
-  EXPECT(assert_equal(expected, *new_solution));
+  EXPECT(assert_equal(expected, new_solution));
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(Sudoku, easy) {
+TEST(Sudoku, easy) {
   Sudoku csp(9,                          //
              0, 0, 5, 0, 9, 0, 0, 0, 1,  //
              0, 0, 0, 0, 0, 2, 0, 7, 3,  //
@@ -186,7 +186,7 @@ TEST_UNSAFE(Sudoku, easy) {
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(Sudoku, extreme) {
+TEST(Sudoku, extreme) {
   Sudoku csp(9,                             //
              0, 0, 9, 7, 4, 8, 0, 0, 0, 7,  //
              0, 0, 0, 0, 0, 0, 0, 0, 0, 2,  //
@@ -223,7 +223,7 @@ TEST_UNSAFE(Sudoku, extreme) {
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(Sudoku, AJC_3star_Feb8_2012) {
+TEST(Sudoku, AJC_3star_Feb8_2012) {
   Sudoku csp(9,                          //
              9, 5, 0, 0, 0, 6, 0, 0, 0,  //
              0, 8, 4, 0, 7, 0, 0, 0, 0,  //
@@ -250,9 +250,9 @@ TEST_UNSAFE(Sudoku, AJC_3star_Feb8_2012) {
   EXPECT_LONGS_EQUAL(81, new_csp.size());
 
   // Check that solution
-  CSP::sharedValues solution = new_csp.optimalAssignment();
+  auto solution = new_csp.optimalAssignment();
   // csp.printAssignment(solution);
-  EXPECT_LONGS_EQUAL(6, solution->at(key99));
+  EXPECT_LONGS_EQUAL(6, solution.at(key99));
 }
 
 /* ************************************************************************* */
