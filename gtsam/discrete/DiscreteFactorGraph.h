@@ -74,7 +74,6 @@ public:
   /** A map from keys to values */
   typedef KeyVector Indices;
   typedef Assignment<Key> Values;
-  typedef boost::shared_ptr<Values> sharedValues;
 
   /** Default constructor */
   DiscreteFactorGraph() {}
