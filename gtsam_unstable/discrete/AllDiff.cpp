@@ -57,14 +57,11 @@ DecisionTreeFactor AllDiff::operator*(const DecisionTreeFactor& f) const {
 }
 
 /* ************************************************************************* */
-bool AllDiff::ensureArcConsistency(size_t j,
-                                   std::vector<Domain>* domains) const {
-  // We are changing the domain of variable j.
-  // TODO(dellaert): confusing, I thought we were changing others...
+bool AllDiff::ensureArcConsistency(Key j, Domains* domains) const {
   Domain& Dj = domains->at(j);
 
   // Though strictly not part of allDiff, we check for
-  // a value in domains[j] that does not occur in any other connected domain.
+  // a value in domains->at(j) that does not occur in any other connected domain.
   // If found, we make this a singleton...
   // TODO: make a new constraint where this really is true
   boost::optional<Domain> maybeChanged = Dj.checkAllDiff(keys_, *domains);
@@ -103,10 +100,10 @@ Constraint::shared_ptr AllDiff::partiallyApply(const Values& values) const {
 
 /* ************************************************************************* */
 Constraint::shared_ptr AllDiff::partiallyApply(
-    const std::vector<Domain>& domains) const {
+    const Domains& domains) const {
   DiscreteFactor::Values known;
   for (Key k : keys_) {
-    const Domain& Dk = domains[k];
+    const Domain& Dk = domains.at(k);
     if (Dk.isSingleton()) known[k] = Dk.firstValue();
   }
   return partiallyApply(known);

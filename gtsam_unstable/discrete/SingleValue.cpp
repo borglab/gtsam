@@ -44,8 +44,7 @@ DecisionTreeFactor SingleValue::operator*(const DecisionTreeFactor& f) const {
 }
 
 /* ************************************************************************* */
-bool SingleValue::ensureArcConsistency(size_t j,
-                                       vector<Domain>* domains) const {
+bool SingleValue::ensureArcConsistency(Key j, Domains* domains) const {
   if (j != keys_[0])
     throw invalid_argument("SingleValue check on wrong domain");
   Domain& D = domains->at(j);
@@ -67,8 +66,8 @@ Constraint::shared_ptr SingleValue::partiallyApply(const Values& values) const {
 
 /* ************************************************************************* */
 Constraint::shared_ptr SingleValue::partiallyApply(
-    const vector<Domain>& domains) const {
-  const Domain& Dk = domains[keys_[0]];
+    const Domains& domains) const {
+  const Domain& Dk = domains.at(keys_[0]);
   if (Dk.isSingleton() && !Dk.contains(value_))
     throw runtime_error("SingleValue::partiallyApply: unsatisfiable");
   return boost::make_shared<SingleValue>(discreteKey(), value_);
