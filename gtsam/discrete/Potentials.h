@@ -29,7 +29,7 @@ namespace gtsam {
   /**
    * A base class for both DiscreteFactor and DiscreteConditional
    */
-  class Potentials: public AlgebraicDecisionTree<Key> {
+  class GTSAM_EXPORT Potentials: public AlgebraicDecisionTree<Key> {
 
   public:
 

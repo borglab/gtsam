@@ -49,7 +49,7 @@ namespace gtsam {
   // Leaf
   /*********************************************************************************/
   template<typename L, typename Y>
-  class DecisionTree<L, Y>::Leaf: public DecisionTree<L, Y>::Node {
+  class GTSAM_EXPORT DecisionTree<L, Y>::Leaf: public DecisionTree<L, Y>::Node {
 
     /** constant stored in this leaf */
     Y constant_;
@@ -139,7 +139,7 @@ namespace gtsam {
   // Choice
   /*********************************************************************************/
   template<typename L, typename Y>
-  class DecisionTree<L, Y>::Choice: public DecisionTree<L, Y>::Node {
+  class GTSAM_EXPORT DecisionTree<L, Y>::Choice: public DecisionTree<L, Y>::Node {
 
     /** the label of the variable on which we split */
     L label_;

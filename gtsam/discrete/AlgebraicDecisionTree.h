@@ -19,6 +19,7 @@
 #pragma once
 
 #include <gtsam/discrete/DecisionTree-inl.h>
+#include <gtsam/dllexport.h>
 
 namespace gtsam {
 
@@ -28,7 +29,7 @@ namespace gtsam {
    * TODO: consider eliminating this class altogether?
    */
   template<typename L>
-  class AlgebraicDecisionTree: public DecisionTree<L, double> {
+  class GTSAM_EXPORT AlgebraicDecisionTree: public DecisionTree<L, double> {
 
   public:
 
