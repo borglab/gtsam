@@ -36,7 +36,7 @@ static const Matrix I = I_1x1;
 static const Matrix I3 = I_3x3;
 
 static const noiseModel::Diagonal::shared_ptr priorOrientationNoise =
-    noiseModel::Diagonal::Sigmas((Vector(1) << 0).finished());
+    noiseModel::Diagonal::Sigmas(Vector1(0));
 static const noiseModel::Diagonal::shared_ptr priorPose2Noise =
     noiseModel::Diagonal::Variances(Vector3(1e-6, 1e-6, 1e-8));
 

@@ -56,7 +56,8 @@ private:
   bool flag_bump_up_near_zero_probs_;
 
   /** concept check by type */
-  GTSAM_CONCEPT_LIE_TYPE(T)GTSAM_CONCEPT_TESTABLE_TYPE(T)
+  GTSAM_CONCEPT_LIE_TYPE(T)
+  GTSAM_CONCEPT_TESTABLE_TYPE(T)
 
 public:
 

@@ -606,7 +606,7 @@ Vector3 f(const Point2& a, const Vector3& b, OptionalJacobian<3, 2> H1,
   if (H1) *H1 << b.y(), b.z(), b.x(), 0, 0, 0;
   if (H2) *H2 = A;
   return A * b;
-};
+}
 }
 
 TEST(ExpressionFactor, MultiplyWithInverseFunction) {

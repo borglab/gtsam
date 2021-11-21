@@ -110,7 +110,7 @@ class ClusterTree {
   typedef sharedCluster sharedNode;
 
   /** concept check */
-  GTSAM_CONCEPT_TESTABLE_TYPE(FactorType);
+  GTSAM_CONCEPT_TESTABLE_TYPE(FactorType)
 
  protected:
   FastVector<sharedNode> roots_;

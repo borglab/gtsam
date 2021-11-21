@@ -147,11 +147,13 @@ VectorValues NonlinearOptimizer::solve(const GaussianFactorGraph& gfg,
   } else if (params.isSequential()) {
     // Sequential QR or Cholesky (decided by params.getEliminationFunction())
     if (params.ordering)
-      delta = gfg.eliminateSequential(*params.ordering, params.getEliminationFunction(),
-                                      boost::none, params.orderingType)->optimize();
+      delta = gfg.eliminateSequential(*params.ordering,
+                                      params.getEliminationFunction())
+                  ->optimize();
     else
-      delta = gfg.eliminateSequential(params.getEliminationFunction(), boost::none,
-                                      params.orderingType)->optimize();
+      delta = gfg.eliminateSequential(params.orderingType,
+                                      params.getEliminationFunction())
+                  ->optimize();
   } else if (params.isIterative()) {
     // Conjugate Gradient -> needs params.iterativeParams
     if (!params.iterativeParams)

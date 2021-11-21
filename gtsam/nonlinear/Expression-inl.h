@@ -246,6 +246,18 @@ struct apply_compose {
     return x.compose(y, H1, H2);
   }
 };
+
+template <>
+struct apply_compose<double> {
+  double operator()(const double& x, const double& y,
+                    OptionalJacobian<1, 1> H1 = boost::none,
+                    OptionalJacobian<1, 1> H2 = boost::none) const {
+    if (H1) H1->setConstant(y);
+    if (H2) H2->setConstant(x);
+    return x * y;
+  }
+};
+
 }
 
 // Global methods:

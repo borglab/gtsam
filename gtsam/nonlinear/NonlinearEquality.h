@@ -219,7 +219,6 @@ protected:
   X value_; /// fixed value for variable
 
   GTSAM_CONCEPT_MANIFOLD_TYPE(X)
-
   GTSAM_CONCEPT_TESTABLE_TYPE(X)
 
 public:

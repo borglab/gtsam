@@ -48,18 +48,18 @@ static const Eigen::MatrixBase<Vector3>::ConstantReturnType Z_3x1 = Vector3::Zer
 // Create handy typedefs and constants for vectors with N>3
 // VectorN and Z_Nx1, for N=1..9
 #define GTSAM_MAKE_VECTOR_DEFS(N)                \
-  typedef Eigen::Matrix<double, N, 1> Vector##N; \
+  using Vector##N = Eigen::Matrix<double, N, 1>; \
   static const Eigen::MatrixBase<Vector##N>::ConstantReturnType Z_##N##x1 = Vector##N::Zero();
 
-GTSAM_MAKE_VECTOR_DEFS(4);
-GTSAM_MAKE_VECTOR_DEFS(5);
-GTSAM_MAKE_VECTOR_DEFS(6);
-GTSAM_MAKE_VECTOR_DEFS(7);
-GTSAM_MAKE_VECTOR_DEFS(8);
-GTSAM_MAKE_VECTOR_DEFS(9);
-GTSAM_MAKE_VECTOR_DEFS(10);
-GTSAM_MAKE_VECTOR_DEFS(11);
-GTSAM_MAKE_VECTOR_DEFS(12);
+GTSAM_MAKE_VECTOR_DEFS(4)
+GTSAM_MAKE_VECTOR_DEFS(5)
+GTSAM_MAKE_VECTOR_DEFS(6)
+GTSAM_MAKE_VECTOR_DEFS(7)
+GTSAM_MAKE_VECTOR_DEFS(8)
+GTSAM_MAKE_VECTOR_DEFS(9)
+GTSAM_MAKE_VECTOR_DEFS(10)
+GTSAM_MAKE_VECTOR_DEFS(11)
+GTSAM_MAKE_VECTOR_DEFS(12)
 
 typedef Eigen::VectorBlock<Vector> SubVector;
 typedef Eigen::VectorBlock<const Vector> ConstSubVector;

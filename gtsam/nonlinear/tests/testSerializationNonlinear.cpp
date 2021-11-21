@@ -58,14 +58,14 @@ using namespace gtsam::serializationTestHelpers;
 
 /* ************************************************************************* */
 // Export all classes derived from Value
-GTSAM_VALUE_EXPORT(gtsam::Cal3_S2);
-GTSAM_VALUE_EXPORT(gtsam::Cal3Bundler);
-GTSAM_VALUE_EXPORT(gtsam::Point3);
-GTSAM_VALUE_EXPORT(gtsam::Pose3);
-GTSAM_VALUE_EXPORT(gtsam::Rot3);
-GTSAM_VALUE_EXPORT(gtsam::PinholeCamera<Cal3_S2>);
-GTSAM_VALUE_EXPORT(gtsam::PinholeCamera<Cal3DS2>);
-GTSAM_VALUE_EXPORT(gtsam::PinholeCamera<Cal3Bundler>);
+GTSAM_VALUE_EXPORT(gtsam::Cal3_S2)
+GTSAM_VALUE_EXPORT(gtsam::Cal3Bundler)
+GTSAM_VALUE_EXPORT(gtsam::Point3)
+GTSAM_VALUE_EXPORT(gtsam::Pose3)
+GTSAM_VALUE_EXPORT(gtsam::Rot3)
+GTSAM_VALUE_EXPORT(gtsam::PinholeCamera<Cal3_S2>)
+GTSAM_VALUE_EXPORT(gtsam::PinholeCamera<Cal3DS2>)
+GTSAM_VALUE_EXPORT(gtsam::PinholeCamera<Cal3Bundler>)
 
 namespace detail {
 template<class T> struct pack {

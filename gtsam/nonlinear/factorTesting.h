@@ -35,8 +35,7 @@ namespace gtsam {
  * zero errors anyway. However, it means that below will only be exact for the correct measurement.
  */
 JacobianFactor linearizeNumerically(const NoiseModelFactor& factor,
-    const Values& values, double delta = 1e-5) {
-
+                                    const Values& values, double delta = 1e-5) {
   // We will fill a vector of key/Jacobians pairs (a map would sort)
   std::vector<std::pair<Key, Matrix> > jacobians;
 
@@ -46,24 +45,24 @@ JacobianFactor linearizeNumerically(const NoiseModelFactor& factor,
 
   // Loop over all variables
   const double one_over_2delta = 1.0 / (2.0 * delta);
-  for(Key key: factor) {
+  for (Key key : factor) {
     // Compute central differences using the values struct.
     VectorValues dX = values.zeroVectors();
     const size_t cols = dX.dim(key);
     Matrix J = Matrix::Zero(rows, cols);
     for (size_t col = 0; col < cols; ++col) {
       Eigen::VectorXd dx = Eigen::VectorXd::Zero(cols);
-      dx[col] = delta;
+      dx(col) = delta;
       dX[key] = dx;
       Values eval_values = values.retract(dX);
       const Eigen::VectorXd left = factor.whitenedError(eval_values);
-      dx[col] = -delta;
+      dx(col) = -delta;
       dX[key] = dx;
       eval_values = values.retract(dX);
       const Eigen::VectorXd right = factor.whitenedError(eval_values);
       J.col(col) = (left - right) * one_over_2delta;
     }
-    jacobians.push_back(std::make_pair(key,J));
+    jacobians.push_back(std::make_pair(key, J));
   }
 
   // Next step...return JacobianFactor
