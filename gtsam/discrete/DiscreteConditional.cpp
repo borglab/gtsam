@@ -35,7 +35,7 @@ using namespace std;
 namespace gtsam {
 
 // Instantiate base class
-template class Conditional<DecisionTreeFactor, DiscreteConditional> ;
+template class GTSAM_EXPORT Conditional<DecisionTreeFactor, DiscreteConditional> ;
 
 /* ******************************************************************************** */
 DiscreteConditional::DiscreteConditional(const size_t nrFrontals,
@@ -91,7 +91,7 @@ bool DiscreteConditional::equals(const DiscreteFactor& other,
     return false;
   else {
     const DecisionTreeFactor& f(
-        static_cast<const DecisionTreeFactor&>(other));
+        dynamic_cast<const DecisionTreeFactor&>(other));
     return DecisionTreeFactor::equals(f, tol);
   }
 }
