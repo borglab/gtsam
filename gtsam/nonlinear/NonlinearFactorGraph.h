@@ -265,6 +265,7 @@ namespace gtsam {
 
   public:
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
     /** \deprecated */
     boost::shared_ptr<HessianFactor> linearizeToHessianFactor(
         const Values& values, boost::none_t, const Dampen& dampen = nullptr) const
@@ -274,6 +275,7 @@ namespace gtsam {
     Values updateCholesky(const Values& values, boost::none_t,
                           const Dampen& dampen = nullptr) const
       {return updateCholesky(values, dampen);}
+#endif
 
   };
 
