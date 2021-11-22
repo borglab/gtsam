@@ -351,5 +351,5 @@ namespace cereal
   struct specialize<Archive, gtsam::ExpressionFactorN<T, Args...>, cereal::specialization::member_serialize> {};
 
   template <class Archive, typename T>
-  struct specialize<Archive, gtsam::ExpressionFactor<T>, cereal::specialization::member_serialize> {};
+  struct specialize<Archive, gtsam::ExpressionFactor<T>, cereal::specialization::member_load_save> {};
 }

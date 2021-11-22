@@ -29,6 +29,12 @@ using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 
+CEREAL_REGISTER_TYPE(gtsam::noiseModel::Constrained);
+CEREAL_REGISTER_TYPE(gtsam::noiseModel::Diagonal);
+CEREAL_REGISTER_TYPE(gtsam::noiseModel::Gaussian);
+CEREAL_REGISTER_TYPE(gtsam::noiseModel::Unit);
+CEREAL_REGISTER_TYPE(gtsam::noiseModel::Isotropic);
+
 // *************************************************************************
 TEST( Rot3AttitudeFactor, Constructor ) {
 
