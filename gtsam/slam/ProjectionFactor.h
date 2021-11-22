@@ -11,7 +11,7 @@
 
 /**
  * @file ProjectionFactor.h
- * @brief Basic bearing factor from 2D measurement
+ * @brief Reprojection of a LANDMARK to a 2D point.
  * @author Chris Beall
  * @author Richard Roberts
  * @author Frank Dellaert
@@ -22,17 +22,21 @@
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <boost/optional.hpp>
 
 namespace gtsam {
 
   /**
-   * Non-linear factor for a constraint derived from a 2D measurement. The calibration is known here.
-   * i.e. the main building block for visual SLAM.
+   * Non-linear factor for a constraint derived from a 2D measurement. 
+   * The calibration is known here.
+   * The main building block for visual SLAM.
    * @addtogroup SLAM
    */
-  template<class POSE, class LANDMARK, class CALIBRATION = Cal3_S2>
+  template <class POSE = Pose3, class LANDMARK = Point3,
+            class CALIBRATION = Cal3_S2>
   class GenericProjectionFactor: public NoiseModelFactor2<POSE, LANDMARK> {
   protected:
 
@@ -57,9 +61,9 @@ namespace gtsam {
     typedef boost::shared_ptr<This> shared_ptr;
 
     /// Default constructor
-  GenericProjectionFactor() :
-      measured_(0, 0), throwCheirality_(false), verboseCheirality_(false) {
-  }
+    GenericProjectionFactor() :
+        measured_(0, 0), throwCheirality_(false), verboseCheirality_(false) {
+    }
 
     /**
      * Constructor
