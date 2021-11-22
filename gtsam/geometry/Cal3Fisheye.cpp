@@ -87,28 +87,16 @@ Point2 Cal3Fisheye::uncalibrate(const Point2& p, OptionalJacobian<2, 9> H1,
       const double dr_dxi = xi * rinv;
       const double dr_dyi = yi * rinv;
       const double dtd_dr = dtd_dt * dt_dr;
-      // const double dtd_dxi = dtd_dt * dt_dr * dr_dxi;
-      // const double dtd_dyi = dtd_dt * dt_dr * dr_dyi;
   
       const double c2 = dr_dxi * dr_dxi;
       const double s2 = dr_dyi * dr_dyi;
       const double cs = dr_dxi * dr_dyi;
 
-      // Following refactoring is numerically stable, even for unnormalized radial 
-      // values by avoiding division with the square radius.
-      //
-      // const double td = t * K.dot(T); - note: s = td/r
-      // const double rrinv = 1 / r2; - division by r2 may cause overflow 
       const double dxd_dxi = dtd_dr * c2 + s * (1 - c2);
       const double dxd_dyi = (dtd_dr - s) * cs;
       const double dyd_dxi = dxd_dyi;
       const double dyd_dyi = dtd_dr * s2 + s * (1 - s2);
 
-      // Derivatives by depth, for future use to support incident
-      // angles above 90 deg.
-      //  const double dxd_dzi = -dtd_dt * x / R2
-      //  const double dyd_dzi = -dtd_dt * y / R2
-      
       Matrix2 DR;
       DR << dxd_dxi, dxd_dyi, dyd_dxi, dyd_dyi;
 
