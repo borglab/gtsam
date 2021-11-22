@@ -90,7 +90,7 @@ class CRefCallAddCopy {
  * \nosubgrouping
  */
 template <class FACTOR>
-class GTSAM_EXPORT FactorGraph {
+class FactorGraph {
  public:
   typedef FACTOR FactorType;  ///< factor type
   typedef boost::shared_ptr<FACTOR>

@@ -20,7 +20,6 @@
 #pragma once
 
 #include <gtsam/discrete/Assignment.h>
-#include <gtsam/dllexport.h>
 
 #include <boost/function.hpp>
 #include <functional>
@@ -36,7 +35,7 @@ namespace gtsam {
    * Y = function range (any algebra), e.g., bool, int, double
    */
   template<typename L, typename Y>
-  class GTSAM_EXPORT DecisionTree {
+  class DecisionTree {
 
   public:
 
@@ -48,11 +47,11 @@ namespace gtsam {
     typedef std::pair<L,size_t> LabelC;
 
     /** DTs consist of Leaf and Choice nodes, both subclasses of Node */
-    class GTSAM_EXPORT Leaf;
-    class GTSAM_EXPORT Choice;
+    class Leaf;
+    class Choice;
 
     /** ------------------------ Node base class --------------------------- */
-    class GTSAM_EXPORT Node {
+    class Node {
     public:
       typedef boost::shared_ptr<const Node> Ptr;
 

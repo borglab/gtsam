@@ -21,7 +21,6 @@
 #include <boost/range.hpp>
 
 #include <gtsam/inference/Key.h>
-#include <gtsam/dllexport.h>
 
 namespace gtsam {
 
@@ -38,7 +37,7 @@ namespace gtsam {
    * \nosubgrouping
    */
   template<class FACTOR, class DERIVEDCONDITIONAL>
-  class GTSAM_EXPORT Conditional
+  class Conditional
   {
   protected:
     /** The first nrFrontal variables are frontal and the rest are parents. */

@@ -91,7 +91,7 @@ bool DiscreteConditional::equals(const DiscreteFactor& other,
     return false;
   else {
     const DecisionTreeFactor& f(
-        dynamic_cast<const DecisionTreeFactor&>(other));
+        static_cast<const DecisionTreeFactor&>(other));
     return DecisionTreeFactor::equals(f, tol);
   }
 }

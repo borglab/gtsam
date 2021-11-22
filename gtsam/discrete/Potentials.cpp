@@ -27,8 +27,8 @@ using namespace std;
 namespace gtsam {
 
 // explicit instantiation
-//template class GTSAM_EXPORT DecisionTree<Key, double>;
-//template class GTSAM_EXPORT AlgebraicDecisionTree<Key>;
+template class DecisionTree<Key, double>;
+template class AlgebraicDecisionTree<Key>;
 
 /* ************************************************************************* */
 double Potentials::safe_div(const double& a, const double& b) {
