@@ -21,6 +21,8 @@
 #include <gtsam/config.h>      // Configuration from CMake
 
 #include <gtsam/base/Vector.h>
+#include <cereal/types/polymorphic.hpp>
+
 #include <memory>
 
 namespace gtsam {

@@ -216,7 +216,7 @@ protected:
       // failed: return"empty" Hessian
       for (Matrix& m : Gs) m = Matrix::Zero(Base::Dim, Base::Dim);
       for (Vector& v : gs) v = Vector::Zero(Base::Dim);
-      return boost::make_shared<RegularHessianFactor<Base::Dim> >(this->keys_,
+      return std::make_shared<RegularHessianFactor<Base::Dim> >(this->keys_,
                                                                   Gs, gs, 0.0);
     }
 
@@ -233,7 +233,7 @@ protected:
     SymmetricBlockMatrix augmentedHessian =  //
         Cameras::SchurComplement(Fs, E, b, lambda, diagonalDamping);
 
-    return boost::make_shared<RegularHessianFactor<Base::Dim> >(
+    return std::make_shared<RegularHessianFactor<Base::Dim> >(
         this->keys_, augmentedHessian);
   }
 

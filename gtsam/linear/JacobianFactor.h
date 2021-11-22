@@ -23,6 +23,7 @@
 #include <gtsam/base/VerticalBlockMatrix.h>
 #include <gtsam/global_includes.h>
 #include <gtsam/inference/VariableSlots.h>
+#include <gtsam/base/serialization.h>
 
 #include <boost/make_shared.hpp>
 
@@ -420,14 +421,7 @@ namespace gtsam {
       // versions of GTSAM
       ar << cereal::virtual_base_class<Base>(this);
       ar << CEREAL_NVP(Ab_);
-      bool model_null = false;
-      if(model_.get() == nullptr) {
-        model_null = true;
-        ar << cereal::make_nvp("model_null", model_null);
-      } else {
-        ar << cereal::make_nvp("model_null", model_null);
-        ar << CEREAL_NVP(model_);
-      }
+      ar << CEREAL_NVP(model_);
     }
 
     template<class ARCHIVE>
@@ -435,15 +429,7 @@ namespace gtsam {
       // invoke serialization of the base class
       ar >> cereal::virtual_base_class<Base>(this);
       ar >> CEREAL_NVP(Ab_);
-      if (version < 1) {
-        ar >> CEREAL_NVP(model_);
-      } else {
-        bool model_null;
-        ar >> CEREAL_NVP(model_null);
-        if (!model_null) {
-          ar >> CEREAL_NVP(model_);
-        }
-      }
+      ar >> CEREAL_NVP(model_);
     }
 
   }; // JacobianFactor
@@ -453,6 +439,9 @@ struct traits<JacobianFactor> : public Testable<JacobianFactor> {
 };
 
 } // \ namespace gtsam
+
+CEREAL_SPECIALIZE_FOR_ALL_ARCHIVES( gtsam::JacobianFactor, cereal::specialization::member_load_save );
+CEREAL_REGISTER_TYPE(gtsam::JacobianFactor);
 
 #include <gtsam/linear/JacobianFactor-inl.h>
 

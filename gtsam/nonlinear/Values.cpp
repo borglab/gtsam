@@ -212,10 +212,6 @@ namespace gtsam {
     return result;
   }
 
-  auto Values::filter(const function<bool(Key)> &filterFcn) {
-    return ValuesView(*this) | ranges::views::filter(filterFcn);
-  };
-
 /* ************************************************************************* */
   const char* ValuesKeyAlreadyExists::what() const noexcept {
     if(message_.empty())

@@ -26,10 +26,59 @@
 // includes for standard serialization types
 #include <cereal/types/map.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include <cereal/types/vector.hpp>
+#include <cereal/types/optional.hpp>
 
 #include <cereal/archives/binary.hpp>
 #include <cereal/archives/xml.hpp>
 #include <cereal/archives/json.hpp>
+
+#include <boost/optional.hpp>
+
+namespace cereal {
+  //! Saving for std::optional
+  template <class Archive, typename T> inline
+  void CEREAL_SAVE_FUNCTION_NAME(Archive& ar, const boost::optional<T>& optional)
+  {
+    if(!optional) {
+      ar(CEREAL_NVP_("nullopt", true));
+    } else {
+      ar(CEREAL_NVP_("nullopt", false),
+         CEREAL_NVP_("data", *optional));
+    }
+  }
+
+  //! Loading for std::optional
+  template <class Archive, typename T> inline
+  void CEREAL_LOAD_FUNCTION_NAME(Archive& ar, boost::optional<T>& optional)
+  {
+    bool nullopt;
+    ar(CEREAL_NVP_("nullopt", nullopt));
+
+    if (nullopt) {
+      optional = boost::none;
+    } else {
+      T value;
+      ar(CEREAL_NVP_("data", value));
+      optional = std::move(value);
+    }
+  }
+
+  template<class Archive, class F, class S>
+  void save(Archive& ar, const std::pair<F, S>& pair)
+  {
+    ar(pair.first, pair.second);
+  }
+
+  template<class Archive, class F, class S>
+  void load(Archive& ar, std::pair<F, S>& pair)
+  {
+    ar(pair.first, pair.second);
+  }
+
+  template <class Archive, class F, class S>
+  struct specialize<Archive, std::pair<F, S>, cereal::specialization::non_member_load_save> {};
+} // namespace cereal
 
 namespace gtsam {
 

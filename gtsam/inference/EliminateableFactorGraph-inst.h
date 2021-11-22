@@ -79,7 +79,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template <class FACTORGRAPH>
-  boost::shared_ptr<
+  std::shared_ptr<
       typename EliminateableFactorGraph<FACTORGRAPH>::BayesTreeType>
   EliminateableFactorGraph<FACTORGRAPH>::eliminateMultifrontal(
       OptionalOrderingType orderingType, const Eliminate& function,

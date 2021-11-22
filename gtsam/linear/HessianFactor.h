@@ -22,6 +22,7 @@
 #include <gtsam/linear/Scatter.h>
 #include <gtsam/base/SymmetricBlockMatrix.h>
 #include <gtsam/base/FastVector.h>
+#include <gtsam/base/serialization.h>
 
 #include <boost/make_shared.hpp>
 
@@ -416,5 +417,6 @@ struct traits<HessianFactor> : public Testable<HessianFactor> {};
 
 } // \ namespace gtsam
 
+CEREAL_REGISTER_TYPE(gtsam::HessianFactor);
 
 #include <gtsam/linear/HessianFactor-inl.h>

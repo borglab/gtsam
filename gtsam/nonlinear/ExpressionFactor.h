@@ -198,7 +198,7 @@ private:
  /// Save to an archive: just saves the base class
  template <class Archive>
  void save(Archive& ar, const unsigned int /*version*/) const {
-   ar << cereal::make_nvp("NoiseModelFactor", cereal::base_class<NoiseModelFactor>(this));
+   ar << cereal::base_class<NoiseModelFactor>(this);
    ar << cereal::make_nvp("measured_", this->measured_);
  }
 
@@ -206,7 +206,7 @@ private:
  /// [expression] method
  template <class Archive>
  void load(Archive& ar, const unsigned int /*version*/) {
-   ar >> cereal::make_nvp("NoiseModelFactor", cereal::base_class<NoiseModelFactor>(this));
+   ar >> cereal::base_class<NoiseModelFactor>(this);
    ar >> cereal::make_nvp("measured_", this->measured_);
    this->initialize(expression());
  }
@@ -280,9 +280,7 @@ private:
   friend class cereal::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
-    ar &cereal::make_nvp(
-        "ExpressionFactorN",
-        cereal::base_class<ExpressionFactor<T>>(this));
+    ar & cereal::base_class<ExpressionFactor<T>>(this);
   }
 };
 /// traits
@@ -346,3 +344,12 @@ protected:
 #endif
 
 } // namespace gtsam
+
+namespace cereal
+{
+  template <class Archive, typename T, typename... Args>
+  struct specialize<Archive, gtsam::ExpressionFactorN<T, Args...>, cereal::specialization::member_serialize> {};
+
+  template <class Archive, typename T>
+  struct specialize<Archive, gtsam::ExpressionFactor<T>, cereal::specialization::member_serialize> {};
+}

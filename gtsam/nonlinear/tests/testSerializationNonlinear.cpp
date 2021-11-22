@@ -35,25 +35,20 @@ using namespace gtsam::serializationTestHelpers;
 
 /* ************************************************************************* */
 // Create GUIDs for Noisemodels
-//BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Diagonal, "gtsam_noiseModel_Diagonal");
-//BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::Base , "gtsam_noiseModel_mEstimator_Base");
-//BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::Null , "gtsam_noiseModel_mEstimator_Null");
-//BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::Fair , "gtsam_noiseModel_mEstimator_Fair");
-//BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::Huber, "gtsam_noiseModel_mEstimator_Huber");
-//BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::Tukey, "gtsam_noiseModel_mEstimator_Tukey");
-//BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Constrained, "gtsam_noiseModel_Constrained");
-//BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Unit, "gtsam_noiseModel_Unit");
-//BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Isotropic,"gtsam_noiseModel_Isotropic");
-//BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Robust, "gtsam_noiseModel_Robust");
-//BOOST_CLASS_EXPORT_GUID(gtsam::SharedNoiseModel, "gtsam_SharedNoiseModel");
-//BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal");
+CEREAL_REGISTER_TYPE_WITH_NAME(gtsam::noiseModel::Diagonal, "gtsam_noiseModel_Diagonal");
+CEREAL_REGISTER_TYPE_WITH_NAME(gtsam::noiseModel::mEstimator::Base , "gtsam_noiseModel_mEstimator_Base");
+CEREAL_REGISTER_TYPE_WITH_NAME(gtsam::noiseModel::mEstimator::Null , "gtsam_noiseModel_mEstimator_Null");
+CEREAL_REGISTER_TYPE_WITH_NAME(gtsam::noiseModel::mEstimator::Fair , "gtsam_noiseModel_mEstimator_Fair");
+CEREAL_REGISTER_TYPE_WITH_NAME(gtsam::noiseModel::mEstimator::Huber, "gtsam_noiseModel_mEstimator_Huber");
+CEREAL_REGISTER_TYPE_WITH_NAME(gtsam::noiseModel::mEstimator::Tukey, "gtsam_noiseModel_mEstimator_Tukey");
+CEREAL_REGISTER_TYPE_WITH_NAME(gtsam::noiseModel::Constrained, "gtsam_noiseModel_Constrained");
+CEREAL_REGISTER_TYPE_WITH_NAME(gtsam::noiseModel::Unit, "gtsam_noiseModel_Unit");
+CEREAL_REGISTER_TYPE_WITH_NAME(gtsam::noiseModel::Isotropic,"gtsam_noiseModel_Isotropic");
+CEREAL_REGISTER_TYPE_WITH_NAME(gtsam::noiseModel::Robust, "gtsam_noiseModel_Robust");
 
 /* ************************************************************************* */
 // Create GUIDs for factors
-//BOOST_CLASS_EXPORT_GUID(gtsam::PriorFactor<gtsam::Pose3>, "gtsam::PriorFactor<gtsam::Pose3>");
-//BOOST_CLASS_EXPORT_GUID(gtsam::JacobianFactor, "gtsam::JacobianFactor");
-//BOOST_CLASS_EXPORT_GUID(gtsam::HessianFactor , "gtsam::HessianFactor");
-//BOOST_CLASS_EXPORT_GUID(gtsam::GaussianConditional , "gtsam::GaussianConditional");
+CEREAL_REGISTER_TYPE_WITH_NAME(gtsam::PriorFactor<gtsam::Pose3>, "gtsam::PriorFactor<gtsam::Pose3>");
 
 
 /* ************************************************************************* */
@@ -87,7 +82,7 @@ static Cal3_S2 cal1(1.0, 2.0, 0.3, 0.1, 0.5);
 static Cal3DS2 cal2(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0);
 static Cal3Bundler cal3(1.0, 2.0, 3.0);
 
-TEST (Serialization, TemplatedValues) {
+TEST_UNSAFE (Serialization, TemplatedValues) {
   EXPECT(equalsObj(pt3));
   GenericValue<Point3> chv1(pt3);
   EXPECT(equalsObj(chv1));
@@ -134,8 +129,8 @@ TEST(Serialization, ISAM2) {
     std::ofstream outputStream(binaryPath);
     cereal::BinaryOutputArchive outputArchive(outputStream);
     outputArchive << solver;
-  } catch(...) {
-    EXPECT(false);
+  } catch(std::exception &e) {
+    result_.addFailure (Failure (name_, __FILE__,__LINE__, e.what()));
   }
 
   gtsam::ISAM2 solverFromDisk;
@@ -143,21 +138,21 @@ TEST(Serialization, ISAM2) {
     std::ifstream ifs(binaryPath);
     cereal::BinaryInputArchive inputArchive(ifs);
     inputArchive >> solverFromDisk;
-  } catch(...) {
-    EXPECT(false);
+  } catch(std::exception &e) {
+    result_.addFailure (Failure (name_, __FILE__,__LINE__, e.what()));
   }
 
   gtsam::Pose3 p1, p2;
   try {
     p1 = solver.calculateEstimate<gtsam::Pose3>(symbol0);
   } catch(std::exception &e) {
-    EXPECT(false);
+    result_.addFailure (Failure (name_, __FILE__,__LINE__, e.what()));
   }
 
   try {
     p2 = solverFromDisk.calculateEstimate<gtsam::Pose3>(symbol0);
   } catch(std::exception &e) {
-    EXPECT(false);
+    result_.addFailure (Failure (name_, __FILE__,__LINE__, e.what()));
   }
   EXPECT(assert_equal(p1, p2));
 }

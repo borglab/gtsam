@@ -125,17 +125,17 @@ protected:
 
 #define THROWS_EXCEPTION(condition)\
 { try { condition; \
-    result_.addFailure (Failure (name_, __FILE__,__LINE__, std::string("Didn't throw: ") + std::to_string(#condition))); \
+    result_.addFailure (Failure (name_, __FILE__,__LINE__, std::string("Didn't throw: ") + std::string(#condition))); \
     return; } \
   catch (...) {} }
 
 #define CHECK_EXCEPTION(condition, exception_name)\
 { try { condition; \
-    result_.addFailure (Failure (name_, __FILE__,__LINE__, std::string("Didn't throw: ") + std::to_string(#condition))); \
+    result_.addFailure (Failure (name_, __FILE__,__LINE__, std::string("Didn't throw: ") + std::string(#condition))); \
     return; } \
   catch (exception_name&) {} \
   catch (...) { \
-  result_.addFailure (Failure (name_, __FILE__,__LINE__, std::string("Wrong exception: ") + std::to_string(#condition) + std::to_string(", expected: ") + std::to_string(#exception_name))); \
+  result_.addFailure (Failure (name_, __FILE__,__LINE__, std::string("Wrong exception: ") + std::string(#condition) + std::string(", expected: ") + std::string(#exception_name))); \
   return; } }
 
 #define EQUALITY(expected,actual)\

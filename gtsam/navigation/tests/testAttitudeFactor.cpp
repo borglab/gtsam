@@ -64,11 +64,6 @@ TEST( Rot3AttitudeFactor, Constructor ) {
 }
 
 /* ************************************************************************* */
-// Export Noisemodels
-// See http://www.boost.org/doc/libs/1_32_0/libs/serialization/doc/special.html
-BOOST_CLASS_EXPORT(gtsam::noiseModel::Isotropic)
-
-/* ************************************************************************* */
 TEST(Rot3AttitudeFactor, Serialization) {
   Unit3 nDown(0, 0, -1);
   SharedNoiseModel model = noiseModel::Isotropic::Sigma(2, 0.25);

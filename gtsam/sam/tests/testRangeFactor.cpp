@@ -78,7 +78,7 @@ TEST( RangeFactor, Constructor) {
 /* ************************************************************************* */
 // Export Noisemodels
 // See http://www.boost.org/doc/libs/1_32_0/libs/serialization/doc/special.html
-BOOST_CLASS_EXPORT(gtsam::noiseModel::Unit);
+CEREAL_REGISTER_TYPE(gtsam::noiseModel::Unit);
 
 /* ************************************************************************* */
 TEST(RangeFactor, Serialization2D) {

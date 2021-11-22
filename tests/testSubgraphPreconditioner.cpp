@@ -29,10 +29,9 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/archive/xml_iarchive.hpp>
+#include <cereal/archives/xml.hpp>
 #include <boost/assign/std/list.hpp>
 #include <boost/range/adaptor/reversed.hpp>
-#include <boost/serialization/export.hpp>
 #include <boost/tuple/tuple.hpp>
 using namespace boost::assign;
 
@@ -200,14 +199,13 @@ TEST(SubgraphPreconditioner, system) {
 }
 
 /* ************************************************************************* */
-BOOST_CLASS_EXPORT_GUID(gtsam::JacobianFactor, "JacobianFactor")
 
 // Read from XML file
 static GaussianFactorGraph read(const string& name) {
   auto inputFile = findExampleDataFile(name);
   ifstream is(inputFile);
   if (!is.is_open()) throw runtime_error("Cannot find file " + inputFile);
-  boost::archive::xml_iarchive in_archive(is);
+  cereal::XMLInputArchive in_archive(is);
   GaussianFactorGraph Ab;
   in_archive >> cereal::make_nvp("graph", Ab);
   return Ab;

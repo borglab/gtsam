@@ -127,8 +127,8 @@ struct LevenbergMarquardtState : public NonlinearOptimizerState {
     // for each of the variables, add a prior
     damped.reserve(damped.size() + values.size());
     for (const auto key_value : values) {
-      const Key key = key_value.first;
-      const size_t dim = key_value.second.dim();
+      const Key key = key_value.key;
+      const size_t dim = key_value.value.dim();
       const CachedModel* item = getCachedModel(dim);
       damped += std::make_shared<JacobianFactor>(key, item->A, item->b, item->model);
     }

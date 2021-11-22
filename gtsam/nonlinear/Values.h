@@ -27,18 +27,18 @@
 #include <gtsam/base/GenericValue.h>
 #include <gtsam/base/VectorSpace.h>
 #include <gtsam/inference/Key.h>
+#include <boost/iterator/transform_iterator.hpp>
+#include <boost/iterator/filter_iterator.hpp>
+#include <boost/ptr_container/ptr_map.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include <string>
 #include <utility>
-
-#include <range/v3/view.hpp>
-#include <range/v3/view/facade.hpp>
 
 namespace gtsam {
 
   // Forward declarations / utilities
   class VectorValues;
-  class ValuesView;
   class ValueAutomaticCasting;
   template<typename T> static bool _truePredicate(const T&) { return true; }
 
@@ -67,11 +67,12 @@ namespace gtsam {
     // below) to clone and deallocate the Value objects, and a boost
     // fast_pool_allocator to allocate map nodes.  In this way, all memory is
     // allocated in a boost memory pool.
-    typedef std::map<
+    typedef boost::ptr_map<
         Key,
-        Value&,
-        std::less<Key>
-        > KeyValueMap;
+        Value,
+        std::less<Key>,
+        ValueCloneAllocator,
+        boost::fast_pool_allocator<std::pair<const Key, void*> > > KeyValueMap;
 
     // The member to store the values, see just above
     KeyValueMap values_;
@@ -106,18 +107,30 @@ namespace gtsam {
     };
 
     /// Mutable forward iterator, with value type KeyValuePair
-    typedef KeyValueMap::iterator iterator;
+    typedef boost::transform_iterator<
+        std::function<KeyValuePair(const KeyValuePtrPair&)>, KeyValueMap::iterator> iterator;
 
     /// Const forward iterator, with value type ConstKeyValuePair
-    typedef KeyValueMap::const_iterator const_iterator;
+    typedef boost::transform_iterator<
+        std::function<ConstKeyValuePair(const ConstKeyValuePtrPair&)>, KeyValueMap::const_iterator> const_iterator;
 
     /// Mutable reverse iterator, with value type KeyValuePair
-    typedef KeyValueMap::reverse_iterator reverse_iterator;
+    typedef boost::transform_iterator<
+        std::function<KeyValuePair(const KeyValuePtrPair&)>, KeyValueMap::reverse_iterator> reverse_iterator;
 
     /// Const reverse iterator, with value type ConstKeyValuePair
-    typedef KeyValueMap::const_reverse_iterator const_reverse_iterator;
+    typedef boost::transform_iterator<
+        std::function<ConstKeyValuePair(const ConstKeyValuePtrPair&)>, KeyValueMap::const_reverse_iterator> const_reverse_iterator;
 
     typedef KeyValuePair value_type;
+
+    /** A filtered view of a Values, returned from Values::filter. */
+    template<class ValueType = Value>
+    class Filtered;
+
+    /** A filtered view of a const Values, returned from Values::filter. */
+    template<class ValueType = Value>
+    class ConstFiltered;
 
     /** Default constructor creates an empty Values class */
     Values() {}
@@ -137,6 +150,14 @@ namespace gtsam {
 
     /** Construct from a Values and an update vector: identical to other.retract(delta) */
     Values(const Values& other, const VectorValues& delta);
+
+    /** Constructor from a Filtered view copies out all values */
+    template<class ValueType>
+    Values(const Filtered<ValueType>& view);
+
+    /** Constructor from a Filtered or ConstFiltered view */
+    template<class ValueType>
+    Values(const ConstFiltered<ValueType>& view);
 
     /// @name Testable
     /// @{
@@ -184,23 +205,23 @@ namespace gtsam {
 
     /** Find an element by key, returning an iterator, or end() if the key was
      * not found. */
-    iterator find(Key j) { return values_.find(j); }
+    iterator find(Key j) { return boost::make_transform_iterator(values_.find(j), &make_deref_pair); }
 
     /** Find an element by key, returning an iterator, or end() if the key was
      * not found. */
-    const_iterator find(Key j) const { return values_.find(j); }
+    const_iterator find(Key j) const { return boost::make_transform_iterator(values_.find(j), &make_const_deref_pair); }
 
     /** Find the element greater than or equal to the specified key. */
-    iterator lower_bound(Key j) { return values_.lower_bound(j); }
+    iterator lower_bound(Key j) { return boost::make_transform_iterator(values_.lower_bound(j), &make_deref_pair); }
 
     /** Find the element greater than or equal to the specified key. */
-    const_iterator lower_bound(Key j) const { return values_.lower_bound(j); }
+    const_iterator lower_bound(Key j) const { return boost::make_transform_iterator(values_.lower_bound(j), &make_const_deref_pair); }
 
     /** Find the lowest-ordered element greater than the specified key. */
-    iterator upper_bound(Key j) { return values_.upper_bound(j); }
+    iterator upper_bound(Key j) { return boost::make_transform_iterator(values_.upper_bound(j), &make_deref_pair); }
 
     /** Find the lowest-ordered element greater than the specified key. */
-    const_iterator upper_bound(Key j) const { return values_.upper_bound(j); }
+    const_iterator upper_bound(Key j) const { return boost::make_transform_iterator(values_.upper_bound(j), &make_const_deref_pair); }
 
     /** The number of variables in this config */
     size_t size() const { return values_.size(); }
@@ -208,14 +229,14 @@ namespace gtsam {
     /** whether the config is empty */
     bool empty() const { return values_.empty(); }
 
-    const_iterator begin() const { return values_.begin(); }
-    const_iterator end() const { return values_.end(); }
-    iterator begin() { return values_.begin(); }
-    iterator end() { return values_.end(); }
-    const_reverse_iterator rbegin() const { return values_.rbegin(); }
-    const_reverse_iterator rend() const { return values_.rend(); }
-    reverse_iterator rbegin() { return values_.rbegin(); }
-    reverse_iterator rend() { return values_.rend(); }
+    const_iterator begin() const { return boost::make_transform_iterator(values_.begin(), &make_const_deref_pair); }
+    const_iterator end() const { return boost::make_transform_iterator(values_.end(), &make_const_deref_pair); }
+    iterator begin() { return boost::make_transform_iterator(values_.begin(), &make_deref_pair); }
+    iterator end() { return boost::make_transform_iterator(values_.end(), &make_deref_pair); }
+    const_reverse_iterator rbegin() const { return boost::make_transform_iterator(values_.rbegin(), &make_const_deref_pair); }
+    const_reverse_iterator rend() const { return boost::make_transform_iterator(values_.rend(), &make_const_deref_pair); }
+    reverse_iterator rbegin() { return boost::make_transform_iterator(values_.rbegin(), &make_deref_pair); }
+    reverse_iterator rend() { return boost::make_transform_iterator(values_.rend(), &make_deref_pair); }
 
     /// @name Manifold Operations
     /// @{
@@ -299,49 +320,109 @@ namespace gtsam {
      * @return A filtered view of the original Values class, which references
      * the original Values class.
      */
-     auto filter(const std::function<bool(Key)>& filterFcn);
+    Filtered<Value>
+    filter(const std::function<bool(Key)>& filterFcn);
+
+    /**
+     * Return a filtered view of this Values class, without copying any data.
+     * In this templated version, only key-value pairs whose value matches the
+     * template argument \c ValueType and whose key causes the function argument
+     * \c filterFcn to return true are visited when iterating over the filtered
+     * view.  Because the object Filtered<Value> returned from filter() is only
+     * a <em>view</em> the original Values object must not be deallocated or
+     * go out of scope as long as the view is needed.
+     * @tparam ValueType The type that the value in a key-value pair must match
+     * to be included in the filtered view.  Currently, base classes are not
+     * resolved so the type must match exactly, except if ValueType = Value, in
+     * which case no type filtering is done.
+     * @param filterFcn The function that determines which key-value pairs are
+     * included in the filtered view, for which this function returns \c true
+     * on their keys (default:  always return true so that filter() only
+     * filters by type, matching \c ValueType).
+     * @return A filtered view of the original Values class, which references
+     * the original Values class.
+     */
+    template<class ValueType>
+    Filtered<ValueType>
+    filter(const std::function<bool(Key)>& filterFcn = &_truePredicate<Key>);
+
+    /**
+     * Return a filtered view of this Values class, without copying any data.
+     * When iterating over the filtered view, only the key-value pairs
+     * with a key causing \c filterFcn to return \c true are visited.  Because
+     * the object Filtered<Value> returned from filter() is only a
+     * <em>view</em> the original Values object must not be deallocated or
+     * go out of scope as long as the view is needed.
+     * @param filterFcn The function that determines which key-value pairs are
+     * included in the filtered view, for which this function returns \c true
+     * on their keys.
+     * @return A filtered view of the original Values class, which references
+     * the original Values class.
+     */
+    ConstFiltered<Value>
+    filter(const std::function<bool(Key)>& filterFcn) const;
+
+    /**
+     * Return a filtered view of this Values class, without copying any data.
+     * In this templated version, only key-value pairs whose value matches the
+     * template argument \c ValueType and whose key causes the function argument
+     * \c filterFcn to return true are visited when iterating over the filtered
+     * view.  Because the object Filtered<Value> returned from filter() is only
+     * a <em>view</em> the original Values object must not be deallocated or
+     * go out of scope as long as the view is needed.
+     * @tparam ValueType The type that the value in a key-value pair must match
+     * to be included in the filtered view.  Currently, base classes are not
+     * resolved so the type must match exactly, except if ValueType = Value, in
+     * which case no type filtering is done.
+     * @param filterFcn The function that determines which key-value pairs are
+     * included in the filtered view, for which this function returns \c true
+     * on their keys.
+     * @return A filtered view of the original Values class, which references
+     * the original Values class.
+     */
+    template<class ValueType>
+    ConstFiltered<ValueType>
+    filter(const std::function<bool(Key)>& filterFcn = &_truePredicate<Key>) const;
 
     // Count values of given type \c ValueType
     template<class ValueType>
     size_t count() const {
       size_t i = 0;
       for (const auto key_value : *this) {
-        if (dynamic_cast<const GenericValue<ValueType>*>(&key_value.second))
+        if (dynamic_cast<const GenericValue<ValueType>*>(&key_value.value))
           ++i;
       }
       return i;
     }
 
   private:
+    // Filters based on ValueType (if not Value) and also based on the user-
+    // supplied \c filter function.
+    template<class ValueType>
+    static bool filterHelper(const std::function<bool(Key)> filter, const ConstKeyValuePair& key_value) {
+      BOOST_STATIC_ASSERT((!boost::is_same<ValueType, Value>::value));
+      // Filter and check the type
+      return filter(key_value.key) && (dynamic_cast<const GenericValue<ValueType>*>(&key_value.value));
+    }
 
     /** Serialization function */
     friend class cereal::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      ar & CEREAL_NVP(values_);
+    void save(ARCHIVE & ar, const unsigned int version) const {
+      ar << CEREAL_NVP(values_);
+    }
+
+    template<class ARCHIVE>
+    void load(ARCHIVE & ar, const unsigned int version) {
+      ar >> CEREAL_NVP(values_);
     }
 
     static ConstKeyValuePair make_const_deref_pair(const KeyValueMap::const_iterator::value_type& key_value) {
-      return ConstKeyValuePair(key_value.first, key_value.second); }
+      return ConstKeyValuePair(key_value.first, *key_value.second); }
 
     static KeyValuePair make_deref_pair(const KeyValueMap::iterator::value_type& key_value) {
-      return KeyValuePair(key_value.first, key_value.second); }
+      return KeyValuePair(key_value.first, *key_value.second); }
 
-  };
-
-  class ValuesView
-      : public ranges::view_facade<ValuesView>
-  {
-    friend ranges::range_access;
-    Values& v_;
-    Values::iterator it;
-    auto & read() const { return *it; }
-    bool equal(ranges::default_sentinel_t) const { return it == v_.end(); }
-    void next() { ++it; }
-   public:
-    ValuesView() = delete;
-    explicit ValuesView(Values& v) : v_(v), it(v.begin())
-    {}
   };
 
   /* ************************************************************************* */
@@ -462,5 +543,48 @@ namespace gtsam {
 
 } //\ namespace gtsam
 
+namespace cereal {
+  template<class T_>
+  void ptr_map_deleter(T_*) {}
 
+  template<class T_>
+  struct ptr_map_unique_deleter
+  {
+    void operator()(T_* p) const {}
+  };
+
+  template<class Archive,
+          class Key_,
+          class T_,
+          class Compare_,
+          class CloneAllocator_,
+          class Allocator_>
+  void save(Archive &ar, const boost::ptr_map<Key_, T_, Compare_, CloneAllocator_, Allocator_> &values_) {
+    ar( cereal::make_size_tag( values_.size() ) );
+    for (auto&& key_value : values_) {
+      ar (cereal::make_map_item(key_value.first, std::unique_ptr<T_, ptr_map_unique_deleter<T_>>(const_cast<T_*>(key_value.second))));
+    }
+  }
+
+  template<class Archive,
+          class Key_,
+          class T_,
+          class Compare_,
+          class CloneAllocator_,
+          class Allocator_>
+  void load(Archive &ar, boost::ptr_map<Key_, T_, Compare_, CloneAllocator_, Allocator_> &values_) {
+    cereal::size_type size;
+    ar >> cereal::make_size_tag( size );
+
+    values_.clear();
+
+    for( auto i = 0; i < size; ++i )
+    {
+      Key_ key;
+      std::unique_ptr<T_, ptr_map_unique_deleter<T_>> value;
+      ar >> cereal::make_map_item(key, value);
+      values_.insert(key, value.get());
+    }
+  }
+}
 #include <gtsam/nonlinear/Values-inl.h>

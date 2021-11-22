@@ -110,3 +110,9 @@ struct traits<BearingRangeFactor<A1, A2, B, R> >
     : public Testable<BearingRangeFactor<A1, A2, B, R> > {};
 
 }  // namespace gtsam
+
+namespace cereal
+{
+  template <class Archive, typename A1, typename A2, typename B, typename R>
+  struct specialize<Archive, gtsam::BearingRangeFactor<A1, A2, B, R>, cereal::specialization::member_serialize> {};
+}

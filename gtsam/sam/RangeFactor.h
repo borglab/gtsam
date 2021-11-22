@@ -84,8 +84,7 @@ class RangeFactor : public ExpressionFactorN<T, A1, A2> {
   friend class cereal::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& cereal::make_nvp(
-        "Base", cereal::base_class<Base>(this));
+    ar& cereal::base_class<Base>(this);
   }
 };  // \ RangeFactor
 
@@ -178,3 +177,13 @@ struct traits<RangeFactorWithTransform<A1, A2, T> >
     : public Testable<RangeFactorWithTransform<A1, A2, T> > {};
 
 }  // \ namespace gtsam
+
+namespace cereal
+{
+  template <class Archive, typename A1, typename A2, typename T>
+  struct specialize<Archive, gtsam::RangeFactor<A1, A2, T>, cereal::specialization::member_serialize> {};
+
+  template <class Archive, typename A1, typename A2, typename T>
+  struct specialize<Archive, gtsam::RangeFactorWithTransform<A1, A2, T>, cereal::specialization::member_serialize> {};
+}
+

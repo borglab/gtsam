@@ -506,3 +506,7 @@ using CameraSetCal3Unified = CameraSet<PinholeCamera<Cal3Unified>>;
 
 } // \namespace gtsam
 
+namespace cereal {
+  template <class Archive>
+  struct specialize<Archive, gtsam::TriangulationResult, cereal::specialization::member_serialize> {};
+}

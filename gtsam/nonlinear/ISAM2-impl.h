@@ -449,18 +449,18 @@ struct GTSAM_EXPORT UpdateImpl {
     VectorValues::const_iterator key_delta;
 #ifdef GTSAM_USE_TBB
     for (key_value = theta->begin(); key_value != theta->end(); ++key_value) {
-      key_delta = delta.find(key_value->first);
+      key_delta = delta.find(key_value->key);
 #else
     for (key_value = theta->begin(), key_delta = delta.begin();
          key_value != theta->end(); ++key_value, ++key_delta) {
       assert(key_value->key == key_delta->first);
 #endif
-      Key var = key_value->second;
+      Key var = key_value->key;
       assert(static_cast<size_t>(delta[var].size()) == key_value->value.dim());
       assert(delta[var].allFinite());
       if (mask.exists(var)) {
-        Value* retracted = key_value->second.retract_(delta[var]);
-        key_value->second = *retracted;
+        Value* retracted = key_value->value.retract_(delta[var]);
+        key_value->value = *retracted;
         retracted->deallocate_();
       }
     }

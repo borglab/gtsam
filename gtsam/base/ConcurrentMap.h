@@ -120,3 +120,9 @@ private:
 };
 
 }
+
+namespace cereal
+{
+  template <class Archive, typename KEY, typename VALUE>
+  struct specialize<Archive, gtsam::ConcurrentMap<KEY, VALUE>, cereal::specialization::member_load_save> {};
+}

@@ -148,5 +148,8 @@ struct traits<GaussianConditional> : public Testable<GaussianConditional> {};
 
 } // \ namespace gtsam
 
+CEREAL_SPECIALIZE_FOR_ALL_ARCHIVES( gtsam::GaussianConditional, cereal::specialization::member_serialize );
+CEREAL_REGISTER_TYPE(gtsam::GaussianConditional);
+
 #include <gtsam/linear/GaussianConditional-inl.h>
 

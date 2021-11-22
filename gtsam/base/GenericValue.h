@@ -23,8 +23,9 @@
 #include <gtsam/base/types.h>
 #include <gtsam/base/Value.h>
 
-#include <boost/make_shared.hpp>
 #include <boost/pool/pool_alloc.hpp>
+
+#include <cereal/types/polymorphic.hpp>
 
 #include <cmath>
 #include <iostream>
@@ -179,12 +180,16 @@ public:
     /** Serialization function */
     friend class cereal::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      ar & cereal::make_nvp("GenericValue",
-              cereal::base_class<Value>(this));
-      ar & cereal::make_nvp("value", value_);
-	}
+    void save(ARCHIVE & ar, const unsigned int /*version*/) const {
+      ar (cereal::base_class<Value>(this));
+      ar (cereal::make_nvp("value", value_));
+	  }
 
+    template<class ARCHIVE>
+    void load(ARCHIVE & ar, const unsigned int /*version*/) {
+      ar (cereal::base_class<Value>(this));
+      ar (cereal::make_nvp("value", value_));
+    }
 
   // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
   enum { NeedsToAlign = (sizeof(T) % 16) == 0 };
@@ -215,3 +220,9 @@ GenericValue<T> genericValue(const T& v) {
 
 
 } /* namespace gtsam */
+
+namespace cereal
+{
+  template <class Archive, typename VALUE>
+  struct specialize<Archive, gtsam::GenericValue<VALUE>, cereal::specialization::member_load_save> {};
+}

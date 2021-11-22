@@ -45,7 +45,7 @@ BearingFactor3D factor3D(poseKey, pointKey, measurement3D, model3D);
 /* ************************************************************************* */
 // Export Noisemodels
 // See http://www.boost.org/doc/libs/1_32_0/libs/serialization/doc/special.html
-BOOST_CLASS_EXPORT(gtsam::noiseModel::Isotropic);
+CEREAL_REGISTER_TYPE_WITH_NAME(gtsam::noiseModel::Isotropic,"gtsam_noiseModel_Isotropic");
 
 /* ************************************************************************* */
 TEST(BearingFactor, Serialization2D) {
