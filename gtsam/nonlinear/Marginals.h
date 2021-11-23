@@ -133,15 +133,15 @@ protected:
 public:
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
   /** \deprecated argument order changed due to removing boost::optional<Ordering> */
-  Marginals(const NonlinearFactorGraph& graph, const Values& solution, Factorization factorization,
+  GTSAM_DEPRECATED Marginals(const NonlinearFactorGraph& graph, const Values& solution, Factorization factorization,
             const Ordering& ordering) : Marginals(graph, solution, ordering, factorization) {}
 
   /** \deprecated argument order changed due to removing boost::optional<Ordering> */
-  Marginals(const GaussianFactorGraph& graph, const Values& solution, Factorization factorization,
+  GTSAM_DEPRECATED Marginals(const GaussianFactorGraph& graph, const Values& solution, Factorization factorization,
             const Ordering& ordering) : Marginals(graph, solution, ordering, factorization) {}
 
   /** \deprecated argument order changed due to removing boost::optional<Ordering> */
-  Marginals(const GaussianFactorGraph& graph, const VectorValues& solution, Factorization factorization,
+  GTSAM_DEPRECATED Marginals(const GaussianFactorGraph& graph, const VectorValues& solution, Factorization factorization,
             const Ordering& ordering) : Marginals(graph, solution, ordering, factorization) {}
 #endif
 
