@@ -738,7 +738,14 @@ class ISAM2 {
                             const gtsam::KeyList& extraReelimKeys,
                             bool force_relinearize);
 
+  void marginalizeLeaves(
+      const gtsam::KeyList& leafKeys,
+      boost::optional<gtsam::FactorIndices&> marginalFactorIndices =
+          boost::none,
+      boost::optional<gtsam::FactorIndices&> deletedFactorsIndices =
+          boost::none);
   gtsam::Values getLinearizationPoint() const;
+  bool valueExists(gtsam::Key key) const;
   gtsam::Values calculateEstimate() const;
   template <VALUE = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3,
                      gtsam::Rot3, gtsam::Pose3, gtsam::Cal3_S2, gtsam::Cal3DS2,
