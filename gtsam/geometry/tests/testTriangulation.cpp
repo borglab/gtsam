@@ -368,7 +368,7 @@ TEST(triangulation, StereotriangulateNonlinear) {
   Point3 initial =
       Point3(46.0536958, 66.4621179, -6.56285929);  // error: 96.5715555191
 
-  Point3 actual = triangulateNonlinear(cameras, measurements, initial);
+  Point3 actual = triangulateNonlinear<StereoCamera>(cameras, measurements, initial);
 
   Point3 expected(46.0484569, 66.4710686,
                   -6.55046613);  // error: 0.763510644187
