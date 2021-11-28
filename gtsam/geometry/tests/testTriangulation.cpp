@@ -70,13 +70,13 @@ TEST(triangulation, twoPoses) {
   // 1. Test simple DLT, perfect in no noise situation
   bool optimize = false;
   boost::optional<Point3> actual1 =  //
-      triangulatePoint3(poses, sharedCal, measurements, rank_tol, optimize);
+      triangulatePoint3<Cal3_S2>(poses, sharedCal, measurements, rank_tol, optimize);
   EXPECT(assert_equal(landmark, *actual1, 1e-7));
 
   // 2. test with optimization on, same answer
   optimize = true;
   boost::optional<Point3> actual2 =  //
-      triangulatePoint3(poses, sharedCal, measurements, rank_tol, optimize);
+      triangulatePoint3<Cal3_S2>(poses, sharedCal, measurements, rank_tol, optimize);
   EXPECT(assert_equal(landmark, *actual2, 1e-7));
 
   // 3. Add some noise and try again: result should be ~ (4.995,
@@ -85,13 +85,13 @@ TEST(triangulation, twoPoses) {
   measurements.at(1) += Point2(-0.2, 0.3);
   optimize = false;
   boost::optional<Point3> actual3 =  //
-      triangulatePoint3(poses, sharedCal, measurements, rank_tol, optimize);
+      triangulatePoint3<Cal3_S2>(poses, sharedCal, measurements, rank_tol, optimize);
   EXPECT(assert_equal(Point3(4.995, 0.499167, 1.19814), *actual3, 1e-4));
 
   // 4. Now with optimization on
   optimize = true;
   boost::optional<Point3> actual4 =  //
-      triangulatePoint3(poses, sharedCal, measurements, rank_tol, optimize);
+      triangulatePoint3<Cal3_S2>(poses, sharedCal, measurements, rank_tol, optimize);
   EXPECT(assert_equal(Point3(4.995, 0.499167, 1.19814), *actual4, 1e-4));
 }
 
@@ -117,7 +117,7 @@ TEST(triangulation, twoPosesBundler) {
   double rank_tol = 1e-9;
 
   boost::optional<Point3> actual =  //
-      triangulatePoint3(poses, bundlerCal, measurements, rank_tol, optimize);
+      triangulatePoint3<Cal3Bundler>(poses, bundlerCal, measurements, rank_tol, optimize);
   EXPECT(assert_equal(landmark, *actual, 1e-7));
 
   // Add some noise and try again
@@ -125,7 +125,7 @@ TEST(triangulation, twoPosesBundler) {
   measurements.at(1) += Point2(-0.2, 0.3);
 
   boost::optional<Point3> actual2 =  //
-      triangulatePoint3(poses, bundlerCal, measurements, rank_tol, optimize);
+      triangulatePoint3<Cal3Bundler>(poses, bundlerCal, measurements, rank_tol, optimize);
   EXPECT(assert_equal(Point3(4.995, 0.499167, 1.19847), *actual2, 1e-4));
 }
 
@@ -138,7 +138,7 @@ TEST(triangulation, fourPoses) {
   measurements += z1, z2;
 
   boost::optional<Point3> actual =
-      triangulatePoint3(poses, sharedCal, measurements);
+      triangulatePoint3<Cal3_S2>(poses, sharedCal, measurements);
   EXPECT(assert_equal(landmark, *actual, 1e-2));
 
   // 2. Add some noise and try again: result should be ~ (4.995,
@@ -147,7 +147,7 @@ TEST(triangulation, fourPoses) {
   measurements.at(1) += Point2(-0.2, 0.3);
 
   boost::optional<Point3> actual2 =  //
-      triangulatePoint3(poses, sharedCal, measurements);
+      triangulatePoint3<Cal3_S2>(poses, sharedCal, measurements);
   EXPECT(assert_equal(landmark, *actual2, 1e-2));
 
   // 3. Add a slightly rotated third camera above, again with measurement noise
@@ -159,12 +159,12 @@ TEST(triangulation, fourPoses) {
   measurements += z3 + Point2(0.1, -0.1);
 
   boost::optional<Point3> triangulated_3cameras =  //
-      triangulatePoint3(poses, sharedCal, measurements);
+      triangulatePoint3<Cal3_S2>(poses, sharedCal, measurements);
   EXPECT(assert_equal(landmark, *triangulated_3cameras, 1e-2));
 
   // Again with nonlinear optimization
   boost::optional<Point3> triangulated_3cameras_opt =
-      triangulatePoint3(poses, sharedCal, measurements, 1e-9, true);
+      triangulatePoint3<Cal3_S2>(poses, sharedCal, measurements, 1e-9, true);
   EXPECT(assert_equal(landmark, *triangulated_3cameras_opt, 1e-2));
 
   // 4. Test failure: Add a 4th camera facing the wrong way
@@ -177,7 +177,7 @@ TEST(triangulation, fourPoses) {
   poses += pose4;
   measurements += Point2(400, 400);
 
-  CHECK_EXCEPTION(triangulatePoint3(poses, sharedCal, measurements),
+  CHECK_EXCEPTION(triangulatePoint3<Cal3_S2>(poses, sharedCal, measurements),
                   TriangulationCheiralityException);
 #endif
 }
@@ -203,7 +203,7 @@ TEST(triangulation, fourPoses_distinct_Ks) {
   measurements += z1, z2;
 
   boost::optional<Point3> actual =  //
-      triangulatePoint3(cameras, measurements);
+      triangulatePoint3<Cal3_S2>(cameras, measurements);
   EXPECT(assert_equal(landmark, *actual, 1e-2));
 
   // 2. Add some noise and try again: result should be ~ (4.995,
@@ -212,7 +212,7 @@ TEST(triangulation, fourPoses_distinct_Ks) {
   measurements.at(1) += Point2(-0.2, 0.3);
 
   boost::optional<Point3> actual2 =  //
-      triangulatePoint3(cameras, measurements);
+      triangulatePoint3<Cal3_S2>(cameras, measurements);
   EXPECT(assert_equal(landmark, *actual2, 1e-2));
 
   // 3. Add a slightly rotated third camera above, again with measurement noise
@@ -225,12 +225,12 @@ TEST(triangulation, fourPoses_distinct_Ks) {
   measurements += z3 + Point2(0.1, -0.1);
 
   boost::optional<Point3> triangulated_3cameras =  //
-      triangulatePoint3(cameras, measurements);
+      triangulatePoint3<Cal3_S2>(cameras, measurements);
   EXPECT(assert_equal(landmark, *triangulated_3cameras, 1e-2));
 
   // Again with nonlinear optimization
   boost::optional<Point3> triangulated_3cameras_opt =
-      triangulatePoint3(cameras, measurements, 1e-9, true);
+      triangulatePoint3<Cal3_S2>(cameras, measurements, 1e-9, true);
   EXPECT(assert_equal(landmark, *triangulated_3cameras_opt, 1e-2));
 
   // 4. Test failure: Add a 4th camera facing the wrong way
@@ -243,7 +243,7 @@ TEST(triangulation, fourPoses_distinct_Ks) {
 
   cameras += camera4;
   measurements += Point2(400, 400);
-  CHECK_EXCEPTION(triangulatePoint3(cameras, measurements),
+  CHECK_EXCEPTION(triangulatePoint3<Cal3_S2>(cameras, measurements),
                   TriangulationCheiralityException);
 #endif
 }
@@ -322,7 +322,7 @@ TEST(triangulation, twoIdenticalPoses) {
   poses += pose1, pose1;
   measurements += z1, z1;
 
-  CHECK_EXCEPTION(triangulatePoint3(poses, sharedCal, measurements),
+  CHECK_EXCEPTION(triangulatePoint3<Cal3_S2>(poses, sharedCal, measurements),
                   TriangulationUnderconstrainedException);
 }
 
@@ -337,7 +337,7 @@ TEST(triangulation, onePose) {
   poses += Pose3();
   measurements += Point2(0, 0);
 
-  CHECK_EXCEPTION(triangulatePoint3(poses, sharedCal, measurements),
+  CHECK_EXCEPTION(triangulatePoint3<Cal3_S2>(poses, sharedCal, measurements),
                   TriangulationUnderconstrainedException);
 }
 
