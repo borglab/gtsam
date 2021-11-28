@@ -24,6 +24,7 @@
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/CameraSet.h>
 #include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/SphericalCamera.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -518,6 +519,6 @@ using CameraSetCal3Bundler = CameraSet<PinholeCamera<Cal3Bundler>>;
 using CameraSetCal3_S2 = CameraSet<PinholeCamera<Cal3_S2>>;
 using CameraSetCal3Fisheye = CameraSet<PinholeCamera<Cal3Fisheye>>;
 using CameraSetCal3Unified = CameraSet<PinholeCamera<Cal3Unified>>;
-
+using CameraSetSpherical = CameraSet<SphericalCamera>;
 } // \namespace gtsam
 
