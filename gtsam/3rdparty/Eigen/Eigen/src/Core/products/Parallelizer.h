@@ -17,8 +17,7 @@ namespace internal {
 /** \internal */
 inline void manage_multi_threading(Action action, int* v)
 {
-  static int m_maxThreads = -1;
-  EIGEN_UNUSED_VARIABLE(m_maxThreads);
+  static EIGEN_UNUSED int m_maxThreads = -1;
 
   if(action==SetAction)
   {
@@ -151,10 +150,8 @@ void parallelize_gemm(const Functor& func, Index rows, Index cols, Index depth, 
     info[i].lhs_start = r0;
     info[i].lhs_length = actualBlockRows;
 
-    if(transpose)
-      func(c0, actualBlockCols, 0, rows, info);
-    else
-      func(0, rows, c0, actualBlockCols, info);
+    if(transpose) func(c0, actualBlockCols, 0, rows, info);
+    else          func(0, rows, c0, actualBlockCols, info);
   }
 #endif
 }

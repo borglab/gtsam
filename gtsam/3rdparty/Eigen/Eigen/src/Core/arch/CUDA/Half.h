@@ -42,7 +42,6 @@
 #define EIGEN_EXPLICIT_CAST(tgt_type) operator tgt_type()
 #endif
 
-#include <sstream>
 
 namespace Eigen {
 

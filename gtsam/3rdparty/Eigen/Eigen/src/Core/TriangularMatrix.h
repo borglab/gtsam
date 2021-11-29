@@ -217,7 +217,9 @@ template<typename _MatrixType, unsigned int _Mode> class TriangularView
     explicit inline TriangularView(MatrixType& matrix) : m_matrix(matrix)
     {}
     
-    EIGEN_INHERIT_ASSIGNMENT_OPERATORS(TriangularView)
+    using Base::operator=;
+    TriangularView& operator=(const TriangularView &other)
+    { return Base::operator=(other); }
 
     /** \copydoc EigenBase::rows() */
     EIGEN_DEVICE_FUNC
@@ -542,10 +544,6 @@ template<typename _MatrixType, unsigned int _Mode> class TriangularViewImpl<_Mat
     template<typename ProductType>
     EIGEN_DEVICE_FUNC
     EIGEN_STRONG_INLINE TriangularViewType& _assignProduct(const ProductType& prod, const Scalar& alpha, bool beta);
-  protected:
-    EIGEN_DEFAULT_COPY_CONSTRUCTOR(TriangularViewImpl)
-    EIGEN_DEFAULT_EMPTY_CONSTRUCTOR_AND_DESTRUCTOR(TriangularViewImpl)
-
 };
 
 /***************************************************************************

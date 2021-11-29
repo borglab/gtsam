@@ -182,8 +182,6 @@ template<typename Derived> class MapBase<Derived, ReadOnlyAccessors>
     #endif
 
   protected:
-    EIGEN_DEFAULT_COPY_CONSTRUCTOR(MapBase)
-    EIGEN_DEFAULT_EMPTY_CONSTRUCTOR_AND_DESTRUCTOR(MapBase)
 
     template<typename T>
     EIGEN_DEVICE_FUNC
@@ -296,9 +294,6 @@ template<typename Derived> class MapBase<Derived, WriteAccessors>
     // In theory we could simply refer to Base:Base::operator=, but MSVC does not like Base::Base,
     // see bugs 821 and 920.
     using ReadOnlyMapBase::Base::operator=;
-  protected:
-    EIGEN_DEFAULT_COPY_CONSTRUCTOR(MapBase)
-    EIGEN_DEFAULT_EMPTY_CONSTRUCTOR_AND_DESTRUCTOR(MapBase)
 };
 
 #undef EIGEN_STATIC_ASSERT_INDEX_BASED_ACCESS

@@ -15,48 +15,48 @@ namespace Eigen {
 namespace internal {
 
 // if the rhs is row major, let's transpose the product
-template <typename Scalar, typename Index, int Side, int Mode, bool Conjugate, int TriStorageOrder, int OtherInnerStride>
-struct triangular_solve_matrix<Scalar,Index,Side,Mode,Conjugate,TriStorageOrder,RowMajor,OtherInnerStride>
+template <typename Scalar, typename Index, int Side, int Mode, bool Conjugate, int TriStorageOrder>
+struct triangular_solve_matrix<Scalar,Index,Side,Mode,Conjugate,TriStorageOrder,RowMajor>
 {
   static void run(
     Index size, Index cols,
     const Scalar*  tri, Index triStride,
-    Scalar* _other, Index otherIncr, Index otherStride,
+    Scalar* _other, Index otherStride,
     level3_blocking<Scalar,Scalar>& blocking)
   {
     triangular_solve_matrix<
       Scalar, Index, Side==OnTheLeft?OnTheRight:OnTheLeft,
       (Mode&UnitDiag) | ((Mode&Upper) ? Lower : Upper),
       NumTraits<Scalar>::IsComplex && Conjugate,
-      TriStorageOrder==RowMajor ? ColMajor : RowMajor, ColMajor, OtherInnerStride>
-      ::run(size, cols, tri, triStride, _other, otherIncr, otherStride, blocking);
+      TriStorageOrder==RowMajor ? ColMajor : RowMajor, ColMajor>
+      ::run(size, cols, tri, triStride, _other, otherStride, blocking);
   }
 };
 
 /* Optimized triangular solver with multiple right hand side and the triangular matrix on the left
  */
-template <typename Scalar, typename Index, int Mode, bool Conjugate, int TriStorageOrder,int OtherInnerStride>
-struct triangular_solve_matrix<Scalar,Index,OnTheLeft,Mode,Conjugate,TriStorageOrder,ColMajor,OtherInnerStride>
+template <typename Scalar, typename Index, int Mode, bool Conjugate, int TriStorageOrder>
+struct triangular_solve_matrix<Scalar,Index,OnTheLeft,Mode,Conjugate,TriStorageOrder,ColMajor>
 {
   static EIGEN_DONT_INLINE void run(
     Index size, Index otherSize,
     const Scalar* _tri, Index triStride,
-    Scalar* _other, Index otherIncr, Index otherStride,
+    Scalar* _other, Index otherStride,
     level3_blocking<Scalar,Scalar>& blocking);
 };
-template <typename Scalar, typename Index, int Mode, bool Conjugate, int TriStorageOrder, int OtherInnerStride>
-EIGEN_DONT_INLINE void triangular_solve_matrix<Scalar,Index,OnTheLeft,Mode,Conjugate,TriStorageOrder,ColMajor,OtherInnerStride>::run(
+template <typename Scalar, typename Index, int Mode, bool Conjugate, int TriStorageOrder>
+EIGEN_DONT_INLINE void triangular_solve_matrix<Scalar,Index,OnTheLeft,Mode,Conjugate,TriStorageOrder,ColMajor>::run(
     Index size, Index otherSize,
     const Scalar* _tri, Index triStride,
-    Scalar* _other, Index otherIncr, Index otherStride,
+    Scalar* _other, Index otherStride,
     level3_blocking<Scalar,Scalar>& blocking)
   {
     Index cols = otherSize;
 
     typedef const_blas_data_mapper<Scalar, Index, TriStorageOrder> TriMapper;
-    typedef blas_data_mapper<Scalar, Index, ColMajor, Unaligned, OtherInnerStride> OtherMapper;
+    typedef blas_data_mapper<Scalar, Index, ColMajor> OtherMapper;
     TriMapper tri(_tri, triStride);
-    OtherMapper other(_other, otherStride, otherIncr);
+    OtherMapper other(_other, otherStride);
 
     typedef gebp_traits<Scalar,Scalar> Traits;
 
@@ -128,19 +128,19 @@ EIGEN_DONT_INLINE void triangular_solve_matrix<Scalar,Index,OnTheLeft,Mode,Conju
               {
                 Scalar b(0);
                 const Scalar* l = &tri(i,s);
-                typename OtherMapper::LinearMapper r = other.getLinearMapper(s,j);
+                Scalar* r = &other(s,j);
                 for (Index i3=0; i3<k; ++i3)
-                  b += conj(l[i3]) * r(i3);
+                  b += conj(l[i3]) * r[i3];
 
                 other(i,j) = (other(i,j) - b)*a;
               }
               else
               {
                 Scalar b = (other(i,j) *= a);
-                typename OtherMapper::LinearMapper r = other.getLinearMapper(s,j);
-                typename TriMapper::LinearMapper l = tri.getLinearMapper(s,i);
+                Scalar* r = &other(s,j);
+                const Scalar* l = &tri(s,i);
                 for (Index i3=0;i3<rs;++i3)
-                  r(i3) -= b * conj(l(i3));
+                  r[i3] -= b * conj(l[i3]);
               }
             }
           }
@@ -185,28 +185,28 @@ EIGEN_DONT_INLINE void triangular_solve_matrix<Scalar,Index,OnTheLeft,Mode,Conju
 
 /* Optimized triangular solver with multiple left hand sides and the triangular matrix on the right
  */
-template <typename Scalar, typename Index, int Mode, bool Conjugate, int TriStorageOrder, int OtherInnerStride>
-struct triangular_solve_matrix<Scalar,Index,OnTheRight,Mode,Conjugate,TriStorageOrder,ColMajor,OtherInnerStride>
+template <typename Scalar, typename Index, int Mode, bool Conjugate, int TriStorageOrder>
+struct triangular_solve_matrix<Scalar,Index,OnTheRight,Mode,Conjugate,TriStorageOrder,ColMajor>
 {
   static EIGEN_DONT_INLINE void run(
     Index size, Index otherSize,
     const Scalar* _tri, Index triStride,
-    Scalar* _other, Index otherIncr, Index otherStride,
+    Scalar* _other, Index otherStride,
     level3_blocking<Scalar,Scalar>& blocking);
 };
-template <typename Scalar, typename Index, int Mode, bool Conjugate, int TriStorageOrder, int OtherInnerStride>
-EIGEN_DONT_INLINE void triangular_solve_matrix<Scalar,Index,OnTheRight,Mode,Conjugate,TriStorageOrder,ColMajor,OtherInnerStride>::run(
+template <typename Scalar, typename Index, int Mode, bool Conjugate, int TriStorageOrder>
+EIGEN_DONT_INLINE void triangular_solve_matrix<Scalar,Index,OnTheRight,Mode,Conjugate,TriStorageOrder,ColMajor>::run(
     Index size, Index otherSize,
     const Scalar* _tri, Index triStride,
-    Scalar* _other, Index otherIncr, Index otherStride,
+    Scalar* _other, Index otherStride,
     level3_blocking<Scalar,Scalar>& blocking)
   {
     Index rows = otherSize;
     typedef typename NumTraits<Scalar>::Real RealScalar;
 
-    typedef blas_data_mapper<Scalar, Index, ColMajor, Unaligned, OtherInnerStride> LhsMapper;
+    typedef blas_data_mapper<Scalar, Index, ColMajor> LhsMapper;
     typedef const_blas_data_mapper<Scalar, Index, TriStorageOrder> RhsMapper;
-    LhsMapper lhs(_other, otherStride, otherIncr);
+    LhsMapper lhs(_other, otherStride);
     RhsMapper rhs(_tri, triStride);
 
     typedef gebp_traits<Scalar,Scalar> Traits;
@@ -297,24 +297,24 @@ EIGEN_DONT_INLINE void triangular_solve_matrix<Scalar,Index,OnTheRight,Mode,Conj
             {
               Index j = IsLower ? absolute_j2+actualPanelWidth-k-1 : absolute_j2+k;
 
-              typename LhsMapper::LinearMapper r = lhs.getLinearMapper(i2,j);
+              Scalar* r = &lhs(i2,j);
               for (Index k3=0; k3<k; ++k3)
               {
                 Scalar b = conj(rhs(IsLower ? j+1+k3 : absolute_j2+k3,j));
-                typename LhsMapper::LinearMapper a = lhs.getLinearMapper(i2,IsLower ? j+1+k3 : absolute_j2+k3);
+                Scalar* a = &lhs(i2,IsLower ? j+1+k3 : absolute_j2+k3);
                 for (Index i=0; i<actual_mc; ++i)
-                  r(i) -= a(i) * b;
+                  r[i] -= a[i] * b;
               }
               if((Mode & UnitDiag)==0)
               {
                 Scalar inv_rjj = RealScalar(1)/conj(rhs(j,j));
                 for (Index i=0; i<actual_mc; ++i)
-                  r(i) *= inv_rjj;
+                  r[i] *= inv_rjj;
               }
             }
 
             // pack the just computed part of lhs to A
-            pack_lhs_panel(blockA, lhs.getSubMapper(i2,absolute_j2),
+            pack_lhs_panel(blockA, LhsMapper(_other+absolute_j2*otherStride+i2, otherStride),
                            actualPanelWidth, actual_mc,
                            actual_kc, j2);
           }
