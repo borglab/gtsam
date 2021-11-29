@@ -611,16 +611,6 @@ class ISAM2GaussNewtonParams {
   void setWildfireThreshold(double wildfireThreshold);
 };
 
-// class ISAM2LevenbergMarquardtParams {
-//   ISAM2LevenbergMarquardtParams();
-
-//   void print(string s = "") const;
-
-//   /** Getters and Setters for all properties */
-//   double getWildfireThreshold() const;
-//   void setWildfireThreshold(double wildfireThreshold);
-// };
-
 class ISAM2DoglegParams {
   ISAM2DoglegParams();
 
@@ -747,13 +737,6 @@ class ISAM2 {
                             const gtsam::KeyList& noRelinKeys,
                             const gtsam::KeyList& extraReelimKeys,
                             bool force_relinearize);
-
-  // void marginalizeLeaves(
-  //     const gtsam::KeyList& leafKeys,
-  //     boost::optional<gtsam::FactorIndices&> marginalFactorIndices =
-  //         boost::none,
-  //     boost::optional<gtsam::FactorIndices&> deletedFactorsIndices =
-  //         boost::none);
 
   gtsam::Values getLinearizationPoint() const;
   bool valueExists(gtsam::Key key) const;
