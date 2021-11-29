@@ -75,8 +75,7 @@ class companion
     void setPolynomial( const VectorType& poly )
     {
       const Index deg = poly.size()-1;
-      m_monic = -1/poly[deg] * poly.head(deg);
-      //m_bl_diag.setIdentity( deg-1 );
+      m_monic = -poly.head(deg)/poly[deg];
       m_bl_diag.setOnes(deg-1);
     }
 
@@ -89,13 +88,13 @@ class companion
     {
       const Index deg   = m_monic.size();
       const Index deg_1 = deg-1;
-      DenseCompanionMatrixType companion(deg,deg);
-      companion <<
+      DenseCompanionMatrixType companMat(deg,deg);
+      companMat <<
         ( LeftBlock(deg,deg_1)
           << LeftBlockFirstRow::Zero(1,deg_1),
           BottomLeftBlock::Identity(deg-1,deg-1)*m_bl_diag.asDiagonal() ).finished()
         , m_monic;
-      return companion;
+      return companMat;
     }
 
 
@@ -107,8 +106,8 @@ class companion
      * colB and rowB are repectively the multipliers for
      * the column and the row in order to balance them.
      * */
-    bool balanced( Scalar colNorm, Scalar rowNorm,
-        bool& isBalanced, Scalar& colB, Scalar& rowB );
+    bool balanced( RealScalar colNorm, RealScalar rowNorm,
+        bool& isBalanced, RealScalar& colB, RealScalar& rowB );
 
     /** Helper function for the balancing algorithm.
      * \returns true if the row and the column, having colNorm and rowNorm
@@ -116,8 +115,8 @@ class companion
      * colB and rowB are repectively the multipliers for
      * the column and the row in order to balance them.
      * */
-    bool balancedR( Scalar colNorm, Scalar rowNorm,
-        bool& isBalanced, Scalar& colB, Scalar& rowB );
+    bool balancedR( RealScalar colNorm, RealScalar rowNorm,
+        bool& isBalanced, RealScalar& colB, RealScalar& rowB );
 
   public:
     /**
@@ -139,10 +138,10 @@ class companion
 
 template< typename _Scalar, int _Deg >
 inline
-bool companion<_Scalar,_Deg>::balanced( Scalar colNorm, Scalar rowNorm,
-    bool& isBalanced, Scalar& colB, Scalar& rowB )
+bool companion<_Scalar,_Deg>::balanced( RealScalar colNorm, RealScalar rowNorm,
+    bool& isBalanced, RealScalar& colB, RealScalar& rowB )
 {
-  if( Scalar(0) == colNorm || Scalar(0) == rowNorm ){ return true; }
+  if( RealScalar(0) == colNorm || RealScalar(0) == rowNorm ){ return true; }
   else
   {
     //To find the balancing coefficients, if the radix is 2,
@@ -150,29 +149,29 @@ bool companion<_Scalar,_Deg>::balanced( Scalar colNorm, Scalar rowNorm,
     // \f$ 2^{2\sigma-1} < rowNorm / colNorm \le 2^{2\sigma+1} \f$
     // then the balancing coefficient for the row is \f$ 1/2^{\sigma} \f$
     // and the balancing coefficient for the column is \f$ 2^{\sigma} \f$
-    rowB = rowNorm / radix<Scalar>();
-    colB = Scalar(1);
-    const Scalar s = colNorm + rowNorm;
+    rowB = rowNorm / radix<RealScalar>();
+    colB = RealScalar(1);
+    const RealScalar s = colNorm + rowNorm;
 
     while (colNorm < rowB)
     {
-      colB *= radix<Scalar>();
-      colNorm *= radix2<Scalar>();
+      colB *= radix<RealScalar>();
+      colNorm *= radix2<RealScalar>();
     }
 
-    rowB = rowNorm * radix<Scalar>();
+    rowB = rowNorm * radix<RealScalar>();
 
     while (colNorm >= rowB)
     {
-      colB /= radix<Scalar>();
-      colNorm /= radix2<Scalar>();
+      colB /= radix<RealScalar>();
+      colNorm /= radix2<RealScalar>();
     }
 
     //This line is used to avoid insubstantial balancing
-    if ((rowNorm + colNorm) < Scalar(0.95) * s * colB)
+    if ((rowNorm + colNorm) < RealScalar(0.95) * s * colB)
     {
       isBalanced = false;
-      rowB = Scalar(1) / colB;
+      rowB = RealScalar(1) / colB;
       return false;
     }
     else{
@@ -182,21 +181,21 @@ bool companion<_Scalar,_Deg>::balanced( Scalar colNorm, Scalar rowNorm,
 
 template< typename _Scalar, int _Deg >
 inline
-bool companion<_Scalar,_Deg>::balancedR( Scalar colNorm, Scalar rowNorm,
-    bool& isBalanced, Scalar& colB, Scalar& rowB )
+bool companion<_Scalar,_Deg>::balancedR( RealScalar colNorm, RealScalar rowNorm,
+    bool& isBalanced, RealScalar& colB, RealScalar& rowB )
 {
-  if( Scalar(0) == colNorm || Scalar(0) == rowNorm ){ return true; }
+  if( RealScalar(0) == colNorm || RealScalar(0) == rowNorm ){ return true; }
   else
   {
     /**
      * Set the norm of the column and the row to the geometric mean
      * of the row and column norm
      */
-    const _Scalar q = colNorm/rowNorm;
+    const RealScalar q = colNorm/rowNorm;
     if( !isApprox( q, _Scalar(1) ) )
     {
       rowB = sqrt( colNorm/rowNorm );
-      colB = Scalar(1)/rowB;
+      colB = RealScalar(1)/rowB;
 
       isBalanced = false;
       return false;
@@ -219,8 +218,8 @@ void companion<_Scalar,_Deg>::balance()
   while( !hasConverged )
   {
     hasConverged = true;
-    Scalar colNorm,rowNorm;
-    Scalar colB,rowB;
+    RealScalar colNorm,rowNorm;
+    RealScalar colB,rowB;
 
     //First row, first column excluding the diagonal
     //==============================================

@@ -11,7 +11,7 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
 option(EIGEN_INTERNAL_DOCUMENTATION "Build internal documentation" OFF)
-
+option(EIGEN_DOC_USE_MATHJAX "Use MathJax for rendering math in HTML docs" ON)
 
 # Set some Doxygen flags
 set(EIGEN_DOXY_PROJECT_NAME             "Eigen")
@@ -19,11 +19,18 @@ set(EIGEN_DOXY_OUTPUT_DIRECTORY_SUFFIX  "")
 set(EIGEN_DOXY_INPUT                    "\"${Eigen_SOURCE_DIR}/Eigen\" \"${Eigen_SOURCE_DIR}/doc\"")
 set(EIGEN_DOXY_HTML_COLORSTYLE_HUE      "220")
 set(EIGEN_DOXY_TAGFILES                 "")
+
 if(EIGEN_INTERNAL_DOCUMENTATION)
   set(EIGEN_DOXY_INTERNAL                 "YES")
 else(EIGEN_INTERNAL_DOCUMENTATION)
   set(EIGEN_DOXY_INTERNAL                 "NO")
 endif(EIGEN_INTERNAL_DOCUMENTATION)
+
+if (EIGEN_DOC_USE_MATHJAX)
+  set(EIGEN_DOXY_USE_MATHJAX "YES")
+else ()
+  set(EIGEN_DOXY_USE_MATHJAX "NO")
+endif()
 
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in

@@ -191,7 +191,7 @@ namespace Eigen
     DenseIndex span(Scalar u) const;
 
     /**
-     * \brief Computes the spang within the provided knot vector in which u is falling.
+     * \brief Computes the span within the provided knot vector in which u is falling.
      **/
     static DenseIndex Span(typename SplineTraits<Spline>::Scalar u, DenseIndex degree, const typename SplineTraits<Spline>::KnotVectorType& knots);
     

@@ -252,11 +252,11 @@ protected:
 public:
 
   /** Default constructor without initialization of the meaningful coefficients.
-    * If Mode==Affine, then the last row is set to [0 ... 0 1] */
+    * If Mode==Affine or Mode==Isometry, then the last row is set to [0 ... 0 1] */
   EIGEN_DEVICE_FUNC inline Transform()
   {
     check_template_params();
-    internal::transform_make_affine<(int(Mode)==Affine) ? Affine : AffineCompact>::run(m_matrix);
+    internal::transform_make_affine<(int(Mode)==Affine || int(Mode)==Isometry) ? Affine : AffineCompact>::run(m_matrix);
   }
 
   EIGEN_DEVICE_FUNC inline Transform(const Transform& other)

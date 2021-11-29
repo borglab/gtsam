@@ -109,5 +109,7 @@ void memoryleak()
 
 void test_exceptions()
 {
-  CALL_SUBTEST( memoryleak() );
+  EIGEN_TRY {
+    CALL_SUBTEST( memoryleak() );
+  } EIGEN_CATCH(...) {}
 }

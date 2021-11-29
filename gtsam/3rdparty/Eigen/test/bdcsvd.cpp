@@ -28,9 +28,13 @@
 template<typename MatrixType>
 void bdcsvd(const MatrixType& a = MatrixType(), bool pickrandom = true)
 {
-  MatrixType m = a;
-  if(pickrandom)
+  MatrixType m;
+  if(pickrandom) {
+    m.resizeLike(a);
     svd_fill_random(m);
+  }
+  else
+    m = a;
 
   CALL_SUBTEST(( svd_test_all_computation_options<BDCSVD<MatrixType> >(m, false)  ));
 }

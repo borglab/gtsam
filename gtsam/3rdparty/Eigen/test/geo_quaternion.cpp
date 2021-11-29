@@ -244,6 +244,14 @@ template<typename Scalar> void mapQuaternion(void){
   // is used to determine wether we can return a coeff by reference or not, which is not enough for Map<const ...>.
   //const MCQuaternionUA& cmcq3(mcq3);
   //VERIFY( &cmcq3.x() == &mcq3.x() );
+
+  // test cast
+  {
+    Quaternion<float> q1f = mq1.template cast<float>();
+    VERIFY_IS_APPROX(q1f.template cast<Scalar>(),mq1);
+    Quaternion<double> q1d = mq1.template cast<double>();
+    VERIFY_IS_APPROX(q1d.template cast<Scalar>(),mq1);
+  }
 }
 
 template<typename Scalar> void quaternionAlignment(void){

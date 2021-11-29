@@ -72,6 +72,11 @@
 #define isnan(X) please_protect_your_isnan_with_parentheses
 #define isinf(X) please_protect_your_isinf_with_parentheses
 #define isfinite(X) please_protect_your_isfinite_with_parentheses
+
+// test possible conflicts
+struct real {};
+struct imag {};
+
 #ifdef M_PI
 #undef M_PI
 #endif

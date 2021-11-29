@@ -92,6 +92,22 @@ template<typename MatrixType> void inverse(const MatrixType& m)
   }
 }
 
+template<typename Scalar>
+void inverse_zerosized()
+{
+  Matrix<Scalar,Dynamic,Dynamic> A(0,0);
+  {
+    Matrix<Scalar,0,1> b, x;
+    x = A.inverse() * b;
+  }
+  {
+    Matrix<Scalar,Dynamic,Dynamic> b(0,1), x;
+    x = A.inverse() * b;
+    VERIFY_IS_EQUAL(x.rows(), 0);
+    VERIFY_IS_EQUAL(x.cols(), 1);
+  }
+}
+
 void test_inverse()
 {
   int s = 0;
@@ -105,6 +121,7 @@ void test_inverse()
     s = internal::random<int>(50,320); 
     CALL_SUBTEST_5( inverse(MatrixXf(s,s)) );
     TEST_SET_BUT_UNUSED_VARIABLE(s)
+    CALL_SUBTEST_5( inverse_zerosized<float>() );
     
     s = internal::random<int>(25,100);
     CALL_SUBTEST_6( inverse(MatrixXcd(s,s)) );

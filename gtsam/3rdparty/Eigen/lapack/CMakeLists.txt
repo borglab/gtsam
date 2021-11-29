@@ -103,9 +103,9 @@ endif()
 add_dependencies(lapack eigen_lapack eigen_lapack_static)
 
 install(TARGETS eigen_lapack eigen_lapack_static
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib)
 
         
         
@@ -133,12 +133,14 @@ if(EXISTS ${eigen_full_path_to_testing_lapack})
   string(REGEX REPLACE "(.*)/STACK:(.*) (.*)" "\\1/STACK:900000000000000000 \\3"
     CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
   endif()
+  file(MAKE_DIRECTORY "${LAPACK_BINARY_DIR}/TESTING")
   add_subdirectory(testing/MATGEN)
   add_subdirectory(testing/LIN)
   add_subdirectory(testing/EIG)
+  cmake_policy(SET CMP0026 OLD)
   macro(add_lapack_test output input target)
     set(TEST_INPUT "${LAPACK_SOURCE_DIR}/testing/${input}")
-    set(TEST_OUTPUT "${LAPACK_BINARY_DIR}/testing/${output}")
+    set(TEST_OUTPUT "${LAPACK_BINARY_DIR}/TESTING/${output}")
     get_target_property(TEST_LOC ${target} LOCATION)
     string(REPLACE "." "_" input_name ${input})
     set(testName "${target}_${input_name}")

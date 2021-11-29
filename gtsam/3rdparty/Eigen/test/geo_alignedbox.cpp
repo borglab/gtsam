@@ -15,8 +15,9 @@
 #include<iostream>
 using namespace std;
 
+// TODO not sure if this is actually still necessary anywhere ...
 template<typename T> EIGEN_DONT_INLINE
-void kill_extra_precision(T& x) { eigen_assert((void*)(&x) != (void*)0); }
+void kill_extra_precision(T& ) {  }
 
 
 template<typename BoxType> void alignedbox(const BoxType& _box)

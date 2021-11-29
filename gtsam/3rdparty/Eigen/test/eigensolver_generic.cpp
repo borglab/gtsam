@@ -67,7 +67,7 @@ template<typename MatrixType> void eigensolver(const MatrixType& m)
     // Test matrix with NaN
     a(0,0) = std::numeric_limits<typename MatrixType::RealScalar>::quiet_NaN();
     EigenSolver<MatrixType> eiNaN(a);
-    VERIFY_IS_EQUAL(eiNaN.info(), NoConvergence);
+    VERIFY_IS_NOT_EQUAL(eiNaN.info(), Success);
   }
 
   // regression test for bug 1098

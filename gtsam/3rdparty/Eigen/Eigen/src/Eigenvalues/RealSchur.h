@@ -236,7 +236,7 @@ template<typename _MatrixType> class RealSchur
     typedef Matrix<Scalar,3,1> Vector3s;
 
     Scalar computeNormOfT();
-    Index findSmallSubdiagEntry(Index iu);
+    Index findSmallSubdiagEntry(Index iu, const Scalar& considerAsZero);
     void splitOffTwoRows(Index iu, bool computeU, const Scalar& exshift);
     void computeShift(Index iu, Index iter, Scalar& exshift, Vector3s& shiftInfo);
     void initFrancisQRStep(Index il, Index iu, const Vector3s& shiftInfo, Index& im, Vector3s& firstHouseholderVector);
@@ -302,12 +302,16 @@ RealSchur<MatrixType>& RealSchur<MatrixType>::computeFromHessenberg(const HessMa
   Index totalIter = 0; // iteration count for whole matrix
   Scalar exshift(0);   // sum of exceptional shifts
   Scalar norm = computeNormOfT();
+  // sub-diagonal entries smaller than considerAsZero will be treated as zero.
+  // We use eps^2 to enable more precision in small eigenvalues.
+  Scalar considerAsZero = numext::maxi<Scalar>( norm * numext::abs2(NumTraits<Scalar>::epsilon()),
+                                                (std::numeric_limits<Scalar>::min)() );
 
   if(norm!=Scalar(0))
   {
     while (iu >= 0)
     {
-      Index il = findSmallSubdiagEntry(iu);
+      Index il = findSmallSubdiagEntry(iu,considerAsZero);
 
       // Check for convergence
       if (il == iu) // One root found
@@ -364,14 +368,17 @@ inline typename MatrixType::Scalar RealSchur<MatrixType>::computeNormOfT()
 
 /** \internal Look for single small sub-diagonal element and returns its index */
 template<typename MatrixType>
-inline Index RealSchur<MatrixType>::findSmallSubdiagEntry(Index iu)
+inline Index RealSchur<MatrixType>::findSmallSubdiagEntry(Index iu, const Scalar& considerAsZero)
 {
   using std::abs;
   Index res = iu;
   while (res > 0)
   {
     Scalar s = abs(m_matT.coeff(res-1,res-1)) + abs(m_matT.coeff(res,res));
-    if (abs(m_matT.coeff(res,res-1)) <= NumTraits<Scalar>::epsilon() * s)
+
+    s = numext::maxi<Scalar>(s * NumTraits<Scalar>::epsilon(), considerAsZero);
+    
+    if (abs(m_matT.coeff(res,res-1)) <= s)
       break;
     res--;
   }

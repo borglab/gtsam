@@ -612,6 +612,62 @@ template<typename Scalar, int Dim, int Options> void transform_products()
   VERIFY_IS_APPROX((ac*p).matrix(), a_m*p_m);
 }
 
+template<typename Scalar, int Mode, int Options> void transformations_no_scale()
+{
+     /* this test covers the following files:
+     Cross.h Quaternion.h, Transform.h
+  */
+  typedef Matrix<Scalar,3,1> Vector3;
+  typedef Matrix<Scalar,4,1> Vector4;
+  typedef Quaternion<Scalar> Quaternionx;
+  typedef AngleAxis<Scalar> AngleAxisx;
+  typedef Transform<Scalar,3,Mode,Options> Transform3;
+  typedef Translation<Scalar,3> Translation3;
+  typedef Matrix<Scalar,4,4> Matrix4;
+
+  Vector3 v0 = Vector3::Random(),
+          v1 = Vector3::Random();
+
+  Transform3 t0, t1, t2;
+
+  Scalar a = internal::random<Scalar>(-Scalar(EIGEN_PI), Scalar(EIGEN_PI));
+
+  Quaternionx q1, q2;
+
+  q1 = AngleAxisx(a, v0.normalized());
+
+  t0 = Transform3::Identity();
+  VERIFY_IS_APPROX(t0.matrix(), Transform3::MatrixType::Identity());
+
+  t0.setIdentity();
+  t1.setIdentity();
+  v1 = Vector3::Ones();
+  t0.linear() = q1.toRotationMatrix();
+  t0.pretranslate(v0);
+  t1.linear() = q1.conjugate().toRotationMatrix();
+  t1.translate(-v0);
+
+  VERIFY((t0 * t1).matrix().isIdentity(test_precision<Scalar>()));
+
+  t1.fromPositionOrientationScale(v0, q1, v1);
+  VERIFY_IS_APPROX(t1.matrix(), t0.matrix());
+  VERIFY_IS_APPROX(t1*v1, t0*v1);
+
+  // translation * vector
+  t0.setIdentity();
+  t0.translate(v0);
+  VERIFY_IS_APPROX((t0 * v1).template head<3>(), Translation3(v0) * v1);
+
+  // Conversion to matrix.
+  Transform3 t3;
+  t3.linear() = q1.toRotationMatrix();
+  t3.translation() = v1;
+  Matrix4 m3 = t3.matrix();
+  VERIFY((m3 * m3.inverse()).isIdentity(test_precision<Scalar>()));
+  // Verify implicit last row is initialized.
+  VERIFY_IS_APPROX(Vector4(m3.row(3)), Vector4(0.0, 0.0, 0.0, 1.0));
+}
+
 void test_geo_transformations()
 {
   for(int i = 0; i < g_repeat; i++) {
@@ -625,7 +681,7 @@ void test_geo_transformations()
     CALL_SUBTEST_3(( transformations<double,Projective,AutoAlign>() ));
     CALL_SUBTEST_3(( transformations<double,Projective,DontAlign>() ));
     CALL_SUBTEST_3(( transform_alignment<double>() ));
-    
+
     CALL_SUBTEST_4(( transformations<float,Affine,RowMajor|AutoAlign>() ));
     CALL_SUBTEST_4(( non_projective_only<float,Affine,RowMajor>() ));
     
@@ -641,5 +697,8 @@ void test_geo_transformations()
 
     CALL_SUBTEST_8(( transform_associativity<double,2,ColMajor>(Rotation2D<double>(internal::random<double>()*double(EIGEN_PI))) ));
     CALL_SUBTEST_8(( transform_associativity<double,3,ColMajor>(Quaterniond::UnitRandom()) ));
+
+    CALL_SUBTEST_9(( transformations_no_scale<double,Affine,AutoAlign>() ));
+    CALL_SUBTEST_9(( transformations_no_scale<double,Isometry,AutoAlign>() ));
   }
 }

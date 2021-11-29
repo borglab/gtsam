@@ -608,7 +608,7 @@ public:
       }
 
       if(Base::m_diag.size()>0)
-        dest = Base::m_diag.asDiagonal().inverse() * dest;
+        dest = Base::m_diag.real().asDiagonal().inverse() * dest;
 
       if (Base::m_matrix.nonZeros()>0) // otherwise I==I
       {

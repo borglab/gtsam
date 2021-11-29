@@ -768,7 +768,7 @@ struct scalar_sign_op<Scalar,true> {
     if (aa==real_type(0))
       return Scalar(0);
     aa = real_type(1)/aa;
-    return Scalar(real(a)*aa, imag(a)*aa );
+    return Scalar(a.real()*aa, a.imag()*aa );
   }
   //TODO
   //template <typename Packet>

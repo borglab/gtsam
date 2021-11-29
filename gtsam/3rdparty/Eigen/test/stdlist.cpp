@@ -18,7 +18,7 @@ void check_stdlist_matrix(const MatrixType& m)
   Index rows = m.rows();
   Index cols = m.cols();
   MatrixType x = MatrixType::Random(rows,cols), y = MatrixType::Random(rows,cols);
-  std::list<MatrixType,Eigen::aligned_allocator<MatrixType> > v(10, MatrixType(rows,cols)), w(20, y);
+  std::list<MatrixType,Eigen::aligned_allocator<MatrixType> > v(10, MatrixType::Zero(rows,cols)), w(20, y);
   v.front() = x;
   w.front() = w.back();
   VERIFY_IS_APPROX(w.front(), w.back());
@@ -33,7 +33,7 @@ void check_stdlist_matrix(const MatrixType& m)
     ++wi;
   }
 
-  v.resize(21);  
+  v.resize(21, MatrixType::Zero(rows,cols));  
   v.back() = x;
   VERIFY_IS_APPROX(v.back(), x);
   v.resize(22,y);
@@ -46,8 +46,8 @@ template<typename TransformType>
 void check_stdlist_transform(const TransformType&)
 {
   typedef typename TransformType::MatrixType MatrixType;
-  TransformType x(MatrixType::Random()), y(MatrixType::Random());
-  std::list<TransformType,Eigen::aligned_allocator<TransformType> > v(10), w(20, y);
+  TransformType x(MatrixType::Random()), y(MatrixType::Random()), ti=TransformType::Identity();
+  std::list<TransformType,Eigen::aligned_allocator<TransformType> > v(10,ti), w(20, y);
   v.front() = x;
   w.front() = w.back();
   VERIFY_IS_APPROX(w.front(), w.back());
@@ -62,7 +62,7 @@ void check_stdlist_transform(const TransformType&)
     ++wi;
   }
 
-  v.resize(21);
+  v.resize(21, ti);
   v.back() = x;
   VERIFY_IS_APPROX(v.back(), x);
   v.resize(22,y);
@@ -75,8 +75,8 @@ template<typename QuaternionType>
 void check_stdlist_quaternion(const QuaternionType&)
 {
   typedef typename QuaternionType::Coefficients Coefficients;
-  QuaternionType x(Coefficients::Random()), y(Coefficients::Random());
-  std::list<QuaternionType,Eigen::aligned_allocator<QuaternionType> > v(10), w(20, y);
+  QuaternionType x(Coefficients::Random()), y(Coefficients::Random()), qi=QuaternionType::Identity();
+  std::list<QuaternionType,Eigen::aligned_allocator<QuaternionType> > v(10,qi), w(20, y);
   v.front() = x;
   w.front() = w.back();
   VERIFY_IS_APPROX(w.front(), w.back());
@@ -91,7 +91,7 @@ void check_stdlist_quaternion(const QuaternionType&)
     ++wi;
   }
 
-  v.resize(21);
+  v.resize(21,qi);
   v.back() = x;
   VERIFY_IS_APPROX(v.back(), x);
   v.resize(22,y);

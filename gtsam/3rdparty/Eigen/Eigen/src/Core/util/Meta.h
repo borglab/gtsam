@@ -97,6 +97,9 @@ template<> struct is_arithmetic<unsigned int>  { enum { value = true }; };
 template<> struct is_arithmetic<signed long>   { enum { value = true }; };
 template<> struct is_arithmetic<unsigned long> { enum { value = true }; };
 
+#if EIGEN_HAS_CXX11
+using std::is_integral;
+#else
 template<typename T> struct is_integral        { enum { value = false }; };
 template<> struct is_integral<bool>            { enum { value = true }; };
 template<> struct is_integral<char>            { enum { value = true }; };
@@ -108,6 +111,11 @@ template<> struct is_integral<signed int>      { enum { value = true }; };
 template<> struct is_integral<unsigned int>    { enum { value = true }; };
 template<> struct is_integral<signed long>     { enum { value = true }; };
 template<> struct is_integral<unsigned long>   { enum { value = true }; };
+#if EIGEN_COMP_MSVC
+template<> struct is_integral<signed __int64>  { enum { value = true }; };
+template<> struct is_integral<unsigned __int64>{ enum { value = true }; };
+#endif
+#endif
 
 #if EIGEN_HAS_CXX11
 using std::make_unsigned;
@@ -530,5 +538,31 @@ bool not_equal_strict(const double& x,const double& y) { return std::not_equal_t
 } // end namespace numext
 
 } // end namespace Eigen
+
+// Define portable (u)int{32,64} types
+#if EIGEN_HAS_CXX11
+#include <cstdint>
+namespace Eigen {
+namespace numext {
+typedef std::uint32_t uint32_t;
+typedef std::int32_t  int32_t;
+typedef std::uint64_t uint64_t;
+typedef std::int64_t  int64_t;
+}
+}
+#else
+// Without c++11, all compilers able to compile Eigen also
+// provides the C99 stdint.h header file.
+#include <stdint.h>
+namespace Eigen {
+namespace numext {
+typedef ::uint32_t uint32_t;
+typedef ::int32_t  int32_t;
+typedef ::uint64_t uint64_t;
+typedef ::int64_t  int64_t;
+}
+}
+#endif
+
 
 #endif // EIGEN_META_H

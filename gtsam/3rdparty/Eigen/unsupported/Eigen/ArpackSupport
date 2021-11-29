@@ -11,8 +11,6 @@
 
 #include <Eigen/Core>
 
-#include <Eigen/src/Core/util/DisableStupidWarnings.h>
-
 /** \defgroup ArpackSupport_Module Arpack support module
   *
   * This module provides a wrapper to Arpack, a library for sparse eigenvalue decomposition.
@@ -23,6 +21,8 @@
   */
 
 #include <Eigen/SparseCholesky>
+
+#include <Eigen/src/Core/util/DisableStupidWarnings.h>
 #include "src/Eigenvalues/ArpackSelfAdjointEigenSolver.h"
 
 #include <Eigen/src/Core/util/ReenableStupidWarnings.h>

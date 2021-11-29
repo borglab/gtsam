@@ -121,6 +121,8 @@ class CwiseUnaryViewImpl<ViewOp,MatrixType,Dense>
     {
       return derived().nestedExpression().outerStride() * sizeof(typename internal::traits<MatrixType>::Scalar) / sizeof(Scalar);
     }
+  protected:
+    EIGEN_DEFAULT_EMPTY_CONSTRUCTOR_AND_DESTRUCTOR(CwiseUnaryViewImpl)
 };
 
 } // end namespace Eigen

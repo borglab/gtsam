@@ -287,7 +287,7 @@ struct abs2_impl_default<Scalar, true> // IsComplex
   EIGEN_DEVICE_FUNC
   static inline RealScalar run(const Scalar& x)
   {
-    return real(x)*real(x) + imag(x)*imag(x);
+    return x.real()*x.real() + x.imag()*x.imag();
   }
 };
 
@@ -313,14 +313,17 @@ struct abs2_retval
 ****************************************************************************/
 
 template<typename Scalar, bool IsComplex>
-struct norm1_default_impl
+struct norm1_default_impl;
+
+template<typename Scalar>
+struct norm1_default_impl<Scalar,true>
 {
   typedef typename NumTraits<Scalar>::Real RealScalar;
   EIGEN_DEVICE_FUNC
   static inline RealScalar run(const Scalar& x)
   {
     EIGEN_USING_STD_MATH(abs);
-    return abs(real(x)) + abs(imag(x));
+    return abs(x.real()) + abs(x.imag());
   }
 };
 
@@ -662,8 +665,8 @@ struct random_default_impl<Scalar, true, false>
 {
   static inline Scalar run(const Scalar& x, const Scalar& y)
   {
-    return Scalar(random(real(x), real(y)),
-                  random(imag(x), imag(y)));
+    return Scalar(random(x.real(), y.real()),
+                  random(x.imag(), y.imag()));
   }
   static inline Scalar run()
   {
@@ -915,6 +918,9 @@ inline EIGEN_MATHFUNC_RETVAL(abs2, Scalar) abs2(const Scalar& x)
 {
   return EIGEN_MATHFUNC_IMPL(abs2, Scalar)::run(x);
 }
+
+EIGEN_DEVICE_FUNC
+inline bool abs2(bool x) { return x; }
 
 template<typename Scalar>
 EIGEN_DEVICE_FUNC

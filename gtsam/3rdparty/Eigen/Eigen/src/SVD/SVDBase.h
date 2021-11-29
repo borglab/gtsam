@@ -183,7 +183,7 @@ public:
     // this temporary is needed to workaround a MSVC issue
     Index diagSize = (std::max<Index>)(1,m_diagSize);
     return m_usePrescribedThreshold ? m_prescribedThreshold
-                                    : diagSize*NumTraits<Scalar>::epsilon();
+                                    : RealScalar(diagSize)*NumTraits<Scalar>::epsilon();
   }
 
   /** \returns true if \a U (full or thin) is asked for in this SVD decomposition */

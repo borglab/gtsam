@@ -232,8 +232,8 @@ On the other hand, since there exist 24 different conventions, they are pretty c
 to create a rotation matrix according to the 2-1-2 convention.</td><td>\code
 Matrix3f m;
 m = AngleAxisf(angle1, Vector3f::UnitZ())
-  * AngleAxisf(angle2, Vector3f::UnitY())
-  * AngleAxisf(angle3, Vector3f::UnitZ());
+ *  * AngleAxisf(angle2, Vector3f::UnitY())
+ *  * AngleAxisf(angle3, Vector3f::UnitZ());
 \endcode</td></tr>
 </table>
 

@@ -31,7 +31,7 @@ class Barrier {
     eigen_assert(((count << 1) >> 1) == count);
   }
   ~Barrier() {
-    eigen_assert((state_>>1) == 0);
+    eigen_plain_assert((state_>>1) == 0);
   }
 
   void Notify() {

@@ -58,7 +58,7 @@ class EventCount {
 
   ~EventCount() {
     // Ensure there are no waiters.
-    eigen_assert((state_.load() & (kStackMask | kWaiterMask)) == kStackMask);
+    eigen_plain_assert((state_.load() & (kStackMask | kWaiterMask)) == kStackMask);
   }
 
   // Prewait prepares for waiting.
