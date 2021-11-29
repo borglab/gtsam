@@ -611,15 +611,15 @@ class ISAM2GaussNewtonParams {
   void setWildfireThreshold(double wildfireThreshold);
 };
 
-class ISAM2LevenbergMarquardtParams {
-  ISAM2LevenbergMarquardtParams();
+// class ISAM2LevenbergMarquardtParams {
+//   ISAM2LevenbergMarquardtParams();
 
-  void print(string s = "") const;
+//   void print(string s = "") const;
 
-  /** Getters and Setters for all properties */
-  double getWildfireThreshold() const;
-  void setWildfireThreshold(double wildfireThreshold);
-};
+//   /** Getters and Setters for all properties */
+//   double getWildfireThreshold() const;
+//   void setWildfireThreshold(double wildfireThreshold);
+// };
 
 class ISAM2DoglegParams {
   ISAM2DoglegParams();
