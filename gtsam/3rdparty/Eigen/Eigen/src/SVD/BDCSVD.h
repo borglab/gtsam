@@ -768,6 +768,21 @@ void BDCSVD<MatrixType>::computeSingVals(const ArrayRef& col0, const ArrayRef& d
     // measure everything relative to shift
     Map<ArrayXr> diagShifted(m_workspace.data()+4*n, n);
     diagShifted = diag - shift;
+
+    if(k!=actual_n-1)
+    {
+      // check that after the shift, f(mid) is still negative:
+      RealScalar midShifted = (right - left) / RealScalar(2);
+      if(shift==right)
+        midShifted = -midShifted;
+      RealScalar fMidShifted = secularEq(midShifted, col0, diag, perm, diagShifted, shift);
+      if(fMidShifted>0)
+      {
+        // fMid was erroneous, fix it:
+        shift =  fMidShifted > Literal(0) ? left : right;
+        diagShifted = diag - shift;
+      }
+    }
     
     // initial guess
     RealScalar muPrev, muCur;
@@ -845,10 +860,12 @@ void BDCSVD<MatrixType>::computeSingVals(const ArrayRef& col0, const ArrayRef& d
       }
       
       RealScalar fLeft = secularEq(leftShifted, col0, diag, perm, diagShifted, shift);
+      eigen_internal_assert(fLeft<Literal(0));
 
 #if defined EIGEN_INTERNAL_DEBUGGING || defined EIGEN_BDCSVD_DEBUG_VERBOSE
       RealScalar fRight = secularEq(rightShifted, col0, diag, perm, diagShifted, shift);
 #endif
+
 
 #ifdef  EIGEN_BDCSVD_DEBUG_VERBOSE
       if(!(fLeft * fRight<0))
@@ -858,23 +875,37 @@ void BDCSVD<MatrixType>::computeSingVals(const ArrayRef& col0, const ArrayRef& d
       }
 #endif
       eigen_internal_assert(fLeft * fRight < Literal(0));
-      
-      while (rightShifted - leftShifted > Literal(2) * NumTraits<RealScalar>::epsilon() * numext::maxi<RealScalar>(abs(leftShifted), abs(rightShifted)))
-      {
-        RealScalar midShifted = (leftShifted + rightShifted) / Literal(2);
-        fMid = secularEq(midShifted, col0, diag, perm, diagShifted, shift);
-        if (fLeft * fMid < Literal(0))
-        {
-          rightShifted = midShifted;
-        }
-        else
-        {
-          leftShifted = midShifted;
-          fLeft = fMid;
-        }
-      }
 
-      muCur = (leftShifted + rightShifted) / Literal(2);
+      if(fLeft<Literal(0))
+      {
+        while (rightShifted - leftShifted > Literal(2) * NumTraits<RealScalar>::epsilon() * numext::maxi<RealScalar>(abs(leftShifted), abs(rightShifted)))
+        {
+          RealScalar midShifted = (leftShifted + rightShifted) / Literal(2);
+          fMid = secularEq(midShifted, col0, diag, perm, diagShifted, shift);
+          eigen_internal_assert((numext::isfinite)(fMid));
+
+          if (fLeft * fMid < Literal(0))
+          {
+            rightShifted = midShifted;
+          }
+          else
+          {
+            leftShifted = midShifted;
+            fLeft = fMid;
+          }
+        }
+        muCur = (leftShifted + rightShifted) / Literal(2);
+      }
+      else 
+      {
+        // We have a problem as shifting on the left or right give either a positive or negative value
+        // at the middle of [left,right]...
+        // Instead fo abbording or entering an infinite loop,
+        // let's just use the middle as the estimated zero-crossing:
+        muCur = (right - left) * RealScalar(0.5);
+        if(shift == right)
+          muCur = -muCur;
+      }
     }
       
     singVals[k] = shift + muCur;
@@ -924,7 +955,7 @@ void BDCSVD<MatrixType>::perturbCol0
           Index j = i<k ? i : perm(l-1);
           prod *= ((singVals(j)+dk) / ((diag(i)+dk))) * ((mus(j)+(shifts(j)-dk)) / ((diag(i)-dk)));
 #ifdef EIGEN_BDCSVD_DEBUG_VERBOSE
-          if(i!=k && std::abs(((singVals(j)+dk)*(mus(j)+(shifts(j)-dk)))/((diag(i)+dk)*(diag(i)-dk)) - 1) > 0.9 )
+          if(i!=k && numext::abs(((singVals(j)+dk)*(mus(j)+(shifts(j)-dk)))/((diag(i)+dk)*(diag(i)-dk)) - 1) > 0.9 )
             std::cout << "     " << ((singVals(j)+dk)*(mus(j)+(shifts(j)-dk)))/((diag(i)+dk)*(diag(i)-dk)) << " == (" << (singVals(j)+dk) << " * " << (mus(j)+(shifts(j)-dk))
                        << ") / (" << (diag(i)+dk) << " * " << (diag(i)-dk) << ")\n";
 #endif
@@ -934,7 +965,7 @@ void BDCSVD<MatrixType>::perturbCol0
       std::cout << "zhat(" << k << ") =  sqrt( " << prod << ")  ;  " << (singVals(last) + dk) << " * " << mus(last) + shifts(last) << " - " << dk << "\n";
 #endif
       RealScalar tmp = sqrt(prod);
-      zhat(k) = col0(k) > Literal(0) ? tmp : -tmp;
+      zhat(k) = col0(k) > Literal(0) ? RealScalar(tmp) : RealScalar(-tmp);
     }
   }
 }

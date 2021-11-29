@@ -14,7 +14,7 @@ namespace Eigen {
 
 /** \geometry_module \ingroup Geometry_Module
   *
-  * \class Scaling
+  * \class UniformScaling
   *
   * \brief Represents a generic uniform scaling transformation
   *

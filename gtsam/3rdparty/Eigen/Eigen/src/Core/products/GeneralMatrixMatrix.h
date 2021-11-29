@@ -20,8 +20,9 @@ template<typename _LhsScalar, typename _RhsScalar> class level3_blocking;
 template<
   typename Index,
   typename LhsScalar, int LhsStorageOrder, bool ConjugateLhs,
-  typename RhsScalar, int RhsStorageOrder, bool ConjugateRhs>
-struct general_matrix_matrix_product<Index,LhsScalar,LhsStorageOrder,ConjugateLhs,RhsScalar,RhsStorageOrder,ConjugateRhs,RowMajor>
+  typename RhsScalar, int RhsStorageOrder, bool ConjugateRhs,
+  int ResInnerStride>
+struct general_matrix_matrix_product<Index,LhsScalar,LhsStorageOrder,ConjugateLhs,RhsScalar,RhsStorageOrder,ConjugateRhs,RowMajor,ResInnerStride>
 {
   typedef gebp_traits<RhsScalar,LhsScalar> Traits;
 
@@ -30,7 +31,7 @@ struct general_matrix_matrix_product<Index,LhsScalar,LhsStorageOrder,ConjugateLh
     Index rows, Index cols, Index depth,
     const LhsScalar* lhs, Index lhsStride,
     const RhsScalar* rhs, Index rhsStride,
-    ResScalar* res, Index resStride,
+    ResScalar* res, Index resIncr, Index resStride,
     ResScalar alpha,
     level3_blocking<RhsScalar,LhsScalar>& blocking,
     GemmParallelInfo<Index>* info = 0)
@@ -39,8 +40,8 @@ struct general_matrix_matrix_product<Index,LhsScalar,LhsStorageOrder,ConjugateLh
     general_matrix_matrix_product<Index,
       RhsScalar, RhsStorageOrder==RowMajor ? ColMajor : RowMajor, ConjugateRhs,
       LhsScalar, LhsStorageOrder==RowMajor ? ColMajor : RowMajor, ConjugateLhs,
-      ColMajor>
-    ::run(cols,rows,depth,rhs,rhsStride,lhs,lhsStride,res,resStride,alpha,blocking,info);
+      ColMajor,ResInnerStride>
+    ::run(cols,rows,depth,rhs,rhsStride,lhs,lhsStride,res,resIncr,resStride,alpha,blocking,info);
   }
 };
 
@@ -49,8 +50,9 @@ struct general_matrix_matrix_product<Index,LhsScalar,LhsStorageOrder,ConjugateLh
 template<
   typename Index,
   typename LhsScalar, int LhsStorageOrder, bool ConjugateLhs,
-  typename RhsScalar, int RhsStorageOrder, bool ConjugateRhs>
-struct general_matrix_matrix_product<Index,LhsScalar,LhsStorageOrder,ConjugateLhs,RhsScalar,RhsStorageOrder,ConjugateRhs,ColMajor>
+  typename RhsScalar, int RhsStorageOrder, bool ConjugateRhs,
+  int ResInnerStride>
+struct general_matrix_matrix_product<Index,LhsScalar,LhsStorageOrder,ConjugateLhs,RhsScalar,RhsStorageOrder,ConjugateRhs,ColMajor,ResInnerStride>
 {
 
 typedef gebp_traits<LhsScalar,RhsScalar> Traits;
@@ -59,17 +61,17 @@ typedef typename ScalarBinaryOpTraits<LhsScalar, RhsScalar>::ReturnType ResScala
 static void run(Index rows, Index cols, Index depth,
   const LhsScalar* _lhs, Index lhsStride,
   const RhsScalar* _rhs, Index rhsStride,
-  ResScalar* _res, Index resStride,
+  ResScalar* _res, Index resIncr, Index resStride,
   ResScalar alpha,
   level3_blocking<LhsScalar,RhsScalar>& blocking,
   GemmParallelInfo<Index>* info = 0)
 {
   typedef const_blas_data_mapper<LhsScalar, Index, LhsStorageOrder> LhsMapper;
   typedef const_blas_data_mapper<RhsScalar, Index, RhsStorageOrder> RhsMapper;
-  typedef blas_data_mapper<typename Traits::ResScalar, Index, ColMajor> ResMapper;
-  LhsMapper lhs(_lhs,lhsStride);
-  RhsMapper rhs(_rhs,rhsStride);
-  ResMapper res(_res, resStride);
+  typedef blas_data_mapper<typename Traits::ResScalar, Index, ColMajor,Unaligned,ResInnerStride> ResMapper;
+  LhsMapper lhs(_lhs, lhsStride);
+  RhsMapper rhs(_rhs, rhsStride);
+  ResMapper res(_res, resStride, resIncr);
 
   Index kc = blocking.kc();                   // cache block size along the K direction
   Index mc = (std::min)(rows,blocking.mc());  // cache block size along the M direction
@@ -226,7 +228,7 @@ struct gemm_functor
     Gemm::run(rows, cols, m_lhs.cols(),
               &m_lhs.coeffRef(row,0), m_lhs.outerStride(),
               &m_rhs.coeffRef(0,col), m_rhs.outerStride(),
-              (Scalar*)&(m_dest.coeffRef(row,col)), m_dest.outerStride(),
+              (Scalar*)&(m_dest.coeffRef(row,col)), m_dest.innerStride(), m_dest.outerStride(),
               m_actualAlpha, m_blocking, info);
   }
 
@@ -428,7 +430,7 @@ struct generic_product_impl<Lhs,Rhs,DenseShape,DenseShape,GemmProduct>
   static void evalTo(Dst& dst, const Lhs& lhs, const Rhs& rhs)
   {
     if((rhs.rows()+dst.rows()+dst.cols())<20 && rhs.rows()>0)
-      lazyproduct::evalTo(dst, lhs, rhs);
+      lazyproduct::eval_dynamic(dst, lhs, rhs, internal::assign_op<typename Dst::Scalar,Scalar>());
     else
     {
       dst.setZero();
@@ -440,7 +442,7 @@ struct generic_product_impl<Lhs,Rhs,DenseShape,DenseShape,GemmProduct>
   static void addTo(Dst& dst, const Lhs& lhs, const Rhs& rhs)
   {
     if((rhs.rows()+dst.rows()+dst.cols())<20 && rhs.rows()>0)
-      lazyproduct::addTo(dst, lhs, rhs);
+      lazyproduct::eval_dynamic(dst, lhs, rhs, internal::add_assign_op<typename Dst::Scalar,Scalar>());
     else
       scaleAndAddTo(dst,lhs, rhs, Scalar(1));
   }
@@ -449,7 +451,7 @@ struct generic_product_impl<Lhs,Rhs,DenseShape,DenseShape,GemmProduct>
   static void subTo(Dst& dst, const Lhs& lhs, const Rhs& rhs)
   {
     if((rhs.rows()+dst.rows()+dst.cols())<20 && rhs.rows()>0)
-      lazyproduct::subTo(dst, lhs, rhs);
+      lazyproduct::eval_dynamic(dst, lhs, rhs, internal::sub_assign_op<typename Dst::Scalar,Scalar>());
     else
       scaleAndAddTo(dst, lhs, rhs, Scalar(-1));
   }
@@ -476,7 +478,8 @@ struct generic_product_impl<Lhs,Rhs,DenseShape,DenseShape,GemmProduct>
         Index,
         LhsScalar, (ActualLhsTypeCleaned::Flags&RowMajorBit) ? RowMajor : ColMajor, bool(LhsBlasTraits::NeedToConjugate),
         RhsScalar, (ActualRhsTypeCleaned::Flags&RowMajorBit) ? RowMajor : ColMajor, bool(RhsBlasTraits::NeedToConjugate),
-        (Dest::Flags&RowMajorBit) ? RowMajor : ColMajor>,
+        (Dest::Flags&RowMajorBit) ? RowMajor : ColMajor,
+        Dest::InnerStrideAtCompileTime>,
       ActualLhsTypeCleaned, ActualRhsTypeCleaned, Dest, BlockingType> GemmFunctor;
 
     BlockingType blocking(dst.rows(), dst.cols(), lhs.cols(), 1, true);

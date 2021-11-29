@@ -464,7 +464,8 @@ template<typename Derived> class MatrixBase
     EIGEN_MATRIX_FUNCTION_1(MatrixComplexPowerReturnValue, pow, power to \c p, const std::complex<RealScalar>& p)
 
   protected:
-    EIGEN_DEVICE_FUNC MatrixBase() : Base() {}
+    EIGEN_DEFAULT_COPY_CONSTRUCTOR(MatrixBase)
+    EIGEN_DEFAULT_EMPTY_CONSTRUCTOR_AND_DESTRUCTOR(MatrixBase)
 
   private:
     EIGEN_DEVICE_FUNC explicit MatrixBase(int);

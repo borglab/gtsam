@@ -230,7 +230,7 @@ template<> __device__ EIGEN_STRONG_INLINE Eigen::half predux<half2>(const half2&
 #else
   float a1 = __low2float(a);
   float a2 = __high2float(a);
-  return Eigen::half(half_impl::raw_uint16_to_half(__float2half_rn(a1 + a2)));
+  return Eigen::half(__float2half_rn(a1 + a2));
 #endif
 }
 
@@ -264,7 +264,7 @@ template<> __device__ EIGEN_STRONG_INLINE Eigen::half predux_mul<half2>(const ha
 #else
   float a1 = __low2float(a);
   float a2 = __high2float(a);
-  return Eigen::half(half_impl::raw_uint16_to_half(__float2half_rn(a1 * a2)));
+  return Eigen::half(__float2half_rn(a1 * a2));
 #endif
 }
 

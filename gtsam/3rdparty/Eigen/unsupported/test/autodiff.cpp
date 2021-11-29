@@ -352,6 +352,21 @@ double bug_1264() {
   return v2(0).value();
 }
 
+// check with expressions on constants
+double bug_1281() {
+  int n = 2;
+  typedef AutoDiffScalar<VectorXd> AD;
+  const AD c = 1.;
+  AD x0(2,n,0);
+  AD y1 = (AD(c)+AD(c))*x0;
+  y1 = x0 * (AD(c)+AD(c));
+  AD y2 = (-AD(c))+x0;
+  y2 = x0+(-AD(c));
+  AD y3 = (AD(c)*(-AD(c))+AD(c))*x0;
+  y3 = x0 * (AD(c)*(-AD(c))+AD(c));
+  return (y1+y2+y3).value();
+}
+
 #endif
 
 void test_autodiff()
@@ -367,5 +382,6 @@ void test_autodiff()
   CALL_SUBTEST_5( bug_1223() );
   CALL_SUBTEST_5( bug_1260() );
   CALL_SUBTEST_5( bug_1261() );
+  CALL_SUBTEST_5( bug_1281() );
 }
 

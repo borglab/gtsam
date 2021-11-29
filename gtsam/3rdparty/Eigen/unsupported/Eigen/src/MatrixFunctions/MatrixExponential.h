@@ -412,7 +412,7 @@ template<typename Derived> struct MatrixExponentialReturnValue
     inline void evalTo(ResultType& result) const
     {
       const typename internal::nested_eval<Derived, 10>::type tmp(m_src);
-      internal::matrix_exp_compute(tmp, result, internal::is_exp_known_type<typename Derived::Scalar>());
+      internal::matrix_exp_compute(tmp, result, internal::is_exp_known_type<typename Derived::RealScalar>());
     }
 
     Index rows() const { return m_src.rows(); }

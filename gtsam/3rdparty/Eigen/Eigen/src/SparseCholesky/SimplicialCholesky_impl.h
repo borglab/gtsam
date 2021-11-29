@@ -156,7 +156,7 @@ void SimplicialCholeskyBase<Derived>::factorize_preordered(const CholMatrixType&
       /* the nonzero entry L(k,i) */
       Scalar l_ki;
       if(DoLDLT)
-        l_ki = yi / m_diag[i];
+        l_ki = yi / numext::real(m_diag[i]);
       else
         yi = l_ki = yi / Lx[Lp[i]];
 

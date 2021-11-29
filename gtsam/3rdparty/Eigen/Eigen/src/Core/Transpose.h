@@ -146,6 +146,8 @@ template<typename MatrixType> class TransposeImpl<MatrixType,Dense>
     {
       return derived().nestedExpression().coeffRef(index);
     }
+  protected:
+    EIGEN_DEFAULT_EMPTY_CONSTRUCTOR_AND_DESTRUCTOR(TransposeImpl)
 };
 
 /** \returns an expression of the transpose of *this.

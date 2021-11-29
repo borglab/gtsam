@@ -44,7 +44,7 @@ struct compute_inverse_size4<Architecture::SSE, float, MatrixType, ResultType>
   static void run(const MatrixType& mat, ResultType& result)
   {
     ActualMatrixType matrix(mat);
-    EIGEN_ALIGN16 const unsigned int _Sign_PNNP[4] = { 0x00000000, 0x80000000, 0x80000000, 0x00000000 };
+    const Packet4f p4f_sign_PNNP = _mm_castsi128_ps(_mm_set_epi32(0x00000000, 0x80000000, 0x80000000, 0x00000000));
 
     // Load the full matrix into registers
     __m128 _L1 = matrix.template packet<MatrixAlignment>( 0);
@@ -139,7 +139,7 @@ struct compute_inverse_size4<Architecture::SSE, float, MatrixType, ResultType>
     iC = _mm_sub_ps(iC, _mm_mul_ps(_mm_shuffle_ps(A,A,0xB1), _mm_shuffle_ps(DC,DC,0x66)));
 
     rd = _mm_shuffle_ps(rd,rd,0);
-    rd = _mm_xor_ps(rd, _mm_load_ps((float*)_Sign_PNNP));
+    rd = _mm_xor_ps(rd, p4f_sign_PNNP);
 
     //  iB = C*|B| - D*B#*A
     iB = _mm_sub_ps(_mm_mul_ps(C,_mm_shuffle_ps(dB,dB,0)), iB);

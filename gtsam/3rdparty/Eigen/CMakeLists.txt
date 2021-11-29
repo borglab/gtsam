@@ -391,22 +391,27 @@ endif()
 
 if(EIGEN_INCLUDE_INSTALL_DIR AND NOT INCLUDE_INSTALL_DIR)
   set(INCLUDE_INSTALL_DIR ${EIGEN_INCLUDE_INSTALL_DIR}
-      CACHE PATH "The directory relative to CMAKE_PREFIX_PATH where Eigen header files are installed")
+      CACHE STRING "The directory relative to CMAKE_PREFIX_PATH where Eigen header files are installed")
 else()
   set(INCLUDE_INSTALL_DIR
       "${CMAKE_INSTALL_INCLUDEDIR}/eigen3"
-      CACHE PATH "The directory relative to CMAKE_PREFIX_PATH where Eigen header files are installed"
+      CACHE STRING "The directory relative to CMAKE_PREFIX_PATH where Eigen header files are installed"
       )
 endif()
 set(CMAKEPACKAGE_INSTALL_DIR
     "${CMAKE_INSTALL_DATADIR}/eigen3/cmake"
-    CACHE PATH "The directory relative to CMAKE_PREFIX_PATH where Eigen3Config.cmake is installed"
+    CACHE STRING "The directory relative to CMAKE_PREFIX_PATH where Eigen3Config.cmake is installed"
     )
 set(PKGCONFIG_INSTALL_DIR
     "${CMAKE_INSTALL_DATADIR}/pkgconfig"
-    CACHE PATH "The directory relative to CMAKE_PREFIX_PATH where eigen3.pc is installed"
+    CACHE STRING "The directory relative to CMAKE_PREFIX_PATH where eigen3.pc is installed"
     )
 
+foreach(var INCLUDE_INSTALL_DIR CMAKEPACKAGE_INSTALL_DIR PKGCONFIG_INSTALL_DIR)
+  if(IS_ABSOLUTE "${${var}}")
+    message(FATAL_ERROR "${var} must be relative to CMAKE_PREFIX_PATH. Got: ${${var}}")
+  endif()
+endforeach()
 
 # similar to set_target_properties but append the property instead of overwriting it
 macro(ei_add_target_property target prop value)

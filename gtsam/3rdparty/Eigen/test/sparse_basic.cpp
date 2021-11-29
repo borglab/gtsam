@@ -612,6 +612,14 @@ template<typename SparseMatrixType> void sparse_basic(const SparseMatrixType& re
     iters[0] = IteratorType(m2,0);
     iters[1] = IteratorType(m2,m2.outerSize()-1);
   }
+
+  // test reserve with empty rows/columns
+  {
+    SparseMatrixType m1(0,cols);
+    m1.reserve(ArrayXi::Constant(m1.outerSize(),1));
+    SparseMatrixType m2(rows,0);
+    m2.reserve(ArrayXi::Constant(m2.outerSize(),1));
+  }
 }
 
 

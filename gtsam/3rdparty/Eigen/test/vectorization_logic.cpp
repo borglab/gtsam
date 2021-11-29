@@ -22,6 +22,14 @@
 #include "main.h"
 #include <typeinfo>
 
+// Disable "ignoring attributes on template argument"
+// for packet_traits<Packet*>
+// => The only workaround would be to wrap _m128 and the likes
+//    within wrappers.
+#if EIGEN_GNUC_AT_LEAST(6,0)
+    #pragma GCC diagnostic ignored "-Wignored-attributes"
+#endif
+
 using internal::demangle_flags;
 using internal::demangle_traversal;
 using internal::demangle_unrolling;

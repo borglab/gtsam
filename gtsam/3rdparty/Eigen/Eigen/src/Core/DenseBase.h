@@ -40,7 +40,7 @@ static inline void check_DenseIndex_is_signed() {
   */
 template<typename Derived> class DenseBase
 #ifndef EIGEN_PARSED_BY_DOXYGEN
-  : public DenseCoeffsBase<Derived>
+  : public DenseCoeffsBase<Derived, internal::accessors_level<Derived>::value>
 #else
   : public DenseCoeffsBase<Derived,DirectWriteAccessors>
 #endif // not EIGEN_PARSED_BY_DOXYGEN
@@ -71,7 +71,7 @@ template<typename Derived> class DenseBase
     typedef Scalar value_type;
     
     typedef typename NumTraits<Scalar>::Real RealScalar;
-    typedef DenseCoeffsBase<Derived> Base;
+    typedef DenseCoeffsBase<Derived, internal::accessors_level<Derived>::value> Base;
 
     using Base::derived;
     using Base::const_cast_derived;
@@ -587,11 +587,12 @@ template<typename Derived> class DenseBase
     }
 
   protected:
+    EIGEN_DEFAULT_COPY_CONSTRUCTOR(DenseBase)
     /** Default constructor. Do nothing. */
     EIGEN_DEVICE_FUNC DenseBase()
     {
       /* Just checks for self-consistency of the flags.
-       * Only do it when debugging Eigen, as this borders on paranoiac and could slow compilation down
+       * Only do it when debugging Eigen, as this borders on paranoia and could slow compilation down
        */
 #ifdef EIGEN_INTERNAL_DEBUGGING
       EIGEN_STATIC_ASSERT((EIGEN_IMPLIES(MaxRowsAtCompileTime==1 && MaxColsAtCompileTime!=1, int(IsRowMajor))

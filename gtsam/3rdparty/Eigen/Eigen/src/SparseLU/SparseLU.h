@@ -43,8 +43,8 @@ template <typename MatrixLType, typename MatrixUType> struct SparseLUMatrixURetu
   * Simple example with key steps 
   * \code
   * VectorXd x(n), b(n);
-  * SparseMatrix<double, ColMajor> A;
-  * SparseLU<SparseMatrix<scalar, ColMajor>, COLAMDOrdering<Index> >   solver;
+  * SparseMatrix<double> A;
+  * SparseLU<SparseMatrix<double>, COLAMDOrdering<int> >   solver;
   * // fill A and b;
   * // Compute the ordering permutation vector from the structural pattern of A
   * solver.analyzePattern(A); 

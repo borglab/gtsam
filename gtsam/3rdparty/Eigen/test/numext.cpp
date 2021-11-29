@@ -12,6 +12,7 @@
 template<typename T>
 void check_abs() {
   typedef typename NumTraits<T>::Real Real;
+  Real zero(0);
 
   if(NumTraits<T>::IsSigned)
     VERIFY_IS_EQUAL(numext::abs(-T(1)), T(1));
@@ -26,9 +27,9 @@ void check_abs() {
     if(NumTraits<T>::IsSigned)
     {
       VERIFY_IS_EQUAL(numext::abs(x), numext::abs(-x));
-      VERIFY( numext::abs(-x) >= Real(0));
+      VERIFY( numext::abs(-x) >= zero );
     }
-    VERIFY( numext::abs(x) >= Real(0));
+    VERIFY( numext::abs(x) >= zero );
     VERIFY_IS_APPROX( numext::abs2(x), numext::abs2(numext::abs(x)) );
   }
 }

@@ -119,7 +119,7 @@ OP(const Scalar& s) const { \
   return this->OP(Derived::PlainObject::Constant(rows(), cols(), s)); \
 } \
 EIGEN_DEVICE_FUNC friend EIGEN_STRONG_INLINE const RCmp ## COMPARATOR ## ReturnType \
-OP(const Scalar& s, const Derived& d) { \
+OP(const Scalar& s, const EIGEN_CURRENT_STORAGE_BASE_CLASS<Derived>& d) { \
   return Derived::PlainObject::Constant(d.rows(), d.cols(), s).OP(d); \
 }
 

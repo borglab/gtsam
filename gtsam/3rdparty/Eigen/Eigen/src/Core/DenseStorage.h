@@ -404,7 +404,7 @@ template<typename T, int _Options> class DenseStorage<T, Dynamic, Dynamic, Dynam
       if(size != m_rows*m_cols)
       {
         internal::conditional_aligned_delete_auto<T,(_Options&DontAlign)==0>(m_data, m_rows*m_cols);
-        if (size)
+        if (size>0) // >0 and not simply !=0 to let the compiler knows that size cannot be negative
           m_data = internal::conditional_aligned_new_auto<T,(_Options&DontAlign)==0>(size);
         else
           m_data = 0;
@@ -479,7 +479,7 @@ template<typename T, int _Rows, int _Options> class DenseStorage<T, Dynamic, _Ro
       if(size != _Rows*m_cols)
       {
         internal::conditional_aligned_delete_auto<T,(_Options&DontAlign)==0>(m_data, _Rows*m_cols);
-        if (size)
+        if (size>0) // >0 and not simply !=0 to let the compiler knows that size cannot be negative
           m_data = internal::conditional_aligned_new_auto<T,(_Options&DontAlign)==0>(size);
         else
           m_data = 0;
@@ -553,7 +553,7 @@ template<typename T, int _Cols, int _Options> class DenseStorage<T, Dynamic, Dyn
       if(size != m_rows*_Cols)
       {
         internal::conditional_aligned_delete_auto<T,(_Options&DontAlign)==0>(m_data, _Cols*m_rows);
-        if (size)
+        if (size>0) // >0 and not simply !=0 to let the compiler knows that size cannot be negative
           m_data = internal::conditional_aligned_new_auto<T,(_Options&DontAlign)==0>(size);
         else
           m_data = 0;

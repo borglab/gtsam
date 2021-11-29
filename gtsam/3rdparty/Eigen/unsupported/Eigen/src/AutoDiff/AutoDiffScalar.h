@@ -453,6 +453,24 @@ struct auto_diff_special_op<_DerType, false>
   void operator+() const;
 };
 
+template<typename BinOp, typename A, typename B, typename RefType>
+void make_coherent_expression(CwiseBinaryOp<BinOp,A,B> xpr, const RefType &ref)
+{
+  make_coherent(xpr.const_cast_derived().lhs(), ref);
+  make_coherent(xpr.const_cast_derived().rhs(), ref);
+}
+
+template<typename UnaryOp, typename A, typename RefType>
+void make_coherent_expression(const CwiseUnaryOp<UnaryOp,A> &xpr, const RefType &ref)
+{
+  make_coherent(xpr.nestedExpression().const_cast_derived(), ref);
+}
+
+// needed for compilation only
+template<typename UnaryOp, typename A, typename RefType>
+void make_coherent_expression(const CwiseNullaryOp<UnaryOp,A> &, const RefType &)
+{}
+
 template<typename A_Scalar, int A_Rows, int A_Cols, int A_Options, int A_MaxRows, int A_MaxCols, typename B>
 struct make_coherent_impl<Matrix<A_Scalar, A_Rows, A_Cols, A_Options, A_MaxRows, A_MaxCols>, B> {
   typedef Matrix<A_Scalar, A_Rows, A_Cols, A_Options, A_MaxRows, A_MaxCols> A;
@@ -461,6 +479,10 @@ struct make_coherent_impl<Matrix<A_Scalar, A_Rows, A_Cols, A_Options, A_MaxRows,
     {
       a.resize(b.size());
       a.setZero();
+    }
+    else if (B::SizeAtCompileTime==Dynamic && a.size()!=0 && b.size()==0)
+    {
+      make_coherent_expression(b,a);
     }
   }
 };
@@ -474,13 +496,17 @@ struct make_coherent_impl<A, Matrix<B_Scalar, B_Rows, B_Cols, B_Options, B_MaxRo
       b.resize(a.size());
       b.setZero();
     }
+    else if (A::SizeAtCompileTime==Dynamic && b.size()!=0 && a.size()==0)
+    {
+      make_coherent_expression(a,b);
+    }
   }
 };
 
 template<typename A_Scalar, int A_Rows, int A_Cols, int A_Options, int A_MaxRows, int A_MaxCols,
          typename B_Scalar, int B_Rows, int B_Cols, int B_Options, int B_MaxRows, int B_MaxCols>
 struct make_coherent_impl<Matrix<A_Scalar, A_Rows, A_Cols, A_Options, A_MaxRows, A_MaxCols>,
-                             Matrix<B_Scalar, B_Rows, B_Cols, B_Options, B_MaxRows, B_MaxCols> > {
+                          Matrix<B_Scalar, B_Rows, B_Cols, B_Options, B_MaxRows, B_MaxCols> > {
   typedef Matrix<A_Scalar, A_Rows, A_Cols, A_Options, A_MaxRows, A_MaxCols> A;
   typedef Matrix<B_Scalar, B_Rows, B_Cols, B_Options, B_MaxRows, B_MaxCols> B;
   static void run(A& a, B& b) {

@@ -49,6 +49,7 @@ int main(int argc, char** argv)
 
 In the case your application is parallelized with OpenMP, you might want to disable Eigen's own parallization as detailed in the previous section.
 
+\warning Using OpenMP with custom scalar types that might throw exceptions can lead to unexpected behaviour in the event of throwing.
 */
 
 }

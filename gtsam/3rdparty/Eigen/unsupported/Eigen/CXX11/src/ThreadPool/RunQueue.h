@@ -47,7 +47,7 @@ class RunQueue {
       array_[i].state.store(kEmpty, std::memory_order_relaxed);
   }
 
-  ~RunQueue() { eigen_assert(Size() == 0); }
+  ~RunQueue() { eigen_plain_assert(Size() == 0); }
 
   // PushFront inserts w at the beginning of the queue.
   // If queue is full returns w, otherwise returns default-constructed Work.

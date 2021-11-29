@@ -279,7 +279,10 @@
 #include <cmath>
 #include <cassert>
 #include <functional>
-#include <iosfwd>
+#include <sstream>
+#ifndef EIGEN_NO_IO
+  #include <iosfwd>
+#endif
 #include <cstring>
 #include <string>
 #include <limits>
@@ -375,7 +378,9 @@ using std::ptrdiff_t;
 
 #if defined EIGEN_VECTORIZE_AVX512
   #include "src/Core/arch/SSE/PacketMath.h"
+  #include "src/Core/arch/SSE/MathFunctions.h"
   #include "src/Core/arch/AVX/PacketMath.h"
+  #include "src/Core/arch/AVX/MathFunctions.h"
   #include "src/Core/arch/AVX512/PacketMath.h"
   #include "src/Core/arch/AVX512/MathFunctions.h"
 #elif defined EIGEN_VECTORIZE_AVX

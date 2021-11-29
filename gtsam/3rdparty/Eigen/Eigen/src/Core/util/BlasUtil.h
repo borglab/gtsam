@@ -31,7 +31,7 @@ template<
   typename Index,
   typename LhsScalar, int LhsStorageOrder, bool ConjugateLhs,
   typename RhsScalar, int RhsStorageOrder, bool ConjugateRhs,
-  int ResStorageOrder>
+  int ResStorageOrder, int ResInnerStride>
 struct general_matrix_matrix_product;
 
 template<typename Index,
@@ -155,13 +155,21 @@ class BlasVectorMapper {
   Scalar* m_data;
 };
 
+template<typename Scalar, typename Index, int AlignmentType, int Incr=1>
+class BlasLinearMapper;
+
 template<typename Scalar, typename Index, int AlignmentType>
-class BlasLinearMapper {
+class BlasLinearMapper<Scalar,Index,AlignmentType,1> {
   public:
   typedef typename packet_traits<Scalar>::type Packet;
   typedef typename packet_traits<Scalar>::half HalfPacket;
 
-  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE BlasLinearMapper(Scalar *data) : m_data(data) {}
+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE BlasLinearMapper(Scalar *data, Index incr=1)
+    : m_data(data)
+  {
+    EIGEN_ONLY_USED_FOR_DEBUG(incr);
+    eigen_assert(incr==1);
+  }
 
   EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void prefetch(int i) const {
     internal::prefetch(&operator()(i));
@@ -188,16 +196,25 @@ class BlasLinearMapper {
 };
 
 // Lightweight helper class to access matrix coefficients.
-template<typename Scalar, typename Index, int StorageOrder, int AlignmentType = Unaligned>
-class blas_data_mapper {
-  public:
+template<typename Scalar, typename Index, int StorageOrder, int AlignmentType = Unaligned, int Incr = 1>
+class blas_data_mapper;
+
+template<typename Scalar, typename Index, int StorageOrder, int AlignmentType>
+class blas_data_mapper<Scalar,Index,StorageOrder,AlignmentType,1>
+{
+public:
   typedef typename packet_traits<Scalar>::type Packet;
   typedef typename packet_traits<Scalar>::half HalfPacket;
 
   typedef BlasLinearMapper<Scalar, Index, AlignmentType> LinearMapper;
   typedef BlasVectorMapper<Scalar, Index> VectorMapper;
 
-  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE blas_data_mapper(Scalar* data, Index stride) : m_data(data), m_stride(stride) {}
+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE blas_data_mapper(Scalar* data, Index stride, Index incr=1)
+   : m_data(data), m_stride(stride)
+  {
+    EIGEN_ONLY_USED_FOR_DEBUG(incr);
+    eigen_assert(incr==1);
+  }
 
   EIGEN_DEVICE_FUNC  EIGEN_ALWAYS_INLINE blas_data_mapper<Scalar, Index, StorageOrder, AlignmentType>
   getSubMapper(Index i, Index j) const {
@@ -249,6 +266,90 @@ class blas_data_mapper {
   protected:
   Scalar* EIGEN_RESTRICT m_data;
   const Index m_stride;
+};
+
+// Implementation of non-natural increment (i.e. inner-stride != 1)
+// The exposed API is not complete yet compared to the Incr==1 case
+// because some features makes less sense in this case.
+template<typename Scalar, typename Index, int AlignmentType, int Incr>
+class BlasLinearMapper
+{
+public:
+  typedef typename packet_traits<Scalar>::type Packet;
+  typedef typename packet_traits<Scalar>::half HalfPacket;
+
+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE BlasLinearMapper(Scalar *data,Index incr) : m_data(data), m_incr(incr) {}
+
+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void prefetch(int i) const {
+    internal::prefetch(&operator()(i));
+  }
+
+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Scalar& operator()(Index i) const {
+    return m_data[i*m_incr.value()];
+  }
+
+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet loadPacket(Index i) const {
+    return pgather<Scalar,Packet>(m_data + i*m_incr.value(), m_incr.value());
+  }
+
+  template<typename PacketType>
+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void storePacket(Index i, const PacketType &p) const {
+    pscatter<Scalar, PacketType>(m_data + i*m_incr.value(), p, m_incr.value());
+  }
+
+protected:
+  Scalar *m_data;
+  const internal::variable_if_dynamic<Index,Incr> m_incr;
+};
+
+template<typename Scalar, typename Index, int StorageOrder, int AlignmentType,int Incr>
+class blas_data_mapper
+{
+public:
+  typedef typename packet_traits<Scalar>::type Packet;
+  typedef typename packet_traits<Scalar>::half HalfPacket;
+
+  typedef BlasLinearMapper<Scalar, Index, AlignmentType,Incr> LinearMapper;
+
+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE blas_data_mapper(Scalar* data, Index stride, Index incr) : m_data(data), m_stride(stride), m_incr(incr) {}
+
+  EIGEN_DEVICE_FUNC  EIGEN_ALWAYS_INLINE blas_data_mapper
+  getSubMapper(Index i, Index j) const {
+    return blas_data_mapper(&operator()(i, j), m_stride, m_incr.value());
+  }
+
+  EIGEN_DEVICE_FUNC  EIGEN_ALWAYS_INLINE LinearMapper getLinearMapper(Index i, Index j) const {
+    return LinearMapper(&operator()(i, j), m_incr.value());
+  }
+
+  EIGEN_DEVICE_FUNC
+  EIGEN_ALWAYS_INLINE Scalar& operator()(Index i, Index j) const {
+    return m_data[StorageOrder==RowMajor ? j*m_incr.value() + i*m_stride : i*m_incr.value() + j*m_stride];
+  }
+
+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE Packet loadPacket(Index i, Index j) const {
+    return pgather<Scalar,Packet>(&operator()(i, j),m_incr.value());
+  }
+
+  template <typename PacketT, int AlignmentT>
+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE PacketT load(Index i, Index j) const {
+    return pgather<Scalar,PacketT>(&operator()(i, j),m_incr.value());
+  }
+
+  template<typename SubPacket>
+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE void scatterPacket(Index i, Index j, const SubPacket &p) const {
+    pscatter<Scalar, SubPacket>(&operator()(i, j), p, m_stride);
+  }
+
+  template<typename SubPacket>
+  EIGEN_DEVICE_FUNC EIGEN_ALWAYS_INLINE SubPacket gatherPacket(Index i, Index j) const {
+    return pgather<Scalar, SubPacket>(&operator()(i, j), m_stride);
+  }
+
+protected:
+  Scalar* EIGEN_RESTRICT m_data;
+  const Index m_stride;
+  const internal::variable_if_dynamic<Index,Incr> m_incr;
 };
 
 // lightweight helper class to access matrix coefficients (const version)

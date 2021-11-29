@@ -49,6 +49,7 @@ template<typename UnaryOp, typename ArgType>
 class unary_evaluator<CwiseUnaryOp<UnaryOp,ArgType>, IteratorBased>::InnerIterator
     : public unary_evaluator<CwiseUnaryOp<UnaryOp,ArgType>, IteratorBased>::EvalIterator
 {
+  protected:
     typedef typename XprType::Scalar Scalar;
     typedef typename unary_evaluator<CwiseUnaryOp<UnaryOp,ArgType>, IteratorBased>::EvalIterator Base;
   public:
@@ -99,6 +100,7 @@ template<typename ViewOp, typename ArgType>
 class unary_evaluator<CwiseUnaryView<ViewOp,ArgType>, IteratorBased>::InnerIterator
     : public unary_evaluator<CwiseUnaryView<ViewOp,ArgType>, IteratorBased>::EvalIterator
 {
+  protected:
     typedef typename XprType::Scalar Scalar;
     typedef typename unary_evaluator<CwiseUnaryView<ViewOp,ArgType>, IteratorBased>::EvalIterator Base;
   public:

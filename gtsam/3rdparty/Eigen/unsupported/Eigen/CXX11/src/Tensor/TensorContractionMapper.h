@@ -113,6 +113,7 @@ class SimpleTensorContractionMapper {
   EIGEN_DEVICE_FUNC
   EIGEN_STRONG_INLINE Index computeIndex(Index row, Index col) const {
     const bool left = (side == Lhs);
+    EIGEN_UNUSED_VARIABLE(left); // annoying bug in g++8.1: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=85963
     Index nocontract_val = left ? row : col;
     Index linidx = 0;
     for (int i = static_cast<int>(array_size<nocontract_t>::value) - 1; i > 0; i--) {
@@ -151,6 +152,7 @@ class SimpleTensorContractionMapper {
   EIGEN_DEVICE_FUNC
   EIGEN_STRONG_INLINE IndexPair<Index> computeIndexPair(Index row, Index col, const Index distance) const {
     const bool left = (side == Lhs);
+    EIGEN_UNUSED_VARIABLE(left); // annoying bug in g++8.1: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=85963
     Index nocontract_val[2] = {left ? row : col, left ? row + distance : col};
     Index linidx[2] = {0, 0};
     if (array_size<typename Tensor::Dimensions>::value > array_size<contract_t>::value) {

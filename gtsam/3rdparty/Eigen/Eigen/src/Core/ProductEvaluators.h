@@ -396,7 +396,7 @@ struct generic_product_impl<Lhs,Rhs,DenseShape,DenseShape,CoeffBasedProductMode>
     // but easier on the compiler side
     call_assignment_no_alias(dst, lhs.lazyProduct(rhs), internal::assign_op<typename Dst::Scalar,Scalar>());
   }
-  
+
   template<typename Dst>
   static EIGEN_STRONG_INLINE void addTo(Dst& dst, const Lhs& lhs, const Rhs& rhs)
   {
@@ -410,6 +410,32 @@ struct generic_product_impl<Lhs,Rhs,DenseShape,DenseShape,CoeffBasedProductMode>
     // dst.noalias() -= lhs.lazyProduct(rhs);
     call_assignment_no_alias(dst, lhs.lazyProduct(rhs), internal::sub_assign_op<typename Dst::Scalar,Scalar>());
   }
+
+  // Catch "dst {,+,-}= (s*A)*B" and evaluate it lazily by moving out the scalar factor:
+  //    dst {,+,-}= s * (A.lazyProduct(B))
+  // This is a huge benefit for heap-allocated matrix types as it save one costly allocation.
+  // For them, this strategy is also faster than simply by-passing the heap allocation through
+  // stack allocation.
+  // For fixed sizes matrices, this is less obvious, it is sometimes x2 faster, but sometimes x3 slower,
+  // and the behavior depends also a lot on the compiler... so let's be conservative and enable them for dynamic-size only,
+  // that is when coming from generic_product_impl<...,GemmProduct> in file GeneralMatrixMatrix.h
+  template<typename Dst, typename Scalar1, typename Scalar2, typename Plain1, typename Xpr2, typename Func>
+  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+  void eval_dynamic(Dst& dst, const CwiseBinaryOp<internal::scalar_product_op<Scalar1,Scalar2>,
+                                           const CwiseNullaryOp<internal::scalar_constant_op<Scalar1>, Plain1>, Xpr2>& lhs, const Rhs& rhs, const Func &func)
+  {
+    call_assignment_no_alias(dst, lhs.lhs().functor().m_other * lhs.rhs().lazyProduct(rhs), func);
+  }
+
+  // Here, we we always have LhsT==Lhs, but we need to make it a template type to make the above
+  // overload more specialized.
+  template<typename Dst, typename LhsT, typename Func>
+  static EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+  void eval_dynamic(Dst& dst, const LhsT& lhs, const Rhs& rhs, const Func &func)
+  {
+    call_assignment_no_alias(dst, lhs.lazyProduct(rhs), func);
+  }
+  
   
 //   template<typename Dst>
 //   static inline void scaleAndAddTo(Dst& dst, const Lhs& lhs, const Rhs& rhs, const Scalar& alpha)

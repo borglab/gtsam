@@ -10,11 +10,11 @@
 
 #include "Core"
 
-#include "src/Core/util/DisableStupidWarnings.h"
-
 #include "SVD"
 #include "LU"
 #include <limits>
+
+#include "src/Core/util/DisableStupidWarnings.h"
 
 /** \defgroup Geometry_Module Geometry module
   *

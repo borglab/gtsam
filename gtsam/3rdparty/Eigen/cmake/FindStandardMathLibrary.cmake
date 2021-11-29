@@ -19,8 +19,11 @@ include(CheckCXXSourceCompiles)
 # notice the std:: is required on some platforms such as QNX
 
 set(find_standard_math_library_test_program
-"#include<cmath>
-int main() { std::sin(0.0); std::log(0.0f); }")
+"
+#include<cmath>
+int main(int argc, char **){
+  return int(std::sin(double(argc)) + std::log(double(argc)));
+}")
 
 # first try compiling/linking the test program without any linker flags
 

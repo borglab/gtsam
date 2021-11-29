@@ -169,20 +169,38 @@ class QuaternionBase : public RotationBase<Derived, 3>
   /** return the result vector of \a v through the rotation*/
   EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE Vector3 _transformVector(const Vector3& v) const;
 
+  #ifdef EIGEN_PARSED_BY_DOXYGEN
   /** \returns \c *this with scalar type casted to \a NewScalarType
     *
     * Note that if \a NewScalarType is equal to the current scalar type of \c *this
     * then this function smartly returns a const reference to \c *this.
     */
   template<typename NewScalarType>
-  EIGEN_DEVICE_FUNC inline typename internal::cast_return_type<Derived,Quaternion<NewScalarType> >::type cast() const
+  EIGEN_DEVICE_FUNC inline typename internal::cast_return_type<Derived,Quaternion<NewScalarType> >::type cast() const;
+
+  #else
+
+  template<typename NewScalarType>
+  EIGEN_DEVICE_FUNC inline 
+  typename internal::enable_if<internal::is_same<Scalar,NewScalarType>::value,const Derived&>::type cast() const
   {
-    return typename internal::cast_return_type<Derived,Quaternion<NewScalarType> >::type(derived());
+    return derived();
   }
+
+  template<typename NewScalarType>
+  EIGEN_DEVICE_FUNC inline 
+  typename internal::enable_if<!internal::is_same<Scalar,NewScalarType>::value,Quaternion<NewScalarType> >::type cast() const
+  {
+    return Quaternion<NewScalarType>(coeffs().template cast<NewScalarType>());
+  }
+  #endif
 
 #ifdef EIGEN_QUATERNIONBASE_PLUGIN
 # include EIGEN_QUATERNIONBASE_PLUGIN
 #endif
+protected:
+  EIGEN_DEFAULT_COPY_CONSTRUCTOR(QuaternionBase)
+  EIGEN_DEFAULT_EMPTY_CONSTRUCTOR_AND_DESTRUCTOR(QuaternionBase)
 };
 
 /***************************************************************************

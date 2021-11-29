@@ -112,6 +112,7 @@ void matlab_cplx_cplx(const M& ar, const M& ai, const M& br, const M& bi, M& cr,
   cr.noalias() -= ai * bi;
   ci.noalias() += ar * bi;
   ci.noalias() += ai * br;
+  // [cr ci] += [ar ai] * br + [-ai ar] * bi
 }
 
 void matlab_real_cplx(const M& a, const M& br, const M& bi, M& cr, M& ci)
@@ -240,7 +241,7 @@ int main(int argc, char ** argv)
     blas_gemm(a,b,r);
     c.noalias() += a * b;
     if(!r.isApprox(c)) {
-      std::cout << r  - c << "\n";
+      std::cout << (r  - c).norm() << "\n";
       std::cerr << "Warning, your product is crap!\n\n";
     }
   #else
@@ -249,7 +250,7 @@ int main(int argc, char ** argv)
       gemm(a,b,c);
       r.noalias() += a.cast<Scalar>() .lazyProduct( b.cast<Scalar>() );
       if(!r.isApprox(c)) {
-        std::cout << r - c << "\n";
+        std::cout << (r  - c).norm() << "\n";
         std::cerr << "Warning, your product is crap!\n\n";
       }
     }

@@ -453,7 +453,7 @@ void permute_symm_to_fullsymm(const MatrixType& mat, SparseMatrix<typename Matri
       Index r = it.row();
       Index c = it.col();
       Index ip = perm ? perm[i] : i;
-      if(Mode==(Upper|Lower))
+      if(Mode==int(Upper|Lower))
         count[StorageOrderMatch ? jp : ip]++;
       else if(r==c)
         count[ip]++;
@@ -486,7 +486,7 @@ void permute_symm_to_fullsymm(const MatrixType& mat, SparseMatrix<typename Matri
       StorageIndex jp = perm ? perm[j] : j;
       StorageIndex ip = perm ? perm[i] : i;
       
-      if(Mode==(Upper|Lower))
+      if(Mode==int(Upper|Lower))
       {
         Index k = count[StorageOrderMatch ? jp : ip]++;
         dest.innerIndexPtr()[k] = StorageOrderMatch ? ip : jp;

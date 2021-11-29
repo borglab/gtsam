@@ -677,6 +677,8 @@ macro(ei_set_build_string)
     set(TMP_BUILD_STRING ${TMP_BUILD_STRING}-cxx11)
   endif()
 
+  set(TMP_BUILD_STRING ${TMP_BUILD_STRING}-v3.3)
+
   if(EIGEN_BUILD_STRING_SUFFIX)
     set(TMP_BUILD_STRING ${TMP_BUILD_STRING}-${EIGEN_BUILD_STRING_SUFFIX})
   endif()
