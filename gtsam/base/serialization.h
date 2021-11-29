@@ -19,8 +19,9 @@
 
 #pragma once
 
-#include <sstream>
+#include <Eigen/Core>
 #include <fstream>
+#include <sstream>
 #include <string>
 
 // includes for standard serialization types
