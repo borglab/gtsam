@@ -34,6 +34,9 @@ virtual class Gaussian : gtsam::noiseModel::Base {
 
   // enabling serialization functionality
   void serializable() const;
+
+  // enable pickling in python
+  void pickle() const;
 };
 
 virtual class Diagonal : gtsam::noiseModel::Gaussian {
@@ -49,6 +52,9 @@ virtual class Diagonal : gtsam::noiseModel::Gaussian {
 
   // enabling serialization functionality
   void serializable() const;
+
+  // enable pickling in python
+  void pickle() const;
 };
 
 virtual class Constrained : gtsam::noiseModel::Diagonal {
@@ -66,6 +72,9 @@ virtual class Constrained : gtsam::noiseModel::Diagonal {
 
     // enabling serialization functionality
     void serializable() const;
+
+    // enable pickling in python
+    void pickle() const;
 };
 
 virtual class Isotropic : gtsam::noiseModel::Diagonal {
@@ -78,6 +87,9 @@ virtual class Isotropic : gtsam::noiseModel::Diagonal {
 
   // enabling serialization functionality
   void serializable() const;
+
+  // enable pickling in python
+  void pickle() const;
 };
 
 virtual class Unit : gtsam::noiseModel::Isotropic {
@@ -85,6 +97,9 @@ virtual class Unit : gtsam::noiseModel::Isotropic {
 
   // enabling serialization functionality
   void serializable() const;
+
+  // enable pickling in python
+  void pickle() const;
 };
 
 namespace mEstimator {
