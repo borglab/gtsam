@@ -138,6 +138,12 @@ public:
   /** \returns the inverse translation (opposite) */
   Translation inverse() const { return Translation(-m_coeffs); }
 
+  Translation& operator=(const Translation& other)
+  {
+    m_coeffs = other.m_coeffs;
+    return *this;
+  }
+
   static const Translation Identity() { return Translation(VectorType::Zero()); }
 
   /** \returns \c *this with scalar type casted to \a NewScalarType
