@@ -460,6 +460,11 @@ namespace gtsam {
         return MixedVariances(precisions.array().inverse());
       }
 
+      /**
+       * The squaredMahalanobisDistance function for a constrained noisemodel,
+       * for non-constrained versions, uses sigmas, otherwise
+       * uses the penalty function with mu
+       */
       double squaredMahalanobisDistance(const Vector& v) const override;
 
       /** Fully constrained variations */
@@ -680,19 +685,19 @@ namespace gtsam {
       /// Return the contained noise model
       const NoiseModel::shared_ptr& noise() const { return noise_; }
 
-      // TODO: functions below are dummy but necessary for the noiseModel::Base
+      // Functions below are dummy but necessary for the noiseModel::Base
       inline Vector whiten(const Vector& v) const override
       { Vector r = v; this->WhitenSystem(r); return r; }
       inline Matrix Whiten(const Matrix& A) const override
       { Vector b; Matrix B=A; this->WhitenSystem(B,b); return B; }
       inline Vector unwhiten(const Vector& /*v*/) const override
       { throw std::invalid_argument("unwhiten is not currently supported for robust noise models."); }
-
+      /// Compute loss from the m-estimator using the Mahalanobis distance.
       double loss(const double squared_distance) const override {
         return robust_->loss(std::sqrt(squared_distance));
       }
 
-      // TODO: these are really robust iterated re-weighting support functions
+      // These are really robust iterated re-weighting support functions
       virtual void WhitenSystem(Vector& b) const;
       void WhitenSystem(std::vector<Matrix>& A, Vector& b) const override;
       void WhitenSystem(Matrix& A, Vector& b) const override;
@@ -703,7 +708,6 @@ namespace gtsam {
         return noise_->unweightedWhiten(v);
       }
       double weight(const Vector& v) const override {
-        // Todo(mikebosse): make the robust weight function input a vector.
         return robust_->weight(v.norm());
       }
 
