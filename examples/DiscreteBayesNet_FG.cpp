@@ -33,11 +33,11 @@ using namespace gtsam;
 int main(int argc, char **argv) {
   // Define keys and a print function
   Key C(1), S(2), R(3), W(4);
-  auto print = [=](DiscreteFactor::sharedValues values) {
-    cout << boolalpha << "Cloudy = " << static_cast<bool>((*values)[C])
-         << "  Sprinkler = " << static_cast<bool>((*values)[S])
-         << "  Rain = " << boolalpha << static_cast<bool>((*values)[R])
-         << "  WetGrass = " << static_cast<bool>((*values)[W]) << endl;
+  auto print = [=](const DiscreteFactor::Values& values) {
+    cout << boolalpha << "Cloudy = " << static_cast<bool>(values.at(C))
+         << "  Sprinkler = " << static_cast<bool>(values.at(S))
+         << "  Rain = " << boolalpha << static_cast<bool>(values.at(R))
+         << "  WetGrass = " << static_cast<bool>(values.at(W)) << endl;
   };
 
   // We assume binary state variables
@@ -85,7 +85,7 @@ int main(int argc, char **argv) {
         }
 
   // "Most Probable Explanation", i.e., configuration with largest value
-  DiscreteFactor::sharedValues mpe = graph.eliminateSequential()->optimize();
+  auto mpe = graph.eliminateSequential()->optimize();
   cout << "\nMost Probable Explanation (MPE):" << endl;
   print(mpe);
 
@@ -97,7 +97,7 @@ int main(int argc, char **argv) {
 
   // solve again, now with evidence
   DiscreteBayesNet::shared_ptr chordal = graph.eliminateSequential();
-  DiscreteFactor::sharedValues mpe_with_evidence = chordal->optimize();
+  auto mpe_with_evidence = chordal->optimize();
 
   cout << "\nMPE given C=0:" << endl;
   print(mpe_with_evidence);
@@ -113,7 +113,7 @@ int main(int argc, char **argv) {
   // We can also sample from it
   cout << "\n10 samples:" << endl;
   for (size_t i = 0; i < 10; i++) {
-    DiscreteFactor::sharedValues sample = chordal->sample();
+    auto sample = chordal->sample();
     print(sample);
   }
   return 0;

@@ -63,8 +63,8 @@ int main(int argc, char** argv) {
   // "Decoding", i.e., configuration with largest value (MPE)
   // We use sequential variable elimination
   DiscreteBayesNet::shared_ptr chordal = graph.eliminateSequential();
-  DiscreteFactor::sharedValues optimalDecoding = chordal->optimize();
-  optimalDecoding->print("\noptimalDecoding");
+  auto optimalDecoding = chordal->optimize();
+  GTSAM_PRINT(optimalDecoding);
 
   // "Inference" Computing marginals
   cout << "\nComputing Node Marginals .." << endl;
