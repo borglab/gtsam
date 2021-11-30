@@ -94,7 +94,7 @@ namespace gtsam {
 //  }
 
   /* ************************************************************************* */
-  DiscreteFactor::sharedValues DiscreteFactorGraph::optimize() const
+  DiscreteFactorGraph::Values DiscreteFactorGraph::optimize() const
   {
     gttic(DiscreteFactorGraph_optimize);
     return BaseEliminateable::eliminateSequential()->optimize();

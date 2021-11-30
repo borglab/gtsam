@@ -21,32 +21,21 @@ namespace gtsam {
 class GTSAM_UNSTABLE_EXPORT CSP : public DiscreteFactorGraph {
  public:
   /** A map from keys to values */
-  typedef KeyVector Indices;
   typedef Assignment<Key> Values;
-  typedef boost::shared_ptr<Values> sharedValues;
 
  public:
-  //    /// Constructor
-  //    CSP() {
-  //    }
-
   /// Add a unary constraint, allowing only a single value
   void addSingleValue(const DiscreteKey& dkey, size_t value) {
-    boost::shared_ptr<SingleValue> factor(new SingleValue(dkey, value));
-    push_back(factor);
+    emplace_shared<SingleValue>(dkey, value);
   }
 
   /// Add a binary AllDiff constraint
   void addAllDiff(const DiscreteKey& key1, const DiscreteKey& key2) {
-    boost::shared_ptr<BinaryAllDiff> factor(new BinaryAllDiff(key1, key2));
-    push_back(factor);
+    emplace_shared<BinaryAllDiff>(key1, key2);
   }
 
   /// Add a general AllDiff constraint
-  void addAllDiff(const DiscreteKeys& dkeys) {
-    boost::shared_ptr<AllDiff> factor(new AllDiff(dkeys));
-    push_back(factor);
-  }
+  void addAllDiff(const DiscreteKeys& dkeys) { emplace_shared<AllDiff>(dkeys); }
 
   //    /** return product of all factors as a single factor */
   //    DecisionTreeFactor product() const {
@@ -56,11 +45,11 @@ class GTSAM_UNSTABLE_EXPORT CSP : public DiscreteFactorGraph {
   //      return result;
   //    }
 
-  /// Find the best total assignment - can be expensive
-  sharedValues optimalAssignment() const;
+  /// Find the best total assignment - can be expensive.
+  Values optimalAssignment() const;
 
-  /// Find the best total assignment - can be expensive
-  sharedValues optimalAssignment(const Ordering& ordering) const;
+  /// Find the best total assignment, with given ordering - can be expensive.
+  Values optimalAssignment(const Ordering& ordering) const;
 
   //    /*
   //     * Perform loopy belief propagation
@@ -78,7 +67,7 @@ class GTSAM_UNSTABLE_EXPORT CSP : public DiscreteFactorGraph {
    * Apply arc-consistency ~ Approximate loopy belief propagation
    * We need to give the domains to a constraint, and it returns
    * a domain whose values don't conflict in the arc-consistency way.
-   * TODO: should get cardinality from Indices
+   * TODO: should get cardinality from DiscreteKeys
    */
   void runArcConsistency(size_t cardinality, size_t nrIterations = 10,
                          bool print = false) const;
