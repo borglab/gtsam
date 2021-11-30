@@ -738,6 +738,10 @@ class ISAM2 {
                             const gtsam::KeyList& extraReelimKeys,
                             bool force_relinearize);
 
+  gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors,
+                            const gtsam::Values& newTheta,
+                            const gtsam::ISAM2UpdateParams& updateParams);
+
   gtsam::Values getLinearizationPoint() const;
   bool valueExists(gtsam::Key key) const;
   gtsam::Values calculateEstimate() const;
