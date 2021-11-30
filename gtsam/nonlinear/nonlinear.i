@@ -738,7 +738,12 @@ class ISAM2 {
                             const gtsam::KeyList& extraReelimKeys,
                             bool force_relinearize);
 
+  gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors,
+                            const gtsam::Values& newTheta,
+                            const gtsam::ISAM2UpdateParams& updateParams);
+
   gtsam::Values getLinearizationPoint() const;
+  bool valueExists(gtsam::Key key) const;
   gtsam::Values calculateEstimate() const;
   template <VALUE = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3,
                      gtsam::Rot3, gtsam::Pose3, gtsam::Cal3_S2, gtsam::Cal3DS2,
@@ -748,12 +753,17 @@ class ISAM2 {
                      gtsam::PinholeCamera<gtsam::Cal3Fisheye>,
                      gtsam::PinholeCamera<gtsam::Cal3Unified>, Vector, Matrix}>
   VALUE calculateEstimate(size_t key) const;
-  gtsam::Values calculateBestEstimate() const;
   Matrix marginalCovariance(size_t key) const;
+  gtsam::Values calculateBestEstimate() const;
   gtsam::VectorValues getDelta() const;
+  double error(const gtsam::VectorValues& x) const;
   gtsam::NonlinearFactorGraph getFactorsUnsafe() const;
   gtsam::VariableIndex getVariableIndex() const;
+  const gtsam::KeySet& getFixedVariables() const;
   gtsam::ISAM2Params params() const;
+
+  void printStats() const;
+  gtsam::VectorValues gradientAtZero() const;
 };
 
 #include <gtsam/nonlinear/NonlinearISAM.h>

@@ -177,16 +177,15 @@ namespace gtsam {
         return *sqrt_information_;
       }
 
-    protected:
-
-      /** protected constructor takes square root information matrix */
-      Gaussian(size_t dim = 1, const boost::optional<Matrix>& sqrt_information = boost::none) :
-        Base(dim), sqrt_information_(sqrt_information) {
-      }
 
     public:
 
       typedef boost::shared_ptr<Gaussian> shared_ptr;
+
+      /** constructor takes square root information matrix */
+      Gaussian(size_t dim = 1,
+               const boost::optional<Matrix>& sqrt_information = boost::none)
+          : Base(dim), sqrt_information_(sqrt_information) {}
 
       ~Gaussian() override {}
 
@@ -290,13 +289,13 @@ namespace gtsam {
       Vector sigmas_, invsigmas_, precisions_;
 
     protected:
-      /** protected constructor - no initializations */
-      Diagonal();
 
       /** constructor to allow for disabling initialization of invsigmas */
       Diagonal(const Vector& sigmas);
 
     public:
+      /** constructor - no initializations, for serialization */
+      Diagonal();
 
       typedef boost::shared_ptr<Diagonal> shared_ptr;
 
@@ -388,14 +387,6 @@ namespace gtsam {
       Vector mu_; ///< Penalty function weight - needs to be large enough to dominate soft constraints
 
       /**
-       * protected constructor takes sigmas.
-       * prevents any inf values
-       * from appearing in invsigmas or precisions.
-       * mu set to large default value (1000.0)
-       */
-      Constrained(const Vector& sigmas = Z_1x1);
-
-      /**
        * Constructor that prevents any inf values
        * from appearing in invsigmas or precisions.
        * Allows for specifying mu.
@@ -405,6 +396,14 @@ namespace gtsam {
     public:
 
       typedef boost::shared_ptr<Constrained> shared_ptr;
+
+      /**
+       * protected constructor takes sigmas.
+       * prevents any inf values
+       * from appearing in invsigmas or precisions.
+       * mu set to large default value (1000.0)
+       */
+      Constrained(const Vector& sigmas = Z_1x1);
 
       ~Constrained() override {}
 
@@ -531,10 +530,10 @@ namespace gtsam {
       Isotropic(size_t dim, double sigma) :
         Diagonal(Vector::Constant(dim, sigma)),sigma_(sigma),invsigma_(1.0/sigma) {}
 
+    public:
+
       /* dummy constructor to allow for serialization */
       Isotropic() : Diagonal(Vector1::Constant(1.0)),sigma_(1.0),invsigma_(1.0) {}
-
-    public:
 
       ~Isotropic() override {}
 
@@ -592,13 +591,12 @@ namespace gtsam {
      * Unit: i.i.d. unit-variance noise on all m dimensions.
      */
     class GTSAM_EXPORT Unit : public Isotropic {
-    protected:
-
-      Unit(size_t dim=1): Isotropic(dim,1.0) {}
-
     public:
 
       typedef boost::shared_ptr<Unit> shared_ptr;
+
+      /** constructor for serialization */
+      Unit(size_t dim=1): Isotropic(dim,1.0) {}
 
       ~Unit() override {}
 
