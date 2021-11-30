@@ -749,12 +749,17 @@ class ISAM2 {
                      gtsam::PinholeCamera<gtsam::Cal3Fisheye>,
                      gtsam::PinholeCamera<gtsam::Cal3Unified>, Vector, Matrix}>
   VALUE calculateEstimate(size_t key) const;
-  gtsam::Values calculateBestEstimate() const;
   Matrix marginalCovariance(size_t key) const;
+  gtsam::Values calculateBestEstimate() const;
   gtsam::VectorValues getDelta() const;
+  double error(const gtsam::VectorValues& x) const;
   gtsam::NonlinearFactorGraph getFactorsUnsafe() const;
   gtsam::VariableIndex getVariableIndex() const;
+  const gtsam::KeySet& getFixedVariables() const;
   gtsam::ISAM2Params params() const;
+
+  void printStats() const;
+  gtsam::VectorValues gradientAtZero() const;
 };
 
 #include <gtsam/nonlinear/NonlinearISAM.h>
