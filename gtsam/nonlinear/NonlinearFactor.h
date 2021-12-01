@@ -28,6 +28,7 @@
 
 #include <boost/serialization/base_object.hpp>
 #include <boost/assign/list_of.hpp>
+#include <boost/mp11/integer_sequence.hpp>
 
 namespace gtsam {
 
@@ -770,5 +771,110 @@ private:
 }; // \class NoiseModelFactor6
 
 /* ************************************************************************* */
+/** A convenient base class for creating your own NoiseModelFactor with N
+ * variables.  To derive from this class, implement evaluateError(). */
+template<class... VALUES>
+class NoiseModelFactorN: public NoiseModelFactor {
+
+protected:
+
+  typedef NoiseModelFactor Base;
+  typedef NoiseModelFactorN<VALUES...> This;
+
+  /* "Dummy templated" alias is used to expand fixed-type parameter packs with
+   * same length as VALUES.  This ignores the template parameter. */
+  template <typename T>
+  using optional_matrix_type = boost::optional<Matrix&>;
+
+  /* "Dummy templated" alias is used to expand fixed-type parameter packs with
+   * same length as VALUES.  This ignores the template parameter. */
+  template <typename T>
+  using key_type = Key;
+
+public:
+
+  /**
+   * Default Constructor for I/O
+   */
+  NoiseModelFactorN() {}
+
+  /**
+   * Constructor.
+   * Example usage: NoiseModelFactorN(noise, key1, key2, ..., keyN)
+   * @param noiseModel shared pointer to noise model
+   * @param keys... keys for the variables in this factor
+   */
+  NoiseModelFactorN(const SharedNoiseModel& noiseModel,
+                    key_type<VALUES>... keys)
+      : Base(noiseModel, std::array<Key, sizeof...(VALUES)>{keys...}) {}
+
+  /**
+   * Constructor.
+   * @param noiseModel shared pointer to noise model
+   * @param keys a container of keys for the variables in this factor
+   */
+  template <typename CONTAINER>
+  NoiseModelFactorN(const SharedNoiseModel& noiseModel, CONTAINER keys)
+      : Base(noiseModel, keys) {
+    assert(std::size(keys) == sizeof...(VALUES));
+  }
+
+  ~NoiseModelFactorN() override {}
+
+  /** Method to retrieve keys */
+  template <int N>
+  inline Key key() const {  return keys_[N];  }
+
+  /** Calls the n-key specific version of evaluateError, which is pure virtual
+   * so must be implemented in the derived class. */
+  Vector unwhitenedError(
+      const Values& x,
+      boost::optional<std::vector<Matrix>&> H = boost::none) const override {
+    return unwhitenedError(boost::mp11::index_sequence_for<VALUES...>{}, x, H);
+  }
+
+  /**
+   *  Override this method to finish implementing an n-way factor.
+   *  If any of the optional Matrix reference arguments are specified, it should
+   * compute both the function evaluation and its derivative(s) in the requested
+   * variables.
+   */
+  virtual Vector evaluateError(
+      const VALUES& ... x,
+      optional_matrix_type<VALUES> ... H) const = 0;
+
+  /** No-jacobians requested function overload (since parameter packs can't have
+   * default args) */
+  Vector evaluateError(const VALUES&... x) const {
+    return evaluateError(x..., optional_matrix_type<VALUES>()...);
+  }
+
+ private:
+
+  /** Pack expansion with index_sequence template pattern */
+  template <std::size_t... Inds>
+  Vector unwhitenedError(
+      boost::mp11::index_sequence<Inds...>,  //
+      const Values& x,
+      boost::optional<std::vector<Matrix>&> H = boost::none) const {
+    if (this->active(x)) {
+      if (H) {
+        return evaluateError(x.at<VALUES>(keys_[Inds])..., (*H)[Inds]...);
+      } else {
+        return evaluateError(x.at<VALUES>(keys_[Inds])...);
+      }
+    } else {
+      return Vector::Zero(this->dim());
+    }
+  }
+
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+    ar & boost::serialization::make_nvp("NoiseModelFactor",
+        boost::serialization::base_object<Base>(*this));
+  }
+}; // \class NoiseModelFactorN
 
 } // \namespace gtsam

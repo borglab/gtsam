@@ -407,6 +407,50 @@ TEST(NonlinearFactor, NoiseModelFactor6) {
 }
 
 /* ************************************************************************* */
+class TestFactorN : public NoiseModelFactorN<double, double, double, double> {
+public:
+  typedef NoiseModelFactorN<double, double, double, double> Base;
+  TestFactorN() : Base(noiseModel::Diagonal::Sigmas((Vector(1) << 2.0).finished()), X(1), X(2), X(3), X(4)) {}
+
+  Vector
+    evaluateError(const double& x1, const double& x2, const double& x3, const double& x4,
+        boost::optional<Matrix&> H1 = boost::none,
+        boost::optional<Matrix&> H2 = boost::none,
+        boost::optional<Matrix&> H3 = boost::none,
+        boost::optional<Matrix&> H4 = boost::none) const override {
+    if (H1) {
+      *H1 = (Matrix(1, 1) << 1.0).finished();
+      *H2 = (Matrix(1, 1) << 2.0).finished();
+      *H3 = (Matrix(1, 1) << 3.0).finished();
+      *H4 = (Matrix(1, 1) << 4.0).finished();
+    }
+    return (Vector(1) << x1 + x2 + x3 + x4).finished();
+  }
+};
+
+/* ************************************ */
+TEST(NonlinearFactor, NoiseModelFactorN) {
+  TestFactorN tf;
+  Values tv;
+  tv.insert(X(1), double((1.0)));
+  tv.insert(X(2), double((2.0)));
+  tv.insert(X(3), double((3.0)));
+  tv.insert(X(4), double((4.0)));
+  EXPECT(assert_equal((Vector(1) << 10.0).finished(), tf.unwhitenedError(tv)));
+  DOUBLES_EQUAL(25.0/2.0, tf.error(tv), 1e-9);
+  JacobianFactor jf(*boost::dynamic_pointer_cast<JacobianFactor>(tf.linearize(tv)));
+  LONGS_EQUAL((long)X(1), (long)jf.keys()[0]);
+  LONGS_EQUAL((long)X(2), (long)jf.keys()[1]);
+  LONGS_EQUAL((long)X(3), (long)jf.keys()[2]);
+  LONGS_EQUAL((long)X(4), (long)jf.keys()[3]);
+  EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 0.5).finished(), jf.getA(jf.begin())));
+  EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 1.0).finished(), jf.getA(jf.begin()+1)));
+  EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 1.5).finished(), jf.getA(jf.begin()+2)));
+  EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 2.0).finished(), jf.getA(jf.begin()+3)));
+  EXPECT(assert_equal((Vector)(Vector(1) << -5.0).finished(), jf.getb()));
+}
+
+/* ************************************************************************* */
 TEST( NonlinearFactor, clone_rekey )
 {
   shared_nlf init(new TestFactor4());
