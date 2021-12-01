@@ -19,12 +19,34 @@ using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
-TEST_UNSAFE(BinaryAllDif, allInOne) {
-  // Create keys and ordering
+TEST(CSP, SingleValue) {
+  // Create keys for Idaho, Arizona, and Utah, allowing two colors for each:
+  size_t nrColors = 3;
+  DiscreteKey ID(0, nrColors), AZ(1, nrColors), UT(2, nrColors);
+
+  // Check that a single value is equal to a decision stump with only one "1":
+  SingleValue singleValue(AZ, 2);
+  DecisionTreeFactor f1(AZ, "0 0 1");
+  EXPECT(assert_equal(f1, singleValue.toDecisionTreeFactor()));
+
+  // Create domains
+  Domains domains;
+  domains.emplace(0, Domain(ID));
+  domains.emplace(1, Domain(AZ));
+  domains.emplace(2, Domain(UT));
+
+  // Ensure arc-consistency: just wipes out values in AZ domain:
+  EXPECT(singleValue.ensureArcConsistency(1, &domains));
+  LONGS_EQUAL(3, domains.at(0).nrValues());
+  LONGS_EQUAL(1, domains.at(1).nrValues());
+  LONGS_EQUAL(3, domains.at(2).nrValues());
+}
+
+/* ************************************************************************* */
+TEST(CSP, BinaryAllDif) {
+  // Create keys for Idaho, Arizona, and Utah, allowing 2 colors for each:
   size_t nrColors = 2;
-  //  DiscreteKey ID("Idaho", nrColors), UT("Utah", nrColors), AZ("Arizona",
-  //  nrColors);
-  DiscreteKey ID(0, nrColors), UT(2, nrColors), AZ(1, nrColors);
+  DiscreteKey ID(0, nrColors), AZ(1, nrColors), UT(2, nrColors);
 
   // Check construction and conversion
   BinaryAllDiff c1(ID, UT);
@@ -36,16 +58,53 @@ TEST_UNSAFE(BinaryAllDif, allInOne) {
   DecisionTreeFactor f2(UT & AZ, "0 1 1 0");
   EXPECT(assert_equal(f2, c2.toDecisionTreeFactor()));
 
+  // Check multiplication of factors with constraint:
   DecisionTreeFactor f3 = f1 * f2;
   EXPECT(assert_equal(f3, c1 * f2));
   EXPECT(assert_equal(f3, c2 * f1));
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(CSP, allInOne) {
-  // Create keys and ordering
+TEST(CSP, AllDiff) {
+  // Create keys for Idaho, Arizona, and Utah, allowing two colors for each:
+  size_t nrColors = 3;
+  DiscreteKey ID(0, nrColors), AZ(1, nrColors), UT(2, nrColors);
+
+  // Check construction and conversion
+  vector<DiscreteKey> dkeys{ID, UT, AZ};
+  AllDiff alldiff(dkeys);
+  DecisionTreeFactor actual = alldiff.toDecisionTreeFactor();
+  // GTSAM_PRINT(actual);
+  actual.dot("actual");
+  DecisionTreeFactor f2(
+      ID & AZ & UT,
+      "0 0 0  0 0 1  0 1 0   0 0 1  0 0 0  1 0 0   0 1 0  1 0 0  0 0 0");
+  EXPECT(assert_equal(f2, actual));
+
+  // Create domains.
+  Domains domains;
+  domains.emplace(0, Domain(ID));
+  domains.emplace(1, Domain(AZ));
+  domains.emplace(2, Domain(UT));
+
+  // First constrict AZ domain:
+  SingleValue singleValue(AZ, 2);
+  EXPECT(singleValue.ensureArcConsistency(1, &domains));
+
+  // Arc-consistency
+  EXPECT(alldiff.ensureArcConsistency(0, &domains));
+  EXPECT(!alldiff.ensureArcConsistency(1, &domains));
+  EXPECT(alldiff.ensureArcConsistency(2, &domains));
+  LONGS_EQUAL(2, domains.at(0).nrValues());
+  LONGS_EQUAL(1, domains.at(1).nrValues());
+  LONGS_EQUAL(2, domains.at(2).nrValues());
+}
+
+/* ************************************************************************* */
+TEST(CSP, allInOne) {
+  // Create keys for Idaho, Arizona, and Utah, allowing 3 colors for each:
   size_t nrColors = 2;
-  DiscreteKey ID(0, nrColors), UT(2, nrColors), AZ(1, nrColors);
+  DiscreteKey ID(0, nrColors), AZ(1, nrColors), UT(2, nrColors);
 
   // Create the CSP
   CSP csp;
@@ -81,15 +140,12 @@ TEST_UNSAFE(CSP, allInOne) {
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(CSP, WesternUS) {
-  // Create keys
+TEST(CSP, WesternUS) {
+  // Create keys for all states in Western US, with 4 color possibilities.
   size_t nrColors = 4;
-  DiscreteKey
-      // Create ordering according to example in ND-CSP.lyx
-      WA(0, nrColors),
-      OR(3, nrColors), CA(1, nrColors), NV(2, nrColors), ID(8, nrColors),
-      UT(9, nrColors), AZ(10, nrColors), MT(4, nrColors), WY(5, nrColors),
-      CO(7, nrColors), NM(6, nrColors);
+  DiscreteKey WA(0, nrColors), OR(3, nrColors), CA(1, nrColors),
+      NV(2, nrColors), ID(8, nrColors), UT(9, nrColors), AZ(10, nrColors),
+      MT(4, nrColors), WY(5, nrColors), CO(7, nrColors), NM(6, nrColors);
 
   // Create the CSP
   CSP csp;
@@ -116,10 +172,11 @@ TEST_UNSAFE(CSP, WesternUS) {
   csp.addAllDiff(WY, CO);
   csp.addAllDiff(CO, NM);
 
-  // Solve
+  // Create ordering according to example in ND-CSP.lyx
   Ordering ordering;
   ordering += Key(0), Key(1), Key(2), Key(3), Key(4), Key(5), Key(6), Key(7),
       Key(8), Key(9), Key(10);
+  // Solve using that ordering:
   auto mpe = csp.optimalAssignment(ordering);
   // GTSAM_PRINT(mpe);
   CSP::Values expected;
@@ -143,33 +200,17 @@ TEST_UNSAFE(CSP, WesternUS) {
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(CSP, AllDiff) {
-  // Create keys and ordering
+TEST(CSP, ArcConsistency) {
+  // Create keys for Idaho, Arizona, and Utah, allowing three colors for each:
   size_t nrColors = 3;
-  DiscreteKey ID(0, nrColors), UT(2, nrColors), AZ(1, nrColors);
+  DiscreteKey ID(0, nrColors), AZ(1, nrColors), UT(2, nrColors);
 
-  // Create the CSP
+  // Create the CSP using just one all-diff constraint, plus constrain Arizona.
   CSP csp;
-  vector<DiscreteKey> dkeys;
-  dkeys += ID, UT, AZ;
+  vector<DiscreteKey> dkeys{ID, UT, AZ};
   csp.addAllDiff(dkeys);
   csp.addSingleValue(AZ, 2);
-  //  GTSAM_PRINT(csp);
-
-  // Check construction and conversion
-  SingleValue s(AZ, 2);
-  DecisionTreeFactor f1(AZ, "0 0 1");
-  EXPECT(assert_equal(f1, s.toDecisionTreeFactor()));
-
-  // Check construction and conversion
-  AllDiff alldiff(dkeys);
-  DecisionTreeFactor actual = alldiff.toDecisionTreeFactor();
-  //  GTSAM_PRINT(actual);
-  //  actual.dot("actual");
-  DecisionTreeFactor f2(
-      ID & AZ & UT,
-      "0 0 0  0 0 1  0 1 0   0 0 1  0 0 0  1 0 0   0 1 0  1 0 0  0 0 0");
-  EXPECT(assert_equal(f2, actual));
+  // GTSAM_PRINT(csp);
 
   // Check an invalid combination, with ID==UT==AZ all same color
   DiscreteFactor::Values invalid;
@@ -192,17 +233,21 @@ TEST_UNSAFE(CSP, AllDiff) {
   EXPECT(assert_equal(expected, mpe));
   EXPECT_DOUBLES_EQUAL(1, csp(mpe), 1e-9);
 
-  // Arc-consistency
-  vector<Domain> domains;
-  domains += Domain(ID), Domain(AZ), Domain(UT);
+  // ensure arc-consistency, i.e., narrow domains...
+  Domains domains;
+  domains.emplace(0, Domain(ID));
+  domains.emplace(1, Domain(AZ));
+  domains.emplace(2, Domain(UT));
+  
   SingleValue singleValue(AZ, 2);
-  EXPECT(singleValue.ensureArcConsistency(1, domains));
-  EXPECT(alldiff.ensureArcConsistency(0, domains));
-  EXPECT(!alldiff.ensureArcConsistency(1, domains));
-  EXPECT(alldiff.ensureArcConsistency(2, domains));
-  LONGS_EQUAL(2, domains[0].nrValues());
-  LONGS_EQUAL(1, domains[1].nrValues());
-  LONGS_EQUAL(2, domains[2].nrValues());
+  AllDiff alldiff(dkeys);
+  EXPECT(singleValue.ensureArcConsistency(1, &domains));
+  EXPECT(alldiff.ensureArcConsistency(0, &domains));
+  EXPECT(!alldiff.ensureArcConsistency(1, &domains));
+  EXPECT(alldiff.ensureArcConsistency(2, &domains));
+  LONGS_EQUAL(2, domains.at(0).nrValues());
+  LONGS_EQUAL(1, domains.at(1).nrValues());
+  LONGS_EQUAL(2, domains.at(2).nrValues());
 
   // Parial application, version 1
   DiscreteFactor::Values known;
@@ -222,6 +267,7 @@ TEST_UNSAFE(CSP, AllDiff) {
 
   // full arc-consistency test
   csp.runArcConsistency(nrColors);
+  // GTSAM_PRINT(csp);
 }
 
 /* ************************************************************************* */
