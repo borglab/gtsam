@@ -202,9 +202,10 @@ Point3 triangulateNonlinear(
 }
 
 template<class CAMERA>
-std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>> getCameraProjectionMatrices(const CameraSet<CAMERA>& cameras) {
+std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>
+projectionMatricesFromCameras(const CameraSet<CAMERA> &cameras) {
   std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>> projection_matrices;
-  for(const CAMERA& camera: cameras){
+  for (const CAMERA &camera: cameras) {
     projection_matrices.push_back(camera.getCameraProjectionMatrix());
   }
   return projection_matrices;
@@ -212,8 +213,8 @@ std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>> getCameraProjectionMat
 
 // overload, assuming pinholePose
 template<class CALIBRATION>
-std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>> getCameraProjectionMatrices(
-    const std::vector<Pose3>& poses, boost::shared_ptr<CALIBRATION> sharedCal) {
+std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>> projectionMatricesFromPoses(
+        const std::vector<Pose3> &poses, boost::shared_ptr<CALIBRATION> sharedCal) {
   std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>> projection_matrices;
   for (size_t i = 0; i < poses.size(); i++) {
     PinholePose<CALIBRATION> camera(poses.at(i), sharedCal);
@@ -245,8 +246,7 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
     throw(TriangulationUnderconstrainedException());
 
   // construct projection matrices from poses & calibration
-  std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>> projection_matrices =
-      getCameraProjectionMatrices< CALIBRATION >(poses, sharedCal);
+  auto projection_matrices = projectionMatricesFromPoses(poses, sharedCal);
 
   // Triangulate linearly
   Point3 point = triangulateDLT(projection_matrices, measurements, rank_tol);
@@ -293,8 +293,7 @@ Point3 triangulatePoint3(
     throw(TriangulationUnderconstrainedException());
 
   // construct projection matrices from poses & calibration
-  std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>> projection_matrices =
-      getCameraProjectionMatrices<CAMERA>(cameras);
+  auto projection_matrices = projectionMatricesFromCameras(cameras);
   Point3 point = triangulateDLT(projection_matrices, measurements, rank_tol);
 
   // The n refine using non-linear optimization

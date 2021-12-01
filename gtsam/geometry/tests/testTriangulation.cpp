@@ -468,9 +468,7 @@ TEST(triangulation, twoPoses_sphericalCamera) {
   double rank_tol = 1e-9;
 
   // 1. Test linear triangulation via DLT
-  std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>
-      projection_matrices =
-          getCameraProjectionMatrices<SphericalCamera>(cameras);
+  auto projection_matrices = projectionMatricesFromCameras(cameras);
   Point3 point = triangulateDLT(projection_matrices, measurements, rank_tol);
   EXPECT(assert_equal(landmark, point, 1e-7));
 
