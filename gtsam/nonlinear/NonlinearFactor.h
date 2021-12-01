@@ -816,7 +816,7 @@ public:
   template <typename CONTAINER>
   NoiseModelFactorN(const SharedNoiseModel& noiseModel, CONTAINER keys)
       : Base(noiseModel, keys) {
-    assert(std::size(keys) == sizeof...(VALUES));
+    assert(keys.size() == sizeof...(VALUES));
   }
 
   ~NoiseModelFactorN() override {}
