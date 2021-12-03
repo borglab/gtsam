@@ -82,7 +82,7 @@ struct traits<QUATERNION_TYPE> {
     using std::sin;
     if (H) *H = SO3::ExpmapDerivative(omega.template cast<double>());
     _Scalar theta2 = omega.dot(omega);
-    if (theta2 > std::numeric_limits<_Scalar>::epsilon()) {
+    if (theta2 > 1e-8) {
       _Scalar theta = std::sqrt(theta2);
       _Scalar ha = _Scalar(0.5) * theta;
       Vector3 vec = (sin(ha) / theta) * omega;
@@ -100,8 +100,8 @@ struct traits<QUATERNION_TYPE> {
     using std::sqrt;
 
     // define these compile time constants to avoid std::abs:
-    static const double twoPi = 2.0 * M_PI, NearlyOne = 1.0 - 1e-10,
-    NearlyNegativeOne = -1.0 + 1e-10;
+    static const double twoPi = 2.0 * M_PI, NearlyOne = 1.0 - 1e-8,
+    NearlyNegativeOne = -1.0 + 1e-8;
 
     TangentVector omega;
 
@@ -117,13 +117,23 @@ struct traits<QUATERNION_TYPE> {
       omega = (-8. / 3. - 2. / 3. * qw) * q.vec();
     } else {
       // Normal, away from zero case
-      _Scalar angle = 2 * acos(qw), s = sqrt(1 - qw * qw);
-      // Important:  convert to [-pi,pi] to keep error continuous
-      if (angle > M_PI)
-      angle -= twoPi;
-      else if (angle < -M_PI)
-      angle += twoPi;
-      omega = (angle / s) * q.vec();
+      if (qw > 0) {
+        _Scalar angle = 2 * acos(qw), s = sqrt(1 - qw * qw);
+        // Important:  convert to [-pi,pi] to keep error continuous
+        if (angle > M_PI)
+          angle -= twoPi;
+        else if (angle < -M_PI)
+          angle += twoPi;
+        omega = (angle / s) * q.vec();
+      } else {
+        // Make sure that we are using a canonical quaternion with w > 0
+        _Scalar angle = 2 * acos(-qw), s = sqrt(1 - qw * qw);
+        if (angle > M_PI)
+          angle -= twoPi;
+        else if (angle < -M_PI)
+          angle += twoPi;
+        omega = (angle / s) * -q.vec();
+      }
     }
 
     if(H) *H = SO3::LogmapDerivative(omega.template cast<double>());
