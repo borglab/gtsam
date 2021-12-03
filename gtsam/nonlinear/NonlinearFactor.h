@@ -592,6 +592,7 @@ class NoiseModelFactorN : public NoiseModelFactor,
   }
 };  // \class NoiseModelFactorN
 
+// // `using` does not work for some reason
 // template <class VALUE>
 // using NoiseModelFactor1 = NoiseModelFactorN<VALUE>;
 // template <class VALUE1, class VALUE2>
@@ -608,252 +609,55 @@ class NoiseModelFactorN : public NoiseModelFactor,
 // using NoiseModelFactor6 =
 //     NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5, VALUE6>;
 
-#define NoiseModelFactor1 NoiseModelFactorN
-#define NoiseModelFactor2 NoiseModelFactorN
-#define NoiseModelFactor3 NoiseModelFactorN
-#define NoiseModelFactor4 NoiseModelFactorN
-#define NoiseModelFactor5 NoiseModelFactorN
-#define NoiseModelFactor6 NoiseModelFactorN
+// this is visually ugly
+template <class VALUE>
+struct NoiseModelFactor1 : NoiseModelFactorN<VALUE> {
+  using NoiseModelFactorN<VALUE>::NoiseModelFactorN;
+  using This = NoiseModelFactor1<VALUE>;
+};
+template <class VALUE1, class VALUE2>
+struct NoiseModelFactor2 : NoiseModelFactorN<VALUE1, VALUE2> {
+  using NoiseModelFactorN<VALUE1, VALUE2>::NoiseModelFactorN;
+  using This = NoiseModelFactor2<VALUE1, VALUE2>;
+};
+template <class VALUE1, class VALUE2, class VALUE3>
+struct NoiseModelFactor3 : NoiseModelFactorN<VALUE1, VALUE2, VALUE3> {
+  using NoiseModelFactorN<VALUE1, VALUE2, VALUE3>::NoiseModelFactorN;
+  using This = NoiseModelFactor3<VALUE1, VALUE2, VALUE3>;
+};
+template <class VALUE1, class VALUE2, class VALUE3, class VALUE4>
+struct NoiseModelFactor4 : NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4> {
+  using NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4>::NoiseModelFactorN;
+  using This = NoiseModelFactor4<VALUE1, VALUE2, VALUE3, VALUE4>;
+};
+template <class VALUE1, class VALUE2, class VALUE3, class VALUE4, class VALUE5>
+struct NoiseModelFactor5
+    : NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5> {
+  using NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4,
+                          VALUE5>::NoiseModelFactorN;
+  using This = NoiseModelFactor5<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5>;
+};
+template <class VALUE1, class VALUE2, class VALUE3, class VALUE4, class VALUE5,
+          class VALUE6>
+struct NoiseModelFactor6
+    : NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5, VALUE6> {
+  using NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5,
+                          VALUE6>::NoiseModelFactorN;
+  using This =
+      NoiseModelFactor6<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5, VALUE6>;
+};
 
-// /* ************************************************************************* */
-// /** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1> and X1
-//  * with VALUE<1>.
-//  * A convenient base class for creating your own NoiseModelFactor
-//  * with 1 variable.  To derive from this class, implement evaluateError().
-//  */
-// template <class VALUE>
-// class NoiseModelFactor1 : public NoiseModelFactorN<VALUE> {
-//  public:
-//   // aliases for value types pulled from keys
-//   using X = VALUE;
-
-//  protected:
-//   using Base = NoiseModelFactor;  // grandparent, for backwards compatibility
-//   using This = NoiseModelFactor1<VALUE>;
-
-//  public:
-//   // inherit NoiseModelFactorN's constructors
-//   using NoiseModelFactorN<VALUE>::NoiseModelFactorN;
-//   ~NoiseModelFactor1() override {}
-
-//   /** method to retrieve key */
-//   inline Key key() const { return this->keys_[0]; }
-
-//  private:
-//   /** Serialization function */
-//   friend class boost::serialization::access;
-//   template <class ARCHIVE>
-//   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-//     ar& boost::serialization::make_nvp(
-//         "NoiseModelFactor", boost::serialization::base_object<Base>(*this));
-//   }
-// };  // \class NoiseModelFactor1
-
-// /* ************************************************************************* */
-// /** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1> and X1
-//  * with VALUE<1>.
-//  * A convenient base class for creating your own NoiseModelFactor
-//  * with 2 variables.  To derive from this class, implement evaluateError().
-//  */
-// template <class VALUE1, class VALUE2>
-// class NoiseModelFactor2 : public NoiseModelFactorN<VALUE1, VALUE2> {
-//  public:
-//   // aliases for value types pulled from keys
-//   using X1 = VALUE1;
-//   using X2 = VALUE2;
-
-//  protected:
-//   using Base = NoiseModelFactor;
-//   using This = NoiseModelFactor2<VALUE1, VALUE2>;
-
-//  public:
-//   // inherit NoiseModelFactorN's constructors
-//   using NoiseModelFactorN<VALUE1, VALUE2>::NoiseModelFactorN;
-//   ~NoiseModelFactor2() override {}
-
-//   /** methods to retrieve both keys */
-//   inline Key key1() const { return this->keys_[0]; }
-//   inline Key key2() const { return this->keys_[1]; }
-
-//  private:
-//   /** Serialization function */
-//   friend class boost::serialization::access;
-//   template <class ARCHIVE>
-//   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-//     ar& boost::serialization::make_nvp(
-//         "NoiseModelFactor", boost::serialization::base_object<Base>(*this));
-//   }
-// };  // \class NoiseModelFactor2
-
-// /* ************************************************************************* */
-// /** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1> and X1
-//  * with VALUE<1>.
-//  * A convenient base class for creating your own NoiseModelFactor
-//  * with 3 variables.  To derive from this class, implement evaluateError().
-//  */
-// template <class VALUE1, class VALUE2, class VALUE3>
-// class NoiseModelFactor3 : public NoiseModelFactorN<VALUE1, VALUE2, VALUE3> {
-//  public:
-//   // aliases for value types pulled from keys
-//   using X1 = VALUE1;
-//   using X2 = VALUE2;
-//   using X3 = VALUE3;
-
-//  protected:
-//   using Base = NoiseModelFactor;
-//   using This = NoiseModelFactor3<VALUE1, VALUE2, VALUE3>;
-
-//  public:
-//   // inherit NoiseModelFactorN's constructors
-//   using NoiseModelFactorN<VALUE1, VALUE2, VALUE3>::NoiseModelFactorN;
-//   ~NoiseModelFactor3() override {}
-
-//   /** methods to retrieve keys */
-//   inline Key key1() const { return this->keys_[0]; }
-//   inline Key key2() const { return this->keys_[1]; }
-//   inline Key key3() const { return this->keys_[2]; }
-
-//  private:
-//   /** Serialization function */
-//   friend class boost::serialization::access;
-//   template <class ARCHIVE>
-//   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-//     ar& boost::serialization::make_nvp(
-//         "NoiseModelFactor", boost::serialization::base_object<Base>(*this));
-//   }
-// };  // \class NoiseModelFactor3
-
-// /* ************************************************************************* */
-// /** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1> and X1
-//  * with VALUE<1>.
-//  * A convenient base class for creating your own NoiseModelFactor
-//  * with 4 variables.  To derive from this class, implement evaluateError().
-//  */
-// template <class VALUE1, class VALUE2, class VALUE3, class VALUE4>
-// class NoiseModelFactor4
-//     : public NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4> {
-//  public:
-//   // aliases for value types pulled from keys
-//   using X1 = VALUE1;
-//   using X2 = VALUE2;
-//   using X3 = VALUE3;
-//   using X4 = VALUE4;
-
-//  protected:
-//   using Base = NoiseModelFactor;
-//   using This = NoiseModelFactor4<VALUE1, VALUE2, VALUE3, VALUE4>;
-
-//  public:
-//   // inherit NoiseModelFactorN's constructors
-//   using NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4>::NoiseModelFactorN;
-//   ~NoiseModelFactor4() override {}
-
-//   /** methods to retrieve keys */
-//   inline Key key1() const { return this->keys_[0]; }
-//   inline Key key2() const { return this->keys_[1]; }
-//   inline Key key3() const { return this->keys_[2]; }
-//   inline Key key4() const { return this->keys_[3]; }
-
-//  private:
-//   /** Serialization function */
-//   friend class boost::serialization::access;
-//   template <class ARCHIVE>
-//   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-//     ar& boost::serialization::make_nvp(
-//         "NoiseModelFactor", boost::serialization::base_object<Base>(*this));
-//   }
-// };  // \class NoiseModelFactor4
-
-// /* ************************************************************************* */
-// /** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1> and X1
-//  * with VALUE<1>.
-//  * A convenient base class for creating your own NoiseModelFactor
-//  * with 5 variables.  To derive from this class, implement evaluateError().
-//  */
-// template <class VALUE1, class VALUE2, class VALUE3, class VALUE4, class VALUE5>
-// class NoiseModelFactor5
-//     : public NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5> {
-//  public:
-//   // aliases for value types pulled from keys
-//   using X1 = VALUE1;
-//   using X2 = VALUE2;
-//   using X3 = VALUE3;
-//   using X4 = VALUE4;
-//   using X5 = VALUE5;
-
-//  protected:
-//   using Base = NoiseModelFactor;
-//   using This = NoiseModelFactor5<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5>;
-
-//  public:
-//   // inherit NoiseModelFactorN's constructors
-//   using NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4,
-//                           VALUE5>::NoiseModelFactorN;
-//   ~NoiseModelFactor5() override {}
-
-//   /** methods to retrieve keys */
-//   inline Key key1() const { return this->keys_[0]; }
-//   inline Key key2() const { return this->keys_[1]; }
-//   inline Key key3() const { return this->keys_[2]; }
-//   inline Key key4() const { return this->keys_[3]; }
-//   inline Key key5() const { return this->keys_[4]; }
-
-//  private:
-//   /** Serialization function */
-//   friend class boost::serialization::access;
-//   template <class ARCHIVE>
-//   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-//     ar& boost::serialization::make_nvp(
-//         "NoiseModelFactor", boost::serialization::base_object<Base>(*this));
-//   }
-// };  // \class NoiseModelFactor5
-
-// /* ************************************************************************* */
-// /** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1> and X1
-//  * with VALUE<1>.
-//  * A convenient base class for creating your own NoiseModelFactor
-//  * with 6 variables.  To derive from this class, implement evaluateError().
-//  */
-// template <class VALUE1, class VALUE2, class VALUE3, class VALUE4, class VALUE5,
-//           class VALUE6>
-// class NoiseModelFactor6
-//     : public NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5, VALUE6> {
-//  public:
-//   // aliases for value types pulled from keys
-//   using X1 = VALUE1;
-//   using X2 = VALUE2;
-//   using X3 = VALUE3;
-//   using X4 = VALUE4;
-//   using X5 = VALUE5;
-//   using X6 = VALUE6;
-
-//  protected:
-//   using Base = NoiseModelFactor;
-//   using This =
-//       NoiseModelFactor6<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5, VALUE6>;
-
-//  public:
-//   // inherit NoiseModelFactorN's constructors
-//   using NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5,
-//                           VALUE6>::NoiseModelFactorN;
-//   ~NoiseModelFactor6() override {}
-
-//   /** methods to retrieve keys */
-//   inline Key key1() const { return this->keys_[0]; }
-//   inline Key key2() const { return this->keys_[1]; }
-//   inline Key key3() const { return this->keys_[2]; }
-//   inline Key key4() const { return this->keys_[3]; }
-//   inline Key key5() const { return this->keys_[4]; }
-//   inline Key key6() const { return this->keys_[5]; }
-
-//  private:
-//   /** Serialization function */
-//   friend class boost::serialization::access;
-//   template <class ARCHIVE>
-//   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-//     ar& boost::serialization::make_nvp(
-//         "NoiseModelFactor", boost::serialization::base_object<Base>(*this));
-//   }
-// };  // \class NoiseModelFactor6
+/* ************************************************************************* */
+/** @deprecated: use NoiseModelFactorN
+ * Convenient base classes for creating your own NoiseModelFactors with 1-6
+ * variables.  To derive from these classes, implement evaluateError().
+ */
+// // This has the side-effect that you could e.g. NoiseModelFactor6<double>
+// #define NoiseModelFactor1 NoiseModelFactorN
+// #define NoiseModelFactor2 NoiseModelFactorN
+// #define NoiseModelFactor3 NoiseModelFactorN
+// #define NoiseModelFactor4 NoiseModelFactorN
+// #define NoiseModelFactor5 NoiseModelFactorN
+// #define NoiseModelFactor6 NoiseModelFactorN
 
 } // \namespace gtsam
