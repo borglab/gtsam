@@ -254,6 +254,50 @@ TEST( NonlinearFactor, cloneWithNewNoiseModel )
 }
 
 /* ************************************************************************* */
+class TestFactor1 : public NoiseModelFactor1<double> {
+  static_assert(std::is_same<Base, NoiseModelFactor>::value, "Base type wrong");
+  static_assert(std::is_same<This, NoiseModelFactor1<double>>::value,
+                "This type wrong");
+
+ public:
+  typedef NoiseModelFactor1<double> Base;
+  TestFactor1() : Base(noiseModel::Diagonal::Sigmas(Vector1(2.0)), L(1)) {}
+
+  Vector evaluateError(const double& x1, boost::optional<Matrix&> H1 =
+                                             boost::none) const override {
+    if (H1) *H1 = (Matrix(1, 1) << 1.0).finished();
+    return (Vector(1) << x1).finished();
+  }
+
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
+    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new TestFactor1(*this)));
+  }
+};
+
+/* ************************************ */
+TEST(NonlinearFactor, NoiseModelFactor1) {
+  TestFactor1 tf;
+  Values tv;
+  tv.insert(L(1), double((1.0)));
+  EXPECT(assert_equal((Vector(1) << 1.0).finished(), tf.unwhitenedError(tv)));
+  DOUBLES_EQUAL(0.25 / 2.0, tf.error(tv), 1e-9);
+  JacobianFactor jf(
+      *boost::dynamic_pointer_cast<JacobianFactor>(tf.linearize(tv)));
+  LONGS_EQUAL((long)L(1), (long)jf.keys()[0]);
+  EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 0.5).finished(),
+                      jf.getA(jf.begin())));
+  EXPECT(assert_equal((Vector)(Vector(1) << -0.5).finished(), jf.getb()));
+
+  // Test all functions/types for backwards compatibility
+  static_assert(std::is_same<TestFactor1::X, double>::value,
+                "X type incorrect");
+  EXPECT(assert_equal(tf.key(), L(1)));
+  std::vector<Matrix> H = {Matrix()};
+  EXPECT(assert_equal(Vector1(1.0), tf.unwhitenedError(tv, H)));
+}
+
+/* ************************************************************************* */
 class TestFactor4 : public NoiseModelFactor4<double, double, double, double> {
   static_assert(std::is_same<Base, NoiseModelFactor>::value, "Base type wrong");
   static_assert(
