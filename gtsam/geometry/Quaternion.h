@@ -82,7 +82,7 @@ struct traits<QUATERNION_TYPE> {
     using std::sin;
     if (H) *H = SO3::ExpmapDerivative(omega.template cast<double>());
     _Scalar theta2 = omega.dot(omega);
-    if (theta2 > 1e-8) {
+    if (theta2 > std::numeric_limits<_Scalar>::epsilon()) {
       _Scalar theta = std::sqrt(theta2);
       _Scalar ha = _Scalar(0.5) * theta;
       Vector3 vec = (sin(ha) / theta) * omega;
@@ -100,8 +100,8 @@ struct traits<QUATERNION_TYPE> {
     using std::sqrt;
 
     // define these compile time constants to avoid std::abs:
-    static const double twoPi = 2.0 * M_PI, NearlyOne = 1.0 - 1e-8,
-    NearlyNegativeOne = -1.0 + 1e-8;
+    static const double twoPi = 2.0 * M_PI, NearlyOne = 1.0 - 1e-10,
+    NearlyNegativeOne = -1.0 + 1e-10;
 
     TangentVector omega;
 
