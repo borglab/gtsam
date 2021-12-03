@@ -255,7 +255,13 @@ TEST( NonlinearFactor, cloneWithNewNoiseModel )
 
 /* ************************************************************************* */
 class TestFactor4 : public NoiseModelFactor4<double, double, double, double> {
-public:
+  static_assert(std::is_same<Base, NoiseModelFactor>::value, "Base type wrong");
+  static_assert(
+      std::is_same<This,
+                   NoiseModelFactor4<double, double, double, double>>::value,
+      "This type wrong");
+
+ public:
   typedef NoiseModelFactor4<double, double, double, double> Base;
   TestFactor4() : Base(noiseModel::Diagonal::Sigmas((Vector(1) << 2.0).finished()), X(1), X(2), X(3), X(4)) {}
 
@@ -299,6 +305,22 @@ TEST(NonlinearFactor, NoiseModelFactor4) {
   EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 1.5).finished(), jf.getA(jf.begin()+2)));
   EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 2.0).finished(), jf.getA(jf.begin()+3)));
   EXPECT(assert_equal((Vector)(Vector(1) << -5.0).finished(), jf.getb()));
+
+  // Test all functions/types for backwards compatibility
+  static_assert(std::is_same<TestFactor4::X1, double>::value,
+                "X1 type incorrect");
+  static_assert(std::is_same<TestFactor4::X2, double>::value,
+                "X2 type incorrect");
+  static_assert(std::is_same<TestFactor4::X3, double>::value,
+                "X3 type incorrect");
+  static_assert(std::is_same<TestFactor4::X4, double>::value,
+                "X4 type incorrect");
+  EXPECT(assert_equal(tf.key1(), X(1)));
+  EXPECT(assert_equal(tf.key2(), X(2)));
+  EXPECT(assert_equal(tf.key3(), X(3)));
+  EXPECT(assert_equal(tf.key4(), X(4)));
+  std::vector<Matrix> H = {Matrix(), Matrix(), Matrix(), Matrix()};
+  EXPECT(assert_equal(Vector1(10.0), tf.unwhitenedError(tv, H)));
 }
 
 /* ************************************************************************* */
