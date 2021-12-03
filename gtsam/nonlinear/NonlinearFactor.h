@@ -314,7 +314,8 @@ public:
  *
  * The tricky part is that we want to _conditionally_ alias these only if the
  * `sizeof...(VALUES)` is greater than the index we want to alias (e.g. a 3-way
- * factor should only have up to X3).
+ * factor should only have up to X3).  SFINAE doesn't work in this case with
+ * aliases so we have to come up with a different approach.
  *
  * The approach we use is to create structs which use template specialization to
  * conditionally typedef X1, X2, ... for us, then inherit from them to inherit
@@ -345,26 +346,26 @@ namespace detail {
 // First handle `typedef X`.  By default, we do not alias X (empty struct).
 template <bool, class... VALUES>
 struct AliasX_ {};
-// But if `1 == sizeof...(VALUES)` is true, then we do alias X by specializing
-// for when the first template parameter is true.
+// But if the first template is true, then we do alias X by specializing.
 template <class... VALUES>
-struct AliasX_<(1 == sizeof...(VALUES)), VALUES...> {
+struct AliasX_<true, VALUES...> {
   using X = GET_VALUE_I(VALUES, 0);
 };
-// We'll alias the "true" template version for convenience.
+// We'll alias (for convenience) the correct version based on whether or not
+// `1 == sizeof...(VALUES)` is true
 template <class... VALUES>
-using AliasX = AliasX_<true, VALUES...>;
+using AliasX = AliasX_<(1 == sizeof...(VALUES)), VALUES...>;
 
 // Now do the same thing for X1, X2, ... using a macro.
-#define ALIAS_HELPER_X(N)                                    \
-  template <bool, class... VALUES>                           \
-  struct AliasX##N##_ {};                                    \
-  template <class... VALUES>                                 \
-  struct AliasX##N##_<(N <= sizeof...(VALUES)), VALUES...> { \
-    using X##N = GET_VALUE_I(VALUES, N - 1);                 \
-  };                                                         \
-  template <class... VALUES>                                 \
-  using AliasX##N = AliasX##N##_<true, VALUES...>;
+#define ALIAS_HELPER_X(N)                    \
+  template <bool, class... VALUES>           \
+  struct AliasX##N##_ {};                    \
+  template <class... VALUES>                 \
+  struct AliasX##N##_<true, VALUES...> {     \
+    using X##N = GET_VALUE_I(VALUES, N - 1); \
+  };                                         \
+  template <class... VALUES>                 \
+  using AliasX##N = AliasX##N##_<(N <= sizeof...(VALUES)), VALUES...>;
 ALIAS_HELPER_X(1);
 ALIAS_HELPER_X(2);
 ALIAS_HELPER_X(3);
