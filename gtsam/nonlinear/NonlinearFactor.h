@@ -878,9 +878,22 @@ public:
       optional_matrix_type<VALUES> ... H) const = 0;
 
   /** No-jacobians requested function overload (since parameter packs can't have
-   * default args) */
-  Vector evaluateError(const VALUES&... x) const {
+   * default args).  This specializes the version below to avoid recursive calls
+   * since this is commonly used. */
+  inline Vector evaluateError(const VALUES&... x) const {
     return evaluateError(x..., optional_matrix_type<VALUES>()...);
+  }
+
+  /** Some optional jacobians omitted function overload */
+  template <typename... OptionalJacArgs,
+            typename std::enable_if<(sizeof...(OptionalJacArgs) > 0) &&
+                                        (sizeof...(OptionalJacArgs) <
+                                         sizeof...(VALUES)),
+                                    bool>::type = true>
+  inline Vector evaluateError(const VALUES&... x,
+                              OptionalJacArgs&&... H) const {
+    return evaluateError(x..., std::forward<OptionalJacArgs>(H)...,
+                         boost::none);
   }
 
  private:

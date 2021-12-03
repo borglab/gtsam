@@ -418,12 +418,10 @@ public:
         boost::optional<Matrix&> H2 = boost::none,
         boost::optional<Matrix&> H3 = boost::none,
         boost::optional<Matrix&> H4 = boost::none) const override {
-    if (H1) {
-      *H1 = (Matrix(1, 1) << 1.0).finished();
-      *H2 = (Matrix(1, 1) << 2.0).finished();
-      *H3 = (Matrix(1, 1) << 3.0).finished();
-      *H4 = (Matrix(1, 1) << 4.0).finished();
-    }
+    if (H1) *H1 = (Matrix(1, 1) << 1.0).finished();
+    if (H2) *H2 = (Matrix(1, 1) << 2.0).finished();
+    if (H3) *H3 = (Matrix(1, 1) << 3.0).finished();
+    if (H4) *H4 = (Matrix(1, 1) << 4.0).finished();
     return (Vector(1) << x1 + x2 + x3 + x4).finished();
   }
 };
@@ -448,6 +446,33 @@ TEST(NonlinearFactor, NoiseModelFactorN) {
   EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 1.5).finished(), jf.getA(jf.begin()+2)));
   EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 2.0).finished(), jf.getA(jf.begin()+3)));
   EXPECT(assert_equal((Vector)(Vector(1) << -5.0).finished(), jf.getb()));
+
+  // Test all evaluateError argument overloads to ensure backward compatibility
+  Matrix H1_expected, H2_expected, H3_expected, H4_expected;
+  Vector e_expected = tf.evaluateError(9, 8, 7, 6, H1_expected, H2_expected,
+                                       H3_expected, H4_expected);
+
+  std::unique_ptr<NoiseModelFactorN<double, double, double, double>> base_ptr(
+      new TestFactorN(tf));
+  Matrix H1, H2, H3, H4;
+  EXPECT(assert_equal(e_expected, base_ptr->evaluateError(9, 8, 7, 6)));
+  EXPECT(assert_equal(e_expected, base_ptr->evaluateError(9, 8, 7, 6, H1)));
+  EXPECT(assert_equal(H1_expected, H1));
+  EXPECT(assert_equal(e_expected,  //
+                      base_ptr->evaluateError(9, 8, 7, 6, H1, H2)));
+  EXPECT(assert_equal(H1_expected, H1));
+  EXPECT(assert_equal(H2_expected, H2));
+  EXPECT(assert_equal(e_expected,
+                      base_ptr->evaluateError(9, 8, 7, 6, H1, H2, H3)));
+  EXPECT(assert_equal(H1_expected, H1));
+  EXPECT(assert_equal(H2_expected, H2));
+  EXPECT(assert_equal(H3_expected, H3));
+  EXPECT(assert_equal(e_expected,
+                      base_ptr->evaluateError(9, 8, 7, 6, H1, H2, H3, H4)));
+  EXPECT(assert_equal(H1_expected, H1));
+  EXPECT(assert_equal(H2_expected, H2));
+  EXPECT(assert_equal(H3_expected, H3));
+  EXPECT(assert_equal(H4_expected, H4));
 }
 
 /* ************************************************************************* */
