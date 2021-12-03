@@ -307,19 +307,39 @@ public:
 
 
 /* ************************************************************************* */
-
 /**
- * A convenient base class for creating your own NoiseModelFactor with n
- * variables.  To derive from this class, implement evaluateError().
+ * A convenient base class for creating your own NoiseModelFactor
+ * with n variables.  To derive from this class, implement evaluateError().
  *
- * Templated on a values structure type. The values structures are typically
- * more general than just vectors, e.g., Rot3 or Pose3,
- * which are objects in non-linear manifolds (Lie groups).
+ * For example, a 2-way factor could be implemented like so:
+ *
+ * ~~~~~~~~~~~~~~~~~~~~{.cpp}
+ * class MyFactor : public NoiseModelFactorN<double, double> {
+ *  public:
+ *   using Base = NoiseModelFactorN<double, double>;
+ *
+ *   MyFactor(Key key1, Key key2, const SharedNoiseModel& noiseModel)
+ *       : Base(noiseModel, key1, key2) {}
+ *
+ *   Vector evaluateError(
+ *       const double& x1, const double& x2,
+ *       boost::optional<Matrix&> H1 = boost::none,
+ *       boost::optional<Matrix&> H2 = boost::none) const override {
+ *     if (H1) *H1 = (Matrix(1, 1) << 1.0).finished();
+ *     if (H2) *H2 = (Matrix(1, 1) << 2.0).finished();
+ *     return (Vector(1) << x1 + 2 * x2).finished();
+ *   }
+ * };
+ * ~~~~~~~~~~~~~~~~~~~~
+ *
+ * These factors are templated on a values structure type. The values structures
+ * are typically more general than just vectors, e.g., Rot3 or Pose3, which are
+ * objects in non-linear manifolds (Lie groups).
  */
 template <class... VALUES>
 class NoiseModelFactorN : public NoiseModelFactor {
  public:
-  /** The type of the N'th template param can be obtained with VALUE<N> */
+  /** The type of the N'th template param can be obtained as VALUE<N> */
   template <int N>
   using VALUE = typename std::tuple_element<N, std::tuple<VALUES...>>::type;
 
@@ -338,6 +358,9 @@ class NoiseModelFactorN : public NoiseModelFactor {
   using key_type = Key;
 
  public:
+  /// @name Constructors
+  /// @{
+
   /**
    * Default Constructor for I/O
    */
@@ -346,8 +369,9 @@ class NoiseModelFactorN : public NoiseModelFactor {
   /**
    * Constructor.
    * Example usage: NoiseModelFactorN(noise, key1, key2, ..., keyN)
-   * @param noiseModel shared pointer to noise model
-   * @param keys... keys for the variables in this factor
+   * @param noiseModel Shared pointer to noise model.
+   * @param keys Keys for the variables in this factor, passed in as separate
+   * arguments.
    */
   NoiseModelFactorN(const SharedNoiseModel& noiseModel,
                     key_type<VALUES>... keys)
@@ -355,14 +379,16 @@ class NoiseModelFactorN : public NoiseModelFactor {
 
   /**
    * Constructor.
-   * @param noiseModel shared pointer to noise model
-   * @param keys a container of keys for the variables in this factor
+   * @param noiseModel Shared pointer to noise model.
+   * @param keys A container of keys for the variables in this factor.
    */
   template <typename CONTAINER>
   NoiseModelFactorN(const SharedNoiseModel& noiseModel, CONTAINER keys)
       : Base(noiseModel, keys) {
     assert(keys.size() == sizeof...(VALUES));
   }
+
+  /// @}
 
   ~NoiseModelFactorN() override {}
 
@@ -372,26 +398,59 @@ class NoiseModelFactorN : public NoiseModelFactor {
     return keys_[N];
   }
 
+  /// @name NoiseModelFactor methods
+  /// @{
+
   /** Calls the n-key specific version of evaluateError, which is pure virtual
-   * so must be implemented in the derived class. */
+   * so must be implemented in the derived class.
+   * @param[in] x A Values object containing the values of all the variables
+   * used in this factor
+   * @param[out] H A vector of (dynamic) matrices whose size should be equal to
+   * n.  The jacobians w.r.t. each variable will be output in this parameter.
+   */
   Vector unwhitenedError(
       const Values& x,
       boost::optional<std::vector<Matrix>&> H = boost::none) const override {
     return unwhitenedError(boost::mp11::index_sequence_for<VALUES...>{}, x, H);
   }
 
+  /// @}
+  /// @name Virtual methods
+  /// @{
   /**
    *  Override this method to finish implementing an n-way factor.
+   *
+   *  Both the `x` and `H` arguments are written here as parameter packs, but
+   * when overriding this method, you probably want to explicitly write them
+   * out.  For example, for a 2-way factor with variable types Pose3 and double:
+   * ```
+   * Vector evaluateError(const Pose3& x1, const double& x2,
+   *                      boost::optional<Matrix&> H1 = boost::none,
+   *                      boost::optional<Matrix&> H2 = boost::none) const
+   * override {...}
+   * ```
+   *
    *  If any of the optional Matrix reference arguments are specified, it should
    * compute both the function evaluation and its derivative(s) in the requested
    * variables.
+   *
+   * @param x The values of the variables to evaluate the error for.  Passed in
+   * as separate arguments.
+   * @param[out] H The Jacobian with respect to each variable (optional).
    */
   virtual Vector evaluateError(const VALUES&... x,
                                optional_matrix_type<VALUES>... H) const = 0;
 
+  /// @}
+  /// @name Convenience method overloads
+  /// @{
+
   /** No-jacobians requested function overload (since parameter packs can't have
    * default args).  This specializes the version below to avoid recursive calls
-   * since this is commonly used. */
+   * since this is commonly used.
+   *
+   * e.g. `Vector error = factor.evaluateError(x1, x2, x3);`
+   */
   inline Vector evaluateError(const VALUES&... x) const {
     return evaluateError(x..., optional_matrix_type<VALUES>()...);
   }
@@ -408,10 +467,14 @@ class NoiseModelFactorN : public NoiseModelFactor {
                          boost::none);
   }
 
+  /// @}
+
  private:
-  /** Pack expansion with index_sequence template pattern */
+  /** Pack expansion with index_sequence template pattern, used to index into
+   * `keys_` and `H`
+   */
   template <std::size_t... Inds>
-  Vector unwhitenedError(
+  inline Vector unwhitenedError(
       boost::mp11::index_sequence<Inds...>,  //
       const Values& x,
       boost::optional<std::vector<Matrix>&> H = boost::none) const {
@@ -436,8 +499,11 @@ class NoiseModelFactorN : public NoiseModelFactor {
 };  // \class NoiseModelFactorN
 
 /* ************************************************************************* */
-/** A convenient base class for creating your own NoiseModelFactor with 1
- * variable.  To derive from this class, implement evaluateError(). */
+/** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1> and X1
+ * with VALUE<1>.
+ * A convenient base class for creating your own NoiseModelFactor
+ * with 1 variable.  To derive from this class, implement evaluateError().
+ */
 template <class VALUE>
 class NoiseModelFactor1 : public NoiseModelFactorN<VALUE> {
  public:
@@ -453,6 +519,7 @@ class NoiseModelFactor1 : public NoiseModelFactorN<VALUE> {
   using NoiseModelFactorN<VALUE>::NoiseModelFactorN;
   ~NoiseModelFactor1() override {}
 
+  /** method to retrieve key */
   inline Key key() const { return this->keys_[0]; }
 
  private:
@@ -466,8 +533,11 @@ class NoiseModelFactor1 : public NoiseModelFactorN<VALUE> {
 };  // \class NoiseModelFactor1
 
 /* ************************************************************************* */
-/** A convenient base class for creating your own NoiseModelFactor with 2
- * variables.  To derive from this class, implement evaluateError(). */
+/** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1> and X1
+ * with VALUE<1>.
+ * A convenient base class for creating your own NoiseModelFactor
+ * with 2 variables.  To derive from this class, implement evaluateError().
+ */
 template <class VALUE1, class VALUE2>
 class NoiseModelFactor2 : public NoiseModelFactorN<VALUE1, VALUE2> {
  public:
@@ -499,8 +569,11 @@ class NoiseModelFactor2 : public NoiseModelFactorN<VALUE1, VALUE2> {
 };  // \class NoiseModelFactor2
 
 /* ************************************************************************* */
-/** A convenient base class for creating your own NoiseModelFactor with 3
- * variables.  To derive from this class, implement evaluateError(). */
+/** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1> and X1
+ * with VALUE<1>.
+ * A convenient base class for creating your own NoiseModelFactor
+ * with 3 variables.  To derive from this class, implement evaluateError().
+ */
 template <class VALUE1, class VALUE2, class VALUE3>
 class NoiseModelFactor3 : public NoiseModelFactorN<VALUE1, VALUE2, VALUE3> {
  public:
@@ -534,8 +607,11 @@ class NoiseModelFactor3 : public NoiseModelFactorN<VALUE1, VALUE2, VALUE3> {
 };  // \class NoiseModelFactor3
 
 /* ************************************************************************* */
-/** A convenient base class for creating your own NoiseModelFactor with 4
- * variables.  To derive from this class, implement evaluateError(). */
+/** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1> and X1
+ * with VALUE<1>.
+ * A convenient base class for creating your own NoiseModelFactor
+ * with 4 variables.  To derive from this class, implement evaluateError().
+ */
 template <class VALUE1, class VALUE2, class VALUE3, class VALUE4>
 class NoiseModelFactor4
     : public NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4> {
@@ -572,8 +648,11 @@ class NoiseModelFactor4
 };  // \class NoiseModelFactor4
 
 /* ************************************************************************* */
-/** A convenient base class for creating your own NoiseModelFactor with 5
- * variables.  To derive from this class, implement evaluateError(). */
+/** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1> and X1
+ * with VALUE<1>.
+ * A convenient base class for creating your own NoiseModelFactor
+ * with 5 variables.  To derive from this class, implement evaluateError().
+ */
 template <class VALUE1, class VALUE2, class VALUE3, class VALUE4, class VALUE5>
 class NoiseModelFactor5
     : public NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5> {
@@ -613,8 +692,11 @@ class NoiseModelFactor5
 };  // \class NoiseModelFactor5
 
 /* ************************************************************************* */
-/** A convenient base class for creating your own NoiseModelFactor with 6
- * variables.  To derive from this class, implement evaluateError(). */
+/** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1> and X1
+ * with VALUE<1>.
+ * A convenient base class for creating your own NoiseModelFactor
+ * with 6 variables.  To derive from this class, implement evaluateError().
+ */
 template <class VALUE1, class VALUE2, class VALUE3, class VALUE4, class VALUE5,
           class VALUE6>
 class NoiseModelFactor6
