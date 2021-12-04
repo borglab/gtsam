@@ -586,11 +586,14 @@ TEST(triangulation, reprojectionError_cameraComparison) {
   Vector2 px = pinholeCamera.project(landmarkL);
 
   // add perturbation and compare error in both cameras
-  Vector2 px_noise(1.0, 1.0);  // 1px perturbation vertically and horizontally
+  Vector2 px_noise(1.0, 2.0);  // px perturbation vertically and horizontally
   Vector2 measured_px = px + px_noise;
   Vector2 measured_px_calibrated = sharedK->calibrate(measured_px);
   Unit3 measured_u =
       Unit3(measured_px_calibrated[0], measured_px_calibrated[1], 1.0);
+  Unit3 expected_measured_u =
+      Unit3(px_noise[0] / sharedK->fx(), px_noise[1] / sharedK->fy(), 1.0);
+  EXPECT(assert_equal(expected_measured_u, measured_u, 1e-7));
 
   Vector2 actualErrorPinhole =
       pinholeCamera.reprojectionError(landmarkL, measured_px);
@@ -600,8 +603,8 @@ TEST(triangulation, reprojectionError_cameraComparison) {
 
   Vector2 actualErrorSpherical =
       sphericalCamera.reprojectionError(landmarkL, measured_u);
-  Vector2 expectedErrorSpherical =
-      Vector2(px_noise[0] / sharedK->fx(), px_noise[1] / sharedK->fy());
+  // actualErrorSpherical: not easy to calculate, since it involves the unit3 basis
+  Vector2 expectedErrorSpherical(-0.00360842, 0.00180419);
   EXPECT(assert_equal(expectedErrorSpherical, actualErrorSpherical, 1e-7));
 }
 
