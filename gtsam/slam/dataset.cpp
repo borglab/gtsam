@@ -392,7 +392,7 @@ parseMeasurements(const std::string &filename,
                   size_t maxIndex) {
   ParseMeasurement<Pose2> parse{model ? createSampler(model) : nullptr,
                                 maxIndex, true, NoiseFormatAUTO,
-                                KernelFunctionTypeNONE};
+                                KernelFunctionTypeNONE, nullptr};
   return parseToVector<BinaryMeasurement<Pose2>>(filename, parse);
 }
 

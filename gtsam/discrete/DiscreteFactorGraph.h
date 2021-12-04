@@ -74,7 +74,6 @@ public:
   /** A map from keys to values */
   typedef KeyVector Indices;
   typedef Assignment<Key> Values;
-  typedef boost::shared_ptr<Values> sharedValues;
 
   /** Default constructor */
   DiscreteFactorGraph() {}
@@ -101,25 +100,27 @@ public:
 
   /// @}
 
-  template<class SOURCE>
+  // Add single key decision-tree factor.
+  template <class SOURCE>
   void add(const DiscreteKey& j, SOURCE table) {
     DiscreteKeys keys;
     keys.push_back(j);
-    push_back(boost::make_shared<DecisionTreeFactor>(keys, table));
+    emplace_shared<DecisionTreeFactor>(keys, table);
   }
 
-  template<class SOURCE>
+  // Add binary key decision-tree factor.
+  template <class SOURCE>
   void add(const DiscreteKey& j1, const DiscreteKey& j2, SOURCE table) {
     DiscreteKeys keys;
     keys.push_back(j1);
     keys.push_back(j2);
-    push_back(boost::make_shared<DecisionTreeFactor>(keys, table));
+    emplace_shared<DecisionTreeFactor>(keys, table);
   }
 
-  /** add shared discreteFactor immediately from arguments */
-  template<class SOURCE>
+  // Add shared discreteFactor immediately from arguments.
+  template <class SOURCE>
   void add(const DiscreteKeys& keys, SOURCE table) {
-    push_back(boost::make_shared<DecisionTreeFactor>(keys, table));
+    emplace_shared<DecisionTreeFactor>(keys, table);
   }
 
   /** Return the set of variables involved in the factors (set union) */
@@ -140,7 +141,7 @@ public:
    *  the dense elimination function specified in \c function,
    *  followed by back-substitution resulting from elimination.  Is equivalent
    *  to calling graph.eliminateSequential()->optimize(). */
-  DiscreteFactor::sharedValues optimize() const;
+  Values optimize() const;
 
 
 //  /** Permute the variables in the factors */

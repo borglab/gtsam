@@ -21,12 +21,13 @@
 
 #pragma once
 
-#include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/EliminateableFactorGraph.h>
+#include <gtsam/inference/FactorGraph.h>
+#include <gtsam/linear/Errors.h>  // Included here instead of fw-declared so we can use Errors::iterator
 #include <gtsam/linear/GaussianFactor.h>
-#include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/HessianFactor.h>
-#include <gtsam/linear/Errors.h> // Included here instead of fw-declared so we can use Errors::iterator
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/VectorValues.h>
 
 namespace gtsam {
 
@@ -395,9 +396,14 @@ namespace gtsam {
 
   public:
 
-    /** \deprecated */
-    VectorValues optimize(boost::none_t,
-      const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
+   /** \deprecated */
+   VectorValues optimize(boost::none_t,
+                         const Eliminate& function =
+                             EliminationTraitsType::DefaultEliminate) const {
+     return optimize(function);
+   }
+#endif
 
   };
 

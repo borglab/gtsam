@@ -35,7 +35,7 @@ class GTSAM_EXPORT PinholeBaseK: public PinholeBase {
 
 private:
 
-  GTSAM_CONCEPT_MANIFOLD_TYPE(CALIBRATION);
+  GTSAM_CONCEPT_MANIFOLD_TYPE(CALIBRATION)
 
   // Get dimensions of calibration type at compile time
   static const int DimK = FixedDimension<CALIBRATION>::value;
