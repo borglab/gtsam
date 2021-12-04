@@ -28,7 +28,7 @@ using namespace std;
 namespace gtsam {
 
 /** instantiate concept checks */
-GTSAM_CONCEPT_POSE_INST(Pose2);
+GTSAM_CONCEPT_POSE_INST(Pose2)
 
 static const Rot2 R_PI_2(Rot2::fromCosSin(0., 1.));
 

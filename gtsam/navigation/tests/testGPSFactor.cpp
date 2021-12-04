@@ -72,7 +72,7 @@ TEST( GPSFactor, Constructor ) {
 
   // Calculate numerical derivatives
   Matrix expectedH = numericalDerivative11<Vector,Pose3>(
-      std::bind(&GPSFactor::evaluateError, &factor, _1, boost::none), T);
+      std::bind(&GPSFactor::evaluateError, &factor, std::placeholders::_1, boost::none), T);
 
   // Use the factor to calculate the derivative
   Matrix actualH;
@@ -101,7 +101,7 @@ TEST( GPSFactor2, Constructor ) {
 
   // Calculate numerical derivatives
   Matrix expectedH = numericalDerivative11<Vector,NavState>(
-      std::bind(&GPSFactor2::evaluateError, &factor, _1, boost::none), T);
+      std::bind(&GPSFactor2::evaluateError, &factor, std::placeholders::_1, boost::none), T);
 
   // Use the factor to calculate the derivative
   Matrix actualH;

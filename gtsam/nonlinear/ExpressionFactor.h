@@ -305,7 +305,7 @@ struct traits<ExpressionFactorN<T, Args...>>
  * \deprecated Prefer the more general ExpressionFactorN<>.
  */
 template <typename T, typename A1, typename A2>
-class ExpressionFactor2 : public ExpressionFactorN<T, A1, A2> {
+class GTSAM_DEPRECATED ExpressionFactor2 : public ExpressionFactorN<T, A1, A2> {
 public:
   /// Destructor
   ~ExpressionFactor2() override {}

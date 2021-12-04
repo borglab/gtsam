@@ -19,7 +19,6 @@
  */
 
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/GaussianEliminationTree.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
@@ -290,10 +289,11 @@ namespace gtsam {
     return blocks;
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   VectorValues GaussianFactorGraph::optimize(const Eliminate& function) const {
     gttic(GaussianFactorGraph_optimize);
-    return BaseEliminateable::eliminateMultifrontal(function)->optimize();
+    return BaseEliminateable::eliminateMultifrontal(Ordering::COLAMD, function)
+        ->optimize();
   }
 
   /* ************************************************************************* */
@@ -501,13 +501,6 @@ namespace gtsam {
       e.push_back(Ai->error_vector(x));
     }
     return e;
-  }
-
-  /* ************************************************************************* */
-  /** \deprecated */
-  VectorValues GaussianFactorGraph::optimize(boost::none_t,
-    const Eliminate& function) const {
-      return optimize(function);
   }
 
   /* ************************************************************************* */

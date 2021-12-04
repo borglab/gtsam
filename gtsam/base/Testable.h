@@ -173,4 +173,4 @@ namespace gtsam {
  * @deprecated please use BOOST_CONCEPT_ASSERT and
  */
 #define GTSAM_CONCEPT_TESTABLE_INST(T) template class gtsam::IsTestable<T>;
-#define GTSAM_CONCEPT_TESTABLE_TYPE(T) typedef gtsam::IsTestable<T> _gtsam_Testable_##T;
+#define GTSAM_CONCEPT_TESTABLE_TYPE(T) using _gtsam_Testable_##T = gtsam::IsTestable<T>;
