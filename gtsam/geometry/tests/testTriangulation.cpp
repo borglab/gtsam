@@ -603,7 +603,7 @@ TEST(triangulation, reprojectionError_cameraComparison) {
 
   Vector2 actualErrorSpherical =
       sphericalCamera.reprojectionError(landmarkL, measured_u);
-  // actualErrorSpherical: not easy to calculate, since it involves the unit3 basis
+  // expectedError: not easy to calculate, since it involves the unit3 basis
   Vector2 expectedErrorSpherical(-0.00360842, 0.00180419);
   EXPECT(assert_equal(expectedErrorSpherical, actualErrorSpherical, 1e-7));
 }
