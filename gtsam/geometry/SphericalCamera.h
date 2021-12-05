@@ -30,6 +30,13 @@
 
 namespace gtsam {
 
+/**
+ * Empty calibration. Only needed to play well with other cameras
+ * (e.g., when templating functions wrt cameras), since other cameras
+ * have constuctors in the form ‘camera(pose,calibration)’
+ * @addtogroup geometry
+ * \nosubgrouping
+ */
 class GTSAM_EXPORT EmptyCal {
  public:
   enum { dimension = 0 };
@@ -42,7 +49,8 @@ class GTSAM_EXPORT EmptyCal {
 };
 
 /**
- * A spherical camera class that has a Pose3 and measures bearing vectors
+ * A spherical camera class that has a Pose3 and measures bearing vectors.
+ * The camera has an ‘Empty’ calibration and the only 6 dof are the pose
  * @addtogroup geometry
  * \nosubgrouping
  */
@@ -183,7 +191,7 @@ class GTSAM_EXPORT SphericalCamera {
   }
 
   /// for Linear Triangulation
-  Matrix34 getCameraProjectionMatrix() const {
+  Matrix34 cameraProjectionMatrix() const {
     return Matrix34(pose_.inverse().matrix().block(0, 0, 3, 4));
   }
 

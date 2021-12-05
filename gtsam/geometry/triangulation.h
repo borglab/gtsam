@@ -206,7 +206,7 @@ std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>
 projectionMatricesFromCameras(const CameraSet<CAMERA> &cameras) {
   std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>> projection_matrices;
   for (const CAMERA &camera: cameras) {
-    projection_matrices.push_back(camera.getCameraProjectionMatrix());
+    projection_matrices.push_back(camera.cameraProjectionMatrix());
   }
   return projection_matrices;
 }
@@ -218,7 +218,7 @@ std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>> projectionMatricesFrom
   std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>> projection_matrices;
   for (size_t i = 0; i < poses.size(); i++) {
     PinholePose<CALIBRATION> camera(poses.at(i), sharedCal);
-    projection_matrices.push_back(camera.getCameraProjectionMatrix());
+    projection_matrices.push_back(camera.cameraProjectionMatrix());
   }
   return projection_matrices;
 }
