@@ -47,6 +47,8 @@ class SmartProjectionPoseFactorRollingShutter
   typedef SmartProjectionFactor<CAMERA> Base;
   typedef SmartProjectionPoseFactorRollingShutter<CAMERA> This;
   typedef typename CAMERA::CalibrationType CALIBRATION;
+  typedef typename CAMERA::Measurement MEASUREMENT;
+  typedef typename CAMERA::MeasurementVector MEASUREMENTS;
 
  protected:
   /// The keys of the pose of the body (with respect to an external world
@@ -68,12 +70,6 @@ class SmartProjectionPoseFactorRollingShutter
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  typedef CAMERA Camera;
-  typedef CameraSet<CAMERA> Cameras;
-
-  /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<This> shared_ptr;
-
   static const int DimBlock =
       12;  ///< size of the variable stacking 2 poses from which the observation
            ///< pose is interpolated
@@ -83,6 +79,12 @@ class SmartProjectionPoseFactorRollingShutter
       MatrixZD;  // F blocks (derivatives wrt block of 2 poses)
   typedef std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD>>
       FBlocks;  // vector of F blocks
+
+  typedef CAMERA Camera;
+  typedef CameraSet<CAMERA> Cameras;
+
+  /// shorthand for a smart pointer to a factor
+  typedef boost::shared_ptr<This> shared_ptr;
 
   /// Default constructor, only for serialization
   SmartProjectionPoseFactorRollingShutter() {}
@@ -125,7 +127,7 @@ class SmartProjectionPoseFactorRollingShutter
    *  interpolated pose is the same as world_P_body_key1
    * @param cameraId ID of the camera taking the measurement (default 0)
    */
-  void add(const Point2& measured, const Key& world_P_body_key1,
+  void add(const MEASUREMENT& measured, const Key& world_P_body_key1,
            const Key& world_P_body_key2, const double& alpha,
            const size_t& cameraId = 0) {
     // store measurements in base class
@@ -164,7 +166,7 @@ class SmartProjectionPoseFactorRollingShutter
    * @param cameraIds IDs of the cameras taking each measurement (same order as
    * the measurements)
    */
-  void add(const Point2Vector& measurements,
+  void add(const MEASUREMENTS& measurements,
            const std::vector<std::pair<Key, Key>>& world_P_body_key_pairs,
            const std::vector<double>& alphas,
            const FastVector<size_t>& cameraIds = FastVector<size_t>()) {
@@ -330,12 +332,13 @@ class SmartProjectionPoseFactorRollingShutter
         const typename Base::Camera& camera_i = (*cameraRig_)[cameraIds_[i]];
         auto body_P_cam = camera_i.pose();
         auto w_P_cam = w_P_body.compose(body_P_cam, dPoseCam_dInterpPose);
-        PinholeCamera<CALIBRATION> camera(w_P_cam, camera_i.calibration());
+        typename Base::Camera camera(
+            w_P_cam, make_shared<typename CAMERA::CalibrationType>(
+                         camera_i.calibration()));
 
         // get jacobians and error vector for current measurement
-        Point2 reprojectionError_i =
-            Point2(camera.project(*this->result_, dProject_dPoseCam, Ei) -
-                   this->measured_.at(i));
+        Point2 reprojectionError_i = camera.reprojectionError(
+            *this->result_, this->measured_.at(i), dProject_dPoseCam, Ei);
         Eigen::Matrix<double, ZDim, DimBlock> J;  // 2 x 12
         J.block(0, 0, ZDim, 6) =
             dProject_dPoseCam * dPoseCam_dInterpPose *
@@ -403,7 +406,7 @@ class SmartProjectionPoseFactorRollingShutter
     for (size_t i = 0; i < Fs.size(); i++)
       Fs[i] = this->noiseModel_->Whiten(Fs[i]);
 
-    Matrix3 P = Base::Cameras::PointCov(E, lambda, diagonalDamping);
+    Matrix3 P = Cameras::PointCov(E, lambda, diagonalDamping);
 
     // Collect all the key pairs: these are the keys that correspond to the
     // blocks in Fs (on which we apply the Schur Complement)

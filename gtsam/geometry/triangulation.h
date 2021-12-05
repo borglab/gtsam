@@ -24,6 +24,7 @@
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/CameraSet.h>
 #include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/SphericalCamera.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -60,6 +61,18 @@ GTSAM_EXPORT Vector4 triangulateHomogeneousDLT(
     const Point2Vector& measurements, double rank_tol = 1e-9);
 
 /**
+ * Same math as Hartley and Zisserman, 2nd Ed., page 312, but with unit-norm bearing vectors
+ * (contrarily to pinhole projection, the z entry is not assumed to be 1 as in Hartley and Zisserman)
+ * @param projection_matrices Projection matrices (K*P^-1)
+ * @param measurements Unit3 bearing measurements
+ * @param rank_tol SVD rank tolerance
+ * @return Triangulated point, in homogeneous coordinates
+ */
+GTSAM_EXPORT Vector4 triangulateHomogeneousDLT(
+    const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>& projection_matrices,
+    const std::vector<Unit3>& measurements, double rank_tol = 1e-9);
+
+/**
  * DLT triangulation: See Hartley and Zisserman, 2nd Ed., page 312
  * @param projection_matrices Projection matrices (K*P^-1)
  * @param measurements 2D measurements
@@ -69,6 +82,14 @@ GTSAM_EXPORT Vector4 triangulateHomogeneousDLT(
 GTSAM_EXPORT Point3 triangulateDLT(
     const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>& projection_matrices,
     const Point2Vector& measurements,
+    double rank_tol = 1e-9);
+
+/**
+ * overload of previous function to work with Unit3 (projected to canonical camera)
+ */
+GTSAM_EXPORT Point3 triangulateDLT(
+    const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>& projection_matrices,
+    const std::vector<Unit3>& measurements,
     double rank_tol = 1e-9);
 
 /**
@@ -180,26 +201,27 @@ Point3 triangulateNonlinear(
   return optimize(graph, values, Symbol('p', 0));
 }
 
-/**
- * Create a 3*4 camera projection matrix from calibration and pose.
- * Functor for partial application on calibration
- * @param pose The camera pose
- * @param cal  The calibration
- * @return Returns a Matrix34
- */
+template<class CAMERA>
+std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>
+projectionMatricesFromCameras(const CameraSet<CAMERA> &cameras) {
+  std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>> projection_matrices;
+  for (const CAMERA &camera: cameras) {
+    projection_matrices.push_back(camera.cameraProjectionMatrix());
+  }
+  return projection_matrices;
+}
+
+// overload, assuming pinholePose
 template<class CALIBRATION>
-struct CameraProjectionMatrix {
-  CameraProjectionMatrix(const CALIBRATION& calibration) :
-      K_(calibration.K()) {
+std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>> projectionMatricesFromPoses(
+        const std::vector<Pose3> &poses, boost::shared_ptr<CALIBRATION> sharedCal) {
+  std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>> projection_matrices;
+  for (size_t i = 0; i < poses.size(); i++) {
+    PinholePose<CALIBRATION> camera(poses.at(i), sharedCal);
+    projection_matrices.push_back(camera.cameraProjectionMatrix());
   }
-  Matrix34 operator()(const Pose3& pose) const {
-    return K_ * (pose.inverse().matrix()).block<3, 4>(0, 0);
-  }
-private:
-  const Matrix3 K_;
-public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
-};
+  return projection_matrices;
+}
 
 /**
  * Function to triangulate 3D landmark point from an arbitrary number
@@ -224,10 +246,7 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
     throw(TriangulationUnderconstrainedException());
 
   // construct projection matrices from poses & calibration
-  std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>> projection_matrices;
-  CameraProjectionMatrix<CALIBRATION> createP(*sharedCal); // partially apply
-  for(const Pose3& pose: poses)
-    projection_matrices.push_back(createP(pose));
+  auto projection_matrices = projectionMatricesFromPoses(poses, sharedCal);
 
   // Triangulate linearly
   Point3 point = triangulateDLT(projection_matrices, measurements, rank_tol);
@@ -274,11 +293,7 @@ Point3 triangulatePoint3(
     throw(TriangulationUnderconstrainedException());
 
   // construct projection matrices from poses & calibration
-  std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>> projection_matrices;
-  for(const CAMERA& camera: cameras)
-    projection_matrices.push_back(
-        CameraProjectionMatrix<typename CAMERA::CalibrationType>(camera.calibration())(
-            camera.pose()));
+  auto projection_matrices = projectionMatricesFromCameras(cameras);
   Point3 point = triangulateDLT(projection_matrices, measurements, rank_tol);
 
   // The n refine using non-linear optimization
@@ -474,8 +489,8 @@ TriangulationResult triangulateSafe(const CameraSet<CAMERA>& cameras,
 #endif
         // Check reprojection error
         if (params.dynamicOutlierRejectionThreshold > 0) {
-          const Point2& zi = measured.at(i);
-          Point2 reprojectionError(camera.project(point) - zi);
+          const typename CAMERA::Measurement& zi = measured.at(i);
+          Point2 reprojectionError = camera.reprojectionError(point, zi);
           maxReprojError = std::max(maxReprojError, reprojectionError.norm());
         }
         i += 1;
@@ -503,6 +518,6 @@ using CameraSetCal3Bundler = CameraSet<PinholeCamera<Cal3Bundler>>;
 using CameraSetCal3_S2 = CameraSet<PinholeCamera<Cal3_S2>>;
 using CameraSetCal3Fisheye = CameraSet<PinholeCamera<Cal3Fisheye>>;
 using CameraSetCal3Unified = CameraSet<PinholeCamera<Cal3Unified>>;
-
+using CameraSetSpherical = CameraSet<SphericalCamera>;
 } // \namespace gtsam
 
