@@ -313,9 +313,8 @@ public:
   }
 
   /// for Linear Triangulation
-  Matrix34 getCameraProjectionMatrix() const {
-    Matrix34 P = Matrix34(PinholeBase::pose().inverse().matrix().block(0, 0, 3, 4));
-    return K_.K() * P;
+  Matrix34 cameraProjectionMatrix() const {
+    return K_.K() * PinholeBase::pose().inverse().matrix().block(0, 0, 3, 4);
   }
 
   /// for Nonlinear Triangulation
