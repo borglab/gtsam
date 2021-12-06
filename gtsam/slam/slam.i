@@ -168,7 +168,7 @@ template <POSE>
 virtual class PoseTranslationPrior : gtsam::NoiseModelFactor {
   PoseTranslationPrior(size_t key, const POSE& pose_z,
                        const gtsam::noiseModel::Base* noiseModel);
-  POSE measured() const;
+  POSE::Translation measured() const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -185,7 +185,7 @@ template <POSE>
 virtual class PoseRotationPrior : gtsam::NoiseModelFactor {
   PoseRotationPrior(size_t key, const POSE& pose_z,
                     const gtsam::noiseModel::Base* noiseModel);
-  POSE measured() const;
+  POSE::Rotation measured() const;
 };
 
 typedef gtsam::PoseRotationPrior<gtsam::Pose2> PoseRotationPrior2D;
