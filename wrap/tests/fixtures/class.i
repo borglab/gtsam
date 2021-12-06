@@ -10,6 +10,9 @@ class Fun {
 
   static This staticMethodWithThis();
 
+  template<T={int}>
+  static double templatedStaticMethod(const T& m);
+
   template<T={string}>
   This templatedMethod(double d, T t);
 

@@ -34,6 +34,9 @@ virtual class Gaussian : gtsam::noiseModel::Base {
 
   // enabling serialization functionality
   void serializable() const;
+
+  // enable pickling in python
+  void pickle() const;
 };
 
 virtual class Diagonal : gtsam::noiseModel::Gaussian {
@@ -49,6 +52,9 @@ virtual class Diagonal : gtsam::noiseModel::Gaussian {
 
   // enabling serialization functionality
   void serializable() const;
+
+  // enable pickling in python
+  void pickle() const;
 };
 
 virtual class Constrained : gtsam::noiseModel::Diagonal {
@@ -66,6 +72,9 @@ virtual class Constrained : gtsam::noiseModel::Diagonal {
 
     // enabling serialization functionality
     void serializable() const;
+
+    // enable pickling in python
+    void pickle() const;
 };
 
 virtual class Isotropic : gtsam::noiseModel::Diagonal {
@@ -78,6 +87,9 @@ virtual class Isotropic : gtsam::noiseModel::Diagonal {
 
   // enabling serialization functionality
   void serializable() const;
+
+  // enable pickling in python
+  void pickle() const;
 };
 
 virtual class Unit : gtsam::noiseModel::Isotropic {
@@ -85,6 +97,9 @@ virtual class Unit : gtsam::noiseModel::Isotropic {
 
   // enabling serialization functionality
   void serializable() const;
+
+  // enable pickling in python
+  void pickle() const;
 };
 
 namespace mEstimator {
@@ -221,6 +236,7 @@ class VectorValues {
   //Constructors
   VectorValues();
   VectorValues(const gtsam::VectorValues& other);
+  VectorValues(const gtsam::VectorValues& first, const gtsam::VectorValues& second);
 
   //Named Constructors
   static gtsam::VectorValues Zero(const gtsam::VectorValues& model);
@@ -301,6 +317,7 @@ virtual class JacobianFactor : gtsam::GaussianFactor {
   void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
                                 gtsam::DefaultKeyFormatter) const;
   void printKeys(string s) const;
+  gtsam::KeyVector& keys() const;
   bool equals(const gtsam::GaussianFactor& lf, double tol) const;
   size_t size() const;
   Vector unweighted_error(const gtsam::VectorValues& c) const;
@@ -400,6 +417,7 @@ class GaussianFactorGraph {
   // error and probability
   double error(const gtsam::VectorValues& c) const;
   double probPrime(const gtsam::VectorValues& c) const;
+  void printErrors(const gtsam::VectorValues& c, string str = "GaussianFactorGraph: ", const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter) const;
 
   gtsam::GaussianFactorGraph clone() const;
   gtsam::GaussianFactorGraph negate() const;
@@ -512,9 +530,9 @@ virtual class GaussianBayesNet {
   size_t size() const;
 
   // FactorGraph derived interface
-  // size_t size() const;
   gtsam::GaussianConditional* at(size_t idx) const;
   gtsam::KeySet keys() const;
+  gtsam::KeyVector keyVector() const;
   bool exists(size_t idx) const;
 
   void saveGraph(const string& s) const;

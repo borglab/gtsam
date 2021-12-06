@@ -41,6 +41,12 @@ class ConstantBias {
   Vector gyroscope() const;
   Vector correctAccelerometer(Vector measurement) const;
   Vector correctGyroscope(Vector measurement) const;
+
+  // enabling serialization functionality
+  void serialize() const;
+
+  // enable pickling in python
+  void pickle() const;
 };
 
 }///\namespace imuBias
@@ -64,6 +70,12 @@ class NavState {
 
   gtsam::NavState retract(const Vector& x) const;
   Vector localCoordinates(const gtsam::NavState& g) const;
+
+  // enabling serialization functionality
+  void serialize() const;
+
+  // enable pickling in python
+  void pickle() const;
 };
 
 #include <gtsam/navigation/PreintegratedRotation.h>
@@ -88,6 +100,8 @@ virtual class PreintegratedRotationParams {
 virtual class PreintegrationParams : gtsam::PreintegratedRotationParams {
   PreintegrationParams(Vector n_gravity);
 
+  gtsam::Vector n_gravity;
+
   static gtsam::PreintegrationParams* MakeSharedD(double g);
   static gtsam::PreintegrationParams* MakeSharedU(double g);
   static gtsam::PreintegrationParams* MakeSharedD();  // default g = 9.81
@@ -104,6 +118,12 @@ virtual class PreintegrationParams : gtsam::PreintegratedRotationParams {
   Matrix getAccelerometerCovariance() const;
   Matrix getIntegrationCovariance()   const;
   bool   getUse2ndOrderCoriolis()     const;
+
+  // enabling serialization functionality
+  void serialize() const;
+
+  // enable pickling in python
+  void pickle() const;
 };
 
 #include <gtsam/navigation/ImuFactor.h>
@@ -133,6 +153,12 @@ class PreintegratedImuMeasurements {
   Vector biasHatVector() const;
   gtsam::NavState predict(const gtsam::NavState& state_i,
       const gtsam::imuBias::ConstantBias& bias) const;
+
+  // enabling serialization functionality
+  void serialize() const;
+
+  // enable pickling in python
+  void pickle() const;
 };
 
 virtual class ImuFactor: gtsam::NonlinearFactor {

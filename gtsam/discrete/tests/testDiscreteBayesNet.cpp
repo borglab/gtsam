@@ -104,12 +104,12 @@ TEST(DiscreteBayesNet, Asia) {
   EXPECT(assert_equal(expected2, *chordal->back()));
 
   // solve
-  DiscreteFactor::sharedValues actualMPE = chordal->optimize();
+  auto actualMPE = chordal->optimize();
   DiscreteFactor::Values expectedMPE;
   insert(expectedMPE)(Asia.first, 0)(Dyspnea.first, 0)(XRay.first, 0)(
       Tuberculosis.first, 0)(Smoking.first, 0)(Either.first, 0)(
       LungCancer.first, 0)(Bronchitis.first, 0);
-  EXPECT(assert_equal(expectedMPE, *actualMPE));
+  EXPECT(assert_equal(expectedMPE, actualMPE));
 
   // add evidence, we were in Asia and we have dyspnea
   fg.add(Asia, "0 1");
@@ -117,12 +117,12 @@ TEST(DiscreteBayesNet, Asia) {
 
   // solve again, now with evidence
   DiscreteBayesNet::shared_ptr chordal2 = fg.eliminateSequential(ordering);
-  DiscreteFactor::sharedValues actualMPE2 = chordal2->optimize();
+  auto actualMPE2 = chordal2->optimize();
   DiscreteFactor::Values expectedMPE2;
   insert(expectedMPE2)(Asia.first, 1)(Dyspnea.first, 1)(XRay.first, 0)(
       Tuberculosis.first, 0)(Smoking.first, 1)(Either.first, 0)(
       LungCancer.first, 0)(Bronchitis.first, 1);
-  EXPECT(assert_equal(expectedMPE2, *actualMPE2));
+  EXPECT(assert_equal(expectedMPE2, actualMPE2));
 
   // now sample from it
   DiscreteFactor::Values expectedSample;
@@ -130,8 +130,8 @@ TEST(DiscreteBayesNet, Asia) {
   insert(expectedSample)(Asia.first, 1)(Dyspnea.first, 1)(XRay.first, 1)(
       Tuberculosis.first, 0)(Smoking.first, 1)(Either.first, 1)(
       LungCancer.first, 1)(Bronchitis.first, 0);
-  DiscreteFactor::sharedValues actualSample = chordal2->sample();
-  EXPECT(assert_equal(expectedSample, *actualSample));
+  auto actualSample = chordal2->sample();
+  EXPECT(assert_equal(expectedSample, actualSample));
 }
 
 /* ************************************************************************* */

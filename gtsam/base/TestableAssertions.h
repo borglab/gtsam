@@ -85,7 +85,7 @@ bool assert_equal(const V& expected, const boost::optional<const V&>& actual, do
  * \deprecated: use container equals instead
  */
 template<class V>
-bool assert_equal(const std::vector<V>& expected, const std::vector<V>& actual, double tol = 1e-9) {
+bool GTSAM_DEPRECATED assert_equal(const std::vector<V>& expected, const std::vector<V>& actual, double tol = 1e-9) {
   bool match = true;
   if (expected.size() != actual.size())
     match = false;
