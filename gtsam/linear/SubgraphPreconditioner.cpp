@@ -173,7 +173,7 @@ void SubgraphPreconditioner::transposeMultiplyAdd
   Errors::const_iterator it = e.begin();
   for(auto& key_value: y) {
     const Vector& ei = *it;
-    axpy(alpha, ei, key_value.second);
+    key_value.second += alpha * ei;
     ++it;
   }
   transposeMultiplyAdd2(alpha, it, e.end(), y);
@@ -191,7 +191,7 @@ void SubgraphPreconditioner::transposeMultiplyAdd2 (double alpha,
 
   VectorValues x = VectorValues::Zero(y); // x = 0
   Ab2_->transposeMultiplyAdd(1.0,e2,x);   // x += A2'*e2
-  axpy(alpha, Rc1_->backSubstituteTranspose(x), y); // y += alpha*inv(R1')*x
+  y += alpha * Rc1_->backSubstituteTranspose(x); // y += alpha*inv(R1')*x
 }
 
 /* ************************************************************************* */

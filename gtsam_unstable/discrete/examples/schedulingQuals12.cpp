@@ -129,7 +129,7 @@ void runLargeExample() {
   tictoc_finishedIteration();
   tictoc_print();
   for (size_t i=0;i<100;i++) {
-    DiscreteFactor::sharedValues assignment = chordal->sample();
+    auto assignment = chordal->sample();
     vector<size_t> stats(scheduler.nrFaculty());
     scheduler.accumulateStats(assignment, stats);
     size_t max = *max_element(stats.begin(), stats.end());
@@ -143,7 +143,7 @@ void runLargeExample() {
   }
 #else
   gttic(large);
-  DiscreteFactor::sharedValues MPE = scheduler.optimalAssignment();
+  auto MPE = scheduler.optimalAssignment();
   gttoc(large);
   tictoc_finishedIteration();
   tictoc_print();
@@ -234,7 +234,7 @@ void sampleSolutions() {
   // now, sample schedules
   for (size_t n = 0; n < 500; n++) {
     vector<size_t> stats(19, 0);
-    vector<Scheduler::sharedValues> samples;
+    vector<Scheduler::Values> samples;
     for (size_t i = 0; i < NRSTUDENTS; i++) {
       samples.push_back(samplers[i]->sample());
       schedulers[i].accumulateStats(samples[i], stats);

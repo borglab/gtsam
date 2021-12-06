@@ -51,7 +51,6 @@ public:
    * the new class DiscreteValue, as the varible's type (domain)
    */
   typedef Assignment<Key> Values;
-  typedef boost::shared_ptr<Values> sharedValues;
 
 public:
 

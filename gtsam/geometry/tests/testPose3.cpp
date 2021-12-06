@@ -146,6 +146,81 @@ TEST(Pose3, Adjoint_full)
 }
 
 /* ************************************************************************* */
+// Check Adjoint numerical derivatives
+TEST(Pose3, Adjoint_jacobians)
+{
+  Vector6 xi = (Vector6() << 0.1, 1.2, 2.3, 3.1, 1.4, 4.5).finished();
+
+  // Check evaluation sanity check
+  EQUALITY(static_cast<gtsam::Vector>(T.AdjointMap() * xi), T.Adjoint(xi));
+  EQUALITY(static_cast<gtsam::Vector>(T2.AdjointMap() * xi), T2.Adjoint(xi));
+  EQUALITY(static_cast<gtsam::Vector>(T3.AdjointMap() * xi), T3.Adjoint(xi));
+
+  // Check jacobians
+  Matrix6 actualH1, actualH2, expectedH1, expectedH2;
+  std::function<Vector6(const Pose3&, const Vector6&)> Adjoint_proxy =
+      [&](const Pose3& T, const Vector6& xi) { return T.Adjoint(xi); };
+
+  T.Adjoint(xi, actualH1, actualH2);
+  expectedH1 = numericalDerivative21(Adjoint_proxy, T, xi);
+  expectedH2 = numericalDerivative22(Adjoint_proxy, T, xi);
+  EXPECT(assert_equal(expectedH1, actualH1));
+  EXPECT(assert_equal(expectedH2, actualH2));
+
+  T2.Adjoint(xi, actualH1, actualH2);
+  expectedH1 = numericalDerivative21(Adjoint_proxy, T2, xi);
+  expectedH2 = numericalDerivative22(Adjoint_proxy, T2, xi);
+  EXPECT(assert_equal(expectedH1, actualH1));
+  EXPECT(assert_equal(expectedH2, actualH2));
+
+  T3.Adjoint(xi, actualH1, actualH2);
+  expectedH1 = numericalDerivative21(Adjoint_proxy, T3, xi);
+  expectedH2 = numericalDerivative22(Adjoint_proxy, T3, xi);
+  EXPECT(assert_equal(expectedH1, actualH1));
+  EXPECT(assert_equal(expectedH2, actualH2));
+}
+
+/* ************************************************************************* */
+// Check AdjointTranspose and jacobians
+TEST(Pose3, AdjointTranspose)
+{
+  Vector6 xi = (Vector6() << 0.1, 1.2, 2.3, 3.1, 1.4, 4.5).finished();
+
+  // Check evaluation
+  EQUALITY(static_cast<Vector>(T.AdjointMap().transpose() * xi),
+           T.AdjointTranspose(xi));
+  EQUALITY(static_cast<Vector>(T2.AdjointMap().transpose() * xi),
+           T2.AdjointTranspose(xi));
+  EQUALITY(static_cast<Vector>(T3.AdjointMap().transpose() * xi),
+           T3.AdjointTranspose(xi));
+
+  // Check jacobians
+  Matrix6 actualH1, actualH2, expectedH1, expectedH2;
+  std::function<Vector6(const Pose3&, const Vector6&)> AdjointTranspose_proxy =
+      [&](const Pose3& T, const Vector6& xi) {
+        return T.AdjointTranspose(xi);
+      };
+
+  T.AdjointTranspose(xi, actualH1, actualH2);
+  expectedH1 = numericalDerivative21(AdjointTranspose_proxy, T, xi);
+  expectedH2 = numericalDerivative22(AdjointTranspose_proxy, T, xi);
+  EXPECT(assert_equal(expectedH1, actualH1, 1e-8));
+  EXPECT(assert_equal(expectedH2, actualH2));
+
+  T2.AdjointTranspose(xi, actualH1, actualH2);
+  expectedH1 = numericalDerivative21(AdjointTranspose_proxy, T2, xi);
+  expectedH2 = numericalDerivative22(AdjointTranspose_proxy, T2, xi);
+  EXPECT(assert_equal(expectedH1, actualH1, 1e-8));
+  EXPECT(assert_equal(expectedH2, actualH2));
+
+  T3.AdjointTranspose(xi, actualH1, actualH2);
+  expectedH1 = numericalDerivative21(AdjointTranspose_proxy, T3, xi);
+  expectedH2 = numericalDerivative22(AdjointTranspose_proxy, T3, xi);
+  EXPECT(assert_equal(expectedH1, actualH1, 1e-8));
+  EXPECT(assert_equal(expectedH2, actualH2));
+}
+
+/* ************************************************************************* */
 // assert that T*wedge(xi)*T^-1 is equal to wedge(Ad_T(xi))
 TEST(Pose3, Adjoint_hat)
 {
@@ -837,16 +912,20 @@ Vector6 testDerivAdjoint(const Vector6& xi, const Vector6& v) {
 }
 
 TEST( Pose3, adjoint) {
-  Vector expected = testDerivAdjoint(screwPose3::xi, screwPose3::xi);
+  Vector6 v = (Vector6() << 1, 2, 3, 4, 5, 6).finished();
+  Vector expected = testDerivAdjoint(screwPose3::xi, v);
 
-  Matrix actualH;
-  Vector actual = Pose3::adjoint(screwPose3::xi, screwPose3::xi, actualH);
+  Matrix actualH1, actualH2;
+  Vector actual = Pose3::adjoint(screwPose3::xi, v, actualH1, actualH2);
 
-  Matrix numericalH = numericalDerivative21<Vector6, Vector6, Vector6>(
-      testDerivAdjoint, screwPose3::xi, screwPose3::xi, 1e-5);
+  Matrix numericalH1 = numericalDerivative21<Vector6, Vector6, Vector6>(
+      testDerivAdjoint, screwPose3::xi, v, 1e-5);
+  Matrix numericalH2 = numericalDerivative22<Vector6, Vector6, Vector6>(
+      testDerivAdjoint, screwPose3::xi, v, 1e-5);
 
   EXPECT(assert_equal(expected,actual,1e-5));
-  EXPECT(assert_equal(numericalH,actualH,1e-5));
+  EXPECT(assert_equal(numericalH1,actualH1,1e-5));
+  EXPECT(assert_equal(numericalH2,actualH2,1e-5));
 }
 
 /* ************************************************************************* */
@@ -859,14 +938,17 @@ TEST( Pose3, adjointTranspose) {
   Vector v = (Vector(6) << 0.04, 0.05, 0.06, 4.0, 5.0, 6.0).finished();
   Vector expected = testDerivAdjointTranspose(xi, v);
 
-  Matrix actualH;
-  Vector actual = Pose3::adjointTranspose(xi, v, actualH);
+  Matrix actualH1, actualH2;
+  Vector actual = Pose3::adjointTranspose(xi, v, actualH1, actualH2);
 
-  Matrix numericalH = numericalDerivative21<Vector6, Vector6, Vector6>(
+  Matrix numericalH1 = numericalDerivative21<Vector6, Vector6, Vector6>(
+      testDerivAdjointTranspose, xi, v, 1e-5);
+  Matrix numericalH2 = numericalDerivative22<Vector6, Vector6, Vector6>(
       testDerivAdjointTranspose, xi, v, 1e-5);
 
   EXPECT(assert_equal(expected,actual,1e-15));
-  EXPECT(assert_equal(numericalH,actualH,1e-5));
+  EXPECT(assert_equal(numericalH1,actualH1,1e-5));
+  EXPECT(assert_equal(numericalH2,actualH2,1e-5));
 }
 
 /* ************************************************************************* */

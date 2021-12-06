@@ -103,7 +103,7 @@ namespace gtsam {
       boost::none, boost::optional<Matrix&> H2 = boost::none) const override {
       T hx = traits<T>::Between(p1, p2, H1, H2); // h(x)
       // manifold equivalent of h(x)-z -> log(z,h(x))
-#ifdef SLOW_BUT_CORRECT_BETWEENFACTOR
+#ifdef GTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR
       typename traits<T>::ChartJacobian::Jacobian Hlocal;
       Vector rval = traits<T>::Local(measured_, hx, boost::none, (H1 || H2) ? &Hlocal : 0);
       if (H1) *H1 = Hlocal * (*H1);
