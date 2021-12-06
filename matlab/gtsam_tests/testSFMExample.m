@@ -25,7 +25,7 @@ poseNoiseSigmas = [0.001 0.001 0.001 0.1 0.1 0.1]';
 graph = NonlinearFactorGraph;
 
 %% Add factors for all measurements
-measurementNoise = noiseModel.Isotropic.Sigma(2,measurementNoiseSigma);
+measurementNoise = noiseModel.Isotropic.Sigma(2,measurementNoiseSigma, true);
 for i=1:length(data.Z)
     for k=1:length(data.Z{i})
         j = data.J{i}{k};
@@ -33,9 +33,9 @@ for i=1:length(data.Z)
     end
 end
 
-posePriorNoise  = noiseModel.Diagonal.Sigmas(poseNoiseSigmas);
+posePriorNoise  = noiseModel.Diagonal.Sigmas(poseNoiseSigmas, true);
 graph.add(PriorFactorPose3(symbol('x',1), truth.cameras{1}.pose, posePriorNoise));
-pointPriorNoise  = noiseModel.Isotropic.Sigma(3,pointNoiseSigma);
+pointPriorNoise  = noiseModel.Isotropic.Sigma(3,pointNoiseSigma, true);
 graph.add(PriorFactorPoint3(symbol('p',1), truth.points{1}, pointPriorNoise));
 
 %% Initial estimate
