@@ -286,14 +286,14 @@ void gtsamPoint3_string_serialize_22(int nargout, mxArray *out[], int nargin, co
 }
 void gtsamPoint3_StaticFunctionRet_23(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  checkArguments("gtsamPoint3.StaticFunctionRet",nargout,nargin,1);
+  checkArguments("gtsam::Point3.StaticFunctionRet",nargout,nargin,1);
   double z = unwrap< double >(in[0]);
   out[0] = wrap< Point3 >(gtsam::Point3::StaticFunctionRet(z));
 }
 
 void gtsamPoint3_staticFunction_24(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  checkArguments("gtsamPoint3.staticFunction",nargout,nargin,0);
+  checkArguments("gtsam::Point3.staticFunction",nargout,nargin,0);
   out[0] = wrap< double >(gtsam::Point3::staticFunction());
 }
 

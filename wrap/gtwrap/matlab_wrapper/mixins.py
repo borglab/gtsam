@@ -108,7 +108,7 @@ class FormatMixin:
         elif is_method:
             formatted_type_name += self.data_type_param.get(name) or name
         else:
-            formatted_type_name += name
+            formatted_type_name += str(name)
 
         if separator == "::":  # C++
             templates = []
@@ -192,10 +192,9 @@ class FormatMixin:
         method = ''
 
         if isinstance(static_method, parser.StaticMethod):
-            method += "".join([separator + x for x in static_method.parent.namespaces()]) + \
-                      separator + static_method.parent.name + separator
+            method += static_method.parent.to_cpp() + separator
 
-        return method[2 * len(separator):]
+        return method
 
     def _format_global_function(self,
                                 function: Union[parser.GlobalFunction, Any],
