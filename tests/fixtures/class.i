@@ -18,6 +18,8 @@ class Fun {
 
   template<T={string}, U={size_t}>
   This multiTemplatedMethod(double d, T t, U u);
+
+  std::map<M, This::M> sets();
 };
 
 

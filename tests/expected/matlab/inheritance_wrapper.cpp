@@ -289,7 +289,7 @@ void MyTemplatePoint2_templatedMethod_17(int nargout, mxArray *out[], int nargin
 
 void MyTemplatePoint2_Level_18(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  checkArguments("MyTemplatePoint2.Level",nargout,nargin,1);
+  checkArguments("MyTemplate<gtsam::Point2>.Level",nargout,nargin,1);
   Point2 K = unwrap< Point2 >(in[0]);
   out[0] = wrap_shared_ptr(boost::make_shared<MyTemplate<Point2>>(MyTemplate<gtsam::Point2>::Level(K)),"MyTemplatePoint2", false);
 }
@@ -457,7 +457,7 @@ void MyTemplateMatrix_templatedMethod_33(int nargout, mxArray *out[], int nargin
 
 void MyTemplateMatrix_Level_34(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  checkArguments("MyTemplateMatrix.Level",nargout,nargin,1);
+  checkArguments("MyTemplate<gtsam::Matrix>.Level",nargout,nargin,1);
   Matrix K = unwrap< Matrix >(in[0]);
   out[0] = wrap_shared_ptr(boost::make_shared<MyTemplate<Matrix>>(MyTemplate<gtsam::Matrix>::Level(K)),"MyTemplateMatrix", false);
 }
