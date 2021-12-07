@@ -96,7 +96,7 @@ Similarity2::Similarity2(const Rot2& R, const Point2& t, double s) :
 }
 
 Similarity2::Similarity2(const Matrix2& R, const Vector2& t, double s) :
-    R_(R), t_(t), s_(s) {
+    R_(Rot2.ClosestTo(R)), t_(t), s_(s) {
 }
 
 Similarity2::Similarity2(const Matrix3& T) :
