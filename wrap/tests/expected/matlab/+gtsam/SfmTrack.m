@@ -1,28 +1,23 @@
-%class MyVector12, see Doxygen page for details
+%class SfmTrack, see Doxygen page for details
 %at https://gtsam.org/doxygen/
 %
-%-------Constructors-------
-%MyVector12()
-%
-classdef MyVector12 < handle
+classdef SfmTrack < handle
   properties
-    ptr_MyVector12 = 0
+    ptr_gtsamSfmTrack = 0
   end
   methods
-    function obj = MyVector12(varargin)
+    function obj = SfmTrack(varargin)
       if nargin == 2 && isa(varargin{1}, 'uint64') && varargin{1} == uint64(5139824614673773682)
         my_ptr = varargin{2};
-        class_wrapper(48, my_ptr);
-      elseif nargin == 0
-        my_ptr = class_wrapper(49);
+        special_cases_wrapper(3, my_ptr);
       else
-        error('Arguments do not match any overload of MyVector12 constructor');
+        error('Arguments do not match any overload of gtsam.SfmTrack constructor');
       end
-      obj.ptr_MyVector12 = my_ptr;
+      obj.ptr_gtsamSfmTrack = my_ptr;
     end
 
     function delete(obj)
-      class_wrapper(50, obj.ptr_MyVector12);
+      special_cases_wrapper(4, obj.ptr_gtsamSfmTrack);
     end
 
     function display(obj), obj.print(''); end

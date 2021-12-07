@@ -239,18 +239,18 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
         return var_list_wrap
 
-    def _wrap_method_check_statement(self, args):
+    def _wrap_method_check_statement(self, args: parser.ArgumentList):
         """
         Wrap the given arguments into either just a varargout call or a
         call in an if statement that checks if the parameters are accurate.
+
+        TODO Update this method so that default arguments are supported.
         """
-        check_statement = ''
         arg_id = 1
 
-        if check_statement == '':
-            check_statement = \
-                'if length(varargin) == {param_count}'.format(
-                    param_count=len(args.list()))
+        param_count = len(args)
+        check_statement = 'if length(varargin) == {param_count}'.format(
+            param_count=param_count)
 
         for _, arg in enumerate(args.list()):
             name = arg.ctype.typename.name
@@ -809,7 +809,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
         for static_method in static_methods:
             format_name = list(static_method[0].name)
-            format_name[0] = format_name[0].upper()
+            format_name[0] = format_name[0]
 
             if static_method[0].name in self.ignore_methods:
                 continue
@@ -850,12 +850,13 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                     wrapper=self._wrapper_name(),
                     id=self._update_wrapper_id(
                         (namespace_name, instantiated_class,
-                         static_overload.name, static_overload)),
+                        static_overload.name, static_overload)),
                     class_name=instantiated_class.name,
                     end_statement=end_statement),
-                                               prefix='    ')
+                                            prefix='    ')
 
-            #TODO Figure out what is static_overload doing here.
+            # If the arguments don't match any of the checks above,
+            # throw an error with the class and method name.
             method_text += textwrap.indent(textwrap.dedent("""\
                     error('Arguments do not match any overload of function {class_name}.{method_name}');
                 """.format(class_name=class_name,
@@ -1081,7 +1082,6 @@ class MatlabWrapper(CheckMixin, FormatMixin):
         obj_start = ''
 
         if isinstance(method, instantiator.InstantiatedMethod):
-            # method_name = method.original.name
             method_name = method.to_cpp()
             obj_start = 'obj->'
 
@@ -1089,6 +1089,10 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                 # method_name += '<{}>'.format(
                 #     self._format_type_name(method.instantiations))
                 method = method.to_cpp()
+
+        elif isinstance(method, instantiator.InstantiatedStaticMethod):
+            method_name = self._format_static_method(method, '::')
+            method_name += method.original.name
 
         elif isinstance(method, parser.GlobalFunction):
             method_name = self._format_global_function(method, '::')
@@ -1250,7 +1254,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                 method_name = ''
 
                 if is_static_method:
-                    method_name = self._format_static_method(extra) + '.'
+                    method_name = self._format_static_method(extra, '.')
 
                 method_name += extra.name
 
@@ -1567,23 +1571,23 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
     def wrap(self, files, path):
         """High level function to wrap the project."""
+        content = ""
         modules = {}
         for file in files:
             with open(file, 'r') as f:
-                content = f.read()
+                content += f.read()
 
-            # Parse the contents of the interface file
-            parsed_result = parser.Module.parseString(content)
-            # print(parsed_result)
+        # Parse the contents of the interface file
+        parsed_result = parser.Module.parseString(content)
 
-            # Instantiate the module
-            module = instantiator.instantiate_namespace(parsed_result)
+        # Instantiate the module
+        module = instantiator.instantiate_namespace(parsed_result)
 
-            if module.name in modules:
-                modules[module.
-                        name].content[0].content += module.content[0].content
-            else:
-                modules[module.name] = module
+        if module.name in modules:
+            modules[
+                module.name].content[0].content += module.content[0].content
+        else:
+            modules[module.name] = module
 
         for module in modules.values():
             # Wrap the full namespace

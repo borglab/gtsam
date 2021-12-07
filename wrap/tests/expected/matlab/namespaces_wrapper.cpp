@@ -248,7 +248,7 @@ void ns2ClassA_nsReturn_12(int nargout, mxArray *out[], int nargin, const mxArra
 
 void ns2ClassA_afunction_13(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  checkArguments("ns2ClassA.afunction",nargout,nargin,0);
+  checkArguments("ns2::ClassA.afunction",nargout,nargin,0);
   out[0] = wrap< double >(ns2::ClassA::afunction());
 }
 
