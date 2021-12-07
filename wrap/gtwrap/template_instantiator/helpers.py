@@ -55,16 +55,14 @@ def instantiate_type(
     # make a deep copy so that there is no overwriting of original template params
     ctype = deepcopy(ctype)
 
-    # Check if the return type has template parameters
+    # Check if the return type has template parameters as the typename's name
     if ctype.typename.instantiations:
         for idx, instantiation in enumerate(ctype.typename.instantiations):
             if instantiation.name in template_typenames:
                 template_idx = template_typenames.index(instantiation.name)
-                ctype.typename.instantiations[
-                    idx] = instantiations[  # type: ignore
-                        template_idx]
+                ctype.typename.instantiations[idx].name =\
+                    instantiations[template_idx]
 
-        return ctype
 
     str_arg_typename = str(ctype.typename)
 
@@ -125,9 +123,18 @@ def instantiate_type(
 
     # Case when 'This' is present in the type namespace, e.g `This::Subclass`.
     elif 'This' in str_arg_typename:
-        # Simply get the index of `This` in the namespace and replace it with the instantiated name.
-        namespace_idx = ctype.typename.namespaces.index('This')
-        ctype.typename.namespaces[namespace_idx] = cpp_typename.name
+        # Check if `This` is in the namespaces
+        if 'This' in ctype.typename.namespaces:
+            # Simply get the index of `This` in the namespace and
+            # replace it with the instantiated name.
+            namespace_idx = ctype.typename.namespaces.index('This')
+            ctype.typename.namespaces[namespace_idx] = cpp_typename.name
+        # Else check if it is in the template namespace, e.g vector<This::Value>
+        else:
+            for idx, instantiation in enumerate(ctype.typename.instantiations):
+                if 'This' in instantiation.namespaces:
+                    ctype.typename.instantiations[idx].namespaces = \
+                        cpp_typename.namespaces + [cpp_typename.name]
         return ctype
 
     else:
