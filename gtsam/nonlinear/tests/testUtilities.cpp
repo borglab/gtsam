@@ -9,38 +9,75 @@
 
  * -------------------------------------------------------------------------- */
 
-/**
+/*
  * @file testUtilities.cpp
- * @author Gerry Chen
- * @author Frank Dellaert
+ * @date Aug 19, 2021
+ * @author Varun Agrawal
+ * @brief Tests for the utilities.
  */
 
-#include <gtsam/nonlinear/utilities.h>
-#include <gtsam/nonlinear/Values.h>
-#include <gtsam/linear/VectorValues.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/TestableAssertions.h>
-
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/inference/Symbol.h>
+#include <gtsam/nonlinear/utilities.h>
 
 using namespace gtsam;
-using namespace std;
+using gtsam::symbol_shorthand::L;
+using gtsam::symbol_shorthand::R;
+using gtsam::symbol_shorthand::X;
 
 /* ************************************************************************* */
-TEST( utilities, extractVector )
-{
-  auto values = Values();
-  values.insert(0, (Vector(6) << 1,2,3,4,5,6).finished());
-  values.insert(1, (Vector(3) << 7,8,9).finished());
-  values.insert(2, (Vector(6) << 13,14,15,16,17,18).finished());
-  values.insert(3, Pose3());
-  auto actual = utilities::extractVector(values);
-  auto expected =
-      (Vector(15) << 1, 2, 3, 4, 5, 6, 7, 8, 9, 13, 14, 15, 16, 17, 18)
-          .finished();
-  EXPECT(assert_equal(expected, actual));
+TEST(Utilities, ExtractPoint2) {
+  Point2 p0(0, 0), p1(1, 0);
+  Values values;
+  values.insert<Point2>(L(0), p0);
+  values.insert<Point2>(L(1), p1);
+  values.insert<Rot3>(R(0), Rot3());
+  values.insert<Pose3>(X(0), Pose3());
+
+  Matrix all_points = utilities::extractPoint2(values);
+  EXPECT_LONGS_EQUAL(2, all_points.rows());
 }
 
 /* ************************************************************************* */
-int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
+TEST(Utilities, ExtractPoint3) {
+  Point3 p0(0, 0, 0), p1(1, 0, 0);
+  Values values;
+  values.insert<Point3>(L(0), p0);
+  values.insert<Point3>(L(1), p1);
+  values.insert<Rot3>(R(0), Rot3());
+  values.insert<Pose3>(X(0), Pose3());
+
+  Matrix all_points = utilities::extractPoint3(values);
+  EXPECT_LONGS_EQUAL(2, all_points.rows());
+}
+
+/* ************************************************************************* */
+TEST(Utilities, ExtractVector) {
+  // Test normal case with 3 vectors and 1 non-vector (ignore non-vector)
+  auto values = Values();
+  values.insert(X(0), (Vector(4) << 1, 2, 3, 4).finished());
+  values.insert(X(2), (Vector(4) << 13, 14, 15, 16).finished());
+  values.insert(X(1), (Vector(4) << 6, 7, 8, 9).finished());
+  values.insert(X(3), Pose3());
+  auto actual = utilities::extractVectors(values, 'x');
+  auto expected =
+      (Matrix(3, 4) << 1, 2, 3, 4, 6, 7, 8, 9, 13, 14, 15, 16).finished();
+  EXPECT(assert_equal(expected, actual));
+
+  // Check that mis-sized vectors fail
+  values.insert(X(4), (Vector(2) << 1, 2).finished());
+  THROWS_EXCEPTION(utilities::extractVectors(values, 'x'));
+  values.update(X(4), (Vector(6) << 1, 2, 3, 4, 5, 6).finished());
+  THROWS_EXCEPTION(utilities::extractVectors(values, 'x'));
+}
+
+/* ************************************************************************* */
+int main() {
+  srand(time(nullptr));
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
+}
 /* ************************************************************************* */
