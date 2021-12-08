@@ -30,7 +30,7 @@ namespace gtsam {
  * \nosubgrouping
  */
 template<typename Calibration>
-class PinholeCamera: public PinholeBaseK<Calibration> {
+class GTSAM_EXPORT PinholeCamera: public PinholeBaseK<Calibration> {
 
 public:
 
@@ -148,7 +148,7 @@ public:
   }
 
   /// print
-  void print(const std::string& s = "PinholeCamera") const {
+  void print(const std::string& s = "PinholeCamera") const override {
     Base::print(s);
     K_.print(s + ".calibration");
   }
@@ -310,6 +310,16 @@ public:
       OptionalJacobian<1, dimension> Dcamera = boost::none,
       OptionalJacobian<1, 6> Dother = boost::none) const {
     return range(camera.pose(), Dcamera, Dother);
+  }
+
+  /// for Linear Triangulation
+  Matrix34 cameraProjectionMatrix() const {
+    return K_.K() * PinholeBase::pose().inverse().matrix().block(0, 0, 3, 4);
+  }
+
+  /// for Nonlinear Triangulation
+  Vector defaultErrorWhenTriangulatingBehindCamera() const {
+    return Eigen::Matrix<double,traits<Point2>::dimension,1>::Constant(2.0 * K_.fx());;
   }
 
 private:

@@ -40,8 +40,8 @@ static Point3Pairs subtractCentroids(const Point3Pairs &abPointPairs,
 }
 
 /// Form inner products x and y and calculate scale.
-static const double calculateScale(const Point3Pairs &d_abPointPairs,
-                                   const Rot3 &aRb) {
+static double calculateScale(const Point3Pairs &d_abPointPairs,
+                             const Rot3 &aRb) {
   double x = 0, y = 0;
   Point3 da, db;
   for (const Point3Pair& d_abPair : d_abPointPairs) {

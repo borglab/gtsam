@@ -55,6 +55,9 @@ namespace gtsam {
     template<class DERIVEDCONDITIONAL>
     DiscreteBayesNet(const FactorGraph<DERIVEDCONDITIONAL>& graph) : Base(graph) {}
 
+    /// Destructor
+    virtual ~DiscreteBayesNet() {}
+
     /// @}
 
     /// @name Testable
@@ -80,10 +83,10 @@ namespace gtsam {
     /**
     * Solve the DiscreteBayesNet by back-substitution
     */
-    DiscreteFactor::sharedValues optimize() const;
+    DiscreteFactor::Values optimize() const;
 
     /** Do ancestral sampling */
-    DiscreteFactor::sharedValues sample() const;
+    DiscreteFactor::Values sample() const;
 
     ///@}
 

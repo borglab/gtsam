@@ -22,3 +22,6 @@ virtual class MyTemplate : MyBase {
 
   static This Level(const T& K);
 };
+
+
+virtual class ForwardKinematicsFactor : gtsam::BetweenFactor<gtsam::Pose3> {};

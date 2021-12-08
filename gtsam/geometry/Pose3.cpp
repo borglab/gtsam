@@ -30,7 +30,7 @@ using std::vector;
 using Point3Pairs = vector<Point3Pair>;
 
 /** instantiate concept checks */
-GTSAM_CONCEPT_POSE_INST(Pose3);
+GTSAM_CONCEPT_POSE_INST(Pose3)
 
 /* ************************************************************************* */
 Pose3::Pose3(const Pose2& pose2) :
@@ -64,6 +64,46 @@ Matrix6 Pose3::AdjointMap() const {
 }
 
 /* ************************************************************************* */
+// Calculate AdjointMap applied to xi_b, with Jacobians
+Vector6 Pose3::Adjoint(const Vector6& xi_b, OptionalJacobian<6, 6> H_pose,
+                       OptionalJacobian<6, 6> H_xib) const {
+  const Matrix6 Ad = AdjointMap();
+
+  // Jacobians
+  // D1 Ad_T(xi_b) = D1 Ad_T Ad_I(xi_b) = Ad_T * D1 Ad_I(xi_b) = Ad_T * ad_xi_b
+  // D2 Ad_T(xi_b) = Ad_T
+  // See docs/math.pdf for more details.
+  // In D1 calculation, we could be more efficient by writing it out, but do not
+  // for readability
+  if (H_pose) *H_pose = -Ad * adjointMap(xi_b);
+  if (H_xib) *H_xib = Ad;
+
+  return Ad * xi_b;
+}
+
+/* ************************************************************************* */
+/// The dual version of Adjoint
+Vector6 Pose3::AdjointTranspose(const Vector6& x, OptionalJacobian<6, 6> H_pose,
+                                OptionalJacobian<6, 6> H_x) const {
+  const Matrix6 Ad = AdjointMap();
+  const Vector6 AdTx = Ad.transpose() * x;
+
+  // Jacobians
+  // See docs/math.pdf for more details.
+  if (H_pose) {
+    const auto w_T_hat = skewSymmetric(AdTx.head<3>()),
+               v_T_hat = skewSymmetric(AdTx.tail<3>());
+    *H_pose << w_T_hat, v_T_hat,  //
+        /*  */ v_T_hat, Z_3x3;
+  }
+  if (H_x) {
+    *H_x = Ad.transpose();
+  }
+
+  return AdTx;
+}
+
+/* ************************************************************************* */
 Matrix6 Pose3::adjointMap(const Vector6& xi) {
   Matrix3 w_hat = skewSymmetric(xi(0), xi(1), xi(2));
   Matrix3 v_hat = skewSymmetric(xi(3), xi(4), xi(5));
@@ -75,7 +115,7 @@ Matrix6 Pose3::adjointMap(const Vector6& xi) {
 
 /* ************************************************************************* */
 Vector6 Pose3::adjoint(const Vector6& xi, const Vector6& y,
-    OptionalJacobian<6, 6> Hxi) {
+    OptionalJacobian<6, 6> Hxi, OptionalJacobian<6, 6> H_y) {
   if (Hxi) {
     Hxi->setZero();
     for (int i = 0; i < 6; ++i) {
@@ -86,12 +126,14 @@ Vector6 Pose3::adjoint(const Vector6& xi, const Vector6& y,
       Hxi->col(i) = Gi * y;
     }
   }
-  return adjointMap(xi) * y;
+  const Matrix6& ad_xi = adjointMap(xi);
+  if (H_y) *H_y = ad_xi;
+  return ad_xi * y;
 }
 
 /* ************************************************************************* */
 Vector6 Pose3::adjointTranspose(const Vector6& xi, const Vector6& y,
-    OptionalJacobian<6, 6> Hxi) {
+    OptionalJacobian<6, 6> Hxi, OptionalJacobian<6, 6> H_y) {
   if (Hxi) {
     Hxi->setZero();
     for (int i = 0; i < 6; ++i) {
@@ -102,7 +144,9 @@ Vector6 Pose3::adjointTranspose(const Vector6& xi, const Vector6& y,
       Hxi->col(i) = GTi * y;
     }
   }
-  return adjointMap(xi).transpose() * y;
+  const Matrix6& adT_xi = adjointMap(xi).transpose();
+  if (H_y) *H_y = adT_xi;
+  return adT_xi * y;
 }
 
 /* ************************************************************************* */

@@ -5,36 +5,11 @@
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/serialization/export.hpp>
 
-#include <folder/path/to/Test.h>
 
 
-typedef Fun<double> FunDouble;
-typedef PrimitiveRef<double> PrimitiveRefDouble;
-typedef MyVector<3> MyVector3;
-typedef MyVector<12> MyVector12;
-typedef MultipleTemplates<int, double> MultipleTemplatesIntDouble;
-typedef MultipleTemplates<int, float> MultipleTemplatesIntFloat;
-typedef MyFactor<gtsam::Pose2, gtsam::Matrix> MyFactorPosePoint2;
 
 
-typedef std::set<boost::shared_ptr<FunRange>*> Collector_FunRange;
-static Collector_FunRange collector_FunRange;
-typedef std::set<boost::shared_ptr<FunDouble>*> Collector_FunDouble;
-static Collector_FunDouble collector_FunDouble;
-typedef std::set<boost::shared_ptr<Test>*> Collector_Test;
-static Collector_Test collector_Test;
-typedef std::set<boost::shared_ptr<PrimitiveRefDouble>*> Collector_PrimitiveRefDouble;
-static Collector_PrimitiveRefDouble collector_PrimitiveRefDouble;
-typedef std::set<boost::shared_ptr<MyVector3>*> Collector_MyVector3;
-static Collector_MyVector3 collector_MyVector3;
-typedef std::set<boost::shared_ptr<MyVector12>*> Collector_MyVector12;
-static Collector_MyVector12 collector_MyVector12;
-typedef std::set<boost::shared_ptr<MultipleTemplatesIntDouble>*> Collector_MultipleTemplatesIntDouble;
-static Collector_MultipleTemplatesIntDouble collector_MultipleTemplatesIntDouble;
-typedef std::set<boost::shared_ptr<MultipleTemplatesIntFloat>*> Collector_MultipleTemplatesIntFloat;
-static Collector_MultipleTemplatesIntFloat collector_MultipleTemplatesIntFloat;
-typedef std::set<boost::shared_ptr<MyFactorPosePoint2>*> Collector_MyFactorPosePoint2;
-static Collector_MyFactorPosePoint2 collector_MyFactorPosePoint2;
+
 
 void _deleteAllObjects()
 {
@@ -42,60 +17,7 @@ void _deleteAllObjects()
   std::streambuf *outbuf = std::cout.rdbuf(&mout);
 
   bool anyDeleted = false;
-  { for(Collector_FunRange::iterator iter = collector_FunRange.begin();
-      iter != collector_FunRange.end(); ) {
-    delete *iter;
-    collector_FunRange.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_FunDouble::iterator iter = collector_FunDouble.begin();
-      iter != collector_FunDouble.end(); ) {
-    delete *iter;
-    collector_FunDouble.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_Test::iterator iter = collector_Test.begin();
-      iter != collector_Test.end(); ) {
-    delete *iter;
-    collector_Test.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_PrimitiveRefDouble::iterator iter = collector_PrimitiveRefDouble.begin();
-      iter != collector_PrimitiveRefDouble.end(); ) {
-    delete *iter;
-    collector_PrimitiveRefDouble.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_MyVector3::iterator iter = collector_MyVector3.begin();
-      iter != collector_MyVector3.end(); ) {
-    delete *iter;
-    collector_MyVector3.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_MyVector12::iterator iter = collector_MyVector12.begin();
-      iter != collector_MyVector12.end(); ) {
-    delete *iter;
-    collector_MyVector12.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_MultipleTemplatesIntDouble::iterator iter = collector_MultipleTemplatesIntDouble.begin();
-      iter != collector_MultipleTemplatesIntDouble.end(); ) {
-    delete *iter;
-    collector_MultipleTemplatesIntDouble.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_MultipleTemplatesIntFloat::iterator iter = collector_MultipleTemplatesIntFloat.begin();
-      iter != collector_MultipleTemplatesIntFloat.end(); ) {
-    delete *iter;
-    collector_MultipleTemplatesIntFloat.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_MyFactorPosePoint2::iterator iter = collector_MyFactorPosePoint2.begin();
-      iter != collector_MyFactorPosePoint2.end(); ) {
-    delete *iter;
-    collector_MyFactorPosePoint2.erase(iter++);
-    anyDeleted = true;
-  } }
+
   if(anyDeleted)
     cout <<
       "WARNING:  Wrap modules with variables in the workspace have been reloaded due to\n"
@@ -109,24 +31,29 @@ void _functions_RTTIRegister() {
   if(!alreadyCreated) {
     std::map<std::string, std::string> types;
 
+
+
     mxArray *registry = mexGetVariable("global", "gtsamwrap_rttiRegistry");
     if(!registry)
       registry = mxCreateStructMatrix(1, 1, 0, NULL);
     typedef std::pair<std::string, std::string> StringPair;
     for(const StringPair& rtti_matlab: types) {
       int fieldId = mxAddField(registry, rtti_matlab.first.c_str());
-      if(fieldId < 0)
+      if(fieldId < 0) {
         mexErrMsgTxt("gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly");
+      }
       mxArray *matlabName = mxCreateString(rtti_matlab.second.c_str());
       mxSetFieldByNumber(registry, 0, fieldId, matlabName);
     }
-    if(mexPutVariable("global", "gtsamwrap_rttiRegistry", registry) != 0)
+    if(mexPutVariable("global", "gtsamwrap_rttiRegistry", registry) != 0) {
       mexErrMsgTxt("gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly");
+    }
     mxDestroyArray(registry);
-    
+
     mxArray *newAlreadyCreated = mxCreateNumericMatrix(0, 0, mxINT8_CLASS, mxREAL);
-    if(mexPutVariable("global", "gtsam_geometry_rttiRegistry_created", newAlreadyCreated) != 0)
+    if(mexPutVariable("global", "gtsam_geometry_rttiRegistry_created", newAlreadyCreated) != 0) {
       mexErrMsgTxt("gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly");
+    }
     mxDestroyArray(newAlreadyCreated);
   }
 }
@@ -196,7 +123,50 @@ void MultiTemplatedFunctionDoubleSize_tDouble_7(int nargout, mxArray *out[], int
   size_t y = unwrap< size_t >(in[1]);
   out[0] = wrap< double >(MultiTemplatedFunctionDoubleSize_tDouble(x,y));
 }
-void TemplatedFunctionRot3_8(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void DefaultFuncInt_8(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("DefaultFuncInt",nargout,nargin,2);
+  int a = unwrap< int >(in[0]);
+  int b = unwrap< int >(in[1]);
+  DefaultFuncInt(a,b);
+}
+void DefaultFuncString_9(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("DefaultFuncString",nargout,nargin,2);
+  string& s = *unwrap_shared_ptr< string >(in[0], "ptr_string");
+  string& name = *unwrap_shared_ptr< string >(in[1], "ptr_string");
+  DefaultFuncString(s,name);
+}
+void DefaultFuncObj_10(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("DefaultFuncObj",nargout,nargin,1);
+  gtsam::KeyFormatter& keyFormatter = *unwrap_shared_ptr< gtsam::KeyFormatter >(in[0], "ptr_gtsamKeyFormatter");
+  DefaultFuncObj(keyFormatter);
+}
+void DefaultFuncZero_11(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("DefaultFuncZero",nargout,nargin,5);
+  int a = unwrap< int >(in[0]);
+  int b = unwrap< int >(in[1]);
+  double c = unwrap< double >(in[2]);
+  bool d = unwrap< bool >(in[3]);
+  bool e = unwrap< bool >(in[4]);
+  DefaultFuncZero(a,b,c,d,e);
+}
+void DefaultFuncVector_12(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("DefaultFuncVector",nargout,nargin,2);
+  std::vector<int>& i = *unwrap_shared_ptr< std::vector<int> >(in[0], "ptr_stdvectorint");
+  std::vector<string>& s = *unwrap_shared_ptr< std::vector<string> >(in[1], "ptr_stdvectorstring");
+  DefaultFuncVector(i,s);
+}
+void setPose_13(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("setPose",nargout,nargin,1);
+  gtsam::Pose3& pose = *unwrap_shared_ptr< gtsam::Pose3 >(in[0], "ptr_gtsamPose3");
+  setPose(pose);
+}
+void TemplatedFunctionRot3_14(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   checkArguments("TemplatedFunctionRot3",nargout,nargin,1);
   gtsam::Rot3& t = *unwrap_shared_ptr< gtsam::Rot3 >(in[0], "ptr_gtsamRot3");
@@ -239,7 +209,25 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
       MultiTemplatedFunctionDoubleSize_tDouble_7(nargout, out, nargin-1, in+1);
       break;
     case 8:
-      TemplatedFunctionRot3_8(nargout, out, nargin-1, in+1);
+      DefaultFuncInt_8(nargout, out, nargin-1, in+1);
+      break;
+    case 9:
+      DefaultFuncString_9(nargout, out, nargin-1, in+1);
+      break;
+    case 10:
+      DefaultFuncObj_10(nargout, out, nargin-1, in+1);
+      break;
+    case 11:
+      DefaultFuncZero_11(nargout, out, nargin-1, in+1);
+      break;
+    case 12:
+      DefaultFuncVector_12(nargout, out, nargin-1, in+1);
+      break;
+    case 13:
+      setPose_13(nargout, out, nargin-1, in+1);
+      break;
+    case 14:
+      TemplatedFunctionRot3_14(nargout, out, nargin-1, in+1);
       break;
     }
   } catch(const std::exception& e) {

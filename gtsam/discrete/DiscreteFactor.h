@@ -51,7 +51,6 @@ public:
    * the new class DiscreteValue, as the varible's type (domain)
    */
   typedef Assignment<Key> Values;
-  typedef boost::shared_ptr<Values> sharedValues;
 
 public:
 
@@ -74,13 +73,14 @@ public:
   /// @name Testable
   /// @{
 
-  // equals
+  /// equals
   virtual bool equals(const DiscreteFactor& lf, double tol = 1e-9) const = 0;
 
-  // print
-  virtual void print(const std::string& s = "DiscreteFactor\n",
-      const KeyFormatter& formatter = DefaultKeyFormatter) const {
-    Factor::print(s, formatter);
+  /// print
+  void print(
+      const std::string& s = "DiscreteFactor\n",
+      const KeyFormatter& formatter = DefaultKeyFormatter) const override {
+    Base::print(s, formatter);
   }
 
   /** Test whether the factor is empty */

@@ -7,13 +7,19 @@ class FunRange {
 
 template<M={double}>
 class Fun {
+
   static This staticMethodWithThis();
+
+  template<T={int}>
+  static double templatedStaticMethod(const T& m);
 
   template<T={string}>
   This templatedMethod(double d, T t);
 
   template<T={string}, U={size_t}>
   This multiTemplatedMethod(double d, T t, U u);
+
+  std::map<M, This::M> sets();
 };
 
 
@@ -61,7 +67,10 @@ class Test {
   pair<Test ,Test*> create_MixedPtrs () const;
   pair<Test*,Test*> return_ptrs (Test* p1, Test* p2) const;
 
+  // This should be callable as .print() in python
   void print() const;
+  // Since this is a reserved keyword, it should be updated to `lambda_`
+  void lambda() const;
 
   void set_container(std::vector<testing::Test> container);
   void set_container(std::vector<testing::Test*> container);
@@ -79,6 +88,8 @@ virtual class ns::OtherClass;
 template<POSE, POINT>
 class MyFactor {
   MyFactor(size_t key1, size_t key2, double measured, const gtsam::noiseModel::Base* noiseModel);
+  void print(const string &s = "factor: ",
+             const gtsam::KeyFormatter &keyFormatter = gtsam::DefaultKeyFormatter);
 };
 
 // and a typedef specializing it
@@ -104,3 +115,23 @@ class MyVector {
 // Class with multiple instantiated templates
 template<T = {int}, U = {double, float}>
 class MultipleTemplates {};
+
+// Test for default args in constructor
+class ForwardKinematics {
+  ForwardKinematics(const gtdynamics::Robot& robot,
+                    const string& start_link_name, const string& end_link_name,
+                    const gtsam::Values& joint_angles,
+                    const gtsam::Pose3& l2Tp = gtsam::Pose3());
+};
+
+// Test for templated constructor
+class TemplatedConstructor {
+  TemplatedConstructor();
+
+  template<T={string, int, double}>
+  TemplatedConstructor(const T& arg);
+};
+
+
+class SuperCoolFactor;
+typedef SuperCoolFactor<gtsam::Pose3> SuperCoolFactorPose3;

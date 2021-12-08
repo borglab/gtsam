@@ -17,7 +17,7 @@ class ClassB {
 // check namespace handling
 Vector aGlobalFunction();
 
-}
+}  // namespace ns1
 
 #include <path/to/ns2.h>
 namespace ns2 {
@@ -38,7 +38,7 @@ class ClassB {
   ClassB();
 };
 
-}
+}  // namespace ns3
 
 class ClassC {
   ClassC();
@@ -51,10 +51,23 @@ Vector aGlobalFunction();
 ns1::ClassA overloadedGlobalFunction(const ns1::ClassA& a);
 ns1::ClassA overloadedGlobalFunction(const ns1::ClassA& a, double b);
 
-} //\namespace ns2
+int aNs2Var;
+
+}  // namespace ns2
 
 class ClassD {
   ClassD();
 };
 
+int aGlobalVar;
 
+namespace gtsam {
+  #include <gtsam/nonlinear/Values.h>
+class Values {
+  Values();
+  Values(const gtsam::Values& other);
+
+  void insert(size_t j, Vector vector);
+  void insert(size_t j, Matrix matrix);
+};
+}

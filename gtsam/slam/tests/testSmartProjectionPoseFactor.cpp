@@ -30,6 +30,7 @@
 #include <iostream>
 
 using namespace boost::assign;
+using namespace std::placeholders;
 
 static const double rankTol = 1.0;
 // Create a noise model for the pixel error
@@ -49,7 +50,7 @@ static Point2 measurement1(323.0, 240.0);
 
 LevenbergMarquardtParams lmParams;
 // Make more verbose like so (in tests):
-// params.verbosityLM = LevenbergMarquardtParams::SUMMARY;
+// lmParams.verbosityLM = LevenbergMarquardtParams::SUMMARY;
 
 /* ************************************************************************* */
 TEST( SmartProjectionPoseFactor, Constructor) {
@@ -130,8 +131,8 @@ TEST( SmartProjectionPoseFactor, noiseless ) {
   EXPECT_DOUBLES_EQUAL(expectedError, actualError2, 1e-7);
 
   // Calculate expected derivative for point (easiest to check)
-  boost::function<Vector(Point3)> f = //
-      boost::bind(&SmartFactor::whitenedError<Point3>, factor, cameras, _1);
+  std::function<Vector(Point3)> f = //
+      std::bind(&SmartFactor::whitenedError<Point3>, factor, cameras, std::placeholders::_1);
 
   // Calculate using computeEP
   Matrix actualE;
@@ -1332,13 +1333,13 @@ TEST( SmartProjectionPoseFactor, Cal3BundlerRotationOnly ) {
 }
 
 /* ************************************************************************* */
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Constrained, "gtsam_noiseModel_Constrained");
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Diagonal, "gtsam_noiseModel_Diagonal");
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Gaussian, "gtsam_noiseModel_Gaussian");
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Unit, "gtsam_noiseModel_Unit");
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Isotropic, "gtsam_noiseModel_Isotropic");
-BOOST_CLASS_EXPORT_GUID(gtsam::SharedNoiseModel, "gtsam_SharedNoiseModel");
-BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal");
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Constrained, "gtsam_noiseModel_Constrained")
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Diagonal, "gtsam_noiseModel_Diagonal")
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Gaussian, "gtsam_noiseModel_Gaussian")
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Unit, "gtsam_noiseModel_Unit")
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Isotropic, "gtsam_noiseModel_Isotropic")
+BOOST_CLASS_EXPORT_GUID(gtsam::SharedNoiseModel, "gtsam_SharedNoiseModel")
+BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal")
 
 TEST(SmartProjectionPoseFactor, serialize) {
   using namespace vanillaPose;
