@@ -305,6 +305,70 @@ public:
 
 }; // \class NoiseModelFactor
 
+
+/* ************************************************************************* */
+/* We need some helper structs to help us with NoiseModelFactorN - specifically
+ * we need to alias X1, X2, X3, ... in the templated NoiseModelFactorN class to
+ * maintain backwards compatibility with NoiseModelFactor1, NoiseModelFactor2,
+ * NoiseModelFactor3, ...
+ *
+ * The tricky part is that we want to _conditionally_ alias these only if the
+ * `sizeof...(VALUES)` is greater than the index we want to alias (e.g. a 3-way
+ * factor should only have up to X3).  SFINAE doesn't work in this case with
+ * aliases so we have to come up with a different approach.
+ *
+ * The approach we use is to inherit from structs that conditionally typedef
+ * these types for us (using template specialization).  Note: std::conditional
+ * doesn't work because it requires that both types exist at compile time.
+ *
+ * Usage:
+ * ```
+ * template <class... VALUES>
+ * class MyClass : public AliasX3<VALUES...> { ... };
+ * ```
+ * This will only typedef X3 if VALUES has at least 3 template parameters.  So
+ * then we can do something like:
+ * ```
+ * int main {
+ *   MyClass<bool, int, double>::X3 a;  // variable a will have type double
+ *   // MyClass<bool, int>::X3 b;   // this won't compile
+ *   MyClass<bool, int, char, double>::X3 c;  // variable c will have type char
+ * }
+ * ```
+ */
+
+namespace detail {
+
+// By default, we do not alias X (empty struct).
+#define ALIAS_FALSE_X(NAME)        \
+  template <bool, class... VALUES> \
+  struct Alias##NAME##_ {};
+// But if the first template is true, then we do alias X by specializing.
+#define ALIAS_TRUE_X(NAME, N)                                                 \
+  template <class... VALUES>                                                  \
+  struct Alias##NAME##_<true, VALUES...> {                                    \
+    using NAME = typename std::tuple_element<N, std::tuple<VALUES...>>::type; \
+  };
+// Finally, alias a convenience struct that chooses the right version.
+#define ALIAS_X(NAME, N, CONDITION)     \
+  ALIAS_FALSE_X(NAME)        \
+  ALIAS_TRUE_X(NAME, N)      \
+  template <class... VALUES> \
+  using Alias##NAME = Alias##NAME##_<(CONDITION), VALUES...>;
+
+ALIAS_X(X, 0, 0 == sizeof...(VALUES));
+ALIAS_X(X1, 0, 0 < sizeof...(VALUES));
+ALIAS_X(X2, 1, 1 < sizeof...(VALUES));
+ALIAS_X(X3, 2, 2 < sizeof...(VALUES));
+ALIAS_X(X4, 3, 3 < sizeof...(VALUES));
+ALIAS_X(X5, 4, 4 < sizeof...(VALUES));
+ALIAS_X(X6, 5, 5 < sizeof...(VALUES));
+#undef ALIAS_FALSE_X
+#undef ALIAS_TRUE_X
+#undef ALIAS_X
+
+}  // namespace detail
+
 /* ************************************************************************* */
 /**
  * A convenient base class for creating your own NoiseModelFactor
@@ -336,7 +400,16 @@ public:
  * objects in non-linear manifolds (Lie groups).
  */
 template <class... VALUES>
-class NoiseModelFactorN : public NoiseModelFactor {
+class NoiseModelFactorN
+    : public NoiseModelFactor,
+      public detail::AliasX<VALUES...>,   // using X = VALUE1
+      public detail::AliasX1<VALUES...>,  // using X1 = VALUE1
+      public detail::AliasX2<VALUES...>,  // using X2 = VALUE2
+      public detail::AliasX3<VALUES...>,  // using X3 = VALUE3
+      public detail::AliasX4<VALUES...>,  // using X4 = VALUE4
+      public detail::AliasX5<VALUES...>,  // using X5 = VALUE5
+      public detail::AliasX6<VALUES...>   // using X6 = VALUE6
+{
  public:
   /// N is the number of variables (N-way factor)
   enum { N = sizeof...(VALUES) };
@@ -344,25 +417,6 @@ class NoiseModelFactorN : public NoiseModelFactor {
   /** The type of the i'th template param can be obtained as VALUE<I> */
   template <int I, typename std::enable_if<(I < N), bool>::type = true>
   using VALUE = typename std::tuple_element<I, std::tuple<VALUES...>>::type;
-
- private:
-  template <int I, typename = void>
-  struct VALUE_OR_VOID {
-    using type = void;
-  };
-  template <int I>
-  struct VALUE_OR_VOID<I, typename std::enable_if<(I < N), bool>::type> {
-    using type = VALUE<I>;
-  };
-
- public:
-  using X = typename VALUE_OR_VOID<0>::type;
-  using X1 = typename VALUE_OR_VOID<0>::type;
-  using X2 = typename VALUE_OR_VOID<1>::type;
-  using X3 = typename VALUE_OR_VOID<2>::type;
-  using X4 = typename VALUE_OR_VOID<3>::type;
-  using X5 = typename VALUE_OR_VOID<4>::type;
-  using X6 = typename VALUE_OR_VOID<5>::type;
 
  protected:
   using Base = NoiseModelFactor;
