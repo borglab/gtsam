@@ -60,11 +60,11 @@ public:
   /// Construct from GTSAM types
   GTSAM_EXPORT Similarity2(const Rot2& R, const Point2& t, double s);
 
-  /// Construct from Eigen types
-  GTSAM_EXPORT Similarity2(const Matrix2& R, const Vector2& t, double s);
+  // /// Construct from Eigen types
+  // GTSAM_EXPORT Similarity2(const Matrix2& R, const Vector2& t, double s);
 
-  /// Construct from matrix [R t; 0 s^-1]
-  GTSAM_EXPORT Similarity2(const Matrix3& T);
+  // /// Construct from matrix [R t; 0 s^-1]
+  // GTSAM_EXPORT Similarity2(const Matrix3& T);
 
   /// @}
   /// @name Testable
@@ -94,9 +94,9 @@ public:
   /// Return the inverse
   GTSAM_EXPORT Similarity2 inverse() const;
 
-  /// @}
-  /// @name Group action on Point2
-  /// @{
+  // /// @}
+  // /// @name Group action on Point2
+  // /// @{
 
   /// Action on a point p is s*(R*p+t)
   GTSAM_EXPORT Point2 transformFrom(const Point2& p) const;
@@ -114,25 +114,25 @@ public:
    */
   GTSAM_EXPORT Pose2 transformFrom(const Pose2& T) const;
 
-  /** syntactic sugar for transformFrom */
+  /* syntactic sugar for transformFrom */
   GTSAM_EXPORT Point2 operator*(const Point2& p) const;
 
-  /**
-   *  Create Similarity2 by aligning at least two point pairs
-   */
-  GTSAM_EXPORT static Similarity2 Align(const std::vector<Point2Pair>& abPointPairs);
+  // /**
+  //  *  Create Similarity2 by aligning at least two point pairs
+  //  */
+  // GTSAM_EXPORT static Similarity2 Align(const std::vector<Point2Pair>& abPointPairs);
   
-  /**
-   * Create the Similarity2 object that aligns at least two pose pairs.
-   * Each pair is of the form (aTi, bTi).
-   * Given a list of pairs in frame a, and a list of pairs in frame b, Align()
-   * will compute the best-fit Similarity2 aSb transformation to align them.
-   * First, the rotation aRb will be computed as the average (Karcher mean) of
-   * many estimates aRb (from each pair). Afterwards, the scale factor will be computed
-   * using the algorithm described here:
-   * http://www5.informatik.uni-erlangen.de/Forschung/Publikationen/2005/Zinsser05-PSR.pdf
-   */
-  GTSAM_EXPORT static Similarity2 Align(const std::vector<Pose2Pair>& abPosePairs);
+  // /**
+  //  * Create the Similarity2 object that aligns at least two pose pairs.
+  //  * Each pair is of the form (aTi, bTi).
+  //  * Given a list of pairs in frame a, and a list of pairs in frame b, Align()
+  //  * will compute the best-fit Similarity2 aSb transformation to align them.
+  //  * First, the rotation aRb will be computed as the average (Karcher mean) of
+  //  * many estimates aRb (from each pair). Afterwards, the scale factor will be computed
+  //  * using the algorithm described here:
+  //  * http://www5.informatik.uni-erlangen.de/Forschung/Publikationen/2005/Zinsser05-PSR.pdf
+  //  */
+  // GTSAM_EXPORT static Similarity2 Align(const std::vector<Pose2Pair>& abPosePairs);
 
   /// @}
   /// @name Lie Group
@@ -180,10 +180,10 @@ public:
 };
 
 
-template<>
-struct traits<Similarity2> : public internal::LieGroup<Similarity2> {};
+// template<>
+// struct traits<Similarity2> : public internal::LieGroup<Similarity2> {};
 
-template<>
-struct traits<const Similarity2> : public internal::LieGroup<Similarity2> {};
+// template<>
+// struct traits<const Similarity2> : public internal::LieGroup<Similarity2> {};
 
 } // namespace gtsam

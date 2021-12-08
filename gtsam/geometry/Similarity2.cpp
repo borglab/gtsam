@@ -17,6 +17,7 @@
 
 #include <gtsam/geometry/Similarity2.h>
 
+#include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/base/Manifold.h>
 #include <gtsam/slam/KarcherMeanFactor-inl.h>
@@ -95,13 +96,13 @@ Similarity2::Similarity2(const Rot2& R, const Point2& t, double s) :
     R_(R), t_(t), s_(s) {
 }
 
-Similarity2::Similarity2(const Matrix2& R, const Vector2& t, double s) :
-    R_(Rot2.ClosestTo(R)), t_(t), s_(s) {
-}
+// Similarity2::Similarity2(const Matrix2& R, const Vector2& t, double s) :
+//     R_(Rot2::ClosestTo(R)), t_(t), s_(s) {
+// }
 
-Similarity2::Similarity2(const Matrix3& T) :
-    R_(T.topLeftCorner<2, 2>()), t_(T.topRightCorner<2, 1>()), s_(1.0 / T(2, 2)) {
-}
+// Similarity2::Similarity2(const Matrix3& T) :
+//     R_(Rot2::ClosestTo(T.topLeftCorner<2, 2>())), t_(T.topRightCorner<2, 1>()), s_(1.0 / T(2, 2)) {
+// }
 
 bool Similarity2::equals(const Similarity2& other, double tol) const {
   return R_.equals(other.R_, tol) && traits<Point2>::Equals(t_, other.t_, tol)
@@ -122,9 +123,9 @@ void Similarity2::print(const std::string& s) const {
 Similarity2 Similarity2::identity() {
   return Similarity2();
 }
-Similarity2 Similarity2::operator*(const Similarity2& S) const {
-  return Similarity2(R_ * S.R_, ((1.0 / S.s_) * t_) + R_ * S.t_, s_ * S.s_);
-}
+// Similarity2 Similarity2::operator*(const Similarity2& S) const {
+//   return Similarity2(R_ * S.R_, ((1.0 / S.s_) * t_) + R_ * S.t_, s_ * S.s_);
+// }
 
 Similarity2 Similarity2::inverse() const {
   const Rot2 Rt = R_.inverse();
@@ -147,41 +148,41 @@ Point2 Similarity2::operator*(const Point2& p) const {
   return transformFrom(p);
 }
 
-Similarity2 Similarity2::Align(const Point2Pairs &abPointPairs) {
-  // Refer to Chapter 3 of
-  // http://www5.informatik.uni-erlangen.de/Forschung/Publikationen/2005/Zinsser05-PSR.pdf
-  if (abPointPairs.size() < 2)
-    throw std::runtime_error("input should have at least 2 pairs of points");
-  auto centroids = means(abPointPairs);
-  auto d_abPointPairs = subtractCentroids(abPointPairs, centroids);
-  Matrix3 H = calculateH(d_abPointPairs);
-  // ClosestTo finds rotation matrix closest to H in Frobenius sense
-  Rot2 aRb = Rot2::ClosestTo(H);
-  return align(d_abPointPairs, aRb, centroids);
-}
+// Similarity2 Similarity2::Align(const Point2Pairs &abPointPairs) {
+//   // Refer to Chapter 3 of
+//   // http://www5.informatik.uni-erlangen.de/Forschung/Publikationen/2005/Zinsser05-PSR.pdf
+//   if (abPointPairs.size() < 2)
+//     throw std::runtime_error("input should have at least 2 pairs of points");
+//   auto centroids = means(abPointPairs);
+//   auto d_abPointPairs = subtractCentroids(abPointPairs, centroids);
+//   Matrix3 H = calculateH(d_abPointPairs);
+//   // ClosestTo finds rotation matrix closest to H in Frobenius sense
+//   Rot2 aRb = Rot2::ClosestTo(H);
+//   return align(d_abPointPairs, aRb, centroids);
+// }
 
-Similarity2 Similarity2::Align(const vector<Pose2Pair> &abPosePairs) {
-  const size_t n = abPosePairs.size();
-  if (n < 2)
-    throw std::runtime_error("input should have at least 2 pairs of poses");
+// Similarity2 Similarity2::Align(const vector<Pose2Pair> &abPosePairs) {
+//   const size_t n = abPosePairs.size();
+//   if (n < 2)
+//     throw std::runtime_error("input should have at least 2 pairs of poses");
 
-  // calculate rotation
-  vector<Rot2> rotations;
-  Point2Pairs abPointPairs;
-  rotations.reserve(n);
-  abPointPairs.reserve(n);
-  // Below denotes the pose of the i'th object/camera/etc in frame "a" or frame "b"
-  Pose2 aTi, bTi;
-  for (const Pose2Pair &abPair : abPosePairs) {
-    std::tie(aTi, bTi) = abPair;
-    const Rot2 aRb = aTi.rotation().compose(bTi.rotation().inverse());
-    rotations.emplace_back(aRb);
-    abPointPairs.emplace_back(aTi.translation(), bTi.translation());
-  }
-  const Rot2 aRb_estimate = FindKarcherMean<Rot2>(rotations);
+//   // calculate rotation
+//   vector<Rot2> rotations;
+//   Point2Pairs abPointPairs;
+//   rotations.reserve(n);
+//   abPointPairs.reserve(n);
+//   // Below denotes the pose of the i'th object/camera/etc in frame "a" or frame "b"
+//   Pose2 aTi, bTi;
+//   for (const Pose2Pair &abPair : abPosePairs) {
+//     std::tie(aTi, bTi) = abPair;
+//     const Rot2 aRb = aTi.rotation().compose(bTi.rotation().inverse());
+//     rotations.emplace_back(aRb);
+//     abPointPairs.emplace_back(aTi.translation(), bTi.translation());
+//   }
+//   const Rot2 aRb_estimate = FindKarcherMean<Rot2>(rotations);
 
-  return alignGivenR(abPointPairs, aRb_estimate);
-}
+//   return alignGivenR(abPointPairs, aRb_estimate);
+// }
 
 std::ostream &operator<<(std::ostream &os, const Similarity2& p) {
   os << "[" << p.rotation().theta() << " "
