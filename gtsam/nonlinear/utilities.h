@@ -163,18 +163,30 @@ Matrix extractPose3(const Values& values) {
   return result;
 }
 
-/// Extract all Vector values into a single tall vector
-Vector extractVector(const Values& values) {
-  Values::ConstFiltered<Vector> vectors = values.filter<Vector>();
-  // Count dimensions
-  DenseIndex totalDim = 0;
-  for (const auto& kv : vectors) totalDim += kv.value.size();
-  // Copy vectors
-  Vector result(totalDim);
-  DenseIndex pos = 0;
+/// Extract all Vector values with a given symbol character into an NxM matrix,
+/// where N is the number of symbols that match the character and M is the
+/// dimension of the variables.  If not all variables have dimension M, then a
+/// runtime error will be thrown.  The order of returned values are sorted by
+/// the symbol.
+/// For example, calling extractVector(values, 'x'), where values contains 200
+/// variables x1, x2, ..., x200 of type Vector each 5-dimensional, will return a
+/// 200x5 matrix with row i containing xi.
+Matrix extractVectors(const Values& values, char c) {
+  Values::ConstFiltered<Vector> vectors =
+      values.filter<Vector>(Symbol::ChrTest(c));
+  if (vectors.size() == 0) {
+    return Matrix();
+  }
+  auto dim = vectors.begin()->value.size();
+  Matrix result(vectors.size(), dim);
+  Eigen::Index rowi = 0;
   for (const auto& kv : vectors) {
-    result.segment(pos, kv.value.size()) = kv.value;
-    pos += kv.value.size();
+    if (kv.value.size() != dim) {
+      throw std::runtime_error(
+          "Tried to extract different-sized vectors into a single matrix");
+    }
+    result.row(rowi) = kv.value;
+    ++rowi;
   }
   return result;
 }
