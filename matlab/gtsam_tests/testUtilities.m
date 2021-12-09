@@ -45,12 +45,12 @@ CHECK('KeySet', isa(actual,'gtsam.KeySet'));
 CHECK('size==3', actual.size==3);
 CHECK('actual.count(x1)', actual.count(x1));
 
-% test extractVector
+% test extractVectors
 values = Values();
 values.insert(0, (1:6)');
 values.insert(1, (7:12)');
 values.insert(2, (13:18)');
 values.insert(7, Pose3());
-actual = utilities.extractVector(values);
+actual = utilities.extractVectors(values);
 expected = reshape(1:18, 6, 3)';
-CHECK('extractVector', all(actual == expected, 'all'));
+CHECK('extractVectors', all(actual == expected, 'all'));
