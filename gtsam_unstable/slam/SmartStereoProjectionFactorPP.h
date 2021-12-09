@@ -40,7 +40,8 @@ namespace gtsam {
  * are Pose3 variables).
  * @addtogroup SLAM
  */
-class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
+class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionFactorPP
+    : public SmartStereoProjectionFactor {
  protected:
   /// shared pointer to calibration object (one for each camera)
   std::vector<boost::shared_ptr<Cal3_S2Stereo>> K_all_;
@@ -294,7 +295,6 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
     ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar & BOOST_SERIALIZATION_NVP(K_all_);
   }
-
 };
 // end of class declaration
 
