@@ -1,30 +1,33 @@
+/* ----------------------------------------------------------------------------
+ * Copyright 2021 The Ambitious Folks of the MRG
+ * See LICENSE for the license information
+ * -------------------------------------------------------------------------- */
+
 /**
  * @file HybridFactorGraph.h
  * @brief Custom hybrid factor graph for discrete + continuous factors
  * @author Kevin Doherty, kdoherty@mit.edu
- * Copyright 2021 The Ambitious Folks of the MRG
+ * @date December 2021
  */
 
 #pragma once
 
 #include <gtsam/discrete/DiscreteFactor.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
+#include <gtsam/hybrid/DCFactorGraph.h>
+#include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 #include <string>
 
-#include "DCSAM_types.h"
-#include "dcsam/DCFactor.h"
-#include "dcsam/DCFactorGraph.h"
-
-namespace dcsam {
+namespace gtsam {
 
 class HybridFactorGraph {
  protected:
   // Separate internal factor graphs for different types of factors
-  gtsam::NonlinearFactorGraph nonlinearGraph_;
-  gtsam::DiscreteFactorGraph discreteGraph_;
+  NonlinearFactorGraph nonlinearGraph_;
+  DiscreteFactorGraph discreteGraph_;
   DCFactorGraph dcGraph_;
 
  public:
@@ -45,7 +48,7 @@ class HybridFactorGraph {
    * @param nonlinearFactor - boost::shared_ptr to the factor to add
    */
   void push_nonlinear(
-      boost::shared_ptr<gtsam::NonlinearFactor> nonlinearFactor);
+      const boost::shared_ptr<NonlinearFactor>& nonlinearFactor);
 
   /**
    * Add a discrete factor to the internal discrete graph
@@ -53,15 +56,14 @@ class HybridFactorGraph {
    */
   template <typename DiscreteFactorType>
   void push_discrete(const DiscreteFactorType &discreteFactor) {
-    discreteGraph_.push_back(
-        boost::make_shared<DiscreteFactorType>(discreteFactor));
+    discreteGraph_.emplace_shared<DiscreteFactorType>(discreteFactor));
   }
 
   /**
    * Add a discrete factor *pointer* to the internal discrete graph
    * @param discreteFactor - boost::shared_ptr to the factor to add
    */
-  void push_discrete(boost::shared_ptr<gtsam::DiscreteFactor> discreteFactor);
+  void push_discrete(const boost::shared_ptr<DiscreteFactor>& discreteFactor);
 
   /**
    * Add a discrete-continuous (DC) factor to the internal DC graph
@@ -82,8 +84,7 @@ class HybridFactorGraph {
    * Simply prints the factor graph.
    */
   void print(const std::string &str = "HybridFactorGraph",
-             const gtsam::KeyFormatter &keyFormatter =
-                 gtsam::DefaultKeyFormatter) const;
+             const KeyFormatter &keyFormatter = DefaultKeyFormatter) const;
 
   /**
    * Mimics the GTSAM::FactorGraph API: retrieve the keys from each internal
@@ -92,23 +93,23 @@ class HybridFactorGraph {
    *
    * @return the (aggregate) set of keys in all of the internal factor graphs.
    */
-  gtsam::FastSet<gtsam::Key> keys() const;
+  FastSet<Key> keys() const;
 
   /**
    * Utility for retrieving the internal nonlinear factor graph
    * @return the member variable nolinearGraph_
    */
-  gtsam::NonlinearFactorGraph nonlinearGraph() const;
+  NonlinearFactorGraph nonlinearGraph() const;
 
   /**
    * Utility for retrieving the internal discrete factor graph
-   * @return the member variable discreteGraph_
+   * @return the member variable discrete_graph_
    */
-  gtsam::DiscreteFactorGraph discreteGraph() const;
+  DiscreteFactorGraph discreteGraph() const;
 
   /**
    * Utility for retrieving the internal DC factor graph
-   * @return the member variable dcGraph_
+   * @return the member variable dc_graph_
    */
   DCFactorGraph dcGraph() const;
 
@@ -148,4 +149,4 @@ class HybridFactorGraph {
   void clear();
 };
 
-}  // namespace dcsam
+}  // namespace gtsam
