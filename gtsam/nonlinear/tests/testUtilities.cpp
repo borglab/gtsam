@@ -21,7 +21,6 @@
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/inference/Symbol.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/utilities.h>
 
 using namespace gtsam;
@@ -53,6 +52,26 @@ TEST(Utilities, ExtractPoint3) {
 
   Matrix all_points = utilities::extractPoint3(values);
   EXPECT_LONGS_EQUAL(2, all_points.rows());
+}
+
+/* ************************************************************************* */
+TEST(Utilities, ExtractVector) {
+  // Test normal case with 3 vectors and 1 non-vector (ignore non-vector)
+  auto values = Values();
+  values.insert(X(0), (Vector(4) << 1, 2, 3, 4).finished());
+  values.insert(X(2), (Vector(4) << 13, 14, 15, 16).finished());
+  values.insert(X(1), (Vector(4) << 6, 7, 8, 9).finished());
+  values.insert(X(3), Pose3());
+  auto actual = utilities::extractVectors(values, 'x');
+  auto expected =
+      (Matrix(3, 4) << 1, 2, 3, 4, 6, 7, 8, 9, 13, 14, 15, 16).finished();
+  EXPECT(assert_equal(expected, actual));
+
+  // Check that mis-sized vectors fail
+  values.insert(X(4), (Vector(2) << 1, 2).finished());
+  THROWS_EXCEPTION(utilities::extractVectors(values, 'x'));
+  values.update(X(4), (Vector(6) << 1, 2, 3, 4, 5, 6).finished());
+  THROWS_EXCEPTION(utilities::extractVectors(values, 'x'));
 }
 
 /* ************************************************************************* */
