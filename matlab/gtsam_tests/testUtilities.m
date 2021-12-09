@@ -47,10 +47,10 @@ CHECK('actual.count(x1)', actual.count(x1));
 
 % test extractVectors
 values = Values();
-values.insert(0, (1:6)');
-values.insert(1, (7:12)');
-values.insert(2, (13:18)');
-values.insert(7, Pose3());
-actual = utilities.extractVectors(values);
+values.insert(symbol('x', 0), (1:6)');
+values.insert(symbol('x', 1), (7:12)');
+values.insert(symbol('x', 2), (13:18)');
+values.insert(symbol('x', 7), Pose3());
+actual = utilities.extractVectors(values, 'x');
 expected = reshape(1:18, 6, 3)';
 CHECK('extractVectors', all(actual == expected, 'all'));
