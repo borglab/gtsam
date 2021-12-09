@@ -336,7 +336,6 @@ public:
  * }
  * ```
  */
-
 namespace detail {
 
 // By default, we do not alias X (empty struct).
@@ -356,7 +355,7 @@ namespace detail {
   template <class... VALUES> \
   using Alias##NAME = Alias##NAME##_<(CONDITION), VALUES...>;
 
-ALIAS_X(X, 0, 0 == sizeof...(VALUES));
+ALIAS_X(X, 0, 1 == sizeof...(VALUES));
 ALIAS_X(X1, 0, 0 < sizeof...(VALUES));
 ALIAS_X(X2, 1, 1 < sizeof...(VALUES));
 ALIAS_X(X3, 2, 2 < sizeof...(VALUES));
@@ -422,13 +421,13 @@ class NoiseModelFactorN
   using Base = NoiseModelFactor;
   using This = NoiseModelFactorN<VALUES...>;
 
-  /* "Dummy templated" alias is used to expand fixed-type parameter packs with
-   * same length as VALUES.  This ignores the template parameter. */
+  /* Like std::void_t, except produces `boost::optional<Matrix&>` instead. Used
+   * to expand fixed-type parameter-packs with same length as VALUES */
   template <typename T>
   using optional_matrix_type = boost::optional<Matrix&>;
 
-  /* "Dummy templated" alias is used to expand fixed-type parameter packs with
-   * same length as VALUES.  This ignores the template parameter. */
+  /* Like std::void_t, except produces `Key` instead. Used to expand fixed-type
+   * parameter-packs with same length as VALUES */
   template <typename T>
   using key_type = Key;
 
@@ -586,72 +585,28 @@ class NoiseModelFactorN
   }
 };  // \class NoiseModelFactorN
 
-// // `using` does not work for some reason
-// template <class VALUE>
-// using NoiseModelFactor1 = NoiseModelFactorN<VALUE>;
-// template <class VALUE1, class VALUE2>
-// using NoiseModelFactor2 = NoiseModelFactorN<VALUE1, VALUE2>;
-// template <class VALUE1, class VALUE2, class VALUE3>
-// using NoiseModelFactor3 = NoiseModelFactorN<VALUE1, VALUE2, VALUE3>;
-// template <class VALUE1, class VALUE2, class VALUE3, class VALUE4>
-// using NoiseModelFactor4 = NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4>;
-// template <class VALUE1, class VALUE2, class VALUE3, class VALUE4, class VALUE5>
-// using NoiseModelFactor5 =
-//     NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5>;
-// template <class VALUE1, class VALUE2, class VALUE3, class VALUE4, class VALUE5,
-//           class VALUE6>
-// using NoiseModelFactor6 =
-//     NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5, VALUE6>;
-
-// this is visually ugly
-template <class VALUE>
-struct NoiseModelFactor1 : NoiseModelFactorN<VALUE> {
-  using NoiseModelFactorN<VALUE>::NoiseModelFactorN;
-  using This = NoiseModelFactor1<VALUE>;
-};
-template <class VALUE1, class VALUE2>
-struct NoiseModelFactor2 : NoiseModelFactorN<VALUE1, VALUE2> {
-  using NoiseModelFactorN<VALUE1, VALUE2>::NoiseModelFactorN;
-  using This = NoiseModelFactor2<VALUE1, VALUE2>;
-};
-template <class VALUE1, class VALUE2, class VALUE3>
-struct NoiseModelFactor3 : NoiseModelFactorN<VALUE1, VALUE2, VALUE3> {
-  using NoiseModelFactorN<VALUE1, VALUE2, VALUE3>::NoiseModelFactorN;
-  using This = NoiseModelFactor3<VALUE1, VALUE2, VALUE3>;
-};
-template <class VALUE1, class VALUE2, class VALUE3, class VALUE4>
-struct NoiseModelFactor4 : NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4> {
-  using NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4>::NoiseModelFactorN;
-  using This = NoiseModelFactor4<VALUE1, VALUE2, VALUE3, VALUE4>;
-};
-template <class VALUE1, class VALUE2, class VALUE3, class VALUE4, class VALUE5>
-struct NoiseModelFactor5
-    : NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5> {
-  using NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4,
-                          VALUE5>::NoiseModelFactorN;
-  using This = NoiseModelFactor5<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5>;
-};
-template <class VALUE1, class VALUE2, class VALUE3, class VALUE4, class VALUE5,
-          class VALUE6>
-struct NoiseModelFactor6
-    : NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5, VALUE6> {
-  using NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5,
-                          VALUE6>::NoiseModelFactorN;
-  using This =
-      NoiseModelFactor6<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5, VALUE6>;
-};
-
 /* ************************************************************************* */
 /** @deprecated: use NoiseModelFactorN
  * Convenient base classes for creating your own NoiseModelFactors with 1-6
  * variables.  To derive from these classes, implement evaluateError().
+ *
+ * Note: we cannot use `using NoiseModelFactor1 = NoiseModelFactorN<VALUE>` due
+ * to class name injection making backwards compatibility difficult.
+ *
+ * Note: This has the side-effect that you could e.g. NoiseModelFactor6<double>.
+ * That is, there is nothing stopping you from using any number of template
+ * arguments with any `NoiseModelFactorX`.
  */
-// // This has the side-effect that you could e.g. NoiseModelFactor6<double>
-// #define NoiseModelFactor1 NoiseModelFactorN
-// #define NoiseModelFactor2 NoiseModelFactorN
-// #define NoiseModelFactor3 NoiseModelFactorN
-// #define NoiseModelFactor4 NoiseModelFactorN
-// #define NoiseModelFactor5 NoiseModelFactorN
-// #define NoiseModelFactor6 NoiseModelFactorN
+#define NoiseModelFactor1 NoiseModelFactorN
+/** @deprecated */
+#define NoiseModelFactor2 NoiseModelFactorN
+/** @deprecated */
+#define NoiseModelFactor3 NoiseModelFactorN
+/** @deprecated */
+#define NoiseModelFactor4 NoiseModelFactorN
+/** @deprecated */
+#define NoiseModelFactor5 NoiseModelFactorN
+/** @deprecated */
+#define NoiseModelFactor6 NoiseModelFactorN
 
 } // \namespace gtsam
