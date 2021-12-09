@@ -163,9 +163,9 @@ Matrix extractPose3(const Values& values) {
   return result;
 }
 
-/// Extract all Vector values with a given symbol character into an NxM matrix,
-/// where N is the number of symbols that match the character and M is the
-/// dimension of the variables.  If not all variables have dimension M, then a
+/// Extract all Vector values with a given symbol character into an mxn matrix,
+/// where m is the number of symbols that match the character and n is the
+/// dimension of the variables.  If not all variables have dimension n, then a
 /// runtime error will be thrown.  The order of returned values are sorted by
 /// the symbol.
 /// For example, calling extractVector(values, 'x'), where values contains 200
