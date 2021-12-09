@@ -29,6 +29,9 @@
 #include <boost/serialization/base_object.hpp>
 #include <boost/assign/list_of.hpp>
 
+// boost::index_sequence was introduced in 1.66, so we'll manually define an
+// implementation if user has 1.65.  boost::index_sequence is used to get array
+// indices that align with a parameter pack.
 #if BOOST_VERSION >= 106600
 #include <boost/mp11/integer_sequence.hpp>
 #else
@@ -467,24 +470,11 @@ class NoiseModelFactorN
 
   ~NoiseModelFactorN() override {}
 
-  /** Methods to retrieve keys */
-#define SUB(Old, New) template <int Old = New>  // to delay template deduction
-#define KEY_IF_TRUE(Enable) typename std::enable_if<(Enable), Key>::type
-  // templated version of `key<I>()`
+  /** Returns a key. Usage: `key<I>()` returns the I'th key. */
   template <int I>
-  inline KEY_IF_TRUE(I < N) key() const {
+  inline typename std::enable_if<(I < N), Key>::type key() const {
     return keys_[I];
   }
-  // backwards-compatibility functions
-  SUB(T, N) inline KEY_IF_TRUE(T == 1) key() const { return keys_[0]; }
-  SUB(T, N) inline KEY_IF_TRUE(T >= 1) key1() const { return keys_[0]; }
-  SUB(T, N) inline KEY_IF_TRUE(T >= 2) key2() const { return keys_[1]; }
-  SUB(T, N) inline KEY_IF_TRUE(T >= 3) key3() const { return keys_[2]; }
-  SUB(T, N) inline KEY_IF_TRUE(T >= 4) key4() const { return keys_[3]; }
-  SUB(T, N) inline KEY_IF_TRUE(T >= 5) key5() const { return keys_[4]; }
-  SUB(T, N) inline KEY_IF_TRUE(T >= 6) key6() const { return keys_[5]; }
-#undef SUB
-#undef KEY_IF_TRUE
 
   /// @name NoiseModelFactor methods
   /// @{
@@ -583,6 +573,32 @@ class NoiseModelFactorN
     ar& boost::serialization::make_nvp(
         "NoiseModelFactor", boost::serialization::base_object<Base>(*this));
   }
+
+ public:
+  /** @defgroup deprecated key access
+   *  Functions to retrieve keys (deprecated).  Use the templated version:
+   *  `key<I>()` instead.
+   *  @{
+   */
+#define SUB(Old, New) template <int Old = New>  // to delay template deduction
+#define KEY_IF_TRUE(Enable) typename std::enable_if<(Enable), Key>::type
+  /** @deprecated */
+  SUB(T, N) inline KEY_IF_TRUE(T == 1) key() const { return keys_[0]; }
+  /** @deprecated */
+  SUB(T, N) inline KEY_IF_TRUE(T >= 1) key1() const { return keys_[0]; }
+  /** @deprecated */
+  SUB(T, N) inline KEY_IF_TRUE(T >= 2) key2() const { return keys_[1]; }
+  /** @deprecated */
+  SUB(T, N) inline KEY_IF_TRUE(T >= 3) key3() const { return keys_[2]; }
+  /** @deprecated */
+  SUB(T, N) inline KEY_IF_TRUE(T >= 4) key4() const { return keys_[3]; }
+  /** @deprecated */
+  SUB(T, N) inline KEY_IF_TRUE(T >= 5) key5() const { return keys_[4]; }
+  /** @deprecated */
+  SUB(T, N) inline KEY_IF_TRUE(T >= 6) key6() const { return keys_[5]; }
+#undef SUB
+#undef KEY_IF_TRUE
+  /** @} */
 };  // \class NoiseModelFactorN
 
 /* ************************************************************************* */
