@@ -20,6 +20,7 @@
 
 #include <gtsam/geometry/CameraSet.h>
 #include <gtsam/slam/SmartProjectionFactor.h>
+#include <gtsam_unstable/dllexport.h>
 
 namespace gtsam {
 /**
@@ -41,7 +42,7 @@ namespace gtsam {
  * @addtogroup SLAM
  */
 template <class CAMERA>
-class SmartProjectionPoseFactorRollingShutter
+class GTSAM_UNSTABLE_EXPORT SmartProjectionPoseFactorRollingShutter
     : public SmartProjectionFactor<CAMERA> {
  private:
   typedef SmartProjectionFactor<CAMERA> Base;

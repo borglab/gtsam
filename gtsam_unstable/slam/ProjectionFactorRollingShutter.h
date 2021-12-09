@@ -21,6 +21,7 @@
 #include <gtsam/geometry/CalibratedCamera.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam_unstable/dllexport.h>
 
 #include <boost/optional.hpp>
 
@@ -40,7 +41,7 @@ namespace gtsam {
  * @addtogroup SLAM
  */
 
-class ProjectionFactorRollingShutter
+class GTSAM_UNSTABLE_EXPORT ProjectionFactorRollingShutter
     : public NoiseModelFactor3<Pose3, Pose3, Point3> {
  protected:
   // Keep a copy of measurement and calibration for I/O
