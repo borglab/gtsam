@@ -52,5 +52,5 @@ values.insert(1, (7:12)');
 values.insert(2, (13:18)');
 values.insert(7, Pose3());
 actual = utilities.extractVector(values);
-expected = reshape(1:18, 3, 6);
+expected = reshape(1:18, 6, 3)';
 CHECK('extractVector', all(actual == expected, 'all'));
