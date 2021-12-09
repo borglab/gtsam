@@ -33,7 +33,7 @@
 namespace gtsam {
 
 // TODO use gtsam::Values
-using DiscreteValues = gtsam::DiscreteFactor::Values;
+using DiscreteValues = DiscreteFactor::Values;
 
 /**
  * @brief Function to normalize a set of log probabilities.
@@ -83,7 +83,7 @@ std::vector<double> expNormalize(const std::vector<double>& log_probs) {
   // Numerical tolerance for floating point comparisons
   double tol = 1e-9;
 
-  if (!gtsam::fpEqual(check_normalization, 1.0, tol)) {
+  if (!fpEqual(check_normalization, 1.0, tol)) {
     std::string errMsg =
         std::string("expNormalize failed to normalize probabilities. ") +
         std::string("Expected normalization constant = 1.0. Got value: ") +
@@ -102,13 +102,13 @@ std::vector<double> expNormalize(const std::vector<double>& log_probs) {
  * `discrete_keys_` contains the keys (plus cardinalities) for *discrete*
  * variables.
  */
-class GTSAM_EXPORT HybridFactor : public gtsam::Factor {
+class GTSAM_EXPORT HybridFactor : public Factor {
  protected:
   // Set of DiscreteKeys for this factor.
-  gtsam::DiscreteKeys discrete_keys_;
+  DiscreteKeys discrete_keys_;
 
  public:
-  using Base = gtsam::Factor;
+  using Base = Factor;
 
   HybridFactor() = default;
 
@@ -119,8 +119,8 @@ class GTSAM_EXPORT HybridFactor : public gtsam::Factor {
    * @param continuous_keys - the keys for *continuous* variables
    * @param discrete_keys - the keys for *discrete* variables
    */
-  HybridFactor(const gtsam::KeyVector& continuous_keys,
-               const gtsam::DiscreteKeys& discrete_keys)
+  HybridFactor(const KeyVector& continuous_keys,
+               const DiscreteKeys& discrete_keys)
       : Base(continuous_keys), discrete_keys_(discrete_keys) {}
 
   HybridFactor& operator=(const HybridFactor& rhs) {
@@ -151,8 +151,8 @@ class GTSAM_EXPORT HybridFactor : public gtsam::Factor {
    * model as a double.
    */
   virtual double error(
-      const gtsam::Values& continuous_values,
-      const gtsam::DiscreteFactor::Values& discrete_values) const = 0;
+      const Values& continuous_values,
+      const DiscreteFactor::Values& discrete_values) const = 0;
 
   /**
    * Linearize the error function with respect to the continuous
@@ -168,8 +168,8 @@ class GTSAM_EXPORT HybridFactor : public gtsam::Factor {
    * @param discrete_values - Likewise, assignment to the discrete variables in
    * `discrete_keys__`.
    */
-  virtual boost::shared_ptr<gtsam::GaussianFactor> linearize(
-      const gtsam::Values& continuous_values,
+  virtual boost::shared_ptr<GaussianFactor> linearize(
+      const Values& continuous_values,
       const DiscreteValues& discrete_values) const = 0;
 
   /**
@@ -187,7 +187,7 @@ class GTSAM_EXPORT HybridFactor : public gtsam::Factor {
   /**
    * Returns the number of rows in the Jacobian with respect to the continuous
    * variables for this factor. Internally this is used in the conversion to a
-   * gtsam::NonlinearFactor
+   * NonlinearFactor
    *
    * This will be specific to the model being implemented, so it is a pure
    * virtual function and must be overridden
@@ -200,19 +200,19 @@ class GTSAM_EXPORT HybridFactor : public gtsam::Factor {
   /*
    * Return the discrete keys for this factor.
    */
-  gtsam::DiscreteKeys discreteKeys() const { return discrete_keys_; }
+  DiscreteKeys discreteKeys() const { return discrete_keys_; }
 
   /**
-   * Converts the HybridFactor to a gtsam::DecisionTreeFactor. Internally, this
-   * will be used to generate a gtsam::DiscreteFactor type, which itself
-   * requires a conversion function to gtsam::DecisionTreeFactor for inference
+   * Converts the HybridFactor to a DecisionTreeFactor. Internally, this
+   * will be used to generate a DiscreteFactor type, which itself
+   * requires a conversion function to DecisionTreeFactor for inference
    * using GTSAM.
    *
    * Performing this conversion can be problem specific, so we allow for the
    * option to override, but try to implement a sensible default: we assume the
    * error function can be called setting each discrete key's variable
    * individually, and the overall HybridFactor can itself be factored as a
-   * product of unary gtsam::DecisionTreeFactors.
+   * product of unary DecisionTreeFactors.
    *
    * Alternative implementations might consider something like the
    * gtsam::AllDiff approach here:
@@ -228,7 +228,7 @@ class GTSAM_EXPORT HybridFactor : public gtsam::Factor {
     DecisionTreeFactor converted;
     for (const DiscreteKey& dkey : discrete_keys_) {
       std::vector<double> probs = evalProbs(dkey, continuous_values);
-      // Cardinality of gtsam::DiscreteKey is located at `second`
+      // Cardinality of DiscreteKey is located at `second`
       assert(probs.size() == dkey.second);
       DecisionTreeFactor unary(dkey, probs);
       converted = converted * unary;
@@ -289,7 +289,7 @@ class GTSAM_EXPORT HybridFactor : public gtsam::Factor {
         // something with a normalized noise model
         // TODO(kevin): does this make sense to do? I think maybe not in
         // general? Should we just yell at the user?
-        boost::shared_ptr<gtsam::GaussianFactor> gaussian_factor =
+        boost::shared_ptr<GaussianFactor> gaussian_factor =
             factor.linearize(values);
         info_matrix = gaussian_factor->information();
       }
@@ -320,8 +320,8 @@ class GTSAM_EXPORT HybridFactor : public gtsam::Factor {
    * @return a vector of length == cardinality of dk specifying the probability
    * of each possible assignment to dk.
    */
-  std::vector<double> evalProbs(const gtsam::DiscreteKey& discrete_key,
-                                const gtsam::Values& continuous_values) const {
+  std::vector<double> evalProbs(const DiscreteKey& discrete_key,
+                                const Values& continuous_values) const {
     /*
      * Normalizing a set of log probabilities in a numerically stable way is
      * tricky. To avoid overflow/underflow issues, we compute the largest
@@ -349,21 +349,21 @@ class GTSAM_EXPORT HybridFactor : public gtsam::Factor {
   }
 
   /**
-   * Take the product of this HybridFactor (as a gtsam::DecisionTreeFactor)
+   * Take the product of this HybridFactor (as a DecisionTreeFactor)
    * conditioned on an assignment to the continous variables,
-   * `continuous_values` with another gtsam::DecisionTreeFactor `f`. Used
+   * `continuous_values` with another DecisionTreeFactor `f`. Used
    * internally by GTSAM to solve discrete factor graphs.
    *
-   * @param f - the gtsam::DecisionTreeFactor to be multiplied by this
+   * @param f - the DecisionTreeFactor to be multiplied by this
    * HybridFactor
    * @param continuous_values - an assignment to the continuous variables
    * (specified by keys_).
-   * @return a gtsam::DecisionTreeFactor representing the product of this factor
+   * @return a DecisionTreeFactor representing the product of this factor
    * with `f`.
    */
-  gtsam::DecisionTreeFactor conditionalTimes(
-      const gtsam::DecisionTreeFactor& f,
-      const gtsam::Values& continuous_values,
+  DecisionTreeFactor conditionalTimes(
+      const DecisionTreeFactor& f,
+      const Values& continuous_values,
       const DiscreteValues& discrete_values) const {
     return toDecisionTreeFactor(continuous_values, discrete_values) * f;
   }
