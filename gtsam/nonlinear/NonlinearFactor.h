@@ -413,9 +413,9 @@ class NoiseModelFactorN
   /// N is the number of variables (N-way factor)
   enum { N = sizeof...(VALUES) };
 
-  /** The type of the i'th template param can be obtained as VALUE<I> */
+  /** The type of the i'th template param can be obtained as X_<I> */
   template <int I, typename std::enable_if<(I < N), bool>::type = true>
-  using VALUE = typename std::tuple_element<I, std::tuple<VALUES...>>::type;
+  using X_ = typename std::tuple_element<I, std::tuple<VALUES...>>::type;
 
  protected:
   using Base = NoiseModelFactor;
