@@ -45,8 +45,8 @@ class PoseToPointFactor : public NoiseModelFactor2<POSE, POINT> {
   /** implement functions needed for Testable */
 
   /** print */
-  virtual void print(const std::string& s, const KeyFormatter& keyFormatter =
-                                               DefaultKeyFormatter) const {
+  void print(const std::string& s, const KeyFormatter& keyFormatter =
+                                       DefaultKeyFormatter) const override {
     std::cout << s << "PoseToPointFactor(" << keyFormatter(this->key1()) << ","
               << keyFormatter(this->key2()) << ")\n"
               << "  measured: " << measured_.transpose() << std::endl;
@@ -54,8 +54,8 @@ class PoseToPointFactor : public NoiseModelFactor2<POSE, POINT> {
   }
 
   /** equals */
-  virtual bool equals(const NonlinearFactor& expected,
-                      double tol = 1e-9) const {
+  bool equals(const NonlinearFactor& expected,
+              double tol = 1e-9) const override {
     const This* e = dynamic_cast<const This*>(&expected);
     return e != nullptr && Base::equals(*e, tol) &&
            traits<POINT>::Equals(this->measured_, e->measured_, tol);
@@ -70,9 +70,10 @@ class PoseToPointFactor : public NoiseModelFactor2<POSE, POINT> {
    *
    * Note: measured_ and the error are in local coordiantes.
    */
-  Vector evaluateError(const POSE& w_T_b, const POINT& w_P,
-                       boost::optional<Matrix&> H1 = boost::none,
-                       boost::optional<Matrix&> H2 = boost::none) const {
+  Vector evaluateError(
+      const POSE& w_T_b, const POINT& w_P,
+      boost::optional<Matrix&> H1 = boost::none,
+      boost::optional<Matrix&> H2 = boost::none) const override {
     return w_T_b.transformTo(w_P, H1, H2) - measured_;
   }
 
