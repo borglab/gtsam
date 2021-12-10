@@ -105,7 +105,7 @@ Constraint::shared_ptr AllDiff::partiallyApply(
   for (Key k : keys_) {
     const Domain& Dk = domains.at(k);
     if (Dk.isSingleton()) {
-      known.insert(k, Dk.firstValue());
+      known.insert<uint64_t>(k, Dk.firstValue());
     }
   }
   return partiallyApply(known);

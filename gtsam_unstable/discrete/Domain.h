@@ -18,7 +18,7 @@ namespace gtsam {
  */
 class GTSAM_UNSTABLE_EXPORT Domain : public Constraint {
   size_t cardinality_;       /// Cardinality
-  std::set<size_t> values_;  /// allowed values
+  std::set<uint64_t> values_;  /// allowed values
 
  public:
   typedef boost::shared_ptr<Domain> shared_ptr;
@@ -43,16 +43,16 @@ class GTSAM_UNSTABLE_EXPORT Domain : public Constraint {
   DiscreteKey discreteKey() const { return DiscreteKey(key(), cardinality_); }
 
   /// Insert a value, non const :-(
-  void insert(size_t value) { values_.insert(value); }
+  void insert(uint64_t value) { values_.insert(value); }
 
   /// Erase a value, non const :-(
-  void erase(size_t value) { values_.erase(value); }
+  void erase(uint64_t value) { values_.erase(value); }
 
   size_t nrValues() const { return values_.size(); }
 
   bool isSingleton() const { return nrValues() == 1; }
 
-  size_t firstValue() const { return *values_.begin(); }
+  uint64_t firstValue() const { return *values_.begin(); }
 
   // print
   void print(const std::string& s = "", const KeyFormatter& formatter =
@@ -73,7 +73,7 @@ class GTSAM_UNSTABLE_EXPORT Domain : public Constraint {
   std::string base1Str() const;
 
   // Check whether domain cotains a specific value.
-  bool contains(size_t value) const { return values_.count(value) > 0; }
+  bool contains(uint64_t value) const { return values_.count(value) > 0; }
 
   /// Calculate value
   double operator()(const Values& values) const override;
