@@ -21,79 +21,17 @@
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteFactor.h>
 #include <gtsam/discrete/DiscreteKey.h>
+#include <gtsam/hybrid/utilities.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/Symbol.h>
-#include <math.h>
 
 #include <algorithm>
-#include <limits>
 #include <string>
-#include <vector>
 
 namespace gtsam {
 
 // TODO use gtsam::Values
 using DiscreteValues = DiscreteFactor::Values;
-
-/**
- * @brief Function to normalize a set of log probabilities.
- *
- * Normalizing a set of log probabilities in a numerically stable way is
- * tricky. To avoid overflow/underflow issues, we compute the largest
- * (finite) log probability and subtract it from each log probability before
- * normalizing. This comes from the observation that if:
- *    p_i = exp(L_i) / ( sum_j exp(L_j) ),
- * Then,
- *    p_i = exp(Z) exp(L_i - Z) / (exp(Z) sum_j exp(L_j - Z))
- *        = exp(L_i - Z) / ( sum_j exp(L_j - Z) )
- *
- * Setting Z = max_j L_j, we can avoid numerical issues that arise when all
- * of the (unnormalized) log probabilities are either very large or very
- * small.
- */
-std::vector<double> expNormalize(const std::vector<double>& log_probs) {
-  double max_log_prob = -std::numeric_limits<double>::infinity();
-  for (size_t i = 0; i < log_probs.size(); i++) {
-    double log_prob = log_probs[i];
-    if ((log_prob != std::numeric_limits<double>::infinity()) &&
-        log_prob > max_log_prob) {
-      max_log_prob = log_prob;
-    }
-  }
-
-  // After computing the max = "Z" of the log probabilities L_i, we compute
-  // the log of the normalizing constant, log S, where S = sum_j exp(L_j - Z).
-  double total = 0.0;
-  for (size_t i = 0; i < log_probs.size(); i++) {
-    double prob_prime = exp(log_probs[i] - max_log_prob);
-    total += prob_prime;
-  }
-  double log_total = log(total);
-
-  // Now we compute the (normalized) probability (for each i):
-  // p_i = exp(L_i - Z - log S)
-  double check_normalization = 0.0;
-  std::vector<double> probs;
-  for (size_t i = 0; i < log_probs.size(); i++) {
-    double prob = exp(log_probs[i] - max_log_prob - log_total);
-    probs.push_back(prob);
-    check_normalization += prob;
-  }
-
-  // Numerical tolerance for floating point comparisons
-  double tol = 1e-9;
-
-  if (!fpEqual(check_normalization, 1.0, tol)) {
-    std::string errMsg =
-        std::string("expNormalize failed to normalize probabilities. ") +
-        std::string("Expected normalization constant = 1.0. Got value: ") +
-        std::to_string(check_normalization) +
-        std::string(
-            "\n This could have resulted from numerical overflow/underflow.");
-    throw std::logic_error(errMsg);
-  }
-  return probs;
-}
 
 /**
  * @brief Abstract class implementing a discrete-continuous factor.
@@ -150,9 +88,8 @@ class GTSAM_EXPORT HybridFactor : public Factor {
    * @return error (usually the negative log-likelihood) for the measurement
    * model as a double.
    */
-  virtual double error(
-      const Values& continuous_values,
-      const DiscreteFactor::Values& discrete_values) const = 0;
+  virtual double error(const Values& continuous_values,
+                       const DiscreteValues& discrete_values) const = 0;
 
   /**
    * Linearize the error function with respect to the continuous
@@ -200,7 +137,7 @@ class GTSAM_EXPORT HybridFactor : public Factor {
   /*
    * Return the discrete keys for this factor.
    */
-  DiscreteKeys discreteKeys() const { return discrete_keys_; }
+  const DiscreteKeys& discreteKeys() const { return discrete_keys_; }
 
   /**
    * Converts the HybridFactor to a DecisionTreeFactor. Internally, this
@@ -224,17 +161,7 @@ class GTSAM_EXPORT HybridFactor : public Factor {
    */
   virtual DecisionTreeFactor toDecisionTreeFactor(
       const Values& continuous_values,
-      const DiscreteValues& discrete_values) const {
-    DecisionTreeFactor converted;
-    for (const DiscreteKey& dkey : discrete_keys_) {
-      std::vector<double> probs = evalProbs(dkey, continuous_values);
-      // Cardinality of DiscreteKey is located at `second`
-      assert(probs.size() == dkey.second);
-      DecisionTreeFactor unary(dkey, probs);
-      converted = converted * unary;
-    }
-    return converted;
-  }
+      const DiscreteValues& discrete_values) const;
 
   // TODO(Kurran): is this the cleanest way to do this? Seems necessary for the
   // DCMaxMixtureFactor implementations etc...
@@ -315,39 +242,13 @@ class GTSAM_EXPORT HybridFactor : public Factor {
    * implementation behavior desired. At present, this is only used internally
    * to specify the default behavior for `toDecisionTreeFactor`.
    *
-   * @param dk - the discrete key to evaluate the likelihood for
+   * @param discrete_key - the discrete key to evaluate the likelihood for
    * @param continuous_values - an assignment to the continuous valued variables
    * @return a vector of length == cardinality of dk specifying the probability
    * of each possible assignment to dk.
    */
   std::vector<double> evalProbs(const DiscreteKey& discrete_key,
-                                const Values& continuous_values) const {
-    /*
-     * Normalizing a set of log probabilities in a numerically stable way is
-     * tricky. To avoid overflow/underflow issues, we compute the largest
-     * (finite) log probability and subtract it from each log probability before
-     * normalizing. This comes from the observation that if:
-     *    p_i = exp(L_i) / ( sum_j exp(L_j) ),
-     * Then,
-     *    p_i = exp(Z) exp(L_i - Z) / (exp(Z) sum_j exp(L_j - Z)),
-     *        = exp(L_i - Z) / ( sum_j exp(L_j - Z) )
-     *
-     * Setting Z = max_j L_j, we can avoid numerical issues that arise when all
-     * of the (unnormalized) log probabilities are either very large or very
-     * small.
-     */
-    std::vector<double> log_probs;
-    for (size_t i = 0; i < discrete_key.second; i++) {
-      DiscreteValues discrete_vals;
-      discrete_vals[discrete_key.first] = i;
-      // Recall: `error` returns -log(prob), so we compute exp(-error) to
-      // recover probability
-      double log_prob = -error(continuous_values, discrete_vals);
-      log_probs.push_back(log_prob);
-    }
-    return expNormalize(log_probs);
-  }
-
+                                const Values& continuous_values) const;
   /**
    * Take the product of this HybridFactor (as a DecisionTreeFactor)
    * conditioned on an assignment to the continous variables,
@@ -358,14 +259,13 @@ class GTSAM_EXPORT HybridFactor : public Factor {
    * HybridFactor
    * @param continuous_values - an assignment to the continuous variables
    * (specified by keys_).
+   * @param discrete_values - an assignment to the discrete variables.
    * @return a DecisionTreeFactor representing the product of this factor
    * with `f`.
    */
   DecisionTreeFactor conditionalTimes(
-      const DecisionTreeFactor& f,
-      const Values& continuous_values,
-      const DiscreteValues& discrete_values) const {
-    return toDecisionTreeFactor(continuous_values, discrete_values) * f;
-  }
+      const DecisionTreeFactor& f, const Values& continuous_values,
+      const DiscreteValues& discrete_values) const;
 };
+
 }  // namespace gtsam
