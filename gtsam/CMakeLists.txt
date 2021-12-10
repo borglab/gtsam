@@ -7,6 +7,7 @@ set (gtsam_subdirs
     base
     basis
     geometry
+    hybrid
     inference
     symbolic
     discrete
