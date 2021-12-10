@@ -49,7 +49,7 @@ TEST_UNSAFE( DiscreteMarginals, UGM_small ) {
   DiscreteFactor::shared_ptr actualC = marginals(Cathy.first);
   Values values;
 
-  values.insert<size_t>(Cathy.first, 0);
+  values.insert<uint64_t>(Cathy.first, 0);
   EXPECT_DOUBLES_EQUAL( 0.359631, (*actualC)(values), 1e-6);
 
   Vector actualCvector = marginals.marginalProbabilities(Cathy);
@@ -96,7 +96,7 @@ TEST_UNSAFE( DiscreteMarginals, UGM_chain ) {
   DiscreteFactor::shared_ptr actualC = marginals(key[2].first);
   Values values;
 
-  values.insert<size_t>(key[2].first, 0);
+  values.insert<uint64_t>(key[2].first, 0);
   EXPECT_DOUBLES_EQUAL( 0.03426, (*actualC)(values), 1e-4);
 }
 
@@ -171,7 +171,7 @@ TEST_UNSAFE(DiscreteMarginals, truss2) {
     Values x = allPosbValues[i];
     double px = graph(x);
     for (size_t j = 0; j < 5; j++)
-      if (x.exists(j) && x.at<size_t>(j))
+      if (x.exists(j) && x.at<uint64_t>(j))
         T[j] += px;
       else
         F[j] += px;

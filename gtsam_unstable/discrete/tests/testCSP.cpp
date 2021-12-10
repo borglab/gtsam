@@ -115,16 +115,16 @@ TEST(CSP, allInOne) {
 
   // Check an invalid combination, with ID==UT==AZ all same color
   Values invalid;
-  invalid.insert<size_t>(ID.first, 0);
-  invalid.insert<size_t>(UT.first, 0);
-  invalid.insert<size_t>(AZ.first, 0);
+  invalid.insert<uint64_t>(ID.first, 0);
+  invalid.insert<uint64_t>(UT.first, 0);
+  invalid.insert<uint64_t>(AZ.first, 0);
   EXPECT_DOUBLES_EQUAL(0, csp(invalid), 1e-9);
 
   // Check a valid combination
   Values valid;
-  valid.insert<size_t>(ID.first, 0);
-  valid.insert<size_t>(UT.first, 1);
-  valid.insert<size_t>(AZ.first, 0);
+  valid.insert<uint64_t>(ID.first, 0);
+  valid.insert<uint64_t>(UT.first, 1);
+  valid.insert<uint64_t>(AZ.first, 0);
   EXPECT_DOUBLES_EQUAL(1, csp(valid), 1e-9);
 
   // Just for fun, create the product and check it
@@ -136,9 +136,9 @@ TEST(CSP, allInOne) {
   // Solve
   auto mpe = csp.optimalAssignment();
   Values expected;
-  expected.insert<size_t>(ID.first, 1);
-  expected.insert<size_t>(UT.first, 0);
-  expected.insert<size_t>(AZ.first, 1);
+  expected.insert<uint64_t>(ID.first, 1);
+  expected.insert<uint64_t>(UT.first, 0);
+  expected.insert<uint64_t>(AZ.first, 1);
   EXPECT(assert_equal(expected, mpe));
   EXPECT_DOUBLES_EQUAL(1, csp(mpe), 1e-9);
 }
@@ -184,17 +184,17 @@ TEST(CSP, WesternUS) {
   auto mpe = csp.optimalAssignment(ordering);
   // GTSAM_PRINT(mpe);
   Values expected;
-  expected.insert<size_t>(WA.first, 1);
-  expected.insert<size_t>(CA.first, 1);
-  expected.insert<size_t>(NV.first, 3);
-  expected.insert<size_t>(OR.first, 0);
-  expected.insert<size_t>(MT.first, 1);
-  expected.insert<size_t>(WY.first, 0);
-  expected.insert<size_t>(NM.first, 3);
-  expected.insert<size_t>(CO.first, 2);
-  expected.insert<size_t>(ID.first, 2);
-  expected.insert<size_t>(UT.first, 1);
-  expected.insert<size_t>(AZ.first, 0);
+  expected.insert<uint64_t>(WA.first, 1);
+  expected.insert<uint64_t>(CA.first, 1);
+  expected.insert<uint64_t>(NV.first, 3);
+  expected.insert<uint64_t>(OR.first, 0);
+  expected.insert<uint64_t>(MT.first, 1);
+  expected.insert<uint64_t>(WY.first, 0);
+  expected.insert<uint64_t>(NM.first, 3);
+  expected.insert<uint64_t>(CO.first, 2);
+  expected.insert<uint64_t>(ID.first, 2);
+  expected.insert<uint64_t>(UT.first, 1);
+  expected.insert<uint64_t>(AZ.first, 0);
 
   // TODO: Fix me! mpe result seems to be right. (See the printing)
   // It has the same prob as the expected solution.
@@ -226,24 +226,24 @@ TEST(CSP, ArcConsistency) {
 
   // Check an invalid combination, with ID==UT==AZ all same color
   Values invalid;
-  invalid.insert<size_t>(ID.first, 0);
-  invalid.insert<size_t>(UT.first, 1);
-  invalid.insert<size_t>(AZ.first, 0);
+  invalid.insert<uint64_t>(ID.first, 0);
+  invalid.insert<uint64_t>(UT.first, 1);
+  invalid.insert<uint64_t>(AZ.first, 0);
   EXPECT_DOUBLES_EQUAL(0, csp(invalid), 1e-9);
 
   // Check a valid combination
   Values valid;
-  valid.insert<size_t>(ID.first, 0);
-  valid.insert<size_t>(UT.first, 1);
-  valid.insert<size_t>(AZ.first, 2);
+  valid.insert<uint64_t>(ID.first, 0);
+  valid.insert<uint64_t>(UT.first, 1);
+  valid.insert<uint64_t>(AZ.first, 2);
   EXPECT_DOUBLES_EQUAL(1, csp(valid), 1e-9);
 
   // Solve
   auto mpe = csp.optimalAssignment();
   Values expected;
-  expected.insert<size_t>(ID.first, 1);
-  expected.insert<size_t>(UT.first, 0);
-  expected.insert<size_t>(AZ.first, 2);
+  expected.insert<uint64_t>(ID.first, 1);
+  expected.insert<uint64_t>(UT.first, 0);
+  expected.insert<uint64_t>(AZ.first, 2);
   EXPECT(assert_equal(expected, mpe));
   EXPECT_DOUBLES_EQUAL(1, csp(mpe), 1e-9);
 
@@ -265,7 +265,7 @@ TEST(CSP, ArcConsistency) {
 
   // Parial application, version 1
   Values known;
-  known.insert<size_t>(AZ.first, 2);
+  known.insert<uint64_t>(AZ.first, 2);
   DiscreteFactor::shared_ptr reduced1 = alldiff.partiallyApply(known);
   DecisionTreeFactor f3(ID & UT, "0 1 1  1 0 1  1 1 0");
   EXPECT(assert_equal(f3, reduced1->toDecisionTreeFactor()));

@@ -11,7 +11,7 @@
 
 /**
  * @file    Assignment.h
- * @brief    An assignment from labels to a discrete value index (size_t)
+ * @brief    An assignment from labels to a discrete value index (uint64_t)
  * @author  Frank Dellaert
  * @date    Feb 5, 2012
  */
@@ -27,12 +27,12 @@
 namespace gtsam {
 
   /**
-   * An assignment from labels to value index (size_t).
+   * An assignment from labels to value index (uint64_t).
    * Assigns to each label a value. Implemented as a simple map.
    * A discrete factor takes an Assignment and returns a value.
    */
   template<class L>
-  class Assignment: public std::map<L, size_t> {
+  class Assignment: public std::map<L, uint64_t> {
   public:
     void print(const std::string& s = "Assignment: ") const {
       std::cout << s << ": ";
@@ -59,30 +59,30 @@ namespace gtsam {
    * variables with each having cardinalities 4, we get 4096 possible
    * configurations!!
    */
-  template<typename L>
+  template <typename L>
   std::vector<Values> cartesianProduct(
-      const std::vector<std::pair<L, size_t> >& keys) {
+      const std::vector<std::pair<L, uint64_t> >& keys) {
     std::vector<Values> allPossValues;
     Values values;
-    typedef std::pair<L, size_t> DiscreteKey;
-    for(const DiscreteKey& key: keys) {
-      values.insert<size_t>(key.first, 0);  //Initialize from 0
+    typedef std::pair<L, uint64_t> DiscreteKey;
+    for (const DiscreteKey& key : keys) {
+      values.insert<uint64_t>(key.first, 0);  // Initialize from 0
     }
 
     while (true) {
       allPossValues.push_back(values);
-      size_t j = 0;
+      uint64_t j = 0;
       for (j = 0; j < keys.size(); j++) {
         L idx = keys[j].first;
         // increment the value at key `idx`
-        size_t val = values.at<size_t>(idx);
-        values.update<size_t>(idx, val + 1);
+        uint64_t val = values.at<uint64_t>(idx);
+        values.update<uint64_t>(idx, val + 1);
 
-        if (values.at<size_t>(idx) < keys[j].second) {
+        if (values.at<uint64_t>(idx) < keys[j].second) {
           break;
         }
         // Wrap condition
-        values.update<size_t>(idx, 0);
+        values.update<uint64_t>(idx, 0);
       }
       if (j == keys.size()) {
         break;

@@ -34,7 +34,7 @@ using namespace gtsam;
 static bool debug = false;
 
 bool getValue(const Values& values, Key key) {
-  return values.exists(key) && values.at<size_t>(key);
+  return values.exists(key) && values.at<uint64_t>(key);
 }
 
 /* ************************************************************************* */

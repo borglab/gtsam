@@ -115,14 +115,14 @@ public:
    * @param parentsValues Known values of the parents
    * @return MPE value of the child (1 frontal variable).
    */
-  size_t solve(const Values& parentsValues) const;
+  uint64_t solve(const Values& parentsValues) const;
 
   /**
    * sample
    * @param parentsValues Known values of the parents
    * @return sample from conditional
    */
-  size_t sample(const Values& parentsValues) const;
+  uint64_t sample(const Values& parentsValues) const;
 
   /// @}
   /// @name Advanced Interface

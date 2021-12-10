@@ -78,29 +78,29 @@ void Scheduler::addStudent(const string& studentName, const string& area1,
 }
 
 /** get key for student and area, 0 is time slot itself */
-const DiscreteKey& Scheduler::key(size_t s,
-                                  boost::optional<size_t> area) const {
+const DiscreteKey& Scheduler::key(uint64_t s,
+                                  boost::optional<uint64_t> area) const {
   return area ? students_[s].keys_[*area] : students_[s].key_;
 }
 
-const string& Scheduler::studentName(size_t i) const {
+const string& Scheduler::studentName(uint64_t i) const {
   assert(i < nrStudents());
   return students_[i].name_;
 }
 
-const DiscreteKey& Scheduler::studentKey(size_t i) const {
+const DiscreteKey& Scheduler::studentKey(uint64_t i) const {
   assert(i < nrStudents());
   return students_[i].key_;
 }
 
-const string& Scheduler::studentArea(size_t i, size_t area) const {
+const string& Scheduler::studentArea(uint64_t i, uint64_t area) const {
   assert(i < nrStudents());
   return students_[i].areaName_[area];
 }
 
 /** Add student-specific constraints to the graph */
-void Scheduler::addStudentSpecificConstraints(size_t i,
-                                              boost::optional<size_t> slot) {
+void Scheduler::addStudentSpecificConstraints(uint64_t i,
+                                              boost::optional<uint64_t> slot) {
   bool debug = ISDEBUG("Scheduler::buildGraph");
 
   assert(i < nrStudents());
@@ -207,11 +207,11 @@ void Scheduler::printAssignment(const Values& assignment) const {
   cout << endl;
   for (size_t s = 0; s < nrStudents(); s++) {
     Key j = 3 * maxNrStudents_ + s;
-    size_t slot = assignment.at<size_t>(j);
+    uint64_t slot = assignment.at<uint64_t>(j);
     cout << studentName(s) << " slot: " << slotName_[slot] << endl;
     Key base = 3 * s;
     for (size_t area = 0; area < 3; area++) {
-      size_t faculty = assignment.at<size_t>(base + area);
+      uint64_t faculty = assignment.at<uint64_t>(base + area);
       cout << setw(12) << studentArea(s, area) << ": " << facultyName_[faculty]
            << endl;
     }
@@ -223,7 +223,7 @@ void Scheduler::printAssignment(const Values& assignment) const {
 void Scheduler::printSpecial(const Values& assignment) const {
   Values::const_iterator it = assignment.begin();
   for (size_t area = 0; area < 3; area++, it++) {
-    size_t f = it->value.cast<size_t>();
+    uint64_t f = it->value.cast<uint64_t>();
     cout << setw(12) << studentArea(0, area) << ": " << facultyName_[f] << endl;
   }
   cout << endl;
@@ -231,11 +231,11 @@ void Scheduler::printSpecial(const Values& assignment) const {
 
 /** Accumulate faculty stats */
 void Scheduler::accumulateStats(const Values& assignment,
-                                vector<size_t>& stats) const {
+                                vector<uint64_t>& stats) const {
   for (size_t s = 0; s < nrStudents(); s++) {
     Key base = 3 * s;
     for (size_t area = 0; area < 3; area++) {
-      size_t f = assignment.at<size_t>(base + area);
+      uint64_t f = assignment.at<uint64_t>(base + area);
       assert(f < stats.size());
       stats[f]++;
     }  // area

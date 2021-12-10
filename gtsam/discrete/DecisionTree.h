@@ -44,7 +44,7 @@ namespace gtsam {
     typedef std::function<Y(const Y&, const Y&)> Binary;
 
     /** A label annotated with cardinality */
-    typedef std::pair<L,size_t> LabelC;
+    using LabelC = std::pair<L, uint64_t>;
 
     /** DTs consist of Leaf and Choice nodes, both subclasses of Node */
     class Leaf;
@@ -87,7 +87,7 @@ namespace gtsam {
       virtual Ptr apply_f_op_g(const Node&, const Binary&) const = 0;
       virtual Ptr apply_g_op_fL(const Leaf&, const Binary&) const = 0;
       virtual Ptr apply_g_op_fC(const Choice&, const Binary&) const = 0;
-      virtual Ptr choose(const L& label, size_t index) const = 0;
+      virtual Ptr choose(const L& label, uint64_t index) const = 0;
       virtual bool isLeaf() const = 0;
     };
     /** ------------------------ Node base class --------------------------- */
@@ -179,7 +179,7 @@ namespace gtsam {
 
     /** create a new function where value(label)==index
      * It's like "restrict" in Darwiche09book pg329, 330? */
-    DecisionTree choose(const L& label, size_t index) const {
+    DecisionTree choose(const L& label, uint64_t index) const {
       NodePtr newRoot = root_->choose(label, index);
       return DecisionTree(newRoot);
     }

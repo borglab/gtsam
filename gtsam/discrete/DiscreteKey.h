@@ -31,7 +31,7 @@ namespace gtsam {
    * Key type for discrete conditionals
    * Includes name and cardinality
    */
-  typedef std::pair<Key,size_t> DiscreteKey;
+  using DiscreteKey = std::pair<Key,uint64_t>;
 
   /// DiscreteKeys is a set of keys that can be assembled using the & operator
   struct DiscreteKeys: public std::vector<DiscreteKey> {

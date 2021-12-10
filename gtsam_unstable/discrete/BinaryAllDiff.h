@@ -18,7 +18,7 @@ namespace gtsam {
  * Returns 1 if values for two keys are different, 0 otherwise.
  */
 class BinaryAllDiff : public Constraint {
-  size_t cardinality0_, cardinality1_;  /// cardinality
+  uint64_t cardinality0_, cardinality1_;  /// cardinality
 
  public:
   /// Constructor
@@ -48,7 +48,7 @@ class BinaryAllDiff : public Constraint {
 
   /// Calculate value
   double operator()(const Values& values) const override {
-    return (double)(values.at<size_t>(keys_[0]) != values.at<size_t>(keys_[1]));
+    return (double)(values.at<uint64_t>(keys_[0]) != values.at<uint64_t>(keys_[1]));
   }
 
   /// Convert into a decisiontree

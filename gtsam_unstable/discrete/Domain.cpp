@@ -32,7 +32,7 @@ string Domain::base1Str() const {
 
 /* ************************************************************************* */
 double Domain::operator()(const Values& values) const {
-  return contains(values.at<size_t>(key()));
+  return contains(values.at<uint64_t>(key()));
 }
 
 /* ************************************************************************* */
@@ -81,7 +81,7 @@ boost::optional<Domain> Domain::checkAllDiff(const KeyVector keys,
 /* ************************************************************************* */
 Constraint::shared_ptr Domain::partiallyApply(const Values& values) const {
   Values::const_iterator it = values.find(key());
-  if (it != values.end() && !contains(it->value.cast<size_t>()))
+  if (it != values.end() && !contains(it->value.cast<uint64_t>()))
     throw runtime_error("Domain::partiallyApply: unsatisfiable");
   return boost::make_shared<Domain>(*this);
 }

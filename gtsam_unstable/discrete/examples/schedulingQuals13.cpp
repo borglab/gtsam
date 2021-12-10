@@ -217,7 +217,7 @@ void solveStaged(size_t addMutex = 2) {
 
     // get corresponding count
     DiscreteKey dkey = scheduler.studentKey(NRSTUDENTS - 1 - s);
-    values.insert(dkey.first, bestSlot);
+    values.insert<uint64_t>(dkey.first, bestSlot);
     double count = (*root)(values);
 
     // remove this slot from consideration

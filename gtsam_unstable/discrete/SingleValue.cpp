@@ -24,7 +24,7 @@ void SingleValue::print(const string& s, const KeyFormatter& formatter) const {
 
 /* ************************************************************************* */
 double SingleValue::operator()(const Values& values) const {
-  return (double)(values.at<size_t>(keys_[0]) == value_);
+  return (double)(values.at<uint64_t>(keys_[0]) == value_);
 }
 
 /* ************************************************************************* */
@@ -59,7 +59,7 @@ bool SingleValue::ensureArcConsistency(Key j, Domains* domains) const {
 /* ************************************************************************* */
 Constraint::shared_ptr SingleValue::partiallyApply(const Values& values) const {
   Values::const_iterator it = values.find(keys_[0]);
-  if (it != values.end() && it->value.cast<size_t>() != value_)
+  if (it != values.end() && it->value.cast<uint64_t>() != value_)
     throw runtime_error("SingleValue::partiallyApply: unsatisfiable");
   return boost::make_shared<SingleValue>(keys_[0], cardinality_, value_);
 }

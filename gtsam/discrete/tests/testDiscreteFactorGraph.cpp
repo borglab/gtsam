@@ -83,8 +83,8 @@ TEST_UNSAFE( DiscreteFactorGraph, DiscreteFactorGraphEvaluationTest) {
 
   // Instantiate Values
   Values values;
-  values.insert<size_t>(0, 1);
-  values.insert<size_t>(1, 1);
+  values.insert<uint64_t>(0, 1);
+  values.insert<uint64_t>(1, 1);
 
   // Check if graph evaluation works ( 0.3*0.6*4 )
   EXPECT_DOUBLES_EQUAL( .72, graph(values), 1e-9);
@@ -94,17 +94,17 @@ TEST_UNSAFE( DiscreteFactorGraph, DiscreteFactorGraphEvaluationTest) {
   graph.add(P1 & P2 & P3, "1 2 3 4 5 6 7 8 9 10 11 12");
 
   // Below values lead to selecting the 8th index in the ternary factor table
-  values.update<size_t>(0, 1);
-  values.update<size_t>(1, 0);
-  values.insert<size_t>(2, 1);
+  values.update<uint64_t>(0, 1);
+  values.update<uint64_t>(1, 0);
+  values.insert<uint64_t>(2, 1);
 
   // Check if graph evaluation works (0.3*0.9*1*0.2*8)
   EXPECT_DOUBLES_EQUAL( 4.32, graph(values), 1e-9);
 
   // Below values lead to selecting the 3rd index in the ternary factor table
-  values.update<size_t>(0, 0);
-  values.update<size_t>(1, 1);
-  values.update<size_t>(2, 0);
+  values.update<uint64_t>(0, 0);
+  values.update<uint64_t>(1, 1);
+  values.update<uint64_t>(2, 0);
 
   // Check if graph evaluation works (0.9*0.6*1*0.9*4)
   EXPECT_DOUBLES_EQUAL( 1.944, graph(values), 1e-9);
@@ -167,9 +167,9 @@ TEST( DiscreteFactorGraph, test)
 
   // Test optimization
   Values expectedValues;
-  expectedValues.insert<size_t>(0, 0);
-  expectedValues.insert<size_t>(1, 0);
-  expectedValues.insert<size_t>(2, 0);
+  expectedValues.insert<uint64_t>(0, 0);
+  expectedValues.insert<uint64_t>(1, 0);
+  expectedValues.insert<uint64_t>(2, 0);
   auto actualValues = graph.optimize();
   EXPECT(assert_equal(expectedValues, actualValues));
 }
@@ -188,9 +188,9 @@ TEST( DiscreteFactorGraph, testMPE)
   auto actualMPE = graph.optimize();
 
   Values expectedMPE;
-  expectedMPE.insert<size_t>(0, 0);
-  expectedMPE.insert<size_t>(1, 1);
-  expectedMPE.insert<size_t>(2, 1);
+  expectedMPE.insert<uint64_t>(0, 0);
+  expectedMPE.insert<uint64_t>(1, 1);
+  expectedMPE.insert<uint64_t>(2, 1);
   EXPECT(assert_equal(expectedMPE, actualMPE));
 }
 
@@ -213,11 +213,11 @@ TEST( DiscreteFactorGraph, testMPE_Darwiche09book_p244)
   //  DiscreteSequentialSolver(graph).eliminate()->print();
 
   Values expectedMPE;
-  expectedMPE.insert<size_t>(4, 0);
-  expectedMPE.insert<size_t>(2, 0);
-  expectedMPE.insert<size_t>(3, 1);
-  expectedMPE.insert<size_t>(0, 1);
-  expectedMPE.insert<size_t>(1, 1);
+  expectedMPE.insert<uint64_t>(4, 0);
+  expectedMPE.insert<uint64_t>(2, 0);
+  expectedMPE.insert<uint64_t>(3, 1);
+  expectedMPE.insert<uint64_t>(0, 1);
+  expectedMPE.insert<uint64_t>(1, 1);
 
   // Use the solver machinery.
   DiscreteBayesNet::shared_ptr chordal = graph.eliminateSequential();

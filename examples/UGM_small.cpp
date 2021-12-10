@@ -55,10 +55,10 @@ int main(int argc, char** argv) {
   for (size_t i = 0; i < allPosbValues.size(); ++i) {
     Values values = allPosbValues[i];
     double prodPot = graph(values);
-    cout << values.at<size_t>(Cathy.first) << " "
-         << values.at<size_t>(Heather.first) << " "
-         << values.at<size_t>(Mark.first) << " "
-         << values.at<size_t>(Allison.first) << " :\t" << prodPot << "\t"
+    cout << values.at<uint64_t>(Cathy.first) << " "
+         << values.at<uint64_t>(Heather.first) << " "
+         << values.at<uint64_t>(Mark.first) << " "
+         << values.at<uint64_t>(Allison.first) << " :\t" << prodPot << "\t"
          << prodPot / 3790 << endl;
   }
 

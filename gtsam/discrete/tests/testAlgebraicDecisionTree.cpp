@@ -445,12 +445,12 @@ TEST(ADT, constructor)
 {
   DiscreteKey v0(0,2), v1(1,3);
   Values x00, x01, x02, x10, x11, x12;
-  x00.insert<size_t>(0, 0), x00.insert<size_t>(1, 0);
-  x01.insert<size_t>(0, 0), x01.insert<size_t>(1, 1);
-  x02.insert<size_t>(0, 0), x02.insert<size_t>(1, 2);
-  x10.insert<size_t>(0, 1), x10.insert<size_t>(1, 0);
-  x11.insert<size_t>(0, 1), x11.insert<size_t>(1, 1);
-  x12.insert<size_t>(0, 1), x12.insert<size_t>(1, 2);
+  x00.insert<uint64_t>(0, 0), x00.insert<uint64_t>(1, 0);
+  x01.insert<uint64_t>(0, 0), x01.insert<uint64_t>(1, 1);
+  x02.insert<uint64_t>(0, 0), x02.insert<uint64_t>(1, 2);
+  x10.insert<uint64_t>(0, 1), x10.insert<uint64_t>(1, 0);
+  x11.insert<uint64_t>(0, 1), x11.insert<uint64_t>(1, 1);
+  x12.insert<uint64_t>(0, 1), x12.insert<uint64_t>(1, 2);
 
   ADT f1(v0 & v1, "0 1 2 3 4 5");
   EXPECT_DOUBLES_EQUAL(0, f1(x00), 1e-9);
@@ -475,16 +475,16 @@ TEST(ADT, constructor)
   t = x++;
   ADT f3(z0 & z1 & z2 & z3, table);
   Values assignment;
-  assignment.insert<size_t>(0, 0);
-  assignment.insert<size_t>(1, 0);
-  assignment.insert<size_t>(2, 0);
-  assignment.insert<size_t>(3, 1);
+  assignment.insert<uint64_t>(0, 0);
+  assignment.insert<uint64_t>(1, 0);
+  assignment.insert<uint64_t>(2, 0);
+  assignment.insert<uint64_t>(3, 1);
   EXPECT_DOUBLES_EQUAL(1, f3(assignment), 1e-9);
 }
 
 /* ************************************************************************* */
 // test conversion to integer indices
-// Only works if DiscreteKeys are binary, as size_t has binary cardinality!
+// Only works if DiscreteKeys are binary, as uint64_t has binary cardinality!
 TEST(ADT, conversion)
 {
   DiscreteKey X(0,2), Y(1,2);
@@ -501,10 +501,10 @@ TEST(ADT, conversion)
   write_dot(fIndexKey, "conversion-f2");
 
   Values x00, x01, x02, x10, x11, x12;
-  x00.insert<size_t>(5, 0), x00.insert<size_t>(2, 0);
-  x01.insert<size_t>(5, 0), x01.insert<size_t>(2, 1);
-  x10.insert<size_t>(5, 1), x10.insert<size_t>(2, 0);
-  x11.insert<size_t>(5, 1), x11.insert<size_t>(2, 1);
+  x00.insert<uint64_t>(5, 0), x00.insert<uint64_t>(2, 0);
+  x01.insert<uint64_t>(5, 0), x01.insert<uint64_t>(2, 1);
+  x10.insert<uint64_t>(5, 1), x10.insert<uint64_t>(2, 0);
+  x11.insert<uint64_t>(5, 1), x11.insert<uint64_t>(2, 1);
   EXPECT_DOUBLES_EQUAL(0.2, fIndexKey(x00), 1e-9);
   EXPECT_DOUBLES_EQUAL(0.5, fIndexKey(x01), 1e-9);
   EXPECT_DOUBLES_EQUAL(0.3, fIndexKey(x10), 1e-9);
@@ -577,10 +577,10 @@ TEST(ADT, zero)
   ADT anotb = a * notb;
   //  GTSAM_PRINT(anotb);
   Values x00, x01, x10, x11;
-  x00.insert<size_t>(0, 0), x00.insert<size_t>(1, 0);
-  x01.insert<size_t>(0, 0), x01.insert<size_t>(1, 1);
-  x10.insert<size_t>(0, 1), x10.insert<size_t>(1, 0);
-  x11.insert<size_t>(0, 1), x11.insert<size_t>(1, 1);
+  x00.insert<uint64_t>(0, 0), x00.insert<uint64_t>(1, 0);
+  x01.insert<uint64_t>(0, 0), x01.insert<uint64_t>(1, 1);
+  x10.insert<uint64_t>(0, 1), x10.insert<uint64_t>(1, 0);
+  x11.insert<uint64_t>(0, 1), x11.insert<uint64_t>(1, 1);
   EXPECT_DOUBLES_EQUAL(0, anotb(x00), 1e-9);
   EXPECT_DOUBLES_EQUAL(0, anotb(x01), 1e-9);
   EXPECT_DOUBLES_EQUAL(1, anotb(x10), 1e-9);

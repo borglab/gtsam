@@ -40,9 +40,9 @@ TEST( DecisionTreeFactor, constructors)
   EXPECT_LONGS_EQUAL(3,f3.size());
 
   Values values;
-  values.insert<size_t>(0, 1); // x
-  values.insert<size_t>(1, 2); // y
-  values.insert<size_t>(2, 1); // z
+  values.insert<uint64_t>(0, 1); // x
+  values.insert<uint64_t>(1, 2); // y
+  values.insert<uint64_t>(2, 1); // z
   EXPECT_DOUBLES_EQUAL(8, f1(values), 1e-9);
   EXPECT_DOUBLES_EQUAL(7, f2(values), 1e-9);
   EXPECT_DOUBLES_EQUAL(75, f3(values), 1e-9);

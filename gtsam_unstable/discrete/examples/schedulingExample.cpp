@@ -170,7 +170,7 @@ void solveStaged(size_t addMutex = 2) {
 
     // get corresponding count
     DiscreteKey dkey = scheduler.studentKey(6 - s);
-    values.insert(dkey.first, bestSlot);
+    values.insert<uint64_t>(dkey.first, bestSlot);
     size_t count = (*root)(values);
 
     // remove this slot from consideration
@@ -324,7 +324,7 @@ void accomodateStudent() {
 
   // get corresponding count
   DiscreteKey dkey = scheduler.studentKey(0);
-  values.insert(dkey.first, bestSlot);
+  values.insert<uint64_t>(dkey.first, bestSlot);
   size_t count = (*root)(values);
   cout << boost::format("%s = %d (%d), count = %d") % scheduler.studentName(0)
       % scheduler.slotName(bestSlot) % bestSlot % count << endl;

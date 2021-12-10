@@ -65,7 +65,7 @@ namespace gtsam {
     Vector vResult(key.second);
     for (size_t state = 0; state < key.second ; ++ state) {
       Values values;
-      values.insert<size_t>(key.first, state);
+      values.insert<uint64_t>(key.first, state);
       vResult(state) = (*marginalFactor)(values);
     }
     return vResult;

@@ -31,12 +31,12 @@ class Sudoku : public CSP {
 
  public:
   /// return DiscreteKey for cell(i,j)
-  const DiscreteKey& dkey(size_t i, size_t j) const {
+  const DiscreteKey& dkey(uint64_t i, uint64_t j) const {
     return dkeys_.at(IJ(i, j));
   }
 
   /// return Key for cell(i,j)
-  Key key(size_t i, size_t j) const { return dkey(i, j).first; }
+  Key key(uint64_t i, uint64_t j) const { return dkey(i, j).first; }
 
   /// Constructor
   Sudoku(size_t n, ...) : n_(n) {
@@ -92,7 +92,7 @@ class Sudoku : public CSP {
     for (size_t i = 0; i < n_; i++) {
       for (size_t j = 0; j < n_; j++) {
         Key k = key(i, j);
-        cout << 1 + assignment.at<size_t>(k) << " ";
+        cout << 1 + assignment.at<uint64_t>(k) << " ";
       }
       cout << endl;
     }
@@ -128,22 +128,22 @@ TEST(Sudoku, small) {
   // optimize and check
   auto solution = csp.optimalAssignment();
   Values expected;
-  expected.insert<size_t>(csp.key(0, 0), 0);
-  expected.insert<size_t>(csp.key(0, 1), 1);
-  expected.insert<size_t>(csp.key(0, 2), 2);
-  expected.insert<size_t>(csp.key(0, 3), 3);
-  expected.insert<size_t>(csp.key(1, 0), 2);
-  expected.insert<size_t>(csp.key(1, 1), 3);
-  expected.insert<size_t>(csp.key(1, 2), 0);
-  expected.insert<size_t>(csp.key(1, 3), 1);
-  expected.insert<size_t>(csp.key(2, 0), 3);
-  expected.insert<size_t>(csp.key(2, 1), 2);
-  expected.insert<size_t>(csp.key(2, 2), 1);
-  expected.insert<size_t>(csp.key(2, 3), 0);
-  expected.insert<size_t>(csp.key(3, 0), 1);
-  expected.insert<size_t>(csp.key(3, 1), 0);
-  expected.insert<size_t>(csp.key(3, 2), 3);
-  expected.insert<size_t>(csp.key(3, 3), 2);
+  expected.insert<uint64_t>(csp.key(0, 0), 0);
+  expected.insert<uint64_t>(csp.key(0, 1), 1);
+  expected.insert<uint64_t>(csp.key(0, 2), 2);
+  expected.insert<uint64_t>(csp.key(0, 3), 3);
+  expected.insert<uint64_t>(csp.key(1, 0), 2);
+  expected.insert<uint64_t>(csp.key(1, 1), 3);
+  expected.insert<uint64_t>(csp.key(1, 2), 0);
+  expected.insert<uint64_t>(csp.key(1, 3), 1);
+  expected.insert<uint64_t>(csp.key(2, 0), 3);
+  expected.insert<uint64_t>(csp.key(2, 1), 2);
+  expected.insert<uint64_t>(csp.key(2, 2), 1);
+  expected.insert<uint64_t>(csp.key(2, 3), 0);
+  expected.insert<uint64_t>(csp.key(3, 0), 1);
+  expected.insert<uint64_t>(csp.key(3, 1), 0);
+  expected.insert<uint64_t>(csp.key(3, 2), 3);
+  expected.insert<uint64_t>(csp.key(3, 3), 2);
   EXPECT(assert_equal(expected, solution));
   // csp.printAssignment(solution);
 
@@ -263,7 +263,7 @@ TEST(Sudoku, AJC_3star_Feb8_2012) {
   // Check that solution
   auto solution = new_csp.optimalAssignment();
   // csp.printAssignment(solution);
-  EXPECT_LONGS_EQUAL(6, solution.at<size_t>(key99));
+  EXPECT_LONGS_EQUAL(6, solution.at<uint64_t>(key99));
 }
 
 /* ************************************************************************* */

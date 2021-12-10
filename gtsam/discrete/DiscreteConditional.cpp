@@ -99,11 +99,11 @@ bool DiscreteConditional::equals(const DiscreteFactor& other,
 /* ******************************************************************************** */
 Potentials::ADT DiscreteConditional::choose(const Values& parentsValues) const {
   ADT pFS(*this);
-  Key j; size_t value;
+  Key j; uint64_t value;
   for(Key key: parents()) {
     try {
       j = (key);
-      value = parentsValues.at<size_t>(j);
+      value = parentsValues.at<uint64_t>(j);
       pFS = pFS.choose(j, value);
     } catch (exception&) {
       cout << "Key: " << j << "  Value: " << value << endl;
@@ -145,7 +145,7 @@ void DiscreteConditional::solveInPlace(Values* values) const {
 
   //set values (inPlace) to mpe
   for(Key j: frontals()) {
-    values->upsert<size_t>(j, mpe.at<size_t>(j));
+    values->upsert<uint64_t>(j, mpe.at<uint64_t>(j));
   }
 }
 
@@ -153,25 +153,25 @@ void DiscreteConditional::solveInPlace(Values* values) const {
 void DiscreteConditional::sampleInPlace(Values* values) const {
   assert(nrFrontals() == 1);
   Key j = (firstFrontalKey());
-  size_t sampled = sample(*values); // Sample variable given parents
+  uint64_t sampled = sample(*values); // Sample variable given parents
   values->upsert(j,  sampled);  // store result in partial solution
 }
 
 /* ******************************************************************************** */
-size_t DiscreteConditional::solve(const Values& parentsValues) const {
+uint64_t DiscreteConditional::solve(const Values& parentsValues) const {
 
   // TODO: is this really the fastest way? I think it is.
   ADT pFS = choose(parentsValues); // P(F|S=parentsValues)
 
   // Then, find the max over all remaining
   // TODO, only works for one key now, seems horribly slow this way
-  size_t mpe = 0;
+  uint64_t mpe = 0;
   Values frontals;
   double maxP = 0;
   assert(nrFrontals() == 1);
   Key j = (firstFrontalKey());
   for (size_t value = 0; value < cardinality(j); value++) {
-    frontals.upsert(j,  value);
+    frontals.upsert<uint64_t>(j,  value);
     double pValueS = pFS(frontals); // P(F=value|S=parentsValues)
     // Update MPE solution if better
     if (pValueS > maxP) {
@@ -183,7 +183,7 @@ size_t DiscreteConditional::solve(const Values& parentsValues) const {
 }
 
 /* ******************************************************************************** */
-size_t DiscreteConditional::sample(const Values& parentsValues) const {
+uint64_t DiscreteConditional::sample(const Values& parentsValues) const {
   static mt19937 rng(2);  // random number generator
 
   // Get the correct conditional density
@@ -192,17 +192,17 @@ size_t DiscreteConditional::sample(const Values& parentsValues) const {
   // TODO(Duy): only works for one key now, seems horribly slow this way
   assert(nrFrontals() == 1);
   Key key = firstFrontalKey();
-  size_t nj = cardinality(key);
+  uint64_t nj = cardinality(key);
   vector<double> p(nj);
   Values frontals;
   for (size_t value = 0; value < nj; value++) {
-    frontals.upsert(key,  value);
+    frontals.upsert<uint64_t>(key,  value);
     p[value] = pFS(frontals);  // P(F=value|S=parentsValues)
     if (p[value] == 1.0) {
       return value;  // shortcut exit
     }
   }
-  std::discrete_distribution<size_t> distribution(p.begin(), p.end());
+  std::discrete_distribution<uint64_t> distribution(p.begin(), p.end());
   return distribution(rng);
 }
 

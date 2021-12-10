@@ -72,10 +72,10 @@ int main(int argc, char **argv) {
       for (size_t h = 0; h < nrStates; h++)
         for (size_t c = 0; c < nrStates; c++) {
           Values values;
-          values.insert(C, c);
-          values.insert(S, h);
-          values.insert(R, m);
-          values.insert(W, a);
+          values.insert<uint64_t>(C, c);
+          values.insert<uint64_t>(S, h);
+          values.insert<uint64_t>(R, m);
+          values.insert<uint64_t>(W, a);
           double prodPot = graph(values);
           cout << setw(8) << static_cast<bool>(c) << setw(14)
                << static_cast<bool>(h) << setw(12) << static_cast<bool>(m)

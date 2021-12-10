@@ -83,10 +83,10 @@ TEST(DT, example)
 
   // create a value
   Values x00, x01, x10, x11;
-  x00.insert<size_t>(A, 0), x00.insert<size_t>(B, 0);
-  x01.insert<size_t>(A, 0), x01.insert<size_t>(B, 1);
-  x10.insert<size_t>(A, 1), x10.insert<size_t>(B, 0);
-  x11.insert<size_t>(A, 1), x11.insert<size_t>(B, 1);
+  x00.insert<uint64_t>(A, 0), x00.insert<uint64_t>(B, 0);
+  x01.insert<uint64_t>(A, 0), x01.insert<uint64_t>(B, 1);
+  x10.insert<uint64_t>(A, 1), x10.insert<uint64_t>(B, 0);
+  x11.insert<uint64_t>(A, 1), x11.insert<uint64_t>(B, 1);
 
   // A
   DT a(A, 0, 5);
@@ -161,9 +161,9 @@ TEST(DT, example)
 
   // and a model assigning stuff to C
   Values x101;
-  x101.insert<size_t>(A, 1);
-  x101.insert<size_t>(B, 0);
-  x101.insert<size_t>(C, 1);
+  x101.insert<uint64_t>(A, 1);
+  x101.insert<uint64_t>(B, 0);
+  x101.insert<uint64_t>(C, 1);
 
   // mul notba with C
   DT notbac = apply(notba, c, &Ring::mul);

@@ -31,7 +31,7 @@ class LoopyBelief {
    * - the factor indices of the corrected belief factors of the neighboring
    * nodes
    */
-  typedef std::map<Key, size_t> CorrectedBeliefIndices;
+  typedef std::map<Key, uint64_t> CorrectedBeliefIndices;
   struct StarGraph {
     DiscreteFactorGraph::shared_ptr star;
     CorrectedBeliefIndices correctedBeliefIndices;
@@ -127,7 +127,7 @@ class LoopyBelief {
       double sum = 0.0;
       for (size_t v = 0; v < allDiscreteKeys.at(key).second; ++v) {
         Values val;
-        val.insert(key, v);
+        val.insert<uint64_t>(key, v);
         sum += (*beliefAtKey)(val);
       }
       string sumFactorTable;

@@ -127,7 +127,7 @@ namespace gtsam {
     }
 
     /** choose a branch, create new memory ! */
-    NodePtr choose(const L& label, size_t index) const override {
+    NodePtr choose(const L& label, uint64_t index) const override {
       return NodePtr(new Leaf(constant()));
     }
 
@@ -149,7 +149,7 @@ namespace gtsam {
 
   private:
     /** incremental allSame */
-    size_t allSame_;
+    uint64_t allSame_;
 
     typedef boost::shared_ptr<const Choice> ChoicePtr;
 
@@ -178,7 +178,7 @@ namespace gtsam {
     bool isLeaf() const override { return false; }
 
     /** Constructor, given choice label and mandatory expected branch count */
-    Choice(const L& label, size_t count) :
+    Choice(const L& label, uint64_t count) :
       label_(label), allSame_(true) {
       branches_.reserve(count);
     }
@@ -297,7 +297,7 @@ namespace gtsam {
             "DecisionTree::operator(): value undefined for a label");
       }
 #endif
-      size_t index = x.at<size_t>(label_);
+      uint64_t index = x.at<uint64_t>(label_);
       NodePtr child = branches_[index];
       return (*child)(x);
     }
@@ -352,7 +352,7 @@ namespace gtsam {
     }
 
     /** choose a branch, recursively */
-    NodePtr choose(const L& label, size_t index) const override {
+    NodePtr choose(const L& label, uint64_t index) const override {
       if (label_ == label)
         return branches_[index]; // choose branch
 
