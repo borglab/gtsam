@@ -270,6 +270,10 @@ struct ScalarTraits : VectorSpaceImpl<Scalar, 1> {
 
 } // namespace internal
 
+/// int
+template <>
+struct traits<int> : public internal::ScalarTraits<int> {};
+
 /// double
 template<> struct traits<double> : public internal::ScalarTraits<double> {
 };

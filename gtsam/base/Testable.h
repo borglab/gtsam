@@ -72,6 +72,9 @@ namespace gtsam {
     }
   }; // \ Testable
 
+  inline void print(int v, const std::string& s = "") {
+    std::cout << (s.empty() ? s : s + " ") << v << std::endl;
+  }
   inline void print(float v, const std::string& s = "") {
     std::cout << (s.empty() ? s : s + " ") << v << std::endl;
   }
