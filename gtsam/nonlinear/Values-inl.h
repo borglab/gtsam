@@ -391,4 +391,10 @@ namespace gtsam {
     update(j, static_cast<const Value&>(GenericValue<ValueType>(val)));
   }
 
+  // upsert with templated value
+  template <typename ValueType>
+  void Values::upsert(Key j, const ValueType& val) {
+    upsert(j, static_cast<const Value&>(GenericValue<ValueType>(val)));
+  }
+
 }

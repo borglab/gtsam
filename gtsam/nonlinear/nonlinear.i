@@ -275,6 +275,7 @@ class Values {
 
   void insert(const gtsam::Values& values);
   void update(const gtsam::Values& values);
+  void upsert(const gtsam::Values& values);
   void erase(size_t j);
   void swap(gtsam::Values& values);
 
@@ -350,6 +351,32 @@ class Values {
   void update(size_t j, Vector vector);
   void update(size_t j, Matrix matrix);
   void update(size_t j, double c);
+
+  void upsert(size_t j, const gtsam::Point2& point2);
+  void upsert(size_t j, const gtsam::Point3& point3);
+  void upsert(size_t j, const gtsam::Rot2& rot2);
+  void upsert(size_t j, const gtsam::Pose2& pose2);
+  void upsert(size_t j, const gtsam::SO3& R);
+  void upsert(size_t j, const gtsam::SO4& Q);
+  void upsert(size_t j, const gtsam::SOn& P);
+  void upsert(size_t j, const gtsam::Rot3& rot3);
+  void upsert(size_t j, const gtsam::Pose3& pose3);
+  void upsert(size_t j, const gtsam::Unit3& unit3);
+  void upsert(size_t j, const gtsam::Cal3_S2& cal3_s2);
+  void upsert(size_t j, const gtsam::Cal3DS2& cal3ds2);
+  void upsert(size_t j, const gtsam::Cal3Bundler& cal3bundler);
+  void upsert(size_t j, const gtsam::Cal3Fisheye& cal3fisheye);
+  void upsert(size_t j, const gtsam::Cal3Unified& cal3unified);
+  void upsert(size_t j, const gtsam::EssentialMatrix& essential_matrix);
+  void upsert(size_t j, const gtsam::PinholeCamera<gtsam::Cal3_S2>& camera);
+  void upsert(size_t j, const gtsam::PinholeCamera<gtsam::Cal3Bundler>& camera);
+  void upsert(size_t j, const gtsam::PinholeCamera<gtsam::Cal3Fisheye>& camera);
+  void upsert(size_t j, const gtsam::PinholeCamera<gtsam::Cal3Unified>& camera);
+  void upsert(size_t j, const gtsam::imuBias::ConstantBias& constant_bias);
+  void upsert(size_t j, const gtsam::NavState& nav_state);
+  void upsert(size_t j, Vector vector);
+  void upsert(size_t j, Matrix matrix);
+  void upsert(size_t j, double c);
 
   template <T = {gtsam::Point2,
                  gtsam::Point3,
