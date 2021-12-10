@@ -22,11 +22,11 @@
 #include <gtsam/base/FastSet.h>
 #include <gtsam/base/FastVector.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/VectorSpace.h>
 #include <gtsam/base/types.h>
 #include <gtsam/dllexport.h>
 
 #include <functional>
-
 #include <iosfwd>
 
 namespace gtsam {
@@ -114,7 +114,7 @@ GTSAM_EXPORT void PrintKeySet(
 template<typename T> struct traits;
 
 template <>
-struct traits<Key> {
+struct traits<Key> : public internal::ScalarTraits<Key> {
   static void Print(const Key& val, const std::string& str = "") {
     PrintKey(val, str);
   }
