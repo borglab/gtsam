@@ -207,11 +207,11 @@ void Scheduler::printAssignment(const Values& assignment) const {
   cout << endl;
   for (size_t s = 0; s < nrStudents(); s++) {
     Key j = 3 * maxNrStudents_ + s;
-    size_t slot = assignment.at(j);
+    size_t slot = assignment.at<size_t>(j);
     cout << studentName(s) << " slot: " << slotName_[slot] << endl;
     Key base = 3 * s;
     for (size_t area = 0; area < 3; area++) {
-      size_t faculty = assignment.at(base + area);
+      size_t faculty = assignment.at<size_t>(base + area);
       cout << setw(12) << studentArea(s, area) << ": " << facultyName_[faculty]
            << endl;
     }
@@ -223,7 +223,7 @@ void Scheduler::printAssignment(const Values& assignment) const {
 void Scheduler::printSpecial(const Values& assignment) const {
   Values::const_iterator it = assignment.begin();
   for (size_t area = 0; area < 3; area++, it++) {
-    size_t f = it->second;
+    size_t f = it->value.cast<size_t>();
     cout << setw(12) << studentArea(0, area) << ": " << facultyName_[f] << endl;
   }
   cout << endl;
@@ -235,7 +235,7 @@ void Scheduler::accumulateStats(const Values& assignment,
   for (size_t s = 0; s < nrStudents(); s++) {
     Key base = 3 * s;
     for (size_t area = 0; area < 3; area++) {
-      size_t f = assignment.at(base + area);
+      size_t f = assignment.at<size_t>(base + area);
       assert(f < stats.size());
       stats[f]++;
     }  // area
@@ -256,7 +256,7 @@ DiscreteBayesNet::shared_ptr Scheduler::eliminate() const {
 }
 
 /** Find the best total assignment - can be expensive */
-Scheduler::Values Scheduler::optimalAssignment() const {
+Values Scheduler::optimalAssignment() const {
   DiscreteBayesNet::shared_ptr chordal = eliminate();
 
   if (ISDEBUG("Scheduler::optimalAssignment")) {
@@ -273,14 +273,14 @@ Scheduler::Values Scheduler::optimalAssignment() const {
 }
 
 /** find the assignment of students to slots with most possible committees */
-Scheduler::Values Scheduler::bestSchedule() const {
+Values Scheduler::bestSchedule() const {
   Values best;
   throw runtime_error("bestSchedule not implemented");
   return best;
 }
 
 /** find the corresponding most desirable committee assignment */
-Scheduler::Values Scheduler::bestAssignment(const Values& bestSchedule) const {
+Values Scheduler::bestAssignment(const Values& bestSchedule) const {
   Values best;
   throw runtime_error("bestAssignment not implemented");
   return best;

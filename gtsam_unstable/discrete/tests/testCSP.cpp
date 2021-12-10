@@ -9,12 +9,12 @@
 #include <gtsam_unstable/discrete/Domain.h>
 
 #include <boost/assign/std/map.hpp>
-using boost::assign::insert;
 #include <CppUnitLite/TestHarness.h>
 
 #include <fstream>
 #include <iostream>
 
+using boost::assign::insert;
 using namespace std;
 using namespace gtsam;
 
@@ -74,8 +74,10 @@ TEST(CSP, AllDiff) {
   vector<DiscreteKey> dkeys{ID, UT, AZ};
   AllDiff alldiff(dkeys);
   DecisionTreeFactor actual = alldiff.toDecisionTreeFactor();
+
   // GTSAM_PRINT(actual);
-  actual.dot("actual");
+  // actual.dot("actual");
+
   DecisionTreeFactor f2(
       ID & AZ & UT,
       "0 0 0  0 0 1  0 1 0   0 0 1  0 0 0  1 0 0   0 1 0  1 0 0  0 0 0");
@@ -112,17 +114,17 @@ TEST(CSP, allInOne) {
   csp.addAllDiff(UT, AZ);
 
   // Check an invalid combination, with ID==UT==AZ all same color
-  DiscreteFactor::Values invalid;
-  invalid[ID.first] = 0;
-  invalid[UT.first] = 0;
-  invalid[AZ.first] = 0;
+  Values invalid;
+  invalid.insert<size_t>(ID.first, 0);
+  invalid.insert<size_t>(UT.first, 0);
+  invalid.insert<size_t>(AZ.first, 0);
   EXPECT_DOUBLES_EQUAL(0, csp(invalid), 1e-9);
 
   // Check a valid combination
-  DiscreteFactor::Values valid;
-  valid[ID.first] = 0;
-  valid[UT.first] = 1;
-  valid[AZ.first] = 0;
+  Values valid;
+  valid.insert<size_t>(ID.first, 0);
+  valid.insert<size_t>(UT.first, 1);
+  valid.insert<size_t>(AZ.first, 0);
   EXPECT_DOUBLES_EQUAL(1, csp(valid), 1e-9);
 
   // Just for fun, create the product and check it
@@ -133,8 +135,10 @@ TEST(CSP, allInOne) {
 
   // Solve
   auto mpe = csp.optimalAssignment();
-  CSP::Values expected;
-  insert(expected)(ID.first, 1)(UT.first, 0)(AZ.first, 1);
+  Values expected;
+  expected.insert<size_t>(ID.first, 1);
+  expected.insert<size_t>(UT.first, 0);
+  expected.insert<size_t>(AZ.first, 1);
   EXPECT(assert_equal(expected, mpe));
   EXPECT_DOUBLES_EQUAL(1, csp(mpe), 1e-9);
 }
@@ -179,10 +183,18 @@ TEST(CSP, WesternUS) {
   // Solve using that ordering:
   auto mpe = csp.optimalAssignment(ordering);
   // GTSAM_PRINT(mpe);
-  CSP::Values expected;
-  insert(expected)(WA.first, 1)(CA.first, 1)(NV.first, 3)(OR.first, 0)(
-      MT.first, 1)(WY.first, 0)(NM.first, 3)(CO.first, 2)(ID.first, 2)(
-      UT.first, 1)(AZ.first, 0);
+  Values expected;
+  expected.insert<size_t>(WA.first, 1);
+  expected.insert<size_t>(CA.first, 1);
+  expected.insert<size_t>(NV.first, 3);
+  expected.insert<size_t>(OR.first, 0);
+  expected.insert<size_t>(MT.first, 1);
+  expected.insert<size_t>(WY.first, 0);
+  expected.insert<size_t>(NM.first, 3);
+  expected.insert<size_t>(CO.first, 2);
+  expected.insert<size_t>(ID.first, 2);
+  expected.insert<size_t>(UT.first, 1);
+  expected.insert<size_t>(AZ.first, 0);
 
   // TODO: Fix me! mpe result seems to be right. (See the printing)
   // It has the same prob as the expected solution.
@@ -213,23 +225,25 @@ TEST(CSP, ArcConsistency) {
   // GTSAM_PRINT(csp);
 
   // Check an invalid combination, with ID==UT==AZ all same color
-  DiscreteFactor::Values invalid;
-  invalid[ID.first] = 0;
-  invalid[UT.first] = 1;
-  invalid[AZ.first] = 0;
+  Values invalid;
+  invalid.insert<size_t>(ID.first, 0);
+  invalid.insert<size_t>(UT.first, 1);
+  invalid.insert<size_t>(AZ.first, 0);
   EXPECT_DOUBLES_EQUAL(0, csp(invalid), 1e-9);
 
   // Check a valid combination
-  DiscreteFactor::Values valid;
-  valid[ID.first] = 0;
-  valid[UT.first] = 1;
-  valid[AZ.first] = 2;
+  Values valid;
+  valid.insert<size_t>(ID.first, 0);
+  valid.insert<size_t>(UT.first, 1);
+  valid.insert<size_t>(AZ.first, 2);
   EXPECT_DOUBLES_EQUAL(1, csp(valid), 1e-9);
 
   // Solve
   auto mpe = csp.optimalAssignment();
-  CSP::Values expected;
-  insert(expected)(ID.first, 1)(UT.first, 0)(AZ.first, 2);
+  Values expected;
+  expected.insert<size_t>(ID.first, 1);
+  expected.insert<size_t>(UT.first, 0);
+  expected.insert<size_t>(AZ.first, 2);
   EXPECT(assert_equal(expected, mpe));
   EXPECT_DOUBLES_EQUAL(1, csp(mpe), 1e-9);
 
@@ -250,8 +264,8 @@ TEST(CSP, ArcConsistency) {
   LONGS_EQUAL(2, domains.at(2).nrValues());
 
   // Parial application, version 1
-  DiscreteFactor::Values known;
-  known[AZ.first] = 2;
+  Values known;
+  known.insert<size_t>(AZ.first, 2);
   DiscreteFactor::shared_ptr reduced1 = alldiff.partiallyApply(known);
   DecisionTreeFactor f3(ID & UT, "0 1 1  1 0 1  1 1 0");
   EXPECT(assert_equal(f3, reduced1->toDecisionTreeFactor()));

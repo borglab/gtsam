@@ -48,7 +48,7 @@ class BinaryAllDiff : public Constraint {
 
   /// Calculate value
   double operator()(const Values& values) const override {
-    return (double)(values.at(keys_[0]) != values.at(keys_[1]));
+    return (double)(values.at<size_t>(keys_[0]) != values.at<size_t>(keys_[1]));
   }
 
   /// Convert into a decisiontree

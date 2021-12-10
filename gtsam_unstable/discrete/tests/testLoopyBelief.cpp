@@ -126,8 +126,8 @@ class LoopyBelief {
       // normalize belief
       double sum = 0.0;
       for (size_t v = 0; v < allDiscreteKeys.at(key).second; ++v) {
-        DiscreteFactor::Values val;
-        val[key] = v;
+        Values val;
+        val.insert(key, v);
         sum += (*beliefAtKey)(val);
       }
       string sumFactorTable;
