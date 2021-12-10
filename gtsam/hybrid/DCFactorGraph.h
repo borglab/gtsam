@@ -13,7 +13,7 @@
  * @file DCFactorGraph.h
  * @date December 2021
  * @brief Simple class for factor graphs of HybridFactor type
- * @author Kevin Doherty, Varun Agrawal
+ * @author Kevin Doherty
  */
 #pragma once
 
