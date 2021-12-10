@@ -50,14 +50,16 @@ int main(int argc, char** argv) {
 
   // Print the UGM distribution
   cout << "\nUGM distribution:" << endl;
-  vector<DiscreteFactor::Values> allPosbValues = cartesianProduct(
-      Cathy & Heather & Mark & Allison);
+  vector<Values> allPosbValues =
+      cartesianProduct(Cathy & Heather & Mark & Allison);
   for (size_t i = 0; i < allPosbValues.size(); ++i) {
-    DiscreteFactor::Values values = allPosbValues[i];
+    Values values = allPosbValues[i];
     double prodPot = graph(values);
-    cout << values[Cathy.first] << " " << values[Heather.first] << " "
-        << values[Mark.first] << " " << values[Allison.first] << " :\t"
-        << prodPot << "\t" << prodPot / 3790 << endl;
+    cout << values.at<size_t>(Cathy.first) << " "
+         << values.at<size_t>(Heather.first) << " "
+         << values.at<size_t>(Mark.first) << " "
+         << values.at<size_t>(Allison.first) << " :\t" << prodPot << "\t"
+         << prodPot / 3790 << endl;
   }
 
   // "Decoding", i.e., configuration with largest value (MPE)

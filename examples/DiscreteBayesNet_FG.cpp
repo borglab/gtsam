@@ -33,11 +33,10 @@ using namespace gtsam;
 int main(int argc, char **argv) {
   // Define keys and a print function
   Key C(1), S(2), R(3), W(4);
-  auto print = [=](const DiscreteFactor::Values& values) {
-    cout << boolalpha << "Cloudy = " << static_cast<bool>(values.at(C))
-         << "  Sprinkler = " << static_cast<bool>(values.at(S))
-         << "  Rain = " << boolalpha << static_cast<bool>(values.at(R))
-         << "  WetGrass = " << static_cast<bool>(values.at(W)) << endl;
+  auto print = [=](const Values& values) {
+    cout << boolalpha << "Cloudy = " << values.at<bool>(C)
+         << "  Sprinkler = " << values.at<bool>(S) << "  Rain = " << boolalpha
+         << values.at<bool>(R) << "  WetGrass = " << values.at<bool>(W) << endl;
   };
 
   // We assume binary state variables
@@ -72,11 +71,11 @@ int main(int argc, char **argv) {
     for (size_t m = 0; m < nrStates; m++)
       for (size_t h = 0; h < nrStates; h++)
         for (size_t c = 0; c < nrStates; c++) {
-          DiscreteFactor::Values values;
-          values[C] = c;
-          values[S] = h;
-          values[R] = m;
-          values[W] = a;
+          Values values;
+          values.insert(C, c);
+          values.insert(S, h);
+          values.insert(R, m);
+          values.insert(W, a);
           double prodPot = graph(values);
           cout << setw(8) << static_cast<bool>(c) << setw(14)
                << static_cast<bool>(h) << setw(12) << static_cast<bool>(m)

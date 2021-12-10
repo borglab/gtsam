@@ -212,12 +212,12 @@ void solveStaged(size_t addMutex = 2) {
       root->print(""/*scheduler.studentName(s)*/);
 
     // solve root node only
-    Scheduler::Values values;
+    Values values;
     size_t bestSlot = root->solve(values);
 
     // get corresponding count
     DiscreteKey dkey = scheduler.studentKey(NRSTUDENTS - 1 - s);
-    values[dkey.first] = bestSlot;
+    values.insert(dkey.first, bestSlot);
     double count = (*root)(values);
 
     // remove this slot from consideration
@@ -259,7 +259,7 @@ void sampleSolutions() {
   // now, sample schedules
   for (size_t n = 0; n < 10000; n++) {
     vector<size_t> stats(nrFaculty, 0);
-    vector<Scheduler::Values> samples;
+    vector<Values> samples;
     for (size_t i = 0; i < NRSTUDENTS; i++) {
       samples.push_back(samplers[i]->sample());
       schedulers[i].accumulateStats(samples[i], stats);
