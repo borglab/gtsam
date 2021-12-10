@@ -82,9 +82,9 @@ TEST_UNSAFE( DiscreteFactorGraph, DiscreteFactorGraphEvaluationTest) {
   graph.add(P1 & P2, "4 1 10 4");
 
   // Instantiate Values
-  DiscreteFactor::Values values;
-  values[0] = 1;
-  values[1] = 1;
+  Values values;
+  values.insert<size_t>(0, 1);
+  values.insert<size_t>(1, 1);
 
   // Check if graph evaluation works ( 0.3*0.6*4 )
   EXPECT_DOUBLES_EQUAL( .72, graph(values), 1e-9);
@@ -94,17 +94,17 @@ TEST_UNSAFE( DiscreteFactorGraph, DiscreteFactorGraphEvaluationTest) {
   graph.add(P1 & P2 & P3, "1 2 3 4 5 6 7 8 9 10 11 12");
 
   // Below values lead to selecting the 8th index in the ternary factor table
-  values[0] = 1;
-  values[1] = 0;
-  values[2] = 1;
+  values.update<size_t>(0, 1);
+  values.update<size_t>(1, 0);
+  values.insert<size_t>(2, 1);
 
   // Check if graph evaluation works (0.3*0.9*1*0.2*8)
   EXPECT_DOUBLES_EQUAL( 4.32, graph(values), 1e-9);
 
   // Below values lead to selecting the 3rd index in the ternary factor table
-  values[0] = 0;
-  values[1] = 1;
-  values[2] = 0;
+  values.update<size_t>(0, 0);
+  values.update<size_t>(1, 1);
+  values.update<size_t>(2, 0);
 
   // Check if graph evaluation works (0.9*0.6*1*0.9*4)
   EXPECT_DOUBLES_EQUAL( 1.944, graph(values), 1e-9);
@@ -151,7 +151,6 @@ TEST( DiscreteFactorGraph, test)
   // add conditionals to complete expected Bayes net
   expected.add(B | A = "5/3 3/5");
   expected.add(A % "1/1");
-  //  GTSAM_PRINT(expected);
 
   // Test elimination tree
   Ordering ordering;
@@ -167,8 +166,10 @@ TEST( DiscreteFactorGraph, test)
 //  EXPECT(assert_equal(expected, *actual2));
 
   // Test optimization
-  DiscreteFactor::Values expectedValues;
-  insert(expectedValues)(0, 0)(1, 0)(2, 0);
+  Values expectedValues;
+  expectedValues.insert<size_t>(0, 0);
+  expectedValues.insert<size_t>(1, 0);
+  expectedValues.insert<size_t>(2, 0);
   auto actualValues = graph.optimize();
   EXPECT(assert_equal(expectedValues, actualValues));
 }
@@ -183,13 +184,13 @@ TEST( DiscreteFactorGraph, testMPE)
   DiscreteFactorGraph graph;
   graph.add(C & A, "0.2 0.8 0.3 0.7");
   graph.add(C & B, "0.1 0.9 0.4 0.6");
-  //  graph.product().print();
-  //  DiscreteSequentialSolver(graph).eliminate()->print();
 
   auto actualMPE = graph.optimize();
 
-  DiscreteFactor::Values expectedMPE;
-  insert(expectedMPE)(0, 0)(1, 1)(2, 1);
+  Values expectedMPE;
+  expectedMPE.insert<size_t>(0, 0);
+  expectedMPE.insert<size_t>(1, 1);
+  expectedMPE.insert<size_t>(2, 1);
   EXPECT(assert_equal(expectedMPE, actualMPE));
 }
 
@@ -211,8 +212,12 @@ TEST( DiscreteFactorGraph, testMPE_Darwiche09book_p244)
   //  graph.product().potentials().dot("Darwiche-product");
   //  DiscreteSequentialSolver(graph).eliminate()->print();
 
-  DiscreteFactor::Values expectedMPE;
-  insert(expectedMPE)(4, 0)(2, 0)(3, 1)(0, 1)(1, 1);
+  Values expectedMPE;
+  expectedMPE.insert<size_t>(4, 0);
+  expectedMPE.insert<size_t>(2, 0);
+  expectedMPE.insert<size_t>(3, 1);
+  expectedMPE.insert<size_t>(0, 1);
+  expectedMPE.insert<size_t>(1, 1);
 
   // Use the solver machinery.
   DiscreteBayesNet::shared_ptr chordal = graph.eliminateSequential();

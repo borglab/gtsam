@@ -55,8 +55,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  double DiscreteFactorGraph::operator()(
-      const DiscreteFactor::Values &values) const {
+  double DiscreteFactorGraph::operator()(const Values& values) const {
     double product = 1.0;
     for( const sharedFactor& factor: factors_ )
       product *= (*factor)(values);
@@ -94,7 +93,7 @@ namespace gtsam {
 //  }
 
   /* ************************************************************************* */
-  DiscreteFactorGraph::Values DiscreteFactorGraph::optimize() const
+  Values DiscreteFactorGraph::optimize() const
   {
     gttic(DiscreteFactorGraph_optimize);
     return BaseEliminateable::eliminateSequential()->optimize();

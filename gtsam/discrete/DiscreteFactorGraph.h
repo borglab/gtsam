@@ -73,7 +73,6 @@ public:
 
   /** A map from keys to values */
   typedef KeyVector Indices;
-  typedef Assignment<Key> Values;
 
   /** Default constructor */
   DiscreteFactorGraph() {}
@@ -130,7 +129,7 @@ public:
   DecisionTreeFactor product() const;
 
   /** Evaluates the factor graph given values, returns the joint probability of the factor graph given specific instantiation of values*/
-  double operator()(const DiscreteFactor::Values & values) const;
+  double operator()(const Values & values) const;
 
   /// print
   void print(
