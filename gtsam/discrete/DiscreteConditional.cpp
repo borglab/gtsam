@@ -103,7 +103,7 @@ Potentials::ADT DiscreteConditional::choose(const Values& parentsValues) const {
   for(Key key: parents()) {
     try {
       j = (key);
-      value = parentsValues.at(j);
+      value = parentsValues.at<size_t>(j);
       pFS = pFS.choose(j, value);
     } catch (exception&) {
       cout << "Key: " << j << "  Value: " << value << endl;
@@ -145,7 +145,7 @@ void DiscreteConditional::solveInPlace(Values* values) const {
 
   //set values (inPlace) to mpe
   for(Key j: frontals()) {
-    (*values)[j] = mpe[j];
+    values->upsert<size_t>(j, mpe.at<size_t>(j));
   }
 }
 
@@ -154,7 +154,7 @@ void DiscreteConditional::sampleInPlace(Values* values) const {
   assert(nrFrontals() == 1);
   Key j = (firstFrontalKey());
   size_t sampled = sample(*values); // Sample variable given parents
-  (*values)[j] = sampled; // store result in partial solution
+  values->upsert(j,  sampled);  // store result in partial solution
 }
 
 /* ******************************************************************************** */
@@ -171,7 +171,7 @@ size_t DiscreteConditional::solve(const Values& parentsValues) const {
   assert(nrFrontals() == 1);
   Key j = (firstFrontalKey());
   for (size_t value = 0; value < cardinality(j); value++) {
-    frontals[j] = value;
+    frontals.upsert(j,  value);
     double pValueS = pFS(frontals); // P(F=value|S=parentsValues)
     // Update MPE solution if better
     if (pValueS > maxP) {
@@ -196,7 +196,7 @@ size_t DiscreteConditional::sample(const Values& parentsValues) const {
   vector<double> p(nj);
   Values frontals;
   for (size_t value = 0; value < nj; value++) {
-    frontals[key] = value;
+    frontals.upsert(key,  value);
     p[value] = pFS(frontals);  // P(F=value|S=parentsValues)
     if (p[value] == 1.0) {
       return value;  // shortcut exit

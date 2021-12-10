@@ -23,6 +23,7 @@
 #include <gtsam/inference/Conditional.h>
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
+#include <gtsam/nonlinear/Values.h>
 
 #include <string>
 
@@ -41,10 +42,6 @@ public:
   typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
   typedef DecisionTreeFactor BaseFactor; ///< Typedef to our factor base class
   typedef Conditional<BaseFactor, This> BaseConditional; ///< Typedef to our conditional base class
-
-  /** A map from keys to values..
-   * TODO: Again, do we need this??? */
-  typedef Assignment<Key> Values;
 
   /// @name Standard Constructors
   /// @{
@@ -111,7 +108,7 @@ public:
   }
 
   /** Restrict to given parent values, returns AlgebraicDecisionDiagram */
-  ADT choose(const Assignment<Key>& parentsValues) const;
+  ADT choose(const Values& parentsValues) const;
 
   /**
    * solve a conditional

@@ -18,9 +18,10 @@
 
 #pragma once
 
+#include <gtsam/base/Testable.h>
 #include <gtsam/discrete/Assignment.h>
 #include <gtsam/inference/Factor.h>
-#include <gtsam/base/Testable.h>
+#include <gtsam/nonlinear/Values.h>
 
 namespace gtsam {
 
@@ -39,18 +40,6 @@ public:
   typedef DiscreteFactor This; ///< This class
   typedef boost::shared_ptr<DiscreteFactor> shared_ptr; ///< shared_ptr to this class
   typedef Factor Base; ///< Our base class
-
-  /** A map from keys to values
-   * TODO: Do we need this? Should we just use gtsam::Values?
-   * We just need another special DiscreteValue to represent labels,
-   * However, all other Lie's operators are undefined in this class.
-   * The good thing is we can have a Hybrid graph of discrete/continuous variables
-   * together..
-   * Another good thing is we don't need to have the special DiscreteKey which stores
-   * cardinality of a Discrete variable. It should be handled naturally in
-   * the new class DiscreteValue, as the varible's type (domain)
-   */
-  typedef Assignment<Key> Values;
 
 public:
 
@@ -104,6 +93,5 @@ public:
 
 // traits
 template<> struct traits<DiscreteFactor> : public Testable<DiscreteFactor> {};
-template<> struct traits<DiscreteFactor::Values> : public Testable<DiscreteFactor::Values> {};
 
 }// namespace gtsam
