@@ -258,7 +258,7 @@ void sampleSolutions() {
 
   // now, sample schedules
   for (size_t n = 0; n < 10000; n++) {
-    vector<size_t> stats(nrFaculty, 0);
+    vector<uint64_t> stats(nrFaculty, 0);
     vector<Values> samples;
     for (size_t i = 0; i < NRSTUDENTS; i++) {
       samples.push_back(samplers[i]->sample());

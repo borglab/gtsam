@@ -130,7 +130,7 @@ void runLargeExample() {
   tictoc_print();
   for (size_t i=0;i<100;i++) {
     auto assignment = chordal->sample();
-    vector<size_t> stats(scheduler.nrFaculty());
+    vector<uint64_t> stats(scheduler.nrFaculty());
     scheduler.accumulateStats(assignment, stats);
     size_t max = *max_element(stats.begin(), stats.end());
     size_t min = *min_element(stats.begin(), stats.end());
@@ -233,7 +233,7 @@ void sampleSolutions() {
 
   // now, sample schedules
   for (size_t n = 0; n < 500; n++) {
-    vector<size_t> stats(19, 0);
+    vector<uint64_t> stats(19, 0);
     vector<Values> samples;
     for (size_t i = 0; i < NRSTUDENTS; i++) {
       samples.push_back(samplers[i]->sample());
