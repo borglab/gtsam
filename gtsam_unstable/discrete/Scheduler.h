@@ -106,8 +106,8 @@ class GTSAM_UNSTABLE_EXPORT Scheduler : public CSP {
   Scheduler(size_t maxNrStudents, const std::string& filename);
 
   /** get key for student and area, 0 is time slot itself */
-  const DiscreteKey& key(size_t s,
-                         boost::optional<size_t> area = boost::none) const;
+  const DiscreteKey& key(uint64_t s,
+                         boost::optional<uint64_t> area = boost::none) const;
 
   /** addStudent has to be called after adding slots and faculty */
   void addStudent(const std::string& studentName, const std::string& area1,
@@ -117,13 +117,13 @@ class GTSAM_UNSTABLE_EXPORT Scheduler : public CSP {
   /// current number of students
   size_t nrStudents() const { return students_.size(); }
 
-  const std::string& studentName(size_t i) const;
-  const DiscreteKey& studentKey(size_t i) const;
-  const std::string& studentArea(size_t i, size_t area) const;
+  const std::string& studentName(uint64_t i) const;
+  const DiscreteKey& studentKey(uint64_t i) const;
+  const std::string& studentArea(uint64_t i, uint64_t area) const;
 
   /** Add student-specific constraints to the graph */
   void addStudentSpecificConstraints(
-      size_t i, boost::optional<size_t> slot = boost::none);
+      uint64_t i, boost::optional<uint64_t> slot = boost::none);
 
   /** Main routine that builds factor graph */
   void buildGraph(size_t mutexBound = 7);
