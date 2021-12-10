@@ -33,8 +33,11 @@ using namespace gtsam;
 
 static bool debug = false;
 
-/* ************************************************************************* */
+bool getValue(const Values& values, Key key) {
+  return values.exists(key) && values.at<size_t>(key);
+}
 
+/* ************************************************************************* */
 TEST_UNSAFE(DiscreteBayesTree, ThinTree) {
   const int nrNodes = 15;
   const size_t nrStates = 2;
@@ -89,11 +92,11 @@ TEST_UNSAFE(DiscreteBayesTree, ThinTree) {
   auto R = bayesTree->roots().front();
 
   // Check whether BN and BT give the same answer on all configurations
-  vector<DiscreteFactor::Values> allPosbValues = cartesianProduct(
+  vector<Values> allPosbValues = cartesianProduct(
       key[0] & key[1] & key[2] & key[3] & key[4] & key[5] & key[6] & key[7] &
       key[8] & key[9] & key[10] & key[11] & key[12] & key[13] & key[14]);
   for (size_t i = 0; i < allPosbValues.size(); ++i) {
-    DiscreteFactor::Values x = allPosbValues[i];
+    Values x = allPosbValues[i];
     double expected = bayesNet.evaluate(x);
     double actual = bayesTree->evaluate(x);
     DOUBLES_EQUAL(expected, actual, 1e-9);
@@ -106,39 +109,42 @@ TEST_UNSAFE(DiscreteBayesTree, ThinTree) {
          joint_4_11 = 0, joint_11_13 = 0, joint_11_13_14 = 0,
          joint_11_12_13_14 = 0, joint_9_11_12_13 = 0, joint_8_11_12_13 = 0;
   for (size_t i = 0; i < allPosbValues.size(); ++i) {
-    DiscreteFactor::Values x = allPosbValues[i];
+    Values x = allPosbValues[i];
     double px = bayesTree->evaluate(x);
-    for (size_t i = 0; i < 15; i++)
-      if (x[i]) marginals[i] += px;
-    if (x[12] && x[14]) {
+    for (size_t i = 0; i < 15; i++) {
+      if (getValue(x, i)) marginals[i] += px;
+    }
+    if (getValue(x, 12) && getValue(x, 14)) {
       joint_12_14 += px;
-      if (x[9]) joint_9_12_14 += px;
-      if (x[8]) joint_8_12_14 += px;
+      if (getValue(x, 9)) joint_9_12_14 += px;
+      if (getValue(x, 8)) joint_8_12_14 += px;
     }
-    if (x[8] && x[12]) joint_8_12 += px;
-    if (x[2]) {
-      if (x[8]) joint82 += px;
-      if (x[1]) joint12 += px;
+    if (getValue(x, 8) && getValue(x, 12)) {
+      joint_8_12 += px;
     }
-    if (x[4]) {
-      if (x[2]) joint24 += px;
-      if (x[5]) joint45 += px;
-      if (x[6]) joint46 += px;
-      if (x[11]) joint_4_11 += px;
+    if (getValue(x, 2)) {
+      if (getValue(x, 8)) joint82 += px;
+      if (getValue(x, 1)) joint12 += px;
     }
-    if (x[11] && x[13]) {
+    if (getValue(x, 4)) {
+      if (getValue(x, 2)) joint24 += px;
+      if (getValue(x, 5)) joint45 += px;
+      if (getValue(x, 6)) joint46 += px;
+      if (getValue(x, 11)) joint_4_11 += px;
+    }
+    if (getValue(x, 11) && getValue(x, 13)) {
       joint_11_13 += px;
-      if (x[8] && x[12]) joint_8_11_12_13 += px;
-      if (x[9] && x[12]) joint_9_11_12_13 += px;
-      if (x[14]) {
+      if (getValue(x, 8) && getValue(x, 12)) joint_8_11_12_13 += px;
+      if (getValue(x, 9) && getValue(x, 12)) joint_9_11_12_13 += px;
+      if (getValue(x, 14)) {
         joint_11_13_14 += px;
-        if (x[12]) {
+        if (getValue(x, 12)) {
           joint_11_12_13_14 += px;
         }
       }
     }
   }
-  DiscreteFactor::Values all1 = allPosbValues.back();
+  Values all1 = allPosbValues.back();
 
   // check separator marginal P(S0)
   auto clique = (*bayesTree)[0];

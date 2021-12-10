@@ -58,7 +58,7 @@ class GTSAM_EXPORT DiscreteBayesTreeClique
   }
 
   //** evaluate conditional probability of subtree for given Values */
-  double evaluate(const DiscreteConditional::Values& values) const;
+  double evaluate(const Values& values) const;
 };
 
 /* ************************************************************************* */
@@ -79,7 +79,7 @@ class GTSAM_EXPORT DiscreteBayesTree
   bool equals(const This& other, double tol = 1e-9) const;
 
   //** evaluate probability for given Values */
-  double evaluate(const DiscreteConditional::Values& values) const;
+  double evaluate(const Values& values) const;
 };
 
 }  // namespace gtsam
