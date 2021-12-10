@@ -25,8 +25,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-
-#include <boost/assign/list_inserter.hpp>
 #include <boost/assign/std/map.hpp>
 
 using namespace boost::assign;
@@ -105,10 +103,16 @@ TEST(DiscreteBayesNet, Asia) {
 
   // solve
   auto actualMPE = chordal->optimize();
-  DiscreteFactor::Values expectedMPE;
-  insert(expectedMPE)(Asia.first, 0)(Dyspnea.first, 0)(XRay.first, 0)(
-      Tuberculosis.first, 0)(Smoking.first, 0)(Either.first, 0)(
-      LungCancer.first, 0)(Bronchitis.first, 0);
+  Values expectedMPE;
+  expectedMPE.insert<size_t>(Asia.first, 0);
+  expectedMPE.insert<size_t>(Dyspnea.first, 0);
+  expectedMPE.insert<size_t>(XRay.first, 0);
+  expectedMPE.insert<size_t>(Tuberculosis.first, 0);
+  expectedMPE.insert<size_t>(Smoking.first, 0);
+  expectedMPE.insert<size_t>(Either.first, 0);
+  expectedMPE.insert<size_t>(LungCancer.first, 0);
+  expectedMPE.insert<size_t>(Bronchitis.first, 0);
+
   EXPECT(assert_equal(expectedMPE, actualMPE));
 
   // add evidence, we were in Asia and we have dyspnea
@@ -118,18 +122,30 @@ TEST(DiscreteBayesNet, Asia) {
   // solve again, now with evidence
   DiscreteBayesNet::shared_ptr chordal2 = fg.eliminateSequential(ordering);
   auto actualMPE2 = chordal2->optimize();
-  DiscreteFactor::Values expectedMPE2;
-  insert(expectedMPE2)(Asia.first, 1)(Dyspnea.first, 1)(XRay.first, 0)(
-      Tuberculosis.first, 0)(Smoking.first, 1)(Either.first, 0)(
-      LungCancer.first, 0)(Bronchitis.first, 1);
+  Values expectedMPE2;
+  expectedMPE2.insert<size_t>(Asia.first, 1);
+  expectedMPE2.insert<size_t>(Dyspnea.first, 1);
+  expectedMPE2.insert<size_t>(XRay.first, 0);
+  expectedMPE2.insert<size_t>(Tuberculosis.first, 0);
+  expectedMPE2.insert<size_t>(Smoking.first, 1);
+  expectedMPE2.insert<size_t>(Either.first, 0);
+  expectedMPE2.insert<size_t>(LungCancer.first, 0);
+  expectedMPE2.insert<size_t>(Bronchitis.first, 1);
+
   EXPECT(assert_equal(expectedMPE2, actualMPE2));
 
   // now sample from it
-  DiscreteFactor::Values expectedSample;
+  Values expectedSample;
   SETDEBUG("DiscreteConditional::sample", false);
-  insert(expectedSample)(Asia.first, 1)(Dyspnea.first, 1)(XRay.first, 1)(
-      Tuberculosis.first, 0)(Smoking.first, 1)(Either.first, 1)(
-      LungCancer.first, 1)(Bronchitis.first, 0);
+  expectedSample.insert<size_t>(Asia.first, 1);
+  expectedSample.insert<size_t>(Dyspnea.first, 1);
+  expectedSample.insert<size_t>(XRay.first, 1);
+  expectedSample.insert<size_t>(Tuberculosis.first, 0);
+  expectedSample.insert<size_t>(Smoking.first, 1);
+  expectedSample.insert<size_t>(Either.first, 1);
+  expectedSample.insert<size_t>(LungCancer.first, 1);
+  expectedSample.insert<size_t>(Bronchitis.first, 0);;
+
   auto actualSample = chordal2->sample();
   EXPECT(assert_equal(expectedSample, actualSample));
 }
