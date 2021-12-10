@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/nonlinear/Values.h>
 #include <iostream>
 #include <vector>
 #include <map>
@@ -51,7 +52,7 @@ namespace gtsam {
    * @param vector list of keys (label,cardinality) pairs.
    * @return vector list of all possible value assignments
    *
-   * This function returns a vector of Assignment values for all possible
+   * This function returns a vector of Values for all possible
    * (Cartesian product) configurations of set of Keys which are nothing
    * but (Label,cardinality) pairs. This function should NOT be called for
    * more than a small number of variables and cardinalities. E.g. For 6
@@ -59,26 +60,33 @@ namespace gtsam {
    * configurations!!
    */
   template<typename L>
-  std::vector<Assignment<L> > cartesianProduct(
+  std::vector<Values> cartesianProduct(
       const std::vector<std::pair<L, size_t> >& keys) {
-    std::vector<Assignment<L> > allPossValues;
-    Assignment<L> values;
+    std::vector<Values> allPossValues;
+    Values values;
     typedef std::pair<L, size_t> DiscreteKey;
-    for(const DiscreteKey& key: keys)
-      values[key.first] = 0;  //Initialize from 0
-    while (1) {
+    for(const DiscreteKey& key: keys) {
+      values.insert<size_t>(key.first, 0);  //Initialize from 0
+    }
+
+    while (true) {
       allPossValues.push_back(values);
       size_t j = 0;
       for (j = 0; j < keys.size(); j++) {
         L idx = keys[j].first;
-        values[idx]++;
-        if (values[idx] < keys[j].second)
+        // increment the value at key `idx`
+        size_t val = values.at<size_t>(idx);
+        values.update<size_t>(idx, val + 1);
+
+        if (values.at<size_t>(idx) < keys[j].second) {
           break;
-        //Wrap condition
-        values[idx] = 0;
+        }
+        // Wrap condition
+        values.update<size_t>(idx, 0);
       }
-      if (j == keys.size())
+      if (j == keys.size()) {
         break;
+      }
     }
     return allPossValues;
   }
