@@ -141,7 +141,7 @@ class GTSAM_UNSTABLE_EXPORT Scheduler : public CSP {
 
   /** Accumulate faculty stats */
   void accumulateStats(const Values& assignment,
-                       std::vector<size_t>& stats) const;
+                       std::vector<uint64_t>& stats) const;
 
   /** Eliminate, return a Bayes net */
   DiscreteBayesNet::shared_ptr eliminate() const;
