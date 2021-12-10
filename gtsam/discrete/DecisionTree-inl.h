@@ -96,7 +96,7 @@ namespace gtsam {
     }
 
     /** evaluate */
-    const Y& operator()(const Assignment<L>& x) const override {
+    const Y& operator()(const Values& x) const override {
       return constant_;
     }
 
@@ -288,16 +288,16 @@ namespace gtsam {
     }
 
     /** evaluate */
-    const Y& operator()(const Assignment<L>& x) const override {
+    const Y& operator()(const Values& x) const override {
 #ifndef NDEBUG
-      typename Assignment<L>::const_iterator it = x.find(label_);
+      typename Values::const_iterator it = x.find(label_);
       if (it == x.end()) {
         std::cout << "Trying to find value for " << label_ << std::endl;
         throw std::invalid_argument(
             "DecisionTree::operator(): value undefined for a label");
       }
 #endif
-      size_t index = x.at(label_);
+      size_t index = x.at<size_t>(label_);
       NodePtr child = branches_[index];
       return (*child)(x);
     }
@@ -615,9 +615,9 @@ namespace gtsam {
     return root_->equals(*other.root_);
   }
 
-  template<typename L, typename Y>
-  const Y& DecisionTree<L, Y>::operator()(const Assignment<L>& x) const {
-    return root_->operator ()(x);
+  template <typename L, typename Y>
+  const Y& DecisionTree<L, Y>::operator()(const Values& x) const {
+    return root_->operator()(x);
   }
 
   template<typename L, typename Y>

@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include <gtsam/discrete/Assignment.h>
+#include <gtsam/nonlinear/Values.h>
 
 #include <boost/function.hpp>
 #include <functional>
@@ -82,7 +82,7 @@ namespace gtsam {
       virtual bool sameLeaf(const Leaf& q) const = 0;
       virtual bool sameLeaf(const Node& q) const = 0;
       virtual bool equals(const Node& other, double tol = 1e-9) const = 0;
-      virtual const Y& operator()(const Assignment<L>& x) const = 0;
+      virtual const Y& operator()(const Values& x) const = 0;
       virtual Ptr apply(const Unary& op) const = 0;
       virtual Ptr apply_f_op_g(const Node&, const Binary&) const = 0;
       virtual Ptr apply_g_op_fL(const Leaf&, const Binary&) const = 0;
@@ -169,7 +169,7 @@ namespace gtsam {
     bool operator==(const DecisionTree& q) const;
 
     /** evaluate */
-    const Y& operator()(const Assignment<L>& x) const;
+    const Y& operator()(const Values& x) const;
 
     /** apply Unary operation "op" to f */
     DecisionTree apply(const Unary& op) const;
