@@ -196,6 +196,21 @@ virtual class EssentialMatrixFactor : gtsam::NoiseModelFactor {
   EssentialMatrixFactor(size_t key, const gtsam::Point2& pA,
                         const gtsam::Point2& pB,
                         const gtsam::noiseModel::Base* noiseModel);
+  void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
+                                gtsam::DefaultKeyFormatter) const;
+  bool equals(const gtsam::EssentialMatrixFactor& other, double tol) const;
+  Vector evaluateError(const gtsam::EssentialMatrix& E) const;
+};
+
+#include <gtsam/slam/EssentialMatrixConstraint.h>
+virtual class EssentialMatrixConstraint : gtsam::NoiseModelFactor {
+  EssentialMatrixConstraint(size_t key1, size_t key2, const gtsam::EssentialMatrix &measuredE,
+                            const gtsam::noiseModel::Base *model);
+  void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
+                                gtsam::DefaultKeyFormatter) const;
+  bool equals(const gtsam::EssentialMatrixConstraint& other, double tol) const;
+  Vector evaluateError(const gtsam::Pose3& p1, const gtsam::Pose3& p2) const;
+  const gtsam::EssentialMatrix& measured() const;
 };
 
 #include <gtsam/slam/dataset.h>
