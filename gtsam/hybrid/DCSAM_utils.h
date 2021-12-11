@@ -68,7 +68,7 @@ inline std::vector<double> expNormalize(const std::vector<double> &logProbs) {
   // Numerical tolerance for floating point comparisons
   double tol = 1e-9;
 
-  if (!fpEqual(checkNormalization, 1.0, tol)) {
+  if (!gtsam::fpEqual(checkNormalization, 1.0, tol)) {
     std::string errMsg =
         std::string("expNormalize failed to normalize probabilities. ") +
         std::string("Expected normalization constant = 1.0. Got value: ") +

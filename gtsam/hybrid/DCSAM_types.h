@@ -21,21 +21,21 @@
 
 namespace gtsam {
 
-using DiscreteValues = DiscreteFactor::Values;
+using DiscreteValues = gtsam::DiscreteFactor::Values;
 
 struct DCValues {
   DCValues() {}
-  DCValues(const Values &c, const DiscreteValues &d)
+  DCValues(const gtsam::Values &c, const DiscreteValues &d)
       : continuous(c), discrete(d) {}
-  Values continuous;
+  gtsam::Values continuous;
   DiscreteValues discrete;
 };
 
 struct DCMarginals {
-  DCMarginals(const Marginals &c, const DiscreteMarginals &d)
+  DCMarginals(const gtsam::Marginals &c, const gtsam::DiscreteMarginals &d)
       : continuous(c), discrete(d) {}
-  Marginals continuous;
-  DiscreteMarginals discrete;
+  gtsam::Marginals continuous;
+  gtsam::DiscreteMarginals discrete;
 };
 
 }  // namespace gtsam

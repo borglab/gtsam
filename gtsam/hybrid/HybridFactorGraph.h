@@ -89,7 +89,7 @@ class HybridFactorGraph {
              const KeyFormatter &keyFormatter = DefaultKeyFormatter) const;
 
   /**
-   * Mimics the FactorGraph API: retrieve the keys from each internal
+   * Mimics the GTSAM::FactorGraph API: retrieve the keys from each internal
    * factor graph. Internally uses FastSet::merge(const FastSet &other) to
    * combine sets from the different member factor graphs.
    *
