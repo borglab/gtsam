@@ -26,8 +26,8 @@ namespace gtsam {
 class HybridFactorGraph {
  protected:
   // Separate internal factor graphs for different types of factors
-  NonlinearFactorGraph nonlinearGraph_;
-  DiscreteFactorGraph discreteGraph_;
+  gtsam::NonlinearFactorGraph nonlinearGraph_;
+  gtsam::DiscreteFactorGraph discreteGraph_;
   DCFactorGraph dcGraph_;
 
  public:
@@ -50,7 +50,7 @@ class HybridFactorGraph {
    * @param nonlinearFactor - boost::shared_ptr to the factor to add
    */
   void push_nonlinear(
-      const boost::shared_ptr<NonlinearFactor>& nonlinearFactor);
+      const boost::shared_ptr<gtsam::NonlinearFactor>& nonlinearFactor);
 
   /**
    * Add a discrete factor to the internal discrete graph
@@ -65,7 +65,7 @@ class HybridFactorGraph {
    * Add a discrete factor *pointer* to the internal discrete graph
    * @param discreteFactor - boost::shared_ptr to the factor to add
    */
-  void push_discrete(const boost::shared_ptr<DiscreteFactor>& discreteFactor);
+  void push_discrete(const boost::shared_ptr<gtsam::DiscreteFactor>& discreteFactor);
 
   /**
    * Add a discrete-continuous (DC) factor to the internal DC graph
@@ -86,7 +86,8 @@ class HybridFactorGraph {
    * Simply prints the factor graph.
    */
   void print(const std::string &str = "HybridFactorGraph",
-             const KeyFormatter &keyFormatter = DefaultKeyFormatter) const;
+             const gtsam::KeyFormatter &keyFormatter = 
+             gtsam::DefaultKeyFormatter) const;
 
   /**
    * Mimics the GTSAM::FactorGraph API: retrieve the keys from each internal
@@ -95,25 +96,25 @@ class HybridFactorGraph {
    *
    * @return the (aggregate) set of keys in all of the internal factor graphs.
    */
-  FastSet<Key> keys() const;
+  gtsam::FastSet<gtsam::Key> keys() const;
 
   /**
    * Utility for retrieving the internal nonlinear factor graph
    * @return the member variable nolinearGraph_
    */
-  NonlinearFactorGraph nonlinearGraph() const;
+  const gtsam::NonlinearFactorGraph& nonlinearGraph() const;
 
   /**
    * Utility for retrieving the internal discrete factor graph
-   * @return the member variable discrete_graph_
+   * @return the member variable discreteGraph_
    */
-  DiscreteFactorGraph discreteGraph() const;
+  const gtsam::DiscreteFactorGraph& discreteGraph() const;
 
   /**
    * Utility for retrieving the internal DC factor graph
-   * @return the member variable dc_graph_
+   * @return the member variable dcGraph_
    */
-  DCFactorGraph dcGraph() const;
+  const DCFactorGraph& dcGraph() const;
 
   /**
    * @return true if all internal graphs are empty

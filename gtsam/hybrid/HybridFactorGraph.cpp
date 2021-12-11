@@ -17,12 +17,12 @@ namespace gtsam {
 HybridFactorGraph::HybridFactorGraph() {}
 
 void HybridFactorGraph::push_nonlinear(
-    const boost::shared_ptr<NonlinearFactor>& nonlinearFactor) {
+    const boost::shared_ptr<gtsam::NonlinearFactor>& nonlinearFactor) {
   nonlinearGraph_.push_back(nonlinearFactor);
 }
 
 void HybridFactorGraph::push_discrete(
-    const boost::shared_ptr<DiscreteFactor> &discreteFactor) {
+    const boost::shared_ptr<gtsam::DiscreteFactor> &discreteFactor) {
   discreteGraph_.push_back(discreteFactor);
 }
 
@@ -31,7 +31,7 @@ void HybridFactorGraph::push_dc(const boost::shared_ptr<DCFactor>& dcFactor) {
 }
 
 void HybridFactorGraph::print(const std::string &str,
-                              const KeyFormatter &keyFormatter) const {
+                              const gtsam::KeyFormatter &keyFormatter) const {
   std::string nonlinearStr = str + ": NonlinearFactorGraph";
   std::string discreteStr = str + ": DiscreteFactorGraph";
   std::string dcStr = str + ": DCFactorGraph";
@@ -41,8 +41,8 @@ void HybridFactorGraph::print(const std::string &str,
   dcGraph_.print(dcStr, keyFormatter);
 }
 
-FastSet<Key> HybridFactorGraph::keys() const {
-  FastSet<Key> keys;
+gtsam::FastSet<gtsam::Key> HybridFactorGraph::keys() const {
+  gtsam::FastSet<gtsam::Key> keys;
   // Combine keys from all the internal graphs
   keys.merge(nonlinearGraph_.keys());
   keys.merge(discreteGraph_.keys());
@@ -50,15 +50,15 @@ FastSet<Key> HybridFactorGraph::keys() const {
   return keys;
 }
 
-NonlinearFactorGraph HybridFactorGraph::nonlinearGraph() const {
+const gtsam::NonlinearFactorGraph& HybridFactorGraph::nonlinearGraph() const {
   return nonlinearGraph_;
 }
 
-DiscreteFactorGraph HybridFactorGraph::discreteGraph() const {
+const gtsam::DiscreteFactorGraph& HybridFactorGraph::discreteGraph() const {
   return discreteGraph_;
 }
 
-DCFactorGraph HybridFactorGraph::dcGraph() const { return dcGraph_; }
+const DCFactorGraph& HybridFactorGraph::dcGraph() const { return dcGraph_; }
 
 bool HybridFactorGraph::empty() const {
   return nonlinearGraph_.empty() && discreteGraph_.empty() && dcGraph_.empty();
