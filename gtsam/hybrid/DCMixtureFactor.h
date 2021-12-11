@@ -1,9 +1,13 @@
+/* ----------------------------------------------------------------------------
+ * Copyright 2020 The Ambitious Folks of the MRG
+ * See LICENSE for the license information
+ * -------------------------------------------------------------------------- */
+
 /**
- * @file DCMixtureFactor.h
- * @brief DC Mixture factor
+ * @file   DCMixtureFactor.h
+ * @brief  DC Mixture factor
  * @author Kevin Doherty, kdoherty@mit.edu
- *
- * Copyright 2021 The Ambitious Folks of the MRG
+ * @date   December 2021
  */
 
 #pragma once

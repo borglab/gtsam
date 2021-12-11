@@ -10,9 +10,9 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file HybridFactor.h
- * @date December, 2021
- * @brief Custom discrete-continuous factor
+ * @file   HybridFactor.h
+ * @date   December, 2021
+ * @brief  Custom discrete-continuous factor
  * @author Kevin Doherty, Varun Agrawal
  */
 

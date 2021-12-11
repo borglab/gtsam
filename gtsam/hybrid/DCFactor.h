@@ -1,8 +1,13 @@
+/* ----------------------------------------------------------------------------
+ * Copyright 2020 The Ambitious Folks of the MRG
+ * See LICENSE for the license information
+ * -------------------------------------------------------------------------- */
+
 /**
- * @file DCFactor.h
- * @brief Custom discrete-continuous factor
+ * @file   DCFactor.h
+ * @brief  Custom discrete-continuous factor
  * @author Kevin Doherty, kdoherty@mit.edu
- * Copyright 2021 The Ambitious Folks of the MRG
+ * @date   December 2021
  */
 
 #pragma once

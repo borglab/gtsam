@@ -1,16 +1,13 @@
 /* ----------------------------------------------------------------------------
-
  * Copyright 2020 The Ambitious Folks of the MRG
-
  * See LICENSE for the license information
-
  * -------------------------------------------------------------------------- */
 
 /**
- * @file DCFactorGraph.h
- * @brief Simple class for factor graphs of DCFactor type
+ * @file   DCFactorGraph.h
+ * @brief  Simple class for factor graphs of DCFactor type
  * @author Kevin Doherty, kdoherty@mit.edu
- * @date December 2021
+ * @date   December 2021
  */
 #pragma once
 

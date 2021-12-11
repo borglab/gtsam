@@ -1,8 +1,13 @@
-/**
- * @file HybridFactorGraph.cpp
- * @brief Custom hybrid factor graph for discrete + continuous factors
- * @author Kevin Doherty, kdoherty@mit.edu
+/* ----------------------------------------------------------------------------
  * Copyright 2021 The Ambitious Folks of the MRG
+ * See LICENSE for the license information
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file   HybridFactorGraph.cpp
+ * @brief  Custom hybrid factor graph for discrete + continuous factors
+ * @author Kevin Doherty, kdoherty@mit.edu
+ * @date   December 2021
  */
 
 #include "dcsam/HybridFactorGraph.h"

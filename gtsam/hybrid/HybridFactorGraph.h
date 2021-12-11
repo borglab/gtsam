@@ -4,10 +4,10 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file HybridFactorGraph.h
- * @brief Custom hybrid factor graph for discrete + continuous factors
+ * @file   HybridFactorGraph.h
+ * @brief  Custom hybrid factor graph for discrete + continuous factors
  * @author Kevin Doherty, kdoherty@mit.edu
- * @date December 2021
+ * @date   December 2021
  */
 
 #pragma once
