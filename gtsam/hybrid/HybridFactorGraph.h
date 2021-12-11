@@ -15,7 +15,7 @@
 #include <gtsam/discrete/DiscreteFactor.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/hybrid/DCFactorGraph.h>
-#include <gtsam/hybrid/HybridFactor.h>
+#include <gtsam/hybrid/DCFactor.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
@@ -32,6 +32,8 @@ class HybridFactorGraph {
 
  public:
   HybridFactorGraph();
+
+  // TODO(dellaert): I propose we only have emplace_shared below.
 
   /**
    * Add a nonlinear factor to the internal nonlinear factor graph
@@ -56,7 +58,7 @@ class HybridFactorGraph {
    */
   template <typename DiscreteFactorType>
   void push_discrete(const DiscreteFactorType &discreteFactor) {
-    discreteGraph_.emplace_shared<DiscreteFactorType>(discreteFactor));
+    discreteGraph_.emplace_shared<DiscreteFactorType>(discreteFactor);
   }
 
   /**
@@ -78,7 +80,7 @@ class HybridFactorGraph {
    * Add a discrete-continuous (DC) factor *pointer* to the internal DC graph
    * @param dcFactor - boost::shared_ptr to the factor to add
    */
-  void push_dc(boost::shared_ptr<DCFactor> dcFactor);
+  void push_dc(const boost::shared_ptr<DCFactor>& dcFactor);
 
   /**
    * Simply prints the factor graph.

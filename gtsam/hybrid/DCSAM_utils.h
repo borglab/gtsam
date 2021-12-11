@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 
-namespace dcsam {
+namespace gtsam {
 
 inline std::vector<double> expNormalize(const std::vector<double> &logProbs) {
   /*
@@ -80,4 +80,4 @@ inline std::vector<double> expNormalize(const std::vector<double> &logProbs) {
   return probs;
 }
 
-}  // namespace dcsam
+}  // namespace gtsam

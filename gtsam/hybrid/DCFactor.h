@@ -23,10 +23,10 @@
 #include <string>
 #include <vector>
 
-#include "dcsam/DCSAM_types.h"
-#include "dcsam/DCSAM_utils.h"
+#include "gtsam/hybrid/DCSAM_types.h"
+#include "gtsam/hybrid/DCSAM_utils.h"
 
-namespace dcsam {
+namespace gtsam {
 
 /**
  * @brief Abstract class implementing a discrete-continuous factor.
@@ -273,7 +273,6 @@ class DCFactor : public gtsam::Factor {
      * small.
      */
     std::vector<double> logProbs;
-    double maxLogProb = -std::numeric_limits<double>::infinity();
     for (size_t i = 0; i < dk.second; i++) {
       DiscreteValues testDiscreteVals;
       testDiscreteVals[dk.first] = i;
@@ -303,4 +302,4 @@ class DCFactor : public gtsam::Factor {
     return toDecisionTreeFactor(continuousVals, discreteVals) * f;
   }
 };
-}  // namespace dcsam
+}  // namespace gtsam

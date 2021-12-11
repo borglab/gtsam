@@ -19,7 +19,7 @@
 
 #include <utility>
 
-namespace dcsam {
+namespace gtsam {
 
 using DiscreteValues = gtsam::DiscreteFactor::Values;
 
@@ -38,4 +38,4 @@ struct DCMarginals {
   gtsam::DiscreteMarginals discrete;
 };
 
-}  // namespace dcsam
+}  // namespace gtsam

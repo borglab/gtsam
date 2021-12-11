@@ -10,28 +10,28 @@
  * @date   December 2021
  */
 
-#include "dcsam/HybridFactorGraph.h"
+#include <gtsam/hybrid/HybridFactorGraph.h>
 
-namespace dcsam {
+namespace gtsam {
 
 HybridFactorGraph::HybridFactorGraph() {}
 
 void HybridFactorGraph::push_nonlinear(
-    boost::shared_ptr<gtsam::NonlinearFactor> nonlinearFactor) {
+    const boost::shared_ptr<NonlinearFactor>& nonlinearFactor) {
   nonlinearGraph_.push_back(nonlinearFactor);
 }
 
 void HybridFactorGraph::push_discrete(
-    boost::shared_ptr<gtsam::DiscreteFactor> discreteFactor) {
+    const boost::shared_ptr<DiscreteFactor> &discreteFactor) {
   discreteGraph_.push_back(discreteFactor);
 }
 
-void HybridFactorGraph::push_dc(boost::shared_ptr<DCFactor> dcFactor) {
+void HybridFactorGraph::push_dc(const boost::shared_ptr<DCFactor>& dcFactor) {
   dcGraph_.push_back(dcFactor);
 }
 
 void HybridFactorGraph::print(const std::string &str,
-                              const gtsam::KeyFormatter &keyFormatter) const {
+                              const KeyFormatter &keyFormatter) const {
   std::string nonlinearStr = str + ": NonlinearFactorGraph";
   std::string discreteStr = str + ": DiscreteFactorGraph";
   std::string dcStr = str + ": DCFactorGraph";
@@ -41,8 +41,8 @@ void HybridFactorGraph::print(const std::string &str,
   dcGraph_.print(dcStr, keyFormatter);
 }
 
-gtsam::FastSet<gtsam::Key> HybridFactorGraph::keys() const {
-  gtsam::FastSet<gtsam::Key> keys;
+FastSet<Key> HybridFactorGraph::keys() const {
+  FastSet<Key> keys;
   // Combine keys from all the internal graphs
   keys.merge(nonlinearGraph_.keys());
   keys.merge(discreteGraph_.keys());
@@ -50,11 +50,11 @@ gtsam::FastSet<gtsam::Key> HybridFactorGraph::keys() const {
   return keys;
 }
 
-gtsam::NonlinearFactorGraph HybridFactorGraph::nonlinearGraph() const {
+NonlinearFactorGraph HybridFactorGraph::nonlinearGraph() const {
   return nonlinearGraph_;
 }
 
-gtsam::DiscreteFactorGraph HybridFactorGraph::discreteGraph() const {
+DiscreteFactorGraph HybridFactorGraph::discreteGraph() const {
   return discreteGraph_;
 }
 
@@ -91,4 +91,4 @@ void HybridFactorGraph::clear() {
   dcGraph_.resize(0);
 }
 
-}  // namespace dcsam
+}  // namespace gtsam

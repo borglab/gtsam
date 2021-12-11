@@ -22,7 +22,7 @@
 
 #include "DCFactor.h"
 
-namespace dcsam {
+namespace gtsam {
 
 /**
  * @brief Implementation of a discrete conditional mixture factor. Implements a
@@ -80,7 +80,7 @@ class DCMixtureFactor : public DCFactor {
     return (factors_.size() > 0) ? factors_[0].dim() : 0;
   }
 
-  bool equals(const DCFactor& other, double tol = 1e-9) const {
+  bool equals(const DCFactor& other, double tol = 1e-9) const override {
     // We attempt a dynamic cast from DCFactor to DCMixtureFactor. If it fails,
     // return false.
     if (!dynamic_cast<const DCMixtureFactor*>(&other)) return false;
@@ -166,4 +166,4 @@ class DCMixtureFactor : public DCFactor {
   }
 };
 
-}  // namespace dcsam
+}  // namespace gtsam
