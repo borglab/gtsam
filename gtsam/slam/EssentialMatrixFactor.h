@@ -14,7 +14,7 @@
  * @brief EssentialMatrixFactor class
  * @author Frank Dellaert
  * @author Ayush Baid
- * @author Akshay Krisnan
+ * @author Akshay Krishnan
  * @date December 17, 2013
  */
 
