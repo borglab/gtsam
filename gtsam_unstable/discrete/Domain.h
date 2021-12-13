@@ -76,7 +76,7 @@ class GTSAM_UNSTABLE_EXPORT Domain : public Constraint {
   bool contains(size_t value) const { return values_.count(value) > 0; }
 
   /// Calculate value
-  double operator()(const Values& values) const override;
+  double operator()(const DiscreteValues& values) const override;
 
   /// Convert into a decisiontree
   DecisionTreeFactor toDecisionTreeFactor() const override;
@@ -104,7 +104,7 @@ class GTSAM_UNSTABLE_EXPORT Domain : public Constraint {
                                        const Domains& domains) const;
 
   /// Partially apply known values
-  Constraint::shared_ptr partiallyApply(const Values& values) const override;
+  Constraint::shared_ptr partiallyApply(const DiscreteValues& values) const override;
 
   /// Partially apply known values, domain version
   Constraint::shared_ptr partiallyApply(const Domains& domains) const override;

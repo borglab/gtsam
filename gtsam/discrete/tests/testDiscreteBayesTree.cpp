@@ -89,24 +89,24 @@ TEST_UNSAFE(DiscreteBayesTree, ThinTree) {
   auto R = bayesTree->roots().front();
 
   // Check whether BN and BT give the same answer on all configurations
-  vector<DiscreteFactor::Values> allPosbValues = cartesianProduct(
+  vector<DiscreteValues> allPosbValues = cartesianProduct(
       key[0] & key[1] & key[2] & key[3] & key[4] & key[5] & key[6] & key[7] &
       key[8] & key[9] & key[10] & key[11] & key[12] & key[13] & key[14]);
   for (size_t i = 0; i < allPosbValues.size(); ++i) {
-    DiscreteFactor::Values x = allPosbValues[i];
+    DiscreteValues x = allPosbValues[i];
     double expected = bayesNet.evaluate(x);
     double actual = bayesTree->evaluate(x);
     DOUBLES_EQUAL(expected, actual, 1e-9);
   }
 
-  // Calculate all some marginals for Values==all1
+  // Calculate all some marginals for DiscreteValues==all1
   Vector marginals = Vector::Zero(15);
   double joint_12_14 = 0, joint_9_12_14 = 0, joint_8_12_14 = 0, joint_8_12 = 0,
          joint82 = 0, joint12 = 0, joint24 = 0, joint45 = 0, joint46 = 0,
          joint_4_11 = 0, joint_11_13 = 0, joint_11_13_14 = 0,
          joint_11_12_13_14 = 0, joint_9_11_12_13 = 0, joint_8_11_12_13 = 0;
   for (size_t i = 0; i < allPosbValues.size(); ++i) {
-    DiscreteFactor::Values x = allPosbValues[i];
+    DiscreteValues x = allPosbValues[i];
     double px = bayesTree->evaluate(x);
     for (size_t i = 0; i < 15; i++)
       if (x[i]) marginals[i] += px;
@@ -138,7 +138,7 @@ TEST_UNSAFE(DiscreteBayesTree, ThinTree) {
       }
     }
   }
-  DiscreteFactor::Values all1 = allPosbValues.back();
+  DiscreteValues all1 = allPosbValues.back();
 
   // check separator marginal P(S0)
   auto clique = (*bayesTree)[0];
