@@ -47,7 +47,7 @@ class BinaryAllDiff : public Constraint {
   }
 
   /// Calculate value
-  double operator()(const Values& values) const override {
+  double operator()(const DiscreteValues& values) const override {
     return (double)(values.at(keys_[0]) != values.at(keys_[1]));
   }
 
@@ -82,7 +82,7 @@ class BinaryAllDiff : public Constraint {
   }
 
   /// Partially apply known values
-  Constraint::shared_ptr partiallyApply(const Values&) const override {
+  Constraint::shared_ptr partiallyApply(const DiscreteValues&) const override {
     throw std::runtime_error("BinaryAllDiff::partiallyApply not implemented");
   }
 

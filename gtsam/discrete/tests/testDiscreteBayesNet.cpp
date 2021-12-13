@@ -105,7 +105,7 @@ TEST(DiscreteBayesNet, Asia) {
 
   // solve
   auto actualMPE = chordal->optimize();
-  DiscreteFactor::Values expectedMPE;
+  DiscreteValues expectedMPE;
   insert(expectedMPE)(Asia.first, 0)(Dyspnea.first, 0)(XRay.first, 0)(
       Tuberculosis.first, 0)(Smoking.first, 0)(Either.first, 0)(
       LungCancer.first, 0)(Bronchitis.first, 0);
@@ -118,14 +118,14 @@ TEST(DiscreteBayesNet, Asia) {
   // solve again, now with evidence
   DiscreteBayesNet::shared_ptr chordal2 = fg.eliminateSequential(ordering);
   auto actualMPE2 = chordal2->optimize();
-  DiscreteFactor::Values expectedMPE2;
+  DiscreteValues expectedMPE2;
   insert(expectedMPE2)(Asia.first, 1)(Dyspnea.first, 1)(XRay.first, 0)(
       Tuberculosis.first, 0)(Smoking.first, 1)(Either.first, 0)(
       LungCancer.first, 0)(Bronchitis.first, 1);
   EXPECT(assert_equal(expectedMPE2, actualMPE2));
 
   // now sample from it
-  DiscreteFactor::Values expectedSample;
+  DiscreteValues expectedSample;
   SETDEBUG("DiscreteConditional::sample", false);
   insert(expectedSample)(Asia.first, 1)(Dyspnea.first, 1)(XRay.first, 1)(
       Tuberculosis.first, 0)(Smoking.first, 1)(Either.first, 1)(

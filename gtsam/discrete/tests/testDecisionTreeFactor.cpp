@@ -43,7 +43,7 @@ TEST( DecisionTreeFactor, constructors)
   //    f2.print("f2:");
   //    f3.print("f3:");
 
-  DecisionTreeFactor::Values values;
+  DiscreteValues values;
   values[0] = 1; // x
   values[1] = 2; // y
   values[2] = 1; // z

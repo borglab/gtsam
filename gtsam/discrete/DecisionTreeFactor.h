@@ -80,7 +80,7 @@ namespace gtsam {
     /// @{
 
     /// Value is just look up in AlgebraicDecisonTree
-    double operator()(const Values& values) const override {
+    double operator()(const DiscreteValues& values) const override {
       return Potentials::operator()(values);
     }
 
