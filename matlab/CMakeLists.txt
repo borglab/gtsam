@@ -64,8 +64,21 @@ set(ignore
     gtsam::Point3
     gtsam::CustomFactor)
 
+set(interface_files
+    ${GTSAM_SOURCE_DIR}/gtsam/gtsam.i
+    ${GTSAM_SOURCE_DIR}/gtsam/base/base.i
+    ${GTSAM_SOURCE_DIR}/gtsam/basis/basis.i
+    ${GTSAM_SOURCE_DIR}/gtsam/geometry/geometry.i
+    ${GTSAM_SOURCE_DIR}/gtsam/linear/linear.i
+    ${GTSAM_SOURCE_DIR}/gtsam/nonlinear/nonlinear.i
+    ${GTSAM_SOURCE_DIR}/gtsam/symbolic/symbolic.i
+    ${GTSAM_SOURCE_DIR}/gtsam/sam/sam.i
+    ${GTSAM_SOURCE_DIR}/gtsam/slam/slam.i
+    ${GTSAM_SOURCE_DIR}/gtsam/sfm/sfm.i
+    ${GTSAM_SOURCE_DIR}/gtsam/navigation/navigation.i
+)
 # Wrap
-matlab_wrap(${GTSAM_SOURCE_DIR}/gtsam/gtsam.i "${GTSAM_ADDITIONAL_LIBRARIES}"
+matlab_wrap("${interface_files}" "gtsam" "${GTSAM_ADDITIONAL_LIBRARIES}"
             "" "${mexFlags}" "${ignore}")
 
 # Wrap version for gtsam_unstable

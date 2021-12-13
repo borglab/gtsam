@@ -31,6 +31,7 @@ PYBIND11_MODULE(class_py, m_) {
     py::class_<Fun<double>, std::shared_ptr<Fun<double>>>(m_, "FunDouble")
         .def("templatedMethodString",[](Fun<double>* self, double d, string t){return self->templatedMethod<string>(d, t);}, py::arg("d"), py::arg("t"))
         .def("multiTemplatedMethodStringSize_t",[](Fun<double>* self, double d, string t, size_t u){return self->multiTemplatedMethod<string,size_t>(d, t, u);}, py::arg("d"), py::arg("t"), py::arg("u"))
+        .def("sets",[](Fun<double>* self){return self->sets();})
         .def_static("staticMethodWithThis",[](){return Fun<double>::staticMethodWithThis();})
         .def_static("templatedStaticMethodInt",[](const int& m){return Fun<double>::templatedStaticMethod<int>(m);}, py::arg("m"));
 
