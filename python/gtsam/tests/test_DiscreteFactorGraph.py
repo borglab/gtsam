@@ -10,28 +10,13 @@ Author: Frank Dellaert
 """
 
 import unittest
-import numpy as np
 
 import gtsam
-from gtsam import DiscreteFactorGraph
+import numpy as np
+from gtsam import DiscreteFactorGraph, DiscreteKeys
 from gtsam.symbol_shorthand import X
 from gtsam.utils.test_case import GtsamTestCase
 
-# #include <gtsam/discrete/DiscreteFactor.h>
-# #include <gtsam/discrete/DiscreteFactorGraph.h>
-# #include <gtsam/discrete/DiscreteEliminationTree.h>
-# #include <gtsam/discrete/DiscreteBayesTree.h>
-# #include <gtsam/inference/BayesNet.h>
-
-# #include <CppUnitLite/TestHarness.h>
-
-# #include <boost/assign/std/map.hpp>
-# using namespace boost::assign
-
-# using namespace std
-# using namespace gtsam
-
-from gtsam import DiscreteKeys, DiscreteFactorGraph
 
 class TestDiscreteFactorGraph(GtsamTestCase):
     """Tests for Discrete Factor Graphs."""
@@ -47,21 +32,18 @@ class TestDiscreteFactorGraph(GtsamTestCase):
         graph.add(P1, "0.9 0.3")
         graph.add(P2, "0.9 0.6")
 
-        # NOTE(fan): originally is an operator overload in C++ &
-        def discrete_and(a, b):
-            dks = DiscreteKeys()
-            dks.push_back(a)
-            dks.push_back(b)
-            return dks
+        keys = DiscreteKeys()
+        keys.push_back(P1)
+        keys.push_back(P2)
 
-        graph.add(discrete_and(P1, P2), "4 1 10 4")
+        graph.add(keys, "4 1 10 4")
 
         print(graph)
 
-#   # Instantiate Values
-#   DiscreteFactor::Values values
-#   values[0] = 1
-#   values[1] = 1
+        # Instantiate Values
+        DiscreteFactor::Values values
+        values[0] = 1
+        values[1] = 1
 
 #   # Check if graph evaluation works ( 0.3*0.6*4 )
 #   EXPECT_DOUBLES_EQUAL( .72, graph(values), 1e-9)
