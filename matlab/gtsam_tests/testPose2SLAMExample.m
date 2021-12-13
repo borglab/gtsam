@@ -26,19 +26,19 @@ graph = NonlinearFactorGraph;
 %% Add prior
 % gaussian for prior
 priorMean = Pose2(0.0, 0.0, 0.0); % prior at origin
-priorNoise = noiseModel.Diagonal.Sigmas([0.3; 0.3; 0.1], true);
+priorNoise = noiseModel.Diagonal.Sigmas([0.3; 0.3; 0.1]);
 graph.add(PriorFactorPose2(1, priorMean, priorNoise)); % add directly to graph
 
 %% Add odometry
 % general noisemodel for odometry
-odometryNoise = noiseModel.Diagonal.Sigmas([0.2; 0.2; 0.1], true);
+odometryNoise = noiseModel.Diagonal.Sigmas([0.2; 0.2; 0.1]);
 graph.add(BetweenFactorPose2(1, 2, Pose2(2.0, 0.0, 0.0 ), odometryNoise));
 graph.add(BetweenFactorPose2(2, 3, Pose2(2.0, 0.0, pi/2), odometryNoise));
 graph.add(BetweenFactorPose2(3, 4, Pose2(2.0, 0.0, pi/2), odometryNoise));
 graph.add(BetweenFactorPose2(4, 5, Pose2(2.0, 0.0, pi/2), odometryNoise));
 
 %% Add pose constraint
-model = noiseModel.Diagonal.Sigmas([0.2; 0.2; 0.1], true);
+model = noiseModel.Diagonal.Sigmas([0.2; 0.2; 0.1]);
 graph.add(BetweenFactorPose2(5, 2, Pose2(2.0, 0.0, pi/2), model));
 
 %% Initialize to noisy points
