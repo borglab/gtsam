@@ -10,8 +10,10 @@ import os.path as osp
 import textwrap
 from functools import partial, reduce
 from typing import Dict, Iterable, List, Union
+import copy
 
 import gtwrap.interface_parser as parser
+from gtwrap.interface_parser.function import ArgumentList
 import gtwrap.template_instantiator as instantiator
 from gtwrap.matlab_wrapper.mixins import CheckMixin, FormatMixin
 from gtwrap.matlab_wrapper.templates import WrapperTemplate
@@ -137,6 +139,37 @@ class MatlabWrapper(CheckMixin, FormatMixin):
         """
         return x + '\n' + ('' if y == '' else '  ') + y
 
+    @staticmethod
+    def _expand_default_arguments(method, save_backup=True):
+        """Recursively expand all possibilities for optional default arguments.
+        We create "overload" functions with fewer arguments, but since we have to "remember" what
+        the default arguments are for later, we make a backup.
+        """
+        def args_copy(args):
+            return ArgumentList([copy.copy(arg) for arg in args.list()])
+        def method_copy(method):
+            method2 = copy.copy(method)
+            method2.args = args_copy(method.args)
+            method2.args.backup = method.args.backup
+            return method2
+        if save_backup:
+            method.args.backup = args_copy(method.args)
+        method = method_copy(method)
+        for arg in reversed(method.args.list()):
+            if arg.default is not None:
+                arg.default = None
+                methodWithArg = method_copy(method)
+                method.args.list().remove(arg)
+                return [
+                    methodWithArg,
+                    *MatlabWrapper._expand_default_arguments(method, save_backup=False)
+                ]
+            break
+        assert all(arg.default is None for arg in method.args.list()), \
+            'In parsing method {:}: Arguments with default values cannot appear before ones ' \
+            'without default values.'.format(method.name)
+        return [method]
+
     def _group_methods(self, methods):
         """Group overloaded methods together"""
         method_map = {}
@@ -147,9 +180,9 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
             if method_index is None:
                 method_map[method.name] = len(method_out)
-                method_out.append([method])
+                method_out.append(MatlabWrapper._expand_default_arguments(method))
             else:
-                method_out[method_index].append(method)
+                method_out[method_index] += MatlabWrapper._expand_default_arguments(method)
 
         return method_out
 
@@ -301,13 +334,9 @@ class MatlabWrapper(CheckMixin, FormatMixin):
             ((a), Test& t = *unwrap_shared_ptr< Test >(in[1], "ptr_Test");),
             ((a), std::shared_ptr<Test> p1 = unwrap_shared_ptr< Test >(in[1], "ptr_Test");)
         """
-        params = ''
         body_args = ''
 
         for arg in args.list():
-            if params != '':
-                params += ','
-
             if self.is_ref(arg.ctype):  # and not constructor:
                 ctype_camel = self._format_type_name(arg.ctype.typename,
                                                      separator='')
@@ -336,8 +365,6 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                            name=arg.name,
                            id=arg_id)),
                                              prefix='  ')
-                if call_type == "":
-                    params += "*"
 
             else:
                 body_args += textwrap.indent(textwrap.dedent('''\
@@ -347,9 +374,28 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                            id=arg_id)),
                                              prefix='  ')
 
-            params += arg.name
-
             arg_id += 1
+
+        params = ''
+        explicit_arg_names = [arg.name for arg in args.list()]
+        # when returning the params list, we need to re-include the default args.
+        for arg in args.backup.list():
+            if params != '':
+                params += ','
+
+            if (arg.default is not None) and (arg.name not in explicit_arg_names):
+                params += arg.default
+                continue
+
+            if (not self.is_ref(arg.ctype)) and (self.is_shared_ptr(arg.ctype)) and (self.is_ptr(
+                    arg.ctype)) and (arg.ctype.typename.name not in self.ignore_namespace):
+                if arg.ctype.is_shared_ptr:
+                    call_type = arg.ctype.is_shared_ptr
+                else:
+                    call_type = arg.ctype.is_ptr
+                if call_type == "":
+                    params += "*"
+            params += arg.name
 
         return params, body_args
 
@@ -555,6 +601,8 @@ class MatlabWrapper(CheckMixin, FormatMixin):
         if not isinstance(ctors, Iterable):
             ctors = [ctors]
 
+        ctors = sum((MatlabWrapper._expand_default_arguments(ctor) for ctor in ctors), [])
+
         methods_wrap = textwrap.indent(textwrap.dedent("""\
             methods
               function obj = {class_name}(varargin)
@@ -674,20 +722,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
     def _group_class_methods(self, methods):
         """Group overloaded methods together"""
-        method_map = {}
-        method_out = []
-
-        for method in methods:
-            method_index = method_map.get(method.name)
-
-            if method_index is None:
-                method_map[method.name] = len(method_out)
-                method_out.append([method])
-            else:
-                # print("[_group_methods] Merging {} with {}".format(method_index, method.name))
-                method_out[method_index].append(method)
-
-        return method_out
+        return self._group_methods(methods)
 
     @classmethod
     def _format_varargout(cls, return_type, return_type_formatted):
