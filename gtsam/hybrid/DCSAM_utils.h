@@ -1,9 +1,14 @@
+/* ----------------------------------------------------------------------------
+ * Copyright 2020 The Ambitious Folks of the MRG
+ * See LICENSE for the license information
+ * -------------------------------------------------------------------------- */
+
 /**
  *
- * @file DCSAM_utils.h
- * @brief Some utilities for DCSAM
+ * @file   DCSAM_utils.h
+ * @brief  Some utilities for DCSAM
  * @author Kevin Doherty, kdoherty@mit.edu
- * Copyright 2021 The Ambitious Folks of the MRG
+ * @date   December 2021
  */
 
 #pragma once
@@ -15,7 +20,7 @@
 #include <string>
 #include <vector>
 
-namespace dcsam {
+namespace gtsam {
 
 inline std::vector<double> expNormalize(const std::vector<double> &logProbs) {
   /*
@@ -75,4 +80,4 @@ inline std::vector<double> expNormalize(const std::vector<double> &logProbs) {
   return probs;
 }
 
-}  // namespace dcsam
+}  // namespace gtsam

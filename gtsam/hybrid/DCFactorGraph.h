@@ -1,16 +1,20 @@
-/**
- * @file DCFactorGraph.h
- * @brief Simple class for factor graphs of DCFactor type
- * @author Kevin Doherty, kdoherty@mit.edu
+/* ----------------------------------------------------------------------------
  * Copyright 2020 The Ambitious Folks of the MRG
+ * See LICENSE for the license information
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file   DCFactorGraph.h
+ * @brief  Simple class for factor graphs of DCFactor type
+ * @author Kevin Doherty, kdoherty@mit.edu
+ * @date   December 2021
  */
 #pragma once
 
+#include <gtsam/hybrid/DCFactor.h>
 #include <gtsam/inference/FactorGraph.h>
 
-#include "dcsam/DCFactor.h"
-
-namespace dcsam {
+namespace gtsam {
 
 /**
  * Very simple class to create a factor graph with factors of type DCFactor
@@ -20,4 +24,4 @@ class DCFactorGraph : public gtsam::FactorGraph<DCFactor> {
   DCFactorGraph() : FactorGraph<DCFactor>() {}
 };
 
-}  // namespace dcsam
+}  // namespace gtsam

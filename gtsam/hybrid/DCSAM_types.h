@@ -1,9 +1,14 @@
+/* ----------------------------------------------------------------------------
+ * Copyright 2020 The Ambitious Folks of the MRG
+ * See LICENSE for the license information
+ * -------------------------------------------------------------------------- */
+
 /**
  *
- * @file DCSAM_types.h
- * @brief Some convenient types for DCSAM
+ * @file   DCSAM_types.h
+ * @brief  Some convenient types for DCSAM
  * @author Kevin Doherty, kdoherty@mit.edu
- * Copyright 2021 The Ambitious Folks of the MRG
+ * @date   December 2021
  */
 
 #pragma once
@@ -14,7 +19,7 @@
 
 #include <utility>
 
-namespace dcsam {
+namespace gtsam {
 
 using DiscreteValues = gtsam::DiscreteFactor::Values;
 
@@ -33,4 +38,4 @@ struct DCMarginals {
   gtsam::DiscreteMarginals discrete;
 };
 
-}  // namespace dcsam
+}  // namespace gtsam

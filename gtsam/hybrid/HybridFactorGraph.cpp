@@ -1,27 +1,32 @@
-/**
- * @file HybridFactorGraph.cpp
- * @brief Custom hybrid factor graph for discrete + continuous factors
- * @author Kevin Doherty, kdoherty@mit.edu
+/* ----------------------------------------------------------------------------
  * Copyright 2021 The Ambitious Folks of the MRG
+ * See LICENSE for the license information
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file   HybridFactorGraph.cpp
+ * @brief  Custom hybrid factor graph for discrete + continuous factors
+ * @author Kevin Doherty, kdoherty@mit.edu
+ * @date   December 2021
  */
 
-#include "dcsam/HybridFactorGraph.h"
+#include <gtsam/hybrid/HybridFactorGraph.h>
 
-namespace dcsam {
+namespace gtsam {
 
 HybridFactorGraph::HybridFactorGraph() {}
 
 void HybridFactorGraph::push_nonlinear(
-    boost::shared_ptr<gtsam::NonlinearFactor> nonlinearFactor) {
+    const boost::shared_ptr<gtsam::NonlinearFactor>& nonlinearFactor) {
   nonlinearGraph_.push_back(nonlinearFactor);
 }
 
 void HybridFactorGraph::push_discrete(
-    boost::shared_ptr<gtsam::DiscreteFactor> discreteFactor) {
+    const boost::shared_ptr<gtsam::DiscreteFactor> &discreteFactor) {
   discreteGraph_.push_back(discreteFactor);
 }
 
-void HybridFactorGraph::push_dc(boost::shared_ptr<DCFactor> dcFactor) {
+void HybridFactorGraph::push_dc(const boost::shared_ptr<DCFactor>& dcFactor) {
   dcGraph_.push_back(dcFactor);
 }
 
@@ -45,15 +50,15 @@ gtsam::FastSet<gtsam::Key> HybridFactorGraph::keys() const {
   return keys;
 }
 
-gtsam::NonlinearFactorGraph HybridFactorGraph::nonlinearGraph() const {
+const gtsam::NonlinearFactorGraph& HybridFactorGraph::nonlinearGraph() const {
   return nonlinearGraph_;
 }
 
-gtsam::DiscreteFactorGraph HybridFactorGraph::discreteGraph() const {
+const gtsam::DiscreteFactorGraph& HybridFactorGraph::discreteGraph() const {
   return discreteGraph_;
 }
 
-DCFactorGraph HybridFactorGraph::dcGraph() const { return dcGraph_; }
+const DCFactorGraph& HybridFactorGraph::dcGraph() const { return dcGraph_; }
 
 bool HybridFactorGraph::empty() const {
   return nonlinearGraph_.empty() && discreteGraph_.empty() && dcGraph_.empty();
@@ -86,4 +91,4 @@ void HybridFactorGraph::clear() {
   dcGraph_.resize(0);
 }
 
-}  // namespace dcsam
+}  // namespace gtsam
