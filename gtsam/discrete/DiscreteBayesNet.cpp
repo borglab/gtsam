@@ -45,7 +45,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  double DiscreteBayesNet::evaluate(const DiscreteConditional::Values & values) const {
+  double DiscreteBayesNet::evaluate(const DiscreteValues & values) const {
     // evaluate all conditionals and multiply
     double result = 1.0;
     for(DiscreteConditional::shared_ptr conditional: *this)
@@ -54,18 +54,18 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  DiscreteFactor::Values DiscreteBayesNet::optimize() const {
+  DiscreteValues DiscreteBayesNet::optimize() const {
     // solve each node in turn in topological sort order (parents first)
-    DiscreteFactor::Values result;
+    DiscreteValues result;
     for (auto conditional: boost::adaptors::reverse(*this))
       conditional->solveInPlace(&result);
     return result;
   }
 
   /* ************************************************************************* */
-  DiscreteFactor::Values DiscreteBayesNet::sample() const {
+  DiscreteValues DiscreteBayesNet::sample() const {
     // sample each node in turn in topological sort order (parents first)
-    DiscreteFactor::Values result;
+    DiscreteValues result;
     for (auto conditional: boost::adaptors::reverse(*this))
       conditional->sampleInPlace(&result);
     return result;

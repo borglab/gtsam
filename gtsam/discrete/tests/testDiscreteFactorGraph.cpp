@@ -81,8 +81,8 @@ TEST_UNSAFE( DiscreteFactorGraph, DiscreteFactorGraphEvaluationTest) {
   graph.add(P2, "0.9 0.6");
   graph.add(P1 & P2, "4 1 10 4");
 
-  // Instantiate Values
-  DiscreteFactor::Values values;
+  // Instantiate DiscreteValues
+  DiscreteValues values;
   values[0] = 1;
   values[1] = 1;
 
@@ -167,7 +167,7 @@ TEST( DiscreteFactorGraph, test)
 //  EXPECT(assert_equal(expected, *actual2));
 
   // Test optimization
-  DiscreteFactor::Values expectedValues;
+  DiscreteValues expectedValues;
   insert(expectedValues)(0, 0)(1, 0)(2, 0);
   auto actualValues = graph.optimize();
   EXPECT(assert_equal(expectedValues, actualValues));
@@ -188,7 +188,7 @@ TEST( DiscreteFactorGraph, testMPE)
 
   auto actualMPE = graph.optimize();
 
-  DiscreteFactor::Values expectedMPE;
+  DiscreteValues expectedMPE;
   insert(expectedMPE)(0, 0)(1, 1)(2, 1);
   EXPECT(assert_equal(expectedMPE, actualMPE));
 }
@@ -211,7 +211,7 @@ TEST( DiscreteFactorGraph, testMPE_Darwiche09book_p244)
   //  graph.product().potentials().dot("Darwiche-product");
   //  DiscreteSequentialSolver(graph).eliminate()->print();
 
-  DiscreteFactor::Values expectedMPE;
+  DiscreteValues expectedMPE;
   insert(expectedMPE)(4, 0)(2, 0)(3, 1)(0, 1)(1, 1);
 
   // Use the solver machinery.

@@ -31,7 +31,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   double DiscreteBayesTreeClique::evaluate(
-      const DiscreteConditional::Values& values) const {
+      const DiscreteValues& values) const {
     // evaluate all conditionals and multiply
     double result = (*conditional_)(values);
     for (const auto& child : children) {
@@ -47,7 +47,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   double DiscreteBayesTree::evaluate(
-      const DiscreteConditional::Values& values) const {
+      const DiscreteValues& values) const {
     double result = 1.0;
     for (const auto& root : roots_) {
       result *= root->evaluate(values);

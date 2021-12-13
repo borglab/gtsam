@@ -42,9 +42,7 @@ public:
   typedef DecisionTreeFactor BaseFactor; ///< Typedef to our factor base class
   typedef Conditional<BaseFactor, This> BaseConditional; ///< Typedef to our conditional base class
 
-  /** A map from keys to values..
-   * TODO: Again, do we need this??? */
-  typedef Assignment<Key> Values;
+  using Values = DiscreteValues; ///< backwards compatibility
 
   /// @name Standard Constructors
   /// @{
@@ -101,7 +99,7 @@ public:
   }
 
   /// Evaluate, just look up in AlgebraicDecisonTree
-  double operator()(const Values& values) const override {
+  double operator()(const DiscreteValues& values) const override {
     return Potentials::operator()(values);
   }
 
@@ -111,31 +109,31 @@ public:
   }
 
   /** Restrict to given parent values, returns AlgebraicDecisionDiagram */
-  ADT choose(const Assignment<Key>& parentsValues) const;
+  ADT choose(const DiscreteValues& parentsValues) const;
 
   /**
    * solve a conditional
    * @param parentsValues Known values of the parents
    * @return MPE value of the child (1 frontal variable).
    */
-  size_t solve(const Values& parentsValues) const;
+  size_t solve(const DiscreteValues& parentsValues) const;
 
   /**
    * sample
    * @param parentsValues Known values of the parents
    * @return sample from conditional
    */
-  size_t sample(const Values& parentsValues) const;
+  size_t sample(const DiscreteValues& parentsValues) const;
 
   /// @}
   /// @name Advanced Interface
   /// @{
 
   /// solve a conditional, in place
-  void solveInPlace(Values* parentsValues) const;
+  void solveInPlace(DiscreteValues* parentsValues) const;
 
   /// sample in place, stores result in partial solution
-  void sampleInPlace(Values* parentsValues) const;
+  void sampleInPlace(DiscreteValues* parentsValues) const;
 
   /// @}
 
