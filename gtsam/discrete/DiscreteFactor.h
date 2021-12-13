@@ -94,6 +94,5 @@ public:
 
 // traits
 template<> struct traits<DiscreteFactor> : public Testable<DiscreteFactor> {};
-template<> struct traits<DiscreteValues> : public Testable<DiscreteValues> {};
 
 }// namespace gtsam

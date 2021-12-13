@@ -34,4 +34,7 @@ namespace gtsam {
  */
 using DiscreteValues = Assignment<Key>;
 
+// traits
+template<> struct traits<DiscreteValues> : public Testable<DiscreteValues> {};
+
 }  // namespace gtsam
