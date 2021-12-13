@@ -78,7 +78,7 @@ classdef Point3 < handle
       error('Arguments do not match any overload of function Point3.StaticFunctionRet');
     end
 
-    function varargout = StaticFunction(varargin)
+    function varargout = staticFunction(varargin)
       % STATICFUNCTION usage: staticFunction() : returns double
       % Doxygen can be found at https://gtsam.org/doxygen/
       if length(varargin) == 0

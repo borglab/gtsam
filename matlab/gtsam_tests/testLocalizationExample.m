@@ -17,7 +17,7 @@ graph = NonlinearFactorGraph;
 
 %% Add two odometry factors
 odometry = Pose2(2.0, 0.0, 0.0); % create a measurement for both factors (the same in this case)
-odometryNoise = noiseModel.Diagonal.Sigmas([0.2; 0.2; 0.1]); % 20cm std on x,y, 0.1 rad on theta
+odometryNoise = noiseModel.Diagonal.Sigmas([0.2; 0.2; 0.1], true); % 20cm std on x,y, 0.1 rad on theta
 graph.add(BetweenFactorPose2(1, 2, odometry, odometryNoise));
 graph.add(BetweenFactorPose2(2, 3, odometry, odometryNoise));
 
@@ -27,7 +27,7 @@ groundTruth = Values;
 groundTruth.insert(1, Pose2(0.0, 0.0, 0.0));
 groundTruth.insert(2, Pose2(2.0, 0.0, 0.0));
 groundTruth.insert(3, Pose2(4.0, 0.0, 0.0));
-model = noiseModel.Diagonal.Sigmas([0.1; 0.1; 10]);
+model = noiseModel.Diagonal.Sigmas([0.1; 0.1; 10], true);
 for i=1:3
     graph.add(PriorFactorPose2(i, groundTruth.atPose2(i), model));
 end

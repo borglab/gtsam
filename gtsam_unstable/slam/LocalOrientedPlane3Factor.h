@@ -9,6 +9,8 @@
 
 #include <gtsam/geometry/OrientedPlane3.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam_unstable/dllexport.h>
+
 #include <string>
 
 namespace gtsam {
@@ -32,9 +34,9 @@ namespace gtsam {
  * a local linearisation point for the plane. The plane is representated and
  * optimized in x1 frame in the optimization.
  */
-class LocalOrientedPlane3Factor: public NoiseModelFactor3<Pose3, Pose3,
-                                                          OrientedPlane3> {
-protected:
+class GTSAM_UNSTABLE_EXPORT LocalOrientedPlane3Factor
+    : public NoiseModelFactor3<Pose3, Pose3, OrientedPlane3> {
+ protected:
   OrientedPlane3 measured_p_;
   typedef NoiseModelFactor3<Pose3, Pose3, OrientedPlane3> Base;
 public:

@@ -20,18 +20,18 @@
 
 #pragma once
 
-#include <gtsam/slam/SmartFactorBase.h>
-#include <gtsam/slam/SmartFactorParams.h>
-
-#include <gtsam/geometry/triangulation.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/StereoCamera.h>
-#include <gtsam/slam/StereoFactor.h>
+#include <gtsam/geometry/triangulation.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/slam/SmartFactorBase.h>
+#include <gtsam/slam/SmartFactorParams.h>
+#include <gtsam/slam/StereoFactor.h>
 #include <gtsam/slam/dataset.h>
+#include <gtsam_unstable/dllexport.h>
 
-#include <boost/optional.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/optional.hpp>
 #include <vector>
 
 namespace gtsam {
@@ -49,8 +49,9 @@ typedef SmartProjectionParams SmartStereoProjectionParams;
  * If you'd like to store poses in values instead of cameras, use
  * SmartStereoProjectionPoseFactor instead
 */
-class SmartStereoProjectionFactor: public SmartFactorBase<StereoCamera> {
-private:
+class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionFactor
+    : public SmartFactorBase<StereoCamera> {
+ private:
 
   typedef SmartFactorBase<StereoCamera> Base;
 
