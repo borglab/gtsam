@@ -18,6 +18,7 @@
 #pragma once
 
 #include <gtsam/discrete/DiscreteFactor.h>
+#include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam_unstable/dllexport.h>
 
 #include <boost/assign.hpp>
@@ -75,7 +76,7 @@ class GTSAM_EXPORT Constraint : public DiscreteFactor {
   virtual bool ensureArcConsistency(Key j, Domains* domains) const = 0;
 
   /// Partially apply known values
-  virtual shared_ptr partiallyApply(const Values&) const = 0;
+  virtual shared_ptr partiallyApply(const DiscreteValues&) const = 0;
 
   /// Partially apply known values, domain version
   virtual shared_ptr partiallyApply(const Domains&) const = 0;

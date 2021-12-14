@@ -31,7 +31,7 @@ string Domain::base1Str() const {
 }
 
 /* ************************************************************************* */
-double Domain::operator()(const Values& values) const {
+double Domain::operator()(const DiscreteValues& values) const {
   return contains(values.at(key()));
 }
 
@@ -79,8 +79,8 @@ boost::optional<Domain> Domain::checkAllDiff(const KeyVector keys,
 }
 
 /* ************************************************************************* */
-Constraint::shared_ptr Domain::partiallyApply(const Values& values) const {
-  Values::const_iterator it = values.find(key());
+Constraint::shared_ptr Domain::partiallyApply(const DiscreteValues& values) const {
+  DiscreteValues::const_iterator it = values.find(key());
   if (it != values.end() && !contains(it->second))
     throw runtime_error("Domain::partiallyApply: unsatisfiable");
   return boost::make_shared<Domain>(*this);

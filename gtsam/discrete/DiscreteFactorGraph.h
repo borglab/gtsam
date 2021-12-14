@@ -71,9 +71,10 @@ public:
   typedef EliminateableFactorGraph<This> BaseEliminateable; ///< Typedef to base elimination class
   typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
 
+  using Values = DiscreteValues; ///< backwards compatibility
+
   /** A map from keys to values */
   typedef KeyVector Indices;
-  typedef Assignment<Key> Values;
 
   /** Default constructor */
   DiscreteFactorGraph() {}
@@ -130,7 +131,7 @@ public:
   DecisionTreeFactor product() const;
 
   /** Evaluates the factor graph given values, returns the joint probability of the factor graph given specific instantiation of values*/
-  double operator()(const DiscreteFactor::Values & values) const;
+  double operator()(const DiscreteValues & values) const;
 
   /// print
   void print(
@@ -141,7 +142,7 @@ public:
    *  the dense elimination function specified in \c function,
    *  followed by back-substitution resulting from elimination.  Is equivalent
    *  to calling graph.eliminateSequential()->optimize(). */
-  Values optimize() const;
+  DiscreteValues optimize() const;
 
 
 //  /** Permute the variables in the factors */
