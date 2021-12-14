@@ -15,6 +15,8 @@ classdef ForwardKinematics < handle
         class_wrapper(55, my_ptr);
       elseif nargin == 5 && isa(varargin{1},'gtdynamics.Robot') && isa(varargin{2},'char') && isa(varargin{3},'char') && isa(varargin{4},'gtsam.Values') && isa(varargin{5},'gtsam.Pose3')
         my_ptr = class_wrapper(56, varargin{1}, varargin{2}, varargin{3}, varargin{4}, varargin{5});
+      elseif nargin == 4 && isa(varargin{1},'gtdynamics.Robot') && isa(varargin{2},'char') && isa(varargin{3},'char') && isa(varargin{4},'gtsam.Values')
+        my_ptr = class_wrapper(57, varargin{1}, varargin{2}, varargin{3}, varargin{4});
       else
         error('Arguments do not match any overload of ForwardKinematics constructor');
       end
@@ -22,7 +24,7 @@ classdef ForwardKinematics < handle
     end
 
     function delete(obj)
-      class_wrapper(57, obj.ptr_ForwardKinematics);
+      class_wrapper(58, obj.ptr_ForwardKinematics);
     end
 
     function display(obj), obj.print(''); end
