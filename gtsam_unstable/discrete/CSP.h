@@ -20,10 +20,8 @@ namespace gtsam {
  */
 class GTSAM_UNSTABLE_EXPORT CSP : public DiscreteFactorGraph {
  public:
-  /** A map from keys to values */
-  typedef Assignment<Key> Values;
+  using Values = DiscreteValues; ///< backwards compatibility
 
- public:
   /// Add a unary constraint, allowing only a single value
   void addSingleValue(const DiscreteKey& dkey, size_t value) {
     emplace_shared<SingleValue>(dkey, value);
@@ -46,10 +44,10 @@ class GTSAM_UNSTABLE_EXPORT CSP : public DiscreteFactorGraph {
   //    }
 
   /// Find the best total assignment - can be expensive.
-  Values optimalAssignment() const;
+  DiscreteValues optimalAssignment() const;
 
   /// Find the best total assignment, with given ordering - can be expensive.
-  Values optimalAssignment(const Ordering& ordering) const;
+  DiscreteValues optimalAssignment(const Ordering& ordering) const;
 
   //    /*
   //     * Perform loopy belief propagation
