@@ -83,6 +83,9 @@ public:
   /// Find value for given assignment of values to variables
   virtual double operator()(const DiscreteValues&) const = 0;
 
+    /// Synonym for operator(), mostly for wrapper
+    double value(const DiscreteValues& values) const { return operator()(values); }
+
   /// Multiply in a DecisionTreeFactor and return the result as DecisionTreeFactor
   virtual DecisionTreeFactor operator*(const DecisionTreeFactor&) const = 0;
 
