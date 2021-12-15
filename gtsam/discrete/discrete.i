@@ -25,7 +25,7 @@ class DiscreteFactor {
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::DiscreteFactor& other, double tol = 1e-9) const;
   bool empty() const;
-  double value(const gtsam::DiscreteValues& values) const;
+  double evaluate(const gtsam::DiscreteValues& values) const;
 };
 
 #include <gtsam/discrete/DiscreteConditional.h>
@@ -42,7 +42,7 @@ virtual class DecisionTreeFactor: gtsam::DiscreteFactor {
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::DecisionTreeFactor& other, double tol = 1e-9) const;
-  double value(const gtsam::DiscreteValues& values) const; // TODO(dellaert): why do I have to repeat???
+  double evaluate(const gtsam::DiscreteValues& values) const; // TODO(dellaert): why do I have to repeat???
 };
 
 #include <gtsam/discrete/DiscreteFactorGraph.h>
@@ -55,7 +55,7 @@ class DiscreteFactorGraph {
   bool equals(const gtsam::DiscreteFactorGraph& fg, double tol = 1e-9) const;
   gtsam::KeySet keys() const;
   gtsam::DecisionTreeFactor product() const;
-  double value(const gtsam::DiscreteValues& values) const;
+  double evaluate(const gtsam::DiscreteValues& values) const;
   DiscreteValues optimize() const;
 };
 

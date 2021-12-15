@@ -44,7 +44,7 @@ class TestDiscreteFactorGraph(GtsamTestCase):
         assignment[1] = 1
 
         # Check if graph evaluation works ( 0.3*0.6*4 )
-        self.assertAlmostEqual(.72, graph.value(assignment))
+        self.assertAlmostEqual(.72, graph.evaluate(assignment))
 
         # Creating a new test with third node and adding unary and ternary factors on it
         graph.add(P3, "0.9 0.2 0.5")
@@ -60,7 +60,7 @@ class TestDiscreteFactorGraph(GtsamTestCase):
         assignment[2] = 1
 
         # Check if graph evaluation works (0.3*0.9*1*0.2*8)
-        self.assertAlmostEqual(4.32, graph.value(assignment))
+        self.assertAlmostEqual(4.32, graph.evaluate(assignment))
 
         # Below assignment lead to selecting the 3rd index in the ternary factor table
         assignment[0] = 0
@@ -68,11 +68,11 @@ class TestDiscreteFactorGraph(GtsamTestCase):
         assignment[2] = 0
 
         # Check if graph evaluation works (0.9*0.6*1*0.9*4)
-        self.assertAlmostEqual(1.944, graph.value(assignment))
+        self.assertAlmostEqual(1.944, graph.evaluate(assignment))
 
         # Check if graph product works
         product = graph.product()
-        self.assertAlmostEqual(1.944, product.value(assignment))
+        self.assertAlmostEqual(1.944, product.evaluate(assignment))
 
     def test_optimize(self):
         """Test constructing and optizing a discrete factor graph."""
@@ -94,7 +94,6 @@ class TestDiscreteFactorGraph(GtsamTestCase):
         expectedValues[1] = 0
         expectedValues[2] = 0
         actualValues = graph.optimize()
-        print(list(actualValues.items()))
         self.assertEqual(list(actualValues.items()),
                          list(expectedValues.items()))
 

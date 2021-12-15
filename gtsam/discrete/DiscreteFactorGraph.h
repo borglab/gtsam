@@ -137,7 +137,7 @@ public:
   double operator()(const DiscreteValues& values) const;
 
   /// Synonym for operator(), mostly for wrapper
-  double value(const DiscreteValues& values) const { return operator()(values); }
+  double evaluate(const DiscreteValues& values) const { return operator()(values); }
 
   /// print
   void print(
