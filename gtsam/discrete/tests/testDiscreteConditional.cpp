@@ -61,11 +61,10 @@ TEST(DiscreteConditional, constructors_alt_interface) {
   r2 += 2.0, 3.0;
   r3 += 1.0, 4.0;
   table += r1, r2, r3;
-  auto actual1 = boost::make_shared<DiscreteConditional>(X | Y = table);
-  EXPECT(actual1);
+  DiscreteConditional actual1(X, {Y}, table);
   DecisionTreeFactor f1(X & Y, "0.5 0.4 0.2 0.5 0.6 0.8");
   DiscreteConditional expected1(1, f1);
-  EXPECT(assert_equal(expected1, *actual1, 1e-9));
+  EXPECT(assert_equal(expected1, actual1, 1e-9));
 
   DecisionTreeFactor f2(
       X & Y & Z, "0.2 0.5 0.3 0.6 0.4 0.7 0.25 0.55 0.35 0.65 0.45 0.75");

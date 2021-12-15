@@ -79,6 +79,18 @@ namespace gtsam {
     return os;
   }
 
+  Signature::Signature(const DiscreteKey& key, const DiscreteKeys& parents,
+                       const Table& table)
+      : key_(key), parents_(parents) {
+    operator=(table);
+  }
+
+  Signature::Signature(const DiscreteKey& key, const DiscreteKeys& parents,
+                       const std::string& spec)
+      : key_(key), parents_(parents) {
+    operator=(spec);
+  }
+
   Signature::Signature(const DiscreteKey& key) :
     key_(key) {
   }
