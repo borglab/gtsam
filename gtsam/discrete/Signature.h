@@ -45,9 +45,9 @@ namespace gtsam {
    *   T|A = "99/1  95/5"
    *   L|S = "99/1  90/10"
    *   B|S = "70/30  40/60"
-   *   E|T,L = "F F F 1"
+   *   (E|T,L) = "F F F 1"
    *   X|E = "95/5 2/98"
-   *   D|E,B = "9/1 2/8 3/7 1/9"
+   *   (D|E,B) = "9/1 2/8 3/7 1/9"
    */
   class GTSAM_EXPORT Signature {
 
@@ -72,45 +72,66 @@ namespace gtsam {
     boost::optional<Table> table_;
 
   public:
+   /**
+    * Construct from key, parents, and a Table specifying the CPT.
+    *
+    * The first string is parsed to add a key and parents.
+    * 
+    * Example: Signature sig(D, {B,E}, table);
+    */
+   Signature(const DiscreteKey& key, const DiscreteKeys& parents,
+             const Table& table);
 
-    /** Constructor from DiscreteKey */
-    Signature(const DiscreteKey& key);
+   /**
+    * Construct from key, parents, and a string specifying the CPT.
+    *
+    * The first string is parsed to add a key and parents. The second string
+    * parses into a table.
+    * 
+    * Example: Signature sig(D, {B,E}, "9/1 2/8 3/7 1/9");
+    */
+   Signature(const DiscreteKey& key, const DiscreteKeys& parents,
+             const std::string& spec);
 
-    /** the variable key */
-    const DiscreteKey& key() const {
-      return key_;
-    }
+   /**
+    * Construct from a single DiscreteKey.
+    *
+    * The resulting signature has no parents or CPT table. Typical use then
+    * either adds parents with | and , operators below, or assigns a table with
+    * operator=().
+    */
+   Signature(const DiscreteKey& key);
 
-    /** the parent keys */
-    const DiscreteKeys& parents() const {
-      return parents_;
-    }
+   /** the variable key */
+   const DiscreteKey& key() const { return key_; }
 
-    /** All keys, with variable key first */
-    DiscreteKeys discreteKeys() const;
+   /** the parent keys */
+   const DiscreteKeys& parents() const { return parents_; }
 
-    /** All key indices, with variable key first */
-    KeyVector indices() const;
+   /** All keys, with variable key first */
+   DiscreteKeys discreteKeys() const;
 
-    // the CPT as parsed, if successful
-    const boost::optional<Table>& table() const {
-      return table_;
-    }
+   /** All key indices, with variable key first */
+   KeyVector indices() const;
 
-    // the CPT as a vector of doubles, with key's values most rapidly changing
-    std::vector<double> cpt() const;
+   // the CPT as parsed, if successful
+   const boost::optional<Table>& table() const { return table_; }
 
-    /** Add a parent */
-    Signature& operator,(const DiscreteKey& parent);
+   // the CPT as a vector of doubles, with key's values most rapidly changing
+   std::vector<double> cpt() const;
 
-    /** Add the CPT spec */
-    Signature& operator=(const std::string& spec);
+   /** Add a parent */
+   Signature& operator,(const DiscreteKey& parent);
 
-    /** Add the CPT spec directly as a table */
-    Signature& operator=(const Table& table);
+   /** Add the CPT spec */
+   Signature& operator=(const std::string& spec);
 
-    /** provide streaming */
-    GTSAM_EXPORT friend std::ostream& operator <<(std::ostream &os, const Signature &s);
+   /** Add the CPT spec directly as a table */
+   Signature& operator=(const Table& table);
+
+   /** provide streaming */
+   GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os,
+                                                const Signature& s);
   };
 
   /**
