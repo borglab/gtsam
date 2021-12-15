@@ -103,7 +103,7 @@ namespace gtsam {
     /** Add a parent */
     Signature& operator,(const DiscreteKey& parent);
 
-    /** Add the CPT spec - Fails in boost 1.40 */
+    /** Add the CPT spec */
     Signature& operator=(const std::string& spec);
 
     /** Add the CPT spec directly as a table */
@@ -122,7 +122,6 @@ namespace gtsam {
   /**
    * Helper function to create Signature objects
    * example: Signature s(D % "99/1");
-   * Uses string parser, which requires BOOST 1.42 or higher
    */
   GTSAM_EXPORT Signature operator%(const DiscreteKey& key, const std::string& parent);
 
