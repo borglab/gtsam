@@ -39,6 +39,9 @@ namespace gtsam {
     // Forward all constructors.
     using std::vector<DiscreteKey>::vector;
 
+    /// Get around gcc bug, which does not like above.
+    DiscreteKeys() {}
+
     /// Construct from a key
     DiscreteKeys(const DiscreteKey& key) {
       push_back(key);
