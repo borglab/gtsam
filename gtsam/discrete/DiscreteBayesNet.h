@@ -71,12 +71,15 @@ namespace gtsam {
     /// @name Standard Interface
     /// @{
 
+    // Add inherited versions of add.
+    using Base::add;
+
     /** Add a DiscreteCondtional */
-    void add(const Signature& s);
-
-//    /** Add a DiscreteCondtional in front, when listing parents first*/
-//    GTSAM_EXPORT void add_front(const Signature& s);
-
+    template <typename... Args>
+    void add(Args&&... args) {
+      emplace_shared<DiscreteConditional>(std::forward<Args>(args)...);
+    }
+        
     //** evaluate for given DiscreteValues */
     double evaluate(const DiscreteValues & values) const;
 

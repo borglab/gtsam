@@ -35,16 +35,6 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-//  void DiscreteBayesNet::add_front(const Signature& s) {
-//    push_front(boost::make_shared<DiscreteConditional>(s));
-//  }
-
-  /* ************************************************************************* */
-  void DiscreteBayesNet::add(const Signature& s) {
-    push_back(boost::make_shared<DiscreteConditional>(s));
-  }
-
-  /* ************************************************************************* */
   double DiscreteBayesNet::evaluate(const DiscreteValues & values) const {
     // evaluate all conditionals and multiply
     double result = 1.0;
