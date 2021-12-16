@@ -134,6 +134,10 @@ public:
   /** Restrict to given parent values, returns AlgebraicDecisionDiagram */
   ADT choose(const DiscreteValues& parentsValues) const;
 
+  /** Restrict to given parent values, returns DecisionTreeFactor */
+  DecisionTreeFactor::shared_ptr chooseAsFactor(
+      const DiscreteValues& parentsValues) const;
+
   /**
    * solve a conditional
    * @param parentsValues Known values of the parents
