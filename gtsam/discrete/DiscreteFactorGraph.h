@@ -136,9 +136,6 @@ public:
    */
   double operator()(const DiscreteValues& values) const;
 
-  /// Synonym for operator(), mostly for wrapper
-  double evaluate(const DiscreteValues& values) const { return operator()(values); }
-
   /// print
   void print(
       const std::string& s = "DiscreteFactorGraph",
