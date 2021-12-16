@@ -36,9 +36,8 @@ namespace gtsam {
   /// DiscreteKeys is a set of keys that can be assembled using the & operator
   struct DiscreteKeys: public std::vector<DiscreteKey> {
 
-    /// Default constructor
-    DiscreteKeys() {
-    }
+    // Forward all constructors.
+    using std::vector<DiscreteKey>::vector;
 
     /// Construct from a key
     DiscreteKeys(const DiscreteKey& key) {
