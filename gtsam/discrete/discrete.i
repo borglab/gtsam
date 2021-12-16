@@ -1,5 +1,5 @@
 //*************************************************************************
-// basis
+// discrete
 //*************************************************************************
 
 namespace gtsam {
@@ -26,7 +26,7 @@ class DiscreteFactor {
   bool equals(const gtsam::DiscreteFactor& other, double tol = 1e-9) const;
   bool empty() const;
   size_t size() const;
-  double evaluate(const gtsam::DiscreteValues& values) const;
+  double operator()(const gtsam::DiscreteValues& values) const;
 };
 
 #include <gtsam/discrete/DecisionTreeFactor.h>
@@ -38,7 +38,7 @@ virtual class DecisionTreeFactor: gtsam::DiscreteFactor {
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::DecisionTreeFactor& other, double tol = 1e-9) const;
-  double evaluate(const gtsam::DiscreteValues& values) const; // TODO(dellaert): why do I have to repeat???
+  double operator()(const gtsam::DiscreteValues& values) const; // TODO(dellaert): why do I have to repeat???
 };
 
 #include <gtsam/discrete/DiscreteConditional.h>
@@ -53,7 +53,7 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
                       const gtsam::DecisionTreeFactor& marginal,
                       const gtsam::Ordering& orderedKeys);
   size_t size() const; // TODO(dellaert): why do I have to repeat???
-  double evaluate(const gtsam::DiscreteValues& values) const; // TODO(dellaert): why do I have to repeat???
+  double operator()(const gtsam::DiscreteValues& values) const; // TODO(dellaert): why do I have to repeat???
   void print(string s = "Discrete Conditional\n",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
@@ -86,7 +86,7 @@ class DiscreteBayesNet {
                 const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   void add(const gtsam::DiscreteConditional& s);
-  double evaluate(const gtsam::DiscreteValues& values) const;
+  double operator()(const gtsam::DiscreteValues& values) const;
   gtsam::DiscreteValues optimize() const;
   gtsam::DiscreteValues sample() const;
 };
@@ -98,7 +98,7 @@ class DiscreteBayesTree {
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::DiscreteBayesTree& other, double tol = 1e-9) const;
-  double evaluate(const gtsam::DiscreteValues& values) const;
+  double operator()(const gtsam::DiscreteValues& values) const;
 };
 
 #include <gtsam/discrete/DiscreteFactorGraph.h>
@@ -119,7 +119,7 @@ class DiscreteFactorGraph {
   bool equals(const gtsam::DiscreteFactorGraph& fg, double tol = 1e-9) const;
   
   gtsam::DecisionTreeFactor product() const;
-  double evaluate(const gtsam::DiscreteValues& values) const;
+  double operator()(const gtsam::DiscreteValues& values) const;
   gtsam::DiscreteValues optimize() const;
 
   gtsam::DiscreteBayesNet eliminateSequential();
