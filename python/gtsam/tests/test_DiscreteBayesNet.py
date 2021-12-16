@@ -91,6 +91,9 @@ class TestDiscreteBayesNet(GtsamTestCase):
         self.assertEqual(list(actualMPE.items()),
                          list(expectedMPE.items()))
 
+        # Check value for MPE is the same
+        self.assertAlmostEqual(asia(actualMPE), fg(actualMPE))
+
         # add evidence, we were in Asia and we have dyspnea
         fg.add(Asia, "0 1")
         fg.add(Dyspnea, "0 1")
