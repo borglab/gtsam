@@ -92,7 +92,6 @@ TEST(testSignature, all_examples) {
   Signature b(B, {S}, "70/30  40/60");
   Signature e(E, {T, L}, "F F F 1");
   Signature x(X, {E}, "95/5 2/98");
-  Signature d(D, {E, B}, "9/1 2/8 3/7 1/9");
 }
 
 // Make sure we can create all signatures for Asia network with operator magic.
@@ -105,7 +104,17 @@ TEST(testSignature, all_examples_magic) {
   Signature b(B | S = "70/30  40/60");
   Signature e((E | T, L) = "F F F 1");
   Signature x(X | E = "95/5 2/98");
-  Signature d((D | E, B) = "9/1 2/8 3/7 1/9");
+}
+
+// Check example from docs.
+TEST(testSignature, doxygen_example) {
+  Signature::Table table{{0.9, 0.1}, {0.2, 0.8}, {0.3, 0.7}, {0.1, 0.9}};
+  Signature d1(D, {E, B}, table);
+  Signature d2((D | E, B) = "9/1 2/8 3/7 1/9");
+  Signature d3(D, {E, B}, "9/1 2/8 3/7 1/9");
+  EXPECT(*(d1.table()) == table);
+  EXPECT(*(d2.table()) == table);
+  EXPECT(*(d3.table()) == table);
 }
 
 /* ************************************************************************* */
