@@ -30,7 +30,7 @@ namespace gtsam {
    * The format is (Key % string) for nodes with no parents,
    * and (Key | Key, Key = string) for nodes with parents.
    *
-   * The string specifies a conditional probability spec in the 00 01 10 11 order.
+   * The string specifies a conditional probability table in 00 01 10 11 order.
    * For three-valued, it would be 00 01 02 10 11 12 20 21 22, etc...
    *
    * For example, given the following keys
@@ -73,22 +73,29 @@ namespace gtsam {
 
   public:
    /**
-    * Construct from key, parents, and a Table specifying the CPT.
+    * Construct from key, parents, and a Signature::Table specifying the
+    * conditional probability table (CPT) in 00 01 10 11 order. For
+    * three-valued, it would be 00 01 02 10 11 12 20 21 22, etc....
     *
     * The first string is parsed to add a key and parents.
-    * 
-    * Example: Signature sig(D, {B,E}, table);
+    *
+    * Example:
+    *   Signature::Table table{{0.9, 0.1}, {0.2, 0.8}, {0.3, 0.7}, {0.1, 0.9}};
+    *   Signature sig(D, {E, B}, table);
     */
    Signature(const DiscreteKey& key, const DiscreteKeys& parents,
              const Table& table);
 
    /**
-    * Construct from key, parents, and a string specifying the CPT.
+    * Construct from key, parents, and a string specifying the conditional
+    * probability table (CPT) in 00 01 10 11 order. For three-valued, it would
+    * be 00 01 02 10 11 12 20 21 22, etc....
     *
     * The first string is parsed to add a key and parents. The second string
     * parses into a table.
-    * 
-    * Example: Signature sig(D, {B,E}, "9/1 2/8 3/7 1/9");
+    *
+    * Example (same CPT as above):
+    *   Signature sig(D, {B,E}, "9/1 2/8 3/7 1/9");
     */
    Signature(const DiscreteKey& key, const DiscreteKeys& parents,
              const std::string& spec);

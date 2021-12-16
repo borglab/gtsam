@@ -83,6 +83,11 @@ namespace gtsam {
     //** evaluate for given DiscreteValues */
     double evaluate(const DiscreteValues & values) const;
 
+    //** (Preferred) sugar for the above for given DiscreteValues */
+    double operator()(const DiscreteValues & values) const {
+      return evaluate(values);
+    }
+
     /**
     * Solve the DiscreteBayesNet by back-substitution
     */
