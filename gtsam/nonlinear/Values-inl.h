@@ -391,4 +391,10 @@ namespace gtsam {
     update(j, static_cast<const Value&>(GenericValue<ValueType>(val)));
   }
 
+  // insert_or_assign with templated value
+  template <typename ValueType>
+  void Values::insert_or_assign(Key j, const ValueType& val) {
+    insert_or_assign(j, static_cast<const Value&>(GenericValue<ValueType>(val)));
+  }
+
 }

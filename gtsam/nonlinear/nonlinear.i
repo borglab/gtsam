@@ -275,6 +275,7 @@ class Values {
 
   void insert(const gtsam::Values& values);
   void update(const gtsam::Values& values);
+  void insert_or_assign(const gtsam::Values& values);
   void erase(size_t j);
   void swap(gtsam::Values& values);
 
@@ -350,6 +351,32 @@ class Values {
   void update(size_t j, Vector vector);
   void update(size_t j, Matrix matrix);
   void update(size_t j, double c);
+
+  void insert_or_assign(size_t j, const gtsam::Point2& point2);
+  void insert_or_assign(size_t j, const gtsam::Point3& point3);
+  void insert_or_assign(size_t j, const gtsam::Rot2& rot2);
+  void insert_or_assign(size_t j, const gtsam::Pose2& pose2);
+  void insert_or_assign(size_t j, const gtsam::SO3& R);
+  void insert_or_assign(size_t j, const gtsam::SO4& Q);
+  void insert_or_assign(size_t j, const gtsam::SOn& P);
+  void insert_or_assign(size_t j, const gtsam::Rot3& rot3);
+  void insert_or_assign(size_t j, const gtsam::Pose3& pose3);
+  void insert_or_assign(size_t j, const gtsam::Unit3& unit3);
+  void insert_or_assign(size_t j, const gtsam::Cal3_S2& cal3_s2);
+  void insert_or_assign(size_t j, const gtsam::Cal3DS2& cal3ds2);
+  void insert_or_assign(size_t j, const gtsam::Cal3Bundler& cal3bundler);
+  void insert_or_assign(size_t j, const gtsam::Cal3Fisheye& cal3fisheye);
+  void insert_or_assign(size_t j, const gtsam::Cal3Unified& cal3unified);
+  void insert_or_assign(size_t j, const gtsam::EssentialMatrix& essential_matrix);
+  void insert_or_assign(size_t j, const gtsam::PinholeCamera<gtsam::Cal3_S2>& camera);
+  void insert_or_assign(size_t j, const gtsam::PinholeCamera<gtsam::Cal3Bundler>& camera);
+  void insert_or_assign(size_t j, const gtsam::PinholeCamera<gtsam::Cal3Fisheye>& camera);
+  void insert_or_assign(size_t j, const gtsam::PinholeCamera<gtsam::Cal3Unified>& camera);
+  void insert_or_assign(size_t j, const gtsam::imuBias::ConstantBias& constant_bias);
+  void insert_or_assign(size_t j, const gtsam::NavState& nav_state);
+  void insert_or_assign(size_t j, Vector vector);
+  void insert_or_assign(size_t j, Matrix matrix);
+  void insert_or_assign(size_t j, double c);
 
   template <T = {gtsam::Point2,
                  gtsam::Point3,
