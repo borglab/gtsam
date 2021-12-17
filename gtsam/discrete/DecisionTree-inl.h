@@ -248,8 +248,9 @@ namespace gtsam {
     void dot(std::ostream& os, bool showZero) const override {
       os << "\"" << this->id() << "\" [shape=circle, label=\"" << label_
           << "\"]\n";
-      for (size_t i = 0; i < branches_.size(); i++) {
-        NodePtr branch = branches_[i];
+      size_t B = branches_.size();
+      for (size_t i = 0; i < B; i++) {
+        const NodePtr& branch = branches_[i];
 
         // Check if zero
         if (!showZero) {
@@ -258,8 +259,10 @@ namespace gtsam {
         }
 
         os << "\"" << this->id() << "\" -> \"" << branch->id() << "\"";
-        if (i == 0) os << " [style=dashed]";
-        if (i > 1) os << " [style=bold]";
+        if (B == 2) {
+          if (i == 0) os << " [style=dashed]";
+          if (i > 1) os << " [style=bold]";
+        }
         os << std::endl;
         branch->dot(os, showZero);
       }
@@ -671,7 +674,14 @@ namespace gtsam {
     int result = system(
         ("dot -Tpdf " + name + ".dot -o " + name + ".pdf >& /dev/null").c_str());
     if (result==-1) throw std::runtime_error("DecisionTree::dot system call failed");
-}
+  }
+
+  template<typename L, typename Y>
+  std::string DecisionTree<L, Y>::dot(bool showZero) const {
+    std::stringstream ss;
+    dot(ss, showZero);
+    return ss.str();
+  }
 
 /*********************************************************************************/
 
