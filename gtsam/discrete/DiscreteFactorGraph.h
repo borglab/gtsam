@@ -130,8 +130,11 @@ public:
   /** return product of all factors as a single factor */
   DecisionTreeFactor product() const;
 
-  /** Evaluates the factor graph given values, returns the joint probability of the factor graph given specific instantiation of values*/
-  double operator()(const DiscreteValues & values) const;
+  /** 
+   * Evaluates the factor graph given values, returns the joint probability of
+   * the factor graph given specific instantiation of values
+   */
+  double operator()(const DiscreteValues& values) const;
 
   /// print
   void print(
