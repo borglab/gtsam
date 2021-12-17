@@ -163,6 +163,14 @@ namespace gtsam {
 //    }
 
     /// @}
+    /// @name Wrapper support
+    /// @{
+    
+    /// Render as markdown table.
+    std::string _repr_markdown_() const;
+
+    /// @}
+
 };
 // DecisionTreeFactor
 
