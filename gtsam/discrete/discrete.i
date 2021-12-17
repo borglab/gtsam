@@ -39,6 +39,7 @@ virtual class DecisionTreeFactor: gtsam::DiscreteFactor {
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::DecisionTreeFactor& other, double tol = 1e-9) const;
   double operator()(const gtsam::DiscreteValues& values) const; // TODO(dellaert): why do I have to repeat???
+  string dot(bool showZero = false) const;
 };
 
 #include <gtsam/discrete/DiscreteConditional.h>
@@ -67,6 +68,7 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
   size_t sample(const gtsam::DiscreteValues& parentsValues) const;
   void solveInPlace(gtsam::DiscreteValues@ parentsValues) const;
   void sampleInPlace(gtsam::DiscreteValues@ parentsValues) const;
+  string dot(bool showZero = false) const;
 };
 
 #include <gtsam/discrete/DiscreteBayesNet.h>
