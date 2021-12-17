@@ -57,6 +57,33 @@ public:
   /** Construct from signature */
   DiscreteConditional(const Signature& signature);
 
+  /**
+   * Construct from key, parents, and a Signature::Table specifying the
+   * conditional probability table (CPT) in 00 01 10 11 order. For
+   * three-valued, it would be 00 01 02 10 11 12 20 21 22, etc....
+   *
+   * The first string is parsed to add a key and parents.
+   *
+   * Example: DiscreteConditional P(D, {B,E}, table);
+   */
+  DiscreteConditional(const DiscreteKey& key, const DiscreteKeys& parents,
+                      const Signature::Table& table)
+      : DiscreteConditional(Signature(key, parents, table)) {}
+
+  /**
+   * Construct from key, parents, and a string specifying the conditional
+   * probability table (CPT) in 00 01 10 11 order. For three-valued, it would
+   * be 00 01 02 10 11 12 20 21 22, etc....
+   *
+   * The first string is parsed to add a key and parents. The second string
+   * parses into a table.
+   *
+   * Example: DiscreteConditional P(D, {B,E}, "9/1 2/8 3/7 1/9");
+   */
+  DiscreteConditional(const DiscreteKey& key, const DiscreteKeys& parents,
+                      const std::string& spec)
+      : DiscreteConditional(Signature(key, parents, spec)) {}
+
   /** construct P(X|Y)=P(X,Y)/P(Y) from P(X,Y) and P(Y) */
   DiscreteConditional(const DecisionTreeFactor& joint,
       const DecisionTreeFactor& marginal);
@@ -110,6 +137,10 @@ public:
 
   /** Restrict to given parent values, returns AlgebraicDecisionDiagram */
   ADT choose(const DiscreteValues& parentsValues) const;
+
+  /** Restrict to given parent values, returns DecisionTreeFactor */
+  DecisionTreeFactor::shared_ptr chooseAsFactor(
+      const DiscreteValues& parentsValues) const;
 
   /**
    * solve a conditional

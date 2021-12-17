@@ -97,23 +97,39 @@ bool DiscreteConditional::equals(const DiscreteFactor& other,
 }
 
 /* ******************************************************************************** */
-Potentials::ADT DiscreteConditional::choose(const DiscreteValues& parentsValues) const {
+Potentials::ADT DiscreteConditional::choose(
+    const DiscreteValues& parentsValues) const {
+  // Get the big decision tree with all the levels, and then go down the
+  // branches based on the value of the parent variables.
   ADT pFS(*this);
-  Key j; size_t value;
-  for(Key key: parents()) {
+  size_t value;
+  for (Key j : parents()) {
     try {
-      j = (key);
       value = parentsValues.at(j);
-      pFS = pFS.choose(j, value);
+      pFS = pFS.choose(j, value);  // ADT keeps getting smaller.
     } catch (exception&) {
       cout << "Key: " << j << "  Value: " << value << endl;
       parentsValues.print("parentsValues: ");
-  //    pFS.print("pFS: ");
       throw runtime_error("DiscreteConditional::choose: parent value missing");
     };
   }
-
   return pFS;
+}
+
+/* ******************************************************************************** */
+DecisionTreeFactor::shared_ptr DiscreteConditional::chooseAsFactor(
+    const DiscreteValues& parentsValues) const {
+  ADT pFS = choose(parentsValues);
+
+  // Convert ADT to factor.
+  if (nrFrontals() != 1) {
+    throw std::runtime_error("Expected only one frontal variable in choose.");
+  }
+  DiscreteKeys keys;
+  const Key frontalKey = keys_[0];
+  size_t frontalCardinality = this->cardinality(frontalKey);
+  keys.push_back(DiscreteKey(frontalKey, frontalCardinality));
+  return boost::make_shared<DecisionTreeFactor>(keys, pFS);
 }
 
 /* ******************************************************************************** */
