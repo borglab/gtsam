@@ -131,9 +131,6 @@ class Ordering {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -195,9 +192,6 @@ class NonlinearFactorGraph {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 
   void saveGraph(const string& s) const;
 };
@@ -289,9 +283,6 @@ class Values {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 
   // New in 4.0, we have to specialize every insert/update/at to generate
   // wrappers Instead of the old: void insert(size_t j, const gtsam::Value&
@@ -851,9 +842,6 @@ virtual class PriorFactor : gtsam::NoiseModelFactor {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 #include <gtsam/nonlinear/NonlinearEquality.h>
