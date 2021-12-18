@@ -34,9 +34,6 @@ virtual class Gaussian : gtsam::noiseModel::Base {
 
   // enabling serialization functionality
   void serializable() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 virtual class Diagonal : gtsam::noiseModel::Gaussian {
@@ -52,9 +49,6 @@ virtual class Diagonal : gtsam::noiseModel::Gaussian {
 
   // enabling serialization functionality
   void serializable() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 virtual class Constrained : gtsam::noiseModel::Diagonal {
@@ -72,9 +66,6 @@ virtual class Constrained : gtsam::noiseModel::Diagonal {
 
     // enabling serialization functionality
     void serializable() const;
-
-    // enable pickling in python
-    void pickle() const;
 };
 
 virtual class Isotropic : gtsam::noiseModel::Diagonal {
@@ -87,9 +78,6 @@ virtual class Isotropic : gtsam::noiseModel::Diagonal {
 
   // enabling serialization functionality
   void serializable() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 virtual class Unit : gtsam::noiseModel::Isotropic {
@@ -97,9 +85,6 @@ virtual class Unit : gtsam::noiseModel::Isotropic {
 
   // enabling serialization functionality
   void serializable() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 namespace mEstimator {
@@ -270,9 +255,6 @@ class VectorValues {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 #include <gtsam/linear/GaussianFactor.h>
@@ -344,9 +326,6 @@ virtual class JacobianFactor : gtsam::GaussianFactor {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 #include <gtsam/linear/HessianFactor.h>
@@ -379,9 +358,6 @@ virtual class HessianFactor : gtsam::GaussianFactor {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 #include <gtsam/linear/GaussianFactorGraph.h>
@@ -463,9 +439,6 @@ class GaussianFactorGraph {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 #include <gtsam/linear/GaussianConditional.h>

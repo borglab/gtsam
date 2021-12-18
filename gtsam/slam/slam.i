@@ -21,9 +21,6 @@ virtual class BetweenFactor : gtsam::NoiseModelFactor {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 #include <gtsam/slam/ProjectionFactor.h>
@@ -172,9 +169,6 @@ virtual class PoseTranslationPrior : gtsam::NoiseModelFactor {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 typedef gtsam::PoseTranslationPrior<gtsam::Pose2> PoseTranslationPrior2D;
@@ -234,9 +228,6 @@ class SfmTrack {
   // enabling serialization functionality
   void serialize() const;
 
-  // enable pickling in python
-  void pickle() const;
-
   // enabling function to compare objects
   bool equals(const gtsam::SfmTrack& expected, double tol) const;
 };
@@ -252,9 +243,6 @@ class SfmData {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 
   // enabling function to compare objects
   bool equals(const gtsam::SfmData& expected, double tol) const;

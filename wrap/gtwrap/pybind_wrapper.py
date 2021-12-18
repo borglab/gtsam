@@ -92,9 +92,20 @@ class PybindWrapper:
                      prefix,
                      suffix,
                      method_suffix=""):
+        """
+        Wrap the `method` for the class specified by `cpp_class`.
+
+        Args:
+            method: The method to wrap.
+            cpp_class: The C++ name of the class to which the method belongs.
+            prefix: Prefix to add to the wrapped method when writing to the cpp file.
+            suffix: Suffix to add to the wrapped method when writing to the cpp file.
+            method_suffix: A string to append to the wrapped method name.
+        """
         py_method = method.name + method_suffix
         cpp_method = method.to_cpp()
 
+        # Special handling for the serialize/serializable method
         if cpp_method in ["serialize", "serializable"]:
             if not cpp_class in self._serializing_classes:
                 self._serializing_classes.append(cpp_class)
@@ -104,16 +115,12 @@ class PybindWrapper:
                      '.def("deserialize", []({class_inst} self, string serialized)' \
                      '{{ gtsam::deserialize(serialized, *self); }}, py::arg("serialized"))' \
                        .format(class_inst=cpp_class + '*')
-            return serialize_method + deserialize_method
 
-        if cpp_method == "pickle":
-            if not cpp_class in self._serializing_classes:
-                raise ValueError(
-                    "Cannot pickle a class which is not serializable")
+            # Since this class supports serialization, we also add the pickle method.
             pickle_method = self.method_indent + \
                 ".def(py::pickle({indent}    [](const {cpp_class} &a){{ /* __getstate__: Returns a string that encodes the state of the object */ return py::make_tuple(gtsam::serialize(a)); }},{indent}    [](py::tuple t){{ /* __setstate__ */ {cpp_class} obj; gtsam::deserialize(t[0].cast<std::string>(), obj); return obj; }}))"
-            return pickle_method.format(cpp_class=cpp_class,
-                                        indent=self.method_indent)
+            return serialize_method + deserialize_method + \
+                pickle_method.format(cpp_class=cpp_class, indent=self.method_indent)
 
         # Add underscore to disambiguate if the method name matches a python keyword
         if py_method in self.python_keywords:
