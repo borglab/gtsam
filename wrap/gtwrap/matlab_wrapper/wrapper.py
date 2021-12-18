@@ -5,16 +5,16 @@ that Matlab's MEX compiler can use.
 
 # pylint: disable=too-many-lines, no-self-use, too-many-arguments, too-many-branches, too-many-statements
 
+import copy
 import os
 import os.path as osp
 import textwrap
 from functools import partial, reduce
 from typing import Dict, Iterable, List, Union
-import copy
 
 import gtwrap.interface_parser as parser
-from gtwrap.interface_parser.function import ArgumentList
 import gtwrap.template_instantiator as instantiator
+from gtwrap.interface_parser.function import ArgumentList
 from gtwrap.matlab_wrapper.mixins import CheckMixin, FormatMixin
 from gtwrap.matlab_wrapper.templates import WrapperTemplate
 
@@ -1269,9 +1269,9 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                     Collector_{class_name}::iterator item;
                     item = collector_{class_name}.find(self);
                     if(item != collector_{class_name}.end()) {{
-                      delete self;
                       collector_{class_name}.erase(item);
                     }}
+                    delete self;
                 ''').format(class_name_sep=class_name_separated,
                             class_name=class_name),
                                         prefix='  ')
