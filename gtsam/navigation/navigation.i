@@ -44,9 +44,6 @@ class ConstantBias {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 }///\namespace imuBias
@@ -73,9 +70,6 @@ class NavState {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 #include <gtsam/navigation/PreintegratedRotation.h>
@@ -121,9 +115,6 @@ virtual class PreintegrationParams : gtsam::PreintegratedRotationParams {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 #include <gtsam/navigation/ImuFactor.h>
@@ -156,9 +147,6 @@ class PreintegratedImuMeasurements {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 virtual class ImuFactor: gtsam::NonlinearFactor {
