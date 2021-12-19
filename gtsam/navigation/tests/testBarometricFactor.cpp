@@ -84,30 +84,44 @@ TEST( BarometricFactor, Constructor ) {
 // *************************************************************************
 
 //***************************************************************************
-TEST(GPSData, init) {
+TEST(BarometricFactor, nonZero) {
+  using namespace example;
 
-  /* GPS Reading 1 will be ENU origin
-  double t1 = 84831;
-  Point3 NED1(0, 0, 0);
-  LocalCartesian enu(35.4393283333333, -119.062986666667, 275.54, kWGS84);
+  //meters to barometric.
 
-  // GPS Readin 2
-  double t2 = 84831.5;
-  double E, N, U;
-  enu.Forward(35.4394633333333, -119.063146666667, 276.52, E, N, U);
-  Point3 NED2(N, E, -U);
+  double baroMeasurement = metersToBaro(10.);
 
-  // Estimate initial state
-  Pose3 T;
-  Vector3 nV;
-  boost::tie(T, nV) = GPSFactor::EstimateState(t1, NED1, t2, NED2, 84831.0796);
+  // Factor
+  Key key(1);
+  Key key2(2);
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(1, 0.25);
+  BarometricFactor factor(key, key2, baroMeasurement, model);
 
-  // Check values values
-  EXPECT(assert_equal((Vector )Vector3(29.9575, -29.0564, -1.95993), nV, 1e-4));
-  EXPECT( assert_equal(Rot3::Ypr(-0.770131, 0.046928, 0), T.rotation(), 1e-5));
-  Point3 expectedT(2.38461, -2.31289, -0.156011);
-  EXPECT(assert_equal(expectedT, T.translation(), 1e-5));
-  */
+  Pose3 T(Rot3::RzRyRx(0.5, 1., 1.), Point3(20., 30., 1.));
+  double baroBias=5.;
+
+  // Calculate numerical derivatives
+  Matrix expectedH = numericalDerivative21<Vector,Pose3, double>(
+      std::bind(&BarometricFactor::evaluateError, &factor, std::placeholders::_1,
+          std::placeholders::_2, boost::none, boost::none), T, baroBias);
+
+  Matrix expectedH2 = numericalDerivative22<Vector,Pose3, double>(
+      std::bind(&BarometricFactor::evaluateError, &factor, std::placeholders::_1,
+          std::placeholders::_2, boost::none, boost::none), T, baroBias);
+
+  // Use the factor to calculate the derivative and the error
+  Matrix actualH, actualH2;
+  Vector error = factor.evaluateError(T, baroBias,  actualH, actualH2);
+  Vector actual = (Vector(1) <<-4.0).finished();
+
+  // Verify we get the expected error
+  EXPECT(assert_equal(expectedH, actualH, 1e-8));
+  EXPECT(assert_equal(expectedH2, actualH2, 1e-8));
+  EXPECT(assert_equal(error, actual , 1e-8));
+
+
+
+
 }
 
 // *************************************************************************
