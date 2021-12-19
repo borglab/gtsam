@@ -17,9 +17,9 @@
  **/
 #pragma once
 
-#include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/navigation/NavState.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/navigation/NavState.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {
 
@@ -31,83 +31,79 @@ namespace gtsam {
  * https://www.grc.nasa.gov/www/k-12/airplane/atmosmet.html
  * @addtogroup Navigation
  */
-class GTSAM_EXPORT BarometricFactor: public NoiseModelFactor2<Pose3, double> {
+class GTSAM_EXPORT BarometricFactor : public NoiseModelFactor2<Pose3, double> {
+   private:
+    typedef NoiseModelFactor2<Pose3, double> Base;
 
-private:
+    double nT_;  ///< Height Measurement based on a standard atmosphere
 
-  typedef NoiseModelFactor2<Pose3, double> Base;
+   public:
+    /// shorthand for a smart pointer to a factor
+    typedef boost::shared_ptr<BarometricFactor> shared_ptr;
 
-  double nT_; ///< Height Measurement based on a standard atmosphere
+    /// Typedef to this class
+    typedef BarometricFactor This;
 
-public:
+    /** default constructor - only use for serialization */
+    BarometricFactor() : nT_(0) {}
 
-  /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<BarometricFactor> shared_ptr;
+    ~BarometricFactor() override {}
 
-  /// Typedef to this class
-  typedef BarometricFactor This;
+    /**
+     * @brief Constructor from a measurement of pressure in KPa.
+     * @param key of the Pose3 variable that will be constrained
+     * @param key of the barometric bias that will be constrained
+     * @param baroIn measurement in KPa
+     * @param model Gaussian noise model 1 dimension
+     */
+    BarometricFactor(Key key, Key baroKey, const double& baroIn,
+                     const SharedNoiseModel& model)
+        : Base(model, key, baroKey), nT_(heightOut(baroIn)) {}
 
-  /** default constructor - only use for serialization */
-  BarometricFactor(): nT_(0) {}
+    /// @return a deep copy of this factor
+    gtsam::NonlinearFactor::shared_ptr clone() const override {
+        return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+            gtsam::NonlinearFactor::shared_ptr(new This(*this)));
+    }
 
-  ~BarometricFactor() override {}
+    /// print
+    void print(
+        const std::string& s = "",
+        const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
 
-  /**
-   * @brief Constructor from a measurement of pressure in KPa.
-   * @param key of the Pose3 variable that will be constrained
-   * @param key of the barometric bias that will be constrained
-   * @param baroIn measurement in KPa
-   * @param model Gaussian noise model 1 dimension
-   */
-  BarometricFactor(Key key, Key baroKey, const double& baroIn, const SharedNoiseModel& model) :
-      Base(model, key, baroKey), nT_(heightOut(baroIn)) {
-  }
+    /// equals
+    bool equals(const NonlinearFactor& expected,
+                double tol = 1e-9) const override;
 
-  /// @return a deep copy of this factor
-  gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
-        gtsam::NonlinearFactor::shared_ptr(new This(*this)));
-  }
+    /// vector of errors
+    Vector evaluateError(
+        const Pose3& p, const double& b,
+        boost::optional<Matrix&> H = boost::none,
+        boost::optional<Matrix&> H2 = boost::none) const override;
 
-  /// print
-  void print(const std::string& s = "", const KeyFormatter& keyFormatter =
-                                            DefaultKeyFormatter) const override;
+    inline const double& measurementIn() const { return nT_; }
 
-  /// equals
-  bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
+    inline double heightOut(double n) const {
+        // From https://www.grc.nasa.gov/www/k-12/airplane/atmosmet.html
+        return (std::pow(n / 101.29, 1. / 5.256) * 288.08 - 273.1 - 15.04) /
+               -0.00649;
+    };
 
-  /// vector of errors
-  Vector evaluateError(const Pose3& p, const double& b,
-      boost::optional<Matrix&> H = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const override;
+    inline double baroOut(const double& meters) {
+        double temp = 15.04 - 0.00649 * meters;
+        return 101.29 * std::pow(((temp + 273.1) / 288.08), 5.256);
+    };
 
-  inline const double & measurementIn() const {
-    return nT_;
-  }
-
-  inline double  heightOut(double n) const {
-    //From https://www.grc.nasa.gov/www/k-12/airplane/atmosmet.html
-    return  (std::pow(n/101.29, 1./5.256)*288.08 - 273.1 - 15.04)/-0.00649;
-
-  };
-
-  inline double   baroOut(const double& meters)
-  {
-      double temp = 15.04 - 0.00649*meters;
-      return 101.29*std::pow(((temp+273.1)/288.08), 5.256);
-  };
-
-private:
-
-  /// Serialization function
-  friend class boost::serialization::access;
-  template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar
-        & boost::serialization::make_nvp("NoiseModelFactor1",
+   private:
+    /// Serialization function
+    friend class boost::serialization::access;
+    template <class ARCHIVE>
+    void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+        ar& boost::serialization::make_nvp(
+            "NoiseModelFactor1",
             boost::serialization::base_object<Base>(*this));
-    ar & BOOST_SERIALIZATION_NVP(nT_);
-  }
+        ar& BOOST_SERIALIZATION_NVP(nT_);
+    }
 };
 
-} /// namespace gtsam
+}  // namespace gtsam
