@@ -91,6 +91,8 @@ class DiscreteBayesNet {
   double operator()(const gtsam::DiscreteValues& values) const;
   gtsam::DiscreteValues optimize() const;
   gtsam::DiscreteValues sample() const;
+  string dot(const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
 };
 
 #include <gtsam/discrete/DiscreteBayesTree.h>
