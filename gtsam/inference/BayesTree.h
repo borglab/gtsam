@@ -182,6 +182,9 @@ namespace gtsam {
      */
     sharedBayesNet jointBayesNet(Key j1, Key j2, const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
 
+   /// @name Graph Display
+   /// @{
+
    /// Output to graphviz format, stream version.
    void dot(std::ostream& os, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 

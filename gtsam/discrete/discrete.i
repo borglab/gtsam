@@ -38,7 +38,6 @@ virtual class DecisionTreeFactor: gtsam::DiscreteFactor {
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::DecisionTreeFactor& other, double tol = 1e-9) const;
-  double operator()(const gtsam::DiscreteValues& values) const; // TODO(dellaert): why do I have to repeat???
   string dot(bool showZero = false) const;
 };
 
@@ -53,8 +52,6 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
   DiscreteConditional(const gtsam::DecisionTreeFactor& joint,
                       const gtsam::DecisionTreeFactor& marginal,
                       const gtsam::Ordering& orderedKeys);
-  size_t size() const; // TODO(dellaert): why do I have to repeat???
-  double operator()(const gtsam::DiscreteValues& values) const; // TODO(dellaert): why do I have to repeat???
   void print(string s = "Discrete Conditional\n",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
@@ -68,7 +65,6 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
   size_t sample(const gtsam::DiscreteValues& parentsValues) const;
   void solveInPlace(gtsam::DiscreteValues@ parentsValues) const;
   void sampleInPlace(gtsam::DiscreteValues@ parentsValues) const;
-  string dot(bool showZero = false) const;
 };
 
 #include <gtsam/discrete/DiscreteBayesNet.h>
@@ -84,6 +80,8 @@ class DiscreteBayesNet {
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::DiscreteBayesNet& other, double tol = 1e-9) const;
+  string dot(const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
   void saveGraph(string s,
                 const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
@@ -91,8 +89,6 @@ class DiscreteBayesNet {
   double operator()(const gtsam::DiscreteValues& values) const;
   gtsam::DiscreteValues optimize() const;
   gtsam::DiscreteValues sample() const;
-  string dot(const gtsam::KeyFormatter& keyFormatter =
-                 gtsam::DefaultKeyFormatter) const;
 };
 
 #include <gtsam/discrete/DiscreteBayesTree.h>
@@ -102,6 +98,11 @@ class DiscreteBayesTree {
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::DiscreteBayesTree& other, double tol = 1e-9) const;
+  string dot(const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
+  void saveGraph(string s,
+                const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
   double operator()(const gtsam::DiscreteValues& values) const;
 };
 

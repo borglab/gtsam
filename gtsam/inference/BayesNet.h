@@ -64,7 +64,7 @@ namespace gtsam {
 
    /// @}
 
-   /// @name Standard Interface
+   /// @name Graph Display
    /// @{
 
    /// Output to graphviz format, stream version.
