@@ -68,8 +68,7 @@ namespace gtsam {
    /// @{
 
    /// Output to graphviz format, stream version.
-   virtual void dot(std::ostream& os, const KeyFormatter& keyFormatter =
-                                          DefaultKeyFormatter) const;
+   void dot(std::ostream& os, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
    /// Output to graphviz format string.
    std::string dot(
