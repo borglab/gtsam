@@ -150,7 +150,7 @@ TEST(DiscreteBayesNet, Sugar) {
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(DiscreteBayesNet, Dot) {
+TEST(DiscreteBayesNet, Dot) {
   DiscreteKey Asia(0, 2), Smoking(4, 2), Tuberculosis(3, 2), LungCancer(6, 2),
       Either(5, 2);
 
