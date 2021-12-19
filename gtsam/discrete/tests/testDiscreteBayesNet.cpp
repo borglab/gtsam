@@ -163,7 +163,13 @@ TEST(DiscreteBayesNet, Dot) {
   fragment.add((Either | Tuberculosis, LungCancer) = "F T T T");
 
   string actual = fragment.dot();
-  EXPECT(actual == "digraph G{\n3->5\n6->5\n4->6\n0->3\n}");
+  EXPECT(actual ==
+         "digraph G{\n"
+         "0->3\n"
+         "4->6\n"
+         "3->5\n"
+         "6->5\n"
+         "}");
 }
 
 /* ************************************************************************* */

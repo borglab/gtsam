@@ -39,8 +39,8 @@ void BayesNet<CONDITIONAL>::dot(std::ostream& os,
                                 const KeyFormatter& keyFormatter) const {
   os << "digraph G{\n";
 
-  for (auto conditional : boost::adaptors::reverse(*this)) {
-    typename CONDITIONAL::Frontals frontals = conditional->frontals();
+  for (auto conditional : *this) {
+    auto frontals = conditional->frontals();
     const Key me = frontals.front();
     auto parents = conditional->parents();
     for (const Key& p : parents)
