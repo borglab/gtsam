@@ -43,7 +43,7 @@ Vector BarometricFactor::evaluateError(const Pose3& p,
     boost::optional<Matrix&> H2) const {
 
   if (H2) (*H2) = (Matrix(1,1) << 1.0).finished();
-  if(H)(*H) = (Matrix(1, 6)<< 0., 0., 0.,0., 0., 1.).finished();
+  if(H)(*H) = (Matrix(1, 6) << 0., 0., 0., 0., 0., 1.).finished();
   return (Vector(1) <<(p.translation().z()+bias - nT_)).finished();
 }
 
