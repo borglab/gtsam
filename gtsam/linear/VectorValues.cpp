@@ -45,7 +45,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   VectorValues::VectorValues(const Vector& x, const Dims& dims) {
-    typedef pair<Key, size_t> Pair;
+    using Pair = pair<const Key, size_t>;
     size_t j = 0;
     for (const Pair& v : dims) {
       Key key;

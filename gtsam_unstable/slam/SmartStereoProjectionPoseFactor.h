@@ -120,7 +120,7 @@ public:
    * @param keyFormatter optional formatter useful for printing Symbols
    */
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) const {
+      DefaultKeyFormatter) const override {
     std::cout << s << "SmartStereoProjectionPoseFactor, z = \n ";
     for(const boost::shared_ptr<Cal3_S2Stereo>& K: K_all_)
     K->print("calibration = ");
@@ -128,7 +128,7 @@ public:
   }
 
   /// equals
-  virtual bool equals(const NonlinearFactor& p, double tol = 1e-9) const {
+  bool equals(const NonlinearFactor& p, double tol = 1e-9) const override {
     const SmartStereoProjectionPoseFactor *e =
         dynamic_cast<const SmartStereoProjectionPoseFactor*>(&p);
 
@@ -138,7 +138,7 @@ public:
   /**
    * error calculates the error of the factor.
    */
-  virtual double error(const Values& values) const {
+  double error(const Values& values) const override {
     if (this->active(values)) {
       return this->totalReprojectionError(cameras(values));
     } else { // else of active flag
@@ -157,7 +157,7 @@ public:
    * to keys involved in this factor
    * @return vector of Values
    */
-   Base::Cameras cameras(const Values& values) const {
+   Base::Cameras cameras(const Values& values) const override {
     Base::Cameras cameras;
     size_t i=0;
     for(const Key& k: this->keys_) {

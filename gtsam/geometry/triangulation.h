@@ -123,27 +123,6 @@ std::pair<NonlinearFactorGraph, Values> triangulationGraph(
   return std::make_pair(graph, values);
 }
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-/// DEPRECATED: PinholeCamera specific version
-template<class CALIBRATION>
-Point3 triangulateNonlinear(
-    const CameraSet<PinholeCamera<CALIBRATION> >& cameras,
-    const Point2Vector& measurements, const Point3& initialEstimate) {
-  return triangulateNonlinear<PinholeCamera<CALIBRATION> > //
-  (cameras, measurements, initialEstimate);
-}
-
-/// DEPRECATED: PinholeCamera specific version
-template<class CALIBRATION>
-std::pair<NonlinearFactorGraph, Values> triangulationGraph(
-    const CameraSet<PinholeCamera<CALIBRATION> >& cameras,
-    const Point2Vector& measurements, Key landmarkKey,
-    const Point3& initialEstimate) {
-  return triangulationGraph<PinholeCamera<CALIBRATION> > //
-  (cameras, measurements, landmarkKey, initialEstimate);
-}
-#endif
-
 /**
  * Optimize for triangulation
  * @param graph nonlinear factors for projection

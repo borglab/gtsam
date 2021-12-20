@@ -80,7 +80,7 @@ public:
 
 
   void print() const { Base::print(); }
-  virtual void print(std::ostream &os) const;
+  void print(std::ostream &os) const override;
 
   static std::string blasTranslator(const BLASKernel k) ;
   static BLASKernel blasTranslator(const std::string &s) ;

@@ -41,9 +41,9 @@ public:
                 boost::optional<Pose3> body_P_sensor = boost::none,
                 size_t expectedNumberCameras = 10)
       : Base(sharedNoiseModel, body_P_sensor, expectedNumberCameras) {}
-  virtual double error(const Values& values) const { return 0.0; }
-  virtual boost::shared_ptr<GaussianFactor> linearize(
-      const Values& values) const {
+  double error(const Values& values) const override { return 0.0; }
+  boost::shared_ptr<GaussianFactor> linearize(
+      const Values& values) const override {
     return boost::shared_ptr<GaussianFactor>(new JacobianFactor());
   }
 };
@@ -105,11 +105,11 @@ public:
   StereoFactor() {}
   StereoFactor(const SharedNoiseModel& sharedNoiseModel): Base(sharedNoiseModel) {
   }
-  virtual double error(const Values& values) const {
+  double error(const Values& values) const override {
     return 0.0;
   }
-  virtual boost::shared_ptr<GaussianFactor> linearize(
-      const Values& values) const {
+  boost::shared_ptr<GaussianFactor> linearize(
+      const Values& values) const override {
     return boost::shared_ptr<GaussianFactor>(new JacobianFactor());
   }
 };

@@ -376,17 +376,6 @@ Vector Constrained::whiten(const Vector& v) const {
   return c;
 }
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-/* ************************************************************************* */
-double Constrained::error(const Vector& v) const {
-  Vector w = Diagonal::whiten(v); // get noisemodel for constrained elements
-  for (size_t i=0; i<dim_; ++i)  // add mu weights on constrained variables
-    if (constrained(i)) // whiten makes constrained variables zero
-      w[i] = v[i] * sqrt(mu_[i]); // TODO: may want to store sqrt rather than rebuild
-  return 0.5 * w.dot(w);
-}
-#endif
-
 /* ************************************************************************* */
 double Constrained::squaredMahalanobisDistance(const Vector& v) const {
   Vector w = Diagonal::whiten(v); // get noisemodel for constrained elements

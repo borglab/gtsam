@@ -84,14 +84,6 @@ class GTSAM_EXPORT Sampler {
 
   /// @}
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-  /// @name Deprecated
-  /// @{
-  explicit Sampler(uint_fast64_t seed = 42u);
-  Vector sampleNewModel(const noiseModel::Diagonal::shared_ptr& model) const;
-  /// @}
-#endif
-
  protected:
   /** given sigmas for a diagonal model, returns a sample */
   Vector sampleDiagonal(const Vector& sigmas) const;

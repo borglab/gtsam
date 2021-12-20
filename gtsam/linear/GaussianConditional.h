@@ -88,10 +88,10 @@ namespace gtsam {
 
     /** print */
     void print(const std::string& = "GaussianConditional",
-      const KeyFormatter& formatter = DefaultKeyFormatter) const;
+      const KeyFormatter& formatter = DefaultKeyFormatter) const override;
 
     /** equals function */
-    bool equals(const GaussianFactor&cg, double tol = 1e-9) const;
+    bool equals(const GaussianFactor&cg, double tol = 1e-9) const override;
 
     /** Return a view of the upper-triangular R block of the conditional */
     constABlock R() const { return Ab_.range(0, nrFrontals()); }
@@ -128,17 +128,9 @@ namespace gtsam {
     /** Scale the values in \c gy according to the sigmas for the frontal variables in this
      *  conditional. */
     void scaleFrontalsBySigma(VectorValues& gy) const;
-//    __declspec(deprecated) void scaleFrontalsBySigma(VectorValues& gy) const; // FIXME: depreciated flag doesn't appear to exist?
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-    /// @name Deprecated
-    /// @{
-    constABlock get_R() const { return R(); }
-    constABlock get_S() const { return S(); }
-    constABlock get_S(const_iterator it) const { return S(it); }
-    const constBVector get_d() const { return d(); }
-    /// @}
-#endif
+    // FIXME: deprecated flag doesn't appear to exist?
+    // __declspec(deprecated) void scaleFrontalsBySigma(VectorValues& gy) const; 
 
    private:
     /** Serialization function */

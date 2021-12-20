@@ -51,12 +51,12 @@ public:
   virtual ~FullIMUFactor() {}
 
   /// @return a deep copy of this factor
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
   /** Check if two factors are equal */
-  virtual bool equals(const NonlinearFactor& e, double tol = 1e-9) const {
+  bool equals(const NonlinearFactor& e, double tol = 1e-9) const override {
     const This* const f = dynamic_cast<const This*>(&e);
     return f && Base::equals(e) &&
         equal_with_abs_tol(accel_, f->accel_, tol) &&
@@ -64,7 +64,7 @@ public:
         std::abs(dt_ - f->dt_) < tol;
   }
 
-  void print(const std::string& s="", const gtsam::KeyFormatter& formatter = gtsam::DefaultKeyFormatter) const {
+  void print(const std::string& s="", const gtsam::KeyFormatter& formatter = gtsam::DefaultKeyFormatter) const override {
     std::string a = "FullIMUFactor: " + s;
     Base::print(a, formatter);
     gtsam::print((Vector)accel_, "accel");
@@ -81,9 +81,9 @@ public:
    * Error evaluation with optional derivatives - calculates
    *  z - h(x1,x2)
    */
-  virtual Vector evaluateError(const PoseRTV& x1, const PoseRTV& x2,
+  Vector evaluateError(const PoseRTV& x1, const PoseRTV& x2,
       boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const {
+      boost::optional<Matrix&> H2 = boost::none) const override {
     Vector9 z;
     z.head(3).operator=(accel_); // Strange syntax to work around ambiguous operator error with clang
     z.segment(3, 3).operator=(gyro_); // Strange syntax to work around ambiguous operator error with clang

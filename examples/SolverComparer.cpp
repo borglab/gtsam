@@ -50,11 +50,11 @@
 #include <boost/program_options.hpp>
 #include <boost/range/algorithm/set_algorithm.hpp>
 #include <boost/range/adaptor/reversed.hpp>
-#include <boost/random.hpp>
 #include <boost/serialization/export.hpp>
 
 #include <fstream>
 #include <iostream>
+#include <random>
 
 #ifdef GTSAM_USE_TBB
 #include <tbb/task_arena.h> // tbb::task_arena
@@ -554,8 +554,8 @@ void runCompare()
 void runPerturb()
 {
   // Set up random number generator
-  boost::mt19937 rng;
-  boost::normal_distribution<double> normal(0.0, perturbationNoise);
+  std::mt19937 rng;
+  std::normal_distribution<double> normal(0.0, perturbationNoise);
 
   // Perturb values
   VectorValues noise;

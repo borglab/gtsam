@@ -26,12 +26,11 @@ using namespace std;
 namespace gtsam {
 
 void PreintegratedRotationParams::print(const string& s) const {
-  cout << s << endl;
+  cout << (s == "" ? s : s + "\n") << endl;
   cout << "gyroscopeCovariance:\n[\n" << gyroscopeCovariance << "\n]" << endl;
   if (omegaCoriolis)
     cout << "omegaCoriolis = (" << omegaCoriolis->transpose() << ")" << endl;
-  if (body_P_sensor)
-    body_P_sensor->print("body_P_sensor");
+  if (body_P_sensor) body_P_sensor->print("body_P_sensor");
 }
 
 bool PreintegratedRotationParams::equals(

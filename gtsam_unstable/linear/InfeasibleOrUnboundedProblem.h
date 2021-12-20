@@ -25,10 +25,10 @@ class InfeasibleOrUnboundedProblem: public ThreadsafeException<
 public:
   InfeasibleOrUnboundedProblem() {
   }
-  virtual ~InfeasibleOrUnboundedProblem() throw () {
+  virtual ~InfeasibleOrUnboundedProblem() noexcept {
   }
 
-  virtual const char* what() const throw () {
+  const char* what() const noexcept override {
     if (description_.empty())
       description_ = "The problem is either infeasible or unbounded.\n";
     return description_.c_str();

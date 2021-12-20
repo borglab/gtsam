@@ -96,7 +96,7 @@ public:
   virtual ~GeneralSFMFactor() {} ///< destructor
 
   /// @return a deep copy of this factor
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));}
 
@@ -105,7 +105,7 @@ public:
    * @param s optional string naming the factor
    * @param keyFormatter optional formatter for printing out Symbols
    */
-  void print(const std::string& s = "SFMFactor", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+  void print(const std::string& s = "SFMFactor", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     Base::print(s, keyFormatter);
     traits<Point2>::Print(measured_, s + ".z");
   }
@@ -113,14 +113,14 @@ public:
   /**
    * equals
    */
-  bool equals(const NonlinearFactor &p, double tol = 1e-9) const {
+  bool equals(const NonlinearFactor &p, double tol = 1e-9) const override {
     const This* e = dynamic_cast<const This*>(&p);
     return e && Base::equals(p, tol) && traits<Point2>::Equals(this->measured_, e->measured_, tol);
   }
 
   /** h(x)-z */
   Vector evaluateError(const CAMERA& camera, const LANDMARK& point,
-      boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const {
+      boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const override {
     try {
       return camera.project2(point,H1,H2) - measured_;
     }
@@ -133,7 +133,7 @@ public:
   }
 
   /// Linearize using fixed-size matrices
-  boost::shared_ptr<GaussianFactor> linearize(const Values& values) const {
+  boost::shared_ptr<GaussianFactor> linearize(const Values& values) const override {
     // Only linearize if the factor is active
     if (!this->active(values)) return boost::shared_ptr<JacobianFactor>();
 
@@ -230,7 +230,7 @@ public:
   virtual ~GeneralSFMFactor2() {} ///< destructor
 
   /// @return a deep copy of this factor
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));}
 
@@ -239,7 +239,7 @@ public:
    * @param s optional string naming the factor
    * @param keyFormatter optional formatter useful for printing Symbols
    */
-  void print(const std::string& s = "SFMFactor2", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+  void print(const std::string& s = "SFMFactor2", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     Base::print(s, keyFormatter);
     traits<Point2>::Print(measured_, s + ".z");
   }
@@ -247,7 +247,7 @@ public:
   /**
    * equals
    */
-  bool equals(const NonlinearFactor &p, double tol = 1e-9) const {
+  bool equals(const NonlinearFactor &p, double tol = 1e-9) const override {
     const This* e = dynamic_cast<const This*>(&p);
     return e && Base::equals(p, tol) && traits<Point2>::Equals(this->measured_, e->measured_, tol);
   }
@@ -256,7 +256,7 @@ public:
   Vector evaluateError(const Pose3& pose3, const Point3& point, const CALIBRATION &calib,
       boost::optional<Matrix&> H1=boost::none,
       boost::optional<Matrix&> H2=boost::none,
-      boost::optional<Matrix&> H3=boost::none) const
+      boost::optional<Matrix&> H3=boost::none) const override
   {
     try {
       Camera camera(pose3,calib);

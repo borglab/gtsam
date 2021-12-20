@@ -33,7 +33,7 @@ y_shift = Point3(0,1,0);
 
 % insert shifted points
 for i=1:nrPoints
-   initial.insert(100+i,landmarks{i}.compose(y_shift)); 
+   initial.insert(100+i,landmarks{i} + y_shift); 
 end
 
 figure(1);

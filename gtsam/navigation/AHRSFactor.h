@@ -75,7 +75,7 @@ class GTSAM_EXPORT PreintegratedAhrsMeasurements : public PreintegratedRotation 
       biasHat_(bias_hat),
       preintMeasCov_(preint_meas_cov) {}
 
-  const Params& p() const { return *boost::static_pointer_cast<const Params>(p_);}
+  Params& p() const { return *boost::static_pointer_cast<Params>(p_);}
   const Vector3& biasHat() const { return biasHat_; }
   const Matrix3& preintMeasCov() const { return preintMeasCov_; }
 
@@ -158,14 +158,14 @@ public:
   }
 
   /// @return a deep copy of this factor
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const;
+  gtsam::NonlinearFactor::shared_ptr clone() const override;
 
   /// print
-  virtual void print(const std::string& s, const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) const;
+  void print(const std::string& s, const KeyFormatter& keyFormatter =
+      DefaultKeyFormatter) const override;
 
   /// equals
-  virtual bool equals(const NonlinearFactor&, double tol = 1e-9) const;
+  bool equals(const NonlinearFactor&, double tol = 1e-9) const override;
 
   /// Access the preintegrated measurements.
   const PreintegratedAhrsMeasurements& preintegratedMeasurements() const {
@@ -178,7 +178,7 @@ public:
   Vector evaluateError(const Rot3& rot_i, const Rot3& rot_j,
       const Vector3& bias, boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none, boost::optional<Matrix&> H3 =
-          boost::none) const;
+          boost::none) const override;
 
   /// predicted states from IMU
   /// TODO(frank): relationship with PIM predict ??

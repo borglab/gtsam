@@ -82,13 +82,13 @@ class GTSAM_EXPORT FunctorizedFactor : public NoiseModelFactor1<T> {
   virtual ~FunctorizedFactor() {}
 
   /// @return a deep copy of this factor
-  virtual NonlinearFactor::shared_ptr clone() const {
+  NonlinearFactor::shared_ptr clone() const override {
     return boost::static_pointer_cast<NonlinearFactor>(
         NonlinearFactor::shared_ptr(new FunctorizedFactor<R, T>(*this)));
   }
 
   Vector evaluateError(const T &params,
-                       boost::optional<Matrix &> H = boost::none) const {
+                       boost::optional<Matrix &> H = boost::none) const override {
     R x = func_(params, H);
     Vector error = traits<R>::Local(measured_, x);
     return error;
@@ -97,7 +97,7 @@ class GTSAM_EXPORT FunctorizedFactor : public NoiseModelFactor1<T> {
   /// @name Testable
   /// @{
   void print(const std::string &s = "",
-             const KeyFormatter &keyFormatter = DefaultKeyFormatter) const {
+             const KeyFormatter &keyFormatter = DefaultKeyFormatter) const override {
     Base::print(s, keyFormatter);
     std::cout << s << (s != "" ? " " : "") << "FunctorizedFactor("
               << keyFormatter(this->key()) << ")" << std::endl;
@@ -106,10 +106,9 @@ class GTSAM_EXPORT FunctorizedFactor : public NoiseModelFactor1<T> {
               << std::endl;
   }
 
-  virtual bool equals(const NonlinearFactor &other, double tol = 1e-9) const {
+  bool equals(const NonlinearFactor &other, double tol = 1e-9) const override {
     const FunctorizedFactor<R, T> *e =
         dynamic_cast<const FunctorizedFactor<R, T> *>(&other);
-    const bool base = Base::equals(*e, tol);
     return e && Base::equals(other, tol) &&
            traits<R>::Equals(this->measured_, e->measured_, tol);
   }

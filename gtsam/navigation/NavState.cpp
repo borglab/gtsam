@@ -88,15 +88,15 @@ Matrix7 NavState::matrix() const {
 
 //------------------------------------------------------------------------------
 ostream& operator<<(ostream& os, const NavState& state) {
-  os << "R:" << state.attitude();
-  os << "p:" << state.position() << endl;
-  os << "v:" << Point3(state.velocity()) << endl;
+  os << "R: " << state.attitude() << "\n";
+  os << "p: " << state.position() << "\n";
+  os << "v: " << Point3(state.velocity());
   return os;
 }
 
 //------------------------------------------------------------------------------
 void NavState::print(const string& s) const {
-  cout << s << *this << endl;
+  cout << (s.empty() ? s : s + " ") << *this << endl;
 }
 
 //------------------------------------------------------------------------------

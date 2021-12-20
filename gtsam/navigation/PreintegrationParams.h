@@ -56,8 +56,8 @@ struct GTSAM_EXPORT PreintegrationParams: PreintegratedRotationParams {
     return boost::shared_ptr<PreintegrationParams>(new PreintegrationParams(Vector3(0, 0, -g)));
   }
 
-  void print(const std::string& s="") const;
-  bool equals(const PreintegratedRotationParams& other, double tol) const;
+  void print(const std::string& s="") const override;
+  bool equals(const PreintegratedRotationParams& other, double tol) const override;
 
   void setAccelerometerCovariance(const Matrix3& cov) { accelerometerCovariance = cov; }
   void setIntegrationCovariance(const Matrix3& cov)   { integrationCovariance = cov; }

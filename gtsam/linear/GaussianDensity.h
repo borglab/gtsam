@@ -57,7 +57,7 @@ namespace gtsam {
 
     /// print
     void print(const std::string& = "GaussianDensity",
-      const KeyFormatter& formatter = DefaultKeyFormatter) const;
+      const KeyFormatter& formatter = DefaultKeyFormatter) const override;
 
     /// Mean \f$ \mu = R^{-1} d \f$
     Vector mean() const;

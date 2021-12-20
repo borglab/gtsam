@@ -75,7 +75,7 @@ DiscreteFactorGraph createExpected() {
   // Mutual exclusion for students
   expected.addAllDiff(A, J);
 
-  return expected;
+  return std::move(expected);
 }
 
 /* ************************************************************************* */

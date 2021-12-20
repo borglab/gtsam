@@ -66,42 +66,42 @@ namespace gtsam {
     }
 
     /// Leaf-Leaf equality
-    bool sameLeaf(const Leaf& q) const {
+    bool sameLeaf(const Leaf& q) const override {
       return constant_ == q.constant_;
     }
 
     /// polymorphic equality: is q is a leaf, could be
-    bool sameLeaf(const Node& q) const {
+    bool sameLeaf(const Node& q) const override {
       return (q.isLeaf() && q.sameLeaf(*this));
     }
 
     /** equality up to tolerance */
-    bool equals(const Node& q, double tol) const {
+    bool equals(const Node& q, double tol) const override {
       const Leaf* other = dynamic_cast<const Leaf*> (&q);
       if (!other) return false;
       return std::abs(double(this->constant_ - other->constant_)) < tol;
     }
 
     /** print */
-    void print(const std::string& s) const {
+    void print(const std::string& s) const override {
       bool showZero = true;
       if (showZero || constant_) std::cout << s << " Leaf " << constant_ << std::endl;
     }
 
     /** to graphviz file */
-    void dot(std::ostream& os, bool showZero) const {
+    void dot(std::ostream& os, bool showZero) const override {
       if (showZero || constant_) os << "\"" << this->id() << "\" [label=\""
           << boost::format("%4.2g") % constant_
           << "\", shape=box, rank=sink, height=0.35, fixedsize=true]\n"; // width=0.55,
     }
 
     /** evaluate */
-    const Y& operator()(const Assignment<L>& x) const {
+    const Y& operator()(const Assignment<L>& x) const override {
       return constant_;
     }
 
     /** apply unary operator */
-    NodePtr apply(const Unary& op) const {
+    NodePtr apply(const Unary& op) const override {
       NodePtr f(new Leaf(op(constant_)));
       return f;
     }
@@ -111,27 +111,27 @@ namespace gtsam {
     // Simply calls apply on argument to call correct virtual method:
     // fL.apply_f_op_g(gL) -> gL.apply_g_op_fL(fL) (below)
     // fL.apply_f_op_g(gC) -> gC.apply_g_op_fL(fL) (Choice)
-    NodePtr apply_f_op_g(const Node& g, const Binary& op) const {
+    NodePtr apply_f_op_g(const Node& g, const Binary& op) const override {
       return g.apply_g_op_fL(*this, op);
     }
 
     // Applying binary operator to two leaves results in a leaf
-    NodePtr apply_g_op_fL(const Leaf& fL, const Binary& op) const {
+    NodePtr apply_g_op_fL(const Leaf& fL, const Binary& op) const override {
       NodePtr h(new Leaf(op(fL.constant_, constant_))); // fL op gL
       return h;
     }
 
     // If second argument is a Choice node, call it's apply with leaf as second
-    NodePtr apply_g_op_fC(const Choice& fC, const Binary& op) const {
+    NodePtr apply_g_op_fC(const Choice& fC, const Binary& op) const override {
       return fC.apply_fC_op_gL(*this, op); // operand order back to normal
     }
 
     /** choose a branch, create new memory ! */
-    NodePtr choose(const L& label, size_t index) const {
+    NodePtr choose(const L& label, size_t index) const override {
       return NodePtr(new Leaf(constant()));
     }
 
-    bool isLeaf() const { return true; }
+    bool isLeaf() const override { return true; }
 
   }; // Leaf
 
@@ -175,7 +175,7 @@ namespace gtsam {
         return f;
     }
 
-    bool isLeaf() const { return false; }
+    bool isLeaf() const override { return false; }
 
     /** Constructor, given choice label and mandatory expected branch count */
     Choice(const L& label, size_t count) :
@@ -236,7 +236,7 @@ namespace gtsam {
     }
 
     /** print (as a tree) */
-    void print(const std::string& s) const {
+    void print(const std::string& s) const override {
       std::cout << s << " Choice(";
       //        std::cout << this << ",";
       std::cout << label_ << ") " << std::endl;
@@ -245,7 +245,7 @@ namespace gtsam {
     }
 
     /** output to graphviz (as a a graph) */
-    void dot(std::ostream& os, bool showZero) const {
+    void dot(std::ostream& os, bool showZero) const override {
       os << "\"" << this->id() << "\" [shape=circle, label=\"" << label_
           << "\"]\n";
       for (size_t i = 0; i < branches_.size(); i++) {
@@ -266,17 +266,17 @@ namespace gtsam {
     }
 
     /// Choice-Leaf equality: always false
-    bool sameLeaf(const Leaf& q) const {
+    bool sameLeaf(const Leaf& q) const override {
       return false;
     }
 
     /// polymorphic equality: if q is a leaf, could be...
-    bool sameLeaf(const Node& q) const {
+    bool sameLeaf(const Node& q) const override {
       return (q.isLeaf() && q.sameLeaf(*this));
     }
 
     /** equality up to tolerance */
-    bool equals(const Node& q, double tol) const {
+    bool equals(const Node& q, double tol) const override {
       const Choice* other = dynamic_cast<const Choice*> (&q);
       if (!other) return false;
       if (this->label_ != other->label_) return false;
@@ -288,7 +288,7 @@ namespace gtsam {
     }
 
     /** evaluate */
-    const Y& operator()(const Assignment<L>& x) const {
+    const Y& operator()(const Assignment<L>& x) const override {
 #ifndef NDEBUG
       typename Assignment<L>::const_iterator it = x.find(label_);
       if (it == x.end()) {
@@ -314,7 +314,7 @@ namespace gtsam {
     }
 
     /** apply unary operator */
-    NodePtr apply(const Unary& op) const {
+    NodePtr apply(const Unary& op) const override {
       boost::shared_ptr<Choice> r(new Choice(label_, *this, op));
       return Unique(r);
     }
@@ -324,12 +324,12 @@ namespace gtsam {
     // Simply calls apply on argument to call correct virtual method:
     // fC.apply_f_op_g(gL) -> gL.apply_g_op_fC(fC) -> (Leaf)
     // fC.apply_f_op_g(gC) -> gC.apply_g_op_fC(fC) -> (below)
-    NodePtr apply_f_op_g(const Node& g, const Binary& op) const {
+    NodePtr apply_f_op_g(const Node& g, const Binary& op) const override {
       return g.apply_g_op_fC(*this, op);
     }
 
     // If second argument of binary op is Leaf node, recurse on branches
-    NodePtr apply_g_op_fL(const Leaf& fL, const Binary& op) const {
+    NodePtr apply_g_op_fL(const Leaf& fL, const Binary& op) const override {
       boost::shared_ptr<Choice> h(new Choice(label(), nrChoices()));
       for(NodePtr branch: branches_)
               h->push_back(fL.apply_f_op_g(*branch, op));
@@ -337,7 +337,7 @@ namespace gtsam {
     }
 
     // If second argument of binary op is Choice, call constructor
-    NodePtr apply_g_op_fC(const Choice& fC, const Binary& op) const {
+    NodePtr apply_g_op_fC(const Choice& fC, const Binary& op) const override {
       boost::shared_ptr<Choice> h(new Choice(fC, *this, op));
       return Unique(h);
     }
@@ -352,7 +352,7 @@ namespace gtsam {
     }
 
     /** choose a branch, recursively */
-    NodePtr choose(const L& label, size_t index) const {
+    NodePtr choose(const L& label, size_t index) const override {
       if (label_ == label)
         return branches_[index]; // choose branch
 

@@ -65,21 +65,21 @@ public:
   }
 
   /// @return a deep copy of this factor
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
   /// print
-  virtual void print(const std::string& s, const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) const;
+  void print(const std::string& s, const KeyFormatter& keyFormatter =
+      DefaultKeyFormatter) const override;
 
   /// equals
-  virtual bool equals(const NonlinearFactor& expected, double tol = 1e-9) const;
+  bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
 
   /// vector of errors
   Vector evaluateError(const Pose3& p,
-      boost::optional<Matrix&> H = boost::none) const;
+      boost::optional<Matrix&> H = boost::none) const override;
 
   inline const Point3 & measurementIn() const {
     return nT_;
@@ -137,21 +137,21 @@ public:
   }
 
   /// @return a deep copy of this factor
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
   /// print
-  virtual void print(const std::string& s, const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) const;
+  void print(const std::string& s, const KeyFormatter& keyFormatter =
+      DefaultKeyFormatter) const override;
 
   /// equals
-  virtual bool equals(const NonlinearFactor& expected, double tol = 1e-9) const;
+  bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
 
   /// vector of errors
   Vector evaluateError(const NavState& p,
-      boost::optional<Matrix&> H = boost::none) const;
+      boost::optional<Matrix&> H = boost::none) const override;
 
   inline const Point3 & measurementIn() const {
     return nT_;

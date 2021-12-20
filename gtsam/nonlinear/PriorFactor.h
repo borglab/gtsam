@@ -65,15 +65,15 @@ namespace gtsam {
     }
 
     /// @return a deep copy of this factor
-    virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+    gtsam::NonlinearFactor::shared_ptr clone() const override {
       return boost::static_pointer_cast<gtsam::NonlinearFactor>(
           gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
     /** implement functions needed for Testable */
 
     /** print */
-    virtual void print(const std::string& s, const KeyFormatter& keyFormatter =
-                                                 DefaultKeyFormatter) const {
+    void print(const std::string& s,
+       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
       std::cout << s << "PriorFactor on " << keyFormatter(this->key()) << "\n";
       traits<T>::Print(prior_, "  prior mean: ");
       if (this->noiseModel_)
@@ -83,7 +83,7 @@ namespace gtsam {
     }
 
     /** equals */
-    virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
+    bool equals(const NonlinearFactor& expected, double tol=1e-9) const override {
       const This* e = dynamic_cast<const This*> (&expected);
       return e != nullptr && Base::equals(*e, tol) && traits<T>::Equals(prior_, e->prior_, tol);
     }
@@ -91,7 +91,7 @@ namespace gtsam {
     /** implement functions needed to derive from Factor */
 
     /** vector of errors */
-    Vector evaluateError(const T& x, boost::optional<Matrix&> H = boost::none) const {
+    Vector evaluateError(const T& x, boost::optional<Matrix&> H = boost::none) const override {
       if (H) (*H) = Matrix::Identity(traits<T>::GetDimension(x),traits<T>::GetDimension(x));
       // manifold equivalent of z-x -> Local(x,z)
       // TODO(ASL) Add Jacobians.
@@ -116,5 +116,10 @@ namespace gtsam {
   public:
 	GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
   };
+
+  /// traits
+  template<class VALUE>
+  struct traits<PriorFactor<VALUE> > : public Testable<PriorFactor<VALUE> > {};
+
 
 } /// namespace gtsam

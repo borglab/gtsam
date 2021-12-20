@@ -15,14 +15,14 @@ import gtsam.*
 
 %% Create two cameras and corresponding essential matrix E
 aRb = Rot3.Yaw(pi/2);
-aTb = Point3 (0.1, 0, 0);
+aTb = [.1, 0, 0]';
 identity=Pose3;
 aPb = Pose3(aRb, aTb);
 cameraA = CalibratedCamera(identity);
 cameraB = CalibratedCamera(aPb);
 
 %% Create 5 points
-P = { Point3(0, 0, 1), Point3(-0.1, 0, 1), Point3(0.1, 0, 1), Point3(0, 0.5, 0.5), Point3(0, -0.5, 0.5) };
+P = { [0, 0, 1]', [-0.1, 0, 1]', [0.1, 0, 1]', [0, 0.5, 0.5]', [0, -0.5, 0.5]' };
 
 %% Project points in both cameras
 for i=1:5

@@ -137,7 +137,7 @@ TEST( GaussianBayesNet, optimize3 )
 }
 
 /* ************************************************************************* */
-TEST(GaussianBayesNet, ordering) 
+TEST(GaussianBayesNet, ordering)
 {
   Ordering expected;
   expected += _x_, _y_;
@@ -155,7 +155,7 @@ TEST( GaussianBayesNet, MatrixStress )
   bn.emplace_shared<GC>(_z_, Vector2(5, 6), 6 * I_2x2);
 
   const VectorValues expected = bn.optimize();
-  for (const auto keys :
+  for (const auto& keys :
        {KeyVector({_x_, _y_, _z_}), KeyVector({_x_, _z_, _y_}),
         KeyVector({_y_, _x_, _z_}), KeyVector({_y_, _z_, _x_}),
         KeyVector({_z_, _x_, _y_}), KeyVector({_z_, _y_, _x_})}) {
@@ -183,7 +183,7 @@ TEST( GaussianBayesNet, backSubstituteTranspose )
 
   VectorValues actual = smallBayesNet.backSubstituteTranspose(x);
   EXPECT(assert_equal(expected, actual));
-  
+
   const auto ordering = noisyBayesNet.ordering();
   const Matrix R = smallBayesNet.matrix(ordering).first;
   const Vector expected_vector = R.transpose().inverse() * x.vector(ordering);
@@ -206,7 +206,7 @@ TEST( GaussianBayesNet, backSubstituteTransposeNoisy )
 
   VectorValues actual = noisyBayesNet.backSubstituteTranspose(x);
   EXPECT(assert_equal(expected, actual));
-  
+
   const auto ordering = noisyBayesNet.ordering();
   const Matrix R = noisyBayesNet.matrix(ordering).first;
   const Vector expected_vector = R.transpose().inverse() * x.vector(ordering);

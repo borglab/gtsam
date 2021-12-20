@@ -90,7 +90,7 @@ void NonlinearOptimizer::defaultOptimize() {
   // Iterative loop
   do {
     // Do next iteration
-    currentError = error();
+    currentError = error(); // TODO(frank): don't do this twice at first !? Computed above!
     iterate();
     tictoc_finishedIteration();
 

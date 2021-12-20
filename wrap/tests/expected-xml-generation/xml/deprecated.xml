@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.8.11">
+  <compounddef id="deprecated" kind="page">
+    <compoundname>deprecated</compoundname>
+    <title>Deprecated List</title>
+    <detaileddescription>
+<para><variablelist>
+<varlistentry><term><anchor id="deprecated_1_deprecated000001"/>Member <ref refid="NonlinearFactor_8h_1acd444d887da7c7f7107e8a5caa703b22" kindref="member">ADD_CLONE_NONLINEAR_FACTOR</ref>  (Derived)</term></varlistentry>
+<listitem><para>: will go away shortly - just add the clone function directly  </para></listitem>
+<varlistentry><term><anchor id="deprecated_1_deprecated000002"/>Member <ref refid="classgtsam_1_1NoiseModelFactor_1a16a8a23069ce6ae664f516edc8f36254" kindref="member">gtsam::NoiseModelFactor::get_noiseModel</ref>  () const </term></varlistentry>
+<listitem><para>access to the noise model </para></listitem>
+</variablelist>
+</para>    </detaileddescription>
+  </compounddef>
+</doxygen>

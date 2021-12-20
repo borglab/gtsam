@@ -104,8 +104,24 @@ if(MSVC)
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_TIMING          /MD /O2  CACHE STRING "(User editable) Private compiler flags for Timing configuration.")
 else()
   # Common to all configurations, next for each configuration:
-  # "-fPIC" is to ensure proper code generation for shared libraries
-  set(GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON          -Wall -fPIC CACHE STRING "(User editable) Private compiler flags for all configurations.")
+
+  if (
+      ((CMAKE_CXX_COMPILER_ID MATCHES "Clang") AND (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 12.0.0)) OR
+      (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+     )
+    set(flag_override_ -Wsuggest-override) # -Werror=suggest-override: Add again someday
+  endif()
+
+  set(GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON
+    -Wall                                          # Enable common warnings
+    -fPIC                                          # ensure proper code generation for shared libraries
+    $<$<CXX_COMPILER_ID:GNU>:-Wreturn-local-addr -Werror=return-local-addr>            # Error: return local address
+    $<$<CXX_COMPILER_ID:Clang>:-Wreturn-stack-address   -Werror=return-stack-address>  # Error: return local address
+    -Wreturn-type  -Werror=return-type             # Error on missing return()
+    -Wformat -Werror=format-security               # Error on wrong printf() arguments
+    $<$<COMPILE_LANGUAGE:CXX>:${flag_override_}>   # Enforce the use of the override keyword
+    #
+    CACHE STRING "(User editable) Private compiler flags for all configurations.")
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_DEBUG           -g -fno-inline  CACHE STRING "(User editable) Private compiler flags for Debug configuration.")
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_RELWITHDEBINFO  -g -O3  CACHE STRING "(User editable) Private compiler flags for RelWithDebInfo configuration.")
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_RELEASE         -O3  CACHE STRING "(User editable) Private compiler flags for Release configuration.")

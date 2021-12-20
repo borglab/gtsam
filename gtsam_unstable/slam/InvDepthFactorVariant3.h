@@ -68,13 +68,13 @@ public:
    * @param keyFormatter optional formatter useful for printing Symbols
    */
   void print(const std::string& s = "InvDepthFactorVariant3a",
-      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     Base::print(s, keyFormatter);
     traits<Point2>::Print(measured_, s + ".z");
   }
 
   /// equals
-  virtual bool equals(const NonlinearFactor& p, double tol = 1e-9) const {
+  bool equals(const NonlinearFactor& p, double tol = 1e-9) const override {
     const This *e = dynamic_cast<const This*>(&p);
     return e
         && Base::equals(p, tol)
@@ -105,7 +105,7 @@ public:
   /// Evaluate error h(x)-z and optionally derivatives
   Vector evaluateError(const Pose3& pose, const Vector3& landmark,
       boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none) const {
+      boost::optional<Matrix&> H2=boost::none) const override {
 
     if(H1) {
       (*H1) = numericalDerivative11<Vector,Pose3>(boost::bind(&InvDepthFactorVariant3a::inverseDepthError, this, _1, landmark), pose);
@@ -188,13 +188,13 @@ public:
    * @param keyFormatter optional formatter useful for printing Symbols
    */
   void print(const std::string& s = "InvDepthFactorVariant3",
-      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     Base::print(s, keyFormatter);
     traits<Point2>::Print(measured_, s + ".z");
   }
 
   /// equals
-  virtual bool equals(const NonlinearFactor& p, double tol = 1e-9) const {
+  bool equals(const NonlinearFactor& p, double tol = 1e-9) const override {
     const This *e = dynamic_cast<const This*>(&p);
     return e
         && Base::equals(p, tol)
@@ -226,7 +226,7 @@ public:
   Vector evaluateError(const Pose3& pose1, const Pose3& pose2, const Vector3& landmark,
       boost::optional<Matrix&> H1=boost::none,
       boost::optional<Matrix&> H2=boost::none,
-      boost::optional<Matrix&> H3=boost::none) const {
+      boost::optional<Matrix&> H3=boost::none) const override {
 
     if(H1)
       (*H1) = numericalDerivative11<Vector,Pose3>(boost::bind(&InvDepthFactorVariant3b::inverseDepthError, this, _1, pose2, landmark), pose1);

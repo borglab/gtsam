@@ -26,13 +26,13 @@ using namespace std;
 
 namespace gtsam {
 
-// Implementation for N>5 just uses dynamic version
+// Implementation for N>=5 just uses dynamic version
 template <int N>
 typename SO<N>::MatrixNN SO<N>::Hat(const TangentVector& xi) {
   return SOn::Hat(xi);
 }
 
-// Implementation for N>5 just uses dynamic version
+// Implementation for N>=5 just uses dynamic version
 template <int N>
 typename SO<N>::TangentVector SO<N>::Vee(const MatrixNN& X) {
   return SOn::Vee(X);
@@ -60,8 +60,9 @@ typename SO<N>::TangentVector SO<N>::ChartAtOrigin::Local(const SO& R,
 
 template <int N>
 typename SO<N>::MatrixDD SO<N>::AdjointMap() const {
+  if (N==2) return I_1x1; // SO(2) case
   throw std::runtime_error(
-      "SO<N>::AdjointMap only implemented for SO3 and SO4.");
+      "SO<N>::AdjointMap only implemented for SO2, SO3 and SO4.");
 }
 
 template <int N>
@@ -84,30 +85,22 @@ typename SO<N>::MatrixDD SO<N>::LogmapDerivative(const TangentVector& omega) {
   throw std::runtime_error("O<N>::LogmapDerivative only implemented for SO3.");
 }
 
+// Default fixed size version (but specialized elsewehere for N=2,3,4)
 template <int N>
 typename SO<N>::VectorN2 SO<N>::vec(
     OptionalJacobian<internal::NSquaredSO(N), dimension> H) const {
-  const size_t n = rows();
-  const size_t n2 = n * n;
-
   // Vectorize
-  VectorN2 X(n2);
-  X << Eigen::Map<const Matrix>(matrix_.data(), n2, 1);
+  VectorN2 X = Eigen::Map<const VectorN2>(matrix_.data());
 
   // If requested, calculate H as (I \oplus Q) * P,
   // where Q is the N*N rotation matrix, and P is calculated below.
   if (H) {
     // Calculate P matrix of vectorized generators
     // TODO(duy): Should we refactor this as the jacobian of Hat?
-    const size_t d = dim();
-    Matrix P(n2, d);
-    for (size_t j = 0; j < d; j++) {
-      const auto X = Hat(Eigen::VectorXd::Unit(d, j));
-      P.col(j) = Eigen::Map<const Matrix>(X.data(), n2, 1);
-    }
-    H->resize(n2, d);
-    for (size_t i = 0; i < n; i++) {
-      H->block(i * n, 0, n, d) = matrix_ * P.block(i * n, 0, n, d);
+    Matrix P = SO<N>::VectorizedGenerators();
+    for (size_t i = 0; i < N; i++) {
+      H->block(i * N, 0, N, dimension) =
+          matrix_ * P.block(i * N, 0, N, dimension);
     }
   }
   return X;

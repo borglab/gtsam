@@ -288,7 +288,7 @@ TEST(testNonlinearISAM, loop_closures ) {
       break;
 
     // Check if vertex
-    const auto indexedPose = parseVertex(is, tag);
+    const auto indexedPose = parseVertexPose(is, tag);
     if (indexedPose) {
       Key id = indexedPose->first;
       initialEstimate.insert(Symbol('x', id), indexedPose->second);
@@ -308,7 +308,7 @@ TEST(testNonlinearISAM, loop_closures ) {
     // check if edge
     const auto betweenPose = parseEdge(is, tag);
     if (betweenPose) {
-      Key id1, id2;
+      size_t id1, id2;
       tie(id1, id2) = betweenPose->first;
       graph.emplace_shared<BetweenFactor<Pose2> >(Symbol('x', id2),
           Symbol('x', id1), betweenPose->second, model);

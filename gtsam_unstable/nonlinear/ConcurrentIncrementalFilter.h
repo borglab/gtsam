@@ -67,10 +67,10 @@ public:
   virtual ~ConcurrentIncrementalFilter() {};
 
   /** Implement a GTSAM standard 'print' function */
-  virtual void print(const std::string& s = "Concurrent Incremental Filter:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+  void print(const std::string& s = "Concurrent Incremental Filter:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
 
   /** Check if two Concurrent Filters are equal */
-  virtual bool equals(const ConcurrentFilter& rhs, double tol = 1e-9) const;
+  bool equals(const ConcurrentFilter& rhs, double tol = 1e-9) const override;
 
   /** Access the current set of factors */
   const NonlinearFactorGraph& getFactors() const {
@@ -130,7 +130,7 @@ public:
    * Perform any required operations before the synchronization process starts.
    * Called by 'synchronize'
    */
-  virtual void presync();
+  void presync() override;
 
   /**
    * Populate the provided containers with factors that constitute the filter branch summarization
@@ -139,7 +139,7 @@ public:
    * @param summarizedFactors The summarized factors for the filter branch
    * @param rootValues The linearization points of the root clique variables
    */
-  virtual void getSummarizedFactors(NonlinearFactorGraph& filterSummarization, Values& filterSummarizationValues);
+  void getSummarizedFactors(NonlinearFactorGraph& filterSummarization, Values& filterSummarizationValues) override;
 
   /**
    * Populate the provided containers with factors being sent to the smoother from the filter. These
@@ -149,20 +149,20 @@ public:
    * @param smootherFactors The new factors to be added to the smoother
    * @param smootherValues The linearization points of any new variables
    */
-  virtual void getSmootherFactors(NonlinearFactorGraph& smootherFactors, Values& smootherValues);
+  void getSmootherFactors(NonlinearFactorGraph& smootherFactors, Values& smootherValues) override;
 
   /**
    * Apply the updated version of the smoother branch summarized factors.
    *
    * @param summarizedFactors An updated version of the smoother branch summarized factors
    */
-  virtual void synchronize(const NonlinearFactorGraph& smootherSummarization, const Values& smootherSummarizationValues);
+  void synchronize(const NonlinearFactorGraph& smootherSummarization, const Values& smootherSummarizationValues) override;
 
   /**
    * Perform any required operations after the synchronization process finishes.
    * Called by 'synchronize'
    */
-  virtual void postsync();
+  void postsync() override;
 
 protected:
 

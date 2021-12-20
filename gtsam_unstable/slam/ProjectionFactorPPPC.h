@@ -91,7 +91,7 @@ namespace gtsam {
     virtual ~ProjectionFactorPPPC() {}
 
     /// @return a deep copy of this factor
-    virtual NonlinearFactor::shared_ptr clone() const {
+    NonlinearFactor::shared_ptr clone() const override {
       return boost::static_pointer_cast<NonlinearFactor>(
           NonlinearFactor::shared_ptr(new This(*this))); }
 
@@ -100,14 +100,14 @@ namespace gtsam {
      * @param s optional string naming the factor
      * @param keyFormatter optional formatter useful for printing Symbols
      */
-    void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+    void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
       std::cout << s << "ProjectionFactorPPPC, z = ";
       traits<Point2>::Print(measured_);
       Base::print("", keyFormatter);
     }
 
     /// equals
-    virtual bool equals(const NonlinearFactor& p, double tol = 1e-9) const {
+    bool equals(const NonlinearFactor& p, double tol = 1e-9) const override {
       const This *e = dynamic_cast<const This*>(&p);
       return e
           && Base::equals(p, tol)
@@ -119,7 +119,7 @@ namespace gtsam {
         boost::optional<Matrix&> H1 = boost::none,
         boost::optional<Matrix&> H2 = boost::none,
         boost::optional<Matrix&> H3 = boost::none,
-        boost::optional<Matrix&> H4 = boost::none) const {
+        boost::optional<Matrix&> H4 = boost::none) const override {
       try {
           if(H1 || H2 || H3 || H4) {
             Matrix H0, H02;

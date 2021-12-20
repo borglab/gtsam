@@ -46,8 +46,8 @@ public:
   }
 
   /// evaluate the error
-  virtual Vector evaluateError(const Pose3& pose, boost::optional<Matrix&> H =
-      boost::none) const {
+  Vector evaluateError(const Pose3& pose, boost::optional<Matrix&> H =
+      boost::none) const override {
     PinholeCamera<Cal3_S2> camera(pose, *K_);
     return camera.project(P_, H, boost::none, boost::none) - p_;
   }

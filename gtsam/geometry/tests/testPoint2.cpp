@@ -238,16 +238,6 @@ TEST( Point2, circleCircleIntersection) {
 }
 
 /* ************************************************************************* */
-#ifndef GTSAM_TYPEDEF_POINTS_TO_VECTORS
-TEST( Point2, stream) {
-  Point2 p(1, 2);
-  std::ostringstream os;
-  os << p;
-  EXPECT(os.str() == "(1, 2)");
-}
-#endif
-
-/* ************************************************************************* */
 int main () {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

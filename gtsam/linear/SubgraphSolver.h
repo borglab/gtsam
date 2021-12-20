@@ -38,7 +38,7 @@ struct GTSAM_EXPORT SubgraphSolverParameters
   explicit SubgraphSolverParameters(const SubgraphBuilderParameters &p = SubgraphBuilderParameters())
     : builderParams(p) {}
   void print() const { Base::print(); }
-  virtual void print(std::ostream &os) const {
+  void print(std::ostream &os) const override {
     Base::print(os);
   }
 };
@@ -136,23 +136,6 @@ class GTSAM_EXPORT SubgraphSolver : public IterativeSolver {
           const GaussianFactorGraph &gfg);
 
   /// @}
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-  /// @name Deprecated
-  /// @{
-  SubgraphSolver(const boost::shared_ptr<GaussianFactorGraph> &A,
-                 const Parameters &parameters, const Ordering &ordering)
-      : SubgraphSolver(*A, parameters, ordering) {}
-  SubgraphSolver(const GaussianFactorGraph &, const GaussianFactorGraph &,
-                 const Parameters &, const Ordering &);
-  SubgraphSolver(const boost::shared_ptr<GaussianFactorGraph> &Ab1,
-                 const boost::shared_ptr<GaussianFactorGraph> &Ab2,
-                 const Parameters &parameters, const Ordering &ordering)
-      : SubgraphSolver(*Ab1, Ab2, parameters, ordering) {}
-  SubgraphSolver(const boost::shared_ptr<GaussianBayesNet> &,
-                 const GaussianFactorGraph &, const Parameters &);
-  /// @}
-#endif
 };
 
 }  // namespace gtsam

@@ -36,6 +36,8 @@ namespace gtsam {
  *    normalized(Tb - Ta) - w_aZb.point3()
  *
  * @addtogroup SFM
+ * 
+ * 
  */
 class TranslationFactor : public NoiseModelFactor2<Point3, Point3> {
  private:

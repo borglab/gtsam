@@ -1,6 +1,9 @@
 # This triggers Cython builds on `gtsam-manylinux-build`
 name: Trigger Python Builds
-on: push
+on:
+  push:
+    branches:
+      - develop
 jobs:
   triggerCython:
     runs-on: ubuntu-latest

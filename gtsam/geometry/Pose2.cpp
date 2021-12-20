@@ -322,10 +322,10 @@ boost::optional<Pose2> align(const vector<Point2Pair>& pairs) {
   // calculate cos and sin
   double c=0,s=0;
   for(const Point2Pair& pair: pairs) {
-    Point2 dq = pair.first  - cp;
-    Point2 dp = pair.second - cq;
-    c +=  dp.x() * dq.x() + dp.y() * dq.y();
-    s +=  dp.y() * dq.x() - dp.x() * dq.y(); // this works but is negative from formula above !! :-(
+    Point2 dp = pair.first - cp;
+    Point2 dq = pair.second - cq;
+    c += dp.x() * dq.x() + dp.y() * dq.y();
+    s += -dp.y() * dq.x() + dp.x() * dq.y();
   }
 
   // calculate angle and translation

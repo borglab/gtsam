@@ -47,7 +47,7 @@ y_shift = Point3(0,1,0);
 
 % insert shifted points
 for i=1:nrPoints
-   initial.insert(100+i,landmarks{i}.compose(y_shift)); 
+   initial.insert(100+i,landmarks{i} + y_shift); 
 end
 
 figure(1);
@@ -146,7 +146,8 @@ for i=1:20
         plotPoint3(result.atPoint3(l),'g');
     end
     
-    ty = result.atPose3(1000).translation().y();
+    t = result.atPose3(1000).translation();
+    ty = t(2);
     text(5,5,5,sprintf('Y-Transform: %0.2g',ty));
   
     if(write_video)

@@ -141,6 +141,27 @@ TEST( RangeFactor, EqualsWithTransform ) {
       body_P_sensor_3D);
   CHECK(assert_equal(factor3D_1, factor3D_2));
 }
+/* ************************************************************************* */
+TEST( RangeFactor, EqualsAfterDeserializing) {
+  // Check that the same results are obtained after deserializing:
+  Pose3 body_P_sensor_3D(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2),
+      Point3(0.25, -0.10, 1.0));
+
+  RangeFactorWithTransform3D factor3D_1(poseKey, pointKey, measurement, model,
+      body_P_sensor_3D), factor3D_2;
+
+  // check with Equal() trait:
+  gtsam::serializationTestHelpers::roundtripXML(factor3D_1, factor3D_2);
+  CHECK(assert_equal(factor3D_1, factor3D_2));
+
+  const Pose3 pose(Rot3::RzRyRx(0.2, -0.3, 1.75), Point3(1.0, 2.0, -3.0));
+  const Point3 point(-2.0, 11.0, 1.0);
+  const Values values = {{poseKey, genericValue(pose)}, {pointKey, genericValue(point)}};
+  
+  const Vector error_1 = factor3D_1.unwhitenedError(values);
+  const Vector error_2 = factor3D_2.unwhitenedError(values);
+  CHECK(assert_equal(error_1, error_2));
+}
 
 /* ************************************************************************* */
 TEST( RangeFactor, Error2D ) {
@@ -152,7 +173,7 @@ TEST( RangeFactor, Error2D ) {
   Point2 point(-4.0, 11.0);
 
   // Use the factor to calculate the error
-  Vector actualError(factor.evaluateError(pose, point));
+  Vector actualError(factor.unwhitenedError({{poseKey, genericValue(pose)}, {pointKey, genericValue(point)}}));
 
   // The expected error is ||(5.0, 9.0)|| - 10.0 = 0.295630141 meter / UnitCovariance
   Vector expectedError = (Vector(1) << 0.295630141).finished();
@@ -175,7 +196,7 @@ TEST( RangeFactor, Error2DWithTransform ) {
   Point2 point(-4.0, 11.0);
 
   // Use the factor to calculate the error
-  Vector actualError(factor.evaluateError(pose, point));
+  Vector actualError(factor.unwhitenedError({{poseKey, genericValue(pose)}, {pointKey, genericValue(point)}}));
 
   // The expected error is ||(5.0, 9.0)|| - 10.0 = 0.295630141 meter / UnitCovariance
   Vector expectedError = (Vector(1) << 0.295630141).finished();
@@ -194,7 +215,7 @@ TEST( RangeFactor, Error3D ) {
   Point3 point(-2.0, 11.0, 1.0);
 
   // Use the factor to calculate the error
-  Vector actualError(factor.evaluateError(pose, point));
+  Vector actualError(factor.unwhitenedError({{poseKey, genericValue(pose)}, {pointKey, genericValue(point)}}));
 
   // The expected error is ||(3.0, 9.0, 4.0)|| - 10.0 = 0.295630141 meter / UnitCovariance
   Vector expectedError = (Vector(1) << 0.295630141).finished();
@@ -218,7 +239,7 @@ TEST( RangeFactor, Error3DWithTransform ) {
   Point3 point(-2.0, 11.0, 1.0);
 
   // Use the factor to calculate the error
-  Vector actualError(factor.evaluateError(pose, point));
+  Vector actualError(factor.unwhitenedError({{poseKey, genericValue(pose)}, {pointKey, genericValue(point)}}));
 
   // The expected error is ||(3.0, 9.0, 4.0)|| - 10.0 = 0.295630141 meter / UnitCovariance
   Vector expectedError = (Vector(1) << 0.295630141).finished();
@@ -266,8 +287,10 @@ TEST( RangeFactor, Jacobian2DWithTransform ) {
   Point2 point(-4.0, 11.0);
 
   // Use the factor to calculate the Jacobians
-  Matrix H1Actual, H2Actual;
-  factor.evaluateError(pose, point, H1Actual, H2Actual);
+  std::vector<Matrix> actualHs(2);
+  factor.unwhitenedError({{poseKey, genericValue(pose)}, {pointKey, genericValue(point)}}, actualHs); 
+  const Matrix& H1Actual = actualHs.at(0);
+  const Matrix& H2Actual = actualHs.at(1);
 
   // Use numerical derivatives to calculate the Jacobians
   Matrix H1Expected, H2Expected;
@@ -291,8 +314,10 @@ TEST( RangeFactor, Jacobian3D ) {
   Point3 point(-2.0, 11.0, 1.0);
 
   // Use the factor to calculate the Jacobians
-  Matrix H1Actual, H2Actual;
-  factor.evaluateError(pose, point, H1Actual, H2Actual);
+  std::vector<Matrix> actualHs(2);
+  factor.unwhitenedError({{poseKey, genericValue(pose)}, {pointKey, genericValue(point)}}, actualHs); 
+  const Matrix& H1Actual = actualHs.at(0);
+  const Matrix& H2Actual = actualHs.at(1);
 
   // Use numerical derivatives to calculate the Jacobians
   Matrix H1Expected, H2Expected;
@@ -321,8 +346,10 @@ TEST( RangeFactor, Jacobian3DWithTransform ) {
   Point3 point(-2.0, 11.0, 1.0);
 
   // Use the factor to calculate the Jacobians
-  Matrix H1Actual, H2Actual;
-  factor.evaluateError(pose, point, H1Actual, H2Actual);
+  std::vector<Matrix> actualHs(2);
+  factor.unwhitenedError({{poseKey, genericValue(pose)}, {pointKey, genericValue(point)}}, actualHs); 
+  const Matrix& H1Actual = actualHs.at(0);
+  const Matrix& H2Actual = actualHs.at(1);
 
   // Use numerical derivatives to calculate the Jacobians
   Matrix H1Expected, H2Expected;
@@ -350,7 +377,7 @@ TEST(RangeFactor, Point3) {
   Vector expectedError = (Vector(1) << 0.295630141).finished();
 
   // Verify we get the expected error
-  CHECK(assert_equal(expectedError, factor.evaluateError(pose, point), 1e-9));
+  CHECK(assert_equal(expectedError, factor.unwhitenedError({{poseKey, genericValue(pose)}, {pointKey, genericValue(point)}}), 1e-9));
 }
 
 /* ************************************************************************* */
@@ -393,7 +420,7 @@ TEST(RangeFactor, NonGTSAM) {
   Vector expectedError = (Vector(1) << 0.295630141).finished();
 
   // Verify we get the expected error
-  CHECK(assert_equal(expectedError, factor.evaluateError(pose, point), 1e-9));
+  CHECK(assert_equal(expectedError, factor.unwhitenedError({{poseKey, genericValue(pose)}, {pointKey, genericValue(point)}}), 1e-9));
 }
 
 /* ************************************************************************* */

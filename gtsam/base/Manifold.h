@@ -167,62 +167,6 @@ struct FixedDimension {
   BOOST_STATIC_ASSERT_MSG(value != Eigen::Dynamic,
       "FixedDimension instantiated for dymanically-sized type.");
 };
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-/// Helper class to construct the product manifold of two other manifolds, M1 and M2
-/// Deprecated because of limited usefulness, maximum obfuscation
-template<typename M1, typename M2>
-class ProductManifold: public std::pair<M1, M2> {
-  BOOST_CONCEPT_ASSERT((IsManifold<M1>));
-  BOOST_CONCEPT_ASSERT((IsManifold<M2>));
-
-protected:
-  enum { dimension1 = traits<M1>::dimension };
-  enum { dimension2 = traits<M2>::dimension };
-
-public:
-  enum { dimension = dimension1 + dimension2 };
-  inline static size_t Dim() { return dimension;}
-  inline size_t dim() const { return dimension;}
-
-  typedef Eigen::Matrix<double, dimension, 1> TangentVector;
-  typedef OptionalJacobian<dimension, dimension> ChartJacobian;
-
-  /// Default constructor needs default constructors to be defined
-  ProductManifold():std::pair<M1,M2>(M1(),M2()) {}
-
-  // Construct from two original manifold values
-  ProductManifold(const M1& m1, const M2& m2):std::pair<M1,M2>(m1,m2) {}
-
-  /// Retract delta to manifold
-  ProductManifold retract(const TangentVector& xi) const {
-    M1 m1 = traits<M1>::Retract(this->first,  xi.template head<dimension1>());
-    M2 m2 = traits<M2>::Retract(this->second, xi.template tail<dimension2>());
-    return ProductManifold(m1,m2);
-  }
-
-  /// Compute the coordinates in the tangent space
-  TangentVector localCoordinates(const ProductManifold& other) const {
-    typename traits<M1>::TangentVector v1 = traits<M1>::Local(this->first,  other.first);
-    typename traits<M2>::TangentVector v2 = traits<M2>::Local(this->second, other.second);
-    TangentVector v;
-    v << v1, v2;
-    return v;
-  }
-
-  // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
-  enum { NeedsToAlign = (sizeof(M1) % 16) == 0 || (sizeof(M2) % 16) == 0
-  };
-public:
-	GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
-};
-
-// Define any direct product group to be a model of the multiplicative Group concept
-template<typename M1, typename M2>
-struct traits<ProductManifold<M1, M2> > : internal::Manifold<ProductManifold<M1, M2> > {
-};
-#endif
-
 } // \ namespace gtsam
 
 ///**

@@ -99,7 +99,7 @@ public:
    * @param keyFormatter optional formatter useful for printing Symbols
    */
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) const {
+      DefaultKeyFormatter) const override {
     std::cout << s << "SmartProjectionFactor\n";
     std::cout << "linearizationMode:\n" << params_.linearizationMode
         << std::endl;
@@ -110,7 +110,7 @@ public:
   }
 
   /// equals
-  virtual bool equals(const NonlinearFactor& p, double tol = 1e-9) const {
+  bool equals(const NonlinearFactor& p, double tol = 1e-9) const override {
     const This *e = dynamic_cast<const This*>(&p);
     return e && params_.linearizationMode == e->params_.linearizationMode
         && Base::equals(p, tol);
@@ -305,8 +305,8 @@ public:
   }
 
   /// linearize
-  virtual boost::shared_ptr<GaussianFactor> linearize(
-      const Values& values) const {
+  boost::shared_ptr<GaussianFactor> linearize(
+      const Values& values) const override {
     return linearizeDamped(values);
   }
 
@@ -409,7 +409,7 @@ public:
   }
 
   /// Calculate total reprojection error
-  virtual double error(const Values& values) const {
+  double error(const Values& values) const override {
     if (this->active(values)) {
       return totalReprojectionError(Base::cameras(values));
     } else { // else of active flag
@@ -442,25 +442,6 @@ public:
 
   /** return the farPoint state */
   bool isFarPoint() const { return result_.farPoint(); }
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-  /// @name Deprecated
-  /// @{
-  // It does not make sense to optimize for a camera where the pose would not be
-  // the actual pose of the camera. An unfortunate consequence of deprecating
-  // this constructor means that we cannot optimize for calibration when the
-  // camera is offset from the body pose. That would need a new factor with
-  // (body) pose and calibration as variables. However, that use case is
-  // unlikely: when a global offset is know, calibration is typically known.
-  SmartProjectionFactor(
-      const SharedNoiseModel& sharedNoiseModel,
-      const boost::optional<Pose3> body_P_sensor,
-      const SmartProjectionParams& params = SmartProjectionParams())
-      : Base(sharedNoiseModel, body_P_sensor),
-        params_(params),
-        result_(TriangulationResult::Degenerate()) {}
-  /// @}
-#endif
 
  private:
 

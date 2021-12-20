@@ -32,7 +32,8 @@ namespace gtsam {
 
 /* ************************************************************************* */
 void Rot3::print(const std::string& s) const {
-  gtsam::print((Matrix)matrix(), s);
+  cout << (s.empty() ? "R: " : s + " ");
+  gtsam::print(static_cast<Matrix>(matrix()));
 }
 
 /* ************************************************************************* */
@@ -222,10 +223,7 @@ pair<Matrix3, Vector3> RQ(const Matrix3& A) {
 
 /* ************************************************************************* */
 ostream &operator<<(ostream &os, const Rot3& R) {
-  os << "\n";
-  os << '|' << R.r1().x() << ", " << R.r2().x() << ", " << R.r3().x() << "|\n";
-  os << '|' << R.r1().y() << ", " << R.r2().y() << ", " << R.r3().y() << "|\n";
-  os << '|' << R.r1().z() << ", " << R.r2().z() << ", " << R.r3().z() << "|\n";
+  os << R.matrix().format(matlabFormat());
   return os;
 }
 

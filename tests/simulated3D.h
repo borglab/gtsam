@@ -90,7 +90,7 @@ struct PointPrior3D: public NoiseModelFactor1<Point3> {
    * @return Vector error between prior value and x (Dimension: 3)
    */
   Vector evaluateError(const Point3& x, boost::optional<Matrix&> H =
-      boost::none) const {
+      boost::none) const override {
     return prior(x, H) - measured_;
   }
 };
@@ -121,7 +121,7 @@ struct Simulated3DMeasurement: public NoiseModelFactor2<Point3, Point3> {
    * @return vector error between measurement and prediction (Dimension: 3)
    */
   Vector evaluateError(const Point3& x1, const Point3& x2,
-      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const {
+      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const override {
     return mea(x1, x2, H1, H2) - measured_;
   }
 };

@@ -40,7 +40,7 @@ public:
   : Base(noiseModel::Constrained::All(1, std::abs(mu)), k1, k, velKey), h_(h) {}
 
   /// @return a deep copy of this factor
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new PendulumFactor1(*this))); }
 
@@ -48,7 +48,7 @@ public:
   Vector evaluateError(const double& qk1, const double& qk, const double& v,
       boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none,
-      boost::optional<Matrix&> H3 = boost::none) const {
+      boost::optional<Matrix&> H3 = boost::none) const override {
     const size_t p = 1;
     if (H1) *H1 = -Matrix::Identity(p,p);
     if (H2) *H2 = Matrix::Identity(p,p);
@@ -88,7 +88,7 @@ public:
   : Base(noiseModel::Constrained::All(1, std::abs(mu)), vk1, vk, qkey), h_(h), g_(g), r_(r) {}
 
   /// @return a deep copy of this factor
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new PendulumFactor2(*this))); }
 
@@ -96,7 +96,7 @@ public:
   Vector evaluateError(const double & vk1, const double & vk, const double & q,
       boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none,
-      boost::optional<Matrix&> H3 = boost::none) const {
+      boost::optional<Matrix&> H3 = boost::none) const override {
     const size_t p = 1;
     if (H1) *H1 = -Matrix::Identity(p,p);
     if (H2) *H2 = Matrix::Identity(p,p);
@@ -139,7 +139,7 @@ public:
     h_(h), m_(m), r_(r), g_(g), alpha_(alpha) {}
 
   /// @return a deep copy of this factor
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new PendulumFactorPk(*this))); }
 
@@ -147,7 +147,7 @@ public:
   Vector evaluateError(const double & pk, const double & qk, const double & qk1,
       boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none,
-      boost::optional<Matrix&> H3 = boost::none) const {
+      boost::optional<Matrix&> H3 = boost::none) const override {
     const size_t p = 1;
 
     double qmid = (1-alpha_)*qk + alpha_*qk1;
@@ -195,7 +195,7 @@ public:
     h_(h), m_(m), r_(r), g_(g), alpha_(alpha) {}
 
   /// @return a deep copy of this factor
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new PendulumFactorPk1(*this))); }
 
@@ -203,7 +203,7 @@ public:
   Vector evaluateError(const double & pk1, const double & qk, const double & qk1,
       boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none,
-      boost::optional<Matrix&> H3 = boost::none) const {
+      boost::optional<Matrix&> H3 = boost::none) const override {
     const size_t p = 1;
 
     double qmid = (1-alpha_)*qk + alpha_*qk1;

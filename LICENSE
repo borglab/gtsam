@@ -23,3 +23,5 @@ ordering library
     - Included unmodified in gtsam/3rdparty/metis
     - Licenced under Apache License v 2.0, provided in
       gtsam/3rdparty/metis/LICENSE.txt
+- Spectra v0.9.0: Sparse Eigenvalue Computation Toolkit as a Redesigned ARPACK.
+    - Licenced under MPL2, provided at https://github.com/yixuan/spectra

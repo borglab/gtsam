@@ -41,10 +41,10 @@ public:
   virtual ~BatchFixedLagSmoother() { };
 
   /** Print the factor for debugging and testing (implementing Testable) */
-  virtual void print(const std::string& s = "BatchFixedLagSmoother:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
+  void print(const std::string& s = "BatchFixedLagSmoother:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
 
   /** Check if two IncrementalFixedLagSmoother Objects are equal */
-  virtual bool equals(const FixedLagSmoother& rhs, double tol = 1e-9) const override;
+  bool equals(const FixedLagSmoother& rhs, double tol = 1e-9) const override;
 
   /** Add new factors, updating the solution and relinearizing as needed. */
   Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(),
@@ -116,15 +116,6 @@ public:
   static NonlinearFactorGraph CalculateMarginalFactors(
       const NonlinearFactorGraph& graph, const Values& theta, const KeyVector& keys,
       const GaussianFactorGraph::Eliminate& eliminateFunction = EliminatePreferCholesky);
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-  static NonlinearFactorGraph calculateMarginalFactors(
-      const NonlinearFactorGraph& graph, const Values& theta, const std::set<Key>& keys,
-      const GaussianFactorGraph::Eliminate& eliminateFunction = EliminatePreferCholesky) {
-    KeyVector keyVector(keys.begin(), keys.end());
-    return CalculateMarginalFactors(graph, theta, keyVector, eliminateFunction);
-  }
-#endif
 
 protected:
 

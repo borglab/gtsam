@@ -1,0 +1,82 @@
+#include <tools/workspace/pybind_wrapper/test/pybind_wrapper_test.h>
+
+namespace anzu {
+
+virtual class PointBase {};
+
+namespace sub {
+class Point2 : anzu::PointBase {
+  Point2(double x);  // use the default value.
+  Point2(double x, double y);
+  double x() const;
+  double y() const;
+  double sum() const;
+  double func_with_default_args(double a) const;  // use the default value.
+  double func_with_default_args(double a, double b) const;
+  void print(string s) const;
+};
+}  // namespace sub
+
+class Point3 : anzu::PointBase {
+  Point3(double x, double y, double z);
+  double x() const;
+  double x(double to_add) const;
+  double y() const;
+  double z() const;
+  double sum() const;
+};
+
+template <POINT = {anzu::sub::Point2, anzu::Point3}>
+class Template {
+  Template(const POINT& point);
+  Template(const POINT& point, double a);
+  Template(const This& other);
+
+  POINT point() const;
+
+  double overload() const;
+  double overload(const POINT& point) const;
+  double overload(const This& other) const;
+
+  POINT method_on_template_type(const POINT& point) const;
+  This method_on_this(const POINT& point) const;
+
+  static This static_method(const This& other, double dummy);
+
+  template <OTHER_POINT = {anzu::sub::Point2, anzu::Point3}>
+  double template_method(const OTHER_POINT& other) const;
+};
+
+template <T1, T2>
+class Template2 {
+  Template2(const T1& t1, const T2& t2);
+  double sum_x() const;
+  double sum_x(const T1& other1) const;
+  double sum_x(T2* other2) const;
+  double sum_x(const T1& other1, T2* other2) const;
+  T1 property_t1;
+};
+
+typedef anzu::Template2<anzu::sub::Point2, anzu::Point3>
+    Template2Point2Point3Instantiation;
+
+class Ignore {
+  Ignore(int x);
+};
+
+namespace sub2 {
+class Point4 {
+  Point4(const anzu::sub::Point2& p_in, double z_in, double w_in);
+  double sum();
+  const anzu::sub::Point2 p;
+  double z;
+  double w;
+};
+}  // namespace sub2
+
+double global_func_on_base(anzu::PointBase* point);
+
+}  // namespace anzu
+
+double global_func_overloads(anzu::sub::Point2* point2);
+double global_func_overloads(anzu::Point3* point3);

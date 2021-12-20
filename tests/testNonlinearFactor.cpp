@@ -239,12 +239,12 @@ public:
   typedef NoiseModelFactor4<double, double, double, double> Base;
   TestFactor4() : Base(noiseModel::Diagonal::Sigmas((Vector(1) << 2.0).finished()), X(1), X(2), X(3), X(4)) {}
 
-  virtual Vector
+  Vector
     evaluateError(const double& x1, const double& x2, const double& x3, const double& x4,
         boost::optional<Matrix&> H1 = boost::none,
         boost::optional<Matrix&> H2 = boost::none,
         boost::optional<Matrix&> H3 = boost::none,
-        boost::optional<Matrix&> H4 = boost::none) const {
+        boost::optional<Matrix&> H4 = boost::none) const override {
     if(H1) {
       *H1 = (Matrix(1, 1) << 1.0).finished();
       *H2 = (Matrix(1, 1) << 2.0).finished();
@@ -254,7 +254,7 @@ public:
     return (Vector(1) << x1 + x2 + x3 + x4).finished();
   }
 
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new TestFactor4(*this))); }
 };
@@ -287,13 +287,13 @@ public:
   typedef NoiseModelFactor5<double, double, double, double, double> Base;
   TestFactor5() : Base(noiseModel::Diagonal::Sigmas((Vector(1) << 2.0).finished()), X(1), X(2), X(3), X(4), X(5)) {}
 
-  virtual Vector
+  Vector
     evaluateError(const X1& x1, const X2& x2, const X3& x3, const X4& x4, const X5& x5,
         boost::optional<Matrix&> H1 = boost::none,
         boost::optional<Matrix&> H2 = boost::none,
         boost::optional<Matrix&> H3 = boost::none,
         boost::optional<Matrix&> H4 = boost::none,
-        boost::optional<Matrix&> H5 = boost::none) const {
+        boost::optional<Matrix&> H5 = boost::none) const override {
     if(H1) {
       *H1 = (Matrix(1, 1) << 1.0).finished();
       *H2 = (Matrix(1, 1) << 2.0).finished();
@@ -336,14 +336,14 @@ public:
   typedef NoiseModelFactor6<double, double, double, double, double, double> Base;
   TestFactor6() : Base(noiseModel::Diagonal::Sigmas((Vector(1) << 2.0).finished()), X(1), X(2), X(3), X(4), X(5), X(6)) {}
 
-  virtual Vector
+  Vector
     evaluateError(const X1& x1, const X2& x2, const X3& x3, const X4& x4, const X5& x5, const X6& x6,
         boost::optional<Matrix&> H1 = boost::none,
         boost::optional<Matrix&> H2 = boost::none,
         boost::optional<Matrix&> H3 = boost::none,
         boost::optional<Matrix&> H4 = boost::none,
         boost::optional<Matrix&> H5 = boost::none,
-        boost::optional<Matrix&> H6 = boost::none) const {
+        boost::optional<Matrix&> H6 = boost::none) const override {
     if(H1) {
       *H1 = (Matrix(1, 1) << 1.0).finished();
       *H2 = (Matrix(1, 1) << 2.0).finished();

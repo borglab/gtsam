@@ -57,7 +57,7 @@ namespace gtsam {
               makeNewTasks(makeNewTasks),
               isPostOrderPhase(false) {}
 
-        tbb::task* execute()
+        tbb::task* execute() override
         {
           if(isPostOrderPhase)
           {
@@ -144,7 +144,7 @@ namespace gtsam {
           roots(roots), myData(myData), visitorPre(visitorPre), visitorPost(visitorPost),
           problemSizeThreshold(problemSizeThreshold) {}
 
-        tbb::task* execute()
+        tbb::task* execute() override
         {
           typedef PreOrderTask<NODE, DATA, VISITOR_PRE, VISITOR_POST> PreOrderTask;
           // Create data and tasks for our children
