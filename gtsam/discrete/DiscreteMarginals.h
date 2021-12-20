@@ -37,6 +37,8 @@ namespace gtsam {
 
   public:
 
+  DiscreteMarginals() {}
+
   /** Construct a marginals class.
    * @param graph The factor graph defining the full joint density on all variables.
    */
