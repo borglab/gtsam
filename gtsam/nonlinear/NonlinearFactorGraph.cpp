@@ -121,7 +121,7 @@ void NonlinearFactorGraph::dot(std::ostream& os, const Values& values,
     // Create factors and variable connections
     size_t i = 0;
     for (const KeyVector& factorKeys : structure) {
-      writer.ProcessFactor(i++, factorKeys, boost::none, &os);
+      writer.processFactor(i++, factorKeys, boost::none, &os);
     }
   } else {
     // Create factors and variable connections
@@ -129,7 +129,7 @@ void NonlinearFactorGraph::dot(std::ostream& os, const Values& values,
       const NonlinearFactor::shared_ptr& factor = at(i);
       if (factor) {
         const KeyVector& factorKeys = factor->keys();
-        writer.ProcessFactor(i, factorKeys, writer.factorPos(min, i), &os);
+        writer.processFactor(i, factorKeys, writer.factorPos(min, i), &os);
       }
     }
   }

@@ -143,7 +143,7 @@ void FactorGraph<FACTOR>::dot(std::ostream& os, const DotWriter& writer,
     const auto& factor = at(i);
     if (factor) {
       const KeyVector& factorKeys = factor->keys();
-      writer.ProcessFactor(i, factorKeys, boost::none, &os);
+      writer.processFactor(i, factorKeys, boost::none, &os);
     }
   }
 

@@ -61,7 +61,7 @@ void DotWriter::ConnectVariableFactor(Key key, size_t i, ostream* os) {
       << "factor" << i << ";\n";
 }
 
-void DotWriter::ProcessFactor(size_t i, const KeyVector& keys,
+void DotWriter::processFactor(size_t i, const KeyVector& keys,
                               const boost::optional<Vector2>& position,
                               ostream* os) const {
   if (plotFactorPoints) {
