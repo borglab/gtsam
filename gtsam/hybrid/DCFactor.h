@@ -12,7 +12,7 @@
 
 #pragma once
 
-#include <gtsam/discrete/DiscreteFactor.h>
+#include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/Symbol.h>
@@ -22,9 +22,6 @@
 #include <limits>
 #include <string>
 #include <vector>
-
-#include "gtsam/hybrid/DCSAM_types.h"
-#include "gtsam/hybrid/DCSAM_utils.h"
 
 namespace gtsam {
 
@@ -87,9 +84,8 @@ class DCFactor : public gtsam::Factor {
    * @return error (usually the negative log-likelihood) for the measurement
    * model as a double.
    */
-  virtual double error(
-      const gtsam::Values& continuousVals,
-      const gtsam::DiscreteFactor::Values& discreteVals) const = 0;
+  virtual double error(const gtsam::Values& continuousVals,
+                       const gtsam::DiscreteValues& discreteVals) const = 0;
 
   /**
    * Linearize the error function with respect to the continuous
@@ -160,17 +156,7 @@ class DCFactor : public gtsam::Factor {
    */
   virtual gtsam::DecisionTreeFactor toDecisionTreeFactor(
       const gtsam::Values& continuousVals,
-      const DiscreteValues& discreteVals) const {
-    gtsam::DecisionTreeFactor converted;
-    for (const gtsam::DiscreteKey& dkey : discreteKeys_) {
-      std::vector<double> probs = evalProbs(dkey, continuousVals);
-      // Cardinality of gtsam::DiscreteKey is located at `second`
-      assert(probs.size() == dkey.second);
-      gtsam::DecisionTreeFactor unary(dkey, probs);
-      converted = converted * unary;
-    }
-    return converted;
-  }
+      const DiscreteValues& discreteVals) const;
 
   /**
    * Calculate a normalizing constant for this DCFactor. Most implementations
@@ -257,32 +243,7 @@ class DCFactor : public gtsam::Factor {
    * of each possible assignment to dk.
    */
   std::vector<double> evalProbs(const gtsam::DiscreteKey& dk,
-                                const gtsam::Values& continuousVals) const {
-    /*
-     * Normalizing a set of log probabilities in a numerically stable way is
-     * tricky. To avoid overflow/underflow issues, we compute the largest
-     * (finite) log probability and subtract it from each log probability before
-     * normalizing. This comes from the observation that if:
-     *    p_i = exp(L_i) / ( sum_j exp(L_j) ),
-     * Then,
-     *    p_i = exp(Z) exp(L_i - Z) / (exp(Z) sum_j exp(L_j - Z)),
-     *        = exp(L_i - Z) / ( sum_j exp(L_j - Z) )
-     *
-     * Setting Z = max_j L_j, we can avoid numerical issues that arise when all
-     * of the (unnormalized) log probabilities are either very large or very
-     * small.
-     */
-    std::vector<double> logProbs;
-    for (size_t i = 0; i < dk.second; i++) {
-      DiscreteValues testDiscreteVals;
-      testDiscreteVals[dk.first] = i;
-      // Recall: `error` returns -log(prob), so we compute exp(-error) to
-      // recover probability
-      double logProb = -error(continuousVals, testDiscreteVals);
-      logProbs.push_back(logProb);
-    }
-    return expNormalize(logProbs);
-  }
+                                const gtsam::Values& continuousVals) const;
 
   /**
    * Take the product of this DCFactor (as a gtsam::DecisionTreeFactor)
@@ -298,8 +259,6 @@ class DCFactor : public gtsam::Factor {
    */
   gtsam::DecisionTreeFactor conditionalTimes(
       const gtsam::DecisionTreeFactor& f, const gtsam::Values& continuousVals,
-      const DiscreteValues& discreteVals) const {
-    return toDecisionTreeFactor(continuousVals, discreteVals) * f;
-  }
+      const DiscreteValues& discreteVals) const;
 };
 }  // namespace gtsam
