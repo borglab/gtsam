@@ -90,7 +90,7 @@ public:
   }
 
   /// Destructor
-  virtual ~ShonanGaugeFactor() {}
+  ~ShonanGaugeFactor() override {}
 
   /// Calculate the error of the factor: always zero
   double error(const Values &c) const override { return 0; }

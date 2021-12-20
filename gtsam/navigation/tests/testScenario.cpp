@@ -19,9 +19,9 @@
 #include <gtsam/navigation/Scenario.h>
 
 #include <CppUnitLite/TestHarness.h>
-#include <boost/bind.hpp>
 #include <cmath>
 
+using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 
@@ -147,7 +147,7 @@ TEST(Scenario, Accelerating) {
   {
     // Check acceleration in nav
     Matrix expected = numericalDerivative11<Vector3, double>(
-        boost::bind(&Scenario::velocity_n, scenario, _1), T);
+        std::bind(&Scenario::velocity_n, scenario, std::placeholders::_1), T);
     EXPECT(assert_equal(Vector3(expected), scenario.acceleration_n(T), 1e-9));
   }
 

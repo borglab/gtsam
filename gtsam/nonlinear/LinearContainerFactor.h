@@ -29,9 +29,6 @@ protected:
   GaussianFactor::shared_ptr factor_;
   boost::optional<Values> linearizationPoint_;
 
-  /** Default constructor - necessary for serialization */
-  LinearContainerFactor() {}
-
   /** direct copy constructor */
   GTSAM_EXPORT LinearContainerFactor(const GaussianFactor::shared_ptr& factor, const boost::optional<Values>& linearizationPoint);
 
@@ -42,6 +39,9 @@ protected:
 public:
 
   typedef boost::shared_ptr<This> shared_ptr;
+
+  /** Default constructor - necessary for serialization */
+  LinearContainerFactor() {}
 
   /** Primary constructor: store a linear factor with optional linearization point */
   GTSAM_EXPORT LinearContainerFactor(const JacobianFactor& factor, const Values& linearizationPoint = Values());
@@ -120,8 +120,21 @@ public:
     return NonlinearFactor::shared_ptr(new LinearContainerFactor(factor_,linearizationPoint_));
   }
 
-  // casting syntactic sugar
+  /**
+   * Creates a shared_ptr clone of the
+   * factor with different keys using
+   * a map from old->new keys
+   */
+  NonlinearFactor::shared_ptr rekey(
+      const std::map<Key, Key>& rekey_mapping) const override;
 
+  /**
+   * Clones a factor and fully replaces its keys
+   * @param new_keys is the full replacement set of keys
+   */
+  NonlinearFactor::shared_ptr rekey(const KeyVector& new_keys) const override;
+
+  /// Casting syntactic sugar
   inline bool hasLinearizationPoint() const { return linearizationPoint_.is_initialized(); }
 
   /**

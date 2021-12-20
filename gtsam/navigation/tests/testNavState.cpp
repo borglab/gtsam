@@ -19,8 +19,11 @@
 #include <gtsam/navigation/NavState.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/numericalDerivative.h>
+
+#include <boost/bind/bind.hpp>
 #include <CppUnitLite/TestHarness.h>
 
+using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 
@@ -36,9 +39,9 @@ static const Vector9 kZeroXi = Vector9::Zero();
 
 /* ************************************************************************* */
 TEST(NavState, Constructor) {
-  boost::function<NavState(const Rot3&, const Point3&, const Vector3&)> create =
-      boost::bind(&NavState::Create, _1, _2, _3, boost::none, boost::none,
-          boost::none);
+  std::function<NavState(const Rot3&, const Point3&, const Vector3&)> create =
+      std::bind(&NavState::Create, std::placeholders::_1, std::placeholders::_2,
+                std::placeholders::_3, boost::none, boost::none, boost::none);
   Matrix aH1, aH2, aH3;
   EXPECT(
       assert_equal(kState1,
@@ -56,9 +59,9 @@ TEST(NavState, Constructor) {
 
 /* ************************************************************************* */
 TEST(NavState, Constructor2) {
-  boost::function<NavState(const Pose3&, const Vector3&)> construct =
-      boost::bind(&NavState::FromPoseVelocity, _1, _2, boost::none,
-          boost::none);
+  std::function<NavState(const Pose3&, const Vector3&)> construct =
+      std::bind(&NavState::FromPoseVelocity, std::placeholders::_1,
+                std::placeholders::_2, boost::none, boost::none);
   Matrix aH1, aH2;
   EXPECT(
       assert_equal(kState1,
@@ -73,7 +76,7 @@ TEST( NavState, Attitude) {
   Rot3 actual = kState1.attitude(aH);
   EXPECT(assert_equal(actual, kAttitude));
   eH = numericalDerivative11<Rot3, NavState>(
-      boost::bind(&NavState::attitude, _1, boost::none), kState1);
+      std::bind(&NavState::attitude, std::placeholders::_1, boost::none), kState1);
   EXPECT(assert_equal((Matrix )eH, aH));
 }
 
@@ -83,7 +86,8 @@ TEST( NavState, Position) {
   Point3 actual = kState1.position(aH);
   EXPECT(assert_equal(actual, kPosition));
   eH = numericalDerivative11<Point3, NavState>(
-      boost::bind(&NavState::position, _1, boost::none), kState1);
+      std::bind(&NavState::position, std::placeholders::_1, boost::none),
+      kState1);
   EXPECT(assert_equal((Matrix )eH, aH));
 }
 
@@ -93,7 +97,8 @@ TEST( NavState, Velocity) {
   Velocity3 actual = kState1.velocity(aH);
   EXPECT(assert_equal(actual, kVelocity));
   eH = numericalDerivative11<Velocity3, NavState>(
-      boost::bind(&NavState::velocity, _1, boost::none), kState1);
+      std::bind(&NavState::velocity, std::placeholders::_1, boost::none),
+      kState1);
   EXPECT(assert_equal((Matrix )eH, aH));
 }
 
@@ -103,7 +108,8 @@ TEST( NavState, BodyVelocity) {
   Velocity3 actual = kState1.bodyVelocity(aH);
   EXPECT(assert_equal<Velocity3>(actual, kAttitude.unrotate(kVelocity)));
   eH = numericalDerivative11<Velocity3, NavState>(
-      boost::bind(&NavState::bodyVelocity, _1, boost::none), kState1);
+      std::bind(&NavState::bodyVelocity, std::placeholders::_1, boost::none),
+      kState1);
   EXPECT(assert_equal((Matrix )eH, aH));
 }
 
@@ -134,8 +140,9 @@ TEST( NavState, Manifold ) {
   // Check retract derivatives
   Matrix9 aH1, aH2;
   kState1.retract(xi, aH1, aH2);
-  boost::function<NavState(const NavState&, const Vector9&)> retract =
-      boost::bind(&NavState::retract, _1, _2, boost::none, boost::none);
+  std::function<NavState(const NavState&, const Vector9&)> retract =
+      std::bind(&NavState::retract, std::placeholders::_1,
+                std::placeholders::_2, boost::none, boost::none);
   EXPECT(assert_equal(numericalDerivative21(retract, kState1, xi), aH1));
   EXPECT(assert_equal(numericalDerivative22(retract, kState1, xi), aH2));
 
@@ -146,9 +153,9 @@ TEST( NavState, Manifold ) {
   EXPECT(assert_equal(numericalDerivative22(retract, state2, xi2), aH2));
 
   // Check localCoordinates derivatives
-  boost::function<Vector9(const NavState&, const NavState&)> local =
-      boost::bind(&NavState::localCoordinates, _1, _2, boost::none,
-          boost::none);
+  std::function<Vector9(const NavState&, const NavState&)> local =
+      std::bind(&NavState::localCoordinates, std::placeholders::_1,
+                std::placeholders::_2, boost::none, boost::none);
   // from state1 to state2
   kState1.localCoordinates(state2, aH1, aH2);
   EXPECT(assert_equal(numericalDerivative21(local, kState1, state2), aH1));
@@ -165,8 +172,9 @@ TEST( NavState, Manifold ) {
 
 /* ************************************************************************* */
 static const double dt = 2.0;
-boost::function<Vector9(const NavState&, const bool&)> coriolis = boost::bind(
-    &NavState::coriolis, _1, dt, kOmegaCoriolis, _2, boost::none);
+std::function<Vector9(const NavState&, const bool&)> coriolis =
+    std::bind(&NavState::coriolis, std::placeholders::_1, dt, kOmegaCoriolis,
+              std::placeholders::_2, boost::none);
 
 TEST(NavState, Coriolis) {
   Matrix9 aH;
@@ -192,15 +200,59 @@ TEST(NavState, Coriolis2) {
   EXPECT(assert_equal(numericalDerivative21(coriolis, state2, true), aH));
 }
 
+TEST(NavState, Coriolis3) {
+  /** Consider a massless planet with an attached nav frame at 
+   *  n_omega = [0 0 1]', and a body at position n_t = [1 0 0]', travelling with 
+   *  velocity n_v = [0 1 0]'. Orient the body so that it is not instantaneously
+   *  aligned with the nav frame (i.e., nRb != I_3x3). Test that first and 
+   *  second order Coriolis corrections are as expected.
+   */
+
+  // Get true first and second order coriolis accelerations
+  double dt = 2.0, dt2 = dt * dt;
+  Vector3 n_omega(0.0, 0.0, 1.0), n_t(1.0, 0.0, 0.0), n_v(0.0, 1.0, 0.0);
+  Vector3 n_aCorr1 = -2.0 * n_omega.cross(n_v),
+          n_aCorr2 = -n_omega.cross(n_omega.cross(n_t));
+  Rot3 nRb = Rot3(-1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0),
+       bRn = nRb.inverse();
+
+  // Get expected first and second order corrections in the nav frame
+  Vector3 n_dP1e = 0.5 * dt2 * n_aCorr1, 
+          n_dP2e = 0.5 * dt2 * (n_aCorr1 + n_aCorr2),
+          n_dV1e = dt * n_aCorr1, 
+          n_dV2e = dt * (n_aCorr1 + n_aCorr2);
+
+  // Get expected first and second order corrections in the body frame
+  Vector3 dRe = -dt * (bRn * n_omega),
+          b_dP1e = bRn * n_dP1e, b_dP2e = bRn * n_dP2e,
+          b_dV1e = bRn * n_dV1e, b_dV2e = bRn * n_dV2e;
+
+  // Get actual first and scond order corrections in body frame
+  NavState kState2(nRb, n_t, n_v);
+  Vector9 dXi1a = kState2.coriolis(dt, n_omega, false),
+          dXi2a = kState2.coriolis(dt, n_omega, true);
+  Vector3 dRa = NavState::dR(dXi1a),
+          b_dP1a = NavState::dP(dXi1a), b_dV1a = NavState::dV(dXi1a),
+          b_dP2a = NavState::dP(dXi2a), b_dV2a = NavState::dV(dXi2a);
+
+  EXPECT(assert_equal(dRe, dRa));
+  EXPECT(assert_equal(b_dP1e, b_dP1a));
+  EXPECT(assert_equal(b_dV1e, b_dV1a));
+  EXPECT(assert_equal(b_dP2e, b_dP2a));
+  EXPECT(assert_equal(b_dV2e, b_dV2a));
+
+}
+
 /* ************************************************************************* */
 TEST(NavState, CorrectPIM) {
   Vector9 xi;
   xi << 0.1, 0.1, 0.1, 0.2, 0.3, 0.4, -0.1, -0.2, -0.3;
   double dt = 0.5;
   Matrix9 aH1, aH2;
-  boost::function<Vector9(const NavState&, const Vector9&)> correctPIM =
-      boost::bind(&NavState::correctPIM, _1, _2, dt, kGravity, kOmegaCoriolis,
-          false, boost::none, boost::none);
+  std::function<Vector9(const NavState&, const Vector9&)> correctPIM =
+      std::bind(&NavState::correctPIM, std::placeholders::_1,
+                std::placeholders::_2, dt, kGravity, kOmegaCoriolis, false,
+                boost::none, boost::none);
   kState1.correctPIM(xi, dt, kGravity, kOmegaCoriolis, false, aH1, aH2);
   EXPECT(assert_equal(numericalDerivative21(correctPIM, kState1, xi), aH1));
   EXPECT(assert_equal(numericalDerivative22(correctPIM, kState1, xi), aH2));
@@ -215,7 +267,7 @@ TEST(NavState, Stream)
   os << state;
 
   string expected;
-  expected = "R: [\n\t1, 0, 0;\n\t0, 1, 0;\n\t0, 0, 1\n]\np: 0\n0\n0\nv: 0\n0\n0";
+  expected = "R: [\n\t1, 0, 0;\n\t0, 1, 0;\n\t0, 0, 1\n]\np: 0 0 0\nv: 0 0 0";
 
   EXPECT(os.str() == expected);
 }

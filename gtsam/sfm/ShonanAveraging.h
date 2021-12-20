@@ -20,36 +20,45 @@
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Vector.h>
+#include <gtsam/dllexport.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/geometry/Rot3.h>
+#include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/sfm/BinaryMeasurement.h>
+#include <gtsam/linear/PowerMethod.h>
+#include <gtsam/linear/AcceleratedPowerMethod.h>
 #include <gtsam/slam/dataset.h>
-#include <gtsam/dllexport.h>
 
 #include <Eigen/Sparse>
 #include <map>
 #include <string>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 namespace gtsam {
 class NonlinearFactorGraph;
 class LevenbergMarquardtOptimizer;
 
 /// Parameters governing optimization etc.
-template <size_t d> struct GTSAM_EXPORT ShonanAveragingParameters {
+template <size_t d>
+struct GTSAM_EXPORT ShonanAveragingParameters {
   // Select Rot2 or Rot3 interface based template parameter d
   using Rot = typename std::conditional<d == 2, Rot2, Rot3>::type;
   using Anchor = std::pair<size_t, Rot>;
 
-  // Paremeters themselves:
-  LevenbergMarquardtParams lm; // LM parameters
-  double optimalityThreshold;  // threshold used in checkOptimality
-  Anchor anchor;               // pose to use as anchor if not Karcher
-  double alpha;                // weight of anchor-based prior (default 0)
-  double beta;                 // weight of Karcher-based prior (default 1)
-  double gamma;                // weight of gauge-fixing factors (default 0)
+  // Parameters themselves:
+  LevenbergMarquardtParams lm;  ///< LM parameters
+  double optimalityThreshold;   ///< threshold used in checkOptimality
+  Anchor anchor;                ///< pose to use as anchor if not Karcher
+  double alpha;                 ///< weight of anchor-based prior (default 0)
+  double beta;                  ///< weight of Karcher-based prior (default 1)
+  double gamma;                 ///< weight of gauge-fixing factors (default 0)
+  /// if enabled, the Huber loss is used (default false)
+  bool useHuber;
+  /// if enabled solution optimality is certified (default true)
+  bool certifyOptimality;
 
   ShonanAveragingParameters(const LevenbergMarquardtParams &lm =
                                 LevenbergMarquardtParams::CeresDefaults(),
@@ -64,15 +73,32 @@ template <size_t d> struct GTSAM_EXPORT ShonanAveragingParameters {
   double getOptimalityThreshold() const { return optimalityThreshold; }
 
   void setAnchor(size_t index, const Rot &value) { anchor = {index, value}; }
+  std::pair<size_t, Rot> getAnchor() const { return anchor; }
 
   void setAnchorWeight(double value) { alpha = value; }
-  double getAnchorWeight() { return alpha; }
+  double getAnchorWeight() const { return alpha; }
 
   void setKarcherWeight(double value) { beta = value; }
-  double getKarcherWeight() { return beta; }
+  double getKarcherWeight() const { return beta; }
 
   void setGaugesWeight(double value) { gamma = value; }
-  double getGaugesWeight() { return gamma; }
+  double getGaugesWeight() const { return gamma; }
+
+  void setUseHuber(bool value) { useHuber = value; }
+  bool getUseHuber() const { return useHuber; }
+
+  void setCertifyOptimality(bool value) { certifyOptimality = value; }
+  bool getCertifyOptimality() const { return certifyOptimality; }
+
+  /// Print the parameters and flags used for rotation averaging.
+  void print(const std::string &s = "") const {
+    std::cout << (s.empty() ? s : s + " ");
+    std::cout << " ShonanAveragingParameters: " << std::endl;
+    std::cout << " alpha: " << alpha << std::endl;
+    std::cout << " beta: " << beta << std::endl;
+    std::cout << " gamma: " << gamma << std::endl;
+    std::cout << " useHuber: " << useHuber << std::endl;
+  }
 };
 
 using ShonanAveragingParameters2 = ShonanAveragingParameters<2>;
@@ -93,8 +119,9 @@ using ShonanAveragingParameters3 = ShonanAveragingParameters<3>;
  *    European Computer Vision Conference, 2020.
  * You can view our ECCV spotlight video at https://youtu.be/5ppaqMyHtE0
  */
-template <size_t d> class GTSAM_EXPORT ShonanAveraging {
-public:
+template <size_t d>
+class GTSAM_EXPORT ShonanAveraging {
+ public:
   using Sparse = Eigen::SparseMatrix<double>;
 
   // Define the Parameters type and use its typedef of the rotation type:
@@ -102,16 +129,15 @@ public:
   using Rot = typename Parameters::Rot;
 
   // We store SO(d) BetweenFactors to get noise model
-  // TODO(frank): use BinaryMeasurement?
   using Measurements = std::vector<BinaryMeasurement<Rot>>;
 
-private:
+ private:
   Parameters parameters_;
   Measurements measurements_;
   size_t nrUnknowns_;
-  Sparse D_; // Sparse (diagonal) degree matrix
-  Sparse Q_; // Sparse measurement matrix, == \tilde{R} in Eriksson18cvpr
-  Sparse L_; // connection Laplacian L = D - Q, needed for optimality check
+  Sparse D_;  // Sparse (diagonal) degree matrix
+  Sparse Q_;  // Sparse measurement matrix, == \tilde{R} in Eriksson18cvpr
+  Sparse L_;  // connection Laplacian L = D - Q, needed for optimality check
 
   /**
    * Build 3Nx3N sparse matrix consisting of rotation measurements, arranged as
@@ -122,7 +148,7 @@ private:
   /// Build 3Nx3N sparse degree matrix D
   Sparse buildD() const;
 
-public:
+ public:
   /// @name Standard Constructors
   /// @{
 
@@ -146,6 +172,36 @@ public:
     return measurements_[k];
   }
 
+  /**
+   * Update factors to use robust Huber loss.
+   *
+   * @param measurements Vector of BinaryMeasurements.
+   * @param k Huber noise model threshold.
+   */
+  Measurements makeNoiseModelRobust(const Measurements &measurements,
+                                    double k = 1.345) const {
+    Measurements robustMeasurements;
+    for (auto &measurement : measurements) {
+      auto model = measurement.noiseModel();
+      const auto &robust =
+          boost::dynamic_pointer_cast<noiseModel::Robust>(model);
+
+      SharedNoiseModel robust_model;
+      // Check if the noise model is already robust
+      if (robust) {
+        robust_model = model;
+      } else {
+        // make robust
+        robust_model = noiseModel::Robust::Create(
+            noiseModel::mEstimator::Huber::Create(k), model);
+      }
+      BinaryMeasurement<Rot> meas(measurement.key1(), measurement.key2(),
+                                  measurement.measured(), robust_model);
+      robustMeasurements.push_back(meas);
+    }
+    return robustMeasurements;
+  }
+
   /// k^th measurement, as a Rot.
   const Rot &measured(size_t k) const { return measurements_[k].measured(); }
 
@@ -156,12 +212,12 @@ public:
   /// @name Matrix API (advanced use, debugging)
   /// @{
 
-  Sparse D() const { return D_; }              ///< Sparse version of D
-  Matrix denseD() const { return Matrix(D_); } ///< Dense version of D
-  Sparse Q() const { return Q_; }              ///< Sparse version of Q
-  Matrix denseQ() const { return Matrix(Q_); } ///< Dense version of Q
-  Sparse L() const { return L_; }              ///< Sparse version of L
-  Matrix denseL() const { return Matrix(L_); } ///< Dense version of L
+  Sparse D() const { return D_; }               ///< Sparse version of D
+  Matrix denseD() const { return Matrix(D_); }  ///< Dense version of D
+  Sparse Q() const { return Q_; }               ///< Sparse version of Q
+  Matrix denseQ() const { return Matrix(Q_); }  ///< Dense version of Q
+  Sparse L() const { return L_; }               ///< Sparse version of L
+  Matrix denseL() const { return Matrix(L_); }  ///< Dense version of L
 
   /// Version that takes pxdN Stiefel manifold elements
   Sparse computeLambda(const Matrix &S) const;
@@ -197,11 +253,18 @@ public:
   double computeMinEigenValue(const Values &values,
                               Vector *minEigenVector = nullptr) const;
 
+  /**
+   * Compute minimum eigenvalue with accelerated power method.
+   * @param values: should be of type SOn
+   */
+  double computeMinEigenValueAP(const Values &values,
+                                Vector *minEigenVector = nullptr) const;
+
   /// Project pxdN Stiefel manifold matrix S to Rot3^N
   Values roundSolutionS(const Matrix &S) const;
 
-  /// Create a tangent direction xi with eigenvector segment v_i
-  static Vector MakeATangentVector(size_t p, const Vector &v, size_t i);
+  /// Create a VectorValues with eigenvector v_i
+  static VectorValues TangentVectorValues(size_t p, const Vector &v);
 
   /// Calculate the riemannian gradient of F(values) at values
   Matrix riemannianGradient(size_t p, const Values &values) const;
@@ -220,11 +283,10 @@ public:
    * @param minEigenVector corresponding to minEigenValue at level p-1
    * @return values of type SO(p)
    */
-  Values
-  initializeWithDescent(size_t p, const Values &values,
-                        const Vector &minEigenVector, double minEigenValue,
-                        double gradienTolerance = 1e-2,
-                        double preconditionedGradNormTolerance = 1e-4) const;
+  Values initializeWithDescent(
+      size_t p, const Values &values, const Vector &minEigenVector,
+      double minEigenValue, double gradienTolerance = 1e-2,
+      double preconditionedGradNormTolerance = 1e-4) const;
   /// @}
   /// @name Advanced API
   /// @{
@@ -237,11 +299,11 @@ public:
 
   /**
    * Create initial Values of type SO(p)
-   * @param p the dimensionality of the rotation manifold 
+   * @param p the dimensionality of the rotation manifold
    */
   Values initializeRandomlyAt(size_t p, std::mt19937 &rng) const;
 
-  /// Version of initializeRandomlyAt with fixed random seed. 
+  /// Version of initializeRandomlyAt with fixed random seed.
   Values initializeRandomlyAt(size_t p) const;
 
   /**
@@ -300,7 +362,8 @@ public:
   Values roundSolution(const Values &values) const;
 
   /// Lift Values of type T to SO(p)
-  template <class T> static Values LiftTo(size_t p, const Values &values) {
+  template <class T>
+  static Values LiftTo(size_t p, const Values &values) {
     Values result;
     for (const auto it : values.filter<T>()) {
       result.insert(it.key, SOn::Lift(p, it.value.matrix()));
@@ -327,7 +390,7 @@ public:
    */
   Values initializeRandomly(std::mt19937 &rng) const;
 
-  /// Random initialization for wrapper, fixed random seed. 
+  /// Random initialization for wrapper, fixed random seed.
   Values initializeRandomly() const;
 
   /**
@@ -340,26 +403,46 @@ public:
   std::pair<Values, double> run(const Values &initialEstimate, size_t pMin = d,
                                 size_t pMax = 10) const;
   /// @}
+
+  /**
+   * Helper function to convert measurements to robust noise model
+   * if flag is set.
+   *
+   * @tparam T the type of measurement, e.g. Rot3.
+   * @param measurements vector of BinaryMeasurements of type T.
+   * @param useRobustModel flag indicating whether use robust noise model
+   * instead.
+   */
+  template <typename T>
+  inline std::vector<BinaryMeasurement<T>> maybeRobust(
+      const std::vector<BinaryMeasurement<T>> &measurements,
+      bool useRobustModel = false) const {
+    return useRobustModel ? makeNoiseModelRobust(measurements) : measurements;
+  }
 };
 
 // Subclasses for d=2 and d=3 that explicitly instantiate, as well as provide a
 // convenience interface with file access.
 
-class ShonanAveraging2 : public ShonanAveraging<2> {
-public:
+class GTSAM_EXPORT ShonanAveraging2 : public ShonanAveraging<2> {
+ public:
   ShonanAveraging2(const Measurements &measurements,
                    const Parameters &parameters = Parameters());
-  ShonanAveraging2(string g2oFile, const Parameters &parameters = Parameters());
+  explicit ShonanAveraging2(std::string g2oFile,
+                            const Parameters &parameters = Parameters());
+  ShonanAveraging2(const BetweenFactorPose2s &factors,
+                   const Parameters &parameters = Parameters());
 };
 
-class ShonanAveraging3 : public ShonanAveraging<3> {
-public:
+class GTSAM_EXPORT ShonanAveraging3 : public ShonanAveraging<3> {
+ public:
   ShonanAveraging3(const Measurements &measurements,
                    const Parameters &parameters = Parameters());
-  ShonanAveraging3(string g2oFile, const Parameters &parameters = Parameters());
+  explicit ShonanAveraging3(std::string g2oFile,
+                            const Parameters &parameters = Parameters());
 
   // TODO(frank): Deprecate after we land pybind wrapper
   ShonanAveraging3(const BetweenFactorPose3s &factors,
                    const Parameters &parameters = Parameters());
 };
-} // namespace gtsam
+}  // namespace gtsam

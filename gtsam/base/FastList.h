@@ -22,6 +22,8 @@
 #include <list>
 #include <boost/utility/enable_if.hpp>
 #include <boost/serialization/nvp.hpp>
+#include <boost/serialization/version.hpp>
+#include <boost/serialization/optional.hpp>
 #include <boost/serialization/list.hpp>
 
 namespace gtsam {

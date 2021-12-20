@@ -86,7 +86,7 @@ public:
   }
 
   /** Virtual destructor */
-  virtual ~TriangulationFactor() {
+  ~TriangulationFactor() override {
   }
 
   /// @return a deep copy of this factor

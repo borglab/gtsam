@@ -37,14 +37,20 @@ public:
   typedef boost::shared_ptr<InequalityFactorGraph> shared_ptr;
 
   /** print */
-  void print(const std::string& str, const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) const {
+  void print(
+      const std::string& str = "",
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     Base::print(str, keyFormatter);
   }
 
   /** equals */
   bool equals(const InequalityFactorGraph& other, double tol = 1e-9) const {
     return Base::equals(other, tol);
+  }
+
+  /// Add a linear inequality, forwards arguments to LinearInequality.
+  template <class... Args> void add(Args &&... args) {
+    emplace_shared<LinearInequality>(std::forward<Args>(args)...);
   }
 
   /**

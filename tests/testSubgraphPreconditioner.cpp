@@ -200,7 +200,7 @@ TEST(SubgraphPreconditioner, system) {
 }
 
 /* ************************************************************************* */
-BOOST_CLASS_EXPORT_GUID(gtsam::JacobianFactor, "JacobianFactor");
+BOOST_CLASS_EXPORT_GUID(gtsam::JacobianFactor, "JacobianFactor")
 
 // Read from XML file
 static GaussianFactorGraph read(const string& name) {

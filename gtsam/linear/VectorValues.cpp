@@ -18,7 +18,7 @@
 
 #include <gtsam/linear/VectorValues.h>
 
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/range/combine.hpp>
 #include <boost/range/numeric.hpp>
 #include <boost/range/adaptor/transformed.hpp>
@@ -38,7 +38,8 @@ namespace gtsam {
   {
     // Merge using predicate for comparing first of pair
     merge(first.begin(), first.end(), second.begin(), second.end(), inserter(values_, values_.end()),
-      boost::bind(&less<Key>::operator(), less<Key>(), boost::bind(&KeyValuePair::first, _1), boost::bind(&KeyValuePair::first, _2)));
+      std::bind(&less<Key>::operator(), less<Key>(), std::bind(&KeyValuePair::first, std::placeholders::_1),
+          std::bind(&KeyValuePair::first, std::placeholders::_2)));
     if(size() != first.size() + second.size())
       throw invalid_argument("Requested to merge two VectorValues that have one or more variables in common.");
   }
@@ -161,7 +162,7 @@ namespace gtsam {
   bool VectorValues::equals(const VectorValues& x, double tol) const {
     if(this->size() != x.size())
       return false;
-    for(const auto& values: boost::combine(*this, x)) {
+    for(const auto values: boost::combine(*this, x)) {
       if(values.get<0>().first != values.get<1>().first ||
         !equal_with_abs_tol(values.get<0>().second, values.get<1>().second, tol))
         return false;
@@ -233,7 +234,7 @@ namespace gtsam {
     double result = 0.0;
     typedef boost::tuple<value_type, value_type> ValuePair;
     using boost::adaptors::map_values;
-    for(const ValuePair& values: boost::combine(*this, v)) {
+    for(const ValuePair values: boost::combine(*this, v)) {
       assert_throw(values.get<0>().first == values.get<1>().first,
         invalid_argument("VectorValues::dot called with a VectorValues of different structure"));
       assert_throw(values.get<0>().second.size() == values.get<1>().second.size(),

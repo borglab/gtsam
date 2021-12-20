@@ -51,7 +51,7 @@ public:
   /** default constructor - only use for serialization */
   GPSFactor(): nT_(0, 0, 0) {}
 
-  virtual ~GPSFactor() {}
+  ~GPSFactor() override {}
 
   /**
    * @brief Constructor from a measurement in a Cartesian frame.
@@ -71,8 +71,8 @@ public:
   }
 
   /// print
-  void print(const std::string& s, const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) const override;
+  void print(const std::string& s = "", const KeyFormatter& keyFormatter =
+                                            DefaultKeyFormatter) const override;
 
   /// equals
   bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
@@ -129,7 +129,7 @@ public:
   /// default constructor - only use for serialization
   GPSFactor2():nT_(0, 0, 0) {}
 
-  virtual ~GPSFactor2() {}
+  ~GPSFactor2() override {}
 
   /// Constructor from a measurement in a Cartesian frame.
   GPSFactor2(Key key, const Point3& gpsIn, const SharedNoiseModel& model) :
@@ -143,8 +143,8 @@ public:
   }
 
   /// print
-  void print(const std::string& s, const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) const override;
+  void print(const std::string& s = "", const KeyFormatter& keyFormatter =
+                                            DefaultKeyFormatter) const override;
 
   /// equals
   bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;

@@ -392,7 +392,7 @@ parseMeasurements(const std::string &filename,
                   size_t maxIndex) {
   ParseMeasurement<Pose2> parse{model ? createSampler(model) : nullptr,
                                 maxIndex, true, NoiseFormatAUTO,
-                                KernelFunctionTypeNONE};
+                                KernelFunctionTypeNONE, nullptr};
   return parseToVector<BinaryMeasurement<Pose2>>(filename, parse);
 }
 
@@ -586,7 +586,7 @@ void save2D(const NonlinearFactorGraph &graph, const Values &config,
   fstream stream(filename.c_str(), fstream::out);
 
   // save poses
-  for (const Values::ConstKeyValuePair key_value : config) {
+  for (const auto key_value : config) {
     const Pose2 &pose = key_value.value.cast<Pose2>();
     stream << "VERTEX2 " << key_value.key << " " << pose.x() << " " << pose.y()
            << " " << pose.theta() << endl;
@@ -1130,6 +1130,13 @@ bool readBAL(const string &filename, SfmData &data) {
 }
 
 /* ************************************************************************* */
+SfmData readBal(const string &filename) {
+  SfmData data;
+  readBAL(filename, data);
+  return data;
+}
+
+/* ************************************************************************* */
 bool writeBAL(const string &filename, SfmData &data) {
   // Open the output file
   ofstream os;
@@ -1157,8 +1164,8 @@ bool writeBAL(const string &filename, SfmData &data) {
     for (size_t k = 0; k < track.number_measurements();
          k++) { // for each observation of the 3D point j
       size_t i = track.measurements[k].first; // camera id
-      double u0 = data.cameras[i].calibration().u0();
-      double v0 = data.cameras[i].calibration().v0();
+      double u0 = data.cameras[i].calibration().px();
+      double v0 = data.cameras[i].calibration().py();
 
       if (u0 != 0 || v0 != 0) {
         cout << "writeBAL has not been tested for calibration with nonzero "

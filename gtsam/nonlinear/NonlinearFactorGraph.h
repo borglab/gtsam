@@ -11,7 +11,7 @@
 
 /**
  * @file    NonlinearFactorGraph.h
- * @brief   Factor Graph Constsiting of non-linear factors
+ * @brief   Factor Graph consisting of non-linear factors
  * @author  Frank Dellaert
  * @author  Carlos Nieto
  * @author  Christian Potthast
@@ -98,9 +98,13 @@ namespace gtsam {
     template<class DERIVEDFACTOR>
     NonlinearFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph) : Base(graph) {}
 
+    /// Destructor
+    virtual ~NonlinearFactorGraph() {}
+
     /** print */
-    void print(const std::string& str = "NonlinearFactorGraph: ",
-               const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+    void print(
+        const std::string& str = "NonlinearFactorGraph: ",
+        const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
 
     /** print errors along with factors*/
     void printErrors(const Values& values, const std::string& str = "NonlinearFactorGraph: ",
@@ -111,8 +115,18 @@ namespace gtsam {
     /** Test equality */
     bool equals(const NonlinearFactorGraph& other, double tol = 1e-9) const;
 
-    /** Write the graph in GraphViz format for visualization */
+    /// Write the graph in GraphViz format for visualization
     void saveGraph(std::ostream& stm, const Values& values = Values(),
+      const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+
+    /**
+     * Write the graph in GraphViz format to file for visualization.
+     *
+     * This is a wrapper friendly version since wrapped languages don't have
+     * access to C++ streams.
+     */
+    void saveGraph(const std::string& file, const Values& values = Values(),
       const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
@@ -251,15 +265,17 @@ namespace gtsam {
 
   public:
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
     /** \deprecated */
-    boost::shared_ptr<HessianFactor> linearizeToHessianFactor(
+    boost::shared_ptr<HessianFactor> GTSAM_DEPRECATED linearizeToHessianFactor(
         const Values& values, boost::none_t, const Dampen& dampen = nullptr) const
       {return linearizeToHessianFactor(values, dampen);}
 
     /** \deprecated */
-    Values updateCholesky(const Values& values, boost::none_t,
+    Values GTSAM_DEPRECATED updateCholesky(const Values& values, boost::none_t,
                           const Dampen& dampen = nullptr) const
       {return updateCholesky(values, dampen);}
+#endif
 
   };
 

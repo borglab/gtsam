@@ -149,7 +149,7 @@ Template JacobianFactor::shared_ptr This::createDualFactor(
     // to compute the least-square approximation of dual variables
     return boost::make_shared<JacobianFactor>(Aterms, b);
   } else {
-    return boost::make_shared<JacobianFactor>();
+    return nullptr;
   }
 }
 
@@ -165,14 +165,13 @@ Template JacobianFactor::shared_ptr This::createDualFactor(
  *  if lambda = 0  you are on the constraint
  *  if lambda > 0  you are violating the constraint.
  */
-Template GaussianFactorGraph::shared_ptr This::buildDualGraph(
+Template GaussianFactorGraph This::buildDualGraph(
     const InequalityFactorGraph& workingSet, const VectorValues& delta) const {
-  GaussianFactorGraph::shared_ptr dualGraph(new GaussianFactorGraph());
+  GaussianFactorGraph dualGraph;
   for (Key key : constrainedKeys_) {
     // Each constrained key becomes a factor in the dual graph
-    JacobianFactor::shared_ptr dualFactor =
-        createDualFactor(key, workingSet, delta);
-    if (!dualFactor->empty()) dualGraph->push_back(dualFactor);
+    auto dualFactor = createDualFactor(key, workingSet, delta);
+    if (dualFactor) dualGraph.push_back(dualFactor);
   }
   return dualGraph;
 }
@@ -193,19 +192,16 @@ This::buildWorkingGraph(const InequalityFactorGraph& workingSet,
 Template typename This::State This::iterate(
     const typename This::State& state) const {
   // Algorithm 16.3 from Nocedal06book.
-  // Solve with the current working set eqn 16.39, but instead of solving for p
-  // solve for x
-  GaussianFactorGraph workingGraph =
-      buildWorkingGraph(state.workingSet, state.values);
+  // Solve with the current working set eqn 16.39, but solve for x not p
+  auto workingGraph = buildWorkingGraph(state.workingSet, state.values);
   VectorValues newValues = workingGraph.optimize();
   // If we CAN'T move further
   // if p_k = 0 is the original condition, modified by Duy to say that the state
   // update is zero.
   if (newValues.equals(state.values, 1e-7)) {
     // Compute lambda from the dual graph
-    GaussianFactorGraph::shared_ptr dualGraph = buildDualGraph(state.workingSet,
-        newValues);
-    VectorValues duals = dualGraph->optimize();
+    auto dualGraph = buildDualGraph(state.workingSet, newValues);
+    VectorValues duals = dualGraph.optimize();
     int leavingFactor = identifyLeavingConstraint(state.workingSet, duals);
     // If all inequality constraints are satisfied: We have the solution!!
     if (leavingFactor < 0) {

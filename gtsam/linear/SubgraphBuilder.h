@@ -21,6 +21,7 @@
 #include <gtsam/base/types.h>
 #include <gtsam/dllexport.h>
 
+#include <boost/serialization/version.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <boost/shared_ptr.hpp>
 

@@ -512,7 +512,7 @@ TEST( ConcurrentIncrementalSmootherDL, synchronize_2 )
 //  Values expectedLinearizationPoint = BatchOptimize(allFactors, allValues, 1);
   Values expectedLinearizationPoint = filterSeparatorValues;
   Values actualLinearizationPoint;
-  for(const Values::ConstKeyValuePair& key_value: filterSeparatorValues) {
+  for(const auto key_value: filterSeparatorValues) {
     actualLinearizationPoint.insert(key_value.key, smoother.getLinearizationPoint().at(key_value.key));
   }
   CHECK(assert_equal(expectedLinearizationPoint, actualLinearizationPoint, 1e-6));
@@ -580,7 +580,7 @@ TEST( ConcurrentIncrementalSmootherDL, synchronize_3 )
 //  GaussianBayesNet::shared_ptr GBNsptr = GSS.eliminate();
 
   KeySet allkeys = LinFactorGraph->keys();
-  for(const Values::ConstKeyValuePair& key_value: filterSeparatorValues) {
+  for(const auto key_value: filterSeparatorValues) {
     allkeys.erase(key_value.key);
   }
   KeyVector variables(allkeys.begin(), allkeys.end());

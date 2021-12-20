@@ -40,7 +40,7 @@ public:
   RelativeElevationFactor(Key poseKey, Key pointKey, double measured,
       const SharedNoiseModel& model);
 
-  virtual ~RelativeElevationFactor() {}
+  ~RelativeElevationFactor() override {}
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {

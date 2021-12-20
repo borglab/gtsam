@@ -82,7 +82,8 @@ Rot3 Rot3::Rz(double t) {
 
 /* ************************************************************************* */
 // Considerably faster than composing matrices above !
-Rot3 Rot3::RzRyRx(double x, double y, double z) {
+Rot3 Rot3::RzRyRx(double x, double y, double z, OptionalJacobian<3, 1> Hx,
+                  OptionalJacobian<3, 1> Hy, OptionalJacobian<3, 1> Hz) {
   double cx=cos(x),sx=sin(x);
   double cy=cos(y),sy=sin(y);
   double cz=cos(z),sz=sin(z);
@@ -97,11 +98,41 @@ Rot3 Rot3::RzRyRx(double x, double y, double z) {
   double s_c = sx * cz;
   double c_c = cx * cz;
   double ssc = ss_ * cz, csc = cs_ * cz, sss = ss_ * sz, css = cs_ * sz;
+  if (Hx) (*Hx) << 1, 0, 0;
+  if (Hy) (*Hy) << 0, cx, -sx;
+  if (Hz) (*Hz) << -sy, sc_, cc_;
   return Rot3(
       _cc,- c_s + ssc,  s_s + csc,
       _cs,  c_c + sss, -s_c + css,
       -sy,        sc_,        cc_
   );
+}
+
+/* ************************************************************************* */
+Rot3 Rot3::normalized() const {
+  /// Implementation from here: https://stackoverflow.com/a/23082112/1236990
+
+  /// Essentially, this computes the orthogonalization error, distributes the
+  /// error to the x and y rows, and then performs a Taylor expansion to
+  /// orthogonalize.
+
+  Matrix3 rot = rot_.matrix(), rot_orth;
+
+  // Check if determinant is already 1.
+  // If yes, then return the current Rot3.
+  if (std::fabs(rot.determinant()-1) < 1e-12) return Rot3(rot_);
+
+  Vector3 x = rot.block<1, 3>(0, 0), y = rot.block<1, 3>(1, 0);
+  double error = x.dot(y);
+
+  Vector3 x_ort = x - (error / 2) * y, y_ort = y - (error / 2) * x;
+  Vector3 z_ort = x_ort.cross(y_ort);
+
+  rot_orth.block<1, 3>(0, 0) = 0.5 * (3 - x_ort.dot(x_ort)) * x_ort;
+  rot_orth.block<1, 3>(1, 0) = 0.5 * (3 - y_ort.dot(y_ort)) * y_ort;
+  rot_orth.block<1, 3>(2, 0) = 0.5 * (3 - z_ort.dot(z_ort)) * z_ort;
+
+  return Rot3(rot_orth);
 }
 
 /* ************************************************************************* */
@@ -145,7 +176,17 @@ Vector3 Rot3::CayleyChart::Local(const Rot3& R, OptionalJacobian<3,3> H) {
   if (H) throw std::runtime_error("Rot3::CayleyChart::Local Derivative");
   // Create a fixed-size matrix
   Matrix3 A = R.matrix();
-  // Mathematica closed form optimization (procrastination?) gone wild:
+
+  // Check if (A+I) is invertible. Same as checking for -1 eigenvalue.
+  if ((A + I_3x3).determinant() == 0.0) {
+    throw std::runtime_error("Rot3::CayleyChart::Local Invalid Rotation");
+  }
+
+  // Mathematica closed form optimization.
+  // The following are the essential computations for the following algorithm
+  // 1. Compute the inverse of P = (A+I), using a closed-form formula since P is 3x3 
+  // 2. Compute the Cayley transform C = 2 * P^{-1} * (A-I)
+  // 3. C is skew-symmetric, so we pick out the computations corresponding only to x, y, and z.
   const double a = A(0, 0), b = A(0, 1), c = A(0, 2);
   const double d = A(1, 0), e = A(1, 1), f = A(1, 2);
   const double g = A(2, 0), h = A(2, 1), i = A(2, 2);

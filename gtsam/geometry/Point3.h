@@ -26,6 +26,7 @@
 #include <gtsam/base/Vector.h>
 #include <gtsam/dllexport.h>
 #include <boost/serialization/nvp.hpp>
+#include <numeric>
 
 namespace gtsam {
 
@@ -34,8 +35,10 @@ namespace gtsam {
 typedef Vector3 Point3;
 
 // Convenience typedef
-typedef std::pair<Point3, Point3> Point3Pair;
+using Point3Pair = std::pair<Point3, Point3>;
 GTSAM_EXPORT std::ostream &operator<<(std::ostream &os, const gtsam::Point3Pair &p);
+
+using Point3Pairs = std::vector<Point3Pair>;
 
 /// distance between two points
 GTSAM_EXPORT double distance3(const Point3& p1, const Point3& q,
@@ -57,6 +60,18 @@ GTSAM_EXPORT Point3 cross(const Point3& p, const Point3& q,
 GTSAM_EXPORT double dot(const Point3& p, const Point3& q,
                         OptionalJacobian<1, 3> H_p = boost::none,
                         OptionalJacobian<1, 3> H_q = boost::none);
+
+/// mean
+template <class CONTAINER>
+Point3 mean(const CONTAINER& points) {
+  if (points.size() == 0) throw std::invalid_argument("Point3::mean input container is empty");
+  Point3 sum(0, 0, 0);
+  sum = std::accumulate(points.begin(), points.end(), sum);
+  return sum / points.size();
+}
+
+/// Calculate the two means of a set of Point3 pairs
+GTSAM_EXPORT Point3Pair means(const std::vector<Point3Pair> &abPointPairs);
 
 template <typename A1, typename A2>
 struct Range;

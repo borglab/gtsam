@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import pytest
 
+import env  # noqa: F401
+
 from pybind11_tests import class_ as m
 from pybind11_tests import UserType, ConstructorStats
 
@@ -22,6 +24,40 @@ def test_instance(msg):
     assert cstats.alive() == 1
     del instance
     assert cstats.alive() == 0
+
+
+def test_type():
+    assert m.check_type(1) == m.DerivedClass1
+    with pytest.raises(RuntimeError) as execinfo:
+        m.check_type(0)
+
+    assert 'pybind11::detail::get_type_info: unable to find type info' in str(execinfo.value)
+    assert 'Invalid' in str(execinfo.value)
+
+    # Currently not supported
+    # See https://github.com/pybind/pybind11/issues/2486
+    # assert m.check_type(2) == int
+
+
+def test_type_of_py():
+    assert m.get_type_of(1) == int
+    assert m.get_type_of(m.DerivedClass1()) == m.DerivedClass1
+    assert m.get_type_of(int) == type
+
+
+def test_type_of_py_nodelete():
+    # If the above test deleted the class, this will segfault
+    assert m.get_type_of(m.DerivedClass1()) == m.DerivedClass1
+
+
+def test_as_type_py():
+    assert m.as_type(int) == int
+
+    with pytest.raises(RuntimeError):
+        assert m.as_type(1) == int
+
+    with pytest.raises(RuntimeError):
+        assert m.as_type(m.DerivedClass1()) == m.DerivedClass1
 
 
 def test_docstrings(doc):
@@ -261,7 +297,7 @@ def test_brace_initialization():
     assert b.vec == [123, 456]
 
 
-@pytest.unsupported_on_pypy
+@pytest.mark.xfail("env.PYPY")
 def test_class_refcount():
     """Instances must correctly increase/decrease the reference count of their types (#1029)"""
     from sys import getrefcount
@@ -307,8 +343,8 @@ def test_aligned():
         assert p % 1024 == 0
 
 
-# https://bitbucket.org/pypy/pypy/issues/2742
-@pytest.unsupported_on_pypy
+# https://foss.heptapod.net/pypy/pypy/-/issues/2742
+@pytest.mark.xfail("env.PYPY")
 def test_final():
     with pytest.raises(TypeError) as exc_info:
         class PyFinalChild(m.IsFinal):
@@ -316,10 +352,16 @@ def test_final():
     assert str(exc_info.value).endswith("is not an acceptable base type")
 
 
-# https://bitbucket.org/pypy/pypy/issues/2742
-@pytest.unsupported_on_pypy
+# https://foss.heptapod.net/pypy/pypy/-/issues/2742
+@pytest.mark.xfail("env.PYPY")
 def test_non_final_final():
     with pytest.raises(TypeError) as exc_info:
         class PyNonFinalFinalChild(m.IsNonFinalFinal):
             pass
     assert str(exc_info.value).endswith("is not an acceptable base type")
+
+
+# https://github.com/pybind/pybind11/issues/1878
+def test_exception_rvalue_abort():
+    with pytest.raises(RuntimeError):
+        m.PyPrintDestructor().throw_something()

@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <boost/shared_ptr.hpp>
+
 #include <gtsam/inference/Key.h>
 #include <gtsam/base/FastList.h>
 #include <gtsam/base/ConcurrentMap.h>

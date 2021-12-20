@@ -158,21 +158,73 @@ Point3 Rot3::column(int index) const{
 }
 
 /* ************************************************************************* */
-Vector3 Rot3::xyz() const {
+Vector3 Rot3::xyz(OptionalJacobian<3, 3> H) const {
   Matrix3 I;Vector3 q;
-  boost::tie(I,q)=RQ(matrix());
+  if (H) {
+    Matrix93 mH;
+    const auto m = matrix();
+#ifdef GTSAM_USE_QUATERNIONS
+    SO3{m}.vec(mH);
+#else
+    rot_.vec(mH);
+#endif
+
+    Matrix39 qHm;
+    boost::tie(I, q) = RQ(m, qHm);
+
+    // TODO : Explore whether this expression can be optimized as both
+    // qHm and mH are super-sparse
+    *H = qHm * mH;
+  } else
+    boost::tie(I, q) = RQ(matrix());
   return q;
 }
 
 /* ************************************************************************* */
-Vector3 Rot3::ypr() const {
-  Vector3 q = xyz();
+Vector3 Rot3::ypr(OptionalJacobian<3, 3> H) const {
+  Vector3 q = xyz(H);
+  if (H) H->row(0).swap(H->row(2));
+
   return Vector3(q(2),q(1),q(0));
 }
 
 /* ************************************************************************* */
-Vector3 Rot3::rpy() const {
-  return xyz();
+Vector3 Rot3::rpy(OptionalJacobian<3, 3> H) const { return xyz(H); }
+
+/* ************************************************************************* */
+double Rot3::roll(OptionalJacobian<1, 3> H) const {
+  double r;
+  if (H) {
+    Matrix3 xyzH;
+    r = xyz(xyzH)(0);
+    *H = xyzH.row(0);
+  } else
+    r = xyz()(0);
+  return r;
+}
+
+/* ************************************************************************* */
+double Rot3::pitch(OptionalJacobian<1, 3> H) const {
+  double p;
+  if (H) {
+    Matrix3 xyzH;
+    p = xyz(xyzH)(1);
+    *H = xyzH.row(1);
+  } else
+    p = xyz()(1);
+  return p;
+}
+
+/* ************************************************************************* */
+double Rot3::yaw(OptionalJacobian<1, 3> H) const {
+  double y;
+  if (H) {
+    Matrix3 xyzH;
+    y = xyz(xyzH)(2);
+    *H = xyzH.row(2);
+  } else
+    y = xyz()(2);
+  return y;
 }
 
 /* ************************************************************************* */
@@ -203,21 +255,62 @@ Matrix3 Rot3::LogmapDerivative(const Vector3& x)    {
 }
 
 /* ************************************************************************* */
-pair<Matrix3, Vector3> RQ(const Matrix3& A) {
+pair<Matrix3, Vector3> RQ(const Matrix3& A, OptionalJacobian<3, 9> H) {
+  const double x = -atan2(-A(2, 1), A(2, 2));
+  const auto Qx = Rot3::Rx(-x).matrix();
+  const Matrix3 B = A * Qx;
 
-  double x = -atan2(-A(2, 1), A(2, 2));
-  Rot3 Qx = Rot3::Rx(-x);
-  Matrix3 B = A * Qx.matrix();
+  const double y = -atan2(B(2, 0), B(2, 2));
+  const auto Qy = Rot3::Ry(-y).matrix();
+  const Matrix3 C = B * Qy;
 
-  double y = -atan2(B(2, 0), B(2, 2));
-  Rot3 Qy = Rot3::Ry(-y);
-  Matrix3 C = B * Qy.matrix();
+  const double z = -atan2(-C(1, 0), C(1, 1));
+  const auto Qz = Rot3::Rz(-z).matrix();
+  const Matrix3 R = C * Qz;
 
-  double z = -atan2(-C(1, 0), C(1, 1));
-  Rot3 Qz = Rot3::Rz(-z);
-  Matrix3 R = C * Qz.matrix();
+  if (H) {
+    if (std::abs(y - M_PI / 2) < 1e-2)
+      throw std::runtime_error(
+          "Rot3::RQ : Derivative undefined at singularity (gimbal lock)");
 
-  Vector xyz = Vector3(x, y, z);
+    auto atan_d1 = [](double y, double x) { return x / (x * x + y * y); };
+    auto atan_d2 = [](double y, double x) { return -y / (x * x + y * y); };
+
+    const auto sx = -Qx(2, 1), cx = Qx(1, 1);
+    const auto sy = -Qy(0, 2), cy = Qy(0, 0);
+
+    *H = Matrix39::Zero();
+    // First, calculate the derivate of x
+    (*H)(0, 5) = atan_d1(A(2, 1), A(2, 2));
+    (*H)(0, 8) = atan_d2(A(2, 1), A(2, 2));
+
+    // Next, calculate the derivate of y. We have
+    // b20 = a20 and b22 = a21 * sx + a22 * cx
+    (*H)(1, 2) = -atan_d1(B(2, 0), B(2, 2));
+    const auto yHb22 = -atan_d2(B(2, 0), B(2, 2));
+    (*H)(1, 5) = yHb22 * sx;
+    (*H)(1, 8) = yHb22 * cx;
+
+    // Next, calculate the derivate of z. We have
+    // c20 = a10 * cy + a11 * sx * sy + a12 * cx * sy
+    // c22 = a11 * cx - a12 * sx
+    const auto c10Hx = (A(1, 1) * cx - A(1, 2) * sx) * sy;
+    const auto c10Hy = A(1, 2) * cx * cy + A(1, 1) * cy * sx - A(1, 0) * sy;
+    Vector9 c10HA = c10Hx * H->row(0) + c10Hy * H->row(1);
+    c10HA[1] = cy;
+    c10HA[4] = sx * sy;
+    c10HA[7] = cx * sy;
+
+    const auto c11Hx = -A(1, 2) * cx - A(1, 1) * sx;
+    Vector9 c11HA = c11Hx * H->row(0);
+    c11HA[4] = cx;
+    c11HA[7] = -sx;
+
+    H->block<1, 9>(2, 0) =
+        atan_d1(C(1, 0), C(1, 1)) * c10HA + atan_d2(C(1, 0), C(1, 1)) * c11HA;
+  }
+
+  const auto xyz = Vector3(x, y, z);
   return make_pair(R, xyz);
 }
 
