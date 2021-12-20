@@ -294,6 +294,28 @@ TEST(Ordering, MetisLoop) {
 }
 #endif
 /* ************************************************************************* */
+#ifdef GTSAM_SUPPORT_NESTED_DISSECTION
+TEST(Ordering, MetisEmptyGraph) {
+  SymbolicFactorGraph symbolicGraph;
+
+  Ordering actual = Ordering::Create(Ordering::METIS, symbolicGraph);
+  Ordering expected;
+  EXPECT(assert_equal(expected, actual));
+}
+#endif
+/* ************************************************************************* */
+#ifdef GTSAM_SUPPORT_NESTED_DISSECTION
+TEST(Ordering, MetisSingleNode) {
+  // create graph with a single node
+  SymbolicFactorGraph symbolicGraph;
+  symbolicGraph.push_factor(7);
+
+  Ordering actual = Ordering::Create(Ordering::METIS, symbolicGraph);
+  Ordering expected = Ordering(list_of(7));
+  EXPECT(assert_equal(expected, actual));
+}
+#endif
+/* ************************************************************************* */
 TEST(Ordering, Create) {
 
   // create chain graph

@@ -70,3 +70,5 @@ namespace gtsam {
   };
 
 }
+
+#include <gtsam/inference/BayesNet-inst.h>

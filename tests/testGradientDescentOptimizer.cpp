@@ -12,7 +12,6 @@
  * @date   Jun 11, 2012
  */
 
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/NonlinearConjugateGradientOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -38,7 +37,7 @@ boost::tuple<NonlinearFactorGraph, Values> generateProblem() {
   Pose2 priorMean(0.0, 0.0, 0.0); // prior at origin
   SharedDiagonal priorNoise = noiseModel::Diagonal::Sigmas(
       Vector3(0.3, 0.3, 0.1));
-  graph += PriorFactor<Pose2>(1, priorMean, priorNoise);
+  graph.addPrior(1, priorMean, priorNoise);
 
   // 2b. Add odometry factors
   SharedDiagonal odometryNoise = noiseModel::Diagonal::Sigmas(

@@ -17,10 +17,10 @@
  */
 
 #include <boost/random.hpp>
-#include <boost/timer.hpp>
 #include <boost/format.hpp>
 #include <boost/lambda/lambda.hpp>
 
+#include <gtsam/base/timing.h>
 #include <gtsam/base/Matrix.h>
 
 #include <iostream>
@@ -30,7 +30,6 @@
 using namespace std;
 //namespace ublas = boost::numeric::ublas;
 //using namespace Eigen;
-using boost::timer;
 using boost::format;
 using namespace boost::lambda;
 
@@ -68,7 +67,6 @@ int main(int argc, char* argv[]) {
     cout << endl;
 
     {
-      timer tim;
       double basicTime, fullTime, topTime, blockTime;
 
       cout << "Row-major matrix, row-major assignment:" << endl;
@@ -79,43 +77,54 @@ int main(int argc, char* argv[]) {
           for(size_t j=0; j<(size_t)mat.cols(); ++j)
             mat(i,j) = rng();
 
-      tim.restart();
+      gttic_(basicTime);
       for(size_t rep=0; rep<nReps; ++rep)
         for(size_t i=0; i<(size_t)mat.rows(); ++i)
           for(size_t j=0; j<(size_t)mat.cols(); ++j)
             mat(i,j) = rng();
-      basicTime = tim.elapsed();
+      gttoc_(basicTime);
+      tictoc_getNode(basicTimeNode, basicTime);
+      basicTime = basicTimeNode->secs();
+      gtsam::tictoc_reset_();
       cout << format("  Basic: %1% mus/element") % double(1000000 * basicTime / double(mat.rows()*mat.cols()*nReps)) << endl;
 
-      tim.restart();
+      gttic_(fullTime);
       for(size_t rep=0; rep<nReps; ++rep)
         for(size_t i=0; i<(size_t)full.rows(); ++i)
           for(size_t j=0; j<(size_t)full.cols(); ++j)
             full(i,j) = rng();
-      fullTime = tim.elapsed();
+      gttoc_(fullTime);
+      tictoc_getNode(fullTimeNode, fullTime);
+      fullTime = fullTimeNode->secs();
+      gtsam::tictoc_reset_();
       cout << format("  Full:  %1% mus/element") % double(1000000 * fullTime / double(full.rows()*full.cols()*nReps)) << endl;
 
-      tim.restart();
+      gttic_(topTime);
       for(size_t rep=0; rep<nReps; ++rep)
         for(size_t i=0; i<(size_t)top.rows(); ++i)
           for(size_t j=0; j<(size_t)top.cols(); ++j)
             top(i,j) = rng();
-      topTime = tim.elapsed();
+      gttoc_(topTime);
+      tictoc_getNode(topTimeNode, topTime);
+      topTime = topTimeNode->secs();
+      gtsam::tictoc_reset_();
       cout << format("  Top:   %1% mus/element") % double(1000000 * topTime / double(top.rows()*top.cols()*nReps)) << endl;
 
-      tim.restart();
+      gttic_(blockTime);
       for(size_t rep=0; rep<nReps; ++rep)
         for(size_t i=0; i<(size_t)block.rows(); ++i)
           for(size_t j=0; j<(size_t)block.cols(); ++j)
             block(i,j) = rng();
-      blockTime = tim.elapsed();
+      gttoc_(blockTime);
+      tictoc_getNode(blockTimeNode, blockTime);
+      blockTime = blockTimeNode->secs();
+      gtsam::tictoc_reset_();
       cout << format("  Block: %1% mus/element") % double(1000000 * blockTime / double(block.rows()*block.cols()*nReps)) << endl;
 
       cout << endl;
     }
 
     {
-      timer tim;
       double basicTime, fullTime, topTime, blockTime;
 
       cout << "Row-major matrix, column-major assignment:" << endl;
@@ -126,43 +135,54 @@ int main(int argc, char* argv[]) {
           for(size_t i=0; i<(size_t)mat.rows(); ++i)
             mat(i,j) = rng();
 
-      tim.restart();
+      gttic_(basicTime);
       for(size_t rep=0; rep<nReps; ++rep)
         for(size_t j=0; j<(size_t)mat.cols(); ++j)
           for(size_t i=0; i<(size_t)mat.rows(); ++i)
             mat(i,j) = rng();
-      basicTime = tim.elapsed();
+      gttoc_(basicTime);
+      tictoc_getNode(basicTimeNode, basicTime);
+      basicTime = basicTimeNode->secs();
+      gtsam::tictoc_reset_();
       cout << format("  Basic: %1% mus/element") % double(1000000 * basicTime / double(mat.rows()*mat.cols()*nReps)) << endl;
 
-      tim.restart();
+      gttic_(fullTime);
       for(size_t rep=0; rep<nReps; ++rep)
         for(size_t j=0; j<(size_t)full.cols(); ++j)
           for(size_t i=0; i<(size_t)full.rows(); ++i)
             full(i,j) = rng();
-      fullTime = tim.elapsed();
+      gttoc_(fullTime);
+      tictoc_getNode(fullTimeNode, fullTime);
+      fullTime = fullTimeNode->secs();
+      gtsam::tictoc_reset_();
       cout << format("  Full:  %1% mus/element") % double(1000000 * fullTime / double(full.rows()*full.cols()*nReps)) << endl;
 
-      tim.restart();
+      gttic_(topTime);
       for(size_t rep=0; rep<nReps; ++rep)
         for(size_t j=0; j<(size_t)top.cols(); ++j)
           for(size_t i=0; i<(size_t)top.rows(); ++i)
             top(i,j) = rng();
-      topTime = tim.elapsed();
+      gttoc_(topTime);
+      tictoc_getNode(topTimeNode, topTime);
+      topTime = topTimeNode->secs();
+      gtsam::tictoc_reset_();
       cout << format("  Top:   %1% mus/element") % double(1000000 * topTime / double(top.rows()*top.cols()*nReps)) << endl;
 
-      tim.restart();
+      gttic_(blockTime);
       for(size_t rep=0; rep<nReps; ++rep)
         for(size_t j=0; j<(size_t)block.cols(); ++j)
           for(size_t i=0; i<(size_t)block.rows(); ++i)
             block(i,j) = rng();
-      blockTime = tim.elapsed();
+      gttoc_(blockTime);
+      tictoc_getNode(blockTimeNode, blockTime);
+      blockTime = blockTimeNode->secs();
+      gtsam::tictoc_reset_();
       cout << format("  Block: %1% mus/element") % double(1000000 * blockTime / double(block.rows()*block.cols()*nReps)) << endl;
 
       cout << endl;
     }
 
     {
-      timer tim;
       double basicTime, fullTime, topTime, blockTime;
       typedef pair<size_t,size_t> ij_t;
       vector<ij_t> ijs(100000);
@@ -174,28 +194,44 @@ int main(int argc, char* argv[]) {
       for(size_t rep=0; rep<1000; ++rep)
         for(const ij_t& ij: ijs) { mat(ij.first, ij.second) = rng(); }
 
+      gttic_(basicTime);
       for_each(ijs.begin(), ijs.end(), _1 = make_pair(rni(),rnj()));
       for(size_t rep=0; rep<1000; ++rep)
         for(const ij_t& ij: ijs) { mat(ij.first, ij.second) = rng(); }
-      basicTime = tim.elapsed();
+      gttoc_(basicTime);
+      tictoc_getNode(basicTimeNode, basicTime);
+      basicTime = basicTimeNode->secs();
+      gtsam::tictoc_reset_();
       cout << format("  Basic: %1% mus/element") % double(1000000 * basicTime / double(ijs.size()*nReps)) << endl;
 
+      gttic_(fullTime);
       for_each(ijs.begin(), ijs.end(), _1 = make_pair(rni(),rnj()));
       for(size_t rep=0; rep<1000; ++rep)
         for(const ij_t& ij: ijs) { full(ij.first, ij.second) = rng(); }
-      fullTime = tim.elapsed();
+      gttoc_(fullTime);
+      tictoc_getNode(fullTimeNode, fullTime);
+      fullTime = fullTimeNode->secs();
+      gtsam::tictoc_reset_();
       cout << format("  Full:  %1% mus/element") % double(1000000 * fullTime / double(ijs.size()*nReps)) << endl;
 
+      gttic_(topTime);
       for_each(ijs.begin(), ijs.end(), _1 = make_pair(rni()%top.rows(),rnj()));
       for(size_t rep=0; rep<1000; ++rep)
         for(const ij_t& ij: ijs) { top(ij.first, ij.second) = rng(); }
-      topTime = tim.elapsed();
+      gttoc_(topTime);
+      tictoc_getNode(topTimeNode, topTime);
+      topTime = topTimeNode->secs();
+      gtsam::tictoc_reset_();
       cout << format("  Top:   %1% mus/element") % double(1000000 * topTime / double(ijs.size()*nReps)) << endl;
 
+      gttic_(blockTime);
       for_each(ijs.begin(), ijs.end(), _1 = make_pair(rni()%block.rows(),rnj()%block.cols()));
       for(size_t rep=0; rep<1000; ++rep)
         for(const ij_t& ij: ijs) { block(ij.first, ij.second) = rng(); }
-      blockTime = tim.elapsed();
+      gttoc_(blockTime);
+      tictoc_getNode(blockTimeNode, blockTime);
+      blockTime = blockTimeNode->secs();
+      gtsam::tictoc_reset_();
       cout << format("  Block: %1% mus/element") % double(1000000 * blockTime / double(ijs.size()*nReps)) << endl;
 
       cout << endl;

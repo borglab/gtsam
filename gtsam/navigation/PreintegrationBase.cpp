@@ -115,20 +115,21 @@ void PreintegrationBase::integrateMeasurement(const Vector3& measuredAcc,
 NavState PreintegrationBase::predict(const NavState& state_i,
     const imuBias::ConstantBias& bias_i, OptionalJacobian<9, 9> H1,
     OptionalJacobian<9, 6> H2) const {
-  // TODO(frank): make sure this stuff is still correct
   Matrix96 D_biasCorrected_bias;
   Vector9 biasCorrected = biasCorrectedDelta(bias_i,
-      H2 ? &D_biasCorrected_bias : 0);
+                                             H2 ? &D_biasCorrected_bias : nullptr);
 
   // Correct for initial velocity and gravity
   Matrix9 D_delta_state, D_delta_biasCorrected;
   Vector9 xi = state_i.correctPIM(biasCorrected, deltaTij_, p().n_gravity,
-      p().omegaCoriolis, p().use2ndOrderCoriolis, H1 ? &D_delta_state : 0,
-      H2 ? &D_delta_biasCorrected : 0);
+                                  p().omegaCoriolis, p().use2ndOrderCoriolis, H1 ? &D_delta_state : nullptr,
+                                  H2 ? &D_delta_biasCorrected : nullptr);
 
   // Use retract to get back to NavState manifold
   Matrix9 D_predict_state, D_predict_delta;
-  NavState state_j = state_i.retract(xi, D_predict_state, D_predict_delta);
+  NavState state_j = state_i.retract(xi,
+                                     H1 ? &D_predict_state : nullptr,
+                                     H2 || H2 ? &D_predict_delta : nullptr);
   if (H1)
     *H1 = D_predict_state + D_predict_delta * D_delta_state;
   if (H2)

@@ -10,8 +10,9 @@ This example will perform a relatively trivial optimization on
 a single variable with a single factor.
 """
 
-import numpy as np
 import gtsam
+import numpy as np
+from gtsam import symbol_shorthand_X as X
 
 
 def main():
@@ -33,7 +34,7 @@ def main():
     prior = gtsam.Rot2.fromAngle(np.deg2rad(30))
     prior.print_('goal angle')
     model = gtsam.noiseModel_Isotropic.Sigma(dim=1, sigma=np.deg2rad(1))
-    key = gtsam.symbol(ord('x'), 1)
+    key = X(1)
     factor = gtsam.PriorFactorRot2(key, prior, model)
 
     """

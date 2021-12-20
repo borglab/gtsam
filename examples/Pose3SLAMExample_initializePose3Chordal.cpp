@@ -10,9 +10,9 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file Pose3SLAMExample_initializePose3.cpp
+ * @file Pose3SLAMExample_initializePose3Chordal.cpp
  * @brief A 3D Pose SLAM example that reads input from g2o, and initializes the Pose3 using InitializePose3
- * Syntax for the script is ./Pose3SLAMExample_initializePose3 input.g2o output.g2o
+ * Syntax for the script is ./Pose3SLAMExample_initializePose3Chordal input.g2o output.g2o
  * @date Aug 25, 2014
  * @author Luca Carlone
  */
@@ -20,14 +20,12 @@
 #include <gtsam/slam/InitializePose3.h>
 #include <gtsam/slam/dataset.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <fstream>
 
 using namespace std;
 using namespace gtsam;
 
-int main(const int argc, const char *argv[]) {
-
+int main(const int argc, const char* argv[]) {
   // Read graph from file
   string g2oFile;
   if (argc < 2)
@@ -41,27 +39,29 @@ int main(const int argc, const char *argv[]) {
   boost::tie(graph, initial) = readG2o(g2oFile, is3D);
 
   // Add prior on the first key
-  NonlinearFactorGraph graphWithPrior = *graph;
-  noiseModel::Diagonal::shared_ptr priorModel = //
-      noiseModel::Diagonal::Variances((Vector(6) << 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-4).finished());
+  auto priorModel = noiseModel::Diagonal::Variances(
+      (Vector(6) << 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-4).finished());
   Key firstKey = 0;
-  for(const Values::ConstKeyValuePair& key_value: *initial) {
+  for (const Values::ConstKeyValuePair& key_value : *initial) {
     std::cout << "Adding prior to g2o file " << std::endl;
     firstKey = key_value.key;
-    graphWithPrior.add(PriorFactor<Pose3>(firstKey, Pose3(), priorModel));
+    graph->addPrior(firstKey, Pose3(), priorModel);
     break;
   }
 
   std::cout << "Initializing Pose3 - chordal relaxation" << std::endl;
-  Values initialization = InitializePose3::initialize(graphWithPrior);
+  Values initialization = InitializePose3::initialize(*graph);
   std::cout << "done!" << std::endl;
 
   if (argc < 3) {
     initialization.print("initialization");
   } else {
     const string outputFile = argv[2];
-    std::cout << "Writing results to file: " << outputFile  << std::endl;
-    writeG2o(*graph, initialization, outputFile);
+    std::cout << "Writing results to file: " << outputFile << std::endl;
+    NonlinearFactorGraph::shared_ptr graphNoKernel;
+    Values::shared_ptr initial2;
+    boost::tie(graphNoKernel, initial2) = readG2o(g2oFile);
+    writeG2o(*graphNoKernel, initialization, outputFile);
     std::cout << "done! " << std::endl;
   }
   return 0;

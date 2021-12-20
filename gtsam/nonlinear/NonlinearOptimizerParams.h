@@ -31,7 +31,7 @@ namespace gtsam {
 /** The common parameters for Nonlinear optimizers.  Most optimizers
  * deriving from NonlinearOptimizer also subclass the parameters.
  */
-class NonlinearOptimizerParams {
+class GTSAM_EXPORT NonlinearOptimizerParams {
 public:
   /** See NonlinearOptimizerParams::verbosity */
   enum Verbosity {
@@ -52,7 +52,7 @@ public:
 
   virtual ~NonlinearOptimizerParams() {
   }
-  GTSAM_EXPORT virtual void print(const std::string& str = "") const;
+  virtual void print(const std::string& str = "") const;
 
   size_t getMaxIterations() const { return maxIterations; }
   double getRelativeErrorTol() const { return relativeErrorTol; }
@@ -68,8 +68,8 @@ public:
     verbosity = verbosityTranslator(src);
   }
 
-  GTSAM_EXPORT static Verbosity verbosityTranslator(const std::string &s) ;
-  GTSAM_EXPORT static std::string verbosityTranslator(Verbosity value) ;
+  static Verbosity verbosityTranslator(const std::string &s) ;
+  static std::string verbosityTranslator(Verbosity value) ;
 
   /** See NonlinearOptimizerParams::linearSolverType */
   enum LinearSolverType {
@@ -82,7 +82,7 @@ public:
   };
 
   LinearSolverType linearSolverType; ///< The type of linear solver to use in the nonlinear optimizer
-  boost::optional<Ordering> ordering; ///< The variable elimination ordering, or empty to use COLAMD (default: empty)
+  boost::optional<Ordering> ordering; ///< The optional variable elimination ordering, or empty to use COLAMD (default: empty)
   IterativeOptimizationParameters::shared_ptr iterativeParams; ///< The container for iterativeOptimization parameters. used in CG Solvers.
 
   inline bool isMultifrontal() const {
@@ -144,10 +144,10 @@ public:
   }
 
 private:
-  GTSAM_EXPORT std::string linearSolverTranslator(LinearSolverType linearSolverType) const;
-  GTSAM_EXPORT LinearSolverType linearSolverTranslator(const std::string& linearSolverType) const;
-  GTSAM_EXPORT std::string orderingTypeTranslator(Ordering::OrderingType type) const;
-  GTSAM_EXPORT Ordering::OrderingType orderingTypeTranslator(const std::string& type) const;
+  std::string linearSolverTranslator(LinearSolverType linearSolverType) const;
+  LinearSolverType linearSolverTranslator(const std::string& linearSolverType) const;
+  std::string orderingTypeTranslator(Ordering::OrderingType type) const;
+  Ordering::OrderingType orderingTypeTranslator(const std::string& type) const;
 };
 
 // For backward compatibility:

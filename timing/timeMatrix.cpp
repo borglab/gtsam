@@ -16,7 +16,7 @@
  */
 
 #include <iostream>
-#include <boost/timer.hpp>
+#include <gtsam/base/timing.h>
 #include <gtsam/base/Matrix.h>
 
 using namespace std;
@@ -54,7 +54,7 @@ double timeCollect(size_t p, size_t m, size_t n, bool passDims, size_t reps) {
   Matrix result;
   double elapsed;
   {
-    boost::timer t;
+    gttic_(elapsed);
 
     if (passDims)
       for (size_t i=0; i<reps; ++i)
@@ -62,7 +62,11 @@ double timeCollect(size_t p, size_t m, size_t n, bool passDims, size_t reps) {
     else
       for (size_t i=0; i<reps; ++i)
         result = collect(matrices);
-    elapsed = t.elapsed();
+
+    gttoc_(elapsed);
+    tictoc_getNode(elapsedNode, elapsed);
+    elapsed = elapsedNode->secs();
+    tictoc_reset_();
   }
   // delete the matrices
   for (size_t i=0; i<p;++i) {
@@ -95,10 +99,15 @@ double timeVScaleColumn(size_t m, size_t n, size_t reps) {
   double elapsed;
   Matrix result;
   {
-    boost::timer t;
+    gttic_(elapsed);
+
     for (size_t i=0; i<reps; ++i)
       Matrix result = vector_scale(M,V);
-    elapsed = t.elapsed();
+
+    gttoc_(elapsed);
+    tictoc_getNode(elapsedNode, elapsed);
+    elapsed = elapsedNode->secs();
+    tictoc_reset_();
   }
 
   return elapsed;
@@ -126,10 +135,15 @@ double timeVScaleRow(size_t m, size_t n, size_t reps) {
   double elapsed;
   Matrix result;
   {
-    boost::timer t;
+    gttic_(elapsed);
+
     for (size_t i=0; i<reps; ++i)
       result = vector_scale(V,M);
-    elapsed = t.elapsed();
+
+    gttoc_(elapsed);
+    tictoc_getNode(elapsedNode, elapsed);
+    elapsed = elapsedNode->secs();
+    tictoc_reset_();
   }
 
   return elapsed;
@@ -156,12 +170,17 @@ double timeColumn(size_t reps) {
   double elapsed;
   Vector result;
   {
-    boost::timer t;
+    gttic_(elapsed);
+
     for (size_t i=0; i<reps; ++i)
       for (size_t j = 0; j<n; ++j)
         //result = ublas::matrix_column<Matrix>(M, j);
         result = column(M, j);
-    elapsed = t.elapsed();
+
+    gttoc_(elapsed);
+    tictoc_getNode(elapsedNode, elapsed);
+    elapsed = elapsedNode->secs();
+    tictoc_reset_();
   }
   return elapsed;
 }
@@ -198,12 +217,17 @@ double timeHouseholder(size_t reps) {
   // perform timing
   double elapsed;
   {
-    boost::timer t;
+    gttic_(elapsed);
+
     for (size_t i=0; i<reps; ++i) {
       Matrix A = Abase;
       householder_(A,3);
     }
-    elapsed = t.elapsed();
+
+    gttoc_(elapsed);
+    tictoc_getNode(elapsedNode, elapsed);
+    elapsed = elapsedNode->secs();
+    tictoc_reset_();
   }
   return elapsed;
 }
@@ -222,13 +246,18 @@ double timeMatrixInsert(size_t reps) {
   // perform timing
   double elapsed;
   {
-    boost::timer t;
+    gttic_(elapsed);
+
     Matrix big = bigBase;
     for (size_t rep=0; rep<reps; ++rep)
       for (size_t i=0; i<100; i += 5)
         for (size_t j=0; j<100; j += 5)
           insertSub(big, small, i,j);
-    elapsed = t.elapsed();
+
+    gttoc_(elapsed);
+    tictoc_getNode(elapsedNode, elapsed);
+    elapsed = elapsedNode->secs();
+    tictoc_reset_();
   }
   return elapsed;
 }

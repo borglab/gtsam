@@ -25,12 +25,12 @@ graph = NonlinearFactorGraph;
 
 %% Add a Gaussian prior on pose x_1
 priorMean = Pose3();%Pose3.Expmap([0.0; 0.0; 0.0; 0.0; 0.0; 0.0]); % prior mean is at origin
-priorNoise = noiseModel.Diagonal.Sigmas([0.3; 0.3; 0.3; 0.1; 0.1; 0.1]); % 30cm std on x,y, 0.1 rad on theta
+priorNoise = noiseModel.Diagonal.Sigmas([0.1; 0.1; 0.1; 0.3; 0.3; 0.3]); % 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
 graph.add(PriorFactorPose3(1, priorMean, priorNoise)); % add directly to graph
 
 %% Add two odometry factors
 odometry = Pose3.Expmap([0.0; 0.0; 0.0; 2.0; 0.0; 0.0]); % create a measurement for both factors (the same in this case)
-odometryNoise = noiseModel.Diagonal.Sigmas([0.2; 0.2; 0.2; 0.1; 0.1; 0.1]); % 20cm std on x,y, 0.1 rad on theta
+odometryNoise = noiseModel.Diagonal.Sigmas([0.1; 0.1; 0.1; 0.2; 0.2; 0.2]); % 20cm std on x,y,z 0.1 rad on roll,pitch,yaw
 graph.add(BetweenFactorPose3(1, 2, odometry, odometryNoise));
 graph.add(BetweenFactorPose3(2, 3, odometry, odometryNoise));
 

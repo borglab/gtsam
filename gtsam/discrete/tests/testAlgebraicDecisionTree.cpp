@@ -24,7 +24,6 @@
 #include <gtsam/discrete/DecisionTree-inl.h> // for convert only
 #define DISABLE_TIMING
 
-#include <boost/timer.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/assign/std/map.hpp>
 #include <boost/assign/std/vector.hpp>
@@ -32,6 +31,7 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/discrete/Signature.h>
+#include <gtsam/base/timing.h>
 
 using namespace std;
 using namespace gtsam;
@@ -75,16 +75,15 @@ void dot(const T&f, const string& filename) {
 // instrumented operators
 /* ******************************************************************************** */
 size_t muls = 0, adds = 0;
-boost::timer timer;
+double elapsed;
 void resetCounts() {
   muls = 0;
   adds = 0;
-  timer.restart();
 }
 void printCounts(const string& s) {
 #ifndef DISABLE_TIMING
   cout << boost::format("%s: %3d muls, %3d adds, %g ms.") % s % muls % adds
-  % (1000 * timer.elapsed()) << endl;
+  % (1000 * elapsed) << endl;
 #endif
   resetCounts();
 }
@@ -133,7 +132,7 @@ TEST(ADT, example3)
 
 /** Convert Signature into CPT */
 ADT create(const Signature& signature) {
-  ADT p(signature.discreteKeysParentsFirst(), signature.cpt());
+  ADT p(signature.discreteKeys(), signature.cpt());
   static size_t count = 0;
   const DiscreteKey& key = signature.key();
   string dotfile = (boost::format("CPT-%03d-%d") % ++count % key.first).str();
@@ -148,6 +147,7 @@ TEST(ADT, joint)
   DiscreteKey A(0, 2), S(1, 2), T(2, 2), L(3, 2), B(4, 2), E(5, 2), X(6, 2), D(7, 2);
 
   resetCounts();
+  gttic_(asiaCPTs);
   ADT pA = create(A % "99/1");
   ADT pS = create(S % "50/50");
   ADT pT = create(T | A = "99/1 95/5");
@@ -156,10 +156,15 @@ TEST(ADT, joint)
   ADT pE = create((E | T, L) = "F T T T");
   ADT pX = create(X | E = "95/5 2/98");
   ADT pD = create((D | E, B) = "9/1 2/8 3/7 1/9");
+  gttoc_(asiaCPTs);
+  tictoc_getNode(asiaCPTsNode, asiaCPTs);
+  elapsed = asiaCPTsNode->secs() + asiaCPTsNode->wall();
+  tictoc_reset_();
   printCounts("Asia CPTs");
 
   // Create joint
   resetCounts();
+  gttic_(asiaJoint);
   ADT joint = pA;
   dot(joint, "Asia-A");
   joint = apply(joint, pS, &mul);
@@ -176,15 +181,20 @@ TEST(ADT, joint)
   dot(joint, "Asia-ASTLBEX");
   joint = apply(joint, pD, &mul);
   dot(joint, "Asia-ASTLBEXD");
-  EXPECT_LONGS_EQUAL(346, (long)muls);
+  EXPECT_LONGS_EQUAL(346, muls);
+  gttoc_(asiaJoint);
+  tictoc_getNode(asiaJointNode, asiaJoint);
+  elapsed = asiaJointNode->secs() + asiaJointNode->wall();
+  tictoc_reset_();
   printCounts("Asia joint");
 
+  // Form P(A,S,T,L) = P(A) P(S) P(T|A) P(L|S)
   ADT pASTL = pA;
   pASTL = apply(pASTL, pS, &mul);
   pASTL = apply(pASTL, pT, &mul);
   pASTL = apply(pASTL, pL, &mul);
 
-  // test combine
+  // test combine to check that P(A) = \sum_{S,T,L} P(A,S,T,L)
   ADT fAa = pASTL.combine(L, &add_).combine(T, &add_).combine(S, &add_);
   EXPECT(assert_equal(pA, fAa));
   ADT fAb = pASTL.combine(S, &add_).combine(T, &add_).combine(L, &add_);
@@ -199,6 +209,7 @@ TEST(ADT, inference)
       B(2,2), L(3,2), E(4,2), S(5,2), T(6,2), X(7,2);
 
   resetCounts();
+  gttic_(infCPTs);
   ADT pA = create(A % "99/1");
   ADT pS = create(S % "50/50");
   ADT pT = create(T | A = "99/1 95/5");
@@ -207,10 +218,15 @@ TEST(ADT, inference)
   ADT pE = create((E | T, L) = "F T T T");
   ADT pX = create(X | E = "95/5 2/98");
   ADT pD = create((D | E, B) = "9/1 2/8 3/7 1/9");
+  gttoc_(infCPTs);
+  tictoc_getNode(infCPTsNode, infCPTs);
+  elapsed = infCPTsNode->secs() + infCPTsNode->wall();
+  tictoc_reset_();
   //  printCounts("Inference CPTs");
 
   // Create joint
   resetCounts();
+  gttic_(asiaProd);
   ADT joint = pA;
   dot(joint, "Joint-Product-A");
   joint = apply(joint, pS, &mul);
@@ -228,8 +244,14 @@ TEST(ADT, inference)
   joint = apply(joint, pD, &mul);
   dot(joint, "Joint-Product-ASTLBEXD");
   EXPECT_LONGS_EQUAL(370, (long)muls); // different ordering
+  gttoc_(asiaProd);
+  tictoc_getNode(asiaProdNode, asiaProd);
+  elapsed = asiaProdNode->secs() + asiaProdNode->wall();
+  tictoc_reset_();
   printCounts("Asia product");
 
+  resetCounts();
+  gttic_(asiaSum);
   ADT marginal = joint;
   marginal = marginal.combine(X, &add_);
   dot(marginal, "Joint-Sum-ADBLEST");
@@ -240,6 +262,10 @@ TEST(ADT, inference)
   marginal = marginal.combine(E, &add_);
   dot(marginal, "Joint-Sum-ADBL");
   EXPECT_LONGS_EQUAL(161, (long)adds);
+  gttoc_(asiaSum);
+  tictoc_getNode(asiaSumNode, asiaSum);
+  elapsed = asiaSumNode->secs() + asiaSumNode->wall();
+  tictoc_reset_();
   printCounts("Asia sum");
 }
 
@@ -249,6 +275,7 @@ TEST(ADT, factor_graph)
   DiscreteKey B(0,2), L(1,2), E(2,2), S(3,2), T(4,2), X(5,2);
 
   resetCounts();
+  gttic_(createCPTs);
   ADT pS = create(S % "50/50");
   ADT pT = create(T % "95/5");
   ADT pL = create(L | S = "99/1 90/10");
@@ -256,10 +283,15 @@ TEST(ADT, factor_graph)
   ADT pX = create(X | E = "95/5 2/98");
   ADT pD = create(B | E = "1/8 7/9");
   ADT pB = create(B | S = "70/30 40/60");
+  gttoc_(createCPTs);
+  tictoc_getNode(createCPTsNode, createCPTs);
+  elapsed = createCPTsNode->secs() + createCPTsNode->wall();
+  tictoc_reset_();
   //  printCounts("Create CPTs");
 
   // Create joint
   resetCounts();
+  gttic_(asiaFG);
   ADT fg = pS;
   fg = apply(fg, pT, &mul);
   fg = apply(fg, pL, &mul);
@@ -269,8 +301,14 @@ TEST(ADT, factor_graph)
   fg = apply(fg, pD, &mul);
   dot(fg, "FactorGraph");
   EXPECT_LONGS_EQUAL(158, (long)muls);
+  gttoc_(asiaFG);
+  tictoc_getNode(asiaFGNode, asiaFG);
+  elapsed = asiaFGNode->secs() + asiaFGNode->wall();
+  tictoc_reset_();
   printCounts("Asia FG");
 
+  resetCounts();
+  gttic_(marg);
   fg = fg.combine(X, &add_);
   dot(fg, "Marginalized-6X");
   fg = fg.combine(T, &add_);
@@ -282,49 +320,83 @@ TEST(ADT, factor_graph)
   fg = fg.combine(L, &add_);
   dot(fg, "Marginalized-2L");
   EXPECT(adds = 54);
+  gttoc_(marg);
+  tictoc_getNode(margNode, marg);
+  elapsed = margNode->secs() + margNode->wall();
+  tictoc_reset_();
   printCounts("marginalize");
 
   // BLESTX
 
   // Eliminate X
+  resetCounts();
+  gttic_(elimX);
   ADT fE = pX;
   dot(fE, "Eliminate-01-fEX");
   fE = fE.combine(X, &add_);
   dot(fE, "Eliminate-02-fE");
+  gttoc_(elimX);
+  tictoc_getNode(elimXNode, elimX);
+  elapsed = elimXNode->secs() + elimXNode->wall();
+  tictoc_reset_();
   printCounts("Eliminate X");
 
   // Eliminate T
+  resetCounts();
+  gttic_(elimT);
   ADT fLE = pT;
   fLE = apply(fLE, pE, &mul);
   dot(fLE, "Eliminate-03-fLET");
   fLE = fLE.combine(T, &add_);
   dot(fLE, "Eliminate-04-fLE");
+  gttoc_(elimT);
+  tictoc_getNode(elimTNode, elimT);
+  elapsed = elimTNode->secs() + elimTNode->wall();
+  tictoc_reset_();
   printCounts("Eliminate T");
 
   // Eliminate S
+  resetCounts();
+  gttic_(elimS);
   ADT fBL = pS;
   fBL = apply(fBL, pL, &mul);
   fBL = apply(fBL, pB, &mul);
   dot(fBL, "Eliminate-05-fBLS");
   fBL = fBL.combine(S, &add_);
   dot(fBL, "Eliminate-06-fBL");
+  gttoc_(elimS);
+  tictoc_getNode(elimSNode, elimS);
+  elapsed = elimSNode->secs() + elimSNode->wall();
+  tictoc_reset_();
   printCounts("Eliminate S");
 
   // Eliminate E
+  resetCounts();
+  gttic_(elimE);
   ADT fBL2 = fE;
   fBL2 = apply(fBL2, fLE, &mul);
   fBL2 = apply(fBL2, pD, &mul);
   dot(fBL2, "Eliminate-07-fBLE");
   fBL2 = fBL2.combine(E, &add_);
   dot(fBL2, "Eliminate-08-fBL2");
+  gttoc_(elimE);
+  tictoc_getNode(elimENode, elimE);
+  elapsed = elimENode->secs() + elimENode->wall();
+  tictoc_reset_();
   printCounts("Eliminate E");
 
   // Eliminate L
+  resetCounts();
+  gttic_(elimL);
   ADT fB = fBL;
   fB = apply(fB, fBL2, &mul);
   dot(fB, "Eliminate-09-fBL");
   fB = fB.combine(L, &add_);
   dot(fB, "Eliminate-10-fB");
+  gttoc_(elimL);
+  tictoc_getNode(elimLNode, elimL);
+  elapsed = elimLNode->secs() + elimLNode->wall();
+  tictoc_reset_();
   printCounts("Eliminate L");
 }
 

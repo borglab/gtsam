@@ -17,7 +17,6 @@
 #include <gtsam/base/timing.h>
 #include <gtsam/slam/dataset.h>
 #include <gtsam/geometry/Pose2.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/ISAM2.h>
@@ -61,7 +60,7 @@ int main(int argc, char *argv[]) {
     gttic_(Create_measurements);
     if(step == 0) {
       // Add prior
-      newFactors.add(PriorFactor<Pose>(0, Pose(), noiseModel::Unit::Create(3)));
+      newFactors.addPrior(0, Pose(), noiseModel::Unit::Create(3));
       newVariables.insert(0, Pose());
     } else {
       Vector eta = Vector::Random(3) * 0.1;

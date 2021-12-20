@@ -48,7 +48,12 @@ public:
     return *preconditioner_;
   }
 
+  // needed for python wrapper
+  void print(const std::string &s) const;
+
   boost::shared_ptr<PreconditionerParameters> preconditioner_;
+
+  void setPreconditionerParams(const boost::shared_ptr<PreconditionerParameters> preconditioner);
 };
 
 /**

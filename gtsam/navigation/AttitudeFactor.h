@@ -35,7 +35,7 @@ class AttitudeFactor {
 
 protected:
 
-  const Unit3 nZ_, bRef_; ///< Position measurement in
+  Unit3 nZ_, bRef_; ///< Position measurement in
 
 public:
 
@@ -56,12 +56,19 @@ public:
   Vector attitudeError(const Rot3& p,
       OptionalJacobian<2,3> H = boost::none) const;
 
+  const Unit3& nZ() const {
+    return nZ_;
+  }
+  const Unit3& bRef() const {
+    return bRef_;
+  }
+
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & boost::serialization::make_nvp("nZ_", const_cast<Unit3&>(nZ_));
-    ar & boost::serialization::make_nvp("bRef_", const_cast<Unit3&>(bRef_));
+    ar & boost::serialization::make_nvp("nZ_",  nZ_);
+    ar & boost::serialization::make_nvp("bRef_", bRef_);
   }
 };
 
@@ -118,12 +125,6 @@ public:
       boost::optional<Matrix&> H = boost::none) const {
     return attitudeError(nRb, H);
   }
-  Unit3 nZ() const {
-    return nZ_;
-  }
-  Unit3 bRef() const {
-    return bRef_;
-  }
 
 private:
 
@@ -138,7 +139,7 @@ private:
   }
 
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /// traits
@@ -204,12 +205,6 @@ public:
     }
     return e;
   }
-  Unit3 nZ() const {
-    return nZ_;
-  }
-  Unit3 bRef() const {
-    return bRef_;
-  }
 
 private:
 
@@ -224,7 +219,7 @@ private:
   }
 
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /// traits

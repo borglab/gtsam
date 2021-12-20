@@ -42,7 +42,7 @@ using symbol_shorthand::P;
 /* ************************************************************************* */
 TEST(PinholeCamera, BAL) {
   string filename = findExampleDataFile("dubrovnik-3-7-pre");
-  SfM_data db;
+  SfmData db;
   bool success = readBAL(filename, db);
   if (!success) throw runtime_error("Could not access file!");
 
@@ -50,7 +50,7 @@ TEST(PinholeCamera, BAL) {
   NonlinearFactorGraph graph;
 
   for (size_t j = 0; j < db.number_tracks(); j++) {
-    for (const SfM_Measurement& m: db.tracks[j].measurements)
+    for (const SfmMeasurement& m: db.tracks[j].measurements)
       graph.emplace_shared<sfmFactor>(m.second, unit2, m.first, P(j));
   }
 

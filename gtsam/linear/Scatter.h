@@ -23,8 +23,6 @@
 #include <gtsam/base/FastMap.h>
 #include <gtsam/dllexport.h>
 
-#include <boost/optional.hpp>
-
 namespace gtsam {
 
 class GaussianFactorGraph;
@@ -51,17 +49,18 @@ struct GTSAM_EXPORT SlotEntry {
 class Scatter : public FastVector<SlotEntry> {
  public:
   /// Default Constructor
-  Scatter() {}
+   GTSAM_EXPORT Scatter() {}
 
-  /// Construct from gaussian factor graph, with optional (partial or complete) ordering
-  Scatter(const GaussianFactorGraph& gfg,
-          boost::optional<const Ordering&> ordering = boost::none);
+  /// Construct from gaussian factor graph, without ordering
+   GTSAM_EXPORT explicit Scatter(const GaussianFactorGraph& gfg);
+
+  /// Construct from gaussian factor graph, with (partial or complete) ordering
+   GTSAM_EXPORT explicit Scatter(const GaussianFactorGraph& gfg, const Ordering& ordering);
 
   /// Add a key/dim pair
-  void add(Key key, size_t dim);
+   GTSAM_EXPORT void add(Key key, size_t dim);
 
  private:
-
   /// Find the SlotEntry with the right key (linear time worst case)
   iterator find(Key key);
 };

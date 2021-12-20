@@ -9,7 +9,8 @@
 
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/Testable.h>
-#include <gtsam/geometry/SimpleCamera.h>
+#include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/Cal3_S2.h>
 
 #include <gtsam_unstable/geometry/InvDepthCamera3.h>
 
@@ -18,7 +19,7 @@ using namespace gtsam;
 
 static Cal3_S2::shared_ptr K(new Cal3_S2(1500, 1200, 0, 640, 480));
 Pose3 level_pose = Pose3(Rot3::Ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1));
-SimpleCamera level_camera(level_pose, *K);
+PinholeCamera<Cal3_S2> level_camera(level_pose, *K);
 
 /* ************************************************************************* */
 TEST( InvDepthFactor, Project1) {

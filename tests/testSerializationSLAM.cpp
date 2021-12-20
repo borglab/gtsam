@@ -27,7 +27,7 @@
 //#include <gtsam/slam/BoundingConstraint.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
 //#include <gtsam/slam/PartialPriorFactor.h>
-#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
 #include <gtsam/sam/RangeFactor.h>
 #include <gtsam/slam/StereoFactor.h>
@@ -47,7 +47,7 @@
 #include <gtsam/geometry/Cal3DS2.h>
 #include <gtsam/geometry/Cal3_S2Stereo.h>
 #include <gtsam/geometry/CalibratedCamera.h>
-#include <gtsam/geometry/SimpleCamera.h>
+#include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/StereoCamera.h>
 
 #include <gtsam/base/serializationTestHelpers.h>
@@ -57,20 +57,21 @@ using namespace gtsam;
 using namespace gtsam::serializationTestHelpers;
 
 // Creating as many permutations of factors as possible
-typedef PriorFactor<LieVector>         PriorFactorLieVector;
-typedef PriorFactor<LieMatrix>         PriorFactorLieMatrix;
-typedef PriorFactor<Point2>            PriorFactorPoint2;
-typedef PriorFactor<StereoPoint2>      PriorFactorStereoPoint2;
-typedef PriorFactor<Point3>            PriorFactorPoint3;
-typedef PriorFactor<Rot2>              PriorFactorRot2;
-typedef PriorFactor<Rot3>              PriorFactorRot3;
-typedef PriorFactor<Pose2>             PriorFactorPose2;
-typedef PriorFactor<Pose3>             PriorFactorPose3;
-typedef PriorFactor<Cal3_S2>           PriorFactorCal3_S2;
-typedef PriorFactor<Cal3DS2>           PriorFactorCal3DS2;
-typedef PriorFactor<CalibratedCamera>  PriorFactorCalibratedCamera;
-typedef PriorFactor<SimpleCamera>      PriorFactorSimpleCamera;
-typedef PriorFactor<StereoCamera>      PriorFactorStereoCamera;
+typedef PriorFactor<LieVector>              PriorFactorLieVector;
+typedef PriorFactor<LieMatrix>              PriorFactorLieMatrix;
+typedef PriorFactor<Point2>                 PriorFactorPoint2;
+typedef PriorFactor<StereoPoint2>           PriorFactorStereoPoint2;
+typedef PriorFactor<Point3>                 PriorFactorPoint3;
+typedef PriorFactor<Rot2>                   PriorFactorRot2;
+typedef PriorFactor<Rot3>                   PriorFactorRot3;
+typedef PriorFactor<Pose2>                  PriorFactorPose2;
+typedef PriorFactor<Pose3>                  PriorFactorPose3;
+typedef PriorFactor<Cal3_S2>                PriorFactorCal3_S2;
+typedef PriorFactor<Cal3DS2>                PriorFactorCal3DS2;
+typedef PriorFactor<CalibratedCamera>       PriorFactorCalibratedCamera;
+typedef PriorFactor<SimpleCamera>           PriorFactorSimpleCamera;
+typedef PriorFactor<PinholeCameraCal3_S2>   PriorFactorPinholeCameraCal3_S2;
+typedef PriorFactor<StereoCamera>           PriorFactorStereoCamera;
 
 typedef BetweenFactor<LieVector>       BetweenFactorLieVector;
 typedef BetweenFactor<LieMatrix>       BetweenFactorLieMatrix;
@@ -81,29 +82,32 @@ typedef BetweenFactor<Rot3>            BetweenFactorRot3;
 typedef BetweenFactor<Pose2>           BetweenFactorPose2;
 typedef BetweenFactor<Pose3>           BetweenFactorPose3;
 
-typedef NonlinearEquality<LieVector>         NonlinearEqualityLieVector;
-typedef NonlinearEquality<LieMatrix>         NonlinearEqualityLieMatrix;
-typedef NonlinearEquality<Point2>            NonlinearEqualityPoint2;
-typedef NonlinearEquality<StereoPoint2>      NonlinearEqualityStereoPoint2;
-typedef NonlinearEquality<Point3>            NonlinearEqualityPoint3;
-typedef NonlinearEquality<Rot2>              NonlinearEqualityRot2;
-typedef NonlinearEquality<Rot3>              NonlinearEqualityRot3;
-typedef NonlinearEquality<Pose2>             NonlinearEqualityPose2;
-typedef NonlinearEquality<Pose3>             NonlinearEqualityPose3;
-typedef NonlinearEquality<Cal3_S2>           NonlinearEqualityCal3_S2;
-typedef NonlinearEquality<Cal3DS2>           NonlinearEqualityCal3DS2;
-typedef NonlinearEquality<CalibratedCamera>  NonlinearEqualityCalibratedCamera;
-typedef NonlinearEquality<SimpleCamera>      NonlinearEqualitySimpleCamera;
-typedef NonlinearEquality<StereoCamera>      NonlinearEqualityStereoCamera;
+typedef NonlinearEquality<LieVector>              NonlinearEqualityLieVector;
+typedef NonlinearEquality<LieMatrix>              NonlinearEqualityLieMatrix;
+typedef NonlinearEquality<Point2>                 NonlinearEqualityPoint2;
+typedef NonlinearEquality<StereoPoint2>           NonlinearEqualityStereoPoint2;
+typedef NonlinearEquality<Point3>                 NonlinearEqualityPoint3;
+typedef NonlinearEquality<Rot2>                   NonlinearEqualityRot2;
+typedef NonlinearEquality<Rot3>                   NonlinearEqualityRot3;
+typedef NonlinearEquality<Pose2>                  NonlinearEqualityPose2;
+typedef NonlinearEquality<Pose3>                  NonlinearEqualityPose3;
+typedef NonlinearEquality<Cal3_S2>                NonlinearEqualityCal3_S2;
+typedef NonlinearEquality<Cal3DS2>                NonlinearEqualityCal3DS2;
+typedef NonlinearEquality<CalibratedCamera>       NonlinearEqualityCalibratedCamera;
+typedef NonlinearEquality<SimpleCamera>           NonlinearEqualitySimpleCamera;
+typedef NonlinearEquality<PinholeCameraCal3_S2>   NonlinearEqualityPinholeCameraCal3_S2;
+typedef NonlinearEquality<StereoCamera>           NonlinearEqualityStereoCamera;
 
-typedef RangeFactor<Pose2, Point2>                      RangeFactor2D;
-typedef RangeFactor<Pose3, Point3>                      RangeFactor3D;
-typedef RangeFactor<Pose2, Pose2>                       RangeFactorPose2;
-typedef RangeFactor<Pose3, Pose3>                       RangeFactorPose3;
-typedef RangeFactor<CalibratedCamera, Point3>           RangeFactorCalibratedCameraPoint;
-typedef RangeFactor<SimpleCamera, Point3>               RangeFactorSimpleCameraPoint;
-typedef RangeFactor<CalibratedCamera, CalibratedCamera> RangeFactorCalibratedCamera;
-typedef RangeFactor<SimpleCamera, SimpleCamera>         RangeFactorSimpleCamera;
+typedef RangeFactor<Pose2, Point2>                              RangeFactor2D;
+typedef RangeFactor<Pose3, Point3>                              RangeFactor3D;
+typedef RangeFactor<Pose2, Pose2>                               RangeFactorPose2;
+typedef RangeFactor<Pose3, Pose3>                               RangeFactorPose3;
+typedef RangeFactor<CalibratedCamera, Point3>                   RangeFactorCalibratedCameraPoint;
+typedef RangeFactor<SimpleCamera, Point3>                       RangeFactorSimpleCameraPoint;
+typedef RangeFactor<PinholeCameraCal3_S2, Point3>               RangeFactorPinholeCameraCal3_S2Point;
+typedef RangeFactor<CalibratedCamera, CalibratedCamera>         RangeFactorCalibratedCamera;
+typedef RangeFactor<SimpleCamera, SimpleCamera>                 RangeFactorSimpleCamera;
+typedef RangeFactor<PinholeCameraCal3_S2, PinholeCameraCal3_S2> RangeFactorPinholeCameraCal3_S2;
 
 typedef BearingRangeFactor<Pose2, Point2>  BearingRangeFactor2D;
 typedef BearingRangeFactor<Pose3, Point3>  BearingRangeFactor3D;
@@ -111,7 +115,7 @@ typedef BearingRangeFactor<Pose3, Point3>  BearingRangeFactor3D;
 typedef GenericProjectionFactor<Pose3, Point3, Cal3_S2> GenericProjectionFactorCal3_S2;
 typedef GenericProjectionFactor<Pose3, Point3, Cal3DS2> GenericProjectionFactorCal3DS2;
 
-typedef gtsam::GeneralSFMFactor<gtsam::SimpleCamera, gtsam::Point3> GeneralSFMFactorCal3_S2;
+typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3_S2, gtsam::Point3> GeneralSFMFactorCal3_S2;
 //typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3DS2, gtsam::Point3> GeneralSFMFactorCal3DS2;
 
 typedef gtsam::GeneralSFMFactor2<gtsam::Cal3_S2> GeneralSFMFactor2Cal3_S2;
@@ -158,6 +162,7 @@ GTSAM_VALUE_EXPORT(gtsam::Cal3DS2);
 GTSAM_VALUE_EXPORT(gtsam::Cal3_S2Stereo);
 GTSAM_VALUE_EXPORT(gtsam::CalibratedCamera);
 GTSAM_VALUE_EXPORT(gtsam::SimpleCamera);
+GTSAM_VALUE_EXPORT(gtsam::PinholeCameraCal3_S2);
 GTSAM_VALUE_EXPORT(gtsam::StereoCamera);
 
 /* Create GUIDs for factors */
@@ -294,7 +299,7 @@ TEST (testSerializationSLAM, factors) {
   Cal3DS2 cal3ds2(1.0, 2.0, 3.0, 4.0, 5.0,6.0, 7.0, 8.0, 9.0);
   Cal3_S2Stereo cal3_s2stereo(1.0, 2.0, 3.0, 4.0, 5.0, 1.0);
   CalibratedCamera calibratedCamera(pose3);
-  SimpleCamera simpleCamera(pose3, cal3_s2);
+  PinholeCamera<Cal3_S2> simpleCamera(pose3, cal3_s2);
   StereoCamera stereoCamera(pose3, boost::make_shared<Cal3_S2Stereo>(cal3_s2stereo));
 
 

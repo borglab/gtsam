@@ -31,13 +31,13 @@ typedef SmartProjectionFactor<Camera> SfmFactor;
 
 int main(int argc, char* argv[]) {
   // parse options and read BAL file
-  SfM_data db = preamble(argc, argv);
+  SfmData db = preamble(argc, argv);
 
   // Add smart factors to graph
   NonlinearFactorGraph graph;
   for (size_t j = 0; j < db.number_tracks(); j++) {
     auto smartFactor = boost::make_shared<SfmFactor>(gNoiseModel);
-    for (const SfM_Measurement& m : db.tracks[j].measurements) {
+    for (const SfmMeasurement& m : db.tracks[j].measurements) {
       size_t i = m.first;
       Point2 z = m.second;
       smartFactor->add(z, C(i));
@@ -48,7 +48,7 @@ int main(int argc, char* argv[]) {
   Values initial;
   size_t i = 0;
   gUseSchur = false;
-  for (const SfM_Camera& camera : db.cameras)
+  for (const SfmCamera& camera : db.cameras)
     initial.insert(C(i++), camera);
 
   return optimize(db, graph, initial);

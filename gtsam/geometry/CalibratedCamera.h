@@ -326,12 +326,12 @@ public:
 
   /// @deprecated
   inline size_t dim() const {
-    return 6;
+    return dimension;
   }
 
   /// @deprecated
   inline static size_t Dim() {
-    return 6;
+    return dimension;
   }
 
   /// @}

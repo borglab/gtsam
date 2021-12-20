@@ -6,7 +6,6 @@
 
 #include <gtsam_unstable/nonlinear/NonlinearClusterTree.h>
 #include <gtsam/sam/BearingRangeFactor.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Point2.h>
@@ -27,7 +26,7 @@ NonlinearFactorGraph planarSLAMGraph() {
   // Prior on pose x1 at the origin.
   Pose2 prior(0.0, 0.0, 0.0);
   auto priorNoise = noiseModel::Diagonal::Sigmas(Vector3(0.3, 0.3, 0.1));
-  graph.emplace_shared<PriorFactor<Pose2> >(x1, prior, priorNoise);
+  graph.addPrior(x1, prior, priorNoise);
 
   // Two odometry factors
   Pose2 odometry(2.0, 0.0, 0.0);

@@ -26,7 +26,6 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 
 using namespace std;
@@ -84,7 +83,7 @@ TEST( BatchFixedLagSmoother, Example )
     Values newValues;
     Timestamps newTimestamps;
 
-    newFactors.push_back(PriorFactor<Point2>(key0, Point2(0.0, 0.0), odometerNoise));
+    newFactors.addPrior(key0, Point2(0.0, 0.0), odometerNoise);
     newValues.insert(key0, Point2(0.01, 0.01));
     newTimestamps[key0] = 0.0;
 

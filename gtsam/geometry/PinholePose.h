@@ -107,9 +107,9 @@ public:
 
     // If needed, apply chain rule
     if (Dpose)
-    *Dpose = Dpi_pn * *Dpose;
+      *Dpose = Dpi_pn * *Dpose;
     if (Dpoint)
-    *Dpoint = Dpi_pn * *Dpoint;
+      *Dpoint = Dpi_pn * *Dpoint;
 
     return pi;
   }
@@ -222,7 +222,7 @@ private:
   }
 
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 // end of class PinholeBaseK
 
@@ -425,7 +425,7 @@ private:
   }
 
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 // end of class PinholePose
 

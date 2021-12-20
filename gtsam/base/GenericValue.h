@@ -20,6 +20,7 @@
 #pragma once
 
 #include <gtsam/base/Manifold.h>
+#include <gtsam/base/types.h>
 #include <gtsam/base/Value.h>
 
 #include <boost/make_shared.hpp>
@@ -83,18 +84,15 @@ public:
 
   /// Virtual print function, uses traits
   virtual void print(const std::string& str) const {
-    std::cout << "(" << typeid(T).name() << ") ";
+    std::cout << "(" << demangle(typeid(T).name()) << ") ";
     traits<T>::Print(value_, str);
   }
 
     /**
      * Create a duplicate object returned as a pointer to the generic Value interface.
-     * For the sake of performance, this function use singleton pool allocator instead of the normal heap allocator.
-     * The result must be deleted with Value::deallocate_, not with the 'delete' operator.
      */
     virtual Value* clone_() const {
-      void *place = boost::singleton_pool<PoolTag, sizeof(GenericValue)>::malloc();
-      GenericValue* ptr = new (place) GenericValue(*this); // calls copy constructor to fill in
+      GenericValue* ptr = new GenericValue(*this); // calls copy constructor to fill in
       return ptr;
     }
 
@@ -102,8 +100,7 @@ public:
      * Destroy and deallocate this object, only if it was originally allocated using clone_().
      */
     virtual void deallocate_() const {
-      this->~GenericValue(); // Virtual destructor cleans up the derived object
-      boost::singleton_pool<PoolTag, sizeof(GenericValue)>::free((void*) this); // Release memory from pool
+      delete this;
     }
 
     /**
@@ -118,10 +115,7 @@ public:
       // Call retract on the derived class using the retract trait function
       const T retractResult = traits<T>::Retract(GenericValue<T>::value(), delta);
 
-      // Create a Value pointer copy of the result
-      void* resultAsValuePlace =
-          boost::singleton_pool<PoolTag, sizeof(GenericValue)>::malloc();
-      Value* resultAsValue = new (resultAsValuePlace) GenericValue(retractResult);
+      Value* resultAsValue = new GenericValue(retractResult);
 
       // Return the pointer to the Value base class
       return resultAsValue;
@@ -174,12 +168,6 @@ public:
 
   private:
 
-    /// Fake Tag struct for singleton pool allocator. In fact, it is never used!
-    struct PoolTag {
-    };
-
-  private:
-
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -193,7 +181,7 @@ public:
   // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
   enum { NeedsToAlign = (sizeof(T) % 16) == 0 };
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
 };
 
 /// use this macro instead of BOOST_CLASS_EXPORT for GenericValues

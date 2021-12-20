@@ -193,14 +193,10 @@ public:
   /// @{
 
   /// return DOF, dimensionality of tangent space
-  inline size_t dim() const {
-    return 5;
-  }
+  inline size_t dim() const { return dimension; }
 
   /// return DOF, dimensionality of tangent space
-  static size_t Dim() {
-    return 5;
-  }
+  static size_t Dim() { return dimension; }
 
   /// Given 5-dim tangent vector, create new calibration
   inline Cal3_S2 retract(const Vector& d) const {

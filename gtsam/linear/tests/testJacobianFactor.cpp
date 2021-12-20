@@ -253,7 +253,7 @@ TEST(JacobianFactor, error)
 /* ************************************************************************* */
 TEST(JacobianFactor, matrices_NULL)
 {
-  // Make sure everything works with NULL noise model
+  // Make sure everything works with nullptr noise model
   JacobianFactor factor(simple::terms, simple::b);
 
   Matrix jacobianExpected(3, 9);

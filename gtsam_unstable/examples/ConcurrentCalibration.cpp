@@ -26,7 +26,6 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/slam/ProjectionFactor.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/dataset.h>
 
 #include <string>
@@ -61,7 +60,7 @@ int main(int argc, char** argv){
   initial_estimate.insert(Symbol('K', 0), *noisy_K);
 
   noiseModel::Diagonal::shared_ptr calNoise = noiseModel::Diagonal::Sigmas((Vector(5) << 500, 500, 1e-5, 100, 100).finished());
-  graph.emplace_shared<PriorFactor<Cal3_S2> >(Symbol('K', 0), *noisy_K, calNoise);
+  graph.addPrior(Symbol('K', 0), *noisy_K, calNoise);
 
 
   ifstream pose_file(pose_loc.c_str());
@@ -77,7 +76,7 @@ int main(int argc, char** argv){
   }
 
   noiseModel::Isotropic::shared_ptr poseNoise = noiseModel::Isotropic::Sigma(6, 0.01);
-  graph.emplace_shared<PriorFactor<Pose3> >(Symbol('x', pose_id), Pose3(m), poseNoise);
+  graph.addPrior(Symbol('x', pose_id), Pose3(m), poseNoise);
 
   // camera and landmark keys
   size_t x, l;

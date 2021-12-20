@@ -99,7 +99,9 @@ VariableSlots::VariableSlots(const FG& factorGraph)
   // factor does not involve that variable.
   size_t jointFactorPos = 0;
   for(const typename FG::sharedFactor& factor: factorGraph) {
-    assert(factor);
+    if (!factor) {
+      continue;
+    }
     size_t factorVarSlot = 0;
     for(const Key involvedVariable: *factor) {
       // Set the slot in this factor for this variable.  If the
@@ -111,7 +113,7 @@ VariableSlots::VariableSlots(const FG& factorGraph)
       iterator thisVarSlots; bool inserted;
         boost::tie(thisVarSlots, inserted) = this->insert(std::make_pair(involvedVariable, FastVector<size_t>()));
       if(inserted)
-        thisVarSlots->second.resize(factorGraph.size(), Empty);
+        thisVarSlots->second.resize(factorGraph.nrFactors(), Empty);
       thisVarSlots->second[jointFactorPos] = factorVarSlot;
       if(debug) std::cout << "  var " << involvedVariable << " rowblock " << jointFactorPos << " comes from factor's slot " << factorVarSlot << std::endl;
       ++ factorVarSlot;

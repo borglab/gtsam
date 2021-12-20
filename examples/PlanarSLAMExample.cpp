@@ -40,7 +40,6 @@
 // Here we will use a RangeBearing factor for the range-bearing measurements to identified
 // landmarks, and Between factors for the relative motion described by odometry measurements.
 // Also, we will initialize the robot at the origin using a Prior factor.
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/sam/BearingRangeFactor.h>
 
@@ -70,35 +69,36 @@ using namespace std;
 using namespace gtsam;
 
 int main(int argc, char** argv) {
-
   // Create a factor graph
   NonlinearFactorGraph graph;
 
   // Create the keys we need for this simple example
-  static Symbol x1('x',1), x2('x',2), x3('x',3);
-  static Symbol l1('l',1), l2('l',2);
+  static Symbol x1('x', 1), x2('x', 2), x3('x', 3);
+  static Symbol l1('l', 1), l2('l', 2);
 
-  // Add a prior on pose x1 at the origin. A prior factor consists of a mean and a noise model (covariance matrix)
-  Pose2 prior(0.0, 0.0, 0.0); // prior mean is at origin
-  noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Sigmas(Vector3(0.3, 0.3, 0.1)); // 30cm std on x,y, 0.1 rad on theta
-  graph.emplace_shared<PriorFactor<Pose2> >(x1, prior, priorNoise); // add directly to graph
+  // Add a prior on pose x1 at the origin. A prior factor consists of a mean and
+  // a noise model (covariance matrix)
+  Pose2 prior(0.0, 0.0, 0.0);  // prior mean is at origin
+  auto priorNoise = noiseModel::Diagonal::Sigmas(
+      Vector3(0.3, 0.3, 0.1));            // 30cm std on x,y, 0.1 rad on theta
+  graph.addPrior(x1, prior, priorNoise);  // add directly to graph
 
   // Add two odometry factors
-  Pose2 odometry(2.0, 0.0, 0.0); // create a measurement for both factors (the same in this case)
-  noiseModel::Diagonal::shared_ptr odometryNoise = noiseModel::Diagonal::Sigmas(Vector3(0.2, 0.2, 0.1)); // 20cm std on x,y, 0.1 rad on theta
+  Pose2 odometry(2.0, 0.0, 0.0);
+  // create a measurement for both factors (the same in this case)
+  auto odometryNoise = noiseModel::Diagonal::Sigmas(
+      Vector3(0.2, 0.2, 0.1));  // 20cm std on x,y, 0.1 rad on theta
   graph.emplace_shared<BetweenFactor<Pose2> >(x1, x2, odometry, odometryNoise);
   graph.emplace_shared<BetweenFactor<Pose2> >(x2, x3, odometry, odometryNoise);
 
   // Add Range-Bearing measurements to two different landmarks
   // create a noise model for the landmark measurements
-  noiseModel::Diagonal::shared_ptr measurementNoise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.2)); // 0.1 rad std on bearing, 20cm on range
+  auto measurementNoise = noiseModel::Diagonal::Sigmas(
+      Vector2(0.1, 0.2));  // 0.1 rad std on bearing, 20cm on range
   // create the measurement values - indices are (pose id, landmark id)
-  Rot2 bearing11 = Rot2::fromDegrees(45),
-       bearing21 = Rot2::fromDegrees(90),
+  Rot2 bearing11 = Rot2::fromDegrees(45), bearing21 = Rot2::fromDegrees(90),
        bearing32 = Rot2::fromDegrees(90);
-  double range11 = std::sqrt(4.0+4.0),
-         range21 = 2.0,
-         range32 = 2.0;
+  double range11 = std::sqrt(4.0 + 4.0), range21 = 2.0, range32 = 2.0;
 
   // Add Bearing-Range factors
   graph.emplace_shared<BearingRangeFactor<Pose2, Point2> >(x1, l1, bearing11, range11, measurementNoise);
@@ -111,7 +111,7 @@ int main(int argc, char** argv) {
   // Create (deliberately inaccurate) initial estimate
   Values initialEstimate;
   initialEstimate.insert(x1, Pose2(0.5, 0.0, 0.2));
-  initialEstimate.insert(x2, Pose2(2.3, 0.1,-0.2));
+  initialEstimate.insert(x2, Pose2(2.3, 0.1, -0.2));
   initialEstimate.insert(x3, Pose2(4.1, 0.1, 0.1));
   initialEstimate.insert(l1, Point2(1.8, 2.1));
   initialEstimate.insert(l2, Point2(4.1, 1.8));
@@ -139,4 +139,3 @@ int main(int argc, char** argv) {
 
   return 0;
 }
-

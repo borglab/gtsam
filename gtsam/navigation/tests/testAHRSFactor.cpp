@@ -15,6 +15,7 @@
  * @author Krunal Chande
  * @author Luca Carlone
  * @author Frank Dellaert
+ * @author Varun Agrawal
  */
 
 #include <gtsam/navigation/AHRSFactor.h>
@@ -200,7 +201,7 @@ TEST(AHRSFactor, Error) {
   // 1e-5 needs to be added only when using quaternions for rotations
 
   EXPECT(assert_equal(H3e, H3a, 1e-5));
-  // FIXME!! DOes not work. Different matrix dimensions.
+  // 1e-5 needs to be added only when using quaternions for rotations
 }
 
 /* ************************************************************************* */
@@ -341,7 +342,7 @@ TEST( AHRSFactor, fistOrderExponential ) {
 //******************************************************************************
 TEST( AHRSFactor, FirstOrderPreIntegratedMeasurements ) {
   // Linearization point
-  Vector3 bias; ///< Current estimate of rotation rate bias
+  Vector3 bias = Vector3::Zero(); ///< Current estimate of rotation rate bias
 
   Pose3 body_P_sensor(Rot3::Expmap(Vector3(0, 0.1, 0.1)), Point3(1, 0, 1));
 

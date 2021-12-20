@@ -1,0 +1,33 @@
+# version format
+version: 4.0.3-{branch}-build{build}
+
+os: Visual Studio 2019
+
+clone_folder: c:\projects\gtsam
+
+platform: x64
+configuration: Release
+
+environment:
+  CTEST_OUTPUT_ON_FAILURE: 1
+  BOOST_ROOT: C:/Libraries/boost_1_71_0
+
+build_script:
+  - cd c:\projects\gtsam\build
+  # As of Dec 2019, not all unit tests build cleanly for MSVC, so we'll just
+  # check that parts of GTSAM build correctly:
+  #- cmake --build .
+  - cmake --build . --config Release --target gtsam
+  - cmake --build . --config Release --target gtsam_unstable
+  - cmake --build . --config Release --target wrap
+  #- cmake --build . --target check
+  - cmake --build . --config Release --target check.base
+  - cmake --build . --config Release --target check.base_unstable
+  - cmake --build . --config Release --target check.linear
+
+before_build:
+  - cd c:\projects\gtsam
+  - mkdir build
+  - cd build
+  # Disable examples to avoid AppVeyor timeout
+  - cmake -G "Visual Studio 16 2019"  .. -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF

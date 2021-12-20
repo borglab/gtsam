@@ -17,7 +17,6 @@
  * @date    Jan 30, 2012
  */
 
-#include <boost/timer.hpp>
 #include <boost/assign/std/vector.hpp>
 using namespace boost::assign;
 

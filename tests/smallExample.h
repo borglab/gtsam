@@ -159,10 +159,10 @@ namespace example {
 namespace impl {
 typedef boost::shared_ptr<NonlinearFactor> shared_nlf;
 
-static SharedDiagonal sigma1_0 = noiseModel::Isotropic::Sigma(2,1.0);
-static SharedDiagonal sigma0_1 = noiseModel::Isotropic::Sigma(2,0.1);
-static SharedDiagonal sigma0_2 = noiseModel::Isotropic::Sigma(2,0.2);
-static SharedDiagonal constraintModel = noiseModel::Constrained::All(2);
+static SharedDiagonal kSigma1_0 = noiseModel::Isotropic::Sigma(2,1.0);
+static SharedDiagonal kSigma0_1 = noiseModel::Isotropic::Sigma(2,0.1);
+static SharedDiagonal kSigma0_2 = noiseModel::Isotropic::Sigma(2,0.2);
+static SharedDiagonal kConstrainedModel = noiseModel::Constrained::All(2);
 
 static const Key _l1_=0, _x1_=1, _x2_=2;
 static const Key _x_=0, _y_=1, _z_=2;
@@ -170,40 +170,43 @@ static const Key _x_=0, _y_=1, _z_=2;
 
 
 /* ************************************************************************* */
-inline boost::shared_ptr<const NonlinearFactorGraph> sharedNonlinearFactorGraph() {
+inline boost::shared_ptr<const NonlinearFactorGraph>
+sharedNonlinearFactorGraph(const SharedNoiseModel &noiseModel1 = impl::kSigma0_1,
+                           const SharedNoiseModel &noiseModel2 = impl::kSigma0_2) {
   using namespace impl;
-  using symbol_shorthand::X;
   using symbol_shorthand::L;
+  using symbol_shorthand::X;
   // Create
-  boost::shared_ptr<NonlinearFactorGraph> nlfg(
-      new NonlinearFactorGraph);
+  boost::shared_ptr<NonlinearFactorGraph> nlfg(new NonlinearFactorGraph);
 
   // prior on x1
-  Point2 mu(0,0);
-  shared_nlf f1(new simulated2D::Prior(mu, sigma0_1, X(1)));
+  Point2 mu(0, 0);
+  shared_nlf f1(new simulated2D::Prior(mu, noiseModel1, X(1)));
   nlfg->push_back(f1);
 
   // odometry between x1 and x2
   Point2 z2(1.5, 0);
-  shared_nlf f2(new simulated2D::Odometry(z2, sigma0_1, X(1), X(2)));
+  shared_nlf f2(new simulated2D::Odometry(z2, noiseModel1, X(1), X(2)));
   nlfg->push_back(f2);
 
   // measurement between x1 and l1
   Point2 z3(0, -1);
-  shared_nlf f3(new simulated2D::Measurement(z3, sigma0_2, X(1), L(1)));
+  shared_nlf f3(new simulated2D::Measurement(z3, noiseModel2, X(1), L(1)));
   nlfg->push_back(f3);
 
   // measurement between x2 and l1
   Point2 z4(-1.5, -1.);
-  shared_nlf f4(new simulated2D::Measurement(z4, sigma0_2, X(2), L(1)));
+  shared_nlf f4(new simulated2D::Measurement(z4, noiseModel2, X(2), L(1)));
   nlfg->push_back(f4);
 
   return nlfg;
 }
 
 /* ************************************************************************* */
-inline NonlinearFactorGraph createNonlinearFactorGraph() {
-  return *sharedNonlinearFactorGraph();
+inline NonlinearFactorGraph
+createNonlinearFactorGraph(const SharedNoiseModel &noiseModel1 = impl::kSigma0_1,
+                           const SharedNoiseModel &noiseModel2 = impl::kSigma0_2) {
+  return *sharedNonlinearFactorGraph(noiseModel1, noiseModel2);
 }
 
 /* ************************************************************************* */
@@ -372,19 +375,19 @@ inline std::pair<NonlinearFactorGraph, Values> createNonlinearSmoother(int T) {
 
   // prior on x1
   Point2 x1(1.0, 0.0);
-  shared_nlf prior(new simulated2D::Prior(x1, sigma1_0, X(1)));
+  shared_nlf prior(new simulated2D::Prior(x1, kSigma1_0, X(1)));
   nlfg.push_back(prior);
   poses.insert(X(1), x1);
 
   for (int t = 2; t <= T; t++) {
     // odometry between x_t and x_{t-1}
     Point2 odo(1.0, 0.0);
-    shared_nlf odometry(new simulated2D::Odometry(odo, sigma1_0, X(t - 1), X(t)));
+    shared_nlf odometry(new simulated2D::Odometry(odo, kSigma1_0, X(t - 1), X(t)));
     nlfg.push_back(odometry);
 
     // measurement on x_t is like perfect GPS
     Point2 xt(t, 0);
-    shared_nlf measurement(new simulated2D::Prior(xt, sigma1_0, X(t)));
+    shared_nlf measurement(new simulated2D::Prior(xt, kSigma1_0, X(t)));
     nlfg.push_back(measurement);
 
     // initial estimate
@@ -412,7 +415,7 @@ inline GaussianFactorGraph createSimpleConstraintGraph() {
   Vector b1(2);
   b1(0) = 1.0;
   b1(1) = -1.0;
-  JacobianFactor::shared_ptr f1(new JacobianFactor(_x_, Ax, b1, sigma0_1));
+  JacobianFactor::shared_ptr f1(new JacobianFactor(_x_, Ax, b1, kSigma0_1));
 
   // create binary constraint factor
   // between _x_ and _y_, that is going to be the only factor on _y_
@@ -422,7 +425,7 @@ inline GaussianFactorGraph createSimpleConstraintGraph() {
   Matrix Ay1 = I_2x2 * -1;
   Vector b2 = Vector2(0.0, 0.0);
   JacobianFactor::shared_ptr f2(new JacobianFactor(_x_, Ax1, _y_, Ay1, b2,
-      constraintModel));
+      kConstrainedModel));
 
   // construct the graph
   GaussianFactorGraph fg;
@@ -453,8 +456,8 @@ inline GaussianFactorGraph createSingleConstraintGraph() {
   Vector b1(2);
   b1(0) = 1.0;
   b1(1) = -1.0;
-  //GaussianFactor::shared_ptr f1(new JacobianFactor(_x_, sigma0_1->Whiten(Ax), sigma0_1->whiten(b1), sigma0_1));
-  JacobianFactor::shared_ptr f1(new JacobianFactor(_x_, Ax, b1, sigma0_1));
+  //GaussianFactor::shared_ptr f1(new JacobianFactor(_x_, kSigma0_1->Whiten(Ax), kSigma0_1->whiten(b1), kSigma0_1));
+  JacobianFactor::shared_ptr f1(new JacobianFactor(_x_, Ax, b1, kSigma0_1));
 
   // create binary constraint factor
   // between _x_ and _y_, that is going to be the only factor on _y_
@@ -468,7 +471,7 @@ inline GaussianFactorGraph createSingleConstraintGraph() {
   Matrix Ay1 = I_2x2 * 10;
   Vector b2 = Vector2(1.0, 2.0);
   JacobianFactor::shared_ptr f2(new JacobianFactor(_x_, Ax1, _y_, Ay1, b2,
-      constraintModel));
+      kConstrainedModel));
 
   // construct the graph
   GaussianFactorGraph fg;
@@ -493,7 +496,7 @@ inline GaussianFactorGraph createMultiConstraintGraph() {
   // unary factor 1
   Matrix A = I_2x2;
   Vector b = Vector2(-2.0, 2.0);
-  JacobianFactor::shared_ptr lf1(new JacobianFactor(_x_, A, b, sigma0_1));
+  JacobianFactor::shared_ptr lf1(new JacobianFactor(_x_, A, b, kSigma0_1));
 
   // constraint 1
   Matrix A11(2, 2);
@@ -512,7 +515,7 @@ inline GaussianFactorGraph createMultiConstraintGraph() {
   b1(0) = 1.0;
   b1(1) = 2.0;
   JacobianFactor::shared_ptr lc1(new JacobianFactor(_x_, A11, _y_, A12, b1,
-      constraintModel));
+      kConstrainedModel));
 
   // constraint 2
   Matrix A21(2, 2);
@@ -531,7 +534,7 @@ inline GaussianFactorGraph createMultiConstraintGraph() {
   b2(0) = 3.0;
   b2(1) = 4.0;
   JacobianFactor::shared_ptr lc2(new JacobianFactor(_x_, A21, _z_, A22, b2,
-      constraintModel));
+      kConstrainedModel));
 
   // construct the graph
   GaussianFactorGraph fg;

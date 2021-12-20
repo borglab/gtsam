@@ -17,7 +17,7 @@
  */
 
 #include <gtsam/slam/InitializePose3.h> 
-#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/inference/Symbol.h>
@@ -75,27 +75,15 @@ Values InitializePose3::normalizeRelaxedRotations(
     const VectorValues& relaxedRot3) {
   gttic(InitializePose3_computeOrientationsChordal);
 
-  Matrix ppm = Z_3x3; // plus plus minus
-  ppm(0,0) = 1; ppm(1,1) = 1; ppm(2,2) = -1;
-
   Values validRot3;
   for(const auto& it: relaxedRot3) {
     Key key = it.first;
     if (key != kAnchorKey) {
-      Matrix3 R;
-      R << Eigen::Map<const Matrix3>(it.second.data()); // Recover M from vectorized
+      Matrix3 M;
+      M << Eigen::Map<const Matrix3>(it.second.data()); // Recover M from vectorized
 
       // ClosestTo finds rotation matrix closest to H in Frobenius sense
-      // Rot3 initRot = Rot3::ClosestTo(M.transpose());
-
-      Matrix U, V; Vector s;
-      svd(R.transpose(), U, s, V);
-      Matrix3 normalizedRotMat = U * V.transpose();
-
-      if(normalizedRotMat.determinant() < 0)
-        normalizedRotMat = U * ppm * V.transpose();
-
-      Rot3 initRot = Rot3(normalizedRotMat);
+      Rot3 initRot = Rot3::ClosestTo(M.transpose());
       validRot3.insert(key, initRot);
     }
   }

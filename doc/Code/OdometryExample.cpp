@@ -5,7 +5,7 @@ NonlinearFactorGraph graph;
 Pose2 priorMean(0.0, 0.0, 0.0);
 noiseModel::Diagonal::shared_ptr priorNoise =
   noiseModel::Diagonal::Sigmas(Vector3(0.3, 0.3, 0.1));
-graph.add(PriorFactor<Pose2>(1, priorMean, priorNoise));
+graph.addPrior(1, priorMean, priorNoise);
 
 // Add two odometry factors
 Pose2 odometry(2.0, 0.0, 0.0);

@@ -122,28 +122,30 @@ namespace gtsam {
     key_(key) {
   }
 
-  DiscreteKeys Signature::discreteKeysParentsFirst() const {
+  DiscreteKeys Signature::discreteKeys() const {
     DiscreteKeys keys;
-    for(const DiscreteKey& key: parents_)
-      keys.push_back(key);
     keys.push_back(key_);
+    for (const DiscreteKey& key : parents_) keys.push_back(key);
     return keys;
   }
 
   KeyVector Signature::indices() const {
     KeyVector js;
     js.push_back(key_.first);
-    for(const DiscreteKey& key: parents_)
-      js.push_back(key.first);
+    for (const DiscreteKey& key : parents_) js.push_back(key.first);
     return js;
   }
 
   vector<double> Signature::cpt() const {
     vector<double> cpt;
     if (table_) {
-      for(const Row& row: *table_)
-              for(const double& x: row)
-                      cpt.push_back(x);
+      const size_t nrStates = table_->at(0).size();
+      for (size_t j = 0; j < nrStates; j++) {
+        for (const Row& row : *table_) {
+          assert(row.size() == nrStates);
+          cpt.push_back(row[j]);
+        }
+      }
     }
     return cpt;
   }

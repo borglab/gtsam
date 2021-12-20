@@ -11,17 +11,17 @@ A structure-from-motion problem on a simulated dataset
 from __future__ import print_function
 
 import gtsam
+import matplotlib.pyplot as plt
 import numpy as np
+from gtsam import symbol_shorthand_L as L
+from gtsam import symbol_shorthand_X as X
 from gtsam.examples import SFMdata
 from gtsam.gtsam import (Cal3_S2, DoglegOptimizer,
-                         GenericProjectionFactorCal3_S2, NonlinearFactorGraph,
-                         Point3, Pose3, PriorFactorPoint3, PriorFactorPose3,
-                         Rot3, SimpleCamera, Values)
-
-
-def symbol(name: str, index: int) -> int:
-    """ helper for creating a symbol without explicitly casting 'name' from str to int """
-    return gtsam.symbol(ord(name), index)
+                         GenericProjectionFactorCal3_S2, Marginals,
+                         NonlinearFactorGraph, PinholeCameraCal3_S2, Point3,
+                         Pose3, PriorFactorPoint3, PriorFactorPose3, Rot3,
+                         SimpleCamera, Values)
+from gtsam.utils import plot
 
 
 def main():
@@ -70,23 +70,23 @@ def main():
     # Add a prior on pose x1. This indirectly specifies where the origin is.
     # 0.3 rad std on roll,pitch,yaw and 0.1m on x,y,z
     pose_noise = gtsam.noiseModel_Diagonal.Sigmas(np.array([0.3, 0.3, 0.3, 0.1, 0.1, 0.1]))
-    factor = PriorFactorPose3(symbol('x', 0), poses[0], pose_noise)
+    factor = PriorFactorPose3(X(0), poses[0], pose_noise)
     graph.push_back(factor)
 
     # Simulated measurements from each camera pose, adding them to the factor graph
     for i, pose in enumerate(poses):
-        camera = SimpleCamera(pose, K)
+        camera = PinholeCameraCal3_S2(pose, K)
         for j, point in enumerate(points):
             measurement = camera.project(point)
             factor = GenericProjectionFactorCal3_S2(
-                measurement, measurement_noise, symbol('x', i), symbol('l', j), K)
+                measurement, measurement_noise, X(i), L(j), K)
             graph.push_back(factor)
 
     # Because the structure-from-motion problem has a scale ambiguity, the problem is still under-constrained
     # Here we add a prior on the position of the first landmark. This fixes the scale by indicating the distance
     # between the first camera and the first landmark. All other landmark positions are interpreted using this scale.
     point_noise = gtsam.noiseModel_Isotropic.Sigma(3, 0.1)
-    factor = PriorFactorPoint3(symbol('l', 0), points[0], point_noise)
+    factor = PriorFactorPoint3(L(0), points[0], point_noise)
     graph.push_back(factor)
     graph.print_('Factor Graph:\n')
 
@@ -94,13 +94,11 @@ def main():
     # Intentionally initialize the variables off from the ground truth
     initial_estimate = Values()
     for i, pose in enumerate(poses):
-        r = Rot3.Rodrigues(-0.1, 0.2, 0.25)
-        t = Point3(0.05, -0.10, 0.20)
-        transformed_pose = pose.compose(Pose3(r, t))
-        initial_estimate.insert(symbol('x', i), transformed_pose)
+        transformed_pose = pose.retract(0.1*np.random.randn(6,1))
+        initial_estimate.insert(X(i), transformed_pose)
     for j, point in enumerate(points):
-        transformed_point = Point3(point.vector() + np.array([-0.25, 0.20, 0.15]))
-        initial_estimate.insert(symbol('l', j), transformed_point)
+        transformed_point = Point3(point.vector() + 0.1*np.random.randn(3))
+        initial_estimate.insert(L(j), transformed_point)
     initial_estimate.print_('Initial Estimates:\n')
 
     # Optimize the graph and print results
@@ -113,6 +111,11 @@ def main():
     print('initial error = {}'.format(graph.error(initial_estimate)))
     print('final error = {}'.format(graph.error(result)))
 
+    marginals = Marginals(graph, result)
+    plot.plot_3d_points(1, result, marginals=marginals)
+    plot.plot_trajectory(1, result, marginals=marginals, scale=8)
+    plot.set_axes_equal(1)
+    plt.show()
 
 if __name__ == '__main__':
     main()

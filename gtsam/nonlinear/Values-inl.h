@@ -348,7 +348,9 @@ namespace gtsam {
        throw ValuesKeyDoesNotExist("at", j);
 
     // Check the type and throw exception if incorrect
-    return internal::handle<ValueType>()(j,item->second);
+    // h() split in two lines to avoid internal compiler error (MSVC2017)
+    auto h = internal::handle<ValueType>();
+    return h(j,item->second);
   }
 
   /* ************************************************************************* */

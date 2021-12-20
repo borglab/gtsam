@@ -42,6 +42,9 @@
 // Whether we are using TBB (if TBB was found and GTSAM_WITH_TBB is enabled in CMake)
 #cmakedefine GTSAM_USE_TBB
 
+// Whether we are using a TBB version higher than 2020
+#cmakedefine TBB_GREATER_EQUAL_2020
+
 // Whether we are using system-Eigen or our own patched version
 #cmakedefine GTSAM_USE_SYSTEM_EIGEN
 

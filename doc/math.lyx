@@ -1,7 +1,9 @@
-#LyX 2.1 created this file. For more info see http://www.lyx.org/
-\lyxformat 474
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
 \begin_document
 \begin_header
+\save_transient_properties true
+\origin unavailable
 \textclass article
 \use_default_options false
 \begin_modules
@@ -14,16 +16,18 @@ theorems-ams-bytype
 \language_package default
 \inputencoding auto
 \fontencoding global
-\font_roman times
-\font_sans default
-\font_typewriter default
-\font_math auto
+\font_roman "times" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
 \font_default_family rmdefault
 \use_non_tex_fonts false
 \font_sc false
 \font_osf false
-\font_sf_scale 100
-\font_tt_scale 100
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
 \graphics default
 \default_output_format default
 \output_sync 0
@@ -53,6 +57,7 @@ theorems-ams-bytype
 \suppress_date false
 \justification true
 \use_refstyle 0
+\use_minted 0
 \index Index
 \shortcut idx
 \color #008000
@@ -65,7 +70,10 @@ theorems-ams-bytype
 \tocdepth 3
 \paragraph_separation indent
 \paragraph_indentation default
-\quotes_language english
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
 \papercolumns 1
 \papersides 1
 \paperpagestyle default
@@ -98,6 +106,11 @@ width "100col%"
 special "none"
 height "1in"
 height_special "totalheight"
+thickness "0.4pt"
+separation "3pt"
+shadowsize "4pt"
+framecolor "black"
+backgroundcolor "none"
 status collapsed
 
 \begin_layout Plain Layout
@@ -654,6 +667,7 @@ reference "eq:LocalBehavior"
 \begin_inset CommandInset citation
 LatexCommand cite
 key "Spivak65book"
+literal "true"
 
 \end_inset
 
@@ -934,6 +948,7 @@ See
 \begin_inset CommandInset citation
 LatexCommand cite
 key "Spivak65book"
+literal "true"
 
 \end_inset
 
@@ -1025,6 +1040,7 @@ See
 \begin_inset CommandInset citation
 LatexCommand cite
 key "Spivak65book"
+literal "true"
 
 \end_inset
 
@@ -2209,6 +2225,7 @@ instantaneous velocity
 LatexCommand cite
 after "page 51 for rotations, page 419 for SE(3)"
 key "Murray94book"
+literal "true"
 
 \end_inset
 
@@ -2965,7 +2982,7 @@ B^{T} & I_{3}\end{array}\right]
 \begin_layout Subsection
 \begin_inset CommandInset label
 LatexCommand label
-name "sub:Pushforward-of-Between"
+name "subsec:Pushforward-of-Between"
 
 \end_inset
 
@@ -3419,6 +3436,7 @@ A retraction
 \begin_inset CommandInset citation
 LatexCommand cite
 key "Absil07book"
+literal "true"
 
 \end_inset
 
@@ -3873,7 +3891,7 @@ BetweenFactor
 , derived in Section 
 \begin_inset CommandInset ref
 LatexCommand ref
-reference "sub:Pushforward-of-Between"
+reference "subsec:Pushforward-of-Between"
 
 \end_inset
 
@@ -4430,7 +4448,7 @@ In the case of
 \begin_inset Formula $\SOthree$
 \end_inset
 
- the vector space is  
+ the vector space is 
 \begin_inset Formula $\Rthree$
 \end_inset
 
@@ -4502,7 +4520,7 @@ reference "Th:InverseAction"
 \begin_layout Subsection
 \begin_inset CommandInset label
 LatexCommand label
-name "sub:3DAngularVelocities"
+name "subsec:3DAngularVelocities"
 
 \end_inset
 
@@ -4695,6 +4713,7 @@ Absil
 LatexCommand cite
 after "page 58"
 key "Absil07book"
+literal "true"
 
 \end_inset
 
@@ -5395,6 +5414,7 @@ While not a Lie group, we can define an exponential map, which is given
 \begin_inset CommandInset citation
 LatexCommand cite
 key "Ma01ijcv"
+literal "true"
 
 \end_inset
 
@@ -5402,6 +5422,7 @@ key "Ma01ijcv"
 \begin_inset CommandInset href
 LatexCommand href
 name "http://stat.fsu.edu/~anuj/CVPR_Tutorial/Part2.pdf"
+literal "false"
 
 \end_inset
 
@@ -5605,6 +5626,7 @@ The exponential map uses
 \begin_inset CommandInset citation
 LatexCommand cite
 key "Absil07book"
+literal "true"
 
 \end_inset
 
@@ -6293,7 +6315,7 @@ d^{c}=R_{w}^{c}\left(d^{w}+(t^{w}v^{w})v^{w}-t^{w}\right)
 \end_layout
 
 \begin_layout Section
-Line3 (Ocaml)
+Line3
 \end_layout
 
 \begin_layout Standard
@@ -6345,6 +6367,14 @@ R'=R(I+\Omega)
 
 \end_inset
 
+
+\end_layout
+
+\begin_layout Subsection
+Projecting Line3
+\end_layout
+
+\begin_layout Standard
 Projecting a line to 2D can be done easily, as both 
 \begin_inset Formula $v$
 \end_inset
@@ -6430,13 +6460,21 @@ or the
 
 \end_layout
 
+\begin_layout Subsection
+Action of 
+\begin_inset Formula $\SEthree$
+\end_inset
+
+ on the line
+\end_layout
+
 \begin_layout Standard
 Transforming a 3D line 
 \begin_inset Formula $(R,(a,b))$
 \end_inset
 
  from a world coordinate frame to a camera frame 
-\begin_inset Formula $(R_{w}^{c},t^{w})$
+\begin_inset Formula $T_{c}^{w}=(R_{c}^{w},t^{w})$
 \end_inset
 
  is done by
@@ -6466,17 +6504,115 @@ b'=b-R_{2}^{T}t^{w}
 
 \end_inset
 
-Again, we need to redo the derivatives, as R is incremented from the right.
- The first argument is incremented from the left, but the result is incremented
- on the right:
+where 
+\begin_inset Formula $R_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $R_{2}$
+\end_inset
+
+ are the columns of 
+\begin_inset Formula $R$
+\end_inset
+
+ , as before.
+ 
+\end_layout
+
+\begin_layout Standard
+To find the derivatives, the transformation of a line 
+\begin_inset Formula $l^{w}=(R,a,b)$
+\end_inset
+
+ from world coordinates to a camera coordinate frame 
+\begin_inset Formula $T_{c}^{w}$
+\end_inset
+
+, specified in world coordinates, can be written as a function 
+\begin_inset Formula $f:\SEthree\times L\rightarrow L$
+\end_inset
+
+, as given above, i.e., 
 \begin_inset Formula 
-\begin{eqnarray*}
-R'(I+\Omega')=(AB)(I+\Omega') & = & (I+\Skew{S\omega})AB\\
-I+\Omega' & = & (AB)^{T}(I+\Skew{S\omega})(AB)\\
-\Omega' & = & R'^{T}\Skew{S\omega}R'\\
-\Omega' & = & \Skew{R'^{T}S\omega}\\
-\omega' & = & R'^{T}S\omega
-\end{eqnarray*}
+\[
+f(T_{c}^{w},l^{w})=\left(\left(R_{c}^{w}\right)^{T}R,a-R_{1}^{T}t^{w},b-R_{2}^{T}t^{w}\right).
+\]
+
+\end_inset
+
+Let us find the Jacobian 
+\begin_inset Formula $J_{1}$
+\end_inset
+
+ of 
+\begin_inset Formula $f$
+\end_inset
+
+ with respect to the first argument 
+\begin_inset Formula $T_{c}^{w}$
+\end_inset
+
+, which should obey
+\begin_inset Formula 
+\begin{align*}
+f(T_{c}^{w}e^{\xihat},l^{w}) & \approx f(T_{c}^{w},l^{w})+J_{1}\xi
+\end{align*}
+
+\end_inset
+
+Note that
+\begin_inset Formula 
+\[
+T_{c}^{w}e^{\xihat}\approx\left[\begin{array}{cc}
+R_{c}^{w}\left(I_{3}+\Skew{\omega}\right) & t^{w}+R_{c}^{w}v\\
+0 & 1
+\end{array}\right]
+\]
+
+\end_inset
+
+Let's write this out separately for each of 
+\begin_inset Formula $R,a,b$
+\end_inset
+
+:
+\begin_inset Formula 
+\begin{align*}
+\left(R_{c}^{w}\left(I_{3}+\Skew{\omega}\right)\right)^{T}R & \approx\left(R_{c}^{w}\right)^{T}R(I+\left[J_{R\omega}\omega\right]_{\times})\\
+a-R_{1}^{T}\left(t^{w}+R_{c}^{w}v\right) & \approx a-R_{1}^{T}t^{w}+J_{av}v\\
+b-R_{2}^{T}\left(t^{w}+R_{c}^{w}v\right) & \approx b-R_{2}^{T}t^{w}+J_{bv}v
+\end{align*}
+
+\end_inset
+
+Simplifying, we get:
+\begin_inset Formula 
+\begin{align*}
+-\Skew{\omega}R' & \approx R'\left[J_{R\omega}\omega\right]_{\times}\\
+-R_{1}^{T}R_{c}^{w} & \approx J_{av}\\
+-R_{2}^{T}R_{c}^{w} & \approx J_{bv}
+\end{align*}
+
+\end_inset
+
+which gives the expressions for 
+\begin_inset Formula $J_{av}$
+\end_inset
+
+ and 
+\begin_inset Formula $J_{bv}$
+\end_inset
+
+.
+ The top line can be further simplified:
+\begin_inset Formula 
+\begin{align*}
+-\Skew{\omega}R' & \approx R'\left[J_{R\omega}\omega\right]_{\times}\\
+-R'^{T}\Skew{\omega}R' & \approx\left[J_{R\omega}\omega\right]_{\times}\\
+-\Skew{R'^{T}\omega} & \approx\left[J_{R\omega}\omega\right]_{\times}\\
+-R'^{T} & \approx J_{R\omega}
+\end{align*}
 
 \end_inset
 
@@ -6687,6 +6823,7 @@ Spivak
 \begin_inset CommandInset citation
 LatexCommand cite
 key "Spivak65book"
+literal "true"
 
 \end_inset
 
@@ -6795,6 +6932,7 @@ The following is adapted from Appendix A in
 \begin_inset CommandInset citation
 LatexCommand cite
 key "Murray94book"
+literal "true"
 
 \end_inset
 
@@ -6924,6 +7062,7 @@ might be
 LatexCommand cite
 after "page 45"
 key "Hall00book"
+literal "true"
 
 \end_inset
 

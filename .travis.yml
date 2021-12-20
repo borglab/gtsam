@@ -7,17 +7,19 @@ addons:
   apt:
     sources:
     - ubuntu-toolchain-r-test
+    - sourceline: 'deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main'
+      key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
     packages:
-    - g++-8
-    - clang-3.8
-    - build-essential
-    - pkg-config
+    - g++-9
+    - clang-9
+    - build-essential pkg-config
     - cmake
-    - libpython-dev python-numpy
+    - python3-dev libpython-dev
+    - python3-numpy
     - libboost-all-dev
 
 # before_install:
-#  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update          ; fi
+  # - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update; fi
 
 install:
   - if [ "$TRAVIS_OS_NAME" == "osx" ]; then HOMEBREW_NO_AUTO_UPDATE=1 brew install ccache  ; fi
@@ -27,9 +29,16 @@ install:
 stages:
   - compile
   - test
+  - special
+
+env:
+  global:
+    - MAKEFLAGS="-j2"
+    - CCACHE_SLOPPINESS=pch_defines,time_macros
 
 # Compile stage without building examples/tests to populate the caches.
 jobs:
+# -------- STAGE 1: COMPILE -----------
   include:
 # on Mac, GCC
   - stage: compile
@@ -68,46 +77,65 @@ jobs:
   - stage: compile
     os: linux
     compiler: clang
-    env: CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_UNSTABLE=OFF
+    env: CC=clang-9 CXX=clang++-9 CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_UNSTABLE=OFF
     script: bash .travis.sh -b
   - stage: compile
     os: linux
+    compiler: clang
+    env: CC=clang-9 CXX=clang++-9 CMAKE_BUILD_TYPE=Release
+    script: bash .travis.sh -b
+# on Linux, with deprecated ON to make sure that path still compiles/tests
+  - stage: special
+    os: linux
+    compiler: clang
+    env: CC=clang-9 CXX=clang++-9 CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_UNSTABLE=OFF GTSAM_ALLOW_DEPRECATED_SINCE_V4=ON
+    script: bash .travis.sh -b
+# on Linux, with GTSAM_WITH_TBB on to make sure GTSAM still compiles/tests
+  - stage: special
+    os: linux
+    compiler: gcc
+    env: CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_UNSTABLE=OFF GTSAM_WITH_TBB=ON
+    script: bash .travis.sh -t
+# -------- STAGE 2: TESTS -----------
+# on Mac, GCC
+  - stage: test
+    os: osx
     compiler: clang
     env: CMAKE_BUILD_TYPE=Release
-    script: bash .travis.sh -b
-# on Linux, with deprecated ON to make sure that path still compiles
-  - stage: compile
+    script: bash .travis.sh -t
+  - stage: test
+    os: osx
+    compiler: clang
+    env: CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_UNSTABLE=OFF
+    script: bash .travis.sh -t
+  - stage: test
+    os: linux
+    compiler: gcc
+    env: CMAKE_BUILD_TYPE=Release
+    script: bash .travis.sh -t
+  - stage: test
+    os: linux
+    compiler: gcc
+    env: CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_UNSTABLE=OFF
+    script: bash .travis.sh -t
+  - stage: test
     os: linux
     compiler: clang
-    env: CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_UNSTABLE=OFF GTSAM_ALLOW_DEPRECATED_SINCE_V4=ON
-    script: bash .travis.sh -b
-
-# Matrix configuration:
-os:
-  - osx
-  - linux
-compiler:
-  - gcc
-  - clang
-env:
-  global:
-    - MAKEFLAGS="-j2"
-    - CCACHE_SLOPPINESS=pch_defines,time_macros
-    - GTSAM_ALLOW_DEPRECATED_SINCE_V4=OFF
-    - GTSAM_BUILD_UNSTABLE=ON
-  matrix:
-    - CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_UNSTABLE=OFF
-    - CMAKE_BUILD_TYPE=Release
-script:
-  - bash .travis.sh -t
-
-matrix:
-  exclude:
-    # Exclude g++ debug on Linux as it consistently times out
-    - os: linux
-      compiler: gcc
-      env : CMAKE_BUILD_TYPE=Debug GTSAM_BUILD_UNSTABLE=OFF
-    # Exclude clang on Linux/clang in release until issue #57 is solved
-    - os: linux
-      compiler: clang
-      env : CMAKE_BUILD_TYPE=Release
+    env: CC=clang-9 CXX=clang++-9 CMAKE_BUILD_TYPE=Release
+    script: bash .travis.sh -t
+# on Linux, with quaternions ON to make sure that path still compiles/tests
+  - stage: special
+    os: linux
+    compiler: clang
+    env: CC=clang-9 CXX=clang++-9 CMAKE_BUILD_TYPE=Release GTSAM_BUILD_UNSTABLE=OFF GTSAM_USE_QUATERNIONS=ON
+    script: bash .travis.sh -t
+  - stage: special
+    os: linux
+    compiler: gcc
+    env: PYTHON_VERSION=3
+    script: bash .travis.python.sh
+  - stage: special
+    os: osx
+    compiler: clang
+    env: PYTHON_VERSION=3
+    script: bash .travis.python.sh

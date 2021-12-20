@@ -1,3 +1,8 @@
+# Set cmake policy to recognize the AppleClang compiler
+# independently from the Clang compiler.
+if(POLICY CMP0025)
+  cmake_policy(SET CMP0025 NEW)
+endif()
 
 # function:  list_append_cache(var [new_values ...])
 # Like "list(APPEND ...)" but working for CACHE variables.
@@ -81,6 +86,11 @@ if(MSVC)
     WINDOWS_LEAN_AND_MEAN
     NOMINMAX
 	)
+  # Avoid literally hundreds to thousands of warnings:
+  list_append_cache(GTSAM_COMPILE_OPTIONS_PUBLIC
+	/wd4267 # warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+  )
+
 endif()
 
 # Other (non-preprocessor macros) compiler flags:
@@ -94,7 +104,8 @@ if(MSVC)
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_TIMING          /MD /O2  CACHE STRING "(User editable) Private compiler flags for Timing configuration.")
 else()
   # Common to all configurations, next for each configuration:
-  set(GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON          -Wall CACHE STRING "(User editable) Private compiler flags for all configurations.")
+  # "-fPIC" is to ensure proper code generation for shared libraries
+  set(GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON          -Wall -fPIC CACHE STRING "(User editable) Private compiler flags for all configurations.")
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_DEBUG           -g -fno-inline  CACHE STRING "(User editable) Private compiler flags for Debug configuration.")
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_RELWITHDEBINFO  -g -O3  CACHE STRING "(User editable) Private compiler flags for RelWithDebInfo configuration.")
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_RELEASE         -O3  CACHE STRING "(User editable) Private compiler flags for Release configuration.")

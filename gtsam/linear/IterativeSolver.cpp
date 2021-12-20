@@ -115,8 +115,11 @@ void KeyInfo::initialize(const GaussianFactorGraph &fg) {
   size_t start = 0;
 
   for (size_t i = 0; i < n; ++i) {
-    const size_t key = ordering_[i];
-    const size_t dim = colspec.find(key)->second;
+    const Key key = ordering_[i];
+    const auto it_key = colspec.find(key);
+    if (it_key==colspec.end())
+      throw std::runtime_error("KeyInfo: Inconsistency in key-dim map");
+    const size_t dim = it_key->second;
     this->emplace(key, KeyInfoEntry(i, dim, start));
     start += dim;
   }

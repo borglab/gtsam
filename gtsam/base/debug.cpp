@@ -20,7 +20,7 @@
 #include <gtsam/config.h> // for GTSAM_USE_TBB
 
 #ifdef GTSAM_USE_TBB
-#include <tbb/mutex.h>
+#include <mutex> // std::mutex, std::unique_lock
 #endif
 
 namespace gtsam {
@@ -28,13 +28,13 @@ namespace gtsam {
 GTSAM_EXPORT FastMap<std::string, ValueWithDefault<bool, false> > debugFlags;
 
 #ifdef GTSAM_USE_TBB
-tbb::mutex debugFlagsMutex;
+std::mutex debugFlagsMutex;
 #endif
 
 /* ************************************************************************* */
 bool guardedIsDebug(const std::string& s) {
 #ifdef GTSAM_USE_TBB
-  tbb::mutex::scoped_lock lock(debugFlagsMutex);
+  std::unique_lock<std::mutex> lock(debugFlagsMutex);
 #endif
   return gtsam::debugFlags[s];
 }
@@ -42,7 +42,7 @@ bool guardedIsDebug(const std::string& s) {
 /* ************************************************************************* */
 void guardedSetDebug(const std::string& s, const bool v) {
 #ifdef GTSAM_USE_TBB
-  tbb::mutex::scoped_lock lock(debugFlagsMutex);
+  std::unique_lock<std::mutex> lock(debugFlagsMutex);
 #endif
   gtsam::debugFlags[s] = v;
 }

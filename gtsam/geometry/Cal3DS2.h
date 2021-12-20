@@ -76,10 +76,10 @@ public:
   Vector localCoordinates(const Cal3DS2& T2) const ;
 
   /// Return dimensions of calibration manifold object
-  virtual size_t dim() const { return 9 ; } //TODO: make a final dimension variable (also, usually size_t in other classes e.g. Pose2)
+  virtual size_t dim() const { return dimension ; }
 
   /// Return dimensions of calibration manifold object
-  static size_t Dim() { return 9; }  //TODO: make a final dimension variable
+  static size_t Dim() { return dimension; }
 
   /// @}
   /// @name Clone

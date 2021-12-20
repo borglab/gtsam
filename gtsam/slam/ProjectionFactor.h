@@ -21,7 +21,8 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/geometry/SimpleCamera.h>
+#include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/Cal3_S2.h>
 #include <boost/optional.hpp>
 
 namespace gtsam {
@@ -188,7 +189,7 @@ namespace gtsam {
     }
 
   public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
   /// traits

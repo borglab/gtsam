@@ -21,7 +21,6 @@
 #include <gtsam/slam/InitializePose3.h>
 #include <gtsam/slam/dataset.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/geometry/Pose3.h>
 #include <CppUnitLite/TestHarness.h>
@@ -67,7 +66,7 @@ NonlinearFactorGraph graph() {
   g.add(BetweenFactor<Pose3>(x2, x3, pose2.between(pose3), model));
   g.add(BetweenFactor<Pose3>(x2, x0, pose2.between(pose0), model));
   g.add(BetweenFactor<Pose3>(x0, x3, pose0.between(pose3), model));
-  g.add(PriorFactor<Pose3>(x0, pose0, model));
+  g.addPrior(x0, pose0, model);
   return g;
 }
 
@@ -78,7 +77,7 @@ NonlinearFactorGraph graph2() {
   g.add(BetweenFactor<Pose3>(x2, x3, pose2.between(pose3), noiseModel::Isotropic::Precision(6, 1.0)));
   g.add(BetweenFactor<Pose3>(x2, x0, Pose3(Rot3::Ypr(0.1,0,0.1), Point3()), noiseModel::Isotropic::Precision(6, 0.0))); // random pose, but zero information
   g.add(BetweenFactor<Pose3>(x0, x3, Pose3(Rot3::Ypr(0.5,-0.2,0.2), Point3(10,20,30)), noiseModel::Isotropic::Precision(6, 0.0))); // random pose, but zero informatoin
-  g.add(PriorFactor<Pose3>(x0, pose0, model));
+  g.addPrior(x0, pose0, model);
   return g;
 }
 }
@@ -267,7 +266,7 @@ TEST( InitializePose3, initializePoses )
   bool is3D = true;
   boost::tie(inputGraph, expectedValues) = readG2o(g2oFile, is3D);
   noiseModel::Unit::shared_ptr priorModel = noiseModel::Unit::Create(6);
-  inputGraph->add(PriorFactor<Pose3>(0, Pose3(), priorModel));
+  inputGraph->addPrior(0, Pose3(), priorModel);
 
   Values initial = InitializePose3::initialize(*inputGraph);
   EXPECT(assert_equal(*expectedValues,initial,0.1));  // TODO(frank): very loose !!

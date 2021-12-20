@@ -10,7 +10,7 @@ endif()
 # Set the version number for the library
 set (GTSAM_VERSION_MAJOR 4)
 set (GTSAM_VERSION_MINOR 0)
-set (GTSAM_VERSION_PATCH 2)
+set (GTSAM_VERSION_PATCH 3)
 math (EXPR GTSAM_VERSION_NUMERIC "10000 * ${GTSAM_VERSION_MAJOR} + 100 * ${GTSAM_VERSION_MINOR} + ${GTSAM_VERSION_PATCH}")
 set (GTSAM_VERSION_STRING "${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH}")
 
@@ -22,6 +22,7 @@ set (GTSAM_VERSION_STRING "${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM
 
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(GtsamMakeConfigFile)
+include(GNUInstallDirs)
 
 # Record the root dir for gtsam - needed during external builds, e.g., ROS
 set(GTSAM_SOURCE_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
@@ -67,13 +68,13 @@ if(GTSAM_UNSTABLE_AVAILABLE)
 endif()
 option(BUILD_SHARED_LIBS                 "Build shared gtsam library, instead of static" ON)
 option(GTSAM_USE_QUATERNIONS             "Enable/Disable using an internal Quaternion representation for rotations instead of rotation matrices. If enable, Rot3::EXPMAP is enforced by default." OFF)
-option(GTSAM_POSE3_EXPMAP 			 	 "Enable/Disable using Pose3::EXPMAP as the default mode. If disabled, Pose3::FIRST_ORDER will be used." OFF)
-option(GTSAM_ROT3_EXPMAP 			 	 "Ignore if GTSAM_USE_QUATERNIONS is OFF (Rot3::EXPMAP by default). Otherwise, enable Rot3::EXPMAP, or if disabled, use Rot3::CAYLEY." OFF)
+option(GTSAM_POSE3_EXPMAP 			 	 "Enable/Disable using Pose3::EXPMAP as the default mode. If disabled, Pose3::FIRST_ORDER will be used." ON)
+option(GTSAM_ROT3_EXPMAP 			 	 "Ignore if GTSAM_USE_QUATERNIONS is OFF (Rot3::EXPMAP by default). Otherwise, enable Rot3::EXPMAP, or if disabled, use Rot3::CAYLEY." ON)
 option(GTSAM_ENABLE_CONSISTENCY_CHECKS   "Enable/Disable expensive consistency checks"       OFF)
 option(GTSAM_WITH_TBB                    "Use Intel Threaded Building Blocks (TBB) if available" ON)
 option(GTSAM_WITH_EIGEN_MKL              "Eigen will use Intel MKL if available" OFF)
 option(GTSAM_WITH_EIGEN_MKL_OPENMP       "Eigen, when using Intel MKL, will also use OpenMP for multithreading if available" OFF)
-option(GTSAM_THROW_CHEIRALITY_EXCEPTION "Throw exception when a triangulated point is behind a camera" ON)
+option(GTSAM_THROW_CHEIRALITY_EXCEPTION  "Throw exception when a triangulated point is behind a camera" ON)
 option(GTSAM_ALLOW_DEPRECATED_SINCE_V4   "Allow use of methods/functions deprecated in GTSAM 4" ON)
 option(GTSAM_TYPEDEF_POINTS_TO_VECTORS   "Typedef Point2 and Point3 to Eigen::Vector equivalents" OFF)
 option(GTSAM_SUPPORT_NESTED_DISSECTION   "Support Metis-based nested dissection" ON)
@@ -88,7 +89,7 @@ if(NOT MSVC AND NOT XCODE_VERSION)
 
   # Set the GTSAM_BUILD_TAG variable.
   # If build type is Release, set to blank (""), else set to the build type.
-  if("${CMAKE_BUILD_TYPE_UPPER}" STREQUAL "RELEASE")
+  if(${CMAKE_BUILD_TYPE_UPPER} STREQUAL "RELEASE")
    set(GTSAM_BUILD_TAG "") # Don't create release mode tag on installed directory
   else()
    set(GTSAM_BUILD_TAG "${CMAKE_BUILD_TYPE}")
@@ -171,49 +172,26 @@ if(NOT Boost_SERIALIZATION_LIBRARY OR NOT Boost_SYSTEM_LIBRARY OR NOT Boost_FILE
   message(FATAL_ERROR "Missing required Boost components >= v1.43, please install/upgrade Boost or configure your search paths.")
 endif()
 
-# Allow for not using the timer libraries on boost < 1.48 (GTSAM timing code falls back to old timer library)
 option(GTSAM_DISABLE_NEW_TIMERS "Disables using Boost.chrono for timing" OFF)
-
-# JLBC: This was once updated to target-based names (Boost::xxx), but it caused
-# problems with Boost versions newer than FindBoost.cmake was prepared to handle,
-# so we downgraded this to classic filenames-based variables, and manually adding
-# the target_include_directories(xxx ${Boost_INCLUDE_DIR})
+# Allow for not using the timer libraries on boost < 1.48 (GTSAM timing code falls back to old timer library)
 set(GTSAM_BOOST_LIBRARIES
-  optimized ${Boost_SERIALIZATION_LIBRARY_RELEASE}
-  optimized ${Boost_SYSTEM_LIBRARY_RELEASE}
-  optimized ${Boost_FILESYSTEM_LIBRARY_RELEASE}
-  optimized ${Boost_THREAD_LIBRARY_RELEASE}
-  optimized ${Boost_DATE_TIME_LIBRARY_RELEASE}
-  optimized ${Boost_REGEX_LIBRARY_RELEASE}
-  debug ${Boost_SERIALIZATION_LIBRARY_DEBUG}
-  debug ${Boost_SYSTEM_LIBRARY_DEBUG}
-  debug ${Boost_FILESYSTEM_LIBRARY_DEBUG}
-  debug ${Boost_THREAD_LIBRARY_DEBUG}
-  debug ${Boost_DATE_TIME_LIBRARY_DEBUG}
-  debug ${Boost_REGEX_LIBRARY_DEBUG}
+  Boost::serialization
+  Boost::system
+  Boost::filesystem
+  Boost::thread
+  Boost::date_time
+  Boost::regex
 )
-message(STATUS "GTSAM_BOOST_LIBRARIES: ${GTSAM_BOOST_LIBRARIES}")
 if (GTSAM_DISABLE_NEW_TIMERS)
     message("WARNING:  GTSAM timing instrumentation manually disabled")
     list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC DGTSAM_DISABLE_NEW_TIMERS)
 else()
     if(Boost_TIMER_LIBRARY)
-      list(APPEND GTSAM_BOOST_LIBRARIES
-        optimized ${Boost_TIMER_LIBRARY_RELEASE}
-        optimized ${Boost_CHRONO_LIBRARY_RELEASE}
-        debug ${Boost_TIMER_LIBRARY_DEBUG}
-        debug ${Boost_CHRONO_LIBRARY_DEBUG}
-        )
+      list(APPEND GTSAM_BOOST_LIBRARIES Boost::timer Boost::chrono)
     else()
       list(APPEND GTSAM_BOOST_LIBRARIES rt) # When using the header-only boost timer library, need -lrt
       message("WARNING:  GTSAM timing instrumentation will use the older, less accurate, Boost timer library because boost older than 1.48 was found.")
     endif()
-endif()
-
-
-if(NOT (${Boost_VERSION} LESS 105600))
-	message("Ignoring Boost restriction on optional lvalue assignment from rvalues")
-	list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC BOOST_OPTIONAL_ALLOW_BINDING_TO_RVALUES BOOST_OPTIONAL_CONFIG_ALLOW_BINDING_TO_RVALUES)
 endif()
 
 ###############################################################################
@@ -222,12 +200,17 @@ find_package(TBB 4.4 COMPONENTS tbb tbbmalloc)
 
 # Set up variables if we're using TBB
 if(TBB_FOUND AND GTSAM_WITH_TBB)
-	set(GTSAM_USE_TBB 1)  # This will go into config.h
-  # all definitions and link requisites will go via imported targets:
-  # tbb & tbbmalloc
-  list(APPEND GTSAM_ADDITIONAL_LIBRARIES tbb tbbmalloc)
+    set(GTSAM_USE_TBB 1)  # This will go into config.h
+    if ((${TBB_VERSION_MAJOR} GREATER 2020) OR (${TBB_VERSION_MAJOR} EQUAL 2020))
+        set(TBB_GREATER_EQUAL_2020 1)
+    else()
+        set(TBB_GREATER_EQUAL_2020 0)
+    endif()
+    # all definitions and link requisites will go via imported targets:
+    # tbb & tbbmalloc
+    list(APPEND GTSAM_ADDITIONAL_LIBRARIES tbb tbbmalloc)
 else()
-	set(GTSAM_USE_TBB 0)  # This will go into config.h
+    set(GTSAM_USE_TBB 0)  # This will go into config.h
 endif()
 
 ###############################################################################
@@ -362,6 +345,11 @@ if (MSVC)
 	list_append_cache(GTSAM_COMPILE_OPTIONS_PRIVATE "/wd4244") # Disable loss of precision which is thrown all over our Eigen
 endif()
 
+if (APPLE AND BUILD_SHARED_LIBS)
+	# Set the default install directory on macOS
+	set(CMAKE_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib")
+endif()
+
 ###############################################################################
 # Global compile options
 
@@ -434,6 +422,10 @@ add_subdirectory(CppUnitLite)
 # Build wrap
 if (GTSAM_BUILD_WRAP)
     add_subdirectory(wrap)
+	# suppress warning of cython line being too long
+	if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-misleading-indentation")
+	endif()
 endif(GTSAM_BUILD_WRAP)
 
 # Build GTSAM library
@@ -451,7 +443,7 @@ add_subdirectory(timing)
 # Build gtsam_unstable
 if (GTSAM_BUILD_UNSTABLE)
     add_subdirectory(gtsam_unstable)
-endif(GTSAM_BUILD_UNSTABLE)
+endif()
 
 # Matlab toolbox
 if (GTSAM_INSTALL_MATLAB_TOOLBOX)
@@ -462,12 +454,11 @@ endif()
 if (GTSAM_INSTALL_CYTHON_TOOLBOX)
   set(GTSAM_INSTALL_CYTHON_TOOLBOX 1)
   # Set up cache options
-  set(GTSAM_CYTHON_INSTALL_PATH "" CACHE PATH "Cython toolbox destination, blank defaults to CMAKE_INSTALL_PREFIX/cython")
-  if(NOT GTSAM_CYTHON_INSTALL_PATH)
-    set(GTSAM_CYTHON_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/cython")
-  endif()
+  # Cython install path appended with Build type (e.g. cython, cythonDebug, etc).
+  # This does not override custom values set from the command line
+  set(GTSAM_CYTHON_INSTALL_PATH "${PROJECT_BINARY_DIR}/cython${GTSAM_BUILD_TAG}" CACHE PATH "Cython toolbox destination, blank defaults to PROJECT_BINARY_DIR/cython<GTSAM_BUILD_TAG>")
   set(GTSAM_EIGENCY_INSTALL_PATH ${GTSAM_CYTHON_INSTALL_PATH}/gtsam_eigency)
-  add_subdirectory(cython)
+  add_subdirectory(cython ${GTSAM_CYTHON_INSTALL_PATH})
 else()
   set(GTSAM_INSTALL_CYTHON_TOOLBOX 0) # This will go into config.h
 endif()
@@ -545,48 +536,54 @@ endif()
 
 print_build_options_for_target(gtsam)
 
-message(STATUS "  Use System Eigen               : ${GTSAM_USE_SYSTEM_EIGEN} (Using version: ${GTSAM_EIGEN_VERSION})")
+message(STATUS "  Use System Eigen                : ${GTSAM_USE_SYSTEM_EIGEN} (Using version: ${GTSAM_EIGEN_VERSION})")
 
 if(GTSAM_USE_TBB)
-	message(STATUS "  Use Intel TBB                  : Yes")
+	message(STATUS "  Use Intel TBB                   : Yes")
 elseif(TBB_FOUND)
-	message(STATUS "  Use Intel TBB                  : TBB found but GTSAM_WITH_TBB is disabled")
+	message(STATUS "  Use Intel TBB                   : TBB found but GTSAM_WITH_TBB is disabled")
 else()
-	message(STATUS "  Use Intel TBB                  : TBB not found")
+	message(STATUS "  Use Intel TBB                   : TBB not found")
 endif()
 if(GTSAM_USE_EIGEN_MKL)
-	message(STATUS "  Eigen will use MKL             : Yes")
+	message(STATUS "  Eigen will use MKL              : Yes")
 elseif(MKL_FOUND)
-	message(STATUS "  Eigen will use MKL             : MKL found but GTSAM_WITH_EIGEN_MKL is disabled")
+	message(STATUS "  Eigen will use MKL              : MKL found but GTSAM_WITH_EIGEN_MKL is disabled")
 else()
-	message(STATUS "  Eigen will use MKL             : MKL not found")
+	message(STATUS "  Eigen will use MKL              : MKL not found")
 endif()
 if(GTSAM_USE_EIGEN_MKL_OPENMP)
-	message(STATUS "  Eigen will use MKL and OpenMP  : Yes")
+	message(STATUS "  Eigen will use MKL and OpenMP   : Yes")
 elseif(OPENMP_FOUND AND NOT GTSAM_WITH_EIGEN_MKL)
-	message(STATUS "  Eigen will use MKL and OpenMP  : OpenMP found but GTSAM_WITH_EIGEN_MKL is disabled")
+	message(STATUS "  Eigen will use MKL and OpenMP   : OpenMP found but GTSAM_WITH_EIGEN_MKL is disabled")
 elseif(OPENMP_FOUND AND NOT MKL_FOUND)
-	message(STATUS "  Eigen will use MKL and OpenMP  : OpenMP found but MKL not found")
+	message(STATUS "  Eigen will use MKL and OpenMP   : OpenMP found but MKL not found")
 elseif(OPENMP_FOUND)
-	message(STATUS "  Eigen will use MKL and OpenMP  : OpenMP found but GTSAM_WITH_EIGEN_MKL_OPENMP is disabled")
+	message(STATUS "  Eigen will use MKL and OpenMP   : OpenMP found but GTSAM_WITH_EIGEN_MKL_OPENMP is disabled")
 else()
-	message(STATUS "  Eigen will use MKL and OpenMP  : OpenMP not found")
+	message(STATUS "  Eigen will use MKL and OpenMP   : OpenMP not found")
 endif()
-message(STATUS "  Default allocator              : ${GTSAM_DEFAULT_ALLOCATOR}")
+message(STATUS "  Default allocator               : ${GTSAM_DEFAULT_ALLOCATOR}")
+
+if(GTSAM_THROW_CHEIRALITY_EXCEPTION)
+	message(STATUS "  Cheirality exceptions enabled   : YES")
+else()
+	message(STATUS "  Cheirality exceptions enabled   : NO")
+endif()
 
 if(NOT MSVC AND NOT XCODE_VERSION)
 	if(CCACHE_FOUND AND GTSAM_BUILD_WITH_CCACHE)
-		message(STATUS "  Build with ccache              : Yes")
+		message(STATUS "  Build with ccache               : Yes")
 	elseif(CCACHE_FOUND)
-		message(STATUS "  Build with ccache              : ccache found but GTSAM_BUILD_WITH_CCACHE is disabled")
+		message(STATUS "  Build with ccache               : ccache found but GTSAM_BUILD_WITH_CCACHE is disabled")
 	else()
-		message(STATUS "  Build with ccache              : No")
+		message(STATUS "  Build with ccache               : No")
 	endif()
 endif()
 
 message(STATUS "Packaging flags                                               ")
-message(STATUS "  CPack Source Generator         : ${CPACK_SOURCE_GENERATOR}")
-message(STATUS "  CPack Generator                : ${CPACK_GENERATOR}")
+message(STATUS "  CPack Source Generator          : ${CPACK_SOURCE_GENERATOR}")
+message(STATUS "  CPack Generator                 : ${CPACK_GENERATOR}")
 
 message(STATUS "GTSAM flags                                               ")
 print_config_flag(${GTSAM_USE_QUATERNIONS}             "Quaternions as default Rot3     ")
@@ -597,15 +594,19 @@ print_config_flag(${GTSAM_ALLOW_DEPRECATED_SINCE_V4}   "Deprecated in GTSAM 4 al
 print_config_flag(${GTSAM_TYPEDEF_POINTS_TO_VECTORS}   "Point3 is typedef to Vector3    ")
 print_config_flag(${GTSAM_SUPPORT_NESTED_DISSECTION}   "Metis-based Nested Dissection   ")
 print_config_flag(${GTSAM_TANGENT_PREINTEGRATION}      "Use tangent-space preintegration")
-print_config_flag(${GTSAM_BUILD_WRAP}                  "Build Wrap                     ")
+print_config_flag(${GTSAM_BUILD_WRAP}                  "Build Wrap                      ")
 
 message(STATUS "MATLAB toolbox flags                                      ")
-print_config_flag(${GTSAM_INSTALL_MATLAB_TOOLBOX}      "Install matlab toolbox         ")
+print_config_flag(${GTSAM_INSTALL_MATLAB_TOOLBOX}      "Install MATLAB toolbox          ")
+if (${GTSAM_INSTALL_MATLAB_TOOLBOX})
+    message(STATUS "  MATLAB root                     : ${MATLAB_ROOT}")
+    message(STATUS "  MEX binary                      : ${MEX_COMMAND}")
+endif()
 
 message(STATUS "Cython toolbox flags                                      ")
-print_config_flag(${GTSAM_INSTALL_CYTHON_TOOLBOX}      "Install Cython toolbox         ")
+print_config_flag(${GTSAM_INSTALL_CYTHON_TOOLBOX}      "Install Cython toolbox          ")
 if(GTSAM_INSTALL_CYTHON_TOOLBOX)
-	message(STATUS "  Python version                 : ${GTSAM_PYTHON_VERSION}")
+	message(STATUS "  Python version                  : ${GTSAM_PYTHON_VERSION}")
 endif()
 message(STATUS "===============================================================")
 

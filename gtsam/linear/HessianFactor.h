@@ -176,31 +176,38 @@ namespace gtsam {
 
     /** Combine a set of factors into a single dense HessianFactor */
     explicit HessianFactor(const GaussianFactorGraph& factors,
-      boost::optional<const Scatter&> scatter = boost::none);
+      const Scatter& scatter);
+
+    /** Combine a set of factors into a single dense HessianFactor */
+    explicit HessianFactor(const GaussianFactorGraph& factors)
+        : HessianFactor(factors, Scatter(factors)) {}
 
     /** Destructor */
     virtual ~HessianFactor() {}
 
     /** Clone this HessianFactor */
-    virtual GaussianFactor::shared_ptr clone() const {
+    GaussianFactor::shared_ptr clone() const override {
       return boost::make_shared<HessianFactor>(*this); }
 
     /** Print the factor for debugging and testing (implementing Testable) */
-    virtual void print(const std::string& s = "",
-        const KeyFormatter& formatter = DefaultKeyFormatter) const;
+    void print(const std::string& s = "",
+        const KeyFormatter& formatter = DefaultKeyFormatter) const override;
 
     /** Compare to another factor for testing (implementing Testable) */
-    virtual bool equals(const GaussianFactor& lf, double tol = 1e-9) const;
+    bool equals(const GaussianFactor& lf, double tol = 1e-9) const override;
 
-    /** Evaluate the factor error f(x), see above. */
-    virtual double error(const VectorValues& c) const; /** 0.5*[x -1]'*H*[x -1] (also see constructor documentation) */
+    /** 
+     * Evaluate the factor error f(x). 
+     * returns 0.5*[x -1]'*H*[x -1] (also see constructor documentation)
+     */
+    double error(const VectorValues& c) const override;
 
     /** Return the dimension of the variable pointed to by the given key iterator
      * todo: Remove this in favor of keeping track of dimensions with variables?
      * @param variable An iterator pointing to the slot in this factor.  You can
      * use, for example, begin() + 2 to get the 3rd variable in this factor.
      */
-    virtual DenseIndex getDim(const_iterator variable) const {
+    DenseIndex getDim(const_iterator variable) const override {
       return info_.getDim(std::distance(begin(), variable));
     }
 
@@ -212,10 +219,10 @@ namespace gtsam {
      * stored stored in this factor.
      * @return a HessianFactor with negated Hessian matrices
      */
-    virtual GaussianFactor::shared_ptr negate() const;
+    GaussianFactor::shared_ptr negate() const override;
 
     /** Check if the factor is empty.  TODO: How should this be defined? */
-    virtual bool empty() const { return size() == 0 /*|| rows() == 0*/; }
+    bool empty() const override { return size() == 0 /*|| rows() == 0*/; }
 
     /** Return the constant term \f$ f \f$ as described above
      * @return The constant term \f$ f \f$
@@ -276,7 +283,7 @@ namespace gtsam {
      * representation of the augmented information matrix, which stores only the
      * upper triangle.
      */
-    virtual Matrix augmentedInformation() const;
+    Matrix augmentedInformation() const override;
 
     /// Return self-adjoint view onto the information matrix (NOT augmented).
     Eigen::SelfAdjointView<SymmetricBlockMatrix::constBlock, Eigen::Upper> informationView() const;
@@ -284,33 +291,36 @@ namespace gtsam {
     /** Return the non-augmented information matrix represented by this
      * GaussianFactor.
      */
-    virtual Matrix information() const;
+    Matrix information() const override;
 
-    /// Return the diagonal of the Hessian for this factor
-    virtual VectorValues hessianDiagonal() const;
+    /// Add the current diagonal to a VectorValues instance
+    void hessianDiagonalAdd(VectorValues& d) const override;
+
+    /// Using the base method
+    using Base::hessianDiagonal;
 
     /// Raw memory access version of hessianDiagonal
-    virtual void hessianDiagonal(double* d) const;
+    void hessianDiagonal(double* d) const override;
 
     /// Return the block diagonal of the Hessian for this factor
-    virtual std::map<Key,Matrix> hessianBlockDiagonal() const;
+    std::map<Key,Matrix> hessianBlockDiagonal() const override;
 
     /// Return (dense) matrix associated with factor
-    virtual std::pair<Matrix, Vector> jacobian() const;
+    std::pair<Matrix, Vector> jacobian() const override;
 
     /**
      * Return (dense) matrix associated with factor
      * The returned system is an augmented matrix: [A b]
      * @param set weight to use whitening to bake in weights
      */
-    virtual Matrix augmentedJacobian() const;
+    Matrix augmentedJacobian() const override;
 
     /** Update an information matrix by adding the information corresponding to this factor
      * (used internally during elimination).
      * @param keys THe ordered vector of keys for the information matrix to be updated
      * @param info The information matrix to be updated
      */
-    void updateHessian(const KeyVector& keys, SymmetricBlockMatrix* info) const;
+    void updateHessian(const KeyVector& keys, SymmetricBlockMatrix* info) const override;
 
     /** Update another Hessian factor
      * @param other the HessianFactor to be updated
@@ -321,19 +331,19 @@ namespace gtsam {
     }
 
     /** y += alpha * A'*A*x */
-    void multiplyHessianAdd(double alpha, const VectorValues& x, VectorValues& y) const;
+    void multiplyHessianAdd(double alpha, const VectorValues& x, VectorValues& y) const override;
 
     /// eta for Hessian
-    VectorValues gradientAtZero() const;
+    VectorValues gradientAtZero() const override;
 
     /// Raw memory access version of gradientAtZero
-    virtual void gradientAtZero(double* d) const;
+    void gradientAtZero(double* d) const override;
 
     /**
      * Compute the gradient at a key:
      *      \grad f(x_i) = \sum_j G_ij*x_j - g_i
      */
-    Vector gradient(Key key, const VectorValues& x) const;
+    Vector gradient(Key key, const VectorValues& x) const override;
 
     /**
      *  In-place elimination that returns a conditional on (ordered) keys specified, and leaves

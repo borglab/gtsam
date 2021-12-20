@@ -1,6 +1,6 @@
 # install CCOLAMD headers
-install(FILES CCOLAMD/Include/ccolamd.h DESTINATION include/gtsam/3rdparty/CCOLAMD)
-install(FILES SuiteSparse_config/SuiteSparse_config.h DESTINATION include/gtsam/3rdparty/SuiteSparse_config)
+install(FILES CCOLAMD/Include/ccolamd.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtsam/3rdparty/CCOLAMD)
+install(FILES SuiteSparse_config/SuiteSparse_config.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtsam/3rdparty/SuiteSparse_config)
 
 if(NOT GTSAM_USE_SYSTEM_EIGEN)
 	# Find plain .h files
@@ -12,12 +12,12 @@ if(NOT GTSAM_USE_SYSTEM_EIGEN)
 		get_filename_component(filename ${eigen_dir} NAME)
 		if (NOT ((${filename} MATCHES "CMakeLists.txt") OR (${filename} MATCHES "src") OR (${filename} MATCHES ".svn")))
 			list(APPEND eigen_headers "${CMAKE_CURRENT_SOURCE_DIR}/Eigen/Eigen/${filename}")
-			install(FILES Eigen/Eigen/${filename} DESTINATION include/gtsam/3rdparty/Eigen/Eigen)
+			install(FILES Eigen/Eigen/${filename} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtsam/3rdparty/Eigen/Eigen)
 		endif()
 	endforeach(eigen_dir)
 
 	if(GTSAM_WITH_EIGEN_UNSUPPORTED)
-		message("-- Installing Eigen Unsupported modules")
+		message(STATUS "Installing Eigen Unsupported modules")
 		# do the same for the unsupported eigen folder
 		file(GLOB_RECURSE  unsupported_eigen_headers "${CMAKE_CURRENT_SOURCE_DIR}/Eigen/unsupported/Eigen/*.h")
 
@@ -26,7 +26,7 @@ if(NOT GTSAM_USE_SYSTEM_EIGEN)
 			get_filename_component(filename ${unsupported_eigen_dir} NAME)
 			if (NOT ((${filename} MATCHES "CMakeLists.txt") OR (${filename} MATCHES "src") OR (${filename} MATCHES "CXX11") OR (${filename} MATCHES ".svn")))
 				list(APPEND unsupported_eigen_headers "${CMAKE_CURRENT_SOURCE_DIR}/Eigen/unsupported/Eigen/${filename}")
-				install(FILES Eigen/unsupported/Eigen/${filename} DESTINATION include/gtsam/3rdparty/Eigen/unsupported/Eigen)
+				install(FILES Eigen/unsupported/Eigen/${filename} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtsam/3rdparty/Eigen/unsupported/Eigen)
 			endif()
 		endforeach(unsupported_eigen_dir)
 	endif()
@@ -37,12 +37,12 @@ if(NOT GTSAM_USE_SYSTEM_EIGEN)
 
 	# install Eigen - only the headers in our 3rdparty directory
 	install(DIRECTORY Eigen/Eigen
-		DESTINATION include/gtsam/3rdparty/Eigen
+		DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtsam/3rdparty/Eigen
 		FILES_MATCHING PATTERN "*.h")
 
 	if(GTSAM_WITH_EIGEN_UNSUPPORTED)
 		install(DIRECTORY Eigen/unsupported/Eigen
-			DESTINATION include/gtsam/3rdparty/Eigen/unsupported/
+			DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtsam/3rdparty/Eigen/unsupported/
 			FILES_MATCHING PATTERN "*.h")
 	endif()
 

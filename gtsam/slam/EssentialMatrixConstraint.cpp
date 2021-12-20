@@ -37,7 +37,7 @@ void EssentialMatrixConstraint::print(const std::string& s,
 bool EssentialMatrixConstraint::equals(const NonlinearFactor& expected,
     double tol) const {
   const This *e = dynamic_cast<const This*>(&expected);
-  return e != NULL && Base::equals(*e, tol)
+  return e != nullptr && Base::equals(*e, tol)
       && this->measuredE_.equals(e->measuredE_, tol);
 }
 

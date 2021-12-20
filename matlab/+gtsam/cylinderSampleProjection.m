@@ -13,7 +13,7 @@ function [visiblePoints] = cylinderSampleProjection(K, pose, imageSize, cylinder
 
 import gtsam.*
 
-camera = SimpleCamera(pose, K);
+camera = PinholeCameraCal3_S2(pose, K);
 
 %% memory allocation
 cylinderNum = length(cylinders);

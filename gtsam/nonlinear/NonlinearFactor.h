@@ -227,6 +227,16 @@ public:
   Vector whitenedError(const Values& c) const;
 
   /**
+   * Vector of errors, whitened, but unweighted by any loss function
+   */
+  Vector unweightedWhitenedError(const Values& c) const;
+
+  /**
+   * Compute the effective weight of the factor from the noise model.
+   */
+  double weight(const Values& c) const;
+
+  /**
    * Calculate the error of the factor.
    * This is the log-likelihood, e.g. \f$ 0.5(h(x)-z)^2/\sigma^2 \f$ in case of Gaussian.
    * In this class, we take the raw prediction error \f$ h(x)-z \f$, ask the noise model

@@ -156,16 +156,17 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  pair<Matrix, Vector> GaussianBayesNet::matrix(boost::optional<const Ordering&> ordering) const {
-    if (ordering) {
-      // Convert to a GaussianFactorGraph and use its machinery
-      GaussianFactorGraph factorGraph(*this);
-      return factorGraph.jacobian(ordering);
-    } else {
-      // recursively call with default ordering
-      const auto defaultOrdering = this->ordering();
-      return matrix(defaultOrdering);
-    }
+  pair<Matrix, Vector> GaussianBayesNet::matrix(const Ordering& ordering) const {
+    // Convert to a GaussianFactorGraph and use its machinery
+    GaussianFactorGraph factorGraph(*this);
+    return factorGraph.jacobian(ordering);
+  }
+
+  /* ************************************************************************* */
+  pair<Matrix, Vector> GaussianBayesNet::matrix() const {
+    // recursively call with default ordering
+    const auto defaultOrdering = this->ordering();
+    return matrix(defaultOrdering);
   }
 
   ///* ************************************************************************* */
@@ -187,16 +188,16 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  double GaussianBayesNet::logDeterminant() const
-  {
+  double GaussianBayesNet::logDeterminant() const {
     double logDet = 0.0;
-    for(const sharedConditional& cg: *this) {
-      if(cg->get_model()) {
+    for (const sharedConditional& cg : *this) {
+      if (cg->get_model()) {
         Vector diag = cg->R().diagonal();
         cg->get_model()->whitenInPlace(diag);
-        logDet += diag.unaryExpr(ptr_fun<double,double>(log)).sum();
+        logDet += diag.unaryExpr([](double x) { return log(x); }).sum();
       } else {
-        logDet += cg->R().diagonal().unaryExpr(ptr_fun<double,double>(log)).sum();
+        logDet +=
+            cg->R().diagonal().unaryExpr([](double x) { return log(x); }).sum();
       }
     }
     return logDet;

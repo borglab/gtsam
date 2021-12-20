@@ -42,123 +42,218 @@
 
 namespace gtsam {
 
-// Serialization directly to strings in compressed format
-template<class T>
-std::string serialize(const T& input) {
-  std::ostringstream out_archive_stream;
+/** @name Standard serialization
+ *  Serialization in default compressed format
+ */
+///@{
+/// serializes to a stream
+template <class T>
+void serializeToStream(const T& input, std::ostream& out_archive_stream) {
   boost::archive::text_oarchive out_archive(out_archive_stream);
   out_archive << input;
-  return out_archive_stream.str();
 }
 
-template<class T>
-void deserialize(const std::string& serialized, T& output) {
-  std::istringstream in_archive_stream(serialized);
+/// deserializes from a stream
+template <class T>
+void deserializeFromStream(std::istream& in_archive_stream, T& output) {
   boost::archive::text_iarchive in_archive(in_archive_stream);
   in_archive >> output;
 }
 
-template<class T>
+/// serializes to a string
+template <class T>
+std::string serializeToString(const T& input) {
+  std::ostringstream out_archive_stream;
+  serializeToStream(input, out_archive_stream);
+  return out_archive_stream.str();
+}
+
+/// deserializes from a string
+template <class T>
+void deserializeFromString(const std::string& serialized, T& output) {
+  std::istringstream in_archive_stream(serialized);
+  deserializeFromStream(in_archive_stream, output);
+}
+
+/// serializes to a file
+template <class T>
 bool serializeToFile(const T& input, const std::string& filename) {
   std::ofstream out_archive_stream(filename.c_str());
-  if (!out_archive_stream.is_open())
-    return false;
-  boost::archive::text_oarchive out_archive(out_archive_stream);
-  out_archive << input;
+  if (!out_archive_stream.is_open()) return false;
+  serializeToStream(input, out_archive_stream);
   out_archive_stream.close();
   return true;
 }
 
-template<class T>
+/// deserializes from a file
+template <class T>
 bool deserializeFromFile(const std::string& filename, T& output) {
   std::ifstream in_archive_stream(filename.c_str());
-  if (!in_archive_stream.is_open())
-    return false;
-  boost::archive::text_iarchive in_archive(in_archive_stream);
-  in_archive >> output;
+  if (!in_archive_stream.is_open()) return false;
+  deserializeFromStream(in_archive_stream, output);
   in_archive_stream.close();
   return true;
 }
 
-// Serialization to XML format with named structures
-template<class T>
-std::string serializeXML(const T& input, const std::string& name="data") {
-  std::ostringstream out_archive_stream;
-  // braces to flush out_archive as it goes out of scope before taking str()
-  // fixes crash with boost 1.66-1.68
-  // see https://github.com/boostorg/serialization/issues/82
-  {
-    boost::archive::xml_oarchive out_archive(out_archive_stream);
-    out_archive << boost::serialization::make_nvp(name.c_str(), input);
-  }
-  return out_archive_stream.str();
+/// serializes to a string
+template <class T>
+std::string serialize(const T& input) {
+  return serializeToString(input);
 }
 
-template<class T>
-void deserializeXML(const std::string& serialized, T& output, const std::string& name="data") {
-  std::istringstream in_archive_stream(serialized);
-  boost::archive::xml_iarchive in_archive(in_archive_stream);
-  in_archive >> boost::serialization::make_nvp(name.c_str(), output);
+/// deserializes from a string
+template <class T>
+void deserialize(const std::string& serialized, T& output) {
+  deserializeFromString(serialized, output);
 }
+///@}
 
-template<class T>
-bool serializeToXMLFile(const T& input, const std::string& filename, const std::string& name="data") {
-  std::ofstream out_archive_stream(filename.c_str());
-  if (!out_archive_stream.is_open())
-    return false;
+/** @name XML Serialization
+ *  Serialization to XML format with named structures
+ */
+///@{
+/// serializes to a stream in XML
+template <class T>
+void serializeToXMLStream(const T& input, std::ostream& out_archive_stream,
+                  const std::string& name = "data") {
   boost::archive::xml_oarchive out_archive(out_archive_stream);
-  out_archive << boost::serialization::make_nvp(name.c_str(), input);;
-  out_archive_stream.close();
-  return true;
+  out_archive << boost::serialization::make_nvp(name.c_str(), input);
 }
 
-template<class T>
-bool deserializeFromXMLFile(const std::string& filename, T& output, const std::string& name="data") {
-  std::ifstream in_archive_stream(filename.c_str());
-  if (!in_archive_stream.is_open())
-    return false;
+/// deserializes from a stream in XML
+template <class T>
+void deserializeFromXMLStream(std::istream& in_archive_stream, T& output,
+                    const std::string& name = "data") {
   boost::archive::xml_iarchive in_archive(in_archive_stream);
   in_archive >> boost::serialization::make_nvp(name.c_str(), output);
-  in_archive_stream.close();
-  return true;
 }
 
-// Serialization to binary format with named structures
-template<class T>
-std::string serializeBinary(const T& input, const std::string& name="data") {
+/// serializes to a string in XML
+template <class T>
+std::string serializeToXMLString(const T& input,
+                         const std::string& name = "data") {
   std::ostringstream out_archive_stream;
-  boost::archive::binary_oarchive out_archive(out_archive_stream);
-  out_archive << boost::serialization::make_nvp(name.c_str(), input);
+  serializeToXMLStream(input, out_archive_stream, name);
   return out_archive_stream.str();
 }
 
-template<class T>
-void deserializeBinary(const std::string& serialized, T& output, const std::string& name="data") {
+/// deserializes from a string in XML
+template <class T>
+void deserializeFromXMLString(const std::string& serialized, T& output,
+                    const std::string& name = "data") {
   std::istringstream in_archive_stream(serialized);
-  boost::archive::binary_iarchive in_archive(in_archive_stream);
-  in_archive >> boost::serialization::make_nvp(name.c_str(), output);
+  deserializeFromXMLStream(in_archive_stream, output, name);
 }
 
-template<class T>
-bool serializeToBinaryFile(const T& input, const std::string& filename, const std::string& name="data") {
+/// serializes to an XML file
+template <class T>
+bool serializeToXMLFile(const T& input, const std::string& filename,
+                        const std::string& name = "data") {
   std::ofstream out_archive_stream(filename.c_str());
-  if (!out_archive_stream.is_open())
-    return false;
-  boost::archive::binary_oarchive out_archive(out_archive_stream);
-  out_archive << boost::serialization::make_nvp(name.c_str(), input);
+  if (!out_archive_stream.is_open()) return false;
+  serializeToXMLStream(input, out_archive_stream, name);
   out_archive_stream.close();
   return true;
 }
 
-template<class T>
-bool deserializeFromBinaryFile(const std::string& filename, T& output, const std::string& name="data") {
+/// deserializes from an XML file
+template <class T>
+bool deserializeFromXMLFile(const std::string& filename, T& output,
+                            const std::string& name = "data") {
   std::ifstream in_archive_stream(filename.c_str());
-  if (!in_archive_stream.is_open())
-    return false;
-  boost::archive::binary_iarchive in_archive(in_archive_stream);
-  in_archive >> boost::serialization::make_nvp(name.c_str(), output);
+  if (!in_archive_stream.is_open()) return false;
+  deserializeFromXMLStream(in_archive_stream, output, name);
   in_archive_stream.close();
   return true;
 }
 
-} // \namespace gtsam
+/// serializes to a string in XML
+template <class T>
+std::string serializeXML(const T& input,
+                         const std::string& name = "data") {
+  return serializeToXMLString(input, name);
+}
+
+/// deserializes from a string in XML
+template <class T>
+void deserializeXML(const std::string& serialized, T& output,
+                    const std::string& name = "data") {
+  deserializeFromXMLString(serialized, output, name);
+}
+///@}
+
+/** @name Binary Serialization
+ *  Serialization to binary format with named structures
+ */
+///@{
+/// serializes to a stream in binary
+template <class T>
+void serializeToBinaryStream(const T& input, std::ostream& out_archive_stream,
+                     const std::string& name = "data") {
+  boost::archive::binary_oarchive out_archive(out_archive_stream);
+  out_archive << boost::serialization::make_nvp(name.c_str(), input);
+}
+
+/// deserializes from a stream in binary
+template <class T>
+void deserializeFromBinaryStream(std::istream& in_archive_stream, T& output,
+                       const std::string& name = "data") {
+  boost::archive::binary_iarchive in_archive(in_archive_stream);
+  in_archive >> boost::serialization::make_nvp(name.c_str(), output);
+}
+
+/// serializes to a string in binary
+template <class T>
+std::string serializeToBinaryString(const T& input,
+                            const std::string& name = "data") {
+  std::ostringstream out_archive_stream;
+  serializeToBinaryStream(input, out_archive_stream, name);
+  return out_archive_stream.str();
+}
+
+/// deserializes from a string in binary
+template <class T>
+void deserializeFromBinaryString(const std::string& serialized, T& output,
+                       const std::string& name = "data") {
+  std::istringstream in_archive_stream(serialized);
+  deserializeFromBinaryStream(in_archive_stream, output, name);
+}
+
+/// serializes to a binary file
+template <class T>
+bool serializeToBinaryFile(const T& input, const std::string& filename,
+                           const std::string& name = "data") {
+  std::ofstream out_archive_stream(filename.c_str());
+  if (!out_archive_stream.is_open()) return false;
+  serializeToBinaryStream(input, out_archive_stream, name);
+  out_archive_stream.close();
+  return true;
+}
+
+/// deserializes from a binary file
+template <class T>
+bool deserializeFromBinaryFile(const std::string& filename, T& output,
+                               const std::string& name = "data") {
+  std::ifstream in_archive_stream(filename.c_str());
+  if (!in_archive_stream.is_open()) return false;
+  deserializeFromBinaryStream(in_archive_stream, output, name);
+  in_archive_stream.close();
+  return true;
+}
+
+/// serializes to a string in binary
+template <class T>
+std::string serializeBinary(const T& input,
+                            const std::string& name = "data") {
+  return serializeToBinaryString(input, name);
+}
+
+/// deserializes from a string in binary
+template <class T>
+void deserializeBinary(const std::string& serialized, T& output,
+                       const std::string& name = "data") {
+  deserializeFromBinaryString(serialized, output, name);
+}
+///@}
+
+}  // namespace gtsam

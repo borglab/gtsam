@@ -350,7 +350,10 @@ void Module::emit_cython_pxd(FileWriter& pxdFile) const {
                  "        T* get()\n"
                  "        long use_count() const\n"
                  "        T& operator*()\n\n"
-                 "    cdef shared_ptr[T] dynamic_pointer_cast[T,U](const shared_ptr[U]& r)\n"
+                 "    cdef shared_ptr[T] dynamic_pointer_cast[T,U](const shared_ptr[U]& r)\n\n";
+
+  // gtsam alignment-friendly shared_ptr
+  pxdFile.oss << "cdef extern from \"gtsam/base/make_shared.h\" namespace \"gtsam\":\n"
                  "    cdef shared_ptr[T] make_shared[T](const T& r)\n\n";
 
   for(const TypedefPair& types: typedefs)

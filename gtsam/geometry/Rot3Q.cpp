@@ -19,8 +19,8 @@
 
 #ifdef GTSAM_USE_QUATERNIONS
 
-#include <boost/math/constants/constants.hpp>
 #include <gtsam/geometry/Rot3.h>
+#include <boost/math/constants/constants.hpp>
 #include <cmath>
 
 using namespace std;
@@ -79,9 +79,13 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  // TODO: Could we do this? It works in Rot3M but not here, probably because
-  // here we create an intermediate value by calling matrix()
-  // const Eigen::Transpose<const Matrix3> Rot3::transpose() const {
+  // TODO: Maybe use return type `const Eigen::Transpose<const Matrix3>`?
+  // It works in Rot3M but not here, because of some weird behavior
+  // due to Eigen's expression templates which needs more investigation.
+  // For example, if we use matrix(), the value returned has a 1e-10,
+  // and if we use quaternion_.toRotationMatrix(), the matrix is arbitrary.
+  // Using eval() here doesn't help, it only helps if we use it in
+  // the downstream code.
   Matrix3 Rot3::transpose() const {
     return matrix().transpose();
   }

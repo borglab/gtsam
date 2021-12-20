@@ -57,7 +57,7 @@ class AdaptAutoDiff {
     if (H1 || H2) {
       // Get derivatives with AutoDiff
       const double* parameters[] = {v1.data(), v2.data()};
-      double rowMajor1[M * N1], rowMajor2[M * N2];  // on the stack
+      double rowMajor1[M * N1] = {}, rowMajor2[M * N2] = {};  // on the stack
       double* jacobians[] = {rowMajor1, rowMajor2};
       success = AutoDiff<FUNCTOR, double, N1, N2>::Differentiate(
           f, parameters, M, result.data(), jacobians);

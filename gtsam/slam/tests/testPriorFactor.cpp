@@ -6,7 +6,7 @@
  */
 
 #include <gtsam/base/Vector.h>
-#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;

@@ -86,8 +86,8 @@ namespace gtsam {
       return parents_;
     }
 
-    /** All keys, with variable key last */
-    DiscreteKeys discreteKeysParentsFirst() const;
+    /** All keys, with variable key first */
+    DiscreteKeys discreteKeys() const;
 
     /** All key indices, with variable key first */
     KeyVector indices() const;

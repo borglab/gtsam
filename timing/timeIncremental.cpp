@@ -15,7 +15,6 @@
  */
 
 #include <gtsam/slam/dataset.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/sam/BearingRangeFactor.h>
 #include <gtsam/geometry/Pose2.h>
@@ -98,7 +97,7 @@ int main(int argc, char *argv[]) {
       //      cout << "Initializing " << 0 << endl;
       newVariables.insert(0, Pose());
       // Add prior
-      newFactors.add(PriorFactor<Pose>(0, Pose(), noiseModel::Unit::Create(3)));
+      newFactors.addPrior(0, Pose(), noiseModel::Unit::Create(3));
     }
     while(nextMeasurement < measurements.size()) {
 

@@ -198,9 +198,7 @@ TEST(testISAM2SmartFactor, Stereo_Batch) {
 
     // prior, for the first keyframe:
     if (kf_id == 0) {
-      const auto prior = boost::make_shared<PriorFactor<Pose3>>(
-          X(kf_id), Pose3::identity(), priorPoseNoise);
-      batch_graph.push_back(prior);
+      batch_graph.addPrior(X(kf_id), Pose3::identity(), priorPoseNoise);
     }
 
     batch_values.insert(X(kf_id), Pose3::identity());
@@ -309,9 +307,7 @@ TEST(testISAM2SmartFactor, Stereo_iSAM2) {
 
     // prior, for the first keyframe:
     if (kf_id == 0) {
-      const auto prior = boost::make_shared<PriorFactor<Pose3>>(
-          X(kf_id), Pose3::identity(), priorPoseNoise);
-      newFactors.push_back(prior);
+      newFactors.addPrior(X(kf_id), Pose3::identity(), priorPoseNoise);
     }
 
     // 2) Run iSAM2:

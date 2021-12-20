@@ -18,7 +18,6 @@
 
 
 #include <gtsam_unstable/nonlinear/IncrementalFixedLagSmoother.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -82,7 +81,7 @@ TEST( IncrementalFixedLagSmoother, Example )
     Values newValues;
     Timestamps newTimestamps;
 
-    newFactors.push_back(PriorFactor<Point2>(key0, Point2(0.0, 0.0), odometerNoise));
+    newFactors.addPrior(key0, Point2(0.0, 0.0), odometerNoise);
     newValues.insert(key0, Point2(0.01, 0.01));
     newTimestamps[key0] = 0.0;
 

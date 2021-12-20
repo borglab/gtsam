@@ -67,7 +67,7 @@ namespace gtsam {
     /** equals */
     virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
       const This *e =  dynamic_cast<const This*> (&expected);
-      return e != NULL && Base::equals(*e, tol) && this->factor_->equals(*e->factor_, tol);
+      return e != nullptr && Base::equals(*e, tol) && this->factor_->equals(*e->factor_, tol);
     }
 
     /** implement functions needed to derive from Factor */

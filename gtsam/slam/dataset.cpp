@@ -37,6 +37,7 @@
 #include <boost/assign/list_inserter.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
+#include <boost/optional.hpp>
 
 #include <cmath>
 #include <fstream>
@@ -252,7 +253,7 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
   is.seekg(0, ios::beg);
 
   // If asked, create a sampler with random number generator
-  Sampler sampler;
+  std::unique_ptr<Sampler> sampler;
   if (addNoise) {
     noiseModel::Diagonal::shared_ptr noise;
     if (model)
@@ -261,7 +262,7 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
       throw invalid_argument(
           "gtsam::load2D: invalid noise model for adding noise"
               "(current version assumes diagonal noise model)!");
-    sampler = Sampler(noise);
+    sampler.reset(new Sampler(noise));
   }
 
   // Parse the pose constraints
@@ -289,7 +290,7 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
         model = modelInFile;
 
       if (addNoise)
-        l1Xl2 = l1Xl2.retract(sampler.sample());
+        l1Xl2 = l1Xl2.retract(sampler->sample());
 
       // Insert vertices if pure odometry file
       if (!initial->exists(id1))
@@ -441,11 +442,11 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
       auto p = dynamic_cast<const GenericValue<Pose3>*>(&key_value.value);
       if (!p) continue;
       const Pose3& pose = p->value();
-      Point3 t = pose.translation();
-      Rot3 R = pose.rotation();
-      stream << "VERTEX_SE3:QUAT " << key_value.key << " " << t.x() << " "  << t.y() << " " << t.z()
-        << " " << R.toQuaternion().x() << " " << R.toQuaternion().y() << " " << R.toQuaternion().z()
-        << " " << R.toQuaternion().w() << endl;
+      const Point3 t = pose.translation();
+      const auto q = pose.rotation().toQuaternion();
+      stream << "VERTEX_SE3:QUAT " << key_value.key << " " << t.x() << " "
+             << t.y() << " " << t.z() << " " << q.x() << " " << q.y() << " "
+             << q.z() << " " << q.w() << endl;
   }
 
   // save edges (2D or 3D)
@@ -485,13 +486,12 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
         throw invalid_argument("writeG2o: invalid noise model!");
       }
       Matrix Info = gaussianModel->R().transpose() * gaussianModel->R();
-      Pose3 pose3D = factor3D->measured();
-      Point3 p = pose3D.translation();
-      Rot3 R = pose3D.rotation();
-
-      stream << "EDGE_SE3:QUAT " << factor3D->key1() << " " << factor3D->key2() << " "
-          << p.x() << " "  << p.y() << " " << p.z()  << " " << R.toQuaternion().x()
-          << " " << R.toQuaternion().y() << " " << R.toQuaternion().z()  << " " << R.toQuaternion().w();
+      const Pose3 pose3D = factor3D->measured();
+      const Point3 p = pose3D.translation();
+      const auto q = pose3D.rotation().toQuaternion();
+      stream << "EDGE_SE3:QUAT " << factor3D->key1() << " " << factor3D->key2()
+             << " " << p.x() << " " << p.y() << " " << p.z() << " " << q.x()
+             << " " << q.y() << " " << q.z() << " " << q.w();
 
       Matrix InfoG2o = I_6x6;
       InfoG2o.block(0,0,3,3) = Info.block(3,3,3,3); // cov translation
@@ -510,6 +510,11 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
   stream.close();
 }
 
+/* ************************************************************************* */
+static Rot3 NormalizedRot3(double w, double x, double y, double z) {
+  const double norm = sqrt(w * w + x * x + y * y + z * z), f = 1.0 / norm;
+  return Rot3::Quaternion(f * w, f * x, f * y, f * z);
+}
 /* ************************************************************************* */
 std::map<Key, Pose3> parse3DPoses(const string& filename) {
   ifstream is(filename.c_str());
@@ -534,16 +539,23 @@ std::map<Key, Pose3> parse3DPoses(const string& filename) {
       Key id;
       double x, y, z, qx, qy, qz, qw;
       ls >> id >> x >> y >> z >> qx >> qy >> qz >> qw;
-      poses.emplace(id, Pose3(Rot3::Quaternion(qw, qx, qy, qz), {x, y, z}));
+      poses.emplace(id, Pose3(NormalizedRot3(qw, qx, qy, qz), {x, y, z}));
     }
   }
   return poses;
 }
 
 /* ************************************************************************* */
-BetweenFactorPose3s parse3DFactors(const string& filename) {
+BetweenFactorPose3s parse3DFactors(
+    const string& filename,
+    const noiseModel::Diagonal::shared_ptr& corruptingNoise) {
   ifstream is(filename.c_str());
   if (!is) throw invalid_argument("parse3DFactors: can not find file " + filename);
+
+  boost::optional<Sampler> sampler;
+  if (corruptingNoise) {
+    sampler = Sampler(corruptingNoise);
+  }
 
   std::vector<BetweenFactor<Pose3>::shared_ptr> factors;
   while (!is.eof()) {
@@ -585,8 +597,13 @@ BetweenFactorPose3s parse3DFactors(const string& filename) {
       mgtsam.block<3, 3>(3, 0) = m.block<3, 3>(3, 0);  // off diagonal
 
       SharedNoiseModel model = noiseModel::Gaussian::Information(mgtsam);
+      auto R12 = NormalizedRot3(qw, qx, qy, qz);
+      if (sampler) {
+        R12 = R12.retract(sampler->sample());
+      }
+
       factors.emplace_back(new BetweenFactor<Pose3>(
-          id1, id2, Pose3(Rot3::Quaternion(qw, qx, qy, qz), {x, y, z}), model));
+          id1, id2, Pose3(R12, {x, y, z}), model));
     }
   }
   return factors;
@@ -646,7 +663,7 @@ Pose3 gtsam2openGL(const Pose3& PoseGTSAM) {
 }
 
 /* ************************************************************************* */
-bool readBundler(const string& filename, SfM_data &data) {
+bool readBundler(const string& filename, SfmData &data) {
   // Load the data file
   ifstream is(filename.c_str(), ifstream::in);
   if (!is) {
@@ -697,7 +714,7 @@ bool readBundler(const string& filename, SfM_data &data) {
   // Get the information for the 3D points
   data.tracks.reserve(nrPoints);
   for (size_t j = 0; j < nrPoints; j++) {
-    SfM_Track track;
+    SfmTrack track;
 
     // Get the 3D position
     float x, y, z;
@@ -733,7 +750,7 @@ bool readBundler(const string& filename, SfM_data &data) {
 }
 
 /* ************************************************************************* */
-bool readBAL(const string& filename, SfM_data &data) {
+bool readBAL(const string& filename, SfmData &data) {
   // Load the data file
   ifstream is(filename.c_str(), ifstream::in);
   if (!is) {
@@ -781,7 +798,7 @@ bool readBAL(const string& filename, SfM_data &data) {
     // Get the 3D position
     float x, y, z;
     is >> x >> y >> z;
-    SfM_Track& track = data.tracks[j];
+    SfmTrack& track = data.tracks[j];
     track.p = Point3(x, y, z);
     track.r = 0.4f;
     track.g = 0.4f;
@@ -793,7 +810,7 @@ bool readBAL(const string& filename, SfM_data &data) {
 }
 
 /* ************************************************************************* */
-bool writeBAL(const string& filename, SfM_data &data) {
+bool writeBAL(const string& filename, SfmData &data) {
   // Open the output file
   ofstream os;
   os.open(filename.c_str());
@@ -815,7 +832,7 @@ bool writeBAL(const string& filename, SfM_data &data) {
   os << endl;
 
   for (size_t j = 0; j < data.number_tracks(); j++) { // for each 3D point j
-    const SfM_Track& track = data.tracks[j];
+    const SfmTrack& track = data.tracks[j];
 
     for (size_t k = 0; k < track.number_measurements(); k++) { // for each observation of the 3D point j
       size_t i = track.measurements[k].first; // camera id
@@ -866,12 +883,12 @@ bool writeBAL(const string& filename, SfM_data &data) {
   return true;
 }
 
-bool writeBALfromValues(const string& filename, const SfM_data &data,
+bool writeBALfromValues(const string& filename, const SfmData &data,
     Values& values) {
   using Camera = PinholeCamera<Cal3Bundler>;
-  SfM_data dataValues = data;
+  SfmData dataValues = data;
 
-  // Store poses or cameras in SfM_data
+  // Store poses or cameras in SfmData
   size_t nrPoses = values.count<Pose3>();
   if (nrPoses == dataValues.number_cameras()) { // we only estimated camera poses
     for (size_t i = 0; i < dataValues.number_cameras(); i++) { // for each camera
@@ -899,7 +916,7 @@ bool writeBALfromValues(const string& filename, const SfM_data &data,
     }
   }
 
-  // Store 3D points in SfM_data
+  // Store 3D points in SfmData
   size_t nrPoints = values.count<Point3>(), nrTracks = dataValues.number_tracks();
   if (nrPoints != nrTracks) {
     cout
@@ -921,24 +938,24 @@ bool writeBALfromValues(const string& filename, const SfM_data &data,
     }
   }
 
-  // Write SfM_data to file
+  // Write SfmData to file
   return writeBAL(filename, dataValues);
 }
 
-Values initialCamerasEstimate(const SfM_data& db) {
+Values initialCamerasEstimate(const SfmData& db) {
   Values initial;
   size_t i = 0; // NO POINTS:  j = 0;
-  for(const SfM_Camera& camera: db.cameras)
+  for(const SfmCamera& camera: db.cameras)
     initial.insert(i++, camera);
   return initial;
 }
 
-Values initialCamerasAndPointsEstimate(const SfM_data& db) {
+Values initialCamerasAndPointsEstimate(const SfmData& db) {
   Values initial;
   size_t i = 0, j = 0;
-  for(const SfM_Camera& camera: db.cameras)
+  for(const SfmCamera& camera: db.cameras)
     initial.insert((i++), camera);
-  for(const SfM_Track& track: db.tracks)
+  for(const SfmTrack& track: db.tracks)
     initial.insert(P(j++), track.p);
   return initial;
 }

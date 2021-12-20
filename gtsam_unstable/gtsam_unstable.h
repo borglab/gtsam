@@ -274,7 +274,7 @@ class SimPolygon2D {
  };
 
 // Nonlinear factors from gtsam, for our Value types
-#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 template<T = {gtsam::PoseRTV}>
 virtual class PriorFactor : gtsam::NoiseModelFactor {
   PriorFactor(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
@@ -377,6 +377,30 @@ virtual class RangeFactor : gtsam::NoiseModelFactor {
 
 typedef gtsam::RangeFactor<gtsam::PoseRTV, gtsam::PoseRTV> RangeFactorRTV;
 
+#include <gtsam_unstable/geometry/Event.h>
+class Event {
+  Event();
+  Event(double t, const gtsam::Point3& p);
+  Event(double t, double x, double y, double z);
+  double time() const;
+  gtsam::Point3 location() const;
+  double height() const;
+  void print(string s) const;
+};
+
+class TimeOfArrival {
+  TimeOfArrival();
+  TimeOfArrival(double speed);
+  double measure(const gtsam::Event& event, const gtsam::Point3& sensor) const;
+};
+
+#include <gtsam_unstable/slam/TOAFactor.h>
+virtual class TOAFactor : gtsam::NonlinearFactor {
+  // For now, because of overload issues, we only expose constructor with known sensor coordinates:
+  TOAFactor(size_t key1, gtsam::Point3 sensor, double measured,
+            const gtsam::noiseModel::Base* noiseModel);
+  static void InsertEvent(size_t key, const gtsam::Event& event, gtsam::Values* values);
+};
 
 #include <gtsam/nonlinear/NonlinearEquality.h>
 template<T = {gtsam::PoseRTV}>

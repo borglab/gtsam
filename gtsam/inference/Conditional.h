@@ -65,6 +65,8 @@ namespace gtsam {
     Conditional(size_t nrFrontals) : nrFrontals_(nrFrontals) {}
 
     /// @}
+
+  public:
     /// @name Testable
     /// @{
 
@@ -76,7 +78,6 @@ namespace gtsam {
 
     /// @}
 
-  public:
     /// @name Standard Interface
     /// @{
 

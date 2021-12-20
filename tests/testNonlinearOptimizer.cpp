@@ -16,10 +16,10 @@
  */
 
 #include <tests/smallExample.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/NonlinearConjugateGradientOptimizer.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/DoglegOptimizer.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
@@ -181,7 +181,7 @@ TEST( NonlinearOptimizer, Factorization )
   config.insert(X(2), Pose2(1.5,0.,0.));
 
   NonlinearFactorGraph graph;
-  graph += PriorFactor<Pose2>(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3, 1e-10));
+  graph.addPrior(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3, 1e-10));
   graph += BetweenFactor<Pose2>(X(1),X(2), Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1));
 
   Ordering ordering;
@@ -240,8 +240,7 @@ TEST(NonlinearOptimizer, NullFactor) {
 TEST_UNSAFE(NonlinearOptimizer, MoreOptimization) {
 
   NonlinearFactorGraph fg;
-  fg += PriorFactor<Pose2>(0, Pose2(0, 0, 0),
-      noiseModel::Isotropic::Sigma(3, 1));
+  fg.addPrior(0, Pose2(0, 0, 0), noiseModel::Isotropic::Sigma(3, 1));
   fg += BetweenFactor<Pose2>(0, 1, Pose2(1, 0, M_PI / 2),
       noiseModel::Isotropic::Sigma(3, 1));
   fg += BetweenFactor<Pose2>(1, 2, Pose2(1, 0, M_PI / 2),
@@ -339,31 +338,137 @@ TEST_UNSAFE(NonlinearOptimizer, MoreOptimization) {
 }
 
 /* ************************************************************************* */
-TEST(NonlinearOptimizer, MoreOptimizationWithHuber) {
+TEST(NonlinearOptimizer, Pose2OptimizationWithHuberNoOutlier) {
 
   NonlinearFactorGraph fg;
-  fg += PriorFactor<Pose2>(0, Pose2(0,0,0), noiseModel::Isotropic::Sigma(3,1));
-  fg += BetweenFactor<Pose2>(0, 1, Pose2(1,0,M_PI/2),
+  fg.addPrior(0, Pose2(0,0,0), noiseModel::Isotropic::Sigma(3,1));
+  fg += BetweenFactor<Pose2>(0, 1, Pose2(1,1.1,M_PI/4),
                               noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(2.0),
                                                          noiseModel::Isotropic::Sigma(3,1)));
-  fg += BetweenFactor<Pose2>(1, 2, Pose2(1,0,M_PI/2),
+  fg += BetweenFactor<Pose2>(0, 1, Pose2(1,0.9,M_PI/2),
                               noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(3.0),
                                                          noiseModel::Isotropic::Sigma(3,1)));
 
   Values init;
-  init.insert(0, Pose2(10,10,0));
-  init.insert(1, Pose2(1,0,M_PI));
-  init.insert(2, Pose2(1,1,-M_PI));
+  init.insert(0, Pose2(0,0,0));
+  init.insert(1, Pose2(0.961187, 0.99965, 1.1781));
 
   Values expected;
   expected.insert(0, Pose2(0,0,0));
-  expected.insert(1, Pose2(1,0,M_PI/2));
-  expected.insert(2, Pose2(1,1,M_PI));
+  expected.insert(1, Pose2(0.961187, 0.99965, 1.1781));
+
+  LevenbergMarquardtParams lm_params;
+
+  auto gn_result = GaussNewtonOptimizer(fg, init).optimize();
+  auto lm_result = LevenbergMarquardtOptimizer(fg, init, lm_params).optimize();
+  auto dl_result = DoglegOptimizer(fg, init).optimize();
+
+  EXPECT(assert_equal(expected, gn_result, 3e-2));
+  EXPECT(assert_equal(expected, lm_result, 3e-2));
+  EXPECT(assert_equal(expected, dl_result, 3e-2));
+}
+
+/* ************************************************************************* */
+TEST(NonlinearOptimizer, Point2LinearOptimizationWithHuber) {
+
+  NonlinearFactorGraph fg;
+  fg.addPrior(0, Point2(0,0), noiseModel::Isotropic::Sigma(2,0.01));
+  fg += BetweenFactor<Point2>(0, 1, Point2(1,1.8),
+                              noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(1.0),
+                                                         noiseModel::Isotropic::Sigma(2,1)));
+  fg += BetweenFactor<Point2>(0, 1, Point2(1,0.9),
+                              noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(1.0),
+                                                         noiseModel::Isotropic::Sigma(2,1)));
+  fg += BetweenFactor<Point2>(0, 1, Point2(1,90),
+                              noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(1.0),
+                                                         noiseModel::Isotropic::Sigma(2,1)));
+
+  Values init;
+  init.insert(0, Point2(1,1));
+  init.insert(1, Point2(1,0));
+
+  Values expected;
+  expected.insert(0, Point2(0,0));
+  expected.insert(1, Point2(1,1.85));
 
   LevenbergMarquardtParams params;
-  EXPECT(assert_equal(expected, GaussNewtonOptimizer(fg, init).optimize()));
-  EXPECT(assert_equal(expected, LevenbergMarquardtOptimizer(fg, init, params).optimize()));
-  EXPECT(assert_equal(expected, DoglegOptimizer(fg, init).optimize()));
+
+  auto gn_result = GaussNewtonOptimizer(fg, init).optimize();
+  auto lm_result = LevenbergMarquardtOptimizer(fg, init, params).optimize();
+  auto dl_result = DoglegOptimizer(fg, init).optimize();
+
+  EXPECT(assert_equal(expected, gn_result, 1e-4));
+  EXPECT(assert_equal(expected, lm_result, 1e-4));
+  EXPECT(assert_equal(expected, dl_result, 1e-4));
+}
+
+/* ************************************************************************* */
+TEST(NonlinearOptimizer, Pose2OptimizationWithHuber) {
+
+  NonlinearFactorGraph fg;
+  fg.addPrior(0, Pose2(0,0, 0), noiseModel::Isotropic::Sigma(3,0.1));
+  fg += BetweenFactor<Pose2>(0, 1, Pose2(0,9, M_PI/2),
+                              noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(0.2),
+                                                         noiseModel::Isotropic::Sigma(3,1)));
+  fg += BetweenFactor<Pose2>(0, 1, Pose2(0, 11, M_PI/2),
+                              noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(0.2),
+                                                         noiseModel::Isotropic::Sigma(3,1)));
+  fg += BetweenFactor<Pose2>(0, 1, Pose2(0, 10, M_PI/2),
+                             noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(0.2),
+                                                        noiseModel::Isotropic::Sigma(3,1)));
+  fg += BetweenFactor<Pose2>(0, 1, Pose2(0,9, 0),
+                              noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(0.2),
+                                                         noiseModel::Isotropic::Sigma(3,1)));
+
+  Values init;
+  init.insert(0, Pose2(0, 0, 0));
+  init.insert(1, Pose2(0, 10, M_PI/4));
+
+  Values expected;
+  expected.insert(0, Pose2(0, 0, 0));
+  expected.insert(1, Pose2(0, 10, 1.45212));
+
+  LevenbergMarquardtParams params;
+
+  auto gn_result = GaussNewtonOptimizer(fg, init).optimize();
+  auto lm_result = LevenbergMarquardtOptimizer(fg, init, params).optimize();
+  auto dl_result = DoglegOptimizer(fg, init).optimize();
+
+  EXPECT(assert_equal(expected, gn_result, 1e-1));
+  EXPECT(assert_equal(expected, lm_result, 1e-1));
+  EXPECT(assert_equal(expected, dl_result, 1e-1));
+}
+
+/* ************************************************************************* */
+TEST(NonlinearOptimizer, RobustMeanCalculation) {
+
+  NonlinearFactorGraph fg;
+
+  Values init;
+
+  Values expected;
+
+  auto huber = noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(20),
+                                          noiseModel::Isotropic::Sigma(1, 1));
+
+  vector<double> pts{-10,-3,-1,1,3,10,1000};
+  for(auto pt : pts) {
+    fg.addPrior(0, pt, huber);
+  }
+
+  init.insert(0, 100.0);
+  expected.insert(0, 3.33333333);
+
+  DoglegParams params_dl;
+  params_dl.setRelativeErrorTol(1e-10);
+
+  auto gn_result = GaussNewtonOptimizer(fg, init).optimize();
+  auto lm_result = LevenbergMarquardtOptimizer(fg, init).optimize();
+  auto dl_result = DoglegOptimizer(fg, init, params_dl).optimize();
+
+  EXPECT(assert_equal(expected, gn_result, tol));
+  EXPECT(assert_equal(expected, lm_result, tol));
+  EXPECT(assert_equal(expected, dl_result, tol));
 }
 
 /* ************************************************************************* */
@@ -379,9 +484,9 @@ TEST(NonlinearOptimizer, disconnected_graph) {
   init.insert(X(3), Pose2(0.,0.,0.));
 
   NonlinearFactorGraph graph;
-  graph += PriorFactor<Pose2>(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3,1));
+  graph.addPrior(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3,1));
   graph += BetweenFactor<Pose2>(X(1),X(2), Pose2(1.5,0.,0.), noiseModel::Isotropic::Sigma(3,1));
-  graph += PriorFactor<Pose2>(X(3), Pose2(3.,0.,0.), noiseModel::Isotropic::Sigma(3,1));
+  graph.addPrior(X(3), Pose2(3.,0.,0.), noiseModel::Isotropic::Sigma(3,1));
 
   EXPECT(assert_equal(expected, LevenbergMarquardtOptimizer(graph, init).optimize()));
 }
@@ -389,23 +494,24 @@ TEST(NonlinearOptimizer, disconnected_graph) {
 /* ************************************************************************* */
 #include <gtsam/linear/iterative.h>
 
-class IterativeLM: public LevenbergMarquardtOptimizer {
-
+class IterativeLM : public LevenbergMarquardtOptimizer {
   /// Solver specific parameters
   ConjugateGradientParameters cgParams_;
   Values initial_;
 
-public:
+ public:
   /// Constructor
   IterativeLM(const NonlinearFactorGraph& graph, const Values& initialValues,
-      const ConjugateGradientParameters &p,
-      const LevenbergMarquardtParams& params = LevenbergMarquardtParams::LegacyDefaults()) :
-      LevenbergMarquardtOptimizer(graph, initialValues, params), cgParams_(p), initial_(initialValues) {
-  }
+              const ConjugateGradientParameters& p,
+              const LevenbergMarquardtParams& params =
+                  LevenbergMarquardtParams::LegacyDefaults())
+      : LevenbergMarquardtOptimizer(graph, initialValues, params),
+        cgParams_(p),
+        initial_(initialValues) {}
 
   /// Solve that uses conjugate gradient
-  virtual VectorValues solve(const GaussianFactorGraph &gfg,
-      const NonlinearOptimizerParams& params) const {
+  virtual VectorValues solve(const GaussianFactorGraph& gfg,
+                             const NonlinearOptimizerParams& params) const {
     VectorValues zeros = initial_.zeroVectors();
     return conjugateGradientDescent(gfg, zeros, cgParams_);
   }
@@ -414,19 +520,20 @@ public:
 /* ************************************************************************* */
 TEST(NonlinearOptimizer, subclass_solver) {
   Values expected;
-  expected.insert(X(1), Pose2(0.,0.,0.));
-  expected.insert(X(2), Pose2(1.5,0.,0.));
-  expected.insert(X(3), Pose2(3.0,0.,0.));
+  expected.insert(X(1), Pose2(0., 0., 0.));
+  expected.insert(X(2), Pose2(1.5, 0., 0.));
+  expected.insert(X(3), Pose2(3.0, 0., 0.));
 
   Values init;
-  init.insert(X(1), Pose2(0.,0.,0.));
-  init.insert(X(2), Pose2(0.,0.,0.));
-  init.insert(X(3), Pose2(0.,0.,0.));
+  init.insert(X(1), Pose2(0., 0., 0.));
+  init.insert(X(2), Pose2(0., 0., 0.));
+  init.insert(X(3), Pose2(0., 0., 0.));
 
   NonlinearFactorGraph graph;
-  graph += PriorFactor<Pose2>(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3,1));
-  graph += BetweenFactor<Pose2>(X(1),X(2), Pose2(1.5,0.,0.), noiseModel::Isotropic::Sigma(3,1));
-  graph += PriorFactor<Pose2>(X(3), Pose2(3.,0.,0.), noiseModel::Isotropic::Sigma(3,1));
+  graph.addPrior(X(1), Pose2(0., 0., 0.), noiseModel::Isotropic::Sigma(3, 1));
+  graph += BetweenFactor<Pose2>(X(1), X(2), Pose2(1.5, 0., 0.),
+                                noiseModel::Isotropic::Sigma(3, 1));
+  graph.addPrior(X(3), Pose2(3., 0., 0.), noiseModel::Isotropic::Sigma(3, 1));
 
   ConjugateGradientParameters p;
   Values actual = IterativeLM(graph, init, p).optimize();
@@ -481,7 +588,7 @@ struct traits<MyType> {
 
 TEST(NonlinearOptimizer, Traits) {
   NonlinearFactorGraph fg;
-  fg += PriorFactor<MyType>(0, MyType(0, 0, 0), noiseModel::Isotropic::Sigma(3, 1));
+  fg.addPrior(0, MyType(0, 0, 0), noiseModel::Isotropic::Sigma(3, 1));
 
   Values init;
   init.insert(0, MyType(0,0,0));

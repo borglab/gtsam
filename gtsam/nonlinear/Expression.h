@@ -66,7 +66,7 @@ public:
   // Expressions wrap trees of functions that can evaluate their own derivatives.
   // The meta-functions below are useful to specify the type of those functions.
   // Example, a function taking a camera and a 3D point and yielding a 2D point:
-  //   Expression<Point2>::BinaryFunction<SimpleCamera,Point3>::type
+  //   Expression<Point2>::BinaryFunction<PinholeCamera<Cal3_S2>,Point3>::type
   template<class A1>
   struct UnaryFunction {
     typedef boost::function<

@@ -179,7 +179,14 @@ namespace gtsam {
      *  j is already used.
      * @param value The vector to be inserted.
      * @param j The index with which the value will be associated. */
-    iterator emplace(Key j, const Vector& value);
+    template<class... Args>
+    inline std::pair<VectorValues::iterator, bool> emplace(Key j, Args&&... args) {
+#if ! defined(GTSAM_USE_TBB) || defined (TBB_GREATER_EQUAL_2020)
+      return values_.emplace(std::piecewise_construct, std::forward_as_tuple(j), std::forward_as_tuple(args...));
+#else
+      return values_.insert(std::make_pair(j, Vector(std::forward<Args>(args)...)));
+#endif
+    }
 
     /** Insert a vector \c value with key \c j.  Throws an invalid_argument exception if the key \c
      *  j is already used.
@@ -197,8 +204,12 @@ namespace gtsam {
      *  and an iterator to the existing value is returned, along with 'false'.  If the value did not
      *  exist, it is inserted and an iterator pointing to the new element, along with 'true', is
      *  returned. */
-    std::pair<iterator, bool> tryInsert(Key j, const Vector& value) {
-      return values_.emplace(j, value); 
+    inline std::pair<iterator, bool> tryInsert(Key j, const Vector& value) {
+#ifdef TBB_GREATER_EQUAL_2020
+      return values_.emplace(j, value);
+#else
+      return values_.insert(std::make_pair(j, value));
+#endif
     }
 
     /** Erase the vector with the given key, or throw std::out_of_range if it does not exist */
@@ -230,7 +241,7 @@ namespace gtsam {
     const_iterator find(Key j) const { return values_.find(j); }
 
     /// overload operator << to print to stringstream
-    friend std::ostream& operator<<(std::ostream&, const VectorValues&);
+    GTSAM_EXPORT friend std::ostream& operator<<(std::ostream&, const VectorValues&);
 
     /** print required by Testable for unit testing */
     void print(const std::string& str = "VectorValues",

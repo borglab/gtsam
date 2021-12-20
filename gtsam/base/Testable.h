@@ -107,7 +107,7 @@ namespace gtsam {
    * Template to create a binary predicate
    */
   template<class V>
-  struct equals : public std::binary_function<const V&, const V&, bool> {
+  struct equals : public std::function<bool(const V&, const V&)> {
     double tol_;
     equals(double tol = 1e-9) : tol_(tol) {}
     bool operator()(const V& expected, const V& actual) {
@@ -119,7 +119,7 @@ namespace gtsam {
    * Binary predicate on shared pointers
    */
   template<class V>
-  struct equals_star : public std::binary_function<const boost::shared_ptr<V>&, const boost::shared_ptr<V>&, bool> {
+  struct equals_star : public std::function<bool(const boost::shared_ptr<V>&, const boost::shared_ptr<V>&)> {
     double tol_;
     equals_star(double tol = 1e-9) : tol_(tol) {}
     bool operator()(const boost::shared_ptr<V>& expected, const boost::shared_ptr<V>& actual) {

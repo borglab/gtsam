@@ -38,7 +38,7 @@ void ConcurrentBatchFilter::PrintNonlinearFactor(const NonlinearFactor::shared_p
     }
     std::cout << ")" << std::endl;
   } else {
-    std::cout << "{ NULL }" << std::endl;
+    std::cout << "{ nullptr }" << std::endl;
   }
 }
 
@@ -79,7 +79,7 @@ void ConcurrentBatchFilter::PrintLinearFactor(const GaussianFactor::shared_ptr& 
     }
     std::cout << ")" << std::endl;
   } else {
-    std::cout << "{ NULL }" << std::endl;
+    std::cout << "{ nullptr }" << std::endl;
   }
 }
 

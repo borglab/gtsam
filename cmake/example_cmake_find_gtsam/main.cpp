@@ -33,7 +33,6 @@
 // Here we will use Between factors for the relative motion described by odometry measurements.
 // We will also use a Between Factor to encode the loop closure constraint
 // Also, we will initialize the robot at the origin using a Prior factor.
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 
 // When the factors are created, we will add them to a Factor Graph. As the factors we are using
@@ -69,7 +68,7 @@ int main(int argc, char** argv) {
   // 2a. Add a prior on the first pose, setting it to the origin
   // A prior factor consists of a mean and a noise model (covariance matrix)
   noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Sigmas(Vector3(0.3, 0.3, 0.1));
-  graph.emplace_shared<PriorFactor<Pose2> >(1, Pose2(0, 0, 0), priorNoise);
+  graph.addPrior(1, Pose2(0, 0, 0), priorNoise);
 
   // For simplicity, we will use the same noise model for odometry and loop closures
   noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Sigmas(Vector3(0.2, 0.2, 0.1));

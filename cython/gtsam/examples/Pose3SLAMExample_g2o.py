@@ -43,18 +43,17 @@ priorModel = gtsam.noiseModel_Diagonal.Variances(vector6(1e-6, 1e-6, 1e-6,
                                                          1e-4, 1e-4, 1e-4))
 
 print("Adding prior to g2o file ")
-graphWithPrior = graph
 firstKey = initial.keys().at(0)
-graphWithPrior.add(gtsam.PriorFactorPose3(firstKey, gtsam.Pose3(), priorModel))
+graph.add(gtsam.PriorFactorPose3(firstKey, gtsam.Pose3(), priorModel))
 
 params = gtsam.GaussNewtonParams()
 params.setVerbosity("Termination")  # this will show info about stopping conds
-optimizer = gtsam.GaussNewtonOptimizer(graphWithPrior, initial, params)
+optimizer = gtsam.GaussNewtonOptimizer(graph, initial, params)
 result = optimizer.optimize()
 print("Optimization complete")
 
-print("initial error = ", graphWithPrior.error(initial))
-print("final error = ", graphWithPrior.error(result))
+print("initial error = ", graph.error(initial))
+print("final error = ", graph.error(result))
 
 if args.output is None:
     print("Final Result:\n{}".format(result))
@@ -66,7 +65,7 @@ else:
     print ("Done!")
 
 if args.plot:
-    resultPoses = gtsam.allPose3s(result)
+    resultPoses = gtsam.utilities_allPose3s(result)
     for i in range(resultPoses.size()):
         plot.plot_pose3(1, resultPoses.atPose3(i))
     plt.show()

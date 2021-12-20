@@ -17,6 +17,7 @@
  * @author  Frank Dellaert
  * @author  Alex Cunningham
  * @author  Alex Hagiopol
+ * @author  Varun Agrawal
  */
 
 // \callgraph
@@ -88,10 +89,9 @@ bool equal_with_abs_tol(const Eigen::DenseBase<MATRIX>& A, const Eigen::DenseBas
 
   for(size_t i=0; i<m1; i++)
     for(size_t j=0; j<n1; j++) {
-      if(boost::math::isnan(A(i,j)) ^ boost::math::isnan(B(i,j)))
+      if(!fpEqual(A(i,j), B(i,j), tol)) {
         return false;
-      else if(std::abs(A(i,j) - B(i,j)) > tol)
-        return false;
+      }
     }
   return true;
 }
@@ -548,17 +548,47 @@ GTSAM_EXPORT Vector columnNormSquare(const Matrix &A);
 namespace boost {
   namespace serialization {
 
+    /**
+     * Ref. https://stackoverflow.com/questions/18382457/eigen-and-boostserialize/22903063#22903063
+     * 
+     * Eigen supports calling resize() on both static and dynamic matrices.
+     * This allows for a uniform API, with resize having no effect if the static matrix
+     * is already the correct size.
+     * https://eigen.tuxfamily.org/dox/group__TutorialMatrixClass.html#TutorialMatrixSizesResizing
+     * 
+     * We use all the Matrix template parameters to ensure wide compatibility.
+     * 
+     * eigen_typekit in ROS uses the same code
+     * http://docs.ros.org/lunar/api/eigen_typekit/html/eigen__mqueue_8cpp_source.html
+     */
+
     // split version - sends sizes ahead
-    template<class Archive>
-    void save(Archive & ar, const gtsam::Matrix & m, unsigned int /*version*/) {
+    template<class Archive,
+             typename Scalar_,
+             int Rows_,
+             int Cols_,
+             int Ops_,
+             int MaxRows_,
+             int MaxCols_>
+    void save(Archive & ar,
+              const Eigen::Matrix<Scalar_, Rows_, Cols_, Ops_, MaxRows_, MaxCols_> & m,
+              const unsigned int /*version*/) {
       const size_t rows = m.rows(), cols = m.cols();
       ar << BOOST_SERIALIZATION_NVP(rows);
       ar << BOOST_SERIALIZATION_NVP(cols);
       ar << make_nvp("data", make_array(m.data(), m.size()));
     }
 
-    template<class Archive>
-    void load(Archive & ar, gtsam::Matrix & m, unsigned int /*version*/) {
+    template<class Archive,
+             typename Scalar_,
+             int Rows_,
+             int Cols_,
+             int Ops_,
+             int MaxRows_,
+             int MaxCols_>
+    void load(Archive & ar,
+              Eigen::Matrix<Scalar_, Rows_, Cols_, Ops_, MaxRows_, MaxCols_> & m,
+              const unsigned int /*version*/) {
       size_t rows, cols;
       ar >> BOOST_SERIALIZATION_NVP(rows);
       ar >> BOOST_SERIALIZATION_NVP(cols);
@@ -566,8 +596,25 @@ namespace boost {
       ar >> make_nvp("data", make_array(m.data(), m.size()));
     }
 
+    // templated version of BOOST_SERIALIZATION_SPLIT_FREE(Eigen::Matrix);
+    template<class Archive,
+             typename Scalar_,
+             int Rows_,
+             int Cols_,
+             int Ops_,
+             int MaxRows_,
+             int MaxCols_>
+    void serialize(Archive & ar,
+              Eigen::Matrix<Scalar_, Rows_, Cols_, Ops_, MaxRows_, MaxCols_> & m,
+              const unsigned int version) {
+      split_free(ar, m, version);
+    }
+
+    // specialized to Matrix for MATLAB wrapper
+    template <class Archive>
+    void serialize(Archive& ar, gtsam::Matrix& m, const unsigned int version) {
+      split_free(ar, m, version);
+    }
+
   } // namespace serialization
 } // namespace boost
-
-BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Matrix);
-

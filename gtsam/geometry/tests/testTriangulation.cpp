@@ -17,7 +17,7 @@
  */
 
 #include <gtsam/geometry/triangulation.h>
-#include <gtsam/geometry/SimpleCamera.h>
+#include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/StereoCamera.h>
 #include <gtsam/geometry/CameraSet.h>
 #include <gtsam/geometry/Cal3Bundler.h>
@@ -151,7 +151,7 @@ TEST( triangulation, fourPoses) {
 
   // 3. Add a slightly rotated third camera above, again with measurement noise
   Pose3 pose3 = pose1 * Pose3(Rot3::Ypr(0.1, 0.2, 0.1), Point3(0.1, -2, -.1));
-  SimpleCamera camera3(pose3, *sharedCal);
+  PinholeCamera<Cal3_S2> camera3(pose3, *sharedCal);
   Point2 z3 = camera3.project(landmark);
 
   poses += pose3;
@@ -168,7 +168,7 @@ TEST( triangulation, fourPoses) {
 
   // 4. Test failure: Add a 4th camera facing the wrong way
   Pose3 pose4 = Pose3(Rot3::Ypr(M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
-  SimpleCamera camera4(pose4, *sharedCal);
+  PinholeCamera<Cal3_S2> camera4(pose4, *sharedCal);
 
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
   CHECK_EXCEPTION(camera4.project(landmark), CheiralityException);
@@ -185,17 +185,17 @@ TEST( triangulation, fourPoses) {
 TEST( triangulation, fourPoses_distinct_Ks) {
   Cal3_S2 K1(1500, 1200, 0, 640, 480);
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  SimpleCamera camera1(pose1, K1);
+  PinholeCamera<Cal3_S2> camera1(pose1, K1);
 
   // create second camera 1 meter to the right of first camera
   Cal3_S2 K2(1600, 1300, 0, 650, 440);
-  SimpleCamera camera2(pose2, K2);
+  PinholeCamera<Cal3_S2> camera2(pose2, K2);
 
   // 1. Project two landmarks into two cameras and triangulate
   Point2 z1 = camera1.project(landmark);
   Point2 z2 = camera2.project(landmark);
 
-  CameraSet<SimpleCamera> cameras;
+  CameraSet<PinholeCamera<Cal3_S2> > cameras;
   Point2Vector measurements;
 
   cameras += camera1, camera2;
@@ -216,7 +216,7 @@ TEST( triangulation, fourPoses_distinct_Ks) {
   // 3. Add a slightly rotated third camera above, again with measurement noise
   Pose3 pose3 = pose1 * Pose3(Rot3::Ypr(0.1, 0.2, 0.1), Point3(0.1, -2, -.1));
   Cal3_S2 K3(700, 500, 0, 640, 480);
-  SimpleCamera camera3(pose3, K3);
+  PinholeCamera<Cal3_S2> camera3(pose3, K3);
   Point2 z3 = camera3.project(landmark);
 
   cameras += camera3;
@@ -234,7 +234,7 @@ TEST( triangulation, fourPoses_distinct_Ks) {
   // 4. Test failure: Add a 4th camera facing the wrong way
   Pose3 pose4 = Pose3(Rot3::Ypr(M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
   Cal3_S2 K4(700, 500, 0, 640, 480);
-  SimpleCamera camera4(pose4, K4);
+  PinholeCamera<Cal3_S2> camera4(pose4, K4);
 
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
   CHECK_EXCEPTION(camera4.project(landmark), CheiralityException);
@@ -250,17 +250,17 @@ TEST( triangulation, fourPoses_distinct_Ks) {
 TEST( triangulation, outliersAndFarLandmarks) {
   Cal3_S2 K1(1500, 1200, 0, 640, 480);
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  SimpleCamera camera1(pose1, K1);
+  PinholeCamera<Cal3_S2> camera1(pose1, K1);
 
   // create second camera 1 meter to the right of first camera
   Cal3_S2 K2(1600, 1300, 0, 650, 440);
-  SimpleCamera camera2(pose2, K2);
+  PinholeCamera<Cal3_S2> camera2(pose2, K2);
 
   // 1. Project two landmarks into two cameras and triangulate
   Point2 z1 = camera1.project(landmark);
   Point2 z2 = camera2.project(landmark);
 
-  CameraSet<SimpleCamera> cameras;
+  CameraSet<PinholeCamera<Cal3_S2> > cameras;
   Point2Vector measurements;
 
   cameras += camera1, camera2;
@@ -280,7 +280,7 @@ TEST( triangulation, outliersAndFarLandmarks) {
   // 3. Add a slightly rotated third camera above with a wrong measurement (OUTLIER)
   Pose3 pose3 = pose1 * Pose3(Rot3::Ypr(0.1, 0.2, 0.1), Point3(0.1, -2, -.1));
   Cal3_S2 K3(700, 500, 0, 640, 480);
-  SimpleCamera camera3(pose3, K3);
+  PinholeCamera<Cal3_S2> camera3(pose3, K3);
   Point2 z3 = camera3.project(landmark);
 
   cameras += camera3;
@@ -302,7 +302,7 @@ TEST( triangulation, outliersAndFarLandmarks) {
 //******************************************************************************
 TEST( triangulation, twoIdenticalPoses) {
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  SimpleCamera camera1(pose1, *sharedCal);
+  PinholeCamera<Cal3_S2> camera1(pose1, *sharedCal);
 
   // 1. Project two landmarks into two cameras and triangulate
   Point2 z1 = camera1.project(landmark);
@@ -382,8 +382,8 @@ TEST( triangulation, StereotriangulateNonlinear ) {
     graph.emplace_shared<StereoFactor>(measurements[1], unit, Symbol('x',2), Symbol('l',1), stereoK);
 
     const SharedDiagonal posePrior = noiseModel::Isotropic::Sigma(6, 1e-9);
-    graph.emplace_shared<PriorFactor<Pose3> >(Symbol('x',1), Pose3(m1), posePrior);
-    graph.emplace_shared<PriorFactor<Pose3> >(Symbol('x',2), Pose3(m2), posePrior);
+    graph.addPrior(Symbol('x',1), Pose3(m1), posePrior);
+    graph.addPrior(Symbol('x',2), Pose3(m2), posePrior);
 
     LevenbergMarquardtOptimizer optimizer(graph, values);
     Values result = optimizer.optimize();

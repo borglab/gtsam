@@ -58,7 +58,7 @@ bool IncrementalFixedLagSmoother::equals(const FixedLagSmoother& rhs,
     double tol) const {
   const IncrementalFixedLagSmoother* e =
       dynamic_cast<const IncrementalFixedLagSmoother*>(&rhs);
-  return e != NULL && FixedLagSmoother::equals(*e, tol)
+  return e != nullptr && FixedLagSmoother::equals(*e, tol)
       && isam_.equals(e->isam_, tol);
 }
 

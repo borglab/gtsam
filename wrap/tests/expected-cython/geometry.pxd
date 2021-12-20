@@ -16,6 +16,8 @@ cdef extern from "boost/shared_ptr.hpp" namespace "boost":
         T& operator*()
 
     cdef shared_ptr[T] dynamic_pointer_cast[T,U](const shared_ptr[U]& r)
+
+cdef extern from "gtsam/base/make_shared.h" namespace "gtsam":
     cdef shared_ptr[T] make_shared[T](const T& r)
 
 cdef extern from "gtsam/geometry/Point2.h" namespace "gtsam":

@@ -5,16 +5,23 @@ try:
 except ImportError:
     from distutils.core import setup, find_packages
 
-if 'SETUP_PY_NO_CHECK' not in os.environ:
-    script_path = os.path.abspath(os.path.realpath(__file__))
-    install_path = os.path.abspath(os.path.realpath(os.path.join('${GTSAM_CYTHON_INSTALL_PATH}${GTSAM_BUILD_TAG}', 'setup.py')))
-    if script_path != install_path:
-        print('setup.py is being run from an unexpected location: "{}"'.format(script_path))
-        print('please run `make install` and run the script from there')
-        sys.exit(1)
-
-
 packages = find_packages()
+
+package_data = {
+    package:
+        [f for f in os.listdir(package.replace('.', os.path.sep)) if os.path.splitext(f)[1] in ('.so', '.pyd')]
+        for package in packages
+}
+
+cython_install_requirements = open("${CYTHON_INSTALL_REQUIREMENTS_FILE}").readlines()
+
+install_requires = [line.strip() \
+    for line in cython_install_requirements \
+    if len(line.strip()) > 0 and not line.strip().startswith('#')
+]
+
+# Cleaner to read in the contents rather than copy them over.
+readme_contents = open("${PROJECT_SOURCE_DIR}/README.md").read()
 
 setup(
     name='gtsam',
@@ -25,7 +32,9 @@ setup(
     author_email='frank.dellaert@gtsam.org',
     license='Simplified BSD license',
     keywords='slam sam robotics localization mapping optimization',
-    long_description='''${README_CONTENTS}''',
+    long_description=readme_contents,
+    long_description_content_type='text/markdown',
+    python_requires='>=2.7',
     # https://pypi.org/pypi?%3Aaction=list_classifiers
     classifiers=[
         'Development Status :: 5 - Production/Stable',
@@ -41,11 +50,6 @@ setup(
     ],
 
     packages=packages,
-    package_data={package:
-        [f for f in os.listdir(package.replace('.', os.path.sep)) if os.path.splitext(f)[1] in ('.so', '.dll')]
-        for package in packages
-    },
-    install_requires=[line.strip() for line in '''
-${CYTHON_INSTALL_REQUIREMENTS}
-'''.splitlines() if len(line.strip()) > 0 and not line.strip().startswith('#')]
+    package_data=package_data,
+    install_requires=install_requires
 )

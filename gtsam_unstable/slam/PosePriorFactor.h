@@ -74,7 +74,7 @@ namespace gtsam {
     /** equals */
     virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
       const This* e = dynamic_cast<const This*> (&expected);
-      return e != NULL
+      return e != nullptr
           && Base::equals(*e, tol)
           && this->prior_.equals(e->prior_, tol)
           && ((!body_P_sensor_ && !e->body_P_sensor_) || (body_P_sensor_ && e->body_P_sensor_ && body_P_sensor_->equals(*e->body_P_sensor_)));

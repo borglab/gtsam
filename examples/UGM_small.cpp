@@ -10,15 +10,16 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file small.cpp
+ * @file UGM_small.cpp
  * @brief UGM (undirected graphical model) examples: small
  * @author Frank Dellaert
  *
  * See http://www.di.ens.fr/~mschmidt/Software/UGM/small.html
  */
 
+#include <gtsam/base/Vector.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
-#include <gtsam/discrete/DiscreteSequentialSolver.h>
+#include <gtsam/discrete/DiscreteMarginals.h>
 
 using namespace std;
 using namespace gtsam;
@@ -61,24 +62,24 @@ int main(int argc, char** argv) {
 
   // "Decoding", i.e., configuration with largest value (MPE)
   // We use sequential variable elimination
-  DiscreteSequentialSolver solver(graph);
-  DiscreteFactor::sharedValues optimalDecoding = solver.optimize();
+  DiscreteBayesNet::shared_ptr chordal = graph.eliminateSequential();
+  DiscreteFactor::sharedValues optimalDecoding = chordal->optimize();
   optimalDecoding->print("\noptimalDecoding");
 
   // "Inference" Computing marginals
   cout << "\nComputing Node Marginals .." << endl;
-  Vector margProbs;
+  DiscreteMarginals marginals(graph);
 
-  margProbs = solver.marginalProbabilities(Cathy);
+  Vector margProbs = marginals.marginalProbabilities(Cathy);
   print(margProbs, "Cathy's Node Marginal:");
 
-  margProbs = solver.marginalProbabilities(Heather);
+  margProbs = marginals.marginalProbabilities(Heather);
   print(margProbs, "Heather's Node Marginal");
 
-  margProbs = solver.marginalProbabilities(Mark);
+  margProbs = marginals.marginalProbabilities(Mark);
   print(margProbs, "Mark's Node Marginal");
 
-  margProbs = solver.marginalProbabilities(Allison);
+  margProbs = marginals.marginalProbabilities(Allison);
   print(margProbs, "Allison's Node Marginal");
 
   return 0;

@@ -168,7 +168,11 @@ Camera camera(Pose3(Rot3().retract(Vector3(0.1, 0.2, 0.3)), Point3(0, 5, 0)),
 Point3 point(10, 0, -5);  // negative Z-axis convention of Snavely!
 Vector9 P = Camera().localCoordinates(camera);
 Vector3 X = point;
+#ifdef GTSAM_POSE3_EXPMAP
+Vector2 expectedMeasurement(1.3124675, 1.2057287);
+#else
 Vector2 expectedMeasurement(1.2431567, 1.2525694);
+#endif
 Matrix E1 = numericalDerivative21<Vector2, Vector9, Vector3>(adapted, P, X);
 Matrix E2 = numericalDerivative22<Vector2, Vector9, Vector3>(adapted, P, X);
 }
@@ -177,7 +181,11 @@ Matrix E2 = numericalDerivative22<Vector2, Vector9, Vector3>(adapted, P, X);
 // Check that Local worked as expected
 TEST(AdaptAutoDiff, Local) {
   using namespace example;
+#ifdef GTSAM_POSE3_EXPMAP
+  Vector9 expectedP = (Vector9() << 0.1, 0.2, 0.3, 0.7583528428, 4.9582357859, -0.224941471539, 1, 0, 0).finished();
+#else
   Vector9 expectedP = (Vector9() << 0.1, 0.2, 0.3, 0, 5, 0, 1, 0, 0).finished();
+#endif
   EXPECT(equal_with_abs_tol(expectedP, P));
   Vector3 expectedX(10, 0, -5);  // negative Z-axis convention of Snavely!
   EXPECT(equal_with_abs_tol(expectedX, X));

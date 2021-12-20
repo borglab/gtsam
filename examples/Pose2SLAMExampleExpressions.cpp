@@ -21,7 +21,6 @@
 #include <gtsam/nonlinear/ExpressionFactorGraph.h>
 
 // For an explanation of headers below, please see Pose2SLAMExample.cpp
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
@@ -31,7 +30,6 @@ using namespace std;
 using namespace gtsam;
 
 int main(int argc, char** argv) {
-
   // 1. Create a factor graph container and add factors to it
   ExpressionFactorGraph graph;
 
@@ -39,31 +37,32 @@ int main(int argc, char** argv) {
   Pose2_ x1(1), x2(2), x3(3), x4(4), x5(5);
 
   // 2a. Add a prior on the first pose, setting it to the origin
-  noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Sigmas(Vector3(0.3, 0.3, 0.1));
+  auto priorNoise = noiseModel::Diagonal::Sigmas(Vector3(0.3, 0.3, 0.1));
   graph.addExpressionFactor(x1, Pose2(0, 0, 0), priorNoise);
 
-  // For simplicity, we will use the same noise model for odometry and loop closures
-  noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Sigmas(Vector3(0.2, 0.2, 0.1));
+  // For simplicity, we use the same noise model for odometry and loop closures
+  auto model = noiseModel::Diagonal::Sigmas(Vector3(0.2, 0.2, 0.1));
 
   // 2b. Add odometry factors
-  graph.addExpressionFactor(between(x1,x2), Pose2(2, 0, 0     ), model);
-  graph.addExpressionFactor(between(x2,x3), Pose2(2, 0, M_PI_2), model);
-  graph.addExpressionFactor(between(x3,x4), Pose2(2, 0, M_PI_2), model);
-  graph.addExpressionFactor(between(x4,x5), Pose2(2, 0, M_PI_2), model);
+  graph.addExpressionFactor(between(x1, x2), Pose2(2, 0, 0), model);
+  graph.addExpressionFactor(between(x2, x3), Pose2(2, 0, M_PI_2), model);
+  graph.addExpressionFactor(between(x3, x4), Pose2(2, 0, M_PI_2), model);
+  graph.addExpressionFactor(between(x4, x5), Pose2(2, 0, M_PI_2), model);
 
   // 2c. Add the loop closure constraint
-  graph.addExpressionFactor(between(x5,x2), Pose2(2, 0, M_PI_2), model);
-  graph.print("\nFactor Graph:\n"); // print
+  graph.addExpressionFactor(between(x5, x2), Pose2(2, 0, M_PI_2), model);
+  graph.print("\nFactor Graph:\n");  // print
 
-  // 3. Create the data structure to hold the initialEstimate estimate to the solution
-  // For illustrative purposes, these have been deliberately set to incorrect values
+  // 3. Create the data structure to hold the initialEstimate estimate to the
+  // solution For illustrative purposes, these have been deliberately set to
+  // incorrect values
   Values initialEstimate;
-  initialEstimate.insert(1, Pose2(0.5, 0.0,  0.2   ));
-  initialEstimate.insert(2, Pose2(2.3, 0.1, -0.2   ));
-  initialEstimate.insert(3, Pose2(4.1, 0.1,  M_PI_2));
-  initialEstimate.insert(4, Pose2(4.0, 2.0,  M_PI  ));
+  initialEstimate.insert(1, Pose2(0.5, 0.0, 0.2));
+  initialEstimate.insert(2, Pose2(2.3, 0.1, -0.2));
+  initialEstimate.insert(3, Pose2(4.1, 0.1, M_PI_2));
+  initialEstimate.insert(4, Pose2(4.0, 2.0, M_PI));
   initialEstimate.insert(5, Pose2(2.1, 2.1, -M_PI_2));
-  initialEstimate.print("\nInitial Estimate:\n"); // print
+  initialEstimate.print("\nInitial Estimate:\n");  // print
 
   // 4. Optimize the initial values using a Gauss-Newton nonlinear optimizer
   GaussNewtonParams parameters;

@@ -30,8 +30,10 @@ class TestDSFMap(GtsamTestCase):
         pair1 = gtsam.IndexPair(1, 18)
         self.assertEqual(key(dsf.find(pair1)), key(pair1))
         pair2 = gtsam.IndexPair(2, 2)
+        
+        # testing the merge feature of dsf
         dsf.merge(pair1, pair2)
-        self.assertTrue(dsf.find(pair1), dsf.find(pair1))
+        self.assertEqual(key(dsf.find(pair1)), key(dsf.find(pair2)))
 
 
 if __name__ == '__main__':

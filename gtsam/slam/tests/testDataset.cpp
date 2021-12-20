@@ -106,59 +106,20 @@ TEST( dataSet, Balbianello)
 {
   ///< The structure where we will save the SfM data
   const string filename = findExampleDataFile("Balbianello");
-  SfM_data mydata;
+  SfmData mydata;
   CHECK(readBundler(filename, mydata));
 
   // Check number of things
   EXPECT_LONGS_EQUAL(5,mydata.number_cameras());
   EXPECT_LONGS_EQUAL(544,mydata.number_tracks());
-  const SfM_Track& track0 = mydata.tracks[0];
+  const SfmTrack& track0 = mydata.tracks[0];
   EXPECT_LONGS_EQUAL(3,track0.number_measurements());
 
   // Check projection of a given point
   EXPECT_LONGS_EQUAL(0,track0.measurements[0].first);
-  const SfM_Camera& camera0 = mydata.cameras[0];
+  const SfmCamera& camera0 = mydata.cameras[0];
   Point2 expected = camera0.project(track0.p), actual = track0.measurements[0].second;
   EXPECT(assert_equal(expected,actual,1));
-}
-
-/* ************************************************************************* */
-TEST( dataSet, readG2o)
-{
-  const string g2oFile = findExampleDataFile("pose2example");
-  NonlinearFactorGraph::shared_ptr actualGraph;
-  Values::shared_ptr actualValues;
-  boost::tie(actualGraph, actualValues) = readG2o(g2oFile);
-
-  Values expectedValues;
-  expectedValues.insert(0, Pose2(0.000000, 0.000000, 0.000000));
-  expectedValues.insert(1, Pose2(1.030390, 0.011350, -0.081596));
-  expectedValues.insert(2, Pose2(2.036137, -0.129733, -0.301887));
-  expectedValues.insert(3, Pose2(3.015097, -0.442395, -0.345514));
-  expectedValues.insert(4, Pose2(3.343949, 0.506678, 1.214715));
-  expectedValues.insert(5, Pose2(3.684491, 1.464049, 1.183785));
-  expectedValues.insert(6, Pose2(4.064626, 2.414783, 1.176333));
-  expectedValues.insert(7, Pose2(4.429778, 3.300180, 1.259169));
-  expectedValues.insert(8, Pose2(4.128877, 2.321481, -1.825391));
-  expectedValues.insert(9, Pose2(3.884653, 1.327509, -1.953016));
-  expectedValues.insert(10, Pose2(3.531067, 0.388263, -2.148934));
-  EXPECT(assert_equal(expectedValues,*actualValues,1e-5));
-
-  noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Precisions(Vector3(44.721360, 44.721360, 30.901699));
-  NonlinearFactorGraph expectedGraph;
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(0, 1, Pose2(1.030390, 0.011350, -0.081596), model);
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(1, 2, Pose2(1.013900, -0.058639, -0.220291), model);
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(2, 3, Pose2(1.027650, -0.007456, -0.043627), model);
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(3, 4, Pose2(-0.012016, 1.004360, 1.560229), model);
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(4, 5, Pose2(1.016030, 0.014565, -0.030930), model);
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(5, 6, Pose2(1.023890, 0.006808, -0.007452), model);
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(6, 7, Pose2(0.957734, 0.003159, 0.082836), model);
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(7, 8, Pose2(-1.023820, -0.013668, -3.084560), model);
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(8, 9, Pose2(1.023440, 0.013984, -0.127624), model);
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(9,10, Pose2(1.003350, 0.022250, -0.195918), model);
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(5, 9, Pose2(0.033943, 0.032439, 3.073637), model);
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(3,10, Pose2(0.044020, 0.988477, -1.553511), model);
-  EXPECT(assert_equal(expectedGraph,*actualGraph,1e-5));
 }
 
 /* ************************************************************************* */
@@ -273,59 +234,103 @@ TEST( dataSet, readG2o3DNonDiagonalNoise)
 }
 
 /* ************************************************************************* */
-TEST( dataSet, readG2oHuber)
-{
-  const string g2oFile = findExampleDataFile("pose2example");
-  NonlinearFactorGraph::shared_ptr actualGraph;
-  Values::shared_ptr actualValues;
-  bool is3D = false;
-  boost::tie(actualGraph, actualValues) = readG2o(g2oFile, is3D, KernelFunctionTypeHUBER);
+TEST(dataSet, readG2oCheckDeterminants) {
+  const string g2oFile = findExampleDataFile("toyExample.g2o");
 
-  noiseModel::Diagonal::shared_ptr baseModel = noiseModel::Diagonal::Precisions(Vector3(44.721360, 44.721360, 30.901699));
-  SharedNoiseModel model = noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(1.345), baseModel);
+  // Check determinants in factors
+  auto factors = parse3DFactors(g2oFile);
+  EXPECT_LONGS_EQUAL(6, factors.size());
+  for (const auto& factor : factors) {
+    const Rot3 R = factor->measured().rotation();
+    EXPECT_DOUBLES_EQUAL(1.0, R.matrix().determinant(), 1e-9);
+  }
 
-  NonlinearFactorGraph expectedGraph;
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(0, 1, Pose2(1.030390, 0.011350, -0.081596), model);
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(1, 2, Pose2(1.013900, -0.058639, -0.220291), model);
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(2, 3, Pose2(1.027650, -0.007456, -0.043627), model);
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(3, 4, Pose2(-0.012016, 1.004360, 1.560229), model);
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(4, 5, Pose2(1.016030, 0.014565, -0.030930), model);
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(5, 6, Pose2(1.023890, 0.006808, -0.007452), model);
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(6, 7, Pose2(0.957734, 0.003159, 0.082836), model);
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(7, 8, Pose2(-1.023820, -0.013668, -3.084560), model);
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(8, 9, Pose2(1.023440, 0.013984, -0.127624), model);
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(9,10, Pose2(1.003350, 0.022250, -0.195918), model);
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(5, 9, Pose2(0.033943, 0.032439, 3.073637), model);
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(3,10, Pose2(0.044020, 0.988477, -1.553511), model);
-  EXPECT(assert_equal(expectedGraph,*actualGraph,1e-5));
+  // Check determinants in initial values
+  const map<Key, Pose3> poses = parse3DPoses(g2oFile);
+  EXPECT_LONGS_EQUAL(5, poses.size());
+  for (const auto& key_value : poses) {
+    const Rot3 R = key_value.second.rotation();
+    EXPECT_DOUBLES_EQUAL(1.0, R.matrix().determinant(), 1e-9);
+  }
 }
 
 /* ************************************************************************* */
-TEST( dataSet, readG2oTukey)
-{
+static NonlinearFactorGraph expectedGraph(const SharedNoiseModel& model) {
+  NonlinearFactorGraph g;
+  using Factor = BetweenFactor<Pose2>;
+  g.emplace_shared<Factor>(0, 1, Pose2(1.030390, 0.011350, -0.081596), model);
+  g.emplace_shared<Factor>(1, 2, Pose2(1.013900, -0.058639, -0.220291), model);
+  g.emplace_shared<Factor>(2, 3, Pose2(1.027650, -0.007456, -0.043627), model);
+  g.emplace_shared<Factor>(3, 4, Pose2(-0.012016, 1.004360, 1.560229), model);
+  g.emplace_shared<Factor>(4, 5, Pose2(1.016030, 0.014565, -0.030930), model);
+  g.emplace_shared<Factor>(5, 6, Pose2(1.023890, 0.006808, -0.007452), model);
+  g.emplace_shared<Factor>(6, 7, Pose2(0.957734, 0.003159, 0.082836), model);
+  g.emplace_shared<Factor>(7, 8, Pose2(-1.023820, -0.013668, -3.084560), model);
+  g.emplace_shared<Factor>(8, 9, Pose2(1.023440, 0.013984, -0.127624), model);
+  g.emplace_shared<Factor>(9, 10, Pose2(1.003350, 0.022250, -0.195918), model);
+  g.emplace_shared<Factor>(5, 9, Pose2(0.033943, 0.032439, 3.073637), model);
+  g.emplace_shared<Factor>(3, 10, Pose2(0.044020, 0.988477, -1.553511), model);
+  return g;
+}
+
+/* ************************************************************************* */
+TEST(dataSet, readG2o) {
+  const string g2oFile = findExampleDataFile("pose2example");
+  NonlinearFactorGraph::shared_ptr actualGraph;
+  Values::shared_ptr actualValues;
+  boost::tie(actualGraph, actualValues) = readG2o(g2oFile);
+
+  auto model = noiseModel::Diagonal::Precisions(
+      Vector3(44.721360, 44.721360, 30.901699));
+  EXPECT(assert_equal(expectedGraph(model), *actualGraph, 1e-5));
+
+  Values expectedValues;
+  expectedValues.insert(0, Pose2(0.000000, 0.000000, 0.000000));
+  expectedValues.insert(1, Pose2(1.030390, 0.011350, -0.081596));
+  expectedValues.insert(2, Pose2(2.036137, -0.129733, -0.301887));
+  expectedValues.insert(3, Pose2(3.015097, -0.442395, -0.345514));
+  expectedValues.insert(4, Pose2(3.343949, 0.506678, 1.214715));
+  expectedValues.insert(5, Pose2(3.684491, 1.464049, 1.183785));
+  expectedValues.insert(6, Pose2(4.064626, 2.414783, 1.176333));
+  expectedValues.insert(7, Pose2(4.429778, 3.300180, 1.259169));
+  expectedValues.insert(8, Pose2(4.128877, 2.321481, -1.825391));
+  expectedValues.insert(9, Pose2(3.884653, 1.327509, -1.953016));
+  expectedValues.insert(10, Pose2(3.531067, 0.388263, -2.148934));
+  EXPECT(assert_equal(expectedValues, *actualValues, 1e-5));
+}
+
+/* ************************************************************************* */
+TEST(dataSet, readG2oHuber) {
   const string g2oFile = findExampleDataFile("pose2example");
   NonlinearFactorGraph::shared_ptr actualGraph;
   Values::shared_ptr actualValues;
   bool is3D = false;
-  boost::tie(actualGraph, actualValues) = readG2o(g2oFile, is3D, KernelFunctionTypeTUKEY);
+  boost::tie(actualGraph, actualValues) =
+      readG2o(g2oFile, is3D, KernelFunctionTypeHUBER);
 
-  noiseModel::Diagonal::shared_ptr baseModel = noiseModel::Diagonal::Precisions(Vector3(44.721360, 44.721360, 30.901699));
-  SharedNoiseModel model = noiseModel::Robust::Create(noiseModel::mEstimator::Tukey::Create(4.6851), baseModel);
+  auto baseModel = noiseModel::Diagonal::Precisions(
+      Vector3(44.721360, 44.721360, 30.901699));
+  auto model = noiseModel::Robust::Create(
+      noiseModel::mEstimator::Huber::Create(1.345), baseModel);
 
-  NonlinearFactorGraph expectedGraph;
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(0, 1, Pose2(1.030390, 0.011350, -0.081596), model);
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(1, 2, Pose2(1.013900, -0.058639, -0.220291), model);
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(2, 3, Pose2(1.027650, -0.007456, -0.043627), model);
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(3, 4, Pose2(-0.012016, 1.004360, 1.560229), model);
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(4, 5, Pose2(1.016030, 0.014565, -0.030930), model);
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(5, 6, Pose2(1.023890, 0.006808, -0.007452), model);
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(6, 7, Pose2(0.957734, 0.003159, 0.082836), model);
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(7, 8, Pose2(-1.023820, -0.013668, -3.084560), model);
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(8, 9, Pose2(1.023440, 0.013984, -0.127624), model);
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(9,10, Pose2(1.003350, 0.022250, -0.195918), model);
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(5, 9, Pose2(0.033943, 0.032439, 3.073637), model);
-  expectedGraph.emplace_shared<BetweenFactor<Pose2> >(3,10, Pose2(0.044020, 0.988477, -1.553511), model);
-  EXPECT(assert_equal(expectedGraph,*actualGraph,1e-5));
+  EXPECT(assert_equal(expectedGraph(model), *actualGraph, 1e-5));
+}
+
+/* ************************************************************************* */
+TEST(dataSet, readG2oTukey) {
+  const string g2oFile = findExampleDataFile("pose2example");
+  NonlinearFactorGraph::shared_ptr actualGraph;
+  Values::shared_ptr actualValues;
+  bool is3D = false;
+  boost::tie(actualGraph, actualValues) =
+      readG2o(g2oFile, is3D, KernelFunctionTypeTUKEY);
+
+  auto baseModel = noiseModel::Diagonal::Precisions(
+      Vector3(44.721360, 44.721360, 30.901699));
+  auto model = noiseModel::Robust::Create(
+      noiseModel::mEstimator::Tukey::Create(4.6851), baseModel);
+
+  EXPECT(assert_equal(expectedGraph(model), *actualGraph, 1e-5));
 }
 
 /* ************************************************************************* */
@@ -389,18 +394,18 @@ TEST( dataSet, readBAL_Dubrovnik)
 {
   ///< The structure where we will save the SfM data
   const string filename = findExampleDataFile("dubrovnik-3-7-pre");
-  SfM_data mydata;
+  SfmData mydata;
   CHECK(readBAL(filename, mydata));
 
   // Check number of things
   EXPECT_LONGS_EQUAL(3,mydata.number_cameras());
   EXPECT_LONGS_EQUAL(7,mydata.number_tracks());
-  const SfM_Track& track0 = mydata.tracks[0];
+  const SfmTrack& track0 = mydata.tracks[0];
   EXPECT_LONGS_EQUAL(3,track0.number_measurements());
 
   // Check projection of a given point
   EXPECT_LONGS_EQUAL(0,track0.measurements[0].first);
-  const SfM_Camera& camera0 = mydata.cameras[0];
+  const SfmCamera& camera0 = mydata.cameras[0];
   Point2 expected = camera0.project(track0.p), actual = track0.measurements[0].second;
   EXPECT(assert_equal(expected,actual,12));
 }
@@ -444,7 +449,7 @@ TEST( dataSet, writeBAL_Dubrovnik)
 {
   ///< Read a file using the unit tested readBAL
   const string filenameToRead = findExampleDataFile("dubrovnik-3-7-pre");
-  SfM_data readData;
+  SfmData readData;
   readBAL(filenameToRead, readData);
 
   // Write readData to file filenameToWrite
@@ -452,7 +457,7 @@ TEST( dataSet, writeBAL_Dubrovnik)
   CHECK(writeBAL(filenameToWrite, readData));
 
   // Read what we wrote
-  SfM_data writtenData;
+  SfmData writtenData;
   CHECK(readBAL(filenameToWrite, writtenData));
 
   // Check that what we read is the same as what we wrote
@@ -467,8 +472,8 @@ TEST( dataSet, writeBAL_Dubrovnik)
 
   for (size_t j = 0; j < readData.number_tracks(); j++){
     // check point
-    SfM_Track expectedTrack  = writtenData.tracks[j];
-    SfM_Track actualTrack = readData.tracks[j];
+    SfmTrack expectedTrack  = writtenData.tracks[j];
+    SfmTrack actualTrack = readData.tracks[j];
     Point3 expectedPoint = expectedTrack.p;
     Point3 actualPoint = actualTrack.p;
     EXPECT(assert_equal(expectedPoint,actualPoint));
@@ -492,10 +497,10 @@ TEST( dataSet, writeBALfromValues_Dubrovnik){
 
   ///< Read a file using the unit tested readBAL
   const string filenameToRead = findExampleDataFile("dubrovnik-3-7-pre");
-  SfM_data readData;
+  SfmData readData;
   readBAL(filenameToRead, readData);
 
-  Pose3 poseChange = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), gtsam::Point3(0.3,0.1,0.3));
+  Pose3 poseChange = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.3,0.1,0.3));
 
   Values value;
   for(size_t i=0; i < readData.number_cameras(); i++){ // for each camera
@@ -514,19 +519,19 @@ TEST( dataSet, writeBALfromValues_Dubrovnik){
   writeBALfromValues(filenameToWrite, readData, value);
 
   // Read the file we wrote
-  SfM_data writtenData;
+  SfmData writtenData;
   readBAL(filenameToWrite, writtenData);
 
   // Check that the reprojection errors are the same and the poses are correct
   // Check number of things
   EXPECT_LONGS_EQUAL(3,writtenData.number_cameras());
   EXPECT_LONGS_EQUAL(7,writtenData.number_tracks());
-  const SfM_Track& track0 = writtenData.tracks[0];
+  const SfmTrack& track0 = writtenData.tracks[0];
   EXPECT_LONGS_EQUAL(3,track0.number_measurements());
 
   // Check projection of a given point
   EXPECT_LONGS_EQUAL(0,track0.measurements[0].first);
-  const SfM_Camera& camera0 = writtenData.cameras[0];
+  const SfmCamera& camera0 = writtenData.cameras[0];
   Point2 expected = camera0.project(track0.p), actual = track0.measurements[0].second;
   EXPECT(assert_equal(expected,actual,12));
 

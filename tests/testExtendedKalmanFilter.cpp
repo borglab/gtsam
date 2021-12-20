@@ -14,7 +14,7 @@
  * @author Stephen Williams
  */
 
-#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/ExtendedKalmanFilter-inl.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
@@ -162,7 +162,7 @@ public:
   /** Check if two factors are equal. Note type is IndexFactor and needs cast. */
   virtual bool equals(const NonlinearFactor& f, double tol = 1e-9) const {
     const This *e = dynamic_cast<const This*> (&f);
-    return (e != NULL) && (key1() == e->key1()) && (key2() == e->key2());
+    return (e != nullptr) && (key1() == e->key1()) && (key2() == e->key2());
   }
 
   /**
@@ -196,7 +196,7 @@ public:
     Vector b = -evaluateError(x1, x2, A1, A2);
     SharedDiagonal constrained =
         boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
-    if (constrained.get() != NULL) {
+    if (constrained.get() != nullptr) {
       return JacobianFactor::shared_ptr(new JacobianFactor(key1(), A1, key2(),
           A2, b, constrained));
     }
@@ -292,7 +292,7 @@ public:
   /** Check if two factors are equal. Note type is IndexFactor and needs cast. */
   virtual bool equals(const NonlinearFactor& f, double tol = 1e-9) const {
     const This *e = dynamic_cast<const This*> (&f);
-    return (e != NULL) && Base::equals(f);
+    return (e != nullptr) && Base::equals(f);
   }
 
   /**
@@ -325,7 +325,7 @@ public:
     Vector b = -evaluateError(x1, A1);
     SharedDiagonal constrained =
         boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
-    if (constrained.get() != NULL) {
+    if (constrained.get() != nullptr) {
       return JacobianFactor::shared_ptr(new JacobianFactor(key(), A1, b, constrained));
     }
     // "Whiten" the system before converting to a Gaussian Factor

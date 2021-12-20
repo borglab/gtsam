@@ -20,119 +20,115 @@
 
 #pragma once
 
-#include <gtsam/base/Matrix.h>
+#include <gtsam/geometry/SOn.h>
+
 #include <gtsam/base/Lie.h>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/dllexport.h>
 
 #include <cmath>
-#include <iosfwd>
+#include <vector>
 
 namespace gtsam {
 
+using SO3 = SO<3>;
+
+// Below are all declarations of SO<3> specializations.
+// They are *defined* in SO3.cpp.
+
+template <>
+GTSAM_EXPORT
+SO3 SO3::AxisAngle(const Vector3& axis, double theta);
+
+template <>
+GTSAM_EXPORT
+SO3 SO3::ClosestTo(const Matrix3& M);
+
+template <>
+GTSAM_EXPORT
+SO3 SO3::ChordalMean(const std::vector<SO3>& rotations);
+
+template <>
+GTSAM_EXPORT
+Matrix3 SO3::Hat(const Vector3& xi);  ///< make skew symmetric matrix
+
+template <>
+GTSAM_EXPORT
+Vector3 SO3::Vee(const Matrix3& X);  ///< inverse of Hat
+
+/// Adjoint map
+template <>
+Matrix3 SO3::AdjointMap() const;
+
 /**
- *  True SO(3), i.e., 3*3 matrix subgroup
- *  We guarantee (all but first) constructors only generate from sub-manifold.
- *  However, round-off errors in repeated composition could move off it...
+ * Exponential map at identity - create a rotation from canonical coordinates
+ * \f$ [R_x,R_y,R_z] \f$ using Rodrigues' formula
  */
-class SO3: public Matrix3, public LieGroup<SO3, 3> {
+template <>
+GTSAM_EXPORT
+SO3 SO3::Expmap(const Vector3& omega, ChartJacobian H);
 
-protected:
+/// Derivative of Expmap
+template <>
+GTSAM_EXPORT
+Matrix3 SO3::ExpmapDerivative(const Vector3& omega);
 
-public:
-  enum {
-    dimension = 3
-  };
+/**
+ * Log map at identity - returns the canonical coordinates
+ * \f$ [R_x,R_y,R_z] \f$ of this rotation
+ */
+template <>
+GTSAM_EXPORT
+Vector3 SO3::Logmap(const SO3& R, ChartJacobian H);
 
-  /// @name Constructors
-  /// @{
+/// Derivative of Logmap
+template <>
+GTSAM_EXPORT
+Matrix3 SO3::LogmapDerivative(const Vector3& omega);
 
-  /// Constructor from AngleAxisd
-  SO3() :
-      Matrix3(I_3x3) {
-  }
+// Chart at origin for SO3 is *not* Cayley but actual Expmap/Logmap
+template <>
+GTSAM_EXPORT
+SO3 SO3::ChartAtOrigin::Retract(const Vector3& omega, ChartJacobian H);
 
-  /// Constructor from Eigen Matrix
-  template<typename Derived>
-  SO3(const MatrixBase<Derived>& R) :
-      Matrix3(R.eval()) {
-  }
+template <>
+GTSAM_EXPORT
+Vector3 SO3::ChartAtOrigin::Local(const SO3& R, ChartJacobian H);
 
-  /// Constructor from AngleAxisd
-  SO3(const Eigen::AngleAxisd& angleAxis) :
-      Matrix3(angleAxis) {
-  }
+template <>
+GTSAM_EXPORT
+Vector9 SO3::vec(OptionalJacobian<9, 3> H) const;
 
-  /// Static, named constructor TODO think about relation with above
-  GTSAM_EXPORT static SO3 AxisAngle(const Vector3& axis, double theta);
+/** Serialization function */
+template <class Archive>
+void serialize(Archive& ar, SO3& R, const unsigned int /*version*/) {
+  Matrix3& M = R.matrix_;
+  ar& boost::serialization::make_nvp("R11", M(0, 0));
+  ar& boost::serialization::make_nvp("R12", M(0, 1));
+  ar& boost::serialization::make_nvp("R13", M(0, 2));
+  ar& boost::serialization::make_nvp("R21", M(1, 0));
+  ar& boost::serialization::make_nvp("R22", M(1, 1));
+  ar& boost::serialization::make_nvp("R23", M(1, 2));
+  ar& boost::serialization::make_nvp("R31", M(2, 0));
+  ar& boost::serialization::make_nvp("R32", M(2, 1));
+  ar& boost::serialization::make_nvp("R33", M(2, 2));
+}
 
-  /// @}
-  /// @name Testable
-  /// @{
-
-  GTSAM_EXPORT void print(const std::string& s) const;
-
-  bool equals(const SO3 & R, double tol) const {
-    return equal_with_abs_tol(*this, R, tol);
-  }
-
-  /// @}
-  /// @name Group
-  /// @{
-
-  /// identity rotation for group operation
-  static SO3 identity() {
-    return I_3x3;
-  }
-
-  /// inverse of a rotation = transpose
-  SO3 inverse() const {
-    return this->Matrix3::inverse();
-  }
-
-  /// @}
-  /// @name Lie Group
-  /// @{
-
-  /**
-   * Exponential map at identity - create a rotation from canonical coordinates
-   * \f$ [R_x,R_y,R_z] \f$ using Rodrigues' formula
-   */
-  GTSAM_EXPORT static SO3 Expmap(const Vector3& omega, ChartJacobian H = boost::none);
-
-  /// Derivative of Expmap
-  GTSAM_EXPORT static Matrix3 ExpmapDerivative(const Vector3& omega);
-
-  /**
-   * Log map at identity - returns the canonical coordinates
-   * \f$ [R_x,R_y,R_z] \f$ of this rotation
-   */
-  GTSAM_EXPORT static Vector3 Logmap(const SO3& R, ChartJacobian H = boost::none);
-
-  /// Derivative of Logmap
-  GTSAM_EXPORT static Matrix3 LogmapDerivative(const Vector3& omega);
-
-  Matrix3 AdjointMap() const {
-    return *this;
-  }
-
-  // Chart at origin
-  struct ChartAtOrigin {
-    static SO3 Retract(const Vector3& omega, ChartJacobian H = boost::none) {
-      return Expmap(omega, H);
-    }
-    static Vector3 Local(const SO3& R, ChartJacobian H = boost::none) {
-      return Logmap(R, H);
-    }
-  };
-
-  using LieGroup<SO3, 3>::inverse;
-
-  /// @}
-};
-
-// This namespace exposes two functors that allow for saving computation when
-// exponential map and its derivatives are needed at the same location in so<3>
-// The second functor also implements dedicated methods to apply dexp and/or inv(dexp)
 namespace so3 {
+
+/**
+ * Compose general matrix with an SO(3) element.
+ * We only provide the 9*9 derivative in the first argument M.
+ */
+GTSAM_EXPORT Matrix3 compose(const Matrix3& M, const SO3& R,
+                OptionalJacobian<9, 9> H = boost::none);
+
+/// (constant) Jacobian of compose wrpt M
+GTSAM_EXPORT Matrix99 Dcompose(const SO3& R);
+
+// Below are two functors that allow for saving computation when exponential map
+// and its derivatives are needed at the same location in so<3>. The second
+// functor also implements dedicated methods to apply dexp and/or inv(dexp).
 
 /// Functor implementing Exponential map
 class GTSAM_EXPORT ExpmapFunctor {
@@ -146,7 +142,7 @@ class GTSAM_EXPORT ExpmapFunctor {
 
  public:
   /// Constructor with element of Lie algebra so(3)
-  ExpmapFunctor(const Vector3& omega, bool nearZeroApprox = false);
+  explicit ExpmapFunctor(const Vector3& omega, bool nearZeroApprox = false);
 
   /// Constructor with axis-angle
   ExpmapFunctor(const Vector3& axis, double angle, bool nearZeroApprox = false);
@@ -163,7 +159,7 @@ class DexpFunctor : public ExpmapFunctor {
 
  public:
   /// Constructor with element of Lie algebra so(3)
-  GTSAM_EXPORT DexpFunctor(const Vector3& omega, bool nearZeroApprox = false);
+  GTSAM_EXPORT explicit DexpFunctor(const Vector3& omega, bool nearZeroApprox = false);
 
   // NOTE(luca): Right Jacobian for Exponential map in SO(3) - equation
   // (10.86) and following equations in G.S. Chirikjian, "Stochastic Models,
@@ -184,12 +180,14 @@ class DexpFunctor : public ExpmapFunctor {
 };
 }  //  namespace so3
 
-template<>
-struct traits<SO3> : public internal::LieGroup<SO3> {
-};
+/*
+ * Define the traits. internal::LieGroup provides both Lie group and Testable
+ */
 
-template<>
-struct traits<const SO3> : public internal::LieGroup<SO3> {
-};
-} // end namespace gtsam
+template <>
+struct traits<SO3> : public internal::LieGroup<SO3> {};
 
+template <>
+struct traits<const SO3> : public internal::LieGroup<SO3> {};
+
+}  // end namespace gtsam

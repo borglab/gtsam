@@ -101,7 +101,7 @@ namespace gtsam {
     /** Create a new function splitting on a variable */
     template<typename Iterator>
     AlgebraicDecisionTree(Iterator begin, Iterator end, const L& label) :
-        Super(NULL) {
+        Super(nullptr) {
       this->root_ = compose(begin, end, label);
     }
 

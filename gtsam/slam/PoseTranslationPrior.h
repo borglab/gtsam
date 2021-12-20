@@ -76,7 +76,7 @@ public:
   /** equals specialized to this factor */
   virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
     const This *e = dynamic_cast<const This*> (&expected);
-    return e != NULL && Base::equals(*e, tol) && traits<Translation>::Equals(measured_, e->measured_, tol);
+    return e != nullptr && Base::equals(*e, tol) && traits<Translation>::Equals(measured_, e->measured_, tol);
   }
 
   /** print contents */

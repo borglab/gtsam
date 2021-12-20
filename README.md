@@ -1,17 +1,20 @@
-[![Build Status](https://travis-ci.com/borglab/gtsam.svg?branch=develop)](https://travis-ci.com/borglab/gtsam/)
-
-# README - Georgia Tech Smoothing and Mapping library
+# README - Georgia Tech Smoothing and Mapping Library
 
 ## What is GTSAM?
 
-GTSAM is a library of C++ classes that implement smoothing and
-mapping (SAM) in robotics and vision, using factor graphs and Bayes
-networks as the underlying computing paradigm rather than sparse
+GTSAM is a C++ library that implements smoothing and
+mapping (SAM) in robotics and vision, using Factor Graphs and Bayes
+Networks as the underlying computing paradigm rather than sparse
 matrices.
 
-On top of the C++ library, GTSAM includes a MATLAB interface (enable
-GTSAM_INSTALL_MATLAB_TOOLBOX in CMake to build it). A Python interface
-is under development.
+| Platform  | Build Status  |
+|:---------:|:-------------:|
+| gcc/clang | [![Build Status](https://travis-ci.com/borglab/gtsam.svg?branch=develop)](https://travis-ci.com/borglab/gtsam/) |
+| MSVC      | [![Build status](https://ci.appveyor.com/api/projects/status/3enllitj52jsxwfg/branch/develop?svg=true)](https://ci.appveyor.com/project/dellaert/gtsam) |
+
+
+On top of the C++ library, GTSAM includes [wrappers for MATLAB & Python](##Wrappers).
+
 
 ## Quickstart
 
@@ -41,9 +44,9 @@ Optional prerequisites - used automatically if findable by CMake:
 
 ## GTSAM 4 Compatibility
 
-GTSAM 4 will introduce several new features, most notably Expressions and a python toolbox. We will also deprecate some legacy functionality and wrongly named methods, but by default the flag GTSAM_ALLOW_DEPRECATED_SINCE_V4 is enabled, allowing anyone to just pull V4 and compile. To build the python toolbox, however, you will have to explicitly disable that flag.
+GTSAM 4 introduces several new features, most notably Expressions and a Python toolbox. We also deprecate some legacy functionality and wrongly named methods, but by default the flag GTSAM_ALLOW_DEPRECATED_SINCE_V4 is enabled, allowing anyone to just pull V4 and compile. To build the python toolbox, however, you will have to explicitly disable that flag.
 
-Also, GTSAM 4 introduces traits, a C++ technique that allows optimizing with non-GTSAM types. That opens the door to retiring geometric types such as Point2 and Point3 to pure Eigen types, which we will also do. A significant change which will not trigger a compile error is that zero-initializing of Point2 and Point3 will be deprecated, so please be aware that this might render functions using their default constructor incorrect.
+Also, GTSAM 4 introduces traits, a C++ technique that allows optimizing with non-GTSAM types. That opens the door to retiring geometric types such as Point2 and Point3 to pure Eigen types, which we also do. A significant change which will not trigger a compile error is that zero-initializing of Point2 and Point3 is deprecated, so please be aware that this might render functions using their default constructor incorrect.
 
 ## Wrappers
 
@@ -62,7 +65,7 @@ Our implementation improves on this using integration on the manifold, as detail
 
 If you are using the factor in academic work, please cite the publications above.
 
-In GTSAM 4 a new and more efficient implementation, based on integrating on the NavState tangent space and detailed in docs/ImuFactor.pdf, is enabled by default. To switch to the RSS 2015 version, set the flag **GTSAM_TANGENT_PREINTEGRATION** to OFF.
+In GTSAM 4 a new and more efficient implementation, based on integrating on the NavState tangent space and detailed in [this document](doc/ImuFactor.pdf), is enabled by default. To switch to the RSS 2015 version, set the flag **GTSAM_TANGENT_PREINTEGRATION** to OFF.
 
 
 ## Additional Information
@@ -79,4 +82,4 @@ GTSAM is open source under the BSD license, see the [`LICENSE`](LICENSE) and [`L
 
 Please see the [`examples/`](examples) directory and the [`USAGE`](USAGE.md) file for examples on how to use GTSAM.
 
-GTSAM was developed in the lab of [Frank Dellaert](http://www.cc.gatech.edu/~dellaert) at the [Georgia Institute of Technology](http://www.gatech.edu), with the help of many contributors over the years, see [THANKS](THANKS).
+GTSAM was developed in the lab of [Frank Dellaert](http://www.cc.gatech.edu/~dellaert) at the [Georgia Institute of Technology](http://www.gatech.edu), with the help of many contributors over the years, see [THANKS](THANKS.md).

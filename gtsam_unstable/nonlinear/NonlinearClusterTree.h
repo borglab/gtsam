@@ -46,21 +46,26 @@ class NonlinearClusterTree : public ClusterTree<NonlinearFactorGraph> {
     // linearize local custer factors straight into hessianFactor, which is returned
     // If no ordering given, uses colamd
     HessianFactor::shared_ptr linearizeToHessianFactor(
-        const Values& values, boost::optional<Ordering> ordering = boost::none,
+        const Values& values,
         const NonlinearFactorGraph::Dampen& dampen = nullptr) const {
-      if (!ordering)
-        ordering.reset(Ordering::ColamdConstrainedFirst(factors, orderedFrontalKeys, true));
-      return factors.linearizeToHessianFactor(values, *ordering, dampen);
+      Ordering ordering;
+      ordering = Ordering::ColamdConstrainedFirst(factors, orderedFrontalKeys, true);
+      return factors.linearizeToHessianFactor(values, ordering, dampen);
     }
 
-    // Recursively eliminate subtree rooted at this Cluster into a Bayes net and factor on parent
+    // linearize local custer factors straight into hessianFactor, which is returned
+    // If no ordering given, uses colamd
+    HessianFactor::shared_ptr linearizeToHessianFactor(
+        const Values& values, const Ordering& ordering,
+        const NonlinearFactorGraph::Dampen& dampen = nullptr) const {
+      return factors.linearizeToHessianFactor(values, ordering, dampen);
+    }
+
+    // Helper function: recursively eliminate subtree rooted at this Cluster into a Bayes net and factor on parent
     // TODO(frank): Use TBB to support deep trees and parallelism
     std::pair<GaussianBayesNet, HessianFactor::shared_ptr> linearizeAndEliminate(
-        const Values& values, boost::optional<Ordering> ordering = boost::none,
-        const NonlinearFactorGraph::Dampen& dampen = nullptr) const {
-      // Linearize and create HessianFactor f(front,separator)
-      HessianFactor::shared_ptr localFactor = linearizeToHessianFactor(values, ordering, dampen);
-
+        const Values& values,
+        const HessianFactor::shared_ptr& localFactor) const {
       // Get contributions f(front) from children, as well as p(children|front)
       GaussianBayesNet bayesNet;
       for (const auto& child : children) {
@@ -72,12 +77,45 @@ class NonlinearClusterTree : public ClusterTree<NonlinearFactorGraph> {
       return {bayesNet, localFactor};
     }
 
+    // Recursively eliminate subtree rooted at this Cluster into a Bayes net and factor on parent
+    // TODO(frank): Use TBB to support deep trees and parallelism
+    std::pair<GaussianBayesNet, HessianFactor::shared_ptr> linearizeAndEliminate(
+        const Values& values,
+        const NonlinearFactorGraph::Dampen& dampen = nullptr) const {
+      // Linearize and create HessianFactor f(front,separator)
+      HessianFactor::shared_ptr localFactor = linearizeToHessianFactor(values, dampen);
+      return linearizeAndEliminate(values, localFactor);
+    }
+
+    // Recursively eliminate subtree rooted at this Cluster into a Bayes net and factor on parent
+    // TODO(frank): Use TBB to support deep trees and parallelism
+    std::pair<GaussianBayesNet, HessianFactor::shared_ptr> linearizeAndEliminate(
+        const Values& values, const Ordering& ordering,
+        const NonlinearFactorGraph::Dampen& dampen = nullptr) const {
+      // Linearize and create HessianFactor f(front,separator)
+      HessianFactor::shared_ptr localFactor = linearizeToHessianFactor(values, ordering, dampen);
+      return linearizeAndEliminate(values, localFactor);
+    }
+
     // Recursively eliminate subtree rooted at this Cluster
     // Version that updates existing Bayes net and returns a new Hessian factor on parent clique
     // It is possible to pass in a nullptr for the bayesNet if only interested in the new factor
     HessianFactor::shared_ptr linearizeAndEliminate(
         const Values& values, GaussianBayesNet* bayesNet,
-        boost::optional<Ordering> ordering = boost::none,
+        const NonlinearFactorGraph::Dampen& dampen = nullptr) const {
+      auto bayesNet_newFactor_pair = linearizeAndEliminate(values, dampen);
+      if (bayesNet) {
+        bayesNet->push_back(bayesNet_newFactor_pair.first);
+      }
+      return bayesNet_newFactor_pair.second;
+    }
+
+    // Recursively eliminate subtree rooted at this Cluster
+    // Version that updates existing Bayes net and returns a new Hessian factor on parent clique
+    // It is possible to pass in a nullptr for the bayesNet if only interested in the new factor
+    HessianFactor::shared_ptr linearizeAndEliminate(
+        const Values& values, GaussianBayesNet* bayesNet,
+        const Ordering& ordering,
         const NonlinearFactorGraph::Dampen& dampen = nullptr) const {
       auto bayesNet_newFactor_pair = linearizeAndEliminate(values, ordering, dampen);
       if (bayesNet) {

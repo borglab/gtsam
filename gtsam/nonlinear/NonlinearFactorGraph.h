@@ -24,6 +24,7 @@
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/inference/FactorGraph.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 
 #include <boost/shared_ptr.hpp>
 #include <functional>
@@ -103,7 +104,9 @@ namespace gtsam {
 
     /** print errors along with factors*/
     void printErrors(const Values& values, const std::string& str = "NonlinearFactorGraph: ",
-                     const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+      const std::function<bool(const Factor* /*factor*/, double /*whitenedError*/, size_t /*index*/)>&
+        printCondition = [](const Factor *,double, size_t) {return true;}) const;
 
     /** Test equality */
     bool equals(const NonlinearFactorGraph& other, double tol = 1e-9) const;
@@ -149,17 +152,31 @@ namespace gtsam {
      * Instead of producing a GaussianFactorGraph, pre-allocate and linearize directly
      * into a HessianFactor. Avoids the many mallocs and pointer indirection in constructing
      * a new graph, and hence useful in case a dense solve is appropriate for your problem.
-     * An optional ordering can be given that still decides how the Hessian is laid out.
      * An optional lambda function can be used to apply damping on the filled Hessian.
      * No parallelism is exploited, because all the factors write in the same memory.
      */
     boost::shared_ptr<HessianFactor> linearizeToHessianFactor(
-        const Values& values, boost::optional<Ordering&> ordering = boost::none,
-        const Dampen& dampen = nullptr) const;
+        const Values& values, const Dampen& dampen = nullptr) const;
+
+    /**
+     * Instead of producing a GaussianFactorGraph, pre-allocate and linearize directly
+     * into a HessianFactor. Avoids the many mallocs and pointer indirection in constructing
+     * a new graph, and hence useful in case a dense solve is appropriate for your problem.
+     * An ordering is given that still decides how the Hessian is laid out.
+     * An optional lambda function can be used to apply damping on the filled Hessian.
+     * No parallelism is exploited, because all the factors write in the same memory.
+     */
+    boost::shared_ptr<HessianFactor> linearizeToHessianFactor(
+        const Values& values, const Ordering& ordering, const Dampen& dampen = nullptr) const;
 
     /// Linearize and solve in one pass.
     /// Calls linearizeToHessianFactor, densely solves the normal equations, and updates the values.
-    Values updateCholesky(const Values& values, boost::optional<Ordering&> ordering = boost::none,
+    Values updateCholesky(const Values& values,
+                          const Dampen& dampen = nullptr) const;
+
+    /// Linearize and solve in one pass.
+    /// Calls linearizeToHessianFactor, densely solves the normal equations, and updates the values.
+    Values updateCholesky(const Values& values, const Ordering& ordering,
                           const Dampen& dampen = nullptr) const;
 
     /// Clone() performs a deep-copy of the graph, including all of the factors
@@ -188,7 +205,41 @@ namespace gtsam {
       push_back(boost::make_shared<ExpressionFactor<T> >(R, z, h));
     }
 
+    /**
+     * Convenience method which adds a PriorFactor to the factor graph.
+     * @param key    Variable key
+     * @param prior  The variable's prior value
+     * @param model  Noise model for prior factor
+     */
+    template<typename T>
+    void addPrior(Key key, const T& prior,
+                  const SharedNoiseModel& model = nullptr) {
+      emplace_shared<PriorFactor<T>>(key, prior, model);
+    }
+
+    /**
+     * Convenience method which adds a PriorFactor to the factor graph.
+     * @param key         Variable key
+     * @param prior       The variable's prior value
+     * @param covariance  Covariance matrix.
+     * 
+     * Note that the smart noise model associated with the prior factor
+     * automatically picks the right noise model (e.g. a diagonal noise model
+     * if the provided covariance matrix is diagonal).
+     */
+    template<typename T>
+    void addPrior(Key key, const T& prior, const Matrix& covariance) {
+      emplace_shared<PriorFactor<T>>(key, prior, covariance);
+    }
+
   private:
+
+    /**
+     * Linearize from Scatter rather than from Ordering.  Made private because
+     *  it doesn't include gttic.
+     */
+    boost::shared_ptr<HessianFactor> linearizeToHessianFactor(
+        const Values& values, const Scatter& scatter, const Dampen& dampen = nullptr) const;
 
     /** Serialization function */
     friend class boost::serialization::access;
@@ -197,6 +248,19 @@ namespace gtsam {
       ar & boost::serialization::make_nvp("NonlinearFactorGraph",
                 boost::serialization::base_object<Base>(*this));
     }
+
+  public:
+
+    /** \deprecated */
+    boost::shared_ptr<HessianFactor> linearizeToHessianFactor(
+        const Values& values, boost::none_t, const Dampen& dampen = nullptr) const
+      {return linearizeToHessianFactor(values, dampen);}
+
+    /** \deprecated */
+    Values updateCholesky(const Values& values, boost::none_t,
+                          const Dampen& dampen = nullptr) const
+      {return updateCholesky(values, dampen);}
+
   };
 
 /// traits

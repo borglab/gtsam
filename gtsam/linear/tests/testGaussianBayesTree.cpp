@@ -25,7 +25,6 @@ using namespace boost::assign;
 
 #include <gtsam/base/debug.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam/geometry/Rot2.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/GaussianConditional.h>

@@ -158,10 +158,13 @@ bool LevenbergMarquardtOptimizer::tryLambda(const GaussianFactorGraph& linear,
     if (params_.verbosityLM >= LevenbergMarquardtParams::TRYDELTA)
       delta.print("delta");
 
-    // cost change in the linearized system (old - new)
+    // Compute the old linearized error as it is not the same
+    // as the nonlinear error when robust noise models are used.
+    double oldLinearizedError = linear.error(VectorValues::Zero(delta));
     double newlinearizedError = linear.error(delta);
 
-    double linearizedCostChange = currentState->error - newlinearizedError;
+    // cost change in the linearized system (old - new)
+    double linearizedCostChange = oldLinearizedError - newlinearizedError;
     if (verbose)
       cout << "newlinearizedError = " << newlinearizedError
            << "  linearizedCostChange = " << linearizedCostChange << endl;
@@ -188,8 +191,8 @@ bool LevenbergMarquardtOptimizer::tryLambda(const GaussianFactorGraph& linear,
       // cost change in the original, nonlinear system (old - new)
       costChange = currentState->error - newError;
 
-      if (linearizedCostChange >
-          1e-20) {  // the (linear) error has to decrease to satisfy this condition
+      if (linearizedCostChange > std::numeric_limits<double>::epsilon() * oldLinearizedError) {
+        // the (linear) error has to decrease to satisfy this condition
         // fidelity of linearized model VS original system between
         modelFidelity = costChange / linearizedCostChange;
         // if we decrease the error in the nonlinear system and modelFidelity is above threshold

@@ -5,13 +5,17 @@ unset(PYTHON_EXECUTABLE CACHE)
 unset(CYTHON_EXECUTABLE CACHE)
 unset(PYTHON_INCLUDE_DIR CACHE)
 unset(PYTHON_MAJOR_VERSION CACHE)
+unset(PYTHON_LIBRARY CACHE)
 
-if(GTSAM_PYTHON_VERSION STREQUAL "Default")
-  find_package(PythonInterp REQUIRED)
-  find_package(PythonLibs REQUIRED)
-else()
-  find_package(PythonInterp ${GTSAM_PYTHON_VERSION} EXACT REQUIRED)
-  find_package(PythonLibs ${GTSAM_PYTHON_VERSION} EXACT REQUIRED)
+# Allow override from command line
+if(NOT DEFINED GTSAM_USE_CUSTOM_PYTHON_LIBRARY)
+  if(GTSAM_PYTHON_VERSION STREQUAL "Default")
+    find_package(PythonInterp REQUIRED)
+    find_package(PythonLibs REQUIRED)
+  else()
+    find_package(PythonInterp ${GTSAM_PYTHON_VERSION} EXACT REQUIRED)
+    find_package(PythonLibs ${GTSAM_PYTHON_VERSION} EXACT REQUIRED)
+  endif()
 endif()
 find_package(Cython 0.25.2 REQUIRED)
 
@@ -37,9 +41,8 @@ execute_process(COMMAND "${PYTHON_EXECUTABLE}" "-c"
 function(wrap_and_install_library_cython interface_header extra_imports install_path libs dependencies)
   # Paths for generated files
   get_filename_component(module_name "${interface_header}" NAME_WE)
-  set(generated_files_path "${PROJECT_BINARY_DIR}/cython/${module_name}")
+  set(generated_files_path "${install_path}")
   wrap_library_cython("${interface_header}" "${generated_files_path}" "${extra_imports}" "${libs}" "${dependencies}")
-  install_cython_wrapped_library("${interface_header}" "${generated_files_path}" "${install_path}")
 endfunction()
 
 function(set_up_required_cython_packages)
@@ -83,6 +86,15 @@ endfunction()
 #    - output_dir:   The output directory
 function(build_cythonized_cpp target cpp_file output_lib_we output_dir)
   add_library(${target} MODULE ${cpp_file})
+  
+  if(WIN32)
+    # Use .pyd extension instead of .dll on Windows
+    set_target_properties(${target} PROPERTIES SUFFIX ".pyd")
+
+    # Add full path to the Python library
+    target_link_libraries(${target} ${PYTHON_LIBRARIES})
+  endif()
+  
   if(APPLE)
     set(link_flags "-undefined dynamic_lookup")
   endif()
@@ -125,6 +137,10 @@ function(cythonize target pyx_file output_lib_we output_dir include_dirs libs in
     target_link_libraries(${target} "${libs}")
   endif()
   add_dependencies(${target} ${target}_pyx2cpp)
+
+  if(TARGET ${python_install_target})
+    add_dependencies(${python_install_target} ${target})
+  endif()
 endfunction()
 
 # Internal function that wraps a library and compiles the wrapper
@@ -137,9 +153,12 @@ function(wrap_library_cython interface_header generated_files_path extra_imports
   get_filename_component(module_name "${interface_header}" NAME_WE)
 
   # Wrap module to Cython pyx
-  message(STATUS "Cython wrapper generating ${module_name}.pyx")
+  message(STATUS "Cython wrapper generating ${generated_files_path}/${module_name}.pyx")
   set(generated_pyx "${generated_files_path}/${module_name}.pyx")
-  file(MAKE_DIRECTORY "${generated_files_path}")
+  if(NOT EXISTS ${generated_files_path})
+    file(MAKE_DIRECTORY "${generated_files_path}")
+  endif()
+
   add_custom_command(
     OUTPUT ${generated_pyx}
     DEPENDS ${interface_header} wrap
@@ -162,46 +181,6 @@ function(wrap_library_cython interface_header generated_files_path extra_imports
       COMMAND cmake -E remove_directory ${generated_files_path})
 endfunction()
 
-# Internal function that installs a wrap toolbox
-function(install_cython_wrapped_library interface_header generated_files_path install_path)
-  get_filename_component(module_name "${interface_header}" NAME_WE)
-
-  # NOTE: only installs .pxd and .pyx and binary files (not .cpp) - the trailing slash on the directory name
-  # here prevents creating the top-level module name directory in the destination.
-  # Split up filename to strip trailing '/' in GTSAM_CYTHON_INSTALL_PATH/subdirectory if there is one
-  get_filename_component(location "${install_path}" PATH)
-  get_filename_component(name "${install_path}" NAME)
-  message(STATUS "Installing Cython Toolbox to ${location}${GTSAM_BUILD_TAG}/${name}") #${GTSAM_CYTHON_INSTALL_PATH}"
-
-  if(GTSAM_BUILD_TYPE_POSTFIXES)
-    foreach(build_type ${CMAKE_CONFIGURATION_TYPES})
-      string(TOUPPER "${build_type}" build_type_upper)
-      if(${build_type_upper} STREQUAL "RELEASE")
-        set(build_type_tag "") # Don't create release mode tag on installed directory
-      else()
-        set(build_type_tag "${build_type}")
-      endif()
-
-      install(DIRECTORY "${generated_files_path}/" DESTINATION "${location}${build_type_tag}/${name}"
-          CONFIGURATIONS "${build_type}"
-          PATTERN "build" EXCLUDE
-          PATTERN "CMakeFiles" EXCLUDE
-          PATTERN "Makefile" EXCLUDE
-          PATTERN "*.cmake" EXCLUDE
-          PATTERN "*.cpp" EXCLUDE
-          PATTERN "*.py" EXCLUDE)
-    endforeach()
-  else()
-    install(DIRECTORY "${generated_files_path}/" DESTINATION ${install_path}
-        PATTERN "build" EXCLUDE
-        PATTERN "CMakeFiles" EXCLUDE
-        PATTERN "Makefile" EXCLUDE
-        PATTERN "*.cmake" EXCLUDE
-        PATTERN "*.cpp" EXCLUDE
-        PATTERN "*.py" EXCLUDE)
-  endif()
-endfunction()
-
 # Helper function to install Cython scripts and handle multiple build types where the scripts
 # should be installed to all build type toolboxes
 #
@@ -219,50 +198,7 @@ function(install_cython_scripts source_directory dest_directory patterns)
   foreach(pattern ${patterns})
     list(APPEND patterns_args PATTERN "${pattern}")
   endforeach()
-  if(GTSAM_BUILD_TYPE_POSTFIXES)
-    foreach(build_type ${CMAKE_CONFIGURATION_TYPES})
-      string(TOUPPER "${build_type}" build_type_upper)
-      if(${build_type_upper} STREQUAL "RELEASE")
-        set(build_type_tag "") # Don't create release mode tag on installed directory
-      else()
-        set(build_type_tag "${build_type}")
-      endif()
-      # Split up filename to strip trailing '/' in GTSAM_CYTHON_INSTALL_PATH if there is one
-      get_filename_component(location "${dest_directory}" PATH)
-      get_filename_component(name "${dest_directory}" NAME)
-      install(DIRECTORY "${source_directory}" DESTINATION "${location}/${name}${build_type_tag}" CONFIGURATIONS "${build_type}"
+
+  file(COPY "${source_directory}" DESTINATION "${dest_directory}"
             FILES_MATCHING ${patterns_args} PATTERN "${exclude_patterns}" EXCLUDE)
-    endforeach()
-  else()
-    install(DIRECTORY "${source_directory}" DESTINATION "${dest_directory}" FILES_MATCHING ${patterns_args} PATTERN "${exclude_patterns}" EXCLUDE)
-  endif()
-
 endfunction()
-
-# Helper function to install specific files and handle multiple build types where the scripts
-# should be installed to all build type toolboxes
-#
-# Arguments:
-#  source_files: The source files to be installed.
-#  dest_directory: The destination directory to install to.
-function(install_cython_files source_files dest_directory)
-
-  if(GTSAM_BUILD_TYPE_POSTFIXES)
-    foreach(build_type ${CMAKE_CONFIGURATION_TYPES})
-      string(TOUPPER "${build_type}" build_type_upper)
-      if(${build_type_upper} STREQUAL "RELEASE")
-        set(build_type_tag "") # Don't create release mode tag on installed directory
-      else()
-        set(build_type_tag "${build_type}")
-      endif()
-      # Split up filename to strip trailing '/' in GTSAM_CYTHON_INSTALL_PATH if there is one
-      get_filename_component(location "${dest_directory}" PATH)
-      get_filename_component(name "${dest_directory}" NAME)
-      install(FILES "${source_files}" DESTINATION "${location}/${name}${build_type_tag}" CONFIGURATIONS "${build_type}")
-    endforeach()
-  else()
-    install(FILES "${source_files}" DESTINATION "${dest_directory}")
-  endif()
-
-endfunction()
-

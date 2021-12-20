@@ -126,65 +126,63 @@ TEST( GaussianFactorGraphSystem, multiply_getb)
 
 /* ************************************************************************* */
 // Test Dummy Preconditioner
-TEST( PCGSolver, dummy )
-{
-  LevenbergMarquardtParams paramsPCG;
-  paramsPCG.linearSolverType = LevenbergMarquardtParams::Iterative;
-  PCGSolverParameters::shared_ptr pcg = boost::make_shared<PCGSolverParameters>();
+TEST(PCGSolver, dummy) {
+  LevenbergMarquardtParams params;
+  params.linearSolverType = LevenbergMarquardtParams::Iterative;
+  auto pcg = boost::make_shared<PCGSolverParameters>();
   pcg->preconditioner_ = boost::make_shared<DummyPreconditionerParameters>();
-  paramsPCG.iterativeParams = pcg;
+  params.iterativeParams = pcg;
 
   NonlinearFactorGraph fg = example::createReallyNonlinearFactorGraph();
 
-  Point2 x0(10,10);
+  Point2 x0(10, 10);
   Values c0;
   c0.insert(X(1), x0);
 
-  Values actualPCG = LevenbergMarquardtOptimizer(fg, c0, paramsPCG).optimize();
+  Values actualPCG = LevenbergMarquardtOptimizer(fg, c0, params).optimize();
 
-  DOUBLES_EQUAL(0,fg.error(actualPCG),tol);
+  DOUBLES_EQUAL(0, fg.error(actualPCG), tol);
 }
 
 /* ************************************************************************* */
 // Test Block-Jacobi Precondioner
-TEST( PCGSolver, blockjacobi )
-{
-  LevenbergMarquardtParams paramsPCG;
-  paramsPCG.linearSolverType = LevenbergMarquardtParams::Iterative;
-  PCGSolverParameters::shared_ptr pcg = boost::make_shared<PCGSolverParameters>();
-  pcg->preconditioner_ = boost::make_shared<BlockJacobiPreconditionerParameters>();
-  paramsPCG.iterativeParams = pcg;
+TEST(PCGSolver, blockjacobi) {
+  LevenbergMarquardtParams params;
+  params.linearSolverType = LevenbergMarquardtParams::Iterative;
+  auto pcg = boost::make_shared<PCGSolverParameters>();
+  pcg->preconditioner_ =
+      boost::make_shared<BlockJacobiPreconditionerParameters>();
+  params.iterativeParams = pcg;
 
   NonlinearFactorGraph fg = example::createReallyNonlinearFactorGraph();
 
-  Point2 x0(10,10);
+  Point2 x0(10, 10);
   Values c0;
   c0.insert(X(1), x0);
 
-  Values actualPCG = LevenbergMarquardtOptimizer(fg, c0, paramsPCG).optimize();
+  Values actualPCG = LevenbergMarquardtOptimizer(fg, c0, params).optimize();
 
-  DOUBLES_EQUAL(0,fg.error(actualPCG),tol);
+  DOUBLES_EQUAL(0, fg.error(actualPCG), tol);
 }
 
 /* ************************************************************************* */
 // Test Incremental Subgraph PCG Solver
-TEST( PCGSolver, subgraph )
-{
-  LevenbergMarquardtParams paramsPCG;
-  paramsPCG.linearSolverType = LevenbergMarquardtParams::Iterative;
-  PCGSolverParameters::shared_ptr pcg = boost::make_shared<PCGSolverParameters>();
+TEST(PCGSolver, subgraph) {
+  LevenbergMarquardtParams params;
+  params.linearSolverType = LevenbergMarquardtParams::Iterative;
+  auto pcg = boost::make_shared<PCGSolverParameters>();
   pcg->preconditioner_ = boost::make_shared<SubgraphPreconditionerParameters>();
-  paramsPCG.iterativeParams = pcg;
+  params.iterativeParams = pcg;
 
   NonlinearFactorGraph fg = example::createReallyNonlinearFactorGraph();
 
-  Point2 x0(10,10);
+  Point2 x0(10, 10);
   Values c0;
   c0.insert(X(1), x0);
 
-  Values actualPCG = LevenbergMarquardtOptimizer(fg, c0, paramsPCG).optimize();
+  Values actualPCG = LevenbergMarquardtOptimizer(fg, c0, params).optimize();
 
-  DOUBLES_EQUAL(0,fg.error(actualPCG),tol);
+  DOUBLES_EQUAL(0, fg.error(actualPCG), tol);
 }
 
 /* ************************************************************************* */

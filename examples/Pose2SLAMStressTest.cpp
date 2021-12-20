@@ -19,7 +19,6 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/StereoFactor.h>
 
 #include <random>
@@ -48,7 +47,7 @@ void testGtsam(int numberNodes) {
   Pose3 first = Pose3(first_M);
 
   NonlinearFactorGraph graph;
-  graph.add(PriorFactor<Pose3>(0, first, priorModel));
+  graph.addPrior(0, first, priorModel);
 
   // vo noise model
   auto VOCovarianceModel = noiseModel::Isotropic::Variance(6, 1e-3);

@@ -16,13 +16,15 @@
  * @author  Christian Potthast
  * @author  Frank Dellaert
  * @author  Richard Roberts
+ * @author  Varun Agrawal
  */
 
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/SO3.h>
 #include <boost/math/constants/constants.hpp>
-#include <boost/random.hpp>
+
 #include <cmath>
+#include <random>
 
 using namespace std;
 
@@ -34,10 +36,9 @@ void Rot3::print(const std::string& s) const {
 }
 
 /* ************************************************************************* */
-Rot3 Rot3::Random(boost::mt19937& rng) {
-  // TODO allow any engine without including all of boost :-(
+Rot3 Rot3::Random(std::mt19937& rng) {
   Unit3 axis = Unit3::Random(rng);
-  boost::uniform_real<double> randomAngle(-M_PI, M_PI);
+  uniform_real_distribution<double> randomAngle(-M_PI, M_PI);
   double angle = randomAngle(rng);
   return AxisAngle(axis, angle);
 }
@@ -182,6 +183,12 @@ Vector Rot3::quaternion() const {
   v(2) = q.y();
   v(3) = q.z();
   return v;
+}
+
+/* ************************************************************************* */
+pair<Unit3, double> Rot3::axisAngle() const {
+  const Vector3 omega = Rot3::Logmap(*this);
+  return std::pair<Unit3, double>(Unit3(omega), omega.norm());
 }
 
 /* ************************************************************************* */

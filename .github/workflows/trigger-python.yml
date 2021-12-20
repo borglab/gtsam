@@ -1,0 +1,14 @@
+# This triggers Cython builds on `gtsam-manylinux-build`
+name: Trigger Python Builds
+on: push
+jobs:
+  triggerCython:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repository Dispatch
+        uses: ProfFan/repository-dispatch@master
+        with:
+          token: ${{ secrets.PYTHON_CI_REPO_ACCESS_TOKEN }}
+          repository: borglab/gtsam-manylinux-build
+          event-type: cython-wrapper
+          client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'

@@ -219,7 +219,7 @@ struct GTSAM_EXPORT ISAM2Params {
 
   /// When you will be removing many factors, e.g. when using ISAM2 as a
   /// fixed-lag smoother, enable this option to add factors in the first
-  /// available factor slots, to avoid accumulating NULL factor slots, at the
+  /// available factor slots, to avoid accumulating nullptr factor slots, at the
   /// cost of having to search for slots every time a factor is added.
   bool findUnusedFactorSlots;
 

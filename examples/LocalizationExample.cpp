@@ -66,12 +66,11 @@ using namespace gtsam;
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 class UnaryFactor: public NoiseModelFactor1<Pose2> {
-
   // The factor will hold a measurement consisting of an (X,Y) location
   // We could this with a Point2 but here we just use two doubles
   double mx_, my_;
 
-public:
+ public:
   /// shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<UnaryFactor> shared_ptr;
 
@@ -85,15 +84,15 @@ public:
   // The first is the 'evaluateError' function. This function implements the desired measurement
   // function, returning a vector of errors when evaluated at the provided variable value. It
   // must also calculate the Jacobians for this measurement function, if requested.
-  Vector evaluateError(const Pose2& q, boost::optional<Matrix&> H = boost::none) const
-  {
+  Vector evaluateError(const Pose2& q,
+                       boost::optional<Matrix&> H = boost::none) const {
     // The measurement function for a GPS-like measurement is simple:
     // error_x = pose.x - measurement.x
     // error_y = pose.y - measurement.y
     // Consequently, the Jacobians are:
     // [ derror_x/dx  derror_x/dy  derror_x/dtheta ] = [1 0 0]
     // [ derror_y/dx  derror_y/dy  derror_y/dtheta ] = [0 1 0]
-    if (H) (*H) = (Matrix(2,3) << 1.0,0.0,0.0, 0.0,1.0,0.0).finished();
+    if (H) (*H) = (Matrix(2, 3) << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0).finished();
     return (Vector(2) << q.x() - mx_, q.y() - my_).finished();
   }
 
@@ -107,29 +106,28 @@ public:
   // Additionally, we encourage you the use of unit testing your custom factors,
   // (as all GTSAM factors are), in which you would need an equals and print, to satisfy the
   // GTSAM_CONCEPT_TESTABLE_INST(T) defined in Testable.h, but these are not needed below.
-
-}; // UnaryFactor
+};  // UnaryFactor
 
 
 int main(int argc, char** argv) {
-
   // 1. Create a factor graph container and add factors to it
   NonlinearFactorGraph graph;
 
   // 2a. Add odometry factors
   // For simplicity, we will use the same noise model for each odometry factor
-  noiseModel::Diagonal::shared_ptr odometryNoise = noiseModel::Diagonal::Sigmas(Vector3(0.2, 0.2, 0.1));
+  auto odometryNoise = noiseModel::Diagonal::Sigmas(Vector3(0.2, 0.2, 0.1));
   // Create odometry (Between) factors between consecutive poses
   graph.emplace_shared<BetweenFactor<Pose2> >(1, 2, Pose2(2.0, 0.0, 0.0), odometryNoise);
   graph.emplace_shared<BetweenFactor<Pose2> >(2, 3, Pose2(2.0, 0.0, 0.0), odometryNoise);
 
   // 2b. Add "GPS-like" measurements
   // We will use our custom UnaryFactor for this.
-  noiseModel::Diagonal::shared_ptr unaryNoise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1)); // 10cm std on x,y
+  auto unaryNoise =
+      noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));  // 10cm std on x,y
   graph.emplace_shared<UnaryFactor>(1, 0.0, 0.0, unaryNoise);
   graph.emplace_shared<UnaryFactor>(2, 2.0, 0.0, unaryNoise);
   graph.emplace_shared<UnaryFactor>(3, 4.0, 0.0, unaryNoise);
-  graph.print("\nFactor Graph:\n"); // print
+  graph.print("\nFactor Graph:\n");  // print
 
   // 3. Create the data structure to hold the initialEstimate estimate to the solution
   // For illustrative purposes, these have been deliberately set to incorrect values
@@ -137,7 +135,7 @@ int main(int argc, char** argv) {
   initialEstimate.insert(1, Pose2(0.5, 0.0, 0.2));
   initialEstimate.insert(2, Pose2(2.3, 0.1, -0.2));
   initialEstimate.insert(3, Pose2(4.1, 0.1, 0.1));
-  initialEstimate.print("\nInitial Estimate:\n"); // print
+  initialEstimate.print("\nInitial Estimate:\n");  // print
 
   // 4. Optimize using Levenberg-Marquardt optimization. The optimizer
   // accepts an optional set of configuration parameters, controlling
