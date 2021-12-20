@@ -92,12 +92,28 @@ class DiscreteBayesNet {
 };
 
 #include <gtsam/discrete/DiscreteBayesTree.h>
+class DiscreteBayesTreeClique {
+  DiscreteBayesTreeClique();
+  DiscreteBayesTreeClique(const gtsam::DiscreteConditional* conditional);
+  const gtsam::DiscreteConditional* conditional() const;
+  bool isRoot() const;
+  void printSignature(
+      const string& s = "Clique: ",
+      const gtsam::KeyFormatter& formatter = gtsam::DefaultKeyFormatter) const;
+  double evaluate(const gtsam::DiscreteValues& values) const;
+};
+
 class DiscreteBayesTree {
   DiscreteBayesTree();
   void print(string s = "DiscreteBayesTree\n",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::DiscreteBayesTree& other, double tol = 1e-9) const;
+
+  size_t size() const;
+  bool empty() const;
+  const DiscreteBayesTreeClique* operator[](size_t j) const;
+
   string dot(const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   void saveGraph(string s,
