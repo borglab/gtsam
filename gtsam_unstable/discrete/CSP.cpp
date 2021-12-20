@@ -14,13 +14,13 @@ using namespace std;
 namespace gtsam {
 
 /// Find the best total assignment - can be expensive
-CSP::Values CSP::optimalAssignment() const {
+DiscreteValues CSP::optimalAssignment() const {
   DiscreteBayesNet::shared_ptr chordal = this->eliminateSequential();
   return chordal->optimize();
 }
 
 /// Find the best total assignment - can be expensive
-CSP::Values CSP::optimalAssignment(const Ordering& ordering) const {
+DiscreteValues CSP::optimalAssignment(const Ordering& ordering) const {
   DiscreteBayesNet::shared_ptr chordal = this->eliminateSequential(ordering);
   return chordal->optimize();
 }

@@ -45,7 +45,7 @@ class GTSAM_UNSTABLE_EXPORT AllDiff : public Constraint {
   }
 
   /// Calculate value = expensive !
-  double operator()(const Values& values) const override;
+  double operator()(const DiscreteValues& values) const override;
 
   /// Convert into a decisiontree, can be *very* expensive !
   DecisionTreeFactor toDecisionTreeFactor() const override;
@@ -62,7 +62,7 @@ class GTSAM_UNSTABLE_EXPORT AllDiff : public Constraint {
   bool ensureArcConsistency(Key j, Domains* domains) const override;
 
   /// Partially apply known values
-  Constraint::shared_ptr partiallyApply(const Values&) const override;
+  Constraint::shared_ptr partiallyApply(const DiscreteValues&) const override;
 
   /// Partially apply known values, domain version
   Constraint::shared_ptr partiallyApply(

@@ -118,9 +118,9 @@ void gtsamPoint2_deconstructor_3(int nargout, mxArray *out[], int nargin, const 
   Collector_gtsamPoint2::iterator item;
   item = collector_gtsamPoint2.find(self);
   if(item != collector_gtsamPoint2.end()) {
-    delete self;
     collector_gtsamPoint2.erase(item);
   }
+  delete self;
 }
 
 void gtsamPoint2_argChar_4(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -262,9 +262,9 @@ void gtsamPoint3_deconstructor_20(int nargout, mxArray *out[], int nargin, const
   Collector_gtsamPoint3::iterator item;
   item = collector_gtsamPoint3.find(self);
   if(item != collector_gtsamPoint3.end()) {
-    delete self;
     collector_gtsamPoint3.erase(item);
   }
+  delete self;
 }
 
 void gtsamPoint3_norm_21(int nargout, mxArray *out[], int nargin, const mxArray *in[])

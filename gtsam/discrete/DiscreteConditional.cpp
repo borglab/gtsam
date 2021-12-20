@@ -97,32 +97,48 @@ bool DiscreteConditional::equals(const DiscreteFactor& other,
 }
 
 /* ******************************************************************************** */
-Potentials::ADT DiscreteConditional::choose(const Values& parentsValues) const {
+Potentials::ADT DiscreteConditional::choose(
+    const DiscreteValues& parentsValues) const {
+  // Get the big decision tree with all the levels, and then go down the
+  // branches based on the value of the parent variables.
   ADT pFS(*this);
-  Key j; size_t value;
-  for(Key key: parents()) {
+  size_t value;
+  for (Key j : parents()) {
     try {
-      j = (key);
       value = parentsValues.at(j);
-      pFS = pFS.choose(j, value);
+      pFS = pFS.choose(j, value);  // ADT keeps getting smaller.
     } catch (exception&) {
       cout << "Key: " << j << "  Value: " << value << endl;
       parentsValues.print("parentsValues: ");
-  //    pFS.print("pFS: ");
       throw runtime_error("DiscreteConditional::choose: parent value missing");
     };
   }
-
   return pFS;
 }
 
 /* ******************************************************************************** */
-void DiscreteConditional::solveInPlace(Values* values) const {
+DecisionTreeFactor::shared_ptr DiscreteConditional::chooseAsFactor(
+    const DiscreteValues& parentsValues) const {
+  ADT pFS = choose(parentsValues);
+
+  // Convert ADT to factor.
+  if (nrFrontals() != 1) {
+    throw std::runtime_error("Expected only one frontal variable in choose.");
+  }
+  DiscreteKeys keys;
+  const Key frontalKey = keys_[0];
+  size_t frontalCardinality = this->cardinality(frontalKey);
+  keys.push_back(DiscreteKey(frontalKey, frontalCardinality));
+  return boost::make_shared<DecisionTreeFactor>(keys, pFS);
+}
+
+/* ******************************************************************************** */
+void DiscreteConditional::solveInPlace(DiscreteValues* values) const {
   // TODO: Abhijit asks: is this really the fastest way? He thinks it is.
   ADT pFS = choose(*values); // P(F|S=parentsValues)
 
   // Initialize
-  Values mpe;
+  DiscreteValues mpe;
   double maxP = 0;
 
   DiscreteKeys keys;
@@ -131,10 +147,10 @@ void DiscreteConditional::solveInPlace(Values* values) const {
     keys & dk;
   }
   // Get all Possible Configurations
-  vector<Values> allPosbValues = cartesianProduct(keys);
+  vector<DiscreteValues> allPosbValues = cartesianProduct(keys);
 
   // Find the MPE
-  for(Values& frontalVals: allPosbValues) {
+  for(DiscreteValues& frontalVals: allPosbValues) {
     double pValueS = pFS(frontalVals); // P(F=value|S=parentsValues)
     // Update MPE solution if better
     if (pValueS > maxP) {
@@ -150,7 +166,7 @@ void DiscreteConditional::solveInPlace(Values* values) const {
 }
 
 /* ******************************************************************************** */
-void DiscreteConditional::sampleInPlace(Values* values) const {
+void DiscreteConditional::sampleInPlace(DiscreteValues* values) const {
   assert(nrFrontals() == 1);
   Key j = (firstFrontalKey());
   size_t sampled = sample(*values); // Sample variable given parents
@@ -158,7 +174,7 @@ void DiscreteConditional::sampleInPlace(Values* values) const {
 }
 
 /* ******************************************************************************** */
-size_t DiscreteConditional::solve(const Values& parentsValues) const {
+size_t DiscreteConditional::solve(const DiscreteValues& parentsValues) const {
 
   // TODO: is this really the fastest way? I think it is.
   ADT pFS = choose(parentsValues); // P(F|S=parentsValues)
@@ -166,7 +182,7 @@ size_t DiscreteConditional::solve(const Values& parentsValues) const {
   // Then, find the max over all remaining
   // TODO, only works for one key now, seems horribly slow this way
   size_t mpe = 0;
-  Values frontals;
+  DiscreteValues frontals;
   double maxP = 0;
   assert(nrFrontals() == 1);
   Key j = (firstFrontalKey());
@@ -183,7 +199,7 @@ size_t DiscreteConditional::solve(const Values& parentsValues) const {
 }
 
 /* ******************************************************************************** */
-size_t DiscreteConditional::sample(const Values& parentsValues) const {
+size_t DiscreteConditional::sample(const DiscreteValues& parentsValues) const {
   static mt19937 rng(2);  // random number generator
 
   // Get the correct conditional density
@@ -194,7 +210,7 @@ size_t DiscreteConditional::sample(const Values& parentsValues) const {
   Key key = firstFrontalKey();
   size_t nj = cardinality(key);
   vector<double> p(nj);
-  Values frontals;
+  DiscreteValues frontals;
   for (size_t value = 0; value < nj; value++) {
     frontals[key] = value;
     p[value] = pFS(frontals);  // P(F=value|S=parentsValues)

@@ -39,9 +39,6 @@ class KeyList {
   void remove(size_t key);
 
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 // Actually a FastSet<Key>
@@ -67,9 +64,6 @@ class KeySet {
   bool count(size_t key) const;  // returns true if value exists
 
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 // Actually a vector<Key>
@@ -91,9 +85,6 @@ class KeyVector {
   void push_back(size_t key) const;
 
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 // Actually a FastMap<Key,int>

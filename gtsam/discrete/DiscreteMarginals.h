@@ -64,7 +64,7 @@ namespace gtsam {
     //Create result
     Vector vResult(key.second);
     for (size_t state = 0; state < key.second ; ++ state) {
-      DiscreteFactor::Values values;
+      DiscreteValues values;
       values[key.first] = state;
       vResult(state) = (*marginalFactor)(values);
     }

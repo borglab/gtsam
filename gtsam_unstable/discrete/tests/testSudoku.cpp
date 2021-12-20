@@ -88,7 +88,7 @@ class Sudoku : public CSP {
   }
 
   /// Print readable form of assignment
-  void printAssignment(const DiscreteFactor::Values& assignment) const {
+  void printAssignment(const DiscreteValues& assignment) const {
     for (size_t i = 0; i < n_; i++) {
       for (size_t j = 0; j < n_; j++) {
         Key k = key(i, j);
@@ -127,7 +127,7 @@ TEST(Sudoku, small) {
 
   // optimize and check
   auto solution = csp.optimalAssignment();
-  CSP::Values expected;
+  DiscreteValues expected;
   insert(expected)(csp.key(0, 0), 0)(csp.key(0, 1), 1)(csp.key(0, 2), 2)(
       csp.key(0, 3), 3)(csp.key(1, 0), 2)(csp.key(1, 1), 3)(csp.key(1, 2), 0)(
       csp.key(1, 3), 1)(csp.key(2, 0), 3)(csp.key(2, 1), 2)(csp.key(2, 2), 1)(

@@ -26,7 +26,7 @@ void AllDiff::print(const std::string& s, const KeyFormatter& formatter) const {
 }
 
 /* ************************************************************************* */
-double AllDiff::operator()(const Values& values) const {
+double AllDiff::operator()(const DiscreteValues& values) const {
   std::set<size_t> taken;  // record values taken by keys
   for (Key dkey : keys_) {
     size_t value = values.at(dkey);      // get the value for that key
@@ -88,7 +88,7 @@ bool AllDiff::ensureArcConsistency(Key j, Domains* domains) const {
 }
 
 /* ************************************************************************* */
-Constraint::shared_ptr AllDiff::partiallyApply(const Values& values) const {
+Constraint::shared_ptr AllDiff::partiallyApply(const DiscreteValues& values) const {
   DiscreteKeys newKeys;
   // loop over keys and add them only if they do not appear in values
   for (Key k : keys_)
@@ -101,7 +101,7 @@ Constraint::shared_ptr AllDiff::partiallyApply(const Values& values) const {
 /* ************************************************************************* */
 Constraint::shared_ptr AllDiff::partiallyApply(
     const Domains& domains) const {
-  DiscreteFactor::Values known;
+  DiscreteValues known;
   for (Key k : keys_) {
     const Domain& Dk = domains.at(k);
     if (Dk.isSingleton()) known[k] = Dk.firstValue();

@@ -50,7 +50,7 @@ class GTSAM_UNSTABLE_EXPORT SingleValue : public Constraint {
   }
 
   /// Calculate value
-  double operator()(const Values& values) const override;
+  double operator()(const DiscreteValues& values) const override;
 
   /// Convert into a decisiontree
   DecisionTreeFactor toDecisionTreeFactor() const override;
@@ -67,7 +67,7 @@ class GTSAM_UNSTABLE_EXPORT SingleValue : public Constraint {
   bool ensureArcConsistency(Key j, Domains* domains) const override;
 
   /// Partially apply known values
-  Constraint::shared_ptr partiallyApply(const Values& values) const override;
+  Constraint::shared_ptr partiallyApply(const DiscreteValues& values) const override;
 
   /// Partially apply known values, domain version
   Constraint::shared_ptr partiallyApply(

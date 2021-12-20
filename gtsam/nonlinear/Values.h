@@ -285,6 +285,19 @@ namespace gtsam {
     /** update the current available values without adding new ones */
     void update(const Values& values);
 
+    /// If key j exists, update value, else perform an insert.
+    void insert_or_assign(Key j, const Value& val);
+
+    /**
+     * Update a set of variables.
+     * If any variable key doe not exist, then perform an insert.
+     */
+    void insert_or_assign(const Values& values);
+
+    /// Templated version to insert_or_assign a variable with the given j.
+    template <typename ValueType>
+    void insert_or_assign(Key j, const ValueType& val);
+
     /** Remove a variable from the config, throws KeyDoesNotExist<J> if j is not present */
     void erase(Key j);
 
