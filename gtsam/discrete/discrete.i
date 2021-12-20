@@ -106,6 +106,11 @@ class DiscreteBayesTree {
   double operator()(const gtsam::DiscreteValues& values) const;
 };
 
+#include <gtsam/inference/DotWriter.h>
+class DotWriter {
+  DotWriter();
+};
+
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 class DiscreteFactorGraph {
   DiscreteFactorGraph();
@@ -122,7 +127,15 @@ class DiscreteFactorGraph {
 
   void print(string s = "") const;
   bool equals(const gtsam::DiscreteFactorGraph& fg, double tol = 1e-9) const;
-  
+
+  string dot(const gtsam::DotWriter& dotWriter = gtsam::DotWriter(),
+             const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
+  void saveGraph(string s,
+                 const gtsam::DotWriter& dotWriter = gtsam::DotWriter(),
+                 const gtsam::KeyFormatter& keyFormatter =
+                     gtsam::DefaultKeyFormatter) const;
+
   gtsam::DecisionTreeFactor product() const;
   double operator()(const gtsam::DiscreteValues& values) const;
   gtsam::DiscreteValues optimize() const;
