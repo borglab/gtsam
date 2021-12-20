@@ -22,9 +22,10 @@
 
 #pragma once
 
+#include <gtsam/inference/DotWriter.h>
+#include <gtsam/inference/Key.h>
 #include <gtsam/base/FastVector.h>
 #include <gtsam/base/Testable.h>
-#include <gtsam/inference/Key.h>
 
 #include <Eigen/Core>  // for Eigen::aligned_allocator
 
@@ -36,6 +37,7 @@
 #include <string>
 #include <type_traits>
 #include <utility>
+#include <iosfwd>
 
 namespace gtsam {
 /// Define collection type:
@@ -370,6 +372,23 @@ class FactorGraph {
   iterator erase(iterator first, iterator last) {
     return factors_.erase(first, last);
   }
+
+  /// @}
+  /// @name Graph Display
+  /// @{
+
+  /// Output to graphviz format, stream version.
+  void dot(std::ostream& os, const DotWriter& writer = DotWriter(),
+           const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+
+  /// Output to graphviz format string.
+  std::string dot(const DotWriter& writer = DotWriter(),
+                  const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+
+  /// output to file with graphviz format.
+  void saveGraph(const std::string& filename,
+                 const DotWriter& writer = DotWriter(),
+                 const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
   /// @}
   /// @name Advanced Interface
