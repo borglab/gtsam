@@ -38,7 +38,6 @@ virtual class DecisionTreeFactor: gtsam::DiscreteFactor {
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::DecisionTreeFactor& other, double tol = 1e-9) const;
-  double operator()(const gtsam::DiscreteValues& values) const; // TODO(dellaert): why do I have to repeat???
 };
 
 #include <gtsam/discrete/DiscreteConditional.h>
@@ -52,8 +51,6 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
   DiscreteConditional(const gtsam::DecisionTreeFactor& joint,
                       const gtsam::DecisionTreeFactor& marginal,
                       const gtsam::Ordering& orderedKeys);
-  size_t size() const; // TODO(dellaert): why do I have to repeat???
-  double operator()(const gtsam::DiscreteValues& values) const; // TODO(dellaert): why do I have to repeat???
   void print(string s = "Discrete Conditional\n",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
