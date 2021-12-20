@@ -165,7 +165,8 @@ namespace gtsam {
     /// @{
 
     /** print method for testing and debugging */
-    void print(const std::string& str = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+    void print(const std::string& s = "",
+               const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
     /** Test whether the sets of keys and values are identical */
     bool equals(const Values& other, double tol=1e-9) const;

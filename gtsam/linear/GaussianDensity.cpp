@@ -31,7 +31,7 @@ namespace gtsam {
   /* ************************************************************************* */
   void GaussianDensity::print(const string &s, const KeyFormatter& formatter) const
   {
-    cout << s << ": density on ";
+    cout << (s.empty() ? s : s + ": ") << "density on ";
     for(const_iterator it = beginFrontals(); it != endFrontals(); ++it)
       cout << (boost::format("[%1%]")%(formatter(*it))).str() << " ";
     cout << endl;

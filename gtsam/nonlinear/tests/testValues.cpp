@@ -60,7 +60,7 @@ class TestValue {
   TestValueData data_;
 public:
   enum {dimension = 0};
-  void print(const std::string& str = "") const {}
+  void print(const std::string& s = "") const {}
   bool equals(const TestValue& other, double tol = 1e-9) const { return true; }
   size_t dim() const { return 0; }
   TestValue retract(const Vector&,

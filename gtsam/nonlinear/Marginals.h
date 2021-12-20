@@ -101,7 +101,8 @@ public:
               Factorization factorization = CHOLESKY);
 
   /** print */
-  void print(const std::string& str = "Marginals: ", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+  void print(const std::string& s = "Marginals:",
+             const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
   /** Compute the marginal factor of a single variable */
   GaussianFactor::shared_ptr marginalFactor(Key variable) const;

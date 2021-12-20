@@ -46,7 +46,7 @@ struct GTSAM_EXPORT PreintegratedRotationParams {
 
   virtual ~PreintegratedRotationParams() {}
 
-  virtual void print(const std::string& s) const;
+  virtual void print(const std::string& s = "") const;
   virtual bool equals(const PreintegratedRotationParams& other, double tol=1e-9) const;
 
   void setGyroscopeCovariance(const Matrix3& cov)   { gyroscopeCovariance = cov;  }
@@ -148,7 +148,7 @@ class GTSAM_EXPORT PreintegratedRotation {
 
   /// @name Testable
   /// @{
-  void print(const std::string& s) const;
+  void print(const std::string& s = "") const;
   bool equals(const PreintegratedRotation& other, double tol) const;
   /// @}
 

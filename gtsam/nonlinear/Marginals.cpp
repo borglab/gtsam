@@ -101,11 +101,12 @@ void Marginals::computeBayesTree(const Ordering& ordering) {
 }
 
 /* ************************************************************************* */
-void Marginals::print(const std::string& str, const KeyFormatter& keyFormatter) const
-{
-  graph_.print(str+"Graph: ");
-  values_.print(str+"Solution: ", keyFormatter);
-  bayesTree_.print(str+"Bayes Tree: ");
+void Marginals::print(const std::string& s,
+                      const KeyFormatter& keyFormatter) const {
+  std::string str = (s.empty() ? s : s + " ");
+  graph_.print(str + "Graph: ");
+  values_.print(str + "Solution: ", keyFormatter);
+  bayesTree_.print(str + "Bayes Tree: ");
 }
 
 /* ************************************************************************* */
@@ -195,7 +196,7 @@ VectorValues Marginals::optimize() const {
 
 /* ************************************************************************* */
 void JointMarginal::print(const std::string& s, const KeyFormatter& formatter) const {
-  cout << s << "Joint marginal on keys ";
+  cout << (s.empty() ? s : s + " ") << "Joint marginal on keys ";
   bool first = true;
   for(const auto& key: keys_) {
     if(!first)

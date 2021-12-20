@@ -84,7 +84,7 @@ KalmanFilter::State KalmanFilter::init(const Vector& x, const Matrix& P0) const 
 
 /* ************************************************************************* */
 void KalmanFilter::print(const string& s) const {
-  cout << "KalmanFilter " << s << ", dim = " << n_ << endl;
+  cout << "KalmanFilter" << (s.empty() ? s : " " + s) << ", dim = " << n_ << endl;
 }
 
 /* ************************************************************************* */

@@ -57,7 +57,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   void GaussianConditional::print(const string &s, const KeyFormatter& formatter) const {
-    cout << s << "  Conditional density ";
+    cout << (s.empty() ? s : s + "  ") << "Conditional density ";
     for (const_iterator it = beginFrontals(); it != endFrontals(); ++it) {
       cout << (boost::format("[%1%]")%(formatter(*it))).str() << " ";
     }

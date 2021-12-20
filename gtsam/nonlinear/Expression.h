@@ -148,7 +148,7 @@ public:
   void dims(std::map<Key, int>& map) const;
 
   /// Print
-  void print(const std::string& s) const;
+  void print(const std::string& s = "") const;
 
   /**
    * @brief Return value and optional derivatives, reverse AD version

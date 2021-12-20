@@ -30,7 +30,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   void System::print(const string& s) const {
-    cout << s << endl;
+    cout << (s.empty() ? s : s + "\n");
     gtsam::print(A_, "A");
     gtsam::print(b_, "b");
   }

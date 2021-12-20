@@ -210,7 +210,7 @@ namespace gtsam {
        */
       static shared_ptr Covariance(const Matrix& covariance, bool smart = true);
 
-      void print(const std::string& name) const override;
+      void print(const std::string& name = "") const override;
       bool equals(const Base& expected, double tol=1e-9) const override;
       Vector sigmas() const override;
       Vector whiten(const Vector& v) const override;
@@ -323,7 +323,7 @@ namespace gtsam {
         return Variances(precisions.array().inverse(), smart);
       }
 
-      void print(const std::string& name) const override;
+      void print(const std::string& name = "") const override;
       Vector sigmas() const override { return sigmas_; }
       Vector whiten(const Vector& v) const override;
       Vector unwhiten(const Vector& v) const override;
@@ -482,7 +482,7 @@ namespace gtsam {
         return shared_ptr(new Constrained(Vector::Constant(dim, mu), Vector::Constant(dim,0)));
       }
 
-      void print(const std::string& name) const override;
+      void print(const std::string& name = "") const override;
 
       /// Calculates error vector with weights applied
       Vector whiten(const Vector& v) const override;
@@ -564,7 +564,7 @@ namespace gtsam {
         return Variance(dim, 1.0/precision, smart);
       }
 
-      void print(const std::string& name) const override;
+      void print(const std::string& name = "") const override;
       double squaredMahalanobisDistance(const Vector& v) const override;
       Vector whiten(const Vector& v) const override;
       Vector unwhiten(const Vector& v) const override;
@@ -615,7 +615,7 @@ namespace gtsam {
       /// true if a unit noise model, saves slow/clumsy dynamic casting
       bool isUnit() const override { return true; }
 
-      void print(const std::string& name) const override;
+      void print(const std::string& name = "") const override;
       double squaredMahalanobisDistance(const Vector& v) const override {return v.dot(v); }
       Vector whiten(const Vector& v) const override { return v; }
       Vector unwhiten(const Vector& v) const override { return v; }
@@ -676,7 +676,7 @@ namespace gtsam {
       /// Destructor
       ~Robust() override {}
 
-      void print(const std::string& name) const override;
+      void print(const std::string& name = "") const override;
       bool equals(const Base& expected, double tol=1e-9) const override;
 
       /// Return the contained robust error function

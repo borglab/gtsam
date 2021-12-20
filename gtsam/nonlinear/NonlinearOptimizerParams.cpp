@@ -72,10 +72,10 @@ void NonlinearOptimizerParams::setIterativeParams(
 }
 
 /* ************************************************************************* */
-void NonlinearOptimizerParams::print(const std::string& str) const {
+void NonlinearOptimizerParams::print(const std::string& s) const {
 
   //NonlinearOptimizerParams::print(str);
-  std::cout << str << "\n";
+  std::cout << (s.empty() ? s : s + "\n");
   std::cout << "relative decrease threshold: " << relativeErrorTol << "\n";
   std::cout << "absolute decrease threshold: " << absoluteErrorTol << "\n";
   std::cout << "      total error threshold: " << errorTol << "\n";

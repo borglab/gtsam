@@ -37,9 +37,10 @@ Errors::Errors(const VectorValues& V) {
 
 /* ************************************************************************* */
 void Errors::print(const std::string& s) const {
-  cout << s << endl;
-  for(const Vector& v: *this)
+  cout << (s.empty() ? s : s + "\n");
+  for (const Vector& v : *this) {
     gtsam::print(v);
+  }
 }
 
 /* ************************************************************************* */

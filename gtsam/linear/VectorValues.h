@@ -244,7 +244,7 @@ namespace gtsam {
     GTSAM_EXPORT friend std::ostream& operator<<(std::ostream&, const VectorValues&);
 
     /** print required by Testable for unit testing */
-    void print(const std::string& str = "VectorValues",
+    void print(const std::string& s = "VectorValues",
         const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
     /** equals required by Testable for unit testing */

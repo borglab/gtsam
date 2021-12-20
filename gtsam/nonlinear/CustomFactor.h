@@ -80,7 +80,7 @@ public:
   Vector unwhitenedError(const Values &x, boost::optional<std::vector<Matrix> &> H = boost::none) const override;
 
   /** print */
-  void print(const std::string &s,
+  void print(const std::string &s = "",
              const KeyFormatter &keyFormatter = DefaultKeyFormatter) const override;
 
   /**

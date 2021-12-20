@@ -413,8 +413,7 @@ JacobianFactor::JacobianFactor(const GaussianFactorGraph& graph,
 /* ************************************************************************* */
 void JacobianFactor::print(const string& s,
     const KeyFormatter& formatter) const {
-  if (!s.empty())
-    cout << s << "\n";
+  cout << (s.empty() ? s : s + "\n");
   for (const_iterator key = begin(); key != end(); ++key) {
     cout << boost::format("  A[%1%] = ") % formatter(*key);
     cout << getA(key).format(matlabFormat()) << endl;

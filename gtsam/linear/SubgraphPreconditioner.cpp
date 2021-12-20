@@ -196,7 +196,7 @@ void SubgraphPreconditioner::transposeMultiplyAdd2 (double alpha,
 
 /* ************************************************************************* */
 void SubgraphPreconditioner::print(const std::string& s) const {
-  cout << s << endl;
+  cout << (s.empty() ? s : s + "\n");
   Ab2_->print();
 }
 

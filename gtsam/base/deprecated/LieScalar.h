@@ -49,8 +49,8 @@ namespace gtsam {
 
     /// @name Testable
     /// @{
-    void print(const std::string& name = "") const {
-      std::cout << name << ": " << d_ << std::endl;
+    void print(const std::string& s = "") const {
+      std::cout << (s.empty() ? s : s + ": ") << d_ << std::endl;
     }
     bool equals(const LieScalar& expected, double tol = 1e-5) const {
       return std::abs(expected.d_ - d_) <= tol;

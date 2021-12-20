@@ -280,7 +280,7 @@ public:
         : value1(expression1.traceExecution(values, trace1, ptr + upAligned(sizeof(Record)))) {}
 
     /// Print to std::cout
-    void print(const std::string& indent) const {
+    void print(const std::string& indent = "") const {
       std::cout << indent << "UnaryExpression::Record {" << std::endl;
       PrintJacobianAndTrace<T,A1>(indent, dTdA1, trace1);
       std::cout << indent << "}" << std::endl;
@@ -404,7 +404,7 @@ public:
           value2(expression2.traceExecution(values, trace2, ptr += expression1.traceSize())) {}
 
     /// Print to std::cout
-    void print(const std::string& indent) const {
+    void print(const std::string& indent = "") const {
       std::cout << indent << "BinaryExpression::Record {" << std::endl;
       PrintJacobianAndTrace<T,A1>(indent, dTdA1, trace1);
       PrintJacobianAndTrace<T,A2>(indent, dTdA2, trace2);
@@ -519,7 +519,7 @@ public:
           value3(expression3.traceExecution(values, trace3, ptr += expression2.traceSize())) {}
 
     /// Print to std::cout
-    void print(const std::string& indent) const {
+    void print(const std::string& indent = "") const {
       std::cout << indent << "TernaryExpression::Record {" << std::endl;
       PrintJacobianAndTrace<T,A1>(indent, dTdA1, trace1);
       PrintJacobianAndTrace<T,A2>(indent, dTdA2, trace2);
@@ -603,7 +603,7 @@ class ScalarMultiplyNode : public ExpressionNode<T> {
     ExecutionTrace<T> trace;
 
     /// Print to std::cout
-    void print(const std::string& indent) const {
+    void print(const std::string& indent = "") const {
       std::cout << indent << "ScalarMultiplyNode::Record {" << std::endl;
       std::cout << indent << "D(" << demangle(typeid(T).name()) << ")/D(" << demangle(typeid(T).name())
                 << ") = " << scalar_dTdA << std::endl;
@@ -693,7 +693,7 @@ class BinarySumNode : public ExpressionNode<T> {
     ExecutionTrace<T> trace2;
 
     /// Print to std::cout
-    void print(const std::string& indent) const {
+    void print(const std::string& indent = "") const {
       std::cout << indent << "BinarySumNode::Record {" << std::endl;
       trace1.print(indent);
       trace2.print(indent);

@@ -50,7 +50,7 @@ void PCGSolverParameters::setPreconditionerParams(const boost::shared_ptr<Precon
 }
 
 void PCGSolverParameters::print(const std::string &s) const {
-  std::cout << s << std::endl;;
+  std::cout << (s.empty() ? s : s + "\n");
   std::ostringstream os;
   print(os);
   std::cout << os.str() << std::endl;

@@ -121,8 +121,9 @@ void Base::reweight(Matrix &A1, Matrix &A2, Matrix &A3, Vector &error) const {
 // Null model
 /* ************************************************************************* */
 
-void Null::print(const std::string &s="") const
-{ cout << s << "null ()" << endl; }
+void Null::print(const std::string &s) const {
+  cout << (s.empty() ? s : s + ": ") << "Null ()" << endl;
+}
 
 Null::shared_ptr Null::Create()
 { return shared_ptr(new Null()); }
@@ -148,8 +149,9 @@ double Fair::loss(double distance) const {
   return c_2 * (normalizedError - std::log1p(normalizedError));
 }
 
-void Fair::print(const std::string &s="") const
-{ cout << s << "fair (" << c_ << ")" << endl; }
+void Fair::print(const std::string &s) const {
+  cout << (s.empty() ? s : s + ": ") << "Fair (" << c_ << ")" << endl;
+}
 
 bool Fair::equals(const Base &expected, double tol) const {
   const Fair* p = dynamic_cast<const Fair*> (&expected);
@@ -184,8 +186,8 @@ double Huber::loss(double distance) const {
   }
 }
 
-void Huber::print(const std::string &s="") const {
-  cout << s << "huber (" << k_ << ")" << endl;
+void Huber::print(const std::string &s) const {
+  cout << (s.empty() ? s : s + ": ") << "Huber (" << k_ << ")" << endl;
 }
 
 bool Huber::equals(const Base &expected, double tol) const {
@@ -217,8 +219,8 @@ double Cauchy::loss(double distance) const {
   return ksquared_ * val * 0.5;
 }
 
-void Cauchy::print(const std::string &s="") const {
-  cout << s << "cauchy (" << k_ << ")" << endl;
+void Cauchy::print(const std::string &s) const {
+  cout << (s.empty() ? s : s + ": ") << "Cauchy (" << k_ << ")" << endl;
 }
 
 bool Cauchy::equals(const Base &expected, double tol) const {
@@ -260,8 +262,8 @@ double Tukey::loss(double distance) const {
   }
 }
 
-void Tukey::print(const std::string &s="") const {
-  std::cout << s << ": Tukey (" << c_ << ")" << std::endl;
+void Tukey::print(const std::string &s) const {
+  cout << (s.empty() ? s : s + ": ") << "Tukey (" << c_ << ")" << endl;
 }
 
 bool Tukey::equals(const Base &expected, double tol) const {
@@ -290,8 +292,8 @@ double Welsch::loss(double distance) const {
   return csquared_ * 0.5 * -std::expm1(-xc2);
 }
 
-void Welsch::print(const std::string &s="") const {
-  std::cout << s << ": Welsch (" << c_ << ")" << std::endl;
+void Welsch::print(const std::string &s) const {
+  cout << (s.empty() ? s : s + ": ") << "Welsch (" << c_ << ")" << endl;
 }
 
 bool Welsch::equals(const Base &expected, double tol) const {
@@ -324,8 +326,8 @@ double GemanMcClure::loss(double distance) const {
   return 0.5 * (c2 * error2) / (c2 + error2);
 }
 
-void GemanMcClure::print(const std::string &s="") const {
-  std::cout << s << ": Geman-McClure (" << c_ << ")" << std::endl;
+void GemanMcClure::print(const std::string &s) const {
+  cout << (s.empty() ? s : s + ": ") << "Geman-McClure (" << c_ << ")" << endl;
 }
 
 bool GemanMcClure::equals(const Base &expected, double tol) const {
@@ -366,8 +368,8 @@ double DCS::loss(double distance) const {
   return (c2*e2 + c_*e4) / ((e2 + c_)*(e2 + c_));
 }
 
-void DCS::print(const std::string &s="") const {
-  std::cout << s << ": DCS (" << c_ << ")" << std::endl;
+void DCS::print(const std::string &s) const {
+  cout << (s.empty() ? s : s + ": ") << "DCS (" << c_ << ")" << endl;
 }
 
 bool DCS::equals(const Base &expected, double tol) const {
@@ -405,8 +407,8 @@ double L2WithDeadZone::loss(double distance) const {
   return (abs_error < k_) ? 0.0 : 0.5*(k_-abs_error)*(k_-abs_error);
 }
 
-void L2WithDeadZone::print(const std::string &s="") const {
-  std::cout << s << ": L2WithDeadZone (" << k_ << ")" << std::endl;
+void L2WithDeadZone::print(const std::string &s) const {
+  cout << (s.empty() ? s : s + ": ") << "L2WithDeadZone (" << k_ << ")" << endl;
 }
 
 bool L2WithDeadZone::equals(const Base &expected, double tol) const {

@@ -151,12 +151,12 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  void VectorValues::print(const string& str,
+  void VectorValues::print(const string& s,
                            const KeyFormatter& formatter) const {
-    cout << str << ": " << size() << " elements\n";
+    cout << (s.empty() ? s : s + ": ") << size() << " elements\n";
     cout << key_formatter(formatter) << *this;
     cout.flush();
-}
+  }
 
   /* ************************************************************************* */
   bool VectorValues::equals(const VectorValues& x, double tol) const {

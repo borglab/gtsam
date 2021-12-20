@@ -161,7 +161,7 @@ class ParameterMatrix {
    * @param s: The prepend string to add more contextual info.
    */
   void print(const std::string& s = "") const {
-    std::cout << (s == "" ? s : s + " ") << matrix_ << std::endl;
+    std::cout << (s.empty() ? s : s + " ") << matrix_ << std::endl;
   }
 
   /**

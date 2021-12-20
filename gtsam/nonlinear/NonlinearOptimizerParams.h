@@ -111,7 +111,7 @@ public:
   virtual ~NonlinearOptimizerParams() {
   }
 
-  virtual void print(const std::string& str = "") const;
+  virtual void print(const std::string& s = "") const;
 
   bool equals(const NonlinearOptimizerParams& other, double tol = 1e-9) const {
     return maxIterations == other.getMaxIterations()

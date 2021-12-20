@@ -74,7 +74,7 @@ class ExtendedKalmanFilter {
 
   /// print
   void print(const std::string& s = "") const {
-    std::cout << s << "\n";
+    std::cout << (s.empty() ? s : s + "\n");
     x_.print(s + "x");
     priorFactor_->print(s + "density");
   }

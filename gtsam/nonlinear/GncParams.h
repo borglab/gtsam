@@ -140,8 +140,8 @@ class GTSAM_EXPORT GncParams {
   }
 
   /// Print.
-  void print(const std::string& str) const {
-    std::cout << str << "\n";
+  void print(const std::string& s = "") const {
+    std::cout << (s.empty() ? s : s + "\n");
     switch (lossType) {
       case GM:
         std::cout << "lossType: Geman McClure" << "\n";
@@ -161,7 +161,7 @@ class GTSAM_EXPORT GncParams {
       std::cout << "knownInliers: " << knownInliers[i] << "\n";
     for (size_t i = 0; i < knownOutliers.size(); i++)
       std::cout << "knownOutliers: " << knownOutliers[i] << "\n";
-    baseOptimizerParams.print(str);
+    baseOptimizerParams.print(s);
   }
 };
 

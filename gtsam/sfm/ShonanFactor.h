@@ -58,7 +58,7 @@ public:
 
   /// print with optional string
   void
-  print(const std::string &s,
+  print(const std::string &s = "",
         const KeyFormatter &keyFormatter = DefaultKeyFormatter) const override;
 
   /// assert equality up to a tolerance

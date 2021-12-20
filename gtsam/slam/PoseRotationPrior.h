@@ -66,8 +66,9 @@ public:
   }
 
   /** print contents */
-  void print(const std::string& s="", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
-    Base::print(s + "PoseRotationPrior", keyFormatter);
+  void print(const std::string& s = "",
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
+    Base::print((s.empty() ? s : s + " ") + "PoseRotationPrior", keyFormatter);
     measured_.print("Measured Rotation");
   }
 

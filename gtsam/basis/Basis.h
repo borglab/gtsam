@@ -159,7 +159,7 @@ class GTSAM_EXPORT Basis {
     }
 
     void print(const std::string& s = "") const {
-      std::cout << s << (s != "" ? " " : "") << weights_ << std::endl;
+      std::cout << (s.empty() ? s : s + " ") << weights_ << std::endl;
     }
   };
 
@@ -350,7 +350,7 @@ class GTSAM_EXPORT Basis {
         : weights_(DERIVED::DerivativeWeights(N, x, a, b)) {}
 
     void print(const std::string& s = "") const {
-      std::cout << s << (s != "" ? " " : "") << weights_ << std::endl;
+      std::cout << (s.empty() ? s : s + " ") << weights_ << std::endl;
     }
   };
 

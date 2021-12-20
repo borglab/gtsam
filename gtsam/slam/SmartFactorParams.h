@@ -68,7 +68,8 @@ struct SmartProjectionParams {
   virtual ~SmartProjectionParams() {
   }
 
-  void print(const std::string& str = "") const {
+  void print(const std::string& s = "") const {
+    std::cout << (s.empty() ? s : s + " ");
     std::cout << "linearizationMode: " << linearizationMode << "\n";
     std::cout << "   degeneracyMode: " << degeneracyMode << "\n";
     std::cout << triangulation << std::endl;

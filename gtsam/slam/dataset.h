@@ -389,6 +389,7 @@ struct SfmData {
 
   /// print
   void print(const std::string& s = "") const {
+    std::cout << (s.empty() ? s : s + " ");
     std::cout << "Number of cameras = " << number_cameras() << std::endl;
     std::cout << "Number of tracks = " << number_tracks() << std::endl;
   }

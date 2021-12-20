@@ -49,7 +49,7 @@ public:
   }
 
   // needed for python wrapper
-  void print(const std::string &s) const;
+  void print(const std::string &s = "") const;
 
   boost::shared_ptr<PreconditionerParameters> preconditioner_;
 

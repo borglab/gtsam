@@ -14,7 +14,7 @@ namespace gtsam {
 //***************************************************************************
 void OrientedPlane3Factor::print(const string& s,
     const KeyFormatter& keyFormatter) const {
-  cout << s << (s == "" ? "" : "\n");
+  cout << (s.empty() ? s : s + "\n");
   cout << "OrientedPlane3Factor Factor (" << keyFormatter(key1()) << ", "
        << keyFormatter(key2()) << ")\n";
   measured_p_.print("Measured Plane");
@@ -48,8 +48,8 @@ Vector OrientedPlane3Factor::evaluateError(const Pose3& pose,
 //***************************************************************************
 void OrientedPlane3DirectionPrior::print(const string& s,
     const KeyFormatter& keyFormatter) const {
-  cout << s << (s == "" ? "" : "\n");
-  cout << s << "Prior Factor on " << keyFormatter(key()) << "\n";
+  cout << (s.empty() ? s : s + "\n");
+  cout << "Prior Factor on " << keyFormatter(key()) << "\n";
   measured_p_.print("Measured Plane");
   this->noiseModel_->print("  noise model: ");
 }

@@ -60,7 +60,7 @@ namespace gtsam {
     // print
     void print(const V& x) {
       std::cout << "iteration = " << k << std::endl;
-      gtsam::print(x,"x");
+      gtsam::print(x, "x");
       gtsam::print(g, "g");
       std::cout << "dotg = " << gamma << std::endl;
       gtsam::print(d, "d");
