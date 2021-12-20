@@ -10,7 +10,8 @@
  * @date    December 2021
  */
 
-#include "gtsam/hybrid/DCMixtureFactor.h"
+#include <gtsam/hybrid/DCMixtureFactor.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 
 // Include for test suite
 #include <CppUnitLite/TestHarness.h>
@@ -56,9 +57,10 @@ TEST(TestSuite, dcdiscrete_mixture) {
   continuousVals.insert(x1, -2.5);
   DiscreteValues discreteVals;
   discreteVals[dk.first] = 0;
-  
+
   // regression
-  EXPECT_DOUBLES_EQUAL(2.2, dcMixture.error(continuousVals, discreteVals), 1e-1);
+  EXPECT_DOUBLES_EQUAL(2.2, dcMixture.error(continuousVals, discreteVals),
+                       1e-1);
 }
 
 /* ************************************************************************* */
