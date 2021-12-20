@@ -8,6 +8,92 @@ to a new version. But it goes into more detail. This includes things like
 deprecated APIs and their replacements, build system changes, general code
 modernization and other useful information.
 
+.. _upgrade-guide-2.6:
+
+v2.6
+====
+
+The ``tools/clang`` submodule and ``tools/mkdoc.py`` have been moved to a
+standalone package, `pybind11-mkdoc`_. If you were using those tools, please
+use them via a pip install from the new location.
+
+.. _pybind11-mkdoc: https://github.com/pybind/pybind11-mkdoc
+
+An error is now thrown when ``__init__`` is forgotten on subclasses. This was
+incorrect before, but was not checked. Add a call to ``__init__`` if it is
+missing.
+
+The undocumented ``h.get_type()`` method has been deprecated and replaced by
+``py::type::of(h)``.
+
+If ``__eq__`` defined but not ``__hash__``, ``__hash__`` is now set to
+``None``, as in normal CPython. You should add ``__hash__`` if you intended the
+class to be hashable, possibly using the new ``py::hash`` shortcut.
+
+Usage of the ``PYBIND11_OVERLOAD*`` macros and ``get_overload`` function should
+be replaced by ``PYBIND11_OVERRIDE*`` and ``get_override``. In the future, the
+old macros may be deprecated and removed.
+
+The ``pybind11`` package on PyPI no longer fills the wheel "headers" slot - if
+you were using the headers from this slot, they are available by requesting the
+``global`` extra, that is, ``pip install "pybind11[global]"``. (Most users will
+be unaffected, as the ``pybind11/include`` location is reported by ``python -m
+pybind11 --includes`` and ``pybind11.get_include()`` is still correct and has
+not changed since 2.5).
+
+CMake support:
+--------------
+
+The minimum required version of CMake is now 3.4.  Several details of the CMake
+support have been deprecated; warnings will be shown if you need to change
+something. The changes are:
+
+* ``PYBIND11_CPP_STANDARD=<platform-flag>`` is deprecated, please use
+  ``CMAKE_CXX_STANDARD=<number>`` instead, or any other valid CMake CXX or CUDA
+  standard selection method, like ``target_compile_features``.
+
+* If you do not request a standard, pybind11 targets will compile with the
+  compiler default, but not less than C++11, instead of forcing C++14 always.
+  If you depend on the old behavior, please use ``set(CMAKE_CXX_STANDARD 14)``
+  instead.
+
+* Direct ``pybind11::module`` usage should always be accompanied by at least
+  ``set(CMAKE_CXX_VISIBILITY_PRESET hidden)`` or similar - it used to try to
+  manually force this compiler flag (but not correctly on all compilers or with
+  CUDA).
+
+* ``pybind11_add_module``'s ``SYSTEM`` argument is deprecated and does nothing;
+  linking now behaves like other imported libraries consistently in both
+  config and submodule mode, and behaves like a ``SYSTEM`` library by
+  default.
+
+* If ``PYTHON_EXECUTABLE`` is not set, virtual environments (``venv``,
+  ``virtualenv``, and ``conda``) are prioritized over the standard search
+  (similar to the new FindPython mode).
+
+In addition, the following changes may be of interest:
+
+* ``CMAKE_INTERPROCEDURAL_OPTIMIZATION`` will be respected by
+  ``pybind11_add_module`` if set instead of linking to ``pybind11::lto`` or
+  ``pybind11::thin_lto``.
+
+* Using ``find_package(Python COMPONENTS Interpreter Development)`` before
+  pybind11 will cause pybind11 to use the new Python mechanisms instead of its
+  own custom search, based on a patched version of classic ``FindPythonInterp``
+  / ``FindPythonLibs``. In the future, this may become the default.
+
+
+
+v2.5
+====
+
+The Python package now includes the headers as data in the package itself, as
+well as in the "headers" wheel slot. ``pybind11 --includes`` and
+``pybind11.get_include()`` report the new location, which is always correct
+regardless of how pybind11 was installed, making the old ``user=`` argument
+meaningless. If you are not using the function to get the location already, you
+are encouraged to switch to the package location.
+
 
 v2.2
 ====

@@ -77,7 +77,7 @@ template<> struct traits<CallConfig> : public Testable<CallConfig> {};
 
 struct Record: public internal::CallRecordImplementor<Record, Cols> {
   Record() : cc(0, 0) {}
-  virtual ~Record() {
+  ~Record() override {
   }
   void print(const std::string& indent) const {
   }

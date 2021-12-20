@@ -59,8 +59,8 @@ namespace gtsam {
 template<class CAMERA, class LANDMARK>
 class GeneralSFMFactor: public NoiseModelFactor2<CAMERA, LANDMARK> {
 
-  GTSAM_CONCEPT_MANIFOLD_TYPE(CAMERA);
-  GTSAM_CONCEPT_MANIFOLD_TYPE(LANDMARK);
+  GTSAM_CONCEPT_MANIFOLD_TYPE(CAMERA)
+  GTSAM_CONCEPT_MANIFOLD_TYPE(LANDMARK)
 
   static const int DimC = FixedDimension<CAMERA>::value;
   static const int DimL = FixedDimension<LANDMARK>::value;
@@ -86,14 +86,17 @@ public:
    * @param cameraKey is the index of the camera
    * @param landmarkKey is the index of the landmark
    */
-  GeneralSFMFactor(const Point2& measured, const SharedNoiseModel& model, Key cameraKey, Key landmarkKey) :
-  Base(model, cameraKey, landmarkKey), measured_(measured) {}
+  GeneralSFMFactor(const Point2& measured, const SharedNoiseModel& model,
+                   Key cameraKey, Key landmarkKey)
+      : Base(model, cameraKey, landmarkKey), measured_(measured) {}
 
-  GeneralSFMFactor():measured_(0.0,0.0) {} ///< default constructor
-  GeneralSFMFactor(const Point2 & p):measured_(p) {} ///< constructor that takes a Point2
-  GeneralSFMFactor(double x, double y):measured_(x,y) {} ///< constructor that takes doubles x,y to make a Point2
+  GeneralSFMFactor() : measured_(0.0, 0.0) {}  ///< default constructor
+  ///< constructor that takes a Point2
+  GeneralSFMFactor(const Point2& p) : measured_(p) {}
+  ///< constructor that takes doubles x,y to make a Point2
+  GeneralSFMFactor(double x, double y) : measured_(x, y) {}
 
-  virtual ~GeneralSFMFactor() {} ///< destructor
+  ~GeneralSFMFactor() override {} ///< destructor
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
@@ -127,7 +130,7 @@ public:
     catch( CheiralityException& e) {
       if (H1) *H1 = JacobianC::Zero();
       if (H2) *H2 = JacobianL::Zero();
-      // TODO warn if verbose output asked for
+      //TODO Print the exception via logging
       return Z_2x1;
     }
   }
@@ -149,7 +152,7 @@ public:
       H1.setZero();
       H2.setZero();
       b.setZero();
-      // TODO warn if verbose output asked for
+      //TODO Print the exception via logging
     }
 
     // Whiten the system if needed
@@ -199,7 +202,7 @@ struct traits<GeneralSFMFactor<CAMERA, LANDMARK> > : Testable<
 template<class CALIBRATION>
 class GeneralSFMFactor2: public NoiseModelFactor3<Pose3, Point3, CALIBRATION> {
 
-  GTSAM_CONCEPT_MANIFOLD_TYPE(CALIBRATION);
+  GTSAM_CONCEPT_MANIFOLD_TYPE(CALIBRATION)
   static const int DimK = FixedDimension<CALIBRATION>::value;
 
 protected:
@@ -227,7 +230,7 @@ public:
   Base(model, poseKey, landmarkKey, calibKey), measured_(measured) {}
   GeneralSFMFactor2():measured_(0.0,0.0) {} ///< default constructor
 
-  virtual ~GeneralSFMFactor2() {} ///< destructor
+  ~GeneralSFMFactor2() override {} ///< destructor
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {

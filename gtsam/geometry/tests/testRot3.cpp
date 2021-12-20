@@ -123,6 +123,21 @@ TEST( Rot3, AxisAngle)
 }
 
 /* ************************************************************************* */
+TEST( Rot3, AxisAngle2)
+{
+  // constructor from a rotation matrix, as doubles in *row-major* order.
+  Rot3 R1(-0.999957, 0.00922903, 0.00203116, 0.00926964, 0.999739, 0.0208927, -0.0018374, 0.0209105, -0.999781);
+  
+  Unit3 actualAxis;
+  double actualAngle;
+  // convert Rot3 to quaternion using GTSAM
+  std::tie(actualAxis, actualAngle) = R1.axisAngle();
+  
+  double expectedAngle = 3.1396582;
+  CHECK(assert_equal(expectedAngle, actualAngle, 1e-5));
+}
+
+/* ************************************************************************* */
 TEST( Rot3, Rodrigues)
 {
   Rot3 R1 = Rot3::Rodrigues(epsilon, 0, 0);
@@ -181,13 +196,13 @@ TEST( Rot3, retract)
 }
 
 /* ************************************************************************* */
-TEST(Rot3, log) {
+TEST( Rot3, log) {
   static const double PI = boost::math::constants::pi<double>();
   Vector w;
   Rot3 R;
 
 #define CHECK_OMEGA(X, Y, Z)             \
-  w = (Vector(3) << X, Y, Z).finished(); \
+  w = (Vector(3) << (X), (Y), (Z)).finished(); \
   R = Rot3::Rodrigues(w);                \
   EXPECT(assert_equal(w, Rot3::Logmap(R), 1e-12));
 
@@ -219,17 +234,17 @@ TEST(Rot3, log) {
   CHECK_OMEGA(0, 0, PI)
 
   // Windows and Linux have flipped sign in quaternion mode
-#if !defined(__APPLE__) && defined(GTSAM_USE_QUATERNIONS)
+//#if !defined(__APPLE__) && defined(GTSAM_USE_QUATERNIONS)
   w = (Vector(3) << x * PI, y * PI, z * PI).finished();
   R = Rot3::Rodrigues(w);
   EXPECT(assert_equal(Vector(-w), Rot3::Logmap(R), 1e-12));
-#else
-  CHECK_OMEGA(x * PI, y * PI, z * PI)
-#endif
+//#else
+//  CHECK_OMEGA(x * PI, y * PI, z * PI)
+//#endif
 
   // Check 360 degree rotations
 #define CHECK_OMEGA_ZERO(X, Y, Z)        \
-  w = (Vector(3) << X, Y, Z).finished(); \
+  w = (Vector(3) << (X), (Y), (Z)).finished(); \
   R = Rot3::Rodrigues(w);                \
   EXPECT(assert_equal((Vector)Z_3x1, Rot3::Logmap(R)));
 
@@ -247,15 +262,15 @@ TEST(Rot3, log) {
   // Rot3's Logmap returns different, but equivalent compacted
   // axis-angle vectors depending on whether Rot3 is implemented
   // by Quaternions or SO3.
-  #if defined(GTSAM_USE_QUATERNIONS)
-    // Quaternion bounds angle to [-pi, pi] resulting in ~179.9 degrees
-    EXPECT(assert_equal(Vector3(0.264451979, -0.742197651, -3.04098211),
+#if defined(GTSAM_USE_QUATERNIONS)
+  // Quaternion bounds angle to [-pi, pi] resulting in ~179.9 degrees
+  EXPECT(assert_equal(Vector3(0.264451979, -0.742197651, -3.04098211),
+                      (Vector)Rot3::Logmap(Rlund), 1e-8));
+#else
+  // SO3 will be approximate because of the non-orthogonality
+  EXPECT(assert_equal(Vector3(0.264452, -0.742197708, -3.04098184),
                         (Vector)Rot3::Logmap(Rlund), 1e-8));
-  #else
-    // SO3 does not bound angle resulting in ~180.1 degrees
-    EXPECT(assert_equal(Vector3(-0.264544406, 0.742217405, 3.04117314),
-                        (Vector)Rot3::Logmap(Rlund), 1e-8));
-  #endif
+#endif
 }
 
 /* ************************************************************************* */
@@ -741,6 +756,193 @@ TEST(Rot3, axisAngle) {
   CHECK_AXIS_ANGLE(Unit3(0, -1, 0), theta165, Rot3::Ypr(0, theta195, 0))
   CHECK_AXIS_ANGLE(Unit3(0, 0, -1), theta165, Rot3::Ypr(theta195, 0, 0))
   CHECK_AXIS_ANGLE(_axis, theta165, Rot3::AxisAngle(axis, theta195))
+}
+
+/* ************************************************************************* */
+Rot3 RzRyRx_proxy(double const& a, double const& b, double const& c) {
+  return Rot3::RzRyRx(a, b, c);
+}
+
+TEST(Rot3, RzRyRx_scalars_derivative) {
+  const auto x = 0.1, y = 0.4, z = 0.2;
+  const auto num_x = numericalDerivative31(RzRyRx_proxy, x, y, z);
+  const auto num_y = numericalDerivative32(RzRyRx_proxy, x, y, z);
+  const auto num_z = numericalDerivative33(RzRyRx_proxy, x, y, z);
+
+  Vector3 act_x, act_y, act_z;
+  Rot3::RzRyRx(x, y, z, act_x, act_y, act_z);
+
+  CHECK(assert_equal(num_x, act_x));
+  CHECK(assert_equal(num_y, act_y));
+  CHECK(assert_equal(num_z, act_z));
+}
+
+/* ************************************************************************* */
+Rot3 RzRyRx_proxy(Vector3 const& xyz) { return Rot3::RzRyRx(xyz); }
+
+TEST(Rot3, RzRyRx_vector_derivative) {
+  const auto xyz = Vector3{-0.3, 0.1, 0.7};
+  const auto num = numericalDerivative11(RzRyRx_proxy, xyz);
+
+  Matrix3 act;
+  Rot3::RzRyRx(xyz, act);
+
+  CHECK(assert_equal(num, act));
+}
+
+/* ************************************************************************* */
+Rot3 Ypr_proxy(double const& y, double const& p, double const& r) {
+  return Rot3::Ypr(y, p, r);
+}
+
+TEST(Rot3, Ypr_derivative) {
+  const auto y = 0.7, p = -0.3, r = 0.1;
+  const auto num_y = numericalDerivative31(Ypr_proxy, y, p, r);
+  const auto num_p = numericalDerivative32(Ypr_proxy, y, p, r);
+  const auto num_r = numericalDerivative33(Ypr_proxy, y, p, r);
+
+  Vector3 act_y, act_p, act_r;
+  Rot3::Ypr(y, p, r, act_y, act_p, act_r);
+
+  CHECK(assert_equal(num_y, act_y));
+  CHECK(assert_equal(num_p, act_p));
+  CHECK(assert_equal(num_r, act_r));
+}
+
+/* ************************************************************************* */
+Vector3 RQ_proxy(Matrix3 const& R) {
+  const auto RQ_ypr = RQ(R);
+  return RQ_ypr.second;
+}
+
+TEST(Rot3, RQ_derivative) {
+  using VecAndErr = std::pair<Vector3, double>;
+  std::vector<VecAndErr> test_xyz;
+  // Test zeros and a couple of random values
+  test_xyz.push_back(VecAndErr{{0, 0, 0}, error});
+  test_xyz.push_back(VecAndErr{{0, 0.5, -0.5}, error});
+  test_xyz.push_back(VecAndErr{{0.3, 0, 0.2}, error});
+  test_xyz.push_back(VecAndErr{{-0.6, 1.3, 0}, 1e-8});
+  test_xyz.push_back(VecAndErr{{1.0, 0.7, 0.8}, error});
+  test_xyz.push_back(VecAndErr{{3.0, 0.7, -0.6}, error});
+  test_xyz.push_back(VecAndErr{{M_PI / 2, 0, 0}, error});
+  test_xyz.push_back(VecAndErr{{0, 0, M_PI / 2}, error});
+
+  // Test close to singularity
+  test_xyz.push_back(VecAndErr{{0, M_PI / 2 - 1e-1, 0}, 1e-7});
+  test_xyz.push_back(VecAndErr{{0, 3 * M_PI / 2 + 1e-1, 0}, 1e-7});
+  test_xyz.push_back(VecAndErr{{0, M_PI / 2 - 1.1e-2, 0}, 1e-4});
+  test_xyz.push_back(VecAndErr{{0, 3 * M_PI / 2 + 1.1e-2, 0}, 1e-4});
+
+  for (auto const& vec_err : test_xyz) {
+    auto const& xyz = vec_err.first;
+
+    const auto R = Rot3::RzRyRx(xyz).matrix();
+    const auto num = numericalDerivative11(RQ_proxy, R);
+    Matrix39 calc;
+    RQ(R, calc);
+
+    const auto err = vec_err.second;
+    CHECK(assert_equal(num, calc, err));
+  }
+}
+
+/* ************************************************************************* */
+Vector3 xyz_proxy(Rot3 const& R) { return R.xyz(); }
+
+TEST(Rot3, xyz_derivative) {
+  const auto aa = Vector3{-0.6, 0.3, 0.2};
+  const auto R = Rot3::Expmap(aa);
+  const auto num = numericalDerivative11(xyz_proxy, R);
+  Matrix3 calc;
+  R.xyz(calc);
+
+  CHECK(assert_equal(num, calc));
+}
+
+/* ************************************************************************* */
+Vector3 ypr_proxy(Rot3 const& R) { return R.ypr(); }
+
+TEST(Rot3, ypr_derivative) {
+  const auto aa = Vector3{0.1, -0.3, -0.2};
+  const auto R = Rot3::Expmap(aa);
+  const auto num = numericalDerivative11(ypr_proxy, R);
+  Matrix3 calc;
+  R.ypr(calc);
+
+  CHECK(assert_equal(num, calc));
+}
+
+/* ************************************************************************* */
+Vector3 rpy_proxy(Rot3 const& R) { return R.rpy(); }
+
+TEST(Rot3, rpy_derivative) {
+  const auto aa = Vector3{1.2, 0.3, -0.9};
+  const auto R = Rot3::Expmap(aa);
+  const auto num = numericalDerivative11(rpy_proxy, R);
+  Matrix3 calc;
+  R.rpy(calc);
+
+  CHECK(assert_equal(num, calc));
+}
+
+/* ************************************************************************* */
+double roll_proxy(Rot3 const& R) { return R.roll(); }
+
+TEST(Rot3, roll_derivative) {
+  const auto aa = Vector3{0.8, -0.8, 0.8};
+  const auto R = Rot3::Expmap(aa);
+  const auto num = numericalDerivative11(roll_proxy, R);
+  Matrix13 calc;
+  R.roll(calc);
+
+  CHECK(assert_equal(num, calc));
+}
+
+/* ************************************************************************* */
+double pitch_proxy(Rot3 const& R) { return R.pitch(); }
+
+TEST(Rot3, pitch_derivative) {
+  const auto aa = Vector3{0.01, 0.1, 0.0};
+  const auto R = Rot3::Expmap(aa);
+  const auto num = numericalDerivative11(pitch_proxy, R);
+  Matrix13 calc;
+  R.pitch(calc);
+
+  CHECK(assert_equal(num, calc));
+}
+
+/* ************************************************************************* */
+double yaw_proxy(Rot3 const& R) { return R.yaw(); }
+
+TEST(Rot3, yaw_derivative) {
+  const auto aa = Vector3{0.0, 0.1, 0.6};
+  const auto R = Rot3::Expmap(aa);
+  const auto num = numericalDerivative11(yaw_proxy, R);
+  Matrix13 calc;
+  R.yaw(calc);
+
+  CHECK(assert_equal(num, calc));
+}
+
+/* ************************************************************************* */
+TEST(Rot3, determinant) {
+  size_t degree = 1;
+  Rot3 R_w0;  // Zero rotation
+  Rot3 R_w1 = Rot3::Ry(degree * M_PI / 180);
+
+  Rot3 R_01, R_w2;
+  double actual, expected = 1.0;
+
+  for (size_t i = 2; i < 360; ++i) {
+    R_01 = R_w0.between(R_w1);
+    R_w2 = R_w1 * R_01;
+    R_w0 = R_w1;
+    R_w1 = R_w2.normalized();
+    actual = R_w2.matrix().determinant();
+
+    EXPECT_DOUBLES_EQUAL(expected, actual, 1e-7);
+  }
 }
 
 /* ************************************************************************* */

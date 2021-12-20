@@ -59,7 +59,7 @@ class BearingRangeFactor
     this->initialize(expression({{key1, key2}}));
   }
 
-  virtual ~BearingRangeFactor() {}
+  ~BearingRangeFactor() override {}
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {

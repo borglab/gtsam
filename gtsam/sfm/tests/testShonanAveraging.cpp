@@ -17,6 +17,7 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/TestableAssertions.h>
 #include <gtsam/sfm/ShonanAveraging.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/FrobeniusFactor.h>
@@ -92,6 +93,27 @@ TEST(ShonanAveraging3, checkOptimality) {
 }
 
 /* ************************************************************************* */
+TEST(ShonanAveraging3, checkSubgraph) {
+  // Create parameter with solver set to SUBGRAPH
+  auto params = ShonanAveragingParameters3(
+      gtsam::LevenbergMarquardtParams::CeresDefaults(), "SUBGRAPH");
+  ShonanAveraging3::Measurements measurements;
+
+  // The toyExample.g2o has 5 vertices, from 0-4
+  // The edges are: 1-2, 2-3, 3-4, 3-1, 1-4, 0-1,
+  // which can build a connected graph
+  auto subgraphShonan = fromExampleName("toyExample.g2o", params);
+
+  // Create initial random estimation
+  Values initial;
+  initial = subgraphShonan.initializeRandomly(kRandomNumberGenerator);
+
+  // Run Shonan with SUBGRAPH solver
+  auto result = subgraphShonan.run(initial, 3, 3);
+  EXPECT_DOUBLES_EQUAL(1e-11, subgraphShonan.cost(result.first), 1e-4);
+}
+
+/* ************************************************************************* */
 TEST(ShonanAveraging3, tryOptimizingAt3) {
   const Values randomRotations = kShonan.initializeRandomly(kRandomNumberGenerator);
   Values initial = ShonanAveraging3::LiftTo<Rot3>(3, randomRotations);  // convert to SOn
@@ -121,18 +143,17 @@ TEST(ShonanAveraging3, tryOptimizingAt4) {
 }
 
 /* ************************************************************************* */
-TEST(ShonanAveraging3, MakeATangentVector) {
+TEST(ShonanAveraging3, TangentVectorValues) {
   Vector9 v;
   v << 1, 2, 3, 4, 5, 6, 7, 8, 9;
-  Matrix expected(5, 5);
-  expected << 0, 0, 0, 0, -4, //
-      0, 0, 0, 0, -5,         //
-      0, 0, 0, 0, -6,         //
-      0, 0, 0, 0, 0,          //
-      4, 5, 6, 0, 0;
-  const Vector xi_1 = ShonanAveraging3::MakeATangentVector(5, v, 1);
-  const auto actual = SOn::Hat(xi_1);
-  CHECK(assert_equal(expected, actual));
+  Vector expected0(10), expected1(10), expected2(10);
+  expected0 << 0, 3, -2, 1, 0, 0, 0, 0, 0, 0;
+  expected1 << 0, 6, -5, 4, 0, 0, 0, 0, 0, 0;
+  expected2 << 0, 9, -8, 7, 0, 0, 0, 0, 0, 0;
+  const VectorValues xi = ShonanAveraging3::TangentVectorValues(5, v);
+  EXPECT(assert_equal(expected0, xi[0]));
+  EXPECT(assert_equal(expected1, xi[1]));
+  EXPECT(assert_equal(expected2, xi[2]));
 }
 
 /* ************************************************************************* */
@@ -167,8 +188,14 @@ TEST(ShonanAveraging3, CheckWithEigen) {
   for (int i = 1; i < lambdas.size(); i++)
       minEigenValue = min(lambdas(i), minEigenValue);
 
+  // Compute Eigenvalue with Accelerated Power method
+  double lambdaAP = kShonan.computeMinEigenValueAP(Qstar3);
+
   // Actual check
-  EXPECT_DOUBLES_EQUAL(minEigenValue, lambda, 1e-12);
+  EXPECT_DOUBLES_EQUAL(0, lambda, 1e-11);
+  EXPECT_DOUBLES_EQUAL(0, minEigenValue, 1e-11);
+  EXPECT_DOUBLES_EQUAL(0, lambdaAP, 1e-11);
+
 
   // Construct test descent direction (as minEigenVector is not predictable
   // across platforms, being one from a basically flat 3d- subspace)
@@ -317,6 +344,42 @@ TEST(ShonanAveraging2, noisyToyGraph) {
   EXPECT_LONGS_EQUAL(6, graph.size());
   auto initial = shonan.initializeRandomly(kRandomNumberGenerator); 
   auto result = shonan.run(initial, 2);
+  EXPECT_DOUBLES_EQUAL(0.0008211, shonan.cost(result.first), 1e-6);
+  EXPECT_DOUBLES_EQUAL(0, result.second, 1e-10); // certificate!
+}
+
+/* ************************************************************************* */
+TEST(ShonanAveraging2, noisyToyGraphWithHuber) {
+  // Load 2D toy example
+  auto lmParams = LevenbergMarquardtParams::CeresDefaults();
+  string g2oFile = findExampleDataFile("noisyToyGraph.txt");
+  ShonanAveraging2::Parameters parameters(lmParams);
+  auto measurements = parseMeasurements<Rot2>(g2oFile);
+  parameters.setUseHuber(true);
+  parameters.setCertifyOptimality(false);
+
+  string parameters_print =
+      " ShonanAveragingParameters: \n alpha: 0\n beta: 1\n gamma: 0\n "
+      "useHuber: 1\n";
+  assert_print_equal(parameters_print, parameters);
+
+  ShonanAveraging2 shonan(measurements, parameters);
+  EXPECT_LONGS_EQUAL(4, shonan.nrUnknowns());
+
+  // Check graph building
+  NonlinearFactorGraph graph = shonan.buildGraphAt(2);
+  EXPECT_LONGS_EQUAL(6, graph.size());
+
+  // test that each factor is actually robust
+  for (size_t i=0; i<=4; i++) { // note: last is the Gauge factor and is not robust
+	  const auto &robust = boost::dynamic_pointer_cast<noiseModel::Robust>(
+			  boost::dynamic_pointer_cast<NoiseModelFactor>(graph[i])->noiseModel());
+	  EXPECT(robust); // we expect the factors to be use a robust noise model (in particular, Huber)
+  }
+
+  // test result
+  auto initial = shonan.initializeRandomly(kRandomNumberGenerator);
+  auto result = shonan.run(initial, 2,2);
   EXPECT_DOUBLES_EQUAL(0.0008211, shonan.cost(result.first), 1e-6);
   EXPECT_DOUBLES_EQUAL(0, result.second, 1e-10); // certificate!
 }

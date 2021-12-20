@@ -315,6 +315,26 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
   void removeVariables(const KeySet& unusedKeys);
 
   void updateDelta(bool forceFullSolve = false) const;
+
+ private:
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+      ar & boost::serialization::base_object<BayesTree<ISAM2Clique> >(*this);
+      ar & BOOST_SERIALIZATION_NVP(theta_);
+      ar & BOOST_SERIALIZATION_NVP(variableIndex_);
+      ar & BOOST_SERIALIZATION_NVP(delta_);
+      ar & BOOST_SERIALIZATION_NVP(deltaNewton_);
+      ar & BOOST_SERIALIZATION_NVP(RgProd_);
+      ar & BOOST_SERIALIZATION_NVP(deltaReplacedMask_);
+      ar & BOOST_SERIALIZATION_NVP(nonlinearFactors_);
+      ar & BOOST_SERIALIZATION_NVP(linearFactors_);
+      ar & BOOST_SERIALIZATION_NVP(doglegDelta_);
+      ar & BOOST_SERIALIZATION_NVP(fixedVariables_);
+      ar & BOOST_SERIALIZATION_NVP(update_count_);
+  }
+
 };  // ISAM2
 
 /// traits

@@ -12,6 +12,7 @@ jobs:
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
       GTSAM_BUILD_UNSTABLE: ${{ matrix.build_unstable }}
+
     strategy:
       fail-fast: false
       matrix:
@@ -31,21 +32,20 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@master
-      - name: Install (macOS)
-        if: runner.os == 'macOS'
+        uses: actions/checkout@v2
+
+      - name: Install Dependencies
         run: |
-          brew install cmake ninja boost
+          brew install cmake ninja
+          brew install boost
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
             brew install gcc@${{ matrix.version }}
-            echo "::set-env name=CC::gcc-${{ matrix.version }}"
-            echo "::set-env name=CXX::g++-${{ matrix.version }}"
+            echo "CC=gcc-${{ matrix.version }}" >> $GITHUB_ENV
+            echo "CXX=g++-${{ matrix.version }}" >> $GITHUB_ENV
           else
             sudo xcode-select -switch /Applications/Xcode_${{ matrix.version }}.app
-            echo "::set-env name=CC::clang"
-            echo "::set-env name=CXX::clang++"
+            echo "CC=clang" >> $GITHUB_ENV
+            echo "CXX=clang++" >> $GITHUB_ENV
           fi
-      - name: Build and Test (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          bash .github/scripts/unix.sh -t
+      - name: Build and Test
+        run: bash .github/scripts/unix.sh -t

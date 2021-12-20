@@ -559,7 +559,7 @@ void runPerturb()
 
   // Perturb values
   VectorValues noise;
-  for(const Values::KeyValuePair& key_val: initial)
+  for(const Values::KeyValuePair key_val: initial)
   {
     Vector noisev(key_val.value.dim());
     for(Vector::Index i = 0; i < noisev.size(); ++i)

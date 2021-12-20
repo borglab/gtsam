@@ -1,5 +1,4 @@
-import os
-import sys
+"""Setup file to install the GTSAM package."""
 
 try:
     from setuptools import setup, find_packages
@@ -8,15 +7,18 @@ except ImportError:
 
 packages = find_packages(where=".")
 print("PACKAGES: ", packages)
+
 package_data = {
     '': [
-        './*.so',
-        './*.dll',
+        "./*.so",
+        "./*.dll",
+        "Data/*"  # Add the data files to the package
+        "Data/**/*"  # Add the data files in subdirectories
     ]
 }
 
 # Cleaner to read in the contents rather than copy them over.
-readme_contents = open("${PROJECT_SOURCE_DIR}/README.md").read()
+readme_contents = open("${GTSAM_SOURCE_DIR}/README.md").read()
 
 setup(
     name='gtsam',
@@ -43,8 +45,9 @@ setup(
         'Programming Language :: Python :: 3',
     ],
     packages=packages,
+    include_package_data=True,
     package_data=package_data,
     test_suite="gtsam.tests",
-    install_requires=["numpy"],
+    install_requires=open("${GTSAM_SOURCE_DIR}/python/requirements.txt").readlines(),
     zip_safe=False,
 )

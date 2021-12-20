@@ -64,7 +64,7 @@ public:
   ConcurrentBatchFilter(const LevenbergMarquardtParams& parameters = LevenbergMarquardtParams()) : parameters_(parameters) {};
 
   /** Default destructor */
-  virtual ~ConcurrentBatchFilter() {};
+  ~ConcurrentBatchFilter() override {};
 
   /** Implement a GTSAM standard 'print' function */
   void print(const std::string& s = "Concurrent Batch Filter:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
@@ -130,7 +130,7 @@ public:
    * Perform any required operations before the synchronization process starts.
    * Called by 'synchronize'
    */
-  virtual void presync() override;
+  void presync() override;
 
   /**
    * Populate the provided containers with factors that constitute the filter branch summarization
@@ -162,7 +162,7 @@ public:
    * Perform any required operations after the synchronization process finishes.
    * Called by 'synchronize'
    */
-  virtual void postsync() override;
+  void postsync() override;
 
 protected:
 

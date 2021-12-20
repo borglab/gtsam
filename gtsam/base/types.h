@@ -34,6 +34,14 @@
 #include <tbb/scalable_allocator.h>
 #endif
 
+#if defined(__GNUC__) || defined(__clang__)
+#define GTSAM_DEPRECATED __attribute__((deprecated))
+#elif defined(_MSC_VER)
+#define GTSAM_DEPRECATED __declspec(deprecated)
+#else
+#define GTSAM_DEPRECATED
+#endif
+
 #ifdef GTSAM_USE_EIGEN_MKL_OPENMP
 #include <omp.h>
 #endif

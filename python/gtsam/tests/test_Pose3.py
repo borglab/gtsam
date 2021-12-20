@@ -59,11 +59,27 @@ class TestPose3(GtsamTestCase):
         self.assertEqual(math.sqrt(2.0), x1.range(pose=xl2))
 
     def test_adjoint(self):
-        """Test adjoint method."""
+        """Test adjoint methods."""
+        T = Pose3()
         xi = np.array([1, 2, 3, 4, 5, 6])
+        # test calling functions
+        T.AdjointMap()
+        T.Adjoint(xi)
+        T.AdjointTranspose(xi)
+        Pose3.adjointMap(xi)
+        Pose3.adjoint(xi, xi)
+        # test correctness of adjoint(x, y)
         expected = np.dot(Pose3.adjointMap_(xi), xi)
         actual = Pose3.adjoint_(xi, xi)
         np.testing.assert_array_equal(actual, expected)
+
+    def test_serialization(self):
+        """Test if serialization is working normally"""
+        expected = Pose3(Rot3.Ypr(0.0, 1.0, 0.0), Point3(1, 1, 0))
+        actual = Pose3()
+        serialized = expected.serialize()
+        actual.deserialize(serialized)
+        self.gtsamAssertEquals(expected, actual, 1e-10)
 
 
 if __name__ == "__main__":

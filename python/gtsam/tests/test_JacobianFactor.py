@@ -19,7 +19,7 @@ from gtsam.utils.test_case import GtsamTestCase
 class TestJacobianFactor(GtsamTestCase):
 
     def test_eliminate(self):
-        # Recommended way to specify a matrix (see cython/README)
+        # Recommended way to specify a matrix (see python/README)
         Ax2 = np.array(
            [[-5., 0.],
             [+0., -5.],

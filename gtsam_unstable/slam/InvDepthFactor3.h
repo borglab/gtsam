@@ -62,7 +62,7 @@ public:
         Base(model, poseKey, pointKey, invDepthKey), measured_(measured), K_(K) {}
 
   /** Virtual destructor */
-  virtual ~InvDepthFactor3() {}
+  ~InvDepthFactor3() override {}
 
   /**
    * print

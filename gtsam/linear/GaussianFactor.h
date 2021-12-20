@@ -54,8 +54,11 @@ namespace gtsam {
     virtual ~GaussianFactor() {}
 
     // Implementing Testable interface
-    virtual void print(const std::string& s = "",
-        const KeyFormatter& formatter = DefaultKeyFormatter) const = 0;
+
+    /// print
+    void print(
+        const std::string& s = "",
+        const KeyFormatter& formatter = DefaultKeyFormatter) const override = 0;
 
     /** Equals for testable */
     virtual bool equals(const GaussianFactor& lf, double tol = 1e-9) const = 0;

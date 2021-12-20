@@ -22,8 +22,6 @@
 
 #include <iostream>
 
-using namespace std;
-
 namespace gtsam {
 
 // Implementation for N>=5 just uses dynamic version
@@ -108,7 +106,7 @@ typename SO<N>::VectorN2 SO<N>::vec(
 
 template <int N>
 void SO<N>::print(const std::string& s) const {
-    cout << s << matrix_ << endl;
+    std::cout << s << matrix_ << std::endl;
 }
 
 }  // namespace gtsam

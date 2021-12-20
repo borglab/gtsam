@@ -55,6 +55,9 @@ namespace gtsam {
     template<class DERIVEDCONDITIONAL>
     GaussianBayesNet(const FactorGraph<DERIVEDCONDITIONAL>& graph) : Base(graph) {}
 
+    /// Destructor
+    virtual ~GaussianBayesNet() {}
+
     /// @}
 
     /// @name Testable
@@ -176,6 +179,23 @@ namespace gtsam {
      * gz'*R'=gx', gy = gz.*sigmas
      */
     VectorValues backSubstituteTranspose(const VectorValues& gx) const;
+
+    /// print graph
+    void print(
+        const std::string& s = "",
+        const KeyFormatter& formatter = DefaultKeyFormatter) const override {
+      Base::print(s, formatter);
+    }
+
+    /**
+     * @brief Save the GaussianBayesNet as an image. Requires `dot` to be
+     * installed.
+     *
+     * @param s The name of the figure.
+     * @param keyFormatter Formatter to use for styling keys in the graph.
+     */
+    void saveGraph(const std::string& s, const KeyFormatter& keyFormatter =
+                                             DefaultKeyFormatter) const;
 
     /// @}
 

@@ -28,7 +28,7 @@ using namespace std;
 namespace gtsam {
 
 /** instantiate concept checks */
-GTSAM_CONCEPT_POSE_INST(Pose2);
+GTSAM_CONCEPT_POSE_INST(Pose2)
 
 static const Rot2 R_PI_2(Rot2::fromCosSin(0., 1.));
 
@@ -48,7 +48,13 @@ Matrix3 Pose2::matrix() const {
 
 /* ************************************************************************* */
 void Pose2::print(const string& s) const {
-  cout << s << "(" << t_.x() << ", " << t_.y() << ", " << r_.theta() << ")" << endl;
+  std::cout << (s.empty() ? s : s + " ") << *this << std::endl;
+}
+
+/* ************************************************************************* */
+std::ostream &operator<<(std::ostream &os, const Pose2& pose) {
+  os << "(" << pose.x() << ", " << pose.y() << ", " << pose.theta() << ")";
+  return os;
 }
 
 /* ************************************************************************* */

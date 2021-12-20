@@ -19,7 +19,7 @@
 #pragma once
 
 #include <boost/shared_ptr.hpp>
-#include <boost/function.hpp>
+#include <functional>
 #include <boost/variant.hpp>
 #include <boost/optional.hpp>
 
@@ -86,7 +86,7 @@ namespace gtsam {
     typedef std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<_FactorType> > EliminationResult;
 
     /// The function type that does a single dense elimination step on a subgraph.
-    typedef boost::function<EliminationResult(const FactorGraphType&, const Ordering&)> Eliminate;
+    typedef std::function<EliminationResult(const FactorGraphType&, const Ordering&)> Eliminate;
 
     /// Typedef for an optional variable index as an argument to elimination functions
     typedef boost::optional<const VariableIndex&> OptionalVariableIndex;
@@ -288,8 +288,9 @@ namespace gtsam {
     FactorGraphType& asDerived() { return static_cast<FactorGraphType&>(*this); }
 
   public:
+  #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
     /** \deprecated ordering and orderingType shouldn't both be specified */
-    boost::shared_ptr<BayesNetType> eliminateSequential(
+    boost::shared_ptr<BayesNetType> GTSAM_DEPRECATED eliminateSequential(
       const Ordering& ordering,
       const Eliminate& function,
       OptionalVariableIndex variableIndex,
@@ -298,7 +299,7 @@ namespace gtsam {
       }
     
     /** \deprecated orderingType specified first for consistency */
-    boost::shared_ptr<BayesNetType> eliminateSequential(
+    boost::shared_ptr<BayesNetType> GTSAM_DEPRECATED eliminateSequential(
       const Eliminate& function,
       OptionalVariableIndex variableIndex = boost::none,
       OptionalOrderingType orderingType = boost::none) const {
@@ -306,7 +307,7 @@ namespace gtsam {
       }
 
     /** \deprecated ordering and orderingType shouldn't both be specified */
-    boost::shared_ptr<BayesTreeType> eliminateMultifrontal(
+    boost::shared_ptr<BayesTreeType> GTSAM_DEPRECATED eliminateMultifrontal(
       const Ordering& ordering,
       const Eliminate& function,
       OptionalVariableIndex variableIndex,
@@ -315,7 +316,7 @@ namespace gtsam {
       }
 
     /** \deprecated orderingType specified first for consistency */
-    boost::shared_ptr<BayesTreeType> eliminateMultifrontal(
+    boost::shared_ptr<BayesTreeType> GTSAM_DEPRECATED eliminateMultifrontal(
       const Eliminate& function,
       OptionalVariableIndex variableIndex = boost::none,
       OptionalOrderingType orderingType = boost::none) const {
@@ -323,7 +324,7 @@ namespace gtsam {
       }
 
     /** \deprecated */
-    boost::shared_ptr<BayesNetType> marginalMultifrontalBayesNet(
+    boost::shared_ptr<BayesNetType> GTSAM_DEPRECATED marginalMultifrontalBayesNet(
       boost::variant<const Ordering&, const KeyVector&> variables,
       boost::none_t,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
@@ -332,13 +333,14 @@ namespace gtsam {
       }
 
     /** \deprecated */
-    boost::shared_ptr<BayesTreeType> marginalMultifrontalBayesTree(
+    boost::shared_ptr<BayesTreeType> GTSAM_DEPRECATED marginalMultifrontalBayesTree(
       boost::variant<const Ordering&, const KeyVector&> variables,
       boost::none_t,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
       OptionalVariableIndex variableIndex = boost::none) const {
           return marginalMultifrontalBayesTree(variables, function, variableIndex);
       }
+  #endif
   };
 
 }

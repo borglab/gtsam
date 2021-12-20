@@ -29,7 +29,9 @@ namespace gtsam {
 /// Parameters for pre-integration:
 /// Usage: Create just a single Params and pass a shared pointer to the constructor
 struct GTSAM_EXPORT PreintegratedRotationParams {
-  Matrix3 gyroscopeCovariance;  ///< continuous-time "Covariance" of gyroscope measurements
+  /// Continuous-time "Covariance" of gyroscope measurements
+  /// The units for stddev are σ = rad/s/√Hz
+  Matrix3 gyroscopeCovariance;
   boost::optional<Vector3> omegaCoriolis;  ///< Coriolis constant
   boost::optional<Pose3> body_P_sensor;    ///< The pose of the sensor in the body frame
 

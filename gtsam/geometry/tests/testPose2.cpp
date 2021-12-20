@@ -14,16 +14,17 @@
  * @brief  Unit tests for Pose2 class
  */
 
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/geometry/Point2.h>
-#include <gtsam/geometry/Rot2.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/testLie.h>
-#include <gtsam/base/lieProxies.h>
-
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/TestableAssertions.h>
+#include <gtsam/base/lieProxies.h>
+#include <gtsam/base/testLie.h>
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Rot2.h>
+
+#include <boost/assign/std/vector.hpp>  // for operator +=
 #include <boost/optional.hpp>
-#include <boost/assign/std/vector.hpp> // for operator +=
 #include <cmath>
 #include <iostream>
 
@@ -908,6 +909,22 @@ TEST(Pose2 , TransformCovariance3) {
       Vector3{0., 0., -0.1 * 0.1 * 20.},
       Vector3{transformed(1, 0), transformed(2, 0), transformed(2, 1)}));
   }
+}
+
+/* ************************************************************************* */
+TEST(Pose2, Print) {
+  Pose2 pose(Rot2::identity(), Point2(1, 2));
+
+  // Generate the expected output
+  string s = "Planar Pose";
+  string expected_stdout = "(1, 2, 0)";
+  string expected1 = expected_stdout + "\n";
+  string expected2 = s + " " + expected1;
+
+  EXPECT(assert_stdout_equal(expected_stdout, pose));
+
+  EXPECT(assert_print_equal(expected1, pose));
+  EXPECT(assert_print_equal(expected2, pose, s));
 }
 
 /* ************************************************************************* */

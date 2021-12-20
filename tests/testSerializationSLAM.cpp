@@ -89,10 +89,8 @@ typedef RangeFactor<Pose3, Point3>                              RangeFactor3D;
 typedef RangeFactor<Pose2, Pose2>                               RangeFactorPose2;
 typedef RangeFactor<Pose3, Pose3>                               RangeFactorPose3;
 typedef RangeFactor<CalibratedCamera, Point3>                   RangeFactorCalibratedCameraPoint;
-typedef RangeFactor<SimpleCamera, Point3>                       RangeFactorSimpleCameraPoint;
 typedef RangeFactor<PinholeCameraCal3_S2, Point3>               RangeFactorPinholeCameraCal3_S2Point;
 typedef RangeFactor<CalibratedCamera, CalibratedCamera>         RangeFactorCalibratedCamera;
-typedef RangeFactor<SimpleCamera, SimpleCamera>                 RangeFactorSimpleCamera;
 typedef RangeFactor<PinholeCameraCal3_S2, PinholeCameraCal3_S2> RangeFactorPinholeCameraCal3_S2;
 
 typedef BearingRangeFactor<Pose2, Point2>  BearingRangeFactor2D;
@@ -102,7 +100,7 @@ typedef GenericProjectionFactor<Pose3, Point3, Cal3_S2> GenericProjectionFactorC
 typedef GenericProjectionFactor<Pose3, Point3, Cal3DS2> GenericProjectionFactorCal3DS2;
 
 typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3_S2, gtsam::Point3> GeneralSFMFactorCal3_S2;
-//typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3DS2, gtsam::Point3> GeneralSFMFactorCal3DS2;
+typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3DS2, gtsam::Point3> GeneralSFMFactorCal3DS2;
 
 typedef gtsam::GeneralSFMFactor2<gtsam::Cal3_S2> GeneralSFMFactor2Cal3_S2;
 
@@ -116,95 +114,94 @@ using symbol_shorthand::L;
 
 /* Create GUIDs for Noisemodels */
 /* ************************************************************************* */
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Constrained, "gtsam_noiseModel_Constrained");
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Diagonal, "gtsam_noiseModel_Diagonal");
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Gaussian, "gtsam_noiseModel_Gaussian");
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Unit, "gtsam_noiseModel_Unit");
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Isotropic, "gtsam_noiseModel_Isotropic");
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Robust, "gtsam_noiseModel_Robust");
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Constrained, "gtsam_noiseModel_Constrained")
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Diagonal, "gtsam_noiseModel_Diagonal")
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Gaussian, "gtsam_noiseModel_Gaussian")
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Unit, "gtsam_noiseModel_Unit")
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Isotropic, "gtsam_noiseModel_Isotropic")
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Robust, "gtsam_noiseModel_Robust")
 
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::Base , "gtsam_noiseModel_mEstimator_Base");
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::Null , "gtsam_noiseModel_mEstimator_Null");
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::Fair , "gtsam_noiseModel_mEstimator_Fair");
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::Huber, "gtsam_noiseModel_mEstimator_Huber");
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::Tukey, "gtsam_noiseModel_mEstimator_Tukey");
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::Base , "gtsam_noiseModel_mEstimator_Base")
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::Null , "gtsam_noiseModel_mEstimator_Null")
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::Fair , "gtsam_noiseModel_mEstimator_Fair")
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::Huber, "gtsam_noiseModel_mEstimator_Huber")
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::Tukey, "gtsam_noiseModel_mEstimator_Tukey")
 
-BOOST_CLASS_EXPORT_GUID(gtsam::SharedNoiseModel, "gtsam_SharedNoiseModel");
-BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal");
+BOOST_CLASS_EXPORT_GUID(gtsam::SharedNoiseModel, "gtsam_SharedNoiseModel")
+BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal")
 
 /* Create GUIDs for geometry */
 /* ************************************************************************* */
-GTSAM_VALUE_EXPORT(gtsam::Point2);
-GTSAM_VALUE_EXPORT(gtsam::StereoPoint2);
-GTSAM_VALUE_EXPORT(gtsam::Point3);
-GTSAM_VALUE_EXPORT(gtsam::Rot2);
-GTSAM_VALUE_EXPORT(gtsam::Rot3);
-GTSAM_VALUE_EXPORT(gtsam::Pose2);
-GTSAM_VALUE_EXPORT(gtsam::Pose3);
-GTSAM_VALUE_EXPORT(gtsam::Cal3_S2);
-GTSAM_VALUE_EXPORT(gtsam::Cal3DS2);
-GTSAM_VALUE_EXPORT(gtsam::Cal3_S2Stereo);
-GTSAM_VALUE_EXPORT(gtsam::CalibratedCamera);
-GTSAM_VALUE_EXPORT(gtsam::SimpleCamera);
-GTSAM_VALUE_EXPORT(gtsam::PinholeCameraCal3_S2);
-GTSAM_VALUE_EXPORT(gtsam::StereoCamera);
+GTSAM_VALUE_EXPORT(gtsam::Point2)
+GTSAM_VALUE_EXPORT(gtsam::StereoPoint2)
+GTSAM_VALUE_EXPORT(gtsam::Point3)
+GTSAM_VALUE_EXPORT(gtsam::Rot2)
+GTSAM_VALUE_EXPORT(gtsam::Rot3)
+GTSAM_VALUE_EXPORT(gtsam::Pose2)
+GTSAM_VALUE_EXPORT(gtsam::Pose3)
+GTSAM_VALUE_EXPORT(gtsam::Cal3_S2)
+GTSAM_VALUE_EXPORT(gtsam::Cal3DS2)
+GTSAM_VALUE_EXPORT(gtsam::Cal3_S2Stereo)
+GTSAM_VALUE_EXPORT(gtsam::CalibratedCamera)
+GTSAM_VALUE_EXPORT(gtsam::PinholeCameraCal3_S2)
+GTSAM_VALUE_EXPORT(gtsam::StereoCamera)
 
 /* Create GUIDs for factors */
 /* ************************************************************************* */
-BOOST_CLASS_EXPORT_GUID(gtsam::JacobianFactor, "gtsam::JacobianFactor");
-BOOST_CLASS_EXPORT_GUID(gtsam::HessianFactor , "gtsam::HessianFactor");
+BOOST_CLASS_EXPORT_GUID(gtsam::JacobianFactor, "gtsam::JacobianFactor")
+BOOST_CLASS_EXPORT_GUID(gtsam::HessianFactor , "gtsam::HessianFactor")
 
-BOOST_CLASS_EXPORT_GUID(PriorFactorPoint2, "gtsam::PriorFactorPoint2");
-BOOST_CLASS_EXPORT_GUID(PriorFactorStereoPoint2, "gtsam::PriorFactorStereoPoint2");
-BOOST_CLASS_EXPORT_GUID(PriorFactorPoint3, "gtsam::PriorFactorPoint3");
-BOOST_CLASS_EXPORT_GUID(PriorFactorRot2, "gtsam::PriorFactorRot2");
-BOOST_CLASS_EXPORT_GUID(PriorFactorRot3, "gtsam::PriorFactorRot3");
-BOOST_CLASS_EXPORT_GUID(PriorFactorPose2, "gtsam::PriorFactorPose2");
-BOOST_CLASS_EXPORT_GUID(PriorFactorPose3, "gtsam::PriorFactorPose3");
-BOOST_CLASS_EXPORT_GUID(PriorFactorCal3_S2, "gtsam::PriorFactorCal3_S2");
-BOOST_CLASS_EXPORT_GUID(PriorFactorCal3DS2, "gtsam::PriorFactorCal3DS2");
-BOOST_CLASS_EXPORT_GUID(PriorFactorCalibratedCamera, "gtsam::PriorFactorCalibratedCamera");
-BOOST_CLASS_EXPORT_GUID(PriorFactorStereoCamera, "gtsam::PriorFactorStereoCamera");
+BOOST_CLASS_EXPORT_GUID(PriorFactorPoint2, "gtsam::PriorFactorPoint2")
+BOOST_CLASS_EXPORT_GUID(PriorFactorStereoPoint2, "gtsam::PriorFactorStereoPoint2")
+BOOST_CLASS_EXPORT_GUID(PriorFactorPoint3, "gtsam::PriorFactorPoint3")
+BOOST_CLASS_EXPORT_GUID(PriorFactorRot2, "gtsam::PriorFactorRot2")
+BOOST_CLASS_EXPORT_GUID(PriorFactorRot3, "gtsam::PriorFactorRot3")
+BOOST_CLASS_EXPORT_GUID(PriorFactorPose2, "gtsam::PriorFactorPose2")
+BOOST_CLASS_EXPORT_GUID(PriorFactorPose3, "gtsam::PriorFactorPose3")
+BOOST_CLASS_EXPORT_GUID(PriorFactorCal3_S2, "gtsam::PriorFactorCal3_S2")
+BOOST_CLASS_EXPORT_GUID(PriorFactorCal3DS2, "gtsam::PriorFactorCal3DS2")
+BOOST_CLASS_EXPORT_GUID(PriorFactorCalibratedCamera, "gtsam::PriorFactorCalibratedCamera")
+BOOST_CLASS_EXPORT_GUID(PriorFactorStereoCamera, "gtsam::PriorFactorStereoCamera")
 
-BOOST_CLASS_EXPORT_GUID(BetweenFactorPoint2, "gtsam::BetweenFactorPoint2");
-BOOST_CLASS_EXPORT_GUID(BetweenFactorPoint3, "gtsam::BetweenFactorPoint3");
-BOOST_CLASS_EXPORT_GUID(BetweenFactorRot2, "gtsam::BetweenFactorRot2");
-BOOST_CLASS_EXPORT_GUID(BetweenFactorRot3, "gtsam::BetweenFactorRot3");
-BOOST_CLASS_EXPORT_GUID(BetweenFactorPose2, "gtsam::BetweenFactorPose2");
-BOOST_CLASS_EXPORT_GUID(BetweenFactorPose3, "gtsam::BetweenFactorPose3");
+BOOST_CLASS_EXPORT_GUID(BetweenFactorPoint2, "gtsam::BetweenFactorPoint2")
+BOOST_CLASS_EXPORT_GUID(BetweenFactorPoint3, "gtsam::BetweenFactorPoint3")
+BOOST_CLASS_EXPORT_GUID(BetweenFactorRot2, "gtsam::BetweenFactorRot2")
+BOOST_CLASS_EXPORT_GUID(BetweenFactorRot3, "gtsam::BetweenFactorRot3")
+BOOST_CLASS_EXPORT_GUID(BetweenFactorPose2, "gtsam::BetweenFactorPose2")
+BOOST_CLASS_EXPORT_GUID(BetweenFactorPose3, "gtsam::BetweenFactorPose3")
 
-BOOST_CLASS_EXPORT_GUID(NonlinearEqualityPoint2, "gtsam::NonlinearEqualityPoint2");
-BOOST_CLASS_EXPORT_GUID(NonlinearEqualityStereoPoint2, "gtsam::NonlinearEqualityStereoPoint2");
-BOOST_CLASS_EXPORT_GUID(NonlinearEqualityPoint3, "gtsam::NonlinearEqualityPoint3");
-BOOST_CLASS_EXPORT_GUID(NonlinearEqualityRot2, "gtsam::NonlinearEqualityRot2");
-BOOST_CLASS_EXPORT_GUID(NonlinearEqualityRot3, "gtsam::NonlinearEqualityRot3");
-BOOST_CLASS_EXPORT_GUID(NonlinearEqualityPose2, "gtsam::NonlinearEqualityPose2");
-BOOST_CLASS_EXPORT_GUID(NonlinearEqualityPose3, "gtsam::NonlinearEqualityPose3");
-BOOST_CLASS_EXPORT_GUID(NonlinearEqualityCal3_S2, "gtsam::NonlinearEqualityCal3_S2");
-BOOST_CLASS_EXPORT_GUID(NonlinearEqualityCal3DS2, "gtsam::NonlinearEqualityCal3DS2");
-BOOST_CLASS_EXPORT_GUID(NonlinearEqualityCalibratedCamera, "gtsam::NonlinearEqualityCalibratedCamera");
-BOOST_CLASS_EXPORT_GUID(NonlinearEqualityStereoCamera, "gtsam::NonlinearEqualityStereoCamera");
+BOOST_CLASS_EXPORT_GUID(NonlinearEqualityPoint2, "gtsam::NonlinearEqualityPoint2")
+BOOST_CLASS_EXPORT_GUID(NonlinearEqualityStereoPoint2, "gtsam::NonlinearEqualityStereoPoint2")
+BOOST_CLASS_EXPORT_GUID(NonlinearEqualityPoint3, "gtsam::NonlinearEqualityPoint3")
+BOOST_CLASS_EXPORT_GUID(NonlinearEqualityRot2, "gtsam::NonlinearEqualityRot2")
+BOOST_CLASS_EXPORT_GUID(NonlinearEqualityRot3, "gtsam::NonlinearEqualityRot3")
+BOOST_CLASS_EXPORT_GUID(NonlinearEqualityPose2, "gtsam::NonlinearEqualityPose2")
+BOOST_CLASS_EXPORT_GUID(NonlinearEqualityPose3, "gtsam::NonlinearEqualityPose3")
+BOOST_CLASS_EXPORT_GUID(NonlinearEqualityCal3_S2, "gtsam::NonlinearEqualityCal3_S2")
+BOOST_CLASS_EXPORT_GUID(NonlinearEqualityCal3DS2, "gtsam::NonlinearEqualityCal3DS2")
+BOOST_CLASS_EXPORT_GUID(NonlinearEqualityCalibratedCamera, "gtsam::NonlinearEqualityCalibratedCamera")
+BOOST_CLASS_EXPORT_GUID(NonlinearEqualityStereoCamera, "gtsam::NonlinearEqualityStereoCamera")
 
-BOOST_CLASS_EXPORT_GUID(RangeFactor2D, "gtsam::RangeFactor2D");
-BOOST_CLASS_EXPORT_GUID(RangeFactor3D, "gtsam::RangeFactor3D");
-BOOST_CLASS_EXPORT_GUID(RangeFactorPose2, "gtsam::RangeFactorPose2");
-BOOST_CLASS_EXPORT_GUID(RangeFactorPose3, "gtsam::RangeFactorPose3");
-BOOST_CLASS_EXPORT_GUID(RangeFactorCalibratedCameraPoint, "gtsam::RangeFactorCalibratedCameraPoint");
-BOOST_CLASS_EXPORT_GUID(RangeFactorSimpleCameraPoint, "gtsam::RangeFactorSimpleCameraPoint");
-BOOST_CLASS_EXPORT_GUID(RangeFactorCalibratedCamera, "gtsam::RangeFactorCalibratedCamera");
-BOOST_CLASS_EXPORT_GUID(RangeFactorSimpleCamera, "gtsam::RangeFactorSimpleCamera");
+BOOST_CLASS_EXPORT_GUID(RangeFactor2D, "gtsam::RangeFactor2D")
+BOOST_CLASS_EXPORT_GUID(RangeFactor3D, "gtsam::RangeFactor3D")
+BOOST_CLASS_EXPORT_GUID(RangeFactorPose2, "gtsam::RangeFactorPose2")
+BOOST_CLASS_EXPORT_GUID(RangeFactorPose3, "gtsam::RangeFactorPose3")
+BOOST_CLASS_EXPORT_GUID(RangeFactorCalibratedCameraPoint, "gtsam::RangeFactorCalibratedCameraPoint")
+BOOST_CLASS_EXPORT_GUID(RangeFactorPinholeCameraCal3_S2Point, "gtsam::RangeFactorPinholeCameraCal3_S2Point")
+BOOST_CLASS_EXPORT_GUID(RangeFactorCalibratedCamera, "gtsam::RangeFactorCalibratedCamera")
+BOOST_CLASS_EXPORT_GUID(RangeFactorPinholeCameraCal3_S2, "gtsam::RangeFactorPinholeCameraCal3_S2")
 
-BOOST_CLASS_EXPORT_GUID(BearingRangeFactor2D, "gtsam::BearingRangeFactor2D");
+BOOST_CLASS_EXPORT_GUID(BearingRangeFactor2D, "gtsam::BearingRangeFactor2D")
 
-BOOST_CLASS_EXPORT_GUID(GenericProjectionFactorCal3_S2, "gtsam::GenericProjectionFactorCal3_S2");
-BOOST_CLASS_EXPORT_GUID(GenericProjectionFactorCal3DS2, "gtsam::GenericProjectionFactorCal3DS2");
+BOOST_CLASS_EXPORT_GUID(GenericProjectionFactorCal3_S2, "gtsam::GenericProjectionFactorCal3_S2")
+BOOST_CLASS_EXPORT_GUID(GenericProjectionFactorCal3DS2, "gtsam::GenericProjectionFactorCal3DS2")
 
-BOOST_CLASS_EXPORT_GUID(GeneralSFMFactorCal3_S2, "gtsam::GeneralSFMFactorCal3_S2");
-//BOOST_CLASS_EXPORT_GUID(GeneralSFMFactorCal3DS2, "gtsam::GeneralSFMFactorCal3DS2");
+BOOST_CLASS_EXPORT_GUID(GeneralSFMFactorCal3_S2, "gtsam::GeneralSFMFactorCal3_S2")
+BOOST_CLASS_EXPORT_GUID(GeneralSFMFactorCal3DS2, "gtsam::GeneralSFMFactorCal3DS2")
 
-BOOST_CLASS_EXPORT_GUID(GeneralSFMFactor2Cal3_S2, "gtsam::GeneralSFMFactor2Cal3_S2");
+BOOST_CLASS_EXPORT_GUID(GeneralSFMFactor2Cal3_S2, "gtsam::GeneralSFMFactor2Cal3_S2")
 
-BOOST_CLASS_EXPORT_GUID(GenericStereoFactor3D, "gtsam::GenericStereoFactor3D");
+BOOST_CLASS_EXPORT_GUID(GenericStereoFactor3D, "gtsam::GenericStereoFactor3D")
 
 
 /* ************************************************************************* */
@@ -352,9 +349,9 @@ TEST (testSerializationSLAM, factors) {
   RangeFactorPose2 rangeFactorPose2(a08, b08, 2.0, model1);
   RangeFactorPose3 rangeFactorPose3(a09, b09, 2.0, model1);
   RangeFactorCalibratedCameraPoint rangeFactorCalibratedCameraPoint(a12, a05, 2.0, model1);
-  RangeFactorSimpleCameraPoint rangeFactorSimpleCameraPoint(a13, a05, 2.0, model1);
+  RangeFactorPinholeCameraCal3_S2Point rangeFactorPinholeCameraCal3_S2Point(a13, a05, 2.0, model1);
   RangeFactorCalibratedCamera rangeFactorCalibratedCamera(a12, b12, 2.0, model1);
-  RangeFactorSimpleCamera rangeFactorSimpleCamera(a13, b13, 2.0, model1);
+  RangeFactorPinholeCameraCal3_S2 rangeFactorPinholeCameraCal3_S2(a13, b13, 2.0, model1);
 
   BearingRangeFactor2D bearingRangeFactor2D(a08, a03, rot2, 2.0, model2);
 
@@ -405,9 +402,9 @@ TEST (testSerializationSLAM, factors) {
   graph += rangeFactorPose2;
   graph += rangeFactorPose3;
   graph += rangeFactorCalibratedCameraPoint;
-  graph += rangeFactorSimpleCameraPoint;
+  graph += rangeFactorPinholeCameraCal3_S2Point;
   graph += rangeFactorCalibratedCamera;
-  graph += rangeFactorSimpleCamera;
+  graph += rangeFactorPinholeCameraCal3_S2;
 
   graph += bearingRangeFactor2D;
 
@@ -463,9 +460,9 @@ TEST (testSerializationSLAM, factors) {
   EXPECT(equalsObj<RangeFactorPose2>(rangeFactorPose2));
   EXPECT(equalsObj<RangeFactorPose3>(rangeFactorPose3));
   EXPECT(equalsObj<RangeFactorCalibratedCameraPoint>(rangeFactorCalibratedCameraPoint));
-  EXPECT(equalsObj<RangeFactorSimpleCameraPoint>(rangeFactorSimpleCameraPoint));
+  EXPECT(equalsObj<RangeFactorPinholeCameraCal3_S2Point>(rangeFactorPinholeCameraCal3_S2Point));
   EXPECT(equalsObj<RangeFactorCalibratedCamera>(rangeFactorCalibratedCamera));
-  EXPECT(equalsObj<RangeFactorSimpleCamera>(rangeFactorSimpleCamera));
+  EXPECT(equalsObj<RangeFactorPinholeCameraCal3_S2>(rangeFactorPinholeCameraCal3_S2));
 
   EXPECT(equalsObj<BearingRangeFactor2D>(bearingRangeFactor2D));
 
@@ -521,9 +518,9 @@ TEST (testSerializationSLAM, factors) {
   EXPECT(equalsXML<RangeFactorPose2>(rangeFactorPose2));
   EXPECT(equalsXML<RangeFactorPose3>(rangeFactorPose3));
   EXPECT(equalsXML<RangeFactorCalibratedCameraPoint>(rangeFactorCalibratedCameraPoint));
-  EXPECT(equalsXML<RangeFactorSimpleCameraPoint>(rangeFactorSimpleCameraPoint));
+  EXPECT(equalsXML<RangeFactorPinholeCameraCal3_S2Point>(rangeFactorPinholeCameraCal3_S2Point));
   EXPECT(equalsXML<RangeFactorCalibratedCamera>(rangeFactorCalibratedCamera));
-  EXPECT(equalsXML<RangeFactorSimpleCamera>(rangeFactorSimpleCamera));
+  EXPECT(equalsXML<RangeFactorPinholeCameraCal3_S2>(rangeFactorPinholeCameraCal3_S2));
 
   EXPECT(equalsXML<BearingRangeFactor2D>(bearingRangeFactor2D));
 
@@ -579,9 +576,9 @@ TEST (testSerializationSLAM, factors) {
   EXPECT(equalsBinary<RangeFactorPose2>(rangeFactorPose2));
   EXPECT(equalsBinary<RangeFactorPose3>(rangeFactorPose3));
   EXPECT(equalsBinary<RangeFactorCalibratedCameraPoint>(rangeFactorCalibratedCameraPoint));
-  EXPECT(equalsBinary<RangeFactorSimpleCameraPoint>(rangeFactorSimpleCameraPoint));
+  EXPECT(equalsBinary<RangeFactorPinholeCameraCal3_S2Point>(rangeFactorPinholeCameraCal3_S2Point));
   EXPECT(equalsBinary<RangeFactorCalibratedCamera>(rangeFactorCalibratedCamera));
-  EXPECT(equalsBinary<RangeFactorSimpleCamera>(rangeFactorSimpleCamera));
+  EXPECT(equalsBinary<RangeFactorPinholeCameraCal3_S2>(rangeFactorPinholeCameraCal3_S2));
 
   EXPECT(equalsBinary<BearingRangeFactor2D>(bearingRangeFactor2D));
 

@@ -183,7 +183,7 @@ namespace gtsam {
         : HessianFactor(factors, Scatter(factors)) {}
 
     /** Destructor */
-    virtual ~HessianFactor() {}
+    ~HessianFactor() override {}
 
     /** Clone this HessianFactor */
     GaussianFactor::shared_ptr clone() const override {

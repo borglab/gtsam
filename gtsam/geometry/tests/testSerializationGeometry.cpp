@@ -57,7 +57,7 @@ static StereoCamera cam2(pose3, cal4ptr);
 static StereoPoint2 spt(1.0, 2.0, 3.0);
 
 /* ************************************************************************* */
-TEST_DISABLED (Serialization, text_geometry) {
+TEST (Serialization, text_geometry) {
   EXPECT(equalsObj<gtsam::Point2>(Point2(1.0, 2.0)));
   EXPECT(equalsObj<gtsam::Pose2>(Pose2(1.0, 2.0, 0.3)));
   EXPECT(equalsObj<gtsam::Rot2>(Rot2::fromDegrees(30.0)));
@@ -82,7 +82,7 @@ TEST_DISABLED (Serialization, text_geometry) {
 }
 
 /* ************************************************************************* */
-TEST_DISABLED (Serialization, xml_geometry) {
+TEST (Serialization, xml_geometry) {
   EXPECT(equalsXML<gtsam::Point2>(Point2(1.0, 2.0)));
   EXPECT(equalsXML<gtsam::Pose2>(Pose2(1.0, 2.0, 0.3)));
   EXPECT(equalsXML<gtsam::Rot2>(Rot2::fromDegrees(30.0)));
@@ -106,7 +106,7 @@ TEST_DISABLED (Serialization, xml_geometry) {
 }
 
 /* ************************************************************************* */
-TEST_DISABLED (Serialization, binary_geometry) {
+TEST (Serialization, binary_geometry) {
   EXPECT(equalsBinary<gtsam::Point2>(Point2(1.0, 2.0)));
   EXPECT(equalsBinary<gtsam::Pose2>(Pose2(1.0, 2.0, 0.3)));
   EXPECT(equalsBinary<gtsam::Rot2>(Rot2::fromDegrees(30.0)));

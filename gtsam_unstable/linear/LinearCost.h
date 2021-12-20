@@ -84,7 +84,7 @@ public:
   }
 
   /** Virtual destructor */
-  virtual ~LinearCost() {
+  ~LinearCost() override {
   }
 
   /** equals */

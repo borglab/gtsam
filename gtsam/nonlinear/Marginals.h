@@ -48,7 +48,7 @@ protected:
 
 public:
 
-  /// Default constructor only for Cython wrapper
+  /// Default constructor only for wrappers
   Marginals(){}
 
   /** Construct a marginals class from a nonlinear factor graph.
@@ -131,17 +131,19 @@ protected:
   void computeBayesTree(const Ordering& ordering);
 
 public:
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
   /** \deprecated argument order changed due to removing boost::optional<Ordering> */
-  Marginals(const NonlinearFactorGraph& graph, const Values& solution, Factorization factorization,
+  GTSAM_DEPRECATED Marginals(const NonlinearFactorGraph& graph, const Values& solution, Factorization factorization,
             const Ordering& ordering) : Marginals(graph, solution, ordering, factorization) {}
 
   /** \deprecated argument order changed due to removing boost::optional<Ordering> */
-  Marginals(const GaussianFactorGraph& graph, const Values& solution, Factorization factorization,
+  GTSAM_DEPRECATED Marginals(const GaussianFactorGraph& graph, const Values& solution, Factorization factorization,
             const Ordering& ordering) : Marginals(graph, solution, ordering, factorization) {}
 
   /** \deprecated argument order changed due to removing boost::optional<Ordering> */
-  Marginals(const GaussianFactorGraph& graph, const VectorValues& solution, Factorization factorization,
+  GTSAM_DEPRECATED Marginals(const GaussianFactorGraph& graph, const VectorValues& solution, Factorization factorization,
             const Ordering& ordering) : Marginals(graph, solution, ordering, factorization) {}
+#endif
 
 };
 
@@ -156,7 +158,7 @@ protected:
   FastMap<Key, size_t> indices_;
 
 public:
-  /// Default constructor only for Cython wrapper
+  /// Default constructor only for wrappers
   JointMarginal() {}
 
   /** Access a block, corresponding to a pair of variables, of the joint

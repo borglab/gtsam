@@ -29,7 +29,7 @@ from gtsam.utils.test_case import GtsamTestCase
 
 def vector3(x, y, z):
     """Create 3D double numpy array."""
-    return np.array([x, y, z], dtype=np.float)
+    return np.array([x, y, z], dtype=float)
 
 
 def compose(*poses):
@@ -94,7 +94,7 @@ class ThreeLinkArm(object):
                          [-self.L1*math.sin(q[0]) - self.L2*math.sin(a)-self.L3*math.sin(b),
                           -self.L1*math.sin(a)-self.L3*math.sin(b),
                           - self.L3*math.sin(b)],
-                         [1, 1, 1]], np.float)
+                         [1, 1, 1]], float)
 
     def poe(self, q):
         """ Forward kinematics.
@@ -230,12 +230,12 @@ class TestPose2SLAMExample(GtsamTestCase):
     def test_jacobian(self):
         """Test Jacobian calculation."""
         # at rest
-        expected = np.array([[-9.5, -6, -2.5], [0, 0, 0], [1, 1, 1]], np.float)
+        expected = np.array([[-9.5, -6, -2.5], [0, 0, 0], [1, 1, 1]], float)
         J = self.arm.jacobian(Q0)
         np.testing.assert_array_almost_equal(J, expected)
 
         # at -90, 90, 0
-        expected = np.array([[-6, -6, -2.5], [3.5, 0, 0], [1, 1, 1]], np.float)
+        expected = np.array([[-6, -6, -2.5], [3.5, 0, 0], [1, 1, 1]], float)
         J = self.arm.jacobian(Q2)
         np.testing.assert_array_almost_equal(J, expected)
 
@@ -280,13 +280,13 @@ class TestPose2SLAMExample(GtsamTestCase):
     def test_manipulator_jacobian(self):
         """Test Jacobian calculation."""
         # at rest
-        expected = np.array([[0, 3.5, 7], [0, 0, 0], [1, 1, 1]], np.float)
+        expected = np.array([[0, 3.5, 7], [0, 0, 0], [1, 1, 1]], float)
         J = self.arm.manipulator_jacobian(Q0)
         np.testing.assert_array_almost_equal(J, expected)
 
         # at -90, 90, 0
         expected = np.array(
-            [[0, 0, 3.5], [0, -3.5, -3.5], [1, 1, 1]], np.float)
+            [[0, 0, 3.5], [0, -3.5, -3.5], [1, 1, 1]], float)
         J = self.arm.manipulator_jacobian(Q2)
         np.testing.assert_array_almost_equal(J, expected)
 
