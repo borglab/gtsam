@@ -22,14 +22,15 @@ namespace gtsam {
 
 /**
  * @brief Container for both discrete and continuous values.
- *
  */
 struct DCValues {
   DCValues() {}
-  DCValues(const Values &c, const DiscreteValues &d)
-      : continuous(c), discrete(d) {}
-  Values continuous;
-  DiscreteValues discrete;
+
+  DCValues(const Values &continuous, const DiscreteValues &discrete)
+      : continuous_(continuous), discrete_(discrete) {}
+
+  Values continuous_;
+  DiscreteValues discrete_;
 };
 
 }  // namespace gtsam

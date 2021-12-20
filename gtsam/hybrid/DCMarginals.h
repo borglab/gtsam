@@ -21,10 +21,12 @@
 namespace gtsam {
 
 struct DCMarginals {
-  DCMarginals(const Marginals &c, const DiscreteMarginals &d)
-      : continuous(c), discrete(d) {}
-  Marginals continuous;
-  DiscreteMarginals discrete;
+  DCMarginals() {}
+
+  DCMarginals(const Marginals &continuous, const DiscreteMarginals &discrete)
+      : continuous_(continuous), discrete_(discrete) {}
+  Marginals continuous_;
+  DiscreteMarginals discrete_;
 };
 
 }  // namespace gtsam
