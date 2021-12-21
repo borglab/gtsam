@@ -17,12 +17,12 @@ namespace gtsam {
 HybridFactorGraph::HybridFactorGraph() {}
 
 void HybridFactorGraph::push_nonlinear(
-    const boost::shared_ptr<gtsam::NonlinearFactor>& nonlinearFactor) {
+    const boost::shared_ptr<NonlinearFactor>& nonlinearFactor) {
   nonlinearGraph_.push_back(nonlinearFactor);
 }
 
 void HybridFactorGraph::push_discrete(
-    const boost::shared_ptr<gtsam::DiscreteFactor> &discreteFactor) {
+    const boost::shared_ptr<DiscreteFactor>& discreteFactor) {
   discreteGraph_.push_back(discreteFactor);
 }
 
@@ -30,8 +30,8 @@ void HybridFactorGraph::push_dc(const boost::shared_ptr<DCFactor>& dcFactor) {
   dcGraph_.push_back(dcFactor);
 }
 
-void HybridFactorGraph::print(const std::string &str,
-                              const gtsam::KeyFormatter &keyFormatter) const {
+void HybridFactorGraph::print(const std::string& str,
+                              const KeyFormatter& keyFormatter) const {
   std::string nonlinearStr = str + ": NonlinearFactorGraph";
   std::string discreteStr = str + ": DiscreteFactorGraph";
   std::string dcStr = str + ": DCFactorGraph";
@@ -41,8 +41,8 @@ void HybridFactorGraph::print(const std::string &str,
   dcGraph_.print(dcStr, keyFormatter);
 }
 
-gtsam::FastSet<gtsam::Key> HybridFactorGraph::keys() const {
-  gtsam::FastSet<gtsam::Key> keys;
+FastSet<Key> HybridFactorGraph::keys() const {
+  FastSet<Key> keys;
   // Combine keys from all the internal graphs
   keys.merge(nonlinearGraph_.keys());
   keys.merge(discreteGraph_.keys());
@@ -50,11 +50,11 @@ gtsam::FastSet<gtsam::Key> HybridFactorGraph::keys() const {
   return keys;
 }
 
-const gtsam::NonlinearFactorGraph& HybridFactorGraph::nonlinearGraph() const {
+const NonlinearFactorGraph& HybridFactorGraph::nonlinearGraph() const {
   return nonlinearGraph_;
 }
 
-const gtsam::DiscreteFactorGraph& HybridFactorGraph::discreteGraph() const {
+const DiscreteFactorGraph& HybridFactorGraph::discreteGraph() const {
   return discreteGraph_;
 }
 
@@ -64,7 +64,7 @@ bool HybridFactorGraph::empty() const {
   return nonlinearGraph_.empty() && discreteGraph_.empty() && dcGraph_.empty();
 }
 
-bool HybridFactorGraph::equals(const HybridFactorGraph &other,
+bool HybridFactorGraph::equals(const HybridFactorGraph& other,
                                double tol) const {
   return nonlinearGraph_.equals(other.nonlinearGraph_, tol) &&
          discreteGraph_.equals(other.discreteGraph_, tol) &&

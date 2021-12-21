@@ -19,7 +19,7 @@ namespace gtsam {
 /**
  * Very simple class to create a factor graph with factors of type DCFactor
  */
-class DCFactorGraph : public gtsam::FactorGraph<DCFactor> {
+class DCFactorGraph : public FactorGraph<DCFactor> {
  public:
   DCFactorGraph() : FactorGraph<DCFactor>() {}
 };
