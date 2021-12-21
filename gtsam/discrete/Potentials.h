@@ -29,7 +29,7 @@ namespace gtsam {
   /**
    * A base class for both DiscreteFactor and DiscreteConditional
    */
-  class Potentials: public AlgebraicDecisionTree<Key> {
+  class GTSAM_EXPORT Potentials: public AlgebraicDecisionTree<Key> {
 
   public:
 
@@ -46,7 +46,7 @@ namespace gtsam {
     }
 
     // Safe division for probabilities
-    GTSAM_EXPORT static double safe_div(const double& a, const double& b);
+    static double safe_div(const double& a, const double& b);
 
 //    // Apply either a permutation or a reduction
 //    template<class P>
@@ -55,10 +55,10 @@ namespace gtsam {
   public:
 
     /** Default constructor for I/O */
-    GTSAM_EXPORT Potentials();
+    Potentials();
 
     /** Constructor from Indices and ADT */
-    GTSAM_EXPORT Potentials(const DiscreteKeys& keys, const ADT& decisionTree);
+    Potentials(const DiscreteKeys& keys, const ADT& decisionTree);
 
     /** Constructor from Indices and (string or doubles) */
     template<class SOURCE>
@@ -67,8 +67,8 @@ namespace gtsam {
     }
 
     // Testable
-    GTSAM_EXPORT bool equals(const Potentials& other, double tol = 1e-9) const;
-    GTSAM_EXPORT void print(const std::string& s = "Potentials: ",
+    bool equals(const Potentials& other, double tol = 1e-9) const;
+    void print(const std::string& s = "Potentials: ",
         const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
     size_t cardinality(Key j) const { return cardinalities_.at(j);}

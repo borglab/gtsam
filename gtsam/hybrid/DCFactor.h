@@ -132,7 +132,7 @@ class DCFactor : public Factor {
   /*
    * Return the discrete keys for this factor.
    */
-  DiscreteKeys discreteKeys() const { return discreteKeys_; }
+  const DiscreteKeys& discreteKeys() const { return discreteKeys_; }
 
   /**
    * Converts the DCFactor to a DecisionTreeFactor. Internally, this will
@@ -164,13 +164,7 @@ class DCFactor : public Factor {
    * TODO(Kurran) is this the cleanest way to do this? Seems necessary for the
    * DCMaxMixtureFactor implementations etc...
    */
-  virtual double logNormalizingConstant(const Values& values) const {
-    throw std::logic_error(
-        "Normalizing constant not implemented."
-        "One or more of the factors in use requires access to the normalization"
-        "constant for a child class of DCFactor, but`logNormalizingConstant` "
-        "has not been overridden.");
-  }
+  virtual double logNormalizingConstant(const Values& values) const;
 
   /**
    * Default for computing the _negative_ normalizing constant for the

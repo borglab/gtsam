@@ -30,6 +30,15 @@ DecisionTreeFactor DCFactor::toDecisionTreeFactor(
 }
 
 /* ************************************************************************* */
+double DCFactor::logNormalizingConstant(const Values& values) const {
+    throw std::logic_error(
+        "Normalizing constant not implemented."
+        "One or more of the factors in use requires access to the normalization"
+        "constant for a child class of DCFactor, but`logNormalizingConstant` "
+        "has not been overridden.");
+  }
+
+/* ************************************************************************* */
 std::vector<double> DCFactor::evalProbs(const DiscreteKey& dk,
                                         const Values& continuousVals) const {
   /*

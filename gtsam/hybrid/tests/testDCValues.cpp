@@ -30,7 +30,8 @@ TEST(DCValues, Constructor) {
   DiscreteValues discValues;
 
   DCValues dc_values(contValues, discValues);
-  EXPECT(assert_type("gtsam::DCValues", dc_values));
+  EXPECT(dc_values.continuous_.size() == 0);
+  EXPECT(dc_values.discrete_.size() == 0);
 }
 
 
