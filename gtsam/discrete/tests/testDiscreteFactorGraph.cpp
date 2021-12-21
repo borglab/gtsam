@@ -360,6 +360,31 @@ cout << unicorns;
 #endif
 
 /* ************************************************************************* */
+TEST(DiscreteFactorGraph, Dot) {
+  // Declare a bunch of keys
+  DiscreteKey C(0, 2), A(1, 2), B(2, 2);
+
+  // Create Factor graph
+  DiscreteFactorGraph graph;
+  graph.add(C & A, "0.2 0.8 0.3 0.7");
+  graph.add(C & B, "0.1 0.9 0.4 0.6");
+
+  string actual = graph.dot();
+  string expected =
+      "graph {\n"
+      "  size=\"5,5\";\n"
+      "\n"
+      "  var0[label=\"0\"];\n"
+      "  var1[label=\"1\"];\n"
+      "  var2[label=\"2\"];\n"
+      "\n"
+      "  var0--var1;\n"
+      "  var0--var2;\n"
+      "}\n";
+  EXPECT(actual == expected);
+}
+
+/* ************************************************************************* */
 int main() {
 TestResult tr;
 return TestRegistry::runAllTests(tr);

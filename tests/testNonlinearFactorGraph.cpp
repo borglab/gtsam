@@ -15,6 +15,7 @@
  * @brief   testNonlinearFactorGraph
  * @author  Carlos Nieto
  * @author  Christian Potthast
+ * @author  Frank Dellaert
  */
 
 #include <gtsam/base/Testable.h>
@@ -285,6 +286,7 @@ TEST(testNonlinearFactorGraph, addPrior) {
   EXPECT(0 != graph.error(values));
 }
 
+/* ************************************************************************* */
 TEST(NonlinearFactorGraph, printErrors)
 {
   const NonlinearFactorGraph fg = createNonlinearFactorGraph();
@@ -307,6 +309,53 @@ TEST(NonlinearFactorGraph, printErrors)
   fg.printErrors(c,"Test graph: ", gtsam::DefaultKeyFormatter,testFilter);
 
   for (bool visit : visited) EXPECT(visit==true);
+}
+
+/* ************************************************************************* */
+TEST(NonlinearFactorGraph, dot) {
+  string expected =
+      "graph {\n"
+      "  size=\"5,5\";\n"
+      "\n"
+      "  var7782220156096217089[label=\"l1\"];\n"
+      "  var8646911284551352321[label=\"x1\"];\n"
+      "  var8646911284551352322[label=\"x2\"];\n"
+      "\n"
+      "  factor0[label=\"\", shape=point];\n"
+      "  var8646911284551352321--factor0;\n"
+      "  var8646911284551352321--var8646911284551352322;\n"
+      "  var8646911284551352321--var7782220156096217089;\n"
+      "  var8646911284551352322--var7782220156096217089;\n"
+      "}\n";
+
+  const NonlinearFactorGraph fg = createNonlinearFactorGraph();
+  string actual = fg.dot();
+  EXPECT(actual == expected);
+}
+
+/* ************************************************************************* */
+TEST(NonlinearFactorGraph, dot_extra) {
+  string expected =
+      "graph {\n"
+      "  size=\"5,5\";\n"
+      "\n"
+      "  var7782220156096217089[label=\"l1\", pos=\"0,0!\"];\n"
+      "  var8646911284551352321[label=\"x1\", pos=\"1,0!\"];\n"
+      "  var8646911284551352322[label=\"x2\", pos=\"1,1.5!\"];\n"
+      "\n"
+      "  factor0[label=\"\", shape=point];\n"
+      "  var8646911284551352321--factor0;\n"
+      "  var8646911284551352321--var8646911284551352322;\n"
+      "  var8646911284551352321--var7782220156096217089;\n"
+      "  var8646911284551352322--var7782220156096217089;\n"
+      "}\n";
+
+  const NonlinearFactorGraph fg = createNonlinearFactorGraph();
+  const Values c = createValues();
+
+  stringstream ss;
+  fg.dot(ss, c);
+  EXPECT(ss.str() == expected);
 }
 
 /* ************************************************************************* */
