@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <algorithm>
 #include <iostream>  // for cout :-(
+#include <fstream>
 #include <sstream>
 #include <string>
 
@@ -123,6 +124,50 @@ FactorIndices FactorGraph<FACTOR>::add_factors(const CONTAINER& factors,
     push_back(factors);
   }
   return newFactorIndices;
+}
+
+/* ************************************************************************* */
+template <class FACTOR>
+void FactorGraph<FACTOR>::dot(std::ostream& os, const DotWriter& writer,
+                              const KeyFormatter& keyFormatter) const {
+  writer.writePreamble(&os);
+
+  // Create nodes for each variable in the graph
+  for (Key key : keys()) {
+    writer.DrawVariable(key, keyFormatter, boost::none, &os);
+  }
+  os << "\n";
+
+  // Create factors and variable connections
+  for (size_t i = 0; i < size(); ++i) {
+    const auto& factor = at(i);
+    if (factor) {
+      const KeyVector& factorKeys = factor->keys();
+      writer.processFactor(i, factorKeys, boost::none, &os);
+    }
+  }
+
+  os << "}\n";
+  std::flush(os);
+}
+
+/* ************************************************************************* */
+template <class FACTOR>
+std::string FactorGraph<FACTOR>::dot(const DotWriter& writer,
+                                     const KeyFormatter& keyFormatter) const {
+  std::stringstream ss;
+  dot(ss, writer, keyFormatter);
+  return ss.str();
+}
+
+/* ************************************************************************* */
+template <class FACTOR>
+void FactorGraph<FACTOR>::saveGraph(const std::string& filename,
+                                    const DotWriter& writer,
+                                    const KeyFormatter& keyFormatter) const {
+  std::ofstream of(filename.c_str());
+  dot(of, writer, keyFormatter);
+  of.close();
 }
 
 }  // namespace gtsam

@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <gtsam/base/types.h>
+
 #include <gtsam/discrete/Assignment.h>
 
 #include <boost/function.hpp>
@@ -35,7 +37,7 @@ namespace gtsam {
    * Y = function range (any algebra), e.g., bool, int, double
    */
   template<typename L, typename Y>
-  class DecisionTree {
+  class GTSAM_EXPORT DecisionTree {
 
   public:
 
@@ -197,6 +199,9 @@ namespace gtsam {
 
     /** output to graphviz format, open a file */
     void dot(const std::string& name, bool showZero = true) const;
+
+    /** output to graphviz format string */
+    std::string dot(bool showZero = true) const;
 
     /// @name Advanced Interface
     /// @{

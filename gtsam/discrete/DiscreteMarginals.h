@@ -29,7 +29,7 @@ namespace gtsam {
   /**
    * A class for computing marginals of variables in a DiscreteFactorGraph
    */
-  class DiscreteMarginals {
+class GTSAM_EXPORT DiscreteMarginals {
 
   protected:
 
