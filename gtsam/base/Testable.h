@@ -33,8 +33,6 @@
 
 #pragma once
 
-#include <gtsam/base/types.h>
-
 #include <boost/concept_check.hpp>
 #include <functional>
 #include <iostream>
