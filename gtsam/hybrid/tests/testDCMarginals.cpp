@@ -30,7 +30,6 @@ TEST(DCMarginals, Constructor) {
   DiscreteMarginals discrete;
 
   DCMarginals dc_marginals(continuous, discrete);
-  EXPECT(assert_type("gtsam::DCMarginals", dc_marginals));
 }
 
 /* ************************************************************************* */

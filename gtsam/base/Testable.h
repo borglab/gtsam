@@ -107,24 +107,6 @@ namespace gtsam {
   }
 
   /**
-   * Assert if the type of V is `type`.
-   *
-   * @param expected The string value for the type to check against.
-   *    This should be the result of `typeid(obj).name()`
-   * @param actual The object whose type you wish to check.
-   */
-  template <class V>
-  bool assert_type(const std::string& expected, const V& actual,
-                   double tol = 1e-9) {
-    std::string actual_type = demangle(typeid(actual).name());
-    if (actual_type == expected) return true;
-    printf("Not equal:\n");
-    std::cout << "expected:\n" << expected << std::endl;
-    std::cout << "actual:\n" << actual_type << std::endl;
-    return false;
-  }
-
-  /**
    * Template to create a binary predicate
    */
   template<class V>
