@@ -23,6 +23,7 @@
 
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/GraphvizFormatting.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 
@@ -40,32 +41,6 @@ namespace gtsam {
   class Expression;
   template<typename T>
   class ExpressionFactor;
-
-  /**
-   * Formatting options when saving in GraphViz format using
-   * NonlinearFactorGraph::saveGraph.
-   */
-  struct GTSAM_EXPORT GraphvizFormatting {
-    enum Axis { X, Y, Z, NEGX, NEGY, NEGZ }; ///< World axes to be assigned to paper axes
-    Axis paperHorizontalAxis; ///< The world axis assigned to the horizontal paper axis
-    Axis paperVerticalAxis; ///< The world axis assigned to the vertical paper axis
-    double figureWidthInches; ///< The figure width on paper in inches
-    double figureHeightInches; ///< The figure height on paper in inches
-    double scale; ///< Scale all positions to reduce / increase density
-    bool mergeSimilarFactors; ///< Merge multiple factors that have the same connectivity
-    bool plotFactorPoints; ///< Plots each factor as a dot between the variables
-    bool connectKeysToFactor; ///< Draw a line from each key within a factor to the dot of the factor
-    bool binaryEdges; ///< just use non-dotted edges for binary factors
-    std::map<size_t, Point2> factorPositions; ///< (optional for each factor) Manually specify factor "dot" positions.
-    /// Default constructor sets up robot coordinates.  Paper horizontal is robot Y,
-    /// paper vertical is robot X.  Default figure size of 5x5 in.
-    GraphvizFormatting() :
-      paperHorizontalAxis(Y), paperVerticalAxis(X),
-      figureWidthInches(5), figureHeightInches(5), scale(1),
-      mergeSimilarFactors(false), plotFactorPoints(true),
-      connectKeysToFactor(true), binaryEdges(true) {}
-  };
-
 
   /**
    * A non-linear factor graph is a graph of non-Gaussian, i.e. non-linear factors,
@@ -114,21 +89,6 @@ namespace gtsam {
 
     /** Test equality */
     bool equals(const NonlinearFactorGraph& other, double tol = 1e-9) const;
-
-    /// Write the graph in GraphViz format for visualization
-    void saveGraph(std::ostream& stm, const Values& values = Values(),
-      const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
-      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
-
-    /**
-     * Write the graph in GraphViz format to file for visualization.
-     *
-     * This is a wrapper friendly version since wrapped languages don't have
-     * access to C++ streams.
-     */
-    void saveGraph(const std::string& file, const Values& values = Values(),
-      const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
-      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
     /** unnormalized error, \f$ 0.5 \sum_i (h_i(X_i)-z)^2/\sigma^2 \f$ in the most common case */
     double error(const Values& values) const;
@@ -246,7 +206,33 @@ namespace gtsam {
       emplace_shared<PriorFactor<T>>(key, prior, covariance);
     }
 
-  private:
+    /// @name Graph Display
+    /// @{
+
+    using FactorGraph::dot;
+    using FactorGraph::saveGraph;
+
+    /// Output to graphviz format, stream version, with Values/extra options.
+    void dot(
+        std::ostream& os, const Values& values,
+        const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
+        const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+
+    /// Output to graphviz format string, with Values/extra options.
+    std::string dot(
+        const Values& values,
+        const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
+        const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+
+    /// output to file with graphviz format, with Values/extra options.
+    void saveGraph(
+        const std::string& filename, const Values& values,
+        const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
+        const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+
+    /// @}
+
+   private:
 
     /**
      * Linearize from Scatter rather than from Ordering.  Made private because
@@ -275,6 +261,14 @@ namespace gtsam {
     Values GTSAM_DEPRECATED updateCholesky(const Values& values, boost::none_t,
                           const Dampen& dampen = nullptr) const
       {return updateCholesky(values, dampen);}
+
+    /** \deprecated */
+    void GTSAM_DEPRECATED saveGraph(
+        std::ostream& os, const Values& values = Values(),
+        const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
+        const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+      dot(os, values, graphvizFormatting, keyFormatter);
+    }
 #endif
 
   };

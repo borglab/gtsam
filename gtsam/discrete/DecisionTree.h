@@ -198,6 +198,9 @@ namespace gtsam {
     /** output to graphviz format, open a file */
     void dot(const std::string& name, bool showZero = true) const;
 
+    /** output to graphviz format string */
+    std::string dot(bool showZero = true) const;
+
     /// @name Advanced Interface
     /// @{
 

@@ -135,7 +135,7 @@ TEST(DiscreteBayesNet, Asia) {
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(DiscreteBayesNet, Sugar) {
+TEST(DiscreteBayesNet, Sugar) {
   DiscreteKey T(0, 2), L(1, 2), E(2, 2), C(8, 3), S(7, 2);
 
   DiscreteBayesNet bn;
@@ -147,6 +147,29 @@ TEST_UNSAFE(DiscreteBayesNet, Sugar) {
   // try multivalued
   bn.add(C % "1/1/2");
   bn.add(C | S = "1/1/2 5/2/3");
+}
+
+/* ************************************************************************* */
+TEST(DiscreteBayesNet, Dot) {
+  DiscreteKey Asia(0, 2), Smoking(4, 2), Tuberculosis(3, 2), LungCancer(6, 2),
+      Either(5, 2);
+
+  DiscreteBayesNet fragment;
+  fragment.add(Asia % "99/1");
+  fragment.add(Smoking % "50/50");
+
+  fragment.add(Tuberculosis | Asia = "99/1 95/5");
+  fragment.add(LungCancer | Smoking = "99/1 90/10");
+  fragment.add((Either | Tuberculosis, LungCancer) = "F T T T");
+
+  string actual = fragment.dot();
+  EXPECT(actual ==
+         "digraph G{\n"
+         "0->3\n"
+         "4->6\n"
+         "3->5\n"
+         "6->5\n"
+         "}");
 }
 
 /* ************************************************************************* */
