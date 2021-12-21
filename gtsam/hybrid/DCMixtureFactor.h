@@ -14,9 +14,10 @@
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/Symbol.h>
-#include <math.h>
 
 #include <algorithm>
+#include <boost/format.hpp>
+#include <cmath>
 #include <limits>
 #include <vector>
 
@@ -27,13 +28,13 @@ namespace gtsam {
 /**
  * @brief Implementation of a discrete conditional mixture factor. Implements a
  * joint discrete-continuous factor where the discrete variable serves to
- * "select" a mixture component corresponding to a gtsam::NonlinearFactor type
+ * "select" a mixture component corresponding to a NonlinearFactor type
  * of measurement.
  */
 template <class NonlinearFactorType>
 class DCMixtureFactor : public DCFactor {
  private:
-  gtsam::DiscreteKey dk_;
+  DiscreteKey dk_;
   std::vector<NonlinearFactorType> factors_;
   bool normalized_;
 
@@ -42,7 +43,7 @@ class DCMixtureFactor : public DCFactor {
 
   DCMixtureFactor() = default;
 
-  DCMixtureFactor(const gtsam::KeyVector& keys, const gtsam::DiscreteKey& dk,
+  DCMixtureFactor(const KeyVector& keys, const DiscreteKey& dk,
                   const std::vector<NonlinearFactorType>& factors,
                   bool normalized = false)
       : dk_(dk), factors_(factors), normalized_(normalized) {
@@ -53,6 +54,9 @@ class DCMixtureFactor : public DCFactor {
     discreteKeys_.push_back(dk);
   }
 
+  /// Discrete key selecting mixture component
+  const DiscreteKey& discreteKey() const { return dk_; }
+
   DCMixtureFactor& operator=(const DCMixtureFactor& rhs) {
     Base::operator=(rhs);
     this->dk_ = rhs.dk_;
@@ -61,7 +65,7 @@ class DCMixtureFactor : public DCFactor {
 
   ~DCMixtureFactor() = default;
 
-  double error(const gtsam::Values& continuousVals,
+  double error(const Values& continuousVals,
                const DiscreteValues& discreteVals) const override {
     // Retrieve the assignment to our discrete key.
     const size_t assignment = discreteVals.at(dk_.first);
@@ -80,6 +84,27 @@ class DCMixtureFactor : public DCFactor {
     return (factors_.size() > 0) ? factors_[0].dim() : 0;
   }
 
+  /// Testable
+  /// @{
+
+  /// print to stdout
+  void print(
+      const std::string& s = "DCMixtureFactor",
+      const KeyFormatter& formatter = DefaultKeyFormatter) const override {
+    std::cout << (s.empty() ? "" : s + " ");
+    std::cout << "(";
+    for (Key key : keys()) {
+      std::cout << " " << formatter(key);
+    }
+    std::cout << "; " << formatter(discreteKey().first) << " ) {\n";
+    for (int i = 0; i < factors_.size(); i++) {
+      auto t = boost::format("component %1%: ") % i;
+      factors_[i].print(t.str());
+    }
+    std::cout << "}\n";
+  }
+
+  /// Check equality
   bool equals(const DCFactor& other, double tol = 1e-9) const override {
     // We attempt a dynamic cast from DCFactor to DCMixtureFactor. If it fails,
     // return false.
@@ -106,8 +131,10 @@ class DCMixtureFactor : public DCFactor {
             (normalized_ == f.normalized_));
   }
 
-  boost::shared_ptr<gtsam::GaussianFactor> linearize(
-      const gtsam::Values& continuousVals,
+  /// @}
+
+  boost::shared_ptr<GaussianFactor> linearize(
+      const Values& continuousVals,
       const DiscreteValues& discreteVals) const override {
     // Retrieve the assignment to our discrete key.
     const size_t assignment = discreteVals.at(dk_.first);
@@ -125,27 +152,26 @@ class DCMixtureFactor : public DCFactor {
    * _negative_ log-likelihood).
    */
   double nonlinearFactorLogNormalizingConstant(
-      const NonlinearFactorType& factor, const gtsam::Values& values) const {
+      const NonlinearFactorType& factor, const Values& values) const {
     // Information matrix (inverse covariance matrix) for the factor.
-    gtsam::Matrix infoMat;
+    Matrix infoMat;
 
     // NOTE: This is sloppy, is there a cleaner way?
     boost::shared_ptr<NonlinearFactorType> fPtr =
         boost::make_shared<NonlinearFactorType>(factor);
-    boost::shared_ptr<gtsam::NonlinearFactor> factorPtr(fPtr);
+    boost::shared_ptr<NonlinearFactor> factorPtr(fPtr);
 
     // If this is a NoiseModelFactor, we'll use its noiseModel to
     // otherwise noiseModelFactor will be nullptr
-    boost::shared_ptr<gtsam::NoiseModelFactor> noiseModelFactor =
-        boost::dynamic_pointer_cast<gtsam::NoiseModelFactor>(factorPtr);
+    boost::shared_ptr<NoiseModelFactor> noiseModelFactor =
+        boost::dynamic_pointer_cast<NoiseModelFactor>(factorPtr);
     if (noiseModelFactor) {
       // If dynamic cast to NoiseModelFactor succeeded, see if the noise model
       // is Gaussian
-      gtsam::noiseModel::Base::shared_ptr noiseModel =
-          noiseModelFactor->noiseModel();
+      noiseModel::Base::shared_ptr noiseModel = noiseModelFactor->noiseModel();
 
-      boost::shared_ptr<gtsam::noiseModel::Gaussian> gaussianNoiseModel =
-          boost::dynamic_pointer_cast<gtsam::noiseModel::Gaussian>(noiseModel);
+      boost::shared_ptr<noiseModel::Gaussian> gaussianNoiseModel =
+          boost::dynamic_pointer_cast<noiseModel::Gaussian>(noiseModel);
       if (gaussianNoiseModel) {
         // If the noise model is Gaussian, retrieve the information matrix
         infoMat = gaussianNoiseModel->information();
@@ -154,7 +180,7 @@ class DCMixtureFactor : public DCFactor {
         // something with a normalized noise model
         // TODO(kevin): does this make sense to do? I think maybe not in
         // general? Should we just yell at the user?
-        boost::shared_ptr<gtsam::GaussianFactor> gaussianFactor =
+        boost::shared_ptr<GaussianFactor> gaussianFactor =
             factor.linearize(values);
         infoMat = gaussianFactor->information();
       }
