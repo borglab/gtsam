@@ -539,10 +539,12 @@ TEST(ThreeViewEssentialMatrixFactor, evaluateErrorJacobians) {
   // initialize essential matrix
   Rot3 A_R_B = Rot3::Expmap(Vector3(M_PI / 6, M_PI / 3, M_PI / 9));
   Unit3 A_t_B(Point3(2, -1, 0.5));
-  EssentialMatrix A_E_B = EssentialMatrix::FromRotationAndDirection(A_R_B, A_t_B);
+  EssentialMatrix A_E_B =
+      EssentialMatrix::FromRotationAndDirection(A_R_B, A_t_B);
   Rot3 A_R_C = Rot3::Expmap(Vector3(-M_PI / 3, M_PI / 4, M_PI / 6));
   Unit3 A_t_C(Point3(1, 1, 1));
-  EssentialMatrix A_E_C = EssentialMatrix::FromRotationAndDirection(A_R_C, A_t_C);
+  EssentialMatrix A_E_C =
+      EssentialMatrix::FromRotationAndDirection(A_R_C, A_t_C);
 
   Values val;
   val.insert(key_A_E_B, A_E_B);
@@ -552,7 +554,8 @@ TEST(ThreeViewEssentialMatrixFactor, evaluateErrorJacobians) {
   Vector3 vB(1.0, -3.0, 1.0);
   Vector3 vC(-1.0, -0.5, 1.0);
 
-  noiseModel::Isotropic::shared_ptr model2 = noiseModel::Isotropic::Sigma(2, 0.01);
+  noiseModel::Isotropic::shared_ptr model2 =
+      noiseModel::Isotropic::Sigma(2, 0.01);
   ThreeViewEssentialMatrixFactor f(key_A_E_B, key_A_E_C, vA, vB, vC, model2);
   EXPECT_CORRECT_FACTOR_JACOBIANS(f, val, 1e-5, 1e-6);
 }
@@ -561,46 +564,64 @@ TEST(ThreeViewEssentialMatrixFactor, evaluateErrorJacobians) {
 TEST(ThreeViewEssentialMatrixFactor, minimization) {
   Key key_i1Ei2(1);
   Key key_i1Ei3(2);
-  Pose3 wTi1 = PinholeCamera<Cal3Bundler>::Lookat(Point3(1, 1, 0), Point3(0, 0, 0), Point3(0, 0, 1)).pose();
-  Pose3 wTi2 = PinholeCamera<Cal3Bundler>::Lookat(Point3(-1, 1, 0), Point3(0, 0, 0), Point3(0, 0, 1)).pose();
-  Pose3 wTi3 = PinholeCamera<Cal3Bundler>::Lookat(Point3(-1, -1, 0), Point3(0, 0, 0), Point3(0, 0, 1)).pose();
+
+  // Prepare ground truth data: 
+  // 3 cameras on X-Y plane looking at origin
+  // 5 points originally specified in i1 not lying on X-Y plane.
+  Pose3 wTi1 =
+      PinholeCamera<Cal3Bundler>::Lookat({1, 1, 0}, {0, 0, 0}, {0, 0, 1})
+          .pose();
+  Pose3 wTi2 =
+      PinholeCamera<Cal3Bundler>::Lookat({-1, 1, 0}, {0, 0, 0}, {0, 0, 1})
+          .pose();
+  Pose3 wTi3 =
+      PinholeCamera<Cal3Bundler>::Lookat({-1, -1, 0}, {0, 0, 0}, {0, 0, 1})
+          .pose();
   Pose3 i1Ti2 = wTi1.inverse() * wTi2;
   Pose3 i1Ti3 = wTi1.inverse() * wTi3;
-  EssentialMatrix i1Ei2_gt = EssentialMatrix::FromRotationAndDirection(i1Ti2.rotation(), Unit3(i1Ti2.translation()));
-  EssentialMatrix i1Ei3_gt = EssentialMatrix::FromRotationAndDirection(i1Ti3.rotation(), Unit3(i1Ti3.translation()));
-  Values gt;
-  gt.insert(key_i1Ei2, i1Ei2_gt);
-  gt.insert(key_i1Ei3, i1Ei3_gt);
- 
-  auto homogenize = [](const Vector3& v) { return Vector3({v.x()/v.z(), v.y()/v.z(), 1.0}); };
+  EssentialMatrix i1Ei2_gt = EssentialMatrix::FromRotationAndDirection(
+      i1Ti2.rotation(), Unit3(i1Ti2.translation()));
+  EssentialMatrix i1Ei3_gt = EssentialMatrix::FromRotationAndDirection(
+      i1Ti3.rotation(), Unit3(i1Ti3.translation()));
   // Create 5 points
   std::vector<Vector3> i1Pj_3d_list = {
-    {1, 1, 1}, {-1, 2, 2}, {1, -3, 0.5}, {-2, 3, -3}, {0, 0.5, -1}
+      {1, 1, 1}, {-1, 2, 2}, {1, -3, 0.5}, {-2, 3, -3}, {0, 0.5, -1}};
+  // Measurements for the points by projecting into all three cameras.
+  auto project = [](const Vector3 &v) {
+    return Vector3({v.x() / v.z(), v.y() / v.z(), 1.0});
   };
   std::vector<Vector3> i1Pj_list, i2Pj_list, i3Pj_list;
-  for(const Vector3& i1Pj : i1Pj_3d_list) {
-    i1Pj_list.push_back(homogenize(i1Pj));
-    i2Pj_list.push_back(homogenize(i1Ti2.transformTo(i1Pj)));
-    i3Pj_list.push_back(homogenize(i1Ti3.transformTo(i1Pj)));
+  for (const Vector3 &i1Pj : i1Pj_3d_list) {
+    i1Pj_list.push_back(project(i1Pj));
+    i2Pj_list.push_back(project(i1Ti2.transformTo(i1Pj)));
+    i3Pj_list.push_back(project(i1Ti3.transformTo(i1Pj)));
   }
 
   NonlinearFactorGraph graph;
-  noiseModel::Isotropic::shared_ptr model2 = noiseModel::Isotropic::Sigma(2, 0.01);
+  noiseModel::Isotropic::shared_ptr model2 =
+      noiseModel::Isotropic::Sigma(2, 0.01);
   for (size_t i = 0; i < 5; i++) {
-    graph.emplace_shared<ThreeViewEssentialMatrixFactor>(key_i1Ei2, key_i1Ei3, i1Pj_list[i],i2Pj_list[i], i3Pj_list[i], model2);
+    graph.emplace_shared<ThreeViewEssentialMatrixFactor>(
+        key_i1Ei2, key_i1Ei3, i1Pj_list[i], i2Pj_list[i], i3Pj_list[i], model2);
   }
 
   // Check error at ground truth
+  Values gt;
+  gt.insert(key_i1Ei2, i1Ei2_gt);
+  gt.insert(key_i1Ei3, i1Ei3_gt);
   EXPECT_DOUBLES_EQUAL(0, graph.error(gt), 1e-8);
-  
-  // Initialization
+
+  // Initialize with random noise from ground truth.
   Values initial;
-  EssentialMatrix i1Ei2_initial = i1Ei2_gt.retract((Vector(5) << 0.2, -0.1, 0.1, 0.2, -0.2).finished());
-  EssentialMatrix i1Ei3_initial = i1Ei3_gt.retract((Vector(5) << 0.05, 0.1, -0.1, 0.1, 0.1).finished());
+  EssentialMatrix i1Ei2_initial =
+      i1Ei2_gt.retract((Vector(5) << 0.2, -0.1, 0.1, 0.2, -0.2).finished());
+  EssentialMatrix i1Ei3_initial =
+      i1Ei3_gt.retract((Vector(5) << 0.05, 0.1, -0.1, 0.1, 0.1).finished());
   initial.insert(key_i1Ei2, i1Ei2_initial);
   initial.insert(key_i1Ei3, i1Ei3_initial);
 
-  LevenbergMarquardtOptimizer  optimizer(graph, initial);
+  // Optimize
+  LevenbergMarquardtOptimizer optimizer(graph, initial);
   Values result = optimizer.optimize();
 
   // Check result
@@ -609,9 +630,7 @@ TEST(ThreeViewEssentialMatrixFactor, minimization) {
 
   // Check error at result
   EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-4);
-  
 }
-
 
 }  // namespace example1
 

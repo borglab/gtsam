@@ -393,7 +393,8 @@ class EssentialMatrixFactor4
 };
 // EssentialMatrixFactor4
 
-
+/* Optimizes the two-view essential matrices with a 3-view consistency constraint. 
+*/
 class ThreeViewEssentialMatrixFactor
     : public NoiseModelFactor2<EssentialMatrix, EssentialMatrix> {
  private:
