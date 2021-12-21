@@ -14,8 +14,8 @@
 
 #include <gtsam/discrete/DiscreteFactor.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
-#include <gtsam/hybrid/DCFactorGraph.h>
 #include <gtsam/hybrid/DCFactor.h>
+#include <gtsam/hybrid/DCFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
@@ -26,8 +26,8 @@ namespace gtsam {
 class HybridFactorGraph {
  protected:
   // Separate internal factor graphs for different types of factors
-  gtsam::NonlinearFactorGraph nonlinearGraph_;
-  gtsam::DiscreteFactorGraph discreteGraph_;
+  NonlinearFactorGraph nonlinearGraph_;
+  DiscreteFactorGraph discreteGraph_;
   DCFactorGraph dcGraph_;
 
  public:
@@ -40,7 +40,7 @@ class HybridFactorGraph {
    * @param nonlinearFactor - the factor to add
    */
   template <typename NonlinearFactorType>
-  void push_nonlinear(const NonlinearFactorType &nonlinearFactor) {
+  void push_nonlinear(const NonlinearFactorType& nonlinearFactor) {
     nonlinearGraph_.push_back(
         boost::make_shared<NonlinearFactorType>(nonlinearFactor));
   }
@@ -50,14 +50,14 @@ class HybridFactorGraph {
    * @param nonlinearFactor - boost::shared_ptr to the factor to add
    */
   void push_nonlinear(
-      const boost::shared_ptr<gtsam::NonlinearFactor>& nonlinearFactor);
+      const boost::shared_ptr<NonlinearFactor>& nonlinearFactor);
 
   /**
    * Add a discrete factor to the internal discrete graph
    * @param discreteFactor - the factor to add
    */
   template <typename DiscreteFactorType>
-  void push_discrete(const DiscreteFactorType &discreteFactor) {
+  void push_discrete(const DiscreteFactorType& discreteFactor) {
     discreteGraph_.emplace_shared<DiscreteFactorType>(discreteFactor);
   }
 
@@ -65,14 +65,14 @@ class HybridFactorGraph {
    * Add a discrete factor *pointer* to the internal discrete graph
    * @param discreteFactor - boost::shared_ptr to the factor to add
    */
-  void push_discrete(const boost::shared_ptr<gtsam::DiscreteFactor>& discreteFactor);
+  void push_discrete(const boost::shared_ptr<DiscreteFactor>& discreteFactor);
 
   /**
    * Add a discrete-continuous (DC) factor to the internal DC graph
    * @param dcFactor - the factor to add
    */
   template <typename DCFactorType>
-  void push_dc(const DCFactorType &dcFactor) {
+  void push_dc(const DCFactorType& dcFactor) {
     dcGraph_.push_back(boost::make_shared<DCFactorType>(dcFactor));
   }
 
@@ -85,30 +85,29 @@ class HybridFactorGraph {
   /**
    * Simply prints the factor graph.
    */
-  void print(const std::string &str = "HybridFactorGraph",
-             const gtsam::KeyFormatter &keyFormatter = 
-             gtsam::DefaultKeyFormatter) const;
+  void print(const std::string& str = "HybridFactorGraph",
+             const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
   /**
-   * Mimics the GTSAM::FactorGraph API: retrieve the keys from each internal
+   * Mimics the FactorGraph API: retrieve the keys from each internal
    * factor graph. Internally uses FastSet::merge(const FastSet &other) to
    * combine sets from the different member factor graphs.
    *
    * @return the (aggregate) set of keys in all of the internal factor graphs.
    */
-  gtsam::FastSet<gtsam::Key> keys() const;
+  FastSet<Key> keys() const;
 
   /**
    * Utility for retrieving the internal nonlinear factor graph
    * @return the member variable nolinearGraph_
    */
-  const gtsam::NonlinearFactorGraph& nonlinearGraph() const;
+  const NonlinearFactorGraph& nonlinearGraph() const;
 
   /**
    * Utility for retrieving the internal discrete factor graph
    * @return the member variable discreteGraph_
    */
-  const gtsam::DiscreteFactorGraph& discreteGraph() const;
+  const DiscreteFactorGraph& discreteGraph() const;
 
   /**
    * Utility for retrieving the internal DC factor graph
@@ -124,7 +123,7 @@ class HybridFactorGraph {
   /**
    * @return true if all internal graphs of `this` are equal to those of `other`
    */
-  bool equals(const HybridFactorGraph &other, double tol = 1e-9) const;
+  bool equals(const HybridFactorGraph& other, double tol = 1e-9) const;
 
   /**
    * @return the total number of factors across all internal graphs
