@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <gtsam/base/types.h>
+
 #include <gtsam/discrete/Assignment.h>
 
 #include <boost/function.hpp>
@@ -35,7 +37,7 @@ namespace gtsam {
    * Y = function range (any algebra), e.g., bool, int, double
    */
   template<typename L, typename Y>
-  class DecisionTree {
+  class GTSAM_EXPORT DecisionTree {
 
   public:
 
