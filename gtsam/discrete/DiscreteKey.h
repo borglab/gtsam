@@ -34,32 +34,32 @@ namespace gtsam {
   using DiscreteKey = std::pair<Key,size_t>;
 
   /// DiscreteKeys is a set of keys that can be assembled using the & operator
-  struct DiscreteKeys: public std::vector<DiscreteKey> {
+  struct GTSAM_EXPORT DiscreteKeys: public std::vector<DiscreteKey> {
 
     // Forward all constructors.
     using std::vector<DiscreteKey>::vector;
 
     /// Constructor for serialization
-    GTSAM_EXPORT DiscreteKeys() : std::vector<DiscreteKey>::vector() {}
+    DiscreteKeys() : std::vector<DiscreteKey>::vector() {}
 
     /// Construct from a key
-    GTSAM_EXPORT DiscreteKeys(const DiscreteKey& key) {
+    DiscreteKeys(const DiscreteKey& key) {
       push_back(key);
     }
 
     /// Construct from a vector of keys
-    GTSAM_EXPORT DiscreteKeys(const std::vector<DiscreteKey>& keys) :
+    DiscreteKeys(const std::vector<DiscreteKey>& keys) :
       std::vector<DiscreteKey>(keys) {
     }
 
     /// Construct from cardinalities with default names
-    GTSAM_EXPORT DiscreteKeys(const std::vector<int>& cs);
+    DiscreteKeys(const std::vector<int>& cs);
 
     /// Return a vector of indices
-    GTSAM_EXPORT KeyVector indices() const;
+    KeyVector indices() const;
 
     /// Return a map from index to cardinality
-    GTSAM_EXPORT std::map<Key,size_t> cardinalities() const;
+    std::map<Key,size_t> cardinalities() const;
 
     /// Add a key (non-const!)
     DiscreteKeys& operator&(const DiscreteKey& key) {
@@ -69,5 +69,5 @@ namespace gtsam {
   }; // DiscreteKeys
 
   /// Create a list from two keys
-  GTSAM_EXPORT DiscreteKeys operator&(const DiscreteKey& key1, const DiscreteKey& key2);
+  DiscreteKeys operator&(const DiscreteKey& key1, const DiscreteKey& key2);
 }
