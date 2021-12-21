@@ -17,6 +17,7 @@
 #include <gtsam/hybrid/DCMixtureFactor.h>
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/EliminateableFactorGraph.h>
+#include <gtsam/inference/EliminationTree.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 
@@ -33,23 +34,30 @@ using symbol_shorthand::X;
 class DCCondtional {
  public:
   using shared_ptr = boost::shared_ptr<DCCondtional>;
+  void print(const std::string& s = "DCCondtional",
+             const KeyFormatter& formatter = gtsam::DefaultKeyFormatter) const {
+    std::cout << (s.empty() ? "" : s + " ") << std::endl;
+  }
 };
 
 /// Bayes net
-class DCBayesNet : public BayesNet<DCCondtional> {};
+class DCBayesNet : public BayesNet<DCCondtional> {
+ public:
+  using ConditionalType = DCCondtional;
+  using shared_ptr = boost::shared_ptr<DCBayesNet>;
+};
 
-/* EliminateableFactorGraph does not play well with hybrid:
 // Forward declaration
 class MixtureFactorGraph;
 class Dummy;
 
 template <>
-struct EliminationTraits<MixtureFactorGraph> {
+struct EliminationTraits<DCFactorGraph> {
   typedef DCFactor FactorType;
   typedef DCFactorGraph FactorGraphType;
   typedef DCCondtional ConditionalType;
   typedef DCBayesNet BayesNetType;
-  typedef Dummy EliminationTreeType;
+  typedef EliminationTree<DCBayesNet, DCFactorGraph> EliminationTreeType;
   typedef Dummy BayesTreeType;
   typedef Dummy JunctionTreeType;
 
@@ -57,11 +65,25 @@ struct EliminationTraits<MixtureFactorGraph> {
   static std::pair<DCCondtional::shared_ptr, DCFactor::shared_ptr>
   DefaultEliminate(const DCFactor& factors, const Ordering& ordering) {
     auto conditional = boost::make_shared<DCCondtional>();
-    auto factor = boost::make_shared<DCFactor>();
-    return {conditional, factor};
+    ///auto factor = TODO ...
+    return {conditional, nullptr};
+  }
+
+  // TODO(dellaert): just does not make sense to return shared pointers.
+  static std::pair<DCBayesNet::shared_ptr, DCFactorGraph::shared_ptr>
+  eliminatePartialSequential(const DCFactorGraph& graph,
+                             const Ordering& ordering) {
+    // VariableIndex variableIndex(graph);
+    // EliminationTreeType etree(graph, variableIndex, ordering);
+    // return etree.eliminate(function);
+
+    auto bayesNet = boost::make_shared<DCBayesNet>();
+    auto factors = boost::make_shared<DCFactorGraph>();
+    return {bayesNet, factors};
   }
 };
 
+/* TODO(dellaert) EliminateableFactorGraph does not play well with hybrid:
 /// Speical DCFactorGraph that can be eliminated partially
 class MixtureFactorGraph : public FactorGraph<DCMixtureFactor>,
                            public EliminateableFactorGraph<MixtureFactorGraph> {
@@ -99,18 +121,20 @@ TEST(DiscreteBayesTree, Switching) {
   }
   GTSAM_PRINT(fg);
   fg.saveGraph("MixtureFactorGraph.dot");
-  
-  //   // Add "mode chain"
+
+  //   // Add "mode chain": can only be done in HybridFactorGraph
   //   for (size_t k = 1; k < K1; k++) {
   //     DiscreteKey mode(M(k), 2), mode_plus(M(k + 1), 2);
   //     fg.add(DiscreteConditional(mode_plus, {mode}, "1/2 3/2"));
   //   }
 
-  // eliminate partially:
-  //   Ordering ordering;
-  //   for (size_t k = 1; k <= K; k++) ordering += X(k);
-  //   auto chordal = fg.eliminatePartialSequential(ordering);
-  //   GTSAM_PRINT(*chordal);
+  // Eliminate partially.
+  Ordering ordering;
+  for (size_t k = 1; k <= K; k++) ordering += X(k);
+  auto result = EliminationTraits<DCFactorGraph>::eliminatePartialSequential(
+      fg, ordering);
+  GTSAM_PRINT(*result.first);
+  GTSAM_PRINT(*result.second);
 }
 
 /* ************************************************************************* */

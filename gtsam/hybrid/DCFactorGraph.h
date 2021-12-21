@@ -16,11 +16,17 @@
 
 namespace gtsam {
 
+class DCConditional;
+
 /**
  * Very simple class to create a factor graph with factors of type DCFactor
  */
 class DCFactorGraph : public gtsam::FactorGraph<DCFactor> {
  public:
+  using shared_ptr = boost::shared_ptr<DCFactorGraph>;
+  using EliminationResult = std::pair<boost::shared_ptr<DCConditional>, boost::shared_ptr<DCFactor> >;
+  using Eliminate = std::function<EliminationResult(const DCFactorGraph&, const Ordering&)>;
+
   DCFactorGraph() : FactorGraph<DCFactor>() {}
 };
 
