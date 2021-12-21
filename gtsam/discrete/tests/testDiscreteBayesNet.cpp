@@ -225,6 +225,34 @@ TEST(DiscreteBayesNet, markdown) {
   EXPECT(actual == expected);
 }
 
+TEST(DiscreteBayesTree, Switching) {
+  size_t nrStates = 3;
+  size_t K = 5;
+
+  DiscreteBayesNet bayesNet;
+
+  // Add "motion models".
+  for (size_t k = 1; k < K; k++) {
+    DiscreteKey key(X(k), nrStates), key_plus(X(k + 1), nrStates),
+        mode(M(k), 2);
+    bayesNet.add(DiscreteConditional(key_plus, {key, mode},
+                                     "1/1/1 1/2/1 3/2/3 1/1/1 1/2/1 3/2/3"));
+  }
+
+  // Add "mode chain"
+  for (size_t k = 1; k < K - 1; k++) {
+    DiscreteKey mode(M(k), 2), mode_plus(M(k + 1), 2);
+    bayesNet.add(DiscreteConditional(mode_plus, {mode}, "1/2 3/2"));
+  }
+
+  // eliminate: because D>C, discrete keys get eliminated last:
+  Ordering ordering;
+  for (size_t k = 1; k <= K; k++) ordering += X(k);
+  for (size_t k = 1; k < K; k++) ordering += M(k);
+  auto chordal = DiscreteFactorGraph(bayesNet).eliminateSequential(ordering);
+  GTSAM_PRINT(*chordal);
+}
+
 /* ************************************************************************* */
 int main() {
   TestResult tr;
