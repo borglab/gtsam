@@ -14,9 +14,10 @@
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/Symbol.h>
-#include <math.h>
 
 #include <algorithm>
+#include <boost/format.hpp>
+#include <cmath>
 #include <limits>
 #include <vector>
 
@@ -53,6 +54,9 @@ class DCMixtureFactor : public DCFactor {
     discreteKeys_.push_back(dk);
   }
 
+  /// Discrete key selecting mixture component
+  const DiscreteKey& discreteKey() const { return dk_; }
+
   DCMixtureFactor& operator=(const DCMixtureFactor& rhs) {
     Base::operator=(rhs);
     this->dk_ = rhs.dk_;
@@ -80,6 +84,27 @@ class DCMixtureFactor : public DCFactor {
     return (factors_.size() > 0) ? factors_[0].dim() : 0;
   }
 
+  /// Testable
+  /// @{
+
+  /// print to stdout
+  void print(
+      const std::string& s = "DCMixtureFactor",
+      const KeyFormatter& formatter = DefaultKeyFormatter) const override {
+    std::cout << (s.empty() ? "" : s + " ");
+    std::cout << "(";
+    for (Key key : keys()) {
+      std::cout << " " << formatter(key);
+    }
+    std::cout << "; " << formatter(discreteKey().first) << " ) {\n";
+    for (int i = 0; i < factors_.size(); i++) {
+      auto t = boost::format("component %1%: ") % i;
+      factors_[i].print(t.str());
+    }
+    std::cout << "}\n";
+  }
+
+  /// Check equality
   bool equals(const DCFactor& other, double tol = 1e-9) const override {
     // We attempt a dynamic cast from DCFactor to DCMixtureFactor. If it fails,
     // return false.
@@ -105,6 +130,8 @@ class DCMixtureFactor : public DCFactor {
             (discreteKeys_ == f.discreteKeys_) &&
             (normalized_ == f.normalized_));
   }
+
+  /// @}
 
   boost::shared_ptr<GaussianFactor> linearize(
       const Values& continuousVals,
