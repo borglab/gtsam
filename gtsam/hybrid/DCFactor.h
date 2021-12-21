@@ -39,6 +39,7 @@ class DCFactor : public gtsam::Factor {
 
  public:
   using Base = gtsam::Factor;
+  using shared_ptr = boost::shared_ptr<Factor>;
 
   DCFactor() = default;
 
