@@ -26,10 +26,6 @@ using namespace std;
 
 namespace gtsam {
 
-// explicit instantiation
-template class DecisionTree<Key, double>;
-template class AlgebraicDecisionTree<Key>;
-
 /* ************************************************************************* */
 double Potentials::safe_div(const double& a, const double& b) {
   // cout << boost::format("%g / %g = %g\n") % a % b % ((a == 0) ? 0 : (a / b));
