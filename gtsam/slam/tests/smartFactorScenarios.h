@@ -138,7 +138,7 @@ namespace sphericalCamera {
 typedef SphericalCamera Camera;
 typedef CameraSet<Camera> Cameras;
 typedef SmartProjectionRigFactor<Camera> SmartFactorP;
-static EmptyCal::shared_ptr emptyK;
+static EmptyCal::shared_ptr emptyK(new EmptyCal());
 Camera level_camera(level_pose);
 Camera level_camera_right(pose_right);
 Camera cam1(level_pose);

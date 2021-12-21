@@ -1394,7 +1394,7 @@ typedef SmartProjectionPoseFactorRollingShutter<Camera> SmartFactorRS_spherical;
 Pose3 interp_pose1 = interpolate<Pose3>(level_pose, pose_right, interp_factor1);
 Pose3 interp_pose2 = interpolate<Pose3>(pose_right, pose_above, interp_factor2);
 Pose3 interp_pose3 = interpolate<Pose3>(pose_above, level_pose, interp_factor3);
-static EmptyCal::shared_ptr emptyK;
+static EmptyCal::shared_ptr emptyK(new EmptyCal());
 Camera cam1(interp_pose1, emptyK);
 Camera cam2(interp_pose2, emptyK);
 Camera cam3(interp_pose3, emptyK);
