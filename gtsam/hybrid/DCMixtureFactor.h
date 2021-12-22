@@ -97,7 +97,7 @@ class DCMixtureFactor : public DCFactor {
       std::cout << " " << formatter(key);
     }
     std::cout << "; " << formatter(discreteKey().first) << " ) {\n";
-    for (int i = 0; i < factors_.size(); i++) {
+    for (size_t i = 0; i < factors_.size(); i++) {
       auto t = boost::format("component %1%: ") % i;
       factors_[i].print(t.str());
     }
