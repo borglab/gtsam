@@ -70,11 +70,11 @@ TEST(HybridFactorGraph, Switching) {
 
   GTSAM_PRINT(fg);
 
-  // Values values;
+  Values values;
   // TODO: create 4 linearization points.
 
   // Linearize here:
-  HybridFactorGraph dcmfg;  // TODO: = fg.linearize(values);
+  HybridFactorGraph dcmfg = fg.linearize(values);
   GTSAM_PRINT(dcmfg);
 }
 

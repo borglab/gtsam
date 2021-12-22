@@ -14,8 +14,9 @@
 
 #include <gtsam/discrete/DiscreteFactor.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
-#include <gtsam/hybrid/DCFactorGraph.h>
 #include <gtsam/hybrid/DCFactor.h>
+#include <gtsam/hybrid/DCFactorGraph.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
@@ -26,12 +27,29 @@ namespace gtsam {
 class HybridFactorGraph {
  protected:
   // Separate internal factor graphs for different types of factors
-  gtsam::NonlinearFactorGraph nonlinearGraph_;
-  gtsam::DiscreteFactorGraph discreteGraph_;
+  NonlinearFactorGraph nonlinearGraph_;
+  DiscreteFactorGraph discreteGraph_;
   DCFactorGraph dcGraph_;
+  GaussianFactorGraph gaussianGraph_;
 
  public:
   HybridFactorGraph();
+
+  /**
+   * @brief Construct a new Hybrid Factor Graph object.
+   * 
+   * @param nonlinearGraph A factor graph with continuous factors.
+   * @param discreteGraph A factor graph with only discrete factors.
+   * @param dcGraph A DCFactorGraph containing DCFactors. 
+   */
+  HybridFactorGraph(
+      const NonlinearFactorGraph& nonlinearGraph,
+      const DiscreteFactorGraph& discreteGraph, const DCFactorGraph& dcGraph,
+      const GaussianFactorGraph& gaussianGraph = GaussianFactorGraph())
+      : nonlinearGraph_(nonlinearGraph),
+        discreteGraph_(discreteGraph),
+        dcGraph_(dcGraph),
+        gaussianGraph_(gaussianGraph) {}
 
   // TODO(dellaert): I propose we only have emplace_shared below.
 
@@ -100,7 +118,7 @@ class HybridFactorGraph {
 
   /**
    * Utility for retrieving the internal nonlinear factor graph
-   * @return the member variable nolinearGraph_
+   * @return the member variable nonlinearGraph_
    */
   const gtsam::NonlinearFactorGraph& nonlinearGraph() const;
 
@@ -109,6 +127,8 @@ class HybridFactorGraph {
    * @return the member variable discreteGraph_
    */
   const gtsam::DiscreteFactorGraph& discreteGraph() const;
+
+  HybridFactorGraph linearize(const Values& continuousValues) const;
 
   /**
    * Utility for retrieving the internal DC factor graph

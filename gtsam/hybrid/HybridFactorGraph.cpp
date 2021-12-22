@@ -58,6 +58,16 @@ const gtsam::DiscreteFactorGraph& HybridFactorGraph::discreteGraph() const {
   return discreteGraph_;
 }
 
+HybridFactorGraph HybridFactorGraph::linearize(
+    const Values& continuousValues) const {
+  auto gaussian_factor_graph = nonlinearGraph_.linearize(continuousValues);
+
+  HybridFactorGraph linearizedGraph(this->nonlinearGraph_,
+                                    this->discreteGraph_, this->dcGraph_,
+                                    *gaussian_factor_graph);
+  return linearizedGraph;
+}
+
 const DCFactorGraph& HybridFactorGraph::dcGraph() const { return dcGraph_; }
 
 bool HybridFactorGraph::empty() const {
