@@ -631,28 +631,47 @@ class PybindWrapper:
             submodules_init="\n".join(submodules_init),
         )
 
-    def wrap(self, sources, main_output):
+    def wrap_submodule(self, source):
         """
-        Wrap all the source interface files.
+        Wrap a list of submodule files, i.e. a set of interface files which are
+        in support of a larger wrapping project.
+
+        E.g. This is used in GTSAM where we have a main gtsam.i, but various smaller .i files
+        which are the submodules.
+        The benefit of this scheme is that it reduces compute and memory usage during compilation.
+
+        Args:
+            source: Interface file which forms the submodule.
+        """
+        filename = Path(source).name
+        module_name = Path(source).stem
+
+        # Read in the complete interface (.i) file
+        with open(source, "r") as f:
+            content = f.read()
+        # Wrap the read-in content
+        cc_content = self.wrap_file(content, module_name=module_name)
+
+        # Generate the C++ code which Pybind11 will use.
+        with open(filename.replace(".i", ".cpp"), "w") as f:
+            f.write(cc_content)
+
+    def wrap(self, sources, main_module_name):
+        """
+        Wrap all the main interface file.
 
         Args:
             sources: List of all interface files.
-            main_output: The name for the main module.
+                The first file should be the main module.
+            main_module_name: The name for the main module.
         """
         main_module = sources[0]
+
+        # Get all the submodule names.
         submodules = []
         for source in sources[1:]:
-            filename = Path(source).name
             module_name = Path(source).stem
-            # Read in the complete interface (.i) file
-            with open(source, "r") as f:
-                content = f.read()
             submodules.append(module_name)
-            cc_content = self.wrap_file(content, module_name=module_name)
-
-            # Generate the C++ code which Pybind11 will use.
-            with open(filename.replace(".i", ".cpp"), "w") as f:
-                f.write(cc_content)
 
         with open(main_module, "r") as f:
             content = f.read()
@@ -661,5 +680,5 @@ class PybindWrapper:
                                     submodules=submodules)
 
         # Generate the C++ code which Pybind11 will use.
-        with open(main_output, "w") as f:
+        with open(main_module_name, "w") as f:
             f.write(cc_content)

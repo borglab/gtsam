@@ -19,7 +19,7 @@ def main():
     arg_parser.add_argument("--src",
                             type=str,
                             required=True,
-                            help="Input interface .i/.h file")
+                            help="Input interface .i/.h file(s)")
     arg_parser.add_argument(
         "--module_name",
         type=str,
@@ -31,7 +31,7 @@ def main():
         "--out",
         type=str,
         required=True,
-        help="Name of the output pybind .cc file",
+        help="Name of the output pybind .cc file(s)",
     )
     arg_parser.add_argument(
         "--use-boost",
@@ -60,7 +60,10 @@ def main():
     )
     arg_parser.add_argument("--template",
                             type=str,
-                            help="The module template file")
+                            help="The module template file (e.g. module.tpl).")
+    arg_parser.add_argument("--is_submodule",
+                            default=False,
+                            action="store_true")
     args = arg_parser.parse_args()
 
     top_module_namespaces = args.top_module_namespaces.split("::")
@@ -78,9 +81,13 @@ def main():
         module_template=template_content,
     )
 
-    # Wrap the code and get back the cpp/cc code.
-    sources = args.src.split(';')
-    wrapper.wrap(sources, args.out)
+    if args.is_submodule:
+        wrapper.wrap_submodule(args.src)
+
+    else:
+        # Wrap the code and get back the cpp/cc code.
+        sources = args.src.split(';')
+        wrapper.wrap(sources, args.out)
 
 
 if __name__ == "__main__":
