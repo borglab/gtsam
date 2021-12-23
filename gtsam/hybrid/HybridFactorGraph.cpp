@@ -35,10 +35,12 @@ void HybridFactorGraph::print(const std::string &str,
   std::string nonlinearStr = str + ": NonlinearFactorGraph";
   std::string discreteStr = str + ": DiscreteFactorGraph";
   std::string dcStr = str + ": DCFactorGraph";
+  std::string gStr = str + ": GaussianGraph";
 
   nonlinearGraph_.print(nonlinearStr, keyFormatter);
   discreteGraph_.print(discreteStr, keyFormatter);
   dcGraph_.print(dcStr, keyFormatter);
+  gaussianGraph_.print(gStr, keyFormatter);
 }
 
 gtsam::FastSet<gtsam::Key> HybridFactorGraph::keys() const {
