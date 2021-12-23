@@ -135,33 +135,31 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  // Check markdown representation looks as expected.
-  std::string DecisionTreeFactor::_repr_markdown_() const {
+  std::string DecisionTreeFactor::_repr_markdown_(
+      const KeyFormatter& keyFormatter) const {
     std::stringstream ss;
 
-    // Print out header and calculate number of rows.
+    // Print out header and construct argument for `cartesianProduct`.
+    std::vector<std::pair<Key, size_t>> pairs;
     ss << "|";
-    for (auto& key : cardinalities_) {
-      size_t k = key.second;
-      ss << key.first << "(" << k << ")|";
+    for (auto& key : keys()) {
+      ss << keyFormatter(key) << "|";
+      pairs.emplace_back(key, cardinalities_.at(key));
     }
     ss << "value|\n";
 
     // Print out separator with alignment hints.
-    size_t n = cardinalities_.size();
     ss << "|";
-    for (size_t j = 0; j < n; j++) ss << ":-:|";
+    for (size_t j = 0; j < size(); j++) ss << ":-:|";
     ss << ":-:|\n";
 
     // Print out all rows.
-    std::vector<std::pair<Key, size_t>> keys(cardinalities_.begin(),
-                                             cardinalities_.end());
-    const auto assignments = cartesianProduct(keys);
-    for (auto &&assignment : assignments) {
+    std::vector<std::pair<Key, size_t>> rpairs(pairs.rbegin(), pairs.rend());
+    const auto assignments = cartesianProduct(rpairs);
+    for (const auto& assignment : assignments) {
       ss << "|";
-      for (auto& kv : assignment) ss << kv.second << "|";
-      const double value = operator()(assignment);
-      ss << value << "|\n";
+      for (auto& key : keys()) ss << assignment.at(key) << "|";
+      ss << operator()(assignment) << "|\n";
     }
     return ss.str();
   }
