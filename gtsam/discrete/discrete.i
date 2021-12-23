@@ -39,7 +39,8 @@ virtual class DecisionTreeFactor: gtsam::DiscreteFactor {
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::DecisionTreeFactor& other, double tol = 1e-9) const;
   string dot(bool showZero = false) const;
-  string _repr_markdown_() const;
+  string _repr_markdown_(const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
 };
 
 #include <gtsam/discrete/DiscreteConditional.h>
@@ -66,7 +67,8 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
   size_t sample(const gtsam::DiscreteValues& parentsValues) const;
   void solveInPlace(gtsam::DiscreteValues@ parentsValues) const;
   void sampleInPlace(gtsam::DiscreteValues@ parentsValues) const;
-  string _repr_markdown_() const;
+  string _repr_markdown_(const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
 };
 
 #include <gtsam/discrete/DiscreteBayesNet.h>
