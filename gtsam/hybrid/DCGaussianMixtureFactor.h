@@ -51,12 +51,9 @@ class DCGaussianMixtureFactor : public DCFactor {
   DCGaussianMixtureFactor() = default;
 
   DCGaussianMixtureFactor(
-      const KeyVector& keys, const DiscreteKeys& dk,
+      const KeyVector& keys, const DiscreteKeys& discreteKeys,
       const std::vector<GaussianFactor::shared_ptr>& factors)
-      : discreteKeys_(dk), factors_(factors) {
-    // Compiler doesn't like `keys_` in the initializer list.
-    keys_ = keys;
-  }
+      : Base(keys, discreteKeys), factors_(factors) {}
 
   /// Discrete key selecting mixture component
   const DiscreteKeys& discreteKeys() const { return discreteKeys_; }
@@ -98,7 +95,7 @@ class DCGaussianMixtureFactor : public DCFactor {
     }
     std::cout << "; " << formatter(discreteKeys_.front().first) << " ]";
     std::cout << "{\n";
-    for (int i = 0; i < factors_.size(); i++) {
+    for (size_t i = 0; i < factors_.size(); i++) {
       auto t = boost::format("component %1%: ") % i;
       factors_[i]->print(t.str());
     }
