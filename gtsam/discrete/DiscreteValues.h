@@ -32,7 +32,22 @@ namespace gtsam {
  * stores cardinality of a Discrete variable. It should be handled naturally in
  * the new class DiscreteValue, as the variable's type (domain)
  */
-using DiscreteValues = Assignment<Key>;
+class DiscreteValues : public Assignment<Key> {
+ public:
+  using Assignment::Assignment; // all constructors
+
+  // Construct from assignment.
+  DiscreteValues(const Assignment<Key>& a) : Assignment<Key>(a) {}
+
+  void print(const std::string& s = "",
+             const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+    std::cout << s << ": ";
+    for (const typename Assignment::value_type& keyValue : *this)
+      std::cout << "(" << keyFormatter(keyValue.first) << ", "
+                << keyValue.second << ")";
+    std::cout << std::endl;
+  }
+};
 
 // traits
 template<> struct traits<DiscreteValues> : public Testable<DiscreteValues> {};

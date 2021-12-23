@@ -147,10 +147,10 @@ void DiscreteConditional::solveInPlace(DiscreteValues* values) const {
     keys & dk;
   }
   // Get all Possible Configurations
-  vector<DiscreteValues> allPosbValues = cartesianProduct(keys);
+  const auto allPosbValues = cartesianProduct(keys);
 
   // Find the MPE
-  for(DiscreteValues& frontalVals: allPosbValues) {
+  for(const auto& frontalVals: allPosbValues) {
     double pValueS = pFS(frontalVals); // P(F=value|S=parentsValues)
     // Update MPE solution if better
     if (pValueS > maxP) {
