@@ -83,9 +83,8 @@ TEST( DecisionTreeFactor, sum_max)
 }
 
 /* ************************************************************************* */
-TEST( DecisionTreeFactor, markdown)
-{
-  DiscreteKey v0(0,3), v1(1,2);
+TEST(DecisionTreeFactor, markdown) {
+  DiscreteKey v0(0, 3), v1(1, 2);
   DecisionTreeFactor f1(v0 & v1, "1 2  3 4  5 6");
   string expected =
       "|0(3)|1(2)|value|\n"
@@ -98,7 +97,7 @@ TEST( DecisionTreeFactor, markdown)
       "|2|1|6|\n";
   string actual = f1._repr_markdown_();
   EXPECT(actual == expected);
-  }
+}
 
 /* ************************************************************************* */
 int main() {
