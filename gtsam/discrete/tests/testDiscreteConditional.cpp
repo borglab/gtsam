@@ -101,9 +101,50 @@ TEST(DiscreteConditional, Combine) {
   c.push_back(boost::make_shared<DiscreteConditional>(A | B = "1/2 2/1"));
   c.push_back(boost::make_shared<DiscreteConditional>(B % "1/2"));
   DecisionTreeFactor factor(A & B, "0.111111 0.444444 0.222222 0.222222");
-  DiscreteConditional actual(2, factor);
-  auto expected = DiscreteConditional::Combine(c.begin(), c.end());
-  EXPECT(assert_equal(*expected, actual, 1e-5));
+  DiscreteConditional expected(2, factor);
+  auto actual = DiscreteConditional::Combine(c.begin(), c.end());
+  EXPECT(assert_equal(expected, *actual, 1e-5));
+}
+
+/* ************************************************************************* */
+// TEST(DiscreteConditional, Combine2) {
+//   DiscreteKey A(0, 3), B(1, 2), C(2, 2);
+//   vector<DiscreteConditional::shared_ptr> c;
+//   auto P = {B, C};
+//   c.push_back(boost::make_shared<DiscreteConditional>(A, P, "1/2 2/1 1/2 2/1"));
+//   c.push_back(boost::make_shared<DiscreteConditional>(B | C = "1/2"));
+//   auto actual = DiscreteConditional::Combine(c.begin(), c.end());
+//   GTSAM_PRINT(*actual);
+// }
+
+/* ************************************************************************* */
+// Check markdown representation looks as expected.
+TEST(DiscreteConditional, markdown) {
+  DiscreteKey A(2, 2), B(1, 2), C(0, 3);
+  DiscreteConditional conditional(A, {B, C}, "0/1 1/3  1/1 3/1  0/1 1/0");
+  EXPECT_LONGS_EQUAL(A.first, *(conditional.beginFrontals()));
+  EXPECT_LONGS_EQUAL(B.first, *(conditional.beginParents()));
+  EXPECT(conditional.endParents() == conditional.end());
+  EXPECT(conditional.endFrontals() == conditional.beginParents());
+  string expected =
+      "|B|C|A|value|\n"
+      "|:-:|:-:|:-:|:-:|\n"
+      "|0|0|*0*|0|\n"
+      "|0|0|*1*|1|\n"
+      "|0|1|*0*|0.25|\n"
+      "|0|1|*1*|0.75|\n"
+      "|0|2|*0*|0.5|\n"
+      "|0|2|*1*|0.5|\n"
+      "|1|0|*0*|0.75|\n"
+      "|1|0|*1*|0.25|\n"
+      "|1|1|*0*|0|\n"
+      "|1|1|*1*|1|\n"
+      "|1|2|*0*|1|\n"
+      "|1|2|*1*|0|\n";
+  vector<string> names{"C", "B", "A"};
+  auto formatter = [names](Key key) { return names[key]; };
+  string actual = conditional._repr_markdown_(formatter);
+  EXPECT(actual == expected);
 }
 
 /* ************************************************************************* */

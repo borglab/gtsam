@@ -167,7 +167,14 @@ public:
   void sampleInPlace(DiscreteValues* parentsValues) const;
 
   /// @}
+  /// @name Wrapper support
+  /// @{
 
+  /// Render as markdown table.
+  std::string _repr_markdown_(
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+
+  /// @}
 };
 // DiscreteConditional
 
