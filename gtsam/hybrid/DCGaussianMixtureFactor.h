@@ -42,7 +42,6 @@ namespace gtsam {
  */
 class DCGaussianMixtureFactor : public DCFactor {
  private:
-  DiscreteKeys discreteKeys_;
   std::vector<GaussianFactor::shared_ptr> factors_;
 
  public:

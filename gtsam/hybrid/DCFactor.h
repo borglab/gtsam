@@ -39,7 +39,7 @@ class DCFactor : public gtsam::Factor {
 
  public:
   using Base = gtsam::Factor;
-  using shared_ptr = boost::shared_ptr<Factor>;
+  using shared_ptr = boost::shared_ptr<DCFactor>;
 
   DCFactor() = default;
 
@@ -101,7 +101,7 @@ class DCFactor : public gtsam::Factor {
    * @param discreteVals - Likewise, assignment to the discrete variables in
    * `discreteKeys__`.
    */
-  virtual boost::shared_ptr<gtsam::GaussianFactor> linearize(
+  virtual GaussianFactor::shared_ptr linearize(
       const gtsam::Values& continuousVals,
       const DiscreteValues& discreteVals) const = 0;
 
