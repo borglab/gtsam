@@ -222,6 +222,46 @@ size_t DiscreteConditional::sample(const DiscreteValues& parentsValues) const {
   return distribution(rng);
 }
 
-/* ******************************************************************************** */
+/* ************************************************************************* */
+std::string DiscreteConditional::_repr_markdown_(
+    const KeyFormatter& keyFormatter) const {
+  std::stringstream ss;
+
+  // Print out header and construct argument for `cartesianProduct`.
+  // TODO(dellaert): examine why we can't use "for (auto key: frontals())"
+  std::vector<std::pair<Key, size_t>> pairs;
+  ss << "|";
+  const_iterator it;
+  for (it = beginParents(); it != endParents(); ++it) {
+    auto key = *it;
+    ss << keyFormatter(key) << "|";
+    pairs.emplace_back(key, cardinalities_.at(key));
+  }
+  for (it = beginFrontals(); it != endFrontals(); ++it) {
+    auto key = *it;
+    ss << keyFormatter(key) << "|";
+    pairs.emplace_back(key, cardinalities_.at(key));
+  }
+  ss << "value|\n";
+
+  // Print out separator with alignment hints.
+  ss << "|";
+  for (size_t j = 0; j < size(); j++) ss << ":-:|";
+  ss << ":-:|\n";
+
+  // Print out all rows.
+  std::vector<std::pair<Key, size_t>> rpairs(pairs.rbegin(), pairs.rend());
+  const auto assignments = cartesianProduct(rpairs);
+  for (const auto& a : assignments) {
+    ss << "|";
+    for (it = beginParents(); it != endParents(); ++it) ss << a.at(*it) << "|";
+    for (it = beginFrontals(); it != endFrontals(); ++it)
+      ss << "*" << a.at(*it) << "*|";
+    ss << operator()(a) << "|\n";
+  }
+  return ss.str();
+}
+/* ********************************************************************************
+ */
 
 }// namespace
