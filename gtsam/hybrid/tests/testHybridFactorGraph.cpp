@@ -72,6 +72,10 @@ TEST(HybridFactorGraph, Switching) {
   GTSAM_PRINT(fg);
 
   Values values;
+  for(size_t k=1; k < K; k++){
+    values.insert<double>(X(k), 0.0);
+  }
+
   // TODO: create 4 linearization points.
 
   // Linearize here:
