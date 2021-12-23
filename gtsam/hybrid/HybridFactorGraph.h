@@ -152,6 +152,15 @@ class HybridFactorGraph {
   void push_dc(const boost::shared_ptr<DCFactor>& dcFactor);
 
   /**
+   * Add a gaussian factor *pointer* to the internal gaussian factor graph
+   * @param gaussianFactor - boost::shared_ptr to the factor to add
+   */
+  void push_gaussian(
+      const boost::shared_ptr<gtsam::GaussianFactor>& gaussianFactor) {
+    gaussianGraph_.push_back(gaussianFactor);
+  }
+
+  /**
    * Simply prints the factor graph.
    */
   void print(const std::string &str = "HybridFactorGraph",
