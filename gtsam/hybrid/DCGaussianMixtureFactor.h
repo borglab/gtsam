@@ -55,6 +55,8 @@ class DCGaussianMixtureFactor : public DCFactor {
       const std::vector<GaussianFactor::shared_ptr>& factors)
       : Base(keys, discreteKeys), factors_(factors) {}
 
+  DCGaussianMixtureFactor(const DCGaussianMixtureFactor& x) = default;
+
   /// Discrete key selecting mixture component
   const DiscreteKeys& discreteKeys() const { return discreteKeys_; }
 
@@ -72,10 +74,16 @@ class DCGaussianMixtureFactor : public DCFactor {
   }
 
   // TODO(dellaert): Does not make sense
-  boost::shared_ptr<gtsam::GaussianFactor> linearize(
+  GaussianFactor::shared_ptr linearize(
       const gtsam::Values& continuousVals,
       const DiscreteValues& discreteVals) const override {
     return factors_[0];
+  }
+
+  /// Return this linear factor as a DCFactor::shared_ptr
+  virtual DCFactor::shared_ptr linearize(
+      const Values& continuousVals) const override {
+    return boost::make_shared<DCGaussianMixtureFactor>(*this);
   }
 
   // TODO(dellaert): implement

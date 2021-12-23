@@ -12,6 +12,7 @@
 
 #pragma once
 
+#include <gtsam/hybrid/DCGaussianMixtureFactor.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/Symbol.h>
 
@@ -40,6 +41,7 @@ class DCMixtureFactor : public DCFactor {
 
  public:
   using Base = DCFactor;
+  using shared_ptr = boost::shared_ptr<DCMixtureFactor>;
 
   DCMixtureFactor() = default;
 
@@ -133,7 +135,9 @@ class DCMixtureFactor : public DCFactor {
 
   /// @}
 
-  boost::shared_ptr<GaussianFactor> linearize(
+  /// Linearize specific nonlinear factors based on the assignment in
+  /// discreteValues.
+  GaussianFactor::shared_ptr linearize(
       const Values& continuousVals,
       const DiscreteValues& discreteVals) const override {
     // Retrieve the assignment to our discrete key.
@@ -142,6 +146,17 @@ class DCMixtureFactor : public DCFactor {
     // `assignment` indexes the nonlinear factors we have stored to compute the
     // error.
     return factors_[assignment].linearize(continuousVals);
+  }
+
+  /// Linearize all the continuous factors to get a DCGaussianMixtureFactor.
+  DCFactor::shared_ptr linearize(const Values& continuousVals) const override {
+    std::vector<GaussianFactor::shared_ptr> linearized_factors;
+    for (size_t i = 0; i < factors_.size(); i++) {
+      auto linearized = factors_[i].linearize(continuousVals);
+      linearized_factors.push_back(linearized);
+    }
+    DCGaussianMixtureFactor linearized(keys_, dk_, linearized_factors);
+    return boost::make_shared<DCGaussianMixtureFactor>(linearized);
   }
 
   /**

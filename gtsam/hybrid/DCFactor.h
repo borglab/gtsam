@@ -105,6 +105,9 @@ class DCFactor : public gtsam::Factor {
       const gtsam::Values& continuousVals,
       const DiscreteValues& discreteVals) const = 0;
 
+  virtual DCFactor::shared_ptr linearize(
+      const Values& continuousVals) const = 0;
+
   /**
    * Returns true when the DCFactor is equal to `other`
    *
