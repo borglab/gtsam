@@ -83,19 +83,21 @@ TEST( DecisionTreeFactor, sum_max)
 }
 
 /* ************************************************************************* */
+// Check markdown representation looks as expected.
 TEST(DecisionTreeFactor, markdown) {
-  DiscreteKey v0(0, 3), v1(1, 2);
-  DecisionTreeFactor f1(v0 & v1, "1 2  3 4  5 6");
+  DiscreteKey A(12, 3), B(5, 2);
+  DecisionTreeFactor f1(A & B, "1 2  3 4  5 6");
   string expected =
-      "|0(3)|1(2)|value|\n"
+      "|A|B|value|\n"
       "|:-:|:-:|:-:|\n"
       "|0|0|1|\n"
-      "|1|0|3|\n"
-      "|2|0|5|\n"
       "|0|1|2|\n"
+      "|1|0|3|\n"
       "|1|1|4|\n"
+      "|2|0|5|\n"
       "|2|1|6|\n";
-  string actual = f1._repr_markdown_();
+  auto formatter = [](Key key) { return key == 12 ? "A" : "B"; };
+  string actual = f1._repr_markdown_(formatter);
   EXPECT(actual == expected);
 }
 
