@@ -53,6 +53,57 @@ class HybridFactorGraph {
 
   // TODO(dellaert): I propose we only have emplace_shared below.
 
+  /// Check if FACTOR type is derived from NonlinearFactor.
+  template <typename FACTOR>
+  using IsNonlinear = typename std::enable_if<
+      std::is_base_of<NonlinearFactor, FACTOR>::value>::type;
+
+  /// Construct a factor and add (shared pointer to it) to factor graph.
+  template <class FACTOR, class... Args>
+  IsNonlinear<FACTOR> emplace_shared(Args&&... args) {
+    nonlinearGraph_.push_back(boost::allocate_shared<FACTOR>(
+        Eigen::aligned_allocator<FACTOR>(), std::forward<Args>(args)...));
+  }
+
+  /// Check if FACTOR type is derived from DiscreteFactor.
+  template <typename FACTOR>
+  using IsDiscrete = typename std::enable_if<
+      std::is_base_of<DiscreteFactor, FACTOR>::value>::type;
+
+  /// Construct a factor and add (shared pointer to it) to factor graph.
+  template <class FACTOR, class... Args>
+  IsDiscrete<FACTOR> emplace_shared(Args&&... args) {
+    discreteGraph_.push_back(boost::allocate_shared<FACTOR>(
+        Eigen::aligned_allocator<FACTOR>(), std::forward<Args>(args)...));
+  }
+
+  /// Check if FACTOR type is derived from DCFactor.
+  template <typename FACTOR>
+  using IsDC =
+      typename std::enable_if<std::is_base_of<DCFactor, FACTOR>::value>::type;
+
+  /// Construct a factor and add (shared pointer to it) to factor graph.
+  template <class FACTOR, class... Args>
+  IsDC<FACTOR> emplace_shared(Args&&... args) {
+    dcGraph_.push_back(boost::allocate_shared<FACTOR>(
+        Eigen::aligned_allocator<FACTOR>(), std::forward<Args>(args)...));
+  }
+
+  /// Check if FACTOR type is derived from GaussianFactor.
+  template <typename FACTOR>
+  using IsGaussian = typename std::enable_if<
+      std::is_base_of<GaussianFactor, FACTOR>::value>::type;
+
+  /// Construct a factor and add (shared pointer to it) to factor graph.
+  template <class FACTOR, class... Args>
+  IsGaussian<FACTOR> emplace_shared(Args&&... args) {
+    gaussianGraph_.push_back(boost::allocate_shared<FACTOR>(
+        Eigen::aligned_allocator<FACTOR>(), std::forward<Args>(args)...));
+  }
+
+  // TODO(dellaert): from below I think we should only keep shared pointer
+  // versions.
+
   /**
    * Add a nonlinear factor to the internal nonlinear factor graph
    * @param nonlinearFactor - the factor to add

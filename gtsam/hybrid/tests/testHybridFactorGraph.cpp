@@ -50,22 +50,23 @@ TEST(HybridFactorGraph, Switching) {
   HybridFactorGraph fg;
 
   // Add a prior on X(1).
-  PriorFactor<double> prior(X(1), 0, Isotropic::Sigma(1, 0.1));
-  fg.push_nonlinear(prior);
+  fg.emplace_shared<PriorFactor<double>>(X(1), 0, Isotropic::Sigma(1, 0.1));
 
   // Add "motion models".
   for (size_t k = 1; k < K; k++) {
     BetweenFactor<double> still(X(k), X(k + 1), 0.0, Isotropic::Sigma(2, 1.0)),
         moving(X(k), X(k + 1), 1.0, Isotropic::Sigma(2, 1.0));
     using MotionMixture = DCMixtureFactor<BetweenFactor<double>>;
-    MotionMixture mixture({X(k), X(k + 1)}, modes[k], {still, moving});
-    fg.push_dc(mixture);
+    auto keys = {X(k), X(k + 1)};
+    auto components = {still, moving};
+    fg.emplace_shared<MotionMixture>(keys, modes[k], components);
   }
 
   // Add "mode chain": can only be done in HybridFactorGraph
   fg.push_discrete(DiscreteConditional(modes[1], {}, "1/1"));
   for (size_t k = 1; k < K; k++) {
-    fg.push_discrete(DiscreteConditional(modes[k + 1], {modes[k]}, "1/2 3/2"));
+    auto parents = {modes[k]};
+    fg.emplace_shared<DiscreteConditional>(modes[k + 1], parents, "1/2 3/2");
   }
 
   GTSAM_PRINT(fg);
