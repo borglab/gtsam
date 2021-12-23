@@ -135,15 +135,14 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  // Check markdown representation looks as expected.
   std::string DecisionTreeFactor::_repr_markdown_() const {
     std::stringstream ss;
 
     // Print out header and calculate number of rows.
     ss << "|";
-    size_t m = 1;  // number of rows
     for (auto& key : cardinalities_) {
       size_t k = key.second;
-      m *= k;
       ss << key.first << "(" << k << ")|";
     }
     ss << "value|\n";
