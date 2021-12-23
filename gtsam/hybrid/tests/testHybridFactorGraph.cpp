@@ -54,8 +54,8 @@ TEST(HybridFactorGraph, Switching) {
 
   // Add "motion models".
   for (size_t k = 1; k < K; k++) {
-    BetweenFactor<double> still(X(k), X(k + 1), 0.0, Isotropic::Sigma(2, 1.0)),
-        moving(X(k), X(k + 1), 1.0, Isotropic::Sigma(2, 1.0));
+    BetweenFactor<double> still(X(k), X(k + 1), 0.0, Isotropic::Sigma(1, 1.0)),
+        moving(X(k), X(k + 1), 1.0, Isotropic::Sigma(1, 1.0));
     using MotionMixture = DCMixtureFactor<BetweenFactor<double>>;
     auto keys = {X(k), X(k + 1)};
     auto components = {still, moving};
@@ -72,7 +72,7 @@ TEST(HybridFactorGraph, Switching) {
   GTSAM_PRINT(fg);
 
   Values values;
-  for(size_t k=1; k < K; k++){
+  for(size_t k=1; k <= K; k++){
     values.insert<double>(X(k), 0.0);
   }
 
