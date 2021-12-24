@@ -227,41 +227,66 @@ std::string DiscreteConditional::_repr_markdown_(
     const KeyFormatter& keyFormatter) const {
   std::stringstream ss;
 
+  // Print out signature.
+  ss << " $P(";
+  for(Key key: frontals())
+    ss << keyFormatter(key);
+  if (nrParents() > 0)
+    ss << "|";
+  bool first = true;
+  for (Key parent : parents()) {
+    if (!first) ss << ",";
+    ss << keyFormatter(parent);
+    first = false;
+  }
+  ss << ")$:" << std::endl;
+
   // Print out header and construct argument for `cartesianProduct`.
-  // TODO(dellaert): examine why we can't use "for (auto key: frontals())"
   std::vector<std::pair<Key, size_t>> pairs;
   ss << "|";
   const_iterator it;
-  for (it = beginParents(); it != endParents(); ++it) {
-    auto key = *it;
-    ss << keyFormatter(key) << "|";
-    pairs.emplace_back(key, cardinalities_.at(key));
+  for(Key parent: parents()) {
+    ss << keyFormatter(parent) << "|";
+    pairs.emplace_back(parent, cardinalities_.at(parent));
   }
-  for (it = beginFrontals(); it != endFrontals(); ++it) {
-    auto key = *it;
-    ss << keyFormatter(key) << "|";
-    pairs.emplace_back(key, cardinalities_.at(key));
+
+  size_t n = 1;
+  for(Key key: frontals()) {
+    size_t k = cardinalities_.at(key);
+    pairs.emplace_back(key, k);
+    n *= k;
   }
-  ss << "value|\n";
+  size_t nrParents = size() - nrFrontals_;
+  std::vector<std::pair<Key, size_t>> slatnorf(pairs.rbegin(),
+                                               pairs.rend() - nrParents);
+  const auto frontal_assignments = cartesianProduct(slatnorf);
+  for (const auto& a : frontal_assignments) {
+    for (it = beginFrontals(); it != endFrontals(); ++it) ss << a.at(*it);
+    ss << "|";
+  }
+  ss << "\n";
 
   // Print out separator with alignment hints.
   ss << "|";
-  for (size_t j = 0; j < size(); j++) ss << ":-:|";
-  ss << ":-:|\n";
+  for (size_t j = 0; j < nrParents + n; j++) ss << ":-:|";
+  ss << "\n";
 
   // Print out all rows.
   std::vector<std::pair<Key, size_t>> rpairs(pairs.rbegin(), pairs.rend());
   const auto assignments = cartesianProduct(rpairs);
+  size_t count = 0;
   for (const auto& a : assignments) {
-    ss << "|";
-    for (it = beginParents(); it != endParents(); ++it) ss << a.at(*it) << "|";
-    for (it = beginFrontals(); it != endFrontals(); ++it)
-      ss << "*" << a.at(*it) << "*|";
-    ss << operator()(a) << "|\n";
+    if (count == 0) {
+      ss << "|";
+      for (it = beginParents(); it != endParents(); ++it)
+        ss << a.at(*it) << "|";
+    }
+    ss << operator()(a) << "|";
+    count = (count + 1) % n;
+    if (count == 0) ss << "\n";
   }
   return ss.str();
 }
-/* ********************************************************************************
- */
+/* ************************************************************************* */
 
-}// namespace
+}  // namespace gtsam
