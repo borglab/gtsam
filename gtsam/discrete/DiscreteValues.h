@@ -36,6 +36,9 @@ class DiscreteValues : public Assignment<Key> {
  public:
   using Assignment::Assignment; // all constructors
 
+  // Define the implicit default constructor.
+  DiscreteValues() = default;
+
   // Construct from assignment.
   DiscreteValues(const Assignment<Key>& a) : Assignment<Key>(a) {}
 
