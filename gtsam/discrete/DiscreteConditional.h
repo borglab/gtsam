@@ -172,7 +172,7 @@ public:
 
   /// Render as markdown table.
   std::string _repr_markdown_(
-      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
 
   /// @}
 };

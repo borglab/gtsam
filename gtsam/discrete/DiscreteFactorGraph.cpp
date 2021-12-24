@@ -129,6 +129,18 @@ namespace gtsam {
     return std::make_pair(cond, sum);
   }
 
-/* ************************************************************************* */
-} // namespace
+  /* ************************************************************************* */
+  std::string DiscreteFactorGraph::_repr_markdown_(
+      const KeyFormatter& keyFormatter) const {
+    using std::endl;
+    std::stringstream ss;
+    ss << "`DiscreteFactorGraph` of size " << size() << endl << endl;
+    for (size_t i = 0; i < factors_.size(); i++) {
+      ss << "factor " << i << ":\n";
+      ss << factors_[i]->_repr_markdown_(keyFormatter) << endl;
+    }
+    return ss.str();
+  }
 
+  /* ************************************************************************* */
+  }  // namespace gtsam
