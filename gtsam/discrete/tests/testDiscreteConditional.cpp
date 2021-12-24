@@ -24,6 +24,7 @@ using namespace boost::assign;
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteConditional.h>
+#include <gtsam/inference/Symbol.h>
 
 using namespace std;
 using namespace gtsam;
@@ -107,40 +108,53 @@ TEST(DiscreteConditional, Combine) {
 }
 
 /* ************************************************************************* */
-// TEST(DiscreteConditional, Combine2) {
-//   DiscreteKey A(0, 3), B(1, 2), C(2, 2);
-//   vector<DiscreteConditional::shared_ptr> c;
-//   auto P = {B, C};
-//   c.push_back(boost::make_shared<DiscreteConditional>(A, P, "1/2 2/1 1/2 2/1"));
-//   c.push_back(boost::make_shared<DiscreteConditional>(B | C = "1/2"));
-//   auto actual = DiscreteConditional::Combine(c.begin(), c.end());
-//   GTSAM_PRINT(*actual);
-// }
+// Check markdown representation looks as expected, no parents.
+TEST(DiscreteConditional, markdown_prior) {
+  DiscreteKey A(Symbol('x', 1), 2);
+  DiscreteConditional conditional(A % "1/3");
+  string expected =
+      " $P(x1)$:\n"
+      "|0|1|\n"
+      "|:-:|:-:|\n"
+      "|0.25|0.75|\n";
+  string actual = conditional._repr_markdown_();
+  EXPECT(actual == expected);
+}
 
 /* ************************************************************************* */
-// Check markdown representation looks as expected.
+// Check markdown representation looks as expected, multivalued.
+TEST(DiscreteConditional, markdown_multivalued) {
+  DiscreteKey A(Symbol('a', 1), 3), B(Symbol('b', 1), 5);
+  DiscreteConditional conditional(
+      A | B = "2/88/10 2/20/78 33/33/34 33/33/34 95/2/3");
+  string expected =
+      " $P(a1|b1)$:\n"
+      "|b1|0|1|2|\n"
+      "|:-:|:-:|:-:|:-:|\n"
+      "|0|0.02|0.88|0.1|\n"
+      "|1|0.02|0.2|0.78|\n"
+      "|2|0.33|0.33|0.34|\n"
+      "|3|0.33|0.33|0.34|\n"
+      "|4|0.95|0.02|0.03|\n";
+  string actual = conditional._repr_markdown_();
+  EXPECT(actual == expected);
+}
+
+/* ************************************************************************* */
+// Check markdown representation looks as expected, two parents.
 TEST(DiscreteConditional, markdown) {
   DiscreteKey A(2, 2), B(1, 2), C(0, 3);
   DiscreteConditional conditional(A, {B, C}, "0/1 1/3  1/1 3/1  0/1 1/0");
-  EXPECT_LONGS_EQUAL(A.first, *(conditional.beginFrontals()));
-  EXPECT_LONGS_EQUAL(B.first, *(conditional.beginParents()));
-  EXPECT(conditional.endParents() == conditional.end());
-  EXPECT(conditional.endFrontals() == conditional.beginParents());
   string expected =
-      "|B|C|A|value|\n"
+      " $P(A|B,C)$:\n"
+      "|B|C|0|1|\n"
       "|:-:|:-:|:-:|:-:|\n"
-      "|0|0|*0*|0|\n"
-      "|0|0|*1*|1|\n"
-      "|0|1|*0*|0.25|\n"
-      "|0|1|*1*|0.75|\n"
-      "|0|2|*0*|0.5|\n"
-      "|0|2|*1*|0.5|\n"
-      "|1|0|*0*|0.75|\n"
-      "|1|0|*1*|0.25|\n"
-      "|1|1|*0*|0|\n"
-      "|1|1|*1*|1|\n"
-      "|1|2|*0*|1|\n"
-      "|1|2|*1*|0|\n";
+      "|0|0|0|1|\n"
+      "|0|1|0.25|0.75|\n"
+      "|0|2|0.5|0.5|\n"
+      "|1|0|0.75|0.25|\n"
+      "|1|1|0|1|\n"
+      "|1|2|1|0|\n";
   vector<string> names{"C", "B", "A"};
   auto formatter = [names](Key key) { return names[key]; };
   string actual = conditional._repr_markdown_(formatter);
