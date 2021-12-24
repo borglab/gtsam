@@ -166,6 +166,9 @@ class DiscreteFactorGraph {
   gtsam::DiscreteBayesNet eliminateSequential(const gtsam::Ordering& ordering);
   gtsam::DiscreteBayesTree eliminateMultifrontal();
   gtsam::DiscreteBayesTree eliminateMultifrontal(const gtsam::Ordering& ordering);
+
+  string _repr_markdown_(const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
 };
 
 }  // namespace gtsam
