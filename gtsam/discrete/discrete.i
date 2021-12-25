@@ -39,6 +39,8 @@ virtual class DecisionTreeFactor: gtsam::DiscreteFactor {
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::DecisionTreeFactor& other, double tol = 1e-9) const;
   string dot(bool showZero = false) const;
+  string markdown(const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
 };
 
 #include <gtsam/discrete/DiscreteConditional.h>
@@ -65,6 +67,8 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
   size_t sample(const gtsam::DiscreteValues& parentsValues) const;
   void solveInPlace(gtsam::DiscreteValues@ parentsValues) const;
   void sampleInPlace(gtsam::DiscreteValues@ parentsValues) const;
+  string markdown(const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
 };
 
 #include <gtsam/discrete/DiscreteBayesNet.h>
@@ -89,6 +93,8 @@ class DiscreteBayesNet {
   double operator()(const gtsam::DiscreteValues& values) const;
   gtsam::DiscreteValues optimize() const;
   gtsam::DiscreteValues sample() const;
+  string markdown(const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
 };
 
 #include <gtsam/discrete/DiscreteBayesTree.h>
@@ -120,6 +126,9 @@ class DiscreteBayesTree {
                 const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   double operator()(const gtsam::DiscreteValues& values) const;
+
+  string markdown(const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
 };
 
 #include <gtsam/inference/DotWriter.h>
@@ -160,6 +169,9 @@ class DiscreteFactorGraph {
   gtsam::DiscreteBayesNet eliminateSequential(const gtsam::Ordering& ordering);
   gtsam::DiscreteBayesTree eliminateMultifrontal();
   gtsam::DiscreteBayesTree eliminateMultifrontal(const gtsam::Ordering& ordering);
+
+  string markdown(const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
 };
 
 }  // namespace gtsam

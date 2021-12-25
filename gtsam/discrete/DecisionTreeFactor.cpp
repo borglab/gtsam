@@ -134,5 +134,35 @@ namespace gtsam {
     return boost::make_shared<DecisionTreeFactor>(dkeys, result);
   }
 
-/* ************************************************************************* */
+  /* ************************************************************************* */
+  std::string DecisionTreeFactor::markdown(
+      const KeyFormatter& keyFormatter) const {
+    std::stringstream ss;
+
+    // Print out header and construct argument for `cartesianProduct`.
+    std::vector<std::pair<Key, size_t>> pairs;
+    ss << "|";
+    for (auto& key : keys()) {
+      ss << keyFormatter(key) << "|";
+      pairs.emplace_back(key, cardinalities_.at(key));
+    }
+    ss << "value|\n";
+
+    // Print out separator with alignment hints.
+    ss << "|";
+    for (size_t j = 0; j < size(); j++) ss << ":-:|";
+    ss << ":-:|\n";
+
+    // Print out all rows.
+    std::vector<std::pair<Key, size_t>> rpairs(pairs.rbegin(), pairs.rend());
+    const auto assignments = cartesianProduct(rpairs);
+    for (const auto& assignment : assignments) {
+      ss << "|";
+      for (auto& key : keys()) ss << assignment.at(key) << "|";
+      ss << operator()(assignment) << "|\n";
+    }
+    return ss.str();
+  }
+
+  /* ************************************************************************* */
 } // namespace gtsam

@@ -163,6 +163,15 @@ namespace gtsam {
 //    }
 
     /// @}
+    /// @name Wrapper support
+    /// @{
+    
+    /// Render as markdown table.
+    std::string markdown(
+        const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
+
+    /// @}
+
 };
 // DecisionTreeFactor
 

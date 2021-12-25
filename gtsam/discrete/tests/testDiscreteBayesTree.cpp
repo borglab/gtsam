@@ -101,7 +101,7 @@ TEST(DiscreteBayesTree, ThinTree) {
   auto R = self.bayesTree->roots().front();
 
   // Check whether BN and BT give the same answer on all configurations
-  vector<DiscreteValues> allPosbValues =
+  auto allPosbValues =
       cartesianProduct(keys[0] & keys[1] & keys[2] & keys[3] & keys[4] &
                        keys[5] & keys[6] & keys[7] & keys[8] & keys[9] &
                        keys[10] & keys[11] & keys[12] & keys[13] & keys[14]);

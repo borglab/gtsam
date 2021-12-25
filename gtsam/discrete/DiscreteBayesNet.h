@@ -13,6 +13,7 @@
  * @file DiscreteBayesNet.h
  * @date Feb 15, 2011
  * @author Duy-Nguyen Ta
+ * @author Frank dellaert
  */
 
 #pragma once
@@ -97,6 +98,14 @@ namespace gtsam {
     DiscreteValues sample() const;
 
     ///@}
+    /// @name Wrapper support
+    /// @{
+
+    /// Render as markdown table.
+    std::string markdown(
+        const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+
+    /// @}
 
   private:
     /** Serialization function */

@@ -154,6 +154,14 @@ public:
 //  /** Apply a reduction, which is a remapping of variable indices. */
 //  GTSAM_EXPORT void reduceWithInverse(const internal::Reduction& inverseReduction);
 
+  /// @name Wrapper support
+  /// @{
+
+  /// Render as markdown table.
+  std::string markdown(
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+
+  /// @}
 }; // \ DiscreteFactorGraph
 
 /// traits
