@@ -188,6 +188,12 @@ class HybridFactorGraph {
    */
   const gtsam::DiscreteFactorGraph& discreteGraph() const;
 
+  /**
+   * @brief Linearize all the continuous factors in the HybridFactorGraph.
+   * 
+   * @param continuousValues: Dictionary of continuous values.
+   * @return HybridFactorGraph 
+   */
   HybridFactorGraph linearize(const Values& continuousValues) const;
 
   /**
