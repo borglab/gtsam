@@ -89,6 +89,14 @@ public:
   virtual DecisionTreeFactor toDecisionTreeFactor() const = 0;
 
   /// @}
+  /// @name Wrapper support
+  /// @{
+  
+  /// Render as markdown table.
+  virtual std::string _repr_markdown_(
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const = 0;
+
+  /// @}
 };
 // DiscreteFactor
 

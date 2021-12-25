@@ -110,13 +110,15 @@ TEST(DiscreteConditional, Combine) {
 /* ************************************************************************* */
 // Check markdown representation looks as expected, no parents.
 TEST(DiscreteConditional, markdown_prior) {
-  DiscreteKey A(Symbol('x', 1), 2);
-  DiscreteConditional conditional(A % "1/3");
+  DiscreteKey A(Symbol('x', 1), 3);
+  DiscreteConditional conditional(A % "1/2/2");
   string expected =
       " $P(x1)$:\n"
-      "|0|1|\n"
+      "|x1|value|\n"
       "|:-:|:-:|\n"
-      "|0.25|0.75|\n";
+      "|0|0.2|\n"
+      "|1|0.4|\n"
+      "|2|0.4|\n";
   string actual = conditional._repr_markdown_();
   EXPECT(actual == expected);
 }
