@@ -223,7 +223,7 @@ size_t DiscreteConditional::sample(const DiscreteValues& parentsValues) const {
 }
 
 /* ************************************************************************* */
-std::string DiscreteConditional::_repr_markdown_(
+std::string DiscreteConditional::markdown(
     const KeyFormatter& keyFormatter) const {
   std::stringstream ss;
 

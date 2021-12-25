@@ -14,6 +14,7 @@ Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellae
 
 import re
 from pathlib import Path
+from typing import List
 
 import gtwrap.interface_parser as parser
 import gtwrap.template_instantiator as instantiator
@@ -45,6 +46,11 @@ class PybindWrapper:
 
         # amount of indentation to add before each function/method declaration.
         self.method_indent = '\n' + (' ' * 8)
+
+        # Special methods which are leveraged by ipython/jupyter notebooks
+        self._ipython_special_methods = [
+            "svg", "png", "jpeg", "html", "javascript", "markdown", "latex"
+        ]
 
     def _py_args_names(self, args):
         """Set the argument names in Pybind11 format."""
@@ -86,6 +92,67 @@ class PybindWrapper:
                 ))
         return res
 
+    def _wrap_serialization(self, cpp_class):
+        """Helper method to add serialize, deserialize and pickle methods to the wrapped class."""
+        if not cpp_class in self._serializing_classes:
+            self._serializing_classes.append(cpp_class)
+
+        serialize_method = self.method_indent + \
+            ".def(\"serialize\", []({class_inst} self){{ return gtsam::serialize(*self); }})".format(class_inst=cpp_class + '*')
+
+        deserialize_method = self.method_indent + \
+                    '.def("deserialize", []({class_inst} self, string serialized)' \
+                    '{{ gtsam::deserialize(serialized, *self); }}, py::arg("serialized"))' \
+                    .format(class_inst=cpp_class + '*')
+
+        # Since this class supports serialization, we also add the pickle method.
+        pickle_method = self.method_indent + \
+            ".def(py::pickle({indent}    [](const {cpp_class} &a){{ /* __getstate__: Returns a string that encodes the state of the object */ return py::make_tuple(gtsam::serialize(a)); }},{indent}    [](py::tuple t){{ /* __setstate__ */ {cpp_class} obj; gtsam::deserialize(t[0].cast<std::string>(), obj); return obj; }}))"
+
+        return serialize_method + deserialize_method + \
+            pickle_method.format(cpp_class=cpp_class, indent=self.method_indent)
+
+    def _wrap_print(self, ret: str, method: parser.Method, cpp_class: str,
+                    args_names: List[str], args_signature_with_names: str,
+                    py_args_names: str, prefix: str, suffix: str):
+        """
+        Update the print method to print to the output stream and append a __repr__ method.
+
+        Args:
+            ret (str): The result of the parser.
+            method (parser.Method): The method to be wrapped.
+            cpp_class (str): The C++ name of the class to which the method belongs.
+            args_names (List[str]): List of argument variable names passed to the method.
+            args_signature_with_names (str): C++ arguments containing their names and type signatures.
+            py_args_names (str): The pybind11 formatted version of the argument list.
+            prefix (str): Prefix to add to the wrapped method when writing to the cpp file.
+            suffix (str): Suffix to add to the wrapped method when writing to the cpp file.
+
+        Returns:
+            str: The wrapped print method.
+        """
+        # Redirect stdout - see pybind docs for why this is a good idea:
+        # https://pybind11.readthedocs.io/en/stable/advanced/pycpp/utilities.html#capturing-standard-output-from-ostream
+        ret = ret.replace('self->print',
+                          'py::scoped_ostream_redirect output; self->print')
+
+        # Make __repr__() call .print() internally
+        ret += '''{prefix}.def("__repr__",
+                    [](const {cpp_class}& self{opt_comma}{args_signature_with_names}){{
+                        gtsam::RedirectCout redirect;
+                        self.{method_name}({method_args});
+                        return redirect.str();
+                    }}{py_args_names}){suffix}'''.format(
+            prefix=prefix,
+            cpp_class=cpp_class,
+            opt_comma=', ' if args_names else '',
+            args_signature_with_names=args_signature_with_names,
+            method_name=method.name,
+            method_args=", ".join(args_names) if args_names else '',
+            py_args_names=py_args_names,
+            suffix=suffix)
+        return ret
+
     def _wrap_method(self,
                      method,
                      cpp_class,
@@ -105,22 +172,19 @@ class PybindWrapper:
         py_method = method.name + method_suffix
         cpp_method = method.to_cpp()
 
+        args_names = method.args.names()
+        py_args_names = self._py_args_names(method.args)
+        args_signature_with_names = self._method_args_signature(method.args)
+
         # Special handling for the serialize/serializable method
         if cpp_method in ["serialize", "serializable"]:
-            if not cpp_class in self._serializing_classes:
-                self._serializing_classes.append(cpp_class)
-            serialize_method = self.method_indent + \
-                ".def(\"serialize\", []({class_inst} self){{ return gtsam::serialize(*self); }})".format(class_inst=cpp_class + '*')
-            deserialize_method = self.method_indent + \
-                     '.def("deserialize", []({class_inst} self, string serialized)' \
-                     '{{ gtsam::deserialize(serialized, *self); }}, py::arg("serialized"))' \
-                       .format(class_inst=cpp_class + '*')
+            return self._wrap_serialization(cpp_class)
 
-            # Since this class supports serialization, we also add the pickle method.
-            pickle_method = self.method_indent + \
-                ".def(py::pickle({indent}    [](const {cpp_class} &a){{ /* __getstate__: Returns a string that encodes the state of the object */ return py::make_tuple(gtsam::serialize(a)); }},{indent}    [](py::tuple t){{ /* __setstate__ */ {cpp_class} obj; gtsam::deserialize(t[0].cast<std::string>(), obj); return obj; }}))"
-            return serialize_method + deserialize_method + \
-                pickle_method.format(cpp_class=cpp_class, indent=self.method_indent)
+        # Special handling of ipython specific methods
+        # https://ipython.readthedocs.io/en/stable/config/integrating.html
+        if cpp_method in self._ipython_special_methods:
+            idx = self._ipython_special_methods.index(cpp_method)
+            py_method = f"_repr_{self._ipython_special_methods[idx]}_"
 
         # Add underscore to disambiguate if the method name matches a python keyword
         if py_method in self.python_keywords:
@@ -132,9 +196,6 @@ class PybindWrapper:
             method,
             (parser.StaticMethod, instantiator.InstantiatedStaticMethod))
         return_void = method.return_type.is_void()
-        args_names = method.args.names()
-        py_args_names = self._py_args_names(method.args)
-        args_signature_with_names = self._method_args_signature(method.args)
 
         caller = cpp_class + "::" if not is_method else "self->"
         function_call = ('{opt_return} {caller}{method_name}'
@@ -165,27 +226,9 @@ class PybindWrapper:
         # Create __repr__ override
         # We allow all arguments to .print() and let the compiler handle type mismatches.
         if method.name == 'print':
-            # Redirect stdout - see pybind docs for why this is a good idea:
-            # https://pybind11.readthedocs.io/en/stable/advanced/pycpp/utilities.html#capturing-standard-output-from-ostream
-            ret = ret.replace(
-                'self->print',
-                'py::scoped_ostream_redirect output; self->print')
-
-            # Make __repr__() call .print() internally
-            ret += '''{prefix}.def("__repr__",
-                    [](const {cpp_class}& self{opt_comma}{args_signature_with_names}){{
-                        gtsam::RedirectCout redirect;
-                        self.{method_name}({method_args});
-                        return redirect.str();
-                    }}{py_args_names}){suffix}'''.format(
-                prefix=prefix,
-                cpp_class=cpp_class,
-                opt_comma=', ' if args_names else '',
-                args_signature_with_names=args_signature_with_names,
-                method_name=method.name,
-                method_args=", ".join(args_names) if args_names else '',
-                py_args_names=py_args_names,
-                suffix=suffix)
+            ret = self._wrap_print(ret, method, cpp_class, args_names,
+                                   args_signature_with_names, py_args_names,
+                                   prefix, suffix)
 
         return ret
 
