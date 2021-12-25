@@ -124,7 +124,7 @@ class DCGaussianMixtureFactor : public DCFactor {
       const std::string& s = "DCGaussianMixtureFactor",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     std::cout << (s.empty() ? "" : s + " ");
-    std::cout << "[";
+    std::cout << "Gaussian Mixture [";
     for (Key key : keys()) {
       std::cout << " " << keyFormatter(key);
     }
