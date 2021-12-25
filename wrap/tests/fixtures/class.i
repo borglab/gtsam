@@ -77,6 +77,10 @@ class Test {
   void set_container(std::vector<testing::Test&> container);
   std::vector<testing::Test*> get_container() const;
 
+  // special ipython method
+  string markdown(const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
+
   // comments at the end!
 
   // even more comments at the end!
