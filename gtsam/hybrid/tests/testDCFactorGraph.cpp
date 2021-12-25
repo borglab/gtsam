@@ -219,13 +219,14 @@ TEST(DiscreteBayesTree, Switching) {
   DCGaussianMixtureFactorGraph dcmfg;  // TODO: = fg.linearize(values);
   GTSAM_PRINT(dcmfg);
 
-  // Eliminate partially.
-  Ordering ordering;
-  for (size_t k = 1; k <= K; k++) ordering += X(k);
-  using dc_traits = EliminationTraits<DCGaussianMixtureFactorGraph>;
-  auto result = dc_traits::eliminatePartialSequential(dcmfg, ordering);
-  GTSAM_PRINT(*result.first); // DCGaussianBayesNet
-  GTSAM_PRINT(*result.second); // DCGaussianMixtureFactorGraph
+  //TODO(Varun) uncomment and finish implementing
+  // // Eliminate partially.
+  // Ordering ordering;
+  // for (size_t k = 1; k <= K; k++) ordering += X(k);
+  // using dc_traits = EliminationTraits<DCGaussianMixtureFactorGraph>;
+  // auto result = dc_traits::eliminatePartialSequential(dcmfg, ordering);
+  // GTSAM_PRINT(*result.first); // DCGaussianBayesNet
+  // GTSAM_PRINT(*result.second); // DCGaussianMixtureFactorGraph
 }
 
 /* ************************************************************************* */
