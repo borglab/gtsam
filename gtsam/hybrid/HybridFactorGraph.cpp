@@ -32,15 +32,11 @@ void HybridFactorGraph::push_dc(const DCFactor::shared_ptr& dcFactor) {
 
 void HybridFactorGraph::print(const std::string& str,
                               const gtsam::KeyFormatter& keyFormatter) const {
-  std::string nonlinearStr = str + ": NonlinearFactorGraph";
-  std::string discreteStr = str + ": DiscreteFactorGraph";
-  std::string dcStr = str + ": DCFactorGraph";
-  std::string gStr = str + ": GaussianGraph";
-
-  nonlinearGraph_.print(nonlinearStr, keyFormatter);
-  discreteGraph_.print(discreteStr, keyFormatter);
-  dcGraph_.print(dcStr, keyFormatter);
-  gaussianGraph_.print(gStr, keyFormatter);
+  std::string prefix = str.empty() ? str : str + ": ";
+  nonlinearGraph_.print(prefix + "NonlinearFactorGraph", keyFormatter);
+  discreteGraph_.print(prefix + "DiscreteFactorGraph", keyFormatter);
+  dcGraph_.print(prefix + "DCFactorGraph", keyFormatter);
+  gaussianGraph_.print(prefix + "GaussianGraph", keyFormatter);
 }
 
 gtsam::FastSet<gtsam::Key> HybridFactorGraph::keys() const {
