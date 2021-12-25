@@ -229,11 +229,22 @@ std::string DiscreteConditional::_repr_markdown_(
 
   // Print out signature.
   ss << " $P(";
-  for(Key key: frontals())
-    ss << keyFormatter(key);
-  if (nrParents() > 0)
-    ss << "|";
   bool first = true;
+  for (Key key : frontals()) {
+    if (!first) ss << ",";
+    ss << keyFormatter(key);
+    first = false;
+  }
+  if (nrParents() == 0) {
+   // We have no parents, call factor method.
+    ss << ")$:" << std::endl;
+    ss << DecisionTreeFactor::_repr_markdown_();
+    return ss.str();
+  }
+
+  // We have parents, continue signature and do custom print.
+  ss << "|";
+  first = true;
   for (Key parent : parents()) {
     if (!first) ss << ",";
     ss << keyFormatter(parent);
@@ -256,9 +267,8 @@ std::string DiscreteConditional::_repr_markdown_(
     pairs.emplace_back(key, k);
     n *= k;
   }
-  size_t nrParents = size() - nrFrontals_;
   std::vector<std::pair<Key, size_t>> slatnorf(pairs.rbegin(),
-                                               pairs.rend() - nrParents);
+                                               pairs.rend() - nrParents());
   const auto frontal_assignments = cartesianProduct(slatnorf);
   for (const auto& a : frontal_assignments) {
     for (it = beginFrontals(); it != endFrontals(); ++it) ss << a.at(*it);
@@ -268,7 +278,7 @@ std::string DiscreteConditional::_repr_markdown_(
 
   // Print out separator with alignment hints.
   ss << "|";
-  for (size_t j = 0; j < nrParents + n; j++) ss << ":-:|";
+  for (size_t j = 0; j < nrParents() + n; j++) ss << ":-:|";
   ss << "\n";
 
   // Print out all rows.
