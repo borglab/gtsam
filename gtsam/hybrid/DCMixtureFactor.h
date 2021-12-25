@@ -155,8 +155,7 @@ class DCMixtureFactor : public DCFactor {
       auto linearized = factors_[i].linearize(continuousVals);
       linearized_factors.push_back(linearized);
     }
-    DCGaussianMixtureFactor linearized(keys_, dk_, linearized_factors);
-    return boost::make_shared<DCGaussianMixtureFactor>(linearized);
+    return boost::make_shared<DCGaussianMixtureFactor>(keys_, dk_, linearized_factors);
   }
 
   /**
