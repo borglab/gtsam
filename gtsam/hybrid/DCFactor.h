@@ -105,6 +105,13 @@ class DCFactor : public gtsam::Factor {
       const gtsam::Values& continuousVals,
       const DiscreteValues& discreteVals) const = 0;
 
+  /**
+   * @brief Linearize all the continuous factors only with respect to the
+   * continuous variables (as given in `keys_`).
+   *
+   * @param continuousVals The continuous variables referenced by `keys_`.
+   * @return DCFactor::shared_ptr
+   */
   virtual DCFactor::shared_ptr linearize(
       const Values& continuousVals) const = 0;
 
