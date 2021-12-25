@@ -147,10 +147,10 @@ void DiscreteConditional::solveInPlace(DiscreteValues* values) const {
     keys & dk;
   }
   // Get all Possible Configurations
-  vector<DiscreteValues> allPosbValues = cartesianProduct(keys);
+  const auto allPosbValues = cartesianProduct(keys);
 
   // Find the MPE
-  for(DiscreteValues& frontalVals: allPosbValues) {
+  for(const auto& frontalVals: allPosbValues) {
     double pValueS = pFS(frontalVals); // P(F=value|S=parentsValues)
     // Update MPE solution if better
     if (pValueS > maxP) {
@@ -222,6 +222,81 @@ size_t DiscreteConditional::sample(const DiscreteValues& parentsValues) const {
   return distribution(rng);
 }
 
-/* ******************************************************************************** */
+/* ************************************************************************* */
+std::string DiscreteConditional::markdown(
+    const KeyFormatter& keyFormatter) const {
+  std::stringstream ss;
 
-}// namespace
+  // Print out signature.
+  ss << " $P(";
+  bool first = true;
+  for (Key key : frontals()) {
+    if (!first) ss << ",";
+    ss << keyFormatter(key);
+    first = false;
+  }
+  if (nrParents() == 0) {
+   // We have no parents, call factor method.
+    ss << ")$:" << std::endl;
+    ss << DecisionTreeFactor::markdown();
+    return ss.str();
+  }
+
+  // We have parents, continue signature and do custom print.
+  ss << "|";
+  first = true;
+  for (Key parent : parents()) {
+    if (!first) ss << ",";
+    ss << keyFormatter(parent);
+    first = false;
+  }
+  ss << ")$:" << std::endl;
+
+  // Print out header and construct argument for `cartesianProduct`.
+  std::vector<std::pair<Key, size_t>> pairs;
+  ss << "|";
+  const_iterator it;
+  for(Key parent: parents()) {
+    ss << keyFormatter(parent) << "|";
+    pairs.emplace_back(parent, cardinalities_.at(parent));
+  }
+
+  size_t n = 1;
+  for(Key key: frontals()) {
+    size_t k = cardinalities_.at(key);
+    pairs.emplace_back(key, k);
+    n *= k;
+  }
+  std::vector<std::pair<Key, size_t>> slatnorf(pairs.rbegin(),
+                                               pairs.rend() - nrParents());
+  const auto frontal_assignments = cartesianProduct(slatnorf);
+  for (const auto& a : frontal_assignments) {
+    for (it = beginFrontals(); it != endFrontals(); ++it) ss << a.at(*it);
+    ss << "|";
+  }
+  ss << "\n";
+
+  // Print out separator with alignment hints.
+  ss << "|";
+  for (size_t j = 0; j < nrParents() + n; j++) ss << ":-:|";
+  ss << "\n";
+
+  // Print out all rows.
+  std::vector<std::pair<Key, size_t>> rpairs(pairs.rbegin(), pairs.rend());
+  const auto assignments = cartesianProduct(rpairs);
+  size_t count = 0;
+  for (const auto& a : assignments) {
+    if (count == 0) {
+      ss << "|";
+      for (it = beginParents(); it != endParents(); ++it)
+        ss << a.at(*it) << "|";
+    }
+    ss << operator()(a) << "|";
+    count = (count + 1) % n;
+    if (count == 0) ss << "\n";
+  }
+  return ss.str();
+}
+/* ************************************************************************* */
+
+}  // namespace gtsam

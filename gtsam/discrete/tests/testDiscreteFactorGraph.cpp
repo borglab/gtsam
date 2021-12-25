@@ -361,11 +361,9 @@ cout << unicorns;
 
 /* ************************************************************************* */
 TEST(DiscreteFactorGraph, Dot) {
-  // Declare a bunch of keys
-  DiscreteKey C(0, 2), A(1, 2), B(2, 2);
-
   // Create Factor graph
   DiscreteFactorGraph graph;
+  DiscreteKey C(0, 2), A(1, 2), B(2, 2);
   graph.add(C & A, "0.2 0.8 0.3 0.7");
   graph.add(C & B, "0.1 0.9 0.4 0.6");
 
@@ -384,6 +382,44 @@ TEST(DiscreteFactorGraph, Dot) {
   EXPECT(actual == expected);
 }
 
+/* ************************************************************************* */
+// Check markdown representation looks as expected.
+TEST(DiscreteFactorGraph, markdown) {
+  // Create Factor graph
+  DiscreteFactorGraph graph;
+  DiscreteKey C(0, 2), A(1, 2), B(2, 2);
+  graph.add(C & A, "0.2 0.8 0.3 0.7");
+  graph.add(C & B, "0.1 0.9 0.4 0.6");
+
+  string expected =
+      "`DiscreteFactorGraph` of size 2\n"
+      "\n"
+      "factor 0:\n"
+      "|C|A|value|\n"
+      "|:-:|:-:|:-:|\n"
+      "|0|0|0.2|\n"
+      "|0|1|0.8|\n"
+      "|1|0|0.3|\n"
+      "|1|1|0.7|\n"
+      "\n"
+      "factor 1:\n"
+      "|C|B|value|\n"
+      "|:-:|:-:|:-:|\n"
+      "|0|0|0.1|\n"
+      "|0|1|0.9|\n"
+      "|1|0|0.4|\n"
+      "|1|1|0.6|\n\n";
+  vector<string> names{"C", "A", "B"};
+  auto formatter = [names](Key key) { return names[key]; };
+  string actual = graph.markdown(formatter);
+  EXPECT(actual == expected);
+
+  // Make sure values are correctly displayed.
+  DiscreteValues values;
+  values[0] = 1;
+  values[1] = 0;
+  EXPECT_DOUBLES_EQUAL(0.3, graph[0]->operator()(values), 1e-9);
+}
 /* ************************************************************************* */
 int main() {
 TestResult tr;
