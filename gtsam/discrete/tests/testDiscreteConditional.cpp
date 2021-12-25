@@ -119,7 +119,7 @@ TEST(DiscreteConditional, markdown_prior) {
       "|0|0.2|\n"
       "|1|0.4|\n"
       "|2|0.4|\n";
-  string actual = conditional._repr_markdown_();
+  string actual = conditional.markdown();
   EXPECT(actual == expected);
 }
 
@@ -138,7 +138,7 @@ TEST(DiscreteConditional, markdown_multivalued) {
       "|2|0.33|0.33|0.34|\n"
       "|3|0.33|0.33|0.34|\n"
       "|4|0.95|0.02|0.03|\n";
-  string actual = conditional._repr_markdown_();
+  string actual = conditional.markdown();
   EXPECT(actual == expected);
 }
 
@@ -159,7 +159,7 @@ TEST(DiscreteConditional, markdown) {
       "|1|2|1|0|\n";
   vector<string> names{"C", "B", "A"};
   auto formatter = [names](Key key) { return names[key]; };
-  string actual = conditional._repr_markdown_(formatter);
+  string actual = conditional.markdown(formatter);
   EXPECT(actual == expected);
 }
 

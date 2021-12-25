@@ -97,7 +97,7 @@ TEST(DecisionTreeFactor, markdown) {
       "|2|0|5|\n"
       "|2|1|6|\n";
   auto formatter = [](Key key) { return key == 12 ? "A" : "B"; };
-  string actual = f1._repr_markdown_(formatter);
+  string actual = f1.markdown(formatter);
   EXPECT(actual == expected);
 }
 

@@ -135,7 +135,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  std::string DecisionTreeFactor::_repr_markdown_(
+  std::string DecisionTreeFactor::markdown(
       const KeyFormatter& keyFormatter) const {
     std::stringstream ss;
 
