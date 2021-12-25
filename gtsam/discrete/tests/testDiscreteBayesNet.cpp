@@ -192,7 +192,7 @@ TEST(DiscreteBayesNet, markdown) {
       "|0|0.8|0.2|\n"
       "|1|0.7|0.3|\n\n";
   auto formatter = [](Key key) { return key == 0 ? "Asia" : "Smoking"; };
-  string actual = fragment._repr_markdown_(formatter);
+  string actual = fragment.markdown(formatter);
   EXPECT(actual == expected);
 }
 

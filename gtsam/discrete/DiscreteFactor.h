@@ -93,7 +93,7 @@ public:
   /// @{
   
   /// Render as markdown table.
-  virtual std::string _repr_markdown_(
+  virtual std::string markdown(
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const = 0;
 
   /// @}

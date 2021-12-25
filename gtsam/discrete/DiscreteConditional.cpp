@@ -238,7 +238,7 @@ std::string DiscreteConditional::markdown(
   if (nrParents() == 0) {
    // We have no parents, call factor method.
     ss << ")$:" << std::endl;
-    ss << DecisionTreeFactor::_repr_markdown_();
+    ss << DecisionTreeFactor::markdown();
     return ss.str();
   }
 
