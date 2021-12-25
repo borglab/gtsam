@@ -24,7 +24,11 @@
 
 namespace gtsam {
 
+class DCGaussianConditional;
 class HybridFactorGraph {
+ public:
+  using shared_ptr = boost::shared_ptr<HybridFactorGraph>;
+
  protected:
   // Separate internal factor graphs for different types of factors
   NonlinearFactorGraph nonlinearGraph_;
@@ -33,7 +37,8 @@ class HybridFactorGraph {
   GaussianFactorGraph gaussianGraph_;
 
  public:
-  HybridFactorGraph();
+  /// Default constructor
+  HybridFactorGraph() = default;
 
   /**
    * @brief Construct a new Hybrid Factor Graph object.
@@ -243,6 +248,15 @@ class HybridFactorGraph {
    * Clears all internal factor graphs
    */
   void clear();
+
+  /// @name Elimination machinery
+  /// @{
+  using FactorType = Factor;
+  using EliminationResult = std::pair<boost::shared_ptr<Factor>,
+                                      boost::shared_ptr<DCGaussianConditional>>;
+  using Eliminate = std::function<EliminationResult(const HybridFactorGraph&,
+                                                    const Ordering&)>;
+  /// @}
 };
 
 }  // namespace gtsam

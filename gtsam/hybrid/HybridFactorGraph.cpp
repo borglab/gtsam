@@ -15,8 +15,6 @@
 
 namespace gtsam {
 
-HybridFactorGraph::HybridFactorGraph() {}
-
 void HybridFactorGraph::push_nonlinear(
     const boost::shared_ptr<gtsam::NonlinearFactor>& nonlinearFactor) {
   nonlinearGraph_.push_back(nonlinearFactor);
