@@ -657,8 +657,6 @@ class TestInterfaceParser(unittest.TestCase):
         int globalVar;
         """)
 
-        # print("module: ", module)
-        # print(dir(module.content[0].name))
         self.assertEqual(["one", "Global", "globalVar"],
                          [x.name for x in module.content])
         self.assertEqual(["two", "two_dummy", "two", "oneVar"],
