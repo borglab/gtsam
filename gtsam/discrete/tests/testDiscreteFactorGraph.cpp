@@ -411,7 +411,7 @@ TEST(DiscreteFactorGraph, markdown) {
       "|1|1|0.6|\n\n";
   vector<string> names{"C", "A", "B"};
   auto formatter = [names](Key key) { return names[key]; };
-  string actual = graph._repr_markdown_(formatter);
+  string actual = graph.markdown(formatter);
   EXPECT(actual == expected);
 
   // Make sure values are correctly displayed.

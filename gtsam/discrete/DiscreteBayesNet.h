@@ -102,7 +102,7 @@ namespace gtsam {
     /// @{
 
     /// Render as markdown table.
-    std::string _repr_markdown_(
+    std::string markdown(
         const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
     /// @}

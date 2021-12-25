@@ -130,14 +130,14 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  std::string DiscreteFactorGraph::_repr_markdown_(
+  std::string DiscreteFactorGraph::markdown(
       const KeyFormatter& keyFormatter) const {
     using std::endl;
     std::stringstream ss;
     ss << "`DiscreteFactorGraph` of size " << size() << endl << endl;
     for (size_t i = 0; i < factors_.size(); i++) {
       ss << "factor " << i << ":\n";
-      ss << factors_[i]->_repr_markdown_(keyFormatter) << endl;
+      ss << factors_[i]->markdown(keyFormatter) << endl;
     }
     return ss.str();
   }

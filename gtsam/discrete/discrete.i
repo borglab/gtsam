@@ -93,7 +93,7 @@ class DiscreteBayesNet {
   double operator()(const gtsam::DiscreteValues& values) const;
   gtsam::DiscreteValues optimize() const;
   gtsam::DiscreteValues sample() const;
-  string _repr_markdown_(const gtsam::KeyFormatter& keyFormatter =
+  string markdown(const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
 };
 
@@ -127,7 +127,7 @@ class DiscreteBayesTree {
                  gtsam::DefaultKeyFormatter) const;
   double operator()(const gtsam::DiscreteValues& values) const;
 
-  string _repr_markdown_(const gtsam::KeyFormatter& keyFormatter =
+  string markdown(const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
 };
 
@@ -170,7 +170,7 @@ class DiscreteFactorGraph {
   gtsam::DiscreteBayesTree eliminateMultifrontal();
   gtsam::DiscreteBayesTree eliminateMultifrontal(const gtsam::Ordering& ordering);
 
-  string _repr_markdown_(const gtsam::KeyFormatter& keyFormatter =
+  string markdown(const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
 };
 
