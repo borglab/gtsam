@@ -81,6 +81,8 @@ virtual class DiscretePrior : gtsam::DiscreteConditional {
                  gtsam::DefaultKeyFormatter) const;
   double operator()(size_t value) const;
   std::vector<double> pmf() const;
+  size_t solve() const;
+  size_t sample() const;
 };
 
 #include <gtsam/discrete/DiscreteBayesNet.h>

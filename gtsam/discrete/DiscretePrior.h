@@ -81,8 +81,24 @@ class GTSAM_EXPORT DiscretePrior : public DiscreteConditional {
   /// Evaluate given a single value.
   double operator()(size_t value) const;
 
-  /// Evaluate given a single value.
+  /// We also want to keep the Base version, taking DiscreteValues:
+  // TODO(dellaert): does not play well with wrapper!
+  // using Base::operator();
+
+  /// Return entire probability mass function.
   std::vector<double> pmf() const;
+
+  /**
+   * solve a conditional
+   * @return MPE value of the child (1 frontal variable).
+   */
+  size_t solve() const { return Base::solve({}); }
+
+  /**
+   * sample
+   * @return sample from conditional
+   */
+  size_t sample() const { return Base::sample({}); }
 
   /// @}
 };
