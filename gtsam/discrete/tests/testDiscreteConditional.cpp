@@ -10,10 +10,11 @@
  * -------------------------------------------------------------------------- */
 
 /*
- * @file    testDecisionTreeFactor.cpp
+ * @file    testDiscreteConditional.cpp
  * @brief   unit tests for DiscreteConditional
  * @author  Duy-Nguyen Ta
- * @date Feb 14, 2011
+ * @author  Frank dellaert
+ * @date    Feb 14, 2011
  */
 
 #include <boost/assign/std/map.hpp>
