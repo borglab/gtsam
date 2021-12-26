@@ -24,6 +24,8 @@
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 
+#include <cstdlib>
+
 // Include for test suite
 #include <CppUnitLite/TestHarness.h>
 
@@ -72,15 +74,24 @@ TEST(HybridFactorGraph, Switching) {
   GTSAM_PRINT(fg);
 
   Values values;
-  for(size_t k=1; k <= K; k++){
+  // Add a bunch of values for the linearization point.
+  for (size_t k = 1; k <= K; k++) {
     values.insert<double>(X(k), 0.0);
   }
 
   // TODO: create 4 linearization points.
 
+  // There original hybrid factor graph should not have any Gaussian factors.
+  // This ensures there are no unintentional factors being created.
+  EXPECT(assert_equal(fg.gaussianGraph().size(), size_t(0)));
+
   // Linearize here:
   HybridFactorGraph dcmfg = fg.linearize(values);
   GTSAM_PRINT(dcmfg);
+
+  // There should only be one linearized continuous factor corresponding to the
+  // PriorFactor on X(1).
+  EXPECT(assert_equal(dcmfg.gaussianGraph().size(), size_t(1)));
 }
 
 /* ************************************************************************* */
