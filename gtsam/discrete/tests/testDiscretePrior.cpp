@@ -23,13 +23,28 @@
 using namespace std;
 using namespace gtsam;
 
+static const DiscreteKey X(0, 2);
+
 /* ************************************************************************* */
 TEST(DiscretePrior, constructors) {
-  DiscreteKey X(0, 2);
   DiscretePrior actual(X % "2/3");
   DecisionTreeFactor f(X, "0.4 0.6");
   DiscretePrior expected(f);
   EXPECT(assert_equal(expected, actual, 1e-9));
+}
+
+/* ************************************************************************* */
+TEST(DiscretePrior, operator) {
+  DiscretePrior prior(X % "2/3");
+  EXPECT_DOUBLES_EQUAL(prior(0), 0.4, 1e-9);
+  EXPECT_DOUBLES_EQUAL(prior(1), 0.6, 1e-9);
+}
+
+/* ************************************************************************* */
+TEST(DiscretePrior, to_vector) {
+  DiscretePrior prior(X % "2/3");
+  vector<double> expected {0.4, 0.6};
+  EXPECT(prior.pmf() ==  expected);
 }
 
 /* ************************************************************************* */
