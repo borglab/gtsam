@@ -35,12 +35,15 @@ struct GTSAM_EXPORT DotWriter {
                              ///< the dot of the factor
   bool binaryEdges;          ///< just use non-dotted edges for binary factors
 
-  DotWriter()
-      : figureWidthInches(5),
-        figureHeightInches(5),
-        plotFactorPoints(true),
-        connectKeysToFactor(true),
-        binaryEdges(true) {}
+  explicit DotWriter(double figureWidthInches = 5,
+                     double figureHeightInches = 5,
+                     bool plotFactorPoints = true,
+                     bool connectKeysToFactor = true, bool binaryEdges = true)
+      : figureWidthInches(figureWidthInches),
+        figureHeightInches(figureHeightInches),
+        plotFactorPoints(plotFactorPoints),
+        connectKeysToFactor(connectKeysToFactor),
+        binaryEdges(binaryEdges) {}
 
   /// Write out preamble, including size.
   void writePreamble(std::ostream* os) const;
