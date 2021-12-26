@@ -13,8 +13,11 @@ Author: Varun Agrawal
 
 import unittest
 
-from gtsam import DiscretePrior, DecisionTreeFactor, DiscreteKeys
+import numpy as np
+from gtsam import DecisionTreeFactor, DiscreteKeys, DiscretePrior
 from gtsam.utils.test_case import GtsamTestCase
+
+X = 0, 2
 
 
 class TestDiscretePrior(GtsamTestCase):
@@ -22,7 +25,6 @@ class TestDiscretePrior(GtsamTestCase):
 
     def test_constructor(self):
         """Test various constructors."""
-        X = 0, 2
         actual = DiscretePrior(X, "2/3")
         keys = DiscreteKeys()
         keys.push_back(X)
@@ -30,10 +32,19 @@ class TestDiscretePrior(GtsamTestCase):
         expected = DiscretePrior(f)
         self.gtsamAssertEquals(actual, expected)
 
+    def test_operator(self):
+        prior = DiscretePrior(X, "2/3")
+        self.assertAlmostEqual(prior(0), 0.4)
+        self.assertAlmostEqual(prior(1), 0.6)
+
+    def test_pmf(self):
+        prior = DiscretePrior(X, "2/3")
+        expected = np.array([0.4, 0.6])
+        np.testing.assert_allclose(expected, prior.pmf())
+
     def test_markdown(self):
         """Test the _repr_markdown_ method."""
 
-        X = 0, 2
         prior = DiscretePrior(X, "2/3")
         expected = " $P(0)$:\n" \
             "|0|value|\n" \
