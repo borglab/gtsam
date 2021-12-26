@@ -62,8 +62,6 @@ public:
    * conditional probability table (CPT) in 00 01 10 11 order. For
    * three-valued, it would be 00 01 02 10 11 12 20 21 22, etc....
    *
-   * The first string is parsed to add a key and parents.
-   *
    * Example: DiscreteConditional P(D, {B,E}, table);
    */
   DiscreteConditional(const DiscreteKey& key, const DiscreteKeys& parents,
@@ -75,8 +73,7 @@ public:
    * probability table (CPT) in 00 01 10 11 order. For three-valued, it would
    * be 00 01 02 10 11 12 20 21 22, etc....
    *
-   * The first string is parsed to add a key and parents. The second string
-   * parses into a table.
+   * The string is parsed into a Signature::Table.
    *
    * Example: DiscreteConditional P(D, {B,E}, "9/1 2/8 3/7 1/9");
    */
