@@ -56,6 +56,10 @@ const gtsam::DiscreteFactorGraph& HybridFactorGraph::discreteGraph() const {
   return discreteGraph_;
 }
 
+const GaussianFactorGraph& HybridFactorGraph::gaussianGraph() const {
+  return gaussianGraph_;
+}
+
 HybridFactorGraph HybridFactorGraph::linearize(
     const Values& continuousValues) const {
   // linearize the continuous factors

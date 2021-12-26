@@ -37,10 +37,10 @@ class HybridFactorGraph {
 
   /**
    * @brief Construct a new Hybrid Factor Graph object.
-   * 
+   *
    * @param nonlinearGraph A factor graph with continuous factors.
    * @param discreteGraph A factor graph with only discrete factors.
-   * @param dcGraph A DCFactorGraph containing DCFactors. 
+   * @param dcGraph A DCFactorGraph containing DCFactors.
    */
   HybridFactorGraph(
       const NonlinearFactorGraph& nonlinearGraph,
@@ -109,7 +109,7 @@ class HybridFactorGraph {
    * @param nonlinearFactor - the factor to add
    */
   template <typename NonlinearFactorType>
-  void push_nonlinear(const NonlinearFactorType &nonlinearFactor) {
+  void push_nonlinear(const NonlinearFactorType& nonlinearFactor) {
     nonlinearGraph_.push_back(
         boost::make_shared<NonlinearFactorType>(nonlinearFactor));
   }
@@ -126,7 +126,7 @@ class HybridFactorGraph {
    * @param discreteFactor - the factor to add
    */
   template <typename DiscreteFactorType>
-  void push_discrete(const DiscreteFactorType &discreteFactor) {
+  void push_discrete(const DiscreteFactorType& discreteFactor) {
     discreteGraph_.emplace_shared<DiscreteFactorType>(discreteFactor);
   }
 
@@ -134,14 +134,15 @@ class HybridFactorGraph {
    * Add a discrete factor *pointer* to the internal discrete graph
    * @param discreteFactor - boost::shared_ptr to the factor to add
    */
-  void push_discrete(const boost::shared_ptr<gtsam::DiscreteFactor>& discreteFactor);
+  void push_discrete(
+      const boost::shared_ptr<gtsam::DiscreteFactor>& discreteFactor);
 
   /**
    * Add a discrete-continuous (DC) factor to the internal DC graph
    * @param dcFactor - the factor to add
    */
   template <typename DCFactorType>
-  void push_dc(const DCFactorType &dcFactor) {
+  void push_dc(const DCFactorType& dcFactor) {
     dcGraph_.push_back(boost::make_shared<DCFactorType>(dcFactor));
   }
 
@@ -163,9 +164,9 @@ class HybridFactorGraph {
   /**
    * Simply prints the factor graph.
    */
-  void print(const std::string &str = "HybridFactorGraph",
-             const gtsam::KeyFormatter &keyFormatter = 
-             gtsam::DefaultKeyFormatter) const;
+  void print(const std::string& str = "HybridFactorGraph",
+             const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
 
   /**
    * Mimics the GTSAM::FactorGraph API: retrieve the keys from each internal
@@ -186,13 +187,19 @@ class HybridFactorGraph {
    * Utility for retrieving the internal discrete factor graph
    * @return the member variable discreteGraph_
    */
-  const gtsam::DiscreteFactorGraph& discreteGraph() const;
+  const DiscreteFactorGraph& discreteGraph() const;
+
+  /**
+   * Utility for retrieving the internal gaussian factor graph
+   * @return the member variable gaussianGraph_
+   */
+  const GaussianFactorGraph& gaussianGraph() const;
 
   /**
    * @brief Linearize all the continuous factors in the HybridFactorGraph.
-   * 
+   *
    * @param continuousValues: Dictionary of continuous values.
-   * @return HybridFactorGraph 
+   * @return HybridFactorGraph
    */
   HybridFactorGraph linearize(const Values& continuousValues) const;
 
@@ -210,7 +217,7 @@ class HybridFactorGraph {
   /**
    * @return true if all internal graphs of `this` are equal to those of `other`
    */
-  bool equals(const HybridFactorGraph &other, double tol = 1e-9) const;
+  bool equals(const HybridFactorGraph& other, double tol = 1e-9) const;
 
   /**
    * @return the total number of factors across all internal graphs
