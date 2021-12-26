@@ -81,6 +81,20 @@ public:
                       const std::string& spec)
       : DiscreteConditional(Signature(key, parents, spec)) {}
 
+  /// No-parent specialization; can also use DiscretePrior.
+  DiscreteConditional(const DiscreteKey& key, const std::string& spec)
+      : DiscreteConditional(Signature(key, {}, spec)) {}
+
+  /// Single-parent specialization
+  DiscreteConditional(const DiscreteKey& key, const std::string& spec,
+                      const DiscreteKey& parent1)
+      : DiscreteConditional(Signature(key, {parent1}, spec)) {}
+
+  /// Two-parent specialization
+  DiscreteConditional(const DiscreteKey& key, const std::string& spec,
+                      const DiscreteKey& parent1, const DiscreteKey& parent2)
+      : DiscreteConditional(Signature(key, {parent1, parent2}, spec)) {}
+
   /** construct P(X|Y)=P(X,Y)/P(Y) from P(X,Y) and P(Y) */
   DiscreteConditional(const DecisionTreeFactor& joint,
       const DecisionTreeFactor& marginal);

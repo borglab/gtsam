@@ -75,8 +75,8 @@ TEST(DiscreteBayesNet, bayesNet) {
 TEST(DiscreteBayesNet, Asia) {
   DiscreteBayesNet asia;
 
-  asia.add(Asia % "99/1");
-  asia.add(Smoking % "50/50");
+  asia.add(Asia, "99/1");
+  asia.add(Smoking % "50/50");  // Signature version
 
   asia.add(Tuberculosis | Asia = "99/1 95/5");
   asia.add(LungCancer | Smoking = "99/1 90/10");
