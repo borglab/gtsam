@@ -228,7 +228,7 @@ std::string DiscreteConditional::markdown(
   std::stringstream ss;
 
   // Print out signature.
-  ss << " $P(";
+  ss << " *P(";
   bool first = true;
   for (Key key : frontals()) {
     if (!first) ss << ",";
@@ -237,7 +237,7 @@ std::string DiscreteConditional::markdown(
   }
   if (nrParents() == 0) {
    // We have no parents, call factor method.
-    ss << ")$:" << std::endl;
+    ss << ")*:\n" << std::endl;
     ss << DecisionTreeFactor::markdown(keyFormatter);
     return ss.str();
   }
@@ -250,7 +250,7 @@ std::string DiscreteConditional::markdown(
     ss << keyFormatter(parent);
     first = false;
   }
-  ss << ")$:" << std::endl;
+  ss << ")*:\n" << std::endl;
 
   // Print out header and construct argument for `cartesianProduct`.
   std::vector<std::pair<Key, size_t>> pairs;

@@ -114,7 +114,7 @@ TEST(DiscreteConditional, markdown_prior) {
   DiscreteKey A(Symbol('x', 1), 3);
   DiscreteConditional conditional(A % "1/2/2");
   string expected =
-      " $P(x1)$:\n"
+      " *P(x1)*:\n\n"
       "|x1|value|\n"
       "|:-:|:-:|\n"
       "|0|0.2|\n"
@@ -131,7 +131,7 @@ TEST(DiscreteConditional, markdown_multivalued) {
   DiscreteConditional conditional(
       A | B = "2/88/10 2/20/78 33/33/34 33/33/34 95/2/3");
   string expected =
-      " $P(a1|b1)$:\n"
+      " *P(a1|b1)*:\n\n"
       "|b1|0|1|2|\n"
       "|:-:|:-:|:-:|:-:|\n"
       "|0|0.02|0.88|0.1|\n"
@@ -149,7 +149,7 @@ TEST(DiscreteConditional, markdown) {
   DiscreteKey A(2, 2), B(1, 2), C(0, 3);
   DiscreteConditional conditional(A, {B, C}, "0/1 1/3  1/1 3/1  0/1 1/0");
   string expected =
-      " $P(A|B,C)$:\n"
+      " *P(A|B,C)*:\n\n"
       "|B|C|0|1|\n"
       "|:-:|:-:|:-:|:-:|\n"
       "|0|0|0|1|\n"
