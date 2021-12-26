@@ -71,6 +71,16 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
                  gtsam::DefaultKeyFormatter) const;
 };
 
+#include <gtsam/discrete/DiscretePrior.h>
+virtual class DiscretePrior : gtsam::DiscreteConditional {
+  DiscretePrior();
+  DiscretePrior(const gtsam::DecisionTreeFactor& f);
+  DiscretePrior(const gtsam::DiscreteKey& key, string spec);
+  void print(string s = "Discrete Prior\n",
+             const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
+};
+
 #include <gtsam/discrete/DiscreteBayesNet.h>
 class DiscreteBayesNet { 
   DiscreteBayesNet();
