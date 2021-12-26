@@ -83,7 +83,7 @@ TEST(HybridFactorGraph, Switching) {
 
   // There original hybrid factor graph should not have any Gaussian factors.
   // This ensures there are no unintentional factors being created.
-  EXPECT(assert_equal(fg.gaussianGraph().size(), size_t(0)));
+  EXPECT(fg.gaussianGraph().size() == 0);
 
   // Linearize here:
   HybridFactorGraph dcmfg = fg.linearize(values);
@@ -91,7 +91,7 @@ TEST(HybridFactorGraph, Switching) {
 
   // There should only be one linearized continuous factor corresponding to the
   // PriorFactor on X(1).
-  EXPECT(assert_equal(dcmfg.gaussianGraph().size(), size_t(1)));
+  EXPECT(dcmfg.gaussianGraph().size() == 1);
 }
 
 /* ************************************************************************* */
