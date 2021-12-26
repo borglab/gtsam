@@ -84,10 +84,17 @@ virtual class DiscretePrior : gtsam::DiscreteConditional {
 };
 
 #include <gtsam/discrete/DiscreteBayesNet.h>
-class DiscreteBayesNet { 
+class DiscreteBayesNet {
   DiscreteBayesNet();
-  void add(const gtsam::DiscreteKey& key,
-           const gtsam::DiscreteKeys& parents, string spec);
+  void add(const gtsam::DiscreteConditional& s);
+  void add(const gtsam::DiscreteKey& key, string spec);
+  void add(const gtsam::DiscreteKey& key, string spec,
+           const gtsam::DiscreteKey& parent1);
+  void add(const gtsam::DiscreteKey& key, string spec,
+           const gtsam::DiscreteKey& parent1,
+           const gtsam::DiscreteKey& parent2);
+  void add(const gtsam::DiscreteKey& key, const gtsam::DiscreteKeys& parents,
+           string spec);
   bool empty() const;
   size_t size() const;
   gtsam::KeySet keys() const;
@@ -98,15 +105,13 @@ class DiscreteBayesNet {
   bool equals(const gtsam::DiscreteBayesNet& other, double tol = 1e-9) const;
   string dot(const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
-  void saveGraph(string s,
-                const gtsam::KeyFormatter& keyFormatter =
-                 gtsam::DefaultKeyFormatter) const;
-  void add(const gtsam::DiscreteConditional& s);
+  void saveGraph(string s, const gtsam::KeyFormatter& keyFormatter =
+                               gtsam::DefaultKeyFormatter) const;
   double operator()(const gtsam::DiscreteValues& values) const;
   gtsam::DiscreteValues optimize() const;
   gtsam::DiscreteValues sample() const;
   string markdown(const gtsam::KeyFormatter& keyFormatter =
-                 gtsam::DefaultKeyFormatter) const;
+                      gtsam::DefaultKeyFormatter) const;
 };
 
 #include <gtsam/discrete/DiscreteBayesTree.h>
