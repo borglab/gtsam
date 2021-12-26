@@ -181,7 +181,7 @@ TEST(DiscreteBayesNet, markdown) {
       "`DiscreteBayesNet` of size 2\n"
       "\n"
       " $P(Asia)$:\n"
-      "|0|value|\n"
+      "|Asia|value|\n"
       "|:-:|:-:|\n"
       "|0|0.99|\n"
       "|1|0.01|\n"
