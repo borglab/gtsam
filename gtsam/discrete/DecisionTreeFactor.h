@@ -183,6 +183,9 @@ namespace gtsam {
 //      Potentials::reduceWithInverse(inverseReduction);
 //    }
 
+    /// Enumerate all values into a map from values to double.
+    std::vector<std::pair<DiscreteValues, double>> enumerate() const;
+
     /// @}
     /// @name Wrapper support
     /// @{

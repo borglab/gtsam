@@ -135,16 +135,32 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  std::vector<std::pair<DiscreteValues, double>> DecisionTreeFactor::enumerate() const {
+    // Get all possible assignments
+    std::vector<std::pair<Key, size_t>> pairs;
+    for (auto& key : keys()) {
+      pairs.emplace_back(key, cardinalities_.at(key));
+    }
+    std::vector<std::pair<Key, size_t>> rpairs(pairs.rbegin(), pairs.rend());
+    const auto assignments = cartesianProduct(rpairs);
+
+    // Construct unordered_map with values
+    std::vector<std::pair<DiscreteValues, double>> result;
+    for (const auto& assignment : assignments) {
+      result.emplace_back(assignment, operator()(assignment));
+    }
+    return result;
+  }
+
+  /* ************************************************************************* */
   std::string DecisionTreeFactor::markdown(
       const KeyFormatter& keyFormatter) const {
     std::stringstream ss;
 
     // Print out header and construct argument for `cartesianProduct`.
-    std::vector<std::pair<Key, size_t>> pairs;
     ss << "|";
     for (auto& key : keys()) {
       ss << keyFormatter(key) << "|";
-      pairs.emplace_back(key, cardinalities_.at(key));
     }
     ss << "value|\n";
 
@@ -154,12 +170,12 @@ namespace gtsam {
     ss << ":-:|\n";
 
     // Print out all rows.
-    std::vector<std::pair<Key, size_t>> rpairs(pairs.rbegin(), pairs.rend());
-    const auto assignments = cartesianProduct(rpairs);
-    for (const auto& assignment : assignments) {
+    auto rows = enumerate();
+    for (const auto& kv : rows) {
       ss << "|";
+      auto assignment = kv.first;
       for (auto& key : keys()) ss << assignment.at(key) << "|";
-      ss << operator()(assignment) << "|\n";
+      ss << kv.second << "|\n";
     }
     return ss.str();
   }

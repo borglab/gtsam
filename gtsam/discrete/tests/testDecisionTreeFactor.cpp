@@ -83,10 +83,28 @@ TEST( DecisionTreeFactor, sum_max)
 }
 
 /* ************************************************************************* */
+// Check enumerate yields the correct list of assignment/value pairs.
+TEST(DecisionTreeFactor, enumerate) {
+  DiscreteKey A(12, 3), B(5, 2);
+  DecisionTreeFactor f(A & B, "1 2  3 4  5 6");
+  auto actual = f.enumerate();
+  std::vector<std::pair<DiscreteValues, double>> expected;
+  DiscreteValues values;
+  for (size_t a : {0, 1, 2}) {
+    for (size_t b : {0, 1}) {
+      values[12] = a;
+      values[5] = b;
+      expected.emplace_back(values, f(values));
+    }
+  }
+  EXPECT(actual == expected);
+}
+
+/* ************************************************************************* */
 // Check markdown representation looks as expected.
 TEST(DecisionTreeFactor, markdown) {
   DiscreteKey A(12, 3), B(5, 2);
-  DecisionTreeFactor f1(A & B, "1 2  3 4  5 6");
+  DecisionTreeFactor f(A & B, "1 2  3 4  5 6");
   string expected =
       "|A|B|value|\n"
       "|:-:|:-:|:-:|\n"
@@ -97,7 +115,7 @@ TEST(DecisionTreeFactor, markdown) {
       "|2|0|5|\n"
       "|2|1|6|\n";
   auto formatter = [](Key key) { return key == 12 ? "A" : "B"; };
-  string actual = f1.markdown(formatter);
+  string actual = f.markdown(formatter);
   EXPECT(actual == expected);
 }
 
