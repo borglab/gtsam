@@ -146,12 +146,16 @@ public:
     return DecisionTreeFactor::shared_ptr(new DecisionTreeFactor(*this));
   }
 
-  /** Restrict to given parent values, returns AlgebraicDecisionDiagram */
-  ADT choose(const DiscreteValues& parentsValues) const;
-
   /** Restrict to given parent values, returns DecisionTreeFactor */
-  DecisionTreeFactor::shared_ptr chooseAsFactor(
+  DecisionTreeFactor::shared_ptr choose(
       const DiscreteValues& parentsValues) const;
+
+  /** Convert to a likelihood factor by providing value before bar. */
+  DecisionTreeFactor::shared_ptr likelihood(
+      const DiscreteValues& frontalValues) const;
+
+  /** Single variable version of likelihood. */
+  DecisionTreeFactor::shared_ptr likelihood(size_t value) const;
 
   /**
    * solve a conditional

@@ -76,8 +76,11 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
       string s = "Discrete Conditional: ",
       const gtsam::KeyFormatter& formatter = gtsam::DefaultKeyFormatter) const;
   gtsam::DecisionTreeFactor* toFactor() const;
-  gtsam::DecisionTreeFactor* chooseAsFactor(
+  gtsam::DecisionTreeFactor* choose(
       const gtsam::DiscreteValues& parentsValues) const;
+  gtsam::DecisionTreeFactor* likelihood(
+      const gtsam::DiscreteValues& frontalValues) const;
+  gtsam::DecisionTreeFactor* likelihood(size_t value) const;
   size_t solve(const gtsam::DiscreteValues& parentsValues) const;
   size_t sample(const gtsam::DiscreteValues& parentsValues) const;
   void solveInPlace(gtsam::DiscreteValues @parentsValues) const;
