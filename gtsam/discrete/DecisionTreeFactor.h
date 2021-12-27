@@ -61,6 +61,23 @@ namespace gtsam {
         DiscreteFactor(keys.indices()), Potentials(keys, table) {
     }
 
+    /// Single-key specialization
+    template <class SOURCE>
+    DecisionTreeFactor(const DiscreteKey& key, SOURCE table)
+        : DecisionTreeFactor(DiscreteKeys{key}, table) {}
+
+    /// Two-key specialization
+    template <class SOURCE>
+    DecisionTreeFactor(const DiscreteKey& key1, const DiscreteKey& key2,
+                       SOURCE table)
+        : DecisionTreeFactor({key1, key2}, table) {}
+
+    /// Three-key specialization
+    template <class SOURCE>
+    DecisionTreeFactor(const DiscreteKey& key1, const DiscreteKey& key2,
+                       const DiscreteKey& key3, SOURCE table)
+        : DecisionTreeFactor({key1, key2, key3}, table) {}
+
     /** Construct from a DiscreteConditional type */
     DecisionTreeFactor(const DiscreteConditional& c);
 

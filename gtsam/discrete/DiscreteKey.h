@@ -43,9 +43,7 @@ namespace gtsam {
     DiscreteKeys() : std::vector<DiscreteKey>::vector() {}
 
     /// Construct from a key
-    DiscreteKeys(const DiscreteKey& key) {
-      push_back(key);
-    }
+    explicit DiscreteKeys(const DiscreteKey& key) { push_back(key); }
 
     /// Construct from a vector of keys
     DiscreteKeys(const std::vector<DiscreteKey>& keys) :

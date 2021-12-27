@@ -30,9 +30,15 @@ class DiscreteFactor {
 };
 
 #include <gtsam/discrete/DecisionTreeFactor.h>
-virtual class DecisionTreeFactor: gtsam::DiscreteFactor {
+virtual class DecisionTreeFactor : gtsam::DiscreteFactor {
   DecisionTreeFactor();
   DecisionTreeFactor(const gtsam::DiscreteKeys& keys, string table);
+  DecisionTreeFactor(const gtsam::DiscreteKey& key, const std::string& spec);
+  DecisionTreeFactor(const gtsam::DiscreteKey& key1,
+                     const gtsam::DiscreteKey& key2, const std::string& spec);
+  DecisionTreeFactor(const gtsam::DiscreteKey& key1,
+                     const gtsam::DiscreteKey& key2,
+                     const gtsam::DiscreteKey& key3, const std::string& spec);
   DecisionTreeFactor(const gtsam::DiscreteConditional& c);
   void print(string s = "DecisionTreeFactor\n",
              const gtsam::KeyFormatter& keyFormatter =
@@ -40,13 +46,19 @@ virtual class DecisionTreeFactor: gtsam::DiscreteFactor {
   bool equals(const gtsam::DecisionTreeFactor& other, double tol = 1e-9) const;
   string dot(bool showZero = false) const;
   string markdown(const gtsam::KeyFormatter& keyFormatter =
-                 gtsam::DefaultKeyFormatter) const;
+                      gtsam::DefaultKeyFormatter) const;
 };
 
 #include <gtsam/discrete/DiscreteConditional.h>
 virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
   DiscreteConditional();
   DiscreteConditional(size_t nFrontals, const gtsam::DecisionTreeFactor& f);
+  DiscreteConditional(const gtsam::DiscreteKey& key, string spec);
+  DiscreteConditional(const gtsam::DiscreteKey& key, string spec,
+                      const gtsam::DiscreteKey& parent1);
+  DiscreteConditional(const gtsam::DiscreteKey& key, string spec,
+                      const gtsam::DiscreteKey& parent1,
+                      const gtsam::DiscreteKey& parent2);
   DiscreteConditional(const gtsam::DiscreteKey& key,
                       const gtsam::DiscreteKeys& parents, string spec);
   DiscreteConditional(const gtsam::DecisionTreeFactor& joint,
@@ -62,13 +74,14 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
       string s = "Discrete Conditional: ",
       const gtsam::KeyFormatter& formatter = gtsam::DefaultKeyFormatter) const;
   gtsam::DecisionTreeFactor* toFactor() const;
-  gtsam::DecisionTreeFactor* chooseAsFactor(const gtsam::DiscreteValues& parentsValues) const;
+  gtsam::DecisionTreeFactor* chooseAsFactor(
+      const gtsam::DiscreteValues& parentsValues) const;
   size_t solve(const gtsam::DiscreteValues& parentsValues) const;
   size_t sample(const gtsam::DiscreteValues& parentsValues) const;
-  void solveInPlace(gtsam::DiscreteValues@ parentsValues) const;
-  void sampleInPlace(gtsam::DiscreteValues@ parentsValues) const;
+  void solveInPlace(gtsam::DiscreteValues @parentsValues) const;
+  void sampleInPlace(gtsam::DiscreteValues @parentsValues) const;
   string markdown(const gtsam::KeyFormatter& keyFormatter =
-                 gtsam::DefaultKeyFormatter) const;
+                      gtsam::DefaultKeyFormatter) const;
 };
 
 #include <gtsam/discrete/DiscretePrior.h>
