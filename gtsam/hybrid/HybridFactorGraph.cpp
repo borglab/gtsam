@@ -18,20 +18,24 @@ namespace gtsam {
 void HybridFactorGraph::push_nonlinear(
     const boost::shared_ptr<gtsam::NonlinearFactor>& nonlinearFactor) {
   nonlinearGraph_.push_back(nonlinearFactor);
+  push_back(nonlinearFactor);
 }
 
 void HybridFactorGraph::push_discrete(
     const DiscreteFactor::shared_ptr& discreteFactor) {
   discreteGraph_.push_back(discreteFactor);
+  push_back(discreteFactor);
 }
 
 void HybridFactorGraph::push_dc(const DCFactor::shared_ptr& dcFactor) {
   dcGraph_.push_back(dcFactor);
+  push_back(dcFactor);
 }
 
 void HybridFactorGraph::print(const std::string& str,
                               const gtsam::KeyFormatter& keyFormatter) const {
   std::string prefix = str.empty() ? str : str + ": ";
+  std::cout << prefix << "size: " << size() << std::endl;
   nonlinearGraph_.print(prefix + "NonlinearFactorGraph", keyFormatter);
   discreteGraph_.print(prefix + "DiscreteFactorGraph", keyFormatter);
   dcGraph_.print(prefix + "DCFactorGraph", keyFormatter);
