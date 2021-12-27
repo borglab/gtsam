@@ -32,7 +32,7 @@ class TestDiscreteFactorGraph(GtsamTestCase):
         graph = DiscreteFactorGraph()
 
         # Add two unary factors (priors)
-        graph.add(P1, "0.9 0.3")
+        graph.add(P1, [0.9, 0.3])
         graph.add(P2, "0.9 0.6")
 
         # Add a binary factor
