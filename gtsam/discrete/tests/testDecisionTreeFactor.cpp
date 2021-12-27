@@ -34,7 +34,7 @@ TEST( DecisionTreeFactor, constructors)
   DiscreteKey X(0,2), Y(1,3), Z(2,2);
 
   // Create factors
-  DecisionTreeFactor f1(X, "2 8");
+  DecisionTreeFactor f1(X, {2, 8});
   DecisionTreeFactor f2(X & Y, "2 5 3 6 4 7");
   DecisionTreeFactor f3(X & Y & Z, "2 5 3 6 4 7 25 55 35 65 45 75");
   EXPECT_LONGS_EQUAL(1,f1.size());
