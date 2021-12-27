@@ -46,7 +46,7 @@ class TestDiscretePrior(GtsamTestCase):
         """Test the _repr_markdown_ method."""
 
         prior = DiscretePrior(X, "2/3")
-        expected = " $P(0)$:\n" \
+        expected = " *P(0)*:\n\n" \
             "|0|value|\n" \
             "|:-:|:-:|\n" \
             "|0|0.4|\n" \
