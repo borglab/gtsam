@@ -72,6 +72,11 @@ HybridFactorGraph HybridFactorGraph::linearize(
     linearized_DC_factors.push_back(dcgf);
   }
 
+  // Add the original factors from the gaussian factor graph
+  for (auto&& factor : this->gaussianGraph()) {
+    gaussian_factor_graph->push_back(factor);
+  }
+
   // Construct new linearized HybridFactorGraph
   HybridFactorGraph linearizedGraph(this->nonlinearGraph_, this->discreteGraph_,
                                     linearized_DC_factors,

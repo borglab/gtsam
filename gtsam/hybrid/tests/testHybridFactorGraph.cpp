@@ -36,6 +36,32 @@ using symbol_shorthand::M;
 using symbol_shorthand::X;
 
 /* ****************************************************************************
+ * Test that any linearized gaussian factors are appended to the existing
+ * gaussian factor graph in the hybrid factor graph.
+ */
+TEST(HybridFactorGraph, GaussianFactorGraph) {
+  NonlinearFactorGraph cfg;
+  GaussianFactorGraph gfg;
+
+  // Add a simple prior factor to the nonlinear factor graph
+  cfg.emplace_shared<PriorFactor<double>>(X(0), 0, Isotropic::Sigma(1, 0.1));
+
+  // Add a factor to the GaussianFactorGraph
+  gfg.add(X(0), I_1x1, Vector1(5));
+
+  // Initialize the hybrid factor graph
+  HybridFactorGraph fg(cfg, DiscreteFactorGraph(), DCFactorGraph(), gfg);
+
+  // Linearization point
+  Values values;
+  values.insert<double>(X(0), 0);
+
+  HybridFactorGraph dcmfg = fg.linearize(values);
+
+  EXPECT(dcmfg.gaussianGraph().size() == 2);
+}
+
+/* ****************************************************************************
  * Test elimination on a switching-like hybrid factor graph.
  */
 TEST(HybridFactorGraph, Switching) {
@@ -92,7 +118,8 @@ TEST(HybridFactorGraph, Switching) {
   // There should only be one linearized continuous factor corresponding to the
   // PriorFactor on X(1).
   EXPECT(dcmfg.gaussianGraph().size() == 1);
-  // There should be two linearized DCGaussianMixtureFactors for each DCMixtureFactor.
+  // There should be two linearized DCGaussianMixtureFactors for each
+  // DCMixtureFactor.
   EXPECT(dcmfg.dcGraph().size() == 2);
 }
 
