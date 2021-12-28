@@ -70,18 +70,6 @@ namespace gtsam {
     DecisionTreeFactor(const DiscreteKey& key, const std::vector<double>& row)
         : DecisionTreeFactor(DiscreteKeys{key}, row) {}
 
-    /// Two-key specialization
-    template <class SOURCE>
-    DecisionTreeFactor(const DiscreteKey& key1, const DiscreteKey& key2,
-                       SOURCE table)
-        : DecisionTreeFactor({key1, key2}, table) {}
-
-    /// Three-key specialization
-    template <class SOURCE>
-    DecisionTreeFactor(const DiscreteKey& key1, const DiscreteKey& key2,
-                       const DiscreteKey& key3, SOURCE table)
-        : DecisionTreeFactor({key1, key2, key3}, table) {}
-
     /** Construct from a DiscreteConditional type */
     DecisionTreeFactor(const DiscreteConditional& c);
 
