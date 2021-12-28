@@ -92,6 +92,8 @@ TEST(HybridFactorGraph, Switching) {
   // There should only be one linearized continuous factor corresponding to the
   // PriorFactor on X(1).
   EXPECT(dcmfg.gaussianGraph().size() == 1);
+  // There should be two linearized DCGaussianMixtureFactors for each DCMixtureFactor.
+  EXPECT(dcmfg.dcGraph().size() == 2);
 }
 
 /* ************************************************************************* */
