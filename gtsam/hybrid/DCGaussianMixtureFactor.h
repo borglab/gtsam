@@ -67,17 +67,17 @@ class DCGaussianMixtureFactor : public DCFactor {
     return 0;
   }
 
-  // TODO(dellaert): Does not make sense
   double error(const gtsam::Values& continuousVals,
                const gtsam::DiscreteValues& discreteVals) const override {
-    return 0;
+    throw std::runtime_error("DCGaussianMixtureFactor::error not implemented");
   }
 
-  // TODO(dellaert): Does not make sense
   GaussianFactor::shared_ptr linearize(
       const gtsam::Values& continuousVals,
       const DiscreteValues& discreteVals) const override {
-    return factors_[0];
+    throw std::runtime_error(
+        "DCGaussianMixtureFactor::linearize(continuous, discrete) not "
+        "implemented");
   }
 
   /// Return linearized version of this factor.
@@ -87,7 +87,9 @@ class DCGaussianMixtureFactor : public DCFactor {
   }
 
   // TODO(dellaert): implement
-  size_t dim() const override { return 0; };
+  size_t dim() const override {
+    throw std::runtime_error("DCGaussianMixtureFactor::dim not implemented");
+  };
 
   /// Testable
   /// @{

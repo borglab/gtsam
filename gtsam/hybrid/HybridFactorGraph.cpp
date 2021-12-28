@@ -69,8 +69,7 @@ HybridFactorGraph HybridFactorGraph::linearize(
   // linearize the DCFactors
   DCFactorGraph linearized_DC_factors;
   for (DCFactor::shared_ptr factor : dcGraph_) {
-    // Check if the factor is a DCGaussianMixtureFactor since we don't linearize
-    // those.
+    // If factor is a DCGaussianMixtureFactor, we don't linearize.
     auto dcgm = dynamic_cast<const DCGaussianMixtureFactor*>(factor.get());
     if (dcgm) {
       linearized_DC_factors.push_back(factor);

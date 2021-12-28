@@ -109,6 +109,10 @@ class DCFactor : public gtsam::Factor {
    * @brief Linearize all the continuous factors only with respect to the
    * continuous variables (as given in `keys_`).
    *
+   * This `linearize` is different from the `linearize(continuous, discrete)` in
+   * that it assumes no assignment of discrete keys and linearizes all
+   * continuous factors associated with this factor.
+   *
    * @param continuousVals The continuous variables referenced by `keys_`.
    * @return DCFactor::shared_ptr
    */
