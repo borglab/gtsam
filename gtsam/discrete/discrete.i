@@ -57,13 +57,10 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
   DiscreteConditional();
   DiscreteConditional(size_t nFrontals, const gtsam::DecisionTreeFactor& f);
   DiscreteConditional(const gtsam::DiscreteKey& key, string spec);
-  DiscreteConditional(const gtsam::DiscreteKey& key, string spec,
-                      const gtsam::DiscreteKey& parent1);
-  DiscreteConditional(const gtsam::DiscreteKey& key, string spec,
-                      const gtsam::DiscreteKey& parent1,
-                      const gtsam::DiscreteKey& parent2);
   DiscreteConditional(const gtsam::DiscreteKey& key,
                       const gtsam::DiscreteKeys& parents, string spec);
+  DiscreteConditional(const gtsam::DiscreteKey& key,
+                      const std::vector<gtsam::DiscreteKey>& parents, string spec);
   DiscreteConditional(const gtsam::DecisionTreeFactor& joint,
                       const gtsam::DecisionTreeFactor& marginal);
   DiscreteConditional(const gtsam::DecisionTreeFactor& joint,
@@ -109,13 +106,10 @@ class DiscreteBayesNet {
   DiscreteBayesNet();
   void add(const gtsam::DiscreteConditional& s);
   void add(const gtsam::DiscreteKey& key, string spec);
-  void add(const gtsam::DiscreteKey& key, string spec,
-           const gtsam::DiscreteKey& parent1);
-  void add(const gtsam::DiscreteKey& key, string spec,
-           const gtsam::DiscreteKey& parent1,
-           const gtsam::DiscreteKey& parent2);
   void add(const gtsam::DiscreteKey& key, const gtsam::DiscreteKeys& parents,
            string spec);
+  void add(const gtsam::DiscreteKey& key,
+           const std::vector<gtsam::DiscreteKey>& parents, string spec);
   bool empty() const;
   size_t size() const;
   gtsam::KeySet keys() const;

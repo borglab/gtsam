@@ -23,7 +23,7 @@ class TestDiscreteConditional(GtsamTestCase):
     def test_likelihood(self):
         X = (0, 2)
         Y = (1, 3)
-        conditional = DiscreteConditional(X, "2/8 4/6 5/5", Y)
+        conditional = DiscreteConditional(X, [Y], "2/8 4/6 5/5")
 
         actual0 = conditional.likelihood(0)
         expected0 = DecisionTreeFactor(Y, "0.2 0.4 0.5")
