@@ -141,6 +141,7 @@ namespace gtsam {
     for (auto& key : keys()) {
       pairs.emplace_back(key, cardinalities_.at(key));
     }
+    // Reverse to make cartesianProduct output a more natural ordering.
     std::vector<std::pair<Key, size_t>> rpairs(pairs.rbegin(), pairs.rend());
     const auto assignments = cartesianProduct(rpairs);
 

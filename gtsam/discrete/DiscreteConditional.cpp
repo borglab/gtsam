@@ -107,7 +107,7 @@ static DiscreteConditional::ADT Choose(const DiscreteConditional& conditional,
     try {
       value = parentsValues.at(j);
       adt = adt.choose(j, value);  // ADT keeps getting smaller.
-    } catch (exception&) {
+    } catch (std::out_of_range&) {
       parentsValues.print("parentsValues: ");
       throw runtime_error("DiscreteConditional::choose: parent value missing");
     };
@@ -251,7 +251,11 @@ size_t DiscreteConditional::sample(const DiscreteValues& parentsValues) const {
   ADT pFS = Choose(*this, parentsValues);  // P(F|S=parentsValues)
 
   // TODO(Duy): only works for one key now, seems horribly slow this way
-  assert(nrFrontals() == 1);
+  if (nrFrontals() != 1) {
+    throw std::invalid_argument(
+        "DiscreteConditional::sample can only be called on single variable "
+        "conditionals");
+  }
   Key key = firstFrontalKey();
   size_t nj = cardinality(key);
   vector<double> p(nj);
