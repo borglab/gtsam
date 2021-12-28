@@ -75,7 +75,7 @@ class Dummy;
 
 template <>
 struct EliminationTraits<HybridFactorGraph> {
-  typedef DCGaussianMixtureFactor FactorType;
+  typedef Factor FactorType;
   typedef HybridFactorGraph FactorGraphType;
   typedef DCGaussianConditional ConditionalType;
   typedef DCGaussianBayesNet BayesNetType;
@@ -84,18 +84,20 @@ struct EliminationTraits<HybridFactorGraph> {
   typedef Dummy JunctionTreeType;
 
   /// The function type that does a single elimination step on a variable.
-  static std::pair<DCGaussianConditional::shared_ptr,
-                   DCGaussianMixtureFactor::shared_ptr>
+  static std::pair<DCGaussianConditional::shared_ptr, boost::shared_ptr<Factor>>
   DefaultEliminate(const HybridFactorGraph& factors, const Ordering& ordering) {
     // We are getting a number of DCMixtureFactors on a set of continuous
     // variables. They might all have different discrete keys. For every
     // possible combination of the discrete keys, we need a GaussianConditional.
     // for (const auto& factor : factors) {
-    //   if (auto p = boost::dynamic_pointer_cast<const DCGaussianMixtureFactor>(
+    //   if (auto p = boost::dynamic_pointer_cast<const
+    //   DCGaussianMixtureFactor>(
     //           factor)) {
     //     GTSAM_PRINT(*p);
     //   };
     // }
+
+    std::cout << "DefaultEliminate" << std::endl;
 
     // Create a DCGaussianConditional...
     auto conditional = boost::make_shared<DCGaussianConditional>();
@@ -110,17 +112,19 @@ struct EliminationTraits<HybridFactorGraph> {
                    HybridFactorGraph::shared_ptr>
   eliminatePartialSequential(const HybridFactorGraph& graph,
                              const Ordering& ordering) {
+    std::cout << "eliminatePartialSequential" << std::endl;
+
     // Variable index only knows about continuous variables.
     VariableIndex variableIndex(graph);
     GTSAM_PRINT(variableIndex);
 
     DCGaussianMixtureEliminationTree etree(graph, variableIndex, ordering);
     GTSAM_PRINT(etree);
-    // return etree.eliminate(function);
+    return etree.eliminate(DefaultEliminate);
 
-    auto bayesNet = boost::make_shared<DCGaussianBayesNet>();
-    auto factors = boost::make_shared<HybridFactorGraph>();
-    return {bayesNet, factors};
+    // auto bayesNet = boost::make_shared<DCGaussianBayesNet>();
+    // auto factors = boost::make_shared<HybridFactorGraph>();
+    // return {bayesNet, factors};
   }
 };
 
@@ -141,7 +145,7 @@ using symbol_shorthand::X;
 /* ****************************************************************************
  * Test elimination on a switching-like hybrid factor graph.
  */
-TEST(DCGaussianElimination, Switching) {
+TEST_UNSAFE(DCGaussianElimination, Switching) {
   // Number of time steps.
   const size_t K = 3;
 

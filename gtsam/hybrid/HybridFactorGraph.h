@@ -258,8 +258,8 @@ class HybridFactorGraph : public FactorGraph<Factor> {
   /// @name Elimination machinery
   /// @{
   using FactorType = Factor;
-  using EliminationResult = std::pair<boost::shared_ptr<Factor>,
-                                      boost::shared_ptr<DCGaussianConditional>>;
+  using EliminationResult = std::pair<boost::shared_ptr<DCGaussianConditional>,
+                                      boost::shared_ptr<Factor> >;
   using Eliminate = std::function<EliminationResult(const HybridFactorGraph&,
                                                     const Ordering&)>;
   /// @}
