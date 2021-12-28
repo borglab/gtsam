@@ -20,7 +20,7 @@ from gtsam.utils.test_case import GtsamTestCase
 class TestDiscreteConditional(GtsamTestCase):
     """Tests for Discrete Conditionals."""
 
-    def test_likelihood(self):
+    def test_single_value_versions(self):
         X = (0, 2)
         Y = (1, 3)
         conditional = DiscreteConditional(X, [Y], "2/8 4/6 5/5")
@@ -32,6 +32,9 @@ class TestDiscreteConditional(GtsamTestCase):
         actual1 = conditional.likelihood(1)
         expected1 = DecisionTreeFactor(Y, "0.8 0.6 0.5")
         self.gtsamAssertEquals(actual1, expected1, 1e-9)
+
+        actual = conditional.sample(2)
+        self.assertIsInstance(actual, int)
 
     def test_markdown(self):
         """Test whether the _repr_markdown_ method."""

@@ -145,7 +145,7 @@ public:
       const DiscreteValues& frontalValues) const;
 
   /** Single variable version of likelihood. */
-  DecisionTreeFactor::shared_ptr likelihood(size_t value) const;
+  DecisionTreeFactor::shared_ptr likelihood(size_t parent_value) const;
 
   /**
    * solve a conditional
@@ -160,6 +160,10 @@ public:
    * @return sample from conditional
    */
   size_t sample(const DiscreteValues& parentsValues) const;
+
+
+  /// Single value version.
+  size_t sample(size_t parent_value) const;
 
   /// @}
   /// @name Advanced Interface
