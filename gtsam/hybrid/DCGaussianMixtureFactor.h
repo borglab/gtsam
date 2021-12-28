@@ -80,10 +80,10 @@ class DCGaussianMixtureFactor : public DCFactor {
     return factors_[0];
   }
 
-  /// Return this linear factor as a DCFactor::shared_ptr
+  /// Return linearized version of this factor.
   virtual DCFactor::shared_ptr linearize(
       const Values& continuousVals) const override {
-    return boost::make_shared<DCGaussianMixtureFactor>(*this);
+    throw std::runtime_error("DCGaussianFactor is already linear");
   }
 
   // TODO(dellaert): implement

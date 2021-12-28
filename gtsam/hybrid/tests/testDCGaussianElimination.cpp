@@ -160,7 +160,7 @@ struct EliminationTraits<DCGaussianMixtureFactorGraph> {
 };
 
 /* TODO(dellaert) EliminateableFactorGraph does not play well with hybrid:
-/// Speical DCFactorGraph that can be eliminated partially
+/// Special DCFactorGraph that can be eliminated partially
 class MixtureFactorGraph : public FactorGraph<DCMixtureFactor>,
                            public EliminateableFactorGraph<MixtureFactorGraph> {
 };

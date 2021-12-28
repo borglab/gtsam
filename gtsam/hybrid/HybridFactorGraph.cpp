@@ -10,6 +10,7 @@
  * @date   December 2021
  */
 
+#include <gtsam/hybrid/DCGaussianMixtureFactor.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
 
 namespace gtsam {
@@ -68,8 +69,16 @@ HybridFactorGraph HybridFactorGraph::linearize(
   // linearize the DCFactors
   DCFactorGraph linearized_DC_factors;
   for (DCFactor::shared_ptr factor : dcGraph_) {
-    auto dcgf = factor->linearize(continuousValues);
-    linearized_DC_factors.push_back(dcgf);
+    // Check if the factor is a DCGaussianMixtureFactor since we don't linearize
+    // those.
+    auto dcgm = dynamic_cast<const DCGaussianMixtureFactor*>(factor.get());
+    if (dcgm) {
+      linearized_DC_factors.push_back(factor);
+
+    } else {
+      auto dcgf = factor->linearize(continuousValues);
+      linearized_DC_factors.push_back(dcgf);
+    }
   }
 
   // Add the original factors from the gaussian factor graph
