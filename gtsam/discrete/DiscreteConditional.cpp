@@ -167,13 +167,13 @@ DecisionTreeFactor::shared_ptr DiscreteConditional::likelihood(
 
 /* ******************************************************************************** */
 DecisionTreeFactor::shared_ptr DiscreteConditional::likelihood(
-    size_t value) const {
+    size_t parent_value) const {
   if (nrFrontals() != 1)
     throw std::invalid_argument(
         "Single value likelihood can only be invoked on single-variable "
         "conditional");
   DiscreteValues values;
-  values.emplace(keys_[0], value);
+  values.emplace(keys_[0], parent_value);
   return likelihood(values);
 }
 
@@ -269,6 +269,17 @@ size_t DiscreteConditional::sample(const DiscreteValues& parentsValues) const {
   }
   std::discrete_distribution<size_t> distribution(p.begin(), p.end());
   return distribution(rng);
+}
+
+/* ******************************************************************************** */
+size_t DiscreteConditional::sample(size_t parent_value) const {
+  if (nrParents() != 1)
+    throw std::invalid_argument(
+        "Single value sample() can only be invoked on single-parent "
+        "conditional");
+  DiscreteValues values;
+  values.emplace(keys_.back(), parent_value);
+  return sample(values);
 }
 
 /* ************************************************************************* */
