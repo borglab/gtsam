@@ -32,16 +32,16 @@ class DiscreteFactor {
 #include <gtsam/discrete/DecisionTreeFactor.h>
 virtual class DecisionTreeFactor : gtsam::DiscreteFactor {
   DecisionTreeFactor();
-  DecisionTreeFactor(const gtsam::DiscreteKeys& keys, string table);
+  
   DecisionTreeFactor(const gtsam::DiscreteKey& key,
                      const std::vector<double>& spec);
-  DecisionTreeFactor(const gtsam::DiscreteKey& key, const std::string& spec);
-  DecisionTreeFactor(const gtsam::DiscreteKey& key1,
-                     const gtsam::DiscreteKey& key2, const std::string& spec);
-  DecisionTreeFactor(const gtsam::DiscreteKey& key1,
-                     const gtsam::DiscreteKey& key2,
-                     const gtsam::DiscreteKey& key3, const std::string& spec);
+  DecisionTreeFactor(const gtsam::DiscreteKey& key, string table);
+  
+  DecisionTreeFactor(const gtsam::DiscreteKeys& keys, string table);
+  DecisionTreeFactor(const std::vector<gtsam::DiscreteKey>& keys, string table);
+  
   DecisionTreeFactor(const gtsam::DiscreteConditional& c);
+  
   void print(string s = "DecisionTreeFactor\n",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
@@ -174,12 +174,13 @@ class DotWriter {
 class DiscreteFactorGraph {
   DiscreteFactorGraph();
   DiscreteFactorGraph(const gtsam::DiscreteBayesNet& bayesNet);
-  
-  void add(const gtsam::DiscreteKey& j, const std::vector<double>& spec);
+
   void add(const gtsam::DiscreteKey& j, string table);
-  void add(const gtsam::DiscreteKey& j1, const gtsam::DiscreteKey& j2, string table);
+  void add(const gtsam::DiscreteKey& j, const std::vector<double>& spec);
+
   void add(const gtsam::DiscreteKeys& keys, string table);
-  
+  void add(const std::vector<gtsam::DiscreteKey>& keys, string table);
+
   bool empty() const;
   size_t size() const;
   gtsam::KeySet keys() const;

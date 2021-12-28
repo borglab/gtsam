@@ -23,7 +23,7 @@ class TestDecisionTreeFactor(GtsamTestCase):
     def setUp(self):
         A = (12, 3)
         B = (5, 2)
-        self.factor = DecisionTreeFactor(A, B, "1 2  3 4  5 6")
+        self.factor = DecisionTreeFactor([A, B], "1 2  3 4  5 6")
 
     def test_enumerate(self):
         actual = self.factor.enumerate()
