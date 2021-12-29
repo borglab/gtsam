@@ -113,13 +113,13 @@ namespace gtsam {
     convert(const typename DecisionTree<M, X>::NodePtr& f, const std::map<M,
         L>& map, std::function<Y(const X&)> op);
 
-    /** Default constructor */
-    DecisionTree();
-
   public:
 
     /// @name Standard Constructors
     /// @{
+
+    /** Default constructor (for serialization) */
+    DecisionTree();
 
     /** Create a constant */
     DecisionTree(const Y& y);
