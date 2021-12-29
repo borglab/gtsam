@@ -1,7 +1,20 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010-2014, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /*
- * @file EssentialMatrixFactor.cpp
+ * @file EssentialMatrixFactor.h
  * @brief EssentialMatrixFactor class
  * @author Frank Dellaert
+ * @author Ayush Baid
+ * @author Akshay Krishnan
  * @date December 17, 2013
  */
 

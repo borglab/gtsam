@@ -312,6 +312,16 @@ public:
     return range(camera.pose(), Dcamera, Dother);
   }
 
+  /// for Linear Triangulation
+  Matrix34 cameraProjectionMatrix() const {
+    return K_.K() * PinholeBase::pose().inverse().matrix().block(0, 0, 3, 4);
+  }
+
+  /// for Nonlinear Triangulation
+  Vector defaultErrorWhenTriangulatingBehindCamera() const {
+    return Eigen::Matrix<double,traits<Point2>::dimension,1>::Constant(2.0 * K_.fx());;
+  }
+
 private:
 
   /** Serialization function */

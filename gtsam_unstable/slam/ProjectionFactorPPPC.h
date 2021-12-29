@@ -18,9 +18,11 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam_unstable/dllexport.h>
+
 #include <boost/optional.hpp>
 
 namespace gtsam {
@@ -30,28 +32,27 @@ namespace gtsam {
    * estimates the body pose, body-camera transform, 3D landmark, and calibration.
    * @addtogroup SLAM
    */
-  template<class POSE, class LANDMARK, class CALIBRATION = Cal3_S2>
-  class ProjectionFactorPPPC: public NoiseModelFactor4<POSE, POSE, LANDMARK, CALIBRATION> {
-  protected:
+template <class POSE, class LANDMARK, class CALIBRATION = Cal3_S2>
+class GTSAM_UNSTABLE_EXPORT ProjectionFactorPPPC
+    : public NoiseModelFactor4<POSE, POSE, LANDMARK, CALIBRATION> {
+ protected:
+  Point2 measured_;  ///< 2D measurement
 
-    Point2 measured_;                    ///< 2D measurement
+  // verbosity handling for Cheirality Exceptions
+  bool throwCheirality_;  ///< If true, rethrows Cheirality exceptions (default: false)
+  bool verboseCheirality_;  ///< If true, prints text for Cheirality exceptions (default: false)
 
-    // verbosity handling for Cheirality Exceptions
-    bool throwCheirality_; ///< If true, rethrows Cheirality exceptions (default: false)
-    bool verboseCheirality_; ///< If true, prints text for Cheirality exceptions (default: false)
+ public:
+  /// shorthand for base class type
+  typedef NoiseModelFactor4<POSE, POSE, LANDMARK, CALIBRATION> Base;
 
-  public:
+  /// shorthand for this class
+  typedef ProjectionFactorPPPC<POSE, LANDMARK, CALIBRATION> This;
 
-    /// shorthand for base class type
-    typedef NoiseModelFactor4<POSE, POSE, LANDMARK, CALIBRATION> Base;
+  /// shorthand for a smart pointer to a factor
+  typedef boost::shared_ptr<This> shared_ptr;
 
-    /// shorthand for this class
-    typedef ProjectionFactorPPPC<POSE, LANDMARK, CALIBRATION> This;
-
-    /// shorthand for a smart pointer to a factor
-    typedef boost::shared_ptr<This> shared_ptr;
-
-    /// Default constructor
+  /// Default constructor
   ProjectionFactorPPPC() :
       measured_(0.0, 0.0), throwCheirality_(false), verboseCheirality_(false) {
   }
@@ -168,7 +169,7 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(throwCheirality_);
       ar & BOOST_SERIALIZATION_NVP(verboseCheirality_);
     }
-  };
+};
 
   /// traits
   template<class POSE, class LANDMARK, class CALIBRATION>

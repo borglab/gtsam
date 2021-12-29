@@ -21,9 +21,6 @@ virtual class BetweenFactor : gtsam::NoiseModelFactor {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 #include <gtsam/slam/ProjectionFactor.h>
@@ -168,6 +165,10 @@ template <POSE>
 virtual class PoseTranslationPrior : gtsam::NoiseModelFactor {
   PoseTranslationPrior(size_t key, const POSE& pose_z,
                        const gtsam::noiseModel::Base* noiseModel);
+  POSE::Translation measured() const;
+
+  // enabling serialization functionality
+  void serialize() const;
 };
 
 typedef gtsam::PoseTranslationPrior<gtsam::Pose2> PoseTranslationPrior2D;
@@ -178,6 +179,7 @@ template <POSE>
 virtual class PoseRotationPrior : gtsam::NoiseModelFactor {
   PoseRotationPrior(size_t key, const POSE& pose_z,
                     const gtsam::noiseModel::Base* noiseModel);
+  POSE::Rotation measured() const;
 };
 
 typedef gtsam::PoseRotationPrior<gtsam::Pose2> PoseRotationPrior2D;
@@ -188,6 +190,21 @@ virtual class EssentialMatrixFactor : gtsam::NoiseModelFactor {
   EssentialMatrixFactor(size_t key, const gtsam::Point2& pA,
                         const gtsam::Point2& pB,
                         const gtsam::noiseModel::Base* noiseModel);
+  void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
+                                gtsam::DefaultKeyFormatter) const;
+  bool equals(const gtsam::EssentialMatrixFactor& other, double tol) const;
+  Vector evaluateError(const gtsam::EssentialMatrix& E) const;
+};
+
+#include <gtsam/slam/EssentialMatrixConstraint.h>
+virtual class EssentialMatrixConstraint : gtsam::NoiseModelFactor {
+  EssentialMatrixConstraint(size_t key1, size_t key2, const gtsam::EssentialMatrix &measuredE,
+                            const gtsam::noiseModel::Base *model);
+  void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
+                                gtsam::DefaultKeyFormatter) const;
+  bool equals(const gtsam::EssentialMatrixConstraint& other, double tol) const;
+  Vector evaluateError(const gtsam::Pose3& p1, const gtsam::Pose3& p2) const;
+  const gtsam::EssentialMatrix& measured() const;
 };
 
 #include <gtsam/slam/dataset.h>
@@ -211,9 +228,6 @@ class SfmTrack {
   // enabling serialization functionality
   void serialize() const;
 
-  // enable pickling in python
-  void pickle() const;
-
   // enabling function to compare objects
   bool equals(const gtsam::SfmTrack& expected, double tol) const;
 };
@@ -229,9 +243,6 @@ class SfmData {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 
   // enabling function to compare objects
   bool equals(const gtsam::SfmData& expected, double tol) const;

@@ -54,6 +54,8 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
   typedef SmartProjectionFactor<CAMERA> Base;
   typedef SmartProjectionRigFactor<CAMERA> This;
   typedef typename CAMERA::CalibrationType CALIBRATION;
+  typedef typename CAMERA::Measurement MEASUREMENT;
+  typedef typename CAMERA::MeasurementVector MEASUREMENTS;
 
   static const int DimPose = 6;  ///< Pose3 dimension
   static const int ZDim = 2;     ///< Measurement dimension
@@ -118,7 +120,7 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
    * @param cameraId ID of the camera in the rig taking the measurement (default
    * 0)
    */
-  void add(const Point2& measured, const Key& poseKey,
+  void add(const MEASUREMENT& measured, const Key& poseKey,
            const size_t& cameraId = 0) {
     // store measurement and key
     this->measured_.push_back(measured);
@@ -144,7 +146,7 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
    * @param cameraIds IDs of the cameras in the rig taking each measurement
    * (same order as the measurements)
    */
-  void add(const Point2Vector& measurements, const KeyVector& poseKeys,
+  void add(const MEASUREMENTS& measurements, const KeyVector& poseKeys,
            const FastVector<size_t>& cameraIds = FastVector<size_t>()) {
     if (poseKeys.size() != measurements.size() ||
         (poseKeys.size() != cameraIds.size() && cameraIds.size() != 0)) {

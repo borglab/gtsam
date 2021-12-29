@@ -122,7 +122,7 @@ TEST(schedulingExample, test) {
 
   // Do exact inference
   gttic(small);
-  DiscreteFactor::sharedValues MPE = s.optimalAssignment();
+  auto MPE = s.optimalAssignment();
   gttoc(small);
 
   // print MPE, commented out as unit tests don't print
@@ -133,13 +133,13 @@ TEST(schedulingExample, test) {
 
   // find the assignment of students to slots with most possible committees
   // Commented out as not implemented yet
-  //  sharedValues bestSchedule = s.bestSchedule();
-  //  GTSAM_PRINT(*bestSchedule);
+  //  auto bestSchedule = s.bestSchedule();
+  //  GTSAM_PRINT(bestSchedule);
 
   //  find the corresponding most desirable committee assignment
   // Commented out as not implemented yet
-  //  sharedValues bestAssignment = s.bestAssignment(bestSchedule);
-  //  GTSAM_PRINT(*bestAssignment);
+  //  auto bestAssignment = s.bestAssignment(bestSchedule);
+  //  GTSAM_PRINT(bestAssignment);
 }
 
 /* ************************************************************************* */

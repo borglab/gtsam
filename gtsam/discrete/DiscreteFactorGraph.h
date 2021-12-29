@@ -71,10 +71,10 @@ public:
   typedef EliminateableFactorGraph<This> BaseEliminateable; ///< Typedef to base elimination class
   typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
 
+  using Values = DiscreteValues; ///< backwards compatibility
+
   /** A map from keys to values */
   typedef KeyVector Indices;
-  typedef Assignment<Key> Values;
-  typedef boost::shared_ptr<Values> sharedValues;
 
   /** Default constructor */
   DiscreteFactorGraph() {}
@@ -101,35 +101,23 @@ public:
 
   /// @}
 
-  template<class SOURCE>
-  void add(const DiscreteKey& j, SOURCE table) {
-    DiscreteKeys keys;
-    keys.push_back(j);
-    push_back(boost::make_shared<DecisionTreeFactor>(keys, table));
+  /** Add a decision-tree factor */
+  template <typename... Args>
+  void add(Args&&... args) {
+    emplace_shared<DecisionTreeFactor>(std::forward<Args>(args)...);
   }
-
-  template<class SOURCE>
-  void add(const DiscreteKey& j1, const DiscreteKey& j2, SOURCE table) {
-    DiscreteKeys keys;
-    keys.push_back(j1);
-    keys.push_back(j2);
-    push_back(boost::make_shared<DecisionTreeFactor>(keys, table));
-  }
-
-  /** add shared discreteFactor immediately from arguments */
-  template<class SOURCE>
-  void add(const DiscreteKeys& keys, SOURCE table) {
-    push_back(boost::make_shared<DecisionTreeFactor>(keys, table));
-  }
-
+      
   /** Return the set of variables involved in the factors (set union) */
   KeySet keys() const;
 
   /** return product of all factors as a single factor */
   DecisionTreeFactor product() const;
 
-  /** Evaluates the factor graph given values, returns the joint probability of the factor graph given specific instantiation of values*/
-  double operator()(const DiscreteFactor::Values & values) const;
+  /** 
+   * Evaluates the factor graph given values, returns the joint probability of
+   * the factor graph given specific instantiation of values
+   */
+  double operator()(const DiscreteValues& values) const;
 
   /// print
   void print(
@@ -140,7 +128,7 @@ public:
    *  the dense elimination function specified in \c function,
    *  followed by back-substitution resulting from elimination.  Is equivalent
    *  to calling graph.eliminateSequential()->optimize(). */
-  DiscreteFactor::sharedValues optimize() const;
+  DiscreteValues optimize() const;
 
 
 //  /** Permute the variables in the factors */
@@ -149,6 +137,14 @@ public:
 //  /** Apply a reduction, which is a remapping of variable indices. */
 //  GTSAM_EXPORT void reduceWithInverse(const internal::Reduction& inverseReduction);
 
+  /// @name Wrapper support
+  /// @{
+
+  /// Render as markdown table.
+  std::string markdown(
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+
+  /// @}
 }; // \ DiscreteFactorGraph
 
 /// traits

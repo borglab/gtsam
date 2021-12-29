@@ -31,6 +31,7 @@ PYBIND11_MODULE(class_py, m_) {
     py::class_<Fun<double>, std::shared_ptr<Fun<double>>>(m_, "FunDouble")
         .def("templatedMethodString",[](Fun<double>* self, double d, string t){return self->templatedMethod<string>(d, t);}, py::arg("d"), py::arg("t"))
         .def("multiTemplatedMethodStringSize_t",[](Fun<double>* self, double d, string t, size_t u){return self->multiTemplatedMethod<string,size_t>(d, t, u);}, py::arg("d"), py::arg("t"), py::arg("u"))
+        .def("sets",[](Fun<double>* self){return self->sets();})
         .def_static("staticMethodWithThis",[](){return Fun<double>::staticMethodWithThis();})
         .def_static("templatedStaticMethodInt",[](const int& m){return Fun<double>::templatedStaticMethod<int>(m);}, py::arg("m"));
 
@@ -68,6 +69,7 @@ PYBIND11_MODULE(class_py, m_) {
         .def("set_container",[](Test* self, std::vector<std::shared_ptr<testing::Test>> container){ self->set_container(container);}, py::arg("container"))
         .def("set_container",[](Test* self, std::vector<testing::Test&> container){ self->set_container(container);}, py::arg("container"))
         .def("get_container",[](Test* self){return self->get_container();})
+        .def("_repr_markdown_",[](Test* self, const gtsam::KeyFormatter& keyFormatter){return self->markdown(keyFormatter);}, py::arg("keyFormatter") = gtsam::DefaultKeyFormatter)
         .def_readwrite("model_ptr", &Test::model_ptr);
 
     py::class_<PrimitiveRef<double>, std::shared_ptr<PrimitiveRef<double>>>(m_, "PrimitiveRefDouble")

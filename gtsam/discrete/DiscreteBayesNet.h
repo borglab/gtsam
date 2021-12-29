@@ -13,6 +13,7 @@
  * @file DiscreteBayesNet.h
  * @date Feb 15, 2011
  * @author Duy-Nguyen Ta
+ * @author Frank dellaert
  */
 
 #pragma once
@@ -22,6 +23,7 @@
 #include <boost/shared_ptr.hpp>
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/FactorGraph.h>
+#include <gtsam/discrete/DiscretePrior.h>
 #include <gtsam/discrete/DiscreteConditional.h>
 
 namespace gtsam {
@@ -71,24 +73,45 @@ namespace gtsam {
     /// @name Standard Interface
     /// @{
 
+    // Add inherited versions of add.
+    using Base::add;
+
+    /** Add a DiscretePrior using a table or a string */
+    void add(const DiscreteKey& key, const std::string& spec) {
+      emplace_shared<DiscretePrior>(key, spec);
+    }
+
     /** Add a DiscreteCondtional */
-    void add(const Signature& s);
+    template <typename... Args>
+    void add(Args&&... args) {
+      emplace_shared<DiscreteConditional>(std::forward<Args>(args)...);
+    }
+        
+    //** evaluate for given DiscreteValues */
+    double evaluate(const DiscreteValues & values) const;
 
-//    /** Add a DiscreteCondtional in front, when listing parents first*/
-//    GTSAM_EXPORT void add_front(const Signature& s);
-
-    //** evaluate for given Values */
-    double evaluate(const DiscreteConditional::Values & values) const;
+    //** (Preferred) sugar for the above for given DiscreteValues */
+    double operator()(const DiscreteValues & values) const {
+      return evaluate(values);
+    }
 
     /**
     * Solve the DiscreteBayesNet by back-substitution
     */
-    DiscreteFactor::sharedValues optimize() const;
+    DiscreteValues optimize() const;
 
     /** Do ancestral sampling */
-    DiscreteFactor::sharedValues sample() const;
+    DiscreteValues sample() const;
 
     ///@}
+    /// @name Wrapper support
+    /// @{
+
+    /// Render as markdown table.
+    std::string markdown(
+        const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+
+    /// @}
 
   private:
     /** Serialization function */

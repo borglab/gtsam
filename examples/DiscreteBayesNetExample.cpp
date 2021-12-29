@@ -56,8 +56,8 @@ int main(int argc, char **argv) {
   DiscreteBayesNet::shared_ptr chordal = fg.eliminateSequential(ordering);
 
   // solve
-  DiscreteFactor::sharedValues mpe = chordal->optimize();
-  GTSAM_PRINT(*mpe);
+  auto mpe = chordal->optimize();
+  GTSAM_PRINT(mpe);
 
   // We can also build a Bayes tree (directed junction tree).
   // The elimination order above will do fine:
@@ -70,14 +70,14 @@ int main(int argc, char **argv) {
 
   // solve again, now with evidence
   DiscreteBayesNet::shared_ptr chordal2 = fg.eliminateSequential(ordering);
-  DiscreteFactor::sharedValues mpe2 = chordal2->optimize();
-  GTSAM_PRINT(*mpe2);
+  auto mpe2 = chordal2->optimize();
+  GTSAM_PRINT(mpe2);
 
   // We can also sample from it
   cout << "\n10 samples:" << endl;
   for (size_t i = 0; i < 10; i++) {
-    DiscreteFactor::sharedValues sample = chordal2->sample();
-    GTSAM_PRINT(*sample);
+    auto sample = chordal2->sample();
+    GTSAM_PRINT(sample);
   }
   return 0;
 }

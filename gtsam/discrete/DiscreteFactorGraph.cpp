@@ -56,7 +56,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   double DiscreteFactorGraph::operator()(
-      const DiscreteFactor::Values &values) const {
+      const DiscreteValues &values) const {
     double product = 1.0;
     for( const sharedFactor& factor: factors_ )
       product *= (*factor)(values);
@@ -94,7 +94,7 @@ namespace gtsam {
 //  }
 
   /* ************************************************************************* */
-  DiscreteFactor::sharedValues DiscreteFactorGraph::optimize() const
+  DiscreteValues DiscreteFactorGraph::optimize() const
   {
     gttic(DiscreteFactorGraph_optimize);
     return BaseEliminateable::eliminateSequential()->optimize();
@@ -129,6 +129,18 @@ namespace gtsam {
     return std::make_pair(cond, sum);
   }
 
-/* ************************************************************************* */
-} // namespace
+  /* ************************************************************************* */
+  std::string DiscreteFactorGraph::markdown(
+      const KeyFormatter& keyFormatter) const {
+    using std::endl;
+    std::stringstream ss;
+    ss << "`DiscreteFactorGraph` of size " << size() << endl << endl;
+    for (size_t i = 0; i < factors_.size(); i++) {
+      ss << "factor " << i << ":\n";
+      ss << factors_[i]->markdown(keyFormatter) << endl;
+    }
+    return ss.str();
+  }
 
+  /* ************************************************************************* */
+  }  // namespace gtsam

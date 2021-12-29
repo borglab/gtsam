@@ -31,7 +31,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   double DiscreteBayesTreeClique::evaluate(
-      const DiscreteConditional::Values& values) const {
+      const DiscreteValues& values) const {
     // evaluate all conditionals and multiply
     double result = (*conditional_)(values);
     for (const auto& child : children) {
@@ -47,7 +47,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   double DiscreteBayesTree::evaluate(
-      const DiscreteConditional::Values& values) const {
+      const DiscreteValues& values) const {
     double result = 1.0;
     for (const auto& root : roots_) {
       result *= root->evaluate(values);
@@ -55,8 +55,21 @@ namespace gtsam {
     return result;
   }
 
-} // \namespace gtsam
+  /* **************************************************************************/
+  std::string DiscreteBayesTree::markdown(
+      const KeyFormatter& keyFormatter) const {
+    using std::endl;
+    std::stringstream ss;
+    ss << "`DiscreteBayesTree` of size " << nodes_.size() << endl << endl;
+    auto visitor = [&](const DiscreteBayesTreeClique::shared_ptr& clique,
+                       size_t& indent) {
+      ss << "\n" << clique->conditional()->markdown(keyFormatter);
+      return indent + 1;
+    };
+    size_t indent;
+    treeTraversal::DepthFirstForest(*this, indent, visitor);
+    return ss.str();
+  }
 
-
-
-
+  /* **************************************************************************/
+  }  // namespace gtsam
