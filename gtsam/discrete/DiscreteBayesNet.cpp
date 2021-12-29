@@ -35,41 +35,41 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-//  void DiscreteBayesNet::add_front(const Signature& s) {
-//    push_front(boost::make_shared<DiscreteConditional>(s));
-//  }
-
-  /* ************************************************************************* */
-  void DiscreteBayesNet::add(const Signature& s) {
-    push_back(boost::make_shared<DiscreteConditional>(s));
-  }
-
-  /* ************************************************************************* */
-  double DiscreteBayesNet::evaluate(const DiscreteConditional::Values & values) const {
+  double DiscreteBayesNet::evaluate(const DiscreteValues & values) const {
     // evaluate all conditionals and multiply
     double result = 1.0;
-    for(DiscreteConditional::shared_ptr conditional: *this)
+    for(const DiscreteConditional::shared_ptr& conditional: *this)
       result *= (*conditional)(values);
     return result;
   }
 
   /* ************************************************************************* */
-  DiscreteFactor::sharedValues DiscreteBayesNet::optimize() const {
+  DiscreteValues DiscreteBayesNet::optimize() const {
     // solve each node in turn in topological sort order (parents first)
-    DiscreteFactor::sharedValues result(new DiscreteFactor::Values());
+    DiscreteValues result;
     for (auto conditional: boost::adaptors::reverse(*this))
-      conditional->solveInPlace(*result);
+      conditional->solveInPlace(&result);
     return result;
   }
 
   /* ************************************************************************* */
-  DiscreteFactor::sharedValues DiscreteBayesNet::sample() const {
+  DiscreteValues DiscreteBayesNet::sample() const {
     // sample each node in turn in topological sort order (parents first)
-    DiscreteFactor::sharedValues result(new DiscreteFactor::Values());
+    DiscreteValues result;
     for (auto conditional: boost::adaptors::reverse(*this))
-      conditional->sampleInPlace(*result);
+      conditional->sampleInPlace(&result);
     return result;
   }
 
+  /* ************************************************************************* */
+  std::string DiscreteBayesNet::markdown(
+      const KeyFormatter& keyFormatter) const {
+    using std::endl;
+    std::stringstream ss;
+    ss << "`DiscreteBayesNet` of size " << size() << endl << endl;
+    for(const DiscreteConditional::shared_ptr& conditional: *this)
+      ss << conditional->markdown(keyFormatter) << endl;
+    return ss.str();
+  }
 /* ************************************************************************* */
 } // namespace

@@ -182,13 +182,20 @@ namespace gtsam {
      */
     sharedBayesNet jointBayesNet(Key j1, Key j2, const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
 
-    /**
-     * Read only with side effects
-     */
+   /// @name Graph Display
+   /// @{
 
-    /** saves the Tree to a text file in GraphViz format */
-    void saveGraph(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+   /// Output to graphviz format, stream version.
+   void dot(std::ostream& os, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
+   /// Output to graphviz format string.
+   std::string dot(
+       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+
+   /// output to file with graphviz format.
+   void saveGraph(const std::string& filename,
+                  const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+  
     /// @}
     /// @name Advanced Interface
     /// @{
@@ -236,8 +243,8 @@ namespace gtsam {
   protected:
 
     /** private helper method for saving the Tree to a text file in GraphViz format */
-    void saveGraph(std::ostream &s, sharedClique clique, const KeyFormatter& keyFormatter,
-        int parentnum = 0) const;
+    void dot(std::ostream &s, sharedClique clique, const KeyFormatter& keyFormatter,
+             int parentnum = 0) const;
 
     /** Gather data on a single clique */
     void getCliqueData(sharedClique clique, BayesTreeCliqueData* stats) const;
@@ -249,7 +256,7 @@ namespace gtsam {
     void fillNodesIndex(const sharedClique& subtree);
 
     // Friend JunctionTree because it directly fills roots and nodes index.
-    template<class BAYESRTEE, class GRAPH> friend class EliminatableClusterTree;
+    template<class BAYESTREE, class GRAPH> friend class EliminatableClusterTree;
 
    private:
     /** Serialization function */

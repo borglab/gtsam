@@ -18,6 +18,8 @@ class Fun {
 
   template<T={string}, U={size_t}>
   This multiTemplatedMethod(double d, T t, U u);
+
+  std::map<M, This::M> sets();
 };
 
 
@@ -74,6 +76,10 @@ class Test {
   void set_container(std::vector<testing::Test*> container);
   void set_container(std::vector<testing::Test&> container);
   std::vector<testing::Test*> get_container() const;
+
+  // special ipython method
+  string markdown(const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
 
   // comments at the end!
 

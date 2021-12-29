@@ -134,26 +134,26 @@ class GTSAM_UNSTABLE_EXPORT Scheduler : public CSP {
       const KeyFormatter& formatter = DefaultKeyFormatter) const override;
 
   /** Print readable form of assignment */
-  void printAssignment(sharedValues assignment) const;
+  void printAssignment(const DiscreteValues& assignment) const;
 
   /** Special print for single-student case */
-  void printSpecial(sharedValues assignment) const;
+  void printSpecial(const DiscreteValues& assignment) const;
 
   /** Accumulate faculty stats */
-  void accumulateStats(sharedValues assignment,
+  void accumulateStats(const DiscreteValues& assignment,
                        std::vector<size_t>& stats) const;
 
   /** Eliminate, return a Bayes net */
   DiscreteBayesNet::shared_ptr eliminate() const;
 
   /** Find the best total assignment - can be expensive */
-  sharedValues optimalAssignment() const;
+  DiscreteValues optimalAssignment() const;
 
   /** find the assignment of students to slots with most possible committees */
-  sharedValues bestSchedule() const;
+  DiscreteValues bestSchedule() const;
 
   /** find the corresponding most desirable committee assignment */
-  sharedValues bestAssignment(sharedValues bestSchedule) const;
+  DiscreteValues bestAssignment(const DiscreteValues& bestSchedule) const;
 
 };  // Scheduler
 

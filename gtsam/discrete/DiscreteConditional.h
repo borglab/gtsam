@@ -42,10 +42,7 @@ public:
   typedef DecisionTreeFactor BaseFactor; ///< Typedef to our factor base class
   typedef Conditional<BaseFactor, This> BaseConditional; ///< Typedef to our conditional base class
 
-  /** A map from keys to values..
-   * TODO: Again, do we need this??? */
-  typedef Assignment<Key> Values;
-  typedef boost::shared_ptr<Values> sharedValues;
+  using Values = DiscreteValues; ///< backwards compatibility
 
   /// @name Standard Constructors
   /// @{
@@ -59,6 +56,34 @@ public:
 
   /** Construct from signature */
   DiscreteConditional(const Signature& signature);
+
+  /**
+   * Construct from key, parents, and a Signature::Table specifying the
+   * conditional probability table (CPT) in 00 01 10 11 order. For
+   * three-valued, it would be 00 01 02 10 11 12 20 21 22, etc....
+   *
+   * Example: DiscreteConditional P(D, {B,E}, table);
+   */
+  DiscreteConditional(const DiscreteKey& key, const DiscreteKeys& parents,
+                      const Signature::Table& table)
+      : DiscreteConditional(Signature(key, parents, table)) {}
+
+  /**
+   * Construct from key, parents, and a string specifying the conditional
+   * probability table (CPT) in 00 01 10 11 order. For three-valued, it would
+   * be 00 01 02 10 11 12 20 21 22, etc....
+   *
+   * The string is parsed into a Signature::Table.
+   *
+   * Example: DiscreteConditional P(D, {B,E}, "9/1 2/8 3/7 1/9");
+   */
+  DiscreteConditional(const DiscreteKey& key, const DiscreteKeys& parents,
+                      const std::string& spec)
+      : DiscreteConditional(Signature(key, parents, spec)) {}
+
+  /// No-parent specialization; can also use DiscretePrior.
+  DiscreteConditional(const DiscreteKey& key, const std::string& spec)
+      : DiscreteConditional(Signature(key, {}, spec)) {}
 
   /** construct P(X|Y)=P(X,Y)/P(Y) from P(X,Y) and P(Y) */
   DiscreteConditional(const DecisionTreeFactor& joint,
@@ -102,7 +127,7 @@ public:
   }
 
   /// Evaluate, just look up in AlgebraicDecisonTree
-  double operator()(const Values& values) const override {
+  double operator()(const DiscreteValues& values) const override {
     return Potentials::operator()(values);
   }
 
@@ -111,35 +136,54 @@ public:
     return DecisionTreeFactor::shared_ptr(new DecisionTreeFactor(*this));
   }
 
-  /** Restrict to given parent values, returns AlgebraicDecisionDiagram */
-  ADT choose(const Assignment<Key>& parentsValues) const;
+  /** Restrict to given parent values, returns DecisionTreeFactor */
+  DecisionTreeFactor::shared_ptr choose(
+      const DiscreteValues& parentsValues) const;
+
+  /** Convert to a likelihood factor by providing value before bar. */
+  DecisionTreeFactor::shared_ptr likelihood(
+      const DiscreteValues& frontalValues) const;
+
+  /** Single variable version of likelihood. */
+  DecisionTreeFactor::shared_ptr likelihood(size_t parent_value) const;
 
   /**
    * solve a conditional
    * @param parentsValues Known values of the parents
    * @return MPE value of the child (1 frontal variable).
    */
-  size_t solve(const Values& parentsValues) const;
+  size_t solve(const DiscreteValues& parentsValues) const;
 
   /**
    * sample
    * @param parentsValues Known values of the parents
    * @return sample from conditional
    */
-  size_t sample(const Values& parentsValues) const;
+  size_t sample(const DiscreteValues& parentsValues) const;
+
+
+  /// Single value version.
+  size_t sample(size_t parent_value) const;
 
   /// @}
   /// @name Advanced Interface
   /// @{
 
   /// solve a conditional, in place
-  void solveInPlace(Values& parentsValues) const;
+  void solveInPlace(DiscreteValues* parentsValues) const;
 
   /// sample in place, stores result in partial solution
-  void sampleInPlace(Values& parentsValues) const;
+  void sampleInPlace(DiscreteValues* parentsValues) const;
 
   /// @}
+  /// @name Wrapper support
+  /// @{
 
+  /// Render as markdown table.
+  std::string markdown(
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
+
+  /// @}
 };
 // DiscreteConditional
 
