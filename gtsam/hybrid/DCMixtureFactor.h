@@ -105,7 +105,7 @@ class DCMixtureFactor : public DCFactor {
     // TODO(kevin) Need to modify this? Maybe we take discrete vals as parameter
     // and DCContinuousFactor will pass this in as needed.
     // return (factors_.size() > 0) ? factors_[0].dim() : 0;
-    //TODO (Varun) find the best way to implement this
+    // TODO (Varun) find the best way to implement this
     return 0;
   }
 
@@ -170,14 +170,8 @@ class DCMixtureFactor : public DCFactor {
               return factor->linearize(continuousVals);
             };
 
-    // Helper class to create identity map
-    class identity_map : public std::map<Key, Key> {
-      Key at(const Key& key) { return key; }
-    };
-    identity_map key_map;
-
     DecisionTree<Key, GaussianFactor::shared_ptr> linearized_factors(
-        factors_, key_map, linearizeDT);
+        factors_, linearizeDT);
 
     return boost::make_shared<DCGaussianMixtureFactor>(keys_, discreteKeys_,
                                                        linearized_factors);

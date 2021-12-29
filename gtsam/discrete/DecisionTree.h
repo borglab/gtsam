@@ -119,7 +119,12 @@ namespace gtsam {
     convert(const typename DecisionTree<M, X>::NodePtr& f, const std::map<M,
         L>& map, std::function<Y(const X&)> op);
 
-  public:
+    /** Convert only node to a different type */
+    template <typename X>
+    NodePtr convert(const typename DecisionTree<L, X>::NodePtr& f,
+                    const std::function<Y(const X&)> op);
+
+   public:
 
     /// @name Standard Constructors
     /// @{
@@ -154,6 +159,11 @@ namespace gtsam {
     template<typename M, typename X>
     DecisionTree(const DecisionTree<M, X>& other,
         const std::map<M, L>& map, std::function<Y(const X&)> op);
+
+    /** Convert only nodes from a different type */
+    template <typename X>
+    DecisionTree(const DecisionTree<L, X>& other,
+                 std::function<Y(const X&)> op);
 
     /// @}
     /// @name Testable
@@ -231,9 +241,16 @@ namespace gtsam {
 
   /** free versions of apply */
 
+  //TODO(Varun) where are these templates Y, L and not L, Y?
   template<typename Y, typename L>
   DecisionTree<L, Y> apply(const DecisionTree<L, Y>& f,
       const typename DecisionTree<L, Y>::Unary& op) {
+    return f.apply(op);
+  }
+
+  template<typename Y, typename L, typename X>
+  DecisionTree<L, Y> apply(const DecisionTree<L, Y>& f,
+      const std::function<Y(const X&)>& op) {
     return f.apply(op);
   }
 

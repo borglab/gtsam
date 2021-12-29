@@ -458,6 +458,14 @@ namespace gtsam {
   }
 
   /*********************************************************************************/
+  template <typename L, typename Y>
+  template <typename X>
+  DecisionTree<L, Y>::DecisionTree(const DecisionTree<L, X>& other,
+                                   std::function<Y(const X&)> op) {
+    root_ = convert(other.root_, op);
+  }
+
+  /*********************************************************************************/
   // Called by two constructors above.
   // Takes a label and a corresponding range of decision trees, and creates a new
   // decision tree. However, the order of the labels needs to be respected, so we
@@ -600,6 +608,38 @@ namespace gtsam {
       functions += converted;
     }
     return LY::compose(functions.begin(), functions.end(), newLabel);
+  }
+
+  /*********************************************************************************/
+  template<typename L, typename Y>
+  template<typename X>
+  typename DecisionTree<L, Y>::NodePtr DecisionTree<L, Y>::convert(
+      const typename DecisionTree<L, X>::NodePtr& f,
+      std::function<Y(const X&)> op) {
+
+    typedef DecisionTree<L, X> LX;
+    typedef typename LX::Leaf LXLeaf;
+    typedef typename LX::Choice LXChoice;
+    typedef typename LX::NodePtr LXNodePtr;
+    typedef DecisionTree<L, Y> LY;
+
+    // ugliness below because apparently we can't have templated virtual functions
+    // If leaf, apply unary conversion "op" and create a unique leaf
+    const LXLeaf* leaf = dynamic_cast<const LXLeaf*> (f.get());
+    if (leaf) return NodePtr(new Leaf(op(leaf->constant())));
+
+    // Check if Choice
+    boost::shared_ptr<const LXChoice> choice = boost::dynamic_pointer_cast<const LXChoice> (f);
+    if (!choice) throw std::invalid_argument(
+        "DecisionTree::Convert: Invalid NodePtr");
+
+    // put together via Shannon expansion otherwise not sorted.
+    std::vector<LY> functions;
+    for(const LXNodePtr& branch: choice->branches()) {
+      LY converted(convert<X>(branch, op));
+      functions += converted;
+    }
+    return LY::compose(functions.begin(), functions.end(), choice->label());
   }
 
   /*********************************************************************************/
