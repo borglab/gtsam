@@ -77,7 +77,7 @@ namespace gtsam {
 
     /** equality up to tolerance */
     bool equals(const Node& q, double tol) const override {
-      const Leaf* other = dynamic_cast<const Leaf*> (&q);
+      const Leaf* other = dynamic_cast<const Leaf*>(&q);
       if (!other) return false;
       return this->constant_ == other->constant_;
     }
