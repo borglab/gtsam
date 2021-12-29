@@ -12,6 +12,7 @@
 
 #pragma once
 
+#include <gtsam/hybrid/DCFactor.h>
 #include <gtsam/hybrid/DCGaussianMixtureFactor.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/Symbol.h>
@@ -21,8 +22,6 @@
 #include <cmath>
 #include <limits>
 #include <vector>
-
-#include "DCFactor.h"
 
 namespace gtsam {
 

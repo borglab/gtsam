@@ -21,6 +21,7 @@
 #pragma once
 
 #include <gtsam/discrete/DiscreteKey.h>
+#include <gtsam/hybrid/DCFactor.h>
 #include <gtsam/inference/Factor.h>
 #include <gtsam/linear/GaussianFactor.h>
 
@@ -29,8 +30,6 @@
 #include <cmath>
 #include <limits>
 #include <vector>
-
-#include "DCFactor.h"
 
 namespace gtsam {
 
