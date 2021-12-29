@@ -34,9 +34,11 @@ namespace gtsam {
  */
 template <class NonlinearFactorType>
 class DCMixtureFactor : public DCFactor {
+  using FactorDecisionTree =
+      DecisionTree<Key, boost::shared_ptr<NonlinearFactorType>>;
+
  private:
-  DiscreteKey dk_;
-  std::vector<NonlinearFactorType> factors_;
+  FactorDecisionTree factors_;
   bool normalized_;
 
  public:
@@ -45,23 +47,40 @@ class DCMixtureFactor : public DCFactor {
 
   DCMixtureFactor() = default;
 
-  DCMixtureFactor(const KeyVector& keys, const DiscreteKey& dk,
-                  const std::vector<NonlinearFactorType>& factors,
+  DCMixtureFactor(const KeyVector& keys, const DiscreteKeys& discreteKeys,
+                  const FactorDecisionTree& factors, bool normalized = false)
+      : Base(keys, discreteKeys),
+        discreteKeys_(discreteKeys),
+        factors_(factors),
+        normalized_(normalized) {}
+
+  /**
+   * @brief Convenience constructor that generates the underlying factor
+   * decision tree for us.
+   *
+   * Here it is important that the vector of discrete keys and the vector of
+   * factors have a 1-to-1 mapping so that the decision tree is constructed
+   * accordingly.
+   *
+   * @param keys Vector of keys for continuous factors.
+   * @param discreteKeys Vector of discrete keys.
+   * @param factors Vector of factors. Each factor should map to its
+   * corresponding assigned discrete key.
+   * @param normalized Flag indicating if the factor error is already
+   * normalized.
+   */
+  DCMixtureFactor(const KeyVector& keys, const DiscreteKeys& discreteKeys,
+                  const vector<NonlinearFactorType>& factors,
                   bool normalized = false)
-      : dk_(dk), factors_(factors), normalized_(normalized) {
-    // Compiler doesn't like `keys_` in the initializer list.
-    keys_ = keys;
-
-    // Add `dk` to `dkeys` list.
-    discreteKeys_.push_back(dk);
+      : Base(keys, discreteKeys),
+        discreteKeys_(discreteKeys),
+        normalized_(normalized) {
+    // Generate the decision tree based on the discreteKey to factor mapping.
+    factors_ = DecisionTree(discreteKeys, factors);
   }
-
-  /// Discrete key selecting mixture component
-  const DiscreteKey& discreteKey() const { return dk_; }
 
   DCMixtureFactor& operator=(const DCMixtureFactor& rhs) {
     Base::operator=(rhs);
-    this->dk_ = rhs.dk_;
     this->factors_ = rhs.factors_;
   }
 
@@ -69,12 +88,12 @@ class DCMixtureFactor : public DCFactor {
 
   double error(const Values& continuousVals,
                const DiscreteValues& discreteVals) const override {
-    // Retrieve the assignment to our discrete key.
-    const size_t assignment = discreteVals.at(dk_.first);
+    /********************************************************/
+    // Retrieve the factor corresponding to the assignment in discreteVals.
+    auto factor = factors_(discreteVals);
+    // Compute the error for the selected factor
+    const double factorError = factor->error(continuousVals);
 
-    // `assignment` indexes the nonlinear factors we have stored to compute the
-    // error.
-    const double factorError = factors_[assignment].error(continuousVals);
     if (normalized_) return factorError;
     return factorError + this->nonlinearFactorLogNormalizingConstant(
                              this->factors_[assignment], continuousVals);
@@ -155,7 +174,8 @@ class DCMixtureFactor : public DCFactor {
       auto linearized = factors_[i].linearize(continuousVals);
       linearized_factors.push_back(linearized);
     }
-    return boost::make_shared<DCGaussianMixtureFactor>(keys_, dk_, linearized_factors);
+    return boost::make_shared<DCGaussianMixtureFactor>(keys_, dk_,
+                                                       linearized_factors);
   }
 
   /**
