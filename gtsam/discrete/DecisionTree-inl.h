@@ -83,7 +83,8 @@ namespace gtsam {
     }
 
     /** print */
-    void print(const std::string& s) const override {
+    void print(const std::string& s,
+               const std::function<std::string(L)> formatter) const override {
       bool showZero = true;
       if (showZero || constant_) std::cout << s << " Leaf " << constant_ << std::endl;
     }
@@ -236,12 +237,11 @@ namespace gtsam {
     }
 
     /** print (as a tree) */
-    void print(const std::string& s) const override {
+    void print(const std::string& s, const std::function<std::string(L)> formatter) const override {
       std::cout << s << " Choice(";
-      //        std::cout << this << ",";
-      std::cout << label_ << ") " << std::endl;
+      std::cout << formatter(label_) << ") " << std::endl;
       for (size_t i = 0; i < branches_.size(); i++)
-        branches_[i]->print((boost::format("%s %d") % s % i).str());
+        branches_[i]->print((boost::format("%s %d") % s % i).str(), formatter);
     }
 
     /** output to graphviz (as a a graph) */
@@ -591,7 +591,7 @@ namespace gtsam {
 
     // get new label
     M oldLabel = choice->label();
-    L newLabel = map.at(oldLabel);
+    L newLabel = oldLabel; //map.at(oldLabel);
 
     // put together via Shannon expansion otherwise not sorted.
     std::vector<LY> functions;
@@ -608,9 +608,11 @@ namespace gtsam {
     return root_->equals(*other.root_, tol);
   }
 
-  template<typename L, typename Y>
-  void DecisionTree<L, Y>::print(const std::string& s) const {
-    root_->print(s);
+  template <typename L, typename Y>
+  void DecisionTree<L, Y>::print(
+      const std::string& s,
+      const std::function<std::string(L)> formatter) const {
+    root_->print(s, formatter);
   }
 
   template<typename L, typename Y>
