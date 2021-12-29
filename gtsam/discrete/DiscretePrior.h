@@ -98,7 +98,7 @@ class GTSAM_EXPORT DiscretePrior : public DiscreteConditional {
    * sample
    * @return sample from conditional
    */
-  size_t sample() const { return Base::sample({}); }
+  size_t sample() const { return Base::sample(DiscreteValues()); }
 
   /// @}
 };
