@@ -20,13 +20,13 @@
 #pragma once
 
 #include <gtsam/base/types.h>
-
 #include <gtsam/discrete/Assignment.h>
 
 #include <boost/function.hpp>
 #include <functional>
 #include <iostream>
 #include <map>
+#include <sstream>
 #include <vector>
 
 namespace gtsam {
@@ -79,7 +79,13 @@ namespace gtsam {
       const void* id() const { return this; }
 
       // everything else is virtual, no documentation here as internal
-      virtual void print(const std::string& s = "") const = 0;
+      virtual void print(
+          const std::string& s = "",
+          const std::function<std::string(L)> formatter = [](const L& x) {
+            std::stringstream ss;
+            ss << x;
+            return ss.str();
+          }) const = 0;
       virtual void dot(std::ostream& os, bool showZero) const = 0;
       virtual bool sameLeaf(const Leaf& q) const = 0;
       virtual bool sameLeaf(const Node& q) const = 0;
@@ -154,7 +160,13 @@ namespace gtsam {
     /// @{
 
     /** GTSAM-style print */
-    void print(const std::string& s = "DecisionTree") const;
+    void print(
+        const std::string& s = "DecisionTree",
+        const std::function<std::string(L)> formatter = [](const L& x) {
+          std::stringstream ss;
+          ss << x;
+          return ss.str();
+        }) const;
 
     // Testable
     bool equals(const DecisionTree& other, double tol = 1e-9) const;
