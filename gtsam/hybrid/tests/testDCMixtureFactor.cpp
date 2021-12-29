@@ -69,7 +69,8 @@ TEST(DCMixtureFactor, Error) {
   // We'll make a variable with 2 possible assignments
   const size_t cardinality = 2;
   DiscreteKey dk(Symbol('d', 1), cardinality);
-  DiscreteKeys dKeys = {dk};
+  DiscreteKeys dKeys;
+  dKeys.push_back(dk);
 
   // Make a symbol for a single continuous variable and add to KeyVector
   Symbol x1 = Symbol('x', 1);

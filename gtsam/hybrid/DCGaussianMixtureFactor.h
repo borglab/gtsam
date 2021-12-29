@@ -41,19 +41,26 @@ namespace gtsam {
  * of measurement.
  */
 class DCGaussianMixtureFactor : public DCFactor {
- private:
-  std::vector<GaussianFactor::shared_ptr> factors_;
-
  public:
   using Base = DCFactor;
   using shared_ptr = boost::shared_ptr<DCGaussianMixtureFactor>;
+  using FactorDecisionTree = DecisionTree<Key, GaussianFactor::shared_ptr>;
 
+ private:
+  FactorDecisionTree factors_;
+
+ public:
   DCGaussianMixtureFactor() = default;
 
+  DCGaussianMixtureFactor(const KeyVector& keys,
+                          const DiscreteKeys& discreteKeys,
+                          const FactorDecisionTree factors)
+      : Base(keys, discreteKeys), factors_(factors) {}
   DCGaussianMixtureFactor(
       const KeyVector& keys, const DiscreteKeys& discreteKeys,
       const std::vector<GaussianFactor::shared_ptr>& factors)
-      : Base(keys, discreteKeys), factors_(factors) {}
+      : Base(keys, discreteKeys),
+        factors_(FactorDecisionTree(discreteKeys, factors)) {}
 
   DCGaussianMixtureFactor(const DCGaussianMixtureFactor& x) = default;
 
@@ -105,10 +112,7 @@ class DCGaussianMixtureFactor : public DCFactor {
     }
     std::cout << "; " << formatter(discreteKeys_.front().first) << " ]";
     std::cout << "{\n";
-    for (size_t i = 0; i < factors_.size(); i++) {
-      auto t = boost::format("component %1%: ") % i;
-      factors_[i]->print(t.str());
-    }
+    factors_.print("", formatter);
     std::cout << "}";
     std::cout << "\n";
   }

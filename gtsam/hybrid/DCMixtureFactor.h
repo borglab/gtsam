@@ -34,6 +34,10 @@ namespace gtsam {
  */
 template <class NonlinearFactorType>
 class DCMixtureFactor : public DCFactor {
+ public:
+  using Base = DCFactor;
+  using shared_ptr = boost::shared_ptr<DCMixtureFactor>;
+
   using FactorDecisionTree =
       DecisionTree<Key, boost::shared_ptr<NonlinearFactorType>>;
 
@@ -42,17 +46,11 @@ class DCMixtureFactor : public DCFactor {
   bool normalized_;
 
  public:
-  using Base = DCFactor;
-  using shared_ptr = boost::shared_ptr<DCMixtureFactor>;
-
   DCMixtureFactor() = default;
 
   DCMixtureFactor(const KeyVector& keys, const DiscreteKeys& discreteKeys,
                   const FactorDecisionTree& factors, bool normalized = false)
-      : Base(keys, discreteKeys),
-        discreteKeys_(discreteKeys),
-        factors_(factors),
-        normalized_(normalized) {}
+      : Base(keys, discreteKeys), factors_(factors), normalized_(normalized) {}
 
   /**
    * @brief Convenience constructor that generates the underlying factor
@@ -70,13 +68,17 @@ class DCMixtureFactor : public DCFactor {
    * normalized.
    */
   DCMixtureFactor(const KeyVector& keys, const DiscreteKeys& discreteKeys,
-                  const vector<NonlinearFactorType>& factors,
+                  const std::vector<NonlinearFactorType>& factors,
                   bool normalized = false)
-      : Base(keys, discreteKeys),
-        discreteKeys_(discreteKeys),
-        normalized_(normalized) {
-    // Generate the decision tree based on the discreteKey to factor mapping.
-    factors_ = DecisionTree(discreteKeys, factors);
+      : Base(keys, discreteKeys), normalized_(normalized) {
+    std::vector<boost::shared_ptr<NonlinearFactorType>> factor_pointers;
+    for (auto&& factor : factors) {
+      boost::shared_ptr<NonlinearFactorType> f_ptr =
+          boost::make_shared<NonlinearFactorType>(factor);
+      factor_pointers.push_back(f_ptr);
+    }
+    // Generate decision tree based on discreteKey to factor mapping.
+    factors_ = FactorDecisionTree(discreteKeys, factor_pointers);
   }
 
   DCMixtureFactor& operator=(const DCMixtureFactor& rhs) {
@@ -95,14 +97,16 @@ class DCMixtureFactor : public DCFactor {
     const double factorError = factor->error(continuousVals);
 
     if (normalized_) return factorError;
-    return factorError + this->nonlinearFactorLogNormalizingConstant(
-                             this->factors_[assignment], continuousVals);
+    return factorError +
+           this->nonlinearFactorLogNormalizingConstant(*factor, continuousVals);
   }
 
   size_t dim() const override {
     // TODO(kevin) Need to modify this? Maybe we take discrete vals as parameter
     // and DCContinuousFactor will pass this in as needed.
-    return (factors_.size() > 0) ? factors_[0].dim() : 0;
+    // return (factors_.size() > 0) ? factors_[0].dim() : 0;
+    //TODO (Varun) find the best way to implement this
+    return 0;
   }
 
   /// Testable
@@ -117,12 +121,12 @@ class DCMixtureFactor : public DCFactor {
     for (Key key : keys()) {
       std::cout << " " << formatter(key);
     }
-    std::cout << "; " << formatter(discreteKey().first) << " ) {\n";
-    for (size_t i = 0; i < factors_.size(); i++) {
-      auto t = boost::format("component %1%: ") % i;
-      factors_[i].print(t.str());
+    std::cout << ";";
+    for (DiscreteKey key : discreteKeys()) {
+      std::cout << " " << formatter(key.first);
     }
-    std::cout << "}\n";
+    std::cout << " ) \n";
+    factors_.print("", formatter);
   }
 
   /// Check equality
@@ -135,15 +139,8 @@ class DCMixtureFactor : public DCFactor {
     // object from `other`
     const DCMixtureFactor& f(static_cast<const DCMixtureFactor&>(other));
 
-    // Ensure that this DCMixtureFactor and `f` have the same number of
-    // component factors in `factors_`.
-    if (factors_.size() != f.factors_.size()) return false;
-
-    // If the number of factors is the same, we compare them individually (they
-    // should be in the same order!). If any fail to match, return false.
-    for (size_t i = 0; i < factors_.size(); i++) {
-      if (!factors_[i].equals(f.factors_[i])) return false;
-    }
+    // Ensure that this DCMixtureFactor and `f` have the same `factors_`.
+    if (!factors_.equals(f.factors_)) return false;
 
     // If everything above passes, and the keys_, discreteKeys_ and normalized_
     // member variables are identical, return true.
@@ -159,22 +156,30 @@ class DCMixtureFactor : public DCFactor {
   GaussianFactor::shared_ptr linearize(
       const Values& continuousVals,
       const DiscreteValues& discreteVals) const override {
-    // Retrieve the assignment to our discrete key.
-    const size_t assignment = discreteVals.at(dk_.first);
-
-    // `assignment` indexes the nonlinear factors we have stored to compute the
-    // error.
-    return factors_[assignment].linearize(continuousVals);
+    auto factor = factors_(discreteVals);
+    return factor->linearize(continuousVals);
   }
 
   /// Linearize all the continuous factors to get a DCGaussianMixtureFactor.
   DCFactor::shared_ptr linearize(const Values& continuousVals) const override {
-    std::vector<GaussianFactor::shared_ptr> linearized_factors;
-    for (size_t i = 0; i < factors_.size(); i++) {
-      auto linearized = factors_[i].linearize(continuousVals);
-      linearized_factors.push_back(linearized);
-    }
-    return boost::make_shared<DCGaussianMixtureFactor>(keys_, dk_,
+    std::function<GaussianFactor::shared_ptr(
+        const boost::shared_ptr<NonlinearFactorType>&)>
+        linearizeDT =
+            [continuousVals](
+                const boost::shared_ptr<NonlinearFactorType>& factor) {
+              return factor->linearize(continuousVals);
+            };
+
+    // Helper class to create identity map
+    class identity_map : public std::map<Key, Key> {
+      Key at(const Key& key) { return key; }
+    };
+    identity_map key_map;
+
+    DecisionTree<Key, GaussianFactor::shared_ptr> linearized_factors(
+        factors_, key_map, linearizeDT);
+
+    return boost::make_shared<DCGaussianMixtureFactor>(keys_, discreteKeys_,
                                                        linearized_factors);
   }
 
