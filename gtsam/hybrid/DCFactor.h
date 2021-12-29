@@ -39,7 +39,7 @@ class DCFactor : public gtsam::Factor {
 
  public:
   using Base = gtsam::Factor;
-  using shared_ptr = boost::shared_ptr<Factor>;
+  using shared_ptr = boost::shared_ptr<DCFactor>;
 
   DCFactor() = default;
 
@@ -101,9 +101,23 @@ class DCFactor : public gtsam::Factor {
    * @param discreteVals - Likewise, assignment to the discrete variables in
    * `discreteKeys__`.
    */
-  virtual boost::shared_ptr<gtsam::GaussianFactor> linearize(
+  virtual GaussianFactor::shared_ptr linearize(
       const gtsam::Values& continuousVals,
       const DiscreteValues& discreteVals) const = 0;
+
+  /**
+   * @brief Linearize all the continuous factors only with respect to the
+   * continuous variables (as given in `keys_`).
+   *
+   * This `linearize` is different from the `linearize(continuous, discrete)` in
+   * that it assumes no assignment of discrete keys and linearizes all
+   * continuous factors associated with this factor.
+   *
+   * @param continuousVals The continuous variables referenced by `keys_`.
+   * @return DCFactor::shared_ptr
+   */
+  virtual DCFactor::shared_ptr linearize(
+      const Values& continuousVals) const = 0;
 
   /**
    * Returns true when the DCFactor is equal to `other`

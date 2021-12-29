@@ -10,6 +10,7 @@
  * @date   December 2021
  */
 
+#include <gtsam/hybrid/DCGaussianMixtureFactor.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
 
 namespace gtsam {
@@ -22,23 +23,21 @@ void HybridFactorGraph::push_nonlinear(
 }
 
 void HybridFactorGraph::push_discrete(
-    const boost::shared_ptr<gtsam::DiscreteFactor> &discreteFactor) {
+    const DiscreteFactor::shared_ptr& discreteFactor) {
   discreteGraph_.push_back(discreteFactor);
 }
 
-void HybridFactorGraph::push_dc(const boost::shared_ptr<DCFactor>& dcFactor) {
+void HybridFactorGraph::push_dc(const DCFactor::shared_ptr& dcFactor) {
   dcGraph_.push_back(dcFactor);
 }
 
-void HybridFactorGraph::print(const std::string &str,
-                              const gtsam::KeyFormatter &keyFormatter) const {
-  std::string nonlinearStr = str + ": NonlinearFactorGraph";
-  std::string discreteStr = str + ": DiscreteFactorGraph";
-  std::string dcStr = str + ": DCFactorGraph";
-
-  nonlinearGraph_.print(nonlinearStr, keyFormatter);
-  discreteGraph_.print(discreteStr, keyFormatter);
-  dcGraph_.print(dcStr, keyFormatter);
+void HybridFactorGraph::print(const std::string& str,
+                              const gtsam::KeyFormatter& keyFormatter) const {
+  std::string prefix = str.empty() ? str : str + ": ";
+  nonlinearGraph_.print(prefix + "NonlinearFactorGraph", keyFormatter);
+  discreteGraph_.print(prefix + "DiscreteFactorGraph", keyFormatter);
+  dcGraph_.print(prefix + "DCFactorGraph", keyFormatter);
+  gaussianGraph_.print(prefix + "GaussianGraph", keyFormatter);
 }
 
 gtsam::FastSet<gtsam::Key> HybridFactorGraph::keys() const {
@@ -58,13 +57,48 @@ const gtsam::DiscreteFactorGraph& HybridFactorGraph::discreteGraph() const {
   return discreteGraph_;
 }
 
+const GaussianFactorGraph& HybridFactorGraph::gaussianGraph() const {
+  return gaussianGraph_;
+}
+
+HybridFactorGraph HybridFactorGraph::linearize(
+    const Values& continuousValues) const {
+  // linearize the continuous factors
+  auto gaussian_factor_graph = nonlinearGraph_.linearize(continuousValues);
+
+  // linearize the DCFactors
+  DCFactorGraph linearized_DC_factors;
+  for (DCFactor::shared_ptr factor : dcGraph_) {
+    // If factor is a DCGaussianMixtureFactor, we don't linearize.
+    auto dcgm = dynamic_cast<const DCGaussianMixtureFactor*>(factor.get());
+    if (dcgm) {
+      linearized_DC_factors.push_back(factor);
+
+    } else {
+      auto dcgf = factor->linearize(continuousValues);
+      linearized_DC_factors.push_back(dcgf);
+    }
+  }
+
+  // Add the original factors from the gaussian factor graph
+  for (auto&& factor : this->gaussianGraph()) {
+    gaussian_factor_graph->push_back(factor);
+  }
+
+  // Construct new linearized HybridFactorGraph
+  HybridFactorGraph linearizedGraph(this->nonlinearGraph_, this->discreteGraph_,
+                                    linearized_DC_factors,
+                                    *gaussian_factor_graph);
+  return linearizedGraph;
+}
+
 const DCFactorGraph& HybridFactorGraph::dcGraph() const { return dcGraph_; }
 
 bool HybridFactorGraph::empty() const {
   return nonlinearGraph_.empty() && discreteGraph_.empty() && dcGraph_.empty();
 }
 
-bool HybridFactorGraph::equals(const HybridFactorGraph &other,
+bool HybridFactorGraph::equals(const HybridFactorGraph& other,
                                double tol) const {
   return nonlinearGraph_.equals(other.nonlinearGraph_, tol) &&
          discreteGraph_.equals(other.discreteGraph_, tol) &&

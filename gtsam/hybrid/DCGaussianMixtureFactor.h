@@ -40,24 +40,22 @@ namespace gtsam {
  * "select" a mixture component corresponding to a GaussianFactor type
  * of measurement.
  */
-class DCGaussianMixtureFactor : public Factor {
+class DCGaussianMixtureFactor : public DCFactor {
  private:
-  DiscreteKeys discreteKeys_;
   std::vector<GaussianFactor::shared_ptr> factors_;
 
  public:
-  using Base = Factor;
+  using Base = DCFactor;
   using shared_ptr = boost::shared_ptr<DCGaussianMixtureFactor>;
-  
+
   DCGaussianMixtureFactor() = default;
 
   DCGaussianMixtureFactor(
-      const KeyVector& keys, const DiscreteKeys& dk,
+      const KeyVector& keys, const DiscreteKeys& discreteKeys,
       const std::vector<GaussianFactor::shared_ptr>& factors)
-      : discreteKeys_(dk), factors_(factors) {
-    // Compiler doesn't like `keys_` in the initializer list.
-    keys_ = keys;
-  }
+      : Base(keys, discreteKeys), factors_(factors) {}
+
+  DCGaussianMixtureFactor(const DCGaussianMixtureFactor& x) = default;
 
   /// Discrete key selecting mixture component
   const DiscreteKeys& discreteKeys() const { return discreteKeys_; }
@@ -68,6 +66,30 @@ class DCGaussianMixtureFactor : public Factor {
                const DiscreteValues& discreteVals) const {
     return 0;
   }
+
+  double error(const gtsam::Values& continuousVals,
+               const gtsam::DiscreteValues& discreteVals) const override {
+    throw std::runtime_error("DCGaussianMixtureFactor::error not implemented");
+  }
+
+  GaussianFactor::shared_ptr linearize(
+      const gtsam::Values& continuousVals,
+      const DiscreteValues& discreteVals) const override {
+    throw std::runtime_error(
+        "DCGaussianMixtureFactor::linearize(continuous, discrete) not "
+        "implemented");
+  }
+
+  /// Return linearized version of this factor.
+  virtual DCFactor::shared_ptr linearize(
+      const Values& continuousVals) const override {
+    throw std::runtime_error("DCGaussianFactor is already linear");
+  }
+
+  // TODO(dellaert): implement
+  size_t dim() const override {
+    throw std::runtime_error("DCGaussianMixtureFactor::dim not implemented");
+  };
 
   /// Testable
   /// @{
@@ -81,20 +103,18 @@ class DCGaussianMixtureFactor : public Factor {
     for (Key key : keys()) {
       std::cout << " " << formatter(key);
     }
-    // std::cout << "; " << formatter(discreteKeys_.front().first) << " ]";
-    // if (false) {
-    //   std::cout << "{\n";
-    //   for (int i = 0; i < factors_.size(); i++) {
-    //     auto t = boost::format("component %1%: ") % i;
-    //     factors_[i].print(t.str());
-    //   }
-    //   std::cout << "}";
-    // }
+    std::cout << "; " << formatter(discreteKeys_.front().first) << " ]";
+    std::cout << "{\n";
+    for (size_t i = 0; i < factors_.size(); i++) {
+      auto t = boost::format("component %1%: ") % i;
+      factors_[i]->print(t.str());
+    }
+    std::cout << "}";
     std::cout << "\n";
   }
 
   /// Check equality
-  bool equals(const DCGaussianMixtureFactor& f, double tol = 1e-9) const {
+  bool equals(const DCFactor& f, double tol = 1e-9) const override {
     // TODO
     return true;
   }

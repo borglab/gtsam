@@ -18,10 +18,9 @@
  * @date    December 2021
  */
 
-#include <gtsam/hybrid/DCFactor.h>
-#include <gtsam/hybrid/DCFactorGraph.h>
-#include <gtsam/hybrid/DCMixtureFactor.h>
 #include <gtsam/hybrid/DCGaussianMixtureFactor.h>
+#include <gtsam/hybrid/DCMixtureFactor.h>
+#include <gtsam/hybrid/HybridFactorGraph.h>
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/EliminateableFactorGraph.h>
 #include <gtsam/inference/EliminationTree-inst.h>
@@ -161,7 +160,7 @@ struct EliminationTraits<DCGaussianMixtureFactorGraph> {
 };
 
 /* TODO(dellaert) EliminateableFactorGraph does not play well with hybrid:
-/// Speical DCFactorGraph that can be eliminated partially
+/// Special DCFactorGraph that can be eliminated partially
 class MixtureFactorGraph : public FactorGraph<DCMixtureFactor>,
                            public EliminateableFactorGraph<MixtureFactorGraph> {
 };
@@ -177,56 +176,55 @@ using symbol_shorthand::X;
 /* ****************************************************************************
  * Test elimination on a switching-like hybrid factor graph.
  */
-TEST(DiscreteBayesTree, Switching) {
+TEST(DCGaussianElimination, Switching) {
   // Number of time steps.
-  const size_t K = 5;
+  const size_t K = 3;
 
-  // Create DiscreteKeys for binary K+1 modes.
+  // Create DiscreteKeys for binary K modes, modes[0] will not be used.
   DiscreteKeys modes;
   for (size_t k = 0; k <= K; k++) {
     modes.emplace_back(M(k), 2);
   }
 
   // Create hybrid factor graph.
-  DCFactorGraph fg;
+  HybridFactorGraph fg;
+
+  Values values;
+  values.insert<double>(X(1), 0);
+  values.insert<double>(X(2), 1);
+  values.insert<double>(X(3), 1);
 
   // Add a prior on X(1).
-  // TODO: make a prior that does not depend on a discrete key.
-  using PriorMixture = DCMixtureFactor<PriorFactor<double>>;
   PriorFactor<double> prior(X(1), 0, Isotropic::Sigma(1, 0.1));
-  PriorMixture priorMixture({X(1)}, modes[0], {prior, prior});
-  fg.add(priorMixture);
+  auto gaussian = prior.linearize(values);
+  fg.push_gaussian(gaussian);
 
   // Add "motion models".
   for (size_t k = 1; k < K; k++) {
-    BetweenFactor<double> still(X(k), X(k + 1), 0.0, Isotropic::Sigma(2, 1.0)),
-        moving(X(k), X(k + 1), 1.0, Isotropic::Sigma(2, 1.0));
+    BetweenFactor<double> still(X(k), X(k + 1), 0.0, Isotropic::Sigma(1, 1.0)),
+        moving(X(k), X(k + 1), 1.0, Isotropic::Sigma(1, 1.0));
     using MotionMixture = DCMixtureFactor<BetweenFactor<double>>;
-    MotionMixture mixture({X(k), X(k + 1)}, modes[k], {still, moving});
-    fg.add(mixture);
+    auto keys = {X(k), X(k + 1)};
+    auto components = {still.linearize(values), moving.linearize(values)};
+    fg.emplace_shared<DCGaussianMixtureFactor>(keys, modes[k], components);
   }
+
+  // Add "mode chain": can only be done in HybridFactorGraph
+  fg.push_discrete(DiscreteConditional(modes[1], {}, "1/1"));
+  for (size_t k = 1; k < K; k++) {
+    auto parents = {modes[k]};
+    fg.emplace_shared<DiscreteConditional>(modes[k + 1], parents, "1/2 3/2");
+  }
+
   GTSAM_PRINT(fg);
-  fg.saveGraph("MixtureFactorGraph.dot");
 
-  //   // Add "mode chain": can only be done in HybridFactorGraph
-  //   for (size_t k = 1; k < K1; k++) {
-  //     DiscreteKey mode(M(k), 2), mode_plus(M(k + 1), 2);
-  //     fg.add(DiscreteConditional(mode_plus, {mode}, "1/2 3/2"));
-  //   }
-
-  // Linearize here:
-  // Values values;
-  DCGaussianMixtureFactorGraph dcmfg;  // TODO: = fg.linearize(values);
-  GTSAM_PRINT(dcmfg);
-
-  //TODO(Varun) uncomment and finish implementing
-  // // Eliminate partially.
-  // Ordering ordering;
-  // for (size_t k = 1; k <= K; k++) ordering += X(k);
-  // using dc_traits = EliminationTraits<DCGaussianMixtureFactorGraph>;
-  // auto result = dc_traits::eliminatePartialSequential(dcmfg, ordering);
-  // GTSAM_PRINT(*result.first); // DCGaussianBayesNet
-  // GTSAM_PRINT(*result.second); // DCGaussianMixtureFactorGraph
+  // Eliminate partially.
+  //   Ordering ordering;
+  //   for (size_t k = 1; k <= K; k++) ordering += X(k);
+  //   using dc_traits = EliminationTraits<DCGaussianMixtureFactorGraph>;
+  //   auto result = dc_traits::eliminatePartialSequential(dcmfg, ordering);
+  //   GTSAM_PRINT(*result.first); // DCGaussianBayesNet
+  //   GTSAM_PRINT(*result.second); // DCGaussianMixtureFactorGraph
 }
 
 /* ************************************************************************* */
