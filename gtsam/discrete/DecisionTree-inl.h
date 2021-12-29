@@ -591,7 +591,7 @@ namespace gtsam {
 
     // get new label
     M oldLabel = choice->label();
-    L newLabel = oldLabel; //map.at(oldLabel);
+    L newLabel = map.at(oldLabel);
 
     // put together via Shannon expansion otherwise not sorted.
     std::vector<LY> functions;
