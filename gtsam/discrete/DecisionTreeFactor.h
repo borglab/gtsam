@@ -61,6 +61,15 @@ namespace gtsam {
         DiscreteFactor(keys.indices()), Potentials(keys, table) {
     }
 
+    /// Single-key specialization
+    template <class SOURCE>
+    DecisionTreeFactor(const DiscreteKey& key, SOURCE table)
+        : DecisionTreeFactor(DiscreteKeys{key}, table) {}
+
+    /// Single-key specialization, with vector of doubles.
+    DecisionTreeFactor(const DiscreteKey& key, const std::vector<double>& row)
+        : DecisionTreeFactor(DiscreteKeys{key}, row) {}
+
     /** Construct from a DiscreteConditional type */
     DecisionTreeFactor(const DiscreteConditional& c);
 
@@ -161,6 +170,9 @@ namespace gtsam {
 //      DiscreteFactor::reduceWithInverse(inverseReduction);
 //      Potentials::reduceWithInverse(inverseReduction);
 //    }
+
+    /// Enumerate all values into a map from values to double.
+    std::vector<std::pair<DiscreteValues, double>> enumerate() const;
 
     /// @}
     /// @name Wrapper support

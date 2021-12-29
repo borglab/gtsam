@@ -75,8 +75,8 @@ TEST(DiscreteBayesNet, bayesNet) {
 TEST(DiscreteBayesNet, Asia) {
   DiscreteBayesNet asia;
 
-  asia.add(Asia % "99/1");
-  asia.add(Smoking % "50/50");
+  asia.add(Asia, "99/1");
+  asia.add(Smoking % "50/50");  // Signature version
 
   asia.add(Tuberculosis | Asia = "99/1 95/5");
   asia.add(LungCancer | Smoking = "99/1 90/10");
@@ -180,13 +180,13 @@ TEST(DiscreteBayesNet, markdown) {
   string expected =
       "`DiscreteBayesNet` of size 2\n"
       "\n"
-      " $P(Asia)$:\n"
+      " *P(Asia)*:\n\n"
       "|Asia|value|\n"
       "|:-:|:-:|\n"
       "|0|0.99|\n"
       "|1|0.01|\n"
       "\n"
-      " $P(Smoking|Asia)$:\n"
+      " *P(Smoking|Asia)*:\n\n"
       "|Asia|0|1|\n"
       "|:-:|:-:|:-:|\n"
       "|0|0.8|0.2|\n"
