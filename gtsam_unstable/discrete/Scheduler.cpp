@@ -133,10 +133,10 @@ void Scheduler::addStudentSpecificConstraints(size_t i,
       Potentials::ADT p(dummy & areaKey,
                         available_);  // available_ is Doodle string
       Potentials::ADT q = p.choose(dummyIndex, *slot);
-      DiscreteFactor::shared_ptr f(new DecisionTreeFactor(areaKey, q));
-      CSP::push_back(f);
+      CSP::add(areaKey, q);
     } else {
-      CSP::add(s.key_, areaKey, available_);  // available_ is Doodle string
+      DiscreteKeys keys {s.key_, areaKey};
+      CSP::add(keys, available_);  // available_ is Doodle string
     }
   }
 

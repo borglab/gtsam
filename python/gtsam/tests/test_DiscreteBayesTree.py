@@ -14,18 +14,8 @@ Author: Frank Dellaert
 import unittest
 
 from gtsam import (DiscreteBayesNet, DiscreteBayesTreeClique,
-                   DiscreteConditional, DiscreteFactorGraph, DiscreteKeys,
-                   Ordering)
+                   DiscreteConditional, DiscreteFactorGraph, Ordering)
 from gtsam.utils.test_case import GtsamTestCase
-
-
-def P(*args):
-    """ Create a DiscreteKeys instances from a variable number of DiscreteKey pairs."""
-    # TODO: We can make life easier by providing variable argument functions in C++ itself.
-    dks = DiscreteKeys()
-    for key in args:
-        dks.push_back(key)
-    return dks
 
 
 class TestDiscreteBayesNet(GtsamTestCase):
@@ -40,25 +30,25 @@ class TestDiscreteBayesNet(GtsamTestCase):
         # Create thin-tree Bayesnet.
         bayesNet = DiscreteBayesNet()
 
-        bayesNet.add(keys[0], P(keys[8], keys[12]), "2/3 1/4 3/2 4/1")
-        bayesNet.add(keys[1], P(keys[8], keys[12]), "4/1 2/3 3/2 1/4")
-        bayesNet.add(keys[2], P(keys[9], keys[12]), "1/4 8/2 2/3 4/1")
-        bayesNet.add(keys[3], P(keys[9], keys[12]), "1/4 2/3 3/2 4/1")
+        bayesNet.add(keys[0], [keys[8], keys[12]], "2/3 1/4 3/2 4/1")
+        bayesNet.add(keys[1], [keys[8], keys[12]], "4/1 2/3 3/2 1/4")
+        bayesNet.add(keys[2], [keys[9], keys[12]], "1/4 8/2 2/3 4/1")
+        bayesNet.add(keys[3], [keys[9], keys[12]], "1/4 2/3 3/2 4/1")
 
-        bayesNet.add(keys[4], P(keys[10], keys[13]), "2/3 1/4 3/2 4/1")
-        bayesNet.add(keys[5], P(keys[10], keys[13]), "4/1 2/3 3/2 1/4")
-        bayesNet.add(keys[6], P(keys[11], keys[13]), "1/4 3/2 2/3 4/1")
-        bayesNet.add(keys[7], P(keys[11], keys[13]), "1/4 2/3 3/2 4/1")
+        bayesNet.add(keys[4], [keys[10], keys[13]], "2/3 1/4 3/2 4/1")
+        bayesNet.add(keys[5], [keys[10], keys[13]], "4/1 2/3 3/2 1/4")
+        bayesNet.add(keys[6], [keys[11], keys[13]], "1/4 3/2 2/3 4/1")
+        bayesNet.add(keys[7], [keys[11], keys[13]], "1/4 2/3 3/2 4/1")
 
-        bayesNet.add(keys[8], P(keys[12], keys[14]), "T 1/4 3/2 4/1")
-        bayesNet.add(keys[9], P(keys[12], keys[14]), "4/1 2/3 F 1/4")
-        bayesNet.add(keys[10], P(keys[13], keys[14]), "1/4 3/2 2/3 4/1")
-        bayesNet.add(keys[11], P(keys[13], keys[14]), "1/4 2/3 3/2 4/1")
+        bayesNet.add(keys[8], [keys[12], keys[14]], "T 1/4 3/2 4/1")
+        bayesNet.add(keys[9], [keys[12], keys[14]], "4/1 2/3 F 1/4")
+        bayesNet.add(keys[10], [keys[13], keys[14]], "1/4 3/2 2/3 4/1")
+        bayesNet.add(keys[11], [keys[13], keys[14]], "1/4 2/3 3/2 4/1")
 
-        bayesNet.add(keys[12], P(keys[14]), "3/1 3/1")
-        bayesNet.add(keys[13], P(keys[14]), "1/3 3/1")
+        bayesNet.add(keys[12], [keys[14]], "3/1 3/1")
+        bayesNet.add(keys[13], [keys[14]], "1/3 3/1")
 
-        bayesNet.add(keys[14], P(), "1/3")
+        bayesNet.add(keys[14], "1/3")
 
         # Create a factor graph out of the Bayes net.
         factorGraph = DiscreteFactorGraph(bayesNet)

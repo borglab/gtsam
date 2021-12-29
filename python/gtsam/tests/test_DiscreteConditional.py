@@ -13,12 +13,29 @@ Author: Varun Agrawal
 
 import unittest
 
-from gtsam import DiscreteConditional, DiscreteKeys
+from gtsam import DecisionTreeFactor, DiscreteConditional, DiscreteKeys
 from gtsam.utils.test_case import GtsamTestCase
 
 
 class TestDiscreteConditional(GtsamTestCase):
     """Tests for Discrete Conditionals."""
+
+    def test_single_value_versions(self):
+        X = (0, 2)
+        Y = (1, 3)
+        conditional = DiscreteConditional(X, [Y], "2/8 4/6 5/5")
+
+        actual0 = conditional.likelihood(0)
+        expected0 = DecisionTreeFactor(Y, "0.2 0.4 0.5")
+        self.gtsamAssertEquals(actual0, expected0, 1e-9)
+
+        actual1 = conditional.likelihood(1)
+        expected1 = DecisionTreeFactor(Y, "0.8 0.6 0.5")
+        self.gtsamAssertEquals(actual1, expected1, 1e-9)
+
+        actual = conditional.sample(2)
+        self.assertIsInstance(actual, int)
+
     def test_markdown(self):
         """Test whether the _repr_markdown_ method."""
 
@@ -32,7 +49,7 @@ class TestDiscreteConditional(GtsamTestCase):
         conditional = DiscreteConditional(A, parents,
                                           "0/1 1/3  1/1 3/1  0/1 1/0")
         expected = \
-            " $P(A|B,C)$:\n" \
+            " *P(A|B,C)*:\n\n" \
             "|B|C|0|1|\n" \
             "|:-:|:-:|:-:|:-:|\n" \
             "|0|0|0|1|\n" \
