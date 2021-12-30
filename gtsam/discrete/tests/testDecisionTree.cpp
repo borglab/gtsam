@@ -179,8 +179,8 @@ TEST(DT, example)
 enum Label {
   U, V, X, Y, Z
 };
-typedef DecisionTree<Label, int> BDT;
-int convert(const int& y) {
+typedef DecisionTree<Label, bool> BDT;
+bool convert(const int& y) {
   return y != 0;
 }
 
@@ -196,7 +196,7 @@ TEST(DT, conversion)
   map<string, Label> ordering;
   ordering[A] = X;
   ordering[B] = Y;
-  std::function<int(const int&)> op = convert;
+  std::function<bool(const int&)> op = convert;
   BDT f2(f1, ordering, op);
   //  f1.print("f1");
   //  f2.print("f2");
