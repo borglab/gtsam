@@ -40,7 +40,7 @@ SubgraphSolver::SubgraphSolver(const GaussianFactorGraph &Ab,
     cout << "Split A into (A1) " << Ab1.size() << " and (A2) " << Ab2.size()
          << " factors" << endl;
 
-  auto Rc1 = Ab1.eliminateSequential(ordering, EliminateQR);
+  auto Rc1 = *Ab1.eliminateSequential(ordering, EliminateQR);
   auto xbar = Rc1.optimize();
   pc_ = boost::make_shared<SubgraphPreconditioner>(Ab2, Rc1, xbar);
 }
@@ -62,7 +62,7 @@ SubgraphSolver::SubgraphSolver(const GaussianFactorGraph &Ab1,
                                const GaussianFactorGraph &Ab2,
                                const Parameters &parameters,
                                const Ordering &ordering)
-    : SubgraphSolver(Ab1.eliminateSequential(ordering, EliminateQR), Ab2,
+    : SubgraphSolver(*Ab1.eliminateSequential(ordering, EliminateQR), Ab2,
                      parameters) {}
 
 /**************************************************************************************************/
