@@ -264,7 +264,7 @@ void SubgraphPreconditioner::build(const GaussianFactorGraph &gfg, const KeyInfo
   auto gfg_subgraph = buildFactorSubgraph(gfg, subgraph, true);
 
   /* factorize and cache BayesNet */
-  Rc1_ = gfg_subgraph.eliminateSequential();
+  Rc1_ = *gfg_subgraph.eliminateSequential();
 }
 
 /*****************************************************************************/

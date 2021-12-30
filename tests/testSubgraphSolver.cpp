@@ -123,7 +123,7 @@ TEST( SubgraphSolver, constructor3 )
   std::tie(Ab1, Ab2) = example::splitOffPlanarTree(N, Ab);
 
   // The caller solves |A1*x-b1|^2 == |R1*x-c1|^2, where R1 is square UT
-  auto Rc1 = Ab1.eliminateSequential();
+  auto Rc1 = *Ab1.eliminateSequential();
 
   // The third constructor allows the caller to pass an already solved preconditioner Rc1_
   // as a Bayes net, in addition to the "loop closing constraints" Ab2, as before

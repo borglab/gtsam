@@ -77,7 +77,7 @@ TEST(SubgraphPreconditioner, planarGraph) {
   DOUBLES_EQUAL(0, error(A, xtrue), 1e-9);  // check zero error for xtrue
 
   // Check that xtrue is optimal
-  GaussianBayesNet R1 = A.eliminateSequential();
+  GaussianBayesNet R1 = *A.eliminateSequential();
   VectorValues actual = R1.optimize();
   EXPECT(assert_equal(xtrue, actual));
 }
@@ -96,7 +96,7 @@ TEST(SubgraphPreconditioner, splitOffPlanarTree) {
   LONGS_EQUAL(4, C.size());
 
   // Check that the tree can be solved to give the ground xtrue
-  GaussianBayesNet R1 = T.eliminateSequential();
+  GaussianBayesNet R1 = *T.eliminateSequential();
   VectorValues xbar = R1.optimize();
   EXPECT(assert_equal(xtrue, xbar));
 }
@@ -115,7 +115,7 @@ TEST(SubgraphPreconditioner, system) {
 
   // Eliminate the spanning tree to build a prior
   const Ordering ord = planarOrdering(N);
-  auto Rc1 = Ab1.eliminateSequential(ord);  // R1*x-c1
+  auto Rc1 = *Ab1.eliminateSequential(ord);  // R1*x-c1
   VectorValues xbar = Rc1.optimize();       // xbar = inv(R1)*c1
 
   // Create Subgraph-preconditioned system
@@ -279,7 +279,7 @@ TEST(SubgraphPreconditioner, conjugateGradients) {
   boost::tie(Ab1, Ab2) = splitOffPlanarTree(N, Ab);
 
   // Eliminate the spanning tree to build a prior
-  GaussianBayesNet Rc1 = Ab1.eliminateSequential();  // R1*x-c1
+  GaussianBayesNet Rc1 = *Ab1.eliminateSequential();  // R1*x-c1
   VectorValues xbar = Rc1.optimize();  // xbar = inv(R1)*c1
 
   // Create Subgraph-preconditioned system
