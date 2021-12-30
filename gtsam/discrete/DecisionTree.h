@@ -39,6 +39,13 @@ namespace gtsam {
   template<typename L, typename Y>
   class GTSAM_EXPORT DecisionTree {
 
+    /// default method used by `formatter` when printing.
+    static std::string DefaultFormatter(const L& x) {
+      std::stringstream ss;
+      ss << x;
+      return ss.str();
+    }
+
   public:
 
     /** Handy typedefs for unary and binary function types */
@@ -79,13 +86,9 @@ namespace gtsam {
       const void* id() const { return this; }
 
       // everything else is virtual, no documentation here as internal
-      virtual void print(
-          const std::string& s = "",
-          const std::function<std::string(L)> formatter = [](const L& x) {
-            std::stringstream ss;
-            ss << x;
-            return ss.str();
-          }) const = 0;
+      virtual void print(const std::string& s = "",
+                         const std::function<std::string(L)>& formatter =
+                             &DefaultFormatter) const = 0;
       virtual void dot(std::ostream& os, bool showZero) const = 0;
       virtual bool sameLeaf(const Leaf& q) const = 0;
       virtual bool sameLeaf(const Node& q) const = 0;
@@ -170,13 +173,9 @@ namespace gtsam {
     /// @{
 
     /** GTSAM-style print */
-    void print(
-        const std::string& s = "DecisionTree",
-        const std::function<std::string(L)> formatter = [](const L& x) {
-          std::stringstream ss;
-          ss << x;
-          return ss.str();
-        }) const;
+    void print(const std::string& s = "DecisionTree",
+               const std::function<std::string(L)>& formatter =
+                   &DefaultFormatter) const;
 
     // Testable
     bool equals(const DecisionTree& other, double tol = 1e-9) const;
@@ -241,20 +240,19 @@ namespace gtsam {
 
   /** free versions of apply */
 
-  //TODO(Varun) where are these templates Y, L and not L, Y?
-  template<typename Y, typename L>
+  template<typename L, typename Y>
   DecisionTree<L, Y> apply(const DecisionTree<L, Y>& f,
       const typename DecisionTree<L, Y>::Unary& op) {
     return f.apply(op);
   }
 
-  template<typename Y, typename L, typename X>
+  template<typename L, typename Y, typename X>
   DecisionTree<L, Y> apply(const DecisionTree<L, Y>& f,
       const std::function<Y(const X&)>& op) {
     return f.apply(op);
   }
 
-  template<typename Y, typename L>
+  template<typename L, typename Y>
   DecisionTree<L, Y> apply(const DecisionTree<L, Y>& f,
       const DecisionTree<L, Y>& g,
       const typename DecisionTree<L, Y>::Binary& op) {
