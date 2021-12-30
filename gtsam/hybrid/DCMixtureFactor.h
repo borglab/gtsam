@@ -55,9 +55,10 @@ class DCMixtureFactor : public DCFactor {
    * @brief Convenience constructor that generates the underlying factor
    * decision tree for us.
    *
-   * Here it is important that the vector of discrete keys and the vector of
-   * factors have a 1-to-1 mapping so that the decision tree is constructed
-   * accordingly.
+   * Here it is important that the vector of
+   * factors has the correct number of elements based on the number of discrete
+   * keys and the cardinality of the keys, so that the decision tree is
+   * constructed appropriately.
    *
    * @param keys Vector of keys for continuous factors.
    * @param discreteKeys Vector of discrete keys.
