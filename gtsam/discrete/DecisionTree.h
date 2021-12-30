@@ -39,11 +39,16 @@ namespace gtsam {
   template<typename L, typename Y>
   class GTSAM_EXPORT DecisionTree {
 
-    /// default method used by `formatter` when printing.
+    /// Default method used by `formatter` when printing.
     static std::string DefaultFormatter(const L& x) {
       std::stringstream ss;
       ss << x;
       return ss.str();
+    }
+
+    /// Default method for comparison of two objects of type Y.
+    static bool DefaultComparator(const Y& a, const Y& b, double tol) {
+      return a == b;
     }
 
   public:
@@ -92,7 +97,9 @@ namespace gtsam {
       virtual void dot(std::ostream& os, bool showZero) const = 0;
       virtual bool sameLeaf(const Leaf& q) const = 0;
       virtual bool sameLeaf(const Node& q) const = 0;
-      virtual bool equals(const Node& other, double tol = 1e-9) const = 0;
+      virtual bool equals(const Node& other, double tol = 1e-9,
+                          const std::function<bool(const Y&, const Y&, double)>&
+                              comparator = &DefaultComparator) const = 0;
       virtual const Y& operator()(const Assignment<L>& x) const = 0;
       virtual Ptr apply(const Unary& op) const = 0;
       virtual Ptr apply_f_op_g(const Node&, const Binary&) const = 0;
@@ -178,7 +185,9 @@ namespace gtsam {
                    &DefaultFormatter) const;
 
     // Testable
-    bool equals(const DecisionTree& other, double tol = 1e-9) const;
+    bool equals(const DecisionTree& other, double tol = 1e-9,
+                const std::function<bool(const Y&, const Y&, double)>&
+                    comparator = &DefaultComparator) const;
 
     /// @}
     /// @name Standard Interface

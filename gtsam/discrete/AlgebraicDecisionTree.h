@@ -30,6 +30,13 @@ namespace gtsam {
   template<typename L>
   class AlgebraicDecisionTree: public DecisionTree<L, double> {
 
+    /**
+     * @brief Default method for comparison of two doubles upto some tolerance.
+     */
+    static bool DefaultComparator(double a, double b, double tol) {
+      return std::abs(a - b) < tol;
+    }
+
   public:
 
     typedef DecisionTree<L, double> Super;
@@ -138,6 +145,12 @@ namespace gtsam {
       return this->combine(labelC, &Ring::add);
     }
 
+    /// Equality method customized to node type `double`.
+    bool equals(const AlgebraicDecisionTree& other, double tol = 1e-9,
+                const std::function<bool(double, double, double)>& comparator =
+                    &DefaultComparator) const {
+      return this->root_->equals(*other.root_, tol, comparator);
+    }
   };
 // AlgebraicDecisionTree
 
