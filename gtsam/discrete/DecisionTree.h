@@ -53,6 +53,9 @@ namespace gtsam {
 
   public:
 
+    using FormatterFunc = std::function<std::string(L)>;
+    using ComparatorFunc = std::function<bool(const Y&, const Y&, double)>;
+
     /** Handy typedefs for unary and binary function types */
     typedef std::function<Y(const Y&)> Unary;
     typedef std::function<Y(const Y&, const Y&)> Binary;
@@ -91,15 +94,15 @@ namespace gtsam {
       const void* id() const { return this; }
 
       // everything else is virtual, no documentation here as internal
-      virtual void print(const std::string& s = "",
-                         const std::function<std::string(L)>& formatter =
-                             &DefaultFormatter) const = 0;
+      virtual void print(
+          const std::string& s = "",
+          const FormatterFunc& formatter = &DefaultFormatter) const = 0;
       virtual void dot(std::ostream& os, bool showZero) const = 0;
       virtual bool sameLeaf(const Leaf& q) const = 0;
       virtual bool sameLeaf(const Node& q) const = 0;
-      virtual bool equals(const Node& other, double tol = 1e-9,
-                          const std::function<bool(const Y&, const Y&, double)>&
-                              comparator = &DefaultComparator) const = 0;
+      virtual bool equals(
+          const Node& other, double tol = 1e-9,
+          const ComparatorFunc& comparator = &DefaultComparator) const = 0;
       virtual const Y& operator()(const Assignment<L>& x) const = 0;
       virtual Ptr apply(const Unary& op) const = 0;
       virtual Ptr apply_f_op_g(const Node&, const Binary&) const = 0;
@@ -181,13 +184,11 @@ namespace gtsam {
 
     /** GTSAM-style print */
     void print(const std::string& s = "DecisionTree",
-               const std::function<std::string(L)>& formatter =
-                   &DefaultFormatter) const;
+               const FormatterFunc& formatter = &DefaultFormatter) const;
 
     // Testable
     bool equals(const DecisionTree& other, double tol = 1e-9,
-                const std::function<bool(const Y&, const Y&, double)>&
-                    comparator = &DefaultComparator) const;
+                const ComparatorFunc& comparator = &DefaultComparator) const;
 
     /// @}
     /// @name Standard Interface
