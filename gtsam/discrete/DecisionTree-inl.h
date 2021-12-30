@@ -19,7 +19,6 @@
 
 #pragma once
 
-#include <gtsam/base/Testable.h>
 #include <gtsam/discrete/DecisionTree.h>
 
 #include <boost/assign/std/vector.hpp>
@@ -78,8 +77,7 @@ namespace gtsam {
 
     /** equality up to tolerance */
     bool equals(const Node& q, double tol,
-                const std::function<bool(const Y&, const Y&, double)>&
-                    comparator) const override {
+                const ComparatorFunc& comparator) const override {
       const Leaf* other = dynamic_cast<const Leaf*>(&q);
       if (!other) return false;
       return comparator(this->constant_, other->constant_, tol);
@@ -87,7 +85,7 @@ namespace gtsam {
 
     /** print */
     void print(const std::string& s,
-               const std::function<std::string(L)>& formatter) const override {
+               const FormatterFunc& formatter) const override {
       bool showZero = true;
       if (showZero || constant_) std::cout << s << " Leaf " << constant_ << std::endl;
     }
@@ -241,7 +239,7 @@ namespace gtsam {
 
     /** print (as a tree) */
     void print(const std::string& s,
-               const std::function<std::string(L)>& formatter) const override {
+               const FormatterFunc& formatter) const override {
       std::cout << s << " Choice(";
       std::cout << formatter(label_) << ") " << std::endl;
       for (size_t i = 0; i < branches_.size(); i++)
@@ -284,8 +282,7 @@ namespace gtsam {
 
     /** equality up to tolerance */
     bool equals(const Node& q, double tol,
-                const std::function<bool(const Y&, const Y&, double)>&
-                    comparator) const override {
+                const ComparatorFunc& comparator) const override {
       const Choice* other = dynamic_cast<const Choice*>(&q);
       if (!other) return false;
       if (this->label_ != other->label_) return false;
@@ -651,16 +648,14 @@ namespace gtsam {
 
   /*********************************************************************************/
   template <typename L, typename Y>
-  bool DecisionTree<L, Y>::equals(
-      const DecisionTree& other, double tol,
-      const std::function<bool(const Y&, const Y&, double)>& comparator) const {
+  bool DecisionTree<L, Y>::equals(const DecisionTree& other, double tol,
+                                  const ComparatorFunc& comparator) const {
     return root_->equals(*other.root_, tol, comparator);
   }
 
   template <typename L, typename Y>
-  void DecisionTree<L, Y>::print(
-      const std::string& s,
-      const std::function<std::string(L)>& formatter) const {
+  void DecisionTree<L, Y>::print(const std::string& s,
+                                 const FormatterFunc& formatter) const {
     root_->print(s, formatter);
   }
 
