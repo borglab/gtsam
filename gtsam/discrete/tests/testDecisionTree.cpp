@@ -32,13 +32,11 @@ using namespace std;
 using namespace gtsam;
 
 template<typename T>
-void dot(const T&f, const string& filename) {
+void DOT(const T&f, const string& filename) {
 #ifndef DISABLE_DOT
   f.dot(filename);
 #endif
 }
-
-#define DOT(x)(dot(x,#x))
 
 struct Crazy { int a; double b; };
 typedef DecisionTree<string,Crazy> CrazyDecisionTree; // check that DecisionTree is actually generic (as it pretends to be)
@@ -179,8 +177,8 @@ TEST(DT, example)
 enum Label {
   U, V, X, Y, Z
 };
-typedef DecisionTree<Label, bool> BDT;
-bool convert(const int& y) {
+typedef DecisionTree<Label, int> BDT;
+int convert(const int& y) {
   return y != 0;
 }
 
@@ -196,7 +194,7 @@ TEST(DT, conversion)
   map<string, Label> ordering;
   ordering[A] = X;
   ordering[B] = Y;
-  std::function<bool(const int&)> op = convert;
+  std::function<int(const int&)> op = convert;
   BDT f2(f1, ordering, op);
   //  f1.print("f1");
   //  f2.print("f2");
