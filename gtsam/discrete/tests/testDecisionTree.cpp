@@ -32,11 +32,13 @@ using namespace std;
 using namespace gtsam;
 
 template<typename T>
-void DOT(const T&f, const string& filename) {
+void write_dot(const T&f, const string& filename) {
 #ifndef DISABLE_DOT
   f.dot(filename);
 #endif
 }
+
+#define DOT(x)(write_dot(x,#x))
 
 struct Crazy { int a; double b; };
 typedef DecisionTree<string,Crazy> CrazyDecisionTree; // check that DecisionTree is actually generic (as it pretends to be)
