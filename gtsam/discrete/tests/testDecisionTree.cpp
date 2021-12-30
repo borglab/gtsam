@@ -40,7 +40,19 @@ void dot(const T&f, const string& filename) {
 
 #define DOT(x)(dot(x,#x))
 
-struct Crazy { int a; double b; };
+struct Crazy {
+  int a;
+  double b;
+
+  bool equals(const Crazy& other, double tol = 1e-12) const {
+    return a == other.a && std::abs(b - other.b) < tol;
+  }
+
+  bool operator==(const Crazy& other) const {
+    return this->equals(other);
+  }
+};
+
 typedef DecisionTree<string,Crazy> CrazyDecisionTree; // check that DecisionTree is actually generic (as it pretends to be)
 
 // traits
