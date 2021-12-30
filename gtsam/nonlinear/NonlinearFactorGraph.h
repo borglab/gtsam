@@ -269,10 +269,10 @@ namespace gtsam {
       dot(os, values, keyFormatter, graphvizFormatting);
     }
     /** \deprecated */
-    void GTSAM_DEPRECATED saveGraph(
-        const std::string& filename, const Values& values,
-        const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
-        const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+    void GTSAM_DEPRECATED
+    saveGraph(const std::string& filename, const Values& values,
+              const GraphvizFormatting& graphvizFormatting,
+              const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
       saveGraph(filename, values, keyFormatter, graphvizFormatting);
     }
 #endif
