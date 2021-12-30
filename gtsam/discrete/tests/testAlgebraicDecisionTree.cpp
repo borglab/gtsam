@@ -48,7 +48,7 @@ template<> struct traits<ADT> : public Testable<ADT> {};
 #define DISABLE_DOT
 
 template<typename T>
-void DOT(const T&f, const string& filename) {
+void dot(const T&f, const string& filename) {
 #ifndef DISABLE_DOT
   f.dot(filename);
 #endif
@@ -112,7 +112,7 @@ TEST(ADT, example3)
   ADT note(E, 0.9, 0.1);
 
   ADT cnotb = c * notb;
-  DOT(cnotb, "ADT-cnotb");
+  dot(cnotb, "ADT-cnotb");
 
 //  a.print("a: ");
 //  cnotb.print("cnotb: ");
@@ -120,11 +120,11 @@ TEST(ADT, example3)
 //  acnotb.print("acnotb: ");
 //  acnotb.printCache("acnotb Cache:");
 
-  DOT(acnotb, "ADT-acnotb");
+  dot(acnotb, "ADT-acnotb");
 
 
   ADT big = apply(apply(d, note, &mul), acnotb, &add_);
-  DOT(big, "ADT-big");
+  dot(big, "ADT-big");
 }
 
 /* ******************************************************************************** */
@@ -137,7 +137,7 @@ ADT create(const Signature& signature) {
   static size_t count = 0;
   const DiscreteKey& key = signature.key();
   string DOTfile = (boost::format("CPT-%03d-%d") % ++count % key.first).str();
-  DOT(p, DOTfile);
+  dot(p, DOTfile);
   return p;
 }
 
@@ -167,21 +167,21 @@ TEST(ADT, joint)
   resetCounts();
   gttic_(asiaJoint);
   ADT joint = pA;
-  DOT(joint, "Asia-A");
+  dot(joint, "Asia-A");
   joint = apply(joint, pS, &mul);
-  DOT(joint, "Asia-AS");
+  dot(joint, "Asia-AS");
   joint = apply(joint, pT, &mul);
-  DOT(joint, "Asia-AST");
+  dot(joint, "Asia-AST");
   joint = apply(joint, pL, &mul);
-  DOT(joint, "Asia-ASTL");
+  dot(joint, "Asia-ASTL");
   joint = apply(joint, pB, &mul);
-  DOT(joint, "Asia-ASTLB");
+  dot(joint, "Asia-ASTLB");
   joint = apply(joint, pE, &mul);
-  DOT(joint, "Asia-ASTLBE");
+  dot(joint, "Asia-ASTLBE");
   joint = apply(joint, pX, &mul);
-  DOT(joint, "Asia-ASTLBEX");
+  dot(joint, "Asia-ASTLBEX");
   joint = apply(joint, pD, &mul);
-  DOT(joint, "Asia-ASTLBEXD");
+  dot(joint, "Asia-ASTLBEXD");
   EXPECT_LONGS_EQUAL(346, muls);
   gttoc_(asiaJoint);
   tictoc_getNode(asiaJointNode, asiaJoint);
@@ -229,21 +229,21 @@ TEST(ADT, inference)
   resetCounts();
   gttic_(asiaProd);
   ADT joint = pA;
-  DOT(joint, "Joint-Product-A");
+  dot(joint, "Joint-Product-A");
   joint = apply(joint, pS, &mul);
-  DOT(joint, "Joint-Product-AS");
+  dot(joint, "Joint-Product-AS");
   joint = apply(joint, pT, &mul);
-  DOT(joint, "Joint-Product-AST");
+  dot(joint, "Joint-Product-AST");
   joint = apply(joint, pL, &mul);
-  DOT(joint, "Joint-Product-ASTL");
+  dot(joint, "Joint-Product-ASTL");
   joint = apply(joint, pB, &mul);
-  DOT(joint, "Joint-Product-ASTLB");
+  dot(joint, "Joint-Product-ASTLB");
   joint = apply(joint, pE, &mul);
-  DOT(joint, "Joint-Product-ASTLBE");
+  dot(joint, "Joint-Product-ASTLBE");
   joint = apply(joint, pX, &mul);
-  DOT(joint, "Joint-Product-ASTLBEX");
+  dot(joint, "Joint-Product-ASTLBEX");
   joint = apply(joint, pD, &mul);
-  DOT(joint, "Joint-Product-ASTLBEXD");
+  dot(joint, "Joint-Product-ASTLBEXD");
   EXPECT_LONGS_EQUAL(370, (long)muls); // different ordering
   gttoc_(asiaProd);
   tictoc_getNode(asiaProdNode, asiaProd);
@@ -255,13 +255,13 @@ TEST(ADT, inference)
   gttic_(asiaSum);
   ADT marginal = joint;
   marginal = marginal.combine(X, &add_);
-  DOT(marginal, "Joint-Sum-ADBLEST");
+  dot(marginal, "Joint-Sum-ADBLEST");
   marginal = marginal.combine(T, &add_);
-  DOT(marginal, "Joint-Sum-ADBLES");
+  dot(marginal, "Joint-Sum-ADBLES");
   marginal = marginal.combine(S, &add_);
-  DOT(marginal, "Joint-Sum-ADBLE");
+  dot(marginal, "Joint-Sum-ADBLE");
   marginal = marginal.combine(E, &add_);
-  DOT(marginal, "Joint-Sum-ADBL");
+  dot(marginal, "Joint-Sum-ADBL");
   EXPECT_LONGS_EQUAL(161, (long)adds);
   gttoc_(asiaSum);
   tictoc_getNode(asiaSumNode, asiaSum);
@@ -300,7 +300,7 @@ TEST(ADT, factor_graph)
   fg = apply(fg, pE, &mul);
   fg = apply(fg, pX, &mul);
   fg = apply(fg, pD, &mul);
-  DOT(fg, "FactorGraph");
+  dot(fg, "FactorGraph");
   EXPECT_LONGS_EQUAL(158, (long)muls);
   gttoc_(asiaFG);
   tictoc_getNode(asiaFGNode, asiaFG);
@@ -311,15 +311,15 @@ TEST(ADT, factor_graph)
   resetCounts();
   gttic_(marg);
   fg = fg.combine(X, &add_);
-  DOT(fg, "Marginalized-6X");
+  dot(fg, "Marginalized-6X");
   fg = fg.combine(T, &add_);
-  DOT(fg, "Marginalized-5T");
+  dot(fg, "Marginalized-5T");
   fg = fg.combine(S, &add_);
-  DOT(fg, "Marginalized-4S");
+  dot(fg, "Marginalized-4S");
   fg = fg.combine(E, &add_);
-  DOT(fg, "Marginalized-3E");
+  dot(fg, "Marginalized-3E");
   fg = fg.combine(L, &add_);
-  DOT(fg, "Marginalized-2L");
+  dot(fg, "Marginalized-2L");
   EXPECT(adds = 54);
   gttoc_(marg);
   tictoc_getNode(margNode, marg);
@@ -333,9 +333,9 @@ TEST(ADT, factor_graph)
   resetCounts();
   gttic_(elimX);
   ADT fE = pX;
-  DOT(fE, "Eliminate-01-fEX");
+  dot(fE, "Eliminate-01-fEX");
   fE = fE.combine(X, &add_);
-  DOT(fE, "Eliminate-02-fE");
+  dot(fE, "Eliminate-02-fE");
   gttoc_(elimX);
   tictoc_getNode(elimXNode, elimX);
   elapsed = elimXNode->secs() + elimXNode->wall();
@@ -347,9 +347,9 @@ TEST(ADT, factor_graph)
   gttic_(elimT);
   ADT fLE = pT;
   fLE = apply(fLE, pE, &mul);
-  DOT(fLE, "Eliminate-03-fLET");
+  dot(fLE, "Eliminate-03-fLET");
   fLE = fLE.combine(T, &add_);
-  DOT(fLE, "Eliminate-04-fLE");
+  dot(fLE, "Eliminate-04-fLE");
   gttoc_(elimT);
   tictoc_getNode(elimTNode, elimT);
   elapsed = elimTNode->secs() + elimTNode->wall();
@@ -362,9 +362,9 @@ TEST(ADT, factor_graph)
   ADT fBL = pS;
   fBL = apply(fBL, pL, &mul);
   fBL = apply(fBL, pB, &mul);
-  DOT(fBL, "Eliminate-05-fBLS");
+  dot(fBL, "Eliminate-05-fBLS");
   fBL = fBL.combine(S, &add_);
-  DOT(fBL, "Eliminate-06-fBL");
+  dot(fBL, "Eliminate-06-fBL");
   gttoc_(elimS);
   tictoc_getNode(elimSNode, elimS);
   elapsed = elimSNode->secs() + elimSNode->wall();
@@ -377,9 +377,9 @@ TEST(ADT, factor_graph)
   ADT fBL2 = fE;
   fBL2 = apply(fBL2, fLE, &mul);
   fBL2 = apply(fBL2, pD, &mul);
-  DOT(fBL2, "Eliminate-07-fBLE");
+  dot(fBL2, "Eliminate-07-fBLE");
   fBL2 = fBL2.combine(E, &add_);
-  DOT(fBL2, "Eliminate-08-fBL2");
+  dot(fBL2, "Eliminate-08-fBL2");
   gttoc_(elimE);
   tictoc_getNode(elimENode, elimE);
   elapsed = elimENode->secs() + elimENode->wall();
@@ -391,9 +391,9 @@ TEST(ADT, factor_graph)
   gttic_(elimL);
   ADT fB = fBL;
   fB = apply(fB, fBL2, &mul);
-  DOT(fB, "Eliminate-09-fBL");
+  dot(fB, "Eliminate-09-fBL");
   fB = fB.combine(L, &add_);
-  DOT(fB, "Eliminate-10-fB");
+  dot(fB, "Eliminate-10-fB");
   gttoc_(elimL);
   tictoc_getNode(elimLNode, elimL);
   elapsed = elimLNode->secs() + elimLNode->wall();
@@ -414,13 +414,13 @@ TEST(ADT, equality_noparser)
   // Check straight equality
   ADT pA1 = create(A % tableA);
   ADT pA2 = create(A % tableA);
-  EXPECT(pA1 == pA2); // should be equal
+  EXPECT(pA1.equals(pA2)); // should be equal
 
   // Check equality after apply
   ADT pB = create(B % tableB);
   ADT pAB1 = apply(pA1, pB, &mul);
   ADT pAB2 = apply(pB, pA1, &mul);
-  EXPECT(pAB2 == pAB1);
+  EXPECT(pAB2.equals(pAB1));
 }
 
 /* ************************************************************************* */
@@ -431,13 +431,13 @@ TEST(ADT, equality_parser)
   // Check straight equality
   ADT pA1 = create(A % "80/20");
   ADT pA2 = create(A % "80/20");
-  EXPECT(pA1 == pA2); // should be equal
+  EXPECT(pA1.equals(pA2)); // should be equal
 
   // Check equality after apply
   ADT pB = create(B % "60/40");
   ADT pAB1 = apply(pA1, pB, &mul);
   ADT pAB2 = apply(pB, pA1, &mul);
-  EXPECT(pAB2 == pAB1);
+  EXPECT(pAB2.equals(pAB1));
 }
 
 /* ******************************************************************************** */
@@ -491,7 +491,7 @@ TEST(ADT, conversion)
 {
   DiscreteKey X(0,2), Y(1,2);
   ADT fDiscreteKey(X & Y, "0.2 0.5 0.3 0.6");
-  DOT(fDiscreteKey, "conversion-f1");
+  dot(fDiscreteKey, "conversion-f1");
 
   std::map<Key, Key> keyMap;
   keyMap[0] = 5;
@@ -500,7 +500,7 @@ TEST(ADT, conversion)
   AlgebraicDecisionTree<Key> fIndexKey(fDiscreteKey, keyMap);
   //  f1.print("f1");
   //  f2.print("f2");
-  DOT(fIndexKey, "conversion-f2");
+  dot(fIndexKey, "conversion-f2");
 
   DiscreteValues x00, x01, x02, x10, x11, x12;
   x00[5] = 0, x00[2] = 0;
@@ -519,7 +519,7 @@ TEST(ADT, elimination)
 {
   DiscreteKey A(0,2), B(1,3), C(2,2);
   ADT f1(A & B & C, "1 2  3 4  5 6    1 8  3 3  5 5");
-  DOT(f1, "elimination-f1");
+  dot(f1, "elimination-f1");
 
   {
     // sum out lower key
