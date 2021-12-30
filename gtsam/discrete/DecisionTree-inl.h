@@ -77,10 +77,10 @@ namespace gtsam {
 
     /** equality up to tolerance */
     bool equals(const Node& q, double tol,
-                const ComparatorFunc& comparator) const override {
+                const CompareFunc& compare) const override {
       const Leaf* other = dynamic_cast<const Leaf*>(&q);
       if (!other) return false;
-      return comparator(this->constant_, other->constant_, tol);
+      return compare(this->constant_, other->constant_);
     }
 
     /** print */
@@ -282,14 +282,14 @@ namespace gtsam {
 
     /** equality up to tolerance */
     bool equals(const Node& q, double tol,
-                const ComparatorFunc& comparator) const override {
+                const CompareFunc& compare) const override {
       const Choice* other = dynamic_cast<const Choice*>(&q);
       if (!other) return false;
       if (this->label_ != other->label_) return false;
       if (branches_.size() != other->branches_.size()) return false;
       // we don't care about shared pointers being equal here
       for (size_t i = 0; i < branches_.size(); i++)
-        if (!(branches_[i]->equals(*(other->branches_[i]), tol, comparator)))
+        if (!(branches_[i]->equals(*(other->branches_[i]), tol, compare)))
           return false;
       return true;
     }
@@ -649,8 +649,8 @@ namespace gtsam {
   /*********************************************************************************/
   template <typename L, typename Y>
   bool DecisionTree<L, Y>::equals(const DecisionTree& other, double tol,
-                                  const ComparatorFunc& comparator) const {
-    return root_->equals(*other.root_, tol, comparator);
+                                  const CompareFunc& compare) const {
+    return root_->equals(*other.root_, tol, compare);
   }
 
   template <typename L, typename Y>

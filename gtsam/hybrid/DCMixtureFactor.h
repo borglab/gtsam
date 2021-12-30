@@ -141,12 +141,11 @@ class DCMixtureFactor : public DCFactor {
     const DCMixtureFactor& f(static_cast<const DCMixtureFactor&>(other));
 
     // Ensure that this DCMixtureFactor and `f` have the same `factors_`.
-    auto comparator = [](const boost::shared_ptr<NonlinearFactorType>& a,
-                         const boost::shared_ptr<NonlinearFactorType>& b,
-                         double tol) {
+    auto compare = [tol](const boost::shared_ptr<NonlinearFactorType>& a,
+                         const boost::shared_ptr<NonlinearFactorType>& b) {
       return traits<NonlinearFactorType>::Equals(*a, *b, tol);
     };
-    if (!factors_.equals(f.factors_, 1e-9, comparator)) return false;
+    if (!factors_.equals(f.factors_, 1e-9, compare)) return false;
 
     // If everything above passes, and the keys_, discreteKeys_ and normalized_
     // member variables are identical, return true.
