@@ -19,21 +19,23 @@
 
 #pragma once
 
-#include <gtsam/discrete/DecisionTree.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/VectorSpace.h>
+#include <gtsam/discrete/DecisionTree.h>
 
+#include <boost/assign/std/vector.hpp>
 #include <boost/format.hpp>
+#include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <boost/tuple/tuple.hpp>
-#include <boost/assign/std/vector.hpp>
-using boost::assign::operator+=;
+#include <boost/type_traits/has_dereference.hpp>
 #include <boost/unordered_set.hpp>
-#include <boost/noncopyable.hpp>
-
-#include <list>
 #include <cmath>
 #include <fstream>
+#include <list>
 #include <sstream>
+
+using boost::assign::operator+=;
 
 namespace gtsam {
 
@@ -75,11 +77,33 @@ namespace gtsam {
       return (q.isLeaf() && q.sameLeaf(*this));
     }
 
+    /// @{
+    /// SFINAE methods for proper substitution.
+    /** equality for integral types. */
+    template <typename T = Y>
+    typename std::enable_if<std::is_integral<T>::value, bool>::type
+    equals(const T& a, const T& b, double tol) const {
+      return std::abs(double(a - b)) < tol;
+    }
+    /** equality for boost::shared_ptr types. */
+    template <typename T = Y>
+    typename std::enable_if<boost::has_dereference<T>::value, bool>::type
+    equals(const T& a, const T& b, double tol) const {
+      return traits<typename T::element_type>::Equals(*a, *b, tol);
+    }
+    /** equality for all other types. */
+    template <typename T = Y>
+    typename std::enable_if<!boost::has_dereference<T>::value && !std::is_integral<T>::value, bool>::type
+    equals(const Y& a, const Y& b, double tol) const {
+      return traits<Y>::Equals(a, b, tol);
+    }
+    /// @}
+
     /** equality up to tolerance */
     bool equals(const Node& q, double tol) const override {
       const Leaf* other = dynamic_cast<const Leaf*>(&q);
       if (!other) return false;
-      return this->constant_ == other->constant_;
+      return this->equals<Y>(this->constant_, other->constant_, tol);
     }
 
     /** print */
