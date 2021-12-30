@@ -89,7 +89,6 @@ class DCMixtureFactor : public DCFactor {
 
   double error(const Values& continuousVals,
                const DiscreteValues& discreteVals) const override {
-    /********************************************************/
     // Retrieve the factor corresponding to the assignment in discreteVals.
     auto factor = factors_(discreteVals);
     // Compute the error for the selected factor
@@ -104,8 +103,7 @@ class DCMixtureFactor : public DCFactor {
     // TODO(kevin) Need to modify this? Maybe we take discrete vals as parameter
     // and DCContinuousFactor will pass this in as needed.
     // return (factors_.size() > 0) ? factors_[0].dim() : 0;
-    // TODO (Varun) find the best way to implement this
-    return 0;
+    throw std::runtime_error("DCMixtureFactor::dim not implemented.");
   }
 
   /// Testable
