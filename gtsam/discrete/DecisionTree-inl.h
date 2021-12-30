@@ -108,7 +108,7 @@ namespace gtsam {
 
     /** print */
     void print(const std::string& s,
-               const std::function<std::string(L)> formatter) const override {
+               const std::function<std::string(L)>& formatter) const override {
       bool showZero = true;
       if (showZero || constant_) std::cout << s << " Leaf " << constant_ << std::endl;
     }
@@ -261,7 +261,8 @@ namespace gtsam {
     }
 
     /** print (as a tree) */
-    void print(const std::string& s, const std::function<std::string(L)> formatter) const override {
+    void print(const std::string& s,
+               const std::function<std::string(L)>& formatter) const override {
       std::cout << s << " Choice(";
       std::cout << formatter(label_) << ") " << std::endl;
       for (size_t i = 0; i < branches_.size(); i++)
@@ -675,7 +676,7 @@ namespace gtsam {
   template <typename L, typename Y>
   void DecisionTree<L, Y>::print(
       const std::string& s,
-      const std::function<std::string(L)> formatter) const {
+      const std::function<std::string(L)>& formatter) const {
     root_->print(s, formatter);
   }
 
