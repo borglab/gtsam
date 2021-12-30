@@ -47,14 +47,14 @@ namespace gtsam {
     }
 
     /// Default method for comparison of two objects of type Y.
-    static bool DefaultComparator(const Y& a, const Y& b, double tol) {
+    static bool DefaultCompare(const Y& a, const Y& b) {
       return a == b;
     }
 
   public:
 
     using FormatterFunc = std::function<std::string(L)>;
-    using ComparatorFunc = std::function<bool(const Y&, const Y&, double)>;
+    using CompareFunc = std::function<bool(const Y&, const Y&)>;
 
     /** Handy typedefs for unary and binary function types */
     typedef std::function<Y(const Y&)> Unary;
@@ -102,7 +102,7 @@ namespace gtsam {
       virtual bool sameLeaf(const Node& q) const = 0;
       virtual bool equals(
           const Node& other, double tol = 1e-9,
-          const ComparatorFunc& comparator = &DefaultComparator) const = 0;
+          const CompareFunc& compare = &DefaultCompare) const = 0;
       virtual const Y& operator()(const Assignment<L>& x) const = 0;
       virtual Ptr apply(const Unary& op) const = 0;
       virtual Ptr apply_f_op_g(const Node&, const Binary&) const = 0;
@@ -188,7 +188,7 @@ namespace gtsam {
 
     // Testable
     bool equals(const DecisionTree& other, double tol = 1e-9,
-                const ComparatorFunc& comparator = &DefaultComparator) const;
+                const CompareFunc& compare = &DefaultCompare) const;
 
     /// @}
     /// @name Standard Interface
