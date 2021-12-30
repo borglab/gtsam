@@ -20,7 +20,6 @@
 #pragma once
 
 #include <gtsam/base/Testable.h>
-#include <gtsam/base/VectorSpace.h>
 #include <gtsam/discrete/DecisionTree.h>
 
 #include <boost/assign/std/vector.hpp>
@@ -77,33 +76,13 @@ namespace gtsam {
       return (q.isLeaf() && q.sameLeaf(*this));
     }
 
-    /// @{
-    /// SFINAE methods for proper substitution.
-    /** equality for integral types. */
-    template <typename T = Y>
-    typename std::enable_if<std::is_integral<T>::value, bool>::type
-    equals(const T& a, const T& b, double tol) const {
-      return std::abs(double(a - b)) < tol;
-    }
-    /** equality for boost::shared_ptr types. */
-    template <typename T = Y>
-    typename std::enable_if<boost::has_dereference<T>::value, bool>::type
-    equals(const T& a, const T& b, double tol) const {
-      return traits<typename T::element_type>::Equals(*a, *b, tol);
-    }
-    /** equality for all other types. */
-    template <typename T = Y>
-    typename std::enable_if<!boost::has_dereference<T>::value && !std::is_integral<T>::value, bool>::type
-    equals(const Y& a, const Y& b, double tol) const {
-      return traits<Y>::Equals(a, b, tol);
-    }
-    /// @}
-
     /** equality up to tolerance */
-    bool equals(const Node& q, double tol) const override {
+    bool equals(const Node& q, double tol,
+                const std::function<bool(const Y&, const Y&, double)>&
+                    comparator) const override {
       const Leaf* other = dynamic_cast<const Leaf*>(&q);
       if (!other) return false;
-      return this->equals<Y>(this->constant_, other->constant_, tol);
+      return comparator(this->constant_, other->constant_, tol);
     }
 
     /** print */
@@ -304,14 +283,17 @@ namespace gtsam {
     }
 
     /** equality up to tolerance */
-    bool equals(const Node& q, double tol) const override {
-      const Choice* other = dynamic_cast<const Choice*> (&q);
+    bool equals(const Node& q, double tol,
+                const std::function<bool(const Y&, const Y&, double)>&
+                    comparator) const override {
+      const Choice* other = dynamic_cast<const Choice*>(&q);
       if (!other) return false;
       if (this->label_ != other->label_) return false;
       if (branches_.size() != other->branches_.size()) return false;
       // we don't care about shared pointers being equal here
       for (size_t i = 0; i < branches_.size(); i++)
-        if (!(branches_[i]->equals(*(other->branches_[i]), tol))) return false;
+        if (!(branches_[i]->equals(*(other->branches_[i]), tol, comparator)))
+          return false;
       return true;
     }
 
@@ -668,9 +650,11 @@ namespace gtsam {
   }
 
   /*********************************************************************************/
-  template<typename L, typename Y>
-  bool DecisionTree<L, Y>::equals(const DecisionTree& other, double tol) const {
-    return root_->equals(*other.root_, tol);
+  template <typename L, typename Y>
+  bool DecisionTree<L, Y>::equals(
+      const DecisionTree& other, double tol,
+      const std::function<bool(const Y&, const Y&, double)>& comparator) const {
+    return root_->equals(*other.root_, tol, comparator);
   }
 
   template <typename L, typename Y>
