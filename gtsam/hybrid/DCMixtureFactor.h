@@ -37,10 +37,13 @@ class DCMixtureFactor : public DCFactor {
   using Base = DCFactor;
   using shared_ptr = boost::shared_ptr<DCMixtureFactor>;
 
+  /// typedef for DecisionTree which has Keys as node labels and
+  /// NonlinearFactorType as leaf nodes.
   using FactorDecisionTree =
       DecisionTree<Key, boost::shared_ptr<NonlinearFactorType>>;
 
  private:
+  /// Decision tree of Gaussian factors indexed by discrete keys.
   FactorDecisionTree factors_;
   bool normalized_;
 

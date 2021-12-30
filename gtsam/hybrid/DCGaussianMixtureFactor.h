@@ -46,7 +46,7 @@ class DCGaussianMixtureFactor : public DCFactor {
   using FactorDecisionTree = DecisionTree<Key, GaussianFactor::shared_ptr>;
 
  private:
-  /// Decision tree of Gaussian factors indexed by a Key.
+  /// Decision tree of Gaussian factors indexed by discrete keys.
   FactorDecisionTree factors_;
 
  public:
@@ -76,8 +76,8 @@ class DCGaussianMixtureFactor : public DCFactor {
   DCGaussianMixtureFactor(
       const KeyVector& keys, const DiscreteKeys& discreteKeys,
       const std::vector<GaussianFactor::shared_ptr>& factors)
-      : Base(keys, discreteKeys),
-        factors_(FactorDecisionTree(discreteKeys, factors)) {}
+      : DCGaussianMixtureFactor(keys, discreteKeys,
+                                FactorDecisionTree(discreteKeys, factors)) {}
 
   /// Copy constructor.
   DCGaussianMixtureFactor(const DCGaussianMixtureFactor& x) = default;
