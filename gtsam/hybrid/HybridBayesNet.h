@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    DCGaussianMixtureFactor.h
+ * @file    HybridBayesNet.h
  * @brief   A set of GaussianFactors, indexed by a set of discrete keys.
  * @author  Varun Agrawal
  * @author  Fan Jiang
@@ -21,6 +21,7 @@
 #pragma once
 
 #include <gtsam/discrete/DiscreteKey.h>
+#include <gtsam/hybrid/DCConditional.h>
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/linear/GaussianConditional.h>
 
@@ -28,21 +29,11 @@
 
 namespace gtsam {
 
-/// A set of GaussianConditionals, indexed by a set of discrete variables.
-class DCGaussianConditional {
- public:
-  using shared_ptr = boost::shared_ptr<DCGaussianConditional>;
-  void print(const std::string& s = "DCGaussianConditional",
-             const KeyFormatter& formatter = gtsam::DefaultKeyFormatter) const {
-    std::cout << (s.empty() ? "" : s + " ") << std::endl;
-  }
-};
-
 /// Bayes net
-class DCGaussianBayesNet : public BayesNet<DCGaussianConditional> {
+class HybridBayesNet : public BayesNet<DCConditional> {
  public:
-  using ConditionalType = DCGaussianConditional;
-  using shared_ptr = boost::shared_ptr<DCGaussianBayesNet>;
+  using ConditionalType = DCConditional;
+  using shared_ptr = boost::shared_ptr<HybridBayesNet>;
 };
 
 }  // namespace gtsam

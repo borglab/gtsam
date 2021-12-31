@@ -18,9 +18,9 @@
  * @date    December 2021
  */
 
-#include <gtsam/hybrid/DCGaussianBayesNet.h>
 #include <gtsam/hybrid/DCGaussianMixtureFactor.h>
 #include <gtsam/hybrid/DCMixtureFactor.h>
+#include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
 #include <gtsam/inference/EliminateableFactorGraph.h>
 #include <gtsam/inference/EliminationTree-inst.h>
@@ -32,12 +32,12 @@
 
 namespace gtsam {
 
-class GTSAM_EXPORT DCGaussianMixtureEliminationTree
-    : public EliminationTree<DCGaussianBayesNet, HybridFactorGraph> {
+class GTSAM_EXPORT HybridEliminationTree
+    : public EliminationTree<HybridBayesNet, HybridFactorGraph> {
  public:
-  typedef EliminationTree<DCGaussianBayesNet, HybridFactorGraph>
-      Base;                                       ///< Base class
-  typedef DCGaussianMixtureEliminationTree This;  ///< This class
+  typedef EliminationTree<HybridBayesNet, HybridFactorGraph>
+      Base;                                    ///< Base class
+  typedef HybridEliminationTree This;          ///< This class
   typedef boost::shared_ptr<This> shared_ptr;  ///< Shared pointer to this class
 
   /**
@@ -49,9 +49,8 @@ class GTSAM_EXPORT DCGaussianMixtureEliminationTree
    * named constructor instead.
    * @return The elimination tree
    */
-  DCGaussianMixtureEliminationTree(const HybridFactorGraph& factorGraph,
-                                   const VariableIndex& structure,
-                                   const Ordering& order)
+  HybridEliminationTree(const HybridFactorGraph& factorGraph,
+                        const VariableIndex& structure, const Ordering& order)
       : Base(factorGraph, structure, order) {}
 
   /** Build the elimination tree of a factor graph.  Note that this has to
@@ -59,8 +58,8 @@ class GTSAM_EXPORT DCGaussianMixtureEliminationTree
    * this precomputed, use the other constructor instead.
    * @param factorGraph The factor graph for which to build the elimination tree
    */
-  DCGaussianMixtureEliminationTree(const HybridFactorGraph& factorGraph,
-                                   const Ordering& order)
+  HybridEliminationTree(const HybridFactorGraph& factorGraph,
+                        const Ordering& order)
       : Base(factorGraph, order) {}
 
   /** Test whether the tree is equal to another */
@@ -77,14 +76,14 @@ template <>
 struct EliminationTraits<HybridFactorGraph> {
   typedef Factor FactorType;
   typedef HybridFactorGraph FactorGraphType;
-  typedef DCGaussianConditional ConditionalType;
-  typedef DCGaussianBayesNet BayesNetType;
-  typedef DCGaussianMixtureEliminationTree EliminationTreeType;
+  typedef DCConditional ConditionalType;
+  typedef HybridBayesNet BayesNetType;
+  typedef HybridEliminationTree EliminationTreeType;
   typedef Dummy BayesTreeType;
   typedef Dummy JunctionTreeType;
 
   /// The function type that does a single elimination step on a variable.
-  static std::pair<DCGaussianConditional::shared_ptr, boost::shared_ptr<Factor>>
+  static std::pair<DCConditional::shared_ptr, boost::shared_ptr<Factor>>
   DefaultEliminate(const HybridFactorGraph& factors, const Ordering& ordering) {
     // We are getting a number of DCMixtureFactors on a set of continuous
     // variables. They might all have different discrete keys. For every
@@ -99,8 +98,8 @@ struct EliminationTraits<HybridFactorGraph> {
 
     std::cout << "DefaultEliminate" << std::endl;
 
-    // Create a DCGaussianConditional...
-    auto conditional = boost::make_shared<DCGaussianConditional>();
+    // Create a DCConditional...
+    auto conditional = boost::make_shared<DCConditional>();
 
     // Create a resulting DCGaussianMixture on the separator.
     /// auto factor = TODO ...
@@ -108,8 +107,7 @@ struct EliminationTraits<HybridFactorGraph> {
   }
 
   // TODO(dellaert): just does not make sense to return shared pointers.
-  static std::pair<DCGaussianBayesNet::shared_ptr,
-                   HybridFactorGraph::shared_ptr>
+  static std::pair<HybridBayesNet::shared_ptr, HybridFactorGraph::shared_ptr>
   eliminatePartialSequential(const HybridFactorGraph& graph,
                              const Ordering& ordering) {
     std::cout << "eliminatePartialSequential" << std::endl;
@@ -118,11 +116,11 @@ struct EliminationTraits<HybridFactorGraph> {
     VariableIndex variableIndex(graph);
     GTSAM_PRINT(variableIndex);
 
-    DCGaussianMixtureEliminationTree etree(graph, variableIndex, ordering);
+    HybridEliminationTree etree(graph, variableIndex, ordering);
     GTSAM_PRINT(etree);
     return etree.eliminate(DefaultEliminate);
 
-    // auto bayesNet = boost::make_shared<DCGaussianBayesNet>();
+    // auto bayesNet = boost::make_shared<HybridBayesNet>();
     // auto factors = boost::make_shared<HybridFactorGraph>();
     // return {bayesNet, factors};
   }
@@ -193,7 +191,7 @@ TEST_UNSAFE(DCGaussianElimination, Switching) {
   for (size_t k = 1; k <= K; k++) ordering += X(k);
   using dc_traits = EliminationTraits<HybridFactorGraph>;
   auto result = dc_traits::eliminatePartialSequential(fg, ordering);
-  GTSAM_PRINT(*result.first);   // DCGaussianBayesNet
+  GTSAM_PRINT(*result.first);   // HybridBayesNet
   GTSAM_PRINT(*result.second);  // HybridFactorGraph
 }
 

@@ -24,7 +24,7 @@
 
 namespace gtsam {
 
-class DCGaussianConditional;
+class DCConditional;
 class HybridFactorGraph : public FactorGraph<Factor> {
  public:
   using shared_ptr = boost::shared_ptr<HybridFactorGraph>;
@@ -258,8 +258,8 @@ class HybridFactorGraph : public FactorGraph<Factor> {
   /// @name Elimination machinery
   /// @{
   using FactorType = Factor;
-  using EliminationResult = std::pair<boost::shared_ptr<DCGaussianConditional>,
-                                      boost::shared_ptr<Factor> >;
+  using EliminationResult =
+      std::pair<boost::shared_ptr<DCConditional>, boost::shared_ptr<Factor> >;
   using Eliminate = std::function<EliminationResult(const HybridFactorGraph&,
                                                     const Ordering&)>;
   /// @}
