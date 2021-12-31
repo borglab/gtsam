@@ -87,7 +87,7 @@ TEST(HybridFactorGraph, Switching) {
     using MotionMixture = DCMixtureFactor<BetweenFactor<double>>;
     auto keys = {X(k), X(k + 1)};
     auto components = {still, moving};
-    fg.emplace_shared<MotionMixture>(keys, modes[k], components);
+    fg.emplace_shared<MotionMixture>(keys, DiscreteKeys{modes[k]}, components);
   }
 
   // Add "mode chain": can only be done in HybridFactorGraph

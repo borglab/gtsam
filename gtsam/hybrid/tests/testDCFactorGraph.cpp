@@ -194,7 +194,7 @@ TEST(DiscreteBayesTree, Switching) {
   // TODO: make a prior that does not depend on a discrete key.
   using PriorMixture = DCMixtureFactor<PriorFactor<double>>;
   PriorFactor<double> prior(X(1), 0, Isotropic::Sigma(1, 0.1));
-  PriorMixture priorMixture({X(1)}, modes[0], {prior, prior});
+  PriorMixture priorMixture({X(1)}, DiscreteKeys{modes[0]}, {prior, prior});
   fg.add(priorMixture);
 
   // Add "motion models".
@@ -202,7 +202,8 @@ TEST(DiscreteBayesTree, Switching) {
     BetweenFactor<double> still(X(k), X(k + 1), 0.0, Isotropic::Sigma(2, 1.0)),
         moving(X(k), X(k + 1), 1.0, Isotropic::Sigma(2, 1.0));
     using MotionMixture = DCMixtureFactor<BetweenFactor<double>>;
-    MotionMixture mixture({X(k), X(k + 1)}, modes[k], {still, moving});
+    MotionMixture mixture({X(k), X(k + 1)}, DiscreteKeys{modes[k]},
+                          {still, moving});
     fg.add(mixture);
   }
   GTSAM_PRINT(fg);
