@@ -11,9 +11,17 @@
  */
 
 #include <gtsam/hybrid/DCGaussianMixtureFactor.h>
+#include <gtsam/hybrid/HybridEliminationTree.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
+#include <gtsam/inference/EliminateableFactorGraph-inst.h>
+
+#include <boost/make_shared.hpp>
 
 namespace gtsam {
+
+// Instantiate base classes
+// template class FactorGraph<Factor>;
+template class EliminateableFactorGraph<HybridFactorGraph>;
 
 void HybridFactorGraph::push_nonlinear(
     const boost::shared_ptr<gtsam::NonlinearFactor>& nonlinearFactor) {
@@ -125,6 +133,30 @@ void HybridFactorGraph::clear() {
   nonlinearGraph_.resize(0);
   discreteGraph_.resize(0);
   dcGraph_.resize(0);
+}
+
+/// The function type that does a single elimination step on a variable.
+std::pair<DCConditional::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
+    const HybridFactorGraph& factors, const Ordering& ordering) {
+  // We are getting a number of DCMixtureFactors on a set of continuous
+  // variables. They might all have different discrete keys. For every
+  // possible combination of the discrete keys, we need a GaussianConditional.
+  // for (const auto& factor : factors) {
+  //   if (auto p = boost::dynamic_pointer_cast<const
+  //   DCGaussianMixtureFactor>(
+  //           factor)) {
+  //     GTSAM_PRINT(*p);
+  //   };
+  // }
+
+  std::cout << "HybridEliminate" << std::endl;
+
+  // Create a DCConditional...
+  auto conditional = boost::make_shared<DCConditional>();
+
+  // Create a resulting DCGaussianMixture on the separator.
+  /// auto factor = TODO ...
+  return {conditional, nullptr};
 }
 
 }  // namespace gtsam

@@ -16,6 +16,7 @@
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/hybrid/DCFactor.h>
 #include <gtsam/hybrid/DCFactorGraph.h>
+#include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -24,8 +25,36 @@
 
 namespace gtsam {
 
+// Forward declarations
 class DCConditional;
-class HybridFactorGraph : public FactorGraph<Factor> {
+class Dummy;
+class HybridFactorGraph;
+class HybridEliminationTree;
+class Ordering;
+
+/** Main elimination function for HybridFactorGraph */
+GTSAM_EXPORT std::pair<DCConditional::shared_ptr, boost::shared_ptr<Factor>>
+EliminateHybrid(const HybridFactorGraph& factors, const Ordering& keys);
+
+template <>
+struct EliminationTraits<HybridFactorGraph> {
+  typedef Factor FactorType;
+  typedef HybridFactorGraph FactorGraphType;
+  typedef DCConditional ConditionalType;
+  typedef HybridBayesNet BayesNetType;
+  typedef HybridEliminationTree EliminationTreeType;
+  typedef HybridBayesNet BayesTreeType;
+  typedef HybridEliminationTree JunctionTreeType;
+
+  /// The function type that does a single elimination step on a variable.
+  static std::pair<DCConditional::shared_ptr, boost::shared_ptr<Factor>>
+  DefaultEliminate(const HybridFactorGraph& factors, const Ordering& ordering) {
+    return EliminateHybrid(factors, ordering);
+  }
+};
+
+class HybridFactorGraph : public FactorGraph<Factor>,
+                          public EliminateableFactorGraph<HybridFactorGraph> {
  public:
   using shared_ptr = boost::shared_ptr<HybridFactorGraph>;
 
@@ -226,7 +255,8 @@ class HybridFactorGraph : public FactorGraph<Factor> {
   bool empty() const;
 
   /**
-   * @return true if all internal graphs of `this` are equal to those of `other`
+   * @return true if all internal graphs of `this` are equal to those of
+   * `other`
    */
   bool equals(const HybridFactorGraph& other, double tol = 1e-9) const;
 
@@ -259,7 +289,7 @@ class HybridFactorGraph : public FactorGraph<Factor> {
   /// @{
   using FactorType = Factor;
   using EliminationResult =
-      std::pair<boost::shared_ptr<DCConditional>, boost::shared_ptr<Factor> >;
+      std::pair<boost::shared_ptr<DCConditional>, boost::shared_ptr<Factor>>;
   using Eliminate = std::function<EliminationResult(const HybridFactorGraph&,
                                                     const Ordering&)>;
   /// @}
