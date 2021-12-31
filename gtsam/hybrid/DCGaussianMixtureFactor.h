@@ -21,6 +21,7 @@
 #pragma once
 
 #include <gtsam/discrete/DiscreteKey.h>
+#include <gtsam/hybrid/DCFactor.h>
 #include <gtsam/inference/Factor.h>
 #include <gtsam/linear/GaussianFactor.h>
 
@@ -29,8 +30,6 @@
 #include <cmath>
 #include <limits>
 #include <vector>
-
-#include "DCFactor.h"
 
 namespace gtsam {
 
@@ -41,20 +40,46 @@ namespace gtsam {
  * of measurement.
  */
 class DCGaussianMixtureFactor : public DCFactor {
- private:
-  std::vector<GaussianFactor::shared_ptr> factors_;
-
  public:
   using Base = DCFactor;
   using shared_ptr = boost::shared_ptr<DCGaussianMixtureFactor>;
+  using FactorDecisionTree = DecisionTree<Key, GaussianFactor::shared_ptr>;
 
+ private:
+  /// Decision tree of Gaussian factors indexed by discrete keys.
+  FactorDecisionTree factors_;
+
+ public:
   DCGaussianMixtureFactor() = default;
 
+  /**
+   * @brief Construct a new DCGaussianMixtureFactor object.
+   *
+   * @param keys Vector of keys for continuous factors.
+   * @param discreteKeys Vector of discrete assignments.
+   * @param factors A decision tree of Gaussian factors (as shared pointers)
+   * where each node has a Key label.
+   */
+  DCGaussianMixtureFactor(const KeyVector& keys,
+                          const DiscreteKeys& discreteKeys,
+                          const FactorDecisionTree factors)
+      : Base(keys, discreteKeys), factors_(factors) {}
+
+  /**
+   * @brief Construct a new DCGaussianMixtureFactor object using a vector of
+   * GaussianFactor shared pointers.
+   *
+   * @param keys Vector of keys for continuous factors.
+   * @param discreteKeys Vector of discrete assignments.
+   * @param factors Vector of gaussian factor shared pointers.
+   */
   DCGaussianMixtureFactor(
       const KeyVector& keys, const DiscreteKeys& discreteKeys,
       const std::vector<GaussianFactor::shared_ptr>& factors)
-      : Base(keys, discreteKeys), factors_(factors) {}
+      : DCGaussianMixtureFactor(keys, discreteKeys,
+                                FactorDecisionTree(discreteKeys, factors)) {}
 
+  /// Copy constructor.
   DCGaussianMixtureFactor(const DCGaussianMixtureFactor& x) = default;
 
   /// Discrete key selecting mixture component
@@ -105,10 +130,7 @@ class DCGaussianMixtureFactor : public DCFactor {
     }
     std::cout << "; " << formatter(discreteKeys_.front().first) << " ]";
     std::cout << "{\n";
-    for (size_t i = 0; i < factors_.size(); i++) {
-      auto t = boost::format("component %1%: ") % i;
-      factors_[i]->print(t.str());
-    }
+    factors_.print("", formatter);
     std::cout << "}";
     std::cout << "\n";
   }

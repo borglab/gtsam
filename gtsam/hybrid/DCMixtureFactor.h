@@ -12,6 +12,7 @@
 
 #pragma once
 
+#include <gtsam/hybrid/DCFactor.h>
 #include <gtsam/hybrid/DCGaussianMixtureFactor.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/Symbol.h>
@@ -21,8 +22,6 @@
 #include <cmath>
 #include <limits>
 #include <vector>
-
-#include "DCFactor.h"
 
 namespace gtsam {
 
@@ -34,34 +33,59 @@ namespace gtsam {
  */
 template <class NonlinearFactorType>
 class DCMixtureFactor : public DCFactor {
- private:
-  DiscreteKey dk_;
-  std::vector<NonlinearFactorType> factors_;
-  bool normalized_;
-
  public:
   using Base = DCFactor;
   using shared_ptr = boost::shared_ptr<DCMixtureFactor>;
 
+  /// typedef for DecisionTree which has Keys as node labels and
+  /// NonlinearFactorType as leaf nodes.
+  using FactorDecisionTree =
+      DecisionTree<Key, boost::shared_ptr<NonlinearFactorType>>;
+
+ private:
+  /// Decision tree of Gaussian factors indexed by discrete keys.
+  FactorDecisionTree factors_;
+  bool normalized_;
+
+ public:
   DCMixtureFactor() = default;
 
-  DCMixtureFactor(const KeyVector& keys, const DiscreteKey& dk,
+  DCMixtureFactor(const KeyVector& keys, const DiscreteKeys& discreteKeys,
+                  const FactorDecisionTree& factors, bool normalized = false)
+      : Base(keys, discreteKeys), factors_(factors), normalized_(normalized) {}
+
+  /**
+   * @brief Convenience constructor that generates the underlying factor
+   * decision tree for us.
+   *
+   * Here it is important that the vector of
+   * factors has the correct number of elements based on the number of discrete
+   * keys and the cardinality of the keys, so that the decision tree is
+   * constructed appropriately.
+   *
+   * @param keys Vector of keys for continuous factors.
+   * @param discreteKeys Vector of discrete keys.
+   * @param factors Vector of factors. Each factor should map to its
+   * corresponding assigned discrete key.
+   * @param normalized Flag indicating if the factor error is already
+   * normalized.
+   */
+  DCMixtureFactor(const KeyVector& keys, const DiscreteKeys& discreteKeys,
                   const std::vector<NonlinearFactorType>& factors,
                   bool normalized = false)
-      : dk_(dk), factors_(factors), normalized_(normalized) {
-    // Compiler doesn't like `keys_` in the initializer list.
-    keys_ = keys;
-
-    // Add `dk` to `dkeys` list.
-    discreteKeys_.push_back(dk);
+      : Base(keys, discreteKeys), normalized_(normalized) {
+    std::vector<boost::shared_ptr<NonlinearFactorType>> factor_pointers;
+    for (auto&& factor : factors) {
+      boost::shared_ptr<NonlinearFactorType> f_ptr =
+          boost::make_shared<NonlinearFactorType>(factor);
+      factor_pointers.push_back(f_ptr);
+    }
+    // Generate decision tree based on discreteKey to factor mapping.
+    factors_ = FactorDecisionTree(discreteKeys, factor_pointers);
   }
-
-  /// Discrete key selecting mixture component
-  const DiscreteKey& discreteKey() const { return dk_; }
 
   DCMixtureFactor& operator=(const DCMixtureFactor& rhs) {
     Base::operator=(rhs);
-    this->dk_ = rhs.dk_;
     this->factors_ = rhs.factors_;
   }
 
@@ -69,21 +93,21 @@ class DCMixtureFactor : public DCFactor {
 
   double error(const Values& continuousVals,
                const DiscreteValues& discreteVals) const override {
-    // Retrieve the assignment to our discrete key.
-    const size_t assignment = discreteVals.at(dk_.first);
+    // Retrieve the factor corresponding to the assignment in discreteVals.
+    auto factor = factors_(discreteVals);
+    // Compute the error for the selected factor
+    const double factorError = factor->error(continuousVals);
 
-    // `assignment` indexes the nonlinear factors we have stored to compute the
-    // error.
-    const double factorError = factors_[assignment].error(continuousVals);
     if (normalized_) return factorError;
-    return factorError + this->nonlinearFactorLogNormalizingConstant(
-                             this->factors_[assignment], continuousVals);
+    return factorError +
+           this->nonlinearFactorLogNormalizingConstant(*factor, continuousVals);
   }
 
   size_t dim() const override {
     // TODO(kevin) Need to modify this? Maybe we take discrete vals as parameter
     // and DCContinuousFactor will pass this in as needed.
-    return (factors_.size() > 0) ? factors_[0].dim() : 0;
+    // return (factors_.size() > 0) ? factors_[0].dim() : 0;
+    throw std::runtime_error("DCMixtureFactor::dim not implemented.");
   }
 
   /// Testable
@@ -98,12 +122,12 @@ class DCMixtureFactor : public DCFactor {
     for (Key key : keys()) {
       std::cout << " " << formatter(key);
     }
-    std::cout << "; " << formatter(discreteKey().first) << " ) {\n";
-    for (size_t i = 0; i < factors_.size(); i++) {
-      auto t = boost::format("component %1%: ") % i;
-      factors_[i].print(t.str());
+    std::cout << ";";
+    for (DiscreteKey key : discreteKeys()) {
+      std::cout << " " << formatter(key.first);
     }
-    std::cout << "}\n";
+    std::cout << " ) \n";
+    factors_.print("", formatter);
   }
 
   /// Check equality
@@ -116,15 +140,12 @@ class DCMixtureFactor : public DCFactor {
     // object from `other`
     const DCMixtureFactor& f(static_cast<const DCMixtureFactor&>(other));
 
-    // Ensure that this DCMixtureFactor and `f` have the same number of
-    // component factors in `factors_`.
-    if (factors_.size() != f.factors_.size()) return false;
-
-    // If the number of factors is the same, we compare them individually (they
-    // should be in the same order!). If any fail to match, return false.
-    for (size_t i = 0; i < factors_.size(); i++) {
-      if (!factors_[i].equals(f.factors_[i])) return false;
-    }
+    // Ensure that this DCMixtureFactor and `f` have the same `factors_`.
+    auto compare = [tol](const boost::shared_ptr<NonlinearFactorType>& a,
+                         const boost::shared_ptr<NonlinearFactorType>& b) {
+      return traits<NonlinearFactorType>::Equals(*a, *b, tol);
+    };
+    if (!factors_.equals(f.factors_, 1e-9, compare)) return false;
 
     // If everything above passes, and the keys_, discreteKeys_ and normalized_
     // member variables are identical, return true.
@@ -140,22 +161,25 @@ class DCMixtureFactor : public DCFactor {
   GaussianFactor::shared_ptr linearize(
       const Values& continuousVals,
       const DiscreteValues& discreteVals) const override {
-    // Retrieve the assignment to our discrete key.
-    const size_t assignment = discreteVals.at(dk_.first);
-
-    // `assignment` indexes the nonlinear factors we have stored to compute the
-    // error.
-    return factors_[assignment].linearize(continuousVals);
+    auto factor = factors_(discreteVals);
+    return factor->linearize(continuousVals);
   }
 
   /// Linearize all the continuous factors to get a DCGaussianMixtureFactor.
   DCFactor::shared_ptr linearize(const Values& continuousVals) const override {
-    std::vector<GaussianFactor::shared_ptr> linearized_factors;
-    for (size_t i = 0; i < factors_.size(); i++) {
-      auto linearized = factors_[i].linearize(continuousVals);
-      linearized_factors.push_back(linearized);
-    }
-    return boost::make_shared<DCGaussianMixtureFactor>(keys_, dk_, linearized_factors);
+    std::function<GaussianFactor::shared_ptr(
+        const boost::shared_ptr<NonlinearFactorType>&)>
+        linearizeDT =
+            [continuousVals](
+                const boost::shared_ptr<NonlinearFactorType>& factor) {
+              return factor->linearize(continuousVals);
+            };
+
+    DecisionTree<Key, GaussianFactor::shared_ptr> linearized_factors(
+        factors_, linearizeDT);
+
+    return boost::make_shared<DCGaussianMixtureFactor>(keys_, discreteKeys_,
+                                                       linearized_factors);
   }
 
   /**

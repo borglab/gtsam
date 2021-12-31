@@ -20,20 +20,20 @@
 #pragma once
 
 #include <gtsam/discrete/DecisionTree.h>
-#include <gtsam/base/Testable.h>
 
+#include <boost/assign/std/vector.hpp>
 #include <boost/format.hpp>
+#include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <boost/tuple/tuple.hpp>
-#include <boost/assign/std/vector.hpp>
-using boost::assign::operator+=;
+#include <boost/type_traits/has_dereference.hpp>
 #include <boost/unordered_set.hpp>
-#include <boost/noncopyable.hpp>
-
-#include <list>
 #include <cmath>
 #include <fstream>
+#include <list>
 #include <sstream>
+
+using boost::assign::operator+=;
 
 namespace gtsam {
 
@@ -76,14 +76,16 @@ namespace gtsam {
     }
 
     /** equality up to tolerance */
-    bool equals(const Node& q, double tol) const override {
-      const Leaf* other = dynamic_cast<const Leaf*> (&q);
+    bool equals(const Node& q, double tol,
+                const CompareFunc& compare) const override {
+      const Leaf* other = dynamic_cast<const Leaf*>(&q);
       if (!other) return false;
-      return std::abs(double(this->constant_ - other->constant_)) < tol;
+      return compare(this->constant_, other->constant_);
     }
 
     /** print */
-    void print(const std::string& s) const override {
+    void print(const std::string& s,
+               const FormatterFunc& formatter) const override {
       bool showZero = true;
       if (showZero || constant_) std::cout << s << " Leaf " << constant_ << std::endl;
     }
@@ -236,12 +238,12 @@ namespace gtsam {
     }
 
     /** print (as a tree) */
-    void print(const std::string& s) const override {
+    void print(const std::string& s,
+               const FormatterFunc& formatter) const override {
       std::cout << s << " Choice(";
-      //        std::cout << this << ",";
-      std::cout << label_ << ") " << std::endl;
+      std::cout << formatter(label_) << ") " << std::endl;
       for (size_t i = 0; i < branches_.size(); i++)
-        branches_[i]->print((boost::format("%s %d") % s % i).str());
+        branches_[i]->print((boost::format("%s %d") % s % i).str(), formatter);
     }
 
     /** output to graphviz (as a a graph) */
@@ -279,14 +281,16 @@ namespace gtsam {
     }
 
     /** equality up to tolerance */
-    bool equals(const Node& q, double tol) const override {
-      const Choice* other = dynamic_cast<const Choice*> (&q);
+    bool equals(const Node& q, double tol,
+                const CompareFunc& compare) const override {
+      const Choice* other = dynamic_cast<const Choice*>(&q);
       if (!other) return false;
       if (this->label_ != other->label_) return false;
       if (branches_.size() != other->branches_.size()) return false;
       // we don't care about shared pointers being equal here
       for (size_t i = 0; i < branches_.size(); i++)
-        if (!(branches_[i]->equals(*(other->branches_[i]), tol))) return false;
+        if (!(branches_[i]->equals(*(other->branches_[i]), tol, compare)))
+          return false;
       return true;
     }
 
@@ -458,6 +462,14 @@ namespace gtsam {
   }
 
   /*********************************************************************************/
+  template <typename L, typename Y>
+  template <typename X>
+  DecisionTree<L, Y>::DecisionTree(const DecisionTree<L, X>& other,
+                                   std::function<Y(const X&)> op) {
+    root_ = convert(other.root_, op);
+  }
+
+  /*********************************************************************************/
   // Called by two constructors above.
   // Takes a label and a corresponding range of decision trees, and creates a new
   // decision tree. However, the order of the labels needs to be respected, so we
@@ -604,13 +616,47 @@ namespace gtsam {
 
   /*********************************************************************************/
   template<typename L, typename Y>
-  bool DecisionTree<L, Y>::equals(const DecisionTree& other, double tol) const {
-    return root_->equals(*other.root_, tol);
+  template<typename X>
+  typename DecisionTree<L, Y>::NodePtr DecisionTree<L, Y>::convert(
+      const typename DecisionTree<L, X>::NodePtr& f,
+      std::function<Y(const X&)> op) {
+
+    typedef DecisionTree<L, X> LX;
+    typedef typename LX::Leaf LXLeaf;
+    typedef typename LX::Choice LXChoice;
+    typedef typename LX::NodePtr LXNodePtr;
+    typedef DecisionTree<L, Y> LY;
+
+    // ugliness below because apparently we can't have templated virtual functions
+    // If leaf, apply unary conversion "op" and create a unique leaf
+    const LXLeaf* leaf = dynamic_cast<const LXLeaf*> (f.get());
+    if (leaf) return NodePtr(new Leaf(op(leaf->constant())));
+
+    // Check if Choice
+    boost::shared_ptr<const LXChoice> choice = boost::dynamic_pointer_cast<const LXChoice> (f);
+    if (!choice) throw std::invalid_argument(
+        "DecisionTree::Convert: Invalid NodePtr");
+
+    // put together via Shannon expansion otherwise not sorted.
+    std::vector<LY> functions;
+    for(const LXNodePtr& branch: choice->branches()) {
+      LY converted(convert<X>(branch, op));
+      functions += converted;
+    }
+    return LY::compose(functions.begin(), functions.end(), choice->label());
   }
 
-  template<typename L, typename Y>
-  void DecisionTree<L, Y>::print(const std::string& s) const {
-    root_->print(s);
+  /*********************************************************************************/
+  template <typename L, typename Y>
+  bool DecisionTree<L, Y>::equals(const DecisionTree& other, double tol,
+                                  const CompareFunc& compare) const {
+    return root_->equals(*other.root_, tol, compare);
+  }
+
+  template <typename L, typename Y>
+  void DecisionTree<L, Y>::print(const std::string& s,
+                                 const FormatterFunc& formatter) const {
+    root_->print(s, formatter);
   }
 
   template<typename L, typename Y>
