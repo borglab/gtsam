@@ -260,9 +260,6 @@ namespace gtsam {
      */
     GaussianFactor::shared_ptr negate() const override;
 
-    /** Check if the factor is empty.  TODO: How should this be defined? */
-    bool empty() const override { return size() == 0 /*|| rows() == 0*/; }
-
     /** is noise model constrained ? */
     bool isConstrained() const {
       return model_ && model_->isConstrained();
