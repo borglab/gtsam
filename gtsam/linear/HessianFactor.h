@@ -221,9 +221,6 @@ namespace gtsam {
      */
     GaussianFactor::shared_ptr negate() const override;
 
-    /** Check if the factor is empty.  TODO: How should this be defined? */
-    bool empty() const override { return size() == 0 /*|| rows() == 0*/; }
-
     /** Return the constant term \f$ f \f$ as described above
      * @return The constant term \f$ f \f$
      */

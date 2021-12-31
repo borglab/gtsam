@@ -112,6 +112,9 @@ typedef FastSet<FactorIndex> FactorIndexSet;
    /// @name Standard Interface
    /// @{
 
+   /// Whether the factor is empty (involves zero variables).
+   bool empty() const { return keys_.empty(); }
+
    /// First key
    Key front() const { return keys_.front(); }
 
