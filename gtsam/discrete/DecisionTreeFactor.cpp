@@ -134,5 +134,52 @@ namespace gtsam {
     return boost::make_shared<DecisionTreeFactor>(dkeys, result);
   }
 
-/* ************************************************************************* */
+  /* ************************************************************************* */
+  std::vector<std::pair<DiscreteValues, double>> DecisionTreeFactor::enumerate() const {
+    // Get all possible assignments
+    std::vector<std::pair<Key, size_t>> pairs;
+    for (auto& key : keys()) {
+      pairs.emplace_back(key, cardinalities_.at(key));
+    }
+    // Reverse to make cartesianProduct output a more natural ordering.
+    std::vector<std::pair<Key, size_t>> rpairs(pairs.rbegin(), pairs.rend());
+    const auto assignments = cartesianProduct(rpairs);
+
+    // Construct unordered_map with values
+    std::vector<std::pair<DiscreteValues, double>> result;
+    for (const auto& assignment : assignments) {
+      result.emplace_back(assignment, operator()(assignment));
+    }
+    return result;
+  }
+
+  /* ************************************************************************* */
+  std::string DecisionTreeFactor::markdown(
+      const KeyFormatter& keyFormatter) const {
+    std::stringstream ss;
+
+    // Print out header and construct argument for `cartesianProduct`.
+    ss << "|";
+    for (auto& key : keys()) {
+      ss << keyFormatter(key) << "|";
+    }
+    ss << "value|\n";
+
+    // Print out separator with alignment hints.
+    ss << "|";
+    for (size_t j = 0; j < size(); j++) ss << ":-:|";
+    ss << ":-:|\n";
+
+    // Print out all rows.
+    auto rows = enumerate();
+    for (const auto& kv : rows) {
+      ss << "|";
+      auto assignment = kv.first;
+      for (auto& key : keys()) ss << assignment.at(key) << "|";
+      ss << kv.second << "|\n";
+    }
+    return ss.str();
+  }
+
+  /* ************************************************************************* */
 } // namespace gtsam

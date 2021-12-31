@@ -213,23 +213,22 @@ namespace gtsam {
     using FactorGraph::saveGraph;
 
     /// Output to graphviz format, stream version, with Values/extra options.
-    void dot(
-        std::ostream& os, const Values& values,
-        const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
-        const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+    void dot(std::ostream& os, const Values& values,
+             const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+             const GraphvizFormatting& graphvizFormatting =
+                 GraphvizFormatting()) const;
 
     /// Output to graphviz format string, with Values/extra options.
-    std::string dot(
-        const Values& values,
-        const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
-        const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+    std::string dot(const Values& values,
+                    const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                    const GraphvizFormatting& graphvizFormatting =
+                        GraphvizFormatting()) const;
 
     /// output to file with graphviz format, with Values/extra options.
-    void saveGraph(
-        const std::string& filename, const Values& values,
-        const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
-        const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
-
+    void saveGraph(const std::string& filename, const Values& values,
+                   const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                   const GraphvizFormatting& graphvizFormatting =
+                       GraphvizFormatting()) const;
     /// @}
 
    private:
@@ -267,7 +266,14 @@ namespace gtsam {
         std::ostream& os, const Values& values = Values(),
         const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
         const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
-      dot(os, values, graphvizFormatting, keyFormatter);
+      dot(os, values, keyFormatter, graphvizFormatting);
+    }
+    /** \deprecated */
+    void GTSAM_DEPRECATED
+    saveGraph(const std::string& filename, const Values& values,
+              const GraphvizFormatting& graphvizFormatting,
+              const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+      saveGraph(filename, values, keyFormatter, graphvizFormatting);
     }
 #endif
 

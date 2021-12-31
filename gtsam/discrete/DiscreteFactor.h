@@ -73,9 +73,6 @@ public:
     Base::print(s, formatter);
   }
 
-  /** Test whether the factor is empty */
-  virtual bool empty() const { return size() == 0; }
-
   /// @}
   /// @name Standard Interface
   /// @{
@@ -87,6 +84,14 @@ public:
   virtual DecisionTreeFactor operator*(const DecisionTreeFactor&) const = 0;
 
   virtual DecisionTreeFactor toDecisionTreeFactor() const = 0;
+
+  /// @}
+  /// @name Wrapper support
+  /// @{
+  
+  /// Render as markdown table.
+  virtual std::string markdown(
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const = 0;
 
   /// @}
 };

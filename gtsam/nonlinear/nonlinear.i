@@ -193,7 +193,12 @@ class NonlinearFactorGraph {
   // enabling serialization functionality
   void serialize() const;
 
-  void saveGraph(const string& s) const;
+  string dot(
+      const gtsam::Values& values,
+      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter);
+  void saveGraph(const string& s, const gtsam::Values& values,
+                 const gtsam::KeyFormatter& keyFormatter =
+                     gtsam::DefaultKeyFormatter) const;
 };
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
@@ -782,6 +787,12 @@ class ISAM2 {
 
   void printStats() const;
   gtsam::VectorValues gradientAtZero() const;
+
+  string dot(const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
+  void saveGraph(string s,
+                const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
 };
 
 #include <gtsam/nonlinear/NonlinearISAM.h>

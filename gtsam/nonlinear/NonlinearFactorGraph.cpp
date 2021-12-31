@@ -26,7 +26,6 @@
 #include <gtsam/linear/linearExceptions.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/inference/Ordering.h>
-#include <gtsam/inference/DotWriter.h>
 #include <gtsam/inference/FactorGraph-inst.h>
 #include <gtsam/config.h> // for GTSAM_USE_TBB
 
@@ -92,8 +91,8 @@ bool NonlinearFactorGraph::equals(const NonlinearFactorGraph& other, double tol)
 
 /* ************************************************************************* */
 void NonlinearFactorGraph::dot(std::ostream& os, const Values& values,
-                               const GraphvizFormatting& writer,
-                               const KeyFormatter& keyFormatter) const {
+                               const KeyFormatter& keyFormatter,
+                               const GraphvizFormatting& writer) const {
   writer.writePreamble(&os);
 
   // Find bounds (imperative)
@@ -139,21 +138,21 @@ void NonlinearFactorGraph::dot(std::ostream& os, const Values& values,
 }
 
 /* ************************************************************************* */
-std::string NonlinearFactorGraph::dot(
-    const Values& values, const GraphvizFormatting& writer,
-    const KeyFormatter& keyFormatter) const {
+std::string NonlinearFactorGraph::dot(const Values& values,
+                                      const KeyFormatter& keyFormatter,
+                                      const GraphvizFormatting& writer) const {
   std::stringstream ss;
-  dot(ss, values, writer, keyFormatter);
+  dot(ss, values, keyFormatter, writer);
   return ss.str();
 }
 
 /* ************************************************************************* */
-void NonlinearFactorGraph::saveGraph(
-    const std::string& filename, const Values& values,
-    const GraphvizFormatting& writer,
-    const KeyFormatter& keyFormatter) const {
+void NonlinearFactorGraph::saveGraph(const std::string& filename,
+                                     const Values& values,
+                                     const KeyFormatter& keyFormatter,
+                                     const GraphvizFormatting& writer) const {
   std::ofstream of(filename);
-  dot(of, values, writer, keyFormatter);
+  dot(of, values, keyFormatter, writer);
   of.close();
 }
 
