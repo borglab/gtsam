@@ -73,9 +73,6 @@ public:
     Base::print(s, formatter);
   }
 
-  /** Test whether the factor is empty */
-  virtual bool empty() const { return size() == 0; }
-
   /// @}
   /// @name Standard Interface
   /// @{
