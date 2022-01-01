@@ -112,8 +112,8 @@ class HybridFactorGraph : protected FactorGraph<Factor>,
   }
 
   // Allow use of selected FactorGraph methods:
-  using Base::reserve;
   using Base::empty;
+  using Base::reserve;
   using Base::size;
   using Base::operator[];
 
@@ -200,7 +200,22 @@ class HybridFactorGraph : protected FactorGraph<Factor>,
   template <typename ITERATOR>
   void push_back(ITERATOR firstFactor, ITERATOR lastFactor) {
     for (auto&& it = firstFactor; it != lastFactor; it++) {
-      Base::push_back(*it);
+      if (NonlinearFactor::shared_ptr nonlinearFactor =
+              boost::dynamic_pointer_cast<NonlinearFactor>(*it)) {
+        push_nonlinear(nonlinearFactor);
+      }
+      if (DiscreteFactor::shared_ptr discreteFactor =
+              boost::dynamic_pointer_cast<DiscreteFactor>(*it)) {
+        push_discrete(discreteFactor);
+      }
+      if (DCFactor::shared_ptr dcFactor =
+              boost::dynamic_pointer_cast<DCFactor>(*it)) {
+        push_dc(dcFactor);
+      }
+      if (GaussianFactor::shared_ptr gaussianFactor =
+              boost::dynamic_pointer_cast<GaussianFactor>(*it)) {
+        push_gaussian(gaussianFactor);
+      }
     }
   }
 
