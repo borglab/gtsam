@@ -20,6 +20,7 @@
 
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/hybrid/DCFactor.h>
+#include <gtsam/hybrid/DCGaussianMixtureFactor.h>
 #include <gtsam/inference/Conditional.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/Symbol.h>
@@ -39,13 +40,14 @@ namespace gtsam {
  * discreteKeys_ contains the keys (plus cardinalities) for *discrete*
  * variables.
  */
-class DCConditional : public Conditional<DCFactor, DCConditional> {
+class DCConditional
+    : public Conditional<DCGaussianMixtureFactor, DCConditional> {
  protected:
   // Set of DiscreteKeys for this factor.
   DiscreteKeys discreteKeys_;
 
  public:
-  using Base = Conditional<DCFactor, DCConditional>;
+  using Base = Conditional<DCGaussianMixtureFactor, DCConditional>;
   using shared_ptr = boost::shared_ptr<DCConditional>;
 
   DCConditional() = default;
