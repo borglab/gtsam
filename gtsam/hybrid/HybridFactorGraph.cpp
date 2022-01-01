@@ -41,23 +41,23 @@ HybridFactorGraph HybridFactorGraph::linearize(
 
   // linearize the DCFactors
   DCFactorGraph linearized_DC_factors;
-  for (DCFactor::shared_ptr factor : dcGraph_) {
-    // If factor is a DCGaussianMixtureFactor, we don't linearize.
-    if (boost::dynamic_pointer_cast<DCGaussianMixtureFactor>(factor)) {
-      linearized_DC_factors.push_back(factor);
+  for (auto&& dcFactor : dcGraph_) {
+    // If dcFactor is a DCGaussianMixtureFactor, we don't linearize.
+    if (boost::dynamic_pointer_cast<DCGaussianMixtureFactor>(dcFactor)) {
+      linearized_DC_factors.push_back(dcFactor);
     } else {
-      auto dcgf = factor->linearize(continuousValues);
-      linearized_DC_factors.push_back(dcgf);
+      auto linearizedDCFactor = dcFactor->linearize(continuousValues);
+      linearized_DC_factors.push_back(linearizedDCFactor);
     }
   }
 
   // Add the original factors from the gaussian factor graph
-  for (auto&& factor : this->gaussianGraph()) {
-    gaussianFactorGraph->push_back(factor);
+  for (auto&& gaussianFactor : gaussianGraph()) {
+    gaussianFactorGraph->push_back(gaussianFactor);
   }
 
   // Construct new linearized HybridFactorGraph
-  return HybridFactorGraph({}, this->discreteGraph_, linearized_DC_factors,
+  return HybridFactorGraph({}, discreteGraph_, linearized_DC_factors,
                            *gaussianFactorGraph);
 }
 
@@ -82,17 +82,41 @@ std::pair<DCConditional::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
     const HybridFactorGraph& factors, const Ordering& ordering) {
   std::cout << "HybridEliminate" << std::endl;
   std::cout << "factors.size():" << factors.size() << std::endl;
-  GTSAM_PRINT(factors);
 
-  // Create a DCConditional...
-  auto conditional = boost::make_shared<DCConditional>();
+  if (factors.nrNonlinearFactors()) {
+    throw std::runtime_error("EliminateHybrid cannot handle NonlinearFactors.");
+  }
+
+  if (factors.nrDiscreteFactors()) {
+    throw std::runtime_error("EliminateHybrid cannot handle DiscreteFactors.");
+  }
 
   // TODO: take all factors, which *must* be all DCGaussianMixtureFactors or
   // GaussianFactors, "add" them (which might involve decision-trees of
   // different structure, and creating a dummy decision tree for Gaussians).
 
-  // If there are no DC factors, this is appropriate:
+  for (auto&& dcFactor : factors.dcGraph()) {
+    if (auto mixtureFactor =
+            boost::dynamic_pointer_cast<DCGaussianMixtureFactor>(dcFactor)) {
+      GTSAM_PRINT(*mixtureFactor);
+    } else {
+      throw std::runtime_error(
+          "EliminateHybrid can only handleDCGaussianMixtureFactors.");
+    }
+  }
+
+  // Add the original factors from the gaussian factor graph
+  for (auto&& gaussianFactor : factors.gaussianGraph()) {
+    GTSAM_PRINT(*gaussianFactor);
+  }
+
+  // If there are no DC factors, this would be appropriate:
   auto result = EliminatePreferCholesky(factors.gaussianGraph(), ordering);
+  boost::shared_ptr<GaussianConditional> gc = result.first;
+  boost::shared_ptr<GaussianFactor> gf = result.second;
+
+  // Create a DCConditional...
+  auto conditional = boost::make_shared<DCConditional>();
 
   // Create a resulting DCGaussianMixture on the separator.
   /// auto factor = TODO ...

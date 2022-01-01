@@ -200,21 +200,17 @@ class HybridFactorGraph : protected FactorGraph<Factor>,
   template <typename ITERATOR>
   void push_back(ITERATOR firstFactor, ITERATOR lastFactor) {
     for (auto&& it = firstFactor; it != lastFactor; it++) {
-      if (NonlinearFactor::shared_ptr nonlinearFactor =
-              boost::dynamic_pointer_cast<NonlinearFactor>(*it)) {
-        push_nonlinear(nonlinearFactor);
+      if (auto p = boost::dynamic_pointer_cast<NonlinearFactor>(*it)) {
+        push_nonlinear(p);
       }
-      if (DiscreteFactor::shared_ptr discreteFactor =
-              boost::dynamic_pointer_cast<DiscreteFactor>(*it)) {
-        push_discrete(discreteFactor);
+      if (auto p = boost::dynamic_pointer_cast<DiscreteFactor>(*it)) {
+        push_discrete(p);
       }
-      if (DCFactor::shared_ptr dcFactor =
-              boost::dynamic_pointer_cast<DCFactor>(*it)) {
-        push_dc(dcFactor);
+      if (auto p = boost::dynamic_pointer_cast<DCFactor>(*it)) {
+        push_dc(p);
       }
-      if (GaussianFactor::shared_ptr gaussianFactor =
-              boost::dynamic_pointer_cast<GaussianFactor>(*it)) {
-        push_gaussian(gaussianFactor);
+      if (auto p = boost::dynamic_pointer_cast<GaussianFactor>(*it)) {
+        push_gaussian(p);
       }
     }
   }
@@ -298,16 +294,16 @@ class HybridFactorGraph : protected FactorGraph<Factor>,
   bool equals(const HybridFactorGraph& other, double tol = 1e-9) const;
 
   /// The total number of factors in the nonlinear factor graph.
-  size_t size_nonlinear() const { return nonlinearGraph_.size(); }
+  size_t nrNonlinearFactors() const { return nonlinearGraph_.size(); }
 
   /// The total number of factors in the discrete factor graph.
-  size_t size_discrete() const { return discreteGraph_.size(); }
+  size_t nrDiscreteFactors() const { return discreteGraph_.size(); }
 
   /// The total number of factors in the DC factor graph.
-  size_t size_dc() const { return dcGraph_.size(); }
+  size_t nrDcFactors() const { return dcGraph_.size(); }
 
   /// The total number of factors in the Gaussian factor graph.
-  size_t size_gaussian() const { return gaussianGraph_.size(); }
+  size_t nrDaussianFactors() const { return gaussianGraph_.size(); }
 
   /**
    * Clears all internal factor graphs
