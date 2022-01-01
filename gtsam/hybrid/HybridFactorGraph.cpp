@@ -25,7 +25,7 @@ template class EliminateableFactorGraph<HybridFactorGraph>;
 
 void HybridFactorGraph::print(const std::string& str,
                               const gtsam::KeyFormatter& keyFormatter) const {
-  std::string prefix = str.empty() ? str : str + ": ";
+  std::string prefix = str.empty() ? str : str + ".";
   std::cout << prefix << "size: " << size() << std::endl;
   nonlinearGraph_.print(prefix + "NonlinearFactorGraph", keyFormatter);
   discreteGraph_.print(prefix + "DiscreteFactorGraph", keyFormatter);
@@ -57,7 +57,7 @@ const GaussianFactorGraph& HybridFactorGraph::gaussianGraph() const {
 HybridFactorGraph HybridFactorGraph::linearize(
     const Values& continuousValues) const {
   // linearize the continuous factors
-  auto gaussian_factor_graph = nonlinearGraph_.linearize(continuousValues);
+  auto gaussianFactorGraph = nonlinearGraph_.linearize(continuousValues);
 
   // linearize the DCFactors
   DCFactorGraph linearized_DC_factors;
@@ -75,14 +75,12 @@ HybridFactorGraph HybridFactorGraph::linearize(
 
   // Add the original factors from the gaussian factor graph
   for (auto&& factor : this->gaussianGraph()) {
-    gaussian_factor_graph->push_back(factor);
+    gaussianFactorGraph->push_back(factor);
   }
 
   // Construct new linearized HybridFactorGraph
-  HybridFactorGraph linearizedGraph(this->nonlinearGraph_, this->discreteGraph_,
-                                    linearized_DC_factors,
-                                    *gaussian_factor_graph);
-  return linearizedGraph;
+  return HybridFactorGraph(this->nonlinearGraph_, this->discreteGraph_,
+                           linearized_DC_factors, *gaussianFactorGraph);
 }
 
 const DCFactorGraph& HybridFactorGraph::dcGraph() const { return dcGraph_; }
@@ -133,6 +131,7 @@ std::pair<DCConditional::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
   // }
 
   std::cout << "HybridEliminate" << std::endl;
+  std::cout << "factors.size():" << factors.size() << std::endl;
   GTSAM_PRINT(factors);
 
   // Create a DCConditional...

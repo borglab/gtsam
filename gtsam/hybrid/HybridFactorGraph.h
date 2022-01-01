@@ -57,6 +57,7 @@ class HybridFactorGraph : public FactorGraph<Factor>,
                           public EliminateableFactorGraph<HybridFactorGraph> {
  public:
   using shared_ptr = boost::shared_ptr<HybridFactorGraph>;
+  using Base = FactorGraph<Factor>;
 
  protected:
   // Separate internal factor graphs for different types of factors
@@ -64,26 +65,6 @@ class HybridFactorGraph : public FactorGraph<Factor>,
   DiscreteFactorGraph discreteGraph_;
   DCFactorGraph dcGraph_;
   GaussianFactorGraph gaussianGraph_;
-
- public:
-  /// Default constructor
-  HybridFactorGraph() = default;
-
-  /**
-   * @brief Construct a new Hybrid Factor Graph object.
-   *
-   * @param nonlinearGraph A factor graph with continuous factors.
-   * @param discreteGraph A factor graph with only discrete factors.
-   * @param dcGraph A DCFactorGraph containing DCFactors.
-   */
-  HybridFactorGraph(
-      const NonlinearFactorGraph& nonlinearGraph,
-      const DiscreteFactorGraph& discreteGraph, const DCFactorGraph& dcGraph,
-      const GaussianFactorGraph& gaussianGraph = GaussianFactorGraph())
-      : nonlinearGraph_(nonlinearGraph),
-        discreteGraph_(discreteGraph),
-        dcGraph_(dcGraph),
-        gaussianGraph_(gaussianGraph) {}
 
   /// Check if FACTOR type is derived from NonlinearFactor.
   template <typename FACTOR>
@@ -105,6 +86,31 @@ class HybridFactorGraph : public FactorGraph<Factor>,
   using IsGaussian = typename std::enable_if<
       std::is_base_of<GaussianFactor, FACTOR>::value>::type;
 
+ public:
+  /// Default constructor
+  HybridFactorGraph() = default;
+
+  /**
+   * @brief Construct a new Hybrid Factor Graph object.
+   *
+   * @param nonlinearGraph A factor graph with continuous factors.
+   * @param discreteGraph A factor graph with only discrete factors.
+   * @param dcGraph A DCFactorGraph containing DCFactors.
+   */
+  HybridFactorGraph(
+      const NonlinearFactorGraph& nonlinearGraph,
+      const DiscreteFactorGraph& discreteGraph, const DCFactorGraph& dcGraph,
+      const GaussianFactorGraph& gaussianGraph = GaussianFactorGraph())
+      : nonlinearGraph_(nonlinearGraph),
+        discreteGraph_(discreteGraph),
+        dcGraph_(dcGraph),
+        gaussianGraph_(gaussianGraph) {
+    Base::push_back(nonlinearGraph);
+    Base::push_back(discreteGraph);
+    Base::push_back(dcGraph);
+    Base::push_back(gaussianGraph);
+  }
+
   /**
    * Add a nonlinear factor *pointer* to the internal nonlinear factor graph
    * @param nonlinearFactor - boost::shared_ptr to the factor to add
@@ -113,7 +119,7 @@ class HybridFactorGraph : public FactorGraph<Factor>,
   IsNonlinear<FACTOR> push_nonlinear(
       const boost::shared_ptr<FACTOR>& nonlinearFactor) {
     nonlinearGraph_.push_back(nonlinearFactor);
-    push_back(nonlinearFactor);
+    Base::push_back(nonlinearFactor);
   }
 
   /**
@@ -124,7 +130,7 @@ class HybridFactorGraph : public FactorGraph<Factor>,
   IsDiscrete<FACTOR> push_discrete(
       const boost::shared_ptr<FACTOR>& discreteFactor) {
     discreteGraph_.push_back(discreteFactor);
-    push_back(discreteFactor);
+    Base::push_back(discreteFactor);
   }
 
   /**
@@ -134,7 +140,7 @@ class HybridFactorGraph : public FactorGraph<Factor>,
   template <typename FACTOR>
   IsDC<FACTOR> push_dc(const boost::shared_ptr<FACTOR>& dcFactor) {
     dcGraph_.push_back(dcFactor);
-    push_back(dcFactor);
+    Base::push_back(dcFactor);
   }
 
   /**
@@ -145,12 +151,16 @@ class HybridFactorGraph : public FactorGraph<Factor>,
   IsGaussian<FACTOR> push_gaussian(
       const boost::shared_ptr<FACTOR>& gaussianFactor) {
     gaussianGraph_.push_back(gaussianFactor);
-    push_back(gaussianFactor);
+    Base::push_back(gaussianFactor);
   }
+
+  /// delete emplace_shared.
+  template <class FACTOR, class... Args>
+  void emplace_shared(Args&&... args) = delete;
 
   /// Construct a factor and add (shared pointer to it) to factor graph.
   template <class FACTOR, class... Args>
-  IsNonlinear<FACTOR> emplace_shared(Args&&... args) {
+  IsNonlinear<FACTOR> emplace_nonlinear(Args&&... args) {
     auto factor = boost::allocate_shared<FACTOR>(
         Eigen::aligned_allocator<FACTOR>(), std::forward<Args>(args)...);
     push_nonlinear(factor);
@@ -158,7 +168,7 @@ class HybridFactorGraph : public FactorGraph<Factor>,
 
   /// Construct a factor and add (shared pointer to it) to factor graph.
   template <class FACTOR, class... Args>
-  IsDiscrete<FACTOR> emplace_shared(Args&&... args) {
+  IsDiscrete<FACTOR> emplace_discrete(Args&&... args) {
     auto factor = boost::allocate_shared<FACTOR>(
         Eigen::aligned_allocator<FACTOR>(), std::forward<Args>(args)...);
     push_discrete(factor);
@@ -166,7 +176,7 @@ class HybridFactorGraph : public FactorGraph<Factor>,
 
   /// Construct a factor and add (shared pointer to it) to factor graph.
   template <class FACTOR, class... Args>
-  IsDC<FACTOR> emplace_shared(Args&&... args) {
+  IsDC<FACTOR> emplace_dc(Args&&... args) {
     auto factor = boost::allocate_shared<FACTOR>(
         Eigen::aligned_allocator<FACTOR>(), std::forward<Args>(args)...);
     push_dc(factor);
@@ -174,7 +184,7 @@ class HybridFactorGraph : public FactorGraph<Factor>,
 
   /// Construct a factor and add (shared pointer to it) to factor graph.
   template <class FACTOR, class... Args>
-  IsGaussian<FACTOR> emplace_shared(Args&&... args) {
+  IsGaussian<FACTOR> emplace_gaussian(Args&&... args) {
     auto factor = boost::allocate_shared<FACTOR>(
         Eigen::aligned_allocator<FACTOR>(), std::forward<Args>(args)...);
     push_gaussian(factor);
@@ -182,32 +192,32 @@ class HybridFactorGraph : public FactorGraph<Factor>,
 
   // DEPRECATED below:.
 
-  /**
-   * Add a nonlinear factor to the internal nonlinear factor graph
-   * @param nonlinearFactor - the factor to add
-   */
-  template <typename FACTOR>
-  IsNonlinear<FACTOR> push_nonlinear(const FACTOR& nonlinearFactor) {
-    emplace_shared<FACTOR>(nonlinearFactor);
-  }
+  // /**
+  //  * Add a nonlinear factor to the internal nonlinear factor graph
+  //  * @param nonlinearFactor - the factor to add
+  //  */
+  // template <typename FACTOR>
+  // IsNonlinear<FACTOR> push_nonlinear(const FACTOR& nonlinearFactor) {
+  //   emplace_shared<FACTOR>(nonlinearFactor);
+  // }
 
-  /**
-   * Add a discrete factor to the internal discrete graph
-   * @param discreteFactor - the factor to add
-   */
-  template <typename FACTOR>
-  IsDiscrete<FACTOR> push_discrete(const FACTOR& discreteFactor) {
-    emplace_shared<FACTOR>(discreteFactor);
-  }
+  // /**
+  //  * Add a discrete factor to the internal discrete graph
+  //  * @param discreteFactor - the factor to add
+  //  */
+  // template <typename FACTOR>
+  // IsDiscrete<FACTOR> push_discrete(const FACTOR& discreteFactor) {
+  //   emplace_shared<FACTOR>(discreteFactor);
+  // }
 
-  /**
-   * Add a discrete-continuous (DC) factor to the internal DC graph
-   * @param dcFactor - the factor to add
-   */
-  template <typename FACTOR>
-  IsDC<FACTOR> push_dc(const FACTOR& dcFactor) {
-    emplace_shared<FACTOR>(dcFactor);
-  }
+  // /**
+  //  * Add a discrete-continuous (DC) factor to the internal DC graph
+  //  * @param dcFactor - the factor to add
+  //  */
+  // template <typename FACTOR>
+  // IsDC<FACTOR> push_dc(const FACTOR& dcFactor) {
+  //   emplace_shared<FACTOR>(dcFactor);
+  // }
 
   /**
    * Simply prints the factor graph.
