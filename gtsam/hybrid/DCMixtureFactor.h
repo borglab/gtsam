@@ -36,11 +36,11 @@ class DCMixtureFactor : public DCFactor {
  public:
   using Base = DCFactor;
   using shared_ptr = boost::shared_ptr<DCMixtureFactor>;
+  using sharedFactor = boost::shared_ptr<NonlinearFactorType>;
 
   /// typedef for DecisionTree which has Keys as node labels and
   /// NonlinearFactorType as leaf nodes.
-  using FactorDecisionTree =
-      DecisionTree<Key, boost::shared_ptr<NonlinearFactorType>>;
+  using FactorDecisionTree = DecisionTree<Key, sharedFactor>;
 
  private:
   /// Decision tree of Gaussian factors indexed by discrete keys.
@@ -50,6 +50,15 @@ class DCMixtureFactor : public DCFactor {
  public:
   DCMixtureFactor() = default;
 
+  /**
+   * @brief Construct from Decision tree.
+   *
+   * @param keys Vector of keys for continuous factors.
+   * @param discreteKeys Vector of discrete keys.
+   * @param factors Decision tree with of shared factors.
+   * @param normalized Flag indicating if the factor error is already
+   * normalized.
+   */
   DCMixtureFactor(const KeyVector& keys, const DiscreteKeys& discreteKeys,
                   const FactorDecisionTree& factors, bool normalized = false)
       : Base(keys, discreteKeys), factors_(factors), normalized_(normalized) {}
@@ -58,35 +67,36 @@ class DCMixtureFactor : public DCFactor {
    * @brief Convenience constructor that generates the underlying factor
    * decision tree for us.
    *
-   * Here it is important that the vector of
-   * factors has the correct number of elements based on the number of discrete
-   * keys and the cardinality of the keys, so that the decision tree is
-   * constructed appropriately.
+   * Here it is important that the vector of factors has the correct number of
+   * elements based on the number of discrete keys and the cardinality of the
+   * keys, so that the decision tree is constructed appropriately.
    *
    * @param keys Vector of keys for continuous factors.
    * @param discreteKeys Vector of discrete keys.
-   * @param factors Vector of factors. Each factor should map to its
-   * corresponding assigned discrete key.
+   * @param factors Vector of shared pointers to factors.
    * @param normalized Flag indicating if the factor error is already
    * normalized.
+   */
+  DCMixtureFactor(const KeyVector& keys, const DiscreteKeys& discreteKeys,
+                  const std::vector<sharedFactor>& factors,
+                  bool normalized = false)
+      : DCMixtureFactor(keys, discreteKeys,
+                        FactorDecisionTree(discreteKeys, factors)) {}
+
+  /**
+   * @brief DEPRECATED constructor with non-shared pointers.
    */
   DCMixtureFactor(const KeyVector& keys, const DiscreteKeys& discreteKeys,
                   const std::vector<NonlinearFactorType>& factors,
                   bool normalized = false)
       : Base(keys, discreteKeys), normalized_(normalized) {
-    std::vector<boost::shared_ptr<NonlinearFactorType>> factor_pointers;
+    std::vector<sharedFactor> factor_pointers;
     for (auto&& factor : factors) {
-      boost::shared_ptr<NonlinearFactorType> f_ptr =
-          boost::make_shared<NonlinearFactorType>(factor);
+      sharedFactor f_ptr = boost::make_shared<NonlinearFactorType>(factor);
       factor_pointers.push_back(f_ptr);
     }
     // Generate decision tree based on discreteKey to factor mapping.
     factors_ = FactorDecisionTree(discreteKeys, factor_pointers);
-  }
-
-  DCMixtureFactor& operator=(const DCMixtureFactor& rhs) {
-    Base::operator=(rhs);
-    this->factors_ = rhs.factors_;
   }
 
   ~DCMixtureFactor() = default;

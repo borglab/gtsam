@@ -35,9 +35,11 @@ using noiseModel::Isotropic;
 using symbol_shorthand::M;
 using symbol_shorthand::X;
 
+using MotionModel = BetweenFactor<double>;
+
 /* ****************************************************************************
- * Test that any linearized gaussian factors are appended to the existing
- * gaussian factor graph in the hybrid factor graph.
+ * Test that any linearizedFactorGraph gaussian factors are appended to the
+ * existing gaussian factor graph in the hybrid factor graph.
  */
 TEST(HybridFactorGraph, GaussianFactorGraph) {
   NonlinearFactorGraph cfg;
@@ -50,77 +52,134 @@ TEST(HybridFactorGraph, GaussianFactorGraph) {
   gfg.add(X(0), I_1x1, Vector1(5));
 
   // Initialize the hybrid factor graph
-  HybridFactorGraph fg(cfg, DiscreteFactorGraph(), DCFactorGraph(), gfg);
+  HybridFactorGraph nonlinearFactorGraph(cfg, DiscreteFactorGraph(),
+                                         DCFactorGraph(), gfg);
 
   // Linearization point
-  Values values;
-  values.insert<double>(X(0), 0);
+  Values linearizationPoint;
+  linearizationPoint.insert<double>(X(0), 0);
 
-  HybridFactorGraph dcmfg = fg.linearize(values);
+  HybridFactorGraph dcmfg = nonlinearFactorGraph.linearize(linearizationPoint);
 
   EXPECT(dcmfg.gaussianGraph().size() == 2);
 }
 
-/* ****************************************************************************
- * Test elimination on a switching-like hybrid factor graph.
+/**
+ * Test fixture with switching network.
  */
-TEST(HybridFactorGraph, Switching) {
-  // Number of time steps.
-  const size_t K = 3;
-
-  // Create DiscreteKeys for binary K modes, modes[0] will not be used.
+using MotionMixture = DCMixtureFactor<MotionModel>;
+struct Switching {
+  size_t K;
   DiscreteKeys modes;
-  for (size_t k = 0; k <= K; k++) {
-    modes.emplace_back(M(k), 2);
+  HybridFactorGraph nonlinearFactorGraph;
+  HybridFactorGraph linearizedFactorGraph;
+  Values linearizationPoint;
+
+  /// Create with given number of time steps.
+  Switching(size_t K) : K(K) {
+    // Create DiscreteKeys for binary K modes, modes[0] will not be used.
+    for (size_t k = 0; k <= K; k++) {
+      modes.emplace_back(M(k), 2);
+    }
+
+    // Create hybrid factor graph.
+    // Add a prior on X(1).
+    nonlinearFactorGraph.emplace_shared<PriorFactor<double>>(
+        X(1), 0, Isotropic::Sigma(1, 0.1));
+
+    // Add "motion models".
+    for (size_t k = 1; k < K; k++) {
+      using MotionMixture = DCMixtureFactor<MotionModel>;
+      auto keys = {X(k), X(k + 1)};
+      auto components = motionModels(k);
+      nonlinearFactorGraph.emplace_shared<MotionMixture>(
+          keys, DiscreteKeys{modes[k]}, components);
+    }
+
+    // Add "mode chain"
+    addModeChain(&nonlinearFactorGraph);
+
+    // Create the linearization point.
+    for (size_t k = 1; k <= K; k++) {
+      linearizationPoint.insert<double>(X(k), static_cast<double>(k));
+    }
+
+    // Create the linearizedFactorGraph hybrid factor graph.
+
+    // Add a prior on X(1).
+    PriorFactor<double> prior(X(1), 0, Isotropic::Sigma(1, 0.1));
+    auto gaussian = prior.linearize(linearizationPoint);
+    linearizedFactorGraph.push_gaussian(gaussian);
+
+    // Add "motion models".
+    for (size_t k = 1; k < K; k++) {
+      MotionModel still(X(k), X(k + 1), 0.0, Isotropic::Sigma(1, 1.0)),
+          moving(X(k), X(k + 1), 1.0, Isotropic::Sigma(1, 1.0));
+      auto keys = {X(k), X(k + 1)};
+      auto components = {still.linearize(linearizationPoint),
+                         moving.linearize(linearizationPoint)};
+      linearizedFactorGraph.emplace_shared<DCGaussianMixtureFactor>(
+          keys, DiscreteKeys{modes[k]}, components);
+    }
+
+    // Add "mode chain"
+    addModeChain(&linearizedFactorGraph);
   }
 
-  // Create hybrid factor graph.
-  HybridFactorGraph fg;
-
-  // Add a prior on X(1).
-  fg.emplace_shared<PriorFactor<double>>(X(1), 0, Isotropic::Sigma(1, 0.1));
-
-  // Add "motion models".
-  for (size_t k = 1; k < K; k++) {
-    BetweenFactor<double> still(X(k), X(k + 1), 0.0, Isotropic::Sigma(1, 1.0)),
-        moving(X(k), X(k + 1), 1.0, Isotropic::Sigma(1, 1.0));
-    using MotionMixture = DCMixtureFactor<BetweenFactor<double>>;
-    auto keys = {X(k), X(k + 1)};
-    auto components = {still, moving};
-    fg.emplace_shared<MotionMixture>(keys, DiscreteKeys{modes[k]}, components);
+  std::vector<MotionModel::shared_ptr> motionModels(size_t k) {
+    auto still = boost::make_shared<MotionModel>(X(k), X(k + 1), 0.0,
+                                                 Isotropic::Sigma(1, 1.0)),
+         moving = boost::make_shared<MotionModel>(X(k), X(k + 1), 1.0,
+                                                  Isotropic::Sigma(1, 1.0));
+    return {still, moving};
   }
 
   // Add "mode chain": can only be done in HybridFactorGraph
-  fg.push_discrete(DiscreteConditional(modes[1], {}, "1/1"));
-  for (size_t k = 1; k < K; k++) {
-    auto parents = {modes[k]};
-    fg.emplace_shared<DiscreteConditional>(modes[k + 1], parents, "1/2 3/2");
+  void addModeChain(HybridFactorGraph* fg) {
+    fg->push_discrete(DiscreteConditional(modes[1], {}, "1/1"));
+    for (size_t k = 1; k < K; k++) {
+      auto parents = {modes[k]};
+      fg->emplace_shared<DiscreteConditional>(modes[k + 1], parents, "1/2 3/2");
+    }
   }
+};
 
-  GTSAM_PRINT(fg);
-
-  Values values;
-  // Add a bunch of values for the linearization point.
-  for (size_t k = 1; k <= K; k++) {
-    values.insert<double>(X(k), 0.0);
-  }
+/* ****************************************************************************
+ * Test linearization on a switching-like hybrid factor graph.
+ */
+TEST(HybridFactorGraph, Linearization) {
+  Switching self(3);
 
   // TODO: create 4 linearization points.
 
   // There original hybrid factor graph should not have any Gaussian factors.
   // This ensures there are no unintentional factors being created.
-  EXPECT(fg.gaussianGraph().size() == 0);
+  EXPECT(self.nonlinearFactorGraph.gaussianGraph().size() == 0);
 
   // Linearize here:
-  HybridFactorGraph dcmfg = fg.linearize(values);
-  GTSAM_PRINT(dcmfg);
+  HybridFactorGraph actualLinearized =
+      self.nonlinearFactorGraph.linearize(self.linearizationPoint);
 
-  // There should only be one linearized continuous factor corresponding to the
-  // PriorFactor on X(1).
-  EXPECT(dcmfg.gaussianGraph().size() == 1);
-  // There should be two linearized DCGaussianMixtureFactors for each
+  // There should only be one linearizedFactorGraph continuous factor
+  // corresponding to the PriorFactor on X(1).
+  EXPECT(actualLinearized.gaussianGraph().size() == 1);
+  // There should be two linearizedFactorGraph DCGaussianMixtureFactors for each
   // DCMixtureFactor.
-  EXPECT(dcmfg.dcGraph().size() == 2);
+  EXPECT(actualLinearized.dcGraph().size() == 2);
+}
+
+/* ****************************************************************************/
+// Test elimination
+TEST(DCGaussianElimination, Switching) {
+  Switching self(3);
+  GTSAM_PRINT(self.linearizedFactorGraph);
+
+  // Eliminate partially.
+  Ordering ordering;
+  for (size_t k = 1; k <= self.K; k++) ordering += X(k);
+  auto result = self.linearizedFactorGraph.eliminatePartialSequential(ordering);
+  GTSAM_PRINT(*result.first);   // HybridBayesNet
+  GTSAM_PRINT(*result.second);  // HybridFactorGraph
 }
 
 /* ************************************************************************* */
