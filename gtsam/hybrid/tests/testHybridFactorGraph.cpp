@@ -66,20 +66,6 @@ TEST(HybridFactorGraph, GaussianFactorGraph) {
 }
 
 /* ****************************************************************************/
-// Test elimination function
-TEST_DISABLED(DCGaussianElimination, EliminateHybrid) {
-  Ordering ordering;
-  for (size_t k = 1; k <= 3; k++) ordering += X(k);
-  HybridFactorGraph factors;
-  HybridFactorGraph::EliminationResult result =
-      EliminateHybrid(factors, ordering);
-  CHECK(result.first);
-  CHECK(result.second);
-  EXPECT_LONGS_EQUAL(2, result.first->nrFrontals());
-  EXPECT_LONGS_EQUAL(2, result.second->size());
-}
-
-/* ****************************************************************************/
 // Test fixture with switching network.
 using MotionMixture = DCMixtureFactor<MotionModel>;
 struct Switching {
@@ -216,8 +202,25 @@ TEST(HybridFactorGraph, EliminationTree) {
 }
 
 /* ****************************************************************************/
+// Test elimination function
+TEST(DCGaussianElimination, EliminateHybrid) {
+  Switching self(3);
+
+  Ordering ordering;
+  for (size_t k = 1; k <= 3; k++) ordering += X(k);
+  HybridFactorGraph factors;
+  factors.push_gaussian(self.linearizedFactorGraph.gaussianGraph()[0]);
+  factors.push_dc(self.linearizedFactorGraph.dcGraph()[1]);
+  auto result = EliminateHybrid(factors, ordering);
+  CHECK(result.first);
+  CHECK(result.second);
+  EXPECT_LONGS_EQUAL(2, result.first->nrFrontals());
+  EXPECT_LONGS_EQUAL(2, result.second->size());
+}
+
+/* ****************************************************************************/
 // Test elimination
-TEST(HybridFactorGraph, Elimination) {
+TEST_DISABLED(HybridFactorGraph, Elimination) {
   Switching self(3);
 
   // Create ordering.
