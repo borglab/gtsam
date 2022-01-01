@@ -227,31 +227,32 @@ class HybridFactorGraph : public FactorGraph<Factor>,
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
 
   /**
-   * Mimics the GTSAM::FactorGraph API: retrieve the keys from each internal
-   * factor graph. Internally uses FastSet::merge(const FastSet &other) to
-   * combine sets from the different member factor graphs.
-   *
-   * @return the (aggregate) set of keys in all of the internal factor graphs.
-   */
-  FastSet<Key> keys() const;
-
-  /**
    * Utility for retrieving the internal nonlinear factor graph
    * @return the member variable nonlinearGraph_
    */
-  const NonlinearFactorGraph& nonlinearGraph() const;
+  const gtsam::NonlinearFactorGraph& nonlinearGraph() const {
+    return nonlinearGraph_;
+  }
 
   /**
    * Utility for retrieving the internal discrete factor graph
    * @return the member variable discreteGraph_
    */
-  const DiscreteFactorGraph& discreteGraph() const;
+  const gtsam::DiscreteFactorGraph& discreteGraph() const {
+    return discreteGraph_;
+  }
+
+  /**
+   * Utility for retrieving the internal DC factor graph
+   * @return the member variable dcGraph_
+   */
+  const DCFactorGraph& dcGraph() const { return dcGraph_; }
 
   /**
    * Utility for retrieving the internal gaussian factor graph
    * @return the member variable gaussianGraph_
    */
-  const GaussianFactorGraph& gaussianGraph() const;
+  const GaussianFactorGraph& gaussianGraph() const { return gaussianGraph_; }
 
   /**
    * @brief Linearize all the continuous factors in the HybridFactorGraph.
@@ -262,44 +263,26 @@ class HybridFactorGraph : public FactorGraph<Factor>,
   HybridFactorGraph linearize(const Values& continuousValues) const;
 
   /**
-   * Utility for retrieving the internal DC factor graph
-   * @return the member variable dcGraph_
-   */
-  const DCFactorGraph& dcGraph() const;
-
-  /**
-   * @return true if all internal graphs are empty
-   */
-  bool empty() const;
-
-  /**
    * @return true if all internal graphs of `this` are equal to those of
    * `other`
    */
   bool equals(const HybridFactorGraph& other, double tol = 1e-9) const;
 
-  /**
-   * @return the total number of factors across all internal graphs
-   */
-  size_t size() const;
+  /// The total number of factors in the nonlinear factor graph.
+  size_t size_nonlinear() const { return nonlinearGraph_.size(); }
 
-  /**
-   * @return the total number of factors in the nonlinear factor graph
-   */
-  size_t size_nonlinear() const;
+  /// The total number of factors in the discrete factor graph.
+  size_t size_discrete() const { return discreteGraph_.size(); }
 
-  /**
-   * @return the total number of factors in the discrete factor graph
-   */
-  size_t size_discrete() const;
+  /// The total number of factors in the DC factor graph.
+  size_t size_dc() const { return dcGraph_.size(); }
 
-  /**
-   * @return the total number of factors in the DC factor graph
-   */
-  size_t size_dc() const;
+  /// The total number of factors in the Gaussian factor graph.
+  size_t size_gaussian() const { return gaussianGraph_.size(); }
 
   /**
    * Clears all internal factor graphs
+   * TODO(dellaert): Not loving this!
    */
   void clear();
 
@@ -312,5 +295,8 @@ class HybridFactorGraph : public FactorGraph<Factor>,
                                                     const Ordering&)>;
   /// @}
 };
+
+template <>
+struct traits<HybridFactorGraph> : public Testable<HybridFactorGraph> {};
 
 }  // namespace gtsam

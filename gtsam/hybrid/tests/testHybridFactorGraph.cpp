@@ -165,7 +165,16 @@ struct Switching {
 TEST(HybridFactorGraph, Switching) {
   Switching self(3);
   EXPECT_LONGS_EQUAL(6, self.nonlinearFactorGraph.size());
-  EXPECT_LONGS_EQUAL(6, self.linearizedFactorGraph.size());  // TODO!!!
+  EXPECT_LONGS_EQUAL(1, self.nonlinearFactorGraph.nonlinearGraph().size());
+  EXPECT_LONGS_EQUAL(3, self.nonlinearFactorGraph.discreteGraph().size());
+  EXPECT_LONGS_EQUAL(2, self.nonlinearFactorGraph.dcGraph().size());
+  EXPECT_LONGS_EQUAL(0, self.nonlinearFactorGraph.gaussianGraph().size());
+
+  EXPECT_LONGS_EQUAL(6, self.linearizedFactorGraph.size());
+  EXPECT_LONGS_EQUAL(0, self.linearizedFactorGraph.nonlinearGraph().size());
+  EXPECT_LONGS_EQUAL(3, self.linearizedFactorGraph.discreteGraph().size());
+  EXPECT_LONGS_EQUAL(2, self.linearizedFactorGraph.dcGraph().size());
+  EXPECT_LONGS_EQUAL(1, self.linearizedFactorGraph.gaussianGraph().size());
 }
 
 /* ****************************************************************************/
@@ -183,53 +192,45 @@ TEST(HybridFactorGraph, Linearization) {
       self.nonlinearFactorGraph.linearize(self.linearizationPoint);
 
   EXPECT_LONGS_EQUAL(6, actualLinearized.size());
-
-  // There should only be one linearizedFactorGraph continuous factor
-  // corresponding to the PriorFactor on X(1).
-  EXPECT_LONGS_EQUAL(1, actualLinearized.gaussianGraph().size());
-  // There should be two linearizedFactorGraph DCGaussianMixtureFactors for each
-  // DCMixtureFactor.
+  EXPECT_LONGS_EQUAL(0, actualLinearized.nonlinearGraph().size());
+  EXPECT_LONGS_EQUAL(3, actualLinearized.discreteGraph().size());
   EXPECT_LONGS_EQUAL(2, actualLinearized.dcGraph().size());
+  EXPECT_LONGS_EQUAL(1, actualLinearized.gaussianGraph().size());
+
+  // TODO: fix this test, the graphs are equal !!!
+  // EXPECT(assert_equal(self.linearizedFactorGraph, actualLinearized));
 }
 
 /* ****************************************************************************/
 // Test elimination tree construction
-TEST_UNSAFE(HybridFactorGraph, EliminationTree) {
+TEST(HybridFactorGraph, EliminationTree) {
   Switching self(3);
 
   // Create ordering.
   Ordering ordering;
   for (size_t k = 1; k <= self.K; k++) ordering += X(k);
 
-  // Linearize, TODO: use self.linearizedFactorGraph when right size.
-  HybridFactorGraph linearized =
-      self.nonlinearFactorGraph.linearize(self.linearizationPoint);
-
   // Create elimination tree.
-  HybridEliminationTree etree(linearized, ordering);
-  GTSAM_PRINT(etree);
+  HybridEliminationTree etree(self.linearizedFactorGraph, ordering);
   EXPECT_LONGS_EQUAL(1, etree.roots().size())
 }
 
 /* ****************************************************************************/
 // Test elimination
-TEST_DISABLED(HybridFactorGraph, Elimination) {
+TEST(HybridFactorGraph, Elimination) {
   Switching self(3);
 
   // Create ordering.
   Ordering ordering;
   for (size_t k = 1; k <= self.K; k++) ordering += X(k);
 
-  // Linearize, TODO: use self.linearizedFactorGraph when right size.
-  HybridFactorGraph linearized =
-      self.nonlinearFactorGraph.linearize(self.linearizationPoint);
-
   // Eliminate partially.
-  auto result = linearized.eliminatePartialSequential(ordering);
-  GTSAM_PRINT(*result.first);   // HybridBayesNet
-  GTSAM_PRINT(*result.second);  // HybridFactorGraph
+  auto result = self.linearizedFactorGraph.eliminatePartialSequential(ordering);
+
+  // GTSAM_PRINT(*result.first);   // HybridBayesNet
+  // GTSAM_PRINT(*result.second);  // HybridFactorGraph
   EXPECT_LONGS_EQUAL(3, result.first->size())
-  EXPECT_LONGS_EQUAL(4, result.second->size())
+  EXPECT_LONGS_EQUAL(3, result.second->size())
 }
 
 /* ************************************************************************* */
