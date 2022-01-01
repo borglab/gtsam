@@ -85,120 +85,128 @@ class HybridFactorGraph : public FactorGraph<Factor>,
         dcGraph_(dcGraph),
         gaussianGraph_(gaussianGraph) {}
 
-  // TODO(dellaert): I propose we only have emplace_shared below.
-
   /// Check if FACTOR type is derived from NonlinearFactor.
   template <typename FACTOR>
   using IsNonlinear = typename std::enable_if<
       std::is_base_of<NonlinearFactor, FACTOR>::value>::type;
-
-  /// Construct a factor and add (shared pointer to it) to factor graph.
-  template <class FACTOR, class... Args>
-  IsNonlinear<FACTOR> emplace_shared(Args&&... args) {
-    auto factor = boost::allocate_shared<FACTOR>(
-        Eigen::aligned_allocator<FACTOR>(), std::forward<Args>(args)...);
-    nonlinearGraph_.push_back(factor);
-    push_back(factor);
-  }
 
   /// Check if FACTOR type is derived from DiscreteFactor.
   template <typename FACTOR>
   using IsDiscrete = typename std::enable_if<
       std::is_base_of<DiscreteFactor, FACTOR>::value>::type;
 
-  /// Construct a factor and add (shared pointer to it) to factor graph.
-  template <class FACTOR, class... Args>
-  IsDiscrete<FACTOR> emplace_shared(Args&&... args) {
-    auto factor = boost::allocate_shared<FACTOR>(
-        Eigen::aligned_allocator<FACTOR>(), std::forward<Args>(args)...);
-    discreteGraph_.push_back(factor);
-    push_back(factor);
-  }
-
   /// Check if FACTOR type is derived from DCFactor.
   template <typename FACTOR>
   using IsDC =
       typename std::enable_if<std::is_base_of<DCFactor, FACTOR>::value>::type;
-
-  /// Construct a factor and add (shared pointer to it) to factor graph.
-  template <class FACTOR, class... Args>
-  IsDC<FACTOR> emplace_shared(Args&&... args) {
-    auto factor = boost::allocate_shared<FACTOR>(
-        Eigen::aligned_allocator<FACTOR>(), std::forward<Args>(args)...);
-    dcGraph_.push_back(factor);
-    push_back(factor);
-  }
 
   /// Check if FACTOR type is derived from GaussianFactor.
   template <typename FACTOR>
   using IsGaussian = typename std::enable_if<
       std::is_base_of<GaussianFactor, FACTOR>::value>::type;
 
-  /// Construct a factor and add (shared pointer to it) to factor graph.
-  template <class FACTOR, class... Args>
-  IsGaussian<FACTOR> emplace_shared(Args&&... args) {
-    auto factor = boost::allocate_shared<FACTOR>(
-        Eigen::aligned_allocator<FACTOR>(), std::forward<Args>(args)...);
-    gaussianGraph_.push_back(factor);
-    push_back(factor);
-  }
-
-  // TODO(dellaert): from below I think we should only keep shared pointer
-  // versions.
-
-  /**
-   * Add a nonlinear factor to the internal nonlinear factor graph
-   * @param nonlinearFactor - the factor to add
-   */
-  template <typename NonlinearFactorType>
-  void push_nonlinear(const NonlinearFactorType& nonlinearFactor) {
-    emplace_shared<NonlinearFactorType>(nonlinearFactor);
-  }
-
   /**
    * Add a nonlinear factor *pointer* to the internal nonlinear factor graph
    * @param nonlinearFactor - boost::shared_ptr to the factor to add
    */
-  void push_nonlinear(
-      const boost::shared_ptr<NonlinearFactor>& nonlinearFactor);
-
-  /**
-   * Add a discrete factor to the internal discrete graph
-   * @param discreteFactor - the factor to add
-   */
-  template <typename DiscreteFactorType>
-  void push_discrete(const DiscreteFactorType& discreteFactor) {
-    emplace_shared<DiscreteFactorType>(discreteFactor);
+  template <typename FACTOR>
+  IsNonlinear<FACTOR> push_nonlinear(
+      const boost::shared_ptr<FACTOR>& nonlinearFactor) {
+    nonlinearGraph_.push_back(nonlinearFactor);
+    push_back(nonlinearFactor);
   }
 
   /**
    * Add a discrete factor *pointer* to the internal discrete graph
    * @param discreteFactor - boost::shared_ptr to the factor to add
    */
-  void push_discrete(const boost::shared_ptr<DiscreteFactor>& discreteFactor);
-
-  /**
-   * Add a discrete-continuous (DC) factor to the internal DC graph
-   * @param dcFactor - the factor to add
-   */
-  template <typename DCFactorType>
-  void push_dc(const DCFactorType& dcFactor) {
-    emplace_shared<DCFactorType>(dcFactor);
+  template <typename FACTOR>
+  IsDiscrete<FACTOR> push_discrete(
+      const boost::shared_ptr<FACTOR>& discreteFactor) {
+    discreteGraph_.push_back(discreteFactor);
+    push_back(discreteFactor);
   }
 
   /**
    * Add a discrete-continuous (DC) factor *pointer* to the internal DC graph
    * @param dcFactor - boost::shared_ptr to the factor to add
    */
-  void push_dc(const boost::shared_ptr<DCFactor>& dcFactor);
+  template <typename FACTOR>
+  IsDC<FACTOR> push_dc(const boost::shared_ptr<FACTOR>& dcFactor) {
+    dcGraph_.push_back(dcFactor);
+    push_back(dcFactor);
+  }
 
   /**
    * Add a gaussian factor *pointer* to the internal gaussian factor graph
    * @param gaussianFactor - boost::shared_ptr to the factor to add
    */
-  void push_gaussian(const boost::shared_ptr<GaussianFactor>& gaussianFactor) {
+  template <typename FACTOR>
+  IsGaussian<FACTOR> push_gaussian(
+      const boost::shared_ptr<FACTOR>& gaussianFactor) {
     gaussianGraph_.push_back(gaussianFactor);
     push_back(gaussianFactor);
+  }
+
+  /// Construct a factor and add (shared pointer to it) to factor graph.
+  template <class FACTOR, class... Args>
+  IsNonlinear<FACTOR> emplace_shared(Args&&... args) {
+    auto factor = boost::allocate_shared<FACTOR>(
+        Eigen::aligned_allocator<FACTOR>(), std::forward<Args>(args)...);
+    push_nonlinear(factor);
+  }
+
+  /// Construct a factor and add (shared pointer to it) to factor graph.
+  template <class FACTOR, class... Args>
+  IsDiscrete<FACTOR> emplace_shared(Args&&... args) {
+    auto factor = boost::allocate_shared<FACTOR>(
+        Eigen::aligned_allocator<FACTOR>(), std::forward<Args>(args)...);
+    push_discrete(factor);
+  }
+
+  /// Construct a factor and add (shared pointer to it) to factor graph.
+  template <class FACTOR, class... Args>
+  IsDC<FACTOR> emplace_shared(Args&&... args) {
+    auto factor = boost::allocate_shared<FACTOR>(
+        Eigen::aligned_allocator<FACTOR>(), std::forward<Args>(args)...);
+    push_dc(factor);
+  }
+
+  /// Construct a factor and add (shared pointer to it) to factor graph.
+  template <class FACTOR, class... Args>
+  IsGaussian<FACTOR> emplace_shared(Args&&... args) {
+    auto factor = boost::allocate_shared<FACTOR>(
+        Eigen::aligned_allocator<FACTOR>(), std::forward<Args>(args)...);
+    push_gaussian(factor);
+  }
+
+  // DEPRECATED below:.
+
+  /**
+   * Add a nonlinear factor to the internal nonlinear factor graph
+   * @param nonlinearFactor - the factor to add
+   */
+  template <typename FACTOR>
+  IsNonlinear<FACTOR> push_nonlinear(const FACTOR& nonlinearFactor) {
+    emplace_shared<FACTOR>(nonlinearFactor);
+  }
+
+  /**
+   * Add a discrete factor to the internal discrete graph
+   * @param discreteFactor - the factor to add
+   */
+  template <typename FACTOR>
+  IsDiscrete<FACTOR> push_discrete(const FACTOR& discreteFactor) {
+    emplace_shared<FACTOR>(discreteFactor);
+  }
+
+  /**
+   * Add a discrete-continuous (DC) factor to the internal DC graph
+   * @param dcFactor - the factor to add
+   */
+  template <typename FACTOR>
+  IsDC<FACTOR> push_dc(const FACTOR& dcFactor) {
+    emplace_shared<FACTOR>(dcFactor);
   }
 
   /**
