@@ -53,7 +53,7 @@ struct EliminationTraits<HybridFactorGraph> {
   }
 };
 
-class HybridFactorGraph : public FactorGraph<Factor>,
+class HybridFactorGraph : protected FactorGraph<Factor>,
                           public EliminateableFactorGraph<HybridFactorGraph> {
  public:
   using shared_ptr = boost::shared_ptr<HybridFactorGraph>;
@@ -110,6 +110,12 @@ class HybridFactorGraph : public FactorGraph<Factor>,
     Base::push_back(dcGraph);
     Base::push_back(gaussianGraph);
   }
+
+  // Allow use of selected FactorGraph methods:
+  using Base::reserve;
+  using Base::empty;
+  using Base::size;
+  using Base::operator[];
 
   /**
    * Add a nonlinear factor *pointer* to the internal nonlinear factor graph
@@ -188,6 +194,14 @@ class HybridFactorGraph : public FactorGraph<Factor>,
     auto factor = boost::allocate_shared<FACTOR>(
         Eigen::aligned_allocator<FACTOR>(), std::forward<Args>(args)...);
     push_gaussian(factor);
+  }
+
+  /** Constructor from iterator over factors (shared_ptr or plain objects) */
+  template <typename ITERATOR>
+  void push_back(ITERATOR firstFactor, ITERATOR lastFactor) {
+    for (auto&& it = firstFactor; it != lastFactor; it++) {
+      Base::push_back(*it);
+    }
   }
 
   // DEPRECATED below:.

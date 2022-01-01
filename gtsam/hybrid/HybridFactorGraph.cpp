@@ -14,6 +14,7 @@
 #include <gtsam/hybrid/HybridEliminationTree.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
 #include <gtsam/inference/EliminateableFactorGraph-inst.h>
+#include <gtsam/linear/HessianFactor.h>
 
 #include <boost/make_shared.hpp>
 
@@ -81,23 +82,19 @@ void HybridFactorGraph::clear() {
 /// The function type that does a single elimination step on a variable.
 std::pair<DCConditional::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
     const HybridFactorGraph& factors, const Ordering& ordering) {
-  // We are getting a number of DCMixtureFactors on a set of continuous
-  // variables. They might all have different discrete keys. For every
-  // possible combination of the discrete keys, we need a GaussianConditional.
-  // for (const auto& factor : factors) {
-  //   if (auto p = boost::dynamic_pointer_cast<const
-  //   DCGaussianMixtureFactor>(
-  //           factor)) {
-  //     GTSAM_PRINT(*p);
-  //   };
-  // }
-
   std::cout << "HybridEliminate" << std::endl;
   std::cout << "factors.size():" << factors.size() << std::endl;
   GTSAM_PRINT(factors);
 
   // Create a DCConditional...
   auto conditional = boost::make_shared<DCConditional>();
+
+  // TODO: take all factors, which *must* be all DCGaussianMixtureFactors or
+  // GaussianFactors, "add" them (which might involve decision-trees of
+  // different structure, and creating a dummy decision tree for Gaussians).
+
+  // If there are no DC factors, this is appropriate:
+  auto result = EliminatePreferCholesky(factors.gaussianGraph(), ordering);
 
   // Create a resulting DCGaussianMixture on the separator.
   /// auto factor = TODO ...
