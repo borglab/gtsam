@@ -20,6 +20,7 @@
 
 #include <gtsam/hybrid/DCFactor.h>
 #include <gtsam/hybrid/DCMixtureFactor.h>
+#include <gtsam/hybrid/HybridEliminationTree.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
@@ -61,12 +62,25 @@ TEST(HybridFactorGraph, GaussianFactorGraph) {
 
   HybridFactorGraph dcmfg = nonlinearFactorGraph.linearize(linearizationPoint);
 
-  EXPECT(dcmfg.gaussianGraph().size() == 2);
+  EXPECT_LONGS_EQUAL(2, dcmfg.gaussianGraph().size());
 }
 
-/**
- * Test fixture with switching network.
- */
+/* ****************************************************************************/
+// Test elimination function
+TEST_DISABLED(DCGaussianElimination, EliminateHybrid) {
+  Ordering ordering;
+  for (size_t k = 1; k <= 3; k++) ordering += X(k);
+  HybridFactorGraph factors;
+  HybridFactorGraph::EliminationResult result =
+      EliminateHybrid(factors, ordering);
+  CHECK(result.first);
+  CHECK(result.second);
+  EXPECT_LONGS_EQUAL(2, result.first->nrFrontals());
+  EXPECT_LONGS_EQUAL(2, result.second->size());
+}
+
+/* ****************************************************************************/
+// Test fixture with switching network.
 using MotionMixture = DCMixtureFactor<MotionModel>;
 struct Switching {
   size_t K;
@@ -84,8 +98,9 @@ struct Switching {
 
     // Create hybrid factor graph.
     // Add a prior on X(1).
-    nonlinearFactorGraph.emplace_shared<PriorFactor<double>>(
+    auto prior = boost::make_shared<PriorFactor<double>>(
         X(1), 0, Isotropic::Sigma(1, 0.1));
+    nonlinearFactorGraph.push_nonlinear(prior);
 
     // Add "motion models".
     for (size_t k = 1; k < K; k++) {
@@ -107,25 +122,24 @@ struct Switching {
     // Create the linearizedFactorGraph hybrid factor graph.
 
     // Add a prior on X(1).
-    PriorFactor<double> prior(X(1), 0, Isotropic::Sigma(1, 0.1));
-    auto gaussian = prior.linearize(linearizationPoint);
+    auto gaussian = prior->linearize(linearizationPoint);
     linearizedFactorGraph.push_gaussian(gaussian);
 
     // Add "motion models".
     for (size_t k = 1; k < K; k++) {
-      MotionModel still(X(k), X(k + 1), 0.0, Isotropic::Sigma(1, 1.0)),
-          moving(X(k), X(k + 1), 1.0, Isotropic::Sigma(1, 1.0));
+      auto components = motionModels(k);
       auto keys = {X(k), X(k + 1)};
-      auto components = {still.linearize(linearizationPoint),
-                         moving.linearize(linearizationPoint)};
+      auto linearized = {components[0]->linearize(linearizationPoint),
+                         components[1]->linearize(linearizationPoint)};
       linearizedFactorGraph.emplace_shared<DCGaussianMixtureFactor>(
-          keys, DiscreteKeys{modes[k]}, components);
+          keys, DiscreteKeys{modes[k]}, linearized);
     }
 
     // Add "mode chain"
     addModeChain(&linearizedFactorGraph);
   }
 
+  // Create motion models for a given time step
   std::vector<MotionModel::shared_ptr> motionModels(size_t k) {
     auto still = boost::make_shared<MotionModel>(X(k), X(k + 1), 0.0,
                                                  Isotropic::Sigma(1, 1.0)),
@@ -162,24 +176,42 @@ TEST(HybridFactorGraph, Linearization) {
 
   // There should only be one linearizedFactorGraph continuous factor
   // corresponding to the PriorFactor on X(1).
-  EXPECT(actualLinearized.gaussianGraph().size() == 1);
+  EXPECT_LONGS_EQUAL(1, actualLinearized.gaussianGraph().size());
   // There should be two linearizedFactorGraph DCGaussianMixtureFactors for each
   // DCMixtureFactor.
-  EXPECT(actualLinearized.dcGraph().size() == 2);
+  EXPECT_LONGS_EQUAL(2, actualLinearized.dcGraph().size());
+}
+
+/* ****************************************************************************/
+// Test elimination tree construction
+TEST(HybridFactorGraph, EliminationTree) {
+  Switching self(3);
+
+  // Create ordering.
+  Ordering ordering;
+  for (size_t k = 1; k <= self.K; k++) ordering += X(k);
+
+  // Create elimination tree.
+  HybridEliminationTree etree(self.linearizedFactorGraph, ordering);
+  GTSAM_PRINT(etree);
+  EXPECT_LONGS_EQUAL(1, etree.roots().size())
 }
 
 /* ****************************************************************************/
 // Test elimination
-TEST(DCGaussianElimination, Switching) {
+TEST(HybridFactorGraph, Elimination) {
   Switching self(3);
-  GTSAM_PRINT(self.linearizedFactorGraph);
 
-  // Eliminate partially.
+  // Create ordering.
   Ordering ordering;
   for (size_t k = 1; k <= self.K; k++) ordering += X(k);
+
+  // Eliminate partially.
   auto result = self.linearizedFactorGraph.eliminatePartialSequential(ordering);
   GTSAM_PRINT(*result.first);   // HybridBayesNet
   GTSAM_PRINT(*result.second);  // HybridFactorGraph
+  EXPECT_LONGS_EQUAL(3, result.first->size())
+  EXPECT_LONGS_EQUAL(4, result.second->size())
 }
 
 /* ************************************************************************* */
