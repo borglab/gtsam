@@ -467,7 +467,6 @@ virtual class GaussianConditional : gtsam::JacobianFactor {
     gtsam::VectorValues solveOtherRHS(const gtsam::VectorValues& parents,
                                       const gtsam::VectorValues& rhs) const;
     void solveTransposeInPlace(gtsam::VectorValues& gy) const;
-    void scaleFrontalsBySigma(gtsam::VectorValues& gy) const;
     Matrix R() const;
     Matrix S() const;
     Vector d() const;
