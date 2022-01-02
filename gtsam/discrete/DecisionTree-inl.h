@@ -454,19 +454,23 @@ namespace gtsam {
   }
 
   /*********************************************************************************/
-  template<typename L, typename Y>
-  template<typename M, typename X>
-  DecisionTree<L, Y>::DecisionTree(const DecisionTree<M, X>& other,
-      const std::map<M, L>& map, std::function<Y(const X&)> op)  {
-    root_ = convert(other.root_, map, op);
-  }
-
-  /*********************************************************************************/
   template <typename L, typename Y>
   template <typename X>
   DecisionTree<L, Y>::DecisionTree(const DecisionTree<L, X>& other,
                                    std::function<Y(const X&)> op) {
-    root_ = convert(other.root_, op);
+    auto map = [](const L& label) { return label; };
+    root_ = convert<L, X>(other.root_, op, map);
+  }
+
+  /*********************************************************************************/
+  template<typename L, typename Y>
+  template<typename M, typename X>
+  DecisionTree<L, Y>::DecisionTree(const DecisionTree<M, X>& other,
+      const std::map<M, L>& map, std::function<Y(const X&)> op)  {
+    std::function<L(const M&)> map_function = [&map](const M& label) -> L {
+      return map.at(label);
+    };
+    root_ = convert<M, X>(other.root_, op, map_function);
   }
 
   /*********************************************************************************/
@@ -579,12 +583,11 @@ namespace gtsam {
   }
 
   /*********************************************************************************/
-  template<typename L, typename Y>
-  template<typename M, typename X>
+  template <typename L, typename Y>
+  template <typename M, typename X>
   typename DecisionTree<L, Y>::NodePtr DecisionTree<L, Y>::convert(
-      const typename DecisionTree<M, X>::NodePtr& f, const std::map<M, L>& map,
-      std::function<Y(const X&)> op) {
-
+      const typename DecisionTree<M, X>::NodePtr& f,
+      std::function<Y(const X&)> op, std::function<L(const M&)> map) {
     typedef DecisionTree<M, X> MX;
     typedef typename MX::Leaf MXLeaf;
     typedef typename MX::Choice MXChoice;
@@ -602,48 +605,16 @@ namespace gtsam {
         "DecisionTree::Convert: Invalid NodePtr");
 
     // get new label
-    M oldLabel = choice->label();
-    L newLabel = map.at(oldLabel);
+    const M oldLabel = choice->label();
+    const L newLabel = map(oldLabel);
 
     // put together via Shannon expansion otherwise not sorted.
     std::vector<LY> functions;
     for(const MXNodePtr& branch: choice->branches()) {
-      LY converted(convert<M, X>(branch, map, op));
+      LY converted(convert<M, X>(branch, op, map));
       functions += converted;
     }
     return LY::compose(functions.begin(), functions.end(), newLabel);
-  }
-
-  /*********************************************************************************/
-  template<typename L, typename Y>
-  template<typename X>
-  typename DecisionTree<L, Y>::NodePtr DecisionTree<L, Y>::convert(
-      const typename DecisionTree<L, X>::NodePtr& f,
-      std::function<Y(const X&)> op) {
-
-    typedef DecisionTree<L, X> LX;
-    typedef typename LX::Leaf LXLeaf;
-    typedef typename LX::Choice LXChoice;
-    typedef typename LX::NodePtr LXNodePtr;
-    typedef DecisionTree<L, Y> LY;
-
-    // ugliness below because apparently we can't have templated virtual functions
-    // If leaf, apply unary conversion "op" and create a unique leaf
-    const LXLeaf* leaf = dynamic_cast<const LXLeaf*> (f.get());
-    if (leaf) return NodePtr(new Leaf(op(leaf->constant())));
-
-    // Check if Choice
-    boost::shared_ptr<const LXChoice> choice = boost::dynamic_pointer_cast<const LXChoice> (f);
-    if (!choice) throw std::invalid_argument(
-        "DecisionTree::Convert: Invalid NodePtr");
-
-    // put together via Shannon expansion otherwise not sorted.
-    std::vector<LY> functions;
-    for(const LXNodePtr& branch: choice->branches()) {
-      LY converted(convert<X>(branch, op));
-      functions += converted;
-    }
-    return LY::compose(functions.begin(), functions.end(), choice->label());
   }
 
   /*********************************************************************************/
