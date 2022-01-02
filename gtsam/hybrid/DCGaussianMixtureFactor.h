@@ -24,6 +24,7 @@
 #include <gtsam/hybrid/DCFactor.h>
 #include <gtsam/inference/Factor.h>
 #include <gtsam/linear/GaussianFactor.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 
 #include <algorithm>
 #include <boost/format.hpp>
@@ -116,7 +117,7 @@ class DCGaussianMixtureFactor : public DCFactor {
     throw std::runtime_error("DCGaussianMixtureFactor::dim not implemented");
   };
 
-  /// Testable
+  /// @name Testable
   /// @{
 
   /// print to stdout
@@ -144,6 +145,48 @@ class DCGaussianMixtureFactor : public DCFactor {
     return true;
   }
   /// @}
+  /// @name Decision Tree methods
+  /// @{
+
+  // TODO(frank): this could be way more elegant/ cheaper, but two obstacles:
+  // - I need to use a shared_ptr because I can't print gfgs
+  // - I now feel the need for an imperative binary op.
+
+  /// A Sum of mixture factors contains small GaussianFactorGraphs
+  using Sum = DecisionTree<Key, GaussianFactorGraph::shared_ptr>;
+
+  /// Add MixtureFactor to a Sum
+  Sum addTo(const Sum& sum) const {
+    using Y = GaussianFactorGraph::shared_ptr;
+    std::function<Y(const Y&, const Y&)> add = [](const Y& graph1,
+                                                  const Y& graph2) {
+      auto result = boost::make_shared<GaussianFactorGraph>(*graph1);
+      result->push_back(*graph2);
+      return result;
+    };
+    const Sum wrapped = wrappedFactors();
+    return sum.empty() ? wrapped : sum.apply(wrapped, add);
+  }
+
+  /// Add MixtureFactor to a Sum, sugar.
+  friend Sum& operator+=(Sum& sum, const DCGaussianMixtureFactor& factor) {
+    sum = factor.addTo(sum);
+    return sum;
+  }
+  /// @}
+
+ private:
+  /// Return Sum decision tree with factors wrapped in Singleton FGs.
+  Sum wrappedFactors() const {
+    std::function<GaussianFactorGraph::shared_ptr(
+        const GaussianFactor::shared_ptr&)>
+        wrap = [](const GaussianFactor::shared_ptr& factor) {
+          auto result = boost::make_shared<GaussianFactorGraph>();
+          result->push_back(factor);
+          return result;
+        };
+    return Sum(factors_, wrap);
+  }
 };
 
 }  // namespace gtsam
