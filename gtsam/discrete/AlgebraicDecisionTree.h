@@ -115,11 +115,11 @@ namespace gtsam {
     template<typename M>
     AlgebraicDecisionTree(const AlgebraicDecisionTree<M>& other,
                           const std::map<M, L>& map) {
-      std::function<L(const M&)> map_function = [&map](const M& label) -> L {
+      std::function<L(const M&)> L_of_M = [&map](const M& label) -> L {
         return map.at(label);
       };
       std::function<double(const double&)> op = Ring::id;
-      this->root_ = this->template convert(other.root_, op, map_function);
+      this->root_ = this->template convertFrom(other.root_, L_of_M, op);
     }
 
     /** sum */

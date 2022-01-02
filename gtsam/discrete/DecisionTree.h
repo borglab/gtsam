@@ -113,27 +113,20 @@ namespace gtsam {
     /** A function is a shared pointer to the root of a DT */
     typedef typename Node::Ptr NodePtr;
 
-  protected:
-
-    /* a DecisionTree just contains the root */
+    /// a DecisionTree just contains the root. TODO(dellaert): make protected.
     NodePtr root_;
+
+  protected:
 
     /** Internal recursive function to create from keys, cardinalities, and Y values */
     template<typename It, typename ValueIt>
     NodePtr create(It begin, It end, ValueIt beginY, ValueIt endY) const;
 
-    /// Convert to a different type, will not convert label if map empty.
+    /// Convert from a DecisionTree<M, X>.
     template <typename M, typename X>
-    NodePtr convert(const typename DecisionTree<M, X>::NodePtr& f,
-                    std::function<Y(const X&)> op,
-                    std::function<L(const M&)> map) const;
-
-    /// Convert to a different type, will not convert label if map empty.
-    template <typename M, typename X>
-    NodePtr convert(std::function<Y(const X&)> op,
-                    std::function<L(const M&)> map) const {
-      return convert(root_, op, map);
-    }
+    NodePtr convertFrom(const typename DecisionTree<M, X>::NodePtr& f,
+                        std::function<L(const M&)> L_of_M,
+                        std::function<Y(const X&)> Y_of_X) const;
 
    public:
 
@@ -169,12 +162,12 @@ namespace gtsam {
     /** Convert from a different type. */
     template <typename X>
     DecisionTree(const DecisionTree<L, X>& other,
-                 std::function<Y(const X&)> op);
+                 std::function<Y(const X&)> Y_of_X);
 
     /** Convert from a different type, also transate labels via map. */
-    template<typename M, typename X>
-    DecisionTree(const DecisionTree<M, X>& other,
-        const std::map<M, L>& map, std::function<Y(const X&)> op);
+    template <typename M, typename X>
+    DecisionTree(const DecisionTree<M, X>& other, const std::map<M, L>& L_of_M,
+                 std::function<Y(const X&)> Y_of_X);
 
     /// @}
     /// @name Testable
