@@ -127,15 +127,11 @@ namespace gtsam {
     template<typename It, typename ValueIt>
     NodePtr create(It begin, It end, ValueIt beginY, ValueIt endY) const;
 
-    /** Convert to a different type */
-    template<typename M, typename X> NodePtr
-    convert(const typename DecisionTree<M, X>::NodePtr& f, const std::map<M,
-        L>& map, std::function<Y(const X&)> op);
-
-    /** Convert only node to a different type */
-    template <typename X>
-    NodePtr convert(const typename DecisionTree<L, X>::NodePtr& f,
-                    const std::function<Y(const X&)> op);
+    /// Convert to a different type, will not convert label if map empty.
+    template <typename M, typename X>
+    NodePtr convert(const typename DecisionTree<M, X>::NodePtr& f,
+                    std::function<Y(const X&)> op,
+                    std::function<L(const M&)> map);
 
    public:
 
@@ -168,15 +164,15 @@ namespace gtsam {
     DecisionTree(const L& label, //
         const DecisionTree& f0, const DecisionTree& f1);
 
-    /** Convert from a different type */
-    template<typename M, typename X>
-    DecisionTree(const DecisionTree<M, X>& other,
-        const std::map<M, L>& map, std::function<Y(const X&)> op);
-
-    /** Convert only nodes from a different type */
+    /** Convert from a different type. */
     template <typename X>
     DecisionTree(const DecisionTree<L, X>& other,
                  std::function<Y(const X&)> op);
+
+    /** Convert from a different type, also transate labels via map. */
+    template<typename M, typename X>
+    DecisionTree(const DecisionTree<M, X>& other,
+        const std::map<M, L>& map, std::function<Y(const X&)> op);
 
     /// @}
     /// @name Testable
