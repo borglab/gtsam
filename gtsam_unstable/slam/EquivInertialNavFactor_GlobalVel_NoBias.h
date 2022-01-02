@@ -372,15 +372,15 @@ public:
     Matrix Z_3x3 = Z_3x3;
     Matrix I_3x3 = I_3x3;
 
-    Matrix H_pos_pos = numericalDerivative11<LieVector, LieVector>(std::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, _1, delta_vel_in_t0), delta_pos_in_t0);
-    Matrix H_pos_vel = numericalDerivative11<LieVector, LieVector>(std::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, delta_pos_in_t0, _1), delta_vel_in_t0);
+    Matrix H_pos_pos = numericalDerivative11<Vector, Vector>(std::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, _1, delta_vel_in_t0), delta_pos_in_t0);
+    Matrix H_pos_vel = numericalDerivative11<Vector, Vector>(std::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, delta_pos_in_t0, _1), delta_vel_in_t0);
     Matrix H_pos_angles = Z_3x3;
 
-    Matrix H_vel_vel = numericalDerivative11<LieVector, LieVector>(std::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t, msr_acc_t, msr_dt, delta_angles, _1, flag_use_body_P_sensor, body_P_sensor), delta_vel_in_t0);
-    Matrix H_vel_angles = numericalDerivative11<LieVector, LieVector>(std::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t, msr_acc_t, msr_dt, _1, delta_vel_in_t0, flag_use_body_P_sensor, body_P_sensor), delta_angles);
+    Matrix H_vel_vel = numericalDerivative11<Vector, Vector>(std::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t, msr_acc_t, msr_dt, delta_angles, _1, flag_use_body_P_sensor, body_P_sensor), delta_vel_in_t0);
+    Matrix H_vel_angles = numericalDerivative11<Vector, Vector>(std::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t, msr_acc_t, msr_dt, _1, delta_vel_in_t0, flag_use_body_P_sensor, body_P_sensor), delta_angles);
     Matrix H_vel_pos = Z_3x3;
 
-    Matrix H_angles_angles = numericalDerivative11<LieVector, LieVector>(std::bind(&PreIntegrateIMUObservations_delta_angles, msr_gyro_t, msr_dt, _1, flag_use_body_P_sensor, body_P_sensor), delta_angles);
+    Matrix H_angles_angles = numericalDerivative11<Vector, Vector>(std::bind(&PreIntegrateIMUObservations_delta_angles, msr_gyro_t, msr_dt, _1, flag_use_body_P_sensor, body_P_sensor), delta_angles);
     Matrix H_angles_pos = Z_3x3;
     Matrix H_angles_vel = Z_3x3;
 
