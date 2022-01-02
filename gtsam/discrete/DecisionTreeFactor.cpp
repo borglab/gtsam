@@ -154,6 +154,31 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  static std::string valueFormatter(const double& v) {
+    return (boost::format("%4.2g") % v).str();
+  }
+
+  /** output to graphviz format, stream version */
+  void DecisionTreeFactor::dot(std::ostream& os,
+                               const KeyFormatter& keyFormatter,
+                               bool showZero) const {
+    Potentials::dot(os, keyFormatter, valueFormatter, showZero);
+  }
+
+  /** output to graphviz format, open a file */
+  void DecisionTreeFactor::dot(const std::string& name,
+                               const KeyFormatter& keyFormatter,
+                               bool showZero) const {
+    Potentials::dot(name, keyFormatter, valueFormatter, showZero);
+  }
+
+  /** output to graphviz format string */
+  std::string DecisionTreeFactor::dot(const KeyFormatter& keyFormatter,
+                                      bool showZero) const {
+    return Potentials::dot(keyFormatter, valueFormatter, showZero);
+  }
+
+  /* ************************************************************************* */
   std::string DecisionTreeFactor::markdown(
       const KeyFormatter& keyFormatter) const {
     std::stringstream ss;
