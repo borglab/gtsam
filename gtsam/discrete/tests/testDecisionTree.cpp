@@ -78,6 +78,9 @@ struct Ring {
   static inline int one() {
     return 1;
   }
+  static inline int id(const int& a) {
+    return a;
+  }
   static inline int add(const int& a, const int& b) {
     return a + b;
   }
@@ -100,6 +103,9 @@ TEST(DT, example)
   x10[A] = 1, x10[B] = 0;
   x11[A] = 1, x11[B] = 1;
 
+  // empty
+  DT empty;
+
   // A
   DT a(A, 0, 5);
   LONGS_EQUAL(0,a(x00))
@@ -117,6 +123,11 @@ TEST(DT, example)
   LONGS_EQUAL(5,notb(x00))
   LONGS_EQUAL(5,notb(x10))
   DOT(notb);
+
+  // Check supplying empty trees yields an exception
+  CHECK_EXCEPTION(apply(empty, &Ring::id), std::runtime_error);
+  CHECK_EXCEPTION(apply(empty, a, &Ring::mul), std::runtime_error);
+  CHECK_EXCEPTION(apply(a, empty, &Ring::mul), std::runtime_error);
 
   // apply, two nodes, in natural order
   DT anotb = apply(a, notb, &Ring::mul);

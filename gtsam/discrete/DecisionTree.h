@@ -194,6 +194,9 @@ namespace gtsam {
     virtual ~DecisionTree() {
     }
 
+    /** empty tree? */
+    bool empty() const { return !root_; }
+
     /** equality */
     bool operator==(const DecisionTree& q) const;
 
