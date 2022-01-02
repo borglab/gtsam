@@ -43,33 +43,73 @@ void dot(const T&f, const string& filename) {
 struct Crazy {
   int a;
   double b;
-
-  bool equals(const Crazy& other, double tol = 1e-12) const {
-    return a == other.a && std::abs(b - other.b) < tol;
-  }
-
-  bool operator==(const Crazy& other) const {
-    return this->equals(other);
-  }
 };
 
-typedef DecisionTree<string,Crazy> CrazyDecisionTree; // check that DecisionTree is actually generic (as it pretends to be)
+//   bool equals(const Crazy& other, double tol = 1e-12) const {
+//     return a == other.a && std::abs(b - other.b) < tol;
+//   }
+
+//   bool operator==(const Crazy& other) const {
+//     return this->equals(other);
+//   }
+// };
+
+struct CrazyDecisionTree : public DecisionTree<string, Crazy> {
+  /// print to stdout
+  void print(const std::string& s = "") const {
+    auto keyFormatter = [](const std::string& s) { return s; };
+    auto valueFormatter = [](const Crazy& v) {
+      return (boost::format("{%d,%4.2g}") % v.a % v.b).str();
+    };
+    DecisionTree<string, Crazy>::print("", keyFormatter, valueFormatter);
+  }
+  /// Equality method customized to Crazy node type
+  bool equals(const CrazyDecisionTree& other, double tol = 1e-9) const {
+    auto compare = [tol](const Crazy& v, const Crazy& w) {
+      return v.a == w.a && std::abs(v.b - w.b) < tol;
+    };
+    return DecisionTree<string, Crazy>::equals(other, compare);
+  }
+};
 
 // traits
 namespace gtsam {
 template<> struct traits<CrazyDecisionTree> : public Testable<CrazyDecisionTree> {};
 }
 
+GTSAM_CONCEPT_TESTABLE_INST(CrazyDecisionTree)
+
 /* ******************************************************************************** */
 // Test string labels and int range
 /* ******************************************************************************** */
 
-typedef DecisionTree<string, int> DT;
+struct DT : public DecisionTree<string, int> {
+  using DecisionTree::DecisionTree;
+  DT(const DecisionTree<string, int>& dt) : root_(dt.root_) {}
+
+  /// print to stdout
+  void print(const std::string& s = "") const {
+    auto keyFormatter = [](const std::string& s) { return s; };
+    auto valueFormatter = [](const int& v) {
+      return (boost::format("%d") % v).str();
+    };
+    DecisionTree<string, int>::print("", keyFormatter, valueFormatter);
+  }
+  // /// Equality method customized to int node type
+  // bool equals(const CrazyDecisionTree& other, double tol = 1e-9) const {
+  //   auto compare = [tol](const int& v, const int& w) {
+  //     return v.a == w.a && std::abs(v.b - w.b) < tol;
+  //   };
+  //   return DecisionTree<string, int>::equals(other, compare);
+  // }
+};
 
 // traits
 namespace gtsam {
 template<> struct traits<DT> : public Testable<DT> {};
 }
+
+GTSAM_CONCEPT_TESTABLE_INST(DT)
 
 struct Ring {
   static inline int zero() {
@@ -91,111 +131,111 @@ struct Ring {
 
 /* ******************************************************************************** */
 // test DT
-TEST(DT, example)
-{
-  // Create labels
-  string A("A"), B("B"), C("C");
+// TEST(DT, example)
+// {
+//   // Create labels
+//   string A("A"), B("B"), C("C");
 
-  // create a value
-  Assignment<string> x00, x01, x10, x11;
-  x00[A] = 0, x00[B] = 0;
-  x01[A] = 0, x01[B] = 1;
-  x10[A] = 1, x10[B] = 0;
-  x11[A] = 1, x11[B] = 1;
+//   // create a value
+//   Assignment<string> x00, x01, x10, x11;
+//   x00[A] = 0, x00[B] = 0;
+//   x01[A] = 0, x01[B] = 1;
+//   x10[A] = 1, x10[B] = 0;
+//   x11[A] = 1, x11[B] = 1;
 
-  // empty
-  DT empty;
+//   // empty
+//   DT empty;
 
-  // A
-  DT a(A, 0, 5);
-  LONGS_EQUAL(0,a(x00))
-  LONGS_EQUAL(5,a(x10))
-  DOT(a);
+//   // A
+//   DT a(A, 0, 5);
+//   LONGS_EQUAL(0,a(x00))
+//   LONGS_EQUAL(5,a(x10))
+//   DOT(a);
 
-  // pruned
-  DT p(A, 2, 2);
-  LONGS_EQUAL(2,p(x00))
-  LONGS_EQUAL(2,p(x10))
-  DOT(p);
+//   // pruned
+//   DT p(A, 2, 2);
+//   LONGS_EQUAL(2,p(x00))
+//   LONGS_EQUAL(2,p(x10))
+//   DOT(p);
 
-  // \neg B
-  DT notb(B, 5, 0);
-  LONGS_EQUAL(5,notb(x00))
-  LONGS_EQUAL(5,notb(x10))
-  DOT(notb);
+//   // \neg B
+//   DT notb(B, 5, 0);
+//   LONGS_EQUAL(5,notb(x00))
+//   LONGS_EQUAL(5,notb(x10))
+//   DOT(notb);
 
-  // Check supplying empty trees yields an exception
-  CHECK_EXCEPTION(apply(empty, &Ring::id), std::runtime_error);
-  CHECK_EXCEPTION(apply(empty, a, &Ring::mul), std::runtime_error);
-  CHECK_EXCEPTION(apply(a, empty, &Ring::mul), std::runtime_error);
+//   // Check supplying empty trees yields an exception
+//   CHECK_EXCEPTION(apply(empty, &Ring::id), std::runtime_error);
+//   CHECK_EXCEPTION(apply(empty, a, &Ring::mul), std::runtime_error);
+//   CHECK_EXCEPTION(apply(a, empty, &Ring::mul), std::runtime_error);
 
-  // apply, two nodes, in natural order
-  DT anotb = apply(a, notb, &Ring::mul);
-  LONGS_EQUAL(0,anotb(x00))
-  LONGS_EQUAL(0,anotb(x01))
-  LONGS_EQUAL(25,anotb(x10))
-  LONGS_EQUAL(0,anotb(x11))
-  DOT(anotb);
+//   // apply, two nodes, in natural order
+//   DT anotb = apply(a, notb, &Ring::mul);
+//   LONGS_EQUAL(0,anotb(x00))
+//   LONGS_EQUAL(0,anotb(x01))
+//   LONGS_EQUAL(25,anotb(x10))
+//   LONGS_EQUAL(0,anotb(x11))
+//   DOT(anotb);
 
-  // check pruning
-  DT pnotb = apply(p, notb, &Ring::mul);
-  LONGS_EQUAL(10,pnotb(x00))
-  LONGS_EQUAL( 0,pnotb(x01))
-  LONGS_EQUAL(10,pnotb(x10))
-  LONGS_EQUAL( 0,pnotb(x11))
-  DOT(pnotb);
+//   // check pruning
+//   DT pnotb = apply(p, notb, &Ring::mul);
+//   LONGS_EQUAL(10,pnotb(x00))
+//   LONGS_EQUAL( 0,pnotb(x01))
+//   LONGS_EQUAL(10,pnotb(x10))
+//   LONGS_EQUAL( 0,pnotb(x11))
+//   DOT(pnotb);
 
-  // check pruning
-  DT zeros = apply(DT(A, 0, 0), notb, &Ring::mul);
-  LONGS_EQUAL(0,zeros(x00))
-  LONGS_EQUAL(0,zeros(x01))
-  LONGS_EQUAL(0,zeros(x10))
-  LONGS_EQUAL(0,zeros(x11))
-  DOT(zeros);
+//   // check pruning
+//   DT zeros = apply(DT(A, 0, 0), notb, &Ring::mul);
+//   LONGS_EQUAL(0,zeros(x00))
+//   LONGS_EQUAL(0,zeros(x01))
+//   LONGS_EQUAL(0,zeros(x10))
+//   LONGS_EQUAL(0,zeros(x11))
+//   DOT(zeros);
 
-  // apply, two nodes, in switched order
-  DT notba = apply(a, notb, &Ring::mul);
-  LONGS_EQUAL(0,notba(x00))
-  LONGS_EQUAL(0,notba(x01))
-  LONGS_EQUAL(25,notba(x10))
-  LONGS_EQUAL(0,notba(x11))
-  DOT(notba);
+//   // apply, two nodes, in switched order
+//   DT notba = apply(a, notb, &Ring::mul);
+//   LONGS_EQUAL(0,notba(x00))
+//   LONGS_EQUAL(0,notba(x01))
+//   LONGS_EQUAL(25,notba(x10))
+//   LONGS_EQUAL(0,notba(x11))
+//   DOT(notba);
 
-  // Test choose 0
-  DT actual0 = notba.choose(A, 0);
-  EXPECT(assert_equal(DT(0.0), actual0));
-  DOT(actual0);
+//   // Test choose 0
+//   DT actual0 = notba.choose(A, 0);
+//   EXPECT(assert_equal(DT(0.0), actual0));
+//   DOT(actual0);
 
-  // Test choose 1
-  DT actual1 = notba.choose(A, 1);
-  EXPECT(assert_equal(DT(B, 25, 0), actual1));
-  DOT(actual1);
+//   // Test choose 1
+//   DT actual1 = notba.choose(A, 1);
+//   EXPECT(assert_equal(DT(B, 25, 0), actual1));
+//   DOT(actual1);
 
-  // apply, two nodes at same level
-  DT a_and_a = apply(a, a, &Ring::mul);
-  LONGS_EQUAL(0,a_and_a(x00))
-  LONGS_EQUAL(0,a_and_a(x01))
-  LONGS_EQUAL(25,a_and_a(x10))
-  LONGS_EQUAL(25,a_and_a(x11))
-  DOT(a_and_a);
+//   // apply, two nodes at same level
+//   DT a_and_a = apply(a, a, &Ring::mul);
+//   LONGS_EQUAL(0,a_and_a(x00))
+//   LONGS_EQUAL(0,a_and_a(x01))
+//   LONGS_EQUAL(25,a_and_a(x10))
+//   LONGS_EQUAL(25,a_and_a(x11))
+//   DOT(a_and_a);
 
-  // create a function on C
-  DT c(C, 0, 5);
+//   // create a function on C
+//   DT c(C, 0, 5);
 
-  // and a model assigning stuff to C
-  Assignment<string> x101;
-  x101[A] = 1, x101[B] = 0, x101[C] = 1;
+//   // and a model assigning stuff to C
+//   Assignment<string> x101;
+//   x101[A] = 1, x101[B] = 0, x101[C] = 1;
 
-  // mul notba with C
-  DT notbac = apply(notba, c, &Ring::mul);
-  LONGS_EQUAL(125,notbac(x101))
-  DOT(notbac);
+//   // mul notba with C
+//   DT notbac = apply(notba, c, &Ring::mul);
+//   LONGS_EQUAL(125,notbac(x101))
+//   DOT(notbac);
 
-  // mul now in different order
-  DT acnotb = apply(apply(a, c, &Ring::mul), notb, &Ring::mul);
-  LONGS_EQUAL(125,acnotb(x101))
-  DOT(acnotb);
-}
+//   // mul now in different order
+//   DT acnotb = apply(apply(a, c, &Ring::mul), notb, &Ring::mul);
+//   LONGS_EQUAL(125,acnotb(x101))
+//   DOT(acnotb);
+// }
 
 /* ******************************************************************************** */
 // test Conversion

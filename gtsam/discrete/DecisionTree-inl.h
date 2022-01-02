@@ -76,25 +76,26 @@ namespace gtsam {
     }
 
     /** equality up to tolerance */
-    bool equals(const Node& q, double tol,
-                const CompareFunc& compare) const override {
+    bool equals(const Node& q, const CompareFunc& compare) const override {
       const Leaf* other = dynamic_cast<const Leaf*>(&q);
       if (!other) return false;
       return compare(this->constant_, other->constant_);
     }
 
     /** print */
-    void print(const std::string& s,
-               const FormatterFunc& formatter) const override {
-      bool showZero = true;
-      if (showZero || constant_) std::cout << s << " Leaf " << constant_ << std::endl;
+    void print(const std::string& s, const LabelFormatter& labelFormatter,
+               const ValueFormatter& valueFormatter) const override {
+      std::cout << s << " Leaf " << valueFormatter(constant_) << std::endl;
     }
 
     /** to graphviz file */
-    void dot(std::ostream& os, bool showZero) const override {
-      if (showZero || constant_) os << "\"" << this->id() << "\" [label=\""
-          << boost::format("%4.2g") % constant_
-          << "\", shape=box, rank=sink, height=0.35, fixedsize=true]\n"; // width=0.55,
+    void dot(std::ostream& os, const LabelFormatter& labelFormatter,
+             const ValueFormatter& valueFormatter,
+             bool showZero) const override {
+      std::string value = valueFormatter(constant_);
+      if (showZero || value.compare("0"))
+        os << "\"" << this->id() << "\" [label=\"" << value
+           << "\", shape=box, rank=sink, height=0.35, fixedsize=true]\n";  // width=0.55,
     }
 
     /** evaluate */
@@ -238,16 +239,19 @@ namespace gtsam {
     }
 
     /** print (as a tree) */
-    void print(const std::string& s,
-               const FormatterFunc& formatter) const override {
+    void print(const std::string& s, const LabelFormatter& labelFormatter,
+               const ValueFormatter& valueFormatter) const override {
       std::cout << s << " Choice(";
-      std::cout << formatter(label_) << ") " << std::endl;
+      std::cout << labelFormatter(label_) << ") " << std::endl;
       for (size_t i = 0; i < branches_.size(); i++)
-        branches_[i]->print((boost::format("%s %d") % s % i).str(), formatter);
+        branches_[i]->print((boost::format("%s %d") % s % i).str(),
+                            labelFormatter, valueFormatter);
     }
 
     /** output to graphviz (as a a graph) */
-    void dot(std::ostream& os, bool showZero) const override {
+    void dot(std::ostream& os, const LabelFormatter& labelFormatter,
+             const ValueFormatter& valueFormatter,
+             bool showZero) const override {
       os << "\"" << this->id() << "\" [shape=circle, label=\"" << label_
           << "\"]\n";
       size_t B = branches_.size();
@@ -257,7 +261,8 @@ namespace gtsam {
         // Check if zero
         if (!showZero) {
           const Leaf* leaf = dynamic_cast<const Leaf*> (branch.get());
-          if (leaf && !leaf->constant()) continue;
+          std::string value = valueFormatter(leaf->constant());
+          if (leaf && value.compare("0")) continue;
         }
 
         os << "\"" << this->id() << "\" -> \"" << branch->id() << "\"";
@@ -266,7 +271,7 @@ namespace gtsam {
           if (i > 1) os << " [style=bold]";
         }
         os << std::endl;
-        branch->dot(os, showZero);
+        branch->dot(os, labelFormatter, valueFormatter, showZero);
       }
     }
 
@@ -280,16 +285,15 @@ namespace gtsam {
       return (q.isLeaf() && q.sameLeaf(*this));
     }
 
-    /** equality up to tolerance */
-    bool equals(const Node& q, double tol,
-                const CompareFunc& compare) const override {
+    /** equality */
+    bool equals(const Node& q, const CompareFunc& compare) const override {
       const Choice* other = dynamic_cast<const Choice*>(&q);
       if (!other) return false;
       if (this->label_ != other->label_) return false;
       if (branches_.size() != other->branches_.size()) return false;
       // we don't care about shared pointers being equal here
       for (size_t i = 0; i < branches_.size(); i++)
-        if (!(branches_[i]->equals(*(other->branches_[i]), tol, compare)))
+        if (!(branches_[i]->equals(*(other->branches_[i]), compare)))
           return false;
       return true;
     }
@@ -459,7 +463,7 @@ namespace gtsam {
   DecisionTree<L, Y>::DecisionTree(const DecisionTree<L, X>& other,
                                    std::function<Y(const X&)> op) {
     auto map = [](const L& label) { return label; };
-    root_ = convert<L, X>(other.root_, op, map);
+    root_ = other.template convert<L, X>(op, map);
   }
 
   /*********************************************************************************/
@@ -470,7 +474,7 @@ namespace gtsam {
     std::function<L(const M&)> map_function = [&map](const M& label) -> L {
       return map.at(label);
     };
-    root_ = convert<M, X>(other.root_, op, map_function);
+    root_ = other.template convert<M, X>(op, map_function);
   }
 
   /*********************************************************************************/
@@ -587,7 +591,7 @@ namespace gtsam {
   template <typename M, typename X>
   typename DecisionTree<L, Y>::NodePtr DecisionTree<L, Y>::convert(
       const typename DecisionTree<M, X>::NodePtr& f,
-      std::function<Y(const X&)> op, std::function<L(const M&)> map) {
+      std::function<Y(const X&)> op, std::function<L(const M&)> map) const {
     typedef DecisionTree<M, X> MX;
     typedef typename MX::Leaf MXLeaf;
     typedef typename MX::Choice MXChoice;
@@ -596,11 +600,11 @@ namespace gtsam {
 
     // ugliness below because apparently we can't have templated virtual functions
     // If leaf, apply unary conversion "op" and create a unique leaf
-    const MXLeaf* leaf = dynamic_cast<const MXLeaf*> (f.get());
+    auto leaf = boost::dynamic_pointer_cast<const MXLeaf>(f);
     if (leaf) return NodePtr(new Leaf(op(leaf->constant())));
 
     // Check if Choice
-    boost::shared_ptr<const MXChoice> choice = boost::dynamic_pointer_cast<const MXChoice> (f);
+    auto choice = boost::dynamic_pointer_cast<const MXChoice>(f);
     if (!choice) throw std::invalid_argument(
         "DecisionTree::Convert: Invalid NodePtr");
 
@@ -619,15 +623,16 @@ namespace gtsam {
 
   /*********************************************************************************/
   template <typename L, typename Y>
-  bool DecisionTree<L, Y>::equals(const DecisionTree& other, double tol,
+  bool DecisionTree<L, Y>::equals(const DecisionTree& other,
                                   const CompareFunc& compare) const {
-    return root_->equals(*other.root_, tol, compare);
+    return root_->equals(*other.root_, compare);
   }
 
   template <typename L, typename Y>
   void DecisionTree<L, Y>::print(const std::string& s,
-                                 const FormatterFunc& formatter) const {
-    root_->print(s, formatter);
+                                 const LabelFormatter& labelFormatter,
+                                 const ValueFormatter& valueFormatter) const {
+    root_->print(s, labelFormatter, valueFormatter);
   }
 
   template<typename L, typename Y>
@@ -687,26 +692,34 @@ namespace gtsam {
   }
 
   /*********************************************************************************/
-  template<typename L, typename Y>
-  void DecisionTree<L, Y>::dot(std::ostream& os, bool showZero) const {
+  template <typename L, typename Y>
+  void DecisionTree<L, Y>::dot(std::ostream& os,
+                               const LabelFormatter& labelFormatter,
+                               const ValueFormatter& valueFormatter,
+                               bool showZero) const {
     os << "digraph G {\n";
-    root_->dot(os, showZero);
+    root_->dot(os, labelFormatter, valueFormatter, showZero);
     os << " [ordering=out]}" << std::endl;
   }
 
-  template<typename L, typename Y>
-  void DecisionTree<L, Y>::dot(const std::string& name, bool showZero) const {
+  template <typename L, typename Y>
+  void DecisionTree<L, Y>::dot(const std::string& name,
+                               const LabelFormatter& labelFormatter,
+                               const ValueFormatter& valueFormatter,
+                               bool showZero) const {
     std::ofstream os((name + ".dot").c_str());
-    dot(os, showZero);
+    dot(os, labelFormatter, valueFormatter, showZero);
     int result = system(
         ("dot -Tpdf " + name + ".dot -o " + name + ".pdf >& /dev/null").c_str());
     if (result==-1) throw std::runtime_error("DecisionTree::dot system call failed");
   }
 
-  template<typename L, typename Y>
-  std::string DecisionTree<L, Y>::dot(bool showZero) const {
+  template <typename L, typename Y>
+  std::string DecisionTree<L, Y>::dot(const LabelFormatter& labelFormatter,
+                                      const ValueFormatter& valueFormatter,
+                                      bool showZero) const {
     std::stringstream ss;
-    dot(ss, showZero);
+    dot(ss, labelFormatter, valueFormatter, showZero);
     return ss.str();
   }
 

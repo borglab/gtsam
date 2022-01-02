@@ -28,7 +28,13 @@ namespace gtsam {
    * TODO: consider eliminating this class altogether?
    */
   template<typename L>
-  class AlgebraicDecisionTree: public DecisionTree<L, double> {
+  class GTSAM_EXPORT AlgebraicDecisionTree: public DecisionTree<L, double> {
+    /// Default method used by `formatter` when printing.
+    static std::string DefaultFormatter(const L& x) {
+      std::stringstream ss;
+      ss << x;
+      return ss.str();
+    }
 
    public:
 
@@ -141,13 +147,23 @@ namespace gtsam {
       return this->combine(labelC, &Ring::add);
     }
 
+    /// print method customized to node type `double`.
+    void print(const std::string& s,
+               const typename Super::LabelFormatter& labelFormatter =
+                   &DefaultFormatter) const {
+      auto valueFormatter = [](const double& v) {
+        return (boost::format("%4.2g") % v).str();
+      };
+      Super::print(s, labelFormatter, valueFormatter);
+    }
+
     /// Equality method customized to node type `double`.
     bool equals(const AlgebraicDecisionTree& other, double tol = 1e-9) const {
       // lambda for comparison of two doubles upto some tolerance.
       auto compare = [tol](double a, double b) {
         return std::abs(a - b) < tol;
       };
-      return this->root_->equals(*other.root_, tol, compare);
+      return Super::equals(other, compare);
     }
   };
 // AlgebraicDecisionTree
