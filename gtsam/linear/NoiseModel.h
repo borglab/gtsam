@@ -730,16 +730,14 @@ namespace gtsam {
 
   } // namespace noiseModel
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-  /** Note, deliberately not in noiseModel namespace.
-   * Deprecated. Only for compatibility with previous version.
+  /** 
+   * Aliases. Deliberately not in noiseModel namespace.
    */
   typedef noiseModel::Base::shared_ptr SharedNoiseModel;
   typedef noiseModel::Gaussian::shared_ptr SharedGaussian;
   typedef noiseModel::Diagonal::shared_ptr SharedDiagonal;
   typedef noiseModel::Constrained::shared_ptr SharedConstrained;
   typedef noiseModel::Isotropic::shared_ptr SharedIsotropic;
-#endif
 
   /// traits
   template<> struct traits<noiseModel::Gaussian> : public Testable<noiseModel::Gaussian> {};

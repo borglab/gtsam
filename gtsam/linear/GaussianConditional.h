@@ -128,7 +128,7 @@ namespace gtsam {
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
     /** Scale the values in \c gy according to the sigmas for the frontal variables in this
      *  conditional. */
-    void GTSAM_DEPRECATED scaleFrontalsBySigma(VectorValues& gy) const;
+    void scaleFrontalsBySigma(VectorValues& gy) const;
 #endif
 
    private:

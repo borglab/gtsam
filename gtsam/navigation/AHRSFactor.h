@@ -104,15 +104,13 @@ class GTSAM_EXPORT PreintegratedAhrsMeasurements : public PreintegratedRotation 
   static Vector DeltaAngles(const Vector& msr_gyro_t, const double msr_dt,
       const Vector3& delta_angles);
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-  /// @deprecated constructor
-  GTSAM_DEPRECATED PreintegratedAhrsMeasurements(
-      const Vector3& biasHat, const Matrix3& measuredOmegaCovariance)
+  /// @deprecated constructor, but used in tests.
+  PreintegratedAhrsMeasurements(const Vector3& biasHat,
+                                const Matrix3& measuredOmegaCovariance)
       : PreintegratedRotation(boost::make_shared<Params>()), biasHat_(biasHat) {
     p_->gyroscopeCovariance = measuredOmegaCovariance;
     resetIntegration();
   }
-#endif
 
 private:
 
@@ -183,27 +181,25 @@ public:
 
   /// predicted states from IMU
   /// TODO(frank): relationship with PIM predict ??
-  static Rot3 Predict(
+  static Rot3 Predict(const Rot3& rot_i, const Vector3& bias,
+                      const PreintegratedAhrsMeasurements& pim);
+
+  /// @deprecated constructor, but used in tests.
+  AHRSFactor(Key rot_i, Key rot_j, Key bias,
+             const PreintegratedAhrsMeasurements& pim,
+             const Vector3& omegaCoriolis,
+             const boost::optional<Pose3>& body_P_sensor = boost::none);
+
+  /// @deprecated static function, but used in tests.
+  static Rot3 predict(
       const Rot3& rot_i, const Vector3& bias,
-      const PreintegratedAhrsMeasurements preintegratedMeasurements);
+      const PreintegratedAhrsMeasurements& pim, const Vector3& omegaCoriolis,
+      const boost::optional<Pose3>& body_P_sensor = boost::none);
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
   /// @deprecated name
   typedef PreintegratedAhrsMeasurements PreintegratedMeasurements;
 
-  /// @deprecated constructor
-  GTSAM_DEPRECATED AHRSFactor(
-      Key rot_i, Key rot_j, Key bias,
-      const PreintegratedMeasurements& preintegratedMeasurements,
-      const Vector3& omegaCoriolis,
-      const boost::optional<Pose3>& body_P_sensor = boost::none);
-
-  /// @deprecated static function
-  static Rot3 GTSAM_DEPRECATED
-  predict(const Rot3& rot_i, const Vector3& bias,
-          const PreintegratedMeasurements preintegratedMeasurements,
-          const Vector3& omegaCoriolis,
-          const boost::optional<Pose3>& body_P_sensor = boost::none);
 #endif
 
 private:
