@@ -77,38 +77,57 @@ void HybridFactorGraph::clear() {
   gaussianGraph_.resize(0);
 }
 
-/// The function type that does a single elimination step on a variable.
-std::pair<DCConditional::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
-    const HybridFactorGraph& factors, const Ordering& ordering) {
-  std::cout << "HybridEliminate" << std::endl;
-  std::cout << "factors.size():" << factors.size() << std::endl;
+/// Define adding a GaussianFactor to a sum.
+using Sum = DCGaussianMixtureFactor::Sum;
+static Sum& operator+=(Sum& sum, const GaussianFactor::shared_ptr& factor) {
+  using Y = GaussianFactorGraph::shared_ptr;
+  std::function<Y(const Y&)> add = [&factor](const Y& graph) {
+    auto result = boost::make_shared<GaussianFactorGraph>(*graph);
+    result->push_back(factor);
+    return result;
+  };
+  sum = sum.apply(add);
+  return sum;
+}
 
-  if (factors.nrNonlinearFactors()) {
-    throw std::runtime_error("EliminateHybrid cannot handle NonlinearFactors.");
+Sum HybridFactorGraph::sum() const {
+  if (nrNonlinearFactors()) {
+    throw std::runtime_error(
+        "HybridFactorGraph::sum cannot handle NonlinearFactors.");
   }
 
-  if (factors.nrDiscreteFactors()) {
-    throw std::runtime_error("EliminateHybrid cannot handle DiscreteFactors.");
+  if (nrDiscreteFactors()) {
+    throw std::runtime_error(
+        "HybridFactorGraph::sum cannot handle DiscreteFactors.");
   }
 
   // TODO: take all factors, which *must* be all DCGaussianMixtureFactors or
   // GaussianFactors, "add" them (which might involve decision-trees of
   // different structure, and creating a dummy decision tree for Gaussians).
 
-  for (auto&& dcFactor : factors.dcGraph()) {
+  // SUM: "sum" all factors, gathering into GaussianFactorGraph
+  DCGaussianMixtureFactor::Sum sum;
+  for (auto&& dcFactor : dcGraph()) {
     if (auto mixtureFactor =
             boost::dynamic_pointer_cast<DCGaussianMixtureFactor>(dcFactor)) {
-      GTSAM_PRINT(*mixtureFactor);
+      sum += *mixtureFactor;
     } else {
       throw std::runtime_error(
-          "EliminateHybrid can only handleDCGaussianMixtureFactors.");
+          "HybridFactorGraph::sum can only handleDCGaussianMixtureFactors.");
     }
   }
 
   // Add the original factors from the gaussian factor graph
-  for (auto&& gaussianFactor : factors.gaussianGraph()) {
-    GTSAM_PRINT(*gaussianFactor);
+  for (auto&& gaussianFactor : gaussianGraph()) {
+    sum += gaussianFactor;
   }
+  return sum;
+}
+
+/// The function type that does a single elimination step on a variable.
+std::pair<DCConditional::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
+    const HybridFactorGraph& factors, const Ordering& ordering) {
+  auto sum = factors.sum();
 
   // If there are no DC factors, this would be appropriate:
   auto result = EliminatePreferCholesky(factors.gaussianGraph(), ordering);

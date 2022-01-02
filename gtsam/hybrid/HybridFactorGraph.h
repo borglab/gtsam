@@ -318,6 +318,12 @@ class HybridFactorGraph : protected FactorGraph<Factor>,
       std::pair<boost::shared_ptr<DCConditional>, boost::shared_ptr<Factor>>;
   using Eliminate = std::function<EliminationResult(const HybridFactorGraph&,
                                                     const Ordering&)>;
+
+  /**
+   * Sum all gaussians and Gaussian mixtures together.
+   * @return a decision tree of GaussianFactorGraphs
+   * */
+  DCGaussianMixtureFactor::Sum sum() const;
   /// @}
 };
 
