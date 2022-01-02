@@ -142,7 +142,7 @@ namespace GeographicLib {
     NormalGravity(real a, real GM, real omega, real f_J2,
                   bool geometricp = true);
     /**
-     * \deprecated Old constructor for the normal gravity.
+     * @deprecated Old constructor for the normal gravity.
      *
      * @param[in] a equatorial radius (meters).
      * @param[in] GM mass constant of the ellipsoid

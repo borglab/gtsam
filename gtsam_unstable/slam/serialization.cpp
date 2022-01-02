@@ -173,7 +173,7 @@ BOOST_CLASS_EXPORT_GUID(GeneralSFMFactor2Cal3_S2, "gtsam::GeneralSFMFactor2Cal3_
 
 BOOST_CLASS_EXPORT_GUID(GenericStereoFactor3D, "gtsam::GenericStereoFactor3D");
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
 
 typedef PriorFactor<SimpleCamera>               PriorFactorSimpleCamera;
 typedef NonlinearEquality<SimpleCamera>         NonlinearEqualitySimpleCamera;

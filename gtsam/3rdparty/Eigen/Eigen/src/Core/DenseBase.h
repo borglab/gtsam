@@ -298,7 +298,7 @@ template<typename Derived> class DenseBase
 
     /** \internal
       * Copies \a other into *this without evaluating other. \returns a reference to *this.
-      * \deprecated */
+      * @deprecated */
     template<typename OtherDerived>
     EIGEN_DEVICE_FUNC
     Derived& lazyAssign(const DenseBase<OtherDerived>& other);
@@ -306,7 +306,7 @@ template<typename Derived> class DenseBase
     EIGEN_DEVICE_FUNC
     CommaInitializer<Derived> operator<< (const Scalar& s);
 
-    /** \deprecated it now returns \c *this */
+    /** @deprecated it now returns \c *this */
     template<unsigned int Added,unsigned int Removed>
     EIGEN_DEPRECATED
     const Derived& flagged() const

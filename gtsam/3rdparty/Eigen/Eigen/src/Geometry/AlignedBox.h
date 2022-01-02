@@ -84,10 +84,10 @@ EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF_VECTORIZABLE_FIXED_SIZE(_Scalar,_AmbientDim)
   /** \returns the dimension in which the box holds */
   EIGEN_DEVICE_FUNC inline Index dim() const { return AmbientDimAtCompileTime==Dynamic ? m_min.size() : Index(AmbientDimAtCompileTime); }
 
-  /** \deprecated use isEmpty() */
+  /** @deprecated use isEmpty() */
   EIGEN_DEVICE_FUNC inline bool isNull() const { return isEmpty(); }
 
-  /** \deprecated use setEmpty() */
+  /** @deprecated use setEmpty() */
   EIGEN_DEVICE_FUNC inline void setNull() { setEmpty(); }
 
   /** \returns true if the box is empty.

@@ -12,7 +12,7 @@
 
 namespace Eigen {
 
-/** \deprecated Use Map<SparseMatrix<> >
+/** @deprecated Use Map<SparseMatrix<> >
   * \class MappedSparseMatrix
   *
   * \brief Sparse matrix
