@@ -380,7 +380,7 @@ namespace GeographicLib {
       return x;
     }
     /**
-     * \deprecated An old name for val<T>(s).
+     * @deprecated An old name for val<T>(s).
      **********************************************************************/
     template<typename T>
       // GEOGRAPHICLIB_DEPRECATED("Use new Utility::val<T>(s)")

@@ -170,7 +170,7 @@ class GTSAM_EXPORT Cal3 {
     return K;
   }
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
   /** @deprecated The following function has been deprecated, use K above */
   Matrix3 matrix() const { return K(); }
 #endif

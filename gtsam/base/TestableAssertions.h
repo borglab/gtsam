@@ -80,9 +80,10 @@ bool assert_equal(const V& expected, const boost::optional<const V&>& actual, do
   return assert_equal(expected, *actual, tol);
 }
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
 /**
  * Version of assert_equals to work with vectors
- * \deprecated: use container equals instead
+ * @deprecated: use container equals instead
  */
 template<class V>
 bool GTSAM_DEPRECATED assert_equal(const std::vector<V>& expected, const std::vector<V>& actual, double tol = 1e-9) {
@@ -108,6 +109,7 @@ bool GTSAM_DEPRECATED assert_equal(const std::vector<V>& expected, const std::ve
   }
   return true;
 }
+#endif
 
 /**
  * Function for comparing maps of testable->testable
