@@ -461,20 +461,21 @@ namespace gtsam {
   template <typename L, typename Y>
   template <typename X>
   DecisionTree<L, Y>::DecisionTree(const DecisionTree<L, X>& other,
-                                   std::function<Y(const X&)> op) {
-    auto map = [](const L& label) { return label; };
-    root_ = other.template convert<L, X>(op, map);
+                                   std::function<Y(const X&)> Y_of_X) {
+    auto L_of_L = [](const L& label) { return label; };
+    root_ = convertFrom<L, X>(Y_of_X, L_of_L);
   }
 
   /*********************************************************************************/
-  template<typename L, typename Y>
-  template<typename M, typename X>
+  template <typename L, typename Y>
+  template <typename M, typename X>
   DecisionTree<L, Y>::DecisionTree(const DecisionTree<M, X>& other,
-      const std::map<M, L>& map, std::function<Y(const X&)> op)  {
-    std::function<L(const M&)> map_function = [&map](const M& label) -> L {
+                                   const std::map<M, L>& map,
+                                   std::function<Y(const X&)> Y_of_X) {
+    std::function<L(const M&)> L_of_M = [&map](const M& label) -> L {
       return map.at(label);
     };
-    root_ = other.template convert<M, X>(op, map_function);
+    root_ = convertFrom<M, X>(other.root_, L_of_M, Y_of_X);
   }
 
   /*********************************************************************************/
@@ -589,9 +590,10 @@ namespace gtsam {
   /*********************************************************************************/
   template <typename L, typename Y>
   template <typename M, typename X>
-  typename DecisionTree<L, Y>::NodePtr DecisionTree<L, Y>::convert(
+  typename DecisionTree<L, Y>::NodePtr DecisionTree<L, Y>::convertFrom(
       const typename DecisionTree<M, X>::NodePtr& f,
-      std::function<Y(const X&)> op, std::function<L(const M&)> map) const {
+      std::function<L(const M&)> L_of_M,
+      std::function<Y(const X&)> Y_of_X) const {
     typedef DecisionTree<M, X> MX;
     typedef typename MX::Leaf MXLeaf;
     typedef typename MX::Choice MXChoice;
@@ -601,7 +603,7 @@ namespace gtsam {
     // ugliness below because apparently we can't have templated virtual functions
     // If leaf, apply unary conversion "op" and create a unique leaf
     auto leaf = boost::dynamic_pointer_cast<const MXLeaf>(f);
-    if (leaf) return NodePtr(new Leaf(op(leaf->constant())));
+    if (leaf) return NodePtr(new Leaf(Y_of_X(leaf->constant())));
 
     // Check if Choice
     auto choice = boost::dynamic_pointer_cast<const MXChoice>(f);
@@ -610,12 +612,12 @@ namespace gtsam {
 
     // get new label
     const M oldLabel = choice->label();
-    const L newLabel = map(oldLabel);
+    const L newLabel = L_of_M(oldLabel);
 
     // put together via Shannon expansion otherwise not sorted.
     std::vector<LY> functions;
     for(const MXNodePtr& branch: choice->branches()) {
-      LY converted(convert<M, X>(branch, op, map));
+      LY converted(convertFrom<M, X>(branch, L_of_M, Y_of_X));
       functions += converted;
     }
     return LY::compose(functions.begin(), functions.end(), newLabel);
