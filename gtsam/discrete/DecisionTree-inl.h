@@ -642,6 +642,11 @@ namespace gtsam {
 
   template<typename L, typename Y>
   DecisionTree<L, Y> DecisionTree<L, Y>::apply(const Unary& op) const {
+    // It is unclear what should happen if tree is empty:
+    if (empty()) {
+      throw std::runtime_error(
+          "DecisionTree::apply(unary op) undefined for empty tree.");
+    }
     return DecisionTree(root_->apply(op));
   }
 
@@ -649,6 +654,11 @@ namespace gtsam {
   template<typename L, typename Y>
   DecisionTree<L, Y> DecisionTree<L, Y>::apply(const DecisionTree& g,
       const Binary& op) const {
+    // It is unclear what should happen if either tree is empty:
+    if (empty() or g.empty()) {
+      throw std::runtime_error(
+          "DecisionTree::apply(binary op) undefined for empty trees.");
+    }
     // apply the operaton on the root of both diagrams
     NodePtr h = root_->apply_f_op_g(*g.root_, op);
     // create a new class with the resulting root "h"
