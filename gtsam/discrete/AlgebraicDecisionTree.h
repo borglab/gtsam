@@ -158,7 +158,7 @@ namespace gtsam {
       return this->combine(labelC, &Ring::add);
     }
 
-    /// print method customized to node type `double`.
+    /// print method customized to value type `double`.
     void print(const std::string& s,
                const typename Base::LabelFormatter& labelFormatter =
                    &DefaultFormatter) const {
@@ -168,7 +168,7 @@ namespace gtsam {
       Base::print(s, labelFormatter, valueFormatter);
     }
 
-    /// Equality method customized to node type `double`.
+    /// Equality method customized to value type `double`.
     bool equals(const AlgebraicDecisionTree& other, double tol = 1e-9) const {
       // lambda for comparison of two doubles upto some tolerance.
       auto compare = [tol](double a, double b) {
