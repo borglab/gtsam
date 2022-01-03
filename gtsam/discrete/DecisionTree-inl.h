@@ -86,8 +86,8 @@ namespace gtsam {
      * @brief Print method.
      * 
      * @param s Prefix string.
-     * @param labelFormatter Functor to format the node label.
-     * @param valueFormatter Functor to format the node value.
+     * @param labelFormatter Functor to format the labels of type L.
+     * @param valueFormatter Functor to format the values of type Y.
      */
     void print(const std::string& s, const LabelFormatter& labelFormatter,
                const ValueFormatter& valueFormatter) const override {

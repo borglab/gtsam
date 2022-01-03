@@ -127,10 +127,10 @@ namespace gtsam {
      * @brief Convert from a DecisionTree<M, X> to DecisionTree<L, Y>.
      * 
      * @tparam M The previous label type.
-     * @tparam X The previous node type.
+     * @tparam X The previous value type.
      * @param f The node pointer to the root of the previous DecisionTree.
      * @param L_of_M Functor to convert from label type M to type L.
-     * @param Y_of_X Functor to convert from node type X to type Y.
+     * @param Y_of_X Functor to convert from value type X to type Y.
      * @return NodePtr 
      */
     template <typename M, typename X>
@@ -170,22 +170,22 @@ namespace gtsam {
         const DecisionTree& f0, const DecisionTree& f1);
 
     /**
-     * @brief Convert from a different node type.
+     * @brief Convert from a different value type.
      *
-     * @tparam X The previous node type.
+     * @tparam X The previous value type.
      * @param other The DecisionTree to convert from.
-     * @param Y_of_X Functor to convert from node type X to type Y.
+     * @param Y_of_X Functor to convert from value type X to type Y.
      */
     template <typename X>
     DecisionTree(const DecisionTree<L, X>& other,
                  std::function<Y(const X&)> Y_of_X);
 
     /**
-     * @brief Convert from a different node type X to node type Y, also transate
+     * @brief Convert from a different value type X to value type Y, also transate
      * labels via map from type M to L.
      *
      * @tparam M Previous label type.
-     * @tparam X Previous node type.
+     * @tparam X Previous value type.
      * @param other The decision tree to convert.
      * @param L_of_M Map from label type M to type L.
      * @param Y_of_X Functor to convert from type X to type Y.
@@ -283,13 +283,6 @@ namespace gtsam {
   template<typename L, typename Y>
   DecisionTree<L, Y> apply(const DecisionTree<L, Y>& f,
       const typename DecisionTree<L, Y>::Unary& op) {
-    return f.apply(op);
-  }
-
-  /// Apply unary operator `op` to DecisionTree `f` but with node type.
-  template<typename L, typename Y, typename X>
-  DecisionTree<L, Y> apply(const DecisionTree<L, Y>& f,
-      const std::function<Y(const X&)>& op) {
     return f.apply(op);
   }
 
