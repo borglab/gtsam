@@ -631,6 +631,48 @@ namespace gtsam {
   }
 
   /*********************************************************************************/
+  template <typename L, typename Y, typename X>
+  struct Fold {
+    std::function<X(const Y&, X)> f;
+
+    /// Construct from folding function
+    Fold(std::function<X(const Y&, X)> f) : f(f) {}
+
+    using NodePtr = typename DecisionTree<L, Y>::NodePtr;
+    using Choice = typename DecisionTree<L, Y>::Choice;
+    using Leaf = typename DecisionTree<L, Y>::Leaf;
+
+    /**
+     * @brief Do a depth-first fold on the tree rooted at node.
+     *
+     * @param node root of a (sub-) tree, or a leaf.
+     * @param x0 Initial accumulator value.
+     * @return X Final accumulator value.
+     */
+    X fold(const NodePtr& node, X x0) const {
+      if (auto leaf = boost::dynamic_pointer_cast<const Leaf>(node)) {
+        return f(leaf->constant(), x0);
+      } else if (auto choice =
+                     boost::dynamic_pointer_cast<const Choice>(node)) {
+        for (auto&& branch : choice->branches()) x0 = fold(branch, x0);
+        return x0;
+      } else {
+        throw std::invalid_argument("Fold: Invalid NodePtr");
+      }
+    }
+
+    // alias for fold:
+    X operator()(const NodePtr& node, X x0) const { return fold(node, x0); }
+  };
+
+  template <typename L, typename Y>
+  template <typename Func, typename X>
+  X DecisionTree<L, Y>::fold(Func f, X x0) const {
+    Fold<L, Y, X> fold(f);
+    return fold(root_, x0);
+  }
+
+  /*********************************************************************************/
   template <typename L, typename Y>
   bool DecisionTree<L, Y>::equals(const DecisionTree& other,
                                   const CompareFunc& compare) const {
