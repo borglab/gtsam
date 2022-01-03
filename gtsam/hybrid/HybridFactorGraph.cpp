@@ -80,10 +80,10 @@ void HybridFactorGraph::clear() {
 /// Define adding a GaussianFactor to a sum.
 using Sum = DCGaussianMixtureFactor::Sum;
 static Sum& operator+=(Sum& sum, const GaussianFactor::shared_ptr& factor) {
-  using Y = GaussianFactorGraph::shared_ptr;
+  using Y = GaussianFactorGraph;
   std::function<Y(const Y&)> add = [&factor](const Y& graph) {
-    auto result = boost::make_shared<GaussianFactorGraph>(*graph);
-    result->push_back(factor);
+    auto result = graph;
+    result.push_back(factor);
     return result;
   };
   sum = sum.apply(add);
@@ -138,12 +138,12 @@ std::pair<DCConditional::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
 
   /// Now we need to eliminate each one using conventional Cholesky:
   /// We can use this by creating a *new* decision tree:
-  using X = GaussianFactorGraph::shared_ptr;
+  using X = GaussianFactorGraph;
   using Y = GaussianFactorGraph::EliminationResult;
-  std::function<Y(const X&)> op = [&ordering](const X& graph) {
-    return EliminatePreferCholesky(*graph, ordering);
+  std::function<Y(const X&)> Y_of_X = [&ordering](const X& graph) {
+    return EliminatePreferCholesky(graph, ordering);
   };
-  DecisionTree<Key, Y> tree(sum, op);
+  DecisionTree<Key, Y> tree(sum, Y_of_X);
 
   // // If there are no DC factors, this would be appropriate:
   // auto result = EliminatePreferCholesky(factors.gaussianGraph(), ordering);

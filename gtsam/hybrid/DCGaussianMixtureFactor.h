@@ -153,15 +153,15 @@ class DCGaussianMixtureFactor : public DCFactor {
   // - I now feel the need for an imperative binary op.
 
   /// A Sum of mixture factors contains small GaussianFactorGraphs
-  using Sum = DecisionTree<Key, GaussianFactorGraph::shared_ptr>;
+  using Sum = DecisionTree<Key, GaussianFactorGraph>;
 
   /// Add MixtureFactor to a Sum
   Sum addTo(const Sum& sum) const {
-    using Y = GaussianFactorGraph::shared_ptr;
+    using Y = GaussianFactorGraph;
     std::function<Y(const Y&, const Y&)> add = [](const Y& graph1,
                                                   const Y& graph2) {
-      auto result = boost::make_shared<GaussianFactorGraph>(*graph1);
-      result->push_back(*graph2);
+      auto result = graph1;
+      result.push_back(graph2);
       return result;
     };
     const Sum wrapped = wrappedFactors();
@@ -178,11 +178,10 @@ class DCGaussianMixtureFactor : public DCFactor {
  private:
   /// Return Sum decision tree with factors wrapped in Singleton FGs.
   Sum wrappedFactors() const {
-    std::function<GaussianFactorGraph::shared_ptr(
-        const GaussianFactor::shared_ptr&)>
-        wrap = [](const GaussianFactor::shared_ptr& factor) {
-          auto result = boost::make_shared<GaussianFactorGraph>();
-          result->push_back(factor);
+    std::function<GaussianFactorGraph(const GaussianFactor::shared_ptr&)> wrap =
+        [](const GaussianFactor::shared_ptr& factor) {
+          GaussianFactorGraph result;
+          result.push_back(factor);
           return result;
         };
     return Sum(factors_, wrap);
