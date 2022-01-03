@@ -194,7 +194,8 @@ namespace gtsam {
 
   /* ************************************************************************* */
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-  void GaussianConditional::scaleFrontalsBySigma(VectorValues& gy) const {
+  void GTSAM_DEPRECATED
+  GaussianConditional::scaleFrontalsBySigma(VectorValues& gy) const {
     DenseIndex vectorPosition = 0;
     for (const_iterator frontal = beginFrontals(); frontal != endFrontals(); ++frontal) {
       gy[*frontal].array() *= model_->sigmas().segment(vectorPosition, getDim(frontal)).array();

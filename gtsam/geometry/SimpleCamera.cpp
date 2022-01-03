@@ -22,7 +22,7 @@
 namespace gtsam {
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-  SimpleCamera simpleCamera(const Matrix34& P) {
+  SimpleCamera GTSAM_DEPRECATED simpleCamera(const Matrix34& P) {
 
     // P = [A|a] = s K cRw [I|-T], with s the unknown scale
     Matrix3 A = P.topLeftCorner(3, 3);

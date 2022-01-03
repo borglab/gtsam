@@ -99,10 +99,10 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
   /// get parameter u0
-  inline double u0() const { return u0_; }
+  inline double GTSAM_DEPRECATED u0() const { return u0_; }
 
   /// get parameter v0
-  inline double v0() const { return v0_; }
+  inline double GTSAM_DEPRECATED v0() const { return v0_; }
 #endif
 
   /**
