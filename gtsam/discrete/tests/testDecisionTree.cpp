@@ -230,13 +230,37 @@ TEST(DT, example)
 }
 
 /* ******************************************************************************** */
-// test Conversion
+// test Conversion of values
+std::function<bool(const int&)> bool_of_int = [](const int& y) {
+  return y != 0;
+};
+typedef DecisionTree<string, bool> StringBoolTree;
+
+TEST(DT, ConvertValuesOnly)
+{
+  // Create labels
+  string A("A"), B("B");
+
+  // apply, two nodes, in natural order
+  DT f1 = apply(DT(A, 0, 5), DT(B, 5, 0), &Ring::mul);
+
+  // convert
+  StringBoolTree f2(f1, bool_of_int);
+
+  // Check a value
+  Assignment<string> x00;
+  x00["A"] = 0, x00["B"] = 0;
+  EXPECT(!f2(x00));
+}
+
+/* ******************************************************************************** */
+// test Conversion of both values and labels.
 enum Label {
   U, V, X, Y, Z
 };
-typedef DecisionTree<Label, bool> BDT;
+typedef DecisionTree<Label, bool> LabelBoolTree;
 
-TEST(DT, conversion)
+TEST(DT, ConvertBoth)
 {
   // Create labels
   string A("A"), B("B");
@@ -248,12 +272,9 @@ TEST(DT, conversion)
   map<string, Label> ordering;
   ordering[A] = X;
   ordering[B] = Y;
-  std::function<bool(const int&)> bool_of_int = [](const int& y) {
-    return y != 0;
-  };
-  BDT f2(f1, ordering, bool_of_int);
+  LabelBoolTree f2(f1, ordering, bool_of_int);
 
-  // create a value
+  // Check some values
   Assignment<Label> x00, x01, x10, x11;
   x00[X] = 0, x00[Y] = 0;
   x01[X] = 0, x01[Y] = 1;

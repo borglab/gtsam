@@ -470,7 +470,7 @@ namespace gtsam {
                                    std::function<Y(const X&)> Y_of_X) {
     // Define functor for identity mapping of node label.
     auto L_of_L = [](const L& label) { return label; };
-    root_ = convertFrom<L, X>(Y_of_X, L_of_L);
+    root_ = convertFrom<L, X>(other.root_, L_of_L, Y_of_X);
   }
 
   /*********************************************************************************/
