@@ -51,13 +51,13 @@ isam = gtsam.ISAM2(isamParams);
 
 initialValues = Values;
 initialValues.insert(symbol('x',0), currentPoseGlobal);
-initialValues.insert(symbol('v',0), LieVector(currentVelocityGlobal));
+initialValues.insert(symbol('v',0), currentVelocityGlobal);
 initialValues.insert(symbol('b',0), imuBias.ConstantBias([0;0;0],[0;0;0]));
 initialFactors = NonlinearFactorGraph;
 initialFactors.add(PriorFactorPose3(symbol('x',0), ...
     currentPoseGlobal, noiseModel.Isotropic.Sigma(6, 1.0)));
-initialFactors.add(PriorFactorLieVector(symbol('v',0), ...
-    LieVector(currentVelocityGlobal), noiseModel.Isotropic.Sigma(3, 1.0)));
+initialFactors.add(PriorFactorVector(symbol('v',0), ...
+    currentVelocityGlobal, noiseModel.Isotropic.Sigma(3, 1.0)));
 initialFactors.add(PriorFactorConstantBias(symbol('b',0), ...
     imuBias.ConstantBias([0;0;0],[0;0;0]), noiseModel.Isotropic.Sigma(6, 1.0)));
 
@@ -96,7 +96,7 @@ for t = times
           initialVel = isam.calculateEstimate(symbol('v',lastSummaryIndex));
       else
           initialPose = Pose3;
-          initialVel = LieVector(velocity);
+          initialVel = velocity;
       end
       initialValues.insert(symbol('x',lastSummaryIndex+1), initialPose);
       initialValues.insert(symbol('v',lastSummaryIndex+1), initialVel);
