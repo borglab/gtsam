@@ -131,27 +131,22 @@ std::ostream& operator<<(std::ostream& os,
 }
 
 /// The function type that does a single elimination step on a variable.
-std::pair<DCConditional::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
+std::pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
     const HybridFactorGraph& factors, const Ordering& ordering) {
   /// Create a new decision tree with all factors gathered at leaves.
   auto sum = factors.sum();
 
   /// Now we need to eliminate each one using conventional Cholesky:
   /// We can use this by creating a *new* decision tree:
-  using X = GaussianFactorGraph;
-  using Y = GaussianFactorGraph::EliminationResult;
-  std::function<Y(const X&)> Y_of_X = [&ordering](const X& graph) {
+  using GFG = GaussianFactorGraph;
+  using Pair = GaussianFactorGraph::EliminationResult;
+  std::function<Pair(const GFG&)> eliminate = [&ordering](const GFG& graph) {
     return EliminatePreferCholesky(graph, ordering);
   };
-  DecisionTree<Key, Y> tree(sum, Y_of_X);
+  DecisionTree<Key, Pair> tree(sum, eliminate);
 
-  // // If there are no DC factors, this would be appropriate:
-  // auto result = EliminatePreferCholesky(factors.gaussianGraph(), ordering);
-  // boost::shared_ptr<GaussianConditional> gc = result.first;
-  // boost::shared_ptr<GaussianFactor> gf = result.second;
-
-  // Create a DCConditional...
-  auto conditional = boost::make_shared<DCConditional>();
+  // Create a GaussianMixture...
+  auto conditional = boost::make_shared<GaussianMixture>();
 
   // Create a resulting DCGaussianMixture on the separator.
   /// auto factor = TODO ...

@@ -26,28 +26,28 @@
 namespace gtsam {
 
 // Forward declarations
-class DCConditional;
+class GaussianMixture;
 class Dummy;
 class HybridFactorGraph;
 class HybridEliminationTree;
 class Ordering;
 
 /** Main elimination function for HybridFactorGraph */
-GTSAM_EXPORT std::pair<DCConditional::shared_ptr, boost::shared_ptr<Factor>>
+GTSAM_EXPORT std::pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>>
 EliminateHybrid(const HybridFactorGraph& factors, const Ordering& keys);
 
 template <>
 struct EliminationTraits<HybridFactorGraph> {
   typedef Factor FactorType;
   typedef HybridFactorGraph FactorGraphType;
-  typedef DCConditional ConditionalType;
+  typedef GaussianMixture ConditionalType;
   typedef HybridBayesNet BayesNetType;
   typedef HybridEliminationTree EliminationTreeType;
   typedef HybridBayesNet BayesTreeType;
   typedef HybridEliminationTree JunctionTreeType;
 
   /// The function type that does a single elimination step on a variable.
-  static std::pair<DCConditional::shared_ptr, boost::shared_ptr<Factor>>
+  static std::pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>>
   DefaultEliminate(const HybridFactorGraph& factors, const Ordering& ordering) {
     return EliminateHybrid(factors, ordering);
   }
@@ -315,7 +315,7 @@ class HybridFactorGraph : protected FactorGraph<Factor>,
   /// @{
   using FactorType = Factor;
   using EliminationResult =
-      std::pair<boost::shared_ptr<DCConditional>, boost::shared_ptr<Factor>>;
+      std::pair<boost::shared_ptr<GaussianMixture>, boost::shared_ptr<Factor>>;
   using Eliminate = std::function<EliminationResult(const HybridFactorGraph&,
                                                     const Ordering&)>;
 

@@ -21,7 +21,7 @@
 #pragma once
 
 #include <gtsam/discrete/DiscreteKey.h>
-#include <gtsam/hybrid/DCConditional.h>
+#include <gtsam/hybrid/GaussianMixture.h>
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/linear/GaussianConditional.h>
 
@@ -30,9 +30,9 @@
 namespace gtsam {
 
 /// Bayes net
-class HybridBayesNet : public BayesNet<DCConditional> {
+class HybridBayesNet : public BayesNet<GaussianMixture> {
  public:
-  using ConditionalType = DCConditional;
+  using ConditionalType = GaussianMixture;
   using shared_ptr = boost::shared_ptr<HybridBayesNet>;
 };
 
