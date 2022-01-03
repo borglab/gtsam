@@ -20,13 +20,13 @@
 #pragma once
 
 #include <gtsam/base/types.h>
-
 #include <gtsam/discrete/Assignment.h>
 
 #include <boost/function.hpp>
 #include <functional>
 #include <iostream>
 #include <map>
+#include <sstream>
 #include <vector>
 
 namespace gtsam {
@@ -39,14 +39,24 @@ namespace gtsam {
   template<typename L, typename Y>
   class GTSAM_EXPORT DecisionTree {
 
+   protected:
+    /// Default method for comparison of two objects of type Y.
+    static bool DefaultCompare(const Y& a, const Y& b) {
+      return a == b;
+    }
+
   public:
 
+    using LabelFormatter = std::function<std::string(L)>;
+    using ValueFormatter = std::function<std::string(Y)>;
+    using CompareFunc = std::function<bool(const Y&, const Y&)>;
+
     /** Handy typedefs for unary and binary function types */
-    typedef std::function<Y(const Y&)> Unary;
-    typedef std::function<Y(const Y&, const Y&)> Binary;
+    using Unary = std::function<Y(const Y&)>;
+    using Binary = std::function<Y(const Y&, const Y&)>;
 
     /** A label annotated with cardinality */
-    typedef std::pair<L,size_t> LabelC;
+    using LabelC = std::pair<L,size_t>;
 
     /** DTs consist of Leaf and Choice nodes, both subclasses of Node */
     class Leaf;
@@ -55,7 +65,7 @@ namespace gtsam {
     /** ------------------------ Node base class --------------------------- */
     class Node {
     public:
-      typedef boost::shared_ptr<const Node> Ptr;
+      using Ptr = boost::shared_ptr<const Node>;
 
 #ifdef DT_DEBUG_MEMORY
       static int nrNodes;
@@ -79,11 +89,16 @@ namespace gtsam {
       const void* id() const { return this; }
 
       // everything else is virtual, no documentation here as internal
-      virtual void print(const std::string& s = "") const = 0;
-      virtual void dot(std::ostream& os, bool showZero) const = 0;
+      virtual void print(const std::string& s,
+                         const LabelFormatter& labelFormatter,
+                         const ValueFormatter& valueFormatter) const = 0;
+      virtual void dot(std::ostream& os, const LabelFormatter& labelFormatter,
+                       const ValueFormatter& valueFormatter,
+                       bool showZero) const = 0;
       virtual bool sameLeaf(const Leaf& q) const = 0;
       virtual bool sameLeaf(const Node& q) const = 0;
-      virtual bool equals(const Node& other, double tol = 1e-9) const = 0;
+      virtual bool equals(const Node& other, const CompareFunc& compare =
+                                                 &DefaultCompare) const = 0;
       virtual const Y& operator()(const Assignment<L>& x) const = 0;
       virtual Ptr apply(const Unary& op) const = 0;
       virtual Ptr apply_f_op_g(const Node&, const Binary&) const = 0;
@@ -97,9 +112,9 @@ namespace gtsam {
   public:
 
     /** A function is a shared pointer to the root of a DT */
-    typedef typename Node::Ptr NodePtr;
+    using NodePtr = typename Node::Ptr;
 
-    /* a DecisionTree just contains the root */
+    /// A DecisionTree just contains the root. TODO(dellaert): make protected.
     NodePtr root_;
 
   protected:
@@ -108,18 +123,28 @@ namespace gtsam {
     template<typename It, typename ValueIt>
     NodePtr create(It begin, It end, ValueIt beginY, ValueIt endY) const;
 
-    /** Convert to a different type */
-    template<typename M, typename X> NodePtr
-    convert(const typename DecisionTree<M, X>::NodePtr& f, const std::map<M,
-        L>& map, std::function<Y(const X&)> op);
+    /**
+     * @brief Convert from a DecisionTree<M, X> to DecisionTree<L, Y>.
+     * 
+     * @tparam M The previous label type.
+     * @tparam X The previous value type.
+     * @param f The node pointer to the root of the previous DecisionTree.
+     * @param L_of_M Functor to convert from label type M to type L.
+     * @param Y_of_X Functor to convert from value type X to type Y.
+     * @return NodePtr 
+     */
+    template <typename M, typename X>
+    NodePtr convertFrom(const typename DecisionTree<M, X>::NodePtr& f,
+                        std::function<L(const M&)> L_of_M,
+                        std::function<Y(const X&)> Y_of_X) const;
 
-    /** Default constructor */
-    DecisionTree();
-
-  public:
+   public:
 
     /// @name Standard Constructors
     /// @{
+
+    /** Default constructor (for serialization) */
+    DecisionTree();
 
     /** Create a constant */
     DecisionTree(const Y& y);
@@ -144,20 +169,48 @@ namespace gtsam {
     DecisionTree(const L& label, //
         const DecisionTree& f0, const DecisionTree& f1);
 
-    /** Convert from a different type */
-    template<typename M, typename X>
-    DecisionTree(const DecisionTree<M, X>& other,
-        const std::map<M, L>& map, std::function<Y(const X&)> op);
+    /**
+     * @brief Convert from a different value type.
+     *
+     * @tparam X The previous value type.
+     * @param other The DecisionTree to convert from.
+     * @param Y_of_X Functor to convert from value type X to type Y.
+     */
+    template <typename X>
+    DecisionTree(const DecisionTree<L, X>& other,
+                 std::function<Y(const X&)> Y_of_X);
+
+    /**
+     * @brief Convert from a different value type X to value type Y, also transate
+     * labels via map from type M to L.
+     *
+     * @tparam M Previous label type.
+     * @tparam X Previous value type.
+     * @param other The decision tree to convert.
+     * @param L_of_M Map from label type M to type L.
+     * @param Y_of_X Functor to convert from type X to type Y.
+     */
+    template <typename M, typename X>
+    DecisionTree(const DecisionTree<M, X>& other, const std::map<M, L>& L_of_M,
+                 std::function<Y(const X&)> Y_of_X);
 
     /// @}
     /// @name Testable
     /// @{
 
-    /** GTSAM-style print */
-    void print(const std::string& s = "DecisionTree") const;
+    /**
+     * @brief GTSAM-style print
+     * 
+     * @param s Prefix string.
+     * @param labelFormatter Functor to format the node label.
+     * @param valueFormatter Functor to format the node value.
+     */
+    void print(const std::string& s, const LabelFormatter& labelFormatter,
+               const ValueFormatter& valueFormatter) const;
 
     // Testable
-    bool equals(const DecisionTree& other, double tol = 1e-9) const;
+    bool equals(const DecisionTree& other,
+                const CompareFunc& compare = &DefaultCompare) const;
 
     /// @}
     /// @name Standard Interface
@@ -166,6 +219,9 @@ namespace gtsam {
     /** Make virtual */
     virtual ~DecisionTree() {
     }
+
+    /// Check if tree is empty.
+    bool empty() const { return !root_; }
 
     /** equality */
     bool operator==(const DecisionTree& q) const;
@@ -195,13 +251,17 @@ namespace gtsam {
     }
 
     /** output to graphviz format, stream version */
-    void dot(std::ostream& os, bool showZero = true) const;
+    void dot(std::ostream& os, const LabelFormatter& labelFormatter,
+             const ValueFormatter& valueFormatter, bool showZero = true) const;
 
     /** output to graphviz format, open a file */
-    void dot(const std::string& name, bool showZero = true) const;
+    void dot(const std::string& name, const LabelFormatter& labelFormatter,
+             const ValueFormatter& valueFormatter, bool showZero = true) const;
 
     /** output to graphviz format string */
-    std::string dot(bool showZero = true) const;
+    std::string dot(const LabelFormatter& labelFormatter,
+                    const ValueFormatter& valueFormatter,
+                    bool showZero = true) const;
 
     /// @name Advanced Interface
     /// @{
@@ -219,13 +279,15 @@ namespace gtsam {
 
   /** free versions of apply */
 
-  template<typename Y, typename L>
+  /// Apply unary operator `op` to DecisionTree `f`.
+  template<typename L, typename Y>
   DecisionTree<L, Y> apply(const DecisionTree<L, Y>& f,
       const typename DecisionTree<L, Y>::Unary& op) {
     return f.apply(op);
   }
 
-  template<typename Y, typename L>
+  /// Apply binary operator `op` to DecisionTree `f`.
+  template<typename L, typename Y>
   DecisionTree<L, Y> apply(const DecisionTree<L, Y>& f,
       const DecisionTree<L, Y>& g,
       const typename DecisionTree<L, Y>::Binary& op) {
