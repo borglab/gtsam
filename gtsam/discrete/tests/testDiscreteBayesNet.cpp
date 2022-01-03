@@ -187,12 +187,13 @@ TEST(DiscreteBayesNet, markdown) {
       "|1|0.01|\n"
       "\n"
       " *P(Smoking|Asia)*:\n\n"
-      "|Asia|0|1|\n"
+      "|*Asia*|0|1|\n"
       "|:-:|:-:|:-:|\n"
       "|0|0.8|0.2|\n"
       "|1|0.7|0.3|\n\n";
   auto formatter = [](Key key) { return key == 0 ? "Asia" : "Smoking"; };
   string actual = fragment.markdown(formatter);
+  cout << actual << endl;
   EXPECT(actual == expected);
 }
 
