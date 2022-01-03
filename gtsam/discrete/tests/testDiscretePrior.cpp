@@ -28,6 +28,8 @@ static const DiscreteKey X(0, 2);
 /* ************************************************************************* */
 TEST(DiscretePrior, constructors) {
   DiscretePrior actual(X % "2/3");
+  EXPECT_LONGS_EQUAL(1, actual.nrFrontals());
+  EXPECT_LONGS_EQUAL(0, actual.nrParents());
   DecisionTreeFactor f(X, "0.4 0.6");
   DiscretePrior expected(f);
   EXPECT(assert_equal(expected, actual, 1e-9));
@@ -41,10 +43,16 @@ TEST(DiscretePrior, operator) {
 }
 
 /* ************************************************************************* */
-TEST(DiscretePrior, to_vector) {
+TEST(DiscretePrior, pmf) {
   DiscretePrior prior(X % "2/3");
   vector<double> expected {0.4, 0.6};
   EXPECT(prior.pmf() ==  expected);
+}
+
+/* ************************************************************************* */
+TEST(DiscretePrior, sample) {
+  DiscretePrior prior(X % "2/3");
+  prior.sample();
 }
 
 /* ************************************************************************* */

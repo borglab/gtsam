@@ -125,12 +125,11 @@ namespace gtsam {
     /** Performs transpose backsubstition in place on values */
     void solveTransposeInPlace(VectorValues& gy) const;
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
     /** Scale the values in \c gy according to the sigmas for the frontal variables in this
      *  conditional. */
-    void scaleFrontalsBySigma(VectorValues& gy) const;
-
-    // FIXME: deprecated flag doesn't appear to exist?
-    // __declspec(deprecated) void scaleFrontalsBySigma(VectorValues& gy) const; 
+    void GTSAM_DEPRECATED scaleFrontalsBySigma(VectorValues& gy) const;
+#endif
 
    private:
     /** Serialization function */

@@ -122,15 +122,18 @@ class DCGaussianMixtureFactor : public DCFactor {
   /// print to stdout
   void print(
       const std::string& s = "DCGaussianMixtureFactor",
-      const KeyFormatter& formatter = DefaultKeyFormatter) const override {
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     std::cout << (s.empty() ? "" : s + " ");
     std::cout << "[";
     for (Key key : keys()) {
-      std::cout << " " << formatter(key);
+      std::cout << " " << keyFormatter(key);
     }
-    std::cout << "; " << formatter(discreteKeys_.front().first) << " ]";
+    std::cout << "; " << keyFormatter(discreteKeys_.front().first) << " ]";
     std::cout << "{\n";
-    factors_.print("", formatter);
+    auto valueFormatter = [](const GaussianFactor::shared_ptr& v) {
+      return (boost::format("%p") % v).str();
+    };
+    factors_.print("", keyFormatter, valueFormatter);
     std::cout << "}";
     std::cout << "\n";
   }
