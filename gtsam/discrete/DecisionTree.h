@@ -64,11 +64,11 @@ namespace gtsam {
     using CompareFunc = std::function<bool(const Y&, const Y&)>;
 
     /** Handy typedefs for unary and binary function types */
-    typedef std::function<Y(const Y&)> Unary;
-    typedef std::function<Y(const Y&, const Y&)> Binary;
+    using Unary = std::function<Y(const Y&)>;
+    using Binary = std::function<Y(const Y&, const Y&)>;
 
     /** A label annotated with cardinality */
-    typedef std::pair<L,size_t> LabelC;
+    using LabelC = std::pair<L,size_t>;
 
     /** DTs consist of Leaf and Choice nodes, both subclasses of Node */
     class Leaf;
@@ -77,7 +77,7 @@ namespace gtsam {
     /** ------------------------ Node base class --------------------------- */
     class Node {
     public:
-      typedef boost::shared_ptr<const Node> Ptr;
+      using Ptr = boost::shared_ptr<const Node>;
 
 #ifdef DT_DEBUG_MEMORY
       static int nrNodes;
@@ -128,7 +128,7 @@ namespace gtsam {
     /** A function is a shared pointer to the root of a DT */
     using NodePtr = typename Node::Ptr;
 
-    /// a DecisionTree just contains the root. TODO(dellaert): make protected.
+    /// A DecisionTree just contains the root. TODO(dellaert): make protected.
     NodePtr root_;
 
   protected:
@@ -137,7 +137,16 @@ namespace gtsam {
     template<typename It, typename ValueIt>
     NodePtr create(It begin, It end, ValueIt beginY, ValueIt endY) const;
 
-    /// Convert from a DecisionTree<M, X>.
+    /**
+     * @brief Convert from a DecisionTree<M, X> to DecisionTree<L, Y>.
+     * 
+     * @tparam M The previous label type.
+     * @tparam X The previous node type.
+     * @param f The node pointer to the root of the previous DecisionTree.
+     * @param L_of_M Functor to convert from label type M to type L.
+     * @param Y_of_X Functor to convert from node type X to type Y.
+     * @return NodePtr 
+     */
     template <typename M, typename X>
     NodePtr convertFrom(const typename DecisionTree<M, X>::NodePtr& f,
                         std::function<L(const M&)> L_of_M,
@@ -174,7 +183,13 @@ namespace gtsam {
     DecisionTree(const L& label, //
         const DecisionTree& f0, const DecisionTree& f1);
 
-    /** Convert from a different type. */
+    /**
+     * @brief Convert from a different node type.
+     *
+     * @tparam X The previous node type.
+     * @param other The DecisionTree to convert from.
+     * @param Y_of_X Functor to convert from node type X to type Y.
+     */
     template <typename X>
     DecisionTree(const DecisionTree<L, X>& other,
                  std::function<Y(const X&)> Y_of_X);
@@ -220,7 +235,7 @@ namespace gtsam {
     virtual ~DecisionTree() {
     }
 
-    /** empty tree? */
+    /// Check if tree is empty.
     bool empty() const { return !root_; }
 
     /** equality */
@@ -283,18 +298,21 @@ namespace gtsam {
 
   /** free versions of apply */
 
+  /// Apply unary operator `op` to DecisionTree `f`.
   template<typename L, typename Y>
   DecisionTree<L, Y> apply(const DecisionTree<L, Y>& f,
       const typename DecisionTree<L, Y>::Unary& op) {
     return f.apply(op);
   }
 
+  /// Apply unary operator `op` to DecisionTree `f` but with node type.
   template<typename L, typename Y, typename X>
   DecisionTree<L, Y> apply(const DecisionTree<L, Y>& f,
       const std::function<Y(const X&)>& op) {
     return f.apply(op);
   }
 
+  /// Apply binary operator `op` to DecisionTree `f`.
   template<typename L, typename Y>
   DecisionTree<L, Y> apply(const DecisionTree<L, Y>& f,
       const DecisionTree<L, Y>& g,

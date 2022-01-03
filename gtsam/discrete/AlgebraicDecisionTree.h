@@ -113,6 +113,7 @@ namespace gtsam {
     template<typename M>
     AlgebraicDecisionTree(const AlgebraicDecisionTree<M>& other,
                           const std::map<M, L>& map) {
+      // Functor for label conversion so we can use `convertFrom`.
       std::function<L(const M&)> L_of_M = [&map](const M& label) -> L {
         return map.at(label);
       };

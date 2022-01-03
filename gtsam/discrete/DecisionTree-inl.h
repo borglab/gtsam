@@ -82,13 +82,19 @@ namespace gtsam {
       return compare(this->constant_, other->constant_);
     }
 
-    /** print */
+    /**
+     * @brief Print method.
+     * 
+     * @param s Prefix string.
+     * @param labelFormatter Functor to format the node label.
+     * @param valueFormatter Functor to format the node value.
+     */
     void print(const std::string& s, const LabelFormatter& labelFormatter,
                const ValueFormatter& valueFormatter) const override {
       std::cout << s << " Leaf " << valueFormatter(constant_) << std::endl;
     }
 
-    /** to graphviz file */
+    /** Write graphviz format to stream `os`. */
     void dot(std::ostream& os, const LabelFormatter& labelFormatter,
              const ValueFormatter& valueFormatter,
              bool showZero) const override {
@@ -154,7 +160,7 @@ namespace gtsam {
     /** incremental allSame */
     size_t allSame_;
 
-    typedef boost::shared_ptr<const Choice> ChoicePtr;
+    using ChoicePtr = boost::shared_ptr<const Choice>;
 
   public:
 
@@ -462,6 +468,7 @@ namespace gtsam {
   template <typename X>
   DecisionTree<L, Y>::DecisionTree(const DecisionTree<L, X>& other,
                                    std::function<Y(const X&)> Y_of_X) {
+    // Define functor for identity mapping of node label.
     auto L_of_L = [](const L& label) { return label; };
     root_ = convertFrom<L, X>(Y_of_X, L_of_L);
   }
@@ -594,11 +601,11 @@ namespace gtsam {
       const typename DecisionTree<M, X>::NodePtr& f,
       std::function<L(const M&)> L_of_M,
       std::function<Y(const X&)> Y_of_X) const {
-    typedef DecisionTree<M, X> MX;
-    typedef typename MX::Leaf MXLeaf;
-    typedef typename MX::Choice MXChoice;
-    typedef typename MX::NodePtr MXNodePtr;
-    typedef DecisionTree<L, Y> LY;
+    using MX = DecisionTree<M, X>;
+    using MXLeaf = typename MX::Leaf;
+    using MXChoice = typename MX::Choice;
+    using MXNodePtr = typename MX::NodePtr;
+    using LY = DecisionTree<L, Y>;
 
     // ugliness below because apparently we can't have templated virtual functions
     // If leaf, apply unary conversion "op" and create a unique leaf
