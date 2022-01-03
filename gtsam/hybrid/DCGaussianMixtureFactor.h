@@ -46,11 +46,13 @@ class DCGaussianMixtureFactor : public DCFactor {
   using shared_ptr = boost::shared_ptr<DCGaussianMixtureFactor>;
   using FactorDecisionTree = DecisionTree<Key, GaussianFactor::shared_ptr>;
 
- private:
+ protected:
   /// Decision tree of Gaussian factors indexed by discrete keys.
   FactorDecisionTree factors_;
 
  public:
+  /// @name Constructors
+  /// @{
   DCGaussianMixtureFactor() = default;
 
   /**
@@ -88,6 +90,10 @@ class DCGaussianMixtureFactor : public DCFactor {
 
   ~DCGaussianMixtureFactor() = default;
 
+  /// @}
+  /// @name Standard Interface
+  /// @{
+
   double error(const VectorValues& continuousVals,
                const DiscreteValues& discreteVals) const {
     return 0;
@@ -117,6 +123,11 @@ class DCGaussianMixtureFactor : public DCFactor {
     throw std::runtime_error("DCGaussianMixtureFactor::dim not implemented");
   };
 
+  const GaussianFactor::shared_ptr& operator()(
+      gtsam::DiscreteValues& discreteVals) const {
+    return factors_(discreteVals);
+  }
+  /// @}
   /// @name Testable
   /// @{
 
@@ -148,9 +159,8 @@ class DCGaussianMixtureFactor : public DCFactor {
   /// @name Decision Tree methods
   /// @{
 
-  // TODO(frank): this could be way more elegant/ cheaper, but two obstacles:
-  // - I need to use a shared_ptr because I can't print gfgs
-  // - I now feel the need for an imperative binary op.
+  // TODO(frank): this could be cheaper with some linked list idea, but I think
+  // it is not worth it.
 
   /// A Sum of mixture factors contains small GaussianFactorGraphs
   using Sum = DecisionTree<Key, GaussianFactorGraph>;
