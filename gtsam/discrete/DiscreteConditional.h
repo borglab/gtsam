@@ -180,8 +180,8 @@ public:
   /// @{
 
   /// Render as markdown table.
-  std::string markdown(
-      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
+  std::string markdown(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                       const Names& names = {}) const override;
 
   /// @}
 };

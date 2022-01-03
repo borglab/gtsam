@@ -283,8 +283,8 @@ size_t DiscreteConditional::sample(size_t parent_value) const {
 }
 
 /* ************************************************************************* */
-std::string DiscreteConditional::markdown(
-    const KeyFormatter& keyFormatter) const {
+std::string DiscreteConditional::markdown(const KeyFormatter& keyFormatter,
+                                          const Names& names) const {
   std::stringstream ss;
 
   // Print out signature.
@@ -331,7 +331,10 @@ std::string DiscreteConditional::markdown(
                                                pairs.rend() - nrParents());
   const auto frontal_assignments = cartesianProduct(slatnorf);
   for (const auto& a : frontal_assignments) {
-    for (it = beginFrontals(); it != endFrontals(); ++it) ss << a.at(*it);
+    for (it = beginFrontals(); it != endFrontals(); ++it) {
+      size_t index = a.at(*it);
+      ss << Translate(names, *it, index);
+    }
     ss << "|";
   }
   ss << "\n";
@@ -348,8 +351,10 @@ std::string DiscreteConditional::markdown(
   for (const auto& a : assignments) {
     if (count == 0) {
       ss << "|";
-      for (it = beginParents(); it != endParents(); ++it)
-        ss << a.at(*it) << "|";
+      for (it = beginParents(); it != endParents(); ++it) {
+        size_t index = a.at(*it);
+        ss << Translate(names, *it, index) << "|";
+      }
     }
     ss << operator()(a) << "|";
     count = (count + 1) % n;
