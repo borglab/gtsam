@@ -56,12 +56,12 @@ public:
    * Note: The anchorPoseKey can simply be chosen as the first pose a plane
    * is observed.  
    */
-  LocalOrientedPlane3Factor(const Vector4& z, const SharedGaussian& noiseModel,
+  LocalOrientedPlane3Factor(const Vector4& z, const SharedNoiseModel& noiseModel,
                             Key poseKey, Key anchorPoseKey, Key landmarkKey)
       : Base(noiseModel, poseKey, anchorPoseKey, landmarkKey), measured_p_(z) {}
 
   LocalOrientedPlane3Factor(const OrientedPlane3& z,
-                            const SharedGaussian& noiseModel,
+                            const SharedNoiseModel& noiseModel,
                             Key poseKey, Key anchorPoseKey, Key landmarkKey)
     : Base(noiseModel, poseKey, anchorPoseKey, landmarkKey), measured_p_(z) {}
 
