@@ -215,8 +215,8 @@ TEST(DCGaussianElimination, Eliminate_x1) {
   auto sum = factors.sum();
   Assignment<Key> mode;
   mode[M(1)] = 1;
-  auto actual = sum(mode);                // Selects one of 2 modes.
-  EXPECT_LONGS_EQUAL(2, actual->size());  // Prior and motion model.
+  auto actual = sum(mode);               // Selects one of 2 modes.
+  EXPECT_LONGS_EQUAL(2, actual.size());  // Prior and motion model.
 
   // Eliminate x1
   Ordering ordering;
@@ -244,8 +244,8 @@ TEST(DCGaussianElimination, Eliminate_x2) {
   Assignment<Key> mode;
   mode[M(1)] = 0;
   mode[M(2)] = 1;
-  auto actual = sum(mode);                // Selects one of 4 mode combinations.
-  EXPECT_LONGS_EQUAL(2, actual->size());  // 2 motion models.
+  auto actual = sum(mode);               // Selects one of 4 mode combinations.
+  EXPECT_LONGS_EQUAL(2, actual.size());  // 2 motion models.
 
   // Eliminate x2
   Ordering ordering;
