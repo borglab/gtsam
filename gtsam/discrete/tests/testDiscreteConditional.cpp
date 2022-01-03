@@ -161,17 +161,19 @@ TEST(DiscreteConditional, markdown) {
   DiscreteConditional conditional(A, {B, C}, "0/1 1/3  1/1 3/1  0/1 1/0");
   string expected =
       " *P(A|B,C)*:\n\n"
-      "|B|C|0|1|\n"
+      "|B|C|T|F|\n"
       "|:-:|:-:|:-:|:-:|\n"
-      "|0|0|0|1|\n"
-      "|0|1|0.25|0.75|\n"
-      "|0|2|0.5|0.5|\n"
-      "|1|0|0.75|0.25|\n"
-      "|1|1|0|1|\n"
-      "|1|2|1|0|\n";
-  vector<string> names{"C", "B", "A"};
-  auto formatter = [names](Key key) { return names[key]; };
-  string actual = conditional.markdown(formatter);
+      "|-|Zero|0|1|\n"
+      "|-|One|0.25|0.75|\n"
+      "|-|Two|0.5|0.5|\n"
+      "|+|Zero|0.75|0.25|\n"
+      "|+|One|0|1|\n"
+      "|+|Two|1|0|\n";
+  vector<string> keyNames{"C", "B", "A"};
+  auto formatter = [keyNames](Key key) { return keyNames[key]; };
+  DecisionTreeFactor::Names names{
+      {0, {"Zero", "One", "Two"}}, {1, {"-", "+"}}, {2, {"T", "F"}}};
+  string actual = conditional.markdown(formatter, names);
   EXPECT(actual == expected);
 }
 
