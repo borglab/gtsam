@@ -45,15 +45,6 @@ struct Crazy {
   double b;
 };
 
-//   bool equals(const Crazy& other, double tol = 1e-12) const {
-//     return a == other.a && std::abs(b - other.b) < tol;
-//   }
-
-//   bool operator==(const Crazy& other) const {
-//     return this->equals(other);
-//   }
-// };
-
 struct CrazyDecisionTree : public DecisionTree<string, Crazy> {
   /// print to stdout
   void print(const std::string& s = "") const {
@@ -261,8 +252,6 @@ TEST(DT, conversion)
     return y != 0;
   };
   BDT f2(f1, ordering, bool_of_int);
-  //  f1.print("f1");
-  //  f2.print("f2");
 
   // create a value
   Assignment<Label> x00, x01, x10, x11;
