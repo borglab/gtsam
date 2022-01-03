@@ -493,7 +493,7 @@ public:
     }
 };
 
-/** @deprecated use SimplicialLDLT or class SimplicialLLT
+/** \deprecated use SimplicialLDLT or class SimplicialLLT
   * \ingroup SparseCholesky_Module
   * \class SimplicialCholesky
   *
