@@ -86,6 +86,7 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
   size_t solve(const gtsam::DiscreteValues& parentsValues) const;
   size_t sample(const gtsam::DiscreteValues& parentsValues) const;
   size_t sample(size_t value) const;
+  size_t sample() const;
   void solveInPlace(gtsam::DiscreteValues @parentsValues) const;
   void sampleInPlace(gtsam::DiscreteValues @parentsValues) const;
   string markdown(const gtsam::KeyFormatter& keyFormatter =
@@ -105,7 +106,6 @@ virtual class DiscretePrior : gtsam::DiscreteConditional {
   double operator()(size_t value) const;
   std::vector<double> pmf() const;
   size_t solve() const;
-  size_t sample() const;
 };
 
 #include <gtsam/discrete/DiscreteBayesNet.h>

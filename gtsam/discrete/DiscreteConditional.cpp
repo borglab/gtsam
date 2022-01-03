@@ -282,6 +282,15 @@ size_t DiscreteConditional::sample(size_t parent_value) const {
   return sample(values);
 }
 
+/* ******************************************************************************** */
+size_t DiscreteConditional::sample() const {
+  if (nrParents() != 0)
+    throw std::invalid_argument(
+        "sample() can only be invoked on no-parent prior");
+  DiscreteValues values;
+  return sample(values);
+}
+
 /* ************************************************************************* */
 std::string DiscreteConditional::markdown(const KeyFormatter& keyFormatter,
                                           const Names& names) const {

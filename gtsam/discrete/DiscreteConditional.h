@@ -162,8 +162,11 @@ public:
   size_t sample(const DiscreteValues& parentsValues) const;
 
 
-  /// Single value version.
+  /// Single parent version.
   size_t sample(size_t parent_value) const;
+
+  /// Zero parent version.
+  size_t sample() const;
 
   /// @}
   /// @name Advanced Interface
