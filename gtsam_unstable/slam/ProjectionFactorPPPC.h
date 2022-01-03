@@ -61,13 +61,17 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorPPPC
     /**
      * Constructor with exception-handling flags
      * TODO: Mark argument order standard (keys, measurement, parameters)
-     * @param measured is the 2 dimensional location of point in image (the measurement)
+     * @param measured is the 2 dimensional location of point in image (the
+     * measurement)
      * @param model is the standard deviation
      * @param poseKey is the index of the camera
+     * @param transformKey is the index of the extrinsic calibration
      * @param pointKey is the index of the landmark
-     * @param K shared pointer to the constant calibration
-     * @param throwCheirality determines whether Cheirality exceptions are rethrown
-     * @param verboseCheirality determines whether exceptions are printed for Cheirality
+     * @param calibKey is the index of the intrinsic calibration
+     * @param throwCheirality determines whether Cheirality exceptions are
+     * rethrown
+     * @param verboseCheirality determines whether exceptions are printed for
+     * Cheirality
      */
     ProjectionFactorPPPC(const Point2& measured, const SharedNoiseModel& model,
         Key poseKey, Key transformKey, Key pointKey, Key calibKey,
