@@ -229,6 +229,22 @@ namespace gtsam {
     /** evaluate */
     const Y& operator()(const Assignment<L>& x) const;
 
+    /**
+     * @brief Fold a binary function over the tree, returning accumulator.
+     *
+     * @tparam X type for accumulator.
+     * @param f binary function: Y * X -> X returning an updated accumulator.
+     * @param x0 initial value for accumulator.
+     * @return X final value for accumulator.
+     * 
+     * @note X is always passed by value.
+     */
+    template <typename Func, typename X>
+    X fold(Func f, X x0) const;
+
+    /** Retrieve all labels. */
+    std::vector<L> labels() const { return std::vector<L>(); }
+
     /** apply Unary operation "op" to f */
     DecisionTree apply(const Unary& op) const;
 
