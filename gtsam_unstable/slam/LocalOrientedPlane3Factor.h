@@ -43,7 +43,7 @@ public:
   /// Constructor
   LocalOrientedPlane3Factor() {}
 
-  virtual ~LocalOrientedPlane3Factor() {}
+  ~LocalOrientedPlane3Factor() override {}
 
   /** Constructor with measured plane (a,b,c,d) coefficients
    * @param z measured plane (a,b,c,d) coefficients as 4D vector
