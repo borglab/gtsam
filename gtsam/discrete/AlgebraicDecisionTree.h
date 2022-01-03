@@ -29,6 +29,18 @@ namespace gtsam {
    */
   template<typename L>
   class GTSAM_EXPORT AlgebraicDecisionTree: public DecisionTree<L, double> {
+    /**
+     * @brief Default method used by `labelFormatter` or `valueFormatter` when printing.
+     * 
+     * @param x The value passed to format.
+     * @return std::string 
+     */
+    static std::string DefaultFormatter(const L& x) {
+      std::stringstream ss;
+      ss << x;
+      return ss.str();
+    }
+
    public:
 
     using Base = DecisionTree<L, double>;
@@ -149,7 +161,7 @@ namespace gtsam {
     /// print method customized to node type `double`.
     void print(const std::string& s,
                const typename Base::LabelFormatter& labelFormatter =
-                   &Base::DefaultFormatter) const {
+                   &DefaultFormatter) const {
       auto valueFormatter = [](const double& v) {
         return (boost::format("%4.2g") % v).str();
       };
