@@ -57,19 +57,6 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorPPPC
       measured_(0.0, 0.0), throwCheirality_(false), verboseCheirality_(false) {
   }
 
-    /**
-     * Constructor
-     * TODO: Mark argument order standard (keys, measurement, parameters)
-     * @param measured is the 2 dimensional location of point in image (the measurement)
-     * @param model is the standard deviation
-     * @param poseKey is the index of the camera
-     * @param pointKey is the index of the landmark
-     * @param K shared pointer to the constant calibration
-     */
-    ProjectionFactorPPPC(const Point2& measured, const SharedNoiseModel& model,
-        Key poseKey, Key transformKey,  Key pointKey, Key calibKey) :
-          Base(model, poseKey, transformKey, pointKey, calibKey), measured_(measured),
-          throwCheirality_(false), verboseCheirality_(false) {}
 
     /**
      * Constructor with exception-handling flags
@@ -84,7 +71,7 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorPPPC
      */
     ProjectionFactorPPPC(const Point2& measured, const SharedNoiseModel& model,
         Key poseKey, Key transformKey, Key pointKey, Key calibKey,
-        bool throwCheirality, bool verboseCheirality) :
+        bool throwCheirality = false, bool verboseCheirality = false) :
           Base(model, poseKey, transformKey, pointKey, calibKey), measured_(measured),
           throwCheirality_(throwCheirality), verboseCheirality_(verboseCheirality) {}
 
