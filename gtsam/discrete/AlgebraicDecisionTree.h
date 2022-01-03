@@ -29,16 +29,9 @@ namespace gtsam {
    */
   template<typename L>
   class GTSAM_EXPORT AlgebraicDecisionTree: public DecisionTree<L, double> {
-    /// Default method used by `formatter` when printing.
-    static std::string DefaultFormatter(const L& x) {
-      std::stringstream ss;
-      ss << x;
-      return ss.str();
-    }
-
    public:
 
-    typedef DecisionTree<L, double> Super;
+    using Base = DecisionTree<L, double>;
 
     /** The Real ring with addition and multiplication */
     struct Ring {
@@ -66,33 +59,33 @@ namespace gtsam {
     };
 
     AlgebraicDecisionTree() :
-        Super(1.0) {
+        Base(1.0) {
     }
 
-    AlgebraicDecisionTree(const Super& add) :
-        Super(add) {
+    AlgebraicDecisionTree(const Base& add) :
+        Base(add) {
     }
 
     /** Create a new leaf function splitting on a variable */
     AlgebraicDecisionTree(const L& label, double y1, double y2) :
-        Super(label, y1, y2) {
+        Base(label, y1, y2) {
     }
 
     /** Create a new leaf function splitting on a variable */
-    AlgebraicDecisionTree(const typename Super::LabelC& labelC, double y1, double y2) :
-        Super(labelC, y1, y2) {
+    AlgebraicDecisionTree(const typename Base::LabelC& labelC, double y1, double y2) :
+        Base(labelC, y1, y2) {
     }
 
     /** Create from keys and vector table */
     AlgebraicDecisionTree //
-    (const std::vector<typename Super::LabelC>& labelCs, const std::vector<double>& ys) {
-      this->root_ = Super::create(labelCs.begin(), labelCs.end(), ys.begin(),
+    (const std::vector<typename Base::LabelC>& labelCs, const std::vector<double>& ys) {
+      this->root_ = Base::create(labelCs.begin(), labelCs.end(), ys.begin(),
           ys.end());
     }
 
     /** Create from keys and string table */
     AlgebraicDecisionTree //
-    (const std::vector<typename Super::LabelC>& labelCs, const std::string& table) {
+    (const std::vector<typename Base::LabelC>& labelCs, const std::string& table) {
       // Convert string to doubles
       std::vector<double> ys;
       std::istringstream iss(table);
@@ -100,18 +93,23 @@ namespace gtsam {
           std::istream_iterator<double>(), std::back_inserter(ys));
 
       // now call recursive Create
-      this->root_ = Super::create(labelCs.begin(), labelCs.end(), ys.begin(),
+      this->root_ = Base::create(labelCs.begin(), labelCs.end(), ys.begin(),
           ys.end());
     }
 
     /** Create a new function splitting on a variable */
     template<typename Iterator>
     AlgebraicDecisionTree(Iterator begin, Iterator end, const L& label) :
-        Super(nullptr) {
+        Base(nullptr) {
       this->root_ = compose(begin, end, label);
     }
 
-    /** Convert */
+    /**
+     * Convert labels from type M to type L.
+     *
+     * @param other: The AlgebraicDecisionTree with label type M to convert.
+     * @param map: Map from label type M to label type L.
+     */
     template<typename M>
     AlgebraicDecisionTree(const AlgebraicDecisionTree<M>& other,
                           const std::map<M, L>& map) {
@@ -143,18 +141,18 @@ namespace gtsam {
     }
 
     /** sum out variable */
-    AlgebraicDecisionTree sum(const typename Super::LabelC& labelC) const {
+    AlgebraicDecisionTree sum(const typename Base::LabelC& labelC) const {
       return this->combine(labelC, &Ring::add);
     }
 
     /// print method customized to node type `double`.
     void print(const std::string& s,
-               const typename Super::LabelFormatter& labelFormatter =
-                   &DefaultFormatter) const {
+               const typename Base::LabelFormatter& labelFormatter =
+                   &Base::DefaultFormatter) const {
       auto valueFormatter = [](const double& v) {
         return (boost::format("%4.2g") % v).str();
       };
-      Super::print(s, labelFormatter, valueFormatter);
+      Base::print(s, labelFormatter, valueFormatter);
     }
 
     /// Equality method customized to node type `double`.
@@ -163,7 +161,7 @@ namespace gtsam {
       auto compare = [tol](double a, double b) {
         return std::abs(a - b) < tol;
       };
-      return Super::equals(other, compare);
+      return Base::equals(other, compare);
     }
   };
 // AlgebraicDecisionTree
