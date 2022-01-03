@@ -86,8 +86,8 @@ class GTSAM_EXPORT Constraint : public DiscreteFactor {
   /// @{
 
   /// Render as markdown table.
-  std::string markdown(
-      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
+  std::string markdown(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                       const Names& names = {}) const override {
     return (boost::format("`Constraint` on %1% variables\n") % (size())).str();
   }
 

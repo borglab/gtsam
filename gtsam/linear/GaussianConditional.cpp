@@ -193,6 +193,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
   void GaussianConditional::scaleFrontalsBySigma(VectorValues& gy) const {
     DenseIndex vectorPosition = 0;
     for (const_iterator frontal = beginFrontals(); frontal != endFrontals(); ++frontal) {
@@ -200,5 +201,6 @@ namespace gtsam {
       vectorPosition += getDim(frontal);
     }
   }
+#endif
 
 }  // namespace gtsam

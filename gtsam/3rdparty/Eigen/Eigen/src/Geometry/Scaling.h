@@ -142,13 +142,13 @@ template<typename Derived>
 inline const DiagonalWrapper<const Derived> Scaling(const MatrixBase<Derived>& coeffs)
 { return coeffs.asDiagonal(); }
 
-/** \deprecated */
+/** @deprecated */
 typedef DiagonalMatrix<float, 2> AlignedScaling2f;
-/** \deprecated */
+/** @deprecated */
 typedef DiagonalMatrix<double,2> AlignedScaling2d;
-/** \deprecated */
+/** @deprecated */
 typedef DiagonalMatrix<float, 3> AlignedScaling3f;
-/** \deprecated */
+/** @deprecated */
 typedef DiagonalMatrix<double,3> AlignedScaling3d;
 //@}
 

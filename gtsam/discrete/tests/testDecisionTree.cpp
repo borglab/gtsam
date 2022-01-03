@@ -43,33 +43,74 @@ void dot(const T&f, const string& filename) {
 struct Crazy {
   int a;
   double b;
-
-  bool equals(const Crazy& other, double tol = 1e-12) const {
-    return a == other.a && std::abs(b - other.b) < tol;
-  }
-
-  bool operator==(const Crazy& other) const {
-    return this->equals(other);
-  }
 };
 
-typedef DecisionTree<string,Crazy> CrazyDecisionTree; // check that DecisionTree is actually generic (as it pretends to be)
+//   bool equals(const Crazy& other, double tol = 1e-12) const {
+//     return a == other.a && std::abs(b - other.b) < tol;
+//   }
+
+//   bool operator==(const Crazy& other) const {
+//     return this->equals(other);
+//   }
+// };
+
+struct CrazyDecisionTree : public DecisionTree<string, Crazy> {
+  /// print to stdout
+  void print(const std::string& s = "") const {
+    auto keyFormatter = [](const std::string& s) { return s; };
+    auto valueFormatter = [](const Crazy& v) {
+      return (boost::format("{%d,%4.2g}") % v.a % v.b).str();
+    };
+    DecisionTree<string, Crazy>::print("", keyFormatter, valueFormatter);
+  }
+  /// Equality method customized to Crazy node type
+  bool equals(const CrazyDecisionTree& other, double tol = 1e-9) const {
+    auto compare = [tol](const Crazy& v, const Crazy& w) {
+      return v.a == w.a && std::abs(v.b - w.b) < tol;
+    };
+    return DecisionTree<string, Crazy>::equals(other, compare);
+  }
+};
 
 // traits
 namespace gtsam {
 template<> struct traits<CrazyDecisionTree> : public Testable<CrazyDecisionTree> {};
 }
 
+GTSAM_CONCEPT_TESTABLE_INST(CrazyDecisionTree)
+
 /* ******************************************************************************** */
 // Test string labels and int range
 /* ******************************************************************************** */
 
-typedef DecisionTree<string, int> DT;
+struct DT : public DecisionTree<string, int> {
+  using Base = DecisionTree<string, int>;
+  using DecisionTree::DecisionTree;
+  DT() = default;
+
+  DT(const Base& dt) : Base(dt) {}
+
+  /// print to stdout
+  void print(const std::string& s = "") const {
+    auto keyFormatter = [](const std::string& s) { return s; };
+    auto valueFormatter = [](const int& v) {
+      return (boost::format("%d") % v).str();
+    };
+    Base::print("", keyFormatter, valueFormatter);
+  }
+  /// Equality method customized to int node type
+  bool equals(const Base& other, double tol = 1e-9) const {
+    auto compare = [](const int& v, const int& w) { return v == w; };
+    return Base::equals(other, compare);
+  }
+};
 
 // traits
 namespace gtsam {
 template<> struct traits<DT> : public Testable<DT> {};
 }
+
+GTSAM_CONCEPT_TESTABLE_INST(DT)
 
 struct Ring {
   static inline int zero() {
@@ -77,6 +118,9 @@ struct Ring {
   }
   static inline int one() {
     return 1;
+  }
+  static inline int id(const int& a) {
+    return a;
   }
   static inline int add(const int& a, const int& b) {
     return a + b;
@@ -100,6 +144,9 @@ TEST(DT, example)
   x10[A] = 1, x10[B] = 0;
   x11[A] = 1, x11[B] = 1;
 
+  // empty
+  DT empty;
+
   // A
   DT a(A, 0, 5);
   LONGS_EQUAL(0,a(x00))
@@ -117,6 +164,11 @@ TEST(DT, example)
   LONGS_EQUAL(5,notb(x00))
   LONGS_EQUAL(5,notb(x10))
   DOT(notb);
+
+  // Check supplying empty trees yields an exception
+  CHECK_EXCEPTION(apply(empty, &Ring::id), std::runtime_error);
+  CHECK_EXCEPTION(apply(empty, a, &Ring::mul), std::runtime_error);
+  CHECK_EXCEPTION(apply(a, empty, &Ring::mul), std::runtime_error);
 
   // apply, two nodes, in natural order
   DT anotb = apply(a, notb, &Ring::mul);
@@ -192,9 +244,6 @@ enum Label {
   U, V, X, Y, Z
 };
 typedef DecisionTree<Label, bool> BDT;
-bool convert(const int& y) {
-  return y != 0;
-}
 
 TEST(DT, conversion)
 {
@@ -208,8 +257,10 @@ TEST(DT, conversion)
   map<string, Label> ordering;
   ordering[A] = X;
   ordering[B] = Y;
-  std::function<bool(const int&)> op = convert;
-  BDT f2(f1, ordering, op);
+  std::function<bool(const int&)> bool_of_int = [](const int& y) {
+    return y != 0;
+  };
+  BDT f2(f1, ordering, bool_of_int);
   //  f1.print("f1");
   //  f2.print("f2");
 

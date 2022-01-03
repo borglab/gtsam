@@ -10,7 +10,7 @@
 #include <CppUnitLite/TestHarness.h>
 #include <iostream>
 
-#include <gtsam/slam/serialization.h>
+#include <gtsam_unstable/slam/serialization.h>
 
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>

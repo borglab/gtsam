@@ -170,7 +170,7 @@ EIGEN_DEVICE_FUNC inline _Scalar ParametrizedLine<_Scalar, _AmbientDim,_Options>
 }
 
 
-/** \deprecated use intersectionParameter()
+/** @deprecated use intersectionParameter()
   * \returns the parameter value of the intersection between \c *this and the given \a hyperplane
   */
 template <typename _Scalar, int _AmbientDim, int _Options>

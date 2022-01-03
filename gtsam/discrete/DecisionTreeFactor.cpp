@@ -154,9 +154,34 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  std::string DecisionTreeFactor::markdown(
-      const KeyFormatter& keyFormatter) const {
-    std::stringstream ss;
+  static std::string valueFormatter(const double& v) {
+    return (boost::format("%4.2g") % v).str();
+  }
+
+  /** output to graphviz format, stream version */
+  void DecisionTreeFactor::dot(std::ostream& os,
+                               const KeyFormatter& keyFormatter,
+                               bool showZero) const {
+    Potentials::dot(os, keyFormatter, valueFormatter, showZero);
+  }
+
+  /** output to graphviz format, open a file */
+  void DecisionTreeFactor::dot(const std::string& name,
+                               const KeyFormatter& keyFormatter,
+                               bool showZero) const {
+    Potentials::dot(name, keyFormatter, valueFormatter, showZero);
+  }
+
+  /** output to graphviz format string */
+  std::string DecisionTreeFactor::dot(const KeyFormatter& keyFormatter,
+                                      bool showZero) const {
+    return Potentials::dot(keyFormatter, valueFormatter, showZero);
+  }
+
+  /* ************************************************************************* */
+  string DecisionTreeFactor::markdown(const KeyFormatter& keyFormatter,
+                                      const Names& names) const {
+    stringstream ss;
 
     // Print out header and construct argument for `cartesianProduct`.
     ss << "|";
@@ -175,7 +200,10 @@ namespace gtsam {
     for (const auto& kv : rows) {
       ss << "|";
       auto assignment = kv.first;
-      for (auto& key : keys()) ss << assignment.at(key) << "|";
+      for (auto& key : keys()) {
+        size_t index = assignment.at(key);
+        ss << Translate(names, key, index) << "|";
+      }
       ss << kv.second << "|\n";
     }
     return ss.str();

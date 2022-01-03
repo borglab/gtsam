@@ -97,7 +97,7 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
 
   Vector3 vector() const;
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
   /// get parameter u0
   inline double u0() const { return u0_; }
 

@@ -178,9 +178,29 @@ namespace gtsam {
     /// @name Wrapper support
     /// @{
     
-    /// Render as markdown table.
-    std::string markdown(
-        const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
+    /** output to graphviz format, stream version */
+    void dot(std::ostream& os,
+             const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+             bool showZero = true) const;
+
+    /** output to graphviz format, open a file */
+    void dot(const std::string& name,
+             const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+             bool showZero = true) const;
+
+    /** output to graphviz format string */
+    std::string dot(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                    bool showZero = true) const;
+
+    /**
+     * @brief Render as markdown table
+     *
+     * @param keyFormatter GTSAM-style Key formatter.
+     * @param names optional, category names corresponding to choices.
+     * @return std::string a markdown string.
+     */
+    std::string markdown(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                         const Names& names = {}) const override;
 
     /// @}
 
