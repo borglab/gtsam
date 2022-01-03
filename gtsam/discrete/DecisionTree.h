@@ -39,9 +39,22 @@ namespace gtsam {
   template<typename L, typename Y>
   class GTSAM_EXPORT DecisionTree {
 
+   protected:
     /// Default method for comparison of two objects of type Y.
     static bool DefaultCompare(const Y& a, const Y& b) {
       return a == b;
+    }
+
+    /**
+     * @brief Default method used by `labelFormatter` or `valueFormatter` when printing.
+     * 
+     * @param x The value passed to format.
+     * @return std::string 
+     */
+    static std::string DefaultFormatter(const L& x) {
+      std::stringstream ss;
+      ss << x;
+      return ss.str();
     }
 
   public:
@@ -88,12 +101,14 @@ namespace gtsam {
       const void* id() const { return this; }
 
       // everything else is virtual, no documentation here as internal
-      virtual void print(const std::string& s,
-                         const LabelFormatter& labelFormatter,
-                         const ValueFormatter& valueFormatter) const = 0;
-      virtual void dot(std::ostream& os, const LabelFormatter& labelFormatter,
-                       const ValueFormatter& valueFormatter,
-                       bool showZero) const = 0;
+      virtual void print(
+          const std::string& s,
+          const LabelFormatter& labelFormatter = &DefaultFormatter,
+          const ValueFormatter& valueFormatter = &DefaultFormatter) const = 0;
+      virtual void dot(std::ostream& os,
+                       const LabelFormatter& labelFormatter = &DefaultFormatter,
+                       const ValueFormatter& valueFormatter = &DefaultFormatter,
+                       bool showZero = true) const = 0;
       virtual bool sameLeaf(const Leaf& q) const = 0;
       virtual bool sameLeaf(const Node& q) const = 0;
       virtual bool equals(const Node& other, const CompareFunc& compare =
@@ -111,7 +126,7 @@ namespace gtsam {
   public:
 
     /** A function is a shared pointer to the root of a DT */
-    typedef typename Node::Ptr NodePtr;
+    using NodePtr = typename Node::Ptr;
 
     /// a DecisionTree just contains the root. TODO(dellaert): make protected.
     NodePtr root_;
@@ -164,7 +179,16 @@ namespace gtsam {
     DecisionTree(const DecisionTree<L, X>& other,
                  std::function<Y(const X&)> Y_of_X);
 
-    /** Convert from a different type, also transate labels via map. */
+    /**
+     * @brief Convert from a different node type X to node type Y, also transate
+     * labels via map from type M to L.
+     *
+     * @tparam M Previous label type.
+     * @tparam X Previous node type.
+     * @param other The decision tree to convert.
+     * @param L_of_M Map from label type M to type L.
+     * @param Y_of_X Functor to convert from type X to type Y.
+     */
     template <typename M, typename X>
     DecisionTree(const DecisionTree<M, X>& other, const std::map<M, L>& L_of_M,
                  std::function<Y(const X&)> Y_of_X);
@@ -173,9 +197,16 @@ namespace gtsam {
     /// @name Testable
     /// @{
 
-    /** GTSAM-style print */
-    void print(const std::string& s, const LabelFormatter& labelFormatter,
-               const ValueFormatter& valueFormatter) const;
+    /**
+     * @brief GTSAM-style print
+     * 
+     * @param s Prefix string.
+     * @param labelFormatter Functor to format the node label.
+     * @param valueFormatter Functor to format the node value.
+     */
+    void print(const std::string& s,
+               const LabelFormatter& labelFormatter = &DefaultFormatter,
+               const ValueFormatter& valueFormatter = &DefaultFormatter) const;
 
     // Testable
     bool equals(const DecisionTree& other,
@@ -220,16 +251,20 @@ namespace gtsam {
     }
 
     /** output to graphviz format, stream version */
-    void dot(std::ostream& os, const LabelFormatter& labelFormatter,
-             const ValueFormatter& valueFormatter, bool showZero = true) const;
+    void dot(std::ostream& os,
+             const LabelFormatter& labelFormatter = &DefaultFormatter,
+             const ValueFormatter& valueFormatter = &DefaultFormatter,
+             bool showZero = true) const;
 
     /** output to graphviz format, open a file */
-    void dot(const std::string& name, const LabelFormatter& labelFormatter,
-             const ValueFormatter& valueFormatter, bool showZero = true) const;
+    void dot(const std::string& name,
+             const LabelFormatter& labelFormatter = &DefaultFormatter,
+             const ValueFormatter& valueFormatter = &DefaultFormatter,
+             bool showZero = true) const;
 
     /** output to graphviz format string */
-    std::string dot(const LabelFormatter& labelFormatter,
-                    const ValueFormatter& valueFormatter,
+    std::string dot(const LabelFormatter& labelFormatter = &DefaultFormatter,
+                    const ValueFormatter& valueFormatter = &DefaultFormatter,
                     bool showZero = true) const;
 
     /// @name Advanced Interface
