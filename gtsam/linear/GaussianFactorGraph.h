@@ -99,6 +99,12 @@ namespace gtsam {
 
     /// @}
 
+    /// Check exact equality.
+    friend bool operator==(const GaussianFactorGraph& lhs,
+                            const GaussianFactorGraph& rhs) {
+      return lhs.isEqual(rhs);
+    }
+
     /** Add a factor by value - makes a copy */
     void add(const GaussianFactor& factor) { push_back(factor.clone()); }
 
@@ -413,7 +419,7 @@ namespace gtsam {
    */
   GTSAM_EXPORT bool hasConstraints(const GaussianFactorGraph& factors);
 
-  /****** Linear Algebra Opeations ******/
+  /****** Linear Algebra Operations ******/
 
   ///* matrix-vector operations */
   //GTSAM_EXPORT void residual(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r);
