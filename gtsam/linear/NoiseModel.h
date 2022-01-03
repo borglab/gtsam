@@ -730,8 +730,8 @@ namespace gtsam {
 
   } // namespace noiseModel
 
-  /** Note, deliberately not in noiseModel namespace.
-   * Deprecated. Only for compatibility with previous version.
+  /** 
+   * Aliases. Deliberately not in noiseModel namespace.
    */
   typedef noiseModel::Base::shared_ptr SharedNoiseModel;
   typedef noiseModel::Gaussian::shared_ptr SharedGaussian;
