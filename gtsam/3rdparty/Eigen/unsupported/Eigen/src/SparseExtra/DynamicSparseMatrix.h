@@ -12,7 +12,7 @@
 
 namespace Eigen { 
 
-/** @deprecated use a SparseMatrix in an uncompressed mode
+/** \deprecated use a SparseMatrix in an uncompressed mode
   *
   * \class DynamicSparseMatrix
   *
@@ -291,7 +291,7 @@ template<typename _Scalar, int _Options, typename _StorageIndex>
 
   public:
 
-    /** @deprecated
+    /** \deprecated
       * Set the matrix to zero and reserve the memory for \a reserveSize nonzero coefficients. */
     EIGEN_DEPRECATED void startFill(Index reserveSize = 1000)
     {
@@ -299,7 +299,7 @@ template<typename _Scalar, int _Options, typename _StorageIndex>
       reserve(reserveSize);
     }
 
-    /** @deprecated use insert()
+    /** \deprecated use insert()
       * inserts a nonzero coefficient at given coordinates \a row, \a col and returns its reference assuming that:
       *  1 - the coefficient does not exist yet
       *  2 - this the coefficient with greater inner coordinate for the given outer coordinate.
@@ -315,7 +315,7 @@ template<typename _Scalar, int _Options, typename _StorageIndex>
       return insertBack(outer,inner);
     }
 
-    /** @deprecated use insert()
+    /** \deprecated use insert()
       * Like fill() but with random inner coordinates.
       * Compared to the generic coeffRef(), the unique limitation is that we assume
       * the coefficient does not exist yet.
@@ -325,7 +325,7 @@ template<typename _Scalar, int _Options, typename _StorageIndex>
       return insert(row,col);
     }
 
-    /** @deprecated use finalize()
+    /** \deprecated use finalize()
       * Does nothing. Provided for compatibility with SparseMatrix. */
     EIGEN_DEPRECATED void endFill() {}
     
