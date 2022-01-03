@@ -143,7 +143,7 @@ TEST(DiscreteConditional, markdown_multivalued) {
       A | B = "2/88/10 2/20/78 33/33/34 33/33/34 95/2/3");
   string expected =
       " *P(a1|b1)*:\n\n"
-      "|b1|0|1|2|\n"
+      "|*b1*|0|1|2|\n"
       "|:-:|:-:|:-:|:-:|\n"
       "|0|0.02|0.88|0.1|\n"
       "|1|0.02|0.2|0.78|\n"
@@ -161,7 +161,7 @@ TEST(DiscreteConditional, markdown) {
   DiscreteConditional conditional(A, {B, C}, "0/1 1/3  1/1 3/1  0/1 1/0");
   string expected =
       " *P(A|B,C)*:\n\n"
-      "|B|C|T|F|\n"
+      "|*B*|*C*|T|F|\n"
       "|:-:|:-:|:-:|:-:|\n"
       "|-|Zero|0|1|\n"
       "|-|One|0.25|0.75|\n"

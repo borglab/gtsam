@@ -317,7 +317,7 @@ std::string DiscreteConditional::markdown(const KeyFormatter& keyFormatter,
   ss << "|";
   const_iterator it;
   for(Key parent: parents()) {
-    ss << keyFormatter(parent) << "|";
+    ss << "*" << keyFormatter(parent) << "*|";
     pairs.emplace_back(parent, cardinalities_.at(parent));
   }
 
