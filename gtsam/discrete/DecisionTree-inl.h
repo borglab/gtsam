@@ -662,7 +662,7 @@ namespace gtsam {
   DecisionTree<L, Y> DecisionTree<L, Y>::apply(const DecisionTree& g,
       const Binary& op) const {
     // It is unclear what should happen if either tree is empty:
-    if (empty() or g.empty()) {
+    if (empty() || g.empty()) {
       throw std::runtime_error(
           "DecisionTree::apply(binary op) undefined for empty trees.");
     }
