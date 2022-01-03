@@ -115,8 +115,8 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorPPPC
       try {
           if(H1 || H2 || H3 || H4) {
             Matrix H0, H02;
-            PinholeCamera<CALIBRATION> camera(pose.compose(transform, H0, H02), K);
-            Point2 reprojectionError(camera.project(point, H1, H3, H4) - measured_);
+            const PinholeCamera<CALIBRATION> camera(pose.compose(transform, H0, H02), K);
+            const Point2 reprojectionError(camera.project(point, H1, H3, H4) - measured_);
             *H2 = *H1 * H02;
             *H1 = *H1 * H0;
             return reprojectionError;
