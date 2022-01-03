@@ -89,8 +89,10 @@ public:
   /// @name Wrapper support
   /// @{
   
+  /// Translation table from values to strings.
   using Names = std::map<Key, std::vector<std::string>>;
 
+  /// Translate an integer index value for given key to a string.
   static std::string Translate(const Names& names, Key key, size_t index);
 
   /**
