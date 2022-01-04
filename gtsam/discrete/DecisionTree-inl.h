@@ -580,7 +580,7 @@ namespace gtsam {
     size_t split = size / nrChoices;
     for (size_t i = 0; i < nrChoices; i++, beginY += split) {
       NodePtr f = create<It, ValueIt>(labelC, end, beginY, beginY + split);
-      functions += DecisionTree(f);
+      functions.emplace_back(f);
     }
     return compose(functions.begin(), functions.end(), begin->first);
   }
@@ -613,8 +613,7 @@ namespace gtsam {
     // put together via Shannon expansion otherwise not sorted.
     std::vector<LY> functions;
     for(auto && branch: choice->branches()) {
-      LY converted(convertFrom<M, X>(branch, L_of_M, Y_of_X));
-      functions += converted;
+      functions.emplace_back(convertFrom<M, X>(branch, L_of_M, Y_of_X));
     }
     return LY::compose(functions.begin(), functions.end(), newLabel);
   }
