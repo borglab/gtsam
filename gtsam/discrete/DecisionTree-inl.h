@@ -604,7 +604,7 @@ namespace gtsam {
     using MXChoice = typename DecisionTree<M, X>::Choice;
     auto choice = boost::dynamic_pointer_cast<const MXChoice>(f);
     if (!choice) throw std::invalid_argument(
-        "DecisionTree::Convert: Invalid NodePtr");
+        "DecisionTree::convertFrom: Invalid NodePtr");
 
     // get new label
     const M oldLabel = choice->label();
@@ -635,6 +635,8 @@ namespace gtsam {
 
       using Choice = typename DecisionTree<L, Y>::Choice;
       auto choice = boost::dynamic_pointer_cast<const Choice>(node);
+      if (!choice)
+        throw std::invalid_argument("DecisionTree::Visit: Invalid NodePtr");
       for (auto&& branch : choice->branches()) (*this)(branch);  // recurse!
     }
   };
@@ -664,6 +666,8 @@ namespace gtsam {
 
       using Choice = typename DecisionTree<L, Y>::Choice;
       auto choice = boost::dynamic_pointer_cast<const Choice>(node);
+      if (!choice)
+        throw std::invalid_argument("DecisionTree::VisitWith: Invalid NodePtr");
       for (size_t i = 0; i < choice->nrChoices(); i++) {
         choices[choice->label()] = i;    // Set assignment for label to i
         (*this)(choice->branches()[i]);  // recurse!
