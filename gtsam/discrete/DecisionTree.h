@@ -28,6 +28,7 @@
 #include <map>
 #include <sstream>
 #include <vector>
+#include <set>
 
 namespace gtsam {
 
@@ -230,6 +231,32 @@ namespace gtsam {
     const Y& operator()(const Assignment<L>& x) const;
 
     /**
+     * @brief Visit all leaves in depth-first fashion.
+     * 
+     * @param f side-effect taking a value.
+     * 
+     * Example:
+     *   int sum = 0;
+     *   auto visitor = [&](int y) { sum += y; };
+     *   tree.visitWith(visitor);
+     */
+    template <typename Func>
+    void visit(Func f) const;
+
+    /**
+     * @brief Visit all leaves in depth-first fashion.
+     * 
+     * @param f side-effect taking an assignment and a value.
+     * 
+     * Example:
+     *   int sum = 0;
+     *   auto visitor = [&](const Assignment<L>& choices, int y) { sum += y; };
+     *   tree.visitWith(visitor);
+     */
+    template <typename Func>
+    void visitWith(Func f) const;
+
+    /**
      * @brief Fold a binary function over the tree, returning accumulator.
      *
      * @tparam X type for accumulator.
@@ -238,12 +265,16 @@ namespace gtsam {
      * @return X final value for accumulator.
      * 
      * @note X is always passed by value.
+     * 
+     * Example:
+     *   auto add = [](const double& y, double x) { return y + x; };
+     *   double sum = tree.fold(add, 0.0);
      */
     template <typename Func, typename X>
     X fold(Func f, X x0) const;
 
-    /** Retrieve all labels. */
-    std::vector<L> labels() const { return std::vector<L>(); }
+    /** Retrieve all unique labels as a set. */
+    std::set<L> labels() const;
 
     /** apply Unary operation "op" to f */
     DecisionTree apply(const Unary& op) const;
