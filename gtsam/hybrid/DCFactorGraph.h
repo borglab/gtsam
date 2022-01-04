@@ -24,8 +24,6 @@ class GaussianMixture;
 class DCFactorGraph : public gtsam::FactorGraph<DCFactor> {
  public:
   using shared_ptr = boost::shared_ptr<DCFactorGraph>;
-  using EliminationResult = std::pair<boost::shared_ptr<GaussianMixture>, boost::shared_ptr<DCFactor> >;
-  using Eliminate = std::function<EliminationResult(const DCFactorGraph&, const Ordering&)>;
 
   DCFactorGraph() : FactorGraph<DCFactor>() {}
 };
