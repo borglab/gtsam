@@ -101,11 +101,7 @@ Sum HybridFactorGraph::sum() const {
         "HybridFactorGraph::sum cannot handle DiscreteFactors.");
   }
 
-  // TODO: take all factors, which *must* be all DCGaussianMixtureFactors or
-  // GaussianFactors, "add" them (which might involve decision-trees of
-  // different structure, and creating a dummy decision tree for Gaussians).
-
-  // SUM: "sum" all factors, gathering into GaussianFactorGraph
+  // "sum" all factors, gathering into GaussianFactorGraph
   DCGaussianMixtureFactor::Sum sum;
   for (auto&& dcFactor : dcGraph()) {
     if (auto mixtureFactor =
@@ -130,27 +126,39 @@ std::ostream& operator<<(std::ostream& os,
   return os;
 }
 
-/// The function type that does a single elimination step on a variable.
+// The function type that does a single elimination step on a variable.
 std::pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
     const HybridFactorGraph& factors, const Ordering& ordering) {
-  /// Create a new decision tree with all factors gathered at leaves.
+  // Create a new decision tree with all factors gathered at leaves.
   auto sum = factors.sum();
 
-  /// Now we need to eliminate each one using conventional Cholesky:
-  /// We can use this by creating a *new* decision tree:
+  // Now we need to eliminate each one using conventional Cholesky:
+  // We can use this by creating a *new* decision tree:
   using GFG = GaussianFactorGraph;
   using Pair = GaussianFactorGraph::EliminationResult;
   auto eliminate = [&ordering](const GFG& graph) {
     return EliminatePreferCholesky(graph, ordering);
   };
-  DecisionTree<Key, Pair> tree(sum, eliminate);
+  DecisionTree<Key, Pair> eliminationResults(sum, eliminate);
 
-  // Create a GaussianMixture...
-  auto conditional = boost::make_shared<GaussianMixture>();
+  // Grab the conditionals and create the GaussianMixture
+  const KeyVector keys; // TODO
+  const DiscreteKeys discreteKeys; // TODO
+  auto first = [](const Pair& result) { return result.first; };
+  GaussianMixture::Conditionals conditionals(eliminationResults, first);
+  auto conditional =
+      boost::make_shared<GaussianMixture>(keys, discreteKeys, conditionals);
 
   // Create a resulting DCGaussianMixture on the separator.
-  /// auto factor = TODO ...
-  return {conditional, nullptr};
+  const KeyVector separatorKeys; // TODO
+  const DiscreteKeys separatorDiscreteKeys; // TODO
+  auto second = [](const Pair& result) { return result.second; };
+  DCGaussianMixtureFactor::Factors separatorFactors(eliminationResults, second);
+  auto factor = boost::make_shared<DCGaussianMixtureFactor>(
+      separatorKeys, separatorDiscreteKeys, separatorFactors);
+
+  // Return the result as a pair.
+  return {conditional, factor};
 }
 
 }  // namespace gtsam

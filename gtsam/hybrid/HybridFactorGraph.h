@@ -320,9 +320,13 @@ class HybridFactorGraph : protected FactorGraph<Factor>,
                                                     const Ordering&)>;
 
   /**
-   * Sum all gaussians and Gaussian mixtures together.
+   * @brief Sum all gaussians and Gaussian mixtures together.
    * @return a decision tree of GaussianFactorGraphs
-   * */
+   *
+   * Takes all factors, which *must* be all DCGaussianMixtureFactors or
+   * GaussianFactors, and "add" them. This might involve decision-trees of
+   * different structure, and creating a different decision tree for Gaussians.
+   */
   DCGaussianMixtureFactor::Sum sum() const;
   /// @}
 };

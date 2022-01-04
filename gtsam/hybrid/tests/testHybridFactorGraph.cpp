@@ -223,9 +223,10 @@ TEST(DCGaussianElimination, Eliminate_x1) {
   ordering += X(1);
 
   auto result = EliminateHybrid(factors, ordering);
+  // GTSAM_PRINT(*result.second);
   CHECK(result.first);
-  CHECK(result.second);
   EXPECT_LONGS_EQUAL(2, result.first->nrFrontals());
+  CHECK(result.second);
   EXPECT_LONGS_EQUAL(2, result.second->size());
 }
 
@@ -252,15 +253,16 @@ TEST(DCGaussianElimination, Eliminate_x2) {
   ordering += X(2);
 
   auto result = EliminateHybrid(factors, ordering);
+  // GTSAM_PRINT(*result.second);
   CHECK(result.first);
-  CHECK(result.second);
   EXPECT_LONGS_EQUAL(2, result.first->nrFrontals());
+  CHECK(result.second);
   EXPECT_LONGS_EQUAL(2, result.second->size());
 }
 
 /* ****************************************************************************/
 // Test elimination
-TEST_DISABLED(HybridFactorGraph, Elimination) {
+TEST(HybridFactorGraph, Elimination) {
   Switching self(3);
 
   // Create ordering.
