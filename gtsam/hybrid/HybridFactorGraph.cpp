@@ -81,7 +81,7 @@ void HybridFactorGraph::clear() {
 using Sum = DCGaussianMixtureFactor::Sum;
 static Sum& operator+=(Sum& sum, const GaussianFactor::shared_ptr& factor) {
   using Y = GaussianFactorGraph;
-  std::function<Y(const Y&)> add = [&factor](const Y& graph) {
+  auto add = [&factor](const Y& graph) {
     auto result = graph;
     result.push_back(factor);
     return result;
@@ -140,7 +140,7 @@ std::pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybri
   /// We can use this by creating a *new* decision tree:
   using GFG = GaussianFactorGraph;
   using Pair = GaussianFactorGraph::EliminationResult;
-  std::function<Pair(const GFG&)> eliminate = [&ordering](const GFG& graph) {
+  auto eliminate = [&ordering](const GFG& graph) {
     return EliminatePreferCholesky(graph, ordering);
   };
   DecisionTree<Key, Pair> tree(sum, eliminate);
