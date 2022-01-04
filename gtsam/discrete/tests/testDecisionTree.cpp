@@ -333,6 +333,30 @@ TEST(DecisionTree, Containers) {
 }
 
 /* ******************************************************************************** */
+// Test visit.
+TEST(DecisionTree, visit) {
+  // Create small two-level tree
+  string A("A"), B("B"), C("C");
+  DT tree(B, DT(A, 0, 1), DT(A, 2, 3));
+  double sum = 0.0;
+  auto visitor = [&](int y) { sum += y; };
+  tree.visit(visitor);
+  EXPECT_DOUBLES_EQUAL(6.0, sum, 1e-9);
+}
+
+/* ******************************************************************************** */
+// Test visit, with Choices argument.
+TEST(DecisionTree, visitWith) {
+  // Create small two-level tree
+  string A("A"), B("B"), C("C");
+  DT tree(B, DT(A, 0, 1), DT(A, 2, 3));
+  double sum = 0.0;
+  auto visitor = [&](const Assignment<string>& choices, int y) { sum += y; };
+  tree.visitWith(visitor);
+  EXPECT_DOUBLES_EQUAL(6.0, sum, 1e-9);
+}
+
+/* ******************************************************************************** */
 // Test fold.
 TEST(DecisionTree, fold) {
   // Create small two-level tree
@@ -345,7 +369,7 @@ TEST(DecisionTree, fold) {
 
 /* ******************************************************************************** */
 // Test retrieving all labels.
-TEST_DISABLED(DecisionTree, labels) {
+TEST(DecisionTree, labels) {
   // Create small two-level tree
   string A("A"), B("B"), C("C");
   DT tree(B, DT(A, 0, 1), DT(A, 2, 3));
