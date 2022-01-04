@@ -43,6 +43,7 @@ class GaussianMixture
   using Base = Conditional<DCGaussianMixtureFactor, GaussianMixture>;
   using shared_ptr = boost::shared_ptr<GaussianMixture>;
   using Conditionals = DecisionTree<Key, GaussianConditional::shared_ptr>;
+  using Factors = DCGaussianMixtureFactor::Factors;
 
   /// @name Constructors
   /// @{
@@ -54,7 +55,13 @@ class GaussianMixture
    * @brief Construct a new GaussianMixture object.
    * @param conditionals A decision tree of GaussianConditional instances.
    */
-  GaussianMixture(const Conditionals& conditionals) {}
+  GaussianMixture(const KeyVector& keys, const DiscreteKeys& discreteKeys,
+                  const Conditionals& conditionals)
+      : DCGaussianMixtureFactor(
+            keys, discreteKeys,
+            Factors(conditionals, [](const GaussianConditional::shared_ptr& p) {
+              return boost::dynamic_pointer_cast<GaussianFactor>(p);
+            })) {}
 
   /// @}
   /// @name Standard API
@@ -69,7 +76,6 @@ class GaussianMixture
     else
       throw std::logic_error(
           "A GaussianMixture unexpectedly contained a non-conditional");
-    ;
   }
   /// @}
   /// @name Testable

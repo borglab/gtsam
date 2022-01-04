@@ -60,16 +60,16 @@ TEST(GaussianConditional, equals) {
 
   Vector2 d1(0.2, 0.5), d2(0.5, 0.2);
 
-  auto conditional1 = boost::make_shared<GaussianConditional>(X(1), d1, R1,
+  auto conditional0 = boost::make_shared<GaussianConditional>(X(1), d1, R1,
                                                               X(2), S1, model),
-       conditional2 = boost::make_shared<GaussianConditional>(X(1), d2, R2,
+       conditional1 = boost::make_shared<GaussianConditional>(X(1), d2, R2,
                                                               X(2), S2, model);
 
   // Create decision tree
   DiscreteKey m1(1, 2);
   GaussianMixture::Conditionals conditionals({m1},
-                                             {conditional1, conditional2});
-  GaussianMixture mixtureFactor(conditionals);
+                                             {conditional0, conditional1});
+  GaussianMixture mixtureFactor({X(1), X(2)}, {m1}, conditionals);
 
   // Let's check that this worked:
   DiscreteValues mode;
