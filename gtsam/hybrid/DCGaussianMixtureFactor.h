@@ -140,7 +140,9 @@ class DCGaussianMixtureFactor : public DCFactor {
     for (Key key : keys()) {
       std::cout << " " << keyFormatter(key);
     }
-    std::cout << "; " << keyFormatter(discreteKeys_.front().first) << " ]";
+    std::cout << "; ";
+    for (auto&& dk : discreteKeys_) std::cout << keyFormatter(dk.first) << " ";
+    std::cout << " ]";
     std::cout << "{\n";
     auto valueFormatter = [](const GaussianFactor::shared_ptr& v) {
       return (boost::format("Gaussian factor on %d keys") % v->size()).str();
