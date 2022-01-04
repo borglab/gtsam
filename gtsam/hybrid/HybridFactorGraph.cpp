@@ -127,8 +127,8 @@ std::ostream& operator<<(std::ostream& os,
 }
 
 // The function type that does a single elimination step on a variable.
-std::pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
-    const HybridFactorGraph& factors, const Ordering& ordering) {
+std::pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>>
+EliminateHybrid(const HybridFactorGraph& factors, const Ordering& ordering) {
   // Create a new decision tree with all factors gathered at leaves.
   auto sum = factors.sum();
 
@@ -136,22 +136,26 @@ std::pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybri
   // We can use this by creating a *new* decision tree:
   using GFG = GaussianFactorGraph;
   using Pair = GaussianFactorGraph::EliminationResult;
-  auto eliminate = [&ordering](const GFG& graph) {
-    return EliminatePreferCholesky(graph, ordering);
+
+  KeyVector keys;
+  KeyVector separatorKeys;
+  auto eliminate = [&](const GFG& graph) {
+    auto result = EliminatePreferCholesky(graph, ordering);
+    if (keys.size() == 0) keys = result.first->keys();
+    if (separatorKeys.size() == 0) separatorKeys = result.second->keys();
+    return result;
   };
   DecisionTree<Key, Pair> eliminationResults(sum, eliminate);
 
   // Grab the conditionals and create the GaussianMixture
-  const KeyVector keys; // TODO
-  const DiscreteKeys discreteKeys; // TODO
+  const DiscreteKeys discreteKeys;  // TODO
   auto first = [](const Pair& result) { return result.first; };
   GaussianMixture::Conditionals conditionals(eliminationResults, first);
   auto conditional =
       boost::make_shared<GaussianMixture>(keys, discreteKeys, conditionals);
 
   // Create a resulting DCGaussianMixture on the separator.
-  const KeyVector separatorKeys; // TODO
-  const DiscreteKeys separatorDiscreteKeys; // TODO
+  const DiscreteKeys separatorDiscreteKeys;  // TODO
   auto second = [](const Pair& result) { return result.second; };
   DCGaussianMixtureFactor::Factors separatorFactors(eliminationResults, second);
   auto factor = boost::make_shared<DCGaussianMixtureFactor>(

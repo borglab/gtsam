@@ -40,8 +40,12 @@ class GaussianMixture
   DiscreteKeys discreteKeys_;
 
  public:
-  using Base = Conditional<DCGaussianMixtureFactor, GaussianMixture>;
-  using shared_ptr = boost::shared_ptr<GaussianMixture>;
+  using This = GaussianMixture;
+  using shared_ptr = boost::shared_ptr<This>;
+  using BaseFactor = DCGaussianMixtureFactor;
+  using BaseConditional = Conditional<BaseFactor, This>;
+
+  // Decision trees
   using Conditionals = DecisionTree<Key, GaussianConditional::shared_ptr>;
   using Factors = DCGaussianMixtureFactor::Factors;
 
@@ -54,14 +58,17 @@ class GaussianMixture
   /**
    * @brief Construct a new GaussianMixture object.
    * @param conditionals A decision tree of GaussianConditional instances.
+   * TODO(Frank): (possibly wrongly) assumes nrFrontals is one
    */
   GaussianMixture(const KeyVector& keys, const DiscreteKeys& discreteKeys,
                   const Conditionals& conditionals)
-      : DCGaussianMixtureFactor(
+      : BaseFactor(
             keys, discreteKeys,
-            Factors(conditionals, [](const GaussianConditional::shared_ptr& p) {
-              return boost::dynamic_pointer_cast<GaussianFactor>(p);
-            })) {}
+            Factors(conditionals,
+                    [](const GaussianConditional::shared_ptr& p) {
+                      return boost::dynamic_pointer_cast<GaussianFactor>(p);
+                    })),
+        BaseConditional(1) {}
 
   /// @}
   /// @name Standard API

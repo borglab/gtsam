@@ -223,11 +223,10 @@ TEST(DCGaussianElimination, Eliminate_x1) {
   ordering += X(1);
 
   auto result = EliminateHybrid(factors, ordering);
-  // GTSAM_PRINT(*result.second);
   CHECK(result.first);
-  EXPECT_LONGS_EQUAL(2, result.first->nrFrontals());
+  EXPECT_LONGS_EQUAL(1, result.first->nrFrontals());
   CHECK(result.second);
-  EXPECT_LONGS_EQUAL(2, result.second->size());
+  EXPECT_LONGS_EQUAL(1, result.second->size());
 }
 
 /* ****************************************************************************/
@@ -253,9 +252,8 @@ TEST(DCGaussianElimination, Eliminate_x2) {
   ordering += X(2);
 
   auto result = EliminateHybrid(factors, ordering);
-  // GTSAM_PRINT(*result.second);
   CHECK(result.first);
-  EXPECT_LONGS_EQUAL(2, result.first->nrFrontals());
+  EXPECT_LONGS_EQUAL(1, result.first->nrFrontals());
   CHECK(result.second);
   EXPECT_LONGS_EQUAL(2, result.second->size());
 }
@@ -263,7 +261,7 @@ TEST(DCGaussianElimination, Eliminate_x2) {
 /* ****************************************************************************/
 // Test elimination
 TEST(HybridFactorGraph, Elimination) {
-  Switching self(3);
+  Switching self(4);
 
   // Create ordering.
   Ordering ordering;
@@ -272,10 +270,13 @@ TEST(HybridFactorGraph, Elimination) {
   // Eliminate partially.
   auto result = self.linearizedFactorGraph.eliminatePartialSequential(ordering);
 
-  // GTSAM_PRINT(*result.first);   // HybridBayesNet
-  // GTSAM_PRINT(*result.second);  // HybridFactorGraph
-  EXPECT_LONGS_EQUAL(3, result.first->size())
-  EXPECT_LONGS_EQUAL(3, result.second->size())
+  CHECK(result.first);
+  GTSAM_PRINT(*result.first);   // HybridBayesNet
+  EXPECT_LONGS_EQUAL(4, result.first->size())
+
+  CHECK(result.second);
+  GTSAM_PRINT(*result.second);  // HybridFactorGraph
+  EXPECT_LONGS_EQUAL(4, result.second->size())
 }
 
 /* ************************************************************************* */
