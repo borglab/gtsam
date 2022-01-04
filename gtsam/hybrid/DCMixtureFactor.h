@@ -36,6 +36,7 @@ class DCMixtureFactor : public DCFactor {
  public:
   using Base = DCFactor;
   using shared_ptr = boost::shared_ptr<DCMixtureFactor>;
+  using sharedFactor = boost::shared_ptr<NonlinearFactorType>;
 
   /// typedef for DecisionTree which has Keys as node labels and
   /// NonlinearFactorType as leaf nodes.
@@ -116,18 +117,21 @@ class DCMixtureFactor : public DCFactor {
   /// print to stdout
   void print(
       const std::string& s = "DCMixtureFactor",
-      const KeyFormatter& formatter = DefaultKeyFormatter) const override {
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     std::cout << (s.empty() ? "" : s + " ");
     std::cout << "(";
     for (Key key : keys()) {
-      std::cout << " " << formatter(key);
+      std::cout << " " << keyFormatter(key);
     }
     std::cout << ";";
     for (DiscreteKey key : discreteKeys()) {
-      std::cout << " " << formatter(key.first);
+      std::cout << " " << keyFormatter(key.first);
     }
     std::cout << " ) \n";
-    factors_.print("", formatter);
+    auto valueFormatter = [](const sharedFactor& v) {
+      return (boost::format("Nonlinear factor on %d keys") % v->size()).str();
+    };
+    factors_.print("", keyFormatter, valueFormatter);
   }
 
   /// Check equality
@@ -145,7 +149,7 @@ class DCMixtureFactor : public DCFactor {
                          const boost::shared_ptr<NonlinearFactorType>& b) {
       return traits<NonlinearFactorType>::Equals(*a, *b, tol);
     };
-    if (!factors_.equals(f.factors_, 1e-9, compare)) return false;
+    if (!factors_.equals(f.factors_, compare)) return false;
 
     // If everything above passes, and the keys_, discreteKeys_ and normalized_
     // member variables are identical, return true.
