@@ -50,7 +50,7 @@ class TestDiscreteConditional(GtsamTestCase):
                                           "0/1 1/3  1/1 3/1  0/1 1/0")
         expected = \
             " *P(A|B,C)*:\n\n" \
-            "|B|C|0|1|\n" \
+            "|*B*|*C*|0|1|\n" \
             "|:-:|:-:|:-:|:-:|\n" \
             "|0|0|0|1|\n" \
             "|0|1|0.25|0.75|\n" \

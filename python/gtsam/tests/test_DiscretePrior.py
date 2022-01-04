@@ -6,7 +6,7 @@ All Rights Reserved
 See LICENSE for the license information
 
 Unit tests for Discrete Priors.
-Author: Varun Agrawal
+Author: Frank Dellaert
 """
 
 # pylint: disable=no-name-in-module, invalid-name
@@ -41,6 +41,11 @@ class TestDiscretePrior(GtsamTestCase):
         prior = DiscretePrior(X, "2/3")
         expected = np.array([0.4, 0.6])
         np.testing.assert_allclose(expected, prior.pmf())
+
+    def test_sample(self):
+        prior = DiscretePrior(X, "2/3")
+        actual = prior.sample()
+        self.assertIsInstance(actual, int)
 
     def test_markdown(self):
         """Test the _repr_markdown_ method."""

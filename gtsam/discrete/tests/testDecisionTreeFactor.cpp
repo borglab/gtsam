@@ -120,6 +120,27 @@ TEST(DecisionTreeFactor, markdown) {
 }
 
 /* ************************************************************************* */
+// Check markdown representation with a value formatter.
+TEST(DecisionTreeFactor, markdownWithValueFormatter) {
+  DiscreteKey A(12, 3), B(5, 2);
+  DecisionTreeFactor f(A & B, "1 2  3 4  5 6");
+  string expected =
+      "|A|B|value|\n"
+      "|:-:|:-:|:-:|\n"
+      "|Zero|-|1|\n"
+      "|Zero|+|2|\n"
+      "|One|-|3|\n"
+      "|One|+|4|\n"
+      "|Two|-|5|\n"
+      "|Two|+|6|\n";
+  auto keyFormatter = [](Key key) { return key == 12 ? "A" : "B"; };
+  DecisionTreeFactor::Names names{{12, {"Zero", "One", "Two"}},
+                                  {5, {"-", "+"}}};
+  string actual = f.markdown(keyFormatter, names);
+  EXPECT(actual == expected);
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
