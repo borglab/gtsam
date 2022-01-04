@@ -142,10 +142,10 @@ public:
     return q - (*this);
   }
   Vector6 GTSAM_DEPRECATED localCoordinates(const ConstantBias& q) {
-    return between(q).vector();
+    return (q - (*this)).vector();
   }
   ConstantBias GTSAM_DEPRECATED retract(const Vector6& v) {
-    return compose(ConstantBias(v));
+    return (*this) + ConstantBias(v);
   }
   static Vector6 GTSAM_DEPRECATED Logmap(const ConstantBias& p) {
     return p.vector();
