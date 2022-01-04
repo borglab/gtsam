@@ -45,15 +45,6 @@ struct Crazy {
   double b;
 };
 
-//   bool equals(const Crazy& other, double tol = 1e-12) const {
-//     return a == other.a && std::abs(b - other.b) < tol;
-//   }
-
-//   bool operator==(const Crazy& other) const {
-//     return this->equals(other);
-//   }
-// };
-
 struct CrazyDecisionTree : public DecisionTree<string, Crazy> {
   /// print to stdout
   void print(const std::string& s = "") const {
@@ -132,8 +123,7 @@ struct Ring {
 
 /* ******************************************************************************** */
 // test DT
-TEST(DT, example)
-{
+TEST(DecisionTree, example) {
   // Create labels
   string A("A"), B("B"), C("C");
 
@@ -239,14 +229,34 @@ TEST(DT, example)
 }
 
 /* ******************************************************************************** */
-// test Conversion
+// test Conversion of values
+bool bool_of_int(const int& y) { return y != 0; };
+typedef DecisionTree<string, bool> StringBoolTree;
+
+TEST(DecisionTree, ConvertValuesOnly) {
+  // Create labels
+  string A("A"), B("B");
+
+  // apply, two nodes, in natural order
+  DT f1 = apply(DT(A, 0, 5), DT(B, 5, 0), &Ring::mul);
+
+  // convert
+  StringBoolTree f2(f1, bool_of_int);
+
+  // Check a value
+  Assignment<string> x00;
+  x00["A"] = 0, x00["B"] = 0;
+  EXPECT(!f2(x00));
+}
+
+/* ******************************************************************************** */
+// test Conversion of both values and labels.
 enum Label {
   U, V, X, Y, Z
 };
-typedef DecisionTree<Label, bool> BDT;
+typedef DecisionTree<Label, bool> LabelBoolTree;
 
-TEST(DT, conversion)
-{
+TEST(DecisionTree, ConvertBoth) {
   // Create labels
   string A("A"), B("B");
 
@@ -257,14 +267,9 @@ TEST(DT, conversion)
   map<string, Label> ordering;
   ordering[A] = X;
   ordering[B] = Y;
-  std::function<bool(const int&)> bool_of_int = [](const int& y) {
-    return y != 0;
-  };
-  BDT f2(f1, ordering, bool_of_int);
-  //  f1.print("f1");
-  //  f2.print("f2");
+  LabelBoolTree f2(f1, ordering, &bool_of_int);
 
-  // create a value
+  // Check some values
   Assignment<Label> x00, x01, x10, x11;
   x00[X] = 0, x00[Y] = 0;
   x01[X] = 0, x01[Y] = 1;
@@ -278,8 +283,7 @@ TEST(DT, conversion)
 
 /* ******************************************************************************** */
 // test Compose expansion
-TEST(DT, Compose)
-{
+TEST(DecisionTree, Compose) {
   // Create labels
   string A("A"), B("B"), C("C");
 
@@ -302,6 +306,73 @@ TEST(DT, Compose)
   DT f5(keys, "0 4 2 6 1 5 3 7");
   EXPECT(assert_equal(f5, f4, 1e-9));
   DOT(f5);
+}
+
+/* ******************************************************************************** */
+// Check we can create a decision tree of containers.
+TEST(DecisionTree, Containers) {
+  using Container = std::vector<double>;
+  using StringContainerTree = DecisionTree<string, Container>;
+
+  // Check default constructor
+  StringContainerTree tree;
+
+  // Create small two-level tree
+  string A("A"), B("B"), C("C");
+  DT stringIntTree(B, DT(A, 0, 1), DT(A, 2, 3));
+
+  // Check conversion
+  auto container_of_int = [](const int& i) {
+    Container c;
+    c.emplace_back(i);
+    return c;
+  };
+  StringContainerTree converted(stringIntTree, container_of_int);
+}
+
+/* ******************************************************************************** */
+// Test visit.
+TEST(DecisionTree, visit) {
+  // Create small two-level tree
+  string A("A"), B("B"), C("C");
+  DT tree(B, DT(A, 0, 1), DT(A, 2, 3));
+  double sum = 0.0;
+  auto visitor = [&](int y) { sum += y; };
+  tree.visit(visitor);
+  EXPECT_DOUBLES_EQUAL(6.0, sum, 1e-9);
+}
+
+/* ******************************************************************************** */
+// Test visit, with Choices argument.
+TEST(DecisionTree, visitWith) {
+  // Create small two-level tree
+  string A("A"), B("B"), C("C");
+  DT tree(B, DT(A, 0, 1), DT(A, 2, 3));
+  double sum = 0.0;
+  auto visitor = [&](const Assignment<string>& choices, int y) { sum += y; };
+  tree.visitWith(visitor);
+  EXPECT_DOUBLES_EQUAL(6.0, sum, 1e-9);
+}
+
+/* ******************************************************************************** */
+// Test fold.
+TEST(DecisionTree, fold) {
+  // Create small two-level tree
+  string A("A"), B("B"), C("C");
+  DT tree(B, DT(A, 0, 1), DT(A, 2, 3));
+  auto add = [](const int& y, double x) { return y + x; };
+  double sum = tree.fold(add, 0.0);
+  EXPECT_DOUBLES_EQUAL(6.0, sum, 1e-9);
+}
+
+/* ******************************************************************************** */
+// Test retrieving all labels.
+TEST(DecisionTree, labels) {
+  // Create small two-level tree
+  string A("A"), B("B"), C("C");
+  DT tree(B, DT(A, 0, 1), DT(A, 2, 3));
+  auto labels = tree.labels();
+  EXPECT_LONGS_EQUAL(2, labels.size());
 }
 
 /* ************************************************************************* */

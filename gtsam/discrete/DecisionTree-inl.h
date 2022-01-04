@@ -88,7 +88,7 @@ namespace gtsam {
       std::cout << s << " Leaf " << valueFormatter(constant_) << std::endl;
     }
 
-    /** to graphviz file */
+    /** Write graphviz format to stream `os`. */
     void dot(std::ostream& os, const LabelFormatter& labelFormatter,
              const ValueFormatter& valueFormatter,
              bool showZero) const override {
@@ -154,7 +154,7 @@ namespace gtsam {
     /** incremental allSame */
     size_t allSame_;
 
-    typedef boost::shared_ptr<const Choice> ChoicePtr;
+    using ChoicePtr = boost::shared_ptr<const Choice>;
 
   public:
 
@@ -459,22 +459,20 @@ namespace gtsam {
 
   /*********************************************************************************/
   template <typename L, typename Y>
-  template <typename X>
+  template <typename X, typename Func>
   DecisionTree<L, Y>::DecisionTree(const DecisionTree<L, X>& other,
-                                   std::function<Y(const X&)> Y_of_X) {
-    auto L_of_L = [](const L& label) { return label; };
-    root_ = convertFrom<L, X>(Y_of_X, L_of_L);
+                                   Func Y_of_X) {
+    // Define functor for identity mapping of node label.
+	auto L_of_L = [](const L& label) { return label; };
+    root_ = convertFrom<L, X>(other.root_, L_of_L, Y_of_X);
   }
 
   /*********************************************************************************/
   template <typename L, typename Y>
-  template <typename M, typename X>
+  template <typename M, typename X, typename Func>
   DecisionTree<L, Y>::DecisionTree(const DecisionTree<M, X>& other,
-                                   const std::map<M, L>& map,
-                                   std::function<Y(const X&)> Y_of_X) {
-    std::function<L(const M&)> L_of_M = [&map](const M& label) -> L {
-      return map.at(label);
-    };
+                                   const std::map<M, L>& map, Func Y_of_X) {
+    auto L_of_M = [&map](const M& label) -> L { return map.at(label); };
     root_ = convertFrom<M, X>(other.root_, L_of_M, Y_of_X);
   }
 
@@ -594,18 +592,16 @@ namespace gtsam {
       const typename DecisionTree<M, X>::NodePtr& f,
       std::function<L(const M&)> L_of_M,
       std::function<Y(const X&)> Y_of_X) const {
-    typedef DecisionTree<M, X> MX;
-    typedef typename MX::Leaf MXLeaf;
-    typedef typename MX::Choice MXChoice;
-    typedef typename MX::NodePtr MXNodePtr;
-    typedef DecisionTree<L, Y> LY;
+    using LY = DecisionTree<L, Y>;
 
     // ugliness below because apparently we can't have templated virtual functions
     // If leaf, apply unary conversion "op" and create a unique leaf
-    auto leaf = boost::dynamic_pointer_cast<const MXLeaf>(f);
-    if (leaf) return NodePtr(new Leaf(Y_of_X(leaf->constant())));
+    using MXLeaf = typename DecisionTree<M, X>::Leaf;
+    if (auto leaf = boost::dynamic_pointer_cast<const MXLeaf>(f))
+    	return NodePtr(new Leaf(Y_of_X(leaf->constant())));
 
     // Check if Choice
+    using MXChoice = typename DecisionTree<M, X>::Choice;
     auto choice = boost::dynamic_pointer_cast<const MXChoice>(f);
     if (!choice) throw std::invalid_argument(
         "DecisionTree::Convert: Invalid NodePtr");
@@ -616,7 +612,7 @@ namespace gtsam {
 
     // put together via Shannon expansion otherwise not sorted.
     std::vector<LY> functions;
-    for(const MXNodePtr& branch: choice->branches()) {
+    for(auto && branch: choice->branches()) {
       LY converted(convertFrom<M, X>(branch, L_of_M, Y_of_X));
       functions += converted;
     }
@@ -624,6 +620,86 @@ namespace gtsam {
   }
 
   /*********************************************************************************/
+  // Functor performing depth-first visit without Assignment<L> argument.
+  template <typename L, typename Y>
+  struct Visit {
+    using F = std::function<void(const Y&)>;
+    Visit(F f) : f(f) {}  ///< Construct from folding function.
+    F f;                  ///< folding function object.
+
+    /// Do a depth-first visit on the tree rooted at node.
+    void operator()(const typename DecisionTree<L, Y>::NodePtr& node) const {
+      using Leaf = typename DecisionTree<L, Y>::Leaf;
+      if (auto leaf = boost::dynamic_pointer_cast<const Leaf>(node))
+        return f(leaf->constant());
+
+      using Choice = typename DecisionTree<L, Y>::Choice;
+      auto choice = boost::dynamic_pointer_cast<const Choice>(node);
+      for (auto&& branch : choice->branches()) (*this)(branch);  // recurse!
+    }
+  };
+
+  template <typename L, typename Y>
+  template <typename Func>
+  void DecisionTree<L, Y>::visit(Func f) const {
+    Visit<L, Y> visit(f);
+    visit(root_);
+  }
+
+  /*********************************************************************************/
+  // Functor performing depth-first visit with Assignment<L> argument.
+  template <typename L, typename Y>
+  struct VisitWith {
+    using Choices = Assignment<L>;
+    using F = std::function<void(const Choices&, const Y&)>;
+    VisitWith(F f) : f(f) {}  ///< Construct from folding function.
+    Choices choices;          ///< Assignment, mutating through recursion.
+    F f;                      ///< folding function object.
+
+    /// Do a depth-first visit on the tree rooted at node.
+    void operator()(const typename DecisionTree<L, Y>::NodePtr& node) {
+      using Leaf = typename DecisionTree<L, Y>::Leaf;
+      if (auto leaf = boost::dynamic_pointer_cast<const Leaf>(node))
+        return f(choices, leaf->constant());
+
+      using Choice = typename DecisionTree<L, Y>::Choice;
+      auto choice = boost::dynamic_pointer_cast<const Choice>(node);
+      for (size_t i = 0; i < choice->nrChoices(); i++) {
+        choices[choice->label()] = i;    // Set assignment for label to i
+        (*this)(choice->branches()[i]);  // recurse!
+      }
+    }
+  };
+
+  template <typename L, typename Y>
+  template <typename Func>
+  void DecisionTree<L, Y>::visitWith(Func f) const {
+    VisitWith<L, Y> visit(f);
+    visit(root_);
+  }
+
+  /*********************************************************************************/
+  // fold is just done with a visit
+  template <typename L, typename Y>
+  template <typename Func, typename X>
+  X DecisionTree<L, Y>::fold(Func f, X x0) const {
+    visit([&](const Y& y) { x0 = f(y, x0); });
+    return x0;
+  }
+
+  /*********************************************************************************/
+  // labels is just done with a visit
+  template <typename L, typename Y>
+  std::set<L> DecisionTree<L, Y>::labels() const {
+    std::set<L> unique;
+    auto f = [&](const Assignment<L>& choices, const Y&) {
+      for (auto&& kv : choices) unique.insert(kv.first);
+    };
+    visitWith(f);
+    return unique;
+  }
+
+/*********************************************************************************/
   template <typename L, typename Y>
   bool DecisionTree<L, Y>::equals(const DecisionTree& other,
                                   const CompareFunc& compare) const {

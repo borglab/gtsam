@@ -65,7 +65,7 @@ const unsigned int RowMajorBit = 0x1;
 const unsigned int EvalBeforeNestingBit = 0x2;
 
 /** \ingroup flags
-  * @deprecated
+  * \deprecated
   * means the expression should be evaluated before any assignment */
 EIGEN_DEPRECATED
 const unsigned int EvalBeforeAssigningBit = 0x4; // FIXME deprecated
@@ -149,7 +149,7 @@ const unsigned int LvalueBit = 0x20;
   */
 const unsigned int DirectAccessBit = 0x40;
 
-/** @deprecated \ingroup flags
+/** \deprecated \ingroup flags
   *
   * means the first coefficient packet is guaranteed to be aligned.
   * An expression cannot has the AlignedBit without the PacketAccessBit flag.

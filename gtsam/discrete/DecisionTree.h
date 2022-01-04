@@ -28,6 +28,7 @@
 #include <map>
 #include <sstream>
 #include <vector>
+#include <set>
 
 namespace gtsam {
 
@@ -39,6 +40,7 @@ namespace gtsam {
   template<typename L, typename Y>
   class GTSAM_EXPORT DecisionTree {
 
+   protected:
     /// Default method for comparison of two objects of type Y.
     static bool DefaultCompare(const Y& a, const Y& b) {
       return a == b;
@@ -51,11 +53,11 @@ namespace gtsam {
     using CompareFunc = std::function<bool(const Y&, const Y&)>;
 
     /** Handy typedefs for unary and binary function types */
-    typedef std::function<Y(const Y&)> Unary;
-    typedef std::function<Y(const Y&, const Y&)> Binary;
+    using Unary = std::function<Y(const Y&)>;
+    using Binary = std::function<Y(const Y&, const Y&)>;
 
     /** A label annotated with cardinality */
-    typedef std::pair<L,size_t> LabelC;
+    using LabelC = std::pair<L,size_t>;
 
     /** DTs consist of Leaf and Choice nodes, both subclasses of Node */
     class Leaf;
@@ -64,7 +66,7 @@ namespace gtsam {
     /** ------------------------ Node base class --------------------------- */
     class Node {
     public:
-      typedef boost::shared_ptr<const Node> Ptr;
+      using Ptr = boost::shared_ptr<const Node>;
 
 #ifdef DT_DEBUG_MEMORY
       static int nrNodes;
@@ -111,9 +113,9 @@ namespace gtsam {
   public:
 
     /** A function is a shared pointer to the root of a DT */
-    typedef typename Node::Ptr NodePtr;
+    using NodePtr = typename Node::Ptr;
 
-    /// a DecisionTree just contains the root. TODO(dellaert): make protected.
+    /// A DecisionTree just contains the root. TODO(dellaert): make protected.
     NodePtr root_;
 
   protected:
@@ -122,7 +124,16 @@ namespace gtsam {
     template<typename It, typename ValueIt>
     NodePtr create(It begin, It end, ValueIt beginY, ValueIt endY) const;
 
-    /// Convert from a DecisionTree<M, X>.
+    /**
+     * @brief Convert from a DecisionTree<M, X> to DecisionTree<L, Y>.
+     * 
+     * @tparam M The previous label type.
+     * @tparam X The previous value type.
+     * @param f The node pointer to the root of the previous DecisionTree.
+     * @param L_of_M Functor to convert from label type M to type L.
+     * @param Y_of_X Functor to convert from value type X to type Y.
+     * @return NodePtr 
+     */
     template <typename M, typename X>
     NodePtr convertFrom(const typename DecisionTree<M, X>::NodePtr& f,
                         std::function<L(const M&)> L_of_M,
@@ -159,21 +170,41 @@ namespace gtsam {
     DecisionTree(const L& label, //
         const DecisionTree& f0, const DecisionTree& f1);
 
-    /** Convert from a different type. */
-    template <typename X>
-    DecisionTree(const DecisionTree<L, X>& other,
-                 std::function<Y(const X&)> Y_of_X);
+    /**
+     * @brief Convert from a different value type.
+     *
+     * @tparam X The previous value type.
+     * @param other The DecisionTree to convert from.
+     * @param Y_of_X Functor to convert from value type X to type Y.
+     */
+    template <typename X, typename Func>
+    DecisionTree(const DecisionTree<L, X>& other, Func Y_of_X);
 
-    /** Convert from a different type, also transate labels via map. */
-    template <typename M, typename X>
-    DecisionTree(const DecisionTree<M, X>& other, const std::map<M, L>& L_of_M,
-                 std::function<Y(const X&)> Y_of_X);
+    /**
+     * @brief Convert from a different value type X to value type Y, also transate
+     * labels via map from type M to L.
+     *
+     * @tparam M Previous label type.
+     * @tparam X Previous value type.
+     * @param other The decision tree to convert.
+     * @param L_of_M Map from label type M to type L.
+     * @param Y_of_X Functor to convert from type X to type Y.
+     */
+    template <typename M, typename X, typename Func>
+    DecisionTree(const DecisionTree<M, X>& other, const std::map<M, L>& map,
+                 Func Y_of_X);
 
     /// @}
     /// @name Testable
     /// @{
 
-    /** GTSAM-style print */
+    /**
+     * @brief GTSAM-style print
+     * 
+     * @param s Prefix string.
+     * @param labelFormatter Functor to format the node label.
+     * @param valueFormatter Functor to format the node value.
+     */
     void print(const std::string& s, const LabelFormatter& labelFormatter,
                const ValueFormatter& valueFormatter) const;
 
@@ -189,7 +220,7 @@ namespace gtsam {
     virtual ~DecisionTree() {
     }
 
-    /** empty tree? */
+    /// Check if tree is empty.
     bool empty() const { return !root_; }
 
     /** equality */
@@ -197,6 +228,52 @@ namespace gtsam {
 
     /** evaluate */
     const Y& operator()(const Assignment<L>& x) const;
+
+    /**
+     * @brief Visit all leaves in depth-first fashion.
+     * 
+     * @param f side-effect taking a value.
+     * 
+     * Example:
+     *   int sum = 0;
+     *   auto visitor = [&](int y) { sum += y; };
+     *   tree.visitWith(visitor);
+     */
+    template <typename Func>
+    void visit(Func f) const;
+
+    /**
+     * @brief Visit all leaves in depth-first fashion.
+     * 
+     * @param f side-effect taking an assignment and a value.
+     * 
+     * Example:
+     *   int sum = 0;
+     *   auto visitor = [&](const Assignment<L>& choices, int y) { sum += y; };
+     *   tree.visitWith(visitor);
+     */
+    template <typename Func>
+    void visitWith(Func f) const;
+
+    /**
+     * @brief Fold a binary function over the tree, returning accumulator.
+     *
+     * @tparam X type for accumulator.
+     * @param f binary function: Y * X -> X returning an updated accumulator.
+     * @param x0 initial value for accumulator.
+     * @return X final value for accumulator.
+     * 
+     * @note X is always passed by value.
+     * 
+     * Example:
+     *   auto add = [](const double& y, double x) { return y + x; };
+     *   double sum = tree.fold(add, 0.0);
+     */
+    template <typename Func, typename X>
+    X fold(Func f, X x0) const;
+
+    /** Retrieve all unique labels as a set. */
+    std::set<L> labels() const;
 
     /** apply Unary operation "op" to f */
     DecisionTree apply(const Unary& op) const;
@@ -248,18 +325,14 @@ namespace gtsam {
 
   /** free versions of apply */
 
+  /// Apply unary operator `op` to DecisionTree `f`.
   template<typename L, typename Y>
   DecisionTree<L, Y> apply(const DecisionTree<L, Y>& f,
       const typename DecisionTree<L, Y>::Unary& op) {
     return f.apply(op);
   }
 
-  template<typename L, typename Y, typename X>
-  DecisionTree<L, Y> apply(const DecisionTree<L, Y>& f,
-      const std::function<Y(const X&)>& op) {
-    return f.apply(op);
-  }
-
+  /// Apply binary operator `op` to DecisionTree `f`.
   template<typename L, typename Y>
   DecisionTree<L, Y> apply(const DecisionTree<L, Y>& f,
       const DecisionTree<L, Y>& g,
