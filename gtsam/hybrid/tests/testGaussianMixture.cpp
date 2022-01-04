@@ -67,8 +67,9 @@ TEST(GaussianConditional, equals) {
 
   // Create decision tree
   DiscreteKey m1(1, 2);
-  GaussianMixture::Conditionals conditionals({m1},
-                                             {conditional0, conditional1});
+  GaussianMixture::Conditionals conditionals(
+      {m1},
+      vector<GaussianConditional::shared_ptr>{conditional0, conditional1});
   GaussianMixture mixtureFactor({X(1), X(2)}, {m1}, conditionals);
 
   // Let's check that this worked:
