@@ -57,13 +57,14 @@ namespace gtsam {
 
   /* **************************************************************************/
   std::string DiscreteBayesTree::markdown(
-      const KeyFormatter& keyFormatter) const {
+      const KeyFormatter& keyFormatter,
+      const DiscreteFactor::Names& names) const {
     using std::endl;
     std::stringstream ss;
     ss << "`DiscreteBayesTree` of size " << nodes_.size() << endl << endl;
     auto visitor = [&](const DiscreteBayesTreeClique::shared_ptr& clique,
                        size_t& indent) {
-      ss << "\n" << clique->conditional()->markdown(keyFormatter);
+      ss << "\n" << clique->conditional()->markdown(keyFormatter, names);
       return indent + 1;
     };
     size_t indent;

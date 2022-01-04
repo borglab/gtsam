@@ -115,7 +115,7 @@ void runLargeExample() {
   // Do brute force product and output that to file
   if (scheduler.nrStudents() == 1) { // otherwise too slow
     DecisionTreeFactor product = scheduler.product();
-    product.dot("scheduling-large", false);
+    product.dot("scheduling-large", DefaultKeyFormatter, false);
   }
 
   // Do exact inference

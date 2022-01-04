@@ -179,9 +179,9 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  std::string DecisionTreeFactor::markdown(
-      const KeyFormatter& keyFormatter) const {
-    std::stringstream ss;
+  string DecisionTreeFactor::markdown(const KeyFormatter& keyFormatter,
+                                      const Names& names) const {
+    stringstream ss;
 
     // Print out header and construct argument for `cartesianProduct`.
     ss << "|";
@@ -200,7 +200,10 @@ namespace gtsam {
     for (const auto& kv : rows) {
       ss << "|";
       auto assignment = kv.first;
-      for (auto& key : keys()) ss << assignment.at(key) << "|";
+      for (auto& key : keys()) {
+        size_t index = assignment.at(key);
+        ss << Translate(names, key, index) << "|";
+      }
       ss << kv.second << "|\n";
     }
     return ss.str();
