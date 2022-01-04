@@ -230,9 +230,7 @@ TEST(DecisionTree, example) {
 
 /* ******************************************************************************** */
 // test Conversion of values
-std::function<bool(const int&)> bool_of_int = [](const int& y) {
-  return y != 0;
-};
+bool bool_of_int(const int& y) { return y != 0; };
 typedef DecisionTree<string, bool> StringBoolTree;
 
 TEST(DecisionTree, ConvertValuesOnly) {
@@ -269,7 +267,7 @@ TEST(DecisionTree, ConvertBoth) {
   map<string, Label> ordering;
   ordering[A] = X;
   ordering[B] = Y;
-  LabelBoolTree f2(f1, ordering, bool_of_int);
+  LabelBoolTree f2(f1, ordering, &bool_of_int);
 
   // Check some values
   Assignment<Label> x00, x01, x10, x11;
@@ -324,7 +322,7 @@ TEST(DecisionTree, Containers) {
   DT stringIntTree(B, DT(A, 0, 1), DT(A, 2, 3));
 
   // Check conversion
-  std::function<Container(const int& i)> container_of_int = [](const int& i) {
+  auto container_of_int = [](const int& i) {
     Container c;
     c.emplace_back(i);
     return c;
