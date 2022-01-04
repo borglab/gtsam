@@ -44,11 +44,11 @@ class DCGaussianMixtureFactor : public DCFactor {
  public:
   using Base = DCFactor;
   using shared_ptr = boost::shared_ptr<DCGaussianMixtureFactor>;
-  using FactorDecisionTree = DecisionTree<Key, GaussianFactor::shared_ptr>;
+  using Factors = DecisionTree<Key, GaussianFactor::shared_ptr>;
 
  protected:
   /// Decision tree of Gaussian factors indexed by discrete keys.
-  FactorDecisionTree factors_;
+  Factors factors_;
 
  public:
   /// @name Constructors
@@ -65,7 +65,7 @@ class DCGaussianMixtureFactor : public DCFactor {
    */
   DCGaussianMixtureFactor(const KeyVector& keys,
                           const DiscreteKeys& discreteKeys,
-                          const FactorDecisionTree factors)
+                          const Factors factors)
       : Base(keys, discreteKeys), factors_(factors) {}
 
   /**
@@ -80,7 +80,7 @@ class DCGaussianMixtureFactor : public DCFactor {
       const KeyVector& keys, const DiscreteKeys& discreteKeys,
       const std::vector<GaussianFactor::shared_ptr>& factors)
       : DCGaussianMixtureFactor(keys, discreteKeys,
-                                FactorDecisionTree(discreteKeys, factors)) {}
+                                Factors(discreteKeys, factors)) {}
 
   /// Copy constructor.
   DCGaussianMixtureFactor(const DCGaussianMixtureFactor& x) = default;
@@ -168,8 +168,7 @@ class DCGaussianMixtureFactor : public DCFactor {
   /// Add MixtureFactor to a Sum
   Sum addTo(const Sum& sum) const {
     using Y = GaussianFactorGraph;
-    std::function<Y(const Y&, const Y&)> add = [](const Y& graph1,
-                                                  const Y& graph2) {
+    auto add = [](const Y& graph1, const Y& graph2) {
       auto result = graph1;
       result.push_back(graph2);
       return result;
@@ -188,12 +187,11 @@ class DCGaussianMixtureFactor : public DCFactor {
  private:
   /// Return Sum decision tree with factors wrapped in Singleton FGs.
   Sum wrappedFactors() const {
-    std::function<GaussianFactorGraph(const GaussianFactor::shared_ptr&)> wrap =
-        [](const GaussianFactor::shared_ptr& factor) {
-          GaussianFactorGraph result;
-          result.push_back(factor);
-          return result;
-        };
+    auto wrap = [](const GaussianFactor::shared_ptr& factor) {
+      GaussianFactorGraph result;
+      result.push_back(factor);
+      return result;
+    };
     return Sum(factors_, wrap);
   }
 };

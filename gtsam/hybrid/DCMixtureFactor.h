@@ -40,11 +40,11 @@ class DCMixtureFactor : public DCFactor {
 
   /// typedef for DecisionTree which has Keys as node labels and
   /// NonlinearFactorType as leaf nodes.
-  using FactorDecisionTree = DecisionTree<Key, sharedFactor>;
+  using Factors = DecisionTree<Key, sharedFactor>;
 
  private:
   /// Decision tree of Gaussian factors indexed by discrete keys.
-  FactorDecisionTree factors_;
+  Factors factors_;
   bool normalized_;
 
  public:
@@ -60,7 +60,7 @@ class DCMixtureFactor : public DCFactor {
    * normalized.
    */
   DCMixtureFactor(const KeyVector& keys, const DiscreteKeys& discreteKeys,
-                  const FactorDecisionTree& factors, bool normalized = false)
+                  const Factors& factors, bool normalized = false)
       : Base(keys, discreteKeys), factors_(factors), normalized_(normalized) {}
 
   /**
@@ -81,7 +81,7 @@ class DCMixtureFactor : public DCFactor {
                   const std::vector<sharedFactor>& factors,
                   bool normalized = false)
       : DCMixtureFactor(keys, discreteKeys,
-                        FactorDecisionTree(discreteKeys, factors)) {}
+                        Factors(discreteKeys, factors)) {}
 
   /**
    * @brief DEPRECATED constructor with non-shared pointers.
@@ -97,7 +97,7 @@ class DCMixtureFactor : public DCFactor {
       factor_pointers.push_back(f_ptr);
     }
     // Generate decision tree based on discreteKey to factor mapping.
-    factors_ = FactorDecisionTree(discreteKeys, factor_pointers);
+    factors_ = Factors(discreteKeys, factor_pointers);
   }
 
   ~DCMixtureFactor() = default;
@@ -180,10 +180,9 @@ class DCMixtureFactor : public DCFactor {
 
   /// Linearize all the continuous factors to get a DCGaussianMixtureFactor.
   DCFactor::shared_ptr linearize(const Values& continuousVals) const override {
-    std::function<GaussianFactor::shared_ptr(const sharedFactor&)> linearizeDT =
-        [continuousVals](const sharedFactor& factor) {
-          return factor->linearize(continuousVals);
-        };
+    auto linearizeDT = [continuousVals](const sharedFactor& factor) {
+      return factor->linearize(continuousVals);
+    };
 
     DecisionTree<Key, GaussianFactor::shared_ptr> linearized_factors(
         factors_, linearizeDT);
