@@ -52,7 +52,7 @@ TEST(TestSuite, dcdiscrete_mixture) {
   auto prior_noiseNullHypo = noiseModel::Isotropic::Sigma(1, sigmaNullHypo);
   PriorFactor<double> fNullHypo(x1, loc, prior_noiseNullHypo);
 
-  DCMixtureFactor<PriorFactor<double>> dcMixture(keys, dk, {f1, fNullHypo});
+  DCMixtureFactor<PriorFactor<double>> dcMixture(keys, {dk}, {f1, fNullHypo});
 
   // Check error.
   Values continuousVals;

@@ -206,7 +206,8 @@ TEST(DCGaussianElimination, Switching) {
     using MotionMixture = DCMixtureFactor<BetweenFactor<double>>;
     auto keys = {X(k), X(k + 1)};
     auto components = {still.linearize(values), moving.linearize(values)};
-    fg.emplace_shared<DCGaussianMixtureFactor>(keys, modes[k], components);
+    fg.emplace_shared<DCGaussianMixtureFactor>(keys, DiscreteKeys{modes[k]},
+                                               components);
   }
 
   // Add "mode chain": can only be done in HybridFactorGraph

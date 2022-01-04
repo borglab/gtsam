@@ -172,10 +172,6 @@ GTSAM_EXPORT GraphAndValues load2D(const std::string& filename,
         false, bool smart = true, NoiseFormat noiseFormat = NoiseFormatAUTO, //
     KernelFunctionType kernelFunctionType = KernelFunctionTypeNONE);
 
-/// @deprecated load2D now allows for arbitrary models and wrapping a robust kernel
-GTSAM_EXPORT GraphAndValues load2D_robust(const std::string& filename,
-    const noiseModel::Base::shared_ptr& model, size_t maxIndex = 0);
-
 /** save 2d graph */
 GTSAM_EXPORT void save2D(const NonlinearFactorGraph& graph,
     const Values& config, const noiseModel::Diagonal::shared_ptr model,
@@ -504,17 +500,21 @@ parse3DFactors(const std::string &filename,
                size_t maxIndex = 0);
 
 using BinaryMeasurementsUnit3 = std::vector<BinaryMeasurement<Unit3>>;
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
-inline boost::optional<IndexedPose> parseVertex(std::istream &is,
-                                                const std::string &tag) {
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
+inline boost::optional<IndexedPose> GTSAM_DEPRECATED
+parseVertex(std::istream& is, const std::string& tag) {
   return parseVertexPose(is, tag);
 }
 
-GTSAM_EXPORT std::map<size_t, Pose3> parse3DPoses(const std::string &filename,
-                                                  size_t maxIndex = 0);
+GTSAM_EXPORT std::map<size_t, Pose3> GTSAM_DEPRECATED
+parse3DPoses(const std::string& filename, size_t maxIndex = 0);
 
-GTSAM_EXPORT std::map<size_t, Point3>
-parse3DLandmarks(const std::string &filename, size_t maxIndex = 0);
+GTSAM_EXPORT std::map<size_t, Point3> GTSAM_DEPRECATED
+parse3DLandmarks(const std::string& filename, size_t maxIndex = 0);
 
+GTSAM_EXPORT GraphAndValues GTSAM_DEPRECATED
+load2D_robust(const std::string& filename,
+              const noiseModel::Base::shared_ptr& model, size_t maxIndex = 0);
 #endif
 }  // namespace gtsam

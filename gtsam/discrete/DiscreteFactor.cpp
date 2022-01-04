@@ -21,13 +21,14 @@
 #include <gtsam/discrete/DiscreteFactor.h>
 
 #include <cmath>
+#include <sstream>
 
 using namespace std;
 
 namespace gtsam {
 
 /* ************************************************************************* */
-std::vector<double> expNormalize(const std::vector<double> &logProbs) {
+std::vector<double> expNormalize(const std::vector<double>& logProbs) {
   double maxLogProb = -std::numeric_limits<double>::infinity();
   for (size_t i = 0; i < logProbs.size(); i++) {
     double logProb = logProbs[i];
@@ -69,6 +70,16 @@ std::vector<double> expNormalize(const std::vector<double> &logProbs) {
     throw std::logic_error(errMsg);
   }
   return probs;
+}
+
+string DiscreteFactor::Translate(const Names& names, Key key, size_t index) {
+  if (names.empty()) {
+    stringstream ss;
+    ss << index;
+    return ss.str();
+  } else {
+    return names.at(key)[index];
+  }
 }
 
 }  // namespace gtsam
