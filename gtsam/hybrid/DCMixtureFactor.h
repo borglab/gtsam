@@ -92,7 +92,8 @@ class DCMixtureFactor : public DCFactor {
       : Base(keys, discreteKeys), normalized_(normalized) {
     std::vector<sharedFactor> factor_pointers;
     for (auto&& factor : factors) {
-      sharedFactor f_ptr = boost::make_shared<NonlinearFactorType>(factor);
+      // TODO(frank): malloc + copy!
+      auto f_ptr = boost::make_shared<NonlinearFactorType>(factor);
       factor_pointers.push_back(f_ptr);
     }
     // Generate decision tree based on discreteKey to factor mapping.
@@ -137,7 +138,7 @@ class DCMixtureFactor : public DCFactor {
       std::cout << " " << keyFormatter(key.first);
     }
     std::cout << " ) \n";
-    auto valueFormatter = [](const boost::shared_ptr<NonlinearFactorType>& v) {
+    auto valueFormatter = [](const sharedFactor& v) {
       return (boost::format("Nonlinear factor on %d keys") % v->size()).str();
     };
     factors_.print("", keyFormatter, valueFormatter);
@@ -154,8 +155,7 @@ class DCMixtureFactor : public DCFactor {
     const DCMixtureFactor& f(static_cast<const DCMixtureFactor&>(other));
 
     // Ensure that this DCMixtureFactor and `f` have the same `factors_`.
-    auto compare = [tol](const boost::shared_ptr<NonlinearFactorType>& a,
-                         const boost::shared_ptr<NonlinearFactorType>& b) {
+    auto compare = [tol](const sharedFactor& a, const sharedFactor& b) {
       return traits<NonlinearFactorType>::Equals(*a, *b, tol);
     };
     if (!factors_.equals(f.factors_, compare)) return false;
@@ -180,13 +180,10 @@ class DCMixtureFactor : public DCFactor {
 
   /// Linearize all the continuous factors to get a DCGaussianMixtureFactor.
   DCFactor::shared_ptr linearize(const Values& continuousVals) const override {
-    std::function<GaussianFactor::shared_ptr(
-        const boost::shared_ptr<NonlinearFactorType>&)>
-        linearizeDT =
-            [continuousVals](
-                const boost::shared_ptr<NonlinearFactorType>& factor) {
-              return factor->linearize(continuousVals);
-            };
+    std::function<GaussianFactor::shared_ptr(const sharedFactor&)> linearizeDT =
+        [continuousVals](const sharedFactor& factor) {
+          return factor->linearize(continuousVals);
+        };
 
     DecisionTree<Key, GaussianFactor::shared_ptr> linearized_factors(
         factors_, linearizeDT);
@@ -207,21 +204,19 @@ class DCMixtureFactor : public DCFactor {
     // Information matrix (inverse covariance matrix) for the factor.
     Matrix infoMat;
 
-    // NOTE: This is sloppy, is there a cleaner way?
-    boost::shared_ptr<NonlinearFactorType> fPtr =
-        boost::make_shared<NonlinearFactorType>(factor);
-    boost::shared_ptr<NonlinearFactor> factorPtr(fPtr);
+    // NOTE: This is sloppy (and mallocs!), is there a cleaner way?
+    auto factorPtr = boost::make_shared<NonlinearFactorType>(factor);
 
     // If this is a NoiseModelFactor, we'll use its noiseModel to
     // otherwise noiseModelFactor will be nullptr
-    boost::shared_ptr<NoiseModelFactor> noiseModelFactor =
+    auto noiseModelFactor =
         boost::dynamic_pointer_cast<NoiseModelFactor>(factorPtr);
     if (noiseModelFactor) {
       // If dynamic cast to NoiseModelFactor succeeded, see if the noise model
       // is Gaussian
-      noiseModel::Base::shared_ptr noiseModel = noiseModelFactor->noiseModel();
+      auto noiseModel = noiseModelFactor->noiseModel();
 
-      boost::shared_ptr<noiseModel::Gaussian> gaussianNoiseModel =
+      auto gaussianNoiseModel =
           boost::dynamic_pointer_cast<noiseModel::Gaussian>(noiseModel);
       if (gaussianNoiseModel) {
         // If the noise model is Gaussian, retrieve the information matrix
@@ -231,8 +226,7 @@ class DCMixtureFactor : public DCFactor {
         // something with a normalized noise model
         // TODO(kevin): does this make sense to do? I think maybe not in
         // general? Should we just yell at the user?
-        boost::shared_ptr<GaussianFactor> gaussianFactor =
-            factor.linearize(values);
+        auto gaussianFactor = factor.linearize(values);
         infoMat = gaussianFactor->information();
       }
     }
