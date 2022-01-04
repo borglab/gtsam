@@ -82,13 +82,7 @@ namespace gtsam {
       return compare(this->constant_, other->constant_);
     }
 
-    /**
-     * @brief Print method.
-     * 
-     * @param s Prefix string.
-     * @param labelFormatter Functor to format the labels of type L.
-     * @param valueFormatter Functor to format the values of type Y.
-     */
+    /** print */
     void print(const std::string& s, const LabelFormatter& labelFormatter,
                const ValueFormatter& valueFormatter) const override {
       std::cout << s << " Leaf " << valueFormatter(constant_) << std::endl;
@@ -465,23 +459,20 @@ namespace gtsam {
 
   /*********************************************************************************/
   template <typename L, typename Y>
-  template <typename X>
+  template <typename X, typename Func>
   DecisionTree<L, Y>::DecisionTree(const DecisionTree<L, X>& other,
-                                   std::function<Y(const X&)> Y_of_X) {
+                                   Func Y_of_X) {
     // Define functor for identity mapping of node label.
-    auto L_of_L = [](const L& label) { return label; };
+	auto L_of_L = [](const L& label) { return label; };
     root_ = convertFrom<L, X>(other.root_, L_of_L, Y_of_X);
   }
 
   /*********************************************************************************/
   template <typename L, typename Y>
-  template <typename M, typename X>
+  template <typename M, typename X, typename Func>
   DecisionTree<L, Y>::DecisionTree(const DecisionTree<M, X>& other,
-                                   const std::map<M, L>& map,
-                                   std::function<Y(const X&)> Y_of_X) {
-    std::function<L(const M&)> L_of_M = [&map](const M& label) -> L {
-      return map.at(label);
-    };
+                                   const std::map<M, L>& map, Func Y_of_X) {
+    auto L_of_M = [&map](const M& label) -> L { return map.at(label); };
     root_ = convertFrom<M, X>(other.root_, L_of_M, Y_of_X);
   }
 
@@ -601,18 +592,16 @@ namespace gtsam {
       const typename DecisionTree<M, X>::NodePtr& f,
       std::function<L(const M&)> L_of_M,
       std::function<Y(const X&)> Y_of_X) const {
-    using MX = DecisionTree<M, X>;
-    using MXLeaf = typename MX::Leaf;
-    using MXChoice = typename MX::Choice;
-    using MXNodePtr = typename MX::NodePtr;
     using LY = DecisionTree<L, Y>;
 
     // ugliness below because apparently we can't have templated virtual functions
     // If leaf, apply unary conversion "op" and create a unique leaf
-    auto leaf = boost::dynamic_pointer_cast<const MXLeaf>(f);
-    if (leaf) return NodePtr(new Leaf(Y_of_X(leaf->constant())));
+    using MXLeaf = typename DecisionTree<M, X>::Leaf;
+    if (auto leaf = boost::dynamic_pointer_cast<const MXLeaf>(f))
+    	return NodePtr(new Leaf(Y_of_X(leaf->constant())));
 
     // Check if Choice
+    using MXChoice = typename DecisionTree<M, X>::Choice;
     auto choice = boost::dynamic_pointer_cast<const MXChoice>(f);
     if (!choice) throw std::invalid_argument(
         "DecisionTree::Convert: Invalid NodePtr");
@@ -623,7 +612,7 @@ namespace gtsam {
 
     // put together via Shannon expansion otherwise not sorted.
     std::vector<LY> functions;
-    for(const MXNodePtr& branch: choice->branches()) {
+    for(auto && branch: choice->branches()) {
       LY converted(convertFrom<M, X>(branch, L_of_M, Y_of_X));
       functions += converted;
     }

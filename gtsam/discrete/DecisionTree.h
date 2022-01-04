@@ -177,9 +177,8 @@ namespace gtsam {
      * @param other The DecisionTree to convert from.
      * @param Y_of_X Functor to convert from value type X to type Y.
      */
-    template <typename X>
-    DecisionTree(const DecisionTree<L, X>& other,
-                 std::function<Y(const X&)> Y_of_X);
+    template <typename X, typename Func>
+    DecisionTree(const DecisionTree<L, X>& other, Func Y_of_X);
 
     /**
      * @brief Convert from a different value type X to value type Y, also transate
@@ -191,9 +190,9 @@ namespace gtsam {
      * @param L_of_M Map from label type M to type L.
      * @param Y_of_X Functor to convert from type X to type Y.
      */
-    template <typename M, typename X>
-    DecisionTree(const DecisionTree<M, X>& other, const std::map<M, L>& L_of_M,
-                 std::function<Y(const X&)> Y_of_X);
+    template <typename M, typename X, typename Func>
+    DecisionTree(const DecisionTree<M, X>& other, const std::map<M, L>& map,
+                 Func Y_of_X);
 
     /// @}
     /// @name Testable
