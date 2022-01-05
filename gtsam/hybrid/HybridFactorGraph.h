@@ -303,7 +303,7 @@ class HybridFactorGraph : protected FactorGraph<Factor>,
   size_t nrDcFactors() const { return dcGraph_.size(); }
 
   /// The total number of factors in the Gaussian factor graph.
-  size_t nrDaussianFactors() const { return gaussianGraph_.size(); }
+  size_t nrGaussianFactors() const { return gaussianGraph_.size(); }
 
   /**
    * Clears all internal factor graphs

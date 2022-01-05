@@ -16,8 +16,6 @@
 
 namespace gtsam {
 
-class GaussianMixture;
-
 /**
  * Very simple class to create a factor graph with factors of type DCFactor
  */

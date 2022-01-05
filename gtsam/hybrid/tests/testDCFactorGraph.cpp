@@ -64,8 +64,6 @@ TEST(DiscreteBayesTree, Switching) {
                           {still, moving});
     fg.add(mixture);
   }
-  // GTSAM_PRINT(fg);
-  // fg.saveGraph("MixtureFactorGraph.dot");
 
   EXPECT_LONGS_EQUAL(5, fg.size());
 }
