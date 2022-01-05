@@ -40,7 +40,8 @@ namespace gtsam {
     /// Cardinality for each key, used in combine
     std::map<Key,size_t> cardinalities_;
 
-    /** Constructor from ColumnIndex, and ADT */
+    /** Constructor from ADT */
+    // TODO(FRank): wrong, no cardinalities_!!!
     Potentials(const ADT& potentials) :
         ADT(potentials) {
     }

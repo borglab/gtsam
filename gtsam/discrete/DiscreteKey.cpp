@@ -38,11 +38,9 @@ namespace gtsam {
     return js;
   }
 
-  map<Key,size_t> DiscreteKeys::cardinalities() const {
-    map<Key,size_t> cs;
-    cs.insert(begin(),end());
-//    for(const DiscreteKey& key: *this)
-//      cs.insert(key);
+  map<Key, size_t> DiscreteKeys::cardinalities() const {
+    map<Key, size_t> cs;
+    cs.insert(begin(), end());
     return cs;
   }
 
