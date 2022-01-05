@@ -383,6 +383,31 @@ TEST(DiscreteFactorGraph, Dot) {
 }
 
 /* ************************************************************************* */
+TEST(DiscreteFactorGraph, DotWithNames) {
+  // Create Factor graph
+  DiscreteFactorGraph graph;
+  DiscreteKey C(0, 2), A(1, 2), B(2, 2);
+  graph.add(C & A, "0.2 0.8 0.3 0.7");
+  graph.add(C & B, "0.1 0.9 0.4 0.6");
+
+  vector<string> names{"C", "A", "B"};
+  auto formatter = [names](Key key) { return names[key]; };
+  string actual = graph.dot(formatter);
+  string expected =
+      "graph {\n"
+      "  size=\"5,5\";\n"
+      "\n"
+      "  var0[label=\"C\"];\n"
+      "  var1[label=\"A\"];\n"
+      "  var2[label=\"B\"];\n"
+      "\n"
+      "  var0--var1;\n"
+      "  var0--var2;\n"
+      "}\n";
+  EXPECT(actual == expected);
+}
+
+/* ************************************************************************* */
 // Check markdown representation looks as expected.
 TEST(DiscreteFactorGraph, markdown) {
   // Create Factor graph
