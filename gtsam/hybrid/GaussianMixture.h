@@ -59,11 +59,17 @@ class GaussianMixture
    * @brief Construct a new GaussianMixture object.
    * @param conditionals A decision tree of GaussianConditional instances.
    * TODO(Frank): (possibly wrongly) assumes nrFrontals is one
+   * TODO(Frank): should pass frontal keys, cont. parent keys, discrete parent
+   * keys, cannot be a conditional on a discrete key.
+   * TODO: desired API =
+   * GaussianConditionalMixture(const Conditionals& conditionals, 
+   *                            const DiscreteKeys& discreteParentKeys)
    */
   GaussianMixture(const KeyVector& keys, const DiscreteKeys& discreteKeys,
                   const Conditionals& conditionals)
       : BaseFactor(
             keys, discreteKeys,
+// TODO     Keys(conditionals), discreteParentKeys,
             Factors(conditionals,
                     [](const GaussianConditional::shared_ptr& p) {
                       return boost::dynamic_pointer_cast<GaussianFactor>(p);
@@ -90,9 +96,7 @@ class GaussianMixture
 
   void print(
       const std::string& s = "GaussianMixture",
-      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
-    DCGaussianMixtureFactor::print(s, keyFormatter);
-  }
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
 
   /// @}
 };
