@@ -35,6 +35,7 @@ namespace gtsam {
 class DCFactor : public gtsam::Factor {
  protected:
   // Set of DiscreteKeys for this factor.
+  // TODO(Frank): This will be a map once we make DiscreteKeys a map!
   gtsam::DiscreteKeys discreteKeys_;
 
  public:
@@ -42,6 +43,16 @@ class DCFactor : public gtsam::Factor {
   using shared_ptr = boost::shared_ptr<DCFactor>;
 
   DCFactor() = default;
+
+  /// Used in constructor to gather all keys, continuous and discrete.
+  static KeyVector AllKeys(const gtsam::KeyVector& continuousKeys,
+                           const gtsam::DiscreteKeys& discreteKeys) {
+    auto result = continuousKeys;
+    for (auto& dk : discreteKeys) {
+      result.push_back(dk.first);
+    }
+    return result;
+  }
 
   /**
    * Base constructor for a DCFactor from a set of discrete keys and continuous
@@ -52,17 +63,12 @@ class DCFactor : public gtsam::Factor {
    */
   DCFactor(const gtsam::KeyVector& continuousKeys,
            const gtsam::DiscreteKeys& discreteKeys)
-      : Base(continuousKeys), discreteKeys_(discreteKeys) {}
+      : Base(AllKeys(continuousKeys, discreteKeys)),
+        discreteKeys_(discreteKeys) {}
 
   // NOTE unsure if needed?
   explicit DCFactor(const gtsam::DiscreteKeys& discreteKeys)
-      : discreteKeys_(discreteKeys) {}
-
-  DCFactor& operator=(const DCFactor& rhs) {
-    Base::operator=(rhs);
-    discreteKeys_ = rhs.discreteKeys_;
-    return *this;
-  }
+      : DCFactor({}, discreteKeys) {}
 
   virtual ~DCFactor() = default;
 
