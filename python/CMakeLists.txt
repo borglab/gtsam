@@ -33,8 +33,6 @@ add_custom_target(gtsam_unstable_header DEPENDS "${PROJECT_SOURCE_DIR}/gtsam_uns
 set(ignore
     gtsam::Point2
     gtsam::Point3
-    gtsam::LieVector
-    gtsam::LieMatrix
     gtsam::ISAM2ThresholdMapValue
     gtsam::FactorIndices
     gtsam::FactorIndexSet
@@ -116,8 +114,6 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
     set(ignore
             gtsam::Point2
             gtsam::Point3
-            gtsam::LieVector
-            gtsam::LieMatrix
             gtsam::ISAM2ThresholdMapValue
             gtsam::FactorIndices
             gtsam::FactorIndexSet

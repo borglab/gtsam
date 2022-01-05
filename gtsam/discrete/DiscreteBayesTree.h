@@ -93,8 +93,8 @@ class GTSAM_EXPORT DiscreteBayesTree
   /// @{
 
   /// Render as markdown table.
-  std::string markdown(
-      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+  std::string markdown(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                       const DiscreteFactor::Names& names = {}) const;
 
   /// @}
 };

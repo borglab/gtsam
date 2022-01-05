@@ -136,8 +136,8 @@ ADT create(const Signature& signature) {
   ADT p(signature.discreteKeys(), signature.cpt());
   static size_t count = 0;
   const DiscreteKey& key = signature.key();
-  string dotfile = (boost::format("CPT-%03d-%d") % ++count % key.first).str();
-  dot(p, dotfile);
+  string DOTfile = (boost::format("CPT-%03d-%d") % ++count % key.first).str();
+  dot(p, DOTfile);
   return p;
 }
 
@@ -414,13 +414,13 @@ TEST(ADT, equality_noparser)
   // Check straight equality
   ADT pA1 = create(A % tableA);
   ADT pA2 = create(A % tableA);
-  EXPECT(pA1 == pA2); // should be equal
+  EXPECT(pA1.equals(pA2)); // should be equal
 
   // Check equality after apply
   ADT pB = create(B % tableB);
   ADT pAB1 = apply(pA1, pB, &mul);
   ADT pAB2 = apply(pB, pA1, &mul);
-  EXPECT(pAB2 == pAB1);
+  EXPECT(pAB2.equals(pAB1));
 }
 
 /* ************************************************************************* */
@@ -431,13 +431,13 @@ TEST(ADT, equality_parser)
   // Check straight equality
   ADT pA1 = create(A % "80/20");
   ADT pA2 = create(A % "80/20");
-  EXPECT(pA1 == pA2); // should be equal
+  EXPECT(pA1.equals(pA2)); // should be equal
 
   // Check equality after apply
   ADT pB = create(B % "60/40");
   ADT pAB1 = apply(pA1, pB, &mul);
   ADT pAB2 = apply(pB, pA1, &mul);
-  EXPECT(pAB2 == pAB1);
+  EXPECT(pAB2.equals(pAB1));
 }
 
 /* ******************************************************************************** */
