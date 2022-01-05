@@ -40,54 +40,64 @@ class DCMixtureFactor : public DCFactor {
 
   /// typedef for DecisionTree which has Keys as node labels and
   /// NonlinearFactorType as leaf nodes.
-  using FactorDecisionTree =
-      DecisionTree<Key, boost::shared_ptr<NonlinearFactorType>>;
+  using Factors = DecisionTree<Key, sharedFactor>;
 
  private:
   /// Decision tree of Gaussian factors indexed by discrete keys.
-  FactorDecisionTree factors_;
+  Factors factors_;
   bool normalized_;
 
  public:
   DCMixtureFactor() = default;
 
+  /**
+   * @brief Construct from Decision tree.
+   *
+   * @param keys Vector of keys for continuous factors.
+   * @param discreteKeys Vector of discrete keys.
+   * @param factors Decision tree with of shared factors.
+   * @param normalized Flag indicating if the factor error is already
+   * normalized.
+   */
   DCMixtureFactor(const KeyVector& keys, const DiscreteKeys& discreteKeys,
-                  const FactorDecisionTree& factors, bool normalized = false)
+                  const Factors& factors, bool normalized = false)
       : Base(keys, discreteKeys), factors_(factors), normalized_(normalized) {}
 
   /**
    * @brief Convenience constructor that generates the underlying factor
    * decision tree for us.
    *
-   * Here it is important that the vector of
-   * factors has the correct number of elements based on the number of discrete
-   * keys and the cardinality of the keys, so that the decision tree is
-   * constructed appropriately.
+   * Here it is important that the vector of factors has the correct number of
+   * elements based on the number of discrete keys and the cardinality of the
+   * keys, so that the decision tree is constructed appropriately.
    *
    * @param keys Vector of keys for continuous factors.
    * @param discreteKeys Vector of discrete keys.
-   * @param factors Vector of factors. Each factor should map to its
-   * corresponding assigned discrete key.
+   * @param factors Vector of shared pointers to factors.
    * @param normalized Flag indicating if the factor error is already
    * normalized.
+   */
+  DCMixtureFactor(const KeyVector& keys, const DiscreteKeys& discreteKeys,
+                  const std::vector<sharedFactor>& factors,
+                  bool normalized = false)
+      : DCMixtureFactor(keys, discreteKeys,
+                        Factors(discreteKeys, factors)) {}
+
+  /**
+   * @brief DEPRECATED constructor with non-shared pointers.
    */
   DCMixtureFactor(const KeyVector& keys, const DiscreteKeys& discreteKeys,
                   const std::vector<NonlinearFactorType>& factors,
                   bool normalized = false)
       : Base(keys, discreteKeys), normalized_(normalized) {
-    std::vector<boost::shared_ptr<NonlinearFactorType>> factor_pointers;
+    std::vector<sharedFactor> factor_pointers;
     for (auto&& factor : factors) {
-      boost::shared_ptr<NonlinearFactorType> f_ptr =
-          boost::make_shared<NonlinearFactorType>(factor);
+      // TODO(frank): malloc + copy!
+      auto f_ptr = boost::make_shared<NonlinearFactorType>(factor);
       factor_pointers.push_back(f_ptr);
     }
     // Generate decision tree based on discreteKey to factor mapping.
-    factors_ = FactorDecisionTree(discreteKeys, factor_pointers);
-  }
-
-  DCMixtureFactor& operator=(const DCMixtureFactor& rhs) {
-    Base::operator=(rhs);
-    this->factors_ = rhs.factors_;
+    factors_ = Factors(discreteKeys, factor_pointers);
   }
 
   ~DCMixtureFactor() = default;
@@ -145,8 +155,7 @@ class DCMixtureFactor : public DCFactor {
     const DCMixtureFactor& f(static_cast<const DCMixtureFactor&>(other));
 
     // Ensure that this DCMixtureFactor and `f` have the same `factors_`.
-    auto compare = [tol](const boost::shared_ptr<NonlinearFactorType>& a,
-                         const boost::shared_ptr<NonlinearFactorType>& b) {
+    auto compare = [tol](const sharedFactor& a, const sharedFactor& b) {
       return traits<NonlinearFactorType>::Equals(*a, *b, tol);
     };
     if (!factors_.equals(f.factors_, compare)) return false;
@@ -171,13 +180,9 @@ class DCMixtureFactor : public DCFactor {
 
   /// Linearize all the continuous factors to get a DCGaussianMixtureFactor.
   DCFactor::shared_ptr linearize(const Values& continuousVals) const override {
-    std::function<GaussianFactor::shared_ptr(
-        const boost::shared_ptr<NonlinearFactorType>&)>
-        linearizeDT =
-            [continuousVals](
-                const boost::shared_ptr<NonlinearFactorType>& factor) {
-              return factor->linearize(continuousVals);
-            };
+    auto linearizeDT = [continuousVals](const sharedFactor& factor) {
+      return factor->linearize(continuousVals);
+    };
 
     DecisionTree<Key, GaussianFactor::shared_ptr> linearized_factors(
         factors_, linearizeDT);
@@ -198,21 +203,19 @@ class DCMixtureFactor : public DCFactor {
     // Information matrix (inverse covariance matrix) for the factor.
     Matrix infoMat;
 
-    // NOTE: This is sloppy, is there a cleaner way?
-    boost::shared_ptr<NonlinearFactorType> fPtr =
-        boost::make_shared<NonlinearFactorType>(factor);
-    boost::shared_ptr<NonlinearFactor> factorPtr(fPtr);
+    // NOTE: This is sloppy (and mallocs!), is there a cleaner way?
+    auto factorPtr = boost::make_shared<NonlinearFactorType>(factor);
 
     // If this is a NoiseModelFactor, we'll use its noiseModel to
     // otherwise noiseModelFactor will be nullptr
-    boost::shared_ptr<NoiseModelFactor> noiseModelFactor =
+    auto noiseModelFactor =
         boost::dynamic_pointer_cast<NoiseModelFactor>(factorPtr);
     if (noiseModelFactor) {
       // If dynamic cast to NoiseModelFactor succeeded, see if the noise model
       // is Gaussian
-      noiseModel::Base::shared_ptr noiseModel = noiseModelFactor->noiseModel();
+      auto noiseModel = noiseModelFactor->noiseModel();
 
-      boost::shared_ptr<noiseModel::Gaussian> gaussianNoiseModel =
+      auto gaussianNoiseModel =
           boost::dynamic_pointer_cast<noiseModel::Gaussian>(noiseModel);
       if (gaussianNoiseModel) {
         // If the noise model is Gaussian, retrieve the information matrix
@@ -222,8 +225,7 @@ class DCMixtureFactor : public DCFactor {
         // something with a normalized noise model
         // TODO(kevin): does this make sense to do? I think maybe not in
         // general? Should we just yell at the user?
-        boost::shared_ptr<GaussianFactor> gaussianFactor =
-            factor.linearize(values);
+        auto gaussianFactor = factor.linearize(values);
         infoMat = gaussianFactor->information();
       }
     }

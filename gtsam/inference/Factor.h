@@ -158,7 +158,6 @@ typedef FastSet<FactorIndex> FactorIndexSet;
 
     /// @}
 
-  public:
     /// @name Advanced Interface
     /// @{
 

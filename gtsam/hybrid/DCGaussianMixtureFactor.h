@@ -24,6 +24,7 @@
 #include <gtsam/hybrid/DCFactor.h>
 #include <gtsam/inference/Factor.h>
 #include <gtsam/linear/GaussianFactor.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 
 #include <algorithm>
 #include <boost/format.hpp>
@@ -43,26 +44,28 @@ class DCGaussianMixtureFactor : public DCFactor {
  public:
   using Base = DCFactor;
   using shared_ptr = boost::shared_ptr<DCGaussianMixtureFactor>;
-  using FactorDecisionTree = DecisionTree<Key, GaussianFactor::shared_ptr>;
+  using Factors = DecisionTree<Key, GaussianFactor::shared_ptr>;
 
- private:
+ protected:
   /// Decision tree of Gaussian factors indexed by discrete keys.
-  FactorDecisionTree factors_;
+  Factors factors_;
 
  public:
+  /// @name Constructors
+  /// @{
   DCGaussianMixtureFactor() = default;
 
   /**
    * @brief Construct a new DCGaussianMixtureFactor object.
    *
    * @param keys Vector of keys for continuous factors.
-   * @param discreteKeys Vector of discrete assignments.
+   * @param discreteKeys Vector of discrete keys.
    * @param factors A decision tree of Gaussian factors (as shared pointers)
    * where each node has a Key label.
    */
   DCGaussianMixtureFactor(const KeyVector& keys,
                           const DiscreteKeys& discreteKeys,
-                          const FactorDecisionTree factors)
+                          const Factors factors)
       : Base(keys, discreteKeys), factors_(factors) {}
 
   /**
@@ -70,14 +73,14 @@ class DCGaussianMixtureFactor : public DCFactor {
    * GaussianFactor shared pointers.
    *
    * @param keys Vector of keys for continuous factors.
-   * @param discreteKeys Vector of discrete assignments.
+   * @param discreteKeys Vector of discrete keys.
    * @param factors Vector of gaussian factor shared pointers.
    */
   DCGaussianMixtureFactor(
       const KeyVector& keys, const DiscreteKeys& discreteKeys,
       const std::vector<GaussianFactor::shared_ptr>& factors)
       : DCGaussianMixtureFactor(keys, discreteKeys,
-                                FactorDecisionTree(discreteKeys, factors)) {}
+                                Factors(discreteKeys, factors)) {}
 
   /// Copy constructor.
   DCGaussianMixtureFactor(const DCGaussianMixtureFactor& x) = default;
@@ -86,6 +89,10 @@ class DCGaussianMixtureFactor : public DCFactor {
   const DiscreteKeys& discreteKeys() const { return discreteKeys_; }
 
   ~DCGaussianMixtureFactor() = default;
+
+  /// @}
+  /// @name Standard Interface
+  /// @{
 
   double error(const VectorValues& continuousVals,
                const DiscreteValues& discreteVals) const {
@@ -116,22 +123,29 @@ class DCGaussianMixtureFactor : public DCFactor {
     throw std::runtime_error("DCGaussianMixtureFactor::dim not implemented");
   };
 
-  /// Testable
+  const GaussianFactor::shared_ptr& operator()(
+      gtsam::DiscreteValues& discreteVals) const {
+    return factors_(discreteVals);
+  }
+  /// @}
+  /// @name Testable
   /// @{
 
   /// print to stdout
   void print(
-      const std::string& s = "DCGaussianMixtureFactor",
+      const std::string& s = "",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     std::cout << (s.empty() ? "" : s + " ");
     std::cout << "[";
     for (Key key : keys()) {
       std::cout << " " << keyFormatter(key);
     }
-    std::cout << "; " << keyFormatter(discreteKeys_.front().first) << " ]";
+    std::cout << "; ";
+    for (auto&& dk : discreteKeys_) std::cout << keyFormatter(dk.first) << " ";
+    std::cout << " ]";
     std::cout << "{\n";
     auto valueFormatter = [](const GaussianFactor::shared_ptr& v) {
-      return (boost::format("%p") % v).str();
+      return (boost::format("Gaussian factor on %d keys") % v->size()).str();
     };
     factors_.print("", keyFormatter, valueFormatter);
     std::cout << "}";
@@ -144,6 +158,44 @@ class DCGaussianMixtureFactor : public DCFactor {
     return true;
   }
   /// @}
+  /// @name Decision Tree methods
+  /// @{
+
+  // TODO(frank): this could be cheaper with some linked list idea, but I think
+  // it is not worth it.
+
+  /// A Sum of mixture factors contains small GaussianFactorGraphs
+  using Sum = DecisionTree<Key, GaussianFactorGraph>;
+
+  /// Add MixtureFactor to a Sum
+  Sum addTo(const Sum& sum) const {
+    using Y = GaussianFactorGraph;
+    auto add = [](const Y& graph1, const Y& graph2) {
+      auto result = graph1;
+      result.push_back(graph2);
+      return result;
+    };
+    const Sum wrapped = wrappedFactors();
+    return sum.empty() ? wrapped : sum.apply(wrapped, add);
+  }
+
+  /// Add MixtureFactor to a Sum, sugar.
+  friend Sum& operator+=(Sum& sum, const DCGaussianMixtureFactor& factor) {
+    sum = factor.addTo(sum);
+    return sum;
+  }
+  /// @}
+
+ private:
+  /// Return Sum decision tree with factors wrapped in Singleton FGs.
+  Sum wrappedFactors() const {
+    auto wrap = [](const GaussianFactor::shared_ptr& factor) {
+      GaussianFactorGraph result;
+      result.push_back(factor);
+      return result;
+    };
+    return Sum(factors_, wrap);
+  }
 };
 
 }  // namespace gtsam

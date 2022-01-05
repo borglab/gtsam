@@ -128,6 +128,11 @@ class FactorGraph {
   /** Collection of factors */
   FastVector<sharedFactor> factors_;
 
+  /// Check exact equality of the factor pointers. Useful for derived ==.
+  bool isEqual(const FactorGraph& other) const {
+    return factors_ == other.factors_;
+  }
+
   /// @name Standard Constructors
   /// @{
 
@@ -290,11 +295,11 @@ class FactorGraph {
   /// @name Testable
   /// @{
 
-  /// print out graph
+  /// Print out graph to std::cout, with optional key formatter.
   virtual void print(const std::string& s = "FactorGraph",
                      const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
-  /** Check equality */
+  /// Check equality up to tolerance.
   bool equals(const This& fg, double tol = 1e-9) const;
   /// @}
 
