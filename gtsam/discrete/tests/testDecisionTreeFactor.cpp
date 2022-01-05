@@ -101,6 +101,20 @@ TEST(DecisionTreeFactor, enumerate) {
 }
 
 /* ************************************************************************* */
+TEST(DiscreteFactorGraph, DotWithNames) {
+  DiscreteKey A(12, 3), B(5, 2);
+  DecisionTreeFactor f(A & B, "1 2  3 4  5 6");
+  auto formatter = [](Key key) { return key == 12 ? "A" : "B"; };
+
+  for (bool showZero:{true, false}) {  
+    string actual = f.dot(formatter, showZero);
+    // pretty weak test, as ids are pointers and not stable across platforms.
+    string expected = "digraph G {";
+    EXPECT(actual.substr(0, 11) == expected);
+  }
+}
+
+/* ************************************************************************* */
 // Check markdown representation looks as expected.
 TEST(DecisionTreeFactor, markdown) {
   DiscreteKey A(12, 3), B(5, 2);
@@ -116,6 +130,27 @@ TEST(DecisionTreeFactor, markdown) {
       "|2|1|6|\n";
   auto formatter = [](Key key) { return key == 12 ? "A" : "B"; };
   string actual = f.markdown(formatter);
+  EXPECT(actual == expected);
+}
+
+/* ************************************************************************* */
+// Check markdown representation with a value formatter.
+TEST(DecisionTreeFactor, markdownWithValueFormatter) {
+  DiscreteKey A(12, 3), B(5, 2);
+  DecisionTreeFactor f(A & B, "1 2  3 4  5 6");
+  string expected =
+      "|A|B|value|\n"
+      "|:-:|:-:|:-:|\n"
+      "|Zero|-|1|\n"
+      "|Zero|+|2|\n"
+      "|One|-|3|\n"
+      "|One|+|4|\n"
+      "|Two|-|5|\n"
+      "|Two|+|6|\n";
+  auto keyFormatter = [](Key key) { return key == 12 ? "A" : "B"; };
+  DecisionTreeFactor::Names names{{12, {"Zero", "One", "Two"}},
+                                  {5, {"-", "+"}}};
+  string actual = f.markdown(keyFormatter, names);
   EXPECT(actual == expected);
 }
 

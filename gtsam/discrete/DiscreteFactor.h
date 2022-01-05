@@ -73,9 +73,6 @@ public:
     Base::print(s, formatter);
   }
 
-  /** Test whether the factor is empty */
-  virtual bool empty() const { return size() == 0; }
-
   /// @}
   /// @name Standard Interface
   /// @{
@@ -92,9 +89,22 @@ public:
   /// @name Wrapper support
   /// @{
   
-  /// Render as markdown table.
+  /// Translation table from values to strings.
+  using Names = std::map<Key, std::vector<std::string>>;
+
+  /// Translate an integer index value for given key to a string.
+  static std::string Translate(const Names& names, Key key, size_t index);
+
+  /**
+   * @brief Render as markdown table
+   * 
+   * @param keyFormatter GTSAM-style Key formatter.
+   * @param names optional, category names corresponding to choices.
+   * @return std::string a markdown string.
+   */
   virtual std::string markdown(
-      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const = 0;
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+      const Names& names = {}) const = 0;
 
   /// @}
 };

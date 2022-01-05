@@ -136,6 +136,24 @@ TEST(DiscreteConditional, markdown_prior) {
 }
 
 /* ************************************************************************* */
+// Check markdown representation looks as expected, no parents + names.
+TEST(DiscreteConditional, markdown_prior_names) {
+  Symbol x1('x', 1);
+  DiscreteKey A(x1, 3);
+  DiscreteConditional conditional(A % "1/2/2");
+  string expected =
+      " *P(x1)*:\n\n"
+      "|x1|value|\n"
+      "|:-:|:-:|\n"
+      "|A0|0.2|\n"
+      "|A1|0.4|\n"
+      "|A2|0.4|\n";
+  DecisionTreeFactor::Names names{{x1, {"A0", "A1", "A2"}}};
+  string actual = conditional.markdown(DefaultKeyFormatter, names);
+  EXPECT(actual == expected);
+}
+
+/* ************************************************************************* */
 // Check markdown representation looks as expected, multivalued.
 TEST(DiscreteConditional, markdown_multivalued) {
   DiscreteKey A(Symbol('a', 1), 3), B(Symbol('b', 1), 5);
@@ -143,7 +161,7 @@ TEST(DiscreteConditional, markdown_multivalued) {
       A | B = "2/88/10 2/20/78 33/33/34 33/33/34 95/2/3");
   string expected =
       " *P(a1|b1)*:\n\n"
-      "|b1|0|1|2|\n"
+      "|*b1*|0|1|2|\n"
       "|:-:|:-:|:-:|:-:|\n"
       "|0|0.02|0.88|0.1|\n"
       "|1|0.02|0.2|0.78|\n"
@@ -155,23 +173,25 @@ TEST(DiscreteConditional, markdown_multivalued) {
 }
 
 /* ************************************************************************* */
-// Check markdown representation looks as expected, two parents.
+// Check markdown representation looks as expected, two parents + names.
 TEST(DiscreteConditional, markdown) {
   DiscreteKey A(2, 2), B(1, 2), C(0, 3);
   DiscreteConditional conditional(A, {B, C}, "0/1 1/3  1/1 3/1  0/1 1/0");
   string expected =
       " *P(A|B,C)*:\n\n"
-      "|B|C|0|1|\n"
+      "|*B*|*C*|T|F|\n"
       "|:-:|:-:|:-:|:-:|\n"
-      "|0|0|0|1|\n"
-      "|0|1|0.25|0.75|\n"
-      "|0|2|0.5|0.5|\n"
-      "|1|0|0.75|0.25|\n"
-      "|1|1|0|1|\n"
-      "|1|2|1|0|\n";
-  vector<string> names{"C", "B", "A"};
-  auto formatter = [names](Key key) { return names[key]; };
-  string actual = conditional.markdown(formatter);
+      "|-|Zero|0|1|\n"
+      "|-|One|0.25|0.75|\n"
+      "|-|Two|0.5|0.5|\n"
+      "|+|Zero|0.75|0.25|\n"
+      "|+|One|0|1|\n"
+      "|+|Two|1|0|\n";
+  vector<string> keyNames{"C", "B", "A"};
+  auto formatter = [keyNames](Key key) { return keyNames[key]; };
+  DecisionTreeFactor::Names names{
+      {0, {"Zero", "One", "Two"}}, {1, {"-", "+"}}, {2, {"T", "F"}}};
+  string actual = conditional.markdown(formatter, names);
   EXPECT(actual == expected);
 }
 

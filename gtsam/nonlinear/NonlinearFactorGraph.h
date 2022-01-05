@@ -250,29 +250,29 @@ namespace gtsam {
 
   public:
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
-    /** \deprecated */
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
+    /** @deprecated */
     boost::shared_ptr<HessianFactor> GTSAM_DEPRECATED linearizeToHessianFactor(
         const Values& values, boost::none_t, const Dampen& dampen = nullptr) const
       {return linearizeToHessianFactor(values, dampen);}
 
-    /** \deprecated */
+    /** @deprecated */
     Values GTSAM_DEPRECATED updateCholesky(const Values& values, boost::none_t,
                           const Dampen& dampen = nullptr) const
       {return updateCholesky(values, dampen);}
 
-    /** \deprecated */
+    /** @deprecated */
     void GTSAM_DEPRECATED saveGraph(
         std::ostream& os, const Values& values = Values(),
         const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
         const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
       dot(os, values, keyFormatter, graphvizFormatting);
     }
-    /** \deprecated */
-    void GTSAM_DEPRECATED saveGraph(
-        const std::string& filename, const Values& values,
-        const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
-        const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+    /** @deprecated */
+    void GTSAM_DEPRECATED
+    saveGraph(const std::string& filename, const Values& values,
+              const GraphvizFormatting& graphvizFormatting,
+              const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
       saveGraph(filename, values, keyFormatter, graphvizFormatting);
     }
 #endif
