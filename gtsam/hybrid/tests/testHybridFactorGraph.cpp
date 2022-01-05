@@ -231,13 +231,14 @@ TEST(DCGaussianElimination, Eliminate_x1) {
 
 /* ****************************************************************************/
 // Test elimination function by eliminating x2 in x1-*-x2-*-x3 chain.
+//                                                m1/      \m2
 TEST(DCGaussianElimination, Eliminate_x2) {
   Switching self(3);
 
-  // Gather factors on x2, will be two mixture factor (with x1 and x3, resp.).
+  // Gather factors on x2, will be two mixture factors (with x1 and x3, resp.).
   HybridFactorGraph factors;
-  factors.push_dc(self.linearizedFactorGraph.dcGraph()[0]);
-  factors.push_dc(self.linearizedFactorGraph.dcGraph()[1]);
+  factors.push_dc(self.linearizedFactorGraph.dcGraph()[0]);  // involves m1
+  factors.push_dc(self.linearizedFactorGraph.dcGraph()[1]);  // involves m2
 
   // Check that sum works:
   auto sum = factors.sum();
@@ -251,11 +252,40 @@ TEST(DCGaussianElimination, Eliminate_x2) {
   Ordering ordering;
   ordering += X(2);
 
-  auto result = EliminateHybrid(factors, ordering);
+  std::pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> result =
+      EliminateHybrid(factors, ordering);
   CHECK(result.first);
+  GTSAM_PRINT(*result.first);
   EXPECT_LONGS_EQUAL(1, result.first->nrFrontals());
   CHECK(result.second);
-  EXPECT_LONGS_EQUAL(2, result.second->size());
+  GTSAM_PRINT(*result.second);
+  // Note: separator keys should include m1, m2.
+  EXPECT_LONGS_EQUAL(4, result.second->size());
+}
+
+/* ****************************************************************************/
+// Test elimination function by eliminating x1 in *-x1-*-m1 graph.
+TEST(DCGaussianElimination, Eliminate_fully) {
+  // // TODO: create a HFG with just one DC factor.
+  // HybridFactorGraph factors;
+
+  // // Check that sum works:
+  // auto sum = factors.sum();
+  // Assignment<Key> mode;
+  // mode[M(1)] = 1;
+  // auto actual = sum(mode);               // Selects one of 2 modes.
+  // EXPECT_LONGS_EQUAL(1, actual.size());  // Prior and motion model.
+
+  // // Eliminate x1
+  // Ordering ordering;
+  // ordering += X(1);
+
+  // auto result = EliminateHybrid(factors, ordering);
+  // CHECK(result.first);
+  // EXPECT_LONGS_EQUAL(1, result.first->nrFrontals());
+  // CHECK(result.second);
+  // // TODO test that it is a a DiscreteFactor !!!!!!
+  // EXPECT_LONGS_EQUAL(1, result.second->size());
 }
 
 /* ****************************************************************************/
@@ -271,7 +301,7 @@ TEST(HybridFactorGraph, Elimination) {
   auto result = self.linearizedFactorGraph.eliminatePartialSequential(ordering);
 
   CHECK(result.first);
-  GTSAM_PRINT(*result.first);   // HybridBayesNet
+  GTSAM_PRINT(*result.first);  // HybridBayesNet
   EXPECT_LONGS_EQUAL(4, result.first->size())
 
   CHECK(result.second);

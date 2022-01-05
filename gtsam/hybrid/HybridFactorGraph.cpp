@@ -18,16 +18,18 @@
 
 #include <boost/make_shared.hpp>
 
+using namespace std;
+
 namespace gtsam {
 
 // Instantiate base classes
 // template class FactorGraph<Factor>;
 template class EliminateableFactorGraph<HybridFactorGraph>;
 
-void HybridFactorGraph::print(const std::string& str,
+void HybridFactorGraph::print(const string& str,
                               const gtsam::KeyFormatter& keyFormatter) const {
-  std::string prefix = str.empty() ? str : str + ".";
-  std::cout << prefix << "size: " << size() << std::endl;
+  string prefix = str.empty() ? str : str + ".";
+  cout << prefix << "size: " << size() << endl;
   nonlinearGraph_.print(prefix + "NonlinearFactorGraph", keyFormatter);
   discreteGraph_.print(prefix + "DiscreteFactorGraph", keyFormatter);
   dcGraph_.print(prefix + "DCFactorGraph", keyFormatter);
@@ -92,12 +94,12 @@ static Sum& operator+=(Sum& sum, const GaussianFactor::shared_ptr& factor) {
 
 Sum HybridFactorGraph::sum() const {
   if (nrNonlinearFactors()) {
-    throw std::runtime_error(
+    throw runtime_error(
         "HybridFactorGraph::sum cannot handle NonlinearFactors.");
   }
 
   if (nrDiscreteFactors()) {
-    throw std::runtime_error(
+    throw runtime_error(
         "HybridFactorGraph::sum cannot handle DiscreteFactors.");
   }
 
@@ -108,7 +110,7 @@ Sum HybridFactorGraph::sum() const {
             boost::dynamic_pointer_cast<DCGaussianMixtureFactor>(dcFactor)) {
       sum += *mixtureFactor;
     } else {
-      throw std::runtime_error(
+      throw runtime_error(
           "HybridFactorGraph::sum can only handleDCGaussianMixtureFactors.");
     }
   }
@@ -120,25 +122,27 @@ Sum HybridFactorGraph::sum() const {
   return sum;
 }
 
-std::ostream& operator<<(std::ostream& os,
-                         const GaussianFactorGraph::EliminationResult& er) {
-  os << "ER" << std::endl;
+ostream& operator<<(ostream& os,
+                    const GaussianFactorGraph::EliminationResult& er) {
+  os << "ER" << endl;
   return os;
 }
 
 // The function type that does a single elimination step on a variable.
-std::pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>>
-EliminateHybrid(const HybridFactorGraph& factors, const Ordering& ordering) {
+pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
+    const HybridFactorGraph& factors, const Ordering& ordering) {
+  // STEP 1: SUM
   // Create a new decision tree with all factors gathered at leaves.
   auto sum = factors.sum();
 
-  // Now we need to eliminate each one using conventional Cholesky:
+  // STEP 1: ELIMINATE
+  // Eliminate each sum using conventional Cholesky:
   // We can use this by creating a *new* decision tree:
   using GFG = GaussianFactorGraph;
   using Pair = GaussianFactorGraph::EliminationResult;
 
   KeyVector keys;
-  KeyVector separatorKeys;
+  KeyVector separatorKeys;  // Do with optional?
   auto eliminate = [&](const GFG& graph) {
     auto result = EliminatePreferCholesky(graph, ordering);
     if (keys.size() == 0) keys = result.first->keys();
@@ -147,22 +151,32 @@ EliminateHybrid(const HybridFactorGraph& factors, const Ordering& ordering) {
   };
   DecisionTree<Key, Pair> eliminationResults(sum, eliminate);
 
+  // STEP 3: Create result
+  // TODO(Frank): auto pair = eliminationResults.unzip();
+
+  const DiscreteKeys discreteKeys = factors.discreteKeys();
+
   // Grab the conditionals and create the GaussianMixture
-  const DiscreteKeys discreteKeys;  // TODO
   auto first = [](const Pair& result) { return result.first; };
   GaussianMixture::Conditionals conditionals(eliminationResults, first);
   auto conditional =
       boost::make_shared<GaussianMixture>(keys, discreteKeys, conditionals);
 
-  // Create a resulting DCGaussianMixture on the separator.
-  const DiscreteKeys separatorDiscreteKeys;  // TODO
-  auto second = [](const Pair& result) { return result.second; };
-  DCGaussianMixtureFactor::Factors separatorFactors(eliminationResults, second);
-  auto factor = boost::make_shared<DCGaussianMixtureFactor>(
-      separatorKeys, separatorDiscreteKeys, separatorFactors);
-
-  // Return the result as a pair.
-  return {conditional, factor};
+  // If there are no more continuous parents, then we should create here a
+  // DiscreteFactor, with the error for each discrete choice.
+  if (separatorKeys.size() == 0) {
+    auto discreteFactor = boost::make_shared<DecisionTreeFactor>(/*TODO*/);
+    cout << "adding a discrete factor!" << endl;
+    return {conditional, discreteFactor};
+  } else {
+    // Create a resulting DCGaussianMixture on the separator.
+    auto second = [](const Pair& result) { return result.second; };
+    DCGaussianMixtureFactor::Factors separatorFactors(eliminationResults,
+                                                      second);
+    auto factor = boost::make_shared<DCGaussianMixtureFactor>(
+        separatorKeys, discreteKeys, separatorFactors);
+    return {conditional, factor};
+  }
 }
 
 }  // namespace gtsam

@@ -33,7 +33,8 @@ class HybridEliminationTree;
 class Ordering;
 
 /** Main elimination function for HybridFactorGraph */
-GTSAM_EXPORT std::pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>>
+using sharedFactor = boost::shared_ptr<Factor>;
+GTSAM_EXPORT std::pair<GaussianMixture::shared_ptr, sharedFactor>
 EliminateHybrid(const HybridFactorGraph& factors, const Ordering& keys);
 
 template <>
@@ -47,8 +48,8 @@ struct EliminationTraits<HybridFactorGraph> {
   typedef HybridEliminationTree JunctionTreeType;
 
   /// The function type that does a single elimination step on a variable.
-  static std::pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>>
-  DefaultEliminate(const HybridFactorGraph& factors, const Ordering& ordering) {
+  static std::pair<GaussianMixture::shared_ptr, sharedFactor> DefaultEliminate(
+      const HybridFactorGraph& factors, const Ordering& ordering) {
     return EliminateHybrid(factors, ordering);
   }
 };
@@ -311,11 +312,21 @@ class HybridFactorGraph : protected FactorGraph<Factor>,
    */
   void clear();
 
+  /// The total number of factors in the Gaussian factor graph.
+  DiscreteKeys discreteKeys() const {
+    DiscreteKeys result;
+    // TODO(Frank): implement!
+    // DiscreteKeys result = discreteGraph_.discreteKeys();
+    // DiscreteKeys dcKeys = dcGraph_.discreteKeys();
+    // result += dcKeys
+    return result;
+  }
+
   /// @name Elimination machinery
   /// @{
   using FactorType = Factor;
   using EliminationResult =
-      std::pair<boost::shared_ptr<GaussianMixture>, boost::shared_ptr<Factor>>;
+      std::pair<boost::shared_ptr<GaussianMixture>, sharedFactor>;
   using Eliminate = std::function<EliminationResult(const HybridFactorGraph&,
                                                     const Ordering&)>;
 
