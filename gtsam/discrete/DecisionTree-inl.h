@@ -419,18 +419,17 @@ namespace gtsam {
   }
 
   /*********************************************************************************/
-  template<typename L, typename Y>
-  DecisionTree<L, Y>::DecisionTree(const std::vector<LabelC>& labelCs,
-      const std::vector<Y>& ys) {
+  template <typename L, typename Y>
+  DecisionTree<L, Y>::DecisionTree(const LabelCs& labelCs,
+                                   const std::vector<Y>& ys) {
     // call recursive Create
     root_ = create(labelCs.begin(), labelCs.end(), ys.begin(), ys.end());
   }
 
   /*********************************************************************************/
-  template<typename L, typename Y>
-  DecisionTree<L, Y>::DecisionTree(const std::vector<LabelC>& labelCs,
-      const std::string& table) {
-
+  template <typename L, typename Y>
+  DecisionTree<L, Y>::DecisionTree(const LabelCs& labelCs,
+                                   const std::string& table) {
     // Convert std::string to values of type Y
     std::vector<Y> ys;
     std::istringstream iss(table);
@@ -559,7 +558,7 @@ namespace gtsam {
     size_t size = endY - beginY;
 
     // Find the next key to work on
-    It labelC = begin + 1;
+    It labelC = ++begin;
     if (labelC == end) {
       // Base case: only one key left
       // Create a simple choice node with values as leaves.

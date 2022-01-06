@@ -58,6 +58,7 @@ namespace gtsam {
 
     /** A label annotated with cardinality */
     using LabelC = std::pair<L,size_t>;
+    using LabelCs = std::map<L, size_t>;
 
     /** DTs consist of Leaf and Choice nodes, both subclasses of Node */
     class Leaf;
@@ -157,10 +158,10 @@ namespace gtsam {
     DecisionTree(const LabelC& label, const Y& y1, const Y& y2);
 
     /** Create from keys and a corresponding vector of values */
-    DecisionTree(const std::vector<LabelC>& labelCs, const std::vector<Y>& ys);
+    DecisionTree(const LabelCs& labelCs, const std::vector<Y>& ys);
 
     /** Create from keys and string table */
-    DecisionTree(const std::vector<LabelC>& labelCs, const std::string& table);
+    DecisionTree(const LabelCs& labelCs, const std::string& table);
 
     /** Create DecisionTree from others */
     template<typename Iterator>
