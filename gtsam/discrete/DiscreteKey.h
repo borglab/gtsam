@@ -73,6 +73,12 @@ namespace gtsam {
       push_back(key);
       return *this;
     }
+
+    /// Helper method to append additional discrete keys.
+    DiscreteKeys& append(const DiscreteKeys& keys) {
+      this->insert(this->begin(), keys.begin(), keys.end());
+      return *this;
+    }
   }; // DiscreteKeys
 
   /// Create a list from two keys

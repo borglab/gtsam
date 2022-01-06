@@ -43,8 +43,9 @@ namespace gtsam {
   /* ************************************************************************* */
   KeySet DiscreteFactorGraph::keys() const {
     KeySet keys;
-    for(const sharedFactor& factor: *this)
-    if (factor) keys.insert(factor->begin(), factor->end());
+    for (const sharedFactor& factor : *this) {
+      if (factor) keys.insert(factor->begin(), factor->end());
+    }
     return keys;
   }
 
