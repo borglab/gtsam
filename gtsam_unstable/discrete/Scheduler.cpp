@@ -158,7 +158,7 @@ void Scheduler::buildGraph(size_t mutexBound) {
 
   if (!mutexBound) {
     DiscreteKeys dkeys;
-    for (const Student& s : students_) dkeys.push_back(s.key_);
+    for (const Student& s : students_) dkeys.emplace(s.key_);
     addAllDiff(dkeys);
   } else {
     if (debug) cout << "Mutex for Students" << endl;

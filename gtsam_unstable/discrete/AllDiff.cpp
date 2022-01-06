@@ -14,7 +14,7 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-AllDiff::AllDiff(const DiscreteKeys& dkeys) : Constraint(dkeys.indices()) {
+AllDiff::AllDiff(const DiscreteKeys& dkeys) : Constraint(getIndices(dkeys)) {
   for (const DiscreteKey& dkey : dkeys) cardinalities_.insert(dkey);
 }
 
@@ -93,7 +93,7 @@ Constraint::shared_ptr AllDiff::partiallyApply(const DiscreteValues& values) con
   // loop over keys and add them only if they do not appear in values
   for (Key k : keys_)
     if (values.find(k) == values.end()) {
-      newKeys.push_back(DiscreteKey(k, cardinalities_.at(k)));
+      newKeys.emplace(DiscreteKey(k, cardinalities_.at(k)));
     }
   return boost::make_shared<AllDiff>(newKeys);
 }

@@ -54,8 +54,8 @@ class BinaryAllDiff : public Constraint {
   /// Convert into a decisiontree
   DecisionTreeFactor toDecisionTreeFactor() const override {
     DiscreteKeys keys;
-    keys.push_back(DiscreteKey(keys_[0], cardinality0_));
-    keys.push_back(DiscreteKey(keys_[1], cardinality1_));
+    keys.emplace(DiscreteKey(keys_[0], cardinality0_));
+    keys.emplace(DiscreteKey(keys_[1], cardinality1_));
     std::vector<double> table;
     for (size_t i1 = 0; i1 < cardinality0_; i1++)
       for (size_t i2 = 0; i2 < cardinality1_; i2++) table.push_back(i1 != i2);

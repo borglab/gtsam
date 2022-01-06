@@ -30,7 +30,7 @@ double SingleValue::operator()(const DiscreteValues& values) const {
 /* ************************************************************************* */
 DecisionTreeFactor SingleValue::toDecisionTreeFactor() const {
   DiscreteKeys keys;
-  keys += DiscreteKey(keys_[0], cardinality_);
+  keys.emplace(DiscreteKey(keys_[0], cardinality_));
   vector<double> table;
   for (size_t i1 = 0; i1 < cardinality_; i1++) table.push_back(i1 == value_);
   DecisionTreeFactor converted(keys, table);
