@@ -315,10 +315,12 @@ class HybridFactorGraph : protected FactorGraph<Factor>,
   /// The total number of factors in the Gaussian factor graph.
   DiscreteKeys discreteKeys() const {
     DiscreteKeys result;
-    // TODO(Frank): implement!
-    // DiscreteKeys result = discreteGraph_.discreteKeys();
-    // DiscreteKeys dcKeys = dcGraph_.discreteKeys();
-    // result += dcKeys
+    for(auto&& key: discreteGraph_.keys()) {
+      //TODO(Varun) how to get cardinality?
+      result.emplace_back(key, 2);
+    }
+    DiscreteKeys dcKeys = dcGraph_.discreteKeys();
+    result.append(dcKeys);
     return result;
   }
 

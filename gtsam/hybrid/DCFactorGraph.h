@@ -24,6 +24,19 @@ class DCFactorGraph : public gtsam::FactorGraph<DCFactor> {
   using shared_ptr = boost::shared_ptr<DCFactorGraph>;
 
   DCFactorGraph() : FactorGraph<DCFactor>() {}
+
+  /// Get all the discrete keys in all the factors in the DCFactorGraph
+  DiscreteKeys discreteKeys() const {
+    DiscreteKeys result;
+    for (const sharedFactor& factor : *this) {
+      if (factor) {
+        // Efficiently insert all the discrete keys to the final result.
+        result.append(factor->discreteKeys());
+      }
+    }
+
+    return result;
+  }
 };
 
 }  // namespace gtsam
