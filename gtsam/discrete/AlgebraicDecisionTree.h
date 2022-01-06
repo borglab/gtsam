@@ -89,24 +89,24 @@ namespace gtsam {
     }
 
     /** Create from keys and vector table */
-    AlgebraicDecisionTree //
-    (const std::vector<typename Base::LabelC>& labelCs, const std::vector<double>& ys) {
-      this->root_ = Base::create(labelCs.begin(), labelCs.end(), ys.begin(),
-          ys.end());
+    AlgebraicDecisionTree(const typename Base::LabelCs& labelCs,
+                          const std::vector<double>& ys) {
+      this->root_ =
+          Base::create(labelCs.begin(), labelCs.end(), ys.begin(), ys.end());
     }
 
     /** Create from keys and string table */
-    AlgebraicDecisionTree //
-    (const std::vector<typename Base::LabelC>& labelCs, const std::string& table) {
+    AlgebraicDecisionTree(const typename Base::LabelCs& labelCs,
+                          const std::string& table) {
       // Convert string to doubles
       std::vector<double> ys;
       std::istringstream iss(table);
       std::copy(std::istream_iterator<double>(iss),
-          std::istream_iterator<double>(), std::back_inserter(ys));
+                std::istream_iterator<double>(), std::back_inserter(ys));
 
       // now call recursive Create
-      this->root_ = Base::create(labelCs.begin(), labelCs.end(), ys.begin(),
-          ys.end());
+      this->root_ =
+          Base::create(labelCs.begin(), labelCs.end(), ys.begin(), ys.end());
     }
 
     /** Create a new function splitting on a variable */
