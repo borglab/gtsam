@@ -23,58 +23,35 @@
 
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace gtsam {
 
-  /**
-   * Key type for discrete variables.
-   * Includes Key and cardinality.
-   */
-  using DiscreteKey = std::pair<Key,size_t>;
+/**
+ * Key type for discrete variables.
+ * Includes Key and cardinality.
+ */
+using DiscreteKey = std::pair<Key, size_t>;
 
-  // TODO(Frank): make this the type?
-  // using DiscreteKeys = std::map<Key, size_t>;
+/// DiscreteKeys is a map of keys that can be assembled using the & operator
+using DiscreteKeys = std::map<Key, size_t>;
 
-  /// DiscreteKeys is a set of keys that can be assembled using the & operator
-  struct GTSAM_EXPORT DiscreteKeys: public std::vector<DiscreteKey> {
+/// Create a list from two keys
+DiscreteKeys operator&(const DiscreteKey& key1, const DiscreteKey& key2);
 
-    // Forward all constructors.
-    using std::vector<DiscreteKey>::vector;
+/// Add a key to a DiscreteKeys object
+DiscreteKeys& operator&(DiscreteKeys& keys, const DiscreteKey& key);
 
-    /// Constructor for serialization
-    DiscreteKeys() : std::vector<DiscreteKey>::vector() {}
+/// Add a (non-const) key to a DiscreteKeys object
+DiscreteKeys& operator&(DiscreteKeys& keys, DiscreteKey& key);
 
-    /// Construct from a key
-    explicit DiscreteKeys(const DiscreteKey& key) { push_back(key); }
+/**
+ * @brief Get the Indices object
+ *
+ * @param keys
+ * @return KeyVector
+ */
+KeyVector getIndices(const DiscreteKeys& keys);
 
-    /// Construct from cardinalities.
-    explicit DiscreteKeys(std::map<Key, size_t> cardinalities) {
-      for (auto&& kv : cardinalities) emplace_back(kv);
-    }
-
-    /// Construct from a vector of keys
-    DiscreteKeys(const std::vector<DiscreteKey>& keys) :
-      std::vector<DiscreteKey>(keys) {
-    }
-
-    /// Construct from cardinalities with default names
-    DiscreteKeys(const std::vector<int>& cs);
-
-    /// Return a vector of indices
-    KeyVector indices() const;
-
-    /// Return a map from index to cardinality
-    std::map<Key,size_t> cardinalities() const;
-
-    /// Add a key (non-const!)
-    // TODO(Frank): we need this operator even if we make it a map.
-    DiscreteKeys& operator&(const DiscreteKey& key) {
-      push_back(key);
-      return *this;
-    }
-  }; // DiscreteKeys
-
-  /// Create a list from two keys
-  DiscreteKeys operator&(const DiscreteKey& key1, const DiscreteKey& key2);
-}
+}  // namespace gtsam
