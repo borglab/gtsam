@@ -226,7 +226,8 @@ TEST(DCGaussianElimination, Eliminate_x1) {
   CHECK(result.first);
   EXPECT_LONGS_EQUAL(1, result.first->nrFrontals());
   CHECK(result.second);
-  EXPECT_LONGS_EQUAL(1, result.second->size());
+  // Has two keys, x2 and m1
+  EXPECT_LONGS_EQUAL(2, result.second->size());
 }
 
 /* ****************************************************************************/
