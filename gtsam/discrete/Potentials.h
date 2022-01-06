@@ -33,7 +33,7 @@ namespace gtsam {
 
   public:
 
-    typedef AlgebraicDecisionTree<Key> ADT;
+    using ADT = AlgebraicDecisionTree<Key>;
 
   protected:
 
@@ -64,7 +64,7 @@ namespace gtsam {
     /** Constructor from Indices and (string or doubles) */
     template<class SOURCE>
     Potentials(const DiscreteKeys& keys, SOURCE table) :
-        ADT(keys, table), cardinalities_(keys.cardinalities()) {
+        ADT(keys, table), cardinalities_(keys) {
     }
 
     // Testable

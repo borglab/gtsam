@@ -58,7 +58,7 @@ namespace gtsam {
     /** Constructor from Indices and (string or doubles) */
     template<class SOURCE>
     DecisionTreeFactor(const DiscreteKeys& keys, SOURCE table) :
-        DiscreteFactor(keys.indices()), Potentials(keys, table) {
+        DiscreteFactor(getIndices(keys)), Potentials(keys, table) {
     }
 
     /// Single-key specialization

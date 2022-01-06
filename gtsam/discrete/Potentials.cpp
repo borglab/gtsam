@@ -42,7 +42,7 @@ Potentials::Potentials() : ADT(1.0) {}
 /* ********************************************************************************
  */
 Potentials::Potentials(const DiscreteKeys& keys, const ADT& decisionTree)
-    : ADT(decisionTree), cardinalities_(keys.cardinalities()) {}
+    : ADT(decisionTree), cardinalities_(keys) {}
 
 /* ************************************************************************* */
 bool Potentials::equals(const Potentials& other, double tol) const {

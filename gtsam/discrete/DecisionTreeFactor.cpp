@@ -34,7 +34,7 @@ namespace gtsam {
   /* ******************************************************************************** */
   DecisionTreeFactor::DecisionTreeFactor(const DiscreteKeys& keys,
       const ADT& potentials) :
-      DiscreteFactor(keys.indices()), Potentials(keys, potentials) {
+      DiscreteFactor(getIndices(keys)), Potentials(keys, potentials) {
   }
 
   /* *************************************************************************/
@@ -69,8 +69,9 @@ namespace gtsam {
     for(Key j: f.keys()) cs[j] = f.cardinality(j);
     // Convert map into keys
     DiscreteKeys keys;
-    for(const std::pair<const Key,size_t>& key: cs)
-      keys.push_back(key);
+    for (const std::pair<const Key, size_t>& key : cs) {
+      keys.emplace(key);
+    }
     // apply operand
     ADT result = ADT::apply(f, op);
     // Make a new factor
@@ -98,7 +99,7 @@ namespace gtsam {
     DiscreteKeys dkeys;
     for (; i < keys().size(); i++) {
       Key j = keys()[i];
-      dkeys.push_back(DiscreteKey(j,cardinality(j)));
+      dkeys.emplace(DiscreteKey(j,cardinality(j)));
     }
     return boost::make_shared<DecisionTreeFactor>(dkeys, result);
   }
@@ -129,7 +130,7 @@ namespace gtsam {
       // TODO: inefficient!
       if (std::find(frontalKeys.begin(), frontalKeys.end(), j) != frontalKeys.end())
         continue;
-      dkeys.push_back(DiscreteKey(j,cardinality(j)));
+      dkeys.emplace(DiscreteKey(j,cardinality(j)));
     }
     return boost::make_shared<DecisionTreeFactor>(dkeys, result);
   }
@@ -137,12 +138,12 @@ namespace gtsam {
   /* ************************************************************************* */
   std::vector<std::pair<DiscreteValues, double>> DecisionTreeFactor::enumerate() const {
     // Get all possible assignments
-    std::vector<std::pair<Key, size_t>> pairs;
+    std::map<Key, size_t> pairs;
     for (auto& key : keys()) {
-      pairs.emplace_back(key, cardinalities_.at(key));
+      pairs.emplace(key, cardinalities_.at(key));
     }
     // Reverse to make cartesianProduct output a more natural ordering.
-    std::vector<std::pair<Key, size_t>> rpairs(pairs.rbegin(), pairs.rend());
+    std::map<Key, size_t> rpairs(pairs.rbegin(), pairs.rend());
     const auto assignments = cartesianProduct(rpairs);
 
     // Construct unordered_map with values

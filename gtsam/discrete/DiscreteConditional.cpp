@@ -135,7 +135,7 @@ DecisionTreeFactor::shared_ptr DiscreteConditional::choose(
   // Convert ADT to factor.
   DiscreteKeys discreteKeys;
   for (Key j : frontals()) {
-    discreteKeys.emplace_back(j, this->cardinality(j));
+    discreteKeys.emplace(j, this->cardinality(j));
   }
   return boost::make_shared<DecisionTreeFactor>(discreteKeys, adt);
 }
@@ -160,7 +160,7 @@ DecisionTreeFactor::shared_ptr DiscreteConditional::likelihood(
   // Convert ADT to factor.
   DiscreteKeys discreteKeys;
   for (Key j : parents()) {
-    discreteKeys.emplace_back(j, this->cardinality(j));
+    discreteKeys[j] = this->cardinality(j);
   }
   return boost::make_shared<DecisionTreeFactor>(discreteKeys, adt);
 }
@@ -336,8 +336,7 @@ std::string DiscreteConditional::markdown(const KeyFormatter& keyFormatter,
     pairs.emplace_back(key, k);
     n *= k;
   }
-  std::vector<std::pair<Key, size_t>> slatnorf(pairs.rbegin(),
-                                               pairs.rend() - nrParents());
+  std::map<Key, size_t> slatnorf(pairs.rbegin(), pairs.rend() - nrParents());
   const auto frontal_assignments = cartesianProduct(slatnorf);
   for (const auto& a : frontal_assignments) {
     for (it = beginFrontals(); it != endFrontals(); ++it) {
@@ -354,7 +353,7 @@ std::string DiscreteConditional::markdown(const KeyFormatter& keyFormatter,
   ss << "\n";
 
   // Print out all rows.
-  std::vector<std::pair<Key, size_t>> rpairs(pairs.rbegin(), pairs.rend());
+  std::map<Key, size_t> rpairs(pairs.rbegin(), pairs.rend());
   const auto assignments = cartesianProduct(rpairs);
   size_t count = 0;
   for (const auto& a : assignments) {

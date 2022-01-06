@@ -97,8 +97,8 @@ namespace gtsam {
 
   DiscreteKeys Signature::discreteKeys() const {
     DiscreteKeys keys;
-    keys.push_back(key_);
-    for (const DiscreteKey& key : parents_) keys.push_back(key);
+    keys.emplace(key_);
+    for (const DiscreteKey& key : parents_) keys.emplace(key);
     return keys;
   }
 
@@ -124,7 +124,7 @@ namespace gtsam {
   }
 
   Signature& Signature::operator,(const DiscreteKey& parent) {
-    parents_.push_back(parent);
+    parents_.emplace(parent);
     return *this;
   }
 
@@ -162,9 +162,14 @@ namespace gtsam {
     if (s.parents_.empty()) {
       os << " % ";
     } else {
-      os << " | " << s.parents_[0].first;
-      for (size_t i = 1; i < s.parents_.size(); i++)
-        os << " && " << s.parents_[i].first;
+      for (DiscreteKeys::const_iterator it = s.parents_.begin();
+           it != s.parents_.end(); it++) {
+        if (it == s.parents_.begin()) {
+          os << it->first;
+        } else {
+          os << " && " << it->first;
+        }
+      }
       os << " = ";
     }
     os << (s.spec_ ? *s.spec_ : "no spec") << endl;
