@@ -63,7 +63,9 @@ class DCFactor : public gtsam::Factor {
    */
   DCFactor(const gtsam::KeyVector& continuousKeys,
            const gtsam::DiscreteKeys& discreteKeys)
-      : Base(AllKeys(continuousKeys, discreteKeys)),
+      //TODO(Varun) This causes double counting of keys
+      // : Base(AllKeys(continuousKeys, discreteKeys)),
+      : Base(continuousKeys),
         discreteKeys_(discreteKeys) {}
 
   // NOTE unsure if needed?
@@ -150,6 +152,9 @@ class DCFactor : public gtsam::Factor {
    * function with respect to continuous variables for
    */
   virtual size_t dim() const = 0;
+
+  /// Return the number of variables involved in this factor
+  size_t size() const override { return keys_.size() + discreteKeys_.size(); }
 
   /*
    * Return the discrete keys for this factor.
