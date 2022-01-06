@@ -439,13 +439,11 @@ class GTSAM_EXPORT GncOptimizer {
         for (size_t k : unknownWeights) {
           if (nfg_[k]) {
             double u2_k = nfg_[k]->error(currentEstimate);  // squared (and whitened) residual
-            if (u2_k >= upperbound) {
+            weights[k] = std::sqrt(barcSq_[k] * mu * (mu + 1) / u2_k) - mu;
+            if (u2_k >= upperbound || weights[k] < 0) {
               weights[k] = 0;
-            } else if (u2_k <= lowerbound) {
+            } else if (u2_k <= lowerbound || weights[k] > 1) {
               weights[k] = 1;
-            } else {
-              weights[k] = std::sqrt(barcSq_[k] * mu * (mu + 1) / u2_k)
-                  - mu;
             }
           }
         }
