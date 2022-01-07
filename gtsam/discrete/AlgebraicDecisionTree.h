@@ -179,5 +179,6 @@ namespace gtsam {
   };
 // AlgebraicDecisionTree
 
+template<typename T> struct traits<AlgebraicDecisionTree<T>> : public Testable<AlgebraicDecisionTree<T>> {};
 }
 // namespace gtsam

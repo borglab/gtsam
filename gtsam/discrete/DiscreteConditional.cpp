@@ -80,7 +80,7 @@ void DiscreteConditional::print(const string& s,
     }
   }
   cout << ")";
-  Potentials::print("");
+  ADT::print("");
   cout << endl;
 }
 
