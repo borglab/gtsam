@@ -22,6 +22,8 @@ using namespace std;
 
 namespace gtsam {
 
+using GFG = GaussianFactorGraph;
+
 // Instantiate base classes
 // template class FactorGraph<Factor>;
 template class EliminateableFactorGraph<HybridFactorGraph>;
@@ -122,6 +124,21 @@ Sum HybridFactorGraph::sum() const {
   return sum;
 }
 
+DecisionTreeFactor::shared_ptr HybridFactorGraph::toDecisionTreeFactor() const {
+  // Get the decision tree mapping an assignment to a GaussianFactorGraph
+  Sum sum = this->sum();
+
+  // Get the decision tree with each leaf as the error for that assignment
+  std::function<double(GaussianFactorGraph)> gfgError = [&](const GFG& graph) {
+    VectorValues values = graph.optimize();
+    return graph.error(values);
+  };
+  DecisionTree<Key, double> gfgdt(sum, gfgError);
+
+  auto factor = boost::make_shared<DecisionTreeFactor>(discreteKeys(), gfgdt);
+  return factor;
+}
+
 ostream& operator<<(ostream& os,
                     const GaussianFactorGraph::EliminationResult& er) {
   os << "ER" << endl;
@@ -138,7 +155,6 @@ pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
   // STEP 1: ELIMINATE
   // Eliminate each sum using conventional Cholesky:
   // We can use this by creating a *new* decision tree:
-  using GFG = GaussianFactorGraph;
   using Pair = GaussianFactorGraph::EliminationResult;
 
   KeyVector keys;
@@ -165,8 +181,16 @@ pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
   // If there are no more continuous parents, then we should create here a
   // DiscreteFactor, with the error for each discrete choice.
   if (separatorKeys.size() == 0) {
-    auto discreteFactor = boost::make_shared<DecisionTreeFactor>(/*TODO*/);
-    cout << "adding a discrete factor!" << endl;
+    // Get the decision tree with each leaf as the error for that assignment
+    std::function<double(GaussianFactorGraph)> gfgError =
+        [&](const GFG& graph) {
+          VectorValues values = graph.optimize();
+          return graph.error(values);
+        };
+    DecisionTree<Key, double> gfgdt(sum, gfgError);
+
+    auto discreteFactor =
+        boost::make_shared<DecisionTreeFactor>(discreteKeys, gfgdt);
     return {conditional, discreteFactor};
   } else {
     // Create a resulting DCGaussianMixture on the separator.

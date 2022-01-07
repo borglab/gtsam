@@ -335,6 +335,27 @@ TEST(DCGaussianElimination, Eliminate_fully) {
 }
 
 /* ****************************************************************************/
+/// Test the toDecisionTreeFactor method
+TEST(HybridFactorGraph, AssignmentFactors) {
+  Switching self(3);
+
+  // Clear out discrete factors since sum() cannot hanldle those
+  HybridFactorGraph linearizedFactorGraph(
+      NonlinearFactorGraph(), DiscreteFactorGraph(),
+      self.linearizedFactorGraph.dcGraph(),
+      self.linearizedFactorGraph.gaussianGraph());
+
+  auto decisionTreeFactor = linearizedFactorGraph.toDecisionTreeFactor();
+
+  auto allAssignments =
+      cartesianProduct(linearizedFactorGraph.discreteKeys());
+
+  for (auto&& assignment : allAssignments) {
+    std::cout << (*decisionTreeFactor)(assignment) << std::endl << std::endl;
+  }
+}
+
+/* ****************************************************************************/
 // Test elimination
 TEST(HybridFactorGraph, Elimination) {
   Switching self(3);
