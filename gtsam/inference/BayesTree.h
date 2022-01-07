@@ -72,7 +72,8 @@ namespace gtsam {
   public:
     typedef CLIQUE Clique; ///< The clique type, normally BayesTreeClique
     typedef boost::shared_ptr<Clique> sharedClique; ///< Shared pointer to a clique
-
+    typedef Clique Node; ///< Synonym for Clique (TODO: remove)
+    typedef sharedClique sharedNode; ///< Synonym for sharedClique (TODO: remove)
     typedef typename CLIQUE::ConditionalType ConditionalType;
     typedef boost::shared_ptr<ConditionalType> sharedConditional;
     typedef typename CLIQUE::BayesNetType BayesNetType;
@@ -267,12 +268,6 @@ namespace gtsam {
     }
 
     /// @}
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-  public:
-    typedef GTSAM_DEPRECATED Clique Node; ///< Synonym for Clique (TODO: remove)
-    typedef GTSAM_DEPRECATED sharedClique sharedNode; ///< Synonym for sharedClique (TODO: remove)
-#endif
 
   }; // BayesTree
 
