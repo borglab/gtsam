@@ -197,22 +197,34 @@ class HybridFactorGraph : protected FactorGraph<Factor>,
     push_gaussian(factor);
   }
 
+  /**
+   * @brief Add a single factor shared pointer to the hybrid factor graph.
+   * Dynamically handles the factor type and assigns it to the correct underlying container.
+   *
+   * @tparam FACTOR The factor type template
+   * @param sharedFactor The factor to add to this factor graph.
+   */
+  template <typename FACTOR>
+  void push_back(const boost::shared_ptr<FACTOR>& sharedFactor) {
+    if (auto p = boost::dynamic_pointer_cast<NonlinearFactor>(sharedFactor)) {
+      push_nonlinear(p);
+    }
+    if (auto p = boost::dynamic_pointer_cast<DiscreteFactor>(sharedFactor)) {
+      push_discrete(p);
+    }
+    if (auto p = boost::dynamic_pointer_cast<DCFactor>(sharedFactor)) {
+      push_dc(p);
+    }
+    if (auto p = boost::dynamic_pointer_cast<GaussianFactor>(sharedFactor)) {
+      push_gaussian(p);
+    }
+  }
+
   /** Constructor from iterator over factors (shared_ptr or plain objects) */
   template <typename ITERATOR>
   void push_back(ITERATOR firstFactor, ITERATOR lastFactor) {
     for (auto&& it = firstFactor; it != lastFactor; it++) {
-      if (auto p = boost::dynamic_pointer_cast<NonlinearFactor>(*it)) {
-        push_nonlinear(p);
-      }
-      if (auto p = boost::dynamic_pointer_cast<DiscreteFactor>(*it)) {
-        push_discrete(p);
-      }
-      if (auto p = boost::dynamic_pointer_cast<DCFactor>(*it)) {
-        push_dc(p);
-      }
-      if (auto p = boost::dynamic_pointer_cast<GaussianFactor>(*it)) {
-        push_gaussian(p);
-      }
+      push_back(*it);
     }
   }
 
@@ -315,12 +327,14 @@ class HybridFactorGraph : protected FactorGraph<Factor>,
   /// The total number of factors in the Gaussian factor graph.
   DiscreteKeys discreteKeys() const {
     DiscreteKeys result;
-    for(auto&& key: discreteGraph_.keys()) {
-      //TODO(Varun) how to get cardinality?
-      result.emplace_back(key, 2);
+    for (auto&& factor : discreteGraph_) {
+      if (auto p = boost::dynamic_pointer_cast<DecisionTreeFactor>(factor)) {
+        for (auto&& key : factor->keys()) {
+          result.emplace_back(key, p->cardinality(key));
+        }
+      }
     }
-    DiscreteKeys dcKeys = dcGraph_.discreteKeys();
-    result.append(dcKeys);
+    result.append(dcGraph_.discreteKeys());
     return result;
   }
 
