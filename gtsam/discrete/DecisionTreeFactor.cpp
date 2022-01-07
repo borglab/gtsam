@@ -34,12 +34,13 @@ namespace gtsam {
   /* ******************************************************************************** */
   DecisionTreeFactor::DecisionTreeFactor(const DiscreteKeys& keys,
       const ADT& potentials) :
-      DiscreteFactor(keys.indices()), Potentials(keys, potentials) {
+      DiscreteFactor(keys.indices()), ADT(potentials),
+      cardinalities_(keys.cardinalities()) {
   }
 
   /* *************************************************************************/
   DecisionTreeFactor::DecisionTreeFactor(const DiscreteConditional& c) :
-      DiscreteFactor(c.keys()), Potentials(c) {
+      DiscreteFactor(c.keys()), AlgebraicDecisionTree<Key>(c), cardinalities_(c.cardinalities_) {
   }
 
   /* ************************************************************************* */
@@ -48,16 +49,24 @@ namespace gtsam {
       return false;
     }
     else {
-      const DecisionTreeFactor& f(static_cast<const DecisionTreeFactor&>(other));
-      return Potentials::equals(f, tol);
+      const auto& f(static_cast<const DecisionTreeFactor&>(other));
+      return ADT::equals(f, tol);
     }
+  }
+
+  /* ************************************************************************* */
+  double DecisionTreeFactor::safe_div(const double &a, const double &b)  {
+    // The use for safe_div is when we divide the product factor by the sum
+    // factor. If the product or sum is zero, we accord zero probability to the
+    // event.
+    return (a == 0 || b == 0) ? 0 : (a / b);
   }
 
   /* ************************************************************************* */
   void DecisionTreeFactor::print(const string& s,
       const KeyFormatter& formatter) const {
     cout << s;
-    Potentials::print("Potentials:",formatter);
+    ADT::print("Potentials:",formatter);
   }
 
   /* ************************************************************************* */
@@ -162,20 +171,20 @@ namespace gtsam {
   void DecisionTreeFactor::dot(std::ostream& os,
                                const KeyFormatter& keyFormatter,
                                bool showZero) const {
-    Potentials::dot(os, keyFormatter, valueFormatter, showZero);
+    ADT::dot(os, keyFormatter, valueFormatter, showZero);
   }
 
   /** output to graphviz format, open a file */
   void DecisionTreeFactor::dot(const std::string& name,
                                const KeyFormatter& keyFormatter,
                                bool showZero) const {
-    Potentials::dot(name, keyFormatter, valueFormatter, showZero);
+    ADT::dot(name, keyFormatter, valueFormatter, showZero);
   }
 
   /** output to graphviz format string */
   std::string DecisionTreeFactor::dot(const KeyFormatter& keyFormatter,
                                       bool showZero) const {
-    return Potentials::dot(keyFormatter, valueFormatter, showZero);
+    return ADT::dot(keyFormatter, valueFormatter, showZero);
   }
 
   /* ************************************************************************* */
@@ -207,6 +216,16 @@ namespace gtsam {
       ss << kv.second << "|\n";
     }
     return ss.str();
+  }
+
+  DecisionTreeFactor::DecisionTreeFactor(const DiscreteKeys &keys, const vector<double> &table) :
+          DiscreteFactor(keys.indices()), AlgebraicDecisionTree<Key>(keys, table),
+          cardinalities_(keys.cardinalities()) {
+  }
+
+  DecisionTreeFactor::DecisionTreeFactor(const DiscreteKeys &keys, const string &table) :
+          DiscreteFactor(keys.indices()), AlgebraicDecisionTree<Key>(keys, table),
+          cardinalities_(keys.cardinalities()) {
   }
 
   /* ************************************************************************* */
