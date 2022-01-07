@@ -38,10 +38,9 @@ void HybridFactorGraph::print(const string& str,
   nonlinearGraph_.print(prefix + "NonlinearFactorGraph", keyFormatter);
   discreteGraph_.print(prefix + "DiscreteFactorGraph", keyFormatter);
   dcGraph_.print(prefix + "DCFactorGraph", keyFormatter);
-  gaussianGraph_.print(prefix + "GaussianGraph", keyFormatter);
 }
 
-HybridFactorGraph HybridFactorGraph::linearize(
+GaussianHybridFactorGraph HybridFactorGraph::linearize(
     const Values& continuousValues) const {
   // linearize the continuous factors
   auto gaussianFactorGraph = nonlinearGraph_.linearize(continuousValues);
@@ -58,14 +57,9 @@ HybridFactorGraph HybridFactorGraph::linearize(
     }
   }
 
-  // Add the original factors from the gaussian factor graph
-  for (auto&& gaussianFactor : gaussianGraph()) {
-    gaussianFactorGraph->push_back(gaussianFactor);
-  }
-
-  // Construct new linearized HybridFactorGraph
-  return HybridFactorGraph({}, discreteGraph_, linearized_DC_factors,
-                           *gaussianFactorGraph);
+  // Construct new GaussianHybridFactorGraph
+  return GaussianHybridFactorGraph(*gaussianFactorGraph, discreteGraph_,
+                                   linearized_DC_factors);
 }
 
 bool HybridFactorGraph::equals(const HybridFactorGraph& other,
@@ -73,15 +67,13 @@ bool HybridFactorGraph::equals(const HybridFactorGraph& other,
   return Base::equals(other, tol) &&
          nonlinearGraph_.equals(other.nonlinearGraph_, tol) &&
          discreteGraph_.equals(other.discreteGraph_, tol) &&
-         dcGraph_.equals(other.dcGraph_, tol) &&
-         gaussianGraph_.equals(other.gaussianGraph_, tol);
+         dcGraph_.equals(other.dcGraph_, tol);
 }
 
 void HybridFactorGraph::clear() {
   nonlinearGraph_.resize(0);
   discreteGraph_.resize(0);
   dcGraph_.resize(0);
-  gaussianGraph_.resize(0);
 }
 
 DiscreteKeys HybridFactorGraph::discreteKeys() const {
@@ -121,13 +113,8 @@ Sum HybridFactorGraph::sum() const {
       sum += *mixtureFactor;
     } else {
       throw runtime_error(
-          "HybridFactorGraph::sum can only handleDCGaussianMixtureFactors.");
+          "HybridFactorGraph::sum can only handle DCGaussianMixtureFactors.");
     }
-  }
-
-  // Add the original factors from the gaussian factor graph
-  for (auto&& gaussianFactor : gaussianGraph()) {
-    sum += gaussianFactor;
   }
   return sum;
 }
@@ -154,10 +141,10 @@ ostream& operator<<(ostream& os,
 
 // The function type that does a single elimination step on a variable.
 pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
-    const HybridFactorGraph& factors, const Ordering& ordering) {
+    const GaussianHybridFactorGraph& factors, const Ordering& ordering) {
   // STEP 1: SUM
   // Create a new decision tree with all factors gathered at leaves.
-  auto sum = factors.sum();
+  Sum sum = factors.sum();
 
   // STEP 1: ELIMINATE
   // Eliminate each sum using conventional Cholesky:
@@ -204,6 +191,40 @@ pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
         separatorKeys, discreteKeys, separatorFactors);
     return {conditional, factor};
   }
+}
+
+DecisionTreeFactor::shared_ptr HybridFactorGraph::toDecisionTreeFactor(
+    const GaussianHybridFactorGraph& ghfg) {
+  using GFG = GaussianFactorGraph;
+
+  Sum sum = ghfg.sum();
+
+  // Get the decision tree with each leaf as the error for that assignment
+  std::function<double(GaussianFactorGraph)> gfgError = [&](const GFG& graph) {
+    VectorValues values = graph.optimize();
+    return graph.error(values);
+  };
+  DecisionTree<Key, double> gfgdt(sum, gfgError);
+
+  auto allAssignments = cartesianProduct<Key>(discreteKeys);
+  sum(allAssignments[0]).print("GFG 1");
+  std::cout << "=======================" << std::endl;
+  sum(allAssignments[1]).print("GFG 2");
+  std::cout << "=======================" << std::endl;
+  sum(allAssignments[2]).print("GFG 3");
+  std::cout << "=======================" << std::endl;
+  sum(allAssignments[3]).print("GFG 4");
+  std::cout << "=======================" << std::endl;
+
+  DecisionTree<Key, double>::ValueFormatter valueFormatter =
+      [](const double& error) {
+        stringstream ss;
+        ss << error;
+        return ss.str();
+      };
+
+  auto factor = boost::make_shared<DecisionTreeFactor>(discreteKeys, gfgdt);
+  return factor;
 }
 
 }  // namespace gtsam
