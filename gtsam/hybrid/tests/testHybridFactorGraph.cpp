@@ -65,6 +65,51 @@ TEST(HybridFactorGraph, GaussianFactorGraph) {
   EXPECT_LONGS_EQUAL(2, dcmfg.gaussianGraph().size());
 }
 
+/* ****************************************************************************
+ * Test push_back on HFG makes the correct distinction.
+ */
+TEST(HybridFactorGraph, PushBack) {
+  HybridFactorGraph fg;
+
+  auto gaussianFactor = boost::make_shared<JacobianFactor>();
+  fg.push_back(gaussianFactor);
+
+  EXPECT_LONGS_EQUAL(fg.dcGraph().size(), 0);
+  EXPECT_LONGS_EQUAL(fg.discreteGraph().size(), 0);
+  EXPECT_LONGS_EQUAL(fg.nonlinearGraph().size(), 0);
+  EXPECT_LONGS_EQUAL(fg.gaussianGraph().size(), 1);
+
+  fg.clear();
+
+  auto nonlinearFactor = boost::make_shared<BetweenFactor<double>>();
+  fg.push_back(nonlinearFactor);
+
+  EXPECT_LONGS_EQUAL(fg.dcGraph().size(), 0);
+  EXPECT_LONGS_EQUAL(fg.discreteGraph().size(), 0);
+  EXPECT_LONGS_EQUAL(fg.nonlinearGraph().size(), 1);
+  EXPECT_LONGS_EQUAL(fg.gaussianGraph().size(), 0);
+
+  fg.clear();
+
+  auto discreteFactor = boost::make_shared<DecisionTreeFactor>();
+  fg.push_back(discreteFactor);
+
+  EXPECT_LONGS_EQUAL(fg.dcGraph().size(), 0);
+  EXPECT_LONGS_EQUAL(fg.discreteGraph().size(), 1);
+  EXPECT_LONGS_EQUAL(fg.nonlinearGraph().size(), 0);
+  EXPECT_LONGS_EQUAL(fg.gaussianGraph().size(), 0);
+
+  fg.clear();
+
+  auto dcFactor = boost::make_shared<DCMixtureFactor<MotionModel>>();
+  fg.push_back(dcFactor);
+
+  EXPECT_LONGS_EQUAL(fg.dcGraph().size(), 1);
+  EXPECT_LONGS_EQUAL(fg.discreteGraph().size(), 0);
+  EXPECT_LONGS_EQUAL(fg.nonlinearGraph().size(), 0);
+  EXPECT_LONGS_EQUAL(fg.gaussianGraph().size(), 0);
+}
+
 /* ****************************************************************************/
 // Test fixture with switching network.
 using MotionMixture = DCMixtureFactor<MotionModel>;
@@ -118,6 +163,7 @@ struct Switching {
                          components[1]->linearize(linearizationPoint)};
       linearizedFactorGraph.emplace_dc<DCGaussianMixtureFactor>(
           keys, DiscreteKeys{modes[k]}, linearized);
+      std::cout << "linearizedFactorGraph size: " << linearizedFactorGraph.size() << std::endl << std::endl;
     }
 
     // Add "mode chain"
