@@ -101,6 +101,20 @@ TEST(DecisionTreeFactor, enumerate) {
 }
 
 /* ************************************************************************* */
+TEST(DiscreteFactorGraph, DotWithNames) {
+  DiscreteKey A(12, 3), B(5, 2);
+  DecisionTreeFactor f(A & B, "1 2  3 4  5 6");
+  auto formatter = [](Key key) { return key == 12 ? "A" : "B"; };
+
+  for (bool showZero:{true, false}) {  
+    string actual = f.dot(formatter, showZero);
+    // pretty weak test, as ids are pointers and not stable across platforms.
+    string expected = "digraph G {";
+    EXPECT(actual.substr(0, 11) == expected);
+  }
+}
+
+/* ************************************************************************* */
 // Check markdown representation looks as expected.
 TEST(DecisionTreeFactor, markdown) {
   DiscreteKey A(12, 3), B(5, 2);

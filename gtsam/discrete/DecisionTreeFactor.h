@@ -19,7 +19,8 @@
 #pragma once
 
 #include <gtsam/discrete/DiscreteFactor.h>
-#include <gtsam/discrete/Potentials.h>
+#include <gtsam/discrete/DiscreteKey.h>
+#include <gtsam/discrete/AlgebraicDecisionTree.h>
 #include <gtsam/inference/Ordering.h>
 
 #include <boost/shared_ptr.hpp>
@@ -35,7 +36,7 @@ namespace gtsam {
   /**
    * A discrete probabilistic factor
    */
-  class GTSAM_EXPORT DecisionTreeFactor: public DiscreteFactor, public Potentials {
+  class GTSAM_EXPORT DecisionTreeFactor: public DiscreteFactor, public AlgebraicDecisionTree<Key> {
 
   public:
 
@@ -43,6 +44,10 @@ namespace gtsam {
     typedef DecisionTreeFactor This;
     typedef DiscreteFactor Base; ///< Typedef to base class
     typedef boost::shared_ptr<DecisionTreeFactor> shared_ptr;
+    typedef AlgebraicDecisionTree<Key> ADT;
+
+  protected:
+    std::map<Key,size_t> cardinalities_;
 
   public:
 
@@ -55,11 +60,11 @@ namespace gtsam {
     /** Constructor from Indices, Ordering, and AlgebraicDecisionDiagram */
     DecisionTreeFactor(const DiscreteKeys& keys, const ADT& potentials);
 
-    /** Constructor from Indices and (string or doubles) */
-    template<class SOURCE>
-    DecisionTreeFactor(const DiscreteKeys& keys, SOURCE table) :
-        DiscreteFactor(keys.indices()), Potentials(keys, table) {
-    }
+    /** Constructor from doubles */
+    DecisionTreeFactor(const DiscreteKeys& keys, const std::vector<double>& table);
+
+    /** Constructor from string */
+    DecisionTreeFactor(const DiscreteKeys& keys, const std::string& table);
 
     /// Single-key specialization
     template <class SOURCE>
@@ -71,7 +76,7 @@ namespace gtsam {
         : DecisionTreeFactor(DiscreteKeys{key}, row) {}
 
     /** Construct from a DiscreteConditional type */
-    DecisionTreeFactor(const DiscreteConditional& c);
+    explicit DecisionTreeFactor(const DiscreteConditional& c);
 
     /// @}
     /// @name Testable
@@ -90,13 +95,17 @@ namespace gtsam {
 
     /// Value is just look up in AlgebraicDecisonTree
     double operator()(const DiscreteValues& values) const override {
-      return Potentials::operator()(values);
+      return ADT::operator()(values);
     }
 
     /// multiply two factors
     DecisionTreeFactor operator*(const DecisionTreeFactor& f) const override {
       return apply(f, ADT::Ring::mul);
     }
+
+    static double safe_div(const double& a, const double& b);
+
+    size_t cardinality(Key j) const { return cardinalities_.at(j);}
 
     /// divide by factor f (safely)
     DecisionTreeFactor operator/(const DecisionTreeFactor& f) const {

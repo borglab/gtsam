@@ -80,7 +80,7 @@ void DiscreteConditional::print(const string& s,
     }
   }
   cout << ")";
-  Potentials::print("");
+  ADT::print("");
   cout << endl;
 }
 
@@ -307,7 +307,7 @@ std::string DiscreteConditional::markdown(const KeyFormatter& keyFormatter,
   if (nrParents() == 0) {
    // We have no parents, call factor method.
     ss << ")*:\n" << std::endl;
-    ss << DecisionTreeFactor::markdown(keyFormatter);
+    ss << DecisionTreeFactor::markdown(keyFormatter, names);
     return ss.str();
   }
 

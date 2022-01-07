@@ -128,7 +128,7 @@ public:
 
   /// Evaluate, just look up in AlgebraicDecisonTree
   double operator()(const DiscreteValues& values) const override {
-    return Potentials::operator()(values);
+    return ADT::operator()(values);
   }
 
   /** Convert to a factor */

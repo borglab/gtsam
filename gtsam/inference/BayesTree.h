@@ -143,7 +143,7 @@ namespace gtsam {
     const Nodes& nodes() const { return nodes_; }
 
     /** Access node by variable */
-    const sharedNode operator[](Key j) const { return nodes_.at(j); }
+    sharedClique operator[](Key j) const { return nodes_.at(j); }
 
     /** return root cliques */
     const Roots& roots() const { return roots_;  }
