@@ -56,7 +56,6 @@ namespace gtsam {
 
   /* ************************************************************************* */
   double DecisionTreeFactor::safe_div(const double &a, const double &b)  {
-    // cout << boost::format("%g / %g = %g\n") % a % b % ((a == 0) ? 0 : (a / b));
     // The use for safe_div is when we divide the product factor by the sum
     // factor. If the product or sum is zero, we accord zero probability to the
     // event.
