@@ -171,10 +171,11 @@ struct Switching {
 
   // Create motion models for a given time step
   std::vector<MotionModel::shared_ptr> motionModels(size_t k) {
-    auto still = boost::make_shared<MotionModel>(X(k), X(k + 1), 0.0,
-                                                 Isotropic::Sigma(1, 1.0)),
-         moving = boost::make_shared<MotionModel>(X(k), X(k + 1), 1.0,
-                                                  Isotropic::Sigma(1, 1.0));
+    auto noise_model = Isotropic::Sigma(1, 1.0);
+    auto still =
+             boost::make_shared<MotionModel>(X(k), X(k + 1), 0.0, noise_model),
+         moving =
+             boost::make_shared<MotionModel>(X(k), X(k + 1), 1.0, noise_model);
     return {still, moving};
   }
 
@@ -336,7 +337,7 @@ TEST(DCGaussianElimination, Eliminate_fully) {
 
 /* ****************************************************************************/
 /// Test the toDecisionTreeFactor method
-TEST(HybridFactorGraph, AssignmentFactors) {
+TEST(HybridFactorGraph, ToDecisionTreeFactor) {
   Switching self(3);
 
   // Clear out discrete factors since sum() cannot hanldle those
@@ -347,12 +348,17 @@ TEST(HybridFactorGraph, AssignmentFactors) {
 
   auto decisionTreeFactor = linearizedFactorGraph.toDecisionTreeFactor();
 
-  auto allAssignments =
-      cartesianProduct(linearizedFactorGraph.discreteKeys());
+  auto allAssignments = cartesianProduct(linearizedFactorGraph.discreteKeys());
 
-  for (auto&& assignment : allAssignments) {
-    std::cout << (*decisionTreeFactor)(assignment) << std::endl << std::endl;
-  }
+  // Regressions: test all 4 assignments.
+  EXPECT_DOUBLES_EQUAL(9.86076e-32, (*decisionTreeFactor)(allAssignments[0]),
+                       1e-9);
+  EXPECT_DOUBLES_EQUAL(9.86076e-32, (*decisionTreeFactor)(allAssignments[1]),
+                       1e-9);
+  EXPECT_DOUBLES_EQUAL(1.67633e-30, (*decisionTreeFactor)(allAssignments[2]),
+                       1e-9);
+  EXPECT_DOUBLES_EQUAL(1.57772e-30, (*decisionTreeFactor)(allAssignments[3]),
+                       1e-9);
 }
 
 /* ****************************************************************************/
