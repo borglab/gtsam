@@ -121,7 +121,8 @@ struct Switching {
   Values linearizationPoint;
 
   /// Create with given number of time steps.
-  Switching(size_t K) : K(K) {
+  Switching(size_t K, double between_sigma = 1.0, double prior_sigma = 0.1)
+      : K(K) {
     // Create DiscreteKeys for binary K modes, modes[0] will not be used.
     for (size_t k = 0; k <= K; k++) {
       modes.emplace_back(M(k), 2);
@@ -130,7 +131,7 @@ struct Switching {
     // Create hybrid factor graph.
     // Add a prior on X(1).
     auto prior = boost::make_shared<PriorFactor<double>>(
-        X(1), 0, Isotropic::Sigma(1, 0.1));
+        X(1), 0, Isotropic::Sigma(1, prior_sigma));
     nonlinearFactorGraph.push_nonlinear(prior);
 
     // Add "motion models".
@@ -157,7 +158,7 @@ struct Switching {
 
     // Add "motion models".
     for (size_t k = 1; k < K; k++) {
-      auto components = motionModels(k);
+      auto components = motionModels(k, between_sigma);
       auto keys = {X(k), X(k + 1)};
       auto linearized = {components[0]->linearize(linearizationPoint),
                          components[1]->linearize(linearizationPoint)};
@@ -170,8 +171,9 @@ struct Switching {
   }
 
   // Create motion models for a given time step
-  std::vector<MotionModel::shared_ptr> motionModels(size_t k) {
-    auto noise_model = Isotropic::Sigma(1, 1.0);
+  std::vector<MotionModel::shared_ptr> motionModels(size_t k,
+                                                    double sigma = 1.0) {
+    auto noise_model = Isotropic::Sigma(1, sigma);
     auto still =
              boost::make_shared<MotionModel>(X(k), X(k + 1), 0.0, noise_model),
          moving =
