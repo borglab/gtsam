@@ -261,9 +261,8 @@ namespace gtsam {
 
         // Check if zero
         if (!showZero) {
-          const Leaf* leaf = dynamic_cast<const Leaf*> (branch.get());
-          std::string value = valueFormatter(leaf->constant());
-          if (leaf && value.compare("0")) continue;
+          const Leaf* leaf = dynamic_cast<const Leaf*>(branch.get());
+          if (leaf && valueFormatter(leaf->constant()).compare("0")) continue;
         }
 
         os << "\"" << this->id() << "\" -> \"" << branch->id() << "\"";
