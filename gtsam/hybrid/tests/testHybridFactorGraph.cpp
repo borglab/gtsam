@@ -340,7 +340,12 @@ TEST(DCGaussianElimination, Eliminate_fully) {
 /* ****************************************************************************/
 /// Test the toDecisionTreeFactor method
 TEST(HybridFactorGraph, ToDecisionTreeFactor) {
-  Switching self(3);
+  size_t K = 3;
+
+  // Provide tight sigma values so that the errors are visibly different.
+  double between_sigma = 5e-8, prior_sigma = 1e-7;
+
+  Switching self(K, between_sigma, prior_sigma);
 
   // Clear out discrete factors since sum() cannot hanldle those
   HybridFactorGraph linearizedFactorGraph(
@@ -352,15 +357,42 @@ TEST(HybridFactorGraph, ToDecisionTreeFactor) {
 
   auto allAssignments = cartesianProduct(linearizedFactorGraph.discreteKeys());
 
-  // Regressions: test all 4 assignments.
-  EXPECT_DOUBLES_EQUAL(9.86076e-32, (*decisionTreeFactor)(allAssignments[0]),
-                       1e-9);
-  EXPECT_DOUBLES_EQUAL(9.86076e-32, (*decisionTreeFactor)(allAssignments[1]),
-                       1e-9);
-  EXPECT_DOUBLES_EQUAL(1.67633e-30, (*decisionTreeFactor)(allAssignments[2]),
-                       1e-9);
-  EXPECT_DOUBLES_EQUAL(1.57772e-30, (*decisionTreeFactor)(allAssignments[3]),
-                       1e-9);
+  // Get the error of the discrete assignment m1=0, m2=1.
+  double actual = (*decisionTreeFactor)(allAssignments[1]);
+
+  /********************************************/
+  // Create equivalent factor graph for m1=0, m2=1
+  GaussianFactorGraph graph;
+
+  // Create the linearization point.
+  Values linearizationPoint;
+  for (size_t k = 1; k <= K; k++) {
+    linearizationPoint.insert<double>(X(k), static_cast<double>(k));
+  }
+
+  // Add a prior on X(1).
+  auto prior = boost::make_shared<PriorFactor<double>>(
+      X(1), 0, Isotropic::Sigma(1, prior_sigma));
+  auto gaussian_prior = prior->linearize(linearizationPoint);
+  graph.push_back(gaussian_prior);
+
+  // Add "motion models".
+  auto noise_model = Isotropic::Sigma(1, between_sigma);
+  auto between_x1_x2 =
+      boost::make_shared<MotionModel>(X(1), X(2), 0.0, noise_model)
+          ->linearize(linearizationPoint);
+  auto between_x2_x3 =
+      boost::make_shared<MotionModel>(X(2), X(3), 1.0, noise_model)
+          ->linearize(linearizationPoint);
+
+  graph.push_back(between_x1_x2);
+  graph.push_back(between_x2_x3);
+
+  VectorValues values = graph.optimize();
+  double expected = graph.error(values);
+  /********************************************/
+
+  EXPECT_DOUBLES_EQUAL(expected, actual, 1e-12);
 }
 
 /* ****************************************************************************/
