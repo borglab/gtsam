@@ -163,7 +163,6 @@ struct Switching {
                          components[1]->linearize(linearizationPoint)};
       linearizedFactorGraph.emplace_dc<DCGaussianMixtureFactor>(
           keys, DiscreteKeys{modes[k]}, linearized);
-      std::cout << "linearizedFactorGraph size: " << linearizedFactorGraph.size() << std::endl << std::endl;
     }
 
     // Add "mode chain"
