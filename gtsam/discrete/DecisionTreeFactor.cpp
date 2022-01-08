@@ -66,7 +66,7 @@ namespace gtsam {
   void DecisionTreeFactor::print(const string& s,
       const KeyFormatter& formatter) const {
     cout << s;
-    ADT::print("Potentials:",formatter);
+    ADT::print("", formatter);
   }
 
   /* ************************************************************************* */

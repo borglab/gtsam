@@ -80,7 +80,7 @@ void DiscreteConditional::print(const string& s,
     }
   }
   cout << ")";
-  ADT::print("");
+  ADT::print("", formatter);
   cout << endl;
 }
 
