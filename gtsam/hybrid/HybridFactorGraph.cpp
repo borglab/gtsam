@@ -22,8 +22,6 @@ using namespace std;
 
 namespace gtsam {
 
-using GFG = GaussianFactorGraph;
-
 // Instantiate base classes
 // template class FactorGraph<Factor>;
 template class EliminateableFactorGraph<HybridFactorGraph>;
@@ -129,14 +127,13 @@ DecisionTreeFactor::shared_ptr HybridFactorGraph::toDecisionTreeFactor() const {
   Sum sum = this->sum();
 
   // Get the decision tree with each leaf as the error for that assignment
-  std::function<double(GaussianFactorGraph)> gfgError = [&](const GFG& graph) {
+  auto gfgError = [&](const GaussianFactorGraph& graph) {
     VectorValues values = graph.optimize();
     return graph.error(values);
   };
   DecisionTree<Key, double> gfgdt(sum, gfgError);
 
-  auto factor = boost::make_shared<DecisionTreeFactor>(discreteKeys(), gfgdt);
-  return factor;
+  return boost::make_shared<DecisionTreeFactor>(discreteKeys(), gfgdt);
 }
 
 ostream& operator<<(ostream& os,
@@ -159,7 +156,7 @@ pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
 
   KeyVector keys;
   KeyVector separatorKeys;  // Do with optional?
-  auto eliminate = [&](const GFG& graph) {
+  auto eliminate = [&](const GaussianFactorGraph& graph) {
     auto result = EliminatePreferCholesky(graph, ordering);
     if (keys.size() == 0) keys = result.first->keys();
     if (separatorKeys.size() == 0) separatorKeys = result.second->keys();
@@ -181,17 +178,9 @@ pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
   // If there are no more continuous parents, then we should create here a
   // DiscreteFactor, with the error for each discrete choice.
   if (separatorKeys.size() == 0) {
-    // Get the decision tree with each leaf as the error for that assignment
-    std::function<double(GaussianFactorGraph)> gfgError =
-        [&](const GFG& graph) {
-          VectorValues values = graph.optimize();
-          return graph.error(values);
-        };
-    DecisionTree<Key, double> gfgdt(sum, gfgError);
-
-    auto discreteFactor =
-        boost::make_shared<DecisionTreeFactor>(discreteKeys, gfgdt);
+    auto discreteFactor = factors.toDecisionTreeFactor();
     return {conditional, discreteFactor};
+
   } else {
     // Create a resulting DCGaussianMixture on the separator.
     auto second = [](const Pair& result) { return result.second; };
