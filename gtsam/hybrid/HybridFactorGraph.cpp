@@ -14,6 +14,7 @@
 #include <gtsam/hybrid/HybridEliminationTree.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
 #include <gtsam/inference/EliminateableFactorGraph-inst.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/HessianFactor.h>
 
 #include <boost/make_shared.hpp>
