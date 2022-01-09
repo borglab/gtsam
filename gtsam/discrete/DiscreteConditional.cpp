@@ -410,16 +410,19 @@ string DiscreteConditional::html(const KeyFormatter& keyFormatter,
   }
   auto frontalAssignments = this->frontalAssignments();
   for (const auto& a : frontalAssignments) {
+    ss << "<th>";
     for (auto&& it = beginFrontals(); it != endFrontals(); ++it) {
       size_t index = a.at(*it);
-      ss << "<th>" << Translate(names, *it, index) << "</th>";
+      ss << Translate(names, *it, index);
     }
+    ss << "</th>";
   }
   ss << "</tr>\n";
 
   // Finish header and start body.
   ss << "  </thead>\n  <tbody>\n";
 
+  // Output all rows, one per assignment:
   size_t count = 0, n = frontalAssignments.size();
   for (const auto& a : allAssignments()) {
     if (count == 0) {
