@@ -222,29 +222,13 @@ namespace gtsam {
   /* ************************************************************************ */
   string DecisionTreeFactor::html(const KeyFormatter& keyFormatter,
                                   const Names& names) const {
-    const string style =
-        "<style scoped=\'\'>\n"
-        "    .dataframe tbody tr th:only-of-type {\n"
-        "        vertical-align: middle;\n"
-        "    }\n"
-        "    .dataframe tbody tr th {\n"
-        "        vertical-align: top;\n"
-        "    }\n"
-        "    .dataframe thead th {\n"
-        "        text-align: right;\n"
-        "    }\n"
-        "</style>\n";
-
     stringstream ss;
 
     // Print out preamble.
-    ss << "<div>\n"
-       << style
-       << "<table border=\'1\' class=\'dataframe\'>\n"
-          "  <thead>\n";
+    ss << "<div>\n<table class=\'DecisionTreeFactor\'>\n  <thead>\n";
 
     // Print out header row.
-    ss << "    <tr style=\'text-align: right;\'>";
+    ss << "    <tr>";
     for (auto& key : keys()) {
       ss << "<th>" << keyFormatter(key) << "</th>";
     }

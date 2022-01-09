@@ -161,21 +161,9 @@ TEST(DecisionTreeFactor, htmlWithValueFormatter) {
   DecisionTreeFactor f(A & B, "1 2  3 4  5 6");
   string expected =
       "<div>\n"
-      "<style scoped=''>\n"
-      "    .dataframe tbody tr th:only-of-type {\n"
-      "        vertical-align: middle;\n"
-      "    }\n"
-      "    .dataframe tbody tr th {\n"
-      "        vertical-align: top;\n"
-      "    }\n"
-      "    .dataframe thead th {\n"
-      "        text-align: right;\n"
-      "    }\n"
-      "</style>\n"
-      "<table border='1' class='dataframe'>\n"
+      "<table class='DecisionTreeFactor'>\n"
       "  <thead>\n"
-      "    <tr style='text-align: "
-      "right;'><th>A</th><th>B</th><th>value</th></tr>\n"
+      "    <tr><th>A</th><th>B</th><th>value</th></tr>\n"
       "  </thead>\n"
       "  <tbody>\n"
       "    <tr><th>Zero</th><th>-</th><td>1</td></tr>\n"
@@ -191,11 +179,6 @@ TEST(DecisionTreeFactor, htmlWithValueFormatter) {
   DecisionTreeFactor::Names names{{12, {"Zero", "One", "Two"}},
                                   {5, {"-", "+"}}};
   string actual = f.html(keyFormatter, names);
-  cout << expected << endl;
-  cout << actual << endl;
-  ofstream ef("expected=html.txt"), af("actual-html.txt");
-  ef << expected << endl;
-  af << actual << endl;
   EXPECT(actual == expected);
 }
 
