@@ -348,18 +348,14 @@ std::string DiscreteConditional::markdown(const KeyFormatter& keyFormatter,
     return ss.str();
   }
 
-  // Print out header and construct argument for `cartesianProduct`.
+  // Print out header.
   ss << "|";
   for (Key parent : parents()) {
     ss << "*" << keyFormatter(parent) << "*|";
   }
 
-  size_t n = 1;
-  for (Key key : frontals()) {
-    size_t k = cardinalities_.at(key);
-    n *= k;
-  }
-  for (const auto& a : frontalAssignments()) {
+  auto frontalAssignments = this->frontalAssignments();
+  for (const auto& a : frontalAssignments) {
     for (auto&& it = beginFrontals(); it != endFrontals(); ++it) {
       size_t index = a.at(*it);
       ss << Translate(names, *it, index);
@@ -370,6 +366,7 @@ std::string DiscreteConditional::markdown(const KeyFormatter& keyFormatter,
 
   // Print out separator with alignment hints.
   ss << "|";
+  size_t n = frontalAssignments.size();
   for (size_t j = 0; j < nrParents() + n; j++) ss << ":-:|";
   ss << "\n";
 
@@ -408,28 +405,37 @@ string DiscreteConditional::html(const KeyFormatter& keyFormatter,
 
   // Print out header row.
   ss << "    <tr>";
-  for (auto& key : keys()) {
-    ss << "<th>" << keyFormatter(key) << "</th>";
+  for (Key parent : parents()) {
+    ss << "<th><i>" << keyFormatter(parent) << "</i></th>";
   }
-  ss << "<th>value</th></tr>\n";
+  auto frontalAssignments = this->frontalAssignments();
+  for (const auto& a : frontalAssignments) {
+    for (auto&& it = beginFrontals(); it != endFrontals(); ++it) {
+      size_t index = a.at(*it);
+      ss << "<th>" << Translate(names, *it, index) << "</th>";
+    }
+  }
+  ss << "</tr>\n";
 
   // Finish header and start body.
   ss << "  </thead>\n  <tbody>\n";
 
-  // Print out all rows.
-  auto rows = enumerate();
-  for (const auto& kv : rows) {
-    ss << "    <tr>";
-    auto assignment = kv.first;
-    for (auto& key : keys()) {
-      size_t index = assignment.at(key);
-      ss << "<th>" << Translate(names, key, index) << "</th>";
+  size_t count = 0, n = frontalAssignments.size();
+  for (const auto& a : allAssignments()) {
+    if (count == 0) {
+      ss << "    <tr>";
+      for (auto&& it = beginParents(); it != endParents(); ++it) {
+        size_t index = a.at(*it);
+        ss << "<th>" << Translate(names, *it, index) << "</th>";
+      }
     }
-    ss << "<td>" << kv.second << "</td>";  // value
-    ss << "</tr>\n";
+    ss << "<td>" << operator()(a) << "</td>";  // value
+    count = (count + 1) % n;
+    if (count == 0) ss << "</tr>\n";
   }
-  ss << "  </tbody>\n</table>\n</div>";
 
+  // Finish up
+  ss << "  </tbody>\n</table>\n</div>";
   return ss.str();
 }
 
