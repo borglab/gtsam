@@ -22,6 +22,7 @@
 #include <gtsam/base/FastSet.h>
 
 #include <boost/make_shared.hpp>
+#include <utility>
 
 using namespace std;
 
@@ -150,9 +151,9 @@ namespace gtsam {
     for (auto& key : keys()) {
       pairs.emplace_back(key, cardinalities_.at(key));
     }
-    // Reverse to make cartesianProduct output a more natural ordering.
+    // Reverse to make cartesian product output a more natural ordering.
     std::vector<std::pair<Key, size_t>> rpairs(pairs.rbegin(), pairs.rend());
-    const auto assignments = cartesianProduct(rpairs);
+    const auto assignments = DiscreteValues::CartesianProduct(rpairs);
 
     // Construct unordered_map with values
     std::vector<std::pair<DiscreteValues, double>> result;
@@ -212,7 +213,7 @@ namespace gtsam {
       auto assignment = kv.first;
       for (auto& key : keys()) {
         size_t index = assignment.at(key);
-        ss << Translate(names, key, index) << "|";
+        ss << DiscreteValues::Translate(names, key, index) << "|";
       }
       ss << kv.second << "|\n";
     }
@@ -244,7 +245,7 @@ namespace gtsam {
       auto assignment = kv.first;
       for (auto& key : keys()) {
         size_t index = assignment.at(key);
-        ss << "<th>" << Translate(names, key, index) << "</th>";
+        ss << "<th>" << DiscreteValues::Translate(names, key, index) << "</th>";
       }
       ss << "<td>" << kv.second << "</td>";  // value
       ss << "</tr>\n";

@@ -180,26 +180,21 @@ DecisionTreeFactor::shared_ptr DiscreteConditional::likelihood(
   return likelihood(values);
 }
 
-/* ******************************************************************************** */
+/* ************************************************************************** */
 void DiscreteConditional::solveInPlace(DiscreteValues* values) const {
-  // TODO: Abhijit asks: is this really the fastest way? He thinks it is.
-  ADT pFS = Choose(*this, *values); // P(F|S=parentsValues)
+  // TODO(Abhijit): is this really the fastest way? He thinks it is.
+  ADT pFS = Choose(*this, *values);  // P(F|S=parentsValues)
 
   // Initialize
   DiscreteValues mpe;
   double maxP = 0;
 
-  DiscreteKeys keys;
-  for(Key idx: frontals()) {
-    DiscreteKey dk(idx, cardinality(idx));
-    keys & dk;
-  }
   // Get all Possible Configurations
-  const auto allPosbValues = cartesianProduct(keys);
+  const auto allPosbValues = frontalAssignments();
 
   // Find the MPE
-  for(const auto& frontalVals: allPosbValues) {
-    double pValueS = pFS(frontalVals); // P(F=value|S=parentsValues)
+  for (const auto& frontalVals : allPosbValues) {
+    double pValueS = pFS(frontalVals);  // P(F=value|S=parentsValues)
     // Update MPE solution if better
     if (pValueS > maxP) {
       maxP = pValueS;
@@ -207,8 +202,8 @@ void DiscreteConditional::solveInPlace(DiscreteValues* values) const {
     }
   }
 
-  //set values (inPlace) to mpe
-  for(Key j: frontals()) {
+  // set values (inPlace) to mpe
+  for (Key j : frontals()) {
     (*values)[j] = mpe[j];
   }
 }
@@ -295,20 +290,20 @@ size_t DiscreteConditional::sample() const {
 }
 
 /* ************************************************************************* */
-vector<Assignment<Key>> DiscreteConditional::frontalAssignments() const {
+vector<DiscreteValues> DiscreteConditional::frontalAssignments() const {
   vector<pair<Key, size_t>> pairs;
   for (Key key : frontals()) pairs.emplace_back(key, cardinalities_.at(key));
   vector<pair<Key, size_t>> rpairs(pairs.rbegin(), pairs.rend());
-  return cartesianProduct(rpairs);
+  return DiscreteValues::CartesianProduct(rpairs);
 }
 
 /* ************************************************************************* */
-vector<Assignment<Key>> DiscreteConditional::allAssignments() const {
+vector<DiscreteValues> DiscreteConditional::allAssignments() const {
   vector<pair<Key, size_t>> pairs;
   for (Key key : parents()) pairs.emplace_back(key, cardinalities_.at(key));
   for (Key key : frontals()) pairs.emplace_back(key, cardinalities_.at(key));
   vector<pair<Key, size_t>> rpairs(pairs.rbegin(), pairs.rend());
-  return cartesianProduct(rpairs);
+  return DiscreteValues::CartesianProduct(rpairs);
 }
 
 /* ************************************************************************* */
@@ -358,7 +353,7 @@ std::string DiscreteConditional::markdown(const KeyFormatter& keyFormatter,
   for (const auto& a : frontalAssignments) {
     for (auto&& it = beginFrontals(); it != endFrontals(); ++it) {
       size_t index = a.at(*it);
-      ss << Translate(names, *it, index);
+      ss << DiscreteValues::Translate(names, *it, index);
     }
     ss << "|";
   }
@@ -377,7 +372,7 @@ std::string DiscreteConditional::markdown(const KeyFormatter& keyFormatter,
       ss << "|";
       for (auto&& it = beginParents(); it != endParents(); ++it) {
         size_t index = a.at(*it);
-        ss << Translate(names, *it, index) << "|";
+        ss << DiscreteValues::Translate(names, *it, index) << "|";
       }
     }
     ss << operator()(a) << "|";
@@ -413,7 +408,7 @@ string DiscreteConditional::html(const KeyFormatter& keyFormatter,
     ss << "<th>";
     for (auto&& it = beginFrontals(); it != endFrontals(); ++it) {
       size_t index = a.at(*it);
-      ss << Translate(names, *it, index);
+      ss << DiscreteValues::Translate(names, *it, index);
     }
     ss << "</th>";
   }
@@ -429,7 +424,7 @@ string DiscreteConditional::html(const KeyFormatter& keyFormatter,
       ss << "    <tr>";
       for (auto&& it = beginParents(); it != endParents(); ++it) {
         size_t index = a.at(*it);
-        ss << "<th>" << Translate(names, *it, index) << "</th>";
+        ss << "<th>" << DiscreteValues::Translate(names, *it, index) << "</th>";
       }
     }
     ss << "<td>" << operator()(a) << "</td>";  // value
