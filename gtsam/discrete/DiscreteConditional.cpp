@@ -396,7 +396,7 @@ string DiscreteConditional::html(const KeyFormatter& keyFormatter,
   }
 
   // Print out preamble.
-  ss << "<table class=\'DiscreteConditional\'>\n  <thead>\n";
+  ss << "<table class='DiscreteConditional'>\n  <thead>\n";
 
   // Print out header row.
   ss << "    <tr>";
