@@ -155,6 +155,51 @@ TEST(DecisionTreeFactor, markdownWithValueFormatter) {
 }
 
 /* ************************************************************************* */
+// Check html representation with a value formatter.
+TEST(DecisionTreeFactor, htmlWithValueFormatter) {
+  DiscreteKey A(12, 3), B(5, 2);
+  DecisionTreeFactor f(A & B, "1 2  3 4  5 6");
+  string expected =
+      "<div>\n"
+      "<style scoped=''>\n"
+      "    .dataframe tbody tr th:only-of-type {\n"
+      "        vertical-align: middle;\n"
+      "    }\n"
+      "    .dataframe tbody tr th {\n"
+      "        vertical-align: top;\n"
+      "    }\n"
+      "    .dataframe thead th {\n"
+      "        text-align: right;\n"
+      "    }\n"
+      "</style>\n"
+      "<table border='1' class='dataframe'>\n"
+      "  <thead>\n"
+      "    <tr style='text-align: "
+      "right;'><th>A</th><th>B</th><th>value</th></tr>\n"
+      "  </thead>\n"
+      "  <tbody>\n"
+      "    <tr><th>Zero</th><th>-</th><td>1</td></tr>\n"
+      "    <tr><th>Zero</th><th>+</th><td>2</td></tr>\n"
+      "    <tr><th>One</th><th>-</th><td>3</td></tr>\n"
+      "    <tr><th>One</th><th>+</th><td>4</td></tr>\n"
+      "    <tr><th>Two</th><th>-</th><td>5</td></tr>\n"
+      "    <tr><th>Two</th><th>+</th><td>6</td></tr>\n"
+      "  </tbody>\n"
+      "</table>\n"
+      "</div>";
+  auto keyFormatter = [](Key key) { return key == 12 ? "A" : "B"; };
+  DecisionTreeFactor::Names names{{12, {"Zero", "One", "Two"}},
+                                  {5, {"-", "+"}}};
+  string actual = f.html(keyFormatter, names);
+  cout << expected << endl;
+  cout << actual << endl;
+  ofstream ef("expected=html.txt"), af("actual-html.txt");
+  ef << expected << endl;
+  af << actual << endl;
+  EXPECT(actual == expected);
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
