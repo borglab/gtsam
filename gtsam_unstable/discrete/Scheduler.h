@@ -8,6 +8,7 @@
 #pragma once
 
 #include <gtsam_unstable/discrete/CSP.h>
+#include <gtsam/discrete/DiscreteBayesNet.h>
 
 namespace gtsam {
 
