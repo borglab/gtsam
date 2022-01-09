@@ -226,7 +226,7 @@ namespace gtsam {
     stringstream ss;
 
     // Print out preamble.
-    ss << "<div>\n<table class=\'DecisionTreeFactor\'>\n  <thead>\n";
+    ss << "<div>\n<table class='DecisionTreeFactor'>\n  <thead>\n";
 
     // Print out header row.
     ss << "    <tr>";
