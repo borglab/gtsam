@@ -12,13 +12,8 @@
 
 #pragma once
 
-#include <gtsam/discrete/DiscreteFactor.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
-#include <gtsam/hybrid/DCFactor.h>
 #include <gtsam/hybrid/DCFactorGraph.h>
-#include <gtsam/hybrid/HybridBayesNet.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 #include <string>
@@ -199,7 +194,8 @@ class HybridFactorGraph : protected FactorGraph<Factor>,
 
   /**
    * @brief Add a single factor shared pointer to the hybrid factor graph.
-   * Dynamically handles the factor type and assigns it to the correct underlying container.
+   * Dynamically handles the factor type and assigns it to the correct
+   * underlying container.
    *
    * @tparam FACTOR The factor type template
    * @param sharedFactor The factor to add to this factor graph.
@@ -344,6 +340,11 @@ class HybridFactorGraph : protected FactorGraph<Factor>,
    * different structure, and creating a different decision tree for Gaussians.
    */
   DCGaussianMixtureFactor::Sum sum() const;
+
+  /// Convert the DecisionTree of (Key, GaussianFactorGraph) to (Key, Graph
+  /// Error).
+  DecisionTreeFactor::shared_ptr toDecisionTreeFactor() const;
+
   /// @}
 };
 
