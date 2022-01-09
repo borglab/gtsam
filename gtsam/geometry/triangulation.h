@@ -350,27 +350,23 @@ struct GTSAM_EXPORT TriangulationParameters {
 
   SharedNoiseModel noiseModel; ///< used in the nonlinear triangulation
 
-  bool invDepthLinearTriangulation; ///< if set to true, we use an inverse depth alternative to DL
-
   /**
    * Constructor
    * @param rankTol tolerance used to check if point triangulation is degenerate
    * @param enableEPI if true refine triangulation with embedded LM iterations
    * @param landmarkDistanceThreshold flag as degenerate if point further than this
    * @param dynamicOutlierRejectionThreshold or if average error larger than this
-   * @param invDepthLinearTriangulation use inverse depth approach to linear triangulation
+   * @param noiseModel noise model to use during nonlinear triangulation
    *
    */
   TriangulationParameters(const double _rankTolerance = 1.0,
       const bool _enableEPI = false, double _landmarkDistanceThreshold = -1,
       double _dynamicOutlierRejectionThreshold = -1,
-      const SharedNoiseModel& _noiseModel = nullptr,
-      const bool _invDepthLinearTriangulation = false) :
+      const SharedNoiseModel& _noiseModel = nullptr) :
       rankTolerance(_rankTolerance), enableEPI(_enableEPI), //
       landmarkDistanceThreshold(_landmarkDistanceThreshold), //
       dynamicOutlierRejectionThreshold(_dynamicOutlierRejectionThreshold),
-      noiseModel(_noiseModel),
-      invDepthLinearTriangulation(_invDepthLinearTriangulation){
+      noiseModel(_noiseModel){
   }
 
   // stream to output
@@ -383,8 +379,6 @@ struct GTSAM_EXPORT TriangulationParameters {
     os << "dynamicOutlierRejectionThreshold = "
         << p.dynamicOutlierRejectionThreshold << std::endl;
     os << "noise model" << std::endl;
-    os << "invDepthLinearTriangulation = " << p.invDepthLinearTriangulation
-       << std::endl;
     return os;
   }
 
@@ -398,7 +392,6 @@ private:
     ar & BOOST_SERIALIZATION_NVP(enableEPI);
     ar & BOOST_SERIALIZATION_NVP(landmarkDistanceThreshold);
     ar & BOOST_SERIALIZATION_NVP(dynamicOutlierRejectionThreshold);
-    ar & BOOST_SERIALIZATION_NVP(invDepthLinearTriangulation);
   }
 };
 
