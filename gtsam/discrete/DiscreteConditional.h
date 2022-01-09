@@ -25,6 +25,7 @@
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 #include <string>
+#include <vector>
 
 namespace gtsam {
 
@@ -182,10 +183,10 @@ class GTSAM_EXPORT DiscreteConditional
   void sampleInPlace(DiscreteValues* parentsValues) const;
 
   /// Return all assignments for frontal variables.
-  std::vector<Assignment<Key>> frontalAssignments() const;
+  std::vector<DiscreteValues> frontalAssignments() const;
 
   /// Return all assignments for frontal *and* parent variables.
-  std::vector<Assignment<Key>> allAssignments() const;
+  std::vector<DiscreteValues> allAssignments() const;
 
   /// @}
   /// @name Wrapper support
