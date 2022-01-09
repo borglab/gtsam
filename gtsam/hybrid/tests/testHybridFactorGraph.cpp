@@ -364,26 +364,20 @@ TEST(HybridFactorGraph, ToDecisionTreeFactor) {
   // Create equivalent factor graph for m1=0, m2=1
   GaussianFactorGraph graph;
 
-  // Create the linearization point.
-  Values linearizationPoint;
-  for (size_t k = 1; k <= K; k++) {
-    linearizationPoint.insert<double>(X(k), static_cast<double>(k));
-  }
-
   // Add a prior on X(1).
   auto prior = boost::make_shared<PriorFactor<double>>(
       X(1), 0, Isotropic::Sigma(1, prior_sigma));
-  auto gaussian_prior = prior->linearize(linearizationPoint);
+  auto gaussian_prior = prior->linearize(self.linearizationPoint);
   graph.push_back(gaussian_prior);
 
   // Add "motion models".
   auto noise_model = Isotropic::Sigma(1, between_sigma);
   auto between_x1_x2 =
       boost::make_shared<MotionModel>(X(1), X(2), 0.0, noise_model)
-          ->linearize(linearizationPoint);
+          ->linearize(self.linearizationPoint);
   auto between_x2_x3 =
       boost::make_shared<MotionModel>(X(2), X(3), 1.0, noise_model)
-          ->linearize(linearizationPoint);
+          ->linearize(self.linearizationPoint);
 
   graph.push_back(between_x1_x2);
   graph.push_back(between_x2_x3);
