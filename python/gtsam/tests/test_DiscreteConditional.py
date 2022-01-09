@@ -49,7 +49,7 @@ class TestDiscreteConditional(GtsamTestCase):
         conditional = DiscreteConditional(A, parents,
                                           "0/1 1/3  1/1 3/1  0/1 1/0")
         expected = \
-            " *P(A|B,C)*:\n\n" \
+            " *P(A|B,C):*\n\n" \
             "|*B*|*C*|0|1|\n" \
             "|:-:|:-:|:-:|:-:|\n" \
             "|0|0|0|1|\n" \
