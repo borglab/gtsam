@@ -171,7 +171,7 @@ struct Switching {
   }
 
   // Create motion models for a given time step
-  std::vector<MotionModel::shared_ptr> motionModels(size_t k,
+  static std::vector<MotionModel::shared_ptr> motionModels(size_t k,
                                                     double sigma = 1.0) {
     auto noise_model = Isotropic::Sigma(1, sigma);
     auto still =
@@ -304,10 +304,10 @@ TEST(DCGaussianElimination, Eliminate_x2) {
   std::pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> result =
       EliminateHybrid(factors, ordering);
   CHECK(result.first);
-  GTSAM_PRINT(*result.first);
+//  GTSAM_PRINT(*result.first);
   EXPECT_LONGS_EQUAL(1, result.first->nrFrontals());
   CHECK(result.second);
-  GTSAM_PRINT(*result.second);
+//  GTSAM_PRINT(*result.second);
   // Note: separator keys should include m1, m2.
   EXPECT_LONGS_EQUAL(4, result.second->size());
 }
@@ -315,26 +315,52 @@ TEST(DCGaussianElimination, Eliminate_x2) {
 /* ****************************************************************************/
 // Test elimination function by eliminating x1 in *-x1-*-m1 graph.
 TEST(DCGaussianElimination, Eliminate_fully) {
-  // // TODO: create a HFG with just one DC factor.
-  // HybridFactorGraph factors;
+  // TODO: create a HFG with just one DC factor.
+  HybridFactorGraph hfg;
+  auto prior = boost::make_shared<PriorFactor<double>>(
+    X(1), 0, Isotropic::Sigma(1, 0.1));
+  hfg.push_nonlinear(prior);
 
-  // // Check that sum works:
-  // auto sum = factors.sum();
-  // Assignment<Key> mode;
-  // mode[M(1)] = 1;
-  // auto actual = sum(mode);               // Selects one of 2 modes.
-  // EXPECT_LONGS_EQUAL(1, actual.size());  // Prior and motion model.
+  using MotionMixture = DCMixtureFactor<MotionModel>;
+  auto keys = {X(1), X(2)};
+  auto components = Switching::motionModels(1);
+  hfg.emplace_dc<MotionMixture>(
+      keys, DiscreteKeys{DiscreteKey(M(1), 2)}, components);
 
-  // // Eliminate x1
-  // Ordering ordering;
-  // ordering += X(1);
+  Values linearizationPoint;
 
-  // auto result = EliminateHybrid(factors, ordering);
-  // CHECK(result.first);
-  // EXPECT_LONGS_EQUAL(1, result.first->nrFrontals());
-  // CHECK(result.second);
-  // // TODO test that it is a a DiscreteFactor !!!!!!
-  // EXPECT_LONGS_EQUAL(1, result.second->size());
+  for (size_t k = 1; k <= 2; k++) {
+    linearizationPoint.insert<double>(X(k), static_cast<double>(k));
+  }
+
+  auto factors = hfg.linearize(linearizationPoint);
+  GTSAM_PRINT(factors);
+  // Check that sum works:
+  auto sum = factors.sum();
+  Assignment<Key> mode;
+  mode[M(1)] = 1;
+  auto actual = sum(mode);               // Selects one of 2 modes.
+  GTSAM_PRINT(actual);
+  EXPECT_LONGS_EQUAL(2, actual.size());  // Prior and motion model.
+
+  // Eliminate x1
+  Ordering ordering;
+  ordering += X(1);
+  ordering += X(2);
+
+  auto result = EliminateHybrid(factors, ordering);
+  CHECK(result.first);
+  GTSAM_PRINT(*result.first);
+  GTSAM_PRINT(*result.second);
+
+  EXPECT_LONGS_EQUAL(1, result.first->nrFrontals());
+  CHECK(result.second);
+
+  auto discreteFactor = dynamic_pointer_cast<DecisionTreeFactor>(result.second);
+  CHECK(discreteFactor);
+  EXPECT_LONGS_EQUAL(1, discreteFactor->discreteKeys().size());
+  std::cerr << Symbol(discreteFactor->discreteKeys()[0].first) << "\n";
+  EXPECT(discreteFactor->root_->isLeaf() == false);
 }
 
 /* ****************************************************************************/
@@ -402,11 +428,11 @@ TEST(HybridFactorGraph, Elimination) {
   auto result = self.linearizedFactorGraph.eliminatePartialSequential(ordering);
 
   CHECK(result.first);
-  GTSAM_PRINT(*result.first);  // HybridBayesNet
+//  GTSAM_PRINT(*result.first);  // HybridBayesNet
   EXPECT_LONGS_EQUAL(3, result.first->size());
 
   CHECK(result.second);
-  GTSAM_PRINT(*result.second);  // HybridFactorGraph
+//  GTSAM_PRINT(*result.second);  // HybridFactorGraph
   EXPECT_LONGS_EQUAL(3, result.second->size());
 }
 

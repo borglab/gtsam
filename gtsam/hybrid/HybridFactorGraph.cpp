@@ -108,11 +108,6 @@ static Sum& operator+=(Sum& sum, const GaussianFactor::shared_ptr& factor) {
 }
 
 Sum HybridFactorGraph::sum() const {
-  if (nrNonlinearFactors()) {
-    throw runtime_error(
-        "HybridFactorGraph::sum cannot handle NonlinearFactors.");
-  }
-
   if (nrDiscreteFactors()) {
     throw runtime_error(
         "HybridFactorGraph::sum cannot handle DiscreteFactors.");
