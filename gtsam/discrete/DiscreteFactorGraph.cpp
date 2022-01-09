@@ -54,9 +54,8 @@ namespace gtsam {
     DiscreteKeys result;
     for (auto&& factor : *this) {
       if (auto p = boost::dynamic_pointer_cast<DecisionTreeFactor>(factor)) {
-        for (auto&& key : factor->keys()) {
-          result.emplace_back(key, p->cardinality(key));
-        }
+        DiscreteKeys factor_keys = p->discreteKeys();
+        result.insert(result.end(), factor_keys.begin(), factor_keys.end());
       }
     }
 

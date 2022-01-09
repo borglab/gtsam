@@ -163,6 +163,15 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  DiscreteKeys DecisionTreeFactor::discreteKeys() const {
+    DiscreteKeys result;
+    for (auto&& key : keys()) {
+        result.emplace_back(key, cardinality(key));
+      }
+    return result;
+  }
+
+  /* ************************************************************************* */
   static std::string valueFormatter(const double& v) {
     return (boost::format("%4.2g") % v).str();
   }
