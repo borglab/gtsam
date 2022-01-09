@@ -85,7 +85,7 @@ DiscreteKeys HybridFactorGraph::discreteKeys() const {
   result = discreteGraph_.discreteKeys();
   // Discrete keys from the DC factor graph.
   auto dcKeys = dcGraph_.discreteKeys();
-  result.insert(result.begin(), dcKeys.begin(), dcKeys.end());
+  result.insert(result.end(), dcKeys.begin(), dcKeys.end());
   return result;
 }
 
