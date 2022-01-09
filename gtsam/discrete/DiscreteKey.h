@@ -33,9 +33,6 @@ namespace gtsam {
    */
   using DiscreteKey = std::pair<Key,size_t>;
 
-  // TODO(Frank): make this the type?
-  // using DiscreteKeys = std::map<Key, size_t>;
-
   /// DiscreteKeys is a set of keys that can be assembled using the & operator
   struct GTSAM_EXPORT DiscreteKeys: public std::vector<DiscreteKey> {
 
@@ -74,11 +71,6 @@ namespace gtsam {
       return *this;
     }
 
-    /// Helper method to append additional discrete keys.
-    DiscreteKeys& append(const DiscreteKeys& keys) {
-      this->insert(this->begin(), keys.begin(), keys.end());
-      return *this;
-    }
   }; // DiscreteKeys
 
   /// Create a list from two keys
