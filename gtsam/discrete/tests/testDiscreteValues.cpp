@@ -57,8 +57,8 @@ TEST(DiscreteValues, htmlWithValueFormatter) {
       "    <tr><th>Variable</th><th>value</th></tr>\n"
       "  </thead>\n"
       "  <tbody>\n"
-      "    <tr><th>B</th><td>'-</td></tr>\n"
-      "    <tr><th>A</th><td>'One</td></tr>\n"
+      "    <tr><th>B</th><td>-</td></tr>\n"
+      "    <tr><th>A</th><td>One</td></tr>\n"
       "  </tbody>\n"
       "</table>\n"
       "</div>";

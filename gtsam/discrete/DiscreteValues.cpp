@@ -65,7 +65,7 @@ string DiscreteValues::html(const KeyFormatter& keyFormatter,
   stringstream ss;
 
   // Print out preamble.
-  ss << "<div>\n<table class=\'DiscreteValues\'>\n  <thead>\n";
+  ss << "<div>\n<table class='DiscreteValues'>\n  <thead>\n";
 
   // Print out header row.
   ss << "    <tr><th>Variable</th><th>value</th></tr>\n";
@@ -76,7 +76,7 @@ string DiscreteValues::html(const KeyFormatter& keyFormatter,
   // Print out all rows.
   for (const auto& kv : *this) {
     ss << "    <tr>";
-    ss << "<th>" << keyFormatter(kv.first) << "</th><td>\'"
+    ss << "<th>" << keyFormatter(kv.first) << "</th><td>"
        << Translate(names, kv.first, kv.second) << "</td>";
     ss << "</tr>\n";
   }
