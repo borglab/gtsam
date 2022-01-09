@@ -50,6 +50,20 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  DiscreteKeys DiscreteFactorGraph::discreteKeys() const {
+    DiscreteKeys result;
+    for (auto&& factor : *this) {
+      if (auto p = boost::dynamic_pointer_cast<DecisionTreeFactor>(factor)) {
+        for (auto&& key : factor->keys()) {
+          result.emplace_back(key, p->cardinality(key));
+        }
+      }
+    }
+
+    return result;
+  }
+
+  /* ************************************************************************* */
   DecisionTreeFactor DiscreteFactorGraph::product() const {
     DecisionTreeFactor result;
     for(const sharedFactor& factor: *this)

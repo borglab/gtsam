@@ -82,13 +82,7 @@ void HybridFactorGraph::clear() {
 DiscreteKeys HybridFactorGraph::discreteKeys() const {
   DiscreteKeys result;
   // Discrete keys from the discrete graph.
-  for (auto&& factor : discreteGraph_) {
-    if (auto p = boost::dynamic_pointer_cast<DecisionTreeFactor>(factor)) {
-      for (auto&& key : factor->keys()) {
-        result.emplace_back(key, p->cardinality(key));
-      }
-    }
-  }
+  result = discreteGraph_.discreteKeys();
   // Discrete keys from the DC factor graph.
   result.append(dcGraph_.discreteKeys());
   return result;
