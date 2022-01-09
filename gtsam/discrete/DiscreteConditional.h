@@ -21,9 +21,9 @@
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/Signature.h>
 #include <gtsam/inference/Conditional.h>
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
 
+#include <boost/make_shared.hpp>
+#include <boost/shared_ptr.hpp>
 #include <string>
 
 namespace gtsam {
@@ -32,24 +32,24 @@ namespace gtsam {
  * Discrete Conditional Density
  * Derives from DecisionTreeFactor
  */
-class GTSAM_EXPORT DiscreteConditional: public DecisionTreeFactor,
-    public Conditional<DecisionTreeFactor, DiscreteConditional> {
-
-public:
+class GTSAM_EXPORT DiscreteConditional
+    : public DecisionTreeFactor,
+      public Conditional<DecisionTreeFactor, DiscreteConditional> {
+ public:
   // typedefs needed to play nice with gtsam
-  typedef DiscreteConditional This; ///< Typedef to this class
-  typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
-  typedef DecisionTreeFactor BaseFactor; ///< Typedef to our factor base class
-  typedef Conditional<BaseFactor, This> BaseConditional; ///< Typedef to our conditional base class
+  typedef DiscreteConditional This;            ///< Typedef to this class
+  typedef boost::shared_ptr<This> shared_ptr;  ///< shared_ptr to this class
+  typedef DecisionTreeFactor BaseFactor;  ///< Typedef to our factor base class
+  typedef Conditional<BaseFactor, This>
+      BaseConditional;  ///< Typedef to our conditional base class
 
-  using Values = DiscreteValues; ///< backwards compatibility
+  using Values = DiscreteValues;  ///< backwards compatibility
 
   /// @name Standard Constructors
   /// @{
 
   /** default constructor needed for serialization */
-  DiscreteConditional() {
-  }
+  DiscreteConditional() {}
 
   /** constructor from factor */
   DiscreteConditional(size_t nFrontals, const DecisionTreeFactor& f);
@@ -87,29 +87,33 @@ public:
 
   /** construct P(X|Y)=P(X,Y)/P(Y) from P(X,Y) and P(Y) */
   DiscreteConditional(const DecisionTreeFactor& joint,
-      const DecisionTreeFactor& marginal);
+                      const DecisionTreeFactor& marginal);
 
   /** construct P(X|Y)=P(X,Y)/P(Y) from P(X,Y) and P(Y) */
   DiscreteConditional(const DecisionTreeFactor& joint,
-      const DecisionTreeFactor& marginal, const Ordering& orderedKeys);
+                      const DecisionTreeFactor& marginal,
+                      const Ordering& orderedKeys);
 
   /**
    * Combine several conditional into a single one.
-   * The conditionals must be given in increasing order, meaning that the parents
-   * of any conditional may not include a conditional coming before it.
-   * @param firstConditional Iterator to the first conditional to combine, must dereference to a shared_ptr<DiscreteConditional>.
-   * @param lastConditional Iterator to after the last conditional to combine, must dereference to a shared_ptr<DiscreteConditional>.
+   * The conditionals must be given in increasing order, meaning that the
+   * parents of any conditional may not include a conditional coming before it.
+   * @param firstConditional Iterator to the first conditional to combine, must
+   * dereference to a shared_ptr<DiscreteConditional>.
+   * @param lastConditional Iterator to after the last conditional to combine,
+   * must dereference to a shared_ptr<DiscreteConditional>.
    * */
-  template<typename ITERATOR>
+  template <typename ITERATOR>
   static shared_ptr Combine(ITERATOR firstConditional,
-      ITERATOR lastConditional);
+                            ITERATOR lastConditional);
 
   /// @}
   /// @name Testable
   /// @{
 
   /// GTSAM-style print
-  void print(const std::string& s = "Discrete Conditional: ",
+  void print(
+      const std::string& s = "Discrete Conditional: ",
       const KeyFormatter& formatter = DefaultKeyFormatter) const override;
 
   /// GTSAM-style equals
@@ -161,7 +165,6 @@ public:
    */
   size_t sample(const DiscreteValues& parentsValues) const;
 
-
   /// Single parent version.
   size_t sample(size_t parent_value) const;
 
@@ -178,6 +181,12 @@ public:
   /// sample in place, stores result in partial solution
   void sampleInPlace(DiscreteValues* parentsValues) const;
 
+  /// Return all assignments for frontal variables.
+  std::vector<Assignment<Key>> frontalAssignments() const;
+
+  /// Return all assignments for frontal *and* parent variables.
+  std::vector<Assignment<Key>> allAssignments() const;
+
   /// @}
   /// @name Wrapper support
   /// @{
@@ -186,15 +195,20 @@ public:
   std::string markdown(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
                        const Names& names = {}) const override;
 
+  /// Render as html table.
+  std::string html(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                   const Names& names = {}) const override;
+
   /// @}
 };
 // DiscreteConditional
 
 // traits
-template<> struct traits<DiscreteConditional> : public Testable<DiscreteConditional> {};
+template <>
+struct traits<DiscreteConditional> : public Testable<DiscreteConditional> {};
 
 /* ************************************************************************* */
-template<typename ITERATOR>
+template <typename ITERATOR>
 DiscreteConditional::shared_ptr DiscreteConditional::Combine(
     ITERATOR firstConditional, ITERATOR lastConditional) {
   // TODO:  check for being a clique
@@ -203,7 +217,7 @@ DiscreteConditional::shared_ptr DiscreteConditional::Combine(
   size_t nrFrontals = 0;
   DecisionTreeFactor product;
   for (ITERATOR it = firstConditional; it != lastConditional;
-      ++it, ++nrFrontals) {
+       ++it, ++nrFrontals) {
     DiscreteConditional::shared_ptr c = *it;
     DecisionTreeFactor::shared_ptr factor = c->toFactor();
     product = (*factor) * product;
@@ -212,5 +226,4 @@ DiscreteConditional::shared_ptr DiscreteConditional::Combine(
   return boost::make_shared<DiscreteConditional>(nrFrontals, product);
 }
 
-} // gtsam
-
+}  // namespace gtsam
