@@ -66,7 +66,7 @@ TEST(DCGaussianMixtureFactor, Sum) {
   DCGaussianMixtureFactor mixtureFactorA({X(1), X(2)}, {m1}, factorsA);
   DCGaussianMixtureFactor mixtureFactorB({X(1), X(3)}, {m2}, factorsB);
 
-  // Check that number of keys is 2
+  // Check that number of keys is 3
   EXPECT_LONGS_EQUAL(3, mixtureFactorA.keys().size());
 
   // Check that number of discrete keys is 1 // TODO(Frank): should not exist?
