@@ -54,6 +54,10 @@ virtual class DecisionTreeFactor : gtsam::DiscreteFactor {
                       gtsam::DefaultKeyFormatter) const;
   string markdown(const gtsam::KeyFormatter& keyFormatter,
                   std::map<gtsam::Key, std::vector<std::string>> names) const;
+  string html(const gtsam::KeyFormatter& keyFormatter =
+                  gtsam::DefaultKeyFormatter) const;
+  string html(const gtsam::KeyFormatter& keyFormatter,
+              std::map<gtsam::Key, std::vector<std::string>> names) const;
 };
 
 #include <gtsam/discrete/DiscreteConditional.h>
@@ -93,6 +97,10 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
                       gtsam::DefaultKeyFormatter) const;
   string markdown(const gtsam::KeyFormatter& keyFormatter,
                   std::map<gtsam::Key, std::vector<std::string>> names) const;
+  string html(const gtsam::KeyFormatter& keyFormatter =
+                  gtsam::DefaultKeyFormatter) const;
+  string html(const gtsam::KeyFormatter& keyFormatter,
+              std::map<gtsam::Key, std::vector<std::string>> names) const;
 };
 
 #include <gtsam/discrete/DiscretePrior.h>
