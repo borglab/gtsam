@@ -60,8 +60,8 @@ string DiscreteValues::markdown(const KeyFormatter& keyFormatter,
   return ss.str();
 }
 
-std::string DiscreteValues::html(const KeyFormatter& keyFormatter,
-                                 const Names& names) const {
+string DiscreteValues::html(const KeyFormatter& keyFormatter,
+                            const Names& names) const {
   stringstream ss;
 
   // Print out preamble.
@@ -83,4 +83,15 @@ std::string DiscreteValues::html(const KeyFormatter& keyFormatter,
   ss << "  </tbody>\n</table>\n</div>";
   return ss.str();
 }
+
+string markdown(const DiscreteValues& values, const KeyFormatter& keyFormatter,
+                const DiscreteValues::Names& names) {
+  return values.markdown(keyFormatter, names);
+}
+
+string html(const DiscreteValues& values, const KeyFormatter& keyFormatter,
+            const DiscreteValues::Names& names) {
+  return values.html(keyFormatter, names);
+}
+
 }  // namespace gtsam
