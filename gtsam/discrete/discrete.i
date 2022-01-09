@@ -17,6 +17,18 @@ class DiscreteKeys {
 };
 
 // DiscreteValues is added in specializations/discrete.h as a std::map
+string markdown(
+    const gtsam::DiscreteValues& values,
+    const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter);
+string markdown(const gtsam::DiscreteValues& values,
+                const gtsam::KeyFormatter& keyFormatter,
+                std::map<gtsam::Key, std::vector<std::string>> names);
+string html(
+    const gtsam::DiscreteValues& values,
+    const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter);
+string html(const gtsam::DiscreteValues& values,
+            const gtsam::KeyFormatter& keyFormatter,
+            std::map<gtsam::Key, std::vector<std::string>> names);
 
 #include <gtsam/discrete/DiscreteFactor.h>
 class DiscreteFactor {

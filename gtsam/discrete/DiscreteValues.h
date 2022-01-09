@@ -21,7 +21,9 @@
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/inference/Key.h>
 
+#include <map>
 #include <string>
+#include <vector>
 
 namespace gtsam {
 
@@ -71,8 +73,8 @@ class DiscreteValues : public Assignment<Key> {
    * @param names translation table for values.
    * @return string markdown output.
    */
-  std::string markdown(const KeyFormatter& keyFormatter,
-                       const Names& names) const;
+  std::string markdown(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                       const Names& names = {}) const;
 
   /**
    * @brief Output as a html table.
@@ -81,10 +83,21 @@ class DiscreteValues : public Assignment<Key> {
    * @param names translation table for values.
    * @return string html output.
    */
-  std::string html(const KeyFormatter& keyFormatter, const Names& names) const;
+  std::string html(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                   const Names& names = {}) const;
 
   /// @}
 };
+
+/// Free version of markdown.
+std::string markdown(const DiscreteValues& values,
+                     const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                     const DiscreteValues::Names& names = {});
+
+/// Free version of html.
+std::string html(const DiscreteValues& values,
+                 const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                 const DiscreteValues::Names& names = {});
 
 // traits
 template <>
