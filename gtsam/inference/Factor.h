@@ -136,7 +136,7 @@ typedef FastSet<FactorIndex> FactorIndexSet;
    /**
     * @return the number of variables involved in this factor
     */
-   virtual size_t size() const { return keys_.size(); }
+   size_t size() const { return keys_.size(); }
 
    /// @}
 
