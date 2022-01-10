@@ -131,19 +131,32 @@ class DCGaussianMixtureFactor : public DCFactor {
   /// @name Testable
   /// @{
 
-  /// print to stdout
-  void print(
+  /// Print the keys, taking care of continuous and discrete.
+  void printKeys(
       const std::string& s = "",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     std::cout << (s.empty() ? "" : s + " ");
     std::cout << "[";
+
+    KeyVector dKeys = discreteKeys_.indices();
     for (Key key : keys()) {
-      std::cout << " " << keyFormatter(key);
+      if (std::find(dKeys.begin(), dKeys.end(), key) == dKeys.end()) {
+        std::cout << " " << keyFormatter(key);
+      }
     }
+
     std::cout << "; ";
-    for (auto&& dk : discreteKeys_) std::cout << keyFormatter(dk.first) << " ";
-    std::cout << " ]";
+    for (Key dk : dKeys) std::cout << keyFormatter(dk) << " ";
+    std::cout << "]";
     std::cout << "{\n";
+  }
+
+  /// print to stdout
+  void print(
+      const std::string& s = "",
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
+    printKeys(s, keyFormatter);
+
     auto valueFormatter = [](const GaussianFactor::shared_ptr& v) {
       return (boost::format("Gaussian factor on %d keys") % v->size()).str();
     };

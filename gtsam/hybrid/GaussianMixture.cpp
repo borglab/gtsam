@@ -26,15 +26,8 @@ template class Conditional<DCGaussianMixtureFactor, GaussianMixture>;
 
 void GaussianMixture::print(const std::string& s,
                             const KeyFormatter& keyFormatter) const {
-  std::cout << (s.empty() ? "" : s + " ");
-  std::cout << "[";
-  for (Key key : keys()) {
-    std::cout << " " << keyFormatter(key);
-  }
-  std::cout << "; ";
-  for (auto&& dk : discreteKeys_) std::cout << keyFormatter(dk.first) << " ";
-  std::cout << " ]";
-  std::cout << "{\n";
+  BaseFactor::printKeys(s, keyFormatter);
+
   auto valueFormatter =
       [](const GaussianFactor::shared_ptr& factor) -> std::string {
     if (auto conditional =
