@@ -10,10 +10,15 @@
  * @date   December 2021
  */
 
+#include <gtsam/discrete/DiscreteEliminationTree.h>
+#include <gtsam/discrete/DiscreteJunctionTree.h>
 #include <gtsam/hybrid/DCGaussianMixtureFactor.h>
 #include <gtsam/hybrid/HybridEliminationTree.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
 #include <gtsam/inference/EliminateableFactorGraph-inst.h>
+#include <gtsam/linear/GaussianEliminationTree.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/GaussianJunctionTree.h>
 #include <gtsam/linear/HessianFactor.h>
 
 #include <boost/make_shared.hpp>
@@ -79,6 +84,16 @@ void HybridFactorGraph::clear() {
   gaussianGraph_.resize(0);
 }
 
+DiscreteKeys HybridFactorGraph::discreteKeys() const {
+  DiscreteKeys result;
+  // Discrete keys from the discrete graph.
+  result = discreteGraph_.discreteKeys();
+  // Discrete keys from the DC factor graph.
+  auto dcKeys = dcGraph_.discreteKeys();
+  result.insert(result.end(), dcKeys.begin(), dcKeys.end());
+  return result;
+}
+
 /// Define adding a GaussianFactor to a sum.
 using Sum = DCGaussianMixtureFactor::Sum;
 static Sum& operator+=(Sum& sum, const GaussianFactor::shared_ptr& factor) {
@@ -122,6 +137,20 @@ Sum HybridFactorGraph::sum() const {
   return sum;
 }
 
+DecisionTreeFactor::shared_ptr HybridFactorGraph::toDecisionTreeFactor() const {
+  // Get the decision tree mapping an assignment to a GaussianFactorGraph
+  Sum sum = this->sum();
+
+  // Get the decision tree with each leaf as the error for that assignment
+  auto gfgError = [&](const GaussianFactorGraph& graph) {
+    VectorValues values = graph.optimize();
+    return graph.error(values);
+  };
+  DecisionTree<Key, double> gfgdt(sum, gfgError);
+
+  return boost::make_shared<DecisionTreeFactor>(discreteKeys(), gfgdt);
+}
+
 ostream& operator<<(ostream& os,
                     const GaussianFactorGraph::EliminationResult& er) {
   os << "ER" << endl;
@@ -138,12 +167,11 @@ pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
   // STEP 1: ELIMINATE
   // Eliminate each sum using conventional Cholesky:
   // We can use this by creating a *new* decision tree:
-  using GFG = GaussianFactorGraph;
   using Pair = GaussianFactorGraph::EliminationResult;
 
   KeyVector keys;
   KeyVector separatorKeys;  // Do with optional?
-  auto eliminate = [&](const GFG& graph) {
+  auto eliminate = [&](const GaussianFactorGraph& graph) {
     auto result = EliminatePreferCholesky(graph, ordering);
     if (keys.size() == 0) keys = result.first->keys();
     if (separatorKeys.size() == 0) separatorKeys = result.second->keys();
@@ -165,9 +193,9 @@ pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
   // If there are no more continuous parents, then we should create here a
   // DiscreteFactor, with the error for each discrete choice.
   if (separatorKeys.size() == 0) {
-    auto discreteFactor = boost::make_shared<DecisionTreeFactor>(/*TODO*/);
-    cout << "adding a discrete factor!" << endl;
+    auto discreteFactor = factors.toDecisionTreeFactor();
     return {conditional, discreteFactor};
+
   } else {
     // Create a resulting DCGaussianMixture on the separator.
     auto second = [](const Pair& result) { return result.second; };

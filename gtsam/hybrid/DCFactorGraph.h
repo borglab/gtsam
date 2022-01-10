@@ -14,6 +14,8 @@
 #include <gtsam/hybrid/DCFactor.h>
 #include <gtsam/inference/FactorGraph.h>
 
+#include <algorithm>
+
 namespace gtsam {
 
 /**
@@ -24,6 +26,24 @@ class DCFactorGraph : public gtsam::FactorGraph<DCFactor> {
   using shared_ptr = boost::shared_ptr<DCFactorGraph>;
 
   DCFactorGraph() : FactorGraph<DCFactor>() {}
+
+  /// Get all the discrete keys in all the factors in the DCFactorGraph
+  DiscreteKeys discreteKeys() const {
+    DiscreteKeys result;
+    for (const sharedFactor& factor : *this) {
+      if (factor) {
+        // Insert all the discrete keys to the final result.
+        for (auto&& key : factor->discreteKeys()) {
+          // Check if key doesn't already exist. If it doesn't then add it.
+          if (std::find(result.begin(), result.end(), key) == result.end()) {
+            result.push_back(key);
+          }
+        }
+      }
+    }
+
+    return result;
+  }
 };
 
 }  // namespace gtsam

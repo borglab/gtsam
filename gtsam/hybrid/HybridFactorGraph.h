@@ -12,13 +12,8 @@
 
 #pragma once
 
-#include <gtsam/discrete/DiscreteFactor.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
-#include <gtsam/hybrid/DCFactor.h>
 #include <gtsam/hybrid/DCFactorGraph.h>
-#include <gtsam/hybrid/HybridBayesNet.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 #include <string>
@@ -197,22 +192,35 @@ class HybridFactorGraph : protected FactorGraph<Factor>,
     push_gaussian(factor);
   }
 
+  /**
+   * @brief Add a single factor shared pointer to the hybrid factor graph.
+   * Dynamically handles the factor type and assigns it to the correct
+   * underlying container.
+   *
+   * @tparam FACTOR The factor type template
+   * @param sharedFactor The factor to add to this factor graph.
+   */
+  template <typename FACTOR>
+  void push_back(const boost::shared_ptr<FACTOR>& sharedFactor) {
+    if (auto p = boost::dynamic_pointer_cast<NonlinearFactor>(sharedFactor)) {
+      push_nonlinear(p);
+    }
+    if (auto p = boost::dynamic_pointer_cast<DiscreteFactor>(sharedFactor)) {
+      push_discrete(p);
+    }
+    if (auto p = boost::dynamic_pointer_cast<DCFactor>(sharedFactor)) {
+      push_dc(p);
+    }
+    if (auto p = boost::dynamic_pointer_cast<GaussianFactor>(sharedFactor)) {
+      push_gaussian(p);
+    }
+  }
+
   /** Constructor from iterator over factors (shared_ptr or plain objects) */
   template <typename ITERATOR>
   void push_back(ITERATOR firstFactor, ITERATOR lastFactor) {
     for (auto&& it = firstFactor; it != lastFactor; it++) {
-      if (auto p = boost::dynamic_pointer_cast<NonlinearFactor>(*it)) {
-        push_nonlinear(p);
-      }
-      if (auto p = boost::dynamic_pointer_cast<DiscreteFactor>(*it)) {
-        push_discrete(p);
-      }
-      if (auto p = boost::dynamic_pointer_cast<DCFactor>(*it)) {
-        push_dc(p);
-      }
-      if (auto p = boost::dynamic_pointer_cast<GaussianFactor>(*it)) {
-        push_gaussian(p);
-      }
+      push_back(*it);
     }
   }
 
@@ -312,15 +320,8 @@ class HybridFactorGraph : protected FactorGraph<Factor>,
    */
   void clear();
 
-  /// The total number of factors in the Gaussian factor graph.
-  DiscreteKeys discreteKeys() const {
-    DiscreteKeys result;
-    // TODO(Frank): implement!
-    // DiscreteKeys result = discreteGraph_.discreteKeys();
-    // DiscreteKeys dcKeys = dcGraph_.discreteKeys();
-    // result += dcKeys
-    return result;
-  }
+  /// Get all the discrete keys in the hybrid factor graph.
+  DiscreteKeys discreteKeys() const;
 
   /// @name Elimination machinery
   /// @{
@@ -339,6 +340,11 @@ class HybridFactorGraph : protected FactorGraph<Factor>,
    * different structure, and creating a different decision tree for Gaussians.
    */
   DCGaussianMixtureFactor::Sum sum() const;
+
+  /// Convert the DecisionTree of (Key, GaussianFactorGraph) to (Key, Graph
+  /// Error).
+  DecisionTreeFactor::shared_ptr toDecisionTreeFactor() const;
+
   /// @}
 };
 

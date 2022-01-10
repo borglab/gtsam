@@ -66,7 +66,7 @@ namespace gtsam {
   void DecisionTreeFactor::print(const string& s,
       const KeyFormatter& formatter) const {
     cout << s;
-    ADT::print("Potentials:",formatter);
+    ADT::print("", formatter);
   }
 
   /* ************************************************************************* */
@@ -159,6 +159,15 @@ namespace gtsam {
     for (const auto& assignment : assignments) {
       result.emplace_back(assignment, operator()(assignment));
     }
+    return result;
+  }
+
+  /* ************************************************************************* */
+  DiscreteKeys DecisionTreeFactor::discreteKeys() const {
+    DiscreteKeys result;
+    for (auto&& key : keys()) {
+        result.emplace_back(key, cardinality(key));
+      }
     return result;
   }
 
