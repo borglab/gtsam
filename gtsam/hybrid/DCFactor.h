@@ -35,7 +35,6 @@ namespace gtsam {
 class DCFactor : public gtsam::Factor {
  protected:
   // Set of DiscreteKeys for this factor.
-  // TODO(Frank): This will be a map once we make DiscreteKeys a map!
   gtsam::DiscreteKeys discreteKeys_;
 
  public:
