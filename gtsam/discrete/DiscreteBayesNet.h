@@ -18,13 +18,16 @@
 
 #pragma once
 
-#include <vector>
-#include <map>
-#include <boost/shared_ptr.hpp>
+#include <gtsam/discrete/DiscreteConditional.h>
+#include <gtsam/discrete/DiscretePrior.h>
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/FactorGraph.h>
-#include <gtsam/discrete/DiscretePrior.h>
-#include <gtsam/discrete/DiscreteConditional.h>
+
+#include <boost/shared_ptr.hpp>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace gtsam {
 
@@ -107,13 +110,17 @@ namespace gtsam {
     /// @name Wrapper support
     /// @{
 
-    /// Render as markdown table.
+    /// Render as markdown tables.
     std::string markdown(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
                          const DiscreteFactor::Names& names = {}) const;
 
+    /// Render as html tables.
+    std::string html(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                     const DiscreteFactor::Names& names = {}) const;
+
     /// @}
 
-  private:
+ private:
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>

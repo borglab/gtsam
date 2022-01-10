@@ -17,6 +17,18 @@ class DiscreteKeys {
 };
 
 // DiscreteValues is added in specializations/discrete.h as a std::map
+string markdown(
+    const gtsam::DiscreteValues& values,
+    const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter);
+string markdown(const gtsam::DiscreteValues& values,
+                const gtsam::KeyFormatter& keyFormatter,
+                std::map<gtsam::Key, std::vector<std::string>> names);
+string html(
+    const gtsam::DiscreteValues& values,
+    const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter);
+string html(const gtsam::DiscreteValues& values,
+            const gtsam::KeyFormatter& keyFormatter,
+            std::map<gtsam::Key, std::vector<std::string>> names);
 
 #include <gtsam/discrete/DiscreteFactor.h>
 class DiscreteFactor {
@@ -54,6 +66,10 @@ virtual class DecisionTreeFactor : gtsam::DiscreteFactor {
                       gtsam::DefaultKeyFormatter) const;
   string markdown(const gtsam::KeyFormatter& keyFormatter,
                   std::map<gtsam::Key, std::vector<std::string>> names) const;
+  string html(const gtsam::KeyFormatter& keyFormatter =
+                  gtsam::DefaultKeyFormatter) const;
+  string html(const gtsam::KeyFormatter& keyFormatter,
+              std::map<gtsam::Key, std::vector<std::string>> names) const;
 };
 
 #include <gtsam/discrete/DiscreteConditional.h>
@@ -93,6 +109,10 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
                       gtsam::DefaultKeyFormatter) const;
   string markdown(const gtsam::KeyFormatter& keyFormatter,
                   std::map<gtsam::Key, std::vector<std::string>> names) const;
+  string html(const gtsam::KeyFormatter& keyFormatter =
+                  gtsam::DefaultKeyFormatter) const;
+  string html(const gtsam::KeyFormatter& keyFormatter,
+              std::map<gtsam::Key, std::vector<std::string>> names) const;
 };
 
 #include <gtsam/discrete/DiscretePrior.h>
@@ -136,6 +156,10 @@ class DiscreteBayesNet {
                       gtsam::DefaultKeyFormatter) const;
   string markdown(const gtsam::KeyFormatter& keyFormatter,
                   std::map<gtsam::Key, std::vector<std::string>> names) const;
+  string html(const gtsam::KeyFormatter& keyFormatter =
+                  gtsam::DefaultKeyFormatter) const;
+  string html(const gtsam::KeyFormatter& keyFormatter,
+              std::map<gtsam::Key, std::vector<std::string>> names) const;
 };
 
 #include <gtsam/discrete/DiscreteBayesTree.h>
@@ -172,6 +196,10 @@ class DiscreteBayesTree {
                  gtsam::DefaultKeyFormatter) const;
   string markdown(const gtsam::KeyFormatter& keyFormatter,
                   std::map<gtsam::Key, std::vector<std::string>> names) const;
+  string html(const gtsam::KeyFormatter& keyFormatter =
+                  gtsam::DefaultKeyFormatter) const;
+  string html(const gtsam::KeyFormatter& keyFormatter,
+              std::map<gtsam::Key, std::vector<std::string>> names) const;
 };
 
 #include <gtsam/inference/DotWriter.h>
@@ -221,6 +249,10 @@ class DiscreteFactorGraph {
                  gtsam::DefaultKeyFormatter) const;
   string markdown(const gtsam::KeyFormatter& keyFormatter,
                   std::map<gtsam::Key, std::vector<std::string>> names) const;
+  string html(const gtsam::KeyFormatter& keyFormatter =
+                  gtsam::DefaultKeyFormatter) const;
+  string html(const gtsam::KeyFormatter& keyFormatter,
+              std::map<gtsam::Key, std::vector<std::string>> names) const;
 };
 
 }  // namespace gtsam

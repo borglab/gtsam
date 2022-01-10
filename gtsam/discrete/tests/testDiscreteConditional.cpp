@@ -125,7 +125,7 @@ TEST(DiscreteConditional, markdown_prior) {
   DiscreteKey A(Symbol('x', 1), 3);
   DiscreteConditional conditional(A % "1/2/2");
   string expected =
-      " *P(x1)*:\n\n"
+      " *P(x1):*\n\n"
       "|x1|value|\n"
       "|:-:|:-:|\n"
       "|0|0.2|\n"
@@ -142,7 +142,7 @@ TEST(DiscreteConditional, markdown_prior_names) {
   DiscreteKey A(x1, 3);
   DiscreteConditional conditional(A % "1/2/2");
   string expected =
-      " *P(x1)*:\n\n"
+      " *P(x1):*\n\n"
       "|x1|value|\n"
       "|:-:|:-:|\n"
       "|A0|0.2|\n"
@@ -160,7 +160,7 @@ TEST(DiscreteConditional, markdown_multivalued) {
   DiscreteConditional conditional(
       A | B = "2/88/10 2/20/78 33/33/34 33/33/34 95/2/3");
   string expected =
-      " *P(a1|b1)*:\n\n"
+      " *P(a1|b1):*\n\n"
       "|*b1*|0|1|2|\n"
       "|:-:|:-:|:-:|:-:|\n"
       "|0|0.02|0.88|0.1|\n"
@@ -178,7 +178,7 @@ TEST(DiscreteConditional, markdown) {
   DiscreteKey A(2, 2), B(1, 2), C(0, 3);
   DiscreteConditional conditional(A, {B, C}, "0/1 1/3  1/1 3/1  0/1 1/0");
   string expected =
-      " *P(A|B,C)*:\n\n"
+      " *P(A|B,C):*\n\n"
       "|*B*|*C*|T|F|\n"
       "|:-:|:-:|:-:|:-:|\n"
       "|-|Zero|0|1|\n"
@@ -192,6 +192,36 @@ TEST(DiscreteConditional, markdown) {
   DecisionTreeFactor::Names names{
       {0, {"Zero", "One", "Two"}}, {1, {"-", "+"}}, {2, {"T", "F"}}};
   string actual = conditional.markdown(formatter, names);
+  EXPECT(actual == expected);
+}
+
+/* ************************************************************************* */
+// Check html representation looks as expected, two parents + names.
+TEST(DiscreteConditional, html) {
+  DiscreteKey A(2, 2), B(1, 2), C(0, 3);
+  DiscreteConditional conditional(A, {B, C}, "0/1 1/3  1/1 3/1  0/1 1/0");
+  string expected =
+      "<div>\n"
+      "<p>  <i>P(A|B,C):</i></p>\n"
+      "<table class='DiscreteConditional'>\n"
+      "  <thead>\n"
+      "    <tr><th><i>B</i></th><th><i>C</i></th><th>T</th><th>F</th></tr>\n"
+      "  </thead>\n"
+      "  <tbody>\n"
+      "    <tr><th>-</th><th>Zero</th><td>0</td><td>1</td></tr>\n"
+      "    <tr><th>-</th><th>One</th><td>0.25</td><td>0.75</td></tr>\n"
+      "    <tr><th>-</th><th>Two</th><td>0.5</td><td>0.5</td></tr>\n"
+      "    <tr><th>+</th><th>Zero</th><td>0.75</td><td>0.25</td></tr>\n"
+      "    <tr><th>+</th><th>One</th><td>0</td><td>1</td></tr>\n"
+      "    <tr><th>+</th><th>Two</th><td>1</td><td>0</td></tr>\n"
+      "  </tbody>\n"
+      "</table>\n"
+      "</div>";
+  vector<string> keyNames{"C", "B", "A"};
+  auto formatter = [keyNames](Key key) { return keyNames[key]; };
+  DecisionTreeFactor::Names names{
+      {0, {"Zero", "One", "Two"}}, {1, {"-", "+"}}, {2, {"T", "F"}}};
+  string actual = conditional.html(formatter, names);
   EXPECT(actual == expected);
 }
 
