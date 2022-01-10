@@ -25,14 +25,4 @@ using namespace std;
 
 namespace gtsam {
 
-string DiscreteFactor::Translate(const Names& names, Key key, size_t index) {
-  if (names.empty()) {
-    stringstream ss;
-    ss << index;
-    return ss.str();
-  } else {
-    return names.at(key)[index];
-  }
-}
-
 }  // namespace gtsam

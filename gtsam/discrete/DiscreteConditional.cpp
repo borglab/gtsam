@@ -29,9 +29,12 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <utility>
 
 using namespace std;
-
+using std::stringstream;
+using std::vector;
+using std::pair;
 namespace gtsam {
 
 // Instantiate base class
@@ -80,7 +83,7 @@ void DiscreteConditional::print(const string& s,
     }
   }
   cout << ")";
-  Potentials::print("");
+  ADT::print("");
   cout << endl;
 }
 
@@ -177,26 +180,21 @@ DecisionTreeFactor::shared_ptr DiscreteConditional::likelihood(
   return likelihood(values);
 }
 
-/* ******************************************************************************** */
+/* ************************************************************************** */
 void DiscreteConditional::solveInPlace(DiscreteValues* values) const {
-  // TODO: Abhijit asks: is this really the fastest way? He thinks it is.
-  ADT pFS = Choose(*this, *values); // P(F|S=parentsValues)
+  // TODO(Abhijit): is this really the fastest way? He thinks it is.
+  ADT pFS = Choose(*this, *values);  // P(F|S=parentsValues)
 
   // Initialize
   DiscreteValues mpe;
   double maxP = 0;
 
-  DiscreteKeys keys;
-  for(Key idx: frontals()) {
-    DiscreteKey dk(idx, cardinality(idx));
-    keys & dk;
-  }
   // Get all Possible Configurations
-  const auto allPosbValues = cartesianProduct(keys);
+  const auto allPosbValues = frontalAssignments();
 
   // Find the MPE
-  for(const auto& frontalVals: allPosbValues) {
-    double pValueS = pFS(frontalVals); // P(F=value|S=parentsValues)
+  for (const auto& frontalVals : allPosbValues) {
+    double pValueS = pFS(frontalVals);  // P(F=value|S=parentsValues)
     // Update MPE solution if better
     if (pValueS > maxP) {
       maxP = pValueS;
@@ -204,8 +202,8 @@ void DiscreteConditional::solveInPlace(DiscreteValues* values) const {
     }
   }
 
-  //set values (inPlace) to mpe
-  for(Key j: frontals()) {
+  // set values (inPlace) to mpe
+  for (Key j : frontals()) {
     (*values)[j] = mpe[j];
   }
 }
@@ -292,57 +290,70 @@ size_t DiscreteConditional::sample() const {
 }
 
 /* ************************************************************************* */
-std::string DiscreteConditional::markdown(const KeyFormatter& keyFormatter,
-                                          const Names& names) const {
-  std::stringstream ss;
+vector<DiscreteValues> DiscreteConditional::frontalAssignments() const {
+  vector<pair<Key, size_t>> pairs;
+  for (Key key : frontals()) pairs.emplace_back(key, cardinalities_.at(key));
+  vector<pair<Key, size_t>> rpairs(pairs.rbegin(), pairs.rend());
+  return DiscreteValues::CartesianProduct(rpairs);
+}
 
-  // Print out signature.
-  ss << " *P(";
+/* ************************************************************************* */
+vector<DiscreteValues> DiscreteConditional::allAssignments() const {
+  vector<pair<Key, size_t>> pairs;
+  for (Key key : parents()) pairs.emplace_back(key, cardinalities_.at(key));
+  for (Key key : frontals()) pairs.emplace_back(key, cardinalities_.at(key));
+  vector<pair<Key, size_t>> rpairs(pairs.rbegin(), pairs.rend());
+  return DiscreteValues::CartesianProduct(rpairs);
+}
+
+/* ************************************************************************* */
+// Print out signature.
+static void streamSignature(const DiscreteConditional& conditional,
+                            const KeyFormatter& keyFormatter,
+                            stringstream* ss) {
+  *ss << "P(";
   bool first = true;
-  for (Key key : frontals()) {
-    if (!first) ss << ",";
-    ss << keyFormatter(key);
+  for (Key key : conditional.frontals()) {
+    if (!first) *ss << ",";
+    *ss << keyFormatter(key);
     first = false;
   }
+  if (conditional.nrParents() > 0) {
+    *ss << "|";
+    bool first = true;
+    for (Key parent : conditional.parents()) {
+      if (!first) *ss << ",";
+      *ss << keyFormatter(parent);
+      first = false;
+    }
+  }
+  *ss << "):";
+}
+
+/* ************************************************************************* */
+std::string DiscreteConditional::markdown(const KeyFormatter& keyFormatter,
+                                          const Names& names) const {
+  stringstream ss;
+  ss << " *";
+  streamSignature(*this, keyFormatter, &ss);
+  ss << "*\n" << std::endl;
   if (nrParents() == 0) {
-   // We have no parents, call factor method.
-    ss << ")*:\n" << std::endl;
+    // We have no parents, call factor method.
     ss << DecisionTreeFactor::markdown(keyFormatter, names);
     return ss.str();
   }
 
-  // We have parents, continue signature and do custom print.
+  // Print out header.
   ss << "|";
-  first = true;
   for (Key parent : parents()) {
-    if (!first) ss << ",";
-    ss << keyFormatter(parent);
-    first = false;
-  }
-  ss << ")*:\n" << std::endl;
-
-  // Print out header and construct argument for `cartesianProduct`.
-  std::vector<std::pair<Key, size_t>> pairs;
-  ss << "|";
-  const_iterator it;
-  for(Key parent: parents()) {
     ss << "*" << keyFormatter(parent) << "*|";
-    pairs.emplace_back(parent, cardinalities_.at(parent));
   }
 
-  size_t n = 1;
-  for(Key key: frontals()) {
-    size_t k = cardinalities_.at(key);
-    pairs.emplace_back(key, k);
-    n *= k;
-  }
-  std::vector<std::pair<Key, size_t>> slatnorf(pairs.rbegin(),
-                                               pairs.rend() - nrParents());
-  const auto frontal_assignments = cartesianProduct(slatnorf);
-  for (const auto& a : frontal_assignments) {
-    for (it = beginFrontals(); it != endFrontals(); ++it) {
+  auto frontalAssignments = this->frontalAssignments();
+  for (const auto& a : frontalAssignments) {
+    for (auto&& it = beginFrontals(); it != endFrontals(); ++it) {
       size_t index = a.at(*it);
-      ss << Translate(names, *it, index);
+      ss << DiscreteValues::Translate(names, *it, index);
     }
     ss << "|";
   }
@@ -350,19 +361,18 @@ std::string DiscreteConditional::markdown(const KeyFormatter& keyFormatter,
 
   // Print out separator with alignment hints.
   ss << "|";
+  size_t n = frontalAssignments.size();
   for (size_t j = 0; j < nrParents() + n; j++) ss << ":-:|";
   ss << "\n";
 
   // Print out all rows.
-  std::vector<std::pair<Key, size_t>> rpairs(pairs.rbegin(), pairs.rend());
-  const auto assignments = cartesianProduct(rpairs);
   size_t count = 0;
-  for (const auto& a : assignments) {
+  for (const auto& a : allAssignments()) {
     if (count == 0) {
       ss << "|";
-      for (it = beginParents(); it != endParents(); ++it) {
+      for (auto&& it = beginParents(); it != endParents(); ++it) {
         size_t index = a.at(*it);
-        ss << Translate(names, *it, index) << "|";
+        ss << DiscreteValues::Translate(names, *it, index) << "|";
       }
     }
     ss << operator()(a) << "|";
@@ -371,6 +381,62 @@ std::string DiscreteConditional::markdown(const KeyFormatter& keyFormatter,
   }
   return ss.str();
 }
+
+/* ************************************************************************ */
+string DiscreteConditional::html(const KeyFormatter& keyFormatter,
+                                 const Names& names) const {
+  stringstream ss;
+  ss << "<div>\n<p>  <i>";
+  streamSignature(*this, keyFormatter, &ss);
+  ss << "</i></p>\n";
+  if (nrParents() == 0) {
+    // We have no parents, call factor method.
+    ss << DecisionTreeFactor::html(keyFormatter, names);
+    return ss.str();
+  }
+
+  // Print out preamble.
+  ss << "<table class='DiscreteConditional'>\n  <thead>\n";
+
+  // Print out header row.
+  ss << "    <tr>";
+  for (Key parent : parents()) {
+    ss << "<th><i>" << keyFormatter(parent) << "</i></th>";
+  }
+  auto frontalAssignments = this->frontalAssignments();
+  for (const auto& a : frontalAssignments) {
+    ss << "<th>";
+    for (auto&& it = beginFrontals(); it != endFrontals(); ++it) {
+      size_t index = a.at(*it);
+      ss << DiscreteValues::Translate(names, *it, index);
+    }
+    ss << "</th>";
+  }
+  ss << "</tr>\n";
+
+  // Finish header and start body.
+  ss << "  </thead>\n  <tbody>\n";
+
+  // Output all rows, one per assignment:
+  size_t count = 0, n = frontalAssignments.size();
+  for (const auto& a : allAssignments()) {
+    if (count == 0) {
+      ss << "    <tr>";
+      for (auto&& it = beginParents(); it != endParents(); ++it) {
+        size_t index = a.at(*it);
+        ss << "<th>" << DiscreteValues::Translate(names, *it, index) << "</th>";
+      }
+    }
+    ss << "<td>" << operator()(a) << "</td>";  // value
+    count = (count + 1) % n;
+    if (count == 0) ss << "</tr>\n";
+  }
+
+  // Finish up
+  ss << "  </tbody>\n</table>\n</div>";
+  return ss.str();
+}
+
 /* ************************************************************************* */
 
 }  // namespace gtsam
