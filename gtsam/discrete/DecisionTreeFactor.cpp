@@ -166,12 +166,9 @@ namespace gtsam {
   DiscreteKeys DecisionTreeFactor::discreteKeys() const {
     DiscreteKeys result;
     for (auto&& key : keys()) {
-        DiscreteKey discreteKey(key, cardinality(key));
-        // Only add unique keys
-        if (std::find(result.begin(), result.end(), discreteKey) == result.end()) {
-          result.push_back(discreteKey);
-        }
-      }
+      DiscreteKey discreteKey(key, cardinality(key));
+      result.push_back(discreteKey);
+    }
     return result;
   }
 
