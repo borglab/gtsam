@@ -92,9 +92,13 @@ class GTSAM_EXPORT DiscreteBayesTree
   /// @name Wrapper support
   /// @{
 
-  /// Render as markdown table.
+  /// Render as markdown tables.
   std::string markdown(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
                        const DiscreteFactor::Names& names = {}) const;
+
+  /// Render as html tables.
+  std::string html(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                   const DiscreteFactor::Names& names = {}) const;
 
   /// @}
 };

@@ -22,18 +22,17 @@
 #include <gtsam/inference/EliminateableFactorGraph.h>
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
-#include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/base/FastSet.h>
 
 #include <boost/make_shared.hpp>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace gtsam {
 
 // Forward declarations
 class DiscreteFactorGraph;
-class DiscreteFactor;
 class DiscreteConditional;
 class DiscreteBayesNet;
 class DiscreteEliminationTree;
@@ -144,14 +143,24 @@ public:
   /// @{
 
   /**
-   * @brief Render as markdown table
-   * 
+   * @brief Render as markdown tables
+   *
    * @param keyFormatter GTSAM-style Key formatter.
    * @param names optional, a map from Key to category names.
    * @return std::string a (potentially long) markdown string.
    */
   std::string markdown(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
                        const DiscreteFactor::Names& names = {}) const;
+
+  /**
+   * @brief Render as html tables
+   *
+   * @param keyFormatter GTSAM-style Key formatter.
+   * @param names optional, a map from Key to category names.
+   * @return std::string a (potentially long) html string.
+   */
+  std::string html(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                   const DiscreteFactor::Names& names = {}) const;
 
   /// @}
 }; // \ DiscreteFactorGraph
