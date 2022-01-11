@@ -23,8 +23,7 @@ namespace gtsam {
 
 /* *******************************************************************************/
 void DCGaussianMixtureFactor::printKeys(
-    const std::string& s = "",
-    const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+    const std::string& s, const KeyFormatter& keyFormatter) const {
   std::cout << (s.empty() ? "" : s + " ");
   std::cout << "[";
 
@@ -42,9 +41,8 @@ void DCGaussianMixtureFactor::printKeys(
 }
 
 /* *******************************************************************************/
-void DCGaussianMixtureFactor::print(
-    const std::string& s = "",
-    const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+void DCGaussianMixtureFactor::print(const std::string& s,
+                                    const KeyFormatter& keyFormatter) const {
   printKeys(s, keyFormatter);
 
   auto valueFormatter = [](const GaussianFactor::shared_ptr& v) {
