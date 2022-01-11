@@ -131,26 +131,14 @@ class DCGaussianMixtureFactor : public DCFactor {
   /// @name Testable
   /// @{
 
-  /// print to stdout
-  void print(
+  /// Print the keys, taking care of continuous and discrete.
+  void printKeys(
       const std::string& s = "",
-      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
-    std::cout << (s.empty() ? "" : s + " ");
-    std::cout << "[";
-    for (Key key : keys()) {
-      std::cout << " " << keyFormatter(key);
-    }
-    std::cout << "; ";
-    for (auto&& dk : discreteKeys_) std::cout << keyFormatter(dk.first) << " ";
-    std::cout << " ]";
-    std::cout << "{\n";
-    auto valueFormatter = [](const GaussianFactor::shared_ptr& v) {
-      return (boost::format("Gaussian factor on %d keys") % v->size()).str();
-    };
-    factors_.print("", keyFormatter, valueFormatter);
-    std::cout << "}";
-    std::cout << "\n";
-  }
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
+
+  /// print to stdout
+  void print(const std::string& s = "", const KeyFormatter& keyFormatter =
+                                            DefaultKeyFormatter) const override;
 
   /// Check equality
   bool equals(const DCFactor& f, double tol = 1e-9) const override {
@@ -168,16 +156,7 @@ class DCGaussianMixtureFactor : public DCFactor {
   using Sum = DecisionTree<Key, GaussianFactorGraph>;
 
   /// Add MixtureFactor to a Sum
-  Sum addTo(const Sum& sum) const {
-    using Y = GaussianFactorGraph;
-    auto add = [](const Y& graph1, const Y& graph2) {
-      auto result = graph1;
-      result.push_back(graph2);
-      return result;
-    };
-    const Sum wrapped = wrappedFactors();
-    return sum.empty() ? wrapped : sum.apply(wrapped, add);
-  }
+  Sum addTo(const Sum& sum) const;
 
   /// Add MixtureFactor to a Sum, sugar.
   friend Sum& operator+=(Sum& sum, const DCGaussianMixtureFactor& factor) {
@@ -188,14 +167,7 @@ class DCGaussianMixtureFactor : public DCFactor {
 
  private:
   /// Return Sum decision tree with factors wrapped in Singleton FGs.
-  Sum wrappedFactors() const {
-    auto wrap = [](const GaussianFactor::shared_ptr& factor) {
-      GaussianFactorGraph result;
-      result.push_back(factor);
-      return result;
-    };
-    return Sum(factors_, wrap);
-  }
+  Sum wrappedFactors() const;
 };
 
 }  // namespace gtsam

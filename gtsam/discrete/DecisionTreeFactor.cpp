@@ -166,8 +166,8 @@ namespace gtsam {
   DiscreteKeys DecisionTreeFactor::discreteKeys() const {
     DiscreteKeys result;
     for (auto&& key : keys()) {
-        result.emplace_back(key, cardinality(key));
-      }
+      result.emplace_back(key, cardinality(key));
+    }
     return result;
   }
 
