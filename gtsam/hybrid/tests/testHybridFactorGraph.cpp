@@ -312,6 +312,8 @@ TEST(DCGaussianElimination, Eliminate_x2) {
   EXPECT_LONGS_EQUAL(4, result.second->size());
 }
 
+/* ****************************************************************************/
+// Helper method to generate gaussian factor graphs with a specific mode.
 GaussianFactorGraph::shared_ptr batchGFG(double between,
                                          Values linearizationPoint) {
   NonlinearFactorGraph graph;
@@ -324,19 +326,24 @@ GaussianFactorGraph::shared_ptr batchGFG(double between,
 
   return graph.linearize(linearizationPoint);
 }
+
 /* ****************************************************************************/
 // Test elimination function by eliminating x1 in *-x1-*-m1 graph.
 TEST(DCGaussianElimination, Eliminate_fully) {
   Switching self(2);
   auto factors = self.linearizedFactorGraph;
-  // GTSAM_PRINT(factors);
+
+  // Add measurement factors
+  auto measurement_noise = noiseModel::Isotropic::Sigmas(Vector1(0.01));
+  factors.emplace_gaussian<JacobianFactor>(X(1), I_1x1, 1 * Vector1::Ones(), measurement_noise);
+  factors.emplace_gaussian<JacobianFactor>(X(2), I_1x1, 2 * Vector1::Ones(), measurement_noise);
+
   // Check that sum works:
   auto sum = factors.sum();
   Assignment<Key> mode;
   mode[M(1)] = 1;
-  auto actual = sum(mode);  // Selects one of 2 modes.
-  // GTSAM_PRINT(actual);
-  EXPECT_LONGS_EQUAL(2, actual.size());  // Prior and motion model.
+  auto actual = sum(mode);               // Selects one of 2 modes.
+  EXPECT_LONGS_EQUAL(4, actual.size());  // Prior, motion model, 2 measurements.
 
   // Eliminate x1
   Ordering ordering;
@@ -353,29 +360,9 @@ TEST(DCGaussianElimination, Eliminate_fully) {
 
   auto discreteFactor = dynamic_pointer_cast<DecisionTreeFactor>(result.second);
   CHECK(discreteFactor);
-  discreteFactor->print();
   EXPECT_LONGS_EQUAL(1, discreteFactor->discreteKeys().size());
-  for (auto&& key : discreteFactor->discreteKeys())
-    std::cerr << Symbol(key.first) << "\n";
-  // EXPECT(discreteFactor->root_->isLeaf() == false);
+  EXPECT(discreteFactor->root_->isLeaf() == false);
 
-  Assignment<Key> mode0;
-  mode0[M(1)] = 0;
-  std::cout << "DecisionTreeFactor mode 0 error: " << (*discreteFactor)(mode0) << std::endl;
-  std::cout << "DecisionTreeFactor mode 1 error: " << (*discreteFactor)(mode) << std::endl;
-
-  auto gfg0 = batchGFG(0, self.linearizationPoint);
-
-  auto gfg1 = batchGFG(1, self.linearizationPoint);
-
-  // This is the correct vector values, so we'll use these for the error
-  VectorValues values = gfg1->optimize();
-
-  std::cout << "error for mode 0: " << gfg0->error(values) << std::endl;
-  std::cout << "error for mode 1: " << gfg1->error(values) << std::endl;
-
-  std::cout << "prob for mode 0: " << gfg0->probPrime(values) << std::endl;
-  std::cout << "prob for mode 1: " << gfg1->probPrime(values) << std::endl;
 }
 
 /* ****************************************************************************/
@@ -424,7 +411,7 @@ TEST(HybridFactorGraph, ToDecisionTreeFactor) {
   graph.push_back(between_x2_x3);
 
   VectorValues values = graph.optimize();
-  double expected = graph.error(values);
+  double expected = graph.probPrime(values);
   /********************************************/
 
   EXPECT_DOUBLES_EQUAL(expected, actual, 1e-12);
