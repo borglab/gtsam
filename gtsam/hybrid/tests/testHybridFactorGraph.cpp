@@ -171,8 +171,8 @@ struct Switching {
   }
 
   // Create motion models for a given time step
-  std::vector<MotionModel::shared_ptr> motionModels(size_t k,
-                                                    double sigma = 1.0) {
+  static std::vector<MotionModel::shared_ptr> motionModels(size_t k,
+                                                           double sigma = 1.0) {
     auto noise_model = Isotropic::Sigma(1, sigma);
     auto still =
              boost::make_shared<MotionModel>(X(k), X(k + 1), 0.0, noise_model),
@@ -304,37 +304,65 @@ TEST(DCGaussianElimination, Eliminate_x2) {
   std::pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> result =
       EliminateHybrid(factors, ordering);
   CHECK(result.first);
-  GTSAM_PRINT(*result.first);
+  //  GTSAM_PRINT(*result.first);
   EXPECT_LONGS_EQUAL(1, result.first->nrFrontals());
   CHECK(result.second);
-  GTSAM_PRINT(*result.second);
+  //  GTSAM_PRINT(*result.second);
   // Note: separator keys should include m1, m2.
   EXPECT_LONGS_EQUAL(4, result.second->size());
 }
 
 /* ****************************************************************************/
+// Helper method to generate gaussian factor graphs with a specific mode.
+GaussianFactorGraph::shared_ptr batchGFG(double between,
+                                         Values linearizationPoint) {
+  NonlinearFactorGraph graph;
+  graph.addPrior<double>(X(1), 0, Isotropic::Sigma(1, 0.1));
+
+  auto between_x1_x2 = boost::make_shared<MotionModel>(
+      X(1), X(2), between, Isotropic::Sigma(1, 1.0));
+
+  graph.push_back(between_x1_x2);
+
+  return graph.linearize(linearizationPoint);
+}
+
+/* ****************************************************************************/
 // Test elimination function by eliminating x1 in *-x1-*-m1 graph.
 TEST(DCGaussianElimination, Eliminate_fully) {
-  // // TODO: create a HFG with just one DC factor.
-  // HybridFactorGraph factors;
+  Switching self(2);
+  auto factors = self.linearizedFactorGraph;
 
-  // // Check that sum works:
-  // auto sum = factors.sum();
-  // Assignment<Key> mode;
-  // mode[M(1)] = 1;
-  // auto actual = sum(mode);               // Selects one of 2 modes.
-  // EXPECT_LONGS_EQUAL(1, actual.size());  // Prior and motion model.
+  // Add measurement factors
+  auto measurement_noise = noiseModel::Isotropic::Sigmas(Vector1(0.01));
+  factors.emplace_gaussian<JacobianFactor>(X(1), I_1x1, 1 * Vector1::Ones(), measurement_noise);
+  factors.emplace_gaussian<JacobianFactor>(X(2), I_1x1, 2 * Vector1::Ones(), measurement_noise);
 
-  // // Eliminate x1
-  // Ordering ordering;
-  // ordering += X(1);
+  // Check that sum works:
+  auto sum = factors.sum();
+  Assignment<Key> mode;
+  mode[M(1)] = 1;
+  auto actual = sum(mode);               // Selects one of 2 modes.
+  EXPECT_LONGS_EQUAL(4, actual.size());  // Prior, motion model, 2 measurements.
 
-  // auto result = EliminateHybrid(factors, ordering);
-  // CHECK(result.first);
-  // EXPECT_LONGS_EQUAL(1, result.first->nrFrontals());
-  // CHECK(result.second);
-  // // TODO test that it is a a DiscreteFactor !!!!!!
-  // EXPECT_LONGS_EQUAL(1, result.second->size());
+  // Eliminate x1
+  Ordering ordering;
+  ordering += X(1);
+  ordering += X(2);
+
+  auto result = EliminateHybrid(factors, ordering);
+  CHECK(result.first);
+  GTSAM_PRINT(*result.first);
+  GTSAM_PRINT(*result.second);
+
+  EXPECT_LONGS_EQUAL(1, result.first->nrFrontals());
+  CHECK(result.second);
+
+  auto discreteFactor = dynamic_pointer_cast<DecisionTreeFactor>(result.second);
+  CHECK(discreteFactor);
+  EXPECT_LONGS_EQUAL(1, discreteFactor->discreteKeys().size());
+  EXPECT(discreteFactor->root_->isLeaf() == false);
+
 }
 
 /* ****************************************************************************/
@@ -383,7 +411,7 @@ TEST(HybridFactorGraph, ToDecisionTreeFactor) {
   graph.push_back(between_x2_x3);
 
   VectorValues values = graph.optimize();
-  double expected = graph.error(values);
+  double expected = graph.probPrime(values);
   /********************************************/
 
   EXPECT_DOUBLES_EQUAL(expected, actual, 1e-12);
@@ -402,11 +430,11 @@ TEST(HybridFactorGraph, Elimination) {
   auto result = self.linearizedFactorGraph.eliminatePartialSequential(ordering);
 
   CHECK(result.first);
-  GTSAM_PRINT(*result.first);  // HybridBayesNet
+  //  GTSAM_PRINT(*result.first);  // HybridBayesNet
   EXPECT_LONGS_EQUAL(3, result.first->size());
 
   CHECK(result.second);
-  GTSAM_PRINT(*result.second);  // HybridFactorGraph
+  //  GTSAM_PRINT(*result.second);  // HybridFactorGraph
   EXPECT_LONGS_EQUAL(3, result.second->size());
 }
 
