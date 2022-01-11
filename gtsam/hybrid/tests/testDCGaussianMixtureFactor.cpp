@@ -19,6 +19,7 @@
  */
 
 #include <gtsam/hybrid/DCGaussianMixtureFactor.h>
+#include <gtsam/hybrid/GaussianMixture.h>
 
 // Include for test suite
 #include <CppUnitLite/TestHarness.h>
@@ -85,6 +86,22 @@ TEST(DCGaussianMixtureFactor, Sum) {
   auto actual = sum(mode);
   EXPECT(actual.at(0) == f11);
   EXPECT(actual.at(1) == f22);
+}
+
+TEST(DCGaussianMixtureFactor, GaussianMixture) {
+  KeyVector keys;
+  keys.push_back(X(0));
+  keys.push_back(X(1));
+
+  DiscreteKeys dKeys;
+  dKeys.emplace_back(M(0), 2);
+  dKeys.emplace_back(M(1), 2);
+
+  auto gaussians = boost::make_shared<GaussianConditional>();
+  GaussianMixture::Conditionals conditionals(gaussians);
+  GaussianMixture gm(keys, dKeys, conditionals);
+
+  EXPECT_LONGS_EQUAL(2, gm.discreteKeys().size());
 }
 
 /* ************************************************************************* */

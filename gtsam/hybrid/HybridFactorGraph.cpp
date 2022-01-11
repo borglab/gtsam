@@ -90,7 +90,12 @@ DiscreteKeys HybridFactorGraph::discreteKeys() const {
   result = discreteGraph_.discreteKeys();
   // Discrete keys from the DC factor graph.
   auto dcKeys = dcGraph_.discreteKeys();
-  result.insert(result.end(), dcKeys.begin(), dcKeys.end());
+  for(auto&& key: dcKeys) {
+    // Only insert unique keys
+    if(std::find(result.begin(), result.end(), key) == result.end()) {
+      result.push_back(key);
+    }
+  }
   return result;
 }
 
@@ -108,11 +113,6 @@ static Sum& operator+=(Sum& sum, const GaussianFactor::shared_ptr& factor) {
 }
 
 Sum HybridFactorGraph::sum() const {
-  if (nrDiscreteFactors()) {
-    throw runtime_error(
-        "HybridFactorGraph::sum cannot handle DiscreteFactors.");
-  }
-
   // "sum" all factors, gathering into GaussianFactorGraph
   DCGaussianMixtureFactor::Sum sum;
   for (auto&& dcFactor : dcGraph()) {

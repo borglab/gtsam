@@ -35,10 +35,6 @@ namespace gtsam {
 class GaussianMixture
     : public DCGaussianMixtureFactor,
       public Conditional<DCGaussianMixtureFactor, GaussianMixture> {
- protected:
-  // Set of DiscreteKeys for this factor.
-  DiscreteKeys discreteKeys_;
-
  public:
   using This = GaussianMixture;
   using shared_ptr = boost::shared_ptr<This>;
