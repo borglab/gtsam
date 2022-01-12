@@ -55,7 +55,7 @@ class TestTriangulationExample(GtsamTestCase):
     def generate_measurements(
         self,
         calibration: Union[Cal3Bundler, Cal3_S2],
-        camera_model,
+        camera_model: Union[PinholeCameraCal3Bundler, PinholeCameraCal3_S2],
         cal_params,
         camera_set: Optional[Union[CameraSetCal3Bundler, CameraSetCal3_S2]] = None,
     ):
