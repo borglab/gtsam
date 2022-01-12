@@ -375,6 +375,31 @@ TEST(DecisionTree, labels) {
   EXPECT_LONGS_EQUAL(2, labels.size());
 }
 
+/* ******************************************************************************** */
+// Test retrieving all labels.
+TEST(DecisionTree, unzip) {
+  using DTP = DecisionTree<string, std::pair<int, string>>;
+  using DT1 = DecisionTree<string, int>;
+  using DT2 = DecisionTree<string, string>;
+
+  // Create small two-level tree
+  string A("A"), B("B"), C("C");
+  DTP tree(B,
+           DTP(A, {0, "zero"}, {1, "one"}),
+           DTP(A, {2, "two"}, {1337, "l33t"})
+  );
+
+  DT1 dt1;
+  DT2 dt2;
+  std::tie(dt1, dt2) = unzip(tree);
+  
+  DT1 tree1(B, DT1(A, 0, 1), DT1(A, 2, 1337));
+  DT2 tree2(B, DT2(A, "zero", "one"), DT2(A, "two", "l33t"));
+
+  EXPECT(tree1.equals(dt1));
+  EXPECT(tree2.equals(dt2));
+}
+
 /* ************************************************************************* */
 int main() {
   TestResult tr;
