@@ -9,7 +9,7 @@ Test Triangulation
 Authors: Frank Dellaert & Fan Jiang (Python) & Sushmita Warrier & John Lambert
 """
 import unittest
-from typing import Iterable, Optional, Tuple, Union
+from typing import Iterable, List, Optional, Tuple, Union
 
 import numpy as np
 
