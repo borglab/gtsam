@@ -334,7 +334,7 @@ TEST(DCGaussianElimination, Eliminate_fully) {
   auto factors = self.linearizedFactorGraph;
 
   // Add measurement factors
-  auto measurement_noise = noiseModel::Isotropic::Sigmas(Vector1(0.01));
+  auto measurement_noise = noiseModel::Isotropic::Sigma(1, 0.1);
   factors.emplace_gaussian<JacobianFactor>(X(1), I_1x1, 1 * Vector1::Ones(), measurement_noise);
   factors.emplace_gaussian<JacobianFactor>(X(2), I_1x1, 2 * Vector1::Ones(), measurement_noise);
 
