@@ -340,4 +340,11 @@ namespace gtsam {
     return f.apply(g, op);
   }
 
+  /// unzip a DecisionTree if its leaves are `std::pair`
+  template<typename L, typename T1, typename T2>
+  std::pair<DecisionTree<L, T1>, DecisionTree<L, T2> > unzip(const DecisionTree<L, std::pair<T1, T2> > &input) {
+    return std::make_pair(DecisionTree<L, T1>(input, [](std::pair<T1, T2> i) { return i.first; }),
+                          DecisionTree<L, T2>(input, [](std::pair<T1, T2> i) { return i.second; }));
+  }
+
 } // namespace gtsam
