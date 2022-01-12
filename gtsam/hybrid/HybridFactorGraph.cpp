@@ -176,8 +176,8 @@ pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
 
   // STEP 3: Create result
   auto pair = unzip(eliminationResults);
-  GaussianMixture::Conditionals conditionals = pair.first;
-  DCGaussianMixtureFactor::Factors separatorFactors = pair.second;
+  const GaussianMixture::Conditionals& conditionals = pair.first;
+  const DCGaussianMixtureFactor::Factors& separatorFactors = pair.second;
 
   const DiscreteKeys discreteKeys = factors.discreteKeys();
 
@@ -188,8 +188,9 @@ pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
   // If there are no more continuous parents, then we should create here a
   // DiscreteFactor, with the error for each discrete choice.
   if (separatorKeys.size() == 0) {
+    VectorValues empty_values;
     auto factorError = [&](const GaussianFactor::shared_ptr& factor) {
-      return exp(-factor->error(VectorValues()));
+      return exp(-factor->error(empty_values));
     };
     DecisionTree<Key, double> fdt(separatorFactors, factorError);
     auto discreteFactor =
