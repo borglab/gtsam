@@ -13,6 +13,7 @@
  * @file DiscreteBayesNet.h
  * @date Feb 15, 2011
  * @author Duy-Nguyen Ta
+ * @author Frank dellaert
  */
 
 #pragma once
@@ -22,6 +23,7 @@
 #include <boost/shared_ptr.hpp>
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/FactorGraph.h>
+#include <gtsam/discrete/DiscretePrior.h>
 #include <gtsam/discrete/DiscreteConditional.h>
 
 namespace gtsam {
@@ -74,6 +76,11 @@ namespace gtsam {
     // Add inherited versions of add.
     using Base::add;
 
+    /** Add a DiscretePrior using a table or a string */
+    void add(const DiscreteKey& key, const std::string& spec) {
+      emplace_shared<DiscretePrior>(key, spec);
+    }
+
     /** Add a DiscreteCondtional */
     template <typename... Args>
     void add(Args&&... args) {
@@ -97,6 +104,14 @@ namespace gtsam {
     DiscreteValues sample() const;
 
     ///@}
+    /// @name Wrapper support
+    /// @{
+
+    /// Render as markdown table.
+    std::string markdown(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                         const DiscreteFactor::Names& names = {}) const;
+
+    /// @}
 
   private:
     /** Serialization function */

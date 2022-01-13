@@ -30,30 +30,46 @@ class DiscreteFactor {
 };
 
 #include <gtsam/discrete/DecisionTreeFactor.h>
-virtual class DecisionTreeFactor: gtsam::DiscreteFactor {
+virtual class DecisionTreeFactor : gtsam::DiscreteFactor {
   DecisionTreeFactor();
+  
+  DecisionTreeFactor(const gtsam::DiscreteKey& key,
+                     const std::vector<double>& spec);
+  DecisionTreeFactor(const gtsam::DiscreteKey& key, string table);
+  
   DecisionTreeFactor(const gtsam::DiscreteKeys& keys, string table);
+  DecisionTreeFactor(const std::vector<gtsam::DiscreteKey>& keys, string table);
+  
   DecisionTreeFactor(const gtsam::DiscreteConditional& c);
+  
   void print(string s = "DecisionTreeFactor\n",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::DecisionTreeFactor& other, double tol = 1e-9) const;
-  double operator()(const gtsam::DiscreteValues& values) const; // TODO(dellaert): why do I have to repeat???
+  string dot(
+      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
+      bool showZero = true) const;
+  std::vector<std::pair<DiscreteValues, double>> enumerate() const;
+  string markdown(const gtsam::KeyFormatter& keyFormatter =
+                      gtsam::DefaultKeyFormatter) const;
+  string markdown(const gtsam::KeyFormatter& keyFormatter,
+                  std::map<gtsam::Key, std::vector<std::string>> names) const;
 };
 
 #include <gtsam/discrete/DiscreteConditional.h>
 virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
   DiscreteConditional();
   DiscreteConditional(size_t nFrontals, const gtsam::DecisionTreeFactor& f);
+  DiscreteConditional(const gtsam::DiscreteKey& key, string spec);
   DiscreteConditional(const gtsam::DiscreteKey& key,
                       const gtsam::DiscreteKeys& parents, string spec);
+  DiscreteConditional(const gtsam::DiscreteKey& key,
+                      const std::vector<gtsam::DiscreteKey>& parents, string spec);
   DiscreteConditional(const gtsam::DecisionTreeFactor& joint,
                       const gtsam::DecisionTreeFactor& marginal);
   DiscreteConditional(const gtsam::DecisionTreeFactor& joint,
                       const gtsam::DecisionTreeFactor& marginal,
                       const gtsam::Ordering& orderedKeys);
-  size_t size() const; // TODO(dellaert): why do I have to repeat???
-  double operator()(const gtsam::DiscreteValues& values) const; // TODO(dellaert): why do I have to repeat???
   void print(string s = "Discrete Conditional\n",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
@@ -62,18 +78,45 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
       string s = "Discrete Conditional: ",
       const gtsam::KeyFormatter& formatter = gtsam::DefaultKeyFormatter) const;
   gtsam::DecisionTreeFactor* toFactor() const;
-  gtsam::DecisionTreeFactor* chooseAsFactor(const gtsam::DiscreteValues& parentsValues) const;
+  gtsam::DecisionTreeFactor* choose(
+      const gtsam::DiscreteValues& parentsValues) const;
+  gtsam::DecisionTreeFactor* likelihood(
+      const gtsam::DiscreteValues& frontalValues) const;
+  gtsam::DecisionTreeFactor* likelihood(size_t value) const;
   size_t solve(const gtsam::DiscreteValues& parentsValues) const;
   size_t sample(const gtsam::DiscreteValues& parentsValues) const;
-  void solveInPlace(gtsam::DiscreteValues@ parentsValues) const;
-  void sampleInPlace(gtsam::DiscreteValues@ parentsValues) const;
+  size_t sample(size_t value) const;
+  size_t sample() const;
+  void solveInPlace(gtsam::DiscreteValues @parentsValues) const;
+  void sampleInPlace(gtsam::DiscreteValues @parentsValues) const;
+  string markdown(const gtsam::KeyFormatter& keyFormatter =
+                      gtsam::DefaultKeyFormatter) const;
+  string markdown(const gtsam::KeyFormatter& keyFormatter,
+                  std::map<gtsam::Key, std::vector<std::string>> names) const;
+};
+
+#include <gtsam/discrete/DiscretePrior.h>
+virtual class DiscretePrior : gtsam::DiscreteConditional {
+  DiscretePrior();
+  DiscretePrior(const gtsam::DecisionTreeFactor& f);
+  DiscretePrior(const gtsam::DiscreteKey& key, string spec);
+  void print(string s = "Discrete Prior\n",
+             const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
+  double operator()(size_t value) const;
+  std::vector<double> pmf() const;
+  size_t solve() const;
 };
 
 #include <gtsam/discrete/DiscreteBayesNet.h>
-class DiscreteBayesNet { 
+class DiscreteBayesNet {
   DiscreteBayesNet();
+  void add(const gtsam::DiscreteConditional& s);
+  void add(const gtsam::DiscreteKey& key, string spec);
+  void add(const gtsam::DiscreteKey& key, const gtsam::DiscreteKeys& parents,
+           string spec);
   void add(const gtsam::DiscreteKey& key,
-           const gtsam::DiscreteKeys& parents, string spec);
+           const std::vector<gtsam::DiscreteKey>& parents, string spec);
   bool empty() const;
   size_t size() const;
   gtsam::KeySet keys() const;
@@ -82,34 +125,73 @@ class DiscreteBayesNet {
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::DiscreteBayesNet& other, double tol = 1e-9) const;
-  void saveGraph(string s,
-                const gtsam::KeyFormatter& keyFormatter =
+  string dot(const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
-  void add(const gtsam::DiscreteConditional& s);
+  void saveGraph(string s, const gtsam::KeyFormatter& keyFormatter =
+                               gtsam::DefaultKeyFormatter) const;
   double operator()(const gtsam::DiscreteValues& values) const;
   gtsam::DiscreteValues optimize() const;
   gtsam::DiscreteValues sample() const;
+  string markdown(const gtsam::KeyFormatter& keyFormatter =
+                      gtsam::DefaultKeyFormatter) const;
+  string markdown(const gtsam::KeyFormatter& keyFormatter,
+                  std::map<gtsam::Key, std::vector<std::string>> names) const;
 };
 
 #include <gtsam/discrete/DiscreteBayesTree.h>
+class DiscreteBayesTreeClique {
+  DiscreteBayesTreeClique();
+  DiscreteBayesTreeClique(const gtsam::DiscreteConditional* conditional);
+  const gtsam::DiscreteConditional* conditional() const;
+  bool isRoot() const;
+  void printSignature(
+      const string& s = "Clique: ",
+      const gtsam::KeyFormatter& formatter = gtsam::DefaultKeyFormatter) const;
+  double evaluate(const gtsam::DiscreteValues& values) const;
+};
+
 class DiscreteBayesTree {
   DiscreteBayesTree();
   void print(string s = "DiscreteBayesTree\n",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::DiscreteBayesTree& other, double tol = 1e-9) const;
+
+  size_t size() const;
+  bool empty() const;
+  const DiscreteBayesTreeClique* operator[](size_t j) const;
+
+  string dot(const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
+  void saveGraph(string s,
+                const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
   double operator()(const gtsam::DiscreteValues& values) const;
+
+  string markdown(const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
+  string markdown(const gtsam::KeyFormatter& keyFormatter,
+                  std::map<gtsam::Key, std::vector<std::string>> names) const;
+};
+
+#include <gtsam/inference/DotWriter.h>
+class DotWriter {
+  DotWriter(double figureWidthInches = 5, double figureHeightInches = 5,
+            bool plotFactorPoints = true, bool connectKeysToFactor = true,
+            bool binaryEdges = true);
 };
 
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 class DiscreteFactorGraph {
   DiscreteFactorGraph();
   DiscreteFactorGraph(const gtsam::DiscreteBayesNet& bayesNet);
-  
+
   void add(const gtsam::DiscreteKey& j, string table);
-  void add(const gtsam::DiscreteKey& j1, const gtsam::DiscreteKey& j2, string table);
+  void add(const gtsam::DiscreteKey& j, const std::vector<double>& spec);
+
   void add(const gtsam::DiscreteKeys& keys, string table);
-  
+  void add(const std::vector<gtsam::DiscreteKey>& keys, string table);
+
   bool empty() const;
   size_t size() const;
   gtsam::KeySet keys() const;
@@ -117,7 +199,15 @@ class DiscreteFactorGraph {
 
   void print(string s = "") const;
   bool equals(const gtsam::DiscreteFactorGraph& fg, double tol = 1e-9) const;
-  
+
+  string dot(
+      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
+      const gtsam::DotWriter& dotWriter = gtsam::DotWriter()) const;
+  void saveGraph(
+      string s,
+      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
+      const gtsam::DotWriter& dotWriter = gtsam::DotWriter()) const;
+
   gtsam::DecisionTreeFactor product() const;
   double operator()(const gtsam::DiscreteValues& values) const;
   gtsam::DiscreteValues optimize() const;
@@ -126,6 +216,11 @@ class DiscreteFactorGraph {
   gtsam::DiscreteBayesNet eliminateSequential(const gtsam::Ordering& ordering);
   gtsam::DiscreteBayesTree eliminateMultifrontal();
   gtsam::DiscreteBayesTree eliminateMultifrontal(const gtsam::Ordering& ordering);
+
+  string markdown(const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
+  string markdown(const gtsam::KeyFormatter& keyFormatter,
+                  std::map<gtsam::Key, std::vector<std::string>> names) const;
 };
 
 }  // namespace gtsam

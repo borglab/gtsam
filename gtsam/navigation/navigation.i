@@ -18,22 +18,11 @@ class ConstantBias {
 
   // Group
   static gtsam::imuBias::ConstantBias identity();
-  gtsam::imuBias::ConstantBias inverse() const;
-  gtsam::imuBias::ConstantBias compose(const gtsam::imuBias::ConstantBias& b) const;
-  gtsam::imuBias::ConstantBias between(const gtsam::imuBias::ConstantBias& b) const;
 
   // Operator Overloads
   gtsam::imuBias::ConstantBias operator-() const;
   gtsam::imuBias::ConstantBias operator+(const gtsam::imuBias::ConstantBias& b) const;
   gtsam::imuBias::ConstantBias operator-(const gtsam::imuBias::ConstantBias& b) const;
-
-  // Manifold
-  gtsam::imuBias::ConstantBias retract(Vector v) const;
-  Vector localCoordinates(const gtsam::imuBias::ConstantBias& b) const;
-
-  // Lie Group
-  static gtsam::imuBias::ConstantBias Expmap(Vector v);
-  static Vector Logmap(const gtsam::imuBias::ConstantBias& b);
 
   // Standard Interface
   Vector vector() const;

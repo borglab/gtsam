@@ -34,12 +34,13 @@ namespace gtsam {
   /* ******************************************************************************** */
   DecisionTreeFactor::DecisionTreeFactor(const DiscreteKeys& keys,
       const ADT& potentials) :
-      DiscreteFactor(keys.indices()), Potentials(keys, potentials) {
+      DiscreteFactor(keys.indices()), ADT(potentials),
+      cardinalities_(keys.cardinalities()) {
   }
 
   /* *************************************************************************/
   DecisionTreeFactor::DecisionTreeFactor(const DiscreteConditional& c) :
-      DiscreteFactor(c.keys()), Potentials(c) {
+      DiscreteFactor(c.keys()), AlgebraicDecisionTree<Key>(c), cardinalities_(c.cardinalities_) {
   }
 
   /* ************************************************************************* */
@@ -48,16 +49,24 @@ namespace gtsam {
       return false;
     }
     else {
-      const DecisionTreeFactor& f(static_cast<const DecisionTreeFactor&>(other));
-      return Potentials::equals(f, tol);
+      const auto& f(static_cast<const DecisionTreeFactor&>(other));
+      return ADT::equals(f, tol);
     }
+  }
+
+  /* ************************************************************************* */
+  double DecisionTreeFactor::safe_div(const double &a, const double &b)  {
+    // The use for safe_div is when we divide the product factor by the sum
+    // factor. If the product or sum is zero, we accord zero probability to the
+    // event.
+    return (a == 0 || b == 0) ? 0 : (a / b);
   }
 
   /* ************************************************************************* */
   void DecisionTreeFactor::print(const string& s,
       const KeyFormatter& formatter) const {
     cout << s;
-    Potentials::print("Potentials:",formatter);
+    ADT::print("Potentials:",formatter);
   }
 
   /* ************************************************************************* */
@@ -134,5 +143,90 @@ namespace gtsam {
     return boost::make_shared<DecisionTreeFactor>(dkeys, result);
   }
 
-/* ************************************************************************* */
+  /* ************************************************************************* */
+  std::vector<std::pair<DiscreteValues, double>> DecisionTreeFactor::enumerate() const {
+    // Get all possible assignments
+    std::vector<std::pair<Key, size_t>> pairs;
+    for (auto& key : keys()) {
+      pairs.emplace_back(key, cardinalities_.at(key));
+    }
+    // Reverse to make cartesianProduct output a more natural ordering.
+    std::vector<std::pair<Key, size_t>> rpairs(pairs.rbegin(), pairs.rend());
+    const auto assignments = cartesianProduct(rpairs);
+
+    // Construct unordered_map with values
+    std::vector<std::pair<DiscreteValues, double>> result;
+    for (const auto& assignment : assignments) {
+      result.emplace_back(assignment, operator()(assignment));
+    }
+    return result;
+  }
+
+  /* ************************************************************************* */
+  static std::string valueFormatter(const double& v) {
+    return (boost::format("%4.2g") % v).str();
+  }
+
+  /** output to graphviz format, stream version */
+  void DecisionTreeFactor::dot(std::ostream& os,
+                               const KeyFormatter& keyFormatter,
+                               bool showZero) const {
+    ADT::dot(os, keyFormatter, valueFormatter, showZero);
+  }
+
+  /** output to graphviz format, open a file */
+  void DecisionTreeFactor::dot(const std::string& name,
+                               const KeyFormatter& keyFormatter,
+                               bool showZero) const {
+    ADT::dot(name, keyFormatter, valueFormatter, showZero);
+  }
+
+  /** output to graphviz format string */
+  std::string DecisionTreeFactor::dot(const KeyFormatter& keyFormatter,
+                                      bool showZero) const {
+    return ADT::dot(keyFormatter, valueFormatter, showZero);
+  }
+
+  /* ************************************************************************* */
+  string DecisionTreeFactor::markdown(const KeyFormatter& keyFormatter,
+                                      const Names& names) const {
+    stringstream ss;
+
+    // Print out header and construct argument for `cartesianProduct`.
+    ss << "|";
+    for (auto& key : keys()) {
+      ss << keyFormatter(key) << "|";
+    }
+    ss << "value|\n";
+
+    // Print out separator with alignment hints.
+    ss << "|";
+    for (size_t j = 0; j < size(); j++) ss << ":-:|";
+    ss << ":-:|\n";
+
+    // Print out all rows.
+    auto rows = enumerate();
+    for (const auto& kv : rows) {
+      ss << "|";
+      auto assignment = kv.first;
+      for (auto& key : keys()) {
+        size_t index = assignment.at(key);
+        ss << Translate(names, key, index) << "|";
+      }
+      ss << kv.second << "|\n";
+    }
+    return ss.str();
+  }
+
+  DecisionTreeFactor::DecisionTreeFactor(const DiscreteKeys &keys, const vector<double> &table) :
+          DiscreteFactor(keys.indices()), AlgebraicDecisionTree<Key>(keys, table),
+          cardinalities_(keys.cardinalities()) {
+  }
+
+  DecisionTreeFactor::DecisionTreeFactor(const DiscreteKeys &keys, const string &table) :
+          DiscreteFactor(keys.indices()), AlgebraicDecisionTree<Key>(keys, table),
+          cardinalities_(keys.cardinalities()) {
+  }
+
+  /* ************************************************************************* */
 } // namespace gtsam

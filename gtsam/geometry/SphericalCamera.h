@@ -43,8 +43,21 @@ class GTSAM_EXPORT EmptyCal {
   EmptyCal() {}
   virtual ~EmptyCal() = default;
   using shared_ptr = boost::shared_ptr<EmptyCal>;
+
+  /// return DOF, dimensionality of tangent space
+  inline static size_t Dim() { return dimension; }
+
   void print(const std::string& s) const {
     std::cout << "empty calibration: " << s << std::endl;
+  }
+
+ private:
+  /// Serialization function
+  friend class boost::serialization::access;
+  template <class Archive>
+  void serialize(Archive& ar, const unsigned int /*version*/) {
+    ar& boost::serialization::make_nvp(
+        "EmptyCal", boost::serialization::base_object<EmptyCal>(*this));
   }
 };
 
@@ -58,9 +71,9 @@ class GTSAM_EXPORT SphericalCamera {
  public:
   enum { dimension = 6 };
 
-  typedef Unit3 Measurement;
-  typedef std::vector<Unit3> MeasurementVector;
-  typedef EmptyCal CalibrationType;
+  using Measurement = Unit3;
+  using MeasurementVector = std::vector<Unit3>;
+  using CalibrationType = EmptyCal;
 
  private:
   Pose3 pose_;  ///< 3D pose of camera
@@ -83,8 +96,8 @@ class GTSAM_EXPORT SphericalCamera {
 
   /// Constructor with empty intrinsics (needed for smart factors)
   explicit SphericalCamera(const Pose3& pose,
-                           const boost::shared_ptr<EmptyCal>& cal)
-      : pose_(pose), emptyCal_(boost::make_shared<EmptyCal>()) {}
+                           const EmptyCal::shared_ptr& cal)
+      : pose_(pose), emptyCal_(cal) {}
 
   /// @}
   /// @name Advanced Constructors
@@ -95,7 +108,7 @@ class GTSAM_EXPORT SphericalCamera {
   virtual ~SphericalCamera() = default;
 
   /// return shared pointer to calibration
-  const boost::shared_ptr<EmptyCal>& sharedCalibration() const {
+  const EmptyCal::shared_ptr& sharedCalibration() const {
     return emptyCal_;
   }
 
@@ -213,6 +226,9 @@ class GTSAM_EXPORT SphericalCamera {
   void serialize(Archive& ar, const unsigned int /*version*/) {
     ar& BOOST_SERIALIZATION_NVP(pose_);
   }
+
+ public:
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 // end of class SphericalCamera
 
