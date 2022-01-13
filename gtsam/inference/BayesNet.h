@@ -64,11 +64,21 @@ namespace gtsam {
 
    /// @}
 
-   /// @name Standard Interface
+   /// @name Graph Display
    /// @{
 
-   void saveGraph(const std::string& s,
+   /// Output to graphviz format, stream version.
+   void dot(std::ostream& os, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+
+   /// Output to graphviz format string.
+   std::string dot(
+       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+
+   /// output to file with graphviz format.
+   void saveGraph(const std::string& filename,
                   const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+  
+   /// @}
   };
 
 }

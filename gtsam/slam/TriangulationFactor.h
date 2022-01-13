@@ -33,18 +33,18 @@ class TriangulationFactor: public NoiseModelFactor1<Point3> {
 public:
 
   /// CAMERA type
-  typedef CAMERA Camera;
+  using Camera = CAMERA;
 
 protected:
 
   /// shorthand for base class type
-  typedef NoiseModelFactor1<Point3> Base;
+  using Base = NoiseModelFactor1<Point3>;
 
   /// shorthand for this class
-  typedef TriangulationFactor<CAMERA> This;
+  using This = TriangulationFactor<CAMERA>;
 
   /// shorthand for measurement type, e.g. Point2 or StereoPoint2
-  typedef typename CAMERA::Measurement Measurement;
+  using Measurement = typename CAMERA::Measurement;
 
   // Keep a copy of measurement and calibration for I/O
   const CAMERA camera_; ///< CAMERA in which this landmark was seen
@@ -55,9 +55,10 @@ protected:
   const bool verboseCheirality_; ///< If true, prints text for Cheirality exceptions (default: false)
 
 public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<This> shared_ptr;
+  using shared_ptr = boost::shared_ptr<This>;
 
   /// Default constructor
   TriangulationFactor() :

@@ -24,7 +24,10 @@
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/base/FastSet.h>
+
 #include <boost/make_shared.hpp>
+#include <string>
+#include <vector>
 
 namespace gtsam {
 
@@ -101,29 +104,12 @@ public:
 
   /// @}
 
-  // Add single key decision-tree factor.
-  template <class SOURCE>
-  void add(const DiscreteKey& j, SOURCE table) {
-    DiscreteKeys keys;
-    keys.push_back(j);
-    emplace_shared<DecisionTreeFactor>(keys, table);
+  /** Add a decision-tree factor */
+  template <typename... Args>
+  void add(Args&&... args) {
+    emplace_shared<DecisionTreeFactor>(std::forward<Args>(args)...);
   }
-
-  // Add binary key decision-tree factor.
-  template <class SOURCE>
-  void add(const DiscreteKey& j1, const DiscreteKey& j2, SOURCE table) {
-    DiscreteKeys keys;
-    keys.push_back(j1);
-    keys.push_back(j2);
-    emplace_shared<DecisionTreeFactor>(keys, table);
-  }
-
-  // Add shared discreteFactor immediately from arguments.
-  template <class SOURCE>
-  void add(const DiscreteKeys& keys, SOURCE table) {
-    emplace_shared<DecisionTreeFactor>(keys, table);
-  }
-
+      
   /** Return the set of variables involved in the factors (set union) */
   KeySet keys() const;
 
@@ -154,6 +140,20 @@ public:
 //  /** Apply a reduction, which is a remapping of variable indices. */
 //  GTSAM_EXPORT void reduceWithInverse(const internal::Reduction& inverseReduction);
 
+  /// @name Wrapper support
+  /// @{
+
+  /**
+   * @brief Render as markdown table
+   * 
+   * @param keyFormatter GTSAM-style Key formatter.
+   * @param names optional, a map from Key to category names.
+   * @return std::string a (potentially long) markdown string.
+   */
+  std::string markdown(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                       const DiscreteFactor::Names& names = {}) const;
+
+  /// @}
 }; // \ DiscreteFactorGraph
 
 /// traits

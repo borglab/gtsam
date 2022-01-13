@@ -1524,7 +1524,7 @@ TEST(SmartProjectionFactorP, 2poses_rankTol) {
 TEST(SmartProjectionFactorP, 2poses_sphericalCamera_rankTol) {
   typedef SphericalCamera Camera;
   typedef SmartProjectionRigFactor<Camera> SmartRigFactor;
-  static EmptyCal::shared_ptr emptyK;
+  EmptyCal::shared_ptr emptyK(new EmptyCal());
   Pose3 poseA = Pose3(
       Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2),
       Point3(0.0, 0.0, 0.0));  // with z pointing along x axis of global frame
