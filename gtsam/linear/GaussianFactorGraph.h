@@ -154,7 +154,8 @@ namespace gtsam {
 
     /** Unnormalized probability. O(n) */
     double probPrime(const VectorValues& c) const {
-      return exp(-0.5 * error(c));
+      // NOTE the 0.5 constant is handled by the factor error.
+      return exp(-error(c));
     }
 
     /**

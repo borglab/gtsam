@@ -108,6 +108,24 @@ TEST( NonlinearFactorGraph, probPrime )
 }
 
 /* ************************************************************************* */
+TEST(NonlinearFactorGraph, ProbPrime2) {
+  NonlinearFactorGraph fg;
+  fg.emplace_shared<PriorFactor<double>>(1, 0.0,
+                                         noiseModel::Isotropic::Sigma(1, 1.0));
+
+  Values values;
+  values.insert(1, 1.0);
+
+  // The prior factor squared error is: 0.5.
+  EXPECT_DOUBLES_EQUAL(0.5, fg.error(values), 1e-12);
+
+  // The probability value is: exp^(-factor_error) / sqrt(2 * PI)
+  // Ignore the denominator and we get: exp^(-factor_error) = exp^(-0.5)
+  double expected = exp(-0.5);
+  EXPECT_DOUBLES_EQUAL(expected, fg.probPrime(values), 1e-12);
+}
+
+/* ************************************************************************* */
 TEST( NonlinearFactorGraph, linearize )
 {
   NonlinearFactorGraph fg = createNonlinearFactorGraph();
