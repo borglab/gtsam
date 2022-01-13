@@ -206,9 +206,11 @@ class GTSAM_EXPORT GncOptimizer {
         std::cout << "GNC Optimizer stopped because all measurements are already known to be inliers or outliers"
                   << std::endl;
       }
+      if (params_.verbosity >= GncParameters::Verbosity::MU) {
+        std::cout << "mu: " << mu << std::endl;
+      }
       if (params_.verbosity >= GncParameters::Verbosity::VALUES) {
         result.print("result\n");
-        std::cout << "mu: " << mu << std::endl;
       }
       return result;
     }
@@ -217,11 +219,15 @@ class GTSAM_EXPORT GncOptimizer {
     for (iter = 0; iter < params_.maxIterations; iter++) {
 
       // display info
-      if (params_.verbosity >= GncParameters::Verbosity::VALUES) {
+      if (params_.verbosity >= GncParameters::Verbosity::MU) {
         std::cout << "iter: " << iter << std::endl;
-        result.print("result\n");
         std::cout << "mu: " << mu << std::endl;
+      }
+      if (params_.verbosity >= GncParameters::Verbosity::WEIGHTS) {
         std::cout << "weights: " << weights_ << std::endl;
+      }
+      if (params_.verbosity >= GncParameters::Verbosity::VALUES) {
+        result.print("result\n");
       }
       // weights update
       weights_ = calculateWeights(result, mu);
@@ -253,9 +259,11 @@ class GTSAM_EXPORT GncOptimizer {
     if (params_.verbosity >= GncParameters::Verbosity::SUMMARY) {
       std::cout << "final iterations: " << iter << std::endl;
       std::cout << "final mu: " << mu << std::endl;
-      std::cout << "final weights: " << weights_ << std::endl;
       std::cout << "previous cost: " << prev_cost << std::endl;
       std::cout << "current cost: " << cost << std::endl;
+    }
+    if (params_.verbosity >= GncParameters::Verbosity::WEIGHTS) {
+      std::cout << "final weights: " << weights_ << std::endl;
     }
     return result;
   }
@@ -291,6 +299,9 @@ class GTSAM_EXPORT GncOptimizer {
                 std::min(mu_init, barcSq_[k] / (2 * rk - barcSq_[k]) ) : mu_init;
           }
         }
+        if (mu_init >= 0 && mu_init < 1e-6)
+          mu_init = 1e-6; // if mu ~ 0 (but positive), that means we have measurements with large errors,
+        // i.e., rk > barcSq_[k] and rk very large, hence we threshold to 1e-6 to avoid mu = 0
         return mu_init > 0 && !std::isinf(mu_init) ? mu_init : -1; // if mu <= 0 or mu = inf, return -1,
         // which leads to termination of the main gnc loop. In this case, all residuals are already below the threshold
         // and there is no need to robustify (TLS = least squares)
@@ -338,8 +349,10 @@ class GTSAM_EXPORT GncOptimizer {
   bool checkCostConvergence(const double cost, const double prev_cost) const {
     bool costConverged = std::fabs(cost - prev_cost) / std::max(prev_cost, 1e-7)
         < params_.relativeCostTol;
-    if (costConverged && params_.verbosity >= GncParameters::Verbosity::SUMMARY)
-      std::cout << "checkCostConvergence = true " << std::endl;
+    if (costConverged && params_.verbosity >= GncParameters::Verbosity::SUMMARY){
+      std::cout << "checkCostConvergence = true (prev. cost = " << prev_cost
+                << ", curr. cost = " << cost << ")" << std::endl;
+    }
     return costConverged;
   }
 

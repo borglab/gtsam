@@ -130,9 +130,9 @@ void Scheduler::addStudentSpecificConstraints(size_t i,
       // get all constraints then specialize to slot
       size_t dummyIndex = maxNrStudents_ * 3 + maxNrStudents_;
       DiscreteKey dummy(dummyIndex, nrTimeSlots());
-      Potentials::ADT p(dummy & areaKey,
+      AlgebraicDecisionTree<Key> p(dummy & areaKey,
                         available_);  // available_ is Doodle string
-      Potentials::ADT q = p.choose(dummyIndex, *slot);
+      auto q = p.choose(dummyIndex, *slot);
       CSP::add(areaKey, q);
     } else {
       DiscreteKeys keys {s.key_, areaKey};

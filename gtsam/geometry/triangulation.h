@@ -14,6 +14,7 @@
  * @brief Functions for triangulation
  * @date July 31, 2013
  * @author Chris Beall
+ * @author Luca Carlone
  */
 
 #pragma once
@@ -105,18 +106,18 @@ template<class CALIBRATION>
 std::pair<NonlinearFactorGraph, Values> triangulationGraph(
     const std::vector<Pose3>& poses, boost::shared_ptr<CALIBRATION> sharedCal,
     const Point2Vector& measurements, Key landmarkKey,
-    const Point3& initialEstimate) {
+    const Point3& initialEstimate,
+    const SharedNoiseModel& model = nullptr) {
   Values values;
   values.insert(landmarkKey, initialEstimate); // Initial landmark value
   NonlinearFactorGraph graph;
   static SharedNoiseModel unit2(noiseModel::Unit::Create(2));
-  static SharedNoiseModel prior_model(noiseModel::Isotropic::Sigma(6, 1e-6));
   for (size_t i = 0; i < measurements.size(); i++) {
     const Pose3& pose_i = poses[i];
     typedef PinholePose<CALIBRATION> Camera;
     Camera camera_i(pose_i, sharedCal);
     graph.emplace_shared<TriangulationFactor<Camera> > //
-        (camera_i, measurements[i], unit2, landmarkKey);
+        (camera_i, measurements[i], model? model : unit2, landmarkKey);
   }
   return std::make_pair(graph, values);
 }
@@ -134,7 +135,8 @@ template<class CAMERA>
 std::pair<NonlinearFactorGraph, Values> triangulationGraph(
     const CameraSet<CAMERA>& cameras,
     const typename CAMERA::MeasurementVector& measurements, Key landmarkKey,
-    const Point3& initialEstimate) {
+    const Point3& initialEstimate,
+    const SharedNoiseModel& model = nullptr) {
   Values values;
   values.insert(landmarkKey, initialEstimate); // Initial landmark value
   NonlinearFactorGraph graph;
@@ -143,7 +145,7 @@ std::pair<NonlinearFactorGraph, Values> triangulationGraph(
   for (size_t i = 0; i < measurements.size(); i++) {
     const CAMERA& camera_i = cameras[i];
     graph.emplace_shared<TriangulationFactor<CAMERA> > //
-        (camera_i, measurements[i], unit, landmarkKey);
+        (camera_i, measurements[i], model? model : unit, landmarkKey);
   }
   return std::make_pair(graph, values);
 }
@@ -169,13 +171,14 @@ GTSAM_EXPORT Point3 optimize(const NonlinearFactorGraph& graph,
 template<class CALIBRATION>
 Point3 triangulateNonlinear(const std::vector<Pose3>& poses,
     boost::shared_ptr<CALIBRATION> sharedCal,
-    const Point2Vector& measurements, const Point3& initialEstimate) {
+    const Point2Vector& measurements, const Point3& initialEstimate,
+    const SharedNoiseModel& model = nullptr) {
 
   // Create a factor graph and initial values
   Values values;
   NonlinearFactorGraph graph;
   boost::tie(graph, values) = triangulationGraph<CALIBRATION> //
-      (poses, sharedCal, measurements, Symbol('p', 0), initialEstimate);
+      (poses, sharedCal, measurements, Symbol('p', 0), initialEstimate, model);
 
   return optimize(graph, values, Symbol('p', 0));
 }
@@ -190,13 +193,14 @@ Point3 triangulateNonlinear(const std::vector<Pose3>& poses,
 template<class CAMERA>
 Point3 triangulateNonlinear(
     const CameraSet<CAMERA>& cameras,
-    const typename CAMERA::MeasurementVector& measurements, const Point3& initialEstimate) {
+    const typename CAMERA::MeasurementVector& measurements, const Point3& initialEstimate,
+    const SharedNoiseModel& model = nullptr) {
 
   // Create a factor graph and initial values
   Values values;
   NonlinearFactorGraph graph;
   boost::tie(graph, values) = triangulationGraph<CAMERA> //
-      (cameras, measurements, Symbol('p', 0), initialEstimate);
+      (cameras, measurements, Symbol('p', 0), initialEstimate, model);
 
   return optimize(graph, values, Symbol('p', 0));
 }
@@ -239,7 +243,8 @@ template<class CALIBRATION>
 Point3 triangulatePoint3(const std::vector<Pose3>& poses,
     boost::shared_ptr<CALIBRATION> sharedCal,
     const Point2Vector& measurements, double rank_tol = 1e-9,
-    bool optimize = false) {
+    bool optimize = false,
+    const SharedNoiseModel& model = nullptr) {
 
   assert(poses.size() == measurements.size());
   if (poses.size() < 2)
@@ -254,7 +259,7 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
   // Then refine using non-linear optimization
   if (optimize)
     point = triangulateNonlinear<CALIBRATION> //
-        (poses, sharedCal, measurements, point);
+        (poses, sharedCal, measurements, point, model);
 
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
   // verify that the triangulated point lies in front of all cameras
@@ -284,7 +289,8 @@ template<class CAMERA>
 Point3 triangulatePoint3(
     const CameraSet<CAMERA>& cameras,
     const typename CAMERA::MeasurementVector& measurements, double rank_tol = 1e-9,
-    bool optimize = false) {
+    bool optimize = false,
+    const SharedNoiseModel& model = nullptr) {
 
   size_t m = cameras.size();
   assert(measurements.size() == m);
@@ -298,7 +304,7 @@ Point3 triangulatePoint3(
 
   // The n refine using non-linear optimization
   if (optimize)
-    point = triangulateNonlinear<CAMERA>(cameras, measurements, point);
+    point = triangulateNonlinear<CAMERA>(cameras, measurements, point, model);
 
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
   // verify that the triangulated point lies in front of all cameras
@@ -317,9 +323,10 @@ template<class CALIBRATION>
 Point3 triangulatePoint3(
     const CameraSet<PinholeCamera<CALIBRATION> >& cameras,
     const Point2Vector& measurements, double rank_tol = 1e-9,
-    bool optimize = false) {
+    bool optimize = false,
+    const SharedNoiseModel& model = nullptr) {
   return triangulatePoint3<PinholeCamera<CALIBRATION> > //
-  (cameras, measurements, rank_tol, optimize);
+  (cameras, measurements, rank_tol, optimize, model);
 }
 
 struct GTSAM_EXPORT TriangulationParameters {
@@ -341,20 +348,25 @@ struct GTSAM_EXPORT TriangulationParameters {
    */
   double dynamicOutlierRejectionThreshold;
 
+  SharedNoiseModel noiseModel; ///< used in the nonlinear triangulation
+
   /**
    * Constructor
    * @param rankTol tolerance used to check if point triangulation is degenerate
    * @param enableEPI if true refine triangulation with embedded LM iterations
    * @param landmarkDistanceThreshold flag as degenerate if point further than this
    * @param dynamicOutlierRejectionThreshold or if average error larger than this
+   * @param noiseModel noise model to use during nonlinear triangulation
    *
    */
   TriangulationParameters(const double _rankTolerance = 1.0,
       const bool _enableEPI = false, double _landmarkDistanceThreshold = -1,
-      double _dynamicOutlierRejectionThreshold = -1) :
+      double _dynamicOutlierRejectionThreshold = -1,
+      const SharedNoiseModel& _noiseModel = nullptr) :
       rankTolerance(_rankTolerance), enableEPI(_enableEPI), //
       landmarkDistanceThreshold(_landmarkDistanceThreshold), //
-      dynamicOutlierRejectionThreshold(_dynamicOutlierRejectionThreshold) {
+      dynamicOutlierRejectionThreshold(_dynamicOutlierRejectionThreshold),
+      noiseModel(_noiseModel){
   }
 
   // stream to output
@@ -366,6 +378,7 @@ struct GTSAM_EXPORT TriangulationParameters {
         << std::endl;
     os << "dynamicOutlierRejectionThreshold = "
         << p.dynamicOutlierRejectionThreshold << std::endl;
+    os << "noise model" << std::endl;
     return os;
   }
 
@@ -468,8 +481,9 @@ TriangulationResult triangulateSafe(const CameraSet<CAMERA>& cameras,
   else
     // We triangulate the 3D position of the landmark
     try {
-      Point3 point = triangulatePoint3<CAMERA>(cameras, measured,
-          params.rankTolerance, params.enableEPI);
+      Point3 point =
+          triangulatePoint3<CAMERA>(cameras, measured, params.rankTolerance,
+                                    params.enableEPI, params.noiseModel);
 
       // Check landmark distance and re-projection errors to avoid outliers
       size_t i = 0;
