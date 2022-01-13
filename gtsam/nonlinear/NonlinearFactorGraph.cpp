@@ -45,7 +45,8 @@ template class FactorGraph<NonlinearFactor>;
 
 /* ************************************************************************* */
 double NonlinearFactorGraph::probPrime(const Values& values) const {
-  return exp(-0.5 * error(values));
+  // NOTE the 0.5 constant is handled by the factor error.
+  return exp(-error(values));
 }
 
 /* ************************************************************************* */
