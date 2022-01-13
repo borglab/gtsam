@@ -90,9 +90,9 @@ DiscreteKeys HybridFactorGraph::discreteKeys() const {
   result = discreteGraph_.discreteKeys();
   // Discrete keys from the DC factor graph.
   auto dcKeys = dcGraph_.discreteKeys();
-  for(auto&& key: dcKeys) {
+  for (auto&& key : dcKeys) {
     // Only insert unique keys
-    if(std::find(result.begin(), result.end(), key) == result.end()) {
+    if (std::find(result.begin(), result.end(), key) == result.end()) {
       result.push_back(key);
     }
   }
@@ -175,27 +175,31 @@ pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
   DecisionTree<Key, Pair> eliminationResults(sum, eliminate);
 
   // STEP 3: Create result
-  // TODO(Frank): auto pair = eliminationResults.unzip();
+  auto pair = unzip(eliminationResults);
+  const GaussianMixture::Conditionals& conditionals = pair.first;
+  const DCGaussianMixtureFactor::Factors& separatorFactors = pair.second;
 
   const DiscreteKeys discreteKeys = factors.discreteKeys();
 
-  // Grab the conditionals and create the GaussianMixture
-  auto first = [](const Pair& result) { return result.first; };
-  GaussianMixture::Conditionals conditionals(eliminationResults, first);
+  // Create the GaussianMixture from the conditionals
   auto conditional =
       boost::make_shared<GaussianMixture>(keys, discreteKeys, conditionals);
 
   // If there are no more continuous parents, then we should create here a
   // DiscreteFactor, with the error for each discrete choice.
   if (separatorKeys.size() == 0) {
-    auto discreteFactor = factors.toDecisionTreeFactor();
+    VectorValues empty_values;
+    auto factorError = [&](const GaussianFactor::shared_ptr& factor) {
+      return exp(-factor->error(empty_values));
+    };
+    DecisionTree<Key, double> fdt(separatorFactors, factorError);
+    auto discreteFactor =
+        boost::make_shared<DecisionTreeFactor>(factors.discreteKeys(), fdt);
+
     return {conditional, discreteFactor};
 
   } else {
     // Create a resulting DCGaussianMixture on the separator.
-    auto second = [](const Pair& result) { return result.second; };
-    DCGaussianMixtureFactor::Factors separatorFactors(eliminationResults,
-                                                      second);
     auto factor = boost::make_shared<DCGaussianMixtureFactor>(
         separatorKeys, discreteKeys, separatorFactors);
     return {conditional, factor};

@@ -224,35 +224,6 @@ class HybridFactorGraph : protected FactorGraph<Factor>,
     }
   }
 
-  // DEPRECATED below:.
-
-  // /**
-  //  * Add a nonlinear factor to the internal nonlinear factor graph
-  //  * @param nonlinearFactor - the factor to add
-  //  */
-  // template <typename FACTOR>
-  // IsNonlinear<FACTOR> push_nonlinear(const FACTOR& nonlinearFactor) {
-  //   emplace_shared<FACTOR>(nonlinearFactor);
-  // }
-
-  // /**
-  //  * Add a discrete factor to the internal discrete graph
-  //  * @param discreteFactor - the factor to add
-  //  */
-  // template <typename FACTOR>
-  // IsDiscrete<FACTOR> push_discrete(const FACTOR& discreteFactor) {
-  //   emplace_shared<FACTOR>(discreteFactor);
-  // }
-
-  // /**
-  //  * Add a discrete-continuous (DC) factor to the internal DC graph
-  //  * @param dcFactor - the factor to add
-  //  */
-  // template <typename FACTOR>
-  // IsDC<FACTOR> push_dc(const FACTOR& dcFactor) {
-  //   emplace_shared<FACTOR>(dcFactor);
-  // }
-
   /**
    * Simply prints the factor graph.
    */
