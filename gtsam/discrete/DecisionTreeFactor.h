@@ -214,6 +214,16 @@ namespace gtsam {
     std::string markdown(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
                          const Names& names = {}) const override;
 
+    /**
+     * @brief Render as html table
+     *
+     * @param keyFormatter GTSAM-style Key formatter.
+     * @param names optional, category names corresponding to choices.
+     * @return std::string a html string.
+     */
+    std::string html(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                     const Names& names = {}) const override;
+
     /// @}
 
 };

@@ -22,6 +22,7 @@
 #include <gtsam/base/FastSet.h>
 
 #include <boost/make_shared.hpp>
+#include <utility>
 
 using namespace std;
 
@@ -150,9 +151,9 @@ namespace gtsam {
     for (auto& key : keys()) {
       pairs.emplace_back(key, cardinalities_.at(key));
     }
-    // Reverse to make cartesianProduct output a more natural ordering.
+    // Reverse to make cartesian product output a more natural ordering.
     std::vector<std::pair<Key, size_t>> rpairs(pairs.rbegin(), pairs.rend());
-    const auto assignments = cartesianProduct(rpairs);
+    const auto assignments = DiscreteValues::CartesianProduct(rpairs);
 
     // Construct unordered_map with values
     std::vector<std::pair<DiscreteValues, double>> result;
@@ -196,12 +197,13 @@ namespace gtsam {
     return ADT::dot(keyFormatter, valueFormatter, showZero);
   }
 
+    // Print out header.
   /* ************************************************************************* */
   string DecisionTreeFactor::markdown(const KeyFormatter& keyFormatter,
                                       const Names& names) const {
     stringstream ss;
 
-    // Print out header and construct argument for `cartesianProduct`.
+    // Print out header.
     ss << "|";
     for (auto& key : keys()) {
       ss << keyFormatter(key) << "|";
@@ -220,18 +222,54 @@ namespace gtsam {
       auto assignment = kv.first;
       for (auto& key : keys()) {
         size_t index = assignment.at(key);
-        ss << Translate(names, key, index) << "|";
+        ss << DiscreteValues::Translate(names, key, index) << "|";
       }
       ss << kv.second << "|\n";
     }
     return ss.str();
   }
 
+  /* ************************************************************************ */
+  string DecisionTreeFactor::html(const KeyFormatter& keyFormatter,
+                                  const Names& names) const {
+    stringstream ss;
+
+    // Print out preamble.
+    ss << "<div>\n<table class='DecisionTreeFactor'>\n  <thead>\n";
+
+    // Print out header row.
+    ss << "    <tr>";
+    for (auto& key : keys()) {
+      ss << "<th>" << keyFormatter(key) << "</th>";
+    }
+    ss << "<th>value</th></tr>\n";
+
+    // Finish header and start body.
+    ss << "  </thead>\n  <tbody>\n";
+
+    // Print out all rows.
+    auto rows = enumerate();
+    for (const auto& kv : rows) {
+      ss << "    <tr>";
+      auto assignment = kv.first;
+      for (auto& key : keys()) {
+        size_t index = assignment.at(key);
+        ss << "<th>" << DiscreteValues::Translate(names, key, index) << "</th>";
+      }
+      ss << "<td>" << kv.second << "</td>";  // value
+      ss << "</tr>\n";
+    }
+    ss << "  </tbody>\n</table>\n</div>";
+    return ss.str();
+  }
+
+  /* ************************************************************************* */
   DecisionTreeFactor::DecisionTreeFactor(const DiscreteKeys &keys, const vector<double> &table) :
           DiscreteFactor(keys.indices()), AlgebraicDecisionTree<Key>(keys, table),
           cardinalities_(keys.cardinalities()) {
   }
 
+  /* ************************************************************************* */
   DecisionTreeFactor::DecisionTreeFactor(const DiscreteKeys &keys, const string &table) :
           DiscreteFactor(keys.indices()), AlgebraicDecisionTree<Key>(keys, table),
           cardinalities_(keys.cardinalities()) {

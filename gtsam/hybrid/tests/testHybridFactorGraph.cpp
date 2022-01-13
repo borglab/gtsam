@@ -22,6 +22,7 @@
 #include <gtsam/hybrid/DCMixtureFactor.h>
 #include <gtsam/hybrid/HybridEliminationTree.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
+#include <gtsam/discrete/DiscretePrior.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 
@@ -383,7 +384,7 @@ TEST(HybridFactorGraph, ToDecisionTreeFactor) {
 
   auto decisionTreeFactor = linearizedFactorGraph.toDecisionTreeFactor();
 
-  auto allAssignments = cartesianProduct(linearizedFactorGraph.discreteKeys());
+  auto allAssignments = DiscreteValues::CartesianProduct(linearizedFactorGraph.discreteKeys());
 
   // Get the error of the discrete assignment m1=0, m2=1.
   double actual = (*decisionTreeFactor)(allAssignments[1]);

@@ -45,7 +45,8 @@ template class FactorGraph<NonlinearFactor>;
 
 /* ************************************************************************* */
 double NonlinearFactorGraph::probPrime(const Values& values) const {
-  return exp(-0.5 * error(values));
+  // NOTE the 0.5 constant is handled by the factor error.
+  return exp(-error(values));
 }
 
 /* ************************************************************************* */
@@ -54,9 +55,14 @@ void NonlinearFactorGraph::print(const std::string& str, const KeyFormatter& key
   for (size_t i = 0; i < factors_.size(); i++) {
     stringstream ss;
     ss << "Factor " << i << ": ";
-    if (factors_[i] != nullptr) factors_[i]->print(ss.str(), keyFormatter);
-    cout << endl;
+    if (factors_[i] != nullptr) {
+      factors_[i]->print(ss.str(), keyFormatter);
+      cout << "\n";
+    } else {
+      cout << ss.str() << "nullptr\n";
+    }
   }
+  std::cout.flush();
 }
 
 /* ************************************************************************* */
@@ -80,8 +86,9 @@ void NonlinearFactorGraph::printErrors(const Values& values, const std::string& 
       factor->print(ss.str(), keyFormatter);
       cout << "error = " << errorValue << "\n";
     }
-    cout << endl; // only one "endl" at end might be faster, \n for each factor
+    cout << "\n";
   }
+  std::cout.flush();
 }
 
 /* ************************************************************************* */

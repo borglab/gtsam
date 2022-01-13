@@ -61,16 +61,29 @@ namespace gtsam {
     return result;
   }
 
-  /* ************************************************************************* */
+  /* *********************************************************************** */
   std::string DiscreteBayesNet::markdown(
       const KeyFormatter& keyFormatter,
       const DiscreteFactor::Names& names) const {
     using std::endl;
     std::stringstream ss;
     ss << "`DiscreteBayesNet` of size " << size() << endl << endl;
-    for(const DiscreteConditional::shared_ptr& conditional: *this)
+    for (const DiscreteConditional::shared_ptr& conditional : *this)
       ss << conditional->markdown(keyFormatter, names) << endl;
     return ss.str();
   }
+
+  /* *********************************************************************** */
+  std::string DiscreteBayesNet::html(
+      const KeyFormatter& keyFormatter,
+      const DiscreteFactor::Names& names) const {
+    using std::endl;
+    std::stringstream ss;
+    ss << "<div><p><tt>DiscreteBayesNet</tt> of size " << size() << "</p>";
+    for (const DiscreteConditional::shared_ptr& conditional : *this)
+      ss << conditional->html(keyFormatter, names) << endl;
+    return ss.str();
+  }
+
 /* ************************************************************************* */
 } // namespace
