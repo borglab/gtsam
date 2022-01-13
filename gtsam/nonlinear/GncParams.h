@@ -48,6 +48,8 @@ class GTSAM_EXPORT GncParams {
   enum Verbosity {
     SILENT = 0,
     SUMMARY,
+    MU,
+    WEIGHTS,
     VALUES
   };
 
