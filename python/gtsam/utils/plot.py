@@ -10,7 +10,7 @@ from matplotlib import patches
 from mpl_toolkits.mplot3d import Axes3D  # pylint: disable=unused-import
 
 import gtsam
-from gtsam import Marginals, Point3, Pose2, Pose3, Values
+from gtsam import Marginals, Point2, Point3, Pose2, Pose3, Values
 
 
 def set_axes_equal(fignum: int) -> None:
@@ -106,6 +106,66 @@ def plot_covariance_ellipse_3d(axes,
     z = data[2 * n:, :] + origin[2]
 
     axes.plot_surface(x, y, z, alpha=alpha, cmap='hot')
+
+
+def plot_point2_on_axes(axes,
+                        point: Point2,
+                        linespec: str,
+                        P: Optional[np.ndarray] = None) -> None:
+    """
+    Plot a 2D point on given axis `axes` with given `linespec`.
+
+    Args:
+        axes (matplotlib.axes.Axes): Matplotlib axes.
+        point: The point to be plotted.
+        linespec: String representing formatting options for Matplotlib.
+        P: Marginal covariance matrix to plot the uncertainty of the estimation.
+    """
+    axes.plot([point[0]], [point[1]], linespec, marker='.', markersize=10)
+    if P is not None:
+        w, v = np.linalg.eig(P)
+
+        # k = 2.296
+        k = 5.0
+
+        angle = np.arctan2(v[1, 0], v[0, 0])
+        e1 = patches.Ellipse(point,
+                             np.sqrt(w[0] * k),
+                             np.sqrt(w[1] * k),
+                             np.rad2deg(angle),
+                             fill=False)
+        axes.add_patch(e1)
+
+
+def plot_point2(
+    fignum: int,
+    point: Point2,
+    linespec: str,
+    P: np.ndarray = None,
+    axis_labels: Iterable[str] = ("X axis", "Y axis"),
+) -> plt.Figure:
+    """
+    Plot a 2D point on given figure with given `linespec`.
+
+    Args:
+        fignum: Integer representing the figure number to use for plotting.
+        point: The point to be plotted.
+        linespec: String representing formatting options for Matplotlib.
+        P: Marginal covariance matrix to plot the uncertainty of the estimation.
+        axis_labels: List of axis labels to set.
+
+    Returns:
+        fig: The matplotlib figure.
+
+    """
+    fig = plt.figure(fignum)
+    axes = fig.gca()
+    plot_point2_on_axes(axes, point, linespec, P)
+
+    axes.set_xlabel(axis_labels[0])
+    axes.set_ylabel(axis_labels[1])
+
+    return fig
 
 
 def plot_pose2_on_axes(axes,
