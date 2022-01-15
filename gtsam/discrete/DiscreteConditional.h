@@ -126,6 +126,9 @@ class GTSAM_EXPORT DiscreteConditional
    */
   DiscreteConditional operator*(const DiscreteConditional& other) const;
 
+  /** Calculate marginal on given key, no parent case. */
+  DiscreteConditional marginal(Key key) const;
+
   /// @}
   /// @name Testable
   /// @{

@@ -110,7 +110,26 @@ DiscreteConditional DiscreteConditional::operator*(
   return DiscreteConditional(newFrontals.size(), discreteKeys, product);
 }
 
-/* ******************************************************************************** */
+/* ************************************************************************** */
+DiscreteConditional DiscreteConditional::marginal(Key key) const {
+  if (nrParents() > 0)
+    throw std::invalid_argument(
+        "DiscreteConditional::marginal: single argument version only valid for "
+        "fully specified joint distributions (i.e., no parents).");
+
+  // Calculate the keys as the frontal keys without the given key.
+  DiscreteKeys discreteKeys{{key, cardinality(key)}};
+
+  // Calculate sum
+  ADT adt(*this);
+  for (auto&& k : frontals())
+    if (k != key) adt = adt.sum(k, cardinality(k));
+
+  // Return new factor
+  return DiscreteConditional(1, discreteKeys, adt);
+}
+
+/* ************************************************************************** */
 void DiscreteConditional::print(const string& s,
                                 const KeyFormatter& formatter) const {
   cout << s << " P( ";

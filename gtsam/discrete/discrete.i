@@ -97,6 +97,7 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
                       const gtsam::Ordering& orderedKeys);
   gtsam::DiscreteConditional operator*(
       const gtsam::DiscreteConditional& other) const;
+  DiscreteConditional marginal(gtsam::Key key) const;
   void print(string s = "Discrete Conditional\n",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
