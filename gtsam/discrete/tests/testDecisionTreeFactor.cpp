@@ -17,10 +17,12 @@
  *  @author Duy-Nguyen Ta
  */
 
-#include <gtsam/discrete/Signature.h>
-#include <gtsam/discrete/DecisionTreeFactor.h>
-#include <gtsam/base/Testable.h>
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/discrete/DecisionTreeFactor.h>
+#include <gtsam/discrete/DiscretePrior.h>
+#include <gtsam/discrete/Signature.h>
+
 #include <boost/assign/std/map.hpp>
 using namespace boost::assign;
 
@@ -51,17 +53,21 @@ TEST( DecisionTreeFactor, constructors)
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE( DecisionTreeFactor, multiplication)
-{
-  DiscreteKey v0(0,2), v1(1,2), v2(2,2);
+TEST(DecisionTreeFactor, multiplication) {
+  DiscreteKey v0(0, 2), v1(1, 2), v2(2, 2);
 
+  // Multiply with a DiscretePrior, i.e., Bayes Law!
+  DiscretePrior prior(v1 % "1/3");
   DecisionTreeFactor f1(v0 & v1, "1 2 3 4");
+  DecisionTreeFactor expected(v0 & v1, "0.25 1.5 0.75 3");
+  CHECK(assert_equal(expected, prior * f1));
+  CHECK(assert_equal(expected, f1 * prior));
+
+  // Multiply two factors
   DecisionTreeFactor f2(v1 & v2, "5 6 7 8");
-
-  DecisionTreeFactor expected(v0 & v1 & v2, "5 6 14 16 15 18 28 32");
-
   DecisionTreeFactor actual = f1 * f2;
-  CHECK(assert_equal(expected, actual));
+  DecisionTreeFactor expected2(v0 & v1 & v2, "5 6 14 16 15 18 28 32");
+  CHECK(assert_equal(expected2, actual));
 }
 
 /* ************************************************************************* */
