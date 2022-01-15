@@ -48,17 +48,17 @@ class GTSAM_EXPORT DiscretePrior : public DiscreteConditional {
   DiscretePrior(const Signature& s) : Base(s) {}
 
   /**
-   * Construct from key and a Signature::Table specifying the
-   * conditional probability table (CPT).
+   * Construct from key and a vector of floats specifying the probability mass
+   * function (PMF).
    *
-   * Example: DiscretePrior P(D, table);
+   * Example: DiscretePrior P(D, {0.4, 0.6});
    */
-  DiscretePrior(const DiscreteKey& key, const Signature::Table& table)
-      : Base(Signature(key, {}, table)) {}
+  DiscretePrior(const DiscreteKey& key, const std::vector<double>& spec)
+      : DiscretePrior(Signature(key, {}, Signature::Table{spec})) {}
 
   /**
-   * Construct from key and a string specifying the conditional
-   * probability table (CPT).
+   * Construct from key and a string specifying the probability mass function
+   * (PMF).
    *
    * Example: DiscretePrior P(D, "9/1 2/8 3/7 1/9");
    */

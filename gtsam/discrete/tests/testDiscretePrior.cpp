@@ -27,12 +27,19 @@ static const DiscreteKey X(0, 2);
 
 /* ************************************************************************* */
 TEST(DiscretePrior, constructors) {
+  DecisionTreeFactor f(X, "0.4 0.6");
+  DiscretePrior expected(f);
+
   DiscretePrior actual(X % "2/3");
   EXPECT_LONGS_EQUAL(1, actual.nrFrontals());
   EXPECT_LONGS_EQUAL(0, actual.nrParents());
-  DecisionTreeFactor f(X, "0.4 0.6");
-  DiscretePrior expected(f);
   EXPECT(assert_equal(expected, actual, 1e-9));
+
+  const vector<double> pmf{0.4, 0.6};
+  DiscretePrior actual2(X, pmf);
+  EXPECT_LONGS_EQUAL(1, actual2.nrFrontals());
+  EXPECT_LONGS_EQUAL(0, actual2.nrParents());
+  EXPECT(assert_equal(expected, actual2, 1e-9));
 }
 
 /* ************************************************************************* */

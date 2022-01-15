@@ -120,6 +120,7 @@ virtual class DiscretePrior : gtsam::DiscreteConditional {
   DiscretePrior();
   DiscretePrior(const gtsam::DecisionTreeFactor& f);
   DiscretePrior(const gtsam::DiscreteKey& key, string spec);
+  DiscretePrior(const gtsam::DiscreteKey& key, std::vector<double> spec);
   void print(string s = "Discrete Prior\n",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;

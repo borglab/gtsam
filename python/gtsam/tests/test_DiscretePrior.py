@@ -25,12 +25,16 @@ class TestDiscretePrior(GtsamTestCase):
 
     def test_constructor(self):
         """Test various constructors."""
-        actual = DiscretePrior(X, "2/3")
         keys = DiscreteKeys()
         keys.push_back(X)
         f = DecisionTreeFactor(keys, "0.4 0.6")
         expected = DiscretePrior(f)
+        
+        actual = DiscretePrior(X, "2/3")
         self.gtsamAssertEquals(actual, expected)
+        
+        actual2 = DiscretePrior(X, [0.4, 0.6])
+        self.gtsamAssertEquals(actual2, expected)
 
     def test_operator(self):
         prior = DiscretePrior(X, "2/3")
