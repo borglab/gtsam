@@ -27,6 +27,7 @@
 #include <gtsam/slam/BetweenFactor.h>
 
 #include <cstdlib>
+#include <numeric>
 
 // Include for test suite
 #include <CppUnitLite/TestHarness.h>
@@ -305,10 +306,8 @@ TEST(DCGaussianElimination, Eliminate_x2) {
   std::pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> result =
       EliminateHybrid(factors, ordering);
   CHECK(result.first);
-  //  GTSAM_PRINT(*result.first);
   EXPECT_LONGS_EQUAL(1, result.first->nrFrontals());
   CHECK(result.second);
-  //  GTSAM_PRINT(*result.second);
   // Note: separator keys should include m1, m2.
   EXPECT_LONGS_EQUAL(4, result.second->size());
 }
@@ -353,8 +352,6 @@ TEST(DCGaussianElimination, Eliminate_fully) {
 
   auto result = EliminateHybrid(factors, ordering);
   CHECK(result.first);
-  GTSAM_PRINT(*result.first);
-  GTSAM_PRINT(*result.second);
 
   EXPECT_LONGS_EQUAL(1, result.first->nrFrontals());
   CHECK(result.second);
@@ -363,7 +360,77 @@ TEST(DCGaussianElimination, Eliminate_fully) {
   CHECK(discreteFactor);
   EXPECT_LONGS_EQUAL(1, discreteFactor->discreteKeys().size());
   EXPECT(discreteFactor->root_->isLeaf() == false);
+}
 
+/* ****************************************************************************/
+// Test if we can incrementally do the inference
+TEST(DCGaussianElimination, Incremental_inference) {
+  Switching three_step(3);
+
+  // Add measurement factors
+  auto measurement_noise = noiseModel::Isotropic::Sigma(1, 0.1);
+  three_step.nonlinearFactorGraph.emplace_nonlinear<PriorFactor<double> >(X(1), 0.0, measurement_noise);
+  three_step.nonlinearFactorGraph.emplace_nonlinear<PriorFactor<double> >(X(2), 1.0, measurement_noise);
+  three_step.nonlinearFactorGraph.emplace_nonlinear<PriorFactor<double> >(X(3), 2.0, measurement_noise);
+
+  Values linearizationPoint;
+  for (size_t k = 1; k <= 4; k++) {
+    linearizationPoint.insert<double>(X(k), static_cast<double>(k - 1));
+  }
+
+  auto factors = three_step.nonlinearFactorGraph.linearize(three_step.linearizationPoint);
+
+  // Eliminate x1
+  Ordering ordering;
+  ordering += X(1);
+  ordering += X(2);
+  ordering += X(3);
+
+  GaussianMixture::shared_ptr gm;
+  boost::shared_ptr<Factor> dtf;
+  std::tie(gm, dtf) = EliminateHybrid(factors, ordering);
+  auto discreteFactor = dynamic_pointer_cast<DecisionTreeFactor>(dtf);
+
+  Switching four_step(4);
+
+  HybridFactorGraph hf;
+
+  hf.push_dc(gm);
+
+  auto dKeys = discreteFactor->keys();
+  std::cout << std::accumulate(dKeys.begin(), dKeys.end(), std::string(),
+                               [](const std::string& a, const Key& b) -> std::string {
+                                 return a + (a.length() > 0 ? "," : "") + (boost::format("(%s)") % Symbol(b)).str();
+                               } ) << "\n";
+
+  hf.push_discrete(discreteFactor);
+  auto conditional = boost::make_shared<DiscreteConditional>(
+      DiscreteKey{M(3), 2}, DiscreteKeys{{M(2), 2}}, "1/2 3/2");
+  hf.push_discrete(conditional);
+
+  hf.push_dc(four_step.nonlinearFactorGraph.dcGraph().at(2));
+
+  hf.emplace_nonlinear<PriorFactor<double> >(X(4), 2.0, measurement_noise);
+
+  Values lp;
+  lp.insert(X(3), linearizationPoint.at(X(3)));
+  lp.insert(X(4), linearizationPoint.at(X(4)));
+  auto lhf = hf.linearize(lp);
+
+  GTSAM_PRINT(lhf);
+
+  ordering += X(4);
+
+  GaussianMixture::shared_ptr gm_4;
+  boost::shared_ptr<Factor> dtf_4;
+  std::tie(gm_4, dtf_4) = EliminateHybrid(lhf, ordering);
+  gm_4->print("GM4");
+  auto discreteFactor4 = dynamic_pointer_cast<DecisionTreeFactor>(dtf_4);
+  discreteFactor4->print("DTF4");
+  (*discreteFactor4 * *discreteFactor).print("Product");
+
+
+//  hf.push_nonlinear(four_step.nonlinearFactorGraph)
 }
 
 /* ****************************************************************************/
