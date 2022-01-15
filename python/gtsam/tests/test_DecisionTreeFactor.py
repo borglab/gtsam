@@ -40,7 +40,7 @@ class TestDecisionTreeFactor(GtsamTestCase):
         prior = DiscretePrior(v1, [1, 3])
         f1 = DecisionTreeFactor([v0, v1], "1 2 3 4")
         expected = DecisionTreeFactor([v0, v1], "0.25 1.5 0.75 3")
-        self.gtsamAssertEquals(prior * f1, expected)
+        self.gtsamAssertEquals(DecisionTreeFactor(prior) * f1, expected)
         self.gtsamAssertEquals(f1 * prior, expected)
 
         # Multiply two factors
