@@ -18,6 +18,9 @@
  */
 
 #include <gtsam/hybrid/DCGaussianMixtureFactor.h>
+#include <regex>
+#include <numeric>
+#include <gtsam/base/utilities.h>
 
 namespace gtsam {
 
@@ -46,6 +49,35 @@ void DCGaussianMixtureFactor::print(const std::string& s,
   printKeys(s, keyFormatter);
 
   auto valueFormatter = [](const GaussianFactor::shared_ptr& v) {
+    auto hessianFactor = boost::dynamic_pointer_cast<HessianFactor>(v);
+    if (hessianFactor) {
+      RedirectCout rd;
+      hessianFactor->print();
+      auto contents = rd.str();
+      auto lines =
+          std::vector<std::string>{std::sregex_token_iterator(contents.begin(), contents.end(), std::regex("\n"), -1),
+                                   std::sregex_token_iterator()};
+      auto indented = std::accumulate(lines.begin(), lines.end(), std::string(),
+                                      [](const std::string &a, const std::string &b) -> std::string {
+                                        return a + "\n    " + b;
+                                      });
+      return (boost::format("Hessian factor on %d keys: \n%s\n") % v->size() % indented).str();
+    }
+
+    auto jacobianFactor = boost::dynamic_pointer_cast<JacobianFactor>(v);
+    if (jacobianFactor) {
+      RedirectCout rd;
+      jacobianFactor->print();
+      auto contents = rd.str();
+      auto lines =
+          std::vector<std::string>{std::sregex_token_iterator(contents.begin(), contents.end(), std::regex("\n"), -1),
+                                   std::sregex_token_iterator()};
+      auto indented = std::accumulate(lines.begin(), lines.end(), std::string("    ----"),
+                                      [](const std::string &a, const std::string &b) -> std::string {
+                                        return a + (a.length() > 0 ? "\n    ----" : "") + b;
+                                      });
+      return (boost::format("Jacobian factor on %d keys: \n%s\n") % v->size() % indented).str();
+    }
     return (boost::format("Gaussian factor on %d keys") % v->size()).str();
   };
   factors_.print("", keyFormatter, valueFormatter);
