@@ -81,6 +81,15 @@ class TestDiscreteConditional(GtsamTestCase):
                 self.assertAlmostEqual(
                     actual(v), AB_given_D(v) * C_given_DE(v))
 
+    def test_marginals(self):
+        conditional = DiscreteConditional(A, [B], "1/2 2/1")
+        prior = DiscreteConditional(B, "1/2")
+        pAB = prior * conditional
+        self.gtsamAssertEquals(prior, pAB.marginal(B[0]))
+
+        pA = DiscreteConditional(A % "5/4")
+        self.gtsamAssertEquals(pA, pAB.marginal(A[0]))
+
     def test_markdown(self):
         """Test whether the _repr_markdown_ method."""
 

@@ -97,9 +97,13 @@ TEST(DiscreteConditional, constructors3) {
 /* ************************************************************************* */
 // Check calculation of joint P(A,B)
 TEST(DiscreteConditional, Multiply) {
-  DiscreteKey A(0, 2), B(1, 2);
+  DiscreteKey A(1, 2), B(0, 2);
   DiscreteConditional conditional(A | B = "1/2 2/1");
   DiscreteConditional prior(B % "1/2");
+
+  // The expected factor
+  DecisionTreeFactor f(A & B, "1 4 2 2");
+  DiscreteConditional expected(2, f);
 
   // P(A,B) = P(A|B) * P(B) = P(B) * P(A|B)
   for (auto&& actual : {prior * conditional, conditional * prior}) {
@@ -110,8 +114,11 @@ TEST(DiscreteConditional, Multiply) {
       const DiscreteValues& v = it.first;
       EXPECT_DOUBLES_EQUAL(actual(v), conditional(v) * prior(v), 1e-9);
     }
+    // And for good measure:
+    EXPECT(assert_equal(expected, actual));
   }
 }
+
 /* ************************************************************************* */
 // Check calculation of conditional joint P(A,B|C)
 TEST(DiscreteConditional, Multiply2) {
@@ -131,6 +138,7 @@ TEST(DiscreteConditional, Multiply2) {
     }
   }
 }
+
 /* ************************************************************************* */
 // Check calculation of conditional joint P(A,B|C), double check keys
 TEST(DiscreteConditional, Multiply3) {
@@ -150,6 +158,7 @@ TEST(DiscreteConditional, Multiply3) {
     }
   }
 }
+
 /* ************************************************************************* */
 // Check calculation of conditional joint P(A,B,C|D,E) = P(A,B|D) P(C|D,E)
 TEST(DiscreteConditional, Multiply4) {
@@ -173,6 +182,31 @@ TEST(DiscreteConditional, Multiply4) {
     }
   }
 }
+
+/* ************************************************************************* */
+// Check calculation of marginals for joint P(A,B)
+TEST(DiscreteConditional, marginals) {
+  DiscreteKey A(1, 2), B(0, 2);
+  DiscreteConditional conditional(A | B = "1/2 2/1");
+  DiscreteConditional prior(B % "1/2");
+  DiscreteConditional pAB = prior * conditional;
+
+  DiscreteConditional actualA = pAB.marginal(A.first);
+  DiscreteConditional pA(A % "5/4");
+  EXPECT(assert_equal(pA, actualA));
+  EXPECT_LONGS_EQUAL(1, actualA.nrFrontals());
+  EXPECT_LONGS_EQUAL(0, actualA.nrParents());
+  KeyVector frontalsA(actualA.beginFrontals(), actualA.endFrontals());
+  EXPECT((frontalsA == KeyVector{1}));
+
+  DiscreteConditional actualB = pAB.marginal(B.first);
+  EXPECT(assert_equal(prior, actualB));
+  EXPECT_LONGS_EQUAL(1, actualB.nrFrontals());
+  EXPECT_LONGS_EQUAL(0, actualB.nrParents());
+  KeyVector frontalsB(actualB.beginFrontals(), actualB.endFrontals());
+  EXPECT((frontalsB == KeyVector{0}));
+}
+
 /* ************************************************************************* */
 TEST(DiscreteConditional, likelihood) {
   DiscreteKey X(0, 2), Y(1, 3);
