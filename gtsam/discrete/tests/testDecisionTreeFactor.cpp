@@ -60,7 +60,7 @@ TEST(DecisionTreeFactor, multiplication) {
   DiscretePrior prior(v1 % "1/3");
   DecisionTreeFactor f1(v0 & v1, "1 2 3 4");
   DecisionTreeFactor expected(v0 & v1, "0.25 1.5 0.75 3");
-  CHECK(assert_equal(expected, prior * f1));
+  CHECK(assert_equal(expected, static_cast<DecisionTreeFactor>(prior) * f1));
   CHECK(assert_equal(expected, f1 * prior));
 
   // Multiply two factors
