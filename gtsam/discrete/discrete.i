@@ -58,6 +58,15 @@ virtual class DecisionTreeFactor : gtsam::DiscreteFactor {
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::DecisionTreeFactor& other, double tol = 1e-9) const;
+
+  double operator()(const gtsam::DiscreteValues& values) const;
+  gtsam::DecisionTreeFactor operator*(const gtsam::DecisionTreeFactor& f) const;
+  size_t cardinality(gtsam::Key j) const;
+  gtsam::DecisionTreeFactor operator/(const gtsam::DecisionTreeFactor& f) const;
+  gtsam::DecisionTreeFactor* sum(size_t nrFrontals) const;
+  gtsam::DecisionTreeFactor* sum(const gtsam::Ordering& keys) const;
+  gtsam::DecisionTreeFactor* max(size_t nrFrontals) const;
+
   string dot(
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
       bool showZero = true) const;
