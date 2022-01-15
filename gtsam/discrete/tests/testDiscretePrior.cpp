@@ -43,6 +43,19 @@ TEST(DiscretePrior, constructors) {
 }
 
 /* ************************************************************************* */
+TEST(DiscretePrior, Multiply) {
+  DiscreteKey A(0, 2), B(1, 2);
+  DiscreteConditional conditional(A | B = "1/2 2/1");
+  DiscretePrior prior(B, "1/2");
+  DiscreteConditional actual = prior * conditional;  // P(A|B) * P(B)
+
+  EXPECT_LONGS_EQUAL(2, actual.nrFrontals());  // = P(A,B)
+  DecisionTreeFactor factor(A & B, "1 4 2 2");
+  DiscreteConditional expected(2, factor);
+  EXPECT(assert_equal(expected, actual, 1e-5));
+}
+
+/* ************************************************************************* */
 TEST(DiscretePrior, operator) {
   DiscretePrior prior(X % "2/3");
   EXPECT_DOUBLES_EQUAL(prior(0), 0.4, 1e-9);

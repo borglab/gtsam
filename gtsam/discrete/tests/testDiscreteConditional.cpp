@@ -34,20 +34,21 @@ using namespace gtsam;
 TEST(DiscreteConditional, constructors) {
   DiscreteKey X(0, 2), Y(2, 3), Z(1, 2);  // watch ordering !
 
-  DiscreteConditional expected(X | Y = "1/1 2/3 1/4");
-  EXPECT_LONGS_EQUAL(0, *(expected.beginFrontals()));
-  EXPECT_LONGS_EQUAL(2, *(expected.beginParents()));
-  EXPECT(expected.endParents() == expected.end());
-  EXPECT(expected.endFrontals() == expected.beginParents());
+  DiscreteConditional actual(X | Y = "1/1 2/3 1/4");
+  EXPECT_LONGS_EQUAL(0, *(actual.beginFrontals()));
+  EXPECT_LONGS_EQUAL(2, *(actual.beginParents()));
+  EXPECT(actual.endParents() == actual.end());
+  EXPECT(actual.endFrontals() == actual.beginParents());
 
   DecisionTreeFactor f1(X & Y, "0.5 0.4 0.2 0.5 0.6 0.8");
-  DiscreteConditional actual1(1, f1);
-  EXPECT(assert_equal(expected, actual1, 1e-9));
+  DiscreteConditional expected1(1, f1);
+  EXPECT(assert_equal(expected1, actual, 1e-9));
 
   DecisionTreeFactor f2(
       X & Y & Z, "0.2 0.5 0.3 0.6 0.4 0.7 0.25 0.55 0.35 0.65 0.45 0.75");
   DiscreteConditional actual2(1, f2);
-  EXPECT(assert_equal(f2 / *f2.sum(1), *actual2.toFactor(), 1e-9));
+  DecisionTreeFactor expected2 = f2 / *f2.sum(1);
+  EXPECT(assert_equal(expected2, static_cast<DecisionTreeFactor>(actual2)));
 }
 
 /* ************************************************************************* */
@@ -61,6 +62,7 @@ TEST(DiscreteConditional, constructors_alt_interface) {
   r3 += 1.0, 4.0;
   table += r1, r2, r3;
   DiscreteConditional actual1(X, {Y}, table);
+
   DecisionTreeFactor f1(X & Y, "0.5 0.4 0.2 0.5 0.6 0.8");
   DiscreteConditional expected1(1, f1);
   EXPECT(assert_equal(expected1, actual1, 1e-9));
@@ -68,43 +70,109 @@ TEST(DiscreteConditional, constructors_alt_interface) {
   DecisionTreeFactor f2(
       X & Y & Z, "0.2 0.5 0.3 0.6 0.4 0.7 0.25 0.55 0.35 0.65 0.45 0.75");
   DiscreteConditional actual2(1, f2);
-  EXPECT(assert_equal(f2 / *f2.sum(1), *actual2.toFactor(), 1e-9));
+  DecisionTreeFactor expected2 = f2 / *f2.sum(1);
+  EXPECT(assert_equal(expected2, static_cast<DecisionTreeFactor>(actual2)));
 }
 
 /* ************************************************************************* */
 TEST(DiscreteConditional, constructors2) {
-  // Declare keys and ordering
   DiscreteKey C(0, 2), B(1, 2);
-  DecisionTreeFactor actual(C & B, "0.8 0.75 0.2 0.25");
   Signature signature((C | B) = "4/1 3/1");
-  DiscreteConditional expected(signature);
-  DecisionTreeFactor::shared_ptr expectedFactor = expected.toFactor();
-  EXPECT(assert_equal(*expectedFactor, actual));
+  DiscreteConditional actual(signature);
+
+  DecisionTreeFactor expected(C & B, "0.8 0.75 0.2 0.25");
+  EXPECT(assert_equal(expected, static_cast<DecisionTreeFactor>(actual)));
 }
 
 /* ************************************************************************* */
 TEST(DiscreteConditional, constructors3) {
-  // Declare keys and ordering
   DiscreteKey C(0, 2), B(1, 2), A(2, 2);
-  DecisionTreeFactor actual(C & B & A, "0.8 0.5 0.5 0.2 0.2 0.5 0.5 0.8");
   Signature signature((C | B, A) = "4/1 1/1 1/1 1/4");
-  DiscreteConditional expected(signature);
-  DecisionTreeFactor::shared_ptr expectedFactor = expected.toFactor();
-  EXPECT(assert_equal(*expectedFactor, actual));
+  DiscreteConditional actual(signature);
+
+  DecisionTreeFactor expected(C & B & A, "0.8 0.5 0.5 0.2 0.2 0.5 0.5 0.8");
+  EXPECT(assert_equal(expected, static_cast<DecisionTreeFactor>(actual)));
 }
 
 /* ************************************************************************* */
-TEST(DiscreteConditional, Combine) {
+// Check calculation of joint P(A,B)
+TEST(DiscreteConditional, Multiply) {
   DiscreteKey A(0, 2), B(1, 2);
-  vector<DiscreteConditional::shared_ptr> c;
-  c.push_back(boost::make_shared<DiscreteConditional>(A | B = "1/2 2/1"));
-  c.push_back(boost::make_shared<DiscreteConditional>(B % "1/2"));
-  DecisionTreeFactor factor(A & B, "0.111111 0.444444 0.222222 0.222222");
-  DiscreteConditional expected(2, factor);
-  auto actual = DiscreteConditional::Combine(c.begin(), c.end());
-  EXPECT(assert_equal(expected, *actual, 1e-5));
-}
+  DiscreteConditional conditional(A | B = "1/2 2/1");
+  DiscreteConditional prior(B % "1/2");
 
+  // P(A,B) = P(A|B) * P(B) = P(B) * P(A|B)
+  for (auto&& actual : {prior * conditional, conditional * prior}) {
+    EXPECT_LONGS_EQUAL(2, actual.nrFrontals());
+    KeyVector frontals(actual.beginFrontals(), actual.endFrontals());
+    EXPECT((frontals == KeyVector{0, 1}));
+    for (auto&& it : actual.enumerate()) {
+      const DiscreteValues& v = it.first;
+      EXPECT_DOUBLES_EQUAL(actual(v), conditional(v) * prior(v), 1e-9);
+    }
+  }
+}
+/* ************************************************************************* */
+// Check calculation of conditional joint P(A,B|C)
+TEST(DiscreteConditional, Multiply2) {
+  DiscreteKey A(0, 2), B(1, 2), C(2, 2);
+  DiscreteConditional A_given_B(A | B = "1/3 3/1");
+  DiscreteConditional B_given_C(B | C = "1/3 3/1");
+
+  // P(A,B|C) = P(A|B)P(B|C) = P(B|C)P(A|B)
+  for (auto&& actual : {A_given_B * B_given_C, B_given_C * A_given_B}) {
+    EXPECT_LONGS_EQUAL(2, actual.nrFrontals());
+    EXPECT_LONGS_EQUAL(1, actual.nrParents());
+    KeyVector frontals(actual.beginFrontals(), actual.endFrontals());
+    EXPECT((frontals == KeyVector{0, 1}));
+    for (auto&& it : actual.enumerate()) {
+      const DiscreteValues& v = it.first;
+      EXPECT_DOUBLES_EQUAL(actual(v), A_given_B(v) * B_given_C(v), 1e-9);
+    }
+  }
+}
+/* ************************************************************************* */
+// Check calculation of conditional joint P(A,B|C), double check keys
+TEST(DiscreteConditional, Multiply3) {
+  DiscreteKey A(1, 2), B(2, 2), C(0, 2);  // different keys!!!
+  DiscreteConditional A_given_B(A | B = "1/3 3/1");
+  DiscreteConditional B_given_C(B | C = "1/3 3/1");
+
+  // P(A,B|C) = P(A|B)P(B|C) = P(B|C)P(A|B)
+  for (auto&& actual : {A_given_B * B_given_C, B_given_C * A_given_B}) {
+    EXPECT_LONGS_EQUAL(2, actual.nrFrontals());
+    EXPECT_LONGS_EQUAL(1, actual.nrParents());
+    KeyVector frontals(actual.beginFrontals(), actual.endFrontals());
+    EXPECT((frontals == KeyVector{1, 2}));
+    for (auto&& it : actual.enumerate()) {
+      const DiscreteValues& v = it.first;
+      EXPECT_DOUBLES_EQUAL(actual(v), A_given_B(v) * B_given_C(v), 1e-9);
+    }
+  }
+}
+/* ************************************************************************* */
+// Check calculation of conditional joint P(A,B,C|D,E) = P(A,B|D) P(C|D,E)
+TEST(DiscreteConditional, Multiply4) {
+  DiscreteKey A(0, 2), B(1, 2), C(2, 2), D(4, 2), E(3, 2);
+  DiscreteConditional A_given_B(A | B = "1/3 3/1");
+  DiscreteConditional B_given_D(B | D = "1/3 3/1");
+  DiscreteConditional AB_given_D = A_given_B * B_given_D;
+  DiscreteConditional C_given_DE((C | D, E) = "4/1 1/1 1/1 1/4");
+
+  // P(A,B,C|D,E) = P(A,B|D) P(C|D,E) = P(C|D,E) P(A,B|D)
+  for (auto&& actual : {AB_given_D * C_given_DE, C_given_DE * AB_given_D}) {
+    EXPECT_LONGS_EQUAL(3, actual.nrFrontals());
+    EXPECT_LONGS_EQUAL(2, actual.nrParents());
+    KeyVector frontals(actual.beginFrontals(), actual.endFrontals());
+    EXPECT((frontals == KeyVector{0, 1, 2}));
+    KeyVector parents(actual.beginParents(), actual.endParents());
+    EXPECT((parents == KeyVector{3, 4}));
+    for (auto&& it : actual.enumerate()) {
+      const DiscreteValues& v = it.first;
+      EXPECT_DOUBLES_EQUAL(actual(v), AB_given_D(v) * C_given_DE(v), 1e-9);
+    }
+  }
+}
 /* ************************************************************************* */
 TEST(DiscreteConditional, likelihood) {
   DiscreteKey X(0, 2), Y(1, 3);

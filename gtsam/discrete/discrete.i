@@ -102,7 +102,6 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
   void printSignature(
       string s = "Discrete Conditional: ",
       const gtsam::KeyFormatter& formatter = gtsam::DefaultKeyFormatter) const;
-  gtsam::DecisionTreeFactor* toFactor() const;
   gtsam::DecisionTreeFactor* choose(
       const gtsam::DiscreteValues& parentsValues) const;
   gtsam::DecisionTreeFactor* likelihood(

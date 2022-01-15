@@ -49,14 +49,21 @@ class GTSAM_EXPORT DiscreteConditional
   /// @name Standard Constructors
   /// @{
 
-  /** default constructor needed for serialization */
+  /// Default constructor needed for serialization.
   DiscreteConditional() {}
 
-  /** constructor from factor */
+  /// Construct from factor, taking the first `nFrontals` keys as frontals.
   DiscreteConditional(size_t nFrontals, const DecisionTreeFactor& f);
 
+  /**
+   * Construct from DiscreteKeys and AlgebraicDecisionTree, taking the first
+   * `nFrontals` keys as frontals, in the order given.
+   */
+  DiscreteConditional(size_t nFrontals, const DiscreteKeys& keys,
+                      const ADT& potentials);
+
   /** Construct from signature */
-  DiscreteConditional(const Signature& signature);
+  explicit DiscreteConditional(const Signature& signature);
 
   /**
    * Construct from key, parents, and a Signature::Table specifying the
@@ -86,27 +93,38 @@ class GTSAM_EXPORT DiscreteConditional
   DiscreteConditional(const DiscreteKey& key, const std::string& spec)
       : DiscreteConditional(Signature(key, {}, spec)) {}
 
-  /** construct P(X|Y)=P(X,Y)/P(Y) from P(X,Y) and P(Y) */
+  /** 
+   * @brief construct P(X|Y) = f(X,Y)/f(Y) from f(X,Y) and f(Y)
+   * Assumes but *does not check* that f(Y)=sum_X f(X,Y). 
+   */
   DiscreteConditional(const DecisionTreeFactor& joint,
                       const DecisionTreeFactor& marginal);
 
-  /** construct P(X|Y)=P(X,Y)/P(Y) from P(X,Y) and P(Y) */
+  /** 
+   * @brief construct P(X|Y) = f(X,Y)/f(Y) from f(X,Y) and f(Y)
+   * Assumes but *does not check* that f(Y)=sum_X f(X,Y).
+   * Makes sure the keys are ordered as given. Does not check orderedKeys.
+   */
   DiscreteConditional(const DecisionTreeFactor& joint,
                       const DecisionTreeFactor& marginal,
                       const Ordering& orderedKeys);
 
   /**
-   * Combine several conditional into a single one.
-   * The conditionals must be given in increasing order, meaning that the
-   * parents of any conditional may not include a conditional coming before it.
-   * @param firstConditional Iterator to the first conditional to combine, must
-   * dereference to a shared_ptr<DiscreteConditional>.
-   * @param lastConditional Iterator to after the last conditional to combine,
-   * must dereference to a shared_ptr<DiscreteConditional>.
-   * */
-  template <typename ITERATOR>
-  static shared_ptr Combine(ITERATOR firstConditional,
-                            ITERATOR lastConditional);
+   * @brief Combine two conditionals, yielding a new conditional with the union
+   * of the frontal keys, ordered by gtsam::Key.
+   *
+   * The two conditionals must make a valid Bayes net fragment, i.e.,
+   * the frontal variables cannot overlap, and must be acyclic:
+   * Example of correct use:
+   *   P(A,B) = P(A|B) * P(B)
+   *   P(A,B|C) = P(A|B) * P(B|C)
+   *   P(A,B,C) = P(A,B|C) * P(C)
+   * Example of incorrect use:
+   *   P(A|B) * P(A|C) = ?
+   *   P(A|B) * P(B|A) = ?
+   * We check for overlapping frontals, but do *not* check for cyclic.
+   */
+  DiscreteConditional operator*(const DiscreteConditional& other) const;
 
   /// @}
   /// @name Testable
@@ -134,11 +152,6 @@ class GTSAM_EXPORT DiscreteConditional
   /// Evaluate, just look up in AlgebraicDecisonTree
   double operator()(const DiscreteValues& values) const override {
     return ADT::operator()(values);
-  }
-
-  /** Convert to a factor */
-  DecisionTreeFactor::shared_ptr toFactor() const {
-    return DecisionTreeFactor::shared_ptr(new DecisionTreeFactor(*this));
   }
 
   /** Restrict to given parent values, returns DecisionTreeFactor */
@@ -207,24 +220,5 @@ class GTSAM_EXPORT DiscreteConditional
 // traits
 template <>
 struct traits<DiscreteConditional> : public Testable<DiscreteConditional> {};
-
-/* ************************************************************************* */
-template <typename ITERATOR>
-DiscreteConditional::shared_ptr DiscreteConditional::Combine(
-    ITERATOR firstConditional, ITERATOR lastConditional) {
-  // TODO:  check for being a clique
-
-  // multiply all the potentials of the given conditionals
-  size_t nrFrontals = 0;
-  DecisionTreeFactor product;
-  for (ITERATOR it = firstConditional; it != lastConditional;
-       ++it, ++nrFrontals) {
-    DiscreteConditional::shared_ptr c = *it;
-    DecisionTreeFactor::shared_ptr factor = c->toFactor();
-    product = (*factor) * product;
-  }
-  // and then create a new multi-frontal conditional
-  return boost::make_shared<DiscreteConditional>(nrFrontals, product);
-}
 
 }  // namespace gtsam
