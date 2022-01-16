@@ -58,6 +58,15 @@ virtual class DecisionTreeFactor : gtsam::DiscreteFactor {
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::DecisionTreeFactor& other, double tol = 1e-9) const;
+
+  double operator()(const gtsam::DiscreteValues& values) const;
+  gtsam::DecisionTreeFactor operator*(const gtsam::DecisionTreeFactor& f) const;
+  size_t cardinality(gtsam::Key j) const;
+  gtsam::DecisionTreeFactor operator/(const gtsam::DecisionTreeFactor& f) const;
+  gtsam::DecisionTreeFactor* sum(size_t nrFrontals) const;
+  gtsam::DecisionTreeFactor* sum(const gtsam::Ordering& keys) const;
+  gtsam::DecisionTreeFactor* max(size_t nrFrontals) const;
+
   string dot(
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
       bool showZero = true) const;
@@ -86,14 +95,18 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
   DiscreteConditional(const gtsam::DecisionTreeFactor& joint,
                       const gtsam::DecisionTreeFactor& marginal,
                       const gtsam::Ordering& orderedKeys);
+  gtsam::DiscreteConditional operator*(
+      const gtsam::DiscreteConditional& other) const;
+  DiscreteConditional marginal(gtsam::Key key) const;
   void print(string s = "Discrete Conditional\n",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::DiscreteConditional& other, double tol = 1e-9) const;
+  size_t nrFrontals() const;
+  size_t nrParents() const;
   void printSignature(
       string s = "Discrete Conditional: ",
       const gtsam::KeyFormatter& formatter = gtsam::DefaultKeyFormatter) const;
-  gtsam::DecisionTreeFactor* toFactor() const;
   gtsam::DecisionTreeFactor* choose(
       const gtsam::DiscreteValues& parentsValues) const;
   gtsam::DecisionTreeFactor* likelihood(
@@ -120,6 +133,7 @@ virtual class DiscretePrior : gtsam::DiscreteConditional {
   DiscretePrior();
   DiscretePrior(const gtsam::DecisionTreeFactor& f);
   DiscretePrior(const gtsam::DiscreteKey& key, string spec);
+  DiscretePrior(const gtsam::DiscreteKey& key, std::vector<double> spec);
   void print(string s = "Discrete Prior\n",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;

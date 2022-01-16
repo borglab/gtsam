@@ -30,6 +30,7 @@
 #include <string>
 #include <vector>
 #include <utility>
+#include <set>
 
 using namespace std;
 using std::stringstream;
@@ -38,38 +39,97 @@ using std::pair;
 namespace gtsam {
 
 // Instantiate base class
-template class GTSAM_EXPORT Conditional<DecisionTreeFactor, DiscreteConditional> ;
+template class GTSAM_EXPORT
+    Conditional<DecisionTreeFactor, DiscreteConditional>;
 
-/* ******************************************************************************** */
+/* ************************************************************************** */
 DiscreteConditional::DiscreteConditional(const size_t nrFrontals,
-    const DecisionTreeFactor& f) :
-    BaseFactor(f / (*f.sum(nrFrontals))), BaseConditional(nrFrontals) {
-}
+                                         const DecisionTreeFactor& f)
+    : BaseFactor(f / (*f.sum(nrFrontals))), BaseConditional(nrFrontals) {}
 
-/* ******************************************************************************** */
-DiscreteConditional::DiscreteConditional(const DecisionTreeFactor& joint,
-    const DecisionTreeFactor& marginal) :
-    BaseFactor(
-        ISDEBUG("DiscreteConditional::COUNT") ? joint : joint / marginal), BaseConditional(
-            joint.size()-marginal.size()) {
-  if (ISDEBUG("DiscreteConditional::DiscreteConditional"))
-    cout << (firstFrontalKey()) << endl; //TODO Print all keys
-}
+/* ************************************************************************** */
+DiscreteConditional::DiscreteConditional(size_t nrFrontals,
+                                         const DiscreteKeys& keys,
+                                         const ADT& potentials)
+    : BaseFactor(keys, potentials), BaseConditional(nrFrontals) {}
 
-/* ******************************************************************************** */
+/* ************************************************************************** */
 DiscreteConditional::DiscreteConditional(const DecisionTreeFactor& joint,
-    const DecisionTreeFactor& marginal, const Ordering& orderedKeys) :
-    DiscreteConditional(joint, marginal) {
+                                         const DecisionTreeFactor& marginal)
+    : BaseFactor(joint / marginal),
+      BaseConditional(joint.size() - marginal.size()) {}
+
+/* ************************************************************************** */
+DiscreteConditional::DiscreteConditional(const DecisionTreeFactor& joint,
+                                         const DecisionTreeFactor& marginal,
+                                         const Ordering& orderedKeys)
+    : DiscreteConditional(joint, marginal) {
   keys_.clear();
   keys_.insert(keys_.end(), orderedKeys.begin(), orderedKeys.end());
 }
 
-/* ******************************************************************************** */
+/* ************************************************************************** */
 DiscreteConditional::DiscreteConditional(const Signature& signature)
     : BaseFactor(signature.discreteKeys(), signature.cpt()),
       BaseConditional(1) {}
 
-/* ******************************************************************************** */
+/* ************************************************************************** */
+DiscreteConditional DiscreteConditional::operator*(
+    const DiscreteConditional& other) const {
+  // Take union of frontal keys
+  std::set<Key> newFrontals;
+  for (auto&& key : this->frontals()) newFrontals.insert(key);
+  for (auto&& key : other.frontals()) newFrontals.insert(key);
+
+  // Check if frontals overlapped
+  if (nrFrontals() + other.nrFrontals() > newFrontals.size())
+    throw std::invalid_argument(
+        "DiscreteConditional::operator* called with overlapping frontal keys.");
+
+  // Now, add cardinalities.
+  DiscreteKeys discreteKeys;
+  for (auto&& key : frontals())
+    discreteKeys.emplace_back(key, cardinality(key));
+  for (auto&& key : other.frontals())
+    discreteKeys.emplace_back(key, other.cardinality(key));
+
+  // Sort
+  std::sort(discreteKeys.begin(), discreteKeys.end());
+
+  // Add parents to set, to make them unique
+  std::set<DiscreteKey> parents;
+  for (auto&& key : this->parents())
+    if (!newFrontals.count(key)) parents.emplace(key, cardinality(key));
+  for (auto&& key : other.parents())
+    if (!newFrontals.count(key)) parents.emplace(key, other.cardinality(key));
+
+  // Finally, add parents to keys, in order
+  for (auto&& dk : parents) discreteKeys.push_back(dk);
+
+  ADT product = ADT::apply(other, ADT::Ring::mul);
+  return DiscreteConditional(newFrontals.size(), discreteKeys, product);
+}
+
+/* ************************************************************************** */
+DiscreteConditional DiscreteConditional::marginal(Key key) const {
+  if (nrParents() > 0)
+    throw std::invalid_argument(
+        "DiscreteConditional::marginal: single argument version only valid for "
+        "fully specified joint distributions (i.e., no parents).");
+
+  // Calculate the keys as the frontal keys without the given key.
+  DiscreteKeys discreteKeys{{key, cardinality(key)}};
+
+  // Calculate sum
+  ADT adt(*this);
+  for (auto&& k : frontals())
+    if (k != key) adt = adt.sum(k, cardinality(k));
+
+  // Return new factor
+  return DiscreteConditional(1, discreteKeys, adt);
+}
+
+/* ************************************************************************** */
 void DiscreteConditional::print(const string& s,
                                 const KeyFormatter& formatter) const {
   cout << s << " P( ";
@@ -82,7 +142,7 @@ void DiscreteConditional::print(const string& s,
       cout << formatter(*it) << " ";
     }
   }
-  cout << ")";
+  cout << "):\n";
   ADT::print("");
   cout << endl;
 }
