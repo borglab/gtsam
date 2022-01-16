@@ -89,7 +89,7 @@ class GTSAM_EXPORT DiscreteConditional
                       const std::string& spec)
       : DiscreteConditional(Signature(key, parents, spec)) {}
 
-  /// No-parent specialization; can also use DiscretePrior.
+  /// No-parent specialization; can also use DiscreteDistribution.
   DiscreteConditional(const DiscreteKey& key, const std::string& spec)
       : DiscreteConditional(Signature(key, {}, spec)) {}
 

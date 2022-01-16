@@ -10,21 +10,23 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file DiscretePrior.cpp
+ *  @file DiscreteDistribution.cpp
  *  @date December 2021
  *  @author Frank Dellaert
  */
 
-#include <gtsam/discrete/DiscretePrior.h>
+#include <gtsam/discrete/DiscreteDistribution.h>
+
+#include <vector>
 
 namespace gtsam {
 
-void DiscretePrior::print(const std::string& s,
-                          const KeyFormatter& formatter) const {
+void DiscreteDistribution::print(const std::string& s,
+                                 const KeyFormatter& formatter) const {
   Base::print(s, formatter);
 }
 
-double DiscretePrior::operator()(size_t value) const {
+double DiscreteDistribution::operator()(size_t value) const {
   if (nrFrontals() != 1)
     throw std::invalid_argument(
         "Single value operator can only be invoked on single-variable "
@@ -34,10 +36,10 @@ double DiscretePrior::operator()(size_t value) const {
   return Base::operator()(values);
 }
 
-std::vector<double> DiscretePrior::pmf() const {
+std::vector<double> DiscreteDistribution::pmf() const {
   if (nrFrontals() != 1)
     throw std::invalid_argument(
-        "DiscretePrior::pmf only defined for single-variable priors");
+        "DiscreteDistribution::pmf only defined for single-variable priors");
   const size_t nrValues = cardinalities_.at(keys_[0]);
   std::vector<double> array;
   array.reserve(nrValues);
