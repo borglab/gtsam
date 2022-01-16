@@ -20,7 +20,7 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
-#include <gtsam/discrete/DiscretePrior.h>
+#include <gtsam/discrete/DiscreteDistribution.h>
 #include <gtsam/discrete/Signature.h>
 
 #include <boost/assign/std/map.hpp>
@@ -56,8 +56,8 @@ TEST( DecisionTreeFactor, constructors)
 TEST(DecisionTreeFactor, multiplication) {
   DiscreteKey v0(0, 2), v1(1, 2), v2(2, 2);
 
-  // Multiply with a DiscretePrior, i.e., Bayes Law!
-  DiscretePrior prior(v1 % "1/3");
+  // Multiply with a DiscreteDistribution, i.e., Bayes Law!
+  DiscreteDistribution prior(v1 % "1/3");
   DecisionTreeFactor f1(v0 & v1, "1 2 3 4");
   DecisionTreeFactor expected(v0 & v1, "0.25 1.5 0.75 3");
   CHECK(assert_equal(expected, static_cast<DecisionTreeFactor>(prior) * f1));

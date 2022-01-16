@@ -13,7 +13,7 @@ Author: Frank Dellaert
 
 import unittest
 
-from gtsam import DecisionTreeFactor, DiscreteValues, DiscretePrior, Ordering
+from gtsam import DecisionTreeFactor, DiscreteValues, DiscreteDistribution, Ordering
 from gtsam.utils.test_case import GtsamTestCase
 
 
@@ -36,8 +36,8 @@ class TestDecisionTreeFactor(GtsamTestCase):
         v1 = (1, 2)
         v2 = (2, 2)
 
-        # Multiply with a DiscretePrior, i.e., Bayes Law!
-        prior = DiscretePrior(v1, [1, 3])
+        # Multiply with a DiscreteDistribution, i.e., Bayes Law!
+        prior = DiscreteDistribution(v1, [1, 3])
         f1 = DecisionTreeFactor([v0, v1], "1 2 3 4")
         expected = DecisionTreeFactor([v0, v1], "0.25 1.5 0.75 3")
         self.gtsamAssertEquals(DecisionTreeFactor(prior) * f1, expected)

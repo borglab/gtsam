@@ -128,12 +128,12 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
               std::map<gtsam::Key, std::vector<std::string>> names) const;
 };
 
-#include <gtsam/discrete/DiscretePrior.h>
-virtual class DiscretePrior : gtsam::DiscreteConditional {
-  DiscretePrior();
-  DiscretePrior(const gtsam::DecisionTreeFactor& f);
-  DiscretePrior(const gtsam::DiscreteKey& key, string spec);
-  DiscretePrior(const gtsam::DiscreteKey& key, std::vector<double> spec);
+#include <gtsam/discrete/DiscreteDistribution.h>
+virtual class DiscreteDistribution : gtsam::DiscreteConditional {
+  DiscreteDistribution();
+  DiscreteDistribution(const gtsam::DecisionTreeFactor& f);
+  DiscreteDistribution(const gtsam::DiscreteKey& key, string spec);
+  DiscreteDistribution(const gtsam::DiscreteKey& key, std::vector<double> spec);
   void print(string s = "Discrete Prior\n",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;

@@ -14,7 +14,7 @@ Author: Frank Dellaert
 import unittest
 
 from gtsam import (DiscreteBayesNet, DiscreteConditional, DiscreteFactorGraph,
-                   DiscreteKeys, DiscretePrior, DiscreteValues, Ordering)
+                   DiscreteKeys, DiscreteDistribution, DiscreteValues, Ordering)
 from gtsam.utils.test_case import GtsamTestCase
 
 
@@ -74,7 +74,7 @@ class TestDiscreteBayesNet(GtsamTestCase):
         for j in range(8):
             ordering.push_back(j)
         chordal = fg.eliminateSequential(ordering)
-        expected2 = DiscretePrior(Bronchitis, "11/9")
+        expected2 = DiscreteDistribution(Bronchitis, "11/9")
         self.gtsamAssertEquals(chordal.at(7), expected2)
 
         # solve
