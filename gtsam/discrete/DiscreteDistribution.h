@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file DiscretePrior.h
+ *  @file DiscreteDistribution.h
  *  @date December 2021
  *  @author Frank Dellaert
  */
@@ -20,6 +20,7 @@
 #include <gtsam/discrete/DiscreteConditional.h>
 
 #include <string>
+#include <vector>
 
 namespace gtsam {
 
@@ -27,7 +28,7 @@ namespace gtsam {
  * A prior probability on a set of discrete variables.
  * Derives from DiscreteConditional
  */
-class GTSAM_EXPORT DiscretePrior : public DiscreteConditional {
+class GTSAM_EXPORT DiscreteDistribution : public DiscreteConditional {
  public:
   using Base = DiscreteConditional;
 
@@ -35,35 +36,36 @@ class GTSAM_EXPORT DiscretePrior : public DiscreteConditional {
   /// @{
 
   /// Default constructor needed for serialization.
-  DiscretePrior() {}
+  DiscreteDistribution() {}
 
   /// Constructor from factor.
-  DiscretePrior(const DecisionTreeFactor& f) : Base(f.size(), f) {}
+  explicit DiscreteDistribution(const DecisionTreeFactor& f)
+      : Base(f.size(), f) {}
 
   /**
    * Construct from a Signature.
    *
-   * Example: DiscretePrior P(D % "3/2");
+   * Example: DiscreteDistribution P(D % "3/2");
    */
-  DiscretePrior(const Signature& s) : Base(s) {}
+  explicit DiscreteDistribution(const Signature& s) : Base(s) {}
 
   /**
    * Construct from key and a vector of floats specifying the probability mass
    * function (PMF).
    *
-   * Example: DiscretePrior P(D, {0.4, 0.6});
+   * Example: DiscreteDistribution P(D, {0.4, 0.6});
    */
-  DiscretePrior(const DiscreteKey& key, const std::vector<double>& spec)
-      : DiscretePrior(Signature(key, {}, Signature::Table{spec})) {}
+  DiscreteDistribution(const DiscreteKey& key, const std::vector<double>& spec)
+      : DiscreteDistribution(Signature(key, {}, Signature::Table{spec})) {}
 
   /**
    * Construct from key and a string specifying the probability mass function
    * (PMF).
    *
-   * Example: DiscretePrior P(D, "9/1 2/8 3/7 1/9");
+   * Example: DiscreteDistribution P(D, "9/1 2/8 3/7 1/9");
    */
-  DiscretePrior(const DiscreteKey& key, const std::string& spec)
-      : DiscretePrior(Signature(key, {}, spec)) {}
+  DiscreteDistribution(const DiscreteKey& key, const std::string& spec)
+      : DiscreteDistribution(Signature(key, {}, spec)) {}
 
   /// @}
   /// @name Testable
@@ -102,10 +104,10 @@ class GTSAM_EXPORT DiscretePrior : public DiscreteConditional {
 
   /// @}
 };
-// DiscretePrior
+// DiscreteDistribution
 
 // traits
 template <>
-struct traits<DiscretePrior> : public Testable<DiscretePrior> {};
+struct traits<DiscreteDistribution> : public Testable<DiscreteDistribution> {};
 
 }  // namespace gtsam
