@@ -70,8 +70,8 @@ HybridFactorGraph HybridFactorGraph::linearize(
 
 bool HybridFactorGraph::equals(const HybridFactorGraph& other,
                                double tol) const {
-  return Base::equals(other, tol) &&
-         nonlinearGraph_.equals(other.nonlinearGraph_, tol) &&
+  // Base::equals(other, tol) && TODO(fan): this does not work because Factor::equals should be virtual!!!
+  return nonlinearGraph_.equals(other.nonlinearGraph_, tol) &&
          discreteGraph_.equals(other.discreteGraph_, tol) &&
          dcGraph_.equals(other.dcGraph_, tol) &&
          gaussianGraph_.equals(other.gaussianGraph_, tol);
@@ -168,8 +168,8 @@ pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
   KeyVector separatorKeys;  // Do with optional?
   auto eliminate = [&](const GaussianFactorGraph& graph) {
     auto result = EliminatePreferCholesky(graph, ordering);
-    if (keys.size() == 0) keys = result.first->keys();
-    if (separatorKeys.size() == 0) separatorKeys = result.second->keys();
+    if (keys.empty()) keys = result.first->keys();
+    if (separatorKeys.empty()) separatorKeys = result.second->keys();
     return result;
   };
   DecisionTree<Key, Pair> eliminationResults(sum, eliminate);
@@ -187,7 +187,7 @@ pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
 
   // If there are no more continuous parents, then we should create here a
   // DiscreteFactor, with the error for each discrete choice.
-  if (separatorKeys.size() == 0) {
+  if (separatorKeys.empty()) {
     VectorValues empty_values;
     auto factorError = [&](const GaussianFactor::shared_ptr& factor) {
       return exp(-factor->error(empty_values));

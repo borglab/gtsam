@@ -141,10 +141,8 @@ class DCGaussianMixtureFactor : public DCFactor {
                                             DefaultKeyFormatter) const override;
 
   /// Check equality
-  bool equals(const DCFactor& f, double tol = 1e-9) const override {
-    // TODO
-    return true;
-  }
+  virtual bool equals(const DCFactor& f, double tol) const override;
+
   /// @}
   /// @name Decision Tree methods
   /// @{

@@ -25,6 +25,7 @@
 #include <gtsam/discrete/DiscretePrior.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/base/utilities.h>
 
 #include <cstdlib>
 #include <numeric>
@@ -153,10 +154,8 @@ struct Switching {
       linearizationPoint.insert<double>(X(k), static_cast<double>(k));
     }
 
-    // Create the linearized hybrid factor graph.
-    // Add a prior on X(1).
-    auto gaussian = prior->linearize(linearizationPoint);
-    linearizedFactorGraph.push_gaussian(gaussian);
+    // Add "mode chain"
+    addModeChain(&linearizedFactorGraph);
 
     // Add "motion models".
     for (size_t k = 1; k < K; k++) {
@@ -168,8 +167,10 @@ struct Switching {
           keys, DiscreteKeys{modes[k]}, linearized);
     }
 
-    // Add "mode chain"
-    addModeChain(&linearizedFactorGraph);
+    // Create the linearized hybrid factor graph.
+    // Add a prior on X(1).
+    auto gaussian = prior->linearize(linearizationPoint);
+    linearizedFactorGraph.push_gaussian(gaussian);
   }
 
   // Create motion models for a given time step
@@ -233,8 +234,7 @@ TEST(HybridFactorGraph, Linearization) {
   EXPECT_LONGS_EQUAL(2, actualLinearized.dcGraph().size());
   EXPECT_LONGS_EQUAL(1, actualLinearized.gaussianGraph().size());
 
-  // TODO: fix this test, the graphs are equal !!!
-  // EXPECT(assert_equal(self.linearizedFactorGraph, actualLinearized));
+  EXPECT(assert_equal(self.linearizedFactorGraph, actualLinearized));
 }
 
 /* ****************************************************************************/
@@ -403,7 +403,9 @@ TEST(DCGaussianElimination, Incremental_inference) {
                                  return a + (a.length() > 0 ? "," : "") + (boost::format("(%s)") % Symbol(b)).str();
                                } ) << "\n";
 
+  // Look, ma, I indeed added the discrete result factor!
   hf.push_discrete(discreteFactor);
+
   auto conditional = boost::make_shared<DiscreteConditional>(
       DiscreteKey{M(3), 2}, DiscreteKeys{{M(2), 2}}, "1/2 3/2");
   hf.push_discrete(conditional);
@@ -428,9 +430,8 @@ TEST(DCGaussianElimination, Incremental_inference) {
   auto discreteFactor4 = dynamic_pointer_cast<DecisionTreeFactor>(dtf_4);
   discreteFactor4->print("DTF4");
   (*discreteFactor4 * *discreteFactor).print("Product");
+  // So at this point we can see that the product seems correct, but why isn't the eliminated thing correct?
 
-
-//  hf.push_nonlinear(four_step.nonlinearFactorGraph)
 }
 
 /* ****************************************************************************/

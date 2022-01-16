@@ -110,5 +110,14 @@ Sum DCGaussianMixtureFactor::wrappedFactors() const {
 }
 
 /* *******************************************************************************/
+bool DCGaussianMixtureFactor::equals(const DCFactor &f, double tol) const {
+  if (typeid(f) == typeid(DCGaussianMixtureFactor)) {
+    // TODO: actually do the proper comparison!
+    return true;
+  }
+  return false;
+}
+
+/* *******************************************************************************/
 
 }  // namespace gtsam
