@@ -87,7 +87,7 @@ class TestDiscreteConditional(GtsamTestCase):
         pAB = prior * conditional
         self.gtsamAssertEquals(prior, pAB.marginal(B[0]))
 
-        pA = DiscreteConditional(A % "5/4")
+        pA = DiscreteConditional(A, "5/4")
         self.gtsamAssertEquals(pA, pAB.marginal(A[0]))
 
     def test_markdown(self):

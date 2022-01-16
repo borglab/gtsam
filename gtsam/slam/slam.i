@@ -11,7 +11,7 @@ namespace gtsam {
 // ######
 
 #include <gtsam/slam/BetweenFactor.h>
-template <T = {Vector, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::SO3,
+template <T = {double, Vector, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::SO3,
                gtsam::SO4, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3,
                gtsam::imuBias::ConstantBias}>
 virtual class BetweenFactor : gtsam::NoiseModelFactor {
