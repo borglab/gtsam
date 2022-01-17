@@ -19,7 +19,7 @@
 #pragma once
 
 #include <gtsam/discrete/DiscreteConditional.h>
-#include <gtsam/discrete/DiscretePrior.h>
+#include <gtsam/discrete/DiscreteDistribution.h>
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/FactorGraph.h>
 
@@ -79,9 +79,9 @@ namespace gtsam {
     // Add inherited versions of add.
     using Base::add;
 
-    /** Add a DiscretePrior using a table or a string */
+    /** Add a DiscreteDistribution using a table or a string */
     void add(const DiscreteKey& key, const std::string& spec) {
-      emplace_shared<DiscretePrior>(key, spec);
+      emplace_shared<DiscreteDistribution>(key, spec);
     }
 
     /** Add a DiscreteCondtional */
