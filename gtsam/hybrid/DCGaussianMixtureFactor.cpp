@@ -106,7 +106,7 @@ Sum DCGaussianMixtureFactor::wrappedFactors() const {
     result.push_back(factor);
     return result;
   };
-  return Sum(factors_, wrap);
+  return {factors_, wrap};
 }
 
 /* *******************************************************************************/

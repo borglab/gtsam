@@ -58,15 +58,15 @@ class DCGaussianMixtureFactor : public DCFactor {
   /**
    * @brief Construct a new DCGaussianMixtureFactor object.
    *
-   * @param keys Vector of keys for continuous factors.
-   * @param discreteKeys Vector of discrete keys.
+   * @param continuousKeys - the keys for *continuous* variables
+   * @param discreteKeys - the keys for *discrete* variables
    * @param factors A decision tree of Gaussian factors (as shared pointers)
    * where each node has a Key label.
    */
-  DCGaussianMixtureFactor(const KeyVector& keys,
+  DCGaussianMixtureFactor(const KeyVector& continuousKeys,
                           const DiscreteKeys& discreteKeys,
                           const Factors factors)
-      : Base(keys, discreteKeys), factors_(factors) {}
+      : Base(continuousKeys, discreteKeys), factors_(factors) {}
 
   /**
    * @brief Construct a new DCGaussianMixtureFactor object using a vector of

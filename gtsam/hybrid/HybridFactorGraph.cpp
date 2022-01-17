@@ -164,12 +164,12 @@ pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
   // We can use this by creating a *new* decision tree:
   using Pair = GaussianFactorGraph::EliminationResult;
 
-  KeyVector keys;
-  KeyVector separatorKeys;  // Do with optional?
+  KeyVector keysOfEliminated; // Not the ordering
+  KeyVector keysOfSeparator;  // TODO(frank): Is this just (keys - ordering)?
   auto eliminate = [&](const GaussianFactorGraph& graph) {
     auto result = EliminatePreferCholesky(graph, ordering);
-    if (keys.empty()) keys = result.first->keys();
-    if (separatorKeys.empty()) separatorKeys = result.second->keys();
+    if (keysOfEliminated.empty()) keysOfEliminated = result.first->keys(); // Initialize the keysOfEliminated to be the keysOfEliminated of the GaussianConditional
+    if (keysOfSeparator.empty()) keysOfSeparator = result.second->keys();
     return result;
   };
   DecisionTree<Key, Pair> eliminationResults(sum, eliminate);
@@ -179,15 +179,15 @@ pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
   const GaussianMixture::Conditionals& conditionals = pair.first;
   const DCGaussianMixtureFactor::Factors& separatorFactors = pair.second;
 
-  const DiscreteKeys discreteKeys = factors.discreteKeys();
-
   // Create the GaussianMixture from the conditionals
+  const size_t nrFrontals = ordering.size();
+  const DiscreteKeys discreteKeys = factors.discreteKeys();
   auto conditional =
-      boost::make_shared<GaussianMixture>(keys, discreteKeys, conditionals);
+      boost::make_shared<GaussianMixture>(nrFrontals, keysOfEliminated, discreteKeys, conditionals);
 
   // If there are no more continuous parents, then we should create here a
   // DiscreteFactor, with the error for each discrete choice.
-  if (separatorKeys.empty()) {
+  if (keysOfSeparator.empty()) {
     VectorValues empty_values;
     auto factorError = [&](const GaussianFactor::shared_ptr& factor) {
       return exp(-factor->error(empty_values));
@@ -201,7 +201,7 @@ pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
   } else {
     // Create a resulting DCGaussianMixture on the separator.
     auto factor = boost::make_shared<DCGaussianMixtureFactor>(
-        separatorKeys, discreteKeys, separatorFactors);
+        keysOfSeparator, discreteKeys, separatorFactors);
     return {conditional, factor};
   }
 }
