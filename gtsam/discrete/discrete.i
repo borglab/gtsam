@@ -165,7 +165,9 @@ class DiscreteBayesNet {
                                gtsam::DefaultKeyFormatter) const;
   double operator()(const gtsam::DiscreteValues& values) const;
   gtsam::DiscreteValues optimize() const;
+  gtsam::DiscreteValues optimize(gtsam::DiscreteValues given) const;
   gtsam::DiscreteValues sample() const;
+  gtsam::DiscreteValues sample(gtsam::DiscreteValues given) const;
   string markdown(const gtsam::KeyFormatter& keyFormatter =
                       gtsam::DefaultKeyFormatter) const;
   string markdown(const gtsam::KeyFormatter& keyFormatter,
