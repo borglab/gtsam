@@ -125,7 +125,10 @@ def plot_point2_on_axes(axes,
     if P is not None:
         w, v = np.linalg.eig(P)
 
-        # k = 2.296
+        # "Sigma" value for drawing the uncertainty ellipse. 5 sigma corresponds
+        # to a 99.9999% confidence, i.e. assuming the estimation has been
+        # computed properly, there is a 99.999% chance that the true position
+        # of the point will lie within the uncertainty ellipse.
         k = 5.0
 
         angle = np.arctan2(v[1, 0], v[0, 0])
