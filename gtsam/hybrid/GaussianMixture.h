@@ -64,7 +64,9 @@ class GaussianMixture
    * GaussianConditionalMixture(const Conditionals& conditionals, 
    *                            const DiscreteKeys& discreteParentKeys)
    */
-  GaussianMixture(size_t nrFrontals, const KeyVector &continuousKeys, const DiscreteKeys &discreteKeys,
+  GaussianMixture(size_t nrFrontals,
+                  const KeyVector &continuousKeys,
+                  const DiscreteKeys &discreteKeys,
                   const Conditionals &conditionals)
       : BaseFactor(
       continuousKeys, discreteKeys,
@@ -73,7 +75,9 @@ class GaussianMixture
               [nrFrontals](const GaussianConditional::shared_ptr &p) {
                 if (p->nrFrontals() != nrFrontals)
                   throw std::invalid_argument(
-                      "GaussianMixture() received a conditional with invalid number of frontals.");
+                      (boost::format(
+                          "GaussianMixture() received a conditional with invalid number %d of frontals (should be %d).")
+                          % nrFrontals % p->nrFrontals()).str());
                 return boost::dynamic_pointer_cast<GaussianFactor>(p);
               })),
         BaseConditional(nrFrontals) {}
