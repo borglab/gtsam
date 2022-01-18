@@ -183,6 +183,94 @@ TEST(triangulation, fourPoses) {
 }
 
 //******************************************************************************
+TEST(triangulation, threePoses_robustNoiseModel) {
+
+  Pose3 pose3 = pose1 * Pose3(Rot3::Ypr(0.1, 0.2, 0.1), Point3(0.1, -2, -.1));
+  PinholeCamera<Cal3_S2> camera3(pose3, *sharedCal);
+  Point2 z3 = camera3.project(landmark);
+
+  vector<Pose3> poses;
+  Point2Vector measurements;
+  poses += pose1, pose2, pose3;
+  measurements += z1, z2, z3;
+
+  // noise free, so should give exactly the landmark
+  boost::optional<Point3> actual =
+      triangulatePoint3<Cal3_S2>(poses, sharedCal, measurements);
+  EXPECT(assert_equal(landmark, *actual, 1e-2));
+
+  // Add outlier
+  measurements.at(0) += Point2(100, 120); // very large pixel noise!
+
+  // now estimate does not match landmark
+  boost::optional<Point3> actual2 =  //
+      triangulatePoint3<Cal3_S2>(poses, sharedCal, measurements);
+  // DLT is surprisingly robust, but still off (actual error is around 0.26m):
+  EXPECT( (landmark - *actual2).norm() >= 0.2);
+  EXPECT( (landmark - *actual2).norm() <= 0.5);
+
+  // Again with nonlinear optimization
+  boost::optional<Point3> actual3 =
+      triangulatePoint3<Cal3_S2>(poses, sharedCal, measurements, 1e-9, true);
+  // result from nonlinear (but non-robust optimization) is close to DLT and still off
+  EXPECT(assert_equal(*actual2, *actual3, 0.1));
+
+  // Again with nonlinear optimization, this time with robust loss
+  auto model = noiseModel::Robust::Create(
+        noiseModel::mEstimator::Huber::Create(1.345), noiseModel::Unit::Create(2));
+  boost::optional<Point3> actual4 = triangulatePoint3<Cal3_S2>(
+      poses, sharedCal, measurements, 1e-9, true, model);
+  // using the Huber loss we now have a quite small error!! nice!
+  EXPECT(assert_equal(landmark, *actual4, 0.05));
+}
+
+//******************************************************************************
+TEST(triangulation, fourPoses_robustNoiseModel) {
+
+  Pose3 pose3 = pose1 * Pose3(Rot3::Ypr(0.1, 0.2, 0.1), Point3(0.1, -2, -.1));
+  PinholeCamera<Cal3_S2> camera3(pose3, *sharedCal);
+  Point2 z3 = camera3.project(landmark);
+
+  vector<Pose3> poses;
+  Point2Vector measurements;
+  poses += pose1, pose1, pose2, pose3; // 2 measurements from pose 1
+  measurements += z1, z1, z2, z3;
+
+  // noise free, so should give exactly the landmark
+  boost::optional<Point3> actual =
+      triangulatePoint3<Cal3_S2>(poses, sharedCal, measurements);
+  EXPECT(assert_equal(landmark, *actual, 1e-2));
+
+  // Add outlier
+  measurements.at(0) += Point2(100, 120); // very large pixel noise!
+  // add noise on other measurements:
+  measurements.at(1) += Point2(0.1, 0.2); // small noise
+  measurements.at(2) += Point2(0.2, 0.2);
+  measurements.at(3) += Point2(0.3, 0.1);
+
+  // now estimate does not match landmark
+  boost::optional<Point3> actual2 =  //
+      triangulatePoint3<Cal3_S2>(poses, sharedCal, measurements);
+  // DLT is surprisingly robust, but still off (actual error is around 0.17m):
+  EXPECT( (landmark - *actual2).norm() >= 0.1);
+  EXPECT( (landmark - *actual2).norm() <= 0.5);
+
+  // Again with nonlinear optimization
+  boost::optional<Point3> actual3 =
+      triangulatePoint3<Cal3_S2>(poses, sharedCal, measurements, 1e-9, true);
+  // result from nonlinear (but non-robust optimization) is close to DLT and still off
+  EXPECT(assert_equal(*actual2, *actual3, 0.1));
+
+  // Again with nonlinear optimization, this time with robust loss
+  auto model = noiseModel::Robust::Create(
+        noiseModel::mEstimator::Huber::Create(1.345), noiseModel::Unit::Create(2));
+  boost::optional<Point3> actual4 = triangulatePoint3<Cal3_S2>(
+      poses, sharedCal, measurements, 1e-9, true, model);
+  // using the Huber loss we now have a quite small error!! nice!
+  EXPECT(assert_equal(landmark, *actual4, 0.05));
+}
+
+//******************************************************************************
 TEST(triangulation, fourPoses_distinct_Ks) {
   Cal3_S2 K1(1500, 1200, 0, 640, 480);
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
