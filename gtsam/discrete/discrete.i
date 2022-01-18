@@ -230,11 +230,16 @@ class DiscreteFactorGraph {
   DiscreteFactorGraph();
   DiscreteFactorGraph(const gtsam::DiscreteBayesNet& bayesNet);
 
-  void add(const gtsam::DiscreteKey& j, string table);
+  // Building the graph
+  void push_back(const gtsam::DiscreteFactor* factor);
+  void push_back(const gtsam::DiscreteConditional* conditional);
+  void push_back(const gtsam::DiscreteFactorGraph& graph);
+  void push_back(const gtsam::DiscreteBayesNet& bayesNet);
+  void push_back(const gtsam::DiscreteBayesTree& bayesTree);
+  void add(const gtsam::DiscreteKey& j, string spec);
   void add(const gtsam::DiscreteKey& j, const std::vector<double>& spec);
-
-  void add(const gtsam::DiscreteKeys& keys, string table);
-  void add(const std::vector<gtsam::DiscreteKey>& keys, string table);
+  void add(const gtsam::DiscreteKeys& keys, string spec);
+  void add(const std::vector<gtsam::DiscreteKey>& keys, string spec);
 
   bool empty() const;
   size_t size() const;
