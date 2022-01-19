@@ -222,6 +222,34 @@ TEST(DiscreteConditional, likelihood) {
 }
 
 /* ************************************************************************* */
+// Check choose on P(C|D,E)
+TEST(DiscreteConditional, choose) {
+  DiscreteKey C(2, 2), D(4, 2), E(3, 2);
+  DiscreteConditional C_given_DE((C | D, E) = "4/1 1/1 1/1 1/4");
+
+  // Case 1: no given values: no-op
+  DiscreteValues given;
+  auto actual1 = C_given_DE.choose(given);
+  EXPECT(assert_equal(C_given_DE, *actual1, 1e-9));
+
+  // Case 2: 1 given value
+  given[D.first] = 1;
+  auto actual2 = C_given_DE.choose(given);
+  EXPECT_LONGS_EQUAL(1, actual2->nrFrontals());
+  EXPECT_LONGS_EQUAL(1, actual2->nrParents());
+  DiscreteConditional expected2(C | E = "1/1 1/4");
+  EXPECT(assert_equal(expected2, *actual2, 1e-9));
+
+  // Case 2: 2 given values
+  given[E.first] = 0;
+  auto actual3 = C_given_DE.choose(given);
+  EXPECT_LONGS_EQUAL(1, actual3->nrFrontals());
+  EXPECT_LONGS_EQUAL(0, actual3->nrParents());
+  DiscreteConditional expected3(C % "1/1");
+  EXPECT(assert_equal(expected3, *actual3, 1e-9));
+}
+
+/* ************************************************************************* */
 // Check markdown representation looks as expected, no parents.
 TEST(DiscreteConditional, markdown_prior) {
   DiscreteKey A(Symbol('x', 1), 3);

@@ -157,9 +157,20 @@ class GTSAM_EXPORT DiscreteConditional
     return ADT::operator()(values);
   }
 
-  /** Restrict to given parent values, returns DecisionTreeFactor */
-  DecisionTreeFactor::shared_ptr choose(
-      const DiscreteValues& parentsValues) const;
+  /** 
+   * @brief restrict to given *parent* values.
+   * 
+   * Note: does not need be complete set. Examples:
+   * 
+   * P(C|D,E) + . -> P(C|D,E)
+   * P(C|D,E) + E -> P(C|D)
+   * P(C|D,E) + D -> P(C|E)
+   * P(C|D,E) + D,E -> P(C)
+   * P(C|D,E) + C -> error!
+   * 
+   * @return a shared_ptr to a new DiscreteConditional
+   */
+  shared_ptr choose(const DiscreteValues& given) const;
 
   /** Convert to a likelihood factor by providing value before bar. */
   DecisionTreeFactor::shared_ptr likelihood(
