@@ -433,7 +433,7 @@ TEST(HybridFactorGraph, Elimination) {
 
 /* ****************************************************************************/
 // Test if we can incrementally do the inference
-TEST(DCGaussianElimination, Incremental_inference) {
+TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
   Switching three_step(3);
 
   // We want to eliminate x1, x2 and x3
@@ -448,23 +448,17 @@ TEST(DCGaussianElimination, Incremental_inference) {
   std::tie(hybridBayesNet, remainingFactorGraph) =
       three_step.linearizedFactorGraph.eliminatePartialSequential(ordering);
 
+  hybridBayesNet->print("hybridBayesNet");
+  remainingFactorGraph->print("rfg");
+
   Switching four_step(4);
 
   HybridFactorGraph hf;
 
-  hf.push_dc(gaussianConditionalMixture);
+  hf.push_dc(hybridBayesNet->at(2));
 
-  auto dKeys = discreteFactor->keys();
-  std::cout << std::accumulate(dKeys.begin(), dKeys.end(), std::string(),
-                               [](const std::string &a,
-                                  const Key &b) -> std::string {
-                                 return a + (a.length() > 0 ? "," : "")
-                                     + (boost::format("(%s)")
-                                         % Symbol(b)).str();
-                               }) << "\n";
-
-  // Look, ma, I indeed added the discrete result factor!
-  hf.push_discrete(discreteFactor);
+  for (const auto& f : remainingFactorGraph->discreteGraph())
+    hf.push_discrete(f);
 
   auto conditional = boost::make_shared<DiscreteConditional>(
       DiscreteKey{M(3), 2}, DiscreteKeys{{M(2), 2}}, "1/2 3/2");
@@ -473,22 +467,26 @@ TEST(DCGaussianElimination, Incremental_inference) {
   hf.push_dc(four_step.nonlinearFactorGraph.dcGraph().at(2));
 
   Values lp;
-  lp.insert(X(3), linearizationPoint.at(X(3)));
-  lp.insert(X(4), linearizationPoint.at(X(4)));
+  lp.insert(X(3), four_step.linearizationPoint.at(X(3)));
+  lp.insert(X(4), four_step.linearizationPoint.at(X(4)));
   auto lhf = hf.linearize(lp);
 
-//  GTSAM_PRINT(lhf);
+  GTSAM_PRINT(lhf);
 
+  ordering.clear();
+  ordering += X(3);
   ordering += X(4);
 
-  GaussianMixture::shared_ptr gm_4;
-  boost::shared_ptr<Factor> dtf_4;
-  std::tie(gm_4, dtf_4) = EliminateHybrid(lhf, ordering);
-//  gm_4->print("GM4");
-  auto discreteFactor4 = dynamic_pointer_cast<DecisionTreeFactor>(dtf_4);
-//  discreteFactor4->print("DTF4");
-//  (*discreteFactor4 * *discreteFactor).print("Product");
-  // So at this point we can see that the product seems correct, but why isn't the eliminated thing correct?
+  // Eliminate the factor graph and get the
+  HybridBayesNet::shared_ptr hybridBayesNet_4;
+  HybridFactorGraph::shared_ptr remainingFactorGraph_4;
+  std::tie(hybridBayesNet_4, remainingFactorGraph_4) =
+      lhf.eliminatePartialSequential(ordering);
+
+  hybridBayesNet_4->print("hybridBayesNet_4:");
+  remainingFactorGraph_4->print("rfg4");
+
+  remainingFactorGraph->discreteGraph().product().print("prod");
 }
 
 /* ************************************************************************* */
