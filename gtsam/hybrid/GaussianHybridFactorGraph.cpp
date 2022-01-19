@@ -27,6 +27,9 @@ using namespace std;
 
 namespace gtsam {
 
+// Instantiate base classes
+template class EliminateableFactorGraph<GaussianHybridFactorGraph>;
+
 void GaussianHybridFactorGraph::print(
     const string& str, const gtsam::KeyFormatter& keyFormatter) const {
   string prefix = str.empty() ? str : str + ".";
@@ -142,6 +145,21 @@ pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
         separatorKeys, discreteKeys, separatorFactors);
     return {conditional, factor};
   }
+}
+
+DecisionTreeFactor::shared_ptr GaussianHybridFactorGraph::toDecisionTreeFactor()
+    const {
+  // Get the decision tree mapping an assignment to a GaussianFactorGraph
+  Sum sum = this->sum();
+
+  // Get the decision tree with each leaf as the error for that assignment
+  auto gfgError = [&](const GaussianFactorGraph& graph) {
+    VectorValues values = graph.optimize();
+    return graph.probPrime(values);
+  };
+  DecisionTree<Key, double> gfgdt(sum, gfgError);
+
+  return boost::make_shared<DecisionTreeFactor>(discreteKeys(), gfgdt);
 }
 
 }  // namespace gtsam

@@ -237,10 +237,6 @@ class HybridFactorGraph : protected FactorGraph<Factor> {
    */
   DCGaussianMixtureFactor::Sum sum() const;
 
-  /// Convert the DecisionTree of (Key, GaussianFactorGraph) to (Key, Graph
-  /// Error).
-  DecisionTreeFactor::shared_ptr toDecisionTreeFactor() const;
-
   /// @}
 };
 

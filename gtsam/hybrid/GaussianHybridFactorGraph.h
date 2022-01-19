@@ -278,6 +278,15 @@ class GaussianHybridFactorGraph
    * different structure, and creating a different decision tree for Gaussians.
    */
   DCGaussianMixtureFactor::Sum sum() const;
+
+  /**
+   * @brief Convert the DecisionTree of (Key, GaussianFactorGraph) to (Key,
+   * Graph Error).
+   *
+   * @return DecisionTreeFactor::shared_ptr
+   */
+  DecisionTreeFactor::shared_ptr toDecisionTreeFactor() const;
+
   /// @}
 };
 

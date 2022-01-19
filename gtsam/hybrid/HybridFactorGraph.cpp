@@ -115,18 +115,4 @@ Sum HybridFactorGraph::sum() const {
   return sum;
 }
 
-DecisionTreeFactor::shared_ptr HybridFactorGraph::toDecisionTreeFactor() const {
-  // Get the decision tree mapping an assignment to a GaussianFactorGraph
-  Sum sum = this->sum();
-
-  // Get the decision tree with each leaf as the error for that assignment
-  auto gfgError = [&](const GaussianFactorGraph& graph) {
-    VectorValues values = graph.optimize();
-    return graph.probPrime(values);
-  };
-  DecisionTree<Key, double> gfgdt(sum, gfgError);
-
-  return boost::make_shared<DecisionTreeFactor>(discreteKeys(), gfgdt);
-}
-
 }  // namespace gtsam
