@@ -38,7 +38,7 @@ struct GTSAM_EXPORT DotWriter {
   explicit DotWriter(double figureWidthInches = 5,
                      double figureHeightInches = 5,
                      bool plotFactorPoints = true,
-                     bool connectKeysToFactor = true, bool binaryEdges = true)
+                     bool connectKeysToFactor = true, bool binaryEdges = false)
       : figureWidthInches(figureWidthInches),
         figureHeightInches(figureHeightInches),
         plotFactorPoints(plotFactorPoints),
