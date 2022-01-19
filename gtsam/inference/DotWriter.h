@@ -57,14 +57,9 @@ struct GTSAM_EXPORT DotWriter {
   static void DrawFactor(size_t i, const boost::optional<Vector2>& position,
                          std::ostream* os);
 
-  /// Connect two variables.
-  static void ConnectVariables(Key key1, Key key2, std::ostream* os);
-
-  /// Connect variable and factor.
-  static void ConnectVariableFactor(Key key, size_t i, std::ostream* os);
-
   /// Draw a single factor, specified by its index i and its variable keys.
   void processFactor(size_t i, const KeyVector& keys,
+                     const KeyFormatter& keyFormatter,
                      const boost::optional<Vector2>& position,
                      std::ostream* os) const;
 };
