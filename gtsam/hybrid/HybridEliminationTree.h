@@ -18,26 +18,26 @@
 
 #pragma once
 
+#include <gtsam/hybrid/GaussianHybridFactorGraph.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
-#include <gtsam/hybrid/HybridFactorGraph.h>
 #include <gtsam/inference/EliminationTree.h>
 
 namespace gtsam {
 
 class GTSAM_EXPORT HybridEliminationTree
-    : public EliminationTree<HybridBayesNet, HybridFactorGraph> {
+    : public EliminationTree<HybridBayesNet, GaussianHybridFactorGraph> {
  public:
-  typedef EliminationTree<HybridBayesNet, HybridFactorGraph>
+  typedef EliminationTree<HybridBayesNet, GaussianHybridFactorGraph>
       Base;                                    ///< Base class
   typedef HybridEliminationTree This;          ///< This class
   typedef boost::shared_ptr<This> shared_ptr;  ///< Shared pointer to this class
 
   /// Build the elimination tree of factor graph given ordering.
-  HybridEliminationTree(const HybridFactorGraph& factorGraph,
+  HybridEliminationTree(const GaussianHybridFactorGraph& factorGraph,
                         const VariableIndex& structure, const Ordering& order);
 
   /// Build the elimination tree of a hybrid factor graph.
-  HybridEliminationTree(const HybridFactorGraph& factorGraph,
+  HybridEliminationTree(const GaussianHybridFactorGraph& factorGraph,
                         const Ordering& order);
 
   /// Test whether the tree is equal to another

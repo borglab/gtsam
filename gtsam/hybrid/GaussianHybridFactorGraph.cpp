@@ -10,10 +10,15 @@
  * @date   December 2021
  */
 
+#include <gtsam/discrete/DiscreteEliminationTree.h>
+#include <gtsam/discrete/DiscreteJunctionTree.h>
 #include <gtsam/hybrid/DCGaussianMixtureFactor.h>
 #include <gtsam/hybrid/GaussianHybridFactorGraph.h>
 #include <gtsam/hybrid/HybridEliminationTree.h>
 #include <gtsam/inference/EliminateableFactorGraph-inst.h>
+#include <gtsam/linear/GaussianEliminationTree.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/GaussianJunctionTree.h>
 #include <gtsam/linear/HessianFactor.h>
 
 #include <boost/make_shared.hpp>
@@ -21,10 +26,6 @@
 using namespace std;
 
 namespace gtsam {
-
-// Instantiate base classes
-// template class FactorGraph<Factor>;
-template class EliminateableFactorGraph<GaussianHybridFactorGraph>;
 
 void GaussianHybridFactorGraph::print(
     const string& str, const gtsam::KeyFormatter& keyFormatter) const {
@@ -63,11 +64,6 @@ static Sum& operator+=(Sum& sum, const GaussianFactor::shared_ptr& factor) {
 }
 
 Sum GaussianHybridFactorGraph::sum() const {
-  if (nrDiscreteFactors()) {
-    throw runtime_error(
-        "GaussianHybridFactorGraph::sum cannot handle DiscreteFactors.");
-  }
-
   // "sum" all factors, gathering into GaussianFactorGraph
   DCGaussianMixtureFactor::Sum sum;
   for (auto&& dcFactor : dcGraph()) {
@@ -92,6 +88,60 @@ ostream& operator<<(ostream& os,
                     const GaussianFactorGraph::EliminationResult& er) {
   os << "ER" << endl;
   return os;
+}
+
+// The function type that does a single elimination step on a variable.
+pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
+    const GaussianHybridFactorGraph& factors, const Ordering& ordering) {
+  // STEP 1: SUM
+  // Create a new decision tree with all factors gathered at leaves.
+  Sum sum = factors.sum();
+
+  // STEP 1: ELIMINATE
+  // Eliminate each sum using conventional Cholesky:
+  // We can use this by creating a *new* decision tree:
+  using Pair = GaussianFactorGraph::EliminationResult;
+
+  KeyVector keys;
+  KeyVector separatorKeys;  // Do with optional?
+  auto eliminate = [&](const GaussianFactorGraph& graph) {
+    auto result = EliminatePreferCholesky(graph, ordering);
+    if (keys.size() == 0) keys = result.first->keys();
+    if (separatorKeys.size() == 0) separatorKeys = result.second->keys();
+    return result;
+  };
+  DecisionTree<Key, Pair> eliminationResults(sum, eliminate);
+
+  // STEP 3: Create result
+  auto pair = unzip(eliminationResults);
+  const GaussianMixture::Conditionals& conditionals = pair.first;
+  const DCGaussianMixtureFactor::Factors& separatorFactors = pair.second;
+
+  const DiscreteKeys discreteKeys = factors.discreteKeys();
+
+  // Create the GaussianMixture from the conditionals
+  auto conditional =
+      boost::make_shared<GaussianMixture>(keys, discreteKeys, conditionals);
+
+  // If there are no more continuous parents, then we should create here a
+  // DiscreteFactor, with the error for each discrete choice.
+  if (separatorKeys.size() == 0) {
+    VectorValues empty_values;
+    auto factorError = [&](const GaussianFactor::shared_ptr& factor) {
+      return exp(-factor->error(empty_values));
+    };
+    DecisionTree<Key, double> fdt(separatorFactors, factorError);
+    auto discreteFactor =
+        boost::make_shared<DecisionTreeFactor>(factors.discreteKeys(), fdt);
+
+    return {conditional, discreteFactor};
+
+  } else {
+    // Create a resulting DCGaussianMixture on the separator.
+    auto factor = boost::make_shared<DCGaussianMixtureFactor>(
+        separatorKeys, discreteKeys, separatorFactors);
+    return {conditional, factor};
+  }
 }
 
 }  // namespace gtsam

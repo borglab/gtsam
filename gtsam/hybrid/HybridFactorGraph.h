@@ -23,38 +23,7 @@
 
 namespace gtsam {
 
-// Forward declarations
-class GaussianMixture;
-class Dummy;
-class HybridFactorGraph;
-class GaussianHybridFactorGraph;
-class HybridEliminationTree;
-class Ordering;
-
-/** Main elimination function for HybridFactorGraph */
-using sharedFactor = boost::shared_ptr<Factor>;
-GTSAM_EXPORT std::pair<GaussianMixture::shared_ptr, sharedFactor>
-EliminateHybrid(const GaussianHybridFactorGraph& factors, const Ordering& keys);
-
-template <>
-struct EliminationTraits<HybridFactorGraph> {
-  typedef Factor FactorType;
-  typedef HybridFactorGraph FactorGraphType;
-  typedef GaussianMixture ConditionalType;
-  typedef HybridBayesNet BayesNetType;
-  typedef HybridEliminationTree EliminationTreeType;
-  typedef HybridBayesNet BayesTreeType;
-  typedef HybridEliminationTree JunctionTreeType;
-
-  /// The function type that does a single elimination step on a variable.
-  static std::pair<GaussianMixture::shared_ptr, sharedFactor> DefaultEliminate(
-      const GaussianHybridFactorGraph& factors, const Ordering& ordering) {
-    return EliminateHybrid(factors, ordering);
-  }
-};
-
-class HybridFactorGraph : protected FactorGraph<Factor>,
-                          public EliminateableFactorGraph<HybridFactorGraph> {
+class HybridFactorGraph : protected FactorGraph<Factor> {
  public:
   using shared_ptr = boost::shared_ptr<HybridFactorGraph>;
   using Base = FactorGraph<Factor>;
@@ -257,14 +226,6 @@ class HybridFactorGraph : protected FactorGraph<Factor>,
 
   /// Get all the discrete keys in the hybrid factor graph.
   DiscreteKeys discreteKeys() const;
-
-  /// @name Elimination machinery
-  /// @{
-  using FactorType = Factor;
-  using EliminationResult =
-      std::pair<boost::shared_ptr<GaussianMixture>, sharedFactor>;
-  using Eliminate = std::function<EliminationResult(
-      const GaussianHybridFactorGraph&, const Ordering&)>;
 
   /**
    * @brief Sum all gaussians and Gaussian mixtures together.

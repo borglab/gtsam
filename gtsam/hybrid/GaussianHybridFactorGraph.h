@@ -18,7 +18,6 @@
 #include <gtsam/hybrid/DCFactorGraph.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 #include <string>
@@ -27,9 +26,37 @@ namespace gtsam {
 
 // Forward declarations
 class GaussianMixture;
+class Dummy;
+class HybridFactorGraph;
+class GaussianHybridFactorGraph;
+class HybridEliminationTree;
+class Ordering;
+
+/** Main elimination function for HybridFactorGraph */
+using sharedFactor = boost::shared_ptr<Factor>;
+GTSAM_EXPORT std::pair<GaussianMixture::shared_ptr, sharedFactor>
+EliminateHybrid(const GaussianHybridFactorGraph& factors, const Ordering& keys);
+
+template <>
+struct EliminationTraits<GaussianHybridFactorGraph> {
+  typedef Factor FactorType;
+  typedef GaussianHybridFactorGraph FactorGraphType;
+  typedef GaussianMixture ConditionalType;
+  typedef HybridBayesNet BayesNetType;
+  typedef HybridEliminationTree EliminationTreeType;
+  typedef HybridBayesNet BayesTreeType;
+  typedef HybridEliminationTree JunctionTreeType;
+
+  /// The function type that does a single elimination step on a variable.
+  static std::pair<GaussianMixture::shared_ptr, sharedFactor> DefaultEliminate(
+      const GaussianHybridFactorGraph& factors, const Ordering& ordering) {
+    return EliminateHybrid(factors, ordering);
+  }
+};
 
 class GaussianHybridFactorGraph
-    : protected FactorGraph<Factor> {
+    : protected FactorGraph<Factor>,
+      public EliminateableFactorGraph<GaussianHybridFactorGraph> {
  public:
   using shared_ptr = boost::shared_ptr<GaussianHybridFactorGraph>;
   using Base = FactorGraph<Factor>;
@@ -228,9 +255,19 @@ class GaussianHybridFactorGraph
         }
       }
     }
-    result.append(dcGraph_.discreteKeys());
+    for (auto&& key : dcGraph_.discreteKeys()) {
+      result.push_back(key);
+    }
     return result;
   }
+
+  /// @name Elimination machinery
+  /// @{
+  using FactorType = Factor;
+  using EliminationResult =
+      std::pair<boost::shared_ptr<GaussianMixture>, sharedFactor>;
+  using Eliminate = std::function<EliminationResult(
+      const GaussianHybridFactorGraph&, const Ordering&)>;
 
   /**
    * @brief Sum all gaussians and Gaussian mixtures together.
