@@ -53,6 +53,21 @@ void GaussianHybridFactorGraph::clear() {
   gaussianGraph_.resize(0);
 }
 
+DiscreteKeys GaussianHybridFactorGraph::discreteKeys() const {
+  DiscreteKeys result;
+  for (auto&& factor : discreteGraph_) {
+    if (auto p = boost::dynamic_pointer_cast<DecisionTreeFactor>(factor)) {
+      for (auto&& key : factor->keys()) {
+        result.emplace_back(key, p->cardinality(key));
+      }
+    }
+  }
+  for (auto&& key : dcGraph_.discreteKeys()) {
+    result.push_back(key);
+  }
+  return result;
+}
+
 /// Define adding a GaussianFactor to a sum.
 using Sum = DCGaussianMixtureFactor::Sum;
 static Sum& operator+=(Sum& sum, const GaussianFactor::shared_ptr& factor) {

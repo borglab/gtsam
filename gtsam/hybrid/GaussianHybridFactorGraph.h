@@ -246,20 +246,7 @@ class GaussianHybridFactorGraph
   void clear();
 
   /// The total number of discrete keys in the factor graph.
-  DiscreteKeys discreteKeys() const {
-    DiscreteKeys result;
-    for (auto&& factor : discreteGraph_) {
-      if (auto p = boost::dynamic_pointer_cast<DecisionTreeFactor>(factor)) {
-        for (auto&& key : factor->keys()) {
-          result.emplace_back(key, p->cardinality(key));
-        }
-      }
-    }
-    for (auto&& key : dcGraph_.discreteKeys()) {
-      result.push_back(key);
-    }
-    return result;
-  }
+  DiscreteKeys discreteKeys() const;
 
   /// @name Elimination machinery
   /// @{
