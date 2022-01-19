@@ -143,7 +143,7 @@ void DiscreteConditional::print(const string& s,
     }
   }
   cout << "):\n";
-  ADT::print("");
+  ADT::print("", formatter);
   cout << endl;
 }
 
