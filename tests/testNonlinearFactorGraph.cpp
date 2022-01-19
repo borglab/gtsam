@@ -341,9 +341,15 @@ TEST(NonlinearFactorGraph, dot) {
       "\n"
       "  factor0[label=\"\", shape=point];\n"
       "  var8646911284551352321--factor0;\n"
-      "  var8646911284551352321--var8646911284551352322;\n"
-      "  var8646911284551352321--var7782220156096217089;\n"
-      "  var8646911284551352322--var7782220156096217089;\n"
+      "  factor1[label=\"\", shape=point];\n"
+      "  var8646911284551352321--factor1;\n"
+      "  var8646911284551352322--factor1;\n"
+      "  factor2[label=\"\", shape=point];\n"
+      "  var8646911284551352321--factor2;\n"
+      "  var7782220156096217089--factor2;\n"
+      "  factor3[label=\"\", shape=point];\n"
+      "  var8646911284551352322--factor3;\n"
+      "  var7782220156096217089--factor3;\n"
       "}\n";
 
   const NonlinearFactorGraph fg = createNonlinearFactorGraph();
@@ -363,9 +369,15 @@ TEST(NonlinearFactorGraph, dot_extra) {
       "\n"
       "  factor0[label=\"\", shape=point];\n"
       "  var8646911284551352321--factor0;\n"
-      "  var8646911284551352321--var8646911284551352322;\n"
-      "  var8646911284551352321--var7782220156096217089;\n"
-      "  var8646911284551352322--var7782220156096217089;\n"
+      "  factor1[label=\"\", shape=point];\n"
+      "  var8646911284551352321--factor1;\n"
+      "  var8646911284551352322--factor1;\n"
+      "  factor2[label=\"\", shape=point];\n"
+      "  var8646911284551352321--factor2;\n"
+      "  var7782220156096217089--factor2;\n"
+      "  factor3[label=\"\", shape=point];\n"
+      "  var8646911284551352322--factor3;\n"
+      "  var7782220156096217089--factor3;\n"
       "}\n";
 
   const NonlinearFactorGraph fg = createNonlinearFactorGraph();
