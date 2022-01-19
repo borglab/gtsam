@@ -27,10 +27,6 @@ using namespace std;
 
 namespace gtsam {
 
-// Instantiate base classes
-// template class FactorGraph<Factor>;
-template class EliminateableFactorGraph<HybridFactorGraph>;
-
 void HybridFactorGraph::print(const string& str,
                               const gtsam::KeyFormatter& keyFormatter) const {
   string prefix = str.empty() ? str : str + ".";
@@ -133,12 +129,6 @@ DecisionTreeFactor::shared_ptr HybridFactorGraph::toDecisionTreeFactor() const {
   return boost::make_shared<DecisionTreeFactor>(discreteKeys(), gfgdt);
 }
 
-ostream& operator<<(ostream& os,
-                    const GaussianFactorGraph::EliminationResult& er) {
-  os << "ER" << endl;
-  return os;
-}
-
 // The function type that does a single elimination step on a variable.
 pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
     const GaussianHybridFactorGraph& factors, const Ordering& ordering) {
@@ -191,40 +181,6 @@ pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
         separatorKeys, discreteKeys, separatorFactors);
     return {conditional, factor};
   }
-}
-
-DecisionTreeFactor::shared_ptr HybridFactorGraph::toDecisionTreeFactor(
-    const GaussianHybridFactorGraph& ghfg) {
-  using GFG = GaussianFactorGraph;
-
-  Sum sum = ghfg.sum();
-
-  // Get the decision tree with each leaf as the error for that assignment
-  std::function<double(GaussianFactorGraph)> gfgError = [&](const GFG& graph) {
-    VectorValues values = graph.optimize();
-    return graph.error(values);
-  };
-  DecisionTree<Key, double> gfgdt(sum, gfgError);
-
-  auto allAssignments = cartesianProduct<Key>(discreteKeys);
-  sum(allAssignments[0]).print("GFG 1");
-  std::cout << "=======================" << std::endl;
-  sum(allAssignments[1]).print("GFG 2");
-  std::cout << "=======================" << std::endl;
-  sum(allAssignments[2]).print("GFG 3");
-  std::cout << "=======================" << std::endl;
-  sum(allAssignments[3]).print("GFG 4");
-  std::cout << "=======================" << std::endl;
-
-  DecisionTree<Key, double>::ValueFormatter valueFormatter =
-      [](const double& error) {
-        stringstream ss;
-        ss << error;
-        return ss.str();
-      };
-
-  auto factor = boost::make_shared<DecisionTreeFactor>(discreteKeys, gfgdt);
-  return factor;
 }
 
 }  // namespace gtsam
