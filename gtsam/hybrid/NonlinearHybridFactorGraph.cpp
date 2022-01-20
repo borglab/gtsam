@@ -11,18 +11,8 @@
  * @date   December 2021
  */
 
-#include <gtsam/discrete/DiscreteEliminationTree.h>
-#include <gtsam/discrete/DiscreteJunctionTree.h>
-#include <gtsam/hybrid/DCGaussianMixtureFactor.h>
-#include <gtsam/hybrid/HybridEliminationTree.h>
+#include <gtsam/hybrid/GaussianHybridFactorGraph.h>
 #include <gtsam/hybrid/NonlinearHybridFactorGraph.h>
-#include <gtsam/inference/EliminateableFactorGraph-inst.h>
-#include <gtsam/linear/GaussianEliminationTree.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/GaussianJunctionTree.h>
-#include <gtsam/linear/HessianFactor.h>
-
-#include <boost/make_shared.hpp>
 
 using namespace std;
 

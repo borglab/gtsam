@@ -14,7 +14,6 @@
 #pragma once
 
 #include <gtsam/hybrid/HybridFactorGraph.h>
-#include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 #include <string>

@@ -12,14 +12,9 @@
 
 #pragma once
 
-#include <gtsam/discrete/DiscreteFactor.h>
-#include <gtsam/discrete/DiscreteFactorGraph.h>
-#include <gtsam/hybrid/DCFactor.h>
-#include <gtsam/hybrid/DCFactorGraph.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 #include <string>
 
