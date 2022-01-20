@@ -44,41 +44,40 @@ void DCGaussianMixtureFactor::printKeys(
 }
 
 /* *******************************************************************************/
-void DCGaussianMixtureFactor::print(const std::string& s,
-                                    const KeyFormatter& keyFormatter) const {
+void DCGaussianMixtureFactor::print(const std::string &s,
+                                    const KeyFormatter &keyFormatter) const {
   printKeys(s, keyFormatter);
 
-  auto valueFormatter = [](const GaussianFactor::shared_ptr& v) {
-    auto hessianFactor = boost::dynamic_pointer_cast<HessianFactor>(v);
-    if (hessianFactor) {
+  auto valueFormatter = [](const GaussianFactor::shared_ptr &v) {
+    auto indenter = [](const GaussianFactor::shared_ptr &p) {
       RedirectCout rd;
-      hessianFactor->print();
+      p->print();
       auto contents = rd.str();
       auto re = std::regex("\n");
       auto lines =
-          std::vector<std::string>{std::sregex_token_iterator(contents.begin(), contents.end(), re, -1),
+          std::vector<std::string>{std::sregex_token_iterator(contents.begin(),
+                                                              contents.end(),
+                                                              re,
+                                                              -1),
                                    std::sregex_token_iterator()};
-      auto indented = std::accumulate(lines.begin(), lines.end(), std::string(),
-                                      [](const std::string &a, const std::string &b) -> std::string {
+      return std::accumulate(lines.begin(), lines.end(), std::string(),
+                                      [](const std::string &a,
+                                         const std::string &b) -> std::string {
                                         return a + "\n    " + b;
                                       });
-      return (boost::format("Hessian factor on %d keys: \n%s\n") % v->size() % indented).str();
+    };
+
+    auto hessianFactor = boost::dynamic_pointer_cast<HessianFactor>(v);
+    if (hessianFactor) {
+
+      return (boost::format("Hessian factor on %d keys: \n%s\n") % v->size()
+          % indenter(v)).str();
     }
 
     auto jacobianFactor = boost::dynamic_pointer_cast<JacobianFactor>(v);
     if (jacobianFactor) {
-      RedirectCout rd;
-      jacobianFactor->print();
-      auto contents = rd.str();
-      auto re = std::regex("\n");
-      auto lines =
-          std::vector<std::string>{std::sregex_token_iterator(contents.begin(), contents.end(), re, -1),
-                                   std::sregex_token_iterator()};
-      auto indented = std::accumulate(lines.begin(), lines.end(), std::string("    ----"),
-                                      [](const std::string &a, const std::string &b) -> std::string {
-                                        return a + (a.length() > 0 ? "\n    ----" : "") + b;
-                                      });
-      return (boost::format("Jacobian factor on %d keys: \n%s\n") % v->size() % indented).str();
+      return (boost::format("Jacobian factor on %d keys: \n%s\n") % v->size()
+          % indenter(v)).str();
     }
     return (boost::format("Gaussian factor on %d keys") % v->size()).str();
   };
@@ -118,6 +117,9 @@ bool DCGaussianMixtureFactor::equals(const DCFactor &f, double tol) const {
     return factors_.equals(other->factors_);
   }
   return false;
+}
+const DCGaussianMixtureFactor::Factors &DCGaussianMixtureFactor::factors() {
+  return factors_;
 }
 
 /* *******************************************************************************/

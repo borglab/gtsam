@@ -22,6 +22,8 @@
 #include <gtsam/hybrid/DCMixtureFactor.h>
 #include <gtsam/hybrid/HybridEliminationTree.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
+#include <gtsam/hybrid/IncrementalHybrid.h>
+#include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/discrete/DiscretePrior.h>
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/nonlinear/PriorFactor.h>
@@ -140,7 +142,6 @@ struct Switching {
 
     // Add "motion models".
     for (size_t k = 1; k < K; k++) {
-      using MotionMixture = DCMixtureFactor<MotionModel>;
       auto keys = {X(k), X(k + 1)};
       auto components = motionModels(k);
       nonlinearFactorGraph.emplace_dc<MotionMixture>(
@@ -150,10 +151,10 @@ struct Switching {
     // Add measurement factors
     auto measurement_noise = noiseModel::Isotropic::Sigma(1, 0.1);
     for (size_t k = 1; k <= K; k++) {
-      nonlinearFactorGraph.emplace_nonlinear<PriorFactor<double> >(X(k),
-                                                                   1.0 * (k
-                                                                       - 1),
-                                                                   measurement_noise);
+      nonlinearFactorGraph.emplace_nonlinear<PriorFactor<double> >(
+          X(k),
+          1.0 * (k - 1),
+          measurement_noise);
     }
 
     // Add "mode chain"
@@ -432,85 +433,6 @@ TEST(HybridFactorGraph, Elimination) {
              == KeyVector({M(2), M(1)}));
 }
 
-///* ****************************************************************************/
-//// Test if we can incrementally do the inference
-//TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
-//  Switching three_step(3);
-//
-//  // We want to eliminate x1, x2 and x3
-//  Ordering ordering;
-//  ordering += X(1);
-//  ordering += X(2);
-//  ordering += X(3);
-//
-//  // Eliminate the factor graph and get the
-//  HybridBayesNet::shared_ptr hybridBayesNet;
-//  HybridFactorGraph::shared_ptr remainingFactorGraph;
-//  std::tie(hybridBayesNet, remainingFactorGraph) =
-//      three_step.linearizedFactorGraph.eliminatePartialSequential(ordering);
-//
-//  hybridBayesNet->print("hybridBayesNet");
-//  remainingFactorGraph->print("rfg");
-//
-//  Switching four_step(4);
-//
-//  HybridFactorGraph hf;
-//
-////  for (const auto& f : remainingFactorGraph->discreteGraph())
-////    hf.push_discrete(f);
-//
-////  auto conditional = boost::make_shared<DiscreteConditional>(
-////      DiscreteKey{M(3), 2}, DiscreteKeys{{M(2), 2}}, "1/2 3/2");
-////  hf.push_discrete(conditional);
-//
-//  hf.push_dc(four_step.nonlinearFactorGraph.dcGraph().at(2));
-//
-//  Values lp;
-//  lp.insert(X(3), four_step.linearizationPoint.at(X(3)));
-//  lp.insert(X(4), four_step.linearizationPoint.at(X(4)));
-//  auto lhf = hf.linearize(lp);
-//
-//  lhf.push_dc(hybridBayesNet->at(2)); // Density on x3
-//
-//  GTSAM_PRINT(lhf);
-//
-//  ordering.clear();
-//  ordering += X(3);
-//  ordering += X(4);
-//
-//  // Eliminate the factor graph and get the
-//  HybridBayesNet::shared_ptr hybridBayesNet_4;
-//  HybridFactorGraph::shared_ptr remainingFactorGraph_4;
-//  std::tie(hybridBayesNet_4, remainingFactorGraph_4) =
-//      lhf.eliminatePartialSequential(ordering);
-//
-//  hybridBayesNet_4->print("hybridBayesNet_4:");
-//  remainingFactorGraph_4->print("rfg4");
-//
-//  remainingFactorGraph->discreteGraph().product().print("prod");
-//}
-
-class IncrementalHybrid {
-
- public:
-
-  HybridBayesNet::shared_ptr hybridBayesNet_;
-  HybridFactorGraph::shared_ptr remainingFactorGraph_;
-  /**
-   * Given new factors, perform an incremental update.
-   * @param graph The new factors, should be linear only
-   */
-  void update(HybridFactorGraph graph, const Ordering &ordering) {
-    // TODO(fan): add all factors involving variables in the `ordering`
-
-    if (ordering.at(0) == X(2)) graph.push_back(hybridBayesNet_->at(1));
-    // Eliminate partially.
-    std::tie(hybridBayesNet_, remainingFactorGraph_) =
-        graph.eliminatePartialSequential(ordering);
-  }
-
-};
-
 /* ****************************************************************************/
 // Test if we can incrementally do the inference
 TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
@@ -544,7 +466,9 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
   CHECK(remainingFactorGraph);
   EXPECT_LONGS_EQUAL(1, remainingFactorGraph->size());
 
-  auto discreteFactor_m1 = *dynamic_pointer_cast<DecisionTreeFactor>(remainingFactorGraph->discreteGraph().at(0));
+  auto discreteFactor_m1 =
+      *dynamic_pointer_cast<DecisionTreeFactor>(remainingFactorGraph->discreteGraph().at(
+          0));
   EXPECT(
       discreteFactor_m1.keys() == KeyVector({M(1)}));
 
@@ -572,7 +496,9 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
   CHECK(remainingFactorGraph2);
   EXPECT_LONGS_EQUAL(1, remainingFactorGraph2->size());
 
-  auto discreteFactor = dynamic_pointer_cast<DecisionTreeFactor>(remainingFactorGraph2->discreteGraph().at(0));
+  auto discreteFactor =
+      dynamic_pointer_cast<DecisionTreeFactor>(remainingFactorGraph2->discreteGraph().at(
+          0));
   EXPECT(
       discreteFactor->keys()
           == KeyVector({M(2), M(1)}));
@@ -583,27 +509,43 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
   ordering += X(3);
 
   // Now we calculate the actual factors using full elimination
-  HybridBayesNet::shared_ptr actualHybridBayesNet;
-  HybridFactorGraph::shared_ptr actualRemainingGraph;
-  std::tie(actualHybridBayesNet, actualRemainingGraph) =
+  HybridBayesNet::shared_ptr expectedHybridBayesNet;
+  HybridFactorGraph::shared_ptr expectedRemainingGraph;
+  std::tie(expectedHybridBayesNet, expectedRemainingGraph) =
       switching.linearizedFactorGraph.eliminatePartialSequential(ordering);
 
   // The densities on X(1) should be the same
   EXPECT(assert_equal(*(hybridBayesNet->at(0)),
-                      *(actualHybridBayesNet->at(0))));
+                      *(expectedHybridBayesNet->at(0))));
 
   // The densities on X(2) should be the same
   EXPECT(assert_equal(*(hybridBayesNet2->at(0)),
-                      *(actualHybridBayesNet->at(1))));
+                      *(expectedHybridBayesNet->at(1))));
 
   // The densities on X(3) should be the same
   EXPECT(assert_equal(*(hybridBayesNet2->at(1)),
-                      *(actualHybridBayesNet->at(2))));
+                      *(expectedHybridBayesNet->at(2))));
+
+  auto m00_prob = [&]() {
+    GaussianFactorGraph gf;
+    gf.add(switching.linearizedFactorGraph.gaussianGraph().at(3));
+
+    Assignment<Key> m00;
+    m00[M(1)] = 0, m00[M(2)] = 0;
+    auto dcMixture = dynamic_pointer_cast<DCGaussianMixtureFactor>(graph2.dcGraph().at(0));
+    gf.add(dcMixture->factors()(m00));
+    auto x2_mixed = hybridBayesNet->at(1);
+    gf.add(x2_mixed->factors()(m00));
+    auto result_gf = gf.eliminateSequential();
+    return gf.probPrime(result_gf->optimize());
+  }();
+
+  EXPECT(assert_equal(m00_prob, 0.60656, 1e-5));
 
   DiscreteValues assignment;
   assignment[M(1)] = 0;
   assignment[M(2)] = 0;
-  EXPECT(assert_equal(0.60656, (*discreteFactor)(assignment), 1e-5));
+  EXPECT(assert_equal(m00_prob, (*discreteFactor)(assignment), 1e-5));
   assignment[M(1)] = 1;
   assignment[M(2)] = 0;
   EXPECT(assert_equal(0.612477, (*discreteFactor)(assignment), 1e-5));
@@ -614,16 +556,14 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
   assignment[M(2)] = 1;
   EXPECT(assert_equal(1.0, (*discreteFactor)(assignment), 1e-5));
 
-  GTSAM_PRINT(actualRemainingGraph->discreteGraph());
-  GTSAM_PRINT(switching.linearizedFactorGraph.discreteGraph());
-
   DiscreteFactorGraph dfg;
   dfg.add(*discreteFactor);
   dfg.add(discreteFactor_m1);
   dfg.add_factors(switching.linearizedFactorGraph.discreteGraph());
 
   auto chordal = dfg.eliminateSequential();
-  auto expectedChordal = actualRemainingGraph->discreteGraph().eliminateSequential();
+  auto expectedChordal =
+      expectedRemainingGraph->discreteGraph().eliminateSequential();
 
   EXPECT(assert_equal(*expectedChordal, *chordal, 1e-6));
 }

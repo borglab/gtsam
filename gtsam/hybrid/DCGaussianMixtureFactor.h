@@ -163,6 +163,7 @@ class DCGaussianMixtureFactor : public DCFactor {
   }
   /// @}
 
+  const Factors& factors();
  private:
   /// Return Sum decision tree with factors wrapped in Singleton FGs.
   Sum wrappedFactors() const;
