@@ -107,8 +107,7 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
   void printSignature(
       string s = "Discrete Conditional: ",
       const gtsam::KeyFormatter& formatter = gtsam::DefaultKeyFormatter) const;
-  gtsam::DecisionTreeFactor* choose(
-      const gtsam::DiscreteValues& parentsValues) const;
+  gtsam::DecisionTreeFactor* choose(const gtsam::DiscreteValues& given) const;
   gtsam::DecisionTreeFactor* likelihood(
       const gtsam::DiscreteValues& frontalValues) const;
   gtsam::DecisionTreeFactor* likelihood(size_t value) const;
@@ -230,11 +229,16 @@ class DiscreteFactorGraph {
   DiscreteFactorGraph();
   DiscreteFactorGraph(const gtsam::DiscreteBayesNet& bayesNet);
 
-  void add(const gtsam::DiscreteKey& j, string table);
+  // Building the graph
+  void push_back(const gtsam::DiscreteFactor* factor);
+  void push_back(const gtsam::DiscreteConditional* conditional);
+  void push_back(const gtsam::DiscreteFactorGraph& graph);
+  void push_back(const gtsam::DiscreteBayesNet& bayesNet);
+  void push_back(const gtsam::DiscreteBayesTree& bayesTree);
+  void add(const gtsam::DiscreteKey& j, string spec);
   void add(const gtsam::DiscreteKey& j, const std::vector<double>& spec);
-
-  void add(const gtsam::DiscreteKeys& keys, string table);
-  void add(const std::vector<gtsam::DiscreteKey>& keys, string table);
+  void add(const gtsam::DiscreteKeys& keys, string spec);
+  void add(const std::vector<gtsam::DiscreteKey>& keys, string spec);
 
   bool empty() const;
   size_t size() const;
@@ -258,8 +262,12 @@ class DiscreteFactorGraph {
 
   gtsam::DiscreteBayesNet eliminateSequential();
   gtsam::DiscreteBayesNet eliminateSequential(const gtsam::Ordering& ordering);
+  std::pair<gtsam::DiscreteBayesNet, gtsam::DiscreteFactorGraph>
+      eliminatePartialSequential(const gtsam::Ordering& ordering);
   gtsam::DiscreteBayesTree eliminateMultifrontal();
   gtsam::DiscreteBayesTree eliminateMultifrontal(const gtsam::Ordering& ordering);
+  std::pair<gtsam::DiscreteBayesTree, gtsam::DiscreteFactorGraph>
+      eliminatePartialMultifrontal(const gtsam::Ordering& ordering);
 
   string markdown(const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
