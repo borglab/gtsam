@@ -162,6 +162,9 @@ pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
   // STEP 1: ELIMINATE
   // Eliminate each sum using conventional Cholesky:
   // We can use this by creating a *new* decision tree:
+
+  // Each pair is a GaussianConditional and the factor generated after
+  // elimination.
   using Pair = GaussianFactorGraph::EliminationResult;
 
   KeyVector keys;

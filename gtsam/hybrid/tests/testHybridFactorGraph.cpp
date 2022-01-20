@@ -331,7 +331,7 @@ GaussianFactorGraph::shared_ptr batchGFG(double between,
 /* ****************************************************************************/
 // Test elimination function by eliminating x1 in *-x1-*-m1 graph.
 TEST(DCGaussianElimination, Eliminate_fully) {
-  Switching self(2);
+  Switching self(2, 1.0, 0.1);
   auto factors = self.linearizedFactorGraph;
 
   // Add measurement factors
@@ -363,7 +363,6 @@ TEST(DCGaussianElimination, Eliminate_fully) {
   CHECK(discreteFactor);
   EXPECT_LONGS_EQUAL(1, discreteFactor->discreteKeys().size());
   EXPECT(discreteFactor->root_->isLeaf() == false);
-
 }
 
 /* ****************************************************************************/
