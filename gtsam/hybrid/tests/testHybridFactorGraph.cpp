@@ -23,6 +23,7 @@
 #include <gtsam/hybrid/DCMixtureFactor.h>
 #include <gtsam/hybrid/HybridEliminationTree.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
+#include <gtsam/hybrid/NonlinearHybridFactorGraph.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 
@@ -54,7 +55,7 @@ TEST(HybridFactorGraph, GaussianFactorGraph) {
   gfg.add(X(0), I_1x1, Vector1(5));
 
   // Initialize the hybrid factor graph
-  HybridFactorGraph nonlinearFactorGraph(cfg, DiscreteFactorGraph(),
+  NonlinearHybridFactorGraph nonlinearFactorGraph(cfg, DiscreteFactorGraph(),
                                          DCFactorGraph());
 
   // Linearization point
@@ -73,7 +74,7 @@ TEST(HybridFactorGraph, GaussianFactorGraph) {
  * Test push_back on HFG makes the correct distinction.
  */
 TEST(HybridFactorGraph, PushBack) {
-  HybridFactorGraph fg;
+  NonlinearHybridFactorGraph fg;
 
   auto nonlinearFactor = boost::make_shared<BetweenFactor<double>>();
   fg.push_back(nonlinearFactor);
@@ -133,7 +134,7 @@ using MotionMixture = DCMixtureFactor<MotionModel>;
 struct Switching {
   size_t K;
   DiscreteKeys modes;
-  HybridFactorGraph nonlinearFactorGraph;
+  NonlinearHybridFactorGraph nonlinearFactorGraph;
   GaussianHybridFactorGraph linearizedFactorGraph;
   Values linearizationPoint;
 
@@ -198,8 +199,8 @@ struct Switching {
     return {still, moving};
   }
 
-  // Add "mode chain" to HybridFactorGraph
-  void addModeChain(HybridFactorGraph* fg) {
+  // Add "mode chain" to NonlinearHybridFactorGraph
+  void addModeChain(NonlinearHybridFactorGraph* fg) {
     auto prior = boost::make_shared<DiscretePrior>(modes[1], "1/1");
     fg->push_discrete(prior);
     for (size_t k = 1; k < K - 1; k++) {
@@ -210,7 +211,7 @@ struct Switching {
     }
   }
 
-  // Add "mode chain" to HybridFactorGraph
+  // Add "mode chain" to GaussianHybridFactorGraph
   void addModeChain(GaussianHybridFactorGraph* fg) {
     auto prior = boost::make_shared<DiscretePrior>(modes[1], "1/1");
     fg->push_discrete(prior);
@@ -227,6 +228,7 @@ struct Switching {
 // Test construction of switching-like hybrid factor graph.
 TEST(HybridFactorGraph, Switching) {
   Switching self(3);
+  GTSAM_PRINT(self.nonlinearFactorGraph);
   EXPECT_LONGS_EQUAL(5, self.nonlinearFactorGraph.size());
   EXPECT_LONGS_EQUAL(1, self.nonlinearFactorGraph.nonlinearGraph().size());
   EXPECT_LONGS_EQUAL(2, self.nonlinearFactorGraph.discreteGraph().size());

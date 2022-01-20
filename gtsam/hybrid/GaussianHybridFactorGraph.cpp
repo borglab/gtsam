@@ -32,24 +32,18 @@ template class EliminateableFactorGraph<GaussianHybridFactorGraph>;
 
 void GaussianHybridFactorGraph::print(
     const string& str, const gtsam::KeyFormatter& keyFormatter) const {
-  string prefix = str.empty() ? str : str + ".";
-  cout << prefix << "size: " << size() << endl;
-  discreteGraph_.print(prefix + "DiscreteFactorGraph", keyFormatter);
-  dcGraph_.print(prefix + "DCFactorGraph", keyFormatter);
-  gaussianGraph_.print(prefix + "GaussianGraph", keyFormatter);
+  Base::print(str, keyFormatter);
+  gaussianGraph_.print("GaussianGraph", keyFormatter);
 }
 
 bool GaussianHybridFactorGraph::equals(const GaussianHybridFactorGraph& other,
                                        double tol) const {
   return Base::equals(other, tol) &&
-         discreteGraph_.equals(other.discreteGraph_, tol) &&
-         dcGraph_.equals(other.dcGraph_, tol) &&
          gaussianGraph_.equals(other.gaussianGraph_, tol);
 }
 
 void GaussianHybridFactorGraph::clear() {
-  discreteGraph_.resize(0);
-  dcGraph_.resize(0);
+  Base::clear();
   gaussianGraph_.resize(0);
 }
 

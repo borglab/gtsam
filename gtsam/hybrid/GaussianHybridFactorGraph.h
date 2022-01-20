@@ -17,6 +17,7 @@
 #include <gtsam/hybrid/DCFactor.h>
 #include <gtsam/hybrid/DCFactorGraph.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
+#include <gtsam/hybrid/HybridFactorGraph.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
@@ -54,28 +55,16 @@ struct EliminationTraits<GaussianHybridFactorGraph> {
   }
 };
 
-class GaussianHybridFactorGraph
-    : protected FactorGraph<Factor>,
+class GTSAM_EXPORT GaussianHybridFactorGraph
+    : public HybridFactorGraph,
       public EliminateableFactorGraph<GaussianHybridFactorGraph> {
  public:
   using shared_ptr = boost::shared_ptr<GaussianHybridFactorGraph>;
-  using Base = FactorGraph<Factor>;
+  using Base = HybridFactorGraph;
 
  protected:
   // Separate internal factor graphs for different types of factors
   GaussianFactorGraph gaussianGraph_;
-  DiscreteFactorGraph discreteGraph_;
-  DCFactorGraph dcGraph_;
-
-  /// Check if FACTOR type is derived from DiscreteFactor.
-  template <typename FACTOR>
-  using IsDiscrete = typename std::enable_if<
-      std::is_base_of<DiscreteFactor, FACTOR>::value>::type;
-
-  /// Check if FACTOR type is derived from DCFactor.
-  template <typename FACTOR>
-  using IsDC =
-      typename std::enable_if<std::is_base_of<DCFactor, FACTOR>::value>::type;
 
   /// Check if FACTOR type is derived from GaussianFactor.
   template <typename FACTOR>
@@ -89,19 +78,15 @@ class GaussianHybridFactorGraph
   /**
    * @brief Construct a new Hybrid Factor Graph object.
    *
-   * @param nonlinearGraph A factor graph with continuous factors.
+   * @param gaussianGraph A factor graph with continuous factors.
    * @param discreteGraph A factor graph with only discrete factors.
    * @param dcGraph A DCFactorGraph containing DCFactors.
    */
   GaussianHybridFactorGraph(const GaussianFactorGraph& gaussianGraph,
                             const DiscreteFactorGraph& discreteGraph,
                             const DCFactorGraph& dcGraph)
-      : gaussianGraph_(gaussianGraph),
-        discreteGraph_(discreteGraph),
-        dcGraph_(dcGraph) {
-    Base::push_back(discreteGraph);
-    Base::push_back(dcGraph);
-    Base::push_back(gaussianGraph);
+      : Base(discreteGraph, dcGraph), gaussianGraph_(gaussianGraph) {
+    Base::Base::push_back(gaussianGraph);
   }
 
   // Allow use of selected FactorGraph methods:
@@ -118,33 +103,8 @@ class GaussianHybridFactorGraph
   IsGaussian<FACTOR> push_gaussian(
       const boost::shared_ptr<FACTOR>& gaussianFactor) {
     gaussianGraph_.push_back(gaussianFactor);
-    Base::push_back(gaussianFactor);
+    Base::Base::push_back(gaussianFactor);
   }
-
-  /**
-   * Add a discrete factor *pointer* to the internal discrete graph
-   * @param discreteFactor - boost::shared_ptr to the factor to add
-   */
-  template <typename FACTOR>
-  IsDiscrete<FACTOR> push_discrete(
-      const boost::shared_ptr<FACTOR>& discreteFactor) {
-    discreteGraph_.push_back(discreteFactor);
-    Base::push_back(discreteFactor);
-  }
-
-  /**
-   * Add a discrete-continuous (DC) factor *pointer* to the internal DC graph
-   * @param dcFactor - boost::shared_ptr to the factor to add
-   */
-  template <typename FACTOR>
-  IsDC<FACTOR> push_dc(const boost::shared_ptr<FACTOR>& dcFactor) {
-    dcGraph_.push_back(dcFactor);
-    Base::push_back(dcFactor);
-  }
-
-  /// delete emplace_shared.
-  template <class FACTOR, class... Args>
-  void emplace_shared(Args&&... args) = delete;
 
   /// Construct a factor and add (shared pointer to it) to factor graph.
   template <class FACTOR, class... Args>
@@ -152,22 +112,6 @@ class GaussianHybridFactorGraph
     auto factor = boost::allocate_shared<FACTOR>(
         Eigen::aligned_allocator<FACTOR>(), std::forward<Args>(args)...);
     push_gaussian(factor);
-  }
-
-  /// Construct a factor and add (shared pointer to it) to factor graph.
-  template <class FACTOR, class... Args>
-  IsDiscrete<FACTOR> emplace_discrete(Args&&... args) {
-    auto factor = boost::allocate_shared<FACTOR>(
-        Eigen::aligned_allocator<FACTOR>(), std::forward<Args>(args)...);
-    push_discrete(factor);
-  }
-
-  /// Construct a factor and add (shared pointer to it) to factor graph.
-  template <class FACTOR, class... Args>
-  IsDC<FACTOR> emplace_dc(Args&&... args) {
-    auto factor = boost::allocate_shared<FACTOR>(
-        Eigen::aligned_allocator<FACTOR>(), std::forward<Args>(args)...);
-    push_dc(factor);
   }
 
   /**
@@ -212,18 +156,6 @@ class GaussianHybridFactorGraph
    */
   const GaussianFactorGraph& gaussianGraph() const { return gaussianGraph_; }
 
-  /**
-   * Utility for retrieving the internal discrete factor graph
-   * @return the member variable discreteGraph_
-   */
-  const DiscreteFactorGraph& discreteGraph() const { return discreteGraph_; }
-
-  /**
-   * Utility for retrieving the internal DC factor graph
-   * @return the member variable dcGraph_
-   */
-  const DCFactorGraph& dcGraph() const { return dcGraph_; }
-
   /// The total number of factors in the Gaussian factor graph.
   size_t nrGaussianFactors() const { return gaussianGraph_.size(); }
 
@@ -233,20 +165,14 @@ class GaussianHybridFactorGraph
    */
   bool equals(const GaussianHybridFactorGraph& other, double tol = 1e-9) const;
 
-  /// The total number of factors in the discrete factor graph.
-  size_t nrDiscreteFactors() const { return discreteGraph_.size(); }
-
-  /// The total number of factors in the DC factor graph.
-  size_t nrDcFactors() const { return dcGraph_.size(); }
-
   /**
    * Clears all internal factor graphs
    * TODO(dellaert): Not loving this!
    */
-  void clear();
+  void clear() override;
 
   /// The total number of discrete keys in the factor graph.
-  DiscreteKeys discreteKeys() const;
+  DiscreteKeys discreteKeys() const override;
 
   /// @name Elimination machinery
   /// @{

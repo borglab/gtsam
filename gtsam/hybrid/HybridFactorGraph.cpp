@@ -31,43 +31,18 @@ void HybridFactorGraph::print(const string& str,
                               const gtsam::KeyFormatter& keyFormatter) const {
   string prefix = str.empty() ? str : str + ".";
   cout << prefix << "size: " << size() << endl;
-  nonlinearGraph_.print(prefix + "NonlinearFactorGraph", keyFormatter);
   discreteGraph_.print(prefix + "DiscreteFactorGraph", keyFormatter);
   dcGraph_.print(prefix + "DCFactorGraph", keyFormatter);
-}
-
-GaussianHybridFactorGraph HybridFactorGraph::linearize(
-    const Values& continuousValues) const {
-  // linearize the continuous factors
-  auto gaussianFactorGraph = nonlinearGraph_.linearize(continuousValues);
-
-  // linearize the DCFactors
-  DCFactorGraph linearized_DC_factors;
-  for (auto&& dcFactor : dcGraph_) {
-    // If dcFactor is a DCGaussianMixtureFactor, we don't linearize.
-    if (boost::dynamic_pointer_cast<DCGaussianMixtureFactor>(dcFactor)) {
-      linearized_DC_factors.push_back(dcFactor);
-    } else {
-      auto linearizedDCFactor = dcFactor->linearize(continuousValues);
-      linearized_DC_factors.push_back(linearizedDCFactor);
-    }
-  }
-
-  // Construct new GaussianHybridFactorGraph
-  return GaussianHybridFactorGraph(*gaussianFactorGraph, discreteGraph_,
-                                   linearized_DC_factors);
 }
 
 bool HybridFactorGraph::equals(const HybridFactorGraph& other,
                                double tol) const {
   return Base::equals(other, tol) &&
-         nonlinearGraph_.equals(other.nonlinearGraph_, tol) &&
          discreteGraph_.equals(other.discreteGraph_, tol) &&
          dcGraph_.equals(other.dcGraph_, tol);
 }
 
 void HybridFactorGraph::clear() {
-  nonlinearGraph_.resize(0);
   discreteGraph_.resize(0);
   dcGraph_.resize(0);
 }
@@ -87,19 +62,7 @@ DiscreteKeys HybridFactorGraph::discreteKeys() const {
   return result;
 }
 
-/// Define adding a GaussianFactor to a sum.
 using Sum = DCGaussianMixtureFactor::Sum;
-static Sum& operator+=(Sum& sum, const GaussianFactor::shared_ptr& factor) {
-  using Y = GaussianFactorGraph;
-  auto add = [&factor](const Y& graph) {
-    auto result = graph;
-    result.push_back(factor);
-    return result;
-  };
-  sum = sum.apply(add);
-  return sum;
-}
-
 Sum HybridFactorGraph::sum() const {
   // "sum" all factors, gathering into GaussianFactorGraph
   DCGaussianMixtureFactor::Sum sum;

@@ -16,8 +16,6 @@
 #include <gtsam/hybrid/DCFactorGraph.h>
 #include <gtsam/hybrid/GaussianHybridFactorGraph.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
-#include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 #include <string>
 
@@ -30,14 +28,8 @@ class HybridFactorGraph : protected FactorGraph<Factor> {
 
  protected:
   // Separate internal factor graphs for different types of factors
-  NonlinearFactorGraph nonlinearGraph_;
   DiscreteFactorGraph discreteGraph_;
   DCFactorGraph dcGraph_;
-
-  /// Check if FACTOR type is derived from NonlinearFactor.
-  template <typename FACTOR>
-  using IsNonlinear = typename std::enable_if<
-      std::is_base_of<NonlinearFactor, FACTOR>::value>::type;
 
   /// Check if FACTOR type is derived from DiscreteFactor.
   template <typename FACTOR>
@@ -56,17 +48,12 @@ class HybridFactorGraph : protected FactorGraph<Factor> {
   /**
    * @brief Construct a new Hybrid Factor Graph object.
    *
-   * @param nonlinearGraph A factor graph with continuous factors.
    * @param discreteGraph A factor graph with only discrete factors.
    * @param dcGraph A DCFactorGraph containing DCFactors.
    */
-  HybridFactorGraph(const NonlinearFactorGraph& nonlinearGraph,
-                    const DiscreteFactorGraph& discreteGraph,
+  HybridFactorGraph(const DiscreteFactorGraph& discreteGraph,
                     const DCFactorGraph& dcGraph)
-      : nonlinearGraph_(nonlinearGraph),
-        discreteGraph_(discreteGraph),
-        dcGraph_(dcGraph) {
-    Base::push_back(nonlinearGraph);
+      : discreteGraph_(discreteGraph), dcGraph_(dcGraph) {
     Base::push_back(discreteGraph);
     Base::push_back(dcGraph);
   }
@@ -76,17 +63,6 @@ class HybridFactorGraph : protected FactorGraph<Factor> {
   using Base::reserve;
   using Base::size;
   using Base::operator[];
-
-  /**
-   * Add a nonlinear factor *pointer* to the internal nonlinear factor graph
-   * @param nonlinearFactor - boost::shared_ptr to the factor to add
-   */
-  template <typename FACTOR>
-  IsNonlinear<FACTOR> push_nonlinear(
-      const boost::shared_ptr<FACTOR>& nonlinearFactor) {
-    nonlinearGraph_.push_back(nonlinearFactor);
-    Base::push_back(nonlinearFactor);
-  }
 
   /**
    * Add a discrete factor *pointer* to the internal discrete graph
@@ -115,14 +91,6 @@ class HybridFactorGraph : protected FactorGraph<Factor> {
 
   /// Construct a factor and add (shared pointer to it) to factor graph.
   template <class FACTOR, class... Args>
-  IsNonlinear<FACTOR> emplace_nonlinear(Args&&... args) {
-    auto factor = boost::allocate_shared<FACTOR>(
-        Eigen::aligned_allocator<FACTOR>(), std::forward<Args>(args)...);
-    push_nonlinear(factor);
-  }
-
-  /// Construct a factor and add (shared pointer to it) to factor graph.
-  template <class FACTOR, class... Args>
   IsDiscrete<FACTOR> emplace_discrete(Args&&... args) {
     auto factor = boost::allocate_shared<FACTOR>(
         Eigen::aligned_allocator<FACTOR>(), std::forward<Args>(args)...);
@@ -147,9 +115,6 @@ class HybridFactorGraph : protected FactorGraph<Factor> {
    */
   template <typename FACTOR>
   void push_back(const boost::shared_ptr<FACTOR>& sharedFactor) {
-    if (auto p = boost::dynamic_pointer_cast<NonlinearFactor>(sharedFactor)) {
-      push_nonlinear(p);
-    }
     if (auto p = boost::dynamic_pointer_cast<DiscreteFactor>(sharedFactor)) {
       push_discrete(p);
     }
@@ -169,17 +134,9 @@ class HybridFactorGraph : protected FactorGraph<Factor> {
   /**
    * Simply prints the factor graph.
    */
-  void print(
+  virtual void print(
       const std::string& str = "HybridFactorGraph",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
-
-  /**
-   * Utility for retrieving the internal nonlinear factor graph
-   * @return the member variable nonlinearGraph_
-   */
-  const gtsam::NonlinearFactorGraph& nonlinearGraph() const {
-    return nonlinearGraph_;
-  }
 
   /**
    * Utility for retrieving the internal discrete factor graph
@@ -196,21 +153,10 @@ class HybridFactorGraph : protected FactorGraph<Factor> {
   const DCFactorGraph& dcGraph() const { return dcGraph_; }
 
   /**
-   * @brief Linearize all the continuous factors in the HybridFactorGraph.
-   *
-   * @param continuousValues: Dictionary of continuous values.
-   * @return GaussianHybridFactorGraph
-   */
-  GaussianHybridFactorGraph linearize(const Values& continuousValues) const;
-
-  /**
    * @return true if all internal graphs of `this` are equal to those of
    * `other`
    */
   bool equals(const HybridFactorGraph& other, double tol = 1e-9) const;
-
-  /// The total number of factors in the nonlinear factor graph.
-  size_t nrNonlinearFactors() const { return nonlinearGraph_.size(); }
 
   /// The total number of factors in the discrete factor graph.
   size_t nrDiscreteFactors() const { return discreteGraph_.size(); }
@@ -222,10 +168,10 @@ class HybridFactorGraph : protected FactorGraph<Factor> {
    * Clears all internal factor graphs
    * TODO(dellaert): Not loving this!
    */
-  void clear();
+  virtual void clear();
 
   /// Get all the discrete keys in the hybrid factor graph.
-  DiscreteKeys discreteKeys() const;
+  virtual DiscreteKeys discreteKeys() const;
 
   /**
    * @brief Sum all gaussians and Gaussian mixtures together.
