@@ -562,7 +562,6 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
 
   auto hybridBayesNet2 = incrementalHybrid.hybridBayesNet_;
   CHECK(hybridBayesNet2);
-  GTSAM_PRINT(*hybridBayesNet2);
   EXPECT_LONGS_EQUAL(2, hybridBayesNet2->size());
   EXPECT(hybridBayesNet2->at(0)->frontals() == KeyVector{X(2)});
   EXPECT(hybridBayesNet2->at(0)->parents() == KeyVector({X(3), M(2), M(1)}));
@@ -571,7 +570,6 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
 
   auto remainingFactorGraph2 = incrementalHybrid.remainingFactorGraph_;
   CHECK(remainingFactorGraph2);
-  GTSAM_PRINT(*remainingFactorGraph2);
   EXPECT_LONGS_EQUAL(1, remainingFactorGraph2->size());
 
   auto discreteFactor = dynamic_pointer_cast<DecisionTreeFactor>(remainingFactorGraph2->discreteGraph().at(0));
@@ -590,36 +588,44 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
   std::tie(actualHybridBayesNet, actualRemainingGraph) =
       switching.linearizedFactorGraph.eliminatePartialSequential(ordering);
 
-  GTSAM_PRINT(*actualHybridBayesNet);
-  GTSAM_PRINT(*actualRemainingGraph);
+  // The densities on X(1) should be the same
+  EXPECT(assert_equal(*(hybridBayesNet->at(0)),
+                      *(actualHybridBayesNet->at(0))));
 
+  // The densities on X(2) should be the same
+  EXPECT(assert_equal(*(hybridBayesNet2->at(0)),
+                      *(actualHybridBayesNet->at(1))));
+
+  // The densities on X(3) should be the same
   EXPECT(assert_equal(*(hybridBayesNet2->at(1)),
                       *(actualHybridBayesNet->at(2))));
 
-//  DiscreteValues assignment;
-//  assignment[M(1)] = 0;
-//  assignment[M(2)] = 0;
-//  EXPECT(assert_equal(0.60656, (*discreteFactor)(assignment), 1e-5));
-//  assignment[M(1)] = 1;
-//  assignment[M(2)] = 0;
-//  EXPECT(assert_equal(0.612477, (*discreteFactor)(assignment), 1e-5));
-//  assignment[M(1)] = 0;
-//  assignment[M(2)] = 1;
-//  EXPECT(assert_equal(0.999952, (*discreteFactor)(assignment), 1e-5));
-//  assignment[M(1)] = 1;
-//  assignment[M(2)] = 1;
-//  EXPECT(assert_equal(1.0, (*discreteFactor)(assignment), 1e-5));
-//
-//  // TODO(fan): I think this is not correct!
-//  DiscreteFactorGraph dfg;
-//  dfg.add(*discreteFactor);
-//  dfg.add(discreteFactor_m1);
-//  dfg.add_factors(switching.linearizedFactorGraph.discreteGraph());
-//
-//  auto chordal = dfg.eliminateSequential();
-//
-//  GTSAM_PRINT(*chordal);
-//  GTSAM_PRINT(*(chordal->at(0)) * *(chordal->at(1)));
+  DiscreteValues assignment;
+  assignment[M(1)] = 0;
+  assignment[M(2)] = 0;
+  EXPECT(assert_equal(0.60656, (*discreteFactor)(assignment), 1e-5));
+  assignment[M(1)] = 1;
+  assignment[M(2)] = 0;
+  EXPECT(assert_equal(0.612477, (*discreteFactor)(assignment), 1e-5));
+  assignment[M(1)] = 0;
+  assignment[M(2)] = 1;
+  EXPECT(assert_equal(0.999952, (*discreteFactor)(assignment), 1e-5));
+  assignment[M(1)] = 1;
+  assignment[M(2)] = 1;
+  EXPECT(assert_equal(1.0, (*discreteFactor)(assignment), 1e-5));
+
+  GTSAM_PRINT(actualRemainingGraph->discreteGraph());
+  GTSAM_PRINT(switching.linearizedFactorGraph.discreteGraph());
+
+  DiscreteFactorGraph dfg;
+  dfg.add(*discreteFactor);
+  dfg.add(discreteFactor_m1);
+  dfg.add_factors(switching.linearizedFactorGraph.discreteGraph());
+
+  auto chordal = dfg.eliminateSequential();
+  auto expectedChordal = actualRemainingGraph->discreteGraph().eliminateSequential();
+
+  EXPECT(assert_equal(*expectedChordal, *chordal, 1e-6));
 }
 
 /* ************************************************************************* */

@@ -112,9 +112,9 @@ Sum DCGaussianMixtureFactor::wrappedFactors() const {
 
 /* *******************************************************************************/
 bool DCGaussianMixtureFactor::equals(const DCFactor &f, double tol) const {
-  if (typeid(f) == typeid(DCGaussianMixtureFactor)) {
-    // TODO: actually do the proper comparison!
-    return true;
+  const DCGaussianMixtureFactor* other;
+  if ((other = dynamic_cast<const DCGaussianMixtureFactor*>(&f))) {
+    return factors_.equals(other->factors_);
   }
   return false;
 }
