@@ -526,6 +526,7 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
   EXPECT(assert_equal(*(hybridBayesNet2->at(1)),
                       *(expectedHybridBayesNet->at(2))));
 
+  // we only do this for 0,0 but others are calculated the same way
   auto m00_prob = [&]() {
     GaussianFactorGraph gf;
     gf.add(switching.linearizedFactorGraph.gaussianGraph().at(3));
