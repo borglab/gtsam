@@ -23,47 +23,21 @@
 
 #include <boost/make_shared.hpp>
 
-using namespace std;
-
 namespace gtsam {
 
-void HybridFactorGraph::print(const string& str,
-                              const gtsam::KeyFormatter& keyFormatter) const {
-  string prefix = str.empty() ? str : str + ".";
-  cout << prefix << "size: " << size() << endl;
-  discreteGraph_.print(prefix + "DiscreteFactorGraph", keyFormatter);
-  dcGraph_.print(prefix + "DCFactorGraph", keyFormatter);
-}
-
-bool HybridFactorGraph::equals(const HybridFactorGraph& other,
-                               double tol) const {
+template <typename FG>
+bool HybridFactorGraph<FG>::equals(const HybridFactorGraph<FG>& other,
+                                   double tol) const {
   return Base::equals(other, tol) &&
          discreteGraph_.equals(other.discreteGraph_, tol) &&
-         dcGraph_.equals(other.dcGraph_, tol);
-}
-
-void HybridFactorGraph::clear() {
-  discreteGraph_.resize(0);
-  dcGraph_.resize(0);
-}
-
-DiscreteKeys HybridFactorGraph::discreteKeys() const {
-  DiscreteKeys result;
-  // Discrete keys from the discrete graph.
-  result = discreteGraph_.discreteKeys();
-  // Discrete keys from the DC factor graph.
-  auto dcKeys = dcGraph_.discreteKeys();
-  for (auto&& key : dcKeys) {
-    // Only insert unique keys
-    if (std::find(result.begin(), result.end(), key) == result.end()) {
-      result.push_back(key);
-    }
-  }
-  return result;
+         dcGraph_.equals(other.dcGraph_, tol) &&
+         factorGraph_.equals(other.factorGraph_, tol);
 }
 
 using Sum = DCGaussianMixtureFactor::Sum;
-Sum HybridFactorGraph::sum() const {
+
+template <typename FG>
+Sum HybridFactorGraph<FG>::sum() const {
   // "sum" all factors, gathering into GaussianFactorGraph
   DCGaussianMixtureFactor::Sum sum;
   for (auto&& dcFactor : dcGraph()) {
@@ -71,7 +45,7 @@ Sum HybridFactorGraph::sum() const {
             boost::dynamic_pointer_cast<DCGaussianMixtureFactor>(dcFactor)) {
       sum += *mixtureFactor;
     } else {
-      throw runtime_error(
+      throw std::runtime_error(
           "HybridFactorGraph::sum can only handle DCGaussianMixtureFactors.");
     }
   }

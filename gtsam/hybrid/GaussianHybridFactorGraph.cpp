@@ -33,18 +33,7 @@ template class EliminateableFactorGraph<GaussianHybridFactorGraph>;
 void GaussianHybridFactorGraph::print(
     const string& str, const gtsam::KeyFormatter& keyFormatter) const {
   Base::print(str, keyFormatter);
-  gaussianGraph_.print("GaussianGraph", keyFormatter);
-}
-
-bool GaussianHybridFactorGraph::equals(const GaussianHybridFactorGraph& other,
-                                       double tol) const {
-  return Base::equals(other, tol) &&
-         gaussianGraph_.equals(other.gaussianGraph_, tol);
-}
-
-void GaussianHybridFactorGraph::clear() {
-  Base::clear();
-  gaussianGraph_.resize(0);
+  factorGraph_.print("GaussianGraph", keyFormatter);
 }
 
 DiscreteKeys GaussianHybridFactorGraph::discreteKeys() const {

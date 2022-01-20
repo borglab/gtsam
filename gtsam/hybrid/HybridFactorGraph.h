@@ -21,13 +21,15 @@
 
 namespace gtsam {
 
-class HybridFactorGraph : protected FactorGraph<Factor> {
+template <typename FG>
+class GTSAM_EXPORT HybridFactorGraph : protected FactorGraph<Factor> {
  public:
   using shared_ptr = boost::shared_ptr<HybridFactorGraph>;
   using Base = FactorGraph<Factor>;
 
  protected:
   // Separate internal factor graphs for different types of factors
+  FG factorGraph_;
   DiscreteFactorGraph discreteGraph_;
   DCFactorGraph dcGraph_;
 
@@ -41,6 +43,16 @@ class HybridFactorGraph : protected FactorGraph<Factor> {
   using IsDC =
       typename std::enable_if<std::is_base_of<DCFactor, FACTOR>::value>::type;
 
+  /// Check if FACTOR type is derived from NonlinearFactor.
+  template <typename FACTOR>
+  using IsNonlinear = typename std::enable_if<
+      std::is_base_of<NonlinearFactor, FACTOR>::value>::type;
+
+  /// Check if FACTOR type is derived from GaussianFactor.
+  template <typename FACTOR>
+  using IsGaussian = typename std::enable_if<
+      std::is_base_of<GaussianFactor, FACTOR>::value>::type;
+
  public:
   /// Default constructor
   HybridFactorGraph() = default;
@@ -48,12 +60,17 @@ class HybridFactorGraph : protected FactorGraph<Factor> {
   /**
    * @brief Construct a new Hybrid Factor Graph object.
    *
+   * @param discreteGraph A factor graph with factors depending on type of `FG`.
    * @param discreteGraph A factor graph with only discrete factors.
    * @param dcGraph A DCFactorGraph containing DCFactors.
    */
-  HybridFactorGraph(const DiscreteFactorGraph& discreteGraph,
+  HybridFactorGraph(const FG& factorGraph,
+                    const DiscreteFactorGraph& discreteGraph,
                     const DCFactorGraph& dcGraph)
-      : discreteGraph_(discreteGraph), dcGraph_(dcGraph) {
+      : factorGraph_(factorGraph),
+        discreteGraph_(discreteGraph),
+        dcGraph_(dcGraph) {
+    Base::push_back(factorGraph);
     Base::push_back(discreteGraph);
     Base::push_back(dcGraph);
   }
@@ -136,7 +153,12 @@ class HybridFactorGraph : protected FactorGraph<Factor> {
    */
   virtual void print(
       const std::string& str = "HybridFactorGraph",
-      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
+    std::string prefix = str.empty() ? str : str + ".";
+    std::cout << prefix << "size: " << size() << std::endl;
+    discreteGraph_.print(prefix + "DiscreteFactorGraph", keyFormatter);
+    dcGraph_.print(prefix + "DCFactorGraph", keyFormatter);
+  }
 
   /**
    * Utility for retrieving the internal discrete factor graph
@@ -168,10 +190,27 @@ class HybridFactorGraph : protected FactorGraph<Factor> {
    * Clears all internal factor graphs
    * TODO(dellaert): Not loving this!
    */
-  virtual void clear();
+  void clear() {
+    discreteGraph_.resize(0);
+    dcGraph_.resize(0);
+    factorGraph_.resize(0);
+  }
 
   /// Get all the discrete keys in the hybrid factor graph.
-  virtual DiscreteKeys discreteKeys() const;
+  virtual DiscreteKeys discreteKeys() const {
+    DiscreteKeys result;
+    // Discrete keys from the discrete graph.
+    result = discreteGraph_.discreteKeys();
+    // Discrete keys from the DC factor graph.
+    auto dcKeys = dcGraph_.discreteKeys();
+    for (auto&& key : dcKeys) {
+      // Only insert unique keys
+      if (std::find(result.begin(), result.end(), key) == result.end()) {
+        result.push_back(key);
+      }
+    }
+    return result;
+  }
 
   /**
    * @brief Sum all gaussians and Gaussian mixtures together.
@@ -186,7 +225,8 @@ class HybridFactorGraph : protected FactorGraph<Factor> {
   /// @}
 };
 
-template <>
-struct traits<HybridFactorGraph> : public Testable<HybridFactorGraph> {};
+template <typename FG>
+struct traits<HybridFactorGraph<FG>> : public Testable<HybridFactorGraph<FG>> {
+};
 
 }  // namespace gtsam

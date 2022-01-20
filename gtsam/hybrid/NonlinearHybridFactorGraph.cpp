@@ -31,13 +31,13 @@ namespace gtsam {
 void NonlinearHybridFactorGraph::print(
     const string& str, const gtsam::KeyFormatter& keyFormatter) const {
   Base::print(str, keyFormatter);
-  nonlinearGraph_.print("NonlinearFactorGraph", keyFormatter);
+  factorGraph_.print("NonlinearFactorGraph", keyFormatter);
 }
 
 GaussianHybridFactorGraph NonlinearHybridFactorGraph::linearize(
     const Values& continuousValues) const {
   // linearize the continuous factors
-  auto gaussianFactorGraph = nonlinearGraph_.linearize(continuousValues);
+  auto gaussianFactorGraph = factorGraph_.linearize(continuousValues);
 
   // linearize the DCFactors
   DCFactorGraph linearized_DC_factors;
@@ -54,17 +54,6 @@ GaussianHybridFactorGraph NonlinearHybridFactorGraph::linearize(
   // Construct new GaussianNonlinearHybridFactorGraph
   return GaussianHybridFactorGraph(*gaussianFactorGraph, discreteGraph_,
                                    linearized_DC_factors);
-}
-
-bool NonlinearHybridFactorGraph::equals(const NonlinearHybridFactorGraph& other,
-                                        double tol) const {
-  return Base::equals(other, tol) &&
-         nonlinearGraph_.equals(other.nonlinearGraph_, tol);
-}
-
-void NonlinearHybridFactorGraph::clear() {
-  Base::clear();
-  nonlinearGraph_.resize(0);
 }
 
 }  // namespace gtsam

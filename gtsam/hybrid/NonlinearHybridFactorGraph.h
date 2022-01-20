@@ -21,19 +21,11 @@
 
 namespace gtsam {
 
-class GTSAM_EXPORT NonlinearHybridFactorGraph : public HybridFactorGraph {
+class GTSAM_EXPORT NonlinearHybridFactorGraph
+    : public HybridFactorGraph<NonlinearFactorGraph> {
  public:
   using shared_ptr = boost::shared_ptr<NonlinearHybridFactorGraph>;
-  using Base = HybridFactorGraph;
-
- protected:
-  // Separate internal factor graphs for different types of factors
-  NonlinearFactorGraph nonlinearGraph_;
-
-  /// Check if FACTOR type is derived from NonlinearFactor.
-  template <typename FACTOR>
-  using IsNonlinear = typename std::enable_if<
-      std::is_base_of<NonlinearFactor, FACTOR>::value>::type;
+  using Base = HybridFactorGraph<NonlinearFactorGraph>;
 
  public:
   /// Default constructor
@@ -49,11 +41,9 @@ class GTSAM_EXPORT NonlinearHybridFactorGraph : public HybridFactorGraph {
   NonlinearHybridFactorGraph(const NonlinearFactorGraph& nonlinearGraph,
                              const DiscreteFactorGraph& discreteGraph,
                              const DCFactorGraph& dcGraph)
-      : Base(discreteGraph, dcGraph), nonlinearGraph_(nonlinearGraph) {
-    Base::Base::push_back(nonlinearGraph);
-  }
+      : Base(nonlinearGraph, discreteGraph, dcGraph) {}
 
-  // Allow use of selected HybridFactorGraph methods:
+  // Allow use of selected FactorGraph methods:
   using Base::empty;
   using Base::reserve;
   using Base::size;
@@ -66,8 +56,16 @@ class GTSAM_EXPORT NonlinearHybridFactorGraph : public HybridFactorGraph {
   template <typename FACTOR>
   IsNonlinear<FACTOR> push_nonlinear(
       const boost::shared_ptr<FACTOR>& nonlinearFactor) {
-    nonlinearGraph_.push_back(nonlinearFactor);
+    factorGraph_.push_back(nonlinearFactor);
     Base::Base::push_back(nonlinearFactor);
+  }
+
+  /// Construct a factor and add (shared pointer to it) to factor graph.
+  template <class FACTOR, class... Args>
+  IsGaussian<FACTOR> emplace_gaussian(Args&&... args) {
+    auto factor = boost::allocate_shared<FACTOR>(
+        Eigen::aligned_allocator<FACTOR>(), std::forward<Args>(args)...);
+    push_gaussian(factor);
   }
 
   /// Construct a factor and add (shared pointer to it) to factor graph.
@@ -90,12 +88,8 @@ class GTSAM_EXPORT NonlinearHybridFactorGraph : public HybridFactorGraph {
   void push_back(const boost::shared_ptr<FACTOR>& sharedFactor) {
     if (auto p = boost::dynamic_pointer_cast<NonlinearFactor>(sharedFactor)) {
       push_nonlinear(p);
-    }
-    if (auto p = boost::dynamic_pointer_cast<DiscreteFactor>(sharedFactor)) {
-      push_discrete(p);
-    }
-    if (auto p = boost::dynamic_pointer_cast<DCFactor>(sharedFactor)) {
-      push_dc(p);
+    } else {
+      Base::push_back(sharedFactor);
     }
   }
 
@@ -119,7 +113,7 @@ class GTSAM_EXPORT NonlinearHybridFactorGraph : public HybridFactorGraph {
    * @return the member variable nonlinearGraph_
    */
   const gtsam::NonlinearFactorGraph& nonlinearGraph() const {
-    return nonlinearGraph_;
+    return factorGraph_;
   }
 
   /**
@@ -138,13 +132,7 @@ class GTSAM_EXPORT NonlinearHybridFactorGraph : public HybridFactorGraph {
   bool equals(const NonlinearHybridFactorGraph& other, double tol = 1e-9) const;
 
   /// The total number of factors in the nonlinear factor graph.
-  size_t nrNonlinearFactors() const { return nonlinearGraph_.size(); }
-
-  /**
-   * Clears all internal factor graphs
-   * TODO(dellaert): Not loving this!
-   */
-  void clear() override;
+  size_t nrNonlinearFactors() const { return factorGraph_.size(); }
 
   /// @}
 };

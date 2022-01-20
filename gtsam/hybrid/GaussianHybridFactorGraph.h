@@ -28,7 +28,6 @@ namespace gtsam {
 // Forward declarations
 class GaussianMixture;
 class Dummy;
-class HybridFactorGraph;
 class GaussianHybridFactorGraph;
 class HybridEliminationTree;
 class Ordering;
@@ -56,20 +55,11 @@ struct EliminationTraits<GaussianHybridFactorGraph> {
 };
 
 class GTSAM_EXPORT GaussianHybridFactorGraph
-    : public HybridFactorGraph,
+    : public HybridFactorGraph<GaussianFactorGraph>,
       public EliminateableFactorGraph<GaussianHybridFactorGraph> {
  public:
   using shared_ptr = boost::shared_ptr<GaussianHybridFactorGraph>;
-  using Base = HybridFactorGraph;
-
- protected:
-  // Separate internal factor graphs for different types of factors
-  GaussianFactorGraph gaussianGraph_;
-
-  /// Check if FACTOR type is derived from GaussianFactor.
-  template <typename FACTOR>
-  using IsGaussian = typename std::enable_if<
-      std::is_base_of<GaussianFactor, FACTOR>::value>::type;
+  using Base = HybridFactorGraph<GaussianFactorGraph>;
 
  public:
   /// Default constructor
@@ -85,9 +75,7 @@ class GTSAM_EXPORT GaussianHybridFactorGraph
   GaussianHybridFactorGraph(const GaussianFactorGraph& gaussianGraph,
                             const DiscreteFactorGraph& discreteGraph,
                             const DCFactorGraph& dcGraph)
-      : Base(discreteGraph, dcGraph), gaussianGraph_(gaussianGraph) {
-    Base::Base::push_back(gaussianGraph);
-  }
+      : Base(gaussianGraph, discreteGraph, dcGraph) {}
 
   // Allow use of selected FactorGraph methods:
   using Base::empty;
@@ -102,7 +90,7 @@ class GTSAM_EXPORT GaussianHybridFactorGraph
   template <typename FACTOR>
   IsGaussian<FACTOR> push_gaussian(
       const boost::shared_ptr<FACTOR>& gaussianFactor) {
-    gaussianGraph_.push_back(gaussianFactor);
+    factorGraph_.push_back(gaussianFactor);
     Base::Base::push_back(gaussianFactor);
   }
 
@@ -126,12 +114,8 @@ class GTSAM_EXPORT GaussianHybridFactorGraph
   void push_back(const boost::shared_ptr<FACTOR>& sharedFactor) {
     if (auto p = boost::dynamic_pointer_cast<GaussianFactor>(sharedFactor)) {
       push_gaussian(p);
-    }
-    if (auto p = boost::dynamic_pointer_cast<DiscreteFactor>(sharedFactor)) {
-      push_discrete(p);
-    }
-    if (auto p = boost::dynamic_pointer_cast<DCFactor>(sharedFactor)) {
-      push_dc(p);
+    } else {
+      Base::push_back(sharedFactor);
     }
   }
 
@@ -154,22 +138,10 @@ class GTSAM_EXPORT GaussianHybridFactorGraph
    * Utility for retrieving the internal gaussian factor graph
    * @return the member variable gaussianGraph_
    */
-  const GaussianFactorGraph& gaussianGraph() const { return gaussianGraph_; }
+  const GaussianFactorGraph& gaussianGraph() const { return factorGraph_; }
 
   /// The total number of factors in the Gaussian factor graph.
-  size_t nrGaussianFactors() const { return gaussianGraph_.size(); }
-
-  /**
-   * @return true if all internal graphs of `this` are equal to those of
-   * `other`
-   */
-  bool equals(const GaussianHybridFactorGraph& other, double tol = 1e-9) const;
-
-  /**
-   * Clears all internal factor graphs
-   * TODO(dellaert): Not loving this!
-   */
-  void clear() override;
+  size_t nrGaussianFactors() const { return factorGraph_.size(); }
 
   /// The total number of discrete keys in the factor graph.
   DiscreteKeys discreteKeys() const override;
