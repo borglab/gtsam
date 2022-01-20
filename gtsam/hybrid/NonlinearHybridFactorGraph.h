@@ -23,11 +23,16 @@ namespace gtsam {
 
 class GTSAM_EXPORT NonlinearHybridFactorGraph
     : public HybridFactorGraph<NonlinearFactorGraph> {
+ protected:
+  /// Check if FACTOR type is derived from NonlinearFactor.
+  template <typename FACTOR>
+  using IsNonlinear = typename std::enable_if<
+      std::is_base_of<NonlinearFactor, FACTOR>::value>::type;
+
  public:
   using shared_ptr = boost::shared_ptr<NonlinearHybridFactorGraph>;
   using Base = HybridFactorGraph<NonlinearFactorGraph>;
 
- public:
   /// Default constructor
   NonlinearHybridFactorGraph() = default;
 
@@ -58,14 +63,6 @@ class GTSAM_EXPORT NonlinearHybridFactorGraph
       const boost::shared_ptr<FACTOR>& nonlinearFactor) {
     factorGraph_.push_back(nonlinearFactor);
     Base::Base::push_back(nonlinearFactor);
-  }
-
-  /// Construct a factor and add (shared pointer to it) to factor graph.
-  template <class FACTOR, class... Args>
-  IsGaussian<FACTOR> emplace_gaussian(Args&&... args) {
-    auto factor = boost::allocate_shared<FACTOR>(
-        Eigen::aligned_allocator<FACTOR>(), std::forward<Args>(args)...);
-    push_gaussian(factor);
   }
 
   /// Construct a factor and add (shared pointer to it) to factor graph.

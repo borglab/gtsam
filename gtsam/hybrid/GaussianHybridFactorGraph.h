@@ -57,11 +57,16 @@ struct EliminationTraits<GaussianHybridFactorGraph> {
 class GTSAM_EXPORT GaussianHybridFactorGraph
     : public HybridFactorGraph<GaussianFactorGraph>,
       public EliminateableFactorGraph<GaussianHybridFactorGraph> {
+ protected:
+  /// Check if FACTOR type is derived from GaussianFactor.
+  template <typename FACTOR>
+  using IsGaussian = typename std::enable_if<
+      std::is_base_of<GaussianFactor, FACTOR>::value>::type;
+
  public:
   using shared_ptr = boost::shared_ptr<GaussianHybridFactorGraph>;
   using Base = HybridFactorGraph<GaussianFactorGraph>;
 
- public:
   /// Default constructor
   GaussianHybridFactorGraph() = default;
 
