@@ -14,15 +14,20 @@
 
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/hybrid/DCFactorGraph.h>
-#include <gtsam/hybrid/GaussianHybridFactorGraph.h>
-#include <gtsam/hybrid/HybridBayesNet.h>
+#include <gtsam/hybrid/DCGaussianMixtureFactor.h>
 
 #include <string>
 
 namespace gtsam {
 
+/**
+ * @brief Base class for hybrid factor graphs.
+ *
+ * @tparam FG The type of factor graph to specialize for, e.g.
+ * NonlinearFactorGraph, GaussianFactorGraph.
+ */
 template <typename FG>
-class GTSAM_EXPORT HybridFactorGraph : protected FactorGraph<Factor> {
+class HybridFactorGraph : protected FactorGraph<Factor> {
  public:
   using shared_ptr = boost::shared_ptr<HybridFactorGraph>;
   using Base = FactorGraph<Factor>;
@@ -43,24 +48,14 @@ class GTSAM_EXPORT HybridFactorGraph : protected FactorGraph<Factor> {
   using IsDC =
       typename std::enable_if<std::is_base_of<DCFactor, FACTOR>::value>::type;
 
-  /// Check if FACTOR type is derived from NonlinearFactor.
-  template <typename FACTOR>
-  using IsNonlinear = typename std::enable_if<
-      std::is_base_of<NonlinearFactor, FACTOR>::value>::type;
-
-  /// Check if FACTOR type is derived from GaussianFactor.
-  template <typename FACTOR>
-  using IsGaussian = typename std::enable_if<
-      std::is_base_of<GaussianFactor, FACTOR>::value>::type;
-
- public:
+  public:
   /// Default constructor
   HybridFactorGraph() = default;
 
   /**
    * @brief Construct a new Hybrid Factor Graph object.
    *
-   * @param discreteGraph A factor graph with factors depending on type of `FG`.
+   * @param factorGraph A factor graph of type `FG`.
    * @param discreteGraph A factor graph with only discrete factors.
    * @param dcGraph A DCFactorGraph containing DCFactors.
    */
@@ -151,7 +146,7 @@ class GTSAM_EXPORT HybridFactorGraph : protected FactorGraph<Factor> {
   /**
    * Simply prints the factor graph.
    */
-  virtual void print(
+  void print(
       const std::string& str = "HybridFactorGraph",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     std::string prefix = str.empty() ? str : str + ".";
@@ -178,7 +173,12 @@ class GTSAM_EXPORT HybridFactorGraph : protected FactorGraph<Factor> {
    * @return true if all internal graphs of `this` are equal to those of
    * `other`
    */
-  bool equals(const HybridFactorGraph& other, double tol = 1e-9) const;
+  bool equals(const HybridFactorGraph<FG>& other, double tol = 1e-9) const {
+    return Base::equals(other, tol) &&
+           discreteGraph_.equals(other.discreteGraph_, tol) &&
+           dcGraph_.equals(other.dcGraph_, tol) &&
+           factorGraph_.equals(other.factorGraph_, tol);
+  }
 
   /// The total number of factors in the discrete factor graph.
   size_t nrDiscreteFactors() const { return discreteGraph_.size(); }
@@ -187,13 +187,12 @@ class GTSAM_EXPORT HybridFactorGraph : protected FactorGraph<Factor> {
   size_t nrDcFactors() const { return dcGraph_.size(); }
 
   /**
-   * Clears all internal factor graphs
-   * TODO(dellaert): Not loving this!
+   * Clears all internal factor graphs by creating new instances of them.
    */
   void clear() {
-    discreteGraph_.resize(0);
-    dcGraph_.resize(0);
-    factorGraph_.resize(0);
+    discreteGraph_ = DiscreteFactorGraph();
+    dcGraph_ = DCFactorGraph();
+    factorGraph_ = FG();
   }
 
   /// Get all the discrete keys in the hybrid factor graph.
@@ -212,6 +211,8 @@ class GTSAM_EXPORT HybridFactorGraph : protected FactorGraph<Factor> {
     return result;
   }
 
+  using Sum = DCGaussianMixtureFactor::Sum;
+
   /**
    * @brief Sum all gaussians and Gaussian mixtures together.
    * @return a decision tree of GaussianFactorGraphs
@@ -220,7 +221,20 @@ class GTSAM_EXPORT HybridFactorGraph : protected FactorGraph<Factor> {
    * GaussianFactors, and "add" them. This might involve decision-trees of
    * different structure, and creating a different decision tree for Gaussians.
    */
-  DCGaussianMixtureFactor::Sum sum() const;
+  DCGaussianMixtureFactor::Sum sum() const {
+    // "sum" all factors, gathering into GaussianFactorGraph
+    DCGaussianMixtureFactor::Sum sum;
+    for (auto&& dcFactor : dcGraph()) {
+      if (auto mixtureFactor =
+              boost::dynamic_pointer_cast<DCGaussianMixtureFactor>(dcFactor)) {
+        sum += *mixtureFactor;
+      } else {
+        throw std::runtime_error(
+            "HybridFactorGraph::sum can only handle DCGaussianMixtureFactors.");
+      }
+    }
+    return sum;
+  }
 };
 
 }  // namespace gtsam
