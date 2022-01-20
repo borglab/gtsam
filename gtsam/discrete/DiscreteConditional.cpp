@@ -143,67 +143,64 @@ void DiscreteConditional::print(const string& s,
     }
   }
   cout << "):\n";
-  ADT::print("");
+  ADT::print("", formatter);
   cout << endl;
 }
 
 /* ******************************************************************************** */
 bool DiscreteConditional::equals(const DiscreteFactor& other,
-    double tol) const {
-  if (!dynamic_cast<const DecisionTreeFactor*>(&other))
+                                 double tol) const {
+  if (!dynamic_cast<const DecisionTreeFactor*>(&other)) {
     return false;
-  else {
-    const DecisionTreeFactor& f(
-        static_cast<const DecisionTreeFactor&>(other));
+  } else {
+    const DecisionTreeFactor& f(static_cast<const DecisionTreeFactor&>(other));
     return DecisionTreeFactor::equals(f, tol);
   }
 }
 
-/* ******************************************************************************** */
+/* ************************************************************************** */
 static DiscreteConditional::ADT Choose(const DiscreteConditional& conditional,
-                                       const DiscreteValues& parentsValues) {
+                                       const DiscreteValues& given,
+                                       bool forceComplete = true) {
   // Get the big decision tree with all the levels, and then go down the
   // branches based on the value of the parent variables.
   DiscreteConditional::ADT adt(conditional);
   size_t value;
   for (Key j : conditional.parents()) {
     try {
-      value = parentsValues.at(j);
+      value = given.at(j);
       adt = adt.choose(j, value);  // ADT keeps getting smaller.
     } catch (std::out_of_range&) {
-      parentsValues.print("parentsValues: ");
-      throw runtime_error("DiscreteConditional::choose: parent value missing");
-    };
+      if (forceComplete) {
+        given.print("parentsValues: ");
+        throw runtime_error(
+            "DiscreteConditional::Choose: parent value missing");
+      }
+    }
   }
   return adt;
 }
 
-/* ******************************************************************************** */
-DecisionTreeFactor::shared_ptr DiscreteConditional::choose(
-    const DiscreteValues& parentsValues) const {
-  // Get the big decision tree with all the levels, and then go down the
-  // branches based on the value of the parent variables.
-  ADT adt(*this);
-  size_t value;
-  for (Key j : parents()) {
-    try {
-      value = parentsValues.at(j);
-      adt = adt.choose(j, value);  // ADT keeps getting smaller.
-    } catch (exception&) {
-      parentsValues.print("parentsValues: ");
-      throw runtime_error("DiscreteConditional::choose: parent value missing");
-    };
-  }
+/* ************************************************************************** */
+DiscreteConditional::shared_ptr DiscreteConditional::choose(
+    const DiscreteValues& given) const {
+  ADT adt = Choose(*this, given, false);  // P(F|S=given)
 
-  // Convert ADT to factor.
-  DiscreteKeys discreteKeys;
+  // Collect all keys not in given.
+  DiscreteKeys dKeys;
   for (Key j : frontals()) {
-    discreteKeys.emplace_back(j, this->cardinality(j));
+    dKeys.emplace_back(j, this->cardinality(j));
   }
-  return boost::make_shared<DecisionTreeFactor>(discreteKeys, adt);
+  for (size_t i = nrFrontals(); i < size(); i++) {
+    Key j = keys_[i];
+    if (given.count(j) == 0) {
+      dKeys.emplace_back(j, this->cardinality(j));
+    }
+  }
+  return boost::make_shared<DiscreteConditional>(nrFrontals(), dKeys, adt);
 }
 
-/* ******************************************************************************** */
+/* ************************************************************************** */
 DecisionTreeFactor::shared_ptr DiscreteConditional::likelihood(
     const DiscreteValues& frontalValues) const {
   // Get the big decision tree with all the levels, and then go down the
@@ -217,7 +214,7 @@ DecisionTreeFactor::shared_ptr DiscreteConditional::likelihood(
     } catch (exception&) {
       frontalValues.print("frontalValues: ");
       throw runtime_error("DiscreteConditional::choose: frontal value missing");
-    };
+    }
   }
 
   // Convert ADT to factor.
@@ -242,7 +239,6 @@ DecisionTreeFactor::shared_ptr DiscreteConditional::likelihood(
 
 /* ************************************************************************** */
 void DiscreteConditional::solveInPlace(DiscreteValues* values) const {
-  // TODO(Abhijit): is this really the fastest way? He thinks it is.
   ADT pFS = Choose(*this, *values);  // P(F|S=parentsValues)
 
   // Initialize
@@ -276,11 +272,9 @@ void DiscreteConditional::sampleInPlace(DiscreteValues* values) const {
   (*values)[j] = sampled; // store result in partial solution
 }
 
-/* ******************************************************************************** */
+/* ************************************************************************** */
 size_t DiscreteConditional::solve(const DiscreteValues& parentsValues) const {
-
-  // TODO: is this really the fastest way? I think it is.
-  ADT pFS = Choose(*this, parentsValues); // P(F|S=parentsValues)
+  ADT pFS = Choose(*this, parentsValues);  // P(F|S=parentsValues)
 
   // Then, find the max over all remaining
   // TODO, only works for one key now, seems horribly slow this way
