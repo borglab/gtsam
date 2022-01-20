@@ -51,5 +51,3 @@ Sum HybridFactorGraph<FG>::sum() const {
   }
   return sum;
 }
-
-}  // namespace gtsam

@@ -85,6 +85,21 @@ Sum GaussianHybridFactorGraph::sum() const {
   return sum;
 }
 
+DecisionTreeFactor::shared_ptr GaussianHybridFactorGraph::toDecisionTreeFactor()
+    const {
+  // Get the decision tree mapping an assignment to a GaussianFactorGraph
+  Sum sum = this->sum();
+
+  // Get the decision tree with each leaf as the error for that assignment
+  auto gfgError = [&](const GaussianFactorGraph& graph) {
+    VectorValues values = graph.optimize();
+    return graph.probPrime(values);
+  };
+  DecisionTree<Key, double> gfgdt(sum, gfgError);
+
+  return boost::make_shared<DecisionTreeFactor>(discreteKeys(), gfgdt);
+}
+
 ostream& operator<<(ostream& os,
                     const GaussianFactorGraph::EliminationResult& er) {
   os << "ER" << endl;
@@ -96,11 +111,14 @@ pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
     const GaussianHybridFactorGraph& factors, const Ordering& ordering) {
   // STEP 1: SUM
   // Create a new decision tree with all factors gathered at leaves.
-  Sum sum = factors.sum();
+  auto sum = factors.sum();
 
   // STEP 1: ELIMINATE
   // Eliminate each sum using conventional Cholesky:
   // We can use this by creating a *new* decision tree:
+
+  // Each pair is a GaussianConditional and the factor generated after
+  // elimination.
   using Pair = GaussianFactorGraph::EliminationResult;
 
   KeyVector keys;
@@ -143,21 +161,6 @@ pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
         separatorKeys, discreteKeys, separatorFactors);
     return {conditional, factor};
   }
-}
-
-DecisionTreeFactor::shared_ptr GaussianHybridFactorGraph::toDecisionTreeFactor()
-    const {
-  // Get the decision tree mapping an assignment to a GaussianFactorGraph
-  Sum sum = this->sum();
-
-  // Get the decision tree with each leaf as the error for that assignment
-  auto gfgError = [&](const GaussianFactorGraph& graph) {
-    VectorValues values = graph.optimize();
-    return graph.probPrime(values);
-  };
-  DecisionTree<Key, double> gfgdt(sum, gfgError);
-
-  return boost::make_shared<DecisionTreeFactor>(discreteKeys(), gfgdt);
 }
 
 }  // namespace gtsam

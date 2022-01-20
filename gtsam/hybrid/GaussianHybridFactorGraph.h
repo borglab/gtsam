@@ -165,9 +165,8 @@ class GTSAM_EXPORT GaussianHybridFactorGraph
   DCGaussianMixtureFactor::Sum sum() const;
 
   /**
-   * @brief Convert the DecisionTree of (Key, GaussianFactorGraph) to (Key,
-   * Graph Error).
-   *
+   * @brief Convert the DecisionTree of (Key, GaussianFactorGraph) to
+   * (Key, Graph probability).
    * @return DecisionTreeFactor::shared_ptr
    */
   DecisionTreeFactor::shared_ptr toDecisionTreeFactor() const;

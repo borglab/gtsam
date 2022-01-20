@@ -221,12 +221,6 @@ class GTSAM_EXPORT HybridFactorGraph : protected FactorGraph<Factor> {
    * different structure, and creating a different decision tree for Gaussians.
    */
   DCGaussianMixtureFactor::Sum sum() const;
-
-  /// @}
-};
-
-template <typename FG>
-struct traits<HybridFactorGraph<FG>> : public Testable<HybridFactorGraph<FG>> {
 };
 
 }  // namespace gtsam
