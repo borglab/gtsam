@@ -35,7 +35,8 @@ void DotWriter::DrawVariable(Key key, const KeyFormatter& keyFormatter,
                              const boost::optional<Vector2>& position,
                              ostream* os) {
   // Label the node with the label from the KeyFormatter
-  *os << "  var" << key << "[label=\"" << keyFormatter(key) << "\"";
+  *os << "  var" << keyFormatter(key) << "[label=\"" << keyFormatter(key)
+      << "\"";
   if (position) {
     *os << ", pos=\"" << position->x() << "," << position->y() << "!\"";
   }
@@ -51,22 +52,26 @@ void DotWriter::DrawFactor(size_t i, const boost::optional<Vector2>& position,
   *os << "];\n";
 }
 
-void DotWriter::ConnectVariables(Key key1, Key key2, ostream* os) {
-  *os << "  var" << key1 << "--"
-      << "var" << key2 << ";\n";
+static void ConnectVariables(Key key1, Key key2,
+                                 const KeyFormatter& keyFormatter,
+                                 ostream* os) {
+  *os << "  var" << keyFormatter(key1) << "--"
+      << "var" << keyFormatter(key2) << ";\n";
 }
 
-void DotWriter::ConnectVariableFactor(Key key, size_t i, ostream* os) {
-  *os << "  var" << key << "--"
+static void ConnectVariableFactor(Key key, const KeyFormatter& keyFormatter,
+                                      size_t i, ostream* os) {
+  *os << "  var" << keyFormatter(key) << "--"
       << "factor" << i << ";\n";
 }
 
 void DotWriter::processFactor(size_t i, const KeyVector& keys,
+                              const KeyFormatter& keyFormatter,
                               const boost::optional<Vector2>& position,
                               ostream* os) const {
   if (plotFactorPoints) {
     if (binaryEdges && keys.size() == 2) {
-      ConnectVariables(keys[0], keys[1], os);
+      ConnectVariables(keys[0], keys[1], keyFormatter, os);
     } else {
       // Create dot for the factor.
       DrawFactor(i, position, os);
@@ -74,7 +79,7 @@ void DotWriter::processFactor(size_t i, const KeyVector& keys,
       // Make factor-variable connections
       if (connectKeysToFactor) {
         for (Key key : keys) {
-          ConnectVariableFactor(key, i, os);
+          ConnectVariableFactor(key, keyFormatter, i, os);
         }
       }
     }
@@ -83,7 +88,7 @@ void DotWriter::processFactor(size_t i, const KeyVector& keys,
     for (Key key1 : keys) {
       for (Key key2 : keys) {
         if (key2 > key1) {
-          ConnectVariables(key1, key2, os);
+          ConnectVariables(key1, key2, keyFormatter, os);
         }
       }
     }

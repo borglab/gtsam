@@ -24,7 +24,7 @@
 #include <gtsam/hybrid/HybridFactorGraph.h>
 #include <gtsam/hybrid/IncrementalHybrid.h>
 #include <gtsam/linear/GaussianBayesNet.h>
-#include <gtsam/discrete/DiscretePrior.h>
+#include <gtsam/discrete/DiscreteDistribution.h>
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
@@ -181,7 +181,7 @@ struct Switching {
 
   // Add "mode chain": can only be done in HybridFactorGraph
   void addModeChain(HybridFactorGraph *fg) {
-    auto prior = boost::make_shared<DiscretePrior>(modes[1], "1/1");
+    auto prior = boost::make_shared<DiscreteDistribution>(modes[1], "1/1");
     fg->push_discrete(prior);
     for (size_t k = 1; k < K - 1; k++) {
       auto parents = {modes[k]};
