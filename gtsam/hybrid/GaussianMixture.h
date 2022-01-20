@@ -104,6 +104,13 @@ class GaussianMixture
       const std::string& s = "GaussianMixture",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
 
+  bool equals(const DCFactor& f, double tol) const override;
+
   /// @}
 };
+
+/// traits
+template <>
+struct traits<GaussianMixture> : public Testable<GaussianMixture> {};
+
 }  // namespace gtsam

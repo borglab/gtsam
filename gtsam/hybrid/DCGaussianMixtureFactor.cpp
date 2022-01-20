@@ -69,8 +69,9 @@ void DCGaussianMixtureFactor::print(const std::string& s,
       RedirectCout rd;
       jacobianFactor->print();
       auto contents = rd.str();
+      auto re = std::regex("\n");
       auto lines =
-          std::vector<std::string>{std::sregex_token_iterator(contents.begin(), contents.end(), std::regex("\n"), -1),
+          std::vector<std::string>{std::sregex_token_iterator(contents.begin(), contents.end(), re, -1),
                                    std::sregex_token_iterator()};
       auto indented = std::accumulate(lines.begin(), lines.end(), std::string("    ----"),
                                       [](const std::string &a, const std::string &b) -> std::string {

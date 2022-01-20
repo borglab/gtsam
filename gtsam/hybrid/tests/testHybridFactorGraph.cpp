@@ -579,30 +579,47 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
       discreteFactor->keys()
           == KeyVector({M(2), M(1)}));
 
-  DiscreteValues assignment;
-  assignment[M(1)] = 0;
-  assignment[M(2)] = 0;
-  EXPECT(assert_equal(0.60656, (*discreteFactor)(assignment), 1e-5));
-  assignment[M(1)] = 1;
-  assignment[M(2)] = 0;
-  EXPECT(assert_equal(0.612477, (*discreteFactor)(assignment), 1e-5));
-  assignment[M(1)] = 0;
-  assignment[M(2)] = 1;
-  EXPECT(assert_equal(0.999952, (*discreteFactor)(assignment), 1e-5));
-  assignment[M(1)] = 1;
-  assignment[M(2)] = 1;
-  EXPECT(assert_equal(1.0, (*discreteFactor)(assignment), 1e-5));
+  ordering.clear();
+  ordering += X(1);
+  ordering += X(2);
+  ordering += X(3);
 
-  // TODO(fan): I think this is not correct!
-  DiscreteFactorGraph dfg;
-  dfg.add(*discreteFactor);
-  dfg.add(discreteFactor_m1);
-  dfg.add_factors(switching.linearizedFactorGraph.discreteGraph());
+  // Now we calculate the actual factors using full elimination
+  HybridBayesNet::shared_ptr actualHybridBayesNet;
+  HybridFactorGraph::shared_ptr actualRemainingGraph;
+  std::tie(actualHybridBayesNet, actualRemainingGraph) =
+      switching.linearizedFactorGraph.eliminatePartialSequential(ordering);
 
-  auto chordal = dfg.eliminateSequential();
+  GTSAM_PRINT(*actualHybridBayesNet);
+  GTSAM_PRINT(*actualRemainingGraph);
 
-  GTSAM_PRINT(*chordal);
-  GTSAM_PRINT(*(chordal->at(0)) * *(chordal->at(1)));
+  EXPECT(assert_equal(*(hybridBayesNet2->at(1)),
+                      *(actualHybridBayesNet->at(2))));
+
+//  DiscreteValues assignment;
+//  assignment[M(1)] = 0;
+//  assignment[M(2)] = 0;
+//  EXPECT(assert_equal(0.60656, (*discreteFactor)(assignment), 1e-5));
+//  assignment[M(1)] = 1;
+//  assignment[M(2)] = 0;
+//  EXPECT(assert_equal(0.612477, (*discreteFactor)(assignment), 1e-5));
+//  assignment[M(1)] = 0;
+//  assignment[M(2)] = 1;
+//  EXPECT(assert_equal(0.999952, (*discreteFactor)(assignment), 1e-5));
+//  assignment[M(1)] = 1;
+//  assignment[M(2)] = 1;
+//  EXPECT(assert_equal(1.0, (*discreteFactor)(assignment), 1e-5));
+//
+//  // TODO(fan): I think this is not correct!
+//  DiscreteFactorGraph dfg;
+//  dfg.add(*discreteFactor);
+//  dfg.add(discreteFactor_m1);
+//  dfg.add_factors(switching.linearizedFactorGraph.discreteGraph());
+//
+//  auto chordal = dfg.eliminateSequential();
+//
+//  GTSAM_PRINT(*chordal);
+//  GTSAM_PRINT(*(chordal->at(0)) * *(chordal->at(1)));
 }
 
 /* ************************************************************************* */
