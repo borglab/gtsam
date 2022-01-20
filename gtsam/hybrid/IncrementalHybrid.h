@@ -31,7 +31,11 @@ class IncrementalHybrid {
 
   /**
    * Given new factors, perform an incremental update.
+   * The relevant densities in the `hybridBayesNet` will be added to the input
+   * graph (fragment), and then eliminated according to the `ordering` presented.
+   *
    * @param graph The new factors, should be linear only
+   * @param ordering The ordering for elimination
    */
   void update(HybridFactorGraph graph, const Ordering &ordering);
 

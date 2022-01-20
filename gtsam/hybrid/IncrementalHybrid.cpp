@@ -18,11 +18,14 @@
  */
 
 #include <gtsam/hybrid/IncrementalHybrid.h>
+#include <unordered_set>
 
 void gtsam::IncrementalHybrid::update(gtsam::HybridFactorGraph graph,
                                       const gtsam::Ordering &ordering) {
+  // if we are not at the first iteration
   if (hybridBayesNet_) {
-    std::set<Key> allVars(ordering.begin(), ordering.end());
+    // We add all relevant densities in the previous `hybridBayesNet` to the graph
+    std::unordered_set<Key> allVars(ordering.begin(), ordering.end());
     for (auto &density : *hybridBayesNet_) {
       for (auto &key : density->frontals()) {
         if (allVars.find(key) != allVars.end()) {

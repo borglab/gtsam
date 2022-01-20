@@ -242,7 +242,7 @@ TEST(HybridFactorGraph, EliminationTree) {
 
 /* ****************************************************************************/
 // Test elimination function by eliminating x1 in *-x1-*-x2 graph.
-TEST_UNSAFE(DCGaussianElimination, Eliminate_x1) {
+TEST(DCGaussianElimination, Eliminate_x1) {
   Switching self(3);
 
   // Gather factors on x1, has a simple Gaussian and a mixture factor.
@@ -435,7 +435,7 @@ TEST(HybridFactorGraph, Elimination) {
 
 /* ****************************************************************************/
 // Test if we can incrementally do the inference
-TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
+TEST(DCGaussianElimination, Incremental_inference) {
   Switching switching(3);
 
   IncrementalHybrid incrementalHybrid;
@@ -526,14 +526,16 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
   EXPECT(assert_equal(*(hybridBayesNet2->at(1)),
                       *(expectedHybridBayesNet->at(2))));
 
-  // we only do this for 0,0 but others are calculated the same way
+  // we only do the manual continuous elimination for 0,0
+  // the other discrete probabilities on M(2) are calculated the same way
   auto m00_prob = [&]() {
     GaussianFactorGraph gf;
     gf.add(switching.linearizedFactorGraph.gaussianGraph().at(3));
 
     Assignment<Key> m00;
     m00[M(1)] = 0, m00[M(2)] = 0;
-    auto dcMixture = dynamic_pointer_cast<DCGaussianMixtureFactor>(graph2.dcGraph().at(0));
+    auto dcMixture =
+        dynamic_pointer_cast<DCGaussianMixtureFactor>(graph2.dcGraph().at(0));
     gf.add(dcMixture->factors()(m00));
     auto x2_mixed = hybridBayesNet->at(1);
     gf.add(x2_mixed->factors()(m00));
