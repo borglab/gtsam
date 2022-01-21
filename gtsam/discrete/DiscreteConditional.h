@@ -180,13 +180,6 @@ class GTSAM_EXPORT DiscreteConditional
   DecisionTreeFactor::shared_ptr likelihood(size_t parent_value) const;
 
   /**
-   * solve a conditional
-   * @param parentsValues Known values of the parents
-   * @return maximum value for the (single) frontal variable.
-   */
-  size_t solve(const DiscreteValues& parentsValues) const;
-
-  /**
    * sample
    * @param parentsValues Known values of the parents
    * @return sample from conditional
@@ -202,9 +195,6 @@ class GTSAM_EXPORT DiscreteConditional
   /// @}
   /// @name Advanced Interface
   /// @{
-
-  /// solve a conditional, in place
-  void solveInPlace(DiscreteValues* parentsValues) const;
 
   /// sample in place, stores result in partial solution
   void sampleInPlace(DiscreteValues* parentsValues) const;
@@ -228,6 +218,14 @@ class GTSAM_EXPORT DiscreteConditional
                    const Names& names = {}) const override;
 
   /// @}
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
+  /// @name Deprecated functionality
+  /// @{
+  size_t GTSAM_DEPRECATED solve(const DiscreteValues& parentsValues) const;
+  void GTSAM_DEPRECATED solveInPlace(DiscreteValues* parentsValues) const;
+  /// @}
+#endif
 };
 // DiscreteConditional
 

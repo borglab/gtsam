@@ -238,6 +238,7 @@ DecisionTreeFactor::shared_ptr DiscreteConditional::likelihood(
 }
 
 /* ************************************************************************** */
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
 void DiscreteConditional::solveInPlace(DiscreteValues* values) const {
   ADT pFS = Choose(*this, *values);  // P(F|S=parentsValues)
 
@@ -264,14 +265,6 @@ void DiscreteConditional::solveInPlace(DiscreteValues* values) const {
   }
 }
 
-/* ******************************************************************************** */
-void DiscreteConditional::sampleInPlace(DiscreteValues* values) const {
-  assert(nrFrontals() == 1);
-  Key j = (firstFrontalKey());
-  size_t sampled = sample(*values); // Sample variable given parents
-  (*values)[j] = sampled; // store result in partial solution
-}
-
 /* ************************************************************************** */
 size_t DiscreteConditional::solve(const DiscreteValues& parentsValues) const {
   ADT pFS = Choose(*this, parentsValues);  // P(F|S=parentsValues)
@@ -294,8 +287,17 @@ size_t DiscreteConditional::solve(const DiscreteValues& parentsValues) const {
   }
   return mpe;
 }
+#endif
 
-/* ******************************************************************************** */
+/* ************************************************************************** */
+void DiscreteConditional::sampleInPlace(DiscreteValues* values) const {
+  assert(nrFrontals() == 1);
+  Key j = (firstFrontalKey());
+  size_t sampled = sample(*values);  // Sample variable given parents
+  (*values)[j] = sampled;            // store result in partial solution
+}
+
+/* ************************************************************************** */
 size_t DiscreteConditional::sample(const DiscreteValues& parentsValues) const {
   static mt19937 rng(2);  // random number generator
 
