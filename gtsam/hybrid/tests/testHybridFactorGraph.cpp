@@ -319,7 +319,8 @@ GaussianFactorGraph::shared_ptr batchGFG(double between,
 /* ****************************************************************************/
 // Test elimination function by eliminating x1 and x2 in graph.
 TEST(DCGaussianElimination, EliminateHybrid_2_Variable) {
-  Switching self(2);
+  Switching self(2, 1.0, 0.1);
+
   auto factors = self.linearizedFactorGraph;
 
   // Check that sum works:
