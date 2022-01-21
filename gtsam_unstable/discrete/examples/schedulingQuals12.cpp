@@ -143,7 +143,7 @@ void runLargeExample() {
   }
 #else
   gttic(large);
-  auto MPE = scheduler.optimalAssignment();
+  auto MPE = scheduler.optimize();
   gttoc(large);
   tictoc_finishedIteration();
   tictoc_print();
