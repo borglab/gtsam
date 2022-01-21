@@ -149,9 +149,6 @@ class GTSAM_EXPORT GaussianHybridFactorGraph
   /// The total number of factors in the Gaussian factor graph.
   size_t nrGaussianFactors() const { return factorGraph_.size(); }
 
-  /// The total number of discrete keys in the factor graph.
-  DiscreteKeys discreteKeys() const override;
-
   /// @name Elimination machinery
   /// @{
   using FactorType = Factor;
