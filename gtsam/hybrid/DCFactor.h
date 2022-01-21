@@ -32,20 +32,20 @@ namespace gtsam {
  * discreteKeys_ contains the keys (plus cardinalities) for *discrete*
  * variables.
  */
-class DCFactor : public gtsam::Factor {
+class DCFactor : public Factor {
  protected:
   // Set of DiscreteKeys for this factor.
-  gtsam::DiscreteKeys discreteKeys_;
+  DiscreteKeys discreteKeys_;
 
  public:
-  using Base = gtsam::Factor;
+  using Base = Factor;
   using shared_ptr = boost::shared_ptr<DCFactor>;
 
   DCFactor() = default;
 
   /// Used in constructor to gather all keys, continuous and discrete.
-  static KeyVector AllKeys(const gtsam::KeyVector& continuousKeys,
-                           const gtsam::DiscreteKeys& discreteKeys) {
+  static KeyVector AllKeys(const KeyVector& continuousKeys,
+                           const DiscreteKeys& discreteKeys) {
     auto result = continuousKeys;
     for (auto& dk : discreteKeys) {
       result.push_back(dk.first);
@@ -60,14 +60,19 @@ class DCFactor : public gtsam::Factor {
    * @param continuousKeys - the keys for *continuous* variables
    * @param discreteKeys - the keys for *discrete* variables
    */
-  DCFactor(const gtsam::KeyVector& continuousKeys,
-           const gtsam::DiscreteKeys& discreteKeys)
+  DCFactor(const KeyVector& continuousKeys, const DiscreteKeys& discreteKeys)
       : Base(AllKeys(continuousKeys, discreteKeys)),
         discreteKeys_(discreteKeys) {}
 
   // NOTE unsure if needed?
-  explicit DCFactor(const gtsam::DiscreteKeys& discreteKeys)
+  explicit DCFactor(const DiscreteKeys& discreteKeys)
       : DCFactor({}, discreteKeys) {}
+
+  DCFactor& operator=(const DCFactor& rhs) {
+    Base::operator=(rhs);
+    discreteKeys_ = rhs.discreteKeys_;
+    return *this;
+  }
 
   virtual ~DCFactor() = default;
 
@@ -90,8 +95,8 @@ class DCFactor : public gtsam::Factor {
    * @return error (usually the negative log-likelihood) for the measurement
    * model as a double.
    */
-  virtual double error(const gtsam::Values& continuousVals,
-                       const gtsam::DiscreteValues& discreteVals) const = 0;
+  virtual double error(const Values& continuousVals,
+                       const DiscreteValues& discreteVals) const = 0;
 
   /**
    * Linearize the error function with respect to the continuous
@@ -107,7 +112,7 @@ class DCFactor : public gtsam::Factor {
    * `discreteKeys__`.
    */
   virtual GaussianFactor::shared_ptr linearize(
-      const gtsam::Values& continuousVals,
+      const Values& continuousVals,
       const DiscreteValues& discreteVals) const = 0;
 
   /**
@@ -138,7 +143,7 @@ class DCFactor : public gtsam::Factor {
   /**
    * Returns the number of rows in the Jacobian with respect to the continuous
    * variables for this factor. Internally this is used in the conversion to a
-   * gtsam::NonlinearFactor
+   * NonlinearFactor
    *
    * TODO(kevin): not sure if needed???
    *
@@ -153,30 +158,29 @@ class DCFactor : public gtsam::Factor {
   /*
    * Return the discrete keys for this factor.
    */
-  const gtsam::DiscreteKeys& discreteKeys() const { return discreteKeys_; }
+  const DiscreteKeys& discreteKeys() const { return discreteKeys_; }
 
   /**
-   * Converts the DCFactor to a gtsam::DecisionTreeFactor. Internally, this will
-   * be used to generate a gtsam::DiscreteFactor type, which itself requires a
-   * conversion function to gtsam::DecisionTreeFactor for inference using GTSAM.
+   * Converts the DCFactor to a DecisionTreeFactor. Internally, this will
+   * be used to generate a DiscreteFactor type, which itself requires a
+   * conversion function to DecisionTreeFactor for inference using GTSAM.
    *
    * Performing this conversion can be problem specific, so we allow for the
    * option to override, but try to implement a sensible default: we assume the
    * error function can be called setting each discrete key's variable
    * individually, and the overall DCFactor can itself be factored as a product
-   * of unary gtsam::DecisionTreeFactors.
+   * of unary DecisionTreeFactors.
    *
    * Alternative implementations might consider something like the
-   * gtsam::AllDiff approach here:
+   * AllDiff approach here:
    * https://github.com/borglab/gtsam/blob/43e8f1e5aeaf11890262722c1e5e04a11dbf9d75/gtsam_unstable/discrete/AllDiff.cpp#L43
    *
    * @param continuousVals - an assignment to the continuous variables
    * @param discreteVals -
-   * @return a gtsam::DecisionTreeFactor implementing this DCFactor.
+   * @return a DecisionTreeFactor implementing this DCFactor.
    */
-  virtual gtsam::DecisionTreeFactor toDecisionTreeFactor(
-      const gtsam::Values& continuousVals,
-      const DiscreteValues& discreteVals) const;
+  virtual DecisionTreeFactor toDecisionTreeFactor(
+      const Values& continuousVals, const DiscreteValues& discreteVals) const;
 
   /**
    * Calculate a normalizing constant for this DCFactor. Most implementations
@@ -186,7 +190,7 @@ class DCFactor : public gtsam::Factor {
    * TODO(Kurran) is this the cleanest way to do this? Seems necessary for the
    * DCMaxMixtureFactor implementations etc...
    */
-  virtual double logNormalizingConstant(const gtsam::Values& values) const;
+  virtual double logNormalizingConstant(const Values& values) const;
 
   /**
    * Default for computing the _negative_ normalizing constant for the
@@ -196,9 +200,9 @@ class DCFactor : public gtsam::Factor {
    */
   template <typename NonlinearFactorType>
   double nonlinearFactorLogNormalizingConstant(
-      const NonlinearFactorType& factor, const gtsam::Values& values) const {
+      const NonlinearFactorType& factor, const Values& values) const {
     // Information matrix (inverse covariance matrix) for the factor.
-    gtsam::Matrix infoMat;
+    Matrix infoMat;
 
     // NOTE: This is sloppy, is there a cleaner way?
     boost::shared_ptr<NonlinearFactorType> fPtr =
@@ -207,16 +211,15 @@ class DCFactor : public gtsam::Factor {
 
     // If this is a NoiseModelFactor, we'll use its noiseModel to
     // otherwise noiseModelFactor will be nullptr
-    boost::shared_ptr<gtsam::NoiseModelFactor> noiseModelFactor =
-        boost::dynamic_pointer_cast<gtsam::NoiseModelFactor>(factorPtr);
+    boost::shared_ptr<NoiseModelFactor> noiseModelFactor =
+        boost::dynamic_pointer_cast<NoiseModelFactor>(factorPtr);
     if (noiseModelFactor) {
       // If dynamic cast to NoiseModelFactor succeeded, see if the noise model
       // is Gaussian
-      gtsam::noiseModel::Base::shared_ptr noiseModel =
-          noiseModelFactor->noiseModel();
+      noiseModel::Base::shared_ptr noiseModel = noiseModelFactor->noiseModel();
 
-      boost::shared_ptr<gtsam::noiseModel::Gaussian> gaussianNoiseModel =
-          boost::dynamic_pointer_cast<gtsam::noiseModel::Gaussian>(noiseModel);
+      boost::shared_ptr<noiseModel::Gaussian> gaussianNoiseModel =
+          boost::dynamic_pointer_cast<noiseModel::Gaussian>(noiseModel);
       if (gaussianNoiseModel) {
         // If the noise model is Gaussian, retrieve the information matrix
         infoMat = gaussianNoiseModel->information();
@@ -225,7 +228,7 @@ class DCFactor : public gtsam::Factor {
         // something with a normalized noise model
         // TODO(kevin): does this make sense to do? I think maybe not in
         // general? Should we just yell at the user?
-        boost::shared_ptr<gtsam::GaussianFactor> gaussianFactor =
+        boost::shared_ptr<GaussianFactor> gaussianFactor =
             factor.linearize(values);
         infoMat = gaussianFactor->information();
       }
@@ -256,23 +259,23 @@ class DCFactor : public gtsam::Factor {
    * @return a vector of length == cardinality of dk specifying the probability
    * of each possible assignment to dk.
    */
-  std::vector<double> evalProbs(const gtsam::DiscreteKey& dk,
-                                const gtsam::Values& continuousVals) const;
+  std::vector<double> evalProbs(const DiscreteKey& dk,
+                                const Values& continuousVals) const;
 
   /**
-   * Take the product of this DCFactor (as a gtsam::DecisionTreeFactor)
+   * Take the product of this DCFactor (as a DecisionTreeFactor)
    * conditioned on an assignment to the continous variables, `continuousVals`
-   * with another gtsam::DecisionTreeFactor `f`. Used internally by GTSAM to
+   * with another DecisionTreeFactor `f`. Used internally by GTSAM to
    * solve discrete factor graphs.
    *
-   * @param f - the gtsam::DecisionTreeFactor to be multiplied by this DCFactor
+   * @param f - the DecisionTreeFactor to be multiplied by this DCFactor
    * @param continuousVals - an assignment to the continuous variables
    * (specified by keys_).
-   * @return a gtsam::DecisionTreeFactor representing the product of this factor
+   * @return a DecisionTreeFactor representing the product of this factor
    * with `f`.
    */
-  gtsam::DecisionTreeFactor conditionalTimes(
-      const gtsam::DecisionTreeFactor& f, const gtsam::Values& continuousVals,
-      const DiscreteValues& discreteVals) const;
+  DecisionTreeFactor conditionalTimes(const DecisionTreeFactor& f,
+                                      const Values& continuousVals,
+                                      const DiscreteValues& discreteVals) const;
 };
 }  // namespace gtsam
