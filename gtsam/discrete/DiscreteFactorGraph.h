@@ -128,18 +128,31 @@ class GTSAM_EXPORT DiscreteFactorGraph
       const std::string& s = "DiscreteFactorGraph",
       const KeyFormatter& formatter = DefaultKeyFormatter) const override;
 
-  /** Solve the factor graph by performing variable elimination in COLAMD order using
-   *  the dense elimination function specified in \c function,
-   *  followed by back-substitution resulting from elimination.  Is equivalent
-   *  to calling graph.eliminateSequential()->optimize(). */
-  DiscreteValues optimize() const;
+  /**
+   * @brief Implement the max-product algorithm
+   *
+   * @param orderingType : one of COLAMD, METIS, NATURAL, CUSTOM
+   * @return DiscreteBayesNet::shared_ptr DAG with lookup tables
+   */
+  boost::shared_ptr<DiscreteBayesNet> maxProduct(
+      OptionalOrderingType orderingType = boost::none) const;
 
+  /**
+   * @brief Find the maximum probable explanation (MPE) by doing max-product.
+   *
+   * @param orderingType
+   * @return DiscreteValues : MPE
+   */
+  DiscreteValues optimize(
+      OptionalOrderingType orderingType = boost::none) const;
 
-//  /** Permute the variables in the factors */
-//  GTSAM_EXPORT void permuteWithInverse(const Permutation& inversePermutation);
-//
-//  /** Apply a reduction, which is a remapping of variable indices. */
-//  GTSAM_EXPORT void reduceWithInverse(const internal::Reduction& inverseReduction);
+  //  /** Permute the variables in the factors */
+  //  GTSAM_EXPORT void permuteWithInverse(const Permutation&
+  //  inversePermutation);
+  //
+  //  /** Apply a reduction, which is a remapping of variable indices. */
+  //  GTSAM_EXPORT void reduceWithInverse(const internal::Reduction&
+  //  inverseReduction);
 
   /// @name Wrapper support
   /// @{
