@@ -72,6 +72,8 @@ class GTSAM_EXPORT DiscreteBayesTree
   typedef DiscreteBayesTree This;
   typedef boost::shared_ptr<This> shared_ptr;
 
+  /// @name Standard interface
+  /// @{
   /** Default constructor, creates an empty Bayes tree */
   DiscreteBayesTree() {}
 
@@ -82,10 +84,23 @@ class GTSAM_EXPORT DiscreteBayesTree
   double evaluate(const DiscreteValues& values) const;
 
   //** (Preferred) sugar for the above for given DiscreteValues */
-  double operator()(const DiscreteValues & values) const {
+  double operator()(const DiscreteValues& values) const {
     return evaluate(values);
   }
 
+  /// @}
+  /// @name Wrapper support
+  /// @{
+
+  /// Render as markdown tables.
+  std::string markdown(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                       const DiscreteFactor::Names& names = {}) const;
+
+  /// Render as html tables.
+  std::string html(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                   const DiscreteFactor::Names& names = {}) const;
+
+  /// @}
 };
 
 }  // namespace gtsam

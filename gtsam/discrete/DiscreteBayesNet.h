@@ -13,16 +13,21 @@
  * @file DiscreteBayesNet.h
  * @date Feb 15, 2011
  * @author Duy-Nguyen Ta
+ * @author Frank dellaert
  */
 
 #pragma once
 
-#include <vector>
-#include <map>
-#include <boost/shared_ptr.hpp>
+#include <gtsam/discrete/DiscreteConditional.h>
+#include <gtsam/discrete/DiscreteDistribution.h>
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/FactorGraph.h>
-#include <gtsam/discrete/DiscreteConditional.h>
+
+#include <boost/shared_ptr.hpp>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace gtsam {
 
@@ -74,6 +79,11 @@ namespace gtsam {
     // Add inherited versions of add.
     using Base::add;
 
+    /** Add a DiscreteDistribution using a table or a string */
+    void add(const DiscreteKey& key, const std::string& spec) {
+      emplace_shared<DiscreteDistribution>(key, spec);
+    }
+
     /** Add a DiscreteCondtional */
     template <typename... Args>
     void add(Args&&... args) {
@@ -89,16 +99,62 @@ namespace gtsam {
     }
 
     /**
-    * Solve the DiscreteBayesNet by back-substitution
+     * @brief solve by back-substitution.
+     *
+     * Assumes the Bayes net is reverse topologically sorted, i.e. last
+     * conditional will be optimized first. If the Bayes net resulted from
+     * eliminating a factor graph, this is true for the elimination ordering.
+     *
+     * @return a sampled value for all variables.
     */
     DiscreteValues optimize() const;
 
-    /** Do ancestral sampling */
+    /**
+     * @brief solve by back-substitution, given certain variables.
+     *
+     * Assumes the Bayes net is reverse topologically sorted *and* that the
+     * Bayes net does not contain any conditionals for the given values.
+     *
+     * @return given values extended with optimized value for other variables.
+     */
+    DiscreteValues optimize(DiscreteValues given) const;
+
+    /**
+     * @brief do ancestral sampling
+     *
+     * Assumes the Bayes net is reverse topologically sorted, i.e. last
+     * conditional will be sampled first. If the Bayes net resulted from
+     * eliminating a factor graph, this is true for the elimination ordering.
+     *
+     * @return a sampled value for all variables.
+     */
     DiscreteValues sample() const;
 
-    ///@}
+    /**
+     * @brief do ancestral sampling, given certain variables.
+     *
+     * Assumes the Bayes net is reverse topologically sorted *and* that the
+     * Bayes net does not contain any conditionals for the given values.
+     *
+     * @return given values extended with sampled value for all other variables.
+     */
+    DiscreteValues sample(DiscreteValues given) const;
 
-  private:
+    ///@}
+    /// @name Wrapper support
+    /// @{
+
+    /// Render as markdown tables.
+    std::string markdown(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                         const DiscreteFactor::Names& names = {}) const;
+
+    /// Render as html tables.
+    std::string html(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                     const DiscreteFactor::Names& names = {}) const;
+
+    /// @}
+
+ private:
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>

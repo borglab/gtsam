@@ -164,8 +164,8 @@ TEST_UNSAFE(DiscreteMarginals, truss2) {
   graph.add(key[2] & key[3] & key[4], "1 2 3 4 5 6 7 8");
 
   // Calculate the marginals by brute force
-  vector<DiscreteValues> allPosbValues =
-      cartesianProduct(key[0] & key[1] & key[2] & key[3] & key[4]);
+  auto allPosbValues = DiscreteValues::CartesianProduct(
+      key[0] & key[1] & key[2] & key[3] & key[4]);
   Vector T = Z_5x1, F = Z_5x1;
   for (size_t i = 0; i < allPosbValues.size(); ++i) {
     DiscreteValues x = allPosbValues[i];

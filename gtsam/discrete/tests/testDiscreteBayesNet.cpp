@@ -38,21 +38,26 @@ using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 
+static const DiscreteKey Asia(0, 2), Smoking(4, 2), Tuberculosis(3, 2),
+    LungCancer(6, 2), Bronchitis(7, 2), Either(5, 2), XRay(2, 2), Dyspnea(1, 2);
+
+using ADT = AlgebraicDecisionTree<Key>;
+
 /* ************************************************************************* */
 TEST(DiscreteBayesNet, bayesNet) {
   DiscreteBayesNet bayesNet;
   DiscreteKey Parent(0, 2), Child(1, 2);
 
   auto prior = boost::make_shared<DiscreteConditional>(Parent % "6/4");
-  CHECK(assert_equal(Potentials::ADT({Parent}, "0.6 0.4"),
-                     (Potentials::ADT)*prior));
+  CHECK(assert_equal(ADT({Parent}, "0.6 0.4"),
+                     (ADT)*prior));
   bayesNet.push_back(prior);
 
   auto conditional =
       boost::make_shared<DiscreteConditional>(Child | Parent = "7/3 8/2");
   EXPECT_LONGS_EQUAL(1, *(conditional->beginFrontals()));
-  Potentials::ADT expected(Child & Parent, "0.7 0.8 0.3 0.2");
-  CHECK(assert_equal(expected, (Potentials::ADT)*conditional));
+  ADT expected(Child & Parent, "0.7 0.8 0.3 0.2");
+  CHECK(assert_equal(expected, (ADT)*conditional));
   bayesNet.push_back(conditional);
 
   DiscreteFactorGraph fg(bayesNet);
@@ -71,11 +76,9 @@ TEST(DiscreteBayesNet, bayesNet) {
 /* ************************************************************************* */
 TEST(DiscreteBayesNet, Asia) {
   DiscreteBayesNet asia;
-  DiscreteKey Asia(0, 2), Smoking(4, 2), Tuberculosis(3, 2), LungCancer(6, 2),
-      Bronchitis(7, 2), Either(5, 2), XRay(2, 2), Dyspnea(1, 2);
 
-  asia.add(Asia % "99/1");
-  asia.add(Smoking % "50/50");
+  asia.add(Asia, "99/1");
+  asia.add(Smoking % "50/50");  // Signature version
 
   asia.add(Tuberculosis | Asia = "99/1 95/5");
   asia.add(LungCancer | Smoking = "99/1 90/10");
@@ -151,9 +154,6 @@ TEST(DiscreteBayesNet, Sugar) {
 
 /* ************************************************************************* */
 TEST(DiscreteBayesNet, Dot) {
-  DiscreteKey Asia(0, 2), Smoking(4, 2), Tuberculosis(3, 2), LungCancer(6, 2),
-      Either(5, 2);
-
   DiscreteBayesNet fragment;
   fragment.add(Asia % "99/1");
   fragment.add(Smoking % "50/50");
@@ -170,6 +170,32 @@ TEST(DiscreteBayesNet, Dot) {
          "3->5\n"
          "6->5\n"
          "}");
+}
+
+/* ************************************************************************* */
+// Check markdown representation looks as expected.
+TEST(DiscreteBayesNet, markdown) {
+  DiscreteBayesNet fragment;
+  fragment.add(Asia % "99/1");
+  fragment.add(Smoking | Asia = "8/2 7/3");
+
+  string expected =
+      "`DiscreteBayesNet` of size 2\n"
+      "\n"
+      " *P(Asia):*\n\n"
+      "|Asia|value|\n"
+      "|:-:|:-:|\n"
+      "|0|0.99|\n"
+      "|1|0.01|\n"
+      "\n"
+      " *P(Smoking|Asia):*\n\n"
+      "|*Asia*|0|1|\n"
+      "|:-:|:-:|:-:|\n"
+      "|0|0.8|0.2|\n"
+      "|1|0.7|0.3|\n\n";
+  auto formatter = [](Key key) { return key == 0 ? "Asia" : "Smoking"; };
+  string actual = fragment.markdown(formatter);
+  EXPECT(actual == expected);
 }
 
 /* ************************************************************************* */

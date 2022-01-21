@@ -19,7 +19,8 @@
 #pragma once
 
 #include <gtsam/discrete/DiscreteFactor.h>
-#include <gtsam/discrete/Potentials.h>
+#include <gtsam/discrete/DiscreteKey.h>
+#include <gtsam/discrete/AlgebraicDecisionTree.h>
 #include <gtsam/inference/Ordering.h>
 
 #include <boost/shared_ptr.hpp>
@@ -35,7 +36,7 @@ namespace gtsam {
   /**
    * A discrete probabilistic factor
    */
-  class GTSAM_EXPORT DecisionTreeFactor: public DiscreteFactor, public Potentials {
+  class GTSAM_EXPORT DecisionTreeFactor: public DiscreteFactor, public AlgebraicDecisionTree<Key> {
 
   public:
 
@@ -43,6 +44,10 @@ namespace gtsam {
     typedef DecisionTreeFactor This;
     typedef DiscreteFactor Base; ///< Typedef to base class
     typedef boost::shared_ptr<DecisionTreeFactor> shared_ptr;
+    typedef AlgebraicDecisionTree<Key> ADT;
+
+  protected:
+    std::map<Key,size_t> cardinalities_;
 
   public:
 
@@ -52,17 +57,26 @@ namespace gtsam {
     /** Default constructor for I/O */
     DecisionTreeFactor();
 
-    /** Constructor from Indices, Ordering, and AlgebraicDecisionDiagram */
+    /** Constructor from DiscreteKeys and AlgebraicDecisionTree */
     DecisionTreeFactor(const DiscreteKeys& keys, const ADT& potentials);
 
-    /** Constructor from Indices and (string or doubles) */
-    template<class SOURCE>
-    DecisionTreeFactor(const DiscreteKeys& keys, SOURCE table) :
-        DiscreteFactor(keys.indices()), Potentials(keys, table) {
-    }
+    /** Constructor from doubles */
+    DecisionTreeFactor(const DiscreteKeys& keys, const std::vector<double>& table);
+
+    /** Constructor from string */
+    DecisionTreeFactor(const DiscreteKeys& keys, const std::string& table);
+
+    /// Single-key specialization
+    template <class SOURCE>
+    DecisionTreeFactor(const DiscreteKey& key, SOURCE table)
+        : DecisionTreeFactor(DiscreteKeys{key}, table) {}
+
+    /// Single-key specialization, with vector of doubles.
+    DecisionTreeFactor(const DiscreteKey& key, const std::vector<double>& row)
+        : DecisionTreeFactor(DiscreteKeys{key}, row) {}
 
     /** Construct from a DiscreteConditional type */
-    DecisionTreeFactor(const DiscreteConditional& c);
+    explicit DecisionTreeFactor(const DiscreteConditional& c);
 
     /// @}
     /// @name Testable
@@ -81,13 +95,17 @@ namespace gtsam {
 
     /// Value is just look up in AlgebraicDecisonTree
     double operator()(const DiscreteValues& values) const override {
-      return Potentials::operator()(values);
+      return ADT::operator()(values);
     }
 
     /// multiply two factors
     DecisionTreeFactor operator*(const DecisionTreeFactor& f) const override {
       return apply(f, ADT::Ring::mul);
     }
+
+    static double safe_div(const double& a, const double& b);
+
+    size_t cardinality(Key j) const { return cardinalities_.at(j);}
 
     /// divide by factor f (safely)
     DecisionTreeFactor operator/(const DecisionTreeFactor& f) const {
@@ -121,14 +139,14 @@ namespace gtsam {
     /**
      * Apply binary operator (*this) "op" f
      * @param f the second argument for op
-     * @param op a binary operator that operates on AlgebraicDecisionDiagram potentials
+     * @param op a binary operator that operates on AlgebraicDecisionTree
      */
     DecisionTreeFactor apply(const DecisionTreeFactor& f, ADT::Binary op) const;
 
     /**
      * Combine frontal variables using binary operator "op"
      * @param nrFrontals nr. of frontal to combine variables in this factor
-     * @param op a binary operator that operates on AlgebraicDecisionDiagram potentials
+     * @param op a binary operator that operates on AlgebraicDecisionTree
      * @return shared pointer to newly created DecisionTreeFactor
      */
     shared_ptr combine(size_t nrFrontals, ADT::Binary op) const;
@@ -136,7 +154,7 @@ namespace gtsam {
     /**
      * Combine frontal variables in an Ordering using binary operator "op"
      * @param nrFrontals nr. of frontal to combine variables in this factor
-     * @param op a binary operator that operates on AlgebraicDecisionDiagram potentials
+     * @param op a binary operator that operates on AlgebraicDecisionTree
      * @return shared pointer to newly created DecisionTreeFactor
      */
     shared_ptr combine(const Ordering& keys, ADT::Binary op) const;
@@ -162,7 +180,49 @@ namespace gtsam {
 //      Potentials::reduceWithInverse(inverseReduction);
 //    }
 
+    /// Enumerate all values into a map from values to double.
+    std::vector<std::pair<DiscreteValues, double>> enumerate() const;
+
     /// @}
+    /// @name Wrapper support
+    /// @{
+    
+    /** output to graphviz format, stream version */
+    void dot(std::ostream& os,
+             const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+             bool showZero = true) const;
+
+    /** output to graphviz format, open a file */
+    void dot(const std::string& name,
+             const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+             bool showZero = true) const;
+
+    /** output to graphviz format string */
+    std::string dot(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                    bool showZero = true) const;
+
+    /**
+     * @brief Render as markdown table
+     *
+     * @param keyFormatter GTSAM-style Key formatter.
+     * @param names optional, category names corresponding to choices.
+     * @return std::string a markdown string.
+     */
+    std::string markdown(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                         const Names& names = {}) const override;
+
+    /**
+     * @brief Render as html table
+     *
+     * @param keyFormatter GTSAM-style Key formatter.
+     * @param names optional, category names corresponding to choices.
+     * @return std::string a html string.
+     */
+    std::string html(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                     const Names& names = {}) const override;
+
+    /// @}
+
 };
 // DecisionTreeFactor
 

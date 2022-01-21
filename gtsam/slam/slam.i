@@ -11,7 +11,7 @@ namespace gtsam {
 // ######
 
 #include <gtsam/slam/BetweenFactor.h>
-template <T = {Vector, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::SO3,
+template <T = {double, Vector, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::SO3,
                gtsam::SO4, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3,
                gtsam::imuBias::ConstantBias}>
 virtual class BetweenFactor : gtsam::NoiseModelFactor {
@@ -264,8 +264,6 @@ pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(
     string filename, gtsam::noiseModel::Diagonal* model);
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename);
-pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D_robust(
-    string filename, gtsam::noiseModel::Base* model, int maxIndex);
 void save2D(const gtsam::NonlinearFactorGraph& graph,
             const gtsam::Values& config, gtsam::noiseModel::Diagonal* model,
             string filename);

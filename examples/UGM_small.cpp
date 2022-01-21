@@ -50,8 +50,8 @@ int main(int argc, char** argv) {
 
   // Print the UGM distribution
   cout << "\nUGM distribution:" << endl;
-  vector<DiscreteFactor::Values> allPosbValues = cartesianProduct(
-      Cathy & Heather & Mark & Allison);
+  auto allPosbValues =
+      DiscreteValues::CartesianProduct(Cathy & Heather & Mark & Allison);
   for (size_t i = 0; i < allPosbValues.size(); ++i) {
     DiscreteFactor::Values values = allPosbValues[i];
     double prodPot = graph(values);

@@ -21,6 +21,7 @@
 #include <gtsam/discrete/DiscreteFactor.h>
 
 #include <cmath>
+#include <sstream>
 
 using namespace std;
 

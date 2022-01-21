@@ -35,12 +35,15 @@ struct GTSAM_EXPORT DotWriter {
                              ///< the dot of the factor
   bool binaryEdges;          ///< just use non-dotted edges for binary factors
 
-  DotWriter()
-      : figureWidthInches(5),
-        figureHeightInches(5),
-        plotFactorPoints(true),
-        connectKeysToFactor(true),
-        binaryEdges(true) {}
+  explicit DotWriter(double figureWidthInches = 5,
+                     double figureHeightInches = 5,
+                     bool plotFactorPoints = true,
+                     bool connectKeysToFactor = true, bool binaryEdges = false)
+      : figureWidthInches(figureWidthInches),
+        figureHeightInches(figureHeightInches),
+        plotFactorPoints(plotFactorPoints),
+        connectKeysToFactor(connectKeysToFactor),
+        binaryEdges(binaryEdges) {}
 
   /// Write out preamble, including size.
   void writePreamble(std::ostream* os) const;
@@ -54,14 +57,9 @@ struct GTSAM_EXPORT DotWriter {
   static void DrawFactor(size_t i, const boost::optional<Vector2>& position,
                          std::ostream* os);
 
-  /// Connect two variables.
-  static void ConnectVariables(Key key1, Key key2, std::ostream* os);
-
-  /// Connect variable and factor.
-  static void ConnectVariableFactor(Key key, size_t i, std::ostream* os);
-
   /// Draw a single factor, specified by its index i and its variable keys.
   void processFactor(size_t i, const KeyVector& keys,
+                     const KeyFormatter& keyFormatter,
                      const boost::optional<Vector2>& position,
                      std::ostream* os) const;
 };

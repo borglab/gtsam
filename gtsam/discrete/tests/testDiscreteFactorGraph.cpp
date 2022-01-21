@@ -361,11 +361,9 @@ cout << unicorns;
 
 /* ************************************************************************* */
 TEST(DiscreteFactorGraph, Dot) {
-  // Declare a bunch of keys
-  DiscreteKey C(0, 2), A(1, 2), B(2, 2);
-
   // Create Factor graph
   DiscreteFactorGraph graph;
+  DiscreteKey C(0, 2), A(1, 2), B(2, 2);
   graph.add(C & A, "0.2 0.8 0.3 0.7");
   graph.add(C & B, "0.1 0.9 0.4 0.6");
 
@@ -378,12 +376,83 @@ TEST(DiscreteFactorGraph, Dot) {
       "  var1[label=\"1\"];\n"
       "  var2[label=\"2\"];\n"
       "\n"
-      "  var0--var1;\n"
-      "  var0--var2;\n"
+      "  factor0[label=\"\", shape=point];\n"
+      "  var0--factor0;\n"
+      "  var1--factor0;\n"
+      "  factor1[label=\"\", shape=point];\n"
+      "  var0--factor1;\n"
+      "  var2--factor1;\n"
       "}\n";
   EXPECT(actual == expected);
 }
 
+/* ************************************************************************* */
+TEST(DiscreteFactorGraph, DotWithNames) {
+  // Create Factor graph
+  DiscreteFactorGraph graph;
+  DiscreteKey C(0, 2), A(1, 2), B(2, 2);
+  graph.add(C & A, "0.2 0.8 0.3 0.7");
+  graph.add(C & B, "0.1 0.9 0.4 0.6");
+
+  vector<string> names{"C", "A", "B"};
+  auto formatter = [names](Key key) { return names[key]; };
+  string actual = graph.dot(formatter);
+  string expected =
+      "graph {\n"
+      "  size=\"5,5\";\n"
+      "\n"
+      "  varC[label=\"C\"];\n"
+      "  varA[label=\"A\"];\n"
+      "  varB[label=\"B\"];\n"
+      "\n"
+      "  factor0[label=\"\", shape=point];\n"
+      "  varC--factor0;\n"
+      "  varA--factor0;\n"
+      "  factor1[label=\"\", shape=point];\n"
+      "  varC--factor1;\n"
+      "  varB--factor1;\n"
+      "}\n";
+  EXPECT(actual == expected);
+}
+
+/* ************************************************************************* */
+// Check markdown representation looks as expected.
+TEST(DiscreteFactorGraph, markdown) {
+  // Create Factor graph
+  DiscreteFactorGraph graph;
+  DiscreteKey C(0, 2), A(1, 2), B(2, 2);
+  graph.add(C & A, "0.2 0.8 0.3 0.7");
+  graph.add(C & B, "0.1 0.9 0.4 0.6");
+
+  string expected =
+      "`DiscreteFactorGraph` of size 2\n"
+      "\n"
+      "factor 0:\n"
+      "|C|A|value|\n"
+      "|:-:|:-:|:-:|\n"
+      "|0|0|0.2|\n"
+      "|0|1|0.8|\n"
+      "|1|0|0.3|\n"
+      "|1|1|0.7|\n"
+      "\n"
+      "factor 1:\n"
+      "|C|B|value|\n"
+      "|:-:|:-:|:-:|\n"
+      "|0|0|0.1|\n"
+      "|0|1|0.9|\n"
+      "|1|0|0.4|\n"
+      "|1|1|0.6|\n\n";
+  vector<string> names{"C", "A", "B"};
+  auto formatter = [names](Key key) { return names[key]; };
+  string actual = graph.markdown(formatter);
+  EXPECT(actual == expected);
+
+  // Make sure values are correctly displayed.
+  DiscreteValues values;
+  values[0] = 1;
+  values[1] = 0;
+  EXPECT_DOUBLES_EQUAL(0.3, graph[0]->operator()(values), 1e-9);
+}
 /* ************************************************************************* */
 int main() {
 TestResult tr;

@@ -90,7 +90,7 @@ namespace gtsam {
     /** Test equality */
     bool equals(const NonlinearFactorGraph& other, double tol = 1e-9) const;
 
-    /** unnormalized error, \f$ 0.5 \sum_i (h_i(X_i)-z)^2/\sigma^2 \f$ in the most common case */
+    /** unnormalized error, \f$ \sum_i 0.5 (h_i(X_i)-z)^2 / \sigma^2 \f$ in the most common case */
     double error(const Values& values) const;
 
     /** Unnormalized probability. O(n) */
@@ -213,23 +213,22 @@ namespace gtsam {
     using FactorGraph::saveGraph;
 
     /// Output to graphviz format, stream version, with Values/extra options.
-    void dot(
-        std::ostream& os, const Values& values,
-        const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
-        const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+    void dot(std::ostream& os, const Values& values,
+             const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+             const GraphvizFormatting& graphvizFormatting =
+                 GraphvizFormatting()) const;
 
     /// Output to graphviz format string, with Values/extra options.
-    std::string dot(
-        const Values& values,
-        const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
-        const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+    std::string dot(const Values& values,
+                    const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                    const GraphvizFormatting& graphvizFormatting =
+                        GraphvizFormatting()) const;
 
     /// output to file with graphviz format, with Values/extra options.
-    void saveGraph(
-        const std::string& filename, const Values& values,
-        const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
-        const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
-
+    void saveGraph(const std::string& filename, const Values& values,
+                   const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                   const GraphvizFormatting& graphvizFormatting =
+                       GraphvizFormatting()) const;
     /// @}
 
    private:
@@ -251,23 +250,30 @@ namespace gtsam {
 
   public:
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
-    /** \deprecated */
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
+    /** @deprecated */
     boost::shared_ptr<HessianFactor> GTSAM_DEPRECATED linearizeToHessianFactor(
         const Values& values, boost::none_t, const Dampen& dampen = nullptr) const
       {return linearizeToHessianFactor(values, dampen);}
 
-    /** \deprecated */
+    /** @deprecated */
     Values GTSAM_DEPRECATED updateCholesky(const Values& values, boost::none_t,
                           const Dampen& dampen = nullptr) const
       {return updateCholesky(values, dampen);}
 
-    /** \deprecated */
+    /** @deprecated */
     void GTSAM_DEPRECATED saveGraph(
         std::ostream& os, const Values& values = Values(),
         const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
         const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
-      dot(os, values, graphvizFormatting, keyFormatter);
+      dot(os, values, keyFormatter, graphvizFormatting);
+    }
+    /** @deprecated */
+    void GTSAM_DEPRECATED
+    saveGraph(const std::string& filename, const Values& values,
+              const GraphvizFormatting& graphvizFormatting,
+              const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+      saveGraph(filename, values, keyFormatter, graphvizFormatting);
     }
 #endif
 
