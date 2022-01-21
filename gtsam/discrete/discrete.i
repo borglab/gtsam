@@ -139,6 +139,7 @@ virtual class DiscreteDistribution : gtsam::DiscreteConditional {
   double operator()(size_t value) const;
   std::vector<double> pmf() const;
   size_t solve() const;
+  size_t argmax() const;
 };
 
 #include <gtsam/discrete/DiscreteBayesNet.h>
