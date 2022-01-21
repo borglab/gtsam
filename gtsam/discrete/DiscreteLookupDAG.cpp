@@ -49,42 +49,9 @@ void DiscreteLookupTable::print(const std::string& s,
   cout << endl;
 }
 
-/* ************************************************************************* */
-// TODO(dellaert): copy/paste from DiscreteConditional.cpp :-(
-vector<DiscreteValues> DiscreteLookupTable::frontalAssignments() const {
-  vector<pair<Key, size_t>> pairs;
-  for (Key key : frontals()) pairs.emplace_back(key, cardinalities_.at(key));
-  vector<pair<Key, size_t>> rpairs(pairs.rbegin(), pairs.rend());
-  return DiscreteValues::CartesianProduct(rpairs);
-}
-
-/* ************************************************************************** */
-// TODO(dellaert): copy/paste from DiscreteConditional.cpp :-(
-static DiscreteLookupTable::ADT Choose(const DiscreteLookupTable& conditional,
-                                       const DiscreteValues& given,
-                                       bool forceComplete = true) {
-  // Get the big decision tree with all the levels, and then go down the
-  // branches based on the value of the parent variables.
-  DiscreteLookupTable::ADT adt(conditional);
-  size_t value;
-  for (Key j : conditional.parents()) {
-    try {
-      value = given.at(j);
-      adt = adt.choose(j, value);  // ADT keeps getting smaller.
-    } catch (std::out_of_range&) {
-      if (forceComplete) {
-        given.print("parentsValues: ");
-        throw std::runtime_error(
-            "DiscreteLookupTable::Choose: parent value missing");
-      }
-    }
-  }
-  return adt;
-}
-
 /* ************************************************************************** */
 void DiscreteLookupTable::argmaxInPlace(DiscreteValues* values) const {
-  ADT pFS = Choose(*this, *values);  // P(F|S=parentsValues)
+  ADT pFS = choose(*values, true);  // P(F|S=parentsValues)
 
   // Initialize
   DiscreteValues mpe;
@@ -111,13 +78,13 @@ void DiscreteLookupTable::argmaxInPlace(DiscreteValues* values) const {
 
 /* ************************************************************************** */
 size_t DiscreteLookupTable::argmax(const DiscreteValues& parentsValues) const {
-  ADT pFS = Choose(*this, parentsValues);  // P(F|S=parentsValues)
+  ADT pFS = choose(parentsValues, true);  // P(F|S=parentsValues)
 
   // Then, find the max over all remaining
   // TODO(Duy): only works for one key now, seems horribly slow this way
   size_t mpe = 0;
-  DiscreteValues frontals;
   double maxP = 0;
+  DiscreteValues frontals;
   assert(nrFrontals() == 1);
   Key j = (firstFrontalKey());
   for (size_t value = 0; value < cardinality(j); value++) {
