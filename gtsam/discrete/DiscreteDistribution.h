@@ -90,18 +90,6 @@ class GTSAM_EXPORT DiscreteDistribution : public DiscreteConditional {
   /// Return entire probability mass function.
   std::vector<double> pmf() const;
 
-  /**
-   * @brief Return assignment that maximizes distribution.
-   * @return Optimal assignment (1 frontal variable).
-   */
-  size_t argmax() const;
-
-  /**
-   * sample
-   * @return sample from conditional
-   */
-  size_t sample() const { return Base::sample(); }
-
   /// @}
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
   /// @name Deprecated functionality

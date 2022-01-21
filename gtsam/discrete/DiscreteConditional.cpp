@@ -287,6 +287,26 @@ size_t DiscreteConditional::solve(const DiscreteValues& parentsValues) const {
 #endif
 
 /* ************************************************************************** */
+size_t DiscreteConditional::argmax() const {
+  size_t maxValue = 0;
+  double maxP = 0;
+  assert(nrFrontals() == 1);
+  assert(nrParents() == 0);
+  DiscreteValues frontals;
+  Key j = firstFrontalKey();
+  for (size_t value = 0; value < cardinality(j); value++) {
+    frontals[j] = value;
+    double pValueS = (*this)(frontals);
+    // Update MPE solution if better
+    if (pValueS > maxP) {
+      maxP = pValueS;
+      maxValue = value;
+    }
+  }
+  return maxValue;
+}
+
+/* ************************************************************************** */
 void DiscreteConditional::sampleInPlace(DiscreteValues* values) const {
   assert(nrFrontals() == 1);
   Key j = (firstFrontalKey());
