@@ -139,6 +139,14 @@ class GTSAM_EXPORT DiscreteFactorGraph
       OptionalOrderingType orderingType = boost::none) const;
 
   /**
+   * @brief Implement the max-product algorithm
+   *
+   * @param ordering
+   * @return DiscreteLookupDAG::shared_ptr `DAG with lookup tables
+   */
+  DiscreteLookupDAG maxProduct(const Ordering& ordering) const;
+
+  /**
    * @brief Find the maximum probable explanation (MPE) by doing max-product.
    *
    * @param orderingType
@@ -146,6 +154,14 @@ class GTSAM_EXPORT DiscreteFactorGraph
    */
   DiscreteValues optimize(
       OptionalOrderingType orderingType = boost::none) const;
+
+  /**
+   * @brief Find the maximum probable explanation (MPE) by doing max-product.
+   *
+   * @param ordering
+   * @return DiscreteValues : MPE
+   */
+  DiscreteValues optimize(const Ordering& ordering) const;
 
   //  /** Permute the variables in the factors */
   //  GTSAM_EXPORT void permuteWithInverse(const Permutation&

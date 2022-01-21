@@ -16,6 +16,7 @@
  *  @author Frank Dellaert
  */
 
+#include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/discrete/DiscreteLookupDAG.h>
 #include <gtsam/discrete/DiscreteValues.h>
 
@@ -97,6 +98,22 @@ size_t DiscreteLookupTable::argmax(const DiscreteValues& parentsValues) const {
     }
   }
   return mpe;
+}
+
+/* ************************************************************************** */
+DiscreteLookupDAG DiscreteLookupDAG::FromBayesNet(
+    const DiscreteBayesNet& bayesNet) {
+  DiscreteLookupDAG dag;
+  for (auto&& conditional : bayesNet) {
+    if (auto lookupTable =
+            boost::dynamic_pointer_cast<DiscreteLookupTable>(conditional)) {
+      dag.push_back(lookupTable);
+    } else {
+      throw std::runtime_error(
+          "DiscreteFactorGraph::maxProduct: Expected look up table.");
+    }
+  }
+  return dag;
 }
 
 /* ************************************************************************** */
