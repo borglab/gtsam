@@ -7,6 +7,7 @@
  * @file   HybridFactorGraph.h
  * @brief  Custom hybrid factor graph for discrete + continuous factors
  * @author Kevin Doherty, kdoherty@mit.edu
+ * @author Varun Agrawal
  * @date   December 2021
  */
 
@@ -14,58 +15,30 @@
 
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/hybrid/DCFactorGraph.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 #include <string>
 
 namespace gtsam {
 
-// Forward declarations
-class GaussianMixture;
-class Dummy;
-class HybridFactorGraph;
-class HybridEliminationTree;
-class Ordering;
+using SharedFactor = boost::shared_ptr<Factor>;
 
-/** Main elimination function for HybridFactorGraph */
-using sharedFactor = boost::shared_ptr<Factor>;
-GTSAM_EXPORT std::pair<GaussianMixture::shared_ptr, sharedFactor>
-EliminateHybrid(const HybridFactorGraph& factors, const Ordering& keys);
-
-template <>
-struct EliminationTraits<HybridFactorGraph> {
-  typedef Factor FactorType;
-  typedef HybridFactorGraph FactorGraphType;
-  typedef GaussianMixture ConditionalType;
-  typedef HybridBayesNet BayesNetType;
-  typedef HybridEliminationTree EliminationTreeType;
-  typedef HybridBayesNet BayesTreeType;
-  typedef HybridEliminationTree JunctionTreeType;
-
-  /// The function type that does a single elimination step on a variable.
-  static std::pair<GaussianMixture::shared_ptr, sharedFactor> DefaultEliminate(
-      const HybridFactorGraph& factors, const Ordering& ordering) {
-    return EliminateHybrid(factors, ordering);
-  }
-};
-
-class HybridFactorGraph : protected FactorGraph<Factor>,
-                          public EliminateableFactorGraph<HybridFactorGraph> {
+/**
+ * @brief Base class for hybrid factor graphs.
+ *
+ * @tparam FG The type of factor graph to specialize for, e.g.
+ * NonlinearFactorGraph, GaussianFactorGraph.
+ */
+template <typename FG>
+class HybridFactorGraph : protected FactorGraph<Factor> {
  public:
   using shared_ptr = boost::shared_ptr<HybridFactorGraph>;
   using Base = FactorGraph<Factor>;
 
  protected:
   // Separate internal factor graphs for different types of factors
-  NonlinearFactorGraph nonlinearGraph_;
+  FG factorGraph_;
   DiscreteFactorGraph discreteGraph_;
   DCFactorGraph dcGraph_;
-  GaussianFactorGraph gaussianGraph_;
-
-  /// Check if FACTOR type is derived from NonlinearFactor.
-  template <typename FACTOR>
-  using IsNonlinear = typename std::enable_if<
-      std::is_base_of<NonlinearFactor, FACTOR>::value>::type;
 
   /// Check if FACTOR type is derived from DiscreteFactor.
   template <typename FACTOR>
@@ -77,11 +50,6 @@ class HybridFactorGraph : protected FactorGraph<Factor>,
   using IsDC =
       typename std::enable_if<std::is_base_of<DCFactor, FACTOR>::value>::type;
 
-  /// Check if FACTOR type is derived from GaussianFactor.
-  template <typename FACTOR>
-  using IsGaussian = typename std::enable_if<
-      std::is_base_of<GaussianFactor, FACTOR>::value>::type;
-
  public:
   /// Default constructor
   HybridFactorGraph() = default;
@@ -89,22 +57,19 @@ class HybridFactorGraph : protected FactorGraph<Factor>,
   /**
    * @brief Construct a new Hybrid Factor Graph object.
    *
-   * @param nonlinearGraph A factor graph with continuous factors.
+   * @param factorGraph A factor graph of type `FG`.
    * @param discreteGraph A factor graph with only discrete factors.
    * @param dcGraph A DCFactorGraph containing DCFactors.
    */
-  HybridFactorGraph(
-      const NonlinearFactorGraph& nonlinearGraph,
-      const DiscreteFactorGraph& discreteGraph, const DCFactorGraph& dcGraph,
-      const GaussianFactorGraph& gaussianGraph = GaussianFactorGraph())
-      : nonlinearGraph_(nonlinearGraph),
+  HybridFactorGraph(const FG& factorGraph,
+                    const DiscreteFactorGraph& discreteGraph,
+                    const DCFactorGraph& dcGraph)
+      : factorGraph_(factorGraph),
         discreteGraph_(discreteGraph),
-        dcGraph_(dcGraph),
-        gaussianGraph_(gaussianGraph) {
-    Base::push_back(nonlinearGraph);
+        dcGraph_(dcGraph) {
+    Base::push_back(factorGraph);
     Base::push_back(discreteGraph);
     Base::push_back(dcGraph);
-    Base::push_back(gaussianGraph);
   }
 
   // Allow use of selected FactorGraph methods:
@@ -112,17 +77,6 @@ class HybridFactorGraph : protected FactorGraph<Factor>,
   using Base::reserve;
   using Base::size;
   using Base::operator[];
-
-  /**
-   * Add a nonlinear factor *pointer* to the internal nonlinear factor graph
-   * @param nonlinearFactor - boost::shared_ptr to the factor to add
-   */
-  template <typename FACTOR>
-  IsNonlinear<FACTOR> push_nonlinear(
-      const boost::shared_ptr<FACTOR>& nonlinearFactor) {
-    nonlinearGraph_.push_back(nonlinearFactor);
-    Base::push_back(nonlinearFactor);
-  }
 
   /**
    * Add a discrete factor *pointer* to the internal discrete graph
@@ -145,28 +99,9 @@ class HybridFactorGraph : protected FactorGraph<Factor>,
     Base::push_back(dcFactor);
   }
 
-  /**
-   * Add a gaussian factor *pointer* to the internal gaussian factor graph
-   * @param gaussianFactor - boost::shared_ptr to the factor to add
-   */
-  template <typename FACTOR>
-  IsGaussian<FACTOR> push_gaussian(
-      const boost::shared_ptr<FACTOR>& gaussianFactor) {
-    gaussianGraph_.push_back(gaussianFactor);
-    Base::push_back(gaussianFactor);
-  }
-
   /// delete emplace_shared.
   template <class FACTOR, class... Args>
   void emplace_shared(Args&&... args) = delete;
-
-  /// Construct a factor and add (shared pointer to it) to factor graph.
-  template <class FACTOR, class... Args>
-  IsNonlinear<FACTOR> emplace_nonlinear(Args&&... args) {
-    auto factor = boost::allocate_shared<FACTOR>(
-        Eigen::aligned_allocator<FACTOR>(), std::forward<Args>(args)...);
-    push_nonlinear(factor);
-  }
 
   /// Construct a factor and add (shared pointer to it) to factor graph.
   template <class FACTOR, class... Args>
@@ -184,35 +119,19 @@ class HybridFactorGraph : protected FactorGraph<Factor>,
     push_dc(factor);
   }
 
-  /// Construct a factor and add (shared pointer to it) to factor graph.
-  template <class FACTOR, class... Args>
-  IsGaussian<FACTOR> emplace_gaussian(Args&&... args) {
-    auto factor = boost::allocate_shared<FACTOR>(
-        Eigen::aligned_allocator<FACTOR>(), std::forward<Args>(args)...);
-    push_gaussian(factor);
-  }
-
   /**
    * @brief Add a single factor shared pointer to the hybrid factor graph.
    * Dynamically handles the factor type and assigns it to the correct
    * underlying container.
    *
-   * @tparam FACTOR The factor type template
    * @param sharedFactor The factor to add to this factor graph.
    */
-  template <typename FACTOR>
-  void push_back(const boost::shared_ptr<FACTOR>& sharedFactor) {
-    if (auto p = boost::dynamic_pointer_cast<NonlinearFactor>(sharedFactor)) {
-      push_nonlinear(p);
-    }
+  void push_back(const SharedFactor& sharedFactor) {
     if (auto p = boost::dynamic_pointer_cast<DiscreteFactor>(sharedFactor)) {
       push_discrete(p);
     }
     if (auto p = boost::dynamic_pointer_cast<DCFactor>(sharedFactor)) {
       push_dc(p);
-    }
-    if (auto p = boost::dynamic_pointer_cast<GaussianFactor>(sharedFactor)) {
-      push_gaussian(p);
     }
   }
 
@@ -229,14 +148,11 @@ class HybridFactorGraph : protected FactorGraph<Factor>,
    */
   void print(
       const std::string& str = "HybridFactorGraph",
-      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
-
-  /**
-   * Utility for retrieving the internal nonlinear factor graph
-   * @return the member variable nonlinearGraph_
-   */
-  const gtsam::NonlinearFactorGraph& nonlinearGraph() const {
-    return nonlinearGraph_;
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
+    std::string prefix = str.empty() ? str : str + ".";
+    std::cout << prefix << "size: " << size() << std::endl;
+    discreteGraph_.print(prefix + "DiscreteFactorGraph", keyFormatter);
+    dcGraph_.print(prefix + "DCFactorGraph", keyFormatter);
   }
 
   /**
@@ -254,27 +170,15 @@ class HybridFactorGraph : protected FactorGraph<Factor>,
   const DCFactorGraph& dcGraph() const { return dcGraph_; }
 
   /**
-   * Utility for retrieving the internal gaussian factor graph
-   * @return the member variable gaussianGraph_
-   */
-  const GaussianFactorGraph& gaussianGraph() const { return gaussianGraph_; }
-
-  /**
-   * @brief Linearize all the continuous factors in the HybridFactorGraph.
-   *
-   * @param continuousValues: Dictionary of continuous values.
-   * @return HybridFactorGraph
-   */
-  HybridFactorGraph linearize(const Values& continuousValues) const;
-
-  /**
    * @return true if all internal graphs of `this` are equal to those of
    * `other`
    */
-  bool equals(const HybridFactorGraph& other, double tol = 1e-9) const;
-
-  /// The total number of factors in the nonlinear factor graph.
-  size_t nrNonlinearFactors() const { return nonlinearGraph_.size(); }
+  bool equals(const HybridFactorGraph<FG>& other, double tol = 1e-9) const {
+    return Base::equals(other, tol) &&
+           discreteGraph_.equals(other.discreteGraph_, tol) &&
+           dcGraph_.equals(other.dcGraph_, tol) &&
+           factorGraph_.equals(other.factorGraph_, tol);
+  }
 
   /// The total number of factors in the discrete factor graph.
   size_t nrDiscreteFactors() const { return discreteGraph_.size(); }
@@ -282,47 +186,21 @@ class HybridFactorGraph : protected FactorGraph<Factor>,
   /// The total number of factors in the DC factor graph.
   size_t nrDcFactors() const { return dcGraph_.size(); }
 
-  /// The total number of factors in the Gaussian factor graph.
-  size_t nrGaussianFactors() const { return gaussianGraph_.size(); }
-
-  /**
-   * Clears all internal factor graphs
-   * TODO(dellaert): Not loving this!
-   */
-  void clear();
-
   /// Get all the discrete keys in the hybrid factor graph.
-  DiscreteKeys discreteKeys() const;
-
-  /// @name Elimination machinery
-  /// @{
-  using FactorType = Factor;
-  using EliminationResult =
-      std::pair<boost::shared_ptr<GaussianMixture>, sharedFactor>;
-  using Eliminate = std::function<EliminationResult(const HybridFactorGraph&,
-                                                    const Ordering&)>;
-
-  /**
-   * @brief Sum all gaussians and Gaussian mixtures together.
-   * @return a decision tree of GaussianFactorGraphs
-   *
-   * Takes all factors, which *must* be all DCGaussianMixtureFactors or
-   * GaussianFactors, and "add" them. This might involve decision-trees of
-   * different structure, and creating a different decision tree for Gaussians.
-   */
-  DCGaussianMixtureFactor::Sum sum() const;
-
-  /**
-   * @brief Convert the DecisionTree of (Key, GaussianFactorGraph) to
-   * (Key, Graph probability).
-   * @return DecisionTreeFactor::shared_ptr
-   */
-  DecisionTreeFactor::shared_ptr toDecisionTreeFactor() const;
-
-  /// @}
+  virtual DiscreteKeys discreteKeys() const {
+    DiscreteKeys result;
+    // Discrete keys from the discrete graph.
+    result = discreteGraph_.discreteKeys();
+    // Discrete keys from the DC factor graph.
+    auto dcKeys = dcGraph_.discreteKeys();
+    for (auto&& key : dcKeys) {
+      // Only insert unique keys
+      if (std::find(result.begin(), result.end(), key) == result.end()) {
+        result.push_back(key);
+      }
+    }
+    return result;
+  }
 };
-
-template <>
-struct traits<HybridFactorGraph> : public Testable<HybridFactorGraph> {};
 
 }  // namespace gtsam

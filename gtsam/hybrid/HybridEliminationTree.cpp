@@ -15,25 +15,25 @@
  * @author Frank Dellaert
  */
 
-#include <gtsam/inference/EliminationTree-inst.h>
 #include <gtsam/hybrid/HybridEliminationTree.h>
+#include <gtsam/inference/EliminationTree-inst.h>
 
 namespace gtsam {
 
 // TODO(dellaert): unclear why we subclass EliminationTree at all.
 
 // Instantiate base class
-template class EliminationTree<HybridBayesNet, HybridFactorGraph>;
+template class EliminationTree<HybridBayesNet, GaussianHybridFactorGraph>;
 
 /* ************************************************************************* */
 HybridEliminationTree::HybridEliminationTree(
-    const HybridFactorGraph& factorGraph, const VariableIndex& structure,
-    const Ordering& order)
+    const GaussianHybridFactorGraph& factorGraph,
+    const VariableIndex& structure, const Ordering& order)
     : Base(factorGraph, structure, order) {}
 
 /* ************************************************************************* */
 HybridEliminationTree::HybridEliminationTree(
-    const HybridFactorGraph& factorGraph, const Ordering& order)
+    const GaussianHybridFactorGraph& factorGraph, const Ordering& order)
     : Base(factorGraph, order) {}
 
 /* ************************************************************************* */

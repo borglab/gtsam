@@ -18,17 +18,18 @@
  * @date    December 2021
  */
 
+#include <gtsam/base/utilities.h>
+#include <gtsam/discrete/DiscreteBayesNet.h>
+#include <gtsam/discrete/DiscreteDistribution.h>
+#include <gtsam/discrete/DiscreteDistribution.h>
 #include <gtsam/hybrid/DCFactor.h>
 #include <gtsam/hybrid/DCMixtureFactor.h>
 #include <gtsam/hybrid/HybridEliminationTree.h>
-#include <gtsam/hybrid/HybridFactorGraph.h>
 #include <gtsam/hybrid/IncrementalHybrid.h>
+#include <gtsam/hybrid/NonlinearHybridFactorGraph.h>
 #include <gtsam/linear/GaussianBayesNet.h>
-#include <gtsam/discrete/DiscreteDistribution.h>
-#include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/base/utilities.h>
 
 #include <cstdlib>
 #include <numeric>
@@ -59,14 +60,17 @@ TEST(HybridFactorGraph, GaussianFactorGraph) {
   gfg.add(X(0), I_1x1, Vector1(5));
 
   // Initialize the hybrid factor graph
-  HybridFactorGraph nonlinearFactorGraph(cfg, DiscreteFactorGraph(),
-                                         DCFactorGraph(), gfg);
+  NonlinearHybridFactorGraph nonlinearFactorGraph(cfg, DiscreteFactorGraph(),
+                                                  DCFactorGraph());
 
   // Linearization point
   Values linearizationPoint;
   linearizationPoint.insert<double>(X(0), 0);
 
-  HybridFactorGraph dcmfg = nonlinearFactorGraph.linearize(linearizationPoint);
+  GaussianHybridFactorGraph dcmfg(gfg, DiscreteFactorGraph(), DCFactorGraph());
+  auto ghfg = nonlinearFactorGraph.linearize(linearizationPoint);
+
+  dcmfg.push_back(ghfg.gaussianGraph().begin(), ghfg.gaussianGraph().end());
 
   EXPECT_LONGS_EQUAL(2, dcmfg.gaussianGraph().size());
 }
@@ -75,17 +79,7 @@ TEST(HybridFactorGraph, GaussianFactorGraph) {
  * Test push_back on HFG makes the correct distinction.
  */
 TEST(HybridFactorGraph, PushBack) {
-  HybridFactorGraph fg;
-
-  auto gaussianFactor = boost::make_shared<JacobianFactor>();
-  fg.push_back(gaussianFactor);
-
-  EXPECT_LONGS_EQUAL(fg.dcGraph().size(), 0);
-  EXPECT_LONGS_EQUAL(fg.discreteGraph().size(), 0);
-  EXPECT_LONGS_EQUAL(fg.nonlinearGraph().size(), 0);
-  EXPECT_LONGS_EQUAL(fg.gaussianGraph().size(), 1);
-
-  fg.clear();
+  NonlinearHybridFactorGraph fg;
 
   auto nonlinearFactor = boost::make_shared<BetweenFactor<double>>();
   fg.push_back(nonlinearFactor);
@@ -93,9 +87,8 @@ TEST(HybridFactorGraph, PushBack) {
   EXPECT_LONGS_EQUAL(fg.dcGraph().size(), 0);
   EXPECT_LONGS_EQUAL(fg.discreteGraph().size(), 0);
   EXPECT_LONGS_EQUAL(fg.nonlinearGraph().size(), 1);
-  EXPECT_LONGS_EQUAL(fg.gaussianGraph().size(), 0);
 
-  fg.clear();
+  fg = NonlinearHybridFactorGraph();
 
   auto discreteFactor = boost::make_shared<DecisionTreeFactor>();
   fg.push_back(discreteFactor);
@@ -103,9 +96,8 @@ TEST(HybridFactorGraph, PushBack) {
   EXPECT_LONGS_EQUAL(fg.dcGraph().size(), 0);
   EXPECT_LONGS_EQUAL(fg.discreteGraph().size(), 1);
   EXPECT_LONGS_EQUAL(fg.nonlinearGraph().size(), 0);
-  EXPECT_LONGS_EQUAL(fg.gaussianGraph().size(), 0);
 
-  fg.clear();
+  fg = NonlinearHybridFactorGraph();
 
   auto dcFactor = boost::make_shared<DCMixtureFactor<MotionModel>>();
   fg.push_back(dcFactor);
@@ -113,7 +105,32 @@ TEST(HybridFactorGraph, PushBack) {
   EXPECT_LONGS_EQUAL(fg.dcGraph().size(), 1);
   EXPECT_LONGS_EQUAL(fg.discreteGraph().size(), 0);
   EXPECT_LONGS_EQUAL(fg.nonlinearGraph().size(), 0);
-  EXPECT_LONGS_EQUAL(fg.gaussianGraph().size(), 0);
+
+  // Now do the same with GaussianHybridFactorGraph
+  GaussianHybridFactorGraph ghfg;
+
+  auto gaussianFactor = boost::make_shared<JacobianFactor>();
+  ghfg.push_back(gaussianFactor);
+
+  EXPECT_LONGS_EQUAL(ghfg.dcGraph().size(), 0);
+  EXPECT_LONGS_EQUAL(ghfg.discreteGraph().size(), 0);
+  EXPECT_LONGS_EQUAL(ghfg.gaussianGraph().size(), 1);
+
+  ghfg = GaussianHybridFactorGraph();
+
+  ghfg.push_back(discreteFactor);
+
+  EXPECT_LONGS_EQUAL(ghfg.dcGraph().size(), 0);
+  EXPECT_LONGS_EQUAL(ghfg.discreteGraph().size(), 1);
+  EXPECT_LONGS_EQUAL(ghfg.gaussianGraph().size(), 0);
+
+  ghfg = GaussianHybridFactorGraph();
+
+  ghfg.push_back(dcFactor);
+
+  EXPECT_LONGS_EQUAL(ghfg.dcGraph().size(), 1);
+  EXPECT_LONGS_EQUAL(ghfg.discreteGraph().size(), 0);
+  EXPECT_LONGS_EQUAL(ghfg.gaussianGraph().size(), 0);
 }
 
 /* ****************************************************************************/
@@ -122,8 +139,8 @@ using MotionMixture = DCMixtureFactor<MotionModel>;
 struct Switching {
   size_t K;
   DiscreteKeys modes;
-  HybridFactorGraph nonlinearFactorGraph;
-  HybridFactorGraph linearizedFactorGraph;
+  NonlinearHybridFactorGraph nonlinearFactorGraph;
+  GaussianHybridFactorGraph linearizedFactorGraph;
   Values linearizationPoint;
 
   /// Create with given number of time steps.
@@ -151,10 +168,8 @@ struct Switching {
     // Add measurement factors
     auto measurement_noise = noiseModel::Isotropic::Sigma(1, 0.1);
     for (size_t k = 1; k <= K; k++) {
-      nonlinearFactorGraph.emplace_nonlinear<PriorFactor<double> >(
-          X(k),
-          1.0 * (k - 1),
-          measurement_noise);
+      nonlinearFactorGraph.emplace_nonlinear<PriorFactor<double>>(
+          X(k), 1.0 * (k - 1), measurement_noise);
     }
 
     // Add "mode chain"
@@ -173,14 +188,26 @@ struct Switching {
                                                            double sigma = 1.0) {
     auto noise_model = Isotropic::Sigma(1, sigma);
     auto still =
-        boost::make_shared<MotionModel>(X(k), X(k + 1), 0.0, noise_model),
-        moving =
-        boost::make_shared<MotionModel>(X(k), X(k + 1), 1.0, noise_model);
+             boost::make_shared<MotionModel>(X(k), X(k + 1), 0.0, noise_model),
+         moving =
+             boost::make_shared<MotionModel>(X(k), X(k + 1), 1.0, noise_model);
     return {still, moving};
   }
 
-  // Add "mode chain": can only be done in HybridFactorGraph
-  void addModeChain(HybridFactorGraph *fg) {
+  // Add "mode chain" to NonlinearHybridFactorGraph
+  void addModeChain(NonlinearHybridFactorGraph* fg) {
+    auto prior = boost::make_shared<DiscreteDistribution>(modes[1], "1/1");
+    fg->push_discrete(prior);
+    for (size_t k = 1; k < K - 1; k++) {
+      auto parents = {modes[k]};
+      auto conditional = boost::make_shared<DiscreteConditional>(
+          modes[k + 1], parents, "1/2 3/2");
+      fg->push_discrete(conditional);
+    }
+  }
+
+  // Add "mode chain" to GaussianHybridFactorGraph
+  void addModeChain(GaussianHybridFactorGraph* fg) {
     auto prior = boost::make_shared<DiscreteDistribution>(modes[1], "1/1");
     fg->push_discrete(prior);
     for (size_t k = 1; k < K - 1; k++) {
@@ -196,14 +223,13 @@ struct Switching {
 // Test construction of switching-like hybrid factor graph.
 TEST(HybridFactorGraph, Switching) {
   Switching self(3);
+
   EXPECT_LONGS_EQUAL(8, self.nonlinearFactorGraph.size());
   EXPECT_LONGS_EQUAL(4, self.nonlinearFactorGraph.nonlinearGraph().size());
   EXPECT_LONGS_EQUAL(2, self.nonlinearFactorGraph.discreteGraph().size());
   EXPECT_LONGS_EQUAL(2, self.nonlinearFactorGraph.dcGraph().size());
-  EXPECT_LONGS_EQUAL(0, self.nonlinearFactorGraph.gaussianGraph().size());
 
   EXPECT_LONGS_EQUAL(8, self.linearizedFactorGraph.size());
-  EXPECT_LONGS_EQUAL(0, self.linearizedFactorGraph.nonlinearGraph().size());
   EXPECT_LONGS_EQUAL(2, self.linearizedFactorGraph.discreteGraph().size());
   EXPECT_LONGS_EQUAL(2, self.linearizedFactorGraph.dcGraph().size());
   EXPECT_LONGS_EQUAL(4, self.linearizedFactorGraph.gaussianGraph().size());
@@ -213,17 +239,15 @@ TEST(HybridFactorGraph, Switching) {
 // Test linearization on a switching-like hybrid factor graph.
 TEST(HybridFactorGraph, Linearization) {
   Switching self(3);
-  // TODO: create 4 linearization points.
 
-  // There original hybrid factor graph should not have any Gaussian factors.
-  // This ensures there are no unintentional factors being created.
-  EXPECT(self.nonlinearFactorGraph.gaussianGraph().size() == 0);
+  // Linearize here:
+  GaussianHybridFactorGraph actualLinearized =
+      self.nonlinearFactorGraph.linearize(self.linearizationPoint);
 
-  EXPECT_LONGS_EQUAL(8, self.linearizedFactorGraph.size());
-  EXPECT_LONGS_EQUAL(0, self.linearizedFactorGraph.nonlinearGraph().size());
-  EXPECT_LONGS_EQUAL(2, self.linearizedFactorGraph.discreteGraph().size());
-  EXPECT_LONGS_EQUAL(2, self.linearizedFactorGraph.dcGraph().size());
-  EXPECT_LONGS_EQUAL(4, self.linearizedFactorGraph.gaussianGraph().size());
+  EXPECT_LONGS_EQUAL(8, actualLinearized.size());
+  EXPECT_LONGS_EQUAL(2, actualLinearized.discreteGraph().size());
+  EXPECT_LONGS_EQUAL(2, actualLinearized.dcGraph().size());
+  EXPECT_LONGS_EQUAL(4, actualLinearized.gaussianGraph().size());
 }
 
 /* ****************************************************************************/
@@ -246,7 +270,7 @@ TEST(DCGaussianElimination, Eliminate_x1) {
   Switching self(3);
 
   // Gather factors on x1, has a simple Gaussian and a mixture factor.
-  HybridFactorGraph factors;
+  GaussianHybridFactorGraph factors;
   factors.push_gaussian(self.linearizedFactorGraph.gaussianGraph()[0]);
   factors.push_dc(self.linearizedFactorGraph.dcGraph()[0]);
 
@@ -276,7 +300,7 @@ TEST(DCGaussianElimination, Eliminate_x2) {
   Switching self(3);
 
   // Gather factors on x2, will be two mixture factors (with x1 and x3, resp.).
-  HybridFactorGraph factors;
+  GaussianHybridFactorGraph factors;
   factors.push_dc(self.linearizedFactorGraph.dcGraph()[0]);  // involves m1
   factors.push_dc(self.linearizedFactorGraph.dcGraph()[1]);  // involves m2
 
@@ -327,7 +351,7 @@ TEST(DCGaussianElimination, EliminateHybrid_2_Variable) {
   auto sum = factors.sum();
   Assignment<Key> mode;
   mode[M(1)] = 1;
-  auto actual = sum(mode);               // Selects one of 2 modes.
+  auto actual = sum(mode);  // Selects one of 2 modes.
   EXPECT_LONGS_EQUAL(4,
                      actual.size());  // Prior, 1 motion models, 2 measurements.
 
@@ -342,10 +366,12 @@ TEST(DCGaussianElimination, EliminateHybrid_2_Variable) {
       EliminateHybrid(factors, ordering);
 
   CHECK(gaussianConditionalMixture);
-  EXPECT_LONGS_EQUAL(2,
-                     gaussianConditionalMixture->nrFrontals()); // Frontals = [x1, x2]
-  EXPECT_LONGS_EQUAL(1,
-                     gaussianConditionalMixture->nrParents()); // 1 parent, which is the mode
+  EXPECT_LONGS_EQUAL(
+      2,
+      gaussianConditionalMixture->nrFrontals());  // Frontals = [x1, x2]
+  EXPECT_LONGS_EQUAL(
+      1,
+      gaussianConditionalMixture->nrParents());  // 1 parent, which is the mode
 
   auto discreteFactor = dynamic_pointer_cast<DecisionTreeFactor>(factorOnModes);
   CHECK(discreteFactor);
@@ -363,11 +389,10 @@ TEST(HybridFactorGraph, ToDecisionTreeFactor) {
 
   Switching self(K, between_sigma, prior_sigma);
 
-  // Clear out discrete factors since sum() cannot handle those
-  HybridFactorGraph linearizedFactorGraph(
-      NonlinearFactorGraph(), DiscreteFactorGraph(),
-      self.linearizedFactorGraph.dcGraph(),
-      self.linearizedFactorGraph.gaussianGraph());
+  // Clear out discrete factors since sum() cannot hanldle those
+  GaussianHybridFactorGraph linearizedFactorGraph(
+      self.linearizedFactorGraph.gaussianGraph(), DiscreteFactorGraph(),
+      self.linearizedFactorGraph.dcGraph());
 
   auto decisionTreeFactor = linearizedFactorGraph.toDecisionTreeFactor();
 
@@ -381,9 +406,9 @@ TEST(HybridFactorGraph, ToDecisionTreeFactor) {
   // Create equivalent factor graph for m1=0, m2=1
   GaussianFactorGraph graph = linearizedFactorGraph.gaussianGraph();
 
-  for (auto &p : linearizedFactorGraph.dcGraph()) {
-    if (auto
-        mixture = boost::dynamic_pointer_cast<DCGaussianMixtureFactor>(p)) {
+  for (auto& p : linearizedFactorGraph.dcGraph()) {
+    if (auto mixture =
+            boost::dynamic_pointer_cast<DCGaussianMixtureFactor>(p)) {
       graph.add((*mixture)(allAssignments[1]));
     }
   }
@@ -409,12 +434,12 @@ TEST(HybridFactorGraph, Elimination) {
 
   // Eliminate partially.
   HybridBayesNet::shared_ptr hybridBayesNet;
-  HybridFactorGraph::shared_ptr remainingFactorGraph;
+  GaussianHybridFactorGraph::shared_ptr remainingFactorGraph;
   std::tie(hybridBayesNet, remainingFactorGraph) =
       linearizedFactorGraph.eliminatePartialSequential(ordering);
 
   CHECK(hybridBayesNet);
-//  GTSAM_PRINT(*hybridBayesNet);  // HybridBayesNet
+  //  GTSAM_PRINT(*hybridBayesNet);  // HybridBayesNet
   EXPECT_LONGS_EQUAL(3, hybridBayesNet->size());
   EXPECT(hybridBayesNet->at(0)->frontals() == KeyVector{X(1)});
   EXPECT(hybridBayesNet->at(0)->parents() == KeyVector({X(2), M(1)}));
@@ -424,14 +449,14 @@ TEST(HybridFactorGraph, Elimination) {
   EXPECT(hybridBayesNet->at(2)->parents() == KeyVector({M(2), M(1)}));
 
   CHECK(remainingFactorGraph);
-//  GTSAM_PRINT(*remainingFactorGraph);  // HybridFactorGraph
+  //  GTSAM_PRINT(*remainingFactorGraph);  // HybridFactorGraph
   EXPECT_LONGS_EQUAL(3, remainingFactorGraph->size());
-  EXPECT(
-      remainingFactorGraph->discreteGraph().at(0)->keys() == KeyVector({M(1)}));
-  EXPECT(remainingFactorGraph->discreteGraph().at(1)->keys()
-             == KeyVector({M(2), M(1)}));
-  EXPECT(remainingFactorGraph->discreteGraph().at(2)->keys()
-             == KeyVector({M(2), M(1)}));
+  EXPECT(remainingFactorGraph->discreteGraph().at(0)->keys() ==
+         KeyVector({M(1)}));
+  EXPECT(remainingFactorGraph->discreteGraph().at(1)->keys() ==
+         KeyVector({M(2), M(1)}));
+  EXPECT(remainingFactorGraph->discreteGraph().at(2)->keys() ==
+         KeyVector({M(2), M(1)}));
 }
 
 /* ****************************************************************************/
@@ -441,7 +466,7 @@ TEST(DCGaussianElimination, Incremental_inference) {
 
   IncrementalHybrid incrementalHybrid;
 
-  HybridFactorGraph graph1;
+  GaussianHybridFactorGraph graph1;
 
   graph1.push_back(switching.linearizedFactorGraph.dcGraph().at(0));
   graph1.push_back(switching.linearizedFactorGraph.gaussianGraph().at(0));
@@ -467,15 +492,14 @@ TEST(DCGaussianElimination, Incremental_inference) {
   CHECK(remainingFactorGraph);
   EXPECT_LONGS_EQUAL(1, remainingFactorGraph->size());
 
-  auto discreteFactor_m1 =
-      *dynamic_pointer_cast<DecisionTreeFactor>(remainingFactorGraph->discreteGraph().at(
-          0));
-  EXPECT(
-      discreteFactor_m1.keys() == KeyVector({M(1)}));
+  auto discreteFactor_m1 = *dynamic_pointer_cast<DecisionTreeFactor>(
+      remainingFactorGraph->discreteGraph().at(0));
+  EXPECT(discreteFactor_m1.keys() == KeyVector({M(1)}));
 
-  HybridFactorGraph graph2;
+  GaussianHybridFactorGraph graph2;
 
-  graph2.push_back(switching.linearizedFactorGraph.dcGraph().at(1)); // p(x3 | x2, m2)
+  graph2.push_back(
+      switching.linearizedFactorGraph.dcGraph().at(1));  // p(x3 | x2, m2)
   graph2.push_back(switching.linearizedFactorGraph.gaussianGraph().at(3));
 
   // Create ordering.
@@ -497,12 +521,9 @@ TEST(DCGaussianElimination, Incremental_inference) {
   CHECK(remainingFactorGraph2);
   EXPECT_LONGS_EQUAL(1, remainingFactorGraph2->size());
 
-  auto discreteFactor =
-      dynamic_pointer_cast<DecisionTreeFactor>(remainingFactorGraph2->discreteGraph().at(
-          0));
-  EXPECT(
-      discreteFactor->keys()
-          == KeyVector({M(2), M(1)}));
+  auto discreteFactor = dynamic_pointer_cast<DecisionTreeFactor>(
+      remainingFactorGraph2->discreteGraph().at(0));
+  EXPECT(discreteFactor->keys() == KeyVector({M(2), M(1)}));
 
   ordering.clear();
   ordering += X(1);
@@ -511,13 +532,13 @@ TEST(DCGaussianElimination, Incremental_inference) {
 
   // Now we calculate the actual factors using full elimination
   HybridBayesNet::shared_ptr expectedHybridBayesNet;
-  HybridFactorGraph::shared_ptr expectedRemainingGraph;
+  GaussianHybridFactorGraph::shared_ptr expectedRemainingGraph;
   std::tie(expectedHybridBayesNet, expectedRemainingGraph) =
       switching.linearizedFactorGraph.eliminatePartialSequential(ordering);
 
   // The densities on X(1) should be the same
-  EXPECT(assert_equal(*(hybridBayesNet->at(0)),
-                      *(expectedHybridBayesNet->at(0))));
+  EXPECT(
+      assert_equal(*(hybridBayesNet->at(0)), *(expectedHybridBayesNet->at(0))));
 
   // The densities on X(2) should be the same
   EXPECT(assert_equal(*(hybridBayesNet2->at(0)),

@@ -18,6 +18,10 @@ if(MSVC)
     if(MSVC_VERSION LESS 1910) # older than VS2017
       list_append_cache(GTSAM_COMPILE_OPTIONS_PRIVATE -Zm295)
     endif()
+
+    # If on Windows, disable warnings which pollute the build log
+    add_compile_options("/wd4834" "/wd4005")
+
 endif()
 
 
