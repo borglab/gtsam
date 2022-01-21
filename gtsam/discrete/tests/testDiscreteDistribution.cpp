@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /*
- * @file    testDiscretePrior.cpp
+ * @file    testDiscreteDistribution.cpp
  * @brief   unit tests for DiscreteDistribution
  * @author  Frank dellaert
  * @date    December 2021
