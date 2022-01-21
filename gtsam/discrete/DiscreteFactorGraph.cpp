@@ -21,6 +21,7 @@
 #include <gtsam/discrete/DiscreteEliminationTree.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/discrete/DiscreteJunctionTree.h>
+#include <gtsam/discrete/DiscreteLookupDAG.h>
 #include <gtsam/inference/EliminateableFactorGraph-inst.h>
 #include <gtsam/inference/FactorGraph-inst.h>
 
@@ -96,18 +97,6 @@ namespace gtsam {
 //  }
 
   /* ************************************************************************ */
-  /**
-   * @brief Lookup table for max-product
-   * 
-   * This inherits from a DiscreteConditional but is not normalized to 1
-   * 
-   */
-  class Lookup : public DiscreteConditional {
-   public:
-    Lookup(size_t nFrontals, const DiscreteKeys& keys, const ADT& potentials)
-        : DiscreteConditional(nFrontals, keys, potentials) {}
-  };
-
   // Alternate eliminate function for MPE
   std::pair<DiscreteConditional::shared_ptr, DecisionTreeFactor::shared_ptr>  //
   EliminateForMPE(const DiscreteFactorGraph& factors,
@@ -133,7 +122,8 @@ namespace gtsam {
     // Make lookup with product
     gttic(lookup);
     size_t nrFrontals = frontalKeys.size();
-    auto lookup = boost::make_shared<Lookup>(nrFrontals, orderedKeys, product);
+    auto lookup = boost::make_shared<DiscreteLookupTable>(nrFrontals,
+                                                          orderedKeys, product);
     gttoc(lookup);
 
     return std::make_pair(
@@ -141,18 +131,37 @@ namespace gtsam {
   }
 
   /* ************************************************************************ */
-  DiscreteBayesNet::shared_ptr DiscreteFactorGraph::maxProduct(
+  DiscreteLookupDAG DiscreteFactorGraph::maxProduct(
       OptionalOrderingType orderingType) const {
     gttic(DiscreteFactorGraph_maxProduct);
-    return BaseEliminateable::eliminateSequential(orderingType,
-                                                  EliminateForMPE);
+
+    // The solution below is a bitclunky: the elimination machinery does not
+    // allow for differently *typed* versions of elimination, so we eliminate
+    // into a Bayes Net using the special eliminate function above, and then
+    // create the DiscreteLookupDAG after the fact, in linear time.
+    auto bayesNet =
+        BaseEliminateable::eliminateSequential(orderingType, EliminateForMPE);
+
+    // Copy to the DAG
+    DiscreteLookupDAG dag;
+    for (auto&& conditional : *bayesNet) {
+      if (auto lookupTable =
+              boost::dynamic_pointer_cast<DiscreteLookupTable>(conditional)) {
+        dag.push_back(lookupTable);
+      } else {
+        throw std::runtime_error(
+            "DiscreteFactorGraph::maxProduct: Expected look up table.");
+      }
+    }
+    return dag;
   }
 
   /* ************************************************************************ */
   DiscreteValues DiscreteFactorGraph::optimize(
       OptionalOrderingType orderingType) const {
     gttic(DiscreteFactorGraph_optimize);
-    return maxProduct()->optimize();
+    DiscreteLookupDAG dag = maxProduct();
+    return dag.argmax();
   }
 
   /* ************************************************************************ */
