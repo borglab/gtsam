@@ -13,6 +13,7 @@
 
 #pragma once
 
+#include <gtsam/hybrid/GaussianHybridFactorGraph.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
