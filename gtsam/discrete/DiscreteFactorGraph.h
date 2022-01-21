@@ -163,14 +163,6 @@ class GTSAM_EXPORT DiscreteFactorGraph
    */
   DiscreteValues optimize(const Ordering& ordering) const;
 
-  //  /** Permute the variables in the factors */
-  //  GTSAM_EXPORT void permuteWithInverse(const Permutation&
-  //  inversePermutation);
-  //
-  //  /** Apply a reduction, which is a remapping of variable indices. */
-  //  GTSAM_EXPORT void reduceWithInverse(const internal::Reduction&
-  //  inverseReduction);
-
   /// @name Wrapper support
   /// @{
 
