@@ -165,11 +165,11 @@ void solveStaged(size_t addMutex = 2) {
       root->print(""/*scheduler.studentName(s)*/);
 
     // solve root node only
-    DiscreteValues values;
-    size_t bestSlot = root->solve(values);
+    size_t bestSlot = root->argmax();
 
     // get corresponding count
     DiscreteKey dkey = scheduler.studentKey(6 - s);
+    DiscreteValues values;
     values[dkey.first] = bestSlot;
     size_t count = (*root)(values);
 
@@ -319,11 +319,11 @@ void accomodateStudent() {
   //  GTSAM_PRINT(*chordal);
 
   // solve root node only
-  DiscreteValues values;
-  size_t bestSlot = root->solve(values);
+  size_t bestSlot = root->argmax();
 
   // get corresponding count
   DiscreteKey dkey = scheduler.studentKey(0);
+  DiscreteValues values;
   values[dkey.first] = bestSlot;
   size_t count = (*root)(values);
   cout << boost::format("%s = %d (%d), count = %d") % scheduler.studentName(0)
