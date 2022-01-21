@@ -34,8 +34,7 @@ class HybridEliminationTree;
 class Ordering;
 
 /** Main elimination function for HybridFactorGraph */
-using sharedFactor = boost::shared_ptr<Factor>;
-GTSAM_EXPORT std::pair<GaussianMixture::shared_ptr, sharedFactor>
+GTSAM_EXPORT std::pair<GaussianMixture::shared_ptr, SharedFactor>
 EliminateHybrid(const GaussianHybridFactorGraph& factors, const Ordering& keys);
 
 template <>
@@ -49,7 +48,7 @@ struct EliminationTraits<GaussianHybridFactorGraph> {
   typedef HybridEliminationTree JunctionTreeType;
 
   /// The function type that does a single elimination step on a variable.
-  static std::pair<GaussianMixture::shared_ptr, sharedFactor> DefaultEliminate(
+  static std::pair<GaussianMixture::shared_ptr, SharedFactor> DefaultEliminate(
       const GaussianHybridFactorGraph& factors, const Ordering& ordering) {
     return EliminateHybrid(factors, ordering);
   }
@@ -113,11 +112,9 @@ class GTSAM_EXPORT GaussianHybridFactorGraph
    * Dynamically handles the factor type and assigns it to the correct
    * underlying container.
    *
-   * @tparam FACTOR The factor type template
    * @param sharedFactor The factor to add to this factor graph.
    */
-  template <typename FACTOR>
-  void push_back(const boost::shared_ptr<FACTOR>& sharedFactor) {
+  void push_back(const SharedFactor& sharedFactor) {
     if (auto p = boost::dynamic_pointer_cast<GaussianFactor>(sharedFactor)) {
       push_gaussian(p);
     } else {
@@ -153,7 +150,7 @@ class GTSAM_EXPORT GaussianHybridFactorGraph
   /// @{
   using FactorType = Factor;
   using EliminationResult =
-      std::pair<boost::shared_ptr<GaussianMixture>, sharedFactor>;
+      std::pair<boost::shared_ptr<GaussianMixture>, SharedFactor>;
   using Eliminate = std::function<EliminationResult(
       const GaussianHybridFactorGraph&, const Ordering&)>;
 

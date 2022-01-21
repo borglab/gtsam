@@ -7,6 +7,7 @@
  * @file   HybridFactorGraph.h
  * @brief  Custom hybrid factor graph for discrete + continuous factors
  * @author Kevin Doherty, kdoherty@mit.edu
+ * @author Varun Agrawal
  * @date   December 2021
  */
 
@@ -19,6 +20,8 @@
 #include <string>
 
 namespace gtsam {
+
+using SharedFactor = boost::shared_ptr<Factor>;
 
 /**
  * @brief Base class for hybrid factor graphs.
@@ -48,7 +51,7 @@ class HybridFactorGraph : protected FactorGraph<Factor> {
   using IsDC =
       typename std::enable_if<std::is_base_of<DCFactor, FACTOR>::value>::type;
 
-  public:
+ public:
   /// Default constructor
   HybridFactorGraph() = default;
 
@@ -122,11 +125,9 @@ class HybridFactorGraph : protected FactorGraph<Factor> {
    * Dynamically handles the factor type and assigns it to the correct
    * underlying container.
    *
-   * @tparam FACTOR The factor type template
    * @param sharedFactor The factor to add to this factor graph.
    */
-  template <typename FACTOR>
-  void push_back(const boost::shared_ptr<FACTOR>& sharedFactor) {
+  void push_back(const SharedFactor& sharedFactor) {
     if (auto p = boost::dynamic_pointer_cast<DiscreteFactor>(sharedFactor)) {
       push_discrete(p);
     }
