@@ -38,7 +38,7 @@ namespace gtsam {
    * Y = function range (any algebra), e.g., bool, int, double
    */
   template<typename L, typename Y>
-  class GTSAM_EXPORT DecisionTree {
+  class DecisionTree {
 
    protected:
     /// Default method for comparison of two objects of type Y.
