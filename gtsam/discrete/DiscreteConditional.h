@@ -93,14 +93,14 @@ class GTSAM_EXPORT DiscreteConditional
   DiscreteConditional(const DiscreteKey& key, const std::string& spec)
       : DiscreteConditional(Signature(key, {}, spec)) {}
 
-  /** 
+  /**
    * @brief construct P(X|Y) = f(X,Y)/f(Y) from f(X,Y) and f(Y)
-   * Assumes but *does not check* that f(Y)=sum_X f(X,Y). 
+   * Assumes but *does not check* that f(Y)=sum_X f(X,Y).
    */
   DiscreteConditional(const DecisionTreeFactor& joint,
                       const DecisionTreeFactor& marginal);
 
-  /** 
+  /**
    * @brief construct P(X|Y) = f(X,Y)/f(Y) from f(X,Y) and f(Y)
    * Assumes but *does not check* that f(Y)=sum_X f(X,Y).
    * Makes sure the keys are ordered as given. Does not check orderedKeys.
@@ -157,17 +157,17 @@ class GTSAM_EXPORT DiscreteConditional
     return ADT::operator()(values);
   }
 
-  /** 
+  /**
    * @brief restrict to given *parent* values.
-   * 
+   *
    * Note: does not need be complete set. Examples:
-   * 
+   *
    * P(C|D,E) + . -> P(C|D,E)
    * P(C|D,E) + E -> P(C|D)
    * P(C|D,E) + D -> P(C|E)
    * P(C|D,E) + D,E -> P(C)
    * P(C|D,E) + C -> error!
-   * 
+   *
    * @return a shared_ptr to a new DiscreteConditional
    */
   shared_ptr choose(const DiscreteValues& given) const;
@@ -226,6 +226,11 @@ class GTSAM_EXPORT DiscreteConditional
   void GTSAM_DEPRECATED solveInPlace(DiscreteValues* parentsValues) const;
   /// @}
 #endif
+
+ protected:
+  /// Internal version of choose
+  DiscreteConditional::ADT choose(const DiscreteValues& given,
+                                  bool forceComplete) const;
 };
 // DiscreteConditional
 

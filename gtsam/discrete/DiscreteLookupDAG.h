@@ -68,9 +68,6 @@ class DiscreteLookupTable : public DiscreteConditional {
    * @param (in/out) parentsValues Known assignments for the parents.
    */
   void argmaxInPlace(DiscreteValues* parentsValues) const;
-
-  /// Return all assignments for frontal variables.
-  std::vector<DiscreteValues> frontalAssignments() const;
 };
 
 /** A DAG made from lookup tables, as defined above. */
