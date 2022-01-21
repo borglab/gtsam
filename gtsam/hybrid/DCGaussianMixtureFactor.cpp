@@ -17,16 +17,14 @@
  * @author Frank Dellaert
  */
 
-#include <gtsam/hybrid/DCGaussianMixtureFactor.h>
-#include <regex>
-#include <numeric>
 #include <gtsam/base/utilities.h>
+#include <gtsam/hybrid/DCGaussianMixtureFactor.h>
 
 namespace gtsam {
 
 /* *******************************************************************************/
 void DCGaussianMixtureFactor::printKeys(
-    const std::string& s, const KeyFormatter& keyFormatter) const {
+    const std::string &s, const KeyFormatter &keyFormatter) const {
   std::cout << (s.empty() ? "" : s + " ");
   std::cout << "[";
 
@@ -49,38 +47,24 @@ void DCGaussianMixtureFactor::print(const std::string &s,
   printKeys(s, keyFormatter);
 
   auto valueFormatter = [](const GaussianFactor::shared_ptr &v) {
-    auto indenter = [](const GaussianFactor::shared_ptr &p) {
+    auto printCapture = [](const GaussianFactor::shared_ptr &p) {
       RedirectCout rd;
       p->print();
-      auto contents = rd.str();
-      auto re = std::regex("\n");
-      auto lines =
-          std::vector<std::string>{std::sregex_token_iterator(contents.begin(),
-                                                              contents.end(),
-                                                              re,
-                                                              -1),
-                                   std::sregex_token_iterator()};
-      return std::accumulate(lines.begin(), lines.end(), std::string(),
-                                      [](const std::string &a,
-                                         const std::string &b) -> std::string {
-                                        return a + "\n    " + b;
-                                      });
+      std::string s = rd.str();
+      return s;
     };
 
-    auto hessianFactor = boost::dynamic_pointer_cast<HessianFactor>(v);
-    if (hessianFactor) {
-
-      return (boost::format("Hessian factor on %d keys: \n%s\n") % v->size()
-          % indenter(v)).str();
+    std::string format_template = "Gaussian factor on %d keys: \n%s\n";
+    if (auto hessianFactor = boost::dynamic_pointer_cast<HessianFactor>(v)) {
+      format_template = "Hessian factor on %d keys: \n%s\n";
+    }
+    if (auto jacobianFactor = boost::dynamic_pointer_cast<JacobianFactor>(v)) {
+      format_template = "Jacobian factor on %d keys: \n%s\n";
     }
 
-    auto jacobianFactor = boost::dynamic_pointer_cast<JacobianFactor>(v);
-    if (jacobianFactor) {
-      return (boost::format("Jacobian factor on %d keys: \n%s\n") % v->size()
-          % indenter(v)).str();
-    }
-    return (boost::format("Gaussian factor on %d keys") % v->size()).str();
+    return (boost::format(format_template) % v->size() % printCapture(v)).str();
   };
+
   factors_.print("", keyFormatter, valueFormatter);
   std::cout << "}";
   std::cout << "\n";
@@ -89,9 +73,9 @@ void DCGaussianMixtureFactor::print(const std::string &s,
 using Sum = DecisionTree<Key, GaussianFactorGraph>;
 
 /* *******************************************************************************/
-Sum DCGaussianMixtureFactor::addTo(const Sum& sum) const {
+Sum DCGaussianMixtureFactor::addTo(const Sum &sum) const {
   using Y = GaussianFactorGraph;
-  auto add = [](const Y& graph1, const Y& graph2) {
+  auto add = [](const Y &graph1, const Y &graph2) {
     auto result = graph1;
     result.push_back(graph2);
     return result;
@@ -102,7 +86,7 @@ Sum DCGaussianMixtureFactor::addTo(const Sum& sum) const {
 
 /* *******************************************************************************/
 Sum DCGaussianMixtureFactor::wrappedFactors() const {
-  auto wrap = [](const GaussianFactor::shared_ptr& factor) {
+  auto wrap = [](const GaussianFactor::shared_ptr &factor) {
     GaussianFactorGraph result;
     result.push_back(factor);
     return result;
@@ -112,8 +96,8 @@ Sum DCGaussianMixtureFactor::wrappedFactors() const {
 
 /* *******************************************************************************/
 bool DCGaussianMixtureFactor::equals(const DCFactor &f, double tol) const {
-  const DCGaussianMixtureFactor* other;
-  if ((other = dynamic_cast<const DCGaussianMixtureFactor*>(&f))) {
+  const DCGaussianMixtureFactor *other;
+  if ((other = dynamic_cast<const DCGaussianMixtureFactor *>(&f))) {
     return factors_.equals(other->factors_);
   }
   return false;

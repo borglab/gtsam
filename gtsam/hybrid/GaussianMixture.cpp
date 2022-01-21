@@ -16,11 +16,9 @@
  * @date   December 2021
  */
 
+#include <gtsam/base/utilities.h>
 #include <gtsam/hybrid/GaussianMixture.h>
 #include <gtsam/inference/Conditional.h>
-#include <gtsam/base/utilities.h>
-#include <regex>
-#include <numeric>
 
 namespace gtsam {
 
@@ -30,8 +28,7 @@ template class Conditional<DCGaussianMixtureFactor, GaussianMixture>;
 void GaussianMixture::print(const std::string &s,
                             const KeyFormatter &keyFormatter) const {
   std::cout << (s.empty() ? "" : s + " ");
-  std::cout << "[";
-
+  std::cout << "GaussianMixture [";
 
   for (Key key : frontals()) std::cout << keyFormatter(key) << " ";
   std::cout << "| ";
@@ -41,42 +38,27 @@ void GaussianMixture::print(const std::string &s,
   std::cout << "{\n";
 
   auto valueFormatter = [](const GaussianFactor::shared_ptr &v) {
-    auto indenter = [](const GaussianFactor::shared_ptr &p) {
+    auto printCapture = [](const GaussianFactor::shared_ptr &p) {
       RedirectCout rd;
       p->print();
-      auto contents = rd.str();
-      auto re = std::regex("\n");
-      auto lines =
-          std::vector<std::string>{std::sregex_token_iterator(contents.begin(),
-                                                              contents.end(),
-                                                              re,
-                                                              -1),
-                                   std::sregex_token_iterator()};
-      return std::accumulate(lines.begin(), lines.end(), std::string(),
-                             [](const std::string &a,
-                                const std::string &b) -> std::string {
-                               return a + "\n    " + b;
-                             });
+      std::string s = rd.str();
+      return s;
     };
 
-    auto hessianFactor = boost::dynamic_pointer_cast<HessianFactor>(v);
-    if (hessianFactor) {
+    std::string format_template = "Gaussian factor on %d keys: \n%s\n";
 
-      return (boost::format("Hessian factor on %d keys: \n%s\n") % v->size()
-          % indenter(v)).str();
+    if (auto hessianFactor = boost::dynamic_pointer_cast<HessianFactor>(v)) {
+      format_template = "Hessian factor on %d keys: \n%s\n";
     }
 
-    auto jacobianFactor = boost::dynamic_pointer_cast<JacobianFactor>(v);
-    if (jacobianFactor) {
-      return (boost::format("Jacobian factor on %d keys: \n%s\n") % v->size()
-          % indenter(v)).str();
+    if (auto jacobianFactor = boost::dynamic_pointer_cast<JacobianFactor>(v)) {
+      format_template = "Jacobian factor on %d keys: \n%s\n";
     }
-    return (boost::format("Gaussian factor on %d keys") % v->size()).str();
+    return (boost::format(format_template) % v->size() % printCapture(v)).str();
   };
 
   factors_.print("", keyFormatter, valueFormatter);
-  std::cout << "}";
-  std::cout << "\n";
+  std::cout << "}\n";
 }
 
 bool GaussianMixture::equals(const DCFactor &f, double tol) const {

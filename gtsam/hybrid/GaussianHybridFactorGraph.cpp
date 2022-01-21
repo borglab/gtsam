@@ -25,6 +25,9 @@
 #include <gtsam/linear/GaussianEliminationTree.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
 
+// Needed for DecisionTree
+#include <boost/make_shared.hpp>
+
 using namespace std;
 
 namespace gtsam {
