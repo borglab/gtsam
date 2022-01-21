@@ -153,6 +153,11 @@ class GTSAM_UNSTABLE_EXPORT Scheduler : public CSP {
   /** find the corresponding most desirable committee assignment */
   DiscreteValues bestAssignment(const DiscreteValues& bestSchedule) const;
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
+  /// Find the best total assignment - can be expensive
+  DiscreteValues optimalAssignment() const;
+#endif
+
 };  // Scheduler
 
 }  // namespace gtsam

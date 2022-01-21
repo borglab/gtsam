@@ -85,4 +85,17 @@ CSP CSP::partiallyApply(const Domains& domains) const {
   }
   return new_csp;
 }
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
+DiscreteValues CSP::optimalAssignment() const {
+  DiscreteBayesNet::shared_ptr chordal = this->eliminateSequential();
+  return chordal->optimize();
+}
+
+DiscreteValues CSP::optimalAssignment(const Ordering& ordering) const {
+  DiscreteBayesNet::shared_ptr chordal = this->eliminateSequential(ordering);
+  return chordal->optimize();
+}
+#endif
+
 }  // namespace gtsam

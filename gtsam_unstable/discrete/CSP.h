@@ -43,6 +43,13 @@ class GTSAM_UNSTABLE_EXPORT CSP : public DiscreteFactorGraph {
   //      return result;
   //    }
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
+  /// Find the best total assignment - can be expensive.
+  DiscreteValues optimalAssignment() const;
+  /// Find the best total assignment, with given ordering - can be expensive.
+  DiscreteValues optimalAssignment(const Ordering& ordering) const;
+#endif
+
   //    /*
   //     * Perform loopy belief propagation
   //     * True belief propagation would check for each value in domain

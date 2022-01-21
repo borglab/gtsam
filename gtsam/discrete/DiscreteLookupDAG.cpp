@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file DiscreteLookupTable.cpp
+ *  @file DiscreteLookupDAG.cpp
  *  @date Feb 14, 2011
  *  @author Duy-Nguyen Ta
  *  @author Frank Dellaert
@@ -114,12 +114,6 @@ DiscreteLookupDAG DiscreteLookupDAG::FromBayesNet(
     }
   }
   return dag;
-}
-
-/* ************************************************************************** */
-DiscreteValues DiscreteLookupDAG::argmax() const {
-  DiscreteValues result;
-  return argmax(result);
 }
 
 DiscreteValues DiscreteLookupDAG::argmax(DiscreteValues result) const {

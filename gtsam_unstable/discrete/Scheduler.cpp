@@ -269,4 +269,22 @@ DiscreteValues Scheduler::bestAssignment(const DiscreteValues& bestSchedule) con
   return best;
 }
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
+DiscreteValues Scheduler::optimalAssignment() const {
+  DiscreteBayesNet::shared_ptr chordal = eliminate();
+
+  if (ISDEBUG("Scheduler::optimalAssignment")) {
+    DiscreteBayesNet::const_iterator it = chordal->end() - 1;
+    const Student& student = students_.front();
+    cout << endl;
+    (*it)->print(student.name_);
+  }
+
+  gttic(my_optimize);
+  DiscreteValues mpe = chordal->optimize();
+  gttoc(my_optimize);
+  return mpe;
+}
+#endif
+
 }  // namespace gtsam
