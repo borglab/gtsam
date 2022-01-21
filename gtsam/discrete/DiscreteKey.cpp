@@ -33,16 +33,13 @@ namespace gtsam {
 
   KeyVector DiscreteKeys::indices() const {
     KeyVector js;
-    for(const DiscreteKey& key: *this)
-      js.push_back(key.first);
+    for (const DiscreteKey& key : *this) js.push_back(key.first);
     return js;
   }
 
-  map<Key,size_t> DiscreteKeys::cardinalities() const {
-    map<Key,size_t> cs;
-    cs.insert(begin(),end());
-//    for(const DiscreteKey& key: *this)
-//      cs.insert(key);
+  map<Key, size_t> DiscreteKeys::cardinalities() const {
+    map<Key, size_t> cs;
+    cs.insert(begin(), end());
     return cs;
   }
 
