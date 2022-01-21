@@ -1,15 +1,23 @@
 /* ----------------------------------------------------------------------------
- * Copyright 2021 The Ambitious Folks of the MRG
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
  * See LICENSE for the license information
+
  * -------------------------------------------------------------------------- */
 
 /**
  * @file   GaussianHybridFactorGraph.cpp
  * @brief  Custom hybrid factor graph for discrete + continuous factors
- * @author Kevin Doherty, kdoherty@mit.edu
- * @date   December 2021
+ * @author Varun Agrawal
+ * @date   January 2022
  */
 
+#include <gtsam/discrete/DiscreteEliminationTree.h>
+#include <gtsam/discrete/DiscreteJunctionTree.h>
 #include <gtsam/hybrid/DCGaussianMixtureFactor.h>
 #include <gtsam/hybrid/GaussianHybridFactorGraph.h>
 #include <gtsam/hybrid/HybridEliminationTree.h>
