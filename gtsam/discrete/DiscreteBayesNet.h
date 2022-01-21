@@ -19,7 +19,7 @@
 #pragma once
 
 #include <gtsam/discrete/DiscreteConditional.h>
-#include <gtsam/discrete/DiscretePrior.h>
+#include <gtsam/discrete/DiscreteDistribution.h>
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/FactorGraph.h>
 
@@ -79,9 +79,9 @@ namespace gtsam {
     // Add inherited versions of add.
     using Base::add;
 
-    /** Add a DiscretePrior using a table or a string */
+    /** Add a DiscreteDistribution using a table or a string */
     void add(const DiscreteKey& key, const std::string& spec) {
-      emplace_shared<DiscretePrior>(key, spec);
+      emplace_shared<DiscreteDistribution>(key, spec);
     }
 
     /** Add a DiscreteCondtional */
@@ -99,12 +99,46 @@ namespace gtsam {
     }
 
     /**
-    * Solve the DiscreteBayesNet by back-substitution
+     * @brief solve by back-substitution.
+     *
+     * Assumes the Bayes net is reverse topologically sorted, i.e. last
+     * conditional will be optimized first. If the Bayes net resulted from
+     * eliminating a factor graph, this is true for the elimination ordering.
+     *
+     * @return a sampled value for all variables.
     */
     DiscreteValues optimize() const;
 
-    /** Do ancestral sampling */
+    /**
+     * @brief solve by back-substitution, given certain variables.
+     *
+     * Assumes the Bayes net is reverse topologically sorted *and* that the
+     * Bayes net does not contain any conditionals for the given values.
+     *
+     * @return given values extended with optimized value for other variables.
+     */
+    DiscreteValues optimize(DiscreteValues given) const;
+
+    /**
+     * @brief do ancestral sampling
+     *
+     * Assumes the Bayes net is reverse topologically sorted, i.e. last
+     * conditional will be sampled first. If the Bayes net resulted from
+     * eliminating a factor graph, this is true for the elimination ordering.
+     *
+     * @return a sampled value for all variables.
+     */
     DiscreteValues sample() const;
+
+    /**
+     * @brief do ancestral sampling, given certain variables.
+     *
+     * Assumes the Bayes net is reverse topologically sorted *and* that the
+     * Bayes net does not contain any conditionals for the given values.
+     *
+     * @return given values extended with sampled value for all other variables.
+     */
+    DiscreteValues sample(DiscreteValues given) const;
 
     ///@}
     /// @name Wrapper support

@@ -14,7 +14,7 @@ Author: Frank Dellaert
 import unittest
 
 import numpy as np
-from gtsam import DecisionTreeFactor, DiscreteKeys, DiscretePrior
+from gtsam import DecisionTreeFactor, DiscreteKeys, DiscreteDistribution
 from gtsam.utils.test_case import GtsamTestCase
 
 X = 0, 2
@@ -25,32 +25,36 @@ class TestDiscretePrior(GtsamTestCase):
 
     def test_constructor(self):
         """Test various constructors."""
-        actual = DiscretePrior(X, "2/3")
         keys = DiscreteKeys()
         keys.push_back(X)
         f = DecisionTreeFactor(keys, "0.4 0.6")
-        expected = DiscretePrior(f)
+        expected = DiscreteDistribution(f)
+
+        actual = DiscreteDistribution(X, "2/3")
         self.gtsamAssertEquals(actual, expected)
 
+        actual2 = DiscreteDistribution(X, [0.4, 0.6])
+        self.gtsamAssertEquals(actual2, expected)
+
     def test_operator(self):
-        prior = DiscretePrior(X, "2/3")
+        prior = DiscreteDistribution(X, "2/3")
         self.assertAlmostEqual(prior(0), 0.4)
         self.assertAlmostEqual(prior(1), 0.6)
 
     def test_pmf(self):
-        prior = DiscretePrior(X, "2/3")
+        prior = DiscreteDistribution(X, "2/3")
         expected = np.array([0.4, 0.6])
         np.testing.assert_allclose(expected, prior.pmf())
 
     def test_sample(self):
-        prior = DiscretePrior(X, "2/3")
+        prior = DiscreteDistribution(X, "2/3")
         actual = prior.sample()
         self.assertIsInstance(actual, int)
 
     def test_markdown(self):
         """Test the _repr_markdown_ method."""
 
-        prior = DiscretePrior(X, "2/3")
+        prior = DiscreteDistribution(X, "2/3")
         expected = " *P(0):*\n\n" \
             "|0|value|\n" \
             "|:-:|:-:|\n" \

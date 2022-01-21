@@ -14,8 +14,19 @@ Author: Frank Dellaert
 import unittest
 
 from gtsam import (DiscreteBayesNet, DiscreteConditional, DiscreteFactorGraph,
-                   DiscreteKeys, DiscretePrior, DiscreteValues, Ordering)
+                   DiscreteKeys, DiscreteDistribution, DiscreteValues, Ordering)
 from gtsam.utils.test_case import GtsamTestCase
+
+# Some keys:
+Asia = (0, 2)
+Smoking = (4, 2)
+Tuberculosis = (3, 2)
+LungCancer = (6, 2)
+
+Bronchitis = (7, 2)
+Either = (5, 2)
+XRay = (2, 2)
+Dyspnea = (1, 2)
 
 
 class TestDiscreteBayesNet(GtsamTestCase):
@@ -43,16 +54,6 @@ class TestDiscreteBayesNet(GtsamTestCase):
     def test_Asia(self):
         """Test full Asia example."""
 
-        Asia = (0, 2)
-        Smoking = (4, 2)
-        Tuberculosis = (3, 2)
-        LungCancer = (6, 2)
-
-        Bronchitis = (7, 2)
-        Either = (5, 2)
-        XRay = (2, 2)
-        Dyspnea = (1, 2)
-
         asia = DiscreteBayesNet()
         asia.add(Asia, "99/1")
         asia.add(Smoking, "50/50")
@@ -74,7 +75,7 @@ class TestDiscreteBayesNet(GtsamTestCase):
         for j in range(8):
             ordering.push_back(j)
         chordal = fg.eliminateSequential(ordering)
-        expected2 = DiscretePrior(Bronchitis, "11/9")
+        expected2 = DiscreteDistribution(Bronchitis, "11/9")
         self.gtsamAssertEquals(chordal.at(7), expected2)
 
         # solve
@@ -106,6 +107,28 @@ class TestDiscreteBayesNet(GtsamTestCase):
         # now sample from it
         actualSample = chordal2.sample()
         self.assertEqual(len(actualSample), 8)
+
+    def test_fragment(self):
+        """Test sampling and optimizing for Asia fragment."""
+
+        # Create a reverse-topologically sorted fragment:
+        fragment = DiscreteBayesNet()
+        fragment.add(Either, [Tuberculosis, LungCancer], "F T T T")
+        fragment.add(Tuberculosis, [Asia], "99/1 95/5")
+        fragment.add(LungCancer, [Smoking], "99/1 90/10")
+
+        # Create assignment with missing values:
+        given = DiscreteValues()
+        for key in [Asia, Smoking]:
+            given[key[0]] = 0
+
+        # Now optimize fragment:
+        actual = fragment.optimize(given)
+        self.assertEqual(len(actual), 5)
+
+        # Now sample from fragment:
+        actual = fragment.sample(given)
+        self.assertEqual(len(actual), 5)
 
 
 if __name__ == "__main__":
