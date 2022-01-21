@@ -248,17 +248,17 @@ void DiscreteConditional::solveInPlace(DiscreteValues* values) const {
   // Get all Possible Configurations
   const auto allPosbValues = frontalAssignments();
 
-  // Find the MPE
+  // Find the maximum
   for (const auto& frontalVals : allPosbValues) {
     double pValueS = pFS(frontalVals);  // P(F=value|S=parentsValues)
-    // Update MPE solution if better
+    // Update maximum solution if better
     if (pValueS > maxP) {
       maxP = pValueS;
       mpe = frontalVals;
     }
   }
 
-  // set values (inPlace) to mpe
+  // set values (inPlace) to maximum
   for (Key j : frontals()) {
     (*values)[j] = mpe[j];
   }

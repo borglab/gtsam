@@ -182,7 +182,7 @@ class GTSAM_EXPORT DiscreteConditional
   /**
    * solve a conditional
    * @param parentsValues Known values of the parents
-   * @return MPE value of the child (1 frontal variable).
+   * @return maximum value for the (single) frontal variable.
    */
   size_t solve(const DiscreteValues& parentsValues) const;
 
