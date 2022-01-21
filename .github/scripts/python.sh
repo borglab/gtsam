@@ -83,6 +83,6 @@ cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
 make -j2 install
 
 cd $GITHUB_WORKSPACE/build/python
-$PYTHON setup.py install --user --prefix=
+pip${PYTHON_VERSION} install --user --prefix= .
 cd $GITHUB_WORKSPACE/python/gtsam/tests
 $PYTHON -m unittest discover -v

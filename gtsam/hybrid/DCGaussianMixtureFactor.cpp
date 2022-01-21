@@ -18,6 +18,9 @@
  */
 
 #include <gtsam/hybrid/DCGaussianMixtureFactor.h>
+#include <regex>
+#include <numeric>
+#include <gtsam/base/utilities.h>
 
 namespace gtsam {
 
@@ -41,11 +44,41 @@ void DCGaussianMixtureFactor::printKeys(
 }
 
 /* *******************************************************************************/
-void DCGaussianMixtureFactor::print(const std::string& s,
-                                    const KeyFormatter& keyFormatter) const {
+void DCGaussianMixtureFactor::print(const std::string &s,
+                                    const KeyFormatter &keyFormatter) const {
   printKeys(s, keyFormatter);
 
-  auto valueFormatter = [](const GaussianFactor::shared_ptr& v) {
+  auto valueFormatter = [](const GaussianFactor::shared_ptr &v) {
+    auto indenter = [](const GaussianFactor::shared_ptr &p) {
+      RedirectCout rd;
+      p->print();
+      auto contents = rd.str();
+      auto re = std::regex("\n");
+      auto lines =
+          std::vector<std::string>{std::sregex_token_iterator(contents.begin(),
+                                                              contents.end(),
+                                                              re,
+                                                              -1),
+                                   std::sregex_token_iterator()};
+      return std::accumulate(lines.begin(), lines.end(), std::string(),
+                                      [](const std::string &a,
+                                         const std::string &b) -> std::string {
+                                        return a + "\n    " + b;
+                                      });
+    };
+
+    auto hessianFactor = boost::dynamic_pointer_cast<HessianFactor>(v);
+    if (hessianFactor) {
+
+      return (boost::format("Hessian factor on %d keys: \n%s\n") % v->size()
+          % indenter(v)).str();
+    }
+
+    auto jacobianFactor = boost::dynamic_pointer_cast<JacobianFactor>(v);
+    if (jacobianFactor) {
+      return (boost::format("Jacobian factor on %d keys: \n%s\n") % v->size()
+          % indenter(v)).str();
+    }
     return (boost::format("Gaussian factor on %d keys") % v->size()).str();
   };
   factors_.print("", keyFormatter, valueFormatter);
@@ -74,7 +107,19 @@ Sum DCGaussianMixtureFactor::wrappedFactors() const {
     result.push_back(factor);
     return result;
   };
-  return Sum(factors_, wrap);
+  return {factors_, wrap};
+}
+
+/* *******************************************************************************/
+bool DCGaussianMixtureFactor::equals(const DCFactor &f, double tol) const {
+  const DCGaussianMixtureFactor* other;
+  if ((other = dynamic_cast<const DCGaussianMixtureFactor*>(&f))) {
+    return factors_.equals(other->factors_);
+  }
+  return false;
+}
+const DCGaussianMixtureFactor::Factors &DCGaussianMixtureFactor::factors() {
+  return factors_;
 }
 
 /* *******************************************************************************/

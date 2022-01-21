@@ -70,8 +70,8 @@ HybridFactorGraph HybridFactorGraph::linearize(
 
 bool HybridFactorGraph::equals(const HybridFactorGraph& other,
                                double tol) const {
-  return Base::equals(other, tol) &&
-         nonlinearGraph_.equals(other.nonlinearGraph_, tol) &&
+  // Base::equals(other, tol) && TODO(fan): this does not work because Factor::equals should be virtual!!!
+  return nonlinearGraph_.equals(other.nonlinearGraph_, tol) &&
          discreteGraph_.equals(other.discreteGraph_, tol) &&
          dcGraph_.equals(other.dcGraph_, tol) &&
          gaussianGraph_.equals(other.gaussianGraph_, tol);
@@ -167,12 +167,12 @@ pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
   // elimination.
   using Pair = GaussianFactorGraph::EliminationResult;
 
-  KeyVector keys;
-  KeyVector separatorKeys;  // Do with optional?
+  KeyVector keysOfEliminated; // Not the ordering
+  KeyVector keysOfSeparator;  // TODO(frank): Is this just (keys - ordering)?
   auto eliminate = [&](const GaussianFactorGraph& graph) {
     auto result = EliminatePreferCholesky(graph, ordering);
-    if (keys.size() == 0) keys = result.first->keys();
-    if (separatorKeys.size() == 0) separatorKeys = result.second->keys();
+    if (keysOfEliminated.empty()) keysOfEliminated = result.first->keys(); // Initialize the keysOfEliminated to be the keysOfEliminated of the GaussianConditional
+    if (keysOfSeparator.empty()) keysOfSeparator = result.second->keys();
     return result;
   };
   DecisionTree<Key, Pair> eliminationResults(sum, eliminate);
@@ -182,15 +182,15 @@ pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
   const GaussianMixture::Conditionals& conditionals = pair.first;
   const DCGaussianMixtureFactor::Factors& separatorFactors = pair.second;
 
-  const DiscreteKeys discreteKeys = factors.discreteKeys();
-
   // Create the GaussianMixture from the conditionals
+  const size_t nrFrontals = ordering.size();
+  const DiscreteKeys discreteKeys = factors.discreteKeys();
   auto conditional =
-      boost::make_shared<GaussianMixture>(keys, discreteKeys, conditionals);
+      boost::make_shared<GaussianMixture>(nrFrontals, keysOfEliminated, discreteKeys, conditionals);
 
   // If there are no more continuous parents, then we should create here a
   // DiscreteFactor, with the error for each discrete choice.
-  if (separatorKeys.size() == 0) {
+  if (keysOfSeparator.empty()) {
     VectorValues empty_values;
     auto factorError = [&](const GaussianFactor::shared_ptr& factor) {
       return exp(-factor->error(empty_values));
@@ -204,7 +204,7 @@ pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
   } else {
     // Create a resulting DCGaussianMixture on the separator.
     auto factor = boost::make_shared<DCGaussianMixtureFactor>(
-        separatorKeys, discreteKeys, separatorFactors);
+        keysOfSeparator, discreteKeys, separatorFactors);
     return {conditional, factor};
   }
 }
