@@ -239,7 +239,7 @@ TEST(DiscreteFactorGraph, testMPE_Darwiche09book_p244) {
   Ordering ordering;
   ordering += Key(0), Key(1), Key(2), Key(3), Key(4);
   auto chordal = graph.eliminateSequential(ordering);
-  EXPECT_LONGS_EQUAL(2, chordal->size());
+  EXPECT_LONGS_EQUAL(5, chordal->size());
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
   auto notOptimal = chordal->optimize();  // not MPE !
   EXPECT(graph(notOptimal) < graph(mpe));
