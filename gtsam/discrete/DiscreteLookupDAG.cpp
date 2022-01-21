@@ -27,10 +27,6 @@ using std::vector;
 
 namespace gtsam {
 
-// Instantiate base class
-template class GTSAM_EXPORT
-    Conditional<DecisionTreeFactor, DiscreteLookupTable>;
-
 /* ************************************************************************** */
 // TODO(dellaert): copy/paste from DiscreteConditional.cpp :-(
 void DiscreteLookupTable::print(const std::string& s,

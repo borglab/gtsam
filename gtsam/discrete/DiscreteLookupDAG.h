@@ -22,17 +22,19 @@
 #include <gtsam/inference/FactorGraph.h>
 
 #include <boost/shared_ptr.hpp>
-
+#include <string>
+#include <utility>
 #include <vector>
 
 namespace gtsam {
 
 /**
  * @brief DiscreteLookupTable table for max-product
+ *
+ * Inherits from discrete conditional for convenience, but is not normalized.
+ * Is used in pax-product algorithm.
  */
-class DiscreteLookupTable
-    : public DecisionTreeFactor,
-      public Conditional<DecisionTreeFactor, DiscreteLookupTable> {
+class DiscreteLookupTable : public DiscreteConditional {
  public:
   using This = DiscreteLookupTable;
   using shared_ptr = boost::shared_ptr<This>;
@@ -47,7 +49,7 @@ class DiscreteLookupTable
    */
   DiscreteLookupTable(size_t nFrontals, const DiscreteKeys& keys,
                       const ADT& potentials)
-      : DecisionTreeFactor(keys, potentials), BaseConditional(nFrontals) {}
+      : DiscreteConditional(nFrontals, keys, potentials) {}
 
   /// GTSAM-style print
   void print(
@@ -99,6 +101,12 @@ class GTSAM_EXPORT DiscreteLookupDAG : public BayesNet<DiscreteLookupTable> {
 
   /// @name Standard Interface
   /// @{
+
+  /** Add a DiscreteLookupTable */
+  template <typename... Args>
+  void add(Args&&... args) {
+    emplace_shared<DiscreteLookupTable>(std::forward<Args>(args)...);
+  }
 
   /**
    * @brief argmax by back-substitution.
