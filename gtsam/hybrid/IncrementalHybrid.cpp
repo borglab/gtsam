@@ -20,7 +20,7 @@
 #include <gtsam/hybrid/IncrementalHybrid.h>
 #include <unordered_set>
 
-void gtsam::IncrementalHybrid::update(gtsam::HybridFactorGraph graph,
+void gtsam::IncrementalHybrid::update(gtsam::GaussianHybridFactorGraph graph,
                                       const gtsam::Ordering &ordering) {
   // if we are not at the first iteration
   if (hybridBayesNet_) {

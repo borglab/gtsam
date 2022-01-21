@@ -18,7 +18,7 @@
  */
 
 #include <gtsam/hybrid/HybridBayesNet.h>
-#include <gtsam/hybrid/HybridFactorGraph.h>
+#include <gtsam/hybrid/GaussianHybridFactorGraph.h>
 
 namespace gtsam {
 
@@ -27,7 +27,7 @@ class IncrementalHybrid {
  public:
 
   HybridBayesNet::shared_ptr hybridBayesNet_;
-  HybridFactorGraph::shared_ptr remainingFactorGraph_;
+  GaussianHybridFactorGraph::shared_ptr remainingFactorGraph_;
 
   /**
    * Given new factors, perform an incremental update.
@@ -37,7 +37,7 @@ class IncrementalHybrid {
    * @param graph The new factors, should be linear only
    * @param ordering The ordering for elimination
    */
-  void update(HybridFactorGraph graph, const Ordering &ordering);
+  void update(GaussianHybridFactorGraph graph, const Ordering &ordering);
 
 };
 
