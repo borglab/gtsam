@@ -57,7 +57,7 @@ namespace gtsam {
     /** Default constructor for I/O */
     DecisionTreeFactor();
 
-    /** Constructor from Indices, Ordering, and AlgebraicDecisionDiagram */
+    /** Constructor from DiscreteKeys and AlgebraicDecisionTree */
     DecisionTreeFactor(const DiscreteKeys& keys, const ADT& potentials);
 
     /** Constructor from doubles */
@@ -139,14 +139,14 @@ namespace gtsam {
     /**
      * Apply binary operator (*this) "op" f
      * @param f the second argument for op
-     * @param op a binary operator that operates on AlgebraicDecisionDiagram potentials
+     * @param op a binary operator that operates on AlgebraicDecisionTree
      */
     DecisionTreeFactor apply(const DecisionTreeFactor& f, ADT::Binary op) const;
 
     /**
      * Combine frontal variables using binary operator "op"
      * @param nrFrontals nr. of frontal to combine variables in this factor
-     * @param op a binary operator that operates on AlgebraicDecisionDiagram potentials
+     * @param op a binary operator that operates on AlgebraicDecisionTree
      * @return shared pointer to newly created DecisionTreeFactor
      */
     shared_ptr combine(size_t nrFrontals, ADT::Binary op) const;
@@ -154,7 +154,7 @@ namespace gtsam {
     /**
      * Combine frontal variables in an Ordering using binary operator "op"
      * @param nrFrontals nr. of frontal to combine variables in this factor
-     * @param op a binary operator that operates on AlgebraicDecisionDiagram potentials
+     * @param op a binary operator that operates on AlgebraicDecisionTree
      * @return shared pointer to newly created DecisionTreeFactor
      */
     shared_ptr combine(const Ordering& keys, ADT::Binary op) const;

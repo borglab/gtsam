@@ -53,6 +53,9 @@ class GaussianMixture
 
   /**
    * @brief Construct a new GaussianMixture object.
+   * @param nrFrontals - the number of frontal keys
+   * @param continuousKeys - the keys for *continuous* variables
+   * @param discreteKeys - the keys for *discrete* variables
    * @param conditionals A decision tree of GaussianConditional instances.
    * TODO(Frank): (possibly wrongly) assumes nrFrontals is one
    * TODO(Frank): should pass frontal keys, cont. parent keys, discrete parent
@@ -61,16 +64,23 @@ class GaussianMixture
    * GaussianConditionalMixture(const Conditionals& conditionals, 
    *                            const DiscreteKeys& discreteParentKeys)
    */
-  GaussianMixture(const KeyVector& keys, const DiscreteKeys& discreteKeys,
-                  const Conditionals& conditionals)
+  GaussianMixture(size_t nrFrontals,
+                  const KeyVector &continuousKeys,
+                  const DiscreteKeys &discreteKeys,
+                  const Conditionals &conditionals)
       : BaseFactor(
-            keys, discreteKeys,
+      continuousKeys, discreteKeys,
 // TODO     Keys(conditionals), discreteParentKeys,
-            Factors(conditionals,
-                    [](const GaussianConditional::shared_ptr& p) {
-                      return boost::dynamic_pointer_cast<GaussianFactor>(p);
-                    })),
-        BaseConditional(1) {}
+      Factors(conditionals,
+              [nrFrontals](const GaussianConditional::shared_ptr &p) {
+                if (p->nrFrontals() != nrFrontals)
+                  throw std::invalid_argument(
+                      (boost::format(
+                          "GaussianMixture() received a conditional with invalid number %d of frontals (should be %d).")
+                          % nrFrontals % p->nrFrontals()).str());
+                return boost::dynamic_pointer_cast<GaussianFactor>(p);
+              })),
+        BaseConditional(nrFrontals) {}
 
   /// @}
   /// @name Standard API
@@ -94,6 +104,13 @@ class GaussianMixture
       const std::string& s = "GaussianMixture",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
 
+  bool equals(const DCFactor& f, double tol) const override;
+
   /// @}
 };
+
+/// traits
+template <>
+struct traits<GaussianMixture> : public Testable<GaussianMixture> {};
+
 }  // namespace gtsam

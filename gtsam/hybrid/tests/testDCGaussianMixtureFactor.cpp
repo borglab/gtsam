@@ -88,7 +88,7 @@ TEST(DCGaussianMixtureFactor, Sum) {
   EXPECT(actual.at(1) == f22);
 }
 
-TEST(DCGaussianMixtureFactor, GaussianMixture) {
+TEST_UNSAFE(DCGaussianMixtureFactor, GaussianMixture) {
   KeyVector keys;
   keys.push_back(X(0));
   keys.push_back(X(1));
@@ -99,7 +99,7 @@ TEST(DCGaussianMixtureFactor, GaussianMixture) {
 
   auto gaussians = boost::make_shared<GaussianConditional>();
   GaussianMixture::Conditionals conditionals(gaussians);
-  GaussianMixture gm(keys, dKeys, conditionals);
+  GaussianMixture gm(0, keys, dKeys, conditionals);
 
   EXPECT_LONGS_EQUAL(2, gm.discreteKeys().size());
 }
