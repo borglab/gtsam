@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/hybrid/DCGaussianMixtureFactor.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
 #include <gtsam/linear/GaussianFactorGraph.h>

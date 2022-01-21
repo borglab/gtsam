@@ -15,7 +15,6 @@
 
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/hybrid/DCFactorGraph.h>
-#include <gtsam/hybrid/DCGaussianMixtureFactor.h>
 
 #include <string>
 
@@ -187,15 +186,6 @@ class HybridFactorGraph : protected FactorGraph<Factor> {
   /// The total number of factors in the DC factor graph.
   size_t nrDcFactors() const { return dcGraph_.size(); }
 
-  /**
-   * Clears all internal factor graphs by creating new instances of them.
-   */
-  void clear() {
-    discreteGraph_ = DiscreteFactorGraph();
-    dcGraph_ = DCFactorGraph();
-    factorGraph_ = FG();
-  }
-
   /// Get all the discrete keys in the hybrid factor graph.
   virtual DiscreteKeys discreteKeys() const {
     DiscreteKeys result;
@@ -210,31 +200,6 @@ class HybridFactorGraph : protected FactorGraph<Factor> {
       }
     }
     return result;
-  }
-
-  using Sum = DCGaussianMixtureFactor::Sum;
-
-  /**
-   * @brief Sum all gaussians and Gaussian mixtures together.
-   * @return a decision tree of GaussianFactorGraphs
-   *
-   * Takes all factors, which *must* be all DCGaussianMixtureFactors or
-   * GaussianFactors, and "add" them. This might involve decision-trees of
-   * different structure, and creating a different decision tree for Gaussians.
-   */
-  DCGaussianMixtureFactor::Sum sum() const {
-    // "sum" all factors, gathering into GaussianFactorGraph
-    DCGaussianMixtureFactor::Sum sum;
-    for (auto&& dcFactor : dcGraph()) {
-      if (auto mixtureFactor =
-              boost::dynamic_pointer_cast<DCGaussianMixtureFactor>(dcFactor)) {
-        sum += *mixtureFactor;
-      } else {
-        throw std::runtime_error(
-            "HybridFactorGraph::sum can only handle DCGaussianMixtureFactors.");
-      }
-    }
-    return sum;
   }
 };
 

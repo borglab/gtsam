@@ -40,6 +40,7 @@ void GaussianHybridFactorGraph::print(
 
 /// Define adding a GaussianFactor to a sum.
 using Sum = DCGaussianMixtureFactor::Sum;
+
 static Sum& operator+=(Sum& sum, const GaussianFactor::shared_ptr& factor) {
   using Y = GaussianFactorGraph;
   auto add = [&factor](const Y& graph) {
@@ -60,8 +61,8 @@ Sum GaussianHybridFactorGraph::sum() const {
       sum += *mixtureFactor;
     } else {
       throw runtime_error(
-          "GaussianHybridFactorGraph::sum can only "
-          "handleDCGaussianMixtureFactors.");
+          "GaussianHybridFactorGraph::sum can only handle "
+          "DCGaussianMixtureFactors.");
     }
   }
 
@@ -108,11 +109,14 @@ pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
   // elimination.
   using Pair = GaussianFactorGraph::EliminationResult;
 
-  KeyVector keysOfEliminated; // Not the ordering
-  KeyVector keysOfSeparator;  // TODO(frank): Is this just (keys - ordering)?
+  KeyVector keysOfEliminated;  // Not the ordering
+  KeyVector keysOfSeparator;   // TODO(frank): Is this just (keys - ordering)?
   auto eliminate = [&](const GaussianFactorGraph& graph) {
     auto result = EliminatePreferCholesky(graph, ordering);
-    if (keysOfEliminated.empty()) keysOfEliminated = result.first->keys(); // Initialize the keysOfEliminated to be the keysOfEliminated of the GaussianConditional
+    if (keysOfEliminated.empty())
+      keysOfEliminated =
+          result.first->keys();  // Initialize the keysOfEliminated to be the
+                                 // keysOfEliminated of the GaussianConditional
     if (keysOfSeparator.empty()) keysOfSeparator = result.second->keys();
     return result;
   };
@@ -126,8 +130,8 @@ pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
   // Create the GaussianMixture from the conditionals
   const size_t nrFrontals = ordering.size();
   const DiscreteKeys discreteKeys = factors.discreteKeys();
-  auto conditional =
-      boost::make_shared<GaussianMixture>(nrFrontals, keysOfEliminated, discreteKeys, conditionals);
+  auto conditional = boost::make_shared<GaussianMixture>(
+      nrFrontals, keysOfEliminated, discreteKeys, conditionals);
 
   // If there are no more continuous parents, then we should create here a
   // DiscreteFactor, with the error for each discrete choice.

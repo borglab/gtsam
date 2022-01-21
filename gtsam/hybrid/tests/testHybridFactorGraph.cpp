@@ -88,7 +88,7 @@ TEST(HybridFactorGraph, PushBack) {
   EXPECT_LONGS_EQUAL(fg.discreteGraph().size(), 0);
   EXPECT_LONGS_EQUAL(fg.nonlinearGraph().size(), 1);
 
-  fg.clear();
+  fg = NonlinearHybridFactorGraph();
 
   auto discreteFactor = boost::make_shared<DecisionTreeFactor>();
   fg.push_back(discreteFactor);
@@ -97,7 +97,7 @@ TEST(HybridFactorGraph, PushBack) {
   EXPECT_LONGS_EQUAL(fg.discreteGraph().size(), 1);
   EXPECT_LONGS_EQUAL(fg.nonlinearGraph().size(), 0);
 
-  fg.clear();
+  fg = NonlinearHybridFactorGraph();
 
   auto dcFactor = boost::make_shared<DCMixtureFactor<MotionModel>>();
   fg.push_back(dcFactor);
@@ -116,7 +116,7 @@ TEST(HybridFactorGraph, PushBack) {
   EXPECT_LONGS_EQUAL(ghfg.discreteGraph().size(), 0);
   EXPECT_LONGS_EQUAL(ghfg.gaussianGraph().size(), 1);
 
-  ghfg.clear();
+  ghfg = GaussianHybridFactorGraph();
 
   ghfg.push_back(discreteFactor);
 
@@ -124,7 +124,7 @@ TEST(HybridFactorGraph, PushBack) {
   EXPECT_LONGS_EQUAL(ghfg.discreteGraph().size(), 1);
   EXPECT_LONGS_EQUAL(ghfg.gaussianGraph().size(), 0);
 
-  ghfg.clear();
+  ghfg = GaussianHybridFactorGraph();
 
   ghfg.push_back(dcFactor);
 
