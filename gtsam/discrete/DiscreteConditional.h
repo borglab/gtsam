@@ -192,6 +192,12 @@ class GTSAM_EXPORT DiscreteConditional
   /// Zero parent version.
   size_t sample() const;
 
+  /**
+   * @brief Return assignment that maximizes distribution.
+   * @return Optimal assignment (1 frontal variable).
+   */
+  size_t argmax() const;
+
   /// @}
   /// @name Advanced Interface
   /// @{
