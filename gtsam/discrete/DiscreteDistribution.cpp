@@ -49,4 +49,21 @@ std::vector<double> DiscreteDistribution::pmf() const {
   return array;
 }
 
+/* ************************************************************************** */
+size_t DiscreteDistribution::argmax() const {
+  size_t maxValue = 0;
+  double maxP = 0;
+  assert(nrFrontals() == 1);
+  Key j = firstFrontalKey();
+  for (size_t value = 0; value < cardinality(j); value++) {
+    double pValueS = (*this)(value);
+    // Update MPE solution if better
+    if (pValueS > maxP) {
+      maxP = pValueS;
+      maxValue = value;
+    }
+  }
+  return maxValue;
+}
+
 }  // namespace gtsam

@@ -91,10 +91,10 @@ class GTSAM_EXPORT DiscreteDistribution : public DiscreteConditional {
   std::vector<double> pmf() const;
 
   /**
-   * solve a conditional
-   * @return MPE value of the child (1 frontal variable).
+   * @brief Return assignment that maximizes distribution.
+   * @return Optimal assignment (1 frontal variable).
    */
-  size_t solve() const { return Base::solve({}); }
+  size_t argmax() const;
 
   /**
    * sample
@@ -103,6 +103,12 @@ class GTSAM_EXPORT DiscreteDistribution : public DiscreteConditional {
   size_t sample() const { return Base::sample(); }
 
   /// @}
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
+  /// @name Deprecated functionality
+  /// @{
+  size_t GTSAM_DEPRECATED solve() const { return Base::solve({}); }
+  /// @}
+#endif
 };
 // DiscreteDistribution
 
