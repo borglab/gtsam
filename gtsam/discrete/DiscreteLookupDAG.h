@@ -28,6 +28,8 @@
 
 namespace gtsam {
 
+class DiscreteBayesNet;
+
 /**
  * @brief DiscreteLookupTable table for max-product
  *
@@ -82,6 +84,9 @@ class GTSAM_EXPORT DiscreteLookupDAG : public BayesNet<DiscreteLookupTable> {
 
   /// Construct empty DAG.
   DiscreteLookupDAG() {}
+
+  // Create from BayesNet with LookupTables
+  static DiscreteLookupDAG FromBayesNet(const DiscreteBayesNet& bayesNet);
 
   /// Destructor
   virtual ~DiscreteLookupDAG() {}

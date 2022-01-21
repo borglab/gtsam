@@ -131,36 +131,39 @@ namespace gtsam {
   }
 
   /* ************************************************************************ */
+  // The max-product solution below is a bit clunky: the elimination machinery
+  // does not allow for differently *typed* versions of elimination, so we
+  // eliminate into a Bayes Net using the special eliminate function above, and
+  // then create the DiscreteLookupDAG after the fact, in linear time.
+
   DiscreteLookupDAG DiscreteFactorGraph::maxProduct(
       OptionalOrderingType orderingType) const {
     gttic(DiscreteFactorGraph_maxProduct);
-
-    // The solution below is a bitclunky: the elimination machinery does not
-    // allow for differently *typed* versions of elimination, so we eliminate
-    // into a Bayes Net using the special eliminate function above, and then
-    // create the DiscreteLookupDAG after the fact, in linear time.
     auto bayesNet =
         BaseEliminateable::eliminateSequential(orderingType, EliminateForMPE);
+    return DiscreteLookupDAG::FromBayesNet(*bayesNet);
+  }
 
-    // Copy to the DAG
-    DiscreteLookupDAG dag;
-    for (auto&& conditional : *bayesNet) {
-      if (auto lookupTable =
-              boost::dynamic_pointer_cast<DiscreteLookupTable>(conditional)) {
-        dag.push_back(lookupTable);
-      } else {
-        throw std::runtime_error(
-            "DiscreteFactorGraph::maxProduct: Expected look up table.");
-      }
-    }
-    return dag;
+  DiscreteLookupDAG DiscreteFactorGraph::maxProduct(
+      const Ordering& ordering) const {
+    gttic(DiscreteFactorGraph_maxProduct);
+    auto bayesNet =
+        BaseEliminateable::eliminateSequential(ordering, EliminateForMPE);
+    return DiscreteLookupDAG::FromBayesNet(*bayesNet);
   }
 
   /* ************************************************************************ */
   DiscreteValues DiscreteFactorGraph::optimize(
       OptionalOrderingType orderingType) const {
     gttic(DiscreteFactorGraph_optimize);
-    DiscreteLookupDAG dag = maxProduct();
+    DiscreteLookupDAG dag = maxProduct(orderingType);
+    return dag.argmax();
+  }
+
+  DiscreteValues DiscreteFactorGraph::optimize(
+      const Ordering& ordering) const {
+    gttic(DiscreteFactorGraph_optimize);
+    DiscreteLookupDAG dag = maxProduct(ordering);
     return dag.argmax();
   }
 
