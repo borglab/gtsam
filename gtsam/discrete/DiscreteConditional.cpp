@@ -322,8 +322,7 @@ size_t DiscreteConditional::sample(const DiscreteValues& parentsValues) const {
   return distribution(rng);
 }
 
-/* ********************************************************************************
- */
+/* ************************************************************************** */
 size_t DiscreteConditional::sample(size_t parent_value) const {
   if (nrParents() != 1)
     throw std::invalid_argument(
@@ -334,8 +333,7 @@ size_t DiscreteConditional::sample(size_t parent_value) const {
   return sample(values);
 }
 
-/* ********************************************************************************
- */
+/* ************************************************************************** */
 size_t DiscreteConditional::sample() const {
   if (nrParents() != 0)
     throw std::invalid_argument(

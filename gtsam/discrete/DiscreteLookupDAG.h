@@ -11,7 +11,7 @@
 
 /**
  * @file DiscreteLookupDAG.h
- * @date JAnuary, 2022
+ * @date January, 2022
  * @author Frank dellaert
  */
 
@@ -34,7 +34,7 @@ class DiscreteBayesNet;
  * @brief DiscreteLookupTable table for max-product
  *
  * Inherits from discrete conditional for convenience, but is not normalized.
- * Is used in pax-product algorithm.
+ * Is used in the max-product algorithm.
  */
 class DiscreteLookupTable : public DiscreteConditional {
  public:
@@ -85,7 +85,7 @@ class GTSAM_EXPORT DiscreteLookupDAG : public BayesNet<DiscreteLookupTable> {
   /// Construct empty DAG.
   DiscreteLookupDAG() {}
 
-  // Create from BayesNet with LookupTables
+  /// Create from BayesNet with LookupTables
   static DiscreteLookupDAG FromBayesNet(const DiscreteBayesNet& bayesNet);
 
   /// Destructor
@@ -111,25 +111,17 @@ class GTSAM_EXPORT DiscreteLookupDAG : public BayesNet<DiscreteLookupTable> {
   }
 
   /**
-   * @brief argmax by back-substitution.
+   * @brief argmax by back-substitution, optionally given certain variables.
    *
    * Assumes the DAG is reverse topologically sorted, i.e. last
-   * conditional will be optimized first. If the DAG resulted from
-   * eliminating a factor graph, this is true for the elimination ordering.
-   *
-   * @return optimal assignment for all variables.
-   */
-  DiscreteValues argmax() const;
-
-  /**
-   * @brief argmax by back-substitution, given certain variables.
-   *
-   * Assumes the DAG is reverse topologically sorted *and* that the
-   * DAG does not contain any conditionals for the given variables.
+   * conditional will be optimized first *and* that the
+   * DAG does not contain any conditionals for the given variables. If the DAG
+   * resulted from eliminating a factor graph, this is true for the elimination
+   * ordering.
    *
    * @return given assignment extended w. optimal assignment for all variables.
    */
-  DiscreteValues argmax(DiscreteValues given) const;
+  DiscreteValues argmax(DiscreteValues given = DiscreteValues()) const;
   /// @}
 
  private:
