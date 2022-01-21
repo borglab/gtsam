@@ -18,10 +18,11 @@
 
 #pragma once
 
-#include <gtsam/inference/FactorGraph.h>
-#include <gtsam/inference/EliminateableFactorGraph.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
+#include <gtsam/discrete/DiscreteLookupDAG.h>
+#include <gtsam/inference/EliminateableFactorGraph.h>
+#include <gtsam/inference/FactorGraph.h>
+#include <gtsam/inference/Ordering.h>
 #include <gtsam/base/FastSet.h>
 
 #include <boost/make_shared.hpp>
@@ -132,9 +133,9 @@ class GTSAM_EXPORT DiscreteFactorGraph
    * @brief Implement the max-product algorithm
    *
    * @param orderingType : one of COLAMD, METIS, NATURAL, CUSTOM
-   * @return DiscreteBayesNet::shared_ptr DAG with lookup tables
+   * @return DiscreteLookupDAG::shared_ptr DAG with lookup tables
    */
-  boost::shared_ptr<DiscreteBayesNet> maxProduct(
+  DiscreteLookupDAG maxProduct(
       OptionalOrderingType orderingType = boost::none) const;
 
   /**
