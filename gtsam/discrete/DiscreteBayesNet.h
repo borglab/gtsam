@@ -31,12 +31,12 @@
 
 namespace gtsam {
 
-/** A Bayes net made from linear-Discrete densities */
+/** A Bayes net made from discrete conditional distributions. */
   class GTSAM_EXPORT DiscreteBayesNet: public BayesNet<DiscreteConditional>
   {
   public:
 
-    typedef FactorGraph<DiscreteConditional> Base;
+    typedef BayesNet<DiscreteConditional> Base;
     typedef DiscreteBayesNet This;
     typedef DiscreteConditional ConditionalType;
     typedef boost::shared_ptr<This> shared_ptr;
@@ -45,7 +45,7 @@ namespace gtsam {
     /// @name Standard Constructors
     /// @{
 
-    /** Construct empty factor graph */
+    /// Construct empty Bayes net.
     DiscreteBayesNet() {}
 
     /** Construct from iterator over conditionals */
@@ -99,27 +99,6 @@ namespace gtsam {
     }
 
     /**
-     * @brief solve by back-substitution.
-     *
-     * Assumes the Bayes net is reverse topologically sorted, i.e. last
-     * conditional will be optimized first. If the Bayes net resulted from
-     * eliminating a factor graph, this is true for the elimination ordering.
-     *
-     * @return a sampled value for all variables.
-    */
-    DiscreteValues optimize() const;
-
-    /**
-     * @brief solve by back-substitution, given certain variables.
-     *
-     * Assumes the Bayes net is reverse topologically sorted *and* that the
-     * Bayes net does not contain any conditionals for the given values.
-     *
-     * @return given values extended with optimized value for other variables.
-     */
-    DiscreteValues optimize(DiscreteValues given) const;
-
-    /**
      * @brief do ancestral sampling
      *
      * Assumes the Bayes net is reverse topologically sorted, i.e. last
@@ -152,7 +131,16 @@ namespace gtsam {
     std::string html(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
                      const DiscreteFactor::Names& names = {}) const;
 
+    ///@}
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
+    /// @name Deprecated functionality
+    /// @{
+
+    DiscreteValues GTSAM_DEPRECATED optimize() const;
+    DiscreteValues GTSAM_DEPRECATED optimize(DiscreteValues given) const;
     /// @}
+#endif
 
  private:
     /** Serialization function */
