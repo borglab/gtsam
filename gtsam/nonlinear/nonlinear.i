@@ -681,24 +681,16 @@ class ISAM2Params {
   void setOptimizationParams(const gtsam::ISAM2DoglegParams& dogleg_params);
   void setRelinearizeThreshold(double threshold);
   void setRelinearizeThreshold(const gtsam::ISAM2ThresholdMap& threshold_map);
-  int getRelinearizeSkip() const;
-  void setRelinearizeSkip(int relinearizeSkip);
-  bool isEnableRelinearization() const;
-  void setEnableRelinearization(bool enableRelinearization);
-  bool isEvaluateNonlinearError() const;
-  void setEvaluateNonlinearError(bool evaluateNonlinearError);
   string getFactorization() const;
   void setFactorization(string factorization);
-  bool isCacheLinearizedFactors() const;
-  void setCacheLinearizedFactors(bool cacheLinearizedFactors);
-  bool isEnableDetailedResults() const;
-  void setEnableDetailedResults(bool enableDetailedResults);
-  bool isEnablePartialRelinearizationCheck() const;
-  void setEnablePartialRelinearizationCheck(
-      bool enablePartialRelinearizationCheck);
-  bool isFindUnusedFactorSlots() const;
-  void setFindUnusedFactorSlots(bool findUnusedFactorSlots);
 
+  int relinearizeSkip;
+  bool enableRelinearization;
+  bool evaluateNonlinearError;
+  bool cacheLinearizedFactors;
+  bool enableDetailedResults;
+  bool enablePartialRelinearizationCheck;
+  bool findUnusedFactorSlots;
 };
 
 class ISAM2Clique {

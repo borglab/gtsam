@@ -300,22 +300,11 @@ struct GTSAM_EXPORT ISAM2Params {
   RelinearizationThreshold getRelinearizeThreshold() const {
     return relinearizeThreshold;
   }
-  int getRelinearizeSkip() const { return relinearizeSkip; }
-  bool isEnableRelinearization() const { return enableRelinearization; }
-  bool isEvaluateNonlinearError() const { return evaluateNonlinearError; }
   std::string getFactorization() const {
     return factorizationTranslator(factorization);
   }
   bool isCacheLinearizedFactors() const { return cacheLinearizedFactors; }
   KeyFormatter getKeyFormatter() const { return keyFormatter; }
-  bool isEnableDetailedResults() const { return enableDetailedResults; }
-  bool isEnablePartialRelinearizationCheck() const {
-    return enablePartialRelinearizationCheck;
-  }
-
-  bool isFindUnusedFactorSlots() const {
-    return findUnusedFactorSlots;
-  }
 
   void setOptimizationParams(OptimizationParams optimizationParams) {
     this->optimizationParams = optimizationParams;
@@ -323,33 +312,11 @@ struct GTSAM_EXPORT ISAM2Params {
   void setRelinearizeThreshold(RelinearizationThreshold relinearizeThreshold) {
     this->relinearizeThreshold = relinearizeThreshold;
   }
-  void setRelinearizeSkip(int relinearizeSkip) {
-    this->relinearizeSkip = relinearizeSkip;
-  }
-  void setEnableRelinearization(bool enableRelinearization) {
-    this->enableRelinearization = enableRelinearization;
-  }
-  void setEvaluateNonlinearError(bool evaluateNonlinearError) {
-    this->evaluateNonlinearError = evaluateNonlinearError;
-  }
   void setFactorization(const std::string& factorization) {
     this->factorization = factorizationTranslator(factorization);
   }
-  void setCacheLinearizedFactors(bool cacheLinearizedFactors) {
-    this->cacheLinearizedFactors = cacheLinearizedFactors;
-  }
   void setKeyFormatter(KeyFormatter keyFormatter) {
     this->keyFormatter = keyFormatter;
-  }
-  void setEnableDetailedResults(bool enableDetailedResults) {
-    this->enableDetailedResults = enableDetailedResults;
-  }
-  void setEnablePartialRelinearizationCheck(
-      bool enablePartialRelinearizationCheck) {
-    this->enablePartialRelinearizationCheck = enablePartialRelinearizationCheck;
-  }
-  void setFindUnusedFactorSlots(bool findUnusedFactorSlots) {
-    this->findUnusedFactorSlots = findUnusedFactorSlots;
   }
 
   GaussianFactorGraph::Eliminate getEliminationFunction() const {
