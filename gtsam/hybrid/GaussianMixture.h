@@ -57,8 +57,6 @@ class GaussianMixture
    * @param continuousKeys - the keys for *continuous* variables
    * @param discreteKeys - the keys for *discrete* variables
    * @param conditionals A decision tree of GaussianConditional instances.
-   * TODO(Frank): (possibly wrongly) assumes nrFrontals is one
-   * TODO(Frank): should pass frontal keys, cont. parent keys, discrete parent
    * keys, cannot be a conditional on a discrete key.
    * TODO: desired API =
    * GaussianConditionalMixture(const Conditionals& conditionals, 
@@ -96,6 +94,16 @@ class GaussianMixture
       throw std::logic_error(
           "A GaussianMixture unexpectedly contained a non-conditional");
   }
+
+  /// Returns the total number of continuous components
+  size_t nrComponents() {
+    size_t total = 0;
+    factors_.visit([&total](const GaussianFactor::shared_ptr &node) {
+      total += 1;
+    });
+    return total;
+  }
+
   /// @}
   /// @name Testable
   /// @{

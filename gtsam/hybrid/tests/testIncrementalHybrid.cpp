@@ -135,7 +135,7 @@ TEST(DCGaussianElimination, Incremental_inference) {
     GaussianFactorGraph gf;
     gf.add(switching.linearizedFactorGraph.gaussianGraph().at(3));
 
-    Assignment<Key> m00;
+    DiscreteValues m00;
     m00[M(1)] = 0, m00[M(2)] = 0;
     auto dcMixture =
         dynamic_pointer_cast<DCGaussianMixtureFactor>(graph2.dcGraph().at(0));
@@ -177,39 +177,76 @@ TEST(DCGaussianElimination, Incremental_inference) {
 /* ****************************************************************************/
 // Test if we can approximately do the inference
 TEST(DCGaussianElimination, Approx_inference) {
-  Switching switching(3);
+  Switching switching(5);
 
   IncrementalHybrid incrementalHybrid;
 
   GaussianHybridFactorGraph graph1;
 
-  graph1.push_back(switching.linearizedFactorGraph.dcGraph().at(0));
-  graph1.push_back(switching.linearizedFactorGraph.gaussianGraph().at(0));
-  graph1.push_back(switching.linearizedFactorGraph.gaussianGraph().at(1));
-  graph1.push_back(switching.linearizedFactorGraph.gaussianGraph().at(2));
+  // Add the 3 DC factors, x1-x2, x2-x3, x3-x4
+  for (size_t i = 0; i < 3; i++) {
+    graph1.push_back(switching.linearizedFactorGraph.dcGraph().at(i));
+  }
+
+  // Add the Gaussian factors, 1 prior on X(1), 4 measurements
+  for (size_t i = 0; i <= 4; i++) {
+    graph1.push_back(switching.linearizedFactorGraph.gaussianGraph().at(i));
+  }
 
   // Create ordering.
   Ordering ordering;
-  ordering += X(1);
-  ordering += X(2);
+  for (size_t j = 1; j <= 4; j++) {
+    ordering += X(j);
+  }
 
-  incrementalHybrid.update(graph1, ordering);
+  size_t maxComponents = 5;
+  incrementalHybrid.update(graph1, ordering, maxComponents);
 
+  /* A hybrid Bayes net
+   * factor 0:  [x1 | x2 m1 ], 2 components
+   * factor 1:  [x2 | x3 m2 m1 ], 4 components
+   * factor 2:  [x3 | x4 m3 m2 m1 ], 8 components
+   * factor 3:  [x4 | m3 m2 m1 ], 8 components
+  */
   auto hybridBayesNet = incrementalHybrid.hybridBayesNet_;
-  CHECK(hybridBayesNet);
-  EXPECT_LONGS_EQUAL(2, hybridBayesNet->size());
-  EXPECT(hybridBayesNet->at(0)->frontals() == KeyVector{X(1)});
-  EXPECT(hybridBayesNet->at(0)->parents() == KeyVector({X(2), M(1)}));
-  EXPECT(hybridBayesNet->at(1)->frontals() == KeyVector{X(2)});
-  EXPECT(hybridBayesNet->at(1)->parents() == KeyVector({M(1)}));
 
+  CHECK(hybridBayesNet);
+  EXPECT_LONGS_EQUAL(4, hybridBayesNet->size());
+  EXPECT_LONGS_EQUAL(2, hybridBayesNet->at(0)->nrComponents());
+  EXPECT_LONGS_EQUAL(4, hybridBayesNet->at(1)->nrComponents());
+  EXPECT_LONGS_EQUAL(8, hybridBayesNet->at(2)->nrComponents());
+  EXPECT_LONGS_EQUAL(5, hybridBayesNet->at(3)->nrComponents());
+
+  GTSAM_PRINT(*hybridBayesNet);
+
+  /*
+   unpruned factor is:
+       Choice(m3)
+       0 Choice(m2)
+       0 0 Choice(m1)
+       0 0 0 Leaf 0.2248 -
+       0 0 1 Leaf 0.3715 -
+       0 1 Choice(m1)
+       0 1 0 Leaf 0.3742 *
+       0 1 1 Leaf 0.6125 *
+       1 Choice(m2)
+       1 0 Choice(m1)
+       1 0 0 Leaf 0.3706 -
+       1 0 1 Leaf 0.6124 *
+       1 1 Choice(m1)
+       1 1 0 Leaf 0.611 *
+       1 1 1 Leaf    1 *
+   */
   auto remainingFactorGraph = incrementalHybrid.remainingFactorGraph_;
   CHECK(remainingFactorGraph);
   EXPECT_LONGS_EQUAL(1, remainingFactorGraph->size());
 
+  GTSAM_PRINT(*remainingFactorGraph);
+
   auto discreteFactor_m1 = *dynamic_pointer_cast<DecisionTreeFactor>(
       remainingFactorGraph->discreteGraph().at(0));
   EXPECT(discreteFactor_m1.keys() == KeyVector({M(1)}));
+  EXPECT_LONGS_EQUAL(5, discreteFactor_m1.nrLeaves());
 }
 
 /* ************************************************************************* */
