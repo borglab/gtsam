@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/base/Testable.h>
 #include <gtsam/discrete/DecisionTree-inl.h>
 
 #include <algorithm>
@@ -70,7 +71,8 @@ namespace gtsam {
 
     AlgebraicDecisionTree() : Base(1.0) {}
 
-    explicit AlgebraicDecisionTree(const Base& add) : Base(add) {}
+    // Explicitly non-explicit constructor
+    AlgebraicDecisionTree(const Base& add) : Base(add) {}
 
     /** Create a new leaf function splitting on a variable */
     AlgebraicDecisionTree(const L& label, double y1, double y2)
