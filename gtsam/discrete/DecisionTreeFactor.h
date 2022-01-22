@@ -186,6 +186,15 @@ namespace gtsam {
     /// Return all the discrete keys associated with this factor.
     DiscreteKeys discreteKeys() const;
 
+    /// Returns the total number of leaves
+    size_t nrLeaves() {
+      size_t total = 0;
+      visit([&total](const double &node) {
+        total += 1;
+      });
+      return total;
+    }
+
     /// @}
     /// @name Wrapper support
     /// @{

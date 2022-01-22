@@ -151,7 +151,9 @@ class GTSAM_EXPORT DiscreteFactorGraph
    * @brief Render as markdown tables
    *
    * @param keyFormatter GTSAM-style Key formatter.
-   * @param names optional, a map from Key to category names.
+   * @param names optional, a map from Key to cat
+   *
+   * egory names.
    * @return std::string a (potentially long) markdown string.
    */
   std::string markdown(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
