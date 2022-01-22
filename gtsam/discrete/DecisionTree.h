@@ -234,6 +234,8 @@ namespace gtsam {
      * 
      * @param f side-effect taking a value.
      * 
+     * @note Due to pruning, leaves might not exhaust choices.
+     * 
      * Example:
      *   int sum = 0;
      *   auto visitor = [&](int y) { sum += y; };
@@ -246,6 +248,8 @@ namespace gtsam {
      * @brief Visit all leaves in depth-first fashion.
      * 
      * @param f side-effect taking an assignment and a value.
+     * 
+     * @note Due to pruning, leaves might not exhaust choices.
      * 
      * Example:
      *   int sum = 0;
@@ -264,6 +268,7 @@ namespace gtsam {
      * @return X final value for accumulator.
      * 
      * @note X is always passed by value.
+     * @note Due to pruning, leaves might not exhaust choices.
      * 
      * Example:
      *   auto add = [](const double& y, double x) { return y + x; };
