@@ -21,6 +21,7 @@
 #include <gtsam/discrete/DiscreteEliminationTree.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/discrete/DiscreteJunctionTree.h>
+#include <gtsam/discrete/DiscreteLookupDAG.h>
 #include <gtsam/inference/EliminateableFactorGraph-inst.h>
 #include <gtsam/inference/FactorGraph-inst.h>
 
@@ -95,22 +96,85 @@ namespace gtsam {
 //      }
 //  }
 
-  /* ************************************************************************* */
-  DiscreteValues DiscreteFactorGraph::optimize() const
-  {
-    gttic(DiscreteFactorGraph_optimize);
-    return BaseEliminateable::eliminateSequential()->optimize();
-  }
-
-  /* ************************************************************************* */
+  /* ************************************************************************ */
+  // Alternate eliminate function for MPE
   std::pair<DiscreteConditional::shared_ptr, DecisionTreeFactor::shared_ptr>  //
-  EliminateDiscrete(const DiscreteFactorGraph& factors, const Ordering& frontalKeys) {
-
+  EliminateForMPE(const DiscreteFactorGraph& factors,
+                  const Ordering& frontalKeys) {
     // PRODUCT: multiply all factors
     gttic(product);
     DecisionTreeFactor product;
-    for(const DiscreteFactor::shared_ptr& factor: factors)
-      product = (*factor) * product;
+    for (auto&& factor : factors) product = (*factor) * product;
+    gttoc(product);
+
+    // max out frontals, this is the factor on the separator
+    gttic(max);
+    DecisionTreeFactor::shared_ptr max = product.max(frontalKeys);
+    gttoc(max);
+
+    // Ordering keys for the conditional so that frontalKeys are really in front
+    DiscreteKeys orderedKeys;
+    for (auto&& key : frontalKeys)
+      orderedKeys.emplace_back(key, product.cardinality(key));
+    for (auto&& key : max->keys())
+      orderedKeys.emplace_back(key, product.cardinality(key));
+
+    // Make lookup with product
+    gttic(lookup);
+    size_t nrFrontals = frontalKeys.size();
+    auto lookup = boost::make_shared<DiscreteLookupTable>(nrFrontals,
+                                                          orderedKeys, product);
+    gttoc(lookup);
+
+    return std::make_pair(
+        boost::dynamic_pointer_cast<DiscreteConditional>(lookup), max);
+  }
+
+  /* ************************************************************************ */
+  // The max-product solution below is a bit clunky: the elimination machinery
+  // does not allow for differently *typed* versions of elimination, so we
+  // eliminate into a Bayes Net using the special eliminate function above, and
+  // then create the DiscreteLookupDAG after the fact, in linear time.
+
+  DiscreteLookupDAG DiscreteFactorGraph::maxProduct(
+      OptionalOrderingType orderingType) const {
+    gttic(DiscreteFactorGraph_maxProduct);
+    auto bayesNet =
+        BaseEliminateable::eliminateSequential(orderingType, EliminateForMPE);
+    return DiscreteLookupDAG::FromBayesNet(*bayesNet);
+  }
+
+  DiscreteLookupDAG DiscreteFactorGraph::maxProduct(
+      const Ordering& ordering) const {
+    gttic(DiscreteFactorGraph_maxProduct);
+    auto bayesNet =
+        BaseEliminateable::eliminateSequential(ordering, EliminateForMPE);
+    return DiscreteLookupDAG::FromBayesNet(*bayesNet);
+  }
+
+  /* ************************************************************************ */
+  DiscreteValues DiscreteFactorGraph::optimize(
+      OptionalOrderingType orderingType) const {
+    gttic(DiscreteFactorGraph_optimize);
+    DiscreteLookupDAG dag = maxProduct(orderingType);
+    return dag.argmax();
+  }
+
+  DiscreteValues DiscreteFactorGraph::optimize(
+      const Ordering& ordering) const {
+    gttic(DiscreteFactorGraph_optimize);
+    DiscreteLookupDAG dag = maxProduct(ordering);
+    return dag.argmax();
+  }
+
+  /* ************************************************************************ */
+  std::pair<DiscreteConditional::shared_ptr, DecisionTreeFactor::shared_ptr>  //
+  EliminateDiscrete(const DiscreteFactorGraph& factors,
+                    const Ordering& frontalKeys) {
+    // PRODUCT: multiply all factors
+    gttic(product);
+    DecisionTreeFactor product;
+    for (auto&& factor : factors) product = (*factor) * product;
     gttoc(product);
 
     // sum out frontals, this is the factor on the separator
@@ -120,15 +184,18 @@ namespace gtsam {
 
     // Ordering keys for the conditional so that frontalKeys are really in front
     Ordering orderedKeys;
-    orderedKeys.insert(orderedKeys.end(), frontalKeys.begin(), frontalKeys.end());
-    orderedKeys.insert(orderedKeys.end(), sum->keys().begin(), sum->keys().end());
+    orderedKeys.insert(orderedKeys.end(), frontalKeys.begin(),
+                       frontalKeys.end());
+    orderedKeys.insert(orderedKeys.end(), sum->keys().begin(),
+                       sum->keys().end());
 
     // now divide product/sum to get conditional
     gttic(divide);
-    DiscreteConditional::shared_ptr cond(new DiscreteConditional(product, *sum, orderedKeys));
+    auto conditional =
+        boost::make_shared<DiscreteConditional>(product, *sum, orderedKeys);
     gttoc(divide);
 
-    return std::make_pair(cond, sum);
+    return std::make_pair(conditional, sum);
   }
 
   /* ************************************************************************ */
