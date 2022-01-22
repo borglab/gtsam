@@ -696,6 +696,9 @@ class ISAM2Params {
   bool isEnablePartialRelinearizationCheck() const;
   void setEnablePartialRelinearizationCheck(
       bool enablePartialRelinearizationCheck);
+  bool isFindUnusedFactorSlots() const;
+  void setFindUnusedFactorSlots(bool findUnusedFactorSlots);
+
 };
 
 class ISAM2Clique {

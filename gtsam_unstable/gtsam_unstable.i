@@ -567,6 +567,10 @@ virtual class FixedLagSmoother {
   double smootherLag() const;
 
   gtsam::FixedLagSmootherResult update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::FixedLagSmootherKeyTimestampMap& timestamps);
+  gtsam::FixedLagSmootherResult update(const gtsam::NonlinearFactorGraph &newFactors,
+                                       const gtsam::Values &newTheta,
+                                       const gtsam::FixedLagSmootherKeyTimestampMap &timestamps,
+                                       const gtsam::FactorIndices &factorsToRemove);
   gtsam::Values calculateEstimate() const;
 };
 
@@ -590,6 +594,8 @@ virtual class IncrementalFixedLagSmoother : gtsam::FixedLagSmoother {
   IncrementalFixedLagSmoother(double smootherLag, const gtsam::ISAM2Params& params);
 
   gtsam::ISAM2Params params() const;
+
+  gtsam::NonlinearFactorGraph getFactors() const;
 };
 
 #include <gtsam_unstable/nonlinear/ConcurrentFilteringAndSmoothing.h>

@@ -313,6 +313,10 @@ struct GTSAM_EXPORT ISAM2Params {
     return enablePartialRelinearizationCheck;
   }
 
+  bool isFindUnusedFactorSlots() const {
+    return findUnusedFactorSlots;
+  }
+
   void setOptimizationParams(OptimizationParams optimizationParams) {
     this->optimizationParams = optimizationParams;
   }
@@ -343,6 +347,9 @@ struct GTSAM_EXPORT ISAM2Params {
   void setEnablePartialRelinearizationCheck(
       bool enablePartialRelinearizationCheck) {
     this->enablePartialRelinearizationCheck = enablePartialRelinearizationCheck;
+  }
+  void setFindUnusedFactorSlots(bool findUnusedFactorSlots) {
+    this->findUnusedFactorSlots = findUnusedFactorSlots;
   }
 
   GaussianFactorGraph::Eliminate getEliminationFunction() const {
