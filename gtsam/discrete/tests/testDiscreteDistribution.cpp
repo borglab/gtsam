@@ -75,6 +75,12 @@ TEST(DiscreteDistribution, sample) {
 }
 
 /* ************************************************************************* */
+TEST(DiscreteDistribution, argmax) {
+  DiscreteDistribution prior(X % "2/3");
+  EXPECT_LONGS_EQUAL(prior.argmax(), 1);
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

@@ -53,10 +53,9 @@ int main(int argc, char **argv) {
   // Create solver and eliminate
   Ordering ordering;
   ordering += Key(0), Key(1), Key(2), Key(3), Key(4), Key(5), Key(6), Key(7);
-  DiscreteBayesNet::shared_ptr chordal = fg.eliminateSequential(ordering);
 
   // solve
-  auto mpe = chordal->optimize();
+  auto mpe = fg.optimize();
   GTSAM_PRINT(mpe);
 
   // We can also build a Bayes tree (directed junction tree).
@@ -69,14 +68,14 @@ int main(int argc, char **argv) {
   fg.add(Dyspnea, "0 1");
 
   // solve again, now with evidence
-  DiscreteBayesNet::shared_ptr chordal2 = fg.eliminateSequential(ordering);
-  auto mpe2 = chordal2->optimize();
+  auto mpe2 = fg.optimize();
   GTSAM_PRINT(mpe2);
 
   // We can also sample from it
+  DiscreteBayesNet::shared_ptr chordal = fg.eliminateSequential(ordering);
   cout << "\n10 samples:" << endl;
   for (size_t i = 0; i < 10; i++) {
-    auto sample = chordal2->sample();
+    auto sample = chordal->sample();
     GTSAM_PRINT(sample);
   }
   return 0;

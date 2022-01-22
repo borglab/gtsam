@@ -22,6 +22,7 @@
 #include <gtsam/base/FastSet.h>
 
 #include <boost/make_shared.hpp>
+#include <boost/format.hpp>
 #include <utility>
 
 using namespace std;
@@ -65,8 +66,12 @@ namespace gtsam {
 
   /* ************************************************************************* */
   void DecisionTreeFactor::print(const string& s,
-      const KeyFormatter& formatter) const {
+                                 const KeyFormatter& formatter) const {
     cout << s;
+    cout << " f[";
+    for (auto&& key : keys())
+      cout << boost::format(" (%1%,%2%),") % formatter(key) % cardinality(key);
+    cout << " ]" << endl;
     ADT::print("", formatter);
   }
 

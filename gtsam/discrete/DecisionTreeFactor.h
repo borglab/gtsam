@@ -127,9 +127,14 @@ namespace gtsam {
       return combine(keys, ADT::Ring::add);
     }
 
-    /// Create new factor by maximizing over all values with the same separator values
+    /// Create new factor by maximizing over all values with the same separator.
     shared_ptr max(size_t nrFrontals) const {
       return combine(nrFrontals, ADT::Ring::max);
+    }
+
+    /// Create new factor by maximizing over all values with the same separator.
+    shared_ptr max(const Ordering& keys) const {
+      return combine(keys, ADT::Ring::max);
     }
 
     /// @}
