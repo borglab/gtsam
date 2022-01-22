@@ -163,7 +163,7 @@ namespace gtsam {
                const typename Base::LabelFormatter& labelFormatter =
                    &DefaultFormatter) const {
       auto valueFormatter = [](const double& v) {
-        return (boost::format("%4.2g") % v).str();
+        return (boost::format("%4.4g") % v).str();
       };
       Base::print(s, labelFormatter, valueFormatter);
     }
