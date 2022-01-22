@@ -18,6 +18,7 @@
  * @date    December 2021
  */
 
+#include <gtsam/base/TestableAssertions.h>
 #include <gtsam/hybrid/DCGaussianMixtureFactor.h>
 #include <gtsam/hybrid/GaussianMixture.h>
 
@@ -86,6 +87,51 @@ TEST(DCGaussianMixtureFactor, Sum) {
   auto actual = sum(mode);
   EXPECT(actual.at(0) == f11);
   EXPECT(actual.at(1) == f22);
+}
+
+TEST(DCGaussianMixtureFactor, Printing) {
+  DiscreteKey m1(1, 2);
+  auto A1 = Matrix::Zero(2, 1);
+  auto A2 = Matrix::Zero(2, 2);
+  auto b = Matrix::Zero(2, 1);
+  auto f10 = boost::make_shared<JacobianFactor>(X(1), A1, X(2), A2, b);
+  auto f11 = boost::make_shared<JacobianFactor>(X(1), A1, X(2), A2, b);
+  std::vector<GaussianFactor::shared_ptr> factors{f10, f11};
+
+  DCGaussianMixtureFactor mixtureFactor({X(1), X(2)}, {m1}, factors);
+
+  std::string expected = \
+R"([ x1 x2; 1 ]{
+ Choice(1) 
+ 0 Leaf Jacobian factor on 2 keys: 
+  A[x1] = [
+	0;
+	0
+]
+  A[x2] = [
+	0, 0;
+	0, 0
+]
+  b = [ 0 0 ]
+  No noise model
+
+
+ 1 Leaf Jacobian factor on 2 keys: 
+  A[x1] = [
+	0;
+	0
+]
+  A[x2] = [
+	0, 0;
+	0, 0
+]
+  b = [ 0 0 ]
+  No noise model
+
+
+}
+)";
+  EXPECT(assert_print_equal(expected, mixtureFactor));
 }
 
 TEST_UNSAFE(DCGaussianMixtureFactor, GaussianMixture) {

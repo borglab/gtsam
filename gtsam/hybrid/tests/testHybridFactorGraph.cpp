@@ -20,6 +20,8 @@
 
 #include "Switching.h"
 
+#include <gtsam/base/TestableAssertions.h>
+#include <gtsam/base/utilities.h>
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/discrete/DiscreteDistribution.h>
 #include <gtsam/hybrid/DCFactor.h>
@@ -317,7 +319,7 @@ TEST(HybridFactorGraph, ToDecisionTreeFactor) {
   // Create equivalent factor graph for m1=0, m2=1
   GaussianFactorGraph graph = linearizedFactorGraph.gaussianGraph();
 
-  for (auto& p : linearizedFactorGraph.dcGraph()) {
+  for (auto &p : linearizedFactorGraph.dcGraph()) {
     if (auto mixture =
             boost::dynamic_pointer_cast<DCGaussianMixtureFactor>(p)) {
       graph.add((*mixture)(allAssignments[1]));
@@ -368,6 +370,135 @@ TEST(HybridFactorGraph, Elimination) {
          KeyVector({M(2), M(1)}));
   EXPECT(remainingFactorGraph->discreteGraph().at(2)->keys() ==
          KeyVector({M(2), M(1)}));
+}
+
+TEST(HybridFactorGraph, Printing) {
+  Switching self(3);
+
+  auto linearizedFactorGraph = self.linearizedFactorGraph;
+
+  // Create ordering.
+  Ordering ordering;
+  for (size_t k = 1; k <= self.K; k++) ordering += X(k);
+
+  // Eliminate partially.
+  HybridBayesNet::shared_ptr hybridBayesNet;
+  GaussianHybridFactorGraph::shared_ptr remainingFactorGraph;
+  std::tie(hybridBayesNet, remainingFactorGraph) =
+      linearizedFactorGraph.eliminatePartialSequential(ordering);
+
+  string expected_hybridFactorGraph =
+      "size: 8\nDiscreteFactorGraph\n"
+      "size: 2\nfactor 0:  P( m1 ):\n"
+      " Leaf  0.5\n\nfactor 1:  P( m2 | m1 ):\n"
+      " Choice(m2) \n 0 Choice(m1) \n 0 0 Leaf 0.3333\n 0 1 Leaf  0.6\n"
+      " 1 Choice(m1) \n 1 0 Leaf 0.6667\n 1 1 Leaf  0.4\n\nDCFactorGraph \n"
+      "size: 2\nfactor 0:  [ x1 x2; m1 ]{\n Choice(m1) \n 0 Leaf Jacobian factor on 2 keys: \n"
+      "  A[x1] = [\n\t-1\n]\n  A[x2] = [\n\t1\n]\n  b = [ -1 ]\n  No noise model\n\n\n"
+      " 1 Leaf Jacobian factor on 2 keys: \n  A[x1] = [\n\t-1\n]\n  A[x2] = [\n\t1\n]\n  b = [ -0 ]\n"
+      "  No noise model\n\n\n}\nfactor 1:  [ x2 x3; m2 ]{\n Choice(m2) \n"
+      " 0 Leaf Jacobian factor on 2 keys: \n  A[x2] = [\n\t-1\n]\n  A[x3] = [\n\t1\n]\n  b = [ -1 ]\n"
+      "  No noise model\n\n\n 1 Leaf Jacobian factor on 2 keys: \n  A[x2] = [\n\t-1\n]\n  A[x3] = [\n\t1\n]\n"
+      "  b = [ -0 ]\n  No noise model\n\n\n}\nGaussianGraph \nsize: 4\nfactor 0: \n  A[x1] = [\n\t10\n]\n"
+      "  b = [ -10 ]\n  No noise model\nfactor 1: \n  A[x1] = [\n\t10\n]\n  b = [ -10 ]\n  No noise model\n"
+      "factor 2: \n  A[x2] = [\n\t10\n]\n  b = [ -10 ]\n  No noise model\nfactor 3: \n  A[x3] = [\n\t10\n]\n"
+      "  b = [ -10 ]\n  No noise model\n";
+  EXPECT(assert_print_equal(expected_hybridFactorGraph, linearizedFactorGraph));
+
+  // Expected output for hybridBayesNet.
+  string expected_hybridBayesNet = R"(
+size: 3
+factor 0:  GaussianMixture [x1 | x2 m1 ]{
+ Choice(m1) 
+ 0 Leaf Jacobian factor on 2 keys: 
+  Conditional density [x1] 
+  R = [ 14.1774 ]
+  S[x2] = [ -0.0705346 ]
+  d = [ -14.0364 ]
+  No noise model
+
+
+ 1 Leaf Jacobian factor on 2 keys: 
+  Conditional density [x1] 
+  R = [ 14.1774 ]
+  S[x2] = [ -0.0705346 ]
+  d = [ -14.1069 ]
+  No noise model
+
+
+}
+factor 1:  GaussianMixture [x2 | x3 m2 m1 ]{
+ Choice(m2) 
+ 0 Choice(m1) 
+ 0 0 Leaf Jacobian factor on 2 keys: 
+  Conditional density [x2] 
+  R = [ 10.0993 ]
+  S[x3] = [ -0.0990172 ]
+  d = [ -9.99975 ]
+  No noise model
+
+
+ 0 1 Leaf Jacobian factor on 2 keys: 
+  Conditional density [x2] 
+  R = [ 10.0993 ]
+  S[x3] = [ -0.0990172 ]
+  d = [ -9.90122 ]
+  No noise model
+
+
+ 1 Choice(m1) 
+ 1 0 Leaf Jacobian factor on 2 keys: 
+  Conditional density [x2] 
+  R = [ 10.0993 ]
+  S[x3] = [ -0.0990172 ]
+  d = [ -10.0988 ]
+  No noise model
+
+
+ 1 1 Leaf Jacobian factor on 2 keys: 
+  Conditional density [x2] 
+  R = [ 10.0993 ]
+  S[x3] = [ -0.0990172 ]
+  d = [ -10.0002 ]
+  No noise model
+
+
+}
+factor 2:  GaussianMixture [x3 | m2 m1 ]{
+ Choice(m2) 
+ 0 Choice(m1) 
+ 0 0 Leaf Jacobian factor on 1 keys: 
+  Conditional density [x3] 
+  R = [ 10.0494 ]
+  d = [ -10.1489 ]
+  No noise model
+
+
+ 0 1 Leaf Jacobian factor on 1 keys: 
+  Conditional density [x3] 
+  R = [ 10.0494 ]
+  d = [ -10.1479 ]
+  No noise model
+
+
+ 1 Choice(m1) 
+ 1 0 Leaf Jacobian factor on 1 keys: 
+  Conditional density [x3] 
+  R = [ 10.0494 ]
+  d = [ -10.0504 ]
+  No noise model
+
+
+ 1 1 Leaf Jacobian factor on 1 keys: 
+  Conditional density [x3] 
+  R = [ 10.0494 ]
+  d = [ -10.0494 ]
+  No noise model
+
+
+}
+)";
+  EXPECT(assert_print_equal(expected_hybridBayesNet, *hybridBayesNet));
 }
 
 /* ************************************************************************* */
