@@ -18,10 +18,11 @@
 
 #pragma once
 
-#include <gtsam/inference/FactorGraph.h>
-#include <gtsam/inference/EliminateableFactorGraph.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
+#include <gtsam/discrete/DiscreteLookupDAG.h>
+#include <gtsam/inference/EliminateableFactorGraph.h>
+#include <gtsam/inference/FactorGraph.h>
+#include <gtsam/inference/Ordering.h>
 #include <gtsam/base/FastSet.h>
 
 #include <boost/make_shared.hpp>
@@ -131,18 +132,39 @@ class GTSAM_EXPORT DiscreteFactorGraph
       const std::string& s = "DiscreteFactorGraph",
       const KeyFormatter& formatter = DefaultKeyFormatter) const override;
 
-  /** Solve the factor graph by performing variable elimination in COLAMD order using
-   *  the dense elimination function specified in \c function,
-   *  followed by back-substitution resulting from elimination.  Is equivalent
-   *  to calling graph.eliminateSequential()->optimize(). */
-  DiscreteValues optimize() const;
+  /**
+   * @brief Implement the max-product algorithm
+   *
+   * @param orderingType : one of COLAMD, METIS, NATURAL, CUSTOM
+   * @return DiscreteLookupDAG::shared_ptr DAG with lookup tables
+   */
+  DiscreteLookupDAG maxProduct(
+      OptionalOrderingType orderingType = boost::none) const;
 
+  /**
+   * @brief Implement the max-product algorithm
+   *
+   * @param ordering
+   * @return DiscreteLookupDAG::shared_ptr `DAG with lookup tables
+   */
+  DiscreteLookupDAG maxProduct(const Ordering& ordering) const;
 
-//  /** Permute the variables in the factors */
-//  GTSAM_EXPORT void permuteWithInverse(const Permutation& inversePermutation);
-//
-//  /** Apply a reduction, which is a remapping of variable indices. */
-//  GTSAM_EXPORT void reduceWithInverse(const internal::Reduction& inverseReduction);
+  /**
+   * @brief Find the maximum probable explanation (MPE) by doing max-product.
+   *
+   * @param orderingType
+   * @return DiscreteValues : MPE
+   */
+  DiscreteValues optimize(
+      OptionalOrderingType orderingType = boost::none) const;
+
+  /**
+   * @brief Find the maximum probable explanation (MPE) by doing max-product.
+   *
+   * @param ordering
+   * @return DiscreteValues : MPE
+   */
+  DiscreteValues optimize(const Ordering& ordering) const;
 
   /// @name Wrapper support
   /// @{

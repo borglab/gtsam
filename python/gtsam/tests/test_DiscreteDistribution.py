@@ -20,7 +20,7 @@ from gtsam.utils.test_case import GtsamTestCase
 X = 0, 2
 
 
-class TestDiscretePrior(GtsamTestCase):
+class TestDiscreteDistribution(GtsamTestCase):
     """Tests for Discrete Priors."""
 
     def test_constructor(self):

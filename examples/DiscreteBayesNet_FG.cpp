@@ -85,7 +85,7 @@ int main(int argc, char **argv) {
         }
 
   // "Most Probable Explanation", i.e., configuration with largest value
-  auto mpe = graph.eliminateSequential()->optimize();
+  auto mpe = graph.optimize();
   cout << "\nMost Probable Explanation (MPE):" << endl;
   print(mpe);
 
@@ -96,8 +96,7 @@ int main(int argc, char **argv) {
   graph.add(Cloudy, "1 0");
 
   // solve again, now with evidence
-  DiscreteBayesNet::shared_ptr chordal = graph.eliminateSequential();
-  auto mpe_with_evidence = chordal->optimize();
+  auto mpe_with_evidence = graph.optimize();
 
   cout << "\nMPE given C=0:" << endl;
   print(mpe_with_evidence);
@@ -110,7 +109,8 @@ int main(int argc, char **argv) {
   cout << "\nP(W=1|C=0):" << marginals.marginalProbabilities(WetGrass)[1]
        << endl;
 
-  // We can also sample from it
+  // We can also sample from the eliminated graph
+  DiscreteBayesNet::shared_ptr chordal = graph.eliminateSequential();
   cout << "\n10 samples:" << endl;
   for (size_t i = 0; i < 10; i++) {
     auto sample = chordal->sample();

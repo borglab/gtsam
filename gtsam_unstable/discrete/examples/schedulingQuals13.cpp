@@ -167,7 +167,7 @@ void runLargeExample() {
   }
 #else
   gttic(large);
-  auto MPE = scheduler.optimalAssignment();
+  auto MPE = scheduler.optimize();
   gttoc(large);
   tictoc_finishedIteration();
   tictoc_print();
@@ -212,11 +212,11 @@ void solveStaged(size_t addMutex = 2) {
       root->print(""/*scheduler.studentName(s)*/);
 
     // solve root node only
-    DiscreteValues values;
-    size_t bestSlot = root->solve(values);
+    size_t bestSlot = root->argmax();
 
     // get corresponding count
     DiscreteKey dkey = scheduler.studentKey(NRSTUDENTS - 1 - s);
+    DiscreteValues values;
     values[dkey.first] = bestSlot;
     double count = (*root)(values);
 

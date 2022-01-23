@@ -21,41 +21,43 @@
 
 #include <gtsam/discrete/DecisionTree.h>
 
+#include <algorithm>
 #include <boost/assign/std/vector.hpp>
 #include <boost/format.hpp>
+#include <boost/make_shared.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/type_traits/has_dereference.hpp>
 #include <boost/unordered_set.hpp>
-#include <boost/make_shared.hpp>
 #include <cmath>
 #include <fstream>
 #include <list>
+#include <map>
+#include <set>
 #include <sstream>
+#include <string>
+#include <vector>
 
 using boost::assign::operator+=;
 
 namespace gtsam {
 
-  /*********************************************************************************/
+  /****************************************************************************/
   // Node
-  /*********************************************************************************/
+  /****************************************************************************/
 #ifdef DT_DEBUG_MEMORY
   template<typename L, typename Y>
   int DecisionTree<L, Y>::Node::nrNodes = 0;
 #endif
 
-  /*********************************************************************************/
+  /****************************************************************************/
   // Leaf
-  /*********************************************************************************/
-  template<typename L, typename Y>
-  class DecisionTree<L, Y>::Leaf: public DecisionTree<L, Y>::Node {
-
+  /****************************************************************************/
+  template <typename L, typename Y>
+  struct DecisionTree<L, Y>::Leaf : public DecisionTree<L, Y>::Node {
     /** constant stored in this leaf */
     Y constant_;
-
-  public:
 
     /** Constructor from constant */
     Leaf(const Y& constant) :
@@ -96,7 +98,7 @@ namespace gtsam {
       std::string value = valueFormatter(constant_);
       if (showZero || value.compare("0"))
         os << "\"" << this->id() << "\" [label=\"" << value
-           << "\", shape=box, rank=sink, height=0.35, fixedsize=true]\n";  // width=0.55,
+           << "\", shape=box, rank=sink, height=0.35, fixedsize=true]\n";
     }
 
     /** evaluate */
@@ -121,13 +123,13 @@ namespace gtsam {
 
     // Applying binary operator to two leaves results in a leaf
     NodePtr apply_g_op_fL(const Leaf& fL, const Binary& op) const override {
-      NodePtr h(new Leaf(op(fL.constant_, constant_))); // fL op gL
+      NodePtr h(new Leaf(op(fL.constant_, constant_)));  // fL op gL
       return h;
     }
 
     // If second argument is a Choice node, call it's apply with leaf as second
     NodePtr apply_g_op_fC(const Choice& fC, const Binary& op) const override {
-      return fC.apply_fC_op_gL(*this, op); // operand order back to normal
+      return fC.apply_fC_op_gL(*this, op);  // operand order back to normal
     }
 
     /** choose a branch, create new memory ! */
@@ -136,32 +138,30 @@ namespace gtsam {
     }
 
     bool isLeaf() const override { return true; }
+  };  // Leaf
 
-  }; // Leaf
-
-  /*********************************************************************************/
+  /****************************************************************************/
   // Choice
-  /*********************************************************************************/
+  /****************************************************************************/
   template<typename L, typename Y>
-  class DecisionTree<L, Y>::Choice: public DecisionTree<L, Y>::Node {
-
+  struct DecisionTree<L, Y>::Choice: public DecisionTree<L, Y>::Node {
     /** the label of the variable on which we split */
     L label_;
 
     /** The children of this Choice node. */
     std::vector<NodePtr> branches_;
 
-  private:
+   private:
     /** incremental allSame */
     size_t allSame_;
 
     using ChoicePtr = boost::shared_ptr<const Choice>;
 
-  public:
-
+   public:
     ~Choice() override {
 #ifdef DT_DEBUG_MEMORY
-        std::std::cout << Node::nrNodes << " destructing (Choice) " << this->id() << std::std::endl;
+      std::std::cout << Node::nrNodes << " destructing (Choice) " << this->id()
+                     << std::std::endl;
 #endif
     }
 
@@ -172,7 +172,8 @@ namespace gtsam {
         assert(f->branches().size() > 0);
         NodePtr f0 = f->branches_[0];
         assert(f0->isLeaf());
-        NodePtr newLeaf(new Leaf(boost::dynamic_pointer_cast<const Leaf>(f0)->constant()));
+        NodePtr newLeaf(
+            new Leaf(boost::dynamic_pointer_cast<const Leaf>(f0)->constant()));
         return newLeaf;
       } else
 #endif
@@ -192,7 +193,6 @@ namespace gtsam {
      */
     Choice(const Choice& f, const Choice& g, const Binary& op) :
       allSame_(true) {
-
       // Choose what to do based on label
       if (f.label() > g.label()) {
         // f higher than g
@@ -318,10 +318,8 @@ namespace gtsam {
      */
     Choice(const L& label, const Choice& f, const Unary& op) :
       label_(label), allSame_(true) {
-
-      branches_.reserve(f.branches_.size()); // reserve space
-      for (const NodePtr& branch: f.branches_)
-              push_back(branch->apply(op));
+      branches_.reserve(f.branches_.size());  // reserve space
+      for (const NodePtr& branch : f.branches_) push_back(branch->apply(op));
     }
 
     /** apply unary operator */
@@ -364,8 +362,7 @@ namespace gtsam {
 
     /** choose a branch, recursively */
     NodePtr choose(const L& label, size_t index) const override {
-      if (label_ == label)
-        return branches_[index]; // choose branch
+      if (label_ == label) return branches_[index];  // choose branch
 
       // second case, not label of interest, just recurse
       auto r = boost::make_shared<Choice>(label_, branches_.size());
@@ -373,12 +370,11 @@ namespace gtsam {
         r->push_back(branch->choose(label, index));
       return Unique(r);
     }
+  };  // Choice
 
-  }; // Choice
-
-  /*********************************************************************************/
+  /****************************************************************************/
   // DecisionTree
-  /*********************************************************************************/
+  /****************************************************************************/
   template<typename L, typename Y>
   DecisionTree<L, Y>::DecisionTree() {
   }
@@ -388,13 +384,13 @@ namespace gtsam {
     root_(root) {
   }
 
-  /*********************************************************************************/
+  /****************************************************************************/
   template<typename L, typename Y>
   DecisionTree<L, Y>::DecisionTree(const Y& y)  {
     root_ = NodePtr(new Leaf(y));
   }
 
-  /*********************************************************************************/
+  /****************************************************************************/
   template <typename L, typename Y>
   DecisionTree<L, Y>::DecisionTree(const L& label, const Y& y1, const Y& y2) {
     auto a = boost::make_shared<Choice>(label, 2);
@@ -404,7 +400,7 @@ namespace gtsam {
     root_ = Choice::Unique(a);
   }
 
-  /*********************************************************************************/
+  /****************************************************************************/
   template <typename L, typename Y>
   DecisionTree<L, Y>::DecisionTree(const LabelC& labelC, const Y& y1,
                                    const Y& y2) {
@@ -417,7 +413,7 @@ namespace gtsam {
     root_ = Choice::Unique(a);
   }
 
-  /*********************************************************************************/
+  /****************************************************************************/
   template<typename L, typename Y>
   DecisionTree<L, Y>::DecisionTree(const std::vector<LabelC>& labelCs,
       const std::vector<Y>& ys) {
@@ -425,29 +421,28 @@ namespace gtsam {
     root_ = create(labelCs.begin(), labelCs.end(), ys.begin(), ys.end());
   }
 
-  /*********************************************************************************/
+  /****************************************************************************/
   template<typename L, typename Y>
   DecisionTree<L, Y>::DecisionTree(const std::vector<LabelC>& labelCs,
       const std::string& table) {
-
     // Convert std::string to values of type Y
     std::vector<Y> ys;
     std::istringstream iss(table);
     copy(std::istream_iterator<Y>(iss), std::istream_iterator<Y>(),
-        back_inserter(ys));
+         back_inserter(ys));
 
     // now call recursive Create
     root_ = create(labelCs.begin(), labelCs.end(), ys.begin(), ys.end());
   }
 
-  /*********************************************************************************/
+  /****************************************************************************/
   template<typename L, typename Y>
   template<typename Iterator> DecisionTree<L, Y>::DecisionTree(
       Iterator begin, Iterator end, const L& label) {
     root_ = compose(begin, end, label);
   }
 
-  /*********************************************************************************/
+  /****************************************************************************/
   template<typename L, typename Y>
   DecisionTree<L, Y>::DecisionTree(const L& label,
       const DecisionTree& f0, const DecisionTree& f1)  {
@@ -456,17 +451,17 @@ namespace gtsam {
     root_ = compose(functions.begin(), functions.end(), label);
   }
 
-  /*********************************************************************************/
+  /****************************************************************************/
   template <typename L, typename Y>
   template <typename X, typename Func>
   DecisionTree<L, Y>::DecisionTree(const DecisionTree<L, X>& other,
                                    Func Y_of_X) {
     // Define functor for identity mapping of node label.
-	auto L_of_L = [](const L& label) { return label; };
+    auto L_of_L = [](const L& label) { return label; };
     root_ = convertFrom<L, X>(other.root_, L_of_L, Y_of_X);
   }
 
-  /*********************************************************************************/
+  /****************************************************************************/
   template <typename L, typename Y>
   template <typename M, typename X, typename Func>
   DecisionTree<L, Y>::DecisionTree(const DecisionTree<M, X>& other,
@@ -475,16 +470,16 @@ namespace gtsam {
     root_ = convertFrom<M, X>(other.root_, L_of_M, Y_of_X);
   }
 
-  /*********************************************************************************/
+  /****************************************************************************/
   // Called by two constructors above.
-  // Takes a label and a corresponding range of decision trees, and creates a new
-  // decision tree. However, the order of the labels needs to be respected, so we
-  // cannot just create a root Choice node on the label: if the label is not the
-  // highest label, we need to do a complicated and expensive recursive call.
-  template<typename L, typename Y> template<typename Iterator>
-  typename DecisionTree<L, Y>::NodePtr DecisionTree<L, Y>::compose(Iterator begin,
-      Iterator end, const L& label) const {
-
+  // Takes a label and a corresponding range of decision trees, and creates a
+  // new decision tree. However, the order of the labels needs to be respected,
+  // so we cannot just create a root Choice node on the label: if the label is
+  // not the highest label, we need a complicated/ expensive recursive call.
+  template <typename L, typename Y>
+  template <typename Iterator>
+  typename DecisionTree<L, Y>::NodePtr DecisionTree<L, Y>::compose(
+      Iterator begin, Iterator end, const L& label) const {
     // find highest label among branches
     boost::optional<L> highestLabel;
     size_t nrChoices = 0;
@@ -527,7 +522,7 @@ namespace gtsam {
     }
   }
 
-  /*********************************************************************************/
+  /****************************************************************************/
   // "create" is a bit of a complicated thing, but very useful.
   // It takes a range of labels and a corresponding range of values,
   // and creates a decision tree, as follows:
@@ -552,7 +547,6 @@ namespace gtsam {
   template<typename It, typename ValueIt>
   typename DecisionTree<L, Y>::NodePtr DecisionTree<L, Y>::create(
       It begin, It end, ValueIt beginY, ValueIt endY) const {
-
     // get crucial counts
     size_t nrChoices = begin->second;
     size_t size = endY - beginY;
@@ -564,7 +558,11 @@ namespace gtsam {
       // Create a simple choice node with values as leaves.
       if (size != nrChoices) {
         std::cout << "Trying to create DD on " << begin->first << std::endl;
-        std::cout << boost::format("DecisionTree::create: expected %d values but got %d instead") % nrChoices % size << std::endl;
+        std::cout << boost::format(
+                         "DecisionTree::create: expected %d values but got %d "
+                         "instead") %
+                         nrChoices % size
+                  << std::endl;
         throw std::invalid_argument("DecisionTree::create invalid argument");
       }
       auto choice = boost::make_shared<Choice>(begin->first, endY - beginY);
@@ -585,7 +583,7 @@ namespace gtsam {
     return compose(functions.begin(), functions.end(), begin->first);
   }
 
-  /*********************************************************************************/
+  /****************************************************************************/
   template <typename L, typename Y>
   template <typename M, typename X>
   typename DecisionTree<L, Y>::NodePtr DecisionTree<L, Y>::convertFrom(
@@ -594,11 +592,11 @@ namespace gtsam {
       std::function<Y(const X&)> Y_of_X) const {
     using LY = DecisionTree<L, Y>;
 
-    // ugliness below because apparently we can't have templated virtual functions
-    // If leaf, apply unary conversion "op" and create a unique leaf
+    // ugliness below because apparently we can't have templated virtual
+    // functions If leaf, apply unary conversion "op" and create a unique leaf
     using MXLeaf = typename DecisionTree<M, X>::Leaf;
     if (auto leaf = boost::dynamic_pointer_cast<const MXLeaf>(f))
-    	return NodePtr(new Leaf(Y_of_X(leaf->constant())));
+      return NodePtr(new Leaf(Y_of_X(leaf->constant())));
 
     // Check if Choice
     using MXChoice = typename DecisionTree<M, X>::Choice;
@@ -612,19 +610,19 @@ namespace gtsam {
 
     // put together via Shannon expansion otherwise not sorted.
     std::vector<LY> functions;
-    for(auto && branch: choice->branches()) {
+    for (auto&& branch : choice->branches()) {
       functions.emplace_back(convertFrom<M, X>(branch, L_of_M, Y_of_X));
     }
     return LY::compose(functions.begin(), functions.end(), newLabel);
   }
 
-  /*********************************************************************************/
+  /****************************************************************************/
   // Functor performing depth-first visit without Assignment<L> argument.
   template <typename L, typename Y>
   struct Visit {
     using F = std::function<void(const Y&)>;
-    Visit(F f) : f(f) {}  ///< Construct from folding function.
-    F f;                  ///< folding function object.
+    explicit Visit(F f) : f(f) {}  ///< Construct from folding function.
+    F f;                           ///< folding function object.
 
     /// Do a depth-first visit on the tree rooted at node.
     void operator()(const typename DecisionTree<L, Y>::NodePtr& node) const {
@@ -647,15 +645,15 @@ namespace gtsam {
     visit(root_);
   }
 
-  /*********************************************************************************/
+  /****************************************************************************/
   // Functor performing depth-first visit with Assignment<L> argument.
   template <typename L, typename Y>
   struct VisitWith {
     using Choices = Assignment<L>;
     using F = std::function<void(const Choices&, const Y&)>;
-    VisitWith(F f) : f(f) {}  ///< Construct from folding function.
-    Choices choices;          ///< Assignment, mutating through recursion.
-    F f;                      ///< folding function object.
+    explicit VisitWith(F f) : f(f) {}  ///< Construct from folding function.
+    Choices choices;  ///< Assignment, mutating through recursion.
+    F f;              ///< folding function object.
 
     /// Do a depth-first visit on the tree rooted at node.
     void operator()(const typename DecisionTree<L, Y>::NodePtr& node) {
@@ -681,7 +679,7 @@ namespace gtsam {
     visit(root_);
   }
 
-  /*********************************************************************************/
+  /****************************************************************************/
   // fold is just done with a visit
   template <typename L, typename Y>
   template <typename Func, typename X>
@@ -690,7 +688,7 @@ namespace gtsam {
     return x0;
   }
 
-  /*********************************************************************************/
+  /****************************************************************************/
   // labels is just done with a visit
   template <typename L, typename Y>
   std::set<L> DecisionTree<L, Y>::labels() const {
@@ -702,7 +700,7 @@ namespace gtsam {
     return unique;
   }
 
-/*********************************************************************************/
+/****************************************************************************/
   template <typename L, typename Y>
   bool DecisionTree<L, Y>::equals(const DecisionTree& other,
                                   const CompareFunc& compare) const {
@@ -736,7 +734,7 @@ namespace gtsam {
     return DecisionTree(root_->apply(op));
   }
 
-  /*********************************************************************************/
+  /****************************************************************************/
   template<typename L, typename Y>
   DecisionTree<L, Y> DecisionTree<L, Y>::apply(const DecisionTree& g,
       const Binary& op) const {
@@ -752,7 +750,7 @@ namespace gtsam {
     return result;
   }
 
-  /*********************************************************************************/
+  /****************************************************************************/
   // The way this works:
   // We have an ADT, picture it as a tree.
   // At a certain depth, we have a branch on "label".
@@ -772,7 +770,7 @@ namespace gtsam {
     return result;
   }
 
-  /*********************************************************************************/
+  /****************************************************************************/
   template <typename L, typename Y>
   void DecisionTree<L, Y>::dot(std::ostream& os,
                                const LabelFormatter& labelFormatter,
@@ -790,9 +788,11 @@ namespace gtsam {
                                bool showZero) const {
     std::ofstream os((name + ".dot").c_str());
     dot(os, labelFormatter, valueFormatter, showZero);
-    int result = system(
-        ("dot -Tpdf " + name + ".dot -o " + name + ".pdf >& /dev/null").c_str());
-    if (result==-1) throw std::runtime_error("DecisionTree::dot system call failed");
+    int result =
+        system(("dot -Tpdf " + name + ".dot -o " + name + ".pdf >& /dev/null")
+                   .c_str());
+    if (result == -1)
+      throw std::runtime_error("DecisionTree::dot system call failed");
   }
 
   template <typename L, typename Y>
@@ -804,8 +804,6 @@ namespace gtsam {
     return ss.str();
   }
 
-/*********************************************************************************/
+/******************************************************************************/
 
-} // namespace gtsam
-
-
+  }  // namespace gtsam
