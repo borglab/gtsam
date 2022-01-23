@@ -93,14 +93,14 @@ class GTSAM_EXPORT DiscreteConditional
   DiscreteConditional(const DiscreteKey& key, const std::string& spec)
       : DiscreteConditional(Signature(key, {}, spec)) {}
 
-  /** 
+  /**
    * @brief construct P(X|Y) = f(X,Y)/f(Y) from f(X,Y) and f(Y)
-   * Assumes but *does not check* that f(Y)=sum_X f(X,Y). 
+   * Assumes but *does not check* that f(Y)=sum_X f(X,Y).
    */
   DiscreteConditional(const DecisionTreeFactor& joint,
                       const DecisionTreeFactor& marginal);
 
-  /** 
+  /**
    * @brief construct P(X|Y) = f(X,Y)/f(Y) from f(X,Y) and f(Y)
    * Assumes but *does not check* that f(Y)=sum_X f(X,Y).
    * Makes sure the keys are ordered as given. Does not check orderedKeys.
@@ -157,17 +157,17 @@ class GTSAM_EXPORT DiscreteConditional
     return ADT::operator()(values);
   }
 
-  /** 
+  /**
    * @brief restrict to given *parent* values.
-   * 
+   *
    * Note: does not need be complete set. Examples:
-   * 
+   *
    * P(C|D,E) + . -> P(C|D,E)
    * P(C|D,E) + E -> P(C|D)
    * P(C|D,E) + D -> P(C|E)
    * P(C|D,E) + D,E -> P(C)
    * P(C|D,E) + C -> error!
-   * 
+   *
    * @return a shared_ptr to a new DiscreteConditional
    */
   shared_ptr choose(const DiscreteValues& given) const;
@@ -178,13 +178,6 @@ class GTSAM_EXPORT DiscreteConditional
 
   /** Single variable version of likelihood. */
   DecisionTreeFactor::shared_ptr likelihood(size_t parent_value) const;
-
-  /**
-   * solve a conditional
-   * @param parentsValues Known values of the parents
-   * @return MPE value of the child (1 frontal variable).
-   */
-  size_t solve(const DiscreteValues& parentsValues) const;
 
   /**
    * sample
@@ -199,12 +192,15 @@ class GTSAM_EXPORT DiscreteConditional
   /// Zero parent version.
   size_t sample() const;
 
+  /**
+   * @brief Return assignment that maximizes distribution.
+   * @return Optimal assignment (1 frontal variable).
+   */
+  size_t argmax() const;
+
   /// @}
   /// @name Advanced Interface
   /// @{
-
-  /// solve a conditional, in place
-  void solveInPlace(DiscreteValues* parentsValues) const;
 
   /// sample in place, stores result in partial solution
   void sampleInPlace(DiscreteValues* parentsValues) const;
@@ -228,6 +224,19 @@ class GTSAM_EXPORT DiscreteConditional
                    const Names& names = {}) const override;
 
   /// @}
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
+  /// @name Deprecated functionality
+  /// @{
+  size_t GTSAM_DEPRECATED solve(const DiscreteValues& parentsValues) const;
+  void GTSAM_DEPRECATED solveInPlace(DiscreteValues* parentsValues) const;
+  /// @}
+#endif
+
+ protected:
+  /// Internal version of choose
+  DiscreteConditional::ADT choose(const DiscreteValues& given,
+                                  bool forceComplete) const;
 };
 // DiscreteConditional
 

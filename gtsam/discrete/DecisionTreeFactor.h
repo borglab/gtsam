@@ -18,16 +18,18 @@
 
 #pragma once
 
+#include <gtsam/discrete/AlgebraicDecisionTree.h>
 #include <gtsam/discrete/DiscreteFactor.h>
 #include <gtsam/discrete/DiscreteKey.h>
-#include <gtsam/discrete/AlgebraicDecisionTree.h>
 #include <gtsam/inference/Ordering.h>
 
+#include <algorithm>
 #include <boost/shared_ptr.hpp>
-
-#include <vector>
-#include <exception>
+#include <map>
 #include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace gtsam {
 
@@ -36,21 +38,19 @@ namespace gtsam {
   /**
    * A discrete probabilistic factor
    */
-  class GTSAM_EXPORT DecisionTreeFactor: public DiscreteFactor, public AlgebraicDecisionTree<Key> {
-
-  public:
-
+  class GTSAM_EXPORT DecisionTreeFactor : public DiscreteFactor,
+                                          public AlgebraicDecisionTree<Key> {
+   public:
     // typedefs needed to play nice with gtsam
     typedef DecisionTreeFactor This;
-    typedef DiscreteFactor Base; ///< Typedef to base class
+    typedef DiscreteFactor Base;  ///< Typedef to base class
     typedef boost::shared_ptr<DecisionTreeFactor> shared_ptr;
     typedef AlgebraicDecisionTree<Key> ADT;
 
-  protected:
-    std::map<Key,size_t> cardinalities_;
+   protected:
+    std::map<Key, size_t> cardinalities_;
 
-  public:
-
+   public:
     /// @name Standard Constructors
     /// @{
 
@@ -61,7 +61,8 @@ namespace gtsam {
     DecisionTreeFactor(const DiscreteKeys& keys, const ADT& potentials);
 
     /** Constructor from doubles */
-    DecisionTreeFactor(const DiscreteKeys& keys, const std::vector<double>& table);
+    DecisionTreeFactor(const DiscreteKeys& keys,
+                      const std::vector<double>& table);
 
     /** Constructor from string */
     DecisionTreeFactor(const DiscreteKeys& keys, const std::string& table);
@@ -86,7 +87,8 @@ namespace gtsam {
     bool equals(const DiscreteFactor& other, double tol = 1e-9) const override;
 
     // print
-    void print(const std::string& s = "DecisionTreeFactor:\n",
+    void print(
+        const std::string& s = "DecisionTreeFactor:\n",
         const KeyFormatter& formatter = DefaultKeyFormatter) const override;
 
     /// @}
@@ -105,7 +107,7 @@ namespace gtsam {
 
     static double safe_div(const double& a, const double& b);
 
-    size_t cardinality(Key j) const { return cardinalities_.at(j);}
+    size_t cardinality(Key j) const { return cardinalities_.at(j); }
 
     /// divide by factor f (safely)
     DecisionTreeFactor operator/(const DecisionTreeFactor& f) const {
@@ -113,9 +115,7 @@ namespace gtsam {
     }
 
     /// Convert into a decisiontree
-    DecisionTreeFactor toDecisionTreeFactor() const override {
-      return *this;
-    }
+    DecisionTreeFactor toDecisionTreeFactor() const override { return *this; }
 
     /// Create new factor by summing all values with the same separator values
     shared_ptr sum(size_t nrFrontals) const {
@@ -127,9 +127,14 @@ namespace gtsam {
       return combine(keys, ADT::Ring::add);
     }
 
-    /// Create new factor by maximizing over all values with the same separator values
+    /// Create new factor by maximizing over all values with the same separator.
     shared_ptr max(size_t nrFrontals) const {
       return combine(nrFrontals, ADT::Ring::max);
+    }
+
+    /// Create new factor by maximizing over all values with the same separator.
+    shared_ptr max(const Ordering& keys) const {
+      return combine(keys, ADT::Ring::max);
     }
 
     /// @}
@@ -159,27 +164,6 @@ namespace gtsam {
      */
     shared_ptr combine(const Ordering& keys, ADT::Binary op) const;
 
-
-//    /**
-//     * @brief Permutes the keys in Potentials and DiscreteFactor
-//     *
-//     * This re-implements the permuteWithInverse() in both Potentials
-//     * and DiscreteFactor by doing both of them together.
-//     */
-//
-//    void permuteWithInverse(const Permutation& inversePermutation){
-//      DiscreteFactor::permuteWithInverse(inversePermutation);
-//      Potentials::permuteWithInverse(inversePermutation);
-//    }
-//
-//    /**
-//     * Apply a reduction, which is a remapping of variable indices.
-//     */
-//    virtual void reduceWithInverse(const internal::Reduction& inverseReduction) {
-//      DiscreteFactor::reduceWithInverse(inverseReduction);
-//      Potentials::reduceWithInverse(inverseReduction);
-//    }
-
     /// Enumerate all values into a map from values to double.
     std::vector<std::pair<DiscreteValues, double>> enumerate() const;
 
@@ -189,16 +173,16 @@ namespace gtsam {
     /// @}
     /// @name Wrapper support
     /// @{
-    
+
     /** output to graphviz format, stream version */
     void dot(std::ostream& os,
-             const KeyFormatter& keyFormatter = DefaultKeyFormatter,
-             bool showZero = true) const;
+            const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+            bool showZero = true) const;
 
     /** output to graphviz format, open a file */
     void dot(const std::string& name,
-             const KeyFormatter& keyFormatter = DefaultKeyFormatter,
-             bool showZero = true) const;
+            const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+            bool showZero = true) const;
 
     /** output to graphviz format string */
     std::string dot(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
@@ -212,7 +196,7 @@ namespace gtsam {
      * @return std::string a markdown string.
      */
     std::string markdown(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
-                         const Names& names = {}) const override;
+                        const Names& names = {}) const override;
 
     /**
      * @brief Render as html table
@@ -222,14 +206,13 @@ namespace gtsam {
      * @return std::string a html string.
      */
     std::string html(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
-                     const Names& names = {}) const override;
+                    const Names& names = {}) const override;
 
     /// @}
-
-};
-// DecisionTreeFactor
+  };
 
 // traits
-template<> struct traits<DecisionTreeFactor> : public Testable<DecisionTreeFactor> {};
+template <>
+struct traits<DecisionTreeFactor> : public Testable<DecisionTreeFactor> {};
 
-}// namespace gtsam
+}  // namespace gtsam
