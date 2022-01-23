@@ -380,7 +380,6 @@ TEST(DecisionTree, unzip) {
   DT1 dt1;
   DT2 dt2;
   std::tie(dt1, dt2) = unzip(tree);
-
   DT1 tree1(B, DT1(A, 0, 1), DT1(A, 2, 1337));
   DT2 tree2(B, DT2(A, "zero", "one"), DT2(A, "two", "l33t"));
 
