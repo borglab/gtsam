@@ -115,6 +115,9 @@ class GTSAM_EXPORT DiscreteFactorGraph
   /** Return the set of variables involved in the factors (set union) */
   KeySet keys() const;
 
+  /// Return the DiscreteKeys in this factor graph.
+  DiscreteKeys discreteKeys() const;
+
   /** return product of all factors as a single factor */
   DecisionTreeFactor product() const;
 

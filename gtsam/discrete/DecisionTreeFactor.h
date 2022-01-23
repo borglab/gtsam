@@ -188,6 +188,9 @@ namespace gtsam {
     /// Enumerate all values into a map from values to double.
     std::vector<std::pair<DiscreteValues, double>> enumerate() const;
 
+    /// Return all the discrete keys associated with this factor.
+    DiscreteKeys discreteKeys() const;
+
     /// @}
     /// @name Wrapper support
     /// @{

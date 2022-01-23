@@ -44,9 +44,23 @@ namespace gtsam {
   /* ************************************************************************* */
   KeySet DiscreteFactorGraph::keys() const {
     KeySet keys;
-    for(const sharedFactor& factor: *this)
-    if (factor) keys.insert(factor->begin(), factor->end());
+    for (const sharedFactor& factor : *this) {
+      if (factor) keys.insert(factor->begin(), factor->end());
+    }
     return keys;
+  }
+
+  /* ************************************************************************* */
+  DiscreteKeys DiscreteFactorGraph::discreteKeys() const {
+    DiscreteKeys result;
+    for (auto&& factor : *this) {
+      if (auto p = boost::dynamic_pointer_cast<DecisionTreeFactor>(factor)) {
+        DiscreteKeys factor_keys = p->discreteKeys();
+        result.insert(result.end(), factor_keys.begin(), factor_keys.end());
+      }
+    }
+
+    return result;
   }
 
   /* ************************************************************************* */
