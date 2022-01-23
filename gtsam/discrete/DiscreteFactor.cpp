@@ -28,7 +28,7 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-std::vector<double> expNormalize(const std::vector<double> &logProbs) {
+std::vector<double> expNormalize(const std::vector<double>& logProbs) {
   double maxLogProb = -std::numeric_limits<double>::infinity();
   for (size_t i = 0; i < logProbs.size(); i++) {
     double logProb = logProbs[i];

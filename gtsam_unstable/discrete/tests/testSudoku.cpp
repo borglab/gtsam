@@ -100,7 +100,7 @@ class Sudoku : public CSP {
 
   /// solve and print solution
   void printSolution() const {
-    auto MPE = optimalAssignment();
+    auto MPE = optimize();
     printAssignment(MPE);
   }
 
@@ -126,7 +126,7 @@ TEST(Sudoku, small) {
              0, 1, 0, 0);
 
   // optimize and check
-  auto solution = csp.optimalAssignment();
+  auto solution = csp.optimize();
   DiscreteValues expected;
   insert(expected)(csp.key(0, 0), 0)(csp.key(0, 1), 1)(csp.key(0, 2), 2)(
       csp.key(0, 3), 3)(csp.key(1, 0), 2)(csp.key(1, 1), 3)(csp.key(1, 2), 0)(
@@ -148,7 +148,7 @@ TEST(Sudoku, small) {
   EXPECT_LONGS_EQUAL(16, new_csp.size());
 
   // Check that solution
-  auto new_solution = new_csp.optimalAssignment();
+  auto new_solution = new_csp.optimize();
   // csp.printAssignment(new_solution);
   EXPECT(assert_equal(expected, new_solution));
 }
@@ -250,7 +250,7 @@ TEST(Sudoku, AJC_3star_Feb8_2012) {
   EXPECT_LONGS_EQUAL(81, new_csp.size());
 
   // Check that solution
-  auto solution = new_csp.optimalAssignment();
+  auto solution = new_csp.optimize();
   // csp.printAssignment(solution);
   EXPECT_LONGS_EQUAL(6, solution.at(key99));
 }

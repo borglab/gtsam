@@ -122,7 +122,7 @@ TEST(schedulingExample, test) {
 
   // Do exact inference
   gttic(small);
-  auto MPE = s.optimalAssignment();
+  auto MPE = s.optimize();
   gttoc(small);
 
   // print MPE, commented out as unit tests don't print
