@@ -70,7 +70,8 @@ class GaussianMixture
       continuousKeys, discreteKeys,
 // TODO     Keys(conditionals), discreteParentKeys,
       Factors(conditionals,
-              [nrFrontals](const GaussianConditional::shared_ptr &p) {
+              [nrFrontals](const GaussianConditional::shared_ptr &p) -> GaussianFactor::shared_ptr {
+                if (!p) return nullptr;
                 if (p->nrFrontals() != nrFrontals)
                   throw std::invalid_argument(
                       (boost::format(
@@ -85,9 +86,10 @@ class GaussianMixture
   /// @{
 
   GaussianConditional::shared_ptr operator()(
-      DiscreteValues& discreteVals) const {
-    auto conditional = boost::dynamic_pointer_cast<GaussianConditional>(
-        factors_(discreteVals));
+      const DiscreteValues& discreteVals) const {
+    auto &ptr = factors_(discreteVals);
+    if (!ptr) return nullptr;
+    auto conditional = boost::dynamic_pointer_cast<GaussianConditional>(ptr);
     if (conditional)
       return conditional;
     else
@@ -99,7 +101,7 @@ class GaussianMixture
   size_t nrComponents() {
     size_t total = 0;
     factors_.visit([&total](const GaussianFactor::shared_ptr &node) {
-      total += 1;
+      if (node) total += 1;
     });
     return total;
   }
@@ -115,6 +117,8 @@ class GaussianMixture
   bool equals(const DCFactor& f, double tol) const override;
 
   /// @}
+
+  friend class IncrementalHybrid;
 };
 
 /// traits

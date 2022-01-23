@@ -54,6 +54,7 @@ void GaussianMixture::print(const std::string &s,
     if (auto jacobianFactor = boost::dynamic_pointer_cast<JacobianFactor>(v)) {
       format_template = "Jacobian factor on %d keys: \n%s\n";
     }
+    if (!v) return std::string {"nullptr\n"};
     return (boost::format(format_template) % v->size() % printCapture(v)).str();
   };
 
@@ -69,6 +70,8 @@ bool GaussianMixture::equals(const DCFactor &f, double tol) const {
     return factors_.equals(other->factors_,
                            [tol](const GaussianFactor::shared_ptr &a,
                                  const GaussianFactor::shared_ptr &b) {
+                             if (a == nullptr && b == nullptr) return true;
+                             if (a == nullptr || b == nullptr) return false;
                              return a->equals(*b, tol);
                            });
   }

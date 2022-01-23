@@ -177,6 +177,106 @@ TEST(DCGaussianElimination, Incremental_inference) {
 /* ****************************************************************************/
 // Test if we can approximately do the inference
 TEST(DCGaussianElimination, Approx_inference) {
+  Switching switching(4);
+
+  IncrementalHybrid incrementalHybrid;
+
+  GaussianHybridFactorGraph graph1;
+
+  // Add the 3 DC factors, x1-x2, x2-x3, x3-x4
+  for (size_t i = 0; i < 3; i++) {
+    graph1.push_back(switching.linearizedFactorGraph.dcGraph().at(i));
+  }
+
+  // Add the Gaussian factors, 1 prior on X(1), 4 measurements
+  for (size_t i = 0; i <= 4; i++) {
+    graph1.push_back(switching.linearizedFactorGraph.gaussianGraph().at(i));
+  }
+
+  // Create ordering.
+  Ordering ordering;
+  for (size_t j = 1; j <= 4; j++) {
+    ordering += X(j);
+  }
+
+  // Now we calculate the actual factors using full elimination
+  HybridBayesNet::shared_ptr unprunedHybridBayesNet;
+  GaussianHybridFactorGraph::shared_ptr unprunedRemainingGraph;
+  std::tie(unprunedHybridBayesNet, unprunedRemainingGraph) =
+      switching.linearizedFactorGraph.eliminatePartialSequential(ordering);
+
+  size_t maxComponents = 5;
+  incrementalHybrid.update(graph1, ordering, maxComponents);
+
+  /*
+   unpruned factor is:
+       Choice(m3)
+       0 Choice(m2)
+       0 0 Choice(m1)
+       0 0 0 Leaf 0.2248 -
+       0 0 1 Leaf 0.3715 -
+       0 1 Choice(m1)
+       0 1 0 Leaf 0.3742 *
+       0 1 1 Leaf 0.6125 *
+       1 Choice(m2)
+       1 0 Choice(m1)
+       1 0 0 Leaf 0.3706 -
+       1 0 1 Leaf 0.6124 *
+       1 1 Choice(m1)
+       1 1 0 Leaf 0.611 *
+       1 1 1 Leaf    1 *
+   */
+  auto remainingFactorGraph = incrementalHybrid.remainingFactorGraph_;
+  CHECK(remainingFactorGraph);
+  EXPECT_LONGS_EQUAL(1, remainingFactorGraph->size());
+
+  auto discreteFactor_m1 = *dynamic_pointer_cast<DecisionTreeFactor>(
+      remainingFactorGraph->discreteGraph().at(0));
+  EXPECT(discreteFactor_m1.keys() == KeyVector({M(3), M(2), M(1)}));
+
+  // Check number of elements equal to zero
+  auto count = [](const double& value, int count) {
+    return value > 0 ? count + 1 : count;
+  };
+  EXPECT_LONGS_EQUAL(5, discreteFactor_m1.fold(count, 0));
+
+  /* A hybrid Bayes net
+   * factor 0:  [x1 | x2 m1 ], 2 components
+   * factor 1:  [x2 | x3 m2 m1 ], 4 components
+   * factor 2:  [x3 | x4 m3 m2 m1 ], 8 components
+   * factor 3:  [x4 | m3 m2 m1 ], 8 components
+  */
+  auto hybridBayesNet = incrementalHybrid.hybridBayesNet_;
+
+  CHECK(hybridBayesNet);
+  EXPECT_LONGS_EQUAL(4, hybridBayesNet->size());
+  EXPECT_LONGS_EQUAL(2, hybridBayesNet->at(0)->nrComponents());
+  EXPECT_LONGS_EQUAL(4, hybridBayesNet->at(1)->nrComponents());
+  EXPECT_LONGS_EQUAL(8, hybridBayesNet->at(2)->nrComponents());
+  EXPECT_LONGS_EQUAL(5, hybridBayesNet->at(3)->nrComponents());
+
+  auto &lastDensity = *(hybridBayesNet->at(3));
+  auto &unprunedLastDensity = *(unprunedHybridBayesNet->at(3));
+  std::vector<std::pair<DiscreteValues, double>>
+      assignments = discreteFactor_m1.enumerate();
+  // Loop over all assignments and check the pruned components
+  for (auto &&av : assignments) {
+    const DiscreteValues &assignment = av.first;
+    const double value = av.second;
+
+    if (value == 0.0) {
+      EXPECT(lastDensity(assignment) == nullptr);
+    } else {
+      CHECK(lastDensity(assignment));
+      EXPECT(assert_equal(*unprunedLastDensity(assignment),
+                          *lastDensity(assignment)));
+    }
+  }
+}
+
+/* ****************************************************************************/
+// Test if we can approximately do the inference
+TEST_UNSAFE(DCGaussianElimination, Incremental_approximate) {
   Switching switching(5);
 
   IncrementalHybrid incrementalHybrid;
@@ -202,52 +302,29 @@ TEST(DCGaussianElimination, Approx_inference) {
   size_t maxComponents = 5;
   incrementalHybrid.update(graph1, ordering, maxComponents);
 
-  /* A hybrid Bayes net
-   * factor 0:  [x1 | x2 m1 ], 2 components
-   * factor 1:  [x2 | x3 m2 m1 ], 4 components
-   * factor 2:  [x3 | x4 m3 m2 m1 ], 8 components
-   * factor 3:  [x4 | m3 m2 m1 ], 8 components
-  */
-  auto hybridBayesNet = incrementalHybrid.hybridBayesNet_;
+  auto &actualBayesNet1 = *incrementalHybrid.hybridBayesNet_;
+  CHECK_EQUAL(4, actualBayesNet1.size());
+  EXPECT_LONGS_EQUAL(2, actualBayesNet1.at(0)->nrComponents());
+  EXPECT_LONGS_EQUAL(4, actualBayesNet1.at(1)->nrComponents());
+  EXPECT_LONGS_EQUAL(8, actualBayesNet1.at(2)->nrComponents());
+  EXPECT_LONGS_EQUAL(5, actualBayesNet1.at(3)->nrComponents());
 
-  CHECK(hybridBayesNet);
-  EXPECT_LONGS_EQUAL(4, hybridBayesNet->size());
-  EXPECT_LONGS_EQUAL(2, hybridBayesNet->at(0)->nrComponents());
-  EXPECT_LONGS_EQUAL(4, hybridBayesNet->at(1)->nrComponents());
-  EXPECT_LONGS_EQUAL(8, hybridBayesNet->at(2)->nrComponents());
-  EXPECT_LONGS_EQUAL(5, hybridBayesNet->at(3)->nrComponents());
+  GaussianHybridFactorGraph graph2;
+  graph2.push_back(switching.linearizedFactorGraph.dcGraph().at(3));
+  graph2.push_back(switching.linearizedFactorGraph.gaussianGraph().at(5));
 
-  GTSAM_PRINT(*hybridBayesNet);
+  Ordering ordering2;
+  ordering2 += X(4);
+  ordering2 += X(5);
 
-  /*
-   unpruned factor is:
-       Choice(m3)
-       0 Choice(m2)
-       0 0 Choice(m1)
-       0 0 0 Leaf 0.2248 -
-       0 0 1 Leaf 0.3715 -
-       0 1 Choice(m1)
-       0 1 0 Leaf 0.3742 *
-       0 1 1 Leaf 0.6125 *
-       1 Choice(m2)
-       1 0 Choice(m1)
-       1 0 0 Leaf 0.3706 -
-       1 0 1 Leaf 0.6124 *
-       1 1 Choice(m1)
-       1 1 0 Leaf 0.611 *
-       1 1 1 Leaf    1 *
-   */
-  auto remainingFactorGraph = incrementalHybrid.remainingFactorGraph_;
-  CHECK(remainingFactorGraph);
-  EXPECT_LONGS_EQUAL(1, remainingFactorGraph->size());
+  incrementalHybrid.update(graph2, ordering2, maxComponents);
 
-  GTSAM_PRINT(*remainingFactorGraph);
-
-  auto discreteFactor_m1 = *dynamic_pointer_cast<DecisionTreeFactor>(
-      remainingFactorGraph->discreteGraph().at(0));
-  EXPECT(discreteFactor_m1.keys() == KeyVector({M(1)}));
-  EXPECT_LONGS_EQUAL(5, discreteFactor_m1.nrLeaves());
+  auto &actualBayesNet = *incrementalHybrid.hybridBayesNet_;
+  CHECK_EQUAL(2, actualBayesNet.size());
+  EXPECT_LONGS_EQUAL(10, actualBayesNet.at(0)->nrComponents());
+  EXPECT_LONGS_EQUAL(5, actualBayesNet.at(1)->nrComponents());
 }
+
 
 /* ************************************************************************* */
 int main() {

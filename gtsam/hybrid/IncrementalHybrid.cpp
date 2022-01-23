@@ -26,12 +26,13 @@ void gtsam::IncrementalHybrid::update(gtsam::GaussianHybridFactorGraph graph,
                                       boost::optional<size_t> maxNrLeaves) {
   // if we are not at the first iteration
   if (hybridBayesNet_) {
-    // We add all relevant densities in the previous `hybridBayesNet` to the graph
+    // We add all relevant conditional mixtures on the last continuous variable
+    // in the previous `hybridBayesNet` to the graph
     std::unordered_set<Key> allVars(ordering.begin(), ordering.end());
-    for (auto &density : *hybridBayesNet_) {
-      for (auto &key : density->frontals()) {
+    for (auto &conditionalMixture : *hybridBayesNet_) {
+      for (auto &key : conditionalMixture->frontals()) {
         if (allVars.find(key) != allVars.end()) {
-          graph.push_back(density);
+          graph.push_back(conditionalMixture);
           break;
         }
       }
@@ -45,44 +46,58 @@ void gtsam::IncrementalHybrid::update(gtsam::GaussianHybridFactorGraph graph,
   // Prune
   if (maxNrLeaves) {
     const auto N = *maxNrLeaves;
-    const auto lastKey = *ordering.rbegin();
 
-    const auto lastDensity =
-        std::find_if(hybridBayesNet_->begin(),
-                     hybridBayesNet_->end(),
-                     [&lastKey](const GaussianMixture::shared_ptr &p) {
-                       if (std::find(p->frontals().begin(),
-                                     p->frontals().end(),
-                                     lastKey)
-                           != p->frontals().end()) {
-                         return true;
-                       } else {
-                         return false;
-                       }
-                     });
+    const GaussianMixture::shared_ptr lastDensity = hybridBayesNet_->back();
 
-    auto discreteFactor_m1 = boost::dynamic_pointer_cast<DecisionTreeFactor>(
+    auto discreteFactor = boost::dynamic_pointer_cast<DecisionTreeFactor>(
         remainingFactorGraph_->discreteGraph().at(0));
-    if (lastDensity != hybridBayesNet_->end()) {
-      // Let's assume that the structure of the last discrete density will be the same as the last continuous
-      // TODO(fan): make a `zip` instead
-      using ProbPair = std::pair<double, Assignment<Key>>;
-      std::vector<ProbPair> probabilities;
-      size_t ord = 0;
-      discreteFactor_m1->visitWith([&](const Assignment<Key> &values, const double &prob) {
-        probabilities.emplace_back(prob, values);
-        ord += 1;
-      });
-      std::nth_element(probabilities.begin(),
-                       probabilities.begin() + N,
-                       probabilities.end(),
-                       std::greater<ProbPair>{});
 
-      (*lastDensity)->factors().visit([&](const GaussianFactor::shared_ptr &p) {
-        // TODO(fan): how to remove stuff??
-      });
-    } else {
-      throw std::out_of_range("We cannot find the last eliminated density");
+    // Let's assume that the structure of the last discrete density will be the same as the last continuous
+    std::vector<double> probabilities;
+    // TODO(fan): The number of probabilities can be lower than the actual number of choices
+    discreteFactor->visit([&](const double &prob) {
+      probabilities.emplace_back(prob);
+    });
+
+    if (probabilities.size() < N) return;
+
+    std::nth_element(probabilities.begin(),
+                     probabilities.begin() + N,
+                     probabilities.end(),
+                     std::greater<double>{});
+
+    auto thresholdValue = probabilities[N - 1];
+
+    // Now threshold
+    auto threshold = [thresholdValue](const double &value) {
+      return value < thresholdValue ? 0.0 : value;
+    };
+    DecisionTree<Key, double> thresholded(*discreteFactor, threshold);
+
+    // Create a new factor with pruned tree
+    // DecisionTreeFactor newFactor(discreteFactor->discreteKeys(), thresholded);
+    discreteFactor->root_ = thresholded.root_;
+
+    std::vector<std::pair<DiscreteValues, double>> assignments = discreteFactor->enumerate();
+
+    // Loop over all assignments and create a vector of GaussianConditionals
+    std::vector<GaussianFactor::shared_ptr> prunedConditionals;
+    for (auto && av : assignments) {
+      const DiscreteValues &assignment = av.first;
+      const double value = av.second;
+
+      if (value == 0.0) {
+        prunedConditionals.emplace_back(nullptr);
+      } else {
+        prunedConditionals.emplace_back(lastDensity->operator()(assignment));
+      }
     }
+
+    GaussianMixture::Factors prunedConditionalsTree(
+        lastDensity->discreteKeys(),
+        prunedConditionals
+    );
+
+    hybridBayesNet_->at(hybridBayesNet_->size() - 1)->factors_ = prunedConditionalsTree;
   }
 }

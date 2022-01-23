@@ -65,7 +65,8 @@ class GTSAM_EXPORT GaussianHybridFactorGraph
       std::is_base_of<GaussianFactor, FACTOR>::value>::type;
 
  public:
-  using shared_ptr = boost::shared_ptr<GaussianHybridFactorGraph>;
+  using This = GaussianHybridFactorGraph;
+  using shared_ptr = boost::shared_ptr<This>;
   using Base = HybridFactorGraph<GaussianFactorGraph>;
 
   /// Default constructor
