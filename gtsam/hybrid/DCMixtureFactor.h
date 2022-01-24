@@ -80,13 +80,14 @@ class DCMixtureFactor : public DCFactor {
   DCMixtureFactor(const KeyVector& keys, const DiscreteKeys& discreteKeys,
                   const std::vector<sharedFactor>& factors,
                   bool normalized = false)
-      : DCMixtureFactor(keys, discreteKeys, Factors(discreteKeys, factors)) {}
+      : DCMixtureFactor(keys, discreteKeys, Factors(discreteKeys, factors),
+                        normalized) {}
 
   ~DCMixtureFactor() = default;
 
   /**
    * @brief Compute error of factor given both continuous and discrete values.
-   * 
+   *
    * @param continuousVals The continuous Values.
    * @param discreteVals The discrete Values.
    * @return double The error of this factor.
@@ -97,7 +98,6 @@ class DCMixtureFactor : public DCFactor {
     auto factor = factors_(discreteVals);
     // Compute the error for the selected factor
     const double factorError = factor->error(continuousVals);
-
     if (normalized_) return factorError;
     return factorError +
            this->nonlinearFactorLogNormalizingConstant(*factor, continuousVals);

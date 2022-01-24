@@ -25,8 +25,6 @@
 
 namespace gtsam {
 
-class GaussianFactor;
-
 /**
  * @brief Abstract class implementing a discrete-continuous factor.
  *
@@ -109,7 +107,7 @@ class DCFactor : public Factor {
    * @param discreteVals - Likewise, assignment to the discrete variables in
    * `discreteKeys__`.
    */
-  virtual boost::shared_ptr<GaussianFactor> linearize(
+  virtual GaussianFactor::shared_ptr linearize(
       const Values& continuousVals,
       const DiscreteValues& discreteVals) const = 0;
 
