@@ -79,7 +79,7 @@ class TestDiscreteBayesNet(GtsamTestCase):
         self.gtsamAssertEquals(chordal.at(7), expected2)
 
         # solve
-        actualMPE = chordal.optimize()
+        actualMPE = fg.optimize()
         expectedMPE = DiscreteValues()
         for key in [Asia, Dyspnea, XRay, Tuberculosis, Smoking, Either, LungCancer, Bronchitis]:
             expectedMPE[key[0]] = 0
@@ -94,8 +94,7 @@ class TestDiscreteBayesNet(GtsamTestCase):
         fg.add(Dyspnea, "0 1")
 
         # solve again, now with evidence
-        chordal2 = fg.eliminateSequential(ordering)
-        actualMPE2 = chordal2.optimize()
+        actualMPE2 = fg.optimize()
         expectedMPE2 = DiscreteValues()
         for key in [XRay, Tuberculosis, Either, LungCancer]:
             expectedMPE2[key[0]] = 0
@@ -105,6 +104,7 @@ class TestDiscreteBayesNet(GtsamTestCase):
                          list(expectedMPE2.items()))
 
         # now sample from it
+        chordal2 = fg.eliminateSequential(ordering)
         actualSample = chordal2.sample()
         self.assertEqual(len(actualSample), 8)
 
@@ -121,10 +121,6 @@ class TestDiscreteBayesNet(GtsamTestCase):
         given = DiscreteValues()
         for key in [Asia, Smoking]:
             given[key[0]] = 0
-
-        # Now optimize fragment:
-        actual = fragment.optimize(given)
-        self.assertEqual(len(actual), 5)
 
         # Now sample from fragment:
         actual = fragment.sample(given)

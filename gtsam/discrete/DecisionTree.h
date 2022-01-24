@@ -26,9 +26,11 @@
 #include <functional>
 #include <iostream>
 #include <map>
-#include <sstream>
-#include <vector>
 #include <set>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace gtsam {
 
@@ -38,16 +40,14 @@ namespace gtsam {
    * Y = function range (any algebra), e.g., bool, int, double
    */
   template<typename L, typename Y>
-  class GTSAM_EXPORT DecisionTree {
-
+  class DecisionTree {
    protected:
     /// Default method for comparison of two objects of type Y.
     static bool DefaultCompare(const Y& a, const Y& b) {
       return a == b;
     }
 
-  public:
-
+   public:
     using LabelFormatter = std::function<std::string(L)>;
     using ValueFormatter = std::function<std::string(Y)>;
     using CompareFunc = std::function<bool(const Y&, const Y&)>;
@@ -57,15 +57,14 @@ namespace gtsam {
     using Binary = std::function<Y(const Y&, const Y&)>;
 
     /** A label annotated with cardinality */
-    using LabelC = std::pair<L,size_t>;
+    using LabelC = std::pair<L, size_t>;
 
     /** DTs consist of Leaf and Choice nodes, both subclasses of Node */
-    class Leaf;
-    class Choice;
+    struct Leaf;
+    struct Choice;
 
     /** ------------------------ Node base class --------------------------- */
-    class Node {
-    public:
+    struct Node {
       using Ptr = boost::shared_ptr<const Node>;
 
 #ifdef DT_DEBUG_MEMORY
@@ -75,14 +74,16 @@ namespace gtsam {
       // Constructor
       Node() {
 #ifdef DT_DEBUG_MEMORY
-      std::cout << ++nrNodes << " constructed " << id() << std::endl; std::cout.flush();
+        std::cout << ++nrNodes << " constructed " << id() << std::endl;
+        std::cout.flush();
 #endif
       }
 
       // Destructor
       virtual ~Node() {
 #ifdef DT_DEBUG_MEMORY
-      std::cout << --nrNodes << " destructed " << id() << std::endl; std::cout.flush();
+        std::cout << --nrNodes << " destructed " << id() << std::endl;
+        std::cout.flush();
 #endif
       }
 
@@ -110,17 +111,17 @@ namespace gtsam {
     };
     /** ------------------------ Node base class --------------------------- */
 
-  public:
-
+   public:
     /** A function is a shared pointer to the root of a DT */
     using NodePtr = typename Node::Ptr;
 
     /// A DecisionTree just contains the root. TODO(dellaert): make protected.
     NodePtr root_;
 
-  protected:
-
-    /** Internal recursive function to create from keys, cardinalities, and Y values */
+   protected:
+    /** Internal recursive function to create from keys, cardinalities, 
+     * and Y values 
+     */
     template<typename It, typename ValueIt>
     NodePtr create(It begin, It end, ValueIt beginY, ValueIt endY) const;
 
@@ -140,7 +141,6 @@ namespace gtsam {
                         std::function<Y(const X&)> Y_of_X) const;
 
    public:
-
     /// @name Standard Constructors
     /// @{
 
@@ -148,7 +148,7 @@ namespace gtsam {
     DecisionTree();
 
     /** Create a constant */
-    DecisionTree(const Y& y);
+    explicit DecisionTree(const Y& y);
 
     /** Create a new leaf function splitting on a variable */
     DecisionTree(const L& label, const Y& y1, const Y& y2);
@@ -167,8 +167,8 @@ namespace gtsam {
     DecisionTree(Iterator begin, Iterator end, const L& label);
 
     /** Create DecisionTree from two others */
-    DecisionTree(const L& label, //
-        const DecisionTree& f0, const DecisionTree& f1);
+    DecisionTree(const L& label, const DecisionTree& f0,
+                 const DecisionTree& f1);
 
     /**
      * @brief Convert from a different value type.
@@ -234,6 +234,8 @@ namespace gtsam {
      * 
      * @param f side-effect taking a value.
      * 
+     * @note Due to pruning, leaves might not exhaust choices.
+     * 
      * Example:
      *   int sum = 0;
      *   auto visitor = [&](int y) { sum += y; };
@@ -246,6 +248,8 @@ namespace gtsam {
      * @brief Visit all leaves in depth-first fashion.
      * 
      * @param f side-effect taking an assignment and a value.
+     * 
+     * @note Due to pruning, leaves might not exhaust choices.
      * 
      * Example:
      *   int sum = 0;
@@ -264,6 +268,7 @@ namespace gtsam {
      * @return X final value for accumulator.
      * 
      * @note X is always passed by value.
+     * @note Due to pruning, leaves might not exhaust choices.
      * 
      * Example:
      *   auto add = [](const double& y, double x) { return y + x; };
@@ -289,7 +294,8 @@ namespace gtsam {
     }
 
     /** combine subtrees on key with binary operation "op" */
-    DecisionTree combine(const L& label, size_t cardinality, const Binary& op) const;
+    DecisionTree combine(const L& label, size_t cardinality,
+                         const Binary& op) const;
 
     /** combine with LabelC for convenience */
     DecisionTree combine(const LabelC& labelC, const Binary& op) const {
@@ -313,15 +319,14 @@ namespace gtsam {
     /// @{
 
     // internal use only
-    DecisionTree(const NodePtr& root);
+    explicit DecisionTree(const NodePtr& root);
 
     // internal use only
     template<typename Iterator> NodePtr
     compose(Iterator begin, Iterator end, const L& label) const;
 
     /// @}
-
-  }; // DecisionTree
+  };  // DecisionTree
 
   /** free versions of apply */
 
@@ -340,4 +345,19 @@ namespace gtsam {
     return f.apply(g, op);
   }
 
-} // namespace gtsam
+  /**
+   * @brief unzip a DecisionTree with `std::pair` values.
+   * 
+   * @param input the DecisionTree with `(T1,T2)` values.
+   * @return a pair of DecisionTree on T1 and T2, respectively.
+   */
+  template <typename L, typename T1, typename T2>
+  std::pair<DecisionTree<L, T1>, DecisionTree<L, T2> > unzip(
+      const DecisionTree<L, std::pair<T1, T2> >& input) {
+    return std::make_pair(
+        DecisionTree<L, T1>(input, [](std::pair<T1, T2> i) { return i.first; }),
+        DecisionTree<L, T2>(input,
+                            [](std::pair<T1, T2> i) { return i.second; }));
+  }
+
+}  // namespace gtsam

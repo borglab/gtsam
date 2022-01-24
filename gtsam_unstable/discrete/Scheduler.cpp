@@ -255,23 +255,6 @@ DiscreteBayesNet::shared_ptr Scheduler::eliminate() const {
   return chordal;
 }
 
-/** Find the best total assignment - can be expensive */
-DiscreteValues Scheduler::optimalAssignment() const {
-  DiscreteBayesNet::shared_ptr chordal = eliminate();
-
-  if (ISDEBUG("Scheduler::optimalAssignment")) {
-    DiscreteBayesNet::const_iterator it = chordal->end() - 1;
-    const Student& student = students_.front();
-    cout << endl;
-    (*it)->print(student.name_);
-  }
-
-  gttic(my_optimize);
-  DiscreteValues mpe = chordal->optimize();
-  gttoc(my_optimize);
-  return mpe;
-}
-
 /** find the assignment of students to slots with most possible committees */
 DiscreteValues Scheduler::bestSchedule() const {
   DiscreteValues best;
