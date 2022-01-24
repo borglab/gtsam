@@ -133,6 +133,18 @@ class Ordering {
   void serialize() const;
 };
 
+#include <gtsam/nonlinear/GraphvizFormatting.h>
+class GraphvizFormatting : gtsam::DotWriter {
+  GraphvizFormatting();
+
+  enum Axis { X, Y, Z, NEGX, NEGY, NEGZ };
+  Axis paperHorizontalAxis;
+  Axis paperVerticalAxis;
+
+  double scale;
+  bool mergeSimilarFactors;
+};
+
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 class NonlinearFactorGraph {
   NonlinearFactorGraph();
@@ -195,10 +207,13 @@ class NonlinearFactorGraph {
 
   string dot(
       const gtsam::Values& values,
-      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter);
+      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
+      const GraphvizFormatting& writer = GraphvizFormatting());
   void saveGraph(const string& s, const gtsam::Values& values,
                  const gtsam::KeyFormatter& keyFormatter =
-                     gtsam::DefaultKeyFormatter) const;
+                     gtsam::DefaultKeyFormatter,
+                 const GraphvizFormatting& writer =
+                     GraphvizFormatting()) const;
 };
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
