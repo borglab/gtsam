@@ -41,7 +41,6 @@ namespace gtsam {
    */
   template<typename L, typename Y>
   class DecisionTree {
-
    protected:
     /// Default method for comparison of two objects of type Y.
     static bool DefaultCompare(const Y& a, const Y& b) {
@@ -348,7 +347,7 @@ namespace gtsam {
 
   /**
    * @brief unzip a DecisionTree with `std::pair` values.
-   *
+   * 
    * @param input the DecisionTree with `(T1,T2)` values.
    * @return a pair of DecisionTree on T1 and T2, respectively.
    */
