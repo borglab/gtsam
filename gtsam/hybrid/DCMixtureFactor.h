@@ -168,7 +168,8 @@ class DCMixtureFactor : public DCFactor {
   }
 
   /// Linearize all the continuous factors to get a DCGaussianMixtureFactor.
-  DCFactor::shared_ptr linearize(const Values& continuousVals) const override {
+  boost::shared_ptr<DCGaussianMixtureFactor> linearize(
+      const Values& continuousVals) const override {
     auto linearizeDT = [continuousVals](const sharedFactor& factor) {
       return factor->linearize(continuousVals);
     };

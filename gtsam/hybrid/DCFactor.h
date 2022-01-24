@@ -25,6 +25,9 @@
 
 namespace gtsam {
 
+// Forward declaration of subclass.
+class DCGaussianMixtureFactor;
+
 /**
  * @brief Abstract class implementing a discrete-continuous factor.
  *
@@ -120,9 +123,9 @@ class DCFactor : public Factor {
    * continuous factors associated with this factor.
    *
    * @param continuousVals The continuous variables referenced by `keys_`.
-   * @return DCFactor::shared_ptr
+   * @return DCGaussianMixtureFactor::shared_ptr
    */
-  virtual DCFactor::shared_ptr linearize(
+  virtual boost::shared_ptr<DCGaussianMixtureFactor> linearize(
       const Values& continuousVals) const = 0;
 
   /**
@@ -224,8 +227,7 @@ class DCFactor : public Factor {
         // something with a normalized noise model
         // TODO(kevin): does this make sense to do? I think maybe not in
         // general? Should we just yell at the user?
-        boost::shared_ptr<GaussianFactor> gaussianFactor =
-            factor.linearize(values);
+        GaussianFactor::shared_ptr gaussianFactor = factor.linearize(values);
         infoMat = gaussianFactor->information();
       }
     }
