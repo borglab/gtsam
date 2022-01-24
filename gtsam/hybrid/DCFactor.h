@@ -25,6 +25,9 @@
 
 namespace gtsam {
 
+// Forward declaration of subclass.
+class DCGaussianMixtureFactor;
+
 /**
  * @brief Abstract class implementing a discrete-continuous factor.
  *
@@ -39,8 +42,19 @@ class DCFactor : public Factor {
 
  public:
   using Base = Factor;
+  using shared_ptr = boost::shared_ptr<DCFactor>;
 
   DCFactor() = default;
+
+  /// Used in constructor to gather all keys, continuous and discrete.
+  static KeyVector AllKeys(const KeyVector& continuousKeys,
+                           const DiscreteKeys& discreteKeys) {
+    auto result = continuousKeys;
+    for (auto& dk : discreteKeys) {
+      result.push_back(dk.first);
+    }
+    return result;
+  }
 
   /**
    * Base constructor for a DCFactor from a set of discrete keys and continuous
@@ -50,11 +64,8 @@ class DCFactor : public Factor {
    * @param discreteKeys - the keys for *discrete* variables
    */
   DCFactor(const KeyVector& continuousKeys, const DiscreteKeys& discreteKeys)
-      : Base(continuousKeys), discreteKeys_(discreteKeys) {}
-
-  // NOTE unsure if needed?
-  explicit DCFactor(const DiscreteKeys& discreteKeys)
-      : discreteKeys_(discreteKeys) {}
+      : Base(AllKeys(continuousKeys, discreteKeys)),
+        discreteKeys_(discreteKeys) {}
 
   DCFactor& operator=(const DCFactor& rhs) {
     Base::operator=(rhs);
@@ -99,9 +110,23 @@ class DCFactor : public Factor {
    * @param discreteVals - Likewise, assignment to the discrete variables in
    * `discreteKeys__`.
    */
-  virtual boost::shared_ptr<GaussianFactor> linearize(
+  virtual GaussianFactor::shared_ptr linearize(
       const Values& continuousVals,
       const DiscreteValues& discreteVals) const = 0;
+
+  /**
+   * @brief Linearize all the continuous factors only with respect to the
+   * continuous variables (as given in `keys_`).
+   *
+   * This `linearize` is different from the `linearize(continuous, discrete)` in
+   * that it assumes no assignment of discrete keys and linearizes all
+   * continuous factors associated with this factor.
+   *
+   * @param continuousVals The continuous variables referenced by `keys_`.
+   * @return DCGaussianMixtureFactor::shared_ptr
+   */
+  virtual boost::shared_ptr<DCGaussianMixtureFactor> linearize(
+      const Values& continuousVals) const = 0;
 
   /**
    * Returns true when the DCFactor is equal to `other`
@@ -202,8 +227,7 @@ class DCFactor : public Factor {
         // something with a normalized noise model
         // TODO(kevin): does this make sense to do? I think maybe not in
         // general? Should we just yell at the user?
-        boost::shared_ptr<GaussianFactor> gaussianFactor =
-            factor.linearize(values);
+        GaussianFactor::shared_ptr gaussianFactor = factor.linearize(values);
         infoMat = gaussianFactor->information();
       }
     }
