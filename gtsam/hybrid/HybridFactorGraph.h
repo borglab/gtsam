@@ -16,7 +16,6 @@
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/hybrid/DCFactorGraph.h>
 
-#include <boost/make_shared.hpp>
 #include <string>
 
 namespace gtsam {

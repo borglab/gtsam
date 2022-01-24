@@ -25,6 +25,8 @@
 #include <gtsam/linear/GaussianEliminationTree.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
 
+#include <boost/make_shared.hpp>
+
 using namespace std;
 
 namespace gtsam {

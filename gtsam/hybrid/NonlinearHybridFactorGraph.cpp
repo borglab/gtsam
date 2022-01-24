@@ -14,6 +14,8 @@
 #include <gtsam/hybrid/GaussianHybridFactorGraph.h>
 #include <gtsam/hybrid/NonlinearHybridFactorGraph.h>
 
+#include <boost/make_shared.hpp>
+
 using namespace std;
 
 namespace gtsam {
