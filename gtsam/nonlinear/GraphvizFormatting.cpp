@@ -53,6 +53,17 @@ boost::optional<Vector2> GraphvizFormatting::operator()(
   } else if (const GenericValue<Vector2>* p =
                  dynamic_cast<const GenericValue<Vector2>*>(&value)) {
     t << p->value().x(), p->value().y(), 0;
+  } else if (const GenericValue<Vector>* p =
+                 dynamic_cast<const GenericValue<Vector>*>(&value)) {
+    if (p->dim() == 2) {
+      const Eigen::Ref<const Vector2> p_2d(p->value());
+      t << p_2d.x(), p_2d.y(), 0;
+    } else if (p->dim() == 3) {
+      const Eigen::Ref<const Vector3> p_3d(p->value());
+      t = p_3d;
+    } else {
+      return boost::none;
+    }
   } else if (const GenericValue<Pose3>* p =
                  dynamic_cast<const GenericValue<Pose3>*>(&value)) {
     t = p->value().translation();
