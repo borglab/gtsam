@@ -61,41 +61,20 @@ class GaussianMixture
    * TODO(Frank): should pass frontal keys, cont. parent keys, discrete parent
    * keys, cannot be a conditional on a discrete key.
    * TODO: desired API =
-   * GaussianConditionalMixture(const Conditionals& conditionals, 
+   * GaussianConditionalMixture(const Conditionals& conditionals,
    *                            const DiscreteKeys& discreteParentKeys)
    */
-  GaussianMixture(size_t nrFrontals,
-                  const KeyVector &continuousKeys,
-                  const DiscreteKeys &discreteKeys,
-                  const Conditionals &conditionals)
-      : BaseFactor(
-      continuousKeys, discreteKeys,
-// TODO     Keys(conditionals), discreteParentKeys,
-      Factors(conditionals,
-              [nrFrontals](const GaussianConditional::shared_ptr &p) {
-                if (p->nrFrontals() != nrFrontals)
-                  throw std::invalid_argument(
-                      (boost::format(
-                          "GaussianMixture() received a conditional with invalid number %d of frontals (should be %d).")
-                          % nrFrontals % p->nrFrontals()).str());
-                return boost::dynamic_pointer_cast<GaussianFactor>(p);
-              })),
-        BaseConditional(nrFrontals) {}
+  GaussianMixture(size_t nrFrontals, const KeyVector& continuousKeys,
+                  const DiscreteKeys& discreteKeys,
+                  const Conditionals& conditionals);
 
   /// @}
   /// @name Standard API
   /// @{
 
   GaussianConditional::shared_ptr operator()(
-      DiscreteValues& discreteVals) const {
-    auto conditional = boost::dynamic_pointer_cast<GaussianConditional>(
-        factors_(discreteVals));
-    if (conditional)
-      return conditional;
-    else
-      throw std::logic_error(
-          "A GaussianMixture unexpectedly contained a non-conditional");
-  }
+      DiscreteValues& discreteVals) const;
+
   /// @}
   /// @name Testable
   /// @{

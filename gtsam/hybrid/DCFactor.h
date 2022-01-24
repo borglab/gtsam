@@ -25,6 +25,8 @@
 
 namespace gtsam {
 
+class GaussianFactor;
+
 /**
  * @brief Abstract class implementing a discrete-continuous factor.
  *
@@ -63,10 +65,6 @@ class DCFactor : public Factor {
   DCFactor(const KeyVector& continuousKeys, const DiscreteKeys& discreteKeys)
       : Base(AllKeys(continuousKeys, discreteKeys)),
         discreteKeys_(discreteKeys) {}
-
-  // NOTE unsure if needed?
-  explicit DCFactor(const DiscreteKeys& discreteKeys)
-      : DCFactor({}, discreteKeys) {}
 
   DCFactor& operator=(const DCFactor& rhs) {
     Base::operator=(rhs);
@@ -111,7 +109,7 @@ class DCFactor : public Factor {
    * @param discreteVals - Likewise, assignment to the discrete variables in
    * `discreteKeys__`.
    */
-  virtual GaussianFactor::shared_ptr linearize(
+  virtual boost::shared_ptr<GaussianFactor> linearize(
       const Values& continuousVals,
       const DiscreteValues& discreteVals) const = 0;
 
