@@ -170,7 +170,7 @@ endif()
 # Add custom target so we can install with `make python-install`
 set(GTSAM_PYTHON_INSTALL_TARGET python-install)
 add_custom_target(${GTSAM_PYTHON_INSTALL_TARGET}
-        COMMAND ${PYTHON_EXECUTABLE} ${GTSAM_PYTHON_BUILD_DIRECTORY}/setup.py install --prefix ${CMAKE_INSTALL_PREFIX}
+        COMMAND ${PYTHON_EXECUTABLE} ${GTSAM_PYTHON_BUILD_DIRECTORY}/setup.py install
         DEPENDS ${GTSAM_PYTHON_DEPENDENCIES}
         WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY})
 
