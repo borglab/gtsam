@@ -1,12 +1,8 @@
 """
-GTSAM Copyright 2010-2021, Georgia Tech Research Corporation,
-Atlanta, Georgia 30332-0415
-All Rights Reserved
-
 See LICENSE for the license information
 
 Unit tests for Graphviz formatting of NonlinearFactorGraph.
-Author: Frank Dellaert & senselessDev
+Author: senselessDev (contact by mentioning on GitHub, e.g. in PR#1059)
 """
 
 # pylint: disable=no-member, invalid-name
