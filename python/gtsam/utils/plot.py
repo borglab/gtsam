@@ -75,8 +75,9 @@ def plot_covariance_ellipse_3d(axes,
     Plots a Gaussian as an uncertainty ellipse
 
     Based on Maybeck Vol 1, page 366
-    k=2.296 corresponds to 1 std, 68.26% of all probability
-    k=11.82 corresponds to 3 std, 99.74% of all probability
+    For the 3D case:
+    k = 3.527 corresponds to 1 std, 68.26% of all probability
+    k = 14.157 corresponds to 3 std, 99.74% of all probability
 
     Args:
         axes (matplotlib.axes.Axes): Matplotlib axes.
@@ -87,7 +88,7 @@ def plot_covariance_ellipse_3d(axes,
         n: Defines the granularity of the ellipse. Higher values indicate finer ellipses.
         alpha: Transparency value for the plotted surface in the range [0, 1].
     """
-    k = 11.82
+    k = np.sqrt(14.157)
     U, S, _ = np.linalg.svd(P)
 
     radii = k * np.sqrt(S)
@@ -113,7 +114,14 @@ def plot_point2_on_axes(axes,
                         linespec: str,
                         P: Optional[np.ndarray] = None) -> None:
     """
-    Plot a 2D point on given axis `axes` with given `linespec`.
+    Plot a 2D point and its corresponding uncertainty ellipse on given axis
+    `axes` with given `linespec`.
+
+    Based on Stochastic Models, Estimation, and Control Vol 1 by Maybeck,
+    page 366
+    For the 2D case:
+    k = 2.296 corresponds to 1 std, 68.26% of all probability
+    k = 11.820 corresponds to 3 std, 99.74% of all probability
 
     Args:
         axes (matplotlib.axes.Axes): Matplotlib axes.
@@ -125,16 +133,15 @@ def plot_point2_on_axes(axes,
     if P is not None:
         w, v = np.linalg.eig(P)
 
-        # "Sigma" value for drawing the uncertainty ellipse. 5 sigma corresponds
-        # to a 99.9999% confidence, i.e. assuming the estimation has been
-        # computed properly, there is a 99.999% chance that the true position
-        # of the point will lie within the uncertainty ellipse.
-        k = 5.0
+        # Scaling value for the uncertainty ellipse, we multiply by 2 because
+        # matplotlib takes the diameter and not the radius of the major and
+        # minor axes of the ellipse.
+        k = 2*np.sqrt(11.820)
 
         angle = np.arctan2(v[1, 0], v[0, 0])
         e1 = patches.Ellipse(point,
-                             np.sqrt(w[0] * k),
-                             np.sqrt(w[1] * k),
+                             np.sqrt(w[0]) * k,
+                             np.sqrt(w[1]) * k,
                              np.rad2deg(angle),
                              fill=False)
         axes.add_patch(e1)
@@ -178,6 +185,12 @@ def plot_pose2_on_axes(axes,
     """
     Plot a 2D pose on given axis `axes` with given `axis_length`.
 
+    Based on Stochastic Models, Estimation, and Control Vol 1 by Maybeck,
+    page 366
+    For the 2D case:
+    k = 2.296 corresponds to 1 std, 68.26% of all probability
+    k = 11.820 corresponds to 3 std, 99.74% of all probability
+
     Args:
         axes (matplotlib.axes.Axes): Matplotlib axes.
         pose: The pose to be plotted.
@@ -205,13 +218,12 @@ def plot_pose2_on_axes(axes,
 
         w, v = np.linalg.eig(gPp)
 
-        # k = 2.296
-        k = 5.0
+        k = 2*np.sqrt(11.820)
 
         angle = np.arctan2(v[1, 0], v[0, 0])
         e1 = patches.Ellipse(origin,
-                             np.sqrt(w[0] * k),
-                             np.sqrt(w[1] * k),
+                             np.sqrt(w[0]) * k,
+                             np.sqrt(w[1]) * k,
                              np.rad2deg(angle),
                              fill=False)
         axes.add_patch(e1)
