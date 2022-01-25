@@ -65,12 +65,10 @@ namespace gtsam {
     std::map<Key,size_t> cardinalities() const;
 
     /// Add a key (non-const!)
-    // TODO(Frank): we need this operator even if we make it a map.
     DiscreteKeys& operator&(const DiscreteKey& key) {
       push_back(key);
       return *this;
     }
-
   }; // DiscreteKeys
 
   /// Create a list from two keys

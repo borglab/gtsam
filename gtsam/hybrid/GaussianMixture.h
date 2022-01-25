@@ -60,43 +60,19 @@ class GaussianMixture
    * @param conditionals A decision tree of GaussianConditional instances.
    * keys, cannot be a conditional on a discrete key.
    * TODO: desired API =
-   * GaussianConditionalMixture(const Conditionals& conditionals, 
+   * GaussianConditionalMixture(const Conditionals& conditionals,
    *                            const DiscreteKeys& discreteParentKeys)
    */
   GaussianMixture(size_t nrFrontals,
                   const KeyVector &continuousKeys,
                   const DiscreteKeys &discreteKeys,
-                  const Conditionals &conditionals)
-      : BaseFactor(
-      continuousKeys, discreteKeys,
-// TODO     Keys(conditionals), discreteParentKeys,
-      Factors(conditionals,
-              [nrFrontals](const GaussianConditional::shared_ptr &p) -> GaussianFactor::shared_ptr {
-                if (!p) return nullptr;
-                if (p->nrFrontals() != nrFrontals)
-                  throw std::invalid_argument(
-                      (boost::format(
-                          "GaussianMixture() received a conditional with invalid number %d of frontals (should be %d).")
-                          % nrFrontals % p->nrFrontals()).str());
-                return boost::dynamic_pointer_cast<GaussianFactor>(p);
-              })),
-        BaseConditional(nrFrontals) {}
+                  const Conditionals &conditionals);
 
   /// @}
   /// @name Standard API
   /// @{
 
-  GaussianConditional::shared_ptr operator()(
-      const DiscreteValues& discreteVals) const {
-    auto &ptr = factors_(discreteVals);
-    if (!ptr) return nullptr;
-    auto conditional = boost::dynamic_pointer_cast<GaussianConditional>(ptr);
-    if (conditional)
-      return conditional;
-    else
-      throw std::logic_error(
-          "A GaussianMixture unexpectedly contained a non-conditional");
-  }
+  GaussianConditional::shared_ptr operator()(const DiscreteValues& discreteVals) const;
 
   /// Returns the total number of continuous components
   size_t nrComponents() {

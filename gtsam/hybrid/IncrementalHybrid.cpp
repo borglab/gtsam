@@ -59,7 +59,8 @@ void gtsam::IncrementalHybrid::update(gtsam::GaussianHybridFactorGraph graph,
     auto discreteFactor = boost::dynamic_pointer_cast<DecisionTreeFactor>(
         remainingFactorGraph_->discreteGraph().at(0));
 
-    // Let's assume that the structure of the last discrete density will be the same as the last continuous
+    // Let's assume that the structure of the last discrete density will be the
+    // same as the last continuous
     std::vector<double> probabilities;
     // TODO(fan): The number of probabilities can be lower than the actual number of choices
     discreteFactor->visit([&](const double &prob) {

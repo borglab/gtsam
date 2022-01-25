@@ -23,7 +23,6 @@
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/hybrid/DCFactor.h>
 #include <gtsam/inference/Factor.h>
-#include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
 #include <algorithm>
@@ -113,9 +112,9 @@ class DCGaussianMixtureFactor : public DCFactor {
   }
 
   /// Return linearized version of this factor.
-  virtual DCFactor::shared_ptr linearize(
+  boost::shared_ptr<DCGaussianMixtureFactor> linearize(
       const Values& continuousVals) const override {
-    throw std::runtime_error("DCGaussianFactor is already linear");
+    throw std::runtime_error("DCGaussianMixtureFactor is already linear");
   }
 
   // TODO(dellaert): implement

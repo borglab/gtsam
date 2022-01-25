@@ -51,14 +51,17 @@ TEST(DiscreteBayesTree, Switching) {
   using noiseModel::Isotropic;
   using symbol_shorthand::X;
   using PriorMixture = DCMixtureFactor<PriorFactor<double>>;
-  PriorFactor<double> prior(X(1), 0, Isotropic::Sigma(1, 0.1));
+  auto prior = boost::make_shared<PriorFactor<double>>(
+      X(1), 0, Isotropic::Sigma(1, 0.1));
   PriorMixture priorMixture({X(1)}, DiscreteKeys{modes[0]}, {prior, prior});
   fg.add(priorMixture);
 
   // Add "motion models".
   for (size_t k = 1; k < K; k++) {
-    BetweenFactor<double> still(X(k), X(k + 1), 0.0, Isotropic::Sigma(2, 1.0)),
-        moving(X(k), X(k + 1), 1.0, Isotropic::Sigma(2, 1.0));
+    auto still = boost::make_shared<BetweenFactor<double>>(
+        X(k), X(k + 1), 0.0, Isotropic::Sigma(2, 1.0));
+    auto moving = boost::make_shared<BetweenFactor<double>>(
+        X(k), X(k + 1), 1.0, Isotropic::Sigma(2, 1.0));
     using MotionMixture = DCMixtureFactor<BetweenFactor<double>>;
     MotionMixture mixture({X(k), X(k + 1)}, DiscreteKeys{modes[k]},
                           {still, moving});

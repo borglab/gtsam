@@ -20,10 +20,47 @@
 #include <gtsam/hybrid/GaussianMixture.h>
 #include <gtsam/inference/Conditional-inst.h>
 
+#include <numeric>
+#include <regex>
+
 namespace gtsam {
 
 // Instantiate base class
 template class Conditional<DCGaussianMixtureFactor, GaussianMixture>;
+
+GaussianMixture::GaussianMixture(size_t nrFrontals,
+                                 const KeyVector &continuousKeys,
+                                 const DiscreteKeys &discreteKeys,
+                                 const Conditionals &conditionals)
+    : BaseFactor(
+          continuousKeys, discreteKeys,
+          // TODO     Keys(conditionals), discreteParentKeys,
+          Factors(
+              conditionals,
+              [nrFrontals](const GaussianConditional::shared_ptr &p) -> GaussianFactor::shared_ptr {
+                if (!p) return nullptr;
+                if (p->nrFrontals() != nrFrontals)
+                  throw std::invalid_argument(
+                      (boost::format(
+                          "GaussianMixture() received a conditional with "
+                          "invalid number %d of frontals (should be %d).") %
+                          nrFrontals % p->nrFrontals())
+                          .str());
+                return boost::dynamic_pointer_cast<GaussianFactor>(p);
+              })),
+      BaseConditional(nrFrontals) {}
+
+GaussianConditional::shared_ptr GaussianMixture::operator()(
+    const DiscreteValues &discreteVals) const {
+  auto &ptr = factors_(discreteVals);
+  if (!ptr) return nullptr;
+  auto conditional = boost::dynamic_pointer_cast<GaussianConditional>(ptr);
+  if (conditional)
+    return conditional;
+  else
+    throw std::logic_error(
+        "A GaussianMixture unexpectedly contained a non-conditional");
+}
 
 void GaussianMixture::print(const std::string &s,
                             const KeyFormatter &keyFormatter) const {

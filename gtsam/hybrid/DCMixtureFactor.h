@@ -80,35 +80,24 @@ class DCMixtureFactor : public DCFactor {
   DCMixtureFactor(const KeyVector& keys, const DiscreteKeys& discreteKeys,
                   const std::vector<sharedFactor>& factors,
                   bool normalized = false)
-      : DCMixtureFactor(keys, discreteKeys,
-                        Factors(discreteKeys, factors)) {}
-
-  /**
-   * @brief DEPRECATED constructor with non-shared pointers.
-   */
-  DCMixtureFactor(const KeyVector& keys, const DiscreteKeys& discreteKeys,
-                  const std::vector<NonlinearFactorType>& factors,
-                  bool normalized = false)
-      : Base(keys, discreteKeys), normalized_(normalized) {
-    std::vector<sharedFactor> factor_pointers;
-    for (auto&& factor : factors) {
-      // TODO(frank): malloc + copy!
-      auto f_ptr = boost::make_shared<NonlinearFactorType>(factor);
-      factor_pointers.push_back(f_ptr);
-    }
-    // Generate decision tree based on discreteKey to factor mapping.
-    factors_ = Factors(discreteKeys, factor_pointers);
-  }
+      : DCMixtureFactor(keys, discreteKeys, Factors(discreteKeys, factors),
+                        normalized) {}
 
   ~DCMixtureFactor() = default;
 
+  /**
+   * @brief Compute error of factor given both continuous and discrete values.
+   *
+   * @param continuousVals The continuous Values.
+   * @param discreteVals The discrete Values.
+   * @return double The error of this factor.
+   */
   double error(const Values& continuousVals,
                const DiscreteValues& discreteVals) const override {
     // Retrieve the factor corresponding to the assignment in discreteVals.
     auto factor = factors_(discreteVals);
     // Compute the error for the selected factor
     const double factorError = factor->error(continuousVals);
-
     if (normalized_) return factorError;
     return factorError +
            this->nonlinearFactorLogNormalizingConstant(*factor, continuousVals);
@@ -179,7 +168,8 @@ class DCMixtureFactor : public DCFactor {
   }
 
   /// Linearize all the continuous factors to get a DCGaussianMixtureFactor.
-  DCFactor::shared_ptr linearize(const Values& continuousVals) const override {
+  boost::shared_ptr<DCGaussianMixtureFactor> linearize(
+      const Values& continuousVals) const override {
     auto linearizeDT = [continuousVals](const sharedFactor& factor) {
       return factor->linearize(continuousVals);
     };
