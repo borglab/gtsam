@@ -1947,8 +1947,8 @@ reference "fig:CompareMarginals"
 
 \end_inset
 
-, where I show the marginals on position as covariance ellipses that contain
- 99.9996% of all probability mass.
+, where I show the marginals on position as 5-sigma covariance ellipses
+ that contain 99.9996% of all probability mass.
  For the odometry marginals, it is immediately apparent from the figure
  that (1) the uncertainty on pose keeps growing, and (2) the uncertainty
  on angular odometry translates into increasing uncertainty on y.
@@ -2202,9 +2202,9 @@ reference "fig:example"
 \end_inset
 
 , along with covariance ellipses shown in green.
- These covariance ellipses in 2D indicate the marginal over position, over
- all possible orientations, and show the area which contain 99.9996% of the
- probability mass.
+ These 5-sigma covariance ellipses in 2D indicate the marginal over position,
+ over all possible orientations, and show the area which contain 99.9996%
+ of the probability mass.
  The graph shows in a clear manner that the uncertainty on pose 
 \begin_inset Formula $x_{5}$
 \end_inset
