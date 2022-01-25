@@ -154,6 +154,16 @@ TEST(DiscreteFactorGraph, test) {
   auto actualMPE = graph.optimize();
   EXPECT(assert_equal(mpe, actualMPE));
   EXPECT_DOUBLES_EQUAL(9, graph(mpe), 1e-5);  // regression
+
+  // Test sumProduct alias with all orderings:
+  auto mpeProbability = expectedBayesNet(mpe);
+  EXPECT_DOUBLES_EQUAL(0.28125, mpeProbability, 1e-5);  // regression
+  for (Ordering::OrderingType orderingType :
+       {Ordering::COLAMD, Ordering::METIS, Ordering::NATURAL,
+        Ordering::CUSTOM}) {
+    auto bayesNet = graph.sumProduct(orderingType);
+    EXPECT_DOUBLES_EQUAL(mpeProbability, bayesNet(mpe), 1e-5);
+  }
 }
 
 /* ************************************************************************* */

@@ -133,10 +133,27 @@ class GTSAM_EXPORT DiscreteFactorGraph
       const KeyFormatter& formatter = DefaultKeyFormatter) const override;
 
   /**
+   * @brief Implement the sum-product algorithm
+   *
+   * @param orderingType : one of COLAMD, METIS, NATURAL, CUSTOM
+   * @return DiscreteBayesNet encoding posterior P(X|Z)
+   */
+  DiscreteBayesNet sumProduct(
+      OptionalOrderingType orderingType = boost::none) const;
+
+  /**
+   * @brief Implement the sum-product algorithm
+   *
+   * @param ordering
+   * @return DiscreteBayesNet encoding posterior P(X|Z)
+   */
+  DiscreteLookupDAG sumProduct(const Ordering& ordering) const;
+
+  /**
    * @brief Implement the max-product algorithm
    *
    * @param orderingType : one of COLAMD, METIS, NATURAL, CUSTOM
-   * @return DiscreteLookupDAG::shared_ptr DAG with lookup tables
+   * @return DiscreteLookupDAG DAG with lookup tables
    */
   DiscreteLookupDAG maxProduct(
       OptionalOrderingType orderingType = boost::none) const;
@@ -145,7 +162,7 @@ class GTSAM_EXPORT DiscreteFactorGraph
    * @brief Implement the max-product algorithm
    *
    * @param ordering
-   * @return DiscreteLookupDAG::shared_ptr `DAG with lookup tables
+   * @return DiscreteLookupDAG `DAG with lookup tables
    */
   DiscreteLookupDAG maxProduct(const Ordering& ordering) const;
 
