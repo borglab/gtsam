@@ -140,7 +140,7 @@ TEST(DCGaussianElimination, Incremental_inference) {
     auto dcMixture =
         dynamic_pointer_cast<DCGaussianMixtureFactor>(graph2.dcGraph().at(0));
     gf.add(dcMixture->factors()(m00));
-    auto x2_mixed = hybridBayesNet->at(1);
+    auto x2_mixed = boost::dynamic_pointer_cast<GaussianMixture>(hybridBayesNet->at(1));
     gf.add(x2_mixed->factors()(m00));
     auto result_gf = gf.eliminateSequential();
     return gf.probPrime(result_gf->optimize());
@@ -250,13 +250,13 @@ TEST(DCGaussianElimination, Approx_inference) {
 
   CHECK(hybridBayesNet);
   EXPECT_LONGS_EQUAL(4, hybridBayesNet->size());
-  EXPECT_LONGS_EQUAL(2, hybridBayesNet->at(0)->nrComponents());
-  EXPECT_LONGS_EQUAL(4, hybridBayesNet->at(1)->nrComponents());
-  EXPECT_LONGS_EQUAL(8, hybridBayesNet->at(2)->nrComponents());
-  EXPECT_LONGS_EQUAL(5, hybridBayesNet->at(3)->nrComponents());
+  EXPECT_LONGS_EQUAL(2, hybridBayesNet->atGaussian(0)->nrComponents());
+  EXPECT_LONGS_EQUAL(4, hybridBayesNet->atGaussian(1)->nrComponents());
+  EXPECT_LONGS_EQUAL(8, hybridBayesNet->atGaussian(2)->nrComponents());
+  EXPECT_LONGS_EQUAL(5, hybridBayesNet->atGaussian(3)->nrComponents());
 
-  auto &lastDensity = *(hybridBayesNet->at(3));
-  auto &unprunedLastDensity = *(unprunedHybridBayesNet->at(3));
+  auto &lastDensity = *(hybridBayesNet->atGaussian(3));
+  auto &unprunedLastDensity = *(unprunedHybridBayesNet->atGaussian(3));
   std::vector<std::pair<DiscreteValues, double>>
       assignments = discreteFactor_m1.enumerate();
   // Loop over all assignments and check the pruned components
@@ -304,10 +304,10 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_approximate) {
 
   auto &actualBayesNet1 = *incrementalHybrid.hybridBayesNet_;
   CHECK_EQUAL(4, actualBayesNet1.size());
-  EXPECT_LONGS_EQUAL(2, actualBayesNet1.at(0)->nrComponents());
-  EXPECT_LONGS_EQUAL(4, actualBayesNet1.at(1)->nrComponents());
-  EXPECT_LONGS_EQUAL(8, actualBayesNet1.at(2)->nrComponents());
-  EXPECT_LONGS_EQUAL(5, actualBayesNet1.at(3)->nrComponents());
+  EXPECT_LONGS_EQUAL(2, actualBayesNet1.atGaussian(0)->nrComponents());
+  EXPECT_LONGS_EQUAL(4, actualBayesNet1.atGaussian(1)->nrComponents());
+  EXPECT_LONGS_EQUAL(8, actualBayesNet1.atGaussian(2)->nrComponents());
+  EXPECT_LONGS_EQUAL(5, actualBayesNet1.atGaussian(3)->nrComponents());
 
   GaussianHybridFactorGraph graph2;
   graph2.push_back(switching.linearizedFactorGraph.dcGraph().at(3));
@@ -321,8 +321,8 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_approximate) {
 
   auto &actualBayesNet = *incrementalHybrid.hybridBayesNet_;
   CHECK_EQUAL(2, actualBayesNet.size());
-  EXPECT_LONGS_EQUAL(10, actualBayesNet.at(0)->nrComponents());
-  EXPECT_LONGS_EQUAL(5, actualBayesNet.at(1)->nrComponents());
+  EXPECT_LONGS_EQUAL(10, actualBayesNet.atGaussian(0)->nrComponents());
+  EXPECT_LONGS_EQUAL(5, actualBayesNet.atGaussian(1)->nrComponents());
 }
 
 

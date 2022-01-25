@@ -21,6 +21,7 @@
 #pragma once
 
 #include <gtsam/discrete/DiscreteKey.h>
+#include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/hybrid/GaussianMixture.h>
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/linear/GaussianConditional.h>
@@ -29,11 +30,26 @@
 
 namespace gtsam {
 
-/// Bayes net
-class HybridBayesNet : public BayesNet<GaussianMixture> {
+/**
+ * A hybrid Bayes net can have discrete conditionals, Gaussian mixtures,
+ * or pure Gaussian conditionals.
+ */
+class GTSAM_EXPORT HybridBayesNet : public BayesNet<AbstractConditional> {
  public:
-  using ConditionalType = GaussianMixture;
+  using ConditionalType = AbstractConditional;
   using shared_ptr = boost::shared_ptr<HybridBayesNet>;
+
+  void add(const DiscreteKey &key, const std::string &table) {
+    DiscreteConditional dc;
+    // TODO(fan): implement this method
+  }
+
+  /**
+   * Get a specific Gaussian mixture factor by index
+   * (this checks array bounds and may throw an exception, as opposed to
+   * operator[] which does not).
+   */
+  GaussianMixture::shared_ptr atGaussian(size_t i);
 };
 
 }  // namespace gtsam

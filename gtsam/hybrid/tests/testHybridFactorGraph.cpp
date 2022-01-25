@@ -335,8 +335,8 @@ TEST(HybridFactorGraph, ToDecisionTreeFactor) {
 }
 
 /* ****************************************************************************/
-// Test elimination
-TEST(HybridFactorGraph, Elimination) {
+// Test partial elimination
+TEST_UNSAFE(HybridFactorGraph, Partial_Elimination) {
   Switching self(3);
 
   auto linearizedFactorGraph = self.linearizedFactorGraph;
@@ -365,13 +365,50 @@ TEST(HybridFactorGraph, Elimination) {
   //  GTSAM_PRINT(*remainingFactorGraph);  // HybridFactorGraph
   EXPECT_LONGS_EQUAL(3, remainingFactorGraph->size());
   EXPECT(remainingFactorGraph->discreteGraph().at(0)->keys() ==
-         KeyVector({M(1)}));
+      KeyVector({M(1)}));
   EXPECT(remainingFactorGraph->discreteGraph().at(1)->keys() ==
-         KeyVector({M(2), M(1)}));
+      KeyVector({M(2), M(1)}));
   EXPECT(remainingFactorGraph->discreteGraph().at(2)->keys() ==
-         KeyVector({M(2), M(1)}));
+      KeyVector({M(2), M(1)}));
 }
 
+/* ****************************************************************************/
+// Test full elimination
+TEST(HybridFactorGraph, Full_Elimination) {
+  Switching self(3);
+
+  auto linearizedFactorGraph = self.linearizedFactorGraph;
+
+  // Create ordering.
+  Ordering ordering;
+  for (size_t k = 1; k <= self.K; k++) ordering += X(k);
+  for (size_t k = 1; k < self.K; k++) ordering += M(k);
+
+  // Eliminate partially.
+  HybridBayesNet::shared_ptr hybridBayesNet =
+      linearizedFactorGraph.eliminateSequential(ordering);
+
+  CHECK(hybridBayesNet);
+  EXPECT_LONGS_EQUAL(3, hybridBayesNet->size());
+  // p(x1 | x2, m1)
+  EXPECT(hybridBayesNet->at(0)->frontals() == KeyVector{X(1)});
+  EXPECT(hybridBayesNet->at(0)->parents() == KeyVector({X(2), M(1)}));
+  // p(x2 | x3, m1, m2)
+  EXPECT(hybridBayesNet->at(1)->frontals() == KeyVector{X(2)});
+  EXPECT(hybridBayesNet->at(1)->parents() == KeyVector({X(3), M(2), M(1)}));
+  // p(x3 | m1, m2)
+  EXPECT(hybridBayesNet->at(2)->frontals() == KeyVector{X(3)});
+  EXPECT(hybridBayesNet->at(2)->parents() == KeyVector({M(2), M(1)}));
+  // P(m1 | m2)
+  EXPECT(hybridBayesNet->at(3)->frontals() == KeyVector{M(1)});
+  EXPECT(hybridBayesNet->at(3)->parents() == KeyVector({M(2)}));
+  // P(m2)
+  EXPECT(hybridBayesNet->at(3)->frontals() == KeyVector{M(2)});
+  EXPECT_LONGS_EQUAL(0, hybridBayesNet->at(3)->nrParents());
+}
+
+/* ****************************************************************************/
+// Test printing
 TEST(HybridFactorGraph, Printing) {
   Switching self(3);
 

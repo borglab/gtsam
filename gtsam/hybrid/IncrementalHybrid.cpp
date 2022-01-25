@@ -29,10 +29,16 @@ void gtsam::IncrementalHybrid::update(gtsam::GaussianHybridFactorGraph graph,
     // We add all relevant conditional mixtures on the last continuous variable
     // in the previous `hybridBayesNet` to the graph
     std::unordered_set<Key> allVars(ordering.begin(), ordering.end());
-    for (auto &conditionalMixture : *hybridBayesNet_) {
-      for (auto &key : conditionalMixture->frontals()) {
+    for (auto &&conditional : *hybridBayesNet_) {
+      for (auto &key : conditional->frontals()) {
         if (allVars.find(key) != allVars.end()) {
-          graph.push_back(conditionalMixture);
+          if (auto
+              gf = boost::dynamic_pointer_cast<GaussianMixture>(conditional)) {
+            graph.push_back(gf);
+          } else if (auto df =
+              boost::dynamic_pointer_cast<DiscreteConditional>(conditional)) {
+            graph.push_back(df);
+          }
           break;
         }
       }
@@ -47,7 +53,8 @@ void gtsam::IncrementalHybrid::update(gtsam::GaussianHybridFactorGraph graph,
   if (maxNrLeaves) {
     const auto N = *maxNrLeaves;
 
-    const GaussianMixture::shared_ptr lastDensity = hybridBayesNet_->back();
+    const auto lastDensity =
+        boost::dynamic_pointer_cast<GaussianMixture>(hybridBayesNet_->back());
 
     auto discreteFactor = boost::dynamic_pointer_cast<DecisionTreeFactor>(
         remainingFactorGraph_->discreteGraph().at(0));
@@ -98,6 +105,6 @@ void gtsam::IncrementalHybrid::update(gtsam::GaussianHybridFactorGraph graph,
         prunedConditionals
     );
 
-    hybridBayesNet_->at(hybridBayesNet_->size() - 1)->factors_ = prunedConditionalsTree;
+    hybridBayesNet_->atGaussian(hybridBayesNet_->size() - 1)->factors_ = prunedConditionalsTree;
   }
 }

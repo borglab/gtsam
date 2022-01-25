@@ -18,7 +18,7 @@
 
 #include <gtsam/base/utilities.h>
 #include <gtsam/hybrid/GaussianMixture.h>
-#include <gtsam/inference/Conditional.h>
+#include <gtsam/inference/Conditional-inst.h>
 
 namespace gtsam {
 

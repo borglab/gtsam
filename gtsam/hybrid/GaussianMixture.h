@@ -22,6 +22,7 @@
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/hybrid/DCGaussianMixtureFactor.h>
 #include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/inference/Conditional.h>
 
 namespace gtsam {
 
