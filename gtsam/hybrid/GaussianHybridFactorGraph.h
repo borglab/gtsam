@@ -28,28 +28,26 @@
 namespace gtsam {
 
 // Forward declarations
-class GaussianMixture;
-class Dummy;
 class GaussianHybridFactorGraph;
 class HybridEliminationTree;
 class Ordering;
 
 /** Main elimination function for HybridFactorGraph */
-GTSAM_EXPORT std::pair<GaussianMixture::shared_ptr, SharedFactor>
+GTSAM_EXPORT std::pair<AbstractConditional::shared_ptr, SharedFactor>
 EliminateHybrid(const GaussianHybridFactorGraph& factors, const Ordering& keys);
 
 template <>
 struct EliminationTraits<GaussianHybridFactorGraph> {
   typedef Factor FactorType;
   typedef GaussianHybridFactorGraph FactorGraphType;
-  typedef GaussianMixture ConditionalType;
+  typedef AbstractConditional ConditionalType;
   typedef HybridBayesNet BayesNetType;
   typedef HybridEliminationTree EliminationTreeType;
   typedef HybridBayesNet BayesTreeType;
   typedef HybridEliminationTree JunctionTreeType;
 
   /// The function type that does a single elimination step on a variable.
-  static std::pair<GaussianMixture::shared_ptr, SharedFactor> DefaultEliminate(
+  static std::pair<AbstractConditional::shared_ptr, SharedFactor> DefaultEliminate(
       const GaussianHybridFactorGraph& factors, const Ordering& ordering) {
     return EliminateHybrid(factors, ordering);
   }
@@ -152,7 +150,7 @@ class GTSAM_EXPORT GaussianHybridFactorGraph
   /// @{
   using FactorType = Factor;
   using EliminationResult =
-      std::pair<boost::shared_ptr<GaussianMixture>, SharedFactor>;
+      std::pair<boost::shared_ptr<AbstractConditional>, SharedFactor>;
   using Eliminate = std::function<EliminationResult(
       const GaussianHybridFactorGraph&, const Ordering&)>;
 

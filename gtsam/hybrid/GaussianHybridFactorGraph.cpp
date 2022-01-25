@@ -100,7 +100,7 @@ ostream& operator<<(ostream& os,
 }
 
 // The function type that does a single elimination step on a variable.
-pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
+pair<AbstractConditional::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
     const GaussianHybridFactorGraph& factors, const Ordering& ordering) {
   // STEP 1: SUM
   // Create a new decision tree with all factors gathered at leaves.
@@ -114,6 +114,17 @@ pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
 
     return hasNull?GaussianFactorGraph():gfg;
   };
+
+  // TODO(fan): Now let's assume that all continuous will be eliminated first!
+  // Here sum is null if remaining are all discrete
+  std::cout << "[EL] " << "key = "; ordering.print("");
+  if (sum.empty()) {
+    std::cerr << "LOLOLOL you got empty! let's do discrete!\n";
+    // Not sure if this is the correct thing, but anyway!
+    DiscreteFactorGraph dfg;
+    dfg.push_back(factors.discreteGraph());
+    return EliminateDiscrete(dfg, ordering);
+  }
 
   sum = Sum(sum, zeroOut);
 
