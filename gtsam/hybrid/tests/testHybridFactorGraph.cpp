@@ -374,7 +374,7 @@ TEST_UNSAFE(HybridFactorGraph, Partial_Elimination) {
 
 /* ****************************************************************************/
 // Test full elimination
-TEST(HybridFactorGraph, Full_Elimination) {
+TEST_DISABLED(HybridFactorGraph, Full_Elimination) {
   Switching self(3);
 
   auto linearizedFactorGraph = self.linearizedFactorGraph;
