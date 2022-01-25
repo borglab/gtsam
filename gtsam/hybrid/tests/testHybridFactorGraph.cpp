@@ -393,7 +393,7 @@ TEST_UNSAFE(HybridFactorGraph, Full_Elimination) {
   GTSAM_PRINT(*hybridBayesNet);
 
   CHECK(hybridBayesNet);
-  EXPECT_LONGS_EQUAL(3, hybridBayesNet->size());
+  EXPECT_LONGS_EQUAL(5, hybridBayesNet->size());
   // p(x1 | x2, m1)
   EXPECT(hybridBayesNet->at(0)->frontals() == KeyVector{X(1)});
   EXPECT(hybridBayesNet->at(0)->parents() == KeyVector({X(2), M(1)}));
@@ -407,8 +407,8 @@ TEST_UNSAFE(HybridFactorGraph, Full_Elimination) {
   EXPECT(hybridBayesNet->at(3)->frontals() == KeyVector{M(1)});
   EXPECT(hybridBayesNet->at(3)->parents() == KeyVector({M(2)}));
   // P(m2)
-  EXPECT(hybridBayesNet->at(3)->frontals() == KeyVector{M(2)});
-  EXPECT_LONGS_EQUAL(0, hybridBayesNet->at(3)->nrParents());
+  EXPECT(hybridBayesNet->at(4)->frontals() == KeyVector{M(2)});
+  EXPECT_LONGS_EQUAL(0, hybridBayesNet->at(4)->nrParents());
 }
 
 /* ****************************************************************************/
