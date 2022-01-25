@@ -40,8 +40,9 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<AbstractConditional> {
   using shared_ptr = boost::shared_ptr<HybridBayesNet>;
 
   void add(const DiscreteKey &key, const std::string &table) {
-    DiscreteConditional dc;
+    DiscreteConditional dc(key, table);
     // TODO(fan): implement this method
+    push_back(dc);
   }
 
   /**
@@ -50,6 +51,14 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<AbstractConditional> {
    * operator[] which does not).
    */
   GaussianMixture::shared_ptr atGaussian(size_t i);
+
+  /**
+   * Get a specific Gaussian mixture factor by index
+   * (this checks array bounds and may throw an exception, as opposed to
+   * operator[] which does not).
+   */
+  DiscreteConditional::shared_ptr atDiscrete(size_t i);
+
 };
 
 }  // namespace gtsam
