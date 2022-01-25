@@ -117,13 +117,18 @@ pair<AbstractConditional::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid
 
   // TODO(fan): Now let's assume that all continuous will be eliminated first!
   // Here sum is null if remaining are all discrete
-  std::cout << "[EL] " << "key = "; ordering.print("");
+  std::cout << "[EL] " << "key = ";
+  ordering.print("");
   if (sum.empty()) {
     std::cerr << "LOLOLOL you got empty! let's do discrete!\n";
     // Not sure if this is the correct thing, but anyway!
     DiscreteFactorGraph dfg;
     dfg.push_back(factors.discreteGraph());
-    return EliminateDiscrete(dfg, ordering);
+
+    auto dbn = dfg.eliminatePartialSequential(ordering, EliminateForMPE);
+    auto &df = dbn.first->at(0);
+    auto &remainingFactors = dbn.second;
+    return {df, remainingFactors->size() ? remainingFactors->at(0) : nullptr};
   }
 
   sum = Sum(sum, zeroOut);
