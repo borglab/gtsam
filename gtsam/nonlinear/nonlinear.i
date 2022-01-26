@@ -111,6 +111,11 @@ size_t mrsymbolIndex(size_t key);
 
 #include <gtsam/inference/Ordering.h>
 class Ordering {
+  /// Type of ordering to use
+  enum OrderingType {
+    COLAMD, METIS, NATURAL, CUSTOM
+  };
+
   // Standard Constructors and Named Constructors
   Ordering();
   Ordering(const gtsam::Ordering& other);
