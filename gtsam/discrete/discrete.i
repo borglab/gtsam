@@ -228,19 +228,6 @@ class DiscreteLookupDAG {
   gtsam::DiscreteValues argmax(gtsam::DiscreteValues given) const;
 };
 
-#include <gtsam/inference/DotWriter.h>
-class DotWriter {
-  DotWriter(double figureWidthInches = 5, double figureHeightInches = 5,
-            bool plotFactorPoints = true, bool connectKeysToFactor = true,
-            bool binaryEdges = true);
-
-  double figureWidthInches;
-  double figureHeightInches;
-  bool plotFactorPoints;
-  bool connectKeysToFactor;
-  bool binaryEdges;
-};
-
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 class DiscreteFactorGraph {
   DiscreteFactorGraph();
