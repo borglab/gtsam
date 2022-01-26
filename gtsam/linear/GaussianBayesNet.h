@@ -21,17 +21,21 @@
 #pragma once
 
 #include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/global_includes.h>
 
 namespace gtsam {
 
-  /** A Bayes net made from linear-Gaussian densities */
-  class GTSAM_EXPORT GaussianBayesNet: public FactorGraph<GaussianConditional>
+  /** 
+   * GaussianBayesNet is a Bayes net made from linear-Gaussian conditionals.
+   * @addtogroup linear
+   */
+  class GTSAM_EXPORT GaussianBayesNet: public BayesNet<GaussianConditional>
   {
   public:
 
-    typedef FactorGraph<GaussianConditional> Base;
+    typedef BayesNet<GaussianConditional> Base;
     typedef GaussianBayesNet This;
     typedef GaussianConditional ConditionalType;
     typedef boost::shared_ptr<This> shared_ptr;
@@ -44,16 +48,21 @@ namespace gtsam {
     GaussianBayesNet() {}
 
     /** Construct from iterator over conditionals */
-    template<typename ITERATOR>
-    GaussianBayesNet(ITERATOR firstConditional, ITERATOR lastConditional) : Base(firstConditional, lastConditional) {}
+    template <typename ITERATOR>
+    GaussianBayesNet(ITERATOR firstConditional, ITERATOR lastConditional)
+        : Base(firstConditional, lastConditional) {}
 
     /** Construct from container of factors (shared_ptr or plain objects) */
-    template<class CONTAINER>
-    explicit GaussianBayesNet(const CONTAINER& conditionals) : Base(conditionals) {}
+    template <class CONTAINER>
+    explicit GaussianBayesNet(const CONTAINER& conditionals) {
+      push_back(conditionals);
+    }
 
-    /** Implicit copy/downcast constructor to override explicit template container constructor */
-    template<class DERIVEDCONDITIONAL>
-    GaussianBayesNet(const FactorGraph<DERIVEDCONDITIONAL>& graph) : Base(graph) {}
+    /** Implicit copy/downcast constructor to override explicit template
+     * container constructor */
+    template <class DERIVEDCONDITIONAL>
+    explicit GaussianBayesNet(const FactorGraph<DERIVEDCONDITIONAL>& graph)
+        : Base(graph) {}
 
     /// Destructor
     virtual ~GaussianBayesNet() {}

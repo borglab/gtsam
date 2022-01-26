@@ -18,17 +18,17 @@
 
 #pragma once
 
+#include <gtsam/inference/FactorGraph.h>
+
 #include <boost/shared_ptr.hpp>
 
-#include <gtsam/inference/FactorGraph.h>
+#include <string>
 
 namespace gtsam {
 
   /**
   * A BayesNet is a tree of conditionals, stored in elimination order.
-  *
-  * todo:  how to handle Bayes nets with an optimize function?  Currently using global functions.
-  * \nosubgrouping
+  * @addtogroup inference
   */
   template<class CONDITIONAL>
   class BayesNet : public FactorGraph<CONDITIONAL> {

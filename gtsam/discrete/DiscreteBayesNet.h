@@ -31,11 +31,12 @@
 
 namespace gtsam {
 
-/** A Bayes net made from discrete conditional distributions. */
-  class GTSAM_EXPORT DiscreteBayesNet: public BayesNet<DiscreteConditional>
-  {
-  public:
-
+/** 
+ * A Bayes net made from discrete conditional distributions. 
+ * @addtogroup discrete
+ */
+class GTSAM_EXPORT DiscreteBayesNet: public BayesNet<DiscreteConditional> {
+ public:
     typedef BayesNet<DiscreteConditional> Base;
     typedef DiscreteBayesNet This;
     typedef DiscreteConditional ConditionalType;
@@ -49,16 +50,20 @@ namespace gtsam {
     DiscreteBayesNet() {}
 
     /** Construct from iterator over conditionals */
-    template<typename ITERATOR>
-    DiscreteBayesNet(ITERATOR firstConditional, ITERATOR lastConditional) : Base(firstConditional, lastConditional) {}
+    template <typename ITERATOR>
+    DiscreteBayesNet(ITERATOR firstConditional, ITERATOR lastConditional)
+        : Base(firstConditional, lastConditional) {}
 
     /** Construct from container of factors (shared_ptr or plain objects) */
-    template<class CONTAINER>
-    explicit DiscreteBayesNet(const CONTAINER& conditionals) : Base(conditionals) {}
+    template <class CONTAINER>
+    explicit DiscreteBayesNet(const CONTAINER& conditionals)
+        : Base(conditionals) {}
 
-    /** Implicit copy/downcast constructor to override explicit template container constructor */
-    template<class DERIVEDCONDITIONAL>
-    DiscreteBayesNet(const FactorGraph<DERIVEDCONDITIONAL>& graph) : Base(graph) {}
+    /** Implicit copy/downcast constructor to override explicit template
+     * container constructor */
+    template <class DERIVEDCONDITIONAL>
+    DiscreteBayesNet(const FactorGraph<DERIVEDCONDITIONAL>& graph)
+        : Base(graph) {}
 
     /// Destructor
     virtual ~DiscreteBayesNet() {}
