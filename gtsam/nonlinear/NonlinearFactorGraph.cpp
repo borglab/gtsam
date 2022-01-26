@@ -102,7 +102,7 @@ bool NonlinearFactorGraph::equals(const NonlinearFactorGraph& other, double tol)
 void NonlinearFactorGraph::dot(std::ostream& os, const Values& values,
                                const KeyFormatter& keyFormatter,
                                const GraphvizFormatting& writer) const {
-  writer.writePreamble(&os);
+  writer.graphPreamble(&os);
 
   // Find bounds (imperative)
   KeySet keys = this->keys();

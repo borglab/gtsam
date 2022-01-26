@@ -25,8 +25,14 @@ using namespace std;
 
 namespace gtsam {
 
-void DotWriter::writePreamble(ostream* os) const {
+void DotWriter::graphPreamble(ostream* os) const {
   *os << "graph {\n";
+  *os << "  size=\"" << figureWidthInches << "," << figureHeightInches
+      << "\";\n\n";
+}
+
+void DotWriter::digraphPreamble(ostream* os) const {
+  *os << "digraph {\n";
   *os << "  size=\"" << figureWidthInches << "," << figureHeightInches
       << "\";\n\n";
 }
