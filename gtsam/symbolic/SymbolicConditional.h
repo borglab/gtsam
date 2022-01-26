@@ -112,6 +112,8 @@ namespace gtsam {
     /** Check equality */
     bool equals(const This& c, double tol = 1e-9) const;
 
+    bool equals(const SymbolicFactor& f, double tol) const override;
+
     /// @}
 
   private:

@@ -8,6 +8,7 @@
  * @brief  Custom hybrid factor graph for discrete + continuous factors
  * @author Kevin Doherty, kdoherty@mit.edu
  * @author Varun Agrawal
+ * @author Fan Jiang
  * @date   December 2021
  */
 

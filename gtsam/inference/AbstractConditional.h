@@ -25,6 +25,9 @@
 namespace gtsam {
 
 class GTSAM_EXPORT AbstractConditional {
+ public:
+  using shared_ptr = boost::shared_ptr<AbstractConditional>;
+
  protected:
   /** The first nrFrontal variables are frontal and the rest are parents. */
   size_t nrFrontals_;

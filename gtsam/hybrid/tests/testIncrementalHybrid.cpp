@@ -42,7 +42,7 @@ using symbol_shorthand::X;
 
 /* ****************************************************************************/
 // Test if we can incrementally do the inference
-TEST(DCGaussianElimination, Incremental_inference) {
+TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
   Switching switching(3);
 
   IncrementalHybrid incrementalHybrid;
@@ -119,15 +119,16 @@ TEST(DCGaussianElimination, Incremental_inference) {
 
   // The densities on X(1) should be the same
   EXPECT(
-      assert_equal(*(hybridBayesNet->at(0)), *(expectedHybridBayesNet->at(0))));
+      assert_equal(*(hybridBayesNet->atGaussian(0)),
+                   *(expectedHybridBayesNet->atGaussian(0))));
 
   // The densities on X(2) should be the same
-  EXPECT(assert_equal(*(hybridBayesNet2->at(0)),
-                      *(expectedHybridBayesNet->at(1))));
+  EXPECT(assert_equal(*(hybridBayesNet2->atGaussian(0)),
+                      *(expectedHybridBayesNet->atGaussian(1))));
 
   // The densities on X(3) should be the same
-  EXPECT(assert_equal(*(hybridBayesNet2->at(1)),
-                      *(expectedHybridBayesNet->at(2))));
+  EXPECT(assert_equal(*(hybridBayesNet2->atGaussian(1)),
+                      *(expectedHybridBayesNet->atGaussian(2))));
 
   // we only do the manual continuous elimination for 0,0
   // the other discrete probabilities on M(2) are calculated the same way
@@ -140,7 +141,8 @@ TEST(DCGaussianElimination, Incremental_inference) {
     auto dcMixture =
         dynamic_pointer_cast<DCGaussianMixtureFactor>(graph2.dcGraph().at(0));
     gf.add(dcMixture->factors()(m00));
-    auto x2_mixed = boost::dynamic_pointer_cast<GaussianMixture>(hybridBayesNet->at(1));
+    auto x2_mixed =
+        boost::dynamic_pointer_cast<GaussianMixture>(hybridBayesNet->at(1));
     gf.add(x2_mixed->factors()(m00));
     auto result_gf = gf.eliminateSequential();
     return gf.probPrime(result_gf->optimize());

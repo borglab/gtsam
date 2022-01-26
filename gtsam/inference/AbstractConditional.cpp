@@ -22,6 +22,8 @@ namespace gtsam {
 /* ************************************************************************* */
 bool AbstractConditional::equals(const AbstractConditional &c,
                                  double tol) const {
+  throw std::invalid_argument("You are calling the base AbstractConditional's"
+                              " equality, which is illegal.");
   return nrFrontals_ == c.nrFrontals_;
 }
 

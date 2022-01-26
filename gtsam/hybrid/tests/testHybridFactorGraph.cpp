@@ -229,7 +229,7 @@ TEST(DCGaussianElimination, Eliminate_x2) {
   Ordering ordering;
   ordering += X(2);
 
-  std::pair<GaussianMixture::shared_ptr, boost::shared_ptr<Factor>> result =
+  std::pair<AbstractConditional::shared_ptr, boost::shared_ptr<Factor>> result =
       EliminateHybrid(factors, ordering);
   CHECK(result.first);
   EXPECT_LONGS_EQUAL(1, result.first->nrFrontals());
@@ -273,10 +273,12 @@ TEST(DCGaussianElimination, EliminateHybrid_2_Variable) {
   ordering += X(1);
   ordering += X(2);
 
-  GaussianMixture::shared_ptr gaussianConditionalMixture;
+  AbstractConditional::shared_ptr abstractConditionalMixture;
   boost::shared_ptr<Factor> factorOnModes;
-  std::tie(gaussianConditionalMixture, factorOnModes) =
+  std::tie(abstractConditionalMixture, factorOnModes) =
       EliminateHybrid(factors, ordering);
+
+  auto gaussianConditionalMixture = dynamic_pointer_cast<GaussianMixture>(abstractConditionalMixture);
 
   CHECK(gaussianConditionalMixture);
   EXPECT_LONGS_EQUAL(
@@ -374,10 +376,31 @@ TEST_UNSAFE(HybridFactorGraph, Partial_Elimination) {
 
 /* ****************************************************************************/
 // Test full elimination
-TEST_DISABLED(HybridFactorGraph, Full_Elimination) {
+TEST_UNSAFE(HybridFactorGraph, Full_Elimination) {
   Switching self(3);
 
   auto linearizedFactorGraph = self.linearizedFactorGraph;
+
+  // We first do a partial elimination
+  HybridBayesNet::shared_ptr hybridBayesNet_partial;
+  GaussianHybridFactorGraph::shared_ptr remainingFactorGraph_partial;
+  DiscreteBayesNet discreteBayesNet;
+
+  {
+    // Create ordering.
+    Ordering ordering;
+    for (size_t k = 1; k <= self.K; k++) ordering += X(k);
+
+    // Eliminate partially.
+    std::tie(hybridBayesNet_partial, remainingFactorGraph_partial) =
+        linearizedFactorGraph.eliminatePartialSequential(ordering);
+
+    DiscreteFactorGraph dfg;
+    dfg.push_back(remainingFactorGraph_partial->discreteGraph());
+    ordering.clear();
+    for (size_t k = 1; k < self.K; k++) ordering += M(k);
+    discreteBayesNet = *dfg.eliminateSequential(ordering, EliminateForMPE);
+  }
 
   // Create ordering.
   Ordering ordering;
@@ -389,7 +412,7 @@ TEST_DISABLED(HybridFactorGraph, Full_Elimination) {
       linearizedFactorGraph.eliminateSequential(ordering);
 
   CHECK(hybridBayesNet);
-  EXPECT_LONGS_EQUAL(3, hybridBayesNet->size());
+  EXPECT_LONGS_EQUAL(5, hybridBayesNet->size());
   // p(x1 | x2, m1)
   EXPECT(hybridBayesNet->at(0)->frontals() == KeyVector{X(1)});
   EXPECT(hybridBayesNet->at(0)->parents() == KeyVector({X(2), M(1)}));
@@ -402,9 +425,13 @@ TEST_DISABLED(HybridFactorGraph, Full_Elimination) {
   // P(m1 | m2)
   EXPECT(hybridBayesNet->at(3)->frontals() == KeyVector{M(1)});
   EXPECT(hybridBayesNet->at(3)->parents() == KeyVector({M(2)}));
+  EXPECT(dynamic_pointer_cast<DiscreteConditional>(hybridBayesNet->at(3))->equals(
+      *discreteBayesNet.at(0)));
   // P(m2)
-  EXPECT(hybridBayesNet->at(3)->frontals() == KeyVector{M(2)});
-  EXPECT_LONGS_EQUAL(0, hybridBayesNet->at(3)->nrParents());
+  EXPECT(hybridBayesNet->at(4)->frontals() == KeyVector{M(2)});
+  EXPECT_LONGS_EQUAL(0, hybridBayesNet->at(4)->nrParents());
+  EXPECT(dynamic_pointer_cast<DiscreteConditional>(hybridBayesNet->at(4))->equals(
+      *discreteBayesNet.at(1)));
 }
 
 /* ****************************************************************************/
