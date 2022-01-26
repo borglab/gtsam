@@ -149,16 +149,15 @@ namespace gtsam {
   DiscreteBayesNet DiscreteFactorGraph::sumProduct(
       OptionalOrderingType orderingType) const {
     gttic(DiscreteFactorGraph_sumProduct);
-    auto bayesNet = BaseEliminateable::eliminateSequential(orderingType);
+    auto bayesNet = eliminateSequential(orderingType);
     return *bayesNet;
   }
 
-  DiscreteLookupDAG DiscreteFactorGraph::sumProduct(
+  DiscreteBayesNet DiscreteFactorGraph::sumProduct(
       const Ordering& ordering) const {
     gttic(DiscreteFactorGraph_sumProduct);
-    auto bayesNet =
-        BaseEliminateable::eliminateSequential(ordering, EliminateForMPE);
-    return DiscreteLookupDAG::FromBayesNet(*bayesNet);
+    auto bayesNet = eliminateSequential(ordering);
+    return *bayesNet;
   }
 
   /* ************************************************************************ */
@@ -170,16 +169,14 @@ namespace gtsam {
   DiscreteLookupDAG DiscreteFactorGraph::maxProduct(
       OptionalOrderingType orderingType) const {
     gttic(DiscreteFactorGraph_maxProduct);
-    auto bayesNet =
-        BaseEliminateable::eliminateSequential(orderingType, EliminateForMPE);
+    auto bayesNet = eliminateSequential(orderingType, EliminateForMPE);
     return DiscreteLookupDAG::FromBayesNet(*bayesNet);
   }
 
   DiscreteLookupDAG DiscreteFactorGraph::maxProduct(
       const Ordering& ordering) const {
     gttic(DiscreteFactorGraph_maxProduct);
-    auto bayesNet =
-        BaseEliminateable::eliminateSequential(ordering, EliminateForMPE);
+    auto bayesNet = eliminateSequential(ordering, EliminateForMPE);
     return DiscreteLookupDAG::FromBayesNet(*bayesNet);
   }
 

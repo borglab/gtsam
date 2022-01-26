@@ -147,7 +147,7 @@ class GTSAM_EXPORT DiscreteFactorGraph
    * @param ordering
    * @return DiscreteBayesNet encoding posterior P(X|Z)
    */
-  DiscreteLookupDAG sumProduct(const Ordering& ordering) const;
+  DiscreteBayesNet sumProduct(const Ordering& ordering) const;
 
   /**
    * @brief Implement the max-product algorithm
