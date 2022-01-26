@@ -80,13 +80,6 @@ namespace gtsam {
 
     /// @}
 
-    /// @name Standard Interface
-    /// @{
-
-    GTSAM_EXPORT void saveGraph(const std::string &s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
-
-    /// @}
-
   private:
     /** Serialization function */
     friend class boost::serialization::access;
