@@ -1,5 +1,5 @@
-#LyX 2.2 created this file. For more info see http://www.lyx.org/
-\lyxformat 508
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
 \begin_document
 \begin_header
 \save_transient_properties true
@@ -62,6 +62,8 @@
 \font_osf false
 \font_sf_scale 100 100
 \font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
 \graphics default
 \default_output_format default
 \output_sync 0
@@ -91,6 +93,7 @@
 \suppress_date false
 \justification true
 \use_refstyle 0
+\use_minted 0
 \index Index
 \shortcut idx
 \color #008000
@@ -105,7 +108,10 @@
 \tocdepth 3
 \paragraph_separation indent
 \paragraph_indentation default
-\quotes_language english
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
 \papercolumns 1
 \papersides 1
 \paperpagestyle default
@@ -168,6 +174,7 @@ Factor graphs
 \begin_inset CommandInset citation
 LatexCommand citep
 key "Koller09book"
+literal "true"
 
 \end_inset
 
@@ -270,6 +277,7 @@ Let us start with a one-page primer on factor graphs, which in no way replaces
 \begin_inset CommandInset citation
 LatexCommand citet
 key "Kschischang01it"
+literal "true"
 
 \end_inset
 
@@ -277,6 +285,7 @@ key "Kschischang01it"
 \begin_inset CommandInset citation
 LatexCommand citet
 key "Loeliger04spm"
+literal "true"
 
 \end_inset
 
@@ -1321,6 +1330,7 @@ r in a pre-existing map, or indeed the presence of absence of ceiling lights
 \begin_inset CommandInset citation
 LatexCommand citet
 key "Dellaert99b"
+literal "true"
 
 \end_inset
 
@@ -1542,6 +1552,7 @@ which is done on line 12.
 \begin_inset CommandInset citation
 LatexCommand citealt
 key "Dellaert06ijrr"
+literal "true"
 
 \end_inset
 
@@ -1936,8 +1947,8 @@ reference "fig:CompareMarginals"
 
 \end_inset
 
-, where I show the marginals on position as covariance ellipses that contain
- 68.26% of all probability mass.
+, where I show the marginals on position as 5-sigma covariance ellipses
+ that contain 99.9996% of all probability mass.
  For the odometry marginals, it is immediately apparent from the figure
  that (1) the uncertainty on pose keeps growing, and (2) the uncertainty
  on angular odometry translates into increasing uncertainty on y.
@@ -1992,6 +2003,7 @@ PoseSLAM
 \begin_inset CommandInset citation
 LatexCommand citep
 key "DurrantWhyte06ram"
+literal "true"
 
 \end_inset
 
@@ -2190,9 +2202,9 @@ reference "fig:example"
 \end_inset
 
 , along with covariance ellipses shown in green.
- These covariance ellipses in 2D indicate the marginal over position, over
- all possible orientations, and show the area which contain 68.26% of the
- probability mass (in 1D this would correspond to one standard deviation).
+ These 5-sigma covariance ellipses in 2D indicate the marginal over position,
+ over all possible orientations, and show the area which contain 99.9996%
+ of the probability mass.
  The graph shows in a clear manner that the uncertainty on pose 
 \begin_inset Formula $x_{5}$
 \end_inset
@@ -3076,6 +3088,7 @@ reference "fig:Victoria-1"
 \begin_inset CommandInset citation
 LatexCommand citep
 key "Kaess09ras"
+literal "true"
 
 \end_inset
 
@@ -3088,6 +3101,7 @@ key "Kaess09ras"
 \begin_inset CommandInset citation
 LatexCommand citep
 key "Kaess08tro"
+literal "true"
 
 \end_inset
 
@@ -3355,6 +3369,7 @@ iSAM
 \begin_inset CommandInset citation
 LatexCommand citet
 key "Kaess08tro,Kaess12ijrr"
+literal "true"
 
 \end_inset
 
@@ -3606,6 +3621,7 @@ subgraph preconditioning
 \begin_inset CommandInset citation
 LatexCommand citet
 key "Dellaert10iros,Jian11iccv"
+literal "true"
 
 \end_inset
 
@@ -3638,6 +3654,7 @@ Visual Odometry
 \begin_inset CommandInset citation
 LatexCommand citet
 key "Nister04cvpr2"
+literal "true"
 
 \end_inset
 
@@ -3661,6 +3678,7 @@ Visual SLAM
 \begin_inset CommandInset citation
 LatexCommand citet
 key "Davison03iccv"
+literal "true"
 
 \end_inset
 
@@ -3711,6 +3729,7 @@ Filtering
 \begin_inset CommandInset citation
 LatexCommand citep
 key "Smith87b"
+literal "true"
 
 \end_inset
 

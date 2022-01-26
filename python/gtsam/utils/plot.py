@@ -12,6 +12,13 @@ from mpl_toolkits.mplot3d import Axes3D  # pylint: disable=unused-import
 import gtsam
 from gtsam import Marginals, Point2, Point3, Pose2, Pose3, Values
 
+# For future reference: following
+# https://www.xarg.org/2018/04/how-to-plot-a-covariance-error-ellipse/
+# we have, in 2D:
+# def kk(p): return math.sqrt(-2*math.log(1-p)) # k to get p probability mass
+# def pp(k): return 1-math.exp(-float(k**2)/2.0) # p as a function of k
+# Some values:
+# k = 5 => p = 99.9996 %
 
 def set_axes_equal(fignum: int) -> None:
     """
@@ -125,10 +132,7 @@ def plot_point2_on_axes(axes,
     if P is not None:
         w, v = np.linalg.eig(P)
 
-        # "Sigma" value for drawing the uncertainty ellipse. 5 sigma corresponds
-        # to a 99.9999% confidence, i.e. assuming the estimation has been
-        # computed properly, there is a 99.999% chance that the true position
-        # of the point will lie within the uncertainty ellipse.
+        # 5 sigma corresponds to 99.9996%, see note above
         k = 5.0
 
         angle = np.arctan2(v[1, 0], v[0, 0])
@@ -205,7 +209,7 @@ def plot_pose2_on_axes(axes,
 
         w, v = np.linalg.eig(gPp)
 
-        # k = 2.296
+        # 5 sigma corresponds to 99.9996%, see note above
         k = 5.0
 
         angle = np.arctan2(v[1, 0], v[0, 0])
