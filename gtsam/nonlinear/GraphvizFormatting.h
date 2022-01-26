@@ -33,10 +33,10 @@ struct GTSAM_EXPORT GraphvizFormatting : public DotWriter {
   /// World axes to be assigned to paper axes
   enum Axis { X, Y, Z, NEGX, NEGY, NEGZ };
 
-  Axis paperHorizontalAxis;   ///< The world axis assigned to the horizontal
-                              ///< paper axis
-  Axis paperVerticalAxis;     ///< The world axis assigned to the vertical paper
-                              ///< axis
+  Axis paperHorizontalAxis;  ///< The world axis assigned to the horizontal
+                             ///< paper axis
+  Axis paperVerticalAxis;    ///< The world axis assigned to the vertical paper
+                             ///< axis
   double scale;  ///< Scale all positions to reduce / increase density
   bool mergeSimilarFactors;  ///< Merge multiple factors that have the same
                              ///< connectivity
@@ -55,8 +55,8 @@ struct GTSAM_EXPORT GraphvizFormatting : public DotWriter {
   // Find bounds
   Vector2 findBounds(const Values& values, const KeySet& keys) const;
 
-  /// Extract a Vector2 from either Vector2, Pose2, Pose3, or Point3      
-  boost::optional<Vector2> operator()(const Value& value) const;
+  /// Extract a Vector2 from either Vector2, Pose2, Pose3, or Point3
+  boost::optional<Vector2> extractPosition(const Value& value) const;
 
   /// Return affinely transformed variable position if it exists.
   boost::optional<Vector2> variablePos(const Values& values, const Vector2& min,
