@@ -14,6 +14,9 @@
 #include <gtsam/hybrid/GaussianHybridFactorGraph.h>
 #include <gtsam/hybrid/NonlinearHybridFactorGraph.h>
 
+// Needed for DecisionTree
+#include <boost/make_shared.hpp>
+
 using namespace std;
 
 namespace gtsam {

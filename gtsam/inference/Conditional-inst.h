@@ -37,11 +37,4 @@ namespace gtsam {
     std::cout << ")" << std::endl;
   }
 
-  /* ************************************************************************* */
-  template<class FACTOR, class DERIVEDFACTOR>
-  bool Conditional<FACTOR,DERIVEDFACTOR>::equals(const This& c, double tol) const
-  {
-    return nrFrontals_ == c.nrFrontals_;
-  }
-
 }

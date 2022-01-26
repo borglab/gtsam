@@ -18,7 +18,7 @@
 
 #include <gtsam/base/utilities.h>
 #include <gtsam/hybrid/GaussianMixture.h>
-#include <gtsam/inference/Conditional.h>
+#include <gtsam/inference/Conditional-inst.h>
 
 #include <numeric>
 #include <regex>
@@ -37,22 +37,24 @@ GaussianMixture::GaussianMixture(size_t nrFrontals,
           // TODO     Keys(conditionals), discreteParentKeys,
           Factors(
               conditionals,
-              [nrFrontals](const GaussianConditional::shared_ptr &p) {
+              [nrFrontals](const GaussianConditional::shared_ptr &p) -> GaussianFactor::shared_ptr {
+                if (!p) return nullptr;
                 if (p->nrFrontals() != nrFrontals)
                   throw std::invalid_argument(
                       (boost::format(
-                           "GaussianMixture() received a conditional with "
-                           "invalid number %d of frontals (should be %d).") %
-                       nrFrontals % p->nrFrontals())
+                          "GaussianMixture() received a conditional with "
+                          "invalid number %d of frontals (should be %d).") %
+                          nrFrontals % p->nrFrontals())
                           .str());
                 return boost::dynamic_pointer_cast<GaussianFactor>(p);
               })),
       BaseConditional(nrFrontals) {}
 
 GaussianConditional::shared_ptr GaussianMixture::operator()(
-    DiscreteValues &discreteVals) const {
-  auto conditional =
-      boost::dynamic_pointer_cast<GaussianConditional>(factors_(discreteVals));
+    const DiscreteValues &discreteVals) const {
+  auto &ptr = factors_(discreteVals);
+  if (!ptr) return nullptr;
+  auto conditional = boost::dynamic_pointer_cast<GaussianConditional>(ptr);
   if (conditional)
     return conditional;
   else
@@ -63,7 +65,7 @@ GaussianConditional::shared_ptr GaussianMixture::operator()(
 void GaussianMixture::print(const std::string &s,
                             const KeyFormatter &keyFormatter) const {
   std::cout << (s.empty() ? "" : s + " ");
-  std::cout << "[";
+  std::cout << "GaussianMixture [";
 
   for (Key key : frontals()) std::cout << keyFormatter(key) << " ";
   std::cout << "| ";
@@ -73,40 +75,28 @@ void GaussianMixture::print(const std::string &s,
   std::cout << "{\n";
 
   auto valueFormatter = [](const GaussianFactor::shared_ptr &v) {
-    auto indenter = [](const GaussianFactor::shared_ptr &p) {
+    auto printCapture = [](const GaussianFactor::shared_ptr &p) {
       RedirectCout rd;
       p->print();
-      auto contents = rd.str();
-      auto re = std::regex("\n");
-      auto lines = std::vector<std::string>{
-          std::sregex_token_iterator(contents.begin(), contents.end(), re, -1),
-          std::sregex_token_iterator()};
-      return std::accumulate(
-          lines.begin(), lines.end(), std::string(),
-          [](const std::string &a, const std::string &b) -> std::string {
-            return a + "\n    " + b;
-          });
+      std::string s = rd.str();
+      return s;
     };
 
-    auto hessianFactor = boost::dynamic_pointer_cast<HessianFactor>(v);
-    if (hessianFactor) {
-      return (boost::format("Hessian factor on %d keys: \n%s\n") % v->size() %
-              indenter(v))
-          .str();
+    std::string format_template = "Gaussian factor on %d keys: \n%s\n";
+
+    if (auto hessianFactor = boost::dynamic_pointer_cast<HessianFactor>(v)) {
+      format_template = "Hessian factor on %d keys: \n%s\n";
     }
 
-    auto jacobianFactor = boost::dynamic_pointer_cast<JacobianFactor>(v);
-    if (jacobianFactor) {
-      return (boost::format("Jacobian factor on %d keys: \n%s\n") % v->size() %
-              indenter(v))
-          .str();
+    if (auto jacobianFactor = boost::dynamic_pointer_cast<JacobianFactor>(v)) {
+      format_template = "Jacobian factor on %d keys: \n%s\n";
     }
-    return (boost::format("Gaussian factor on %d keys") % v->size()).str();
+    if (!v) return std::string {"nullptr\n"};
+    return (boost::format(format_template) % v->size() % printCapture(v)).str();
   };
 
   factors_.print("", keyFormatter, valueFormatter);
-  std::cout << "}";
-  std::cout << "\n";
+  std::cout << "}\n";
 }
 
 bool GaussianMixture::equals(const DCFactor &f, double tol) const {
@@ -117,6 +107,8 @@ bool GaussianMixture::equals(const DCFactor &f, double tol) const {
     return factors_.equals(other->factors_,
                            [tol](const GaussianFactor::shared_ptr &a,
                                  const GaussianFactor::shared_ptr &b) {
+                             if (a == nullptr && b == nullptr) return true;
+                             if (a == nullptr || b == nullptr) return false;
                              return a->equals(*b, tol);
                            });
   }

@@ -22,6 +22,7 @@
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/hybrid/DCGaussianMixtureFactor.h>
 #include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/inference/Conditional.h>
 
 namespace gtsam {
 
@@ -57,23 +58,30 @@ class GaussianMixture
    * @param continuousKeys - the keys for *continuous* variables
    * @param discreteKeys - the keys for *discrete* variables
    * @param conditionals A decision tree of GaussianConditional instances.
-   * TODO(Frank): (possibly wrongly) assumes nrFrontals is one
-   * TODO(Frank): should pass frontal keys, cont. parent keys, discrete parent
    * keys, cannot be a conditional on a discrete key.
    * TODO: desired API =
    * GaussianConditionalMixture(const Conditionals& conditionals,
    *                            const DiscreteKeys& discreteParentKeys)
    */
-  GaussianMixture(size_t nrFrontals, const KeyVector& continuousKeys,
-                  const DiscreteKeys& discreteKeys,
-                  const Conditionals& conditionals);
+  GaussianMixture(size_t nrFrontals,
+                  const KeyVector &continuousKeys,
+                  const DiscreteKeys &discreteKeys,
+                  const Conditionals &conditionals);
 
   /// @}
   /// @name Standard API
   /// @{
 
-  GaussianConditional::shared_ptr operator()(
-      DiscreteValues& discreteVals) const;
+  GaussianConditional::shared_ptr operator()(const DiscreteValues& discreteVals) const;
+
+  /// Returns the total number of continuous components
+  size_t nrComponents() {
+    size_t total = 0;
+    factors_.visit([&total](const GaussianFactor::shared_ptr &node) {
+      if (node) total += 1;
+    });
+    return total;
+  }
 
   /// @}
   /// @name Testable
@@ -86,6 +94,8 @@ class GaussianMixture
   bool equals(const DCFactor& f, double tol) const override;
 
   /// @}
+
+  friend class IncrementalHybrid;
 };
 
 /// traits

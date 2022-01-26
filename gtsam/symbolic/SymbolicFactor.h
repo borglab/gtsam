@@ -90,7 +90,8 @@ namespace gtsam {
     /// @name Testable
     /// @{
 
-    bool equals(const This& other, double tol = 1e-9) const;
+    /** Equals for testable */
+    virtual bool equals(const This& lf, double tol = 1e-9) const;
 
     /// print
     void print(
