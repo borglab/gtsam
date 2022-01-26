@@ -23,6 +23,7 @@
 
 #include <boost/range/adaptor/reversed.hpp>
 #include <fstream>
+#include <string>
 
 namespace gtsam {
 
@@ -39,7 +40,7 @@ void BayesNet<CONDITIONAL>::dot(std::ostream& os,
                                 const KeyFormatter& keyFormatter) const {
   os << "digraph G{\n";
 
-  for (auto conditional : *this) {
+  for (auto conditional : boost::adaptors::reverse(*this)) {
     auto frontals = conditional->frontals();
     const Key me = frontals.front();
     auto parents = conditional->parents();
