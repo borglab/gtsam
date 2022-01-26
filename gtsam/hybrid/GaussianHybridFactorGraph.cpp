@@ -122,10 +122,10 @@ pair<AbstractConditional::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid
     DiscreteFactorGraph dfg;
     dfg.push_back(factors.discreteGraph());
 
-    auto dbn = dfg.eliminatePartialSequential(ordering, EliminateForMPE);
-    auto &df = dbn.first->at(0);
-    auto &remainingFactors = dbn.second;
-    return {df, remainingFactors->size() ? remainingFactors->at(0) : nullptr};
+    auto dbn = EliminateForMPE(dfg, ordering);
+    auto &df = dbn.first;
+    auto &newFactor = dbn.second;
+    return {df, newFactor};
   }
 
   sum = Sum(sum, zeroOut);
