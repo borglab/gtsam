@@ -277,9 +277,9 @@ class DiscreteFactorGraph {
   double operator()(const gtsam::DiscreteValues& values) const;
   gtsam::DiscreteValues optimize() const;
 
-  gtsam::DiscreteLookupDAG sumProduct();
-  gtsam::DiscreteLookupDAG sumProduct(gtsam::Ordering::OrderingType type);
-  gtsam::DiscreteLookupDAG sumProduct(const gtsam::Ordering& ordering);
+  gtsam::DiscreteBayesNet sumProduct();
+  gtsam::DiscreteBayesNet sumProduct(gtsam::Ordering::OrderingType type);
+  gtsam::DiscreteBayesNet sumProduct(const gtsam::Ordering& ordering);
 
   gtsam::DiscreteLookupDAG maxProduct();
   gtsam::DiscreteLookupDAG maxProduct(gtsam::Ordering::OrderingType type);
