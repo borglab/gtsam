@@ -44,7 +44,7 @@ void BayesNet<CONDITIONAL>::dot(std::ostream& os,
   // Create nodes for each variable in the graph
   for (Key key : this->keys()) {
     auto position = writer.variablePos(key);
-    writer.DrawVariable(key, keyFormatter, position, &os);
+    writer.drawVariable(key, keyFormatter, position, &os);
   }
   os << "\n";
 

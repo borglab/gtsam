@@ -24,6 +24,7 @@
 
 #include <iosfwd>
 #include <map>
+#include <set>
 
 namespace gtsam {
 
@@ -43,7 +44,7 @@ struct GTSAM_EXPORT DotWriter {
    * Variable positions can be optionally specified and will be included in the
    * dor file with a "!' sign, so "neato" can use it to render them.
    */
-  std::map<gtsam::Key, Vector2> variablePositions;
+  std::map<Key, Vector2> variablePositions;
 
   /**
    * The position hints allow one to use symbol character and index to specify
@@ -51,6 +52,9 @@ struct GTSAM_EXPORT DotWriter {
    * a given symbol, it will be used to calculate the positions as (index,hint).
    */
   std::map<char, double> positionHints;
+
+  /** A set of keys that will be displayed as a box */
+  std::set<Key> boxes;
 
   explicit DotWriter(double figureWidthInches = 5,
                      double figureHeightInches = 5,
@@ -69,9 +73,9 @@ struct GTSAM_EXPORT DotWriter {
   void digraphPreamble(std::ostream* os) const;
 
   /// Create a variable dot fragment.
-  static void DrawVariable(Key key, const KeyFormatter& keyFormatter,
-                           const boost::optional<Vector2>& position,
-                           std::ostream* os);
+  void drawVariable(Key key, const KeyFormatter& keyFormatter,
+                    const boost::optional<Vector2>& position,
+                    std::ostream* os) const;
 
   /// Create factor dot.
   static void DrawFactor(size_t i, const boost::optional<Vector2>& position,
