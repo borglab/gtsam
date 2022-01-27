@@ -316,12 +316,17 @@ class InitializePose3 {
   static gtsam::Values initialize(const gtsam::NonlinearFactorGraph& graph);
 };
 
-#include <gtsam/slam/KarcherMeanFactor-inl.h>
+#include <gtsam/slam/KarcherMeanFactor.h>
 template <T = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3,
                gtsam::SO3, gtsam::SO4, gtsam::Rot3, gtsam::Pose3}>
 virtual class KarcherMeanFactor : gtsam::NonlinearFactor {
   KarcherMeanFactor(const gtsam::KeyVector& keys);
 };
+  
+template <class T>
+T FindKarcherMean(const std::vector<T, Eigen::aligned_allocator<T>> &rotations);
+
+template <class T> T FindKarcherMean(std::initializer_list<T> &&rotations);
   
 class Rot3Vector {
   Rot3Vector();
