@@ -3,11 +3,6 @@
 //*************************************************************************
 namespace gtsam {
 
-#include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-
-// ###################
-
 #include <gtsam/symbolic/SymbolicFactor.h>
 virtual class SymbolicFactor {
   // Standard Constructors and Named Constructors
@@ -171,31 +166,6 @@ class SymbolicBayesTreeClique {
   //  root, Eliminate function) const;
   //
   void deleteCachedShortcuts();
-};
-
-#include <gtsam/inference/VariableIndex.h>
-class VariableIndex {
-  // Standard Constructors and Named Constructors
-  VariableIndex();
-  // TODO: Templetize constructor when wrap supports it
-  // template<T = {gtsam::FactorGraph}>
-  // VariableIndex(const T& factorGraph, size_t nVariables);
-  // VariableIndex(const T& factorGraph);
-  VariableIndex(const gtsam::SymbolicFactorGraph& sfg);
-  VariableIndex(const gtsam::GaussianFactorGraph& gfg);
-  VariableIndex(const gtsam::NonlinearFactorGraph& fg);
-  VariableIndex(const gtsam::VariableIndex& other);
-
-  // Testable
-  bool equals(const gtsam::VariableIndex& other, double tol) const;
-  void print(string s = "VariableIndex: ",
-             const gtsam::KeyFormatter& keyFormatter =
-                 gtsam::DefaultKeyFormatter) const;
-
-  // Standard interface
-  size_t size() const;
-  size_t nFactors() const;
-  size_t nEntries() const;
 };
 
 }  // namespace gtsam
