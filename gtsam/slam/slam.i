@@ -322,9 +322,7 @@ template <T = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3,
 virtual class KarcherMeanFactor : gtsam::NonlinearFactor {
   KarcherMeanFactor(const gtsam::KeyVector& keys);
 };
-
-template <T = {gtsam::Rot3}>
-const T FindKarcherMean<T>(const std::vector<T>& rotations);
+const gtsam::Rot3 FindKarcherMean<gtsam::Rot3>(const std::vector<gtsam::Rot3>& rotations);
 
 #include <gtsam/slam/FrobeniusFactor.h>
 gtsam::noiseModel::Isotropic* ConvertNoiseModel(gtsam::noiseModel::Base* model,
