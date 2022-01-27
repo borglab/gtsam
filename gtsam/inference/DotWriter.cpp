@@ -102,7 +102,10 @@ void DotWriter::processFactor(size_t i, const KeyVector& keys,
       ConnectVariables(keys[0], keys[1], keyFormatter, os);
     } else {
       // Create dot for the factor.
-      DrawFactor(i, position, os);
+      if (!position && factorPositions.count(i))
+        DrawFactor(i, factorPositions.at(i), os);
+      else
+        DrawFactor(i, position, os);
 
       // Make factor-variable connections
       if (connectKeysToFactor) {

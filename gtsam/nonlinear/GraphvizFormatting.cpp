@@ -124,7 +124,7 @@ boost::optional<Vector2> GraphvizFormatting::extractPosition(
 boost::optional<Vector2> GraphvizFormatting::variablePos(const Values& values,
                                                          const Vector2& min,
                                                          Key key) const {
-  if (!values.exists(key)) return boost::none;
+  if (!values.exists(key)) return DotWriter::variablePos(key);
   boost::optional<Vector2> xy = extractPosition(values.at(key));
   if (xy) {
     xy->x() = scale * (xy->x() - min.x());

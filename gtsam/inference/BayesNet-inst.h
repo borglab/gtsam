@@ -48,6 +48,7 @@ void BayesNet<CONDITIONAL>::dot(std::ostream& os,
   }
   os << "\n";
 
+  // Reverse order as typically Bayes nets stored in reverse topological sort.
   for (auto conditional : boost::adaptors::reverse(*this)) {
     auto frontals = conditional->frontals();
     const Key me = frontals.front();

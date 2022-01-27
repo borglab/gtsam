@@ -41,9 +41,6 @@ struct GTSAM_EXPORT GraphvizFormatting : public DotWriter {
   bool mergeSimilarFactors;  ///< Merge multiple factors that have the same
                              ///< connectivity
 
-  /// (optional for each factor) Manually specify factor "dot" positions:
-  std::map<size_t, Vector2> factorPositions;
-
   /// Default constructor sets up robot coordinates.  Paper horizontal is robot
   /// Y, paper vertical is robot X.  Default figure size of 5x5 in.
   GraphvizFormatting()

@@ -42,7 +42,7 @@ struct GTSAM_EXPORT DotWriter {
 
   /**
    * Variable positions can be optionally specified and will be included in the
-   * dor file with a "!' sign, so "neato" can use it to render them.
+   * dot file with a "!' sign, so "neato" can use it to render them.
    */
   std::map<Key, Vector2> variablePositions;
 
@@ -55,6 +55,12 @@ struct GTSAM_EXPORT DotWriter {
 
   /** A set of keys that will be displayed as a box */
   std::set<Key> boxes;
+
+  /**
+   * Factor positions can be optionally specified and will be included in the
+   * dot file with a "!' sign, so "neato" can use it to render them.
+   */
+  std::map<size_t, Vector2> factorPositions;
 
   explicit DotWriter(double figureWidthInches = 5,
                      double figureHeightInches = 5,
