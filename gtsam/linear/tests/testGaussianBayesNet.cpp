@@ -312,7 +312,6 @@ TEST(GaussianBayesNet, Dot) {
   EXPECT(assert_equal(Vector2(10, 20), *position, 1e-5));
 
   string actual = noisyBayesNet.dot(DefaultKeyFormatter, writer);
-  noisyBayesNet.saveGraph("noisyBayesNet.dot", DefaultKeyFormatter, writer);
   EXPECT(actual ==
     "digraph {\n"
     "  size=\"5,5\";\n"

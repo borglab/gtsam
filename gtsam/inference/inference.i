@@ -129,6 +129,7 @@ class DotWriter {
   bool binaryEdges;
 
   std::map<gtsam::Key, gtsam::Vector2> variablePositions;
+  std::map<char, double> positionHints;
 };
 
 #include <gtsam/inference/VariableIndex.h>

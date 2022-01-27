@@ -16,8 +16,10 @@
  * @date December, 2021
  */
 
-#include <gtsam/base/Vector.h>
 #include <gtsam/inference/DotWriter.h>
+
+#include <gtsam/base/Vector.h>
+#include <gtsam/inference/Symbol.h>
 
 #include <ostream>
 
@@ -59,16 +61,33 @@ void DotWriter::DrawFactor(size_t i, const boost::optional<Vector2>& position,
 }
 
 static void ConnectVariables(Key key1, Key key2,
-                                 const KeyFormatter& keyFormatter,
-                                 ostream* os) {
+                             const KeyFormatter& keyFormatter, ostream* os) {
   *os << "  var" << keyFormatter(key1) << "--"
       << "var" << keyFormatter(key2) << ";\n";
 }
 
 static void ConnectVariableFactor(Key key, const KeyFormatter& keyFormatter,
-                                      size_t i, ostream* os) {
+                                  size_t i, ostream* os) {
   *os << "  var" << keyFormatter(key) << "--"
       << "factor" << i << ";\n";
+}
+
+/// Return variable position or none
+boost::optional<Vector2> DotWriter::variablePos(Key key) const {
+  boost::optional<Vector2> result = boost::none;
+
+  // Check position hint
+  Symbol symbol(key);
+  auto hint = positionHints.find(symbol.chr());
+  if (hint != positionHints.end())
+    result.reset(Vector2(symbol.index(), hint->second));
+
+  // Override with explicit position, if given.
+  auto pos = variablePositions.find(key);
+  if (pos != variablePositions.end())
+    result.reset(pos->second);
+
+  return result;
 }
 
 void DotWriter::processFactor(size_t i, const KeyVector& keys,
