@@ -127,6 +127,8 @@ class DotWriter {
   bool plotFactorPoints;
   bool connectKeysToFactor;
   bool binaryEdges;
+
+  std::map<gtsam::Key, gtsam::Vector2> variablePositions;
 };
 
 #include <gtsam/inference/VariableIndex.h>

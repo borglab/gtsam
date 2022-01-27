@@ -98,6 +98,7 @@ virtual class SymbolicConditional : gtsam::SymbolicFactor {
   bool equals(const gtsam::SymbolicConditional& other, double tol) const;
 
   // Standard interface
+  gtsam::Key firstFrontalKey() const;
   size_t nrFrontals() const;
   size_t nrParents() const;
 };
