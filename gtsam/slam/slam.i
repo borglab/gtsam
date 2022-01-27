@@ -325,12 +325,13 @@ virtual class KarcherMeanFactor : gtsam::NonlinearFactor {
   
 class Rot3Vector {
   Rot3Vector();
+  size_t size() const;
 
   // structure specific methods
   gtsam::Rot3 at(size_t i) const;
   void push_back(const gtsam::Rot3& R);
 };
-const gtsam::Rot3 FindKarcherMean<gtsam::Rot3>(const Rot3Vector& rotations);
+gtsam::Rot3 FindKarcherMean<gtsam::Rot3>(const Rot3Vector& rotations);
 
 #include <gtsam/slam/FrobeniusFactor.h>
 gtsam::noiseModel::Isotropic* ConvertNoiseModel(gtsam::noiseModel::Base* model,
