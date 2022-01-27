@@ -111,7 +111,7 @@ void NonlinearFactorGraph::dot(std::ostream& os, const Values& values,
   // Create nodes for each variable in the graph
   for (Key key : keys) {
     auto position = writer.variablePos(values, min, key);
-    writer.DrawVariable(key, keyFormatter, position, &os);
+    writer.drawVariable(key, keyFormatter, position, &os);
   }
   os << "\n";
 

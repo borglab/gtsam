@@ -39,14 +39,17 @@ void DotWriter::digraphPreamble(ostream* os) const {
       << "\";\n\n";
 }
 
-void DotWriter::DrawVariable(Key key, const KeyFormatter& keyFormatter,
+void DotWriter::drawVariable(Key key, const KeyFormatter& keyFormatter,
                              const boost::optional<Vector2>& position,
-                             ostream* os) {
+                             ostream* os) const {
   // Label the node with the label from the KeyFormatter
   *os << "  var" << keyFormatter(key) << "[label=\"" << keyFormatter(key)
       << "\"";
   if (position) {
     *os << ", pos=\"" << position->x() << "," << position->y() << "!\"";
+  }
+  if (boxes.count(key)) {
+    *os << ", shape=box";
   }
   *os << "];\n";
 }

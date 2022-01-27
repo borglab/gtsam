@@ -91,18 +91,21 @@ TEST(SymbolicBayesNet, Dot) {
   DotWriter writer;
   writer.positionHints.emplace('a', 2);
   writer.positionHints.emplace('x', 1);
+  writer.boxes.emplace(A(1));
+  writer.boxes.emplace(A(2));
   
   auto position = writer.variablePos(A(1));
   CHECK(position);
   EXPECT(assert_equal(Vector2(1, 2), *position, 1e-5));
 
   string actual = bn.dot(DefaultKeyFormatter, writer);
+  bn.saveGraph("bn.dot", DefaultKeyFormatter, writer);
   EXPECT(actual ==
          "digraph {\n"
          "  size=\"5,5\";\n"
          "\n"
-         "  vara1[label=\"a1\", pos=\"1,2!\"];\n"
-         "  vara2[label=\"a2\", pos=\"2,2!\"];\n"
+         "  vara1[label=\"a1\", pos=\"1,2!\", shape=box];\n"
+         "  vara2[label=\"a2\", pos=\"2,2!\", shape=box];\n"
          "  varx1[label=\"x1\", pos=\"1,1!\"];\n"
          "  varx2[label=\"x2\", pos=\"2,1!\"];\n"
          "  varx3[label=\"x3\", pos=\"3,1!\"];\n"

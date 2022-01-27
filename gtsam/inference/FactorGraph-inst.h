@@ -135,7 +135,7 @@ void FactorGraph<FACTOR>::dot(std::ostream& os,
 
   // Create nodes for each variable in the graph
   for (Key key : keys()) {
-    writer.DrawVariable(key, keyFormatter, boost::none, &os);
+    writer.drawVariable(key, keyFormatter, boost::none, &os);
   }
   os << "\n";
 
