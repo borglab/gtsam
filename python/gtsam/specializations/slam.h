@@ -17,4 +17,4 @@ py::bind_vector<
 py::bind_vector<
     std::vector<boost::shared_ptr<gtsam::BetweenFactor<gtsam::Pose2> > > >(
     m_, "BetweenFactorPose2s");
-py::bind_vector<std::vector<gtsam::Rot3>>(m_, "Rot3Vector");
+py::bind_vector<std::vector<gtsam::Rot3, Eigen::aligned_allocator<gtsam::Rot3>>(m_, "Rot3Vector");
