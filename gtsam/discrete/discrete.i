@@ -157,6 +157,10 @@ class DiscreteBayesNet {
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::DiscreteBayesNet& other, double tol = 1e-9) const;
+  double operator()(const gtsam::DiscreteValues& values) const;
+  gtsam::DiscreteValues sample() const;
+  gtsam::DiscreteValues sample(gtsam::DiscreteValues given) const;
+
   string dot(
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
       const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
@@ -164,9 +168,6 @@ class DiscreteBayesNet {
       string s,
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
       const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
-  double operator()(const gtsam::DiscreteValues& values) const;
-  gtsam::DiscreteValues sample() const;
-  gtsam::DiscreteValues sample(gtsam::DiscreteValues given) const;
   string markdown(const gtsam::KeyFormatter& keyFormatter =
                       gtsam::DefaultKeyFormatter) const;
   string markdown(const gtsam::KeyFormatter& keyFormatter,
@@ -256,14 +257,6 @@ class DiscreteFactorGraph {
   void print(string s = "") const;
   bool equals(const gtsam::DiscreteFactorGraph& fg, double tol = 1e-9) const;
 
-  string dot(
-      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
-      const gtsam::DotWriter& dotWriter = gtsam::DotWriter()) const;
-  void saveGraph(
-      string s,
-      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
-      const gtsam::DotWriter& dotWriter = gtsam::DotWriter()) const;
-
   gtsam::DecisionTreeFactor product() const;
   double operator()(const gtsam::DiscreteValues& values) const;
   gtsam::DiscreteValues optimize() const;
@@ -284,6 +277,14 @@ class DiscreteFactorGraph {
   gtsam::DiscreteBayesTree eliminateMultifrontal(const gtsam::Ordering& ordering);
   std::pair<gtsam::DiscreteBayesTree, gtsam::DiscreteFactorGraph>
       eliminatePartialMultifrontal(const gtsam::Ordering& ordering);
+
+  string dot(
+      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
+      const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
+  void saveGraph(
+      string s,
+      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
+      const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
 
   string markdown(const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;

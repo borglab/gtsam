@@ -131,6 +131,7 @@ class DotWriter {
   std::map<gtsam::Key, gtsam::Vector2> variablePositions;
   std::map<char, double> positionHints;
   std::set<Key> boxes;
+  std::map<size_t, gtsam::Vector2> factorPositions;
 };
 
 #include <gtsam/inference/VariableIndex.h>
