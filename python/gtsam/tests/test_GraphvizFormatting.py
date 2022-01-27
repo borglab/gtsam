@@ -78,7 +78,7 @@ class TestGraphvizFormatting(GtsamTestCase):
         graphviz_formatting.paperHorizontalAxis = gtsam.GraphvizFormatting.Axis.X
         graphviz_formatting.paperVerticalAxis = gtsam.GraphvizFormatting.Axis.Y
         self.assertEqual(self.graph.dot(self.values,
-                                        writer=graphviz_formatting),
+                                        formatting=graphviz_formatting),
                          textwrap.dedent(expected_result))
 
     def test_factor_points(self):
@@ -100,7 +100,7 @@ class TestGraphvizFormatting(GtsamTestCase):
         graphviz_formatting.plotFactorPoints = False
 
         self.assertEqual(self.graph.dot(self.values,
-                                        writer=graphviz_formatting),
+                                        formatting=graphviz_formatting),
                          textwrap.dedent(expected_result))
 
     def test_width_height(self):
@@ -127,7 +127,7 @@ class TestGraphvizFormatting(GtsamTestCase):
         graphviz_formatting.figureHeightInches = 10
 
         self.assertEqual(self.graph.dot(self.values,
-                                        writer=graphviz_formatting),
+                                        formatting=graphviz_formatting),
                          textwrap.dedent(expected_result))
 
 

@@ -98,11 +98,11 @@ class NonlinearFactorGraph {
   string dot(
       const gtsam::Values& values,
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
-      const GraphvizFormatting& writer = GraphvizFormatting());
+      const GraphvizFormatting& formatting = GraphvizFormatting());
   void saveGraph(
       const string& s, const gtsam::Values& values,
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
-      const GraphvizFormatting& writer = GraphvizFormatting()) const;
+      const GraphvizFormatting& formatting = GraphvizFormatting()) const;
 
   // enabling serialization functionality
   void serialize() const;
