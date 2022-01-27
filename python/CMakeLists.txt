@@ -45,6 +45,7 @@ set(ignore
     gtsam::Point3Pairs
     gtsam::Pose3Pairs
     gtsam::Pose3Vector
+    gtsam::Rot3Vector
     gtsam::KeyVector
     gtsam::BinaryMeasurementsUnit3
     gtsam::DiscreteKey
