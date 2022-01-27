@@ -39,8 +39,18 @@ struct GTSAM_EXPORT DotWriter {
                              ///< the dot of the factor
   bool binaryEdges;          ///< just use non-dotted edges for binary factors
 
-  /// (optional for each variable) Manually specify variable node positions
+  /**
+   * Variable positions can be optionally specified and will be included in the
+   * dor file with a "!' sign, so "neato" can use it to render them.
+   */
   std::map<gtsam::Key, Vector2> variablePositions;
+
+  /**
+   * The position hints allow one to use symbol character and index to specify
+   * position. Unless variable positions are specified, if a hint is present for
+   * a given symbol, it will be used to calculate the positions as (index,hint).
+   */
+  std::map<char, double> positionHints;
 
   explicit DotWriter(double figureWidthInches = 5,
                      double figureHeightInches = 5,
@@ -68,13 +78,7 @@ struct GTSAM_EXPORT DotWriter {
                          std::ostream* os);
 
   /// Return variable position or none
-  boost::optional<Vector2> variablePos(Key key) const {
-    auto it = variablePositions.find(key);
-    if (it == variablePositions.end())
-      return boost::none;
-    else
-      return it->second;
-  }
+  boost::optional<Vector2> variablePos(Key key) const;
 
   /// Draw a single factor, specified by its index i and its variable keys.
   void processFactor(size_t i, const KeyVector& keys,

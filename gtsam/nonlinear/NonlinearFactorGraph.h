@@ -43,12 +43,14 @@ namespace gtsam {
   class ExpressionFactor;
 
   /**
-   * A non-linear factor graph is a graph of non-Gaussian, i.e. non-linear factors,
-   * which derive from NonlinearFactor. The values structures are typically (in SAM) more general
-   * than just vectors, e.g., Rot3 or Pose3, which are objects in non-linear manifolds.
-   * Linearizing the non-linear factor graph creates a linear factor graph on the
-   * tangent vector space at the linearization point. Because the tangent space is a true
-   * vector space, the config type will be an VectorValues in that linearized factor graph.
+   * A NonlinearFactorGraph is a graph of non-Gaussian, i.e. non-linear factors,
+   * which derive from NonlinearFactor. The values structures are typically (in
+   * SAM) more general than just vectors, e.g., Rot3 or Pose3, which are objects
+   * in non-linear manifolds. Linearizing the non-linear factor graph creates a
+   * linear factor graph on the tangent vector space at the linearization point.
+   * Because the tangent space is a true vector space, the config type will be
+   * an VectorValues in that linearized factor graph.
+   * @addtogroup nonlinear
    */
   class GTSAM_EXPORT NonlinearFactorGraph: public FactorGraph<NonlinearFactor> {
 
@@ -57,6 +59,9 @@ namespace gtsam {
     typedef FactorGraph<NonlinearFactor> Base;
     typedef NonlinearFactorGraph This;
     typedef boost::shared_ptr<This> shared_ptr;
+
+    /// @name Standard Constructors
+    /// @{
 
     /** Default constructor */
     NonlinearFactorGraph() {}
@@ -76,6 +81,10 @@ namespace gtsam {
     /// Destructor
     virtual ~NonlinearFactorGraph() {}
 
+    /// @}
+    /// @name Testable
+    /// @{
+
     /** print */
     void print(
         const std::string& str = "NonlinearFactorGraph: ",
@@ -89,6 +98,10 @@ namespace gtsam {
 
     /** Test equality */
     bool equals(const NonlinearFactorGraph& other, double tol = 1e-9) const;
+
+    /// @}
+    /// @name Standard Interface
+    /// @{
 
     /** unnormalized error, \f$ \sum_i 0.5 (h_i(X_i)-z)^2 / \sigma^2 \f$ in the most common case */
     double error(const Values& values) const;
@@ -206,6 +219,7 @@ namespace gtsam {
       emplace_shared<PriorFactor<T>>(key, prior, covariance);
     }
 
+    /// @}
     /// @name Graph Display
     /// @{
 
@@ -250,6 +264,8 @@ namespace gtsam {
   public:
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
+    /// @name Deprecated
+    /// @{
     /** @deprecated */
     boost::shared_ptr<HessianFactor> GTSAM_DEPRECATED linearizeToHessianFactor(
         const Values& values, boost::none_t, const Dampen& dampen = nullptr) const
@@ -261,19 +277,20 @@ namespace gtsam {
       {return updateCholesky(values, dampen);}
 
     /** @deprecated */
-    void GTSAM_DEPRECATED
-    saveGraph(std::ostream& os, const Values& values = Values(),
-              const GraphvizFormatting& writer = GraphvizFormatting(),
-              const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+    void GTSAM_DEPRECATED saveGraph(
+        std::ostream& os, const Values& values = Values(),
+        const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
+        const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
       dot(os, values, keyFormatter, graphvizFormatting);
     }
     /** @deprecated */
     void GTSAM_DEPRECATED
     saveGraph(const std::string& filename, const Values& values,
-              const GraphvizFormatting& writer,
+              const GraphvizFormatting& graphvizFormatting,
               const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
       saveGraph(filename, values, keyFormatter, graphvizFormatting);
     }
+    /// @}
 #endif
 
   };
