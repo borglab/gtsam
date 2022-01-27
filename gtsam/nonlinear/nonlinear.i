@@ -95,18 +95,17 @@ class NonlinearFactorGraph {
   gtsam::GaussianFactorGraph* linearize(const gtsam::Values& values) const;
   gtsam::NonlinearFactorGraph clone() const;
 
-  // enabling serialization functionality
-  void serialize() const;
-
   string dot(
       const gtsam::Values& values,
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
       const GraphvizFormatting& writer = GraphvizFormatting());
-  void saveGraph(const string& s, const gtsam::Values& values,
-                 const gtsam::KeyFormatter& keyFormatter =
-                     gtsam::DefaultKeyFormatter,
-                 const GraphvizFormatting& writer =
-                     GraphvizFormatting()) const;
+  void saveGraph(
+      const string& s, const gtsam::Values& values,
+      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
+      const GraphvizFormatting& writer = GraphvizFormatting()) const;
+
+  // enabling serialization functionality
+  void serialize() const;
 };
 
 #include <gtsam/nonlinear/NonlinearFactor.h>

@@ -437,6 +437,14 @@ class GaussianFactorGraph {
   pair<Matrix,Vector> hessian() const;
   pair<Matrix,Vector> hessian(const gtsam::Ordering& ordering) const;
 
+  string dot(
+      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
+      const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
+  void saveGraph(
+      string s,
+      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
+      const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
+
   // enabling serialization functionality
   void serialize() const;
 };
@@ -527,6 +535,14 @@ virtual class GaussianBayesNet {
   double logDeterminant() const;
   gtsam::VectorValues backSubstitute(const gtsam::VectorValues& gx) const;
   gtsam::VectorValues backSubstituteTranspose(const gtsam::VectorValues& gx) const;
+
+  string dot(
+      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
+      const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
+  void saveGraph(
+      string s,
+      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
+      const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
 };
 
 #include <gtsam/linear/GaussianBayesTree.h>
