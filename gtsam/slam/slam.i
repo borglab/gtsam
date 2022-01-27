@@ -331,7 +331,8 @@ class Rot3Vector {
   gtsam::Rot3 at(size_t i) const;
   void push_back(const gtsam::Rot3& R);
 };
-gtsam::Rot3 FindKarcherMean<gtsam::Rot3>(const Rot3Vector& rotations);
+typedef FindKarcherMean<gtsam::Rot3> FindKarcherMeanRot3;
+gtsam::Rot3 FindKarcherMeanRot3(const Rot3Vector& rotations);
 
 #include <gtsam/slam/FrobeniusFactor.h>
 gtsam::noiseModel::Isotropic* ConvertNoiseModel(gtsam::noiseModel::Base* model,
