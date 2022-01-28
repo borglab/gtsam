@@ -145,6 +145,22 @@ namespace gtsam {
   }
 
   /* ************************************************************************ */
+  // sumProduct is just an alias for regular eliminateSequential.
+  DiscreteBayesNet DiscreteFactorGraph::sumProduct(
+      OptionalOrderingType orderingType) const {
+    gttic(DiscreteFactorGraph_sumProduct);
+    auto bayesNet = eliminateSequential(orderingType);
+    return *bayesNet;
+  }
+
+  DiscreteBayesNet DiscreteFactorGraph::sumProduct(
+      const Ordering& ordering) const {
+    gttic(DiscreteFactorGraph_sumProduct);
+    auto bayesNet = eliminateSequential(ordering);
+    return *bayesNet;
+  }
+
+  /* ************************************************************************ */
   // The max-product solution below is a bit clunky: the elimination machinery
   // does not allow for differently *typed* versions of elimination, so we
   // eliminate into a Bayes Net using the special eliminate function above, and
@@ -153,16 +169,14 @@ namespace gtsam {
   DiscreteLookupDAG DiscreteFactorGraph::maxProduct(
       OptionalOrderingType orderingType) const {
     gttic(DiscreteFactorGraph_maxProduct);
-    auto bayesNet =
-        BaseEliminateable::eliminateSequential(orderingType, EliminateForMPE);
+    auto bayesNet = eliminateSequential(orderingType, EliminateForMPE);
     return DiscreteLookupDAG::FromBayesNet(*bayesNet);
   }
 
   DiscreteLookupDAG DiscreteFactorGraph::maxProduct(
       const Ordering& ordering) const {
     gttic(DiscreteFactorGraph_maxProduct);
-    auto bayesNet =
-        BaseEliminateable::eliminateSequential(ordering, EliminateForMPE);
+    auto bayesNet = eliminateSequential(ordering, EliminateForMPE);
     return DiscreteLookupDAG::FromBayesNet(*bayesNet);
   }
 
