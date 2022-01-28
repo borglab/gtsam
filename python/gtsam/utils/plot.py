@@ -79,6 +79,8 @@ def plot_covariance_ellipse_3d(axes,
     k = 3.527 corresponds to 1 std, 68.26% of all probability
     k = 14.157 corresponds to 3 std, 99.74% of all probability
 
+    We choose k = 5 which corresponds to 99.99846% of all probability in 3D
+
     Args:
         axes (matplotlib.axes.Axes): Matplotlib axes.
         origin: The origin in the world frame.
@@ -88,7 +90,8 @@ def plot_covariance_ellipse_3d(axes,
         n: Defines the granularity of the ellipse. Higher values indicate finer ellipses.
         alpha: Transparency value for the plotted surface in the range [0, 1].
     """
-    k = np.sqrt(14.157)
+    # Sigma value corresponding to the covariance ellipse
+    k = 5
     U, S, _ = np.linalg.svd(P)
 
     radii = k * np.sqrt(S)
@@ -123,6 +126,8 @@ def plot_point2_on_axes(axes,
     k = 2.296 corresponds to 1 std, 68.26% of all probability
     k = 11.820 corresponds to 3 std, 99.74% of all probability
 
+    We choose k = 5 which corresponds to 99.99963% of all probability for 2D.
+
     Args:
         axes (matplotlib.axes.Axes): Matplotlib axes.
         point: The point to be plotted.
@@ -133,15 +138,15 @@ def plot_point2_on_axes(axes,
     if P is not None:
         w, v = np.linalg.eig(P)
 
-        # Scaling value for the uncertainty ellipse, we multiply by 2 because
-        # matplotlib takes the diameter and not the radius of the major and
-        # minor axes of the ellipse.
-        k = 2*np.sqrt(11.820)
+        # Sigma value corresponding to the covariance ellipse
+        k = 5
 
         angle = np.arctan2(v[1, 0], v[0, 0])
+        # We multiply k by 2 since k corresponds to the radius but Ellipse uses
+        # the diameter.
         e1 = patches.Ellipse(point,
-                             np.sqrt(w[0]) * k,
-                             np.sqrt(w[1]) * k,
+                             np.sqrt(w[0]) * 2 * k,
+                             np.sqrt(w[1]) * 2 * k,
                              np.rad2deg(angle),
                              fill=False)
         axes.add_patch(e1)
@@ -191,6 +196,8 @@ def plot_pose2_on_axes(axes,
     k = 2.296 corresponds to 1 std, 68.26% of all probability
     k = 11.820 corresponds to 3 std, 99.74% of all probability
 
+    We choose k = 5 which corresponds to 99.99963% of all probability for 2D.
+
     Args:
         axes (matplotlib.axes.Axes): Matplotlib axes.
         pose: The pose to be plotted.
@@ -218,12 +225,15 @@ def plot_pose2_on_axes(axes,
 
         w, v = np.linalg.eig(gPp)
 
-        k = 2*np.sqrt(11.820)
+        # Sigma value corresponding to the covariance ellipse
+        k = 5
 
         angle = np.arctan2(v[1, 0], v[0, 0])
+        # We multiply k by 2 since k corresponds to the radius but Ellipse uses
+        # the diameter.
         e1 = patches.Ellipse(origin,
-                             np.sqrt(w[0]) * k,
-                             np.sqrt(w[1]) * k,
+                             np.sqrt(w[0]) * 2 * k,
+                             np.sqrt(w[1]) * 2 * k,
                              np.rad2deg(angle),
                              fill=False)
         axes.add_patch(e1)
