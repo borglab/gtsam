@@ -106,26 +106,13 @@ TEST(DiscreteBayesNet, Asia) {
   DiscreteConditional expected2(Bronchitis % "11/9");
   EXPECT(assert_equal(expected2, *chordal->back()));
 
-  // solve
-  auto actualMPE = chordal->optimize();
-  DiscreteValues expectedMPE;
-  insert(expectedMPE)(Asia.first, 0)(Dyspnea.first, 0)(XRay.first, 0)(
-      Tuberculosis.first, 0)(Smoking.first, 0)(Either.first, 0)(
-      LungCancer.first, 0)(Bronchitis.first, 0);
-  EXPECT(assert_equal(expectedMPE, actualMPE));
-
   // add evidence, we were in Asia and we have dyspnea
   fg.add(Asia, "0 1");
   fg.add(Dyspnea, "0 1");
 
   // solve again, now with evidence
   DiscreteBayesNet::shared_ptr chordal2 = fg.eliminateSequential(ordering);
-  auto actualMPE2 = chordal2->optimize();
-  DiscreteValues expectedMPE2;
-  insert(expectedMPE2)(Asia.first, 1)(Dyspnea.first, 1)(XRay.first, 0)(
-      Tuberculosis.first, 0)(Smoking.first, 1)(Either.first, 0)(
-      LungCancer.first, 0)(Bronchitis.first, 1);
-  EXPECT(assert_equal(expectedMPE2, actualMPE2));
+  EXPECT(assert_equal(expected2, *chordal->back()));
 
   // now sample from it
   DiscreteValues expectedSample;
@@ -163,12 +150,21 @@ TEST(DiscreteBayesNet, Dot) {
   fragment.add((Either | Tuberculosis, LungCancer) = "F T T T");
 
   string actual = fragment.dot();
+  cout << actual << endl;
   EXPECT(actual ==
-         "digraph G{\n"
-         "0->3\n"
-         "4->6\n"
-         "3->5\n"
-         "6->5\n"
+         "digraph {\n"
+         "  size=\"5,5\";\n"
+         "\n"
+         "  var0[label=\"0\"];\n"
+         "  var3[label=\"3\"];\n"
+         "  var4[label=\"4\"];\n"
+         "  var5[label=\"5\"];\n"
+         "  var6[label=\"6\"];\n"
+         "\n"
+         "  var3->var5\n"
+         "  var6->var5\n"
+         "  var4->var6\n"
+         "  var0->var3\n"
          "}");
 }
 

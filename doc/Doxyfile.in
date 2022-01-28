@@ -1188,7 +1188,7 @@ USE_MATHJAX            = YES
 # MathJax, but it is strongly recommended to install a local copy of MathJax 
 # before deployment.
 
-MATHJAX_RELPATH        = https://cdn.mathjax.org/mathjax/latest
+# MATHJAX_RELPATH        = https://cdn.mathjax.org/mathjax/latest
 
 # The MATHJAX_EXTENSIONS tag can be used to specify one or MathJax extension 
 # names that should be enabled during MathJax rendering.
