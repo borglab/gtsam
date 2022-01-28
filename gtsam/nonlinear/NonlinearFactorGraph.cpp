@@ -33,8 +33,10 @@
 #  include <tbb/parallel_for.h>
 #endif
 
+#include <algorithm>
 #include <cmath>
 #include <fstream>
+#include <set>
 
 using namespace std;
 
@@ -100,7 +102,7 @@ bool NonlinearFactorGraph::equals(const NonlinearFactorGraph& other, double tol)
 void NonlinearFactorGraph::dot(std::ostream& os, const Values& values,
                                const KeyFormatter& keyFormatter,
                                const GraphvizFormatting& writer) const {
-  writer.writePreamble(&os);
+  writer.graphPreamble(&os);
 
   // Find bounds (imperative)
   KeySet keys = this->keys();
@@ -109,7 +111,7 @@ void NonlinearFactorGraph::dot(std::ostream& os, const Values& values,
   // Create nodes for each variable in the graph
   for (Key key : keys) {
     auto position = writer.variablePos(values, min, key);
-    writer.DrawVariable(key, keyFormatter, position, &os);
+    writer.drawVariable(key, keyFormatter, position, &os);
   }
   os << "\n";
 
@@ -127,7 +129,7 @@ void NonlinearFactorGraph::dot(std::ostream& os, const Values& values,
     // Create factors and variable connections
     size_t i = 0;
     for (const KeyVector& factorKeys : structure) {
-      writer.processFactor(i++, factorKeys, boost::none, &os);
+      writer.processFactor(i++, factorKeys, keyFormatter, boost::none, &os);
     }
   } else {
     // Create factors and variable connections
@@ -135,7 +137,8 @@ void NonlinearFactorGraph::dot(std::ostream& os, const Values& values,
       const NonlinearFactor::shared_ptr& factor = at(i);
       if (factor) {
         const KeyVector& factorKeys = factor->keys();
-        writer.processFactor(i, factorKeys, writer.factorPos(min, i), &os);
+        writer.processFactor(i, factorKeys, keyFormatter,
+                             writer.factorPos(min, i), &os);
       }
     }
   }

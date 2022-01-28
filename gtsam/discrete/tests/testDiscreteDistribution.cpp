@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /*
- * @file    testDiscretePrior.cpp
+ * @file    testDiscreteDistribution.cpp
  * @brief   unit tests for DiscreteDistribution
  * @author  Frank dellaert
  * @date    December 2021
@@ -72,6 +72,12 @@ TEST(DiscreteDistribution, pmf) {
 TEST(DiscreteDistribution, sample) {
   DiscreteDistribution prior(X % "2/3");
   prior.sample();
+}
+
+/* ************************************************************************* */
+TEST(DiscreteDistribution, argmax) {
+  DiscreteDistribution prior(X % "2/3");
+  EXPECT_LONGS_EQUAL(prior.argmax(), 1);
 }
 
 /* ************************************************************************* */

@@ -191,20 +191,36 @@ TEST(DiscreteConditional, marginals) {
   DiscreteConditional prior(B % "1/2");
   DiscreteConditional pAB = prior * conditional;
 
+  // P(A=0) = P(A=0|B=0)P(B=0) + P(A=0|B=1)P(B=1) = 1*1 + 2*2 = 5
+  // P(A=1) = P(A=1|B=0)P(B=0) + P(A=1|B=1)P(B=1) = 2*1 + 1*2 = 4
   DiscreteConditional actualA = pAB.marginal(A.first);
   DiscreteConditional pA(A % "5/4");
   EXPECT(assert_equal(pA, actualA));
-  EXPECT_LONGS_EQUAL(1, actualA.nrFrontals());
+  EXPECT(actualA.frontals() == KeyVector{1});
   EXPECT_LONGS_EQUAL(0, actualA.nrParents());
-  KeyVector frontalsA(actualA.beginFrontals(), actualA.endFrontals());
-  EXPECT((frontalsA == KeyVector{1}));
 
   DiscreteConditional actualB = pAB.marginal(B.first);
   EXPECT(assert_equal(prior, actualB));
-  EXPECT_LONGS_EQUAL(1, actualB.nrFrontals());
+  EXPECT(actualB.frontals() == KeyVector{0});
   EXPECT_LONGS_EQUAL(0, actualB.nrParents());
-  KeyVector frontalsB(actualB.beginFrontals(), actualB.endFrontals());
-  EXPECT((frontalsB == KeyVector{0}));
+}
+
+/* ************************************************************************* */
+// Check calculation of marginals in case branches are pruned
+TEST(DiscreteConditional, marginals2) {
+  DiscreteKey A(0, 2), B(1, 2);  // changing keys need to make pruning happen!
+  DiscreteConditional conditional(A | B = "2/2 3/1");
+  DiscreteConditional prior(B % "1/2");
+  DiscreteConditional pAB = prior * conditional;
+  GTSAM_PRINT(pAB);
+  // P(A=0) = P(A=0|B=0)P(B=0) + P(A=0|B=1)P(B=1) = 2*1 + 3*2 = 8
+  // P(A=1) = P(A=1|B=0)P(B=0) + P(A=1|B=1)P(B=1) = 2*1 + 1*2 = 4
+  DiscreteConditional actualA = pAB.marginal(A.first);
+  DiscreteConditional pA(A % "8/4");
+  EXPECT(assert_equal(pA, actualA));
+
+  DiscreteConditional actualB = pAB.marginal(B.first);
+  EXPECT(assert_equal(prior, actualB));
 }
 
 /* ************************************************************************* */
@@ -219,6 +235,34 @@ TEST(DiscreteConditional, likelihood) {
   auto actual1 = conditional.likelihood(1);
   DecisionTreeFactor expected1(Y, "0.8 0.6 0.5");
   EXPECT(assert_equal(expected1, *actual1, 1e-9));
+}
+
+/* ************************************************************************* */
+// Check choose on P(C|D,E)
+TEST(DiscreteConditional, choose) {
+  DiscreteKey C(2, 2), D(4, 2), E(3, 2);
+  DiscreteConditional C_given_DE((C | D, E) = "4/1 1/1 1/1 1/4");
+
+  // Case 1: no given values: no-op
+  DiscreteValues given;
+  auto actual1 = C_given_DE.choose(given);
+  EXPECT(assert_equal(C_given_DE, *actual1, 1e-9));
+
+  // Case 2: 1 given value
+  given[D.first] = 1;
+  auto actual2 = C_given_DE.choose(given);
+  EXPECT_LONGS_EQUAL(1, actual2->nrFrontals());
+  EXPECT_LONGS_EQUAL(1, actual2->nrParents());
+  DiscreteConditional expected2(C | E = "1/1 1/4");
+  EXPECT(assert_equal(expected2, *actual2, 1e-9));
+
+  // Case 2: 2 given values
+  given[E.first] = 0;
+  auto actual3 = C_given_DE.choose(given);
+  EXPECT_LONGS_EQUAL(1, actual3->nrFrontals());
+  EXPECT_LONGS_EQUAL(0, actual3->nrParents());
+  DiscreteConditional expected3(C % "1/1");
+  EXPECT(assert_equal(expected3, *actual3, 1e-9));
 }
 
 /* ************************************************************************* */

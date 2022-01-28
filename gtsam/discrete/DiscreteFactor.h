@@ -122,4 +122,24 @@ public:
 // traits
 template<> struct traits<DiscreteFactor> : public Testable<DiscreteFactor> {};
 
+
+/**
+ * @brief Normalize a set of log probabilities.
+ *
+ * Normalizing a set of log probabilities in a numerically stable way is
+ * tricky. To avoid overflow/underflow issues, we compute the largest
+ * (finite) log probability and subtract it from each log probability before
+ * normalizing. This comes from the observation that if:
+ *    p_i = exp(L_i) / ( sum_j exp(L_j) ),
+ * Then,
+ *    p_i = exp(Z) exp(L_i - Z) / (exp(Z) sum_j exp(L_j - Z)),
+ *        = exp(L_i - Z) / ( sum_j exp(L_j - Z) )
+ *
+ * Setting Z = max_j L_j, we can avoid numerical issues that arise when all
+ * of the (unnormalized) log probabilities are either very large or very
+ * small.
+ */
+std::vector<double> expNormalize(const std::vector<double> &logProbs);
+
+
 }// namespace gtsam

@@ -16,26 +16,25 @@
  *  @author Frank Dellaert
  */
 
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/debug.h>
 #include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/discrete/Signature.h>
 #include <gtsam/inference/Conditional-inst.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/debug.h>
-
-#include <boost/make_shared.hpp>
 
 #include <algorithm>
+#include <boost/make_shared.hpp>
 #include <random>
+#include <set>
 #include <stdexcept>
 #include <string>
-#include <vector>
 #include <utility>
-#include <set>
+#include <vector>
 
 using namespace std;
+using std::pair;
 using std::stringstream;
 using std::vector;
-using std::pair;
 namespace gtsam {
 
 // Instantiate base class
@@ -143,67 +142,63 @@ void DiscreteConditional::print(const string& s,
     }
   }
   cout << "):\n";
-  ADT::print("");
+  ADT::print("", formatter);
   cout << endl;
 }
 
-/* ******************************************************************************** */
+/* ************************************************************************** */
 bool DiscreteConditional::equals(const DiscreteFactor& other,
-    double tol) const {
-  if (!dynamic_cast<const DecisionTreeFactor*>(&other))
+                                 double tol) const {
+  if (!dynamic_cast<const DecisionTreeFactor*>(&other)) {
     return false;
-  else {
-    const DecisionTreeFactor& f(
-        static_cast<const DecisionTreeFactor&>(other));
+  } else {
+    const DecisionTreeFactor& f(static_cast<const DecisionTreeFactor&>(other));
     return DecisionTreeFactor::equals(f, tol);
   }
 }
 
-/* ******************************************************************************** */
-static DiscreteConditional::ADT Choose(const DiscreteConditional& conditional,
-                                       const DiscreteValues& parentsValues) {
+/* ************************************************************************** */
+DiscreteConditional::ADT DiscreteConditional::choose(
+    const DiscreteValues& given, bool forceComplete) const {
   // Get the big decision tree with all the levels, and then go down the
   // branches based on the value of the parent variables.
-  DiscreteConditional::ADT adt(conditional);
+  DiscreteConditional::ADT adt(*this);
   size_t value;
-  for (Key j : conditional.parents()) {
+  for (Key j : parents()) {
     try {
-      value = parentsValues.at(j);
+      value = given.at(j);
       adt = adt.choose(j, value);  // ADT keeps getting smaller.
     } catch (std::out_of_range&) {
-      parentsValues.print("parentsValues: ");
-      throw runtime_error("DiscreteConditional::choose: parent value missing");
-    };
+      if (forceComplete) {
+        given.print("parentsValues: ");
+        throw runtime_error(
+            "DiscreteConditional::choose: parent value missing");
+      }
+    }
   }
   return adt;
 }
 
-/* ******************************************************************************** */
-DecisionTreeFactor::shared_ptr DiscreteConditional::choose(
-    const DiscreteValues& parentsValues) const {
-  // Get the big decision tree with all the levels, and then go down the
-  // branches based on the value of the parent variables.
-  ADT adt(*this);
-  size_t value;
-  for (Key j : parents()) {
-    try {
-      value = parentsValues.at(j);
-      adt = adt.choose(j, value);  // ADT keeps getting smaller.
-    } catch (exception&) {
-      parentsValues.print("parentsValues: ");
-      throw runtime_error("DiscreteConditional::choose: parent value missing");
-    };
-  }
+/* ************************************************************************** */
+DiscreteConditional::shared_ptr DiscreteConditional::choose(
+    const DiscreteValues& given) const {
+  ADT adt = choose(given, false);  // P(F|S=given)
 
-  // Convert ADT to factor.
-  DiscreteKeys discreteKeys;
+  // Collect all keys not in given.
+  DiscreteKeys dKeys;
   for (Key j : frontals()) {
-    discreteKeys.emplace_back(j, this->cardinality(j));
+    dKeys.emplace_back(j, this->cardinality(j));
   }
-  return boost::make_shared<DecisionTreeFactor>(discreteKeys, adt);
+  for (size_t i = nrFrontals(); i < size(); i++) {
+    Key j = keys_[i];
+    if (given.count(j) == 0) {
+      dKeys.emplace_back(j, this->cardinality(j));
+    }
+  }
+  return boost::make_shared<DiscreteConditional>(nrFrontals(), dKeys, adt);
 }
 
-/* ******************************************************************************** */
+/* ************************************************************************** */
 DecisionTreeFactor::shared_ptr DiscreteConditional::likelihood(
     const DiscreteValues& frontalValues) const {
   // Get the big decision tree with all the levels, and then go down the
@@ -217,7 +212,7 @@ DecisionTreeFactor::shared_ptr DiscreteConditional::likelihood(
     } catch (exception&) {
       frontalValues.print("frontalValues: ");
       throw runtime_error("DiscreteConditional::choose: frontal value missing");
-    };
+    }
   }
 
   // Convert ADT to factor.
@@ -228,7 +223,7 @@ DecisionTreeFactor::shared_ptr DiscreteConditional::likelihood(
   return boost::make_shared<DecisionTreeFactor>(discreteKeys, adt);
 }
 
-/* ******************************************************************************** */
+/* ****************************************************************************/
 DecisionTreeFactor::shared_ptr DiscreteConditional::likelihood(
     size_t parent_value) const {
   if (nrFrontals() != 1)
@@ -241,9 +236,9 @@ DecisionTreeFactor::shared_ptr DiscreteConditional::likelihood(
 }
 
 /* ************************************************************************** */
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
 void DiscreteConditional::solveInPlace(DiscreteValues* values) const {
-  // TODO(Abhijit): is this really the fastest way? He thinks it is.
-  ADT pFS = Choose(*this, *values);  // P(F|S=parentsValues)
+  ADT pFS = choose(*values, true);  // P(F|S=parentsValues)
 
   // Initialize
   DiscreteValues mpe;
@@ -252,61 +247,79 @@ void DiscreteConditional::solveInPlace(DiscreteValues* values) const {
   // Get all Possible Configurations
   const auto allPosbValues = frontalAssignments();
 
-  // Find the MPE
+  // Find the maximum
   for (const auto& frontalVals : allPosbValues) {
     double pValueS = pFS(frontalVals);  // P(F=value|S=parentsValues)
-    // Update MPE solution if better
+    // Update maximum solution if better
     if (pValueS > maxP) {
       maxP = pValueS;
       mpe = frontalVals;
     }
   }
 
-  // set values (inPlace) to mpe
+  // set values (inPlace) to maximum
   for (Key j : frontals()) {
     (*values)[j] = mpe[j];
   }
 }
 
-/* ******************************************************************************** */
-void DiscreteConditional::sampleInPlace(DiscreteValues* values) const {
-  assert(nrFrontals() == 1);
-  Key j = (firstFrontalKey());
-  size_t sampled = sample(*values); // Sample variable given parents
-  (*values)[j] = sampled; // store result in partial solution
-}
-
-/* ******************************************************************************** */
+/* ************************************************************************** */
 size_t DiscreteConditional::solve(const DiscreteValues& parentsValues) const {
-
-  // TODO: is this really the fastest way? I think it is.
-  ADT pFS = Choose(*this, parentsValues); // P(F|S=parentsValues)
+  ADT pFS = choose(parentsValues, true);  // P(F|S=parentsValues)
 
   // Then, find the max over all remaining
-  // TODO, only works for one key now, seems horribly slow this way
-  size_t mpe = 0;
-  DiscreteValues frontals;
+  size_t max = 0;
   double maxP = 0;
+  DiscreteValues frontals;
   assert(nrFrontals() == 1);
   Key j = (firstFrontalKey());
   for (size_t value = 0; value < cardinality(j); value++) {
     frontals[j] = value;
     double pValueS = pFS(frontals); // P(F=value|S=parentsValues)
+    // Update solution if better
+    if (pValueS > maxP) {
+      maxP = pValueS;
+      max = value;
+    }
+  }
+  return max;
+}
+#endif
+
+/* ************************************************************************** */
+size_t DiscreteConditional::argmax() const {
+  size_t maxValue = 0;
+  double maxP = 0;
+  assert(nrFrontals() == 1);
+  assert(nrParents() == 0);
+  DiscreteValues frontals;
+  Key j = firstFrontalKey();
+  for (size_t value = 0; value < cardinality(j); value++) {
+    frontals[j] = value;
+    double pValueS = (*this)(frontals);
     // Update MPE solution if better
     if (pValueS > maxP) {
       maxP = pValueS;
-      mpe = value;
+      maxValue = value;
     }
   }
-  return mpe;
+  return maxValue;
 }
 
-/* ******************************************************************************** */
+/* ************************************************************************** */
+void DiscreteConditional::sampleInPlace(DiscreteValues* values) const {
+  assert(nrFrontals() == 1);
+  Key j = (firstFrontalKey());
+  size_t sampled = sample(*values);  // Sample variable given parents
+  (*values)[j] = sampled;            // store result in partial solution
+}
+
+/* ************************************************************************** */
 size_t DiscreteConditional::sample(const DiscreteValues& parentsValues) const {
   static mt19937 rng(2);  // random number generator
 
   // Get the correct conditional density
-  ADT pFS = Choose(*this, parentsValues);  // P(F|S=parentsValues)
+  ADT pFS = choose(parentsValues, true);  // P(F|S=parentsValues)
 
   // TODO(Duy): only works for one key now, seems horribly slow this way
   if (nrFrontals() != 1) {
@@ -329,7 +342,7 @@ size_t DiscreteConditional::sample(const DiscreteValues& parentsValues) const {
   return distribution(rng);
 }
 
-/* ******************************************************************************** */
+/* ************************************************************************** */
 size_t DiscreteConditional::sample(size_t parent_value) const {
   if (nrParents() != 1)
     throw std::invalid_argument(
@@ -340,7 +353,7 @@ size_t DiscreteConditional::sample(size_t parent_value) const {
   return sample(values);
 }
 
-/* ******************************************************************************** */
+/* ************************************************************************** */
 size_t DiscreteConditional::sample() const {
   if (nrParents() != 0)
     throw std::invalid_argument(

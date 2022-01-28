@@ -61,9 +61,8 @@ int main(int argc, char** argv) {
   }
 
   // "Decoding", i.e., configuration with largest value (MPE)
-  // We use sequential variable elimination
-  DiscreteBayesNet::shared_ptr chordal = graph.eliminateSequential();
-  auto optimalDecoding = chordal->optimize();
+  // Uses max-product
+  auto optimalDecoding = graph.optimize();
   GTSAM_PRINT(optimalDecoding);
 
   // "Inference" Computing marginals
