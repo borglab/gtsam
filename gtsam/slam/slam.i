@@ -316,24 +316,14 @@ class InitializePose3 {
   static gtsam::Values initialize(const gtsam::NonlinearFactorGraph& graph);
 };
 
-#include <gtsam/slam/KarcherMeanFactor.h>
+#include <gtsam/slam/KarcherMeanFactor-inl.h>
 template <T = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3,
                gtsam::SO3, gtsam::SO4, gtsam::Rot3, gtsam::Pose3}>
 virtual class KarcherMeanFactor : gtsam::NonlinearFactor {
   KarcherMeanFactor(const gtsam::KeyVector& keys);
 };
 
-class Rot3Vector {
-  Rot3Vector();
-  size_t size() const;
-
-  // structure specific methods
-  gtsam::Rot3 at(size_t i) const;
-  void push_back(const gtsam::Rot3& R);
-};
-gtsam::Rot3 FindKarcherMean<gtsam::Rot3>(const Rot3Vector &rotations);
-typedef FindKarcherMean<gtsam::Rot3> FindKarcherMeanRot3;
-gtsam::Rot3 FindKarcherMeanRot3(const gtsam::Rot3Vector& rotations);
+gtsam::Rot3 FindKarcherMean(const gtsam::Rot3Vector& rotations);
 
 #include <gtsam/slam/FrobeniusFactor.h>
 gtsam::noiseModel::Isotropic* ConvertNoiseModel(gtsam::noiseModel::Base* model,
