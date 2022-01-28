@@ -10,41 +10,51 @@
 * -------------------------------------------------------------------------- */
 
 /**
-* @file    BayesNet.h
-* @brief   Bayes network
-* @author  Frank Dellaert
-* @author  Richard Roberts
-*/
+ * @file    BayesNet.h
+ * @brief   Bayes network
+ * @author  Frank Dellaert
+ * @author  Richard Roberts
+ */
 
 #pragma once
 
-#include <gtsam/inference/FactorGraph-inst.h>
 #include <gtsam/inference/BayesNet.h>
+#include <gtsam/inference/FactorGraph-inst.h>
 
 #include <boost/range/adaptor/reversed.hpp>
 #include <fstream>
+#include <string>
 
 namespace gtsam {
 
 /* ************************************************************************* */
 template <class CONDITIONAL>
-void BayesNet<CONDITIONAL>::print(
-    const std::string& s, const KeyFormatter& formatter) const {
+void BayesNet<CONDITIONAL>::print(const std::string& s,
+                                  const KeyFormatter& formatter) const {
   Base::print(s, formatter);
 }
 
 /* ************************************************************************* */
 template <class CONDITIONAL>
 void BayesNet<CONDITIONAL>::dot(std::ostream& os,
-                                const KeyFormatter& keyFormatter) const {
-  os << "digraph G{\n";
+                                const KeyFormatter& keyFormatter,
+                                const DotWriter& writer) const {
+  writer.digraphPreamble(&os);
 
-  for (auto conditional : *this) {
+  // Create nodes for each variable in the graph
+  for (Key key : this->keys()) {
+    auto position = writer.variablePos(key);
+    writer.drawVariable(key, keyFormatter, position, &os);
+  }
+  os << "\n";
+
+  // Reverse order as typically Bayes nets stored in reverse topological sort.
+  for (auto conditional : boost::adaptors::reverse(*this)) {
     auto frontals = conditional->frontals();
     const Key me = frontals.front();
     auto parents = conditional->parents();
     for (const Key& p : parents)
-      os << keyFormatter(p) << "->" << keyFormatter(me) << "\n";
+      os << "  var" << keyFormatter(p) << "->var" << keyFormatter(me) << "\n";
   }
 
   os << "}";
@@ -53,18 +63,20 @@ void BayesNet<CONDITIONAL>::dot(std::ostream& os,
 
 /* ************************************************************************* */
 template <class CONDITIONAL>
-std::string BayesNet<CONDITIONAL>::dot(const KeyFormatter& keyFormatter) const {
+std::string BayesNet<CONDITIONAL>::dot(const KeyFormatter& keyFormatter,
+                                       const DotWriter& writer) const {
   std::stringstream ss;
-  dot(ss, keyFormatter);
+  dot(ss, keyFormatter, writer);
   return ss.str();
 }
 
 /* ************************************************************************* */
 template <class CONDITIONAL>
 void BayesNet<CONDITIONAL>::saveGraph(const std::string& filename,
-                                      const KeyFormatter& keyFormatter) const {
+                                      const KeyFormatter& keyFormatter,
+                                      const DotWriter& writer) const {
   std::ofstream of(filename.c_str());
-  dot(of, keyFormatter);
+  dot(of, keyFormatter, writer);
   of.close();
 }
 
