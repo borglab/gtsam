@@ -76,8 +76,8 @@ def plot_covariance_ellipse_3d(axes,
 
     Based on Maybeck Vol 1, page 366
     For the 3D case:
-    k = 3.527 corresponds to 1 std, 68.26% of all probability
-    k = 14.157 corresponds to 3 std, 99.74% of all probability
+    k = 1.878 corresponds to 1 std, 68.26% of all probability
+    k = 3.763 corresponds to 3 std, 99.74% of all probability
 
     We choose k = 5 which corresponds to 99.99846% of all probability in 3D
 
@@ -123,8 +123,8 @@ def plot_point2_on_axes(axes,
     Based on Stochastic Models, Estimation, and Control Vol 1 by Maybeck,
     page 366
     For the 2D case:
-    k = 2.296 corresponds to 1 std, 68.26% of all probability
-    k = 11.820 corresponds to 3 std, 99.74% of all probability
+    k = 1.515 corresponds to 1 std, 68.26% of all probability
+    k = 3.438 corresponds to 3 std, 99.74% of all probability
 
     We choose k = 5 which corresponds to 99.99963% of all probability for 2D.
 
@@ -193,8 +193,8 @@ def plot_pose2_on_axes(axes,
     Based on Stochastic Models, Estimation, and Control Vol 1 by Maybeck,
     page 366
     For the 2D case:
-    k = 2.296 corresponds to 1 std, 68.26% of all probability
-    k = 11.820 corresponds to 3 std, 99.74% of all probability
+    k = 1.515 corresponds to 1 std, 68.26% of all probability
+    k = 3.438 corresponds to 3 std, 99.74% of all probability
 
     We choose k = 5 which corresponds to 99.99963% of all probability for 2D.
 
