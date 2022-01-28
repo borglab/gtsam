@@ -150,12 +150,21 @@ TEST(DiscreteBayesNet, Dot) {
   fragment.add((Either | Tuberculosis, LungCancer) = "F T T T");
 
   string actual = fragment.dot();
+  cout << actual << endl;
   EXPECT(actual ==
-         "digraph G{\n"
-         "0->3\n"
-         "4->6\n"
-         "3->5\n"
-         "6->5\n"
+         "digraph {\n"
+         "  size=\"5,5\";\n"
+         "\n"
+         "  var0[label=\"0\"];\n"
+         "  var3[label=\"3\"];\n"
+         "  var4[label=\"4\"];\n"
+         "  var5[label=\"5\"];\n"
+         "  var6[label=\"6\"];\n"
+         "\n"
+         "  var3->var5\n"
+         "  var6->var5\n"
+         "  var4->var6\n"
+         "  var0->var3\n"
          "}");
 }
 
