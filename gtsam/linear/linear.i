@@ -437,42 +437,53 @@ class GaussianFactorGraph {
   pair<Matrix,Vector> hessian() const;
   pair<Matrix,Vector> hessian(const gtsam::Ordering& ordering) const;
 
+  string dot(
+      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
+      const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
+  void saveGraph(
+      string s,
+      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
+      const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
+
   // enabling serialization functionality
   void serialize() const;
 };
 
 #include <gtsam/linear/GaussianConditional.h>
 virtual class GaussianConditional : gtsam::JacobianFactor {
-  //Constructors
-  GaussianConditional(size_t key, Vector d, Matrix R, const gtsam::noiseModel::Diagonal* sigmas);
+  // Constructors
+  GaussianConditional(size_t key, Vector d, Matrix R,
+                      const gtsam::noiseModel::Diagonal* sigmas);
   GaussianConditional(size_t key, Vector d, Matrix R, size_t name1, Matrix S,
-      const gtsam::noiseModel::Diagonal* sigmas);
+                      const gtsam::noiseModel::Diagonal* sigmas);
   GaussianConditional(size_t key, Vector d, Matrix R, size_t name1, Matrix S,
-      size_t name2, Matrix T, const gtsam::noiseModel::Diagonal* sigmas);
+                      size_t name2, Matrix T,
+                      const gtsam::noiseModel::Diagonal* sigmas);
 
-  //Constructors with no noise model
+  // Constructors with no noise model
   GaussianConditional(size_t key, Vector d, Matrix R);
-    GaussianConditional(size_t key, Vector d, Matrix R, size_t name1, Matrix S);
-    GaussianConditional(size_t key, Vector d, Matrix R, size_t name1, Matrix S,
-        size_t name2, Matrix T);
+  GaussianConditional(size_t key, Vector d, Matrix R, size_t name1, Matrix S);
+  GaussianConditional(size_t key, Vector d, Matrix R, size_t name1, Matrix S,
+                      size_t name2, Matrix T);
 
-  //Standard Interface
-    void print(string s = "GaussianConditional",
-               const gtsam::KeyFormatter& keyFormatter =
-                   gtsam::DefaultKeyFormatter) const;
-    bool equals(const gtsam::GaussianConditional& cg, double tol) const;
+  // Standard Interface
+  void print(string s = "GaussianConditional",
+             const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
+  bool equals(const gtsam::GaussianConditional& cg, double tol) const;
+  gtsam::Key firstFrontalKey() const;
+  
+  // Advanced Interface
+  gtsam::VectorValues solve(const gtsam::VectorValues& parents) const;
+  gtsam::VectorValues solveOtherRHS(const gtsam::VectorValues& parents,
+                                    const gtsam::VectorValues& rhs) const;
+  void solveTransposeInPlace(gtsam::VectorValues& gy) const;
+  Matrix R() const;
+  Matrix S() const;
+  Vector d() const;
 
-    // Advanced Interface
-    gtsam::VectorValues solve(const gtsam::VectorValues& parents) const;
-    gtsam::VectorValues solveOtherRHS(const gtsam::VectorValues& parents,
-                                      const gtsam::VectorValues& rhs) const;
-    void solveTransposeInPlace(gtsam::VectorValues& gy) const;
-    Matrix R() const;
-    Matrix S() const;
-    Vector d() const;
-
-    // enabling serialization functionality
-    void serialize() const;
+  // enabling serialization functionality
+  void serialize() const;
 };
 
 #include <gtsam/linear/GaussianDensity.h>
@@ -524,6 +535,14 @@ virtual class GaussianBayesNet {
   double logDeterminant() const;
   gtsam::VectorValues backSubstitute(const gtsam::VectorValues& gx) const;
   gtsam::VectorValues backSubstituteTranspose(const gtsam::VectorValues& gx) const;
+
+  string dot(
+      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
+      const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
+  void saveGraph(
+      string s,
+      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
+      const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
 };
 
 #include <gtsam/linear/GaussianBayesTree.h>
