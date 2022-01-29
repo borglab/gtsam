@@ -598,6 +598,9 @@ class ISAM2Params {
   bool enableDetailedResults;
   bool enablePartialRelinearizationCheck;
   bool findUnusedFactorSlots;
+
+  enum Factorization { CHOLESKY, QR };
+  Factorization factorization;
 };
 
 class ISAM2Clique {
