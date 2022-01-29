@@ -582,6 +582,8 @@ virtual class BatchFixedLagSmoother : gtsam::FixedLagSmoother {
   BatchFixedLagSmoother(double smootherLag);
   BatchFixedLagSmoother(double smootherLag, const gtsam::LevenbergMarquardtParams& params);
 
+  void print(string s = "BatchFixedLagSmoother:\n") const;
+
   gtsam::LevenbergMarquardtParams params() const;
   template <VALUE = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3,
                      gtsam::Rot3, gtsam::Pose3, gtsam::Cal3_S2, gtsam::Cal3DS2,
@@ -595,9 +597,12 @@ virtual class IncrementalFixedLagSmoother : gtsam::FixedLagSmoother {
   IncrementalFixedLagSmoother(double smootherLag);
   IncrementalFixedLagSmoother(double smootherLag, const gtsam::ISAM2Params& params);
 
+  void print(string s = "IncrementalFixedLagSmoother:\n") const;
+
   gtsam::ISAM2Params params() const;
 
   gtsam::NonlinearFactorGraph getFactors() const;
+  gtsam::ISAM2 getISAM2() const;
 };
 
 #include <gtsam_unstable/nonlinear/ConcurrentFilteringAndSmoothing.h>
