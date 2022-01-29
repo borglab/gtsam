@@ -11,8 +11,5 @@
  * mutations on Python side will not be reflected on C++.
  */
 
-PYBIND11_MAKE_OPAQUE(
-    std::vector<boost::shared_ptr<gtsam::BetweenFactor<gtsam::Pose3> > >);
-PYBIND11_MAKE_OPAQUE(
-    std::vector<boost::shared_ptr<gtsam::BetweenFactor<gtsam::Pose2> > >);
-PYBIND11_MAKE_OPAQUE(gtsam::Rot3Vector);
+#include <pybind11/stl.h>
+
