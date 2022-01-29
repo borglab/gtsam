@@ -568,8 +568,11 @@ virtual class FixedLagSmoother {
 
   gtsam::FixedLagSmootherResult update(const gtsam::NonlinearFactorGraph &newFactors,
                                        const gtsam::Values &newTheta,
+                                       const gtsam::FixedLagSmootherKeyTimestampMap &timestamps);
+  gtsam::FixedLagSmootherResult update(const gtsam::NonlinearFactorGraph &newFactors,
+                                       const gtsam::Values &newTheta,
                                        const gtsam::FixedLagSmootherKeyTimestampMap &timestamps,
-                                       const gtsam::FactorIndices &factorsToRemove=gtsam::FactorIndices());
+                                       const gtsam::FactorIndices &factorsToRemove);
   gtsam::Values calculateEstimate() const;
 };
 
