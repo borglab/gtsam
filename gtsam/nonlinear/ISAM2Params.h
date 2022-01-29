@@ -303,7 +303,6 @@ struct GTSAM_EXPORT ISAM2Params {
   std::string getFactorization() const {
     return factorizationTranslator(factorization);
   }
-  bool isCacheLinearizedFactors() const { return cacheLinearizedFactors; }
   KeyFormatter getKeyFormatter() const { return keyFormatter; }
 
   void setOptimizationParams(OptimizationParams optimizationParams) {
