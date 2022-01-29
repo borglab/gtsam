@@ -119,7 +119,7 @@ h = figure;
 % Solver object
 isamParams = ISAM2Params;
 isamParams.setFactorization('CHOLESKY');
-isamParams.setRelinearizeSkip(10);
+isamParams.relinearizeSkip = 10;
 isam = gtsam.ISAM2(isamParams);
 newFactors = NonlinearFactorGraph;
 newValues = Values;
