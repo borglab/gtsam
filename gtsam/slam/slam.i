@@ -253,17 +253,27 @@ bool writeBAL(string filename, gtsam::SfmData& data);
 gtsam::Values initialCamerasEstimate(const gtsam::SfmData& db);
 gtsam::Values initialCamerasAndPointsEstimate(const gtsam::SfmData& db);
 
-pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(
-    string filename, gtsam::noiseModel::Diagonal* model, int maxIndex,
-    bool addNoise, bool smart);
-pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(
-    string filename, gtsam::noiseModel::Diagonal* model, int maxIndex,
-    bool addNoise);
-pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(
-    string filename, gtsam::noiseModel::Diagonal* model, int maxIndex);
-pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(
-    string filename, gtsam::noiseModel::Diagonal* model);
-pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename);
+enum NoiseFormat {
+  NoiseFormatG2O,
+  NoiseFormatTORO,
+  NoiseFormatGRAPH,
+  NoiseFormatCOV,
+  NoiseFormatAUTO
+};
+
+enum KernelFunctionType {
+  KernelFunctionTypeNONE,
+  KernelFunctionTypeHUBER,
+  KernelFunctionTypeTUKEY
+};
+
+std::pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(
+    string filename, gtsam::noiseModel::Diagonal* model = nullptr,
+    size_t maxIndex = 0, bool addNoise = false, bool smart = true,
+    gtsam::NoiseFormat noiseFormat = gtsam::NoiseFormatAUTO,
+    gtsam::KernelFunctionType kernelFunctionType =
+        gtsam::KernelFunctionTypeNONE);
+
 void save2D(const gtsam::NonlinearFactorGraph& graph,
             const gtsam::Values& config, gtsam::noiseModel::Diagonal* model,
             string filename);
@@ -290,9 +300,10 @@ gtsam::BetweenFactorPose3s parse3DFactors(string filename);
 
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load3D(string filename);
 
-pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> readG2o(string filename);
-pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> readG2o(string filename,
-                                                           bool is3D);
+pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> readG2o(
+    string filename, const bool is3D = false,
+    gtsam::KernelFunctionType kernelFunctionType =
+        gtsam::KernelFunctionTypeNONE);
 void writeG2o(const gtsam::NonlinearFactorGraph& graph,
               const gtsam::Values& estimate, string filename);
 
