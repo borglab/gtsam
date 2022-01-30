@@ -88,7 +88,7 @@ void _inheritance_RTTIRegister() {
     mxDestroyArray(registry);
 
     mxArray *newAlreadyCreated = mxCreateNumericMatrix(0, 0, mxINT8_CLASS, mxREAL);
-    if(mexPutVariable("global", "gtsam_geometry_rttiRegistry_created", newAlreadyCreated) != 0) {
+    if(mexPutVariable("global", "gtsam_inheritance_rttiRegistry_created", newAlreadyCreated) != 0) {
       mexErrMsgTxt("gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly");
     }
     mxDestroyArray(newAlreadyCreated);
@@ -121,9 +121,9 @@ void MyBase_deconstructor_2(int nargout, mxArray *out[], int nargin, const mxArr
   Collector_MyBase::iterator item;
   item = collector_MyBase.find(self);
   if(item != collector_MyBase.end()) {
-    delete self;
     collector_MyBase.erase(item);
   }
+  delete self;
 }
 
 void MyTemplatePoint2_collectorInsertAndMakeBase_3(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -171,9 +171,9 @@ void MyTemplatePoint2_deconstructor_6(int nargout, mxArray *out[], int nargin, c
   Collector_MyTemplatePoint2::iterator item;
   item = collector_MyTemplatePoint2.find(self);
   if(item != collector_MyTemplatePoint2.end()) {
-    delete self;
     collector_MyTemplatePoint2.erase(item);
   }
+  delete self;
 }
 
 void MyTemplatePoint2_accept_T_7(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -289,7 +289,7 @@ void MyTemplatePoint2_templatedMethod_17(int nargout, mxArray *out[], int nargin
 
 void MyTemplatePoint2_Level_18(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  checkArguments("MyTemplatePoint2.Level",nargout,nargin,1);
+  checkArguments("MyTemplate<gtsam::Point2>.Level",nargout,nargin,1);
   Point2 K = unwrap< Point2 >(in[0]);
   out[0] = wrap_shared_ptr(boost::make_shared<MyTemplate<Point2>>(MyTemplate<gtsam::Point2>::Level(K)),"MyTemplatePoint2", false);
 }
@@ -339,9 +339,9 @@ void MyTemplateMatrix_deconstructor_22(int nargout, mxArray *out[], int nargin, 
   Collector_MyTemplateMatrix::iterator item;
   item = collector_MyTemplateMatrix.find(self);
   if(item != collector_MyTemplateMatrix.end()) {
-    delete self;
     collector_MyTemplateMatrix.erase(item);
   }
+  delete self;
 }
 
 void MyTemplateMatrix_accept_T_23(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -457,7 +457,7 @@ void MyTemplateMatrix_templatedMethod_33(int nargout, mxArray *out[], int nargin
 
 void MyTemplateMatrix_Level_34(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  checkArguments("MyTemplateMatrix.Level",nargout,nargin,1);
+  checkArguments("MyTemplate<gtsam::Matrix>.Level",nargout,nargin,1);
   Matrix K = unwrap< Matrix >(in[0]);
   out[0] = wrap_shared_ptr(boost::make_shared<MyTemplate<Matrix>>(MyTemplate<gtsam::Matrix>::Level(K)),"MyTemplateMatrix", false);
 }
@@ -492,9 +492,9 @@ void ForwardKinematicsFactor_deconstructor_37(int nargout, mxArray *out[], int n
   Collector_ForwardKinematicsFactor::iterator item;
   item = collector_ForwardKinematicsFactor.find(self);
   if(item != collector_ForwardKinematicsFactor.end()) {
-    delete self;
     collector_ForwardKinematicsFactor.erase(item);
   }
+  delete self;
 }
 
 

@@ -67,7 +67,7 @@ void _template_RTTIRegister() {
     mxDestroyArray(registry);
 
     mxArray *newAlreadyCreated = mxCreateNumericMatrix(0, 0, mxINT8_CLASS, mxREAL);
-    if(mexPutVariable("global", "gtsam_geometry_rttiRegistry_created", newAlreadyCreated) != 0) {
+    if(mexPutVariable("global", "gtsam_template_rttiRegistry_created", newAlreadyCreated) != 0) {
       mexErrMsgTxt("gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly");
     }
     mxDestroyArray(newAlreadyCreated);
@@ -138,9 +138,9 @@ void TemplatedConstructor_deconstructor_5(int nargout, mxArray *out[], int nargi
   Collector_TemplatedConstructor::iterator item;
   item = collector_TemplatedConstructor.find(self);
   if(item != collector_TemplatedConstructor.end()) {
-    delete self;
     collector_TemplatedConstructor.erase(item);
   }
+  delete self;
 }
 
 void ScopedTemplateResult_collectorInsertAndMakeBase_6(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -172,9 +172,9 @@ void ScopedTemplateResult_deconstructor_8(int nargout, mxArray *out[], int nargi
   Collector_ScopedTemplateResult::iterator item;
   item = collector_ScopedTemplateResult.find(self);
   if(item != collector_ScopedTemplateResult.end()) {
-    delete self;
     collector_ScopedTemplateResult.erase(item);
   }
+  delete self;
 }
 
 

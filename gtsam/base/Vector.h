@@ -203,18 +203,19 @@ inline double inner_prod(const V1 &a, const V2& b) {
   return a.dot(b);
 }
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
 /**
  * BLAS Level 1 scal: x <- alpha*x
- * \deprecated: use operators instead
+ * @deprecated: use operators instead
  */
-inline void scal(double alpha, Vector& x) { x *= alpha; }
+inline void GTSAM_DEPRECATED scal(double alpha, Vector& x) { x *= alpha; }
 
 /**
  * BLAS Level 1 axpy: y <- alpha*x + y
- * \deprecated: use operators instead
+ * @deprecated: use operators instead
  */
 template<class V1, class V2>
-inline void axpy(double alpha, const V1& x, V2& y) {
+inline void GTSAM_DEPRECATED axpy(double alpha, const V1& x, V2& y) {
   assert (y.size()==x.size());
   y += alpha * x;
 }
@@ -222,6 +223,7 @@ inline void axpy(double alpha, const Vector& x, SubVector y) {
   assert (y.size()==x.size());
   y += alpha * x;
 }
+#endif
 
 /**
  * house(x,j) computes HouseHolder vector v and scaling factor beta

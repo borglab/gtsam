@@ -5,6 +5,7 @@ that Matlab's MEX compiler can use.
 
 # pylint: disable=too-many-lines, no-self-use, too-many-arguments, too-many-branches, too-many-statements
 
+import copy
 import os
 import os.path as osp
 import textwrap
@@ -13,6 +14,7 @@ from typing import Dict, Iterable, List, Union
 
 import gtwrap.interface_parser as parser
 import gtwrap.template_instantiator as instantiator
+from gtwrap.interface_parser.function import ArgumentList
 from gtwrap.matlab_wrapper.mixins import CheckMixin, FormatMixin
 from gtwrap.matlab_wrapper.templates import WrapperTemplate
 
@@ -137,6 +139,37 @@ class MatlabWrapper(CheckMixin, FormatMixin):
         """
         return x + '\n' + ('' if y == '' else '  ') + y
 
+    @staticmethod
+    def _expand_default_arguments(method, save_backup=True):
+        """Recursively expand all possibilities for optional default arguments.
+        We create "overload" functions with fewer arguments, but since we have to "remember" what
+        the default arguments are for later, we make a backup.
+        """
+        def args_copy(args):
+            return ArgumentList([copy.copy(arg) for arg in args.list()])
+        def method_copy(method):
+            method2 = copy.copy(method)
+            method2.args = args_copy(method.args)
+            method2.args.backup = method.args.backup
+            return method2
+        if save_backup:
+            method.args.backup = args_copy(method.args)
+        method = method_copy(method)
+        for arg in reversed(method.args.list()):
+            if arg.default is not None:
+                arg.default = None
+                methodWithArg = method_copy(method)
+                method.args.list().remove(arg)
+                return [
+                    methodWithArg,
+                    *MatlabWrapper._expand_default_arguments(method, save_backup=False)
+                ]
+            break
+        assert all(arg.default is None for arg in method.args.list()), \
+            'In parsing method {:}: Arguments with default values cannot appear before ones ' \
+            'without default values.'.format(method.name)
+        return [method]
+
     def _group_methods(self, methods):
         """Group overloaded methods together"""
         method_map = {}
@@ -147,9 +180,9 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
             if method_index is None:
                 method_map[method.name] = len(method_out)
-                method_out.append([method])
+                method_out.append(MatlabWrapper._expand_default_arguments(method))
             else:
-                method_out[method_index].append(method)
+                method_out[method_index] += MatlabWrapper._expand_default_arguments(method)
 
         return method_out
 
@@ -239,18 +272,18 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
         return var_list_wrap
 
-    def _wrap_method_check_statement(self, args):
+    def _wrap_method_check_statement(self, args: parser.ArgumentList):
         """
         Wrap the given arguments into either just a varargout call or a
         call in an if statement that checks if the parameters are accurate.
+
+        TODO Update this method so that default arguments are supported.
         """
-        check_statement = ''
         arg_id = 1
 
-        if check_statement == '':
-            check_statement = \
-                'if length(varargin) == {param_count}'.format(
-                    param_count=len(args.list()))
+        param_count = len(args)
+        check_statement = 'if length(varargin) == {param_count}'.format(
+            param_count=param_count)
 
         for _, arg in enumerate(args.list()):
             name = arg.ctype.typename.name
@@ -301,13 +334,9 @@ class MatlabWrapper(CheckMixin, FormatMixin):
             ((a), Test& t = *unwrap_shared_ptr< Test >(in[1], "ptr_Test");),
             ((a), std::shared_ptr<Test> p1 = unwrap_shared_ptr< Test >(in[1], "ptr_Test");)
         """
-        params = ''
         body_args = ''
 
         for arg in args.list():
-            if params != '':
-                params += ','
-
             if self.is_ref(arg.ctype):  # and not constructor:
                 ctype_camel = self._format_type_name(arg.ctype.typename,
                                                      separator='')
@@ -336,8 +365,6 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                            name=arg.name,
                            id=arg_id)),
                                              prefix='  ')
-                if call_type == "":
-                    params += "*"
 
             else:
                 body_args += textwrap.indent(textwrap.dedent('''\
@@ -347,9 +374,28 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                            id=arg_id)),
                                              prefix='  ')
 
-            params += arg.name
-
             arg_id += 1
+
+        params = ''
+        explicit_arg_names = [arg.name for arg in args.list()]
+        # when returning the params list, we need to re-include the default args.
+        for arg in args.backup.list():
+            if params != '':
+                params += ','
+
+            if (arg.default is not None) and (arg.name not in explicit_arg_names):
+                params += arg.default
+                continue
+
+            if (not self.is_ref(arg.ctype)) and (self.is_shared_ptr(arg.ctype)) and (self.is_ptr(
+                    arg.ctype)) and (arg.ctype.typename.name not in self.ignore_namespace):
+                if arg.ctype.is_shared_ptr:
+                    call_type = arg.ctype.is_shared_ptr
+                else:
+                    call_type = arg.ctype.is_ptr
+                if call_type == "":
+                    params += "*"
+            params += arg.name
 
         return params, body_args
 
@@ -555,6 +601,8 @@ class MatlabWrapper(CheckMixin, FormatMixin):
         if not isinstance(ctors, Iterable):
             ctors = [ctors]
 
+        ctors = sum((MatlabWrapper._expand_default_arguments(ctor) for ctor in ctors), [])
+
         methods_wrap = textwrap.indent(textwrap.dedent("""\
             methods
               function obj = {class_name}(varargin)
@@ -674,20 +722,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
     def _group_class_methods(self, methods):
         """Group overloaded methods together"""
-        method_map = {}
-        method_out = []
-
-        for method in methods:
-            method_index = method_map.get(method.name)
-
-            if method_index is None:
-                method_map[method.name] = len(method_out)
-                method_out.append([method])
-            else:
-                # print("[_group_methods] Merging {} with {}".format(method_index, method.name))
-                method_out[method_index].append(method)
-
-        return method_out
+        return self._group_methods(methods)
 
     @classmethod
     def _format_varargout(cls, return_type, return_type_formatted):
@@ -809,7 +844,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
         for static_method in static_methods:
             format_name = list(static_method[0].name)
-            format_name[0] = format_name[0].upper()
+            format_name[0] = format_name[0]
 
             if static_method[0].name in self.ignore_methods:
                 continue
@@ -850,12 +885,13 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                     wrapper=self._wrapper_name(),
                     id=self._update_wrapper_id(
                         (namespace_name, instantiated_class,
-                         static_overload.name, static_overload)),
+                        static_overload.name, static_overload)),
                     class_name=instantiated_class.name,
                     end_statement=end_statement),
-                                               prefix='    ')
+                                            prefix='    ')
 
-            #TODO Figure out what is static_overload doing here.
+            # If the arguments don't match any of the checks above,
+            # throw an error with the class and method name.
             method_text += textwrap.indent(textwrap.dedent("""\
                     error('Arguments do not match any overload of function {class_name}.{method_name}');
                 """.format(class_name=class_name,
@@ -1081,7 +1117,6 @@ class MatlabWrapper(CheckMixin, FormatMixin):
         obj_start = ''
 
         if isinstance(method, instantiator.InstantiatedMethod):
-            # method_name = method.original.name
             method_name = method.to_cpp()
             obj_start = 'obj->'
 
@@ -1089,6 +1124,10 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                 # method_name += '<{}>'.format(
                 #     self._format_type_name(method.instantiations))
                 method = method.to_cpp()
+
+        elif isinstance(method, instantiator.InstantiatedStaticMethod):
+            method_name = self._format_static_method(method, '::')
+            method_name += method.original.name
 
         elif isinstance(method, parser.GlobalFunction):
             method_name = self._format_global_function(method, '::')
@@ -1230,9 +1269,9 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                     Collector_{class_name}::iterator item;
                     item = collector_{class_name}.find(self);
                     if(item != collector_{class_name}.end()) {{
-                      delete self;
                       collector_{class_name}.erase(item);
                     }}
+                    delete self;
                 ''').format(class_name_sep=class_name_separated,
                             class_name=class_name),
                                         prefix='  ')
@@ -1250,7 +1289,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                 method_name = ''
 
                 if is_static_method:
-                    method_name = self._format_static_method(extra) + '.'
+                    method_name = self._format_static_method(extra, '.')
 
                 method_name += extra.name
 
@@ -1567,23 +1606,23 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
     def wrap(self, files, path):
         """High level function to wrap the project."""
+        content = ""
         modules = {}
         for file in files:
             with open(file, 'r') as f:
-                content = f.read()
+                content += f.read()
 
-            # Parse the contents of the interface file
-            parsed_result = parser.Module.parseString(content)
-            # print(parsed_result)
+        # Parse the contents of the interface file
+        parsed_result = parser.Module.parseString(content)
 
-            # Instantiate the module
-            module = instantiator.instantiate_namespace(parsed_result)
+        # Instantiate the module
+        module = instantiator.instantiate_namespace(parsed_result)
 
-            if module.name in modules:
-                modules[module.
-                        name].content[0].content += module.content[0].content
-            else:
-                modules[module.name] = module
+        if module.name in modules:
+            modules[
+                module.name].content[0].content += module.content[0].content
+        else:
+            modules[module.name] = module
 
         for module in modules.values():
             # Wrap the full namespace

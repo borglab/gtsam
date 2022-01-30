@@ -117,6 +117,28 @@ class TestCal3Unified(GtsamTestCase):
         score = graph.error(state)
         self.assertAlmostEqual(score, 0)
 
+    def test_jacobian(self):
+        """Evaluate jacobian at optical axis"""
+        obj_point_on_axis = np.array([0, 0, 1])
+        img_point = np.array([0.0, 0.0])
+        pose = gtsam.Pose3()
+        camera = gtsam.Cal3Unified()
+        state = gtsam.Values()
+        camera_key, pose_key, landmark_key = K(0), P(0), L(0)
+        state.insert_cal3unified(camera_key, camera)
+        state.insert_point3(landmark_key, obj_point_on_axis)
+        state.insert_pose3(pose_key, pose)
+        g = gtsam.NonlinearFactorGraph()
+        noise_model = gtsam.noiseModel.Unit.Create(2)
+        factor = gtsam.GeneralSFMFactor2Cal3Unified(img_point, noise_model, pose_key, landmark_key, camera_key)
+        g.add(factor)
+        f = g.error(state)
+        gaussian_factor_graph = g.linearize(state)
+        H, z = gaussian_factor_graph.jacobian()
+        self.assertAlmostEqual(f, 0)
+        self.gtsamAssertEquals(z, np.zeros(2))
+        self.gtsamAssertEquals(H @ H.T, 4*np.eye(2))
+
     @unittest.skip("triangulatePoint3 currently seems to require perspective projections.")
     def test_triangulation(self):
         """Estimate spatial point from image measurements"""

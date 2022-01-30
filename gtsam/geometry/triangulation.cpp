@@ -53,13 +53,55 @@ Vector4 triangulateHomogeneousDLT(
   return v;
 }
 
-Point3 triangulateDLT(const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>& projection_matrices,
+Vector4 triangulateHomogeneousDLT(
+    const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>& projection_matrices,
+    const std::vector<Unit3>& measurements, double rank_tol) {
+
+  // number of cameras
+  size_t m = projection_matrices.size();
+
+  // Allocate DLT matrix
+  Matrix A = Matrix::Zero(m * 2, 4);
+
+  for (size_t i = 0; i < m; i++) {
+    size_t row = i * 2;
+    const Matrix34& projection = projection_matrices.at(i);
+    const Point3& p = measurements.at(i).point3(); // to get access to x,y,z of the bearing vector
+
+    // build system of equations
+    A.row(row) = p.x() * projection.row(2) - p.z() * projection.row(0);
+    A.row(row + 1) = p.y() * projection.row(2) - p.z() * projection.row(1);
+  }
+  int rank;
+  double error;
+  Vector v;
+  boost::tie(rank, error, v) = DLT(A, rank_tol);
+
+  if (rank < 3)
+    throw(TriangulationUnderconstrainedException());
+
+  return v;
+}
+
+Point3 triangulateDLT(
+    const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>& projection_matrices,
     const Point2Vector& measurements, double rank_tol) {
 
-  Vector4 v = triangulateHomogeneousDLT(projection_matrices, measurements, rank_tol);
-
+  Vector4 v = triangulateHomogeneousDLT(projection_matrices, measurements,
+                                        rank_tol);
   // Create 3D point from homogeneous coordinates
   return Point3(v.head<3>() / v[3]);
+}
+
+Point3 triangulateDLT(
+    const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>& projection_matrices,
+    const std::vector<Unit3>& measurements, double rank_tol) {
+
+  // contrary to previous triangulateDLT, this is now taking Unit3 inputs
+  Vector4 v = triangulateHomogeneousDLT(projection_matrices, measurements,
+                                         rank_tol);
+   // Create 3D point from homogeneous coordinates
+   return Point3(v.head<3>() / v[3]);
 }
 
 ///
@@ -71,7 +113,7 @@ Point3 triangulateDLT(const std::vector<Matrix34, Eigen::aligned_allocator<Matri
  * @return refined Point3
  */
 Point3 optimize(const NonlinearFactorGraph& graph, const Values& values,
-    Key landmarkKey) {
+                Key landmarkKey) {
   // Maybe we should consider Gauss-Newton?
   LevenbergMarquardtParams params;
   params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;

@@ -121,6 +121,13 @@ public:
     return _project(pw, Dpose, Dpoint, Dcal);
   }
 
+  /// project a 3D point from world coordinates into the image
+  Point2 reprojectionError(const Point3& pw, const Point2& measured, OptionalJacobian<2, 6> Dpose = boost::none,
+      OptionalJacobian<2, 3> Dpoint = boost::none,
+      OptionalJacobian<2, DimK> Dcal = boost::none) const {
+    return Point2(_project(pw, Dpose, Dpoint, Dcal) - measured);
+  }
+
   /// project a point at infinity from world coordinates into the image
   Point2 project(const Unit3& pw, OptionalJacobian<2, 6> Dpose = boost::none,
       OptionalJacobian<2, 2> Dpoint = boost::none,
@@ -158,7 +165,6 @@ public:
 
     return result;
   }
-
 
   /// backproject a 2-dimensional point to a 3-dimensional point at infinity
   Unit3 backprojectPointAtInfinity(const Point2& p) const {
@@ -410,6 +416,16 @@ public:
     return PinholePose(); // assumes that the default constructor is valid
   }
 
+  /// for Linear Triangulation
+  Matrix34 cameraProjectionMatrix() const {
+    Matrix34 P = Matrix34(PinholeBase::pose().inverse().matrix().block(0, 0, 3, 4));
+    return K_->K() * P;
+  }
+
+  /// for Nonlinear Triangulation
+  Vector defaultErrorWhenTriangulatingBehindCamera() const {
+    return Eigen::Matrix<double,traits<Point2>::dimension,1>::Constant(2.0 * K_->fx());;
+  }
   /// @}
 
 private:
