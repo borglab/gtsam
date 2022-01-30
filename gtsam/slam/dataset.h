@@ -167,10 +167,11 @@ GTSAM_EXPORT GraphAndValues load2D(
  * @param kernelFunctionType whether to wrap the noise model in a robust kernel
  * @return graph and initial values
  */
-GTSAM_EXPORT GraphAndValues load2D(const std::string& filename,
-    SharedNoiseModel model = SharedNoiseModel(), size_t maxIndex = 0, bool addNoise =
-        false, bool smart = true, NoiseFormat noiseFormat = NoiseFormatAUTO, //
-    KernelFunctionType kernelFunctionType = KernelFunctionTypeNONE);
+GTSAM_EXPORT GraphAndValues
+load2D(const std::string& filename, SharedNoiseModel model = SharedNoiseModel(),
+       size_t maxIndex = 0, bool addNoise = false, bool smart = true,
+       NoiseFormat noiseFormat = NoiseFormatAUTO,  //
+       KernelFunctionType kernelFunctionType = KernelFunctionTypeNONE);
 
 /** save 2d graph */
 GTSAM_EXPORT void save2D(const NonlinearFactorGraph& graph,
@@ -185,8 +186,9 @@ GTSAM_EXPORT void save2D(const NonlinearFactorGraph& graph,
  * @param kernelFunctionType whether to wrap the noise model in a robust kernel
  * @return graph and initial values
  */
-GTSAM_EXPORT GraphAndValues readG2o(const std::string& g2oFile, const bool is3D = false,
-    KernelFunctionType kernelFunctionType = KernelFunctionTypeNONE);
+GTSAM_EXPORT GraphAndValues
+readG2o(const std::string& g2oFile, const bool is3D = false,
+        KernelFunctionType kernelFunctionType = KernelFunctionTypeNONE);
 
 /**
  * @brief This function writes a g2o file from
