@@ -270,11 +270,14 @@ class DiscreteFactorGraph {
   gtsam::DiscreteLookupDAG maxProduct(const gtsam::Ordering& ordering);
 
   gtsam::DiscreteBayesNet eliminateSequential();
+  gtsam::DiscreteBayesNet eliminateSequential(gtsam::Ordering::OrderingType type);
   gtsam::DiscreteBayesNet eliminateSequential(const gtsam::Ordering& ordering);
   std::pair<gtsam::DiscreteBayesNet, gtsam::DiscreteFactorGraph>
       eliminatePartialSequential(const gtsam::Ordering& ordering);
+
   gtsam::DiscreteBayesTree eliminateMultifrontal();
-  gtsam::DiscreteBayesTree eliminateMultifrontal(const gtsam::Ordering& ordering);
+  gtsam::DiscreteBayesTree eliminateMultifrontal(gtsam::Ordering::OrderingType type);  
+  gtsam::DiscreteBayesTree eliminateMultifrontal(const gtsam::Ordering& ordering);  
   std::pair<gtsam::DiscreteBayesTree, gtsam::DiscreteFactorGraph>
       eliminatePartialMultifrontal(const gtsam::Ordering& ordering);
 
