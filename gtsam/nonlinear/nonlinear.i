@@ -23,117 +23,19 @@ namespace gtsam {
 #include <gtsam/geometry/SOn.h>
 #include <gtsam/geometry/StereoPoint2.h>
 #include <gtsam/geometry/Unit3.h>
-#include <gtsam/inference/Symbol.h>
 #include <gtsam/navigation/ImuBias.h>
 #include <gtsam/navigation/NavState.h>
 
-class Symbol {
-  Symbol();
-  Symbol(char c, uint64_t j);
-  Symbol(size_t key);
+#include <gtsam/nonlinear/GraphvizFormatting.h>
+class GraphvizFormatting : gtsam::DotWriter {
+  GraphvizFormatting();
 
-  size_t key() const;
-  void print(const string& s = "") const;
-  bool equals(const gtsam::Symbol& expected, double tol) const;
+  enum Axis { X, Y, Z, NEGX, NEGY, NEGZ };
+  Axis paperHorizontalAxis;
+  Axis paperVerticalAxis;
 
-  char chr() const;
-  uint64_t index() const;
-  string string() const;
-};
-
-size_t symbol(char chr, size_t index);
-char symbolChr(size_t key);
-size_t symbolIndex(size_t key);
-
-namespace symbol_shorthand {
-size_t A(size_t j);
-size_t B(size_t j);
-size_t C(size_t j);
-size_t D(size_t j);
-size_t E(size_t j);
-size_t F(size_t j);
-size_t G(size_t j);
-size_t H(size_t j);
-size_t I(size_t j);
-size_t J(size_t j);
-size_t K(size_t j);
-size_t L(size_t j);
-size_t M(size_t j);
-size_t N(size_t j);
-size_t O(size_t j);
-size_t P(size_t j);
-size_t Q(size_t j);
-size_t R(size_t j);
-size_t S(size_t j);
-size_t T(size_t j);
-size_t U(size_t j);
-size_t V(size_t j);
-size_t W(size_t j);
-size_t X(size_t j);
-size_t Y(size_t j);
-size_t Z(size_t j);
-}  // namespace symbol_shorthand
-
-// Default keyformatter
-void PrintKeyList(
-    const gtsam::KeyList& keys, const string& s = "",
-    const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter);
-void PrintKeyVector(
-    const gtsam::KeyVector& keys, const string& s = "",
-    const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter);
-void PrintKeySet(
-    const gtsam::KeySet& keys, const string& s = "",
-    const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter);
-
-#include <gtsam/inference/LabeledSymbol.h>
-class LabeledSymbol {
-  LabeledSymbol(size_t full_key);
-  LabeledSymbol(const gtsam::LabeledSymbol& key);
-  LabeledSymbol(unsigned char valType, unsigned char label, size_t j);
-
-  size_t key() const;
-  unsigned char label() const;
-  unsigned char chr() const;
-  size_t index() const;
-
-  gtsam::LabeledSymbol upper() const;
-  gtsam::LabeledSymbol lower() const;
-  gtsam::LabeledSymbol newChr(unsigned char c) const;
-  gtsam::LabeledSymbol newLabel(unsigned char label) const;
-
-  void print(string s = "") const;
-};
-
-size_t mrsymbol(unsigned char c, unsigned char label, size_t j);
-unsigned char mrsymbolChr(size_t key);
-unsigned char mrsymbolLabel(size_t key);
-size_t mrsymbolIndex(size_t key);
-
-#include <gtsam/inference/Ordering.h>
-class Ordering {
-  // Standard Constructors and Named Constructors
-  Ordering();
-  Ordering(const gtsam::Ordering& other);
-
-  template <FACTOR_GRAPH = {gtsam::NonlinearFactorGraph,
-                            gtsam::GaussianFactorGraph}>
-  static gtsam::Ordering Colamd(const FACTOR_GRAPH& graph);
-
-  // Testable
-  void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
-                                gtsam::DefaultKeyFormatter) const;
-  bool equals(const gtsam::Ordering& ord, double tol) const;
-
-  // Standard interface
-  size_t size() const;
-  size_t at(size_t key) const;
-  void push_back(size_t key);
-
-  // enabling serialization functionality
-  void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
+  double scale;
+  bool mergeSimilarFactors;
 };
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -193,13 +95,17 @@ class NonlinearFactorGraph {
   gtsam::GaussianFactorGraph* linearize(const gtsam::Values& values) const;
   gtsam::NonlinearFactorGraph clone() const;
 
+  string dot(
+      const gtsam::Values& values,
+      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
+      const GraphvizFormatting& formatting = GraphvizFormatting());
+  void saveGraph(
+      const string& s, const gtsam::Values& values,
+      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
+      const GraphvizFormatting& formatting = GraphvizFormatting()) const;
+
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
-
-  void saveGraph(const string& s) const;
 };
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
@@ -275,6 +181,7 @@ class Values {
 
   void insert(const gtsam::Values& values);
   void update(const gtsam::Values& values);
+  void insert_or_assign(const gtsam::Values& values);
   void erase(size_t j);
   void swap(gtsam::Values& values);
 
@@ -288,9 +195,6 @@ class Values {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 
   // New in 4.0, we have to specialize every insert/update/at to generate
   // wrappers Instead of the old: void insert(size_t j, const gtsam::Value&
@@ -350,6 +254,32 @@ class Values {
   void update(size_t j, Vector vector);
   void update(size_t j, Matrix matrix);
   void update(size_t j, double c);
+
+  void insert_or_assign(size_t j, const gtsam::Point2& point2);
+  void insert_or_assign(size_t j, const gtsam::Point3& point3);
+  void insert_or_assign(size_t j, const gtsam::Rot2& rot2);
+  void insert_or_assign(size_t j, const gtsam::Pose2& pose2);
+  void insert_or_assign(size_t j, const gtsam::SO3& R);
+  void insert_or_assign(size_t j, const gtsam::SO4& Q);
+  void insert_or_assign(size_t j, const gtsam::SOn& P);
+  void insert_or_assign(size_t j, const gtsam::Rot3& rot3);
+  void insert_or_assign(size_t j, const gtsam::Pose3& pose3);
+  void insert_or_assign(size_t j, const gtsam::Unit3& unit3);
+  void insert_or_assign(size_t j, const gtsam::Cal3_S2& cal3_s2);
+  void insert_or_assign(size_t j, const gtsam::Cal3DS2& cal3ds2);
+  void insert_or_assign(size_t j, const gtsam::Cal3Bundler& cal3bundler);
+  void insert_or_assign(size_t j, const gtsam::Cal3Fisheye& cal3fisheye);
+  void insert_or_assign(size_t j, const gtsam::Cal3Unified& cal3unified);
+  void insert_or_assign(size_t j, const gtsam::EssentialMatrix& essential_matrix);
+  void insert_or_assign(size_t j, const gtsam::PinholeCamera<gtsam::Cal3_S2>& camera);
+  void insert_or_assign(size_t j, const gtsam::PinholeCamera<gtsam::Cal3Bundler>& camera);
+  void insert_or_assign(size_t j, const gtsam::PinholeCamera<gtsam::Cal3Fisheye>& camera);
+  void insert_or_assign(size_t j, const gtsam::PinholeCamera<gtsam::Cal3Unified>& camera);
+  void insert_or_assign(size_t j, const gtsam::imuBias::ConstantBias& constant_bias);
+  void insert_or_assign(size_t j, const gtsam::NavState& nav_state);
+  void insert_or_assign(size_t j, Vector vector);
+  void insert_or_assign(size_t j, Matrix matrix);
+  void insert_or_assign(size_t j, double c);
 
   template <T = {gtsam::Point2,
                  gtsam::Point3,
@@ -738,7 +668,12 @@ class ISAM2 {
                             const gtsam::KeyList& extraReelimKeys,
                             bool force_relinearize);
 
+  gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors,
+                            const gtsam::Values& newTheta,
+                            const gtsam::ISAM2UpdateParams& updateParams);
+
   gtsam::Values getLinearizationPoint() const;
+  bool valueExists(gtsam::Key key) const;
   gtsam::Values calculateEstimate() const;
   template <VALUE = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3,
                      gtsam::Rot3, gtsam::Pose3, gtsam::Cal3_S2, gtsam::Cal3DS2,
@@ -748,12 +683,23 @@ class ISAM2 {
                      gtsam::PinholeCamera<gtsam::Cal3Fisheye>,
                      gtsam::PinholeCamera<gtsam::Cal3Unified>, Vector, Matrix}>
   VALUE calculateEstimate(size_t key) const;
-  gtsam::Values calculateBestEstimate() const;
   Matrix marginalCovariance(size_t key) const;
+  gtsam::Values calculateBestEstimate() const;
   gtsam::VectorValues getDelta() const;
+  double error(const gtsam::VectorValues& x) const;
   gtsam::NonlinearFactorGraph getFactorsUnsafe() const;
   gtsam::VariableIndex getVariableIndex() const;
+  const gtsam::KeySet& getFixedVariables() const;
   gtsam::ISAM2Params params() const;
+
+  void printStats() const;
+  gtsam::VectorValues gradientAtZero() const;
+
+  string dot(const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
+  void saveGraph(string s,
+                const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
 };
 
 #include <gtsam/nonlinear/NonlinearISAM.h>
@@ -814,9 +760,6 @@ virtual class PriorFactor : gtsam::NoiseModelFactor {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 #include <gtsam/nonlinear/NonlinearEquality.h>

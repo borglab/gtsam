@@ -402,7 +402,7 @@ ALIAS_X(X6, 5, 5 < sizeof...(VALUES));
  * objects in non-linear manifolds (Lie groups).
  */
 template <class... VALUES>
-class NoiseModelFactorN
+class GTSAM_EXPORT NoiseModelFactorN
     : public NoiseModelFactor,
       public detail::AliasX<VALUES...>,   // using X = VALUE1
       public detail::AliasX1<VALUES...>,  // using X1 = VALUE1

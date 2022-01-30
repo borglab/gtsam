@@ -32,7 +32,7 @@ TEST( Errors, arithmetic )
   e += Vector2(1.0,2.0), Vector3(3.0,4.0,5.0);
   DOUBLES_EQUAL(1+4+9+16+25,dot(e,e),1e-9);
 
-  axpy(2.0,e,e);
+  axpy(2.0, e, e);
   Errors expected;
   expected += Vector2(3.0,6.0), Vector3(9.0,12.0,15.0);
   CHECK(assert_equal(expected,e));
