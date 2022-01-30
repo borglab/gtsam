@@ -107,6 +107,59 @@ TEST (Serialization, TemplatedValues) {
   EXPECT(equalsBinary(values));
 }
 
+bool str_assert_equal(const string& expected, const string& actual) {
+  if (actual == expected) return true;
+  printf("Not equal:\n");
+  std::cout << "expected:\n" << expected << std::endl;
+  std::cout << "actual:\n" << actual << std::endl;
+  return false;
+}
+TEST(Serialization, NoiseModelFactor1_backwards_compatibility) {
+  PriorFactor<Pose3> factor(
+      12345, Pose3(Rot3::RzRyRx(Vector3(1., 2., 3.)), Point3(4., 5., 6.)),
+      noiseModel::Unit::Create(6));
+
+  // String
+  std::string actual_str = serialize(factor);
+  // Generated from hash 3ba65669113f41d0e56a03b4b314047776bab5c4 (>4.2a4)
+  std::string expected_str =
+      "22 serialization::archive 19 1 0\n"
+      "0 0 0 0 0 0 0 1 0 12345 0 1 6 21 gtsam_noiseModel_Unit 1 0\n"
+      "1 1 0\n"
+      "2 1 0\n"
+      "3 0 0 0 0 6 0 1 0 0 0 6 1.00000000000000000e+00 1.00000000000000000e+00 "
+      "1.00000000000000000e+00 1.00000000000000000e+00 1.00000000000000000e+00 "
+      "1.00000000000000000e+00 6 1.00000000000000000e+00 "
+      "1.00000000000000000e+00 1.00000000000000000e+00 1.00000000000000000e+00 "
+      "1.00000000000000000e+00 1.00000000000000000e+00 1.00000000000000000e+00 "
+      "1.00000000000000000e+00 0 0 0 0 4.11982245665682978e-01 "
+      "-8.33737651774156818e-01 -3.67630462924899259e-01 "
+      "-5.87266449276209815e-02 -4.26917621276207360e-01 "
+      "9.02381585483330806e-01 -9.09297426825681709e-01 "
+      "-3.50175488374014632e-01 -2.24845095366152908e-01 0 0 "
+      "4.00000000000000000e+00 5.00000000000000000e+00 "
+      "6.00000000000000000e+00\n";
+  EXPECT(str_assert_equal(expected_str, actual_str));
+  PriorFactor<Pose3> factor_deserialized_str = PriorFactor<Pose3>();
+  deserializeFromString(expected_str, factor_deserialized_str);
+  EXPECT(assert_equal(factor, factor_deserialized_str));
+
+  // XML
+  std::string actual_xml = serializeXML(factor);
+  std::string expected_xml;
+  {  // read from file
+    // Generated from hash 3ba65669113f41d0e56a03b4b314047776bab5c4 (>4.2a4)
+    std::ifstream f("priorFactor.xml");
+    std::stringstream buffer;
+    buffer << f.rdbuf();
+    expected_xml = buffer.str();
+  }
+  EXPECT(str_assert_equal(expected_xml, actual_xml));
+  PriorFactor<Pose3> factor_deserialized_xml = PriorFactor<Pose3>();
+  deserializeFromXMLFile("priorFactor.xml", factor_deserialized_xml);
+  EXPECT(assert_equal(factor, factor_deserialized_xml));
+}
+
 TEST(Serialization, ISAM2) {
 
   gtsam::ISAM2Params parameters;
