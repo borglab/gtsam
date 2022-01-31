@@ -34,22 +34,7 @@ set(ignore
     gtsam::Point2
     gtsam::Point3
     gtsam::ISAM2ThresholdMapValue
-    gtsam::FactorIndices
-    gtsam::FactorIndexSet
-    gtsam::IndexPairSetMap
-    gtsam::IndexPairVector
-    gtsam::BetweenFactorPose2s
-    gtsam::BetweenFactorPose3s
-    gtsam::Point2Vector
-    gtsam::Point2Pairs
-    gtsam::Point3Pairs
-    gtsam::Pose3Pairs
-    gtsam::Pose3Vector
-    gtsam::Rot3Vector
-    gtsam::KeyVector
-    gtsam::BinaryMeasurementsUnit3
-    gtsam::DiscreteKey
-    gtsam::KeyPairDoubleMap)
+    gtsam::DiscreteKey)
 
 set(interface_headers
     ${PROJECT_SOURCE_DIR}/gtsam/gtsam.i
@@ -117,19 +102,11 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             gtsam::Point2
             gtsam::Point3
             gtsam::ISAM2ThresholdMapValue
-            gtsam::FactorIndices
-            gtsam::FactorIndexSet
-            gtsam::BetweenFactorPose3s
-            gtsam::Point2Vector
-            gtsam::Pose3Vector
-            gtsam::KeyVector
             gtsam::FixedLagSmootherKeyTimestampMapValue
-            gtsam::BinaryMeasurementsUnit3
             gtsam::CameraSetCal3_S2
             gtsam::CameraSetCal3Bundler
             gtsam::CameraSetCal3Unified
-            gtsam::CameraSetCal3Fisheye
-            gtsam::KeyPairDoubleMap)
+            gtsam::CameraSetCal3Fisheye)
             
     pybind_wrap(${GTSAM_PYTHON_UNSTABLE_TARGET} # target
             ${PROJECT_SOURCE_DIR}/gtsam_unstable/gtsam_unstable.i # interface_header
