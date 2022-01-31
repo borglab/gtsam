@@ -142,15 +142,10 @@ TEST(Serialization, NoiseModelFactor1_backwards_compatibility) {
   EXPECT(assert_equal(factor, factor_deserialized_str));
 
   // XML
-  std::string expected_xml;
-  {  // read from file
-    std::ifstream f("priorFactor.xml");
-    std::stringstream buffer;
-    buffer << f.rdbuf();
-    expected_xml = buffer.str();
-  }
   PriorFactor<Pose3> factor_deserialized_xml = PriorFactor<Pose3>();
-  deserializeFromXMLFile("priorFactor.xml", factor_deserialized_xml);
+  deserializeFromXMLFile(GTSAM_SOURCE_TREE_DATASET_DIR
+                         "/../../gtsam/nonlinear/tests/priorFactor.xml",
+                         factor_deserialized_xml);
   EXPECT(assert_equal(factor, factor_deserialized_xml));
 }
 
