@@ -632,14 +632,14 @@ TEST(EssentialMatrixFactor2, extraMinimization) {
   // We start with a factor graph and add constraints to it
   // Noise sigma is 1, assuming pixel measurements
   NonlinearFactorGraph graph;
-  for (size_t i = 0; i < data.number_tracks(); i++)
+  for (size_t i = 0; i < data.nrTracks(); i++)
     graph.emplace_shared<EssentialMatrixFactor2>(100, i, pA(i), pB(i), model2,
                                                  K);
 
   // Check error at ground truth
   Values truth;
   truth.insert(100, trueE);
-  for (size_t i = 0; i < data.number_tracks(); i++) {
+  for (size_t i = 0; i < data.nrTracks(); i++) {
     Point3 P1 = data.tracks[i].p;
     truth.insert(i, double(baseline / P1.z()));
   }
@@ -654,7 +654,7 @@ TEST(EssentialMatrixFactor2, extraMinimization) {
   // Check result
   EssentialMatrix actual = result.at<EssentialMatrix>(100);
   EXPECT(assert_equal(trueE, actual, 1e-1));
-  for (size_t i = 0; i < data.number_tracks(); i++)
+  for (size_t i = 0; i < data.nrTracks(); i++)
     EXPECT_DOUBLES_EQUAL(truth.at<double>(i), result.at<double>(i), 1e-1);
 
   // Check error at result

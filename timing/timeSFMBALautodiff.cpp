@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
 
   // Build graph
   NonlinearFactorGraph graph;
-  for (size_t j = 0; j < db.number_tracks(); j++) {
+  for (size_t j = 0; j < db.nrTracks(); j++) {
     for (const SfmMeasurement& m: db.tracks[j].measurements) {
       size_t i = m.first;
       Point2 z = m.second;

@@ -160,10 +160,10 @@ TEST( dataSet, Balbianello)
   CHECK(readBundler(filename, mydata));
 
   // Check number of things
-  EXPECT_LONGS_EQUAL(5,mydata.number_cameras());
-  EXPECT_LONGS_EQUAL(544,mydata.number_tracks());
+  EXPECT_LONGS_EQUAL(5,mydata.nrCameras());
+  EXPECT_LONGS_EQUAL(544,mydata.nrTracks());
   const SfmTrack& track0 = mydata.tracks[0];
-  EXPECT_LONGS_EQUAL(3,track0.number_measurements());
+  EXPECT_LONGS_EQUAL(3,track0.nrMeasurements());
 
   // Check projection of a given point
   EXPECT_LONGS_EQUAL(0,track0.measurements[0].first);
@@ -470,10 +470,10 @@ TEST( dataSet, readBAL_Dubrovnik)
   CHECK(readBAL(filename, mydata));
 
   // Check number of things
-  EXPECT_LONGS_EQUAL(3,mydata.number_cameras());
-  EXPECT_LONGS_EQUAL(7,mydata.number_tracks());
+  EXPECT_LONGS_EQUAL(3,mydata.nrCameras());
+  EXPECT_LONGS_EQUAL(7,mydata.nrTracks());
   const SfmTrack& track0 = mydata.tracks[0];
-  EXPECT_LONGS_EQUAL(3,track0.number_measurements());
+  EXPECT_LONGS_EQUAL(3,track0.nrMeasurements());
 
   // Check projection of a given point
   EXPECT_LONGS_EQUAL(0,track0.measurements[0].first);
@@ -533,16 +533,16 @@ TEST( dataSet, writeBAL_Dubrovnik)
   CHECK(readBAL(filenameToWrite, writtenData));
 
   // Check that what we read is the same as what we wrote
-  EXPECT_LONGS_EQUAL(readData.number_cameras(),writtenData.number_cameras());
-  EXPECT_LONGS_EQUAL(readData.number_tracks(),writtenData.number_tracks());
+  EXPECT_LONGS_EQUAL(readData.nrCameras(),writtenData.nrCameras());
+  EXPECT_LONGS_EQUAL(readData.nrTracks(),writtenData.nrTracks());
 
-  for (size_t i = 0; i < readData.number_cameras(); i++){
+  for (size_t i = 0; i < readData.nrCameras(); i++){
     PinholeCamera<Cal3Bundler> expectedCamera = writtenData.cameras[i];
     PinholeCamera<Cal3Bundler> actualCamera = readData.cameras[i];
     EXPECT(assert_equal(expectedCamera,actualCamera));
   }
 
-  for (size_t j = 0; j < readData.number_tracks(); j++){
+  for (size_t j = 0; j < readData.nrTracks(); j++){
     // check point
     SfmTrack expectedTrack  = writtenData.tracks[j];
     SfmTrack actualTrack = readData.tracks[j];
@@ -556,7 +556,7 @@ TEST( dataSet, writeBAL_Dubrovnik)
     EXPECT(assert_equal(expectedRGB,actualRGB));
 
     // check measurements
-    for (size_t k = 0; k < actualTrack.number_measurements(); k++){
+    for (size_t k = 0; k < actualTrack.nrMeasurements(); k++){
       EXPECT_LONGS_EQUAL(expectedTrack.measurements[k].first,actualTrack.measurements[k].first);
       EXPECT(assert_equal(expectedTrack.measurements[k].second,actualTrack.measurements[k].second));
     }
@@ -575,11 +575,11 @@ TEST( dataSet, writeBALfromValues_Dubrovnik){
   Pose3 poseChange = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.3,0.1,0.3));
 
   Values value;
-  for(size_t i=0; i < readData.number_cameras(); i++){ // for each camera
+  for(size_t i=0; i < readData.nrCameras(); i++){ // for each camera
     Pose3 pose = poseChange.compose(readData.cameras[i].pose());
     value.insert(X(i), pose);
   }
-  for(size_t j=0; j < readData.number_tracks(); j++){ // for each point
+  for(size_t j=0; j < readData.nrTracks(); j++){ // for each point
     Point3 point = poseChange.transformFrom( readData.tracks[j].p );
     value.insert(P(j), point);
   }
@@ -594,10 +594,10 @@ TEST( dataSet, writeBALfromValues_Dubrovnik){
 
   // Check that the reprojection errors are the same and the poses are correct
   // Check number of things
-  EXPECT_LONGS_EQUAL(3,writtenData.number_cameras());
-  EXPECT_LONGS_EQUAL(7,writtenData.number_tracks());
+  EXPECT_LONGS_EQUAL(3,writtenData.nrCameras());
+  EXPECT_LONGS_EQUAL(7,writtenData.nrTracks());
   const SfmTrack& track0 = writtenData.tracks[0];
-  EXPECT_LONGS_EQUAL(3,track0.number_measurements());
+  EXPECT_LONGS_EQUAL(3,track0.nrMeasurements());
 
   // Check projection of a given point
   EXPECT_LONGS_EQUAL(0,track0.measurements[0].first);
