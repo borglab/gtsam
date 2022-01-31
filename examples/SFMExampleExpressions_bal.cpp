@@ -28,7 +28,8 @@
 // Header order is close to far
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/slam/dataset.h>  // for loading BAL datasets !
+#include <gtsam/sfm/SfmData.h>  // for loading BAL datasets !
+#include <gtsam/slam/dataset.h>
 #include <vector>
 
 using namespace std;
@@ -46,8 +47,7 @@ int main(int argc, char* argv[]) {
   if (argc > 1) filename = string(argv[1]);
 
   // Load the SfM data from file
-  SfmData mydata;
-  readBAL(filename, mydata);
+  SfmData mydata = SfmData::FromBalFile(filename);
   cout << boost::format("read %1% tracks on %2% cameras\n") %
               mydata.numberTracks() % mydata.numberCameras();
 

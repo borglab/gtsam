@@ -31,6 +31,9 @@ class SfmTrack {
 #include <gtsam/sfm/SfmData.h>
 class SfmData {
   SfmData();
+  gtsam::SfmData FromBundlerFile(string filename);
+  gtsam::SfmData FromBalFile(string filename);
+
   size_t numberCameras() const;
   size_t numberTracks() const;
   gtsam::PinholeCamera<gtsam::Cal3Bundler> camera(size_t idx) const;

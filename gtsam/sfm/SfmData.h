@@ -20,6 +20,7 @@
 
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/sfm/SfmTrack.h>
 
@@ -35,11 +36,31 @@ typedef PinholeCamera<Cal3Bundler> SfmCamera;
  * @brief SfmData stores a bunch of SfmTracks
  * @addtogroup sfm
  */
-struct SfmData {
+struct GTSAM_EXPORT SfmData {
   std::vector<SfmCamera> cameras;  ///< Set of cameras
 
   std::vector<SfmTrack> tracks;  ///< Sparse set of points
 
+  /// @name Create from file
+  /// @{
+
+  /**
+   * @brief Parses a bundler output file and return result as SfmData instance.
+   * @param filename The name of the bundler file
+   * @param data SfM structure where the data is stored
+   * @return true if the parsing was successful, false otherwise
+   */
+  static SfmData FromBundlerFile(const std::string& filename);
+
+  /**
+   * @brief Parse a "Bundle Adjustment in the Large" (BAL) file and return
+   * result as SfmData instance.
+   * @param filename The name of the BAL file.
+   * @return SfM structure where the data is stored.
+   */
+  static SfmData FromBalFile(const std::string& filename);
+
+  /// @}
   /// @name Standard Interface
   /// @{
 
@@ -60,6 +81,29 @@ struct SfmData {
 
   /// The camera pose at frame index `idx`
   SfmCamera camera(size_t idx) const { return cameras[idx]; }
+
+  /**
+   * @brief Create projection factors using keys X(i) and P(j)
+   *
+   * @param model a noise model for projection errors
+   * @return NonlinearFactorGraph
+   */
+  NonlinearFactorGraph generalSfmFactors(
+      const SharedNoiseModel& model = noiseModel::Isotropic::Sigma(2,
+                                                                   1.0)) const;
+
+  /**
+   * @brief Create factor graph with projection factors and gauge fix.
+   *
+   * @param model a noise model for projection errors
+   * @param fixedCamera which camera to fix, if any (use boost::none if none)
+   * @param fixedPoint which point to fix, if any (use boost::none if none)
+   * @return NonlinearFactorGraph
+   */
+  NonlinearFactorGraph sfmFactorGraph(
+      const SharedNoiseModel& model = noiseModel::Isotropic::Sigma(2, 1.0),
+      boost::optional<size_t> fixedCamera = 0,
+      boost::optional<size_t> fixedPoint = 0) const;
 
   /// @}
   /// @name Testable
@@ -101,23 +145,12 @@ struct SfmData {
 template <>
 struct traits<SfmData> : public Testable<SfmData> {};
 
-/**
- * @brief This function parses a bundler output file and stores the data into a
- * SfmData structure
- * @param filename The name of the bundler file
- * @param data SfM structure where the data is stored
- * @return true if the parsing was successful, false otherwise
- */
-GTSAM_EXPORT bool readBundler(const std::string& filename, SfmData& data);
-
-/**
- * @brief This function parses a "Bundle Adjustment in the Large" (BAL) file and
- * stores the data into a SfmData structure
- * @param filename The name of the BAL file
- * @param data SfM structure where the data is stored
- * @return true if the parsing was successful, false otherwise
- */
-GTSAM_EXPORT bool readBAL(const std::string& filename, SfmData& data);
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
+GTSAM_EXPORT bool GTSAM_DEPRECATED readBundler(const std::string& filename,
+                                               SfmData& data);
+GTSAM_EXPORT bool GTSAM_DEPRECATED readBAL(const std::string& filename,
+                                           SfmData& data);
+#endif
 
 /**
  * @brief This function parses a "Bundle Adjustment in the Large" (BAL) file and
@@ -134,7 +167,7 @@ GTSAM_EXPORT SfmData readBal(const std::string& filename);
  * @param data SfM structure where the data is stored
  * @return true if the parsing was successful, false otherwise
  */
-GTSAM_EXPORT bool writeBAL(const std::string& filename, SfmData& data);
+GTSAM_EXPORT bool writeBAL(const std::string& filename, const SfmData& data);
 
 /**
  * @brief This function writes a "Bundle Adjustment in the Large" (BAL) file
@@ -149,7 +182,7 @@ GTSAM_EXPORT bool writeBAL(const std::string& filename, SfmData& data);
  * @return true if the parsing was successful, false otherwise
  */
 GTSAM_EXPORT bool writeBALfromValues(const std::string& filename,
-                                     const SfmData& data, Values& values);
+                                     const SfmData& data, const Values& values);
 
 /**
  * @brief This function converts an openGL camera pose to an GTSAM camera pose
