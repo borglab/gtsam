@@ -1,9 +1,9 @@
 from __future__ import print_function
 
-import numpy as np
 import unittest
 
 import gtsam
+import numpy as np
 
 """ Returns example pose values of 3 points A, B and C in the world frame """
 def ExampleValues():
@@ -19,7 +19,7 @@ def ExampleValues():
 
 """ Returns binary measurements for the points in the given edges."""
 def SimulateMeasurements(gt_poses, graph_edges):
-    measurements = gtsam.BinaryMeasurementsUnit3()
+    measurements = []
     for edge in graph_edges:
         Ta = gt_poses.atPose3(edge[0]).translation()
         Tb = gt_poses.atPose3(edge[1]).translation()
@@ -34,7 +34,7 @@ class TestTranslationRecovery(unittest.TestCase):
 
     def test_constructor(self):
         """Construct from binary measurements."""
-        algorithm = gtsam.TranslationRecovery(gtsam.BinaryMeasurementsUnit3())
+        algorithm = gtsam.TranslationRecovery([])
         self.assertIsInstance(algorithm, gtsam.TranslationRecovery)
 
     def test_run(self):
