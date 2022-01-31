@@ -27,7 +27,7 @@ void SfmTrack::print(const std::string& s) const {
   std::cout << " measurements of point " << p << std::endl;
 }
 
-bool SfmTrack::equals(const SfmTrack& sfmTrack, double tolÏ) const {
+bool SfmTrack::equals(const SfmTrack& sfmTrack, double tol) const {
   // check the 3D point
   if (!p.isApprox(sfmTrack.p)) {
     return false;
