@@ -4,7 +4,51 @@
 
 namespace gtsam {
 
-// #####
+#include <gtsam/sfm/SfmTrack.h>
+class SfmTrack {
+  SfmTrack();
+  SfmTrack(const gtsam::Point3& pt);
+  const Point3& point3() const;
+
+  double r;
+  double g;
+  double b;
+
+  std::vector<pair<size_t, gtsam::Point2>> measurements;
+
+  size_t nrMeasurements() const;
+  pair<size_t, gtsam::Point2> measurement(size_t idx) const;
+  pair<size_t, size_t> siftIndex(size_t idx) const;
+  void addMeasurement(size_t idx, const gtsam::Point2& m);
+
+  // enabling serialization functionality
+  void serialize() const;
+
+  // enabling function to compare objects
+  bool equals(const gtsam::SfmTrack& expected, double tol) const;
+};
+
+#include <gtsam/sfm/SfmData.h>
+class SfmData {
+  SfmData();
+  size_t nrCameras() const;
+  size_t nrTracks() const;
+  gtsam::PinholeCamera<gtsam::Cal3Bundler> camera(size_t idx) const;
+  gtsam::SfmTrack track(size_t idx) const;
+  void addTrack(const gtsam::SfmTrack& t);
+  void addCamera(const gtsam::SfmCamera& cam);
+
+  // enabling serialization functionality
+  void serialize() const;
+
+  // enabling function to compare objects
+  bool equals(const gtsam::SfmData& expected, double tol) const;
+};
+
+gtsam::SfmData readBal(string filename);
+bool writeBAL(string filename, gtsam::SfmData& data);
+gtsam::Values initialCamerasEstimate(const gtsam::SfmData& db);
+gtsam::Values initialCamerasAndPointsEstimate(const gtsam::SfmData& db);
 
 #include <gtsam/sfm/ShonanFactor.h>
 
