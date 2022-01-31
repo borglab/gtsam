@@ -15,6 +15,7 @@
  * @brief test general SFM class, with nonlinear optimization and BAL files
  */
 
+#include <gtsam/sfm/SfmData.h>
 #include <gtsam/slam/dataset.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/geometry/Point3.h>
@@ -42,9 +43,7 @@ using symbol_shorthand::P;
 /* ************************************************************************* */
 TEST(PinholeCamera, BAL) {
   string filename = findExampleDataFile("dubrovnik-3-7-pre");
-  SfmData db;
-  bool success = readBAL(filename, db);
-  if (!success) throw runtime_error("Could not access file!");
+  SfmData db = SfmData::FromBalFile(filename);
 
   SharedNoiseModel unit2 = noiseModel::Unit::Create(2);
   NonlinearFactorGraph graph;

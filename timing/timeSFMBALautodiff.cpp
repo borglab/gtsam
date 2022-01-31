@@ -59,7 +59,7 @@ int main(int argc, char* argv[]) {
   Values initial;
   size_t i = 0, j = 0;
   for (const SfmCamera& camera: db.cameras) {
-    // readBAL converts to GTSAM format, so we need to convert back !
+    // SfmData::FromBalFile converts to GTSAM format, so we need to convert back !
     Pose3 openGLpose = gtsam2openGL(camera.pose());
     Vector9 v9;
     v9 << Pose3::Logmap(openGLpose), camera.calibration();
