@@ -42,7 +42,7 @@ class TestSfmData(GtsamTestCase):
         self.tracks.addMeasurement(i1, uv_i1)
         self.tracks.addMeasurement(i2, uv_i2)
         # Number of measurements in the track is 2
-        self.assertEqual(self.tracks.nrMeasurements(), 2)
+        self.assertEqual(self.tracks.numberMeasurements(), 2)
         # camera_idx in the first measurement of the track corresponds to i1
         cam_idx, img_measurement = self.tracks.measurement(0)
         self.assertEqual(cam_idx, i1)
@@ -70,7 +70,7 @@ class TestSfmData(GtsamTestCase):
         self.data.addTrack(self.tracks)
         self.data.addTrack(track2)
         # Number of tracks in SfmData is 2
-        self.assertEqual(self.data.nrTracks(), 2)
+        self.assertEqual(self.data.numberTracks(), 2)
         # camera idx of first measurement of second track corresponds to i1
         cam_idx, img_measurement = self.data.track(1).measurement(0)
         self.assertEqual(cam_idx, i1)

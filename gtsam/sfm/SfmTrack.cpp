@@ -39,13 +39,13 @@ bool SfmTrack::equals(const SfmTrack& sfmTrack, double tol) const {
   }
 
   // compare size of vectors for measurements and siftIndices
-  if (nrMeasurements() != sfmTrack.nrMeasurements() ||
+  if (numberMeasurements() != sfmTrack.numberMeasurements() ||
       siftIndices.size() != sfmTrack.siftIndices.size()) {
     return false;
   }
 
   // compare measurements (order sensitive)
-  for (size_t idx = 0; idx < nrMeasurements(); ++idx) {
+  for (size_t idx = 0; idx < numberMeasurements(); ++idx) {
     SfmMeasurement measurement = measurements[idx];
     SfmMeasurement otherMeasurement = sfmTrack.measurements[idx];
 

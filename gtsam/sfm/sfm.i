@@ -16,7 +16,7 @@ class SfmTrack {
 
   std::vector<pair<size_t, gtsam::Point2>> measurements;
 
-  size_t nrMeasurements() const;
+  size_t numberMeasurements() const;
   pair<size_t, gtsam::Point2> measurement(size_t idx) const;
   pair<size_t, size_t> siftIndex(size_t idx) const;
   void addMeasurement(size_t idx, const gtsam::Point2& m);
@@ -31,8 +31,8 @@ class SfmTrack {
 #include <gtsam/sfm/SfmData.h>
 class SfmData {
   SfmData();
-  size_t nrCameras() const;
-  size_t nrTracks() const;
+  size_t numberCameras() const;
+  size_t numberTracks() const;
   gtsam::PinholeCamera<gtsam::Cal3Bundler> camera(size_t idx) const;
   gtsam::SfmTrack track(size_t idx) const;
   void addTrack(const gtsam::SfmTrack& t);
@@ -136,7 +136,7 @@ class ShonanAveraging2 {
 
   // Query properties
   size_t nrUnknowns() const;
-  size_t nrMeasurements() const;
+  size_t numberMeasurements() const;
   gtsam::Rot2 measured(size_t i);
   gtsam::KeyVector keys(size_t i);
 
@@ -184,7 +184,7 @@ class ShonanAveraging3 {
 
   // Query properties
   size_t nrUnknowns() const;
-  size_t nrMeasurements() const;
+  size_t numberMeasurements() const;
   gtsam::Rot3 measured(size_t i);
   gtsam::KeyVector keys(size_t i);
 

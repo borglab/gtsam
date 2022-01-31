@@ -50,10 +50,10 @@ struct SfmData {
   void addCamera(const SfmCamera& cam) { cameras.push_back(cam); }
 
   /// The number of reconstructed 3D points
-  size_t nrTracks() const { return tracks.size(); }
+  size_t numberTracks() const { return tracks.size(); }
 
   /// The number of cameras
-  size_t nrCameras() const { return cameras.size(); }
+  size_t numberCameras() const { return cameras.size(); }
 
   /// The track formed by series of landmark measurements
   SfmTrack track(size_t idx) const { return tracks[idx]; }

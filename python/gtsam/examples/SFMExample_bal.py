@@ -29,10 +29,10 @@ DEFAULT_BAL_DATASET = "dubrovnik-3-7-pre"
 def plot_scene(scene_data: gtsam.SfmData, result: gtsam.Values) -> None:
     """Plot the SFM results."""
     plot_vals = gtsam.Values()
-    for cam_idx in range(scene_data.nrCameras()):
+    for cam_idx in range(scene_data.numberCameras()):
         plot_vals.insert(C(cam_idx),
                          result.atPinholeCameraCal3Bundler(C(cam_idx)).pose())
-    for j in range(scene_data.nrTracks()):
+    for j in range(scene_data.numberTracks()):
         plot_vals.insert(P(j), result.atPoint3(P(j)))
 
     plot.plot_3d_points(0, plot_vals, linespec="g.")
@@ -47,8 +47,8 @@ def run(args: argparse.Namespace) -> None:
 
     # Load the SfM data from file
     scene_data = gtsam.readBal(input_file)
-    logging.info("read %d tracks on %d cameras\n", scene_data.nrTracks(),
-                 scene_data.nrCameras())
+    logging.info("read %d tracks on %d cameras\n", scene_data.numberTracks(),
+                 scene_data.numberCameras())
 
     # Create a factor graph
     graph = gtsam.NonlinearFactorGraph()
@@ -57,10 +57,10 @@ def run(args: argparse.Namespace) -> None:
     noise = gtsam.noiseModel.Isotropic.Sigma(2, 1.0)  # one pixel in u and v
 
     # Add measurements to the factor graph
-    for j in range(scene_data.nrTracks()):
+    for j in range(scene_data.numberTracks()):
         track = scene_data.track(j)  # SfmTrack
         # retrieve the SfmMeasurement objects
-        for m_idx in range(track.nrMeasurements()):
+        for m_idx in range(track.numberMeasurements()):
             # i represents the camera index, and uv is the 2d measurement
             i, uv = track.measurement(m_idx)
             # note use of shorthand symbols C and P
@@ -82,13 +82,13 @@ def run(args: argparse.Namespace) -> None:
 
     i = 0
     # add each PinholeCameraCal3Bundler
-    for cam_idx in range(scene_data.nrCameras()):
+    for cam_idx in range(scene_data.numberCameras()):
         camera = scene_data.camera(cam_idx)
         initial.insert(C(i), camera)
         i += 1
 
     # add each SfmTrack
-    for j in range(scene_data.nrTracks()):
+    for j in range(scene_data.numberTracks()):
         track = scene_data.track(j)
         initial.insert(P(j), track.point3())
 
