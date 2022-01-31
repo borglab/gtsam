@@ -15,7 +15,7 @@ import logging
 import sys
 
 import gtsam
-from gtsam import (GeneralSFMFactorCal3Bundler,
+from gtsam import (GeneralSFMFactorCal3Bundler, SfmData,
                    PriorFactorPinholeCameraCal3Bundler, PriorFactorPoint3)
 from gtsam.symbol_shorthand import C, P  # type: ignore
 from gtsam.utils import plot  # type: ignore
@@ -26,7 +26,7 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 DEFAULT_BAL_DATASET = "dubrovnik-3-7-pre"
 
 
-def plot_scene(scene_data: gtsam.SfmData, result: gtsam.Values) -> None:
+def plot_scene(scene_data: SfmData, result: gtsam.Values) -> None:
     """Plot the SFM results."""
     plot_vals = gtsam.Values()
     for cam_idx in range(scene_data.numberCameras()):
@@ -46,7 +46,7 @@ def run(args: argparse.Namespace) -> None:
     input_file = args.input_file
 
     # Load the SfM data from file
-    scene_data = gtsam.readBal(input_file)
+    scene_data = SfmData.FromBalFile(input_file)
     logging.info("read %d tracks on %d cameras\n", scene_data.numberTracks(),
                  scene_data.numberCameras())
 
