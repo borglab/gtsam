@@ -73,8 +73,8 @@ int optimize(const SfmData& db, const NonlinearFactorGraph& graph,
   if (gUseSchur) {
     // Create Schur-complement ordering
     Ordering ordering;
-    for (size_t j = 0; j < db.number_tracks(); j++) ordering.push_back(P(j));
-    for (size_t i = 0; i < db.number_cameras(); i++) {
+    for (size_t j = 0; j < db.nrTracks(); j++) ordering.push_back(P(j));
+    for (size_t i = 0; i < db.nrCameras(); i++) {
       ordering.push_back(C(i));
       if (separateCalibration) ordering.push_back(K(i));
     }
