@@ -83,7 +83,7 @@ struct GTSAM_EXPORT SfmData {
   SfmCamera camera(size_t idx) const { return cameras[idx]; }
 
   /**
-   * @brief Create projection factors using keys X(i) and P(j)
+   * @brief Create projection factors using keys i and P(j)
    *
    * @param model a noise model for projection errors
    * @return NonlinearFactorGraph
@@ -94,6 +94,8 @@ struct GTSAM_EXPORT SfmData {
 
   /**
    * @brief Create factor graph with projection factors and gauge fix.
+   *
+   * Note: pose keys are simply integer indices, points use Symbol('p', j).
    *
    * @param model a noise model for projection errors
    * @param fixedCamera which camera to fix, if any (use boost::none if none)
@@ -177,8 +179,8 @@ GTSAM_EXPORT bool writeBAL(const std::string& filename, const SfmData& data);
  * @param data SfM structure where the data is stored
  * @param values structure where the graph values are stored (values can be
  * either Pose3 or PinholeCamera<Cal3Bundler> for the cameras, and should be
- * Point3 for the 3D points). Note that the current version assumes that the
- * keys are "x1" for pose 1 (or "c1" for camera 1) and "l1" for landmark 1
+ * Point3 for the 3D points). Note: assumes that the keys are "i" for pose i
+ * and "Symbol::('p',j)" for landmark j.
  * @return true if the parsing was successful, false otherwise
  */
 GTSAM_EXPORT bool writeBALfromValues(const std::string& filename,
@@ -212,7 +214,10 @@ GTSAM_EXPORT Pose3 gtsam2openGL(const Rot3& R, double tx, double ty, double tz);
 GTSAM_EXPORT Pose3 gtsam2openGL(const Pose3& PoseGTSAM);
 
 /**
- * @brief This function creates initial values for cameras from db
+ * @brief This function creates initial values for cameras from db.
+ *
+ * No symbol is used, so camera keys are simply integer indices.
+ *
  * @param SfmData
  * @return Values
  */
@@ -220,6 +225,9 @@ GTSAM_EXPORT Values initialCamerasEstimate(const SfmData& db);
 
 /**
  * @brief This function creates initial values for cameras and points from db
+ *
+ * Note: Pose keys are simply integer indices, points use Symbol('p', j).
+ *
  * @param SfmData
  * @return Values
  */
