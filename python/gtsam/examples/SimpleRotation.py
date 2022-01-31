@@ -31,7 +31,7 @@ def main():
     - A measurement model with the correct dimensionality for the factor
     """
     prior = gtsam.Rot2.fromAngle(np.deg2rad(30))
-    prior.print_('goal angle')
+    prior.print('goal angle')
     model = gtsam.noiseModel.Isotropic.Sigma(dim=1, sigma=np.deg2rad(1))
     key = X(1)
     factor = gtsam.PriorFactorRot2(key, prior, model)
@@ -48,7 +48,7 @@ def main():
     """
     graph = gtsam.NonlinearFactorGraph()
     graph.push_back(factor)
-    graph.print_('full graph')
+    graph.print('full graph')
 
     """
     Step 3: Create an initial estimate
@@ -65,7 +65,7 @@ def main():
     """
     initial = gtsam.Values()
     initial.insert(key, gtsam.Rot2.fromAngle(np.deg2rad(20)))
-    initial.print_('initial estimate')
+    initial.print('initial estimate')
 
     """
     Step 4: Optimize
@@ -77,7 +77,7 @@ def main():
     with the final state of the optimization.
     """
     result = gtsam.LevenbergMarquardtOptimizer(graph, initial).optimize()
-    result.print_('final result')
+    result.print('final result')
 
 
 if __name__ == '__main__':
