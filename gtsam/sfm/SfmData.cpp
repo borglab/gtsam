@@ -29,7 +29,6 @@ using std::cout;
 using std::endl;
 
 using gtsam::symbol_shorthand::P;
-using gtsam::symbol_shorthand::X;
 
 /* ************************************************************************** */
 void SfmData::print(const std::string &s) const {
@@ -356,7 +355,7 @@ bool writeBALfromValues(const std::string &filename, const SfmData &data,
   size_t nrPoses = values.count<Pose3>();
   if (nrPoses == dataValues.cameras.size()) {  // we only estimated camera poses
     for (size_t i = 0; i < dataValues.cameras.size(); i++) {  // for each camera
-      Pose3 pose = values.at<Pose3>(X(i));
+      Pose3 pose = values.at<Pose3>(i);
       Cal3Bundler K = dataValues.cameras[i].calibration();
       Camera camera(pose, K);
       dataValues.cameras[i] = camera;
@@ -415,8 +414,7 @@ NonlinearFactorGraph SfmData::generalSfmFactors(
     for (const SfmMeasurement &m : track.measurements) {
       size_t i = m.first;
       Point2 uv = m.second;
-      factors.emplace_shared<ProjectionFactor>(
-          uv, model, X(i), P(j));  // note use of shorthand symbols X and P
+      factors.emplace_shared<ProjectionFactor>(uv, model, i, P(j));
     }
     j += 1;
   }
@@ -432,7 +430,7 @@ NonlinearFactorGraph SfmData::sfmFactorGraph(
   NonlinearFactorGraph graph = generalSfmFactors(model);
   using noiseModel::Constrained;
   if (fixedCamera) {
-    graph.addPrior(X(*fixedCamera), cameras[0], Constrained::All(9));
+    graph.addPrior(*fixedCamera, cameras[0], Constrained::All(9));
   }
   if (fixedPoint) {
     graph.addPrior(P(*fixedPoint), tracks[0].p, Constrained::All(3));
@@ -452,7 +450,7 @@ Values initialCamerasEstimate(const SfmData &db) {
 Values initialCamerasAndPointsEstimate(const SfmData &db) {
   Values initial;
   size_t i = 0, j = 0;
-  for (const SfmCamera &camera : db.cameras) initial.insert((i++), camera);
+  for (const SfmCamera &camera : db.cameras) initial.insert(i++, camera);
   for (const SfmTrack &track : db.tracks) initial.insert(P(j++), track.p);
   return initial;
 }

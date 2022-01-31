@@ -25,7 +25,6 @@ using namespace std;
 using namespace gtsam;
 
 using gtsam::symbol_shorthand::P;
-using gtsam::symbol_shorthand::X;
 
 namespace gtsam {
 GTSAM_EXPORT std::string createRewrittenFileName(const std::string& name);
@@ -167,19 +166,19 @@ TEST(dataSet, writeBALfromValues_Dubrovnik) {
   Pose3 poseChange =
       Pose3(Rot3::Ypr(-M_PI / 10, 0., -M_PI / 10), Point3(0.3, 0.1, 0.3));
 
-  Values value;
+  Values values;
   for (size_t i = 0; i < readData.numberCameras(); i++) {  // for each camera
     Pose3 pose = poseChange.compose(readData.cameras[i].pose());
-    value.insert(X(i), pose);
+    values.insert(i, pose);
   }
   for (size_t j = 0; j < readData.numberTracks(); j++) {  // for each point
     Point3 point = poseChange.transformFrom(readData.tracks[j].p);
-    value.insert(P(j), point);
+    values.insert(P(j), point);
   }
 
   // Write values and readData to a file
   const string filenameToWrite = createRewrittenFileName(filenameToRead);
-  writeBALfromValues(filenameToWrite, readData, value);
+  writeBALfromValues(filenameToWrite, readData, values);
 
   // Read the file we wrote
   SfmData writtenData = SfmData::FromBalFile(filenameToWrite);
@@ -199,11 +198,11 @@ TEST(dataSet, writeBALfromValues_Dubrovnik) {
   EXPECT(assert_equal(expected, actual, 12));
 
   Pose3 expectedPose = camera0.pose();
-  Pose3 actualPose = value.at<Pose3>(X(0));
+  Pose3 actualPose = values.at<Pose3>(0);
   EXPECT(assert_equal(expectedPose, actualPose, 1e-7));
 
   Point3 expectedPoint = track0.p;
-  Point3 actualPoint = value.at<Point3>(P(0));
+  Point3 actualPoint = values.at<Point3>(P(0));
   EXPECT(assert_equal(expectedPoint, actualPoint, 1e-6));
 }
 
