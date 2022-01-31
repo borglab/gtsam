@@ -10,11 +10,3 @@
  * with `PYBIND11_MAKE_OPAQUE` this allows the types to be modified with Python,
  * and saves one copy operation.
  */
-
-#ifdef GTSAM_ALLOCATOR_TBB
-py::bind_vector<std::vector<gtsam::Key, tbb::tbb_allocator<gtsam::Key> > >(m_, "KeyVector");
-py::implicitly_convertible<py::list, std::vector<gtsam::Key, tbb::tbb_allocator<gtsam::Key> > >();
-#else
-py::bind_vector<std::vector<gtsam::Key> >(m_, "KeyVector");
-py::implicitly_convertible<py::list, std::vector<gtsam::Key> >();
-#endif
