@@ -49,7 +49,7 @@ int main(int argc, char* argv[]) {
   SfmData mydata;
   readBAL(filename, mydata);
   cout << boost::format("read %1% tracks on %2% cameras\n") %
-              mydata.nrTracks() % mydata.nrCameras();
+              mydata.numberTracks() % mydata.numberCameras();
 
   // Create a factor graph
   ExpressionFactorGraph graph;

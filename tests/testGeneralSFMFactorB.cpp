@@ -49,7 +49,7 @@ TEST(PinholeCamera, BAL) {
   SharedNoiseModel unit2 = noiseModel::Unit::Create(2);
   NonlinearFactorGraph graph;
 
-  for (size_t j = 0; j < db.nrTracks(); j++) {
+  for (size_t j = 0; j < db.numberTracks(); j++) {
     for (const SfmMeasurement& m: db.tracks[j].measurements)
       graph.emplace_shared<sfmFactor>(m.second, unit2, m.first, P(j));
   }

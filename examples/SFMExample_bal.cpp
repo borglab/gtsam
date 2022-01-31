@@ -43,7 +43,7 @@ int main (int argc, char* argv[]) {
   // Load the SfM data from file
   SfmData mydata;
   readBAL(filename, mydata);
-  cout << boost::format("read %1% tracks on %2% cameras\n") % mydata.nrTracks() % mydata.nrCameras();
+  cout << boost::format("read %1% tracks on %2% cameras\n") % mydata.numberTracks() % mydata.numberCameras();
 
   // Create a factor graph
   NonlinearFactorGraph graph;

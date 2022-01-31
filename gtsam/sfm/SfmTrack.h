@@ -68,7 +68,7 @@ struct SfmTrack {
   }
 
   /// Total number of measurements in this track
-  size_t nrMeasurements() const { return measurements.size(); }
+  size_t numberMeasurements() const { return measurements.size(); }
 
   /// Get the measurement (camera index, Point2) at pose index `idx`
   const SfmMeasurement& measurement(size_t idx) const {
