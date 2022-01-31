@@ -1149,19 +1149,19 @@ bool writeBAL(const string &filename, SfmData &data) {
 
   // Write the number of camera poses and 3D points
   size_t nrObservations = 0;
-  for (size_t j = 0; j < data.number_tracks(); j++) {
-    nrObservations += data.tracks[j].number_measurements();
+  for (size_t j = 0; j < data.nrTracks(); j++) {
+    nrObservations += data.tracks[j].nrMeasurements();
   }
 
   // Write observations
-  os << data.number_cameras() << " " << data.number_tracks() << " "
+  os << data.nrCameras() << " " << data.nrTracks() << " "
      << nrObservations << endl;
   os << endl;
 
-  for (size_t j = 0; j < data.number_tracks(); j++) { // for each 3D point j
+  for (size_t j = 0; j < data.nrTracks(); j++) { // for each 3D point j
     const SfmTrack &track = data.tracks[j];
 
-    for (size_t k = 0; k < track.number_measurements();
+    for (size_t k = 0; k < track.nrMeasurements();
          k++) { // for each observation of the 3D point j
       size_t i = track.measurements[k].first; // camera id
       double u0 = data.cameras[i].calibration().px();
@@ -1186,7 +1186,7 @@ bool writeBAL(const string &filename, SfmData &data) {
   os << endl;
 
   // Write cameras
-  for (size_t i = 0; i < data.number_cameras(); i++) { // for each camera
+  for (size_t i = 0; i < data.nrCameras(); i++) { // for each camera
     Pose3 poseGTSAM = data.cameras[i].pose();
     Cal3Bundler cameraCalibration = data.cameras[i].calibration();
     Pose3 poseOpenGL = gtsam2openGL(poseGTSAM);
@@ -1201,7 +1201,7 @@ bool writeBAL(const string &filename, SfmData &data) {
   }
 
   // Write the points
-  for (size_t j = 0; j < data.number_tracks(); j++) { // for each 3D point j
+  for (size_t j = 0; j < data.nrTracks(); j++) { // for each 3D point j
     Point3 point = data.tracks[j].p;
     os << point.x() << endl;
     os << point.y() << endl;
@@ -1221,8 +1221,8 @@ bool writeBALfromValues(const string &filename, const SfmData &data,
   // Store poses or cameras in SfmData
   size_t nrPoses = values.count<Pose3>();
   if (nrPoses ==
-      dataValues.number_cameras()) { // we only estimated camera poses
-    for (size_t i = 0; i < dataValues.number_cameras();
+      dataValues.nrCameras()) { // we only estimated camera poses
+    for (size_t i = 0; i < dataValues.nrCameras();
          i++) { // for each camera
       Pose3 pose = values.at<Pose3>(X(i));
       Cal3Bundler K = dataValues.cameras[i].calibration();
@@ -1231,7 +1231,7 @@ bool writeBALfromValues(const string &filename, const SfmData &data,
     }
   } else {
     size_t nrCameras = values.count<Camera>();
-    if (nrCameras == dataValues.number_cameras()) { // we only estimated camera
+    if (nrCameras == dataValues.nrCameras()) { // we only estimated camera
                                                     // poses and calibration
       for (size_t i = 0; i < nrCameras; i++) {      // for each camera
         Key cameraKey = i;                          // symbol('c',i);
@@ -1241,7 +1241,7 @@ bool writeBALfromValues(const string &filename, const SfmData &data,
     } else {
       cout << "writeBALfromValues: different number of cameras in "
               "SfM_dataValues (#cameras "
-           << dataValues.number_cameras() << ") and values (#cameras "
+           << dataValues.nrCameras() << ") and values (#cameras "
            << nrPoses << ", #poses " << nrCameras << ")!!" << endl;
       return false;
     }
@@ -1249,7 +1249,7 @@ bool writeBALfromValues(const string &filename, const SfmData &data,
 
   // Store 3D points in SfmData
   size_t nrPoints = values.count<Point3>(),
-         nrTracks = dataValues.number_tracks();
+         nrTracks = dataValues.nrTracks();
   if (nrPoints != nrTracks) {
     cout << "writeBALfromValues: different number of points in "
             "SfM_dataValues (#points= "
