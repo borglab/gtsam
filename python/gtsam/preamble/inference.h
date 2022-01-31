@@ -11,5 +11,3 @@
  * mutations on Python side will not be reflected on C++.
  */
 
-#include <pybind11/stl.h>
-
