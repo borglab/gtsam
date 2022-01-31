@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    SFMExample.cpp
+ * @file    SFMExample_bal.cpp
  * @brief   Solve a structure-from-motion problem from a "Bundle Adjustment in the Large" file
  * @author  Frank Dellaert
  */
