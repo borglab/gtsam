@@ -41,19 +41,6 @@ class DSFMap {
   std::map<KEY, This::Set> sets();
 };
 
-class IndexPairVector {
-  IndexPairVector();
-  IndexPairVector(const gtsam::IndexPairVector& other);
-
-  // common STL methods
-  size_t size() const;
-  bool empty() const;
-  void clear();
-
-  // structure specific methods
-  gtsam::IndexPair at(size_t i) const;
-  void push_back(gtsam::IndexPair key) const;
-};
 
 gtsam::IndexPairVector IndexPairSetAsArray(gtsam::IndexPairSet& set);
 
