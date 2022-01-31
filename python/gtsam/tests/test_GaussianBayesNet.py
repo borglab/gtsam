@@ -5,8 +5,8 @@ All Rights Reserved
 
 See LICENSE for the license information
 
-Unit tests for Linear Factor Graphs.
-Author: Frank Dellaert & Gerry Chen
+Unit tests for Gaussian Bayes Nets.
+Author: Frank Dellaert
 """
 # pylint: disable=invalid-name, no-name-in-module, no-member
 
