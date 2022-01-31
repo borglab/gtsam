@@ -8,13 +8,12 @@ See LICENSE for the license information
 CustomFactor unit tests.
 Author: Fan Jiang
 """
-from typing import List
 import unittest
-from gtsam import Values, Pose2, CustomFactor
-
-import numpy as np
+from typing import List
 
 import gtsam
+import numpy as np
+from gtsam import CustomFactor, JacobianFactor, Pose2, Values
 from gtsam.utils.test_case import GtsamTestCase
 
 
@@ -24,17 +23,17 @@ class TestCustomFactor(GtsamTestCase):
 
         def error_func(this: CustomFactor, v: gtsam.Values, H: List[np.ndarray]):
             """Minimal error function stub"""
-            return np.array([1, 0, 0])
+            return np.array([1, 0, 0]), H
 
         noise_model = gtsam.noiseModel.Unit.Create(3)
-        cf = CustomFactor(noise_model, gtsam.KeyVector([0]), error_func)
+        cf = CustomFactor(noise_model, [0], error_func)
 
     def test_new_keylist(self):
         """Test the creation of a new CustomFactor"""
 
         def error_func(this: CustomFactor, v: gtsam.Values, H: List[np.ndarray]):
             """Minimal error function stub"""
-            return np.array([1, 0, 0])
+            return np.array([1, 0, 0]), H
 
         noise_model = gtsam.noiseModel.Unit.Create(3)
         cf = CustomFactor(noise_model, [0], error_func)
@@ -47,7 +46,7 @@ class TestCustomFactor(GtsamTestCase):
             """Minimal error function with no Jacobian"""
             key0 = this.keys()[0]
             error = -v.atPose2(key0).localCoordinates(expected_pose)
-            return error
+            return error, H
 
         noise_model = gtsam.noiseModel.Unit.Create(3)
         cf = CustomFactor(noise_model, [0], error_func)
@@ -81,10 +80,10 @@ class TestCustomFactor(GtsamTestCase):
                 result = gT1.between(gT2)
                 H[0] = -result.inverse().AdjointMap()
                 H[1] = np.eye(3)
-            return error
+            return error, H
 
         noise_model = gtsam.noiseModel.Unit.Create(3)
-        cf = CustomFactor(noise_model, gtsam.KeyVector([0, 1]), error_func)
+        cf = CustomFactor(noise_model, [0, 1], error_func)
         v = Values()
         v.insert(0, gT1)
         v.insert(1, gT2)
@@ -104,9 +103,9 @@ class TestCustomFactor(GtsamTestCase):
         gT1 = Pose2(1, 2, np.pi / 2)
         gT2 = Pose2(-1, 4, np.pi)
 
-        def error_func(this: CustomFactor, v: gtsam.Values, _: List[np.ndarray]):
+        def error_func(this: CustomFactor, v: gtsam.Values, H: List[np.ndarray]):
             """Minimal error function stub"""
-            return np.array([1, 0, 0])
+            return np.array([1, 0, 0]), H
 
         noise_model = gtsam.noiseModel.Unit.Create(3)
         from gtsam.symbol_shorthand import X
@@ -144,10 +143,10 @@ class TestCustomFactor(GtsamTestCase):
                 result = gT1.between(gT2)
                 H[0] = -result.inverse().AdjointMap()
                 H[1] = np.eye(3)
-            return error
+            return error, H
 
         noise_model = gtsam.noiseModel.Unit.Create(3)
-        cf = CustomFactor(noise_model, gtsam.KeyVector([0, 1]), error_func)
+        cf = CustomFactor(noise_model, [0, 1], error_func)
         v = Values()
         v.insert(0, gT1)
         v.insert(1, gT2)
@@ -182,7 +181,7 @@ class TestCustomFactor(GtsamTestCase):
                 result = gT1.between(gT2)
                 H[0] = -result.inverse().AdjointMap()
                 H[1] = np.eye(3)
-            return error
+            return error, H
 
         noise_model = gtsam.noiseModel.Unit.Create(3)
         cf = CustomFactor(noise_model, [0, 1], error_func)
