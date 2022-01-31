@@ -268,24 +268,6 @@ void save2D(const gtsam::NonlinearFactorGraph& graph,
             const gtsam::Values& config, gtsam::noiseModel::Diagonal* model,
             string filename);
 
-// std::vector<gtsam::BetweenFactor<Pose2>::shared_ptr>
-// Ignored by pybind -> will be List[BetweenFactorPose2]
-class BetweenFactorPose2s {
-  BetweenFactorPose2s();
-  size_t size() const;
-  gtsam::BetweenFactor<gtsam::Pose2>* at(size_t i) const;
-  void push_back(const gtsam::BetweenFactor<gtsam::Pose2>* factor);
-};
-gtsam::BetweenFactorPose2s parse2DFactors(string filename);
-
-// std::vector<gtsam::BetweenFactor<Pose3>::shared_ptr>
-// Ignored by pybind -> will be List[BetweenFactorPose3]
-class BetweenFactorPose3s {
-  BetweenFactorPose3s();
-  size_t size() const;
-  gtsam::BetweenFactor<gtsam::Pose3>* at(size_t i) const;
-  void push_back(const gtsam::BetweenFactor<gtsam::Pose3>* factor);
-};
 gtsam::BetweenFactorPose3s parse3DFactors(string filename);
 
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load3D(string filename);
@@ -323,7 +305,7 @@ virtual class KarcherMeanFactor : gtsam::NonlinearFactor {
   KarcherMeanFactor(const gtsam::KeyVector& keys);
 };
 
-gtsam::Rot3 FindKarcherMean(const gtsam::Rot3Vector& rotations);
+gtsam::Rot3 FindKarcherMean(const std::vector<gtsam::Rot3>& rotations);
 
 #include <gtsam/slam/FrobeniusFactor.h>
 gtsam::noiseModel::Isotropic* ConvertNoiseModel(gtsam::noiseModel::Base* model,

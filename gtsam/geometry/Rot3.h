@@ -564,9 +564,6 @@ class GTSAM_EXPORT Rot3 : public LieGroup<Rot3, 3> {
 #endif
   };
 
-  /// std::vector of Rot3s, mainly for wrapper
-  using Rot3Vector = std::vector<Rot3, Eigen::aligned_allocator<Rot3> >;
-
   /**
    * [RQ] receives a 3 by 3 matrix and returns an upper triangular matrix R
    * and 3 rotation angles corresponding to the rotation matrix Q=Qz'*Qy'*Qx'

@@ -29,13 +29,6 @@ class BinaryMeasurement {
 typedef gtsam::BinaryMeasurement<gtsam::Unit3> BinaryMeasurementUnit3;
 typedef gtsam::BinaryMeasurement<gtsam::Rot3> BinaryMeasurementRot3;
 
-class BinaryMeasurementsUnit3 {
-  BinaryMeasurementsUnit3();
-  size_t size() const;
-  gtsam::BinaryMeasurement<gtsam::Unit3> at(size_t idx) const;
-  void push_back(const gtsam::BinaryMeasurement<gtsam::Unit3>& measurement);
-};
-
 #include <gtsam/sfm/ShonanAveraging.h>
 
 // TODO(frank): copy/pasta below until we have integer template paremeters in
@@ -178,15 +171,6 @@ class ShonanAveraging3 {
 
 #include <gtsam/sfm/MFAS.h>
 
-class KeyPairDoubleMap {
-  KeyPairDoubleMap();
-  KeyPairDoubleMap(const gtsam::KeyPairDoubleMap& other);
-
-  size_t size() const;
-  bool empty() const;
-  void clear();
-  size_t at(const pair<size_t, size_t>& keypair) const;
-};
 
 class MFAS {
   MFAS(const gtsam::BinaryMeasurementsUnit3& relativeTranslations,
