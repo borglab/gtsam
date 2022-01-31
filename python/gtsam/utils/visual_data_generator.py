@@ -36,7 +36,7 @@ class GroundTruth:
         self.cameras = [Pose3()] * nrCameras
         self.points = [Point3(0, 0, 0)] * nrPoints
 
-    def print_(self, s="") -> None:
+    def print(self, s="") -> None:
         print(s)
         print("K = ", self.K)
         print("Cameras: ", len(self.cameras))
