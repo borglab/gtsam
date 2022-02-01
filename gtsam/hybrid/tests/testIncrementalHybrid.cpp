@@ -10,12 +10,11 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    testDCFactorGraph.cpp
- * @brief   Unit tests for DCFactorGraph
- * @author  Varun Agrawal
+ * @file    testIncrementalHybrid.cpp
+ * @brief   Unit tests for incremental inference
  * @author  Fan Jiang
  * @author  Frank Dellaert
- * @date    December 2021
+ * @date    Jan 2021
  */
 
 #include "Switching.h"
