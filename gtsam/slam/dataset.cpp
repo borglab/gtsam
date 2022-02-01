@@ -208,15 +208,15 @@ std::map<size_t, Point2> parseVariables<Point2>(const std::string &filename,
 
 /* ************************************************************************* */
 // Interpret noise parameters according to flags
-static SharedNoiseModel
-createNoiseModel(const Vector6 v, bool smart, NoiseFormat noiseFormat,
-                 KernelFunctionType kernelFunctionType) {
+static SharedNoiseModel createNoiseModel(
+    const Vector6 &v, bool smart, NoiseFormat noiseFormat,
+    KernelFunctionType kernelFunctionType) {
   if (noiseFormat == NoiseFormatAUTO) {
     // Try to guess covariance matrix layout
-    if (v(0) != 0.0 && v(1) == 0.0 && v(2) != 0.0 && //
+    if (v(0) != 0.0 && v(1) == 0.0 && v(2) != 0.0 &&  //
         v(3) != 0.0 && v(4) == 0.0 && v(5) == 0.0) {
       noiseFormat = NoiseFormatGRAPH;
-    } else if (v(0) != 0.0 && v(1) == 0.0 && v(2) == 0.0 && //
+    } else if (v(0) != 0.0 && v(1) == 0.0 && v(2) == 0.0 &&  //
                v(3) != 0.0 && v(4) == 0.0 && v(5) != 0.0) {
       noiseFormat = NoiseFormatCOV;
     } else {
