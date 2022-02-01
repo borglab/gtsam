@@ -209,50 +209,6 @@ virtual class EssentialMatrixConstraint : gtsam::NoiseModelFactor {
 
 #include <gtsam/slam/dataset.h>
 
-class SfmTrack {
-  SfmTrack();
-  SfmTrack(const gtsam::Point3& pt);
-  const Point3& point3() const;
-
-  double r;
-  double g;
-  double b;
-
-  std::vector<pair<size_t, gtsam::Point2>> measurements;
-
-  size_t number_measurements() const;
-  pair<size_t, gtsam::Point2> measurement(size_t idx) const;
-  pair<size_t, size_t> siftIndex(size_t idx) const;
-  void add_measurement(size_t idx, const gtsam::Point2& m);
-
-  // enabling serialization functionality
-  void serialize() const;
-
-  // enabling function to compare objects
-  bool equals(const gtsam::SfmTrack& expected, double tol) const;
-};
-
-class SfmData {
-  SfmData();
-  size_t number_cameras() const;
-  size_t number_tracks() const;
-  gtsam::PinholeCamera<gtsam::Cal3Bundler> camera(size_t idx) const;
-  gtsam::SfmTrack track(size_t idx) const;
-  void add_track(const gtsam::SfmTrack& t);
-  void add_camera(const gtsam::SfmCamera& cam);
-
-  // enabling serialization functionality
-  void serialize() const;
-
-  // enabling function to compare objects
-  bool equals(const gtsam::SfmData& expected, double tol) const;
-};
-
-gtsam::SfmData readBal(string filename);
-bool writeBAL(string filename, gtsam::SfmData& data);
-gtsam::Values initialCamerasEstimate(const gtsam::SfmData& db);
-gtsam::Values initialCamerasAndPointsEstimate(const gtsam::SfmData& db);
-
 enum NoiseFormat {
   NoiseFormatG2O,
   NoiseFormatTORO,
