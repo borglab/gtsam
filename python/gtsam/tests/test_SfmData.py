@@ -14,10 +14,9 @@ from __future__ import print_function
 
 import unittest
 
-import numpy as np
-
 import gtsam
-from gtsam import SfmData, SfmTrack, Point2, Point3
+import numpy as np
+from gtsam import Point2, Point3, SfmData, SfmTrack
 from gtsam.utils.test_case import GtsamTestCase
 
 
@@ -34,40 +33,39 @@ class TestSfmData(GtsamTestCase):
         """Test functions in SfmTrack"""
         # measurement is of format (camera_idx, imgPoint)
         # create arbitrary camera indices for two cameras
-        i1, i2 = 4,5
+        i1, i2 = 4, 5
 
         # create arbitrary image measurements for cameras i1 and i2
         uv_i1 = Point2(12.6, 82)
-        
+
         # translating point uv_i1 along X-axis
         uv_i2 = Point2(24.88, 82)
-        
+
         # add measurements to the track
         self.tracks.addMeasurement(i1, uv_i1)
         self.tracks.addMeasurement(i2, uv_i2)
-        
+
         # Number of measurements in the track is 2
         self.assertEqual(self.tracks.numberMeasurements(), 2)
-        
+
         # camera_idx in the first measurement of the track corresponds to i1
         cam_idx, img_measurement = self.tracks.measurement(0)
         self.assertEqual(cam_idx, i1)
         np.testing.assert_array_almost_equal(
-            Point3(0.,0.,0.), 
+            Point3(0., 0., 0.),
             self.tracks.point3()
         )
-
 
     def test_data(self):
         """Test functions in SfmData"""
         # Create new track with 3 measurements
-        i1, i2, i3 = 3,5,6
+        i1, i2, i3 = 3, 5, 6
         uv_i1 = Point2(21.23, 45.64)
-        
+
         # translating along X-axis
         uv_i2 = Point2(45.7, 45.64)
         uv_i3 = Point2(68.35, 45.64)
-        
+
         # add measurements and arbitrary point to the track
         measurements = [(i1, uv_i1), (i2, uv_i2), (i3, uv_i3)]
         pt = Point3(1.0, 6.0, 2.0)
@@ -80,14 +78,17 @@ class TestSfmData(GtsamTestCase):
 
         # Number of tracks in SfmData is 2
         self.assertEqual(self.data.numberTracks(), 2)
-        
+
         # camera idx of first measurement of second track corresponds to i1
         cam_idx, img_measurement = self.data.track(1).measurement(0)
         self.assertEqual(cam_idx, i1)
 
     def test_Balbianello(self):
+        """ Check that we can successfully read a bundler file and create a 
+            factor graph from it
+        """
         # The structure where we will save the SfM data
-        filename = gtsam.findExampleDataFile("Balbianello")
+        filename = gtsam.findExampleDataFile("Balbianello.out")
         sfm_data = SfmData.FromBundlerFile(filename)
 
         # Check number of things
@@ -104,7 +105,8 @@ class TestSfmData(GtsamTestCase):
         self.gtsamAssertEquals(expected, actual, 1)
 
         # We share *one* noiseModel between all projection factors
-        model = gtsam.noiseModel.Isotropic.Sigma(2, 1.0)  # one pixel in u and v
+        model = gtsam.noiseModel.Isotropic.Sigma(
+            2, 1.0)  # one pixel in u and v
 
         # Convert to NonlinearFactorGraph
         graph = sfm_data.sfmFactorGraph(model)
