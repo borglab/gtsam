@@ -48,7 +48,7 @@ int main(int argc, char* argv[]) {
   SfmData mydata;
   readBAL(filename, mydata);
   cout << boost::format("read %1% tracks on %2% cameras\n") %
-              mydata.number_tracks() % mydata.number_cameras();
+              mydata.numberTracks() % mydata.numberCameras();
 
   // Create a factor graph
   NonlinearFactorGraph graph;
@@ -131,7 +131,7 @@ int main(int argc, char* argv[]) {
 
     cout << "Time comparison by solving " << filename << " results:" << endl;
     cout << boost::format("%1% point tracks and %2% cameras\n") %
-                mydata.number_tracks() % mydata.number_cameras()
+                mydata.numberTracks() % mydata.numberCameras()
          << endl;
 
     tictoc_print_();
