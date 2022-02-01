@@ -46,7 +46,7 @@ posesIMUbody(1).R = poses(1).R;
 
 %% Solver object
 isamParams = ISAM2Params;
-isamParams.setRelinearizeSkip(1);
+isamParams.relinearizeSkip = 1;
 isam = gtsam.ISAM2(isamParams);
 
 initialValues = Values;
