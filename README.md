@@ -1,97 +1,125 @@
-# README - Georgia Tech Smoothing and Mapping Library
+# WRAP
 
-**Important Note**
+The wrap library wraps the GTSAM library into a Python library or MATLAB toolbox.
+It was designed to be more general than just wrapping GTSAM. For notes on creating a wrap interface, see `gtsam.h` for what features can be wrapped into a toolbox, as well as the current state of the toolbox for GTSAM.
 
-As of August 1 2020, the `develop` branch is officially in "Pre 4.1" mode, and features deprecated in 4.0 have been removed. Please use the last [4.0.3 release](https://github.com/borglab/gtsam/releases/tag/4.0.3) if you need those features. 
+## Prerequisites
 
-However, most are easily converted and can be tracked down (in 4.0.3) by disabling the cmake flag `GTSAM_ALLOW_DEPRECATED_SINCE_V4`.
+`Pybind11` and `pyparsing`
 
-## What is GTSAM?
-
-GTSAM is a C++ library that implements smoothing and
-mapping (SAM) in robotics and vision, using Factor Graphs and Bayes
-Networks as the underlying computing paradigm rather than sparse
-matrices.
-
-The current support matrix is:
-
-| Platform     | Compiler  | Build Status  |
-|:------------:|:---------:|:-------------:|
-| Ubuntu 18.04 | gcc/clang | ![Linux CI](https://github.com/borglab/gtsam/workflows/Linux%20CI/badge.svg) |
-| macOS        | clang     | ![macOS CI](https://github.com/borglab/gtsam/workflows/macOS%20CI/badge.svg) |
-| Windows      | MSVC      | ![Windows CI](https://github.com/borglab/gtsam/workflows/Windows%20CI/badge.svg) |
-
-
-On top of the C++ library, GTSAM includes [wrappers for MATLAB & Python](#wrappers).
-
-
-## Quickstart
-
-In the root library folder execute:
+1. This library uses `pybind11`, which is included as a subdirectory in GTSAM.
+2. The `interface_parser.py` in this library uses `pyparsing` to parse the interface file `gtsam.h`. Please install it first in your current Python environment before attempting the build.
 
 ```sh
-#!bash
-$ mkdir build
-$ cd build
-$ cmake ..
-$ make check (optional, runs unit tests)
-$ make install
+python3 -m pip install pyparsing
 ```
 
-Prerequisites:
+## Getting Started
 
-- [Boost](http://www.boost.org/users/download/) >= 1.65 (Ubuntu: `sudo apt-get install libboost-all-dev`)
-- [CMake](http://www.cmake.org/cmake/resources/software.html) >= 3.0 (Ubuntu: `sudo apt-get install cmake`)
-- A modern compiler, i.e., at least gcc 4.7.3 on Linux.
+Clone this repository to your local machine and perform the standard CMake install:
 
-Optional prerequisites - used automatically if findable by CMake:
+```sh
+mkdir build && cd build
+cmake ..
+make install # use sudo if needed
+```
 
-- [Intel Threaded Building Blocks (TBB)](http://www.threadingbuildingblocks.org/) (Ubuntu: `sudo apt-get install libtbb-dev`)
-- [Intel Math Kernel Library (MKL)](http://software.intel.com/en-us/intel-mkl) (Ubuntu: [installing using APT](https://software.intel.com/en-us/articles/installing-intel-free-libs-and-python-apt-repo))
-    - See [INSTALL.md](INSTALL.md) for more installation information
-    - Note that MKL may not provide a speedup in all cases. Make sure to benchmark your problem with and without MKL.
+Using `wrap` in your project is straightforward from here. In your `CMakeLists.txt` file, you just need to add the following:
 
-## GTSAM 4 Compatibility
+```cmake
+find_package(gtwrap)
 
-GTSAM 4 introduces several new features, most notably Expressions and a Python toolbox. It also introduces traits, a C++ technique that allows optimizing with non-GTSAM types. That opens the door to retiring geometric types such as Point2 and Point3 to pure Eigen types, which we also do. A significant change which will not trigger a compile error is that zero-initializing of Point2 and Point3 is deprecated, so please be aware that this might render functions using their default constructor incorrect.
+set(interface_files ${PROJECT_SOURCE_DIR}/cpp/${PROJECT_NAME}.h)
 
-GTSAM 4 also deprecated some legacy functionality and wrongly named methods. If you are on a 4.0.X release, you can define the flag `GTSAM_ALLOW_DEPRECATED_SINCE_V4` to use the deprecated methods.
+pybind_wrap(${PROJECT_NAME}_py # target
+            "${interface_files}" # list of interface header files
+            "${PROJECT_NAME}.cpp" # the generated cpp
+            "${PROJECT_NAME}" # module_name
+            "${PROJECT_MODULE_NAME}" # top namespace in the cpp file e.g. gtsam
+            "${ignore}" # ignore classes
+            ${PROJECT_BINARY_DIR}/${PROJECT_NAME}.tpl # the wrapping template file
+            ${PROJECT_NAME} # libs
+            "${PROJECT_NAME}" # dependencies
+            ON # use boost
+            )
+```
 
-GTSAM 4.1 added a new pybind wrapper, and **removed** the deprecated functionality. There is a flag `GTSAM_ALLOW_DEPRECATED_SINCE_V41` for newly deprecated methods since the 4.1 release, which is on by default, allowing anyone to just pull version 4.1 and compile.
+For more information, please follow our [tutorial](https://github.com/borglab/gtsam-project-python).
 
+## Documentation
 
-## Wrappers
+Documentation for wrapping C++ code can be found [here](https://github.com/borglab/wrap/blob/master/DOCS.md).
 
-We provide support for [MATLAB](matlab/README.md) and [Python](python/README.md) wrappers for GTSAM. Please refer to the linked documents for more details.
+## Python Wrapper
 
-## The Preintegrated IMU Factor
+**WARNING: On macOS, you have to statically build GTSAM to use the wrapper.**
 
-GTSAM includes a state of the art IMU handling scheme based on
+1. Set `GTSAM_BUILD_PYTHON=ON` while configuring the build with `cmake`.
+1. What you can do in the `build` folder:
 
-- Todd Lupton and Salah Sukkarieh, _"Visual-Inertial-Aided Navigation for High-Dynamic Motion in Built Environments Without Initial Conditions"_, TRO, 28(1):61-76, 2012. [[link]](https://ieeexplore.ieee.org/document/6092505)
+   1. Just run python then import GTSAM and play around:
 
-Our implementation improves on this using integration on the manifold, as detailed in
+      ```python
+      import gtsam
+      gtsam.__dir__()
+      ```
 
-- Luca Carlone, Zsolt Kira, Chris Beall, Vadim Indelman, and Frank Dellaert, _"Eliminating conditionally independent sets in factor graphs: a unifying perspective based on smart factors"_, Int. Conf. on Robotics and Automation (ICRA), 2014. [[link]](https://ieeexplore.ieee.org/abstract/document/6907483)
-- Christian Forster, Luca Carlone, Frank Dellaert, and Davide Scaramuzza, "IMU Preintegration on Manifold for Efficient Visual-Inertial Maximum-a-Posteriori Estimation", Robotics: Science and Systems (RSS), 2015. [[link]](http://www.roboticsproceedings.org/rss11/p06.pdf)
+   1. Run the unittests:
+      ```sh
+      python -m unittest discover
+      ```
+   1. Edit the unittests in `python/gtsam/*.py` and simply rerun the test.
+      They were symlinked to `<build_folder>/gtsam/*.py` to facilitate fast development.
+      `python -m unittest gtsam/tests/test_Pose3.py` - NOTE: You might need to re-run `cmake ..` if files are deleted or added.
 
-If you are using the factor in academic work, please cite the publications above.
+1. Do `make install` and `cd <gtsam_install_folder>/python`. Here, you can:
+   1. Run the unittests:
+      ```sh
+      python setup.py test
+      ```
+   2. Install `gtsam` to your current Python environment.
+      ```sh
+      python setup.py install
+      ```
+      - NOTE: It's a good idea to create a virtual environment otherwise it will be installed in your system Python's site-packages.
 
-In GTSAM 4 a new and more efficient implementation, based on integrating on the NavState tangent space and detailed in [this document](doc/ImuFactor.pdf), is enabled by default. To switch to the RSS 2015 version, set the flag `GTSAM_TANGENT_PREINTEGRATION` to OFF.
+## Matlab Wrapper
 
+In the CMake, simply include the `MatlabWrap.cmake` file.
 
-## Additional Information
+```cmake
+include(MatlabWrap)
+```
 
-There is a [`GTSAM users Google group`](https://groups.google.com/forum/#!forum/gtsam-users) for general discussion.
+This cmake file defines functions for generating MATLAB wrappers.
 
-Read about important [`GTSAM-Concepts`](GTSAM-Concepts.md) here. A primer on GTSAM Expressions,
-which support (superfast) automatic differentiation,
-can be found on the [GTSAM wiki on BitBucket](https://bitbucket.org/gtborg/gtsam/wiki/Home).
+- `wrap_and_install_library(interfaceHeader linkLibraries extraIncludeDirs extraMexFlags)` Generates wrap code and compiles the wrapper.
 
-See the [`INSTALL`](INSTALL.md) file for more detailed installation instructions.
+Usage example:
 
-GTSAM is open source under the BSD license, see the [`LICENSE`](LICENSE) and [`LICENSE.BSD`](LICENSE.BSD) files.
+    `wrap_and_install_library("lba.h" "" "" "")`
 
-Please see the [`examples/`](examples) directory and the [`USAGE`](USAGE.md) file for examples on how to use GTSAM.
+Arguments:
 
-GTSAM was developed in the lab of [Frank Dellaert](http://www.cc.gatech.edu/~dellaert) at the [Georgia Institute of Technology](http://www.gatech.edu), with the help of many contributors over the years, see [THANKS](THANKS.md).
+- `interfaceHeader`: The relative or absolute path to the wrapper interface definition file.
+- `linkLibraries`: Any _additional_ libraries to link. Your project library
+  (e.g. `lba`), libraries it depends on, and any necessary
+  MATLAB libraries will be linked automatically. So normally,
+  leave this empty.
+- `extraIncludeDirs`: Any _additional_ include paths required by dependent
+  libraries that have not already been added by
+  include_directories. Again, normally, leave this empty.
+- `extraMexFlags`: Any _additional_ flags to pass to the compiler when building
+  the wrap code. Normally, leave this empty.
+
+## Git subtree and Contributing
+
+**\*WARNING\*: Running the ./update_wrap.sh script from the GTSAM repo creates 2 new commits in GTSAM.  Be sure to _NOT_ push these directly to master/develop.  Preferably, open up a new PR with these updates (see below).**
+
+The [wrap library](https://github.com/borglab/wrap) is included in GTSAM as a git subtree.  This means that sometimes the wrap library can have new features or changes that are not yet reflected in GTSAM.  There are two options to get the most up-to-date versions of wrap:
+  1. Clone and install the [wrap repository](https://github.com/borglab/wrap).  For external projects, make sure cmake is using the external `wrap` rather than the one pre-packaged with GTSAM.
+  2. Run `./update_wrap.sh` from the root of GTSAM's repository to pull in the newest version of wrap to your local GTSAM installation.  See the warning above about this script automatically creating commits.
+
+To make a PR on GTSAM with the most recent wrap updates, create a new branch/fork then pull in the most recent wrap changes using `./update_wrap.sh`.  You should find that two new commits have been made: a squash and a merge from master.  You can push these (to the non-develop branch) and open a PR.
+
+For any code contributions to the wrap project, please make them on the [wrap repository](https://github.com/borglab/wrap).

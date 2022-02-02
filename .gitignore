@@ -1,19 +1,11 @@
-/build*
-/debug*
-.idea
-*.pyc
-*.DS_Store
-*.swp
-/examples/Data/dubrovnik-3-7-pre-rewritten.txt
-/examples/Data/pose2example-rewritten.txt
-/examples/Data/pose3example-rewritten.txt
-*.txt.user
-*.txt.user.6d59f0c
-*.pydevproject
-.vscode
-.env
-/.vs/
-/CMakeSettings.json
-# for QtCreator:
-CMakeLists.txt.user*
-xcode/
+__pycache__/
+.vscode/
+*build*
+*install*
+*dist*
+*.egg-info
+
+# Files related to code coverage stats
+**/.coverage
+
+gtwrap/matlab_wrapper/matlab_wrapper.tpl
