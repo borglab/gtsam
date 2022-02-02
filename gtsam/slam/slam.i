@@ -223,12 +223,12 @@ enum KernelFunctionType {
   KernelFunctionTypeTUKEY
 };
 
-std::pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(
+pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(
     string filename, gtsam::noiseModel::Diagonal* model = nullptr,
     size_t maxIndex = 0, bool addNoise = false, bool smart = true,
-    gtsam::NoiseFormat noiseFormat = gtsam::NoiseFormatAUTO,
+    gtsam::NoiseFormat noiseFormat = gtsam::NoiseFormat::NoiseFormatAUTO,
     gtsam::KernelFunctionType kernelFunctionType =
-        gtsam::KernelFunctionTypeNONE);
+        gtsam::KernelFunctionType::KernelFunctionTypeNONE);
 
 void save2D(const gtsam::NonlinearFactorGraph& graph,
             const gtsam::Values& config, gtsam::noiseModel::Diagonal* model,
@@ -259,7 +259,7 @@ pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load3D(string filename);
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> readG2o(
     string filename, const bool is3D = false,
     gtsam::KernelFunctionType kernelFunctionType =
-        gtsam::KernelFunctionTypeNONE);
+        gtsam::KernelFunctionType::KernelFunctionTypeNONE);
 void writeG2o(const gtsam::NonlinearFactorGraph& graph,
               const gtsam::Values& estimate, string filename);
 
