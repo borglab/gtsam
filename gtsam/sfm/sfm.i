@@ -31,12 +31,23 @@ class SfmTrack {
 #include <gtsam/sfm/SfmData.h>
 class SfmData {
   SfmData();
-  size_t numberCameras() const;
-  size_t numberTracks() const;
-  gtsam::PinholeCamera<gtsam::Cal3Bundler> camera(size_t idx) const;
-  gtsam::SfmTrack track(size_t idx) const;
+  static gtsam::SfmData FromBundlerFile(string filename);
+  static gtsam::SfmData FromBalFile(string filename);
+
   void addTrack(const gtsam::SfmTrack& t);
   void addCamera(const gtsam::SfmCamera& cam);
+  size_t numberTracks() const;
+  size_t numberCameras() const;
+  gtsam::SfmTrack track(size_t idx) const;
+  gtsam::PinholeCamera<gtsam::Cal3Bundler> camera(size_t idx) const;
+
+  gtsam::NonlinearFactorGraph generalSfmFactors(
+      const gtsam::SharedNoiseModel& model =
+          gtsam::noiseModel::Isotropic::Sigma(2, 1.0)) const;
+  gtsam::NonlinearFactorGraph sfmFactorGraph(
+      const gtsam::SharedNoiseModel& model =
+          gtsam::noiseModel::Isotropic::Sigma(2, 1.0),
+      size_t fixedCamera = 0, size_t fixedPoint = 0) const;
 
   // enabling serialization functionality
   void serialize() const;

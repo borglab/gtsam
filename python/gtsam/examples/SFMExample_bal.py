@@ -15,9 +15,9 @@ import logging
 import sys
 
 import gtsam
-from gtsam import (GeneralSFMFactorCal3Bundler,
+from gtsam import (GeneralSFMFactorCal3Bundler, SfmData,
                    PriorFactorPinholeCameraCal3Bundler, PriorFactorPoint3)
-from gtsam.symbol_shorthand import C, P  # type: ignore
+from gtsam.symbol_shorthand import P  # type: ignore
 from gtsam.utils import plot  # type: ignore
 from matplotlib import pyplot as plt
 
@@ -26,12 +26,11 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 DEFAULT_BAL_DATASET = "dubrovnik-3-7-pre"
 
 
-def plot_scene(scene_data: gtsam.SfmData, result: gtsam.Values) -> None:
+def plot_scene(scene_data: SfmData, result: gtsam.Values) -> None:
     """Plot the SFM results."""
     plot_vals = gtsam.Values()
-    for cam_idx in range(scene_data.numberCameras()):
-        plot_vals.insert(C(cam_idx),
-                         result.atPinholeCameraCal3Bundler(C(cam_idx)).pose())
+    for i in range(scene_data.numberCameras()):
+        plot_vals.insert(i, result.atPinholeCameraCal3Bundler(i).pose())
     for j in range(scene_data.numberTracks()):
         plot_vals.insert(P(j), result.atPoint3(P(j)))
 
@@ -46,7 +45,7 @@ def run(args: argparse.Namespace) -> None:
     input_file = args.input_file
 
     # Load the SfM data from file
-    scene_data = gtsam.readBal(input_file)
+    scene_data = SfmData.FromBalFile(input_file)
     logging.info("read %d tracks on %d cameras\n", scene_data.numberTracks(),
                  scene_data.numberCameras())
 
@@ -64,12 +63,12 @@ def run(args: argparse.Namespace) -> None:
             # i represents the camera index, and uv is the 2d measurement
             i, uv = track.measurement(m_idx)
             # note use of shorthand symbols C and P
-            graph.add(GeneralSFMFactorCal3Bundler(uv, noise, C(i), P(j)))
+            graph.add(GeneralSFMFactorCal3Bundler(uv, noise, i, P(j)))
 
     # Add a prior on pose x1. This indirectly specifies where the origin is.
     graph.push_back(
         PriorFactorPinholeCameraCal3Bundler(
-            C(0), scene_data.camera(0),
+            0, scene_data.camera(0),
             gtsam.noiseModel.Isotropic.Sigma(9, 0.1)))
     # Also add a prior on the position of the first landmark to fix the scale
     graph.push_back(
@@ -82,9 +81,9 @@ def run(args: argparse.Namespace) -> None:
 
     i = 0
     # add each PinholeCameraCal3Bundler
-    for cam_idx in range(scene_data.numberCameras()):
-        camera = scene_data.camera(cam_idx)
-        initial.insert(C(i), camera)
+    for i in range(scene_data.numberCameras()):
+        camera = scene_data.camera(i)
+        initial.insert(i, camera)
         i += 1
 
     # add each SfmTrack

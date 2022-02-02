@@ -18,13 +18,13 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/sfm/SfmData.h>
 
 using namespace std;
 using namespace gtsam;
 
 using gtsam::symbol_shorthand::P;
-using gtsam::symbol_shorthand::X;
 
 namespace gtsam {
 GTSAM_EXPORT std::string createRewrittenFileName(const std::string& name);
@@ -33,41 +33,50 @@ GTSAM_EXPORT std::string findExampleDataFile(const std::string& name);
 
 /* ************************************************************************* */
 TEST(dataSet, Balbianello) {
-  ///< The structure where we will save the SfM data
+  // The structure where we will save the SfM data
   const string filename = findExampleDataFile("Balbianello");
-  SfmData mydata;
-  CHECK(readBundler(filename, mydata));
+  SfmData sfmData = SfmData::FromBundlerFile(filename);
 
   // Check number of things
-  EXPECT_LONGS_EQUAL(5, mydata.numberCameras());
-  EXPECT_LONGS_EQUAL(544, mydata.numberTracks());
-  const SfmTrack& track0 = mydata.tracks[0];
+  EXPECT_LONGS_EQUAL(5, sfmData.numberCameras());
+  EXPECT_LONGS_EQUAL(544, sfmData.numberTracks());
+  const SfmTrack& track0 = sfmData.tracks[0];
   EXPECT_LONGS_EQUAL(3, track0.numberMeasurements());
 
   // Check projection of a given point
   EXPECT_LONGS_EQUAL(0, track0.measurements[0].first);
-  const SfmCamera& camera0 = mydata.cameras[0];
+  const SfmCamera& camera0 = sfmData.cameras[0];
   Point2 expected = camera0.project(track0.p),
          actual = track0.measurements[0].second;
   EXPECT(assert_equal(expected, actual, 1));
+
+  // We share *one* noiseModel between all projection factors
+  auto model = noiseModel::Isotropic::Sigma(2, 1.0);  // one pixel in u and v
+
+  // Convert to NonlinearFactorGraph
+  NonlinearFactorGraph graph = sfmData.sfmFactorGraph(model);
+  EXPECT_LONGS_EQUAL(1419, graph.size());  // regression
+
+  // Get initial estimate
+  Values values = initialCamerasAndPointsEstimate(sfmData);
+  EXPECT_LONGS_EQUAL(549, values.size());  // regression
 }
 
 /* ************************************************************************* */
 TEST(dataSet, readBAL_Dubrovnik) {
-  ///< The structure where we will save the SfM data
+  // The structure where we will save the SfM data
   const string filename = findExampleDataFile("dubrovnik-3-7-pre");
-  SfmData mydata;
-  CHECK(readBAL(filename, mydata));
+  SfmData sfmData = SfmData::FromBalFile(filename);
 
   // Check number of things
-  EXPECT_LONGS_EQUAL(3, mydata.numberCameras());
-  EXPECT_LONGS_EQUAL(7, mydata.numberTracks());
-  const SfmTrack& track0 = mydata.tracks[0];
+  EXPECT_LONGS_EQUAL(3, sfmData.numberCameras());
+  EXPECT_LONGS_EQUAL(7, sfmData.numberTracks());
+  const SfmTrack& track0 = sfmData.tracks[0];
   EXPECT_LONGS_EQUAL(3, track0.numberMeasurements());
 
   // Check projection of a given point
   EXPECT_LONGS_EQUAL(0, track0.measurements[0].first);
-  const SfmCamera& camera0 = mydata.cameras[0];
+  const SfmCamera& camera0 = sfmData.cameras[0];
   Point2 expected = camera0.project(track0.p),
          actual = track0.measurements[0].second;
   EXPECT(assert_equal(expected, actual, 12));
@@ -105,18 +114,15 @@ TEST(dataSet, gtsam2openGL) {
 
 /* ************************************************************************* */
 TEST(dataSet, writeBAL_Dubrovnik) {
-  ///< Read a file using the unit tested readBAL
   const string filenameToRead = findExampleDataFile("dubrovnik-3-7-pre");
-  SfmData readData;
-  readBAL(filenameToRead, readData);
+  SfmData readData = SfmData::FromBalFile(filenameToRead);
 
   // Write readData to file filenameToWrite
   const string filenameToWrite = createRewrittenFileName(filenameToRead);
   CHECK(writeBAL(filenameToWrite, readData));
 
   // Read what we wrote
-  SfmData writtenData;
-  CHECK(readBAL(filenameToWrite, writtenData));
+  SfmData writtenData = SfmData::FromBalFile(filenameToWrite);
 
   // Check that what we read is the same as what we wrote
   EXPECT_LONGS_EQUAL(readData.numberCameras(), writtenData.numberCameras());
@@ -154,31 +160,28 @@ TEST(dataSet, writeBAL_Dubrovnik) {
 
 /* ************************************************************************* */
 TEST(dataSet, writeBALfromValues_Dubrovnik) {
-  ///< Read a file using the unit tested readBAL
   const string filenameToRead = findExampleDataFile("dubrovnik-3-7-pre");
-  SfmData readData;
-  readBAL(filenameToRead, readData);
+  SfmData readData = SfmData::FromBalFile(filenameToRead);
 
   Pose3 poseChange =
       Pose3(Rot3::Ypr(-M_PI / 10, 0., -M_PI / 10), Point3(0.3, 0.1, 0.3));
 
-  Values value;
+  Values values;
   for (size_t i = 0; i < readData.numberCameras(); i++) {  // for each camera
     Pose3 pose = poseChange.compose(readData.cameras[i].pose());
-    value.insert(X(i), pose);
+    values.insert(i, pose);
   }
   for (size_t j = 0; j < readData.numberTracks(); j++) {  // for each point
     Point3 point = poseChange.transformFrom(readData.tracks[j].p);
-    value.insert(P(j), point);
+    values.insert(P(j), point);
   }
 
   // Write values and readData to a file
   const string filenameToWrite = createRewrittenFileName(filenameToRead);
-  writeBALfromValues(filenameToWrite, readData, value);
+  writeBALfromValues(filenameToWrite, readData, values);
 
   // Read the file we wrote
-  SfmData writtenData;
-  readBAL(filenameToWrite, writtenData);
+  SfmData writtenData = SfmData::FromBalFile(filenameToWrite);
 
   // Check that the reprojection errors are the same and the poses are correct
   // Check number of things
@@ -195,11 +198,11 @@ TEST(dataSet, writeBALfromValues_Dubrovnik) {
   EXPECT(assert_equal(expected, actual, 12));
 
   Pose3 expectedPose = camera0.pose();
-  Pose3 actualPose = value.at<Pose3>(X(0));
+  Pose3 actualPose = values.at<Pose3>(0);
   EXPECT(assert_equal(expectedPose, actualPose, 1e-7));
 
   Point3 expectedPoint = track0.p;
-  Point3 actualPoint = value.at<Point3>(P(0));
+  Point3 actualPoint = values.at<Point3>(P(0));
   EXPECT(assert_equal(expectedPoint, actualPoint, 1e-6));
 }
 

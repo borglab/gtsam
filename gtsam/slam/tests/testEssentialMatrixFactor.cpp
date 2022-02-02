@@ -15,6 +15,7 @@
 #include <gtsam/nonlinear/expressionTesting.h>
 #include <gtsam/nonlinear/factorTesting.h>
 #include <gtsam/slam/EssentialMatrixFactor.h>
+#include <gtsam/sfm/SfmData.h>
 #include <gtsam/slam/dataset.h>
 
 using namespace std::placeholders;
@@ -34,8 +35,7 @@ gtsam::Rot3 cRb = gtsam::Rot3(bX, bZ, -bY).inverse();
 namespace example1 {
 
 const string filename = findExampleDataFile("18pointExample1.txt");
-SfmData data;
-bool readOK = readBAL(filename, data);
+SfmData data = SfmData::FromBalFile(filename);
 Rot3 c1Rc2 = data.cameras[1].pose().rotation();
 Point3 c1Tc2 = data.cameras[1].pose().translation();
 // TODO: maybe default value not good; assert with 0th
@@ -53,8 +53,6 @@ Vector vB(size_t i) { return EssentialMatrix::Homogeneous(pB(i)); }
 
 //*************************************************************************
 TEST(EssentialMatrixFactor, testData) {
-  CHECK(readOK);
-
   // Check E matrix
   Matrix expected(3, 3);
   expected << 0, 0, 0, 0, 0, -0.1, 0.1, 0, 0;
@@ -538,8 +536,7 @@ TEST(EssentialMatrixFactor4, minimizationWithStrongCal3BundlerPrior) {
 namespace example2 {
 
 const string filename = findExampleDataFile("5pointExample2.txt");
-SfmData data;
-bool readOK = readBAL(filename, data);
+SfmData data = SfmData::FromBalFile(filename);
 Rot3 aRb = data.cameras[1].pose().rotation();
 Point3 aTb = data.cameras[1].pose().translation();
 EssentialMatrix trueE(aRb, Unit3(aTb));

@@ -18,6 +18,7 @@
 
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/sfm/SfmData.h>
+#include <gtsam/slam/GeneralSFMFactor.h>
 
 #include <fstream>
 #include <iostream>
@@ -28,7 +29,6 @@ using std::cout;
 using std::endl;
 
 using gtsam::symbol_shorthand::P;
-using gtsam::symbol_shorthand::X;
 
 /* ************************************************************************** */
 void SfmData::print(const std::string &s) const {
@@ -99,13 +99,15 @@ Pose3 gtsam2openGL(const Pose3 &PoseGTSAM) {
 }
 
 /* ************************************************************************** */
-bool readBundler(const std::string &filename, SfmData &data) {
+SfmData SfmData::FromBundlerFile(const std::string &filename) {
   // Load the data file
   std::ifstream is(filename.c_str(), std::ifstream::in);
   if (!is) {
-    cout << "Error in readBundler: can not find the file!!" << endl;
-    return false;
+    throw std::runtime_error(
+        "Error in FromBundlerFile: can not find the file!!");
   }
+
+  SfmData sfmData;
 
   // Ignore the first line
   char aux[500];
@@ -133,9 +135,8 @@ bool readBundler(const std::string &filename, SfmData &data) {
 
     // Check for all-zero R, in which case quit
     if (r11 == 0 && r12 == 0 && r13 == 0) {
-      cout << "Error in readBundler: zero rotation matrix for pose " << i
-           << endl;
-      return false;
+      throw std::runtime_error(
+          "Error in FromBundlerFile: zero rotation matrix");
     }
 
     // Get the translation vector
@@ -144,11 +145,11 @@ bool readBundler(const std::string &filename, SfmData &data) {
 
     Pose3 pose = openGL2gtsam(R, tx, ty, tz);
 
-    data.cameras.emplace_back(pose, K);
+    sfmData.cameras.emplace_back(pose, K);
   }
 
   // Get the information for the 3D points
-  data.tracks.reserve(nrPoints);
+  sfmData.tracks.reserve(nrPoints);
   for (size_t j = 0; j < nrPoints; j++) {
     SfmTrack track;
 
@@ -178,34 +179,34 @@ bool readBundler(const std::string &filename, SfmData &data) {
       track.siftIndices.emplace_back(cam_idx, point_idx);
     }
 
-    data.tracks.push_back(track);
+    sfmData.tracks.push_back(track);
   }
 
-  is.close();
-  return true;
+  return sfmData;
 }
 
 /* ************************************************************************** */
-bool readBAL(const std::string &filename, SfmData &data) {
+SfmData SfmData::FromBalFile(const std::string &filename) {
   // Load the data file
   std::ifstream is(filename.c_str(), std::ifstream::in);
   if (!is) {
-    cout << "Error in readBAL: can not find the file!!" << endl;
-    return false;
+    throw std::runtime_error("Error in FromBalFile: can not find the file!!");
   }
+
+  SfmData sfmData;
 
   // Get the number of camera poses and 3D points
   size_t nrPoses, nrPoints, nrObservations;
   is >> nrPoses >> nrPoints >> nrObservations;
 
-  data.tracks.resize(nrPoints);
+  sfmData.tracks.resize(nrPoints);
 
   // Get the information for the observations
   for (size_t k = 0; k < nrObservations; k++) {
     size_t i = 0, j = 0;
     float u, v;
     is >> i >> j >> u >> v;
-    data.tracks[j].measurements.emplace_back(i, Point2(u, -v));
+    sfmData.tracks[j].measurements.emplace_back(i, Point2(u, -v));
   }
 
   // Get the information for the camera poses
@@ -226,7 +227,7 @@ bool readBAL(const std::string &filename, SfmData &data) {
     is >> f >> k1 >> k2;
     Cal3Bundler K(f, k1, k2);
 
-    data.cameras.emplace_back(pose, K);
+    sfmData.cameras.emplace_back(pose, K);
   }
 
   // Get the information for the 3D points
@@ -234,26 +235,18 @@ bool readBAL(const std::string &filename, SfmData &data) {
     // Get the 3D position
     float x, y, z;
     is >> x >> y >> z;
-    SfmTrack &track = data.tracks[j];
+    SfmTrack &track = sfmData.tracks[j];
     track.p = Point3(x, y, z);
     track.r = 0.4f;
     track.g = 0.4f;
     track.b = 0.4f;
   }
 
-  is.close();
-  return true;
+  return sfmData;
 }
 
 /* ************************************************************************** */
-SfmData readBal(const std::string &filename) {
-  SfmData data;
-  readBAL(filename, data);
-  return data;
-}
-
-/* ************************************************************************** */
-bool writeBAL(const std::string &filename, SfmData &data) {
+bool writeBAL(const std::string &filename, const SfmData &data) {
   // Open the output file
   std::ofstream os;
   os.open(filename.c_str());
@@ -329,9 +322,32 @@ bool writeBAL(const std::string &filename, SfmData &data) {
   return true;
 }
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
+bool readBundler(const std::string &filename, SfmData &data) {
+  try {
+    data = SfmData::FromBundlerFile(filename);
+    return true;
+  } catch (const std::exception & /* e */) {
+    return false;
+  }
+}
+bool readBAL(const std::string &filename, SfmData &data) {
+  try {
+    data = SfmData::FromBalFile(filename);
+    return true;
+  } catch (const std::exception & /* e */) {
+    return false;
+  }
+}
+#endif
+
+SfmData readBal(const std::string &filename) {
+  return SfmData::FromBalFile(filename);
+}
+
 /* ************************************************************************** */
 bool writeBALfromValues(const std::string &filename, const SfmData &data,
-                        Values &values) {
+                        const Values &values) {
   using Camera = PinholeCamera<Cal3Bundler>;
   SfmData dataValues = data;
 
@@ -339,7 +355,7 @@ bool writeBALfromValues(const std::string &filename, const SfmData &data,
   size_t nrPoses = values.count<Pose3>();
   if (nrPoses == dataValues.cameras.size()) {  // we only estimated camera poses
     for (size_t i = 0; i < dataValues.cameras.size(); i++) {  // for each camera
-      Pose3 pose = values.at<Pose3>(X(i));
+      Pose3 pose = values.at<Pose3>(i);
       Cal3Bundler K = dataValues.cameras[i].calibration();
       Camera camera(pose, K);
       dataValues.cameras[i] = camera;
@@ -388,6 +404,41 @@ bool writeBALfromValues(const std::string &filename, const SfmData &data,
 }
 
 /* ************************************************************************** */
+NonlinearFactorGraph SfmData::generalSfmFactors(
+    const SharedNoiseModel &model) const {
+  using ProjectionFactor = GeneralSFMFactor<SfmCamera, Point3>;
+  NonlinearFactorGraph factors;
+
+  size_t j = 0;
+  for (const SfmTrack &track : tracks) {
+    for (const SfmMeasurement &m : track.measurements) {
+      size_t i = m.first;
+      Point2 uv = m.second;
+      factors.emplace_shared<ProjectionFactor>(uv, model, i, P(j));
+    }
+    j += 1;
+  }
+
+  return factors;
+}
+
+/* ************************************************************************** */
+NonlinearFactorGraph SfmData::sfmFactorGraph(
+    const SharedNoiseModel &model, boost::optional<size_t> fixedCamera,
+    boost::optional<size_t> fixedPoint) const {
+  using ProjectionFactor = GeneralSFMFactor<SfmCamera, Point3>;
+  NonlinearFactorGraph graph = generalSfmFactors(model);
+  using noiseModel::Constrained;
+  if (fixedCamera) {
+    graph.addPrior(*fixedCamera, cameras[0], Constrained::All(9));
+  }
+  if (fixedPoint) {
+    graph.addPrior(P(*fixedPoint), tracks[0].p, Constrained::All(3));
+  }
+  return graph;
+}
+
+/* ************************************************************************** */
 Values initialCamerasEstimate(const SfmData &db) {
   Values initial;
   size_t i = 0;  // NO POINTS:  j = 0;
@@ -399,7 +450,7 @@ Values initialCamerasEstimate(const SfmData &db) {
 Values initialCamerasAndPointsEstimate(const SfmData &db) {
   Values initial;
   size_t i = 0, j = 0;
-  for (const SfmCamera &camera : db.cameras) initial.insert((i++), camera);
+  for (const SfmCamera &camera : db.cameras) initial.insert(i++, camera);
   for (const SfmTrack &track : db.tracks) initial.insert(P(j++), track.p);
   return initial;
 }
