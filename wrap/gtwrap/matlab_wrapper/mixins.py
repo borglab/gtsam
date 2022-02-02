@@ -26,25 +26,30 @@ class CheckMixin:
                 return True
         return False
 
+    def can_be_pointer(self, arg_type: parser.Type):
+        """
+        Determine if the `arg_type` can have a pointer to it.
+
+        E.g. `Pose3` can have `Pose3*` but 
+        `Matrix` should not have `Matrix*`.
+        """
+        return (arg_type.typename.name not in self.not_ptr_type
+                and arg_type.typename.name not in self.ignore_namespace
+                and arg_type.typename.name != 'string')
+
     def is_shared_ptr(self, arg_type: parser.Type):
         """
         Determine if the `interface_parser.Type` should be treated as a
         shared pointer in the wrapper.
         """
-        return arg_type.is_shared_ptr or (
-            arg_type.typename.name not in self.not_ptr_type
-            and arg_type.typename.name not in self.ignore_namespace
-            and arg_type.typename.name != 'string')
+        return arg_type.is_shared_ptr
 
     def is_ptr(self, arg_type: parser.Type):
         """
         Determine if the `interface_parser.Type` should be treated as a
         raw pointer in the wrapper.
         """
-        return arg_type.is_ptr or (
-            arg_type.typename.name not in self.not_ptr_type
-            and arg_type.typename.name not in self.ignore_namespace
-            and arg_type.typename.name != 'string')
+        return arg_type.is_ptr
 
     def is_ref(self, arg_type: parser.Type):
         """
