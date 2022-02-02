@@ -70,7 +70,7 @@ virtual class DecisionTreeFactor : gtsam::DiscreteFactor {
   string dot(
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
       bool showZero = true) const;
-  std::vector<std::pair<DiscreteValues, double>> enumerate() const;
+  std::vector<std::pair<gtsam::DiscreteValues, double>> enumerate() const;
   string markdown(const gtsam::KeyFormatter& keyFormatter =
                       gtsam::DefaultKeyFormatter) const;
   string markdown(const gtsam::KeyFormatter& keyFormatter,
@@ -269,16 +269,16 @@ class DiscreteFactorGraph {
   gtsam::DiscreteLookupDAG maxProduct(gtsam::Ordering::OrderingType type);
   gtsam::DiscreteLookupDAG maxProduct(const gtsam::Ordering& ordering);
 
-  gtsam::DiscreteBayesNet eliminateSequential();
-  gtsam::DiscreteBayesNet eliminateSequential(gtsam::Ordering::OrderingType type);
-  gtsam::DiscreteBayesNet eliminateSequential(const gtsam::Ordering& ordering);
-  std::pair<gtsam::DiscreteBayesNet, gtsam::DiscreteFactorGraph>
+  gtsam::DiscreteBayesNet* eliminateSequential();
+  gtsam::DiscreteBayesNet* eliminateSequential(gtsam::Ordering::OrderingType type);
+  gtsam::DiscreteBayesNet* eliminateSequential(const gtsam::Ordering& ordering);
+  pair<gtsam::DiscreteBayesNet*, gtsam::DiscreteFactorGraph*>
       eliminatePartialSequential(const gtsam::Ordering& ordering);
 
-  gtsam::DiscreteBayesTree eliminateMultifrontal();
-  gtsam::DiscreteBayesTree eliminateMultifrontal(gtsam::Ordering::OrderingType type);  
-  gtsam::DiscreteBayesTree eliminateMultifrontal(const gtsam::Ordering& ordering);  
-  std::pair<gtsam::DiscreteBayesTree, gtsam::DiscreteFactorGraph>
+  gtsam::DiscreteBayesTree* eliminateMultifrontal();
+  gtsam::DiscreteBayesTree* eliminateMultifrontal(gtsam::Ordering::OrderingType type);  
+  gtsam::DiscreteBayesTree* eliminateMultifrontal(const gtsam::Ordering& ordering);  
+  pair<gtsam::DiscreteBayesTree*, gtsam::DiscreteFactorGraph*>
       eliminatePartialMultifrontal(const gtsam::Ordering& ordering);
 
   string dot(
