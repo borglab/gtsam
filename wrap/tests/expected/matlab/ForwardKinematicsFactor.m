@@ -11,9 +11,9 @@ classdef ForwardKinematicsFactor < gtsam.BetweenFactor<gtsam.Pose3>
         if nargin == 2
           my_ptr = varargin{2};
         else
-          my_ptr = inheritance_wrapper(36, varargin{2});
+          my_ptr = inheritance_wrapper(52, varargin{2});
         end
-        base_ptr = inheritance_wrapper(35, my_ptr);
+        base_ptr = inheritance_wrapper(51, my_ptr);
       else
         error('Arguments do not match any overload of ForwardKinematicsFactor constructor');
       end
@@ -22,7 +22,7 @@ classdef ForwardKinematicsFactor < gtsam.BetweenFactor<gtsam.Pose3>
     end
 
     function delete(obj)
-      inheritance_wrapper(37, obj.ptr_ForwardKinematicsFactor);
+      inheritance_wrapper(53, obj.ptr_ForwardKinematicsFactor);
     end
 
     function display(obj), obj.print(''); end
