@@ -1,33 +1,48 @@
-
-
 #include <gtsam/geometry/TrifocalTensor2.h>
 
 #include <iostream>
 
 namespace gtsam {
+
+std::vector<Point2> convertToProjective(const std::vector<Rot2>& rotations) {
+  std::vector<Point2> projectives;
+  projectives.reserve(rotations.size());
+  for (const Rot2& rotation : rotations) {
+    projectives.emplace_back(rotation.c() / rotation.s(), 1.0);
+  }
+  return projectives;
+}
+
 TrifocalTensor2::TrifocalTensor2(const std::vector<Rot2>& bearings_u,
                                  const std::vector<Rot2>& bearings_v,
-                                 const std::vector<Rot2>& bearings_w) {
-  int i = 0;
-  Matrix system_matrix(bearings_u.size(), 8);
-  for (int i = 0; i < bearings_u.size(); i++) {
-    system_matrix(i, 0) = bearings_u[i].c() * bearings_v[i].c() * bearings_w[i].c();
-    system_matrix(i, 1) = bearings_u[i].c() * bearings_v[i].c() * bearings_w[i].s();
-    system_matrix(i, 2) = bearings_u[i].c() * bearings_v[i].s() * bearings_w[i].c();
-    system_matrix(i, 3) = bearings_u[i].c() * bearings_v[i].s() * bearings_w[i].s();
-    system_matrix(i, 4) = bearings_u[i].s() * bearings_v[i].c() * bearings_w[i].c();
-    system_matrix(i, 5) = bearings_u[i].s() * bearings_v[i].c() * bearings_w[i].s();
-    system_matrix(i, 6) = bearings_u[i].s() * bearings_v[i].s() * bearings_w[i].c();
-    system_matrix(i, 7) = bearings_u[i].s() * bearings_v[i].s() * bearings_w[i].s();
-  }
+                                 const std::vector<Rot2>& bearings_w)
+    : TrifocalTensor2(convertToProjective(bearings_u),
+                      convertToProjective(bearings_v),
+                      convertToProjective(bearings_w)) {}
 
-  gtsam::Matrix U, S, V;
-  svd(system_matrix, U, S, V);
-  gtsam::Vector8 V_last_column = column(V, V.cols() - 1);
+TrifocalTensor2::TrifocalTensor2(const std::vector<Point2>& u,
+                                 const std::vector<Point2>& v,
+                                 const std::vector<Point2>& w) {
+  if (u.size() != v.size() || v.size() != w.size()) {
+    // throw error here
+  }
+  Matrix A(u.size(), 8);
+  for (int row = 0; row < u.size(); row++) {
+    for (int i = 0; i < 2; i++) {
+      for (int j = 0; j < 2; j++) {
+        for (int k = 0; k < 2; k++) {
+          A(row, 4 * i + 2 * j + k) = u[row](i) * v[row](j) * w[row](k);
+        }
+      }
+    }
+  }
+  Matrix U, V;
+  Vector S;
+  svd(A, U, S, V);
   for (int i = 0; i < 2; i++) {
     for (int j = 0; j < 2; j++) {
-      matrix0_(i, j) = V_last_column(2 * i + j);
-      matrix1_(i, j) = V_last_column(2 * i + j + 4);
+      matrix0_(i, j) = V(2 * i + j, V.cols() - 1);
+      matrix1_(i, j) = V(2 * i + j + 4, V.cols() - 1);
     }
   }
 }
@@ -37,8 +52,8 @@ Rot2 TrifocalTensor2::transform(const Rot2& vZp, const Rot2& wZp) const {
   Vector2 v_measurement, w_measurement;
   v_measurement << vZp.c(), vZp.s();
   w_measurement << wZp.c(), wZp.s();
-  uZp = Rot2.atan(trans(v_measurement) * this->matrix0_ * w_measurement,
-                  -trans(v_measurement) * this->matrix1_ * w_measurement);
-  return uZp;
+  return Rot2::atan2(-dot(matrix1_ * w_measurement, v_measurement),
+                     dot(matrix0_ * w_measurement, v_measurement));
 }
+
 }  // namespace gtsam
