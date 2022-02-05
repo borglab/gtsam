@@ -52,8 +52,8 @@ Rot2 TrifocalTensor2::transform(const Rot2& vZp, const Rot2& wZp) const {
   Vector2 v_measurement, w_measurement;
   v_measurement << vZp.c(), vZp.s();
   w_measurement << wZp.c(), wZp.s();
-  return Rot2::atan2(-dot(matrix1_ * w_measurement, v_measurement),
-                     dot(matrix0_ * w_measurement, v_measurement));
+  return Rot2::atan2(dot(matrix0_ * w_measurement, v_measurement),
+                     -dot(matrix1_ * w_measurement, v_measurement));
 }
 
 }  // namespace gtsam
