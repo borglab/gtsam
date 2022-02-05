@@ -2,6 +2,7 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/geometry/BearingRange.h>
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/TrifocalTensor2.h>
 
 #include <vector>
 
@@ -11,10 +12,7 @@ using namespace gtsam;
 
 typedef BearingRange<Pose2, Point2> BearingRange2D;
 
-GTSAM_CONCEPT_TESTABLE_INST(TrifocalTensor2D)
-GTSAM_CONCEPT_MANIFOLD_INST(TrifocalTensor2D)
-
-TEST(TrifocalTensor2D, get_estimate_measurement) {
+TEST(TrifocalTensor2, transform) {
   // 2D robots poses
   Pose2 u = Pose2(0, 0, 0);
   Pose2 v = Pose2(1.0, 2.0, 3.1415926 / 6);
@@ -46,11 +44,17 @@ TEST(TrifocalTensor2D, get_estimate_measurement) {
   }
 
   // calculate trifocal tensor
-  TrifocalTensor2D T(measurement_u, measurement_v, measurement_w);
+  TrifocalTensor2 T(measurement_u, measurement_v, measurement_w);
 
   // estimate measurement of a robot from the measurements of the other two
   // robots
-  vector<Rot2> exp_measurement_u;
-  exp_measurement_u = T.get_estimate_measurement(measurement_v, measurement_w);
-  EXPECT(assert_equal(exp_measurement_u, measurement_u, 1e-8));
+  for (int i = 0; i < measurement_u.size(); i++) {
+    const Rot2 actual_measurement_u = T.transform(measurement_v[i], measurement_w[i]);
+    EXPECT(assert_equal(actual_measurement_u, measurement_u[i], 1e-8));
+  }
+}
+
+int main() {
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
 }
