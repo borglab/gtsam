@@ -32,7 +32,7 @@ class TrifocalTensor2 {
 
   TrifocalTensor2(const std::vector<Rot2>& bearings_u,
                   const std::vector<Rot2>& bearings_v,
-                  const std::vector<Rot2>& bearings_w) const;
+                  const std::vector<Rot2>& bearings_w);
   
   Rot2 transform(const Rot2& vZp, const Rot2& wZp) const;
 
