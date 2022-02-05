@@ -32,13 +32,13 @@ TrifocalTensor2::TrifocalTensor2(const std::vector<Rot2>& bearings_u,
   }
 }
 
-Rot2 transform(const Rot2& vZp, const Rot2& wZp) const {
+Rot2 TrifocalTensor2::transform(const Rot2& vZp, const Rot2& wZp) const {
   Rot2 uZp;
   Vector2 v_measurement, w_measurement;
   v_measurement << vZp.c(), vZp.s();
   w_measurement << wZp.c(), wZp.s();
-  uZp = Rot2.atan(trans(v_measurement) * matrix0_ * w_measurement,
-                  -trans(v_measurement) * matrix1_ * w_measurement);
+  uZp = Rot2.atan(trans(v_measurement) * this->matrix0_ * w_measurement,
+                  -trans(v_measurement) * this->matrix1_ * w_measurement);
   return uZp;
 }
 }  // namespace gtsam
