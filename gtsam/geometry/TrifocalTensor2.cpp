@@ -9,16 +9,16 @@ TrifocalTensor2::TrifocalTensor2(const std::vector<Rot2>& bearings_u,
                                  const std::vector<Rot2>& bearings_v,
                                  const std::vector<Rot2>& bearings_w) {
   int i = 0;
-  gtsam::Matrix(bearing_u.size(), 8) system_matrix;
-  for (int i = 0; i < bearing_u.size(); i++) {
-    system_matrix(i, 0) = bearings_u.c() * bearings_v.c() * bearings_w.c();
-    system_matrix(i, 1) = bearings_u.c() * bearings_v.c() * bearings_w.s();
-    system_matrix(i, 2) = bearings_u.c() * bearings_v.s() * bearings_w.c();
-    system_matrix(i, 3) = bearings_u.c() * bearings_v.s() * bearings_w.s();
-    system_matrix(i, 4) = bearings_u.s() * bearings_v.c() * bearings_w.c();
-    system_matrix(i, 5) = bearings_u.s() * bearings_v.c() * bearings_w.s();
-    system_matrix(i, 6) = bearings_u.s() * bearings_v.s() * bearings_w.c();
-    system_matrix(i, 7) = bearings_u.s() * bearings_v.s() * bearings_w.s();
+  Matrix system_matrix(bearings_u.size(), 8);
+  for (int i = 0; i < bearings_u.size(); i++) {
+    system_matrix(i, 0) = bearings_u[i].c() * bearings_v[i].c() * bearings_w[i].c();
+    system_matrix(i, 1) = bearings_u[i].c() * bearings_v[i].c() * bearings_w[i].s();
+    system_matrix(i, 2) = bearings_u[i].c() * bearings_v[i].s() * bearings_w[i].c();
+    system_matrix(i, 3) = bearings_u[i].c() * bearings_v[i].s() * bearings_w[i].s();
+    system_matrix(i, 4) = bearings_u[i].s() * bearings_v[i].c() * bearings_w[i].c();
+    system_matrix(i, 5) = bearings_u[i].s() * bearings_v[i].c() * bearings_w[i].s();
+    system_matrix(i, 6) = bearings_u[i].s() * bearings_v[i].s() * bearings_w[i].c();
+    system_matrix(i, 7) = bearings_u[i].s() * bearings_v[i].s() * bearings_w[i].s();
   }
 
   gtsam::Matrix U, S, V;
@@ -32,13 +32,13 @@ TrifocalTensor2::TrifocalTensor2(const std::vector<Rot2>& bearings_u,
   }
 }
 
-Rot2 transform(const Rot2& vZp, const Rot2& wZp) const{
-    Rot2 uZp;
-    Vector2 v_measurement, w_measurement;
-    v_measurement << vZp.c(), vZp.s();
-    w_measurement << wZp.c(), wZp.s();
-    uZp = Rot2.atan(trans(v_measurement) * matrix0_ * w_measurement, - trans(v_measurement) * matrix1_ * w_measurement);
-    return uZp;
-
+Rot2 transform(const Rot2& vZp, const Rot2& wZp) const {
+  Rot2 uZp;
+  Vector2 v_measurement, w_measurement;
+  v_measurement << vZp.c(), vZp.s();
+  w_measurement << wZp.c(), wZp.s();
+  uZp = Rot2.atan(trans(v_measurement) * matrix0_ * w_measurement,
+                  -trans(v_measurement) * matrix1_ * w_measurement);
+  return uZp;
 }
 }  // namespace gtsam
