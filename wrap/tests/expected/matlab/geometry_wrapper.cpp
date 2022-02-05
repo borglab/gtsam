@@ -151,7 +151,7 @@ void gtsamPoint2_argChar_7(int nargout, mxArray *out[], int nargin, const mxArra
 {
   checkArguments("argChar",nargout,nargin-1,1);
   auto obj = unwrap_shared_ptr<gtsam::Point2>(in[0], "ptr_gtsamPoint2");
-  boost::shared_ptr<char> a = unwrap_shared_ptr< char >(in[1], "ptr_char");
+  char* a = unwrap_ptr< char >(in[1], "ptr_char");
   obj->argChar(a);
 }
 
@@ -175,7 +175,7 @@ void gtsamPoint2_argChar_10(int nargout, mxArray *out[], int nargin, const mxArr
 {
   checkArguments("argChar",nargout,nargin-1,1);
   auto obj = unwrap_shared_ptr<gtsam::Point2>(in[0], "ptr_gtsamPoint2");
-  boost::shared_ptr<char> a = unwrap_shared_ptr< char >(in[1], "ptr_char");
+  char* a = unwrap_ptr< char >(in[1], "ptr_char");
   obj->argChar(a);
 }
 
