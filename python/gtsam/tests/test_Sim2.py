@@ -65,7 +65,7 @@ class TestSim2(GtsamTestCase):
            world frame has poses rotated about z-axis (90 degree yaw)
            world and egovehicle frame translated by 11 meters w.r.t. each other
         """
-        Rz90 = Rot3.Rz(np.deg2rad(90))
+        Rz90 = Rot2.Rz(np.deg2rad(90))
 
         # Create source poses (three objects o1, o2, o3 living in the egovehicle "e" frame)
         # Suppose they are 3d cuboids detected by an onboard sensor in the egovehicle frame
@@ -107,10 +107,10 @@ class TestSim2(GtsamTestCase):
         R180 = Rot2.fromDegrees(180)
         R270 = Rot2.fromDegrees(270)
 
-        aTi0 = Pose3(R0, np.array([2, 3]))
-        aTi1 = Pose3(R90, np.array([12, 3]))
-        aTi2 = Pose3(R180, np.array([12, 13]))
-        aTi3 = Pose3(R270, np.array([2, 13]))
+        aTi0 = Pose2(R0, np.array([2, 3]))
+        aTi1 = Pose2(R90, np.array([12, 3]))
+        aTi2 = Pose2(R180, np.array([12, 13]))
+        aTi3 = Pose2(R270, np.array([2, 13]))
 
         aTi_list = [aTi0, aTi1, aTi2, aTi3]
 
@@ -144,7 +144,7 @@ class TestSim2(GtsamTestCase):
         """Ensure object equality works properly (are equal)."""
         bSa = Similarity2(R=Rot2(), t=np.array([1, 2]), s=3.0)
         bSa_ = Similarity2(R=Rot2(), t=np.array([1.0, 2.0]), s=3)
-        assert bSa == bSa_
+        self.gtsamAssertEquals(bSa, bSa_)
 
     def test_not_eq_translation(self) -> None:
         """Ensure object equality works properly (not equal translation)."""
