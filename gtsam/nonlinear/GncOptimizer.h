@@ -142,8 +142,9 @@ class GTSAM_EXPORT GncOptimizer {
    * provides an extra interface for the user to initialize the weightst
    * */
   void setWeights(const Vector w) {
-    if(w.size() != nfg_.size()){
-      throw std::runtime_error("GncOptimizer::setWeights: the number of specified weights"
+    if (size_t(w.size()) != nfg_.size()) {
+      throw std::runtime_error(
+          "GncOptimizer::setWeights: the number of specified weights"
           " does not match the size of the factor graph.");
     }
     weights_ = w;

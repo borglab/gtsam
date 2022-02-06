@@ -912,16 +912,20 @@ Vector6 testDerivAdjoint(const Vector6& xi, const Vector6& v) {
 }
 
 TEST( Pose3, adjoint) {
-  Vector expected = testDerivAdjoint(screwPose3::xi, screwPose3::xi);
+  Vector6 v = (Vector6() << 1, 2, 3, 4, 5, 6).finished();
+  Vector expected = testDerivAdjoint(screwPose3::xi, v);
 
-  Matrix actualH;
-  Vector actual = Pose3::adjoint(screwPose3::xi, screwPose3::xi, actualH);
+  Matrix actualH1, actualH2;
+  Vector actual = Pose3::adjoint(screwPose3::xi, v, actualH1, actualH2);
 
-  Matrix numericalH = numericalDerivative21<Vector6, Vector6, Vector6>(
-      testDerivAdjoint, screwPose3::xi, screwPose3::xi, 1e-5);
+  Matrix numericalH1 = numericalDerivative21<Vector6, Vector6, Vector6>(
+      testDerivAdjoint, screwPose3::xi, v, 1e-5);
+  Matrix numericalH2 = numericalDerivative22<Vector6, Vector6, Vector6>(
+      testDerivAdjoint, screwPose3::xi, v, 1e-5);
 
   EXPECT(assert_equal(expected,actual,1e-5));
-  EXPECT(assert_equal(numericalH,actualH,1e-5));
+  EXPECT(assert_equal(numericalH1,actualH1,1e-5));
+  EXPECT(assert_equal(numericalH2,actualH2,1e-5));
 }
 
 /* ************************************************************************* */
@@ -934,14 +938,17 @@ TEST( Pose3, adjointTranspose) {
   Vector v = (Vector(6) << 0.04, 0.05, 0.06, 4.0, 5.0, 6.0).finished();
   Vector expected = testDerivAdjointTranspose(xi, v);
 
-  Matrix actualH;
-  Vector actual = Pose3::adjointTranspose(xi, v, actualH);
+  Matrix actualH1, actualH2;
+  Vector actual = Pose3::adjointTranspose(xi, v, actualH1, actualH2);
 
-  Matrix numericalH = numericalDerivative21<Vector6, Vector6, Vector6>(
+  Matrix numericalH1 = numericalDerivative21<Vector6, Vector6, Vector6>(
+      testDerivAdjointTranspose, xi, v, 1e-5);
+  Matrix numericalH2 = numericalDerivative22<Vector6, Vector6, Vector6>(
       testDerivAdjointTranspose, xi, v, 1e-5);
 
   EXPECT(assert_equal(expected,actual,1e-15));
-  EXPECT(assert_equal(numericalH,actualH,1e-5));
+  EXPECT(assert_equal(numericalH1,actualH1,1e-5));
+  EXPECT(assert_equal(numericalH2,actualH2,1e-5));
 }
 
 /* ************************************************************************* */
