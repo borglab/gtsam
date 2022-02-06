@@ -193,7 +193,7 @@ Similarity2 Similarity2::Align(const Pose2Pairs& abPosePairs) {
     rotations.emplace_back(aRb);
     abPointPairs.emplace_back(aTi.translation(), bTi.translation());
   }
-  const Rot2 aRb_estimate;  // = FindKarcherMean<Rot2>(rotations);
+  const Rot2 aRb_estimate = FindKarcherMean<Rot2>(rotations);
 
   return internal::alignGivenR(abPointPairs, aRb_estimate);
 }
