@@ -37,28 +37,40 @@ namespace gtsam {
     return Base::equals(bn, tol);
   }
 
-  /* ************************************************************************* */
-  VectorValues GaussianBayesNet::optimize() const
-  {
-    VectorValues soln; // no missing variables -> just create an empty vector
-    return optimize(soln);
+  /* ************************************************************************ */
+  VectorValues GaussianBayesNet::optimize() const {
+    VectorValues solution;  // no missing variables -> create an empty vector
+    return optimize(solution);
   }
 
-  /* ************************************************************************* */
-  VectorValues GaussianBayesNet::optimize(
-      const VectorValues& solutionForMissing) const {
-    VectorValues soln(solutionForMissing); // possibly empty
+  VectorValues GaussianBayesNet::optimize(VectorValues solution) const {
     // (R*x)./sigmas = y by solving x=inv(R)*(y.*sigmas)
-    /** solve each node in turn in topological sort order (parents first)*/
-    for (auto cg: boost::adaptors::reverse(*this)) {
+    // solve each node in reverse topological sort order (parents first)
+    for (auto cg : boost::adaptors::reverse(*this)) {
       // i^th part of R*x=y, x=inv(R)*y
-      // (Rii*xi + R_i*x(i+1:))./si = yi <-> xi = inv(Rii)*(yi.*si - R_i*x(i+1:))
-      soln.insert(cg->solve(soln));
+      // (Rii*xi + R_i*x(i+1:))./si = yi =>
+      // xi = inv(Rii)*(yi.*si - R_i*x(i+1:))
+      solution.insert(cg->solve(solution));
     }
-    return soln;
+    return solution;
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
+  VectorValues GaussianBayesNet::sample() const {
+    VectorValues result;  // no missing variables -> create an empty vector
+    return sample(result);
+  }
+
+  VectorValues GaussianBayesNet::sample(VectorValues result) const {
+    // sample each node in reverse topological sort order (parents first)
+    for (auto cg : boost::adaptors::reverse(*this)) {
+      const VectorValues sampled = cg->sample(result);
+      result.insert(sampled);
+    }
+    return result;
+  }
+
+  /* ************************************************************************ */
   VectorValues GaussianBayesNet::optimizeGradientSearch() const
   {
     gttic(GaussianBayesTree_optimizeGradientSearch);
