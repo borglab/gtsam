@@ -88,11 +88,18 @@ namespace gtsam {
     /// @name Standard Interface
     /// @{
 
-    /// Solve the GaussianBayesNet, i.e. return \f$ x = R^{-1}*d \f$, by back-substitution
+    /// Solve the GaussianBayesNet, i.e. return \f$ x = R^{-1}*d \f$, by
+    /// back-substitution
     VectorValues optimize() const;
 
-    /// Version of optimize for incomplete BayesNet, needs solution for missing variables
-    VectorValues optimize(const VectorValues& solutionForMissing) const;
+    /// Version of optimize for incomplete BayesNet, given missing variables
+    VectorValues optimize(const VectorValues given) const;
+
+    /// Sample using ancestral sampling
+    VectorValues sample() const;
+
+    /// Sample from an incomplete BayesNet, given missing variables
+    VectorValues sample(VectorValues given) const;
 
     /**
      * Return ordering corresponding to a topological sort.
