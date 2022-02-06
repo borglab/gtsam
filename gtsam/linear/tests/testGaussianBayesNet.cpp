@@ -301,5 +301,31 @@ TEST(GaussianBayesNet, ComputeSteepestDescentPoint) {
 }
 
 /* ************************************************************************* */
-int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
+TEST(GaussianBayesNet, Dot) {
+  GaussianBayesNet fragment;
+  DotWriter writer;
+  writer.variablePositions.emplace(_x_, Vector2(10, 20));
+  writer.variablePositions.emplace(_y_, Vector2(50, 20));
+  
+  auto position = writer.variablePos(_x_);
+  CHECK(position);
+  EXPECT(assert_equal(Vector2(10, 20), *position, 1e-5));
+
+  string actual = noisyBayesNet.dot(DefaultKeyFormatter, writer);
+  EXPECT(actual ==
+    "digraph {\n"
+    "  size=\"5,5\";\n"
+    "\n"
+    "  var11[label=\"11\", pos=\"10,20!\"];\n"
+    "  var22[label=\"22\", pos=\"50,20!\"];\n"
+    "\n"
+    "  var22->var11\n"
+    "}");
+}
+
+/* ************************************************************************* */
+int main() {
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
+}
 /* ************************************************************************* */

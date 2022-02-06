@@ -27,9 +27,6 @@ class Point2 {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
   
 class Point2Pairs {
@@ -104,9 +101,6 @@ class StereoPoint2 {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 #include <gtsam/geometry/Point3.h>
@@ -131,9 +125,6 @@ class Point3 {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 class Point3Pairs {
@@ -191,9 +182,6 @@ class Rot2 {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 #include <gtsam/geometry/SO3.h>
@@ -372,9 +360,6 @@ class Rot3 {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 #include <gtsam/geometry/Pose2.h>
@@ -433,9 +418,6 @@ class Pose2 {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
   
 boost::optional<gtsam::Pose2> align(const gtsam::Point2Pairs& pairs);
@@ -473,6 +455,9 @@ class Pose3 {
   Vector logmap(const gtsam::Pose3& pose);
   Matrix AdjointMap() const;
   Vector Adjoint(Vector xi) const;
+  Vector AdjointTranspose(Vector xi) const;
+  static Matrix adjointMap(Vector xi);
+  static Vector adjoint(Vector xi, Vector y);
   static Matrix adjointMap_(Vector xi);
   static Vector adjoint_(Vector xi, Vector y);
   static Vector adjointTranspose(Vector xi, Vector y);
@@ -499,9 +484,6 @@ class Pose3 {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 class Pose3Pairs {
@@ -543,9 +525,6 @@ class Unit3 {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 
   // enabling function to compare objects
   bool equals(const gtsam::Unit3& expected, double tol) const;
@@ -608,9 +587,6 @@ class Cal3_S2 {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 #include <gtsam/geometry/Cal3DS2_Base.h>
@@ -639,9 +615,6 @@ virtual class Cal3DS2_Base {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 #include <gtsam/geometry/Cal3DS2.h>
@@ -665,9 +638,6 @@ virtual class Cal3DS2 : gtsam::Cal3DS2_Base {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 #include <gtsam/geometry/Cal3Unified.h>
@@ -702,9 +672,6 @@ virtual class Cal3Unified : gtsam::Cal3DS2_Base {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 #include <gtsam/geometry/Cal3Fisheye.h>
@@ -747,9 +714,6 @@ class Cal3Fisheye {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 #include <gtsam/geometry/Cal3_S2Stereo.h>
@@ -808,9 +772,6 @@ class Cal3Bundler {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 #include <gtsam/geometry/CalibratedCamera.h>
@@ -844,9 +805,6 @@ class CalibratedCamera {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 #include <gtsam/geometry/PinholeCamera.h>
@@ -886,9 +844,6 @@ class PinholeCamera {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
   
 #include <gtsam/geometry/Similarity2.h>
@@ -981,9 +936,6 @@ class StereoCamera {
 
   // enabling serialization functionality
   void serialize() const;
-
-  // enable pickling in python
-  void pickle() const;
 };
 
 #include <gtsam/geometry/triangulation.h>
@@ -993,27 +945,34 @@ class StereoCamera {
 gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
                                 gtsam::Cal3_S2* sharedCal,
                                 const gtsam::Point2Vector& measurements,
-                                double rank_tol, bool optimize);
+                                double rank_tol, bool optimize,
+                                const gtsam::SharedNoiseModel& model = nullptr);
 gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
                                 gtsam::Cal3DS2* sharedCal,
                                 const gtsam::Point2Vector& measurements,
-                                double rank_tol, bool optimize);
+                                double rank_tol, bool optimize,
+                                const gtsam::SharedNoiseModel& model = nullptr);
 gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
                                 gtsam::Cal3Bundler* sharedCal,
                                 const gtsam::Point2Vector& measurements,
-                                double rank_tol, bool optimize);
+                                double rank_tol, bool optimize,
+                                const gtsam::SharedNoiseModel& model = nullptr);
 gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3_S2& cameras,
                                 const gtsam::Point2Vector& measurements,
-                                double rank_tol, bool optimize);
+                                double rank_tol, bool optimize,
+                                const gtsam::SharedNoiseModel& model = nullptr);
 gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3Bundler& cameras,
                                 const gtsam::Point2Vector& measurements,
-                                double rank_tol, bool optimize);
+                                double rank_tol, bool optimize,
+                                const gtsam::SharedNoiseModel& model = nullptr);
 gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3Fisheye& cameras,
                                 const gtsam::Point2Vector& measurements,
-                                double rank_tol, bool optimize);
+                                double rank_tol, bool optimize,
+                                const gtsam::SharedNoiseModel& model = nullptr);
 gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3Unified& cameras,
                                 const gtsam::Point2Vector& measurements,
-                                double rank_tol, bool optimize);
+                                double rank_tol, bool optimize,
+                                const gtsam::SharedNoiseModel& model = nullptr);
 gtsam::Point3 triangulateNonlinear(const gtsam::Pose3Vector& poses,
                                    gtsam::Cal3_S2* sharedCal,
                                    const gtsam::Point2Vector& measurements,

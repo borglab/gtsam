@@ -29,9 +29,6 @@ protected:
   GaussianFactor::shared_ptr factor_;
   boost::optional<Values> linearizationPoint_;
 
-  /** Default constructor - necessary for serialization */
-  LinearContainerFactor() {}
-
   /** direct copy constructor */
   GTSAM_EXPORT LinearContainerFactor(const GaussianFactor::shared_ptr& factor, const boost::optional<Values>& linearizationPoint);
 
@@ -42,6 +39,9 @@ protected:
 public:
 
   typedef boost::shared_ptr<This> shared_ptr;
+
+  /** Default constructor - necessary for serialization */
+  LinearContainerFactor() {}
 
   /** Primary constructor: store a linear factor with optional linearization point */
   GTSAM_EXPORT LinearContainerFactor(const JacobianFactor& factor, const Values& linearizationPoint = Values());

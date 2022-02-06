@@ -38,7 +38,7 @@ class DSFMap {
   DSFMap();
   KEY find(const KEY& key) const;
   void merge(const KEY& x, const KEY& y);
-  std::map<KEY, Set> sets();
+  std::map<KEY, This::Set> sets();
 };
 
 class IndexPairSet {

@@ -33,12 +33,15 @@ namespace gtsam {
  */
 
 /**
- * This factor optimizes the pose of the body as well as the extrinsic camera calibration (pose of camera wrt body).
- * Each camera may have its own extrinsic calibration or the same calibration can be shared by multiple cameras.
- * This factor requires that values contain the involved poses and extrinsics (both are Pose3 variables).
+ * This factor optimizes the pose of the body as well as the extrinsic camera
+ * calibration (pose of camera wrt body). Each camera may have its own extrinsic
+ * calibration or the same calibration can be shared by multiple cameras. This
+ * factor requires that values contain the involved poses and extrinsics (both
+ * are Pose3 variables).
  * @addtogroup SLAM
  */
-class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
+class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionFactorPP
+    : public SmartStereoProjectionFactor {
  protected:
   /// shared pointer to calibration object (one for each camera)
   std::vector<boost::shared_ptr<Cal3_S2Stereo>> K_all_;
@@ -292,7 +295,6 @@ class SmartStereoProjectionFactorPP : public SmartStereoProjectionFactor {
     ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar & BOOST_SERIALIZATION_NVP(K_all_);
   }
-
 };
 // end of class declaration
 

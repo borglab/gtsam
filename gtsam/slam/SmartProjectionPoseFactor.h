@@ -41,11 +41,10 @@ namespace gtsam {
  * If the calibration should be optimized, as well, use SmartProjectionFactor instead!
  * @addtogroup SLAM
  */
-template<class CALIBRATION>
-class SmartProjectionPoseFactor: public SmartProjectionFactor<
-    PinholePose<CALIBRATION> > {
-
-private:
+template <class CALIBRATION>
+class GTSAM_EXPORT SmartProjectionPoseFactor
+    : public SmartProjectionFactor<PinholePose<CALIBRATION> > {
+ private:
   typedef PinholePose<CALIBRATION> Camera;
   typedef SmartProjectionFactor<Camera> Base;
   typedef SmartProjectionPoseFactor<CALIBRATION> This;
@@ -156,7 +155,6 @@ public:
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar & BOOST_SERIALIZATION_NVP(K_);
   }
-
 };
 // end of class declaration
 
