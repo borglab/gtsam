@@ -18,6 +18,7 @@
 #include <gtsam/linear/linearExceptions.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/Sampler.h>
 
 #include <boost/format.hpp>
 #ifdef __GNUC__
@@ -220,7 +221,35 @@ namespace gtsam {
     }
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
+  VectorValues GaussianConditional::sample(
+      const VectorValues& parentsValues) const {
+    if (nrFrontals() != 1) {
+      throw std::invalid_argument(
+          "GaussianConditional::sample can only be called on single variable "
+          "conditionals");
+    }
+    if (!model_) {
+      throw std::invalid_argument(
+          "GaussianConditional::sample can only be called if a diagonal noise "
+          "model was specified at construction.");
+    }
+    VectorValues solution = solve(parentsValues);
+    Sampler sampler(model_);
+    Key key = firstFrontalKey();
+    solution[key] += sampler.sample();
+    return solution;
+  }
+
+  VectorValues GaussianConditional::sample() const {
+    if (nrParents() != 0)
+      throw std::invalid_argument(
+          "sample() can only be invoked on no-parent prior");
+    VectorValues values;
+    return sample(values);
+  }
+
+  /* ************************************************************************ */
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
   void GTSAM_DEPRECATED
   GaussianConditional::scaleFrontalsBySigma(VectorValues& gy) const {

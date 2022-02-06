@@ -44,6 +44,9 @@ namespace gtsam {
     typedef JacobianFactor BaseFactor; ///< Typedef to our factor base class
     typedef Conditional<BaseFactor, This> BaseConditional; ///< Typedef to our conditional base class
 
+    /// @name Constructors
+    /// @{
+
     /** default constructor needed for serialization */
     GaussianConditional() {}
 
@@ -99,12 +102,20 @@ namespace gtsam {
     template<typename ITERATOR>
     static shared_ptr Combine(ITERATOR firstConditional, ITERATOR lastConditional);
 
+    /// @}
+    /// @name Testable
+    /// @{
+
     /** print */
     void print(const std::string& = "GaussianConditional",
       const KeyFormatter& formatter = DefaultKeyFormatter) const override;
 
     /** equals function */
     bool equals(const GaussianFactor&cg, double tol = 1e-9) const override;
+
+    /// @}
+    /// @name Standard Interface
+    /// @{
 
     /** Return a view of the upper-triangular R block of the conditional */
     constABlock R() const { return Ab_.range(0, nrFrontals()); }
@@ -138,10 +149,25 @@ namespace gtsam {
     /** Performs transpose backsubstition in place on values */
     void solveTransposeInPlace(VectorValues& gy) const;
 
+    /**
+     * sample
+     * @param parentsValues Known values of the parents
+     * @return sample from conditional
+     */
+    VectorValues sample(const VectorValues& parentsValues) const;
+
+    /// Zero parent version.
+    VectorValues sample() const;
+
+    /// @}
+
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
+    /// @name Deprecated
+    /// @{
     /** Scale the values in \c gy according to the sigmas for the frontal variables in this
      *  conditional. */
     void GTSAM_DEPRECATED scaleFrontalsBySigma(VectorValues& gy) const;
+    /// @}
 #endif
 
    private:
