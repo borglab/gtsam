@@ -180,15 +180,15 @@ public:
   /// @{
 
   /// Calculate 4*4 matrix group equivalent
-  GTSAM_EXPORT const Matrix4 matrix() const;
+  GTSAM_EXPORT Matrix4 matrix() const;
 
   /// Return a GTSAM rotation
-  const Rot3& rotation() const {
+  Rot3 rotation() const {
     return R_;
   }
 
   /// Return a GTSAM translation
-  const Point3& translation() const {
+  Point3 translation() const {
     return t_;
   }
 
