@@ -282,7 +282,7 @@ public:
  * which are objects in non-linear manifolds (Lie groups).
  */
 template<class VALUE>
-class NoiseModelFactor1: public NoiseModelFactor {
+class GTSAM_EXPORT NoiseModelFactor1: public NoiseModelFactor {
 
 public:
 
@@ -366,7 +366,7 @@ private:
 /** A convenient base class for creating your own NoiseModelFactor with 2
  * variables.  To derive from this class, implement evaluateError(). */
 template<class VALUE1, class VALUE2>
-class NoiseModelFactor2: public NoiseModelFactor {
+class GTSAM_EXPORT NoiseModelFactor2: public NoiseModelFactor {
 
 public:
 
@@ -441,7 +441,7 @@ private:
 /** A convenient base class for creating your own NoiseModelFactor with 3
  * variables.  To derive from this class, implement evaluateError(). */
 template<class VALUE1, class VALUE2, class VALUE3>
-class NoiseModelFactor3: public NoiseModelFactor {
+class GTSAM_EXPORT NoiseModelFactor3: public NoiseModelFactor {
 
 public:
 
@@ -518,7 +518,7 @@ private:
 /** A convenient base class for creating your own NoiseModelFactor with 4
  * variables.  To derive from this class, implement evaluateError(). */
 template<class VALUE1, class VALUE2, class VALUE3, class VALUE4>
-class NoiseModelFactor4: public NoiseModelFactor {
+class GTSAM_EXPORT NoiseModelFactor4: public NoiseModelFactor {
 
 public:
 
@@ -599,7 +599,7 @@ private:
 /** A convenient base class for creating your own NoiseModelFactor with 5
  * variables.  To derive from this class, implement evaluateError(). */
 template<class VALUE1, class VALUE2, class VALUE3, class VALUE4, class VALUE5>
-class NoiseModelFactor5: public NoiseModelFactor {
+class GTSAM_EXPORT NoiseModelFactor5: public NoiseModelFactor {
 
 public:
 
@@ -684,7 +684,7 @@ private:
 /** A convenient base class for creating your own NoiseModelFactor with 6
  * variables.  To derive from this class, implement evaluateError(). */
 template<class VALUE1, class VALUE2, class VALUE3, class VALUE4, class VALUE5, class VALUE6>
-class NoiseModelFactor6: public NoiseModelFactor {
+class GTSAM_EXPORT NoiseModelFactor6: public NoiseModelFactor {
 
 public:
 

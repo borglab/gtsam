@@ -205,23 +205,5 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  void GaussianBayesNet::saveGraph(const std::string& s,
-                                   const KeyFormatter& keyFormatter) const {
-    std::ofstream of(s.c_str());
-    of << "digraph G{\n";
-
-    for (auto conditional : boost::adaptors::reverse(*this)) {
-      typename GaussianConditional::Frontals frontals = conditional->frontals();
-      Key me = frontals.front();
-      typename GaussianConditional::Parents parents = conditional->parents();
-      for (Key p : parents)
-        of << keyFormatter(p) << "->" << keyFormatter(me) << std::endl;
-    }
-
-    of << "}";
-    of.close();
-  }
-
-  /* ************************************************************************* */
 
 } // namespace gtsam

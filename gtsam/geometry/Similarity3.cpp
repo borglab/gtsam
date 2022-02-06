@@ -40,8 +40,10 @@ static Point3Pairs subtractCentroids(const Point3Pairs &abPointPairs,
 }
 
 /// Form inner products x and y and calculate scale.
-static const double calculateScale(const Point3Pairs &d_abPointPairs,
-                                   const Rot3 &aRb) {
+// We force the scale to be a non-negative quantity
+// (see Section 10.1 of https://ethaneade.com/lie_groups.pdf)
+static double calculateScale(const Point3Pairs &d_abPointPairs,
+                             const Rot3 &aRb) {
   double x = 0, y = 0;
   Point3 da, db;
   for (const Point3Pair& d_abPair : d_abPointPairs) {
@@ -50,7 +52,7 @@ static const double calculateScale(const Point3Pairs &d_abPointPairs,
     y += da.transpose() * da_prime;
     x += da_prime.transpose() * da_prime;
   }
-  const double s = y / x;
+  const double s = std::fabs(y / x);
   return s;
 }
 
