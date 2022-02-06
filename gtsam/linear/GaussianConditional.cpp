@@ -63,10 +63,11 @@ namespace gtsam {
   GaussianConditional GaussianConditional::FromMeanAndStddev(
       Key key, const Matrix& A, Key parent, const Vector& b, double sigma) {
     // |Rx + Sy - d| = |x-(Ay + b)|/sigma
-    const Matrix R = Matrix::Identity(b.size(), b.size()) / sigma;
-    const Matrix S = -A / sigma;
-    const Vector d = b / sigma;
-    return GaussianConditional(key, d, R, parent, S);
+    const Matrix R = Matrix::Identity(b.size(), b.size());
+    const Matrix S = -A;
+    const Vector d = b;
+    return GaussianConditional(key, d, R, parent, S,
+                               noiseModel::Isotropic::Sigma(b.size(), sigma));
   }
 
   /* ************************************************************************ */
@@ -74,11 +75,12 @@ namespace gtsam {
       Key key, const Matrix& A1, Key parent1, const Matrix& A2, Key parent2,
       const Vector& b, double sigma) {
     // |Rx + Sy + Tz - d| = |x-(A1 y + A2 z + b)|/sigma
-    const Matrix R = Matrix::Identity(b.size(), b.size()) / sigma;
-    const Matrix S = -A1 / sigma;
-    const Matrix T = -A2 / sigma;
-    const Vector d = b / sigma;
-    return GaussianConditional(key, d, R, parent1, S, parent2, T);
+    const Matrix R = Matrix::Identity(b.size(), b.size());
+    const Matrix S = -A1;
+    const Matrix T = -A2;
+    const Vector d = b;
+    return GaussianConditional(key, d, R, parent1, S, parent2, T,
+                               noiseModel::Isotropic::Sigma(b.size(), sigma));
   }
 
   /* ************************************************************************ */

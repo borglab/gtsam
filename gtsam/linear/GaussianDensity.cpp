@@ -26,8 +26,9 @@ namespace gtsam {
   GaussianDensity GaussianDensity::FromMeanAndStddev(Key key,
                                                      const Vector& mean,
                                                      double sigma) {
-    return GaussianDensity(key, mean / sigma,
-                           Matrix::Identity(mean.size(), mean.size()) / sigma);
+    return GaussianDensity(key, mean,
+                           Matrix::Identity(mean.size(), mean.size()),
+                           noiseModel::Isotropic::Sigma(mean.size(), sigma));
   }
 
   /* ************************************************************************* */
