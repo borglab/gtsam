@@ -23,9 +23,11 @@ using namespace std;
 namespace gtsam {
 
   /* ************************************************************************* */
-  GaussianDensity GaussianDensity::FromMeanAndStddev(Key key, const Vector& mean, const double& sigma)
-  {
-    return GaussianDensity(key, mean / sigma, Matrix::Identity(mean.size(), mean.size()) / sigma);
+  GaussianDensity GaussianDensity::FromMeanAndStddev(Key key,
+                                                     const Vector& mean,
+                                                     double sigma) {
+    return GaussianDensity(key, mean / sigma,
+                           Matrix::Identity(mean.size(), mean.size()) / sigma);
   }
 
   /* ************************************************************************* */
@@ -35,8 +37,8 @@ namespace gtsam {
     for(const_iterator it = beginFrontals(); it != endFrontals(); ++it)
       cout << (boost::format("[%1%]")%(formatter(*it))).str() << " ";
     cout << endl;
-    gtsam::print(Matrix(R()), "R: ");
-    gtsam::print(Vector(d()), "d: ");
+    gtsam::print(mean(), "mean: ");
+    gtsam::print(covariance(), "covariance: ");
     if(model_)
       model_->print("Noise model: ");
   }

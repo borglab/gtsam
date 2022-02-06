@@ -490,14 +490,19 @@ virtual class GaussianConditional : gtsam::JacobianFactor {
 
 #include <gtsam/linear/GaussianDensity.h>
 virtual class GaussianDensity : gtsam::GaussianConditional {
-    //Constructors
-  GaussianDensity(size_t key, Vector d, Matrix R, const gtsam::noiseModel::Diagonal* sigmas);
+  // Constructors
+  GaussianDensity(gtsam::Key key, Vector d, Matrix R,
+                  const gtsam::noiseModel::Diagonal* sigmas);
 
-  //Standard Interface
+  static gtsam::GaussianDensity FromMeanAndStddev(gtsam::Key key,
+                                                  const Vector& mean,
+                                                  double sigma);
+
+  // Standard Interface
   void print(string s = "GaussianDensity",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
-  bool equals(const gtsam::GaussianDensity &cg, double tol) const;
+  bool equals(const gtsam::GaussianDensity& cg, double tol) const;
   Vector mean() const;
   Matrix covariance() const;
 };
