@@ -47,6 +47,10 @@ class TrifocalTensor2 {
 
   // Same as above, but using projective measurements.
   Point2 transform(const Point2& vZp, const Point2& wZp) const;
+
+  // Get trifocal tensor matrix from class
+  Matrix2 mat0() const;
+  Matrix2 mat1() const;
 };
 
 }  // namespace gtsam
