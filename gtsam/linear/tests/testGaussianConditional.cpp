@@ -23,6 +23,7 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/linear/GaussianDensity.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 
 #include <boost/assign/std/list.hpp>
@@ -337,6 +338,28 @@ TEST(GaussianConditional, FromMeanAndStddev) {
   Vector2 e2 = (x0 - (A1 * x1 + A2 * x2 + b)) / sigma;
   double expected2 = 0.5 * e2.dot(e2);
   EXPECT_DOUBLES_EQUAL(expected2, conditional2.error(values), 1e-9);
+}
+
+/* ************************************************************************* */
+// Test sampling
+TEST(GaussianConditional, sample) {
+  Matrix A1 = (Matrix(2, 2) << 1., 2., 3., 4.).finished();
+  const Vector2 b(20, 40), x1(3, 4);
+  const double sigma = 0.01;
+
+  auto density = GaussianDensity::FromMeanAndStddev(X(0), b, sigma);
+  auto actual1 = density.sample();
+  EXPECT_LONGS_EQUAL(1, actual1.size());
+  EXPECT(assert_equal(b, actual1[X(0)], 50 * sigma));
+
+  VectorValues values;
+  values.insert(X(1), x1);
+
+  auto conditional =
+      GaussianConditional::FromMeanAndStddev(X(0), A1, X(1), b, sigma);
+  auto actual2 = conditional.sample(values);
+  EXPECT_LONGS_EQUAL(1, actual2.size());
+  EXPECT(assert_equal(A1 * x1 + b, actual2[X(0)], 50 * sigma));
 }
 
 /* ************************************************************************* */
