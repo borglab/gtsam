@@ -468,6 +468,20 @@ virtual class GaussianConditional : gtsam::JacobianFactor {
   GaussianConditional(size_t key, Vector d, Matrix R, size_t name1, Matrix S,
                       size_t name2, Matrix T);
 
+  // Named constructors
+  static gtsam::GaussianConditional FromMeanAndStddev(gtsam::Key key, 
+                                                      const Matrix& A,
+                                                      gtsam::Key parent,
+                                                      const Vector& b,
+                                                      double sigma);
+
+  static gtsam::GaussianConditional FromMeanAndStddev(gtsam::Key key,
+                                                      const Matrix& A1,
+                                                      gtsam::Key parent1, 
+                                                      const Matrix& A2,
+                                                      gtsam::Key parent2, 
+                                                      const Vector& b,
+                                                      double sigma);
   // Standard Interface
   void print(string s = "GaussianConditional",
              const gtsam::KeyFormatter& keyFormatter =

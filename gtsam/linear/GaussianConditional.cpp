@@ -43,19 +43,45 @@ namespace gtsam {
     Key key, const Vector& d, const Matrix& R, const SharedDiagonal& sigmas) :
   BaseFactor(key, R, d, sigmas), BaseConditional(1) {}
 
-  /* ************************************************************************* */
-  GaussianConditional::GaussianConditional(
-    Key key, const Vector& d, const Matrix& R,
-    Key name1, const Matrix& S, const SharedDiagonal& sigmas) :
-  BaseFactor(key, R, name1, S, d, sigmas), BaseConditional(1) {}
+  /* ************************************************************************ */
+  GaussianConditional::GaussianConditional(Key key, const Vector& d,
+                                           const Matrix& R, Key parent1,
+                                           const Matrix& S,
+                                           const SharedDiagonal& sigmas)
+      : BaseFactor(key, R, parent1, S, d, sigmas), BaseConditional(1) {}
 
-  /* ************************************************************************* */
-  GaussianConditional::GaussianConditional(
-    Key key, const Vector& d, const Matrix& R,
-    Key name1, const Matrix& S, Key name2, const Matrix& T, const SharedDiagonal& sigmas) :
-  BaseFactor(key, R, name1, S, name2, T, d, sigmas), BaseConditional(1) {}
+  /* ************************************************************************ */
+  GaussianConditional::GaussianConditional(Key key, const Vector& d,
+                                           const Matrix& R, Key parent1,
+                                           const Matrix& S, Key parent2,
+                                           const Matrix& T,
+                                           const SharedDiagonal& sigmas)
+      : BaseFactor(key, R, parent1, S, parent2, T, d, sigmas),
+        BaseConditional(1) {}
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
+  GaussianConditional GaussianConditional::FromMeanAndStddev(
+      Key key, const Matrix& A, Key parent, const Vector& b, double sigma) {
+    // |Rx + Sy - d| = |x-(Ay + b)|/sigma
+    const Matrix R = Matrix::Identity(b.size(), b.size()) / sigma;
+    const Matrix S = -A / sigma;
+    const Vector d = b / sigma;
+    return GaussianConditional(key, d, R, parent, S);
+  }
+
+  /* ************************************************************************ */
+  GaussianConditional GaussianConditional::FromMeanAndStddev(
+      Key key, const Matrix& A1, Key parent1, const Matrix& A2, Key parent2,
+      const Vector& b, double sigma) {
+    // |Rx + Sy + Tz - d| = |x-(A1 y + A2 z + b)|/sigma
+    const Matrix R = Matrix::Identity(b.size(), b.size()) / sigma;
+    const Matrix S = -A1 / sigma;
+    const Matrix T = -A2 / sigma;
+    const Vector d = b / sigma;
+    return GaussianConditional(key, d, R, parent1, S, parent2, T);
+  }
+
+  /* ************************************************************************ */
   void GaussianConditional::print(const string &s, const KeyFormatter& formatter) const {
     cout << s << "  Conditional density ";
     for (const_iterator it = beginFrontals(); it != endFrontals(); ++it) {

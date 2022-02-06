@@ -29,9 +29,10 @@
 namespace gtsam {
 
   /**
-  * A conditional Gaussian functions as the node in a Bayes network
+  * A GaussianConditional functions as the node in a Bayes network.
   * It has a set of parents y,z, etc. and implements a probability density on x.
   * The negative log-probability is given by \f$ \frac{1}{2} |Rx - (d - Sy - Tz - ...)|^2 \f$
+  * @addtogroup linear
   */
   class GTSAM_EXPORT GaussianConditional :
     public JacobianFactor,
@@ -51,13 +52,14 @@ namespace gtsam {
       const SharedDiagonal& sigmas = SharedDiagonal());
 
     /** constructor with only one parent |Rx+Sy-d| */
-    GaussianConditional(Key key, const Vector& d, const Matrix& R,
-      Key name1, const Matrix& S, const SharedDiagonal& sigmas = SharedDiagonal());
+    GaussianConditional(Key key, const Vector& d, const Matrix& R, Key parent1,
+                        const Matrix& S,
+                        const SharedDiagonal& sigmas = SharedDiagonal());
 
     /** constructor with two parents |Rx+Sy+Tz-d| */
-    GaussianConditional(Key key, const Vector& d, const Matrix& R,
-      Key name1, const Matrix& S, Key name2, const Matrix& T,
-      const SharedDiagonal& sigmas = SharedDiagonal());
+    GaussianConditional(Key key, const Vector& d, const Matrix& R, Key parent1,
+                        const Matrix& S, Key parent2, const Matrix& T,
+                        const SharedDiagonal& sigmas = SharedDiagonal());
 
     /** Constructor with arbitrary number of frontals and parents.
     *   @tparam TERMS A container whose value type is std::pair<Key, Matrix>, specifying the
@@ -75,6 +77,17 @@ namespace gtsam {
     GaussianConditional(
       const KEYS& keys, size_t nrFrontals, const VerticalBlockMatrix& augmentedMatrix,
       const SharedDiagonal& sigmas = SharedDiagonal());
+
+    /// Construct from mean A1 p1 + b and standard deviation.
+    static GaussianConditional FromMeanAndStddev(Key key, const Matrix& A,
+                                                 Key parent, const Vector& b,
+                                                 double sigma);
+
+    /// Construct from mean A1 p1 + A2 p2 + b and standard deviation.
+    static GaussianConditional FromMeanAndStddev(Key key,  //
+                                                 const Matrix& A1, Key parent1,
+                                                 const Matrix& A2, Key parent2,
+                                                 const Vector& b, double sigma);
 
     /** Combine several GaussianConditional into a single dense GC.  The conditionals enumerated by
     *   \c first and \c last must be in increasing order, meaning that the parents of any
