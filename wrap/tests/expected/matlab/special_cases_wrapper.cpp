@@ -84,7 +84,7 @@ void _special_cases_RTTIRegister() {
     mxDestroyArray(registry);
 
     mxArray *newAlreadyCreated = mxCreateNumericMatrix(0, 0, mxINT8_CLASS, mxREAL);
-    if(mexPutVariable("global", "gtsam_geometry_rttiRegistry_created", newAlreadyCreated) != 0) {
+    if(mexPutVariable("global", "gtsam_special_cases_rttiRegistry_created", newAlreadyCreated) != 0) {
       mexErrMsgTxt("gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly");
     }
     mxDestroyArray(newAlreadyCreated);
@@ -108,9 +108,9 @@ void gtsamNonlinearFactorGraph_deconstructor_1(int nargout, mxArray *out[], int 
   Collector_gtsamNonlinearFactorGraph::iterator item;
   item = collector_gtsamNonlinearFactorGraph.find(self);
   if(item != collector_gtsamNonlinearFactorGraph.end()) {
-    delete self;
     collector_gtsamNonlinearFactorGraph.erase(item);
   }
+  delete self;
 }
 
 void gtsamNonlinearFactorGraph_addPrior_2(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -140,9 +140,9 @@ void gtsamSfmTrack_deconstructor_4(int nargout, mxArray *out[], int nargin, cons
   Collector_gtsamSfmTrack::iterator item;
   item = collector_gtsamSfmTrack.find(self);
   if(item != collector_gtsamSfmTrack.end()) {
-    delete self;
     collector_gtsamSfmTrack.erase(item);
   }
+  delete self;
 }
 
 void gtsamPinholeCameraCal3Bundler_collectorInsertAndMakeBase_5(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -162,9 +162,9 @@ void gtsamPinholeCameraCal3Bundler_deconstructor_6(int nargout, mxArray *out[], 
   Collector_gtsamPinholeCameraCal3Bundler::iterator item;
   item = collector_gtsamPinholeCameraCal3Bundler.find(self);
   if(item != collector_gtsamPinholeCameraCal3Bundler.end()) {
-    delete self;
     collector_gtsamPinholeCameraCal3Bundler.erase(item);
   }
+  delete self;
 }
 
 void gtsamGeneralSFMFactorCal3Bundler_collectorInsertAndMakeBase_7(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -184,9 +184,9 @@ void gtsamGeneralSFMFactorCal3Bundler_deconstructor_8(int nargout, mxArray *out[
   Collector_gtsamGeneralSFMFactorCal3Bundler::iterator item;
   item = collector_gtsamGeneralSFMFactorCal3Bundler.find(self);
   if(item != collector_gtsamGeneralSFMFactorCal3Bundler.end()) {
-    delete self;
     collector_gtsamGeneralSFMFactorCal3Bundler.erase(item);
   }
+  delete self;
 }
 
 

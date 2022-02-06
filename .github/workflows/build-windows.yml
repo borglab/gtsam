@@ -26,7 +26,11 @@ jobs:
             windows-2019-cl,
           ]
 
-        build_type: [Debug, Release]
+        build_type: [
+            Debug,
+            #TODO(Varun) The release build takes over 2.5 hours, need to figure out why.
+            # Release
+          ]
         build_unstable: [ON]
         include:
           #TODO This build fails, need to understand why.
@@ -90,13 +94,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Build
+      - name: Configuration
         run: |
           cmake -E remove_directory build
           cmake -B build -S . -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DBOOST_ROOT="${env:BOOST_ROOT}" -DBOOST_INCLUDEDIR="${env:BOOST_ROOT}\boost\include" -DBOOST_LIBRARYDIR="${env:BOOST_ROOT}\lib"
-          cmake --build build --config ${{ matrix.build_type }} --target gtsam
-          cmake --build build --config ${{ matrix.build_type }} --target gtsam_unstable
-          cmake --build build --config ${{ matrix.build_type }} --target wrap
-          cmake --build build --config ${{ matrix.build_type }} --target check.base
-          cmake --build build --config ${{ matrix.build_type }} --target check.base_unstable
-          cmake --build build --config ${{ matrix.build_type }} --target check.linear
+
+      - name: Build
+        run: |
+          # Since Visual Studio is a multi-generator, we need to use --config
+          # https://stackoverflow.com/a/24470998/1236990
+          cmake --build build -j 4 --config ${{ matrix.build_type }} --target gtsam
+          cmake --build build -j 4 --config ${{ matrix.build_type }} --target gtsam_unstable
+          cmake --build build -j 4 --config ${{ matrix.build_type }} --target wrap
+          cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.base
+          cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.base_unstable
+          cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.linear

@@ -477,6 +477,14 @@ boost::shared_ptr<Class> unwrap_shared_ptr(const mxArray* obj, const string& pro
   return *spp;
 }
 
+template <typename Class>
+Class* unwrap_ptr(const mxArray* obj, const string& propertyName) {
+
+  mxArray* mxh = mxGetProperty(obj,0, propertyName.c_str());
+  Class* x = reinterpret_cast<Class*> (mxGetData(mxh));
+  return x;
+}
+
 //// throw an error if unwrap_shared_ptr is attempted for an Eigen Vector
 //template <>
 //Vector unwrap_shared_ptr<Vector>(const mxArray* obj, const string& propertyName) {
