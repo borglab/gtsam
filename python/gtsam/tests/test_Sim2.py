@@ -27,10 +27,10 @@ class TestSim2(GtsamTestCase):
         Scenario:
            3 object poses
            same scale (no gauge ambiguity)
-           world frame has poses rotated about x-axis (90 degree roll)
+           world frame has poses rotated about 180 degrees.
            world and egovehicle frame translated by 15 meters w.r.t. each other
         """
-        Rx90 = Rot2.fromDegrees(90)
+        R180 = Rot2.fromDegrees(180)
 
         # Create source poses (three objects o1, o2, o3 living in the egovehicle "e" frame)
         # Suppose they are 3d cuboids detected by an onboard sensor in the egovehicle frame
@@ -41,10 +41,10 @@ class TestSim2(GtsamTestCase):
         eToi_list = [eTo0, eTo1, eTo2]
 
         # Create destination poses
-        # (same three objects, but instead living in the world/city "w" frame)
-        wTo0 = Pose2(Rx90, np.array([-10, 0]))
-        wTo1 = Pose2(Rx90, np.array([-5, 0]))
-        wTo2 = Pose2(Rx90, np.array([0, 0]))
+        # (same three objects, but instead living in the world "w" frame)
+        wTo0 = Pose2(R180, np.array([-10, 0]))
+        wTo1 = Pose2(R180, np.array([-5, 0]))
+        wTo2 = Pose2(R180, np.array([0, 0]))
 
         wToi_list = [wTo0, wTo1, wTo2]
 
@@ -62,10 +62,10 @@ class TestSim2(GtsamTestCase):
         Scenario:
            3 object poses
            with gauge ambiguity (2x scale)
-           world frame has poses rotated about z-axis (90 degree yaw)
+           world frame has poses rotated by 90 degrees.
            world and egovehicle frame translated by 11 meters w.r.t. each other
         """
-        Rz90 = Rot3.Rz(np.deg2rad(90))
+        R90 = Rot2.fromDegrees(90)
 
         # Create source poses (three objects o1, o2, o3 living in the egovehicle "e" frame)
         # Suppose they are 3d cuboids detected by an onboard sensor in the egovehicle frame
@@ -77,9 +77,9 @@ class TestSim2(GtsamTestCase):
 
         # Create destination poses
         # (same three objects, but instead living in the world/city "w" frame)
-        wTo0 = Pose2(Rz90, np.array([0, 12]))
-        wTo1 = Pose2(Rz90, np.array([0, 14]))
-        wTo2 = Pose2(Rz90, np.array([0, 18]))
+        wTo0 = Pose2(R90, np.array([0, 12]))
+        wTo1 = Pose2(R90, np.array([0, 14]))
+        wTo2 = Pose2(R90, np.array([0, 18]))
 
         wToi_list = [wTo0, wTo1, wTo2]
 
@@ -107,10 +107,10 @@ class TestSim2(GtsamTestCase):
         R180 = Rot2.fromDegrees(180)
         R270 = Rot2.fromDegrees(270)
 
-        aTi0 = Pose3(R0, np.array([2, 3]))
-        aTi1 = Pose3(R90, np.array([12, 3]))
-        aTi2 = Pose3(R180, np.array([12, 13]))
-        aTi3 = Pose3(R270, np.array([2, 13]))
+        aTi0 = Pose2(R0, np.array([2, 3]))
+        aTi1 = Pose2(R90, np.array([12, 3]))
+        aTi2 = Pose2(R180, np.array([12, 13]))
+        aTi3 = Pose2(R270, np.array([2, 13]))
 
         aTi_list = [aTi0, aTi1, aTi2, aTi3]
 
@@ -144,7 +144,7 @@ class TestSim2(GtsamTestCase):
         """Ensure object equality works properly (are equal)."""
         bSa = Similarity2(R=Rot2(), t=np.array([1, 2]), s=3.0)
         bSa_ = Similarity2(R=Rot2(), t=np.array([1.0, 2.0]), s=3)
-        assert bSa == bSa_
+        self.gtsamAssertEquals(bSa, bSa_)
 
     def test_not_eq_translation(self) -> None:
         """Ensure object equality works properly (not equal translation)."""

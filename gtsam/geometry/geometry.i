@@ -862,9 +862,10 @@ class Similarity2 {
   static gtsam::Similarity2 Align(const gtsam::Pose2Pairs& abPosePairs);
 
   // Standard Interface
-  const Matrix matrix() const;
-  const gtsam::Rot2& rotation();
-  const gtsam::Point2& translation();
+  bool equals(const gtsam::Similarity2& sim, double tol) const;
+  Matrix matrix() const;
+  gtsam::Rot2& rotation();
+  gtsam::Point2& translation();
   double scale() const;
 };
 
@@ -884,9 +885,10 @@ class Similarity3 {
   static gtsam::Similarity3 Align(const gtsam::Pose3Pairs& abPosePairs);
 
   // Standard Interface
-  const Matrix matrix() const;
-  const gtsam::Rot3& rotation();
-  const gtsam::Point3& translation();
+  bool equals(const gtsam::Similarity3& sim, double tol) const;
+  Matrix matrix() const;
+  gtsam::Rot3& rotation();
+  gtsam::Point3& translation();
   double scale() const;
 };
 
