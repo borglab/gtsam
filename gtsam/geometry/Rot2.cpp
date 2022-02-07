@@ -130,15 +130,15 @@ Rot2 Rot2::relativeBearing(const Point2& d, OptionalJacobian<1, 2> H) {
 }
 
 /* ************************************************************************* */
-static Rot2 ClosestTo(const Matrix2& M) {
-   double c = M(0,0);
-   double s = M(1,0);
-   double theta_rad = atan2(s, c);
-   c = cos(theta_rad);
-   s = sin(theta_rad);
-   return Rot2::fromCosSin(c, s);
+Rot2 Rot2::ClosestTo(const Matrix2& M) {
+  double c = M(0, 0);
+  double s = M(1, 0);
+  double theta_rad = std::atan2(s, c);
+  c = cos(theta_rad);
+  s = sin(theta_rad);
+  return Rot2::fromCosSin(c, s);
 }
-  
+
 /* ************************************************************************* */
 
 } // gtsam
