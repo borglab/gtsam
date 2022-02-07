@@ -352,14 +352,21 @@ TEST(GaussianConditional, sample) {
   EXPECT_LONGS_EQUAL(1, actual1.size());
   EXPECT(assert_equal(b, actual1[X(0)], 50 * sigma));
 
-  VectorValues values;
-  values.insert(X(1), x1);
+  VectorValues given;
+  given.insert(X(1), x1);
 
   auto conditional =
       GaussianConditional::FromMeanAndStddev(X(0), A1, X(1), b, sigma);
-  auto actual2 = conditional.sample(values);
+  auto actual2 = conditional.sample(given);
   EXPECT_LONGS_EQUAL(1, actual2.size());
   EXPECT(assert_equal(A1 * x1 + b, actual2[X(0)], 50 * sigma));
+
+  // Use a specific random generator
+  std::mt19937_64 rng(4242);
+  auto actual3 = conditional.sample(given, &rng);
+  EXPECT_LONGS_EQUAL(1, actual2.size());
+  // regression:
+  EXPECT(assert_equal(Vector2(31.0111856, 64.9850775), actual2[X(0)], 1e-5));
 }
 
 /* ************************************************************************* */

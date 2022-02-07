@@ -35,6 +35,9 @@
 #include <list>
 #include <string>
 
+// In Wrappers we have no access to this so have a default ready
+static std::mt19937_64 kRandomNumberGenerator(42);
+
 using namespace std;
 
 namespace gtsam {
@@ -222,8 +225,8 @@ namespace gtsam {
   }
 
   /* ************************************************************************ */
-  VectorValues GaussianConditional::sample(
-      const VectorValues& parentsValues) const {
+  VectorValues GaussianConditional::sample(const VectorValues& parentsValues,
+                                           std::mt19937_64* rng) const {
     if (nrFrontals() != 1) {
       throw std::invalid_argument(
           "GaussianConditional::sample can only be called on single variable "
@@ -235,18 +238,27 @@ namespace gtsam {
           "model was specified at construction.");
     }
     VectorValues solution = solve(parentsValues);
-    Sampler sampler(model_);
     Key key = firstFrontalKey();
-    solution[key] += sampler.sample();
+    const Vector& sigmas = model_->sigmas();
+    solution[key] += Sampler::sampleDiagonal(sigmas, rng);
     return solution;
   }
 
-  VectorValues GaussianConditional::sample() const {
+  VectorValues GaussianConditional::sample(std::mt19937_64* rng) const {
     if (nrParents() != 0)
       throw std::invalid_argument(
           "sample() can only be invoked on no-parent prior");
     VectorValues values;
     return sample(values);
+  }
+
+  /* ************************************************************************ */
+  VectorValues GaussianConditional::sample() const {
+    return sample(&kRandomNumberGenerator);
+  }
+
+  VectorValues GaussianConditional::sample(const VectorValues& given) const {
+    return sample(given, &kRandomNumberGenerator);
   }
 
   /* ************************************************************************ */

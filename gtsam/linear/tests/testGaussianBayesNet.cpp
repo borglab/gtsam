@@ -155,6 +155,14 @@ TEST(GaussianBayesNet, sample) {
   EXPECT_LONGS_EQUAL(2, actual.size());
   EXPECT(assert_equal(mean, actual[X(1)], 50 * sigma));
   EXPECT(assert_equal(A1 * mean + b, actual[X(0)], 50 * sigma));
+
+  // Use a specific random generator
+  std::mt19937_64 rng(4242);
+  auto actual3 = gbn.sample(&rng);
+  EXPECT_LONGS_EQUAL(2, actual.size());
+  // regression:
+  EXPECT(assert_equal(Vector2(20.0129382, 40.0039798), actual[X(1)], 1e-5));
+  EXPECT(assert_equal(Vector2(110.032083, 230.039811), actual[X(0)], 1e-5));
 }
 
 /* ************************************************************************* */

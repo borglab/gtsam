@@ -95,10 +95,27 @@ namespace gtsam {
     /// Version of optimize for incomplete BayesNet, given missing variables
     VectorValues optimize(const VectorValues given) const;
 
-    /// Sample using ancestral sampling
+    /**
+     * Sample using ancestral sampling
+     * Example:
+     *   std::mt19937_64 rng(42);
+     *   auto sample = gbn.sample(&rng);
+     */
+    VectorValues sample(std::mt19937_64* rng) const;
+
+    /**
+     * Sample from an incomplete BayesNet, given missing variables
+     * Example:
+     *   std::mt19937_64 rng(42);
+     *   VectorValues given = ...;
+     *   auto sample = gbn.sample(given, &rng);
+     */
+    VectorValues sample(VectorValues given, std::mt19937_64* rng) const;
+
+    /// Sample using ancestral sampling, use default rng
     VectorValues sample() const;
 
-    /// Sample from an incomplete BayesNet, given missing variables
+    /// Sample from an incomplete BayesNet, use default rng
     VectorValues sample(VectorValues given) const;
 
     /**
