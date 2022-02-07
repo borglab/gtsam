@@ -26,6 +26,8 @@
 #include <gtsam/inference/Conditional.h>
 #include <gtsam/linear/VectorValues.h>
 
+#include <random> // for std::mt19937_64 
+
 namespace gtsam {
 
   /**
@@ -150,14 +152,28 @@ namespace gtsam {
     void solveTransposeInPlace(VectorValues& gy) const;
 
     /**
-     * sample
-     * @param parentsValues Known values of the parents
-     * @return sample from conditional
+     * Sample from conditional, zero parent version
+     * Example:
+     *   std::mt19937_64 rng(42);
+     *   auto sample = gbn.sample(&rng);
      */
-    VectorValues sample(const VectorValues& parentsValues) const;
+    VectorValues sample(std::mt19937_64* rng) const;
 
-    /// Zero parent version.
+    /**
+     * Sample from conditional, given missing variables
+     * Example:
+     *   std::mt19937_64 rng(42);
+     *   VectorValues given = ...;
+     *   auto sample = gbn.sample(given, &rng);
+     */
+    VectorValues sample(const VectorValues& parentsValues,
+                        std::mt19937_64* rng) const;
+
+    /// Sample, use default rng
     VectorValues sample() const;
+
+    /// Sample with given values, use default rng
+    VectorValues sample(const VectorValues& parentsValues) const;
 
     /// @}
 
