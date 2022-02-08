@@ -21,14 +21,15 @@ namespace gtsam {
 /* ************************************************************************* */
 void AbstractConditional::print(const std::string &s,
                                 const KeyFormatter &formatter) const {
-  // Don't do anything since we are abstract
+  throw std::runtime_error("AbstractConditional::print not implemented!");
 }
 
 /* ************************************************************************* */
 bool AbstractConditional::equals(const AbstractConditional &c,
                                  double tol) const {
-  throw std::invalid_argument("You are calling the base AbstractConditional's"
-                              " equality, which is illegal.");
+  throw std::invalid_argument(
+      "You are calling the base AbstractConditional's"
+      " equality, which is illegal.");
   return nrFrontals_ == c.nrFrontals_;
 }
 
