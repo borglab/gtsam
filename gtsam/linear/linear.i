@@ -407,8 +407,10 @@ class GaussianFactorGraph {
 
   // Elimination and marginals
   gtsam::GaussianBayesNet* eliminateSequential();
+  gtsam::GaussianBayesNet* eliminateSequential(gtsam::Ordering::OrderingType type);
   gtsam::GaussianBayesNet* eliminateSequential(const gtsam::Ordering& ordering);
   gtsam::GaussianBayesTree* eliminateMultifrontal();
+  gtsam::GaussianBayesTree* eliminateMultifrontal(gtsam::Ordering::OrderingType type);
   gtsam::GaussianBayesTree* eliminateMultifrontal(const gtsam::Ordering& ordering);
   pair<gtsam::GaussianBayesNet*, gtsam::GaussianFactorGraph*> eliminatePartialSequential(
     const gtsam::Ordering& ordering);
@@ -466,15 +468,33 @@ virtual class GaussianConditional : gtsam::JacobianFactor {
   GaussianConditional(size_t key, Vector d, Matrix R, size_t name1, Matrix S,
                       size_t name2, Matrix T);
 
-  // Standard Interface
+  // Named constructors
+  static gtsam::GaussianConditional FromMeanAndStddev(gtsam::Key key, 
+                                                      const Matrix& A,
+                                                      gtsam::Key parent,
+                                                      const Vector& b,
+                                                      double sigma);
+
+  static gtsam::GaussianConditional FromMeanAndStddev(gtsam::Key key,
+                                                      const Matrix& A1,
+                                                      gtsam::Key parent1, 
+                                                      const Matrix& A2,
+                                                      gtsam::Key parent2, 
+                                                      const Vector& b,
+                                                      double sigma);
+  // Testable
   void print(string s = "GaussianConditional",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::GaussianConditional& cg, double tol) const;
+  
+  // Standard Interface
   gtsam::Key firstFrontalKey() const;
+  gtsam::VectorValues solve(const gtsam::VectorValues& parents) const;
+  gtsam::VectorValues sample(const gtsam::VectorValues& parents) const;
+  gtsam::VectorValues sample() const;
   
   // Advanced Interface
-  gtsam::VectorValues solve(const gtsam::VectorValues& parents) const;
   gtsam::VectorValues solveOtherRHS(const gtsam::VectorValues& parents,
                                     const gtsam::VectorValues& rhs) const;
   void solveTransposeInPlace(gtsam::VectorValues& gy) const;
@@ -488,14 +508,21 @@ virtual class GaussianConditional : gtsam::JacobianFactor {
 
 #include <gtsam/linear/GaussianDensity.h>
 virtual class GaussianDensity : gtsam::GaussianConditional {
-    //Constructors
-  GaussianDensity(size_t key, Vector d, Matrix R, const gtsam::noiseModel::Diagonal* sigmas);
+  // Constructors
+  GaussianDensity(gtsam::Key key, Vector d, Matrix R,
+                  const gtsam::noiseModel::Diagonal* sigmas);
 
-  //Standard Interface
+  static gtsam::GaussianDensity FromMeanAndStddev(gtsam::Key key,
+                                                  const Vector& mean,
+                                                  double sigma);
+
+  // Testable
   void print(string s = "GaussianDensity",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
-  bool equals(const gtsam::GaussianDensity &cg, double tol) const;
+  bool equals(const gtsam::GaussianDensity& cg, double tol) const;
+
+  // Standard Interface
   Vector mean() const;
   Matrix covariance() const;
 };
@@ -512,6 +539,21 @@ virtual class GaussianBayesNet {
   bool equals(const gtsam::GaussianBayesNet& other, double tol) const;
   size_t size() const;
 
+  // Standard interface
+  void push_back(gtsam::GaussianConditional* conditional);
+  void push_back(const gtsam::GaussianBayesNet& bayesNet);
+  gtsam::GaussianConditional* front() const;
+  gtsam::GaussianConditional* back() const;
+
+  gtsam::VectorValues optimize() const;
+  gtsam::VectorValues optimize(gtsam::VectorValues given) const;
+  gtsam::VectorValues optimizeGradientSearch() const;
+  
+  gtsam::VectorValues sample(gtsam::VectorValues given) const;
+  gtsam::VectorValues sample() const;
+  gtsam::VectorValues backSubstitute(const gtsam::VectorValues& gx) const;
+  gtsam::VectorValues backSubstituteTranspose(const gtsam::VectorValues& gx) const;
+
   // FactorGraph derived interface
   gtsam::GaussianConditional* at(size_t idx) const;
   gtsam::KeySet keys() const;
@@ -520,21 +562,12 @@ virtual class GaussianBayesNet {
 
   void saveGraph(const string& s) const;
 
-  gtsam::GaussianConditional* front() const;
-  gtsam::GaussianConditional* back() const;
-  void push_back(gtsam::GaussianConditional* conditional);
-  void push_back(const gtsam::GaussianBayesNet& bayesNet);
-
-  gtsam::VectorValues optimize() const;
-  gtsam::VectorValues optimize(gtsam::VectorValues& solutionForMissing) const;
-  gtsam::VectorValues optimizeGradientSearch() const;
+  std::pair<Matrix, Vector> matrix() const; 
   gtsam::VectorValues gradient(const gtsam::VectorValues& x0) const;
   gtsam::VectorValues gradientAtZero() const;
   double error(const gtsam::VectorValues& x) const;
   double determinant() const;
   double logDeterminant() const;
-  gtsam::VectorValues backSubstitute(const gtsam::VectorValues& gx) const;
-  gtsam::VectorValues backSubstituteTranspose(const gtsam::VectorValues& gx) const;
 
   string dot(
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
@@ -556,7 +589,12 @@ virtual class GaussianBayesTree {
   size_t size() const;
   bool empty() const;
   size_t numCachedSeparatorMarginals() const;
-  void saveGraph(string s) const;
+
+  string dot(const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
+  void saveGraph(string s,
+                const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
 
   gtsam::VectorValues optimize() const;
   gtsam::VectorValues optimizeGradientSearch() const;

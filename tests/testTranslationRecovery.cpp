@@ -18,6 +18,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/sfm/TranslationRecovery.h>
+#include <gtsam/sfm/SfmData.h>
 #include <gtsam/slam/dataset.h>
 
 using namespace std;
@@ -42,9 +43,7 @@ Unit3 GetDirectionFromPoses(const Values& poses,
 // sets up an optimization problem for the three unknown translations.
 TEST(TranslationRecovery, BAL) {
   const string filename = findExampleDataFile("dubrovnik-3-7-pre");
-  SfmData db;
-  bool success = readBAL(filename, db);
-  if (!success) throw runtime_error("Could not access file!");
+  SfmData db = SfmData::FromBalFile(filename);
 
   // Get camera poses, as Values
   size_t j = 0;
