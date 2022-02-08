@@ -115,12 +115,7 @@ TEST(DiscreteBayesNet, Asia) {
 
   // solve again, now with evidence
   auto chordal2 = fg.eliminateSequential(ordering);
-  auto actualMPE2 = chordal2->optimize();
-  DiscreteValues expectedMPE2;
-  insert(expectedMPE2)(Asia.first, 1)(Dyspnea.first, 1)(XRay.first, 0)(
-      Tuberculosis.first, 0)(Smoking.first, 1)(Either.first, 0)(
-      LungCancer.first, 0)(Bronchitis.first, 1);
-  EXPECT(assert_equal(expectedMPE2, actualMPE2));
+  EXPECT(assert_equal(expected2, *chordal->back()));
 
   // now sample from it
   DiscreteValues expectedSample;
