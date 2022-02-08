@@ -22,6 +22,7 @@
 #include <gtsam/inference/Factor.h>
 #include <gtsam/base/Testable.h>
 
+#include <string>
 namespace gtsam {
 
 class DecisionTreeFactor;
@@ -73,9 +74,6 @@ public:
     Base::print(s, formatter);
   }
 
-  /** Test whether the factor is empty */
-  virtual bool empty() const { return size() == 0; }
-
   /// @}
   /// @name Standard Interface
   /// @{
@@ -89,10 +87,59 @@ public:
   virtual DecisionTreeFactor toDecisionTreeFactor() const = 0;
 
   /// @}
+  /// @name Wrapper support
+  /// @{
+  
+  /// Translation table from values to strings.
+  using Names = DiscreteValues::Names;
+
+  /**
+   * @brief Render as markdown table
+   *
+   * @param keyFormatter GTSAM-style Key formatter.
+   * @param names optional, category names corresponding to choices.
+   * @return std::string a markdown string.
+   */
+  virtual std::string markdown(
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+      const Names& names = {}) const = 0;
+
+  /**
+   * @brief Render as html table
+   *
+   * @param keyFormatter GTSAM-style Key formatter.
+   * @param names optional, category names corresponding to choices.
+   * @return std::string a html string.
+   */
+  virtual std::string html(
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+      const Names& names = {}) const = 0;
+
+  /// @}
 };
 // DiscreteFactor
 
 // traits
 template<> struct traits<DiscreteFactor> : public Testable<DiscreteFactor> {};
+
+
+/**
+ * @brief Normalize a set of log probabilities.
+ *
+ * Normalizing a set of log probabilities in a numerically stable way is
+ * tricky. To avoid overflow/underflow issues, we compute the largest
+ * (finite) log probability and subtract it from each log probability before
+ * normalizing. This comes from the observation that if:
+ *    p_i = exp(L_i) / ( sum_j exp(L_j) ),
+ * Then,
+ *    p_i = exp(Z) exp(L_i - Z) / (exp(Z) sum_j exp(L_j - Z)),
+ *        = exp(L_i - Z) / ( sum_j exp(L_j - Z) )
+ *
+ * Setting Z = max_j L_j, we can avoid numerical issues that arise when all
+ * of the (unnormalized) log probabilities are either very large or very
+ * small.
+ */
+std::vector<double> expNormalize(const std::vector<double> &logProbs);
+
 
 }// namespace gtsam

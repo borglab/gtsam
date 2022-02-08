@@ -26,7 +26,6 @@
 #include <gtsam/linear/linearExceptions.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/inference/Ordering.h>
-#include <gtsam/inference/DotWriter.h>
 #include <gtsam/inference/FactorGraph-inst.h>
 #include <gtsam/config.h> // for GTSAM_USE_TBB
 
@@ -34,8 +33,10 @@
 #  include <tbb/parallel_for.h>
 #endif
 
+#include <algorithm>
 #include <cmath>
 #include <fstream>
+#include <set>
 
 using namespace std;
 
@@ -46,7 +47,8 @@ template class FactorGraph<NonlinearFactor>;
 
 /* ************************************************************************* */
 double NonlinearFactorGraph::probPrime(const Values& values) const {
-  return exp(-0.5 * error(values));
+  // NOTE the 0.5 constant is handled by the factor error.
+  return exp(-error(values));
 }
 
 /* ************************************************************************* */
@@ -55,9 +57,14 @@ void NonlinearFactorGraph::print(const std::string& str, const KeyFormatter& key
   for (size_t i = 0; i < factors_.size(); i++) {
     stringstream ss;
     ss << "Factor " << i << ": ";
-    if (factors_[i] != nullptr) factors_[i]->print(ss.str(), keyFormatter);
-    cout << endl;
+    if (factors_[i] != nullptr) {
+      factors_[i]->print(ss.str(), keyFormatter);
+      cout << "\n";
+    } else {
+      cout << ss.str() << "nullptr\n";
+    }
   }
+  std::cout.flush();
 }
 
 /* ************************************************************************* */
@@ -81,8 +88,9 @@ void NonlinearFactorGraph::printErrors(const Values& values, const std::string& 
       factor->print(ss.str(), keyFormatter);
       cout << "error = " << errorValue << "\n";
     }
-    cout << endl; // only one "endl" at end might be faster, \n for each factor
+    cout << "\n";
   }
+  std::cout.flush();
 }
 
 /* ************************************************************************* */
@@ -92,9 +100,9 @@ bool NonlinearFactorGraph::equals(const NonlinearFactorGraph& other, double tol)
 
 /* ************************************************************************* */
 void NonlinearFactorGraph::dot(std::ostream& os, const Values& values,
-                               const GraphvizFormatting& writer,
-                               const KeyFormatter& keyFormatter) const {
-  writer.writePreamble(&os);
+                               const KeyFormatter& keyFormatter,
+                               const GraphvizFormatting& writer) const {
+  writer.graphPreamble(&os);
 
   // Find bounds (imperative)
   KeySet keys = this->keys();
@@ -103,7 +111,7 @@ void NonlinearFactorGraph::dot(std::ostream& os, const Values& values,
   // Create nodes for each variable in the graph
   for (Key key : keys) {
     auto position = writer.variablePos(values, min, key);
-    writer.DrawVariable(key, keyFormatter, position, &os);
+    writer.drawVariable(key, keyFormatter, position, &os);
   }
   os << "\n";
 
@@ -121,7 +129,7 @@ void NonlinearFactorGraph::dot(std::ostream& os, const Values& values,
     // Create factors and variable connections
     size_t i = 0;
     for (const KeyVector& factorKeys : structure) {
-      writer.processFactor(i++, factorKeys, boost::none, &os);
+      writer.processFactor(i++, factorKeys, keyFormatter, boost::none, &os);
     }
   } else {
     // Create factors and variable connections
@@ -129,7 +137,8 @@ void NonlinearFactorGraph::dot(std::ostream& os, const Values& values,
       const NonlinearFactor::shared_ptr& factor = at(i);
       if (factor) {
         const KeyVector& factorKeys = factor->keys();
-        writer.processFactor(i, factorKeys, writer.factorPos(min, i), &os);
+        writer.processFactor(i, factorKeys, keyFormatter,
+                             writer.factorPos(min, i), &os);
       }
     }
   }
@@ -139,21 +148,21 @@ void NonlinearFactorGraph::dot(std::ostream& os, const Values& values,
 }
 
 /* ************************************************************************* */
-std::string NonlinearFactorGraph::dot(
-    const Values& values, const GraphvizFormatting& writer,
-    const KeyFormatter& keyFormatter) const {
+std::string NonlinearFactorGraph::dot(const Values& values,
+                                      const KeyFormatter& keyFormatter,
+                                      const GraphvizFormatting& writer) const {
   std::stringstream ss;
-  dot(ss, values, writer, keyFormatter);
+  dot(ss, values, keyFormatter, writer);
   return ss.str();
 }
 
 /* ************************************************************************* */
-void NonlinearFactorGraph::saveGraph(
-    const std::string& filename, const Values& values,
-    const GraphvizFormatting& writer,
-    const KeyFormatter& keyFormatter) const {
+void NonlinearFactorGraph::saveGraph(const std::string& filename,
+                                     const Values& values,
+                                     const KeyFormatter& keyFormatter,
+                                     const GraphvizFormatting& writer) const {
   std::ofstream of(filename);
-  dot(of, values, writer, keyFormatter);
+  dot(of, values, keyFormatter, writer);
   of.close();
 }
 

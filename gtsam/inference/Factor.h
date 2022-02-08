@@ -112,6 +112,9 @@ typedef FastSet<FactorIndex> FactorIndexSet;
    /// @name Standard Interface
    /// @{
 
+   /// Whether the factor is empty (involves zero variables).
+   bool empty() const { return keys_.empty(); }
+
    /// First key
    Key front() const { return keys_.front(); }
 
@@ -150,13 +153,11 @@ typedef FastSet<FactorIndex> FactorIndexSet;
        const std::string& s = "Factor",
        const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
-  protected:
     /// check equality
     bool equals(const This& other, double tol = 1e-9) const;
 
     /// @}
 
-  public:
     /// @name Advanced Interface
     /// @{
 

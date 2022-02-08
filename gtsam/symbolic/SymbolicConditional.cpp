@@ -30,7 +30,12 @@ void SymbolicConditional::print(const std::string& str,
 
 /* ************************************************************************* */
 bool SymbolicConditional::equals(const This& c, double tol) const {
-  return BaseFactor::equals(c) && BaseConditional::equals(c);
+  return BaseFactor::equals(c) && (nrFrontals_ == c.nrFrontals_);
+}
+
+bool SymbolicConditional::equals(const SymbolicFactor& f, double tol) const {
+  auto dyn = dynamic_cast<const SymbolicConditional*>(&f);
+  return dyn && This::equals(*dyn);
 }
 
 }  // namespace gtsam

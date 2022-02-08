@@ -41,21 +41,26 @@ using namespace gtsam;
 using symbol_shorthand::X;
 using symbol_shorthand::M;
 
+static const DiscreteKey Asia(0, 2), Smoking(4, 2), Tuberculosis(3, 2),
+    LungCancer(6, 2), Bronchitis(7, 2), Either(5, 2), XRay(2, 2), Dyspnea(1, 2);
+
+using ADT = AlgebraicDecisionTree<Key>;
+
 /* ************************************************************************* */
 TEST(DiscreteBayesNet, bayesNet) {
   DiscreteBayesNet bayesNet;
   DiscreteKey Parent(0, 2), Child(1, 2);
 
   auto prior = boost::make_shared<DiscreteConditional>(Parent % "6/4");
-  CHECK(assert_equal(Potentials::ADT({Parent}, "0.6 0.4"),
-                     (Potentials::ADT)*prior));
+  CHECK(assert_equal(ADT({Parent}, "0.6 0.4"),
+                     (ADT)*prior));
   bayesNet.push_back(prior);
 
   auto conditional =
       boost::make_shared<DiscreteConditional>(Child | Parent = "7/3 8/2");
   EXPECT_LONGS_EQUAL(1, *(conditional->beginFrontals()));
-  Potentials::ADT expected(Child & Parent, "0.7 0.8 0.3 0.2");
-  CHECK(assert_equal(expected, (Potentials::ADT)*conditional));
+  ADT expected(Child & Parent, "0.7 0.8 0.3 0.2");
+  CHECK(assert_equal(expected, (ADT)*conditional));
   bayesNet.push_back(conditional);
 
   DiscreteFactorGraph fg(bayesNet);
@@ -74,11 +79,9 @@ TEST(DiscreteBayesNet, bayesNet) {
 /* ************************************************************************* */
 TEST(DiscreteBayesNet, Asia) {
   DiscreteBayesNet asia;
-  DiscreteKey Asia(0, 2), Smoking(4, 2), Tuberculosis(3, 2), LungCancer(6, 2),
-      Bronchitis(7, 2), Either(5, 2), XRay(2, 2), Dyspnea(1, 2);
 
-  asia.add(Asia % "99/1");
-  asia.add(Smoking % "50/50");
+  asia.add(Asia, "99/1");
+  asia.add(Smoking % "50/50");  // Signature version
 
   asia.add(Tuberculosis | Asia = "99/1 95/5");
   asia.add(LungCancer | Smoking = "99/1 90/10");
@@ -105,14 +108,6 @@ TEST(DiscreteBayesNet, Asia) {
   auto chordal = fg.eliminateSequential(ordering);
   DiscreteConditional expected2(Bronchitis % "11/9");
   EXPECT(assert_equal(expected2, *chordal->back()));
-
-  // solve
-  auto actualMPE = chordal->optimize();
-  DiscreteValues expectedMPE;
-  insert(expectedMPE)(Asia.first, 0)(Dyspnea.first, 0)(XRay.first, 0)(
-      Tuberculosis.first, 0)(Smoking.first, 0)(Either.first, 0)(
-      LungCancer.first, 0)(Bronchitis.first, 0);
-  EXPECT(assert_equal(expectedMPE, actualMPE));
 
   // add evidence, we were in Asia and we have dyspnea
   fg.add(Asia, "0 1");
@@ -154,9 +149,6 @@ TEST(DiscreteBayesNet, Sugar) {
 
 /* ************************************************************************* */
 TEST(DiscreteBayesNet, Dot) {
-  DiscreteKey Asia(0, 2), Smoking(4, 2), Tuberculosis(3, 2), LungCancer(6, 2),
-      Either(5, 2);
-
   DiscreteBayesNet fragment;
   fragment.add(Asia % "99/1");
   fragment.add(Smoking % "50/50");
@@ -167,11 +159,19 @@ TEST(DiscreteBayesNet, Dot) {
 
   string actual = fragment.dot();
   EXPECT(actual ==
-         "digraph G{\n"
-         "0->3\n"
-         "4->6\n"
-         "3->5\n"
-         "6->5\n"
+         "digraph {\n"
+         "  size=\"5,5\";\n"
+         "\n"
+         "  var0[label=\"0\"];\n"
+         "  var3[label=\"3\"];\n"
+         "  var4[label=\"4\"];\n"
+         "  var5[label=\"5\"];\n"
+         "  var6[label=\"6\"];\n"
+         "\n"
+         "  var3->var5\n"
+         "  var6->var5\n"
+         "  var4->var6\n"
+         "  var0->var3\n"
          "}");
 }
 
@@ -202,6 +202,32 @@ TEST(DiscreteBayesTree, Switching) {
   for (size_t k = 1; k < K; k++) ordering += M(k);
   auto chordal = DiscreteFactorGraph(bayesNet).eliminateSequential(ordering);
   GTSAM_PRINT(*chordal);
+}
+
+/* ************************************************************************* */
+// Check markdown representation looks as expected.
+TEST(DiscreteBayesNet, markdown) {
+  DiscreteBayesNet fragment;
+  fragment.add(Asia % "99/1");
+  fragment.add(Smoking | Asia = "8/2 7/3");
+
+  string expected =
+      "`DiscreteBayesNet` of size 2\n"
+      "\n"
+      " *P(Asia):*\n\n"
+      "|Asia|value|\n"
+      "|:-:|:-:|\n"
+      "|0|0.99|\n"
+      "|1|0.01|\n"
+      "\n"
+      " *P(Smoking|Asia):*\n\n"
+      "|*Asia*|0|1|\n"
+      "|:-:|:-:|:-:|\n"
+      "|0|0.8|0.2|\n"
+      "|1|0.7|0.3|\n\n";
+  auto formatter = [](Key key) { return key == 0 ? "Asia" : "Smoking"; };
+  string actual = fragment.markdown(formatter);
+  EXPECT(actual == expected);
 }
 
 /* ************************************************************************* */

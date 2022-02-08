@@ -13,8 +13,10 @@ Author: Frank Dellaert
 
 import unittest
 
-from gtsam import DiscreteFactorGraph, DiscreteKeys, DiscreteValues
+from gtsam import DiscreteFactorGraph, DiscreteKeys, DiscreteValues, Ordering
 from gtsam.utils.test_case import GtsamTestCase
+
+OrderingType = Ordering.OrderingType
 
 
 class TestDiscreteFactorGraph(GtsamTestCase):
@@ -32,11 +34,11 @@ class TestDiscreteFactorGraph(GtsamTestCase):
         graph = DiscreteFactorGraph()
 
         # Add two unary factors (priors)
-        graph.add(P1, "0.9 0.3")
+        graph.add(P1, [0.9, 0.3])
         graph.add(P2, "0.9 0.6")
 
         # Add a binary factor
-        graph.add(P1, P2, "4 1 10 4")
+        graph.add([P1, P2], "4 1 10 4")
 
         # Instantiate Values
         assignment = DiscreteValues()
@@ -85,8 +87,8 @@ class TestDiscreteFactorGraph(GtsamTestCase):
         # A simple factor graph (A)-fAC-(C)-fBC-(B)
         # with smoothness priors
         graph = DiscreteFactorGraph()
-        graph.add(A, C, "3 1 1 3")
-        graph.add(C, B, "3 1 1 3")
+        graph.add([A, C], "3 1 1 3")
+        graph.add([C, B], "3 1 1 3")
 
         # Test optimization
         expectedValues = DiscreteValues()
@@ -105,17 +107,53 @@ class TestDiscreteFactorGraph(GtsamTestCase):
 
         # Create Factor graph
         graph = DiscreteFactorGraph()
-        graph.add(C, A, "0.2 0.8 0.3 0.7")
-        graph.add(C, B, "0.1 0.9 0.4 0.6")
+        graph.add([C, A], "0.2 0.8 0.3 0.7")
+        graph.add([C, B], "0.1 0.9 0.4 0.6")
 
-        actualMPE = graph.optimize()
+        # We know MPE
+        mpe = DiscreteValues()
+        mpe[0] = 0
+        mpe[1] = 1
+        mpe[2] = 1
 
-        expectedMPE = DiscreteValues()
-        expectedMPE[0] = 0
-        expectedMPE[1] = 1
-        expectedMPE[2] = 1
+        # Use maxProduct
+        dag = graph.maxProduct(OrderingType.COLAMD)
+        actualMPE = dag.argmax()
         self.assertEqual(list(actualMPE.items()),
-                         list(expectedMPE.items()))
+                         list(mpe.items()))
+
+        # All in one
+        actualMPE2 = graph.optimize()
+        self.assertEqual(list(actualMPE2.items()),
+                         list(mpe.items()))
+
+    def test_sumProduct(self):
+        """Test sumProduct."""
+
+        # Declare a bunch of keys
+        C, A, B = (0, 2), (1, 2), (2, 2)
+
+        # Create Factor graph
+        graph = DiscreteFactorGraph()
+        graph.add([C, A], "0.2 0.8 0.3 0.7")
+        graph.add([C, B], "0.1 0.9 0.4 0.6")
+
+        # We know MPE
+        mpe = DiscreteValues()
+        mpe[0] = 0
+        mpe[1] = 1
+        mpe[2] = 1
+
+        # Use default sumProduct
+        bayesNet = graph.sumProduct()
+        mpeProbability = bayesNet(mpe)
+        self.assertAlmostEqual(mpeProbability, 0.36)  # regression
+
+        # Use sumProduct
+        for ordering_type in [OrderingType.COLAMD, OrderingType.METIS, OrderingType.NATURAL,
+                              OrderingType.CUSTOM]:
+            bayesNet = graph.sumProduct(ordering_type)
+            self.assertEqual(bayesNet(mpe), mpeProbability)
 
 
 if __name__ == "__main__":

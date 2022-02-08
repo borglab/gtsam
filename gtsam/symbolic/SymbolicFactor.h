@@ -90,7 +90,8 @@ namespace gtsam {
     /// @name Testable
     /// @{
 
-    bool equals(const This& other, double tol = 1e-9) const;
+    /** Equals for testable */
+    virtual bool equals(const This& lf, double tol = 1e-9) const;
 
     /// print
     void print(
@@ -143,9 +144,6 @@ namespace gtsam {
 
     /// @name Standard Interface
     /// @{
-
-    /** Whether the factor is empty (involves zero variables). */
-    bool empty() const { return keys_.empty(); }
 
     /** Eliminate the variables in \c keys, in the order specified in \c keys, returning a
      *  conditional and marginal. */

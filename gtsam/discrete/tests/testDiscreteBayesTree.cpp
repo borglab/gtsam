@@ -101,10 +101,10 @@ TEST(DiscreteBayesTree, ThinTree) {
   auto R = self.bayesTree->roots().front();
 
   // Check whether BN and BT give the same answer on all configurations
-  vector<DiscreteValues> allPosbValues =
-      cartesianProduct(keys[0] & keys[1] & keys[2] & keys[3] & keys[4] &
-                       keys[5] & keys[6] & keys[7] & keys[8] & keys[9] &
-                       keys[10] & keys[11] & keys[12] & keys[13] & keys[14]);
+  auto allPosbValues = DiscreteValues::CartesianProduct(
+      keys[0] & keys[1] & keys[2] & keys[3] & keys[4] & keys[5] & keys[6] &
+      keys[7] & keys[8] & keys[9] & keys[10] & keys[11] & keys[12] & keys[13] &
+      keys[14]);
   for (size_t i = 0; i < allPosbValues.size(); ++i) {
     DiscreteValues x = allPosbValues[i];
     double expected = self.bayesNet.evaluate(x);
@@ -243,27 +243,27 @@ TEST(DiscreteBayesTree, Dot) {
   string actual = self.bayesTree->dot();
   EXPECT(actual ==
          "digraph G{\n"
-         "0[label=\"13,11,6,7\"];\n"
+         "0[label=\"13, 11, 6, 7\"];\n"
          "0->1\n"
-         "1[label=\"14 : 11,13\"];\n"
+         "1[label=\"14 : 11, 13\"];\n"
          "1->2\n"
-         "2[label=\"9,12 : 14\"];\n"
+         "2[label=\"9, 12 : 14\"];\n"
          "2->3\n"
-         "3[label=\"3 : 9,12\"];\n"
+         "3[label=\"3 : 9, 12\"];\n"
          "2->4\n"
-         "4[label=\"2 : 9,12\"];\n"
+         "4[label=\"2 : 9, 12\"];\n"
          "2->5\n"
-         "5[label=\"8 : 12,14\"];\n"
+         "5[label=\"8 : 12, 14\"];\n"
          "5->6\n"
-         "6[label=\"1 : 8,12\"];\n"
+         "6[label=\"1 : 8, 12\"];\n"
          "5->7\n"
-         "7[label=\"0 : 8,12\"];\n"
+         "7[label=\"0 : 8, 12\"];\n"
          "1->8\n"
-         "8[label=\"10 : 13,14\"];\n"
+         "8[label=\"10 : 13, 14\"];\n"
          "8->9\n"
-         "9[label=\"5 : 10,13\"];\n"
+         "9[label=\"5 : 10, 13\"];\n"
          "8->10\n"
-         "10[label=\"4 : 10,13\"];\n"
+         "10[label=\"4 : 10, 13\"];\n"
          "}");
 }
 

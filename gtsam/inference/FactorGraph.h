@@ -128,6 +128,11 @@ class FactorGraph {
   /** Collection of factors */
   FastVector<sharedFactor> factors_;
 
+  /// Check exact equality of the factor pointers. Useful for derived ==.
+  bool isEqual(const FactorGraph& other) const {
+    return factors_ == other.factors_;
+  }
+
   /// @name Standard Constructors
   /// @{
 
@@ -290,11 +295,11 @@ class FactorGraph {
   /// @name Testable
   /// @{
 
-  /// print out graph
+  /// Print out graph to std::cout, with optional key formatter.
   virtual void print(const std::string& s = "FactorGraph",
                      const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
-  /** Check equality */
+  /// Check equality up to tolerance.
   bool equals(const This& fg, double tol = 1e-9) const;
   /// @}
 
@@ -378,17 +383,18 @@ class FactorGraph {
   /// @{
 
   /// Output to graphviz format, stream version.
-  void dot(std::ostream& os, const DotWriter& writer = DotWriter(),
-           const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+  void dot(std::ostream& os,
+           const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+           const DotWriter& writer = DotWriter()) const;
 
   /// Output to graphviz format string.
-  std::string dot(const DotWriter& writer = DotWriter(),
-                  const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+  std::string dot(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                  const DotWriter& writer = DotWriter()) const;
 
   /// output to file with graphviz format.
   void saveGraph(const std::string& filename,
-                 const DotWriter& writer = DotWriter(),
-                 const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+                 const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                 const DotWriter& writer = DotWriter()) const;
 
   /// @}
   /// @name Advanced Interface

@@ -128,13 +128,15 @@ FactorIndices FactorGraph<FACTOR>::add_factors(const CONTAINER& factors,
 
 /* ************************************************************************* */
 template <class FACTOR>
-void FactorGraph<FACTOR>::dot(std::ostream& os, const DotWriter& writer,
-                              const KeyFormatter& keyFormatter) const {
-  writer.writePreamble(&os);
+void FactorGraph<FACTOR>::dot(std::ostream& os,
+                              const KeyFormatter& keyFormatter,
+                              const DotWriter& writer) const {
+  writer.graphPreamble(&os);
 
   // Create nodes for each variable in the graph
   for (Key key : keys()) {
-    writer.DrawVariable(key, keyFormatter, boost::none, &os);
+    auto position = writer.variablePos(key);
+    writer.drawVariable(key, keyFormatter, position, &os);
   }
   os << "\n";
 
@@ -143,7 +145,7 @@ void FactorGraph<FACTOR>::dot(std::ostream& os, const DotWriter& writer,
     const auto& factor = at(i);
     if (factor) {
       const KeyVector& factorKeys = factor->keys();
-      writer.processFactor(i, factorKeys, boost::none, &os);
+      writer.processFactor(i, factorKeys, keyFormatter, boost::none, &os);
     }
   }
 
@@ -153,20 +155,20 @@ void FactorGraph<FACTOR>::dot(std::ostream& os, const DotWriter& writer,
 
 /* ************************************************************************* */
 template <class FACTOR>
-std::string FactorGraph<FACTOR>::dot(const DotWriter& writer,
-                                     const KeyFormatter& keyFormatter) const {
+std::string FactorGraph<FACTOR>::dot(const KeyFormatter& keyFormatter,
+                                     const DotWriter& writer) const {
   std::stringstream ss;
-  dot(ss, writer, keyFormatter);
+  dot(ss, keyFormatter, writer);
   return ss.str();
 }
 
 /* ************************************************************************* */
 template <class FACTOR>
 void FactorGraph<FACTOR>::saveGraph(const std::string& filename,
-                                    const DotWriter& writer,
-                                    const KeyFormatter& keyFormatter) const {
+                                    const KeyFormatter& keyFormatter,
+                                    const DotWriter& writer) const {
   std::ofstream of(filename.c_str());
-  dot(of, writer, keyFormatter);
+  dot(of, keyFormatter, writer);
   of.close();
 }
 

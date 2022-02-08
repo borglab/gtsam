@@ -228,7 +228,7 @@ TEST(SymbolicFactorGraph, marginals) {
 }
 
 /* ************************************************************************* */
-TEST(SymbolicFactorGraph, constructFromBayesNet) {
+TEST_DISABLED(SymbolicFactorGraph, constructFromBayesNet) {
   // create expected factor graph
   SymbolicFactorGraph expected;
   expected.push_factor(0, 1, 2);
@@ -248,7 +248,7 @@ TEST(SymbolicFactorGraph, constructFromBayesNet) {
 }
 
 /* ************************************************************************* */
-TEST(SymbolicFactorGraph, constructFromBayesTree) {
+TEST_DISABLED(SymbolicFactorGraph, constructFromBayesTree) {
   // create expected factor graph
   SymbolicFactorGraph expected;
   expected.push_factor(_E_, _L_, _B_);

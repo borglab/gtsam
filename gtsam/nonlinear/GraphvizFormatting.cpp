@@ -34,7 +34,7 @@ Vector2 GraphvizFormatting::findBounds(const Values& values,
   min.y() = std::numeric_limits<double>::infinity();
   for (const Key& key : keys) {
     if (values.exists(key)) {
-      boost::optional<Vector2> xy = operator()(values.at(key));
+      boost::optional<Vector2> xy = extractPosition(values.at(key));
       if (xy) {
         if (xy->x() < min.x()) min.x() = xy->x();
         if (xy->y() < min.y()) min.y() = xy->y();
@@ -44,7 +44,7 @@ Vector2 GraphvizFormatting::findBounds(const Values& values,
   return min;
 }
 
-boost::optional<Vector2> GraphvizFormatting::operator()(
+boost::optional<Vector2> GraphvizFormatting::extractPosition(
     const Value& value) const {
   Vector3 t;
   if (const GenericValue<Pose2>* p =
@@ -53,6 +53,17 @@ boost::optional<Vector2> GraphvizFormatting::operator()(
   } else if (const GenericValue<Vector2>* p =
                  dynamic_cast<const GenericValue<Vector2>*>(&value)) {
     t << p->value().x(), p->value().y(), 0;
+  } else if (const GenericValue<Vector>* p =
+                 dynamic_cast<const GenericValue<Vector>*>(&value)) {
+    if (p->dim() == 2) {
+      const Eigen::Ref<const Vector2> p_2d(p->value());
+      t << p_2d.x(), p_2d.y(), 0;
+    } else if (p->dim() == 3) {
+      const Eigen::Ref<const Vector3> p_3d(p->value());
+      t = p_3d;
+    } else {
+      return boost::none;
+    }
   } else if (const GenericValue<Pose3>* p =
                  dynamic_cast<const GenericValue<Pose3>*>(&value)) {
     t = p->value().translation();
@@ -110,12 +121,11 @@ boost::optional<Vector2> GraphvizFormatting::operator()(
   return Vector2(x, y);
 }
 
-// Return affinely transformed variable position if it exists.
 boost::optional<Vector2> GraphvizFormatting::variablePos(const Values& values,
                                                          const Vector2& min,
                                                          Key key) const {
-  if (!values.exists(key)) return boost::none;
-  boost::optional<Vector2> xy = operator()(values.at(key));
+  if (!values.exists(key)) return DotWriter::variablePos(key);
+  boost::optional<Vector2> xy = extractPosition(values.at(key));
   if (xy) {
     xy->x() = scale * (xy->x() - min.x());
     xy->y() = scale * (xy->y() - min.y());
@@ -123,7 +133,6 @@ boost::optional<Vector2> GraphvizFormatting::variablePos(const Values& values,
   return xy;
 }
 
-// Return affinely transformed factor position if it exists.
 boost::optional<Vector2> GraphvizFormatting::factorPos(const Vector2& min,
                                                        size_t i) const {
   if (factorPositions.size() == 0) return boost::none;

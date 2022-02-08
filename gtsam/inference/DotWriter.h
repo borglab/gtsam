@@ -23,10 +23,15 @@
 #include <gtsam/inference/Key.h>
 
 #include <iosfwd>
+#include <map>
+#include <set>
 
 namespace gtsam {
 
-/// Graphviz formatter.
+/**
+ * @brief DotWriter is a helper class for writing graphviz .dot files.
+ * @addtogroup inference
+ */
 struct GTSAM_EXPORT DotWriter {
   double figureWidthInches;   ///< The figure width on paper in inches
   double figureHeightInches;  ///< The figure height on paper in inches
@@ -35,33 +40,59 @@ struct GTSAM_EXPORT DotWriter {
                              ///< the dot of the factor
   bool binaryEdges;          ///< just use non-dotted edges for binary factors
 
-  DotWriter()
-      : figureWidthInches(5),
-        figureHeightInches(5),
-        plotFactorPoints(true),
-        connectKeysToFactor(true),
-        binaryEdges(true) {}
+  /**
+   * Variable positions can be optionally specified and will be included in the
+   * dot file with a "!' sign, so "neato" can use it to render them.
+   */
+  std::map<Key, Vector2> variablePositions;
 
-  /// Write out preamble, including size.
-  void writePreamble(std::ostream* os) const;
+  /**
+   * The position hints allow one to use symbol character and index to specify
+   * position. Unless variable positions are specified, if a hint is present for
+   * a given symbol, it will be used to calculate the positions as (index,hint).
+   */
+  std::map<char, double> positionHints;
+
+  /** A set of keys that will be displayed as a box */
+  std::set<Key> boxes;
+
+  /**
+   * Factor positions can be optionally specified and will be included in the
+   * dot file with a "!' sign, so "neato" can use it to render them.
+   */
+  std::map<size_t, Vector2> factorPositions;
+
+  explicit DotWriter(double figureWidthInches = 5,
+                     double figureHeightInches = 5,
+                     bool plotFactorPoints = true,
+                     bool connectKeysToFactor = true, bool binaryEdges = false)
+      : figureWidthInches(figureWidthInches),
+        figureHeightInches(figureHeightInches),
+        plotFactorPoints(plotFactorPoints),
+        connectKeysToFactor(connectKeysToFactor),
+        binaryEdges(binaryEdges) {}
+
+  /// Write out preamble for graph, including size.
+  void graphPreamble(std::ostream* os) const;
+
+  /// Write out preamble for digraph, including size.
+  void digraphPreamble(std::ostream* os) const;
 
   /// Create a variable dot fragment.
-  static void DrawVariable(Key key, const KeyFormatter& keyFormatter,
-                           const boost::optional<Vector2>& position,
-                           std::ostream* os);
+  void drawVariable(Key key, const KeyFormatter& keyFormatter,
+                    const boost::optional<Vector2>& position,
+                    std::ostream* os) const;
 
   /// Create factor dot.
   static void DrawFactor(size_t i, const boost::optional<Vector2>& position,
                          std::ostream* os);
 
-  /// Connect two variables.
-  static void ConnectVariables(Key key1, Key key2, std::ostream* os);
-
-  /// Connect variable and factor.
-  static void ConnectVariableFactor(Key key, size_t i, std::ostream* os);
+  /// Return variable position or none
+  boost::optional<Vector2> variablePos(Key key) const;
 
   /// Draw a single factor, specified by its index i and its variable keys.
   void processFactor(size_t i, const KeyVector& keys,
+                     const KeyFormatter& keyFormatter,
                      const boost::optional<Vector2>& position,
                      std::ostream* os) const;
 };

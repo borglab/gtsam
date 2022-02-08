@@ -62,8 +62,8 @@ public:
       nKeys_(0) {
   }
 
-  template<class FG>
-  MetisIndex(const FG& factorGraph) :
+  template<class FACTORGRAPH>
+  MetisIndex(const FACTORGRAPH& factorGraph) :
       nKeys_(0) {
     augment(factorGraph);
   }
@@ -78,8 +78,8 @@ public:
    * Augment the variable index with new factors.  This can be used when
    * solving problems incrementally.
    */
-  template<class FACTOR>
-  void augment(const FactorGraph<FACTOR>& factors);
+  template<class FACTORGRAPH>
+  void augment(const FACTORGRAPH& factors);
 
   const std::vector<int32_t>& xadj() const {
     return xadj_;

@@ -99,6 +99,12 @@ namespace gtsam {
 
     /// @}
 
+    /// Check exact equality.
+    friend bool operator==(const GaussianFactorGraph& lhs,
+                            const GaussianFactorGraph& rhs) {
+      return lhs.isEqual(rhs);
+    }
+
     /** Add a factor by value - makes a copy */
     void add(const GaussianFactor& factor) { push_back(factor.clone()); }
 
@@ -154,7 +160,8 @@ namespace gtsam {
 
     /** Unnormalized probability. O(n) */
     double probPrime(const VectorValues& c) const {
-      return exp(-0.5 * error(c));
+      // NOTE the 0.5 constant is handled by the factor error.
+      return exp(-error(c));
     }
 
     /**
@@ -396,11 +403,11 @@ namespace gtsam {
 
   public:
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
-   /** \deprecated */
-   VectorValues optimize(boost::none_t,
-                         const Eliminate& function =
-                             EliminationTraitsType::DefaultEliminate) const {
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
+   /** @deprecated */
+   VectorValues GTSAM_DEPRECATED
+   optimize(boost::none_t, const Eliminate& function =
+                               EliminationTraitsType::DefaultEliminate) const {
      return optimize(function);
    }
 #endif
@@ -413,7 +420,7 @@ namespace gtsam {
    */
   GTSAM_EXPORT bool hasConstraints(const GaussianFactorGraph& factors);
 
-  /****** Linear Algebra Opeations ******/
+  /****** Linear Algebra Operations ******/
 
   ///* matrix-vector operations */
   //GTSAM_EXPORT void residual(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r);

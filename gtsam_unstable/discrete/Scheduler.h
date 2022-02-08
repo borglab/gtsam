@@ -8,6 +8,7 @@
 #pragma once
 
 #include <gtsam_unstable/discrete/CSP.h>
+#include <gtsam/discrete/DiscreteBayesNet.h>
 
 namespace gtsam {
 
@@ -145,9 +146,6 @@ class GTSAM_UNSTABLE_EXPORT Scheduler : public CSP {
 
   /** Eliminate, return a Bayes net */
   DiscreteBayesNet::shared_ptr eliminate() const;
-
-  /** Find the best total assignment - can be expensive */
-  DiscreteValues optimalAssignment() const;
 
   /** find the assignment of students to slots with most possible committees */
   DiscreteValues bestSchedule() const;

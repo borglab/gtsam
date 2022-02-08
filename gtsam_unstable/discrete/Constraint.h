@@ -22,6 +22,7 @@
 #include <gtsam_unstable/dllexport.h>
 
 #include <boost/assign.hpp>
+#include <boost/format.hpp>
 #include <map>
 
 namespace gtsam {
@@ -80,6 +81,22 @@ class GTSAM_EXPORT Constraint : public DiscreteFactor {
 
   /// Partially apply known values, domain version
   virtual shared_ptr partiallyApply(const Domains&) const = 0;
+  /// @}
+  /// @name Wrapper support
+  /// @{
+
+  /// Render as markdown table.
+  std::string markdown(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                       const Names& names = {}) const override {
+    return (boost::format("`Constraint` on %1% variables\n") % (size())).str();
+  }
+
+  /// Render as html table.
+  std::string html(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                   const Names& names = {}) const override {
+    return (boost::format("<p>Constraint on %1% variables</p>") % (size())).str();
+  }
+
   /// @}
 };
 // DiscreteFactor
