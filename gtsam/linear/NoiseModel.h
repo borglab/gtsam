@@ -1075,6 +1075,9 @@ namespace gtsam {
   typedef noiseModel::Constrained::shared_ptr SharedConstrained;
   typedef noiseModel::Isotropic::shared_ptr SharedIsotropic;
 
+  //[MH-G]:
+  typedef std::vector<noiseModel::Base::shared_ptr> SharedNoiseModelArr;
+
   /// traits
   template<> struct traits<noiseModel::Gaussian> : public Testable<noiseModel::Gaussian> {};
   template<> struct traits<noiseModel::Diagonal> : public Testable<noiseModel::Diagonal> {};

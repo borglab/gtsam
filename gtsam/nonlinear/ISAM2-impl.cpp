@@ -39,10 +39,32 @@ void ISAM2::Impl::AddVariables(
   theta.insert(newTheta);
   if(debug) newTheta.print("The new variables are: ");
   // Add zeros into the VectorValues
+  //[MH-A]
   delta.insert(newTheta.zeroVectors());
   deltaNewton.insert(newTheta.zeroVectors());
   RgProd.insert(newTheta.zeroVectors());
 }
+
+//================================= MH ==================================
+//[MH-A]: handle HypoTree...
+void ISAM2::Impl::mhAddVariables(
+    const Values& newTheta, Values& theta, VectorValues& delta,
+    VectorValues& deltaNewton, VectorValues& RgProd,
+    const KeyFormatter& keyFormatter)
+{
+  const bool debug = ISDEBUG("ISAM2 mhAddVariables");
+
+  theta.mhInsert(newTheta);
+
+  if(debug) newTheta.print("The new variables are: ");
+  
+  // Add zeros into the VectorValues
+  delta.insert(newTheta.zeroVectors());
+  deltaNewton.insert(newTheta.zeroVectors());
+  RgProd.insert(newTheta.zeroVectors());
+}
+
+//================================= END MH ==================================
 
 /* ************************************************************************* */
 void ISAM2::Impl::AddFactorsStep1(const NonlinearFactorGraph& newFactors, bool useUnusedSlots,
@@ -50,7 +72,7 @@ void ISAM2::Impl::AddFactorsStep1(const NonlinearFactorGraph& newFactors, bool u
 {
   newFactorIndices.resize(newFactors.size());
 
-  if(useUnusedSlots)
+  if(useUnusedSlots) //default: false
   {
     size_t globalFactorIndex = 0;
     for(size_t newFactorIndex = 0; newFactorIndex < newFactors.size(); ++newFactorIndex)
@@ -110,10 +132,11 @@ KeySet ISAM2::Impl::CheckRelinearizationFull(const VectorValues& delta,
 {
   KeySet relinKeys;
 
-  if(const double* threshold = boost::get<double>(&relinearizeThreshold))
+  if(const double* threshold = boost::get<double>(&relinearizeThreshold)) //mhsiao: default one threshold for all
   {
-    for(const VectorValues::KeyValuePair& key_delta: delta) {
-      double maxDelta = key_delta.second.lpNorm<Eigen::Infinity>();
+    //TODO Cloud be improved?
+    for(const VectorValues::KeyValuePair& key_delta: delta) { //mhsiao: might waste checking all delta (since new added ones are always from zeroVectors()...)
+      double maxDelta = key_delta.second.lpNorm<Eigen::Infinity>(); //mhsiao: Infinity-lpNorm() == max(), works for MH as well (lucky!)
       if(maxDelta >= *threshold)
         relinKeys.insert(key_delta.first);
     }
@@ -202,8 +225,10 @@ KeySet ISAM2::Impl::CheckRelinearizationPartial(const FastVector<ISAM2::sharedCl
 }
 
 /* ************************************************************************* */
+//[MH-A]: same for MH
 void ISAM2::Impl::FindAll(ISAM2Clique::shared_ptr clique, KeySet& keys, const KeySet& markedMask)
 {
+    
   static const bool debug = false;
   // does the separator contain any of the variables?
   bool found = false;
@@ -260,17 +285,69 @@ void ISAM2::Impl::ExpmapMasked(Values& values, const VectorValues& delta,
   }
 }
 
+//=============================== mhExpmapMasked() ==========================================
+void ISAM2::Impl::mhExpmapMasked(Values& values, const VectorValues& delta,
+    const KeySet& mask, boost::optional<VectorValues&> invalidateIfDebug, const KeyFormatter& keyFormatter)
+{
+  // If debugging, invalidate if requested, otherwise do not invalidate.
+  // Invalidating means setting expmapped entries to Inf, to trigger assertions
+  // if we try to re-use them.
+#ifdef NDEBUG
+  invalidateIfDebug = boost::none;
+#endif
+
+  assert(values.size() == delta.size());
+  Values::iterator key_value;
+  VectorValues::const_iterator key_delta;
+#ifdef GTSAM_USE_TBB
+  for(key_value = values.begin(); key_value != values.end(); ++key_value)
+  {
+    key_delta = delta.find(key_value->key);
+#else
+  for(key_value = values.begin(), key_delta = delta.begin(); key_value != values.end(); ++key_value, ++key_delta)
+  {
+    assert(key_value->key == key_delta->first);
+#endif
+    Key var = key_value->key;
+    
+    assert(delta[var].size() == (int)key_value->value.dim()*(int)key_value->value.hypoNum()); //mhsiao: special Vector structure makes size() == dim()*hypoNum()
+    assert(delta[var].allFinite());
+    if(mask.exists(var)) {
+      
+      //[MH-A]: Do NOT create a copy
+      key_value->value.retractInPlace_(delta[var]);
+
+      if(invalidateIfDebug)
+        (*invalidateIfDebug)[var].operator=(Vector::Constant(delta[var].rows(), numeric_limits<double>::infinity())); // Strange syntax to work with clang++ (bug in clang?)
+    }
+  }
+}
+//=============================== END mhExpmapMasked() ==========================================
+
 /* ************************************************************************* */
 namespace internal {
+
 inline static void optimizeInPlace(const boost::shared_ptr<ISAM2Clique>& clique, VectorValues& result) {
   // parents are assumed to already be solved and available in result
   result.update(clique->conditional()->solve(result));
 
-  // starting from the root, call optimize on each conditional
+  // starting from the root, call optimize on each conditional 
   for(const boost::shared_ptr<ISAM2Clique>& child: clique->children)
-    optimizeInPlace(child, result);
+    optimizeInPlace(child, result); //recursive
 }
+//=============================== mhOptimizeInPlace() =====================
+inline static void mhOptimizeInPlace(const boost::shared_ptr<ISAM2Clique>& clique, Values& theta, VectorValues& result, const double& splitThreshold) {
+
+  // parents are assumed to already be solved and available in result
+  result.update(clique->conditional()->mhSolve(theta, result, splitThreshold));
+
+  // starting from the root, call optimize on each conditional 
+  for(const boost::shared_ptr<ISAM2Clique>& child: clique->children) {
+    mhOptimizeInPlace(child, theta, result, splitThreshold); //recursive
+  }
 }
+//=============================== END mhOptimizeInPlace() =====================
+} // END internal namespace
 
 /* ************************************************************************* */
 size_t ISAM2::Impl::UpdateGaussNewtonDelta(const FastVector<ISAM2::sharedClique>& roots,
@@ -278,13 +355,16 @@ size_t ISAM2::Impl::UpdateGaussNewtonDelta(const FastVector<ISAM2::sharedClique>
 
   size_t lastBacksubVariableCount;
 
-  if (wildfireThreshold <= 0.0) {
+  if (wildfireThreshold <= 0.0) { //used in TEST_01
+
     // Threshold is zero or less, so do a full recalculation
-    for(const ISAM2::sharedClique& root: roots)
+    for(const ISAM2::sharedClique& root: roots) {
       internal::optimizeInPlace(root, delta);
+    }
     lastBacksubVariableCount = delta.size();
 
   } else {
+
     // Optimize with wildfire
     lastBacksubVariableCount = 0;
     for(const ISAM2::sharedClique& root: roots)
@@ -299,6 +379,39 @@ size_t ISAM2::Impl::UpdateGaussNewtonDelta(const FastVector<ISAM2::sharedClique>
 
   return lastBacksubVariableCount;
 }
+//========================== mhUpdateGaussNewtonDelta() ================
+size_t ISAM2::Impl::mhUpdateGaussNewtonDelta(const FastVector<ISAM2::sharedClique>& roots, const KeySet& replacedKeys, Values& theta, VectorValues& delta, double wildfireThreshold, const double& splitThreshold) {
+
+  size_t lastBacksubVariableCount;
+
+  if (wildfireThreshold <= 0.0) { //used in TEST_01
+
+    // Threshold is zero or less, so do a full recalculation
+    for(const ISAM2::sharedClique& root: roots) {
+
+      //[MH-A]:
+      internal::mhOptimizeInPlace(root, theta, delta, splitThreshold);
+    
+    }
+    lastBacksubVariableCount = delta.size();
+
+  } else {
+    //[MH-A]: Waiting for the first round being completed
+    // Optimize with wildfire
+    lastBacksubVariableCount = 0;
+    for(const ISAM2::sharedClique& root: roots)
+      lastBacksubVariableCount += optimizeWildfireNonRecursive(
+      root, wildfireThreshold, replacedKeys, delta); // modifies delta
+
+#ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
+    for(size_t j=0; j<delta.size(); ++j)
+      assert(delta[j].unaryExpr(ptr_fun(isfinite<double>)).all());
+#endif
+  }
+
+  return lastBacksubVariableCount;
+}
+//========================== END mhUpdateGaussNewtonDelta() ================
 
 /* ************************************************************************* */
 namespace internal {
@@ -373,4 +486,5 @@ VectorValues ISAM2::Impl::ComputeGradientSearch(const VectorValues& gradAtZero,
   return step * gradAtZero;
 }
 
-}
+} //gtsam namespace
+

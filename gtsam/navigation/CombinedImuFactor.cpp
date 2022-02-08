@@ -276,6 +276,111 @@ void CombinedImuFactor::Predict(const Pose3& pose_i, const Vector3& vel_i,
 }
 #endif
 
+/*
+//TODO: Don't work well under MH...
+//======================= MHCombinedImuFactor functions ======================
+MHCombinedImuFactor::MHCombinedImuFactor(Key pose_i, Key vel_i, Key pose_j,
+    Key vel_j, Key bias_i, Key bias_j,
+    const std::vector<PreintegratedCombinedMeasurements>& pim_arr) :
+    Base(noiseModel::Gaussian::Covariance(pim_arr.front().preintMeasCov_), 
+        pose_i, vel_i, pose_j, vel_j, bias_i, bias_j), _PIM_arr_(pim_arr) {
 }
- /// namespace gtsam
+
+//------------------------------------------------------------------------------
+gtsam::NonlinearFactor::shared_ptr MHCombinedImuFactor::clone() const {
+  return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+      gtsam::NonlinearFactor::shared_ptr(new This(*this)));
+}
+
+//------------------------------------------------------------------------------
+void MHCombinedImuFactor::print(const string& s, const KeyFormatter& keyFormatter) const {
+  cout << "MHCombinedImuFactor::print() NOT implemented yet!!" << endl;
+  //TODO:
+}
+
+//------------------------------------------------------------------------------
+bool MHCombinedImuFactor::equals(const NonlinearFactor& other, double tol) const {
+  
+  const This* e = dynamic_cast<const This*>(&other);
+  if ( e != NULL && Base::equals(*e, tol) ) {
+    if ( _PIM_arr_.size() == e->_PIM_arr_.size() ) {  
+      for (int i = 0; i < _PIM_arr_.size(); ++i) {
+        if ( !(_PIM_arr_[i].equals(e->_PIM_arr_[i], tol)) ) {
+          return false;
+        }
+      }
+      return true; //ONLY TRUE HERE
+    }
+  }
+  return false;
+}
+
+//------------------------------------------------------------------------------
+Vector MHCombinedImuFactor::evaluateSingleError(const Pose3& pose_i,
+    const Vector3& vel_i, const Pose3& pose_j, const Vector3& vel_j,
+    const imuBias::ConstantBias& bias_i, const imuBias::ConstantBias& bias_j,
+    const int& mode_id,
+    boost::optional<Matrix&> H1, boost::optional<Matrix&> H2,
+    boost::optional<Matrix&> H3, boost::optional<Matrix&> H4,
+    boost::optional<Matrix&> H5, boost::optional<Matrix&> H6) const {
+
+  // error wrt bias evolution model (random walk)
+  Matrix6 Hbias_i, Hbias_j;
+  Vector6 fbias = traits<imuBias::ConstantBias>::Between(bias_j, bias_i,
+      H6 ? &Hbias_j : 0, H5 ? &Hbias_i : 0).vector();
+
+  Matrix96 D_r_pose_i, D_r_pose_j, D_r_bias_i;
+  Matrix93 D_r_vel_i, D_r_vel_j;
+
+  // error wrt preintegrated measurements
+  Vector9 r_Rpv = _PIM_arr_[mode_id].computeErrorAndJacobians(pose_i, vel_i, pose_j, vel_j,
+      bias_i, H1 ? &D_r_pose_i : 0, H2 ? &D_r_vel_i : 0, H3 ? &D_r_pose_j : 0,
+      H4 ? &D_r_vel_j : 0, H5 ? &D_r_bias_i : 0);
+
+  // if we need the jacobians
+  if (H1) {
+    H1->resize(15, 6);
+    H1->block<9, 6>(0, 0) = D_r_pose_i;
+    // adding: [dBiasAcc/dPi ; dBiasOmega/dPi]
+    H1->block<6, 6>(9, 0).setZero();
+  }
+  if (H2) {
+    H2->resize(15, 3);
+    H2->block<9, 3>(0, 0) = D_r_vel_i;
+    // adding: [dBiasAcc/dVi ; dBiasOmega/dVi]
+    H2->block<6, 3>(9, 0).setZero();
+  }
+  if (H3) {
+    H3->resize(15, 6);
+    H3->block<9, 6>(0, 0) = D_r_pose_j;
+    // adding: [dBiasAcc/dPj ; dBiasOmega/dPj]
+    H3->block<6, 6>(9, 0).setZero();
+  }
+  if (H4) {
+    H4->resize(15, 3);
+    H4->block<9, 3>(0, 0) = D_r_vel_j;
+    // adding: [dBiasAcc/dVi ; dBiasOmega/dVi]
+    H4->block<6, 3>(9, 0).setZero();
+  }
+  if (H5) {
+    H5->resize(15, 6);
+    H5->block<9, 6>(0, 0) = D_r_bias_i;
+    // adding: [dBiasAcc/dBias_i ; dBiasOmega/dBias_i]
+    H5->block<6, 6>(9, 0) = Hbias_i;
+  }
+  if (H6) {
+    H6->resize(15, 6);
+    H6->block<9, 6>(0, 0).setZero();
+    // adding: [dBiasAcc/dBias_j ; dBiasOmega/dBias_j]
+    H6->block<6, 6>(9, 0) = Hbias_j;
+  }
+
+  // overall error
+  Vector r(15);
+  r << r_Rpv, fbias; // vector of size 15
+  return r;
+}
+// */
+
+} /// namespace gtsam
 

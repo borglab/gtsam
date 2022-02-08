@@ -73,7 +73,28 @@ void HessianFactor::Allocate(const Scatter& scatter) {
   }
   dims.back() = 1;
   info_ = SymmetricBlockMatrix(dims);
+
 }
+
+//====================== MHHessianFactor::mhAllocate() =================
+void MHHessianFactor::mhAllocate(const Scatter& scatter) {
+  //gttic(HessianFactor_Allocate);
+
+  // Allocate with dimensions for each variable plus 1 at the end for the information vector
+  const size_t n = scatter.size();
+  keys_.resize(n);
+  
+  //FastVector<DenseIndex> dims(n + 1);
+  
+  DenseIndex slot = 0;
+  for(const SlotEntry& slotentry: scatter) {
+    keys_[slot] = slotentry.key;
+    ++slot;
+  }
+
+}
+
+//====================== END MHHessianFactor::mhAllocate() =================
 
 /* ************************************************************************* */
 HessianFactor::HessianFactor(const Scatter& scatter) {
@@ -258,9 +279,12 @@ HessianFactor::HessianFactor(const GaussianFactorGraph& factors,
   // Form A' * A
   gttic(update);
   info_.setZero();
-  for(const auto& factor: factors)
-    if (factor)
-      factor->updateHessian(keys_, &info_);
+  for(const auto& factor: factors) {
+    if (factor) {
+      factor->updateHessian(keys_, &info_); //mhsiao: link back to JacobianFactor
+    }
+  }
+
   gttoc(update);
 }
 
@@ -382,7 +406,40 @@ void HessianFactor::updateHessian(const FastVector<Key>& infoKeys,
       }
     }
   }
+
 }
+//============================== MHHF::mhUpdateHessian() ===================
+//[MH-A]:
+void MHHessianFactor::mhUpdateHessian(const FastVector<Key>& keys, HessList& hessian_list, const int& max_layer_idx) const {
+  
+  // max_layer_idx decides the recursive iter...
+  const int this_layer_idx = resulting_layer_->getLayerIdx();
+  const int layer_diff = max_layer_idx - this_layer_idx;
+  
+  std::vector<int> descendant_num_arr(hypoSize());
+  
+  size_t dna_idx = 0;
+  const HypoList& hypo_list = getHypoList();
+  for (HypoListCstIter it = hypo_list.begin(); it != hypo_list.end(); ++it) {
+    descendant_num_arr[dna_idx] = (*it)->findDescendantNum(layer_diff);
+    ++dna_idx;
+  }
+
+  HessListIter hit = hessian_list.begin();
+  int dna_count = 0;
+  for (HessListCstIter ihit = hessian_list_.begin(); ihit != hessian_list_.end(); ++ihit) { //should NOT ++hit here
+    
+    auto& num = descendant_num_arr[dna_count];
+    for (int k = 0; k < num; ++k) {
+      (*ihit).updateHessian(keys, &((*hit).info())); 
+      
+      ++hit;
+    }
+    dna_count++;
+  }
+
+}
+//============================== END MHHF::mhUpdateHessian() ===================
 
 /* ************************************************************************* */
 GaussianFactor::shared_ptr HessianFactor::negate() const {
@@ -478,6 +535,7 @@ boost::shared_ptr<GaussianConditional> HessianFactor::eliminateCholesky(const Or
     // Do dense elimination
     size_t nFrontals = keys.size();
     assert(nFrontals <= size());
+
     info_.choleskyPartial(nFrontals);
 
     // TODO(frank): pre-allocate GaussianConditional and write into it
@@ -558,5 +616,130 @@ std::pair<boost::shared_ptr<GaussianConditional>,
   else
     return EliminateCholesky(factors, keys);
 }
+
+//================================== MHEliminateCholesky() ===========================
+//[MH-A]: convert JF/MHJF to HF/MHHF here... returns GaussianConditional and MHHessianFactor
+std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<MHHessianFactor> > 
+MHEliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys) {
+
+  //gttic(EliminateCholesky);
+  
+  // Build joint factor
+  MHHessianFactor::shared_ptr jointFactor;
+  try {
+
+    Scatter scatter(factors, true, keys);
+
+    //[MH-A]: [REFINE] constructor(): combine several MHJacobianFactor into one MHHessianFactor
+    jointFactor = boost::make_shared<MHHessianFactor>(factors, scatter);
+
+  } catch (std::invalid_argument&) {
+    throw InvalidDenseElimination(
+        "MHEliminateCholesky was called with a request to eliminate variables that are not involved in the provided factors.");
+  }
+
+  // Do dense elimination
+  //[MH-A]: careful "auto"
+  auto conditional = jointFactor->mhEliminateCholesky(keys); //MHHessianFactor::mhEliminateCholesky() returns GaussianConditional
+
+  // Return result
+  return make_pair(conditional, jointFactor);
+  // 
+}
+
+//================================== END MHEliminateCholesky() ============================
+
+//
+//========================== MHHessianFactor::mhEliminateCholesky() =========================
+boost::shared_ptr<GaussianConditional> MHHessianFactor::mhEliminateCholesky(const Ordering& keys) {
+
+  //gttic(HessianFactor_eliminateCholesky);
+
+  GaussianConditional::shared_ptr conditional;
+
+  try {
+
+    // Do dense elimination
+    size_t nFrontals = keys.size();
+    assert(nFrontals <= size());
+
+    std::list<VerticalBlockMatrix> Ab_list;
+    for (HessListIter it = hessian_list_.begin(); it != hessian_list_.end(); ++it) {
+
+      (it->info()).choleskyPartial(nFrontals);
+
+      // TODO(frank): pre-allocate GaussianConditional and write into it
+      Ab_list.push_back((it->info()).split(nFrontals));
+
+    }
+    //[MH-A]: [DONE] call MHJacobianFactor() as base constructor...
+
+    conditional = boost::make_shared<GaussianConditional>(keys_, nFrontals, Ab_list, resulting_layer_);
+
+    // Erase the eliminated keys in this factor
+    keys_.erase(begin(), begin() + nFrontals);
+    for (HessListIter it = hessian_list_.begin(); it != hessian_list_.end(); ++it) {
+      it->keys().erase(it->begin(), it->begin() + nFrontals);
+    }
+
+  } catch (const CholeskyFailed& e) {
+    throw IndeterminantLinearSystemException(keys.front());
+  }
+
+  // Return result
+  return conditional;
+}
+//================================== END mhEliminateCholesky() ============================
+
+//======================= HessianFactor(GaussianFactorGraph, Sactter) ==================
+MHHessianFactor::MHHessianFactor(const GaussianFactorGraph& factors, boost::optional<const Scatter&> scatter) {
+  //gttic(HessianFactor_MergeConstructor);
+  
+  //[MH-A]: try to copy this...
+  mhAllocate(scatter ? *scatter : Scatter(factors, true));
+
+  // Find the max_hypo_num
+  int max_layer_idx = -1;
+  boost::shared_ptr<GaussianFactor> max_fac_ptr;
+  for(const auto& fac: factors) {
+    if (fac) {
+      const int tmp_layer_idx = fac->getHypoLayer()->getLayerIdx();
+
+      if (tmp_layer_idx >= max_layer_idx) {
+        max_layer_idx = tmp_layer_idx;
+        max_fac_ptr = fac;
+      }
+    }
+  }
+
+  const HypoList& hypo_list = max_fac_ptr->getHypoList(); 
+  
+  hessian_list_.resize(hypo_list.size());
+  
+  for (HessListIter it = hessian_list_.begin(); it != hessian_list_.end(); ++it) {
+
+    (*it).Allocate(scatter ? *scatter : Scatter(factors, true));
+  }
+  
+  for(const auto& fac: factors) {
+    //[MH-A]: find corresponding hypos in each factor and update corresponding hessian info (use recursive)
+
+    if (fac) { 
+      //[MH-C]:
+      if (fac->removeAccumulatedPruned()) { //[MH-opt]: work on cached factors only... 
+        // Some Factors NOT pruned correctly????
+        //TODO: Do nothing for now...
+      }
+
+      fac->mhUpdateHessian(keys_, hessian_list_, max_layer_idx);
+    }
+  }
+  
+  resulting_layer_ = max_fac_ptr->getHypoLayer();
+  
+  //gttoc(update);
+
+}
+//======================= END HessianFactor(GaussianFactorGraph, Sactter) ==================
 
 } // gtsam

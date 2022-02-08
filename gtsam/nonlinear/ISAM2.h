@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <gtsam/inference/HypoTree.h>
+
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/DoglegOptimizerImpl.h>
 #include <gtsam/linear/GaussianBayesTree.h>
@@ -240,10 +242,20 @@ struct GTSAM_EXPORT ISAM2Params {
   void setEnableDetailedResults(bool enableDetailedResults) { this->enableDetailedResults = enableDetailedResults; }
   void setEnablePartialRelinearizationCheck(bool enablePartialRelinearizationCheck) { this->enablePartialRelinearizationCheck = enablePartialRelinearizationCheck; }
 
+  
   GaussianFactorGraph::Eliminate getEliminationFunction() const {
     return factorization == CHOLESKY
       ? (GaussianFactorGraph::Eliminate)EliminatePreferCholesky
       : (GaussianFactorGraph::Eliminate)EliminateQR;
+  }
+  
+  //[MH-A]: always return MHEliminateCholesky for MH...
+  GaussianFactorGraph::Eliminate mhGetEliminationFunction() const {
+    //mhsiao: GaussianFactorGraph::Eliminate defines the function input type: boost::function<EliminationResult(const GaussianFactorGraph&, const Ordering&)
+    // Above EliminationResult defines the function return type: std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<GaussianFactor> > 
+    // GaussianFactor is actually MHHessianFactor in MH...
+    return (GaussianFactorGraph::Eliminate)MHEliminateCholesky; //refer to "MHEliminateCholesky()" in HessianFactor.cpp
+
   }
 
   /// @}
@@ -373,10 +385,11 @@ public:
   typedef BayesTreeCliqueBase<This, GaussianFactorGraph> Base;
   typedef boost::shared_ptr<This> shared_ptr;
   typedef boost::weak_ptr<This> weak_ptr;
+
   typedef GaussianConditional ConditionalType;
   typedef ConditionalType::shared_ptr sharedConditional;
 
-  Base::FactorType::shared_ptr cachedFactor_;
+  Base::FactorType::shared_ptr cachedFactor_; //GaussianFactor::shared_ptr
   Vector gradientContribution_;
   FastMap<Key, VectorValues::iterator> solnPointers_;
 
@@ -384,7 +397,7 @@ public:
   ISAM2Clique() : Base() {}
 
   /// Copy constructor, does *not* copy solution pointers as these are invalid in different trees.
-  ISAM2Clique(const ISAM2Clique& other) :
+  ISAM2Clique(const ISAM2Clique& other) : //called in BayesTreeOrphanWrapper()
     Base(other), cachedFactor_(other.cachedFactor_), gradientContribution_(other.gradientContribution_) {}
 
   /// Assignment operator, does *not* copy solution pointers as these are invalid in different trees.
@@ -398,12 +411,18 @@ public:
 
   /// Overridden to also store the remaining factor and gradient contribution
   void setEliminationResult(const FactorGraphType::EliminationResult& eliminationResult);
+  
+  //[MH-A]: 
+  void mhSetEliminationResult(const FactorGraphType::EliminationResult& eliminationResult);
 
   /** Access the cached factor */
   Base::FactorType::shared_ptr& cachedFactor() { return cachedFactor_; }
 
   /** Access the gradient contribution */
-  const Vector& gradientContribution() const { return gradientContribution_; }
+  const Vector& gradientContribution() const { 
+      
+    return gradientContribution_;     
+  }
 
   bool equals(const This& other, double tol=1e-9) const;
 
@@ -651,8 +670,6 @@ protected:
 
 }; // ISAM2
 
-/// traits
-template<> struct traits<ISAM2> : public Testable<ISAM2> {};
 
 /// Optimize the BayesTree, starting from the root.
 /// @param replaced Needs to contain
@@ -676,6 +693,198 @@ size_t optimizeWildfireNonRecursive(const boost::shared_ptr<CLIQUE>& root,
 /// calculate the number of non-zero entries for the tree starting at clique (use root for complete matrix)
 template<class CLIQUE>
 int calculate_nnz(const boost::shared_ptr<CLIQUE>& clique);
+
+
+//=============================================================== MHISAM2 ======================================================================
+//[MH-A]: Keep the same structure as ISAM2. Add HypoTree and modify all affected functions
+// Refer to ISAM2: public BayesTree<ISAM2Clique> 
+class GTSAM_EXPORT MHISAM2: public ISAM2 {
+public:
+  typedef boost::shared_ptr<Factor> sharedFactor;
+  typedef boost::shared_ptr<MHNoiseModelFactor> sharedMHFactor;
+  
+  typedef std::list<HypoNode*> HypoList;
+  typedef typename HypoList::iterator HypoListIter;
+  typedef typename HypoList::const_iterator HypoListCstIter;
+
+  typedef std::tuple<double, HypoNode*, size_t> PruneObj;
+  typedef std::list<PruneObj> PruneList;
+  typedef typename PruneList::iterator PruneListIter;
+  typedef typename PruneList::const_iterator PruneListCstIter;
+  
+  typedef std::list<std::pair<Key, HypoLayer*>  > KeyLayerList;
+  typedef typename KeyLayerList::iterator KeyLayerListIter;
+  typedef typename KeyLayerList::const_iterator KeyLayerListCstIter;
+
+  bool is_update_delta_required_; //mhsiao: used to save one mhUpdateDelta() in update()...
+
+  HypoTree* hypo_tree_; //see inference/HypoTree.h
+
+  MHParams mh_params_; //see inference/HypoTree.h
+
+  KeyLayerList expand_list_;
+  
+  //==== mhsiao: How to interpret the members in ISMA2 ====
+  // Values theta_; //each Value can now be multi-hypo as "MHGenericValue : public Value"
+
+  // VariableIndex variableIndex_; //not changed. Used to search for the indices of factors that involve this key: FastMap<Key, FastVector<size_t> >
+
+  // mutable VectorValues delta_; //each Vector = [v_1 ; v_2 ; ... ; v_n] contains all current hypos
+  // mutable VectorValues deltaNewton_; //only used when using Dogleg - stores the Gauss-Newton update
+  // mutable VectorValues RgProd_; //only used when using Dogleg - stores R*g and is updated incrementally
+
+  // mutable KeySet deltaReplacedMask_; //make sure accessed in the right way
+
+  // NonlinearFactorGraph nonlinearFactors_; //each NonlinearFactor can now be multi-hypo as "MHBetweenFactor : public NoiseModelFactor2<VALUE, VALUE>"
+
+  // mutable GaussianFactorGraph linearFactors_; //each GaussianFactor can now be multi-hypo as "MHHessianFactor : public GaussianFactor"
+
+  //[MH-A]: Constructor using: ISAM2(const ISAM2Params& params)
+  MHISAM2(const ISAM2Params& params, const MHParams& mh_params) : ISAM2(params), mh_params_(mh_params) {
+    
+    hypo_tree_ = new HypoTree(); //create one root (multiple roots are NOT supported in MH) 
+    
+    is_update_delta_required_ = false;
+  }
+  
+  HypoNode* getHypoTreeRoot() {
+    return hypo_tree_->root();
+  }
+
+  HypoLayer* getFirstHypoLayer() {
+    return &(hypo_tree_->getLayer(0)); //layer_arr_[0]  
+  }
+  
+  HypoLayer* getLastHypoLayer() {
+    return &(hypo_tree_->getLastLayer()); //layer_arr_.back()  
+  }
+
+  const int& getLastHypoLayerIdx() {
+    return hypo_tree_->getLastLayer().getLayerIdx();
+  }
+  
+  std::list<HypoNode*>& getNodeListAt(const int& layer_idx) {
+    return hypo_tree_->getLayer(layer_idx).getNodeList();
+  }
+  
+  std::list<HypoNode*>& getLastNodeList() {
+    return hypo_tree_->getLastLayer().getNodeList();
+  }
+
+  HypoLayer* createNextHypoLayer(const int& mode_size, const size_t& dim, const bool& is_loop = false, const bool& is_detachable = false) {
+    hypo_tree_->addLayer(mode_size, dim, is_loop, is_detachable);
+    return &(hypo_tree_->getLastLayer());
+  }
+  //[MH-C]:
+  void accumulateCommonDim(const size_t& dim) {
+    hypo_tree_->updateCommonDim(dim);
+  }
+
+  void assocLatestHypoLayerWith(sharedFactor factor) {
+    // Input is always a descendant of MHNoiseModelFactor
+    (boost::static_pointer_cast<MHNoiseModelFactor>(factor))->setCreatingHypoLayer(hypo_tree_->setLatestLayerSource(factor));
+  }
+
+  bool isModeIdExistInLayer(const int& mode_id, const int& layer_idx) {
+    return hypo_tree_->getLayer(layer_idx).isModeIdExist(mode_id);
+  }
+
+  bool isModeConvergedInLayer(const int& layer_idx) {
+    return hypo_tree_->getLayer(layer_idx).isModeConverged();
+  }
+
+  //MHGenericValue<Pose3> predictPose3Multi(const MHGenericValue<Pose3>& mh_generic, const std::vector<Pose3>& odom_arr);
+
+  //==== Functions from original ISAM2 that should be modified in MHISAM2 (contains hypo managing) ====
+  ISAM2Result update(
+      const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(),
+      const Values& newTheta = Values(),
+      const FactorIndices& removeFactorIndices = FactorIndices(),
+      const boost::optional<FastMap<Key,int> >& constrainedKeys = boost::none,
+      const boost::optional<FastList<Key> >& noRelinKeys = boost::none,
+      const boost::optional<FastList<Key> >& extraReelimKeys = boost::none,
+      bool force_relinearize = false);
+  
+  Values mhCalculateEstimate();
+  
+  Values mhCalculateBestEstimate();
+  
+  const VectorValues& mhGetDelta();
+
+  //[MH-C]:
+  HypoNode* getBestHypo(const size_t& best_type = 0);
+  
+  //[MH-C]:
+  void autoHypoPruning(const bool& is_num_limited = true);
+
+  //[MH-C]:
+  void setVariableToExpand(const Key& key, HypoLayer* target_layer);
+
+  //[MH-C]: TEST
+  void printAllFinalHypo() {
+    for(const ISAM2::sharedClique& root: roots_) {
+      root->cachedFactor()->printAllHypo();
+    }
+  }
+  
+  //[MH-C]: TEST
+  int calculateExpGrowHypoNum() {
+    return hypo_tree_->calculateOriginalHypoNum();
+  }
+  
+  //[MH-A]: used for Dogleg (but Dogleg NOT implemented yet)
+  VectorValues mhGradientAtZero() const;
+
+protected:
+  void mhUpdateDelta(bool forceFullSolve = false);
+
+protected: //MHISAM2::
+  //[MH-A]: mhLinearize() is called inside...
+  GaussianFactorGraph::shared_ptr mhRelinearizeAffectedFactors(const FastList<Key>& affectedKeys, const KeySet& relinKeys) const;
+  
+  boost::shared_ptr<KeySet > recalculate(
+      const KeySet& markedKeys, 
+      const KeySet& relinKeys,
+      const std::vector<Key>& observedKeys, 
+      const KeySet& unusedIndices, 
+      const boost::optional<FastMap<Key,int> >& constrainKeys, 
+      ISAM2Result& result);
+  
+  //[MH-C]:
+  inline void removePrunedConditional(const boost::shared_ptr<ISAM2Clique>& clique) {
+  
+    if (clique->conditional()->removeAccumulatedPruned()) {
+      for(const boost::shared_ptr<ISAM2Clique>& child: clique->children) {
+        removePrunedConditional(child); //recursive
+      }
+    }
+  }
+
+  //[MH-C]:
+  void removePrunedCachedFactors(Cliques& orphans) {
+    for (auto& orphan: orphans) {
+      orphan->cachedFactor_->removeAccumulatedPruned();
+    }
+  }
+
+  //[MH-C]:
+  void expandListedVariables() {
+    for (KeyLayerListIter kit = expand_list_.begin(); kit != expand_list_.end(); ++kit) {
+      const Key& key = kit->first;
+      HypoLayer* target_layer = kit->second;
+      (theta_.at(key)).setAgreeWith(key, target_layer);
+    }
+    expand_list_.clear();
+  }
+
+}; // MHISAM2
+
+/// traits
+template<> struct traits<ISAM2> : public Testable<ISAM2> {};
+/// traits
+template<> struct traits<MHISAM2> : public Testable<MHISAM2> {};
+
+//===================================================== END MHISAM2 =======================================================
 
 } /// namespace gtsam
 

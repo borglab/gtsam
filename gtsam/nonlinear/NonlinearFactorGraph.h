@@ -142,6 +142,9 @@ namespace gtsam {
     /// Linearize a nonlinear factor graph
     boost::shared_ptr<GaussianFactorGraph> linearize(const Values& linearizationPoint) const;
 
+    //[MH-A]: for both NMF and MHNMF
+    boost::shared_ptr<GaussianFactorGraph> mhLinearize(const Values& linearizationPoint) const;
+    
     /// typdef for dampen functions used below
     typedef std::function<void(const boost::shared_ptr<HessianFactor>& hessianFactor)> Dampen;
 

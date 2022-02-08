@@ -60,7 +60,7 @@ namespace gtsam {
    * \addtogroup Multifrontal
    * \nosubgrouping
    */
-  template<class CLIQUE>
+  template<class CLIQUE> //
   class BayesTree
   {
   protected:
@@ -69,12 +69,12 @@ namespace gtsam {
 
   public:
     typedef CLIQUE Clique; ///< The clique type, normally BayesTreeClique
-    typedef boost::shared_ptr<Clique> sharedClique; ///< Shared pointer to a clique
+    typedef boost::shared_ptr<Clique> sharedClique; ///< Shared pointer to a clique 
     typedef Clique Node; ///< Synonym for Clique (TODO: remove)
     typedef sharedClique sharedNode; ///< Synonym for sharedClique (TODO: remove)
     typedef typename CLIQUE::ConditionalType ConditionalType;
     typedef boost::shared_ptr<ConditionalType> sharedConditional;
-    typedef typename CLIQUE::BayesNetType BayesNetType;
+    typedef typename CLIQUE::BayesNetType BayesNetType; //
     typedef boost::shared_ptr<BayesNetType> sharedBayesNet;
     typedef typename CLIQUE::FactorType FactorType;
     typedef boost::shared_ptr<FactorType> sharedFactor;
@@ -87,7 +87,7 @@ namespace gtsam {
     typedef FastList<sharedClique> Cliques;
 
     /** Map from keys to Clique */
-    typedef ConcurrentMap<Key, sharedClique> Nodes;
+    typedef ConcurrentMap<Key, sharedClique> Nodes; 
 
   protected:
 
@@ -214,6 +214,7 @@ namespace gtsam {
      * Given a list of indices, turn "contaminated" part of the tree back into a factor graph.
      * Factors and orphans are added to the in/out arguments.
      */
+    //[MH-A]: same for MH
     void removeTop(const FastVector<Key>& keys, BayesNetType& bn, Cliques& orphans);
 
     /**
@@ -263,11 +264,12 @@ namespace gtsam {
   }; // BayesTree
 
   /* ************************************************************************* */
+  //mhsiao: used in ISAM2::update(): 
   template<class CLIQUE>
   class BayesTreeOrphanWrapper : public CLIQUE::ConditionalType
-  {
+  { //mhsiao: GaussianConditional
   public:
-    typedef CLIQUE CliqueType;
+    typedef CLIQUE CliqueType; //mhsiao: ISAM2Clique 
     typedef typename CLIQUE::ConditionalType Base;
 
     boost::shared_ptr<CliqueType> clique;
@@ -279,6 +281,17 @@ namespace gtsam {
       // this subtree into the elimination.
       this->keys_.assign(clique->conditional()->beginParents(), clique->conditional()->endParents());
     }
+
+//============================ BayesTreeOrphanWrapper(is_mh) ========================   
+    BayesTreeOrphanWrapper(const boost::shared_ptr<CliqueType>& clique, const bool& is_mh) : clique(clique) {
+      //[MH-A]: Setup resulting_layer_
+      this->resulting_layer_ = clique->conditional()->getHypoLayer();
+
+      // Store parent keys in our base type factor so that eliminating those parent keys will pull
+      // this subtree into the elimination.
+      this->keys_.assign(clique->conditional()->beginParents(), clique->conditional()->endParents());
+    }
+//============================ END BayesTreeOrphanWrapper(is_mh) ========================   
 
     void print(const std::string& s="", const KeyFormatter& formatter = DefaultKeyFormatter) const {
       clique->print(s + "stored clique", formatter);

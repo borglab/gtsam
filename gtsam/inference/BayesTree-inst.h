@@ -432,6 +432,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  //[MH-A]: same for MH
   template<class CLIQUE>
   void BayesTree<CLIQUE>::removePath(sharedClique clique, BayesNetType& bn, Cliques& orphans)
   {
@@ -445,18 +446,19 @@ namespace gtsam {
       this->removeClique(clique);
 
       // remove path above me
-      this->removePath(typename Clique::shared_ptr(clique->parent_.lock()), bn, orphans);
+      this->removePath(typename Clique::shared_ptr(clique->parent_.lock()), bn, orphans); //recursive
 
       // add children to list of orphans (splice also removed them from clique->children_)
       orphans.insert(orphans.begin(), clique->children.begin(), clique->children.end());
       clique->children.clear();
 
-      bn.push_back(clique->conditional_);
+      bn.push_back(clique->conditional_); //Modified "GaussianConditional : public MHJacobianFactor, public ..."
 
     }
   }
 
   /* ************************************************************************* */
+  //[MH-A]: same for MH
   template<class CLIQUE>
   void BayesTree<CLIQUE>::removeTop(const FastVector<Key>& keys, BayesNetType& bn, Cliques& orphans)
   {
@@ -464,18 +466,21 @@ namespace gtsam {
     for(const Key& j: keys)
     {
       // get the clique
-      // TODO: Nodes will be searched again in removeClique
+      //TODO: Nodes will be searched again in removeClique
       typename Nodes::const_iterator node = nodes_.find(j);
       if(node != nodes_.end()) {
         // remove path from clique to root
-        this->removePath(node->second, bn, orphans);
+        //[MH-A]: same for MH
+        this->removePath(node->second, bn, orphans); //mhsiao: node->second is boost::shared_ptr<ISAM2Clique>
       }
     }
 
     // Delete cachedShortcuts for each orphan subtree
-    //TODO: Consider Improving
-    for(sharedClique& orphan: orphans)
+    //TODO: Consider Improving (existed)
+    //[MH-A]: same for MH
+    for(sharedClique& orphan: orphans) {
       orphan->deleteCachedShortcuts();
+    }
   }
 
   /* ************************************************************************* */
@@ -516,5 +521,4 @@ namespace gtsam {
     return cliques;
   }
 
-}
-/// namespace gtsam
+} /// namespace gtsam

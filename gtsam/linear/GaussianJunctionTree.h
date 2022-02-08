@@ -49,6 +49,6 @@ namespace gtsam {
     * @return The elimination tree
     */
     GaussianJunctionTree(const GaussianEliminationTree& eliminationTree);
-  };
+  }; // END GaussianJunctionTree
 
 }

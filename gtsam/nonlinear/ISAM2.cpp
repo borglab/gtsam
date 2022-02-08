@@ -120,15 +120,36 @@ std::string ISAM2Params::factorizationTranslator(const ISAM2Params::Factorizatio
 /* ************************************************************************* */
 void ISAM2Clique::setEliminationResult(const FactorGraphType::EliminationResult& eliminationResult)
 {
+
   conditional_ = eliminationResult.first;
   cachedFactor_ = eliminationResult.second;
+
+
   // Compute gradient contribution
   gradientContribution_.resize(conditional_->cols() - 1);
-  // Rewrite -(R * P')'*d   as   -(d' * R * P')'   for computational speed reasons
-  gradientContribution_ << -conditional_->get_R().transpose() * conditional_->get_d(),
-    -conditional_->get_S().transpose() * conditional_->get_d();
-}
 
+  // Rewrite -(R * P')'*d   as   -(d' * R * P')'   for computational speed reasons
+  gradientContribution_ << -conditional_->get_R().transpose() * conditional_->get_d(), -conditional_->get_S().transpose() * conditional_->get_d();
+
+}
+//============================= ISAM2Clique::mhSetEliminationResult() ========
+void ISAM2Clique::mhSetEliminationResult(const FactorGraphType::EliminationResult& eliminationResult)
+{
+
+  conditional_ = eliminationResult.first;
+  cachedFactor_ = eliminationResult.second;
+
+  /*
+  //TODO: mhsiao: should setup later for Dogleg
+  // Compute gradient contribution
+  gradientContribution_.resize(conditional_->cols() - 1);
+
+  // Rewrite -(R * P')'*d   as   -(d' * R * P')'   for computational speed reasons
+  gradientContribution_ << -conditional_->get_R().transpose() * conditional_->get_d(), -conditional_->get_S().transpose() * conditional_->get_d();
+
+  // */
+}
+//============================= END ISAM2Clique::mhSetEliminationResult() ========
 /* ************************************************************************* */
 bool ISAM2Clique::equals(const This& other, double tol) const {
   return Base::equals(other) &&
@@ -191,7 +212,6 @@ KeySet ISAM2::getAffectedFactors(const KeyList& keys) const {
 /* ************************************************************************* */
 // retrieve all factors that ONLY contain the affected variables
 // (note that the remaining stuff is summarized in the cached factors)
-
 GaussianFactorGraph::shared_ptr
 ISAM2::relinearizeAffectedFactors(const FastList<Key>& affectedKeys, const KeySet& relinKeys) const
 {
@@ -211,14 +231,14 @@ ISAM2::relinearizeAffectedFactors(const FastList<Key>& affectedKeys, const KeySe
   GaussianFactorGraph::shared_ptr linearized = boost::make_shared<GaussianFactorGraph>();
   for(Key idx: candidates) {
     bool inside = true;
-    bool useCachedLinear = params_.cacheLinearizedFactors;
+    bool useCachedLinear = params_.cacheLinearizedFactors; //mhsiao: default true
     for(Key key: nonlinearFactors_[idx]->keys()) {
       if(affectedKeysSet.find(key) == affectedKeysSet.end()) {
-        inside = false;
+        inside = false; //mhsiao: do nothing if any of the Keys is NOT in the affectedKeysSet...
         break;
       }
       if(useCachedLinear && relinKeys.find(key) != relinKeys.end())
-        useCachedLinear = false;
+        useCachedLinear = false; //mhsiao: do NOT use cached linear factor if any of the Keys is in relinKets...
     }
     if(inside) {
       if(useCachedLinear) {
@@ -246,13 +266,13 @@ ISAM2::relinearizeAffectedFactors(const FastList<Key>& affectedKeys, const KeySe
 
 /* ************************************************************************* */
 // find intermediate (linearized) factors from cache that are passed into the affected area
-
+//[MH-A]: same for MH
 GaussianFactorGraph ISAM2::getCachedBoundaryFactors(Cliques& orphans) {
   GaussianFactorGraph cachedBoundary;
 
   for(sharedClique orphan: orphans) {
     // retrieve the cached factor and add to boundary
-    cachedBoundary.push_back(orphan->cachedFactor());
+    cachedBoundary.push_back(orphan->cachedFactor()); //push_back(GaussianFactor::shared_ptr)
   }
 
   return cachedBoundary;
@@ -436,8 +456,10 @@ boost::shared_ptr<KeySet > ISAM2::recalculate(const KeySet& markedKeys, const Ke
 
     gttic(orphans);
     // Add the orphaned subtrees
-    for(const sharedClique& orphan: orphans)
+    for(const sharedClique& orphan: orphans) {
+
       factors += boost::make_shared<BayesTreeOrphanWrapper<Clique> >(orphan);
+    }
     gttoc(orphans);
 
 
@@ -963,7 +985,9 @@ void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeysList,
 void ISAM2::updateDelta(bool forceFullSolve) const
 {
   gttic(updateDelta);
+
   if(params_.optimizationParams.type() == typeid(ISAM2GaussNewtonParams)) {
+
     // If using Gauss-Newton, update with wildfireThreshold
     const ISAM2GaussNewtonParams& gaussNewtonParams =
         boost::get<ISAM2GaussNewtonParams>(params_.optimizationParams);
@@ -975,6 +999,7 @@ void ISAM2::updateDelta(bool forceFullSolve) const
     gttoc(Wildfire_update);
 
   } else if(params_.optimizationParams.type() == typeid(ISAM2DoglegParams)) {
+
     // If using Dogleg, do a Dogleg step
     const ISAM2DoglegParams& doglegParams =
         boost::get<ISAM2DoglegParams>(params_.optimizationParams);
@@ -1009,7 +1034,78 @@ void ISAM2::updateDelta(bool forceFullSolve) const
     gttoc(Copy_dx_d);
   }
 }
+  
 
+//============================== MHISAM2::mhUpdateDelta() =======================
+//[MH-A]: forceFullSolve: [mhCalBstEst = true], [mhCalEst = none(false)]
+void MHISAM2::mhUpdateDelta(bool forceFullSolve) { //mhsiao: remove const to allow updating the structure of theta_
+  //gttic(updateDelta);
+
+  if(params_.optimizationParams.type() == typeid(ISAM2GaussNewtonParams)) {
+
+    // If using Gauss-Newton, update with wildfireThreshold
+    const ISAM2GaussNewtonParams& gaussNewtonParams =
+        boost::get<ISAM2GaussNewtonParams>(params_.optimizationParams);
+    const double effectiveWildfireThreshold = forceFullSolve ? 0.0 : gaussNewtonParams.wildfireThreshold;
+    
+    //gttic(Wildfire_update);
+    
+    //[MH-A]: Additionally input theta_ to allow hypo_assoc
+    lastBacksubVariableCount = Impl::mhUpdateGaussNewtonDelta(roots_, deltaReplacedMask_, theta_, delta_, effectiveWildfireThreshold, 0.001); //Setup splitThreshold //0.001
+
+    deltaReplacedMask_.clear();
+    
+    //gttoc(Wildfire_update);
+  } else if(params_.optimizationParams.type() == typeid(ISAM2DoglegParams)) { 
+    /*
+    //TODO: If using Dogleg, do a Dogleg step (NOT implemented yet)
+    const ISAM2DoglegParams& doglegParams =
+        boost::get<ISAM2DoglegParams>(params_.optimizationParams);
+    const double effectiveWildfireThreshold = forceFullSolve ? 0.0 : doglegParams.wildfireThreshold;
+
+    // Do one Dogleg iteration
+    //gttic(Dogleg_Iterate);
+
+    // Compute Newton's method step
+    //gttic(Wildfire_update);
+    
+    //TODO: Additionally input theta_ to allow hypo_assoc
+    lastBacksubVariableCount = Impl::mhUpdateGaussNewtonDelta(roots_, deltaReplacedMask_, theta_, deltaNewton_, effectiveWildfireThreshold, 0.001);
+    
+    //gttoc(Wildfire_update);
+
+    // Compute steepest descent step
+    //TODO:
+    const VectorValues gradAtZero = this->mhGradientAtZero(); // Compute gradient
+    
+    //TODO: re-check
+    Impl::UpdateRgProd(roots_, deltaReplacedMask_, gradAtZero, RgProd_); // Update RgProd
+    
+    //TODO: using the original function might be okay... (take norm across hypos?)
+    const VectorValues dx_u = Impl::ComputeGradientSearch(gradAtZero, RgProd_); // Compute gradient search point
+
+    // Clear replaced keys mask because now we've updated deltaNewton_ and RgProd_
+    deltaReplacedMask_.clear();
+
+    //TODO: re-check
+    // Compute dogleg point
+    DoglegOptimizerImpl::IterationResult doglegResult(DoglegOptimizerImpl::Iterate(*doglegDelta_, doglegParams.adaptationMode, dx_u, deltaNewton_, *this, nonlinearFactors_, theta_, nonlinearFactors_.error(theta_), doglegParams.verbose));
+    
+    //gttoc(Dogleg_Iterate);
+
+    //gttic(Copy_dx_d);
+    
+    // Update Delta and linear step
+    doglegDelta_ = doglegResult.delta;
+    
+    delta_ = doglegResult.dx_d; // Copy the VectorValues containing with the linear solution
+    
+    //gttoc(Copy_dx_d);
+    // */
+  }
+  is_update_delta_required_ = !(forceFullSolve);
+}
+//============================== END MHISAM2::mhUpdateDelta() =======================
 /* ************************************************************************* */
 Values ISAM2::calculateEstimate() const {
   gttic(ISAM2_calculateEstimate);
@@ -1018,6 +1114,19 @@ Values ISAM2::calculateEstimate() const {
   return theta_.retract(delta);
   gttoc(Expmap);
 }
+//============================== MHISAM2::mhCalculateEstimate() ===========
+Values MHISAM2::mhCalculateEstimate() { //mhsiao: remove const to allow updating theta_
+  //gttic(ISAM2_calculateEstimate);
+  
+  const VectorValues& delta(getDelta());
+  
+  //gttic(Expmap);
+  
+  return theta_.retract(delta);
+  
+  //gttoc(Expmap);
+}
+//============================== END MHISAM2::mhCalculateEstimate() ===========
 
 /* ************************************************************************* */
 const Value& ISAM2::calculateEstimate(Key key) const {
@@ -1030,6 +1139,18 @@ Values ISAM2::calculateBestEstimate() const {
   updateDelta(true); // Force full solve when updating delta_
   return theta_.retract(delta_);
 }
+//============================== MHISAM2::mhCalculateBestEstimate() ===========
+//[MH-A]:
+Values MHISAM2::mhCalculateBestEstimate() { //mhsiao: remove const
+
+  //[MH-A]: now only GaussNewton... 
+  //TODO: Add Dogleg later...
+  mhUpdateDelta(true); // Force full solve when updating delta_
+  
+  return theta_.mhRetract(delta_);
+}
+
+//============================== END MHISAM2::mhCalculateBestEstimate() ===========
 
 /* ************************************************************************* */
 Matrix ISAM2::marginalCovariance(Key key) const {
@@ -1042,6 +1163,14 @@ const VectorValues& ISAM2::getDelta() const {
     updateDelta();
   return delta_;
 }
+//============================== MHISAM2::mhGetDelta() ====================
+const VectorValues& MHISAM2::mhGetDelta() {
+  if(!deltaReplacedMask_.empty())
+    mhUpdateDelta();
+  return delta_;
+}
+
+//============================== END MHISAM2::mhGetDelta() ====================
 
 /* ************************************************************************* */
 double ISAM2::error(const VectorValues& x) const
@@ -1081,6 +1210,656 @@ VectorValues ISAM2::gradientAtZero() const
 
   return g;
 }
+
+//=========================== MHISAM2::mhGradientAtZero() ===========================
+VectorValues MHISAM2::mhGradientAtZero() const
+{
+  // Create result
+  VectorValues g;
+
+  /*
+  // Sum up contributions for each clique
+  //TODO: for Dogleg, NOT implemented yet
+  for(const ISAM2::sharedClique& root: this->roots()) {
+    //mhGradientAtZeroTreeAdder(root, g);
+  }
+  // */
+
+  return g;
+}
+
+//=========================== END MHISAM2::mhGradientAtZero() ===========================
+
+//=========================== MHISAM2::mhRelinearizeAffectedFactors() ===========================
+//[MH-A]:
+GaussianFactorGraph::shared_ptr MHISAM2::mhRelinearizeAffectedFactors(const FastList<Key>& affectedKeys, const KeySet& relinKeys) const
+{
+  //gttic(getAffectedFactors);
+  //[MH-A]: same for MH
+  KeySet candidates = getAffectedFactors(affectedKeys);
+  //gttoc(getAffectedFactors);
+
+  NonlinearFactorGraph nonlinearAffectedFactors;
+
+  //gttic(affectedKeysSet);
+  // for fast lookup below
+  KeySet affectedKeysSet;
+  affectedKeysSet.insert(affectedKeys.begin(), affectedKeys.end());
+  //gttoc(affectedKeysSet);
+
+  //gttic(check_candidates_and_linearize);
+  GaussianFactorGraph::shared_ptr linearized = boost::make_shared<GaussianFactorGraph>();
+  for(Key idx: candidates) {
+    bool inside = true;
+    bool useCachedLinear = params_.cacheLinearizedFactors;
+    for(Key key: nonlinearFactors_[idx]->keys()) {
+      if(affectedKeysSet.find(key) == affectedKeysSet.end()) {
+        inside = false;
+        break;
+      }
+      if(useCachedLinear && relinKeys.find(key) != relinKeys.end())
+        useCachedLinear = false;
+    }
+    if(inside) {
+      if(useCachedLinear) {
+#ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
+        assert(linearFactors_[idx]);
+        assert(linearFactors_[idx]->keys() == nonlinearFactors_[idx]->keys());
+#endif
+        linearized->push_back(linearFactors_[idx]);
+      } else {
+        //[MH-A]: call MHNoiseModelFactor::mhLinearize()
+        GaussianFactor::shared_ptr linearFactor = nonlinearFactors_[idx]->mhLinearize(theta_);
+        linearized->push_back(linearFactor);
+        if(params_.cacheLinearizedFactors) {
+#ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
+          assert(linearFactors_[idx]->keys() == linearFactor->keys());
+#endif
+          linearFactors_[idx] = linearFactor;
+        }
+      }
+    }
+  }
+  //gttoc(check_candidates_and_linearize);
+
+  return linearized;
+}
+//=========================== END MHISAM2::mhRelinearizeAffectedFactors() ===========================
+
+//=================================== MHISAM2::recalculate() ==============================
+//[MH-A]: the only change: ISAM2Param::mhGetEliminationFunction() 
+boost::shared_ptr<KeySet > MHISAM2::recalculate(const KeySet& markedKeys, 
+                                                const KeySet& relinKeys,
+                                                const vector<Key>& observedKeys,
+                                                const KeySet& unusedIndices,
+                                                const boost::optional<FastMap<Key,int> >& constrainKeys, //default empty
+                                                ISAM2Result& result) {
+
+  // 1. Remove top of Bayes tree and convert to a factor graph:
+  // (a) For each affected variable, remove the corresponding clique and all parents up to the root.
+  // (b) Store orphaned sub-trees \BayesTree_{O} of removed cliques.
+  //gttic(removetop);
+  
+  Cliques orphans; //FastList<boost::shared_ptr<ISAM2Clique> >
+  
+  //[MH-A]: Modify GaussianConditional : public MHJF
+  GaussianBayesNet affectedBayesNet; //change GaussianConditional into a more general class (DONE)
+
+  //[MH-A]: same for MH
+  this->removeTop(FastVector<Key>(markedKeys.begin(), markedKeys.end()), affectedBayesNet, orphans); //refer to BayesTree::removeTop()
+
+  //gttoc(removetop);
+
+  //    FactorGraph<GaussianFactor> factors(affectedBayesNet);
+  // bug was here: we cannot reuse the original factors, because then the cached factors get messed up
+  // [all the necessary data is actually contained in the affectedBayesNet, including what was passed in from the boundaries,
+  //  so this would be correct; however, in the process we also generate new cached_ entries that will be wrong (ie. they don't
+  //  contain what would be passed up at a certain point if batch elimination was done, but that's what we need); we could choose
+  //  not to update cached_ from here, but then the new information (and potentially different variable ordering) is not reflected
+  //  in the cached_ values which again will be wrong]
+  // so instead we have to retrieve the original linearized factors AND add the cached factors from the boundary
+
+  // BEGIN OF COPIED CODE
+
+  // ordering provides all keys in conditionals, there cannot be others because path to root included
+  //gttic(affectedKeys);
+  FastList<Key> affectedKeys;
+  // Add all the used Keys in the affectedBayesNet into the affectedKeys
+  //[MH-A]: same for MH. ConditionalType = GaussianConditional, defined in ISAM2.h
+  for(const ConditionalType::shared_ptr& conditional: affectedBayesNet) {
+    affectedKeys.insert(affectedKeys.end(), conditional->beginFrontals(), conditional->endFrontals()); //GaussianConditional::beginFrontals() returns Factor::begin()
+  }
+  //gttoc(affectedKeys);
+
+  boost::shared_ptr<KeySet > affectedKeysSet(new KeySet()); // Will return this result
+
+  if (false) { // Batch is not efficient for MH (consider hypo growing/expansing)
+  //if(affectedKeys.size() >= theta_.size() * batchThreshold) { //default batchThreshold = 0.65
+
+    //TODO: NOT implemented...
+    
+    // Do a batch step - reorder and relinearize all variables
+    //gttic(batch);
+
+    //gttic(add_keys);
+    br::copy(variableIndex_ | br::map_keys, std::inserter(*affectedKeysSet, affectedKeysSet->end()));
+    //gttoc(add_keys);
+
+    //gttic(ordering);
+    Ordering order;
+    if(constrainKeys) { //default false
+      //TODO: NOT implemented...
+      std::cout << "ERROR: ConstrainKeys NOT implemented for MH yet!!" << std::endl;
+      //order = Ordering::ColamdConstrained(variableIndex_, *constrainKeys);
+    } else {
+      if(theta_.size() > observedKeys.size()) {
+        // Only if some variables are unconstrained
+        FastMap<Key, int> constraintGroups;
+        for(Key var: observedKeys)
+          constraintGroups[var] = 1;
+        order = Ordering::ColamdConstrained(variableIndex_, constraintGroups);
+      } else {
+        order = Ordering::Colamd(variableIndex_);
+      }
+    }
+    //gttoc(ordering);
+
+    //gttic(linearize);
+    GaussianFactorGraph linearized = *nonlinearFactors_.mhLinearize(theta_);
+    if(params_.cacheLinearizedFactors)
+      linearFactors_ = linearized;
+    //gttoc(linearize);
+
+    //gttic(eliminate);
+    //[MH-A]:
+    ISAM2BayesTree::shared_ptr bayesTree = ISAM2JunctionTree(GaussianEliminationTree(linearized, variableIndex_, order)).mhEliminate(params_.mhGetEliminationFunction()).first;
+    //gttoc(eliminate);
+
+    //gttic(insert);
+    this->clear();
+    this->roots_.insert(this->roots_.end(), bayesTree->roots().begin(), bayesTree->roots().end());
+    this->nodes_.insert(bayesTree->nodes().begin(), bayesTree->nodes().end());
+    //gttoc(insert);
+
+    result.variablesReeliminated = affectedKeysSet->size();
+    result.factorsRecalculated = nonlinearFactors_.size();
+
+    lastAffectedMarkedCount = markedKeys.size();
+    lastAffectedVariableCount = affectedKeysSet->size();
+    lastAffectedFactorCount = linearized.size();
+
+    // Reeliminated keys for detailed results
+    if(params_.enableDetailedResults) { //default false
+      for(Key key: theta_.keys()) {
+        result.detail->variableStatus[key].isReeliminated = true;
+      }
+    }
+
+    //gttoc(batch);
+
+  } else { 
+    // Always incremental for MH
+
+    //gttic(incremental);
+
+    // 2. Add the new factors \Factors' into the resulting factor graph
+    FastList<Key> affectedAndNewKeys;
+    affectedAndNewKeys.insert(affectedAndNewKeys.end(), affectedKeys.begin(), affectedKeys.end());
+    affectedAndNewKeys.insert(affectedAndNewKeys.end(), observedKeys.begin(), observedKeys.end()); //from input...
+    //gttic(relinearizeAffected);
+    //[MH-A]: call MHNoiseModelFactor::mhLinearize() inside...
+    GaussianFactorGraph factors(*mhRelinearizeAffectedFactors(affectedAndNewKeys, relinKeys)); //define "factors"
+    //if(debug) factors.print("Relinearized factors: ");
+    //gttoc(relinearizeAffected);
+
+
+    //if(debug) { cout << "Affected keys: "; for(const Key key: affectedKeys) { cout << key << " "; } cout << endl; }
+
+    result.variablesReeliminated = affectedAndNewKeys.size();
+    result.factorsRecalculated = factors.size();
+    lastAffectedMarkedCount = markedKeys.size();
+    lastAffectedVariableCount = affectedKeys.size();
+    lastAffectedFactorCount = factors.size();
+    
+    //gttic(cached);
+    
+    //[MH-C]:
+    removePrunedCachedFactors(orphans);
+    
+    // add the cached intermediate results from the boundary of the orphans ...
+    //[MH-A]: same for MH
+    GaussianFactorGraph cachedBoundary = getCachedBoundaryFactors(orphans);
+    //if(debug) cachedBoundary.print("Boundary factors: ");
+    factors.push_back(cachedBoundary);
+    //gttoc(cached);
+
+    //gttic(orphans);
+    // Add the orphaned subtrees
+    //[MH-A]: 
+    for(const sharedClique& orphan: orphans) {
+
+      factors += boost::make_shared<BayesTreeOrphanWrapper<Clique> >(orphan, true); //here "Clique" is actually "ISAM2Clique" (defined in ISAM2 and BayesTree classes...)
+    }
+    //gttoc(orphans);
+
+    // END OF COPIED CODE
+
+    // 3. Re-order and eliminate the factor graph into a Bayes net (Algorithm [alg:eliminate]), and re-assemble into a new Bayes tree (Algorithm [alg:BayesTree])
+
+    //gttic(reorder_and_eliminate);
+
+    //gttic(list_to_set);
+    // create a partial reordering for the new and contaminated factors
+    // markedKeys are passed in: those variables will be forced to the end in the ordering
+    affectedKeysSet->insert(markedKeys.begin(), markedKeys.end());
+    affectedKeysSet->insert(affectedKeys.begin(), affectedKeys.end());
+    //gttoc(list_to_set);
+
+    //[MH-A]: same for MH
+    VariableIndex affectedFactorsVarIndex(factors); //assoc each Key (variable) with the indices of the linked factors within the input "factors"
+
+    //gttic(ordering_constraints);
+    // Create ordering constraints
+    //[MH-A]: same for MH
+    FastMap<Key,int> constraintGroups;
+    if(constrainKeys) { //default empty
+      //constraintGroups = *constrainKeys;
+
+      std::cout << "ERROR: ConstrainKeys NOT implemented for MH yet!!" << std::endl;
+
+    } else {
+      constraintGroups = FastMap<Key,int>();
+      const int group = observedKeys.size() < affectedFactorsVarIndex.size() ? 1 : 0;
+      for (Key var: observedKeys) {
+        constraintGroups.insert(make_pair(var, group));
+      }
+    }
+
+    // Remove unaffected keys from the constraints
+    //[MH-A]: same for MH
+    for(FastMap<Key,int>::iterator iter = constraintGroups.begin(); iter != constraintGroups.end(); /*Incremented in loop ++iter*/) {
+      if(unusedIndices.exists(iter->first) || !affectedKeysSet->exists(iter->first))
+        constraintGroups.erase(iter ++);
+      else
+        ++ iter;
+    }
+    //gttoc(ordering_constraints);
+
+    // Generate ordering
+    //gttic(Ordering);
+    //[MH-A]: same for MH
+    Ordering ordering = Ordering::ColamdConstrained(affectedFactorsVarIndex, constraintGroups);
+    //gttoc(Ordering);
+
+    //[MH-A]: EliminatableClusterTree.eliminate() : ???? // ClusterTree.h
+    //[MH-A]: ISAM2JunctionTree(GaussianEliminationTree) : same for MH
+    //[MH-A]: GaussianEliminationTree() : same for MH
+    ISAM2BayesTree::shared_ptr bayesTree = ISAM2JunctionTree( GaussianEliminationTree(factors, affectedFactorsVarIndex, ordering) ).mhEliminate(params_.mhGetEliminationFunction()).first; //refer to mhGetEliminationFunction() in ISAM2.h
+
+    //gttoc(reorder_and_eliminate);
+
+    //gttic(reassemble);
+    this->roots_.insert(this->roots_.end(), bayesTree->roots().begin(), bayesTree->roots().end());
+    this->nodes_.insert(bayesTree->nodes().begin(), bayesTree->nodes().end());
+    //gttoc(reassemble);
+
+    // 4. The orphans have already been inserted during elimination
+
+    //gttoc(incremental);
+  }
+
+  return affectedKeysSet;
+}
+
+
+//=================================== END MHISAM2::recalculate() ==============================
+
+//=================================== MHISAM2::update() ==============================
+
+ISAM2Result MHISAM2::update(
+    const NonlinearFactorGraph& newFactors, 
+    const Values& newTheta, 
+    const FactorIndices& removeFactorIndices,
+    const boost::optional<FastMap<Key,int> >& constrainedKeys, 
+    const boost::optional<FastList<Key> >& noRelinKeys,
+    const boost::optional<FastList<Key> >& extraReelimKeys, 
+    bool force_relinearize) {
+
+  //[MH-A]: all Value or GenericValue are now MHGenericValue
+  //[MH-A]: all Value and Factor have to consider hypo
+
+  this->update_count_++;
+
+  lastAffectedVariableCount = 0;
+  lastAffectedFactorCount = 0;
+  lastAffectedCliqueCount = 0;
+  lastAffectedMarkedCount = 0;
+  lastBacksubVariableCount = 0;
+  lastNnzTop = 0;
+  ISAM2Result result;
+  
+  const bool relinearizeThisStep = force_relinearize
+      || (params_.enableRelinearization && update_count_ % params_.relinearizeSkip == 0);
+
+  // Update delta if we need it to check relinearization later
+  if(relinearizeThisStep) {
+    if (is_update_delta_required_) {
+
+      //gttic(updateDelta);    
+
+      //[MH-A]: (another call later)
+      mhUpdateDelta(disableReordering); //default: disableReordering = false 
+    
+      //gttoc(updateDelta);
+    }
+  }
+  
+  //gttic(push_back_factors);
+  
+  // 1. Add any new factors \Factors:=\Factors\cup\Factors'.
+  // Add the new factor indices to the result struct
+  
+  //if(debug || verbose) newFactors.print("The new factors are: ");
+  
+  //[MH-A]: same for MH
+  Impl::AddFactorsStep1(newFactors, params_.findUnusedFactorSlots, nonlinearFactors_, result.newFactorsIndices);
+
+  //TODO: NOT activated for now... 
+  // Remove the removed factors
+  NonlinearFactorGraph removeFactors; removeFactors.reserve(removeFactorIndices.size());
+  for(size_t index: removeFactorIndices) {
+    removeFactors.push_back(nonlinearFactors_[index]);
+    nonlinearFactors_.remove(index);
+    if(params_.cacheLinearizedFactors)
+      linearFactors_.remove(index);
+  }
+
+  //TODO: NOT activated for now... 
+  // Remove removed factors from the variable index so we do not attempt to relinearize them
+  variableIndex_.remove(removeFactorIndices.begin(), removeFactorIndices.end(), removeFactors);
+
+  //TODO: NOT activated for now... 
+  // Compute unused keys and indices
+  KeySet unusedKeys;
+  KeySet unusedIndices;
+  {
+    // Get keys from removed factors and new factors, and compute unused keys,
+    // i.e., keys that are empty now and do not appear in the new factors.
+    KeySet removedAndEmpty;
+    for(Key key: removeFactors.keys()) {
+      if(variableIndex_[key].empty())
+        removedAndEmpty.insert(removedAndEmpty.end(), key);
+    }
+    KeySet newFactorSymbKeys = newFactors.keys();
+    std::set_difference(removedAndEmpty.begin(), removedAndEmpty.end(),
+      newFactorSymbKeys.begin(), newFactorSymbKeys.end(), std::inserter(unusedKeys, unusedKeys.end()));
+
+    // Get indices for unused keys
+    for(Key key: unusedKeys) {
+      unusedIndices.insert(unusedIndices.end(), key);
+    }
+  }
+  
+  //gttoc(push_back_factors);
+
+  //gttic(add_new_variables);
+  
+  //[MH-A]: Keep same dim() but add hypoNum() for Values::zeroVectors()
+  // 2. Initialize any new variables \Theta_{new} and add \Theta:=\Theta\cup\Theta_{new}.
+  Impl::mhAddVariables(newTheta, theta_, delta_, deltaNewton_, RgProd_);
+
+  //[MH-A]: Link each HypoNode to the newTheta done in mhInsert(Key, Value)...
+
+  //gttoc(add_new_variables);
+  
+  //gttic(gather_involved_keys);
+  
+  // 3. Mark linear update
+  KeySet markedKeys = newFactors.keys(); // Get keys from new factors
+  
+  //TODO: NOT activated for now... 
+  // Also mark keys involved in removed factors
+  {
+    KeySet markedRemoveKeys = removeFactors.keys(); // Get keys involved in removed factors
+    markedKeys.insert(markedRemoveKeys.begin(), markedRemoveKeys.end()); // Add to the overall set of marked keys
+  }
+
+  //TODO: NOT activated for now... 
+  // NOTE: we use assign instead of the iterator constructor here because this
+  // is a vector of size_t, so the constructor unintentionally resolves to
+  // vector(size_t count, Key value) instead of the iterator constructor.
+
+  FastVector<Key> observedKeys;  
+  observedKeys.reserve(markedKeys.size());
+
+  for(Key index: markedKeys) {
+    if(unusedIndices.find(index) == unusedIndices.end()) {// Only add if not unused
+      observedKeys.push_back(index); // Make a copy of these, as we'll soon add to them
+
+    }
+  }
+
+  //gttoc(gather_involved_keys);
+
+  // Check relinearization if we're at the nth step, or we are using a looser loop relin threshold
+  KeySet relinKeys;
+  if (relinearizeThisStep) {
+    
+    //gttic(gather_relinearize_keys);
+    
+    // 4. Mark keys in \Delta above threshold \beta: J=\{\Delta_{j}\in\Delta|\Delta_{j}\geq\beta\}.
+    if(params_.enablePartialRelinearizationCheck) { //default false
+
+      std::cout << "if-enablePartialRelinearizationCheck (NOT activated yet)" << std::endl;
+
+      //relinKeys = Impl::CheckRelinearizationPartial(roots_, delta_, params_.relinearizeThreshold);
+    
+    } else {
+
+      //[MH-A]: same for MH
+      relinKeys = Impl::CheckRelinearizationFull(delta_, params_.relinearizeThreshold);
+    }
+  
+  
+    //if(disableReordering) relinKeys = Impl::CheckRelinearizationFull(delta_, 0.0); // This is used for debugging
+    
+    //TODO: NOT activated for now... 
+    // Remove from relinKeys any keys whose linearization points are fixed
+    for(Key key: fixedVariables_) {
+
+      std::cout << "for-fixedVariables_ (NOT activated yet)" << std::endl;
+
+      relinKeys.erase(key);
+    }
+    if(noRelinKeys) {
+      for(Key key: *noRelinKeys) {
+        relinKeys.erase(key);
+      }
+    }
+
+    //[MH-A]: same for MH
+    // Add the variables being relinearized to the marked keys
+    KeySet markedRelinMask;
+    for(const Key key: relinKeys) {
+      markedRelinMask.insert(key);
+    }
+    markedKeys.insert(relinKeys.begin(), relinKeys.end());
+    //gttoc(gather_relinearize_keys);
+
+    //gttic(fluid_find_all);
+    // 5. Mark all cliques that involve marked variables \Theta_{J} and all their ancestors.
+    if (!relinKeys.empty()) { //existed variables have large delta so should be updated
+      for(const sharedClique& root: roots_)
+        //[MH-A]: same for MH
+        // add other cliques that have the marked ones in the separator
+        Impl::FindAll(root, markedKeys, markedRelinMask);
+    }
+    //gttoc(fluid_find_all);
+
+    //gttic(expmap);
+    // 6. Update linearization point for marked variables: \Theta_{J}:=\Theta_{J}+\Delta_{J}.
+    if (!relinKeys.empty()) {
+      //[MH-A]: Changed to MHGV::retractInPlace_()
+      Impl::mhExpmapMasked(theta_, delta_, markedRelinMask, delta_);
+    }
+    //gttoc(expmap);
+
+    result.variablesRelinearized = markedKeys.size();
+  } else {
+
+    std::cout << "else-relinearizeThisStep (NOT recommended for MH)" << std::endl;
+
+    result.variablesRelinearized = 0;
+  }
+  
+  //[MH-C]:
+  expandListedVariables(); //mhsiao: actually only one item, and it MUST assoc to the old last HypoLayer (now 2nd-last since a new one should be added...)
+
+  //gttic(linearize_new);
+  // 7. Linearize new factors
+  if(params_.cacheLinearizedFactors) { //default true
+    
+    //gttic(linearize);
+    
+    //[MH-A]: without setting up hypo_list_ (later MHHessianFactor can still recover hypo_list_ from involved MH-variables)... some functions in MHJacobianFactor are still empty... 
+    GaussianFactorGraph::shared_ptr linearFactors = newFactors.mhLinearize(theta_); //only newly-added factors being linearized...
+  
+    if(params_.findUnusedFactorSlots) //default false
+    {
+
+      std::cout << "if-findUnusedFactorSlots (NOT activated yet 1)" << std::endl;
+      /*
+      linearFactors_.resize(nonlinearFactors_.size());
+      for(size_t newFactorI = 0; newFactorI < newFactors.size(); ++newFactorI)
+        linearFactors_[result.newFactorsIndices[newFactorI]] = (*linearFactors)[newFactorI];
+      // */
+    } else {
+
+      //[MH-A]: same for MH
+      linearFactors_.push_back(*linearFactors);
+    }
+    assert(nonlinearFactors_.size() == linearFactors_.size());
+    //gttoc(linearize);
+  }
+  //gttoc(linearize_new);
+
+  //gttic(augment_VI);
+  // Augment the variable index with the new factors
+  if(params_.findUnusedFactorSlots) { //default false
+
+    std::cout << "if-findUnusedFactorSlots (NOT activated yet 2)" << std::endl;
+    //variableIndex_.augment(newFactors, result.newFactorsIndices);
+  } else {
+
+    //[MH-A]: same for MH
+    variableIndex_.augment(newFactors);
+  }
+  //gttoc(augment_VI);
+
+  //gttic(recalculate);
+  // 8. Redo top of Bayes tree
+  //[MH-A]:  
+  boost::shared_ptr<KeySet > replacedKeys;
+  if(!markedKeys.empty() || !observedKeys.empty()) {
+
+    replacedKeys = recalculate(markedKeys, relinKeys, observedKeys, unusedIndices, constrainedKeys, result);
+  }
+
+  //[MH-A]: same for MH
+  // Update replaced keys mask (accumulates until back-substitution takes place)
+  if(replacedKeys) {
+    deltaReplacedMask_.insert(replacedKeys->begin(), replacedKeys->end());
+  }
+
+  //gttoc(recalculate);
+
+  //TODO: NOT activated for now... 
+  // Update data structures to remove unused keys
+  if(!unusedKeys.empty()) {
+    
+    //gttic(remove_variables);
+    
+    Impl::RemoveVariables(unusedKeys, roots_, theta_, variableIndex_, delta_, deltaNewton_, RgProd_,
+        deltaReplacedMask_, Base::nodes_, fixedVariables_);
+    
+    //gttoc(remove_variables);
+  }
+  result.cliques = this->nodes().size();
+
+  /*
+  gttic(evaluate_error_after);
+  if(params_.evaluateNonlinearError)
+    result.errorAfter.reset(nonlinearFactors_.error(calculateEstimate()));
+  gttoc(evaluate_error_after);
+  // */
+
+  is_update_delta_required_ = true;
+
+  //[MH-C]: NOT pruning MHJF and MHHF yet... will do it when calling the cached-Factors
+  autoHypoPruning(); //default: limit #hypos 
+  //autoHypoPruning(false); //only prune large errors (NOT recommended)
+
+  return result;
+}
+
+//=================================== END MHISAM2::update() ==============================
+
+void MHISAM2::autoHypoPruning(const bool& is_num_limited) {
+  
+  size_t desired_hypo_th = std::numeric_limits<size_t>::max();
+  size_t limit_hypo_bound = std::numeric_limits<size_t>::max();
+  if (is_num_limited) {
+    desired_hypo_th = mh_params_.desiredHypoTH;
+    limit_hypo_bound = mh_params_.limitHypoTH;
+  }
+
+  const bool& is_strict_th = mh_params_.isStrictTH;
+  const bool& is_print_details = mh_params_.isPrintPruningDetails;
+
+  for(const ISAM2::sharedClique& root: roots_) { //should only run once
+    
+    PruneList prune_list;
+    
+    if ( root->cachedFactor()->selectPruneList(prune_list, desired_hypo_th, limit_hypo_bound, is_strict_th, is_print_details) ) {
+
+      //[MH-C]: Call flagToPrune() on all HypoNode in prune_list
+      for (PruneListIter it = prune_list.begin(); it != prune_list.end(); ++it) {
+        
+        (std::get<1>(*it))->flagToPrune();
+      }
+ 
+      //[MH-C]: Starting from the last HypoLayer, do pruneFlagedNodes()
+      getLastHypoLayer()->pruneFlagedNodes();
+    
+      //[MH-C]: Prune the corresponding MHGVs
+      theta_.pruneUpToDate();
+
+      //[MH-C]: Prune the corresponding conditionals
+      for(const ISAM2::sharedClique& root: roots_) {
+        removePrunedConditional(root);
+      }
+
+      //[MH-C]: Notice: Do NOT prune the corresponding cached Factors in Cliques here (can be very inefficient)... Do it later using removePrunedConditional()
+
+    } // END if-prune_list is NOT empty 
+  }
+} // END MHISAM2::autoHypoPruning()
+
+//[MH-C]:
+HypoNode* MHISAM2::getBestHypo(const size_t& best_type) {
+  for(const ISAM2::sharedClique& root: roots_) {
+    return root->cachedFactor()->findBestHypo(best_type);
+  }
+  std::cout << "ERROR: roots_.size() = 0" << std::endl;
+  return NULL;
+}
+
+//[MH-C]:
+void MHISAM2::setVariableToExpand(const Key& key, HypoLayer* target_layer) {
+  expand_list_.push_back(std::make_pair(key, target_layer)); //later call expandListedVariables() to do the real expansion
+
+} // END setVariableToExpand()
+
 
 }
 /// namespace gtsam

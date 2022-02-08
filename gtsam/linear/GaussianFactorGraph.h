@@ -44,11 +44,16 @@ namespace gtsam {
   {
     typedef GaussianFactor FactorType;                   ///< Type of factors in factor graph
     typedef GaussianFactorGraph FactorGraphType;         ///< Type of the factor graph (e.g. GaussianFactorGraph)
+   
+    //[MH-A]: now also works for MH 
     typedef GaussianConditional ConditionalType;         ///< Type of conditionals from elimination
+    
     typedef GaussianBayesNet BayesNetType;               ///< Type of Bayes net from sequential elimination
+    
     typedef GaussianEliminationTree EliminationTreeType; ///< Type of elimination tree
     typedef GaussianBayesTree BayesTreeType;             ///< Type of Bayes tree
     typedef GaussianJunctionTree JunctionTreeType;       ///< Type of Junction tree
+
     /// The default dense elimination function
     static std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> >
       DefaultEliminate(const FactorGraphType& factors, const Ordering& keys) {

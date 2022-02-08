@@ -65,6 +65,7 @@ namespace gtsam {
       static This FromEliminationTree(const ETREE& eliminationTree) { return This(eliminationTree); }
 
     /** Build the junction tree from an elimination tree. */
+    //[MH-A]: same for MH (used in recalculate() in ISAM2.cpp)
     template<class ETREE_BAYESNET, class ETREE_GRAPH>
     JunctionTree(const EliminationTree<ETREE_BAYESNET, ETREE_GRAPH>& eliminationTree);
 

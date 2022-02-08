@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <gtsam/inference/HypoTree.h>
+
 #include <gtsam/linear/Scatter.h>
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/base/Vector.h>
@@ -245,6 +247,9 @@ namespace gtsam {
 
     /** Access a vector that is a subset of relevant keys. */
     Vector vector(const FastVector<Key>& keys) const;
+    
+    //[MH-A]:
+    void mhUpdateVectorArr(const Key& j, const size_t& dim, const size_t& pos, HypoLayer* layer_ptr, std::vector<Vector>& xS_arr, const int& max_layer_idx) const;
 
     /** Access a vector that is a subset of relevant keys, dims version. */
     Vector vector(const Dims& dims) const;

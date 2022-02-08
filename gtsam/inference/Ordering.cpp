@@ -175,8 +175,10 @@ Ordering Ordering::ColamdConstrainedFirst(const VariableIndex& variableIndex,
 }
 
 /* ************************************************************************* */
+//[MH-A]: linked from recalculate() in ISAM2.cpp
 Ordering Ordering::ColamdConstrained(const VariableIndex& variableIndex,
     const FastMap<Key, int>& groups) {
+
   gttic(Ordering_COLAMDConstrained);
   size_t n = variableIndex.size();
   std::vector<int> cmember(n, 0);

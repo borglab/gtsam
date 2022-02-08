@@ -56,15 +56,16 @@ namespace gtsam {
 
   public:
     typedef GRAPH FactorGraphType; ///< The factor graph type
-    typedef typename GRAPH::FactorType FactorType; ///< The type of factors
-    typedef typename boost::shared_ptr<FactorType> sharedFactor;  ///< Shared pointer to a factor
+    typedef typename GRAPH::FactorType FactorType; ///< The type of factors //mhsiao: GaussianFactor for ISAM2//
+    typedef typename boost::shared_ptr<FactorType> sharedFactor;  ///< Shared pointer to a factor //
     typedef BAYESNET BayesNetType; ///< The BayesNet corresponding to FACTOR
     typedef typename BayesNetType::ConditionalType ConditionalType; ///< The type of conditionals
     typedef typename boost::shared_ptr<ConditionalType> sharedConditional; ///< Shared pointer to a conditional
     typedef typename GRAPH::Eliminate Eliminate;
 
+    //[MH-A]: used in ISAM2JunctionTree(), where "GRAPH" is "GaussianFactorGraph"... same for MH
     struct Node {
-      typedef FastVector<sharedFactor> Factors;
+      typedef FastVector<sharedFactor> Factors; //
       typedef FastVector<boost::shared_ptr<Node> > Children;
 
       Key key; ///< key associated with root
@@ -75,7 +76,7 @@ namespace gtsam {
         const Eliminate& function, const FastVector<sharedFactor>& childrenFactors) const;
 
       void print(const std::string& str, const KeyFormatter& keyFormatter) const;
-    };
+    }; //END struct Node
 
     typedef boost::shared_ptr<Node> sharedNode; ///< Shared pointer to Node
 
@@ -97,6 +98,7 @@ namespace gtsam {
     * named constructor instead.
     * @return The elimination tree
     */
+    //[MH-A]: linked from GaussianEliminationTree() : Base()
     EliminationTree(const FactorGraphType& factorGraph,
       const VariableIndex& structure, const Ordering& order);
 

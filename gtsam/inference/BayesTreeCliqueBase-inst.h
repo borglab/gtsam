@@ -196,6 +196,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  //[MH-A]: same as original... used in Bayestree::mhRemoveTop() 
   template<class DERIVED, class FACTORGRAPH>
   void BayesTreeCliqueBase<DERIVED, FACTORGRAPH>::deleteCachedShortcuts() {
 

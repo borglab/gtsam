@@ -48,6 +48,9 @@ struct GTSAM_EXPORT ISAM2::Impl {
       VectorValues& deltaNewton, VectorValues& RgProd,
       const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
+  //[MH-A]:
+  static void mhAddVariables(const Values& newTheta, Values& theta, VectorValues& delta, VectorValues& deltaNewton, VectorValues& RgProd, const KeyFormatter& keyFormatter = DefaultKeyFormatter);
+
   /// Perform the first part of the bookkeeping updates for adding new factors.  Adds them to the
   /// complete list of nonlinear factors, and populates the list of new factor indices, both
   /// optionally finding and reusing empty factor slots.
@@ -122,12 +125,20 @@ struct GTSAM_EXPORT ISAM2::Impl {
       const KeySet& mask,
       boost::optional<VectorValues&> invalidateIfDebug = boost::none,
       const KeyFormatter& keyFormatter = DefaultKeyFormatter);
+  
+  //[MH-A]: delta part should be modified...
+  static void mhExpmapMasked(Values& values, const VectorValues& delta,
+      const KeySet& mask,
+      boost::optional<VectorValues&> invalidateIfDebug = boost::none,
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
   /**
    * Update the Newton's method step point, using wildfire
    */
   static size_t UpdateGaussNewtonDelta(const FastVector<ISAM2::sharedClique>& roots,
       const KeySet& replacedKeys, VectorValues& delta, double wildfireThreshold);
+  //[MH-A]: additionally input ISAM2::theta_ to allow hypo-assoc...
+  static size_t mhUpdateGaussNewtonDelta(const FastVector<ISAM2::sharedClique>& roots, const KeySet& replacedKeys, Values& theta, VectorValues& delta, double wildfireThreshold, const double& splitThreshold);
 
   /**
    * Update the RgProd (R*g) incrementally taking into account which variables

@@ -106,6 +106,7 @@ pair<size_t, bool> choleskyCareful(Matrix& ATA, int order) {
 
 /* ************************************************************************* */
 bool choleskyPartial(Matrix& ABC, size_t nFrontal, size_t topleft) {
+
   gttic(choleskyPartial);
   if (nFrontal == 0)
     return true;
@@ -123,8 +124,11 @@ bool choleskyPartial(Matrix& ABC, size_t nFrontal, size_t topleft) {
   gttic(LLT);
   Eigen::LLT<Matrix, Eigen::Upper> llt(A);
   Eigen::ComputationInfo lltResult = llt.info();
-  if (lltResult != Eigen::Success)
+
+  if (lltResult != Eigen::Success) {
     return false;
+  }
+
   auto R = A.triangularView<Eigen::Upper>();
   R = llt.matrixU();
   gttoc(LLT);
@@ -154,5 +158,6 @@ bool choleskyPartial(Matrix& ABC, size_t nFrontal, size_t topleft) {
   } else {
     return true;
   }
-}
+
+} // END choleskyPartial()
 }  // namespace gtsam

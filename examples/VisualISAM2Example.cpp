@@ -75,6 +75,10 @@ int main(int argc, char* argv[]) {
   // and type of linear solver. For this example, we we set the relinearization threshold small so the iSAM2 result
   // will approach the batch result.
   ISAM2Params parameters;
+  
+  //TODO: test only
+  parameters.optimizationParams = gtsam::ISAM2GaussNewtonParams(0.0); //_wildfireThreshold = 0.001
+  
   parameters.relinearizeThreshold = 0.01;
   parameters.relinearizeSkip = 1;
   ISAM2 isam(parameters);

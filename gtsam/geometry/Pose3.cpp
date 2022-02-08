@@ -176,8 +176,11 @@ Pose3 Pose3::ChartAtOrigin::Retract(const Vector6& xi, ChartJacobian H) {
 /* ************************************************************************* */
 Vector6 Pose3::ChartAtOrigin::Local(const Pose3& T, ChartJacobian H) {
 #ifdef GTSAM_POSE3_EXPMAP
+    
   return Logmap(T, H);
+
 #else
+
   Matrix3 DR;
   Vector3 omega = Rot3::LocalCoordinates(T.rotation(), H ? &DR : 0);
   if (H) {
@@ -186,6 +189,7 @@ Vector6 Pose3::ChartAtOrigin::Local(const Pose3& T, ChartJacobian H) {
   }
   Vector6 xi;
   xi << omega, T.translation();
+
   return xi;
 #endif
 }

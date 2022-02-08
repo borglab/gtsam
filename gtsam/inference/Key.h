@@ -34,11 +34,15 @@ typedef boost::function<std::string(Key)> KeyFormatter;
 
 // Helper function for DefaultKeyFormatter
 GTSAM_EXPORT std::string _defaultKeyFormatter(Key key);
+//[MH-A]:
+GTSAM_EXPORT std::string _singleTypeKeyFormatter(Key key);
 
 /// The default KeyFormatter, which is used if no KeyFormatter is passed to
 /// a nonlinear 'print' function.  Automatically detects plain integer keys
 /// and Symbol keys.
 static const KeyFormatter DefaultKeyFormatter = &_defaultKeyFormatter;
+//[MH-A]:
+static const KeyFormatter SingleTypeKeyFormatter = &_singleTypeKeyFormatter;
 
 // Helper function for Multi-robot Key Formatter
 GTSAM_EXPORT std::string _multirobotKeyFormatter(gtsam::Key key);

@@ -56,6 +56,9 @@ class Scatter : public FastVector<SlotEntry> {
   /// Construct from gaussian factor graph, with optional (partial or complete) ordering
   Scatter(const GaussianFactorGraph& gfg,
           boost::optional<const Ordering&> ordering = boost::none);
+  
+  Scatter(const GaussianFactorGraph& gfg, const bool& is_mh,
+          boost::optional<const Ordering&> ordering = boost::none);
 
   /// Add a key/dim pair
   void add(Key key, size_t dim);

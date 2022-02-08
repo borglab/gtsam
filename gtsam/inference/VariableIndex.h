@@ -49,7 +49,9 @@ public:
 
 protected:
   typedef FastMap<Key,Factors> KeyMap;
-  KeyMap index_;
+  
+  KeyMap index_; //mhsiao: the only member...
+  
   size_t nFactors_; // Number of factors in the original factor graph.
   size_t nEntries_; // Sum of involved variable counts of each factor.
 
@@ -70,6 +72,7 @@ public:
    * Create a VariableIndex that computes and stores the block column structure
    * of a factor graph.
    */
+  //[MH-A]: linked from recalculate() in ISAM2.cpp
   template<class FG>
   VariableIndex(const FG& factorGraph) : nFactors_(0), nEntries_(0) { augment(factorGraph); }
 

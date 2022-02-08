@@ -70,6 +70,7 @@ void SymmetricBlockMatrix::choleskyPartial(DenseIndex nFrontals) {
 }
 
 /* ************************************************************************* */
+//mhsiao: used in MHHessianFactor::mhEliminateCholesky()
 VerticalBlockMatrix SymmetricBlockMatrix::split(DenseIndex nFrontals) {
   gttic(VerticalBlockMatrix_split);
 

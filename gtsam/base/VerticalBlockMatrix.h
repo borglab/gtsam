@@ -45,8 +45,10 @@ namespace gtsam {
     typedef Eigen::Block<Matrix> Block;
     typedef Eigen::Block<const Matrix> constBlock;
 
-  protected:
+  //protected: //mhsiao: test only
     Matrix matrix_; ///< The full matrix
+  
+  protected: //mhsiao: test only
     FastVector<DenseIndex> variableColOffsets_; ///< the starting columns of each block (0-based)
 
     DenseIndex rowStart_; ///< Changes apparent matrix view, see main class comment.
@@ -69,9 +71,15 @@ namespace gtsam {
         bool appendOneDimension = false) :
         variableColOffsets_(dimensions.size() + (appendOneDimension ? 2 : 1)),
         rowStart_(0), rowEnd_(height), blockStart_(0) {
+
       fillOffsets(dimensions.begin(), dimensions.end(), appendOneDimension);
-      matrix_.resize(height, variableColOffsets_.back());
+
+      //TODO: mhsiao: not zeros?
+      //matrix_.resize(height, variableColOffsets_.back());
+      matrix_ = Eigen::MatrixXd::Zero(height, variableColOffsets_.back());
+
       assertInvariants();
+
     }
 
     /** Construct from a container of the sizes of each vertical block and a pre-prepared matrix. */
@@ -94,7 +102,10 @@ namespace gtsam {
         variableColOffsets_((lastBlockDim-firstBlockDim) + (appendOneDimension ? 2 : 1)),
         rowStart_(0), rowEnd_(height), blockStart_(0) {
       fillOffsets(firstBlockDim, lastBlockDim, appendOneDimension);
+      //TODO: mhsiao: not zeros?
       matrix_.resize(height, variableColOffsets_.back());
+      //matrix_ = Eigen::MatrixXd::Zero(height, variableColOffsets_.back());
+      
       assertInvariants();
     }
 

@@ -59,6 +59,7 @@ namespace gtsam {
       Key key = key_value->key;  // Non-const duplicate to deal with non-const insert argument
       if (it != delta.end()) {
         const Vector& v = it->second;
+
         Value* retractedValue(key_value->value.retract_(v));  // Retract
         values_.insert(key, retractedValue);  // Add retracted result directly to result values
       } else {
@@ -66,6 +67,39 @@ namespace gtsam {
       }
     }
   }
+//======================= Values(is_mh) for mhRetract() =======================
+  //[MH-A]: actually same as the original Values(other, delta), but can be separated for later functionalities...
+  Values::Values(Values& other, const VectorValues& delta, const bool& is_mh) { //is_mh should always be true
+    for (iterator key_value = other.begin(); key_value != other.end(); ++key_value) {
+      VectorValues::const_iterator it = delta.find(key_value->key); //see if this Key required to be updated
+      Key key = key_value->key;  // Non-const duplicate to deal with non-const insert argument
+      if (it != delta.end()) { //found
+        const Vector& v = it->second;
+        
+        //[MH-A]: MHGV::retract_()
+        Value* retractedValue(key_value->value.retract_(v));  // Retract
+
+        values_.insert(key, retractedValue);  // Add retracted result directly to result values
+        
+      } else {
+        values_.insert(key, key_value->value.clone_());  // Add original version to result values
+      }
+
+    }
+  }
+//======================= END Values(is_mh) for mhRetract() =======================
+  void Values::mhRetractInPlace(const VectorValues& delta) {
+    for (iterator key_value = begin(); key_value != end(); ++key_value) {
+      VectorValues::const_iterator it = delta.find(key_value->key); //see if this Key required to be updated
+      if (it != delta.end()) { //found
+        const Vector& v = it->second;
+        
+        //[MH-A]: MHGV::retract_()
+        key_value->value.retractInPlace_(v);  // Retract
+
+      } // END if
+    } // END for
+  } // END mhRetractInPlace()
 
   /* ************************************************************************* */
   void Values::print(const string& str, const KeyFormatter& keyFormatter) const {
@@ -102,6 +136,12 @@ namespace gtsam {
   Values Values::retract(const VectorValues& delta) const {
     return Values(*this, delta);
   }
+//========================= mhRetract() ======================  
+  //[MH-A]:
+  Values Values::mhRetract(const VectorValues& delta) {
+    return Values(*this, delta, true);
+  }
+//========================= END mhRetract() ======================  
 
   /* ************************************************************************* */
   VectorValues Values::localCoordinates(const Values& cp) const {
@@ -129,20 +169,77 @@ namespace gtsam {
     return *item->second;
   }
 
+//====================== non-const at() ========================
+  //[MH-A]: MH has to modify the values
+  Value& Values::at(Key j) {
+    // Find the item
+    KeyValueMap::iterator item = values_.find(j);
+
+    // Throw exception if it does not exist
+    if(item == values_.end())
+      throw ValuesKeyDoesNotExist("retrieve", j);
+    return *item->second;
+  }
+//====================== END non-const at() ========================
+
   /* ************************************************************************* */
   void Values::insert(Key j, const Value& val) {
     std::pair<iterator,bool> insertResult = tryInsert(j, val);
     if(!insertResult.second)
       throw ValuesKeyAlreadyExists(j);
   }
+  
+  //=========================== MH ============================
+  //[MH-A]:
+  void Values::mhInsert(Key j, const Value& val) {
+    std::pair<iterator,bool> insertResult = tryInsert(j, val);
+    if(!insertResult.second)
+      throw ValuesKeyAlreadyExists(j);
+
+    //[MH-A]: link from HypoTree
+    
+    const HypoList& hypo_list = val.getHypoList();
+    
+    const GenericList& generic_list = val.getGenericList(); 
+  
+    if (generic_list.size() != hypo_list.size()) {
+        std::cout << "ERROR: generic_list.size() != hypo_list.size()... Make sure to call mhCalculateBestEstimate() after pruning if the MHGVs are used later!!" << std::endl;
+    }
+    
+    GenericListCstIter git = generic_list.begin();
+    
+    for (HypoListCstIter hit = hypo_list.begin(); hit != hypo_list.end(); ++hit) {
+     
+      // Setup Key-Value* map in each HypoNode
+      (*hit)->addKeyValuePair(j, (*git));
+      
+      ++git; 
+    }
+  }
+  //=========================== END MH ============================
 
   /* ************************************************************************* */
   void Values::insert(const Values& values) {
     for(const_iterator key_value = values.begin(); key_value != values.end(); ++key_value) {
       Key key = key_value->key; // Non-const duplicate to deal with non-const insert argument
-      insert(key, key_value->value);
+      insert(key, key_value->value); //NOT calling insert(Key, T)
     }
   }
+
+//========================= MH ================================
+  //[MH-A]:
+  void Values::mhInsert(const Values& values) {
+    for(const_iterator key_value = values.begin(); key_value != values.end(); ++key_value) {
+      Key key = key_value->key; // Non-const duplicate to deal with non-const insert argument
+      mhInsert(key, key_value->value); //NOT calling insert(Key, T)
+      
+      (key_value->value.getHypoLayer())->setKeyMap(key);
+
+    }
+  }
+
+
+//========================= END MH ================================
 
   /* ************************************************************************* */
   std::pair<Values::iterator, bool> Values::tryInsert(Key j, const Value& value) {
@@ -209,7 +306,7 @@ namespace gtsam {
   VectorValues Values::zeroVectors() const {
     VectorValues result;
     for(const ConstKeyValuePair& key_value: *this)
-      result.insert(key_value.key, Vector::Zero(key_value.value.dim()));
+      result.insert(key_value.key, Vector::Zero(key_value.value.hypoNum()*key_value.value.dim())); //the hypoNum() for original Value is 1
     return result;
   }
 

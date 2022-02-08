@@ -117,6 +117,8 @@ public:
 
 
   friend class CombinedImuFactor;
+  //TODO: NOT stable...
+  //friend class MHCombinedImuFactor; //
 
  public:
   /// @name Constructors
@@ -316,5 +318,103 @@ private:
   }
 };
 // class CombinedImuFactor
+
+/*
+//======================= MHCombinedFactor =======================
+//TODO: Doesn;t work well under GaussNewton... Dogleg NOT implemented yet!! 
+class MHCombinedImuFactor: public MHNoiseModelFactor6<Pose3, Vector3, Pose3,
+    Vector3, imuBias::ConstantBias, imuBias::ConstantBias> {
+public:
+
+private:
+
+  typedef MHCombinedImuFactor This;
+  typedef MHNoiseModelFactor6<Pose3, Vector3, Pose3, Vector3,
+      imuBias::ConstantBias, imuBias::ConstantBias> Base;
+
+  std::vector<PreintegratedCombinedMeasurements> _PIM_arr_;
+
+  // Default constructor - only use for serialization 
+  MHCombinedImuFactor() {}
+
+public:
+
+  // Shorthand for a smart pointer to a factor
+#if !defined(_MSC_VER) && __GNUC__ == 4 && __GNUC_MINOR__ > 5
+  typedef typename boost::shared_ptr<MHCombinedImuFactor> shared_ptr;
+#else
+  typedef boost::shared_ptr<MHCombinedImuFactor> shared_ptr;
+#endif
+
+  //
+  // Constructor
+  // @param pose_i Previous pose key
+  // @param vel_i  Previous velocity key
+  // @param pose_j Current pose key
+  // @param vel_j  Current velocity key
+  // @param bias_i Previous bias key
+  // @param bias_j Current bias key
+  // @param PreintegratedCombinedMeasurements Combined IMU measurements
+  //
+  
+  //TODO:
+  MHCombinedImuFactor(
+      Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias_i, Key bias_j,
+      const std::vector<PreintegratedCombinedMeasurements>& preintegratedMeasurements_arr);
+
+  virtual ~MHCombinedImuFactor() {}
+
+  /// @return a deep copy of this factor
+  virtual gtsam::NonlinearFactor::shared_ptr clone() const;
+
+  // implement functions needed for Testable 
+
+  /// print
+  virtual void print(const std::string& s, const KeyFormatter& keyFormatter =
+      DefaultKeyFormatter) const;
+
+  /// equals
+  virtual bool equals(const NonlinearFactor& expected, double tol = 1e-9) const;
+
+  // Access the preintegrated measurements. 
+
+  const std::vector<PreintegratedCombinedMeasurements>& preintegratedMeasurementsAll() const {
+    return _PIM_arr_;
+  }
+
+  // implement functions needed to derive from Factor
+
+  /// vector of errors
+  //TODO:
+  Vector evaluateSingleError(const Pose3& pose_i, const Vector3& vel_i,
+      const Pose3& pose_j, const Vector3& vel_j,
+      const imuBias::ConstantBias& bias_i, const imuBias::ConstantBias& bias_j,
+      const int& mode_id,
+      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
+          boost::none, boost::optional<Matrix&> H3 = boost::none,
+      boost::optional<Matrix&> H4 = boost::none, boost::optional<Matrix&> H5 =
+          boost::none, boost::optional<Matrix&> H6 = boost::none) const;
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+
+//TODO: NOT finished yet... refer to the original class
+
+#endif
+
+private:
+
+  // Serialization function
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, 
+                 const unsigned int //version
+                ) {
+    ar & boost::serialization::make_nvp("MHNoiseModelFactor6",
+         boost::serialization::base_object<Base>(*this));
+    ar & BOOST_SERIALIZATION_NVP(_PIM_arr_);
+  }
+};
+// class CombinedImuFactor
+// */
 
 } /// namespace gtsam

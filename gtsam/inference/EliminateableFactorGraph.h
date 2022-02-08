@@ -26,7 +26,11 @@
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/VariableIndex.h>
 
+//#include <gtsam/linear/GaussianConditional.h> //mhsiao: trick
+
 namespace gtsam {
+
+  //class MHGaussianConditional; //mhsiao: trick
 
   /// Traits class for eliminateable factor graphs, specifies the types that result from
   /// elimination, etc.  This must be defined for each factor graph that inherits from
@@ -60,14 +64,14 @@ namespace gtsam {
     typedef FACTORGRAPH FactorGraphType; ///< Typedef to factor graph type
     // Base factor type stored in this graph (private because derived classes will get this from
     // their FactorGraph base class)
-    typedef typename EliminationTraits<FactorGraphType>::FactorType _FactorType;
+    typedef typename EliminationTraits<FactorGraphType>::FactorType _FactorType; //
 
   public:
     /// Typedef to the specific EliminationTraits for this graph
     typedef EliminationTraits<FactorGraphType> EliminationTraitsType;
 
     /// Conditional type stored in the Bayes net produced by elimination
-    typedef typename EliminationTraitsType::ConditionalType ConditionalType;
+    typedef typename EliminationTraitsType::ConditionalType ConditionalType; //
 
     /// Bayes net type produced by sequential elimination
     typedef typename EliminationTraitsType::BayesNetType BayesNetType;
@@ -83,7 +87,7 @@ namespace gtsam {
 
     /// The pair of conditional and remaining factor produced by a single dense elimination step on
     /// a subgraph.
-    typedef std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<_FactorType> > EliminationResult;
+    typedef std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<_FactorType> > EliminationResult; //mhsiao: used in BayesTreeCliqueBase::setEliminationResult()
 
     /// The function type that does a single dense elimination step on a subgraph.
     typedef boost::function<EliminationResult(const FactorGraphType&, const Ordering&)> Eliminate;

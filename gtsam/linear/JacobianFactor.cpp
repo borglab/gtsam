@@ -444,10 +444,12 @@ double JacobianFactor::error(const VectorValues& c) const {
 /* ************************************************************************* */
 Matrix JacobianFactor::augmentedInformation() const {
   if (model_) {
+    // is_model
     Matrix AbWhitened = Ab_.full();
     model_->WhitenInPlace(AbWhitened);
     return AbWhitened.transpose() * AbWhitened;
   } else {
+    // not_model
     return Ab_.full().transpose() * Ab_.full();
   }
 }
@@ -503,6 +505,7 @@ map<Key, Matrix> JacobianFactor::hessianBlockDiagonal() const {
 /* ************************************************************************* */
 void JacobianFactor::updateHessian(const FastVector<Key>& infoKeys,
                                    SymmetricBlockMatrix* info) const {
+ 
   gttic(updateHessian_JacobianFactor);
 
   if (rows() == 0) return;
@@ -535,6 +538,7 @@ void JacobianFactor::updateHessian(const FastVector<Key>& infoKeys,
       // Fill diagonal block with Aj'*Aj
       info->diagonalBlock(J).rankUpdate(Ab_j.transpose());
     }
+  
   }
 }
 
@@ -796,5 +800,39 @@ GaussianConditional::shared_ptr JacobianFactor::splitConditional(size_t nrFronta
 
   return conditional;
 }
+
+//============================= mhUpdateHessian() =============================
+//[MH-A]:
+void MHJacobianFactor::mhUpdateHessian(const FastVector<Key>& keys, HessList& hessian_list, const int& max_layer_idx) const {
+  // max_layer_idx decides the recursive iter...
+  const int this_layer_idx = resulting_layer_->getLayerIdx();
+  const int layer_diff = max_layer_idx - this_layer_idx;
+
+  //std::vector<int> descendant_num_arr(hypo_list_.size()); //[D]
+  std::vector<int> descendant_num_arr(hypoSize());
+  size_t dna_idx = 0;
+  
+  //for (HypoListCstIter it = hypo_list_.begin(); it != hypo_list_.end(); ++it) { //[D]
+  const HypoList& hypo_list = getHypoList();
+  for (HypoListCstIter it = hypo_list.begin(); it != hypo_list.end(); ++it) {
+    //[MH-A]:
+    descendant_num_arr[dna_idx] = (*it)->findDescendantNum(layer_diff);
+    ++dna_idx;
+  }
+
+  HessListIter hit = hessian_list.begin();
+  int dna_count = 0;
+  for (JacobListCstIter jit = jacobian_list_.begin(); jit != jacobian_list_.end(); ++jit) { //should NOT ++hit here
+    
+    auto& num = descendant_num_arr[dna_count];
+    for (int k = 0; k < num; ++k) {
+      (*jit).updateHessian(keys, &((*hit).info())); 
+      ++hit;
+    }
+    dna_count++;
+  }
+
+}
+//============================= END mhUpdateHessian() =============================
 
 }  // namespace gtsam

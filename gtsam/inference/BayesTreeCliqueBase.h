@@ -21,11 +21,15 @@
 #include <gtsam/base/types.h>
 #include <gtsam/base/FastVector.h>
 
+//#include <gtsam/linear/GaussianBayesNet.h> //mhsiao: trick
+
 namespace gtsam {
+
+  //class MHGaussianBayesNet; //mhsiao: trick
 
   // Forward declarations
   template<class CLIQUE> class BayesTree;
-  template<class GRAPH> struct EliminationTraits;
+  template<class GRAPH> struct EliminationTraits; //{1}
 
   /**
    * This is the base class for BayesTree cliques.  The default and standard derived type is
@@ -46,7 +50,7 @@ namespace gtsam {
   private:
     typedef BayesTreeCliqueBase<DERIVED, FACTORGRAPH> This;
     typedef DERIVED DerivedType;
-    typedef EliminationTraits<FACTORGRAPH> EliminationTraitsType;
+    typedef EliminationTraits<FACTORGRAPH> EliminationTraitsType; //{2}
     typedef boost::shared_ptr<This> shared_ptr;
     typedef boost::weak_ptr<This> weak_ptr;
     typedef boost::shared_ptr<DerivedType> derived_ptr;
@@ -54,9 +58,9 @@ namespace gtsam {
 
   public:
     typedef FACTORGRAPH FactorGraphType;
-    typedef typename EliminationTraitsType::BayesNetType BayesNetType;
-    typedef typename BayesNetType::ConditionalType ConditionalType;
-    typedef boost::shared_ptr<ConditionalType> sharedConditional;
+    typedef typename EliminationTraitsType::BayesNetType BayesNetType; //{3} 
+    typedef typename BayesNetType::ConditionalType ConditionalType; //{4} //GaussianConditional
+    typedef boost::shared_ptr<ConditionalType> sharedConditional; //{5} 
     typedef typename FactorGraphType::FactorType FactorType;
     typedef typename FactorGraphType::Eliminate Eliminate;
 
@@ -77,7 +81,8 @@ namespace gtsam {
     mutable boost::optional<FactorGraphType> cachedSeparatorMarginal_;
 
   public:
-    sharedConditional conditional_;
+    sharedConditional conditional_; //mhsiao: extend this original to handle MH... (DONE)
+    
     derived_weak_ptr parent_;
     FastVector<derived_ptr> children;
     int problemSize_;
@@ -86,6 +91,10 @@ namespace gtsam {
     /// conditional and ignores the remaining factor, but this is overridden in ISAM2Clique
     /// to also cache the remaining factor.
     void setEliminationResult(const typename FactorGraphType::EliminationResult& eliminationResult);
+    //[MH-A]: 
+    void mhSetEliminationResult(const typename FactorGraphType::EliminationResult& eliminationResult) {
+      std::cout << "ERROR: BayesTreeCliqueBase::mhSetEliminationResult() should NEVER be called" << std::endl;
+    }
 
     /// @name Testable
     /// @{

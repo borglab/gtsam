@@ -23,6 +23,7 @@
 namespace gtsam {
 
 /* ************************************************************************* */
+//[MH-A]: same for MH (from "affectedFactorsVarIndex" in ISAM2.cpp)
 template<class FG>
 void VariableIndex::augment(const FG& factors,
     boost::optional<const FastVector<size_t>&> newFactorIndices) {

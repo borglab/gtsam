@@ -27,6 +27,7 @@
 
 namespace gtsam {
 
+//[MH-A]: should be the same for MH
 template<class BAYESTREE, class GRAPH, class ETREE_NODE>
 struct ConstructorTraversalData {
   typedef typename JunctionTree<BAYESTREE, GRAPH>::Node Node;
@@ -118,9 +119,10 @@ struct ConstructorTraversalData {
     // now really merge
     node->mergeChildren(merge);
   }
-};
+}; // END struct ConstructorTraversalData
 
 /* ************************************************************************* */
+//[MH-A]: should be the same for MH
 template<class BAYESTREE, class GRAPH>
 template<class ETREE_BAYESNET, class ETREE_GRAPH>
 JunctionTree<BAYESTREE, GRAPH>::JunctionTree(
@@ -135,11 +137,13 @@ JunctionTree<BAYESTREE, GRAPH>::JunctionTree(
 
   // Traverse the elimination tree, doing symbolic elimination and merging nodes
   // as we go.  Gather the created junction tree roots in a dummy Node.
-  typedef typename EliminationTree<ETREE_BAYESNET, ETREE_GRAPH>::Node ETreeNode;
+  typedef typename EliminationTree<ETREE_BAYESNET, ETREE_GRAPH>::Node ETreeNode; //mhsiao: ISAM2: EliminationTree::Node with FastVector<sharedGaussianFactor> as one of the members...
+  
   typedef ConstructorTraversalData<BAYESTREE, GRAPH, ETreeNode> Data;
   Data rootData(0);
   rootData.myJTNode = boost::make_shared<typename Base::Node>(); // Make a dummy node to gather
                                                                  // the junction tree roots
+  //[MH-A]: shoulde be same for MH... 
   treeTraversal::DepthFirstForest(eliminationTree, rootData,
       Data::ConstructorTraversalVisitorPre,
       Data::ConstructorTraversalVisitorPostAlg2);
@@ -149,6 +153,6 @@ JunctionTree<BAYESTREE, GRAPH>::JunctionTree(
 
   // Transfer remaining factors from elimination tree
   Base::remainingFactors_ = eliminationTree.remainingFactors();
-}
+} // END JunctionTree()
 
 } // namespace gtsam

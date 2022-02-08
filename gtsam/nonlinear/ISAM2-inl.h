@@ -245,7 +245,7 @@ bool optimizeWildfireNode(const boost::shared_ptr<CLIQUE>& clique, double thresh
   }
 
   return recalculate;
-}
+} // END optimizeWildfireNode()
 
 } // namespace internal
 

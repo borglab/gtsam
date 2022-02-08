@@ -143,6 +143,180 @@ namespace gtsam {
 
     return result;
   }
+//================ copyVecAt(), toLongVec() ==================
+//[MH-A]:
+void copyVecAt(std::vector<Vector>& in_arr, std::vector<Vector>& out_arr, const size_t& dim, const size_t& pos) {
+  out_arr.resize(in_arr.size());
+  for (size_t i = 0; i < in_arr.size(); ++i) {
+    out_arr[i] = in_arr[i].segment(pos, dim);
+  }
+}
+//[MH-A]:
+Vector toLongVec(std::vector<Vector>& in_arr, const size_t& dim) {
+  Vector out_v(dim*in_arr.size());
+  size_t pos = 0;
+  for (size_t i = 0; i < in_arr.size(); ++i) {
+    out_v.segment(pos, dim) = in_arr[i];
+    pos += dim;
+  }
+  return out_v; 
+}
+//================ END copyVecAt(), toLongVec() ==================
+
+//============================================== mhSolve() ==========================================
+  //[MH-A]:
+  VectorValues GaussianConditional::mhSolve(Values& theta, const VectorValues& x, const double& splitThreshold) const
+  {
+    VectorValues result;
+
+    std::vector<Vector> solution_arr;
+    int max_layer_idx = -1;
+
+    const int this_layer_idx = resulting_layer_->getLayerIdx();
+
+    if (nrParents() != 0) { //NOT the root clique
+      
+      //[MH-A]: Find max-hypo among all xS (separators)
+      std::vector<HypoLayer*> hypo_layer_arr(nrParents());
+
+      int max_idx = -1;
+      //size_t sum_dim = 0;
+      std::vector<size_t> dim_arr(nrParents()); 
+
+      //[MH-A]: find the max-hypo among all separators (parents) and use it to set the hypo of the output solution
+      size_t hla_idx = 0;
+      for(auto kit = beginParents(); kit != endParents(); ++kit) {
+
+        Value* val_ptr = &(theta.at(*kit));
+        HypoLayer* tmp_layer_ptr = val_ptr->getHypoLayer();
+        
+        dim_arr[hla_idx] = val_ptr->dim();
+
+        const int tmp_layer_idx = tmp_layer_ptr->getLayerIdx();
+
+        hypo_layer_arr[hla_idx] = tmp_layer_ptr; //later used in mhUpdateVectorArr()
+
+        if (tmp_layer_idx >= max_layer_idx) {
+          max_layer_idx = tmp_layer_idx;
+          max_idx = hla_idx;
+        }
+        
+        ++hla_idx;
+      }
+
+      HypoLayer* max_layer_ptr = hypo_layer_arr[max_idx];
+
+      // WARNING: Consider HypoLayers of the frontals as well
+      for(auto kit = beginFrontals(); kit != endFrontals(); ++kit) {
+        Value* val_ptr = &(theta.at(*kit));
+        HypoLayer* tmp_layer_ptr = val_ptr->getHypoLayer();
+
+        const int tmp_layer_idx = tmp_layer_ptr->getLayerIdx();
+        if (tmp_layer_idx >= max_layer_idx) {
+          max_layer_idx = tmp_layer_idx;
+          max_layer_ptr = tmp_layer_ptr;
+        }
+      }
+
+      if (max_layer_idx < this_layer_idx) {
+std::cout << "ERROR: max_layer_idx from both parents and frontals (" << max_layer_idx << ") < this_layer_idx (" << this_layer_idx << ") should NEVER happen !!" << std::endl;      
+        // Force to expand
+        max_layer_idx = this_layer_idx;
+        max_layer_ptr = resulting_layer_;
+std::cout << "FINAL_MAX: " << max_layer_idx << std::endl;      
+      }
+      
+      size_t sum_dim = std::accumulate(dim_arr.begin(), dim_arr.end(), 0);
+       
+      //[MH-A]: Create Vector
+      //const HypoList& max_hypo_list = *(hypo_list_arr[max_idx]);
+      const HypoList& max_hypo_list = max_layer_ptr->getNodeList();
+      std::vector<Vector> xS_arr(max_hypo_list.size(), Vector(sum_dim)); //(# hypo) * (dim)
+
+      //max_layer_idx = hypo_layer_arr[max_idx]->getLayerIdx();
+      size_t pos = 0;
+      int hla_count = 0;
+      for(auto kit = beginParents(); kit != endParents(); ++kit) {
+
+        //[MH-A]: Used in all cliques except the root 
+        
+        const size_t& dim = dim_arr[hla_count];
+
+        x.mhUpdateVectorArr((*kit), dim, pos, hypo_layer_arr[hla_count], xS_arr, max_layer_idx); //later half of the Keys
+        hla_count++;
+        pos += dim;
+
+      }   
+    
+      //[MH-A]: Get solution based on the max-hypo (assocate across the HypoTree)
+      const int layer_diff = max_layer_idx - this_layer_idx;
+      
+      std::vector<int> descendant_num_arr(hypoSize());
+      
+      size_t dna_idx = 0;
+
+      const HypoList& hypo_list = getHypoList();
+      for (HypoListCstIter it = hypo_list.begin(); it != hypo_list.end(); ++it) {
+        //[MH-A]:
+        descendant_num_arr[dna_idx] = (*it)->findDescendantNum(layer_diff);
+        ++dna_idx;
+      }
+
+      solution_arr.resize(xS_arr.size());
+      
+      int dna_count = 0; //slower
+      int xs_count = 0; //faster
+      for (JacobListCstIter jit = jacobian_list_.begin(); jit != jacobian_list_.end(); ++jit) {
+
+        auto& num = descendant_num_arr[dna_count];
+        for (int k = 0; k < num; ++k) {
+
+          solution_arr[xs_count] = mhGet_single_R(jit).triangularView<Eigen::Upper>().solve(mhGet_single_d(jit) - mhGet_single_S(jit)*xS_arr[xs_count]);
+          xs_count++;
+          
+          if (solution_arr.back().hasNaN()) {
+            throw IndeterminantLinearSystemException(keys().front());
+          }
+        }
+        dna_count++;
+      }
+    
+    } else { //root Clique
+      //[MH-A]: Get solution based on itself
+      max_layer_idx = this_layer_idx;
+    
+      solution_arr.resize(jacobian_list_.size());
+      size_t sa_idx = 0;
+      for (JacobListCstIter jit = jacobian_list_.begin(); jit != jacobian_list_.end(); ++jit) { 
+        solution_arr[sa_idx] = mhGet_single_R(jit).triangularView<Eigen::Upper>().solve(mhGet_single_d(jit));
+        ++sa_idx;
+
+        if (solution_arr.back().hasNaN()) {
+          throw IndeterminantLinearSystemException(keys().front());
+        }
+      }
+    } // END if-else root
+
+    //[MH-A]: Re-group the output VectorArr into VectorValues while eliminating deplicated items (might have to check if the baseline # hypo of each Vector is greater than the # hypo of the corresponding MHGV)
+    //[MH-A]: Add corresponding hypo of Values based on the final # hypo of solutions
+    int pos = 0;
+    for(auto kit = beginFrontals(); kit != endFrontals(); ++kit) {
+      size_t dim = getDim(kit);
+      std::vector<Vector> vec_arr;
+      copyVecAt(solution_arr, vec_arr, dim, pos); //mhsiao: each single Vector, could be merged based on hypo
+      
+      theta.at(*kit).mergeHypoAndSetAgree(vec_arr, max_layer_idx, (*kit), splitThreshold); //mhsiao: vec_arr and front_layer both got modified in the function...
+      
+      //[MH-opt]:
+      result.insert((*kit), toLongVec(vec_arr, dim)); //the only time waste here: about 1% ~ 2% in total... (NOT worth optimizing this?)
+      pos += dim;
+    }
+
+    return result;
+  }
+
+//============================================== END mhSolve() ==========================================
+
 
   /* ************************************************************************* */
   VectorValues GaussianConditional::solveOtherRHS(
@@ -207,4 +381,51 @@ namespace gtsam {
     }
   }
 
-}
+//============================== MHGaussianConditional::functions() =======================
+/*
+  bool MHGaussianConditional::equals(const GaussianFactor& f, double tol) const {
+    //
+    if (const GaussianConditional* c = dynamic_cast<const GaussianConditional*>(&f))
+    {
+      // check if the size of the parents_ map is the same
+      if (parents().size() != c->parents().size())
+        return false;
+
+      // check if R_ and d_ are linear independent
+      for (DenseIndex i = 0; i < Ab_.rows(); i++) {
+        list<Vector> rows1; rows1.push_back(Vector(get_R().row(i)));
+        list<Vector> rows2; rows2.push_back(Vector(c->get_R().row(i)));
+
+        // check if the matrices are the same
+        // iterate over the parents_ map
+        for (const_iterator it = beginParents(); it != endParents(); ++it) {
+          const_iterator it2 = c->beginParents() + (it - beginParents());
+          if (*it != *(it2))
+            return false;
+          rows1.push_back(row(getA(it), i));
+          rows2.push_back(row(c->getA(it2), i));
+        }
+
+        Vector row1 = concatVectors(rows1);
+        Vector row2 = concatVectors(rows2);
+        if (!linear_dependent(row1, row2, tol))
+          return false;
+      }
+
+      // check if sigmas are equal
+      if ((model_ && !c->model_) || (!model_ && c->model_)
+        || (model_ && c->model_ && !model_->equals(*c->model_, tol)))
+        return false;
+
+      return true;
+    }
+    else
+    {
+      return false;
+    }
+    //
+  } // END MHGaussianConditional::equals()
+// */
+
+//============================== END MHGaussianConditional::functions() =======================
+} // END gtsam namespace

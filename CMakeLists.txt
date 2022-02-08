@@ -9,7 +9,7 @@ if(NOT DEFINED CMAKE_MACOSX_RPATH)
 endif()
 
 # Set the version number for the library
-set (GTSAM_VERSION_MAJOR 4)
+set (GTSAM_VERSION_MAJOR 7) #Originally 4. Try set to 7 for MH
 set (GTSAM_VERSION_MINOR 0)
 set (GTSAM_VERSION_PATCH 0)
 math (EXPR GTSAM_VERSION_NUMERIC "10000 * ${GTSAM_VERSION_MAJOR} + 100 * ${GTSAM_VERSION_MINOR} + ${GTSAM_VERSION_PATCH}")
@@ -55,7 +55,7 @@ endif()
 if(GTSAM_UNSTABLE_AVAILABLE)
     option(GTSAM_BUILD_UNSTABLE              "Enable/Disable libgtsam_unstable"          ON)
 endif()
-option(GTSAM_BUILD_STATIC_LIBRARY        "Build a static gtsam library, instead of shared" OFF)
+option(GTSAM_BUILD_STATIC_LIBRARY        "Build a static gtsam library, instead of shared" ON) #originally OFF. Try set to ON for MH
 option(GTSAM_USE_QUATERNIONS             "Enable/Disable using an internal Quaternion representation for rotations instead of rotation matrices. If enable, Rot3::EXPMAP is enforced by default." OFF)
 option(GTSAM_POSE3_EXPMAP 			 	 "Enable/Disable using Pose3::EXPMAP as the default mode. If disabled, Pose3::FIRST_ORDER will be used." OFF)
 option(GTSAM_ROT3_EXPMAP 			 	 "Ignore if GTSAM_USE_QUATERNIONS is OFF (Rot3::EXPMAP by default). Otherwise, enable Rot3::EXPMAP, or if disabled, use Rot3::CAYLEY." OFF)

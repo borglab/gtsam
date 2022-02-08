@@ -20,11 +20,19 @@
 
 #pragma once
 
+#include <gtsam/inference/HypoTree.h>
+
 #include <gtsam/inference/Factor.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Testable.h>
 
 namespace gtsam {
+
+class HypoNode;
+class HypoLayer;
+class HypoTree;
+
+class HessianFactor;
 
   // Forward declarations
   class VectorValues;
@@ -38,9 +46,19 @@ namespace gtsam {
   class GTSAM_EXPORT GaussianFactor : public Factor
   {
   public:
+    
+    typedef std::list<HypoNode*> HypoList; //for virtual getHypoList()
+    
     typedef GaussianFactor This; ///< This class
     typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
     typedef Factor Base; ///< Our base class
+
+    typedef std::list<HessianFactor> HessList;
+    
+    typedef std::tuple<double, HypoNode*, size_t> PruneObj;
+    typedef std::list<PruneObj> PruneList;
+    typedef typename PruneList::iterator PruneListIter;
+    typedef typename PruneList::const_iterator PruneListCstIter;
 
     /** Default constructor creates empty factor */
     GaussianFactor() {}
@@ -52,6 +70,52 @@ namespace gtsam {
 
     /** Destructor */
     virtual ~GaussianFactor() {}
+
+    //[MH-A]: virtual only
+    virtual size_t hypoSize() const {
+      std::cout << "GaussianFactor::hypoSize() should NEVER be called" << std::endl;
+      return 1; //cannot be pure virtual...
+    }
+    //[MH-A]: virtual only
+    virtual const HypoList& getHypoList() const {
+      std::cout << "GaussianFactor::getHypoList() return empty" << std::endl;
+      HypoList* empty_list = new HypoList();
+      return *empty_list; //should NEVER be called...
+    }
+
+    virtual const HypoLayer* getHypoLayer() const {
+      std::cout << "const GaussianFactor::getHypoLayer() return NULL" << std::endl;
+      return NULL;
+    }
+    virtual HypoLayer* getHypoLayer() {
+      std::cout << "GaussianFactor::getHypoLayer() return NULL" << std::endl;
+      return NULL;
+    }
+    
+    virtual const void showType() const {
+      std::cout << "show: GF" << std::endl;
+    }
+    
+    //[MH-C]:
+    virtual bool removeAccumulatedPruned() {
+      std::cout << "GaussianFactor::removeAccumulatedPruned() return false" << std::endl;
+      return false;
+    }
+   
+    //[MH-C]: virtual only
+    virtual void printAllHypo() {
+      std::cout << "GaussianFactor::printAllErr2() should NEVER be called" << std::endl;
+    }
+    
+    //[MH-C]: virtual only
+    virtual bool selectPruneList(PruneList& prune_list, const size_t& max_hypo_num, const size_t& ult_hypo_bound, const bool& is_strict_th, const bool& is_print_details) const { 
+      std::cout << "GaussianFactor::selectPruneList() return false" << std::endl;
+      return false;
+    }
+    virtual HypoNode* findBestHypo(const size_t& best_type) { 
+      std::cout << "GaussianFactor::findBestHypo() should NEVER be called" << std::endl;
+      return NULL;
+    }
 
     // Implementing Testable interface
     virtual void print(const std::string& s = "",
@@ -129,6 +193,11 @@ namespace gtsam {
     virtual void updateHessian(const FastVector<Key>& keys,
                            SymmetricBlockMatrix* info) const = 0;
 
+    //[MH-A]: challenging association...
+    virtual void mhUpdateHessian(const FastVector<Key>& keys, HessList& hessian_list, const int& max_layer_idx) const {
+      std::cout << "ERROR: GaussianFactor::mhUpdateHessian() should NEVER be called" << std::endl;
+    }
+    
     /// y += alpha * A'*A*x
     virtual void multiplyHessianAdd(double alpha, const VectorValues& x, VectorValues& y) const = 0;
 

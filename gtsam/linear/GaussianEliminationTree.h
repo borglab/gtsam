@@ -40,8 +40,8 @@ namespace gtsam {
     * named constructor instead.
     * @return The elimination tree
     */
-    GaussianEliminationTree(const GaussianFactorGraph& factorGraph,
-      const VariableIndex& structure, const Ordering& order);
+    //[MH-A]: same for MH (used in recalculate() in ISAM2.cpp)
+    GaussianEliminationTree(const GaussianFactorGraph& factorGraph, const VariableIndex& structure, const Ordering& order);
 
     /** Build the elimination tree of a factor graph.  Note that this has to compute the column
     * structure as a VariableIndex, so if you already have this precomputed, use the other
@@ -58,6 +58,6 @@ namespace gtsam {
 
     friend class ::EliminationTreeTester;
 
-  };
+  }; // END GaussianEliminationTree
 
 }

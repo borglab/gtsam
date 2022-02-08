@@ -155,6 +155,7 @@ namespace gtsam {
 
     /** Iterator at end of involved variable keys */
     iterator end() { return keys_.end(); }
+    
 
   private:
     /** Serialization function */

@@ -307,6 +307,39 @@ public:
     }
   }
 };
+
+//============================ MH =============================
+//[MH-A]: for MH-linearization (works for both NMF and MHNMF)
+class _MHLinearizeOneFactor {
+  const NonlinearFactorGraph& nonlinearGraph_;
+  const Values& linearizationPoint_;
+  GaussianFactorGraph& result_;
+public:
+  // Create functor with constant parameters
+  _MHLinearizeOneFactor(const NonlinearFactorGraph& graph,
+      const Values& linearizationPoint, GaussianFactorGraph& result) :
+      nonlinearGraph_(graph), linearizationPoint_(linearizationPoint), result_(result) {
+  }
+  //[MH-A]: used in parallel linearization... same for MH
+  // Operator that linearizes a given range of the factors
+  void operator()(const tbb::blocked_range<size_t>& blocked_range) const {
+   
+    for (size_t i = blocked_range.begin(); i != blocked_range.end(); ++i) {
+    
+    
+      if (nonlinearGraph_[i]) {
+        result_[i] = nonlinearGraph_[i]->mhLinearize(linearizationPoint_);
+
+      } else {
+        result_[i] = GaussianFactor::shared_ptr();
+      }
+    }
+    
+  }
+};
+
+//============================ END MH =============================
+
 #endif
 
 }
@@ -319,15 +352,15 @@ GaussianFactorGraph::shared_ptr NonlinearFactorGraph::linearize(const Values& li
   // create an empty linear FG
   GaussianFactorGraph::shared_ptr linearFG = boost::make_shared<GaussianFactorGraph>();
 
+//==== Parallel ====
 #ifdef GTSAM_USE_TBB
-
-  linearFG->resize(size());
+  linearFG->resize(size()); //simply number of factors
   TbbOpenMPMixedScope threadLimiter; // Limits OpenMP threads since we're mixing TBB and OpenMP
   tbb::parallel_for(tbb::blocked_range<size_t>(0, size()),
     _LinearizeOneFactor(*this, linearizationPoint, *linearFG));
 
+//==== Serial ====
 #else
-
   linearFG->reserve(size());
 
   // linearize all factors
@@ -428,5 +461,42 @@ NonlinearFactorGraph NonlinearFactorGraph::rekey(const std::map<Key,Key>& rekey_
 }
 
 /* ************************************************************************* */
+
+//================== NonlinearFactorGraph::mhLinearize() =================
+//[MH-A]: Do NOT have to change the structure, but have to change inside NonlinearFactor::mhLinearize()... (NOTICE: NOT the same linearize() for overall graph)
+GaussianFactorGraph::shared_ptr NonlinearFactorGraph::mhLinearize(const Values& linearizationPoint) const
+{
+  gttic(NonlinearFactorGraph_linearize);
+
+  // create an empty linear FG
+  GaussianFactorGraph::shared_ptr linearFG = boost::make_shared<GaussianFactorGraph>();
+
+//==== Parallel ====
+#ifdef GTSAM_USE_TBB
+
+  linearFG->resize(size()); //simply number of factors
+  TbbOpenMPMixedScope threadLimiter; // Limits OpenMP threads since we're mixing TBB and OpenMP
+  tbb::parallel_for(tbb::blocked_range<size_t>(0, size()),
+    _MHLinearizeOneFactor(*this, linearizationPoint, *linearFG));
+
+//==== Serial ====
+#else
+
+  linearFG->reserve(size());
+
+  // linearize all factors
+  for(const sharedFactor& factor: factors_) {
+    if(factor) {
+      (*linearFG) += factor->mhLinearize(linearizationPoint);
+    } else
+    (*linearFG) += GaussianFactor::shared_ptr();
+  }
+
+#endif
+
+  return linearFG;
+}
+
+//================== END NonlinearFactorGraph::mhLinearize() =================
 
 } // namespace gtsam

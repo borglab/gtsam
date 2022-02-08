@@ -25,6 +25,7 @@ namespace gtsam {
   template class EliminationTree<GaussianBayesNet, GaussianFactorGraph>;
 
   /* ************************************************************************* */
+  //[MH-A]: same for MH
   GaussianEliminationTree::GaussianEliminationTree(
     const GaussianFactorGraph& factorGraph, const VariableIndex& structure,
     const Ordering& order) :

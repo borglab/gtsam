@@ -33,4 +33,11 @@ namespace gtsam {
     const KEYS& keys, size_t nrFrontals, const VerticalBlockMatrix& augmentedMatrix, const SharedDiagonal& sigmas) :
   BaseFactor(keys, augmentedMatrix, sigmas), BaseConditional(nrFrontals) {}
 
+//=========== GaussianConditional() for MHJacobianFactor inputs ==========
+  //[MH-A]:
+  template<typename KEYS>
+  GaussianConditional::GaussianConditional(const KEYS& keys, size_t nrFrontals, const std::list<VerticalBlockMatrix>& augmentedMatrix_list, HypoLayer* resulting_layer, const SharedDiagonal& sigmas) : BaseFactor(keys, augmentedMatrix_list, resulting_layer, sigmas), BaseConditional(nrFrontals) {}
+
+//=========== END GaussianConditional() for MHJacobianFactor inputs ==========
+
 } // gtsam

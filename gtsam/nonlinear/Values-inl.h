@@ -280,10 +280,58 @@ namespace gtsam {
          // value returns a const ValueType&, and the return makes a copy !!!!!
          return dynamic_cast<const GenericValue<ValueType>&>(*pointer).value();
        } catch (std::bad_cast&) {
+     
          throw ValuesIncorrectType(j, typeid(*pointer), typeid(ValueType));
        }
      }
    };
+   
+   //[MH-A]:
+   template <typename ValueType>
+   struct mhHandleMHGV {
+     MHGenericValue<ValueType> operator()(Key j, const Value* const pointer) {
+       try {
+         // value returns a const ValueType&, and the return makes a copy !!!!!
+         return dynamic_cast<const MHGenericValue<ValueType>&>(*pointer);
+      
+       } catch (std::bad_cast&) {
+       
+         throw ValuesIncorrectType(j, typeid(*pointer), typeid(ValueType));
+       }
+     }
+   }; // END mhHandleMHGV struct
+  
+   //[MH-A]:
+   template <typename ValueType>
+   struct mhHandle {
+     std::vector<ValueType> operator()(Key j, const Value* const pointer) {
+       try {
+         // value returns a const ValueType&, and the return makes a copy !!!!!
+         return dynamic_cast<const MHGenericValue<ValueType>&>(*pointer).valueArr();
+      
+       } catch (std::bad_cast&) {
+       
+         throw ValuesIncorrectType(j, typeid(*pointer), typeid(ValueType));
+       }
+     }
+   }; // END mhHandle struct
+   
+   //[MH-A]:
+   template <typename ValueType>
+   struct mhHandleHypo {
+     ValueType operator()(Key j, const Value* const pointer, HypoNode* max_hypo_ptr) {
+       try {
+         // value returns a const ValueType&, and the return makes a copy !!!!!
+         const size_t& layer_idx = dynamic_cast<const MHGenericValue<ValueType>&>(*pointer).getHypoLayer()->getLayerIdx();
+         const HypoNode* this_hypo = max_hypo_ptr->findAncestor(layer_idx);
+         return boost::dynamic_pointer_cast<const GenericValue<ValueType> >( this_hypo->key_value_map_.find(j)->second )->value();
+       
+       } catch (std::bad_cast&) {
+      
+         throw ValuesIncorrectType(j, typeid(*pointer), typeid(ValueType));
+       }
+     }
+   }; // END mhHandleHypo struct
 
    template <typename MatrixType, bool isDynamic>
    struct handle_matrix;
@@ -352,6 +400,54 @@ namespace gtsam {
     return internal::handle<ValueType>()(j,item->second);
   }
 
+//=============================== getMHGVAt() ==========================
+  template<typename ValueType>
+  MHGenericValue<ValueType> Values::getMHGVAt(Key j) const {
+
+    // Find the item
+    KeyValueMap::const_iterator item = values_.find(j);
+
+    // Throw exception if it does not exist
+    if(item == values_.end())
+      throw ValuesKeyDoesNotExist("getMHGVAt", j);
+
+    // Check the type and throw exception if incorrect
+    return internal::mhHandleMHGV<ValueType>()(j, item->second);
+  }
+//=============================== END getMHGVAt() ==========================
+
+//=============================== mhAt() ==========================
+  //[MH-A]:
+  template<typename ValueType>
+  std::vector<ValueType> Values::mhAt(Key j) const {
+    // Find the item
+    KeyValueMap::const_iterator item = values_.find(j);
+
+    // Throw exception if it does not exist
+    if(item == values_.end())
+      throw ValuesKeyDoesNotExist("mhAt", j);
+
+    // Check the type and throw exception if incorrect
+    return internal::mhHandle<ValueType>()(j, item->second);
+  }
+//=============================== END mhAt() ==========================
+
+//=============================== mhAtHypo() ==========================
+  //[MH-A]: access one value T
+  template<typename ValueType>
+  ValueType Values::mhAtHypo(Key j, HypoNode* max_hypo_ptr) const {
+    // Find the item
+    KeyValueMap::const_iterator item = values_.find(j);
+    
+    // Throw exception if it does not exist
+    if(item == values_.end())
+      throw ValuesKeyDoesNotExist("mhAtHypo", j);
+    
+    // Check the type and throw exception if incorrect
+    return internal::mhHandleHypo<ValueType>()(j, item->second, max_hypo_ptr);
+  }
+//=============================== END mhAtHypo() ==========================
+
   /* ************************************************************************* */
   template<typename ValueType>
   boost::optional<const ValueType&> Values::exists(Key j) const {
@@ -380,7 +476,7 @@ namespace gtsam {
   void Values::insert(Key j, const ValueType& val) {
     insert(j, static_cast<const Value&>(GenericValue<ValueType>(val)));
   }
-
+  
   // update with templated value
   template <typename ValueType>
   void Values::update(Key j, const ValueType& val) {

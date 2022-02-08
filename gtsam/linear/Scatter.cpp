@@ -57,6 +57,7 @@ Scatter::Scatter(const GaussianFactorGraph& gfg,
     // loop over variables
     for (GaussianFactor::const_iterator variable = factor->begin();
          variable != factor->end(); ++variable) {
+
       const Key key = *variable;
       iterator it = find(key); // theoretically expensive, yet cache friendly
       if (it!=end())
@@ -73,7 +74,56 @@ Scatter::Scatter(const GaussianFactorGraph& gfg,
 
   // Filter out keys with zero dimensions (if ordering had more keys)
   erase(std::remove_if(begin(), end(), SlotEntry::Zero), end());
+
 }
+
+//=================================== MH Scatter() ===========================
+Scatter::Scatter(const GaussianFactorGraph& gfg, const bool& is_mh, boost::optional<const Ordering&> ordering) {
+  
+  //gttic(Scatter_Constructor);
+
+  // If we have an ordering, pre-fill the ordered variables first
+  if (ordering) {
+    for (Key key : *ordering) {
+      add(key, 0);
+    }
+  }
+
+  // Now, find dimensions of variables and/or extend
+  for (const auto& factor : gfg) {
+    if (!factor)
+      continue;
+
+    // TODO: Fix this hack to cope with zero-row Jacobians that come from BayesTreeOrphanWrappers
+    const MHJacobianFactor* asMHJacobian = dynamic_cast<const MHJacobianFactor*>(factor.get());
+    if (asMHJacobian && asMHJacobian->cols() <= 1) continue;
+
+    // loop over variables
+    for (GaussianFactor::const_iterator variable = factor->begin(); variable != factor->end(); ++variable) {
+
+      const Key key = *variable;
+      iterator it = find(key); // theoretically expensive, yet cache friendly
+
+      if (it!=end()) {
+        it->dimension = factor->getDim(variable);
+      } else {
+        add(key, factor->getDim(variable));
+      }
+    }
+  }
+
+  // To keep the same behavior as before, sort the keys after the ordering
+  iterator first = begin();
+  if (ordering) first += ordering->size();
+  if (first != end()) std::sort(first, end());
+
+  // Filter out keys with zero dimensions (if ordering had more keys)
+  erase(std::remove_if(begin(), end(), SlotEntry::Zero), end());
+
+}
+
+//=================================== END MH Scatter() ===========================
+
 
 /* ************************************************************************* */
 void Scatter::add(Key key, size_t dim) {

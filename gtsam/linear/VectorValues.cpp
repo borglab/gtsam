@@ -105,7 +105,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  void VectorValues::insert(const VectorValues& values)
+  void VectorValues::insert(const VectorValues& values) //mhsioa: used to createinit-zero-vectors of delta
   {
     size_t originalSize = size();
     values_.insert(values.begin(), values.end());
@@ -181,6 +181,37 @@ namespace gtsam {
 
     return result;
   }
+
+//====================== mhUpdateVectorArr() ========================
+  //[MH-A]: update xS_arr using corresponding Vector
+  void VectorValues::mhUpdateVectorArr(const Key& j, const size_t& dim, const size_t& pos, HypoLayer* layer_ptr, std::vector<Vector>& xS_arr, const int& max_layer_idx) const {
+    
+    HypoLayer::HypoList& hypo_list = layer_ptr->getNodeList();
+    const int this_layer_idx = layer_ptr->getLayerIdx();
+    const int layer_diff = max_layer_idx - this_layer_idx;
+
+    std::vector<int> descendant_num_arr(hypo_list.size());
+    size_t dna_idx = 0;
+    for (HypoLayer::HypoListIter it = hypo_list.begin(); it != hypo_list.end(); ++it) {
+      //[MH-A]:
+      descendant_num_arr[dna_idx] = (*it)->findDescendantNum(layer_diff);
+      ++dna_idx;
+    }
+
+    const Vector& mh_vec = at(j);
+    int xa_count = 0;
+    for (size_t i = 0; i < descendant_num_arr.size(); ++i) {
+      Vector vec = mh_vec.segment(i*dim, dim);
+      auto& num = descendant_num_arr[i];
+      for (int k = 0; k < num; ++k) {
+        xS_arr[xa_count].segment(pos, dim) = vec;
+        xa_count++;
+      }
+    }
+
+ }
+//====================== END mhUpdateVectorArr() ========================
+
 
   /* ************************************************************************* */
   Vector VectorValues::vector(const Dims& keys) const

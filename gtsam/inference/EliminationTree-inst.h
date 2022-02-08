@@ -75,6 +75,7 @@ namespace gtsam {
 
 
   /* ************************************************************************* */
+  //[MH-A]: Create a tree from FactorGraph (same for MH)
   template<class BAYESNET, class GRAPH>
   EliminationTree<BAYESNET,GRAPH>::EliminationTree(const FactorGraphType& graph,
     const VariableIndex& structure, const Ordering& order)

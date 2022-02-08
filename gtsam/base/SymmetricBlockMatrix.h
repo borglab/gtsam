@@ -55,8 +55,10 @@ namespace gtsam {
     typedef Eigen::Block<Matrix> Block;
     typedef Eigen::Block<const Matrix> constBlock;
 
-  protected:
+  //protected: //mhsiao: test only
     Matrix matrix_; ///< The full matrix
+  
+  protected: //mhsiao: test only
     FastVector<DenseIndex> variableColOffsets_; ///< the starting columns of each block (0-based)
 
     DenseIndex blockStart_; ///< Changes apparent matrix view, see main class comment.
@@ -76,7 +78,11 @@ namespace gtsam {
       blockStart_(0)
     {
       fillOffsets(dimensions.begin(), dimensions.end(), appendOneDimension);
-      matrix_.resize(variableColOffsets_.back(), variableColOffsets_.back());
+      
+      //TODO: mhsiao: not zeros?
+      //matrix_.resize(variableColOffsets_.back(), variableColOffsets_.back());
+      matrix_ = Eigen::MatrixXd::Zero(variableColOffsets_.back(), variableColOffsets_.back());
+      
       assertInvariants();
     }
 
@@ -321,6 +327,7 @@ namespace gtsam {
       return nOffsets() - 1;
     }
 
+  public: //mhsiao: test only
     /// Get an offset for a block index (in the active view).
     DenseIndex offset(DenseIndex block) const {
       assert(block >= 0);
@@ -328,6 +335,7 @@ namespace gtsam {
       assert(actual_index < nOffsets());
       return variableColOffsets_[actual_index];
     }
+  protected: //mhsiao: test only
 
     /// Get an arbitrary block from the matrix. Indices are in block units.
     constBlock block_(DenseIndex iBlock, DenseIndex jBlock,

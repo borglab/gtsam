@@ -107,6 +107,7 @@ ClusterTree<GRAPH>& ClusterTree<GRAPH>::operator=(const This& other) {
 // Elimination traversal data - stores a pointer to the parent data and collects
 // the factors resulting from elimination of the children.  Also sets up BayesTree
 // cliques with parent and child pointers.
+//[MH-A]: Edit in existing class
 template<class CLUSTERTREE>
 struct EliminationData {
   // Typedefs
@@ -114,7 +115,7 @@ struct EliminationData {
   typedef typename CLUSTERTREE::FactorType FactorType;
   typedef typename CLUSTERTREE::FactorGraphType FactorGraphType;
   typedef typename CLUSTERTREE::ConditionalType ConditionalType;
-  typedef typename CLUSTERTREE::BayesTreeType::Node BTNode;
+  typedef typename CLUSTERTREE::BayesTreeType::Node BTNode; //mhsiao: ISAM2Clique : public BayesTreeCliqueBase<ISAM2Clique, GaussianFactorGraph>
 
   EliminationData* const parentData;
   size_t myIndexInParent;
@@ -149,24 +150,39 @@ struct EliminationData {
 
   // Elimination post-order visitor - combine the child factors with our own factors, add the
   // resulting conditional to the BayesTree, and add the remaining factor to the parent.
+  //[MH-A]:
   class EliminationPostOrderVisitor {
     const typename CLUSTERTREE::Eliminate& eliminationFunction_;
     typename CLUSTERTREE::BayesTreeType::Nodes& nodesIndex_;
 
+    //[MH-A]: Tell MH-iSAM2 from original iSAM2
+    bool is_mh_;
+
   public:
-    // Construct functor
+    //[MH-A]: Construct functor now also works for MH
     EliminationPostOrderVisitor(
         const typename CLUSTERTREE::Eliminate& eliminationFunction,
         typename CLUSTERTREE::BayesTreeType::Nodes& nodesIndex) :
         eliminationFunction_(eliminationFunction), nodesIndex_(nodesIndex) {
+      is_mh_ = false;
+    }
+    
+    //[MH-A]:
+    EliminationPostOrderVisitor(
+        const typename CLUSTERTREE::Eliminate& eliminationFunction,
+        typename CLUSTERTREE::BayesTreeType::Nodes& nodesIndex, const bool& is_mh) :
+        eliminationFunction_(eliminationFunction), nodesIndex_(nodesIndex) {
+      is_mh_ = is_mh;
     }
 
     // Function that does the HEAVY lifting
+    //[MH-A]: linked from EliminatableClusterTree::eliminate()
     void operator()(const typename CLUSTERTREE::sharedNode& node, EliminationData& myData) {
+
       assert(node);
 
       // Gather factors
-      FactorGraphType gatheredFactors;
+      FactorGraphType gatheredFactors; //GaussianFactorGraph
       gatheredFactors.reserve(node->factors.size() + node->nrChildren());
       gatheredFactors += node->factors;
       gatheredFactors += myData.childFactors;
@@ -182,23 +198,31 @@ struct EliminationData {
       }
 
       // >>>>>>>>>>>>>> Do dense elimination step >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+      //[MH-A]: returns GaussianConditional and MHHessianFactor in MH...
       auto eliminationResult = eliminationFunction_(gatheredFactors, node->orderedFrontalKeys);
       // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
       // Store conditional in BayesTree clique, and in the case of ISAM2Clique also store the
       // remaining factor
-      myData.bayesTreeNode->setEliminationResult(eliminationResult);
+      //[MH-A]:
+      if (is_mh_) {
+        myData.bayesTreeNode->mhSetEliminationResult(eliminationResult);
+      } else {
+        myData.bayesTreeNode->setEliminationResult(eliminationResult);
+      }
 
       // Fill nodes index - we do this here instead of calling insertRoot at the end to avoid
       // putting orphan subtrees in the index - they'll already be in the index of the ISAM2
       // object they're added to.
-      for (const Key& j: myData.bayesTreeNode->conditional()->frontals())
+      for (const Key& j: myData.bayesTreeNode->conditional()->frontals()) {
         nodesIndex_.insert(std::make_pair(j, myData.bayesTreeNode));
+      }
 
       // Store remaining factor in parent's gathered factors
       if (!eliminationResult.second->empty())
         myData.parentData->childFactors[myData.myIndexInParent] = eliminationResult.second;
-    }
+    } // END operator()
+
   };
 };
 
@@ -216,9 +240,51 @@ EliminatableClusterTree<BAYESTREE, GRAPH>& EliminatableClusterTree<BAYESTREE, GR
 }
 
 /* ************************************************************************* */
+//[MH-A]: should be the same for MH... 
 template <class BAYESTREE, class GRAPH>
 std::pair<boost::shared_ptr<BAYESTREE>, boost::shared_ptr<GRAPH> >
 EliminatableClusterTree<BAYESTREE, GRAPH>::eliminate(const Eliminate& function) const {
+
+  gttic(ClusterTree_eliminate);
+  // Do elimination (depth-first traversal).  The rootsContainer stores a 'dummy' BayesTree node
+  // that contains all of the roots as its children.  rootsContainer also stores the remaining
+  // un-eliminated factors passed up from the roots.
+  boost::shared_ptr<BayesTreeType> result = boost::make_shared<BayesTreeType>();
+
+  typedef EliminationData<This> Data;
+  Data rootsContainer(0, this->nrRoots());
+  
+  //[MH-A]: EliminationPostOrderVisitor::operator() below
+  typename Data::EliminationPostOrderVisitor visitorPost(function, result->nodes_); //NOTICE: "operator()"
+  {
+    TbbOpenMPMixedScope threadLimiter;  // Limits OpenMP threads since we're mixing TBB and OpenMP
+
+    treeTraversal::DepthFirstForestParallel(*this, rootsContainer, Data::EliminationPreOrderVisitor, visitorPost, 10);
+  }
+
+  // Create BayesTree from roots stored in the dummy BayesTree node.
+  result->roots_.insert(result->roots_.end(), rootsContainer.bayesTreeNode->children.begin(),
+                        rootsContainer.bayesTreeNode->children.end());
+
+  // Add remaining factors that were not involved with eliminated variables
+  boost::shared_ptr<FactorGraphType> remaining = boost::make_shared<FactorGraphType>();
+  remaining->reserve(remainingFactors_.size() + rootsContainer.childFactors.size());
+  remaining->push_back(remainingFactors_.begin(), remainingFactors_.end());
+  for (const sharedFactor& factor : rootsContainer.childFactors) {
+    if (factor)
+      remaining->push_back(factor);
+  }
+
+  // Return result
+  return std::make_pair(result, remaining);
+} // END eliminate()
+
+//================================ EliminatableClusterTree::mhEliminate() ======================================
+//[MH-A]: should be the same for MH... 
+template <class BAYESTREE, class GRAPH>
+std::pair<boost::shared_ptr<BAYESTREE>, boost::shared_ptr<GRAPH> >
+EliminatableClusterTree<BAYESTREE, GRAPH>::mhEliminate(const Eliminate& function) const {
+
   gttic(ClusterTree_eliminate);
   // Do elimination (depth-first traversal).  The rootsContainer stores a 'dummy' BayesTree node
   // that contains all of the roots as its children.  rootsContainer also stores the remaining
@@ -228,11 +294,12 @@ EliminatableClusterTree<BAYESTREE, GRAPH>::eliminate(const Eliminate& function) 
   typedef EliminationData<This> Data;
   Data rootsContainer(0, this->nrRoots());
 
-  typename Data::EliminationPostOrderVisitor visitorPost(function, result->nodes_);
+  //[MH-A]: EliminationPostOrderVisitor::operator() below
+  typename Data::EliminationPostOrderVisitor visitorPost(function, result->nodes_, true); //NOTICE: "operator()"
   {
     TbbOpenMPMixedScope threadLimiter;  // Limits OpenMP threads since we're mixing TBB and OpenMP
-    treeTraversal::DepthFirstForestParallel(*this, rootsContainer, Data::EliminationPreOrderVisitor,
-                                            visitorPost, 10);
+
+    treeTraversal::DepthFirstForestParallel(*this, rootsContainer, Data::EliminationPreOrderVisitor, visitorPost, 10);
   }
 
   // Create BayesTree from roots stored in the dummy BayesTree node.
@@ -251,5 +318,6 @@ EliminatableClusterTree<BAYESTREE, GRAPH>::eliminate(const Eliminate& function) 
   // Return result
   return std::make_pair(result, remaining);
 }
+//================================ END EliminatableClusterTree::mhEliminate() ======================================
 
 } // namespace gtsam

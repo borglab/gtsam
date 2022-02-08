@@ -13,8 +13,11 @@
 #include <gtsam/base/FastVector.h>
 #include <gtsam/inference/Ordering.h>
 
+#include <gtsam/linear/GaussianFactorGraph.h> //mhsiao: trick
+
 namespace gtsam {
 
+  class GaussianFactorGraph; //mhsiao: trick
 /**
  * A cluster-tree is associated with a factor graph and is defined as in Koller-Friedman:
  * each node k represents a subset \f$ C_k \sub X \f$, and the tree is family preserving, in that
@@ -193,6 +196,7 @@ class EliminatableClusterTree : public ClusterTree<GRAPH> {
       sharedConditional;  ///< Shared pointer to a conditional
 
   typedef typename GRAPH::Eliminate Eliminate;         ///< Typedef for an eliminate subroutine
+  
   typedef typename GRAPH::FactorType FactorType;       ///< The type of factors
   typedef boost::shared_ptr<FactorType> sharedFactor;  ///< Shared pointer to a factor
 
@@ -219,8 +223,10 @@ class EliminatableClusterTree : public ClusterTree<GRAPH> {
    * in GaussianFactorGraph.h
    * @return The Bayes tree and factor graph resulting from elimination
    */
-  std::pair<boost::shared_ptr<BayesTreeType>, boost::shared_ptr<FactorGraphType> > eliminate(
-      const Eliminate& function) const;
+  std::pair<boost::shared_ptr<BayesTreeType>, boost::shared_ptr<FactorGraphType> > eliminate(const Eliminate& function) const;
+  
+  //[MH-A]: replace Eliminate with mhEliminate...
+  std::pair<boost::shared_ptr<BayesTreeType>, boost::shared_ptr<FactorGraphType> > mhEliminate(const Eliminate& function) const;
 
   /// @}
 

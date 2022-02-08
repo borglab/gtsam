@@ -18,13 +18,22 @@
 
 #pragma once
 
+#include <iostream>
+
+#include <gtsam/inference/HypoTree.h>
+
 #include <gtsam/config.h>      // Configuration from CMake
 
 #include <gtsam/base/Vector.h>
 #include <boost/serialization/assume_abstract.hpp>
 #include <memory>
+#include <vector>
 
 namespace gtsam {
+
+class HypoNode;
+class HypoLayer;
+class HypoTree;
 
   /**
    * This is the interface class for any value that may be used as a variable
@@ -82,7 +91,14 @@ namespace gtsam {
    */
   class GTSAM_EXPORT Value {
   public:
-
+    
+    //[MH-A]: 
+    typedef std::list<HypoNode*> HypoList; //for virtual getHypoList()
+    
+    typedef boost::shared_ptr<Value> sharedImplyGeneric;
+   
+    typedef std::list<sharedImplyGeneric> GenericList;
+        
     /** Clone this value in a special memory pool, must be deleted with Value::deallocate_, *not* with the 'delete' operator. */
     virtual Value* clone_() const = 0;
 
@@ -104,6 +120,40 @@ namespace gtsam {
      * @return The dimensionality of the tangent space
      */
     virtual size_t dim() const = 0;
+    
+    //[MH-A]: 
+    virtual size_t hypoNum() const = 0; //added for zeroVector()
+    
+    virtual const HypoList& getHypoList() const {
+      std::cout << "const Value::getHypoList() return empty" << std::endl;
+      HypoList* empty_list = new HypoList();
+      return *empty_list; //should NEVER be called
+    }
+     
+    virtual HypoLayer* getHypoLayer() const {
+      std::cout << "const Value::getHypoLayer() return NULL" << std::endl;
+      return NULL; //should NEVER be called
+    }
+    virtual const GenericList& getGenericList() const {
+      std::cout << "Value::getGenericList() return empty" << std::endl;
+      GenericList* empty_list = new GenericList();
+      return *empty_list; //should NEVER be called
+    }
+    
+    //[MH-A]: used in mhSolve()
+    virtual void mergeHypoAndSetAgree(std::vector<Vector>& vec_arr, const int& max_layer_idx, const Key& key, const double& splitThreshold) {
+      std::cout << "Value::mergeHypoAndSetAgree() should NEVER be called" << std::endl;
+    }
+    
+    virtual bool removeAccumulatedPruned() {
+      std::cout << "Value::removeAccumulatedPruned() should NEVER be called" << std::endl;
+      return false;
+    }
+
+    //[MH-C]:
+    virtual void setAgreeWith(const Key& key, HypoLayer* target_layer) {
+      std::cout << "Value::setAgreeWith() should NEVER be called" << std::endl;
+    }
 
     /** Increment the value, by mapping from the vector delta in the tangent
      * space of the current value back to the manifold to produce a new,
@@ -112,6 +162,18 @@ namespace gtsam {
      * which to increment this value.
      */
     virtual Value* retract_(const Vector& delta) const = 0;
+    
+    virtual Value* retractInPlace_(const Vector& delta) {
+      Value* empty_value = NULL;
+      std::cout << "Value::retractInPlace_() should NEVER be called" << std::endl;
+      return empty_value;
+    }
+    
+    virtual Value* this_() {
+      Value* empty_value = NULL;
+      std::cout << "Value::this_() should NEVER be called" << std::endl;
+      return empty_value;
+    }
 
     /** Compute the coordinates in the tangent space of this value that
      * retract() would map to \c value.
@@ -172,6 +234,140 @@ namespace gtsam {
 
   };
 
+//============================== MHValue ===============================
+  class MHValue: public Value {
+
+  public:
+  
+    typedef boost::shared_ptr<Value> sharedImplyGeneric;
+
+    typedef std::list<HypoNode*> HypoList;
+    typedef std::list<sharedImplyGeneric> GenericList; //mhsiao: actually ValueList
+    
+    typedef typename HypoList::iterator HypoListIter;
+    typedef typename HypoList::const_iterator HypoListCstIter;
+    typedef typename GenericList::iterator GenericListIter;
+    typedef typename GenericList::const_iterator GenericListCstIter;
+
+  public:
+
+    GenericList generic_list_;
+
+    HypoLayer* resulting_layer_;
+
+  public:
+    
+    MHValue() {};
+    ~MHValue() {}; 
+   
+    /** Clone this value in a special memory pool, must be deleted with Value::deallocate_, *not* with the 'delete' operator. */
+    virtual Value* clone_() const = 0;
+
+    /** Deallocate a raw pointer of this value */
+    virtual void deallocate_() const = 0;
+
+    /** Clone this value (normal clone on the heap, delete with 'delete' operator) */
+    virtual boost::shared_ptr<Value> clone() const = 0;
+
+    /** Compare this Value with another for equality. */
+    virtual bool equals_(const Value& other, double tol = 1e-9) const = 0;
+
+    /** Print this value, for debugging and unit tests */
+    virtual void print(const std::string& str = "") const = 0;
+
+    /** Return the dimensionality of the tangent space of this value.  This is
+     * the dimensionality of \c delta passed into retract() and of the vector
+     * returned by localCoordinates().
+     * @return The dimensionality of the tangent space
+     */
+    virtual size_t dim() const = 0;
+    
+    virtual size_t hypoNum() const = 0; //mhsiao: added for zeroVector()
+
+    //virtual const HypoList& getHypoList() const = 0;
+    //virtual HypoLayer* getHypoLayer() const = 0;
+    //virtual const GenericList& getGenericList() const = 0;
+    
+    virtual const HypoList& getHypoList() const {
+      std::cout << "const MHValue::getHypoList() return empty" << std::endl;
+      HypoList* empty_list = new HypoList();
+      return *empty_list; //should NEVER be called
+    }
+     
+    virtual HypoLayer* getHypoLayer() const {
+      std::cout << "const MHValue::getHypoLayer() return NULL" << std::endl;
+      return NULL;
+    }
+    virtual const GenericList& getGenericList() const {
+      std::cout << "MHValue::getGenericList() return empty" << std::endl;
+      GenericList* empty_list = new GenericList();
+      return *empty_list; //should NEVER be called
+    }
+    
+    //[MH-A]: used in mhSolve()
+    virtual void mergeHypoAndSetAgree(std::vector<Vector>& vec_arr, const int& max_layer_idx, const Key& key, const double& splitThreshold) {
+      std::cout << "MHValue::mergeHypoAndSetAgree() should NEVER be called" << std::endl;
+    }
+
+    virtual bool removeAccumulatedPruned() {
+      std::cout << "MHValue::removeAccumulatedPruned() should NEVER be called" << std::endl;
+      return false;
+    }
+    
+    //[MH-C]:
+    virtual void setAgreeWith(const Key& key, HypoLayer* target_layer) {
+      std::cout << "MHValue::setAgreeWith() should NEVER be called" << std::endl;
+    }
+    
+    /** Increment the value, by mapping from the vector delta in the tangent
+     * space of the current value back to the manifold to produce a new,
+     * incremented value.
+     * @param delta The delta vector in the tangent space of this value, by
+     * which to increment this value.
+     */
+    virtual Value* retract_(const Vector& delta) const = 0;
+    
+    virtual Value* retractInPlace_(const Vector& delta) {
+      Value* empty_value = NULL;
+      std::cout << "Value::retractInPlace_() should NEVER be called" << std::endl;
+      return empty_value;
+    }
+    
+    virtual Value* this_() {
+      Value* empty_value = NULL;
+      std::cout << "Value::this_() should NEVER be called" << std::endl;
+      return empty_value;
+    }
+
+    /** Compute the coordinates in the tangent space of this value that
+     * retract() would map to \c value.
+     * @param value The value whose coordinates should be determined in the
+     * tangent space of the value on which this function is called.
+     * @return The coordinates of \c value in the tangent space of \c this.
+     */
+    virtual Vector localCoordinates_(const Value& value) const = 0;
+
+    /** Assignment operator */
+    virtual Value& operator=(const Value& /*rhs*/) {
+      //needs a empty definition so recursion in implicit derived assignment operators work
+     return *this;
+    }
+
+    /** Cast to known ValueType */
+    template<typename ValueType>
+    const ValueType& cast() const;
+    
+  private:
+    friend class boost::serialization::access;
+    template<class ARCHIVE>
+    void serialize(ARCHIVE & /*ar*/, const unsigned int /*version*/) {
+    }
+  
+  };
+//============================== MHValue ===============================
+
 } /* namespace gtsam */
 
 BOOST_SERIALIZATION_ASSUME_ABSTRACT(gtsam::Value)
+
+

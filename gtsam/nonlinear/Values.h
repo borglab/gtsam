@@ -24,6 +24,8 @@
 
 #pragma once
 
+#include <gtsam/inference/HypoTree.h>
+
 #include <gtsam/base/GenericValue.h>
 #include <gtsam/base/VectorSpace.h>
 #include <gtsam/inference/Key.h>
@@ -68,6 +70,20 @@ namespace gtsam {
   * localCoordinates.
   */
   class GTSAM_EXPORT Values {
+
+  public:
+    typedef std::list<HypoNode*> HypoList;
+    //typedef std::list<GenericValue> GenericList;
+    typedef typename HypoList::iterator HypoListIter;
+    //typedef typename GenericList::iterator GenericListIter;
+    typedef typename HypoList::const_iterator HypoListCstIter;
+    //typedef typename GenericList::const_iterator GenericListCstIter;
+    typedef boost::shared_ptr<Value> sharedImplyGeneric;
+
+    typedef typename std::list<sharedImplyGeneric> GenericList;
+    
+    typedef typename GenericList::iterator GenericListIter;
+    typedef typename GenericList::const_iterator GenericListCstIter;
 
   private:
 
@@ -151,6 +167,11 @@ namespace gtsam {
 
     /** Construct from a Values and an update vector: identical to other.retract(delta) */
     Values(const Values& other, const VectorValues& delta);
+    //[MH-A]: use "is_mh" to tell apart from the above constructor...
+    Values(Values& other, const VectorValues& delta, const bool& is_mh);
+
+    //[MH-A]:
+    void mhRetractInPlace(const VectorValues& delta);
 
     /** Constructor from a Filtered view copies out all values */
     template<class ValueType>
@@ -181,7 +202,19 @@ namespace gtsam {
      */
     template<typename ValueType>
     ValueType at(Key j) const;
-
+    
+    //[MH-A]: access MHGV<T>
+    template<typename ValueType>
+    MHGenericValue<ValueType> getMHGVAt(Key j) const;
+    
+    //[MH-A]: access entire list<T>
+    template<typename ValueType>
+    std::vector<ValueType> mhAt(Key j) const;
+    
+    //[MH-A]: access entire list<T>
+    template<typename ValueType>
+    ValueType mhAtHypo(Key j, HypoNode* max_hypo_ptr) const;
+    
     /// version for double
     double atDouble(size_t key) const { return at<double>(key);}
 
@@ -191,6 +224,9 @@ namespace gtsam {
      * @return A const reference to the stored value
      */
     const Value& at(Key j) const;
+    
+    //[MH-A]:
+    Value& at(Key j);
 
     /** Check if a value exists with key \c j.  See exists<>(Key j)
      * and exists(const TypedKey& j) for versions that return the value if it
@@ -244,6 +280,8 @@ namespace gtsam {
 
     /** Add a delta config to current config and returns a new config */
     Values retract(const VectorValues& delta) const;
+    //[MH-A]:
+    Values mhRetract(const VectorValues& delta);
 
     /** Get a delta config about a linearization point c0 (*this) */
     VectorValues localCoordinates(const Values& cp) const;
@@ -252,16 +290,22 @@ namespace gtsam {
 
     /** Add a variable with the given j, throws KeyAlreadyExists<J> if j is already present */
     void insert(Key j, const Value& val);
+   
+    //[MH-A]: might NOT be used at all... 
+    void mhInsert(Key j, const Value& val);
 
     /** Add a set of variables, throws KeyAlreadyExists<J> if a key is already present */
     void insert(const Values& values);
+    
+    //[MH-A]: handle HypoTree
+    void mhInsert(const Values& values);
 
     /** Templated version to add a variable with the given j,
      * throws KeyAlreadyExists<J> if j is already present
      */
     template <typename ValueType>
     void insert(Key j, const ValueType& val);
-
+    
     /// version for double
     void insertDouble(Key j, double c) { insert<double>(j,c); }
 
@@ -271,6 +315,14 @@ namespace gtsam {
      *  returned. */
     std::pair<iterator, bool> tryInsert(Key j, const Value& value);
 
+    //[MH-C]:
+    void pruneUpToDate () {
+      for (iterator key_value = begin(); key_value != end(); ++key_value) {
+        // Check pruned record in Hypo-tree and prune hypos in MHGV accordingly
+        key_value->value.removeAccumulatedPruned();
+      }
+    }
+    
     /** single element change of existing element */
     void update(Key j, const Value& val);
 

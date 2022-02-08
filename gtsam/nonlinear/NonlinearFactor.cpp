@@ -133,14 +133,100 @@ boost::shared_ptr<GaussianFactor> NoiseModelFactor::linearize(
 
   // TODO pass unwhitened + noise model to Gaussian factor
   using noiseModel::Constrained;
-  if (noiseModel_ && noiseModel_->isConstrained())
+  if (noiseModel_ && noiseModel_->isConstrained()) {
     return GaussianFactor::shared_ptr(
         new JacobianFactor(terms, b,
             boost::static_pointer_cast<Constrained>(noiseModel_)->unit()));
-  else
+  } else {
     return GaussianFactor::shared_ptr(new JacobianFactor(terms, b));
+  }
 }
 
 /* ************************************************************************* */
+
+//==================================== MHNoiseModelFactor::mhLinearize() ==========================================
+//[MH-A]: 
+boost::shared_ptr<GaussianFactor> MHNoiseModelFactor::mhLinearize(const Values& x) const {
+  
+  // Only linearize if the factor is active
+  if (!active(x)) //default skip
+    return boost::shared_ptr<MHJacobianFactor>();
+
+  // Call evaluate error to get Jacobians and RHS vector b
+  //[MH-A]: get max_hypo_layer from all connected input Values x;
+  int max_layer_idx = 0; //mhsiao: the max_hypo_num defines the output number of hypos in MHJacobianfactor
+  HypoLayer* resulting_layer; //WARNING: initialization needed????
+    
+  int max_key_idx = -1; 
+  for (size_t i = 0; i < size(); ++i) {
+
+    HypoLayer* tmp_layer_ptr = x.at(keys()[i]).getHypoLayer();
+    int tmp_layer_idx = tmp_layer_ptr->getLayerIdx(); //mhsiao: define a virtual hypoNum() inside Value and define the implementation in both GenericValue and MHGenericValue so that we do not need MHValue here...
+    
+    if (tmp_layer_idx >= max_layer_idx) {
+       
+        max_layer_idx = tmp_layer_idx;
+        resulting_layer = tmp_layer_ptr;
+        
+        max_key_idx = i;
+    }
+  }
+
+  //[MHA]: check
+  if (max_key_idx == -1) { //impossible... sth must go wrong...
+    throw std::invalid_argument("ERROR: MHNoiseModelFactor::mhLinearize() cannot find max_hypo_num properly...");
+  }
+  
+  setMaxKeyIdx(max_key_idx);
+  
+  std::vector<std::vector<Matrix> > A_arr(resulting_layer->getNodeSize(), std::vector<Matrix>(size())); //2D size-initialization of std::vector
+  
+  //[MH-G]: corresponding NoiseModels
+  std::vector<SharedNoiseModel> corresp_noiseModel_arr(resulting_layer->getNodeSize());
+
+  //[MH-A]: NOTICE: have to setMaxKeyIdx() before calling mhUnwhitenedError()
+  //[MH-G]: output corresponding NoiseModels if different in each hypo
+  std::vector<Vector> b_arr = mhUnwhitenedError(x, A_arr, corresp_noiseModel_arr); //NOTICE: the original negative (-) is now implemented in the loop below
+  
+  for (size_t i = 0; i < b_arr.size(); ++i) {
+    b_arr[i] = -b_arr[i]; //negative (-) is here!!
+  }
+    
+  //check(noiseModel_, b_arr.front().size());
+  check(noiseModel_arr_.front(), b_arr.front().size());
+  
+  // Whiten the corresponding system now
+  //noiseModel_->WhitenSystem(A_arr[i], b_arr[i]);
+  if (noiseModel_arr_.size() == 1) {
+    for (size_t i = 0; i < b_arr.size(); ++i) {
+      //[MH-A]: same for MH
+      noiseModel_arr_.front()->WhitenSystem(A_arr[i], b_arr[i]);
+    }
+  } else if (noiseModel_arr_.size() > 1) {
+    for (size_t i = 0; i < b_arr.size(); ++i) {
+      //[MH-G]: find each corresponding NoiseModel 
+      corresp_noiseModel_arr[i]->WhitenSystem(A_arr[i], b_arr[i]);
+    }
+  }
+    //[MH-G]:
+  
+  // Fill in terms, needed to create JacobianFactor below
+  //[MH-A]: create mh_terms that will be used to generate MHJacobianFactor 
+  std::vector<std::pair<Key, std::vector<Matrix> > > mh_terms(size()); //mh_terms[key_size][hypo_size]
+  for (size_t j = 0; j < size(); ++j) { //j: key
+    mh_terms[j].first = keys()[j];
+    mh_terms[j].second.resize(A_arr.size());
+    for (size_t i = 0; i < A_arr.size(); ++i) { //i: hypo
+
+      (mh_terms[j].second)[i].swap(A_arr[i][j]); //A_arr[hypo_size][key_size]
+
+    }
+  }
+    
+    //[MH-A]: Create MHJacobianFactor (and assign corresponding hypos from the above hypo_list_ ... not implemented yet) 
+    return GaussianFactor::shared_ptr(new MHJacobianFactor(mh_terms, b_arr, resulting_layer)); //we don't need hypo_list_ in MHJacobianFactor since we can recover the hypo_list_ from x when constructing MHHessianFactor...
+}
+
+//==================================== END MHNoiseModelFactor::mhLinearize() ==========================================
 
 } // \namespace gtsam
