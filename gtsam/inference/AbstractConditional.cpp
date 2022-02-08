@@ -11,14 +11,19 @@
 
 /**
  * @file    AbstractConditional.cpp
- * @brief   Concrete base class for conditional densities
+ * @brief   Abstract base class for conditional densities
  * @author  Fan Jiang
  */
-
 
 #include <gtsam/inference/AbstractConditional.h>
 
 namespace gtsam {
+/* ************************************************************************* */
+void AbstractConditional::print(const std::string &s,
+                                const KeyFormatter &formatter) const {
+  // Don't do anything since we are abstract
+}
+
 /* ************************************************************************* */
 bool AbstractConditional::equals(const AbstractConditional &c,
                                  double tol) const {
@@ -27,4 +32,4 @@ bool AbstractConditional::equals(const AbstractConditional &c,
   return nrFrontals_ == c.nrFrontals_;
 }
 
-}
+}  // namespace gtsam
