@@ -14,10 +14,12 @@
  */
 
 #include <gtsam/geometry/TrifocalTensor2.h>
+
 #include <iostream>
 
 namespace gtsam {
-// Convert bearing measurements to projective form
+
+// Convert bearing measurements to projective coordinates.
 std::vector<Point2> convertToProjective(const std::vector<Rot2>& rotations) {
   std::vector<Point2> projectives;
   projectives.reserve(rotations.size());
@@ -91,8 +93,5 @@ Rot2 TrifocalTensor2::transform(const Rot2& vZp, const Rot2& wZp) const {
   return Rot2::atan2(dot(matrix0_ * w_measurement, v_measurement),
                      -dot(matrix1_ * w_measurement, v_measurement));
 }
-
-Matrix2 TrifocalTensor2::mat0() const { return matrix0_; }
-Matrix2 TrifocalTensor2::mat1() const { return matrix1_; }
 
 }  // namespace gtsam

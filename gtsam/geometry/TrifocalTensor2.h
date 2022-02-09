@@ -22,8 +22,16 @@
 
 namespace gtsam {
 
+/**
+ * @brief A trifocal tensor for 1D cameras in a plane. It encodes the
+ * relationship between bearing measurements of a point in the plane observed in
+ * 3 1D cameras.
+ * @addtogroup geometry
+ * \nosubgrouping
+ */
 class TrifocalTensor2 {
  private:
+  // The trifocal tensor has 2 matrices.
   Matrix2 matrix0_, matrix1_;
 
  public:
@@ -32,25 +40,52 @@ class TrifocalTensor2 {
   // Construct from the two 2x2 matrices that form the tensor.
   TrifocalTensor2(const Matrix2& matrix0, const Matrix2& matrix1);
 
-  // Construct from 8 bearing measurements.
+  /**
+   * @brief Constructor using 8 bearing measurements in 3 cameras. Throws a
+   * runtime error if the size of inputs are unequal or less than 8.
+   *
+   * @param u bearing measurement in camera u.
+   * @param v bearing measurement in camera v.
+   * @param w bearing measurement in camera w.
+   */
   TrifocalTensor2(const std::vector<Rot2>& bearings_u,
                   const std::vector<Rot2>& bearings_v,
                   const std::vector<Rot2>& bearings_w);
 
-  // Construct from 8 bearing measurements expressed in projective coordinates.
+  /**
+   * @brief Constructor using 8 projective measurements in 3 cameras. Throws a
+   * runtime error if the size of inputs are unequal or less than 8.
+   *
+   * @param u projective 1D bearing measurement in camera u.
+   * @param v projective 1D bearing measurement in camera v.
+   * @param w projective 1D bearing measurement in camera w.
+   */
   TrifocalTensor2(const std::vector<Point2>& u, const std::vector<Point2>& v,
                   const std::vector<Point2>& w);
 
-  // Finds a measurement in the first view using measurements from second and
-  // third views.
+  /**
+   * @brief Computes the bearing in camera 'u' given bearing measurements in
+   * cameras 'v' and 'w'.
+   *
+   * @param vZp bearing measurement in camera v
+   * @param wZp bearing measurement in camera w
+   * @return bearing measurement in camera u
+   */
   Rot2 transform(const Rot2& vZp, const Rot2& wZp) const;
 
-  // Same as above, but using projective measurements.
+  /**
+   * @brief Computes the bearing in camera 'u' from that of cameras 'v' and 'w',
+   * in projective coordinates.
+   *
+   * @param vZp projective bearing measurement in camera v
+   * @param wZp projective bearing measurement in camera w
+   * @return projective bearing measurement in camera u
+   */
   Point2 transform(const Point2& vZp, const Point2& wZp) const;
 
-  // Get trifocal tensor matrix from class
-  Matrix2 mat0() const;
-  Matrix2 mat1() const;
+  // Accessors for the two matrices that comprise the trifocal tensor.
+  Matrix2 mat0() const { return matrix0_; }
+  Matrix2 mat1() const { return matrix1_; }
 };
 
 }  // namespace gtsam
