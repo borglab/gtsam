@@ -50,36 +50,28 @@ TrifocalTensor2::TrifocalTensor2(const std::vector<Point2>& u,
         "Number of input measurements in 3 cameras must be same");
   }
   
+  // Create the system matrix A.
   Matrix A(u.size() > 8 ? u.size() : 8, 8);
-  std::cout << "system matrix:" << std::endl;
   for (int row = 0; row < u.size(); row++) {
     for (int i = 0; i < 2; i++) {
       for (int j = 0; j < 2; j++) {
         for (int k = 0; k < 2; k++) {
           A(row, 4 * i + 2 * j + k) = u[row](i) * v[row](j) * w[row](k);
-          std::cout << A(row, 4 * i + 2 * j + k) << " ";
         }
       }
     }
-    std::cout << std::endl;
   }
   for (int row = u.size() - 8; row < 0; row++) {
     for (int col = 0; col < 8; col++) {
       A(row, col) = 0;
-      std::cout << A(row, col) << " ";
     }
-    std::cout << std::endl;
   }
+  
+  // Eigen vector of smallest singular value is the trifocal tensor.
   Matrix U, V;
   Vector S;
   svd(A, U, S, V);
-  std::cout << "V:" << std::endl;
-  for (int i = 0; i < V.rows(); i++) {
-    for (int j = 0; j < V.cols(); j++) {
-      std::cout << V(i, j) << " ";
-    }
-    std::cout << std::endl;
-  }
+
   for (int i = 0; i < 2; i++) {
     for (int j = 0; j < 2; j++) {
       matrix0_(i, j) = V(2 * i + j, V.cols() - 1);
