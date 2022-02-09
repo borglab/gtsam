@@ -1,11 +1,12 @@
+#include <iostream>
+#include <vector>
+
 #include <CppUnitLite/TestHarness.h>
+
 #include <gtsam/base/Testable.h>
 #include <gtsam/geometry/BearingRange.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/TrifocalTensor2.h>
-#include <iostream>
-
-#include <vector>
 
 using namespace std::placeholders;
 using namespace std;
@@ -43,10 +44,6 @@ TEST(TrifocalTensor2, transform) {
   for (unsigned int i = 0; i < measurement_u.size(); i++) {
     const Rot2 actual_measurement_u =
         T.transform(measurement_v[i], measurement_w[i]);
-    cout << "the ground truth: " << measurement_u[i].c() << " "
-         << measurement_u[i].s()
-         << "; the estimate: " << actual_measurement_u.c() << " "
-         << actual_measurement_u.s() << "\n";
 
     // there might be two solutions for u1 and u2, comparing the ratio instead
     // of both cos and sin
