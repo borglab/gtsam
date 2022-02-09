@@ -255,7 +255,7 @@ class VectorValues {
 
   // enabling serialization functionality
   void serialize() const;
-  void html() const;
+  string html() const;
 };
 
 #include <gtsam/linear/GaussianFactor.h>
@@ -492,6 +492,9 @@ virtual class GaussianConditional : gtsam::JacobianFactor {
   // Standard Interface
   gtsam::Key firstFrontalKey() const;
   gtsam::VectorValues solve(const gtsam::VectorValues& parents) const;
+  gtsam::JacobianFactor* likelihood(
+      const gtsam::VectorValues& frontalValues) const;
+  gtsam::JacobianFactor* likelihood(Vector frontal) const;
   gtsam::VectorValues sample(const gtsam::VectorValues& parents) const;
   gtsam::VectorValues sample() const;
   
