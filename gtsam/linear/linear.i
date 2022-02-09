@@ -255,6 +255,7 @@ class VectorValues {
 
   // enabling serialization functionality
   void serialize() const;
+  void html() const;
 };
 
 #include <gtsam/linear/GaussianFactor.h>
