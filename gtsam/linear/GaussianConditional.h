@@ -24,6 +24,7 @@
 #include <gtsam/global_includes.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/inference/Conditional.h>
+#include <gtsam/inference/Conditional-inst.h>
 #include <gtsam/linear/VectorValues.h>
 
 #include <random> // for std::mt19937_64 

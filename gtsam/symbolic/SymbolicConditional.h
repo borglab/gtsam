@@ -20,6 +20,7 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/types.h>
 #include <gtsam/inference/Conditional.h>
+#include <gtsam/inference/Conditional-inst.h>
 #include <gtsam/symbolic/SymbolicFactor.h>
 
 namespace gtsam {

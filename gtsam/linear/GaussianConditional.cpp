@@ -15,7 +15,6 @@
  * @author Christian Potthast, Frank Dellaert
  */
 
-#include <gtsam/inference/Conditional-inst.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/Sampler.h>
 #include <gtsam/linear/VectorValues.h>

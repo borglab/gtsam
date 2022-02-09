@@ -15,7 +15,6 @@
  * @date    Oct 17, 2010
  */
 
-#include <gtsam/inference/Conditional-inst.h>
 #include <gtsam/symbolic/SymbolicConditional.h>
 
 namespace gtsam {
