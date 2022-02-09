@@ -27,13 +27,6 @@ TEST(TrifocalTensor2, transform) {
   landmarks.push_back(Point2(-3.2, -1.0));
   landmarks.push_back(Point2(1.5, 2.0));
 
-  /*
-   * the example
-   * D:\Gatech\research\3DReconstruction\GTSAM\gtsam\examples\Pose3SLAMExampleExpressions_BearingRangeWithTransform.cpp
-   * uses class graph. I don't have enough time to read code about that now.
-   * Maybe I'll do it later.
-   */
-
   // getting bearing measurement from landmarks
   vector<Rot2> measurement_u, measurement_v, measurement_w;
   for (int i = 0; i < landmarks.size(); ++i) {
@@ -47,7 +40,7 @@ TEST(TrifocalTensor2, transform) {
 
   // estimate measurement of a robot from the measurements of the other two
   // robots
-  for (int i = 0; i < measurement_u.size(); i++) {
+  for (unsigned int i = 0; i < measurement_u.size(); i++) {
     const Rot2 actual_measurement_u =
         T.transform(measurement_v[i], measurement_w[i]);
     cout << "the ground truth: " << measurement_u[i].c() << " "
@@ -86,7 +79,7 @@ TEST(TrifocalTensor2, mat0) {
 
   // getting bearing measurement from landmarks
   vector<Rot2> measurement_u, measurement_v, measurement_w;
-  for (int i = 0; i < landmarks.size(); ++i) {
+  for (unsigned int i = 0; i < landmarks.size(); ++i) {
     measurement_u.push_back(u.bearing(landmarks[i]));
     measurement_v.push_back(v.bearing(landmarks[i]));
     measurement_w.push_back(w.bearing(landmarks[i]));
@@ -128,7 +121,7 @@ TEST(TrifocalTensor2, mat1) {
 
   // getting bearing measurement from landmarks
   vector<Rot2> measurement_u, measurement_v, measurement_w;
-  for (int i = 0; i < landmarks.size(); ++i) {
+  for (unsigned int i = 0; i < landmarks.size(); ++i) {
     measurement_u.push_back(u.bearing(landmarks[i]));
     measurement_v.push_back(v.bearing(landmarks[i]));
     measurement_w.push_back(w.bearing(landmarks[i]));
