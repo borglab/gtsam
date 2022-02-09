@@ -70,13 +70,6 @@ TEST(TrifocalTensor2, mat0) {
   landmarks.push_back(Point2(-3.2, -1.0));
   landmarks.push_back(Point2(1.5, 2.0));
 
-  /*
-   * the example
-   * D:\Gatech\research\3DReconstruction\GTSAM\gtsam\examples\Pose3SLAMExampleExpressions_BearingRangeWithTransform.cpp
-   * uses class graph. I don't have enough time to read code about that now.
-   * Maybe I'll do it later.
-   */
-
   // getting bearing measurement from landmarks
   vector<Rot2> measurement_u, measurement_v, measurement_w;
   for (unsigned int i = 0; i < landmarks.size(); ++i) {
@@ -111,13 +104,6 @@ TEST(TrifocalTensor2, mat1) {
   landmarks.push_back(Point2(-0.4, -0.4));
   landmarks.push_back(Point2(-3.2, -1.0));
   landmarks.push_back(Point2(1.5, 2.0));
-
-  /*
-   * the example
-   * D:\Gatech\research\3DReconstruction\GTSAM\gtsam\examples\Pose3SLAMExampleExpressions_BearingRangeWithTransform.cpp
-   * uses class graph. I don't have enough time to read code about that now.
-   * Maybe I'll do it later.
-   */
 
   // getting bearing measurement from landmarks
   vector<Rot2> measurement_u, measurement_v, measurement_w;
