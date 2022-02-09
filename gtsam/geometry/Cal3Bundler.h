@@ -41,6 +41,9 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
  public:
   enum { dimension = 3 };
 
+  ///< shared pointer to stereo calibration object
+  using shared_ptr = boost::shared_ptr<Cal3Bundler>;
+
   /// @name Standard Constructors
   /// @{
 

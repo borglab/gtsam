@@ -407,8 +407,10 @@ class GaussianFactorGraph {
 
   // Elimination and marginals
   gtsam::GaussianBayesNet* eliminateSequential();
+  gtsam::GaussianBayesNet* eliminateSequential(gtsam::Ordering::OrderingType type);
   gtsam::GaussianBayesNet* eliminateSequential(const gtsam::Ordering& ordering);
   gtsam::GaussianBayesTree* eliminateMultifrontal();
+  gtsam::GaussianBayesTree* eliminateMultifrontal(gtsam::Ordering::OrderingType type);
   gtsam::GaussianBayesTree* eliminateMultifrontal(const gtsam::Ordering& ordering);
   pair<gtsam::GaussianBayesNet*, gtsam::GaussianFactorGraph*> eliminatePartialSequential(
     const gtsam::Ordering& ordering);
@@ -527,6 +529,7 @@ virtual class GaussianBayesNet {
 
   gtsam::VectorValues optimize() const;
   gtsam::VectorValues optimize(gtsam::VectorValues& solutionForMissing) const;
+  std::pair<Matrix, Vector> matrix() const; 
   gtsam::VectorValues optimizeGradientSearch() const;
   gtsam::VectorValues gradient(const gtsam::VectorValues& x0) const;
   gtsam::VectorValues gradientAtZero() const;
@@ -556,7 +559,12 @@ virtual class GaussianBayesTree {
   size_t size() const;
   bool empty() const;
   size_t numCachedSeparatorMarginals() const;
-  void saveGraph(string s) const;
+
+  string dot(const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
+  void saveGraph(string s,
+                const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
 
   gtsam::VectorValues optimize() const;
   gtsam::VectorValues optimizeGradientSearch() const;

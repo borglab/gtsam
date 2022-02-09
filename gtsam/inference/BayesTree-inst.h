@@ -95,7 +95,7 @@ namespace gtsam {
   /* ************************************************************************* */
   template <class CLIQUE>
   void BayesTree<CLIQUE>::dot(std::ostream& s, sharedClique clique,
-                              const KeyFormatter& indexFormatter,
+                              const KeyFormatter& keyFormatter,
                               int parentnum) const {
     static int num = 0;
     bool first = true;
@@ -104,10 +104,10 @@ namespace gtsam {
     std::string parent = out.str();
     parent += "[label=\"";
 
-    for (Key index : clique->conditional_->frontals()) {
-      if (!first) parent += ",";
+    for (Key key : clique->conditional_->frontals()) {
+      if (!first) parent += ", ";
       first = false;
-      parent += indexFormatter(index);
+      parent += keyFormatter(key);
     }
 
     if (clique->parent()) {
@@ -116,10 +116,10 @@ namespace gtsam {
     }
 
     first = true;
-    for (Key sep : clique->conditional_->parents()) {
-      if (!first) parent += ",";
+    for (Key parentKey : clique->conditional_->parents()) {
+      if (!first) parent += ", ";
       first = false;
-      parent += indexFormatter(sep);
+      parent += keyFormatter(parentKey);
     }
     parent += "\"];\n";
     s << parent;
@@ -127,7 +127,7 @@ namespace gtsam {
 
     for (sharedClique c : clique->children) {
       num++;
-      dot(s, c, indexFormatter, parentnum);
+      dot(s, c, keyFormatter, parentnum);
     }
   }
 
