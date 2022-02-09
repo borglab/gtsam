@@ -15,9 +15,10 @@
  * @author Christian Potthast, Frank Dellaert
  */
 
-#include <gtsam/linear/linearExceptions.h>
 #include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/linear/Sampler.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/linearExceptions.h>
 
 #include <boost/format.hpp>
 #ifdef __GNUC__
@@ -34,6 +35,9 @@
 #include <list>
 #include <string>
 
+// In Wrappers we have no access to this so have a default ready
+static std::mt19937_64 kRandomNumberGenerator(42);
+
 using namespace std;
 
 namespace gtsam {
@@ -43,19 +47,47 @@ namespace gtsam {
     Key key, const Vector& d, const Matrix& R, const SharedDiagonal& sigmas) :
   BaseFactor(key, R, d, sigmas), BaseConditional(1) {}
 
-  /* ************************************************************************* */
-  GaussianConditional::GaussianConditional(
-    Key key, const Vector& d, const Matrix& R,
-    Key name1, const Matrix& S, const SharedDiagonal& sigmas) :
-  BaseFactor(key, R, name1, S, d, sigmas), BaseConditional(1) {}
+  /* ************************************************************************ */
+  GaussianConditional::GaussianConditional(Key key, const Vector& d,
+                                           const Matrix& R, Key parent1,
+                                           const Matrix& S,
+                                           const SharedDiagonal& sigmas)
+      : BaseFactor(key, R, parent1, S, d, sigmas), BaseConditional(1) {}
 
-  /* ************************************************************************* */
-  GaussianConditional::GaussianConditional(
-    Key key, const Vector& d, const Matrix& R,
-    Key name1, const Matrix& S, Key name2, const Matrix& T, const SharedDiagonal& sigmas) :
-  BaseFactor(key, R, name1, S, name2, T, d, sigmas), BaseConditional(1) {}
+  /* ************************************************************************ */
+  GaussianConditional::GaussianConditional(Key key, const Vector& d,
+                                           const Matrix& R, Key parent1,
+                                           const Matrix& S, Key parent2,
+                                           const Matrix& T,
+                                           const SharedDiagonal& sigmas)
+      : BaseFactor(key, R, parent1, S, parent2, T, d, sigmas),
+        BaseConditional(1) {}
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
+  GaussianConditional GaussianConditional::FromMeanAndStddev(
+      Key key, const Matrix& A, Key parent, const Vector& b, double sigma) {
+    // |Rx + Sy - d| = |x-(Ay + b)|/sigma
+    const Matrix R = Matrix::Identity(b.size(), b.size());
+    const Matrix S = -A;
+    const Vector d = b;
+    return GaussianConditional(key, d, R, parent, S,
+                               noiseModel::Isotropic::Sigma(b.size(), sigma));
+  }
+
+  /* ************************************************************************ */
+  GaussianConditional GaussianConditional::FromMeanAndStddev(
+      Key key, const Matrix& A1, Key parent1, const Matrix& A2, Key parent2,
+      const Vector& b, double sigma) {
+    // |Rx + Sy + Tz - d| = |x-(A1 y + A2 z + b)|/sigma
+    const Matrix R = Matrix::Identity(b.size(), b.size());
+    const Matrix S = -A1;
+    const Matrix T = -A2;
+    const Vector d = b;
+    return GaussianConditional(key, d, R, parent1, S, parent2, T,
+                               noiseModel::Isotropic::Sigma(b.size(), sigma));
+  }
+
+  /* ************************************************************************ */
   void GaussianConditional::print(const string &s, const KeyFormatter& formatter) const {
     cout << s << "  Conditional density ";
     for (const_iterator it = beginFrontals(); it != endFrontals(); ++it) {
@@ -192,7 +224,44 @@ namespace gtsam {
     }
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
+  VectorValues GaussianConditional::sample(const VectorValues& parentsValues,
+                                           std::mt19937_64* rng) const {
+    if (nrFrontals() != 1) {
+      throw std::invalid_argument(
+          "GaussianConditional::sample can only be called on single variable "
+          "conditionals");
+    }
+    if (!model_) {
+      throw std::invalid_argument(
+          "GaussianConditional::sample can only be called if a diagonal noise "
+          "model was specified at construction.");
+    }
+    VectorValues solution = solve(parentsValues);
+    Key key = firstFrontalKey();
+    const Vector& sigmas = model_->sigmas();
+    solution[key] += Sampler::sampleDiagonal(sigmas, rng);
+    return solution;
+  }
+
+  VectorValues GaussianConditional::sample(std::mt19937_64* rng) const {
+    if (nrParents() != 0)
+      throw std::invalid_argument(
+          "sample() can only be invoked on no-parent prior");
+    VectorValues values;
+    return sample(values);
+  }
+
+  /* ************************************************************************ */
+  VectorValues GaussianConditional::sample() const {
+    return sample(&kRandomNumberGenerator);
+  }
+
+  VectorValues GaussianConditional::sample(const VectorValues& given) const {
+    return sample(given, &kRandomNumberGenerator);
+  }
+
+  /* ************************************************************************ */
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
   void GTSAM_DEPRECATED
   GaussianConditional::scaleFrontalsBySigma(VectorValues& gy) const {

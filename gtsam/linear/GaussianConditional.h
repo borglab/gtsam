@@ -24,14 +24,18 @@
 #include <gtsam/global_includes.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/inference/Conditional.h>
+#include <gtsam/inference/Conditional-inst.h>
 #include <gtsam/linear/VectorValues.h>
+
+#include <random> // for std::mt19937_64 
 
 namespace gtsam {
 
   /**
-  * A conditional Gaussian functions as the node in a Bayes network
+  * A GaussianConditional functions as the node in a Bayes network.
   * It has a set of parents y,z, etc. and implements a probability density on x.
   * The negative log-probability is given by \f$ \frac{1}{2} |Rx - (d - Sy - Tz - ...)|^2 \f$
+  * @addtogroup linear
   */
   class GTSAM_EXPORT GaussianConditional :
     public JacobianFactor,
@@ -43,6 +47,9 @@ namespace gtsam {
     typedef JacobianFactor BaseFactor; ///< Typedef to our factor base class
     typedef Conditional<BaseFactor, This> BaseConditional; ///< Typedef to our conditional base class
 
+    /// @name Constructors
+    /// @{
+
     /** default constructor needed for serialization */
     GaussianConditional() {}
 
@@ -51,13 +58,14 @@ namespace gtsam {
       const SharedDiagonal& sigmas = SharedDiagonal());
 
     /** constructor with only one parent |Rx+Sy-d| */
-    GaussianConditional(Key key, const Vector& d, const Matrix& R,
-      Key name1, const Matrix& S, const SharedDiagonal& sigmas = SharedDiagonal());
+    GaussianConditional(Key key, const Vector& d, const Matrix& R, Key parent1,
+                        const Matrix& S,
+                        const SharedDiagonal& sigmas = SharedDiagonal());
 
     /** constructor with two parents |Rx+Sy+Tz-d| */
-    GaussianConditional(Key key, const Vector& d, const Matrix& R,
-      Key name1, const Matrix& S, Key name2, const Matrix& T,
-      const SharedDiagonal& sigmas = SharedDiagonal());
+    GaussianConditional(Key key, const Vector& d, const Matrix& R, Key parent1,
+                        const Matrix& S, Key parent2, const Matrix& T,
+                        const SharedDiagonal& sigmas = SharedDiagonal());
 
     /** Constructor with arbitrary number of frontals and parents.
     *   @tparam TERMS A container whose value type is std::pair<Key, Matrix>, specifying the
@@ -76,6 +84,17 @@ namespace gtsam {
       const KEYS& keys, size_t nrFrontals, const VerticalBlockMatrix& augmentedMatrix,
       const SharedDiagonal& sigmas = SharedDiagonal());
 
+    /// Construct from mean A1 p1 + b and standard deviation.
+    static GaussianConditional FromMeanAndStddev(Key key, const Matrix& A,
+                                                 Key parent, const Vector& b,
+                                                 double sigma);
+
+    /// Construct from mean A1 p1 + A2 p2 + b and standard deviation.
+    static GaussianConditional FromMeanAndStddev(Key key,  //
+                                                 const Matrix& A1, Key parent1,
+                                                 const Matrix& A2, Key parent2,
+                                                 const Vector& b, double sigma);
+
     /** Combine several GaussianConditional into a single dense GC.  The conditionals enumerated by
     *   \c first and \c last must be in increasing order, meaning that the parents of any
     *   conditional may not include a conditional coming before it.
@@ -86,12 +105,20 @@ namespace gtsam {
     template<typename ITERATOR>
     static shared_ptr Combine(ITERATOR firstConditional, ITERATOR lastConditional);
 
+    /// @}
+    /// @name Testable
+    /// @{
+
     /** print */
     void print(const std::string& = "GaussianConditional",
       const KeyFormatter& formatter = DefaultKeyFormatter) const override;
 
     /** equals function */
     bool equals(const GaussianFactor&cg, double tol = 1e-9) const override;
+
+    /// @}
+    /// @name Standard Interface
+    /// @{
 
     /** Return a view of the upper-triangular R block of the conditional */
     constABlock R() const { return Ab_.range(0, nrFrontals()); }
@@ -125,10 +152,39 @@ namespace gtsam {
     /** Performs transpose backsubstition in place on values */
     void solveTransposeInPlace(VectorValues& gy) const;
 
+    /**
+     * Sample from conditional, zero parent version
+     * Example:
+     *   std::mt19937_64 rng(42);
+     *   auto sample = gbn.sample(&rng);
+     */
+    VectorValues sample(std::mt19937_64* rng) const;
+
+    /**
+     * Sample from conditional, given missing variables
+     * Example:
+     *   std::mt19937_64 rng(42);
+     *   VectorValues given = ...;
+     *   auto sample = gbn.sample(given, &rng);
+     */
+    VectorValues sample(const VectorValues& parentsValues,
+                        std::mt19937_64* rng) const;
+
+    /// Sample, use default rng
+    VectorValues sample() const;
+
+    /// Sample with given values, use default rng
+    VectorValues sample(const VectorValues& parentsValues) const;
+
+    /// @}
+
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
+    /// @name Deprecated
+    /// @{
     /** Scale the values in \c gy according to the sigmas for the frontal variables in this
      *  conditional. */
     void GTSAM_DEPRECATED scaleFrontalsBySigma(VectorValues& gy) const;
+    /// @}
 #endif
 
    private:

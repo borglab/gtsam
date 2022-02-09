@@ -11,16 +11,16 @@
 
 /**
  * @file    AbstractConditional.h
- * @brief   Concrete base class for conditional densities
+ * @brief   Abstract base class for conditional densities
  * @author  Fan Jiang
  */
 
 // \callgraph
 #pragma once
 
-#include <boost/range.hpp>
-
 #include <gtsam/inference/Key.h>
+
+#include <boost/range.hpp>
 
 namespace gtsam {
 
@@ -58,8 +58,8 @@ class GTSAM_EXPORT AbstractConditional {
   /// @{
 
   /** print with optional formatter */
-  virtual void print(const std::string &s = "Conditional",
-                     const KeyFormatter &formatter = DefaultKeyFormatter) const = 0;
+  virtual void print(const std::string &s = "AbstractConditional",
+                     const KeyFormatter &formatter = DefaultKeyFormatter) const;
 
   /** check equality */
   bool equals(const AbstractConditional &c, double tol = 1e-9) const;
@@ -78,7 +78,6 @@ class GTSAM_EXPORT AbstractConditional {
   /** return the number of parents */
   virtual size_t nrParents() const = 0;
 
-
   /** return a view of the frontal keys */
   virtual Frontals frontals() const = 0;
 
@@ -90,4 +89,4 @@ class GTSAM_EXPORT AbstractConditional {
 template <>
 struct traits<AbstractConditional> : public Testable<AbstractConditional> {};
 
-}
+}  // namespace gtsam

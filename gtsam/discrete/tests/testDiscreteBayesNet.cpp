@@ -20,6 +20,7 @@
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/discrete/DiscreteMarginals.h>
 #include <gtsam/base/debug.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Vector.h>
 
@@ -37,6 +38,8 @@ using namespace boost::assign;
 
 using namespace std;
 using namespace gtsam;
+using symbol_shorthand::X;
+using symbol_shorthand::M;
 
 static const DiscreteKey Asia(0, 2), Smoking(4, 2), Tuberculosis(3, 2),
     LungCancer(6, 2), Bronchitis(7, 2), Either(5, 2), XRay(2, 2), Dyspnea(1, 2);
@@ -102,7 +105,7 @@ TEST(DiscreteBayesNet, Asia) {
   // Create solver and eliminate
   Ordering ordering;
   ordering += Key(0), Key(1), Key(2), Key(3), Key(4), Key(5), Key(6), Key(7);
-  DiscreteBayesNet::shared_ptr chordal = fg.eliminateSequential(ordering);
+  auto chordal = fg.eliminateSequential(ordering);
   DiscreteConditional expected2(Bronchitis % "11/9");
   EXPECT(assert_equal(expected2, *chordal->back()));
 
@@ -111,7 +114,7 @@ TEST(DiscreteBayesNet, Asia) {
   fg.add(Dyspnea, "0 1");
 
   // solve again, now with evidence
-  DiscreteBayesNet::shared_ptr chordal2 = fg.eliminateSequential(ordering);
+  auto chordal2 = fg.eliminateSequential(ordering);
   EXPECT(assert_equal(expected2, *chordal->back()));
 
   // now sample from it
@@ -165,6 +168,35 @@ TEST(DiscreteBayesNet, Dot) {
          "  var4->var6\n"
          "  var0->var3\n"
          "}");
+}
+
+/* ************************************************************************* */
+TEST(DiscreteBayesTree, Switching) {
+  size_t nrStates = 3;
+  size_t K = 5;
+
+  DiscreteBayesNet bayesNet;
+
+  // Add "motion models".
+  for (size_t k = 1; k < K; k++) {
+    DiscreteKey key(X(k), nrStates), key_plus(X(k + 1), nrStates),
+        mode(M(k), 2);
+    bayesNet.add(DiscreteConditional(key_plus, {key, mode},
+                                     "1/1/1 1/2/1 3/2/3 1/1/1 1/2/1 3/2/3"));
+  }
+
+  // Add "mode chain"
+  for (size_t k = 1; k < K - 1; k++) {
+    DiscreteKey mode(M(k), 2), mode_plus(M(k + 1), 2);
+    bayesNet.add(DiscreteConditional(mode_plus, {mode}, "1/2 3/2"));
+  }
+
+  // eliminate: because D>C, discrete keys get eliminated last:
+  Ordering ordering;
+  for (size_t k = 1; k <= K; k++) ordering += X(k);
+  for (size_t k = 1; k < K; k++) ordering += M(k);
+  auto chordal = DiscreteFactorGraph(bayesNet).eliminateSequential(ordering);
+  GTSAM_PRINT(*chordal);
 }
 
 /* ************************************************************************* */
