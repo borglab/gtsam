@@ -15,7 +15,7 @@
 
 #include <gtsam/geometry/TrifocalTensor2.h>
 
-#include <iostream>
+#include <stdexcept>
 
 namespace gtsam {
 
@@ -41,10 +41,15 @@ TrifocalTensor2::TrifocalTensor2(const std::vector<Rot2>& bearings_u,
 TrifocalTensor2::TrifocalTensor2(const std::vector<Point2>& u,
                                  const std::vector<Point2>& v,
                                  const std::vector<Point2>& w) {
-  if (u.size() != v.size() || v.size() != w.size()) {
-    // throw error here
+  if (u.size() < 8) {
+    throw std::invalid_argument(
+        "Trifocal tensor computation requires at least 8 measurements")
   }
-
+  if (u.size() != v.size() || v.size() != w.size()) {
+    throw std::invalid_argument(
+        "Number of input measurements in 3 cameras must be same");
+  }
+  
   Matrix A(u.size() > 8 ? u.size() : 8, 8);
   std::cout << "system matrix:" << std::endl;
   for (int row = 0; row < u.size(); row++) {
