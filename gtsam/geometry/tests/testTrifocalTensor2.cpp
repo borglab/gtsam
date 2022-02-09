@@ -11,8 +11,6 @@ using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 
-typedef BearingRange<Pose2, Point2> BearingRange2D;
-
 TEST(TrifocalTensor2, transform) {
   // 2D robots poses
   Pose2 u = Pose2(0, 0, 0);
@@ -43,8 +41,6 @@ TEST(TrifocalTensor2, transform) {
     measurement_v.push_back(v.bearing(landmarks[i]));
     measurement_w.push_back(w.bearing(landmarks[i]));
   }
-
-  
 
   // calculate trifocal tensor
   TrifocalTensor2 T(measurement_u, measurement_v, measurement_w);
