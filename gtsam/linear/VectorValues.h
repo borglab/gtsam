@@ -34,7 +34,7 @@
 namespace gtsam {
 
   /**
-   * This class represents a collection of vector-valued variables associated
+   * VectorValues represents a collection of vector-valued variables associated
    * each with a unique integer index.  It is typically used to store the variables
    * of a GaussianFactorGraph.  Optimizing a GaussianFactorGraph or GaussianBayesNet
    * returns this class.
@@ -69,7 +69,7 @@ namespace gtsam {
    * which is a view on the underlying data structure.
    *
    * This class is additionally used in gradient descent and dog leg to store the gradient.
-   * \nosubgrouping
+   * @addtogroup linear
    */
   class GTSAM_EXPORT VectorValues {
    protected:
@@ -344,11 +344,16 @@ namespace gtsam {
 
     /// @}
 
-    /// @}
-    /// @name Matlab syntactic sugar for linear algebra operations
+    /// @name Wrapper support
     /// @{
 
-    //inline VectorValues scale(const double a, const VectorValues& c) const { return a * (*this); }
+    /**
+     * @brief Output as a html table.
+     *
+     * @param keyFormatter function that formats keys.
+     */
+    std::string html(
+        const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
     /// @}
 

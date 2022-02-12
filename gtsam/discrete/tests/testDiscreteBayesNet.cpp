@@ -150,7 +150,6 @@ TEST(DiscreteBayesNet, Dot) {
   fragment.add((Either | Tuberculosis, LungCancer) = "F T T T");
 
   string actual = fragment.dot();
-  cout << actual << endl;
   EXPECT(actual ==
          "digraph {\n"
          "  size=\"5,5\";\n"
