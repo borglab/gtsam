@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <boost/serialization/library_version_type.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/set.hpp>
 #include <gtsam/base/FastDefaultAllocator.h>
