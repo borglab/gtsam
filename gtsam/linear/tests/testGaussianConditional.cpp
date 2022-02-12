@@ -341,6 +341,33 @@ TEST(GaussianConditional, FromMeanAndStddev) {
 }
 
 /* ************************************************************************* */
+// Test likelihood method (conversion to JacobianFactor)
+TEST(GaussianConditional, likelihood) {
+  Matrix A1 = (Matrix(2, 2) << 1., 2., 3., 4.).finished();
+  const Vector2 b(20, 40), x0(1, 2);
+  const double sigma = 0.01;
+
+  // |x0 - A1 x1 - b|^2
+  auto conditional =
+      GaussianConditional::FromMeanAndStddev(X(0), A1, X(1), b, sigma);
+
+  VectorValues frontalValues;
+  frontalValues.insert(X(0), x0);
+  auto actual1 = conditional.likelihood(frontalValues);
+  CHECK(actual1);
+
+  // |(-A1) x1 - (b - x0)|^2
+  JacobianFactor expected(X(1), -A1, b - x0,
+                          noiseModel::Isotropic::Sigma(2, sigma));
+  EXPECT(assert_equal(expected, *actual1, tol));
+
+  // Check single vector version
+  auto actual2 = conditional.likelihood(x0);
+  CHECK(actual2);
+  EXPECT(assert_equal(expected, *actual2, tol));
+}
+
+/* ************************************************************************* */
 // Test sampling
 TEST(GaussianConditional, sample) {
   Matrix A1 = (Matrix(2, 2) << 1., 2., 3., 4.).finished();
