@@ -18,7 +18,9 @@
 
 #pragma once
 
+#if BOOST_VERSION >= 107400
 #include <boost/serialization/library_version_type.hpp>
+#endif
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/set.hpp>
 #include <gtsam/base/FastDefaultAllocator.h>
