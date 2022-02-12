@@ -395,7 +395,7 @@ namespace gtsam {
     // Print out all rows.
 #ifdef GTSAM_USE_TBB
     // TBB uses un-ordered map, so inefficiently order them:
-    std::map<Key,Vector> ordered;
+    std::map<Key, Vector> ordered;
     for (const auto& kv : *this) ordered.emplace(kv);
     for (const auto& kv : ordered) {
 #else

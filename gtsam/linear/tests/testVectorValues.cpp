@@ -272,7 +272,6 @@ TEST(VectorValues, html) {
       "</table>\n"
       "</div>";
   string actual = vv.html();
-  cout << actual << endl;
   EXPECT(actual == expected);
 }
 
