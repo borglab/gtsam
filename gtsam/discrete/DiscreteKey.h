@@ -72,5 +72,5 @@ namespace gtsam {
   }; // DiscreteKeys
 
   /// Create a list from two keys
-  DiscreteKeys operator&(const DiscreteKey& key1, const DiscreteKey& key2);
+  GTSAM_EXPORT DiscreteKeys operator&(const DiscreteKey& key1, const DiscreteKey& key2);
 }
