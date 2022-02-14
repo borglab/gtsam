@@ -54,6 +54,8 @@ class GTSAM_EXPORT FrobeniusPrior : public NoiseModelFactor1<Rot> {
   Eigen::Matrix<double, Dim, 1> vecM_;  ///< vectorized matrix to approximate
 
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   /// Constructor
   FrobeniusPrior(Key j, const MatrixNN& M,
                  const SharedNoiseModel& model = nullptr)
@@ -106,6 +108,8 @@ class GTSAM_EXPORT FrobeniusBetweenFactor : public NoiseModelFactor2<Rot, Rot> {
   enum { Dim = Rot::VectorN2::RowsAtCompileTime };
 
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   /// @name Constructor
   /// @{
 

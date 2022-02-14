@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    SFMExample.cpp
+ * @file    SFMExample_bal.cpp
  * @brief   Solve a structure-from-motion problem from a "Bundle Adjustment in the Large" file
  * @author  Frank Dellaert
  */
@@ -20,7 +20,8 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
-#include <gtsam/slam/dataset.h> // for loading BAL datasets !
+#include <gtsam/sfm/SfmData.h> // for loading BAL datasets !
+#include <gtsam/slam/dataset.h>
 #include <vector>
 
 using namespace std;
@@ -41,9 +42,8 @@ int main (int argc, char* argv[]) {
   if (argc>1) filename = string(argv[1]);
 
   // Load the SfM data from file
-  SfmData mydata;
-  readBAL(filename, mydata);
-  cout << boost::format("read %1% tracks on %2% cameras\n") % mydata.number_tracks() % mydata.number_cameras();
+  SfmData mydata = SfmData::FromBalFile(filename);
+  cout << boost::format("read %1% tracks on %2% cameras\n") % mydata.numberTracks() % mydata.numberCameras();
 
   // Create a factor graph
   NonlinearFactorGraph graph;
