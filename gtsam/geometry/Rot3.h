@@ -49,16 +49,14 @@
 
 namespace gtsam {
 
-  /**
-   * @brief A 3D rotation represented as a rotation matrix if the preprocessor
-   * symbol GTSAM_USE_QUATERNIONS is not defined, or as a quaternion if it
-   * is defined.
-   * @addtogroup geometry
-   * \nosubgrouping
-   */
-  class GTSAM_EXPORT Rot3 : public LieGroup<Rot3,3> {
-
-  private:
+/**
+ * @brief Rot3 is a 3D rotation represented as a rotation matrix if the
+ * preprocessor symbol GTSAM_USE_QUATERNIONS is not defined, or as a quaternion
+ * if it is defined.
+ * @addtogroup geometry
+ */
+class GTSAM_EXPORT Rot3 : public LieGroup<Rot3, 3> {
+ private:
 
 #ifdef GTSAM_USE_QUATERNIONS
     /** Internal Eigen Quaternion */
@@ -67,8 +65,7 @@ namespace gtsam {
     SO3 rot_;
 #endif
 
-  public:
-
+ public:
     /// @name Constructors and named constructors
     /// @{
 
@@ -83,7 +80,7 @@ namespace gtsam {
      */
     Rot3(const Point3& col1, const Point3& col2, const Point3& col3);
 
-    /** constructor from a rotation matrix, as doubles in *row-major* order !!! */
+    /// Construct from a rotation matrix, as doubles in *row-major* order !!!
     Rot3(double R11, double R12, double R13,
         double R21, double R22, double R23,
         double R31, double R32, double R33);
@@ -567,6 +564,9 @@ namespace gtsam {
 #endif
   };
 
+  /// std::vector of Rot3s, mainly for wrapper
+  using Rot3Vector = std::vector<Rot3, Eigen::aligned_allocator<Rot3> >;
+
   /**
    * [RQ] receives a 3 by 3 matrix and returns an upper triangular matrix R
    * and 3 rotation angles corresponding to the rotation matrix Q=Qz'*Qy'*Qx'
@@ -585,5 +585,6 @@ namespace gtsam {
 
   template<>
   struct traits<const Rot3> : public internal::LieGroup<Rot3> {};
-}
+  
+}  // namespace gtsam
 

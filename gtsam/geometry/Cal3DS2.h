@@ -37,6 +37,9 @@ class GTSAM_EXPORT Cal3DS2 : public Cal3DS2_Base {
  public:
   enum { dimension = 9 };
 
+  ///< shared pointer to stereo calibration object
+  using shared_ptr = boost::shared_ptr<Cal3DS2>;
+
   /// @name Standard Constructors
   /// @{
 

@@ -177,7 +177,7 @@ class GTSAM_EXPORT DiscreteConditional
       const DiscreteValues& frontalValues) const;
 
   /** Single variable version of likelihood. */
-  DecisionTreeFactor::shared_ptr likelihood(size_t parent_value) const;
+  DecisionTreeFactor::shared_ptr likelihood(size_t frontal) const;
 
   /**
    * sample

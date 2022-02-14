@@ -98,11 +98,11 @@ class NonlinearFactorGraph {
   string dot(
       const gtsam::Values& values,
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
-      const GraphvizFormatting& formatting = GraphvizFormatting());
+      const GraphvizFormatting& writer = GraphvizFormatting());
   void saveGraph(
       const string& s, const gtsam::Values& values,
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
-      const GraphvizFormatting& formatting = GraphvizFormatting()) const;
+      const GraphvizFormatting& writer = GraphvizFormatting()) const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -588,21 +588,19 @@ class ISAM2Params {
   void setOptimizationParams(const gtsam::ISAM2DoglegParams& dogleg_params);
   void setRelinearizeThreshold(double threshold);
   void setRelinearizeThreshold(const gtsam::ISAM2ThresholdMap& threshold_map);
-  int getRelinearizeSkip() const;
-  void setRelinearizeSkip(int relinearizeSkip);
-  bool isEnableRelinearization() const;
-  void setEnableRelinearization(bool enableRelinearization);
-  bool isEvaluateNonlinearError() const;
-  void setEvaluateNonlinearError(bool evaluateNonlinearError);
   string getFactorization() const;
   void setFactorization(string factorization);
-  bool isCacheLinearizedFactors() const;
-  void setCacheLinearizedFactors(bool cacheLinearizedFactors);
-  bool isEnableDetailedResults() const;
-  void setEnableDetailedResults(bool enableDetailedResults);
-  bool isEnablePartialRelinearizationCheck() const;
-  void setEnablePartialRelinearizationCheck(
-      bool enablePartialRelinearizationCheck);
+
+  int relinearizeSkip;
+  bool enableRelinearization;
+  bool evaluateNonlinearError;
+  bool cacheLinearizedFactors;
+  bool enableDetailedResults;
+  bool enablePartialRelinearizationCheck;
+  bool findUnusedFactorSlots;
+
+  enum Factorization { CHOLESKY, QR };
+  Factorization factorization;
 };
 
 class ISAM2Clique {
