@@ -56,6 +56,10 @@ class NonlinearHybridFactorGraph {
   NonlinearHybridFactorGraph(const gtsam::NonlinearFactorGraph& nonlinearGraph,
                              const gtsam::DiscreteFactorGraph& discreteGraph,
                              const gtsam::DCFactorGraph& dcGraph);
+
+  void print(const std::string& str = "NonlinearHybridFactorGraph",
+             const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
 };
 
 #include <gtsam/hybrid/GaussianHybridFactorGraph.h>
@@ -65,6 +69,10 @@ class GaussianHybridFactorGraph {
   GaussianHybridFactorGraph(const gtsam::GaussianFactorGraph& gaussianGraph,
                             const gtsam::DiscreteFactorGraph& discreteGraph,
                             const gtsam::DCFactorGraph& dcGraph);
+
+  void print(const std::string& str = "GaussianHybridFactorGraph",
+             const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
 };
 
 #include <gtsam/hybrid/IncrementalHybrid.h>
