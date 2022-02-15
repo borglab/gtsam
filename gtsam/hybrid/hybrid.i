@@ -1,6 +1,7 @@
 //*************************************************************************
 // hybrid
 //*************************************************************************
+
 namespace gtsam {
 
 // #include <gtsam/inference/Key.h>
@@ -49,14 +50,42 @@ class DCFactorGraph {
   gtsam::DiscreteKeys discreteKeys() const;
 };
 
+#include <gtsam/hybrid/HybridFactorGraph.h>
+
+template <FG>
+class HybridFactorGraph {
+  HybridFactorGraph();
+  HybridFactorGraph(const FG& factorGraph,
+                    const DiscreteFactorGraph& discreteGraph,
+                    const DCFactorGraph& dcGraph);
+
+  bool equals(const gtsam::HybridFactorGraph<FG>& other, double tol = 1e-9) const;
+  void print(const std::string& str = "HybridFactorGraph",
+             const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
+
+  const gtsam::DiscreteFactorGraph& discreteGraph() const;
+  const gtsam::DCFactorGraph& dcGraph() const;
+
+  gtsam::DiscreteKeys discreteKeys() const;
+};
+
 #include <gtsam/hybrid/NonlinearHybridFactorGraph.h>
 
-class NonlinearHybridFactorGraph {
+class NonlinearHybridFactorGraph : gtsam::HybridFactorGraph<gtsam::NonlinearFactorGraph> {
   NonlinearHybridFactorGraph();
   NonlinearHybridFactorGraph(const gtsam::NonlinearFactorGraph& nonlinearGraph,
                              const gtsam::DiscreteFactorGraph& discreteGraph,
                              const gtsam::DCFactorGraph& dcGraph);
 
+  const gtsam::NonlinearFactorGraph& nonlinearGraph() const;
+
+  gtsam::GaussianHybridFactorGraph linearize(
+      const gtsam::Values& continuousValues) const;
+
+  size_t size() const;
+  bool equals(const gtsam::NonlinearHybridFactorGraph& other,
+              double tol = 1e-9) const;
   void print(const std::string& str = "NonlinearHybridFactorGraph",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
@@ -70,6 +99,7 @@ class GaussianHybridFactorGraph {
                             const gtsam::DiscreteFactorGraph& discreteGraph,
                             const gtsam::DCFactorGraph& dcGraph);
 
+  size_t size() const;
   void print(const std::string& str = "GaussianHybridFactorGraph",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
