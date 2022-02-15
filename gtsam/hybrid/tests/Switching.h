@@ -20,11 +20,11 @@
 
 #include <gtsam/discrete/DiscreteDistribution.h>
 #include <gtsam/hybrid/DCMixtureFactor.h>
-#include <gtsam/hybrid/NonlinearHybridFactorGraph.h>
 #include <gtsam/hybrid/GaussianHybridFactorGraph.h>
-#include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/linear/NoiseModel.h>
+#include <gtsam/hybrid/NonlinearHybridFactorGraph.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/linear/NoiseModel.h>
+#include <gtsam/slam/BetweenFactor.h>
 
 namespace gtsam {
 using MotionModel = BetweenFactor<double>;
@@ -52,7 +52,7 @@ struct Switching {
 
     // Create hybrid factor graph.
     // Add a prior on X(1).
-    auto prior = boost::make_shared < PriorFactor < double >> (
+    auto prior = boost::make_shared<PriorFactor<double>>(
         X(1), 0, noiseModel::Isotropic::Sigma(1, prior_sigma));
     nonlinearFactorGraph.push_nonlinear(prior);
 
@@ -67,7 +67,7 @@ struct Switching {
     // Add measurement factors
     auto measurement_noise = noiseModel::Isotropic::Sigma(1, 0.1);
     for (size_t k = 1; k <= K; k++) {
-      nonlinearFactorGraph.emplace_nonlinear < PriorFactor < double >> (
+      nonlinearFactorGraph.emplace_nonlinear<PriorFactor<double>>(
           X(k), 1.0 * (k - 1), measurement_noise);
     }
 
@@ -83,16 +83,16 @@ struct Switching {
   }
 
   // Create motion models for a given time step
-  static std::vector <MotionModel::shared_ptr> motionModels(size_t k,
-                                                            double sigma = 1.0) {
+  static std::vector<MotionModel::shared_ptr> motionModels(size_t k,
+                                                           double sigma = 1.0) {
     using symbol_shorthand::M;
     using symbol_shorthand::X;
 
     auto noise_model = noiseModel::Isotropic::Sigma(1, sigma);
     auto still =
-        boost::make_shared<MotionModel>(X(k), X(k + 1), 0.0, noise_model),
-        moving =
-        boost::make_shared<MotionModel>(X(k), X(k + 1), 1.0, noise_model);
+             boost::make_shared<MotionModel>(X(k), X(k + 1), 0.0, noise_model),
+         moving =
+             boost::make_shared<MotionModel>(X(k), X(k + 1), 1.0, noise_model);
     return {still, moving};
   }
 
@@ -121,4 +121,4 @@ struct Switching {
   }
 };
 
-}
+}  // namespace gtsam
