@@ -74,6 +74,7 @@ set(interface_files
     ${GTSAM_SOURCE_DIR}/gtsam/linear/linear.i
     ${GTSAM_SOURCE_DIR}/gtsam/nonlinear/nonlinear.i
     ${GTSAM_SOURCE_DIR}/gtsam/symbolic/symbolic.i
+    ${GTSAM_SOURCE_DIR}/gtsam/hybrid/hybrid.i
     ${GTSAM_SOURCE_DIR}/gtsam/sam/sam.i
     ${GTSAM_SOURCE_DIR}/gtsam/slam/slam.i
     ${GTSAM_SOURCE_DIR}/gtsam/sfm/sfm.i
