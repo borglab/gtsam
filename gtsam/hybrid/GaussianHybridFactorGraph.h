@@ -21,6 +21,7 @@
 #include <gtsam/hybrid/DCGaussianMixtureFactor.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
+#include <gtsam/inference/AbstractConditional.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
 #include <string>
@@ -47,8 +48,9 @@ struct EliminationTraits<GaussianHybridFactorGraph> {
   typedef HybridEliminationTree JunctionTreeType;
 
   /// The function type that does a single elimination step on a variable.
-  static std::pair<AbstractConditional::shared_ptr, SharedFactor> DefaultEliminate(
-      const GaussianHybridFactorGraph& factors, const Ordering& ordering) {
+  static std::pair<AbstractConditional::shared_ptr, SharedFactor>
+  DefaultEliminate(const GaussianHybridFactorGraph& factors,
+                   const Ordering& ordering) {
     return EliminateHybrid(factors, ordering);
   }
 };
