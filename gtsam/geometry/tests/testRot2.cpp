@@ -156,15 +156,14 @@ TEST( Rot2, relativeBearing )
 }
 
 //******************************************************************************
-namespace rot2_example {
+namespace {
 Rot2 id;
 Rot2 T1(0.1);
 Rot2 T2(0.2);
-}  // namespace rot2_example
+}  // namespace
 
 //******************************************************************************
 TEST(Rot2, Invariants) {
-  using namespace rot2_example;
   EXPECT(check_group_invariants(id, id));
   EXPECT(check_group_invariants(id, T1));
   EXPECT(check_group_invariants(T2, id));
@@ -178,7 +177,6 @@ TEST(Rot2, Invariants) {
 
 //******************************************************************************
 TEST(Rot2, LieGroupDerivatives) {
-  using namespace rot2_example;
   CHECK_LIE_GROUP_DERIVATIVES(id, id);
   CHECK_LIE_GROUP_DERIVATIVES(id, T2);
   CHECK_LIE_GROUP_DERIVATIVES(T2, id);
@@ -187,7 +185,6 @@ TEST(Rot2, LieGroupDerivatives) {
 
 //******************************************************************************
 TEST(Rot2, ChartDerivatives) {
-  using namespace rot2_example;
   CHECK_CHART_DERIVATIVES(id, id);
   CHECK_CHART_DERIVATIVES(id, T2);
   CHECK_CHART_DERIVATIVES(T2, id);

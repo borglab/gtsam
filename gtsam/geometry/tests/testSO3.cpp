@@ -67,16 +67,15 @@ TEST(SO3, ClosestTo) {
 }
 
 //******************************************************************************
-namespace so3_example {
+namespace {
 SO3 id;
 Vector3 z_axis(0, 0, 1), v2(1, 2, 0), v3(1, 2, 3);
 SO3 R1(Eigen::AngleAxisd(0.1, z_axis));
 SO3 R2(Eigen::AngleAxisd(0.2, z_axis));
-}  // namespace so3_example
+}  // namespace
 
 /* ************************************************************************* */
 TEST(SO3, ChordalMean) {
-  using namespace so3_example;
   std::vector<SO3> rotations = {R1, R1.inverse()};
   EXPECT(assert_equal(SO3(), SO3::ChordalMean(rotations)));
 }
@@ -84,7 +83,6 @@ TEST(SO3, ChordalMean) {
 //******************************************************************************
 // Check that Hat specialization is equal to dynamic version
 TEST(SO3, Hat) {
-  using namespace so3_example;
   EXPECT(assert_equal(SO3::Hat(z_axis), SOn::Hat(z_axis)));
   EXPECT(assert_equal(SO3::Hat(v2), SOn::Hat(v2)));
   EXPECT(assert_equal(SO3::Hat(v3), SOn::Hat(v3)));
@@ -93,7 +91,6 @@ TEST(SO3, Hat) {
 //******************************************************************************
 // Check that Hat specialization is equal to dynamic version
 TEST(SO3, Vee) {
-  using namespace so3_example;
   auto X1 = SOn::Hat(z_axis), X2 = SOn::Hat(v2), X3 = SOn::Hat(v3);
   EXPECT(assert_equal(SO3::Vee(X1), SOn::Vee(X1)));
   EXPECT(assert_equal(SO3::Vee(X2), SOn::Vee(X2)));
@@ -102,7 +99,6 @@ TEST(SO3, Vee) {
 
 //******************************************************************************
 TEST(SO3, Local) {
-  using namespace so3_example;
   Vector3 expected(0, 0, 0.1);
   Vector3 actual = traits<SO3>::Local(R1, R2);
   EXPECT(assert_equal((Vector)expected, actual));
@@ -110,7 +106,6 @@ TEST(SO3, Local) {
 
 //******************************************************************************
 TEST(SO3, Retract) {
-  using namespace so3_example;
   Vector3 v(0, 0, 0.1);
   SO3 actual = traits<SO3>::Retract(R1, v);
   EXPECT(assert_equal(R2, actual));
@@ -118,7 +113,6 @@ TEST(SO3, Retract) {
 
 //******************************************************************************
 TEST(SO3, Logmap) {
-  using namespace so3_example;
   Vector3 expected(0, 0, 0.1);
   Vector3 actual = SO3::Logmap(R1.between(R2));
   EXPECT(assert_equal((Vector)expected, actual));
@@ -126,7 +120,6 @@ TEST(SO3, Logmap) {
 
 //******************************************************************************
 TEST(SO3, Expmap) {
-  using namespace so3_example;
   Vector3 v(0, 0, 0.1);
   SO3 actual = R1 * SO3::Expmap(v);
   EXPECT(assert_equal(R2, actual));
@@ -134,8 +127,6 @@ TEST(SO3, Expmap) {
 
 //******************************************************************************
 TEST(SO3, Invariants) {
-  using namespace so3_example;
-
   EXPECT(check_group_invariants(id, id));
   EXPECT(check_group_invariants(id, R1));
   EXPECT(check_group_invariants(R2, id));
@@ -149,7 +140,6 @@ TEST(SO3, Invariants) {
 
 //******************************************************************************
 TEST(SO3, LieGroupDerivatives) {
-  using namespace so3_example;
   CHECK_LIE_GROUP_DERIVATIVES(id, id);
   CHECK_LIE_GROUP_DERIVATIVES(id, R2);
   CHECK_LIE_GROUP_DERIVATIVES(R2, id);
@@ -158,7 +148,6 @@ TEST(SO3, LieGroupDerivatives) {
 
 //******************************************************************************
 TEST(SO3, ChartDerivatives) {
-  using namespace so3_example;
   CHECK_CHART_DERIVATIVES(id, id);
   CHECK_CHART_DERIVATIVES(id, R2);
   CHECK_CHART_DERIVATIVES(R2, id);
@@ -363,7 +352,6 @@ TEST(SO3, ApplyInvDexp) {
 
 //******************************************************************************
 TEST(SO3, vec) {
-  using namespace so3_example;
   const Vector9 expected = Eigen::Map<const Vector9>(R2.matrix().data());
   Matrix actualH;
   const Vector9 actual = R2.vec(actualH);

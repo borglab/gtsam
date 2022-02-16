@@ -640,16 +640,14 @@ TEST( Rot3, slerp)
 }
 
 //******************************************************************************
-namespace rot3_example {
+namespace {
 Rot3 id;
 Rot3 T1(Rot3::AxisAngle(Vector3(0, 0, 1), 1));
 Rot3 T2(Rot3::AxisAngle(Vector3(0, 1, 0), 2));
-}  // namespace rot3_example
+}  // namespace
 
 //******************************************************************************
 TEST(Rot3, Invariants) {
-  using namespace rot3_example;
-
   EXPECT(check_group_invariants(id, id));
   EXPECT(check_group_invariants(id, T1));
   EXPECT(check_group_invariants(T2, id));
@@ -665,8 +663,6 @@ TEST(Rot3, Invariants) {
 
 //******************************************************************************
 TEST(Rot3, LieGroupDerivatives) {
-  using namespace rot3_example;
-
   CHECK_LIE_GROUP_DERIVATIVES(id, id);
   CHECK_LIE_GROUP_DERIVATIVES(id, T2);
   CHECK_LIE_GROUP_DERIVATIVES(T2, id);
@@ -676,8 +672,6 @@ TEST(Rot3, LieGroupDerivatives) {
 
 //******************************************************************************
 TEST(Rot3, ChartDerivatives) {
-  using namespace rot3_example;
-
   if (ROT3_DEFAULT_COORDINATES_MODE == Rot3::EXPMAP) {
     CHECK_CHART_DERIVATIVES(id, id);
     CHECK_CHART_DERIVATIVES(id, T2);

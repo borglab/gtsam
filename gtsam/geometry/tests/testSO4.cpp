@@ -55,7 +55,7 @@ TEST(SO4, Random) {
 }
 
 //******************************************************************************
-namespace so4_example {
+namespace {
 SO4 id;
 Vector6 v1 = (Vector(6) << 0, 0, 0, 0.1, 0, 0).finished();
 SO4 Q1 = SO4::Expmap(v1);
@@ -63,12 +63,10 @@ Vector6 v2 = (Vector(6) << 0.00, 0.00, 0.00, 0.01, 0.02, 0.03).finished();
 SO4 Q2 = SO4::Expmap(v2);
 Vector6 v3 = (Vector(6) << 1, 2, 3, 4, 5, 6).finished();
 SO4 Q3 = SO4::Expmap(v3);
-}  // namespace so4_example
+}  // namespace
 
 //******************************************************************************
 TEST(SO4, Expmap) {
-  using namespace so4_example;
-
   // If we do exponential map in SO(3) subgroup, topleft should be equal to R1.
   auto R1 = SO3::Expmap(v1.tail<3>()).matrix();
   EXPECT((Q1.matrix().topLeftCorner<3, 3>().isApprox(R1)));
@@ -91,7 +89,6 @@ TEST(SO4, Expmap) {
 //******************************************************************************
 // Check that Hat specialization is equal to dynamic version
 TEST(SO4, Hat) {
-  using namespace so4_example;
   EXPECT(assert_equal(SO4::Hat(v1), SOn::Hat(v1)));
   EXPECT(assert_equal(SO4::Hat(v2), SOn::Hat(v2)));
   EXPECT(assert_equal(SO4::Hat(v3), SOn::Hat(v3)));
@@ -100,7 +97,6 @@ TEST(SO4, Hat) {
 //******************************************************************************
 // Check that Hat specialization is equal to dynamic version
 TEST(SO4, Vee) {
-  using namespace so4_example;
   auto X1 = SOn::Hat(v1), X2 = SOn::Hat(v2), X3 = SOn::Hat(v3);
   EXPECT(assert_equal(SO4::Vee(X1), SOn::Vee(X1)));
   EXPECT(assert_equal(SO4::Vee(X2), SOn::Vee(X2)));
@@ -109,8 +105,6 @@ TEST(SO4, Vee) {
 
 //******************************************************************************
 TEST(SO4, Retract) {
-  using namespace so4_example;
-
   // Check that Cayley yields the same as Expmap for small values
   EXPECT(assert_equal(id.retract(v1 / 100), SO4::Expmap(v1 / 100)));
   EXPECT(assert_equal(id.retract(v2 / 100), SO4::Expmap(v2 / 100)));
@@ -127,7 +121,6 @@ TEST(SO4, Retract) {
 //******************************************************************************
 // Check that Cayley is identical to dynamic version
 TEST(SO4, Local) {
-  using namespace so4_example;
   EXPECT(
       assert_equal(id.localCoordinates(Q1), SOn(4).localCoordinates(SOn(Q1))));
   EXPECT(
@@ -140,8 +133,6 @@ TEST(SO4, Local) {
 
 //******************************************************************************
 TEST(SO4, Invariants) {
-  using namespace so4_example;
-
   EXPECT(check_group_invariants(id, id));
   EXPECT(check_group_invariants(id, Q1));
   EXPECT(check_group_invariants(Q2, id));
@@ -157,8 +148,6 @@ TEST(SO4, Invariants) {
 
 //******************************************************************************
 TEST(SO4, compose) {
-  using namespace so4_example;
-
   SO4 expected = Q1 * Q2;
   Matrix actualH1, actualH2;
   SO4 actual = Q1.compose(Q2, actualH1, actualH2);
@@ -175,8 +164,6 @@ TEST(SO4, compose) {
 
 //******************************************************************************
 TEST(SO4, vec) {
-  using namespace so4_example;
-
   using Vector16 = SO4::VectorN2;
   const Vector16 expected = Eigen::Map<const Vector16>(Q2.matrix().data());
   Matrix actualH;
@@ -189,8 +176,6 @@ TEST(SO4, vec) {
 
 //******************************************************************************
 TEST(SO4, topLeft) {
-  using namespace so4_example;
-
   const Matrix3 expected = Q3.matrix().topLeftCorner<3, 3>();
   Matrix actualH;
   const Matrix3 actual = topLeft(Q3, actualH);
@@ -204,8 +189,6 @@ TEST(SO4, topLeft) {
 
 //******************************************************************************
 TEST(SO4, stiefel) {
-  using namespace so4_example;
-
   const Matrix43 expected = Q3.matrix().leftCols<3>();
   Matrix actualH;
   const Matrix43 actual = stiefel(Q3, actualH);
