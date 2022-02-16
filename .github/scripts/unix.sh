@@ -91,6 +91,7 @@ function build ()
 {
   export GTSAM_BUILD_EXAMPLES_ALWAYS=ON
   export GTSAM_BUILD_TESTS=OFF
+  export GTSAM_SINGLE_TEST_EXE=ON
 
   configure
 
@@ -108,6 +109,7 @@ function test ()
 {
   export GTSAM_BUILD_EXAMPLES_ALWAYS=OFF
   export GTSAM_BUILD_TESTS=ON
+  export GTSAM_SINGLE_TEST_EXE=ON
 
   configure
 
