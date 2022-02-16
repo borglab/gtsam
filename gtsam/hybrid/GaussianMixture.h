@@ -13,6 +13,7 @@
  * @file   GaussianMixture.h
  * @brief  Discrete-continuous conditional density
  * @author Frank Dellaert
+ * @author Fan Jiang
  * @date   December 2021
  */
 
@@ -21,8 +22,8 @@
 #include <gtsam/discrete/DecisionTree.h>
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/hybrid/DCGaussianMixtureFactor.h>
-#include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/inference/Conditional.h>
+#include <gtsam/linear/GaussianConditional.h>
 
 namespace gtsam {
 
@@ -63,21 +64,21 @@ class GaussianMixture
    * GaussianConditionalMixture(const Conditionals& conditionals,
    *                            const DiscreteKeys& discreteParentKeys)
    */
-  GaussianMixture(size_t nrFrontals,
-                  const KeyVector &continuousKeys,
-                  const DiscreteKeys &discreteKeys,
-                  const Conditionals &conditionals);
+  GaussianMixture(size_t nrFrontals, const KeyVector& continuousKeys,
+                  const DiscreteKeys& discreteKeys,
+                  const Conditionals& conditionals);
 
   /// @}
   /// @name Standard API
   /// @{
 
-  GaussianConditional::shared_ptr operator()(const DiscreteValues& discreteVals) const;
+  GaussianConditional::shared_ptr operator()(
+      const DiscreteValues& discreteVals) const;
 
   /// Returns the total number of continuous components
   size_t nrComponents() {
     size_t total = 0;
-    factors_.visit([&total](const GaussianFactor::shared_ptr &node) {
+    factors_.visit([&total](const GaussianFactor::shared_ptr& node) {
       if (node) total += 1;
     });
     return total;

@@ -31,7 +31,7 @@ using SharedFactor = boost::shared_ptr<Factor>;
  * NonlinearFactorGraph, GaussianFactorGraph.
  */
 template <typename FG>
-class HybridFactorGraph : protected FactorGraph<Factor> {
+class HybridFactorGraph : public FactorGraph<Factor> {
  public:
   using shared_ptr = boost::shared_ptr<HybridFactorGraph>;
   using Base = FactorGraph<Factor>;

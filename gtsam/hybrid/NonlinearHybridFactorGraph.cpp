@@ -27,6 +27,11 @@ void NonlinearHybridFactorGraph::print(
   factorGraph_.print("NonlinearFactorGraph", keyFormatter);
 }
 
+bool NonlinearHybridFactorGraph::equals(const NonlinearHybridFactorGraph& other,
+                                        double tol) const {
+  return Base::equals(other, tol);
+}
+
 GaussianHybridFactorGraph NonlinearHybridFactorGraph::linearize(
     const Values& continuousValues) const {
   // linearize the continuous factors

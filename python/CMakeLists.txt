@@ -60,6 +60,7 @@ set(interface_headers
     ${PROJECT_SOURCE_DIR}/gtsam/linear/linear.i
     ${PROJECT_SOURCE_DIR}/gtsam/nonlinear/nonlinear.i
     ${PROJECT_SOURCE_DIR}/gtsam/symbolic/symbolic.i
+    ${PROJECT_SOURCE_DIR}/gtsam/hybrid/hybrid.i
     ${PROJECT_SOURCE_DIR}/gtsam/sam/sam.i
     ${PROJECT_SOURCE_DIR}/gtsam/slam/slam.i
     ${PROJECT_SOURCE_DIR}/gtsam/sfm/sfm.i
