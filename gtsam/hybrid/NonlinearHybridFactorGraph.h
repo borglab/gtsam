@@ -106,6 +106,12 @@ class GTSAM_EXPORT NonlinearHybridFactorGraph
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
 
   /**
+   * @return true if all internal graphs of `this` are equal to those of
+   * `other`
+   */
+  bool equals(const NonlinearHybridFactorGraph& other, double tol = 1e-9) const;
+
+  /**
    * Utility for retrieving the internal nonlinear factor graph
    * @return the member variable nonlinearGraph_
    */
@@ -121,12 +127,6 @@ class GTSAM_EXPORT NonlinearHybridFactorGraph
    * @return GaussianHybridFactorGraph
    */
   GaussianHybridFactorGraph linearize(const Values& continuousValues) const;
-
-  /**
-   * @return true if all internal graphs of `this` are equal to those of
-   * `other`
-   */
-  bool equals(const NonlinearHybridFactorGraph& other, double tol = 1e-9) const;
 
   /// The total number of factors in the nonlinear factor graph.
   size_t nrNonlinearFactors() const { return factorGraph_.size(); }

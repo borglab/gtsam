@@ -53,13 +53,14 @@ class DCFactorGraph {
 #include <gtsam/hybrid/HybridFactorGraph.h>
 
 template <FG>
-class HybridFactorGraph {
+virtual class HybridFactorGraph {
   HybridFactorGraph();
   HybridFactorGraph(const FG& factorGraph,
-                    const DiscreteFactorGraph& discreteGraph,
-                    const DCFactorGraph& dcGraph);
+                    const gtsam::DiscreteFactorGraph& discreteGraph,
+                    const gtsam::DCFactorGraph& dcGraph);
 
-  bool equals(const gtsam::HybridFactorGraph<FG>& other, double tol = 1e-9) const;
+  bool equals(const gtsam::HybridFactorGraph<FG>& other,
+              double tol = 1e-9) const;
   void print(const std::string& str = "HybridFactorGraph",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
@@ -70,9 +71,12 @@ class HybridFactorGraph {
   gtsam::DiscreteKeys discreteKeys() const;
 };
 
+typedef gtsam::HybridFactorGraph<gtsam::NonlinearFactorGraph>
+    HybridFactorGraphNonlinear;
+
 #include <gtsam/hybrid/NonlinearHybridFactorGraph.h>
 
-class NonlinearHybridFactorGraph : gtsam::HybridFactorGraph<gtsam::NonlinearFactorGraph> {
+virtual class NonlinearHybridFactorGraph {
   NonlinearHybridFactorGraph();
   NonlinearHybridFactorGraph(const gtsam::NonlinearFactorGraph& nonlinearGraph,
                              const gtsam::DiscreteFactorGraph& discreteGraph,
