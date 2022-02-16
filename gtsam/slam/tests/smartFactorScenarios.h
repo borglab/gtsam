@@ -29,6 +29,7 @@
 using namespace std;
 using namespace gtsam;
 
+namespace {
 // three landmarks ~5 meters infront of camera
 Point3 landmark1(5, 0.5, 1.2);
 Point3 landmark2(5, -0.5, 1.2);
@@ -48,23 +49,24 @@ static SharedNoiseModel unit2(noiseModel::Unit::Create(2));
 
 static double fov = 60;  // degrees
 static size_t w = 640, h = 480;
+}
 
 /* ************************************************************************* */
 // default Cal3_S2 cameras
 namespace vanilla {
 typedef PinholeCamera<Cal3_S2> Camera;
 typedef SmartProjectionFactor<Camera> SmartFactor;
-static Cal3_S2 K(fov, w, h);
-static Cal3_S2 K2(1500, 1200, 0, w, h);
-Camera level_camera(level_pose, K2);
-Camera level_camera_right(pose_right, K2);
-Point2 level_uv = level_camera.project(landmark1);
-Point2 level_uv_right = level_camera_right.project(landmark1);
-Camera cam1(level_pose, K2);
-Camera cam2(pose_right, K2);
-Camera cam3(pose_above, K2);
+static const Cal3_S2 K(fov, w, h);
+static const Cal3_S2 K2(1500, 1200, 0, w, h);
+static const Camera level_camera(level_pose, K2);
+static const Camera level_camera_right(pose_right, K2);
+static const Point2 level_uv = level_camera.project(landmark1);
+static const Point2 level_uv_right = level_camera_right.project(landmark1);
+static const Camera cam1(level_pose, K2);
+static const Camera cam2(pose_right, K2);
+static const Camera cam3(pose_above, K2);
 typedef GeneralSFMFactor<Camera, Point3> SFMFactor;
-SmartProjectionParams params;
+static const SmartProjectionParams params;
 }  // namespace vanilla
 
 /* ************************************************************************* */
@@ -74,12 +76,12 @@ typedef PinholePose<Cal3_S2> Camera;
 typedef CameraSet<Camera> Cameras;
 typedef SmartProjectionPoseFactor<Cal3_S2> SmartFactor;
 typedef SmartProjectionRigFactor<Camera> SmartRigFactor;
-static Cal3_S2::shared_ptr sharedK(new Cal3_S2(fov, w, h));
-Camera level_camera(level_pose, sharedK);
-Camera level_camera_right(pose_right, sharedK);
-Camera cam1(level_pose, sharedK);
-Camera cam2(pose_right, sharedK);
-Camera cam3(pose_above, sharedK);
+static const Cal3_S2::shared_ptr sharedK(new Cal3_S2(fov, w, h));
+static const Camera level_camera(level_pose, sharedK);
+static const Camera level_camera_right(pose_right, sharedK);
+static const Camera cam1(level_pose, sharedK);
+static const Camera cam2(pose_right, sharedK);
+static const Camera cam3(pose_above, sharedK);
 }  // namespace vanillaPose
 
 /* ************************************************************************* */
@@ -89,12 +91,12 @@ typedef PinholePose<Cal3_S2> Camera;
 typedef CameraSet<Camera> Cameras;
 typedef SmartProjectionPoseFactor<Cal3_S2> SmartFactor;
 typedef SmartProjectionRigFactor<Camera> SmartRigFactor;
-static Cal3_S2::shared_ptr sharedK2(new Cal3_S2(1500, 1200, 0, 640, 480));
-Camera level_camera(level_pose, sharedK2);
-Camera level_camera_right(pose_right, sharedK2);
-Camera cam1(level_pose, sharedK2);
-Camera cam2(pose_right, sharedK2);
-Camera cam3(pose_above, sharedK2);
+static const Cal3_S2::shared_ptr sharedK2(new Cal3_S2(1500, 1200, 0, 640, 480));
+static const Camera level_camera(level_pose, sharedK2);
+static const Camera level_camera_right(pose_right, sharedK2);
+static const Camera cam1(level_pose, sharedK2);
+static const Camera cam2(pose_right, sharedK2);
+static const Camera cam3(pose_above, sharedK2);
 }  // namespace vanillaPose2
 
 /* *************************************************************************/
@@ -103,15 +105,15 @@ namespace bundler {
 typedef PinholeCamera<Cal3Bundler> Camera;
 typedef CameraSet<Camera> Cameras;
 typedef SmartProjectionFactor<Camera> SmartFactor;
-static Cal3Bundler K(500, 1e-3, 1e-3, 0, 0);
-Camera level_camera(level_pose, K);
-Camera level_camera_right(pose_right, K);
-Point2 level_uv = level_camera.project(landmark1);
-Point2 level_uv_right = level_camera_right.project(landmark1);
-Pose3 pose1 = level_pose;
-Camera cam1(level_pose, K);
-Camera cam2(pose_right, K);
-Camera cam3(pose_above, K);
+static const Cal3Bundler K(500, 1e-3, 1e-3, 0, 0);
+static const Camera level_camera(level_pose, K);
+static const Camera level_camera_right(pose_right, K);
+static const Point2 level_uv = level_camera.project(landmark1);
+static const Point2 level_uv_right = level_camera_right.project(landmark1);
+static const Pose3 pose1 = level_pose;
+static const Camera cam1(level_pose, K);
+static const Camera cam2(pose_right, K);
+static const Camera cam3(pose_above, K);
 typedef GeneralSFMFactor<Camera, Point3> SFMFactor;
 }  // namespace bundler
 
@@ -122,14 +124,14 @@ typedef PinholePose<Cal3Bundler> Camera;
 typedef CameraSet<Camera> Cameras;
 typedef SmartProjectionPoseFactor<Cal3Bundler> SmartFactor;
 typedef SmartProjectionRigFactor<Camera> SmartRigFactor;
-static boost::shared_ptr<Cal3Bundler> sharedBundlerK(new Cal3Bundler(500, 1e-3,
+static const boost::shared_ptr<Cal3Bundler> sharedBundlerK(new Cal3Bundler(500, 1e-3,
                                                                      1e-3, 1000,
                                                                      2000));
-Camera level_camera(level_pose, sharedBundlerK);
-Camera level_camera_right(pose_right, sharedBundlerK);
-Camera cam1(level_pose, sharedBundlerK);
-Camera cam2(pose_right, sharedBundlerK);
-Camera cam3(pose_above, sharedBundlerK);
+static const Camera level_camera(level_pose, sharedBundlerK);
+static const Camera level_camera_right(pose_right, sharedBundlerK);
+static const Camera cam1(level_pose, sharedBundlerK);
+static const Camera cam2(pose_right, sharedBundlerK);
+static const Camera cam3(pose_above, sharedBundlerK);
 }  // namespace bundlerPose
 
 /* ************************************************************************* */
@@ -138,12 +140,12 @@ namespace sphericalCamera {
 typedef SphericalCamera Camera;
 typedef CameraSet<Camera> Cameras;
 typedef SmartProjectionRigFactor<Camera> SmartFactorP;
-static EmptyCal::shared_ptr emptyK(new EmptyCal());
-Camera level_camera(level_pose);
-Camera level_camera_right(pose_right);
-Camera cam1(level_pose);
-Camera cam2(pose_right);
-Camera cam3(pose_above);
+static const EmptyCal::shared_ptr emptyK(new EmptyCal());
+static const Camera level_camera(level_pose);
+static const Camera level_camera_right(pose_right);
+static const Camera cam1(level_pose);
+static const Camera cam2(pose_right);
+static const Camera cam3(pose_above);
 }  // namespace sphericalCamera
 /* *************************************************************************/
 
