@@ -29,10 +29,8 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/archive/xml_iarchive.hpp>
 #include <boost/assign/std/list.hpp>
 #include <boost/range/adaptor/reversed.hpp>
-#include <boost/serialization/export.hpp>
 #include <boost/tuple/tuple.hpp>
 using namespace boost::assign;
 
@@ -195,75 +193,6 @@ TEST(SubgraphPreconditioner, system) {
   auto g = system.gradient(y0);
   Vector expected_g = Vector::Zero(18);
   EXPECT(assert_equal(expected_g, vec(g)));
-}
-
-/* ************************************************************************* */
-BOOST_CLASS_EXPORT_GUID(gtsam::JacobianFactor, "JacobianFactor")
-
-// Read from XML file
-static GaussianFactorGraph read(const string& name) {
-  auto inputFile = findExampleDataFile(name);
-  ifstream is(inputFile);
-  if (!is.is_open()) throw runtime_error("Cannot find file " + inputFile);
-  boost::archive::xml_iarchive in_archive(is);
-  GaussianFactorGraph Ab;
-  in_archive >> boost::serialization::make_nvp("graph", Ab);
-  return Ab;
-}
-
-TEST(SubgraphSolver, Solves) {
-  // Create preconditioner
-  SubgraphPreconditioner system;
-
-  // We test on three different graphs
-  const auto Ab1 = planarGraph(3).first;
-  const auto Ab2 = read("toy3D");
-  const auto Ab3 = read("randomGrid3D");
-
-  // For all graphs, test solve and solveTranspose
-  for (const auto& Ab : {Ab1, Ab2, Ab3}) {
-    // Call build, a non-const method needed to make solve work :-(
-    KeyInfo keyInfo(Ab);
-    std::map<Key, Vector> lambda;
-    system.build(Ab, keyInfo, lambda);
-
-    // Create a perturbed (non-zero) RHS
-    const auto xbar = system.Rc1().optimize();  // merely for use in zero below
-    auto values_y = VectorValues::Zero(xbar);
-    auto it = values_y.begin();
-    it->second.setConstant(100);
-    ++it;
-    it->second.setConstant(-100);
-
-    // Solve the VectorValues way
-    auto values_x = system.Rc1().backSubstitute(values_y);
-
-    // Solve the matrix way, this really just checks BN::backSubstitute
-    // This only works with Rc1 ordering, not with keyInfo !
-    // TODO(frank): why does this not work with an arbitrary ordering?
-    const auto ord = system.Rc1().ordering();
-    const Matrix R1 = system.Rc1().matrix(ord).first;
-    auto ord_y = values_y.vector(ord);
-    auto vector_x = R1.inverse() * ord_y;
-    EXPECT(assert_equal(vector_x, values_x.vector(ord)));
-
-    // Test that 'solve' does implement x = R^{-1} y
-    // We do this by asserting it gives same answer as backSubstitute
-    // Only works with keyInfo ordering:
-    const auto ordering = keyInfo.ordering();
-    auto vector_y = values_y.vector(ordering);
-    const size_t N = R1.cols();
-    Vector solve_x = Vector::Zero(N);
-    system.solve(vector_y, solve_x);
-    EXPECT(assert_equal(values_x.vector(ordering), solve_x));
-
-    // Test that transposeSolve does implement x = R^{-T} y
-    // We do this by asserting it gives same answer as backSubstituteTranspose
-    auto values_x2 = system.Rc1().backSubstituteTranspose(values_y);
-    Vector solveT_x = Vector::Zero(N);
-    system.transposeSolve(vector_y, solveT_x);
-    EXPECT(assert_equal(values_x2.vector(ordering), solveT_x));
-  }
 }
 
 /* ************************************************************************* */
