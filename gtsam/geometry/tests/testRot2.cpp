@@ -156,44 +156,42 @@ TEST( Rot2, relativeBearing )
 }
 
 //******************************************************************************
+namespace rot2_example {
+Rot2 id;
 Rot2 T1(0.1);
 Rot2 T2(0.2);
+}  // namespace rot2_example
 
 //******************************************************************************
-TEST(Rot2 , Invariants) {
-  Rot2 id;
+TEST(Rot2, Invariants) {
+  using namespace rot2_example;
+  EXPECT(check_group_invariants(id, id));
+  EXPECT(check_group_invariants(id, T1));
+  EXPECT(check_group_invariants(T2, id));
+  EXPECT(check_group_invariants(T2, T1));
 
-  EXPECT(check_group_invariants(id,id));
-  EXPECT(check_group_invariants(id,T1));
-  EXPECT(check_group_invariants(T2,id));
-  EXPECT(check_group_invariants(T2,T1));
-
-  EXPECT(check_manifold_invariants(id,id));
-  EXPECT(check_manifold_invariants(id,T1));
-  EXPECT(check_manifold_invariants(T2,id));
-  EXPECT(check_manifold_invariants(T2,T1));
-
+  EXPECT(check_manifold_invariants(id, id));
+  EXPECT(check_manifold_invariants(id, T1));
+  EXPECT(check_manifold_invariants(T2, id));
+  EXPECT(check_manifold_invariants(T2, T1));
 }
 
 //******************************************************************************
-TEST(Rot2 , LieGroupDerivatives) {
-  Rot2 id;
-
-  CHECK_LIE_GROUP_DERIVATIVES(id,id);
-  CHECK_LIE_GROUP_DERIVATIVES(id,T2);
-  CHECK_LIE_GROUP_DERIVATIVES(T2,id);
-  CHECK_LIE_GROUP_DERIVATIVES(T2,T1);
-
+TEST(Rot2, LieGroupDerivatives) {
+  using namespace rot2_example;
+  CHECK_LIE_GROUP_DERIVATIVES(id, id);
+  CHECK_LIE_GROUP_DERIVATIVES(id, T2);
+  CHECK_LIE_GROUP_DERIVATIVES(T2, id);
+  CHECK_LIE_GROUP_DERIVATIVES(T2, T1);
 }
 
 //******************************************************************************
-TEST(Rot2 , ChartDerivatives) {
-  Rot2 id;
-
-  CHECK_CHART_DERIVATIVES(id,id);
-  CHECK_CHART_DERIVATIVES(id,T2);
-  CHECK_CHART_DERIVATIVES(T2,id);
-  CHECK_CHART_DERIVATIVES(T2,T1);
+TEST(Rot2, ChartDerivatives) {
+  using namespace rot2_example;
+  CHECK_CHART_DERIVATIVES(id, id);
+  CHECK_CHART_DERIVATIVES(id, T2);
+  CHECK_CHART_DERIVATIVES(T2, id);
+  CHECK_CHART_DERIVATIVES(T2, T1);
 }
 
 /* ************************************************************************* */

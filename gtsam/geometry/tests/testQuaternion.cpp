@@ -81,12 +81,6 @@ TEST(Quaternion , Compose) {
 }
 
 //******************************************************************************
-Vector3 Q_z_axis(0, 0, 1);
-Q id(Eigen::AngleAxisd(0, Q_z_axis));
-Q R1(Eigen::AngleAxisd(1, Q_z_axis));
-Q R2(Eigen::AngleAxisd(2, Vector3(0, 1, 0)));
-
-//******************************************************************************
 TEST(Quaternion , Between) {
   Vector3 z_axis(0, 0, 1);
   Q q1(Eigen::AngleAxisd(0.2, z_axis));
@@ -108,7 +102,17 @@ TEST(Quaternion , Inverse) {
 }
 
 //******************************************************************************
-TEST(Quaternion , Invariants) {
+namespace q_example {
+Vector3 Q_z_axis(0, 0, 1);
+Q id(Eigen::AngleAxisd(0, Q_z_axis));
+Q R1(Eigen::AngleAxisd(1, Q_z_axis));
+Q R2(Eigen::AngleAxisd(2, Vector3(0, 1, 0)));
+}  // namespace q_example
+
+//******************************************************************************
+TEST(Quaternion, Invariants) {
+  using namespace q_example;
+
   EXPECT(check_group_invariants(id, id));
   EXPECT(check_group_invariants(id, R1));
   EXPECT(check_group_invariants(R2, id));
@@ -121,7 +125,9 @@ TEST(Quaternion , Invariants) {
 }
 
 //******************************************************************************
-TEST(Quaternion , LieGroupDerivatives) {
+TEST(Quaternion, LieGroupDerivatives) {
+  using namespace q_example;
+
   CHECK_LIE_GROUP_DERIVATIVES(id, id);
   CHECK_LIE_GROUP_DERIVATIVES(id, R2);
   CHECK_LIE_GROUP_DERIVATIVES(R2, id);
@@ -129,7 +135,9 @@ TEST(Quaternion , LieGroupDerivatives) {
 }
 
 //******************************************************************************
-TEST(Quaternion , ChartDerivatives) {
+TEST(Quaternion, ChartDerivatives) {
+  using namespace q_example;
+
   CHECK_CHART_DERIVATIVES(id, id);
   CHECK_CHART_DERIVATIVES(id, R2);
   CHECK_CHART_DERIVATIVES(R2, id);
