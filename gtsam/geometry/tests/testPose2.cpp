@@ -796,16 +796,14 @@ TEST(Pose2, align_4) {
 }
 
 //******************************************************************************
-namespace pose2_example {
+namespace {
 Pose2 id;
 Pose2 T1(M_PI / 4.0, Point2(sqrt(0.5), sqrt(0.5)));
 Pose2 T2(M_PI / 2.0, Point2(0.0, 2.0));
-}  // namespace pose2_example
+}  // namespace
 
 //******************************************************************************
 TEST(Pose2, Invariants) {
-  using namespace pose2_example;
-
   EXPECT(check_group_invariants(id, id));
   EXPECT(check_group_invariants(id, T1));
   EXPECT(check_group_invariants(T2, id));
@@ -819,8 +817,6 @@ TEST(Pose2, Invariants) {
 
 //******************************************************************************
 TEST(Pose2, LieGroupDerivatives) {
-  using namespace pose2_example;
-
   CHECK_LIE_GROUP_DERIVATIVES(id, id);
   CHECK_LIE_GROUP_DERIVATIVES(id, T2);
   CHECK_LIE_GROUP_DERIVATIVES(T2, id);
@@ -829,8 +825,6 @@ TEST(Pose2, LieGroupDerivatives) {
 
 //******************************************************************************
 TEST(Pose2, ChartDerivatives) {
-  using namespace pose2_example;
-
   CHECK_CHART_DERIVATIVES(id, id);
   CHECK_CHART_DERIVATIVES(id, T2);
   CHECK_CHART_DERIVATIVES(T2, id);
