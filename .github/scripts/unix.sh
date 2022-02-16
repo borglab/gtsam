@@ -71,6 +71,7 @@ function configure()
       -DGTSAM_USE_SYSTEM_EIGEN=${GTSAM_USE_SYSTEM_EIGEN:-OFF} \
       -DGTSAM_USE_SYSTEM_METIS=${GTSAM_USE_SYSTEM_METIS:-OFF} \
       -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF \
+      -DGTSAM_SINGLE_TEST_EXE=ON \
       -DBOOST_ROOT=$BOOST_ROOT \
       -DBoost_NO_SYSTEM_PATHS=ON \
       -DBoost_ARCHITECTURE=-x64
@@ -91,7 +92,6 @@ function build ()
 {
   export GTSAM_BUILD_EXAMPLES_ALWAYS=ON
   export GTSAM_BUILD_TESTS=OFF
-  export GTSAM_SINGLE_TEST_EXE=ON
 
   configure
 
@@ -109,7 +109,6 @@ function test ()
 {
   export GTSAM_BUILD_EXAMPLES_ALWAYS=OFF
   export GTSAM_BUILD_TESTS=ON
-  export GTSAM_SINGLE_TEST_EXE=ON
 
   configure
 
