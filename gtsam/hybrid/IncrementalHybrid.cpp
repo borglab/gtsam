@@ -22,9 +22,12 @@
 #include <algorithm>
 #include <unordered_set>
 
-void gtsam::IncrementalHybrid::update(gtsam::GaussianHybridFactorGraph graph,
-                                      const gtsam::Ordering &ordering,
-                                      boost::optional<size_t> maxNrLeaves) {
+namespace gtsam {
+
+/* ************************************************************************* */
+void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
+                               const Ordering &ordering,
+                               boost::optional<size_t> maxNrLeaves) {
   // if we are not at the first iteration
   if (hybridBayesNet_) {
     // We add all relevant conditional mixtures on the last continuous variable
@@ -116,3 +119,28 @@ void gtsam::IncrementalHybrid::update(gtsam::GaussianHybridFactorGraph graph,
         prunedConditionalsTree;
   }
 }
+
+/* ************************************************************************* */
+GaussianMixture::shared_ptr IncrementalHybrid::gaussianMixture(
+    size_t index) const {
+  return boost::dynamic_pointer_cast<GaussianMixture>(
+      hybridBayesNet_->at(index));
+}
+
+/* ************************************************************************* */
+const DiscreteFactorGraph &IncrementalHybrid::remainingDiscreteGraph() const {
+  return remainingFactorGraph_->discreteGraph();
+}
+
+/* ************************************************************************* */
+HybridBayesNet::shared_ptr IncrementalHybrid::hybridBayesNet() const {
+  return hybridBayesNet_;
+}
+
+/* ************************************************************************* */
+GaussianHybridFactorGraph::shared_ptr IncrementalHybrid::remainingFactorGraph()
+    const {
+  return remainingFactorGraph_;
+}
+
+}  // namespace gtsam
