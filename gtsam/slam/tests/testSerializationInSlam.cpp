@@ -16,16 +16,17 @@
  *  @date   February 2022
  */
 
-#include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/serializationTestHelpers.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include "smartFactorScenarios.h"
+#include "PinholeFactor.h"
+
 #include <gtsam/slam/SmartProjectionFactor.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/base/serializationTestHelpers.h>
+
+#include <CppUnitLite/TestHarness.h>
 
 #include <boost/assign/std/map.hpp>
 #include <iostream>
-
-#include "smartFactorScenarios.h"
-#include "PinholeFactor.h"
 
 namespace {
 static const double rankTol = 1.0;
