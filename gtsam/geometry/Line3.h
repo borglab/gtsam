@@ -21,6 +21,21 @@
 
 namespace gtsam {
 
+class Line3;
+
+/**
+ * Transform a line from world to camera frame
+ * @param wTc - Pose3 of camera in world frame
+ * @param wL - Line3 in world frame
+ * @param Dpose - OptionalJacobian of transformed line with respect to p
+ * @param Dline -  OptionalJacobian of transformed line with respect to l
+ * @return Transformed line in camera frame
+ */
+GTSAM_EXPORT Line3 transformTo(const Pose3 &wTc, const Line3 &wL,
+                  OptionalJacobian<4, 6> Dpose = boost::none,
+                  OptionalJacobian<4, 4> Dline = boost::none);
+
+
 /**
  * A 3D line (R,a,b) : (Rot3,Scalar,Scalar)
  * @addtogroup geometry
@@ -135,41 +150,6 @@ class GTSAM_EXPORT Line3 {
                            OptionalJacobian<4, 6> Dpose,
                            OptionalJacobian<4, 4> Dline);
 };
-
-/**
- * Transform a line from world to camera frame
- * @param wTc - Pose3 of camera in world frame
- * @param wL - Line3 in world frame
- * @param Dpose - OptionalJacobian of transformed line with respect to p
- * @param Dline -  OptionalJacobian of transformed line with respect to l
- * @return Transformed line in camera frame
- */
-Line3 transformTo(const Pose3 &wTc, const Line3 &wL,
-                  OptionalJacobian<4, 6> Dpose = boost::none,
-                  OptionalJacobian<4, 4> Dline = boost::none) {
-  Rot3 wRc = wTc.rotation();
-  Rot3 cRw = wRc.inverse();
-  Rot3 cRl = cRw * wL.R_;
-
-  Vector2 w_ab;
-  Vector3 t = ((wL.R_).transpose() * wTc.translation());
-  Vector2 c_ab(wL.a_ - t[0], wL.b_ - t[1]);
-
-  if (Dpose) {
-    Matrix3 lRc = (cRl.matrix()).transpose();
-    Dpose->setZero();
-    // rotation
-    Dpose->block<2, 3>(0, 0) = -lRc.block<2, 3>(0, 0);
-    // translation
-    Dpose->block<2, 3>(2, 3) = -lRc.block<2, 3>(0, 0);
-  }
-  if (Dline) {
-    Dline->setIdentity();
-    (*Dline)(0, 3) = -t[2];
-    (*Dline)(1, 2) = t[2];
-  }
-  return Line3(cRl, c_ab[0], c_ab[1]);
-}
 
 template<>
 struct traits<Line3> : public internal::Manifold<Line3> {};
