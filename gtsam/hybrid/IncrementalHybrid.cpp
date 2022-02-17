@@ -29,11 +29,11 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
                                const Ordering &ordering,
                                boost::optional<size_t> maxNrLeaves) {
   // if we are not at the first iteration
-  if (hybridBayesNet_) {
+  if (!hybridBayesNet_.empty()) {
     // We add all relevant conditional mixtures on the last continuous variable
     // in the previous `hybridBayesNet` to the graph
     std::unordered_set<Key> allVars(ordering.begin(), ordering.end());
-    for (auto &&conditional : *hybridBayesNet_) {
+    for (auto &&conditional : hybridBayesNet_) {
       for (auto &key : conditional->frontals()) {
         if (allVars.find(key) != allVars.end()) {
           if (auto gf =
@@ -47,28 +47,26 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
         }
       }
     }
-  } else {
-    // Initialize an empty HybridBayesNet
-    hybridBayesNet_ = boost::make_shared<HybridBayesNet>();
   }
 
   // Eliminate partially.
   HybridBayesNet::shared_ptr bayesNetFragment;
-  std::tie(bayesNetFragment, remainingFactorGraph_) =
-      graph.eliminatePartialSequential(ordering);
+  auto result = graph.eliminatePartialSequential(ordering);
+  bayesNetFragment = result.first;
+  remainingFactorGraph_ = *result.second;
 
   // Add the partial bayes net to the posterior bayes net.
-  hybridBayesNet_->push_back<HybridBayesNet>(*bayesNetFragment);
+  hybridBayesNet_.push_back<HybridBayesNet>(*bayesNetFragment);
 
   // Prune
   if (maxNrLeaves) {
     const auto N = *maxNrLeaves;
 
     const auto lastDensity =
-        boost::dynamic_pointer_cast<GaussianMixture>(hybridBayesNet_->back());
+        boost::dynamic_pointer_cast<GaussianMixture>(hybridBayesNet_.back());
 
     auto discreteFactor = boost::dynamic_pointer_cast<DecisionTreeFactor>(
-        remainingFactorGraph_->discreteGraph().at(0));
+        remainingFactorGraph_.discreteGraph().at(0));
 
     // Let's assume that the structure of the last discrete density will be the
     // same as the last continuous
@@ -115,7 +113,7 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
     GaussianMixture::Factors prunedConditionalsTree(lastDensity->discreteKeys(),
                                                     prunedConditionals);
 
-    hybridBayesNet_->atGaussian(hybridBayesNet_->size() - 1)->factors_ =
+    hybridBayesNet_.atGaussian(hybridBayesNet_.size() - 1)->factors_ =
         prunedConditionalsTree;
   }
 }
@@ -124,21 +122,21 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
 GaussianMixture::shared_ptr IncrementalHybrid::gaussianMixture(
     size_t index) const {
   return boost::dynamic_pointer_cast<GaussianMixture>(
-      hybridBayesNet_->at(index));
+      hybridBayesNet_.at(index));
 }
 
 /* ************************************************************************* */
 const DiscreteFactorGraph &IncrementalHybrid::remainingDiscreteGraph() const {
-  return remainingFactorGraph_->discreteGraph();
+  return remainingFactorGraph_.discreteGraph();
 }
 
 /* ************************************************************************* */
-HybridBayesNet::shared_ptr IncrementalHybrid::hybridBayesNet() const {
+const HybridBayesNet &IncrementalHybrid::hybridBayesNet() const {
   return hybridBayesNet_;
 }
 
 /* ************************************************************************* */
-GaussianHybridFactorGraph::shared_ptr IncrementalHybrid::remainingFactorGraph()
+const GaussianHybridFactorGraph &IncrementalHybrid::remainingFactorGraph()
     const {
   return remainingFactorGraph_;
 }
