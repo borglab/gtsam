@@ -119,11 +119,17 @@ class DCMixtureFactor : public DCFactor {
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     std::cout << (s.empty() ? "" : s + " ");
     std::cout << "(";
-    for (Key key : keys()) {
+    auto contKeys = keys();
+    auto dKeys = discreteKeys();
+    for(DiscreteKey key: dKeys) {
+      auto it = std::find(contKeys.begin(), contKeys.end(), key.first);
+      contKeys.erase(it);
+    }
+    for (Key key : contKeys) {
       std::cout << " " << keyFormatter(key);
     }
     std::cout << ";";
-    for (DiscreteKey key : discreteKeys()) {
+    for (DiscreteKey key : dKeys) {
       std::cout << " " << keyFormatter(key.first);
     }
     std::cout << " ) \n";
