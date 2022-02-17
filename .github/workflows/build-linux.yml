@@ -62,7 +62,7 @@ jobs:
           fi
           sudo apt-get -y update
 
-          sudo apt-get -y install cmake build-essential pkg-config libpython-dev python-numpy libicu-dev
+          sudo apt-get -y install cmake build-essential pkg-config libpython-dev python-numpy libicu-dev libboost-all-dev
 
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
             sudo apt-get install -y g++-${{ matrix.version }} g++-${{ matrix.version }}-multilib
@@ -73,10 +73,6 @@ jobs:
             echo "CC=clang-${{ matrix.version }}" >> $GITHUB_ENV
             echo "CXX=clang++-${{ matrix.version }}" >> $GITHUB_ENV
           fi
-
-      - name: Install Boost
-        run: |
-          bash .github/scripts/boost.sh
 
       - name: Build and Test
         run: bash .github/scripts/unix.sh -t
