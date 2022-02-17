@@ -351,6 +351,3 @@ template <>
 struct traits<CombinedImuFactor> : public Testable<CombinedImuFactor> {};
 
 }  // namespace gtsam
-
-/// Add Boost serialization export key (declaration) for derived class
-BOOST_CLASS_EXPORT_KEY(gtsam::PreintegrationCombinedParams)
