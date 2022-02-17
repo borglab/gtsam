@@ -107,7 +107,7 @@ TEST(DecisionTreeFactor, enumerate) {
 }
 
 /* ************************************************************************* */
-TEST(DiscreteFactorGraph, DotWithNames) {
+TEST(DecisionTreeFactor, DotWithNames) {
   DiscreteKey A(12, 3), B(5, 2);
   DecisionTreeFactor f(A & B, "1 2  3 4  5 6");
   auto formatter = [](Key key) { return key == 12 ? "A" : "B"; };

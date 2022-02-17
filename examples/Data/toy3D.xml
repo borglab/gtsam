@@ -7,7 +7,7 @@
 			<count>2</count>
 			<item_version>1</item_version>
 			<item class_id="3" tracking_level="0" version="1">
-				<px class_id="4" class_name="JacobianFactor" tracking_level="1" version="0" object_id="_0">
+				<px class_id="4" class_name="gtsam::JacobianFactor" tracking_level="1" version="0" object_id="_0">
 					<Base class_id="5" tracking_level="0" version="0">
 						<Base class_id="6" tracking_level="0" version="0">
 							<keys_>
