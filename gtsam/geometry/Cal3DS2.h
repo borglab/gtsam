@@ -21,6 +21,7 @@
 #pragma once
 
 #include <gtsam/geometry/Cal3DS2_Base.h>
+#include <boost/shared_ptr.hpp>
 
 namespace gtsam {
 

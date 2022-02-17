@@ -18,6 +18,7 @@
 #pragma once
 
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/MatrixSerialization.h>
 #include <gtsam/base/FastVector.h>
 
 namespace gtsam {

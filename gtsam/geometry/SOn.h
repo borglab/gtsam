@@ -24,6 +24,8 @@
 #include <gtsam/dllexport.h>
 #include <Eigen/Core>
 
+#include <boost/serialization/nvp.hpp>
+
 #include <iostream> // TODO(frank): how to avoid?
 #include <string>
 #include <type_traits>
