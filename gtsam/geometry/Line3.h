@@ -26,7 +26,7 @@ namespace gtsam {
  * @addtogroup geometry
  * \nosubgrouping
  */
-class Line3 {
+class GTSAM_EXPORT Line3 {
  private:
   Rot3 R_;    // Rotation of line about x and y in world frame
   double a_, b_;  // Intersection of line with the world x-y plane rotated by R_
@@ -146,7 +146,30 @@ class Line3 {
  */
 Line3 transformTo(const Pose3 &wTc, const Line3 &wL,
                   OptionalJacobian<4, 6> Dpose = boost::none,
-                  OptionalJacobian<4, 4> Dline = boost::none);
+                  OptionalJacobian<4, 4> Dline = boost::none) {
+  Rot3 wRc = wTc.rotation();
+  Rot3 cRw = wRc.inverse();
+  Rot3 cRl = cRw * wL.R_;
+
+  Vector2 w_ab;
+  Vector3 t = ((wL.R_).transpose() * wTc.translation());
+  Vector2 c_ab(wL.a_ - t[0], wL.b_ - t[1]);
+
+  if (Dpose) {
+    Matrix3 lRc = (cRl.matrix()).transpose();
+    Dpose->setZero();
+    // rotation
+    Dpose->block<2, 3>(0, 0) = -lRc.block<2, 3>(0, 0);
+    // translation
+    Dpose->block<2, 3>(2, 3) = -lRc.block<2, 3>(0, 0);
+  }
+  if (Dline) {
+    Dline->setIdentity();
+    (*Dline)(0, 3) = -t[2];
+    (*Dline)(1, 2) = t[2];
+  }
+  return Line3(cRl, c_ab[0], c_ab[1]);
+}
 
 template<>
 struct traits<Line3> : public internal::Manifold<Line3> {};
