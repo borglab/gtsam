@@ -34,6 +34,8 @@
 #include <fstream>
 #include <limits>
 #include <iostream>
+#include <iostream>
+#include <vector>
 
 using namespace std;
 
