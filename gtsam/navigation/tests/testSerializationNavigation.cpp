@@ -69,6 +69,7 @@ P getPreintegratedMeasurements() {
 
 /* ************************************************************************* */
 TEST(ImuFactor, serialization) {
+  cout << "ImuFactor start" << endl;
   auto pim = getPreintegratedMeasurements<PreintegratedImuMeasurements>();
 
   EXPECT(equalsObj<PreintegratedImuMeasurements>(pim));
@@ -80,10 +81,12 @@ TEST(ImuFactor, serialization) {
   EXPECT(equalsObj<ImuFactor>(factor));
   EXPECT(equalsXML<ImuFactor>(factor));
   EXPECT(equalsBinary<ImuFactor>(factor));
+  cout << "ImuFactor end" << endl;
 }
 
 /* ************************************************************************* */
 TEST(ImuFactor2, serialization) {
+  cout << "ImuFactor2 start" << endl;
   auto pim = getPreintegratedMeasurements<PreintegratedImuMeasurements>();
 
   ImuFactor2 factor(1, 2, 3, pim);
@@ -91,10 +94,12 @@ TEST(ImuFactor2, serialization) {
   EXPECT(equalsObj<ImuFactor2>(factor));
   EXPECT(equalsXML<ImuFactor2>(factor));
   EXPECT(equalsBinary<ImuFactor2>(factor));
+  cout << "ImuFactor2 end" << endl;
 }
 
 /* ************************************************************************* */
 TEST(CombinedImuFactor, Serialization) {
+  cout << "CombinedImuFactor start" << endl;
   auto pim = getPreintegratedMeasurements<PreintegratedCombinedMeasurements>();
 
   EXPECT(equalsObj<PreintegratedCombinedMeasurements>(pim));
@@ -106,10 +111,12 @@ TEST(CombinedImuFactor, Serialization) {
   EXPECT(equalsObj<CombinedImuFactor>(factor));
   EXPECT(equalsXML<CombinedImuFactor>(factor));
   EXPECT(equalsBinary<CombinedImuFactor>(factor));
+  cout << "CombinedImuFactor end" << endl;
 }
 
 /* ************************************************************************* */
 TEST(Rot3AttitudeFactor, Serialization) {
+  cout << "Rot3AttitudeFactor start" << endl;
   Unit3 nDown(0, 0, -1);
   SharedNoiseModel model = noiseModel::Isotropic::Sigma(2, 0.25);
   Rot3AttitudeFactor factor(0, nDown, model);
@@ -117,10 +124,12 @@ TEST(Rot3AttitudeFactor, Serialization) {
   EXPECT(serializationTestHelpers::equalsObj(factor));
   EXPECT(serializationTestHelpers::equalsXML(factor));
   EXPECT(serializationTestHelpers::equalsBinary(factor));
+  cout << "Rot3AttitudeFactor end" << endl;
 }
 
 /* ************************************************************************* */
 TEST(Pose3AttitudeFactor, Serialization) {
+  cout << "Pose3AttitudeFactor start" << endl;
   Unit3 nDown(0, 0, -1);
   SharedNoiseModel model = noiseModel::Isotropic::Sigma(2, 0.25);
   Pose3AttitudeFactor factor(0, nDown, model);
@@ -128,6 +137,7 @@ TEST(Pose3AttitudeFactor, Serialization) {
   EXPECT(serializationTestHelpers::equalsObj(factor));
   EXPECT(serializationTestHelpers::equalsXML(factor));
   EXPECT(serializationTestHelpers::equalsBinary(factor));
+  cout << "Pose3AttitudeFactor end" << endl;
 }
 
 /* ************************************************************************* */
