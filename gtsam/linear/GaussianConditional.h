@@ -152,6 +152,13 @@ namespace gtsam {
     /** Performs transpose backsubstition in place on values */
     void solveTransposeInPlace(VectorValues& gy) const;
 
+    /** Convert to a likelihood factor by providing value before bar. */
+    JacobianFactor::shared_ptr likelihood(
+        const VectorValues& frontalValues) const;
+
+    /** Single variable version of likelihood. */
+    JacobianFactor::shared_ptr likelihood(const Vector& frontal) const;
+
     /**
      * Sample from conditional, zero parent version
      * Example:

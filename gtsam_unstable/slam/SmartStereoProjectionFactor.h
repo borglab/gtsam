@@ -49,7 +49,7 @@ typedef SmartProjectionParams SmartStereoProjectionParams;
  * If you'd like to store poses in values instead of cameras, use
  * SmartStereoProjectionPoseFactor instead
 */
-class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionFactor
+class SmartStereoProjectionFactor
     : public SmartFactorBase<StereoCamera> {
  private:
 

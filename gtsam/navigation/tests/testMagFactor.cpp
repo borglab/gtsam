@@ -31,7 +31,7 @@ using namespace std;
 using namespace gtsam;
 using namespace GeographicLib;
 
-// *************************************************************************
+namespace {
 // Convert from Mag to ENU
 // ENU Origin is where the plane was in hold next to runway
 // const double lat0 = 33.86998, lon0 = -84.30626, h0 = 274;
@@ -51,10 +51,11 @@ Point3 bias(10, -10, 50);
 Point3 scaled = scale * nM;
 Point3 measured = nRb.inverse() * (scale * nM) + bias;
 
-double s(scale * nM.norm());
+double s(scale* nM.norm());
 Unit3 dir(nM);
 
 SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 0.25);
+}  // namespace
 
 using boost::none;
 

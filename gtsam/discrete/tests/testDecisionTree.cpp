@@ -17,17 +17,19 @@
  * @date    Jan 30, 2012
  */
 
-#include <boost/assign/std/vector.hpp>
-using namespace boost::assign;
-
-#include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/discrete/Signature.h>
-
 // #define DT_DEBUG_MEMORY
 // #define DT_NO_PRUNING
 #define DISABLE_DOT
 #include <gtsam/discrete/DecisionTree-inl.h>
+
+#include <gtsam/base/Testable.h>
+#include <gtsam/discrete/Signature.h>
+
+#include <CppUnitLite/TestHarness.h>
+
+#include <boost/assign/std/vector.hpp>
+using namespace boost::assign;
+
 using namespace std;
 using namespace gtsam;
 
@@ -148,9 +150,9 @@ TEST(DecisionTree, example) {
   DOT(notb);
 
   // Check supplying empty trees yields an exception
-  CHECK_EXCEPTION(apply(empty, &Ring::id), std::runtime_error);
-  CHECK_EXCEPTION(apply(empty, a, &Ring::mul), std::runtime_error);
-  CHECK_EXCEPTION(apply(a, empty, &Ring::mul), std::runtime_error);
+  CHECK_EXCEPTION(gtsam::apply(empty, &Ring::id), std::runtime_error);
+  CHECK_EXCEPTION(gtsam::apply(empty, a, &Ring::mul), std::runtime_error);
+  CHECK_EXCEPTION(gtsam::apply(a, empty, &Ring::mul), std::runtime_error);
 
   // apply, two nodes, in natural order
   DT anotb = apply(a, notb, &Ring::mul);

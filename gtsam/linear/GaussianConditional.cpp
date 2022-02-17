@@ -225,6 +225,50 @@ namespace gtsam {
   }
 
   /* ************************************************************************ */
+  JacobianFactor::shared_ptr GaussianConditional::likelihood(
+      const VectorValues& frontalValues) const {
+    // Error is |Rx - (d - Sy - Tz - ...)|^2
+    // so when we instantiate x (which has to be completely known) we beget:
+    // |Sy + Tz + ... - (d - Rx)|^2
+    // The noise model just transfers over!
+
+    // Get frontalValues as vector
+    const Vector x =
+        frontalValues.vector(KeyVector(beginFrontals(), endFrontals()));
+
+    // Copy the augmented Jacobian matrix:
+    auto newAb = Ab_;
+
+    // Restrict view to parent blocks
+    newAb.firstBlock() += nrFrontals_;
+
+    // Update right-hand-side (last column)
+    auto last = newAb.matrix().cols() - 1;
+    const auto RR = R().triangularView<Eigen::Upper>();
+    newAb.matrix().col(last) -= RR * x;
+
+    // The keys now do not include the frontal keys:
+    KeyVector newKeys;
+    newKeys.reserve(nrParents());
+    for (auto&& key : parents()) newKeys.push_back(key);
+
+    // Hopefully second newAb copy below is optimized out...
+    return boost::make_shared<JacobianFactor>(newKeys, newAb, model_);
+  }
+
+  /* **************************************************************************/
+  JacobianFactor::shared_ptr GaussianConditional::likelihood(
+      const Vector& frontal) const {
+    if (nrFrontals() != 1)
+      throw std::invalid_argument(
+          "GaussianConditional Single value likelihood can only be invoked on "
+          "single-variable conditional");
+    VectorValues values;
+    values.insert(keys_[0], frontal);
+    return likelihood(values);
+  }
+
+  /* ************************************************************************ */
   VectorValues GaussianConditional::sample(const VectorValues& parentsValues,
                                            std::mt19937_64* rng) const {
     if (nrFrontals() != 1) {
