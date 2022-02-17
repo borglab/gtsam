@@ -17,8 +17,6 @@
  * @date    Jan 2021
  */
 
-#include "Switching.h"
-
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/discrete/DiscreteDistribution.h>
 #include <gtsam/hybrid/DCFactor.h>
@@ -29,6 +27,8 @@
 #include <gtsam/nonlinear/PriorFactor.h>
 
 #include <numeric>
+
+#include "Switching.h"
 
 // Include for test suite
 #include <CppUnitLite/TestHarness.h>
@@ -91,11 +91,11 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
 
   auto hybridBayesNet2 = incrementalHybrid.hybridBayesNet_;
   CHECK(hybridBayesNet2);
-  EXPECT_LONGS_EQUAL(2, hybridBayesNet2->size());
-  EXPECT(hybridBayesNet2->at(0)->frontals() == KeyVector{X(2)});
-  EXPECT(hybridBayesNet2->at(0)->parents() == KeyVector({X(3), M(2), M(1)}));
-  EXPECT(hybridBayesNet2->at(1)->frontals() == KeyVector{X(3)});
-  EXPECT(hybridBayesNet2->at(1)->parents() == KeyVector({M(2), M(1)}));
+  EXPECT_LONGS_EQUAL(4, hybridBayesNet2->size());
+  EXPECT(hybridBayesNet2->at(2)->frontals() == KeyVector{X(2)});
+  EXPECT(hybridBayesNet2->at(2)->parents() == KeyVector({X(3), M(2), M(1)}));
+  EXPECT(hybridBayesNet2->at(3)->frontals() == KeyVector{X(3)});
+  EXPECT(hybridBayesNet2->at(3)->parents() == KeyVector({M(2), M(1)}));
 
   auto remainingFactorGraph2 = incrementalHybrid.remainingFactorGraph_;
   CHECK(remainingFactorGraph2);
@@ -117,16 +117,15 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
       switching.linearizedFactorGraph.eliminatePartialSequential(ordering);
 
   // The densities on X(1) should be the same
-  EXPECT(
-      assert_equal(*(hybridBayesNet->atGaussian(0)),
-                   *(expectedHybridBayesNet->atGaussian(0))));
+  EXPECT(assert_equal(*(hybridBayesNet->atGaussian(0)),
+                      *(expectedHybridBayesNet->atGaussian(0))));
 
   // The densities on X(2) should be the same
-  EXPECT(assert_equal(*(hybridBayesNet2->atGaussian(0)),
+  EXPECT(assert_equal(*(hybridBayesNet2->atGaussian(2)),
                       *(expectedHybridBayesNet->atGaussian(1))));
 
   // The densities on X(3) should be the same
-  EXPECT(assert_equal(*(hybridBayesNet2->atGaussian(1)),
+  EXPECT(assert_equal(*(hybridBayesNet2->atGaussian(3)),
                       *(expectedHybridBayesNet->atGaussian(2))));
 
   // we only do the manual continuous elimination for 0,0
@@ -236,7 +235,7 @@ TEST(DCGaussianElimination, Approx_inference) {
   EXPECT(discreteFactor_m1.keys() == KeyVector({M(3), M(2), M(1)}));
 
   // Check number of elements equal to zero
-  auto count = [](const double& value, int count) {
+  auto count = [](const double &value, int count) {
     return value > 0 ? count + 1 : count;
   };
   EXPECT_LONGS_EQUAL(5, discreteFactor_m1.fold(count, 0));
@@ -246,7 +245,7 @@ TEST(DCGaussianElimination, Approx_inference) {
    * factor 1:  [x2 | x3 m2 m1 ], 4 components
    * factor 2:  [x3 | x4 m3 m2 m1 ], 8 components
    * factor 3:  [x4 | m3 m2 m1 ], 8 components
-  */
+   */
   auto hybridBayesNet = incrementalHybrid.hybridBayesNet_;
 
   CHECK(hybridBayesNet);
@@ -258,8 +257,8 @@ TEST(DCGaussianElimination, Approx_inference) {
 
   auto &lastDensity = *(hybridBayesNet->atGaussian(3));
   auto &unprunedLastDensity = *(unprunedHybridBayesNet->atGaussian(3));
-  std::vector<std::pair<DiscreteValues, double>>
-      assignments = discreteFactor_m1.enumerate();
+  std::vector<std::pair<DiscreteValues, double>> assignments =
+      discreteFactor_m1.enumerate();
   // Loop over all assignments and check the pruned components
   for (auto &&av : assignments) {
     const DiscreteValues &assignment = av.first;
@@ -325,7 +324,6 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_approximate) {
   EXPECT_LONGS_EQUAL(10, actualBayesNet.atGaussian(0)->nrComponents());
   EXPECT_LONGS_EQUAL(5, actualBayesNet.atGaussian(1)->nrComponents());
 }
-
 
 /* ************************************************************************* */
 int main() {
