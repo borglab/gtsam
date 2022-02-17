@@ -384,6 +384,7 @@ boost::shared_ptr<Sampler> createSampler(const SharedNoiseModel &model) {
 /* ************************************************************************* */
 // Implementation of parseMeasurements for Pose2
 template <>
+GTSAM_EXPORT
 std::vector<BinaryMeasurement<Pose2>>
 parseMeasurements(const std::string &filename,
                   const noiseModel::Diagonal::shared_ptr &model,
@@ -411,6 +412,7 @@ static BinaryMeasurement<Rot2> convert(const BinaryMeasurement<Pose2> &p) {
 }
 
 template <>
+GTSAM_EXPORT
 std::vector<BinaryMeasurement<Rot2>>
 parseMeasurements(const std::string &filename,
                   const noiseModel::Diagonal::shared_ptr &model,
@@ -868,6 +870,7 @@ template <> struct ParseMeasurement<Pose3> {
 /* ************************************************************************* */
 // Implementation of parseMeasurements for Pose3
 template <>
+GTSAM_EXPORT
 std::vector<BinaryMeasurement<Pose3>>
 parseMeasurements(const std::string &filename,
                   const noiseModel::Diagonal::shared_ptr &model,
@@ -895,6 +898,7 @@ static BinaryMeasurement<Rot3> convert(const BinaryMeasurement<Pose3> &p) {
 }
 
 template <>
+GTSAM_EXPORT
 std::vector<BinaryMeasurement<Rot3>>
 parseMeasurements(const std::string &filename,
                   const noiseModel::Diagonal::shared_ptr &model,
