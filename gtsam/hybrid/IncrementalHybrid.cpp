@@ -18,8 +18,9 @@
  */
 
 #include <gtsam/hybrid/IncrementalHybrid.h>
-#include <unordered_set>
+
 #include <algorithm>
+#include <unordered_set>
 
 void gtsam::IncrementalHybrid::update(gtsam::GaussianHybridFactorGraph graph,
                                       const gtsam::Ordering &ordering,
@@ -32,22 +33,29 @@ void gtsam::IncrementalHybrid::update(gtsam::GaussianHybridFactorGraph graph,
     for (auto &&conditional : *hybridBayesNet_) {
       for (auto &key : conditional->frontals()) {
         if (allVars.find(key) != allVars.end()) {
-          if (auto
-              gf = boost::dynamic_pointer_cast<GaussianMixture>(conditional)) {
+          if (auto gf =
+                  boost::dynamic_pointer_cast<GaussianMixture>(conditional)) {
             graph.push_back(gf);
-          } else if (auto df =
-              boost::dynamic_pointer_cast<DiscreteConditional>(conditional)) {
+          } else if (auto df = boost::dynamic_pointer_cast<DiscreteConditional>(
+                         conditional)) {
             graph.push_back(df);
           }
           break;
         }
       }
     }
+  } else {
+    // Initialize an empty HybridBayesNet
+    hybridBayesNet_ = boost::make_shared<HybridBayesNet>();
   }
 
   // Eliminate partially.
-  std::tie(hybridBayesNet_, remainingFactorGraph_) =
+  HybridBayesNet::shared_ptr bayesNetFragment;
+  std::tie(bayesNetFragment, remainingFactorGraph_) =
       graph.eliminatePartialSequential(ordering);
+
+  // Add the partial bayes net to the posterior bayes net.
+  hybridBayesNet_->push_back<HybridBayesNet>(*bayesNetFragment);
 
   // Prune
   if (maxNrLeaves) {
@@ -62,17 +70,15 @@ void gtsam::IncrementalHybrid::update(gtsam::GaussianHybridFactorGraph graph,
     // Let's assume that the structure of the last discrete density will be the
     // same as the last continuous
     std::vector<double> probabilities;
-    // TODO(fan): The number of probabilities can be lower than the actual number of choices
-    discreteFactor->visit([&](const double &prob) {
-      probabilities.emplace_back(prob);
-    });
+    // TODO(fan): The number of probabilities can be lower than the actual
+    // number of choices
+    discreteFactor->visit(
+        [&](const double &prob) { probabilities.emplace_back(prob); });
 
     if (probabilities.size() < N) return;
 
-    std::nth_element(probabilities.begin(),
-                     probabilities.begin() + N,
-                     probabilities.end(),
-                     std::greater<double>{});
+    std::nth_element(probabilities.begin(), probabilities.begin() + N,
+                     probabilities.end(), std::greater<double>{});
 
     auto thresholdValue = probabilities[N - 1];
 
@@ -83,14 +89,16 @@ void gtsam::IncrementalHybrid::update(gtsam::GaussianHybridFactorGraph graph,
     DecisionTree<Key, double> thresholded(*discreteFactor, threshold);
 
     // Create a new factor with pruned tree
-    // DecisionTreeFactor newFactor(discreteFactor->discreteKeys(), thresholded);
+    // DecisionTreeFactor newFactor(discreteFactor->discreteKeys(),
+    // thresholded);
     discreteFactor->root_ = thresholded.root_;
 
-    std::vector<std::pair<DiscreteValues, double>> assignments = discreteFactor->enumerate();
+    std::vector<std::pair<DiscreteValues, double>> assignments =
+        discreteFactor->enumerate();
 
     // Loop over all assignments and create a vector of GaussianConditionals
     std::vector<GaussianFactor::shared_ptr> prunedConditionals;
-    for (auto && av : assignments) {
+    for (auto &&av : assignments) {
       const DiscreteValues &assignment = av.first;
       const double value = av.second;
 
@@ -101,11 +109,10 @@ void gtsam::IncrementalHybrid::update(gtsam::GaussianHybridFactorGraph graph,
       }
     }
 
-    GaussianMixture::Factors prunedConditionalsTree(
-        lastDensity->discreteKeys(),
-        prunedConditionals
-    );
+    GaussianMixture::Factors prunedConditionalsTree(lastDensity->discreteKeys(),
+                                                    prunedConditionals);
 
-    hybridBayesNet_->atGaussian(hybridBayesNet_->size() - 1)->factors_ = prunedConditionalsTree;
+    hybridBayesNet_->atGaussian(hybridBayesNet_->size() - 1)->factors_ =
+        prunedConditionalsTree;
   }
 }

@@ -37,7 +37,8 @@ template class EliminateableFactorGraph<GaussianHybridFactorGraph>;
 
 void GaussianHybridFactorGraph::print(
     const string& str, const gtsam::KeyFormatter& keyFormatter) const {
-  Base::print(str, keyFormatter);
+  std::cout << (str.empty() ? str : str + " ") << std::endl;
+  Base::print("", keyFormatter);
   factorGraph_.print("GaussianGraph", keyFormatter);
 }
 
@@ -100,19 +101,20 @@ ostream& operator<<(ostream& os,
 }
 
 // The function type that does a single elimination step on a variable.
-pair<AbstractConditional::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid(
-    const GaussianHybridFactorGraph& factors, const Ordering& ordering) {
+pair<AbstractConditional::shared_ptr, boost::shared_ptr<Factor>>
+EliminateHybrid(const GaussianHybridFactorGraph& factors,
+                const Ordering& ordering) {
   // STEP 1: SUM
   // Create a new decision tree with all factors gathered at leaves.
   auto sum = factors.sum();
 
   // zero out all sums with null ptrs
-  auto zeroOut = [](const GaussianFactorGraph &gfg) {
-    bool hasNull = std::any_of(gfg.begin(),
-                               gfg.end(),
-                               [](const GaussianFactor::shared_ptr &ptr) { return !ptr; });
+  auto zeroOut = [](const GaussianFactorGraph& gfg) {
+    bool hasNull =
+        std::any_of(gfg.begin(), gfg.end(),
+                    [](const GaussianFactor::shared_ptr& ptr) { return !ptr; });
 
-    return hasNull?GaussianFactorGraph():gfg;
+    return hasNull ? GaussianFactorGraph() : gfg;
   };
 
   // TODO(fan): Now let's assume that all continuous will be eliminated first!
@@ -123,8 +125,8 @@ pair<AbstractConditional::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid
     dfg.push_back(factors.discreteGraph());
 
     auto dbn = EliminateForMPE(dfg, ordering);
-    auto &df = dbn.first;
-    auto &newFactor = dbn.second;
+    auto& df = dbn.first;
+    auto& newFactor = dbn.second;
     return {df, newFactor};
   }
 
@@ -140,17 +142,17 @@ pair<AbstractConditional::shared_ptr, boost::shared_ptr<Factor>> EliminateHybrid
 
   KeyVector keysOfEliminated;  // Not the ordering
   KeyVector keysOfSeparator;   // TODO(frank): Is this just (keys - ordering)?
-  auto eliminate =
-      [&](const GaussianFactorGraph &graph) -> GaussianFactorGraph::EliminationResult {
-        if (graph.empty()) return {nullptr, nullptr};
-        auto result = EliminatePreferCholesky(graph, ordering);
-        if (keysOfEliminated.empty())
-          keysOfEliminated =
-              result.first->keys();  // Initialize the keysOfEliminated to be the
-        // keysOfEliminated of the GaussianConditional
-        if (keysOfSeparator.empty()) keysOfSeparator = result.second->keys();
-        return result;
-      };
+  auto eliminate = [&](const GaussianFactorGraph& graph)
+      -> GaussianFactorGraph::EliminationResult {
+    if (graph.empty()) return {nullptr, nullptr};
+    auto result = EliminatePreferCholesky(graph, ordering);
+    if (keysOfEliminated.empty())
+      keysOfEliminated =
+          result.first->keys();  // Initialize the keysOfEliminated to be the
+    // keysOfEliminated of the GaussianConditional
+    if (keysOfSeparator.empty()) keysOfSeparator = result.second->keys();
+    return result;
+  };
   DecisionTree<Key, Pair> eliminationResults(sum, eliminate);
 
   // STEP 3: Create result

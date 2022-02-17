@@ -188,6 +188,17 @@ class HybridFactorGraph : public FactorGraph<Factor> {
   /// The total number of factors in the DC factor graph.
   size_t nrDcFactors() const { return dcGraph_.size(); }
 
+  /** Directly resize the number of factors in the graph. If the new size is
+   * less than the original, factors at the end will be removed.  If the new
+   * size is larger than the original, null factors will be appended.
+   */
+  void resize(size_t size) override {
+    Base::resize(size);
+    factorGraph_.resize(size);
+    discreteGraph_.resize(size);
+    dcGraph_.resize(size);
+  }
+
   /// Get all the discrete keys in the hybrid factor graph.
   virtual DiscreteKeys discreteKeys() const {
     DiscreteKeys result;

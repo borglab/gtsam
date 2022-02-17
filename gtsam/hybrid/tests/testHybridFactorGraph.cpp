@@ -18,8 +18,6 @@
  * @date    December 2021
  */
 
-#include "Switching.h"
-
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/utilities.h>
 #include <gtsam/discrete/DiscreteBayesNet.h>
@@ -34,6 +32,8 @@
 #include <gtsam/slam/BetweenFactor.h>
 
 #include <numeric>
+
+#include "Switching.h"
 
 // Include for test suite
 #include <CppUnitLite/TestHarness.h>
@@ -72,6 +72,75 @@ TEST(HybridFactorGraph, GaussianFactorGraph) {
   dcmfg.push_back(ghfg.gaussianGraph().begin(), ghfg.gaussianGraph().end());
 
   EXPECT_LONGS_EQUAL(2, dcmfg.gaussianGraph().size());
+}
+
+/* ************************************************************************** */
+/// Test that the resize method works correctly for a
+/// NonlinearHybridFactorGraph.
+TEST(NonlinearHybridFactorGraph, Resize) {
+  NonlinearHybridFactorGraph fg;
+  auto nonlinearFactor = boost::make_shared<BetweenFactor<double>>();
+  fg.push_back(nonlinearFactor);
+
+  auto discreteFactor = boost::make_shared<DecisionTreeFactor>();
+  fg.push_back(discreteFactor);
+
+  auto dcFactor = boost::make_shared<DCMixtureFactor<MotionModel>>();
+  fg.push_back(dcFactor);
+
+  EXPECT_LONGS_EQUAL(fg.dcGraph().size(), 1);
+  EXPECT_LONGS_EQUAL(fg.discreteGraph().size(), 1);
+  EXPECT_LONGS_EQUAL(fg.nonlinearGraph().size(), 1);
+
+  EXPECT_LONGS_EQUAL(fg.size(), 3);
+
+  fg.resize(0);
+  EXPECT_LONGS_EQUAL(fg.dcGraph().size(), 0);
+  EXPECT_LONGS_EQUAL(fg.discreteGraph().size(), 0);
+  EXPECT_LONGS_EQUAL(fg.nonlinearGraph().size(), 0);
+
+  EXPECT_LONGS_EQUAL(fg.size(), 0);
+}
+
+/* ************************************************************************** */
+/// Test that the resize method works correctly for a
+/// GaussianHybridFactorGraph.
+TEST(GaussianHybridFactorGraph, Resize) {
+  NonlinearHybridFactorGraph nhfg;
+  auto nonlinearFactor = boost::make_shared<BetweenFactor<double>>(
+      X(0), X(1), 0.0, Isotropic::Sigma(1, 0.1));
+  nhfg.push_back(nonlinearFactor);
+  auto discreteFactor = boost::make_shared<DecisionTreeFactor>();
+  nhfg.push_back(discreteFactor);
+
+  KeyVector contKeys = {X(0), X(1)};
+  auto noise_model = noiseModel::Isotropic::Sigma(1, 1.0);
+  auto still = boost::make_shared<MotionModel>(X(0), X(1), 0.0, noise_model),
+       moving = boost::make_shared<MotionModel>(X(0), X(1), 1.0, noise_model);
+  std::vector<MotionModel::shared_ptr> components = {still, moving};
+  auto dcFactor = boost::make_shared<DCMixtureFactor<MotionModel>>(
+      contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, components);
+  nhfg.push_back(dcFactor);
+
+  Values linearizationPoint;
+  linearizationPoint.insert<double>(X(0), 0);
+  linearizationPoint.insert<double>(X(1), 1);
+
+  // Generate `GaussianHybridFactorGraph` by linearizing
+  GaussianHybridFactorGraph fg = nhfg.linearize(linearizationPoint);
+
+  EXPECT_LONGS_EQUAL(fg.dcGraph().size(), 1);
+  EXPECT_LONGS_EQUAL(fg.discreteGraph().size(), 1);
+  EXPECT_LONGS_EQUAL(fg.gaussianGraph().size(), 1);
+
+  EXPECT_LONGS_EQUAL(fg.size(), 3);
+
+  fg.resize(0);
+  EXPECT_LONGS_EQUAL(fg.dcGraph().size(), 0);
+  EXPECT_LONGS_EQUAL(fg.discreteGraph().size(), 0);
+  EXPECT_LONGS_EQUAL(fg.gaussianGraph().size(), 0);
+
+  EXPECT_LONGS_EQUAL(fg.size(), 0);
 }
 
 /* ****************************************************************************
@@ -278,7 +347,8 @@ TEST(DCGaussianElimination, EliminateHybrid_2_Variable) {
   std::tie(abstractConditionalMixture, factorOnModes) =
       EliminateHybrid(factors, ordering);
 
-  auto gaussianConditionalMixture = dynamic_pointer_cast<GaussianMixture>(abstractConditionalMixture);
+  auto gaussianConditionalMixture =
+      dynamic_pointer_cast<GaussianMixture>(abstractConditionalMixture);
 
   CHECK(gaussianConditionalMixture);
   EXPECT_LONGS_EQUAL(
@@ -367,11 +437,11 @@ TEST_UNSAFE(HybridFactorGraph, Partial_Elimination) {
   //  GTSAM_PRINT(*remainingFactorGraph);  // HybridFactorGraph
   EXPECT_LONGS_EQUAL(3, remainingFactorGraph->size());
   EXPECT(remainingFactorGraph->discreteGraph().at(0)->keys() ==
-      KeyVector({M(1)}));
+         KeyVector({M(1)}));
   EXPECT(remainingFactorGraph->discreteGraph().at(1)->keys() ==
-      KeyVector({M(2), M(1)}));
+         KeyVector({M(2), M(1)}));
   EXPECT(remainingFactorGraph->discreteGraph().at(2)->keys() ==
-      KeyVector({M(2), M(1)}));
+         KeyVector({M(2), M(1)}));
 }
 
 /* ****************************************************************************/
@@ -425,13 +495,13 @@ TEST_UNSAFE(HybridFactorGraph, Full_Elimination) {
   // P(m1 | m2)
   EXPECT(hybridBayesNet->at(3)->frontals() == KeyVector{M(1)});
   EXPECT(hybridBayesNet->at(3)->parents() == KeyVector({M(2)}));
-  EXPECT(dynamic_pointer_cast<DiscreteConditional>(hybridBayesNet->at(3))->equals(
-      *discreteBayesNet.at(0)));
+  EXPECT(dynamic_pointer_cast<DiscreteConditional>(hybridBayesNet->at(3))
+             ->equals(*discreteBayesNet.at(0)));
   // P(m2)
   EXPECT(hybridBayesNet->at(4)->frontals() == KeyVector{M(2)});
   EXPECT_LONGS_EQUAL(0, hybridBayesNet->at(4)->nrParents());
-  EXPECT(dynamic_pointer_cast<DiscreteConditional>(hybridBayesNet->at(4))->equals(
-      *discreteBayesNet.at(1)));
+  EXPECT(dynamic_pointer_cast<DiscreteConditional>(hybridBayesNet->at(4))
+             ->equals(*discreteBayesNet.at(1)));
 }
 
 /* ****************************************************************************/
@@ -452,20 +522,28 @@ TEST(HybridFactorGraph, Printing) {
       linearizedFactorGraph.eliminatePartialSequential(ordering);
 
   string expected_hybridFactorGraph =
-      "size: 8\nDiscreteFactorGraph\n"
+      "\nsize: 8\nDiscreteFactorGraph\n"
       "size: 2\nfactor 0:  P( m1 ):\n"
       " Leaf  0.5\n\nfactor 1:  P( m2 | m1 ):\n"
       " Choice(m2) \n 0 Choice(m1) \n 0 0 Leaf 0.3333\n 0 1 Leaf  0.6\n"
       " 1 Choice(m1) \n 1 0 Leaf 0.6667\n 1 1 Leaf  0.4\n\nDCFactorGraph \n"
-      "size: 2\nfactor 0:  [ x1 x2; m1 ]{\n Choice(m1) \n 0 Leaf Jacobian factor on 2 keys: \n"
-      "  A[x1] = [\n\t-1\n]\n  A[x2] = [\n\t1\n]\n  b = [ -1 ]\n  No noise model\n\n\n"
-      " 1 Leaf Jacobian factor on 2 keys: \n  A[x1] = [\n\t-1\n]\n  A[x2] = [\n\t1\n]\n  b = [ -0 ]\n"
+      "size: 2\nfactor 0:  [ x1 x2; m1 ]{\n Choice(m1) \n 0 Leaf Jacobian "
+      "factor on 2 keys: \n"
+      "  A[x1] = [\n\t-1\n]\n  A[x2] = [\n\t1\n]\n  b = [ -1 ]\n  No noise "
+      "model\n\n\n"
+      " 1 Leaf Jacobian factor on 2 keys: \n  A[x1] = [\n\t-1\n]\n  A[x2] = "
+      "[\n\t1\n]\n  b = [ -0 ]\n"
       "  No noise model\n\n\n}\nfactor 1:  [ x2 x3; m2 ]{\n Choice(m2) \n"
-      " 0 Leaf Jacobian factor on 2 keys: \n  A[x2] = [\n\t-1\n]\n  A[x3] = [\n\t1\n]\n  b = [ -1 ]\n"
-      "  No noise model\n\n\n 1 Leaf Jacobian factor on 2 keys: \n  A[x2] = [\n\t-1\n]\n  A[x3] = [\n\t1\n]\n"
-      "  b = [ -0 ]\n  No noise model\n\n\n}\nGaussianGraph \nsize: 4\nfactor 0: \n  A[x1] = [\n\t10\n]\n"
-      "  b = [ -10 ]\n  No noise model\nfactor 1: \n  A[x1] = [\n\t10\n]\n  b = [ -10 ]\n  No noise model\n"
-      "factor 2: \n  A[x2] = [\n\t10\n]\n  b = [ -10 ]\n  No noise model\nfactor 3: \n  A[x3] = [\n\t10\n]\n"
+      " 0 Leaf Jacobian factor on 2 keys: \n  A[x2] = [\n\t-1\n]\n  A[x3] = "
+      "[\n\t1\n]\n  b = [ -1 ]\n"
+      "  No noise model\n\n\n 1 Leaf Jacobian factor on 2 keys: \n  A[x2] = "
+      "[\n\t-1\n]\n  A[x3] = [\n\t1\n]\n"
+      "  b = [ -0 ]\n  No noise model\n\n\n}\nGaussianGraph \nsize: 4\nfactor "
+      "0: \n  A[x1] = [\n\t10\n]\n"
+      "  b = [ -10 ]\n  No noise model\nfactor 1: \n  A[x1] = [\n\t10\n]\n  b "
+      "= [ -10 ]\n  No noise model\n"
+      "factor 2: \n  A[x2] = [\n\t10\n]\n  b = [ -10 ]\n  No noise "
+      "model\nfactor 3: \n  A[x3] = [\n\t10\n]\n"
       "  b = [ -10 ]\n  No noise model\n";
   EXPECT(assert_print_equal(expected_hybridFactorGraph, linearizedFactorGraph));
 
