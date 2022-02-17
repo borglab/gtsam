@@ -39,7 +39,7 @@ class DCFactorGraph : public FactorGraph<DCFactor> {
       }
     }
 
-    // STL magic to remove duplicate keys
+    // STL trick to remove duplicate keys
     std::sort(result.begin(), result.end());
     result.erase(std::unique(result.begin(), result.end()), result.end());
 

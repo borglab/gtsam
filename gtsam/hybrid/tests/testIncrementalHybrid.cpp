@@ -92,16 +92,16 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
   EXPECT_LONGS_EQUAL(3, hybridBayesNet2.size());
   // hybridBayesNet2.print();
   EXPECT(hybridBayesNet2.at(1)->frontals() == KeyVector{X(2)});
-  EXPECT(hybridBayesNet2.at(1)->parents() == KeyVector({X(3), M(2), M(1)}));
+  EXPECT(hybridBayesNet2.at(1)->parents() == KeyVector({X(3), M(1), M(2)}));
   EXPECT(hybridBayesNet2.at(2)->frontals() == KeyVector{X(3)});
-  EXPECT(hybridBayesNet2.at(2)->parents() == KeyVector({M(2), M(1)}));
+  EXPECT(hybridBayesNet2.at(2)->parents() == KeyVector({M(1), M(2)}));
 
   auto remainingFactorGraph2 = incrementalHybrid.remainingFactorGraph();
   EXPECT_LONGS_EQUAL(1, remainingFactorGraph2.size());
 
   auto discreteFactor = dynamic_pointer_cast<DecisionTreeFactor>(
       remainingFactorGraph2.discreteGraph().at(0));
-  EXPECT(discreteFactor->keys() == KeyVector({M(2), M(1)}));
+  EXPECT(discreteFactor->keys() == KeyVector({M(1), M(2)}));
 
   ordering.clear();
   ordering += X(1);
@@ -229,7 +229,7 @@ TEST(DCGaussianElimination, Approx_inference) {
 
   auto discreteFactor_m1 = *dynamic_pointer_cast<DecisionTreeFactor>(
       remainingFactorGraph.discreteGraph().at(0));
-  EXPECT(discreteFactor_m1.keys() == KeyVector({M(3), M(2), M(1)}));
+  EXPECT(discreteFactor_m1.keys() == KeyVector({M(1), M(2), M(3)}));
 
   // Check number of elements equal to zero
   auto count = [](const double &value, int count) {

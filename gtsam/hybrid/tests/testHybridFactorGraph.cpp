@@ -429,9 +429,9 @@ TEST_UNSAFE(HybridFactorGraph, Partial_Elimination) {
   EXPECT(hybridBayesNet->at(0)->frontals() == KeyVector{X(1)});
   EXPECT(hybridBayesNet->at(0)->parents() == KeyVector({X(2), M(1)}));
   EXPECT(hybridBayesNet->at(1)->frontals() == KeyVector{X(2)});
-  EXPECT(hybridBayesNet->at(1)->parents() == KeyVector({X(3), M(2), M(1)}));
+  EXPECT(hybridBayesNet->at(1)->parents() == KeyVector({X(3), M(1), M(2)}));
   EXPECT(hybridBayesNet->at(2)->frontals() == KeyVector{X(3)});
-  EXPECT(hybridBayesNet->at(2)->parents() == KeyVector({M(2), M(1)}));
+  EXPECT(hybridBayesNet->at(2)->parents() == KeyVector({M(1), M(2)}));
 
   CHECK(remainingFactorGraph);
   //  GTSAM_PRINT(*remainingFactorGraph);  // HybridFactorGraph
@@ -441,7 +441,7 @@ TEST_UNSAFE(HybridFactorGraph, Partial_Elimination) {
   EXPECT(remainingFactorGraph->discreteGraph().at(1)->keys() ==
          KeyVector({M(2), M(1)}));
   EXPECT(remainingFactorGraph->discreteGraph().at(2)->keys() ==
-         KeyVector({M(2), M(1)}));
+         KeyVector({M(1), M(2)}));
 }
 
 /* ****************************************************************************/
@@ -488,10 +488,10 @@ TEST_UNSAFE(HybridFactorGraph, Full_Elimination) {
   EXPECT(hybridBayesNet->at(0)->parents() == KeyVector({X(2), M(1)}));
   // p(x2 | x3, m1, m2)
   EXPECT(hybridBayesNet->at(1)->frontals() == KeyVector{X(2)});
-  EXPECT(hybridBayesNet->at(1)->parents() == KeyVector({X(3), M(2), M(1)}));
+  EXPECT(hybridBayesNet->at(1)->parents() == KeyVector({X(3), M(1), M(2)}));
   // p(x3 | m1, m2)
   EXPECT(hybridBayesNet->at(2)->frontals() == KeyVector{X(3)});
-  EXPECT(hybridBayesNet->at(2)->parents() == KeyVector({M(2), M(1)}));
+  EXPECT(hybridBayesNet->at(2)->parents() == KeyVector({M(1), M(2)}));
   // P(m1 | m2)
   EXPECT(hybridBayesNet->at(3)->frontals() == KeyVector{M(1)});
   EXPECT(hybridBayesNet->at(3)->parents() == KeyVector({M(2)}));
@@ -569,7 +569,7 @@ factor 0:  GaussianMixture [x1 | x2 m1 ]{
 
 
 }
-factor 1:  GaussianMixture [x2 | x3 m2 m1 ]{
+factor 1:  GaussianMixture [x2 | x3 m1 m2 ]{
  Choice(m2) 
  0 Choice(m1) 
  0 0 Leaf Jacobian factor on 2 keys: 
@@ -606,7 +606,7 @@ factor 1:  GaussianMixture [x2 | x3 m2 m1 ]{
 
 
 }
-factor 2:  GaussianMixture [x3 | m2 m1 ]{
+factor 2:  GaussianMixture [x3 | m1 m2 ]{
  Choice(m2) 
  0 Choice(m1) 
  0 0 Leaf Jacobian factor on 1 keys: 
