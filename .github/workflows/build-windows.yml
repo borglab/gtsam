@@ -122,5 +122,5 @@ jobs:
           cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.symbolic
 
           # Run GTSAM_UNSTABLE tests
-          cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.base_unstable
+          #cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.base_unstable
           
