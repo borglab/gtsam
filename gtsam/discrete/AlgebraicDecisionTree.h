@@ -33,7 +33,7 @@ namespace gtsam {
    * TODO: consider eliminating this class altogether?
    */
   template <typename L>
-  class GTSAM_EXPORT AlgebraicDecisionTree : public DecisionTree<L, double> {
+  class AlgebraicDecisionTree : public DecisionTree<L, double> {
     /**
      * @brief Default method used by `labelFormatter` or `valueFormatter` when
      * printing.
@@ -127,7 +127,7 @@ namespace gtsam {
         return map.at(label);
       };
       std::function<double(const double&)> op = Ring::id;
-      this->root_ = this->template convertFrom(other.root_, L_of_M, op);
+      this->root_ = DecisionTree<L, double>::convertFrom(other.root_, L_of_M, op);
     }
 
     /** sum */
