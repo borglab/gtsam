@@ -89,12 +89,12 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
 
   auto hybridBayesNet2 = incrementalHybrid.hybridBayesNet();
 
-  EXPECT_LONGS_EQUAL(4, hybridBayesNet2.size());
+  EXPECT_LONGS_EQUAL(3, hybridBayesNet2.size());
   // hybridBayesNet2.print();
-  EXPECT(hybridBayesNet2.at(2)->frontals() == KeyVector{X(2)});
-  EXPECT(hybridBayesNet2.at(2)->parents() == KeyVector({X(3), M(2), M(1)}));
-  EXPECT(hybridBayesNet2.at(3)->frontals() == KeyVector{X(3)});
-  EXPECT(hybridBayesNet2.at(3)->parents() == KeyVector({M(2), M(1)}));
+  EXPECT(hybridBayesNet2.at(1)->frontals() == KeyVector{X(2)});
+  EXPECT(hybridBayesNet2.at(1)->parents() == KeyVector({X(3), M(2), M(1)}));
+  EXPECT(hybridBayesNet2.at(2)->frontals() == KeyVector{X(3)});
+  EXPECT(hybridBayesNet2.at(2)->parents() == KeyVector({M(2), M(1)}));
 
   auto remainingFactorGraph2 = incrementalHybrid.remainingFactorGraph();
   EXPECT_LONGS_EQUAL(1, remainingFactorGraph2.size());
@@ -119,11 +119,11 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
                       *(expectedHybridBayesNet->atGaussian(0))));
 
   // The densities on X(2) should be the same
-  EXPECT(assert_equal(*(hybridBayesNet2.atGaussian(2)),
+  EXPECT(assert_equal(*(hybridBayesNet2.atGaussian(1)),
                       *(expectedHybridBayesNet->atGaussian(1))));
 
   // The densities on X(3) should be the same
-  EXPECT(assert_equal(*(hybridBayesNet2.atGaussian(3)),
+  EXPECT(assert_equal(*(hybridBayesNet2.atGaussian(2)),
                       *(expectedHybridBayesNet->atGaussian(2))));
 
   // we only do the manual continuous elimination for 0,0

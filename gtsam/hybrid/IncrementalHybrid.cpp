@@ -34,14 +34,27 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
     // in the previous `hybridBayesNet` to the graph
     std::unordered_set<Key> allVars(ordering.begin(), ordering.end());
     for (auto &&conditional : hybridBayesNet_) {
+      // Flag indicating if a conditional will be updated due to factors in
+      // `graph`
+      bool marked_for_update = false;
+
       for (auto &key : conditional->frontals()) {
         if (allVars.find(key) != allVars.end()) {
           if (auto gf =
                   boost::dynamic_pointer_cast<GaussianMixture>(conditional)) {
             graph.push_back(gf);
+            marked_for_update = true;
           } else if (auto df = boost::dynamic_pointer_cast<DiscreteConditional>(
                          conditional)) {
             graph.push_back(df);
+            marked_for_update = true;
+          }
+
+          // If a conditional is due to be updated, we remove if from the
+          // previous bayes net.
+          if (marked_for_update) {
+            auto it = find(hybridBayesNet_.begin(), hybridBayesNet_.end(), conditional);
+            hybridBayesNet_.erase(it);
           }
           break;
         }
