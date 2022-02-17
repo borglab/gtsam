@@ -10,17 +10,19 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    testImuFactor.cpp
- * @brief   Unit test for ImuFactor
+ * @file    testSerializationNavigation.cpp
+ * @brief   serialization tests for navigation
  * @author  Luca Carlone
  * @author  Frank Dellaert
  * @author  Richard Roberts
  * @author  Stephen Williams
  * @author  Varun Agrawal
+ * @date    February 2022
  */
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/serializationTestHelpers.h>
+#include <gtsam/navigation/AttitudeFactor.h>
 #include <gtsam/navigation/CombinedImuFactor.h>
 #include <gtsam/navigation/ImuFactor.h>
 
@@ -30,17 +32,13 @@ using namespace std;
 using namespace gtsam;
 using namespace gtsam::serializationTestHelpers;
 
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Constrained,
-                        "gtsam_noiseModel_Constrained")
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Diagonal,
-                        "gtsam_noiseModel_Diagonal")
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Gaussian,
-                        "gtsam_noiseModel_Gaussian")
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Unit, "gtsam_noiseModel_Unit")
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Isotropic,
-                        "gtsam_noiseModel_Isotropic")
-BOOST_CLASS_EXPORT_GUID(gtsam::SharedNoiseModel, "gtsam_SharedNoiseModel")
-BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal")
+BOOST_CLASS_EXPORT_GUID(noiseModel::Constrained, "gtsam_noiseModel_Constrained")
+BOOST_CLASS_EXPORT_GUID(noiseModel::Diagonal, "gtsam_noiseModel_Diagonal")
+BOOST_CLASS_EXPORT_GUID(noiseModel::Gaussian, "gtsam_noiseModel_Gaussian")
+BOOST_CLASS_EXPORT_GUID(noiseModel::Unit, "gtsam_noiseModel_Unit")
+BOOST_CLASS_EXPORT_GUID(noiseModel::Isotropic, "gtsam_noiseModel_Isotropic")
+BOOST_CLASS_EXPORT_GUID(SharedNoiseModel, "gtsam_SharedNoiseModel")
+BOOST_CLASS_EXPORT_GUID(SharedDiagonal, "gtsam_SharedDiagonal")
 
 template <typename P>
 P getPreintegratedMeasurements() {
@@ -69,6 +67,7 @@ P getPreintegratedMeasurements() {
   return pim;
 }
 
+/* ************************************************************************* */
 TEST(ImuFactor, serialization) {
   auto pim = getPreintegratedMeasurements<PreintegratedImuMeasurements>();
 
@@ -83,6 +82,7 @@ TEST(ImuFactor, serialization) {
   EXPECT(equalsBinary<ImuFactor>(factor));
 }
 
+/* ************************************************************************* */
 TEST(ImuFactor2, serialization) {
   auto pim = getPreintegratedMeasurements<PreintegratedImuMeasurements>();
 
@@ -93,6 +93,7 @@ TEST(ImuFactor2, serialization) {
   EXPECT(equalsBinary<ImuFactor2>(factor));
 }
 
+/* ************************************************************************* */
 TEST(CombinedImuFactor, Serialization) {
   auto pim = getPreintegratedMeasurements<PreintegratedCombinedMeasurements>();
 
@@ -105,6 +106,28 @@ TEST(CombinedImuFactor, Serialization) {
   EXPECT(equalsObj<CombinedImuFactor>(factor));
   EXPECT(equalsXML<CombinedImuFactor>(factor));
   EXPECT(equalsBinary<CombinedImuFactor>(factor));
+}
+
+/* ************************************************************************* */
+TEST(Rot3AttitudeFactor, Serialization) {
+  Unit3 nDown(0, 0, -1);
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(2, 0.25);
+  Rot3AttitudeFactor factor(0, nDown, model);
+
+  EXPECT(serializationTestHelpers::equalsObj(factor));
+  EXPECT(serializationTestHelpers::equalsXML(factor));
+  EXPECT(serializationTestHelpers::equalsBinary(factor));
+}
+
+/* ************************************************************************* */
+TEST(Pose3AttitudeFactor, Serialization) {
+  Unit3 nDown(0, 0, -1);
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(2, 0.25);
+  Pose3AttitudeFactor factor(0, nDown, model);
+
+  EXPECT(serializationTestHelpers::equalsObj(factor));
+  EXPECT(serializationTestHelpers::equalsXML(factor));
+  EXPECT(serializationTestHelpers::equalsBinary(factor));
 }
 
 /* ************************************************************************* */

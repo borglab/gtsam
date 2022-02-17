@@ -796,44 +796,39 @@ TEST(Pose2, align_4) {
 }
 
 //******************************************************************************
+namespace {
+Pose2 id;
 Pose2 T1(M_PI / 4.0, Point2(sqrt(0.5), sqrt(0.5)));
 Pose2 T2(M_PI / 2.0, Point2(0.0, 2.0));
+}  // namespace
 
 //******************************************************************************
-TEST(Pose2 , Invariants) {
-  Pose2 id;
+TEST(Pose2, Invariants) {
+  EXPECT(check_group_invariants(id, id));
+  EXPECT(check_group_invariants(id, T1));
+  EXPECT(check_group_invariants(T2, id));
+  EXPECT(check_group_invariants(T2, T1));
 
-  EXPECT(check_group_invariants(id,id));
-  EXPECT(check_group_invariants(id,T1));
-  EXPECT(check_group_invariants(T2,id));
-  EXPECT(check_group_invariants(T2,T1));
-
-  EXPECT(check_manifold_invariants(id,id));
-  EXPECT(check_manifold_invariants(id,T1));
-  EXPECT(check_manifold_invariants(T2,id));
-  EXPECT(check_manifold_invariants(T2,T1));
-
+  EXPECT(check_manifold_invariants(id, id));
+  EXPECT(check_manifold_invariants(id, T1));
+  EXPECT(check_manifold_invariants(T2, id));
+  EXPECT(check_manifold_invariants(T2, T1));
 }
 
 //******************************************************************************
-TEST(Pose2 , LieGroupDerivatives) {
-  Pose2 id;
-
-  CHECK_LIE_GROUP_DERIVATIVES(id,id);
-  CHECK_LIE_GROUP_DERIVATIVES(id,T2);
-  CHECK_LIE_GROUP_DERIVATIVES(T2,id);
-  CHECK_LIE_GROUP_DERIVATIVES(T2,T1);
-
+TEST(Pose2, LieGroupDerivatives) {
+  CHECK_LIE_GROUP_DERIVATIVES(id, id);
+  CHECK_LIE_GROUP_DERIVATIVES(id, T2);
+  CHECK_LIE_GROUP_DERIVATIVES(T2, id);
+  CHECK_LIE_GROUP_DERIVATIVES(T2, T1);
 }
 
 //******************************************************************************
-TEST(Pose2 , ChartDerivatives) {
-  Pose2 id;
-
-  CHECK_CHART_DERIVATIVES(id,id);
-  CHECK_CHART_DERIVATIVES(id,T2);
-  CHECK_CHART_DERIVATIVES(T2,id);
-  CHECK_CHART_DERIVATIVES(T2,T1);
+TEST(Pose2, ChartDerivatives) {
+  CHECK_CHART_DERIVATIVES(id, id);
+  CHECK_CHART_DERIVATIVES(id, T2);
+  CHECK_CHART_DERIVATIVES(T2, id);
+  CHECK_CHART_DERIVATIVES(T2, T1);
 }
 
 //******************************************************************************

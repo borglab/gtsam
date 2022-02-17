@@ -27,9 +27,11 @@ using namespace std;
 using namespace gtsam;
 using namespace boost::placeholders;
 
+namespace {
 noiseModel::Diagonal::shared_ptr model = noiseModel::Unit::Create(1);
 
 const size_t N = 32;
+}  // namespace
 
 //******************************************************************************
 TEST(Chebyshev2, Point) {
