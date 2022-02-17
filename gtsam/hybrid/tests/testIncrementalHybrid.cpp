@@ -68,11 +68,10 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
   EXPECT(hybridBayesNet.at(1)->parents() == KeyVector({M(1)}));
 
   auto remainingFactorGraph = incrementalHybrid.remainingFactorGraph();
-  CHECK(remainingFactorGraph);
-  EXPECT_LONGS_EQUAL(1, remainingFactorGraph->size());
+  EXPECT_LONGS_EQUAL(1, remainingFactorGraph.size());
 
   auto discreteFactor_m1 = *dynamic_pointer_cast<DecisionTreeFactor>(
-      remainingFactorGraph->discreteGraph().at(0));
+      remainingFactorGraph.discreteGraph().at(0));
   EXPECT(discreteFactor_m1.keys() == KeyVector({M(1)}));
 
   GaussianHybridFactorGraph graph2;
@@ -98,11 +97,10 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
   EXPECT(hybridBayesNet2.at(3)->parents() == KeyVector({M(2), M(1)}));
 
   auto remainingFactorGraph2 = incrementalHybrid.remainingFactorGraph();
-  CHECK(remainingFactorGraph2);
-  EXPECT_LONGS_EQUAL(1, remainingFactorGraph2->size());
+  EXPECT_LONGS_EQUAL(1, remainingFactorGraph2.size());
 
   auto discreteFactor = dynamic_pointer_cast<DecisionTreeFactor>(
-      remainingFactorGraph2->discreteGraph().at(0));
+      remainingFactorGraph2.discreteGraph().at(0));
   EXPECT(discreteFactor->keys() == KeyVector({M(2), M(1)}));
 
   ordering.clear();
@@ -227,11 +225,10 @@ TEST(DCGaussianElimination, Approx_inference) {
        1 1 1 Leaf    1 *
    */
   auto remainingFactorGraph = incrementalHybrid.remainingFactorGraph();
-  CHECK(remainingFactorGraph);
-  EXPECT_LONGS_EQUAL(1, remainingFactorGraph->size());
+  EXPECT_LONGS_EQUAL(1, remainingFactorGraph.size());
 
   auto discreteFactor_m1 = *dynamic_pointer_cast<DecisionTreeFactor>(
-      remainingFactorGraph->discreteGraph().at(0));
+      remainingFactorGraph.discreteGraph().at(0));
   EXPECT(discreteFactor_m1.keys() == KeyVector({M(3), M(2), M(1)}));
 
   // Check number of elements equal to zero

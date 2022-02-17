@@ -25,7 +25,7 @@ namespace gtsam {
 class IncrementalHybrid {
  private:
   HybridBayesNet hybridBayesNet_;
-  GaussianHybridFactorGraph::shared_ptr remainingFactorGraph_;
+  GaussianHybridFactorGraph remainingFactorGraph_;
 
  public:
   /**
@@ -65,7 +65,7 @@ class IncrementalHybrid {
    *
    * @return GaussianHybridFactorGraph
    */
-  GaussianHybridFactorGraph::shared_ptr remainingFactorGraph() const;
+  const GaussianHybridFactorGraph& remainingFactorGraph() const;
 };
 
 };  // namespace gtsam

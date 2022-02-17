@@ -51,8 +51,9 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
 
   // Eliminate partially.
   HybridBayesNet::shared_ptr bayesNetFragment;
-  std::tie(bayesNetFragment, remainingFactorGraph_) =
-      graph.eliminatePartialSequential(ordering);
+  auto result = graph.eliminatePartialSequential(ordering);
+  bayesNetFragment = result.first;
+  remainingFactorGraph_ = *result.second;
 
   // Add the partial bayes net to the posterior bayes net.
   hybridBayesNet_.push_back<HybridBayesNet>(*bayesNetFragment);
@@ -65,7 +66,7 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
         boost::dynamic_pointer_cast<GaussianMixture>(hybridBayesNet_.back());
 
     auto discreteFactor = boost::dynamic_pointer_cast<DecisionTreeFactor>(
-        remainingFactorGraph_->discreteGraph().at(0));
+        remainingFactorGraph_.discreteGraph().at(0));
 
     // Let's assume that the structure of the last discrete density will be the
     // same as the last continuous
@@ -126,7 +127,7 @@ GaussianMixture::shared_ptr IncrementalHybrid::gaussianMixture(
 
 /* ************************************************************************* */
 const DiscreteFactorGraph &IncrementalHybrid::remainingDiscreteGraph() const {
-  return remainingFactorGraph_->discreteGraph();
+  return remainingFactorGraph_.discreteGraph();
 }
 
 /* ************************************************************************* */
@@ -135,7 +136,7 @@ const HybridBayesNet &IncrementalHybrid::hybridBayesNet() const {
 }
 
 /* ************************************************************************* */
-GaussianHybridFactorGraph::shared_ptr IncrementalHybrid::remainingFactorGraph()
+const GaussianHybridFactorGraph &IncrementalHybrid::remainingFactorGraph()
     const {
   return remainingFactorGraph_;
 }
