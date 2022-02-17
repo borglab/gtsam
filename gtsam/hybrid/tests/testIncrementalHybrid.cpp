@@ -60,7 +60,7 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
 
   incrementalHybrid.update(graph1, ordering);
 
-  auto hybridBayesNet = incrementalHybrid.hybridBayesNet();
+  auto hybridBayesNet = incrementalHybrid.hybridBayesNet_;
   CHECK(hybridBayesNet);
   EXPECT_LONGS_EQUAL(2, hybridBayesNet->size());
   EXPECT(hybridBayesNet->at(0)->frontals() == KeyVector{X(1)});
@@ -68,7 +68,7 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
   EXPECT(hybridBayesNet->at(1)->frontals() == KeyVector{X(2)});
   EXPECT(hybridBayesNet->at(1)->parents() == KeyVector({M(1)}));
 
-  auto remainingFactorGraph = incrementalHybrid.remainingFactorGraph();
+  auto remainingFactorGraph = incrementalHybrid.remainingFactorGraph_;
   CHECK(remainingFactorGraph);
   EXPECT_LONGS_EQUAL(1, remainingFactorGraph->size());
 
@@ -89,7 +89,7 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
 
   incrementalHybrid.update(graph2, ordering2);
 
-  auto hybridBayesNet2 = incrementalHybrid.hybridBayesNet();
+  auto hybridBayesNet2 = incrementalHybrid.hybridBayesNet_;
   CHECK(hybridBayesNet2);
   EXPECT_LONGS_EQUAL(4, hybridBayesNet2->size());
   EXPECT(hybridBayesNet2->at(2)->frontals() == KeyVector{X(2)});
@@ -97,7 +97,7 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
   EXPECT(hybridBayesNet2->at(3)->frontals() == KeyVector{X(3)});
   EXPECT(hybridBayesNet2->at(3)->parents() == KeyVector({M(2), M(1)}));
 
-  auto remainingFactorGraph2 = incrementalHybrid.remainingFactorGraph();
+  auto remainingFactorGraph2 = incrementalHybrid.remainingFactorGraph_;
   CHECK(remainingFactorGraph2);
   EXPECT_LONGS_EQUAL(1, remainingFactorGraph2->size());
 
@@ -226,7 +226,7 @@ TEST(DCGaussianElimination, Approx_inference) {
        1 1 0 Leaf 0.611 *
        1 1 1 Leaf    1 *
    */
-  auto remainingFactorGraph = incrementalHybrid.remainingFactorGraph();
+  auto remainingFactorGraph = incrementalHybrid.remainingFactorGraph_;
   CHECK(remainingFactorGraph);
   EXPECT_LONGS_EQUAL(1, remainingFactorGraph->size());
 
@@ -246,7 +246,7 @@ TEST(DCGaussianElimination, Approx_inference) {
    * factor 2:  [x3 | x4 m3 m2 m1 ], 8 components
    * factor 3:  [x4 | m3 m2 m1 ], 8 components
    */
-  auto hybridBayesNet = incrementalHybrid.hybridBayesNet();
+  auto hybridBayesNet = incrementalHybrid.hybridBayesNet_;
 
   CHECK(hybridBayesNet);
   EXPECT_LONGS_EQUAL(4, hybridBayesNet->size());
@@ -302,7 +302,7 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_approximate) {
   size_t maxComponents = 5;
   incrementalHybrid.update(graph1, ordering, maxComponents);
 
-  auto &actualBayesNet1 = *incrementalHybrid.hybridBayesNet();
+  auto &actualBayesNet1 = *incrementalHybrid.hybridBayesNet_;
   CHECK_EQUAL(4, actualBayesNet1.size());
   EXPECT_LONGS_EQUAL(2, actualBayesNet1.atGaussian(0)->nrComponents());
   EXPECT_LONGS_EQUAL(4, actualBayesNet1.atGaussian(1)->nrComponents());
@@ -319,7 +319,7 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_approximate) {
 
   incrementalHybrid.update(graph2, ordering2, maxComponents);
 
-  auto &actualBayesNet = *incrementalHybrid.hybridBayesNet();
+  auto &actualBayesNet = *incrementalHybrid.hybridBayesNet_;
   CHECK_EQUAL(2, actualBayesNet.size());
   EXPECT_LONGS_EQUAL(10, actualBayesNet.atGaussian(0)->nrComponents());
   EXPECT_LONGS_EQUAL(5, actualBayesNet.atGaussian(1)->nrComponents());
