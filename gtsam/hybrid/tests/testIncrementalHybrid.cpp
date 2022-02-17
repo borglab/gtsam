@@ -17,8 +17,6 @@
  * @date    Jan 2021
  */
 
-#include "Switching.h"
-
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/discrete/DiscreteDistribution.h>
 #include <gtsam/hybrid/DCFactor.h>
@@ -29,6 +27,8 @@
 #include <gtsam/nonlinear/PriorFactor.h>
 
 #include <numeric>
+
+#include "Switching.h"
 
 // Include for test suite
 #include <CppUnitLite/TestHarness.h>
@@ -60,7 +60,7 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
 
   incrementalHybrid.update(graph1, ordering);
 
-  auto hybridBayesNet = incrementalHybrid.hybridBayesNet_;
+  auto hybridBayesNet = incrementalHybrid.hybridBayesNet();
   CHECK(hybridBayesNet);
   EXPECT_LONGS_EQUAL(2, hybridBayesNet->size());
   EXPECT(hybridBayesNet->at(0)->frontals() == KeyVector{X(1)});
@@ -68,7 +68,7 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
   EXPECT(hybridBayesNet->at(1)->frontals() == KeyVector{X(2)});
   EXPECT(hybridBayesNet->at(1)->parents() == KeyVector({M(1)}));
 
-  auto remainingFactorGraph = incrementalHybrid.remainingFactorGraph_;
+  auto remainingFactorGraph = incrementalHybrid.remainingFactorGraph();
   CHECK(remainingFactorGraph);
   EXPECT_LONGS_EQUAL(1, remainingFactorGraph->size());
 
@@ -89,15 +89,15 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
 
   incrementalHybrid.update(graph2, ordering2);
 
-  auto hybridBayesNet2 = incrementalHybrid.hybridBayesNet_;
+  auto hybridBayesNet2 = incrementalHybrid.hybridBayesNet();
   CHECK(hybridBayesNet2);
-  EXPECT_LONGS_EQUAL(2, hybridBayesNet2->size());
-  EXPECT(hybridBayesNet2->at(0)->frontals() == KeyVector{X(2)});
-  EXPECT(hybridBayesNet2->at(0)->parents() == KeyVector({X(3), M(2), M(1)}));
-  EXPECT(hybridBayesNet2->at(1)->frontals() == KeyVector{X(3)});
-  EXPECT(hybridBayesNet2->at(1)->parents() == KeyVector({M(2), M(1)}));
+  EXPECT_LONGS_EQUAL(4, hybridBayesNet2->size());
+  EXPECT(hybridBayesNet2->at(2)->frontals() == KeyVector{X(2)});
+  EXPECT(hybridBayesNet2->at(2)->parents() == KeyVector({X(3), M(2), M(1)}));
+  EXPECT(hybridBayesNet2->at(3)->frontals() == KeyVector{X(3)});
+  EXPECT(hybridBayesNet2->at(3)->parents() == KeyVector({M(2), M(1)}));
 
-  auto remainingFactorGraph2 = incrementalHybrid.remainingFactorGraph_;
+  auto remainingFactorGraph2 = incrementalHybrid.remainingFactorGraph();
   CHECK(remainingFactorGraph2);
   EXPECT_LONGS_EQUAL(1, remainingFactorGraph2->size());
 
@@ -117,16 +117,15 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
       switching.linearizedFactorGraph.eliminatePartialSequential(ordering);
 
   // The densities on X(1) should be the same
-  EXPECT(
-      assert_equal(*(hybridBayesNet->atGaussian(0)),
-                   *(expectedHybridBayesNet->atGaussian(0))));
+  EXPECT(assert_equal(*(hybridBayesNet->atGaussian(0)),
+                      *(expectedHybridBayesNet->atGaussian(0))));
 
   // The densities on X(2) should be the same
-  EXPECT(assert_equal(*(hybridBayesNet2->atGaussian(0)),
+  EXPECT(assert_equal(*(hybridBayesNet2->atGaussian(2)),
                       *(expectedHybridBayesNet->atGaussian(1))));
 
   // The densities on X(3) should be the same
-  EXPECT(assert_equal(*(hybridBayesNet2->atGaussian(1)),
+  EXPECT(assert_equal(*(hybridBayesNet2->atGaussian(3)),
                       *(expectedHybridBayesNet->atGaussian(2))));
 
   // we only do the manual continuous elimination for 0,0
@@ -227,7 +226,7 @@ TEST(DCGaussianElimination, Approx_inference) {
        1 1 0 Leaf 0.611 *
        1 1 1 Leaf    1 *
    */
-  auto remainingFactorGraph = incrementalHybrid.remainingFactorGraph_;
+  auto remainingFactorGraph = incrementalHybrid.remainingFactorGraph();
   CHECK(remainingFactorGraph);
   EXPECT_LONGS_EQUAL(1, remainingFactorGraph->size());
 
@@ -236,7 +235,7 @@ TEST(DCGaussianElimination, Approx_inference) {
   EXPECT(discreteFactor_m1.keys() == KeyVector({M(3), M(2), M(1)}));
 
   // Check number of elements equal to zero
-  auto count = [](const double& value, int count) {
+  auto count = [](const double &value, int count) {
     return value > 0 ? count + 1 : count;
   };
   EXPECT_LONGS_EQUAL(5, discreteFactor_m1.fold(count, 0));
@@ -246,8 +245,8 @@ TEST(DCGaussianElimination, Approx_inference) {
    * factor 1:  [x2 | x3 m2 m1 ], 4 components
    * factor 2:  [x3 | x4 m3 m2 m1 ], 8 components
    * factor 3:  [x4 | m3 m2 m1 ], 8 components
-  */
-  auto hybridBayesNet = incrementalHybrid.hybridBayesNet_;
+   */
+  auto hybridBayesNet = incrementalHybrid.hybridBayesNet();
 
   CHECK(hybridBayesNet);
   EXPECT_LONGS_EQUAL(4, hybridBayesNet->size());
@@ -258,8 +257,8 @@ TEST(DCGaussianElimination, Approx_inference) {
 
   auto &lastDensity = *(hybridBayesNet->atGaussian(3));
   auto &unprunedLastDensity = *(unprunedHybridBayesNet->atGaussian(3));
-  std::vector<std::pair<DiscreteValues, double>>
-      assignments = discreteFactor_m1.enumerate();
+  std::vector<std::pair<DiscreteValues, double>> assignments =
+      discreteFactor_m1.enumerate();
   // Loop over all assignments and check the pruned components
   for (auto &&av : assignments) {
     const DiscreteValues &assignment = av.first;
@@ -303,7 +302,7 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_approximate) {
   size_t maxComponents = 5;
   incrementalHybrid.update(graph1, ordering, maxComponents);
 
-  auto &actualBayesNet1 = *incrementalHybrid.hybridBayesNet_;
+  auto &actualBayesNet1 = *incrementalHybrid.hybridBayesNet();
   CHECK_EQUAL(4, actualBayesNet1.size());
   EXPECT_LONGS_EQUAL(2, actualBayesNet1.atGaussian(0)->nrComponents());
   EXPECT_LONGS_EQUAL(4, actualBayesNet1.atGaussian(1)->nrComponents());
@@ -320,12 +319,11 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_approximate) {
 
   incrementalHybrid.update(graph2, ordering2, maxComponents);
 
-  auto &actualBayesNet = *incrementalHybrid.hybridBayesNet_;
+  auto &actualBayesNet = *incrementalHybrid.hybridBayesNet();
   CHECK_EQUAL(2, actualBayesNet.size());
   EXPECT_LONGS_EQUAL(10, actualBayesNet.atGaussian(0)->nrComponents());
   EXPECT_LONGS_EQUAL(5, actualBayesNet.atGaussian(1)->nrComponents());
 }
-
 
 /* ************************************************************************* */
 int main() {
