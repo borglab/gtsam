@@ -28,6 +28,8 @@
 #include <gtsam/base/Vector.h>
 #include <boost/tuple/tuple.hpp>
 
+#include <vector>
+
 /**
  * Matrix is a typedef in the gtsam namespace
  * TODO: make a version to work with matlab wrapping
