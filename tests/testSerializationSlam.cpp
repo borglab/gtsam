@@ -51,6 +51,9 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/base/serializationTestHelpers.h>
 
+#include <boost/archive/xml_iarchive.hpp>
+#include <boost/serialization/export.hpp>
+
 using namespace std;
 using namespace gtsam;
 using namespace gtsam::serializationTestHelpers;
@@ -615,7 +618,7 @@ static GaussianFactorGraph read(const string& name) {
 // Read from XML file
 TEST(SubgraphSolver, Solves) {
   using gtsam::example::planarGraph;
-  
+
   // Create preconditioner
   SubgraphPreconditioner system;
 
