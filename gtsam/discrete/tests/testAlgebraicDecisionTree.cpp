@@ -318,7 +318,7 @@ TEST(ADT, factor_graph) {
   dot(fg, "Marginalized-3E");
   fg = fg.combine(L, &add_);
   dot(fg, "Marginalized-2L");
-  EXPECT(adds = 54);
+  EXPECT(adds == 54);
   gttoc_(marg);
   tictoc_getNode(margNode, marg);
   elapsed = margNode->secs() + margNode->wall();
