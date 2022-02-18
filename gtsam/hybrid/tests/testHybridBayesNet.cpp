@@ -38,7 +38,7 @@ TEST(HybridBayesNet, Creation) {
 
   bayesNet.add(Asia, "99/1");
 
-  DiscreteConditional expected (Asia, "99/1");
+  DiscreteConditional expected(Asia, "99/1");
 
   CHECK(bayesNet.atDiscrete(0));
   auto& df = *bayesNet.atDiscrete(0);
