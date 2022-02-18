@@ -30,6 +30,10 @@
 using namespace std;
 using namespace gtsam;
 
+using noiseModel::Isotropic;
+using symbol_shorthand::M;
+using symbol_shorthand::X;
+
 /* ****************************************************************************
  * Test construction with small switching-like hybrid factor graph.
  */
@@ -48,8 +52,6 @@ TEST(DiscreteBayesTree, Switching) {
   DCFactorGraph fg;
 
   // Add a prior on X(1).
-  using noiseModel::Isotropic;
-  using symbol_shorthand::X;
   using PriorMixture = DCMixtureFactor<PriorFactor<double>>;
   auto prior = boost::make_shared<PriorFactor<double>>(
       X(1), 0, Isotropic::Sigma(1, 0.1));
@@ -69,6 +71,32 @@ TEST(DiscreteBayesTree, Switching) {
   }
 
   EXPECT_LONGS_EQUAL(5, fg.size());
+}
+
+/* ************************************************************************* */
+/// Test that discrete keys are not duplicated
+TEST(DCFactorGraph, DiscreteKeys) {
+  DCFactorGraph fg;
+
+  for (size_t k = 0; k < 2; k++) {
+    auto still = boost::make_shared<BetweenFactor<double>>(
+        X(k), X(k + 1), 0.0, Isotropic::Sigma(2, 1.0));
+    auto moving = boost::make_shared<BetweenFactor<double>>(
+        X(k), X(k + 1), 1.0, Isotropic::Sigma(2, 1.0));
+    using MotionMixture = DCMixtureFactor<BetweenFactor<double>>;
+
+    // Add a mixture which has a mode on each continious variable.
+    MotionMixture mixture(
+        {X(k), X(k + 1)},
+        DiscreteKeys{DiscreteKey(M(k), 2), DiscreteKey(M(k + 1), 2)},
+        {still, moving, moving, moving});
+    fg.add(mixture);
+  }
+
+  EXPECT_LONGS_EQUAL(3, fg.discreteKeys().size());
+  EXPECT(fg.discreteKeys() ==
+         DiscreteKeys({DiscreteKey(M(0), 2), DiscreteKey(M(1), 2),
+                       DiscreteKey(M(2), 2)}));
 }
 
 /* ************************************************************************* */
