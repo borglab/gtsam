@@ -17,6 +17,7 @@
  */
 
 #include <gtsam/sfm/SfmData.h>
+#include <gtsam/slam/dataset.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
