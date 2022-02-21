@@ -215,10 +215,11 @@ TEST(Ordering, AppendVector) {
 
 /* ************************************************************************* */
 TEST(Ordering, Contains) {
+  using symbol_shorthand::X;
   Ordering ordering;
-  expected += X(0);
-  expected += X(1);
-  expected += X(2);
+  ordering += X(0);
+  ordering += X(1);
+  ordering += X(2);
 
   EXPECT(ordering.contains(X(1)));
   EXPECT(!ordering.contains(X(4)));
