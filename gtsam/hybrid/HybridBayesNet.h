@@ -24,6 +24,7 @@
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/hybrid/GaussianMixture.h>
 #include <gtsam/inference/BayesNet.h>
+#include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianConditional.h>
 
 #include <iostream>  // TODO!
@@ -56,14 +57,16 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<AbstractConditional> {
    * (this checks array bounds and may throw an exception, as opposed to
    * operator[] which does not).
    */
-  GaussianMixture::shared_ptr atGaussian(size_t i);
+  GaussianMixture::shared_ptr atGaussian(size_t i) const;
 
   /**
    * Get a specific Gaussian mixture factor by index
    * (this checks array bounds and may throw an exception, as opposed to
    * operator[] which does not).
    */
-  DiscreteConditional::shared_ptr atDiscrete(size_t i);
+  DiscreteConditional::shared_ptr atDiscrete(size_t i) const;
+
+  GaussianBayesNet operator()(const DiscreteValues &assignment) const;
 };
 
 }  // namespace gtsam
