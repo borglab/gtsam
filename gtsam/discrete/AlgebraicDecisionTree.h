@@ -33,7 +33,7 @@ namespace gtsam {
    * TODO: consider eliminating this class altogether?
    */
   template <typename L>
-  class AlgebraicDecisionTree : public DecisionTree<L, double> {
+  class GTSAM_EXPORT AlgebraicDecisionTree : public DecisionTree<L, double> {
     /**
      * @brief Default method used by `labelFormatter` or `valueFormatter` when
      * printing.
