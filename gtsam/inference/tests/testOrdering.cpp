@@ -200,6 +200,31 @@ TEST(Ordering, csr_format_3) {
 }
 
 /* ************************************************************************* */
+TEST(Ordering, AppendVector) {
+  using symbol_shorthand::X;
+  Ordering actual;
+  KeyVector keys = {X(0), X(1), X(2)};
+  actual += keys;
+
+  Ordering expected;
+  expected += X(0);
+  expected += X(1);
+  expected += X(2);
+  EXPECT(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+TEST(Ordering, Contains) {
+  Ordering ordering;
+  expected += X(0);
+  expected += X(1);
+  expected += X(2);
+
+  EXPECT(ordering.contains(X(1)));
+  EXPECT(!ordering.contains(X(4)));
+}
+
+/* ************************************************************************* */
 #ifdef GTSAM_SUPPORT_NESTED_DISSECTION
 TEST(Ordering, csr_format_4) {
   SymbolicFactorGraph symbolicGraph;
