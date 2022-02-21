@@ -11,7 +11,7 @@
 
 /**
  * @file    HybridBayesNet.h
- * @brief   A set of GaussianFactors, indexed by a set of discrete keys.
+ * @brief   A bayes net of Gaussian Conditionals indexed by discrete keys.
  * @author  Varun Agrawal
  * @author  Fan Jiang
  * @author  Frank Dellaert
@@ -66,7 +66,7 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<AbstractConditional> {
    */
   DiscreteConditional::shared_ptr atDiscrete(size_t i) const;
 
-  GaussianBayesNet operator()(const DiscreteValues &assignment) const;
+  GaussianBayesNet choose(const DiscreteValues &assignment) const;
 };
 
 }  // namespace gtsam
