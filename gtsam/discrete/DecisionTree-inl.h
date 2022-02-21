@@ -372,7 +372,7 @@ namespace gtsam {
   /****************************************************************************/
   // DecisionTree
   /****************************************************************************/
-  template <typename L, typename Y>
+  template<typename L, typename Y>
   DecisionTree<L, Y>::DecisionTree() {
   }
 
@@ -721,7 +721,7 @@ namespace gtsam {
     return root_->operator ()(x);
   }
 
-  template <typename L, typename Y>
+  template<typename L, typename Y>
   DecisionTree<L, Y> DecisionTree<L, Y>::apply(const Unary& op) const {
     // It is unclear what should happen if tree is empty:
     if (empty()) {
