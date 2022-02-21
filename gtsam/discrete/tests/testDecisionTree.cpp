@@ -150,9 +150,7 @@ TEST(DecisionTree, example) {
   DOT(notb);
 
   // Check supplying empty trees yields an exception
-  DT tree = gtsam::apply(empty, &Ring::id);
-  EXPECT_LONGS_EQUAL(0, tree.labels().size());
-
+  CHECK_EXCEPTION(gtsam::apply(empty, &Ring::id), std::runtime_error);
   CHECK_EXCEPTION(gtsam::apply(empty, a, &Ring::mul), std::runtime_error);
   CHECK_EXCEPTION(gtsam::apply(a, empty, &Ring::mul), std::runtime_error);
 
