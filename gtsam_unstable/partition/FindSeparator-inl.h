@@ -24,7 +24,7 @@
 
 extern "C" {
 #include <metis.h>
-#include "metislib.h"
+#include <metislib.h>
 }
 
 
