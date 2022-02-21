@@ -710,6 +710,8 @@ TEST(HybridFactorGraph, DefaultDecisionTree) {
   // This should NOT fail
   std::tie(hybridBayesNet, remainingFactorGraph) =
       linearized.eliminatePartialSequential(ordering);
+  EXPECT_LONGS_EQUAL(4, hybridBayesNet->size());
+  EXPECT_LONGS_EQUAL(1, remainingFactorGraph->size());
 }
 
 /* ************************************************************************* */
