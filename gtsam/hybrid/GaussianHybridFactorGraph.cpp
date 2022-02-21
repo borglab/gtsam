@@ -48,12 +48,20 @@ using Sum = DCGaussianMixtureFactor::Sum;
 // This is the version for Gaussian Factors
 static Sum& operator+=(Sum& sum, const GaussianFactor::shared_ptr& factor) {
   using Y = GaussianFactorGraph;
-  auto add = [&factor](const Y& graph) {
-    auto result = graph;
+  // If the decision tree is not intiialized, then intialize it.
+  if (sum.empty()) {
+    GaussianFactorGraph result;
     result.push_back(factor);
-    return result;
-  };
-  sum = sum.apply(add);
+    sum = Sum(result);
+
+  } else {
+    auto add = [&factor](const Y& graph) {
+      auto result = graph;
+      result.push_back(factor);
+      return result;
+    };
+    sum = sum.apply(add);
+  }
   return sum;
 }
 

@@ -647,6 +647,11 @@ factor 2:  GaussianMixture [x3 | m1 m2 ]{
 }
 
 /* ************************************************************************* */
+// Simple PlanarSLAM example test with 2 poses and 2 landmarks (each pose
+// connects to 1 landmark) to expose issue with default decision tree creation
+// in hybrid elimination. The hybrid factor is between the poses X0 and X1. The
+// issue arises if we eliminate a landmark variable first since it is not
+// connected to a DCFactor.
 TEST(HybridFactorGraph, DefaultDecisionTree) {
   NonlinearHybridFactorGraph fg;
 
@@ -672,22 +677,20 @@ TEST(HybridFactorGraph, DefaultDecisionTree) {
       contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, components);
   fg.push_back(dcFactor);
 
-  // Add Range-Bearing measurements to two different landmarks
+  // Add Range-Bearing measurements to from X0 to L0 and X1 to L1.
   // create a noise model for the landmark measurements
   auto measurementNoise = noiseModel::Diagonal::Sigmas(
       Vector2(0.1, 0.2));  // 0.1 rad std on bearing, 20cm on range
   // create the measurement values - indices are (pose id, landmark id)
-  Rot2 bearing11 = Rot2::fromDegrees(45), bearing21 = Rot2::fromDegrees(90),
-       bearing32 = Rot2::fromDegrees(90);
-  double range11 = std::sqrt(4.0 + 4.0), range21 = 2.0, range32 = 2.0;
+  Rot2 bearing11 = Rot2::fromDegrees(45),
+       bearing22 = Rot2::fromDegrees(90);
+  double range11 = std::sqrt(4.0 + 4.0), range22 = 2.0;
 
   // Add Bearing-Range factors
   fg.emplace_nonlinear<BearingRangeFactor<Pose2, Point2>>(
       X(0), L(0), bearing11, range11, measurementNoise);
   fg.emplace_nonlinear<BearingRangeFactor<Pose2, Point2>>(
-      X(1), L(0), bearing21, range21, measurementNoise);
-  fg.emplace_nonlinear<BearingRangeFactor<Pose2, Point2>>(
-      X(1), L(1), bearing32, range32, measurementNoise);
+      X(1), L(1), bearing22, range22, measurementNoise);
 
   // Create (deliberately inaccurate) initial estimate
   Values initialEstimate;

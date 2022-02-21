@@ -163,6 +163,10 @@ class GTSAM_EXPORT GaussianHybridFactorGraph
    * Takes all factors, which *must* be all DCGaussianMixtureFactors or
    * GaussianFactors, and "add" them. This might involve decision-trees of
    * different structure, and creating a different decision tree for Gaussians.
+   *
+   * If no discrete variables are involved, i.e. only GaussianFactors provided
+   * or "leaf-only" DCGaussianMixtureFactors, then we will return a leaf-only
+   * DecisionTree with a single GaussianFactorGraph.
    */
   DCGaussianMixtureFactor::Sum sum() const;
 
