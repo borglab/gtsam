@@ -46,10 +46,10 @@ void DCGaussianMixtureFactor::print(const std::string &s,
                                     const KeyFormatter &keyFormatter) const {
   printKeys(s, keyFormatter);
 
-  auto valueFormatter = [](const GaussianFactor::shared_ptr &v) {
-    auto printCapture = [](const GaussianFactor::shared_ptr &p) {
+  auto valueFormatter = [&](const GaussianFactor::shared_ptr &v) {
+    auto printCapture = [&](const GaussianFactor::shared_ptr &p) {
       RedirectCout rd;
-      p->print();
+      p->print("", keyFormatter);
       std::string s = rd.str();
       return s;
     };
