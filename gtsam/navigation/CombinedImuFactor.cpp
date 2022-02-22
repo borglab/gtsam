@@ -256,6 +256,3 @@ std::ostream& operator<<(std::ostream& os, const CombinedImuFactor& f) {
 }
  /// namespace gtsam
 
-/// Boost serialization export definition for derived class
-BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::PreintegrationCombinedParams)
-

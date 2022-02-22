@@ -42,7 +42,7 @@ namespace gtsam {
  * @addtogroup SLAM
  */
 template <class CALIBRATION>
-class GTSAM_EXPORT SmartProjectionPoseFactor
+class SmartProjectionPoseFactor
     : public SmartProjectionFactor<PinholePose<CALIBRATION> > {
  private:
   typedef PinholePose<CALIBRATION> Camera;
