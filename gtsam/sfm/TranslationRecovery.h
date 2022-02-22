@@ -16,6 +16,8 @@
  * @brief Recovering translations in an epipolar graph when rotations are given.
  */
 
+#pragma once
+
 #include <map>
 #include <set>
 #include <utility>

@@ -15,6 +15,8 @@
  * @author Frank Dellaert
  **/
 
+#pragma once
+
 #include <gtsam/base/Group.h>
 #include <gtsam/base/Testable.h>
 

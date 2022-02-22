@@ -16,6 +16,8 @@
  * @date    July 5, 2015
  */
 
+#pragma once
+
 #include <gtsam/sfm/SfmData.h>
 #include <gtsam/slam/dataset.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
