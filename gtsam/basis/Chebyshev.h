@@ -29,7 +29,7 @@ namespace gtsam {
  * These are typically denoted with the symbol T_n, where n is the degree.
  * The parameter N is the number of coefficients, i.e., N = n+1.
  */
-struct Chebyshev1Basis : Basis<Chebyshev1Basis> {
+struct GTSAM_EXPORT Chebyshev1Basis : Basis<Chebyshev1Basis> {
   using Parameters = Eigen::Matrix<double, -1, 1 /*Nx1*/>;
 
   Parameters parameters_;
@@ -77,7 +77,7 @@ struct Chebyshev1Basis : Basis<Chebyshev1Basis> {
  * functions. In this sense, they are like the sines and cosines of the Fourier
  * basis.
  */
-struct Chebyshev2Basis : Basis<Chebyshev2Basis> {
+struct GTSAM_EXPORT Chebyshev2Basis : Basis<Chebyshev2Basis> {
   using Parameters = Eigen::Matrix<double, -1, 1 /*Nx1*/>;
 
   /**

@@ -92,7 +92,7 @@ Matrix kroneckerProductIdentity(const Weights& w) {
 
 /// CRTP Base class for function bases
 template <typename DERIVED>
-class GTSAM_EXPORT Basis {
+class Basis {
  public:
   /**
    * Calculate weights for all x in vector X.
@@ -497,11 +497,6 @@ class GTSAM_EXPORT Basis {
     }
   };
 
-  // Vector version for MATLAB :-(
-  static double Derivative(double x, const Vector& p,  //
-                           OptionalJacobian</*1xN*/ -1, -1> H = boost::none) {
-    return DerivativeFunctor(x)(p.transpose(), H);
-  }
 };
 
 }  // namespace gtsam
