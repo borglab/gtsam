@@ -300,6 +300,7 @@ class GTSAM_EXPORT ShonanAveraging {
   /**
    * Create initial Values of type SO(p)
    * @param p the dimensionality of the rotation manifold
+   * @param rng random number generator
    */
   Values initializeRandomlyAt(size_t p, std::mt19937 &rng) const;
 
