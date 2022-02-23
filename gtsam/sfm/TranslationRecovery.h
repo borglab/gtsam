@@ -99,10 +99,18 @@ class TranslationRecovery {
 
   /**
    * @brief Create random initial translations.
-   *
+   * 
+   * @param rng random number generator
    * @return Values
    */
-  Values initalizeRandomly() const;
+  Values initializeRandomly(std::mt19937 &rng) const;
+
+  /**
+   * @brief Version of initializeRandomly with a fixed seed.
+   * 
+   * @return Values
+   */
+  Values initializeRandomly() const;
 
   /**
    * @brief Build and optimize factor graph.
