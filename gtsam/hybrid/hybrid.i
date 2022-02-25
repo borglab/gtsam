@@ -48,6 +48,16 @@ virtual class GaussianMixture : gtsam::DCGaussianMixtureFactor {
 class DCFactorGraph {
   DCFactorGraph();
   gtsam::DiscreteKeys discreteKeys() const;
+
+  size_t size() const;
+  bool empty() const;
+  void remove(size_t i);
+  void resize(size_t size);
+  size_t nrFactors() const;
+
+  void print(const std::string& str = "DCFactorGraph",
+             const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
 };
 
 #include <gtsam/hybrid/HybridFactorGraph.h>
@@ -84,6 +94,11 @@ class NonlinearHybridFactorGraph {
 
   const gtsam::NonlinearFactorGraph& nonlinearGraph() const;
 
+  //TODO(Varun) issues with templated inheritance
+  const gtsam::DiscreteFactorGraph& discreteGraph() const;
+  const gtsam::DCFactorGraph& dcGraph() const;
+  gtsam::DiscreteKeys discreteKeys() const;
+
   gtsam::GaussianHybridFactorGraph linearize(
       const gtsam::Values& continuousValues) const;
 
@@ -113,13 +128,27 @@ class GaussianHybridFactorGraph {
   void print(const std::string& str = "GaussianHybridFactorGraph",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
+
+  //TODO(Varun) issues with templated inheritance
+  const gtsam::DiscreteFactorGraph& discreteGraph() const;
+  const gtsam::DCFactorGraph& dcGraph() const;
+  gtsam::DiscreteKeys discreteKeys() const;
+
 };
 
 #include <gtsam/hybrid/IncrementalHybrid.h>
 
 class IncrementalHybrid {
+  IncrementalHybrid();
+
   void update(gtsam::GaussianHybridFactorGraph graph,
-              const gtsam::Ordering& ordering);
+              const gtsam::Ordering& ordering,
+              boost::optional<size_t> maxNrLeaves = nullptr);
+
+  GaussianMixture* gaussianMixture(size_t index) const;
+  const DiscreteFactorGraph& remainingDiscreteGraph() const;
+  const HybridBayesNet& hybridBayesNet() const;
+  const GaussianHybridFactorGraph& remainingFactorGraph() const;
 };
 
 }  // namespace gtsam
