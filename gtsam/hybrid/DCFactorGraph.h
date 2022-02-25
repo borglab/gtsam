@@ -34,14 +34,13 @@ class DCFactorGraph : public FactorGraph<DCFactor> {
       if (factor) {
         // Insert all the discrete keys to the final result.
         for (auto&& key : factor->discreteKeys()) {
+          // Check if the key doesn't already exist. If not, then add.
+          if (std::find(result.begin(), result.end(), key) == result.end()) {
             result.push_back(key);
+          }
         }
       }
     }
-
-    // STL trick to remove duplicate keys
-    std::sort(result.begin(), result.end());
-    result.erase(std::unique(result.begin(), result.end()), result.end());
 
     return result;
   }

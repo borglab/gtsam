@@ -372,8 +372,9 @@ namespace gtsam {
   /****************************************************************************/
   // DecisionTree
   /****************************************************************************/
-  template <typename L, typename Y>
-  DecisionTree<L, Y>::DecisionTree() {}
+  template<typename L, typename Y>
+  DecisionTree<L, Y>::DecisionTree() {
+  }
 
   template<typename L, typename Y>
   DecisionTree<L, Y>::DecisionTree(const NodePtr& root) :
@@ -722,10 +723,10 @@ namespace gtsam {
 
   template<typename L, typename Y>
   DecisionTree<L, Y> DecisionTree<L, Y>::apply(const Unary& op) const {
-    // If empty, create tree with default root.
-    // `op` is then applied to this "empty" tree to initialize it.
+    // It is unclear what should happen if tree is empty:
     if (empty()) {
-      return DecisionTree(Leaf(Y()).apply(op));
+      throw std::runtime_error(
+          "DecisionTree::apply(unary op) undefined for empty tree.");
     }
     return DecisionTree(root_->apply(op));
   }
