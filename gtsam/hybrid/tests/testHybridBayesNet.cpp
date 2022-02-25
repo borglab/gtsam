@@ -11,7 +11,7 @@
 
 /**
  * @file    testHybridBayesNet.cpp
- * @brief   Unit tests for DCFactorGraph
+ * @brief   Unit tests for HybridBayesNet
  * @author  Varun Agrawal
  * @author  Fan Jiang
  * @author  Frank Dellaert
@@ -19,6 +19,7 @@
  */
 
 #include <gtsam/hybrid/HybridBayesNet.h>
+#include <gtsam/hybrid/tests/Switching.h>
 
 // Include for test suite
 #include <CppUnitLite/TestHarness.h>
@@ -43,6 +44,43 @@ TEST(HybridBayesNet, Creation) {
   CHECK(bayesNet.atDiscrete(0));
   auto& df = *bayesNet.atDiscrete(0);
   EXPECT(df.equals(expected));
+}
+
+/* ****************************************************************************/
+// Test choosing an assignment of conditionals
+TEST(HybridBayesNet, Choose) {
+  Switching s(4);
+
+  Ordering ordering;
+  for (auto&& kvp : s.linearizationPoint) {
+    ordering += kvp.key;
+  }
+  HybridBayesNet::shared_ptr hybridBayesNet;
+  GaussianHybridFactorGraph::shared_ptr remainingFactorGraph;
+  std::tie(hybridBayesNet, remainingFactorGraph) =
+      s.linearizedFactorGraph.eliminatePartialSequential(ordering);
+
+  DiscreteValues assignment;
+  assignment[M(1)] = 1;
+  assignment[M(2)] = 1;
+  assignment[M(3)] = 0;
+
+  GaussianBayesNet gbn = hybridBayesNet->choose(assignment);
+
+  EXPECT_LONGS_EQUAL(4, gbn.size());
+
+  EXPECT(assert_equal(*(*boost::dynamic_pointer_cast<GaussianMixture>(
+                          hybridBayesNet->atGaussian(0)))(assignment),
+                      *gbn.at(0)));
+  EXPECT(assert_equal(*(*boost::dynamic_pointer_cast<GaussianMixture>(
+                          hybridBayesNet->atGaussian(1)))(assignment),
+                      *gbn.at(1)));
+  EXPECT(assert_equal(*(*boost::dynamic_pointer_cast<GaussianMixture>(
+                          hybridBayesNet->atGaussian(2)))(assignment),
+                      *gbn.at(2)));
+  EXPECT(assert_equal(*(*boost::dynamic_pointer_cast<GaussianMixture>(
+                          hybridBayesNet->atGaussian(3)))(assignment),
+                      *gbn.at(3)));
 }
 
 /* ************************************************************************* */

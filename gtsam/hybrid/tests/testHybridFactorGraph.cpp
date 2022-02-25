@@ -22,6 +22,7 @@
 #include <gtsam/base/utilities.h>
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/discrete/DiscreteDistribution.h>
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/hybrid/DCFactor.h>
 #include <gtsam/hybrid/DCMixtureFactor.h>
 #include <gtsam/hybrid/HybridEliminationTree.h>
@@ -29,6 +30,7 @@
 #include <gtsam/hybrid/NonlinearHybridFactorGraph.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/nonlinear/PriorFactor.h>
+#include <gtsam/sam/BearingRangeFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 
 #include <numeric>
@@ -41,6 +43,7 @@
 using namespace std;
 using namespace gtsam;
 using noiseModel::Isotropic;
+using symbol_shorthand::L;
 using symbol_shorthand::M;
 using symbol_shorthand::X;
 
@@ -641,6 +644,77 @@ factor 2:  GaussianMixture [x3 | m2 m1 ]{
 }
 )";
   EXPECT(assert_print_equal(expected_hybridBayesNet, *hybridBayesNet));
+}
+
+/* ************************************************************************* */
+// Simple PlanarSLAM example test with 2 poses and 2 landmarks (each pose
+// connects to 1 landmark) to expose issue with default decision tree creation
+// in hybrid elimination. The hybrid factor is between the poses X0 and X1. The
+// issue arises if we eliminate a landmark variable first since it is not
+// connected to a DCFactor.
+TEST(HybridFactorGraph, DefaultDecisionTree) {
+  NonlinearHybridFactorGraph fg;
+
+  // Add a prior on pose x1 at the origin. A prior factor consists of a mean and
+  // a noise model (covariance matrix)
+  Pose2 prior(0.0, 0.0, 0.0);  // prior mean is at origin
+  auto priorNoise = noiseModel::Diagonal::Sigmas(
+      Vector3(0.3, 0.3, 0.1));  // 30cm std on x,y, 0.1 rad on theta
+  fg.emplace_nonlinear<PriorFactor<Pose2>>(X(0), prior, priorNoise);
+
+  using PlanarMotionModel = BetweenFactor<Pose2>;
+
+  // Add odometry factor
+  Pose2 odometry(2.0, 0.0, 0.0);
+  KeyVector contKeys = {X(0), X(1)};
+  auto noise_model = noiseModel::Isotropic::Sigma(3, 1.0);
+  auto still = boost::make_shared<PlanarMotionModel>(X(0), X(1), Pose2(0, 0, 0),
+                                                     noise_model),
+       moving = boost::make_shared<PlanarMotionModel>(X(0), X(1), odometry,
+                                                      noise_model);
+  std::vector<PlanarMotionModel::shared_ptr> components = {still, moving};
+  auto dcFactor = boost::make_shared<DCMixtureFactor<PlanarMotionModel>>(
+      contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, components);
+  fg.push_back(dcFactor);
+
+  // Add Range-Bearing measurements to from X0 to L0 and X1 to L1.
+  // create a noise model for the landmark measurements
+  auto measurementNoise = noiseModel::Diagonal::Sigmas(
+      Vector2(0.1, 0.2));  // 0.1 rad std on bearing, 20cm on range
+  // create the measurement values - indices are (pose id, landmark id)
+  Rot2 bearing11 = Rot2::fromDegrees(45),
+       bearing22 = Rot2::fromDegrees(90);
+  double range11 = std::sqrt(4.0 + 4.0), range22 = 2.0;
+
+  // Add Bearing-Range factors
+  fg.emplace_nonlinear<BearingRangeFactor<Pose2, Point2>>(
+      X(0), L(0), bearing11, range11, measurementNoise);
+  fg.emplace_nonlinear<BearingRangeFactor<Pose2, Point2>>(
+      X(1), L(1), bearing22, range22, measurementNoise);
+
+  // Create (deliberately inaccurate) initial estimate
+  Values initialEstimate;
+  initialEstimate.insert(X(0), Pose2(0.5, 0.0, 0.2));
+  initialEstimate.insert(X(1), Pose2(2.3, 0.1, -0.2));
+  initialEstimate.insert(L(0), Point2(1.8, 2.1));
+  initialEstimate.insert(L(1), Point2(4.1, 1.8));
+
+  // We want to eliminate variables not connected to DCFactors first.
+  Ordering ordering;
+  ordering += L(0);
+  ordering += L(1);
+  ordering += X(0);
+  ordering += X(1);
+
+  GaussianHybridFactorGraph linearized = fg.linearize(initialEstimate);
+  gtsam::HybridBayesNet::shared_ptr hybridBayesNet;
+  gtsam::GaussianHybridFactorGraph::shared_ptr remainingFactorGraph;
+
+  // This should NOT fail
+  std::tie(hybridBayesNet, remainingFactorGraph) =
+      linearized.eliminatePartialSequential(ordering);
+  EXPECT_LONGS_EQUAL(4, hybridBayesNet->size());
+  EXPECT_LONGS_EQUAL(1, remainingFactorGraph->size());
 }
 
 /* ************************************************************************* */
