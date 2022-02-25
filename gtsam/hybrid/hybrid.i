@@ -76,7 +76,7 @@ typedef gtsam::HybridFactorGraph<gtsam::NonlinearFactorGraph>
 
 #include <gtsam/hybrid/NonlinearHybridFactorGraph.h>
 
-virtual class NonlinearHybridFactorGraph {
+class NonlinearHybridFactorGraph {
   NonlinearHybridFactorGraph();
   NonlinearHybridFactorGraph(const gtsam::NonlinearFactorGraph& nonlinearGraph,
                              const gtsam::DiscreteFactorGraph& discreteGraph,
@@ -88,6 +88,12 @@ virtual class NonlinearHybridFactorGraph {
       const gtsam::Values& continuousValues) const;
 
   size_t size() const;
+  bool empty() const;
+  void remove(size_t i);
+  void resize(size_t size);
+  size_t nrFactors() const;
+  gtsam::NonlinearFactor* at(size_t idx) const;
+
   bool equals(const gtsam::NonlinearHybridFactorGraph& other,
               double tol = 1e-9) const;
   void print(const std::string& str = "NonlinearHybridFactorGraph",

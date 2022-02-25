@@ -106,7 +106,7 @@ EliminateHybrid(const GaussianHybridFactorGraph& factors,
                 const Ordering& ordering) {
   // STEP 1: SUM
   // Create a new decision tree with all factors gathered at leaves.
-  auto sum = factors.sum();
+  Sum sum = factors.sum();
 
   // zero out all sums with null ptrs
   auto zeroOut = [](const GaussianFactorGraph& gfg) {
@@ -138,7 +138,7 @@ EliminateHybrid(const GaussianHybridFactorGraph& factors,
 
   // Each pair is a GaussianConditional and the factor generated after
   // elimination.
-  using Pair = GaussianFactorGraph::EliminationResult;
+  using EliminationPair = GaussianFactorGraph::EliminationResult;
 
   KeyVector keysOfEliminated;  // Not the ordering
   KeyVector keysOfSeparator;   // TODO(frank): Is this just (keys - ordering)?
@@ -153,7 +153,7 @@ EliminateHybrid(const GaussianHybridFactorGraph& factors,
     if (keysOfSeparator.empty()) keysOfSeparator = result.second->keys();
     return result;
   };
-  DecisionTree<Key, Pair> eliminationResults(sum, eliminate);
+  DecisionTree<Key, EliminationPair> eliminationResults(sum, eliminate);
 
   // STEP 3: Create result
   auto pair = unzip(eliminationResults);

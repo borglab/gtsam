@@ -20,8 +20,8 @@
 
 #pragma once
 
-#include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/discrete/DiscreteConditional.h>
+#include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/hybrid/GaussianMixture.h>
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/linear/GaussianConditional.h>
@@ -36,8 +36,14 @@ namespace gtsam {
  */
 class GTSAM_EXPORT HybridBayesNet : public BayesNet<AbstractConditional> {
  public:
+  using Base = BayesNet<AbstractConditional>;
+  using This = HybridBayesNet;
   using ConditionalType = AbstractConditional;
   using shared_ptr = boost::shared_ptr<HybridBayesNet>;
+  using sharedConditional = boost::shared_ptr<ConditionalType>;
+
+  /** Construct empty bayes net */
+  HybridBayesNet() : Base() {}
 
   void add(const DiscreteKey &key, const std::string &table) {
     DiscreteConditional dc(key, table);
@@ -58,7 +64,6 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<AbstractConditional> {
    * operator[] which does not).
    */
   DiscreteConditional::shared_ptr atDiscrete(size_t i);
-
 };
 
 }  // namespace gtsam
