@@ -116,8 +116,8 @@ TEST(TranslationRecovery, TwoPoseTest) {
   const auto result = algorithm.run(/*scale=*/3.0);
 
   // Check result for first two translations, determined by prior
-  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0)));
-  EXPECT(assert_equal(Point3(3, 0, 0), result.at<Point3>(1)));
+  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0), 1e-8));
+  EXPECT(assert_equal(Point3(3, 0, 0), result.at<Point3>(1), 1e-8));
 }
 
 TEST(TranslationRecovery, ThreePoseTest) {
@@ -153,9 +153,9 @@ TEST(TranslationRecovery, ThreePoseTest) {
   const auto result = algorithm.run(/*scale=*/3.0);
 
   // Check result
-  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0)));
-  EXPECT(assert_equal(Point3(3, 0, 0), result.at<Point3>(1)));
-  EXPECT(assert_equal(Point3(1.5, -1.5, 0), result.at<Point3>(3)));
+  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0), 1e-8));
+  EXPECT(assert_equal(Point3(3, 0, 0), result.at<Point3>(1), 1e-8));
+  EXPECT(assert_equal(Point3(1.5, -1.5, 0), result.at<Point3>(3), 1e-8));
 }
 
 TEST(TranslationRecovery, ThreePosesIncludingZeroTranslation) {
@@ -190,9 +190,9 @@ TEST(TranslationRecovery, ThreePosesIncludingZeroTranslation) {
   const auto result = algorithm.run(/*scale=*/3.0);
 
   // Check result
-  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0)));
-  EXPECT(assert_equal(Point3(3, 0, 0), result.at<Point3>(1)));
-  EXPECT(assert_equal(Point3(3, 0, 0), result.at<Point3>(2)));
+  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0), 1e-8));
+  EXPECT(assert_equal(Point3(3, 0, 0), result.at<Point3>(1), 1e-8));
+  EXPECT(assert_equal(Point3(3, 0, 0), result.at<Point3>(2), 1e-8));
 }
 
 TEST(TranslationRecovery, FourPosesIncludingZeroTranslation) {
@@ -231,10 +231,10 @@ TEST(TranslationRecovery, FourPosesIncludingZeroTranslation) {
   const auto result = algorithm.run(/*scale=*/4.0);
 
   // Check result
-  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0)));
-  EXPECT(assert_equal(Point3(4, 0, 0), result.at<Point3>(1)));
-  EXPECT(assert_equal(Point3(4, 0, 0), result.at<Point3>(2)));
-  EXPECT(assert_equal(Point3(2, -2, 0), result.at<Point3>(3)));
+  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0), 1e-8));
+  EXPECT(assert_equal(Point3(4, 0, 0), result.at<Point3>(1), 1e-8));
+  EXPECT(assert_equal(Point3(4, 0, 0), result.at<Point3>(2), 1e-8));
+  EXPECT(assert_equal(Point3(2, -2, 0), result.at<Point3>(3), 1e-8));
 }
 
 TEST(TranslationRecovery, ThreePosesWithZeroTranslation) {
@@ -261,9 +261,9 @@ TEST(TranslationRecovery, ThreePosesWithZeroTranslation) {
   const auto result = algorithm.run(/*scale=*/4.0);
 
   // Check result
-  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0)));
-  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(1)));
-  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(2)));
+  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0), 1e-8));
+  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(1), 1e-8));
+  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(2), 1e-8));
 }
 
 /* ************************************************************************* */
