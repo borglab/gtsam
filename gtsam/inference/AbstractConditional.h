@@ -83,6 +83,8 @@ class GTSAM_EXPORT AbstractConditional {
 
   virtual Parents parents() const = 0;
   /// @}
+
+  //TODO(Varun) add iterators so we can call hybridBayesNet.keyVector()
 };
 
 /// traits
