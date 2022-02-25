@@ -65,19 +65,19 @@ GaussianConditional::shared_ptr GaussianMixture::operator()(
 void GaussianMixture::print(const std::string &s,
                             const KeyFormatter &keyFormatter) const {
   std::cout << (s.empty() ? "" : s + " ");
-  std::cout << "GaussianMixture [";
+  std::cout << "GaussianMixture [ ";
 
   for (Key key : frontals()) std::cout << keyFormatter(key) << " ";
-  std::cout << "| ";
+  if (parents().size()) std::cout << "| ";
   for (Key key : parents()) std::cout << keyFormatter(key) << " ";
 
   std::cout << "]";
   std::cout << "{\n";
 
-  auto valueFormatter = [](const GaussianFactor::shared_ptr &v) {
-    auto printCapture = [](const GaussianFactor::shared_ptr &p) {
+  auto valueFormatter = [&](const GaussianFactor::shared_ptr &v) {
+    auto printCapture = [&](const GaussianFactor::shared_ptr &p) {
       RedirectCout rd;
-      p->print();
+      p->print("", keyFormatter);
       std::string s = rd.str();
       return s;
     };
