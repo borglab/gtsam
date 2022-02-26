@@ -38,7 +38,8 @@ class TrifocalTensor2 {
   TrifocalTensor2() {}
 
   // Construct from the two 2x2 matrices that form the tensor.
-  TrifocalTensor2(const Matrix2& matrix0, const Matrix2& matrix1);
+  TrifocalTensor2(const Matrix2& matrix0, const Matrix2& matrix1)
+      : matrix0_(matrix0), matrix1_(matrix1) {}
 
   /**
    * @brief Estimates a tensor from 8 bearing measurements in 3 cameras. Throws
