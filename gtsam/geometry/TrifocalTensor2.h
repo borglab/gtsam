@@ -41,27 +41,30 @@ class TrifocalTensor2 {
   TrifocalTensor2(const Matrix2& matrix0, const Matrix2& matrix1);
 
   /**
-   * @brief Constructor using 8 bearing measurements in 3 cameras. Throws a
-   * runtime error if the size of inputs are unequal or less than 8.
+   * @brief Estimates a tensor from 8 bearing measurements in 3 cameras. Throws
+   * a runtime error if the size of inputs are unequal or less than 8.
    *
    * @param u bearing measurement in camera u.
    * @param v bearing measurement in camera v.
    * @param w bearing measurement in camera w.
+   * @return Tensor estimated from the measurements.
    */
-  TrifocalTensor2(const std::vector<Rot2>& bearings_u,
-                  const std::vector<Rot2>& bearings_v,
-                  const std::vector<Rot2>& bearings_w);
+  static TrifocalTensor2 FromBearingMeasurements(
+      const std::vector<Rot2>& bearings_u, const std::vector<Rot2>& bearings_v,
+      const std::vector<Rot2>& bearings_w);
 
   /**
-   * @brief Constructor using 8 projective measurements in 3 cameras. Throws a
-   * runtime error if the size of inputs are unequal or less than 8.
+   * @brief Estimates a tensor from 8 projective measurements in 3 cameras.
+   * Throws a runtime error if the size of inputs are unequal or less than 8.
    *
    * @param u projective 1D bearing measurement in camera u.
    * @param v projective 1D bearing measurement in camera v.
    * @param w projective 1D bearing measurement in camera w.
+   * @return tensor estimated from the measurements.
    */
-  TrifocalTensor2(const std::vector<Point2>& u, const std::vector<Point2>& v,
-                  const std::vector<Point2>& w);
+  static TrifocalTensor2 FromProjectiveBearingMeasurements(
+      const std::vector<Point2>& u, const std::vector<Point2>& v,
+      const std::vector<Point2>& w);
 
   /**
    * @brief Computes the bearing in camera 'u' given bearing measurements in

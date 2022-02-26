@@ -65,12 +65,13 @@ TrifocalTestData getTestData() {
 
 }  // namespace trifocal
 
+// Check transform() correctly transforms measurements from 2 views to third.
 TEST(TrifocalTensor2, transform) {
   trifocal::TrifocalTestData data = trifocal::getTestData();
 
   // calculate trifocal tensor
-  TrifocalTensor2 T(data.measurements[0], data.measurements[1],
-                    data.measurements[2]);
+  TrifocalTensor2 T = TrifocalTensor2::FromBearingMeasurements(
+      data.measurements[0], data.measurements[1], data.measurements[2]);
 
   // estimate measurement of a robot from the measurements of the other two
   // robots
@@ -86,12 +87,13 @@ TEST(TrifocalTensor2, transform) {
   }
 }
 
+// Check the correct tensor is computed from measurements (catch regressions).
 TEST(TrifocalTensor2, tensorRegression) {
   trifocal::TrifocalTestData data = trifocal::getTestData();
 
   // calculate trifocal tensor
-  TrifocalTensor2 T(data.measurements[0], data.measurements[1],
-                    data.measurements[2]);
+  TrifocalTensor2 T = TrifocalTensor2::FromBearingMeasurements(
+      data.measurements[0], data.measurements[1], data.measurements[2]);
 
   Matrix2 expected_tensor_mat0, expected_tensor_mat1;
   // These values were obtained from a numpy-based python implementation.

@@ -16,6 +16,7 @@
 #include <gtsam/geometry/TrifocalTensor2.h>
 
 #include <stdexcept>
+#include <vector>
 
 namespace gtsam {
 
@@ -30,26 +31,27 @@ std::vector<Point2> convertToProjective(const std::vector<Rot2>& rotations) {
 }
 
 // Construct from 8 bearing measurements.
-TrifocalTensor2::TrifocalTensor2(const std::vector<Rot2>& bearings_u,
-                                 const std::vector<Rot2>& bearings_v,
-                                 const std::vector<Rot2>& bearings_w)
-    : TrifocalTensor2(convertToProjective(bearings_u),
-                      convertToProjective(bearings_v),
-                      convertToProjective(bearings_w)) {}
+TrifocalTensor2 TrifocalTensor2::FromBearingMeasurements(
+    const std::vector<Rot2>& bearings_u, const std::vector<Rot2>& bearings_v,
+    const std::vector<Rot2>& bearings_w) {
+  return TrifocalTensor2::FromProjectiveBearingMeasurements(
+      convertToProjective(bearings_u), convertToProjective(bearings_v),
+      convertToProjective(bearings_w));
+}
 
 // Construct from 8 bearing measurements expressed in projective coordinates.
-TrifocalTensor2::TrifocalTensor2(const std::vector<Point2>& u,
-                                 const std::vector<Point2>& v,
-                                 const std::vector<Point2>& w) {
+TrifocalTensor2 TrifocalTensor2::FromProjectiveBearingMeasurements(
+    const std::vector<Point2>& u, const std::vector<Point2>& v,
+    const std::vector<Point2>& w) {
   if (u.size() < 8) {
     throw std::invalid_argument(
-        "Trifocal tensor computation requires at least 8 measurements")
+        "Trifocal tensor computation requires at least 8 measurements");
   }
   if (u.size() != v.size() || v.size() != w.size()) {
     throw std::invalid_argument(
         "Number of input measurements in 3 cameras must be same");
   }
-  
+
   // Create the system matrix A.
   Matrix A(u.size() > 8 ? u.size() : 8, 8);
   for (int row = 0; row < u.size(); row++) {
@@ -66,18 +68,20 @@ TrifocalTensor2::TrifocalTensor2(const std::vector<Point2>& u,
       A(row, col) = 0;
     }
   }
-  
+
   // Eigen vector of smallest singular value is the trifocal tensor.
   Matrix U, V;
   Vector S;
   svd(A, U, S, V);
 
+  Matrix2 matrix0, matrix1;
   for (int i = 0; i < 2; i++) {
     for (int j = 0; j < 2; j++) {
-      matrix0_(i, j) = V(2 * i + j, V.cols() - 1);
-      matrix1_(i, j) = V(2 * i + j + 4, V.cols() - 1);
+      matrix0(i, j) = V(2 * i + j, V.cols() - 1);
+      matrix1(i, j) = V(2 * i + j + 4, V.cols() - 1);
     }
   }
+  return TrifocalTensor2(matrix0, matrix1);
 }
 
 // Finds a measurement in the first view using measurements from second and
