@@ -40,17 +40,17 @@ TrifocalTestData getTestData() {
 
   // Poses
   data.gt_poses.emplace_back(0, 0, 0);
-  data.gt_poses.emplace_back(0, 0, 0);
-  data.gt_poses.emplace_back(0, 0, 0);
+  data.gt_poses.emplace_back(-1.9, 4, -2 * acos(0.0) / 8);
+  data.gt_poses.emplace_back(2.1, -2.1, 2 * acos(0.0) / 3);
 
   // Landmarks
-  data.gt_landmarks.emplace_back(2.0, 0.5);
-  data.gt_landmarks.emplace_back(-0.8, 2.4);
-  data.gt_landmarks.emplace_back(1.9, -0.4);
-  data.gt_landmarks.emplace_back(2.3, 1.0);
-  data.gt_landmarks.emplace_back(-0.4, -0.4);
-  data.gt_landmarks.emplace_back(-3.2, -1.0);
-  data.gt_landmarks.emplace_back(1.5, 2.0);
+  data.gt_landmarks.emplace_back(1.2, 1.0);
+  data.gt_landmarks.emplace_back(2.4, 3.5);
+  data.gt_landmarks.emplace_back(-1.0, 0.5);
+  data.gt_landmarks.emplace_back(3.4, -1.5);
+  data.gt_landmarks.emplace_back(5.1, 0.6);
+  data.gt_landmarks.emplace_back(-0.1, -0.7);
+  data.gt_landmarks.emplace_back(3.1, 1.9);
 
   // Measurements
   for (const Pose2& pose : data.gt_poses) {
@@ -97,11 +97,40 @@ TEST(TrifocalTensor2, tensorRegression) {
 
   Matrix2 expected_tensor_mat0, expected_tensor_mat1;
   // These values were obtained from a numpy-based python implementation.
-  expected_tensor_mat0 << -0.13178263, 0.29210566, -0.00860471, -0.73975238;
-  expected_tensor_mat1 << -0.27261704, 0.09097327, 0.51699647, 0.0108839;
+  expected_tensor_mat0 << -0.16301732 -0.1968196, -0.6082839  -0.10324949;
+  expected_tensor_mat1 << 0.45758469 -0.36310941, 0.30334159 -0.34751881;
 
   EXPECT(assert_equal(T.mat0(), expected_tensor_mat0, 1e-2));
   EXPECT(assert_equal(T.mat1(), expected_tensor_mat1, 1e-2));
+}
+
+// Check the calculation of Jacobian (Ground-true Jacobian comes from Auto-Grad
+// result of Pytorch)
+TEST(TrifocalTensor2, Jacobian) {
+  trifocal::TrifocalTestData data = trifocal::getTestData();
+
+  // Construct trifocal tensor using 2 rotations and 3 bearing measurements in 3
+  // cameras.
+  std::vector<Rot2> trifocal_in_angle;
+  trifocal_in_angle.insert(
+      trifocal_in_angle.end(),
+      {-0.39269908169872414, 1.0471975511965976, 2.014244663214635,
+       -0.7853981633974483, -0.5976990577022983});
+
+  // calculate trifocal tensor
+  TrifocalTensor2 T(trifocal_in_angle);
+
+  // Calculate Jacobian matrix
+  Matrix jacobian_of_trifocal = T.Jacobian(
+      data.measurements[0], data.measurements[1], data.measurements[2]);
+  // These values were obtained from a Pytorch-based python implementation.
+  Matrix expected_jacobian(7, 5) << -2.2003, 0.7050, 0.9689, 0.6296, -3.1280,
+      -4.6886, 1.1274, 2.7912, 1.6121, -5.1817, -0.7223, -0.6841, 0.5387,
+      0.7208, -0.5677, -0.8645, 0.1767, 0.5967, 0.9383, -2.2041, -3.0437,
+      0.5239, 2.0144, 1.6368, -4.0335, -1.9855, -0.2741, 1.4741, 0.6783,
+      -0.9262, -4.6600, 0.7275, 2.8182, 1.9639, -5.5489;
+
+  EXPECT(assert_equal(jacobian_of_trifocal, expected_jacobian, 1e-8));
 }
 
 int main() {
