@@ -553,7 +553,7 @@ TEST(HybridFactorGraph, Printing) {
   // Expected output for hybridBayesNet.
   string expected_hybridBayesNet = R"(
 size: 3
-factor 0:  GaussianMixture [x1 | x2 m1 ]{
+factor 0:  GaussianMixture [ x1 | x2 m1 ]{
  Choice(m1) 
  0 Leaf Jacobian factor on 2 keys: 
   Conditional density [x1] 
@@ -572,7 +572,7 @@ factor 0:  GaussianMixture [x1 | x2 m1 ]{
 
 
 }
-factor 1:  GaussianMixture [x2 | x3 m2 m1 ]{
+factor 1:  GaussianMixture [ x2 | x3 m2 m1 ]{
  Choice(m2) 
  0 Choice(m1) 
  0 0 Leaf Jacobian factor on 2 keys: 
@@ -609,7 +609,7 @@ factor 1:  GaussianMixture [x2 | x3 m2 m1 ]{
 
 
 }
-factor 2:  GaussianMixture [x3 | m2 m1 ]{
+factor 2:  GaussianMixture [ x3 | m2 m1 ]{
  Choice(m2) 
  0 Choice(m1) 
  0 0 Leaf Jacobian factor on 1 keys: 

@@ -33,7 +33,11 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
     // We add all relevant conditional mixtures on the last continuous variable
     // in the previous `hybridBayesNet` to the graph
     std::unordered_set<Key> allVars(ordering.begin(), ordering.end());
-    for (auto &&conditional : hybridBayesNet_) {
+
+    // TODO(Varun) Using a for-range loop doesn't work since some of the
+    // conditionals are invalid pointers
+    for (size_t i = 0; i < hybridBayesNet_.size(); i++) {
+      auto conditional = hybridBayesNet_.at(i);
       // Flag indicating if a conditional will be updated due to factors in
       // `graph`
       bool marked_for_update = false;
@@ -53,7 +57,8 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
           // If a conditional is due to be updated, we remove if from the
           // previous bayes net.
           if (marked_for_update) {
-            auto it = find(hybridBayesNet_.begin(), hybridBayesNet_.end(), conditional);
+            auto it = find(hybridBayesNet_.begin(), hybridBayesNet_.end(),
+                           conditional);
             hybridBayesNet_.erase(it);
           }
           break;
