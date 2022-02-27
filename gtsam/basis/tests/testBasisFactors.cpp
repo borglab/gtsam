@@ -20,6 +20,7 @@
 #include <gtsam/basis/Basis.h>
 #include <gtsam/basis/BasisFactors.h>
 #include <gtsam/basis/Chebyshev2.h>
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/nonlinear/FunctorizedFactor.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/factorTesting.h>
@@ -31,6 +32,7 @@
 #include <CppUnitLite/TestHarness.h>
 
 using gtsam::noiseModel::Isotropic;
+using gtsam::Pose2;
 using gtsam::Vector;
 using gtsam::Values;
 using gtsam::Chebyshev2;
@@ -64,8 +66,6 @@ TEST(BasisFactors, EvaluationFactor) {
   initial.insert<Vector>(key, functionValues);
 
   LevenbergMarquardtParams parameters;
-  parameters.verbosity = NonlinearOptimizerParams::SILENT;
-  parameters.verbosityLM = LevenbergMarquardtParams::SILENT;
   parameters.setMaxIterations(20);
   Values result =
       LevenbergMarquardtOptimizer(graph, initial, parameters).optimize();
@@ -92,8 +92,6 @@ TEST(BasisFactors, VectorEvaluationFactor) {
   initial.insert<ParameterMatrix<M>>(key, stateMatrix);
 
   LevenbergMarquardtParams parameters;
-  parameters.verbosity = NonlinearOptimizerParams::SILENT;
-  parameters.verbosityLM = LevenbergMarquardtParams::SILENT;
   parameters.setMaxIterations(20);
   Values result =
       LevenbergMarquardtOptimizer(graph, initial, parameters).optimize();
@@ -130,11 +128,11 @@ TEST(BasisFactors, VectorComponentFactor) {
   const size_t i = 2;
   const double measured = 0.0, t = 3.0, a = 2.0, b = 4.0;
   auto model = Isotropic::Sigma(1, 1.0);
-  VectorComponentFactor<Chebyshev2, P> controlPrior(key, measured, model, N, i,
+  VectorComponentFactor<Chebyshev2, P> factor(key, measured, model, N, i,
                                                     t, a, b);
 
   NonlinearFactorGraph graph;
-  graph.add(controlPrior);
+  graph.add(factor);
 
   ParameterMatrix<P> stateMatrix(N);
 
@@ -142,8 +140,31 @@ TEST(BasisFactors, VectorComponentFactor) {
   initial.insert<ParameterMatrix<P>>(key, stateMatrix);
 
   LevenbergMarquardtParams parameters;
-  parameters.verbosity = NonlinearOptimizerParams::SILENT;
-  parameters.verbosityLM = LevenbergMarquardtParams::SILENT;
+  parameters.setMaxIterations(20);
+  Values result =
+      LevenbergMarquardtOptimizer(graph, initial, parameters).optimize();
+
+  EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-9);
+}
+
+//******************************************************************************
+TEST(BasisFactors, ManifoldEvaluationFactor) {
+  using gtsam::ManifoldEvaluationFactor;
+  const Pose2 measured;
+  const double t = 3.0, a = 2.0, b = 4.0;
+  auto model = Isotropic::Sigma(3, 1.0);
+  ManifoldEvaluationFactor<Chebyshev2, Pose2> factor(key, measured, model, N,
+                                                     t, a, b);
+
+  NonlinearFactorGraph graph;
+  graph.add(factor);
+
+  ParameterMatrix<3> stateMatrix(N);
+
+  Values initial;
+  initial.insert<ParameterMatrix<3>>(key, stateMatrix);
+
+  LevenbergMarquardtParams parameters;
   parameters.setMaxIterations(20);
   Values result =
       LevenbergMarquardtOptimizer(graph, initial, parameters).optimize();
@@ -169,8 +190,6 @@ TEST(BasisFactors, VecDerivativePrior) {
   initial.insert<ParameterMatrix<M>>(key, stateMatrix);
 
   LevenbergMarquardtParams parameters;
-  parameters.verbosity = NonlinearOptimizerParams::SILENT;
-  parameters.verbosityLM = LevenbergMarquardtParams::SILENT;
   parameters.setMaxIterations(20);
   Values result =
       LevenbergMarquardtOptimizer(graph, initial, parameters).optimize();
@@ -196,8 +215,6 @@ TEST(BasisFactors, ComponentDerivativeFactor) {
   initial.insert<ParameterMatrix<M>>(key, stateMatrix);
 
   LevenbergMarquardtParams parameters;
-  parameters.verbosity = NonlinearOptimizerParams::SILENT;
-  parameters.verbosityLM = LevenbergMarquardtParams::SILENT;
   parameters.setMaxIterations(20);
   Values result =
       LevenbergMarquardtOptimizer(graph, initial, parameters).optimize();
