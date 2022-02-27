@@ -40,45 +40,51 @@ using gtsam::LevenbergMarquardtOptimizer;
 using gtsam::NonlinearFactorGraph;
 using gtsam::NonlinearOptimizerParams;
 
-const size_t N = 2;
+constexpr size_t N = 2;
 
-// Key for FunctorizedFactor
-gtsam::Key key = gtsam::Symbol('X', 0);
+// Key used in all tests
+const gtsam::Symbol key('X', 0);
 
 //******************************************************************************
-TEST(FunctorizedFactor, Print2) {
-  using gtsam::VectorEvaluationFactor;
-  const size_t M = 1;
+TEST(BasisFactors, EvaluationFactor) {
+  using gtsam::EvaluationFactor;
 
-  Vector measured = Vector::Ones(M) * 42;
+  double measured = 0;
 
-  auto model = Isotropic::Sigma(M, 1.0);
-  VectorEvaluationFactor<Chebyshev2, M> priorFactor(key, measured, model, N, 0);
+  auto model = Isotropic::Sigma(1, 1.0);
+  EvaluationFactor<Chebyshev2> factor(key, measured, model, N, 0);
 
-  std::string expected =
-      "  keys = { X0 }\n"
-      "  noise model: unit (1) \n"
-      "FunctorizedFactor(X0)\n"
-      "  measurement: [\n"
-      "	42\n"
-      "]\n"
-      "  noise model sigmas: 1\n";
+  NonlinearFactorGraph graph;
+  graph.add(factor);
 
-  EXPECT(assert_print_equal(expected, priorFactor));
+  Vector functionValues(N);
+  functionValues.setZero();
+
+  Values initial;
+  initial.insert<Vector>(key, functionValues);
+
+  LevenbergMarquardtParams parameters;
+  parameters.verbosity = NonlinearOptimizerParams::SILENT;
+  parameters.verbosityLM = LevenbergMarquardtParams::SILENT;
+  parameters.setMaxIterations(20);
+  Values result =
+      LevenbergMarquardtOptimizer(graph, initial, parameters).optimize();
+
+  EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-9);
 }
 
 //******************************************************************************
-TEST(FunctorizedFactor, VectorEvaluationFactor) {
+TEST(BasisFactors, VectorEvaluationFactor) {
   using gtsam::VectorEvaluationFactor;
   const size_t M = 4;
 
-  Vector measured = Vector::Zero(M);
+  const Vector measured = Vector::Zero(M);
 
   auto model = Isotropic::Sigma(M, 1.0);
-  VectorEvaluationFactor<Chebyshev2, M> priorFactor(key, measured, model, N, 0);
+  VectorEvaluationFactor<Chebyshev2, M> factor(key, measured, model, N, 0);
 
   NonlinearFactorGraph graph;
-  graph.add(priorFactor);
+  graph.add(factor);
 
   ParameterMatrix<M> stateMatrix(N);
 
@@ -96,7 +102,29 @@ TEST(FunctorizedFactor, VectorEvaluationFactor) {
 }
 
 //******************************************************************************
-TEST(FunctorizedFactor, VectorComponentFactor) {
+TEST(BasisFactors, Print) {
+  using gtsam::VectorEvaluationFactor;
+  const size_t M = 1;
+
+  const Vector measured = Vector::Ones(M) * 42;
+
+  auto model = Isotropic::Sigma(M, 1.0);
+  VectorEvaluationFactor<Chebyshev2, M> factor(key, measured, model, N, 0);
+
+  std::string expected =
+      "  keys = { X0 }\n"
+      "  noise model: unit (1) \n"
+      "FunctorizedFactor(X0)\n"
+      "  measurement: [\n"
+      "	42\n"
+      "]\n"
+      "  noise model sigmas: 1\n";
+
+  EXPECT(assert_print_equal(expected, factor));
+}
+
+//******************************************************************************
+TEST(BasisFactors, VectorComponentFactor) {
   using gtsam::VectorComponentFactor;
   const int P = 4;
   const size_t i = 2;
@@ -124,11 +152,11 @@ TEST(FunctorizedFactor, VectorComponentFactor) {
 }
 
 //******************************************************************************
-TEST(FunctorizedFactor, VecDerivativePrior) {
+TEST(BasisFactors, VecDerivativePrior) {
   using gtsam::VectorDerivativeFactor;
   const size_t M = 4;
 
-  Vector measured = Vector::Zero(M);
+  const Vector measured = Vector::Zero(M);
   auto model = Isotropic::Sigma(M, 1.0);
   VectorDerivativeFactor<Chebyshev2, M> vecDPrior(key, measured, model, N, 0);
 
@@ -151,7 +179,7 @@ TEST(FunctorizedFactor, VecDerivativePrior) {
 }
 
 //******************************************************************************
-TEST(FunctorizedFactor, ComponentDerivativeFactor) {
+TEST(BasisFactors, ComponentDerivativeFactor) {
   using gtsam::ComponentDerivativeFactor;
   const size_t M = 4;
 

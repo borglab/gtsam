@@ -29,6 +29,9 @@ namespace gtsam {
  * pseudo-spectral parameterization.
  *
  * @tparam BASIS The basis class to use e.g. Chebyshev2
+ *
+ * Example, degree 8 Chebyshev polynomial measured at x=0.5:
+ *  EvaluationFactor<Chebyshev2> factor(key, measured, model, 8, 0.5);
  */
 template <class BASIS>
 class EvaluationFactor : public FunctorizedFactor<double, Vector> {
@@ -47,7 +50,7 @@ class EvaluationFactor : public FunctorizedFactor<double, Vector> {
    * @param N The degree of the polynomial.
    * @param x The point at which to evaluate the polynomial.
    */
-  EvaluationFactor(Key key, const double &z, const SharedNoiseModel &model,
+  EvaluationFactor(Key key, double z, const SharedNoiseModel &model,
                    const size_t N, double x)
       : Base(key, z, model, typename BASIS::EvaluationFunctor(N, x)) {}
 
@@ -62,7 +65,7 @@ class EvaluationFactor : public FunctorizedFactor<double, Vector> {
    * @param a Lower bound for the polynomial.
    * @param b Upper bound for the polynomial.
    */
-  EvaluationFactor(Key key, const double &z, const SharedNoiseModel &model,
+  EvaluationFactor(Key key, double z, const SharedNoiseModel &model,
                    const size_t N, double x, double a, double b)
       : Base(key, z, model, typename BASIS::EvaluationFunctor(N, x, a, b)) {}
 
