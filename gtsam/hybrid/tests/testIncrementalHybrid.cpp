@@ -19,12 +19,14 @@
 
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/discrete/DiscreteDistribution.h>
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/hybrid/DCFactor.h>
 #include <gtsam/hybrid/DCMixtureFactor.h>
 #include <gtsam/hybrid/HybridEliminationTree.h>
 #include <gtsam/hybrid/IncrementalHybrid.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/nonlinear/PriorFactor.h>
+#include <gtsam/sam/BearingRangeFactor.h>
 
 #include <numeric>
 
@@ -36,8 +38,12 @@
 using namespace std;
 using namespace gtsam;
 using noiseModel::Isotropic;
+using symbol_shorthand::L;
 using symbol_shorthand::M;
+using symbol_shorthand::W;
 using symbol_shorthand::X;
+using symbol_shorthand::Y;
+using symbol_shorthand::Z;
 
 /* ****************************************************************************/
 // Test if we can incrementally do the inference
@@ -319,6 +325,115 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_approximate) {
   CHECK_EQUAL(2, actualBayesNet.size());
   EXPECT_LONGS_EQUAL(10, actualBayesNet.atGaussian(0)->nrComponents());
   EXPECT_LONGS_EQUAL(5, actualBayesNet.atGaussian(1)->nrComponents());
+}
+
+/* ************************************************************************* */
+/* This test reproduces a bug I've been having with the legged robot state
+ * estimator where after elimination of all variables, we still have a
+ * DCGaussianFactor left.
+ * Doing this in GTSAM to make debugging easier. */
+TEST(IncrementalHybrid, NonTrivial) {
+  NonlinearHybridFactorGraph fg;
+
+  // Add a prior on pose x1 at the origin. A prior factor consists of a mean and
+  // a noise model (covariance matrix)
+  Pose2 prior(0.0, 0.0, 0.0);  // prior mean is at origin
+  auto priorNoise = noiseModel::Diagonal::Sigmas(
+      Vector3(0.3, 0.3, 0.1));  // 30cm std on x,y, 0.1 rad on theta
+  fg.emplace_nonlinear<PriorFactor<Pose2>>(X(0), prior, priorNoise);
+
+  // create a noise model for the landmark measurements
+  auto poseNoise = noiseModel::Isotropic::Sigma(3, 0.1);
+
+  // We model a robot's single leg as X - Y - Z - W
+  // where X is the base link and W is the foot link.
+
+  // Add connecting poses similar to PoseFactors in GTD
+  fg.emplace_nonlinear<BetweenFactor<Pose2>>(X(0), Y(0), Pose2(0, 1.0, 0),
+                                             poseNoise);
+  fg.emplace_nonlinear<BetweenFactor<Pose2>>(Y(0), Z(0), Pose2(0, 1.0, 0),
+                                             poseNoise);
+  fg.emplace_nonlinear<BetweenFactor<Pose2>>(Z(0), W(0), Pose2(0, 1.0, 0),
+                                             poseNoise);
+
+  // Create initial estimate
+  Values initial;
+  initial.insert(X(0), Pose2(0.0, 0.0, 0.0));
+  initial.insert(Y(0), Pose2(0.0, 1.0, 0.0));
+  initial.insert(Z(0), Pose2(0.0, 2.0, 0.0));
+  initial.insert(W(0), Pose2(0.0, 3.0, 0.0));
+
+  GaussianHybridFactorGraph gfg = fg.linearize(initial);
+  fg = NonlinearHybridFactorGraph();
+
+  IncrementalHybrid inc;
+
+  Ordering ordering;
+  ordering += W(0);
+  ordering += Z(0);
+  ordering += Y(0);
+  ordering += X(0);
+  ordering.print("ordering:");
+  inc.update(gfg, ordering);
+
+  GTSAM_PRINT(inc.hybridBayesNet());
+  std::cout << "\n\n";
+  GTSAM_PRINT(inc.remainingFactorGraph());
+
+  using PlanarMotionModel = BetweenFactor<Pose2>;
+
+  // Add odometry factor
+  Pose2 odometry(1.0, 0.0, 0.0);
+  KeyVector contKeys = {W(0), W(1)};
+  auto noise_model = noiseModel::Isotropic::Sigma(3, 1.0);
+  auto still = boost::make_shared<PlanarMotionModel>(W(0), W(1), Pose2(0, 0, 0),
+                                                     noise_model),
+       moving = boost::make_shared<PlanarMotionModel>(W(0), W(1), odometry,
+                                                      noise_model);
+  std::vector<PlanarMotionModel::shared_ptr> components = {still, moving};
+  auto dcFactor = boost::make_shared<DCMixtureFactor<PlanarMotionModel>>(
+      contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, components);
+  fg.push_back(dcFactor);
+
+  // Add equivalent of ImuFactor
+  fg.emplace_nonlinear<BetweenFactor<Pose2>>(X(0), X(1), Pose2(1.0, 0.0, 0),
+                                             poseNoise);
+  // PoseFactors-like at k=1
+  fg.emplace_nonlinear<BetweenFactor<Pose2>>(X(1), Y(1), Pose2(0, 1, 0),
+                                             poseNoise);
+  fg.emplace_nonlinear<BetweenFactor<Pose2>>(Y(1), Z(1), Pose2(0, 1, 0),
+                                             poseNoise);
+  fg.emplace_nonlinear<BetweenFactor<Pose2>>(Z(1), W(1), Pose2(-1, 1, 0),
+                                             poseNoise);
+
+  initial.insert(X(1), Pose2(1.0, 0.0, 0.0));
+  initial.insert(Y(1), Pose2(1.0, 1.0, 0.0));
+  initial.insert(Z(1), Pose2(1.0, 2.0, 0.0));
+  initial.insert(W(1), Pose2(0.0, 3.0, 0.0));
+
+  ordering = Ordering();
+  ordering += Y(1);
+  ordering += W(0);
+  ordering += W(1);
+  ordering += Z(1);
+  ordering += X(0);
+  ordering += X(1);
+
+  gfg = fg.linearize(initial);
+  std::cout << "\n\n=============" << std::endl;
+  inc.update(gfg, ordering);
+
+  GTSAM_PRINT(inc.hybridBayesNet());
+  GTSAM_PRINT(inc.remainingFactorGraph());
+
+  // gtsam::HybridBayesNet::shared_ptr hybridBayesNet;
+  // gtsam::GaussianHybridFactorGraph::shared_ptr remainingFactorGraph;
+
+  // // This should NOT fail
+  // std::tie(hybridBayesNet, remainingFactorGraph) =
+  //     linearized.eliminatePartialSequential(ordering);
+  // EXPECT_LONGS_EQUAL(4, hybridBayesNet->size());
+  // EXPECT_LONGS_EQUAL(1, remainingFactorGraph->size());
 }
 
 /* ************************************************************************* */
