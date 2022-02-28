@@ -431,11 +431,61 @@ TEST(IncrementalHybrid, NonTrivial) {
   ordering += X(1);
 
   gfg = fg.linearize(initial);
-  std::cout << "\n\n=============" << std::endl;
+  std::cout << "\n\n=============\n\n" << std::endl;
   inc.update(gfg, ordering);
 
   GTSAM_PRINT(inc.hybridBayesNet());
   GTSAM_PRINT(inc.remainingFactorGraph());
+
+  // Add odometry factor
+  contKeys = {W(1), W(2)};
+  noise_model = noiseModel::Isotropic::Sigma(3, 1.0);
+  still = boost::make_shared<PlanarMotionModel>(W(1), W(2), Pose2(0, 0, 0),
+                                                noise_model);
+  moving =
+      boost::make_shared<PlanarMotionModel>(W(1), W(2), odometry, noise_model);
+  components = {still, moving};
+  dcFactor = boost::make_shared<DCMixtureFactor<PlanarMotionModel>>(
+      contKeys, DiscreteKeys{gtsam::DiscreteKey(M(2), 2)}, components);
+  fg.push_back(dcFactor);
+
+  // Add equivalent of ImuFactor
+  fg.emplace_nonlinear<BetweenFactor<Pose2>>(X(1), X(2), Pose2(1.0, 0.0, 0),
+                                             poseNoise);
+  // PoseFactors-like at k=1
+  fg.emplace_nonlinear<BetweenFactor<Pose2>>(X(2), Y(2), Pose2(0, 1, 0),
+                                             poseNoise);
+  fg.emplace_nonlinear<BetweenFactor<Pose2>>(Y(2), Z(2), Pose2(0, 1, 0),
+                                             poseNoise);
+  fg.emplace_nonlinear<BetweenFactor<Pose2>>(Z(2), W(2), Pose2(-2, 1, 0),
+                                             poseNoise);
+
+  initial.insert(X(2), Pose2(2.0, 0.0, 0.0));
+  initial.insert(Y(2), Pose2(2.0, 1.0, 0.0));
+  initial.insert(Z(2), Pose2(2.0, 2.0, 0.0));
+  initial.insert(W(2), Pose2(0.0, 3.0, 0.0));
+
+  // Ordering at k=2. We should only need variables at k=2 and k=1 in order to
+  // be truly incremental.
+  ordering = Ordering();
+  ordering += Y(1);
+  ordering += Y(2);
+  ordering += W(1);
+  ordering += W(2);
+  ordering += Z(1);
+  ordering += Z(2);
+  ordering += X(1);
+  ordering += X(2);
+
+  gfg = fg.linearize(initial);
+  std::cout << "\n\n=============\n\n" << std::endl;
+  inc.update(gfg, ordering);
+
+  GTSAM_PRINT(inc.hybridBayesNet());
+  GTSAM_PRINT(inc.remainingFactorGraph());
+
+  // The final discrete graph should not be empty since we have eliminated everything.
+  EXPECT(inc.remainingDiscreteGraph().size() != 0);
 }
 
 /* ************************************************************************* */
