@@ -233,9 +233,12 @@ TEST(DCGaussianElimination, Approx_inference) {
   auto remainingFactorGraph = incrementalHybrid.remainingFactorGraph();
   EXPECT_LONGS_EQUAL(1, remainingFactorGraph.size());
 
-  auto discreteFactor_m1 = *dynamic_pointer_cast<DecisionTreeFactor>(
-      remainingFactorGraph.discreteGraph().at(0));
+  auto discreteFactor_m1 =
+      *dynamic_pointer_cast<DecisionTreeFactor>(incrementalHybrid.remainingDiscreteGraph().at(0));
   EXPECT(discreteFactor_m1.keys() == KeyVector({M(3), M(2), M(1)}));
+
+  size_t nrLeaves = incrementalHybrid.remainingDiscreteGraph().at(0)->toDecisionTreeFactor().nrLeaves();
+  EXPECT(5 == nrLeaves);
 
   // Check number of elements equal to zero
   auto count = [](const double &value, int count) {
@@ -303,6 +306,9 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_approximate) {
 
   size_t maxComponents = 5;
   incrementalHybrid.update(graph1, ordering, maxComponents);
+
+  size_t nrLeaves = incrementalHybrid.remainingDiscreteGraph().at(0)->toDecisionTreeFactor().nrLeaves();
+  EXPECT(5 == nrLeaves);
 
   auto actualBayesNet1 = incrementalHybrid.hybridBayesNet();
   CHECK_EQUAL(4, actualBayesNet1.size());
