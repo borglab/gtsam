@@ -328,10 +328,8 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_approximate) {
 }
 
 /* ************************************************************************* */
-/* This test reproduces a bug I've been having with the legged robot state
- * estimator where after elimination of all variables, we still have a
- * DCGaussianFactor left.
- * Doing this in GTSAM to make debugging easier. */
+/* Test for figuring out the optimal ordering to ensure we get a discrete graph
+ * after elimination. */
 TEST(IncrementalHybrid, NonTrivial) {
   NonlinearHybridFactorGraph fg;
 
@@ -369,16 +367,12 @@ TEST(IncrementalHybrid, NonTrivial) {
   IncrementalHybrid inc;
 
   Ordering ordering;
-  ordering += W(0);
   ordering += Z(0);
   ordering += Y(0);
+  ordering += W(0);
   ordering += X(0);
-  ordering.print("ordering:");
-  inc.update(gfg, ordering);
 
-  GTSAM_PRINT(inc.hybridBayesNet());
-  std::cout << "\n\n";
-  GTSAM_PRINT(inc.remainingFactorGraph());
+  inc.update(gfg, ordering);
 
   using PlanarMotionModel = BetweenFactor<Pose2>;
 
@@ -390,7 +384,7 @@ TEST(IncrementalHybrid, NonTrivial) {
                                                      noise_model),
        moving = boost::make_shared<PlanarMotionModel>(W(0), W(1), odometry,
                                                       noise_model);
-  std::vector<PlanarMotionModel::shared_ptr> components = {still, moving};
+  std::vector<PlanarMotionModel::shared_ptr> components = {moving, still};
   auto dcFactor = boost::make_shared<DCMixtureFactor<PlanarMotionModel>>(
       contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, components);
   fg.push_back(dcFactor);
@@ -411,31 +405,21 @@ TEST(IncrementalHybrid, NonTrivial) {
   initial.insert(Z(1), Pose2(1.0, 2.0, 0.0));
   initial.insert(W(1), Pose2(0.0, 3.0, 0.0));
 
-  // ordering = Ordering();
-  // ordering += Y(1);
-  // ordering += W(0);
-  // ordering += W(1);
-  // ordering += Z(1);
-  // ordering += X(0);
-  // ordering += X(1);
-
-  // Above ordering doesn't work, so let's add all variables at k=0
+  // Ordering for k=1. We need a smart ordering scheme where
+  // variables not conncted to DCFactors (excluding variables of final interest
+  // e.g. X) should be eliminated first.
   ordering = Ordering();
-  ordering += Y(0);
   ordering += Y(1);
-  ordering += W(0);
-  ordering += W(1);
-  ordering += Z(0);
   ordering += Z(1);
+  ordering += W(0);
   ordering += X(0);
+  ordering += W(1);
   ordering += X(1);
 
   gfg = fg.linearize(initial);
-  std::cout << "\n\n=============\n\n" << std::endl;
-  inc.update(gfg, ordering);
+  fg = NonlinearHybridFactorGraph();
 
-  GTSAM_PRINT(inc.hybridBayesNet());
-  GTSAM_PRINT(inc.remainingFactorGraph());
+  inc.update(gfg, ordering);
 
   // Add odometry factor
   contKeys = {W(1), W(2)};
@@ -444,7 +428,7 @@ TEST(IncrementalHybrid, NonTrivial) {
                                                 noise_model);
   moving =
       boost::make_shared<PlanarMotionModel>(W(1), W(2), odometry, noise_model);
-  components = {still, moving};
+  components = {moving, still};
   dcFactor = boost::make_shared<DCMixtureFactor<PlanarMotionModel>>(
       contKeys, DiscreteKeys{gtsam::DiscreteKey(M(2), 2)}, components);
   fg.push_back(dcFactor);
@@ -465,27 +449,28 @@ TEST(IncrementalHybrid, NonTrivial) {
   initial.insert(Z(2), Pose2(2.0, 2.0, 0.0));
   initial.insert(W(2), Pose2(0.0, 3.0, 0.0));
 
-  // Ordering at k=2. We should only need variables at k=2 and k=1 in order to
-  // be truly incremental.
+  // Ordering at k=2. Same idea as before.
   ordering = Ordering();
-  ordering += Y(1);
   ordering += Y(2);
-  ordering += W(1);
-  ordering += W(2);
-  ordering += Z(1);
   ordering += Z(2);
+  ordering += W(1);
   ordering += X(1);
+  ordering += W(2);
   ordering += X(2);
 
   gfg = fg.linearize(initial);
-  std::cout << "\n\n=============\n\n" << std::endl;
+
   inc.update(gfg, ordering);
 
-  GTSAM_PRINT(inc.hybridBayesNet());
-  GTSAM_PRINT(inc.remainingFactorGraph());
-
-  // The final discrete graph should not be empty since we have eliminated everything.
+  // The final discrete graph should not be empty since we have eliminated
+  // everything.
   EXPECT(inc.remainingDiscreteGraph().size() != 0);
+
+  DiscreteValues optimal_assignment = inc.remainingDiscreteGraph().optimize();
+  DiscreteValues expected_assignment;
+  expected_assignment[M(1)] = 1;
+  expected_assignment[M(2)] = 1;
+  EXPECT(assert_equal(expected_assignment, optimal_assignment));
 }
 
 /* ************************************************************************* */
