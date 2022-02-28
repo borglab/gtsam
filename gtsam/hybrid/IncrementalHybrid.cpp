@@ -88,6 +88,9 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
     const auto lastDensity =
         boost::dynamic_pointer_cast<GaussianMixture>(hybridBayesNet_.back());
 
+    // Check if discreteGraph exists. Possible that `update` had no DCFactors or Discrete Factors.
+    if (remainingFactorGraph_.discreteGraph().size() == 0) return;
+
     auto discreteFactor = boost::dynamic_pointer_cast<DecisionTreeFactor>(
         remainingFactorGraph_.discreteGraph().at(0));
 
