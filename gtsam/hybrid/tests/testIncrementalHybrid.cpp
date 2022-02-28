@@ -411,10 +411,21 @@ TEST(IncrementalHybrid, NonTrivial) {
   initial.insert(Z(1), Pose2(1.0, 2.0, 0.0));
   initial.insert(W(1), Pose2(0.0, 3.0, 0.0));
 
+  // ordering = Ordering();
+  // ordering += Y(1);
+  // ordering += W(0);
+  // ordering += W(1);
+  // ordering += Z(1);
+  // ordering += X(0);
+  // ordering += X(1);
+
+  // Above ordering doesn't work, so let's add all variables at k=0
   ordering = Ordering();
+  ordering += Y(0);
   ordering += Y(1);
   ordering += W(0);
   ordering += W(1);
+  ordering += Z(0);
   ordering += Z(1);
   ordering += X(0);
   ordering += X(1);
@@ -425,15 +436,6 @@ TEST(IncrementalHybrid, NonTrivial) {
 
   GTSAM_PRINT(inc.hybridBayesNet());
   GTSAM_PRINT(inc.remainingFactorGraph());
-
-  // gtsam::HybridBayesNet::shared_ptr hybridBayesNet;
-  // gtsam::GaussianHybridFactorGraph::shared_ptr remainingFactorGraph;
-
-  // // This should NOT fail
-  // std::tie(hybridBayesNet, remainingFactorGraph) =
-  //     linearized.eliminatePartialSequential(ordering);
-  // EXPECT_LONGS_EQUAL(4, hybridBayesNet->size());
-  // EXPECT_LONGS_EQUAL(1, remainingFactorGraph->size());
 }
 
 /* ************************************************************************* */
