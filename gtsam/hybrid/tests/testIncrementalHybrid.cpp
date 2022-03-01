@@ -459,6 +459,7 @@ TEST(IncrementalHybrid, NonTrivial) {
   ordering += W(2);
   ordering += X(2);
 
+  GTSAM_PRINT(fg);
   gfg = fg.linearize(initial);
 
   inc.update(gfg, ordering);

@@ -16,6 +16,8 @@
  * @date   January 2022
  */
 
+#include <gtsam/base/utilities.h>
+
 #include <gtsam/discrete/DiscreteEliminationTree.h>
 #include <gtsam/discrete/DiscreteJunctionTree.h>
 #include <gtsam/hybrid/DCGaussianMixtureFactor.h>
@@ -66,6 +68,7 @@ static Sum& operator+=(Sum& sum, const GaussianFactor::shared_ptr& factor) {
 }
 
 Sum GaussianHybridFactorGraph::sum() const {
+  gttic_(Sum);
   // "sum" all factors, gathering into GaussianFactorGraph
   DCGaussianMixtureFactor::Sum sum;
   for (auto&& dcFactor : dcGraph()) {
@@ -112,6 +115,8 @@ ostream& operator<<(ostream& os,
 pair<AbstractConditional::shared_ptr, boost::shared_ptr<Factor>>
 EliminateHybrid(const GaussianHybridFactorGraph& factors,
                 const Ordering& ordering) {
+
+  ordering.print("\nEliminating:");
   // STEP 1: SUM
   // Create a new decision tree with all factors gathered at leaves.
   Sum sum = factors.sum();
@@ -128,6 +133,7 @@ EliminateHybrid(const GaussianHybridFactorGraph& factors,
   // TODO(fan): Now let's assume that all continuous will be eliminated first!
   // Here sum is null if remaining are all discrete
   if (sum.empty()) {
+    gttic_(DFG);
     // Not sure if this is the correct thing, but anyway!
     DiscreteFactorGraph dfg;
     dfg.push_back(factors.discreteGraph());
@@ -152,6 +158,7 @@ EliminateHybrid(const GaussianHybridFactorGraph& factors,
   KeyVector keysOfSeparator;   // TODO(frank): Is this just (keys - ordering)?
   auto eliminate = [&](const GaussianFactorGraph& graph)
       -> GaussianFactorGraph::EliminationResult {
+      gttic_(Eliminate);
     if (graph.empty()) return {nullptr, nullptr};
     auto result = EliminatePreferCholesky(graph, ordering);
     if (keysOfEliminated.empty())
@@ -161,10 +168,30 @@ EliminateHybrid(const GaussianHybridFactorGraph& factors,
     if (keysOfSeparator.empty()) keysOfSeparator = result.second->keys();
     return result;
   };
-  DecisionTree<Key, EliminationPair> eliminationResults(sum, eliminate);
 
+  auto valueFormatter = [&](const GaussianFactorGraph &v) {
+    auto printCapture = [&](const GaussianFactorGraph &p) {
+      RedirectCout rd;
+      p.print("", DefaultKeyFormatter);
+      std::string s = rd.str();
+      return s;
+    };
+
+    std::string format_template = "Gaussian factor graph with %d factors:\n%s\n";
+    return (boost::format(format_template) % v.size() % printCapture(v)).str();
+  };
+  sum.print(">>>>>>>>>>>>>\n", DefaultKeyFormatter, valueFormatter);
+
+  gttic_(EliminationResult);
+  std::cout << ">>>>>>> nrLeaves in `sum`: " << sum.nrLeaves() << std::endl;
+  DecisionTree<Key, EliminationPair> eliminationResults(sum, eliminate);
+  // std::cout << "Elimination done!!!!!!!\n\n" << std::endl;
+  gttoc_(EliminationResult);
+
+  gttic_(Leftover);
   // STEP 3: Create result
   auto pair = unzip(eliminationResults);
+
   const GaussianMixture::Conditionals& conditionals = pair.first;
   const DCGaussianMixtureFactor::Factors& separatorFactors = pair.second;
 
