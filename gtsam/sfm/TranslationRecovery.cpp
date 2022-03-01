@@ -96,7 +96,7 @@ Values TranslationRecovery::initializeRandomly(std::mt19937 *rng) const {
   // Create a lambda expression that checks whether value exists and randomly
   // initializes if not.
   Values initial;
-  auto insert = [&initial, &rng, &randomVal](Key j) {
+  auto insert = [&](Key j) {
     if (!initial.exists(j)) {
       initial.insert<Point3>(
           j, Point3(randomVal(rng), randomVal(rng), randomVal(rng)));
