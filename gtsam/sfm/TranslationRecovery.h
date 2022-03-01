@@ -16,15 +16,15 @@
  * @brief Recovering translations in an epipolar graph when rotations are given.
  */
 
-#include <map>
-#include <set>
-#include <utility>
-#include <vector>
-
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/sfm/BinaryMeasurement.h>
+
+#include <map>
+#include <set>
+#include <utility>
+#include <vector>
 
 namespace gtsam {
 
@@ -99,15 +99,15 @@ class TranslationRecovery {
 
   /**
    * @brief Create random initial translations.
-   * 
+   *
    * @param rng random number generator
    * @return Values
    */
-  Values initializeRandomly(std::mt19937 &rng) const;
+  Values initializeRandomly(std::mt19937 *rng) const;
 
   /**
    * @brief Version of initializeRandomly with a fixed seed.
-   * 
+   *
    * @return Values
    */
   Values initializeRandomly() const;

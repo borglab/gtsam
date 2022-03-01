@@ -91,7 +91,7 @@ void TranslationRecovery::addPrior(
       edge->key2(), scale * edge->measured().point3(), edge->noiseModel());
 }
 
-Values TranslationRecovery::initializeRandomly(std::mt19937 &rng) const {
+Values TranslationRecovery::initializeRandomly(std::mt19937 *rng) const {
   uniform_real_distribution<double> randomVal(-1, 1);
   // Create a lambda expression that checks whether value exists and randomly
   // initializes if not.
@@ -121,7 +121,7 @@ Values TranslationRecovery::initializeRandomly(std::mt19937 &rng) const {
 }
 
 Values TranslationRecovery::initializeRandomly() const {
-  return initializeRandomly(kRandomNumberGenerator);
+  return initializeRandomly(&kRandomNumberGenerator);
 }
 
 Values TranslationRecovery::run(const double scale) const {
