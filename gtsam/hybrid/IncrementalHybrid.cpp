@@ -126,7 +126,7 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
     };
     DecisionTree<Key, double> thresholded(*discreteFactor, thresholdFunc);
     size_t nrPrunedLeaves = 0;
-    thresholded.visitWith([&nrPrunedLeaves](const double &d) {
+    thresholded.visit([&nrPrunedLeaves](const double &d) {
       if (d > 0) nrPrunedLeaves += 1;
     });
     std::cout << "Leaves after pruning: " << nrPrunedLeaves << std::endl;
