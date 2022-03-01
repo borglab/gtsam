@@ -82,6 +82,7 @@ class IndexPairSetMap {
 };
 
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/MatrixSerialization.h>
 bool linear_independent(Matrix A, Matrix B, double tol);
 
 #include <gtsam/base/Value.h>

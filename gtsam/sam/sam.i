@@ -22,10 +22,19 @@ virtual class RangeFactor : gtsam::NoiseModelFactor {
   void serialize() const;
 };
 
+// between points:
+typedef gtsam::RangeFactor<gtsam::Point2, gtsam::Point2> RangeFactor2;
+typedef gtsam::RangeFactor<gtsam::Point3, gtsam::Point3> RangeFactor3;
+
+// between pose and point:
 typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Point2> RangeFactor2D;
-typedef gtsam::RangeFactor<gtsam::Pose3, gtsam::Point3> RangeFactor3D;
 typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Pose2> RangeFactorPose2;
+
+// between poses:
+typedef gtsam::RangeFactor<gtsam::Pose3, gtsam::Point3> RangeFactor3D;
 typedef gtsam::RangeFactor<gtsam::Pose3, gtsam::Pose3> RangeFactorPose3;
+
+// more specialized types:
 typedef gtsam::RangeFactor<gtsam::CalibratedCamera, gtsam::Point3>
     RangeFactorCalibratedCameraPoint;
 typedef gtsam::RangeFactor<gtsam::PinholeCamera<gtsam::Cal3_S2>, gtsam::Point3>

@@ -25,6 +25,7 @@
 
 #include <boost/tuple/tuple.hpp>
 #include <boost/tokenizer.hpp>
+#include <boost/format.hpp>
 
 #include <cstdarg>
 #include <cstring>

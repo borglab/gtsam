@@ -8,6 +8,7 @@ To create a DLL in windows, the `GTSAM_EXPORT` keyword has been created and need
     * At least one of the functions inside that class is declared in a .cpp file and not just the .h file.
     * You can `GTSAM_EXPORT` any class it inherits from as well.  (Note that this implictly requires the class does not derive from a "header-only" class.  Note that Eigen is a "header-only" library, so if your class derives from Eigen, _do not_ use `GTSAM_EXPORT` in the class definition!) 
 3.  If you have defined a class using `GTSAM_EXPORT`, do not use `GTSAM_EXPORT` in any of its individual function declarations.  (Note that you _can_ put `GTSAM_EXPORT` in the definition of individual functions within a class as long as you don't put `GTSAM_EXPORT` in the class definition.)
+4. For template specializations, you need to add `GTSAM_EXPORT` to each individual specialization.
 
 ## When is GTSAM_EXPORT being used incorrectly
 Unfortunately, using `GTSAM_EXPORT` incorrectly often does not cause a compiler or linker error in the library that is being compiled, but only when you try to use that DLL in a different library.  For example, an error in `gtsam/base` will often show up when compiling the `check_base_program` or the MATLAB wrapper, but not when compiling/linking gtsam itself.  The most common errors will say something like:

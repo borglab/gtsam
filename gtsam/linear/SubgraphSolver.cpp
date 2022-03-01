@@ -34,24 +34,24 @@ namespace gtsam {
 SubgraphSolver::SubgraphSolver(const GaussianFactorGraph &Ab,
     const Parameters &parameters, const Ordering& ordering) :
     parameters_(parameters) {
-  GaussianFactorGraph::shared_ptr Ab1,Ab2;
+  GaussianFactorGraph Ab1, Ab2;
   std::tie(Ab1, Ab2) = splitGraph(Ab);
   if (parameters_.verbosity())
-    cout << "Split A into (A1) " << Ab1->size() << " and (A2) " << Ab2->size()
+    cout << "Split A into (A1) " << Ab1.size() << " and (A2) " << Ab2.size()
          << " factors" << endl;
 
-  auto Rc1 = Ab1->eliminateSequential(ordering, EliminateQR);
-  auto xbar = boost::make_shared<VectorValues>(Rc1->optimize());
+  auto Rc1 = *Ab1.eliminateSequential(ordering, EliminateQR);
+  auto xbar = Rc1.optimize();
   pc_ = boost::make_shared<SubgraphPreconditioner>(Ab2, Rc1, xbar);
 }
 
 /**************************************************************************************************/
 // Taking eliminated tree [R1|c] and constraint graph [A2|b2]
-SubgraphSolver::SubgraphSolver(const GaussianBayesNet::shared_ptr &Rc1,
-                               const GaussianFactorGraph::shared_ptr &Ab2,
+SubgraphSolver::SubgraphSolver(const GaussianBayesNet &Rc1,
+                               const GaussianFactorGraph &Ab2,
                                const Parameters &parameters)
     : parameters_(parameters) {
-  auto xbar = boost::make_shared<VectorValues>(Rc1->optimize());
+  auto xbar = Rc1.optimize();
   pc_ = boost::make_shared<SubgraphPreconditioner>(Ab2, Rc1, xbar);
 }
 
@@ -59,10 +59,10 @@ SubgraphSolver::SubgraphSolver(const GaussianBayesNet::shared_ptr &Rc1,
 // Taking subgraphs [A1|b1] and [A2|b2]
 // delegate up
 SubgraphSolver::SubgraphSolver(const GaussianFactorGraph &Ab1,
-                               const GaussianFactorGraph::shared_ptr &Ab2,
+                               const GaussianFactorGraph &Ab2,
                                const Parameters &parameters,
                                const Ordering &ordering)
-    : SubgraphSolver(Ab1.eliminateSequential(ordering, EliminateQR), Ab2,
+    : SubgraphSolver(*Ab1.eliminateSequential(ordering, EliminateQR), Ab2,
                      parameters) {}
 
 /**************************************************************************************************/
@@ -78,7 +78,7 @@ VectorValues SubgraphSolver::optimize(const GaussianFactorGraph &gfg,
   return VectorValues();
 }
 /**************************************************************************************************/
-pair<GaussianFactorGraph::shared_ptr, GaussianFactorGraph::shared_ptr> //
+pair<GaussianFactorGraph, GaussianFactorGraph> //
 SubgraphSolver::splitGraph(const GaussianFactorGraph &factorGraph) {
 
   /* identify the subgraph structure */

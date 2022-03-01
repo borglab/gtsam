@@ -28,8 +28,8 @@
 namespace gtsam {
 
   /**
-   * Key type for discrete conditionals
-   * Includes name and cardinality
+   * Key type for discrete variables.
+   * Includes Key and cardinality.
    */
   using DiscreteKey = std::pair<Key,size_t>;
 
@@ -44,6 +44,11 @@ namespace gtsam {
 
     /// Construct from a key
     explicit DiscreteKeys(const DiscreteKey& key) { push_back(key); }
+
+    /// Construct from cardinalities.
+    explicit DiscreteKeys(std::map<Key, size_t> cardinalities) {
+      for (auto&& kv : cardinalities) emplace_back(kv);
+    }
 
     /// Construct from a vector of keys
     DiscreteKeys(const std::vector<DiscreteKey>& keys) :
@@ -67,5 +72,5 @@ namespace gtsam {
   }; // DiscreteKeys
 
   /// Create a list from two keys
-  DiscreteKeys operator&(const DiscreteKey& key1, const DiscreteKey& key2);
+  GTSAM_EXPORT DiscreteKeys operator&(const DiscreteKey& key1, const DiscreteKey& key2);
 }

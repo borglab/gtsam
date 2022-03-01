@@ -45,6 +45,7 @@ set(ignore
     gtsam::Point3Pairs
     gtsam::Pose3Pairs
     gtsam::Pose3Vector
+    gtsam::Rot3Vector
     gtsam::KeyVector
     gtsam::BinaryMeasurementsUnit3
     gtsam::DiscreteKey
@@ -53,6 +54,7 @@ set(ignore
 set(interface_headers
     ${PROJECT_SOURCE_DIR}/gtsam/gtsam.i
     ${PROJECT_SOURCE_DIR}/gtsam/base/base.i
+    ${PROJECT_SOURCE_DIR}/gtsam/inference/inference.i
     ${PROJECT_SOURCE_DIR}/gtsam/discrete/discrete.i
     ${PROJECT_SOURCE_DIR}/gtsam/geometry/geometry.i
     ${PROJECT_SOURCE_DIR}/gtsam/linear/linear.i
@@ -181,5 +183,5 @@ add_custom_target(
           ${CMAKE_COMMAND} -E env # add package to python path so no need to install
           "PYTHONPATH=${GTSAM_PYTHON_BUILD_DIRECTORY}/$ENV{PYTHONPATH}"
           ${PYTHON_EXECUTABLE} -m unittest discover -v -s .
-          DEPENDS ${GTSAM_PYTHON_DEPENDENCIES}
+          DEPENDS ${GTSAM_PYTHON_DEPENDENCIES} ${GTSAM_PYTHON_TEST_FILES}
           WORKING_DIRECTORY "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam/tests")
