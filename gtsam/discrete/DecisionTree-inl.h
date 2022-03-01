@@ -590,10 +590,12 @@ namespace gtsam {
     using LY = DecisionTree<L, Y>;
 
     // ugliness below because apparently we can't have templated virtual
-    // functions If leaf, apply unary conversion "op" and create a unique leaf
+    // functions
+    // If leaf, apply unary conversion "op" and create a unique leaf
     using MXLeaf = typename DecisionTree<M, X>::Leaf;
-    if (auto leaf = boost::dynamic_pointer_cast<const MXLeaf>(f))
+    if (auto leaf = boost::dynamic_pointer_cast<const MXLeaf>(f)) {
       return NodePtr(new Leaf(Y_of_X(leaf->constant())));
+    }
 
     // Check if Choice
     using MXChoice = typename DecisionTree<M, X>::Choice;
