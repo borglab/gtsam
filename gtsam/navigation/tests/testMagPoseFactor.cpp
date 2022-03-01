@@ -20,7 +20,7 @@
 using namespace std::placeholders;
 using namespace gtsam;
 
-// *****************************************************************************
+namespace {
 // Magnetic field in the nav frame (NED), with units of nT.
 Point3 nM(22653.29982, -1956.83010, 44202.47862);
 
@@ -51,8 +51,9 @@ SharedNoiseModel model3 = noiseModel::Isotropic::Sigma(3, 0.25);
 
 // Make up a rotation and offset of the sensor in the body frame.
 Pose2 body_P2_sensor(Rot2(-0.30), Point2(1.0, -2.0));
-Pose3 body_P3_sensor(Rot3::RzRyRx(Vector3(1.5, 0.9, -1.15)), Point3(-0.1, 0.2, 0.3));
-// *****************************************************************************
+Pose3 body_P3_sensor(Rot3::RzRyRx(Vector3(1.5, 0.9, -1.15)),
+                     Point3(-0.1, 0.2, 0.3));
+}  // namespace
 
 // *****************************************************************************
 TEST(MagPoseFactor, Constructors) {

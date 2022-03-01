@@ -59,15 +59,15 @@ int main(int argc, char **argv) {
   // Convert to factor graph
   DiscreteFactorGraph factorGraph(hmm);
 
+  // Do max-prodcut
+  auto mpe = factorGraph.optimize();
+  GTSAM_PRINT(mpe);
+
   // Create solver and eliminate
   // This will create a DAG ordered with arrow of time reversed
   DiscreteBayesNet::shared_ptr chordal =
       factorGraph.eliminateSequential(ordering);
   chordal->print("Eliminated");
-
-  // solve
-  auto mpe = chordal->optimize();
-  GTSAM_PRINT(mpe);
 
   // We can also sample from it
   cout << "\n10 samples:" << endl;

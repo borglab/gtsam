@@ -7,7 +7,7 @@ import gtsam.*
 %% Initialize iSAM
 params = gtsam.ISAM2Params;
 if options.alwaysRelinearize
-    params.setRelinearizeSkip(1);
+    params.relinearizeSkip = 1;
 end
 isam = ISAM2(params);
 

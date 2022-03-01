@@ -68,6 +68,8 @@ set(interface_files
     ${GTSAM_SOURCE_DIR}/gtsam/gtsam.i
     ${GTSAM_SOURCE_DIR}/gtsam/base/base.i
     ${GTSAM_SOURCE_DIR}/gtsam/basis/basis.i
+    ${PROJECT_SOURCE_DIR}/gtsam/inference/inference.i
+    ${PROJECT_SOURCE_DIR}/gtsam/discrete/discrete.i
     ${GTSAM_SOURCE_DIR}/gtsam/geometry/geometry.i
     ${GTSAM_SOURCE_DIR}/gtsam/linear/linear.i
     ${GTSAM_SOURCE_DIR}/gtsam/nonlinear/nonlinear.i

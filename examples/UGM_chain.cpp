@@ -68,9 +68,8 @@ int main(int argc, char** argv) {
        << graph.size() << " factors (Unary+Edge).";
 
   // "Decoding", i.e., configuration with largest value
-  // We use sequential variable elimination
-  DiscreteBayesNet::shared_ptr chordal = graph.eliminateSequential();
-  auto optimalDecoding = chordal->optimize();
+  // Uses max-product.
+  auto optimalDecoding = graph.optimize();
   optimalDecoding.print("\nMost Probable Explanation (optimalDecoding)\n");
 
   // "Inference" Computing marginals for each node
