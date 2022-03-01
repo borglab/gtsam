@@ -99,7 +99,7 @@ Values TranslationRecovery::initializeRandomly(std::mt19937 *rng) const {
   auto insert = [&](Key j) {
     if (!initial.exists(j)) {
       initial.insert<Point3>(
-          j, Point3(randomVal(rng), randomVal(rng), randomVal(rng)));
+          j, Point3(randomVal(*rng), randomVal(*rng), randomVal(*rng)));
     }
   };
 
