@@ -85,34 +85,48 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
   if (maxNrLeaves) {
     DecisionTreeFactor::shared_ptr discreteFactor = prune(*maxNrLeaves);
 
-    if (!discreteFactor) return;
+    // If valid pruned discrete factor, then propagate to gaussian mixtures
+    if (discreteFactor) {
+      std::cout << "Leaves after pruning: " << discreteFactor->nrLeaves()
+                << std::endl;
+      DiscreteKeys discreteKeys = discreteFactor->discreteKeys();
+      DiscreteKeys rpairs(discreteKeys.rbegin(), discreteKeys.rend());
+      std::vector<DiscreteValues> assignments =
+          DiscreteValues::CartesianProduct(rpairs);
 
-    std::vector<std::pair<DiscreteValues, double>> assignments =
-        discreteFactor->enumerate();
+      discreteFactor->print();
 
-    // Go through all the conditionals in the
-    // bayesNetFragment and prune them as well.
-    for (auto &&conditional : *bayesNetFragment) {
-      auto gaussianMixture =
-          boost::dynamic_pointer_cast<GaussianMixture>(conditional);
+      // Go through all the conditionals in the
+      // bayesNetFragment and prune them as well.
+      for (auto &&conditional : *bayesNetFragment) {
+        auto gaussianMixture =
+            boost::dynamic_pointer_cast<GaussianMixture>(conditional);
 
-      // Loop over all assignments and create a vector of GaussianConditionals
-      std::vector<GaussianFactor::shared_ptr> prunedConditionals;
-      for (auto &&av : assignments) {
-        const DiscreteValues &assignment = av.first;
-        const double value = av.second;
+        if (gaussianMixture->discreteKeys().size() <
+            discreteFactor->discreteKeys().size())
+          continue;
 
-        if (value == -1.0) {
-          prunedConditionals.emplace_back(nullptr);
-        } else {
-          prunedConditionals.emplace_back(
-              gaussianMixture->operator()(assignment));
+        // Loop over all assignments and create a set of GaussianConditionals
+        std::vector<GaussianFactor::shared_ptr> prunedConditionals;
+
+        for (auto &&assignment : assignments) {
+          try {
+            discreteFactor->operator()(assignment);
+            // If success, then leaf exists so we keep it.
+            prunedConditionals.emplace_back(
+                gaussianMixture->operator()(assignment));
+
+          } catch (std::exception &e) {
+            prunedConditionals.emplace_back(nullptr);
+          }
         }
-      }
 
-      GaussianMixture::Factors prunedConditionalsTree(
-          gaussianMixture->discreteKeys(), prunedConditionals);
-      gaussianMixture->factors_ = prunedConditionalsTree;
+        GaussianMixture::Factors prunedConditionalsTree(
+            gaussianMixture->discreteKeys(), prunedConditionals);
+
+        gaussianMixture->factors_ = prunedConditionalsTree;
+        // gaussianMixture->print("\n\nAfter!!\n");
+      }
     }
   }
 
@@ -124,8 +138,6 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
 
 DecisionTreeFactor::shared_ptr IncrementalHybrid::prune(size_t maxNrLeaves) {
   std::cout << "------------------ Perform pruning!!!!" << std::endl;
-  std::cout << maxNrLeaves << "  ||  "
-            << remainingFactorGraph_.discreteGraph().empty() << std::endl;
   const auto N = maxNrLeaves;
 
   // Check if discreteGraph is empty. Possible if no discrete variables.
@@ -141,7 +153,6 @@ DecisionTreeFactor::shared_ptr IncrementalHybrid::prune(size_t maxNrLeaves) {
   discreteFactor->visit(
       [&](const double &prob) { probabilities.emplace_back(prob); });
 
-  std::cout << "probabilities.size(): " << probabilities.size() << std::endl;
   // The number of probabilities can be lower than max_leaves
   if (probabilities.size() <= N) return discreteFactor;
 
@@ -167,13 +178,9 @@ DecisionTreeFactor::shared_ptr IncrementalHybrid::prune(size_t maxNrLeaves) {
 
   std::cout << "Initial number of leaves: " << discreteFactor->nrLeaves()
             << std::endl;
-  std::cout << "Leaves after pruning: " << pruned.nrLeaves() << std::endl;
 
-  // Assign the thresholded tree
-  // discreteFactor->root_ = thresholded.root_;
-  // discreteFactor->root_ = pruned.root_;
-  discreteFactor = boost::make_shared<DecisionTreeFactor>(
-      discreteFactor->discreteKeys(), pruned);
+  // Assign the thresholded tree. Imperative :-(
+  discreteFactor->root_ = pruned.root_;
 
   return discreteFactor;
 }
