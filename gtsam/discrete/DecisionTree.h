@@ -274,7 +274,7 @@ namespace gtsam {
     NodePtr prune(const NodePtr& node, Func predicate);
 
     /// Return the number of leaves in the tree.
-    size_t nrLeaves() {
+    size_t nrLeaves() const {
       size_t total = 0;
       visit([&total](const Y& node) { total += 1; });
       return total;
