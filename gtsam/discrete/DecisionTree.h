@@ -239,7 +239,7 @@ namespace gtsam {
      * Example:
      *   int sum = 0;
      *   auto visitor = [&](int y) { sum += y; };
-     *   tree.visitWith(visitor);
+     *   tree.visit(visitor);
      */
     template <typename Func>
     void visit(Func f) const;
@@ -258,6 +258,28 @@ namespace gtsam {
      */
     template <typename Func>
     void visitWith(Func f) const;
+
+    /**
+     * @brief Prune leaves satisfying boolean predicate `f`.
+     *
+     * @param predicate A functional which returns true/false given a leaf constant.
+     *
+     * Example:
+     *  // return true if leaf value is nullptr.
+     *  auto predicate = [&](const Y& value) { 
+     *      if (value) {return false;} else {return true}
+     *  };
+     *  tree.prune(predicate);
+     */
+    template <typename Func>
+    NodePtr prune(const NodePtr& node, Func predicate);
+
+    /// Return the number of leaves in the tree.
+    size_t nrLeaves() {
+      size_t total = 0;
+      visit([&total](const Y& node) { total += 1; });
+      return total;
+    }
 
     /**
      * @brief Fold a binary function over the tree, returning accumulator.
