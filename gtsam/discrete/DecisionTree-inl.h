@@ -171,10 +171,13 @@ namespace gtsam {
       if (f->allSame_) {
         assert(f->branches().size() > 0);
         NodePtr f0 = f->branches_[0];
-        assert(f0->isLeaf());
-        NodePtr newLeaf(
+        if (f0->isLeaf()) {
+          NodePtr newLeaf(
             new Leaf(boost::dynamic_pointer_cast<const Leaf>(f0)->constant()));
-        return newLeaf;
+          return newLeaf;
+        } else {
+          return f;
+        }
       } else
 #endif
         return f;
@@ -306,7 +309,7 @@ namespace gtsam {
       }
 #endif
       size_t index = x.at(label_);
-      NodePtr child = branches_[index];
+      NodePtr child = branches_.at(index);
       return (*child)(x);
     }
 
@@ -697,6 +700,36 @@ namespace gtsam {
     };
     visitWith(f);
     return unique;
+  }
+
+  template <typename L, typename Y>
+  template <typename Func>
+  typename DecisionTree<L, Y>::NodePtr DecisionTree<L, Y>::prune(const NodePtr& node, Func predicate) {
+    // Prune<L, Y> prune(f);
+    // prune(root_);
+    using LY = DecisionTree<L, Y>;
+    // If leaf, check the predicate and return accordingly.
+    if (auto leaf = boost::dynamic_pointer_cast<const Leaf>(node)) {  
+      if(predicate(leaf->constant())) {
+        return nullptr;
+      }
+      return NodePtr(new Leaf(leaf->constant()));
+    }
+     // Check if Choice
+    auto choice = boost::dynamic_pointer_cast<const Choice>(node);
+    if (!choice) throw std::invalid_argument(
+        "DecisionTree::convertFrom: Invalid NodePtr");
+
+    // put together via Shannon expansion otherwise not sorted.
+    std::vector<LY> functions;
+    for (auto&& branch : choice->branches()) {
+      auto new_node = prune(branch, predicate);
+      // If valid node, then add it.
+      if (new_node) {
+        functions.emplace_back(new_node);
+      }
+    }
+    return LY::compose(functions.begin(), functions.end(), choice->label());
   }
 
 /****************************************************************************/
