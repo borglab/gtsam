@@ -16,8 +16,6 @@
  * @date   January 2022
  */
 
-#include <gtsam/base/utilities.h>
-
 #include <gtsam/discrete/DiscreteEliminationTree.h>
 #include <gtsam/discrete/DiscreteJunctionTree.h>
 #include <gtsam/hybrid/DCGaussianMixtureFactor.h>
@@ -121,15 +119,6 @@ EliminateHybrid(const GaussianHybridFactorGraph& factors,
   // Create a new decision tree with all factors gathered at leaves.
   Sum sum = factors.sum();
 
-  // zero out all sums with null ptrs
-  auto zeroOut = [](const GaussianFactorGraph& gfg) {
-    bool hasNull =
-        std::any_of(gfg.begin(), gfg.end(),
-                    [](const GaussianFactor::shared_ptr& ptr) { return !ptr; });
-
-    return hasNull ? GaussianFactorGraph() : gfg;
-  };
-
   // TODO(fan): Now let's assume that all continuous will be eliminated first!
   // Here sum is null if remaining are all discrete
   if (sum.empty()) {
@@ -144,6 +133,14 @@ EliminateHybrid(const GaussianHybridFactorGraph& factors,
     return {df, newFactor};
   }
 
+  // zero out all sums with null ptrs
+  auto zeroOut = [](const GaussianFactorGraph& gfg) {
+    bool hasNull =
+        std::any_of(gfg.begin(), gfg.end(),
+                    [](const GaussianFactor::shared_ptr& ptr) { return !ptr; });
+
+    return hasNull ? GaussianFactorGraph() : gfg;
+  };
   sum = Sum(sum, zeroOut);
 
   // STEP 1: ELIMINATE
@@ -169,23 +166,8 @@ EliminateHybrid(const GaussianHybridFactorGraph& factors,
     return result;
   };
 
-  auto valueFormatter = [&](const GaussianFactorGraph &v) {
-    auto printCapture = [&](const GaussianFactorGraph &p) {
-      RedirectCout rd;
-      p.print("", DefaultKeyFormatter);
-      std::string s = rd.str();
-      return s;
-    };
-
-    std::string format_template = "Gaussian factor graph with %d factors:\n%s\n";
-    return (boost::format(format_template) % v.size() % printCapture(v)).str();
-  };
-  sum.print(">>>>>>>>>>>>>\n", DefaultKeyFormatter, valueFormatter);
-
   gttic_(EliminationResult);
-  std::cout << ">>>>>>> nrLeaves in `sum`: " << sum.nrLeaves() << std::endl;
   DecisionTree<Key, EliminationPair> eliminationResults(sum, eliminate);
-  // std::cout << "Elimination done!!!!!!!\n\n" << std::endl;
   gttoc_(EliminationResult);
 
   gttic_(Leftover);
