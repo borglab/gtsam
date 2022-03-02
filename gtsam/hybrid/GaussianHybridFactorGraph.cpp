@@ -121,6 +121,14 @@ EliminateHybrid(const GaussianHybridFactorGraph& factors,
   // Create a new decision tree with all factors gathered at leaves.
   Sum sum = factors.sum();
 
+  std::cout << "\033[1;32m";
+  sum.print("", DefaultKeyFormatter, [](GaussianFactorGraph gfg){
+    RedirectCout rd;
+    gfg.keys().print("");
+    return rd.str();
+  });
+  std::cout << "\033[0m\n";
+
   // zero out all sums with null ptrs
   auto zeroOut = [](const GaussianFactorGraph& gfg) {
     bool hasNull =
@@ -180,10 +188,17 @@ EliminateHybrid(const GaussianHybridFactorGraph& factors,
     std::string format_template = "Gaussian factor graph with %d factors:\n%s\n";
     return (boost::format(format_template) % v.size() % printCapture(v)).str();
   };
-  sum.print(">>>>>>>>>>>>>\n", DefaultKeyFormatter, valueFormatter);
+//  sum.print(">>>>>>>>>>>>>\n", DefaultKeyFormatter, valueFormatter);
 
   gttic_(EliminationResult);
   std::cout << ">>>>>>> nrLeaves in `sum`: " << sum.nrLeaves() << std::endl;
+  std::cout << "\033[1;31m";
+  sum.print("", DefaultKeyFormatter, [](GaussianFactorGraph gfg){
+    RedirectCout rd;
+    gfg.keys().print("");
+    return rd.str();
+  });
+  std::cout << "\033[0m\n";
   DecisionTree<Key, EliminationPair> eliminationResults(sum, eliminate);
   // std::cout << "Elimination done!!!!!!!\n\n" << std::endl;
   gttoc_(EliminationResult);

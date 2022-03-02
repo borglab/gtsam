@@ -368,9 +368,9 @@ TEST(IncrementalHybrid, NonTrivial) {
   IncrementalHybrid inc;
 
   Ordering ordering;
-  ordering += W(0);
   ordering += Z(0);
   ordering += Y(0);
+  ordering += W(0);
   ordering += X(0);
 
   inc.update(gfg, ordering);
@@ -411,18 +411,16 @@ TEST(IncrementalHybrid, NonTrivial) {
   // e.g. X) should be eliminated first.
   ordering = Ordering();
   ordering += W(0);
-  ordering += Z(0);
-  ordering += Y(0);
   ordering += X(0);
-  ordering += W(1);
   ordering += Z(1);
   ordering += Y(1);
+  ordering += W(1);
   ordering += X(1);
 
   gfg = fg.linearize(initial);
   fg = NonlinearHybridFactorGraph();
 
-  inc.update(gfg, ordering, 4);
+  inc.update(gfg, ordering, 2);
 
   // Add odometry factor
   contKeys = {W(1), W(2)};
@@ -455,12 +453,10 @@ TEST(IncrementalHybrid, NonTrivial) {
   // Ordering at k=2. Same idea as before.
   ordering = Ordering();
   ordering += W(1);
-  ordering += Z(1);
-  ordering += Y(1);
   ordering += X(1);
-  ordering += W(2);
   ordering += Z(2);
   ordering += Y(2);
+  ordering += W(2);
   ordering += X(2);
 
   gfg = fg.linearize(initial);
@@ -501,12 +497,10 @@ TEST(IncrementalHybrid, NonTrivial) {
   // Ordering at k=3. Same idea as before.
   ordering = Ordering();
   ordering += W(2);
-  ordering += Z(2);
-  ordering += Y(2);
   ordering += X(2);
-  ordering += W(3);
   ordering += Z(3);
   ordering += Y(3);
+  ordering += W(3);
   ordering += X(3);
 
   gfg = fg.linearize(initial);
@@ -522,11 +516,12 @@ TEST(IncrementalHybrid, NonTrivial) {
   // everything.
   EXPECT(!inc.remainingDiscreteGraph().empty());
 
-  // DiscreteValues optimal_assignment = inc.remainingDiscreteGraph().optimize();
-  // DiscreteValues expected_assignment;
-  // expected_assignment[M(1)] = 1;
-  // expected_assignment[M(2)] = 1;
-  // EXPECT(assert_equal(expected_assignment, optimal_assignment));
+   DiscreteValues optimal_assignment = inc.remainingDiscreteGraph().optimize();
+   DiscreteValues expected_assignment;
+   expected_assignment[M(1)] = 1;
+  expected_assignment[M(2)] = 1;
+  expected_assignment[M(3)] = 1;
+   EXPECT(assert_equal(expected_assignment, optimal_assignment));
 }
 
 /* ************************************************************************* */

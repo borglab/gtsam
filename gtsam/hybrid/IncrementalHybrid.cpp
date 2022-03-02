@@ -21,6 +21,7 @@
 
 #include <algorithm>
 #include <unordered_set>
+#include <gtsam/base/utilities.h>
 
 namespace gtsam {
 
@@ -68,6 +69,7 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
     for (auto &&conditional : conditionals_to_erase) {
       auto it =
           find(hybridBayesNet_.begin(), hybridBayesNet_.end(), conditional);
+      std::cout << "Removing "; conditional->print("");
       hybridBayesNet_.erase(it);
     }
   }
@@ -117,7 +119,7 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
     // Now threshold the decision tree
     size_t total = 0;
     auto thresholdFunc = [threshold, &total, N](const double &value) {
-      if (value < threshold || total >= N) {
+      if (value < threshold || total > N) {
         return 0.0;
       } else {
         total += 1;
@@ -140,23 +142,34 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
         discreteFactor->enumerate();
 
     // Loop over all assignments and create a vector of GaussianConditionals
-    std::vector<GaussianFactor::shared_ptr> prunedConditionals;
-    for (auto &&av : assignments) {
-      const DiscreteValues &assignment = av.first;
-      const double value = av.second;
+    std::vector<GaussianMixture::shared_ptr> lastClique;
+    lastClique.push_back(lastDensity);
+    lastClique.push_back(hybridBayesNet_.atGaussian(hybridBayesNet_.size()-2));
+    for (auto &p : lastClique) {
+      std::vector<GaussianFactor::shared_ptr> prunedConditionals;
+      for (auto &&av : assignments) {
+        const DiscreteValues &assignment = av.first;
+        const double value = av.second;
 
-      if (value == 0.0) {
-        prunedConditionals.emplace_back(nullptr);
-      } else {
-        prunedConditionals.emplace_back(lastDensity->operator()(assignment));
+        if (value == 0.0) {
+          prunedConditionals.emplace_back(nullptr);
+        } else {
+          prunedConditionals.emplace_back(p->operator()(assignment));
+        }
       }
+
+      GaussianMixture::Factors prunedConditionalsTree(p->discreteKeys(),
+                                                      prunedConditionals);
+
+      p->factors_ =
+          prunedConditionalsTree;
+
+      p->factors_.print("", DefaultKeyFormatter, [](GaussianFactor::shared_ptr p){
+        RedirectCout rd;
+        if (p) p->print();
+        return rd.str();
+      });
     }
-
-    GaussianMixture::Factors prunedConditionalsTree(lastDensity->discreteKeys(),
-                                                    prunedConditionals);
-
-    hybridBayesNet_.atGaussian(hybridBayesNet_.size() - 1)->factors_ =
-        prunedConditionalsTree;
   }
   tictoc_print_();
 }
