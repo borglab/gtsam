@@ -75,6 +75,8 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
   gttic_(Elimination);
   // Eliminate partially.
   HybridBayesNet::shared_ptr bayesNetFragment;
+  graph.print("\n>>>>");
+  std::cout << "\n\n" << std::endl;
   auto result = graph.eliminatePartialSequential(ordering);
   bayesNetFragment = result.first;
   remainingFactorGraph_ = *result.second;
@@ -97,22 +99,23 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
     auto discreteFactor = boost::dynamic_pointer_cast<DecisionTreeFactor>(
         remainingFactorGraph_.discreteGraph().at(0));
 
-    std::cout << "Initial number of leaves: " << discreteFactor->nrLeaves() << std::endl;
+    std::cout << "Initial number of leaves: " << discreteFactor->nrLeaves()
+              << std::endl;
 
     // Let's assume that the structure of the last discrete density will be the
     // same as the last continuous
     std::vector<double> probabilities;
-    // TODO(fan): The number of probabilities can be lower than the actual
     // number of choices
     discreteFactor->visit(
         [&](const double &prob) { probabilities.emplace_back(prob); });
 
+    // The number of probabilities can be lower than max_leaves
     if (probabilities.size() <= N) return;
 
-    std::nth_element(probabilities.begin(), probabilities.begin() + N,
-                     probabilities.end(), std::greater<double>{});
+    std::sort(probabilities.begin(), probabilities.end(),
+              std::greater<double>{});
 
-    double threshold = probabilities[N];
+    double threshold = probabilities[N - 1];
 
     // Now threshold the decision tree
     size_t total = 0;
