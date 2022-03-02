@@ -81,39 +81,39 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
 
   gttoc_(Elimination);
 
-  // TODO(Varun) We should go through all the conditionals in the
-  // bayesNetFragment and prune them as well.
-
   // Prune
   if (maxNrLeaves) {
     DecisionTreeFactor::shared_ptr discreteFactor = prune(*maxNrLeaves);
 
-    if(!discreteFactor) return;
+    if (!discreteFactor) return;
 
     std::vector<std::pair<DiscreteValues, double>> assignments =
         discreteFactor->enumerate();
 
-    const auto lastDensity =
-        boost::dynamic_pointer_cast<GaussianMixture>(hybridBayesNet_.back());
+    // Go through all the conditionals in the
+    // bayesNetFragment and prune them as well.
+    for (auto &&conditional : *bayesNetFragment) {
+      auto gaussianMixture =
+          boost::dynamic_pointer_cast<GaussianMixture>(conditional);
 
-    // Loop over all assignments and create a vector of GaussianConditionals
-    std::vector<GaussianFactor::shared_ptr> prunedConditionals;
-    for (auto &&av : assignments) {
-      const DiscreteValues &assignment = av.first;
-      const double value = av.second;
+      // Loop over all assignments and create a vector of GaussianConditionals
+      std::vector<GaussianFactor::shared_ptr> prunedConditionals;
+      for (auto &&av : assignments) {
+        const DiscreteValues &assignment = av.first;
+        const double value = av.second;
 
-      if (value == -1.0) {
-        prunedConditionals.emplace_back(nullptr);
-      } else {
-        prunedConditionals.emplace_back(lastDensity->operator()(assignment));
+        if (value == -1.0) {
+          prunedConditionals.emplace_back(nullptr);
+        } else {
+          prunedConditionals.emplace_back(
+              gaussianMixture->operator()(assignment));
+        }
       }
+
+      GaussianMixture::Factors prunedConditionalsTree(
+          gaussianMixture->discreteKeys(), prunedConditionals);
+      gaussianMixture->factors_ = prunedConditionalsTree;
     }
-
-    GaussianMixture::Factors prunedConditionalsTree(lastDensity->discreteKeys(),
-                                                    prunedConditionals);
-
-    hybridBayesNet_.atGaussian(hybridBayesNet_.size() - 1)->factors_ =
-        prunedConditionalsTree;
   }
 
   // Add the partial bayes net to the posterior bayes net.
