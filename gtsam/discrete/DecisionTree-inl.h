@@ -697,8 +697,6 @@ namespace gtsam {
   template <typename L, typename Y>
   template <typename Func>
   typename DecisionTree<L, Y>::NodePtr DecisionTree<L, Y>::prune(const NodePtr& node, Func predicate) {
-    // Prune<L, Y> prune(f);
-    // prune(root_);
     using LY = DecisionTree<L, Y>;
     // If leaf, check the predicate and return accordingly.
     if (auto leaf = boost::dynamic_pointer_cast<const Leaf>(node)) {  
