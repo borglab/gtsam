@@ -553,6 +553,15 @@ namespace gtsam {
     if (labelC == end) {
       // Base case: only one key left
       // Create a simple choice node with values as leaves.
+      if (size != nrChoices) {
+        std::cout << "Trying to create DD on " << begin->first << std::endl;
+        std::cout << boost::format(
+                         "DecisionTree::create: expected %d values but got %d "
+                         "instead") %
+                         nrChoices % size
+                  << std::endl;
+        throw std::invalid_argument("DecisionTree::create invalid argument");
+      }
       auto choice = boost::make_shared<Choice>(begin->first, endY - beginY);
       for (ValueIt y = beginY; y != endY; y++)
         choice->push_back(NodePtr(new Leaf(*y)));
