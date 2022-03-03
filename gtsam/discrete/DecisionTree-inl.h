@@ -694,6 +694,7 @@ namespace gtsam {
     return unique;
   }
 
+  /****************************************************************************/
   template <typename L, typename Y>
   template <typename Func>
   typename DecisionTree<L, Y>::NodePtr DecisionTree<L, Y>::prune(const NodePtr& node, Func predicate) {
@@ -720,6 +721,13 @@ namespace gtsam {
       }
     }
     return LY::compose(functions.begin(), functions.end(), choice->label());
+  }
+
+  /****************************************************************************/
+  template <typename L, typename Y>
+  template <typename Func>
+  typename DecisionTree<L, Y>::NodePtr DecisionTree<L, Y>::prune(Func predicate) {
+    return prune(root_, predicate);
   }
 
 /****************************************************************************/

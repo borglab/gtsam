@@ -423,7 +423,7 @@ TEST(DecisionTree, Erase) {
   DT tree(keys, "0 1 2 3 -1 5 6 7");
   
   auto predicate = [](const double& d) { return d == -1;};
-  DT prunedTree(tree.prune(tree.root_, predicate));
+  DT prunedTree(tree.prune(predicate));
 
   // Duplicating the value should simulate pruning.
   DT expectedTree(keys, "0 1 2 3 5 5 6 7");

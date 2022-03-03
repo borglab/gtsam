@@ -274,6 +274,16 @@ namespace gtsam {
     template <typename Func>
     NodePtr prune(const NodePtr& node, Func predicate);
 
+    /**
+     * @brief Prune the tree based on the predicate. Starts at root by default.
+     *
+     * @tparam Func
+     * @param predicate Function which returns true if leaf is to be pruned.
+     * @return NodePtr
+     */
+    template <typename Func>
+    NodePtr prune(Func predicate);
+
     /// Return the number of leaves in the tree.
     size_t nrLeaves() {
       size_t total = 0;
