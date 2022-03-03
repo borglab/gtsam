@@ -430,6 +430,14 @@ TEST(DecisionTree, Erase) {
 
   EXPECT(assert_equal(expectedTree, prunedTree));
 
+  DT tree2(keys, "0 1 2 3 -1 -1 6 7");
+  DT prunedTree2(tree2.prune(predicate));
+  DT expectedTree2(keys, "0 1 2 3 6 7");
+  tree2.print("tree2\n");
+  prunedTree2.print("prunedTree2\n");
+  expectedTree2.print("expectedTree2\n");
+  EXPECT(assert_equal(expectedTree2, prunedTree2));
+
 }
 /* ************************************************************************* */
 int main() {

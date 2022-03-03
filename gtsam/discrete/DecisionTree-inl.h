@@ -702,7 +702,7 @@ namespace gtsam {
     // If leaf, check the predicate and return accordingly.
     if (auto leaf = boost::dynamic_pointer_cast<const Leaf>(node)) {  
       if(predicate(leaf->constant())) {
-        return nullptr;
+        return NodePtr();
       }
       return NodePtr(new Leaf(leaf->constant()));
     }
