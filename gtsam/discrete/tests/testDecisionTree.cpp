@@ -86,7 +86,6 @@ struct DT : public DecisionTree<string, int> {
 
   /// print to stdout
   void print(const std::string& s = "") const {
-    std::cout << s;
     auto keyFormatter = [](const std::string& s) { return s; };
     auto valueFormatter = [](const int& v) {
       return (boost::format("%d") % v).str();
@@ -414,23 +413,6 @@ TEST(DecisionTree, threshold) {
   EXPECT_LONGS_EQUAL(2, thresholded.fold(count, 0));
 }
 
-/* ************************************************************************** */
-// Test erasing branches.
-TEST(DecisionTree, Erase) {
-  // Create three level tree
-  vector<DT::LabelC> keys;
-  keys += DT::LabelC("C", 2), DT::LabelC("B", 2), DT::LabelC("A", 2);
-  DT tree(keys, "0 1 2 3 -1 5 6 7");
-  
-  auto predicate = [](const double& d) { return d == -1;};
-  DT prunedTree(tree.prune(tree.root_, predicate));
-
-  // Duplicating the value should simulate pruning.
-  DT expectedTree(keys, "0 1 2 3 5 5 6 7");
-
-  EXPECT(assert_equal(expectedTree, prunedTree));
-
-}
 /* ************************************************************************* */
 int main() {
   TestResult tr;

@@ -167,13 +167,7 @@ namespace gtsam {
     // Construct unordered_map with values
     std::vector<std::pair<DiscreteValues, double>> result;
     for (const auto& assignment : assignments) {
-      try {
-        result.emplace_back(assignment, operator()(assignment));
-      } catch (std::exception& e) {
-        // Got invalid assignment so we just skip
-        continue;
-      }
-      
+      result.emplace_back(assignment, operator()(assignment));
     }
     return result;
   }

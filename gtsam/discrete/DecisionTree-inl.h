@@ -171,13 +171,10 @@ namespace gtsam {
       if (f->allSame_) {
         assert(f->branches().size() > 0);
         NodePtr f0 = f->branches_[0];
-        if (f0->isLeaf()) {
-          NodePtr newLeaf(
+        assert(f0->isLeaf());
+        NodePtr newLeaf(
             new Leaf(boost::dynamic_pointer_cast<const Leaf>(f0)->constant()));
-          return newLeaf;
-        } else {
-          return f;
-        }
+        return newLeaf;
       } else
 #endif
         return f;
@@ -309,7 +306,7 @@ namespace gtsam {
       }
 #endif
       size_t index = x.at(label_);
-      NodePtr child = branches_.at(index);
+      NodePtr child = branches_[index];
       return (*child)(x);
     }
 
@@ -556,6 +553,15 @@ namespace gtsam {
     if (labelC == end) {
       // Base case: only one key left
       // Create a simple choice node with values as leaves.
+      if (size != nrChoices) {
+        std::cout << "Trying to create DD on " << begin->first << std::endl;
+        std::cout << boost::format(
+                         "DecisionTree::create: expected %d values but got %d "
+                         "instead") %
+                         nrChoices % size
+                  << std::endl;
+        throw std::invalid_argument("DecisionTree::create invalid argument");
+      }
       auto choice = boost::make_shared<Choice>(begin->first, endY - beginY);
       for (ValueIt y = beginY; y != endY; y++)
         choice->push_back(NodePtr(new Leaf(*y)));
@@ -691,36 +697,6 @@ namespace gtsam {
     };
     visitWith(f);
     return unique;
-  }
-
-  template <typename L, typename Y>
-  template <typename Func>
-  typename DecisionTree<L, Y>::NodePtr DecisionTree<L, Y>::prune(const NodePtr& node, Func predicate) {
-    // Prune<L, Y> prune(f);
-    // prune(root_);
-    using LY = DecisionTree<L, Y>;
-    // If leaf, check the predicate and return accordingly.
-    if (auto leaf = boost::dynamic_pointer_cast<const Leaf>(node)) {  
-      if(predicate(leaf->constant())) {
-        return nullptr;
-      }
-      return NodePtr(new Leaf(leaf->constant()));
-    }
-     // Check if Choice
-    auto choice = boost::dynamic_pointer_cast<const Choice>(node);
-    if (!choice) throw std::invalid_argument(
-        "DecisionTree::convertFrom: Invalid NodePtr");
-
-    // put together via Shannon expansion otherwise not sorted.
-    std::vector<LY> functions;
-    for (auto&& branch : choice->branches()) {
-      auto new_node = prune(branch, predicate);
-      // If valid node, then add it.
-      if (new_node) {
-        functions.emplace_back(new_node);
-      }
-    }
-    return LY::compose(functions.begin(), functions.end(), choice->label());
   }
 
 /****************************************************************************/
