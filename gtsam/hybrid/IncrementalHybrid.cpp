@@ -85,6 +85,9 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
   if (maxNrLeaves) {
     DecisionTreeFactor::shared_ptr discreteFactor = prune(*maxNrLeaves);
 
+    HybridBayesNet::shared_ptr prunedBayesNetFragment =
+        boost::make_shared<HybridBayesNet>(*bayesNetFragment);
+
     // If valid pruned discrete factor, then propagate to gaussian mixtures
     if (discreteFactor) {
       // To Prune, we visitWith every leaf in the GaussianMixture. For each
@@ -96,32 +99,53 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
       discreteFactor->print();
 
       // Go through all the conditionals in the
-      // bayesNetFragment and prune them as well.
-      for (auto &&conditional : *bayesNetFragment) {
-        auto gaussianMixture =
+      // bayesNetFragment and prune them as per discreteFactor.
+      for (size_t i = 0; i < bayesNetFragment->size(); i++) {
+        auto conditional = bayesNetFragment->at(i);
+
+        GaussianMixture::shared_ptr gaussianMixture =
             boost::dynamic_pointer_cast<GaussianMixture>(conditional);
+
+        // Container for nodes (or nullptrs) to create a new DecisionTree
+        std::vector<GaussianConditional::shared_ptr> nodes;
 
         // Loop over all assignments and create a set of GaussianConditionals
         auto pruner = [&](const Assignment<Key> &choices,
                           const GaussianFactor::shared_ptr &gf) {
           // typecast so we can use this below
           DiscreteValues values(choices);
-
           try {
             if ((*discreteFactor)(values) == -1.0) {
-              (*gaussianMixture)(values) = nullptr;
+              nodes.push_back(nullptr);
+            } else {
+              nodes.push_back(
+                  boost::dynamic_pointer_cast<GaussianConditional>(gf));
             }
           } catch (std::exception &e) {
             // assignment not present so we continue
           }
         };
 
-        if (auto gf =
-                boost::dynamic_pointer_cast<GaussianMixture>(conditional)) {
-          gf->factors_.visitWith(pruner);
+        if (gaussianMixture) {
+          gaussianMixture->factors_.visitWith(pruner);
+
+          DiscreteKeys discreteKeys = gaussianMixture->discreteKeys();
+          // reverse keys to get a natural ordering
+          std::reverse(discreteKeys.begin(), discreteKeys.end());
+
+          // Create the tree
+          auto prunedTree = GaussianMixture::Conditionals(discreteKeys, nodes);
+          // Create the new gaussian mixture and add it to the bayes net.
+          auto prunedGaussianMixture = boost::make_shared<GaussianMixture>(
+              gaussianMixture->nrFrontals(), gaussianMixture->continuousKeys(),
+              discreteKeys, prunedTree);
+          prunedBayesNetFragment->addGaussian(i, prunedGaussianMixture);
         }
       }
     }
+
+    // Set the bayes net fragment to the pruned version
+    bayesNetFragment = prunedBayesNetFragment;
   }
 
   // Add the partial bayes net to the posterior bayes net.

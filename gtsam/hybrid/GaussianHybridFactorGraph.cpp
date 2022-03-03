@@ -113,8 +113,7 @@ ostream& operator<<(ostream& os,
 pair<AbstractConditional::shared_ptr, boost::shared_ptr<Factor>>
 EliminateHybrid(const GaussianHybridFactorGraph& factors,
                 const Ordering& ordering) {
-
-  ordering.print("\nEliminating:");
+  ordering.print("\nEliminating: ");
   // STEP 1: SUM
   // Create a new decision tree with all factors gathered at leaves.
   Sum sum = factors.sum();
@@ -155,8 +154,8 @@ EliminateHybrid(const GaussianHybridFactorGraph& factors,
   KeyVector keysOfSeparator;   // TODO(frank): Is this just (keys - ordering)?
   auto eliminate = [&](const GaussianFactorGraph& graph)
       -> GaussianFactorGraph::EliminationResult {
-      gttic_(Eliminate);
     if (graph.empty()) return {nullptr, nullptr};
+    gttic_(Eliminate);
     auto result = EliminatePreferCholesky(graph, ordering);
     if (keysOfEliminated.empty())
       keysOfEliminated =
