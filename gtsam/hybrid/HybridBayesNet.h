@@ -60,6 +60,14 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<AbstractConditional> {
   GaussianMixture::shared_ptr atGaussian(size_t i) const;
 
   /**
+   * @brief Set gaussian mixture at specific index.
+   *
+   * @param i The index to set the gaussian mixture at.
+   * @param gaussian The gaussian mixture shared pointer to add.
+   */
+  void addGaussian(size_t i, const GaussianMixture::shared_ptr &gaussian);
+
+  /**
    * Get a specific Gaussian mixture factor by index
    * (this checks array bounds and may throw an exception, as opposed to
    * operator[] which does not).
