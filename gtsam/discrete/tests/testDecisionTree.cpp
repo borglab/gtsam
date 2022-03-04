@@ -20,12 +20,11 @@
 // #define DT_DEBUG_MEMORY
 // #define DT_NO_PRUNING
 #define DISABLE_DOT
-#include <gtsam/discrete/DecisionTree-inl.h>
-
-#include <gtsam/base/Testable.h>
-#include <gtsam/discrete/Signature.h>
-
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/discrete/DecisionTree-inl.h>
+#include <gtsam/discrete/DiscreteValues.h>
+#include <gtsam/discrete/Signature.h>
 
 #include <boost/assign/std/vector.hpp>
 using namespace boost::assign;
@@ -411,6 +410,28 @@ TEST(DecisionTree, threshold) {
   // Check number of leaves equal to zero now = 2
   // Note: it is 2, because the pruned branches are counted as 1!
   EXPECT_LONGS_EQUAL(2, thresholded.fold(count, 0));
+}
+
+/* ************************************************************************** */
+// Test convertFromWithChoice constructor.
+TEST(DecisionTree, ConvertFromWithChoice) {
+  // Create three level tree
+  vector<DT::LabelC> keys;
+  keys += DT::LabelC("C", 2), DT::LabelC("B", 2), DT::LabelC("A", 2);
+  DT tree(keys, "0 1 2 3 4 5 6 7");
+
+  DT predicateTree(keys, "0 1 2 -1 4 5 -1 -1");
+
+  std::vector<int> nodes;
+  auto collector = [&](const int& x) {
+    nodes.push_back(x);
+  };
+  predicateTree.print();
+  predicateTree.visit(collector);
+  std::cout << "Number of node (should be < 8): " << nodes.size() << std::endl;
+
+  // This constructor will fail because the last 2 -1s are merged together.
+  DT actualTree(keys, nodes);
 }
 
 /* ************************************************************************* */
