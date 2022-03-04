@@ -406,9 +406,7 @@ TEST(IncrementalHybrid, NonTrivial) {
   initial.insert(Z(1), Pose2(1.0, 2.0, 0.0));
   initial.insert(W(1), Pose2(0.0, 3.0, 0.0));
 
-  // Ordering for k=1. We need a smart ordering scheme where
-  // variables not conncted to DCFactors (excluding variables of final interest
-  // e.g. X) should be eliminated first.
+  // Ordering for k=1.
   ordering = Ordering();
   ordering += W(0);
   ordering += Z(0);
@@ -422,7 +420,7 @@ TEST(IncrementalHybrid, NonTrivial) {
   gfg = fg.linearize(initial);
   fg = NonlinearHybridFactorGraph();
 
-  inc.update(gfg, ordering, 4);
+  inc.update(gfg, ordering, 2);
 
   // Add odometry factor
   contKeys = {W(1), W(2)};
@@ -452,7 +450,7 @@ TEST(IncrementalHybrid, NonTrivial) {
   initial.insert(Z(2), Pose2(2.0, 2.0, 0.0));
   initial.insert(W(2), Pose2(0.0, 3.0, 0.0));
 
-  // Ordering at k=2. Same idea as before.
+  // Ordering at k=2.
   ordering = Ordering();
   ordering += W(1);
   ordering += Z(1);
@@ -466,7 +464,7 @@ TEST(IncrementalHybrid, NonTrivial) {
   gfg = fg.linearize(initial);
   fg = NonlinearHybridFactorGraph();
 
-  inc.update(gfg, ordering);
+  inc.update(gfg, ordering, 2);
 
   // Add odometry factor
   contKeys = {W(2), W(3)};
@@ -511,7 +509,7 @@ TEST(IncrementalHybrid, NonTrivial) {
   fg = NonlinearHybridFactorGraph();
 
   std::cout << "\n\n======== final elimination" << std::endl;
-  inc.update(gfg, ordering, 4);
+  inc.update(gfg, ordering, 3);
 
   // The final discrete graph should not be empty since we have eliminated
   // everything.

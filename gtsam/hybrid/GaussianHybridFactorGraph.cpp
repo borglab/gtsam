@@ -113,7 +113,6 @@ ostream& operator<<(ostream& os,
 pair<AbstractConditional::shared_ptr, boost::shared_ptr<Factor>>
 EliminateHybrid(const GaussianHybridFactorGraph& factors,
                 const Ordering& ordering) {
-  ordering.print("\nEliminating: ");
   // STEP 1: SUM
   // Create a new decision tree with all factors gathered at leaves.
   Sum sum = factors.sum();
@@ -132,15 +131,15 @@ EliminateHybrid(const GaussianHybridFactorGraph& factors,
     return {df, newFactor};
   }
 
-  // zero out all sums with null ptrs
-  auto zeroOut = [](const GaussianFactorGraph& gfg) {
+  // If a tree leaf contains nullptr, convert that leaf to an empty gausiaan FG
+  auto emptyGaussian = [](const GaussianFactorGraph& gfg) {
     bool hasNull =
         std::any_of(gfg.begin(), gfg.end(),
                     [](const GaussianFactor::shared_ptr& ptr) { return !ptr; });
 
     return hasNull ? GaussianFactorGraph() : gfg;
   };
-  sum = Sum(sum, zeroOut);
+  sum = Sum(sum, emptyGaussian);
 
   // STEP 1: ELIMINATE
   // Eliminate each sum using conventional Cholesky:
@@ -155,8 +154,8 @@ EliminateHybrid(const GaussianHybridFactorGraph& factors,
   auto eliminate = [&](const GaussianFactorGraph& graph)
       -> GaussianFactorGraph::EliminationResult {
     if (graph.empty()) return {nullptr, nullptr};
-    gttic_(Eliminate);
     auto result = EliminatePreferCholesky(graph, ordering);
+    gttic_(Eliminate);
     if (keysOfEliminated.empty())
       keysOfEliminated =
           result.first->keys();  // Initialize the keysOfEliminated to be the
@@ -166,6 +165,7 @@ EliminateHybrid(const GaussianHybridFactorGraph& factors,
   };
 
   gttic_(EliminationResult);
+
   DecisionTree<Key, EliminationPair> eliminationResults(sum, eliminate);
   gttoc_(EliminationResult);
 
