@@ -49,20 +49,31 @@ void DCGaussianMixtureFactor::print(const std::string &s,
   auto valueFormatter = [&](const GaussianFactor::shared_ptr &v) {
     auto printCapture = [&](const GaussianFactor::shared_ptr &p) {
       RedirectCout rd;
-      p->print("", keyFormatter);
+      if (p) {
+        p->print("", keyFormatter);
+      } else {
+        std::cout << "nullptr" << std::endl;
+      }
+
       std::string s = rd.str();
       return s;
     };
 
-    std::string format_template = "Gaussian factor on %d keys: \n%s\n";
-    if (auto hessianFactor = boost::dynamic_pointer_cast<HessianFactor>(v)) {
-      format_template = "Hessian factor on %d keys: \n%s\n";
-    }
-    if (auto jacobianFactor = boost::dynamic_pointer_cast<JacobianFactor>(v)) {
-      format_template = "Jacobian factor on %d keys: \n%s\n";
-    }
+    if (v) {
+      std::string format_template = "Gaussian factor on %d keys: \n%s\n";
+      if (auto hessianFactor = boost::dynamic_pointer_cast<HessianFactor>(v)) {
+        format_template = "Hessian factor on %d keys: \n%s\n";
+      }
+      if (auto jacobianFactor =
+              boost::dynamic_pointer_cast<JacobianFactor>(v)) {
+        format_template = "Jacobian factor on %d keys: \n%s\n";
+      }
 
-    return (boost::format(format_template) % v->size() % printCapture(v)).str();
+      return (boost::format(format_template) % v->size() % printCapture(v))
+          .str();
+    } else {
+      return std::string("nullptr");
+    }
   };
 
   factors_.print("", keyFormatter, valueFormatter);
