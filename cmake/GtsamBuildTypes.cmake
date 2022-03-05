@@ -93,6 +93,10 @@ if(MSVC)
 	/wd4267 # warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
   )
 
+  add_compile_options(/wd4005)
+  add_compile_options(/wd4101)
+  add_compile_options(/wd4834)
+
 endif()
 
 # Other (non-preprocessor macros) compiler flags:

@@ -358,17 +358,21 @@ Vector SOn::Vee(const Matrix& X);
 using DynamicJacobian = OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic>;
 
 template <>
+GTSAM_EXPORT
 SOn LieGroup<SOn, Eigen::Dynamic>::compose(const SOn& g, DynamicJacobian H1,
                                            DynamicJacobian H2) const;
 
 template <>
+GTSAM_EXPORT
 SOn LieGroup<SOn, Eigen::Dynamic>::between(const SOn& g, DynamicJacobian H1,
                                            DynamicJacobian H2) const;
 
 /*
  * Specialize dynamic vec.
  */
-template <> typename SOn::VectorN2 SOn::vec(DynamicJacobian H) const;
+template <> 
+GTSAM_EXPORT
+typename SOn::VectorN2 SOn::vec(DynamicJacobian H) const;
 
 /** Serialization function */
 template<class Archive>
