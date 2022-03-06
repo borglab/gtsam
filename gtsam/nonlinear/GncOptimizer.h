@@ -254,6 +254,7 @@ class GTSAM_EXPORT GncOptimizer {
 
       // logging
       if(params_.logOutput){
+        std::cout << "Logging files for each GNC iteration: don't do this if you are measuring runtime!" << std::endl;
         std::string outputFile = "./temp/output_graph_gnc_iter_" + std::to_string(iter) + ".g2o";
         writeG2o(graph_iter, result, outputFile);
 
