@@ -26,8 +26,11 @@
 
 #pragma once
 
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/GncParams.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/slam/dataset.h>
+
 #include <boost/math/distributions/chi_squared.hpp>
 
 namespace gtsam {
@@ -248,6 +251,33 @@ class GTSAM_EXPORT GncOptimizer {
 
       // get ready for next iteration
       prev_cost = cost;
+
+      // logging
+      if(params_.logOutput){
+        std::string outputFile = "./temp/output_graph_gnc_iter_" + std::to_string(iter) + ".g2o";
+        writeG2o(graph_iter, result, outputFile);
+
+        std::string outputWeightsFile = "./temp/output_weights_gnc_iter_" + std::to_string(iter) + ".txt";
+        std::ofstream os;
+        os.open(outputWeightsFile.c_str());
+        os.precision(20);
+        if (!os.is_open()) {
+          throw std::runtime_error("cannot open output_weights_gnc_iter file");
+        }
+        for(size_t slot = 0; slot < graph_iter.size(); slot++){
+          Key key1 = graph_iter[slot]->keys().at(0);
+          if (graph_iter[slot]->keys().size() == 1){ // prior
+            if( abs(weights_[slot] - 1.0) > 1e-7 )
+              throw std::runtime_error("prior weight different from 1?");
+            continue;
+          }
+          Key key2 = graph_iter[slot]->keys().at(1);
+          if( Symbol(key1).chr() == 'l' && Symbol(key1).chr() == 'l' ){ // data association factor!
+            os << Symbol(key1).index() << " " << Symbol(key2).index()  << " " << weights_[slot] << std::endl;
+          }
+        }
+        os.close();
+      }
 
       // display info
       if (params_.verbosity >= GncParameters::Verbosity::VALUES) {
