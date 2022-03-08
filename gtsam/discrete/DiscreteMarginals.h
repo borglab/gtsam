@@ -29,13 +29,15 @@ namespace gtsam {
   /**
    * A class for computing marginals of variables in a DiscreteFactorGraph
    */
-class GTSAM_EXPORT DiscreteMarginals {
+class DiscreteMarginals {
 
   protected:
 
     DiscreteBayesTree::shared_ptr bayesTree_;
 
   public:
+
+  DiscreteMarginals() {}
 
   /** Construct a marginals class.
    * @param graph The factor graph defining the full joint density on all variables.

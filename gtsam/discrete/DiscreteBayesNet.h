@@ -18,22 +18,26 @@
 
 #pragma once
 
-#include <vector>
-#include <map>
-#include <boost/shared_ptr.hpp>
+#include <gtsam/discrete/DiscreteConditional.h>
+#include <gtsam/discrete/DiscreteDistribution.h>
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/FactorGraph.h>
-#include <gtsam/discrete/DiscretePrior.h>
-#include <gtsam/discrete/DiscreteConditional.h>
+
+#include <boost/shared_ptr.hpp>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace gtsam {
 
-/** A Bayes net made from linear-Discrete densities */
-  class GTSAM_EXPORT DiscreteBayesNet: public BayesNet<DiscreteConditional>
-  {
-  public:
-
-    typedef FactorGraph<DiscreteConditional> Base;
+/** 
+ * A Bayes net made from discrete conditional distributions. 
+ * @addtogroup discrete
+ */
+class GTSAM_EXPORT DiscreteBayesNet: public BayesNet<DiscreteConditional> {
+ public:
+    typedef BayesNet<DiscreteConditional> Base;
     typedef DiscreteBayesNet This;
     typedef DiscreteConditional ConditionalType;
     typedef boost::shared_ptr<This> shared_ptr;
@@ -42,20 +46,24 @@ namespace gtsam {
     /// @name Standard Constructors
     /// @{
 
-    /** Construct empty factor graph */
+    /// Construct empty Bayes net.
     DiscreteBayesNet() {}
 
     /** Construct from iterator over conditionals */
-    template<typename ITERATOR>
-    DiscreteBayesNet(ITERATOR firstConditional, ITERATOR lastConditional) : Base(firstConditional, lastConditional) {}
+    template <typename ITERATOR>
+    DiscreteBayesNet(ITERATOR firstConditional, ITERATOR lastConditional)
+        : Base(firstConditional, lastConditional) {}
 
     /** Construct from container of factors (shared_ptr or plain objects) */
-    template<class CONTAINER>
-    explicit DiscreteBayesNet(const CONTAINER& conditionals) : Base(conditionals) {}
+    template <class CONTAINER>
+    explicit DiscreteBayesNet(const CONTAINER& conditionals)
+        : Base(conditionals) {}
 
-    /** Implicit copy/downcast constructor to override explicit template container constructor */
-    template<class DERIVEDCONDITIONAL>
-    DiscreteBayesNet(const FactorGraph<DERIVEDCONDITIONAL>& graph) : Base(graph) {}
+    /** Implicit copy/downcast constructor to override explicit template
+     * container constructor */
+    template <class DERIVEDCONDITIONAL>
+    DiscreteBayesNet(const FactorGraph<DERIVEDCONDITIONAL>& graph)
+        : Base(graph) {}
 
     /// Destructor
     virtual ~DiscreteBayesNet() {}
@@ -76,9 +84,9 @@ namespace gtsam {
     // Add inherited versions of add.
     using Base::add;
 
-    /** Add a DiscretePrior using a table or a string */
+    /** Add a DiscreteDistribution using a table or a string */
     void add(const DiscreteKey& key, const std::string& spec) {
-      emplace_shared<DiscretePrior>(key, spec);
+      emplace_shared<DiscreteDistribution>(key, spec);
     }
 
     /** Add a DiscreteCondtional */
@@ -96,24 +104,50 @@ namespace gtsam {
     }
 
     /**
-    * Solve the DiscreteBayesNet by back-substitution
-    */
-    DiscreteValues optimize() const;
-
-    /** Do ancestral sampling */
+     * @brief do ancestral sampling
+     *
+     * Assumes the Bayes net is reverse topologically sorted, i.e. last
+     * conditional will be sampled first. If the Bayes net resulted from
+     * eliminating a factor graph, this is true for the elimination ordering.
+     *
+     * @return a sampled value for all variables.
+     */
     DiscreteValues sample() const;
+
+    /**
+     * @brief do ancestral sampling, given certain variables.
+     *
+     * Assumes the Bayes net is reverse topologically sorted *and* that the
+     * Bayes net does not contain any conditionals for the given values.
+     *
+     * @return given values extended with sampled value for all other variables.
+     */
+    DiscreteValues sample(DiscreteValues given) const;
 
     ///@}
     /// @name Wrapper support
     /// @{
 
-    /// Render as markdown table.
+    /// Render as markdown tables.
     std::string markdown(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
                          const DiscreteFactor::Names& names = {}) const;
 
-    /// @}
+    /// Render as html tables.
+    std::string html(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                     const DiscreteFactor::Names& names = {}) const;
 
-  private:
+    ///@}
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
+    /// @name Deprecated functionality
+    /// @{
+
+    DiscreteValues GTSAM_DEPRECATED optimize() const;
+    DiscreteValues GTSAM_DEPRECATED optimize(DiscreteValues given) const;
+    /// @}
+#endif
+
+ private:
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>

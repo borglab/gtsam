@@ -73,4 +73,22 @@ namespace gtsam {
   }
 
   /* **************************************************************************/
+  std::string DiscreteBayesTree::html(
+      const KeyFormatter& keyFormatter,
+      const DiscreteFactor::Names& names) const {
+    using std::endl;
+    std::stringstream ss;
+    ss << "<div><p><tt>DiscreteBayesTree</tt> of size " << nodes_.size()
+       << "</p>";
+    auto visitor = [&](const DiscreteBayesTreeClique::shared_ptr& clique,
+                       size_t& indent) {
+      ss << clique->conditional()->html(keyFormatter, names);
+      return indent + 1;
+    };
+    size_t indent;
+    treeTraversal::DepthFirstForest(*this, indent, visitor);
+    return ss.str();
+  }
+
+  /* **************************************************************************/
   }  // namespace gtsam

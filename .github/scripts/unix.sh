@@ -71,6 +71,7 @@ function configure()
       -DGTSAM_USE_SYSTEM_EIGEN=${GTSAM_USE_SYSTEM_EIGEN:-OFF} \
       -DGTSAM_USE_SYSTEM_METIS=${GTSAM_USE_SYSTEM_METIS:-OFF} \
       -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF \
+      -DGTSAM_SINGLE_TEST_EXE=ON \
       -DBOOST_ROOT=$BOOST_ROOT \
       -DBoost_NO_SYSTEM_PATHS=ON \
       -DBoost_ARCHITECTURE=-x64
@@ -95,7 +96,11 @@ function build ()
   configure
 
   if [ "$(uname)" == "Linux" ]; then
-    make -j$(nproc)
+    if (($(nproc) > 2)); then
+      make -j$(nproc)
+    else
+      make -j2
+    fi
   elif [ "$(uname)" == "Darwin" ]; then
     make -j$(sysctl -n hw.physicalcpu)
   fi
@@ -113,7 +118,11 @@ function test ()
 
   # Actual testing
   if [ "$(uname)" == "Linux" ]; then
-    make -j$(nproc) check
+    if (($(nproc) > 2)); then
+      make -j$(nproc) check
+    else
+      make -j2 check
+    fi
   elif [ "$(uname)" == "Darwin" ]; then
     make -j$(sysctl -n hw.physicalcpu) check
   fi

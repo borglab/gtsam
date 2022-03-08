@@ -17,10 +17,12 @@
  *  @author Duy-Nguyen Ta
  */
 
-#include <gtsam/discrete/Signature.h>
-#include <gtsam/discrete/DecisionTreeFactor.h>
-#include <gtsam/base/Testable.h>
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/discrete/DecisionTreeFactor.h>
+#include <gtsam/discrete/DiscreteDistribution.h>
+#include <gtsam/discrete/Signature.h>
+
 #include <boost/assign/std/map.hpp>
 using namespace boost::assign;
 
@@ -51,17 +53,21 @@ TEST( DecisionTreeFactor, constructors)
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE( DecisionTreeFactor, multiplication)
-{
-  DiscreteKey v0(0,2), v1(1,2), v2(2,2);
+TEST(DecisionTreeFactor, multiplication) {
+  DiscreteKey v0(0, 2), v1(1, 2), v2(2, 2);
 
+  // Multiply with a DiscreteDistribution, i.e., Bayes Law!
+  DiscreteDistribution prior(v1 % "1/3");
   DecisionTreeFactor f1(v0 & v1, "1 2 3 4");
+  DecisionTreeFactor expected(v0 & v1, "0.25 1.5 0.75 3");
+  CHECK(assert_equal(expected, static_cast<DecisionTreeFactor>(prior) * f1));
+  CHECK(assert_equal(expected, f1 * prior));
+
+  // Multiply two factors
   DecisionTreeFactor f2(v1 & v2, "5 6 7 8");
-
-  DecisionTreeFactor expected(v0 & v1 & v2, "5 6 14 16 15 18 28 32");
-
   DecisionTreeFactor actual = f1 * f2;
-  CHECK(assert_equal(expected, actual));
+  DecisionTreeFactor expected2(v0 & v1 & v2, "5 6 14 16 15 18 28 32");
+  CHECK(assert_equal(expected2, actual));
 }
 
 /* ************************************************************************* */
@@ -101,7 +107,7 @@ TEST(DecisionTreeFactor, enumerate) {
 }
 
 /* ************************************************************************* */
-TEST(DiscreteFactorGraph, DotWithNames) {
+TEST(DecisionTreeFactor, DotWithNames) {
   DiscreteKey A(12, 3), B(5, 2);
   DecisionTreeFactor f(A & B, "1 2  3 4  5 6");
   auto formatter = [](Key key) { return key == 12 ? "A" : "B"; };
@@ -151,6 +157,34 @@ TEST(DecisionTreeFactor, markdownWithValueFormatter) {
   DecisionTreeFactor::Names names{{12, {"Zero", "One", "Two"}},
                                   {5, {"-", "+"}}};
   string actual = f.markdown(keyFormatter, names);
+  EXPECT(actual == expected);
+}
+
+/* ************************************************************************* */
+// Check html representation with a value formatter.
+TEST(DecisionTreeFactor, htmlWithValueFormatter) {
+  DiscreteKey A(12, 3), B(5, 2);
+  DecisionTreeFactor f(A & B, "1 2  3 4  5 6");
+  string expected =
+      "<div>\n"
+      "<table class='DecisionTreeFactor'>\n"
+      "  <thead>\n"
+      "    <tr><th>A</th><th>B</th><th>value</th></tr>\n"
+      "  </thead>\n"
+      "  <tbody>\n"
+      "    <tr><th>Zero</th><th>-</th><td>1</td></tr>\n"
+      "    <tr><th>Zero</th><th>+</th><td>2</td></tr>\n"
+      "    <tr><th>One</th><th>-</th><td>3</td></tr>\n"
+      "    <tr><th>One</th><th>+</th><td>4</td></tr>\n"
+      "    <tr><th>Two</th><th>-</th><td>5</td></tr>\n"
+      "    <tr><th>Two</th><th>+</th><td>6</td></tr>\n"
+      "  </tbody>\n"
+      "</table>\n"
+      "</div>";
+  auto keyFormatter = [](Key key) { return key == 12 ? "A" : "B"; };
+  DecisionTreeFactor::Names names{{12, {"Zero", "One", "Two"}},
+                                  {5, {"-", "+"}}};
+  string actual = f.html(keyFormatter, names);
   EXPECT(actual == expected);
 }
 

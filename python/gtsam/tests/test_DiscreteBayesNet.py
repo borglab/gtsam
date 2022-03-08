@@ -12,10 +12,23 @@ Author: Frank Dellaert
 # pylint: disable=no-name-in-module, invalid-name
 
 import unittest
+import textwrap
 
+import gtsam
 from gtsam import (DiscreteBayesNet, DiscreteConditional, DiscreteFactorGraph,
-                   DiscreteKeys, DiscretePrior, DiscreteValues, Ordering)
+                   DiscreteKeys, DiscreteDistribution, DiscreteValues, Ordering)
 from gtsam.utils.test_case import GtsamTestCase
+
+# Some keys:
+Asia = (0, 2)
+Smoking = (4, 2)
+Tuberculosis = (3, 2)
+LungCancer = (6, 2)
+
+Bronchitis = (7, 2)
+Either = (5, 2)
+XRay = (2, 2)
+Dyspnea = (1, 2)
 
 
 class TestDiscreteBayesNet(GtsamTestCase):
@@ -43,16 +56,6 @@ class TestDiscreteBayesNet(GtsamTestCase):
     def test_Asia(self):
         """Test full Asia example."""
 
-        Asia = (0, 2)
-        Smoking = (4, 2)
-        Tuberculosis = (3, 2)
-        LungCancer = (6, 2)
-
-        Bronchitis = (7, 2)
-        Either = (5, 2)
-        XRay = (2, 2)
-        Dyspnea = (1, 2)
-
         asia = DiscreteBayesNet()
         asia.add(Asia, "99/1")
         asia.add(Smoking, "50/50")
@@ -74,11 +77,11 @@ class TestDiscreteBayesNet(GtsamTestCase):
         for j in range(8):
             ordering.push_back(j)
         chordal = fg.eliminateSequential(ordering)
-        expected2 = DiscretePrior(Bronchitis, "11/9")
+        expected2 = DiscreteDistribution(Bronchitis, "11/9")
         self.gtsamAssertEquals(chordal.at(7), expected2)
 
         # solve
-        actualMPE = chordal.optimize()
+        actualMPE = fg.optimize()
         expectedMPE = DiscreteValues()
         for key in [Asia, Dyspnea, XRay, Tuberculosis, Smoking, Either, LungCancer, Bronchitis]:
             expectedMPE[key[0]] = 0
@@ -93,8 +96,7 @@ class TestDiscreteBayesNet(GtsamTestCase):
         fg.add(Dyspnea, "0 1")
 
         # solve again, now with evidence
-        chordal2 = fg.eliminateSequential(ordering)
-        actualMPE2 = chordal2.optimize()
+        actualMPE2 = fg.optimize()
         expectedMPE2 = DiscreteValues()
         for key in [XRay, Tuberculosis, Either, LungCancer]:
             expectedMPE2[key[0]] = 0
@@ -104,8 +106,60 @@ class TestDiscreteBayesNet(GtsamTestCase):
                          list(expectedMPE2.items()))
 
         # now sample from it
+        chordal2 = fg.eliminateSequential(ordering)
         actualSample = chordal2.sample()
         self.assertEqual(len(actualSample), 8)
+
+    def test_fragment(self):
+        """Test sampling and optimizing for Asia fragment."""
+
+        # Create a reverse-topologically sorted fragment:
+        fragment = DiscreteBayesNet()
+        fragment.add(Either, [Tuberculosis, LungCancer], "F T T T")
+        fragment.add(Tuberculosis, [Asia], "99/1 95/5")
+        fragment.add(LungCancer, [Smoking], "99/1 90/10")
+
+        # Create assignment with missing values:
+        given = DiscreteValues()
+        for key in [Asia, Smoking]:
+            given[key[0]] = 0
+
+        # Now sample from fragment:
+        actual = fragment.sample(given)
+        self.assertEqual(len(actual), 5)
+
+    def test_dot(self):
+        """Check that dot works with position hints."""
+        fragment = DiscreteBayesNet()
+        fragment.add(Either, [Tuberculosis, LungCancer], "F T T T")
+        MyAsia = gtsam.symbol('a', 0), 2  # use a symbol!
+        fragment.add(Tuberculosis, [MyAsia], "99/1 95/5")
+        fragment.add(LungCancer, [Smoking], "99/1 90/10")
+
+        # Make sure we can *update* position hints
+        writer = gtsam.DotWriter()
+        ph: dict = writer.positionHints
+        ph.update({'a': 2})  # hint at symbol position
+        writer.positionHints = ph
+
+        # Check the output of dot
+        actual = fragment.dot(writer=writer)
+        expected_result = """\
+            digraph {
+              size="5,5";
+
+              var3[label="3"];
+              var4[label="4"];
+              var5[label="5"];
+              var6[label="6"];
+              vara0[label="a0", pos="0,2!"];
+
+              var4->var6
+              vara0->var3
+              var3->var5
+              var6->var5
+            }"""
+        self.assertEqual(actual, textwrap.dedent(expected_result))
 
 
 if __name__ == "__main__":

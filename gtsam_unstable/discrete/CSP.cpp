@@ -6,24 +6,13 @@
  */
 
 #include <gtsam/base/Testable.h>
+#include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam_unstable/discrete/CSP.h>
 #include <gtsam_unstable/discrete/Domain.h>
 
 using namespace std;
 
 namespace gtsam {
-
-/// Find the best total assignment - can be expensive
-DiscreteValues CSP::optimalAssignment() const {
-  DiscreteBayesNet::shared_ptr chordal = this->eliminateSequential();
-  return chordal->optimize();
-}
-
-/// Find the best total assignment - can be expensive
-DiscreteValues CSP::optimalAssignment(const Ordering& ordering) const {
-  DiscreteBayesNet::shared_ptr chordal = this->eliminateSequential(ordering);
-  return chordal->optimize();
-}
 
 bool CSP::runArcConsistency(const VariableIndex& index,
                             Domains* domains) const {

@@ -108,6 +108,24 @@ TEST( NonlinearFactorGraph, probPrime )
 }
 
 /* ************************************************************************* */
+TEST(NonlinearFactorGraph, ProbPrime2) {
+  NonlinearFactorGraph fg;
+  fg.emplace_shared<PriorFactor<double>>(1, 0.0,
+                                         noiseModel::Isotropic::Sigma(1, 1.0));
+
+  Values values;
+  values.insert(1, 1.0);
+
+  // The prior factor squared error is: 0.5.
+  EXPECT_DOUBLES_EQUAL(0.5, fg.error(values), 1e-12);
+
+  // The probability value is: exp^(-factor_error) / sqrt(2 * PI)
+  // Ignore the denominator and we get: exp^(-factor_error) = exp^(-0.5)
+  double expected = exp(-0.5);
+  EXPECT_DOUBLES_EQUAL(expected, fg.probPrime(values), 1e-12);
+}
+
+/* ************************************************************************* */
 TEST( NonlinearFactorGraph, linearize )
 {
   NonlinearFactorGraph fg = createNonlinearFactorGraph();
@@ -317,15 +335,21 @@ TEST(NonlinearFactorGraph, dot) {
       "graph {\n"
       "  size=\"5,5\";\n"
       "\n"
-      "  var7782220156096217089[label=\"l1\"];\n"
-      "  var8646911284551352321[label=\"x1\"];\n"
-      "  var8646911284551352322[label=\"x2\"];\n"
+      "  varl1[label=\"l1\"];\n"
+      "  varx1[label=\"x1\"];\n"
+      "  varx2[label=\"x2\"];\n"
       "\n"
       "  factor0[label=\"\", shape=point];\n"
-      "  var8646911284551352321--factor0;\n"
-      "  var8646911284551352321--var8646911284551352322;\n"
-      "  var8646911284551352321--var7782220156096217089;\n"
-      "  var8646911284551352322--var7782220156096217089;\n"
+      "  varx1--factor0;\n"
+      "  factor1[label=\"\", shape=point];\n"
+      "  varx1--factor1;\n"
+      "  varx2--factor1;\n"
+      "  factor2[label=\"\", shape=point];\n"
+      "  varx1--factor2;\n"
+      "  varl1--factor2;\n"
+      "  factor3[label=\"\", shape=point];\n"
+      "  varx2--factor3;\n"
+      "  varl1--factor3;\n"
       "}\n";
 
   const NonlinearFactorGraph fg = createNonlinearFactorGraph();
@@ -339,15 +363,21 @@ TEST(NonlinearFactorGraph, dot_extra) {
       "graph {\n"
       "  size=\"5,5\";\n"
       "\n"
-      "  var7782220156096217089[label=\"l1\", pos=\"0,0!\"];\n"
-      "  var8646911284551352321[label=\"x1\", pos=\"1,0!\"];\n"
-      "  var8646911284551352322[label=\"x2\", pos=\"1,1.5!\"];\n"
+      "  varl1[label=\"l1\", pos=\"0,0!\"];\n"
+      "  varx1[label=\"x1\", pos=\"1,0!\"];\n"
+      "  varx2[label=\"x2\", pos=\"1,1.5!\"];\n"
       "\n"
       "  factor0[label=\"\", shape=point];\n"
-      "  var8646911284551352321--factor0;\n"
-      "  var8646911284551352321--var8646911284551352322;\n"
-      "  var8646911284551352321--var7782220156096217089;\n"
-      "  var8646911284551352322--var7782220156096217089;\n"
+      "  varx1--factor0;\n"
+      "  factor1[label=\"\", shape=point];\n"
+      "  varx1--factor1;\n"
+      "  varx2--factor1;\n"
+      "  factor2[label=\"\", shape=point];\n"
+      "  varx1--factor2;\n"
+      "  varl1--factor2;\n"
+      "  factor3[label=\"\", shape=point];\n"
+      "  varx2--factor3;\n"
+      "  varl1--factor3;\n"
       "}\n";
 
   const NonlinearFactorGraph fg = createNonlinearFactorGraph();

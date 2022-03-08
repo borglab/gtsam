@@ -44,9 +44,6 @@ class Chebyshev2 {
   static Matrix DerivativeWeights(size_t N, double x, double a, double b);
   static Matrix IntegrationWeights(size_t N, double a, double b);
   static Matrix DifferentiationMatrix(size_t N, double a, double b);
-
-  // TODO Needs OptionalJacobian
-  // static double Derivative(double x, Vector f);
 };
 
 #include <gtsam/basis/ParameterMatrix.h>

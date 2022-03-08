@@ -18,7 +18,12 @@
 #pragma once
 
 #include <gtsam/discrete/Assignment.h>
+#include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/inference/Key.h>
+
+#include <map>
+#include <string>
+#include <vector>
 
 namespace gtsam {
 
@@ -32,27 +37,70 @@ namespace gtsam {
  * stores cardinality of a Discrete variable. It should be handled naturally in
  * the new class DiscreteValue, as the variable's type (domain)
  */
-class DiscreteValues : public Assignment<Key> {
+class GTSAM_EXPORT DiscreteValues : public Assignment<Key> {
  public:
-  using Assignment::Assignment; // all constructors
+  using Base = Assignment<Key>;  // base class
+
+  using Assignment::Assignment;  // all constructors
 
   // Define the implicit default constructor.
   DiscreteValues() = default;
 
   // Construct from assignment.
-  DiscreteValues(const Assignment<Key>& a) : Assignment<Key>(a) {}
+  explicit DiscreteValues(const Base& a) : Base(a) {}
 
   void print(const std::string& s = "",
-             const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
-    std::cout << s << ": ";
-    for (const typename Assignment::value_type& keyValue : *this)
-      std::cout << "(" << keyFormatter(keyValue.first) << ", "
-                << keyValue.second << ")";
-    std::cout << std::endl;
+             const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+
+  static std::vector<DiscreteValues> CartesianProduct(
+      const DiscreteKeys& keys) {
+    return Base::CartesianProduct<DiscreteValues>(keys);
   }
+
+  /// @name Wrapper support
+  /// @{
+
+  /// Translation table from values to strings.
+  using Names = std::map<Key, std::vector<std::string>>;
+
+  /// Translate an integer index value for given key to a string.
+  static std::string Translate(const Names& names, Key key, size_t index);
+
+  /**
+   * @brief Output as a markdown table.
+   *
+   * @param keyFormatter function that formats keys.
+   * @param names translation table for values.
+   * @return string markdown output.
+   */
+  std::string markdown(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                       const Names& names = {}) const;
+
+  /**
+   * @brief Output as a html table.
+   *
+   * @param keyFormatter function that formats keys.
+   * @param names translation table for values.
+   * @return string html output.
+   */
+  std::string html(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                   const Names& names = {}) const;
+
+  /// @}
 };
 
+/// Free version of markdown.
+std::string markdown(const DiscreteValues& values,
+                     const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                     const DiscreteValues::Names& names = {});
+
+/// Free version of html.
+std::string html(const DiscreteValues& values,
+                 const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                 const DiscreteValues::Names& names = {});
+
 // traits
-template<> struct traits<DiscreteValues> : public Testable<DiscreteValues> {};
+template <>
+struct traits<DiscreteValues> : public Testable<DiscreteValues> {};
 
 }  // namespace gtsam

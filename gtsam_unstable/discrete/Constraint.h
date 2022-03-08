@@ -34,7 +34,7 @@ using Domains = std::map<Key, Domain>;
  * Base class for constraint factors
  * Derived classes include SingleValue, BinaryAllDiff, and AllDiff.
  */
-class GTSAM_EXPORT Constraint : public DiscreteFactor {
+class GTSAM_UNSTABLE_EXPORT Constraint : public DiscreteFactor {
  public:
   typedef boost::shared_ptr<Constraint> shared_ptr;
 
@@ -89,6 +89,12 @@ class GTSAM_EXPORT Constraint : public DiscreteFactor {
   std::string markdown(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
                        const Names& names = {}) const override {
     return (boost::format("`Constraint` on %1% variables\n") % (size())).str();
+  }
+
+  /// Render as html table.
+  std::string html(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                   const Names& names = {}) const override {
+    return (boost::format("<p>Constraint on %1% variables</p>") % (size())).str();
   }
 
   /// @}

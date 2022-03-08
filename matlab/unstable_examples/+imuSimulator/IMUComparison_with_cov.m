@@ -34,7 +34,7 @@ poses(1).R = currentPoseGlobal.rotation.matrix;
 
 %% Solver object
 isamParams = ISAM2Params;
-isamParams.setRelinearizeSkip(1);
+isamParams.relinearizeSkip = 1;
 isam = gtsam.ISAM2(isamParams);
 
 sigma_init_x = 1.0;
