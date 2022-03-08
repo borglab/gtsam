@@ -83,6 +83,26 @@ class TestScenario(GtsamTestCase):
         actual = GncLMOptimizer(self.fg, self.initial_values, gncParams).optimize()
         self.assertAlmostEqual(0, self.fg.error(actual))
 
+    def test_iteration_hook(self):
+        # set up iteration hook to track some testable values
+        iteration_count = 0
+        final_error = 0
+        final_values = None
+        def iteration_hook(iter, error_before, error_after):
+            nonlocal iteration_count, final_error, final_values
+            iteration_count = iter
+            final_error = error_after
+            final_values = optimizer.values()
+        # optimize
+        params = LevenbergMarquardtParams.CeresDefaults()
+        params.setOrdering(self.ordering)
+        params.iterationHook = iteration_hook
+        optimizer = LevenbergMarquardtOptimizer(self.fg, self.initial_values, params)
+        actual = optimizer.optimize()
+        self.assertAlmostEqual(0, self.fg.error(actual))
+        self.gtsamAssertEquals(final_values, actual)
+        self.assertEqual(self.fg.error(actual), final_error)
+        self.assertEqual(optimizer.iterations(), iteration_count)
 
 if __name__ == "__main__":
     unittest.main()

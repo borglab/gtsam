@@ -403,6 +403,8 @@ virtual class NonlinearOptimizerParams {
   bool isSequential() const;
   bool isCholmod() const;
   bool isIterative() const;
+
+  gtsam::NonlinearOptimizerParams::IterationHook iterationHook;
 };
 
 bool checkConvergence(double relativeErrorTreshold,
