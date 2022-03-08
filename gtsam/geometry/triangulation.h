@@ -227,6 +227,35 @@ std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>> projectionMatricesFrom
   return projection_matrices;
 }
 
+/** Remove distortion for measurements so as if the measurements came from a pinhole camera.
+ *
+ * Removes distortion but maintains the K matrix of the initial sharedCal. Operates by calibrating using
+ * full calibration and uncalibrating with only the pinhole component of the calibration.
+ * @tparam CALIBRATION Calibration type to use.
+ * @param sharedCal Calibration with which measurements were taken.
+ * @param measurements Vector of measurements to undistort.
+ * @return measurements with the effect of the distortion of sharedCal removed.
+ */
+template <class CALIBRATION>
+Point2Vector undistortMeasurements(boost::shared_ptr<CALIBRATION> sharedCal, const Point2Vector& measurements) {
+    const auto& K = sharedCal->K();
+    Cal3_S2 pinholeCalibration(K(0,0), K(1,1), K(0,1), K(0,2), K(1,2));
+    Point2Vector undistortedMeasurements;
+    // Calibrate with sharedCal and uncalibrate with pinhole version of sharedCal so that measurements are undistorted.
+    std::transform(measurements.begin(), measurements.end(), std::back_inserter(undistortedMeasurements), [&sharedCal, &pinholeCalibration](auto& measurement) {
+        return pinholeCalibration.uncalibrate(sharedCal->calibrate(measurement));
+    });
+
+    return undistortedMeasurements;
+}
+
+/** Specialization for Cal3_S2 as it doesn't need to be undistorted. */
+template <>
+Point2Vector undistortMeasurements(boost::shared_ptr<Cal3_S2> sharedCal, const Point2Vector& measurements) {
+    return measurements;
+}
+
+
 /**
  * Function to triangulate 3D landmark point from an arbitrary number
  * of poses (at least 2) using the DLT. The function checks that the
@@ -253,8 +282,11 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
   // construct projection matrices from poses & calibration
   auto projection_matrices = projectionMatricesFromPoses(poses, sharedCal);
 
+  // Undistort the measurements, leaving only the pinhole elements in effect.
+  auto undistortedMeasurements = undistortMeasurements<CALIBRATION>(sharedCal, measurements);
+
   // Triangulate linearly
-  Point3 point = triangulateDLT(projection_matrices, measurements, rank_tol);
+  Point3 point = triangulateDLT(projection_matrices, undistortedMeasurements, rank_tol);
 
   // Then refine using non-linear optimization
   if (optimize)
