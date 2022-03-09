@@ -275,7 +275,7 @@ class GTSAM_EXPORT GncOptimizer {
             continue;
           }
           Key key2 = graph_iter[slot]->keys().at(1);
-          if( Symbol(key1).chr() == 'l' && Symbol(key1).chr() == 'l' ){ // data association factor!
+          if( Symbol(key1).chr() == 'l' && Symbol(key2).chr() == 'l' ){ // data association factor!
             os << Symbol(key1).index() << " " << Symbol(key2).index()  << " " << weights_[slot] << std::endl;
           }
         }
