@@ -227,34 +227,98 @@ std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>> projectionMatricesFrom
   return projection_matrices;
 }
 
+/** Create a pinhole calibration from a different Cal3 object, removing distortion.
+ *
+ * @tparam CALIBRATION Original calibration object.
+ * @param cal Input calibration object.
+ * @return Cal3_S2 with only the pinhole elements of cal.
+ */
+template <class CALIBRATION>
+Cal3_S2 createPinholeCalibration(const CALIBRATION& cal) {
+  const auto& K = cal.K();
+  return Cal3_S2(K(0,0), K(1,1), K(0,1), K(0,2), K(1,2));
+}
+
+/** Internal undistortMeasurement to be used by undistortMeasurement and undistortMeasurements */
+template <class CALIBRATION, class MEASUREMENT>
+MEASUREMENT undistortMeasurementInternal(const CALIBRATION& cal,
+    const MEASUREMENT& measurement,
+    boost::optional<Cal3_S2> pinholeCal = boost::none) {
+  if (!pinholeCal) {
+    pinholeCal = createPinholeCalibration(cal);
+  }
+  return pinholeCal->uncalibrate(cal.calibrate(measurement));
+}
+
 /** Remove distortion for measurements so as if the measurements came from a pinhole camera.
  *
- * Removes distortion but maintains the K matrix of the initial sharedCal. Operates by calibrating using
+ * Removes distortion but maintains the K matrix of the initial cal. Operates by calibrating using
  * full calibration and uncalibrating with only the pinhole component of the calibration.
  * @tparam CALIBRATION Calibration type to use.
- * @param sharedCal Calibration with which measurements were taken.
+ * @param cal Calibration with which measurements were taken.
  * @param measurements Vector of measurements to undistort.
  * @return measurements with the effect of the distortion of sharedCal removed.
  */
 template <class CALIBRATION>
-Point2Vector undistortMeasurements(boost::shared_ptr<CALIBRATION> sharedCal, const Point2Vector& measurements) {
-    const auto& K = sharedCal->K();
-    Cal3_S2 pinholeCalibration(K(0,0), K(1,1), K(0,1), K(0,2), K(1,2));
-    Point2Vector undistortedMeasurements;
-    // Calibrate with sharedCal and uncalibrate with pinhole version of sharedCal so that measurements are undistorted.
-    std::transform(measurements.begin(), measurements.end(), std::back_inserter(undistortedMeasurements), [&sharedCal, &pinholeCalibration](auto& measurement) {
-        return pinholeCalibration.uncalibrate(sharedCal->calibrate(measurement));
-    });
-
-    return undistortedMeasurements;
+Point2Vector undistortMeasurements(const CALIBRATION& cal,
+    const Point2Vector& measurements) {
+  Cal3_S2 pinholeCalibration = createPinholeCalibration(cal);
+  Point2Vector undistortedMeasurements;
+  // Calibrate with cal and uncalibrate with pinhole version of cal so that measurements are undistorted.
+  std::transform(measurements.begin(), measurements.end(), std::back_inserter(undistortedMeasurements),
+                 [&cal, &pinholeCalibration](const Point2& measurement) {
+                     return undistortMeasurementInternal<CALIBRATION>(cal, measurement, pinholeCalibration);
+               });
+  return undistortedMeasurements;
 }
 
 /** Specialization for Cal3_S2 as it doesn't need to be undistorted. */
 template <>
-Point2Vector undistortMeasurements(boost::shared_ptr<Cal3_S2> sharedCal, const Point2Vector& measurements) {
+inline Point2Vector undistortMeasurements(const Cal3_S2& cal,
+                                          const Point2Vector& measurements) {
     return measurements;
 }
 
+
+/** Remove distortion for measurements so as if the measurements came from a pinhole camera.
+ *
+ * Removes distortion but maintains the K matrix of the initial calibrations. Operates by calibrating using
+ * full calibration and uncalibrating with only the pinhole component of the calibration.
+ * @tparam CAMERA Camera type to use.
+ * @param cameras Cameras corresponding to each measurement.
+ * @param measurements Vector of measurements to undistort.
+ * @return measurements with the effect of the distortion of the camera removed.
+ */
+template <class CAMERA>
+typename CAMERA::MeasurementVector undistortMeasurements(const CameraSet<CAMERA>& cameras,
+    const typename CAMERA::MeasurementVector& measurements) {
+
+  const size_t num_meas = cameras.size();
+  assert(num_meas == measurements.size());
+  typename CAMERA::MeasurementVector undistortedMeasurements(num_meas);
+  for (size_t ii = 0; ii < num_meas; ++ii) {
+    // Calibrate with cal and uncalibrate with pinhole version of cal so that measurements are undistorted.
+    undistortedMeasurements[ii] =
+            undistortMeasurementInternal<typename CAMERA::CalibrationType>(cameras[ii].calibration(), measurements[ii]);
+  }
+  return undistortedMeasurements;
+}
+
+/** Specialize for Cal3_S2 to do nothing. */
+template <class CAMERA = PinholeCamera<Cal3_S2>>
+inline PinholeCamera<Cal3_S2>::MeasurementVector undistortMeasurements(
+    const CameraSet<PinholeCamera<Cal3_S2>>& cameras,
+    const PinholeCamera<Cal3_S2>::MeasurementVector& measurements) {
+  return measurements;
+}
+
+/** Specialize for SphericalCamera to do nothing. */
+template <class CAMERA = SphericalCamera>
+inline SphericalCamera::MeasurementVector undistortMeasurements(
+        const CameraSet<SphericalCamera>& cameras,
+        const SphericalCamera::MeasurementVector& measurements) {
+  return measurements;
+}
 
 /**
  * Function to triangulate 3D landmark point from an arbitrary number
@@ -283,7 +347,7 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
   auto projection_matrices = projectionMatricesFromPoses(poses, sharedCal);
 
   // Undistort the measurements, leaving only the pinhole elements in effect.
-  auto undistortedMeasurements = undistortMeasurements<CALIBRATION>(sharedCal, measurements);
+  auto undistortedMeasurements = undistortMeasurements<CALIBRATION>(*sharedCal, measurements);
 
   // Triangulate linearly
   Point3 point = triangulateDLT(projection_matrices, undistortedMeasurements, rank_tol);
@@ -332,7 +396,11 @@ Point3 triangulatePoint3(
 
   // construct projection matrices from poses & calibration
   auto projection_matrices = projectionMatricesFromCameras(cameras);
-  Point3 point = triangulateDLT(projection_matrices, measurements, rank_tol);
+
+  // Undistort the measurements, leaving only the pinhole elements in effect.
+  auto undistortedMeasurements = undistortMeasurements<CAMERA>(cameras, measurements);
+
+  Point3 point = triangulateDLT(projection_matrices, undistortedMeasurements, rank_tol);
 
   // The n refine using non-linear optimization
   if (optimize)
