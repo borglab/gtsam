@@ -56,10 +56,11 @@ using gtsam::Symbol;
 #include <gtsam/base/timing.h>
 using gtsam::tictoc_print_;
 
-
 // Standard headers, added last, so we know headers above work on their own.
 #include <fstream>
 #include <iostream>
+#include <random>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -73,7 +74,7 @@ namespace NM = gtsam::noiseModel;
 
 // load the odometry
 // DR: Odometry Input (delta distance traveled and delta heading change)
-//    Time (sec)  Delta Dist. Trav. (m) Delta Heading (rad)
+//    Time (sec)  Delta Distance Traveled (m) Delta Heading (rad)
 using TimedOdometry = std::pair<double, Pose2>;
 std::list<TimedOdometry> readOdometry() {
   std::list<TimedOdometry> odometryList;
@@ -120,7 +121,6 @@ int main(int argc, char** argv) {
   size_t minK =
       150;  // minimum number of range measurements to process initially
   size_t incK = 25;  // minimum number of range measurements to process after
-  bool groundTruth = false;
   bool robust = true;
 
   // Set Noise parameters
@@ -129,6 +129,7 @@ int main(int argc, char** argv) {
   double sigmaR = 100;        // range standard deviation
   const NM::Base::shared_ptr  // all same type
       priorNoise = NM::Diagonal::Sigmas(priorSigmas),  // prior
+      looseNoise = NM::Isotropic::Sigma(2, 1000),      // loose LM prior
       odoNoise = NM::Diagonal::Sigmas(odoSigmas),      // odometry
       gaussian = NM::Isotropic::Sigma(1, sigmaR),      // non-robust
       tukey = NM::Robust::Create(NM::mEstimator::Tukey::Create(15),
@@ -145,18 +146,11 @@ int main(int argc, char** argv) {
   gtsam::Values initial;
   initial.insert(0, pose0);
 
-  //  initialize points
-  if (groundTruth) {  // from TL file
-    initial.insert(Symbol('L', 1), Point2(-68.9265, 18.3778));
-    initial.insert(Symbol('L', 6), Point2(-37.5805, 69.2278));
-    initial.insert(Symbol('L', 0), Point2(-33.6205, 26.9678));
-    initial.insert(Symbol('L', 5), Point2(1.7095, -5.8122));
-  } else {  // drawn from sigma=1 Gaussian in matlab version
-    initial.insert(Symbol('L', 1), Point2(3.5784, 2.76944));
-    initial.insert(Symbol('L', 6), Point2(-1.34989, 3.03492));
-    initial.insert(Symbol('L', 0), Point2(0.725404, -0.0630549));
-    initial.insert(Symbol('L', 5), Point2(0.714743, -0.204966));
-  }
+  // We will initialize landmarks randomly, and keep track of which landmarks we
+  // already added with a set.
+  std::mt19937_64 rng;
+  std::normal_distribution<double> normal(0.0, 1.0);
+  std::set<Symbol> initializedLandmarks;
 
   // set some loop variables
   size_t i = 1;  // step counter
@@ -185,9 +179,19 @@ int main(int argc, char** argv) {
     // Check if there are range factors to be added
     while (k < K && t >= boost::get<0>(triples[k])) {
       size_t j = boost::get<1>(triples[k]);
+      Symbol landmark_key('L', j);
       double range = boost::get<2>(triples[k]);
       newFactors.emplace_shared<gtsam::RangeFactor<Pose2, Point2>>(
-          i, Symbol('L', j), range, rangeNoise);
+          i, landmark_key, range, rangeNoise);
+      if (initializedLandmarks.count(landmark_key) == 0) {
+        double x = normal(rng), y = normal(rng);
+        initial.insert(landmark_key, Point2(x, y));
+        initializedLandmarks.insert(landmark_key);
+        // We also add a very loose prior on the landmark in case there is only
+        // one sighting, which cannot fully determine the landmark.
+        newFactors.emplace_shared<gtsam::PriorFactor<Point2>>(
+            landmark_key, Point2(0, 0), looseNoise);
+      }
       k = k + 1;
       countK = countK + 1;
     }
@@ -219,6 +223,13 @@ int main(int argc, char** argv) {
 
   // Print timings
   tictoc_print_();
+
+  // Print optimized landmarks:
+  gtsam::Values finalResult = isam.calculateEstimate();
+  for (auto&& landmark_key : initializedLandmarks) {
+    Point2 p = finalResult.at<Point2>(landmark_key);
+    std::cout << landmark_key << ":" << p.transpose() << "\n";
+  }
 
   exit(0);
 }
