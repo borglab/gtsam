@@ -59,7 +59,7 @@ Matrix6 Pose3::AdjointMap() const {
   const Matrix3 R = R_.matrix();
   Matrix3 A = skewSymmetric(t_.x(), t_.y(), t_.z()) * R;
   Matrix6 adj;
-  adj << R, Z_3x3, A, R;
+  adj << R, Z_3x3, A, R;  // Gives [R 0; A R]
   return adj;
 }
 
