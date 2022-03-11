@@ -139,7 +139,7 @@ namespace gtsam {
       return nodes_.empty();
     }
 
-    /** return nodes */
+    /** Return nodes. Each node is a clique of variables obtained after elimination. */
     const Nodes& nodes() const { return nodes_; }
 
     /** Access node by variable */
