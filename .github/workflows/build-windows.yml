@@ -48,7 +48,9 @@ jobs:
       - name: Install Dependencies
         shell: powershell
         run: |
-          Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh')
+          iwr -useb get.scoop.sh -outfile 'install_scoop.ps1'
+          .\install_scoop.ps1 -RunAsAdmin
+
           scoop install cmake --global  # So we don't get issues with CMP0074 policy
           scoop install ninja --global
 
