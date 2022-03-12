@@ -27,47 +27,45 @@ namespace gtsam {
 /**
  * Base class for hybrid probabilistic factors
  */
-class GTSAM_EXPORT HybridFactor: public Factor {
+class GTSAM_EXPORT HybridFactor : public Factor {
 
 public:
 
-// typedefs needed to play nice with gtsam
-typedef HybridFactor This; ///< This class
-typedef boost::shared_ptr<HybridFactor> shared_ptr; ///< shared_ptr to this class
-typedef Factor Base; ///< Our base class
-
-using Values = Values; ///< backwards compatibility
+  // typedefs needed to play nice with gtsam
+  typedef HybridFactor This; ///< This class
+  typedef boost::shared_ptr<HybridFactor> shared_ptr; ///< shared_ptr to this class
+  typedef Factor Base; ///< Our base class
 
 public:
 
 /// @name Standard Constructors
 /// @{
 
-/** Default constructor creates empty factor */
-HybridFactor() {}
+  /** Default constructor creates empty factor */
+  HybridFactor() {}
 
-/** Construct from container of keys.  This constructor is used internally from derived factor
- *  constructors, either from a container of keys or from a boost::assign::list_of. */
-template<typename CONTAINER>
-HybridFactor(const CONTAINER& keys) : Base(keys) {}
+  /** Construct from container of keys.  This constructor is used internally from derived factor
+   *  constructors, either from a container of keys or from a boost::assign::list_of. */
+  template<typename CONTAINER>
+  HybridFactor(const CONTAINER &keys) : Base(keys) {}
 
-/// Virtual destructor
-virtual ~HybridFactor() {
-}
+  /// Virtual destructor
+  virtual ~HybridFactor() {
+  }
 
 /// @}
 /// @name Testable
 /// @{
 
-/// equals
-virtual bool equals(const HybridFactor& lf, double tol = 1e-9) const = 0;
+  /// equals
+  virtual bool equals(const HybridFactor &lf, double tol = 1e-9) const = 0;
 
-/// print
-void print(
-    const std::string& s = "HybridFactor\n",
-    const KeyFormatter& formatter = DefaultKeyFormatter) const override {
-Base::print(s, formatter);
-}
+  /// print
+  void print(
+      const std::string &s = "HybridFactor\n",
+      const KeyFormatter &formatter = DefaultKeyFormatter) const override {
+    Base::print(s, formatter);
+  }
 
 /// @}
 /// @name Standard Interface
@@ -78,6 +76,7 @@ Base::print(s, formatter);
 // HybridFactor
 
 // traits
-template<> struct traits<HybridFactor> : public Testable<HybridFactor> {};
+template<>
+struct traits<HybridFactor> : public Testable<HybridFactor> {};
 
 }// namespace gtsam

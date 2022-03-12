@@ -29,6 +29,9 @@ EliminateHybrid(const HybridFactorGraph &factors,
   // The issue here is that, how can we know which variable is discrete if we
   // unify Values? Obviously we can tell using the factors, but is that fast?
 
+  // In the case of multifrontal, we will need to use a constrained ordering
+  // so that the discrete parts will be guaranteed to be eliminated last!
+
   // PRODUCT: multiply all factors
   gttic(product);
   KeySet allKeys;
