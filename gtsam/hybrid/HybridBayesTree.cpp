@@ -12,9 +12,8 @@
 /**
  * @file    HybridBayesTree.cpp
  * @brief   Hybrid Bayes Tree, the result of eliminating a HybridJunctionTree
- * @brief   HybridBayesTree
- * @author  Frank Dellaert
- * @author  Richard Roberts
+ * @date Mar 11, 2022
+ * @author  Fan Jiang
  */
 
 #include <gtsam/base/treeTraversal-inst.h>

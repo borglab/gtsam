@@ -11,9 +11,8 @@
 
 /**
  * @file HybridJunctionTree.cpp
- * @date Mar 29, 2013
- * @author Frank Dellaert
- * @author Richard Roberts
+ * @date Mar 11, 2022
+ * @author Fan Jiang
  */
 
 #include <gtsam/inference/JunctionTree-inst.h>
