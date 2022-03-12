@@ -34,7 +34,7 @@ namespace gtsam {
  *
  * As a type-erased variant of:
  * - DiscreteConditional
- * - GaussianMixture
+ * - CLGaussianConditional
  * - GaussianConditional
  */
 class GTSAM_EXPORT HybridConditional
