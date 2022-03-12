@@ -75,4 +75,7 @@ EliminateHybrid(const HybridFactorGraph &factors,
                         boost::make_shared<HybridConditional>(std::move(sum)));
 }
 
+void HybridFactorGraph::add(JacobianFactor &&factor) {
+  FactorGraph::add(boost::make_shared<HybridGaussianFactor>(std::move(factor)));
+}
 }

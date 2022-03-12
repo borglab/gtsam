@@ -24,6 +24,8 @@ namespace gtsam {
 class HybridDiscreteFactor : public HybridFactor {
  public:
   using Base = HybridFactor;
+  using This = HybridDiscreteFactor;
+  using shared_ptr = boost::shared_ptr<This>;
 
   DiscreteFactor::shared_ptr inner;
 

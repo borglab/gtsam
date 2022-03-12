@@ -19,6 +19,7 @@
 
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/inference/Factor.h>
+#include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/base/Testable.h>
 
 #include <string>
@@ -36,6 +37,12 @@ public:
   typedef boost::shared_ptr<HybridFactor> shared_ptr; ///< shared_ptr to this class
   typedef Factor Base; ///< Our base class
 
+  bool isDiscrete_ = false;
+  bool isContinuous_ = false;
+  bool isHybrid_ = false;
+
+  DiscreteKeys discreteKeys_;
+
 public:
 
 /// @name Standard Constructors
@@ -46,8 +53,25 @@ public:
 
   /** Construct from container of keys.  This constructor is used internally from derived factor
    *  constructors, either from a container of keys or from a boost::assign::list_of. */
-  template<typename CONTAINER>
-  HybridFactor(const CONTAINER &keys) : Base(keys) {}
+//  template<typename CONTAINER>
+//  HybridFactor(const CONTAINER &keys) : Base(keys) {}
+
+  HybridFactor(const KeyVector &keys) : Base(keys), isContinuous_(true) {}
+
+  static KeyVector CollectKeys(const KeyVector &continuousKeys, const DiscreteKeys &discreteKeys) {
+    KeyVector allKeys;
+    std::copy(continuousKeys.begin(), continuousKeys.end(), std::back_inserter(allKeys));
+    std::transform(discreteKeys.begin(),
+                   discreteKeys.end(),
+                   std::back_inserter(allKeys),
+                   [](const DiscreteKey &k) { return k.first; });
+    return allKeys;
+  }
+
+  HybridFactor(const KeyVector &continuousKeys, const DiscreteKeys &discreteKeys) : Base(
+      CollectKeys(continuousKeys, discreteKeys)), isHybrid_(true) {}
+
+  HybridFactor(const DiscreteKeys &discreteKeys) : Base(CollectKeys({}, discreteKeys)), isDiscrete_(true) {}
 
   /// Virtual destructor
   virtual ~HybridFactor() {
@@ -64,7 +88,11 @@ public:
   void print(
       const std::string &s = "HybridFactor\n",
       const KeyFormatter &formatter = DefaultKeyFormatter) const override {
-    Base::print(s, formatter);
+    std::cout << s;
+    if (isContinuous_) std::cout << "Cont. ";
+    if (isDiscrete_) std::cout << "Disc. ";
+    if (isHybrid_) std::cout << "Hybr. ";
+    this->printKeys("", formatter);
   }
 
 /// @}
