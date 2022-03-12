@@ -73,6 +73,19 @@ TEST(HybridFactorGraph, eliminateMultifrontal) {
   GTSAM_PRINT(*result.second);
 }
 
+TEST(HybridFactorGraph, eliminateFullMultifrontal) {
+  HybridFactorGraph hfg;
+
+  DiscreteKey x(X(1), 2);
+
+  hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
+  hfg.add(HybridDiscreteFactor(DecisionTreeFactor(x, {2, 8})));
+
+  auto result = hfg.eliminateMultifrontal();
+
+  GTSAM_PRINT(*result);
+}
+
 /* ************************************************************************* */
 int main() {
   TestResult tr;

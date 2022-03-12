@@ -70,17 +70,19 @@ class HybridFactorGraph : public FactorGraph<HybridFactor>, public Eliminateable
  public:
   HybridFactorGraph() = default;
 
-  /** Construct from container of factors (shared_ptr or plain objects) */
-  template <class CONTAINER>
-  explicit HybridFactorGraph(const CONTAINER& factors) : Base(factors) {}
+//  /** Construct from container of factors (shared_ptr or plain objects) */
+//  template <class CONTAINER>
+//  explicit HybridFactorGraph(const CONTAINER& factors) : Base(factors) {}
 
   /** Implicit copy/downcast constructor to override explicit template container
-   * constructor */
+   * constructor. In BayesTree this is used for:
+   * `cachedSeparatorMarginal_.reset(*separatorMarginal)`
+   * */
   template <class DERIVEDFACTOR>
   HybridFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph) : Base(graph) {}
 
   using FactorGraph::add;
-  
+
   /// Add a factor directly using a shared_ptr.
   void add(JacobianFactor &&factor);
 };
