@@ -7,17 +7,19 @@
 #include <gtsam/hybrid/HybridFactorGraph.h>
 
 #include <gtsam/hybrid/HybridGaussianFactor.h>
+#include <gtsam/hybrid/HybridDiscreteFactor.h>
 
 #include <gtsam/inference/EliminateableFactorGraph-inst.h>
 
 namespace gtsam {
 
-template class EliminateableFactorGraph<HybridFactorGraph>;
+template
+class EliminateableFactorGraph<HybridFactorGraph>;
 
 /* ************************************************************************ */
 std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>  //
-EliminateHybrid(const HybridFactorGraph& factors,
-                  const Ordering& frontalKeys) {
+EliminateHybrid(const HybridFactorGraph &factors,
+                const Ordering &frontalKeys) {
   // NOTE(fan): Because we are in the Conditional Gaussian regime there are only
   // few cases: continuous variable, we make a GM if there are hybrid factors;
   // continuous variable, we make a GF if there are no hybrid factors;
@@ -29,7 +31,20 @@ EliminateHybrid(const HybridFactorGraph& factors,
 
   // PRODUCT: multiply all factors
   gttic(product);
-  HybridGaussianFactor product(JacobianFactor(0, I_3x3, Z_3x1));
+  KeySet allKeys;
+  // TODO: we do a mock by just doing the correct key thing
+  std::cout << "Begin Eliminate\n";
+  for (auto &&factor : factors) {
+    std::cout << ">>> Eliminating: ";
+    factor->printKeys();
+    allKeys.insert(factor->begin(), factor->end());
+  }
+  for (auto &k : frontalKeys) {
+    allKeys.erase(k);
+  }
+
+  HybridConditional sum(allKeys.size(), Ordering(allKeys));
+//  HybridDiscreteFactor product(DiscreteConditional());
 //  for (auto&& factor : factors) product = (*factor) * product;
   gttoc(product);
 
@@ -39,11 +54,11 @@ EliminateHybrid(const HybridFactorGraph& factors,
   gttoc(sum);
 
   // Ordering keys for the conditional so that frontalKeys are really in front
-//  Ordering orderedKeys;
-//  orderedKeys.insert(orderedKeys.end(), frontalKeys.begin(),
-//                     frontalKeys.end());
-//  orderedKeys.insert(orderedKeys.end(), sum->keys().begin(),
-//                     sum->keys().end());
+  Ordering orderedKeys;
+  orderedKeys.insert(orderedKeys.end(), frontalKeys.begin(),
+                     frontalKeys.end());
+  orderedKeys.insert(orderedKeys.end(), sum.keys().begin(),
+                     sum.keys().end());
 
   // now divide product/sum to get conditional
   gttic(divide);
@@ -52,7 +67,9 @@ EliminateHybrid(const HybridFactorGraph& factors,
   gttoc(divide);
 
 //  return std::make_pair(conditional, sum);
-  return std::make_pair(boost::make_shared<HybridConditional>(), boost::make_shared<HybridGaussianFactor>(product));
+  return std::make_pair(boost::make_shared<HybridConditional>(frontalKeys.size(),
+                                                              orderedKeys),
+                        boost::make_shared<HybridConditional>(std::move(sum)));
 }
 
 }

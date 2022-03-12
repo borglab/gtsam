@@ -8,7 +8,7 @@
 
 namespace gtsam {
 
-HybridGaussianFactor::HybridGaussianFactor(GaussianFactor::shared_ptr other) : Base(other->keys()){
+HybridGaussianFactor::HybridGaussianFactor(GaussianFactor::shared_ptr other) : Base(other->keys()) {
   inner = other;
 }
 

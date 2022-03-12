@@ -59,6 +59,10 @@ public:
 /// Default constructor needed for serialization.
 HybridConditional() = default;
 
+HybridConditional(size_t nFrontals, const KeyVector& keys) : BaseFactor(keys), BaseConditional(nFrontals) {
+
+}
+
 /**
  * @brief Combine two conditionals, yielding a new conditional with the union
  * of the frontal keys, ordered by gtsam::Key.

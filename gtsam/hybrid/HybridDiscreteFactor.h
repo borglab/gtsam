@@ -23,6 +23,8 @@ namespace gtsam {
 
 class HybridDiscreteFactor : public HybridFactor {
  public:
+  using Base = HybridFactor;
+
   DiscreteFactor::shared_ptr inner;
 
   // Implicit conversion from a shared ptr of GF
@@ -30,5 +32,8 @@ class HybridDiscreteFactor : public HybridFactor {
 
   // Forwarding constructor from concrete JacobianFactor
   HybridDiscreteFactor(DecisionTreeFactor &&dtf);
+
+ public:
+  virtual bool equals(const HybridFactor& lf, double tol) const override;
 };
 }
