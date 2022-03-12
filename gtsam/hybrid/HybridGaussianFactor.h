@@ -24,6 +24,8 @@ namespace gtsam {
 class HybridGaussianFactor : public HybridFactor {
  public:
   using Base = HybridFactor;
+  using This = HybridGaussianFactor;
+  using shared_ptr = boost::shared_ptr<This>;
 
   GaussianFactor::shared_ptr inner;
 

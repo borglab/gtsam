@@ -26,6 +26,8 @@
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/inference/BayesNet.h>
 
+#include <gtsam/inference/Symbol.h>
+
 #include <CppUnitLite/TestHarness.h>
 
 #include <boost/assign/std/map.hpp>
@@ -33,6 +35,8 @@ using namespace boost::assign;
 
 using namespace std;
 using namespace gtsam;
+
+using gtsam::symbol_shorthand::X;
 
 /* ************************************************************************* */
 TEST_UNSAFE(HybridFactorGraph, test) {
@@ -58,12 +62,12 @@ TEST_UNSAFE(HybridFactorGraph, eliminate) {
 TEST(HybridFactorGraph, eliminateMultifrontal) {
   HybridFactorGraph hfg;
 
-  DiscreteKey X(1, 2);
+  DiscreteKey x(X(1), 2);
 
-  hfg.add(HybridGaussianFactor(JacobianFactor(0, I_3x3, Z_3x1)));
-  hfg.add(HybridDiscreteFactor(DecisionTreeFactor(X, {2, 8})));
+  hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
+  hfg.add(HybridDiscreteFactor(DecisionTreeFactor(x, {2, 8})));
 
-  auto result = hfg.eliminatePartialMultifrontal({0});
+  auto result = hfg.eliminatePartialMultifrontal({X(0)});
 
   GTSAM_PRINT(*result.first);
   GTSAM_PRINT(*result.second);

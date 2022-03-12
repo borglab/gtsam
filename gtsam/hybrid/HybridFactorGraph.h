@@ -33,6 +33,8 @@ class HybridEliminationTree;
 class HybridBayesTree;
 class HybridJunctionTree;
 
+class JacobianFactor;
+
 /** Main elimination function for HybridFactorGraph */
 GTSAM_EXPORT std::pair<boost::shared_ptr<HybridConditional>, HybridFactor::shared_ptr>
 EliminateHybrid(const HybridFactorGraph& factors, const Ordering& keys);
@@ -77,6 +79,10 @@ class HybridFactorGraph : public FactorGraph<HybridFactor>, public Eliminateable
   template <class DERIVEDFACTOR>
   HybridFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph) : Base(graph) {}
 
+  using FactorGraph::add;
+  
+  /// Add a factor directly using a shared_ptr.
+  void add(JacobianFactor &&factor);
 };
 
 }

@@ -14,7 +14,7 @@ HybridDiscreteFactor::HybridDiscreteFactor(DiscreteFactor::shared_ptr other)
 }
 
 HybridDiscreteFactor::HybridDiscreteFactor(DecisionTreeFactor &&dtf)
-    : Base(dtf.keys()),
+    : Base(dtf.discreteKeys()),
       inner(boost::make_shared<DecisionTreeFactor>(std::move(dtf))) {
 
 }
