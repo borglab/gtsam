@@ -32,19 +32,23 @@ EliminateHybrid(const HybridFactorGraph &factors,
   // In the case of multifrontal, we will need to use a constrained ordering
   // so that the discrete parts will be guaranteed to be eliminated last!
 
-  // PRODUCT: multiply all factors
-  gttic(product);
+  // PREPROCESS: Identify the nature of the current elimination
   KeySet allKeys;
   // TODO: we do a mock by just doing the correct key thing
-  std::cout << "Begin Eliminate\n";
+  std::cout << "Begin Eliminate: ";
+  frontalKeys.print();
+
   for (auto &&factor : factors) {
-    std::cout << ">>> Eliminating: ";
-    factor->printKeys();
+    std::cout << ">>> Adding factor: ";
+    factor->print();
     allKeys.insert(factor->begin(), factor->end());
   }
   for (auto &k : frontalKeys) {
     allKeys.erase(k);
   }
+
+  // PRODUCT: multiply all factors
+  gttic(product);
 
   HybridConditional sum(allKeys.size(), Ordering(allKeys));
 //  HybridDiscreteFactor product(DiscreteConditional());

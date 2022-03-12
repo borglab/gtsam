@@ -29,11 +29,11 @@ class HybridGaussianFactor : public HybridFactor {
 
   GaussianFactor::shared_ptr inner;
 
-  // Implicit conversion from a shared ptr of GF
-  HybridGaussianFactor(GaussianFactor::shared_ptr other);
+  // Explicit conversion from a shared ptr of GF
+  explicit HybridGaussianFactor(GaussianFactor::shared_ptr other);
 
   // Forwarding constructor from concrete JacobianFactor
-  HybridGaussianFactor(JacobianFactor &&jf);
+  explicit HybridGaussianFactor(JacobianFactor &&jf);
 
  public:
   virtual bool equals(const HybridFactor& lf, double tol) const override;

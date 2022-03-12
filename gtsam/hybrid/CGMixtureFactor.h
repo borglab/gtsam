@@ -1,15 +1,21 @@
 /* ----------------------------------------------------------------------------
- * Copyright 2021 The Ambitious Folks of the MRG
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
  * See LICENSE for the license information
+
  * -------------------------------------------------------------------------- */
 
 /**
  * @file   CGMixtureFactor.h
  * @brief  A set of Gaussian factors indexed by a set of discrete keys.
- * @author Varun Agrawal
  * @author Fan Jiang
+ * @author Varun Agrawal
  * @author Frank Dellaert
- * @date   December 2021
+ * @date   Mar 12, 2022
  */
 
 #include <gtsam/hybrid/HybridFactor.h>
@@ -31,9 +37,11 @@ public:
 
   CGMixtureFactor() = default;
 
-  CGMixtureFactor(const KeyVector &continuousKeys, const DiscreteKeys &discreteKeys, const Factors &factors) : Base(continuousKeys, discreteKeys) {
+  CGMixtureFactor(const KeyVector &continuousKeys,
+                  const DiscreteKeys &discreteKeys,
+                  const Factors &factors);
 
-  }
+  bool equals(const HybridFactor &lf, double tol = 1e-9) const override;
 };
 
 }
