@@ -68,8 +68,7 @@ TEST(AngleTriangulationFactor, L1ZeroError) {
   Point2 u0 = C0.project2(landmark), u1 = C1.project2(landmark);
 
   // Create the factor
-  AngleTriangulationFactor<Cal3_S2> factor(kKey1, kKey2, K, u0, u1, model,
-  L1);
+  AngleTriangulationFactor<Cal3_S2> factor(kKey1, kKey2, K, u0, u1, model, L1);
 
   Values values;
   values.insert<Pose3>(kKey1, wTc0);
@@ -83,16 +82,17 @@ TEST(AngleTriangulationFactor, NanError) {
   Cal3_S2 K(500, 500, 0.1, 640 / 2, 480 / 2);
   Pose3 wTc0(Rot3(0.866025, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866025),
              Point3(0, 0, 0));
-  Pose3 wTc1(
-      Rot3(0.866025, 0, -0.500009, 0, 1, 0, 0.500009, 0, 0.866025),
-      Point3(40, 0, 0));
+  Pose3 wTc1(Rot3(0.866025, 0, -0.500009, 0, 1, 0, 0.500009, 0, 0.866025),
+             Point3(40, 0, 0));
   PinholeCamera<Cal3_S2> C0(wTc0, K), C1(wTc1, K);
   Point3 landmark(20, 0, 40 * sin(M_PI / 3));
   Point2 u0 = C0.project2(landmark), u1 = C1.project2(landmark);
 
   // Create a factor
   AngleTriangulationFactor<Cal3_S2> factor(kKey1, kKey2, K, u0, u1, model, L1);
-  std::cout << factor.evaluateError(wTc0, wTc1) << std::endl;
+  Vector2 actualError = factor.evaluateError(wTc0, wTc1);
+  Vector2 expectedError = Vector2::Zero();
+  EXPECT(assert_equal(expectedError, actualError));
 }
 
 /* ************************************************************************* */
@@ -110,8 +110,7 @@ TEST(AngleTriangulationFactor, VectorAngle) {
   Point2 u0 = C0.project2(landmark), u1 = C1.project2(landmark);
 
   // Create a factor
-  AngleTriangulationFactor<Cal3_S2> factor(kKey1, kKey2, K, u0, u1, model,
-  L1);
+  AngleTriangulationFactor<Cal3_S2> factor(kKey1, kKey2, K, u0, u1, model, L1);
 
   Vector3 a(1, 2, 3), b(7, 8, 9);
 
@@ -141,8 +140,7 @@ TEST(AngleTriangulationFactor, VectorAngle2) {
   Point2 u0 = C0.project2(landmark), u1 = C1.project2(landmark);
 
   // Create a factor
-  AngleTriangulationFactor<Cal3_S2> factor(kKey1, kKey2, K, u0, u1, model,
-  L1);
+  AngleTriangulationFactor<Cal3_S2> factor(kKey1, kKey2, K, u0, u1, model, L1);
 
   Vector3 a(-0.866025, 0, 0.5), b(-0.799408, -0.230769, 0.5);
 
@@ -217,8 +215,7 @@ TEST(AngleTriangulationFactor, L2ZeroError) {
   Point2 u0 = C0.project2(landmark), u1 = C1.project2(landmark);
 
   // Create the factor
-  AngleTriangulationFactor<Cal3_S2> factor(kKey1, kKey2, K, u0, u1, model,
-  L2);
+  AngleTriangulationFactor<Cal3_S2> factor(kKey1, kKey2, K, u0, u1, model, L2);
 
   Values values;
   values.insert<Pose3>(kKey1, wTc0);
@@ -263,12 +260,10 @@ TEST(AngleTriangulationFactor, NonZeroError) {
   Point2 u0 = C0.project2(landmark), u1 = C1.project2(landmark);
   // create a factor
   SharedNoiseModel model(noiseModel::Isotropic::Sigma(2, 1e-10));
-  AngleTriangulationFactor<Cal3_S2> factor(kKey1, kKey2, K, u0, u1, model,
-  L1);
+  AngleTriangulationFactor<Cal3_S2> factor(kKey1, kKey2, K, u0, u1, model, L1);
 
   Pose3 wTc1_noisy = wTc1 * Pose3(Rot3(), Point3(0, 10, 0));
 
-  std::cout << "\n\n\nnon zero error" << std::endl;
   // use the factor to calculate the error
   Vector actualError(factor.evaluateError(wTc0, wTc1_noisy));
 
@@ -297,9 +292,11 @@ TEST(AngleTriangulationFactor, NonZeroError) {
   PinholeCamera<Cal3_S2> C1_noisy(wTc1_noisy, K);
   PinholeCamera<Cal3_S2> C1_prime(result.at<Pose3>(kKey2), K);
 
-  std::cout << "original: " << u1.transpose() << std::endl;
-  std::cout << "noisy: " << C1_noisy.project2(landmark).transpose() << std::endl;
-  std::cout << "result: " << C1_prime.project2(landmark).transpose() << std::endl;
+  // std::cout << "original: " << u1.transpose() << std::endl;
+  // std::cout << "noisy: " << C1_noisy.project2(landmark).transpose()
+  //           << std::endl;
+  // std::cout << "result: " << C1_prime.project2(landmark).transpose()
+  //           << std::endl;
 }
 
 /* ************************************************************************* */

@@ -226,9 +226,11 @@ class GTSAM_EXPORT AngleTriangulationFactor
     Matrix13 H_theta0_Rf0, H_theta0_m0_prime, H_theta1_f1, H_theta1_m1_prime;
 
     // Get the relative pose between views C0 and C1.
-    Pose3 c0Tc1 = wTc0.inverse(H_1_inverse).compose(wTc1, H_T_1, H_T_2);
-    Rot3 R = c0Tc1.rotation(H_R_T);
-    Point3 t = c0Tc1.translation(H_t_T);
+    Pose3 c0Tc1 =
+        wTc0.inverse(H1 ? &H_1_inverse : nullptr)
+            .compose(wTc1, H1 ? &H_T_1 : nullptr, H2 ? &H_T_2 : nullptr);
+    Rot3 R = c0Tc1.rotation(H1 || H2 ? &H_R_T : nullptr);
+    Point3 t = c0Tc1.translation(H1 || H2 ? &H_t_T : nullptr);
 
     Matrix3 Kinv = K_.inverse();
 
@@ -237,7 +239,7 @@ class GTSAM_EXPORT AngleTriangulationFactor
 
     Vector3 f0 = Kinv * u0, f1 = Kinv * u1;
 
-    Vector3 m0 = R.rotate(f0, H_m0_R), m1 = f1;
+    Vector3 m0 = R.rotate(f0, H1 || H2 ? &H_m0_R : nullptr), m1 = f1;
 
     Unit3 m0_hat(m0), m1_hat(m1);
 
@@ -245,16 +247,19 @@ class GTSAM_EXPORT AngleTriangulationFactor
 
     switch (minimizationType_) {
       case L1:
-        m_primes =
-            l1TriangulationError(t, m0, m1, m0_hat, m1_hat, H_t, H_m0, H_m1);
+        m_primes = l1TriangulationError(
+            t, m0, m1, m0_hat, m1_hat, H1 || H2 ? &H_t : nullptr,
+            H1 || H2 ? &H_m0 : nullptr, H1 || H2 ? &H_m1 : nullptr);
         break;
       case L2:
-        m_primes =
-            l2TriangulationError(t, m0, m1, m0_hat, m1_hat, H_t, H_m0, H_m1);
+        m_primes = l2TriangulationError(
+            t, m0, m1, m0_hat, m1_hat, H1 || H2 ? &H_t : nullptr,
+            H1 || H2 ? &H_m0 : nullptr, H1 || H2 ? &H_m1 : nullptr);
         break;
       case Linfinity:
-        m_primes = lInfinityTriangulationError(t, m0, m1, m0_hat, m1_hat, H_t,
-                                               H_m0, H_m1);
+        m_primes = lInfinityTriangulationError(
+            t, m0, m1, m0_hat, m1_hat, H1 || H2 ? &H_t : nullptr,
+            H1 || H2 ? &H_m0 : nullptr, H1 || H2 ? &H_m1 : nullptr);
         break;
     }
 
@@ -262,11 +267,14 @@ class GTSAM_EXPORT AngleTriangulationFactor
     Vector3 m1_prime = m_primes.at(1);
 
     // Angle between Rf0 and Rf0'
-    Vector3 Rf0 = R.rotate(f0, H_Rf0_R);
-    double theta0 = vectorAngle(Rf0, m0_prime, H_theta0_Rf0, H_theta0_m0_prime);
+    Vector3 Rf0 = R.rotate(f0, H1 || H2 ? &H_Rf0_R : nullptr);
+    double theta0 =
+        vectorAngle(Rf0, m0_prime, H1 || H2 ? &H_theta0_Rf0 : nullptr,
+                    H1 || H2 ? &H_theta0_m0_prime : nullptr);
 
     // Angle betwen f1 and f1'
-    double theta1 = vectorAngle(f1, m1_prime, H_theta1_f1, H_theta1_m1_prime);
+    double theta1 = vectorAngle(f1, m1_prime, H1 || H2 ? &H_theta1_f1 : nullptr,
+                                H1 || H2 ? &H_theta1_m1_prime : nullptr);
 
     if (H1) {
       Matrix3 H_m0_prime_m0 = H_m0.block<3, 3>(0, 0);
