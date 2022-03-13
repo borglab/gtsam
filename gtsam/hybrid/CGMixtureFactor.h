@@ -42,6 +42,9 @@ public:
                   const Factors &factors);
 
   bool equals(const HybridFactor &lf, double tol = 1e-9) const override;
+
+  void print(const std::string &s = "HybridFactor\n",
+             const KeyFormatter &formatter = DefaultKeyFormatter) const override;
 };
 
 }

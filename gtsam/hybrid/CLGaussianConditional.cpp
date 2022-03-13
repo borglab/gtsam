@@ -18,3 +18,34 @@
 
 #include <gtsam/hybrid/CLGaussianConditional.h>
 
+#include <gtsam/inference/Conditional-inst.h>
+
+namespace gtsam {
+
+CLGaussianConditional::CLGaussianConditional(const KeyVector &continuousFrontals,
+                                             const KeyVector &continuousParents,
+                                             const DiscreteKeys &discreteParents,
+                                             const CLGaussianConditional::Conditionals &factors)
+    : BaseFactor(
+    CollectKeys(continuousFrontals, continuousParents), discreteParents),
+      BaseConditional(continuousFrontals.size()) {
+
+}
+
+bool CLGaussianConditional::equals(const HybridFactor &lf, double tol) const {
+  return false;
+}
+
+void CLGaussianConditional::print(const std::string &s, const KeyFormatter &formatter) const {
+  std::cout << s << ": ";
+  if (isContinuous_) std::cout << "Cont. ";
+  if (isDiscrete_) std::cout << "Disc. ";
+  if (isHybrid_) std::cout << "Hybr. ";
+  BaseConditional::print("", formatter);
+  std::cout << "Discrete Keys = ";
+  for (auto &dk : discreteKeys_) {
+    std::cout << "(" << formatter(dk.first) << ", " << dk.second << "), ";
+  }
+  std::cout << "\n";
+}
+}

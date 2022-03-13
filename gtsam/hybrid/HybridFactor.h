@@ -25,6 +25,9 @@
 #include <string>
 namespace gtsam {
 
+KeyVector CollectKeys(const KeyVector &continuousKeys, const DiscreteKeys &discreteKeys);
+KeyVector CollectKeys(const KeyVector &keys1, const KeyVector &keys2);
+
 /**
  * Base class for hybrid probabilistic factors
  */
@@ -49,33 +52,21 @@ public:
 /// @{
 
   /** Default constructor creates empty factor */
-  HybridFactor() {}
+  HybridFactor();
 
   /** Construct from container of keys.  This constructor is used internally from derived factor
    *  constructors, either from a container of keys or from a boost::assign::list_of. */
 //  template<typename CONTAINER>
 //  HybridFactor(const CONTAINER &keys) : Base(keys) {}
 
-  HybridFactor(const KeyVector &keys) : Base(keys), isContinuous_(true) {}
+  explicit HybridFactor(const KeyVector &keys);
 
-  static KeyVector CollectKeys(const KeyVector &continuousKeys, const DiscreteKeys &discreteKeys) {
-    KeyVector allKeys;
-    std::copy(continuousKeys.begin(), continuousKeys.end(), std::back_inserter(allKeys));
-    std::transform(discreteKeys.begin(),
-                   discreteKeys.end(),
-                   std::back_inserter(allKeys),
-                   [](const DiscreteKey &k) { return k.first; });
-    return allKeys;
-  }
+  HybridFactor(const KeyVector &continuousKeys, const DiscreteKeys &discreteKeys);
 
-  HybridFactor(const KeyVector &continuousKeys, const DiscreteKeys &discreteKeys) : Base(
-      CollectKeys(continuousKeys, discreteKeys)), isHybrid_(true) {}
-
-  HybridFactor(const DiscreteKeys &discreteKeys) : Base(CollectKeys({}, discreteKeys)), isDiscrete_(true) {}
+  explicit HybridFactor(const DiscreteKeys &discreteKeys);
 
   /// Virtual destructor
-  virtual ~HybridFactor() {
-  }
+  virtual ~HybridFactor();
 
 /// @}
 /// @name Testable

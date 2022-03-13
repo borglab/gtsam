@@ -16,3 +16,38 @@
  */
 
 #include <gtsam/hybrid/HybridFactor.h>
+
+namespace gtsam {
+
+KeyVector CollectKeys(const KeyVector &continuousKeys, const DiscreteKeys &discreteKeys) {
+  KeyVector allKeys;
+  std::copy(continuousKeys.begin(), continuousKeys.end(), std::back_inserter(allKeys));
+  std::transform(discreteKeys.begin(),
+                 discreteKeys.end(),
+                 std::back_inserter(allKeys),
+                 [](const DiscreteKey &k) { return k.first; });
+  return allKeys;
+}
+
+KeyVector CollectKeys(const KeyVector &keys1, const KeyVector &keys2) {
+  KeyVector allKeys;
+  std::copy(keys1.begin(), keys1.end(), std::back_inserter(allKeys));
+  std::copy(keys2.begin(), keys2.end(), std::back_inserter(allKeys));
+  return allKeys;
+}
+
+HybridFactor::HybridFactor() = default;
+
+HybridFactor::HybridFactor(const KeyVector &keys) : Base(keys), isContinuous_(true) {}
+
+HybridFactor::HybridFactor(const KeyVector &continuousKeys, const DiscreteKeys &discreteKeys)
+    : Base(
+    CollectKeys(continuousKeys, discreteKeys)), isHybrid_(true), discreteKeys_(discreteKeys) {}
+
+HybridFactor::HybridFactor(const DiscreteKeys &discreteKeys) : Base(CollectKeys({}, discreteKeys)),
+                                                               isDiscrete_(true),
+                                                               discreteKeys_(discreteKeys) {}
+
+HybridFactor::~HybridFactor() = default;
+
+}
