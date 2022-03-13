@@ -21,6 +21,11 @@ HybridDiscreteFactor::HybridDiscreteFactor(DecisionTreeFactor &&dtf)
 
 bool HybridDiscreteFactor::equals(const HybridFactor &lf, double tol) const {
   return false;
+}
+
+void HybridDiscreteFactor::print(const std::string &s, const KeyFormatter &formatter) const {
+  HybridFactor::print(s, formatter);
+  inner->print("inner: ", formatter);
 };
 
 }

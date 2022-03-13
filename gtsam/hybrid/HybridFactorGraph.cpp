@@ -34,6 +34,7 @@ EliminateHybrid(const HybridFactorGraph &factors,
 
   // PREPROCESS: Identify the nature of the current elimination
   KeySet allKeys;
+
   // TODO: we do a mock by just doing the correct key thing
   std::cout << "Begin Eliminate: ";
   frontalKeys.print();
@@ -43,6 +44,7 @@ EliminateHybrid(const HybridFactorGraph &factors,
     factor->print();
     allKeys.insert(factor->begin(), factor->end());
   }
+
   for (auto &k : frontalKeys) {
     allKeys.erase(k);
   }
@@ -51,13 +53,14 @@ EliminateHybrid(const HybridFactorGraph &factors,
   gttic(product);
 
   HybridConditional sum(allKeys.size(), Ordering(allKeys));
-//  HybridDiscreteFactor product(DiscreteConditional());
-//  for (auto&& factor : factors) product = (*factor) * product;
+
+  //  HybridDiscreteFactor product(DiscreteConditional());
+  //  for (auto&& factor : factors) product = (*factor) * product;
   gttoc(product);
 
   // sum out frontals, this is the factor on the separator
   gttic(sum);
-//  HybridFactor::shared_ptr sum = product.sum(frontalKeys);
+  //  HybridFactor::shared_ptr sum = product.sum(frontalKeys);
   gttoc(sum);
 
   // Ordering keys for the conditional so that frontalKeys are really in front
@@ -69,11 +72,11 @@ EliminateHybrid(const HybridFactorGraph &factors,
 
   // now divide product/sum to get conditional
   gttic(divide);
-//  auto conditional =
-//      boost::make_shared<HybridConditional>(product, *sum, orderedKeys);
+  //  auto conditional =
+  //      boost::make_shared<HybridConditional>(product, *sum, orderedKeys);
   gttoc(divide);
 
-//  return std::make_pair(conditional, sum);
+  //  return std::make_pair(conditional, sum);
   return std::make_pair(boost::make_shared<HybridConditional>(frontalKeys.size(),
                                                               orderedKeys),
                         boost::make_shared<HybridConditional>(std::move(sum)));

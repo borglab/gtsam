@@ -20,6 +20,7 @@
 #include <gtsam/hybrid/HybridFactorGraph.h>
 #include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridDiscreteFactor.h>
+#include <gtsam/hybrid/CLGaussianConditional.h>
 #include <gtsam/hybrid/CGMixtureFactor.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
@@ -47,6 +48,13 @@ TEST_UNSAFE(HybridFactorGraph, creation) {
   HybridFactorGraph hfg;
 
   hfg.add(HybridGaussianFactor(JacobianFactor(0, I_3x3, Z_3x1)));
+
+  CLGaussianConditional clgc(
+      {X(0)}, {X(1)},
+      DiscreteKeys(DiscreteKey{C(0), 2}),
+      CLGaussianConditional::Conditionals()
+  );
+  GTSAM_PRINT(clgc);
 }
 
 TEST_UNSAFE(HybridFactorGraph, eliminate) {
@@ -84,12 +92,19 @@ TEST(HybridFactorGraph, eliminateFullMultifrontal) {
   hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
 
-  DecisionTree<Key, GaussianFactor::shared_ptr> dt;
+  DecisionTree<Key, GaussianFactor::shared_ptr> dt(C(1),
+                                                   boost::make_shared<JacobianFactor>(X(1),
+                                                                                      I_3x3,
+                                                                                      Z_3x1),
+                                                   boost::make_shared<JacobianFactor>(X(1),
+                                                                                      I_3x3,
+                                                                                      Vector3::Ones()));
 
-  hfg.add(CGMixtureFactor({X(1)}, { x }, dt));
+  hfg.add(CGMixtureFactor({X(1)}, {x}, dt));
   hfg.add(HybridDiscreteFactor(DecisionTreeFactor(x, {2, 8})));
+  hfg.add(HybridDiscreteFactor(DecisionTreeFactor({{C(1), 2}, {C(2), 2}}, "1 2 3 4")));
 
-  auto result = hfg.eliminateMultifrontal(Ordering::ColamdConstrainedLast(hfg, {C(1)}));
+  auto result = hfg.eliminateMultifrontal(Ordering::ColamdConstrainedLast(hfg, {C(1), C(2)}));
 
   GTSAM_PRINT(*result);
   GTSAM_PRINT(*result->marginalFactor(C(1)));

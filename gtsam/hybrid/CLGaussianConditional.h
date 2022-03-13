@@ -19,13 +19,30 @@
 #include <gtsam/inference/Conditional.h>
 #include <gtsam/hybrid/HybridFactor.h>
 
+#include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/discrete/DecisionTree.h>
+
 namespace gtsam {
 class CLGaussianConditional : public HybridFactor, public Conditional<HybridFactor, CLGaussianConditional> {
 public:
   using This = CLGaussianConditional;
   using shared_ptr = boost::shared_ptr<CLGaussianConditional>;
   using BaseFactor = HybridFactor;
+  using BaseConditional = Conditional<HybridFactor, CLGaussianConditional>;
 
+  using Conditionals = DecisionTree<Key, GaussianConditional::shared_ptr>;
 
+public:
+
+  CLGaussianConditional(const KeyVector &continuousFrontals,
+                        const KeyVector &continuousParents,
+                        const DiscreteKeys &discreteParents,
+                        const Conditionals &factors);
+
+  bool equals(const HybridFactor &lf, double tol = 1e-9) const override;
+
+  void print(
+      const std::string &s = "CLGaussianConditional\n",
+      const KeyFormatter &formatter = DefaultKeyFormatter) const override;
 };
 }

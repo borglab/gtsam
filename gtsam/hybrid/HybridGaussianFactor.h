@@ -37,5 +37,7 @@ class HybridGaussianFactor : public HybridFactor {
 
  public:
   virtual bool equals(const HybridFactor& lf, double tol) const override;
+
+  void print(const std::string &s = "HybridFactor\n", const KeyFormatter &formatter = DefaultKeyFormatter) const override;
 };
 }

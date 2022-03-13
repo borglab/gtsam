@@ -18,6 +18,10 @@ HybridGaussianFactor::HybridGaussianFactor(JacobianFactor &&jf) : Base(jf.keys()
 
 bool HybridGaussianFactor::equals(const HybridFactor& lf, double tol) const {
   return false;
+}
+void HybridGaussianFactor::print(const std::string &s, const KeyFormatter &formatter) const {
+  HybridFactor::print(s, formatter);
+  inner->print("inner: ", formatter);
 };
 
 }
