@@ -27,6 +27,7 @@ namespace gtsam {
 
 KeyVector CollectKeys(const KeyVector &continuousKeys, const DiscreteKeys &discreteKeys);
 KeyVector CollectKeys(const KeyVector &keys1, const KeyVector &keys2);
+DiscreteKeys CollectDiscreteKeys(const DiscreteKeys &key1, const DiscreteKeys &key2);
 
 /**
  * Base class for hybrid probabilistic factors

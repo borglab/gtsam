@@ -32,12 +32,14 @@ public:
 
   using Conditionals = DecisionTree<Key, GaussianConditional::shared_ptr>;
 
+  Conditionals conditionals_;
+
 public:
 
   CLGaussianConditional(const KeyVector &continuousFrontals,
                         const KeyVector &continuousParents,
                         const DiscreteKeys &discreteParents,
-                        const Conditionals &factors);
+                        const Conditionals &conditionals);
 
   bool equals(const HybridFactor &lf, double tol = 1e-9) const override;
 
