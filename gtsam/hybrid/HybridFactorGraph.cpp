@@ -30,10 +30,15 @@ std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>  //
 EliminateHybrid(const HybridFactorGraph &factors,
                 const Ordering &frontalKeys) {
   // NOTE(fan): Because we are in the Conditional Gaussian regime there are only
-  // few cases: continuous variable, we make a GM if there are hybrid factors;
+  // a few cases:
+  // continuous variable, we make a GM if there are hybrid factors;
   // continuous variable, we make a GF if there are no hybrid factors;
   // discrete variable, no continuous factor is allowed (escapes CG regime), so
   // we panic, if discrete only we do the discrete elimination.
+
+  // However it is not that simple. During elimination it is possible that the multifrontal needs
+  // to eliminate an ordering that contains both Gaussian and hybrid variables, for example x1, c1.
+  // In this scenario, we will have a density P(x1, c1) that is a CLG P(x1|c1)P(c1) (see Murphy02)
 
   // The issue here is that, how can we know which variable is discrete if we
   // unify Values? Obviously we can tell using the factors, but is that fast?

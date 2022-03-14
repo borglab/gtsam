@@ -88,7 +88,7 @@ TEST_DISABLED(HybridFactorGraph, eliminateMultifrontal) {
   EXPECT_LONGS_EQUAL(result.second->size(), 1);
 }
 
-TEST(HybridFactorGraph, eliminateFullMultifrontal) {
+TEST_DISABLED(HybridFactorGraph, eliminateFullMultifrontalSimple) {
 
   std::cout << ">>>>>>>>>>>>>>\n";
 
@@ -112,6 +112,35 @@ TEST(HybridFactorGraph, eliminateFullMultifrontal) {
   hfg.add(HybridDiscreteFactor(DecisionTreeFactor({{C(1), 2}, {C(2), 2}}, "1 2 3 4")));
 
   auto result = hfg.eliminateMultifrontal(Ordering::ColamdConstrainedLast(hfg, {C(1), C(2)}));
+
+  GTSAM_PRINT(*result);
+  GTSAM_PRINT(*result->marginalFactor(C(1)));
+}
+
+TEST(HybridFactorGraph, eliminateFullMultifrontalCLG) {
+
+  std::cout << ">>>>>>>>>>>>>>\n";
+
+  HybridFactorGraph hfg;
+
+  DiscreteKey x(C(1), 2);
+
+  hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
+  hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
+
+  DecisionTree<Key, GaussianFactor::shared_ptr> dt(C(1),
+                                                   boost::make_shared<JacobianFactor>(X(1),
+                                                                                      I_3x3,
+                                                                                      Z_3x1),
+                                                   boost::make_shared<JacobianFactor>(X(1),
+                                                                                      I_3x3,
+                                                                                      Vector3::Ones()));
+
+  hfg.add(CGMixtureFactor({X(1)}, {x}, dt));
+  hfg.add(HybridDiscreteFactor(DecisionTreeFactor(x, {2, 8})));
+//  hfg.add(HybridDiscreteFactor(DecisionTreeFactor({{C(1), 2}, {C(2), 2}}, "1 2 3 4")));
+
+  auto result = hfg.eliminateMultifrontal(Ordering::ColamdConstrainedLast(hfg, {C(1)}));
 
   GTSAM_PRINT(*result);
   GTSAM_PRINT(*result->marginalFactor(C(1)));
