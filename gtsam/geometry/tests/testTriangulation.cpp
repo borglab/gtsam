@@ -97,16 +97,17 @@ TEST(triangulation, twoPoses) {
 }
 
 //******************************************************************************
-// Simple test with a well-behaved two camera situation with Cal3S2 calibration.
-TEST(triangulation, twoPosesCal3S2) {
+// Simple test with a well-behaved two camera situation with Cal3DS2 calibration.
+TEST(triangulation, twoPosesCal3DS2) {
   static const boost::shared_ptr<Cal3DS2> sharedDistortedCal =  //
-          boost::make_shared<Cal3DS2>(1500, 1200, 0, 640, 480, -.3, 0.1, 0.0001, -0.0003);
+      boost::make_shared<Cal3DS2>(1500, 1200, 0, 640, 480, -.3, 0.1, 0.0001,
+                                  -0.0003);
 
   PinholeCamera<Cal3DS2> camera1Distorted(pose1, *sharedDistortedCal);
 
   PinholeCamera<Cal3DS2> camera2Distorted(pose2, *sharedDistortedCal);
 
-// 1. Project two landmarks into two cameras and triangulate
+  // 0. Project two landmarks into two cameras and triangulate
   Point2 z1Distorted = camera1Distorted.project(landmark);
   Point2 z2Distorted = camera2Distorted.project(landmark);
 
@@ -121,13 +122,15 @@ TEST(triangulation, twoPosesCal3S2) {
   // 1. Test simple DLT, perfect in no noise situation
   bool optimize = false;
   boost::optional<Point3> actual1 =  //
-          triangulatePoint3<Cal3DS2>(poses, sharedDistortedCal, measurements, rank_tol, optimize);
+      triangulatePoint3<Cal3DS2>(poses, sharedDistortedCal, measurements,
+                                 rank_tol, optimize);
   EXPECT(assert_equal(landmark, *actual1, 1e-7));
 
   // 2. test with optimization on, same answer
   optimize = true;
   boost::optional<Point3> actual2 =  //
-          triangulatePoint3<Cal3DS2>(poses, sharedDistortedCal, measurements, rank_tol, optimize);
+      triangulatePoint3<Cal3DS2>(poses, sharedDistortedCal, measurements,
+                                 rank_tol, optimize);
   EXPECT(assert_equal(landmark, *actual2, 1e-7));
 
   // 3. Add some noise and try again: result should be ~ (4.995,
@@ -136,28 +139,32 @@ TEST(triangulation, twoPosesCal3S2) {
   measurements.at(1) += Point2(-0.2, 0.3);
   optimize = false;
   boost::optional<Point3> actual3 =  //
-          triangulatePoint3<Cal3DS2>(poses, sharedDistortedCal, measurements, rank_tol, optimize);
+      triangulatePoint3<Cal3DS2>(poses, sharedDistortedCal, measurements,
+                                 rank_tol, optimize);
   EXPECT(assert_equal(Point3(4.995, 0.499167, 1.19814), *actual3, 1e-3));
 
   // 4. Now with optimization on
   optimize = true;
   boost::optional<Point3> actual4 =  //
-          triangulatePoint3<Cal3DS2>(poses, sharedDistortedCal, measurements, rank_tol, optimize);
+      triangulatePoint3<Cal3DS2>(poses, sharedDistortedCal, measurements,
+                                 rank_tol, optimize);
   EXPECT(assert_equal(Point3(4.995, 0.499167, 1.19814), *actual4, 1e-3));
 }
 
 //******************************************************************************
-// Simple test with a well-behaved two camera situation with Fisheye calibration.
+// Simple test with a well-behaved two camera situation with Fisheye
+// calibration.
 TEST(triangulation, twoPosesFisheye) {
   using Calibration = Cal3Fisheye;
   static const boost::shared_ptr<Calibration> sharedDistortedCal =  //
-          boost::make_shared<Calibration>(1500, 1200, .1, 640, 480, -.3, 0.1, 0.0001, -0.0003);
+      boost::make_shared<Calibration>(1500, 1200, .1, 640, 480, -.3, 0.1,
+                                      0.0001, -0.0003);
 
   PinholeCamera<Calibration> camera1Distorted(pose1, *sharedDistortedCal);
 
   PinholeCamera<Calibration> camera2Distorted(pose2, *sharedDistortedCal);
 
-// 1. Project two landmarks into two cameras and triangulate
+  // 0. Project two landmarks into two cameras and triangulate
   Point2 z1Distorted = camera1Distorted.project(landmark);
   Point2 z2Distorted = camera2Distorted.project(landmark);
 
@@ -172,13 +179,15 @@ TEST(triangulation, twoPosesFisheye) {
   // 1. Test simple DLT, perfect in no noise situation
   bool optimize = false;
   boost::optional<Point3> actual1 =  //
-          triangulatePoint3<Calibration>(poses, sharedDistortedCal, measurements, rank_tol, optimize);
+      triangulatePoint3<Calibration>(poses, sharedDistortedCal, measurements,
+                                     rank_tol, optimize);
   EXPECT(assert_equal(landmark, *actual1, 1e-7));
 
   // 2. test with optimization on, same answer
   optimize = true;
   boost::optional<Point3> actual2 =  //
-          triangulatePoint3<Calibration>(poses, sharedDistortedCal, measurements, rank_tol, optimize);
+      triangulatePoint3<Calibration>(poses, sharedDistortedCal, measurements,
+                                     rank_tol, optimize);
   EXPECT(assert_equal(landmark, *actual2, 1e-7));
 
   // 3. Add some noise and try again: result should be ~ (4.995,
@@ -187,16 +196,17 @@ TEST(triangulation, twoPosesFisheye) {
   measurements.at(1) += Point2(-0.2, 0.3);
   optimize = false;
   boost::optional<Point3> actual3 =  //
-          triangulatePoint3<Calibration>(poses, sharedDistortedCal, measurements, rank_tol, optimize);
+      triangulatePoint3<Calibration>(poses, sharedDistortedCal, measurements,
+                                     rank_tol, optimize);
   EXPECT(assert_equal(Point3(4.995, 0.499167, 1.19814), *actual3, 1e-3));
 
   // 4. Now with optimization on
   optimize = true;
   boost::optional<Point3> actual4 =  //
-          triangulatePoint3<Calibration>(poses, sharedDistortedCal, measurements, rank_tol, optimize);
+      triangulatePoint3<Calibration>(poses, sharedDistortedCal, measurements,
+                                     rank_tol, optimize);
   EXPECT(assert_equal(Point3(4.995, 0.499167, 1.19814), *actual4, 1e-3));
 }
-
 
 //******************************************************************************
 // Similar, but now with Bundler calibration
@@ -220,7 +230,8 @@ TEST(triangulation, twoPosesBundler) {
   double rank_tol = 1e-9;
 
   boost::optional<Point3> actual =  //
-      triangulatePoint3<Cal3Bundler>(poses, bundlerCal, measurements, rank_tol, optimize);
+      triangulatePoint3<Cal3Bundler>(poses, bundlerCal, measurements, rank_tol,
+                                     optimize);
   EXPECT(assert_equal(landmark, *actual, 1e-7));
 
   // Add some noise and try again
@@ -228,7 +239,8 @@ TEST(triangulation, twoPosesBundler) {
   measurements.at(1) += Point2(-0.2, 0.3);
 
   boost::optional<Point3> actual2 =  //
-      triangulatePoint3<Cal3Bundler>(poses, bundlerCal, measurements, rank_tol, optimize);
+      triangulatePoint3<Cal3Bundler>(poses, bundlerCal, measurements, rank_tol,
+                                     optimize);
   EXPECT(assert_equal(Point3(4.995, 0.499167, 1.19847), *actual2, 1e-3));
 }
 
