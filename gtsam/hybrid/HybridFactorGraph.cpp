@@ -2,6 +2,7 @@
 // Created by Fan Jiang on 3/11/22.
 //
 
+#include "gtsam/inference/Key.h"
 #include <gtsam/hybrid/HybridEliminationTree.h>
 #include <gtsam/hybrid/HybridJunctionTree.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
@@ -12,6 +13,7 @@
 
 #include <gtsam/inference/EliminateableFactorGraph-inst.h>
 
+#include <iostream>
 #include <unordered_map>
 
 namespace gtsam {
@@ -57,6 +59,8 @@ EliminateHybrid(const HybridFactorGraph &factors,
   KeySet continuousSeparator;
 
   // TODO: we do a mock by just doing the correct key thing
+  std::cout << RED_BOLD << "Begin Eliminate: " << RESET;
+  frontalKeys.print();
 
   // This initializes separatorKeys and discreteCardinalities
   for (auto &&factor : factors) {
@@ -94,12 +98,28 @@ EliminateHybrid(const HybridFactorGraph &factors,
     }
   }
 
-  std::cout << RED_BOLD << "Begin Eliminate: " << RESET;
-  frontalKeys.print();
+  std::cout << RED_BOLD << "Keys: " << RESET;
+  for (auto &f : frontalKeys) {
+    if (discreteCardinalities.find(f) != discreteCardinalities.end()) {
+      auto &key = discreteCardinalities.at(f);
+      std::cout << boost::format(" (%1%,%2%),") % DefaultKeyFormatter(key.first) % key.second;
+    } else {
+      std::cout << " " << DefaultKeyFormatter(f) << ",";
+    }
+  }
 
-  std::cout << RED_BOLD << "Discrete Keys: " << RESET;
-  for (auto &&key : discreteCardinalities)
-    std::cout << boost::format(" (%1%,%2%),") % DefaultKeyFormatter(key.second.first) % key.second.second;
+  if (separatorKeys.size() > 0) {
+    std::cout << " | ";
+  }
+
+  for (auto &f : separatorKeys) {
+    if (discreteCardinalities.find(f) != discreteCardinalities.end()) {
+      auto &key = discreteCardinalities.at(f);
+      std::cout << boost::format(" (%1%,%2%),") % DefaultKeyFormatter(key.first) % key.second;
+    } else {
+      std::cout << DefaultKeyFormatter(f) << ",";
+    }
+  }
   std::cout << "\n" << RESET;
   // PRODUCT: multiply all factors
   gttic(product);
