@@ -18,17 +18,20 @@
 
 #include <gtsam/hybrid/CLGaussianConditional.h>
 
+#include <gtsam/base/utilities.h>
+
 #include <gtsam/inference/Conditional-inst.h>
+#include <gtsam/discrete/DecisionTree-inl.h>
 
 namespace gtsam {
 
 CLGaussianConditional::CLGaussianConditional(const KeyVector &continuousFrontals,
                                              const KeyVector &continuousParents,
                                              const DiscreteKeys &discreteParents,
-                                             const CLGaussianConditional::Conditionals &factors)
+                                             const CLGaussianConditional::Conditionals &conditionals)
     : BaseFactor(
     CollectKeys(continuousFrontals, continuousParents), discreteParents),
-      BaseConditional(continuousFrontals.size()) {
+      BaseConditional(continuousFrontals.size()), conditionals_(conditionals) {
 
 }
 
@@ -47,5 +50,15 @@ void CLGaussianConditional::print(const std::string &s, const KeyFormatter &form
     std::cout << "(" << formatter(dk.first) << ", " << dk.second << "), ";
   }
   std::cout << "\n";
+  conditionals_.print(
+      "",
+      [&](Key k) {
+        return formatter(k);
+      }, [&](const GaussianConditional::shared_ptr &gf) -> std::string {
+        RedirectCout rd;
+        if (!gf->empty()) gf->print("", formatter);
+        else return {"nullptr"};
+        return rd.str();
+      });
 }
 }

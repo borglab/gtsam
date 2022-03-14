@@ -36,6 +36,13 @@ KeyVector CollectKeys(const KeyVector &keys1, const KeyVector &keys2) {
   return allKeys;
 }
 
+DiscreteKeys CollectDiscreteKeys(const DiscreteKeys &key1, const DiscreteKeys &key2) {
+  DiscreteKeys allKeys;
+  std::copy(key1.begin(), key1.end(), std::back_inserter(allKeys));
+  std::copy(key2.begin(), key2.end(), std::back_inserter(allKeys));
+  return allKeys;
+}
+
 HybridFactor::HybridFactor() = default;
 
 HybridFactor::HybridFactor(const KeyVector &keys) : Base(keys), isContinuous_(true) {}

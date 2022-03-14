@@ -42,7 +42,7 @@ using gtsam::symbol_shorthand::X;
 using gtsam::symbol_shorthand::C;
 
 /* ************************************************************************* */
-TEST_UNSAFE(HybridFactorGraph, creation) {
+TEST(HybridFactorGraph, creation) {
   HybridConditional test;
 
   HybridFactorGraph hfg;
@@ -52,12 +52,19 @@ TEST_UNSAFE(HybridFactorGraph, creation) {
   CLGaussianConditional clgc(
       {X(0)}, {X(1)},
       DiscreteKeys(DiscreteKey{C(0), 2}),
-      CLGaussianConditional::Conditionals()
+      CLGaussianConditional::Conditionals(
+          C(0),
+          boost::make_shared<GaussianConditional>(
+              X(0), Z_3x1, I_3x3, X(1), I_3x3),
+          boost::make_shared<GaussianConditional>(
+              X(0), Vector3::Ones(),
+              I_3x3, X(1),
+              I_3x3))
   );
   GTSAM_PRINT(clgc);
 }
 
-TEST_UNSAFE(HybridFactorGraph, eliminate) {
+TEST_DISABLED(HybridFactorGraph, eliminate) {
   HybridFactorGraph hfg;
 
   hfg.add(HybridGaussianFactor(JacobianFactor(0, I_3x3, Z_3x1)));
@@ -67,7 +74,7 @@ TEST_UNSAFE(HybridFactorGraph, eliminate) {
   EXPECT_LONGS_EQUAL(result.first->size(), 1);
 }
 
-TEST(HybridFactorGraph, eliminateMultifrontal) {
+TEST_DISABLED(HybridFactorGraph, eliminateMultifrontal) {
   HybridFactorGraph hfg;
 
   DiscreteKey x(X(1), 2);
