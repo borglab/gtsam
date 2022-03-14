@@ -15,6 +15,7 @@
  *  @author Fan Jiang
  */
 
+#include "Test.h"
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
@@ -94,7 +95,7 @@ TEST_DISABLED(HybridFactorGraph, eliminateFullMultifrontalSimple) {
 
   HybridFactorGraph hfg;
 
-  DiscreteKey x(C(1), 2);
+  DiscreteKey c1(C(1), 2);
 
   hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
@@ -107,9 +108,12 @@ TEST_DISABLED(HybridFactorGraph, eliminateFullMultifrontalSimple) {
                                                                                       I_3x3,
                                                                                       Vector3::Ones()));
 
-  hfg.add(CGMixtureFactor({X(1)}, {x}, dt));
-  hfg.add(HybridDiscreteFactor(DecisionTreeFactor(x, {2, 8})));
+  hfg.add(CGMixtureFactor({X(1)}, {c1}, dt));
+  hfg.add(CGMixtureFactor({X(0)}, {c1}, dt));
+  hfg.add(HybridDiscreteFactor(DecisionTreeFactor(c1, {2, 8})));
   hfg.add(HybridDiscreteFactor(DecisionTreeFactor({{C(1), 2}, {C(2), 2}}, "1 2 3 4")));
+  // hfg.add(HybridDiscreteFactor(DecisionTreeFactor({{C(2), 2}, {C(3), 2}}, "1 2 3 4")));
+  // hfg.add(HybridDiscreteFactor(DecisionTreeFactor({{C(3), 2}, {C(1), 2}}, "1 2 2 1")));
 
   auto result = hfg.eliminateMultifrontal(Ordering::ColamdConstrainedLast(hfg, {C(1), C(2)}));
 
@@ -123,7 +127,7 @@ TEST(HybridFactorGraph, eliminateFullMultifrontalCLG) {
 
   HybridFactorGraph hfg;
 
-  DiscreteKey x(C(1), 2);
+  DiscreteKey c(C(1), 2);
 
   hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
@@ -136,14 +140,22 @@ TEST(HybridFactorGraph, eliminateFullMultifrontalCLG) {
                                                                                       I_3x3,
                                                                                       Vector3::Ones()));
 
-  hfg.add(CGMixtureFactor({X(1)}, {x}, dt));
-  hfg.add(HybridDiscreteFactor(DecisionTreeFactor(x, {2, 8})));
+  hfg.add(CGMixtureFactor({X(1)}, {c}, dt));
+  hfg.add(HybridDiscreteFactor(DecisionTreeFactor(c, {2, 8})));
 //  hfg.add(HybridDiscreteFactor(DecisionTreeFactor({{C(1), 2}, {C(2), 2}}, "1 2 3 4")));
 
   auto result = hfg.eliminateMultifrontal(Ordering::ColamdConstrainedLast(hfg, {C(1)}));
 
   GTSAM_PRINT(*result);
-  GTSAM_PRINT(*result->marginalFactor(C(1)));
+
+  // We immediately need to escape the CLG domain if we do this!!!
+  GTSAM_PRINT(*result->marginalFactor(X(1)));
+  /*
+  Explanation: the Junction tree will need to reeliminate to get to the marginal on X(1), which
+  is not possible because it involves eliminating discrete before continuous. The solution to this,
+  however, is in Murphy02. TLDR is that this is 1. expensive and 2. inexact. neverless it is doable.
+  And I believe that we should do this.
+  */
 }
 
 /* ************************************************************************* */
