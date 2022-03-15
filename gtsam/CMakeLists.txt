@@ -10,7 +10,7 @@ set (gtsam_subdirs
     inference
     symbolic
     discrete
-	hybrid
+    hybrid
     linear
     nonlinear
     sam

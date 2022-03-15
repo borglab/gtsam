@@ -18,6 +18,8 @@
  * @date   Mar 12, 2022
  */
 
+#pragma once
+
 #include <gtsam/discrete/DecisionTree.h>
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/hybrid/HybridFactor.h>

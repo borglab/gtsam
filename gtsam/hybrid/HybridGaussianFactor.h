@@ -15,6 +15,8 @@
  *  @author Fan Jiang
  */
 
+#pragma once
+
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
