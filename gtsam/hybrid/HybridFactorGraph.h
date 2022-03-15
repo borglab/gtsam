@@ -36,43 +36,50 @@ class HybridJunctionTree;
 class JacobianFactor;
 
 /** Main elimination function for HybridFactorGraph */
-GTSAM_EXPORT std::pair<boost::shared_ptr<HybridConditional>, HybridFactor::shared_ptr>
-EliminateHybrid(const HybridFactorGraph& factors, const Ordering& keys);
+GTSAM_EXPORT
+    std::pair<boost::shared_ptr<HybridConditional>, HybridFactor::shared_ptr>
+    EliminateHybrid(const HybridFactorGraph& factors, const Ordering& keys);
 
 /* ************************************************************************* */
-template<> struct EliminationTraits<HybridFactorGraph>
-{
-  typedef HybridFactor FactorType;                   ///< Type of factors in factor graph
-  typedef HybridFactorGraph FactorGraphType;         ///< Type of the factor graph (e.g. HybridFactorGraph)
-  typedef HybridConditional ConditionalType;         ///< Type of conditionals from elimination
-  typedef HybridBayesNet BayesNetType;               ///< Type of Bayes net from sequential elimination
-  typedef HybridEliminationTree EliminationTreeType; ///< Type of elimination tree
-  typedef HybridBayesTree BayesTreeType;             ///< Type of Bayes tree
-  typedef HybridJunctionTree JunctionTreeType;       ///< Type of Junction tree
+template <>
+struct EliminationTraits<HybridFactorGraph> {
+  typedef HybridFactor FactorType;  ///< Type of factors in factor graph
+  typedef HybridFactorGraph
+      FactorGraphType;  ///< Type of the factor graph (e.g. HybridFactorGraph)
+  typedef HybridConditional
+      ConditionalType;  ///< Type of conditionals from elimination
+  typedef HybridBayesNet
+      BayesNetType;  ///< Type of Bayes net from sequential elimination
+  typedef HybridEliminationTree
+      EliminationTreeType;                      ///< Type of elimination tree
+  typedef HybridBayesTree BayesTreeType;        ///< Type of Bayes tree
+  typedef HybridJunctionTree JunctionTreeType;  ///< Type of Junction tree
   /// The default dense elimination function
-  static std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> >
+  static std::pair<boost::shared_ptr<ConditionalType>,
+                   boost::shared_ptr<FactorType> >
   DefaultEliminate(const FactorGraphType& factors, const Ordering& keys) {
-    return EliminateHybrid(factors, keys); }
+    return EliminateHybrid(factors, keys);
+  }
 };
 
-
-class HybridFactorGraph : public FactorGraph<HybridFactor>, public EliminateableFactorGraph<HybridFactorGraph> {
+class HybridFactorGraph : public FactorGraph<HybridFactor>,
+                          public EliminateableFactorGraph<HybridFactorGraph> {
  public:
   using Base = FactorGraph<HybridFactor>;
-  using This = HybridFactorGraph;          ///< this class
+  using This = HybridFactorGraph;  ///< this class
   using BaseEliminateable =
-  EliminateableFactorGraph<This>;          ///< for elimination
+      EliminateableFactorGraph<This>;          ///< for elimination
   using shared_ptr = boost::shared_ptr<This>;  ///< shared_ptr to This
 
   using Values = gtsam::Values;  ///< backwards compatibility
-  using Indices = KeyVector;  ///> map from keys to values
+  using Indices = KeyVector;     ///> map from keys to values
 
  public:
   HybridFactorGraph() = default;
 
-//  /** Construct from container of factors (shared_ptr or plain objects) */
-//  template <class CONTAINER>
-//  explicit HybridFactorGraph(const CONTAINER& factors) : Base(factors) {}
+  //  /** Construct from container of factors (shared_ptr or plain objects) */
+  //  template <class CONTAINER>
+  //  explicit HybridFactorGraph(const CONTAINER& factors) : Base(factors) {}
 
   /** Implicit copy/downcast constructor to override explicit template container
    * constructor. In BayesTree this is used for:
@@ -84,8 +91,7 @@ class HybridFactorGraph : public FactorGraph<HybridFactor>, public Eliminateable
   using FactorGraph::add;
 
   /// Add a factor directly using a shared_ptr.
-  void add(JacobianFactor &&factor);
+  void add(JacobianFactor&& factor);
 };
 
-}
-
+}  // namespace gtsam

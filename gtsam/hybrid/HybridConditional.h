@@ -17,10 +17,9 @@
 
 #pragma once
 
-#include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/discrete/DiscreteConditional.h>
+#include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/inference/Conditional.h>
-
 
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
@@ -38,33 +37,30 @@ namespace gtsam {
  * - GaussianConditional
  */
 class GTSAM_EXPORT HybridConditional
-: public HybridFactor,
-public Conditional<HybridFactor, HybridConditional> {
-public:
+    : public HybridFactor,
+      public Conditional<HybridFactor, HybridConditional> {
+ public:
   // typedefs needed to play nice with gtsam
-  typedef HybridConditional This;            ///< Typedef to this class
+  typedef HybridConditional This;              ///< Typedef to this class
   typedef boost::shared_ptr<This> shared_ptr;  ///< shared_ptr to this class
   typedef HybridFactor BaseFactor;  ///< Typedef to our factor base class
   typedef Conditional<BaseFactor, This>
       BaseConditional;  ///< Typedef to our conditional base class
 
-private:
+ private:
   // Type-erased pointer to the inner type
   std::unique_ptr<Factor> inner;
 
-public:
-/// @name Standard Constructors
-/// @{
+ public:
+  /// @name Standard Constructors
+  /// @{
 
   /// Default constructor needed for serialization.
   HybridConditional() = default;
 
-  HybridConditional(const KeyVector &continuousKeys,
-                    const DiscreteKeys &discreteKeys,
-                    size_t nFrontals)
-      : BaseFactor(continuousKeys, discreteKeys), BaseConditional(nFrontals) {
-
-  }
+  HybridConditional(const KeyVector& continuousKeys,
+                    const DiscreteKeys& discreteKeys, size_t nFrontals)
+      : BaseFactor(continuousKeys, discreteKeys), BaseConditional(nFrontals) {}
 
   /**
    * @brief Combine two conditionals, yielding a new conditional with the union
@@ -83,9 +79,9 @@ public:
    */
   HybridConditional operator*(const HybridConditional& other) const;
 
-/// @}
-/// @name Testable
-/// @{
+  /// @}
+  /// @name Testable
+  /// @{
 
   /// GTSAM-style print
   void print(
@@ -95,7 +91,7 @@ public:
   /// GTSAM-style equals
   bool equals(const HybridFactor& other, double tol = 1e-9) const override;
 
-/// @}
+  /// @}
 };
 // DiscreteConditional
 

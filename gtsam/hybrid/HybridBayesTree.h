@@ -11,8 +11,7 @@
 
 /**
  * @file    HybridBayesTree.h
- * @brief   Hybrid Bayes Tree, the result of eliminating a
- * HybridJunctionTree
+ * @brief   Hybrid Bayes Tree, the result of eliminating a HybridJunctionTree
  * @date Mar 11, 2022
  * @author  Fan Jiang
  */
@@ -22,8 +21,8 @@
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
 #include <gtsam/inference/BayesTree.h>
-#include <gtsam/inference/Conditional.h>
 #include <gtsam/inference/BayesTreeCliqueBase.h>
+#include <gtsam/inference/Conditional.h>
 
 #include <string>
 
@@ -39,22 +38,18 @@ class GTSAM_EXPORT HybridBayesTreeClique
     : public BayesTreeCliqueBase<HybridBayesTreeClique, HybridFactorGraph> {
  public:
   typedef HybridBayesTreeClique This;
-  typedef BayesTreeCliqueBase<HybridBayesTreeClique, HybridFactorGraph>
-      Base;
+  typedef BayesTreeCliqueBase<HybridBayesTreeClique, HybridFactorGraph> Base;
   typedef boost::shared_ptr<This> shared_ptr;
   typedef boost::weak_ptr<This> weak_ptr;
   HybridBayesTreeClique() {}
   virtual ~HybridBayesTreeClique() {}
-  HybridBayesTreeClique(
-      const boost::shared_ptr<HybridConditional>& conditional)
+  HybridBayesTreeClique(const boost::shared_ptr<HybridConditional>& conditional)
       : Base(conditional) {}
-
 };
 
 /* ************************************************************************* */
 /** A Bayes tree representing a Hybrid density */
-class GTSAM_EXPORT HybridBayesTree
-    : public BayesTree<HybridBayesTreeClique> {
+class GTSAM_EXPORT HybridBayesTree : public BayesTree<HybridBayesTreeClique> {
  private:
   typedef BayesTree<HybridBayesTreeClique> Base;
 
