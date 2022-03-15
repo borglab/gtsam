@@ -15,6 +15,8 @@
  *  @author Fan Jiang
  */
 
+#pragma once
+
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteFactor.h>
 #include <gtsam/hybrid/HybridFactor.h>

@@ -16,6 +16,8 @@
  * @date   Mar 12, 2022
  */
 
+#pragma once
+
 #include <gtsam/discrete/DecisionTree.h>
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/inference/Conditional.h>
