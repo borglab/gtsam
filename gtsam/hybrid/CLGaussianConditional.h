@@ -16,15 +16,16 @@
  * @date   Mar 12, 2022
  */
 
-#include <gtsam/inference/Conditional.h>
-#include <gtsam/hybrid/HybridFactor.h>
-
-#include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/discrete/DecisionTree.h>
+#include <gtsam/hybrid/HybridFactor.h>
+#include <gtsam/inference/Conditional.h>
+#include <gtsam/linear/GaussianConditional.h>
 
 namespace gtsam {
-class CLGaussianConditional : public HybridFactor, public Conditional<HybridFactor, CLGaussianConditional> {
-public:
+class CLGaussianConditional
+    : public HybridFactor,
+      public Conditional<HybridFactor, CLGaussianConditional> {
+ public:
   using This = CLGaussianConditional;
   using shared_ptr = boost::shared_ptr<CLGaussianConditional>;
   using BaseFactor = HybridFactor;
@@ -34,8 +35,7 @@ public:
 
   Conditionals conditionals_;
 
-public:
-
+ public:
   CLGaussianConditional(const KeyVector &continuousFrontals,
                         const KeyVector &continuousParents,
                         const DiscreteKeys &discreteParents,
@@ -47,4 +47,4 @@ public:
       const std::string &s = "CLGaussianConditional\n",
       const KeyFormatter &formatter = DefaultKeyFormatter) const override;
 };
-}
+}  // namespace gtsam

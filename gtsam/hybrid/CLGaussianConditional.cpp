@@ -16,30 +16,28 @@
  * @date   Mar 12, 2022
  */
 
-#include <gtsam/hybrid/CLGaussianConditional.h>
-
 #include <gtsam/base/utilities.h>
-
-#include <gtsam/inference/Conditional-inst.h>
 #include <gtsam/discrete/DecisionTree-inl.h>
+#include <gtsam/hybrid/CLGaussianConditional.h>
+#include <gtsam/inference/Conditional-inst.h>
 
 namespace gtsam {
 
-CLGaussianConditional::CLGaussianConditional(const KeyVector &continuousFrontals,
-                                             const KeyVector &continuousParents,
-                                             const DiscreteKeys &discreteParents,
-                                             const CLGaussianConditional::Conditionals &conditionals)
-    : BaseFactor(
-    CollectKeys(continuousFrontals, continuousParents), discreteParents),
-      BaseConditional(continuousFrontals.size()), conditionals_(conditionals) {
-
-}
+CLGaussianConditional::CLGaussianConditional(
+    const KeyVector &continuousFrontals, const KeyVector &continuousParents,
+    const DiscreteKeys &discreteParents,
+    const CLGaussianConditional::Conditionals &conditionals)
+    : BaseFactor(CollectKeys(continuousFrontals, continuousParents),
+                 discreteParents),
+      BaseConditional(continuousFrontals.size()),
+      conditionals_(conditionals) {}
 
 bool CLGaussianConditional::equals(const HybridFactor &lf, double tol) const {
   return false;
 }
 
-void CLGaussianConditional::print(const std::string &s, const KeyFormatter &formatter) const {
+void CLGaussianConditional::print(const std::string &s,
+                                  const KeyFormatter &formatter) const {
   std::cout << s << ": ";
   if (isContinuous_) std::cout << "Cont. ";
   if (isDiscrete_) std::cout << "Disc. ";
@@ -51,14 +49,14 @@ void CLGaussianConditional::print(const std::string &s, const KeyFormatter &form
   }
   std::cout << "\n";
   conditionals_.print(
-      "",
-      [&](Key k) {
-        return formatter(k);
-      }, [&](const GaussianConditional::shared_ptr &gf) -> std::string {
+      "", [&](Key k) { return formatter(k); },
+      [&](const GaussianConditional::shared_ptr &gf) -> std::string {
         RedirectCout rd;
-        if (!gf->empty()) gf->print("", formatter);
-        else return {"nullptr"};
+        if (!gf->empty())
+          gf->print("", formatter);
+        else
+          return {"nullptr"};
         return rd.str();
       });
 }
-}
+}  // namespace gtsam

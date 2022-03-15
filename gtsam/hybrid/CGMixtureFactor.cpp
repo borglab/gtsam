@@ -1,6 +1,22 @@
-//
-// Created by Fan Jiang on 3/11/22.
-//
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file   CGMixtureFactor.cpp
+ * @brief  A set of Gaussian factors indexed by a set of discrete keys.
+ * @author Fan Jiang
+ * @author Varun Agrawal
+ * @author Frank Dellaert
+ * @date   Mar 12, 2022
+ */
 
 #include <gtsam/hybrid/CGMixtureFactor.h>
 

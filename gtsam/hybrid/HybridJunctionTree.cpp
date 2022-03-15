@@ -15,9 +15,9 @@
  * @author Fan Jiang
  */
 
-#include <gtsam/inference/JunctionTree-inst.h>
-#include <gtsam/hybrid/HybridJunctionTree.h>
 #include <gtsam/hybrid/HybridEliminationTree.h>
+#include <gtsam/hybrid/HybridJunctionTree.h>
+#include <gtsam/inference/JunctionTree-inst.h>
 
 namespace gtsam {
 
@@ -27,7 +27,7 @@ template class JunctionTree<HybridBayesTree, HybridFactorGraph>;
 
 /* ************************************************************************* */
 HybridJunctionTree::HybridJunctionTree(
-    const HybridEliminationTree& eliminationTree) :
-    Base(eliminationTree) {}
+    const HybridEliminationTree& eliminationTree)
+    : Base(eliminationTree) {}
 
-}
+}  // namespace gtsam

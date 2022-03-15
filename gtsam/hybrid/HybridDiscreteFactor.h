@@ -15,8 +15,8 @@
  *  @author Fan Jiang
  */
 
-#include <gtsam/discrete/DiscreteFactor.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
+#include <gtsam/discrete/DiscreteFactor.h>
 #include <gtsam/hybrid/HybridFactor.h>
 
 namespace gtsam {
@@ -36,8 +36,10 @@ class HybridDiscreteFactor : public HybridFactor {
   HybridDiscreteFactor(DecisionTreeFactor &&dtf);
 
  public:
-  virtual bool equals(const HybridFactor& lf, double tol) const override;
+  virtual bool equals(const HybridFactor &lf, double tol) const override;
 
-  void print(const std::string &s = "HybridFactor\n", const KeyFormatter &formatter = DefaultKeyFormatter) const override;
+  void print(
+      const std::string &s = "HybridFactor\n",
+      const KeyFormatter &formatter = DefaultKeyFormatter) const override;
 };
-}
+}  // namespace gtsam

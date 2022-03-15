@@ -1,25 +1,37 @@
-//
-// Created by Fan Jiang on 3/11/22.
-//
+/* ----------------------------------------------------------------------------
 
-#include "gtsam/inference/Key.h"
-#include <gtsam/hybrid/HybridEliminationTree.h>
-#include <gtsam/hybrid/HybridJunctionTree.h>
-#include <gtsam/hybrid/HybridFactorGraph.h>
-#include <gtsam/hybrid/HybridFactor.h>
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
 
-#include <gtsam/hybrid/HybridGaussianFactor.h>
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file   HybridFactorGraph.cpp
+ * @brief  Hybrid factor graph that uses type erasure
+ * @author Fan Jiang
+ * @date   Mar 11, 2022
+ */
+
 #include <gtsam/hybrid/HybridDiscreteFactor.h>
-
+#include <gtsam/hybrid/HybridEliminationTree.h>
+#include <gtsam/hybrid/HybridFactor.h>
+#include <gtsam/hybrid/HybridFactorGraph.h>
+#include <gtsam/hybrid/HybridGaussianFactor.h>
+#include <gtsam/hybrid/HybridJunctionTree.h>
 #include <gtsam/inference/EliminateableFactorGraph-inst.h>
 
 #include <iostream>
 #include <unordered_map>
 
+#include "gtsam/inference/Key.h"
+
 namespace gtsam {
 
-template
-class EliminateableFactorGraph<HybridFactorGraph>;
+template class EliminateableFactorGraph<HybridFactorGraph>;
 
 static std::string BLACK_BOLD = "\033[1;30m";
 static std::string RED_BOLD = "\033[1;31m";
@@ -29,8 +41,7 @@ static std::string RESET = "\033[0m";
 
 /* ************************************************************************ */
 std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>  //
-EliminateHybrid(const HybridFactorGraph &factors,
-                const Ordering &frontalKeys) {
+EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
   // NOTE(fan): Because we are in the Conditional Gaussian regime there are only
   // a few cases:
   // continuous variable, we make a GM if there are hybrid factors;
@@ -38,9 +49,10 @@ EliminateHybrid(const HybridFactorGraph &factors,
   // discrete variable, no continuous factor is allowed (escapes CG regime), so
   // we panic, if discrete only we do the discrete elimination.
 
-  // However it is not that simple. During elimination it is possible that the multifrontal needs
-  // to eliminate an ordering that contains both Gaussian and hybrid variables, for example x1, c1.
-  // In this scenario, we will have a density P(x1, c1) that is a CLG P(x1|c1)P(c1) (see Murphy02)
+  // However it is not that simple. During elimination it is possible that the
+  // multifrontal needs to eliminate an ordering that contains both Gaussian and
+  // hybrid variables, for example x1, c1. In this scenario, we will have a
+  // density P(x1, c1) that is a CLG P(x1|c1)P(c1) (see Murphy02)
 
   // The issue here is that, how can we know which variable is discrete if we
   // unify Values? Obviously we can tell using the factors, but is that fast?
@@ -102,7 +114,8 @@ EliminateHybrid(const HybridFactorGraph &factors,
   for (auto &f : frontalKeys) {
     if (discreteCardinalities.find(f) != discreteCardinalities.end()) {
       auto &key = discreteCardinalities.at(f);
-      std::cout << boost::format(" (%1%,%2%),") % DefaultKeyFormatter(key.first) % key.second;
+      std::cout << boost::format(" (%1%,%2%),") %
+                       DefaultKeyFormatter(key.first) % key.second;
     } else {
       std::cout << " " << DefaultKeyFormatter(f) << ",";
     }
@@ -115,7 +128,8 @@ EliminateHybrid(const HybridFactorGraph &factors,
   for (auto &f : separatorKeys) {
     if (discreteCardinalities.find(f) != discreteCardinalities.end()) {
       auto &key = discreteCardinalities.at(f);
-      std::cout << boost::format(" (%1%,%2%),") % DefaultKeyFormatter(key.first) % key.second;
+      std::cout << boost::format(" (%1%,%2%),") %
+                       DefaultKeyFormatter(key.first) % key.second;
     } else {
       std::cout << DefaultKeyFormatter(f) << ",";
     }
@@ -124,9 +138,10 @@ EliminateHybrid(const HybridFactorGraph &factors,
   // PRODUCT: multiply all factors
   gttic(product);
 
-  HybridConditional sum(KeyVector(continuousSeparator.begin(), continuousSeparator.end()),
-                        DiscreteKeys(discreteSeparator.begin(), discreteSeparator.end()),
-                        separatorKeys.size());
+  HybridConditional sum(
+      KeyVector(continuousSeparator.begin(), continuousSeparator.end()),
+      DiscreteKeys(discreteSeparator.begin(), discreteSeparator.end()),
+      separatorKeys.size());
 
   //  HybridDiscreteFactor product(DiscreteConditional());
   //  for (auto&& factor : factors) product = (*factor) * product;
@@ -139,10 +154,8 @@ EliminateHybrid(const HybridFactorGraph &factors,
 
   // Ordering keys for the conditional so that frontalKeys are really in front
   Ordering orderedKeys;
-  orderedKeys.insert(orderedKeys.end(), frontalKeys.begin(),
-                     frontalKeys.end());
-  orderedKeys.insert(orderedKeys.end(), sum.keys().begin(),
-                     sum.keys().end());
+  orderedKeys.insert(orderedKeys.end(), frontalKeys.begin(), frontalKeys.end());
+  orderedKeys.insert(orderedKeys.end(), sum.keys().begin(), sum.keys().end());
 
   // now divide product/sum to get conditional
   gttic(divide);
@@ -163,12 +176,11 @@ EliminateHybrid(const HybridFactorGraph &factors,
   std::cout << RED_BOLD << "[End Eliminate]\n" << RESET;
 
   //  return std::make_pair(conditional, sum);
-  return std::make_pair(
-      conditional,
-      boost::make_shared<HybridConditional>(std::move(sum)));
+  return std::make_pair(conditional,
+                        boost::make_shared<HybridConditional>(std::move(sum)));
 }
 
 void HybridFactorGraph::add(JacobianFactor &&factor) {
   FactorGraph::add(boost::make_shared<HybridGaussianFactor>(std::move(factor)));
 }
-}
+}  // namespace gtsam

@@ -19,11 +19,12 @@
 
 namespace gtsam {
 
-KeyVector CollectKeys(const KeyVector &continuousKeys, const DiscreteKeys &discreteKeys) {
+KeyVector CollectKeys(const KeyVector &continuousKeys,
+                      const DiscreteKeys &discreteKeys) {
   KeyVector allKeys;
-  std::copy(continuousKeys.begin(), continuousKeys.end(), std::back_inserter(allKeys));
-  std::transform(discreteKeys.begin(),
-                 discreteKeys.end(),
+  std::copy(continuousKeys.begin(), continuousKeys.end(),
+            std::back_inserter(allKeys));
+  std::transform(discreteKeys.begin(), discreteKeys.end(),
                  std::back_inserter(allKeys),
                  [](const DiscreteKey &k) { return k.first; });
   return allKeys;
@@ -36,7 +37,8 @@ KeyVector CollectKeys(const KeyVector &keys1, const KeyVector &keys2) {
   return allKeys;
 }
 
-DiscreteKeys CollectDiscreteKeys(const DiscreteKeys &key1, const DiscreteKeys &key2) {
+DiscreteKeys CollectDiscreteKeys(const DiscreteKeys &key1,
+                                 const DiscreteKeys &key2) {
   DiscreteKeys allKeys;
   std::copy(key1.begin(), key1.end(), std::back_inserter(allKeys));
   std::copy(key2.begin(), key2.end(), std::back_inserter(allKeys));
@@ -45,16 +47,20 @@ DiscreteKeys CollectDiscreteKeys(const DiscreteKeys &key1, const DiscreteKeys &k
 
 HybridFactor::HybridFactor() = default;
 
-HybridFactor::HybridFactor(const KeyVector &keys) : Base(keys), isContinuous_(true) {}
+HybridFactor::HybridFactor(const KeyVector &keys)
+    : Base(keys), isContinuous_(true) {}
 
-HybridFactor::HybridFactor(const KeyVector &continuousKeys, const DiscreteKeys &discreteKeys)
-    : Base(
-    CollectKeys(continuousKeys, discreteKeys)), isHybrid_(true), discreteKeys_(discreteKeys) {}
+HybridFactor::HybridFactor(const KeyVector &continuousKeys,
+                           const DiscreteKeys &discreteKeys)
+    : Base(CollectKeys(continuousKeys, discreteKeys)),
+      isHybrid_(true),
+      discreteKeys_(discreteKeys) {}
 
-HybridFactor::HybridFactor(const DiscreteKeys &discreteKeys) : Base(CollectKeys({}, discreteKeys)),
-                                                               isDiscrete_(true),
-                                                               discreteKeys_(discreteKeys) {}
+HybridFactor::HybridFactor(const DiscreteKeys &discreteKeys)
+    : Base(CollectKeys({}, discreteKeys)),
+      isDiscrete_(true),
+      discreteKeys_(discreteKeys) {}
 
 HybridFactor::~HybridFactor() = default;
 
-}
+}  // namespace gtsam

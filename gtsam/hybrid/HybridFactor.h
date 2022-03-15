@@ -17,29 +17,30 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/Values.h>
-#include <gtsam/inference/Factor.h>
-#include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/discrete/DiscreteKey.h>
+#include <gtsam/inference/Factor.h>
+#include <gtsam/nonlinear/Values.h>
 
 #include <string>
 namespace gtsam {
 
-KeyVector CollectKeys(const KeyVector &continuousKeys, const DiscreteKeys &discreteKeys);
+KeyVector CollectKeys(const KeyVector &continuousKeys,
+                      const DiscreteKeys &discreteKeys);
 KeyVector CollectKeys(const KeyVector &keys1, const KeyVector &keys2);
-DiscreteKeys CollectDiscreteKeys(const DiscreteKeys &key1, const DiscreteKeys &key2);
+DiscreteKeys CollectDiscreteKeys(const DiscreteKeys &key1,
+                                 const DiscreteKeys &key2);
 
 /**
  * Base class for hybrid probabilistic factors
  */
 class GTSAM_EXPORT HybridFactor : public Factor {
-
-public:
-
+ public:
   // typedefs needed to play nice with gtsam
-  typedef HybridFactor This; ///< This class
-  typedef boost::shared_ptr<HybridFactor> shared_ptr; ///< shared_ptr to this class
-  typedef Factor Base; ///< Our base class
+  typedef HybridFactor This;  ///< This class
+  typedef boost::shared_ptr<HybridFactor>
+      shared_ptr;       ///< shared_ptr to this class
+  typedef Factor Base;  ///< Our base class
 
   bool isDiscrete_ = false;
   bool isContinuous_ = false;
@@ -47,31 +48,33 @@ public:
 
   DiscreteKeys discreteKeys_;
 
-public:
-
-/// @name Standard Constructors
-/// @{
+ public:
+  /// @name Standard Constructors
+  /// @{
 
   /** Default constructor creates empty factor */
   HybridFactor();
 
-  /** Construct from container of keys.  This constructor is used internally from derived factor
-   *  constructors, either from a container of keys or from a boost::assign::list_of. */
-//  template<typename CONTAINER>
-//  HybridFactor(const CONTAINER &keys) : Base(keys) {}
+  /** Construct from container of keys.  This constructor is used internally
+   * from derived factor
+   *  constructors, either from a container of keys or from a
+   * boost::assign::list_of. */
+  //  template<typename CONTAINER>
+  //  HybridFactor(const CONTAINER &keys) : Base(keys) {}
 
   explicit HybridFactor(const KeyVector &keys);
 
-  HybridFactor(const KeyVector &continuousKeys, const DiscreteKeys &discreteKeys);
+  HybridFactor(const KeyVector &continuousKeys,
+               const DiscreteKeys &discreteKeys);
 
   explicit HybridFactor(const DiscreteKeys &discreteKeys);
 
   /// Virtual destructor
   virtual ~HybridFactor();
 
-/// @}
-/// @name Testable
-/// @{
+  /// @}
+  /// @name Testable
+  /// @{
 
   /// equals
   virtual bool equals(const HybridFactor &lf, double tol = 1e-9) const = 0;
@@ -87,16 +90,16 @@ public:
     this->printKeys("", formatter);
   }
 
-/// @}
-/// @name Standard Interface
-/// @{
+  /// @}
+  /// @name Standard Interface
+  /// @{
 
-/// @}
+  /// @}
 };
 // HybridFactor
 
 // traits
-template<>
+template <>
 struct traits<HybridFactor> : public Testable<HybridFactor> {};
 
-}// namespace gtsam
+}  // namespace gtsam
