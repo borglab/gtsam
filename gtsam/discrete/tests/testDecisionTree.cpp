@@ -347,6 +347,44 @@ TEST(DecisionTree, visitWith) {
 }
 
 /* ************************************************************************** */
+// Test visit, with Choices argument.
+TEST(DecisionTree, VisitWithPruned) {
+  // Create pruned tree
+  std::pair<string, size_t> A("A", 2), B("B", 2), C("C", 2);
+  std::vector<std::pair<string, size_t>> labels = {C, B, A};
+  std::vector<int> nodes = {0, 0, 2, 3, 4, 4, 6, 7};
+  DT tree(labels, nodes);
+
+  std::vector<Assignment<string>> choices;
+  auto func = [&](const Assignment<string>& choice, const int& d) {
+    choices.push_back(choice);
+  };
+  tree.visitWith(func);
+
+  EXPECT_LONGS_EQUAL(6, choices.size());
+
+  Assignment<string> expectedAssignment;
+
+  expectedAssignment = {{"B", 0}, {"C", 0}};
+  EXPECT(expectedAssignment == choices.at(0));
+
+  expectedAssignment = {{"A", 0}, {"B", 1}, {"C", 0}};
+  EXPECT(expectedAssignment == choices.at(1));
+
+  expectedAssignment = {{"A", 1}, {"B", 1}, {"C", 0}};
+  EXPECT(expectedAssignment == choices.at(2));
+
+  expectedAssignment = {{"B", 0}, {"C", 1}};
+  EXPECT(expectedAssignment == choices.at(3));
+
+  expectedAssignment = {{"A", 0}, {"B", 1}, {"C", 1}};
+  EXPECT(expectedAssignment == choices.at(4));
+
+  expectedAssignment = {{"A", 1}, {"B", 1}, {"C", 1}};
+  EXPECT(expectedAssignment == choices.at(5));
+}
+
+/* ************************************************************************** */
 // Test fold.
 TEST(DecisionTree, fold) {
   // Create small two-level tree
