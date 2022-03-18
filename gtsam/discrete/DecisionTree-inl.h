@@ -668,9 +668,11 @@ namespace gtsam {
       for (size_t i = 0; i < choice->nrChoices(); i++) {
         choices[choice->label()] = i;  // Set assignment for label to i
 
-        VisitWith<L, Y> visit(f);
-        visit.choices = choices;
-        visit(choice->branches()[i]);  // recurse!
+        (*this)(choice->branches()[i]);  // recurse!
+
+        // Remove the choice so we are backtracking
+        auto choice_it = choices.find(choice->label());
+        choices.erase(choice_it);
       }
     }
   };

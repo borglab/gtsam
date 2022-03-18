@@ -20,10 +20,12 @@
 // #define DT_DEBUG_MEMORY
 // #define DT_NO_PRUNING
 #define DISABLE_DOT
-#include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/Testable.h>
 #include <gtsam/discrete/DecisionTree-inl.h>
+
+#include <gtsam/base/Testable.h>
 #include <gtsam/discrete/Signature.h>
+
+#include <CppUnitLite/TestHarness.h>
 
 #include <boost/assign/std/vector.hpp>
 using namespace boost::assign;
