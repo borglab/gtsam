@@ -267,7 +267,7 @@ TEST(DCGaussianElimination, Approx_inference) {
     const DiscreteValues &assignment = av.first;
     const double value = av.second;
 
-    if (value == -1.0) {
+    if (value == 0.0) {
       EXPECT(lastDensity(assignment) == nullptr);
     } else {
       CHECK(lastDensity(assignment));
@@ -420,7 +420,7 @@ TEST(IncrementalHybrid, NonTrivial) {
   gfg = fg.linearize(initial);
   fg = NonlinearHybridFactorGraph();
 
-  inc.update(gfg, ordering, 2);
+  inc.update(gfg, ordering);
 
   // Add odometry factor
   contKeys = {W(1), W(2)};
