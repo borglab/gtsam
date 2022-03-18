@@ -33,6 +33,8 @@ namespace gtsam {
 template <class L>
 class Assignment : public std::map<L, size_t> {
  public:
+  using std::map<L, size_t>::operator=;
+
   void print(const std::string& s = "Assignment: ") const {
     std::cout << s << ": ";
     for (const typename Assignment::value_type& keyValue : *this)
