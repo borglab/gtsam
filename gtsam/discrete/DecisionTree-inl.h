@@ -666,8 +666,11 @@ namespace gtsam {
       if (!choice)
         throw std::invalid_argument("DecisionTree::VisitWith: Invalid NodePtr");
       for (size_t i = 0; i < choice->nrChoices(); i++) {
-        choices[choice->label()] = i;    // Set assignment for label to i
-        (*this)(choice->branches()[i]);  // recurse!
+        choices[choice->label()] = i;  // Set assignment for label to i
+
+        VisitWith<L, Y> visit(f);
+        visit.choices = choices;
+        visit(choice->branches()[i]);  // recurse!
       }
     }
   };
