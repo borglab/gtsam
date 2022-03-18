@@ -15,6 +15,8 @@
  * @author  Asa Hammond
  */
 
+#pragma once
+
 #include <gtsam/navigation/NavState.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 

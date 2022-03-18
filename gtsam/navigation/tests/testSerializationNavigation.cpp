@@ -39,6 +39,9 @@ BOOST_CLASS_EXPORT_GUID(noiseModel::Unit, "gtsam_noiseModel_Unit")
 BOOST_CLASS_EXPORT_GUID(noiseModel::Isotropic, "gtsam_noiseModel_Isotropic")
 BOOST_CLASS_EXPORT_GUID(SharedNoiseModel, "gtsam_SharedNoiseModel")
 BOOST_CLASS_EXPORT_GUID(SharedDiagonal, "gtsam_SharedDiagonal")
+BOOST_CLASS_EXPORT_GUID(PreintegratedImuMeasurements, "gtsam_PreintegratedImuMeasurements")
+BOOST_CLASS_EXPORT_GUID(PreintegrationCombinedParams, "gtsam_PreintegrationCombinedParams")
+BOOST_CLASS_EXPORT_GUID(PreintegratedCombinedMeasurements, "gtsam_PreintegratedCombinedMeasurements")
 
 template <typename P>
 P getPreintegratedMeasurements() {
