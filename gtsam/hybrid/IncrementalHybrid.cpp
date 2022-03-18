@@ -87,7 +87,8 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
 
     // If valid pruned discrete factor, then propagate to gaussian mixtures
     if (discreteFactor) {
-      HybridBayesNet::shared_ptr prunedBayesNetFragment = pruneBayesNet(bayesNetFragment, discreteFactor);
+      HybridBayesNet::shared_ptr prunedBayesNetFragment =
+          pruneBayesNet(bayesNetFragment, discreteFactor);
       // Set the bayes net fragment to the pruned version
       bayesNetFragment = prunedBayesNetFragment;
     }
@@ -171,14 +172,10 @@ HybridBayesNet::shared_ptr IncrementalHybrid::pruneBayesNet(
                       const GaussianFactor::shared_ptr &gf) {
       // typecast so we can use this below
       DiscreteValues values(choices);
-      try {
-        if ((*discreteFactor)(values) == 0.0) {
-          nodes.push_back(nullptr);
-        } else {
-          nodes.push_back(boost::dynamic_pointer_cast<GaussianConditional>(gf));
-        }
-      } catch (std::exception &e) {
-        // assignment not present so we continue
+      if ((*discreteFactor)(values) == 0.0) {
+        nodes.push_back(nullptr);
+      } else {
+        nodes.push_back(boost::dynamic_pointer_cast<GaussianConditional>(gf));
       }
     };
 
@@ -186,6 +183,13 @@ HybridBayesNet::shared_ptr IncrementalHybrid::pruneBayesNet(
         boost::dynamic_pointer_cast<GaussianMixture>(conditional);
 
     if (gaussianMixture) {
+      // We may have mixtures with less discrete keys than discreteFactor so we
+      // skip those since the label assignment does not exist.
+      if (gaussianMixture->discreteKeys() != discreteFactor->discreteKeys()) {
+        continue;
+      }
+
+      // Run the pruning
       gaussianMixture->factors_.visitWith(pruner);
 
       DiscreteKeys discreteKeys = gaussianMixture->discreteKeys();
@@ -198,6 +202,7 @@ HybridBayesNet::shared_ptr IncrementalHybrid::pruneBayesNet(
       auto prunedGaussianMixture = boost::make_shared<GaussianMixture>(
           gaussianMixture->nrFrontals(), gaussianMixture->continuousKeys(),
           discreteKeys, prunedTree);
+
       prunedBayesNetFragment->addGaussian(i, prunedGaussianMixture);
     }
   }
