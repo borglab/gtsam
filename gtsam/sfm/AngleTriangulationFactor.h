@@ -40,6 +40,12 @@ class GTSAM_EXPORT AngleTriangulationFactor
   MinimizationType minimizationType_;
 
  public:
+  /// shorthand for this class
+  using This = AngleTriangulationFactor;
+
+  /// shorthand for a smart pointer to a factor
+  using shared_ptr = boost::shared_ptr<This>;
+
   AngleTriangulationFactor() {}
 
   AngleTriangulationFactor(Key j1, Key j2, const CALIBRATION& K,

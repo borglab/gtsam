@@ -21,6 +21,7 @@
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Point3.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/sfm/AngleTriangulationFactor.h>
@@ -170,8 +171,6 @@ Vector factorError(const Pose3& T1, const Pose3& T2,
 
 TEST(AngleTriangulationFactor, L1Jacobian) {
   Cal3_S2 K(500, 500, 0.1, 640 / 2, 480 / 2);
-  // Pose3 wTc0(Rot3::Ypr(0.0, M_PI / 3, 0.0), Point3(0, 0, 0));
-  // Pose3 wTc1(Rot3::Ypr(0.0, 2 * M_PI / 3, 0.0), Point3(40, 0, 0));
   Pose3 wTc0(Rot3::Ypr(0.0, M_PI / 6, 0.0), Point3(0, 0, 0));
   Pose3 wTc1(Rot3::Ypr(0.0, -M_PI / 6, 0.0), Point3(40, 0, 0));
   PinholeCamera<Cal3_S2> C0(wTc0, K), C1(wTc1, K);
@@ -297,6 +296,112 @@ TEST(AngleTriangulationFactor, NonZeroError) {
   //           << std::endl;
   // std::cout << "result: " << C1_prime.project2(landmark).transpose()
   //           << std::endl;
+}
+
+/* ************************************************************************* */
+std::vector<gtsam::Point3> createPoints() {
+  // Create the set of ground-truth landmarks
+  std::vector<gtsam::Point3> points;
+  points.push_back(gtsam::Point3(10.0, 10.0, 10.0));
+  points.push_back(gtsam::Point3(-10.0, 10.0, 10.0));
+  points.push_back(gtsam::Point3(-10.0, -10.0, 10.0));
+  points.push_back(gtsam::Point3(10.0, -10.0, 10.0));
+  points.push_back(gtsam::Point3(10.0, 10.0, -10.0));
+  points.push_back(gtsam::Point3(-10.0, 10.0, -10.0));
+  points.push_back(gtsam::Point3(-10.0, -10.0, -10.0));
+  points.push_back(gtsam::Point3(10.0, -10.0, -10.0));
+
+  return points;
+}
+
+/* ************************************************************************* */
+std::vector<gtsam::Pose3> createPoses(
+    const gtsam::Pose3& init = gtsam::Pose3(gtsam::Rot3::Ypr(M_PI / 2, 0,
+                                                             -M_PI / 2),
+                                            gtsam::Point3(30, 0, 0)),
+    const gtsam::Pose3& delta = gtsam::Pose3(
+        gtsam::Rot3::Ypr(0, -M_PI / 4, 0),
+        gtsam::Point3(sin(M_PI / 4) * 30, 0, 30 * (1 - sin(M_PI / 4)))),
+    int steps = 8) {
+  // Create the set of ground-truth poses
+  // Default values give a circular trajectory, radius 30 at pi/4 intervals,
+  // always facing the circle center
+  std::vector<gtsam::Pose3> poses;
+  int i = 1;
+  poses.push_back(init);
+  for (; i < steps; ++i) {
+    poses.push_back(poses[i - 1].compose(delta));
+  }
+
+  return poses;
+}
+
+TEST(AngleTriangulationFactor, SfmExample) {
+  using symbol_shorthand::X;
+
+  // Define the camera calibration parameters
+  Cal3_S2::shared_ptr K(new Cal3_S2(50.0, 50.0, 0.0, 50.0, 50.0));
+
+  // Define the camera observation noise model
+  auto measurementNoise =
+      noiseModel::Isotropic::Sigma(2, 1e-5);  // one pixel in u and v
+
+  // Create the set of ground-truth landmarks
+  vector<Point3> points = createPoints();
+
+  // Create the set of ground-truth poses
+  vector<Pose3> poses = createPoses();
+
+  // Create a factor graph
+  NonlinearFactorGraph graph;
+
+  // Add a prior on pose x1. This indirectly specifies where the origin is.
+  auto poseNoise = noiseModel::Diagonal::Sigmas(
+      (Vector(6) << Vector3::Constant(0.1), Vector3::Constant(0.0003))
+          .finished());  // 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
+  graph.addPrior(X(0), poses[0], poseNoise);  // add directly to graph
+
+  // Simulated measurements from each camera pose, adding them to the factor
+  // graph
+  for (size_t j = 0; j < points.size(); ++j) {
+    for (size_t i = 0; i < poses.size(); ++i) {
+      PinholeCamera<Cal3_S2> camera(poses[i], *K);
+      Point2 prev_measurement, measurement;
+      if (i == 0) {
+        prev_measurement = camera.project(points[j]);
+      } else {
+        measurement = camera.project(points[j]);
+        graph.emplace_shared<AngleTriangulationFactor<Cal3_S2>>(
+            X(i - 1), X(i), *K, prev_measurement, measurement, measurementNoise,
+            L1);
+
+        prev_measurement = measurement;
+      }
+    }
+  }
+
+  // Intentionally initialize the variables off from the ground truth
+  Values initialEstimate;
+  for (size_t i = 0; i < poses.size(); ++i) {
+    auto corrupted_pose = poses[i].compose(
+        Pose3(Rot3::Rodrigues(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20)));
+    initialEstimate.insert(X(i), corrupted_pose);
+  }
+  /* Optimize the graph and print results */
+  Values result =
+      LevenbergMarquardtOptimizer(graph, initialEstimate).optimize();
+
+  // std::cout << "===================\n\n"<<std::endl;
+  // for(size_t i=0;i<poses.size();i++){
+  //   std::cout << poses[i] << std::endl;
+  // }
+  // std::cout << "===================\n\n"<<std::endl;
+  // initialEstimate.print("Initial Estimate:\n");
+  // std::cout << "===================\n\n"<<std::endl;
+  // result.print("Final results:\n");
+
+  std::cout << graph.error(initialEstimate) << std::endl;
+  std::cout << graph.error(result) << std::endl;
 }
 
 /* ************************************************************************* */
