@@ -112,6 +112,13 @@ namespace gtsam {
       return f;
     }
 
+    /// Apply unary operator with assignment
+    NodePtr apply(const UnaryAssignment& op,
+                  const Assignment<L>& choices) const override {
+      NodePtr f(new Leaf(op(choices, constant_)));
+      return f;
+    }
+
     // Apply binary operator "h = f op g" on Leaf node
     // Note op is not assumed commutative so we need to keep track of order
     // Simply calls apply on argument to call correct virtual method:
@@ -322,9 +329,45 @@ namespace gtsam {
       for (const NodePtr& branch : f.branches_) push_back(branch->apply(op));
     }
 
+    /**
+     * @brief Constructor which accepts a UnaryAssignment op and the
+     * corresponding assignment.
+     *
+     * @param label The label for this node.
+     * @param f The original choice node to apply the op on.
+     * @param op Function to apply on the choice node. Takes Assignment and
+     * value as arguments.
+     * @param choices The Assignment that will go to op.
+     */
+    Choice(const L& label, const Choice& f, const UnaryAssignment& op,
+           const Assignment<L>& choices)
+        : label_(label), allSame_(true) {
+      branches_.reserve(f.branches_.size());  // reserve space
+
+      Assignment<L> choices_ = choices;
+
+      for (size_t i = 0; i < f.branches_.size(); i++) {
+        choices_[label_] = i;  // Set assignment for label to i
+
+        const NodePtr branch = f.branches_[i];
+        push_back(branch->apply(op, choices_));
+
+        // Remove the choice so we are backtracking
+        auto choice_it = choices_.find(label_);
+        choices_.erase(choice_it);
+      }
+    }
+
     /** apply unary operator */
     NodePtr apply(const Unary& op) const override {
       auto r = boost::make_shared<Choice>(label_, *this, op);
+      return Unique(r);
+    }
+
+    /// Apply unary operator with assignment
+    NodePtr apply(const UnaryAssignment& op,
+                  const Assignment<L>& choices) const override {
+      auto r = boost::make_shared<Choice>(label_, *this, op, choices);
       return Unique(r);
     }
 
@@ -737,6 +780,20 @@ namespace gtsam {
           "DecisionTree::apply(unary op) undefined for empty tree.");
     }
     return DecisionTree(root_->apply(op));
+  }
+
+  /// Apply unary operator with assignment
+  template <typename L, typename Y>
+  DecisionTree<L, Y> DecisionTree<L, Y>::apply(
+      const UnaryAssignment& op) const {
+        std::cout << "Calling the correct apply" << std::endl;
+    // It is unclear what should happen if tree is empty:
+    if (empty()) {
+      throw std::runtime_error(
+          "DecisionTree::apply(unary op) undefined for empty tree.");
+    }
+    Assignment<L> choices;
+    return DecisionTree(root_->apply(op, choices));
   }
 
   /****************************************************************************/
