@@ -233,10 +233,9 @@ TEST(DCGaussianElimination, Approx_inference) {
   auto remainingFactorGraph = incrementalHybrid.remainingFactorGraph();
   EXPECT_LONGS_EQUAL(1, remainingFactorGraph.size());
 
-  auto discreteFactor_m1 =
-      *dynamic_pointer_cast<DecisionTreeFactor>(incrementalHybrid.remainingDiscreteGraph().at(0));
+  auto discreteFactor_m1 = *dynamic_pointer_cast<DecisionTreeFactor>(
+      incrementalHybrid.remainingDiscreteGraph().at(0));
   EXPECT(discreteFactor_m1.keys() == KeyVector({M(3), M(2), M(1)}));
-
 
   // Check number of elements equal to zero
   auto count = [](const double &value, int count) {
@@ -508,7 +507,6 @@ TEST(IncrementalHybrid, NonTrivial) {
   gfg = fg.linearize(initial);
   fg = NonlinearHybridFactorGraph();
 
-  std::cout << "\n\n======== final elimination" << std::endl;
   inc.update(gfg, ordering, 3);
 
   // The final discrete graph should not be empty since we have eliminated
@@ -521,6 +519,11 @@ TEST(IncrementalHybrid, NonTrivial) {
   expected_assignment[M(2)] = 1;
   expected_assignment[M(3)] = 1;
   EXPECT(assert_equal(expected_assignment, optimal_assignment));
+
+  // Test if pruning propagated correctly.
+  auto lastConditional = boost::dynamic_pointer_cast<GaussianMixture>(
+      inc.hybridBayesNet().at(inc.hybridBayesNet().size() - 1));
+  EXPECT_LONGS_EQUAL(3, lastConditional->nrComponents());
 }
 
 /* ************************************************************************* */
