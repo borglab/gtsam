@@ -786,7 +786,6 @@ namespace gtsam {
   template <typename L, typename Y>
   DecisionTree<L, Y> DecisionTree<L, Y>::apply(
       const UnaryAssignment& op) const {
-        std::cout << "Calling the correct apply" << std::endl;
     // It is unclear what should happen if tree is empty:
     if (empty()) {
       throw std::runtime_error(
