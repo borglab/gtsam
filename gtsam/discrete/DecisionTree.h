@@ -54,6 +54,7 @@ namespace gtsam {
 
     /** Handy typedefs for unary and binary function types */
     using Unary = std::function<Y(const Y&)>;
+    using UnaryAssignment = std::function<Y(const Assignment<L>&, const Y&)>;
     using Binary = std::function<Y(const Y&, const Y&)>;
 
     /** A label annotated with cardinality */
@@ -103,6 +104,8 @@ namespace gtsam {
                                                  &DefaultCompare) const = 0;
       virtual const Y& operator()(const Assignment<L>& x) const = 0;
       virtual Ptr apply(const Unary& op) const = 0;
+      virtual Ptr apply(const UnaryAssignment& op,
+                        const Assignment<L>& choices) const = 0;
       virtual Ptr apply_f_op_g(const Node&, const Binary&) const = 0;
       virtual Ptr apply_g_op_fL(const Leaf&, const Binary&) const = 0;
       virtual Ptr apply_g_op_fC(const Choice&, const Binary&) const = 0;
@@ -283,6 +286,16 @@ namespace gtsam {
     /** apply Unary operation "op" to f */
     DecisionTree apply(const Unary& op) const;
 
+    /**
+     * @brief Apply Unary operation "op" to f while also providing the
+     * corresponding assignment.
+     *
+     * @param op Function which takes Assignment<L> and Y as input and returns
+     * object of type Y.
+     * @return DecisionTree
+     */
+    DecisionTree apply(const UnaryAssignment& op) const;
+
     /** apply binary operation "op" to f and g */
     DecisionTree apply(const DecisionTree& g, const Binary& op) const;
 
@@ -334,6 +347,13 @@ namespace gtsam {
   template<typename L, typename Y>
   DecisionTree<L, Y> apply(const DecisionTree<L, Y>& f,
       const typename DecisionTree<L, Y>::Unary& op) {
+    return f.apply(op);
+  }
+
+  /// Apply unary operator `op` with Assignment to DecisionTree `f`.
+  template<typename L, typename Y>
+  DecisionTree<L, Y> apply(const DecisionTree<L, Y>& f,
+      const typename DecisionTree<L, Y>::UnaryAssignment& op) {
     return f.apply(op);
   }
 
