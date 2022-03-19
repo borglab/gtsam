@@ -153,14 +153,19 @@ EliminateHybrid(const GaussianHybridFactorGraph& factors,
   KeyVector keysOfSeparator;   // TODO(frank): Is this just (keys - ordering)?
   auto eliminate = [&](const GaussianFactorGraph& graph)
       -> GaussianFactorGraph::EliminationResult {
-    if (graph.empty()) return {nullptr, nullptr};
+    if (graph.empty()) {
+      return {nullptr, nullptr};
+    }
     auto result = EliminatePreferCholesky(graph, ordering);
     gttic_(Eliminate);
-    if (keysOfEliminated.empty())
+    if (keysOfEliminated.empty()) {
       keysOfEliminated =
           result.first->keys();  // Initialize the keysOfEliminated to be the
+    }
     // keysOfEliminated of the GaussianConditional
-    if (keysOfSeparator.empty()) keysOfSeparator = result.second->keys();
+    if (keysOfSeparator.empty()) {
+      keysOfSeparator = result.second->keys();
+    }
     return result;
   };
 
