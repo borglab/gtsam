@@ -67,10 +67,10 @@ using gtsam::tictoc_print_;
 
 namespace NM = gtsam::noiseModel;
 
-// data available at
-// http://www.frc.ri.cmu.edu/projects/emergencyresponse/RangeData/ Datafile
-// format (from
-// http://www.frc.ri.cmu.edu/projects/emergencyresponse/RangeData/log.html)
+// Data is second UWB ranging dataset, B2 or "plaza 2", from
+// "Navigating with Ranging Radios: Five Data Sets with Ground Truth"
+// by Joseph Djugash, Bradley Hamner, and Stephan Roth
+// https://www.ri.cmu.edu/pub_files/2009/9/Final_5datasetsRangingRadios.pdf
 
 // load the odometry
 // DR: Odometry Input (delta distance traveled and delta heading change)
@@ -99,8 +99,7 @@ std::vector<RangeTriple> readTriples() {
   std::ifstream is(data_file.c_str());
 
   while (is) {
-    double t, sender, range;
-    size_t receiver;
+    double t, range, sender, receiver;
     is >> t >> sender >> receiver >> range;
     triples.emplace_back(t, receiver, range);
   }
@@ -112,10 +111,12 @@ std::vector<RangeTriple> readTriples() {
 int main(int argc, char** argv) {
   // load Plaza2 data
   std::list<TimedOdometry> odometry = readOdometry();
-  //  size_t M = odometry.size();
+  size_t M = odometry.size();
+  std::cout << "Read " << M << " odometry entries." << std::endl;
 
   std::vector<RangeTriple> triples = readTriples();
   size_t K = triples.size();
+  std::cout << "Read " << K << " range triples." << std::endl;
 
   // parameters
   size_t minK =
@@ -149,7 +150,7 @@ int main(int argc, char** argv) {
   // We will initialize landmarks randomly, and keep track of which landmarks we
   // already added with a set.
   std::mt19937_64 rng;
-  std::normal_distribution<double> normal(0.0, 1.0);
+  std::normal_distribution<double> normal(0.0, 100.0);
   std::set<Symbol> initializedLandmarks;
 
   // set some loop variables
@@ -184,6 +185,7 @@ int main(int argc, char** argv) {
       newFactors.emplace_shared<gtsam::RangeFactor<Pose2, Point2>>(
           i, landmark_key, range, rangeNoise);
       if (initializedLandmarks.count(landmark_key) == 0) {
+        std::cout << "adding landmark " << j << std::endl;
         double x = normal(rng), y = normal(rng);
         initial.insert(landmark_key, Point2(x, y));
         initializedLandmarks.insert(landmark_key);
@@ -199,6 +201,7 @@ int main(int argc, char** argv) {
     // Check whether to update iSAM 2
     if ((k > minK) && (countK > incK)) {
       if (!initialized) {  // Do a full optimize for first minK ranges
+        std::cout << "Initializing at time " << k << std::endl;
         gttic_(batchInitialization);
         gtsam::LevenbergMarquardtOptimizer batchOptimizer(newFactors, initial);
         initial = batchOptimizer.optimize();
