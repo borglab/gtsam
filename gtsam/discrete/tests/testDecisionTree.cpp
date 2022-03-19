@@ -90,6 +90,7 @@ struct DT : public DecisionTree<string, int> {
     auto valueFormatter = [](const int& v) {
       return (boost::format("%d") % v).str();
     };
+    std::cout << s;
     Base::print("", keyFormatter, valueFormatter);
   }
   /// Equality method customized to int node type
@@ -449,6 +450,33 @@ TEST(DecisionTree, threshold) {
   // Check number of leaves equal to zero now = 2
   // Note: it is 2, because the pruned branches are counted as 1!
   EXPECT_LONGS_EQUAL(2, thresholded.fold(count, 0));
+}
+
+/* ************************************************************************** */
+// Test apply with assignment.
+TEST(DecisionTree, ApplyWithAssignment) {
+  // Create three level tree
+  vector<DT::LabelC> keys;
+  keys += DT::LabelC("C", 2), DT::LabelC("B", 2), DT::LabelC("A", 2);
+  DT tree(keys, "1 2 3 4 5 6 7 8");
+
+  DecisionTree<string, double> probTree(
+      keys, "0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08");
+  double threshold = 0.035;
+
+  // We test pruning one tree by indexing into another.
+  auto pruner = [&](const Assignment<string>& choices, const int& x) {
+    // Prune out all the leaves with even numbers
+    if (probTree(choices) < threshold) {
+      return 0;
+    } else {
+      return x;
+    }
+  };
+  DT prunedTree = tree.apply(pruner);
+
+  DT expectedTree(keys, "0 0 0 4 5 6 7 8");
+  EXPECT(assert_equal(expectedTree, prunedTree));
 }
 
 /* ************************************************************************* */
