@@ -15,7 +15,7 @@ For example:
 ```cpp
 class GTSAM_EXPORT MyClass { ... };
 
-GTSAM_EXPORT myFunction();
+GTSAM_EXPORT return_type myFunction();
 ```
 
 More details [here](Using-GTSAM-EXPORT.md).

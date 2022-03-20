@@ -127,7 +127,7 @@ namespace gtsam {
         return map.at(label);
       };
       std::function<double(const double&)> op = Ring::id;
-      this->root_ = this->template convertFrom(other.root_, L_of_M, op);
+      this->root_ = DecisionTree<L, double>::convertFrom(other.root_, L_of_M, op);
     }
 
     /** sum */

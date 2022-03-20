@@ -177,8 +177,8 @@ boost::optional<IndexedPose> parseVertexPose(istream &is, const string &tag) {
 }
 
 template <>
-std::map<size_t, Pose2> parseVariables<Pose2>(const std::string &filename,
-                                              size_t maxIndex) {
+GTSAM_EXPORT std::map<size_t, Pose2> parseVariables<Pose2>(
+    const std::string &filename, size_t maxIndex) {
   return parseToMap<Pose2>(filename, parseVertexPose, maxIndex);
 }
 
@@ -199,8 +199,8 @@ boost::optional<IndexedLandmark> parseVertexLandmark(istream &is,
 }
 
 template <>
-std::map<size_t, Point2> parseVariables<Point2>(const std::string &filename,
-                                                size_t maxIndex) {
+GTSAM_EXPORT std::map<size_t, Point2> parseVariables<Point2>(
+    const std::string &filename, size_t maxIndex) {
   return parseToMap<Point2>(filename, parseVertexLandmark, maxIndex);
 }
 
@@ -384,6 +384,7 @@ boost::shared_ptr<Sampler> createSampler(const SharedNoiseModel &model) {
 /* ************************************************************************* */
 // Implementation of parseMeasurements for Pose2
 template <>
+GTSAM_EXPORT
 std::vector<BinaryMeasurement<Pose2>>
 parseMeasurements(const std::string &filename,
                   const noiseModel::Diagonal::shared_ptr &model,
@@ -411,6 +412,7 @@ static BinaryMeasurement<Rot2> convert(const BinaryMeasurement<Pose2> &p) {
 }
 
 template <>
+GTSAM_EXPORT
 std::vector<BinaryMeasurement<Rot2>>
 parseMeasurements(const std::string &filename,
                   const noiseModel::Diagonal::shared_ptr &model,
@@ -426,6 +428,7 @@ parseMeasurements(const std::string &filename,
 /* ************************************************************************* */
 // Implementation of parseFactors for Pose2
 template <>
+GTSAM_EXPORT
 std::vector<BetweenFactor<Pose2>::shared_ptr>
 parseFactors<Pose2>(const std::string &filename,
                     const noiseModel::Diagonal::shared_ptr &model,
@@ -775,8 +778,8 @@ boost::optional<pair<size_t, Pose3>> parseVertexPose3(istream &is,
 }
 
 template <>
-std::map<size_t, Pose3> parseVariables<Pose3>(const std::string &filename,
-                                              size_t maxIndex) {
+GTSAM_EXPORT std::map<size_t, Pose3> parseVariables<Pose3>(
+    const std::string &filename, size_t maxIndex) {
   return parseToMap<Pose3>(filename, parseVertexPose3, maxIndex);
 }
 
@@ -793,8 +796,8 @@ boost::optional<pair<size_t, Point3>> parseVertexPoint3(istream &is,
 }
 
 template <>
-std::map<size_t, Point3> parseVariables<Point3>(const std::string &filename,
-                                                size_t maxIndex) {
+GTSAM_EXPORT std::map<size_t, Point3> parseVariables<Point3>(
+    const std::string &filename, size_t maxIndex) {
   return parseToMap<Point3>(filename, parseVertexPoint3, maxIndex);
 }
 
@@ -868,6 +871,7 @@ template <> struct ParseMeasurement<Pose3> {
 /* ************************************************************************* */
 // Implementation of parseMeasurements for Pose3
 template <>
+GTSAM_EXPORT
 std::vector<BinaryMeasurement<Pose3>>
 parseMeasurements(const std::string &filename,
                   const noiseModel::Diagonal::shared_ptr &model,
@@ -895,6 +899,7 @@ static BinaryMeasurement<Rot3> convert(const BinaryMeasurement<Pose3> &p) {
 }
 
 template <>
+GTSAM_EXPORT
 std::vector<BinaryMeasurement<Rot3>>
 parseMeasurements(const std::string &filename,
                   const noiseModel::Diagonal::shared_ptr &model,
@@ -910,6 +915,7 @@ parseMeasurements(const std::string &filename,
 /* ************************************************************************* */
 // Implementation of parseFactors for Pose3
 template <>
+GTSAM_EXPORT
 std::vector<BetweenFactor<Pose3>::shared_ptr>
 parseFactors<Pose3>(const std::string &filename,
                     const noiseModel::Diagonal::shared_ptr &model,

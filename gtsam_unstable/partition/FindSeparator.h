@@ -6,6 +6,8 @@
  *  Description: find the separator of bisectioning for a given graph
  */
 
+#pragma once
+
 #include <map>
 #include <vector>
 #include <boost/optional.hpp>

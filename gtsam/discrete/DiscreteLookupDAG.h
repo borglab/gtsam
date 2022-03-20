@@ -36,7 +36,7 @@ class DiscreteBayesNet;
  * Inherits from discrete conditional for convenience, but is not normalized.
  * Is used in the max-product algorithm.
  */
-class DiscreteLookupTable : public DiscreteConditional {
+class GTSAM_EXPORT DiscreteLookupTable : public DiscreteConditional {
  public:
   using This = DiscreteLookupTable;
   using shared_ptr = boost::shared_ptr<This>;
@@ -46,7 +46,7 @@ class DiscreteLookupTable : public DiscreteConditional {
    * @brief Construct a new Discrete Lookup Table object
    *
    * @param nFrontals number of frontal variables
-   * @param keys a orted list of gtsam::Keys
+   * @param keys a sorted list of gtsam::Keys
    * @param potentials the algebraic decision tree with lookup values
    */
   DiscreteLookupTable(size_t nFrontals, const DiscreteKeys& keys,
