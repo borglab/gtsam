@@ -67,8 +67,8 @@ TEST(DCGaussianElimination, Incremental_inference) {
   // Run update step
   incrementalHybrid.update(graph1, ordering);
 
-  // Test if hybrid bayes net is the correct size and if the keys are as
-  // expected.
+  // Check that after update we have 2 hybrid Bayes net nodes:
+  // P(X1|X2, M1) and P(X2|M1)
   auto hybridBayesNet = incrementalHybrid.hybridBayesNet();
   EXPECT_LONGS_EQUAL(2, hybridBayesNet.size());
   EXPECT(hybridBayesNet.at(0)->frontals() == KeyVector{X(1)});
@@ -76,8 +76,8 @@ TEST(DCGaussianElimination, Incremental_inference) {
   EXPECT(hybridBayesNet.at(1)->frontals() == KeyVector{X(2)});
   EXPECT(hybridBayesNet.at(1)->parents() == KeyVector({M(1)}));
 
-  // Check if the remaining factor graph and DecisionTreeFactor of discrete
-  // modes is the right size
+  // Check that the remaining factor graph has
+  // a single decision tree factor on M1
   auto remainingFactorGraph = incrementalHybrid.remainingFactorGraph();
   EXPECT_LONGS_EQUAL(1, remainingFactorGraph.size());
 
@@ -100,8 +100,9 @@ TEST(DCGaussianElimination, Incremental_inference) {
 
   incrementalHybrid.update(graph2, ordering2);
 
-  // Test if hybrid bayes net is the correct size and if the keys are as
-  // expected.
+  // Check that after the second update we have
+  // 2 additional hybrid Bayes net nodes:
+  // P(X2|X3, M2, M1), and P(X3|M2, M1)
   auto hybridBayesNet2 = incrementalHybrid.hybridBayesNet();
   EXPECT_LONGS_EQUAL(3, hybridBayesNet2.size());
   EXPECT(hybridBayesNet2.at(1)->frontals() == KeyVector{X(2)});
@@ -109,11 +110,10 @@ TEST(DCGaussianElimination, Incremental_inference) {
   EXPECT(hybridBayesNet2.at(2)->frontals() == KeyVector{X(3)});
   EXPECT(hybridBayesNet2.at(2)->parents() == KeyVector({M(2), M(1)}));
 
-  // Check if the remaining factor graph and DecisionTreeFactor of discrete
-  // modes is the right size
+  // Check that the remaining factor graph has a single decision tree factor on
+  // M2 and M1.
   auto remainingFactorGraph2 = incrementalHybrid.remainingFactorGraph();
   EXPECT_LONGS_EQUAL(1, remainingFactorGraph2.size());
-
   auto discreteFactor = dynamic_pointer_cast<DecisionTreeFactor>(
       remainingFactorGraph2.discreteGraph().at(0));
   EXPECT(discreteFactor->keys() == KeyVector({M(2), M(1)}));
@@ -182,6 +182,8 @@ TEST(DCGaussianElimination, Incremental_inference) {
   dfg.add(discreteFactor_m1);
   dfg.add_factors(switching.linearizedFactorGraph.discreteGraph());
 
+  // Check if the chordal graph generated from incremental elimination matches
+  // that of batch elimination.
   auto chordal = dfg.eliminateSequential();
   auto expectedChordal =
       expectedRemainingGraph->discreteGraph().eliminateSequential();
@@ -255,8 +257,8 @@ TEST(DCGaussianElimination, Approx_inference) {
       1 1 1 Leaf    1
    */
 
-  // Test if the remaining factor graph has one factor and if it is the expected
-  // discrete factor.
+  // Test that the remaining factor graph has one
+  // DecisionTreeFactor on {M3, M2, M1}.
   auto remainingFactorGraph = incrementalHybrid.remainingFactorGraph();
   EXPECT_LONGS_EQUAL(1, remainingFactorGraph.size());
 
@@ -268,6 +270,7 @@ TEST(DCGaussianElimination, Approx_inference) {
   auto count = [](const double &value, int count) {
     return value > 0 ? count + 1 : count;
   };
+  // Check that the number of leaves after pruning is 5.
   EXPECT_LONGS_EQUAL(5, discreteFactor_m1.fold(count, 0));
 
   /* Expected hybrid Bayes net
@@ -278,12 +281,16 @@ TEST(DCGaussianElimination, Approx_inference) {
    */
   auto hybridBayesNet = incrementalHybrid.hybridBayesNet();
 
+  // Check if we have a bayes net with 4 hybrid nodes,
+  // each with 2, 4, 5 (pruned), and 5 (pruned) leaves respetively.
   EXPECT_LONGS_EQUAL(4, hybridBayesNet.size());
   EXPECT_LONGS_EQUAL(2, hybridBayesNet.atGaussian(0)->nrComponents());
   EXPECT_LONGS_EQUAL(4, hybridBayesNet.atGaussian(1)->nrComponents());
   EXPECT_LONGS_EQUAL(5, hybridBayesNet.atGaussian(2)->nrComponents());
   EXPECT_LONGS_EQUAL(5, hybridBayesNet.atGaussian(3)->nrComponents());
 
+  // Check that the hybrid nodes of the bayes net match those of the bayes net
+  // before pruning, at the same positions.
   auto &lastDensity = *(hybridBayesNet.atGaussian(3));
   auto &unprunedLastDensity = *(unprunedHybridBayesNet->atGaussian(3));
   std::vector<std::pair<DiscreteValues, double>> assignments =
@@ -330,7 +337,8 @@ TEST(DCGaussianElimination, Incremental_approximate) {
   size_t maxComponents = 5;
   incrementalHybrid.update(graph1, ordering, maxComponents);
 
-  // Test the bayes net and if the number of pruned leaves are as expected.
+  // Check if we have a bayes net with 4 hybrid nodes,
+  // each with 2, 4, 8, and 5 (pruned) leaves respetively.
   auto actualBayesNet1 = incrementalHybrid.hybridBayesNet();
   CHECK_EQUAL(4, actualBayesNet1.size());
   EXPECT_LONGS_EQUAL(2, actualBayesNet1.atGaussian(0)->nrComponents());
@@ -350,8 +358,8 @@ TEST(DCGaussianElimination, Incremental_approximate) {
   // Run update with pruning a second time.
   incrementalHybrid.update(graph2, ordering2, maxComponents);
 
-  // Test the bayes net and if the number of pruned leaves
-  // are as expected after round 2.
+  // Check if we have a bayes net with 2 hybrid nodes,
+  // each with 10 (pruned), and 5 (pruned) leaves respetively.
   auto actualBayesNet = incrementalHybrid.hybridBayesNet();
   CHECK_EQUAL(2, actualBayesNet.size());
   EXPECT_LONGS_EQUAL(10, actualBayesNet.atGaussian(0)->nrComponents());
@@ -557,10 +565,10 @@ TEST(IncrementalHybrid, NonTrivial) {
   inc.update(gfg, ordering, 3);
 
   // The final discrete graph should not be empty since we have eliminated
-  // everything.
+  // all continuous variables.
   EXPECT(!inc.remainingDiscreteGraph().empty());
 
-  // Test if the optimal discrete mode assignment is correct.
+  // Test if the optimal discrete mode assignment is (1, 1, 1).
   DiscreteValues optimal_assignment = inc.remainingDiscreteGraph().optimize();
   DiscreteValues expected_assignment;
   expected_assignment[M(1)] = 1;
@@ -568,7 +576,8 @@ TEST(IncrementalHybrid, NonTrivial) {
   expected_assignment[M(3)] = 1;
   EXPECT(assert_equal(expected_assignment, optimal_assignment));
 
-  // Test if pruning propagated correctly.
+  // Test if pruning worked correctly by checking that we only have 3 leaves in
+  // the last node.
   auto lastConditional = boost::dynamic_pointer_cast<GaussianMixture>(
       inc.hybridBayesNet().at(inc.hybridBayesNet().size() - 1));
   EXPECT_LONGS_EQUAL(3, lastConditional->nrComponents());
