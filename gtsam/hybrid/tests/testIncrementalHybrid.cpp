@@ -12,8 +12,7 @@
 /**
  * @file    testIncrementalHybrid.cpp
  * @brief   Unit tests for incremental inference
- * @author  Fan Jiang
- * @author  Frank Dellaert
+ * @author  Fan Jiang, Varun Agrawal, Frank Dellaert
  * @date    Jan 2021
  */
 
@@ -47,13 +46,14 @@ using symbol_shorthand::Z;
 
 /* ****************************************************************************/
 // Test if we can incrementally do the inference
-TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
+TEST(DCGaussianElimination, Incremental_inference) {
   Switching switching(3);
-
   IncrementalHybrid incrementalHybrid;
-
   GaussianHybridFactorGraph graph1;
 
+  // Create initial factor graph
+  // *- X1 -*-  X2 -*-X3
+  //     \*-M1-*/
   graph1.push_back(switching.linearizedFactorGraph.dcGraph().at(0));
   graph1.push_back(switching.linearizedFactorGraph.gaussianGraph().at(0));
   graph1.push_back(switching.linearizedFactorGraph.gaussianGraph().at(1));
@@ -64,8 +64,11 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
   ordering += X(1);
   ordering += X(2);
 
+  // Run update step
   incrementalHybrid.update(graph1, ordering);
 
+  // Test if hybrid bayes net is the correct size and if the keys are as
+  // expected.
   auto hybridBayesNet = incrementalHybrid.hybridBayesNet();
   EXPECT_LONGS_EQUAL(2, hybridBayesNet.size());
   EXPECT(hybridBayesNet.at(0)->frontals() == KeyVector{X(1)});
@@ -73,6 +76,8 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
   EXPECT(hybridBayesNet.at(1)->frontals() == KeyVector{X(2)});
   EXPECT(hybridBayesNet.at(1)->parents() == KeyVector({M(1)}));
 
+  // Check if the remaining factor graph and DecisionTreeFactor of discrete
+  // modes is the right size
   auto remainingFactorGraph = incrementalHybrid.remainingFactorGraph();
   EXPECT_LONGS_EQUAL(1, remainingFactorGraph.size());
 
@@ -80,6 +85,8 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
       remainingFactorGraph.discreteGraph().at(0));
   EXPECT(discreteFactor_m1.keys() == KeyVector({M(1)}));
 
+  /********************************************************/
+  // New factor graph for incremental update.
   GaussianHybridFactorGraph graph2;
 
   graph2.push_back(
@@ -93,15 +100,17 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
 
   incrementalHybrid.update(graph2, ordering2);
 
+  // Test if hybrid bayes net is the correct size and if the keys are as
+  // expected.
   auto hybridBayesNet2 = incrementalHybrid.hybridBayesNet();
-
   EXPECT_LONGS_EQUAL(3, hybridBayesNet2.size());
-  // hybridBayesNet2.print();
   EXPECT(hybridBayesNet2.at(1)->frontals() == KeyVector{X(2)});
   EXPECT(hybridBayesNet2.at(1)->parents() == KeyVector({X(3), M(2), M(1)}));
   EXPECT(hybridBayesNet2.at(2)->frontals() == KeyVector{X(3)});
   EXPECT(hybridBayesNet2.at(2)->parents() == KeyVector({M(2), M(1)}));
 
+  // Check if the remaining factor graph and DecisionTreeFactor of discrete
+  // modes is the right size
   auto remainingFactorGraph2 = incrementalHybrid.remainingFactorGraph();
   EXPECT_LONGS_EQUAL(1, remainingFactorGraph2.size());
 
@@ -109,6 +118,8 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
       remainingFactorGraph2.discreteGraph().at(0));
   EXPECT(discreteFactor->keys() == KeyVector({M(2), M(1)}));
 
+  /********************************************************/
+  // Run batch elimination so we can compare results.
   ordering.clear();
   ordering += X(1);
   ordering += X(2);
@@ -150,9 +161,9 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
     return gf.probPrime(result_gf->optimize());
   }();
 
-  EXPECT(assert_equal(m00_prob, 0.60656, 1e-5));
-
+  /// Test if the probability values are as expected with regression tests.
   DiscreteValues assignment;
+  EXPECT(assert_equal(m00_prob, 0.60656, 1e-5));
   assignment[M(1)] = 0;
   assignment[M(2)] = 0;
   EXPECT(assert_equal(m00_prob, (*discreteFactor)(assignment), 1e-5));
@@ -182,9 +193,7 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_inference) {
 // Test if we can approximately do the inference
 TEST(DCGaussianElimination, Approx_inference) {
   Switching switching(4);
-
   IncrementalHybrid incrementalHybrid;
-
   GaussianHybridFactorGraph graph1;
 
   // Add the 3 DC factors, x1-x2, x2-x3, x3-x4
@@ -213,23 +222,41 @@ TEST(DCGaussianElimination, Approx_inference) {
   incrementalHybrid.update(graph1, ordering, maxComponents);
 
   /*
-   unpruned factor is:
-       Choice(m3)
-       0 Choice(m2)
-       0 0 Choice(m1)
-       0 0 0 Leaf 0.2248 -
-       0 0 1 Leaf 0.3715 -
-       0 1 Choice(m1)
-       0 1 0 Leaf 0.3742 *
-       0 1 1 Leaf 0.6125 *
-       1 Choice(m2)
-       1 0 Choice(m1)
-       1 0 0 Leaf 0.3706 -
-       1 0 1 Leaf 0.6124 *
-       1 1 Choice(m1)
-       1 1 0 Leaf 0.611 *
-       1 1 1 Leaf    1 *
+  unpruned factor is:
+      Choice(m3)
+      0 Choice(m2)
+      0 0 Choice(m1)
+      0 0 0 Leaf 0.2248 -
+      0 0 1 Leaf 0.3715 -
+      0 1 Choice(m1)
+      0 1 0 Leaf 0.3742 *
+      0 1 1 Leaf 0.6125 *
+      1 Choice(m2)
+      1 0 Choice(m1)
+      1 0 0 Leaf 0.3706 -
+      1 0 1 Leaf 0.6124 *
+      1 1 Choice(m1)
+      1 1 0 Leaf 0.611 *
+      1 1 1 Leaf    1 *
+
+  pruned factors is:
+      Choice(m3)
+      0 Choice(m2)
+      0 0 Leaf    0
+      0 1 Choice(m1)
+      0 1 0 Leaf 0.3742
+      0 1 1 Leaf 0.6125
+      1 Choice(m2)
+      1 0 Choice(m1)
+      1 0 0 Leaf    0
+      1 0 1 Leaf 0.6124
+      1 1 Choice(m1)
+      1 1 0 Leaf 0.611
+      1 1 1 Leaf    1
    */
+
+  // Test if the remaining factor graph has one factor and if it is the expected
+  // discrete factor.
   auto remainingFactorGraph = incrementalHybrid.remainingFactorGraph();
   EXPECT_LONGS_EQUAL(1, remainingFactorGraph.size());
 
@@ -237,13 +264,13 @@ TEST(DCGaussianElimination, Approx_inference) {
       incrementalHybrid.remainingDiscreteGraph().at(0));
   EXPECT(discreteFactor_m1.keys() == KeyVector({M(3), M(2), M(1)}));
 
-  // Check number of elements equal to zero
+  // Get the number of elements which are equal to 0.
   auto count = [](const double &value, int count) {
     return value > 0 ? count + 1 : count;
   };
   EXPECT_LONGS_EQUAL(5, discreteFactor_m1.fold(count, 0));
 
-  /* A hybrid Bayes net
+  /* Expected hybrid Bayes net
    * factor 0:  [x1 | x2 m1 ], 2 components
    * factor 1:  [x2 | x3 m2 m1 ], 4 components
    * factor 2:  [x3 | x4 m3 m2 m1 ], 8 components
@@ -277,12 +304,10 @@ TEST(DCGaussianElimination, Approx_inference) {
 }
 
 /* ****************************************************************************/
-// Test if we can approximately do the inference
-TEST_UNSAFE(DCGaussianElimination, Incremental_approximate) {
+// Test approximate inference with an additional pruning step.
+TEST(DCGaussianElimination, Incremental_approximate) {
   Switching switching(5);
-
   IncrementalHybrid incrementalHybrid;
-
   GaussianHybridFactorGraph graph1;
 
   // Add the 3 DC factors, x1-x2, x2-x3, x3-x4
@@ -301,9 +326,11 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_approximate) {
     ordering += X(j);
   }
 
+  // Run update with pruning
   size_t maxComponents = 5;
   incrementalHybrid.update(graph1, ordering, maxComponents);
 
+  // Test the bayes net and if the number of pruned leaves are as expected.
   auto actualBayesNet1 = incrementalHybrid.hybridBayesNet();
   CHECK_EQUAL(4, actualBayesNet1.size());
   EXPECT_LONGS_EQUAL(2, actualBayesNet1.atGaussian(0)->nrComponents());
@@ -311,6 +338,7 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_approximate) {
   EXPECT_LONGS_EQUAL(8, actualBayesNet1.atGaussian(2)->nrComponents());
   EXPECT_LONGS_EQUAL(5, actualBayesNet1.atGaussian(3)->nrComponents());
 
+  /***** Run Round 2 *****/
   GaussianHybridFactorGraph graph2;
   graph2.push_back(switching.linearizedFactorGraph.dcGraph().at(3));
   graph2.push_back(switching.linearizedFactorGraph.gaussianGraph().at(5));
@@ -319,21 +347,31 @@ TEST_UNSAFE(DCGaussianElimination, Incremental_approximate) {
   ordering2 += X(4);
   ordering2 += X(5);
 
+  // Run update with pruning a second time.
   incrementalHybrid.update(graph2, ordering2, maxComponents);
 
+  // Test the bayes net and if the number of pruned leaves
+  // are as expected after round 2.
   auto actualBayesNet = incrementalHybrid.hybridBayesNet();
   CHECK_EQUAL(2, actualBayesNet.size());
   EXPECT_LONGS_EQUAL(10, actualBayesNet.atGaussian(0)->nrComponents());
   EXPECT_LONGS_EQUAL(5, actualBayesNet.atGaussian(1)->nrComponents());
 }
 
-/* ************************************************************************* */
-/* Test for figuring out the optimal ordering to ensure we get a discrete graph
- * after elimination. */
+/* ************************************************************************/
+// Test for figuring out the optimal ordering to ensure we get
+// a discrete graph after elimination.
 TEST(IncrementalHybrid, NonTrivial) {
+  // This is a GTSAM-only test for running inference on a single legged robot.
+  // The leg links are represented by the chain X-Y-Z-W, where X is the base and
+  // W is the foot.
+  // We use BetweenFactor<Pose2> as constraints between each of the poses.
+
+  /*************** Run Round 1 ***************/
   NonlinearHybridFactorGraph fg;
 
-  // Add a prior on pose x1 at the origin. A prior factor consists of a mean and
+  // Add a prior on pose x1 at the origin.
+  // A prior factor consists of a mean  and
   // a noise model (covariance matrix)
   Pose2 prior(0.0, 0.0, 0.0);  // prior mean is at origin
   auto priorNoise = noiseModel::Diagonal::Sigmas(
@@ -366,17 +404,20 @@ TEST(IncrementalHybrid, NonTrivial) {
 
   IncrementalHybrid inc;
 
+  // Regular ordering going up the chain.
   Ordering ordering;
   ordering += W(0);
   ordering += Z(0);
   ordering += Y(0);
   ordering += X(0);
 
+  // Update without pruning
   inc.update(gfg, ordering);
 
+  /*************** Run Round 2 ***************/
   using PlanarMotionModel = BetweenFactor<Pose2>;
 
-  // Add odometry factor
+  // Add odometry factor with discrete modes.
   Pose2 odometry(1.0, 0.0, 0.0);
   KeyVector contKeys = {W(0), W(1)};
   auto noise_model = noiseModel::Isotropic::Sigma(3, 1.0);
@@ -403,9 +444,12 @@ TEST(IncrementalHybrid, NonTrivial) {
   initial.insert(X(1), Pose2(1.0, 0.0, 0.0));
   initial.insert(Y(1), Pose2(1.0, 1.0, 0.0));
   initial.insert(Z(1), Pose2(1.0, 2.0, 0.0));
+  // The leg link did not move so we set the expected pose accordingly.
   initial.insert(W(1), Pose2(0.0, 3.0, 0.0));
 
   // Ordering for k=1.
+  // This ordering follows the intuition that we eliminate the previous
+  // timestep, and then the current timestep.
   ordering = Ordering();
   ordering += W(0);
   ordering += Z(0);
@@ -419,11 +463,12 @@ TEST(IncrementalHybrid, NonTrivial) {
   gfg = fg.linearize(initial);
   fg = NonlinearHybridFactorGraph();
 
+  // Update without pruning
   inc.update(gfg, ordering);
 
-  // Add odometry factor
+  /*************** Run Round 3 ***************/
+  // Add odometry factor with discrete modes.
   contKeys = {W(1), W(2)};
-  noise_model = noiseModel::Isotropic::Sigma(3, 1.0);
   still = boost::make_shared<PlanarMotionModel>(W(1), W(2), Pose2(0, 0, 0),
                                                 noise_model);
   moving =
@@ -449,7 +494,7 @@ TEST(IncrementalHybrid, NonTrivial) {
   initial.insert(Z(2), Pose2(2.0, 2.0, 0.0));
   initial.insert(W(2), Pose2(0.0, 3.0, 0.0));
 
-  // Ordering at k=2.
+  // Ordering at k=2. Same intuition as before.
   ordering = Ordering();
   ordering += W(1);
   ordering += Z(1);
@@ -463,11 +508,12 @@ TEST(IncrementalHybrid, NonTrivial) {
   gfg = fg.linearize(initial);
   fg = NonlinearHybridFactorGraph();
 
+  // Now we prune!
   inc.update(gfg, ordering, 2);
 
-  // Add odometry factor
+  /*************** Run Round 4 ***************/
+  // Add odometry factor with discrete modes.
   contKeys = {W(2), W(3)};
-  noise_model = noiseModel::Isotropic::Sigma(3, 0.1);
   still = boost::make_shared<PlanarMotionModel>(W(2), W(3), Pose2(0, 0, 0),
                                                 noise_model);
   moving =
@@ -493,7 +539,7 @@ TEST(IncrementalHybrid, NonTrivial) {
   initial.insert(Z(3), Pose2(3.0, 2.0, 0.0));
   initial.insert(W(3), Pose2(0.0, 3.0, 0.0));
 
-  // Ordering at k=3. Same idea as before.
+  // Ordering at k=3. Same intuition as before.
   ordering = Ordering();
   ordering += W(2);
   ordering += Z(2);
@@ -507,12 +553,14 @@ TEST(IncrementalHybrid, NonTrivial) {
   gfg = fg.linearize(initial);
   fg = NonlinearHybridFactorGraph();
 
+  // Keep pruning!
   inc.update(gfg, ordering, 3);
 
   // The final discrete graph should not be empty since we have eliminated
   // everything.
   EXPECT(!inc.remainingDiscreteGraph().empty());
 
+  // Test if the optimal discrete mode assignment is correct.
   DiscreteValues optimal_assignment = inc.remainingDiscreteGraph().optimize();
   DiscreteValues expected_assignment;
   expected_assignment[M(1)] = 1;
