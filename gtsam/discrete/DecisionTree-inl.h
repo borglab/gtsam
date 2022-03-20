@@ -307,7 +307,7 @@ namespace gtsam {
 #ifndef NDEBUG
       typename Assignment<L>::const_iterator it = x.find(label_);
       if (it == x.end()) {
-        // std::cout << "Trying to find value for " << label_ << std::endl;
+        std::cout << "Trying to find value for " << label_ << std::endl;
         throw std::invalid_argument(
             "DecisionTree::operator(): value undefined for a label");
       }
