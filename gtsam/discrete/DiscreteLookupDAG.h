@@ -46,7 +46,7 @@ class GTSAM_EXPORT DiscreteLookupTable : public DiscreteConditional {
    * @brief Construct a new Discrete Lookup Table object
    *
    * @param nFrontals number of frontal variables
-   * @param keys a orted list of gtsam::Keys
+   * @param keys a sorted list of gtsam::Keys
    * @param potentials the algebraic decision tree with lookup values
    */
   DiscreteLookupTable(size_t nFrontals, const DiscreteKeys& keys,
