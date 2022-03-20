@@ -462,7 +462,7 @@ TEST(DecisionTree, ApplyWithAssignment) {
 
   DecisionTree<string, double> probTree(
       keys, "0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08");
-  double threshold = 0.035;
+  double threshold = 0.045;
 
   // We test pruning one tree by indexing into another.
   auto pruner = [&](const Assignment<string>& choices, const int& x) {
@@ -475,8 +475,18 @@ TEST(DecisionTree, ApplyWithAssignment) {
   };
   DT prunedTree = tree.apply(pruner);
 
-  DT expectedTree(keys, "0 0 0 4 5 6 7 8");
+  DT expectedTree(keys, "0 0 0 0 5 6 7 8");
   EXPECT(assert_equal(expectedTree, prunedTree));
+
+  size_t count = 0;
+  auto counter = [&](const Assignment<string>& choices, const int& x) {
+    count += 1;
+    return x;
+  };
+  DT prunedTree2 = prunedTree.apply(counter);
+
+  // Check if apply doesn't enumerate all leaves.
+  EXPECT_LONGS_EQUAL(5, count);
 }
 
 /* ************************************************************************* */
