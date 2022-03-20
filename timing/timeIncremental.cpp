@@ -72,7 +72,7 @@ int main(int argc, char *argv[]) {
   cout << "Loading data..." << endl;
 
   gttic_(Find_datafile);
-  //string datasetFile = findExampleDataFile("w10000-odom");
+  //string datasetFile = findExampleDataFile("w10000");
   string datasetFile = findExampleDataFile("victoria_park");
   std::pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> data =
     load2D(datasetFile);
