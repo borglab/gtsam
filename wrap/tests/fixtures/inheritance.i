@@ -1,6 +1,5 @@
 // A base class
 virtual class MyBase {
-
 };
 
 // A templated class
