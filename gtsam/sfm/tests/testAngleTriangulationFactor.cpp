@@ -291,11 +291,11 @@ TEST(AngleTriangulationFactor, NonZeroError) {
   PinholeCamera<Cal3_S2> C1_noisy(wTc1_noisy, K);
   PinholeCamera<Cal3_S2> C1_prime(result.at<Pose3>(kKey2), K);
 
-  // std::cout << "original: " << u1.transpose() << std::endl;
-  // std::cout << "noisy: " << C1_noisy.project2(landmark).transpose()
-  //           << std::endl;
-  // std::cout << "result: " << C1_prime.project2(landmark).transpose()
-  //           << std::endl;
+  std::cout << "original: " << u1.transpose() << std::endl;
+  std::cout << "noisy: " << C1_noisy.project2(landmark).transpose()
+            << std::endl;
+  std::cout << "result: " << C1_prime.project2(landmark).transpose()
+            << std::endl;
 }
 
 /* ************************************************************************* */
