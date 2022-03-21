@@ -412,7 +412,7 @@ class PybindWrapper:
 
     def wrap_instantiated_declaration(
             self, instantiated_decl: instantiator.InstantiatedDeclaration):
-        """Wrap the class."""
+        """Wrap the forward declaration."""
         module_var = self._gen_module_var(instantiated_decl.namespaces())
         cpp_class = instantiated_decl.to_cpp()
         if cpp_class in self.ignore_classes:
@@ -420,7 +420,7 @@ class PybindWrapper:
 
         res = (
             '\n    py::class_<{cpp_class}, '
-            '{shared_ptr_type}::shared_ptr<{cpp_class}>>({module_var}, "{class_name}")'
+            '{shared_ptr_type}::shared_ptr<{cpp_class}>>({module_var}, "{class_name}");'
         ).format(shared_ptr_type=('boost' if self.use_boost else 'std'),
                  cpp_class=cpp_class,
                  class_name=instantiated_decl.name,
