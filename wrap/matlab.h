@@ -37,15 +37,16 @@ extern "C" {
 #include <mex.h>
 }
 
-#include <boost/shared_ptr.hpp>
+#include <boost/cstdint.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include <list>
-#include <string>
-#include <sstream>
-#include <typeinfo>
 #include <set>
+#include <sstream>
 #include <streambuf>
+#include <string>
+#include <typeinfo>
 
 using namespace std;
 using namespace boost; // not usual, but for conciseness of generated code
