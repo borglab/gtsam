@@ -103,49 +103,48 @@ class GTSAM_EXPORT AngleTriangulationFactor
     Vector3 m0_prime, m1_prime;
 
     if (m0_hat.cross(t).norm() <= m1_hat.cross(t).norm()) {
-      Matrix3 H_m1_cross, H_t_cross;
+      Matrix3 H_cross_m1, H_cross_t;
       Matrix23 H_n1_hat;
       Matrix32 H_n1_hat_point;
-      Matrix13 H_m0_dot, H_n1_hat_dot;
+      Matrix13 H_dot_m0, H_dot_n1_hat;
 
       // Use equation 12
-      Vector n1 = cross(m1, t, H_m1_cross, H_t_cross);
-      Unit3 n1_hat = Unit3::FromPoint3(n1, H_n1_hat);
+      Vector n1 = cross(m1, t, H_cross_m1, H_cross_t);
+      Vector3 n1_hat = Unit3::FromPoint3(n1, H_n1_hat).point3(H_n1_hat_point);
 
-      Vector3 n1_hat_point = n1_hat.point3(H_n1_hat_point);
-      double d = dot(m0, n1_hat_point, H_m0_dot, H_n1_hat_dot);
-      m0_prime = m0 - (d * n1_hat_point);
+      double d = dot(m0, n1_hat, H_dot_m0, H_dot_n1_hat);
+      m0_prime = m0 - (d * n1_hat);
       m1_prime = m1;
 
       if (H_t) {
-        Matrix3 H_m0_prime_t = -((n1_hat_point * H_n1_hat_dot * H_n1_hat_point *
-                                  H_n1_hat * H_t_cross) +  //
-                                 (d * H_n1_hat_point * H_n1_hat * H_t_cross));
+        Matrix3 H_m0_prime_t = -((n1_hat * H_dot_n1_hat * H_n1_hat_point *
+                                  H_n1_hat * H_cross_t) +  //
+                                 (d * H_n1_hat_point * H_n1_hat * H_cross_t));
         Matrix3 H_m1_prime_t = Matrix3::Zero();
 
         (*H_t) << H_m0_prime_t, H_m1_prime_t;
       }
       if (H_m0) {
-        Matrix3 H_m0_prime_m0 = Matrix3::Identity() - (n1_hat_point * H_m0_dot);
+        Matrix3 H_m0_prime_m0 = Matrix3::Identity() - (n1_hat * H_dot_m0);
         Matrix3 H_m1_prime_m0 = Matrix3::Zero();
         (*H_m0) << H_m0_prime_m0, H_m1_prime_m0;
       }
       if (H_m1) {
-        Matrix3 H_m1_prime_m0 = -((n1_hat_point * H_n1_hat_dot *
-                                   H_n1_hat_point * H_n1_hat * H_m1_cross) +  //
-                                  (d * H_n1_hat_point * H_n1_hat * H_m1_cross));
+        Matrix3 H_m1_prime_m0 = -((n1_hat * H_dot_n1_hat * H_n1_hat_point *
+                                   H_n1_hat * H_cross_m1) +  //
+                                  (d * H_n1_hat_point * H_n1_hat * H_cross_m1));
         Matrix3 H_m1_prime_m1 = Matrix3::Identity();
         (*H_m1) << H_m1_prime_m0, H_m1_prime_m1;
       }
 
     } else {
-      Matrix3 H_m0_cross, H_t_cross;
+      Matrix3 H_cross_m0, H_cross_t;
       Matrix23 H_n0_hat;
       Matrix32 H_n0_hat_point;
       Matrix13 H_m1_dot, H_n0_hat_dot;
 
       // Use equation 13
-      Vector n0 = cross(m0, t, H_m0_cross, H_t_cross);
+      Vector n0 = cross(m0, t, H_cross_m0, H_cross_t);
       Unit3 n0_hat = Unit3::FromPoint3(n0, H_n0_hat);
 
       m0_prime = m0;
@@ -157,16 +156,16 @@ class GTSAM_EXPORT AngleTriangulationFactor
       if (H_t) {
         Matrix3 H_m0_prime_t = Matrix3::Zero();
         Matrix3 H_m1_prime_t = -((n0_hat_point * H_n0_hat_dot * H_n0_hat_point *
-                                  H_n0_hat * H_t_cross) +  //
-                                 (d * H_n0_hat_point * H_n0_hat * H_t_cross));
+                                  H_n0_hat * H_cross_t) +  //
+                                 (d * H_n0_hat_point * H_n0_hat * H_cross_t));
 
         (*H_t) << H_m0_prime_t, H_m1_prime_t;
       }
       if (H_m0) {
         Matrix3 H_m0_prime_m0 = Matrix3::Identity();
         Matrix3 H_m1_prime_m0 = -((n0_hat_point * H_n0_hat_dot *
-                                   H_n0_hat_point * H_n0_hat * H_m0_cross) +
-                                  d * H_n0_hat_point * H_n0_hat * H_m0_cross);
+                                   H_n0_hat_point * H_n0_hat * H_cross_m0) +
+                                  d * H_n0_hat_point * H_n0_hat * H_cross_m0);
         (*H_m0) << H_m0_prime_m0, H_m1_prime_m0;
       }
       if (H_m1) {
