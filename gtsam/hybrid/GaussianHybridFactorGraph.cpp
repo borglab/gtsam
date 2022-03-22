@@ -131,7 +131,7 @@ EliminateHybrid(const GaussianHybridFactorGraph& factors,
     return {df, newFactor};
   }
 
-  // If a tree leaf contains nullptr, convert that leaf to an empty gausiaan FG
+  // If a tree leaf contains nullptr, convert that leaf to an empty GaussianFactorGraph
   auto emptyGaussian = [](const GaussianFactorGraph& gfg) {
     bool hasNull =
         std::any_of(gfg.begin(), gfg.end(),
