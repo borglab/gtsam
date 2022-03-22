@@ -18,7 +18,7 @@
 #include <CppUnitLite/Test.h>
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/hybrid/CGMixtureFactor.h>
-#include <gtsam/hybrid/CLGaussianConditional.h>
+#include <gtsam/hybrid/GaussianMixture.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
 #include <gtsam/hybrid/HybridConditional.h>
@@ -31,6 +31,7 @@
 #include <gtsam/linear/JacobianFactor.h>
 
 #include <boost/assign/std/map.hpp>
+#include "gtsam/base/Testable.h"
 
 using namespace boost::assign;
 
@@ -48,9 +49,9 @@ TEST(HybridFactorGraph, creation) {
 
   hfg.add(HybridGaussianFactor(JacobianFactor(0, I_3x3, Z_3x1)));
 
-  CLGaussianConditional clgc(
+  GaussianMixture clgc(
       {X(0)}, {X(1)}, DiscreteKeys(DiscreteKey{C(0), 2}),
-      CLGaussianConditional::Conditionals(
+      GaussianMixture::Conditionals(
           C(0),
           boost::make_shared<GaussianConditional>(X(0), Z_3x1, I_3x3, X(1),
                                                   I_3x3),
@@ -69,7 +70,7 @@ TEST_DISABLED(HybridFactorGraph, eliminate) {
   EXPECT_LONGS_EQUAL(result.first->size(), 1);
 }
 
-TEST_DISABLED(HybridFactorGraph, eliminateMultifrontal) {
+TEST(HybridFactorGraph, eliminateMultifrontal) {
   HybridFactorGraph hfg;
 
   DiscreteKey x(X(1), 2);
@@ -132,13 +133,77 @@ TEST(HybridFactorGraph, eliminateFullMultifrontalCLG) {
   //  hfg.add(HybridDiscreteFactor(DecisionTreeFactor({{C(1), 2}, {C(2), 2}}, "1
   //  2 3 4")));
 
-  auto result =
-      hfg.eliminateMultifrontal(Ordering::ColamdConstrainedLast(hfg, {C(1)}));
+  auto ordering_full = Ordering::ColamdConstrainedLast(hfg, {C(1)});
 
-  GTSAM_PRINT(*result);
+  HybridBayesTree::shared_ptr hbt = hfg.eliminateMultifrontal(ordering_full);
 
-  // We immediately need to escape the CLG domain if we do this!!!
-  GTSAM_PRINT(*result->marginalFactor(X(1)));
+  GTSAM_PRINT(*hbt);
+  /*
+  Explanation: the Junction tree will need to reeliminate to get to the marginal
+  on X(1), which is not possible because it involves eliminating discrete before
+  continuous. The solution to this, however, is in Murphy02. TLDR is that this
+  is 1. expensive and 2. inexact. neverless it is doable. And I believe that we
+  should do this.
+  */
+}
+
+/**
+ * This test is about how to assemble the Bayes Tree roots after we do partial elimination
+*/
+TEST_DISABLED(HybridFactorGraph, eliminateFullMultifrontalTwoClique) {
+  std::cout << ">>>>>>>>>>>>>>\n";
+
+  HybridFactorGraph hfg;
+
+  hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
+  hfg.add(JacobianFactor(X(1), I_3x3, X(2), -I_3x3, Z_3x1));
+
+  {
+    DecisionTree<Key, GaussianFactor::shared_ptr> dt(
+        C(0), boost::make_shared<JacobianFactor>(X(0), I_3x3, Z_3x1),
+        boost::make_shared<JacobianFactor>(X(0), I_3x3, Vector3::Ones()));
+
+    hfg.add(CGMixtureFactor({X(0)}, {{C(0), 2}}, dt));
+
+    DecisionTree<Key, GaussianFactor::shared_ptr> dt1(
+        C(1), boost::make_shared<JacobianFactor>(X(2), I_3x3, Z_3x1),
+        boost::make_shared<JacobianFactor>(X(2), I_3x3, Vector3::Ones()));
+
+    hfg.add(CGMixtureFactor({X(2)}, {{C(1), 2}}, dt1));
+  }
+
+  // hfg.add(HybridDiscreteFactor(DecisionTreeFactor(c, {2, 8})));
+  hfg.add(HybridDiscreteFactor(DecisionTreeFactor({{C(1), 2}, {C(2), 2}}, "1 2 3 4")));
+
+  hfg.add(JacobianFactor(X(3), I_3x3, X(4), -I_3x3, Z_3x1));
+  hfg.add(JacobianFactor(X(4), I_3x3, X(5), -I_3x3, Z_3x1));
+
+  {
+    DecisionTree<Key, GaussianFactor::shared_ptr> dt(
+        C(3), boost::make_shared<JacobianFactor>(X(3), I_3x3, Z_3x1),
+        boost::make_shared<JacobianFactor>(X(3), I_3x3, Vector3::Ones()));
+
+    hfg.add(CGMixtureFactor({X(3)}, {{C(3), 2}}, dt));
+
+    DecisionTree<Key, GaussianFactor::shared_ptr> dt1(
+        C(2), boost::make_shared<JacobianFactor>(X(5), I_3x3, Z_3x1),
+        boost::make_shared<JacobianFactor>(X(5), I_3x3, Vector3::Ones()));
+
+    hfg.add(CGMixtureFactor({X(5)}, {{C(2), 2}}, dt1));
+  }
+
+  auto ordering_full = Ordering::ColamdConstrainedLast(hfg, {C(0), C(1), C(2), C(3)});
+
+  GTSAM_PRINT(ordering_full);
+
+  HybridBayesTree::shared_ptr hbt;
+  HybridFactorGraph::shared_ptr remaining;
+  std::tie(hbt, remaining) =
+      hfg.eliminatePartialMultifrontal(Ordering(ordering_full.begin(), ordering_full.end()));
+
+  GTSAM_PRINT(*hbt);
+
+  GTSAM_PRINT(*remaining);
   /*
   Explanation: the Junction tree will need to reeliminate to get to the marginal
   on X(1), which is not possible because it involves eliminating discrete before

@@ -53,13 +53,25 @@ HybridFactor::HybridFactor(const KeyVector &keys)
 HybridFactor::HybridFactor(const KeyVector &continuousKeys,
                            const DiscreteKeys &discreteKeys)
     : Base(CollectKeys(continuousKeys, discreteKeys)),
-      isHybrid_(true),
+      isDiscrete_((continuousKeys.size() == 0) && (discreteKeys.size() != 0)),
+      isContinuous_((continuousKeys.size() != 0) && (discreteKeys.size() == 0)),
+      isHybrid_((continuousKeys.size() != 0) && (discreteKeys.size() != 0)),
       discreteKeys_(discreteKeys) {}
 
 HybridFactor::HybridFactor(const DiscreteKeys &discreteKeys)
     : Base(CollectKeys({}, discreteKeys)),
       isDiscrete_(true),
       discreteKeys_(discreteKeys) {}
+
+void HybridFactor::print(
+      const std::string &s,
+      const KeyFormatter &formatter) const {
+  std::cout << s;
+  if (isContinuous_) std::cout << "Cont. ";
+  if (isDiscrete_) std::cout << "Disc. ";
+  if (isHybrid_) std::cout << "Hybr. ";
+  this->printKeys("", formatter);
+}
 
 HybridFactor::~HybridFactor() = default;
 

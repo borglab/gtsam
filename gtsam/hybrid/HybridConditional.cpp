@@ -19,9 +19,31 @@
 #include <gtsam/inference/Conditional-inst.h>
 
 namespace gtsam {
+
+HybridConditional::HybridConditional(const KeyVector &continuousFrontals,
+                                     const DiscreteKeys &discreteFrontals,
+                                     const KeyVector &continuousParents,
+                                     const DiscreteKeys &discreteParents)
+    : HybridConditional(
+          CollectKeys({continuousFrontals.begin(), continuousFrontals.end()},
+                      {continuousParents.begin(), continuousParents.end()}),
+          CollectDiscreteKeys(
+              {discreteFrontals.begin(), discreteFrontals.end()},
+              {discreteParents.begin(), discreteParents.end()}),
+          continuousFrontals.size() + discreteFrontals.size()) {}
+
+HybridConditional::HybridConditional(
+    boost::shared_ptr<GaussianConditional> continuousConditional)
+    : BaseFactor(continuousConditional->keys()),
+      BaseConditional(continuousConditional->nrFrontals()) {}
+
 void HybridConditional::print(const std::string &s,
                               const KeyFormatter &formatter) const {
-  std::cout << s << "P(";
+  std::cout << s;
+  if (isContinuous_) std::cout << "Cont. ";
+  if (isDiscrete_) std::cout << "Disc. ";
+  if (isHybrid_) std::cout << "Hybr. ";
+  std::cout << "P(";
   int index = 0;
   const size_t N = keys().size();
   const size_t contN = N - discreteKeys_.size();

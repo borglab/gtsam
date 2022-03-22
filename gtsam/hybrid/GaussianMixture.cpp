@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file   CLGaussianConditional.cpp
+ * @file   GaussianMixture.cpp
  * @brief  A hybrid conditional in the Conditional Linear Gaussian scheme
  * @author Fan Jiang
  * @date   Mar 12, 2022
@@ -18,25 +18,25 @@
 
 #include <gtsam/base/utilities.h>
 #include <gtsam/discrete/DecisionTree-inl.h>
-#include <gtsam/hybrid/CLGaussianConditional.h>
+#include <gtsam/hybrid/GaussianMixture.h>
 #include <gtsam/inference/Conditional-inst.h>
 
 namespace gtsam {
 
-CLGaussianConditional::CLGaussianConditional(
+GaussianMixture::GaussianMixture(
     const KeyVector &continuousFrontals, const KeyVector &continuousParents,
     const DiscreteKeys &discreteParents,
-    const CLGaussianConditional::Conditionals &conditionals)
+    const GaussianMixture::Conditionals &conditionals)
     : BaseFactor(CollectKeys(continuousFrontals, continuousParents),
                  discreteParents),
       BaseConditional(continuousFrontals.size()),
       conditionals_(conditionals) {}
 
-bool CLGaussianConditional::equals(const HybridFactor &lf, double tol) const {
+bool GaussianMixture::equals(const HybridFactor &lf, double tol) const {
   return false;
 }
 
-void CLGaussianConditional::print(const std::string &s,
+void GaussianMixture::print(const std::string &s,
                                   const KeyFormatter &formatter) const {
   std::cout << s << ": ";
   if (isContinuous_) std::cout << "Cont. ";

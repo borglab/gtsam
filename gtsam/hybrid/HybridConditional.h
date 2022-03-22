@@ -25,6 +25,8 @@
 #include <boost/shared_ptr.hpp>
 #include <string>
 #include <vector>
+#include "gtsam/inference/Key.h"
+#include "gtsam/linear/GaussianConditional.h"
 
 namespace gtsam {
 
@@ -33,8 +35,8 @@ namespace gtsam {
  *
  * As a type-erased variant of:
  * - DiscreteConditional
- * - CLGaussianConditional
  * - GaussianConditional
+ * - GaussianMixture
  */
 class GTSAM_EXPORT HybridConditional
     : public HybridFactor,
@@ -62,6 +64,13 @@ class GTSAM_EXPORT HybridConditional
                     const DiscreteKeys& discreteKeys, size_t nFrontals)
       : BaseFactor(continuousKeys, discreteKeys), BaseConditional(nFrontals) {}
 
+  HybridConditional(const KeyVector& continuousFrontals,
+                    const DiscreteKeys& discreteFrontals,
+                    const KeyVector& continuousParents,
+                    const DiscreteKeys& discreteParents);
+
+  HybridConditional(boost::shared_ptr<GaussianConditional> continuousConditional);
+  
   /**
    * @brief Combine two conditionals, yielding a new conditional with the union
    * of the frontal keys, ordered by gtsam::Key.
