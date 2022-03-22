@@ -90,6 +90,7 @@ struct DT : public DecisionTree<string, int> {
     auto valueFormatter = [](const int& v) {
       return (boost::format("%d") % v).str();
     };
+    std::cout << s;
     Base::print("", keyFormatter, valueFormatter);
   }
   /// Equality method customized to int node type
@@ -347,6 +348,44 @@ TEST(DecisionTree, visitWith) {
 }
 
 /* ************************************************************************** */
+// Test visit, with Choices argument.
+TEST(DecisionTree, VisitWithPruned) {
+  // Create pruned tree
+  std::pair<string, size_t> A("A", 2), B("B", 2), C("C", 2);
+  std::vector<std::pair<string, size_t>> labels = {C, B, A};
+  std::vector<int> nodes = {0, 0, 2, 3, 4, 4, 6, 7};
+  DT tree(labels, nodes);
+
+  std::vector<Assignment<string>> choices;
+  auto func = [&](const Assignment<string>& choice, const int& d) {
+    choices.push_back(choice);
+  };
+  tree.visitWith(func);
+
+  EXPECT_LONGS_EQUAL(6, choices.size());
+
+  Assignment<string> expectedAssignment;
+
+  expectedAssignment = {{"B", 0}, {"C", 0}};
+  EXPECT(expectedAssignment == choices.at(0));
+
+  expectedAssignment = {{"A", 0}, {"B", 1}, {"C", 0}};
+  EXPECT(expectedAssignment == choices.at(1));
+
+  expectedAssignment = {{"A", 1}, {"B", 1}, {"C", 0}};
+  EXPECT(expectedAssignment == choices.at(2));
+
+  expectedAssignment = {{"B", 0}, {"C", 1}};
+  EXPECT(expectedAssignment == choices.at(3));
+
+  expectedAssignment = {{"A", 0}, {"B", 1}, {"C", 1}};
+  EXPECT(expectedAssignment == choices.at(4));
+
+  expectedAssignment = {{"A", 1}, {"B", 1}, {"C", 1}};
+  EXPECT(expectedAssignment == choices.at(5));
+}
+
+/* ************************************************************************** */
 // Test fold.
 TEST(DecisionTree, fold) {
   // Create small two-level tree
@@ -411,6 +450,43 @@ TEST(DecisionTree, threshold) {
   // Check number of leaves equal to zero now = 2
   // Note: it is 2, because the pruned branches are counted as 1!
   EXPECT_LONGS_EQUAL(2, thresholded.fold(count, 0));
+}
+
+/* ************************************************************************** */
+// Test apply with assignment.
+TEST(DecisionTree, ApplyWithAssignment) {
+  // Create three level tree
+  vector<DT::LabelC> keys;
+  keys += DT::LabelC("C", 2), DT::LabelC("B", 2), DT::LabelC("A", 2);
+  DT tree(keys, "1 2 3 4 5 6 7 8");
+
+  DecisionTree<string, double> probTree(
+      keys, "0.01 0.02 0.03 0.04 0.05 0.06 0.07 0.08");
+  double threshold = 0.045;
+
+  // We test pruning one tree by indexing into another.
+  auto pruner = [&](const Assignment<string>& choices, const int& x) {
+    // Prune out all the leaves with even numbers
+    if (probTree(choices) < threshold) {
+      return 0;
+    } else {
+      return x;
+    }
+  };
+  DT prunedTree = tree.apply(pruner);
+
+  DT expectedTree(keys, "0 0 0 0 5 6 7 8");
+  EXPECT(assert_equal(expectedTree, prunedTree));
+
+  size_t count = 0;
+  auto counter = [&](const Assignment<string>& choices, const int& x) {
+    count += 1;
+    return x;
+  };
+  DT prunedTree2 = prunedTree.apply(counter);
+
+  // Check if apply doesn't enumerate all leaves.
+  EXPECT_LONGS_EQUAL(5, count);
 }
 
 /* ************************************************************************* */
