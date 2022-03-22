@@ -75,93 +75,143 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
   gttic_(Elimination);
   // Eliminate partially.
   HybridBayesNet::shared_ptr bayesNetFragment;
-  graph.print("\n>>>>");
-  std::cout << "\n\n" << std::endl;
   auto result = graph.eliminatePartialSequential(ordering);
   bayesNetFragment = result.first;
   remainingFactorGraph_ = *result.second;
 
   gttoc_(Elimination);
 
+  // Prune
+  if (maxNrLeaves) {
+    DecisionTreeFactor::shared_ptr discreteFactor = prune(*maxNrLeaves);
+
+    // If valid pruned discrete factor, then propagate to gaussian mixtures
+    if (discreteFactor) {
+      HybridBayesNet::shared_ptr prunedBayesNetFragment =
+          pruneBayesNet(bayesNetFragment, discreteFactor);
+      // Set the bayes net fragment to the pruned version
+      bayesNetFragment = prunedBayesNetFragment;
+    }
+  }
+
   // Add the partial bayes net to the posterior bayes net.
   hybridBayesNet_.push_back<HybridBayesNet>(*bayesNetFragment);
 
-  // Prune
-  if (maxNrLeaves) {
-    const auto N = *maxNrLeaves;
-
-    // Check if discreteGraph is empty. Possible if no discrete variables.
-    if (remainingFactorGraph_.discreteGraph().empty()) return;
-
-    const auto lastDensity =
-        boost::dynamic_pointer_cast<GaussianMixture>(hybridBayesNet_.back());
-
-    auto discreteFactor = boost::dynamic_pointer_cast<DecisionTreeFactor>(
-        remainingFactorGraph_.discreteGraph().at(0));
-
-    std::cout << "Initial number of leaves: " << discreteFactor->nrLeaves()
-              << std::endl;
-
-    // Let's assume that the structure of the last discrete density will be the
-    // same as the last continuous
-    std::vector<double> probabilities;
-    // number of choices
-    discreteFactor->visit(
-        [&](const double &prob) { probabilities.emplace_back(prob); });
-
-    // The number of probabilities can be lower than max_leaves
-    if (probabilities.size() <= N) return;
-
-    std::sort(probabilities.begin(), probabilities.end(),
-              std::greater<double>{});
-
-    double threshold = probabilities[N - 1];
-
-    // Now threshold the decision tree
-    size_t total = 0;
-    auto thresholdFunc = [threshold, &total, N](const double &value) {
-      if (value < threshold || total >= N) {
-        return 0.0;
-      } else {
-        total += 1;
-        return value;
-      }
-    };
-    DecisionTree<Key, double> thresholded(*discreteFactor, thresholdFunc);
-    size_t nrPrunedLeaves = 0;
-    thresholded.visit([&nrPrunedLeaves](const double &d) {
-      if (d > 0) nrPrunedLeaves += 1;
-    });
-    std::cout << "Leaves after pruning: " << nrPrunedLeaves << std::endl;
-
-    // Create a new factor with pruned tree
-    // DecisionTreeFactor newFactor(discreteFactor->discreteKeys(),
-    // thresholded);
-    discreteFactor->root_ = thresholded.root_;
-
-    std::vector<std::pair<DiscreteValues, double>> assignments =
-        discreteFactor->enumerate();
-
-    // Loop over all assignments and create a vector of GaussianConditionals
-    std::vector<GaussianFactor::shared_ptr> prunedConditionals;
-    for (auto &&av : assignments) {
-      const DiscreteValues &assignment = av.first;
-      const double value = av.second;
-
-      if (value == 0.0) {
-        prunedConditionals.emplace_back(nullptr);
-      } else {
-        prunedConditionals.emplace_back(lastDensity->operator()(assignment));
-      }
-    }
-
-    GaussianMixture::Factors prunedConditionalsTree(lastDensity->discreteKeys(),
-                                                    prunedConditionals);
-
-    hybridBayesNet_.atGaussian(hybridBayesNet_.size() - 1)->factors_ =
-        prunedConditionalsTree;
-  }
   tictoc_print_();
+}
+
+// TODO(Varun) Move to DecisionTreeFactor.h
+DecisionTreeFactor::shared_ptr IncrementalHybrid::prune(size_t maxNrLeaves) {
+  const auto N = maxNrLeaves;
+
+  // Check if discreteGraph is empty. Possible if no discrete variables.
+  if (remainingFactorGraph_.discreteGraph().empty()) return nullptr;
+
+  auto discreteFactor = boost::dynamic_pointer_cast<DecisionTreeFactor>(
+      remainingFactorGraph_.discreteGraph().at(0));
+
+  // Let's assume that the structure of the last discrete density will be the
+  // same as the last continuous
+  std::vector<double> probabilities;
+  // number of choices
+  discreteFactor->visit(
+      [&](const double &prob) { probabilities.emplace_back(prob); });
+
+  // The number of probabilities can be lower than max_leaves
+  if (probabilities.size() <= N) return discreteFactor;
+
+  std::sort(probabilities.begin(), probabilities.end(), std::greater<double>{});
+
+  double threshold = probabilities[N - 1];
+
+  // Now threshold the decision tree
+  size_t total = 0;
+  auto thresholdFunc = [threshold, &total, N](const double &value) {
+    if (value < threshold || total >= N) {
+      return 0.0;
+    } else {
+      total += 1;
+      return value;
+    }
+  };
+  DecisionTree<Key, double> thresholded(*discreteFactor, thresholdFunc);
+
+  // Assign the thresholded tree. Imperative :-(
+  discreteFactor->root_ = thresholded.root_;
+
+  return discreteFactor;
+}
+
+HybridBayesNet::shared_ptr IncrementalHybrid::pruneBayesNet(
+    const HybridBayesNet::shared_ptr &bayesNetFragment,
+    const DecisionTreeFactor::shared_ptr &discreteFactor) const {
+  // To Prune, we visitWith every leaf in the GaussianMixture. For each
+  // leaf, we apply an operation, where using the assignment, we can
+  // check the discrete decision tree for an exception and if yes, then just
+  // set the leaf to a nullptr. We can later check the GaussianMixture for
+  // just nullptrs.
+
+  HybridBayesNet::shared_ptr prunedBayesNetFragment =
+      boost::make_shared<HybridBayesNet>(*bayesNetFragment);
+
+  // Go through all the conditionals in the
+  // bayesNetFragment and prune them as per discreteFactor.
+  for (size_t i = 0; i < bayesNetFragment->size(); i++) {
+    auto conditional = bayesNetFragment->at(i);
+
+    // Container for nodes (or nullptrs) to create a new DecisionTree
+    std::vector<GaussianConditional::shared_ptr> nodes;
+
+    // Loop over all assignments and create a set of GaussianConditionals
+    std::function<GaussianFactor::shared_ptr(
+        const Assignment<Key> &, const GaussianFactor::shared_ptr &)>
+        pruner = [&](const Assignment<Key> &choices,
+                     const GaussianFactor::shared_ptr &gf) {
+          // typecast so we can use this to get probability value
+          DiscreteValues values(choices);
+
+          if ((*discreteFactor)(values) == 0.0) {
+            // empty aka null pointer
+            boost::shared_ptr<GaussianFactor> null;
+            return null;
+          } else {
+            return gf;
+          }
+        };
+
+    GaussianMixture::shared_ptr gaussianMixture =
+        boost::dynamic_pointer_cast<GaussianMixture>(conditional);
+
+    if (gaussianMixture) {
+      // We may have mixtures with less discrete keys than discreteFactor so we
+      // skip those since the label assignment does not exist.
+      if (gaussianMixture->discreteKeys() != discreteFactor->discreteKeys()) {
+        continue;
+      }
+
+      // Run the pruning to get a new, pruned tree
+      auto prunedFactors = gaussianMixture->factors_.apply(pruner);
+
+      DiscreteKeys discreteKeys = gaussianMixture->discreteKeys();
+      // reverse keys to get a natural ordering
+      std::reverse(discreteKeys.begin(), discreteKeys.end());
+
+      // Convert to GaussianConditionals
+      auto prunedTree = GaussianMixture::Conditionals(
+          prunedFactors, [](const GaussianFactor::shared_ptr &factor) {
+            return boost::dynamic_pointer_cast<GaussianConditional>(factor);
+          });
+
+      // Create the new gaussian mixture and add it to the bayes net.
+      auto prunedGaussianMixture = boost::make_shared<GaussianMixture>(
+          gaussianMixture->nrFrontals(), gaussianMixture->continuousKeys(),
+          discreteKeys, prunedTree);
+
+      prunedBayesNetFragment->setGaussian(i, prunedGaussianMixture);
+    }
+  }
+
+  return prunedBayesNetFragment;
 }
 
 /* ************************************************************************* */

@@ -134,7 +134,12 @@ class DCMixtureFactor : public DCFactor {
     }
     std::cout << " ) \n";
     auto valueFormatter = [](const sharedFactor& v) {
-      return (boost::format("Nonlinear factor on %d keys") % v->size()).str();
+      if (v) {
+        return (boost::format("Nonlinear factor on %d keys") % v->size()).str();
+      } else {
+        return std::string("nullptr");
+      }
+      
     };
     factors_.print("", keyFormatter, valueFormatter);
   }

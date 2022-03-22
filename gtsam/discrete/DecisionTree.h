@@ -261,7 +261,8 @@ namespace gtsam {
     template <typename Func>
     void visitWith(Func f) const;
 
-    size_t nrLeaves() {
+    /// Return the number of leaves in the tree.
+    size_t nrLeaves() const {
       size_t total = 0;
       visit([&total](const Y& node) { total += 1; });
       return total;
