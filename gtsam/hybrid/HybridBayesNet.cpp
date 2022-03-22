@@ -24,7 +24,7 @@ GaussianMixture::shared_ptr HybridBayesNet::atGaussian(size_t i) const {
   return boost::dynamic_pointer_cast<GaussianMixture>(factors_.at(i));
 }
 
-void HybridBayesNet::addGaussian(size_t i,
+void HybridBayesNet::setGaussian(size_t i,
                                  const GaussianMixture::shared_ptr& gaussian) {
   factors_.at(i) = gaussian;
 }

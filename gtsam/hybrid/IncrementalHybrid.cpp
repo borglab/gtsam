@@ -207,7 +207,7 @@ HybridBayesNet::shared_ptr IncrementalHybrid::pruneBayesNet(
           gaussianMixture->nrFrontals(), gaussianMixture->continuousKeys(),
           discreteKeys, prunedTree);
 
-      prunedBayesNetFragment->addGaussian(i, prunedGaussianMixture);
+      prunedBayesNetFragment->setGaussian(i, prunedGaussianMixture);
     }
   }
 
