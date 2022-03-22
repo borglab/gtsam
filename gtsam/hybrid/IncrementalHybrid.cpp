@@ -72,11 +72,16 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
     }
   }
 
+  gttic_(Elimination);
   // Eliminate partially.
   HybridBayesNet::shared_ptr bayesNetFragment;
+  graph.print("\n>>>>");
+  std::cout << "\n\n" << std::endl;
   auto result = graph.eliminatePartialSequential(ordering);
   bayesNetFragment = result.first;
   remainingFactorGraph_ = *result.second;
+
+  gttoc_(Elimination);
 
   // Add the partial bayes net to the posterior bayes net.
   hybridBayesNet_.push_back<HybridBayesNet>(*bayesNetFragment);
@@ -85,35 +90,49 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
   if (maxNrLeaves) {
     const auto N = *maxNrLeaves;
 
+    // Check if discreteGraph is empty. Possible if no discrete variables.
+    if (remainingFactorGraph_.discreteGraph().empty()) return;
+
     const auto lastDensity =
         boost::dynamic_pointer_cast<GaussianMixture>(hybridBayesNet_.back());
-
-    // Check if discreteGraph exists. Possible that `update` had no DCFactors or Discrete Factors.
-    if (remainingFactorGraph_.discreteGraph().size() == 0) return;
 
     auto discreteFactor = boost::dynamic_pointer_cast<DecisionTreeFactor>(
         remainingFactorGraph_.discreteGraph().at(0));
 
+    std::cout << "Initial number of leaves: " << discreteFactor->nrLeaves()
+              << std::endl;
+
     // Let's assume that the structure of the last discrete density will be the
     // same as the last continuous
     std::vector<double> probabilities;
-    // TODO(fan): The number of probabilities can be lower than the actual
     // number of choices
     discreteFactor->visit(
         [&](const double &prob) { probabilities.emplace_back(prob); });
 
-    if (probabilities.size() < N) return;
+    // The number of probabilities can be lower than max_leaves
+    if (probabilities.size() <= N) return;
 
-    std::nth_element(probabilities.begin(), probabilities.begin() + N,
-                     probabilities.end(), std::greater<double>{});
+    std::sort(probabilities.begin(), probabilities.end(),
+              std::greater<double>{});
 
-    auto thresholdValue = probabilities[N - 1];
+    double threshold = probabilities[N - 1];
 
-    // Now threshold
-    auto threshold = [thresholdValue](const double &value) {
-      return value < thresholdValue ? 0.0 : value;
+    // Now threshold the decision tree
+    size_t total = 0;
+    auto thresholdFunc = [threshold, &total, N](const double &value) {
+      if (value < threshold || total >= N) {
+        return 0.0;
+      } else {
+        total += 1;
+        return value;
+      }
     };
-    DecisionTree<Key, double> thresholded(*discreteFactor, threshold);
+    DecisionTree<Key, double> thresholded(*discreteFactor, thresholdFunc);
+    size_t nrPrunedLeaves = 0;
+    thresholded.visit([&nrPrunedLeaves](const double &d) {
+      if (d > 0) nrPrunedLeaves += 1;
+    });
+    std::cout << "Leaves after pruning: " << nrPrunedLeaves << std::endl;
 
     // Create a new factor with pruned tree
     // DecisionTreeFactor newFactor(discreteFactor->discreteKeys(),
@@ -142,6 +161,7 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
     hybridBayesNet_.atGaussian(hybridBayesNet_.size() - 1)->factors_ =
         prunedConditionalsTree;
   }
+  tictoc_print_();
 }
 
 /* ************************************************************************* */
