@@ -480,11 +480,11 @@ class GTSAM_EXPORT GncOptimizer {
         return weights;
       }
       case GncLossType::TLS: {  // use eq (14) in GNC paper
-        double upperbound = (mu + 1) / mu * barcSq_.maxCoeff();
-        double lowerbound = mu / (mu + 1) * barcSq_.minCoeff();
         for (size_t k : unknownWeights) {
           if (nfg_[k]) {
             double u2_k = nfg_[k]->error(currentEstimate);  // squared (and whitened) residual
+            double upperbound = (mu + 1) / mu * barcSq_[k];
+            double lowerbound = mu / (mu + 1) * barcSq_[k];
             weights[k] = std::sqrt(barcSq_[k] * mu * (mu + 1) / u2_k) - mu;
             if (u2_k >= upperbound || weights[k] < 0) {
               weights[k] = 0;
