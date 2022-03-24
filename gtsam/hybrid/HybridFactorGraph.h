@@ -37,8 +37,8 @@ class JacobianFactor;
 
 /** Main elimination function for HybridFactorGraph */
 GTSAM_EXPORT
-    std::pair<boost::shared_ptr<HybridConditional>, HybridFactor::shared_ptr>
-    EliminateHybrid(const HybridFactorGraph& factors, const Ordering& keys);
+std::pair<boost::shared_ptr<HybridConditional>, HybridFactor::shared_ptr>
+EliminateHybrid(const HybridFactorGraph& factors, const Ordering& keys);
 
 /* ************************************************************************* */
 template <>
@@ -62,6 +62,12 @@ struct EliminationTraits<HybridFactorGraph> {
   }
 };
 
+/**
+ * Hybrid Factor Graph
+ * -----------------------
+ * This is the linear version of a hybrid factor graph. Everything inside needs
+ * to be hybrid factor or hybrid conditional.
+ */
 class HybridFactorGraph : public FactorGraph<HybridFactor>,
                           public EliminateableFactorGraph<HybridFactorGraph> {
  public:
