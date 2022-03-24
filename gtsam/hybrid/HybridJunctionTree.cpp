@@ -161,7 +161,6 @@ HybridJunctionTree::HybridJunctionTree(
 
   // Traverse the elimination tree, doing symbolic elimination and merging nodes
   // as we go.  Gather the created junction tree roots in a dummy Node.
-  typedef typename HybridEliminationTree::Node ETreeNode;
   typedef HybridConstructorTraversalData Data;
   Data rootData(0);
   rootData.myJTNode =
