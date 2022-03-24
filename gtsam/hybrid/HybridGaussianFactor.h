@@ -23,6 +23,10 @@
 
 namespace gtsam {
 
+/**
+ * A HybridGaussianFactor is a wrapper for GaussianFactor so that we do not have
+ * a diamond inheritance.
+ */
 class HybridGaussianFactor : public HybridFactor {
  public:
   using Base = HybridFactor;

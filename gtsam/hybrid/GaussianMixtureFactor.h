@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file   CGMixtureFactor.h
+ * @file   GaussianMixtureFactor.h
  * @brief  A set of Gaussian factors indexed by a set of discrete keys.
  * @author Fan Jiang
  * @author Varun Agrawal
@@ -29,19 +29,19 @@ namespace gtsam {
 
 class GaussianFactorGraph;
 
-class CGMixtureFactor : public HybridFactor {
+class GaussianMixtureFactor : public HybridFactor {
  public:
   using Base = HybridFactor;
-  using This = CGMixtureFactor;
+  using This = GaussianMixtureFactor;
   using shared_ptr = boost::shared_ptr<This>;
 
   using Factors = DecisionTree<Key, GaussianFactor::shared_ptr>;
 
   Factors factors_;
 
-  CGMixtureFactor() = default;
+  GaussianMixtureFactor() = default;
 
-  CGMixtureFactor(const KeyVector &continuousKeys,
+  GaussianMixtureFactor(const KeyVector &continuousKeys,
                   const DiscreteKeys &discreteKeys, const Factors &factors);
 
   using Sum = DecisionTree<Key, GaussianFactorGraph>;

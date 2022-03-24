@@ -33,7 +33,9 @@ class HybridConditional;
 class VectorValues;
 
 /* ************************************************************************* */
-/** A clique in a HybridBayesTree */
+/** A clique in a HybridBayesTree
+ * which is a HybridConditional internally.
+ */
 class GTSAM_EXPORT HybridBayesTreeClique
     : public BayesTreeCliqueBase<HybridBayesTreeClique, HybridFactorGraph> {
  public:

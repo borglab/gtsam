@@ -17,7 +17,7 @@
 
 #include <CppUnitLite/Test.h>
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam/hybrid/CGMixtureFactor.h>
+#include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/hybrid/GaussianMixture.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
@@ -108,8 +108,8 @@ TEST(HybridFactorGraph, eliminateFullSequentialSimple) {
       C(1), boost::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1),
       boost::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()));
 
-  hfg.add(CGMixtureFactor({X(1)}, {c1}, dt));
-  // hfg.add(CGMixtureFactor({X(0)}, {c1}, dt));
+  hfg.add(GaussianMixtureFactor({X(1)}, {c1}, dt));
+  // hfg.add(GaussianMixtureFactor({X(0)}, {c1}, dt));
   hfg.add(HybridDiscreteFactor(DecisionTreeFactor(c1, {2, 8})));
   hfg.add(HybridDiscreteFactor(
       DecisionTreeFactor({{C(1), 2}, {C(2), 2}}, "1 2 3 4")));
@@ -137,8 +137,8 @@ TEST(HybridFactorGraph, eliminateFullMultifrontalSimple) {
       C(1), boost::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1),
       boost::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()));
 
-  hfg.add(CGMixtureFactor({X(1)}, {c1}, dt));
-  // hfg.add(CGMixtureFactor({X(0)}, {c1}, dt));
+  hfg.add(GaussianMixtureFactor({X(1)}, {c1}, dt));
+  // hfg.add(GaussianMixtureFactor({X(0)}, {c1}, dt));
   hfg.add(HybridDiscreteFactor(DecisionTreeFactor(c1, {2, 8})));
   hfg.add(HybridDiscreteFactor(
       DecisionTreeFactor({{C(1), 2}, {C(2), 2}}, "1 2 3 4")));
@@ -167,7 +167,7 @@ TEST_DISABLED(HybridFactorGraph, eliminateFullMultifrontalCLG) {
       C(1), boost::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1),
       boost::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()));
 
-  hfg.add(CGMixtureFactor({X(1)}, {c}, dt));
+  hfg.add(GaussianMixtureFactor({X(1)}, {c}, dt));
   hfg.add(HybridDiscreteFactor(DecisionTreeFactor(c, {2, 8})));
   //  hfg.add(HybridDiscreteFactor(DecisionTreeFactor({{C(1), 2}, {C(2), 2}}, "1
   //  2 3 4")));
@@ -203,13 +203,13 @@ TEST_DISABLED(HybridFactorGraph, eliminateFullMultifrontalTwoClique) {
         C(0), boost::make_shared<JacobianFactor>(X(0), I_3x3, Z_3x1),
         boost::make_shared<JacobianFactor>(X(0), I_3x3, Vector3::Ones()));
 
-    hfg.add(CGMixtureFactor({X(0)}, {{C(0), 2}}, dt));
+    hfg.add(GaussianMixtureFactor({X(0)}, {{C(0), 2}}, dt));
 
     DecisionTree<Key, GaussianFactor::shared_ptr> dt1(
         C(1), boost::make_shared<JacobianFactor>(X(2), I_3x3, Z_3x1),
         boost::make_shared<JacobianFactor>(X(2), I_3x3, Vector3::Ones()));
 
-    hfg.add(CGMixtureFactor({X(2)}, {{C(1), 2}}, dt1));
+    hfg.add(GaussianMixtureFactor({X(2)}, {{C(1), 2}}, dt1));
   }
 
   // hfg.add(HybridDiscreteFactor(DecisionTreeFactor(c, {2, 8})));
@@ -224,13 +224,13 @@ TEST_DISABLED(HybridFactorGraph, eliminateFullMultifrontalTwoClique) {
         C(3), boost::make_shared<JacobianFactor>(X(3), I_3x3, Z_3x1),
         boost::make_shared<JacobianFactor>(X(3), I_3x3, Vector3::Ones()));
 
-    hfg.add(CGMixtureFactor({X(3)}, {{C(3), 2}}, dt));
+    hfg.add(GaussianMixtureFactor({X(3)}, {{C(3), 2}}, dt));
 
     DecisionTree<Key, GaussianFactor::shared_ptr> dt1(
         C(2), boost::make_shared<JacobianFactor>(X(5), I_3x3, Z_3x1),
         boost::make_shared<JacobianFactor>(X(5), I_3x3, Vector3::Ones()));
 
-    hfg.add(CGMixtureFactor({X(5)}, {{C(2), 2}}, dt1));
+    hfg.add(GaussianMixtureFactor({X(5)}, {{C(2), 2}}, dt1));
   }
 
   auto ordering_full =
