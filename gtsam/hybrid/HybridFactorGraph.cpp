@@ -21,8 +21,8 @@
 #include <gtsam/base/utilities.h>
 #include <gtsam/discrete/Assignment.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
-#include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/hybrid/GaussianMixture.h>
+#include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/hybrid/HybridDiscreteFactor.h>
 #include <gtsam/hybrid/HybridEliminationTree.h>
@@ -55,6 +55,8 @@ static std::string RED_BOLD = "\033[1;31m";
 static std::string GREEN = "\033[0;32m";
 static std::string GREEN_BOLD = "\033[1;32m";
 static std::string RESET = "\033[0m";
+
+static bool DEBUG = false;
 
 static GaussianMixtureFactor::Sum &addGaussian(
     GaussianMixtureFactor::Sum &sum, const GaussianFactor::shared_ptr &factor) {
@@ -129,15 +131,18 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
   KeySet continuousFrontals;
   KeySet continuousSeparator;
 
-  // TODO: we do a mock by just doing the correct key thing
-  std::cout << RED_BOLD << "Begin Eliminate: " << RESET;
-  frontalKeys.print();
+  if (DEBUG) {
+    std::cout << RED_BOLD << "Begin Eliminate: " << RESET;
+    frontalKeys.print();
+  }
 
   // This initializes separatorKeys and discreteCardinalities
   for (auto &&factor : factors) {
-    std::cout << ">>> Adding factor: " << GREEN;
-    factor->print();
-    std::cout << RESET;
+    if (DEBUG) {
+      std::cout << ">>> Adding factor: " << GREEN;
+      factor->print();
+      std::cout << RESET;
+    }
     separatorKeys.insert(factor->begin(), factor->end());
     if (!factor->isContinuous_) {
       for (auto &k : factor->discreteKeys_) {
@@ -171,7 +176,8 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
     }
   }
 
-  {
+  // Only for printing
+  if (DEBUG) {
     std::cout << RED_BOLD << "Keys: " << RESET;
     for (auto &f : frontalKeys) {
       if (discreteCardinalities.find(f) != discreteCardinalities.end()) {
@@ -203,7 +209,10 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
 
   // Case 1: we are only dealing with continuous
   if (discreteCardinalities.empty() && !allContinuousKeys.empty()) {
-    std::cout << RED_BOLD << "CONT. ONLY" << RESET << "\n";
+    if (DEBUG) {
+      std::cout << RED_BOLD << "CONT. ONLY" << RESET << "\n";
+    }
+
     GaussianFactorGraph gfg;
     for (auto &fp : factors) {
       auto ptr = boost::dynamic_pointer_cast<HybridGaussianFactor>(fp);
@@ -222,7 +231,10 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
 
   // Case 2: we are only dealing with discrete
   if (allContinuousKeys.empty()) {
-    std::cout << RED_BOLD << "DISCRETE ONLY" << RESET << "\n";
+    if (DEBUG) {
+      std::cout << RED_BOLD << "DISCRETE ONLY" << RESET << "\n";
+    }
+
     DiscreteFactorGraph dfg;
     for (auto &fp : factors) {
       auto ptr = boost::dynamic_pointer_cast<HybridDiscreteFactor>(fp);
@@ -246,88 +258,12 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
   DiscreteKeys discreteSeparator(discreteSeparatorSet.begin(),
                                  discreteSeparatorSet.end());
 
-  // We will need to know a mapping on when will a factor be fully determined by
-  // discrete keys std::vector<std::vector<HybridFactor::shared_ptr>>
-  // availableFactors;
-
-  // {
-  //   std::vector<std::pair<KeySet, HybridFactor::shared_ptr>> keysForFactor;
-  //   keysForFactor.reserve(factors.size());
-  //   std::transform(
-  //       factors.begin(), factors.end(), std::back_inserter(keysForFactor),
-  //       [](HybridFactor::shared_ptr factor)
-  //           -> std::pair<KeySet, HybridFactor::shared_ptr> {
-  //         return {KeySet(factor->keys().begin() + factor->nrContinuous,
-  //                        factor->keys().end()),
-  //                 factor};
-  //       });
-
-  //   KeySet currentAllKeys;
-  //   const auto N = discreteSeparator.size();
-  //   for (size_t k = 0; k < N; k++) {
-  //     currentAllKeys.insert(discreteSeparator.at(k).first);
-  //     std::vector<bool> shouldRemove(N, false);
-  //     for (size_t i = 0; i < keysForFactor.size(); i++) {
-  //       availableFactors.emplace_back();
-
-  //       if (std::includes(currentAllKeys.begin(), currentAllKeys.end(),
-  //                         keysForFactor[i].first.begin(),
-  //                         keysForFactor[i].first.end())) {
-  //         // mark for delete
-  //         shouldRemove[i] = true;
-  //         availableFactors.back().push_back(keysForFactor[i].second);
-  //       }
-  //       keysForFactor.erase(
-  //           std::remove_if(keysForFactor.begin(), keysForFactor.end(),
-  //                          [&shouldRemove, &keysForFactor](std::pair<KeySet,
-  //                          HybridFactor::shared_ptr> const &i) {
-  //                            return shouldRemove.at(&i -
-  //                            keysForFactor.data());
-  //                          }),
-  //           keysForFactor.end());
-  //     }
-  //   }
-  // }
-
-  // std::function<boost::shared_ptr<DecisionTree<Key, GaussianFactorGraph>>(
-  //     (Assignment<Key>, GaussianFactorGraph, int))>
-  //     visitor = [&](Assignment<Key> history, GaussianFactorGraph gf, int pos)
-  //     -> boost::shared_ptr<DecisionTree<Key, GaussianFactorGraph>> {
-  //   const auto currentKey = discreteSeparator[pos].first;
-  //   const auto currentCard = discreteSeparator[pos].second;
-
-  //   std::vector<boost::shared_ptr<DecisionTree<Key, GaussianFactorGraph>>>
-  //       children(currentCard, nullptr);
-  //   for (size_t choice = 0; choice < currentCard; choice++) {
-  //     Assignment<Key> new_assignment = history;
-  //     GaussianFactorGraph new_gf(gf);
-  //     // we try to get all currently available factors
-  //     for (auto &factor : availableFactors[pos]) {
-  //       if (!factor) {
-  //         continue;
-  //       }
-
-  //       auto ptr_mf = boost::dynamic_pointer_cast<GaussianMixtureFactor>(factor);
-  //       if (ptr_mf) gf.push_back(ptr_mf->factors_(new_assignment));
-
-  //       auto ptr_gm = boost::dynamic_pointer_cast<GaussianMixture>(factor);
-  //       if (ptr_gm) gf.push_back(ptr_gm->conditionals_(new_assignment));
-
-  //       children[choice] = visitor(new_assignment, new_gf, pos + 1);
-  //     }
-  //   }
-  // };
-
-  // PRODUCT: multiply all factors
-  // HybridConditional sum_factor(
-  //     KeyVector(continuousSeparator.begin(), continuousSeparator.end()),
-  //     DiscreteKeys(discreteSeparatorSet.begin(), discreteSeparatorSet.end()),
-  //     separatorKeys.size());
-
   // sum out frontals, this is the factor on the separator
   gttic(sum);
 
-  std::cout << RED_BOLD << "HYBRID ELIM." << RESET << "\n";
+  if (DEBUG) {
+    std::cout << RED_BOLD << "HYBRID ELIM." << RESET << "\n";
+  }
 
   GaussianMixtureFactor::Sum sum;
 
@@ -355,16 +291,20 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
   }
 
   for (auto &f : deferredFactors) {
-    std::cout << GREEN_BOLD << "Adding Gaussian" << RESET << "\n";
+    if (DEBUG) {
+      std::cout << GREEN_BOLD << "Adding Gaussian" << RESET << "\n";
+    }
     sum = addGaussian(sum, f);
   }
 
-  std::cout << GREEN_BOLD << "[GFG Tree]\n" << RESET;
-  sum.print("", DefaultKeyFormatter, [](GaussianFactorGraph gfg) {
-    RedirectCout rd;
-    gfg.print("");
-    return rd.str();
-  });
+  if (DEBUG) {
+    std::cout << GREEN_BOLD << "[GFG Tree]\n" << RESET;
+    sum.print("", DefaultKeyFormatter, [](GaussianFactorGraph gfg) {
+      RedirectCout rd;
+      gfg.print("");
+      return rd.str();
+    });
+  }
 
   gttoc(sum);
 
@@ -401,23 +341,25 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
   auto conditional = boost::make_shared<GaussianMixture>(
       frontalKeys, keysOfSeparator, discreteSeparator, conditionals);
 
-  std::cout << GREEN_BOLD << "[Conditional]\n" << RESET;
-  conditional->print();
-  std::cout << GREEN_BOLD << "[Separator]\n" << RESET;
-  separatorFactors.print("", DefaultKeyFormatter,
-                         [](GaussianFactor::shared_ptr gc) {
-                           RedirectCout rd;
-                           gc->print("");
-                           return rd.str();
-                         });
-  std::cout << RED_BOLD << "[End Eliminate]\n" << RESET;
+  if (DEBUG) {
+    std::cout << GREEN_BOLD << "[Conditional]\n" << RESET;
+    conditional->print();
+    std::cout << GREEN_BOLD << "[Separator]\n" << RESET;
+    separatorFactors.print("", DefaultKeyFormatter,
+                           [](GaussianFactor::shared_ptr gc) {
+                             RedirectCout rd;
+                             gc->print("");
+                             return rd.str();
+                           });
+    std::cout << RED_BOLD << "[End Eliminate]\n" << RESET;
+  }
 
   // If there are no more continuous parents, then we should create here a
   // DiscreteFactor, with the error for each discrete choice.
   if (keysOfSeparator.empty()) {
     VectorValues empty_values;
     auto factorError = [&](const GaussianFactor::shared_ptr &factor) {
-      if (!factor) return 0.0; // TODO(fan): does this make sense?
+      if (!factor) return 0.0;  // TODO(fan): does this make sense?
       return exp(-factor->error(empty_values));
     };
     DecisionTree<Key, double> fdt(separatorFactors, factorError);
@@ -433,36 +375,6 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
         frontalKeys, discreteSeparator, separatorFactors);
     return {boost::make_shared<HybridConditional>(conditional), factor};
   }
-
-  // Ordering keys for the conditional so that frontalKeys are really in front
-  // Ordering orderedKeys;
-  // orderedKeys.insert(orderedKeys.end(), frontalKeys.begin(),
-  // frontalKeys.end()); orderedKeys.insert(orderedKeys.end(),
-  // sum_factor.keys().begin(),
-  //                    sum_factor.keys().end());
-
-  // // now divide product/sum to get conditional
-  // gttic(divide);
-  // //  auto conditional =
-  // //      boost::make_shared<HybridConditional>(product, *sum, orderedKeys);
-  // gttoc(divide);
-
-  // auto conditional = boost::make_shared<HybridConditional>(
-  //     CollectKeys({continuousFrontals.begin(), continuousFrontals.end()},
-  //                 {continuousSeparator.begin(), continuousSeparator.end()}),
-  //     CollectDiscreteKeys(
-  //         {discreteFrontals.begin(), discreteFrontals.end()},
-  //         {discreteSeparatorSet.begin(), discreteSeparatorSet.end()}),
-  //     continuousFrontals.size() + discreteFrontals.size());
-  // std::cout << GREEN_BOLD << "[Conditional]\n" << RESET;
-  // conditional->print();
-  // std::cout << GREEN_BOLD << "[Separator]\n" << RESET;
-  // sum_factor.print();
-  // std::cout << RED_BOLD << "[End Eliminate]\n" << RESET;
-
-  // //  return std::make_pair(conditional, sum);
-  // return std::make_pair(conditional, boost::make_shared<HybridConditional>(
-  //                                        std::move(sum_factor)));
 }
 
 void HybridFactorGraph::add(JacobianFactor &&factor) {
