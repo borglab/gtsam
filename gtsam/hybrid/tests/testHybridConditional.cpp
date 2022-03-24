@@ -17,8 +17,8 @@
 
 #include <CppUnitLite/Test.h>
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/hybrid/GaussianMixture.h>
+#include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
 #include <gtsam/hybrid/HybridConditional.h>
@@ -75,7 +75,7 @@ TEST_DISABLED(HybridFactorGraph, eliminate) {
 
   hfg.add(HybridGaussianFactor(JacobianFactor(0, I_3x3, Z_3x1)));
 
-  auto result = hfg.eliminatePartialSequential({0});
+  auto result = hfg.eliminatePartialSequential(KeyVector{0});
 
   EXPECT_LONGS_EQUAL(result.first->size(), 1);
 }
