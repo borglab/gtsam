@@ -24,9 +24,8 @@
 #include <gtsam/linear/GaussianConditional.h>
 
 namespace gtsam {
-class GaussianMixture
-    : public HybridFactor,
-      public Conditional<HybridFactor, GaussianMixture> {
+class GaussianMixture : public HybridFactor,
+                        public Conditional<HybridFactor, GaussianMixture> {
  public:
   using This = GaussianMixture;
   using shared_ptr = boost::shared_ptr<GaussianMixture>;
@@ -38,14 +37,22 @@ class GaussianMixture
   Conditionals conditionals_;
 
  public:
+  /**
+   * @brief Construct a new Gaussian Mixture object
+   *
+   * @param continuousFrontals the continuous frontals.
+   * @param continuousParents the continuous parents.
+   * @param discreteParents the discrete parents. Will be placed last.
+   * @param conditionals a decision tree of GaussianConditionals.
+   */
   GaussianMixture(const KeyVector &continuousFrontals,
-                        const KeyVector &continuousParents,
-                        const DiscreteKeys &discreteParents,
-                        const Conditionals &conditionals);
+                  const KeyVector &continuousParents,
+                  const DiscreteKeys &discreteParents,
+                  const Conditionals &conditionals);
 
   using Sum = DecisionTree<Key, GaussianFactorGraph>;
 
-  const Conditionals& conditionals();
+  const Conditionals &conditionals();
 
   /* *******************************************************************************/
   Sum addTo(const Sum &sum) const;
