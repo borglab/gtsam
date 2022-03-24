@@ -21,7 +21,7 @@
 #include <gtsam/base/utilities.h>
 #include <gtsam/discrete/Assignment.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
-#include <gtsam/hybrid/CGMixtureFactor.h>
+#include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/hybrid/GaussianMixture.h>
 #include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/hybrid/HybridDiscreteFactor.h>
@@ -56,14 +56,14 @@ static std::string GREEN = "\033[0;32m";
 static std::string GREEN_BOLD = "\033[1;32m";
 static std::string RESET = "\033[0m";
 
-static CGMixtureFactor::Sum &addGaussian(
-    CGMixtureFactor::Sum &sum, const GaussianFactor::shared_ptr &factor) {
+static GaussianMixtureFactor::Sum &addGaussian(
+    GaussianMixtureFactor::Sum &sum, const GaussianFactor::shared_ptr &factor) {
   using Y = GaussianFactorGraph;
   // If the decision tree is not intiialized, then intialize it.
   if (sum.empty()) {
     GaussianFactorGraph result;
     result.push_back(factor);
-    sum = CGMixtureFactor::Sum(result);
+    sum = GaussianMixtureFactor::Sum(result);
 
   } else {
     auto add = [&factor](const Y &graph) {
@@ -307,7 +307,7 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
   //         continue;
   //       }
 
-  //       auto ptr_mf = boost::dynamic_pointer_cast<CGMixtureFactor>(factor);
+  //       auto ptr_mf = boost::dynamic_pointer_cast<GaussianMixtureFactor>(factor);
   //       if (ptr_mf) gf.push_back(ptr_mf->factors_(new_assignment));
 
   //       auto ptr_gm = boost::dynamic_pointer_cast<GaussianMixture>(factor);
@@ -329,13 +329,13 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
 
   std::cout << RED_BOLD << "HYBRID ELIM." << RESET << "\n";
 
-  CGMixtureFactor::Sum sum;
+  GaussianMixtureFactor::Sum sum;
 
   std::vector<GaussianFactor::shared_ptr> deferredFactors;
 
   for (auto &f : factors) {
     if (f->isHybrid_) {
-      auto cgmf = boost::dynamic_pointer_cast<CGMixtureFactor>(f);
+      auto cgmf = boost::dynamic_pointer_cast<GaussianMixtureFactor>(f);
       if (cgmf) {
         sum = cgmf->addTo(sum);
       }
@@ -395,7 +395,7 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
   auto pair = unzip(eliminationResults);
 
   const GaussianMixture::Conditionals &conditionals = pair.first;
-  const CGMixtureFactor::Factors &separatorFactors = pair.second;
+  const GaussianMixtureFactor::Factors &separatorFactors = pair.second;
 
   // Create the GaussianMixture from the conditionals
   auto conditional = boost::make_shared<GaussianMixture>(
@@ -429,7 +429,7 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
 
   } else {
     // Create a resulting DCGaussianMixture on the separator.
-    auto factor = boost::make_shared<CGMixtureFactor>(
+    auto factor = boost::make_shared<GaussianMixtureFactor>(
         frontalKeys, discreteSeparator, separatorFactors);
     return {boost::make_shared<HybridConditional>(conditional), factor};
   }

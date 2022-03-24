@@ -34,6 +34,11 @@ DiscreteKeys CollectDiscreteKeys(const DiscreteKeys &key1,
 
 /**
  * Base class for hybrid probabilistic factors
+ * Examples:
+ *  - HybridGaussianFactor
+ *  - HybridDiscreteFactor
+ *  - GaussianMixtureFactor
+ *  - GaussianMixture
  */
 class GTSAM_EXPORT HybridFactor : public Factor {
  public:

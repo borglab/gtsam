@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file   CGMixtureFactor.cpp
+ * @file   GaussianMixtureFactor.cpp
  * @brief  A set of Gaussian factors indexed by a set of discrete keys.
  * @author Fan Jiang
  * @author Varun Agrawal
@@ -18,7 +18,7 @@
  * @date   Mar 12, 2022
  */
 
-#include <gtsam/hybrid/CGMixtureFactor.h>
+#include <gtsam/hybrid/GaussianMixtureFactor.h>
 
 #include <gtsam/discrete/DecisionTree.h>
 #include <gtsam/discrete/DecisionTree-inl.h>
@@ -27,15 +27,15 @@
 
 namespace gtsam {
 
-CGMixtureFactor::CGMixtureFactor(const KeyVector &continuousKeys,
+GaussianMixtureFactor::GaussianMixtureFactor(const KeyVector &continuousKeys,
                                  const DiscreteKeys &discreteKeys,
                                  const Factors &factors) : Base(continuousKeys, discreteKeys),
                                                            factors_(factors) {}
-bool CGMixtureFactor::equals(const HybridFactor &lf, double tol) const {
+bool GaussianMixtureFactor::equals(const HybridFactor &lf, double tol) const {
   return false;
 }
 
-void CGMixtureFactor::print(const std::string &s, const KeyFormatter &formatter) const {
+void GaussianMixtureFactor::print(const std::string &s, const KeyFormatter &formatter) const {
   HybridFactor::print(s, formatter);
   factors_.print(
       "mixture = ",
@@ -49,12 +49,12 @@ void CGMixtureFactor::print(const std::string &s, const KeyFormatter &formatter)
       });
 }
 
-const CGMixtureFactor::Factors& CGMixtureFactor::factors() {
+const GaussianMixtureFactor::Factors& GaussianMixtureFactor::factors() {
   return factors_;
 }
 
 /* *******************************************************************************/
-CGMixtureFactor::Sum CGMixtureFactor::addTo(const CGMixtureFactor::Sum &sum) const {
+GaussianMixtureFactor::Sum GaussianMixtureFactor::addTo(const GaussianMixtureFactor::Sum &sum) const {
   using Y = GaussianFactorGraph;
   auto add = [](const Y &graph1, const Y &graph2) {
     auto result = graph1;
@@ -66,7 +66,7 @@ CGMixtureFactor::Sum CGMixtureFactor::addTo(const CGMixtureFactor::Sum &sum) con
 }
 
 /* *******************************************************************************/
-CGMixtureFactor::Sum CGMixtureFactor::wrappedFactors() const {
+GaussianMixtureFactor::Sum GaussianMixtureFactor::wrappedFactors() const {
   auto wrap = [](const GaussianFactor::shared_ptr &factor) {
     GaussianFactorGraph result;
     result.push_back(factor);
