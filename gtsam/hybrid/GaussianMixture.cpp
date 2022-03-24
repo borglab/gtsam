@@ -13,6 +13,8 @@
  * @file   GaussianMixture.cpp
  * @brief  A hybrid conditional in the Conditional Linear Gaussian scheme
  * @author Fan Jiang
+ * @author Varun Agrawal
+ * @author Frank Dellaert
  * @date   Mar 12, 2022
  */
 
