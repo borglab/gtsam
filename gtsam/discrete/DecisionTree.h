@@ -262,6 +262,9 @@ namespace gtsam {
     template <typename Func>
     void visitWith(Func f) const;
 
+    /// Return the number of leaves in the tree.
+    size_t nrLeaves() const;
+
     /**
      * @brief Fold a binary function over the tree, returning accumulator.
      *
