@@ -27,6 +27,8 @@
 
 namespace gtsam {
 
+class GaussianFactorGraph;
+
 class CGMixtureFactor : public HybridFactor {
  public:
   using Base = HybridFactor;
@@ -41,6 +43,16 @@ class CGMixtureFactor : public HybridFactor {
 
   CGMixtureFactor(const KeyVector &continuousKeys,
                   const DiscreteKeys &discreteKeys, const Factors &factors);
+
+  using Sum = DecisionTree<Key, GaussianFactorGraph>;
+
+  const Factors& factors();
+
+  /* *******************************************************************************/
+  Sum addTo(const Sum &sum) const;
+
+  /* *******************************************************************************/
+  Sum wrappedFactors() const;
 
   bool equals(const HybridFactor &lf, double tol = 1e-9) const override;
 

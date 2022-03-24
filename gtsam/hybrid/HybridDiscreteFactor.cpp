@@ -19,12 +19,15 @@
 #include <gtsam/hybrid/HybridDiscreteFactor.h>
 
 #include <boost/make_shared.hpp>
+#include "gtsam/discrete/DecisionTreeFactor.h"
 
 namespace gtsam {
 
+// TODO(fan): THIS IS VERY VERY DIRTY! We need to get DiscreteFactor right!
 HybridDiscreteFactor::HybridDiscreteFactor(DiscreteFactor::shared_ptr other)
-    : Base(other->keys()) {
+    : Base(boost::dynamic_pointer_cast<DecisionTreeFactor>(other)->discreteKeys()) {
   inner = other;
+
 }
 
 HybridDiscreteFactor::HybridDiscreteFactor(DecisionTreeFactor &&dtf)

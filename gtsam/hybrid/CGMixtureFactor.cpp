@@ -20,7 +20,9 @@
 
 #include <gtsam/hybrid/CGMixtureFactor.h>
 
+#include <gtsam/discrete/DecisionTree.h>
 #include <gtsam/discrete/DecisionTree-inl.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/base/utilities.h>
 
 namespace gtsam {
@@ -47,4 +49,29 @@ void CGMixtureFactor::print(const std::string &s, const KeyFormatter &formatter)
       });
 }
 
+const CGMixtureFactor::Factors& CGMixtureFactor::factors() {
+  return factors_;
+}
+
+/* *******************************************************************************/
+CGMixtureFactor::Sum CGMixtureFactor::addTo(const CGMixtureFactor::Sum &sum) const {
+  using Y = GaussianFactorGraph;
+  auto add = [](const Y &graph1, const Y &graph2) {
+    auto result = graph1;
+    result.push_back(graph2);
+    return result;
+  };
+  const Sum wrapped = wrappedFactors();
+  return sum.empty() ? wrapped : sum.apply(wrapped, add);
+}
+
+/* *******************************************************************************/
+CGMixtureFactor::Sum CGMixtureFactor::wrappedFactors() const {
+  auto wrap = [](const GaussianFactor::shared_ptr &factor) {
+    GaussianFactorGraph result;
+    result.push_back(factor);
+    return result;
+  };
+  return {factors_, wrap};
+}
 }

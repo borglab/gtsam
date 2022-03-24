@@ -23,12 +23,19 @@
 
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
+#include <stdexcept>
 #include <string>
+#include <typeinfo>
 #include <vector>
-#include "gtsam/inference/Key.h"
-#include "gtsam/linear/GaussianConditional.h"
+#include "gtsam/hybrid/GaussianMixture.h"
+
+#include <gtsam/hybrid/HybridFactorGraph.h>
+#include <gtsam/inference/Key.h>
+#include <gtsam/linear/GaussianConditional.h>
 
 namespace gtsam {
+
+class HybridFactorGraph;
 
 /**
  * Hybrid Conditional Density
@@ -49,9 +56,9 @@ class GTSAM_EXPORT HybridConditional
   typedef Conditional<BaseFactor, This>
       BaseConditional;  ///< Typedef to our conditional base class
 
- private:
+ protected:
   // Type-erased pointer to the inner type
-  std::unique_ptr<Factor> inner;
+  boost::shared_ptr<Factor> inner;
 
  public:
   /// @name Standard Constructors
@@ -70,23 +77,15 @@ class GTSAM_EXPORT HybridConditional
                     const DiscreteKeys& discreteParents);
 
   HybridConditional(boost::shared_ptr<GaussianConditional> continuousConditional);
+
+  HybridConditional(boost::shared_ptr<DiscreteConditional> discreteConditional);
   
-  /**
-   * @brief Combine two conditionals, yielding a new conditional with the union
-   * of the frontal keys, ordered by gtsam::Key.
-   *
-   * The two conditionals must make a valid Bayes net fragment, i.e.,
-   * the frontal variables cannot overlap, and must be acyclic:
-   * Example of correct use:
-   *   P(A,B) = P(A|B) * P(B)
-   *   P(A,B|C) = P(A|B) * P(B|C)
-   *   P(A,B,C) = P(A,B|C) * P(C)
-   * Example of incorrect use:
-   *   P(A|B) * P(A|C) = ?
-   *   P(A|B) * P(B|A) = ?
-   * We check for overlapping frontals, but do *not* check for cyclic.
-   */
-  HybridConditional operator*(const HybridConditional& other) const;
+  HybridConditional(boost::shared_ptr<GaussianMixture> gaussianMixture);
+
+  GaussianMixture::shared_ptr asMixture() {
+      if (!isHybrid_) throw std::invalid_argument("Not a mixture");
+      return boost::static_pointer_cast<GaussianMixture>(inner);
+  }
 
   /// @}
   /// @name Testable
@@ -101,6 +100,10 @@ class GTSAM_EXPORT HybridConditional
   bool equals(const HybridFactor& other, double tol = 1e-9) const override;
 
   /// @}
+
+  friend std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>  //
+  EliminateHybrid(const HybridFactorGraph& factors,
+                  const Ordering& frontalKeys);
 };
 // DiscreteConditional
 
