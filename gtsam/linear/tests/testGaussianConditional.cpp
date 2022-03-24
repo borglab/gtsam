@@ -404,25 +404,27 @@ TEST(GaussianConditional, Print) {
   const Vector2 b(20, 40);
   const double sigma = 3;
 
+  std::string s = "GaussianConditional";
+
   auto conditional =
       GaussianConditional::FromMeanAndStddev(X(0), A1, X(1), b, sigma);
 
   // Test printing for single parent.
   std::string expected =
-    "Conditional density [x0 | x1]\n"
+    "GaussianConditional p(x0 | x1)\n"
     "  R = [ 1 0 ]\n"
     "      [ 0 1 ]\n"
     "  S[x1] = [ -1 -2 ]\n"
     "          [ -3 -4 ]\n"
     "  d = [ 20 40 ]\n"
     "isotropic dim=2 sigma=3\n";
-  EXPECT(assert_print_equal(expected, conditional));
+  EXPECT(assert_print_equal(expected, conditional, s));
 
   // Test printing for multiple parents.
   auto conditional2 = GaussianConditional::FromMeanAndStddev(X(0), A1, Y(0), A2,
                                                              Y(1), b, sigma);
   std::string expected2 =
-    "Conditional density [x0 | y0 y1]\n"
+    "GaussianConditional p(x0 | y0 y1)\n"
     "  R = [ 1 0 ]\n"
     "      [ 0 1 ]\n"
     "  S[y0] = [ -1 -2 ]\n"
@@ -431,7 +433,7 @@ TEST(GaussianConditional, Print) {
     "          [ -7 -8 ]\n"
     "  d = [ 20 40 ]\n"
     "isotropic dim=2 sigma=3\n";
-  EXPECT(assert_print_equal(expected2, conditional2));
+  EXPECT(assert_print_equal(expected2, conditional2, s));
 }
 
 /* ************************************************************************* */
