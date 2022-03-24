@@ -28,7 +28,7 @@ HybridConditional::HybridConditional(const KeyVector &continuousFrontals,
                                      const DiscreteKeys &discreteParents)
     : HybridConditional(
           CollectKeys({continuousFrontals.begin(), continuousFrontals.end()},
-                      {continuousParents.begin(), continuousParents.end()}),
+                      KeyVector {continuousParents.begin(), continuousParents.end()}),
           CollectDiscreteKeys(
               {discreteFrontals.begin(), discreteFrontals.end()},
               {discreteParents.begin(), discreteParents.end()}),
