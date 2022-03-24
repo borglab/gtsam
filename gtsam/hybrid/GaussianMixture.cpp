@@ -20,6 +20,7 @@
 #include <gtsam/discrete/DecisionTree-inl.h>
 #include <gtsam/hybrid/GaussianMixture.h>
 #include <gtsam/inference/Conditional-inst.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 
 namespace gtsam {
 
@@ -31,6 +32,32 @@ GaussianMixture::GaussianMixture(
                  discreteParents),
       BaseConditional(continuousFrontals.size()),
       conditionals_(conditionals) {}
+
+const GaussianMixture::Conditionals& GaussianMixture::conditionals() {
+  return conditionals_;
+}
+
+/* *******************************************************************************/
+GaussianMixture::Sum GaussianMixture::addTo(const GaussianMixture::Sum &sum) const {
+  using Y = GaussianFactorGraph;
+  auto add = [](const Y &graph1, const Y &graph2) {
+    auto result = graph1;
+    result.push_back(graph2);
+    return result;
+  };
+  const Sum wrapped = wrappedConditionals();
+  return sum.empty() ? wrapped : sum.apply(wrapped, add);
+}
+
+/* *******************************************************************************/
+GaussianMixture::Sum GaussianMixture::wrappedConditionals() const {
+  auto wrap = [](const GaussianFactor::shared_ptr &factor) {
+    GaussianFactorGraph result;
+    result.push_back(factor);
+    return result;
+  };
+  return {conditionals_, wrap};
+}
 
 bool GaussianMixture::equals(const HybridFactor &lf, double tol) const {
   return false;

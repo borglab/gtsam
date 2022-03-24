@@ -17,6 +17,8 @@
 
 #include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/inference/Conditional-inst.h>
+#include "gtsam/hybrid/HybridFactor.h"
+#include "gtsam/inference/Key.h"
 
 namespace gtsam {
 
@@ -34,8 +36,27 @@ HybridConditional::HybridConditional(const KeyVector &continuousFrontals,
 
 HybridConditional::HybridConditional(
     boost::shared_ptr<GaussianConditional> continuousConditional)
-    : BaseFactor(continuousConditional->keys()),
-      BaseConditional(continuousConditional->nrFrontals()) {}
+    : HybridConditional(continuousConditional->keys(), {},
+                        continuousConditional->nrFrontals()) {
+  inner = continuousConditional;
+}
+
+HybridConditional::HybridConditional(
+    boost::shared_ptr<DiscreteConditional> discreteConditional)
+    : HybridConditional({}, discreteConditional->discreteKeys(),
+                        discreteConditional->nrFrontals()) {
+  inner = discreteConditional;
+}
+
+HybridConditional::HybridConditional(
+    boost::shared_ptr<GaussianMixture> gaussianMixture)
+    : BaseFactor(KeyVector(gaussianMixture->keys().begin(),
+                           gaussianMixture->keys().begin() +
+                               gaussianMixture->nrContinuous),
+                 gaussianMixture->discreteKeys_),
+      BaseConditional(gaussianMixture->nrFrontals()) {
+  inner = gaussianMixture;
+}
 
 void HybridConditional::print(const std::string &s,
                               const KeyFormatter &formatter) const {
@@ -70,8 +91,4 @@ bool HybridConditional::equals(const HybridFactor &other, double tol) const {
   return false;
 }
 
-HybridConditional HybridConditional::operator*(
-    const HybridConditional &other) const {
-  return {};
-}
 }  // namespace gtsam

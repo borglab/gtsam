@@ -31,7 +31,6 @@
 #include <gtsam/linear/JacobianFactor.h>
 
 #include <boost/assign/std/map.hpp>
-#include "gtsam/base/Testable.h"
 
 using namespace boost::assign;
 
@@ -41,22 +40,33 @@ using namespace gtsam;
 using gtsam::symbol_shorthand::C;
 using gtsam::symbol_shorthand::X;
 
+#define BOOST_STACKTRACE_GNU_SOURCE_NOT_REQUIRED
+
+#include <signal.h>  // ::signal, ::raise
+
+#include <boost/stacktrace.hpp>
+
+void my_signal_handler(int signum) {
+  ::signal(signum, SIG_DFL);
+  std::cout << boost::stacktrace::stacktrace();
+  ::raise(SIGABRT);
+}
+
 /* ************************************************************************* */
-TEST(HybridFactorGraph, creation) {
+TEST_DISABLED(HybridFactorGraph, creation) {
   HybridConditional test;
 
   HybridFactorGraph hfg;
 
   hfg.add(HybridGaussianFactor(JacobianFactor(0, I_3x3, Z_3x1)));
 
-  GaussianMixture clgc(
-      {X(0)}, {X(1)}, DiscreteKeys(DiscreteKey{C(0), 2}),
-      GaussianMixture::Conditionals(
-          C(0),
-          boost::make_shared<GaussianConditional>(X(0), Z_3x1, I_3x3, X(1),
-                                                  I_3x3),
-          boost::make_shared<GaussianConditional>(X(0), Vector3::Ones(), I_3x3,
-                                                  X(1), I_3x3)));
+  GaussianMixture clgc({X(0)}, {X(1)}, DiscreteKeys(DiscreteKey{C(0), 2}),
+                       GaussianMixture::Conditionals(
+                           C(0),
+                           boost::make_shared<GaussianConditional>(
+                               X(0), Z_3x1, I_3x3, X(1), I_3x3),
+                           boost::make_shared<GaussianConditional>(
+                               X(0), Vector3::Ones(), I_3x3, X(1), I_3x3)));
   GTSAM_PRINT(clgc);
 }
 
@@ -70,7 +80,7 @@ TEST_DISABLED(HybridFactorGraph, eliminate) {
   EXPECT_LONGS_EQUAL(result.first->size(), 1);
 }
 
-TEST(HybridFactorGraph, eliminateMultifrontal) {
+TEST_DISABLED(HybridFactorGraph, eliminateMultifrontal) {
   HybridFactorGraph hfg;
 
   DiscreteKey x(X(1), 2);
@@ -84,7 +94,7 @@ TEST(HybridFactorGraph, eliminateMultifrontal) {
   EXPECT_LONGS_EQUAL(result.second->size(), 1);
 }
 
-TEST_DISABLED(HybridFactorGraph, eliminateFullMultifrontalSimple) {
+TEST(HybridFactorGraph, eliminateFullMultifrontalSimple) {
   std::cout << ">>>>>>>>>>>>>>\n";
 
   HybridFactorGraph hfg;
@@ -99,7 +109,7 @@ TEST_DISABLED(HybridFactorGraph, eliminateFullMultifrontalSimple) {
       boost::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()));
 
   hfg.add(CGMixtureFactor({X(1)}, {c1}, dt));
-  hfg.add(CGMixtureFactor({X(0)}, {c1}, dt));
+  // hfg.add(CGMixtureFactor({X(0)}, {c1}, dt));
   hfg.add(HybridDiscreteFactor(DecisionTreeFactor(c1, {2, 8})));
   hfg.add(HybridDiscreteFactor(
       DecisionTreeFactor({{C(1), 2}, {C(2), 2}}, "1 2 3 4")));
@@ -114,7 +124,7 @@ TEST_DISABLED(HybridFactorGraph, eliminateFullMultifrontalSimple) {
   GTSAM_PRINT(*result->marginalFactor(C(1)));
 }
 
-TEST(HybridFactorGraph, eliminateFullMultifrontalCLG) {
+TEST_DISABLED(HybridFactorGraph, eliminateFullMultifrontalCLG) {
   std::cout << ">>>>>>>>>>>>>>\n";
 
   HybridFactorGraph hfg;
@@ -148,8 +158,9 @@ TEST(HybridFactorGraph, eliminateFullMultifrontalCLG) {
 }
 
 /**
- * This test is about how to assemble the Bayes Tree roots after we do partial elimination
-*/
+ * This test is about how to assemble the Bayes Tree roots after we do partial
+ * elimination
+ */
 TEST_DISABLED(HybridFactorGraph, eliminateFullMultifrontalTwoClique) {
   std::cout << ">>>>>>>>>>>>>>\n";
 
@@ -173,7 +184,8 @@ TEST_DISABLED(HybridFactorGraph, eliminateFullMultifrontalTwoClique) {
   }
 
   // hfg.add(HybridDiscreteFactor(DecisionTreeFactor(c, {2, 8})));
-  hfg.add(HybridDiscreteFactor(DecisionTreeFactor({{C(1), 2}, {C(2), 2}}, "1 2 3 4")));
+  hfg.add(HybridDiscreteFactor(
+      DecisionTreeFactor({{C(1), 2}, {C(2), 2}}, "1 2 3 4")));
 
   hfg.add(JacobianFactor(X(3), I_3x3, X(4), -I_3x3, Z_3x1));
   hfg.add(JacobianFactor(X(4), I_3x3, X(5), -I_3x3, Z_3x1));
@@ -192,14 +204,15 @@ TEST_DISABLED(HybridFactorGraph, eliminateFullMultifrontalTwoClique) {
     hfg.add(CGMixtureFactor({X(5)}, {{C(2), 2}}, dt1));
   }
 
-  auto ordering_full = Ordering::ColamdConstrainedLast(hfg, {C(0), C(1), C(2), C(3)});
+  auto ordering_full =
+      Ordering::ColamdConstrainedLast(hfg, {C(0), C(1), C(2), C(3)});
 
   GTSAM_PRINT(ordering_full);
 
   HybridBayesTree::shared_ptr hbt;
   HybridFactorGraph::shared_ptr remaining;
-  std::tie(hbt, remaining) =
-      hfg.eliminatePartialMultifrontal(Ordering(ordering_full.begin(), ordering_full.end()));
+  std::tie(hbt, remaining) = hfg.eliminatePartialMultifrontal(
+      Ordering(ordering_full.begin(), ordering_full.end()));
 
   GTSAM_PRINT(*hbt);
 
@@ -215,6 +228,9 @@ TEST_DISABLED(HybridFactorGraph, eliminateFullMultifrontalTwoClique) {
 
 /* ************************************************************************* */
 int main() {
+  ::signal(SIGSEGV, &my_signal_handler);
+  ::signal(SIGBUS, &my_signal_handler);
+
   TestResult tr;
   return TestRegistry::runAllTests(tr);
 }

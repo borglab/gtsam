@@ -22,6 +22,7 @@
 #include <gtsam/inference/Factor.h>
 #include <gtsam/nonlinear/Values.h>
 
+#include <cstddef>
 #include <string>
 namespace gtsam {
 
@@ -45,6 +46,8 @@ class GTSAM_EXPORT HybridFactor : public Factor {
   bool isDiscrete_ = false;
   bool isContinuous_ = false;
   bool isHybrid_ = false;
+
+  size_t nrContinuous = 0;
 
   DiscreteKeys discreteKeys_;
 

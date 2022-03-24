@@ -43,6 +43,16 @@ class GaussianMixture
                         const DiscreteKeys &discreteParents,
                         const Conditionals &conditionals);
 
+  using Sum = DecisionTree<Key, GaussianFactorGraph>;
+
+  const Conditionals& conditionals();
+
+  /* *******************************************************************************/
+  Sum addTo(const Sum &sum) const;
+
+  /* *******************************************************************************/
+  Sum wrappedConditionals() const;
+
   bool equals(const HybridFactor &lf, double tol = 1e-9) const override;
 
   void print(
