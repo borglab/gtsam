@@ -150,18 +150,14 @@ filename "common_macros.tex"
 
 \end_layout
 
-\begin_layout Section*
-Overview
-\end_layout
-
-\begin_layout Standard
+\begin_layout Abstract
 In this document I provide a hands-on introduction to both factor graphs
  and GTSAM.
  This is an updated version from the 2012 TR that is tailored to our GTSAM
  4.0 library and beyond.
 \end_layout
 
-\begin_layout Standard
+\begin_layout Abstract
 
 \series bold
 Factor graphs
@@ -202,7 +198,7 @@ ts or prior knowledge.
  robotics and vision.
 \end_layout
 
-\begin_layout Standard
+\begin_layout Abstract
 The GTSAM toolbox (GTSAM stands for 
 \begin_inset Quotes eld
 \end_inset
@@ -223,7 +219,7 @@ Georgia Tech Smoothing and Mapping
 y.
 \end_layout
 
-\begin_layout Standard
+\begin_layout Abstract
 GTSAM exploits sparsity to be computationally efficient.
  Typically measurements only provide information on the relationship between
  a handful of variables, and hence the resulting factor graph will be sparsely
@@ -234,8 +230,11 @@ l complexity.
  GTSAM provides iterative methods that are quite efficient regardless.
 \end_layout
 
-\begin_layout Standard
-You can download the latest version of GTSAM from GitHub at 
+\begin_layout Abstract
+You can download the latest version of GTSAM from GitHub at
+\end_layout
+
+\begin_layout Abstract
 \begin_inset Flex URL
 status open
 
@@ -1365,14 +1364,18 @@ where
 \end_inset
 
  is the measurement, 
-\begin_inset Formula $q$
+\begin_inset Formula $q\in SE(2)$
 \end_inset
 
  is the unknown variable, 
 \begin_inset Formula $h(q)$
 \end_inset
 
- is a (possibly nonlinear) measurement function, and 
+ is a 
+\series bold
+measurement function
+\series default
+, and 
 \begin_inset Formula $\Sigma$
 \end_inset
 
@@ -1633,7 +1636,7 @@ Many of our users, when attempting to create a custom factor, are initially
 \begin_inset Formula $2\times3$
 \end_inset
 
- diagonal matrix.
+ identity matrix.
  This 
 \emph on
 would
@@ -1647,7 +1650,7 @@ would
  such that
 \begin_inset Formula 
 \[
-h(qe^{\hat{\xi}})\approx h(q)+H\xi
+h(q\exp\hat{\xi})\approx h(q)+H\xi
 \]
 
 \end_inset
@@ -1664,7 +1667,8 @@ where
 \series bold
 exponential map
 \series default
- for the variable we want to update, In this case 
+ for the variable we want to update.
+ In this case 
 \begin_inset Formula $q\in SE(2)$
 \end_inset
 
@@ -1689,7 +1693,7 @@ The exponential map for
 \[
 \exp\hat{\xi}\approx\left[\begin{array}{ccc}
 1 & -\delta\theta & \delta x\\
-\delta\theta & 1 & \delta x\\
+\delta\theta & 1 & \delta y\\
 0 & 0 & 1
 \end{array}\right]
 \]
@@ -1709,7 +1713,7 @@ h(qe^{\hat{\xi}})\approx h\left(\left[\begin{array}{ccc}
 0 & 0 & 1
 \end{array}\right]\left[\begin{array}{ccc}
 1 & -\delta\theta & \delta x\\
-\delta\theta & 1 & \delta x\\
+\delta\theta & 1 & \delta y\\
 0 & 0 & 1
 \end{array}\right]\right)=\left[\begin{array}{c}
 q_{x}+\cos(q_{\theta})\delta x-\sin(q_{\theta})\delta y\\
@@ -1724,6 +1728,66 @@ which then explains the Jacobian
 \end_inset
 
 .
+\end_layout
+
+\begin_layout Standard
+Lie groups are very relevant in the robotics context, and you can read more
+ here:
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Flex URL
+status open
+
+\begin_layout Plain Layout
+
+https://github.com/borglab/gtsam/blob/develop/doc/LieGroups.pdf
+\end_layout
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Flex URL
+status open
+
+\begin_layout Plain Layout
+
+https://github.com/borglab/gtsam/blob/develop/doc/math.pdf
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In some cases you want to go even beyond Lie groups to a looser concept,
+ 
+\series bold
+manifolds
+\series default
+, because not all unknown variables behave like a group, e.g., the space of
+ 3D planes, 2D lines, directions in space, etc.
+ For manifolds we do not always have an exponential map, but we have a retractio
+n that plays the same role.
+ Some of this is explained here:
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Flex URL
+status open
+
+\begin_layout Plain Layout
+
+https://gtsam.org/notes/GTSAM-Concepts.html 
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Subsection
