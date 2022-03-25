@@ -420,6 +420,10 @@ TEST(IncrementalHybrid, NonTrivial) {
   ordering += X(0);
 
   // Update without pruning
+  // The result is a HybridBayesNet with no discrete variables
+  // (equivalent to a GaussianBayesNet).
+  // Factorization is:
+  // `P(X | measurements) = P(W0|Z0) P(Z0|Y0) P(Y0|X0) P(X0)`
   inc.update(gfg, ordering);
 
   /*************** Run Round 2 ***************/
@@ -472,6 +476,11 @@ TEST(IncrementalHybrid, NonTrivial) {
   fg = NonlinearHybridFactorGraph();
 
   // Update without pruning
+  // The result is a HybridBayesNet with 1 discrete variable M(1).
+  // P(X | measurements) = P(W0|Z0, W1, M1) P(Z0|Y0, W1, M1) P(Y0|X0, W1, M1)
+  //                       P(X0 | X1, W1, M1) P(W1|Z1, X1, M1) P(Z1|Y1, X1, M1)
+  //                       P(Y1 | X1, M1)P(X1 | M1)P(M1)
+  // The MHS tree is a 2 level tree for time indices (0, 1) with 2 leaves.
   inc.update(gfg, ordering);
 
   /*************** Run Round 3 ***************/
@@ -517,6 +526,12 @@ TEST(IncrementalHybrid, NonTrivial) {
   fg = NonlinearHybridFactorGraph();
 
   // Now we prune!
+  // P(X | measurements) = P(W0|Z0, W1, M1) P(Z0|Y0, W1, M1) P(Y0|X0, W1, M1) P(X0 | X1, W1, M1)
+  //                       P(W1|W2, Z1, X1, M1, M2) P(Z1| W2, Y1, X1, M1, M2) P(Y1 | W2, X1, M1, M2)
+  //                       P(X1 | W2, X2, M1, M2) P(W2|Z2, X2, M1, M2) P(Z2|Y2, X2, M1, M2)
+  //                       P(Y2 | X2, M1, M2)P(X2 | M1, M2) P(M1, M2)
+  // The MHS at this point should be a 3 level tree on (0, 1, 2).
+  // 0 has 2 choices, 1 has 4 choices and 2 has 4 choices.
   inc.update(gfg, ordering, 2);
 
   /*************** Run Round 4 ***************/

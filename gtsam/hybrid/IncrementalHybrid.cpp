@@ -81,17 +81,21 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
 
   gttoc_(Elimination);
 
-  // Prune
-  if (maxNrLeaves) {
+  /// Prune
+  // Check if discreteGraph is not empty.
+  // Possibly empty if no discrete variables.
+  if (maxNrLeaves && !remainingFactorGraph_.discreteGraph().empty()) {
+    // First we prune the discrete probability tree (tree with doubles at
+    // leaves). This method computes the threshold based on maxNrLeaves and sets
+    // all leaves below the threshold to 0.0.
     DecisionTreeFactor::shared_ptr discreteFactor = prune(*maxNrLeaves);
 
-    // If valid pruned discrete factor, then propagate to gaussian mixtures
-    if (discreteFactor) {
-      HybridBayesNet::shared_ptr prunedBayesNetFragment =
-          pruneBayesNet(bayesNetFragment, discreteFactor);
-      // Set the bayes net fragment to the pruned version
-      bayesNetFragment = prunedBayesNetFragment;
-    }
+    // `pruneBayesNet` sets the leaves with 0 in discreteFactor to nullptr in
+    // all the conditionals with the same keys in bayesNetFragment.
+    HybridBayesNet::shared_ptr prunedBayesNetFragment =
+        pruneBayesNet(bayesNetFragment, discreteFactor);
+    // Set the bayes net fragment to the pruned version
+    bayesNetFragment = prunedBayesNetFragment;
   }
 
   // Add the partial bayes net to the posterior bayes net.
@@ -102,10 +106,7 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
 
 // TODO(Varun) Move to DecisionTreeFactor.h
 DecisionTreeFactor::shared_ptr IncrementalHybrid::prune(size_t maxNrLeaves) {
-  const auto N = maxNrLeaves;
-
-  // Check if discreteGraph is empty. Possible if no discrete variables.
-  if (remainingFactorGraph_.discreteGraph().empty()) return nullptr;
+  const size_t N = maxNrLeaves;
 
   auto discreteFactor = boost::dynamic_pointer_cast<DecisionTreeFactor>(
       remainingFactorGraph_.discreteGraph().at(0));
@@ -185,7 +186,9 @@ HybridBayesNet::shared_ptr IncrementalHybrid::pruneBayesNet(
     if (gaussianMixture) {
       // We may have mixtures with less discrete keys than discreteFactor so we
       // skip those since the label assignment does not exist.
-      if (gaussianMixture->discreteKeys() != discreteFactor->discreteKeys()) {
+      std::set<DiscreteKey> gmKeySet = gaussianMixture->discreteKeys().asSet();
+      std::set<DiscreteKey> dfKeySet = discreteFactor->discreteKeys().asSet();
+      if (gmKeySet != dfKeySet) {
         continue;
       }
 
