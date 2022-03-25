@@ -179,6 +179,14 @@ namespace gtsam {
       return total;
     }
 
+    /**
+     * @brief Prune the decision tree of discrete variables.
+     *
+     * @param maxNrLeaves The maximum number of leaves to keep.
+     * @return DecisionTreeFactor::shared_ptr
+     */
+    shared_ptr prune(size_t maxNrLeaves) const;
+
     /// @}
     /// @name Wrapper support
     /// @{

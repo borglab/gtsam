@@ -74,7 +74,24 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<AbstractConditional> {
    */
   DiscreteConditional::shared_ptr atDiscrete(size_t i) const;
 
+  /**
+   * @brief Get the Gaussian Bayes Net which corresponds to a specific discrete
+   * value assignment.
+   *
+   * @param assignment The discrete value assignment for the discrete keys.
+   * @return GaussianBayesNet
+   */
   GaussianBayesNet choose(const DiscreteValues &assignment) const;
+
+  /**
+   * @brief Prune the conditionals in the bayes net as per the pruning
+   * structure in `discreteFactor`.
+   *
+   * @param discreteFactor A DecisionTreeFactor shared pointer which has a
+   * pruned tree structure.
+   * @return HybridBayesNet::shared_ptr
+   */
+  shared_ptr prune(const DecisionTreeFactor::shared_ptr &discreteFactor) const;
 };
 
 }  // namespace gtsam

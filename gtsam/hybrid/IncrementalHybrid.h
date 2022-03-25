@@ -50,18 +50,6 @@ class IncrementalHybrid {
   void update(GaussianHybridFactorGraph graph, const Ordering& ordering,
               boost::optional<size_t> maxNrLeaves = boost::none);
 
-  /**
-   * @brief Method to prune the decision tree of discrete variables.
-   *
-   * @param maxNrLeaves The maximum number of leaves to keep.
-   * @return DecisionTreeFactor::shared_ptr 
-   */
-  DecisionTreeFactor::shared_ptr prune(size_t maxNrLeaves);
-
-  HybridBayesNet::shared_ptr pruneBayesNet(
-      const HybridBayesNet::shared_ptr& bayesNetFragment,
-      const DecisionTreeFactor::shared_ptr& discreteFactor) const;
-
   /// Get the Gaussian Mixture from the Bayes Net posterior at `index`.
   GaussianMixture::shared_ptr gaussianMixture(size_t index) const;
 
