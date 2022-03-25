@@ -40,6 +40,7 @@ using namespace gtsam;
 using namespace std;
 using namespace boost::assign;
 using symbol_shorthand::X;
+using symbol_shorthand::Y;
 
 static const double tol = 1e-5;
 
@@ -394,6 +395,45 @@ TEST(GaussianConditional, sample) {
   EXPECT_LONGS_EQUAL(1, actual2.size());
   // regression is not repeatable across platforms/versions :-(
   // EXPECT(assert_equal(Vector2(31.0111856, 64.9850775), actual2[X(0)], 1e-5));
+}
+
+/* ************************************************************************* */
+TEST(GaussianConditional, Print) {
+  Matrix A1 = (Matrix(2, 2) << 1., 2., 3., 4.).finished();
+  Matrix A2 = (Matrix(2, 2) << 5., 6., 7., 8.).finished();
+  const Vector2 b(20, 40);
+  const double sigma = 3;
+
+  std::string s = "GaussianConditional";
+
+  auto conditional =
+      GaussianConditional::FromMeanAndStddev(X(0), A1, X(1), b, sigma);
+
+  // Test printing for single parent.
+  std::string expected =
+    "GaussianConditional p(x0 | x1)\n"
+    "  R = [ 1 0 ]\n"
+    "      [ 0 1 ]\n"
+    "  S[x1] = [ -1 -2 ]\n"
+    "          [ -3 -4 ]\n"
+    "  d = [ 20 40 ]\n"
+    "isotropic dim=2 sigma=3\n";
+  EXPECT(assert_print_equal(expected, conditional, s));
+
+  // Test printing for multiple parents.
+  auto conditional2 = GaussianConditional::FromMeanAndStddev(X(0), A1, Y(0), A2,
+                                                             Y(1), b, sigma);
+  std::string expected2 =
+    "GaussianConditional p(x0 | y0 y1)\n"
+    "  R = [ 1 0 ]\n"
+    "      [ 0 1 ]\n"
+    "  S[y0] = [ -1 -2 ]\n"
+    "          [ -3 -4 ]\n"
+    "  S[y1] = [ -5 -6 ]\n"
+    "          [ -7 -8 ]\n"
+    "  d = [ 20 40 ]\n"
+    "isotropic dim=2 sigma=3\n";
+  EXPECT(assert_print_equal(expected2, conditional2, s));
 }
 
 /* ************************************************************************* */

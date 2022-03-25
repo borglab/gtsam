@@ -262,11 +262,7 @@ namespace gtsam {
     void visitWith(Func f) const;
 
     /// Return the number of leaves in the tree.
-    size_t nrLeaves() const {
-      size_t total = 0;
-      visit([&total](const Y& node) { total += 1; });
-      return total;
-    }
+    size_t nrLeaves() const;
 
     /**
      * @brief Fold a binary function over the tree, returning accumulator.
