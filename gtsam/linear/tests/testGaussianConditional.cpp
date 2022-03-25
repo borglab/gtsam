@@ -407,7 +407,7 @@ TEST(GaussianConditional, Print) {
   GaussianConditional conditional(X(0), b, Matrix2::Identity(),
                                   noiseModel::Isotropic::Sigma(2, sigma));
 
-  // Test printing for single parent.
+  // Test printing for no parents.
   std::string expected =
     "GaussianConditional p(x0)\n"
     "  R = [ 1 0 ]\n"
