@@ -28,49 +28,9 @@ namespace gtsam {
 void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
                                const Ordering &ordering,
                                boost::optional<size_t> maxNrLeaves) {
-  // if we are not at the first iteration
-  if (!hybridBayesNet_.empty()) {
-    // We add all relevant conditional mixtures on the last continuous variable
-    // in the previous `hybridBayesNet` to the graph
-    std::unordered_set<Key> allVars(ordering.begin(), ordering.end());
-
-    // Conditionals to remove from the bayes net
-    // since the conditional will be updated.
-    std::vector<AbstractConditional::shared_ptr> conditionals_to_erase;
-
-    // TODO(Varun) Using a for-range loop doesn't work since some of the
-    // conditionals are invalid pointers
-    for (size_t i = 0; i < hybridBayesNet_.size(); i++) {
-      auto conditional = hybridBayesNet_.at(i);
-
-      for (auto &key : conditional->frontals()) {
-        if (allVars.find(key) != allVars.end()) {
-          if (auto gf =
-                  boost::dynamic_pointer_cast<GaussianMixture>(conditional)) {
-            graph.push_back(gf);
-
-            conditionals_to_erase.push_back(conditional);
-
-          } else if (auto df = boost::dynamic_pointer_cast<DiscreteConditional>(
-                         conditional)) {
-            graph.push_back(df);
-
-            conditionals_to_erase.push_back(conditional);
-          }
-
-          break;
-        }
-      }
-    }
-
-    // Remove conditionals at the end so we don't affect the order in the
-    // original bayes net.
-    for (auto &&conditional : conditionals_to_erase) {
-      auto it =
-          find(hybridBayesNet_.begin(), hybridBayesNet_.end(), conditional);
-      hybridBayesNet_.erase(it);
-    }
-  }
+  // Add the necessary conditionals from the previous timestep(s).
+  std::tie(graph, hybridBayesNet_) =
+      addConditionals(graph, hybridBayesNet_, ordering);
 
   gttic_(Elimination);
   // Eliminate partially.
@@ -109,6 +69,57 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
   hybridBayesNet_.push_back<HybridBayesNet>(*bayesNetFragment);
 
   tictoc_print_();
+}
+
+/* ************************************************************************* */
+std::pair<GaussianHybridFactorGraph, HybridBayesNet>
+IncrementalHybrid::addConditionals(
+    const GaussianHybridFactorGraph &originalGraph,
+    const HybridBayesNet &originalHybridBayesNet,
+    const Ordering &ordering) const {
+  GaussianHybridFactorGraph graph(originalGraph);
+  HybridBayesNet hybridBayesNet(originalHybridBayesNet);
+
+  // If we are not at the first iteration, means we have conditionals to add.
+  if (!hybridBayesNet.empty()) {
+    // We add all relevant conditional mixtures on the last continuous variable
+    // in the previous `hybridBayesNet` to the graph
+    std::unordered_set<Key> allKeys(ordering.begin(), ordering.end());
+
+    // Conditionals to remove from the bayes net
+    // since the conditional will be updated.
+    std::vector<AbstractConditional::shared_ptr> conditionals_to_erase;
+
+    // TODO(Varun) Using a for-range loop doesn't work since some of the
+    // conditionals are invalid pointers
+    for (size_t i = 0; i < hybridBayesNet.size(); i++) {
+      auto conditional = hybridBayesNet.at(i);
+
+      for (auto &key : conditional->frontals()) {
+        if (allKeys.find(key) != allKeys.end()) {
+          if (auto gf =
+                  boost::dynamic_pointer_cast<GaussianMixture>(conditional)) {
+            graph.push_back(gf);
+            conditionals_to_erase.push_back(conditional);
+
+          } else if (auto df = boost::dynamic_pointer_cast<DiscreteConditional>(
+                         conditional)) {
+            graph.push_back(df);
+            conditionals_to_erase.push_back(conditional);
+          }
+
+          break;
+        }
+      }
+    }
+    // Remove conditionals at the end so we don't affect the order in the
+    // original bayes net.
+    for (auto &&conditional : conditionals_to_erase) {
+      auto it = find(hybridBayesNet.begin(), hybridBayesNet.end(), conditional);
+      hybridBayesNet.erase(it);
+    }
+  }
+  return std::make_pair(graph, hybridBayesNet);
 }
 
 /* ************************************************************************* */
