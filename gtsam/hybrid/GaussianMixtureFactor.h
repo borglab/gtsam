@@ -29,6 +29,8 @@ namespace gtsam {
 
 class GaussianFactorGraph;
 
+typedef std::vector<gtsam::GaussianFactor::shared_ptr> GaussianFactorVector;
+
 class GaussianMixtureFactor : public HybridFactor {
  public:
   using Base = HybridFactor;
@@ -42,11 +44,16 @@ class GaussianMixtureFactor : public HybridFactor {
   GaussianMixtureFactor() = default;
 
   GaussianMixtureFactor(const KeyVector &continuousKeys,
-                  const DiscreteKeys &discreteKeys, const Factors &factors);
+                        const DiscreteKeys &discreteKeys,
+                        const Factors &factors);
 
   using Sum = DecisionTree<Key, GaussianFactorGraph>;
 
-  const Factors& factors();
+  const Factors &factors();
+
+  static This FromFactorList(
+      const KeyVector &continuousKeys, const DiscreteKeys &discreteKeys,
+      const std::vector<GaussianFactor::shared_ptr> &factors);
 
   /* *******************************************************************************/
   Sum addTo(const Sum &sum) const;

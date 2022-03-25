@@ -18,43 +18,52 @@
  * @date   Mar 12, 2022
  */
 
-#include <gtsam/hybrid/GaussianMixtureFactor.h>
-
-#include <gtsam/discrete/DecisionTree.h>
-#include <gtsam/discrete/DecisionTree-inl.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/base/utilities.h>
+#include <gtsam/discrete/DecisionTree-inl.h>
+#include <gtsam/discrete/DecisionTree.h>
+#include <gtsam/hybrid/GaussianMixtureFactor.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 
 namespace gtsam {
 
 GaussianMixtureFactor::GaussianMixtureFactor(const KeyVector &continuousKeys,
-                                 const DiscreteKeys &discreteKeys,
-                                 const Factors &factors) : Base(continuousKeys, discreteKeys),
-                                                           factors_(factors) {}
+                                             const DiscreteKeys &discreteKeys,
+                                             const Factors &factors)
+    : Base(continuousKeys, discreteKeys), factors_(factors) {}
 bool GaussianMixtureFactor::equals(const HybridFactor &lf, double tol) const {
   return false;
 }
 
-void GaussianMixtureFactor::print(const std::string &s, const KeyFormatter &formatter) const {
+GaussianMixtureFactor GaussianMixtureFactor::FromFactorList(
+    const KeyVector &continuousKeys, const DiscreteKeys &discreteKeys,
+    const std::vector<GaussianFactor::shared_ptr> &factorsList) {
+  Factors dt(discreteKeys, factorsList);
+
+  return GaussianMixtureFactor(continuousKeys, discreteKeys, dt);
+}
+
+void GaussianMixtureFactor::print(const std::string &s,
+                                  const KeyFormatter &formatter) const {
   HybridFactor::print(s, formatter);
   factors_.print(
-      "mixture = ",
-      [&](Key k) {
-        return formatter(k);
-      }, [&](const GaussianFactor::shared_ptr &gf) -> std::string {
+      "mixture = ", [&](Key k) { return formatter(k); },
+      [&](const GaussianFactor::shared_ptr &gf) -> std::string {
         RedirectCout rd;
-        if (!gf->empty()) gf->print("", formatter);
-        else return {"nullptr"};
+        if (!gf->empty())
+          gf->print("", formatter);
+        else
+          return {"nullptr"};
         return rd.str();
       });
 }
 
-const GaussianMixtureFactor::Factors& GaussianMixtureFactor::factors() {
+const GaussianMixtureFactor::Factors &GaussianMixtureFactor::factors() {
   return factors_;
 }
 
 /* *******************************************************************************/
-GaussianMixtureFactor::Sum GaussianMixtureFactor::addTo(const GaussianMixtureFactor::Sum &sum) const {
+GaussianMixtureFactor::Sum GaussianMixtureFactor::addTo(
+    const GaussianMixtureFactor::Sum &sum) const {
   using Y = GaussianFactorGraph;
   auto add = [](const Y &graph1, const Y &graph2) {
     auto result = graph1;
@@ -74,4 +83,4 @@ GaussianMixtureFactor::Sum GaussianMixtureFactor::wrappedFactors() const {
   };
   return {factors_, wrap};
 }
-}
+}  // namespace gtsam

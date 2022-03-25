@@ -60,6 +60,11 @@ class GaussianMixture : public HybridFactor,
   /* *******************************************************************************/
   Sum wrappedConditionals() const;
 
+  static This FromConditionalList(
+      const KeyVector &continuousFrontals, const KeyVector &continuousParents,
+      const DiscreteKeys &discreteParents,
+      const std::vector<GaussianConditional::shared_ptr> &conditionals);
+
   bool equals(const HybridFactor &lf, double tol = 1e-9) const override;
 
   void print(

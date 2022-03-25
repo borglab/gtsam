@@ -32,6 +32,7 @@ class HybridBayesNet;
 class HybridEliminationTree;
 class HybridBayesTree;
 class HybridJunctionTree;
+class DecisionTreeFactor;
 
 class JacobianFactor;
 
@@ -98,6 +99,12 @@ class HybridFactorGraph : public FactorGraph<HybridFactor>,
 
   /// Add a factor directly using a shared_ptr.
   void add(JacobianFactor&& factor);
+
+  void add(DecisionTreeFactor&& factor);
+
+  void add(boost::shared_ptr<DecisionTreeFactor> factor);
+
+  void add(boost::shared_ptr<JacobianFactor> factor);
 };
 
 }  // namespace gtsam

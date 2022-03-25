@@ -133,15 +133,19 @@ TEST(HybridFactorGraph, eliminateFullMultifrontalSimple) {
   hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
 
-  DecisionTree<Key, GaussianFactor::shared_ptr> dt(
-      C(1), boost::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1),
-      boost::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()));
+  // DecisionTree<Key, GaussianFactor::shared_ptr> dt(
+  //     C(1), boost::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1),
+  //     boost::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()));
 
-  hfg.add(GaussianMixtureFactor({X(1)}, {c1}, dt));
+  // hfg.add(GaussianMixtureFactor({X(1)}, {c1}, dt));
+  hfg.add(GaussianMixtureFactor::FromFactorList(
+      {X(1)}, {{C(1), 2}},
+      {boost::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1),
+       boost::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones())}));
+
   // hfg.add(GaussianMixtureFactor({X(0)}, {c1}, dt));
-  hfg.add(HybridDiscreteFactor(DecisionTreeFactor(c1, {2, 8})));
-  hfg.add(HybridDiscreteFactor(
-      DecisionTreeFactor({{C(1), 2}, {C(2), 2}}, "1 2 3 4")));
+  hfg.add(DecisionTreeFactor(c1, {2, 8}));
+  hfg.add(DecisionTreeFactor({{C(1), 2}, {C(2), 2}}, "1 2 3 4"));
   // hfg.add(HybridDiscreteFactor(DecisionTreeFactor({{C(2), 2}, {C(3), 2}}, "1
   // 2 3 4"))); hfg.add(HybridDiscreteFactor(DecisionTreeFactor({{C(3), 2},
   // {C(1), 2}}, "1 2 2 1")));
@@ -199,11 +203,14 @@ TEST_DISABLED(HybridFactorGraph, eliminateFullMultifrontalTwoClique) {
   hfg.add(JacobianFactor(X(1), I_3x3, X(2), -I_3x3, Z_3x1));
 
   {
-    DecisionTree<Key, GaussianFactor::shared_ptr> dt(
-        C(0), boost::make_shared<JacobianFactor>(X(0), I_3x3, Z_3x1),
-        boost::make_shared<JacobianFactor>(X(0), I_3x3, Vector3::Ones()));
+    // DecisionTree<Key, GaussianFactor::shared_ptr> dt(
+    //     C(0), boost::make_shared<JacobianFactor>(X(0), I_3x3, Z_3x1),
+    //     boost::make_shared<JacobianFactor>(X(0), I_3x3, Vector3::Ones()));
 
-    hfg.add(GaussianMixtureFactor({X(0)}, {{C(0), 2}}, dt));
+    hfg.add(GaussianMixtureFactor::FromFactorList(
+        {X(0)}, {{C(0), 2}},
+        {boost::make_shared<JacobianFactor>(X(0), I_3x3, Z_3x1),
+         boost::make_shared<JacobianFactor>(X(0), I_3x3, Vector3::Ones())}));
 
     DecisionTree<Key, GaussianFactor::shared_ptr> dt1(
         C(1), boost::make_shared<JacobianFactor>(X(2), I_3x3, Z_3x1),

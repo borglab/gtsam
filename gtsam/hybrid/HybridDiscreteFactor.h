@@ -35,10 +35,10 @@ class HybridDiscreteFactor : public HybridFactor {
 
   DiscreteFactor::shared_ptr inner;
 
-  // Implicit conversion from a shared ptr of GF
+  // Implicit conversion from a shared ptr of DF
   HybridDiscreteFactor(DiscreteFactor::shared_ptr other);
 
-  // Forwarding constructor from concrete JacobianFactor
+  // Forwarding constructor from concrete DecisionTreeFactor
   HybridDiscreteFactor(DecisionTreeFactor &&dtf);
 
  public:
