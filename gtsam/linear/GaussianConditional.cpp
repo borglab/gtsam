@@ -89,15 +89,20 @@ namespace gtsam {
 
   /* ************************************************************************ */
   void GaussianConditional::print(const string &s, const KeyFormatter& formatter) const {
-    cout << s << " p(";
+    cout << s << "GaussianConditional p(";
     for (const_iterator it = beginFrontals(); it != endFrontals(); ++it) {
-      cout << (boost::format("%1%")%(formatter(*it))).str() << " ";
+      cout << (boost::format("%1%") % (formatter(*it))).str()
+           << (nrFrontals() > 1 ? " " : "");
     }
-    cout << "|";
-    for (const_iterator it = beginParents(); it != endParents(); ++it) {
-      cout << " " << (boost::format("%1%")%(formatter(*it))).str();
+
+    if (nrParents()) {
+      cout << " |";
+      for (const_iterator it = beginParents(); it != endParents(); ++it) {
+        cout << " " << (boost::format("%1%") % (formatter(*it))).str();
+      }
     }
     cout << ")" << endl;
+
     cout << formatMatrixIndented("  R = ", R()) << endl;
     for (const_iterator it = beginParents() ; it != endParents() ; ++it) {
       cout << formatMatrixIndented((boost::format("  S[%1%] = ")%(formatter(*it))).str(), getA(it))
