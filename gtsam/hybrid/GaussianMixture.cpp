@@ -35,12 +35,23 @@ GaussianMixture::GaussianMixture(
       BaseConditional(continuousFrontals.size()),
       conditionals_(conditionals) {}
 
-const GaussianMixture::Conditionals& GaussianMixture::conditionals() {
+const GaussianMixture::Conditionals &GaussianMixture::conditionals() {
   return conditionals_;
 }
 
+GaussianMixture GaussianMixture::FromConditionalList(
+    const KeyVector &continuousFrontals, const KeyVector &continuousParents,
+    const DiscreteKeys &discreteParents,
+    const std::vector<GaussianConditional::shared_ptr> &conditionalsList) {
+  Conditionals dt(discreteParents, conditionalsList);
+
+  return GaussianMixture(continuousFrontals, continuousParents, discreteParents,
+                         dt);
+}
+
 /* *******************************************************************************/
-GaussianMixture::Sum GaussianMixture::addTo(const GaussianMixture::Sum &sum) const {
+GaussianMixture::Sum GaussianMixture::addTo(
+    const GaussianMixture::Sum &sum) const {
   using Y = GaussianFactorGraph;
   auto add = [](const Y &graph1, const Y &graph2) {
     auto result = graph1;
@@ -66,7 +77,7 @@ bool GaussianMixture::equals(const HybridFactor &lf, double tol) const {
 }
 
 void GaussianMixture::print(const std::string &s,
-                                  const KeyFormatter &formatter) const {
+                            const KeyFormatter &formatter) const {
   std::cout << s << ": ";
   if (isContinuous_) std::cout << "Cont. ";
   if (isDiscrete_) std::cout << "Disc. ";

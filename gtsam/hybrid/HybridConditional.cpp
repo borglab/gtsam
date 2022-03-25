@@ -16,9 +16,9 @@
  */
 
 #include <gtsam/hybrid/HybridConditional.h>
+#include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/inference/Conditional-inst.h>
-#include "gtsam/hybrid/HybridFactor.h"
-#include "gtsam/inference/Key.h"
+#include <gtsam/inference/Key.h>
 
 namespace gtsam {
 
@@ -27,8 +27,9 @@ HybridConditional::HybridConditional(const KeyVector &continuousFrontals,
                                      const KeyVector &continuousParents,
                                      const DiscreteKeys &discreteParents)
     : HybridConditional(
-          CollectKeys({continuousFrontals.begin(), continuousFrontals.end()},
-                      KeyVector {continuousParents.begin(), continuousParents.end()}),
+          CollectKeys(
+              {continuousFrontals.begin(), continuousFrontals.end()},
+              KeyVector{continuousParents.begin(), continuousParents.end()}),
           CollectDiscreteKeys(
               {discreteFrontals.begin(), discreteFrontals.end()},
               {discreteParents.begin(), discreteParents.end()}),
