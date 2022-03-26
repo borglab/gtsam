@@ -473,6 +473,17 @@ boost::optional<Pose3> Pose3::Align(const Point3Pairs &abPointPairs) {
   return Pose3(aRb, aTb);
 }
 
+boost::optional<Pose3> Pose3::Align(const Matrix& a, const Matrix& b) {
+  if (a.rows() != 3 || b.rows() != 3 || a.cols() != b.cols()) {
+    throw std::invalid_argument(
+      "Pose3:Align expects 3*N matrices of equal shape.");
+  }
+  Point3Pairs abPointPairs;
+  for (size_t j=0; j < a.cols(); j++) {
+    abPointPairs.emplace_back(a.col(j), b.col(j));
+  }
+  return Pose3::Align(abPointPairs);
+}
 boost::optional<Pose3> align(const Point3Pairs &baPointPairs) {
   Point3Pairs abPointPairs;
   for (const Point3Pair &baPair : baPointPairs) {

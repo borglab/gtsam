@@ -85,6 +85,9 @@ public:
    */
   static boost::optional<Pose3> Align(const std::vector<Point3Pair>& abPointPairs);
 
+  // Version of Pose3::Align that takes 2 matrices.
+  static boost::optional<Pose3> Align(const Matrix& a, const Matrix& b);
+
   /// @}
   /// @name Testable
   /// @{

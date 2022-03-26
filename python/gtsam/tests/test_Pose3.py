@@ -102,6 +102,24 @@ class TestPose3(GtsamTestCase):
         actual.deserialize(serialized)
         self.gtsamAssertEquals(expected, actual, 1e-10)
 
+    def test_align_squares(self):
+        """Test if Align method can align 2 squares."""
+        square = np.array([[0,0,0],[0,1,0],[1,1,0],[1,0,0]], float).T
+        sTt = Pose3(Rot3.Rodrigues(0, 0, -math.pi), Point3(2, 4, 0))
+        transformed = sTt.transformTo(square)
+
+        st_pairs = Point3Pairs()
+        for j in range(4):
+            st_pairs.append((square[:,j], transformed[:,j]))
+
+        # Recover the transformation sTt
+        estimated_sTt = Pose3.Align(st_pairs)
+        self.gtsamAssertEquals(estimated_sTt, sTt, 1e-10)
+
+        # Matrix version
+        estimated_sTt = Pose3.Align(square, transformed)
+        self.gtsamAssertEquals(estimated_sTt, sTt, 1e-10)
+
 
 if __name__ == "__main__":
     unittest.main()

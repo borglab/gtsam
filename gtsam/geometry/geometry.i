@@ -431,6 +431,9 @@ class Pose3 {
   Pose3(const gtsam::Pose2& pose2);
   Pose3(Matrix mat);
 
+  static boost::optional<gtsam::Pose3> Align(const gtsam::Point3Pairs& abPointPairs);
+  static boost::optional<gtsam::Pose3> Align(const gtsam::Matrix& a, const gtsam::Matrix& b);
+
   // Testable
   void print(string s = "") const;
   bool equals(const gtsam::Pose3& pose, double tol) const;
