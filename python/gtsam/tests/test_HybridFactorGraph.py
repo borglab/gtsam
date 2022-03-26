@@ -40,9 +40,17 @@ class TestHybridFactorGraph(GtsamTestCase):
         hfg.add(jf2)
         hfg.push_back(gmf)
 
-        hfg.eliminateSequential(
+        hbn = hfg.eliminateSequential(
             gtsam.Ordering.ColamdConstrainedLastHybridFactorGraph(
-                hfg, [C(0)])).print()
+                hfg, [C(0)]))
+
+        print("hbn = ", hbn)
+
+        mixture = hbn.at(0).getInner()
+        print(mixture)
+
+        discrete_conditional = hbn.at(hbn.size()-1).getInner()
+        print(discrete_conditional)
 
 
 if __name__ == "__main__":

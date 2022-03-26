@@ -57,7 +57,7 @@ static std::string GREEN = "\033[0;32m";
 static std::string GREEN_BOLD = "\033[1;32m";
 static std::string RESET = "\033[0m";
 
-static bool DEBUG = false;
+constexpr bool DEBUG = false;
 
 static GaussianMixtureFactor::Sum &addGaussian(
     GaussianMixtureFactor::Sum &sum, const GaussianFactor::shared_ptr &factor) {
@@ -123,7 +123,7 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
   // However this is also the case with iSAM2, so no pressure :)
 
   // PREPROCESS: Identify the nature of the current elimination
-  std::unordered_map<Key, DiscreteKey> discreteCardinalities;
+  std::unordered_map<Key, DiscreteKey> mapFromKeyToDiscreteKey;
   std::set<DiscreteKey> discreteSeparatorSet;
   std::set<DiscreteKey> discreteFrontals;
 
@@ -137,7 +137,7 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
     frontalKeys.print();
   }
 
-  // This initializes separatorKeys and discreteCardinalities
+  // This initializes separatorKeys and mapFromKeyToDiscreteKey
   for (auto &&factor : factors) {
     if (DEBUG) {
       std::cout << ">>> Adding factor: " << GREEN;
@@ -147,7 +147,7 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
     separatorKeys.insert(factor->begin(), factor->end());
     if (!factor->isContinuous_) {
       for (auto &k : factor->discreteKeys_) {
-        discreteCardinalities[k.first] = k;
+        mapFromKeyToDiscreteKey[k.first] = k;
       }
     }
   }
@@ -159,8 +159,8 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
 
   // Fill in discrete frontals and continuous frontals for the end result
   for (auto &k : frontalKeys) {
-    if (discreteCardinalities.find(k) != discreteCardinalities.end()) {
-      discreteFrontals.insert(discreteCardinalities.at(k));
+    if (mapFromKeyToDiscreteKey.find(k) != mapFromKeyToDiscreteKey.end()) {
+      discreteFrontals.insert(mapFromKeyToDiscreteKey.at(k));
     } else {
       continuousFrontals.insert(k);
       allContinuousKeys.insert(k);
@@ -169,8 +169,8 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
 
   // Fill in discrete frontals and continuous frontals for the end result
   for (auto &k : separatorKeys) {
-    if (discreteCardinalities.find(k) != discreteCardinalities.end()) {
-      discreteSeparatorSet.insert(discreteCardinalities.at(k));
+    if (mapFromKeyToDiscreteKey.find(k) != mapFromKeyToDiscreteKey.end()) {
+      discreteSeparatorSet.insert(mapFromKeyToDiscreteKey.at(k));
     } else {
       continuousSeparator.insert(k);
       allContinuousKeys.insert(k);
@@ -181,8 +181,8 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
   if (DEBUG) {
     std::cout << RED_BOLD << "Keys: " << RESET;
     for (auto &f : frontalKeys) {
-      if (discreteCardinalities.find(f) != discreteCardinalities.end()) {
-        auto &key = discreteCardinalities.at(f);
+      if (mapFromKeyToDiscreteKey.find(f) != mapFromKeyToDiscreteKey.end()) {
+        auto &key = mapFromKeyToDiscreteKey.at(f);
         std::cout << boost::format(" (%1%,%2%),") %
                          DefaultKeyFormatter(key.first) % key.second;
       } else {
@@ -195,8 +195,8 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
     }
 
     for (auto &f : separatorKeys) {
-      if (discreteCardinalities.find(f) != discreteCardinalities.end()) {
-        auto &key = discreteCardinalities.at(f);
+      if (mapFromKeyToDiscreteKey.find(f) != mapFromKeyToDiscreteKey.end()) {
+        auto &key = mapFromKeyToDiscreteKey.at(f);
         std::cout << boost::format(" (%1%,%2%),") %
                          DefaultKeyFormatter(key.first) % key.second;
       } else {
@@ -209,7 +209,7 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
   // NOTE: We should really defer the product here because of pruning
 
   // Case 1: we are only dealing with continuous
-  if (discreteCardinalities.empty() && !allContinuousKeys.empty()) {
+  if (mapFromKeyToDiscreteKey.empty() && !allContinuousKeys.empty()) {
     if (DEBUG) {
       std::cout << RED_BOLD << "CONT. ONLY" << RESET << "\n";
     }
