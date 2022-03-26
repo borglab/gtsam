@@ -15,6 +15,17 @@ virtual class HybridFactor {
   gtsam::KeyVector keys() const;
 };
 
+#include <gtsam/hybrid/HybridConditional.h>
+virtual class HybridConditional {
+  void print(string s = "Hybrid Conditional\n",
+             const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
+  bool equals(const gtsam::HybridConditional& other, double tol = 1e-9) const;
+  size_t nrFrontals() const;
+  size_t nrParents() const;
+  Factor* getInner();
+};
+
 #include <gtsam/hybrid/GaussianMixtureFactor.h>
 class GaussianMixtureFactor : gtsam::HybridFactor {
   static GaussianMixtureFactor FromFactorList(
