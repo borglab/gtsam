@@ -471,8 +471,8 @@ class Pose3 {
   gtsam::Point3 transformTo(const gtsam::Point3& point) const;
 
   // Matrix versions
-  Matrix transformAllFrom(const Matrix& points) const;
-  Matrix transformAllTo(const Matrix& points) const;
+  Matrix transformFrom(const Matrix& points) const;
+  Matrix transformTo(const Matrix& points) const;
 
   // Standard Interface
   gtsam::Rot3 rotation() const;
