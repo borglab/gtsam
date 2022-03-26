@@ -30,12 +30,33 @@ class TestPose3(GtsamTestCase):
         actual = T2.between(T3)
         self.gtsamAssertEquals(actual, expected, 1e-6)
 
-    def test_transform_to(self):
+    def test_transformTo(self):
         """Test transformTo method."""
-        transform = Pose3(Rot3.Rodrigues(0, 0, -1.570796), Point3(2, 4, 0))
-        actual = transform.transformTo(Point3(3, 2, 10))
+        pose = Pose3(Rot3.Rodrigues(0, 0, -1.570796), Point3(2, 4, 0))
+        actual = pose.transformTo(Point3(3, 2, 10))
         expected = Point3(2, 1, 10)
         self.gtsamAssertEquals(actual, expected, 1e-6)
+
+        # multi-point version
+        points = np.stack([Point3(3, 2, 10), Point3(3, 2, 10)]).T
+        actual_array = pose.transformAllTo(points)
+        self.assertEqual(actual_array.shape, (3, 2))
+        expected_array = np.stack([expected, expected]).T
+        np.testing.assert_allclose(actual_array, expected_array)
+
+    def test_transformFrom(self):
+        """Test transformTo method."""
+        pose = Pose3(Rot3.Rodrigues(0, 0, -1.570796), Point3(2, 4, 0))
+        actual = pose.transformFrom(Point3(2, 1, 10))
+        expected = Point3(3, 2, 10)
+        self.gtsamAssertEquals(actual, expected, 1e-6)
+
+        # multi-point version
+        points = np.stack([Point3(2, 1, 10), Point3(2, 1, 10)]).T
+        actual_array = pose.transformAllFrom(points)
+        self.assertEqual(actual_array.shape, (3, 2))
+        expected_array = np.stack([expected, expected]).T
+        np.testing.assert_allclose(actual_array, expected_array)
 
     def test_range(self):
         """Test range method."""

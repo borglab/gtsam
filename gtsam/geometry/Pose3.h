@@ -249,6 +249,13 @@ public:
   Point3 transformFrom(const Point3& point, OptionalJacobian<3, 6> Hself =
       boost::none, OptionalJacobian<3, 3> Hpoint = boost::none) const;
 
+  /**
+   * @brief transform many points in Pose coordinates and transform to world.
+   * @param points 3*N matrix in Pose coordinates
+   * @return points in world coordinates, as 3*N Matrix
+   */
+  Matrix transformAllFrom(const Matrix& points) const;
+
   /** syntactic sugar for transformFrom */
   inline Point3 operator*(const Point3& point) const {
     return transformFrom(point);
@@ -263,6 +270,13 @@ public:
    */
   Point3 transformTo(const Point3& point, OptionalJacobian<3, 6> Hself =
       boost::none, OptionalJacobian<3, 3> Hpoint = boost::none) const;
+
+  /**
+   * @brief transform many points in world coordinates and transform to Pose.
+   * @param points 3*N matrix in world coordinates
+   * @return points in Pose coordinates, as 3*N Matrix
+   */
+  Matrix transformAllTo(const Matrix& points) const;
 
   /// @}
   /// @name Standard Interface

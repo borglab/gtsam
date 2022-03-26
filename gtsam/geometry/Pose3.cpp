@@ -354,6 +354,17 @@ Point3 Pose3::transformFrom(const Point3& point, OptionalJacobian<3, 6> Hself,
   return R_ * point + t_;
 }
 
+Matrix Pose3::transformAllFrom(const Matrix& points) const {
+  if (points.rows() != 3) {
+    throw std::invalid_argument("Pose3:transformFrom expects 3*N matrix.");
+  }
+  Matrix result(3, points.cols());
+  for (size_t j=0; j < points.cols(); j++) {
+    result.col(j) = transformFrom(Point3(points.col(j)));
+  }
+  return result;
+}
+
 /* ************************************************************************* */
 Point3 Pose3::transformTo(const Point3& point, OptionalJacobian<3, 6> Hself,
     OptionalJacobian<3, 3> Hpoint) const {
@@ -372,6 +383,17 @@ Point3 Pose3::transformTo(const Point3& point, OptionalJacobian<3, 6> Hself,
     *Hpoint = Rt;
   }
   return q;
+}
+
+Matrix Pose3::transformAllTo(const Matrix& points) const {
+  if (points.rows() != 3) {
+    throw std::invalid_argument("Pose3:transformTo expects 3*N matrix.");
+  }
+  Matrix result(3, points.cols());
+  for (size_t j=0; j < points.cols(); j++) {
+    result.col(j) = transformTo(Point3(points.col(j)));
+  }
+  return result;
 }
 
 /* ************************************************************************* */
