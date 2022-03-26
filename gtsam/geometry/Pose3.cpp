@@ -358,11 +358,8 @@ Matrix Pose3::transformFrom(const Matrix& points) const {
   if (points.rows() != 3) {
     throw std::invalid_argument("Pose3:transformFrom expects 3*N matrix.");
   }
-  Matrix result(3, points.cols());
-  for (size_t j=0; j < points.cols(); j++) {
-    result.col(j) = transformFrom(Point3(points.col(j)));
-  }
-  return result;
+  const Matrix3 R = R_.matrix();
+  return (R * points).colwise() + t_;  // Eigen broadcasting!
 }
 
 /* ************************************************************************* */
@@ -389,11 +386,8 @@ Matrix Pose3::transformTo(const Matrix& points) const {
   if (points.rows() != 3) {
     throw std::invalid_argument("Pose3:transformTo expects 3*N matrix.");
   }
-  Matrix result(3, points.cols());
-  for (size_t j=0; j < points.cols(); j++) {
-    result.col(j) = transformTo(Point3(points.col(j)));
-  }
-  return result;
+  const Matrix3 Rt = R_.transpose();
+  return Rt * (points.colwise() - t_);  // Eigen broadcasting!
 }
 
 /* ************************************************************************* */
@@ -453,7 +447,7 @@ Unit3 Pose3::bearing(const Pose3& pose, OptionalJacobian<2, 6> Hself,
 boost::optional<Pose3> Pose3::Align(const Point3Pairs &abPointPairs) {
   const size_t n = abPointPairs.size();
   if (n < 3) {
-    return boost::none; // we need at least three pairs
+    return boost::none;  // we need at least three pairs
   }
 
   // calculate centroids
@@ -484,6 +478,7 @@ boost::optional<Pose3> Pose3::Align(const Matrix& a, const Matrix& b) {
   }
   return Pose3::Align(abPointPairs);
 }
+
 boost::optional<Pose3> align(const Point3Pairs &baPointPairs) {
   Point3Pairs abPointPairs;
   for (const Point3Pair &baPair : baPointPairs) {
