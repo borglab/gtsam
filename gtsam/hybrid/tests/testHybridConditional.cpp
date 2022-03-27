@@ -31,6 +31,11 @@
 #include <gtsam/linear/JacobianFactor.h>
 
 #include <boost/assign/std/map.hpp>
+#include <cstddef>
+
+#include "gtsam/inference/DotWriter.h"
+#include "gtsam/inference/Key.h"
+#include "gtsam/inference/Ordering.h"
 
 using namespace boost::assign;
 
@@ -83,10 +88,10 @@ TEST_DISABLED(HybridFactorGraph, eliminate) {
 TEST_DISABLED(HybridFactorGraph, eliminateMultifrontal) {
   HybridFactorGraph hfg;
 
-  DiscreteKey x(X(1), 2);
+  DiscreteKey c(C(1), 2);
 
   hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
-  hfg.add(HybridDiscreteFactor(DecisionTreeFactor(x, {2, 8})));
+  hfg.add(HybridDiscreteFactor(DecisionTreeFactor(c, {2, 8})));
 
   auto result = hfg.eliminatePartialMultifrontal({X(0)});
 
@@ -94,7 +99,7 @@ TEST_DISABLED(HybridFactorGraph, eliminateMultifrontal) {
   EXPECT_LONGS_EQUAL(result.second->size(), 1);
 }
 
-TEST(HybridFactorGraph, eliminateFullSequentialSimple) {
+TEST_DISABLED(HybridFactorGraph, eliminateFullSequentialSimple) {
   std::cout << ">>>>>>>>>>>>>>\n";
 
   HybridFactorGraph hfg;
@@ -123,7 +128,7 @@ TEST(HybridFactorGraph, eliminateFullSequentialSimple) {
   GTSAM_PRINT(*result);
 }
 
-TEST(HybridFactorGraph, eliminateFullMultifrontalSimple) {
+TEST_DISABLED(HybridFactorGraph, eliminateFullMultifrontalSimple) {
   std::cout << ">>>>>>>>>>>>>>\n";
 
   HybridFactorGraph hfg;
@@ -247,12 +252,82 @@ TEST_DISABLED(HybridFactorGraph, eliminateFullMultifrontalTwoClique) {
 
   HybridBayesTree::shared_ptr hbt;
   HybridFactorGraph::shared_ptr remaining;
-  std::tie(hbt, remaining) = hfg.eliminatePartialMultifrontal(
-      Ordering(ordering_full.begin(), ordering_full.end()));
+  std::tie(hbt, remaining) = hfg.eliminatePartialMultifrontal(ordering_full);
 
   GTSAM_PRINT(*hbt);
 
   GTSAM_PRINT(*remaining);
+
+  hbt->dot(std::cout);
+  /*
+  Explanation: the Junction tree will need to reeliminate to get to the marginal
+  on X(1), which is not possible because it involves eliminating discrete before
+  continuous. The solution to this, however, is in Murphy02. TLDR is that this
+  is 1. expensive and 2. inexact. neverless it is doable. And I believe that we
+  should do this.
+  */
+}
+
+HybridFactorGraph::shared_ptr makeSwitchingChain(size_t n) {
+  HybridFactorGraph hfg;
+
+  hfg.add(JacobianFactor(X(1), I_3x3, Z_3x1));
+
+  // X(1) to X(n+1)
+  for (size_t t = 1; t < n; t++) {
+    hfg.add(GaussianMixtureFactor::FromFactorList(
+        {X(t), X(t + 1)}, {{C(t), 2}},
+        {boost::make_shared<JacobianFactor>(X(t), I_3x3, X(t + 1), I_3x3,
+                                            Z_3x1),
+         boost::make_shared<JacobianFactor>(X(t), I_3x3, X(t + 1), I_3x3,
+                                            Vector3::Ones())}));
+  }
+
+  return boost::make_shared<HybridFactorGraph>(std::move(hfg));
+}
+
+// TODO(fan): make a graph like Varun's paper one
+TEST(HybridFactorGraph, Switching) {
+  auto hfg = makeSwitchingChain(9);
+
+  // X(5) will be the center, X(1-4), X(6-9)
+  // X(3), X(7)
+  // X(2), X(8)
+  // X(1), X(4), X(6), X(9)
+  // C(5) will be the center, C(1-4), C(6-8)
+  // C(3), C(7)
+  // C(1), C(4), C(2), C(6), C(8)
+  auto ordering_full =
+      Ordering(KeyVector{X(1), X(4), X(2), X(6), X(9), X(8), X(3), X(7), X(5),
+                         C(1), C(4), C(2), C(6), C(8), C(3), C(7), C(5)});
+
+  GTSAM_PRINT(*hfg);
+  GTSAM_PRINT(ordering_full);
+
+  HybridBayesTree::shared_ptr hbt;
+  HybridFactorGraph::shared_ptr remaining;
+  std::tie(hbt, remaining) = hfg->eliminatePartialMultifrontal(ordering_full);
+
+  GTSAM_PRINT(*hbt);
+
+  GTSAM_PRINT(*remaining);
+
+  {
+    DotWriter dw;
+    dw.positionHints['c'] = 2;
+    dw.positionHints['x'] = 1;
+    std::cout << hfg->dot(DefaultKeyFormatter, dw);
+    std::cout << "\n";
+    hbt->dot(std::cout);
+  }
+
+  {
+    DotWriter dw;
+    dw.positionHints['x'] = 1;
+    std::cout << "\n";
+    std::cout << hfg->eliminateSequential(ordering_full)
+                     ->dot(DefaultKeyFormatter, dw);
+  }
   /*
   Explanation: the Junction tree will need to reeliminate to get to the marginal
   on X(1), which is not possible because it involves eliminating discrete before

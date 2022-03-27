@@ -31,7 +31,7 @@
 #include <typeinfo>
 #include <vector>
 
-#include "gtsam/hybrid/GaussianMixture.h"
+#include <gtsam/hybrid/GaussianMixture.h>
 
 namespace gtsam {
 
