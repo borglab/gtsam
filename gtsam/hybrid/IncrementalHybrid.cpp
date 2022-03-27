@@ -50,12 +50,12 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
     // all leaves below the threshold to 0.0.
     auto discreteFactor = boost::dynamic_pointer_cast<DecisionTreeFactor>(
         remainingFactorGraph_.discreteGraph().at(0));
-    DecisionTreeFactor::shared_ptr prunedDiscreteFactor =
+    DecisionTreeFactor prunedDiscreteFactor =
         discreteFactor->prune(*maxNrLeaves);
 
     // Assign the thresholded tree so we it is accessible from
     // remainingFactorGraph. Imperative :-(
-    discreteFactor->root_ = prunedDiscreteFactor->root_;
+    discreteFactor->root_ = prunedDiscreteFactor.root_;
 
     // `pruneBayesNet` sets the leaves with 0 in discreteFactor to nullptr in
     // all the conditionals with the same keys in bayesNetFragment.
