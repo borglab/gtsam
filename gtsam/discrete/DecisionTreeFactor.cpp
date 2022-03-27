@@ -290,10 +290,8 @@ namespace gtsam {
   DecisionTreeFactor DecisionTreeFactor::prune(size_t maxNrLeaves) const {
     const size_t N = maxNrLeaves;
 
-    // Let's assume that the structure of the last discrete density will be the
-    // same as the last continuous
+    // Get the probabilities in the decision tree so we can threshold.
     std::vector<double> probabilities;
-    // number of choices
     this->visit([&](const double& prob) { probabilities.emplace_back(prob); });
 
     // The number of probabilities can be lower than max_leaves
@@ -318,10 +316,8 @@ namespace gtsam {
     };
     DecisionTree<Key, double> thresholded(*this, thresholdFunc);
 
-    // Create pruned decision tree factor
-    DecisionTreeFactor prunedDiscreteFactor(this->discreteKeys(), thresholded);
-
-    return prunedDiscreteFactor;
+    // Create pruned decision tree factor and return.
+    return DecisionTreeFactor(this->discreteKeys(), thresholded);
   }
 
   /* ************************************************************************ */
