@@ -42,7 +42,7 @@ GaussianBayesNet HybridBayesNet::choose(
 }
 
 /* ************************************************************************* */
-HybridBayesNet::shared_ptr HybridBayesNet::prune(
+HybridBayesNet HybridBayesNet::prune(
     const DecisionTreeFactor::shared_ptr &discreteFactor) const {
   // To Prune, we visitWith every leaf in the GaussianMixture. For each
   // leaf, we apply an operation, where using the assignment, we can
@@ -50,8 +50,7 @@ HybridBayesNet::shared_ptr HybridBayesNet::prune(
   // set the leaf to a nullptr. We can later check the GaussianMixture for
   // just nullptrs.
 
-  HybridBayesNet::shared_ptr prunedBayesNetFragment =
-      boost::make_shared<HybridBayesNet>();
+  HybridBayesNet prunedBayesNetFragment;
 
   // Go through all the conditionals in the
   // Bayes Net and prune them as per discreteFactor.
@@ -62,21 +61,20 @@ HybridBayesNet::shared_ptr HybridBayesNet::prune(
     std::vector<GaussianConditional::shared_ptr> nodes;
 
     // Loop over all assignments and create a set of GaussianConditionals
-    std::function<GaussianFactor::shared_ptr(
-        const Assignment<Key> &, const GaussianFactor::shared_ptr &)>
-        pruner = [&](const Assignment<Key> &choices,
-                     const GaussianFactor::shared_ptr &gf) {
-          // typecast so we can use this to get probability value
-          DiscreteValues values(choices);
+    auto pruner = [&](const Assignment<Key> &choices,
+                      const GaussianFactor::shared_ptr &gf)
+        -> GaussianFactor::shared_ptr {
+      // typecast so we can use this to get probability value
+      DiscreteValues values(choices);
 
-          if ((*discreteFactor)(values) == 0.0) {
-            // empty aka null pointer
-            boost::shared_ptr<GaussianFactor> null;
-            return null;
-          } else {
-            return gf;
-          }
-        };
+      if ((*discreteFactor)(values) == 0.0) {
+        // empty aka null pointer
+        boost::shared_ptr<GaussianFactor> null;
+        return null;
+      } else {
+        return gf;
+      }
+    };
 
     GaussianMixture::shared_ptr gaussianMixture =
         boost::dynamic_pointer_cast<GaussianMixture>(conditional);
@@ -88,7 +86,7 @@ HybridBayesNet::shared_ptr HybridBayesNet::prune(
       std::set<DiscreteKey> dfKeySet = discreteFactor->discreteKeys().asSet();
       if (gmKeySet != dfKeySet) {
         // Add the gaussianMixture which doesn't have to be pruned.
-        prunedBayesNetFragment->push_back(gaussianMixture);
+        prunedBayesNetFragment.push_back(gaussianMixture);
         continue;
       }
 
@@ -110,11 +108,11 @@ HybridBayesNet::shared_ptr HybridBayesNet::prune(
           gaussianMixture->nrFrontals(), gaussianMixture->continuousKeys(),
           discreteKeys, prunedTree);
 
-      prunedBayesNetFragment->push_back(prunedGaussianMixture);
+      prunedBayesNetFragment.push_back(prunedGaussianMixture);
 
     } else {
       // Add the non-GaussianMixture conditional
-      prunedBayesNetFragment->push_back(conditional);
+      prunedBayesNetFragment.push_back(conditional);
     }
   }
 

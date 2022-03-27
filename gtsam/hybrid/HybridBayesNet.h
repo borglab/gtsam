@@ -85,7 +85,8 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<AbstractConditional> {
    * pruned tree structure.
    * @return HybridBayesNet
    */
-  shared_ptr prune(const DecisionTreeFactor::shared_ptr &discreteFactor) const;
+  HybridBayesNet prune(
+      const DecisionTreeFactor::shared_ptr &discreteFactor) const;
 };
 
 }  // namespace gtsam
