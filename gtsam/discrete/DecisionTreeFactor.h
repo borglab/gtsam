@@ -170,22 +170,17 @@ namespace gtsam {
     /// Return all the discrete keys associated with this factor.
     DiscreteKeys discreteKeys() const;
 
-    /// Returns the total number of leaves
-    size_t nrLeaves() {
-      size_t total = 0;
-      visit([&total](const double &node) {
-        total += 1;
-      });
-      return total;
-    }
-
     /**
      * @brief Prune the decision tree of discrete variables.
      *
+     * Pruning will set the leaves to be "pruned" to 0 indicating a 0
+     * probability.
+     * A leaf is pruned if it is not in the top `maxNrLeaves` values.
+     *
      * @param maxNrLeaves The maximum number of leaves to keep.
-     * @return DecisionTreeFactor::shared_ptr
+     * @return DecisionTreeFactor
      */
-    shared_ptr prune(size_t maxNrLeaves) const;
+    DecisionTreeFactor prune(size_t maxNrLeaves) const;
 
     /// @}
     /// @name Wrapper support
