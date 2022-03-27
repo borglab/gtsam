@@ -45,7 +45,7 @@ class TestPose3(GtsamTestCase):
         np.testing.assert_allclose(actual_array, expected_array, atol=1e-6)
 
     def test_transformFrom(self):
-        """Test transformTo method."""
+        """Test transformFrom method."""
         pose = Pose3(Rot3.Rodrigues(0, 0, -math.pi/2), Point3(2, 4, 0))
         actual = pose.transformFrom(Point3(2, 1, 10))
         expected = Point3(3, 2, 10)
