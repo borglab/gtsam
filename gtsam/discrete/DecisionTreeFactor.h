@@ -178,7 +178,7 @@ namespace gtsam {
      * A leaf is pruned if it is not in the top `maxNrLeaves` values.
      *
      * @param maxNrLeaves The maximum number of leaves to keep.
-     * @return DecisionTreeFactor::shared_ptr
+     * @return DecisionTreeFactor
      */
     DecisionTreeFactor prune(size_t maxNrLeaves) const;
 
