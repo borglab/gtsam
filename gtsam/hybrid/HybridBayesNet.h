@@ -60,14 +60,6 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<AbstractConditional> {
   GaussianMixture::shared_ptr atGaussian(size_t i) const;
 
   /**
-   * @brief Set gaussian mixture at specific index.
-   *
-   * @param i The index to set the gaussian mixture at.
-   * @param gaussian The gaussian mixture shared pointer to add.
-   */
-  void setGaussian(size_t i, const GaussianMixture::shared_ptr &gaussian);
-
-  /**
    * Get a specific Gaussian mixture factor by index
    * (this checks array bounds and may throw an exception, as opposed to
    * operator[] which does not).
@@ -84,12 +76,14 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<AbstractConditional> {
   GaussianBayesNet choose(const DiscreteValues &assignment) const;
 
   /**
-   * @brief Prune the conditionals in the bayes net as per the pruning
-   * structure in `discreteFactor`.
+   * @brief Prune each of the conditionals in the Bayes net as per the structure
+   * in `discreteFactor`.
+   * Pruning here refers to setting the leaf to a nullptr
+   * where the probability in `discreteFactor` is 0.0.
    *
    * @param discreteFactor A DecisionTreeFactor shared pointer which has a
    * pruned tree structure.
-   * @return HybridBayesNet::shared_ptr
+   * @return HybridBayesNet
    */
   shared_ptr prune(const DecisionTreeFactor::shared_ptr &discreteFactor) const;
 };
