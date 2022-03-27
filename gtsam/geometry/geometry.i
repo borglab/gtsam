@@ -406,6 +406,10 @@ class Pose2 {
   gtsam::Point2 transformFrom(const gtsam::Point2& p) const;
   gtsam::Point2 transformTo(const gtsam::Point2& p) const;
 
+  // Matrix versions
+  Matrix transformFrom(const Matrix& points) const;
+  Matrix transformTo(const Matrix& points) const;
+
   // Standard Interface
   double x() const;
   double y() const;
