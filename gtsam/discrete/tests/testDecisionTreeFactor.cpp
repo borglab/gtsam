@@ -107,6 +107,27 @@ TEST(DecisionTreeFactor, enumerate) {
 }
 
 /* ************************************************************************* */
+// Check pruning of the decision tree works as expected.
+TEST(DecisionTreeFactor, Prune) {
+  DiscreteKey A(1, 2), B(2, 2), C(3, 2);
+  DecisionTreeFactor f(A & B & C, "1 5 3 7 2 6 4 8");
+
+  // Only keep the leaves with the top 5 values.
+  size_t maxNrLeaves = 5;
+  auto pruned5 = f.prune(maxNrLeaves);
+
+  // Pruned leaves should be 0
+  DecisionTreeFactor expected(A & B & C, "0 5 0 7 0 6 4 8");
+  EXPECT(assert_equal(expected, pruned5));
+
+  // Check for more extreme pruning where we only keep the top 2 leaves
+  maxNrLeaves = 2;
+  auto pruned2 = f.prune(maxNrLeaves);
+  DecisionTreeFactor expected2(A & B & C, "0 0 0 7 0 0 0 8");
+  EXPECT(assert_equal(expected2, pruned2));
+}
+
+/* ************************************************************************* */
 TEST(DecisionTreeFactor, DotWithNames) {
   DiscreteKey A(12, 3), B(5, 2);
   DecisionTreeFactor f(A & B, "1 2  3 4  5 6");
