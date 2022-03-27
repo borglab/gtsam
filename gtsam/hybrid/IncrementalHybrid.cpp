@@ -34,9 +34,9 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
 
   gttic_(Elimination);
   // Eliminate partially.
-  HybridBayesNet::shared_ptr bayesNetFragment;
+  HybridBayesNet bayesNetFragment;
   auto result = graph.eliminatePartialSequential(ordering);
-  bayesNetFragment = result.first;
+  bayesNetFragment = *result.first;
   remainingFactorGraph_ = *result.second;
 
   gttoc_(Elimination);
@@ -59,14 +59,14 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
 
     // `pruneBayesNet` sets the leaves with 0 in discreteFactor to nullptr in
     // all the conditionals with the same keys in bayesNetFragment.
-    HybridBayesNet::shared_ptr prunedBayesNetFragment =
-        bayesNetFragment->prune(discreteFactor);
+    HybridBayesNet prunedBayesNetFragment =
+        bayesNetFragment.prune(discreteFactor);
     // Set the bayes net fragment to the pruned version
     bayesNetFragment = prunedBayesNetFragment;
   }
 
   // Add the partial bayes net to the posterior bayes net.
-  hybridBayesNet_.push_back<HybridBayesNet>(*bayesNetFragment);
+  hybridBayesNet_.push_back<HybridBayesNet>(bayesNetFragment);
 
   tictoc_print_();
 }
