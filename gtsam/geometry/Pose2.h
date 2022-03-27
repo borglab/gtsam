@@ -199,13 +199,29 @@ public:
       OptionalJacobian<2, 3> Dpose = boost::none,
       OptionalJacobian<2, 2> Dpoint = boost::none) const;
 
+  /**
+   * @brief transform many points in world coordinates and transform to Pose.
+   * @param points 2*N matrix in world coordinates
+   * @return points in Pose coordinates, as 2*N Matrix
+   */
+  Matrix transformTo(const Matrix& points) const;
+
   /** Return point coordinates in global frame */
   GTSAM_EXPORT Point2 transformFrom(const Point2& point,
       OptionalJacobian<2, 3> Dpose = boost::none,
       OptionalJacobian<2, 2> Dpoint = boost::none) const;
 
+  /**
+   * @brief transform many points in Pose coordinates and transform to world.
+   * @param points 2*N matrix in Pose coordinates
+   * @return points in world coordinates, as 2*N Matrix
+   */
+  Matrix transformFrom(const Matrix& points) const;
+
   /** syntactic sugar for transformFrom */
-  inline Point2 operator*(const Point2& point) const { return transformFrom(point);}
+  inline Point2 operator*(const Point2& point) const { 
+    return transformFrom(point);
+  }
 
   /// @}
   /// @name Standard Interface
