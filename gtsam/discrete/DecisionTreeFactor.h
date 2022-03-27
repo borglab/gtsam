@@ -170,6 +170,18 @@ namespace gtsam {
     /// Return all the discrete keys associated with this factor.
     DiscreteKeys discreteKeys() const;
 
+    /**
+     * @brief Prune the decision tree of discrete variables.
+     *
+     * Pruning will set the leaves to be "pruned" to 0 indicating a 0
+     * probability.
+     * A leaf is pruned if it is not in the top `maxNrLeaves` values.
+     *
+     * @param maxNrLeaves The maximum number of leaves to keep.
+     * @return DecisionTreeFactor
+     */
+    DecisionTreeFactor prune(size_t maxNrLeaves) const;
+
     /// @}
     /// @name Wrapper support
     /// @{
