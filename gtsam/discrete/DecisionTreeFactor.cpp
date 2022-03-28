@@ -287,4 +287,38 @@ namespace gtsam {
         cardinalities_(keys.cardinalities()) {}
 
   /* ************************************************************************ */
+  DecisionTreeFactor DecisionTreeFactor::prune(size_t maxNrLeaves) const {
+    const size_t N = maxNrLeaves;
+
+    // Get the probabilities in the decision tree so we can threshold.
+    std::vector<double> probabilities;
+    this->visit([&](const double& prob) { probabilities.emplace_back(prob); });
+
+    // The number of probabilities can be lower than max_leaves
+    if (probabilities.size() <= N) {
+      return *this;
+    }
+
+    std::sort(probabilities.begin(), probabilities.end(),
+              std::greater<double>{});
+
+    double threshold = probabilities[N - 1];
+
+    // Now threshold the decision tree
+    size_t total = 0;
+    auto thresholdFunc = [threshold, &total, N](const double& value) {
+      if (value < threshold || total >= N) {
+        return 0.0;
+      } else {
+        total += 1;
+        return value;
+      }
+    };
+    DecisionTree<Key, double> thresholded(*this, thresholdFunc);
+
+    // Create pruned decision tree factor and return.
+    return DecisionTreeFactor(this->discreteKeys(), thresholded);
+  }
+
+  /* ************************************************************************ */
 }  // namespace gtsam
