@@ -66,7 +66,6 @@ static Sum& operator+=(Sum& sum, const GaussianFactor::shared_ptr& factor) {
 }
 
 Sum GaussianHybridFactorGraph::sum() const {
-  gttic_(Sum);
   // "sum" all factors, gathering into GaussianFactorGraph
   DCGaussianMixtureFactor::Sum sum;
   for (auto&& dcFactor : dcGraph()) {
@@ -120,7 +119,6 @@ EliminateHybrid(const GaussianHybridFactorGraph& factors,
   // TODO(fan): Now let's assume that all continuous will be eliminated first!
   // Here sum is null if remaining are all discrete
   if (sum.empty()) {
-    gttic_(DFG);
     // Not sure if this is the correct thing, but anyway!
     DiscreteFactorGraph dfg;
     dfg.push_back(factors.discreteGraph());
@@ -131,7 +129,8 @@ EliminateHybrid(const GaussianHybridFactorGraph& factors,
     return {df, newFactor};
   }
 
-  // If a tree leaf contains nullptr, convert that leaf to an empty GaussianFactorGraph
+  // If a tree leaf contains nullptr, convert that leaf to an empty
+  // GaussianFactorGraph
   auto emptyGaussian = [](const GaussianFactorGraph& gfg) {
     bool hasNull =
         std::any_of(gfg.begin(), gfg.end(),
@@ -169,12 +168,8 @@ EliminateHybrid(const GaussianHybridFactorGraph& factors,
     return result;
   };
 
-  gttic_(EliminationResult);
-
   DecisionTree<Key, EliminationPair> eliminationResults(sum, eliminate);
-  gttoc_(EliminationResult);
 
-  gttic_(Leftover);
   // STEP 3: Create result
   auto pair = unzip(eliminationResults);
 
