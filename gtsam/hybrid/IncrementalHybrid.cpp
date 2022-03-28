@@ -28,55 +28,15 @@ namespace gtsam {
 void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
                                const Ordering &ordering,
                                boost::optional<size_t> maxNrLeaves) {
-  // if we are not at the first iteration
-  if (!hybridBayesNet_.empty()) {
-    // We add all relevant conditional mixtures on the last continuous variable
-    // in the previous `hybridBayesNet` to the graph
-    std::unordered_set<Key> allVars(ordering.begin(), ordering.end());
-
-    // Conditionals to remove from the bayes net
-    // since the conditional will be updated.
-    std::vector<AbstractConditional::shared_ptr> conditionals_to_erase;
-
-    // TODO(Varun) Using a for-range loop doesn't work since some of the
-    // conditionals are invalid pointers
-    for (size_t i = 0; i < hybridBayesNet_.size(); i++) {
-      auto conditional = hybridBayesNet_.at(i);
-
-      for (auto &key : conditional->frontals()) {
-        if (allVars.find(key) != allVars.end()) {
-          if (auto gf =
-                  boost::dynamic_pointer_cast<GaussianMixture>(conditional)) {
-            graph.push_back(gf);
-
-            conditionals_to_erase.push_back(conditional);
-
-          } else if (auto df = boost::dynamic_pointer_cast<DiscreteConditional>(
-                         conditional)) {
-            graph.push_back(df);
-
-            conditionals_to_erase.push_back(conditional);
-          }
-
-          break;
-        }
-      }
-    }
-
-    // Remove conditionals at the end so we don't affect the order in the
-    // original bayes net.
-    for (auto &&conditional : conditionals_to_erase) {
-      auto it =
-          find(hybridBayesNet_.begin(), hybridBayesNet_.end(), conditional);
-      hybridBayesNet_.erase(it);
-    }
-  }
+  // Add the necessary conditionals from the previous timestep(s).
+  std::tie(graph, hybridBayesNet_) =
+      addConditionals(graph, hybridBayesNet_, ordering);
 
   gttic_(Elimination);
   // Eliminate partially.
-  HybridBayesNet::shared_ptr bayesNetFragment;
+  HybridBayesNet bayesNetFragment;
   auto result = graph.eliminatePartialSequential(ordering);
-  bayesNetFragment = result.first;
+  bayesNetFragment = *result.first;
   remainingFactorGraph_ = *result.second;
 
   gttoc_(Elimination);
@@ -88,133 +48,78 @@ void IncrementalHybrid::update(GaussianHybridFactorGraph graph,
     // First we prune the discrete probability tree (tree with doubles at
     // leaves). This method computes the threshold based on maxNrLeaves and sets
     // all leaves below the threshold to 0.0.
-    DecisionTreeFactor::shared_ptr discreteFactor = prune(*maxNrLeaves);
+    auto discreteFactor = boost::dynamic_pointer_cast<DecisionTreeFactor>(
+        remainingFactorGraph_.discreteGraph().at(0));
+    DecisionTreeFactor prunedDiscreteFactor =
+        discreteFactor->prune(*maxNrLeaves);
+
+    // Assign the thresholded tree so we it is accessible from
+    // remainingFactorGraph. Imperative :-(
+    discreteFactor->root_ = prunedDiscreteFactor.root_;
 
     // `pruneBayesNet` sets the leaves with 0 in discreteFactor to nullptr in
     // all the conditionals with the same keys in bayesNetFragment.
-    HybridBayesNet::shared_ptr prunedBayesNetFragment =
-        pruneBayesNet(bayesNetFragment, discreteFactor);
+    HybridBayesNet prunedBayesNetFragment =
+        bayesNetFragment.prune(discreteFactor);
     // Set the bayes net fragment to the pruned version
     bayesNetFragment = prunedBayesNetFragment;
   }
 
   // Add the partial bayes net to the posterior bayes net.
-  hybridBayesNet_.push_back<HybridBayesNet>(*bayesNetFragment);
+  hybridBayesNet_.push_back<HybridBayesNet>(bayesNetFragment);
 
   tictoc_print_();
 }
 
-// TODO(Varun) Move to DecisionTreeFactor.h
-DecisionTreeFactor::shared_ptr IncrementalHybrid::prune(size_t maxNrLeaves) {
-  const size_t N = maxNrLeaves;
+/* ************************************************************************* */
+std::pair<GaussianHybridFactorGraph, HybridBayesNet>
+IncrementalHybrid::addConditionals(
+    const GaussianHybridFactorGraph &originalGraph,
+    const HybridBayesNet &originalHybridBayesNet,
+    const Ordering &ordering) const {
+  GaussianHybridFactorGraph graph(originalGraph);
+  HybridBayesNet hybridBayesNet(originalHybridBayesNet);
 
-  auto discreteFactor = boost::dynamic_pointer_cast<DecisionTreeFactor>(
-      remainingFactorGraph_.discreteGraph().at(0));
+  // If we are not at the first iteration, means we have conditionals to add.
+  if (!hybridBayesNet.empty()) {
+    // We add all relevant conditional mixtures on the last continuous variable
+    // in the previous `hybridBayesNet` to the graph
+    std::unordered_set<Key> allKeys(ordering.begin(), ordering.end());
 
-  // Let's assume that the structure of the last discrete density will be the
-  // same as the last continuous
-  std::vector<double> probabilities;
-  // number of choices
-  discreteFactor->visit(
-      [&](const double &prob) { probabilities.emplace_back(prob); });
+    // Conditionals to remove from the bayes net
+    // since the conditional will be updated.
+    std::vector<AbstractConditional::shared_ptr> conditionals_to_erase;
 
-  // The number of probabilities can be lower than max_leaves
-  if (probabilities.size() <= N) return discreteFactor;
+    // TODO(Varun) Using a for-range loop doesn't work since some of the
+    // conditionals are invalid pointers
+    for (size_t i = 0; i < hybridBayesNet.size(); i++) {
+      auto conditional = hybridBayesNet.at(i);
 
-  std::sort(probabilities.begin(), probabilities.end(), std::greater<double>{});
+      for (auto &key : conditional->frontals()) {
+        if (allKeys.find(key) != allKeys.end()) {
+          if (auto gf =
+                  boost::dynamic_pointer_cast<GaussianMixture>(conditional)) {
+            graph.push_back(gf);
+            conditionals_to_erase.push_back(conditional);
 
-  double threshold = probabilities[N - 1];
-
-  // Now threshold the decision tree
-  size_t total = 0;
-  auto thresholdFunc = [threshold, &total, N](const double &value) {
-    if (value < threshold || total >= N) {
-      return 0.0;
-    } else {
-      total += 1;
-      return value;
-    }
-  };
-  DecisionTree<Key, double> thresholded(*discreteFactor, thresholdFunc);
-
-  // Assign the thresholded tree. Imperative :-(
-  discreteFactor->root_ = thresholded.root_;
-
-  return discreteFactor;
-}
-
-HybridBayesNet::shared_ptr IncrementalHybrid::pruneBayesNet(
-    const HybridBayesNet::shared_ptr &bayesNetFragment,
-    const DecisionTreeFactor::shared_ptr &discreteFactor) const {
-  // To Prune, we visitWith every leaf in the GaussianMixture. For each
-  // leaf, we apply an operation, where using the assignment, we can
-  // check the discrete decision tree for an exception and if yes, then just
-  // set the leaf to a nullptr. We can later check the GaussianMixture for
-  // just nullptrs.
-
-  HybridBayesNet::shared_ptr prunedBayesNetFragment =
-      boost::make_shared<HybridBayesNet>(*bayesNetFragment);
-
-  // Go through all the conditionals in the
-  // bayesNetFragment and prune them as per discreteFactor.
-  for (size_t i = 0; i < bayesNetFragment->size(); i++) {
-    auto conditional = bayesNetFragment->at(i);
-
-    // Container for nodes (or nullptrs) to create a new DecisionTree
-    std::vector<GaussianConditional::shared_ptr> nodes;
-
-    // Loop over all assignments and create a set of GaussianConditionals
-    std::function<GaussianFactor::shared_ptr(
-        const Assignment<Key> &, const GaussianFactor::shared_ptr &)>
-        pruner = [&](const Assignment<Key> &choices,
-                     const GaussianFactor::shared_ptr &gf) {
-          // typecast so we can use this to get probability value
-          DiscreteValues values(choices);
-
-          if ((*discreteFactor)(values) == 0.0) {
-            // empty aka null pointer
-            boost::shared_ptr<GaussianFactor> null;
-            return null;
-          } else {
-            return gf;
+          } else if (auto df = boost::dynamic_pointer_cast<DiscreteConditional>(
+                         conditional)) {
+            graph.push_back(df);
+            conditionals_to_erase.push_back(conditional);
           }
-        };
 
-    GaussianMixture::shared_ptr gaussianMixture =
-        boost::dynamic_pointer_cast<GaussianMixture>(conditional);
-
-    if (gaussianMixture) {
-      // We may have mixtures with less discrete keys than discreteFactor so we
-      // skip those since the label assignment does not exist.
-      std::set<DiscreteKey> gmKeySet = gaussianMixture->discreteKeys().asSet();
-      std::set<DiscreteKey> dfKeySet = discreteFactor->discreteKeys().asSet();
-      if (gmKeySet != dfKeySet) {
-        continue;
+          break;
+        }
       }
-
-      // Run the pruning to get a new, pruned tree
-      auto prunedFactors = gaussianMixture->factors_.apply(pruner);
-
-      DiscreteKeys discreteKeys = gaussianMixture->discreteKeys();
-      // reverse keys to get a natural ordering
-      std::reverse(discreteKeys.begin(), discreteKeys.end());
-
-      // Convert to GaussianConditionals
-      auto prunedTree = GaussianMixture::Conditionals(
-          prunedFactors, [](const GaussianFactor::shared_ptr &factor) {
-            return boost::dynamic_pointer_cast<GaussianConditional>(factor);
-          });
-
-      // Create the new gaussian mixture and add it to the bayes net.
-      auto prunedGaussianMixture = boost::make_shared<GaussianMixture>(
-          gaussianMixture->nrFrontals(), gaussianMixture->continuousKeys(),
-          discreteKeys, prunedTree);
-
-      prunedBayesNetFragment->setGaussian(i, prunedGaussianMixture);
+    }
+    // Remove conditionals at the end so we don't affect the order in the
+    // original bayes net.
+    for (auto &&conditional : conditionals_to_erase) {
+      auto it = find(hybridBayesNet.begin(), hybridBayesNet.end(), conditional);
+      hybridBayesNet.erase(it);
     }
   }
-
-  return prunedBayesNetFragment;
+  return std::make_pair(graph, hybridBayesNet);
 }
 
 /* ************************************************************************* */
