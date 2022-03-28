@@ -41,6 +41,13 @@ GaussianBayesNet HybridBayesNet::choose(
   return gbn;
 }
 
+/// Return the DiscreteKey vector as a set.
+static std::set<DiscreteKey> DiscreteKeysAsSet(const DiscreteKeys &dkeys) {
+  std::set<DiscreteKey> s;
+  s.insert(dkeys.begin(), dkeys.end());
+  return s;
+}
+
 /* ************************************************************************* */
 HybridBayesNet HybridBayesNet::prune(
     const DecisionTreeFactor::shared_ptr &discreteFactor) const {
@@ -82,8 +89,8 @@ HybridBayesNet HybridBayesNet::prune(
     if (gaussianMixture) {
       // We may have mixtures with less discrete keys than discreteFactor so we
       // skip those since the label assignment does not exist.
-      std::set<DiscreteKey> gmKeySet = gaussianMixture->discreteKeys().asSet();
-      std::set<DiscreteKey> dfKeySet = discreteFactor->discreteKeys().asSet();
+      auto gmKeySet = DiscreteKeysAsSet(gaussianMixture->discreteKeys());
+      auto dfKeySet = DiscreteKeysAsSet(discreteFactor->discreteKeys());
       if (gmKeySet != dfKeySet) {
         // Add the gaussianMixture which doesn't have to be pruned.
         prunedBayesNetFragment.push_back(gaussianMixture);

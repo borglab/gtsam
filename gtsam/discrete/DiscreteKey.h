@@ -69,13 +69,6 @@ namespace gtsam {
       push_back(key);
       return *this;
     }
-
-    /// Return the DiscreteKey vector as a set.
-    std::set<DiscreteKey> asSet() const {
-      std::set<DiscreteKey> s;
-      s.insert(this->begin(), this->end());
-      return s;
-    }
   }; // DiscreteKeys
 
   /// Create a list from two keys

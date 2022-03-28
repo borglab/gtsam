@@ -119,7 +119,7 @@ IncrementalHybrid::addConditionals(
       hybridBayesNet.erase(it);
     }
   }
-  return std::make_pair(graph, hybridBayesNet);
+  return {graph, hybridBayesNet};
 }
 
 /* ************************************************************************* */
