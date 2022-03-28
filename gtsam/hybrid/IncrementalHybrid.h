@@ -50,6 +50,19 @@ class IncrementalHybrid {
   void update(GaussianHybridFactorGraph graph, const Ordering& ordering,
               boost::optional<size_t> maxNrLeaves = boost::none);
 
+  /**
+   * @brief Add conditionals from previous timestep as part of liquefication.
+   *
+   * @param graph The new factor graph for the current time step.
+   * @param hybridBayesNet The hybrid bayes net containing all conditionals so
+   * far.
+   * @param ordering The elimination ordering.
+   * @return std::pair<GaussianHybridFactorGraph, HybridBayesNet>
+   */
+  std::pair<GaussianHybridFactorGraph, HybridBayesNet> addConditionals(
+      const GaussianHybridFactorGraph& graph,
+      const HybridBayesNet& hybridBayesNet, const Ordering& ordering) const;
+
   /// Get the Gaussian Mixture from the Bayes Net posterior at `index`.
   GaussianMixture::shared_ptr gaussianMixture(size_t index) const;
 

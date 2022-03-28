@@ -116,15 +116,6 @@ EliminateHybrid(const GaussianHybridFactorGraph& factors,
   // Create a new decision tree with all factors gathered at leaves.
   Sum sum = factors.sum();
 
-  // zero out all sums with null ptrs
-  auto zeroOut = [](const GaussianFactorGraph& gfg) {
-    bool hasNull =
-        std::any_of(gfg.begin(), gfg.end(),
-                    [](const GaussianFactor::shared_ptr& ptr) { return !ptr; });
-
-    return hasNull ? GaussianFactorGraph() : gfg;
-  };
-
   // TODO(fan): Now let's assume that all continuous will be eliminated first!
   // Here sum is null if remaining are all discrete
   if (sum.empty()) {
@@ -138,7 +129,16 @@ EliminateHybrid(const GaussianHybridFactorGraph& factors,
     return {df, newFactor};
   }
 
-  sum = Sum(sum, zeroOut);
+  // If a tree leaf contains nullptr, convert that leaf to an empty
+  // GaussianFactorGraph
+  auto emptyGaussian = [](const GaussianFactorGraph& gfg) {
+    bool hasNull =
+        std::any_of(gfg.begin(), gfg.end(),
+                    [](const GaussianFactor::shared_ptr& ptr) { return !ptr; });
+
+    return hasNull ? GaussianFactorGraph() : gfg;
+  };
+  sum = Sum(sum, emptyGaussian);
 
   // STEP 1: ELIMINATE
   // Eliminate each sum using conventional Cholesky:
@@ -152,19 +152,27 @@ EliminateHybrid(const GaussianHybridFactorGraph& factors,
   KeyVector keysOfSeparator;   // TODO(frank): Is this just (keys - ordering)?
   auto eliminate = [&](const GaussianFactorGraph& graph)
       -> GaussianFactorGraph::EliminationResult {
-    if (graph.empty()) return {nullptr, nullptr};
+    if (graph.empty()) {
+      return {nullptr, nullptr};
+    }
     auto result = EliminatePreferCholesky(graph, ordering);
-    if (keysOfEliminated.empty())
+    gttic_(Eliminate);
+    if (keysOfEliminated.empty()) {
       keysOfEliminated =
           result.first->keys();  // Initialize the keysOfEliminated to be the
+    }
     // keysOfEliminated of the GaussianConditional
-    if (keysOfSeparator.empty()) keysOfSeparator = result.second->keys();
+    if (keysOfSeparator.empty()) {
+      keysOfSeparator = result.second->keys();
+    }
     return result;
   };
+
   DecisionTree<Key, EliminationPair> eliminationResults(sum, eliminate);
 
   // STEP 3: Create result
   auto pair = unzip(eliminationResults);
+
   const GaussianMixture::Conditionals& conditionals = pair.first;
   const DCGaussianMixtureFactor::Factors& separatorFactors = pair.second;
 

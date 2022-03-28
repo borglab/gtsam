@@ -556,7 +556,7 @@ size: 3
 factor 0:  GaussianMixture [ x1 | x2 m1 ]{
  Choice(m1) 
  0 Leaf Jacobian factor on 2 keys: 
-  Conditional density [x1] 
+ p(x1 | x2)
   R = [ 14.1774 ]
   S[x2] = [ -0.0705346 ]
   d = [ -14.0364 ]
@@ -564,7 +564,7 @@ factor 0:  GaussianMixture [ x1 | x2 m1 ]{
 
 
  1 Leaf Jacobian factor on 2 keys: 
-  Conditional density [x1] 
+ p(x1 | x2)
   R = [ 14.1774 ]
   S[x2] = [ -0.0705346 ]
   d = [ -14.1069 ]
@@ -576,7 +576,7 @@ factor 1:  GaussianMixture [ x2 | x3 m2 m1 ]{
  Choice(m2) 
  0 Choice(m1) 
  0 0 Leaf Jacobian factor on 2 keys: 
-  Conditional density [x2] 
+ p(x2 | x3)
   R = [ 10.0993 ]
   S[x3] = [ -0.0990172 ]
   d = [ -9.99975 ]
@@ -584,7 +584,7 @@ factor 1:  GaussianMixture [ x2 | x3 m2 m1 ]{
 
 
  0 1 Leaf Jacobian factor on 2 keys: 
-  Conditional density [x2] 
+ p(x2 | x3)
   R = [ 10.0993 ]
   S[x3] = [ -0.0990172 ]
   d = [ -9.90122 ]
@@ -593,7 +593,7 @@ factor 1:  GaussianMixture [ x2 | x3 m2 m1 ]{
 
  1 Choice(m1) 
  1 0 Leaf Jacobian factor on 2 keys: 
-  Conditional density [x2] 
+ p(x2 | x3)
   R = [ 10.0993 ]
   S[x3] = [ -0.0990172 ]
   d = [ -10.0988 ]
@@ -601,7 +601,7 @@ factor 1:  GaussianMixture [ x2 | x3 m2 m1 ]{
 
 
  1 1 Leaf Jacobian factor on 2 keys: 
-  Conditional density [x2] 
+ p(x2 | x3)
   R = [ 10.0993 ]
   S[x3] = [ -0.0990172 ]
   d = [ -10.0002 ]
@@ -613,14 +613,14 @@ factor 2:  GaussianMixture [ x3 | m2 m1 ]{
  Choice(m2) 
  0 Choice(m1) 
  0 0 Leaf Jacobian factor on 1 keys: 
-  Conditional density [x3] 
+ p(x3 |)
   R = [ 10.0494 ]
   d = [ -10.1489 ]
   No noise model
 
 
  0 1 Leaf Jacobian factor on 1 keys: 
-  Conditional density [x3] 
+ p(x3 |)
   R = [ 10.0494 ]
   d = [ -10.1479 ]
   No noise model
@@ -628,14 +628,14 @@ factor 2:  GaussianMixture [ x3 | m2 m1 ]{
 
  1 Choice(m1) 
  1 0 Leaf Jacobian factor on 1 keys: 
-  Conditional density [x3] 
+ p(x3 |)
   R = [ 10.0494 ]
   d = [ -10.0504 ]
   No noise model
 
 
  1 1 Leaf Jacobian factor on 1 keys: 
-  Conditional density [x3] 
+ p(x3 |)
   R = [ 10.0494 ]
   d = [ -10.0494 ]
   No noise model

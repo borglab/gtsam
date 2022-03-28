@@ -39,6 +39,8 @@ class DCFactor : public Factor {
  protected:
   // Set of DiscreteKeys for this factor.
   DiscreteKeys discreteKeys_;
+  // For bookkeeping
+  KeyVector continuousKeys_;
 
  public:
   using Base = Factor;
@@ -65,7 +67,8 @@ class DCFactor : public Factor {
    */
   DCFactor(const KeyVector& continuousKeys, const DiscreteKeys& discreteKeys)
       : Base(AllKeys(continuousKeys, discreteKeys)),
-        discreteKeys_(discreteKeys) {}
+        discreteKeys_(discreteKeys),
+        continuousKeys_(continuousKeys) {}
 
   DCFactor& operator=(const DCFactor& rhs) {
     Base::operator=(rhs);
@@ -158,6 +161,11 @@ class DCFactor : public Factor {
    * Return the discrete keys for this factor.
    */
   const DiscreteKeys& discreteKeys() const { return discreteKeys_; }
+
+  /*
+   * Return only the continuous keys for this factor.
+   */
+  const KeyVector& continuousKeys() const { return continuousKeys_; }
 
   /**
    * Converts the DCFactor to a DecisionTreeFactor. Internally, this will

@@ -77,15 +77,19 @@ void GaussianMixture::print(const std::string &s,
   auto valueFormatter = [&](const GaussianFactor::shared_ptr &v) {
     auto printCapture = [&](const GaussianFactor::shared_ptr &p) {
       RedirectCout rd;
-      p->print("", keyFormatter);
+      if (p) {
+        p->print("", keyFormatter);
+      } else {
+        std::cout << "nullptr" << std::endl;
+      }
       std::string s = rd.str();
       return s;
     };
 
-    std::string format_template = "Gaussian factor on %d keys: \n%s\n";
+    std::string format_template = "Gaussian factor on %d keys:%s\n";
 
     if (auto hessianFactor = boost::dynamic_pointer_cast<HessianFactor>(v)) {
-      format_template = "Hessian factor on %d keys: \n%s\n";
+      format_template = "Hessian factor on %d keys:%s\n";
     }
 
     if (auto jacobianFactor = boost::dynamic_pointer_cast<JacobianFactor>(v)) {
