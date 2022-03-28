@@ -84,7 +84,15 @@ class GTSAM_EXPORT AbstractConditional {
   virtual Parents parents() const = 0;
   /// @}
 
-  //TODO(Varun) add iterators so we can call hybridBayesNet.keyVector()
+  /** Iterator at beginning of involved variable keys */
+  KeyVector::const_iterator begin() const {
+    throw std::runtime_error("AbstractConditional::begin not implemented!");
+  }
+
+  /** Iterator at end of involved variable keys */
+  KeyVector::const_iterator end() const {
+    throw std::runtime_error("AbstractConditional::end not implemented!");
+  }
 };
 
 /// traits
