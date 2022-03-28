@@ -75,6 +75,7 @@ class GTSAM_EXPORT GncParams {
   std::vector<size_t> knownInliers = std::vector<size_t>();  ///< Slots in the factor graph corresponding to measurements that we know are inliers
   std::vector<size_t> knownOutliers = std::vector<size_t>();  ///< Slots in the factor graph corresponding to measurements that we know are outliers
   bool logOutput = false;
+  bool carryStateAcrossIters = false;
 
   /// Set the robust loss function to be used in GNC (chosen among the ones in GncLossType).
   void setLossType(const GncLossType type) {

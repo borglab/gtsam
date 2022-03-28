@@ -190,6 +190,7 @@ class GTSAM_EXPORT GncOptimizer {
     BaseOptimizer baseOptimizer(
         graph_initial, state_, params_.baseOptimizerParams);
     Values result = baseOptimizer.optimize();
+
     double mu = initializeMu();
     double prev_cost = graph_initial.error(result);
     double cost = 0.0;  // this will be updated in the main loop
@@ -221,7 +222,10 @@ class GTSAM_EXPORT GncOptimizer {
 
     size_t iter;
     for (iter = 0; iter < params_.maxIterations; iter++) {
-
+      if(params_.carryStateAcrossIters){
+        std::cout << "Reusing state as initial guess for next iteration" << std::endl;
+        state_ = result;
+      }
       // display info
       if (params_.verbosity >= GncParameters::Verbosity::MU) {
         std::cout << "iter: " << iter << std::endl;
