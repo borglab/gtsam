@@ -404,13 +404,23 @@ TEST(GaussianConditional, Print) {
   const Vector2 b(20, 40);
   const double sigma = 3;
 
-  std::string s = "GaussianConditional";
+  GaussianConditional conditional(X(0), b, Matrix2::Identity(),
+                                  noiseModel::Isotropic::Sigma(2, sigma));
 
-  auto conditional =
+  // Test printing for no parents.
+  std::string expected =
+    "GaussianConditional p(x0)\n"
+    "  R = [ 1 0 ]\n"
+    "      [ 0 1 ]\n"
+    "  d = [ 20 40 ]\n"
+    "isotropic dim=2 sigma=3\n";
+  EXPECT(assert_print_equal(expected, conditional, "GaussianConditional"));
+
+  auto conditional1 =
       GaussianConditional::FromMeanAndStddev(X(0), A1, X(1), b, sigma);
 
   // Test printing for single parent.
-  std::string expected =
+  std::string expected1 =
     "GaussianConditional p(x0 | x1)\n"
     "  R = [ 1 0 ]\n"
     "      [ 0 1 ]\n"
@@ -418,7 +428,7 @@ TEST(GaussianConditional, Print) {
     "          [ -3 -4 ]\n"
     "  d = [ 20 40 ]\n"
     "isotropic dim=2 sigma=3\n";
-  EXPECT(assert_print_equal(expected, conditional, s));
+  EXPECT(assert_print_equal(expected1, conditional1, "GaussianConditional"));
 
   // Test printing for multiple parents.
   auto conditional2 = GaussianConditional::FromMeanAndStddev(X(0), A1, Y(0), A2,
@@ -433,7 +443,7 @@ TEST(GaussianConditional, Print) {
     "          [ -7 -8 ]\n"
     "  d = [ 20 40 ]\n"
     "isotropic dim=2 sigma=3\n";
-  EXPECT(assert_print_equal(expected2, conditional2, s));
+  EXPECT(assert_print_equal(expected2, conditional2, "GaussianConditional"));
 }
 
 /* ************************************************************************* */
