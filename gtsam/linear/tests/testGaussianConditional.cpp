@@ -414,7 +414,7 @@ TEST(GaussianConditional, Print) {
     "      [ 0 1 ]\n"
     "  d = [ 20 40 ]\n"
     "isotropic dim=2 sigma=3\n";
-  EXPECT(assert_print_equal(expected, conditional));
+  EXPECT(assert_print_equal(expected, conditional, "GaussianConditional"));
 
   auto conditional1 =
       GaussianConditional::FromMeanAndStddev(X(0), A1, X(1), b, sigma);
@@ -428,7 +428,7 @@ TEST(GaussianConditional, Print) {
     "          [ -3 -4 ]\n"
     "  d = [ 20 40 ]\n"
     "isotropic dim=2 sigma=3\n";
-  EXPECT(assert_print_equal(expected1, conditional1));
+  EXPECT(assert_print_equal(expected1, conditional1, "GaussianConditional"));
 
   // Test printing for multiple parents.
   auto conditional2 = GaussianConditional::FromMeanAndStddev(X(0), A1, Y(0), A2,
@@ -443,7 +443,7 @@ TEST(GaussianConditional, Print) {
     "          [ -7 -8 ]\n"
     "  d = [ 20 40 ]\n"
     "isotropic dim=2 sigma=3\n";
-  EXPECT(assert_print_equal(expected2, conditional2));
+  EXPECT(assert_print_equal(expected2, conditional2, "GaussianConditional"));
 }
 
 /* ************************************************************************* */
