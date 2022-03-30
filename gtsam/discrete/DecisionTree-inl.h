@@ -59,14 +59,22 @@ namespace gtsam {
     /** constant stored in this leaf */
     Y constant_;
 
-    /** Constructor from constant */
-    Leaf(const Y& constant) :
-      constant_(constant) {}
+    /** The number of assignments contained within this leaf
+     * Particularly useful when leaves have been pruned.
+     */
+    size_t nrAssignments_;
+
+    /// Constructor from constant
+    Leaf(const Y& constant, size_t nrAssignments = 1)
+        : constant_(constant), nrAssignments_(nrAssignments) {}
 
     /** return the constant */
     const Y& constant() const {
       return constant_;
     }
+
+    /// Return the number of assignments contained within this leaf.
+    size_t nrAssignments() const { return nrAssignments_; }
 
     /// Leaf-Leaf equality
     bool sameLeaf(const Leaf& q) const override {
@@ -108,14 +116,14 @@ namespace gtsam {
 
     /** apply unary operator */
     NodePtr apply(const Unary& op) const override {
-      NodePtr f(new Leaf(op(constant_)));
+      NodePtr f(new Leaf(op(constant_), nrAssignments_));
       return f;
     }
 
     /// Apply unary operator with assignment
     NodePtr apply(const UnaryAssignment& op,
                   const Assignment<L>& choices) const override {
-      NodePtr f(new Leaf(op(choices, constant_)));
+      NodePtr f(new Leaf(op(choices, constant_), nrAssignments_));
       return f;
     }
 
@@ -130,7 +138,8 @@ namespace gtsam {
 
     // Applying binary operator to two leaves results in a leaf
     NodePtr apply_g_op_fL(const Leaf& fL, const Binary& op) const override {
-      NodePtr h(new Leaf(op(fL.constant_, constant_)));  // fL op gL
+      // fL op gL
+      NodePtr h(new Leaf(op(fL.constant_, constant_), nrAssignments_));
       return h;
     }
 
@@ -141,7 +150,7 @@ namespace gtsam {
 
     /** choose a branch, create new memory ! */
     NodePtr choose(const L& label, size_t index) const override {
-      return NodePtr(new Leaf(constant()));
+      return NodePtr(new Leaf(constant(), nrAssignments()));
     }
 
     bool isLeaf() const override { return true; }
@@ -178,9 +187,16 @@ namespace gtsam {
       if (f->allSame_) {
         assert(f->branches().size() > 0);
         NodePtr f0 = f->branches_[0];
-        assert(f0->isLeaf());
+
+        size_t nrAssignments = 0;
+        for(auto branch: f->branches()) {
+          assert(branch->isLeaf());
+          nrAssignments +=
+              boost::dynamic_pointer_cast<const Leaf>(branch)->nrAssignments();
+        }
         NodePtr newLeaf(
-            new Leaf(boost::dynamic_pointer_cast<const Leaf>(f0)->constant()));
+            new Leaf(boost::dynamic_pointer_cast<const Leaf>(f0)->constant(),
+                     nrAssignments));
         return newLeaf;
       } else
 #endif
@@ -640,7 +656,7 @@ namespace gtsam {
     // If leaf, apply unary conversion "op" and create a unique leaf.
     using MXLeaf = typename DecisionTree<M, X>::Leaf;
     if (auto leaf = boost::dynamic_pointer_cast<const MXLeaf>(f)) {
-      return NodePtr(new Leaf(Y_of_X(leaf->constant())));
+      return NodePtr(new Leaf(Y_of_X(leaf->constant()), leaf->nrAssignments()));
     }
 
     // Check if Choice
