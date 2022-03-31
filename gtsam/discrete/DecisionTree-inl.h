@@ -717,6 +717,42 @@ namespace gtsam {
 
   /****************************************************************************/
   /**
+   * Functor performing depth-first visit with Leaf argument.
+   *
+   * NOTE: We differentiate between leaves and assignments. Concretely, a 3
+   * binary variable tree will have 2^3=8 assignments, but based on pruning, it
+   * can have <8 leaves. For example, if a tree has all assignment values as 1,
+   * then pruning will cause the tree to have only 1 leaf yet 8 assignments.
+   */
+  template <typename L, typename Y>
+  struct VisitLeaf {
+    using F = std::function<void(const typename DecisionTree<L, Y>::Leaf&)>;
+    explicit VisitLeaf(F f) : f(f) {}  ///< Construct from folding function.
+    F f;                           ///< folding function object.
+
+    /// Do a depth-first visit on the tree rooted at node.
+    void operator()(const typename DecisionTree<L, Y>::NodePtr& node) const {
+      using Leaf = typename DecisionTree<L, Y>::Leaf;
+      if (auto leaf = boost::dynamic_pointer_cast<const Leaf>(node))
+        return f(*leaf);
+
+      using Choice = typename DecisionTree<L, Y>::Choice;
+      auto choice = boost::dynamic_pointer_cast<const Choice>(node);
+      if (!choice)
+        throw std::invalid_argument("DecisionTree::VisitLeaf: Invalid NodePtr");
+      for (auto&& branch : choice->branches()) (*this)(branch);  // recurse!
+    }
+  };
+
+  template <typename L, typename Y>
+  template <typename Func>
+  void DecisionTree<L, Y>::visitLeaf(Func f) const {
+    VisitLeaf<L, Y> visit(f);
+    visit(root_);
+  }
+
+  /****************************************************************************/
+  /**
    * Functor performing depth-first visit with Assignment<L> argument.
    *
    * NOTE: Follows the same pruning semantics as `visit`.
