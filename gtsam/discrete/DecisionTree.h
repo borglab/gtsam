@@ -251,6 +251,23 @@ namespace gtsam {
     /**
      * @brief Visit all leaves in depth-first fashion.
      *
+     * @param f (side-effect) Function taking the leaf node pointer.
+     *
+     * @note Due to pruning, the number of leaves may not be the same as the
+     * number of assignments. E.g. if we have a tree on 2 binary variables with
+     * all values being 1, then there are 2^2=4 assignments, but only 1 leaf.
+     *
+     * Example:
+     *   int sum = 0;
+     *   auto visitor = [&](int y) { sum += y; };
+     *   tree.visitWith(visitor);
+     */
+    template <typename Func>
+    void visitLeaf(Func f) const;
+
+    /**
+     * @brief Visit all leaves in depth-first fashion.
+     *
      * @param f (side-effect) Function taking an assignment and a value.
      *
      * @note Due to pruning, the number of leaves may not be the same as the
