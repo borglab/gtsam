@@ -175,12 +175,13 @@ namespace gtsam {
      *
      * Pruning will set the leaves to be "pruned" to 0 indicating a 0
      * probability.
-     * A leaf is pruned if it is not in the top `maxNrLeaves` values.
+     * An assignment is pruned if it is not in the top `maxNrAssignments`
+     * values.
      *
-     * @param maxNrLeaves The maximum number of leaves to keep.
+     * @param maxNrAssignments The maximum number of assignments to keep.
      * @return DecisionTreeFactor
      */
-    DecisionTreeFactor prune(size_t maxNrLeaves) const;
+    DecisionTreeFactor prune(size_t maxNrAssignments) const;
 
     /// @}
     /// @name Wrapper support
