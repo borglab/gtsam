@@ -16,14 +16,14 @@
  */
 
 #include <gtsam/hybrid/HybridEliminationTree.h>
+#include <gtsam/hybrid/HybridFactorGraph.h>
 #include <gtsam/hybrid/HybridJunctionTree.h>
 #include <gtsam/inference/JunctionTree-inst.h>
+#include <gtsam/inference/Key.h>
 
 #include <unordered_map>
 
-#include "gtsam/hybrid/HybridFactorGraph.h"
-#include "gtsam/inference/Key.h"
-
+// #undef NDEBUG
 namespace gtsam {
 
 // Instantiate base classes
