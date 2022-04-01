@@ -479,6 +479,7 @@ boost::optional<Pose3> Pose3::Align(const Matrix& a, const Matrix& b) {
   return Pose3::Align(abPointPairs);
 }
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
 boost::optional<Pose3> align(const Point3Pairs &baPointPairs) {
   Point3Pairs abPointPairs;
   for (const Point3Pair &baPair : baPointPairs) {
@@ -486,6 +487,7 @@ boost::optional<Pose3> align(const Point3Pairs &baPointPairs) {
   }
   return Pose3::Align(abPointPairs);
 }
+#endif
 
 /* ************************************************************************* */
 std::ostream &operator<<(std::ostream &os, const Pose3& pose) {

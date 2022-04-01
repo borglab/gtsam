@@ -92,6 +92,18 @@ public:
     *this = Expmap(v);
   }
 
+  /**
+   *  Create Pose2 by aligning two point pairs
+   *  A pose aTb is estimated between pairs (a_point, b_point) such that 
+   *    a_point = aTb * b_point
+   *  Note this allows for noise on the points but in that case the mapping 
+   *  will not be exact.
+   */
+  static boost::optional<Pose2> Align(const Point2Pairs& abPointPairs);
+
+  // Version of Pose2::Align that takes 2 matrices.
+  static boost::optional<Pose2> Align(const Matrix& a, const Matrix& b);
+
   /// @}
   /// @name Testable
   /// @{
@@ -331,12 +343,15 @@ inline Matrix wedge<Pose2>(const Vector& xi) {
   return Matrix(Pose2::wedge(xi(0),xi(1),xi(2))).eval();
 }
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
 /**
+ * @deprecated Use static constructor (with reversed pairs!)
  * Calculate pose between a vector of 2D point correspondences (p,q)
  * where q = Pose2::transformFrom(p) = t + R*p
  */
-typedef std::pair<Point2,Point2> Point2Pair;
-GTSAM_EXPORT boost::optional<Pose2> align(const std::vector<Point2Pair>& pairs);
+GTSAM_EXPORT boost::optional<Pose2> 
+GTSAM_DEPRECATED align(const Point2Pairs& pairs);
+#endif
 
 template <>
 struct traits<Pose2> : public internal::LieGroup<Pose2> {};

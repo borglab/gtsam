@@ -372,6 +372,9 @@ class Pose2 {
   Pose2(const gtsam::Rot2& r, const gtsam::Point2& t);
   Pose2(Vector v);
 
+  static boost::optional<gtsam::Pose2> Align(const gtsam::Point2Pairs& abPointPairs);
+  static boost::optional<gtsam::Pose2> Align(const gtsam::Matrix& a, const gtsam::Matrix& b);
+
   // Testable
   void print(string s = "") const;
   bool equals(const gtsam::Pose2& pose, double tol) const;
@@ -424,8 +427,6 @@ class Pose2 {
   void serialize() const;
 };
   
-boost::optional<gtsam::Pose2> align(const gtsam::Point2Pairs& pairs);
-
 #include <gtsam/geometry/Pose3.h>
 class Pose3 {
   // Standard Constructors
