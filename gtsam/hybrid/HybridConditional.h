@@ -18,6 +18,7 @@
 #pragma once
 
 #include <gtsam/discrete/DiscreteConditional.h>
+#include <gtsam/hybrid/GaussianMixture.h>
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
 #include <gtsam/inference/Conditional.h>
@@ -30,8 +31,6 @@
 #include <string>
 #include <typeinfo>
 #include <vector>
-
-#include <gtsam/hybrid/GaussianMixture.h>
 
 namespace gtsam {
 
@@ -101,9 +100,12 @@ class GTSAM_EXPORT HybridConditional
     return boost::static_pointer_cast<GaussianMixture>(inner);
   }
 
-  boost::shared_ptr<Factor> getInner() {
-      return inner;
+  DiscreteConditional::shared_ptr asDiscreteConditional() {
+    if (!isDiscrete_) throw std::invalid_argument("Not a discrete conditional");
+    return boost::static_pointer_cast<DiscreteConditional>(inner);
   }
+
+  boost::shared_ptr<Factor> getInner() { return inner; }
 
   /// @}
   /// @name Testable

@@ -217,11 +217,17 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
     GaussianFactorGraph gfg;
     for (auto &fp : factors) {
       auto ptr = boost::dynamic_pointer_cast<HybridGaussianFactor>(fp);
-      if (ptr)
+      if (ptr) {
         gfg.push_back(ptr->inner);
-      else
-        gfg.push_back(boost::static_pointer_cast<GaussianConditional>(
-            boost::static_pointer_cast<HybridConditional>(fp)->inner));
+      } else {
+        auto p = boost::static_pointer_cast<HybridConditional>(fp)->inner;
+        if (p) {
+          gfg.push_back(boost::static_pointer_cast<GaussianConditional>(p));
+        } else {
+          // It is an orphan wrapper
+          if (DEBUG) std::cout << "Got an orphan wrapper conditional\n";
+        }
+      }
     }
 
     auto result = EliminatePreferCholesky(gfg, frontalKeys);
@@ -239,11 +245,17 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
     DiscreteFactorGraph dfg;
     for (auto &fp : factors) {
       auto ptr = boost::dynamic_pointer_cast<HybridDiscreteFactor>(fp);
-      if (ptr)
+      if (ptr) {
         dfg.push_back(ptr->inner);
-      else
-        dfg.push_back(boost::static_pointer_cast<DiscreteConditional>(
-            boost::static_pointer_cast<HybridConditional>(fp)->inner));
+      } else {
+        auto p = boost::static_pointer_cast<HybridConditional>(fp)->inner;
+        if (p) {
+          dfg.push_back(boost::static_pointer_cast<DiscreteConditional>(p));
+        } else {
+          // It is an orphan wrapper
+          if (DEBUG) std::cout << "Got an orphan wrapper conditional\n";
+        }
+      }
     }
 
     auto result = EliminateDiscrete(dfg, frontalKeys);
@@ -286,8 +298,18 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
       deferredFactors.push_back(
           boost::dynamic_pointer_cast<HybridGaussianFactor>(f)->inner);
     } else {
-      throw std::invalid_argument(
-          "factor is discrete in continuous elimination");
+      // We need to handle the case where the object is actually an
+      // BayesTreeOrphanWrapper!
+      auto orphan = boost::dynamic_pointer_cast<
+          BayesTreeOrphanWrapper<HybridBayesTree::Clique>>(f);
+      if (orphan) {
+        if (DEBUG) std::cout << "Got an orphan wrapper conditional\n";
+      } else {
+        auto &fr = *f;
+        throw std::invalid_argument(
+            std::string("factor is discrete in continuous elimination") +
+            typeid(fr).name());
+      }
     }
   }
 
@@ -373,7 +395,8 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
   } else {
     // Create a resulting DCGaussianMixture on the separator.
     auto factor = boost::make_shared<GaussianMixtureFactor>(
-        frontalKeys, discreteSeparator, separatorFactors);
+        KeyVector(continuousSeparator.begin(), continuousSeparator.end()),
+        discreteSeparator, separatorFactors);
     return {boost::make_shared<HybridConditional>(conditional), factor};
   }
 }

@@ -70,4 +70,33 @@ class GTSAM_EXPORT HybridBayesTree : public BayesTree<HybridBayesTreeClique> {
   /// @}
 };
 
+/* This does special stuff for the hybrid case */
+template <class CLIQUE>
+class BayesTreeOrphanWrapper<
+    CLIQUE,
+    boost::enable_if_t<boost::is_same<CLIQUE, HybridBayesTreeClique>::value> >
+    : public CLIQUE::ConditionalType {
+ public:
+  typedef CLIQUE CliqueType;
+  typedef typename CLIQUE::ConditionalType Base;
+
+  boost::shared_ptr<CliqueType> clique;
+
+  BayesTreeOrphanWrapper(const boost::shared_ptr<CliqueType>& clique)
+      : clique(clique) {
+    // Store parent keys in our base type factor so that eliminating those
+    // parent keys will pull this subtree into the elimination.
+    this->keys_.assign(clique->conditional()->beginParents(),
+                       clique->conditional()->endParents());
+    this->discreteKeys_.assign(clique->conditional()->discreteKeys_.begin(),
+                               clique->conditional()->discreteKeys_.end());
+  }
+
+  void print(
+      const std::string& s = "",
+      const KeyFormatter& formatter = DefaultKeyFormatter) const override {
+    clique->print(s + "stored clique", formatter);
+  }
+};
+
 }  // namespace gtsam

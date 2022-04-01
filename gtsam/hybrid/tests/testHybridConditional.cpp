@@ -17,6 +17,9 @@
 
 #include <CppUnitLite/Test.h>
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/discrete/DecisionTreeFactor.h>
+#include <gtsam/discrete/DiscreteKey.h>
+#include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam/hybrid/GaussianMixture.h>
 #include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
@@ -26,16 +29,23 @@
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
 #include <gtsam/hybrid/HybridGaussianFactor.h>
+#include <gtsam/hybrid/HybridISAM.h>
 #include <gtsam/inference/BayesNet.h>
+#include <gtsam/inference/DotWriter.h>
+#include <gtsam/inference/Key.h>
+#include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/JacobianFactor.h>
 
+#include <algorithm>
 #include <boost/assign/std/map.hpp>
 #include <cstddef>
+#include <functional>
+#include <iostream>
+#include <iterator>
+#include <vector>
 
-#include "gtsam/inference/DotWriter.h"
-#include "gtsam/inference/Key.h"
-#include "gtsam/inference/Ordering.h"
+#include "Switching.h"
 
 using namespace boost::assign;
 
@@ -43,7 +53,9 @@ using namespace std;
 using namespace gtsam;
 
 using gtsam::symbol_shorthand::C;
+using gtsam::symbol_shorthand::D;
 using gtsam::symbol_shorthand::X;
+using gtsam::symbol_shorthand::Y;
 
 #define BOOST_STACKTRACE_GNU_SOURCE_NOT_REQUIRED
 
@@ -97,6 +109,29 @@ TEST_DISABLED(HybridFactorGraph, eliminateMultifrontal) {
 
   EXPECT_LONGS_EQUAL(result.first->size(), 1);
   EXPECT_LONGS_EQUAL(result.second->size(), 1);
+}
+
+TEST(HybridFactorGraph, eliminateFullSequentialEqualChance) {
+  HybridFactorGraph hfg;
+
+  DiscreteKey c1(C(1), 2);
+
+  hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
+  hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
+
+  DecisionTree<Key, GaussianFactor::shared_ptr> dt(
+      C(1), boost::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1),
+      boost::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()));
+
+  hfg.add(GaussianMixtureFactor({X(1)}, {c1}, dt));
+
+  auto result =
+      hfg.eliminateSequential(Ordering::ColamdConstrainedLast(hfg, {C(1)}));
+
+  auto dc = result->at(2)->asDiscreteConditional();
+  DiscreteValues dv;
+  dv[C(1)] = 0;
+  EXPECT_DOUBLES_EQUAL(0.6225, dc->operator()(dv), 1e-3);
 }
 
 TEST_DISABLED(HybridFactorGraph, eliminateFullSequentialSimple) {
@@ -268,27 +303,10 @@ TEST_DISABLED(HybridFactorGraph, eliminateFullMultifrontalTwoClique) {
   */
 }
 
-HybridFactorGraph::shared_ptr makeSwitchingChain(size_t n) {
-  HybridFactorGraph hfg;
-
-  hfg.add(JacobianFactor(X(1), I_3x3, Z_3x1));
-
-  // X(1) to X(n+1)
-  for (size_t t = 1; t < n; t++) {
-    hfg.add(GaussianMixtureFactor::FromFactorList(
-        {X(t), X(t + 1)}, {{C(t), 2}},
-        {boost::make_shared<JacobianFactor>(X(t), I_3x3, X(t + 1), I_3x3,
-                                            Z_3x1),
-         boost::make_shared<JacobianFactor>(X(t), I_3x3, X(t + 1), I_3x3,
-                                            Vector3::Ones())}));
-  }
-
-  return boost::make_shared<HybridFactorGraph>(std::move(hfg));
-}
-
 // TODO(fan): make a graph like Varun's paper one
 TEST(HybridFactorGraph, Switching) {
-  auto hfg = makeSwitchingChain(9);
+  auto N = 12;
+  auto hfg = makeSwitchingChain(N);
 
   // X(5) will be the center, X(1-4), X(6-9)
   // X(3), X(7)
@@ -297,20 +315,73 @@ TEST(HybridFactorGraph, Switching) {
   // C(5) will be the center, C(1-4), C(6-8)
   // C(3), C(7)
   // C(1), C(4), C(2), C(6), C(8)
-  auto ordering_full =
-      Ordering(KeyVector{X(1), X(4), X(2), X(6), X(9), X(8), X(3), X(7), X(5),
-                         C(1), C(4), C(2), C(6), C(8), C(3), C(7), C(5)});
+  // auto ordering_full =
+  //     Ordering(KeyVector{X(1), X(4), X(2), X(6), X(9), X(8), X(3), X(7),
+  //     X(5),
+  //                        C(1), C(4), C(2), C(6), C(8), C(3), C(7), C(5)});
+  KeyVector ordering;
 
-  GTSAM_PRINT(*hfg);
+  {
+    std::vector<int> naturalX(N);
+    std::iota(naturalX.begin(), naturalX.end(), 1);
+    std::vector<Key> ordX;
+    std::transform(naturalX.begin(), naturalX.end(), std::back_inserter(ordX),
+                   [](int x) { return X(x); });
+
+    KeyVector ndX;
+    std::vector<int> lvls;
+    std::tie(ndX, lvls) = makeBinaryOrdering(ordX);
+    std::copy(ndX.begin(), ndX.end(), std::back_inserter(ordering));
+    for (auto &l : lvls) {
+      l = -l;
+    }
+    std::copy(lvls.begin(), lvls.end(),
+              std::ostream_iterator<int>(std::cout, ","));
+    std::cout << "\n";
+  }
+  {
+    std::vector<int> naturalC(N - 1);
+    std::iota(naturalC.begin(), naturalC.end(), 1);
+    std::vector<Key> ordC;
+    std::transform(naturalC.begin(), naturalC.end(), std::back_inserter(ordC),
+                   [](int x) { return C(x); });
+    KeyVector ndC;
+    std::vector<int> lvls;
+
+    // std::copy(ordC.begin(), ordC.end(), std::back_inserter(ordering));
+    std::tie(ndC, lvls) = makeBinaryOrdering(ordC);
+    std::copy(ndC.begin(), ndC.end(), std::back_inserter(ordering));
+    std::copy(lvls.begin(), lvls.end(),
+              std::ostream_iterator<int>(std::cout, ","));
+  }
+  auto ordering_full = Ordering(ordering);
+
+  // auto ordering_full =
+  //     Ordering();
+
+  // for (int i = 1; i <= 9; i++) {
+  //   ordering_full.push_back(X(i));
+  // }
+
+  // for (int i = 1; i < 9; i++) {
+  //   ordering_full.push_back(C(i));
+  // }
+
+  // auto ordering_full =
+  //     Ordering(KeyVector{X(1), X(4), X(2), X(6), X(9), X(8), X(3), X(7),
+  //     X(5),
+  //                        C(1), C(2), C(3), C(4), C(5), C(6), C(7), C(8)});
+
+  // GTSAM_PRINT(*hfg);
   GTSAM_PRINT(ordering_full);
 
   HybridBayesTree::shared_ptr hbt;
   HybridFactorGraph::shared_ptr remaining;
   std::tie(hbt, remaining) = hfg->eliminatePartialMultifrontal(ordering_full);
 
-  GTSAM_PRINT(*hbt);
+  // GTSAM_PRINT(*hbt);
 
-  GTSAM_PRINT(*remaining);
+  // GTSAM_PRINT(*remaining);
 
   {
     DotWriter dw;
@@ -323,7 +394,8 @@ TEST(HybridFactorGraph, Switching) {
 
   {
     DotWriter dw;
-    dw.positionHints['x'] = 1;
+    // dw.positionHints['c'] = 2;
+    // dw.positionHints['x'] = 1;
     std::cout << "\n";
     std::cout << hfg->eliminateSequential(ordering_full)
                      ->dot(DefaultKeyFormatter, dw);
@@ -335,6 +407,189 @@ TEST(HybridFactorGraph, Switching) {
   is 1. expensive and 2. inexact. neverless it is doable. And I believe that we
   should do this.
   */
+  hbt->marginalFactor(C(11))->print("HBT: ");
+}
+
+// TODO(fan): make a graph like Varun's paper one
+TEST(HybridFactorGraph, SwitchingISAM) {
+  auto N = 11;
+  auto hfg = makeSwitchingChain(N);
+
+  // X(5) will be the center, X(1-4), X(6-9)
+  // X(3), X(7)
+  // X(2), X(8)
+  // X(1), X(4), X(6), X(9)
+  // C(5) will be the center, C(1-4), C(6-8)
+  // C(3), C(7)
+  // C(1), C(4), C(2), C(6), C(8)
+  // auto ordering_full =
+  //     Ordering(KeyVector{X(1), X(4), X(2), X(6), X(9), X(8), X(3), X(7),
+  //     X(5),
+  //                        C(1), C(4), C(2), C(6), C(8), C(3), C(7), C(5)});
+  KeyVector ordering;
+
+  {
+    std::vector<int> naturalX(N);
+    std::iota(naturalX.begin(), naturalX.end(), 1);
+    std::vector<Key> ordX;
+    std::transform(naturalX.begin(), naturalX.end(), std::back_inserter(ordX),
+                   [](int x) { return X(x); });
+
+    KeyVector ndX;
+    std::vector<int> lvls;
+    std::tie(ndX, lvls) = makeBinaryOrdering(ordX);
+    std::copy(ndX.begin(), ndX.end(), std::back_inserter(ordering));
+    for (auto &l : lvls) {
+      l = -l;
+    }
+    std::copy(lvls.begin(), lvls.end(),
+              std::ostream_iterator<int>(std::cout, ","));
+    std::cout << "\n";
+  }
+  {
+    std::vector<int> naturalC(N - 1);
+    std::iota(naturalC.begin(), naturalC.end(), 1);
+    std::vector<Key> ordC;
+    std::transform(naturalC.begin(), naturalC.end(), std::back_inserter(ordC),
+                   [](int x) { return C(x); });
+    KeyVector ndC;
+    std::vector<int> lvls;
+
+    // std::copy(ordC.begin(), ordC.end(), std::back_inserter(ordering));
+    std::tie(ndC, lvls) = makeBinaryOrdering(ordC);
+    std::copy(ndC.begin(), ndC.end(), std::back_inserter(ordering));
+    std::copy(lvls.begin(), lvls.end(),
+              std::ostream_iterator<int>(std::cout, ","));
+  }
+  auto ordering_full = Ordering(ordering);
+
+  // GTSAM_PRINT(*hfg);
+  GTSAM_PRINT(ordering_full);
+
+  HybridBayesTree::shared_ptr hbt;
+  HybridFactorGraph::shared_ptr remaining;
+  std::tie(hbt, remaining) = hfg->eliminatePartialMultifrontal(ordering_full);
+
+  // GTSAM_PRINT(*hbt);
+
+  // GTSAM_PRINT(*remaining);
+
+  {
+    DotWriter dw;
+    dw.positionHints['c'] = 2;
+    dw.positionHints['x'] = 1;
+    std::cout << hfg->dot(DefaultKeyFormatter, dw);
+    std::cout << "\n";
+    hbt->dot(std::cout);
+  }
+
+  {
+    DotWriter dw;
+    // dw.positionHints['c'] = 2;
+    // dw.positionHints['x'] = 1;
+    std::cout << "\n";
+    std::cout << hfg->eliminateSequential(ordering_full)
+                     ->dot(DefaultKeyFormatter, dw);
+  }
+
+  auto new_fg = makeSwitchingChain(12);
+  auto isam = HybridISAM(*hbt);
+
+  {
+    HybridFactorGraph factorGraph;
+    factorGraph.push_back(new_fg->at(new_fg->size() - 2));
+    factorGraph.push_back(new_fg->at(new_fg->size() - 1));
+    isam.update(factorGraph);
+    std::cout << isam.dot();
+    isam.marginalFactor(C(11))->print();
+  }
+}
+
+TEST_DISABLED(HybridFactorGraph, SwitchingTwoVar) {
+  const int N = 7;
+  auto hfg = makeSwitchingChain(N, X);
+  hfg->push_back(*makeSwitchingChain(N, Y, D));
+
+  for (int t = 1; t <= N; t++) {
+    hfg->add(JacobianFactor(X(t), I_3x3, Y(t), -I_3x3, Vector3(1.0, 0.0, 0.0)));
+  }
+
+  KeyVector ordering;
+
+  KeyVector naturalX(N);
+  std::iota(naturalX.begin(), naturalX.end(), 1);
+  KeyVector ordX;
+  for (size_t i = 1; i <= N; i++) {
+    ordX.emplace_back(X(i));
+    ordX.emplace_back(Y(i));
+  }
+
+  // {
+  //   KeyVector ndX;
+  //   std::vector<int> lvls;
+  //   std::tie(ndX, lvls) = makeBinaryOrdering(naturalX);
+  //   std::copy(ndX.begin(), ndX.end(), std::back_inserter(ordering));
+  //   std::copy(lvls.begin(), lvls.end(),
+  //             std::ostream_iterator<int>(std::cout, ","));
+  //   std::cout << "\n";
+
+  //   for (size_t i = 0; i < N; i++) {
+  //     ordX.emplace_back(X(ndX[i]));
+  //     ordX.emplace_back(Y(ndX[i]));
+  //   }
+  // }
+
+  for (size_t i = 1; i <= N - 1; i++) {
+    ordX.emplace_back(C(i));
+  }
+  for (size_t i = 1; i <= N - 1; i++) {
+    ordX.emplace_back(D(i));
+  }
+
+  {
+    DotWriter dw;
+    dw.positionHints['x'] = 1;
+    dw.positionHints['c'] = 0;
+    dw.positionHints['d'] = 3;
+    dw.positionHints['y'] = 2;
+    std::cout << hfg->dot(DefaultKeyFormatter, dw);
+    std::cout << "\n";
+  }
+
+  {
+    DotWriter dw;
+    dw.positionHints['y'] = 9;
+    // dw.positionHints['c'] = 0;
+    // dw.positionHints['d'] = 3;
+    dw.positionHints['x'] = 1;
+    std::cout << "\n";
+    // std::cout << hfg->eliminateSequential(Ordering(ordX))
+    //                  ->dot(DefaultKeyFormatter, dw);
+    hfg->eliminateMultifrontal(Ordering(ordX))->dot(std::cout);
+  }
+
+  Ordering ordering_partial;
+  for (size_t i = 1; i <= N; i++) {
+    ordering_partial.emplace_back(X(i));
+    ordering_partial.emplace_back(Y(i));
+  }
+  {
+    HybridBayesNet::shared_ptr hbn;
+    HybridFactorGraph::shared_ptr remaining;
+    std::tie(hbn, remaining) =
+        hfg->eliminatePartialSequential(ordering_partial);
+
+    // remaining->print();
+    {
+      DotWriter dw;
+      dw.positionHints['x'] = 1;
+      dw.positionHints['c'] = 0;
+      dw.positionHints['d'] = 3;
+      dw.positionHints['y'] = 2;
+      std::cout << remaining->dot(DefaultKeyFormatter, dw);
+      std::cout << "\n";
+    }
+  }
 }
 
 /* ************************************************************************* */
