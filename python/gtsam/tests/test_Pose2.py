@@ -70,27 +70,36 @@ class TestPose2(GtsamTestCase):
               O---O
         """
         pts_a = [
-            Point2(3, 1),
-            Point2(1, 1),
-            Point2(1, 3),
-            Point2(3, 3),
-        ]
-        pts_b = [
             Point2(1, -3),
             Point2(1, -5),
             Point2(-1, -5),
             Point2(-1, -3),
         ]
+        pts_b = [
+            Point2(3, 1),
+            Point2(1, 1),
+            Point2(1, 3),
+            Point2(3, 3),
+        ]
 
         # fmt: on
         ab_pairs = Point2Pairs(list(zip(pts_a, pts_b)))
-        bTa = gtsam.align(ab_pairs)
-        aTb = bTa.inverse()
-        assert aTb is not None
+        aTb = Pose2.Align(ab_pairs)
+        self.assertIsNotNone(aTb)
 
         for pt_a, pt_b in zip(pts_a, pts_b):
             pt_a_ = aTb.transformFrom(pt_b)
-            assert np.allclose(pt_a, pt_a_)
+            np.testing.assert_allclose(pt_a, pt_a_)
+
+        # Matrix version
+        A = np.array(pts_a).T
+        B = np.array(pts_b).T
+        aTb = Pose2.Align(A, B)
+        self.assertIsNotNone(aTb)
+
+        for pt_a, pt_b in zip(pts_a, pts_b):
+            pt_a_ = aTb.transformFrom(pt_b)
+            np.testing.assert_allclose(pt_a, pt_a_)
 
 
 if __name__ == "__main__":
