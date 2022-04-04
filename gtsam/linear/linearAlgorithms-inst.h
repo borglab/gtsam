@@ -23,6 +23,10 @@
 
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
+#include <chrono>
+#include <iostream>
+#include <ostream>
+#include <stdexcept>
 
 namespace gtsam
 {
@@ -56,9 +60,24 @@ namespace gtsam
         {
           OptimizeData myData;
           myData.parentData = parentData;
+
           // Take any ancestor results we'll need
-          for(Key parent: clique->conditional_->parents())
-            myData.cliqueResults.emplace(parent, myData.parentData->cliqueResults.at(parent));
+          for (Key parent : clique->conditional_->parents()) {
+            if (!myData.parentData->cliqueResults.exists(parent)) {
+              std::cerr << "BOOM! " << "parent = " << parent << "\n";
+              for (Key parent : clique->conditional_->parents()) {
+                std::cerr << " -- p [" << parent << "]\n";
+              }
+              for (auto p : myData.parentData->cliqueResults) {
+                std::cerr << " -- cr [" << p.first << "]\n";
+              }
+              std::flush(std::cerr);
+              std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            }
+
+            auto parent_data = myData.parentData->cliqueResults.at(parent);
+            myData.cliqueResults.emplace(parent, parent_data);
+          }
 
           // Solve and store in our results
           {

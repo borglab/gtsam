@@ -46,7 +46,7 @@ namespace gtsam {
         bool makeNewTasks;
 
         // Keep track of order phase across multiple calls to the same functor
-        mutable bool isPostOrderPhase;
+        bool isPostOrderPhase;
 
         PreOrderTask(const boost::shared_ptr<NODE>& treeNode, const boost::shared_ptr<DATA>& myData,
                      VISITOR_PRE& visitorPre, VISITOR_POST& visitorPost, int problemSizeThreshold,
@@ -90,8 +90,9 @@ namespace gtsam {
                 ctg.wait();
 
                 // Allocate post-order task as a continuation
-                isPostOrderPhase = true;
-                tg.run(*this);
+                PreOrderTask new_task(*this);
+                new_task.isPostOrderPhase = true;
+                tg.run(new_task);
               }
               else
               {
