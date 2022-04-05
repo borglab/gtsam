@@ -20,7 +20,7 @@ void my_signal_handler(int signum) {
   ::signal(signum, SIG_DFL);
   std::cout << boost::stacktrace::stacktrace();
 	std::flush(std::cout);
-	
+
   ::raise(SIGTERM);
 }
 
@@ -32,10 +32,10 @@ TEST_UNSAFE(TBB, MemoryCorruption) {
   boost::tie(graph_, initial_) =
       gtsam::load3D(gtsam::findExampleDataFile("sphere2500"));
 
-  gtsam::NonlinearFactorGraph graph(graph_->begin(), graph_->begin() + 1000);
+  gtsam::NonlinearFactorGraph graph(graph_->begin(), graph_->begin() + 500);
   //   // Add prior
   graph.emplace_shared<gtsam::PriorFactor<gtsam::Pose3>>(
-      500, gtsam::Pose3(), gtsam::noiseModel::Isotropic::Sigma(6, 1e-1));
+      250, gtsam::Pose3(), gtsam::noiseModel::Isotropic::Sigma(6, 1e-1));
   auto initial = gtsam::InitializePose3::initialize(graph);
 
   // Run the optimizer a bunch

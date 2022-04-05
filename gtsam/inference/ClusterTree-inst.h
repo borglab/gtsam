@@ -120,20 +120,25 @@ struct EliminationData {
   size_t myIndexInParent;
   FastVector<sharedFactor> childFactors;
   boost::shared_ptr<BTNode> bayesTreeNode;
+  boost::shared_ptr<std::mutex> writeLock;
 
   EliminationData(EliminationData* _parentData, size_t nChildren) :
-      parentData(_parentData), bayesTreeNode(boost::make_shared<BTNode>()) {
+      parentData(_parentData), bayesTreeNode(boost::make_shared<BTNode>()), writeLock(boost::make_shared<std::mutex>()) {
     if (parentData) {
+      parentData->writeLock->lock();
       myIndexInParent = parentData->childFactors.size();
       parentData->childFactors.push_back(sharedFactor());
+      parentData->writeLock->unlock();
     } else {
       myIndexInParent = 0;
     }
     // Set up BayesTree parent and child pointers
     if (parentData) {
+      parentData->writeLock->lock();
       if (parentData->parentData) // If our parent is not the dummy node
         bayesTreeNode->parent_ = parentData->bayesTreeNode;
       parentData->bayesTreeNode->children.push_back(bayesTreeNode);
+      parentData->writeLock->unlock();
     }
   }
 
@@ -196,8 +201,11 @@ struct EliminationData {
         nodesIndex_.insert(std::make_pair(j, myData.bayesTreeNode));
 
       // Store remaining factor in parent's gathered factors
-      if (!eliminationResult.second->empty())
+      if (!eliminationResult.second->empty()) {
+        myData.parentData->writeLock->lock();
         myData.parentData->childFactors[myData.myIndexInParent] = eliminationResult.second;
+        myData.parentData->writeLock->unlock();
+      }
     }
   };
 };

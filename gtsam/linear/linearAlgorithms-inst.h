@@ -28,6 +28,8 @@
 #include <ostream>
 #include <stdexcept>
 
+#include <tbb/task.h>
+
 namespace gtsam
 {
   namespace internal
@@ -71,8 +73,8 @@ namespace gtsam
               for (auto p : myData.parentData->cliqueResults) {
                 std::cerr << " -- cr [" << p.first << "]\n";
               }
+              
               std::flush(std::cerr);
-              std::this_thread::sleep_for(std::chrono::milliseconds(1));
             }
 
             auto parent_data = myData.parentData->cliqueResults.at(parent);

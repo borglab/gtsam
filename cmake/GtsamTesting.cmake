@@ -167,7 +167,7 @@ macro(gtsamAddTestsGlob_impl groupName globPatterns excludedFiles linkLibraries)
 
 				# Add executable
 				add_executable(${script_name} ${script_src} ${script_headers})
-				target_link_libraries(${script_name} CppUnitLite ${linkLibraries})
+				target_link_libraries(${script_name} PUBLIC CppUnitLite ${linkLibraries})
 
 				# Apply user build flags from CMake cache variables:
 				gtsam_apply_build_flags(${script_name})
@@ -214,7 +214,7 @@ macro(gtsamAddTestsGlob_impl groupName globPatterns excludedFiles linkLibraries)
 
 			# Add executable
 			add_executable(${target_name} "${script_srcs}" ${script_headers})
-			target_link_libraries(${target_name} CppUnitLite ${linkLibraries})
+			target_link_libraries(${target_name} PUBLIC CppUnitLite ${linkLibraries})
 
 			# Apply user build flags from CMake cache variables:
 			gtsam_apply_build_flags(${target_name})
@@ -284,7 +284,7 @@ macro(gtsamAddExesGlob_impl globPatterns excludedFiles linkLibraries groupName b
 
 		# Add executable
 		add_executable(${script_name} ${script_src} ${script_headers})
-		target_link_libraries(${script_name} ${linkLibraries})
+		target_link_libraries(${script_name} PUBLIC ${linkLibraries})
 
 		# Apply user build flags from CMake cache variables:
 		gtsam_apply_build_flags(${script_name})

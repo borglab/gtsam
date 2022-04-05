@@ -92,7 +92,7 @@ namespace gtsam {
                 // Allocate post-order task as a continuation
                 PreOrderTask new_task(*this);
                 new_task.isPostOrderPhase = true;
-                tg.run(new_task);
+                ctg.run_and_wait(new_task);
               }
               else
               {
