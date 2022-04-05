@@ -16,6 +16,10 @@
 
 #include <boost/stacktrace.hpp>
 
+#include <Tracy.hpp>
+
+const char* optimizeMarker = "Optimize";
+
 void my_signal_handler(int signum) {
   ::signal(signum, SIG_DFL);
   std::cout << boost::stacktrace::stacktrace();
@@ -32,16 +36,18 @@ TEST_UNSAFE(TBB, MemoryCorruption) {
   boost::tie(graph_, initial_) =
       gtsam::load3D(gtsam::findExampleDataFile("sphere2500"));
 
-  gtsam::NonlinearFactorGraph graph(graph_->begin(), graph_->begin() + 500);
+  gtsam::NonlinearFactorGraph graph(graph_->begin(), graph_->begin() + 1000);
   //   // Add prior
   graph.emplace_shared<gtsam::PriorFactor<gtsam::Pose3>>(
-      250, gtsam::Pose3(), gtsam::noiseModel::Isotropic::Sigma(6, 1e-1));
+      500, gtsam::Pose3(), gtsam::noiseModel::Isotropic::Sigma(6, 1e-1));
   auto initial = gtsam::InitializePose3::initialize(graph);
 
   // Run the optimizer a bunch
   for (size_t i = 0; i < 1000; i++) {
     gtsam::LevenbergMarquardtOptimizer optimizer(graph, initial);
+    FrameMarkStart(optimizeMarker);
     auto result = optimizer.optimize();
+    FrameMarkEnd(optimizeMarker);
     // result.print();
     std::cout << "Iteration " << i << "\n";
   }

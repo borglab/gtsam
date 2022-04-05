@@ -15,6 +15,8 @@
 #include <gtsam/base/timing.h>
 #include <gtsam/base/treeTraversal-inst.h>
 
+#include <mutex>
+
 namespace gtsam {
 
 /* ************************************************************************* */

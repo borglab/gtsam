@@ -29,6 +29,11 @@
 #include <gtsam/base/timing.h>
 #include <gtsam/base/cholesky.h>
 
+#ifdef GTSAM_USE_TBB
+#  include <tbb/parallel_for.h>
+#  include <tbb/parallel_reduce.h>
+#endif
+
 using namespace std;
 using namespace gtsam;
 
@@ -287,6 +292,38 @@ namespace gtsam {
       }
     }
     return blocks;
+  }
+
+  /* ************************************************************************ */
+  double GaussianFactorGraph::error(const VectorValues& x) const {
+    double total_error = 0.;
+#ifdef GTSAM_USE_TBBA
+
+    std::vector<double> results(size());
+
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, size()),
+                      [&](tbb::blocked_range<size_t> r) {
+                        for (size_t i = r.begin(); i < r.end(); i++)
+                          results[i] = (*this)[i]->error(x);
+                      });
+
+    total_error = tbb::parallel_reduce(
+        tbb::blocked_range<size_t>(0, size()), 0.0,
+        [&](tbb::blocked_range<size_t> r, double running_total) {
+          for (size_t i = r.begin(); i < r.end(); i++) {
+            running_total += results[i];
+          }
+
+          return running_total;
+        },
+        std::plus<double>());
+#else
+    for(const sharedFactor& factor: *this){
+      if(factor)
+        total_error += factor->error(x);
+    }
+#endif
+    return total_error;
   }
 
   /* ************************************************************************ */

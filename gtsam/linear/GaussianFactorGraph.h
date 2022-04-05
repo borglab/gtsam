@@ -149,14 +149,7 @@ namespace gtsam {
     std::map<Key, size_t> getKeyDimMap() const;
 
     /** unnormalized error */
-    double error(const VectorValues& x) const {
-      double total_error = 0.;
-      for(const sharedFactor& factor: *this){
-        if(factor)
-          total_error += factor->error(x);
-      }
-      return total_error;
-    }
+    double error(const VectorValues& x) const;
 
     /** Unnormalized probability. O(n) */
     double probPrime(const VectorValues& c) const {

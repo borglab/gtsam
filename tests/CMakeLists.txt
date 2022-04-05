@@ -11,6 +11,8 @@ include(FetchContent)
 
 FetchContent_Declare( tracy GIT_REPOSITORY https://github.com/wolfpld/tracy.git GIT_TAG master GIT_SHALLOW TRUE GIT_PROGRESS TRUE )
 
+option(TRACY_NO_EXIT ON)
+
 FetchContent_MakeAvailable(tracy)
 
 # Build tests

@@ -43,6 +43,11 @@
 #include <sstream>
 #include <stdexcept>
 
+#ifdef GTSAM_USE_TBB
+#  include <tbb/parallel_for.h>
+#  include <tbb/parallel_reduce.h>
+#endif
+
 using namespace std;
 using namespace boost::assign;
 
@@ -481,8 +486,32 @@ bool JacobianFactor::equals(const GaussianFactor& f_, double tol) const {
 /* ************************************************************************* */
 Vector JacobianFactor::unweighted_error(const VectorValues& c) const {
   Vector e = -getb();
+#ifdef GTSAM_USE_TBBA
+
+  std::vector<Vector> results(size());
+
+  tbb::parallel_for(tbb::blocked_range<size_t>(0, size()),
+                    [&](tbb::blocked_range<size_t> r) {
+                      for (size_t i = r.begin(); i < r.end(); i++)
+                        results[i] = Ab_(i) * c[keys_[i]];
+                    });
+
+  e += tbb::parallel_reduce<tbb::blocked_range<size_t>, Vector>(
+      tbb::blocked_range<size_t>(0, size()), Vector::Zero(e.size()),
+      [&](tbb::blocked_range<size_t> r, const Vector& running_total_) -> Vector {
+        Vector running_total = running_total_;
+        for (size_t i = r.begin(); i < r.end(); i++) {
+          running_total += results[i];
+        }
+
+        return running_total;
+      },
+      [](const Vector& a, const Vector& b) -> Vector { return (a+b); });
+#else
   for (size_t pos = 0; pos < size(); ++pos)
     e += Ab_(pos) * c[keys_[pos]];
+#endif
+
   return e;
 }
 
