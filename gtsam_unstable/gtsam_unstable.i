@@ -797,4 +797,30 @@ virtual class ProjectionFactorPPPC : gtsam::NoiseModelFactor {
 typedef gtsam::ProjectionFactorPPPC<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> ProjectionFactorPPPCCal3_S2;
 typedef gtsam::ProjectionFactorPPPC<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2> ProjectionFactorPPPCCal3DS2;
 
+#include <gtsam_unstable/slam/ProjectionFactorRollingShutter.h>
+virtual class ProjectionFactorRollingShutter : gtsam::NoiseModelFactor {
+  ProjectionFactorRollingShutter(const gtsam::Point2& measured, double alpha, const gtsam::noiseModel::Base* noiseModel,
+      size_t poseKey_a, size_t poseKey_b, size_t pointKey, const gtsam::Cal3_S2* K);
+
+  ProjectionFactorRollingShutter(const gtsam::Point2& measured, double alpha, const gtsam::noiseModel::Base* noiseModel,
+    size_t poseKey_a, size_t poseKey_b, size_t pointKey, const gtsam::Cal3_S2* K, gtsam::Pose3& body_P_sensor);
+
+  ProjectionFactorRollingShutter(const gtsam::Point2& measured, double alpha, const gtsam::noiseModel::Base* noiseModel,
+        size_t poseKey_a, size_t poseKey_b, size_t pointKey, const gtsam::Cal3_S2* K, bool throwCheirality,
+        bool verboseCheirality);
+
+  ProjectionFactorRollingShutter(const gtsam::Point2& measured, double alpha, const gtsam::noiseModel::Base* noiseModel,
+      size_t poseKey_a, size_t poseKey_b, size_t pointKey, const gtsam::Cal3_S2* K, bool throwCheirality,
+      bool verboseCheirality, gtsam::Pose3& body_P_sensor);
+
+  gtsam::Point2 measured() const;
+  double alpha() const;
+  gtsam::Cal3_S2* calibration() const;
+  bool verboseCheirality() const;
+  bool throwCheirality() const;
+
+  // enabling serialization functionality
+  void serialize() const;
+};
+
 } //\namespace gtsam
