@@ -27,7 +27,7 @@ point_noise = gtsam.noiseModel.Diagonal.Sigmas(np.ones(2))
 cal = gtsam.Cal3_S2()
 body_p_sensor = gtsam.Pose3()
 alpha = 0.1
-measured = array([0.13257015, 0.0004157])
+measured = np.array([0.13257015, 0.0004157])
 
 
 class TestProjectionFactorRollingShutter(GtsamTestCase):
@@ -52,7 +52,7 @@ class TestProjectionFactorRollingShutter(GtsamTestCase):
         values.insert(1, pose2)
         values.insert(2, point)
         factor = gtsam_unstable.ProjectionFactorRollingShutter(measured, alpha, point_noise, 0, 1, 2, cal)
-        self.assertEqual(factor.error(values), 0)
+        self.gtsamAssertEquals(factor.error(values), np.array(0), tol=1e-9)
 
 
 if __name__ == '__main__':
