@@ -7,14 +7,6 @@ if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang") # might not be best test - Richar
 	list (APPEND tests_exclude "testSerializationSlam.cpp") 
 endif()
 
-include(FetchContent)
-
-FetchContent_Declare( tracy GIT_REPOSITORY https://github.com/wolfpld/tracy.git GIT_TAG master GIT_SHALLOW TRUE GIT_PROGRESS TRUE )
-
-option(TRACY_NO_EXIT ON)
-
-FetchContent_MakeAvailable(tracy)
-
 # Build tests
 gtsamAddTestsGlob(tests "test*.cpp" "${tests_exclude}" "gtsam")
 

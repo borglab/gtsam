@@ -38,6 +38,8 @@
 #include <limits>
 #include <string>
 
+#include <Tracy.hpp>
+
 using namespace std;
 
 namespace gtsam {
@@ -128,6 +130,8 @@ bool LevenbergMarquardtOptimizer::tryLambda(const GaussianFactorGraph& linear,
   boost::timer lamda_iteration_timer;
   lamda_iteration_timer.restart();
 #endif
+
+  ZoneScopedN("tryLambda");
 
   if (verbose)
     cout << "trying lambda = " << currentState->lambda << endl;
@@ -261,6 +265,8 @@ bool LevenbergMarquardtOptimizer::tryLambda(const GaussianFactorGraph& linear,
 /* ************************************************************************* */
 GaussianFactorGraph::shared_ptr LevenbergMarquardtOptimizer::iterate() {
   auto currentState = static_cast<const State*>(state_.get());
+
+  ZoneScopedN("LM_iterate");
 
   gttic(LM_iterate);
 

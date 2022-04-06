@@ -107,6 +107,9 @@ add_library(gtsam ${gtsam_srcs})
 target_link_libraries(gtsam PUBLIC ${GTSAM_BOOST_LIBRARIES})
 target_link_libraries(gtsam PUBLIC ${GTSAM_ADDITIONAL_LIBRARIES})
 
+list(APPEND GTSAM_EXPORTED_TARGETS TracyClient)
+target_link_libraries(gtsam PRIVATE TracyClient)
+
 # Apply build flags:
 gtsam_apply_build_flags(gtsam)
 

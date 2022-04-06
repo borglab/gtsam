@@ -34,6 +34,8 @@
 #include <iostream>
 #include <iomanip>
 
+#include <Tracy.hpp>
+
 using namespace std;
 
 namespace gtsam {
@@ -134,6 +136,9 @@ const Values& NonlinearOptimizer::optimizeSafely() {
 /* ************************************************************************* */
 VectorValues NonlinearOptimizer::solve(const GaussianFactorGraph& gfg,
                                        const NonlinearOptimizerParams& params) const {
+
+  ZoneScopedN("NLO_Solve");
+
   // solution of linear solver is an update to the linearization point
   VectorValues delta;
 

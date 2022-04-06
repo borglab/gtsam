@@ -17,6 +17,8 @@
 
 #include <mutex>
 
+#include <Tracy.hpp>
+
 namespace gtsam {
 
 /* ************************************************************************* */
@@ -136,11 +138,11 @@ struct EliminationData {
     }
     // Set up BayesTree parent and child pointers
     if (parentData) {
-      parentData->writeLock->lock();
+      // parentData->writeLock->lock();
       if (parentData->parentData) // If our parent is not the dummy node
         bayesTreeNode->parent_ = parentData->bayesTreeNode;
       parentData->bayesTreeNode->children.push_back(bayesTreeNode);
-      parentData->writeLock->unlock();
+      // parentData->writeLock->unlock();
     }
   }
 
@@ -229,6 +231,8 @@ EliminatableClusterTree<BAYESTREE, GRAPH>& EliminatableClusterTree<BAYESTREE, GR
 template <class BAYESTREE, class GRAPH>
 std::pair<boost::shared_ptr<BAYESTREE>, boost::shared_ptr<GRAPH> >
 EliminatableClusterTree<BAYESTREE, GRAPH>::eliminate(const Eliminate& function) const {
+  
+  ZoneScopedN("ClusterTree_eliminate");
   gttic(ClusterTree_eliminate);
   // Do elimination (depth-first traversal).  The rootsContainer stores a 'dummy' BayesTree node
   // that contains all of the roots as its children.  rootsContainer also stores the remaining

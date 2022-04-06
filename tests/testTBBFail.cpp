@@ -36,14 +36,14 @@ TEST_UNSAFE(TBB, MemoryCorruption) {
   boost::tie(graph_, initial_) =
       gtsam::load3D(gtsam::findExampleDataFile("sphere2500"));
 
-  gtsam::NonlinearFactorGraph graph(graph_->begin(), graph_->begin() + 1000);
+  gtsam::NonlinearFactorGraph graph(graph_->begin(), graph_->begin() + 4000);
   //   // Add prior
   graph.emplace_shared<gtsam::PriorFactor<gtsam::Pose3>>(
-      500, gtsam::Pose3(), gtsam::noiseModel::Isotropic::Sigma(6, 1e-1));
+      2000, gtsam::Pose3(), gtsam::noiseModel::Isotropic::Sigma(6, 1e-1));
   auto initial = gtsam::InitializePose3::initialize(graph);
 
   // Run the optimizer a bunch
-  for (size_t i = 0; i < 1000; i++) {
+  for (size_t i = 0; i < 1; i++) {
     gtsam::LevenbergMarquardtOptimizer optimizer(graph, initial);
     FrameMarkStart(optimizeMarker);
     auto result = optimizer.optimize();
