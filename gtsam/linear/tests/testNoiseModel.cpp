@@ -668,7 +668,7 @@ TEST(NoiseModel, robustNoiseL2WithDeadZone)
   for (int i = 0; i < 5; i++) {
     Vector3 error = Vector3(i, 0, 0);
     DOUBLES_EQUAL(std::fmax(0, i - dead_zone_size) * i,
-                  robust->squaredMahalanobisDistance(error), 1e-8);
+                  robust->loss(robust->squaredMahalanobisDistance(error)), 1e-8);
   }
 }
 
