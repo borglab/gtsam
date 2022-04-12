@@ -48,7 +48,9 @@ jobs:
       - name: Install Dependencies
         shell: powershell
         run: |
-          Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh')
+          iwr -useb get.scoop.sh -outfile 'install_scoop.ps1'
+          .\install_scoop.ps1 -RunAsAdmin
+
           scoop install cmake --global  # So we don't get issues with CMP0074 policy
           scoop install ninja --global
 
@@ -106,6 +108,21 @@ jobs:
           cmake --build build -j 4 --config ${{ matrix.build_type }} --target gtsam
           cmake --build build -j 4 --config ${{ matrix.build_type }} --target gtsam_unstable
           cmake --build build -j 4 --config ${{ matrix.build_type }} --target wrap
+
+          # Run GTSAM tests
           cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.base
-          cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.base_unstable
+          cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.basis
+          cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.discrete
+          #cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.geometry
+          cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.inference
           cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.linear
+          cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.navigation
+          #cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.nonlinear
+          #cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.sam
+          cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.sfm
+          #cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.slam
+          cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.symbolic
+
+          # Run GTSAM_UNSTABLE tests
+          #cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.base_unstable
+          

@@ -15,6 +15,8 @@
  * @author Frank Dellaert
  */
 
+#pragma once
+
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/CalibratedCamera.h>
 #include <boost/make_shared.hpp>

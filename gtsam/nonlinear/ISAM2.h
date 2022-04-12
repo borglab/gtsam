@@ -295,6 +295,17 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
       const ISAM2UpdateParams& updateParams, const FastList<Key>& affectedKeys,
       const KeySet& relinKeys);
 
+  /**
+   * @brief Perform an incremental update of the factor graph to return a new
+   * Bayes Tree with affected keys.
+   *
+   * @param updateParams Parameters for the ISAM2 update.
+   * @param relinKeys Keys of variables to relinearize.
+   * @param affectedKeys The set of keys which are affected in the update.
+   * @param affectedKeysSet [output] Affected and contaminated keys.
+   * @param orphans [output] List of orphanes cliques after elimination.
+   * @param result [output] The result of the incremental update step.
+   */
   void recalculateIncremental(const ISAM2UpdateParams& updateParams,
                               const KeySet& relinKeys,
                               const FastList<Key>& affectedKeys,
