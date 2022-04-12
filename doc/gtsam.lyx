@@ -1,5 +1,5 @@
-#LyX 2.2 created this file. For more info see http://www.lyx.org/
-\lyxformat 508
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
 \begin_document
 \begin_header
 \save_transient_properties true
@@ -62,6 +62,8 @@
 \font_osf false
 \font_sf_scale 100 100
 \font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
 \graphics default
 \default_output_format default
 \output_sync 0
@@ -91,6 +93,7 @@
 \suppress_date false
 \justification true
 \use_refstyle 0
+\use_minted 0
 \index Index
 \shortcut idx
 \color #008000
@@ -105,7 +108,10 @@
 \tocdepth 3
 \paragraph_separation indent
 \paragraph_indentation default
-\quotes_language english
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
 \papercolumns 1
 \papersides 1
 \paperpagestyle default
@@ -128,14 +134,10 @@ A Hands-on Introduction
 
 \begin_layout Author
 Frank Dellaert
-\begin_inset Newline newline
-\end_inset
-
-Technical Report number GT-RIM-CP&R-2014-XXX
 \end_layout
 
 \begin_layout Date
-September 2014
+Updated Last March 2022
 \end_layout
 
 \begin_layout Standard
@@ -148,18 +150,14 @@ filename "common_macros.tex"
 
 \end_layout
 
-\begin_layout Section*
-Overview
-\end_layout
-
-\begin_layout Standard
+\begin_layout Abstract
 In this document I provide a hands-on introduction to both factor graphs
  and GTSAM.
  This is an updated version from the 2012 TR that is tailored to our GTSAM
- 3.0 library and beyond.
+ 4.0 library and beyond.
 \end_layout
 
-\begin_layout Standard
+\begin_layout Abstract
 
 \series bold
 Factor graphs
@@ -168,6 +166,7 @@ Factor graphs
 \begin_inset CommandInset citation
 LatexCommand citep
 key "Koller09book"
+literal "true"
 
 \end_inset
 
@@ -199,7 +198,7 @@ ts or prior knowledge.
  robotics and vision.
 \end_layout
 
-\begin_layout Standard
+\begin_layout Abstract
 The GTSAM toolbox (GTSAM stands for 
 \begin_inset Quotes eld
 \end_inset
@@ -214,11 +213,13 @@ Georgia Tech Smoothing and Mapping
  It provides state of the art solutions to the SLAM and SFM problems, but
  can also be used to model and solve both simpler and more complex estimation
  problems.
- It also provides a MATLAB interface which allows for rapid prototype developmen
-t, visualization, and user interaction.
+ It also provides MATLAB and Python wrappers which allow for rapid prototype
+ development, visualization, and user interaction.
+ In addition, it is easy to use in Jupyter notebooks and/or Google's coLaborator
+y.
 \end_layout
 
-\begin_layout Standard
+\begin_layout Abstract
 GTSAM exploits sparsity to be computationally efficient.
  Typically measurements only provide information on the relationship between
  a handful of variables, and hence the resulting factor graph will be sparsely
@@ -229,14 +230,17 @@ l complexity.
  GTSAM provides iterative methods that are quite efficient regardless.
 \end_layout
 
-\begin_layout Standard
-You can download the latest version of GTSAM at 
+\begin_layout Abstract
+You can download the latest version of GTSAM from GitHub at
+\end_layout
+
+\begin_layout Abstract
 \begin_inset Flex URL
 status open
 
 \begin_layout Plain Layout
 
-http://tinyurl.com/gtsam
+https://github.com/borglab/gtsam
 \end_layout
 
 \end_inset
@@ -270,6 +274,7 @@ Let us start with a one-page primer on factor graphs, which in no way replaces
 \begin_inset CommandInset citation
 LatexCommand citet
 key "Kschischang01it"
+literal "true"
 
 \end_inset
 
@@ -277,6 +282,7 @@ key "Kschischang01it"
 \begin_inset CommandInset citation
 LatexCommand citet
 key "Loeliger04spm"
+literal "true"
 
 \end_inset
 
@@ -732,7 +738,7 @@ noindent
 \begin_inset Formula $f_{0}(x_{1})$
 \end_inset
 
- on lines 5-8 as an instance of 
+ on lines 5-7 as an instance of 
 \series bold
 \emph on
 PriorFactor<T>
@@ -764,7 +770,7 @@ Pose2,
 noiseModel::Diagonal
 \series default
 \emph default
- by specifying three standard deviations in line 7, respectively 30 cm.
+ by specifying three standard deviations in line 6, respectively 30 cm.
 \begin_inset space ~
 \end_inset
 
@@ -786,7 +792,7 @@ Similarly, odometry measurements are specified as
 Pose2
 \series default
 \emph default
- on line 11, with a slightly different noise model defined on line 12-13.
+ on line 10, with a slightly different noise model defined on line 11.
  We then add the two factors 
 \begin_inset Formula $f_{1}(x_{1},x_{2};o_{1})$
 \end_inset
@@ -795,7 +801,7 @@ Pose2
 \begin_inset Formula $f_{2}(x_{2},x_{3};o_{2})$
 \end_inset
 
- on lines 14-15, as instances of yet another templated class, 
+ on lines 12-13, as instances of yet another templated class, 
 \series bold
 \emph on
 BetweenFactor<T>
@@ -866,7 +872,7 @@ smoothing and mapping
 
 .
  Later in this document we will talk about how we can also use GTSAM to
- do filtering (which you often do 
+ do filtering (which often you do 
 \emph on
 not
 \emph default
@@ -919,7 +925,11 @@ Values
 \begin_layout Standard
 The latter point is often a point of confusion with beginning users of GTSAM.
  It helps to remember that when designing GTSAM we took a functional approach
- of classes corresponding to mathematical objects, which are usually immutable.
+ of classes corresponding to mathematical objects, which are usually 
+\emph on
+immutable
+\emph default
+.
  You should think of a factor graph as a 
 \emph on
 function
@@ -1018,7 +1028,7 @@ NonlinearFactorGraph
 \end_layout
 
 \begin_layout Standard
-The relevant output from running the example is as follows:
+The relevant output from running the example is as follows: 
 \family typewriter
 \size small
 
@@ -1321,6 +1331,7 @@ r in a pre-existing map, or indeed the presence of absence of ceiling lights
 \begin_inset CommandInset citation
 LatexCommand citet
 key "Dellaert99b"
+literal "true"
 
 \end_inset
 
@@ -1353,14 +1364,18 @@ where
 \end_inset
 
  is the measurement, 
-\begin_inset Formula $q$
+\begin_inset Formula $q\in SE(2)$
 \end_inset
 
  is the unknown variable, 
 \begin_inset Formula $h(q)$
 \end_inset
 
- is a (possibly nonlinear) measurement function, and 
+ is a 
+\series bold
+measurement function
+\series default
+, and 
 \begin_inset Formula $\Sigma$
 \end_inset
 
@@ -1536,12 +1551,13 @@ E(q)\define h(q)-m
 
 \end_inset
 
-which is done on line 12.
+which is done on line 14.
  Importantly, because we want to use this factor for nonlinear optimization
  (see e.g., 
 \begin_inset CommandInset citation
 LatexCommand citealt
 key "Dellaert06ijrr"
+literal "true"
 
 \end_inset
 
@@ -1588,11 +1604,11 @@ q_{y}
 \begin_inset Formula $q=\left(q_{x},q_{y},q_{\theta}\right)$
 \end_inset
 
-, yields the following simple 
+, yields the following 
 \begin_inset Formula $2\times3$
 \end_inset
 
- matrix in tangent space which is the same the as the rotation matrix:
+ matrix:
 \end_layout
 
 \begin_layout Standard
@@ -1603,6 +1619,171 @@ H=\left[\begin{array}{ccc}
 \sin(q_{\theta}) & \cos(q_{\theta}) & 0
 \end{array}\right]
 \]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Paragraph*
+Important Note
+\end_layout
+
+\begin_layout Standard
+Many of our users, when attempting to create a custom factor, are initially
+ surprised at the Jacobian matrix not agreeing with their intuition.
+ For example, above you might simply expect a 
+\begin_inset Formula $2\times3$
+\end_inset
+
+ identity matrix.
+ This 
+\emph on
+would
+\emph default
+ be true for variables belonging to a vector space.
+ However, in GTSAM we define the Jacobian more generally to be the matrix
+ 
+\begin_inset Formula $H$
+\end_inset
+
+ such that
+\begin_inset Formula 
+\[
+h(q\exp\hat{\xi})\approx h(q)+H\xi
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $\xi=(\delta x,\delta y,\delta\theta)$
+\end_inset
+
+ is an incremental update and 
+\begin_inset Formula $\exp\hat{\xi}$
+\end_inset
+
+ is the 
+\series bold
+exponential map
+\series default
+ for the variable we want to update.
+ In this case 
+\begin_inset Formula $q\in SE(2)$
+\end_inset
+
+, where 
+\begin_inset Formula $SE(2)$
+\end_inset
+
+ is the group of 2D rigid transforms, implemented by 
+\series bold
+\emph on
+Pose2
+\emph default
+.
+ 
+\series default
+The exponential map for 
+\begin_inset Formula $SE(2)$
+\end_inset
+
+ can be approximated to first order as
+\begin_inset Formula 
+\[
+\exp\hat{\xi}\approx\left[\begin{array}{ccc}
+1 & -\delta\theta & \delta x\\
+\delta\theta & 1 & \delta y\\
+0 & 0 & 1
+\end{array}\right]
+\]
+
+\end_inset
+
+when using the 
+\begin_inset Formula $3\times3$
+\end_inset
+
+ matrix representation for 2D poses, and hence 
+\begin_inset Formula 
+\[
+h(qe^{\hat{\xi}})\approx h\left(\left[\begin{array}{ccc}
+\cos(q_{\theta}) & -\sin(q_{\theta}) & q_{x}\\
+\sin(q_{\theta}) & \cos(q_{\theta}) & q_{y}\\
+0 & 0 & 1
+\end{array}\right]\left[\begin{array}{ccc}
+1 & -\delta\theta & \delta x\\
+\delta\theta & 1 & \delta y\\
+0 & 0 & 1
+\end{array}\right]\right)=\left[\begin{array}{c}
+q_{x}+\cos(q_{\theta})\delta x-\sin(q_{\theta})\delta y\\
+q_{y}+\sin(q_{\theta})\delta x+\cos(q_{\theta})\delta y
+\end{array}\right]
+\]
+
+\end_inset
+
+which then explains the Jacobian 
+\begin_inset Formula $H$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Lie groups are very relevant in the robotics context, and you can read more
+ here:
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Flex URL
+status open
+
+\begin_layout Plain Layout
+
+https://github.com/borglab/gtsam/blob/develop/doc/LieGroups.pdf
+\end_layout
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Flex URL
+status open
+
+\begin_layout Plain Layout
+
+https://github.com/borglab/gtsam/blob/develop/doc/math.pdf
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In some cases you want to go even beyond Lie groups to a looser concept,
+ 
+\series bold
+manifolds
+\series default
+, because not all unknown variables behave like a group, e.g., the space of
+ 3D planes, 2D lines, directions in space, etc.
+ For manifolds we do not always have an exponential map, but we have a retractio
+n that plays the same role.
+ Some of this is explained here:
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Flex URL
+status open
+
+\begin_layout Plain Layout
+
+https://gtsam.org/notes/GTSAM-Concepts.html 
+\end_layout
 
 \end_inset
 
@@ -1669,13 +1850,13 @@ UnaryFactor
 \series default
 \emph default
  instances, and add them to graph.
- GTSAM uses shared pointers to refer to factors in factor graphs, and 
+ GTSAM uses shared pointers to refer to factors, and 
 \series bold
 \emph on
-boost::make_shared
+emplace_shared
 \series default
 \emph default
- is a convenience function to simultaneously construct a class and create
+ is a convenience method to simultaneously construct a class and create
  a 
 \series bold
 \emph on
@@ -1683,22 +1864,6 @@ shared_ptr
 \series default
 \emph default
  to it.
- 
-\begin_inset Note Note
-status collapsed
-
-\begin_layout Plain Layout
-and on lines 4-6 we add three newly created 
-\series bold
-\emph on
-UnaryFactor
-\series default
-\emph default
- instances to the graph.
-\end_layout
-
-\end_inset
-
  We obtain the factor graph from Figure 
 \begin_inset CommandInset ref
 LatexCommand vref
@@ -1936,8 +2101,8 @@ reference "fig:CompareMarginals"
 
 \end_inset
 
-, where I show the marginals on position as covariance ellipses that contain
- 68.26% of all probability mass.
+, where I show the marginals on position as 5-sigma covariance ellipses
+ that contain 99.9996% of all probability mass.
  For the odometry marginals, it is immediately apparent from the figure
  that (1) the uncertainty on pose keeps growing, and (2) the uncertainty
  on angular odometry translates into increasing uncertainty on y.
@@ -1992,6 +2157,7 @@ PoseSLAM
 \begin_inset CommandInset citation
 LatexCommand citep
 key "DurrantWhyte06ram"
+literal "true"
 
 \end_inset
 
@@ -2190,9 +2356,9 @@ reference "fig:example"
 \end_inset
 
 , along with covariance ellipses shown in green.
- These covariance ellipses in 2D indicate the marginal over position, over
- all possible orientations, and show the area which contain 68.26% of the
- probability mass (in 1D this would correspond to one standard deviation).
+ These 5-sigma covariance ellipses in 2D indicate the marginal over position,
+ over all possible orientations, and show the area which contain 99.9996%
+ of the probability mass.
  The graph shows in a clear manner that the uncertainty on pose 
 \begin_inset Formula $x_{5}$
 \end_inset
@@ -3076,6 +3242,7 @@ reference "fig:Victoria-1"
 \begin_inset CommandInset citation
 LatexCommand citep
 key "Kaess09ras"
+literal "true"
 
 \end_inset
 
@@ -3088,6 +3255,7 @@ key "Kaess09ras"
 \begin_inset CommandInset citation
 LatexCommand citep
 key "Kaess08tro"
+literal "true"
 
 \end_inset
 
@@ -3355,6 +3523,7 @@ iSAM
 \begin_inset CommandInset citation
 LatexCommand citet
 key "Kaess08tro,Kaess12ijrr"
+literal "true"
 
 \end_inset
 
@@ -3606,6 +3775,7 @@ subgraph preconditioning
 \begin_inset CommandInset citation
 LatexCommand citet
 key "Dellaert10iros,Jian11iccv"
+literal "true"
 
 \end_inset
 
@@ -3638,6 +3808,7 @@ Visual Odometry
 \begin_inset CommandInset citation
 LatexCommand citet
 key "Nister04cvpr2"
+literal "true"
 
 \end_inset
 
@@ -3661,6 +3832,7 @@ Visual SLAM
 \begin_inset CommandInset citation
 LatexCommand citet
 key "Davison03iccv"
+literal "true"
 
 \end_inset
 
@@ -3711,6 +3883,7 @@ Filtering
 \begin_inset CommandInset citation
 LatexCommand citep
 key "Smith87b"
+literal "true"
 
 \end_inset
 

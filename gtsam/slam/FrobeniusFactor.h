@@ -48,12 +48,14 @@ ConvertNoiseModel(const SharedNoiseModel &model, size_t n,
  * element of SO(3) or SO(4).
  */
 template <class Rot>
-class GTSAM_EXPORT FrobeniusPrior : public NoiseModelFactor1<Rot> {
+class FrobeniusPrior : public NoiseModelFactor1<Rot> {
   enum { Dim = Rot::VectorN2::RowsAtCompileTime };
   using MatrixNN = typename Rot::MatrixNN;
   Eigen::Matrix<double, Dim, 1> vecM_;  ///< vectorized matrix to approximate
 
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   /// Constructor
   FrobeniusPrior(Key j, const MatrixNN& M,
                  const SharedNoiseModel& model = nullptr)
@@ -73,7 +75,7 @@ class GTSAM_EXPORT FrobeniusPrior : public NoiseModelFactor1<Rot> {
  * The template argument can be any fixed-size SO<N>.
  */
 template <class Rot>
-class GTSAM_EXPORT FrobeniusFactor : public NoiseModelFactor2<Rot, Rot> {
+class FrobeniusFactor : public NoiseModelFactor2<Rot, Rot> {
   enum { Dim = Rot::VectorN2::RowsAtCompileTime };
 
  public:
@@ -99,13 +101,15 @@ class GTSAM_EXPORT FrobeniusFactor : public NoiseModelFactor2<Rot, Rot> {
  * and in fact only SO3 and SO4 really work, as we need SO<N>::AdjointMap.
  */
 template <class Rot>
-class GTSAM_EXPORT FrobeniusBetweenFactor : public NoiseModelFactor2<Rot, Rot> {
+class FrobeniusBetweenFactor : public NoiseModelFactor2<Rot, Rot> {
   Rot R12_;  ///< measured rotation between R1 and R2
   Eigen::Matrix<double, Rot::dimension, Rot::dimension>
       R2hat_H_R1_;  ///< fixed derivative of R2hat wrpt R1
   enum { Dim = Rot::VectorN2::RowsAtCompileTime };
 
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   /// @name Constructor
   /// @{
 

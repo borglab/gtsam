@@ -1,5 +1,4 @@
-#if !defined(__OBJECT_H)
-#define __OBJECT_H
+#pragma once
 
 #include <atomic>
 #include "constructor_stats.h"
@@ -65,7 +64,7 @@ public:
     ref() : m_ptr(nullptr) { print_default_created(this); track_default_created((ref_tag*) this); }
 
     /// Construct a reference from a pointer
-    ref(T *ptr) : m_ptr(ptr) {
+    explicit ref(T *ptr) : m_ptr(ptr) {
         if (m_ptr) ((Object *) m_ptr)->incRef();
 
         print_created(this, "from pointer", m_ptr); track_created((ref_tag*) this, "from pointer");
@@ -81,7 +80,7 @@ public:
     }
 
     /// Move constructor
-    ref(ref &&r) : m_ptr(r.m_ptr) {
+    ref(ref &&r) noexcept : m_ptr(r.m_ptr) {
         r.m_ptr = nullptr;
 
         print_move_created(this, "with pointer", m_ptr); track_move_created((ref_tag*) this);
@@ -96,7 +95,7 @@ public:
     }
 
     /// Move another reference into the current one
-    ref& operator=(ref&& r) {
+    ref &operator=(ref &&r) noexcept {
         print_move_assigned(this, "pointer", r.m_ptr); track_move_assigned((ref_tag*) this);
 
         if (*this == r)
@@ -110,7 +109,11 @@ public:
 
     /// Overwrite this reference with another reference
     ref& operator=(const ref& r) {
-        print_copy_assigned(this, "pointer", r.m_ptr); track_copy_assigned((ref_tag*) this);
+        if (this == &r) {
+            return *this;
+        }
+        print_copy_assigned(this, "pointer", r.m_ptr);
+        track_copy_assigned((ref_tag *) this);
 
         if (m_ptr == r.m_ptr)
             return *this;
@@ -161,7 +164,7 @@ public:
     const T& operator*() const { return *m_ptr; }
 
     /// Return a pointer to the referenced object
-    operator T* () { return m_ptr; }
+    explicit operator T* () { return m_ptr; }
 
     /// Return a const pointer to the referenced object
     T* get_ptr() { return m_ptr; }
@@ -171,5 +174,3 @@ public:
 private:
     T *m_ptr;
 };
-
-#endif /* __OBJECT_H */

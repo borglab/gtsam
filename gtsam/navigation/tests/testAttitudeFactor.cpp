@@ -19,8 +19,6 @@
 #include <gtsam/navigation/AttitudeFactor.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam/base/serialization.h>
-#include <gtsam/base/serializationTestHelpers.h>
 
 #include <boost/bind/bind.hpp>
 #include <CppUnitLite/TestHarness.h>
@@ -61,22 +59,6 @@ TEST( Rot3AttitudeFactor, Constructor ) {
 
   // Verify we get the expected error
   EXPECT(assert_equal(expectedH, actualH, 1e-8));
-}
-
-/* ************************************************************************* */
-// Export Noisemodels
-// See http://www.boost.org/doc/libs/1_32_0/libs/serialization/doc/special.html
-BOOST_CLASS_EXPORT(gtsam::noiseModel::Isotropic)
-
-/* ************************************************************************* */
-TEST(Rot3AttitudeFactor, Serialization) {
-  Unit3 nDown(0, 0, -1);
-  SharedNoiseModel model = noiseModel::Isotropic::Sigma(2, 0.25);
-  Rot3AttitudeFactor factor(0, nDown, model);
-
-  EXPECT(serializationTestHelpers::equalsObj(factor));
-  EXPECT(serializationTestHelpers::equalsXML(factor));
-  EXPECT(serializationTestHelpers::equalsBinary(factor));
 }
 
 /* ************************************************************************* */
@@ -127,17 +109,6 @@ TEST( Pose3AttitudeFactor, Constructor ) {
 
   // Verify we get the expected error
   EXPECT(assert_equal(expectedH, actualH, 1e-8));
-}
-
-/* ************************************************************************* */
-TEST(Pose3AttitudeFactor, Serialization) {
-  Unit3 nDown(0, 0, -1);
-  SharedNoiseModel model = noiseModel::Isotropic::Sigma(2, 0.25);
-  Pose3AttitudeFactor factor(0, nDown, model);
-
-  EXPECT(serializationTestHelpers::equalsObj(factor));
-  EXPECT(serializationTestHelpers::equalsXML(factor));
-  EXPECT(serializationTestHelpers::equalsBinary(factor));
 }
 
 /* ************************************************************************* */

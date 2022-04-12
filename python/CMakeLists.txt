@@ -45,6 +45,7 @@ set(ignore
     gtsam::Point3Pairs
     gtsam::Pose3Pairs
     gtsam::Pose3Vector
+    gtsam::Rot3Vector
     gtsam::KeyVector
     gtsam::BinaryMeasurementsUnit3
     gtsam::DiscreteKey
@@ -53,6 +54,7 @@ set(ignore
 set(interface_headers
     ${PROJECT_SOURCE_DIR}/gtsam/gtsam.i
     ${PROJECT_SOURCE_DIR}/gtsam/base/base.i
+    ${PROJECT_SOURCE_DIR}/gtsam/inference/inference.i
     ${PROJECT_SOURCE_DIR}/gtsam/discrete/discrete.i
     ${PROJECT_SOURCE_DIR}/gtsam/geometry/geometry.i
     ${PROJECT_SOURCE_DIR}/gtsam/linear/linear.i
@@ -170,7 +172,7 @@ endif()
 # Add custom target so we can install with `make python-install`
 set(GTSAM_PYTHON_INSTALL_TARGET python-install)
 add_custom_target(${GTSAM_PYTHON_INSTALL_TARGET}
-        COMMAND ${PYTHON_EXECUTABLE} ${GTSAM_PYTHON_BUILD_DIRECTORY}/setup.py install
+        COMMAND ${PYTHON_EXECUTABLE} -m pip install --user .
         DEPENDS ${GTSAM_PYTHON_DEPENDENCIES}
         WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY})
 

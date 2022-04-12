@@ -23,115 +23,9 @@ namespace gtsam {
 #include <gtsam/geometry/SOn.h>
 #include <gtsam/geometry/StereoPoint2.h>
 #include <gtsam/geometry/Unit3.h>
-#include <gtsam/inference/Symbol.h>
 #include <gtsam/navigation/ImuBias.h>
 #include <gtsam/navigation/NavState.h>
-
-class Symbol {
-  Symbol();
-  Symbol(char c, uint64_t j);
-  Symbol(size_t key);
-
-  size_t key() const;
-  void print(const string& s = "") const;
-  bool equals(const gtsam::Symbol& expected, double tol) const;
-
-  char chr() const;
-  uint64_t index() const;
-  string string() const;
-};
-
-size_t symbol(char chr, size_t index);
-char symbolChr(size_t key);
-size_t symbolIndex(size_t key);
-
-namespace symbol_shorthand {
-size_t A(size_t j);
-size_t B(size_t j);
-size_t C(size_t j);
-size_t D(size_t j);
-size_t E(size_t j);
-size_t F(size_t j);
-size_t G(size_t j);
-size_t H(size_t j);
-size_t I(size_t j);
-size_t J(size_t j);
-size_t K(size_t j);
-size_t L(size_t j);
-size_t M(size_t j);
-size_t N(size_t j);
-size_t O(size_t j);
-size_t P(size_t j);
-size_t Q(size_t j);
-size_t R(size_t j);
-size_t S(size_t j);
-size_t T(size_t j);
-size_t U(size_t j);
-size_t V(size_t j);
-size_t W(size_t j);
-size_t X(size_t j);
-size_t Y(size_t j);
-size_t Z(size_t j);
-}  // namespace symbol_shorthand
-
-// Default keyformatter
-void PrintKeyList(
-    const gtsam::KeyList& keys, const string& s = "",
-    const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter);
-void PrintKeyVector(
-    const gtsam::KeyVector& keys, const string& s = "",
-    const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter);
-void PrintKeySet(
-    const gtsam::KeySet& keys, const string& s = "",
-    const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter);
-
-#include <gtsam/inference/LabeledSymbol.h>
-class LabeledSymbol {
-  LabeledSymbol(size_t full_key);
-  LabeledSymbol(const gtsam::LabeledSymbol& key);
-  LabeledSymbol(unsigned char valType, unsigned char label, size_t j);
-
-  size_t key() const;
-  unsigned char label() const;
-  unsigned char chr() const;
-  size_t index() const;
-
-  gtsam::LabeledSymbol upper() const;
-  gtsam::LabeledSymbol lower() const;
-  gtsam::LabeledSymbol newChr(unsigned char c) const;
-  gtsam::LabeledSymbol newLabel(unsigned char label) const;
-
-  void print(string s = "") const;
-};
-
-size_t mrsymbol(unsigned char c, unsigned char label, size_t j);
-unsigned char mrsymbolChr(size_t key);
-unsigned char mrsymbolLabel(size_t key);
-size_t mrsymbolIndex(size_t key);
-
-#include <gtsam/inference/Ordering.h>
-class Ordering {
-  // Standard Constructors and Named Constructors
-  Ordering();
-  Ordering(const gtsam::Ordering& other);
-
-  template <FACTOR_GRAPH = {gtsam::NonlinearFactorGraph,
-                            gtsam::GaussianFactorGraph}>
-  static gtsam::Ordering Colamd(const FACTOR_GRAPH& graph);
-
-  // Testable
-  void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
-                                gtsam::DefaultKeyFormatter) const;
-  bool equals(const gtsam::Ordering& ord, double tol) const;
-
-  // Standard interface
-  size_t size() const;
-  size_t at(size_t key) const;
-  void push_back(size_t key);
-
-  // enabling serialization functionality
-  void serialize() const;
-};
+#include <gtsam/basis/ParameterMatrix.h>
 
 #include <gtsam/nonlinear/GraphvizFormatting.h>
 class GraphvizFormatting : gtsam::DotWriter {
@@ -202,18 +96,17 @@ class NonlinearFactorGraph {
   gtsam::GaussianFactorGraph* linearize(const gtsam::Values& values) const;
   gtsam::NonlinearFactorGraph clone() const;
 
-  // enabling serialization functionality
-  void serialize() const;
-
   string dot(
       const gtsam::Values& values,
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
       const GraphvizFormatting& writer = GraphvizFormatting());
-  void saveGraph(const string& s, const gtsam::Values& values,
-                 const gtsam::KeyFormatter& keyFormatter =
-                     gtsam::DefaultKeyFormatter,
-                 const GraphvizFormatting& writer =
-                     GraphvizFormatting()) const;
+  void saveGraph(
+      const string& s, const gtsam::Values& values,
+      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
+      const GraphvizFormatting& writer = GraphvizFormatting()) const;
+
+  // enabling serialization functionality
+  void serialize() const;
 };
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
@@ -336,6 +229,21 @@ class Values {
   void insert(size_t j, const gtsam::imuBias::ConstantBias& constant_bias);
   void insert(size_t j, const gtsam::NavState& nav_state);
   void insert(size_t j, double c);
+  void insert(size_t j, const gtsam::ParameterMatrix<1>& X);
+  void insert(size_t j, const gtsam::ParameterMatrix<2>& X);
+  void insert(size_t j, const gtsam::ParameterMatrix<3>& X);
+  void insert(size_t j, const gtsam::ParameterMatrix<4>& X);
+  void insert(size_t j, const gtsam::ParameterMatrix<5>& X);
+  void insert(size_t j, const gtsam::ParameterMatrix<6>& X);
+  void insert(size_t j, const gtsam::ParameterMatrix<7>& X);
+  void insert(size_t j, const gtsam::ParameterMatrix<8>& X);
+  void insert(size_t j, const gtsam::ParameterMatrix<9>& X);
+  void insert(size_t j, const gtsam::ParameterMatrix<10>& X);
+  void insert(size_t j, const gtsam::ParameterMatrix<11>& X);
+  void insert(size_t j, const gtsam::ParameterMatrix<12>& X);
+  void insert(size_t j, const gtsam::ParameterMatrix<13>& X);
+  void insert(size_t j, const gtsam::ParameterMatrix<14>& X);
+  void insert(size_t j, const gtsam::ParameterMatrix<15>& X);
 
   void update(size_t j, const gtsam::Point2& point2);
   void update(size_t j, const gtsam::Point3& point3);
@@ -362,6 +270,21 @@ class Values {
   void update(size_t j, Vector vector);
   void update(size_t j, Matrix matrix);
   void update(size_t j, double c);
+  void update(size_t j, const gtsam::ParameterMatrix<1>& X);
+  void update(size_t j, const gtsam::ParameterMatrix<2>& X);
+  void update(size_t j, const gtsam::ParameterMatrix<3>& X);
+  void update(size_t j, const gtsam::ParameterMatrix<4>& X);
+  void update(size_t j, const gtsam::ParameterMatrix<5>& X);
+  void update(size_t j, const gtsam::ParameterMatrix<6>& X);
+  void update(size_t j, const gtsam::ParameterMatrix<7>& X);
+  void update(size_t j, const gtsam::ParameterMatrix<8>& X);
+  void update(size_t j, const gtsam::ParameterMatrix<9>& X);
+  void update(size_t j, const gtsam::ParameterMatrix<10>& X);
+  void update(size_t j, const gtsam::ParameterMatrix<11>& X);
+  void update(size_t j, const gtsam::ParameterMatrix<12>& X);
+  void update(size_t j, const gtsam::ParameterMatrix<13>& X);
+  void update(size_t j, const gtsam::ParameterMatrix<14>& X);
+  void update(size_t j, const gtsam::ParameterMatrix<15>& X);
 
   void insert_or_assign(size_t j, const gtsam::Point2& point2);
   void insert_or_assign(size_t j, const gtsam::Point3& point3);
@@ -388,6 +311,21 @@ class Values {
   void insert_or_assign(size_t j, Vector vector);
   void insert_or_assign(size_t j, Matrix matrix);
   void insert_or_assign(size_t j, double c);
+  void insert_or_assign(size_t j, const gtsam::ParameterMatrix<1>& X);
+  void insert_or_assign(size_t j, const gtsam::ParameterMatrix<2>& X);
+  void insert_or_assign(size_t j, const gtsam::ParameterMatrix<3>& X);
+  void insert_or_assign(size_t j, const gtsam::ParameterMatrix<4>& X);
+  void insert_or_assign(size_t j, const gtsam::ParameterMatrix<5>& X);
+  void insert_or_assign(size_t j, const gtsam::ParameterMatrix<6>& X);
+  void insert_or_assign(size_t j, const gtsam::ParameterMatrix<7>& X);
+  void insert_or_assign(size_t j, const gtsam::ParameterMatrix<8>& X);
+  void insert_or_assign(size_t j, const gtsam::ParameterMatrix<9>& X);
+  void insert_or_assign(size_t j, const gtsam::ParameterMatrix<10>& X);
+  void insert_or_assign(size_t j, const gtsam::ParameterMatrix<11>& X);
+  void insert_or_assign(size_t j, const gtsam::ParameterMatrix<12>& X);
+  void insert_or_assign(size_t j, const gtsam::ParameterMatrix<13>& X);
+  void insert_or_assign(size_t j, const gtsam::ParameterMatrix<14>& X);
+  void insert_or_assign(size_t j, const gtsam::ParameterMatrix<15>& X);
 
   template <T = {gtsam::Point2,
                  gtsam::Point3,
@@ -413,7 +351,22 @@ class Values {
                  gtsam::NavState,
                  Vector,
                  Matrix,
-                 double}>
+                 double,
+                 gtsam::ParameterMatrix<1>,
+                 gtsam::ParameterMatrix<2>,
+                 gtsam::ParameterMatrix<3>,
+                 gtsam::ParameterMatrix<4>,
+                 gtsam::ParameterMatrix<5>,
+                 gtsam::ParameterMatrix<6>,
+                 gtsam::ParameterMatrix<7>,
+                 gtsam::ParameterMatrix<8>,
+                 gtsam::ParameterMatrix<9>,
+                 gtsam::ParameterMatrix<10>,
+                 gtsam::ParameterMatrix<11>,
+                 gtsam::ParameterMatrix<12>,
+                 gtsam::ParameterMatrix<13>,
+                 gtsam::ParameterMatrix<14>,
+                 gtsam::ParameterMatrix<15>}>
   T at(size_t j);
 };
 
@@ -696,21 +649,19 @@ class ISAM2Params {
   void setOptimizationParams(const gtsam::ISAM2DoglegParams& dogleg_params);
   void setRelinearizeThreshold(double threshold);
   void setRelinearizeThreshold(const gtsam::ISAM2ThresholdMap& threshold_map);
-  int getRelinearizeSkip() const;
-  void setRelinearizeSkip(int relinearizeSkip);
-  bool isEnableRelinearization() const;
-  void setEnableRelinearization(bool enableRelinearization);
-  bool isEvaluateNonlinearError() const;
-  void setEvaluateNonlinearError(bool evaluateNonlinearError);
   string getFactorization() const;
   void setFactorization(string factorization);
-  bool isCacheLinearizedFactors() const;
-  void setCacheLinearizedFactors(bool cacheLinearizedFactors);
-  bool isEnableDetailedResults() const;
-  void setEnableDetailedResults(bool enableDetailedResults);
-  bool isEnablePartialRelinearizationCheck() const;
-  void setEnablePartialRelinearizationCheck(
-      bool enablePartialRelinearizationCheck);
+
+  int relinearizeSkip;
+  bool enableRelinearization;
+  bool evaluateNonlinearError;
+  bool cacheLinearizedFactors;
+  bool enableDetailedResults;
+  bool enablePartialRelinearizationCheck;
+  bool findUnusedFactorSlots;
+
+  enum Factorization { CHOLESKY, QR };
+  Factorization factorization;
 };
 
 class ISAM2Clique {
@@ -731,6 +682,7 @@ class ISAM2Result {
   /** Getters and Setters for all properties */
   size_t getVariablesRelinearized() const;
   size_t getVariablesReeliminated() const;
+  FactorIndices getNewFactorsIndices() const;
   size_t getCliques() const;
   double getErrorBefore() const;
   double getErrorAfter() const;

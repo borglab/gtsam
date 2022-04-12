@@ -59,14 +59,22 @@ namespace gtsam {
     /** constant stored in this leaf */
     Y constant_;
 
-    /** Constructor from constant */
-    Leaf(const Y& constant) :
-      constant_(constant) {}
+    /** The number of assignments contained within this leaf
+     * Particularly useful when leaves have been pruned.
+     */
+    size_t nrAssignments_;
+
+    /// Constructor from constant
+    Leaf(const Y& constant, size_t nrAssignments = 1)
+        : constant_(constant), nrAssignments_(nrAssignments) {}
 
     /** return the constant */
     const Y& constant() const {
       return constant_;
     }
+
+    /// Return the number of assignments contained within this leaf.
+    size_t nrAssignments() const { return nrAssignments_; }
 
     /// Leaf-Leaf equality
     bool sameLeaf(const Leaf& q) const override {
@@ -108,7 +116,14 @@ namespace gtsam {
 
     /** apply unary operator */
     NodePtr apply(const Unary& op) const override {
-      NodePtr f(new Leaf(op(constant_)));
+      NodePtr f(new Leaf(op(constant_), nrAssignments_));
+      return f;
+    }
+
+    /// Apply unary operator with assignment
+    NodePtr apply(const UnaryAssignment& op,
+                  const Assignment<L>& choices) const override {
+      NodePtr f(new Leaf(op(choices, constant_), nrAssignments_));
       return f;
     }
 
@@ -123,7 +138,8 @@ namespace gtsam {
 
     // Applying binary operator to two leaves results in a leaf
     NodePtr apply_g_op_fL(const Leaf& fL, const Binary& op) const override {
-      NodePtr h(new Leaf(op(fL.constant_, constant_)));  // fL op gL
+      // fL op gL
+      NodePtr h(new Leaf(op(fL.constant_, constant_), nrAssignments_));
       return h;
     }
 
@@ -134,7 +150,7 @@ namespace gtsam {
 
     /** choose a branch, create new memory ! */
     NodePtr choose(const L& label, size_t index) const override {
-      return NodePtr(new Leaf(constant()));
+      return NodePtr(new Leaf(constant(), nrAssignments()));
     }
 
     bool isLeaf() const override { return true; }
@@ -171,9 +187,16 @@ namespace gtsam {
       if (f->allSame_) {
         assert(f->branches().size() > 0);
         NodePtr f0 = f->branches_[0];
-        assert(f0->isLeaf());
+
+        size_t nrAssignments = 0;
+        for(auto branch: f->branches()) {
+          assert(branch->isLeaf());
+          nrAssignments +=
+              boost::dynamic_pointer_cast<const Leaf>(branch)->nrAssignments();
+        }
         NodePtr newLeaf(
-            new Leaf(boost::dynamic_pointer_cast<const Leaf>(f0)->constant()));
+            new Leaf(boost::dynamic_pointer_cast<const Leaf>(f0)->constant(),
+                     nrAssignments));
         return newLeaf;
       } else
 #endif
@@ -322,9 +345,45 @@ namespace gtsam {
       for (const NodePtr& branch : f.branches_) push_back(branch->apply(op));
     }
 
+    /**
+     * @brief Constructor which accepts a UnaryAssignment op and the
+     * corresponding assignment.
+     *
+     * @param label The label for this node.
+     * @param f The original choice node to apply the op on.
+     * @param op Function to apply on the choice node. Takes Assignment and
+     * value as arguments.
+     * @param choices The Assignment that will go to op.
+     */
+    Choice(const L& label, const Choice& f, const UnaryAssignment& op,
+           const Assignment<L>& choices)
+        : label_(label), allSame_(true) {
+      branches_.reserve(f.branches_.size());  // reserve space
+
+      Assignment<L> choices_ = choices;
+
+      for (size_t i = 0; i < f.branches_.size(); i++) {
+        choices_[label_] = i;  // Set assignment for label to i
+
+        const NodePtr branch = f.branches_[i];
+        push_back(branch->apply(op, choices_));
+
+        // Remove the choice so we are backtracking
+        auto choice_it = choices_.find(label_);
+        choices_.erase(choice_it);
+      }
+    }
+
     /** apply unary operator */
     NodePtr apply(const Unary& op) const override {
       auto r = boost::make_shared<Choice>(label_, *this, op);
+      return Unique(r);
+    }
+
+    /// Apply unary operator with assignment
+    NodePtr apply(const UnaryAssignment& op,
+                  const Assignment<L>& choices) const override {
+      auto r = boost::make_shared<Choice>(label_, *this, op, choices);
       return Unique(r);
     }
 
@@ -592,11 +651,13 @@ namespace gtsam {
       std::function<Y(const X&)> Y_of_X) const {
     using LY = DecisionTree<L, Y>;
 
-    // ugliness below because apparently we can't have templated virtual
-    // functions If leaf, apply unary conversion "op" and create a unique leaf
+    // Ugliness below because apparently we can't have templated virtual
+    // functions.
+    // If leaf, apply unary conversion "op" and create a unique leaf.
     using MXLeaf = typename DecisionTree<M, X>::Leaf;
-    if (auto leaf = boost::dynamic_pointer_cast<const MXLeaf>(f))
-      return NodePtr(new Leaf(Y_of_X(leaf->constant())));
+    if (auto leaf = boost::dynamic_pointer_cast<const MXLeaf>(f)) {
+      return NodePtr(new Leaf(Y_of_X(leaf->constant()), leaf->nrAssignments()));
+    }
 
     // Check if Choice
     using MXChoice = typename DecisionTree<M, X>::Choice;
@@ -666,8 +727,13 @@ namespace gtsam {
       if (!choice)
         throw std::invalid_argument("DecisionTree::VisitWith: Invalid NodePtr");
       for (size_t i = 0; i < choice->nrChoices(); i++) {
-        choices[choice->label()] = i;    // Set assignment for label to i
+        choices[choice->label()] = i;  // Set assignment for label to i
+
         (*this)(choice->branches()[i]);  // recurse!
+
+        // Remove the choice so we are backtracking
+        auto choice_it = choices.find(choice->label());
+        choices.erase(choice_it);
       }
     }
   };
@@ -677,6 +743,14 @@ namespace gtsam {
   void DecisionTree<L, Y>::visitWith(Func f) const {
     VisitWith<L, Y> visit(f);
     visit(root_);
+  }
+
+  /****************************************************************************/
+  template <typename L, typename Y>
+  size_t DecisionTree<L, Y>::nrLeaves() const {
+    size_t total = 0;
+    visit([&total](const Y& node) { total += 1; });
+    return total;
   }
 
   /****************************************************************************/
@@ -732,6 +806,19 @@ namespace gtsam {
           "DecisionTree::apply(unary op) undefined for empty tree.");
     }
     return DecisionTree(root_->apply(op));
+  }
+
+  /// Apply unary operator with assignment
+  template <typename L, typename Y>
+  DecisionTree<L, Y> DecisionTree<L, Y>::apply(
+      const UnaryAssignment& op) const {
+    // It is unclear what should happen if tree is empty:
+    if (empty()) {
+      throw std::runtime_error(
+          "DecisionTree::apply(unary op) undefined for empty tree.");
+    }
+    Assignment<L> choices;
+    return DecisionTree(root_->apply(op, choices));
   }
 
   /****************************************************************************/

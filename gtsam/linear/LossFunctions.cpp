@@ -19,6 +19,7 @@
 #include <gtsam/linear/LossFunctions.h>
 
 #include <iostream>
+#include <vector>
 
 using namespace std;
 
