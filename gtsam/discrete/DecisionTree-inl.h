@@ -681,12 +681,14 @@ namespace gtsam {
 
   /****************************************************************************/
   /**
-   * Functor performing depth-first visit without Assignment<L> argument.
+   * Functor performing depth-first visit to each leaf with the leaf value as
+   * the argument.
    *
    * NOTE: We differentiate between leaves and assignments. Concretely, a 3
    * binary variable tree will have 2^3=8 assignments, but based on pruning, it
-   * can have <8 leaves. For example, if a tree has all assignment values as 1,
-   * then pruning will cause the tree to have only 1 leaf yet 8 assignments.
+   * can have less than 8 leaves. For example, if a tree has all assignment
+   * values as 1, then pruning will cause the tree to have only 1 leaf yet 8
+   * assignments.
    */
   template <typename L, typename Y>
   struct Visit {
@@ -717,7 +719,8 @@ namespace gtsam {
 
   /****************************************************************************/
   /**
-   * Functor performing depth-first visit with Leaf argument.
+   * Functor performing depth-first visit to each leaf with the Leaf object
+   * passed as an argument.
    *
    * NOTE: We differentiate between leaves and assignments. Concretely, a 3
    * binary variable tree will have 2^3=8 assignments, but based on pruning, it
@@ -753,7 +756,8 @@ namespace gtsam {
 
   /****************************************************************************/
   /**
-   * Functor performing depth-first visit with Assignment<L> argument.
+   * Functor performing depth-first visit to each leaf with the leaf's
+   * `Assignment<L>` and value passed as arguments.
    *
    * NOTE: Follows the same pruning semantics as `visit`.
    */
@@ -811,7 +815,19 @@ namespace gtsam {
   }
 
   /****************************************************************************/
-  // Get (partial) labels by performing a visit.
+  /**
+   * Get (partial) labels by performing a visit.
+   *
+   * This method performs a depth-first search to go to every leaf and records
+   * the keys assignment which leads to that leaf. Since the tree can be pruned,
+   * there might be a leaf at a lower depth which results in a partial
+   * assignment (i.e. not all keys are specified).
+   *
+   * E.g. given a tree with 3 keys, there may be a branch where the 3rd key has
+   * the same values for all the leaves. This leads to the branch being pruned
+   * so we get a leaf which is arrived at by just the first 2 keys and their
+   * assignments.
+   */
   template <typename L, typename Y>
   std::set<L> DecisionTree<L, Y>::labels() const {
     std::set<L> unique;
