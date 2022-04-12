@@ -295,10 +295,11 @@ namespace gtsam {
    template <int M, int N>
    struct handle_matrix<Eigen::Matrix<double, M, N>, true> {
      inline Eigen::Matrix<double, M, N> operator()(Key j, const Value* const pointer) {
-       try {
+       auto ptr = dynamic_cast<const GenericValue<Eigen::Matrix<double, M, N>>*>(pointer);
+       if (ptr) {
          // value returns a const Matrix&, and the return makes a copy !!!!!
-         return dynamic_cast<const GenericValue<Eigen::Matrix<double, M, N>>&>(*pointer).value();
-       } catch (std::bad_cast&) {
+         return ptr->value();
+       } else {
          // If a fixed matrix was stored, we end up here as well.
          throw ValuesIncorrectType(j, typeid(*pointer), typeid(Eigen::Matrix<double, M, N>));
        }
@@ -312,13 +313,13 @@ namespace gtsam {
        auto ptr = dynamic_cast<const GenericValue<Eigen::Matrix<double, M, N>>*>(pointer);
        if (ptr) {
          // value returns a const MatrixMN&, and the return makes a copy !!!!!
-         return dynamic_cast<const GenericValue<Eigen::Matrix<double, M, N>>&>(*pointer).value();
+         return ptr->value();
        } else {
          Matrix A;
+         // Check if a dynamic matrix was stored
          auto ptr = dynamic_cast<const GenericValue<Eigen::MatrixXd>*>(pointer);
          if (ptr) {
-           // Check if a dynamic matrix was stored
-           A = ptr->value();  // will throw if not....
+           A = ptr->value();
          } else {
            // Or a dynamic vector
            A = handle_matrix<Eigen::VectorXd, true>()(j, pointer);  // will throw if not....
