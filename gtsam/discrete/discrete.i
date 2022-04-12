@@ -70,7 +70,7 @@ virtual class DecisionTreeFactor : gtsam::DiscreteFactor {
   string dot(
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
       bool showZero = true) const;
-  std::vector<std::pair<DiscreteValues, double>> enumerate() const;
+  std::vector<std::pair<gtsam::DiscreteValues, double>> enumerate() const;
   string markdown(const gtsam::KeyFormatter& keyFormatter =
                       gtsam::DefaultKeyFormatter) const;
   string markdown(const gtsam::KeyFormatter& keyFormatter,
@@ -97,11 +97,12 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
                       const gtsam::Ordering& orderedKeys);
   gtsam::DiscreteConditional operator*(
       const gtsam::DiscreteConditional& other) const;
-  DiscreteConditional marginal(gtsam::Key key) const;
+  gtsam::DiscreteConditional marginal(gtsam::Key key) const;
   void print(string s = "Discrete Conditional\n",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::DiscreteConditional& other, double tol = 1e-9) const;
+  gtsam::Key firstFrontalKey() const;
   size_t nrFrontals() const;
   size_t nrParents() const;
   void printSignature(
@@ -156,13 +157,17 @@ class DiscreteBayesNet {
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::DiscreteBayesNet& other, double tol = 1e-9) const;
-  string dot(const gtsam::KeyFormatter& keyFormatter =
-                 gtsam::DefaultKeyFormatter) const;
-  void saveGraph(string s, const gtsam::KeyFormatter& keyFormatter =
-                               gtsam::DefaultKeyFormatter) const;
   double operator()(const gtsam::DiscreteValues& values) const;
   gtsam::DiscreteValues sample() const;
   gtsam::DiscreteValues sample(gtsam::DiscreteValues given) const;
+
+  string dot(
+      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
+      const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
+  void saveGraph(
+      string s,
+      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
+      const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
   string markdown(const gtsam::KeyFormatter& keyFormatter =
                       gtsam::DefaultKeyFormatter) const;
   string markdown(const gtsam::KeyFormatter& keyFormatter,
@@ -228,19 +233,6 @@ class DiscreteLookupDAG {
   gtsam::DiscreteValues argmax(gtsam::DiscreteValues given) const;
 };
 
-#include <gtsam/inference/DotWriter.h>
-class DotWriter {
-  DotWriter(double figureWidthInches = 5, double figureHeightInches = 5,
-            bool plotFactorPoints = true, bool connectKeysToFactor = true,
-            bool binaryEdges = true);
-
-  double figureWidthInches;
-  double figureHeightInches;
-  bool plotFactorPoints;
-  bool connectKeysToFactor;
-  bool binaryEdges;
-};
-
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 class DiscreteFactorGraph {
   DiscreteFactorGraph();
@@ -265,29 +257,37 @@ class DiscreteFactorGraph {
   void print(string s = "") const;
   bool equals(const gtsam::DiscreteFactorGraph& fg, double tol = 1e-9) const;
 
-  string dot(
-      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
-      const gtsam::DotWriter& dotWriter = gtsam::DotWriter()) const;
-  void saveGraph(
-      string s,
-      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
-      const gtsam::DotWriter& dotWriter = gtsam::DotWriter()) const;
-
   gtsam::DecisionTreeFactor product() const;
   double operator()(const gtsam::DiscreteValues& values) const;
   gtsam::DiscreteValues optimize() const;
 
+  gtsam::DiscreteBayesNet sumProduct();
+  gtsam::DiscreteBayesNet sumProduct(gtsam::Ordering::OrderingType type);
+  gtsam::DiscreteBayesNet sumProduct(const gtsam::Ordering& ordering);
+
   gtsam::DiscreteLookupDAG maxProduct();
+  gtsam::DiscreteLookupDAG maxProduct(gtsam::Ordering::OrderingType type);
   gtsam::DiscreteLookupDAG maxProduct(const gtsam::Ordering& ordering);
 
-  gtsam::DiscreteBayesNet eliminateSequential();
-  gtsam::DiscreteBayesNet eliminateSequential(const gtsam::Ordering& ordering);
-  std::pair<gtsam::DiscreteBayesNet, gtsam::DiscreteFactorGraph>
+  gtsam::DiscreteBayesNet* eliminateSequential();
+  gtsam::DiscreteBayesNet* eliminateSequential(gtsam::Ordering::OrderingType type);
+  gtsam::DiscreteBayesNet* eliminateSequential(const gtsam::Ordering& ordering);
+  pair<gtsam::DiscreteBayesNet*, gtsam::DiscreteFactorGraph*>
       eliminatePartialSequential(const gtsam::Ordering& ordering);
-  gtsam::DiscreteBayesTree eliminateMultifrontal();
-  gtsam::DiscreteBayesTree eliminateMultifrontal(const gtsam::Ordering& ordering);
-  std::pair<gtsam::DiscreteBayesTree, gtsam::DiscreteFactorGraph>
+
+  gtsam::DiscreteBayesTree* eliminateMultifrontal();
+  gtsam::DiscreteBayesTree* eliminateMultifrontal(gtsam::Ordering::OrderingType type);  
+  gtsam::DiscreteBayesTree* eliminateMultifrontal(const gtsam::Ordering& ordering);  
+  pair<gtsam::DiscreteBayesTree*, gtsam::DiscreteFactorGraph*>
       eliminatePartialMultifrontal(const gtsam::Ordering& ordering);
+
+  string dot(
+      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
+      const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
+  void saveGraph(
+      string s,
+      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
+      const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
 
   string markdown(const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;

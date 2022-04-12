@@ -147,11 +147,13 @@ class MatlabWrapper(CheckMixin, FormatMixin):
         """
         def args_copy(args):
             return ArgumentList([copy.copy(arg) for arg in args.list()])
+
         def method_copy(method):
             method2 = copy.copy(method)
             method2.args = args_copy(method.args)
             method2.args.backup = method.args.backup
             return method2
+
         if save_backup:
             method.args.backup = args_copy(method.args)
         method = method_copy(method)
@@ -162,7 +164,8 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                 method.args.list().remove(arg)
                 return [
                     methodWithArg,
-                    *MatlabWrapper._expand_default_arguments(method, save_backup=False)
+                    *MatlabWrapper._expand_default_arguments(method,
+                                                             save_backup=False)
                 ]
             break
         assert all(arg.default is None for arg in method.args.list()), \
@@ -180,9 +183,12 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
             if method_index is None:
                 method_map[method.name] = len(method_out)
-                method_out.append(MatlabWrapper._expand_default_arguments(method))
+                method_out.append(
+                    MatlabWrapper._expand_default_arguments(method))
             else:
-                method_out[method_index] += MatlabWrapper._expand_default_arguments(method)
+                method_out[
+                    method_index] += MatlabWrapper._expand_default_arguments(
+                        method)
 
         return method_out
 
@@ -337,43 +343,42 @@ class MatlabWrapper(CheckMixin, FormatMixin):
         body_args = ''
 
         for arg in args.list():
+            ctype_camel = self._format_type_name(arg.ctype.typename,
+                                                 separator='')
+            ctype_sep = self._format_type_name(arg.ctype.typename)
+
             if self.is_ref(arg.ctype):  # and not constructor:
-                ctype_camel = self._format_type_name(arg.ctype.typename,
-                                                     separator='')
-                body_args += textwrap.indent(textwrap.dedent('''\
-                   {ctype}& {name} = *unwrap_shared_ptr< {ctype} >(in[{id}], "ptr_{ctype_camel}");
-                '''.format(ctype=self._format_type_name(arg.ctype.typename),
-                           ctype_camel=ctype_camel,
-                           name=arg.name,
-                           id=arg_id)),
-                                             prefix='  ')
+                arg_type = "{ctype}&".format(ctype=ctype_sep)
+                unwrap = '*unwrap_shared_ptr< {ctype} >(in[{id}], "ptr_{ctype_camel}");'.format(
+                    ctype=ctype_sep, ctype_camel=ctype_camel, id=arg_id)
 
-            elif (self.is_shared_ptr(arg.ctype) or self.is_ptr(arg.ctype)) and \
+            elif self.is_ptr(arg.ctype) and \
                     arg.ctype.typename.name not in self.ignore_namespace:
-                if arg.ctype.is_shared_ptr:
-                    call_type = arg.ctype.is_shared_ptr
-                else:
-                    call_type = arg.ctype.is_ptr
 
-                body_args += textwrap.indent(textwrap.dedent('''\
-                    {std_boost}::shared_ptr<{ctype_sep}> {name} = unwrap_shared_ptr< {ctype_sep} >(in[{id}], "ptr_{ctype}");
-                '''.format(std_boost='boost' if constructor else 'boost',
-                           ctype_sep=self._format_type_name(
-                               arg.ctype.typename),
-                           ctype=self._format_type_name(arg.ctype.typename,
-                                                        separator=''),
-                           name=arg.name,
-                           id=arg_id)),
-                                             prefix='  ')
+                arg_type = "{ctype_sep}*".format(ctype_sep=ctype_sep)
+                unwrap = 'unwrap_ptr< {ctype_sep} >(in[{id}], "ptr_{ctype}");'.format(
+                    ctype_sep=ctype_sep, ctype=ctype_camel, id=arg_id)
+
+            elif (self.is_shared_ptr(arg.ctype) or self.can_be_pointer(arg.ctype)) and \
+                    arg.ctype.typename.name not in self.ignore_namespace:
+                call_type = arg.ctype.is_shared_ptr
+
+                arg_type = "{std_boost}::shared_ptr<{ctype_sep}>".format(
+                    std_boost='boost' if constructor else 'boost',
+                    ctype_sep=ctype_sep)
+                unwrap = 'unwrap_shared_ptr< {ctype_sep} >(in[{id}], "ptr_{ctype}");'.format(
+                    ctype_sep=ctype_sep, ctype=ctype_camel, id=arg_id)
 
             else:
-                body_args += textwrap.indent(textwrap.dedent('''\
-                    {ctype} {name} = unwrap< {ctype} >(in[{id}]);
-                '''.format(ctype=arg.ctype.typename.name,
-                           name=arg.name,
-                           id=arg_id)),
-                                             prefix='  ')
+                arg_type = "{ctype}".format(ctype=arg.ctype.typename.name)
+                unwrap = 'unwrap< {ctype} >(in[{id}]);'.format(
+                    ctype=arg.ctype.typename.name, id=arg_id)
 
+            body_args += textwrap.indent(textwrap.dedent('''\
+                    {arg_type} {name} = {unwrap}
+                    '''.format(arg_type=arg_type, name=arg.name,
+                               unwrap=unwrap)),
+                                         prefix='  ')
             arg_id += 1
 
         params = ''
@@ -383,12 +388,14 @@ class MatlabWrapper(CheckMixin, FormatMixin):
             if params != '':
                 params += ','
 
-            if (arg.default is not None) and (arg.name not in explicit_arg_names):
+            if (arg.default is not None) and (arg.name
+                                              not in explicit_arg_names):
                 params += arg.default
                 continue
 
-            if (not self.is_ref(arg.ctype)) and (self.is_shared_ptr(arg.ctype)) and (self.is_ptr(
-                    arg.ctype)) and (arg.ctype.typename.name not in self.ignore_namespace):
+            if not self.is_ref(arg.ctype) and (self.is_shared_ptr(arg.ctype) or \
+                self.is_ptr(arg.ctype) or self.can_be_pointer(arg.ctype))and \
+                    arg.ctype.typename.name not in self.ignore_namespace:
                 if arg.ctype.is_shared_ptr:
                     call_type = arg.ctype.is_shared_ptr
                 else:
@@ -601,7 +608,8 @@ class MatlabWrapper(CheckMixin, FormatMixin):
         if not isinstance(ctors, Iterable):
             ctors = [ctors]
 
-        ctors = sum((MatlabWrapper._expand_default_arguments(ctor) for ctor in ctors), [])
+        ctors = sum((MatlabWrapper._expand_default_arguments(ctor)
+                     for ctor in ctors), [])
 
         methods_wrap = textwrap.indent(textwrap.dedent("""\
             methods
@@ -885,10 +893,10 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                     wrapper=self._wrapper_name(),
                     id=self._update_wrapper_id(
                         (namespace_name, instantiated_class,
-                        static_overload.name, static_overload)),
+                         static_overload.name, static_overload)),
                     class_name=instantiated_class.name,
                     end_statement=end_statement),
-                                            prefix='    ')
+                                               prefix='    ')
 
             # If the arguments don't match any of the checks above,
             # throw an error with the class and method name.
@@ -1079,7 +1087,8 @@ class MatlabWrapper(CheckMixin, FormatMixin):
         pair_value = 'first' if func_id == 0 else 'second'
         new_line = '\n' if func_id == 0 else ''
 
-        if self.is_shared_ptr(return_type) or self.is_ptr(return_type):
+        if self.is_shared_ptr(return_type) or self.is_ptr(return_type) or \
+            self.can_be_pointer(return_type):
             shared_obj = 'pairResult.' + pair_value
 
             if not (return_type.is_shared_ptr or return_type.is_ptr):
@@ -1145,7 +1154,8 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
         if return_1_name != 'void':
             if return_count == 1:
-                if self.is_shared_ptr(return_1) or self.is_ptr(return_1):
+                if self.is_shared_ptr(return_1) or self.is_ptr(return_1) or \
+                    self.can_be_pointer(return_1):
                     sep_method_name = partial(self._format_type_name,
                                               return_1.typename,
                                               include_namespace=True)

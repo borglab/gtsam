@@ -131,11 +131,12 @@ template <class FACTOR>
 void FactorGraph<FACTOR>::dot(std::ostream& os,
                               const KeyFormatter& keyFormatter,
                               const DotWriter& writer) const {
-  writer.writePreamble(&os);
+  writer.graphPreamble(&os);
 
   // Create nodes for each variable in the graph
   for (Key key : keys()) {
-    writer.DrawVariable(key, keyFormatter, boost::none, &os);
+    auto position = writer.variablePos(key);
+    writer.drawVariable(key, keyFormatter, position, &os);
   }
   os << "\n";
 

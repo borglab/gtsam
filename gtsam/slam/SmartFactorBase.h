@@ -47,7 +47,7 @@ namespace gtsam {
  * @tparam CAMERA should behave like a PinholeCamera.
  */
 template<class CAMERA>
-class GTSAM_EXPORT SmartFactorBase: public NonlinearFactor {
+class SmartFactorBase: public NonlinearFactor {
 
 private:
   typedef NonlinearFactor Base;
@@ -146,7 +146,7 @@ protected:
    */
   template<class SFM_TRACK>
   void add(const SFM_TRACK& trackToAdd) {
-    for (size_t k = 0; k < trackToAdd.number_measurements(); k++) {
+    for (size_t k = 0; k < trackToAdd.numberMeasurements(); k++) {
       this->measured_.push_back(trackToAdd.measurements[k].second);
       this->keys_.push_back(trackToAdd.measurements[k].first);
     }

@@ -372,6 +372,9 @@ class Pose2 {
   Pose2(const gtsam::Rot2& r, const gtsam::Point2& t);
   Pose2(Vector v);
 
+  static boost::optional<gtsam::Pose2> Align(const gtsam::Point2Pairs& abPointPairs);
+  static boost::optional<gtsam::Pose2> Align(const gtsam::Matrix& a, const gtsam::Matrix& b);
+
   // Testable
   void print(string s = "") const;
   bool equals(const gtsam::Pose2& pose, double tol) const;
@@ -406,6 +409,10 @@ class Pose2 {
   gtsam::Point2 transformFrom(const gtsam::Point2& p) const;
   gtsam::Point2 transformTo(const gtsam::Point2& p) const;
 
+  // Matrix versions
+  Matrix transformFrom(const Matrix& points) const;
+  Matrix transformTo(const Matrix& points) const;
+
   // Standard Interface
   double x() const;
   double y() const;
@@ -420,8 +427,6 @@ class Pose2 {
   void serialize() const;
 };
   
-boost::optional<gtsam::Pose2> align(const gtsam::Point2Pairs& pairs);
-
 #include <gtsam/geometry/Pose3.h>
 class Pose3 {
   // Standard Constructors
@@ -430,6 +435,9 @@ class Pose3 {
   Pose3(const gtsam::Rot3& r, const gtsam::Point3& t);
   Pose3(const gtsam::Pose2& pose2);
   Pose3(Matrix mat);
+
+  static boost::optional<gtsam::Pose3> Align(const gtsam::Point3Pairs& abPointPairs);
+  static boost::optional<gtsam::Pose3> Align(const gtsam::Matrix& a, const gtsam::Matrix& b);
 
   // Testable
   void print(string s = "") const;
@@ -469,6 +477,10 @@ class Pose3 {
   // Group Action on Point3
   gtsam::Point3 transformFrom(const gtsam::Point3& point) const;
   gtsam::Point3 transformTo(const gtsam::Point3& point) const;
+
+  // Matrix versions
+  Matrix transformFrom(const Matrix& points) const;
+  Matrix transformTo(const Matrix& points) const;
 
   // Standard Interface
   gtsam::Rot3 rotation() const;
