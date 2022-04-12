@@ -8,11 +8,11 @@ See LICENSE for the license information
 Pose2 unit tests.
 Author: Frank Dellaert & Duy Nguyen Ta & John Lambert
 """
+import math
 import unittest
 
-import numpy as np
-
 import gtsam
+import numpy as np
 from gtsam import Point2, Point2Pairs, Pose2
 from gtsam.utils.test_case import GtsamTestCase
 
@@ -25,6 +25,34 @@ class TestPose2(GtsamTestCase):
         expected = np.dot(Pose2.adjointMap_(xi), xi)
         actual = Pose2.adjoint_(xi, xi)
         np.testing.assert_array_equal(actual, expected)
+
+    def test_transformTo(self):
+        """Test transformTo method."""
+        pose = Pose2(2, 4, -math.pi/2)
+        actual = pose.transformTo(Point2(3, 2))
+        expected = Point2(2, 1)
+        self.gtsamAssertEquals(actual, expected, 1e-6)
+
+        # multi-point version
+        points = np.stack([Point2(3, 2), Point2(3, 2)]).T
+        actual_array = pose.transformTo(points)
+        self.assertEqual(actual_array.shape, (2, 2))
+        expected_array = np.stack([expected, expected]).T
+        np.testing.assert_allclose(actual_array, expected_array, atol=1e-6)
+
+    def test_transformFrom(self):
+        """Test transformFrom method."""
+        pose = Pose2(2, 4, -math.pi/2)
+        actual = pose.transformFrom(Point2(2, 1))
+        expected = Point2(3, 2)
+        self.gtsamAssertEquals(actual, expected, 1e-6)
+
+        # multi-point version
+        points = np.stack([Point2(2, 1), Point2(2, 1)]).T
+        actual_array = pose.transformFrom(points)
+        self.assertEqual(actual_array.shape, (2, 2))
+        expected_array = np.stack([expected, expected]).T
+        np.testing.assert_allclose(actual_array, expected_array, atol=1e-6)
 
     def test_align(self) -> None:
         """Ensure estimation of the Pose2 element to align two 2d point clouds succeeds.

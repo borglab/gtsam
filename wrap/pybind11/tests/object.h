@@ -1,5 +1,4 @@
-#if !defined(__OBJECT_H)
-#define __OBJECT_H
+#pragma once
 
 #include <atomic>
 #include "constructor_stats.h"
@@ -171,5 +170,3 @@ public:
 private:
     T *m_ptr;
 };
-
-#endif /* __OBJECT_H */

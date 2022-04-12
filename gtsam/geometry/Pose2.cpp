@@ -213,6 +213,14 @@ Point2 Pose2::transformTo(const Point2& point,
   return q;
 }
 
+Matrix Pose2::transformTo(const Matrix& points) const {
+  if (points.rows() != 2) {
+    throw std::invalid_argument("Pose2:transformTo expects 2*N matrix.");
+  }
+  const Matrix2 Rt = rotation().transpose();
+  return Rt * (points.colwise() - t_);  // Eigen broadcasting!
+}
+
 /* ************************************************************************* */
 // see doc/math.lyx, SE(2) section
 Point2 Pose2::transformFrom(const Point2& point,
@@ -222,6 +230,15 @@ Point2 Pose2::transformFrom(const Point2& point,
   const Point2 q = r_.rotate(point, Hrotation, Hpoint);
   if (Htranslation) *Htranslation = (Hpoint ? *Hpoint : r_.matrix());
   return q + t_;
+}
+
+
+Matrix Pose2::transformFrom(const Matrix& points) const {
+  if (points.rows() != 2) {
+    throw std::invalid_argument("Pose2:transformFrom expects 2*N matrix.");
+  }
+  const Matrix2 R = rotation().matrix();
+  return (R * points).colwise() + t_;  // Eigen broadcasting!
 }
 
 /* ************************************************************************* */

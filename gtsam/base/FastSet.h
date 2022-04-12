@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <boost/version.hpp>
 #if BOOST_VERSION >= 107400
 #include <boost/serialization/library_version_type.hpp>
 #endif
