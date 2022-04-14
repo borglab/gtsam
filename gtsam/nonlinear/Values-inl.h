@@ -279,10 +279,11 @@ namespace gtsam {
    template <typename ValueType>
    struct handle {
      ValueType operator()(Key j, const Value* const pointer) {
-       try {
+       auto ptr = dynamic_cast<const GenericValue<ValueType>*>(pointer);
+       if (ptr) {
          // value returns a const ValueType&, and the return makes a copy !!!!!
-         return dynamic_cast<const GenericValue<ValueType>&>(*pointer).value();
-       } catch (std::bad_cast&) {
+         return ptr->value();
+       } else {
          throw ValuesIncorrectType(j, typeid(*pointer), typeid(ValueType));
        }
      }
@@ -367,10 +368,10 @@ namespace gtsam {
 
     if(item != values_.end()) {
       // dynamic cast the type and throw exception if incorrect
-      const Value& value = *item->second;
-      try {
-        return dynamic_cast<const GenericValue<ValueType>&>(value).value();
-      } catch (std::bad_cast &) {
+      auto ptr = dynamic_cast<const GenericValue<ValueType>*>(item->second);
+      if (ptr) {
+        return ptr->value();
+      } else {
         // NOTE(abe): clang warns about potential side effects if done in typeid
         const Value* value = item->second;
         throw ValuesIncorrectType(j, typeid(*value), typeid(ValueType));
