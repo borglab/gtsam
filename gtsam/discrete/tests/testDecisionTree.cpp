@@ -18,7 +18,7 @@
  */
 
 // #define DT_DEBUG_MEMORY
-// #define DT_NO_PRUNING
+// #define GTSAM_DT_NO_PRUNING
 #define DISABLE_DOT
 #include <gtsam/discrete/DecisionTree-inl.h>
 
