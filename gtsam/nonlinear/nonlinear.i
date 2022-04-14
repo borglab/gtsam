@@ -245,6 +245,10 @@ class Values {
   void insert(size_t j, const gtsam::ParameterMatrix<14>& X);
   void insert(size_t j, const gtsam::ParameterMatrix<15>& X);
 
+  template <T = {gtsam::Point2,
+                 gtsam::Point3}>
+  void insert(size_t j, const T& val);
+
   void update(size_t j, const gtsam::Point2& point2);
   void update(size_t j, const gtsam::Point3& point3);
   void update(size_t j, const gtsam::Rot2& rot2);
