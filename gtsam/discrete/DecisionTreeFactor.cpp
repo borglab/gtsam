@@ -287,12 +287,16 @@ namespace gtsam {
         cardinalities_(keys.cardinalities()) {}
 
   /* ************************************************************************ */
-  DecisionTreeFactor DecisionTreeFactor::prune(size_t maxNrLeaves) const {
-    const size_t N = maxNrLeaves;
+  DecisionTreeFactor DecisionTreeFactor::prune(size_t maxNrAssignments) const {
+    const size_t N = maxNrAssignments;
 
     // Get the probabilities in the decision tree so we can threshold.
     std::vector<double> probabilities;
-    this->visit([&](const double& prob) { probabilities.emplace_back(prob); });
+    this->visitLeaf([&](const Leaf& leaf) {
+      size_t nrAssignments = leaf.nrAssignments();
+      double prob = leaf.constant();
+      probabilities.insert(probabilities.end(), nrAssignments, prob);
+    });
 
     // The number of probabilities can be lower than max_leaves
     if (probabilities.size() <= N) {

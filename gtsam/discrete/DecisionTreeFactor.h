@@ -174,13 +174,21 @@ namespace gtsam {
      * @brief Prune the decision tree of discrete variables.
      *
      * Pruning will set the leaves to be "pruned" to 0 indicating a 0
-     * probability.
-     * A leaf is pruned if it is not in the top `maxNrLeaves` values.
+     * probability. An assignment is pruned if it is not in the top
+     * `maxNrAssignments` values.
      *
-     * @param maxNrLeaves The maximum number of leaves to keep.
+     * A violation can occur if there are more
+     * duplicate values than `maxNrAssignments`. A violation here is the need to
+     * un-prune the decision tree (e.g. all assignment values are 1.0). We could
+     * have another case where some subset of duplicates exist (e.g. for a tree
+     * with 8 assignments we have 1, 1, 1, 1, 0.8, 0.7, 0.6, 0.5), but this is
+     * not a violation since the for `maxNrAssignments=5` the top values are (1,
+     * 0.8).
+     *
+     * @param maxNrAssignments The maximum number of assignments to keep.
      * @return DecisionTreeFactor
      */
-    DecisionTreeFactor prune(size_t maxNrLeaves) const;
+    DecisionTreeFactor prune(size_t maxNrAssignments) const;
 
     /// @}
     /// @name Wrapper support
