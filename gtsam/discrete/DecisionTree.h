@@ -105,7 +105,7 @@ namespace gtsam {
       virtual const Y& operator()(const Assignment<L>& x) const = 0;
       virtual Ptr apply(const Unary& op) const = 0;
       virtual Ptr apply(const UnaryAssignment& op,
-                        const Assignment<L>& choices) const = 0;
+                        const Assignment<L>& assignment) const = 0;
       virtual Ptr apply_f_op_g(const Node&, const Binary&) const = 0;
       virtual Ptr apply_g_op_fL(const Leaf&, const Binary&) const = 0;
       virtual Ptr apply_g_op_fC(const Choice&, const Binary&) const = 0;
@@ -153,7 +153,7 @@ namespace gtsam {
     /** Create a constant */
     explicit DecisionTree(const Y& y);
 
-    /** Create a new leaf function splitting on a variable */
+    /// Create tree with 2 assignments `y1`, `y2`, splitting on variable `label`
     DecisionTree(const L& label, const Y& y1, const Y& y2);
 
     /** Allow Label+Cardinality for convenience */
@@ -219,9 +219,8 @@ namespace gtsam {
     /// @name Standard Interface
     /// @{
 
-    /** Make virtual */
-    virtual ~DecisionTree() {
-    }
+    /// Make virtual
+    virtual ~DecisionTree() {}
 
     /// Check if tree is empty.
     bool empty() const { return !root_; }
@@ -234,11 +233,13 @@ namespace gtsam {
 
     /**
      * @brief Visit all leaves in depth-first fashion.
-     * 
-     * @param f side-effect taking a value.
-     * 
-     * @note Due to pruning, leaves might not exhaust choices.
-     * 
+     *
+     * @param f (side-effect) Function taking a value.
+     *
+     * @note Due to pruning, the number of leaves may not be the same as the
+     * number of assignments. E.g. if we have a tree on 2 binary variables with
+     * all values being 1, then there are 2^2=4 assignments, but only 1 leaf.
+     *
      * Example:
      *   int sum = 0;
      *   auto visitor = [&](int y) { sum += y; };
@@ -249,14 +250,33 @@ namespace gtsam {
 
     /**
      * @brief Visit all leaves in depth-first fashion.
-     * 
-     * @param f side-effect taking an assignment and a value.
-     * 
-     * @note Due to pruning, leaves might not exhaust choices.
-     * 
+     *
+     * @param f (side-effect) Function taking the leaf node pointer.
+     *
+     * @note Due to pruning, the number of leaves may not be the same as the
+     * number of assignments. E.g. if we have a tree on 2 binary variables with
+     * all values being 1, then there are 2^2=4 assignments, but only 1 leaf.
+     *
      * Example:
      *   int sum = 0;
-     *   auto visitor = [&](const Assignment<L>& choices, int y) { sum += y; };
+     *   auto visitor = [&](int y) { sum += y; };
+     *   tree.visitWith(visitor);
+     */
+    template <typename Func>
+    void visitLeaf(Func f) const;
+
+    /**
+     * @brief Visit all leaves in depth-first fashion.
+     *
+     * @param f (side-effect) Function taking an assignment and a value.
+     *
+     * @note Due to pruning, the number of leaves may not be the same as the
+     * number of assignments. E.g. if we have a tree on 2 binary variables with
+     * all values being 1, then there are 2^2=4 assignments, but only 1 leaf.
+     *
+     * Example:
+     *   int sum = 0;
+     *   auto visitor = [&](const Assignment<L>& assignment, int y) { sum += y; };
      *   tree.visitWith(visitor);
      */
     template <typename Func>
@@ -275,7 +295,7 @@ namespace gtsam {
      * 
      * @note X is always passed by value.
      * @note Due to pruning, leaves might not exhaust choices.
-     * 
+     *
      * Example:
      *   auto add = [](const double& y, double x) { return y + x; };
      *   double sum = tree.fold(add, 0.0);
