@@ -223,7 +223,7 @@ class GTSAM_EXPORT AngleTriangulationFactor
       const Pose3& wTc0, const Pose3& wTc1,
       boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none) const override {
-    Matrix6 H_1_inverse, H_T_1, H_T_2;
+    Matrix6 H_2_inverse, H_T_1, H_T_2;
     Matrix36 H_R_T, H_t_T;
     Matrix3 H_m0_R;
     Matrix63 H_t, H_m0, H_m1;
@@ -231,21 +231,19 @@ class GTSAM_EXPORT AngleTriangulationFactor
     Matrix13 H_theta0_Rf0, H_theta0_m0_prime, H_theta1_f1, H_theta1_m1_prime;
 
     // Get the relative pose between views C0 and C1.
-    Pose3 c0Tc1 =
-        wTc0.inverse(H1 ? &H_1_inverse : nullptr)
-            .compose(wTc1, H1 ? &H_T_1 : nullptr, H2 ? &H_T_2 : nullptr);
-    Rot3 R = c0Tc1.rotation(H1 || H2 ? &H_R_T : nullptr);
-    Point3 t = c0Tc1.translation(H1 || H2 ? &H_t_T : nullptr);
-
-    Matrix3 Kinv = K_.inverse();
+    Pose3 c1Tc0 =
+        wTc1.inverse(H2 ? &H_2_inverse : nullptr)
+            .compose(wTc0, H2 ? &H_T_2 : nullptr, H1 ? &H_T_1 : nullptr);
+    Rot3 R = c1Tc0.rotation(H1 || H2 ? &H_R_T : nullptr);
+    Point3 t = c1Tc0.translation(H1 || H2 ? &H_t_T : nullptr);
 
     // Convert pixel coordinates to homogenous coordinates.
     Vector3 u0(u0_(0), u0_(1), 1), u1(u1_(0), u1_(1), 1);
 
+    Matrix3 Kinv = K_.inverse();
     Vector3 f0 = Kinv * u0, f1 = Kinv * u1;
 
     Vector3 m0 = R.rotate(f0, H1 || H2 ? &H_m0_R : nullptr), m1 = f1;
-
     Unit3 m0_hat(m0), m1_hat(m1);
 
     std::vector<Vector3> m_primes;
@@ -292,18 +290,16 @@ class GTSAM_EXPORT AngleTriangulationFactor
       Matrix3 H_m1_prime_t = H_t.block<3, 3>(3, 0);
 
       Matrix16 J11 =
-          (H_theta0_Rf0 * H_Rf0_R * H_R_T * H_T_1 * H_1_inverse) +  //
-          (H_theta0_m0_prime * H_m0_prime_m0 * H_m0_R * H_R_T * H_T_1 *
-           H_1_inverse) +  //
+          (H_theta0_Rf0 * H_Rf0_R * H_R_T * H_T_1) +  //
+          (H_theta0_m0_prime * H_m0_prime_m0 * H_m0_R * H_R_T * H_T_1) +  //
           //  (H_theta0_m0_prime * H_m0_prime_m1) // m1 is constant so 0
-          (H_theta0_m0_prime * H_m0_prime_t * H_t_T * H_T_1 * H_1_inverse);
+          (H_theta0_m0_prime * H_m0_prime_t * H_t_T * H_T_1);
 
       Matrix16 J21 =
           // (H_theta1_f1) +  // This is zero because f1 is constant
-          (H_theta1_m1_prime * H_m1_prime_m0 * H_m0_R * H_R_T * H_T_1 *
-           H_1_inverse) +  //
+          (H_theta1_m1_prime * H_m1_prime_m0 * H_m0_R * H_R_T * H_T_1) +  //
           // (H_theta1_m1_prime * H_m1_prime_m1) // m1 is constant so 0
-          (H_theta1_m1_prime * H_m1_prime_t * H_t_T * H_T_1 * H_1_inverse);
+          (H_theta1_m1_prime * H_m1_prime_t * H_t_T * H_T_1);
 
       (*H1) = Matrix26::Zero();
       H1->block<1, 6>(0, 0) = J11;
@@ -321,16 +317,16 @@ class GTSAM_EXPORT AngleTriangulationFactor
       Matrix3 H_m1_prime_t = H_t.block<3, 3>(3, 0);
 
       Matrix16 J12 =
-          (H_theta0_Rf0 * H_Rf0_R * H_R_T * H_T_2) +                      //
-          (H_theta0_m0_prime * H_m0_prime_m0 * H_m0_R * H_R_T * H_T_2) +  //
+          (H_theta0_Rf0 * H_Rf0_R * H_R_T * H_T_2 * H_2_inverse) +                      //
+          (H_theta0_m0_prime * H_m0_prime_m0 * H_m0_R * H_R_T * H_T_2 * H_2_inverse) +  //
           // (H_theta0_m0_prime * H_m0_prime_m1) // m1 is constant so 0
-          (H_theta0_m0_prime * H_m0_prime_t * H_t_T * H_T_2);
+          (H_theta0_m0_prime * H_m0_prime_t * H_t_T * H_T_2 * H_2_inverse);
 
       Matrix16 J22 =
           // (H_theta1_f1) +  // f1 is constant
-          (H_theta1_m1_prime * H_m1_prime_m0 * H_m0_R * H_R_T * H_T_2) +  //
+          (H_theta1_m1_prime * H_m1_prime_m0 * H_m0_R * H_R_T * H_T_2 * H_2_inverse) +  //
           // (H_theta1_m1_prime * H_m1_prime_m1) // m1 is constant so 0
-          (H_theta1_m1_prime * H_m1_prime_t * H_t_T * H_T_2);
+          (H_theta1_m1_prime * H_m1_prime_t * H_t_T * H_T_2 * H_2_inverse);
 
       (*H2) = Matrix26::Zero();
       H2->block<1, 6>(0, 0) = J12;
