@@ -33,8 +33,7 @@ using namespace gtsam;
 // Create a noise model for the ray triangulation
 static SharedNoiseModel model(noiseModel::Isotropic::Sigma(2, 1e-5));
 
-// Keys are deliberately *not* in sorted order to test that case.
-static const Key kKey1(2), kKey2(1);
+static const Key kKey1(1), kKey2(2);
 
 auto L1 = AngleTriangulationFactor<Cal3_S2>::MinimizationType::L1;
 auto L2 = AngleTriangulationFactor<Cal3_S2>::MinimizationType::L2;
@@ -400,8 +399,8 @@ TEST(AngleTriangulationFactor, SfmExample) {
   // std::cout << "===================\n\n"<<std::endl;
   // result.print("Final results:\n");
 
-  std::cout << graph.error(initialEstimate) << std::endl;
-  std::cout << graph.error(result) << std::endl;
+  std::cout << "Initial Error: " << graph.error(initialEstimate) << std::endl;
+  std::cout << "  Final Error: " << graph.error(result) << std::endl;
 }
 
 /* ************************************************************************* */
