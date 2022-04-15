@@ -824,6 +824,7 @@ template <CALIBRATION>
 class PinholeCamera {
   // Standard Constructors and Named Constructors
   PinholeCamera();
+  PinholeCamera(const gtsam::PinholeCamera<CALIBRATION> other);
   PinholeCamera(const gtsam::Pose3& pose);
   PinholeCamera(const gtsam::Pose3& pose, const CALIBRATION& K);
   static This Level(const CALIBRATION& K, const gtsam::Pose2& pose,
@@ -850,6 +851,7 @@ class PinholeCamera {
   static gtsam::Point2 Project(const gtsam::Point3& cameraPoint);
   pair<gtsam::Point2, bool> projectSafe(const gtsam::Point3& pw) const;
   gtsam::Point2 project(const gtsam::Point3& point);
+  gtsam::Point2 project(const gtsam::Point3& point, Eigen::Ref<Eigen::MatrixXd> Dpose, Eigen::Ref<Eigen::MatrixXd> Dpoint, Eigen::Ref<Eigen::MatrixXd> Dcal);
   gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;
   double range(const gtsam::Point3& point);
   double range(const gtsam::Pose3& pose);
