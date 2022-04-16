@@ -660,6 +660,77 @@ namespace {
     bool ok = treeEqual && /*linEqual &&*/ nonlinEqual && /*linCorrect &&*/ /*afterLinCorrect &&*/ afterNonlinCorrect;
     return ok;
   }
+
+  boost::optional<FastMap<Key, int>> createOrderingConstraints(const ISAM2& isam, const KeyVector& newKeys, const KeySet& marginalizableKeys)
+  {
+    if (marginalizableKeys.empty()) {
+      return boost::none;
+    } else {
+      FastMap<Key, int> constrainedKeys = FastMap<Key, int>();
+      // Generate ordering constraints so that the marginalizable variables will be eliminated first
+      // Set all existing and new variables to Group1
+      for (const auto& key_val : isam.getDelta()) {
+        constrainedKeys.emplace(key_val.first, 1);
+      }
+      for (const auto& key : newKeys) {
+        constrainedKeys.emplace(key, 1);
+      }
+      // And then re-assign the marginalizable variables to Group0 so that they'll all be leaf nodes
+      for (const auto& key : marginalizableKeys) {
+        constrainedKeys.at(key) = 0;
+      }
+      return constrainedKeys;
+    }
+  }
+
+  void markAffectedKeys(const Key& key, const ISAM2Clique::shared_ptr& rootClique, KeyList& additionalKeys)
+  {
+    std::stack<ISAM2Clique::shared_ptr> frontier;
+    frontier.push(rootClique);
+    // Basic DFS to find additional keys
+    while (!frontier.empty()) {
+      // Get the top of the stack
+      const ISAM2Clique::shared_ptr clique = frontier.top();
+      frontier.pop();
+      // Check if we have more keys and children to add
+      if (std::find(clique->conditional()->beginParents(), clique->conditional()->endParents(), key) !=
+          clique->conditional()->endParents()) {
+        for (Key i : clique->conditional()->frontals()) {
+          additionalKeys.push_back(i);
+        }
+        for (const ISAM2Clique::shared_ptr& child : clique->children) {
+          frontier.push(child);
+        }
+      }
+    }
+  }
+
+  bool updateAndMarginalize(const NonlinearFactorGraph& newFactors, const Values& newValues, const KeySet& marginalizableKeys, ISAM2& isam)
+  {
+    // Force ISAM2 to put marginalizable variables at the beginning
+    const boost::optional<FastMap<Key, int>> orderingConstraints = createOrderingConstraints(isam, newValues.keys(), marginalizableKeys);
+
+    // Mark additional keys between the marginalized keys and the leaves
+    KeyList markedKeys;
+    for (Key key : marginalizableKeys) {
+      markedKeys.push_back(key);
+      ISAM2Clique::shared_ptr clique = isam[key];
+      for (const ISAM2Clique::shared_ptr& child : clique->children) {
+        markAffectedKeys(key, child, markedKeys);
+      }
+    }
+
+    // Update
+    isam.update(newFactors, newValues, FactorIndices{}, orderingConstraints, boost::none, markedKeys);
+
+    if (!marginalizableKeys.empty()) {
+      FastList<Key> leafKeys(marginalizableKeys.begin(), marginalizableKeys.end());
+      return checkMarginalizeLeaves(isam, leafKeys);
+    }
+    else {
+      return true;
+    }
+  }
 }
 
 /* ************************************************************************* */
