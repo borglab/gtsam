@@ -714,16 +714,17 @@ namespace {
     const boost::optional<FastMap<Key, int>> orderingConstraints = createOrderingConstraints(isam, newValues.keys(), marginalizableKeys);
 
     // Mark additional keys between the marginalized keys and the leaves
-    KeyList additionalMarkedKeys;
+    KeyList markedKeys;
     for (Key key : marginalizableKeys) {
+      markedKeys.push_back(key);
       ISAM2Clique::shared_ptr clique = isam[key];
       for (const ISAM2Clique::shared_ptr& child : clique->children) {
-        markAffectedKeys(key, child, additionalMarkedKeys);
+        markAffectedKeys(key, child, markedKeys);
       }
     }
 
     // Update
-    isam.update(newFactors, newValues, FactorIndices{}, orderingConstraints, boost::none, additionalMarkedKeys);
+    isam.update(newFactors, newValues, FactorIndices{}, orderingConstraints, boost::none, markedKeys);
 
     if (!marginalizableKeys.empty()) {
       FastList<Key> leafKeys(marginalizableKeys.begin(), marginalizableKeys.end());
