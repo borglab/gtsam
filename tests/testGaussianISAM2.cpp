@@ -946,6 +946,37 @@ TEST(ISAM2, MarginalizeRoot)
 }
 
 /* ************************************************************************* */
+TEST(ISAM2, marginalizationSize)
+{
+  const boost::shared_ptr<noiseModel::Isotropic> nm = noiseModel::Isotropic::Sigma(6, 1.0);
+
+  NonlinearFactorGraph factors;
+  Values values;
+  ISAM2Params params;
+  params.findUnusedFactorSlots = true;
+  ISAM2 isam{params};
+
+  // Create a pose variable
+  Key aKey(0);
+  values.insert(aKey, Pose3::identity());
+  factors.addPrior(aKey, Pose3::identity(), nm);
+  // Create another pose variable linked to the first
+  Pose3 b = Pose3::identity();
+  Key bKey(1);
+  values.insert(bKey, Pose3::identity());
+  factors.emplace_shared<BetweenFactor<Pose3>>(aKey, bKey, Pose3::identity(), nm);
+  // Optimize the graph
+  EXPECT(updateAndMarginalize(factors, values, {}, isam));
+
+  // Now remove a variable -> we should not see the number of factors increase
+  gtsam::KeySet to_remove;
+  to_remove.insert(aKey);
+  const auto numFactorsBefore = isam.getFactorsUnsafe().size();
+  updateAndMarginalize({}, {}, to_remove, isam);
+  EXPECT(numFactorsBefore == isam.getFactorsUnsafe().size());
+}
+
+/* ************************************************************************* */
 TEST(ISAM2, marginalCovariance)
 {
   // Create isam2
