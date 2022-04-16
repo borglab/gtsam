@@ -121,19 +121,6 @@ public:
     return _project(pw, Dpose, Dpoint, Dcal);
   }
 
-  /// project, but for Python use
-  Point2 project(const Point3& pw, Eigen::Ref<Matrix> Dpose, Eigen::Ref<Matrix> Dpoint, Eigen::Ref<Matrix> Dcal) const {
-    Eigen::Matrix<double, 2, 6> Dpose_;
-    Eigen::Matrix<double, 2, 3> Dpoint_;
-    Eigen::Matrix<double, 2, DimK> Dcal_;
-
-    auto ret = _project(pw, Dpose_, Dpoint_, Dcal_);
-    Dpose = Dpose_;
-    Dpoint = Dpoint_;
-    Dcal = Dcal_;
-    return ret;
-  }
-
   /// project a 3D point from world coordinates into the image
   Point2 reprojectionError(const Point3& pw, const Point2& measured, OptionalJacobian<2, 6> Dpose = boost::none,
       OptionalJacobian<2, 3> Dpoint = boost::none,
