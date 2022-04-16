@@ -367,9 +367,9 @@ TEST(AngleTriangulationFactor, SfmExample) {
       PinholeCamera<Cal3_S2> camera(poses[i], *K);
       Point2 prev_measurement, measurement;
       if (i == 0) {
-        prev_measurement = camera.project(points[j]);
+        prev_measurement = camera.project2(points[j]);
       } else {
-        measurement = camera.project(points[j]);
+        measurement = camera.project2(points[j]);
         graph.emplace_shared<AngleTriangulationFactor<Cal3_S2>>(
             X(i - 1), X(i), *K, prev_measurement, measurement, measurementNoise,
             L1);
@@ -382,21 +382,23 @@ TEST(AngleTriangulationFactor, SfmExample) {
   // Intentionally initialize the variables off from the ground truth
   Values initialEstimate;
   for (size_t i = 0; i < poses.size(); ++i) {
-    auto corrupted_pose = poses[i].compose(
-        Pose3(Rot3::Rodrigues(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20)));
+    // auto corrupted_pose = poses[i].compose(
+    //     Pose3(Rot3::Rodrigues(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20)));
+    //TODO(Varun) with GT poses, the FG error should be close to 0
+    auto corrupted_pose = poses[i];
     initialEstimate.insert(X(i), corrupted_pose);
   }
   /* Optimize the graph and print results */
   Values result =
       LevenbergMarquardtOptimizer(graph, initialEstimate).optimize();
 
-  // std::cout << "===================\n\n"<<std::endl;
-  // for(size_t i=0;i<poses.size();i++){
+  // std::cout << "===================\n\n" << std::endl;
+  // for (size_t i = 0; i < poses.size(); i++) {
   //   std::cout << poses[i] << std::endl;
   // }
-  // std::cout << "===================\n\n"<<std::endl;
+  // std::cout << "===================\n\n" << std::endl;
   // initialEstimate.print("Initial Estimate:\n");
-  // std::cout << "===================\n\n"<<std::endl;
+  // std::cout << "===================\n\n" << std::endl;
   // result.print("Final results:\n");
 
   std::cout << "Initial Error: " << graph.error(initialEstimate) << std::endl;
