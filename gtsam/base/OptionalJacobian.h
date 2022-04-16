@@ -20,6 +20,7 @@
 #pragma once
 #include <gtsam/config.h>      // Configuration from CMake
 #include <Eigen/Dense>
+#include <stdexcept>
 
 #ifndef OPTIONALJACOBIAN_NOBOOST
 #include <boost/optional.hpp>
@@ -94,6 +95,20 @@ public:
       map_(nullptr) {
     dynamic->resize(Rows, Cols); // no malloc if correct size
     usurp(dynamic->data());
+  }
+
+  /**
+   * @brief Constructor from an Eigen::Ref *value*. Will not usurp if dimension is wrong
+   * @note This is important so we don't overwrite someone else's memory!
+   */
+  OptionalJacobian(Eigen::Ref<Eigen::MatrixXd> dynamic_ref) :
+      map_(nullptr) {
+    if (dynamic_ref.rows() == Rows && dynamic_ref.cols() == Cols && !dynamic_ref.IsRowMajor) {
+      usurp(dynamic_ref.data());
+    } else {
+      // It's never a good idea to throw in the constructor
+      throw std::invalid_argument("OptionalJacobian called with wrong dimensions or storage order.\n");
+    }
   }
 
 #ifndef OPTIONALJACOBIAN_NOBOOST
