@@ -223,6 +223,7 @@ class GTSAM_EXPORT Cauchy : public Base {
   void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
     ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar &BOOST_SERIALIZATION_NVP(k_);
+    ar &BOOST_SERIALIZATION_NVP(ksquared_);
   }
 };
 
@@ -273,6 +274,7 @@ class GTSAM_EXPORT Welsch : public Base {
   void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
     ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar &BOOST_SERIALIZATION_NVP(c_);
+    ar &BOOST_SERIALIZATION_NVP(csquared_);
   }
 };
 
