@@ -426,7 +426,6 @@ NonlinearFactorGraph SfmData::generalSfmFactors(
 NonlinearFactorGraph SfmData::sfmFactorGraph(
     const SharedNoiseModel &model, boost::optional<size_t> fixedCamera,
     boost::optional<size_t> fixedPoint) const {
-  using ProjectionFactor = GeneralSFMFactor<SfmCamera, Point3>;
   NonlinearFactorGraph graph = generalSfmFactors(model);
   using noiseModel::Constrained;
   if (fixedCamera) {

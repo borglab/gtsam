@@ -107,12 +107,47 @@ TEST(DecisionTreeFactor, enumerate) {
 }
 
 /* ************************************************************************* */
+// Check pruning of the decision tree works as expected.
+TEST(DecisionTreeFactor, Prune) {
+  DiscreteKey A(1, 2), B(2, 2), C(3, 2);
+  DecisionTreeFactor f(A & B & C, "1 5 3 7 2 6 4 8");
+
+  // Only keep the leaves with the top 5 values.
+  size_t maxNrAssignments = 5;
+  auto pruned5 = f.prune(maxNrAssignments);
+
+  // Pruned leaves should be 0
+  DecisionTreeFactor expected(A & B & C, "0 5 0 7 0 6 4 8");
+  EXPECT(assert_equal(expected, pruned5));
+
+  // Check for more extreme pruning where we only keep the top 2 leaves
+  maxNrAssignments = 2;
+  auto pruned2 = f.prune(maxNrAssignments);
+  DecisionTreeFactor expected2(A & B & C, "0 0 0 7 0 0 0 8");
+  EXPECT(assert_equal(expected2, pruned2));
+
+  DiscreteKey D(4, 2);
+  DecisionTreeFactor factor(
+      D & C & B & A,
+      "0.0 0.0 0.0 0.60658897 0.61241912 0.61241969 0.61247685 0.61247742 0.0 "
+      "0.0 0.0 0.99995287 1.0 1.0 1.0 1.0");
+
+  DecisionTreeFactor expected3(
+      D & C & B & A,
+      "0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 "
+      "0.999952870000 1.0 1.0 1.0 1.0");
+  maxNrAssignments = 5;
+  auto pruned3 = factor.prune(maxNrAssignments);
+  EXPECT(assert_equal(expected3, pruned3));
+}
+
+/* ************************************************************************* */
 TEST(DecisionTreeFactor, DotWithNames) {
   DiscreteKey A(12, 3), B(5, 2);
   DecisionTreeFactor f(A & B, "1 2  3 4  5 6");
   auto formatter = [](Key key) { return key == 12 ? "A" : "B"; };
 
-  for (bool showZero:{true, false}) {  
+  for (bool showZero:{true, false}) {
     string actual = f.dot(formatter, showZero);
     // pretty weak test, as ids are pointers and not stable across platforms.
     string expected = "digraph G {";
@@ -194,4 +229,3 @@ int main() {
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-
