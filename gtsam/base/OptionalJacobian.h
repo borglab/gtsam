@@ -102,7 +102,8 @@ public:
    * @brief Constructor from an Eigen::Ref *value*. Will not usurp if dimension is wrong
    * @note This is important so we don't overwrite someone else's memory!
    */
-  OptionalJacobian(Eigen::Ref<Eigen::MatrixXd> dynamic_ref) :
+  template<class MATRIX>
+  OptionalJacobian(Eigen::Ref<MATRIX> dynamic_ref) :
       map_(nullptr) {
     if (dynamic_ref.rows() == Rows && dynamic_ref.cols() == Cols && !dynamic_ref.IsRowMajor) {
       usurp(dynamic_ref.data());
