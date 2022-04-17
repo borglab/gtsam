@@ -584,7 +584,13 @@ class Cal3_S2 {
 
   // Action on Point2
   gtsam::Point2 calibrate(const gtsam::Point2& p) const;
+  gtsam::Point2 calibrate(const gtsam::Point2& p,
+                          Eigen::Ref<Eigen::MatrixXd> Dcal,
+                          Eigen::Ref<Eigen::MatrixXd> Dp) const;
   gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
+  gtsam::Point2 uncalibrate(const gtsam::Point2& p,
+                            Eigen::Ref<Eigen::MatrixXd> Dcal,
+                            Eigen::Ref<Eigen::MatrixXd> Dp) const;
 
   // Standard Interface
   double fx() const;
@@ -686,7 +692,13 @@ virtual class Cal3Unified : gtsam::Cal3DS2_Base {
   // Note: the signature of this functions differ from the functions
   // with equal name in the base class.
   gtsam::Point2 calibrate(const gtsam::Point2& p) const;
+  gtsam::Point2 calibrate(const gtsam::Point2& p,
+                          Eigen::Ref<Eigen::MatrixXd> Dcal,
+                          Eigen::Ref<Eigen::MatrixXd> Dp) const;
   gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
+  gtsam::Point2 uncalibrate(const gtsam::Point2& p,
+                            Eigen::Ref<Eigen::MatrixXd> Dcal,
+                            Eigen::Ref<Eigen::MatrixXd> Dp) const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -712,7 +724,13 @@ class Cal3Fisheye {
 
   // Action on Point2
   gtsam::Point2 calibrate(const gtsam::Point2& p) const;
+  gtsam::Point2 calibrate(const gtsam::Point2& p,
+                          Eigen::Ref<Eigen::MatrixXd> Dcal,
+                          Eigen::Ref<Eigen::MatrixXd> Dp) const;
   gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
+  gtsam::Point2 uncalibrate(const gtsam::Point2& p,
+                            Eigen::Ref<Eigen::MatrixXd> Dcal,
+                            Eigen::Ref<Eigen::MatrixXd> Dp) const;
 
   // Standard Interface
   double fx() const;
@@ -775,7 +793,13 @@ class Cal3Bundler {
 
   // Action on Point2
   gtsam::Point2 calibrate(const gtsam::Point2& p) const;
+  gtsam::Point2 calibrate(const gtsam::Point2& p,
+                          Eigen::Ref<Eigen::MatrixXd> Dcal,
+                          Eigen::Ref<Eigen::MatrixXd> Dp) const;
   gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
+  gtsam::Point2 uncalibrate(const gtsam::Point2& p,
+                            Eigen::Ref<Eigen::MatrixXd> Dcal,
+                            Eigen::Ref<Eigen::MatrixXd> Dp) const;
 
   // Standard Interface
   double fx() const;
