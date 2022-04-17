@@ -32,7 +32,6 @@ class TestPinholeCamera(GtsamTestCase):
 
         self.gtsamAssertEquals(Dpoint, np.array([[1, 0, -1], [0, 1, -1]]))
 
-        print(repr(Dpose), repr(Dcal))
         self.gtsamAssertEquals(
             Dpose,
             np.array([
