@@ -837,12 +837,25 @@ class CalibratedCamera {
 
   // Action on Point3
   gtsam::Point2 project(const gtsam::Point3& point) const;
+  gtsam::Point2 project(const gtsam::Point3& point,
+                        Eigen::Ref<Eigen::MatrixXd> Dcamera,
+                        Eigen::Ref<Eigen::MatrixXd> Dpoint);
+  gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;
+  gtsam::Point3 backproject(const gtsam::Point2& p, double depth,
+                            Eigen::Ref<Eigen::MatrixXd> Dresult_dpose,
+                            Eigen::Ref<Eigen::MatrixXd> Dresult_dp,
+                            Eigen::Ref<Eigen::MatrixXd> Dresult_ddepth);
+
   static gtsam::Point2 Project(const gtsam::Point3& cameraPoint);
 
   // Standard Interface
   gtsam::Pose3 pose() const;
   double range(const gtsam::Point3& point) const;
+  double range(const gtsam::Point3& point, Eigen::Ref<Eigen::MatrixXd> Dcamera,
+               Eigen::Ref<Eigen::MatrixXd> Dpoint);
   double range(const gtsam::Pose3& pose) const;
+  double range(const gtsam::Pose3& point, Eigen::Ref<Eigen::MatrixXd> Dcamera,
+               Eigen::Ref<Eigen::MatrixXd> Dpose);
   double range(const gtsam::CalibratedCamera& camera) const;
 
   // enabling serialization functionality
@@ -965,8 +978,17 @@ class StereoCamera {
   static size_t Dim();
 
   // Transformations and measurement functions
-  gtsam::StereoPoint2 project(const gtsam::Point3& point);
+  gtsam::StereoPoint2 project(const gtsam::Point3& point) const;
   gtsam::Point3 backproject(const gtsam::StereoPoint2& p) const;
+
+  // project with Jacobian
+  gtsam::StereoPoint2 project2(const gtsam::Point3& point,
+                              Eigen::Ref<Eigen::MatrixXd> H1,
+                              Eigen::Ref<Eigen::MatrixXd> H2) const;
+
+  gtsam::Point3 backproject2(const gtsam::StereoPoint2& p,
+                             Eigen::Ref<Eigen::MatrixXd> H1,
+                             Eigen::Ref<Eigen::MatrixXd> H2) const;
 
   // enabling serialization functionality
   void serialize() const;
