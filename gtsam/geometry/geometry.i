@@ -623,7 +623,13 @@ virtual class Cal3DS2_Base {
 
   // Action on Point2
   gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
+  gtsam::Point2 uncalibrate(const gtsam::Point2& p,
+                            Eigen::Ref<Eigen::MatrixXd> Dcal,
+                            Eigen::Ref<Eigen::MatrixXd> Dp) const;
   gtsam::Point2 calibrate(const gtsam::Point2& p) const;
+  gtsam::Point2 calibrate(const gtsam::Point2& p,
+                          Eigen::Ref<Eigen::MatrixXd> Dcal,
+                          Eigen::Ref<Eigen::MatrixXd> Dp) const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -851,10 +857,22 @@ class PinholeCamera {
   static gtsam::Point2 Project(const gtsam::Point3& cameraPoint);
   pair<gtsam::Point2, bool> projectSafe(const gtsam::Point3& pw) const;
   gtsam::Point2 project(const gtsam::Point3& point);
-  gtsam::Point2 project(const gtsam::Point3& point, Eigen::Ref<Eigen::MatrixXd> Dpose, Eigen::Ref<Eigen::MatrixXd> Dpoint, Eigen::Ref<Eigen::MatrixXd> Dcal);
+  gtsam::Point2 project(const gtsam::Point3& point,
+                        Eigen::Ref<Eigen::MatrixXd> Dpose,
+                        Eigen::Ref<Eigen::MatrixXd> Dpoint,
+                        Eigen::Ref<Eigen::MatrixXd> Dcal);
   gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;
+  gtsam::Point3 backproject(const gtsam::Point2& p, double depth,
+                            Eigen::Ref<Eigen::MatrixXd> Dresult_dpose,
+                            Eigen::Ref<Eigen::MatrixXd> Dresult_dp,
+                            Eigen::Ref<Eigen::MatrixXd> Dresult_ddepth,
+                            Eigen::Ref<Eigen::MatrixXd> Dresult_dcal);
   double range(const gtsam::Point3& point);
+  double range(const gtsam::Point3& point, Eigen::Ref<Eigen::MatrixXd> Dcamera,
+               Eigen::Ref<Eigen::MatrixXd> Dpoint);
   double range(const gtsam::Pose3& pose);
+  double range(const gtsam::Pose3& pose, Eigen::Ref<Eigen::MatrixXd> Dcamera,
+               Eigen::Ref<Eigen::MatrixXd> Dpose);
 
   // enabling serialization functionality
   void serialize() const;

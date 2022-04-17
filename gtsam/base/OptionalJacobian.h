@@ -21,6 +21,7 @@
 #include <gtsam/config.h>      // Configuration from CMake
 #include <Eigen/Dense>
 #include <stdexcept>
+#include <string>
 
 #ifndef OPTIONALJACOBIAN_NOBOOST
 #include <boost/optional.hpp>
@@ -106,8 +107,11 @@ public:
     if (dynamic_ref.rows() == Rows && dynamic_ref.cols() == Cols && !dynamic_ref.IsRowMajor) {
       usurp(dynamic_ref.data());
     } else {
-      // It's never a good idea to throw in the constructor
-      throw std::invalid_argument("OptionalJacobian called with wrong dimensions or storage order.\n");
+      throw std::invalid_argument(
+          std::string("OptionalJacobian called with wrong dimensions or "
+                      "storage order.\n"
+                      "Expected: ") +
+          "(" + std::to_string(Rows) + ", " + std::to_string(Cols) + ")");
     }
   }
 
