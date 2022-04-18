@@ -96,11 +96,12 @@ class GTSAM_EXPORT AngleTriangulationFactor
 
   std::vector<Vector3> l1TriangulationError(
       const Point3& t, const Vector3& m0, const Vector3& m1,
-      const Unit3& m0_hat, const Unit3& m1_hat,
       OptionalJacobian<6, 3> H_t = boost::none,
       OptionalJacobian<6, 3> H_m0 = boost::none,
       OptionalJacobian<6, 3> H_m1 = boost::none) const {
     Vector3 m0_prime, m1_prime;
+
+    const Unit3 m0_hat(m0), m1_hat(m1);
 
     if (m0_hat.cross(t).norm() <= m1_hat.cross(t).norm()) {
       Matrix3 H_cross_m1, H_cross_t;
@@ -180,11 +181,12 @@ class GTSAM_EXPORT AngleTriangulationFactor
 
   std::vector<Vector3> l2TriangulationError(
       const Point3& t, const Vector3& m0, const Vector3& m1,
-      const Unit3& m0_hat, const Unit3& m1_hat,
       OptionalJacobian<6, 3> H_t = boost::none,
       OptionalJacobian<6, 3> H_m0 = boost::none,
       OptionalJacobian<6, 3> H_m1 = boost::none) const {
     Point3 t_hat = Unit3(t).point3();
+
+    const Unit3 m0_hat(m0), m1_hat(m1);
 
     Matrix23 A;
     A.block<1, 3>(0, 0) = m0_hat.unitVector();
@@ -204,10 +206,11 @@ class GTSAM_EXPORT AngleTriangulationFactor
 
   std::vector<Vector3> lInfinityTriangulationError(
       const Point3& t, const Vector3& m0, const Vector3& m1,
-      const Unit3& m0_hat, const Unit3& m1_hat,
       OptionalJacobian<6, 3> H_t = boost::none,
       OptionalJacobian<6, 3> H_m0 = boost::none,
       OptionalJacobian<6, 3> H_m1 = boost::none) const {
+    const Unit3 m0_hat(m0), m1_hat(m1);
+
     Vector3 n_a = (m0_hat.unitVector() + m1_hat.unitVector()).cross(t);
     Vector3 n_b = (m0_hat.unitVector() - m1_hat.unitVector()).cross(t);
 
@@ -244,25 +247,27 @@ class GTSAM_EXPORT AngleTriangulationFactor
     Vector3 f0 = Kinv * u0, f1 = Kinv * u1;
 
     Vector3 m0 = R.rotate(f0, H1 || H2 ? &H_m0_R : nullptr), m1 = f1;
-    Unit3 m0_hat(m0), m1_hat(m1);
 
     std::vector<Vector3> m_primes;
 
     switch (minimizationType_) {
       case L1:
-        m_primes = l1TriangulationError(
-            t, m0, m1, m0_hat, m1_hat, H1 || H2 ? &H_t : nullptr,
-            H1 || H2 ? &H_m0 : nullptr, H1 || H2 ? &H_m1 : nullptr);
+        m_primes = l1TriangulationError(t, m0, m1,  //
+                                        H1 || H2 ? &H_t : nullptr,
+                                        H1 || H2 ? &H_m0 : nullptr,
+                                        H1 || H2 ? &H_m1 : nullptr);
         break;
       case L2:
-        m_primes = l2TriangulationError(
-            t, m0, m1, m0_hat, m1_hat, H1 || H2 ? &H_t : nullptr,
-            H1 || H2 ? &H_m0 : nullptr, H1 || H2 ? &H_m1 : nullptr);
+        m_primes = l2TriangulationError(t, m0, m1,  //
+                                        H1 || H2 ? &H_t : nullptr,
+                                        H1 || H2 ? &H_m0 : nullptr,
+                                        H1 || H2 ? &H_m1 : nullptr);
         break;
       case Linfinity:
-        m_primes = lInfinityTriangulationError(
-            t, m0, m1, m0_hat, m1_hat, H1 || H2 ? &H_t : nullptr,
-            H1 || H2 ? &H_m0 : nullptr, H1 || H2 ? &H_m1 : nullptr);
+        m_primes = lInfinityTriangulationError(t, m0, m1,  //
+                                               H1 || H2 ? &H_t : nullptr,
+                                               H1 || H2 ? &H_m0 : nullptr,
+                                               H1 || H2 ? &H_m1 : nullptr);
         break;
     }
 
@@ -290,7 +295,7 @@ class GTSAM_EXPORT AngleTriangulationFactor
       Matrix3 H_m1_prime_t = H_t.block<3, 3>(3, 0);
 
       Matrix16 J11 =
-          (H_theta0_Rf0 * H_Rf0_R * H_R_T * H_T_1) +  //
+          (H_theta0_Rf0 * H_Rf0_R * H_R_T * H_T_1) +                      //
           (H_theta0_m0_prime * H_m0_prime_m0 * H_m0_R * H_R_T * H_T_1) +  //
           //  (H_theta0_m0_prime * H_m0_prime_m1) // m1 is constant so 0
           (H_theta0_m0_prime * H_m0_prime_t * H_t_T * H_T_1);
@@ -317,14 +322,16 @@ class GTSAM_EXPORT AngleTriangulationFactor
       Matrix3 H_m1_prime_t = H_t.block<3, 3>(3, 0);
 
       Matrix16 J12 =
-          (H_theta0_Rf0 * H_Rf0_R * H_R_T * H_T_2 * H_2_inverse) +                      //
-          (H_theta0_m0_prime * H_m0_prime_m0 * H_m0_R * H_R_T * H_T_2 * H_2_inverse) +  //
+          (H_theta0_Rf0 * H_Rf0_R * H_R_T * H_T_2 * H_2_inverse) +  //
+          (H_theta0_m0_prime * H_m0_prime_m0 * H_m0_R * H_R_T * H_T_2 *
+           H_2_inverse) +  //
           // (H_theta0_m0_prime * H_m0_prime_m1) // m1 is constant so 0
           (H_theta0_m0_prime * H_m0_prime_t * H_t_T * H_T_2 * H_2_inverse);
 
       Matrix16 J22 =
           // (H_theta1_f1) +  // f1 is constant
-          (H_theta1_m1_prime * H_m1_prime_m0 * H_m0_R * H_R_T * H_T_2 * H_2_inverse) +  //
+          (H_theta1_m1_prime * H_m1_prime_m0 * H_m0_R * H_R_T * H_T_2 *
+           H_2_inverse) +  //
           // (H_theta1_m1_prime * H_m1_prime_m1) // m1 is constant so 0
           (H_theta1_m1_prime * H_m1_prime_t * H_t_T * H_T_2 * H_2_inverse);
 

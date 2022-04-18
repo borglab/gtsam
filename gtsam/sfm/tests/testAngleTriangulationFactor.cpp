@@ -101,12 +101,14 @@ double vectorAngle(const Vector3& a, const Vector3& b,
   return factor.vectorAngle(a, b);
 }
 
+/* ************************************************************************* */
 TEST(AngleTriangulationFactor, VectorAngle) {
   Cal3_S2 K(500, 500, 0.1, 640 / 2, 480 / 2);
-  Pose3 wTc0(Rot3::Ypr(0.0, M_PI / 3, 0.0), Point3(0, 0, 0));
-  Pose3 wTc1(Rot3::Ypr(0.0, 2 * M_PI / 3, 0.0), Point3(40, 0, 0));
+  Pose3 wTc0(Rot3::Ypr(0.0, M_PI_4, 0.0), Point3(0, 0, 0));
+  Pose3 wTc1(Rot3::Ypr(0.0, -M_PI_4, 0.0), Point3(40, 0, 0));
   PinholeCamera<Cal3_S2> C0(wTc0, K), C1(wTc1, K);
-  Point3 landmark(40 * 2 * cos(M_PI / 3), 40 * sin(M_PI / 3), 0);
+
+  Point3 landmark(20, 0, 20);
   Point2 u0 = C0.project2(landmark), u1 = C1.project2(landmark);
 
   // Create a factor
