@@ -63,12 +63,14 @@ class TestOptimizeComet(GtsamTestCase):
         def hook(_, error):
             print(error)
 
-        # Only thing we require from optimizer is an iterate method
+        # Wrapper function sets the hook and calls optimizer.optimize() for us.
         gtsam_optimize(self.optimizer, self.params, hook)
 
         # Check that optimizing yields the identity.
         actual = self.optimizer.values()
         self.gtsamAssertEquals(actual.atRot3(KEY), self.expected, tol=1e-6)
+        self.assertEqual(self.capturedOutput.getvalue(),
+                         "0.020000000000000004\n0.010000000000000005\n0.010000000000000004\n")
 
     def test_lm_simple_printing(self):
         """Make sure we are properly terminating LM"""
@@ -79,6 +81,8 @@ class TestOptimizeComet(GtsamTestCase):
 
         actual = self.lmoptimizer.values()
         self.gtsamAssertEquals(actual.atRot3(KEY), self.expected, tol=1e-6)
+        self.assertEqual(self.capturedOutput.getvalue(),
+                         "0.020000000000000004\n0.010000000000249996\n0.009999999999999998\n")
 
     @unittest.skip("Not a test we want run every time, as needs comet.ml account")
     def test_comet(self):
