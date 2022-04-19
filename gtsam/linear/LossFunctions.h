@@ -70,6 +70,8 @@ class GTSAM_EXPORT Base {
   Base(const ReweightScheme reweight = Block) : reweight_(reweight) {}
   virtual ~Base() {}
 
+  ReweightScheme reweightScheme() const { return reweight_; }
+
   /*
    * This method is responsible for returning the total penalty for a given
    * amount of error. For example, this method is responsible for implementing
@@ -160,6 +162,7 @@ class GTSAM_EXPORT Fair : public Base {
   void print(const std::string &s) const override;
   bool equals(const Base &expected, double tol = 1e-8) const override;
   static shared_ptr Create(double c, const ReweightScheme reweight = Block);
+  double modelParameter() const { return c_; }
 
  private:
   /** Serialization function */
@@ -185,6 +188,7 @@ class GTSAM_EXPORT Huber : public Base {
   void print(const std::string &s) const override;
   bool equals(const Base &expected, double tol = 1e-8) const override;
   static shared_ptr Create(double k, const ReweightScheme reweight = Block);
+  double modelParameter() const { return k_; }
 
  private:
   /** Serialization function */
@@ -215,6 +219,7 @@ class GTSAM_EXPORT Cauchy : public Base {
   void print(const std::string &s) const override;
   bool equals(const Base &expected, double tol = 1e-8) const override;
   static shared_ptr Create(double k, const ReweightScheme reweight = Block);
+  double modelParameter() const { return k_; }
 
  private:
   /** Serialization function */
@@ -241,6 +246,7 @@ class GTSAM_EXPORT Tukey : public Base {
   void print(const std::string &s) const override;
   bool equals(const Base &expected, double tol = 1e-8) const override;
   static shared_ptr Create(double k, const ReweightScheme reweight = Block);
+  double modelParameter() const { return c_; }
 
  private:
   /** Serialization function */
@@ -266,6 +272,7 @@ class GTSAM_EXPORT Welsch : public Base {
   void print(const std::string &s) const override;
   bool equals(const Base &expected, double tol = 1e-8) const override;
   static shared_ptr Create(double k, const ReweightScheme reweight = Block);
+  double modelParameter() const { return c_; }
 
  private:
   /** Serialization function */
@@ -295,6 +302,7 @@ class GTSAM_EXPORT GemanMcClure : public Base {
   void print(const std::string &s) const override;
   bool equals(const Base &expected, double tol = 1e-8) const override;
   static shared_ptr Create(double k, const ReweightScheme reweight = Block);
+  double modelParameter() const { return c_; }
 
  protected:
   double c_;
@@ -325,6 +333,7 @@ class GTSAM_EXPORT DCS : public Base {
   void print(const std::string &s) const override;
   bool equals(const Base &expected, double tol = 1e-8) const override;
   static shared_ptr Create(double k, const ReweightScheme reweight = Block);
+  double modelParameter() const { return c_; }
 
  protected:
   double c_;
@@ -358,6 +367,7 @@ class GTSAM_EXPORT L2WithDeadZone : public Base {
   void print(const std::string &s) const override;
   bool equals(const Base &expected, double tol = 1e-8) const override;
   static shared_ptr Create(double k, const ReweightScheme reweight = Block);
+  double modelParameter() const { return k_; }
 
  private:
   /** Serialization function */
