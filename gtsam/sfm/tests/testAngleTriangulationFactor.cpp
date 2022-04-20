@@ -282,20 +282,26 @@ TEST(AngleTriangulationFactor, NonZeroError) {
   LevenbergMarquardtParams params;
   params.setVerbosity("SILENT");
   params.setVerbosityLM("SILENT");
+
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   Values result = optimizer.optimize();
-  std::cout << wTc1_noisy << std::endl;
-  std::cout << result.at<Pose3>(kKey2) << std::endl;
+
+  // Final error should be zero
+  EXPECT_DOUBLES_EQUAL(0.0, graph.error(result), 1e-9);
 
   std::cout << wTc1 << std::endl;
+  std::cout << wTc1_noisy << std::endl;
+  // Result is a rotated matrix (instead of translated) but that's because we
+  // only have 2 constraints for 6 unknowns.
+  std::cout << result.at<Pose3>(kKey2) << std::endl;
 
   PinholeCamera<Cal3_S2> C1_noisy(wTc1_noisy, K);
   PinholeCamera<Cal3_S2> C1_prime(result.at<Pose3>(kKey2), K);
 
-  std::cout << "original: " << u1.transpose() << std::endl;
-  std::cout << "noisy: " << C1_noisy.project2(landmark).transpose()
+  std::cout << "original projection: " << u1.transpose() << std::endl;
+  std::cout << "noisy projection: " << C1_noisy.project2(landmark).transpose()
             << std::endl;
-  std::cout << "result: " << C1_prime.project2(landmark).transpose()
+  std::cout << "result projection: " << C1_prime.project2(landmark).transpose()
             << std::endl;
 }
 
@@ -323,7 +329,7 @@ std::vector<gtsam::Pose3> createPoses(
     const gtsam::Pose3& delta = gtsam::Pose3(
         gtsam::Rot3::Ypr(0, -M_PI / 4, 0),
         gtsam::Point3(sin(M_PI / 4) * 30, 0, 30 * (1 - sin(M_PI / 4)))),
-    int steps = 8) {
+    int steps = 8, ) {
   // Create the set of ground-truth poses
   // Default values give a circular trajectory, radius 30 at pi/4 intervals,
   // always facing the circle center
@@ -345,7 +351,7 @@ TEST(AngleTriangulationFactor, SfmExample) {
 
   // Define the camera observation noise model
   auto measurementNoise =
-      noiseModel::Isotropic::Sigma(2, 1e-5);  // one pixel in u and v
+      noiseModel::Isotropic::Sigma(2, 1.0);  // one pixel in u and v
 
   // Create the set of ground-truth landmarks
   vector<Point3> points = createPoints();
@@ -364,10 +370,10 @@ TEST(AngleTriangulationFactor, SfmExample) {
 
   // Simulated measurements from each camera pose, adding them to the factor
   // graph
+  Point2 prev_measurement, measurement;
   for (size_t j = 0; j < points.size(); ++j) {
     for (size_t i = 0; i < poses.size(); ++i) {
       PinholeCamera<Cal3_S2> camera(poses[i], *K);
-      Point2 prev_measurement, measurement;
       if (i == 0) {
         prev_measurement = camera.project2(points[j]);
       } else {
@@ -381,27 +387,27 @@ TEST(AngleTriangulationFactor, SfmExample) {
     }
   }
 
+  std::cout << "===================\n\n" << std::endl;
+
   // Intentionally initialize the variables off from the ground truth
   Values initialEstimate;
   for (size_t i = 0; i < poses.size(); ++i) {
-    // auto corrupted_pose = poses[i].compose(
-    //     Pose3(Rot3::Rodrigues(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20)));
-    //TODO(Varun) with GT poses, the FG error should be close to 0
-    auto corrupted_pose = poses[i];
+    std::cout << poses[i] << std::endl;
+    auto corrupted_pose = poses[i].compose(
+        Pose3(Rot3::Rodrigues(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20)));
     initialEstimate.insert(X(i), corrupted_pose);
   }
   /* Optimize the graph and print results */
   Values result =
       LevenbergMarquardtOptimizer(graph, initialEstimate).optimize();
 
-  // std::cout << "===================\n\n" << std::endl;
   // for (size_t i = 0; i < poses.size(); i++) {
   //   std::cout << poses[i] << std::endl;
   // }
-  // std::cout << "===================\n\n" << std::endl;
-  // initialEstimate.print("Initial Estimate:\n");
-  // std::cout << "===================\n\n" << std::endl;
-  // result.print("Final results:\n");
+  std::cout << "===================\n" << std::endl;
+  initialEstimate.print("Initial Estimate:\n");
+  std::cout << "===================\n" << std::endl;
+  result.print("Final results:\n");
 
   std::cout << "Initial Error: " << graph.error(initialEstimate) << std::endl;
   std::cout << "  Final Error: " << graph.error(result) << std::endl;
