@@ -36,9 +36,9 @@ inline HybridFactorGraph::shared_ptr makeSwitchingChain(
   return boost::make_shared<HybridFactorGraph>(std::move(hfg));
 }
 
-inline std::pair<std::vector<Key>, std::vector<int>> makeBinaryOrdering(
+inline std::pair<KeyVector, std::vector<int>> makeBinaryOrdering(
     std::vector<Key> &input) {
-  std::vector<Key> new_order;
+  KeyVector new_order;
   std::vector<int> levels(input.size());
   std::function<void(std::vector<Key>::iterator, std::vector<Key>::iterator,
                      int)>
