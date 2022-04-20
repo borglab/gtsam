@@ -36,7 +36,7 @@ def optimize(optimizer, check_convergence, hook):
 def gtsam_optimize(optimizer,
                    params,
                    hook):
-    """ Given an optimizer and its params, iterate until convergence.
+    """ Given an optimizer and params, iterate until convergence.
         After each iteration, hook(optimizer) is called.
         After the function, use values and errors to get the result.
         Arguments:
@@ -44,6 +44,10 @@ def gtsam_optimize(optimizer,
                 params {NonlinearOptimizarParams} -- Nonlinear optimizer parameters
                 hook -- hook function to record the error
     """
-    hook(optimizer, optimizer.error()) # call once at start (backwards compatibility)
-    params.iterationHook = lambda iteration, error_before, error_after: hook(optimizer, error_after)
-    return optimizer.optimize()
+    def check_convergence(optimizer, current_error, new_error):
+        return (optimizer.iterations() >= params.getMaxIterations()) or (
+            gtsam.checkConvergence(params.getRelativeErrorTol(), params.getAbsoluteErrorTol(), params.getErrorTol(),
+                                   current_error, new_error)) or (
+            isinstance(optimizer, gtsam.LevenbergMarquardtOptimizer) and optimizer.lambda_() > params.getlambdaUpperBound())
+    optimize(optimizer, check_convergence, hook)
+    return optimizer.values()
