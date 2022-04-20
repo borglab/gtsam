@@ -39,7 +39,6 @@ def gtsam_optimize(optimizer,
     """ Given an optimizer and its params, iterate until convergence.
         After each iteration, hook(optimizer) is called.
         After the function, use values and errors to get the result.
-        Optimizer must have been created with the same params as the one passed into this function!
         Arguments:
                 optimizer {NonlinearOptimizer} -- Nonlinear optimizer
                 params {NonlinearOptimizarParams} -- Nonlinear optimizer parameters
