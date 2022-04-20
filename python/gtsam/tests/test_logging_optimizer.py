@@ -39,6 +39,8 @@ class TestOptimizeComet(GtsamTestCase):
             self.gtsamAssertEquals(actual.atRot3(KEY), self.expected, tol=1e-6)
             # Check that logging output prints out 3 lines (exact intermediate values differ by OS)
             self.assertEqual(self.capturedOutput.getvalue().count('\n'), 3)
+            # reset stdout catcher
+            self.capturedOutput.truncate(0)
         self.check = check
 
         self.graph = gtsam.NonlinearFactorGraph()
