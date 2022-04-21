@@ -120,9 +120,9 @@ TEST(Serialization, NoiseModelFactor1_backwards_compatibility) {
       noiseModel::Unit::Create(6));
 
   // String
-  std::string expected_str =
+  std::string serialized_str =
       "22 serialization::archive 15 1 0\n"
-      "0 0 0 0 0 0 0 1 0 12345 0 1 6 21 gtsam_noiseModel_Unit 1 0\n"
+      "0 0 0 0 0 0 0 0 0 1 0 12345 0 1 6 21 gtsam_noiseModel_Unit 1 0\n"
       "1 1 0\n"
       "2 1 0\n"
       "3 0 0 0 0 6 0 1 0 0 0 6 1.00000000000000000e+00 1.00000000000000000e+00 "
@@ -135,10 +135,9 @@ TEST(Serialization, NoiseModelFactor1_backwards_compatibility) {
       "-5.87266449276209815e-02 -4.26917621276207360e-01 "
       "9.02381585483330806e-01 -9.09297426825681709e-01 "
       "-3.50175488374014632e-01 -2.24845095366152908e-01 0 0 "
-      "4.00000000000000000e+00 5.00000000000000000e+00 "
-      "6.00000000000000000e+00\n";
+      "4.00000000000000000e+00 5.00000000000000000e+00 6.00000000000000000e+00";
   PriorFactor<Pose3> factor_deserialized_str = PriorFactor<Pose3>();
-  deserializeFromString(expected_str, factor_deserialized_str);
+  deserializeFromString(serialized_str, factor_deserialized_str);
   EXPECT(assert_equal(factor, factor_deserialized_str));
 
   // XML
