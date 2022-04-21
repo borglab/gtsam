@@ -16,6 +16,8 @@
  * @date   January 29, 2014
  */
 
+#pragma once
+
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/geometry/Rot3.h>

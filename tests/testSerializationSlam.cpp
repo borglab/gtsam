@@ -19,16 +19,16 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include <tests/smallExample.h>
+
+#include <gtsam/sam/RangeFactor.h>
 #include <gtsam/sam/BearingRangeFactor.h>
+
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
-#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
-#include <gtsam/sam/RangeFactor.h>
+#include <gtsam/slam/dataset.h>
 #include <gtsam/slam/StereoFactor.h>
-#include <gtsam/nonlinear/NonlinearEquality.h>
-#include <gtsam/inference/Symbol.h>
-#include <gtsam/linear/GaussianISAM.h>
+
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/StereoPoint2.h>
 #include <gtsam/geometry/Point3.h>
@@ -44,7 +44,15 @@
 #include <gtsam/geometry/StereoCamera.h>
 #include <gtsam/geometry/SimpleCamera.h>
 
+#include <gtsam/nonlinear/NonlinearEquality.h>
+#include <gtsam/nonlinear/PriorFactor.h>
+#include <gtsam/linear/SubgraphPreconditioner.h>
+#include <gtsam/linear/GaussianISAM.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/base/serializationTestHelpers.h>
+
+#include <boost/archive/xml_iarchive.hpp>
+#include <boost/serialization/export.hpp>
 
 using namespace std;
 using namespace gtsam;
@@ -592,6 +600,78 @@ TEST (testSerializationSLAM, factors) {
   EXPECT(equalsBinary<GenericStereoFactor3D>(genericStereoFactor3D));
 }
 
+/* ************************************************************************* */
+// Read from XML file
+namespace {
+static GaussianFactorGraph read(const string& name) {
+  auto inputFile = findExampleDataFile(name);
+  ifstream is(inputFile);
+  if (!is.is_open()) throw runtime_error("Cannot find file " + inputFile);
+  boost::archive::xml_iarchive in_archive(is);
+  GaussianFactorGraph Ab;
+  in_archive >> boost::serialization::make_nvp("graph", Ab);
+  return Ab;
+}
+}  // namespace
+
+/* ************************************************************************* */
+// Read from XML file
+TEST(SubgraphSolver, Solves) {
+  using gtsam::example::planarGraph;
+
+  // Create preconditioner
+  SubgraphPreconditioner system;
+
+  // We test on three different graphs
+  const auto Ab1 = planarGraph(3).first;
+  const auto Ab2 = read("toy3D");
+  const auto Ab3 = read("randomGrid3D");
+
+  // For all graphs, test solve and solveTranspose
+  for (const auto& Ab : {Ab1, Ab2, Ab3}) {
+    // Call build, a non-const method needed to make solve work :-(
+    KeyInfo keyInfo(Ab);
+    std::map<Key, Vector> lambda;
+    system.build(Ab, keyInfo, lambda);
+
+    // Create a perturbed (non-zero) RHS
+    const auto xbar = system.Rc1().optimize();  // merely for use in zero below
+    auto values_y = VectorValues::Zero(xbar);
+    auto it = values_y.begin();
+    it->second.setConstant(100);
+    ++it;
+    it->second.setConstant(-100);
+
+    // Solve the VectorValues way
+    auto values_x = system.Rc1().backSubstitute(values_y);
+
+    // Solve the matrix way, this really just checks BN::backSubstitute
+    // This only works with Rc1 ordering, not with keyInfo !
+    // TODO(frank): why does this not work with an arbitrary ordering?
+    const auto ord = system.Rc1().ordering();
+    const Matrix R1 = system.Rc1().matrix(ord).first;
+    auto ord_y = values_y.vector(ord);
+    auto vector_x = R1.inverse() * ord_y;
+    EXPECT(assert_equal(vector_x, values_x.vector(ord)));
+
+    // Test that 'solve' does implement x = R^{-1} y
+    // We do this by asserting it gives same answer as backSubstitute
+    // Only works with keyInfo ordering:
+    const auto ordering = keyInfo.ordering();
+    auto vector_y = values_y.vector(ordering);
+    const size_t N = R1.cols();
+    Vector solve_x = Vector::Zero(N);
+    system.solve(vector_y, solve_x);
+    EXPECT(assert_equal(values_x.vector(ordering), solve_x));
+
+    // Test that transposeSolve does implement x = R^{-T} y
+    // We do this by asserting it gives same answer as backSubstituteTranspose
+    auto values_x2 = system.Rc1().backSubstituteTranspose(values_y);
+    Vector solveT_x = Vector::Zero(N);
+    system.transposeSolve(vector_y, solveT_x);
+    EXPECT(assert_equal(values_x2.vector(ordering), solveT_x));
+  }
+}
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

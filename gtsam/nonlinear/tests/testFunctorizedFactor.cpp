@@ -17,16 +17,14 @@
  * @brief unit tests for FunctorizedFactor class
  */
 
-#include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/TestableAssertions.h>
-#include <gtsam/basis/Basis.h>
-#include <gtsam/basis/BasisFactors.h>
-#include <gtsam/basis/Chebyshev2.h>
-#include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/FunctorizedFactor.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/factorTesting.h>
+#include <gtsam/inference/Symbol.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/TestableAssertions.h>
+
+#include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;
@@ -270,135 +268,6 @@ TEST(FunctorizedFactor, Lambda2) {
   Vector error = factor.evaluateError(A, x);
 
   EXPECT(assert_equal(Vector::Zero(3), error, 1e-9));
-}
-
-const size_t N = 2;
-
-//******************************************************************************
-TEST(FunctorizedFactor, Print2) {
-  const size_t M = 1;
-
-  Vector measured = Vector::Ones(M) * 42;
-
-  auto model = noiseModel::Isotropic::Sigma(M, 1.0);
-  VectorEvaluationFactor<Chebyshev2, M> priorFactor(key, measured, model, N, 0);
-
-  string expected =
-      "  keys = { X0 }\n"
-      "  noise model: unit (1) \n"
-      "FunctorizedFactor(X0)\n"
-      "  measurement: [\n"
-      "	42\n"
-      "]\n"
-      "  noise model sigmas: 1\n";
-
-  EXPECT(assert_print_equal(expected, priorFactor));
-}
-
-//******************************************************************************
-TEST(FunctorizedFactor, VectorEvaluationFactor) {
-  const size_t M = 4;
-
-  Vector measured = Vector::Zero(M);
-
-  auto model = noiseModel::Isotropic::Sigma(M, 1.0);
-  VectorEvaluationFactor<Chebyshev2, M> priorFactor(key, measured, model, N, 0);
-
-  NonlinearFactorGraph graph;
-  graph.add(priorFactor);
-
-  ParameterMatrix<M> stateMatrix(N);
-
-  Values initial;
-  initial.insert<ParameterMatrix<M>>(key, stateMatrix);
-
-  LevenbergMarquardtParams parameters;
-  parameters.verbosity = NonlinearOptimizerParams::SILENT;
-  parameters.verbosityLM = LevenbergMarquardtParams::SILENT;
-  parameters.setMaxIterations(20);
-  Values result =
-      LevenbergMarquardtOptimizer(graph, initial, parameters).optimize();
-
-  EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-9);
-}
-
-//******************************************************************************
-TEST(FunctorizedFactor, VectorComponentFactor) {
-  const int P = 4;
-  const size_t i = 2;
-  const double measured = 0.0, t = 3.0, a = 2.0, b = 4.0;
-  auto model = noiseModel::Isotropic::Sigma(1, 1.0);
-  VectorComponentFactor<Chebyshev2, P> controlPrior(key, measured, model, N, i,
-                                                    t, a, b);
-
-  NonlinearFactorGraph graph;
-  graph.add(controlPrior);
-
-  ParameterMatrix<P> stateMatrix(N);
-
-  Values initial;
-  initial.insert<ParameterMatrix<P>>(key, stateMatrix);
-
-  LevenbergMarquardtParams parameters;
-  parameters.verbosity = NonlinearOptimizerParams::SILENT;
-  parameters.verbosityLM = LevenbergMarquardtParams::SILENT;
-  parameters.setMaxIterations(20);
-  Values result =
-      LevenbergMarquardtOptimizer(graph, initial, parameters).optimize();
-
-  EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-9);
-}
-
-//******************************************************************************
-TEST(FunctorizedFactor, VecDerivativePrior) {
-  const size_t M = 4;
-
-  Vector measured = Vector::Zero(M);
-  auto model = noiseModel::Isotropic::Sigma(M, 1.0);
-  VectorDerivativeFactor<Chebyshev2, M> vecDPrior(key, measured, model, N, 0);
-
-  NonlinearFactorGraph graph;
-  graph.add(vecDPrior);
-
-  ParameterMatrix<M> stateMatrix(N);
-
-  Values initial;
-  initial.insert<ParameterMatrix<M>>(key, stateMatrix);
-
-  LevenbergMarquardtParams parameters;
-  parameters.verbosity = NonlinearOptimizerParams::SILENT;
-  parameters.verbosityLM = LevenbergMarquardtParams::SILENT;
-  parameters.setMaxIterations(20);
-  Values result =
-      LevenbergMarquardtOptimizer(graph, initial, parameters).optimize();
-
-  EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-9);
-}
-
-//******************************************************************************
-TEST(FunctorizedFactor, ComponentDerivativeFactor) {
-  const size_t M = 4;
-
-  double measured = 0;
-  auto model = noiseModel::Isotropic::Sigma(1, 1.0);
-  ComponentDerivativeFactor<Chebyshev2, M> controlDPrior(key, measured, model,
-                                                         N, 0, 0);
-
-  NonlinearFactorGraph graph;
-  graph.add(controlDPrior);
-
-  Values initial;
-  ParameterMatrix<M> stateMatrix(N);
-  initial.insert<ParameterMatrix<M>>(key, stateMatrix);
-
-  LevenbergMarquardtParams parameters;
-  parameters.verbosity = NonlinearOptimizerParams::SILENT;
-  parameters.verbosityLM = LevenbergMarquardtParams::SILENT;
-  parameters.setMaxIterations(20);
-  Values result =
-      LevenbergMarquardtOptimizer(graph, initial, parameters).optimize();
-
-  EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-9);
 }
 
 /* ************************************************************************* */

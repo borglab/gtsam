@@ -86,7 +86,7 @@ void load2D_2(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   checkArguments("load2D",nargout,nargin,2);
   string filename = unwrap< string >(in[0]);
-  boost::shared_ptr<gtsam::noiseModel::Diagonal> model = unwrap_shared_ptr< gtsam::noiseModel::Diagonal >(in[1], "ptr_gtsamnoiseModelDiagonal");
+  gtsam::noiseModel::Diagonal* model = unwrap_ptr< gtsam::noiseModel::Diagonal >(in[1], "ptr_gtsamnoiseModelDiagonal");
   auto pairResult = load2D(filename,model);
   out[0] = wrap_shared_ptr(pairResult.first,"gtsam.NonlinearFactorGraph", false);
   out[1] = wrap_shared_ptr(pairResult.second,"gtsam.Values", false);

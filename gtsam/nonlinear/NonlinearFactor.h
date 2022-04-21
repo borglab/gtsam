@@ -303,7 +303,7 @@ public:
  * objects in non-linear manifolds (Lie groups).
  */
 template <class... VALUES>
-class GTSAM_EXPORT NoiseModelFactorN : public NoiseModelFactor {
+class NoiseModelFactorN : public NoiseModelFactor {
  public:
   /// N is the number of variables (N-way factor)
   enum { N = sizeof...(VALUES) };
