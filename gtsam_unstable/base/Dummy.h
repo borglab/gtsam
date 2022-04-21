@@ -17,6 +17,8 @@
  * @date June 14, 2012
  */
 
+#pragma once
+
 #include <gtsam/global_includes.h>
 #include <gtsam_unstable/dllexport.h>
 #include <string>

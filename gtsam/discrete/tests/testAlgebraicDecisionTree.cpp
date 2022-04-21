@@ -20,7 +20,7 @@
 #include <gtsam/discrete/DiscreteKey.h>  // make sure we have traits
 #include <gtsam/discrete/DiscreteValues.h>
 // headers first to make sure no missing headers
-//#define DT_NO_PRUNING
+//#define GTSAM_DT_NO_PRUNING
 #include <gtsam/discrete/AlgebraicDecisionTree.h>
 #include <gtsam/discrete/DecisionTree-inl.h>  // for convert only
 #define DISABLE_TIMING
@@ -318,7 +318,7 @@ TEST(ADT, factor_graph) {
   dot(fg, "Marginalized-3E");
   fg = fg.combine(L, &add_);
   dot(fg, "Marginalized-2L");
-  EXPECT(adds = 54);
+  LONGS_EQUAL(49, adds);
   gttoc_(marg);
   tictoc_getNode(margNode, marg);
   elapsed = margNode->secs() + margNode->wall();

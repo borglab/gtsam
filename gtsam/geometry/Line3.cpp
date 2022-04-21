@@ -117,4 +117,4 @@ Line3 transformTo(const Pose3 &wTc, const Line3 &wL,
   return Line3(cRl, c_ab[0], c_ab[1]);
 }
 
-}
+}  // namespace gtsam
