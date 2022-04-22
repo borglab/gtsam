@@ -350,8 +350,8 @@ double DCS::weight(double distance) const {
   const double e2 = distance*distance;
   if (e2 > c_)
   {
-    const double w = c_/(c_ + e2);
-    return 2.0*w*w;
+    const double w = 2.0*c_/(c_ + e2);
+    return w*w;
   }
 
   return 1.0;
