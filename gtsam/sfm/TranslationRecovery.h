@@ -93,9 +93,19 @@ class TranslationRecovery {
    * @param graph factor graph to which prior is added.
    * @param priorNoiseModel the noise model to use with the prior.
    */
-  void addPrior(const double scale, NonlinearFactorGraph *graph,
+  void addPrior(const double scale,
+                const boost::shared_ptr<NonlinearFactorGraph> graph,
                 const SharedNoiseModel &priorNoiseModel =
                     noiseModel::Isotropic::Sigma(3, 0.01)) const;
+
+  void addPrior(Key i, const Point3 &prior,
+                const boost::shared_ptr<NonlinearFactorGraph> graph,
+                const SharedNoiseModel &priorNoiseModel =
+                    noiseModel::Isotropic::Sigma(3, 0.01)) const;
+
+  void addRelativeHardConstraint(
+      Key i, Key j, const Point3 &w_itj,
+      const boost::shared_ptr<NonlinearFactorGraph> graph) const;
 
   /**
    * @brief Create random initial translations.
@@ -120,6 +130,8 @@ class TranslationRecovery {
    */
   Values run(const double scale = 1.0) const;
 
+  Values addDuplicateNodes(const Values &result) const;
+
   /**
    * @brief Simulate translation direction measurements
    *
@@ -131,5 +143,8 @@ class TranslationRecovery {
    */
   static TranslationEdges SimulateMeasurements(
       const Values &poses, const std::vector<KeyPair> &edges);
+
+ private:
+  Key getUniqueKey(const Key i) const;
 };
 }  // namespace gtsam
