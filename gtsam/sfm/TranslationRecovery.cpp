@@ -21,6 +21,7 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/linear/NoiseModel.h>
+#include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -28,6 +29,7 @@
 #include <gtsam/sfm/TranslationFactor.h>
 #include <gtsam/sfm/TranslationRecovery.h>
 #include <gtsam/slam/PriorFactor.h>
+#include <gtsam/slam/expressions.h>
 
 #include <set>
 #include <utility>
@@ -81,7 +83,7 @@ NonlinearFactorGraph TranslationRecovery::buildGraph() const {
 }
 
 void TranslationRecovery::addPrior(
-    const double scale, NonlinearFactorGraph *graph,
+    const double scale, const boost::shared_ptr<NonlinearFactorGraph> graph,
     const SharedNoiseModel &priorNoiseModel) const {
   auto edge = relativeTranslations_.begin();
   if (edge == relativeTranslations_.end()) return;
@@ -89,6 +91,32 @@ void TranslationRecovery::addPrior(
                                               priorNoiseModel);
   graph->emplace_shared<PriorFactor<Point3> >(
       edge->key2(), scale * edge->measured().point3(), edge->noiseModel());
+}
+
+void TranslationRecovery::addPrior(
+    Key i, const Point3 &prior,
+    const boost::shared_ptr<NonlinearFactorGraph> graph,
+    const SharedNoiseModel &priorNoiseModel) const {
+  graph->addPrior(getUniqueKey(i), prior, priorNoiseModel);
+}
+
+Key TranslationRecovery::getUniqueKey(const Key i) const {
+  for (const auto &optimizedAndDuplicateKeys : sameTranslationNodes_) {
+    Key optimizedKey = optimizedAndDuplicateKeys.first;
+    std::set<Key> duplicateKeys = optimizedAndDuplicateKeys.second;
+    if (i == optimizedKey || duplicateKeys.count(i)) return optimizedKey;
+  }
+  // Unlikely case, when i is not in the graph.
+  return i;
+}
+
+void TranslationRecovery::addRelativeHardConstraint(
+    Key i, Key j, const Point3 &w_itj,
+    const boost::shared_ptr<NonlinearFactorGraph> graph) const {
+  Point3_ wti_(getUniqueKey(i)), wtj_(getUniqueKey(j));
+  Expression<Point3> w_itj_ = wtj_ - wti_;
+  graph->addExpressionFactor(noiseModel::Constrained::All(3, 1e9), w_itj,
+                             w_itj_);
 }
 
 Values TranslationRecovery::initializeRandomly(std::mt19937 *rng) const {
@@ -125,12 +153,17 @@ Values TranslationRecovery::initializeRandomly() const {
 }
 
 Values TranslationRecovery::run(const double scale) const {
-  auto graph = buildGraph();
-  addPrior(scale, &graph);
+  boost::shared_ptr<NonlinearFactorGraph> graph_ptr =
+      boost::make_shared<NonlinearFactorGraph>(buildGraph());
+  addPrior(scale, graph_ptr);
   const Values initial = initializeRandomly();
-  LevenbergMarquardtOptimizer lm(graph, initial, params_);
+  LevenbergMarquardtOptimizer lm(*graph_ptr, initial, params_);
   Values result = lm.optimize();
+  return addDuplicateNodes(result);
+}
 
+Values TranslationRecovery::addDuplicateNodes(const Values &result) const {
+  Values final_result = result;
   // Nodes that were not optimized are stored in sameTranslationNodes_ as a map
   // from a key that was optimized to keys that were not optimized. Iterate over
   // map and add results for keys not optimized.
@@ -139,11 +172,12 @@ Values TranslationRecovery::run(const double scale) const {
     std::set<Key> duplicateKeys = optimizedAndDuplicateKeys.second;
     // Add the result for the duplicate key if it does not already exist.
     for (const Key duplicateKey : duplicateKeys) {
-      if (result.exists(duplicateKey)) continue;
-      result.insert<Point3>(duplicateKey, result.at<Point3>(optimizedKey));
+      if (final_result.exists(duplicateKey)) continue;
+      final_result.insert<Point3>(duplicateKey,
+                                  final_result.at<Point3>(optimizedKey));
     }
   }
-  return result;
+  return final_result;
 }
 
 TranslationRecovery::TranslationEdges TranslationRecovery::SimulateMeasurements(

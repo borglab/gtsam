@@ -17,8 +17,8 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam/sfm/TranslationRecovery.h>
 #include <gtsam/sfm/SfmData.h>
+#include <gtsam/sfm/TranslationRecovery.h>
 #include <gtsam/slam/dataset.h>
 
 using namespace std;
@@ -263,6 +263,43 @@ TEST(TranslationRecovery, ThreePosesWithZeroTranslation) {
   EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0), 1e-8));
   EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(1), 1e-8));
   EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(2), 1e-8));
+}
+
+TEST(TranslationRecovery, ThreePosesWithOneHardConstraint) {
+  // Create a dataset with 3 poses.
+  // __      __
+  // \/      \/
+  //  0 _____ 1
+  //    \ __ /
+  //     \\//
+  //       3
+  //
+  // 0 and 1 face in the same direction but have a translation offset. 3 is in
+  // the same direction as 0 and 1, in between 0 and 1, with some Y axis offset.
+
+  Values poses;
+  poses.insert<Pose3>(0, Pose3(Rot3(), Point3(0, 0, 0)));
+  poses.insert<Pose3>(1, Pose3(Rot3(), Point3(2, 0, 0)));
+  poses.insert<Pose3>(3, Pose3(Rot3(), Point3(1, -1, 0)));
+
+  auto relativeTranslations =
+      TranslationRecovery::SimulateMeasurements(poses, {{0, 1}, {3, 0}});
+
+  TranslationRecovery algorithm(relativeTranslations);
+  boost::shared_ptr<NonlinearFactorGraph> graph_ptr =
+      boost::make_shared<NonlinearFactorGraph>(algorithm.buildGraph());
+  algorithm.addPrior(0, Point3(), graph_ptr);
+  algorithm.addRelativeHardConstraint(0, 1, Point3(2, 0, 0), graph_ptr);
+  const Values initial = algorithm.initializeRandomly();
+  LevenbergMarquardtParams params;
+  LevenbergMarquardtOptimizer lm(*graph_ptr, initial, params);
+  auto result = algorithm.addDuplicateNodes(lm.optimize());
+  EXPECT_LONGS_EQUAL(4, graph_ptr->size());
+
+  // Check result
+  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0), 1e-4));
+  EXPECT(assert_equal(Point3(2, 0, 0), result.at<Point3>(1), 1e-4));
+  EXPECT(assert_equal(Point3(1, -1, 0), result.at<Point3>(3), 1e-4));
 }
 
 /* ************************************************************************* */

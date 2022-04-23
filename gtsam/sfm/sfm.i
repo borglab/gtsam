@@ -4,6 +4,8 @@
 
 namespace gtsam {
 
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/Values.h>
 #include <gtsam/sfm/SfmTrack.h>
 class SfmTrack {
   SfmTrack();
@@ -142,8 +144,8 @@ class ShonanAveraging2 {
   ShonanAveraging2(string g2oFile);
   ShonanAveraging2(string g2oFile,
                    const gtsam::ShonanAveragingParameters2& parameters);
-  ShonanAveraging2(const gtsam::BetweenFactorPose2s &factors,
-                   const gtsam::ShonanAveragingParameters2 &parameters);
+  ShonanAveraging2(const gtsam::BetweenFactorPose2s& factors,
+                   const gtsam::ShonanAveragingParameters2& parameters);
 
   // Query properties
   size_t nrUnknowns() const;
@@ -259,6 +261,16 @@ class TranslationRecovery {
   TranslationRecovery(
       const gtsam::BinaryMeasurementsUnit3&
           relativeTranslations);  // default LevenbergMarquardtParams
+  gtsam::NonlinearFactorGraph buildGraph() const;
+  gtsam::Values initializeRandomly() const;
+  void addPrior(gtsam::Key i, const gtsam::Point3& prior,
+                gtsam::NonlinearFactorGraph* graph,
+                const gtsam::SharedNoiseModel& model =
+                    gtsam::noiseModel::Isotropic::Sigma(3, 0.01)) const;
+  void addRelativeHardConstraint(gtsam::Key i, gtsam::Key j,
+                                 const gtsam::Point3& w_itj,
+                                 gtsam::NonlinearFactorGraph* graph) const;
+  gtsam::Values addDuplicateNodes(const gtsam::Values& result) const;
   gtsam::Values run(const double scale) const;
   gtsam::Values run() const;  // default scale = 1.0
 };
