@@ -714,16 +714,17 @@ namespace {
     const boost::optional<FastMap<Key, int>> orderingConstraints = createOrderingConstraints(isam, newValues.keys(), marginalizableKeys);
 
     // Mark additional keys between the marginalized keys and the leaves
-    KeyList additionalMarkedKeys;
+    KeyList markedKeys;
     for (Key key : marginalizableKeys) {
+      markedKeys.push_back(key);
       ISAM2Clique::shared_ptr clique = isam[key];
       for (const ISAM2Clique::shared_ptr& child : clique->children) {
-        markAffectedKeys(key, child, additionalMarkedKeys);
+        markAffectedKeys(key, child, markedKeys);
       }
     }
 
     // Update
-    isam.update(newFactors, newValues, FactorIndices{}, orderingConstraints, boost::none, additionalMarkedKeys);
+    isam.update(newFactors, newValues, FactorIndices{}, orderingConstraints, boost::none, markedKeys);
 
     if (!marginalizableKeys.empty()) {
       FastList<Key> leafKeys(marginalizableKeys.begin(), marginalizableKeys.end());
@@ -943,6 +944,37 @@ TEST(ISAM2, MarginalizeRoot)
 
   estimate = isam.calculateBestEstimate();
   EXPECT(estimate.empty());
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, marginalizationSize)
+{
+  const boost::shared_ptr<noiseModel::Isotropic> nm = noiseModel::Isotropic::Sigma(6, 1.0);
+
+  NonlinearFactorGraph factors;
+  Values values;
+  ISAM2Params params;
+  params.findUnusedFactorSlots = true;
+  ISAM2 isam{params};
+
+  // Create a pose variable
+  Key aKey(0);
+  values.insert(aKey, Pose3::identity());
+  factors.addPrior(aKey, Pose3::identity(), nm);
+  // Create another pose variable linked to the first
+  Pose3 b = Pose3::identity();
+  Key bKey(1);
+  values.insert(bKey, Pose3::identity());
+  factors.emplace_shared<BetweenFactor<Pose3>>(aKey, bKey, Pose3::identity(), nm);
+  // Optimize the graph
+  EXPECT(updateAndMarginalize(factors, values, {}, isam));
+
+  // Now remove a variable -> we should not see the number of factors increase
+  gtsam::KeySet to_remove;
+  to_remove.insert(aKey);
+  const auto numFactorsBefore = isam.getFactorsUnsafe().size();
+  updateAndMarginalize({}, {}, to_remove, isam);
+  EXPECT(numFactorsBefore == isam.getFactorsUnsafe().size());
 }
 
 /* ************************************************************************* */
