@@ -90,7 +90,11 @@ class GTSAM_EXPORT PreintegratedAhrsMeasurements : public PreintegratedRotation 
 
   /**
    * Add a single Gyroscope measurement to the preintegration.
-   * @param measureOmedga Measured angular velocity (in body frame)
+   * Measurements are taken to be in the sensor
+   * frame and conversion to the body frame is handled by `body_P_sensor` in
+   * `PreintegratedRotationParams` (if provided).
+   *
+   * @param measuredOmega Measured angular velocity (as given by the sensor)
    * @param deltaT Time step
    */
   void integrateMeasurement(const Vector3& measuredOmega, double deltaT);
