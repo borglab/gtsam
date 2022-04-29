@@ -290,8 +290,4 @@ Matrix4 Similarity3::matrix() const {
   return T;
 }
 
-Similarity3::operator Pose3() const {
-  return Pose3(R_, s_ * t_);
-}
-
 } // namespace gtsam
