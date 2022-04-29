@@ -84,7 +84,7 @@ class Similarity2 : public LieGroup<Similarity2, 4> {
   /// @{
 
   /// Return an identity transform
-  GTSAM_EXPORT static Similarity2 identity();
+  GTSAM_EXPORT static Similarity2 Identity();
 
   /// Composition
   GTSAM_EXPORT Similarity2 operator*(const Similarity2& S) const;
