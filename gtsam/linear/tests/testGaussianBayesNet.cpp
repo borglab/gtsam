@@ -16,10 +16,12 @@
  */
 
 #include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianDensity.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
+#include <gtsam/inference/Symbol.h>
 
 #include <CppUnitLite/TestHarness.h>
 #include <boost/tuple/tuple.hpp>
@@ -35,6 +37,7 @@ using namespace boost::assign;
 using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
+using symbol_shorthand::X;
 
 static const Key _x_ = 11, _y_ = 22, _z_ = 33;
 
@@ -136,6 +139,30 @@ TEST( GaussianBayesNet, optimize3 )
     (_y_, Vector1::Constant(5));
   VectorValues actual = smallBayesNet.backSubstitute(gx);
   EXPECT(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+TEST(GaussianBayesNet, sample) {
+  GaussianBayesNet gbn;
+  Matrix A1 = (Matrix(2, 2) << 1., 2., 3., 4.).finished();
+  const Vector2 mean(20, 40), b(10, 10);
+  const double sigma = 0.01;
+
+  gbn.add(GaussianConditional::FromMeanAndStddev(X(0), A1, X(1), b, sigma));
+  gbn.add(GaussianDensity::FromMeanAndStddev(X(1), mean, sigma));
+
+  auto actual = gbn.sample();
+  EXPECT_LONGS_EQUAL(2, actual.size());
+  EXPECT(assert_equal(mean, actual[X(1)], 50 * sigma));
+  EXPECT(assert_equal(A1 * mean + b, actual[X(0)], 50 * sigma));
+
+  // Use a specific random generator
+  std::mt19937_64 rng(4242);
+  auto actual3 = gbn.sample(&rng);
+  EXPECT_LONGS_EQUAL(2, actual.size());
+  // regression is not repeatable across platforms/versions :-(
+  // EXPECT(assert_equal(Vector2(20.0129382, 40.0039798), actual[X(1)], 1e-5));
+  // EXPECT(assert_equal(Vector2(110.032083, 230.039811), actual[X(0)], 1e-5));
 }
 
 /* ************************************************************************* */

@@ -17,10 +17,13 @@
  **/
 
 #include <gtsam/linear/GaussianDensity.h>
+#include <gtsam/inference/Symbol.h>
+
 #include <CppUnitLite/TestHarness.h>
 
 using namespace gtsam;
 using namespace std;
+using symbol_shorthand::X;
 
 /* ************************************************************************* */
 TEST(GaussianDensity, constructor)
@@ -35,6 +38,22 @@ TEST(GaussianDensity, constructor)
   GaussianDensity copied(conditional);
   EXPECT(assert_equal(d, copied.d()));
   EXPECT(assert_equal(s, copied.get_model()->sigmas()));
+}
+
+/* ************************************************************************* */
+// Test FromMeanAndStddev named constructor
+TEST(GaussianDensity, FromMeanAndStddev) {
+  Matrix A1 = (Matrix(2, 2) << 1., 2., 3., 4.).finished();
+  const Vector2 b(20, 40), x0(1, 2);
+  const double sigma = 3;
+
+  VectorValues values;
+  values.insert(X(0), x0);
+
+  auto density = GaussianDensity::FromMeanAndStddev(X(0), b, sigma);
+  Vector2 e = (x0 - b) / sigma;
+  double expected = 0.5 * e.dot(e);
+  EXPECT_DOUBLES_EQUAL(expected, density.error(values), 1e-9);
 }
 
 /* ************************************************************************* */
