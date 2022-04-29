@@ -270,17 +270,7 @@ TEST(Ordering, MetisLoop) {
   symbolicGraph.push_factor(0, 5);
 
   // METIS
-#if !defined(__APPLE__)
-  {
-    Ordering actual = Ordering::Create(Ordering::METIS, symbolicGraph);
-    //  - P( 0 4 1)
-    //  | - P( 2 | 4 1)
-    //  | | - P( 3 | 4 2)
-    //  | - P( 5 | 0 1)
-    Ordering expected = Ordering(list_of(3)(2)(5)(0)(4)(1));
-    EXPECT(assert_equal(expected, actual));
-  }
-#else
+#if defined(__APPLE__)
   {
     Ordering actual = Ordering::Create(Ordering::METIS, symbolicGraph);
     //  - P( 1 0 3)
@@ -288,6 +278,26 @@ TEST(Ordering, MetisLoop) {
     //  | | - P( 5 | 0 4)
     //  | - P( 2 | 1 3)
     Ordering expected = Ordering(list_of(5)(4)(2)(1)(0)(3));
+    EXPECT(assert_equal(expected, actual));
+  }
+#elif defined(_WIN32)
+  {
+    Ordering actual = Ordering::Create(Ordering::METIS, symbolicGraph);
+    //  - P( 0 5 2)
+    //  | - P( 3 | 5 2)
+    //  | | - P( 4 | 5 3)
+    //  | - P( 1 | 0 2)
+    Ordering expected = Ordering(list_of(4)(3)(1)(0)(5)(2));
+    EXPECT(assert_equal(expected, actual));
+  }
+#else
+  {
+    Ordering actual = Ordering::Create(Ordering::METIS, symbolicGraph);
+    //  - P( 0 4 1)
+    //  | - P( 2 | 4 1)
+    //  | | - P( 3 | 4 2)
+    //  | - P( 5 | 0 1)
+    Ordering expected = Ordering(list_of(3)(2)(5)(0)(4)(1));
     EXPECT(assert_equal(expected, actual));
   }
 #endif

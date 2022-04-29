@@ -37,7 +37,7 @@ namespace gtsam {
  * stores cardinality of a Discrete variable. It should be handled naturally in
  * the new class DiscreteValue, as the variable's type (domain)
  */
-class DiscreteValues : public Assignment<Key> {
+class GTSAM_EXPORT DiscreteValues : public Assignment<Key> {
  public:
   using Base = Assignment<Key>;  // base class
 

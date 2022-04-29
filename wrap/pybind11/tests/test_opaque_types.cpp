@@ -44,7 +44,7 @@ TEST_SUBMODULE(opaque_types, m) {
     m.def("print_opaque_list", [](const StringList &l) {
         std::string ret = "Opaque list: [";
         bool first = true;
-        for (auto entry : l) {
+        for (const auto &entry : l) {
             if (!first)
                 ret += ", ";
             ret += entry;
@@ -64,4 +64,10 @@ TEST_SUBMODULE(opaque_types, m) {
         result->push_back("some value");
         return std::unique_ptr<StringList>(result);
     });
+
+    // test unions
+    py::class_<IntFloat>(m, "IntFloat")
+        .def(py::init<>())
+        .def_readwrite("i", &IntFloat::i)
+        .def_readwrite("f", &IntFloat::f);
 }
