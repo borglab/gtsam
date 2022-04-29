@@ -28,7 +28,7 @@ using std::vector;
 namespace internal {
 
 /// Subtract centroids from point pairs.
-static Point2Pairs subtractCentroids(const Point2Pairs& abPointPairs,
+static Point2Pairs SubtractCentroids(const Point2Pairs& abPointPairs,
                                      const Point2Pair& centroids) {
   Point2Pairs d_abPointPairs;
   for (const Point2Pair& abPair : abPointPairs) {
@@ -40,7 +40,7 @@ static Point2Pairs subtractCentroids(const Point2Pairs& abPointPairs,
 }
 
 /// Form inner products x and y and calculate scale.
-static double calculateScale(const Point2Pairs& d_abPointPairs,
+static double CalculateScale(const Point2Pairs& d_abPointPairs,
                              const Rot2& aRb) {
   double x = 0, y = 0;
   Point2 da, db;
@@ -56,7 +56,7 @@ static double calculateScale(const Point2Pairs& d_abPointPairs,
 }
 
 /// Form outer product H.
-static Matrix2 calculateH(const Point2Pairs& d_abPointPairs) {
+static Matrix2 CalculateH(const Point2Pairs& d_abPointPairs) {
   Matrix2 H = Z_2x2;
   for (const Point2Pair& d_abPair : d_abPointPairs) {
     H += d_abPair.first * d_abPair.second.transpose();
@@ -73,9 +73,9 @@ static Matrix2 calculateH(const Point2Pairs& d_abPointPairs) {
  * @param centroids
  * @return Similarity2
  */
-static Similarity2 align(const Point2Pairs& d_abPointPairs, const Rot2& aRb,
+static Similarity2 Align(const Point2Pairs& d_abPointPairs, const Rot2& aRb,
                          const Point2Pair& centroids) {
-  const double s = calculateScale(d_abPointPairs, aRb);
+  const double s = CalculateScale(d_abPointPairs, aRb);
   // dividing aTb by s is required because the registration cost function
   // minimizes ||a - sRb - t||, whereas Sim(2) computes s(Rb + t)
   const Point2 aTb = (centroids.first - s * (aRb * centroids.second)) / s;
@@ -93,11 +93,11 @@ static Similarity2 align(const Point2Pairs& d_abPointPairs, const Rot2& aRb,
  * @param aRb
  * @return Similarity2
  */
-static Similarity2 alignGivenR(const Point2Pairs& abPointPairs,
+static Similarity2 AlignGivenR(const Point2Pairs& abPointPairs,
                                const Rot2& aRb) {
   auto centroids = means(abPointPairs);
-  auto d_abPointPairs = internal::subtractCentroids(abPointPairs, centroids);
-  return internal::align(d_abPointPairs, aRb, centroids);
+  auto d_abPointPairs = internal::SubtractCentroids(abPointPairs, centroids);
+  return internal::Align(d_abPointPairs, aRb, centroids);
 }
 }  // namespace internal
 
@@ -134,7 +134,7 @@ void Similarity2::print(const std::string& s) const {
             << std::endl;
 }
 
-Similarity2 Similarity2::identity() { return Similarity2(); }
+Similarity2 Similarity2::Identity() { return Similarity2(); }
 
 Similarity2 Similarity2::operator*(const Similarity2& S) const {
   return Similarity2(R_ * S.R_, ((1.0 / S.s_) * t_) + R_ * S.t_, s_ * S.s_);
@@ -167,11 +167,11 @@ Similarity2 Similarity2::Align(const Point2Pairs& abPointPairs) {
   if (abPointPairs.size() < 2)
     throw std::runtime_error("input should have at least 2 pairs of points");
   auto centroids = means(abPointPairs);
-  auto d_abPointPairs = internal::subtractCentroids(abPointPairs, centroids);
-  Matrix2 H = internal::calculateH(d_abPointPairs);
+  auto d_abPointPairs = internal::SubtractCentroids(abPointPairs, centroids);
+  Matrix2 H = internal::CalculateH(d_abPointPairs);
   // ClosestTo finds rotation matrix closest to H in Frobenius sense
   Rot2 aRb = Rot2::ClosestTo(H);
-  return internal::align(d_abPointPairs, aRb, centroids);
+  return internal::Align(d_abPointPairs, aRb, centroids);
 }
 
 Similarity2 Similarity2::Align(const Pose2Pairs& abPosePairs) {
@@ -195,7 +195,7 @@ Similarity2 Similarity2::Align(const Pose2Pairs& abPosePairs) {
   }
   const Rot2 aRb_estimate = FindKarcherMean<Rot2>(rotations);
 
-  return internal::alignGivenR(abPointPairs, aRb_estimate);
+  return internal::AlignGivenR(abPointPairs, aRb_estimate);
 }
 
 std::ostream& operator<<(std::ostream& os, const Similarity2& p) {
