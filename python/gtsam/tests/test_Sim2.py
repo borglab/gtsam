@@ -12,9 +12,7 @@ Author: John Lambert
 import unittest
 
 import numpy as np
-
-import gtsam
-from gtsam import Point2, Pose2, Pose2Pairs, Rot2, Similarity2
+from gtsam import Pose2, Pose2Pairs, Rot2, Similarity2
 from gtsam.utils.test_case import GtsamTestCase
 
 
@@ -135,10 +133,10 @@ class TestSim2(GtsamTestCase):
         bta = np.array([1, 2])
         bsa = 3.0
         bSa = Similarity2(R=bRa, t=bta, s=bsa)
-        assert isinstance(bSa, Similarity2)
-        assert np.allclose(bSa.rotation().matrix(), bRa.matrix())
-        assert np.allclose(bSa.translation(), bta)
-        assert np.allclose(bSa.scale(), bsa)
+        self.assertIsInstance(bSa, Similarity2)
+        np.testing.assert_allclose(bSa.rotation().matrix(), bRa.matrix())
+        np.testing.assert_allcloseallclose(bSa.translation(), bta)
+        np.testing.assert_allcloseallclose(bSa.scale(), bsa)
 
     def test_is_eq(self) -> None:
         """Ensure object equality works properly (are equal)."""
@@ -150,19 +148,19 @@ class TestSim2(GtsamTestCase):
         """Ensure object equality works properly (not equal translation)."""
         bSa = Similarity2(R=Rot2(), t=np.array([2, 1]), s=3.0)
         bSa_ = Similarity2(R=Rot2(), t=np.array([1.0, 2.0]), s=3)
-        assert bSa != bSa_
+        self.assertNotEqual(bSa, bSa_)
 
     def test_not_eq_rotation(self) -> None:
         """Ensure object equality works properly (not equal rotation)."""
         bSa = Similarity2(R=Rot2(), t=np.array([2, 1]), s=3.0)
         bSa_ = Similarity2(R=Rot2.fromDegrees(180), t=np.array([2.0, 1.0]), s=3)
-        assert bSa != bSa_
+        self.assertNotEqual(bSa, bSa_)
 
     def test_not_eq_scale(self) -> None:
         """Ensure object equality works properly (not equal scale)."""
         bSa = Similarity2(R=Rot2(), t=np.array([2, 1]), s=3.0)
         bSa_ = Similarity2(R=Rot2(), t=np.array([2.0, 1.0]), s=1.0)
-        assert bSa != bSa_
+        self.assertNotEqual(bSa, bSa_)
 
     def test_rotation(self) -> None:
         """Ensure rotation component is returned properly."""
@@ -172,7 +170,7 @@ class TestSim2(GtsamTestCase):
 
         # evaluates to [[0, -1], [1, 0]]
         expected_R = Rot2.fromDegrees(90)
-        assert np.allclose(expected_R.matrix(), bSa.rotation().matrix())
+        np.testing.assert_allclose(expected_R.matrix(), bSa.rotation().matrix())
 
     def test_translation(self) -> None:
         """Ensure translation component is returned properly."""
@@ -181,7 +179,7 @@ class TestSim2(GtsamTestCase):
         bSa = Similarity2(R=R, t=t, s=3.0)
 
         expected_t = np.array([1, 2])
-        assert np.allclose(expected_t, bSa.translation())
+        np.testing.assert_allclose(expected_t, bSa.translation())
 
     def test_scale(self) -> None:
         """Ensure the scale factor is returned properly."""
@@ -189,7 +187,7 @@ class TestSim2(GtsamTestCase):
         bta = np.array([1, 2])
         bsa = 3.0
         bSa = Similarity2(R=bRa, t=bta, s=bsa)
-        assert bSa.scale() == 3.0
+        self.assertEqual(bSa.scale(), 3.0)
 
 
 if __name__ == "__main__":
