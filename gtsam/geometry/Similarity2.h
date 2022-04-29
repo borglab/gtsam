@@ -156,9 +156,6 @@ class GTSAM_EXPORT Similarity2 : public LieGroup<Similarity2, 4> {
   /// Return the scale
   double scale() const { return s_; }
 
-  /// Convert to a rigid body pose (R, s*t)
-  operator Pose2() const;
-
   /// Dimensionality of tangent space = 4 DOF - used to autodetect sizes
   inline static size_t Dim() { return 4; }
 

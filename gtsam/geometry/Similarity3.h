@@ -190,11 +190,6 @@ class GTSAM_EXPORT Similarity3 : public LieGroup<Similarity3, 7> {
   /// Return the scale
   double scale() const { return s_; }
 
-  /// Convert to a rigid body pose (R, s*t)
-  /// TODO(frank): why is this here? Red flag! Definitely don't have it as a
-  /// cast.
-  operator Pose3() const;
-
   /// Dimensionality of tangent space = 7 DOF - used to autodetect sizes
   inline static size_t Dim() { return 7; }
 
