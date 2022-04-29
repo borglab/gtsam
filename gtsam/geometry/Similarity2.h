@@ -32,7 +32,7 @@ class Pose2;
 /**
  * 2D similarity transform
  */
-class Similarity2 : public LieGroup<Similarity2, 4> {
+class GTSAM_EXPORT Similarity2 : public LieGroup<Similarity2, 4> {
   /// @name Pose Concept
   /// @{
   typedef Rot2 Rotation;
@@ -49,55 +49,54 @@ class Similarity2 : public LieGroup<Similarity2, 4> {
   /// @{
 
   /// Default constructor
-  GTSAM_EXPORT Similarity2();
+  Similarity2();
 
   /// Construct pure scaling
-  GTSAM_EXPORT Similarity2(double s);
+  Similarity2(double s);
 
   /// Construct from GTSAM types
-  GTSAM_EXPORT Similarity2(const Rot2& R, const Point2& t, double s);
+  Similarity2(const Rot2& R, const Point2& t, double s);
 
   /// Construct from Eigen types
-  GTSAM_EXPORT Similarity2(const Matrix2& R, const Vector2& t, double s);
+  Similarity2(const Matrix2& R, const Vector2& t, double s);
 
   /// Construct from matrix [R t; 0 s^-1]
-  GTSAM_EXPORT Similarity2(const Matrix3& T);
+  Similarity2(const Matrix3& T);
 
   /// @}
   /// @name Testable
   /// @{
 
   /// Compare with tolerance
-  GTSAM_EXPORT bool equals(const Similarity2& sim, double tol) const;
+  bool equals(const Similarity2& sim, double tol) const;
 
   /// Exact equality
-  GTSAM_EXPORT bool operator==(const Similarity2& other) const;
+  bool operator==(const Similarity2& other) const;
 
   /// Print with optional string
-  GTSAM_EXPORT void print(const std::string& s) const;
+  void print(const std::string& s) const;
 
-  GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os,
-                                               const Similarity2& p);
+  friend std::ostream& operator<<(std::ostream& os, const Similarity2& p);
 
   /// @}
   /// @name Group
   /// @{
 
   /// Return an identity transform
-  GTSAM_EXPORT static Similarity2 Identity();
+  static Similarity2 Identity();
 
   /// Composition
-  GTSAM_EXPORT Similarity2 operator*(const Similarity2& S) const;
+  Similarity2 operator*(const Similarity2& S) const;
 
   /// Return the inverse
-  GTSAM_EXPORT Similarity2 inverse() const;
+  Similarity2 inverse() const;
 
   /// @}
   /// @name Group action on Point2
   /// @{
 
   /// Action on a point p is s*(R*p+t)
-  GTSAM_EXPORT Point2 transformFrom(const Point2& p) const;
+  Point2 transformFrom(const Point2& p) const;
 
   /**
    * Action on a pose T.
@@ -110,15 +109,15 @@ class Similarity2 : public LieGroup<Similarity2, 4> {
    * This group action satisfies the compatibility condition.
    * For more details, refer to: https://en.wikipedia.org/wiki/Group_action
    */
-  GTSAM_EXPORT Pose2 transformFrom(const Pose2& T) const;
+  Pose2 transformFrom(const Pose2& T) const;
 
   /* syntactic sugar for transformFrom */
-  GTSAM_EXPORT Point2 operator*(const Point2& p) const;
+  Point2 operator*(const Point2& p) const;
 
   /**
    *  Create Similarity2 by aligning at least two point pairs
    */
-  GTSAM_EXPORT static Similarity2 Align(const Point2Pairs& abPointPairs);
+  static Similarity2 Align(const Point2Pairs& abPointPairs);
 
   /**
    * Create the Similarity2 object that aligns at least two pose pairs.
@@ -133,8 +132,7 @@ class Similarity2 : public LieGroup<Similarity2, 4> {
    * using the algorithm described here:
    * http://www5.informatik.uni-erlangen.de/Forschung/Publikationen/2005/Zinsser05-PSR.pdf
    */
-  GTSAM_EXPORT static Similarity2 Align(
-      const std::vector<Pose2Pair>& abPosePairs);
+  static Similarity2 Align(const std::vector<Pose2Pair>& abPosePairs);
 
   /// @}
   /// @name Lie Group
@@ -147,7 +145,7 @@ class Similarity2 : public LieGroup<Similarity2, 4> {
   /// @{
 
   /// Calculate 4*4 matrix group equivalent
-  GTSAM_EXPORT Matrix3 matrix() const;
+  Matrix3 matrix() const;
 
   /// Return a GTSAM rotation
   Rot2 rotation() const { return R_; }
@@ -159,7 +157,7 @@ class Similarity2 : public LieGroup<Similarity2, 4> {
   double scale() const { return s_; }
 
   /// Convert to a rigid body pose (R, s*t)
-  GTSAM_EXPORT operator Pose2() const;
+  operator Pose2() const;
 
   /// Dimensionality of tangent space = 4 DOF - used to autodetect sizes
   inline static size_t Dim() { return 4; }
