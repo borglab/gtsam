@@ -135,8 +135,8 @@ class TestSim2(GtsamTestCase):
         bSa = Similarity2(R=bRa, t=bta, s=bsa)
         self.assertIsInstance(bSa, Similarity2)
         np.testing.assert_allclose(bSa.rotation().matrix(), bRa.matrix())
-        np.testing.assert_allcloseallclose(bSa.translation(), bta)
-        np.testing.assert_allcloseallclose(bSa.scale(), bsa)
+        np.testing.assert_allclose(bSa.translation(), bta)
+        np.testing.assert_allclose(bSa.scale(), bsa)
 
     def test_is_eq(self) -> None:
         """Ensure object equality works properly (are equal)."""
