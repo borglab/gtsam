@@ -12,7 +12,7 @@
 /**
  * @file   Similarity2.h
  * @brief  Implementation of Similarity2 transform
- * @author John Lambert
+ * @author John Lambert, Varun Agrawal
  */
 
 #pragma once
@@ -137,6 +137,29 @@ class GTSAM_EXPORT Similarity2 : public LieGroup<Similarity2, 4> {
   /// @}
   /// @name Lie Group
   /// @{
+
+  /**
+   * Log map at the identity
+   * \f$ [t_x, t_y, \delta, \lambda] \f$
+   */
+  static Vector4 Logmap(const Similarity2& S,  //
+                        OptionalJacobian<4, 4> Hm = boost::none);
+
+  /// Exponential map at the identity
+  static Similarity2 Expmap(const Vector4& v,  //
+                            OptionalJacobian<4, 4> Hm = boost::none);
+
+  /// Chart at the origin
+  struct ChartAtOrigin {
+    static Similarity2 Retract(const Vector4& v,
+                               ChartJacobian H = boost::none) {
+      return Similarity2::Expmap(v, H);
+    }
+    static Vector4 Local(const Similarity2& other,
+                         ChartJacobian H = boost::none) {
+      return Similarity2::Logmap(other, H);
+    }
+  };
 
   using LieGroup<Similarity2, 4>::inverse;
 

@@ -12,7 +12,7 @@
 /**
  * @file   Similarity2.cpp
  * @brief  Implementation of Similarity2 transform
- * @author John Lambert
+ * @author John Lambert, Varun Agrawal
  */
 
 #include <gtsam/base/Manifold.h>
@@ -196,6 +196,30 @@ Similarity2 Similarity2::Align(const Pose2Pairs& abPosePairs) {
   const Rot2 aRb_estimate = FindKarcherMean<Rot2>(rotations);
 
   return internal::AlignGivenR(abPointPairs, aRb_estimate);
+}
+
+Vector4 Similarity2::Logmap(const Similarity2& S,  //
+                            OptionalJacobian<4, 4> Hm) {
+  const Vector2 u = S.t_;
+  const Vector1 w = Rot2::Logmap(S.R_);
+  const double s = log(S.s_);
+  Vector4 result;
+  result << u, w, s;
+  if (Hm) {
+    throw std::runtime_error("Similarity2::Logmap: derivative not implemented");
+  }
+  return result;
+}
+
+Similarity2 Similarity2::Expmap(const Vector4& v,  //
+                                OptionalJacobian<4, 4> Hm) {
+  const Vector2 t = v.head<2>();
+  const Rot2 R = Rot2::Expmap(v.segment<1>(2));
+  const double s = v[3];
+  if (Hm) {
+    throw std::runtime_error("Similarity2::Expmap: derivative not implemented");
+  }
+  return Similarity2(R, t, s);
 }
 
 std::ostream& operator<<(std::ostream& os, const Similarity2& p) {
