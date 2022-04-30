@@ -458,18 +458,18 @@ TEST(Similarity3, Optimization2) {
   Values result;
   result = LevenbergMarquardtOptimizer(graph, initial).optimize();
   //result.print("Optimized Estimate\n");
-  Pose3 p1, p2, p3, p4, p5;
-  p1 = Pose3(result.at<Similarity3>(X(1)));
-  p2 = Pose3(result.at<Similarity3>(X(2)));
-  p3 = Pose3(result.at<Similarity3>(X(3)));
-  p4 = Pose3(result.at<Similarity3>(X(4)));
-  p5 = Pose3(result.at<Similarity3>(X(5)));
+  Similarity3 p1, p2, p3, p4, p5;
+  p1 = result.at<Similarity3>(X(1));
+  p2 = result.at<Similarity3>(X(2));
+  p3 = result.at<Similarity3>(X(3));
+  p4 = result.at<Similarity3>(X(4));
+  p5 = result.at<Similarity3>(X(5));
 
-  //p1.print("Pose1");
-  //p2.print("Pose2");
-  //p3.print("Pose3");
-  //p4.print("Pose4");
-  //p5.print("Pose5");
+  //p1.print("Similarity1");
+  //p2.print("Similarity2");
+  //p3.print("Similarity3");
+  //p4.print("Similarity4");
+  //p5.print("Similarity5");
 
   Similarity3 expected(0.7);
   EXPECT(assert_equal(expected, result.at<Similarity3>(X(5)), 0.4));

@@ -914,6 +914,29 @@ class PinholeCamera {
   // enabling serialization functionality
   void serialize() const;
 };
+  
+#include <gtsam/geometry/Similarity2.h>
+class Similarity2 {
+  // Standard Constructors
+  Similarity2();
+  Similarity2(double s);
+  Similarity2(const gtsam::Rot2& R, const gtsam::Point2& t, double s);
+  Similarity2(const Matrix& R, const Vector& t, double s);
+  Similarity2(const Matrix& T);
+
+  gtsam::Point2 transformFrom(const gtsam::Point2& p) const;
+  gtsam::Pose2 transformFrom(const gtsam::Pose2& T);
+
+  static gtsam::Similarity2 Align(const gtsam::Point2Pairs& abPointPairs);
+  static gtsam::Similarity2 Align(const gtsam::Pose2Pairs& abPosePairs);
+
+  // Standard Interface
+  bool equals(const gtsam::Similarity2& sim, double tol) const;
+  Matrix matrix() const;
+  gtsam::Rot2& rotation();
+  gtsam::Point2& translation();
+  double scale() const;
+};
 
 #include <gtsam/geometry/Similarity3.h>
 class Similarity3 {
@@ -931,9 +954,10 @@ class Similarity3 {
   static gtsam::Similarity3 Align(const gtsam::Pose3Pairs& abPosePairs);
 
   // Standard Interface
-  const Matrix matrix() const;
-  const gtsam::Rot3& rotation();
-  const gtsam::Point3& translation();
+  bool equals(const gtsam::Similarity3& sim, double tol) const;
+  Matrix matrix() const;
+  gtsam::Rot3& rotation();
+  gtsam::Point3& translation();
   double scale() const;
 };
 
