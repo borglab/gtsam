@@ -161,6 +161,9 @@ class GTSAM_EXPORT Similarity2 : public LieGroup<Similarity2, 4> {
     }
   };
 
+  /// Project from one tangent space to another
+  Matrix4 AdjointMap() const;
+
   using LieGroup<Similarity2, 4>::inverse;
 
   /// @}

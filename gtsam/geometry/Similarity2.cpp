@@ -222,6 +222,10 @@ Similarity2 Similarity2::Expmap(const Vector4& v,  //
   return Similarity2(R, t, s);
 }
 
+Matrix4 Similarity2::AdjointMap() const {
+  throw std::runtime_error("Similarity2::AdjointMap not implemented");
+}
+
 std::ostream& operator<<(std::ostream& os, const Similarity2& p) {
   os << "[" << p.rotation().theta() << " " << p.translation().transpose() << " "
      << p.scale() << "]\';";
