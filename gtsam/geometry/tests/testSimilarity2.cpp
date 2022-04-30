@@ -26,12 +26,12 @@
 using namespace std::placeholders;
 using namespace gtsam;
 using namespace std;
-using symbol_shorthand::X;
 
 GTSAM_CONCEPT_TESTABLE_INST(Similarity2)
 
 static const Point2 P(0.2, 0.7);
 static const Rot2 R = Rot2::fromAngle(0.3);
+static const double s = 4;
 
 const double degree = M_PI / 180;
 
