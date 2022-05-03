@@ -9,6 +9,8 @@ class SfmTrack {
   SfmTrack();
   SfmTrack(const gtsam::Point3& pt);
   const Point3& point3() const;
+  
+  Point3 p;
 
   double r;
   double g;
@@ -33,6 +35,9 @@ class SfmData {
   SfmData();
   static gtsam::SfmData FromBundlerFile(string filename);
   static gtsam::SfmData FromBalFile(string filename);
+
+  std::vector<gtsam::SfmTrack> tracks;
+  std::vector<gtsam::PinholeCamera<gtsam::Cal3Bundler>> cameras;
 
   void addTrack(const gtsam::SfmTrack& t);
   void addCamera(const gtsam::SfmCamera& cam);
@@ -184,6 +189,10 @@ class ShonanAveraging2 {
 };
 
 class ShonanAveraging3 {
+  ShonanAveraging3(
+      const std::vector<gtsam::BinaryMeasurement<gtsam::Rot3>>& measurements,
+      const gtsam::ShonanAveragingParameters3& parameters =
+          gtsam::ShonanAveragingParameters3());
   ShonanAveraging3(string g2oFile);
   ShonanAveraging3(string g2oFile,
                    const gtsam::ShonanAveragingParameters3& parameters);
