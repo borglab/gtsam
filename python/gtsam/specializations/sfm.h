@@ -13,6 +13,8 @@
 
 py::bind_vector<std::vector<gtsam::BinaryMeasurement<gtsam::Unit3> > >(
     m_, "BinaryMeasurementsUnit3");
+py::bind_vector<std::vector<gtsam::BinaryMeasurement<gtsam::Rot3> > >(
+    m_, "BinaryMeasurementsRot3");
 py::bind_map<gtsam::KeyPairDoubleMap>(m_, "KeyPairDoubleMap");
 
 py::bind_vector<
