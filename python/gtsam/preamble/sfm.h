@@ -19,3 +19,7 @@ PYBIND11_MAKE_OPAQUE(
 
 PYBIND11_MAKE_OPAQUE(
     std::vector<gtsam::SfmCamera>);
+PYBIND11_MAKE_OPAQUE(
+    std::vector<gtsam::BinaryMeasurement<gtsam::Unit3>>);
+PYBIND11_MAKE_OPAQUE(
+    std::vector<gtsam::BinaryMeasurement<gtsam::Rot3>>);
