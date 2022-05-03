@@ -36,15 +36,15 @@ class SfmData {
   static gtsam::SfmData FromBundlerFile(string filename);
   static gtsam::SfmData FromBalFile(string filename);
 
-  std::vector<gtsam::SfmTrack> tracks;
-  std::vector<gtsam::PinholeCamera<gtsam::Cal3Bundler>> cameras;
+  std::vector<gtsam::SfmTrack>& trackList() const;
+  std::vector<gtsam::PinholeCamera<gtsam::Cal3Bundler>>& cameraList() const;
 
   void addTrack(const gtsam::SfmTrack& t);
   void addCamera(const gtsam::SfmCamera& cam);
   size_t numberTracks() const;
   size_t numberCameras() const;
-  gtsam::SfmTrack track(size_t idx) const;
-  gtsam::PinholeCamera<gtsam::Cal3Bundler> camera(size_t idx) const;
+  gtsam::SfmTrack& track(size_t idx) const;
+  gtsam::PinholeCamera<gtsam::Cal3Bundler>& camera(size_t idx) const;
 
   gtsam::NonlinearFactorGraph generalSfmFactors(
       const gtsam::SharedNoiseModel& model =
