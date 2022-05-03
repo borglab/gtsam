@@ -107,6 +107,14 @@ file(GLOB GTSAM_PYTHON_UTIL_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gtsam/utils/*.py"
 foreach(util_file ${GTSAM_PYTHON_UTIL_FILES})
         configure_file(${util_file} "${GTSAM_MODULE_PATH}/utils/${test_file}" COPYONLY)
 endforeach()
+file(GLOB GTSAM_PYTHON_PREAMBLE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gtsam/preamble/*.h")
+foreach(util_file ${GTSAM_PYTHON_PREAMBLE_FILES})
+        configure_file(${util_file} "${GTSAM_MODULE_PATH}/preamble/${test_file}" COPYONLY)
+endforeach()
+file(GLOB GTSAM_PYTHON_SPECIALIZATION_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gtsam/specializations/*.h")
+foreach(util_file ${GTSAM_PYTHON_SPECIALIZATION_FILES})
+        configure_file(${util_file} "${GTSAM_MODULE_PATH}/specializations/${test_file}" COPYONLY)
+endforeach()
 
 # Common directory for data/datasets stored with the package.
 # This will store the data in the Python site package directly.
