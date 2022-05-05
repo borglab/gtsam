@@ -15,7 +15,7 @@ set (gtsam_subdirs
     sam
     sfm
     slam
-	  navigation
+    navigation
 )
 
 set(gtsam_srcs)

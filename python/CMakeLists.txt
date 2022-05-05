@@ -33,8 +33,6 @@ add_custom_target(gtsam_unstable_header DEPENDS "${PROJECT_SOURCE_DIR}/gtsam_uns
 set(ignore
     gtsam::Point2
     gtsam::Point3
-    gtsam::LieVector
-    gtsam::LieMatrix
     gtsam::ISAM2ThresholdMapValue
     gtsam::FactorIndices
     gtsam::FactorIndexSet
@@ -47,13 +45,17 @@ set(ignore
     gtsam::Point3Pairs
     gtsam::Pose3Pairs
     gtsam::Pose3Vector
+    gtsam::Rot3Vector
     gtsam::KeyVector
     gtsam::BinaryMeasurementsUnit3
+    gtsam::DiscreteKey
     gtsam::KeyPairDoubleMap)
 
 set(interface_headers
     ${PROJECT_SOURCE_DIR}/gtsam/gtsam.i
     ${PROJECT_SOURCE_DIR}/gtsam/base/base.i
+    ${PROJECT_SOURCE_DIR}/gtsam/inference/inference.i
+    ${PROJECT_SOURCE_DIR}/gtsam/discrete/discrete.i
     ${PROJECT_SOURCE_DIR}/gtsam/geometry/geometry.i
     ${PROJECT_SOURCE_DIR}/gtsam/linear/linear.i
     ${PROJECT_SOURCE_DIR}/gtsam/nonlinear/nonlinear.i
@@ -65,8 +67,10 @@ set(interface_headers
     ${PROJECT_SOURCE_DIR}/gtsam/basis/basis.i
 )
 
+set(GTSAM_PYTHON_TARGET gtsam_py)
+set(GTSAM_PYTHON_UNSTABLE_TARGET gtsam_unstable_py)
 
-pybind_wrap(gtsam_py # target
+pybind_wrap(${GTSAM_PYTHON_TARGET} # target
             "${interface_headers}" # interface_headers
             "gtsam.cpp" # generated_cpp
             "gtsam" # module_name
@@ -78,7 +82,7 @@ pybind_wrap(gtsam_py # target
             ON # use_boost
             )
 
-set_target_properties(gtsam_py PROPERTIES
+set_target_properties(${GTSAM_PYTHON_TARGET} PROPERTIES
     INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib"
     INSTALL_RPATH_USE_LINK_PATH TRUE
     OUTPUT_NAME "gtsam"
@@ -87,26 +91,35 @@ set_target_properties(gtsam_py PROPERTIES
     RELWITHDEBINFO_POSTFIX "" # Otherwise you will have a wrong name
     )
 
+# Set the path for the GTSAM python module
 set(GTSAM_MODULE_PATH ${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam)
 
-# Symlink all tests .py files to build folder.
-create_symlinks("${CMAKE_CURRENT_SOURCE_DIR}/gtsam"
+# Copy all python files to build folder.
+copy_directory("${CMAKE_CURRENT_SOURCE_DIR}/gtsam"
         "${GTSAM_MODULE_PATH}")
+
+# Hack to get python test and util files copied every time they are modified
+file(GLOB GTSAM_PYTHON_TEST_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gtsam/tests/*.py")
+foreach(test_file ${GTSAM_PYTHON_TEST_FILES})
+        configure_file(${test_file} "${GTSAM_MODULE_PATH}/tests/${test_file}" COPYONLY)
+endforeach()
+file(GLOB GTSAM_PYTHON_UTIL_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gtsam/utils/*.py")
+foreach(util_file ${GTSAM_PYTHON_UTIL_FILES})
+        configure_file(${util_file} "${GTSAM_MODULE_PATH}/utils/${test_file}" COPYONLY)
+endforeach()
 
 # Common directory for data/datasets stored with the package.
 # This will store the data in the Python site package directly.
 file(COPY "${GTSAM_SOURCE_DIR}/examples/Data" DESTINATION "${GTSAM_MODULE_PATH}")
 
 # Add gtsam as a dependency to the install target
-set(GTSAM_PYTHON_DEPENDENCIES gtsam_py)
+set(GTSAM_PYTHON_DEPENDENCIES ${GTSAM_PYTHON_TARGET})
 
 
 if(GTSAM_UNSTABLE_BUILD_PYTHON)
     set(ignore
             gtsam::Point2
             gtsam::Point3
-            gtsam::LieVector
-            gtsam::LieMatrix
             gtsam::ISAM2ThresholdMapValue
             gtsam::FactorIndices
             gtsam::FactorIndexSet
@@ -122,7 +135,7 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             gtsam::CameraSetCal3Fisheye
             gtsam::KeyPairDoubleMap)
             
-    pybind_wrap(gtsam_unstable_py # target
+    pybind_wrap(${GTSAM_PYTHON_UNSTABLE_TARGET} # target
             ${PROJECT_SOURCE_DIR}/gtsam_unstable/gtsam_unstable.i # interface_header
             "gtsam_unstable.cpp" # generated_cpp
             "gtsam_unstable" # module_name
@@ -134,7 +147,7 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             ON # use_boost
             )
 
-    set_target_properties(gtsam_unstable_py PROPERTIES
+    set_target_properties(${GTSAM_PYTHON_UNSTABLE_TARGET} PROPERTIES
             INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib"
             INSTALL_RPATH_USE_LINK_PATH TRUE
             OUTPUT_NAME "gtsam_unstable"
@@ -145,19 +158,25 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
 
     set(GTSAM_UNSTABLE_MODULE_PATH ${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam_unstable)
 
-    # Symlink all tests .py files to build folder.
-    create_symlinks("${CMAKE_CURRENT_SOURCE_DIR}/gtsam_unstable"
+    # Copy all python files to build folder.
+    copy_directory("${CMAKE_CURRENT_SOURCE_DIR}/gtsam_unstable"
             "${GTSAM_UNSTABLE_MODULE_PATH}")
 
+    # Hack to get python test files copied every time they are modified
+    file(GLOB GTSAM_UNSTABLE_PYTHON_TEST_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gtsam_unstable/tests/*.py")
+    foreach(test_file ${GTSAM_UNSTABLE_PYTHON_TEST_FILES})
+        configure_file(${test_file} "${GTSAM_UNSTABLE_MODULE_PATH}/tests/${test_file}" COPYONLY)
+    endforeach()
+
     # Add gtsam_unstable to the install target
-    list(APPEND GTSAM_PYTHON_DEPENDENCIES gtsam_unstable_py)
+    list(APPEND GTSAM_PYTHON_DEPENDENCIES ${GTSAM_PYTHON_UNSTABLE_TARGET})
 
 endif()
 
 # Add custom target so we can install with `make python-install`
 set(GTSAM_PYTHON_INSTALL_TARGET python-install)
 add_custom_target(${GTSAM_PYTHON_INSTALL_TARGET}
-        COMMAND ${PYTHON_EXECUTABLE} ${GTSAM_PYTHON_BUILD_DIRECTORY}/setup.py install
+        COMMAND ${PYTHON_EXECUTABLE} -m pip install --user .
         DEPENDS ${GTSAM_PYTHON_DEPENDENCIES}
         WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY})
 
@@ -168,5 +187,5 @@ add_custom_target(
           ${CMAKE_COMMAND} -E env # add package to python path so no need to install
           "PYTHONPATH=${GTSAM_PYTHON_BUILD_DIRECTORY}/$ENV{PYTHONPATH}"
           ${PYTHON_EXECUTABLE} -m unittest discover -v -s .
-          DEPENDS ${GTSAM_PYTHON_DEPENDENCIES}
+          DEPENDS ${GTSAM_PYTHON_DEPENDENCIES} ${GTSAM_PYTHON_TEST_FILES}
           WORKING_DIRECTORY "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam/tests")

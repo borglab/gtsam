@@ -171,6 +171,25 @@ namespace gtsam {
     }
   }
 
+  /* ************************************************************************ */
+  void Values::insert_or_assign(Key j, const Value& val) {
+    if (this->exists(j)) {
+      // If key already exists, perform an update.
+      this->update(j, val);
+    } else {
+      // If key does not exist, perform an insert.
+      this->insert(j, val);
+    }
+  }
+
+  /* ************************************************************************ */
+  void Values::insert_or_assign(const Values& values) {
+    for (const_iterator key_value = values.begin(); key_value != values.end();
+         ++key_value) {
+      this->insert_or_assign(key_value->key, key_value->value);
+    }
+  }
+
   /* ************************************************************************* */
   void Values::erase(Key j) {
     KeyValueMap::iterator item = values_.find(j);

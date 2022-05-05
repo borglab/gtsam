@@ -2668,7 +2668,7 @@ reference "eq:pushforward"
 \begin{eqnarray*}
 \varphi(a)e^{\yhat} & = & \varphi(ae^{\xhat})\\
 a^{-1}e^{\yhat} & = & \left(ae^{\xhat}\right)^{-1}\\
-e^{\yhat} & = & -ae^{\xhat}a^{-1}\\
+e^{\yhat} & = & ae^{-\xhat}a^{-1}\\
 \yhat & = & -\Ad a\xhat
 \end{eqnarray*}
 
@@ -3003,8 +3003,8 @@ between
 \begin_inset Formula 
 \begin{align}
 \varphi(g,h)e^{\yhat} & =\varphi(ge^{\xhat},h)\nonumber \\
-g^{-1}he^{\yhat} & =\left(ge^{\xhat}\right)^{-1}h=-e^{\xhat}g^{-1}h\nonumber \\
-e^{\yhat} & =-\left(h^{-1}g\right)e^{\xhat}\left(h^{-1}g\right)^{-1}=-\exp\Ad{\left(h^{-1}g\right)}\xhat\nonumber \\
+g^{-1}he^{\yhat} & =\left(ge^{\xhat}\right)^{-1}h=e^{-\xhat}g^{-1}h\nonumber \\
+e^{\yhat} & =\left(h^{-1}g\right)e^{-\xhat}\left(h^{-1}g\right)^{-1}=\exp\Ad{\left(h^{-1}g\right)}(-\xhat)\nonumber \\
 \yhat & =-\Ad{\left(h^{-1}g\right)}\xhat=-\Ad{\varphi\left(h,g\right)}\xhat\label{eq:Dbetween1}
 \end{align}
 
@@ -5085,6 +5085,394 @@ reference "ex:projection"
 \end_layout
 
 \begin_layout Subsection
+Derivative of Adjoint
+\begin_inset CommandInset label
+LatexCommand label
+name "subsec:pose3_adjoint_deriv"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Consider 
+\begin_inset Formula $f:SE(3)\times\mathbb{R}^{6}\rightarrow\mathbb{R}^{6}$
+\end_inset
+
+ is defined as 
+\begin_inset Formula $f(T,\xi_{b})=Ad_{T}\hat{\xi}_{b}$
+\end_inset
+
+.
+ The derivative is notated (see Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Derivatives-of-Actions"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+):
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+Df_{(T,\xi_{b})}(\xi,\delta\xi_{b})=D_{1}f_{(T,\xi_{b})}(\xi)+D_{2}f_{(T,\xi_{b})}(\delta\xi_{b})
+\]
+
+\end_inset
+
+First, computing 
+\begin_inset Formula $D_{2}f_{(T,\xi_{b})}(\xi_{b})$
+\end_inset
+
+ is easy, as its matrix is simply 
+\begin_inset Formula $Ad_{T}$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+f(T,\xi_{b}+\delta\xi_{b})=Ad_{T}(\widehat{\xi_{b}+\delta\xi_{b}})=Ad_{T}(\hat{\xi}_{b})+Ad_{T}(\delta\hat{\xi}_{b})
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+D_{2}f_{(T,\xi_{b})}(\xi_{b})=Ad_{T}
+\]
+
+\end_inset
+
+We will derive 
+\begin_inset Formula $D_{1}f_{(T,\xi_{b})}(\xi)$
+\end_inset
+
+ using two approaches.
+ In the first, we'll define 
+\begin_inset Formula $g(T,\xi)\triangleq T\exp\hat{\xi}$
+\end_inset
+
+.
+ From Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Derivatives-of-Actions"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+,
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+D_{2}g_{(T,\xi)}(\xi) & =T\hat{\xi}\\
+D_{2}g_{(T,\xi)}^{-1}(\xi) & =-\hat{\xi}T^{-1}
+\end{align*}
+
+\end_inset
+
+Now we can use the definition of the Adjoint representation 
+\begin_inset Formula $Ad_{g}\hat{\xi}=g\hat{\xi}g^{-1}$
+\end_inset
+
+ (aka conjugation by 
+\begin_inset Formula $g$
+\end_inset
+
+) then apply product rule and simplify:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+D_{1}f_{(T,\xi_{b})}(\xi)=D_{1}\left(Ad_{T\exp(\hat{\xi})}\hat{\xi}_{b}\right)(\xi) & =D_{1}\left(g\hat{\xi}_{b}g^{-1}\right)(\xi)\\
+ & =\left(D_{2}g_{(T,\xi)}(\xi)\right)\hat{\xi}_{b}g^{-1}(T,0)+g(T,0)\hat{\xi}_{b}\left(D_{2}g_{(T,\xi)}^{-1}(\xi)\right)\\
+ & =T\hat{\xi}\hat{\xi}_{b}T^{-1}-T\hat{\xi}_{b}\hat{\xi}T^{-1}\\
+ & =T\left(\hat{\xi}\hat{\xi}_{b}-\hat{\xi}_{b}\hat{\xi}\right)T^{-1}\\
+ & =Ad_{T}(ad_{\hat{\xi}}\hat{\xi}_{b})\\
+ & =-Ad_{T}(ad_{\hat{\xi}_{b}}\hat{\xi})\\
+D_{1}F_{(T,\xi_{b})} & =-(Ad_{T})(ad_{\hat{\xi}_{b}})
+\end{align*}
+
+\end_inset
+
+Where 
+\begin_inset Formula $ad_{\hat{\xi}}:\mathfrak{g}\rightarrow\mathfrak{g}$
+\end_inset
+
+ is the adjoint map of the lie algebra.
+\end_layout
+
+\begin_layout Standard
+The second, perhaps more intuitive way of deriving 
+\begin_inset Formula $D_{1}f_{(T,\xi_{b})}(\xi_{b})$
+\end_inset
+
+, would be to use the fact that the derivative at the origin 
+\begin_inset Formula $D_{1}Ad_{I}\hat{\xi}_{b}=ad_{\hat{\xi}_{b}}$
+\end_inset
+
+ by definition of the adjoint 
+\begin_inset Formula $ad_{\xi}$
+\end_inset
+
+.
+ Then applying the property 
+\begin_inset Formula $Ad_{AB}=Ad_{A}Ad_{B}$
+\end_inset
+
+,
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+D_{1}Ad_{T}\hat{\xi}_{b}(\xi)=D_{1}Ad_{T*I}\hat{\xi}_{b}(\xi)=Ad_{T}\left(D_{1}Ad_{I}\hat{\xi}_{b}(\xi)\right)=Ad_{T}\left(ad_{\hat{\xi}}(\hat{\xi}_{b})\right)=-Ad_{T}\left(ad_{\hat{\xi}_{b}}(\hat{\xi})\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Derivative of AdjointTranspose
+\end_layout
+
+\begin_layout Standard
+The transpose of the Adjoint, 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula $Ad_{T}^{T}:\mathfrak{g^{*}\rightarrow g^{*}}$
+\end_inset
+
+, is useful as a way to change the reference frame of vectors in the dual
+ space 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\xout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+(note the 
+\begin_inset Formula $^{*}$
+\end_inset
+
+ denoting that we are now in the dual space)
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+.
+ To be more concrete, where
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\xout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+as 
+\begin_inset Formula $Ad_{T}\hat{\xi}_{b}$
+\end_inset
+
+ converts the 
+\emph on
+twist
+\emph default
+ 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula $\xi_{b}$
+\end_inset
+
+ from the 
+\begin_inset Formula $T$
+\end_inset
+
+ frame,
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\xout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+ 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula $Ad_{T}^{T}\hat{\xi}_{b}^{*}$
+\end_inset
+
+ converts the 
+\family default
+\series default
+\shape default
+\size default
+\emph on
+\bar default
+\strikeout default
+\xout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+wrench
+\emph default
+ 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\xout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula $\xi_{b}^{*}$
+\end_inset
+
+ from the 
+\begin_inset Formula $T$
+\end_inset
+
+ frame
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\xout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+.
+ It's difficult to apply a similar derivation as in Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:pose3_adjoint_deriv"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ for the derivative of 
+\begin_inset Formula $Ad_{T}^{T}\hat{\xi}_{b}^{*}$
+\end_inset
+
+ because 
+\begin_inset Formula $Ad_{T}^{T}$
+\end_inset
+
+ cannot be naturally defined as a conjugation, so we resort to crunching
+ through the algebra.
+ The details are omitted but the result is a form that vaguely resembles
+ (but does not exactly match) 
+\begin_inset Formula $ad(Ad_{T}^{T}\hat{\xi}_{b}^{*})$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\begin{bmatrix}\omega_{T}\\
+v_{T}
+\end{bmatrix}^{*} & \triangleq Ad_{T}^{T}\hat{\xi}_{b}^{*}\\
+D_{1}Ad_{T}^{T}\hat{\xi}_{b}^{*}(\xi) & =\begin{bmatrix}\hat{\omega}_{T} & \hat{v}_{T}\\
+\hat{v}_{T} & 0
+\end{bmatrix}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
 Instantaneous Velocity
 \end_layout
 
@@ -6286,7 +6674,7 @@ One representation of a line is through 2 vectors
 \begin_inset Formula $d$
 \end_inset
 
- points from the orgin to the closest point on the line.
+ points from the origin to the closest point on the line.
 \end_layout
 
 \begin_layout Standard

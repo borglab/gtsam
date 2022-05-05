@@ -48,7 +48,7 @@ namespace gtsam {
   unit translations in a projection direction.
   @addtogroup SFM
 */
-class MFAS {
+class GTSAM_EXPORT MFAS {
  public:
   // used to represent edges between two nodes in the graph. When used in
   // translation averaging for global SfM

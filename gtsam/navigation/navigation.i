@@ -18,22 +18,11 @@ class ConstantBias {
 
   // Group
   static gtsam::imuBias::ConstantBias identity();
-  gtsam::imuBias::ConstantBias inverse() const;
-  gtsam::imuBias::ConstantBias compose(const gtsam::imuBias::ConstantBias& b) const;
-  gtsam::imuBias::ConstantBias between(const gtsam::imuBias::ConstantBias& b) const;
 
   // Operator Overloads
   gtsam::imuBias::ConstantBias operator-() const;
   gtsam::imuBias::ConstantBias operator+(const gtsam::imuBias::ConstantBias& b) const;
   gtsam::imuBias::ConstantBias operator-(const gtsam::imuBias::ConstantBias& b) const;
-
-  // Manifold
-  gtsam::imuBias::ConstantBias retract(Vector v) const;
-  Vector localCoordinates(const gtsam::imuBias::ConstantBias& b) const;
-
-  // Lie Group
-  static gtsam::imuBias::ConstantBias Expmap(Vector v);
-  static Vector Logmap(const gtsam::imuBias::ConstantBias& b);
 
   // Standard Interface
   Vector vector() const;
@@ -41,6 +30,9 @@ class ConstantBias {
   Vector gyroscope() const;
   Vector correctAccelerometer(Vector measurement) const;
   Vector correctGyroscope(Vector measurement) const;
+
+  // enabling serialization functionality
+  void serialize() const;
 };
 
 }///\namespace imuBias
@@ -64,6 +56,9 @@ class NavState {
 
   gtsam::NavState retract(const Vector& x) const;
   Vector localCoordinates(const gtsam::NavState& g) const;
+
+  // enabling serialization functionality
+  void serialize() const;
 };
 
 #include <gtsam/navigation/PreintegratedRotation.h>
@@ -88,6 +83,8 @@ virtual class PreintegratedRotationParams {
 virtual class PreintegrationParams : gtsam::PreintegratedRotationParams {
   PreintegrationParams(Vector n_gravity);
 
+  gtsam::Vector n_gravity;
+
   static gtsam::PreintegrationParams* MakeSharedD(double g);
   static gtsam::PreintegrationParams* MakeSharedU(double g);
   static gtsam::PreintegrationParams* MakeSharedD();  // default g = 9.81
@@ -104,6 +101,9 @@ virtual class PreintegrationParams : gtsam::PreintegratedRotationParams {
   Matrix getAccelerometerCovariance() const;
   Matrix getIntegrationCovariance()   const;
   bool   getUse2ndOrderCoriolis()     const;
+
+  // enabling serialization functionality
+  void serialize() const;
 };
 
 #include <gtsam/navigation/ImuFactor.h>
@@ -133,6 +133,9 @@ class PreintegratedImuMeasurements {
   Vector biasHatVector() const;
   gtsam::NavState predict(const gtsam::NavState& state_i,
       const gtsam::imuBias::ConstantBias& bias) const;
+
+  // enabling serialization functionality
+  void serialize() const;
 };
 
 virtual class ImuFactor: gtsam::NonlinearFactor {
