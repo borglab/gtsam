@@ -40,7 +40,7 @@ PYBIND11_MODULE({module_name}, m_) {{
 
 {wrapped_namespace}
 
-#include "python/gtsam_unstable/specializations.h"
+#include "python/gtsam_unstable/specializations/gtsam_unstable.h"
 
 }}
 

@@ -8,6 +8,7 @@ To create a DLL in windows, the `GTSAM_EXPORT` keyword has been created and need
     * At least one of the functions inside that class is declared in a .cpp file and not just the .h file.
     * You can `GTSAM_EXPORT` any class it inherits from as well.  (Note that this implictly requires the class does not derive from a "header-only" class.  Note that Eigen is a "header-only" library, so if your class derives from Eigen, _do not_ use `GTSAM_EXPORT` in the class definition!) 
 3.  If you have defined a class using `GTSAM_EXPORT`, do not use `GTSAM_EXPORT` in any of its individual function declarations.  (Note that you _can_ put `GTSAM_EXPORT` in the definition of individual functions within a class as long as you don't put `GTSAM_EXPORT` in the class definition.)
+4. For template specializations, you need to add `GTSAM_EXPORT` to each individual specialization.
 
 ## When is GTSAM_EXPORT being used incorrectly
 Unfortunately, using `GTSAM_EXPORT` incorrectly often does not cause a compiler or linker error in the library that is being compiled, but only when you try to use that DLL in a different library.  For example, an error in `gtsam/base` will often show up when compiling the `check_base_program` or the MATLAB wrapper, but not when compiling/linking gtsam itself.  The most common errors will say something like:
@@ -29,7 +30,7 @@ Rule #1 doesn't seem very bad, until you combine it with rule #2
 
 ***Compiler Rule #2*** Anything declared in a header file is not included in a DLL.
 
-When these two rules are combined, you get some very confusing results.  For example, a class which is completely defined in a header (e.g. LieMatrix) cannot use `GTSAM_EXPORT` in its definition.  If LieMatrix is defined with `GTSAM_EXPORT`, then the compiler _must_ find LieMatrix in a DLL.  Because LieMatrix is a header-only class, however, it can't find it, leading to a very confusing "I can't find this symbol" type of error.  Note that the linker says it can't find the symbol even though the compiler found the header file that completely defines the class.
+When these two rules are combined, you get some very confusing results.  For example, a class which is completely defined in a header (e.g. Foo) cannot use `GTSAM_EXPORT` in its definition.  If Foo is defined with `GTSAM_EXPORT`, then the compiler _must_ find Foo in a DLL.  Because Foo is a header-only class, however, it can't find it, leading to a very confusing "I can't find this symbol" type of error.  Note that the linker says it can't find the symbol even though the compiler found the header file that completely defines the class.
 
 Also note that when a class that you want to export inherits from another class that is not exportable, this can cause significant issues.  According to this [MSVC Warning page](https://docs.microsoft.com/en-us/cpp/error-messages/compiler-warnings/compiler-warning-level-2-c4275?view=vs-2019), it may not strictly be a rule, but we have seen several linker errors when a class that is defined with `GTSAM_EXPORT` extended an Eigen class.  In general, it appears that any inheritance of non-exportable class by an exportable class is a bad idea.
 

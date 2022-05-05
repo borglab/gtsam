@@ -99,6 +99,30 @@ TEST(GncOptimizer, gncConstructor) {
 }
 
 /* ************************************************************************* */
+TEST(GncOptimizer, solverParameterParsing) {
+  // has to have Gaussian noise models !
+  auto fg = example::createReallyNonlinearFactorGraph();  // just a unary factor
+                                                          // on a 2D point
+
+  Point2 p0(3, 3);
+  Values initial;
+  initial.insert(X(1), p0);
+
+  LevenbergMarquardtParams lmParams;
+  lmParams.setMaxIterations(0); // forces not to perform optimization
+  GncParams<LevenbergMarquardtParams> gncParams(lmParams);
+  auto gnc = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial,
+                                                               gncParams);
+  Values result = gnc.optimize();
+
+  // check that LM did not perform optimization and result is the same as the initial guess
+  DOUBLES_EQUAL(fg.error(initial), fg.error(result), tol);
+
+  // also check the params:
+  DOUBLES_EQUAL(0.0, gncParams.baseOptimizerParams.maxIterations, tol);
+}
+
+/* ************************************************************************* */
 TEST(GncOptimizer, gncConstructorWithRobustGraphAsInput) {
   auto fg = example::sharedNonRobustFactorGraphWithOutliers();
   // same graph with robust noise model

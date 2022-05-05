@@ -19,7 +19,6 @@
  */
 
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/GaussianEliminationTree.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
@@ -290,10 +289,11 @@ namespace gtsam {
     return blocks;
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   VectorValues GaussianFactorGraph::optimize(const Eliminate& function) const {
     gttic(GaussianFactorGraph_optimize);
-    return BaseEliminateable::eliminateMultifrontal(function)->optimize();
+    return BaseEliminateable::eliminateMultifrontal(Ordering::COLAMD, function)
+        ->optimize();
   }
 
   /* ************************************************************************* */
@@ -379,7 +379,7 @@ namespace gtsam {
 
     gttic(Compute_minimizing_step_size);
     // Compute minimizing step size
-    double step = -gradientSqNorm / dot(Rg, Rg);
+    double step = -gradientSqNorm / gtsam::dot(Rg, Rg);
     gttoc(Compute_minimizing_step_size);
 
     gttic(Compute_point);
@@ -504,10 +504,32 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  /** \deprecated */
-  VectorValues GaussianFactorGraph::optimize(boost::none_t,
-    const Eliminate& function) const {
-      return optimize(function);
+  void GaussianFactorGraph::printErrors(
+      const VectorValues& values, const std::string& str,
+      const KeyFormatter& keyFormatter,
+      const std::function<bool(const Factor* /*factor*/,
+                               double /*whitenedError*/, size_t /*index*/)>&
+          printCondition) const {
+    cout << str << "size: " << size() << endl << endl;
+    for (size_t i = 0; i < (*this).size(); i++) {
+      const sharedFactor& factor = (*this)[i];
+      const double errorValue =
+          (factor != nullptr ? (*this)[i]->error(values) : .0);
+      if (!printCondition(factor.get(), errorValue, i))
+        continue;  // User-provided filter did not pass
+
+      stringstream ss;
+      ss << "Factor " << i << ": ";
+      if (factor == nullptr) {
+        cout << "nullptr"
+             << "\n";
+      } else {
+        factor->print(ss.str(), keyFormatter);
+        cout << "error = " << errorValue << "\n";
+      }
+      cout << endl;  // only one "endl" at end might be faster, \n for each
+                     // factor
+    }
   }
 
 } // namespace gtsam

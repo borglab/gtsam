@@ -112,7 +112,7 @@ void _namespaces_RTTIRegister() {
     mxDestroyArray(registry);
 
     mxArray *newAlreadyCreated = mxCreateNumericMatrix(0, 0, mxINT8_CLASS, mxREAL);
-    if(mexPutVariable("global", "gtsam_geometry_rttiRegistry_created", newAlreadyCreated) != 0) {
+    if(mexPutVariable("global", "gtsam_namespaces_rttiRegistry_created", newAlreadyCreated) != 0) {
       mexErrMsgTxt("gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly");
     }
     mxDestroyArray(newAlreadyCreated);
@@ -147,9 +147,9 @@ void ns1ClassA_deconstructor_2(int nargout, mxArray *out[], int nargin, const mx
   Collector_ns1ClassA::iterator item;
   item = collector_ns1ClassA.find(self);
   if(item != collector_ns1ClassA.end()) {
-    delete self;
     collector_ns1ClassA.erase(item);
   }
+  delete self;
 }
 
 void ns1ClassB_collectorInsertAndMakeBase_3(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -180,9 +180,9 @@ void ns1ClassB_deconstructor_5(int nargout, mxArray *out[], int nargin, const mx
   Collector_ns1ClassB::iterator item;
   item = collector_ns1ClassB.find(self);
   if(item != collector_ns1ClassB.end()) {
-    delete self;
     collector_ns1ClassB.erase(item);
   }
+  delete self;
 }
 
 void aGlobalFunction_6(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -218,9 +218,9 @@ void ns2ClassA_deconstructor_9(int nargout, mxArray *out[], int nargin, const mx
   Collector_ns2ClassA::iterator item;
   item = collector_ns2ClassA.find(self);
   if(item != collector_ns2ClassA.end()) {
-    delete self;
     collector_ns2ClassA.erase(item);
   }
+  delete self;
 }
 
 void ns2ClassA_memberFunction_10(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -248,7 +248,7 @@ void ns2ClassA_nsReturn_12(int nargout, mxArray *out[], int nargin, const mxArra
 
 void ns2ClassA_afunction_13(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  checkArguments("ns2ClassA.afunction",nargout,nargin,0);
+  checkArguments("ns2::ClassA.afunction",nargout,nargin,0);
   out[0] = wrap< double >(ns2::ClassA::afunction());
 }
 
@@ -280,9 +280,9 @@ void ns2ns3ClassB_deconstructor_16(int nargout, mxArray *out[], int nargin, cons
   Collector_ns2ns3ClassB::iterator item;
   item = collector_ns2ns3ClassB.find(self);
   if(item != collector_ns2ns3ClassB.end()) {
-    delete self;
     collector_ns2ns3ClassB.erase(item);
   }
+  delete self;
 }
 
 void ns2ClassC_collectorInsertAndMakeBase_17(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -313,9 +313,9 @@ void ns2ClassC_deconstructor_19(int nargout, mxArray *out[], int nargin, const m
   Collector_ns2ClassC::iterator item;
   item = collector_ns2ClassC.find(self);
   if(item != collector_ns2ClassC.end()) {
-    delete self;
     collector_ns2ClassC.erase(item);
   }
+  delete self;
 }
 
 void aGlobalFunction_20(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -364,9 +364,9 @@ void ClassD_deconstructor_25(int nargout, mxArray *out[], int nargin, const mxAr
   Collector_ClassD::iterator item;
   item = collector_ClassD.find(self);
   if(item != collector_ClassD.end()) {
-    delete self;
     collector_ClassD.erase(item);
   }
+  delete self;
 }
 
 void gtsamValues_collectorInsertAndMakeBase_26(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -409,9 +409,9 @@ void gtsamValues_deconstructor_29(int nargout, mxArray *out[], int nargin, const
   Collector_gtsamValues::iterator item;
   item = collector_gtsamValues.find(self);
   if(item != collector_gtsamValues.end()) {
-    delete self;
     collector_gtsamValues.erase(item);
   }
+  delete self;
 }
 
 void gtsamValues_insert_30(int nargout, mxArray *out[], int nargin, const mxArray *in[])
