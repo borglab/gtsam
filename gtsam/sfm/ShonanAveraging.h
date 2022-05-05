@@ -165,7 +165,7 @@ class GTSAM_EXPORT ShonanAveraging {
   size_t nrUnknowns() const { return nrUnknowns_; }
 
   /// Return number of measurements
-  size_t nrMeasurements() const { return measurements_.size(); }
+  size_t numberMeasurements() const { return measurements_.size(); }
 
   /// k^th binary measurement
   const BinaryMeasurement<Rot> &measurement(size_t k) const {
@@ -300,6 +300,7 @@ class GTSAM_EXPORT ShonanAveraging {
   /**
    * Create initial Values of type SO(p)
    * @param p the dimensionality of the rotation manifold
+   * @param rng random number generator
    */
   Values initializeRandomlyAt(size_t p, std::mt19937 &rng) const;
 

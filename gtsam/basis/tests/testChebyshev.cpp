@@ -25,9 +25,10 @@
 using namespace std;
 using namespace gtsam;
 
+namespace {
 auto model = noiseModel::Unit::Create(1);
-
 const size_t N = 3;
+}  // namespace
 
 //******************************************************************************
 TEST(Chebyshev, Chebyshev1) {

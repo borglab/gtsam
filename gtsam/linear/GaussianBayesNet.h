@@ -21,17 +21,22 @@
 #pragma once
 
 #include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/global_includes.h>
 
+#include <utility>
 namespace gtsam {
 
-  /** A Bayes net made from linear-Gaussian densities */
-  class GTSAM_EXPORT GaussianBayesNet: public FactorGraph<GaussianConditional>
+  /** 
+   * GaussianBayesNet is a Bayes net made from linear-Gaussian conditionals.
+   * @addtogroup linear
+   */
+  class GTSAM_EXPORT GaussianBayesNet: public BayesNet<GaussianConditional>
   {
   public:
 
-    typedef FactorGraph<GaussianConditional> Base;
+    typedef BayesNet<GaussianConditional> Base;
     typedef GaussianBayesNet This;
     typedef GaussianConditional ConditionalType;
     typedef boost::shared_ptr<This> shared_ptr;
@@ -44,16 +49,21 @@ namespace gtsam {
     GaussianBayesNet() {}
 
     /** Construct from iterator over conditionals */
-    template<typename ITERATOR>
-    GaussianBayesNet(ITERATOR firstConditional, ITERATOR lastConditional) : Base(firstConditional, lastConditional) {}
+    template <typename ITERATOR>
+    GaussianBayesNet(ITERATOR firstConditional, ITERATOR lastConditional)
+        : Base(firstConditional, lastConditional) {}
 
     /** Construct from container of factors (shared_ptr or plain objects) */
-    template<class CONTAINER>
-    explicit GaussianBayesNet(const CONTAINER& conditionals) : Base(conditionals) {}
+    template <class CONTAINER>
+    explicit GaussianBayesNet(const CONTAINER& conditionals) {
+      push_back(conditionals);
+    }
 
-    /** Implicit copy/downcast constructor to override explicit template container constructor */
-    template<class DERIVEDCONDITIONAL>
-    GaussianBayesNet(const FactorGraph<DERIVEDCONDITIONAL>& graph) : Base(graph) {}
+    /** Implicit copy/downcast constructor to override explicit template
+     * container constructor */
+    template <class DERIVEDCONDITIONAL>
+    explicit GaussianBayesNet(const FactorGraph<DERIVEDCONDITIONAL>& graph)
+        : Base(graph) {}
 
     /// Destructor
     virtual ~GaussianBayesNet() {}
@@ -66,16 +76,47 @@ namespace gtsam {
     /** Check equality */
     bool equals(const This& bn, double tol = 1e-9) const;
 
+    /// print graph
+    void print(
+        const std::string& s = "",
+        const KeyFormatter& formatter = DefaultKeyFormatter) const override {
+      Base::print(s, formatter);
+    }
+
     /// @}
 
     /// @name Standard Interface
     /// @{
 
-    /// Solve the GaussianBayesNet, i.e. return \f$ x = R^{-1}*d \f$, by back-substitution
+    /// Solve the GaussianBayesNet, i.e. return \f$ x = R^{-1}*d \f$, by
+    /// back-substitution
     VectorValues optimize() const;
 
-    /// Version of optimize for incomplete BayesNet, needs solution for missing variables
-    VectorValues optimize(const VectorValues& solutionForMissing) const;
+    /// Version of optimize for incomplete BayesNet, given missing variables
+    VectorValues optimize(const VectorValues given) const;
+
+    /**
+     * Sample using ancestral sampling
+     * Example:
+     *   std::mt19937_64 rng(42);
+     *   auto sample = gbn.sample(&rng);
+     */
+    VectorValues sample(std::mt19937_64* rng) const;
+
+    /**
+     * Sample from an incomplete BayesNet, given missing variables
+     * Example:
+     *   std::mt19937_64 rng(42);
+     *   VectorValues given = ...;
+     *   auto sample = gbn.sample(given, &rng);
+     */
+    VectorValues sample(VectorValues given, std::mt19937_64* rng) const;
+
+    /// Sample using ancestral sampling, use default rng
+    VectorValues sample() const;
+
+    /// Sample from an incomplete BayesNet, use default rng
+    VectorValues sample(VectorValues given) const;
 
     /**
      * Return ordering corresponding to a topological sort.
@@ -179,23 +220,6 @@ namespace gtsam {
      * gz'*R'=gx', gy = gz.*sigmas
      */
     VectorValues backSubstituteTranspose(const VectorValues& gx) const;
-
-    /// print graph
-    void print(
-        const std::string& s = "",
-        const KeyFormatter& formatter = DefaultKeyFormatter) const override {
-      Base::print(s, formatter);
-    }
-
-    /**
-     * @brief Save the GaussianBayesNet as an image. Requires `dot` to be
-     * installed.
-     *
-     * @param s The name of the figure.
-     * @param keyFormatter Formatter to use for styling keys in the graph.
-     */
-    void saveGraph(const std::string& s, const KeyFormatter& keyFormatter =
-                                             DefaultKeyFormatter) const;
 
     /// @}
 

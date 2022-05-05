@@ -85,6 +85,9 @@ public:
    */
   static boost::optional<Pose3> Align(const std::vector<Point3Pair>& abPointPairs);
 
+  // Version of Pose3::Align that takes 2 matrices.
+  static boost::optional<Pose3> Align(const Matrix& a, const Matrix& b);
+
   /// @}
   /// @name Testable
   /// @{
@@ -145,15 +148,22 @@ public:
    * Calculate Adjoint map, transforming a twist in this pose's (i.e, body) frame to the world spatial frame
    * Ad_pose is 6*6 matrix that when applied to twist xi \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$, returns Ad_pose(xi)
    */
-  Matrix6 AdjointMap() const; /// FIXME Not tested - marked as incorrect
+  Matrix6 AdjointMap() const;
 
   /**
-   * Apply this pose's AdjointMap Ad_g to a twist \f$ \xi_b \f$, i.e. a body-fixed velocity, transforming it to the spatial frame
+   * Apply this pose's AdjointMap Ad_g to a twist \f$ \xi_b \f$, i.e. a
+   * body-fixed velocity, transforming it to the spatial frame
    * \f$ \xi^s = g*\xi^b*g^{-1} = Ad_g * \xi^b \f$
+   * Note that H_xib = AdjointMap()
    */
-  Vector6 Adjoint(const Vector6& xi_b) const {
-    return AdjointMap() * xi_b;
-  } /// FIXME Not tested - marked as incorrect
+  Vector6 Adjoint(const Vector6& xi_b,
+                  OptionalJacobian<6, 6> H_this = boost::none,
+                  OptionalJacobian<6, 6> H_xib = boost::none) const;
+  
+  /// The dual version of Adjoint
+  Vector6 AdjointTranspose(const Vector6& x,
+                           OptionalJacobian<6, 6> H_this = boost::none,
+                           OptionalJacobian<6, 6> H_x = boost::none) const;
 
   /**
    * Compute the [ad(w,v)] operator as defined in [Kobilarov09siggraph], pg 11
@@ -170,13 +180,14 @@ public:
    * and its inverse transpose in the discrete Euler Poincare' (DEP) operator.
    *
    */
-  static Matrix6 adjointMap(const Vector6 &xi);
+  static Matrix6 adjointMap(const Vector6& xi);
 
   /**
    * Action of the adjointMap on a Lie-algebra vector y, with optional derivatives
    */
-  static Vector6 adjoint(const Vector6 &xi, const Vector6 &y,
-      OptionalJacobian<6, 6> Hxi = boost::none);
+  static Vector6 adjoint(const Vector6& xi, const Vector6& y,
+                         OptionalJacobian<6, 6> Hxi = boost::none,
+                         OptionalJacobian<6, 6> H_y = boost::none);
 
   // temporary fix for wrappers until case issue is resolved
   static Matrix6 adjointMap_(const Vector6 &xi) { return adjointMap(xi);}
@@ -186,7 +197,8 @@ public:
    * The dual version of adjoint action, acting on the dual space of the Lie-algebra vector space.
    */
   static Vector6 adjointTranspose(const Vector6& xi, const Vector6& y,
-      OptionalJacobian<6, 6> Hxi = boost::none);
+                                  OptionalJacobian<6, 6> Hxi = boost::none,
+                                  OptionalJacobian<6, 6> H_y = boost::none);
 
   /// Derivative of Expmap
   static Matrix6 ExpmapDerivative(const Vector6& xi);
@@ -240,6 +252,13 @@ public:
   Point3 transformFrom(const Point3& point, OptionalJacobian<3, 6> Hself =
       boost::none, OptionalJacobian<3, 3> Hpoint = boost::none) const;
 
+  /**
+   * @brief transform many points in Pose coordinates and transform to world.
+   * @param points 3*N matrix in Pose coordinates
+   * @return points in world coordinates, as 3*N Matrix
+   */
+  Matrix transformFrom(const Matrix& points) const;
+
   /** syntactic sugar for transformFrom */
   inline Point3 operator*(const Point3& point) const {
     return transformFrom(point);
@@ -254,6 +273,13 @@ public:
    */
   Point3 transformTo(const Point3& point, OptionalJacobian<3, 6> Hself =
       boost::none, OptionalJacobian<3, 3> Hpoint = boost::none) const;
+
+  /**
+   * @brief transform many points in world coordinates and transform to Pose.
+   * @param points 3*N matrix in world coordinates
+   * @return points in Pose coordinates, as 3*N Matrix
+   */
+  Matrix transformTo(const Matrix& points) const;
 
   /// @}
   /// @name Standard Interface
