@@ -38,7 +38,7 @@ class DSFMap {
   DSFMap();
   KEY find(const KEY& key) const;
   void merge(const KEY& x, const KEY& y);
-  std::map<KEY, Set> sets();
+  std::map<KEY, This::Set> sets();
 };
 
 class IndexPairSet {
@@ -82,6 +82,7 @@ class IndexPairSetMap {
 };
 
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/MatrixSerialization.h>
 bool linear_independent(Matrix A, Matrix B, double tol);
 
 #include <gtsam/base/Value.h>

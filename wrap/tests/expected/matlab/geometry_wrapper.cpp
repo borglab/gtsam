@@ -118,9 +118,9 @@ void gtsamPoint2_deconstructor_3(int nargout, mxArray *out[], int nargin, const 
   Collector_gtsamPoint2::iterator item;
   item = collector_gtsamPoint2.find(self);
   if(item != collector_gtsamPoint2.end()) {
-    delete self;
     collector_gtsamPoint2.erase(item);
   }
+  delete self;
 }
 
 void gtsamPoint2_argChar_4(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -151,7 +151,7 @@ void gtsamPoint2_argChar_7(int nargout, mxArray *out[], int nargin, const mxArra
 {
   checkArguments("argChar",nargout,nargin-1,1);
   auto obj = unwrap_shared_ptr<gtsam::Point2>(in[0], "ptr_gtsamPoint2");
-  boost::shared_ptr<char> a = unwrap_shared_ptr< char >(in[1], "ptr_char");
+  char* a = unwrap_ptr< char >(in[1], "ptr_char");
   obj->argChar(a);
 }
 
@@ -175,7 +175,7 @@ void gtsamPoint2_argChar_10(int nargout, mxArray *out[], int nargin, const mxArr
 {
   checkArguments("argChar",nargout,nargin-1,1);
   auto obj = unwrap_shared_ptr<gtsam::Point2>(in[0], "ptr_gtsamPoint2");
-  boost::shared_ptr<char> a = unwrap_shared_ptr< char >(in[1], "ptr_char");
+  char* a = unwrap_ptr< char >(in[1], "ptr_char");
   obj->argChar(a);
 }
 
@@ -262,9 +262,9 @@ void gtsamPoint3_deconstructor_20(int nargout, mxArray *out[], int nargin, const
   Collector_gtsamPoint3::iterator item;
   item = collector_gtsamPoint3.find(self);
   if(item != collector_gtsamPoint3.end()) {
-    delete self;
     collector_gtsamPoint3.erase(item);
   }
+  delete self;
 }
 
 void gtsamPoint3_norm_21(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -286,14 +286,14 @@ void gtsamPoint3_string_serialize_22(int nargout, mxArray *out[], int nargin, co
 }
 void gtsamPoint3_StaticFunctionRet_23(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  checkArguments("gtsamPoint3.StaticFunctionRet",nargout,nargin,1);
+  checkArguments("gtsam::Point3.StaticFunctionRet",nargout,nargin,1);
   double z = unwrap< double >(in[0]);
   out[0] = wrap< Point3 >(gtsam::Point3::StaticFunctionRet(z));
 }
 
 void gtsamPoint3_staticFunction_24(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  checkArguments("gtsamPoint3.staticFunction",nargout,nargin,0);
+  checkArguments("gtsam::Point3.staticFunction",nargout,nargin,0);
   out[0] = wrap< double >(gtsam::Point3::staticFunction());
 }
 

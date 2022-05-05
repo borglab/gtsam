@@ -75,7 +75,7 @@ void _multiple_files_RTTIRegister() {
     mxDestroyArray(registry);
 
     mxArray *newAlreadyCreated = mxCreateNumericMatrix(0, 0, mxINT8_CLASS, mxREAL);
-    if(mexPutVariable("global", "gtsam_geometry_rttiRegistry_created", newAlreadyCreated) != 0) {
+    if(mexPutVariable("global", "gtsam_multiple_files_rttiRegistry_created", newAlreadyCreated) != 0) {
       mexErrMsgTxt("gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly");
     }
     mxDestroyArray(newAlreadyCreated);
@@ -110,9 +110,9 @@ void gtsamClass1_deconstructor_2(int nargout, mxArray *out[], int nargin, const 
   Collector_gtsamClass1::iterator item;
   item = collector_gtsamClass1.find(self);
   if(item != collector_gtsamClass1.end()) {
-    delete self;
     collector_gtsamClass1.erase(item);
   }
+  delete self;
 }
 
 void gtsamClass2_collectorInsertAndMakeBase_3(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -143,9 +143,9 @@ void gtsamClass2_deconstructor_5(int nargout, mxArray *out[], int nargin, const 
   Collector_gtsamClass2::iterator item;
   item = collector_gtsamClass2.find(self);
   if(item != collector_gtsamClass2.end()) {
-    delete self;
     collector_gtsamClass2.erase(item);
   }
+  delete self;
 }
 
 void gtsamClassA_collectorInsertAndMakeBase_6(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -176,9 +176,9 @@ void gtsamClassA_deconstructor_8(int nargout, mxArray *out[], int nargin, const 
   Collector_gtsamClassA::iterator item;
   item = collector_gtsamClassA.find(self);
   if(item != collector_gtsamClassA.end()) {
-    delete self;
     collector_gtsamClassA.erase(item);
   }
+  delete self;
 }
 
 

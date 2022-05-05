@@ -175,6 +175,7 @@ struct ISAM2Result {
   /** Getters and Setters */
   size_t getVariablesRelinearized() const { return variablesRelinearized; }
   size_t getVariablesReeliminated() const { return variablesReeliminated; }
+  FactorIndices getNewFactorsIndices() const { return newFactorsIndices; }
   size_t getCliques() const { return cliques; }
   double getErrorBefore() const { return errorBefore ? *errorBefore : std::nan(""); }
   double getErrorAfter() const { return errorAfter ? *errorAfter : std::nan(""); }

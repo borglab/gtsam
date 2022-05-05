@@ -18,6 +18,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/sfm/TranslationRecovery.h>
+#include <gtsam/sfm/SfmData.h>
 #include <gtsam/slam/dataset.h>
 
 using namespace std;
@@ -42,9 +43,7 @@ Unit3 GetDirectionFromPoses(const Values& poses,
 // sets up an optimization problem for the three unknown translations.
 TEST(TranslationRecovery, BAL) {
   const string filename = findExampleDataFile("dubrovnik-3-7-pre");
-  SfmData db;
-  bool success = readBAL(filename, db);
-  if (!success) throw runtime_error("Could not access file!");
+  SfmData db = SfmData::FromBalFile(filename);
 
   // Get camera poses, as Values
   size_t j = 0;
@@ -116,8 +115,8 @@ TEST(TranslationRecovery, TwoPoseTest) {
   const auto result = algorithm.run(/*scale=*/3.0);
 
   // Check result for first two translations, determined by prior
-  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0)));
-  EXPECT(assert_equal(Point3(3, 0, 0), result.at<Point3>(1)));
+  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0), 1e-8));
+  EXPECT(assert_equal(Point3(3, 0, 0), result.at<Point3>(1), 1e-8));
 }
 
 TEST(TranslationRecovery, ThreePoseTest) {
@@ -153,9 +152,9 @@ TEST(TranslationRecovery, ThreePoseTest) {
   const auto result = algorithm.run(/*scale=*/3.0);
 
   // Check result
-  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0)));
-  EXPECT(assert_equal(Point3(3, 0, 0), result.at<Point3>(1)));
-  EXPECT(assert_equal(Point3(1.5, -1.5, 0), result.at<Point3>(3)));
+  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0), 1e-8));
+  EXPECT(assert_equal(Point3(3, 0, 0), result.at<Point3>(1), 1e-8));
+  EXPECT(assert_equal(Point3(1.5, -1.5, 0), result.at<Point3>(3), 1e-8));
 }
 
 TEST(TranslationRecovery, ThreePosesIncludingZeroTranslation) {
@@ -190,9 +189,9 @@ TEST(TranslationRecovery, ThreePosesIncludingZeroTranslation) {
   const auto result = algorithm.run(/*scale=*/3.0);
 
   // Check result
-  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0)));
-  EXPECT(assert_equal(Point3(3, 0, 0), result.at<Point3>(1)));
-  EXPECT(assert_equal(Point3(3, 0, 0), result.at<Point3>(2)));
+  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0), 1e-8));
+  EXPECT(assert_equal(Point3(3, 0, 0), result.at<Point3>(1), 1e-8));
+  EXPECT(assert_equal(Point3(3, 0, 0), result.at<Point3>(2), 1e-8));
 }
 
 TEST(TranslationRecovery, FourPosesIncludingZeroTranslation) {
@@ -231,10 +230,10 @@ TEST(TranslationRecovery, FourPosesIncludingZeroTranslation) {
   const auto result = algorithm.run(/*scale=*/4.0);
 
   // Check result
-  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0)));
-  EXPECT(assert_equal(Point3(4, 0, 0), result.at<Point3>(1)));
-  EXPECT(assert_equal(Point3(4, 0, 0), result.at<Point3>(2)));
-  EXPECT(assert_equal(Point3(2, -2, 0), result.at<Point3>(3)));
+  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0), 1e-8));
+  EXPECT(assert_equal(Point3(4, 0, 0), result.at<Point3>(1), 1e-8));
+  EXPECT(assert_equal(Point3(4, 0, 0), result.at<Point3>(2), 1e-8));
+  EXPECT(assert_equal(Point3(2, -2, 0), result.at<Point3>(3), 1e-8));
 }
 
 TEST(TranslationRecovery, ThreePosesWithZeroTranslation) {
@@ -261,9 +260,9 @@ TEST(TranslationRecovery, ThreePosesWithZeroTranslation) {
   const auto result = algorithm.run(/*scale=*/4.0);
 
   // Check result
-  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0)));
-  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(1)));
-  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(2)));
+  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0), 1e-8));
+  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(1), 1e-8));
+  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(2), 1e-8));
 }
 
 /* ************************************************************************* */

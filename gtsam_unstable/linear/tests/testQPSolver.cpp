@@ -226,7 +226,7 @@ pair<QP, QP> testParser(QPSParser parser) {
   expected.inequalities.add(X1, -I_1x1, 0, 2);                  // x >= 0
   expected.inequalities.add(X2, -I_1x1, 0, 3);                  // y > = 0
   return {expected, exampleqp};
-};
+}
 
 TEST(QPSolver, ParserSyntaticTest) {
   auto result = testParser(QPSParser("QPExample.QPS"));
