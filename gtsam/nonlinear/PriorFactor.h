@@ -94,7 +94,6 @@ namespace gtsam {
     Vector evaluateError(const T& x, boost::optional<Matrix&> H = boost::none) const override {
       if (H) (*H) = Matrix::Identity(traits<T>::GetDimension(x),traits<T>::GetDimension(x));
       // manifold equivalent of z-x -> Local(x,z)
-      // TODO(ASL) Add Jacobians.
       return -traits<T>::Local(x, prior_);
     }
 
