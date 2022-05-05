@@ -27,7 +27,7 @@ for i=0:length(measurements)
     if options.includeIMUFactors == 1
       currentVelKey = symbol('v', 0);
       currentVel = values.atPoint3(currentVelKey);
-      graph.add(PriorFactorLieVector(currentVelKey, LieVector(currentVel), noiseModels.noiseVel));
+      graph.add(PriorFactorVector(currentVelKey, currentVel, noiseModels.noiseVel));
       
       currentBiasKey = symbol('b', 0);
       currentBias = values.atPoint3(currentBiasKey);

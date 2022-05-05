@@ -72,7 +72,7 @@ namespace gtsam {
     double takeOptimalStep(V& x) {
       // TODO: can we use gamma instead of dot(d,g) ????? Answer not trivial
       double alpha = -dot(d, g) / dot(Ad, Ad); // calculate optimal step-size
-      axpy(alpha, d, x); // // do step in new search direction, x += alpha*d
+      x += alpha * d; // do step in new search direction, x += alpha*d
       return alpha;
     }
 
@@ -106,7 +106,7 @@ namespace gtsam {
         double beta = new_gamma / gamma;
         // d = g + d*beta;
         d *= beta;
-        axpy(1.0, g, d);
+        d += 1.0 * g;
       }
 
       gamma = new_gamma;

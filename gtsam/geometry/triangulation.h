@@ -14,6 +14,7 @@
  * @brief Functions for triangulation
  * @date July 31, 2013
  * @author Chris Beall
+ * @author Luca Carlone
  */
 
 #pragma once
@@ -24,6 +25,7 @@
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/CameraSet.h>
 #include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/SphericalCamera.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -60,6 +62,18 @@ GTSAM_EXPORT Vector4 triangulateHomogeneousDLT(
     const Point2Vector& measurements, double rank_tol = 1e-9);
 
 /**
+ * Same math as Hartley and Zisserman, 2nd Ed., page 312, but with unit-norm bearing vectors
+ * (contrarily to pinhole projection, the z entry is not assumed to be 1 as in Hartley and Zisserman)
+ * @param projection_matrices Projection matrices (K*P^-1)
+ * @param measurements Unit3 bearing measurements
+ * @param rank_tol SVD rank tolerance
+ * @return Triangulated point, in homogeneous coordinates
+ */
+GTSAM_EXPORT Vector4 triangulateHomogeneousDLT(
+    const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>& projection_matrices,
+    const std::vector<Unit3>& measurements, double rank_tol = 1e-9);
+
+/**
  * DLT triangulation: See Hartley and Zisserman, 2nd Ed., page 312
  * @param projection_matrices Projection matrices (K*P^-1)
  * @param measurements 2D measurements
@@ -69,6 +83,14 @@ GTSAM_EXPORT Vector4 triangulateHomogeneousDLT(
 GTSAM_EXPORT Point3 triangulateDLT(
     const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>& projection_matrices,
     const Point2Vector& measurements,
+    double rank_tol = 1e-9);
+
+/**
+ * overload of previous function to work with Unit3 (projected to canonical camera)
+ */
+GTSAM_EXPORT Point3 triangulateDLT(
+    const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>& projection_matrices,
+    const std::vector<Unit3>& measurements,
     double rank_tol = 1e-9);
 
 /**
@@ -84,18 +106,18 @@ template<class CALIBRATION>
 std::pair<NonlinearFactorGraph, Values> triangulationGraph(
     const std::vector<Pose3>& poses, boost::shared_ptr<CALIBRATION> sharedCal,
     const Point2Vector& measurements, Key landmarkKey,
-    const Point3& initialEstimate) {
+    const Point3& initialEstimate,
+    const SharedNoiseModel& model = nullptr) {
   Values values;
   values.insert(landmarkKey, initialEstimate); // Initial landmark value
   NonlinearFactorGraph graph;
   static SharedNoiseModel unit2(noiseModel::Unit::Create(2));
-  static SharedNoiseModel prior_model(noiseModel::Isotropic::Sigma(6, 1e-6));
   for (size_t i = 0; i < measurements.size(); i++) {
     const Pose3& pose_i = poses[i];
     typedef PinholePose<CALIBRATION> Camera;
     Camera camera_i(pose_i, sharedCal);
     graph.emplace_shared<TriangulationFactor<Camera> > //
-        (camera_i, measurements[i], unit2, landmarkKey);
+        (camera_i, measurements[i], model? model : unit2, landmarkKey);
   }
   return std::make_pair(graph, values);
 }
@@ -113,7 +135,8 @@ template<class CAMERA>
 std::pair<NonlinearFactorGraph, Values> triangulationGraph(
     const CameraSet<CAMERA>& cameras,
     const typename CAMERA::MeasurementVector& measurements, Key landmarkKey,
-    const Point3& initialEstimate) {
+    const Point3& initialEstimate,
+    const SharedNoiseModel& model = nullptr) {
   Values values;
   values.insert(landmarkKey, initialEstimate); // Initial landmark value
   NonlinearFactorGraph graph;
@@ -122,7 +145,7 @@ std::pair<NonlinearFactorGraph, Values> triangulationGraph(
   for (size_t i = 0; i < measurements.size(); i++) {
     const CAMERA& camera_i = cameras[i];
     graph.emplace_shared<TriangulationFactor<CAMERA> > //
-        (camera_i, measurements[i], unit, landmarkKey);
+        (camera_i, measurements[i], model? model : unit, landmarkKey);
   }
   return std::make_pair(graph, values);
 }
@@ -148,13 +171,14 @@ GTSAM_EXPORT Point3 optimize(const NonlinearFactorGraph& graph,
 template<class CALIBRATION>
 Point3 triangulateNonlinear(const std::vector<Pose3>& poses,
     boost::shared_ptr<CALIBRATION> sharedCal,
-    const Point2Vector& measurements, const Point3& initialEstimate) {
+    const Point2Vector& measurements, const Point3& initialEstimate,
+    const SharedNoiseModel& model = nullptr) {
 
   // Create a factor graph and initial values
   Values values;
   NonlinearFactorGraph graph;
   boost::tie(graph, values) = triangulationGraph<CALIBRATION> //
-      (poses, sharedCal, measurements, Symbol('p', 0), initialEstimate);
+      (poses, sharedCal, measurements, Symbol('p', 0), initialEstimate, model);
 
   return optimize(graph, values, Symbol('p', 0));
 }
@@ -169,37 +193,142 @@ Point3 triangulateNonlinear(const std::vector<Pose3>& poses,
 template<class CAMERA>
 Point3 triangulateNonlinear(
     const CameraSet<CAMERA>& cameras,
-    const typename CAMERA::MeasurementVector& measurements, const Point3& initialEstimate) {
+    const typename CAMERA::MeasurementVector& measurements, const Point3& initialEstimate,
+    const SharedNoiseModel& model = nullptr) {
 
   // Create a factor graph and initial values
   Values values;
   NonlinearFactorGraph graph;
   boost::tie(graph, values) = triangulationGraph<CAMERA> //
-      (cameras, measurements, Symbol('p', 0), initialEstimate);
+      (cameras, measurements, Symbol('p', 0), initialEstimate, model);
 
   return optimize(graph, values, Symbol('p', 0));
 }
 
-/**
- * Create a 3*4 camera projection matrix from calibration and pose.
- * Functor for partial application on calibration
- * @param pose The camera pose
- * @param cal  The calibration
- * @return Returns a Matrix34
- */
+template<class CAMERA>
+std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>
+projectionMatricesFromCameras(const CameraSet<CAMERA> &cameras) {
+  std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>> projection_matrices;
+  for (const CAMERA &camera: cameras) {
+    projection_matrices.push_back(camera.cameraProjectionMatrix());
+  }
+  return projection_matrices;
+}
+
+// overload, assuming pinholePose
 template<class CALIBRATION>
-struct CameraProjectionMatrix {
-  CameraProjectionMatrix(const CALIBRATION& calibration) :
-      K_(calibration.K()) {
+std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>> projectionMatricesFromPoses(
+        const std::vector<Pose3> &poses, boost::shared_ptr<CALIBRATION> sharedCal) {
+  std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>> projection_matrices;
+  for (size_t i = 0; i < poses.size(); i++) {
+    PinholePose<CALIBRATION> camera(poses.at(i), sharedCal);
+    projection_matrices.push_back(camera.cameraProjectionMatrix());
   }
-  Matrix34 operator()(const Pose3& pose) const {
-    return K_ * (pose.inverse().matrix()).block<3, 4>(0, 0);
+  return projection_matrices;
+}
+
+/** Create a pinhole calibration from a different Cal3 object, removing
+ * distortion.
+ *
+ * @tparam CALIBRATION Original calibration object.
+ * @param cal Input calibration object.
+ * @return Cal3_S2 with only the pinhole elements of cal.
+ */
+template <class CALIBRATION>
+Cal3_S2 createPinholeCalibration(const CALIBRATION& cal) {
+  const auto& K = cal.K();
+  return Cal3_S2(K(0, 0), K(1, 1), K(0, 1), K(0, 2), K(1, 2));
+}
+
+/** Internal undistortMeasurement to be used by undistortMeasurement and
+ * undistortMeasurements */
+template <class CALIBRATION, class MEASUREMENT>
+MEASUREMENT undistortMeasurementInternal(
+    const CALIBRATION& cal, const MEASUREMENT& measurement,
+    boost::optional<Cal3_S2> pinholeCal = boost::none) {
+  if (!pinholeCal) {
+    pinholeCal = createPinholeCalibration(cal);
   }
-private:
-  const Matrix3 K_;
-public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
-};
+  return pinholeCal->uncalibrate(cal.calibrate(measurement));
+}
+
+/** Remove distortion for measurements so as if the measurements came from a
+ * pinhole camera.
+ *
+ * Removes distortion but maintains the K matrix of the initial cal. Operates by
+ * calibrating using full calibration and uncalibrating with only the pinhole
+ * component of the calibration.
+ * @tparam CALIBRATION Calibration type to use.
+ * @param cal Calibration with which measurements were taken.
+ * @param measurements Vector of measurements to undistort.
+ * @return measurements with the effect of the distortion of sharedCal removed.
+ */
+template <class CALIBRATION>
+Point2Vector undistortMeasurements(const CALIBRATION& cal,
+                                   const Point2Vector& measurements) {
+  Cal3_S2 pinholeCalibration = createPinholeCalibration(cal);
+  Point2Vector undistortedMeasurements;
+  // Calibrate with cal and uncalibrate with pinhole version of cal so that
+  // measurements are undistorted.
+  std::transform(measurements.begin(), measurements.end(),
+                 std::back_inserter(undistortedMeasurements),
+                 [&cal, &pinholeCalibration](const Point2& measurement) {
+                   return undistortMeasurementInternal<CALIBRATION>(
+                       cal, measurement, pinholeCalibration);
+                 });
+  return undistortedMeasurements;
+}
+
+/** Specialization for Cal3_S2 as it doesn't need to be undistorted. */
+template <>
+inline Point2Vector undistortMeasurements(const Cal3_S2& cal,
+                                          const Point2Vector& measurements) {
+  return measurements;
+}
+
+/** Remove distortion for measurements so as if the measurements came from a
+ * pinhole camera.
+ *
+ * Removes distortion but maintains the K matrix of the initial calibrations.
+ * Operates by calibrating using full calibration and uncalibrating with only
+ * the pinhole component of the calibration.
+ * @tparam CAMERA Camera type to use.
+ * @param cameras Cameras corresponding to each measurement.
+ * @param measurements Vector of measurements to undistort.
+ * @return measurements with the effect of the distortion of the camera removed.
+ */
+template <class CAMERA>
+typename CAMERA::MeasurementVector undistortMeasurements(
+    const CameraSet<CAMERA>& cameras,
+    const typename CAMERA::MeasurementVector& measurements) {
+  const size_t num_meas = cameras.size();
+  assert(num_meas == measurements.size());
+  typename CAMERA::MeasurementVector undistortedMeasurements(num_meas);
+  for (size_t ii = 0; ii < num_meas; ++ii) {
+    // Calibrate with cal and uncalibrate with pinhole version of cal so that
+    // measurements are undistorted.
+    undistortedMeasurements[ii] =
+        undistortMeasurementInternal<typename CAMERA::CalibrationType>(
+            cameras[ii].calibration(), measurements[ii]);
+  }
+  return undistortedMeasurements;
+}
+
+/** Specialize for Cal3_S2 to do nothing. */
+template <class CAMERA = PinholeCamera<Cal3_S2>>
+inline PinholeCamera<Cal3_S2>::MeasurementVector undistortMeasurements(
+    const CameraSet<PinholeCamera<Cal3_S2>>& cameras,
+    const PinholeCamera<Cal3_S2>::MeasurementVector& measurements) {
+  return measurements;
+}
+
+/** Specialize for SphericalCamera to do nothing. */
+template <class CAMERA = SphericalCamera>
+inline SphericalCamera::MeasurementVector undistortMeasurements(
+    const CameraSet<SphericalCamera>& cameras,
+    const SphericalCamera::MeasurementVector& measurements) {
+  return measurements;
+}
 
 /**
  * Function to triangulate 3D landmark point from an arbitrary number
@@ -217,25 +346,28 @@ template<class CALIBRATION>
 Point3 triangulatePoint3(const std::vector<Pose3>& poses,
     boost::shared_ptr<CALIBRATION> sharedCal,
     const Point2Vector& measurements, double rank_tol = 1e-9,
-    bool optimize = false) {
+    bool optimize = false,
+    const SharedNoiseModel& model = nullptr) {
 
   assert(poses.size() == measurements.size());
   if (poses.size() < 2)
     throw(TriangulationUnderconstrainedException());
 
   // construct projection matrices from poses & calibration
-  std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>> projection_matrices;
-  CameraProjectionMatrix<CALIBRATION> createP(*sharedCal); // partially apply
-  for(const Pose3& pose: poses)
-    projection_matrices.push_back(createP(pose));
+  auto projection_matrices = projectionMatricesFromPoses(poses, sharedCal);
+
+  // Undistort the measurements, leaving only the pinhole elements in effect.
+  auto undistortedMeasurements =
+      undistortMeasurements<CALIBRATION>(*sharedCal, measurements);
 
   // Triangulate linearly
-  Point3 point = triangulateDLT(projection_matrices, measurements, rank_tol);
+  Point3 point =
+      triangulateDLT(projection_matrices, undistortedMeasurements, rank_tol);
 
   // Then refine using non-linear optimization
   if (optimize)
     point = triangulateNonlinear<CALIBRATION> //
-        (poses, sharedCal, measurements, point);
+        (poses, sharedCal, measurements, point, model);
 
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
   // verify that the triangulated point lies in front of all cameras
@@ -265,7 +397,8 @@ template<class CAMERA>
 Point3 triangulatePoint3(
     const CameraSet<CAMERA>& cameras,
     const typename CAMERA::MeasurementVector& measurements, double rank_tol = 1e-9,
-    bool optimize = false) {
+    bool optimize = false,
+    const SharedNoiseModel& model = nullptr) {
 
   size_t m = cameras.size();
   assert(measurements.size() == m);
@@ -274,16 +407,18 @@ Point3 triangulatePoint3(
     throw(TriangulationUnderconstrainedException());
 
   // construct projection matrices from poses & calibration
-  std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>> projection_matrices;
-  for(const CAMERA& camera: cameras)
-    projection_matrices.push_back(
-        CameraProjectionMatrix<typename CAMERA::CalibrationType>(camera.calibration())(
-            camera.pose()));
-  Point3 point = triangulateDLT(projection_matrices, measurements, rank_tol);
+  auto projection_matrices = projectionMatricesFromCameras(cameras);
+
+  // Undistort the measurements, leaving only the pinhole elements in effect.
+  auto undistortedMeasurements =
+      undistortMeasurements<CAMERA>(cameras, measurements);
+
+  Point3 point =
+      triangulateDLT(projection_matrices, undistortedMeasurements, rank_tol);
 
   // The n refine using non-linear optimization
   if (optimize)
-    point = triangulateNonlinear<CAMERA>(cameras, measurements, point);
+    point = triangulateNonlinear<CAMERA>(cameras, measurements, point, model);
 
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
   // verify that the triangulated point lies in front of all cameras
@@ -302,9 +437,10 @@ template<class CALIBRATION>
 Point3 triangulatePoint3(
     const CameraSet<PinholeCamera<CALIBRATION> >& cameras,
     const Point2Vector& measurements, double rank_tol = 1e-9,
-    bool optimize = false) {
+    bool optimize = false,
+    const SharedNoiseModel& model = nullptr) {
   return triangulatePoint3<PinholeCamera<CALIBRATION> > //
-  (cameras, measurements, rank_tol, optimize);
+  (cameras, measurements, rank_tol, optimize, model);
 }
 
 struct GTSAM_EXPORT TriangulationParameters {
@@ -326,20 +462,25 @@ struct GTSAM_EXPORT TriangulationParameters {
    */
   double dynamicOutlierRejectionThreshold;
 
+  SharedNoiseModel noiseModel; ///< used in the nonlinear triangulation
+
   /**
    * Constructor
    * @param rankTol tolerance used to check if point triangulation is degenerate
    * @param enableEPI if true refine triangulation with embedded LM iterations
    * @param landmarkDistanceThreshold flag as degenerate if point further than this
    * @param dynamicOutlierRejectionThreshold or if average error larger than this
+   * @param noiseModel noise model to use during nonlinear triangulation
    *
    */
   TriangulationParameters(const double _rankTolerance = 1.0,
       const bool _enableEPI = false, double _landmarkDistanceThreshold = -1,
-      double _dynamicOutlierRejectionThreshold = -1) :
+      double _dynamicOutlierRejectionThreshold = -1,
+      const SharedNoiseModel& _noiseModel = nullptr) :
       rankTolerance(_rankTolerance), enableEPI(_enableEPI), //
       landmarkDistanceThreshold(_landmarkDistanceThreshold), //
-      dynamicOutlierRejectionThreshold(_dynamicOutlierRejectionThreshold) {
+      dynamicOutlierRejectionThreshold(_dynamicOutlierRejectionThreshold),
+      noiseModel(_noiseModel){
   }
 
   // stream to output
@@ -351,6 +492,7 @@ struct GTSAM_EXPORT TriangulationParameters {
         << std::endl;
     os << "dynamicOutlierRejectionThreshold = "
         << p.dynamicOutlierRejectionThreshold << std::endl;
+    os << "noise model" << std::endl;
     return os;
   }
 
@@ -453,8 +595,9 @@ TriangulationResult triangulateSafe(const CameraSet<CAMERA>& cameras,
   else
     // We triangulate the 3D position of the landmark
     try {
-      Point3 point = triangulatePoint3<CAMERA>(cameras, measured,
-          params.rankTolerance, params.enableEPI);
+      Point3 point =
+          triangulatePoint3<CAMERA>(cameras, measured, params.rankTolerance,
+                                    params.enableEPI, params.noiseModel);
 
       // Check landmark distance and re-projection errors to avoid outliers
       size_t i = 0;
@@ -474,8 +617,8 @@ TriangulationResult triangulateSafe(const CameraSet<CAMERA>& cameras,
 #endif
         // Check reprojection error
         if (params.dynamicOutlierRejectionThreshold > 0) {
-          const Point2& zi = measured.at(i);
-          Point2 reprojectionError(camera.project(point) - zi);
+          const typename CAMERA::Measurement& zi = measured.at(i);
+          Point2 reprojectionError = camera.reprojectionError(point, zi);
           maxReprojError = std::max(maxReprojError, reprojectionError.norm());
         }
         i += 1;
@@ -503,6 +646,6 @@ using CameraSetCal3Bundler = CameraSet<PinholeCamera<Cal3Bundler>>;
 using CameraSetCal3_S2 = CameraSet<PinholeCamera<Cal3_S2>>;
 using CameraSetCal3Fisheye = CameraSet<PinholeCamera<Cal3Fisheye>>;
 using CameraSetCal3Unified = CameraSet<PinholeCamera<Cal3Unified>>;
-
+using CameraSetSpherical = CameraSet<SphericalCamera>;
 } // \namespace gtsam
 

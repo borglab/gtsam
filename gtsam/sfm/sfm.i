@@ -4,7 +4,62 @@
 
 namespace gtsam {
 
-// #####
+#include <gtsam/sfm/SfmTrack.h>
+class SfmTrack {
+  SfmTrack();
+  SfmTrack(const gtsam::Point3& pt);
+  const Point3& point3() const;
+
+  double r;
+  double g;
+  double b;
+
+  std::vector<pair<size_t, gtsam::Point2>> measurements;
+
+  size_t numberMeasurements() const;
+  pair<size_t, gtsam::Point2> measurement(size_t idx) const;
+  pair<size_t, size_t> siftIndex(size_t idx) const;
+  void addMeasurement(size_t idx, const gtsam::Point2& m);
+
+  // enabling serialization functionality
+  void serialize() const;
+
+  // enabling function to compare objects
+  bool equals(const gtsam::SfmTrack& expected, double tol) const;
+};
+
+#include <gtsam/sfm/SfmData.h>
+class SfmData {
+  SfmData();
+  static gtsam::SfmData FromBundlerFile(string filename);
+  static gtsam::SfmData FromBalFile(string filename);
+
+  void addTrack(const gtsam::SfmTrack& t);
+  void addCamera(const gtsam::SfmCamera& cam);
+  size_t numberTracks() const;
+  size_t numberCameras() const;
+  gtsam::SfmTrack track(size_t idx) const;
+  gtsam::PinholeCamera<gtsam::Cal3Bundler> camera(size_t idx) const;
+
+  gtsam::NonlinearFactorGraph generalSfmFactors(
+      const gtsam::SharedNoiseModel& model =
+          gtsam::noiseModel::Isotropic::Sigma(2, 1.0)) const;
+  gtsam::NonlinearFactorGraph sfmFactorGraph(
+      const gtsam::SharedNoiseModel& model =
+          gtsam::noiseModel::Isotropic::Sigma(2, 1.0),
+      size_t fixedCamera = 0, size_t fixedPoint = 0) const;
+
+  // enabling serialization functionality
+  void serialize() const;
+
+  // enabling function to compare objects
+  bool equals(const gtsam::SfmData& expected, double tol) const;
+};
+
+gtsam::SfmData readBal(string filename);
+bool writeBAL(string filename, gtsam::SfmData& data);
+gtsam::Values initialCamerasEstimate(const gtsam::SfmData& db);
+gtsam::Values initialCamerasAndPointsEstimate(const gtsam::SfmData& db);
 
 #include <gtsam/sfm/ShonanFactor.h>
 
@@ -92,7 +147,7 @@ class ShonanAveraging2 {
 
   // Query properties
   size_t nrUnknowns() const;
-  size_t nrMeasurements() const;
+  size_t numberMeasurements() const;
   gtsam::Rot2 measured(size_t i);
   gtsam::KeyVector keys(size_t i);
 
@@ -140,7 +195,7 @@ class ShonanAveraging3 {
 
   // Query properties
   size_t nrUnknowns() const;
-  size_t nrMeasurements() const;
+  size_t numberMeasurements() const;
   gtsam::Rot3 measured(size_t i);
   gtsam::KeyVector keys(size_t i);
 

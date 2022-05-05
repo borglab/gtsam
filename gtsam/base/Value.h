@@ -21,6 +21,7 @@
 #include <gtsam/config.h>      // Configuration from CMake
 
 #include <gtsam/base/Vector.h>
+#include <boost/serialization/nvp.hpp>
 #include <boost/serialization/assume_abstract.hpp>
 #include <memory>
 

@@ -1,4 +1,3 @@
-project(GTSAM CXX C)
 cmake_minimum_required(VERSION 3.0)
 
 # new feature to Cmake Version > 2.8.12
@@ -9,12 +8,23 @@ endif()
 
 # Set the version number for the library
 set (GTSAM_VERSION_MAJOR 4)
-set (GTSAM_VERSION_MINOR 1)
+set (GTSAM_VERSION_MINOR 2)
 set (GTSAM_VERSION_PATCH 0)
+set (GTSAM_PRERELEASE_VERSION "a6")
 math (EXPR GTSAM_VERSION_NUMERIC "10000 * ${GTSAM_VERSION_MAJOR} + 100 * ${GTSAM_VERSION_MINOR} + ${GTSAM_VERSION_PATCH}")
-set (GTSAM_VERSION_STRING "${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH}")
 
-set (CMAKE_PROJECT_VERSION ${GTSAM_VERSION_STRING})
+if (${GTSAM_VERSION_PATCH} EQUAL 0)
+    set (GTSAM_VERSION_STRING "${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}${GTSAM_PRERELEASE_VERSION}")
+else()
+    set (GTSAM_VERSION_STRING "${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH}${GTSAM_PRERELEASE_VERSION}")
+endif()
+
+project(GTSAM
+        LANGUAGES CXX C
+        VERSION "${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH}")
+
+message(STATUS "GTSAM Version: ${GTSAM_VERSION_STRING}")
+
 set (CMAKE_PROJECT_VERSION_MAJOR ${GTSAM_VERSION_MAJOR})
 set (CMAKE_PROJECT_VERSION_MINOR ${GTSAM_VERSION_MINOR})
 set (CMAKE_PROJECT_VERSION_PATCH ${GTSAM_VERSION_PATCH})
@@ -87,6 +97,13 @@ if(GTSAM_BUILD_PYTHON OR GTSAM_INSTALL_MATLAB_TOOLBOX)
         CACHE STRING "The Python version to use for wrapping")
     # Set the include directory for matlab.h
     set(GTWRAP_INCLUDE_NAME "wrap")
+
+    # Copy matlab.h to the correct folder.
+    configure_file(${PROJECT_SOURCE_DIR}/wrap/matlab.h
+               ${PROJECT_BINARY_DIR}/wrap/matlab.h COPYONLY)
+    # Add the include directories so that matlab.h can be found
+    include_directories("${PROJECT_BINARY_DIR}" "${GTSAM_EIGEN_INCLUDE_FOR_BUILD}")
+
     add_subdirectory(wrap)
     list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/wrap/cmake")
 endif()
@@ -104,6 +121,11 @@ endif()
 # Install config and export files
 GtsamMakeConfigFile(GTSAM "${CMAKE_CURRENT_SOURCE_DIR}/gtsam_extra.cmake.in")
 export(TARGETS ${GTSAM_EXPORTED_TARGETS} FILE GTSAM-exports.cmake)
+
+if (GTSAM_BUILD_UNSTABLE)
+    GtsamMakeConfigFile(GTSAM_UNSTABLE "${CMAKE_CURRENT_SOURCE_DIR}/gtsam_extra.cmake.in")
+    export(TARGETS ${GTSAM_UNSTABLE_EXPORTED_TARGETS} FILE GTSAM_UNSTABLE-exports.cmake)
+endif()
 
 # Check for doxygen availability - optional dependency
 find_package(Doxygen)

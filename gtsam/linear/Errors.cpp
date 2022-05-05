@@ -110,11 +110,10 @@ double dot(const Errors& a, const Errors& b) {
 }
 
 /* ************************************************************************* */
-template<>
-void axpy<Errors,Errors>(double alpha, const Errors& x, Errors& y) {
+void axpy(double alpha, const Errors& x, Errors& y) {
   Errors::const_iterator it = x.begin();
   for(Vector& yi: y)
-    axpy(alpha,*(it++),yi);
+    yi += alpha * (*(it++));
 }
 
 /* ************************************************************************* */

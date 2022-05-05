@@ -172,6 +172,22 @@ TEST( Values, update_element )
   CHECK(assert_equal((Vector)v2, cfg.at<Vector3>(key1)));
 }
 
+TEST(Values, InsertOrAssign) {
+  Values values;
+  Key X(0);
+  double x = 1;
+  
+  CHECK(values.size() == 0);
+  // This should perform an insert.
+  values.insert_or_assign(X, x);
+  EXPECT(assert_equal(values.at<double>(X), x));
+
+  // This should perform an update.
+  double y = 2;
+  values.insert_or_assign(X, y);
+  EXPECT(assert_equal(values.at<double>(X), y));
+}
+
 /* ************************************************************************* */
 TEST(Values, basic_functions)
 {
