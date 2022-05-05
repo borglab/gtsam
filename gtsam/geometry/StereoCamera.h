@@ -170,6 +170,11 @@ public:
       OptionalJacobian<3, 3> H2 = boost::none, OptionalJacobian<3, 0> H3 =
           boost::none) const;
 
+  /// for Nonlinear Triangulation
+  Vector defaultErrorWhenTriangulatingBehindCamera() const {
+    return Eigen::Matrix<double,traits<Measurement>::dimension,1>::Constant(2.0 * K_->fx());;
+  }
+
   /// @}
 
 private:

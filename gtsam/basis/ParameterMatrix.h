@@ -153,7 +153,7 @@ class ParameterMatrix {
     return matrix_ * other;
   }
 
-  /// @name Vector Space requirements, following LieMatrix
+  /// @name Vector Space requirements
   /// @{
 
   /**

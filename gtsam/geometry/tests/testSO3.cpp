@@ -67,10 +67,12 @@ TEST(SO3, ClosestTo) {
 }
 
 //******************************************************************************
+namespace {
 SO3 id;
 Vector3 z_axis(0, 0, 1), v2(1, 2, 0), v3(1, 2, 3);
 SO3 R1(Eigen::AngleAxisd(0.1, z_axis));
 SO3 R2(Eigen::AngleAxisd(0.2, z_axis));
+}  // namespace
 
 /* ************************************************************************* */
 TEST(SO3, ChordalMean) {
@@ -79,16 +81,16 @@ TEST(SO3, ChordalMean) {
 }
 
 //******************************************************************************
+// Check that Hat specialization is equal to dynamic version
 TEST(SO3, Hat) {
-  // Check that Hat specialization is equal to dynamic version
   EXPECT(assert_equal(SO3::Hat(z_axis), SOn::Hat(z_axis)));
   EXPECT(assert_equal(SO3::Hat(v2), SOn::Hat(v2)));
   EXPECT(assert_equal(SO3::Hat(v3), SOn::Hat(v3)));
 }
 
 //******************************************************************************
+// Check that Hat specialization is equal to dynamic version
 TEST(SO3, Vee) {
-  // Check that Hat specialization is equal to dynamic version
   auto X1 = SOn::Hat(z_axis), X2 = SOn::Hat(v2), X3 = SOn::Hat(v3);
   EXPECT(assert_equal(SO3::Vee(X1), SOn::Vee(X1)));
   EXPECT(assert_equal(SO3::Vee(X2), SOn::Vee(X2)));

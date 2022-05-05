@@ -113,6 +113,9 @@ public:
   /// Get results of latest isam2 update
   const ISAM2Result& getISAM2Result() const{ return isamResult_; }
 
+  /// Get the iSAM2 object which is used for the inference internally
+  const ISAM2& getISAM2() const { return isam_; }
+
 protected:
 
   /** Create default parameters */

@@ -21,12 +21,13 @@
 
 #pragma once
 
-#include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/EliminateableFactorGraph.h>
+#include <gtsam/inference/FactorGraph.h>
+#include <gtsam/linear/Errors.h>  // Included here instead of fw-declared so we can use Errors::iterator
 #include <gtsam/linear/GaussianFactor.h>
-#include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/HessianFactor.h>
-#include <gtsam/linear/Errors.h> // Included here instead of fw-declared so we can use Errors::iterator
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/VectorValues.h>
 
 namespace gtsam {
 
@@ -98,6 +99,12 @@ namespace gtsam {
 
     /// @}
 
+    /// Check exact equality.
+    friend bool operator==(const GaussianFactorGraph& lhs,
+                            const GaussianFactorGraph& rhs) {
+      return lhs.isEqual(rhs);
+    }
+
     /** Add a factor by value - makes a copy */
     void add(const GaussianFactor& factor) { push_back(factor.clone()); }
 
@@ -153,7 +160,8 @@ namespace gtsam {
 
     /** Unnormalized probability. O(n) */
     double probPrime(const VectorValues& c) const {
-      return exp(-0.5 * error(c));
+      // NOTE the 0.5 constant is handled by the factor error.
+      return exp(-error(c));
     }
 
     /**
@@ -375,6 +383,14 @@ namespace gtsam {
     /** In-place version e <- A*x that takes an iterator. */
     void multiplyInPlace(const VectorValues& x, const Errors::iterator& e) const;
 
+    void printErrors(
+        const VectorValues& x,
+        const std::string& str = "GaussianFactorGraph: ",
+        const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+        const std::function<bool(const Factor* /*factor*/,
+                                 double /*whitenedError*/, size_t /*index*/)>&
+            printCondition =
+                [](const Factor*, double, size_t) { return true; }) const;
     /// @}
 
   private:
@@ -387,9 +403,14 @@ namespace gtsam {
 
   public:
 
-    /** \deprecated */
-    VectorValues optimize(boost::none_t,
-      const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
+   /** @deprecated */
+   VectorValues GTSAM_DEPRECATED
+   optimize(boost::none_t, const Eliminate& function =
+                               EliminationTraitsType::DefaultEliminate) const {
+     return optimize(function);
+   }
+#endif
 
   };
 
@@ -399,7 +420,7 @@ namespace gtsam {
    */
   GTSAM_EXPORT bool hasConstraints(const GaussianFactorGraph& factors);
 
-  /****** Linear Algebra Opeations ******/
+  /****** Linear Algebra Operations ******/
 
   ///* matrix-vector operations */
   //GTSAM_EXPORT void residual(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r);
