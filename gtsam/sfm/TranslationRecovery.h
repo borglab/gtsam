@@ -28,6 +28,40 @@
 
 namespace gtsam {
 
+// Parameters for the Translation Recovery problem.
+class TranslationRecoveryParams {
+ public:
+  std::vector<BinaryMeasurement<Point3>> getBetweenTranslations() const {
+    return betweenTranslations_;
+  }
+
+  void setBetweenTranslations(
+      const std::vector<BinaryMeasurement<Point3>> &betweenTranslations) {
+    betweenTranslations_ = betweenTranslations;
+  }
+
+  LevenbergMarquardtParams getLMParams() const { return lmParams_; }
+
+  Values getInitialValues() const { return initial_; }
+
+  void setInitialValues(const Values &values) { initial_ = values; }
+
+  void setLMParams(const LevenbergMarquardtParams &lmParams) {
+    lmParams_ = lmParams;
+  }
+
+ private:
+  // Relative translations with a known scale used as between factors in the
+  // problem if provided.
+  std::vector<BinaryMeasurement<Point3>> betweenTranslations_;
+
+  // LevenbergMarquardtParams for optimization.
+  LevenbergMarquardtParams lmParams_;
+
+  // Initial values, random intialization will be used if not provided.
+  Values initial_;
+};
+
 // Set up an optimization problem for the unknown translations Ti in the world
 // coordinate frame, given the known camera attitudes wRi with respect to the
 // world frame, and a set of (noisy) translation directions of type Unit3,
@@ -57,8 +91,8 @@ class TranslationRecovery {
   // Translation directions between camera pairs.
   TranslationEdges relativeTranslations_;
 
-  // Parameters used by the LM Optimizer.
-  LevenbergMarquardtParams params_;
+  // Parameters.
+  TranslationRecoveryParams params_;
 
   // Map from a key in the graph to a set of keys that share the same
   // translation.
@@ -71,13 +105,11 @@ class TranslationRecovery {
    * @param relativeTranslations the relative translations, in world coordinate
    * frames, vector of BinaryMeasurements of Unit3, where each key of a
    * measurement is a point in 3D.
-   * @param lmParams (optional) gtsam::LavenbergMarquardtParams that can be
-   * used to modify the parameters for the LM optimizer. By default, uses the
-   * default LM parameters.
+   * @param params (optional) parameters for the recovery problem.
    */
   TranslationRecovery(
       const TranslationEdges &relativeTranslations,
-      const LevenbergMarquardtParams &lmParams = LevenbergMarquardtParams());
+      const TranslationRecoveryParams &params = TranslationRecoveryParams());
 
   /**
    * @brief Build the factor graph to do the optimization.
@@ -98,15 +130,6 @@ class TranslationRecovery {
                 const SharedNoiseModel &priorNoiseModel =
                     noiseModel::Isotropic::Sigma(3, 0.01)) const;
 
-  void addPrior(Key i, const Point3 &prior,
-                const boost::shared_ptr<NonlinearFactorGraph> graph,
-                const SharedNoiseModel &priorNoiseModel =
-                    noiseModel::Isotropic::Sigma(3, 0.01)) const;
-
-  void addRelativeHardConstraint(
-      Key i, Key j, const Point3 &w_itj,
-      const boost::shared_ptr<NonlinearFactorGraph> graph) const;
-
   /**
    * @brief Create random initial translations.
    *
@@ -126,11 +149,10 @@ class TranslationRecovery {
    * @brief Build and optimize factor graph.
    *
    * @param scale scale for first relative translation which fixes gauge.
+   * The scale is only used if relativeTranslations in the params is empty.
    * @return Values
    */
   Values run(const double scale = 1.0) const;
-
-  Values addDuplicateNodes(const Values &result) const;
 
   /**
    * @brief Simulate translation direction measurements
@@ -145,6 +167,23 @@ class TranslationRecovery {
       const Values &poses, const std::vector<KeyPair> &edges);
 
  private:
+  /**
+   * @brief Gets the key of the variable being optimized among multiple input
+   * variables that have the same translation.
+   *
+   * @param i key of input variable.
+   * @return Key of optimized variable - same as input if it does not have any
+   * zero-translation edges.
+   */
   Key getUniqueKey(const Key i) const;
+
+  /**
+   * @brief Adds nodes that were not optimized for because they were connected
+   * to another node with a zero-translation edge in the input.
+   *
+   * @param result optimization problem result
+   * @return translation estimates for all variables in the input.
+   */
+  Values addSameTranslationNodes(const Values &result) const;
 };
 }  // namespace gtsam
