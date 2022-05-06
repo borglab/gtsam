@@ -28,6 +28,7 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/sfm/TranslationFactor.h>
 #include <gtsam/sfm/TranslationRecovery.h>
+#include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/expressions.h>
 
@@ -42,8 +43,8 @@ static std::mt19937 kRandomNumberGenerator(42);
 
 TranslationRecovery::TranslationRecovery(
     const TranslationRecovery::TranslationEdges &relativeTranslations,
-    const LevenbergMarquardtParams &lmParams)
-    : params_(lmParams) {
+    const TranslationRecoveryParams &params)
+    : params_(params) {
   // Some relative translations may be zero. We treat nodes that have a zero
   // relativeTranslation as a single node.
 
@@ -73,10 +74,19 @@ TranslationRecovery::TranslationRecovery(
 NonlinearFactorGraph TranslationRecovery::buildGraph() const {
   NonlinearFactorGraph graph;
 
-  // Add all relative translation edges
+  // Add translation factors for input translation directions.
   for (auto edge : relativeTranslations_) {
     graph.emplace_shared<TranslationFactor>(edge.key1(), edge.key2(),
                                             edge.measured(), edge.noiseModel());
+  }
+
+  // Add between factors for optional relative translations.
+  for (auto edge : params_.getBetweenTranslations()) {
+    Key k1 = getUniqueKey(edge.key1()), k2 = getUniqueKey(edge.key2());
+    if (k1 != k2) {
+      graph.emplace_shared<BetweenFactor<Point3>>(k1, k2, edge.measured(),
+                                                  edge.noiseModel());
+    }
   }
 
   return graph;
@@ -87,17 +97,13 @@ void TranslationRecovery::addPrior(
     const SharedNoiseModel &priorNoiseModel) const {
   auto edge = relativeTranslations_.begin();
   if (edge == relativeTranslations_.end()) return;
-  graph->emplace_shared<PriorFactor<Point3> >(edge->key1(), Point3(0, 0, 0),
-                                              priorNoiseModel);
-  graph->emplace_shared<PriorFactor<Point3> >(
-      edge->key2(), scale * edge->measured().point3(), edge->noiseModel());
-}
-
-void TranslationRecovery::addPrior(
-    Key i, const Point3 &prior,
-    const boost::shared_ptr<NonlinearFactorGraph> graph,
-    const SharedNoiseModel &priorNoiseModel) const {
-  graph->addPrior(getUniqueKey(i), prior, priorNoiseModel);
+  graph->emplace_shared<PriorFactor<Point3>>(edge->key1(), Point3(0, 0, 0),
+                                             priorNoiseModel);
+  // Add a scale prior only if no other between factors were added.
+  if (params_.getBetweenTranslations().empty()) {
+    graph->emplace_shared<PriorFactor<Point3>>(
+        edge->key2(), scale * edge->measured().point3(), edge->noiseModel());
+  }
 }
 
 Key TranslationRecovery::getUniqueKey(const Key i) const {
@@ -110,25 +116,21 @@ Key TranslationRecovery::getUniqueKey(const Key i) const {
   return i;
 }
 
-void TranslationRecovery::addRelativeHardConstraint(
-    Key i, Key j, const Point3 &w_itj,
-    const boost::shared_ptr<NonlinearFactorGraph> graph) const {
-  Point3_ wti_(getUniqueKey(i)), wtj_(getUniqueKey(j));
-  Expression<Point3> w_itj_ = wtj_ - wti_;
-  graph->addExpressionFactor(noiseModel::Constrained::All(3, 1e9), w_itj,
-                             w_itj_);
-}
-
 Values TranslationRecovery::initializeRandomly(std::mt19937 *rng) const {
   uniform_real_distribution<double> randomVal(-1, 1);
   // Create a lambda expression that checks whether value exists and randomly
   // initializes if not.
   Values initial;
+  const Values inputInitial = params_.getInitialValues();
   auto insert = [&](Key j) {
-    if (!initial.exists(j)) {
+    if (initial.exists(j)) return;
+    if (inputInitial.exists(j)) {
+      initial.insert<Point3>(j, inputInitial.at<Point3>(j));
+    } else {
       initial.insert<Point3>(
           j, Point3(randomVal(*rng), randomVal(*rng), randomVal(*rng)));
     }
+    // Assumes all nodes connected by zero-edges have the same initialization.
   };
 
   // Loop over measurements and add a random translation
@@ -157,12 +159,13 @@ Values TranslationRecovery::run(const double scale) const {
       boost::make_shared<NonlinearFactorGraph>(buildGraph());
   addPrior(scale, graph_ptr);
   const Values initial = initializeRandomly();
-  LevenbergMarquardtOptimizer lm(*graph_ptr, initial, params_);
+  LevenbergMarquardtOptimizer lm(*graph_ptr, initial, params_.getLMParams());
   Values result = lm.optimize();
-  return addDuplicateNodes(result);
+  return addSameTranslationNodes(result);
 }
 
-Values TranslationRecovery::addDuplicateNodes(const Values &result) const {
+Values TranslationRecovery::addSameTranslationNodes(
+    const Values &result) const {
   Values final_result = result;
   // Nodes that were not optimized are stored in sameTranslationNodes_ as a map
   // from a key that was optimized to keys that were not optimized. Iterate over
