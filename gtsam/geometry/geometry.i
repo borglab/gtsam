@@ -372,6 +372,9 @@ class Pose2 {
   Pose2(const gtsam::Rot2& r, const gtsam::Point2& t);
   Pose2(Vector v);
 
+  static boost::optional<gtsam::Pose2> Align(const gtsam::Point2Pairs& abPointPairs);
+  static boost::optional<gtsam::Pose2> Align(const gtsam::Matrix& a, const gtsam::Matrix& b);
+
   // Testable
   void print(string s = "") const;
   bool equals(const gtsam::Pose2& pose, double tol) const;
@@ -424,8 +427,6 @@ class Pose2 {
   void serialize() const;
 };
   
-boost::optional<gtsam::Pose2> align(const gtsam::Point2Pairs& pairs);
-
 #include <gtsam/geometry/Pose3.h>
 class Pose3 {
   // Standard Constructors
@@ -583,7 +584,13 @@ class Cal3_S2 {
 
   // Action on Point2
   gtsam::Point2 calibrate(const gtsam::Point2& p) const;
+  gtsam::Point2 calibrate(const gtsam::Point2& p,
+                          Eigen::Ref<Eigen::MatrixXd> Dcal,
+                          Eigen::Ref<Eigen::MatrixXd> Dp) const;
   gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
+  gtsam::Point2 uncalibrate(const gtsam::Point2& p,
+                            Eigen::Ref<Eigen::MatrixXd> Dcal,
+                            Eigen::Ref<Eigen::MatrixXd> Dp) const;
 
   // Standard Interface
   double fx() const;
@@ -622,7 +629,13 @@ virtual class Cal3DS2_Base {
 
   // Action on Point2
   gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
+  gtsam::Point2 uncalibrate(const gtsam::Point2& p,
+                            Eigen::Ref<Eigen::MatrixXd> Dcal,
+                            Eigen::Ref<Eigen::MatrixXd> Dp) const;
   gtsam::Point2 calibrate(const gtsam::Point2& p) const;
+  gtsam::Point2 calibrate(const gtsam::Point2& p,
+                          Eigen::Ref<Eigen::MatrixXd> Dcal,
+                          Eigen::Ref<Eigen::MatrixXd> Dp) const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -679,7 +692,13 @@ virtual class Cal3Unified : gtsam::Cal3DS2_Base {
   // Note: the signature of this functions differ from the functions
   // with equal name in the base class.
   gtsam::Point2 calibrate(const gtsam::Point2& p) const;
+  gtsam::Point2 calibrate(const gtsam::Point2& p,
+                          Eigen::Ref<Eigen::MatrixXd> Dcal,
+                          Eigen::Ref<Eigen::MatrixXd> Dp) const;
   gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
+  gtsam::Point2 uncalibrate(const gtsam::Point2& p,
+                            Eigen::Ref<Eigen::MatrixXd> Dcal,
+                            Eigen::Ref<Eigen::MatrixXd> Dp) const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -705,7 +724,13 @@ class Cal3Fisheye {
 
   // Action on Point2
   gtsam::Point2 calibrate(const gtsam::Point2& p) const;
+  gtsam::Point2 calibrate(const gtsam::Point2& p,
+                          Eigen::Ref<Eigen::MatrixXd> Dcal,
+                          Eigen::Ref<Eigen::MatrixXd> Dp) const;
   gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
+  gtsam::Point2 uncalibrate(const gtsam::Point2& p,
+                            Eigen::Ref<Eigen::MatrixXd> Dcal,
+                            Eigen::Ref<Eigen::MatrixXd> Dp) const;
 
   // Standard Interface
   double fx() const;
@@ -768,7 +793,13 @@ class Cal3Bundler {
 
   // Action on Point2
   gtsam::Point2 calibrate(const gtsam::Point2& p) const;
+  gtsam::Point2 calibrate(const gtsam::Point2& p,
+                          Eigen::Ref<Eigen::MatrixXd> Dcal,
+                          Eigen::Ref<Eigen::MatrixXd> Dp) const;
   gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
+  gtsam::Point2 uncalibrate(const gtsam::Point2& p,
+                            Eigen::Ref<Eigen::MatrixXd> Dcal,
+                            Eigen::Ref<Eigen::MatrixXd> Dp) const;
 
   // Standard Interface
   double fx() const;
@@ -806,12 +837,25 @@ class CalibratedCamera {
 
   // Action on Point3
   gtsam::Point2 project(const gtsam::Point3& point) const;
+  gtsam::Point2 project(const gtsam::Point3& point,
+                        Eigen::Ref<Eigen::MatrixXd> Dcamera,
+                        Eigen::Ref<Eigen::MatrixXd> Dpoint);
+  gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;
+  gtsam::Point3 backproject(const gtsam::Point2& p, double depth,
+                            Eigen::Ref<Eigen::MatrixXd> Dresult_dpose,
+                            Eigen::Ref<Eigen::MatrixXd> Dresult_dp,
+                            Eigen::Ref<Eigen::MatrixXd> Dresult_ddepth);
+
   static gtsam::Point2 Project(const gtsam::Point3& cameraPoint);
 
   // Standard Interface
   gtsam::Pose3 pose() const;
   double range(const gtsam::Point3& point) const;
+  double range(const gtsam::Point3& point, Eigen::Ref<Eigen::MatrixXd> Dcamera,
+               Eigen::Ref<Eigen::MatrixXd> Dpoint);
   double range(const gtsam::Pose3& pose) const;
+  double range(const gtsam::Pose3& point, Eigen::Ref<Eigen::MatrixXd> Dcamera,
+               Eigen::Ref<Eigen::MatrixXd> Dpose);
   double range(const gtsam::CalibratedCamera& camera) const;
 
   // enabling serialization functionality
@@ -823,6 +867,7 @@ template <CALIBRATION>
 class PinholeCamera {
   // Standard Constructors and Named Constructors
   PinholeCamera();
+  PinholeCamera(const gtsam::PinholeCamera<CALIBRATION> other);
   PinholeCamera(const gtsam::Pose3& pose);
   PinholeCamera(const gtsam::Pose3& pose, const CALIBRATION& K);
   static This Level(const CALIBRATION& K, const gtsam::Pose2& pose,
@@ -849,12 +894,48 @@ class PinholeCamera {
   static gtsam::Point2 Project(const gtsam::Point3& cameraPoint);
   pair<gtsam::Point2, bool> projectSafe(const gtsam::Point3& pw) const;
   gtsam::Point2 project(const gtsam::Point3& point);
+  gtsam::Point2 project(const gtsam::Point3& point,
+                        Eigen::Ref<Eigen::MatrixXd> Dpose,
+                        Eigen::Ref<Eigen::MatrixXd> Dpoint,
+                        Eigen::Ref<Eigen::MatrixXd> Dcal);
   gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;
+  gtsam::Point3 backproject(const gtsam::Point2& p, double depth,
+                            Eigen::Ref<Eigen::MatrixXd> Dresult_dpose,
+                            Eigen::Ref<Eigen::MatrixXd> Dresult_dp,
+                            Eigen::Ref<Eigen::MatrixXd> Dresult_ddepth,
+                            Eigen::Ref<Eigen::MatrixXd> Dresult_dcal);
   double range(const gtsam::Point3& point);
+  double range(const gtsam::Point3& point, Eigen::Ref<Eigen::MatrixXd> Dcamera,
+               Eigen::Ref<Eigen::MatrixXd> Dpoint);
   double range(const gtsam::Pose3& pose);
+  double range(const gtsam::Pose3& pose, Eigen::Ref<Eigen::MatrixXd> Dcamera,
+               Eigen::Ref<Eigen::MatrixXd> Dpose);
 
   // enabling serialization functionality
   void serialize() const;
+};
+  
+#include <gtsam/geometry/Similarity2.h>
+class Similarity2 {
+  // Standard Constructors
+  Similarity2();
+  Similarity2(double s);
+  Similarity2(const gtsam::Rot2& R, const gtsam::Point2& t, double s);
+  Similarity2(const Matrix& R, const Vector& t, double s);
+  Similarity2(const Matrix& T);
+
+  gtsam::Point2 transformFrom(const gtsam::Point2& p) const;
+  gtsam::Pose2 transformFrom(const gtsam::Pose2& T);
+
+  static gtsam::Similarity2 Align(const gtsam::Point2Pairs& abPointPairs);
+  static gtsam::Similarity2 Align(const gtsam::Pose2Pairs& abPosePairs);
+
+  // Standard Interface
+  bool equals(const gtsam::Similarity2& sim, double tol) const;
+  Matrix matrix() const;
+  gtsam::Rot2& rotation();
+  gtsam::Point2& translation();
+  double scale() const;
 };
 
 #include <gtsam/geometry/Similarity3.h>
@@ -873,9 +954,10 @@ class Similarity3 {
   static gtsam::Similarity3 Align(const gtsam::Pose3Pairs& abPosePairs);
 
   // Standard Interface
-  const Matrix matrix() const;
-  const gtsam::Rot3& rotation();
-  const gtsam::Point3& translation();
+  bool equals(const gtsam::Similarity3& sim, double tol) const;
+  Matrix matrix() const;
+  gtsam::Rot3& rotation();
+  gtsam::Point3& translation();
   double scale() const;
 };
 
@@ -920,8 +1002,17 @@ class StereoCamera {
   static size_t Dim();
 
   // Transformations and measurement functions
-  gtsam::StereoPoint2 project(const gtsam::Point3& point);
+  gtsam::StereoPoint2 project(const gtsam::Point3& point) const;
   gtsam::Point3 backproject(const gtsam::StereoPoint2& p) const;
+
+  // project with Jacobian
+  gtsam::StereoPoint2 project2(const gtsam::Point3& point,
+                              Eigen::Ref<Eigen::MatrixXd> H1,
+                              Eigen::Ref<Eigen::MatrixXd> H2) const;
+
+  gtsam::Point3 backproject2(const gtsam::StereoPoint2& p,
+                             Eigen::Ref<Eigen::MatrixXd> H1,
+                             Eigen::Ref<Eigen::MatrixXd> H2) const;
 
   // enabling serialization functionality
   void serialize() const;
