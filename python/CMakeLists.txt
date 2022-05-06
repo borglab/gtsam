@@ -47,6 +47,7 @@ set(ignore
     gtsam::Pose3Vector
     gtsam::Rot3Vector
     gtsam::KeyVector
+    gtsam::BinaryMeasurementsPoint3
     gtsam::BinaryMeasurementsUnit3
     gtsam::DiscreteKey
     gtsam::KeyPairDoubleMap)
@@ -124,6 +125,7 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             gtsam::Pose3Vector
             gtsam::KeyVector
             gtsam::FixedLagSmootherKeyTimestampMapValue
+            gtsam::BinaryMeasurementsPoint3
             gtsam::BinaryMeasurementsUnit3
             gtsam::CameraSetCal3_S2
             gtsam::CameraSetCal3Bundler

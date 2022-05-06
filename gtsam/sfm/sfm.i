@@ -85,12 +85,20 @@ class BinaryMeasurement {
 
 typedef gtsam::BinaryMeasurement<gtsam::Unit3> BinaryMeasurementUnit3;
 typedef gtsam::BinaryMeasurement<gtsam::Rot3> BinaryMeasurementRot3;
+typedef gtsam::BinaryMeasurement<gtsam::Point3> BinaryMeasurementPoint3;
 
 class BinaryMeasurementsUnit3 {
   BinaryMeasurementsUnit3();
   size_t size() const;
   gtsam::BinaryMeasurement<gtsam::Unit3> at(size_t idx) const;
   void push_back(const gtsam::BinaryMeasurement<gtsam::Unit3>& measurement);
+};
+
+class BinaryMeasurementsPoint3 {
+  BinaryMeasurementsPoint3();
+  size_t size() const;
+  gtsam::BinaryMeasurement<gtsam::Point3> at(size_t idx) const;
+  void push_back(const gtsam::BinaryMeasurement<gtsam::Point3>& measurement);
 };
 
 #include <gtsam/sfm/ShonanAveraging.h>
@@ -254,23 +262,23 @@ class MFAS {
 };
 
 #include <gtsam/sfm/TranslationRecovery.h>
+class TranslationRecoveryParams {
+  gtsam::BinaryMeasurementsPoint3 getBetweenTranslations() const;
+  gtsam::Values getInitialValues() const;
+  gtsam::LevenbergMarquardtParams getLMParams() const;
+
+  void setBetweenTranslations(
+      const gtsam::BinaryMeasurementsPoint3& betweenTranslations);
+  void setInitialValues(const gtsam::Values& values);
+  void setLMParams(const gtsam::LevenbergMarquardtParams& lmParams);
+};
+
 class TranslationRecovery {
   TranslationRecovery(
       const gtsam::BinaryMeasurementsUnit3& relativeTranslations,
-      const gtsam::LevenbergMarquardtParams& lmParams);
-  TranslationRecovery(
-      const gtsam::BinaryMeasurementsUnit3&
-          relativeTranslations);  // default LevenbergMarquardtParams
-  gtsam::NonlinearFactorGraph buildGraph() const;
-  gtsam::Values initializeRandomly() const;
-  void addPrior(gtsam::Key i, const gtsam::Point3& prior,
-                gtsam::NonlinearFactorGraph* graph,
-                const gtsam::SharedNoiseModel& model =
-                    gtsam::noiseModel::Isotropic::Sigma(3, 0.01)) const;
-  void addRelativeHardConstraint(gtsam::Key i, gtsam::Key j,
-                                 const gtsam::Point3& w_itj,
-                                 gtsam::NonlinearFactorGraph* graph) const;
-  gtsam::Values addDuplicateNodes(const gtsam::Values& result) const;
+      const gtsam::TranslationRecoveryParams& lmParams);
+  TranslationRecovery(const gtsam::BinaryMeasurementsUnit3&
+                          relativeTranslations);  // default params
   gtsam::Values run(const double scale) const;
   gtsam::Values run() const;  // default scale = 1.0
 };
