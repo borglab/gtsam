@@ -93,7 +93,8 @@ void TranslationRecovery::addPrior(
 
   // Add between factors for optional relative translations.
   for (auto edge : betweenTranslations) {
-    Key k1 = getUniqueKey(edge.key1()), k2 = getUniqueKey(edge.key2());
+    Key k1 = getSameTranslationRootNode(edge.key1()),
+        k2 = getSameTranslationRootNode(edge.key2());
     if (k1 != k2) {
       graph->emplace_shared<BetweenFactor<Point3>>(k1, k2, edge.measured(),
                                                    edge.noiseModel());
@@ -107,7 +108,7 @@ void TranslationRecovery::addPrior(
   }
 }
 
-Key TranslationRecovery::getUniqueKey(const Key i) const {
+Key TranslationRecovery::getSameTranslationRootNode(const Key i) const {
   for (const auto &optimizedAndDuplicateKeys : sameTranslationNodes_) {
     Key optimizedKey = optimizedAndDuplicateKeys.first;
     std::set<Key> duplicateKeys = optimizedAndDuplicateKeys.second;
