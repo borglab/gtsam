@@ -153,7 +153,7 @@ class TranslationRecovery {
    * @return Key of optimized variable - same as input if it does not have any
    * zero-translation edges.
    */
-  Key getUniqueKey(const Key i) const;
+  Key getSameTranslationRootNode(const Key i) const;
 
   /**
    * @brief Adds nodes that were not optimized for because they were connected
