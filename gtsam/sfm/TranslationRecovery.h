@@ -29,24 +29,12 @@
 namespace gtsam {
 
 // Parameters for the Translation Recovery problem.
-class TranslationRecoveryParams {
- public:
-  LevenbergMarquardtParams getLMParams() const { return lmParams_; }
-
-  Values getInitialValues() const { return initial_; }
-
-  void setInitialValues(const Values &values) { initial_ = values; }
-
-  void setLMParams(const LevenbergMarquardtParams &lmParams) {
-    lmParams_ = lmParams;
-  }
-
- private:
+struct TranslationRecoveryParams {
   // LevenbergMarquardtParams for optimization.
-  LevenbergMarquardtParams lmParams_;
+  LevenbergMarquardtParams lmParams;
 
   // Initial values, random intialization will be used if not provided.
-  Values initial_;
+  Values initial;
 };
 
 // Set up an optimization problem for the unknown translations Ti in the world
@@ -114,7 +102,7 @@ class TranslationRecovery {
    */
   void addPrior(
       const std::vector<BinaryMeasurement<Point3>> &betweenTranslations,
-      const double scale, const boost::shared_ptr<NonlinearFactorGraph> graph,
+      const double scale, NonlinearFactorGraph *graph,
       const SharedNoiseModel &priorNoiseModel =
           noiseModel::Isotropic::Sigma(3, 0.01)) const;
 
