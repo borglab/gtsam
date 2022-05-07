@@ -11,7 +11,8 @@
  * mutations on Python side will not be reflected on C++.
  */
 
-#include <pybind11/stl.h>
+// Including <stl.h> can cause some serious hard-to-debug bugs!!!
+// #include <pybind11/stl.h>
 #include <pybind11/stl_bind.h>
 
 PYBIND11_MAKE_OPAQUE(
