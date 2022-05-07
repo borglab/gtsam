@@ -79,28 +79,29 @@ NonlinearFactorGraph TranslationRecovery::buildGraph() const {
     graph.emplace_shared<TranslationFactor>(edge.key1(), edge.key2(),
                                             edge.measured(), edge.noiseModel());
   }
-
-  // Add between factors for optional relative translations.
-  for (auto edge : params_.getBetweenTranslations()) {
-    Key k1 = getUniqueKey(edge.key1()), k2 = getUniqueKey(edge.key2());
-    if (k1 != k2) {
-      graph.emplace_shared<BetweenFactor<Point3>>(k1, k2, edge.measured(),
-                                                  edge.noiseModel());
-    }
-  }
-
   return graph;
 }
 
 void TranslationRecovery::addPrior(
+    const std::vector<BinaryMeasurement<Point3>> &betweenTranslations,
     const double scale, const boost::shared_ptr<NonlinearFactorGraph> graph,
     const SharedNoiseModel &priorNoiseModel) const {
   auto edge = relativeTranslations_.begin();
   if (edge == relativeTranslations_.end()) return;
   graph->emplace_shared<PriorFactor<Point3>>(edge->key1(), Point3(0, 0, 0),
                                              priorNoiseModel);
+
+  // Add between factors for optional relative translations.
+  for (auto edge : betweenTranslations) {
+    Key k1 = getUniqueKey(edge.key1()), k2 = getUniqueKey(edge.key2());
+    if (k1 != k2) {
+      graph->emplace_shared<BetweenFactor<Point3>>(k1, k2, edge.measured(),
+                                                   edge.noiseModel());
+    }
+  }
+
   // Add a scale prior only if no other between factors were added.
-  if (params_.getBetweenTranslations().empty()) {
+  if (betweenTranslations.empty()) {
     graph->emplace_shared<PriorFactor<Point3>>(
         edge->key2(), scale * edge->measured().point3(), edge->noiseModel());
   }
@@ -154,10 +155,12 @@ Values TranslationRecovery::initializeRandomly() const {
   return initializeRandomly(&kRandomNumberGenerator);
 }
 
-Values TranslationRecovery::run(const double scale) const {
+Values TranslationRecovery::run(
+    const std::vector<BinaryMeasurement<Point3>> &betweenTranslations,
+    const double scale) const {
   boost::shared_ptr<NonlinearFactorGraph> graph_ptr =
       boost::make_shared<NonlinearFactorGraph>(buildGraph());
-  addPrior(scale, graph_ptr);
+  addPrior(betweenTranslations, scale, graph_ptr);
   const Values initial = initializeRandomly();
   LevenbergMarquardtOptimizer lm(*graph_ptr, initial, params_.getLMParams());
   Values result = lm.optimize();

@@ -31,15 +31,6 @@ namespace gtsam {
 // Parameters for the Translation Recovery problem.
 class TranslationRecoveryParams {
  public:
-  std::vector<BinaryMeasurement<Point3>> getBetweenTranslations() const {
-    return betweenTranslations_;
-  }
-
-  void setBetweenTranslations(
-      const std::vector<BinaryMeasurement<Point3>> &betweenTranslations) {
-    betweenTranslations_ = betweenTranslations;
-  }
-
   LevenbergMarquardtParams getLMParams() const { return lmParams_; }
 
   Values getInitialValues() const { return initial_; }
@@ -51,10 +42,6 @@ class TranslationRecoveryParams {
   }
 
  private:
-  // Relative translations with a known scale used as between factors in the
-  // problem if provided.
-  std::vector<BinaryMeasurement<Point3>> betweenTranslations_;
-
   // LevenbergMarquardtParams for optimization.
   LevenbergMarquardtParams lmParams_;
 
@@ -125,10 +112,11 @@ class TranslationRecovery {
    * @param graph factor graph to which prior is added.
    * @param priorNoiseModel the noise model to use with the prior.
    */
-  void addPrior(const double scale,
-                const boost::shared_ptr<NonlinearFactorGraph> graph,
-                const SharedNoiseModel &priorNoiseModel =
-                    noiseModel::Isotropic::Sigma(3, 0.01)) const;
+  void addPrior(
+      const std::vector<BinaryMeasurement<Point3>> &betweenTranslations,
+      const double scale, const boost::shared_ptr<NonlinearFactorGraph> graph,
+      const SharedNoiseModel &priorNoiseModel =
+          noiseModel::Isotropic::Sigma(3, 0.01)) const;
 
   /**
    * @brief Create random initial translations.
@@ -152,7 +140,9 @@ class TranslationRecovery {
    * The scale is only used if relativeTranslations in the params is empty.
    * @return Values
    */
-  Values run(const double scale = 1.0) const;
+  Values run(
+      const std::vector<BinaryMeasurement<Point3>> &betweenTranslations = {},
+      const double scale = 1.0) const;
 
   /**
    * @brief Simulate translation direction measurements
