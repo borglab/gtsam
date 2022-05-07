@@ -84,7 +84,7 @@ NonlinearFactorGraph TranslationRecovery::buildGraph() const {
 
 void TranslationRecovery::addPrior(
     const std::vector<BinaryMeasurement<Point3>> &betweenTranslations,
-    const double scale, const boost::shared_ptr<NonlinearFactorGraph> graph,
+    const double scale, NonlinearFactorGraph *graph,
     const SharedNoiseModel &priorNoiseModel) const {
   auto edge = relativeTranslations_.begin();
   if (edge == relativeTranslations_.end()) return;
@@ -122,11 +122,10 @@ Values TranslationRecovery::initializeRandomly(std::mt19937 *rng) const {
   // Create a lambda expression that checks whether value exists and randomly
   // initializes if not.
   Values initial;
-  const Values inputInitial = params_.getInitialValues();
   auto insert = [&](Key j) {
     if (initial.exists(j)) return;
-    if (inputInitial.exists(j)) {
-      initial.insert<Point3>(j, inputInitial.at<Point3>(j));
+    if (params_.initial.exists(j)) {
+      initial.insert<Point3>(j, params_.initial.at<Point3>(j));
     } else {
       initial.insert<Point3>(
           j, Point3(randomVal(*rng), randomVal(*rng), randomVal(*rng)));
@@ -158,11 +157,10 @@ Values TranslationRecovery::initializeRandomly() const {
 Values TranslationRecovery::run(
     const std::vector<BinaryMeasurement<Point3>> &betweenTranslations,
     const double scale) const {
-  boost::shared_ptr<NonlinearFactorGraph> graph_ptr =
-      boost::make_shared<NonlinearFactorGraph>(buildGraph());
-  addPrior(betweenTranslations, scale, graph_ptr);
+  NonlinearFactorGraph graph = buildGraph();
+  addPrior(betweenTranslations, scale, &graph);
   const Values initial = initializeRandomly();
-  LevenbergMarquardtOptimizer lm(*graph_ptr, initial, params_.getLMParams());
+  LevenbergMarquardtOptimizer lm(graph, initial, params_.lmParams);
   Values result = lm.optimize();
   return addSameTranslationNodes(result);
 }

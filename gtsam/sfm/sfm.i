@@ -263,11 +263,8 @@ class MFAS {
 
 #include <gtsam/sfm/TranslationRecovery.h>
 class TranslationRecoveryParams {
-  gtsam::Values getInitialValues() const;
-  gtsam::LevenbergMarquardtParams getLMParams() const;
-
-  void setInitialValues(const gtsam::Values& values);
-  void setLMParams(const gtsam::LevenbergMarquardtParams& lmParams);
+  gtsam::LevenbergMarquardtParams lmParams;
+  gtsam::Values initial;
 };
 
 class TranslationRecovery {
@@ -279,7 +276,7 @@ class TranslationRecovery {
   gtsam::Values run(const gtsam::BinaryMeasurementsPoint3& betweenTranslations,
                     const double scale) const;
   // default empty betweenTranslations
-  gtsam::Values run(const double scale) const;
+  // gtsam::Values run(const double scale) const;
   gtsam::Values run() const;  // default scale = 1.0
 };
 
