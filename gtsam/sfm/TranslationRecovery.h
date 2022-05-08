@@ -11,7 +11,7 @@
 
 /**
  * @file TranslationRecovery.h
- * @author Frank Dellaert
+ * @author Frank Dellaert, Akshay Krishnan
  * @date March 2020
  * @brief Recovering translations in an epipolar graph when rotations are given.
  */
@@ -78,12 +78,16 @@ class TranslationRecovery {
   TranslationRecovery(const TranslationRecoveryParams &params)
       : params_(params) {}
 
-  // Same as above, with default parameters.
+  /**
+   * @brief Default constructor.
+   */
   TranslationRecovery() = default;
 
   /**
    * @brief Build the factor graph to do the optimization.
    *
+   * @param relativeTranslations unit translation directions between
+   * translations to be estimated
    * @return NonlinearFactorGraph
    */
   NonlinearFactorGraph buildGraph(
@@ -92,8 +96,12 @@ class TranslationRecovery {
   /**
    * @brief Add priors on ednpoints of first measurement edge.
    *
+   * @param relativeTranslations unit translation directions between
+   * translations to be estimated
    * @param scale scale for first relative translation which fixes gauge.
    * @param graph factor graph to which prior is added.
+   * @param betweenTranslations relative translations (with scale) between 2
+   * points in world coordinate frame known a priori.
    * @param priorNoiseModel the noise model to use with the prior.
    */
   void addPrior(
@@ -105,8 +113,11 @@ class TranslationRecovery {
           noiseModel::Isotropic::Sigma(3, 0.01)) const;
 
   /**
-   * @brief Create random initial translations.
+   * @brief Create random initial translations. Uses inial values from params if
+   * provided.
    *
+   * @param relativeTranslations unit translation directions between
+   * translations to be estimated
    * @param rng random number generator
    * @return Values
    */
@@ -115,8 +126,11 @@ class TranslationRecovery {
       std::mt19937 *rng) const;
 
   /**
-   * @brief Version of initializeRandomly with a fixed seed.
+   * @brief Version of initializeRandomly with a fixed seed. Uses initial values
+   * from params if provided.
    *
+   * @param relativeTranslations unit translation directions between
+   * translations to be estimated
    * @return Values
    */
   Values initializeRandomly(
