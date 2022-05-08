@@ -77,10 +77,14 @@ struct GTSAM_EXPORT SfmData {
   size_t numberCameras() const { return cameras.size(); }
 
   /// The track formed by series of landmark measurements
-  SfmTrack track(size_t idx) const { return tracks[idx]; }
+  const SfmTrack& track(size_t idx) const { return tracks[idx]; }
 
   /// The camera pose at frame index `idx`
-  SfmCamera camera(size_t idx) const { return cameras[idx]; }
+  const SfmCamera& camera(size_t idx) const { return cameras[idx]; }
+
+  /// Getters
+  const std::vector<SfmCamera>& cameraList() const { return cameras; }
+  const std::vector<SfmTrack>& trackList() const { return tracks; }
 
   /**
    * @brief Create projection factors using keys i and P(j)
