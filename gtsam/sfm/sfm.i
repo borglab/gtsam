@@ -265,19 +265,33 @@ class MFAS {
 class TranslationRecoveryParams {
   gtsam::LevenbergMarquardtParams lmParams;
   gtsam::Values initial;
+  TranslationRecoveryParams();
 };
 
 class TranslationRecovery {
-  TranslationRecovery(
+  TranslationRecovery(const gtsam::TranslationRecoveryParams& lmParams);
+  TranslationRecovery();  // default params.
+  void addPrior(const gtsam::BinaryMeasurementsUnit3& relativeTranslations,
+                const double scale,
+                const gtsam::BinaryMeasurementsPoint3& betweenTranslations,
+                gtsam::NonlinearFactorGraph @graph,
+                const gtsam::SharedNoiseModel& priorNoiseModel) const;
+  void addPrior(const gtsam::BinaryMeasurementsUnit3& relativeTranslations,
+                const double scale,
+                const gtsam::BinaryMeasurementsPoint3& betweenTranslations,
+                gtsam::NonlinearFactorGraph @graph) const;
+  gtsam::NonlinearFactorGraph buildGraph(
+      const gtsam::BinaryMeasurementsUnit3& relativeTranslations) const;
+  gtsam::Values run(
       const gtsam::BinaryMeasurementsUnit3& relativeTranslations,
-      const gtsam::TranslationRecoveryParams& lmParams);
-  TranslationRecovery(const gtsam::BinaryMeasurementsUnit3&
-                          relativeTranslations);  // default params
-  gtsam::Values run(const gtsam::BinaryMeasurementsPoint3& betweenTranslations,
-                    const double scale) const;
+      const double scale,
+      const gtsam::BinaryMeasurementsPoint3& betweenTranslations) const;
   // default empty betweenTranslations
-  // gtsam::Values run(const double scale) const;
-  gtsam::Values run() const;  // default scale = 1.0
+  gtsam::Values run(const gtsam::BinaryMeasurementsUnit3& relativeTranslations,
+                    const double scale) const;
+  // default scale = 1.0, empty betweenTranslations
+  gtsam::Values run(
+      const gtsam::BinaryMeasurementsUnit3& relativeTranslations) const;
 };
 
 }  // namespace gtsam
