@@ -69,29 +69,25 @@ class TranslationRecovery {
   // Parameters.
   TranslationRecoveryParams params_;
 
-  // Map from a key in the graph to a set of keys that share the same
-  // translation.
-  std::map<Key, std::set<Key>> sameTranslationNodes_;
-
  public:
   /**
    * @brief Construct a new Translation Recovery object
    *
-   * @param relativeTranslations the relative translations, in world coordinate
-   * frames, vector of BinaryMeasurements of Unit3, where each key of a
-   * measurement is a point in 3D.
-   * @param params (optional) parameters for the recovery problem.
+   * @param params parameters for the recovery problem.
    */
-  TranslationRecovery(
-      const TranslationEdges &relativeTranslations,
-      const TranslationRecoveryParams &params = TranslationRecoveryParams());
+  TranslationRecovery(const TranslationRecoveryParams &params)
+      : params_(params) {}
+
+  // Same as above, with default parameters.
+  TranslationRecovery() = default;
 
   /**
    * @brief Build the factor graph to do the optimization.
    *
    * @return NonlinearFactorGraph
    */
-  NonlinearFactorGraph buildGraph() const;
+  NonlinearFactorGraph buildGraph(
+      const std::vector<BinaryMeasurement<Unit3>> &relativeTranslations) const;
 
   /**
    * @brief Add priors on ednpoints of first measurement edge.
@@ -101,8 +97,10 @@ class TranslationRecovery {
    * @param priorNoiseModel the noise model to use with the prior.
    */
   void addPrior(
+      const std::vector<BinaryMeasurement<Unit3>> &relativeTranslations,
+      const double scale,
       const std::vector<BinaryMeasurement<Point3>> &betweenTranslations,
-      const double scale, NonlinearFactorGraph *graph,
+      NonlinearFactorGraph *graph,
       const SharedNoiseModel &priorNoiseModel =
           noiseModel::Isotropic::Sigma(3, 0.01)) const;
 
@@ -112,25 +110,34 @@ class TranslationRecovery {
    * @param rng random number generator
    * @return Values
    */
-  Values initializeRandomly(std::mt19937 *rng) const;
+  Values initializeRandomly(
+      const std::vector<BinaryMeasurement<Unit3>> &relativeTranslations,
+      std::mt19937 *rng) const;
 
   /**
    * @brief Version of initializeRandomly with a fixed seed.
    *
    * @return Values
    */
-  Values initializeRandomly() const;
+  Values initializeRandomly(
+      const std::vector<BinaryMeasurement<Unit3>> &relativeTranslations) const;
 
   /**
    * @brief Build and optimize factor graph.
    *
+   * @param relativeTranslations the relative translations, in world coordinate
+   * frames, vector of BinaryMeasurements of Unit3, where each key of a
+   * measurement is a point in 3D.
    * @param scale scale for first relative translation which fixes gauge.
-   * The scale is only used if relativeTranslations in the params is empty.
+   * The scale is only used if betweenTranslations is empty.
+   * @param betweenTranslations relative translations (with scale) between 2
+   * points in world coordinate frame known a priori.
    * @return Values
    */
-  Values run(
-      const std::vector<BinaryMeasurement<Point3>> &betweenTranslations = {},
-      const double scale = 1.0) const;
+  Values run(const TranslationEdges &relativeTranslations,
+             const double scale = 1.0,
+             const std::vector<BinaryMeasurement<Point3>> &betweenTranslations =
+                 {}) const;
 
   /**
    * @brief Simulate translation direction measurements
@@ -143,25 +150,5 @@ class TranslationRecovery {
    */
   static TranslationEdges SimulateMeasurements(
       const Values &poses, const std::vector<KeyPair> &edges);
-
- private:
-  /**
-   * @brief Gets the key of the variable being optimized among multiple input
-   * variables that have the same translation.
-   *
-   * @param i key of input variable.
-   * @return Key of optimized variable - same as input if it does not have any
-   * zero-translation edges.
-   */
-  Key getSameTranslationRootNode(const Key i) const;
-
-  /**
-   * @brief Adds nodes that were not optimized for because they were connected
-   * to another node with a zero-translation edge in the input.
-   *
-   * @param result optimization problem result
-   * @return translation estimates for all variables in the input.
-   */
-  Values addSameTranslationNodes(const Values &result) const;
 };
 }  // namespace gtsam
