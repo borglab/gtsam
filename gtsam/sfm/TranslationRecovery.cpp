@@ -41,16 +41,13 @@ using namespace std;
 // In Wrappers we have no access to this so have a default ready.
 static std::mt19937 kRandomNumberGenerator(42);
 
-TranslationRecovery::TranslationRecovery(
-    const TranslationRecovery::TranslationEdges &relativeTranslations,
-    const TranslationRecoveryParams &params)
-    : params_(params) {
-  // Some relative translations may be zero. We treat nodes that have a zero
-  // relativeTranslation as a single node.
-
-  // A DSFMap is used to find sets of nodes that have a zero relative
-  // translation. Add the nodes in each edge to the DSFMap, and merge nodes that
-  // are connected by a zero relative translation.
+// Some relative translations may be zero. We treat nodes that have a zero
+// relativeTranslation as a single node.
+// A DSFMap is used to find sets of nodes that have a zero relative
+// translation. Add the nodes in each edge to the DSFMap, and merge nodes that
+// are connected by a zero relative translation.
+DSFMap<Key> getSameTranslationDSFMap(
+    const std::vector<BinaryMeasurement<Unit3>> &relativeTranslations) {
   DSFMap<Key> sameTranslationDSF;
   for (const auto &edge : relativeTranslations) {
     Key key1 = sameTranslationDSF.find(edge.key1());
@@ -59,23 +56,52 @@ TranslationRecovery::TranslationRecovery(
       sameTranslationDSF.merge(key1, key2);
     }
   }
-  // Use only those edges for which two keys have a distinct root in the DSFMap.
-  for (const auto &edge : relativeTranslations) {
-    Key key1 = sameTranslationDSF.find(edge.key1());
-    Key key2 = sameTranslationDSF.find(edge.key2());
-    if (key1 == key2) continue;
-    relativeTranslations_.emplace_back(key1, key2, edge.measured(),
-                                       edge.noiseModel());
-  }
-  // Store the DSF map for post-processing results.
-  sameTranslationNodes_ = sameTranslationDSF.sets();
+  return sameTranslationDSF;
 }
 
-NonlinearFactorGraph TranslationRecovery::buildGraph() const {
+// Removes zero-translation edges from measurements, and combines the nodes in
+// these edges into a single node.
+template <typename T>
+std::vector<BinaryMeasurement<T>> removeSameTranslationNodes(
+    const std::vector<BinaryMeasurement<T>> &edges,
+    const DSFMap<Key> &sameTranslationDSFMap) {
+  std::vector<BinaryMeasurement<T>> newEdges;
+  for (const auto &edge : edges) {
+    Key key1 = sameTranslationDSFMap.find(edge.key1());
+    Key key2 = sameTranslationDSFMap.find(edge.key2());
+    if (key1 == key2) continue;
+    newEdges.emplace_back(key1, key2, edge.measured(), edge.noiseModel());
+  }
+  return newEdges;
+}
+
+// Adds nodes that were not optimized for because they were connected
+// to another node with a zero-translation edge in the input.
+Values addSameTranslationNodes(const Values &result,
+                               const DSFMap<Key> &sameTranslationDSFMap) {
+  Values final_result = result;
+  // Nodes that were not optimized are stored in sameTranslationNodes_ as a map
+  // from a key that was optimized to keys that were not optimized. Iterate over
+  // map and add results for keys not optimized.
+  for (const auto &optimizedAndDuplicateKeys : sameTranslationDSFMap.sets()) {
+    Key optimizedKey = optimizedAndDuplicateKeys.first;
+    std::set<Key> duplicateKeys = optimizedAndDuplicateKeys.second;
+    // Add the result for the duplicate key if it does not already exist.
+    for (const Key duplicateKey : duplicateKeys) {
+      if (final_result.exists(duplicateKey)) continue;
+      final_result.insert<Point3>(duplicateKey,
+                                  final_result.at<Point3>(optimizedKey));
+    }
+  }
+  return final_result;
+}
+
+NonlinearFactorGraph TranslationRecovery::buildGraph(
+    const std::vector<BinaryMeasurement<Unit3>> &relativeTranslations) const {
   NonlinearFactorGraph graph;
 
   // Add translation factors for input translation directions.
-  for (auto edge : relativeTranslations_) {
+  for (auto edge : relativeTranslations) {
     graph.emplace_shared<TranslationFactor>(edge.key1(), edge.key2(),
                                             edge.measured(), edge.noiseModel());
   }
@@ -83,22 +109,20 @@ NonlinearFactorGraph TranslationRecovery::buildGraph() const {
 }
 
 void TranslationRecovery::addPrior(
+    const std::vector<BinaryMeasurement<Unit3>> &relativeTranslations,
+    const double scale,
     const std::vector<BinaryMeasurement<Point3>> &betweenTranslations,
-    const double scale, NonlinearFactorGraph *graph,
+    NonlinearFactorGraph *graph,
     const SharedNoiseModel &priorNoiseModel) const {
-  auto edge = relativeTranslations_.begin();
-  if (edge == relativeTranslations_.end()) return;
+  auto edge = relativeTranslations.begin();
+  if (edge == relativeTranslations.end()) return;
   graph->emplace_shared<PriorFactor<Point3>>(edge->key1(), Point3(0, 0, 0),
                                              priorNoiseModel);
 
   // Add between factors for optional relative translations.
   for (auto edge : betweenTranslations) {
-    Key k1 = getSameTranslationRootNode(edge.key1()),
-        k2 = getSameTranslationRootNode(edge.key2());
-    if (k1 != k2) {
-      graph->emplace_shared<BetweenFactor<Point3>>(k1, k2, edge.measured(),
-                                                   edge.noiseModel());
-    }
+    graph->emplace_shared<BetweenFactor<Point3>>(
+        edge.key1(), edge.key2(), edge.measured(), edge.noiseModel());
   }
 
   // Add a scale prior only if no other between factors were added.
@@ -108,17 +132,9 @@ void TranslationRecovery::addPrior(
   }
 }
 
-Key TranslationRecovery::getSameTranslationRootNode(const Key i) const {
-  for (const auto &optimizedAndDuplicateKeys : sameTranslationNodes_) {
-    Key optimizedKey = optimizedAndDuplicateKeys.first;
-    std::set<Key> duplicateKeys = optimizedAndDuplicateKeys.second;
-    if (i == optimizedKey || duplicateKeys.count(i)) return optimizedKey;
-  }
-  // Unlikely case, when i is not in the graph.
-  return i;
-}
-
-Values TranslationRecovery::initializeRandomly(std::mt19937 *rng) const {
+Values TranslationRecovery::initializeRandomly(
+    const std::vector<BinaryMeasurement<Unit3>> &relativeTranslations,
+    std::mt19937 *rng) const {
   uniform_real_distribution<double> randomVal(-1, 1);
   // Create a lambda expression that checks whether value exists and randomly
   // initializes if not.
@@ -135,54 +151,53 @@ Values TranslationRecovery::initializeRandomly(std::mt19937 *rng) const {
   };
 
   // Loop over measurements and add a random translation
-  for (auto edge : relativeTranslations_) {
+  for (auto edge : relativeTranslations) {
     insert(edge.key1());
     insert(edge.key2());
-  }
-
-  // If there are no valid edges, but zero-distance edges exist, initialize one
-  // of the nodes in a connected component of zero-distance edges.
-  if (initial.empty() && !sameTranslationNodes_.empty()) {
-    for (const auto &optimizedAndDuplicateKeys : sameTranslationNodes_) {
-      Key optimizedKey = optimizedAndDuplicateKeys.first;
-      initial.insert<Point3>(optimizedKey, Point3(0, 0, 0));
-    }
   }
   return initial;
 }
 
-Values TranslationRecovery::initializeRandomly() const {
-  return initializeRandomly(&kRandomNumberGenerator);
+Values TranslationRecovery::initializeRandomly(
+    const std::vector<BinaryMeasurement<Unit3>> &relativeTranslations) const {
+  return initializeRandomly(relativeTranslations, &kRandomNumberGenerator);
 }
 
 Values TranslationRecovery::run(
-    const std::vector<BinaryMeasurement<Point3>> &betweenTranslations,
-    const double scale) const {
-  NonlinearFactorGraph graph = buildGraph();
-  addPrior(betweenTranslations, scale, &graph);
-  const Values initial = initializeRandomly();
-  LevenbergMarquardtOptimizer lm(graph, initial, params_.lmParams);
-  Values result = lm.optimize();
-  return addSameTranslationNodes(result);
-}
+    const TranslationEdges &relativeTranslations, const double scale,
+    const std::vector<BinaryMeasurement<Point3>> &betweenTranslations) const {
+  // Find edges that have a zero-translation, and recompute relativeTranslations
+  // and betweenTranslations by retaining only one node for every zero-edge.
+  DSFMap<Key> sameTranslationDSFMap =
+      getSameTranslationDSFMap(relativeTranslations);
+  const TranslationEdges nonzeroRelativeTranslations =
+      removeSameTranslationNodes(relativeTranslations, sameTranslationDSFMap);
+  const std::vector<BinaryMeasurement<Point3>> nonzeroBetweenTranslations =
+      removeSameTranslationNodes(betweenTranslations, sameTranslationDSFMap);
 
-Values TranslationRecovery::addSameTranslationNodes(
-    const Values &result) const {
-  Values final_result = result;
-  // Nodes that were not optimized are stored in sameTranslationNodes_ as a map
-  // from a key that was optimized to keys that were not optimized. Iterate over
-  // map and add results for keys not optimized.
-  for (const auto &optimizedAndDuplicateKeys : sameTranslationNodes_) {
-    Key optimizedKey = optimizedAndDuplicateKeys.first;
-    std::set<Key> duplicateKeys = optimizedAndDuplicateKeys.second;
-    // Add the result for the duplicate key if it does not already exist.
-    for (const Key duplicateKey : duplicateKeys) {
-      if (final_result.exists(duplicateKey)) continue;
-      final_result.insert<Point3>(duplicateKey,
-                                  final_result.at<Point3>(optimizedKey));
+  // Create graph of translation factors.
+  NonlinearFactorGraph graph = buildGraph(nonzeroRelativeTranslations);
+
+  // Add global frame prior and scale (either from betweenTranslations or
+  // scale).
+  addPrior(nonzeroRelativeTranslations, scale, nonzeroBetweenTranslations,
+           &graph);
+
+  // Uses initial values from params if provided.
+  Values initial = initializeRandomly(nonzeroRelativeTranslations);
+
+  // If there are no valid edges, but zero-distance edges exist, initialize one
+  // of the nodes in a connected component of zero-distance edges.
+  if (initial.empty() && !sameTranslationDSFMap.sets().empty()) {
+    for (const auto &optimizedAndDuplicateKeys : sameTranslationDSFMap.sets()) {
+      Key optimizedKey = optimizedAndDuplicateKeys.first;
+      initial.insert<Point3>(optimizedKey, Point3(0, 0, 0));
     }
   }
-  return final_result;
+
+  LevenbergMarquardtOptimizer lm(graph, initial, params_.lmParams);
+  Values result = lm.optimize();
+  return addSameTranslationNodes(result, sameTranslationDSFMap);
 }
 
 TranslationRecovery::TranslationEdges TranslationRecovery::SimulateMeasurements(
