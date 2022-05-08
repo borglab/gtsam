@@ -43,7 +43,7 @@ void DotWriter::drawVariable(Key key, const KeyFormatter& keyFormatter,
                              const boost::optional<Vector2>& position,
                              ostream* os) const {
   // Label the node with the label from the KeyFormatter
-  *os << "  var" << keyFormatter(key) << "[label=\"" << keyFormatter(key)
+  *os << "  var" << key << "[label=\"" << keyFormatter(key)
       << "\"";
   if (position) {
     *os << ", pos=\"" << position->x() << "," << position->y() << "!\"";
@@ -65,13 +65,13 @@ void DotWriter::DrawFactor(size_t i, const boost::optional<Vector2>& position,
 
 static void ConnectVariables(Key key1, Key key2,
                              const KeyFormatter& keyFormatter, ostream* os) {
-  *os << "  var" << keyFormatter(key1) << "--"
-      << "var" << keyFormatter(key2) << ";\n";
+  *os << "  var" << key1 << "--"
+      << "var" << key2 << ";\n";
 }
 
 static void ConnectVariableFactor(Key key, const KeyFormatter& keyFormatter,
                                   size_t i, ostream* os) {
-  *os << "  var" << keyFormatter(key) << "--"
+  *os << "  var" << key << "--"
       << "factor" << i << ";\n";
 }
 
