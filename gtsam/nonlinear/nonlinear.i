@@ -226,6 +226,10 @@ class Values {
   void insert(size_t j, const gtsam::PinholeCamera<gtsam::Cal3Bundler>& camera);
   void insert(size_t j, const gtsam::PinholeCamera<gtsam::Cal3Fisheye>& camera);
   void insert(size_t j, const gtsam::PinholeCamera<gtsam::Cal3Unified>& camera);
+  void insert(size_t j, const gtsam::PinholePose<gtsam::Cal3_S2>& camera);
+  void insert(size_t j, const gtsam::PinholePose<gtsam::Cal3Bundler>& camera);
+  void insert(size_t j, const gtsam::PinholePose<gtsam::Cal3Fisheye>& camera);
+  void insert(size_t j, const gtsam::PinholePose<gtsam::Cal3Unified>& camera);
   void insert(size_t j, const gtsam::imuBias::ConstantBias& constant_bias);
   void insert(size_t j, const gtsam::NavState& nav_state);
   void insert(size_t j, double c);
@@ -269,6 +273,10 @@ class Values {
   void update(size_t j, const gtsam::PinholeCamera<gtsam::Cal3Bundler>& camera);
   void update(size_t j, const gtsam::PinholeCamera<gtsam::Cal3Fisheye>& camera);
   void update(size_t j, const gtsam::PinholeCamera<gtsam::Cal3Unified>& camera);
+  void update(size_t j, const gtsam::PinholePose<gtsam::Cal3_S2>& camera);
+  void update(size_t j, const gtsam::PinholePose<gtsam::Cal3Bundler>& camera);
+  void update(size_t j, const gtsam::PinholePose<gtsam::Cal3Fisheye>& camera);
+  void update(size_t j, const gtsam::PinholePose<gtsam::Cal3Unified>& camera);
   void update(size_t j, const gtsam::imuBias::ConstantBias& constant_bias);
   void update(size_t j, const gtsam::NavState& nav_state);
   void update(size_t j, Vector vector);
@@ -310,6 +318,10 @@ class Values {
   void insert_or_assign(size_t j, const gtsam::PinholeCamera<gtsam::Cal3Bundler>& camera);
   void insert_or_assign(size_t j, const gtsam::PinholeCamera<gtsam::Cal3Fisheye>& camera);
   void insert_or_assign(size_t j, const gtsam::PinholeCamera<gtsam::Cal3Unified>& camera);
+  void insert_or_assign(size_t j, const gtsam::PinholePose<gtsam::Cal3_S2>& camera);
+  void insert_or_assign(size_t j, const gtsam::PinholePose<gtsam::Cal3Bundler>& camera);
+  void insert_or_assign(size_t j, const gtsam::PinholePose<gtsam::Cal3Fisheye>& camera);
+  void insert_or_assign(size_t j, const gtsam::PinholePose<gtsam::Cal3Unified>& camera);
   void insert_or_assign(size_t j, const gtsam::imuBias::ConstantBias& constant_bias);
   void insert_or_assign(size_t j, const gtsam::NavState& nav_state);
   void insert_or_assign(size_t j, Vector vector);
@@ -351,6 +363,10 @@ class Values {
                  gtsam::PinholeCamera<gtsam::Cal3Bundler>,
                  gtsam::PinholeCamera<gtsam::Cal3Fisheye>,
                  gtsam::PinholeCamera<gtsam::Cal3Unified>,
+                 gtsam::PinholePose<gtsam::Cal3_S2>,
+                 gtsam::PinholePose<gtsam::Cal3Bundler>,
+                 gtsam::PinholePose<gtsam::Cal3Fisheye>,
+                 gtsam::PinholePose<gtsam::Cal3Unified>,
                  gtsam::imuBias::ConstantBias,
                  gtsam::NavState,
                  Vector,
