@@ -365,7 +365,7 @@ boost::optional<Pose2> Pose2::Align(const Matrix& a, const Matrix& b) {
       "Pose2:Align expects 2*N matrices of equal shape.");
   }
   Point2Pairs ab_pairs;
-  for (size_t j=0; j < a.cols(); j++) {
+  for (Eigen::Index j = 0; j < a.cols(); j++) {
     ab_pairs.emplace_back(a.col(j), b.col(j));
   }
   return Pose2::Align(ab_pairs);

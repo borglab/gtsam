@@ -113,6 +113,18 @@ list<Point2> circleCircleIntersection(Point2 c1, double r1, Point2 c2,
   return circleCircleIntersection(c1, c2, fh);
 }
 
+Point2Pair means(const std::vector<Point2Pair> &abPointPairs) {
+  const size_t n = abPointPairs.size();
+  if (n == 0) throw std::invalid_argument("Point2::mean input Point2Pair vector is empty");
+  Point2 aSum(0, 0), bSum(0, 0);
+  for (const Point2Pair &abPair : abPointPairs) {
+    aSum += abPair.first;
+    bSum += abPair.second;
+  }
+  const double f = 1.0 / n;
+  return {aSum * f, bSum * f};
+}
+  
 /* ************************************************************************* */
 ostream &operator<<(ostream &os, const gtsam::Point2Pair &p) {
   os << p.first << " <-> " << p.second;
