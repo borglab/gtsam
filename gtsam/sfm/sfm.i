@@ -104,6 +104,7 @@ class BinaryMeasurementsPoint3 {
   size_t size() const;
   gtsam::BinaryMeasurement<gtsam::Point3> at(size_t idx) const;
   void push_back(const gtsam::BinaryMeasurement<gtsam::Point3>& measurement);
+};
 
 class BinaryMeasurementsRot3 {
   BinaryMeasurementsRot3();
