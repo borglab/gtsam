@@ -90,6 +90,22 @@ typedef gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Unified>,
                                 gtsam::Point3>
     GeneralSFMFactorCal3Unified;
 
+typedef gtsam::GeneralSFMFactor<gtsam::PinholePose<gtsam::Cal3_S2>,
+                                gtsam::Point3>
+    GeneralSFMFactorPoseCal3_S2;
+typedef gtsam::GeneralSFMFactor<gtsam::PinholePose<gtsam::Cal3DS2>,
+                                gtsam::Point3>
+    GeneralSFMFactorPoseCal3DS2;
+typedef gtsam::GeneralSFMFactor<gtsam::PinholePose<gtsam::Cal3Bundler>,
+                                gtsam::Point3>
+    GeneralSFMFactorPoseCal3Bundler;
+typedef gtsam::GeneralSFMFactor<gtsam::PinholePose<gtsam::Cal3Fisheye>,
+                                gtsam::Point3>
+    GeneralSFMFactorPoseCal3Fisheye;
+typedef gtsam::GeneralSFMFactor<gtsam::PinholePose<gtsam::Cal3Unified>,
+                                gtsam::Point3>
+    GeneralSFMFactorPoseCal3Unified;
+
 template <CALIBRATION = {gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler,
                          gtsam::Cal3Fisheye, gtsam::Cal3Unified}>
 virtual class GeneralSFMFactor2 : gtsam::NoiseModelFactor {
