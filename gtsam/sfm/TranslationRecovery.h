@@ -28,15 +28,6 @@
 
 namespace gtsam {
 
-// Parameters for the Translation Recovery problem.
-struct TranslationRecoveryParams {
-  // LevenbergMarquardtParams for optimization.
-  LevenbergMarquardtParams lmParams;
-
-  // Initial values, random intialization will be used if not provided.
-  Values initial;
-};
-
 // Set up an optimization problem for the unknown translations Ti in the world
 // coordinate frame, given the known camera attitudes wRi with respect to the
 // world frame, and a set of (noisy) translation directions of type Unit3,
@@ -67,16 +58,16 @@ class TranslationRecovery {
   TranslationEdges relativeTranslations_;
 
   // Parameters.
-  TranslationRecoveryParams params_;
+  LevenbergMarquardtParams lmParams_;
 
  public:
   /**
    * @brief Construct a new Translation Recovery object
    *
-   * @param params parameters for the recovery problem.
+   * @param lmParams parameters for optimization.
    */
-  TranslationRecovery(const TranslationRecoveryParams &params)
-      : params_(params) {}
+  TranslationRecovery(const LevenbergMarquardtParams &lmParams)
+      : lmParams_(lmParams) {}
 
   /**
    * @brief Default constructor.
@@ -94,7 +85,11 @@ class TranslationRecovery {
       const std::vector<BinaryMeasurement<Unit3>> &relativeTranslations) const;
 
   /**
-   * @brief Add priors on ednpoints of first measurement edge.
+   * @brief Add 3 factors to the graph:
+   *    - A prior on the first point to lie at (0, 0, 0)
+   *    - If betweenTranslations is non-empty, between factors provided by it.
+   *    - If betweenTranslations is empty, a prior on scale of the first
+   * relativeTranslations edge.
    *
    * @param relativeTranslations unit translation directions between
    * translations to be estimated
@@ -113,28 +108,29 @@ class TranslationRecovery {
           noiseModel::Isotropic::Sigma(3, 0.01)) const;
 
   /**
-   * @brief Create random initial translations. Uses inial values from params if
-   * provided.
+   * @brief Create random initial translations.
    *
    * @param relativeTranslations unit translation directions between
    * translations to be estimated
    * @param rng random number generator
+   * @param intialValues (optional) initial values from a prior
    * @return Values
    */
   Values initializeRandomly(
       const std::vector<BinaryMeasurement<Unit3>> &relativeTranslations,
-      std::mt19937 *rng) const;
+      std::mt19937 *rng, const Values &initialValues = Values()) const;
 
   /**
-   * @brief Version of initializeRandomly with a fixed seed. Uses initial values
-   * from params if provided.
+   * @brief Version of initializeRandomly with a fixed seed.
    *
    * @param relativeTranslations unit translation directions between
    * translations to be estimated
+   * @param initialValues (optional) initial values from a prior
    * @return Values
    */
   Values initializeRandomly(
-      const std::vector<BinaryMeasurement<Unit3>> &relativeTranslations) const;
+      const std::vector<BinaryMeasurement<Unit3>> &relativeTranslations,
+      const Values &initialValues = Values()) const;
 
   /**
    * @brief Build and optimize factor graph.
@@ -146,12 +142,14 @@ class TranslationRecovery {
    * The scale is only used if betweenTranslations is empty.
    * @param betweenTranslations relative translations (with scale) between 2
    * points in world coordinate frame known a priori.
+   * @param initialValues intial values for optimization. Initializes randomly
+   * if not provided.
    * @return Values
    */
-  Values run(const TranslationEdges &relativeTranslations,
-             const double scale = 1.0,
-             const std::vector<BinaryMeasurement<Point3>> &betweenTranslations =
-                 {}) const;
+  Values run(
+      const TranslationEdges &relativeTranslations, const double scale = 1.0,
+      const std::vector<BinaryMeasurement<Point3>> &betweenTranslations = {},
+      const Values &initialValues = Values()) const;
 
   /**
    * @brief Simulate translation direction measurements

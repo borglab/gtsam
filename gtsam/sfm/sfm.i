@@ -262,14 +262,9 @@ class MFAS {
 };
 
 #include <gtsam/sfm/TranslationRecovery.h>
-class TranslationRecoveryParams {
-  gtsam::LevenbergMarquardtParams lmParams;
-  gtsam::Values initial;
-  TranslationRecoveryParams();
-};
 
 class TranslationRecovery {
-  TranslationRecovery(const gtsam::TranslationRecoveryParams& lmParams);
+  TranslationRecovery(const gtsam::LevenbergMarquardtParams& lmParams);
   TranslationRecovery();  // default params.
   void addPrior(const gtsam::BinaryMeasurementsUnit3& relativeTranslations,
                 const double scale,
@@ -282,6 +277,11 @@ class TranslationRecovery {
                 gtsam::NonlinearFactorGraph @graph) const;
   gtsam::NonlinearFactorGraph buildGraph(
       const gtsam::BinaryMeasurementsUnit3& relativeTranslations) const;
+  gtsam::Values run(const gtsam::BinaryMeasurementsUnit3& relativeTranslations,
+                    const double scale,
+                    const gtsam::BinaryMeasurementsPoint3& betweenTranslations,
+                    const gtsam::Values& initialValues) const;
+  // default random initial values
   gtsam::Values run(
       const gtsam::BinaryMeasurementsUnit3& relativeTranslations,
       const double scale,
