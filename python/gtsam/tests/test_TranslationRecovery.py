@@ -46,10 +46,8 @@ class TestTranslationRecovery(unittest.TestCase):
         # Set verbosity to Silent for tests
         lmParams = gtsam.LevenbergMarquardtParams()
         lmParams.setVerbosityLM("silent")
-        params = gtsam.TranslationRecoveryParams()
-        params.lmParams = lmParams
 
-        algorithm = gtsam.TranslationRecovery(params)
+        algorithm = gtsam.TranslationRecovery(lmParams)
         scale = 2.0
         result = algorithm.run(measurements, scale)
 

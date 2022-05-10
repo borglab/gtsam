@@ -134,15 +134,15 @@ void TranslationRecovery::addPrior(
 
 Values TranslationRecovery::initializeRandomly(
     const std::vector<BinaryMeasurement<Unit3>> &relativeTranslations,
-    std::mt19937 *rng) const {
+    std::mt19937 *rng, const Values &initialValues) const {
   uniform_real_distribution<double> randomVal(-1, 1);
   // Create a lambda expression that checks whether value exists and randomly
   // initializes if not.
   Values initial;
   auto insert = [&](Key j) {
     if (initial.exists(j)) return;
-    if (params_.initial.exists(j)) {
-      initial.insert<Point3>(j, params_.initial.at<Point3>(j));
+    if (initialValues.exists(j)) {
+      initial.insert<Point3>(j, initialValues.at<Point3>(j));
     } else {
       initial.insert<Point3>(
           j, Point3(randomVal(*rng), randomVal(*rng), randomVal(*rng)));
@@ -159,13 +159,16 @@ Values TranslationRecovery::initializeRandomly(
 }
 
 Values TranslationRecovery::initializeRandomly(
-    const std::vector<BinaryMeasurement<Unit3>> &relativeTranslations) const {
-  return initializeRandomly(relativeTranslations, &kRandomNumberGenerator);
+    const std::vector<BinaryMeasurement<Unit3>> &relativeTranslations,
+    const Values &initialValues) const {
+  return initializeRandomly(relativeTranslations, &kRandomNumberGenerator,
+                            initialValues);
 }
 
 Values TranslationRecovery::run(
     const TranslationEdges &relativeTranslations, const double scale,
-    const std::vector<BinaryMeasurement<Point3>> &betweenTranslations) const {
+    const std::vector<BinaryMeasurement<Point3>> &betweenTranslations,
+    const Values &initialValues) const {
   // Find edges that have a zero-translation, and recompute relativeTranslations
   // and betweenTranslations by retaining only one node for every zero-edge.
   DSFMap<Key> sameTranslationDSFMap =
@@ -184,7 +187,8 @@ Values TranslationRecovery::run(
            &graph);
 
   // Uses initial values from params if provided.
-  Values initial = initializeRandomly(nonzeroRelativeTranslations);
+  Values initial =
+      initializeRandomly(nonzeroRelativeTranslations, initialValues);
 
   // If there are no valid edges, but zero-distance edges exist, initialize one
   // of the nodes in a connected component of zero-distance edges.
@@ -195,7 +199,7 @@ Values TranslationRecovery::run(
     }
   }
 
-  LevenbergMarquardtOptimizer lm(graph, initial, params_.lmParams);
+  LevenbergMarquardtOptimizer lm(graph, initial, lmParams_);
   Values result = lm.optimize();
   return addSameTranslationNodes(result, sameTranslationDSFMap);
 }
