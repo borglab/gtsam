@@ -671,6 +671,10 @@ virtual class DummyPreconditionerParameters : gtsam::PreconditionerParameters {
   DummyPreconditionerParameters();
 };
 
+virtual class BlockJacobiPreconditionerParameters : gtsam::PreconditionerParameters {
+  BlockJacobiPreconditionerParameters();
+};
+
 #include <gtsam/linear/PCGSolver.h>
 virtual class PCGSolverParameters : gtsam::ConjugateGradientParameters {
   PCGSolverParameters();
