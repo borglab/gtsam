@@ -23,6 +23,7 @@
 #include <gtsam/geometry/Cal3Fisheye.h>
 #include <gtsam/geometry/Cal3Unified.h>
 #include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/Cal3DS2.h>
 #include <gtsam/geometry/CameraSet.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/SphericalCamera.h>
@@ -510,18 +511,18 @@ private:
 };
 
 /**
- * TriangulationResult is an optional point, along with the reasons why it is invalid.
+ * TriangulationResult is an optional point, along with the reasons why it is
+ * invalid.
  */
-class TriangulationResult: public boost::optional<Point3> {
-  enum Status {
-    VALID, DEGENERATE, BEHIND_CAMERA, OUTLIER, FAR_POINT
-  };
-  Status status_;
-  TriangulationResult(Status s) :
-      status_(s) {
-  }
-public:
+class TriangulationResult : public boost::optional<Point3> {
+ public:
+  enum Status { VALID, DEGENERATE, BEHIND_CAMERA, OUTLIER, FAR_POINT };
+  Status status;
 
+ private:
+  TriangulationResult(Status s) : status(s) {}
+
+ public:
   /**
    * Default constructor, only for serialization
    */
@@ -530,54 +531,38 @@ public:
   /**
    * Constructor
    */
-  TriangulationResult(const Point3& p) :
-      status_(VALID) {
-    reset(p);
-  }
+  TriangulationResult(const Point3& p) : status(VALID) { reset(p); }
   static TriangulationResult Degenerate() {
     return TriangulationResult(DEGENERATE);
   }
-  static TriangulationResult Outlier() {
-    return TriangulationResult(OUTLIER);
-  }
+  static TriangulationResult Outlier() { return TriangulationResult(OUTLIER); }
   static TriangulationResult FarPoint() {
     return TriangulationResult(FAR_POINT);
   }
   static TriangulationResult BehindCamera() {
     return TriangulationResult(BEHIND_CAMERA);
   }
-  bool valid() const {
-    return status_ == VALID;
-  }
-  bool degenerate() const {
-    return status_ == DEGENERATE;
-  }
-  bool outlier() const {
-    return status_ == OUTLIER;
-  }
-  bool farPoint() const {
-    return status_ == FAR_POINT;
-  }
-  bool behindCamera() const {
-    return status_ == BEHIND_CAMERA;
-  }
+  bool valid() const { return status == VALID; }
+  bool degenerate() const { return status == DEGENERATE; }
+  bool outlier() const { return status == OUTLIER; }
+  bool farPoint() const { return status == FAR_POINT; }
+  bool behindCamera() const { return status == BEHIND_CAMERA; }
   // stream to output
-  friend std::ostream &operator<<(std::ostream &os,
-      const TriangulationResult& result) {
+  friend std::ostream& operator<<(std::ostream& os,
+                                  const TriangulationResult& result) {
     if (result)
       os << "point = " << *result << std::endl;
     else
-      os << "no point, status = " << result.status_ << std::endl;
+      os << "no point, status = " << result.status << std::endl;
     return os;
   }
 
-private:
-
+ private:
   /// Serialization function
   friend class boost::serialization::access;
-  template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
-    ar & BOOST_SERIALIZATION_NVP(status_);
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int version) {
+    ar& BOOST_SERIALIZATION_NVP(status);
   }
 };
 
@@ -644,6 +629,7 @@ TriangulationResult triangulateSafe(const CameraSet<CAMERA>& cameras,
 // Vector of Cameras - used by the Python/MATLAB wrapper
 using CameraSetCal3Bundler = CameraSet<PinholeCamera<Cal3Bundler>>;
 using CameraSetCal3_S2 = CameraSet<PinholeCamera<Cal3_S2>>;
+using CameraSetCal3DS2 = CameraSet<PinholeCamera<Cal3DS2>>;
 using CameraSetCal3Fisheye = CameraSet<PinholeCamera<Cal3Fisheye>>;
 using CameraSetCal3Unified = CameraSet<PinholeCamera<Cal3Unified>>;
 using CameraSetSpherical = CameraSet<SphericalCamera>;
