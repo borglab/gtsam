@@ -57,6 +57,7 @@ using gtsam::symbol_shorthand::D;
 using gtsam::symbol_shorthand::X;
 using gtsam::symbol_shorthand::Y;
 
+#ifdef HYBRID_DEBUG
 #define BOOST_STACKTRACE_GNU_SOURCE_NOT_REQUIRED
 
 #include <signal.h>  // ::signal, ::raise
@@ -68,6 +69,7 @@ void my_signal_handler(int signum) {
   std::cout << boost::stacktrace::stacktrace();
   ::raise(SIGABRT);
 }
+#endif
 
 /* ************************************************************************* */
 TEST_DISABLED(HybridFactorGraph, creation) {
@@ -594,9 +596,10 @@ TEST_DISABLED(HybridFactorGraph, SwitchingTwoVar) {
 
 /* ************************************************************************* */
 int main() {
+#ifdef HYBRID_DEBUG
   ::signal(SIGSEGV, &my_signal_handler);
   ::signal(SIGBUS, &my_signal_handler);
-
+#endif
   TestResult tr;
   return TestRegistry::runAllTests(tr);
 }

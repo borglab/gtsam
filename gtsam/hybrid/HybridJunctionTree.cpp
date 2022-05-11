@@ -59,12 +59,12 @@ struct HybridConstructorTraversalData {
     myData.myJTNode = boost::make_shared<Node>(node->key, node->factors);
     parentData.myJTNode->addChild(myData.myJTNode);
 
-#ifndef NDEBUG
+#ifdef GTSAM_HYBRID_JUNCTIONTREE_DEBUG
     std::cout << "Getting discrete info: ";
 #endif
     for (HybridFactor::shared_ptr& f : node->factors) {
       for (auto& k : f->discreteKeys_) {
-#ifndef NDEBUG
+#ifdef GTSAM_HYBRID_JUNCTIONTREE_DEBUG
         std::cout << "DK: " << DefaultKeyFormatter(k.first) << "\n";
 #endif
 
@@ -104,7 +104,7 @@ struct HybridConstructorTraversalData {
     boost::tie(myConditional, mySeparatorFactor) =
         internal::EliminateSymbolic(symbolicFactors, keyAsOrdering);
 
-#ifndef NDEBUG
+#ifdef GTSAM_HYBRID_JUNCTIONTREE_DEBUG
     std::cout << "Symbolic: ";
     myConditional->print();
 #endif
@@ -136,7 +136,7 @@ struct HybridConstructorTraversalData {
             myData.discreteKeys.exists(myConditional->frontals()[0]);
         const bool theirType =
             myData.discreteKeys.exists(childConditionals[i]->frontals()[0]);
-#ifndef NDEBUG
+#ifdef GTSAM_HYBRID_JUNCTIONTREE_DEBUG
         std::cout << "Type: "
                   << DefaultKeyFormatter(myConditional->frontals()[0]) << " vs "
                   << DefaultKeyFormatter(childConditionals[i]->frontals()[0])
@@ -145,7 +145,7 @@ struct HybridConstructorTraversalData {
         if (myType == theirType) {
           // Increment number of frontal variables
           myNrFrontals += nrFrontals[i];
-#ifndef NDEBUG
+#ifdef GTSAM_HYBRID_JUNCTIONTREE_DEBUG
           std::cout << "Merging ";
           childConditionals[i]->print();
 #endif
