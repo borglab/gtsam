@@ -74,7 +74,7 @@ class GTSAM_EXPORT HybridBayesTree : public BayesTree<HybridBayesTreeClique> {
 template <class CLIQUE>
 class BayesTreeOrphanWrapper<
     CLIQUE,
-    boost::enable_if_t<boost::is_same<CLIQUE, HybridBayesTreeClique>::value> >
+    typename std::enable_if<boost::is_same<CLIQUE, HybridBayesTreeClique>::value> >
     : public CLIQUE::ConditionalType {
  public:
   typedef CLIQUE CliqueType;
