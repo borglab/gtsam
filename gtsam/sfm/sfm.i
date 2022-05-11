@@ -4,6 +4,8 @@
 
 namespace gtsam {
 
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/Values.h>
 #include <gtsam/sfm/SfmTrack.h>
 class SfmTrack {
   SfmTrack();
@@ -88,12 +90,20 @@ class BinaryMeasurement {
 
 typedef gtsam::BinaryMeasurement<gtsam::Unit3> BinaryMeasurementUnit3;
 typedef gtsam::BinaryMeasurement<gtsam::Rot3> BinaryMeasurementRot3;
+typedef gtsam::BinaryMeasurement<gtsam::Point3> BinaryMeasurementPoint3;
 
 class BinaryMeasurementsUnit3 {
   BinaryMeasurementsUnit3();
   size_t size() const;
   gtsam::BinaryMeasurement<gtsam::Unit3> at(size_t idx) const;
   void push_back(const gtsam::BinaryMeasurement<gtsam::Unit3>& measurement);
+};
+
+class BinaryMeasurementsPoint3 {
+  BinaryMeasurementsPoint3();
+  size_t size() const;
+  gtsam::BinaryMeasurement<gtsam::Point3> at(size_t idx) const;
+  void push_back(const gtsam::BinaryMeasurement<gtsam::Point3>& measurement);
 };
 
 class BinaryMeasurementsRot3 {
@@ -154,8 +164,8 @@ class ShonanAveraging2 {
   ShonanAveraging2(string g2oFile);
   ShonanAveraging2(string g2oFile,
                    const gtsam::ShonanAveragingParameters2& parameters);
-  ShonanAveraging2(const gtsam::BetweenFactorPose2s &factors,
-                   const gtsam::ShonanAveragingParameters2 &parameters);
+  ShonanAveraging2(const gtsam::BetweenFactorPose2s& factors,
+                   const gtsam::ShonanAveragingParameters2& parameters);
 
   // Query properties
   size_t nrUnknowns() const;
@@ -268,15 +278,36 @@ class MFAS {
 };
 
 #include <gtsam/sfm/TranslationRecovery.h>
+
 class TranslationRecovery {
-  TranslationRecovery(
+  TranslationRecovery(const gtsam::LevenbergMarquardtParams& lmParams);
+  TranslationRecovery();  // default params.
+  void addPrior(const gtsam::BinaryMeasurementsUnit3& relativeTranslations,
+                const double scale,
+                const gtsam::BinaryMeasurementsPoint3& betweenTranslations,
+                gtsam::NonlinearFactorGraph @graph,
+                const gtsam::SharedNoiseModel& priorNoiseModel) const;
+  void addPrior(const gtsam::BinaryMeasurementsUnit3& relativeTranslations,
+                const double scale,
+                const gtsam::BinaryMeasurementsPoint3& betweenTranslations,
+                gtsam::NonlinearFactorGraph @graph) const;
+  gtsam::NonlinearFactorGraph buildGraph(
+      const gtsam::BinaryMeasurementsUnit3& relativeTranslations) const;
+  gtsam::Values run(const gtsam::BinaryMeasurementsUnit3& relativeTranslations,
+                    const double scale,
+                    const gtsam::BinaryMeasurementsPoint3& betweenTranslations,
+                    const gtsam::Values& initialValues) const;
+  // default random initial values
+  gtsam::Values run(
       const gtsam::BinaryMeasurementsUnit3& relativeTranslations,
-      const gtsam::LevenbergMarquardtParams& lmParams);
-  TranslationRecovery(
-      const gtsam::BinaryMeasurementsUnit3&
-          relativeTranslations);  // default LevenbergMarquardtParams
-  gtsam::Values run(const double scale) const;
-  gtsam::Values run() const;  // default scale = 1.0
+      const double scale,
+      const gtsam::BinaryMeasurementsPoint3& betweenTranslations) const;
+  // default empty betweenTranslations
+  gtsam::Values run(const gtsam::BinaryMeasurementsUnit3& relativeTranslations,
+                    const double scale) const;
+  // default scale = 1.0, empty betweenTranslations
+  gtsam::Values run(
+      const gtsam::BinaryMeasurementsUnit3& relativeTranslations) const;
 };
 
 }  // namespace gtsam
