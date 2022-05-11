@@ -1094,6 +1094,19 @@ virtual class TriangulationResult : boost::optional<gtsam::Point3> {
   Status status;
 };
 
+class TriangulationParameters {
+  double rankTolerance;
+  bool enableEPI;
+  double landmarkDistanceThreshold;
+  double dynamicOutlierRejectionThreshold;
+  SharedNoiseModel noiseModel;
+  TriangulationParameters(const double rankTolerance = 1.0,
+                          const bool enableEPI = false,
+                          double landmarkDistanceThreshold = -1,
+                          double dynamicOutlierRejectionThreshold = -1,
+                          const gtsam::SharedNoiseModel& noiseModel = nullptr);
+};
+
 // Templates appear not yet supported for free functions - issue raised at
 // borglab/wrap#14 to add support
 
@@ -1114,6 +1127,10 @@ gtsam::Point3 triangulateNonlinear(const gtsam::Pose3Vector& poses,
 gtsam::Point3 triangulateNonlinear(const gtsam::CameraSetCal3_S2& cameras,
                                    const gtsam::Point2Vector& measurements,
                                    const gtsam::Point3& initialEstimate);
+gtsam::TriangulationResult triangulateSafe(
+    const gtsam::CameraSetCal3_S2& cameras,
+    const gtsam::Point2Vector& measurements,
+    const gtsam::TriangulationParameters& params);
 
 // Cal3DS2 versions
 gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
@@ -1132,6 +1149,10 @@ gtsam::Point3 triangulateNonlinear(const gtsam::Pose3Vector& poses,
 gtsam::Point3 triangulateNonlinear(const gtsam::CameraSetCal3DS2& cameras,
                                    const gtsam::Point2Vector& measurements,
                                    const gtsam::Point3& initialEstimate);
+gtsam::TriangulationResult triangulateSafe(
+    const gtsam::CameraSetCal3DS2& cameras,
+    const gtsam::Point2Vector& measurements,
+    const gtsam::TriangulationParameters& params);
 
 // Cal3Bundler versions
 gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
@@ -1150,6 +1171,10 @@ gtsam::Point3 triangulateNonlinear(const gtsam::Pose3Vector& poses,
 gtsam::Point3 triangulateNonlinear(const gtsam::CameraSetCal3Bundler& cameras,
                                    const gtsam::Point2Vector& measurements,
                                    const gtsam::Point3& initialEstimate);
+gtsam::TriangulationResult triangulateSafe(
+    const gtsam::CameraSetCal3Bundler& cameras,
+    const gtsam::Point2Vector& measurements,
+    const gtsam::TriangulationParameters& params);
 
 // Cal3Fisheye versions
 gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
@@ -1168,6 +1193,10 @@ gtsam::Point3 triangulateNonlinear(const gtsam::Pose3Vector& poses,
 gtsam::Point3 triangulateNonlinear(const gtsam::CameraSetCal3Fisheye& cameras,
                                    const gtsam::Point2Vector& measurements,
                                    const gtsam::Point3& initialEstimate);
+gtsam::TriangulationResult triangulateSafe(
+    const gtsam::CameraSetCal3Fisheye& cameras,
+    const gtsam::Point2Vector& measurements,
+    const gtsam::TriangulationParameters& params);
 
 // Cal3Unified versions                                
 gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
@@ -1186,6 +1215,10 @@ gtsam::Point3 triangulateNonlinear(const gtsam::Pose3Vector& poses,
 gtsam::Point3 triangulateNonlinear(const gtsam::CameraSetCal3Unified& cameras,
                                    const gtsam::Point2Vector& measurements,
                                    const gtsam::Point3& initialEstimate);
+gtsam::TriangulationResult triangulateSafe(
+    const gtsam::CameraSetCal3Unified& cameras,
+    const gtsam::Point2Vector& measurements,
+    const gtsam::TriangulationParameters& params);
 
 
 
