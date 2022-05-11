@@ -8,26 +8,17 @@ See LICENSE for the license information
 Test Triangulation
 Authors: Frank Dellaert & Fan Jiang (Python) & Sushmita Warrier & John Lambert
 """
+# pylint: disable=no-name-in-module, invalid-name, no-member
 import unittest
 from typing import Iterable, List, Optional, Tuple, Union
-
 import numpy as np
 
 import gtsam
-from gtsam import (
-    Cal3_S2,
-    Cal3Bundler,
-    CameraSetCal3_S2,
-    CameraSetCal3Bundler,
-    PinholeCameraCal3_S2,
-    PinholeCameraCal3Bundler,
-    Point2,
-    Point2Vector,
-    Point3,
-    Pose3,
-    Pose3Vector,
-    Rot3,
-)
+from gtsam import (Cal3_S2, Cal3Bundler, CameraSetCal3_S2,
+                   CameraSetCal3Bundler, PinholeCameraCal3_S2,
+                   PinholeCameraCal3Bundler, Point2, Point2Vector, Point3,
+                   Pose3, Pose3Vector, Rot3, TriangulationParameters,
+                   TriangulationResult)
 from gtsam.utils.test_case import GtsamTestCase
 
 UPRIGHT = Rot3.Ypr(-np.pi / 2, 0.0, -np.pi / 2)
@@ -217,6 +208,68 @@ class TestTriangulationExample(GtsamTestCase):
                                           model=model)
         # using the Huber loss we now have a quite small error!! nice!
         self.assertTrue(np.allclose(landmark, actual4, atol=0.05))
+
+    def test_outliers_and_far_landmarks(self) -> None:
+        """Check safe triangulation function."""
+        pose1, pose2 = self.poses
+
+        K1 = Cal3_S2(1500, 1200, 0, 640, 480)
+        # create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
+        camera1 = PinholeCameraCal3_S2(pose1, K1)
+
+        # create second camera 1 meter to the right of first camera
+        K2 = Cal3_S2(1600, 1300, 0, 650, 440)
+        camera2 = PinholeCameraCal3_S2(pose2, K2)
+
+        # 1. Project two landmarks into two cameras and triangulate
+        z1 = camera1.project(self.landmark)
+        z2 = camera2.project(self.landmark)
+
+        cameras = CameraSetCal3_S2()
+        measurements = Point2Vector()
+
+        cameras.append(camera1)
+        cameras.append(camera2)
+        measurements.append(z1)
+        measurements.append(z2)
+
+        landmarkDistanceThreshold = 10  # landmark is closer than that
+        # all default except landmarkDistanceThreshold: 
+        params = TriangulationParameters(1.0, False, landmarkDistanceThreshold)
+        actual: TriangulationResult = gtsam.triangulateSafe(
+            cameras, measurements, params)
+        self.gtsamAssertEquals(actual.get(), self.landmark, 1e-2)
+        self.assertTrue(actual.valid())
+
+        landmarkDistanceThreshold = 4  # landmark is farther than that
+        params2 = TriangulationParameters(
+            1.0, False, landmarkDistanceThreshold)
+        actual = gtsam.triangulateSafe(cameras, measurements, params2)
+        self.assertTrue(actual.farPoint())
+
+        # 3. Add a slightly rotated third camera above with a wrong measurement
+        # (OUTLIER)
+        pose3 = pose1 * Pose3(Rot3.Ypr(0.1, 0.2, 0.1), Point3(0.1, -2, -.1))
+        K3 = Cal3_S2(700, 500, 0, 640, 480)
+        camera3 = PinholeCameraCal3_S2(pose3, K3)
+        z3 = camera3.project(self.landmark)
+
+        cameras.append(camera3)
+        measurements.append(z3 + Point2(10, -10))
+
+        landmarkDistanceThreshold = 10  # landmark is closer than that
+        outlierThreshold = 100   # loose, the outlier is going to pass
+        params3 = TriangulationParameters(1.0, False, landmarkDistanceThreshold,
+                                          outlierThreshold)
+        actual = gtsam.triangulateSafe(cameras, measurements, params3)
+        self.assertTrue(actual.valid())
+
+        # now set stricter threshold for outlier rejection
+        outlierThreshold = 5  # tighter, the outlier is not going to pass
+        params4 = TriangulationParameters(1.0, False, landmarkDistanceThreshold,
+                                          outlierThreshold)
+        actual = gtsam.triangulateSafe(cameras, measurements, params4)
+        self.assertTrue(actual.outlier())
 
 
 if __name__ == "__main__":
