@@ -23,8 +23,8 @@ PYBIND11_MAKE_OPAQUE(
     std::vector<gtsam::Point2, Eigen::aligned_allocator<gtsam::Point2>>);
 PYBIND11_MAKE_OPAQUE(gtsam::Point2Pairs);
 PYBIND11_MAKE_OPAQUE(gtsam::Point3Pairs);
+PYBIND11_MAKE_OPAQUE(gtsam::Pose2Pairs);
 PYBIND11_MAKE_OPAQUE(gtsam::Pose3Pairs);
 PYBIND11_MAKE_OPAQUE(std::vector<gtsam::Pose3>);
-PYBIND11_MAKE_OPAQUE(
-    gtsam::CameraSet<gtsam::PinholeCamera<gtsam::Cal3Bundler>>);
+PYBIND11_MAKE_OPAQUE(gtsam::CameraSet<gtsam::PinholeCamera<gtsam::Cal3Bundler>>);
 PYBIND11_MAKE_OPAQUE(gtsam::CameraSet<gtsam::PinholeCamera<gtsam::Cal3_S2>>);

@@ -27,7 +27,6 @@
 #include <GeographicLib/Config.h>
 #include <GeographicLib/LocalCartesian.hpp>
 
-using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 using namespace GeographicLib;
@@ -71,7 +70,7 @@ TEST( GPSFactor, Constructor ) {
   EXPECT(assert_equal(Z_3x1,factor.evaluateError(T),1e-5));
 
   // Calculate numerical derivatives
-  Matrix expectedH = numericalDerivative11<Vector,Pose3>(
+  Matrix expectedH = numericalDerivative11<Vector, Pose3>(
       std::bind(&GPSFactor::evaluateError, &factor, std::placeholders::_1, boost::none), T);
 
   // Use the factor to calculate the derivative
@@ -100,7 +99,7 @@ TEST( GPSFactor2, Constructor ) {
   EXPECT(assert_equal(Z_3x1,factor.evaluateError(T),1e-5));
 
   // Calculate numerical derivatives
-  Matrix expectedH = numericalDerivative11<Vector,NavState>(
+  Matrix expectedH = numericalDerivative11<Vector, NavState>(
       std::bind(&GPSFactor2::evaluateError, &factor, std::placeholders::_1, boost::none), T);
 
   // Use the factor to calculate the derivative

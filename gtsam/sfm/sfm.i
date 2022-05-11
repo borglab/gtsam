@@ -9,6 +9,8 @@ class SfmTrack {
   SfmTrack();
   SfmTrack(const gtsam::Point3& pt);
   const Point3& point3() const;
+  
+  Point3 p;
 
   double r;
   double g;
@@ -34,12 +36,15 @@ class SfmData {
   static gtsam::SfmData FromBundlerFile(string filename);
   static gtsam::SfmData FromBalFile(string filename);
 
+  std::vector<gtsam::SfmTrack>& trackList() const;
+  std::vector<gtsam::PinholeCamera<gtsam::Cal3Bundler>>& cameraList() const;
+
   void addTrack(const gtsam::SfmTrack& t);
   void addCamera(const gtsam::SfmCamera& cam);
   size_t numberTracks() const;
   size_t numberCameras() const;
-  gtsam::SfmTrack track(size_t idx) const;
-  gtsam::PinholeCamera<gtsam::Cal3Bundler> camera(size_t idx) const;
+  gtsam::SfmTrack& track(size_t idx) const;
+  gtsam::PinholeCamera<gtsam::Cal3Bundler>& camera(size_t idx) const;
 
   gtsam::NonlinearFactorGraph generalSfmFactors(
       const gtsam::SharedNoiseModel& model =
@@ -89,6 +94,13 @@ class BinaryMeasurementsUnit3 {
   size_t size() const;
   gtsam::BinaryMeasurement<gtsam::Unit3> at(size_t idx) const;
   void push_back(const gtsam::BinaryMeasurement<gtsam::Unit3>& measurement);
+};
+
+class BinaryMeasurementsRot3 {
+  BinaryMeasurementsRot3();
+  size_t size() const;
+  gtsam::BinaryMeasurement<gtsam::Rot3> at(size_t idx) const;
+  void push_back(const gtsam::BinaryMeasurement<gtsam::Rot3>& measurement);
 };
 
 #include <gtsam/sfm/ShonanAveraging.h>
@@ -184,6 +196,10 @@ class ShonanAveraging2 {
 };
 
 class ShonanAveraging3 {
+  ShonanAveraging3(
+      const std::vector<gtsam::BinaryMeasurement<gtsam::Rot3>>& measurements,
+      const gtsam::ShonanAveragingParameters3& parameters =
+          gtsam::ShonanAveragingParameters3());
   ShonanAveraging3(string g2oFile);
   ShonanAveraging3(string g2oFile,
                    const gtsam::ShonanAveragingParameters3& parameters);
