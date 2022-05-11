@@ -11,6 +11,8 @@
  * and saves one copy operation.
  */
 
+py::bind_vector<std::vector<gtsam::BinaryMeasurement<gtsam::Point3> > >(
+    m_, "BinaryMeasurementsPoint3");
 py::bind_vector<std::vector<gtsam::BinaryMeasurement<gtsam::Unit3> > >(
     m_, "BinaryMeasurementsUnit3");
 py::bind_vector<std::vector<gtsam::BinaryMeasurement<gtsam::Rot3> > >(
