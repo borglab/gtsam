@@ -337,7 +337,6 @@ vector<size_t> SubgraphBuilder::kruskal(const GaussianFactorGraph &gfg,
   DSFVector dsf(n);
 
   size_t count = 0;
-  double sum = 0.0;
   for (const size_t index : sortedIndices) {
     const GaussianFactor &gf = *gfg[index];
     const auto keys = gf.keys();
@@ -347,7 +346,6 @@ vector<size_t> SubgraphBuilder::kruskal(const GaussianFactorGraph &gfg,
     if (dsf.find(u) != dsf.find(v)) {
       dsf.merge(u, v);
       treeIndices.push_back(index);
-      sum += weights[index];
       if (++count == n - 1) break;
     }
   }
