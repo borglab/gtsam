@@ -1091,7 +1091,17 @@ class StereoCamera {
 class TriangulationResult {
   enum Status { VALID, DEGENERATE, BEHIND_CAMERA, OUTLIER, FAR_POINT };
   Status status;
+  TriangulationResult(const gtsam::Point3& p);
   const gtsam::Point3& get() const;
+  static TriangulationResult Degenerate();
+  static TriangulationResult Outlier();
+  static TriangulationResult FarPoint();
+  static TriangulationResult BehindCamera();
+  bool valid() const;
+  bool degenerate() const;
+  bool outlier() const;
+  bool farPoint() const;
+  bool behindCamera() const;
 };
 
 class TriangulationParameters {

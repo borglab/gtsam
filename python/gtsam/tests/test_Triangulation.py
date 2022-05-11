@@ -228,17 +228,17 @@ class TestTriangulationExample(GtsamTestCase):
         cameras = CameraSetCal3_S2()
         measurements = Point2Vector()
 
-        cameras.push_back(camera1)
-        cameras.push_back(camera2)
-        measurements.push_back(z1)
-        measurements.push_back(z2)
+        cameras.append(camera1)
+        cameras.append(camera2)
+        measurements.append(z1)
+        measurements.append(z2)
 
         landmarkDistanceThreshold = 10  # landmark is closer than that
         # all default except landmarkDistanceThreshold: 
         params = TriangulationParameters(1.0, False, landmarkDistanceThreshold)
         actual: TriangulationResult = gtsam.triangulateSafe(
             cameras, measurements, params)
-        self.gtsamAssertEquals(actual, self.landmark, 1e-2)
+        self.gtsamAssertEquals(actual.get(), self.landmark, 1e-2)
         self.assertTrue(actual.valid())
 
         landmarkDistanceThreshold = 4  # landmark is farther than that
@@ -254,8 +254,8 @@ class TestTriangulationExample(GtsamTestCase):
         camera3 = PinholeCameraCal3_S2(pose3, K3)
         z3 = camera3.project(self.landmark)
 
-        cameras.push_back(camera3)
-        measurements.push_back(z3 + Point2(10, -10))
+        cameras.append(camera3)
+        measurements.append(z3 + Point2(10, -10))
 
         landmarkDistanceThreshold = 10  # landmark is closer than that
         outlierThreshold = 100   # loose, the outlier is going to pass
