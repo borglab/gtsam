@@ -1089,6 +1089,11 @@ class StereoCamera {
 
 #include <gtsam/geometry/triangulation.h>
 
+virtual class TriangulationResult : boost::optional<gtsam::Point3> {
+  enum Status { VALID, DEGENERATE, BEHIND_CAMERA, OUTLIER, FAR_POINT };
+  Status status;
+};
+
 // Templates appear not yet supported for free functions - issue raised at
 // borglab/wrap#14 to add support
 gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
