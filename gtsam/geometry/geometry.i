@@ -1040,7 +1040,11 @@ class Similarity3 {
   double scale() const;
 };
 
-template <T>
+template <T = {gtsam::PinholeCameraCal3_S2,
+               gtsam::PinholeCameraCal3DS2,
+               gtsam::PinholeCameraCal3Bundler,
+               gtsam::PinholeCameraCal3Fisheye,
+               gtsam::PinholeCameraCal3Unified}>
 class CameraSet {
   CameraSet();
 
@@ -1088,10 +1092,10 @@ class StereoCamera {
 };
 
 #include <gtsam/geometry/triangulation.h>
-
-virtual class TriangulationResult : boost::optional<gtsam::Point3> {
+class TriangulationResult {
   enum Status { VALID, DEGENERATE, BEHIND_CAMERA, OUTLIER, FAR_POINT };
   Status status;
+  const gtsam::Point3& get() const;
 };
 
 class TriangulationParameters {
