@@ -473,7 +473,7 @@ boost::optional<Pose3> Pose3::Align(const Matrix& a, const Matrix& b) {
       "Pose3:Align expects 3*N matrices of equal shape.");
   }
   Point3Pairs abPointPairs;
-  for (size_t j=0; j < a.cols(); j++) {
+  for (Eigen::Index j = 0; j < a.cols(); j++) {
     abPointPairs.emplace_back(a.col(j), b.col(j));
   }
   return Pose3::Align(abPointPairs);

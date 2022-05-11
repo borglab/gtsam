@@ -11,12 +11,12 @@ Author: Frank Dellaert
 
 # pylint: disable=no-name-in-module, invalid-name
 
-import unittest
 import textwrap
+import unittest
 
 import gtsam
-from gtsam import (DiscreteBayesNet, DiscreteConditional, DiscreteFactorGraph,
-                   DiscreteKeys, DiscreteDistribution, DiscreteValues, Ordering)
+from gtsam import (DiscreteBayesNet, DiscreteConditional, DiscreteDistribution,
+                   DiscreteFactorGraph, DiscreteKeys, DiscreteValues, Ordering)
 from gtsam.utils.test_case import GtsamTestCase
 
 # Some keys:
@@ -152,10 +152,10 @@ class TestDiscreteBayesNet(GtsamTestCase):
               var4[label="4"];
               var5[label="5"];
               var6[label="6"];
-              vara0[label="a0", pos="0,2!"];
+              var6989586621679009792[label="a0", pos="0,2!"];
 
               var4->var6
-              vara0->var3
+              var6989586621679009792->var3
               var3->var5
               var6->var5
             }"""
