@@ -36,7 +36,7 @@ class TestTranslationRecovery(unittest.TestCase):
         """Construct from binary measurements."""
         algorithm = gtsam.TranslationRecovery()
         self.assertIsInstance(algorithm, gtsam.TranslationRecovery)
-        algorithm_params = gtsam.TranslationRecovery(gtsam.TranslationRecoveryParams())
+        algorithm_params = gtsam.TranslationRecovery(gtsam.LevenbergMarquardtParams())
         self.assertIsInstance(algorithm_params, gtsam.TranslationRecovery)
 
     def test_run(self):
