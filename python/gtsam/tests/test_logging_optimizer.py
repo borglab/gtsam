@@ -66,9 +66,9 @@ class TestOptimizeComet(GtsamTestCase):
 
         # Wrapper function sets the hook and calls optimizer.optimize() for us.
         params = gtsam.GaussNewtonParams()
-        actual = optimize_using(gtsam.GaussNewtonOptimizer, hook)(self.graph, self.initial)
+        actual = optimize_using(gtsam.GaussNewtonOptimizer, hook, self.graph, self.initial)
         self.check(actual)
-        actual = optimize_using(gtsam.GaussNewtonOptimizer, hook)(self.graph, self.initial, params)
+        actual = optimize_using(gtsam.GaussNewtonOptimizer, hook, self.graph, self.initial, params)
         self.check(actual)
         actual = gtsam_optimize(gtsam.GaussNewtonOptimizer(self.graph, self.initial, params),
                                 params, hook)
@@ -80,10 +80,10 @@ class TestOptimizeComet(GtsamTestCase):
             print(error)
 
         params = gtsam.LevenbergMarquardtParams()
-        actual = optimize_using(gtsam.LevenbergMarquardtOptimizer, hook)(self.graph, self.initial)
+        actual = optimize_using(gtsam.LevenbergMarquardtOptimizer, hook, self.graph, self.initial)
         self.check(actual)
-        actual = optimize_using(gtsam.LevenbergMarquardtOptimizer, hook)(self.graph, self.initial,
-                                                                         params)
+        actual = optimize_using(gtsam.LevenbergMarquardtOptimizer, hook, self.graph, self.initial,
+                                params)
         self.check(actual)
         actual = gtsam_optimize(gtsam.LevenbergMarquardtOptimizer(self.graph, self.initial, params),
                                 params, hook)
