@@ -484,6 +484,9 @@ virtual class NonlinearOptimizerParams {
   bool isSequential() const;
   bool isCholmod() const;
   bool isIterative() const;
+
+  // This only applies to python since matlab does not have lambda machinery.
+  gtsam::NonlinearOptimizerParams::IterationHook iterationHook;
 };
 
 bool checkConvergence(double relativeErrorTreshold,
