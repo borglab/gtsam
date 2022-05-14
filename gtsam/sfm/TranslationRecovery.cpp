@@ -134,6 +134,7 @@ void TranslationRecovery::addPrior(
 
 Values TranslationRecovery::initializeRandomly(
     const std::vector<BinaryMeasurement<Unit3>> &relativeTranslations,
+    const std::vector<BinaryMeasurement<Point3>> &betweenTranslations,
     std::mt19937 *rng, const Values &initialValues) const {
   uniform_real_distribution<double> randomVal(-1, 1);
   // Create a lambda expression that checks whether value exists and randomly
@@ -155,14 +156,19 @@ Values TranslationRecovery::initializeRandomly(
     insert(edge.key1());
     insert(edge.key2());
   }
+  for (auto edge : betweenTranslations) {
+    insert(edge.key1());
+    insert(edge.key2());
+  }
   return initial;
 }
 
 Values TranslationRecovery::initializeRandomly(
     const std::vector<BinaryMeasurement<Unit3>> &relativeTranslations,
+    const std::vector<BinaryMeasurement<Point3>> &betweenTranslations,
     const Values &initialValues) const {
-  return initializeRandomly(relativeTranslations, &kRandomNumberGenerator,
-                            initialValues);
+  return initializeRandomly(relativeTranslations, betweenTranslations,
+                            &kRandomNumberGenerator, initialValues);
 }
 
 Values TranslationRecovery::run(
@@ -187,8 +193,8 @@ Values TranslationRecovery::run(
            &graph);
 
   // Uses initial values from params if provided.
-  Values initial =
-      initializeRandomly(nonzeroRelativeTranslations, initialValues);
+  Values initial = initializeRandomly(
+      nonzeroRelativeTranslations, nonzeroBetweenTranslations, initialValues);
 
   // If there are no valid edges, but zero-distance edges exist, initialize one
   // of the nodes in a connected component of zero-distance edges.

@@ -112,12 +112,15 @@ class TranslationRecovery {
    *
    * @param relativeTranslations unit translation directions between
    * translations to be estimated
+   * @param betweenTranslations relative translations (with scale) between 2
+   * points in world coordinate frame known a priori.
    * @param rng random number generator
    * @param intialValues (optional) initial values from a prior
    * @return Values
    */
   Values initializeRandomly(
       const std::vector<BinaryMeasurement<Unit3>> &relativeTranslations,
+      const std::vector<BinaryMeasurement<Point3>> &betweenTranslations,
       std::mt19937 *rng, const Values &initialValues = Values()) const;
 
   /**
@@ -125,11 +128,14 @@ class TranslationRecovery {
    *
    * @param relativeTranslations unit translation directions between
    * translations to be estimated
+   * @param betweenTranslations relative translations (with scale) between 2
+   * points in world coordinate frame known a priori.
    * @param initialValues (optional) initial values from a prior
    * @return Values
    */
   Values initializeRandomly(
       const std::vector<BinaryMeasurement<Unit3>> &relativeTranslations,
+      const std::vector<BinaryMeasurement<Point3>> &betweenTranslations,
       const Values &initialValues = Values()) const;
 
   /**
