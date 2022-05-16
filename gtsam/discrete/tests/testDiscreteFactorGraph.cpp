@@ -415,16 +415,16 @@ TEST(DiscreteFactorGraph, DotWithNames) {
       "graph {\n"
       "  size=\"5,5\";\n"
       "\n"
-      "  varC[label=\"C\"];\n"
-      "  varA[label=\"A\"];\n"
-      "  varB[label=\"B\"];\n"
+      "  var0[label=\"C\"];\n"
+      "  var1[label=\"A\"];\n"
+      "  var2[label=\"B\"];\n"
       "\n"
       "  factor0[label=\"\", shape=point];\n"
-      "  varC--factor0;\n"
-      "  varA--factor0;\n"
+      "  var0--factor0;\n"
+      "  var1--factor0;\n"
       "  factor1[label=\"\", shape=point];\n"
-      "  varC--factor1;\n"
-      "  varB--factor1;\n"
+      "  var0--factor1;\n"
+      "  var2--factor1;\n"
       "}\n";
   EXPECT(actual == expected);
 }

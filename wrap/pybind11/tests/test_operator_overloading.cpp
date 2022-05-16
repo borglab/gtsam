@@ -7,18 +7,28 @@
     BSD-style license that can be found in the LICENSE file.
 */
 
-#include "pybind11_tests.h"
 #include "constructor_stats.h"
-#include <pybind11/operators.h>
+#include "pybind11_tests.h"
 #include <functional>
+#include <pybind11/operators.h>
+#include <pybind11/stl.h>
 
 class Vector2 {
 public:
     Vector2(float x, float y) : x(x), y(y) { print_created(this, toString()); }
     Vector2(const Vector2 &v) : x(v.x), y(v.y) { print_copy_created(this); }
-    Vector2(Vector2 &&v) : x(v.x), y(v.y) { print_move_created(this); v.x = v.y = 0; }
+    Vector2(Vector2 &&v) noexcept : x(v.x), y(v.y) {
+        print_move_created(this);
+        v.x = v.y = 0;
+    }
     Vector2 &operator=(const Vector2 &v) { x = v.x; y = v.y; print_copy_assigned(this); return *this; }
-    Vector2 &operator=(Vector2 &&v) { x = v.x; y = v.y; v.x = v.y = 0; print_move_assigned(this); return *this; }
+    Vector2 &operator=(Vector2 &&v) noexcept {
+        x   = v.x;
+        y   = v.y;
+        v.x = v.y = 0;
+        print_move_assigned(this);
+        return *this;
+    }
     ~Vector2() { print_destroyed(this); }
 
     std::string toString() const { return "[" + std::to_string(x) + ", " + std::to_string(y) + "]"; }
@@ -62,6 +72,12 @@ int operator+(const C2 &, const C2 &) { return 22; }
 int operator+(const C2 &, const C1 &) { return 21; }
 int operator+(const C1 &, const C2 &) { return 12; }
 
+struct HashMe {
+    std::string member;
+};
+
+bool operator==(const HashMe &lhs, const HashMe &rhs) { return lhs.member == rhs.member; }
+
 // Note: Specializing explicit within `namespace std { ... }` is done due to a
 // bug in GCC<7. If you are supporting compilers later than this, consider
 // specializing `using template<> struct std::hash<...>` in the global
@@ -73,6 +89,14 @@ namespace std {
         // Not a good hash function, but easy to test
         size_t operator()(const Vector2 &) { return 4; }
     };
+
+    // HashMe has a hash function in C++ but no `__hash__` for Python.
+    template <>
+    struct hash<HashMe> {
+        std::size_t operator()(const HashMe &selector) const {
+            return std::hash<std::string>()(selector.member);
+        }
+    };
 } // namespace std
 
 // Not a good abs function, but easy to test.
@@ -80,8 +104,8 @@ std::string abs(const Vector2&) {
     return "abs(Vector2)";
 }
 
-// MSVC warns about unknown pragmas, and warnings are errors.
-#ifndef _MSC_VER
+// MSVC & Intel warns about unknown pragmas, and warnings are errors.
+#if !defined(_MSC_VER) && !defined(__INTEL_COMPILER)
   #pragma GCC diagnostic push
   // clang 7.0.0 and Apple LLVM 10.0.1 introduce `-Wself-assign-overloaded` to
   // `-Wall`, which is used here for overloading (e.g. `py::self += py::self `).
@@ -89,7 +113,7 @@ std::string abs(const Vector2&) {
   // Taken from: https://github.com/RobotLocomotion/drake/commit/aaf84b46
   // TODO(eric): This could be resolved using a function / functor (e.g. `py::self()`).
   #if defined(__APPLE__) && defined(__clang__)
-    #if (__clang_major__ >= 10) && (__clang_minor__ >= 0) && (__clang_patchlevel__ >= 1)
+    #if (__clang_major__ >= 10)
       #pragma GCC diagnostic ignored "-Wself-assign-overloaded"
     #endif
   #elif defined(__clang__)
@@ -219,8 +243,12 @@ TEST_SUBMODULE(operators, m) {
         .def("__hash__", &Hashable::hash)
         .def(py::init<int>())
         .def(py::self == py::self);
-}
 
-#ifndef _MSC_VER
+    // define __eq__ but not __hash__
+    py::class_<HashMe>(m, "HashMe").def(py::self == py::self);
+
+    m.def("get_unhashable_HashMe_set", []() { return std::unordered_set<HashMe>{{"one"}}; });
+}
+#if !defined(_MSC_VER) && !defined(__INTEL_COMPILER)
   #pragma GCC diagnostic pop
 #endif
