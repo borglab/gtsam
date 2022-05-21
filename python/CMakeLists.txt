@@ -47,6 +47,7 @@ set(ignore
     gtsam::Pose3Vector
     gtsam::Rot3Vector
     gtsam::KeyVector
+    gtsam::BinaryMeasurementsPoint3
     gtsam::BinaryMeasurementsUnit3
     gtsam::BinaryMeasurementsRot3
     gtsam::DiscreteKey
@@ -138,6 +139,7 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             gtsam::Pose3Vector
             gtsam::KeyVector
             gtsam::FixedLagSmootherKeyTimestampMapValue
+            gtsam::BinaryMeasurementsPoint3
             gtsam::BinaryMeasurementsUnit3
             gtsam::BinaryMeasurementsRot3
             gtsam::CameraSetCal3_S2
@@ -187,7 +189,7 @@ endif()
 # Add custom target so we can install with `make python-install`
 set(GTSAM_PYTHON_INSTALL_TARGET python-install)
 add_custom_target(${GTSAM_PYTHON_INSTALL_TARGET}
-        COMMAND ${PYTHON_EXECUTABLE} -m pip install --user .
+        COMMAND ${PYTHON_EXECUTABLE} -m pip install .
         DEPENDS ${GTSAM_PYTHON_DEPENDENCIES}
         WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY})
 
