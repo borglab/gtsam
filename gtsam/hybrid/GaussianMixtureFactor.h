@@ -56,7 +56,7 @@ class GaussianMixtureFactor : public HybridFactor {
       const std::vector<GaussianFactor::shared_ptr> &factors);
 
   /* *******************************************************************************/
-  Sum addTo(const Sum &sum) const;
+  Sum add(const Sum &sum) const;
 
   /* *******************************************************************************/
   Sum wrappedFactors() const;

@@ -50,7 +50,7 @@ GaussianMixture GaussianMixture::FromConditionalList(
 }
 
 /* *******************************************************************************/
-GaussianMixture::Sum GaussianMixture::addTo(
+GaussianMixture::Sum GaussianMixture::add(
     const GaussianMixture::Sum &sum) const {
   using Y = GaussianFactorGraph;
   auto add = [](const Y &graph1, const Y &graph2) {
@@ -58,20 +58,21 @@ GaussianMixture::Sum GaussianMixture::addTo(
     result.push_back(graph2);
     return result;
   };
-  const Sum wrapped = wrappedConditionals();
+  const Sum wrapped = asGraph();
   return sum.empty() ? wrapped : sum.apply(wrapped, add);
 }
 
 /* *******************************************************************************/
-GaussianMixture::Sum GaussianMixture::wrappedConditionals() const {
-  auto wrap = [](const GaussianFactor::shared_ptr &factor) {
+GaussianMixture::Sum GaussianMixture::asGraph() const {
+  auto lambda = [](const GaussianFactor::shared_ptr &factor) {
     GaussianFactorGraph result;
     result.push_back(factor);
     return result;
   };
-  return {conditionals_, wrap};
+  return {conditionals_, lambda};
 }
 
+/* TODO(fan): this (for Testable) is not implemented! */
 bool GaussianMixture::equals(const HybridFactor &lf, double tol) const {
   return false;
 }

@@ -1,3 +1,21 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/*
+ *  @file Switching.h
+ *  @date Mar 11, 2022
+ *  @author Varun Agrawal
+ *  @author Fan Jiang
+ */
+
 #include <gtsam/base/Matrix.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/hybrid/GaussianMixtureFactor.h>

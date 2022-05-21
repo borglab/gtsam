@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /*
- *  @file testHybridConditional.cpp
+ *  @file testHybridFactorGraph.cpp
  *  @date Mar 11, 2022
  *  @author Fan Jiang
  */
