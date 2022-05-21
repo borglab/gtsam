@@ -286,12 +286,12 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
     if (f->isHybrid_) {
       auto cgmf = boost::dynamic_pointer_cast<GaussianMixtureFactor>(f);
       if (cgmf) {
-        sum = cgmf->addTo(sum);
+        sum = cgmf->add(sum);
       }
 
       auto gm = boost::dynamic_pointer_cast<HybridConditional>(f);
       if (gm) {
-        sum = gm->asMixture()->addTo(sum);
+        sum = gm->asMixture()->add(sum);
       }
 
     } else if (f->isContinuous_) {

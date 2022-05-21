@@ -62,7 +62,7 @@ const GaussianMixtureFactor::Factors &GaussianMixtureFactor::factors() {
 }
 
 /* *******************************************************************************/
-GaussianMixtureFactor::Sum GaussianMixtureFactor::addTo(
+GaussianMixtureFactor::Sum GaussianMixtureFactor::add(
     const GaussianMixtureFactor::Sum &sum) const {
   using Y = GaussianFactorGraph;
   auto add = [](const Y &graph1, const Y &graph2) {

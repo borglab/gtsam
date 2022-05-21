@@ -13,6 +13,7 @@
  * @file   GaussianMixture.h
  * @brief  A hybrid conditional in the Conditional Linear Gaussian scheme
  * @author Fan Jiang
+ * @author Varun Agrawal
  * @date   Mar 12, 2022
  */
 
@@ -55,10 +56,10 @@ class GaussianMixture : public HybridFactor,
   const Conditionals &conditionals();
 
   /* *******************************************************************************/
-  Sum addTo(const Sum &sum) const;
+  Sum add(const Sum &sum) const;
 
   /* *******************************************************************************/
-  Sum wrappedConditionals() const;
+  Sum asGraph() const;
 
   static This FromConditionalList(
       const KeyVector &continuousFrontals, const KeyVector &continuousParents,
