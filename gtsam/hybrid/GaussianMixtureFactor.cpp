@@ -34,6 +34,7 @@ bool GaussianMixtureFactor::equals(const HybridFactor &lf, double tol) const {
   return false;
 }
 
+/* *******************************************************************************/
 GaussianMixtureFactor GaussianMixtureFactor::FromFactorList(
     const KeyVector &continuousKeys, const DiscreteKeys &discreteKeys,
     const std::vector<GaussianFactor::shared_ptr> &factorsList) {
@@ -42,6 +43,8 @@ GaussianMixtureFactor GaussianMixtureFactor::FromFactorList(
   return GaussianMixtureFactor(continuousKeys, discreteKeys, dt);
 }
 
+
+/* *******************************************************************************/
 void GaussianMixtureFactor::print(const std::string &s,
                                   const KeyFormatter &formatter) const {
   HybridFactor::print(s, formatter);
@@ -57,6 +60,7 @@ void GaussianMixtureFactor::print(const std::string &s,
       });
 }
 
+/* *******************************************************************************/
 const GaussianMixtureFactor::Factors &GaussianMixtureFactor::factors() {
   return factors_;
 }

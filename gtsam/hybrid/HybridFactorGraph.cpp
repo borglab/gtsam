@@ -22,7 +22,7 @@
 #include <gtsam/discrete/Assignment.h>
 #include <gtsam/discrete/DiscreteEliminationTree.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
-#include <gtsam/hybrid/GaussianMixture.h>
+#include <gtsam/hybrid/GaussianMixtureConditional.h>
 #include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/hybrid/HybridDiscreteFactor.h>
@@ -104,7 +104,7 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
   // Because of all these reasons, we need to think very carefully about how to
   // implement the hybrid factors so that we do not get poor performance.
   //
-  // The first thing is how to represent the GaussianMixture. A very possible
+  // The first thing is how to represent the GaussianMixtureConditional. A very possible
   // scenario is that the incoming factors will have different levels of
   // discrete keys. For example, imagine we are going to eliminate the fragment:
   // $\phi(x1,c1,c2)$, $\phi(x1,c2,c3)$, which is perfectly valid. Now we will
@@ -358,11 +358,11 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
 
   auto pair = unzip(eliminationResults);
 
-  const GaussianMixture::Conditionals &conditionals = pair.first;
+  const GaussianMixtureConditional::Conditionals &conditionals = pair.first;
   const GaussianMixtureFactor::Factors &separatorFactors = pair.second;
 
-  // Create the GaussianMixture from the conditionals
-  auto conditional = boost::make_shared<GaussianMixture>(
+  // Create the GaussianMixtureConditional from the conditionals
+  auto conditional = boost::make_shared<GaussianMixtureConditional>(
       frontalKeys, keysOfSeparator, discreteSeparator, conditionals);
 
   if (DEBUG) {

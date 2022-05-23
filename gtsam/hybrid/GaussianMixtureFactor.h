@@ -55,10 +55,8 @@ class GaussianMixtureFactor : public HybridFactor {
       const KeyVector &continuousKeys, const DiscreteKeys &discreteKeys,
       const std::vector<GaussianFactor::shared_ptr> &factors);
 
-  /* *******************************************************************************/
   Sum add(const Sum &sum) const;
 
-  /* *******************************************************************************/
   Sum wrappedFactors() const;
 
   bool equals(const HybridFactor &lf, double tol = 1e-9) const override;

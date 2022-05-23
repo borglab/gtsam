@@ -50,7 +50,7 @@ HybridConditional::HybridConditional(
 }
 
 HybridConditional::HybridConditional(
-    boost::shared_ptr<GaussianMixture> gaussianMixture)
+    boost::shared_ptr<GaussianMixtureConditional> gaussianMixture)
     : BaseFactor(KeyVector(gaussianMixture->keys().begin(),
                            gaussianMixture->keys().begin() +
                                gaussianMixture->nrContinuous),

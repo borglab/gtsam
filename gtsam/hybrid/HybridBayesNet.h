@@ -20,8 +20,6 @@
 #include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/inference/BayesNet.h>
 
-#include <iostream>  // TODO!
-
 namespace gtsam {
 
 /**
