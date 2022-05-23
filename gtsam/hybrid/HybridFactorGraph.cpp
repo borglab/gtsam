@@ -20,6 +20,7 @@
 
 #include <gtsam/base/utilities.h>
 #include <gtsam/discrete/Assignment.h>
+#include <gtsam/discrete/DiscreteEliminationTree.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/hybrid/GaussianMixture.h>
 #include <gtsam/hybrid/GaussianMixtureFactor.h>
