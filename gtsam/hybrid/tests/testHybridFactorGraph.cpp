@@ -20,7 +20,7 @@
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/discrete/DiscreteValues.h>
-#include <gtsam/hybrid/GaussianMixture.h>
+#include <gtsam/hybrid/GaussianMixtureConditional.h>
 #include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
@@ -79,8 +79,8 @@ TEST(HybridFactorGraph, creation) {
 
   hfg.add(HybridGaussianFactor(JacobianFactor(0, I_3x3, Z_3x1)));
 
-  GaussianMixture clgc({X(0)}, {X(1)}, DiscreteKeys(DiscreteKey{C(0), 2}),
-                       GaussianMixture::Conditionals(
+  GaussianMixtureConditional clgc({X(0)}, {X(1)}, DiscreteKeys(DiscreteKey{C(0), 2}),
+                       GaussianMixtureConditional::Conditionals(
                            C(0),
                            boost::make_shared<GaussianConditional>(
                                X(0), Z_3x1, I_3x3, X(1), I_3x3),
