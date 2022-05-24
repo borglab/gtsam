@@ -66,7 +66,7 @@ void HybridConditional::print(const std::string &s,
   if (isDiscrete_) std::cout << "Disc. ";
   if (isHybrid_) std::cout << "Hybr. ";
   std::cout << "P(";
-  int index = 0;
+  size_t index = 0;
   const size_t N = keys().size();
   const size_t contN = N - discreteKeys_.size();
   while (index < N) {
