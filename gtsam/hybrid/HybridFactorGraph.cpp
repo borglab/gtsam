@@ -22,6 +22,7 @@
 #include <gtsam/discrete/Assignment.h>
 #include <gtsam/discrete/DiscreteEliminationTree.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
+#include <gtsam/discrete/DiscreteJunctionTree.h>
 #include <gtsam/hybrid/GaussianMixtureConditional.h>
 #include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/hybrid/HybridConditional.h>
@@ -34,6 +35,7 @@
 #include <gtsam/inference/EliminateableFactorGraph-inst.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/linear/GaussianEliminationTree.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
@@ -104,9 +106,10 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
   // Because of all these reasons, we need to think very carefully about how to
   // implement the hybrid factors so that we do not get poor performance.
   //
-  // The first thing is how to represent the GaussianMixtureConditional. A very possible
-  // scenario is that the incoming factors will have different levels of
-  // discrete keys. For example, imagine we are going to eliminate the fragment:
+  // The first thing is how to represent the GaussianMixtureConditional. A very
+  // possible scenario is that the incoming factors will have different levels
+  // of discrete keys. For example, imagine we are going to eliminate the
+  // fragment:
   // $\phi(x1,c1,c2)$, $\phi(x1,c2,c3)$, which is perfectly valid. Now we will
   // need to know how to retrieve the corresponding continuous densities for the
   // assi- -gnment (c1,c2,c3) (OR (c2,c3,c1)! note there is NO defined order!).
