@@ -36,7 +36,8 @@ GaussianMixtureConditional::GaussianMixtureConditional(
       conditionals_(conditionals) {}
 
 /* *******************************************************************************/
-const GaussianMixtureConditional::Conditionals &GaussianMixtureConditional::conditionals() {
+const GaussianMixtureConditional::Conditionals &
+GaussianMixtureConditional::conditionals() {
   return conditionals_;
 }
 
@@ -47,8 +48,8 @@ GaussianMixtureConditional GaussianMixtureConditional::FromConditionalList(
     const std::vector<GaussianConditional::shared_ptr> &conditionalsList) {
   Conditionals dt(discreteParents, conditionalsList);
 
-  return GaussianMixtureConditional(continuousFrontals, continuousParents, discreteParents,
-                         dt);
+  return GaussianMixtureConditional(continuousFrontals, continuousParents,
+                                    discreteParents, dt);
 }
 
 /* *******************************************************************************/
@@ -60,12 +61,13 @@ GaussianMixtureConditional::Sum GaussianMixtureConditional::add(
     result.push_back(graph2);
     return result;
   };
-  const Sum wrapped = asGraph();
-  return sum.empty() ? wrapped : sum.apply(wrapped, add);
+  const Sum tree = asGaussianFactorGraphTree();
+  return sum.empty() ? tree : sum.apply(tree, add);
 }
 
 /* *******************************************************************************/
-GaussianMixtureConditional::Sum GaussianMixtureConditional::asGraph() const {
+GaussianMixtureConditional::Sum
+GaussianMixtureConditional::asGaussianFactorGraphTree() const {
   auto lambda = [](const GaussianFactor::shared_ptr &factor) {
     GaussianFactorGraph result;
     result.push_back(factor);
@@ -74,14 +76,15 @@ GaussianMixtureConditional::Sum GaussianMixtureConditional::asGraph() const {
   return {conditionals_, lambda};
 }
 
-/* TODO(fan): this (for Testable) is not implemented! */
-bool GaussianMixtureConditional::equals(const HybridFactor &lf, double tol) const {
-  return false;
+/* *******************************************************************************/
+bool GaussianMixtureConditional::equals(const HybridFactor &lf,
+                                        double tol) const {
+  return BaseFactor::equals(lf, tol);
 }
 
 /* *******************************************************************************/
 void GaussianMixtureConditional::print(const std::string &s,
-                            const KeyFormatter &formatter) const {
+                                       const KeyFormatter &formatter) const {
   std::cout << s << ": ";
   if (isContinuous_) std::cout << "Cont. ";
   if (isDiscrete_) std::cout << "Disc. ";

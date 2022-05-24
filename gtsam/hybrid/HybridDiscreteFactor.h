@@ -24,8 +24,9 @@
 namespace gtsam {
 
 /**
- * A HybridDiscreteFactor is a wrapper for DiscreteFactor, so we hide the
- * implementation of DiscreteFactor, and thus avoiding diamond inheritance.
+ * A HybridDiscreteFactor is a thin container for DiscreteFactor, which allows
+ * us to hide the implementation of DiscreteFactor and thus avoid diamond
+ * inheritance.
  */
 class HybridDiscreteFactor : public HybridFactor {
  public:
