@@ -64,6 +64,10 @@ HybridFactor::HybridFactor(const DiscreteKeys &discreteKeys)
       isDiscrete_(true),
       discreteKeys_(discreteKeys) {}
 
+bool HybridFactor::equals(const HybridFactor &lf, double tol) const {
+  return Base::equals(lf, tol);
+}
+
 void HybridFactor::print(const std::string &s,
                          const KeyFormatter &formatter) const {
   std::cout << s;
