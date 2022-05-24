@@ -89,7 +89,7 @@ void HybridConditional::print(const std::string &s,
 }
 
 bool HybridConditional::equals(const HybridFactor &other, double tol) const {
-  return false;
+  return BaseFactor::equals(other, tol);
 }
 
 }  // namespace gtsam

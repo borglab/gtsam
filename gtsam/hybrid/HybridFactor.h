@@ -85,7 +85,7 @@ class GTSAM_EXPORT HybridFactor : public Factor {
   /// @{
 
   /// equals
-  virtual bool equals(const HybridFactor &lf, double tol = 1e-9) const = 0;
+  virtual bool equals(const HybridFactor &lf, double tol = 1e-9) const;
 
   /// print
   void print(
