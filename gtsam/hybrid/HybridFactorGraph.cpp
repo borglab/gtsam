@@ -229,8 +229,8 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
         if (p) {
           gfg.push_back(boost::static_pointer_cast<GaussianConditional>(p));
         } else {
-          // It is an orphan wrapper
-          if (DEBUG) std::cout << "Got an orphan wrapper conditional\n";
+          // It is an orphan wrapped conditional
+          if (DEBUG) std::cout << "Got an orphan conditional\n";
         }
       }
     }

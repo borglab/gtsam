@@ -15,8 +15,8 @@
  * @author Fan Jiang
  */
 
-#include <gtsam/inference/EliminationTree-inst.h>
 #include <gtsam/hybrid/HybridEliminationTree.h>
+#include <gtsam/inference/EliminationTree-inst.h>
 
 namespace gtsam {
 
@@ -26,18 +26,17 @@ template class EliminationTree<HybridBayesNet, HybridFactorGraph>;
 /* ************************************************************************* */
 HybridEliminationTree::HybridEliminationTree(
     const HybridFactorGraph& factorGraph, const VariableIndex& structure,
-    const Ordering& order) :
-    Base(factorGraph, structure, order) {}
+    const Ordering& order)
+    : Base(factorGraph, structure, order) {}
 
 /* ************************************************************************* */
 HybridEliminationTree::HybridEliminationTree(
-    const HybridFactorGraph& factorGraph, const Ordering& order) :
-    Base(factorGraph, order) {}
+    const HybridFactorGraph& factorGraph, const Ordering& order)
+    : Base(factorGraph, order) {}
 
 /* ************************************************************************* */
-bool HybridEliminationTree::equals(const This& other, double tol) const
-{
+bool HybridEliminationTree::equals(const This& other, double tol) const {
   return Base::equals(other, tol);
 }
 
-}
+}  // namespace gtsam

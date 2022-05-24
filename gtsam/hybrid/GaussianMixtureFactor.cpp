@@ -26,10 +26,13 @@
 
 namespace gtsam {
 
+/* *******************************************************************************/
 GaussianMixtureFactor::GaussianMixtureFactor(const KeyVector &continuousKeys,
                                              const DiscreteKeys &discreteKeys,
                                              const Factors &factors)
     : Base(continuousKeys, discreteKeys), factors_(factors) {}
+
+/* *******************************************************************************/
 bool GaussianMixtureFactor::equals(const HybridFactor &lf, double tol) const {
   return false;
 }
@@ -42,7 +45,6 @@ GaussianMixtureFactor GaussianMixtureFactor::FromFactorList(
 
   return GaussianMixtureFactor(continuousKeys, discreteKeys, dt);
 }
-
 
 /* *******************************************************************************/
 void GaussianMixtureFactor::print(const std::string &s,
@@ -74,12 +76,13 @@ GaussianMixtureFactor::Sum GaussianMixtureFactor::add(
     result.push_back(graph2);
     return result;
   };
-  const Sum wrapped = wrappedFactors();
-  return sum.empty() ? wrapped : sum.apply(wrapped, add);
+  const Sum tree = asGaussianFactorGraphTree();
+  return sum.empty() ? tree : sum.apply(tree, add);
 }
 
 /* *******************************************************************************/
-GaussianMixtureFactor::Sum GaussianMixtureFactor::wrappedFactors() const {
+GaussianMixtureFactor::Sum GaussianMixtureFactor::asGaussianFactorGraphTree()
+    const {
   auto wrap = [](const GaussianFactor::shared_ptr &factor) {
     GaussianFactorGraph result;
     result.push_back(factor);

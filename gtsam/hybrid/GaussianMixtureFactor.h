@@ -57,13 +57,20 @@ class GaussianMixtureFactor : public HybridFactor {
 
   Sum add(const Sum &sum) const;
 
-  Sum wrappedFactors() const;
-
   bool equals(const HybridFactor &lf, double tol = 1e-9) const override;
 
   void print(
       const std::string &s = "HybridFactor\n",
       const KeyFormatter &formatter = DefaultKeyFormatter) const override;
+
+ protected:
+  /**
+   * @brief Helper function to return factors and functional to create a
+   * DecisionTree of Gaussian Factor Graphs.
+   *
+   * @return Sum (DecisionTree<Key, GaussianFactorGraph)
+   */
+  Sum asGaussianFactorGraphTree() const;
 };
 
 }  // namespace gtsam

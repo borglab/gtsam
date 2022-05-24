@@ -25,8 +25,9 @@
 #include <gtsam/linear/GaussianConditional.h>
 
 namespace gtsam {
-class GaussianMixtureConditional : public HybridFactor,
-                        public Conditional<HybridFactor, GaussianMixtureConditional> {
+class GaussianMixtureConditional
+    : public HybridFactor,
+      public Conditional<HybridFactor, GaussianMixtureConditional> {
  public:
   using This = GaussianMixtureConditional;
   using shared_ptr = boost::shared_ptr<GaussianMixtureConditional>;
@@ -47,9 +48,9 @@ class GaussianMixtureConditional : public HybridFactor,
    * @param conditionals a decision tree of GaussianConditionals.
    */
   GaussianMixtureConditional(const KeyVector &continuousFrontals,
-                  const KeyVector &continuousParents,
-                  const DiscreteKeys &discreteParents,
-                  const Conditionals &conditionals);
+                             const KeyVector &continuousParents,
+                             const DiscreteKeys &discreteParents,
+                             const Conditionals &conditionals);
 
   using Sum = DecisionTree<Key, GaussianFactorGraph>;
 
@@ -60,30 +61,32 @@ class GaussianMixtureConditional : public HybridFactor,
    */
   Sum add(const Sum &sum) const;
 
-	/**
-	 * @brief Convert a DecisionTree of factors into a DT of Gaussian FGs.
-	 */
-  Sum asGraph() const;
-
-	/**
-	 * @brief Make a Gaussian Mixture from a list of Gaussian conditionals
-	 * 
-	 * @param continuousFrontals The continuous frontal variables
-	 * @param continuousParents The continuous parent variables
-	 * @param discreteParents Discrete parents variables
-	 * @param conditionals List of conditionals
-	 */
+  /**
+   * @brief Make a Gaussian Mixture from a list of Gaussian conditionals
+   *
+   * @param continuousFrontals The continuous frontal variables
+   * @param continuousParents The continuous parent variables
+   * @param discreteParents Discrete parents variables
+   * @param conditionals List of conditionals
+   */
   static This FromConditionalList(
       const KeyVector &continuousFrontals, const KeyVector &continuousParents,
       const DiscreteKeys &discreteParents,
       const std::vector<GaussianConditional::shared_ptr> &conditionals);
 
-	/* TODO: this is only a stub */
+  /// Test equality with base HybridFactor
   bool equals(const HybridFactor &lf, double tol = 1e-9) const override;
 
-	/* print utility */
+  /* print utility */
   void print(
       const std::string &s = "GaussianMixtureConditional\n",
       const KeyFormatter &formatter = DefaultKeyFormatter) const override;
+
+ protected:
+  /**
+   * @brief Convert a DecisionTree of factors into a DT of Gaussian FGs.
+   */
+  Sum asGaussianFactorGraphTree() const;
 };
+
 }  // namespace gtsam

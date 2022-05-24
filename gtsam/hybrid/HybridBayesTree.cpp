@@ -17,10 +17,10 @@
  */
 
 #include <gtsam/base/treeTraversal-inst.h>
+#include <gtsam/hybrid/HybridBayesNet.h>
+#include <gtsam/hybrid/HybridBayesTree.h>
 #include <gtsam/inference/BayesTree-inst.h>
 #include <gtsam/inference/BayesTreeCliqueBase-inst.h>
-#include <gtsam/hybrid/HybridBayesTree.h>
-#include <gtsam/hybrid/HybridBayesNet.h>
 
 namespace gtsam {
 

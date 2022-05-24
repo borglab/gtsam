@@ -64,9 +64,8 @@ HybridFactor::HybridFactor(const DiscreteKeys &discreteKeys)
       isDiscrete_(true),
       discreteKeys_(discreteKeys) {}
 
-void HybridFactor::print(
-      const std::string &s,
-      const KeyFormatter &formatter) const {
+void HybridFactor::print(const std::string &s,
+                         const KeyFormatter &formatter) const {
   std::cout << s;
   if (isContinuous_) std::cout << "Cont. ";
   if (isDiscrete_) std::cout << "Disc. ";

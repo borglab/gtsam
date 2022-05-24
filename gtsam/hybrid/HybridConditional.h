@@ -93,7 +93,8 @@ class GTSAM_EXPORT HybridConditional
 
   HybridConditional(boost::shared_ptr<DiscreteConditional> discreteConditional);
 
-  HybridConditional(boost::shared_ptr<GaussianMixtureConditional> gaussianMixture);
+  HybridConditional(
+      boost::shared_ptr<GaussianMixtureConditional> gaussianMixture);
 
   GaussianMixtureConditional::shared_ptr asMixture() {
     if (!isHybrid_) throw std::invalid_argument("Not a mixture");
