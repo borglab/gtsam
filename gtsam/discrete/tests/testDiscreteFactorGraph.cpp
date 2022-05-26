@@ -19,6 +19,7 @@
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/discrete/DiscreteEliminationTree.h>
 #include <gtsam/discrete/DiscreteBayesTree.h>
+#include <gtsam/discrete/TableFactor.h>
 #include <gtsam/inference/BayesNet.h>
 
 #include <CppUnitLite/TestHarness.h>
@@ -46,6 +47,31 @@ TEST_UNSAFE(DiscreteFactorGraph, debugScheduler) {
   graph.add(ME & AI, "0 1 1 1   1 0 1 1   1 1 0 1  1 1 1 0");
   graph.add(PC & ME, "0 1 1 1   1 0 1 1   1 1 0 1  1 1 1 0");
   graph.add(PC & AI, "0 1 1 1   1 0 1 1   1 1 0 1  1 1 1 0");
+
+  // Check MPE.
+  auto actualMPE = graph.optimize();
+  DiscreteValues mpe;
+  insert(mpe)(0, 2)(1, 1)(2, 0)(3, 0);
+  EXPECT(assert_equal(mpe, actualMPE));
+}
+
+/* ************************************************************************* */
+TEST_UNSAFE(DiscreteFactorGraph, debugSchedulerTable) {
+  DiscreteKey PC(0, 4), ME(1, 4), AI(2, 4), A(3, 3);
+
+  DiscreteFactorGraph graph;
+  graph.push_back(TableFactor(AI, "1 0 0 1"));
+  graph.push_back(TableFactor(AI, "1 1 1 0"));
+  graph.push_back(TableFactor(A & AI, "1 1 1 0   1 1 1 1   0 1 1 1"));
+  graph.push_back(TableFactor(ME, "0 1 0 0"));
+  graph.push_back(TableFactor(ME, "1 1 1 0"));
+  graph.push_back(TableFactor(A & ME, "1 1 1 0   1 1 1 1   0 1 1 1"));
+  graph.push_back(TableFactor(PC, "1 0 1 0"));
+  graph.push_back(TableFactor(PC, "1 1 1 0"));
+  graph.push_back(TableFactor(A & PC, "1 1 1 0   1 1 1 1   0 1 1 1"));
+  graph.push_back(TableFactor(ME & AI, "0 1 1 1   1 0 1 1   1 1 0 1  1 1 1 0"));
+  graph.push_back(TableFactor(PC & ME, "0 1 1 1   1 0 1 1   1 1 0 1  1 1 1 0"));
+  graph.push_back(TableFactor(PC & AI, "0 1 1 1   1 0 1 1   1 1 0 1  1 1 1 0"));
 
   // Check MPE.
   auto actualMPE = graph.optimize();
@@ -98,6 +124,57 @@ TEST_UNSAFE( DiscreteFactorGraph, DiscreteFactorGraphEvaluationTest) {
   // Check if graph product works
   DecisionTreeFactor product = graph.product();
   EXPECT_DOUBLES_EQUAL( 1.944, product(values), 1e-9);
+}
+
+/* ************************************************************************* */
+/// Test the () operator of DiscreteFactorGraph
+TEST_UNSAFE(DiscreteFactorGraph, DiscreteFactorGraphEvaluationTestTable) {
+  // Three keys P1 and P2
+  DiscreteKey P1(0, 2), P2(1, 2), P3(2, 3);
+
+  // Create the DiscreteFactorGraph
+  DiscreteFactorGraph graph;
+  TableFactor f1(P1, "0.9 0.3");
+  TableFactor f2(P2, "0.9 0.6");
+  TableFactor f3(P1 & P2, "4 1 10 4");
+  graph.push_back(f1);
+  graph.push_back(f2);
+  graph.push_back(f3);
+
+  // Instantiate DiscreteValues
+  DiscreteValues values;
+  values[0] = 1;
+  values[1] = 1;
+
+  // Check if graph evaluation works ( 0.3*0.6*4 )
+  EXPECT_DOUBLES_EQUAL(.72, graph(values), 1e-9);
+
+  // Creating a new test with third node and adding unary and ternary factors on
+  // it
+  TableFactor f4(P3, "0.9 0.2 0.5");
+  TableFactor f5(P1 & P2 & P3, "1 2 3 4 5 6 7 8 9 10 11 12");
+  graph.push_back(f4);
+  graph.push_back(f5);
+
+  // Below values lead to selecting the 8th index in the ternary factor table
+  values[0] = 1;
+  values[1] = 0;
+  values[2] = 1;
+
+  // Check if graph evaluation works (0.3*0.9*1*0.2*8)
+  EXPECT_DOUBLES_EQUAL(4.32, graph(values), 1e-9);
+
+  // Below values lead to selecting the 3rd index in the ternary factor table
+  values[0] = 0;
+  values[1] = 1;
+  values[2] = 0;
+
+  // Check if graph evaluation works (0.9*0.6*1*0.9*4)
+  EXPECT_DOUBLES_EQUAL(1.944, graph(values), 1e-9);
+
+  // Check if graph product works
+  DecisionTreeFactor product = graph.product();
+  EXPECT_DOUBLES_EQUAL(1.944, product(values), 1e-9);
 }
 
 /* ************************************************************************* */
@@ -171,6 +248,77 @@ TEST(DiscreteFactorGraph, test) {
   }
 }
 
+/* **************************************************************************/
+TEST(DiscreteFactorGraph, testTable) {
+  // Declare keys and ordering
+  DiscreteKey C(0, 2), B(1, 2), A(2, 2);
+
+  // A simple factor graph (A)-fAC-(C)-fBC-(B)
+  // with smoothness priors
+  DiscreteFactorGraph graph;
+  graph.push_back(TableFactor(A & C, "3 1 1 3"));
+  graph.push_back(TableFactor(C & B, "3 1 1 3"));
+
+  // Test EliminateDiscrete
+  Ordering frontalKeys;
+  frontalKeys += Key(0);
+  DiscreteConditional::shared_ptr conditional;
+  DecisionTreeFactor::shared_ptr newFactor;
+  boost::tie(conditional, newFactor) = EliminateDiscrete(graph, frontalKeys);
+
+  // Check Conditional
+  CHECK(conditional);
+  Signature signature((C | B, A) = "9/1 1/1 1/1 1/9");
+  DiscreteConditional expectedConditional(signature);
+  EXPECT(assert_equal(expectedConditional, *conditional));
+
+  // Check Factor
+  CHECK(newFactor);
+  DecisionTreeFactor expectedFactor(B & A, "10 6 6 10");
+  EXPECT(assert_equal(expectedFactor, *newFactor));
+
+  // Test using elimination tree
+  Ordering ordering;
+  ordering += Key(0), Key(1), Key(2);
+  DiscreteEliminationTree etree(graph, ordering);
+  DiscreteBayesNet::shared_ptr actual;
+  DiscreteFactorGraph::shared_ptr remainingGraph;
+  boost::tie(actual, remainingGraph) = etree.eliminate(&EliminateDiscrete);
+
+  // Check Bayes net
+  DiscreteBayesNet expectedBayesNet;
+  expectedBayesNet.add(signature);
+  expectedBayesNet.add(B | A = "5/3 3/5");
+  expectedBayesNet.add(A % "1/1");
+  EXPECT(assert_equal(expectedBayesNet, *actual));
+
+  // Test eliminateSequential
+  DiscreteBayesNet::shared_ptr actual2 = graph.eliminateSequential(ordering);
+  EXPECT(assert_equal(expectedBayesNet, *actual2));
+
+  // Test mpe
+  DiscreteValues mpe;
+  insert(mpe)(0, 0)(1, 0)(2, 0);
+  auto actualMPE = graph.optimize();
+  EXPECT(assert_equal(mpe, actualMPE));
+  EXPECT_DOUBLES_EQUAL(9, graph(mpe), 1e-5);  // regression
+
+  // Test sumProduct alias with all orderings:
+  auto mpeProbability = expectedBayesNet(mpe);
+  EXPECT_DOUBLES_EQUAL(0.28125, mpeProbability, 1e-5);  // regression
+
+  // Using custom ordering
+  DiscreteBayesNet bayesNet = graph.sumProduct(ordering);
+  EXPECT_DOUBLES_EQUAL(mpeProbability, bayesNet(mpe), 1e-5);
+
+  for (Ordering::OrderingType orderingType :
+       {Ordering::COLAMD, Ordering::METIS, Ordering::NATURAL,
+        Ordering::CUSTOM}) {
+    auto bayesNet = graph.sumProduct(orderingType);
+    EXPECT_DOUBLES_EQUAL(mpeProbability, bayesNet(mpe), 1e-5);
+  }
+}
+
 /* ************************************************************************* */
 TEST_UNSAFE(DiscreteFactorGraph, testMaxProduct) {
   // Declare a bunch of keys
@@ -180,6 +328,32 @@ TEST_UNSAFE(DiscreteFactorGraph, testMaxProduct) {
   DiscreteFactorGraph graph;
   graph.add(C & A, "0.2 0.8 0.3 0.7");
   graph.add(C & B, "0.1 0.9 0.4 0.6");
+
+  // Created expected MPE
+  DiscreteValues mpe;
+  insert(mpe)(0, 0)(1, 1)(2, 1);
+
+  // Do max-product with different orderings
+  for (Ordering::OrderingType orderingType :
+       {Ordering::COLAMD, Ordering::METIS, Ordering::NATURAL,
+        Ordering::CUSTOM}) {
+    DiscreteLookupDAG dag = graph.maxProduct(orderingType);
+    auto actualMPE = dag.argmax();
+    EXPECT(assert_equal(mpe, actualMPE));
+    auto actualMPE2 = graph.optimize();  // all in one
+    EXPECT(assert_equal(mpe, actualMPE2));
+  }
+}
+
+/* **************************************************************************/ 
+TEST_UNSAFE(DiscreteFactorGraph, testMaxProductTable) {
+  // Declare a bunch of keys
+  DiscreteKey C(0, 2), A(1, 2), B(2, 2);
+
+  // Create Factor graph
+  DiscreteFactorGraph graph;
+  graph.push_back(TableFactor(C & A, "0.2 0.8 0.3 0.7"));
+  graph.push_back(TableFactor(C & B, "0.1 0.9 0.4 0.6"));
 
   // Created expected MPE
   DiscreteValues mpe;
