@@ -23,12 +23,12 @@ virtual class HybridConditional {
   bool equals(const gtsam::HybridConditional& other, double tol = 1e-9) const;
   size_t nrFrontals() const;
   size_t nrParents() const;
-  Factor* getInner();
+  Factor* inner();
 };
 
 #include <gtsam/hybrid/GaussianMixtureFactor.h>
 class GaussianMixtureFactor : gtsam::HybridFactor {
-  static GaussianMixtureFactor FromFactorList(
+  static GaussianMixtureFactor FromFactors(
       const gtsam::KeyVector& continuousKeys,
       const gtsam::DiscreteKeys& discreteKeys,
       const std::vector<gtsam::GaussianFactor::shared_ptr>& factorsList);
@@ -40,7 +40,7 @@ class GaussianMixtureFactor : gtsam::HybridFactor {
 
 #include <gtsam/hybrid/GaussianMixtureConditional.h>
 class GaussianMixtureConditional : gtsam::HybridFactor {
-  static GaussianMixtureConditional FromConditionalList(
+  static GaussianMixtureConditional FromConditionals(
       const gtsam::KeyVector& continuousFrontals,
       const gtsam::KeyVector& continuousParents,
       const gtsam::DiscreteKeys& discreteParents,
