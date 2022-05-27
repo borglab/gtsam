@@ -236,43 +236,46 @@ hybridElimination(const HybridFactorGraph &factors, const Ordering &frontalKeys,
 /* ************************************************************************ */
 std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>  //
 EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
-  // NOTE(fan): Because we are in the Conditional Gaussian regime there are only
+  // NOTE: Because we are in the Conditional Gaussian regime there are only
   // a few cases:
-  // continuous variable, we make a GM if there are hybrid factors;
-  // continuous variable, we make a GF if there are no hybrid factors;
-  // discrete variable, no continuous factor is allowed (escapes CG regime), so
-  // we panic, if discrete only we do the discrete elimination.
+  // 1. continuous variable, make a Gaussian Mixture if there are hybrid
+  // factors;
+  // 2. continuous variable, we make a Gaussian Factor if there are no hybrid
+  // factors;
+  // 3. discrete variable, no continuous factor is allowed
+  // (escapes Conditional Gaussian regime), if discrete only we do the discrete
+  // elimination.
 
   // However it is not that simple. During elimination it is possible that the
   // multifrontal needs to eliminate an ordering that contains both Gaussian and
-  // hybrid variables, for example x1, c1. In this scenario, we will have a
-  // density P(x1, c1) that is a CLG P(x1|c1)P(c1) (see Murphy02)
+  // hybrid variables, for example x1, c1.
+  // In this scenario, we will have a density P(x1, c1) that is a Conditional
+  // Linear Gaussian P(x1|c1)P(c1) (see Murphy02).
 
   // The issue here is that, how can we know which variable is discrete if we
   // unify Values? Obviously we can tell using the factors, but is that fast?
 
   // In the case of multifrontal, we will need to use a constrained ordering
   // so that the discrete parts will be guaranteed to be eliminated last!
-
-  // Because of all these reasons, we need to think very carefully about how to
+  // Because of all these reasons, we carefully consider how to
   // implement the hybrid factors so that we do not get poor performance.
-  //
-  // The first thing is how to represent the GaussianMixtureConditional. A very
-  // possible scenario is that the incoming factors will have different levels
-  // of discrete keys. For example, imagine we are going to eliminate the
-  // fragment:
-  // $\phi(x1,c1,c2)$, $\phi(x1,c2,c3)$, which is perfectly valid. Now we will
-  // need to know how to retrieve the corresponding continuous densities for the
-  // assi- -gnment (c1,c2,c3) (OR (c2,c3,c1)! note there is NO defined order!).
-  // And we also need to consider when there is pruning. Two mixture factors
-  // could have different pruning patterns-one could have (c1=0,c2=1) pruned,
-  // and another could have (c2=0,c3=1) pruned, and this creates a big problem
-  // in how to identify the intersection of non-pruned branches.
 
-  // One possible approach is first building the collection of all discrete
-  // keys. After that we enumerate the space of all key combinations *lazily* so
-  // that the exploration branch terminates whenever an assignment yields NULL
-  // in any of the hybrid factors.
+  // The first thing is how to represent the GaussianMixtureConditional.
+  // A very possible scenario is that the incoming factors will have different
+  // levels of discrete keys. For example, imagine we are going to eliminate the
+  // fragment: $\phi(x1,c1,c2)$, $\phi(x1,c2,c3)$, which is perfectly valid.
+  // Now we will need to know how to retrieve the corresponding continuous
+  // densities for the assignment (c1,c2,c3) (OR (c2,c3,c1), note there is NO
+  // defined order!). We also need to consider when there is pruning. Two
+  // mixture factors could have different pruning patterns - one could have
+  // (c1=0,c2=1) pruned, and another could have (c2=0,c3=1) pruned, and this
+  // creates a big problem in how to identify the intersection of non-pruned
+  // branches.
+
+  // Our approach is first building the collection of all discrete keys. After
+  // that we enumerate the space of all key combinations *lazily* so that the
+  // exploration branch terminates whenever an assignment yields NULL in any of
+  // the hybrid factors.
 
   // When the number of assignments is large we may encounter stack overflows.
   // However this is also the case with iSAM2, so no pressure :)
