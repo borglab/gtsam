@@ -56,7 +56,7 @@ TEST_UNSAFE(DiscreteFactorGraph, debugScheduler) {
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(DiscreteFactorGraph, debugSchedulerTable) {
+TEST(DiscreteFactorGraph, debugSchedulerTable) {
   DiscreteKey PC(0, 4), ME(1, 4), AI(2, 4), A(3, 3);
 
   DiscreteFactorGraph graph;
@@ -128,7 +128,7 @@ TEST_UNSAFE( DiscreteFactorGraph, DiscreteFactorGraphEvaluationTest) {
 
 /* ************************************************************************* */
 /// Test the () operator of DiscreteFactorGraph
-TEST_UNSAFE(DiscreteFactorGraph, DiscreteFactorGraphEvaluationTestTable) {
+TEST(DiscreteFactorGraph, DiscreteFactorGraphEvaluationTestTable) {
   // Three keys P1 and P2
   DiscreteKey P1(0, 2), P2(1, 2), P3(2, 3);
 
