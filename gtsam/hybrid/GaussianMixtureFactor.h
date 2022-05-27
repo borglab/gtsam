@@ -11,7 +11,7 @@
 
 /**
  * @file   GaussianMixtureFactor.h
- * @brief  A set of Gaussian factors indexed by a set of discrete keys.
+ * @brief  A factor that is a function of discrete and continuous variables.
  * @author Fan Jiang
  * @author Varun Agrawal
  * @author Frank Dellaert
@@ -29,48 +29,86 @@ namespace gtsam {
 
 class GaussianFactorGraph;
 
-typedef std::vector<gtsam::GaussianFactor::shared_ptr> GaussianFactorVector;
+using GaussianFactorVector = std::vector<gtsam::GaussianFactor::shared_ptr>;
 
+/**
+ * @brief A linear factor that is a function of both discrete and continuous
+ * variables, i.e. P(X, M | Z) where X is the set of continuous variables, M is
+ * the set of discrete variables and Z is the measurement set.
+ *
+ * Represents the underlying Gaussian Mixture as a Decision Tree, where the set
+ * of discrete variables indexes to the continuous gaussian distribution.
+ *
+ */
 class GaussianMixtureFactor : public HybridFactor {
  public:
   using Base = HybridFactor;
   using This = GaussianMixtureFactor;
   using shared_ptr = boost::shared_ptr<This>;
 
+  using Sum = DecisionTree<Key, GaussianFactorGraph>;
+
+  /// typedef for Decision Tree of Gaussian Factors
   using Factors = DecisionTree<Key, GaussianFactor::shared_ptr>;
 
+ private:
   Factors factors_;
 
+  /**
+   * @brief Helper function to return factors and functional to create a
+   * DecisionTree of Gaussian Factor Graphs.
+   *
+   * @return Sum (DecisionTree<Key, GaussianFactorGraph>)
+   */
+  Sum asGaussianFactorGraphTree() const;
+
+ public:
+  /// @name Constructors
+  /// @{
+
+  /// Default constructor, mainly for serialization.
   GaussianMixtureFactor() = default;
 
+  /**
+   * @brief Construct a new Gaussian Mixture Factor object.
+   *
+   * @param continuousKeys A vector of keys representing continuous variables.
+   * @param discreteKeys A vector of keys representing discrete variables and
+   * their cardinalities.
+   * @param factors The decision tree of Gaussian Factors stored as the mixture
+   * density.
+   */
   GaussianMixtureFactor(const KeyVector &continuousKeys,
                         const DiscreteKeys &discreteKeys,
                         const Factors &factors);
 
-  using Sum = DecisionTree<Key, GaussianFactorGraph>;
-
-  const Factors &factors();
-
-  static This FromFactorList(
+  static This FromFactors(
       const KeyVector &continuousKeys, const DiscreteKeys &discreteKeys,
       const std::vector<GaussianFactor::shared_ptr> &factors);
 
-  Sum add(const Sum &sum) const;
+  /// @}
+  /// @name Testable
+  /// @{
 
   bool equals(const HybridFactor &lf, double tol = 1e-9) const override;
 
   void print(
       const std::string &s = "HybridFactor\n",
       const KeyFormatter &formatter = DefaultKeyFormatter) const override;
+  /// @}
 
- protected:
+  /// Getter for the underlying Gaussian Factor Decision Tree.
+  const Factors &factors();
+
   /**
-   * @brief Helper function to return factors and functional to create a
-   * DecisionTree of Gaussian Factor Graphs.
+   * @brief Combine the Gaussian Factor Graphs in `sum` and `this` while
+   * maintaining the original tree structure.
    *
-   * @return Sum (DecisionTree<Key, GaussianFactorGraph)
+   * @param sum Decision Tree of Gaussian Factor Graphs indexed by the
+   * variables.
+   * @return Sum
    */
-  Sum asGaussianFactorGraphTree() const;
+  Sum add(const Sum &sum) const;
 };
 
 }  // namespace gtsam
