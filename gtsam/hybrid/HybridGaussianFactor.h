@@ -28,12 +28,13 @@ namespace gtsam {
  * a diamond inheritance.
  */
 class HybridGaussianFactor : public HybridFactor {
+ private:
+  GaussianFactor::shared_ptr inner_;
+
  public:
   using Base = HybridFactor;
   using This = HybridGaussianFactor;
   using shared_ptr = boost::shared_ptr<This>;
-
-  GaussianFactor::shared_ptr inner;
 
   // Explicit conversion from a shared ptr of GF
   explicit HybridGaussianFactor(GaussianFactor::shared_ptr other);
@@ -47,5 +48,7 @@ class HybridGaussianFactor : public HybridFactor {
   void print(
       const std::string &s = "HybridFactor\n",
       const KeyFormatter &formatter = DefaultKeyFormatter) const override;
+
+  GaussianFactor::shared_ptr inner() const { return inner_; }
 };
 }  // namespace gtsam

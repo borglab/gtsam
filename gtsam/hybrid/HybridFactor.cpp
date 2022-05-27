@@ -19,6 +19,7 @@
 
 namespace gtsam {
 
+/* ************************************************************************ */
 KeyVector CollectKeys(const KeyVector &continuousKeys,
                       const DiscreteKeys &discreteKeys) {
   KeyVector allKeys;
@@ -30,6 +31,7 @@ KeyVector CollectKeys(const KeyVector &continuousKeys,
   return allKeys;
 }
 
+/* ************************************************************************ */
 KeyVector CollectKeys(const KeyVector &keys1, const KeyVector &keys2) {
   KeyVector allKeys;
   std::copy(keys1.begin(), keys1.end(), std::back_inserter(allKeys));
@@ -37,6 +39,7 @@ KeyVector CollectKeys(const KeyVector &keys1, const KeyVector &keys2) {
   return allKeys;
 }
 
+/* ************************************************************************ */
 DiscreteKeys CollectDiscreteKeys(const DiscreteKeys &key1,
                                  const DiscreteKeys &key2) {
   DiscreteKeys allKeys;
@@ -45,29 +48,32 @@ DiscreteKeys CollectDiscreteKeys(const DiscreteKeys &key1,
   return allKeys;
 }
 
-HybridFactor::HybridFactor() = default;
-
+/* ************************************************************************ */
 HybridFactor::HybridFactor(const KeyVector &keys)
-    : Base(keys), isContinuous_(true), nrContinuous(keys.size()) {}
+    : Base(keys), isContinuous_(true), nrContinuous_(keys.size()) {}
 
+/* ************************************************************************ */
 HybridFactor::HybridFactor(const KeyVector &continuousKeys,
                            const DiscreteKeys &discreteKeys)
     : Base(CollectKeys(continuousKeys, discreteKeys)),
       isDiscrete_((continuousKeys.size() == 0) && (discreteKeys.size() != 0)),
       isContinuous_((continuousKeys.size() != 0) && (discreteKeys.size() == 0)),
       isHybrid_((continuousKeys.size() != 0) && (discreteKeys.size() != 0)),
-      nrContinuous(continuousKeys.size()),
+      nrContinuous_(continuousKeys.size()),
       discreteKeys_(discreteKeys) {}
 
+/* ************************************************************************ */
 HybridFactor::HybridFactor(const DiscreteKeys &discreteKeys)
     : Base(CollectKeys({}, discreteKeys)),
       isDiscrete_(true),
       discreteKeys_(discreteKeys) {}
 
+/* ************************************************************************ */
 bool HybridFactor::equals(const HybridFactor &lf, double tol) const {
   return Base::equals(lf, tol);
 }
 
+/* ************************************************************************ */
 void HybridFactor::print(const std::string &s,
                          const KeyFormatter &formatter) const {
   std::cout << s;
@@ -76,7 +82,5 @@ void HybridFactor::print(const std::string &s,
   if (isHybrid_) std::cout << "Hybr. ";
   this->printKeys("", formatter);
 }
-
-HybridFactor::~HybridFactor() = default;
 
 }  // namespace gtsam

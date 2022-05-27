@@ -41,6 +41,16 @@ DiscreteKeys CollectDiscreteKeys(const DiscreteKeys &key1,
  *  - GaussianMixture
  */
 class GTSAM_EXPORT HybridFactor : public Factor {
+ private:
+  bool isDiscrete_ = false;
+  bool isContinuous_ = false;
+  bool isHybrid_ = false;
+
+  size_t nrContinuous_ = 0;
+
+ protected:
+  DiscreteKeys discreteKeys_;
+
  public:
   // typedefs needed to play nice with gtsam
   typedef HybridFactor This;  ///< This class
@@ -48,27 +58,11 @@ class GTSAM_EXPORT HybridFactor : public Factor {
       shared_ptr;       ///< shared_ptr to this class
   typedef Factor Base;  ///< Our base class
 
-  bool isDiscrete_ = false;
-  bool isContinuous_ = false;
-  bool isHybrid_ = false;
-
-  size_t nrContinuous = 0;
-
-  DiscreteKeys discreteKeys_;
-
- public:
   /// @name Standard Constructors
   /// @{
 
   /** Default constructor creates empty factor */
-  HybridFactor();
-
-  /** Construct from container of keys.  This constructor is used internally
-   * from derived factor
-   *  constructors, either from a container of keys or from a
-   * boost::assign::list_of. */
-  //  template<typename CONTAINER>
-  //  HybridFactor(const CONTAINER &keys) : Base(keys) {}
+  HybridFactor() = default;
 
   explicit HybridFactor(const KeyVector &keys);
 
@@ -78,7 +72,7 @@ class GTSAM_EXPORT HybridFactor : public Factor {
   explicit HybridFactor(const DiscreteKeys &discreteKeys);
 
   /// Virtual destructor
-  virtual ~HybridFactor();
+  virtual ~HybridFactor() = default;
 
   /// @}
   /// @name Testable
@@ -95,6 +89,21 @@ class GTSAM_EXPORT HybridFactor : public Factor {
   /// @}
   /// @name Standard Interface
   /// @{
+
+  /// True if this is a factor of discrete variables only.
+  bool isDiscrete() const { return isDiscrete_; }
+
+  /// True if this is a factor of continuous variables only.
+  bool isContinuous() const { return isContinuous_; }
+
+  /// True is this is a Discrete-Continuous factor.
+  bool isHybrid() const { return isHybrid_; }
+
+  /// Return the number of continuous variables in this factor.
+  size_t nrContinuous() const { return nrContinuous_; }
+
+  /// Return vector of discrete keys.
+  DiscreteKeys discreteKeys() const { return discreteKeys_; }
 
   /// @}
 };
