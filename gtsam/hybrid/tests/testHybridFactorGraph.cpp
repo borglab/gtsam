@@ -90,6 +90,7 @@ TEST(HybridFactorGraph, creation) {
   GTSAM_PRINT(clgc);
 }
 
+/* ************************************************************************* */
 TEST(HybridFactorGraph, eliminate) {
   HybridFactorGraph hfg;
 
@@ -100,6 +101,7 @@ TEST(HybridFactorGraph, eliminate) {
   EXPECT_LONGS_EQUAL(result.first->size(), 1);
 }
 
+/* ************************************************************************* */
 TEST(HybridFactorGraph, eliminateMultifrontal) {
   HybridFactorGraph hfg;
 
@@ -116,6 +118,7 @@ TEST(HybridFactorGraph, eliminateMultifrontal) {
   EXPECT_LONGS_EQUAL(result.second->size(), 1);
 }
 
+/* ************************************************************************* */
 TEST(HybridFactorGraph, eliminateFullSequentialEqualChance) {
   HybridFactorGraph hfg;
 
@@ -139,9 +142,8 @@ TEST(HybridFactorGraph, eliminateFullSequentialEqualChance) {
   EXPECT_DOUBLES_EQUAL(0.6225, dc->operator()(dv), 1e-3);
 }
 
+/* ************************************************************************* */
 TEST(HybridFactorGraph, eliminateFullSequentialSimple) {
-  std::cout << ">>>>>>>>>>>>>>\n";
-
   HybridFactorGraph hfg;
 
   DiscreteKey c1(C(1), 2);
@@ -168,9 +170,8 @@ TEST(HybridFactorGraph, eliminateFullSequentialSimple) {
   GTSAM_PRINT(*result);
 }
 
+/* ************************************************************************* */
 TEST(HybridFactorGraph, eliminateFullMultifrontalSimple) {
-  std::cout << ">>>>>>>>>>>>>>\n";
-
   HybridFactorGraph hfg;
 
   DiscreteKey c1(C(1), 2);
@@ -202,9 +203,8 @@ TEST(HybridFactorGraph, eliminateFullMultifrontalSimple) {
   GTSAM_PRINT(*result->marginalFactor(C(2)));
 }
 
+/* ************************************************************************* */
 TEST(HybridFactorGraph, eliminateFullMultifrontalCLG) {
-  std::cout << ">>>>>>>>>>>>>>\n";
-
   HybridFactorGraph hfg;
 
   DiscreteKey c(C(1), 2);
@@ -235,13 +235,12 @@ TEST(HybridFactorGraph, eliminateFullMultifrontalCLG) {
   */
 }
 
+/* ************************************************************************* */
 /*
  * This test is about how to assemble the Bayes Tree roots after we do partial
  * elimination
  */
 TEST(HybridFactorGraph, eliminateFullMultifrontalTwoClique) {
-  std::cout << ">>>>>>>>>>>>>>\n";
-
   HybridFactorGraph hfg;
 
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
@@ -308,6 +307,7 @@ TEST(HybridFactorGraph, eliminateFullMultifrontalTwoClique) {
   */
 }
 
+/* ************************************************************************* */
 // TODO(fan): make a graph like Varun's paper one
 TEST(HybridFactorGraph, Switching) {
   auto N = 12;
@@ -415,6 +415,7 @@ TEST(HybridFactorGraph, Switching) {
   hbt->marginalFactor(C(11))->print("HBT: ");
 }
 
+/* ************************************************************************* */
 // TODO(fan): make a graph like Varun's paper one
 TEST(HybridFactorGraph, SwitchingISAM) {
   auto N = 11;
@@ -510,6 +511,7 @@ TEST(HybridFactorGraph, SwitchingISAM) {
   }
 }
 
+/* ************************************************************************* */
 TEST(HybridFactorGraph, SwitchingTwoVar) {
   const int N = 7;
   auto hfg = makeSwitchingChain(N, X);
@@ -599,10 +601,6 @@ TEST(HybridFactorGraph, SwitchingTwoVar) {
 
 /* ************************************************************************* */
 int main() {
-#ifdef HYBRID_DEBUG
-  ::signal(SIGSEGV, &my_signal_handler);
-  ::signal(SIGBUS, &my_signal_handler);
-#endif
   TestResult tr;
   return TestRegistry::runAllTests(tr);
 }
