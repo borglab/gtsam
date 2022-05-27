@@ -22,6 +22,7 @@
 
 namespace gtsam {
 
+/* ************************************************************************ */
 HybridConditional::HybridConditional(const KeyVector &continuousFrontals,
                                      const DiscreteKeys &discreteFrontals,
                                      const KeyVector &continuousParents,
@@ -35,36 +36,40 @@ HybridConditional::HybridConditional(const KeyVector &continuousFrontals,
               {discreteParents.begin(), discreteParents.end()}),
           continuousFrontals.size() + discreteFrontals.size()) {}
 
+/* ************************************************************************ */
 HybridConditional::HybridConditional(
     boost::shared_ptr<GaussianConditional> continuousConditional)
     : HybridConditional(continuousConditional->keys(), {},
                         continuousConditional->nrFrontals()) {
-  inner = continuousConditional;
+  inner_ = continuousConditional;
 }
 
+/* ************************************************************************ */
 HybridConditional::HybridConditional(
     boost::shared_ptr<DiscreteConditional> discreteConditional)
     : HybridConditional({}, discreteConditional->discreteKeys(),
                         discreteConditional->nrFrontals()) {
-  inner = discreteConditional;
+  inner_ = discreteConditional;
 }
 
+/* ************************************************************************ */
 HybridConditional::HybridConditional(
     boost::shared_ptr<GaussianMixtureConditional> gaussianMixture)
     : BaseFactor(KeyVector(gaussianMixture->keys().begin(),
                            gaussianMixture->keys().begin() +
-                               gaussianMixture->nrContinuous),
-                 gaussianMixture->discreteKeys_),
+                               gaussianMixture->nrContinuous()),
+                 gaussianMixture->discreteKeys()),
       BaseConditional(gaussianMixture->nrFrontals()) {
-  inner = gaussianMixture;
+  inner_ = gaussianMixture;
 }
 
+/* ************************************************************************ */
 void HybridConditional::print(const std::string &s,
                               const KeyFormatter &formatter) const {
   std::cout << s;
-  if (isContinuous_) std::cout << "Cont. ";
-  if (isDiscrete_) std::cout << "Disc. ";
-  if (isHybrid_) std::cout << "Hybr. ";
+  if (isContinuous()) std::cout << "Cont. ";
+  if (isDiscrete()) std::cout << "Disc. ";
+  if (isHybrid()) std::cout << "Hybr. ";
   std::cout << "P(";
   size_t index = 0;
   const size_t N = keys().size();
@@ -85,9 +90,10 @@ void HybridConditional::print(const std::string &s,
     index++;
   }
   std::cout << ")\n";
-  if (inner) inner->print("", formatter);
+  if (inner_) inner_->print("", formatter);
 }
 
+/* ************************************************************************ */
 bool HybridConditional::equals(const HybridFactor &other, double tol) const {
   return BaseFactor::equals(other, tol);
 }

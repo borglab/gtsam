@@ -42,7 +42,7 @@ GaussianMixtureConditional::conditionals() {
 }
 
 /* *******************************************************************************/
-GaussianMixtureConditional GaussianMixtureConditional::FromConditionalList(
+GaussianMixtureConditional GaussianMixtureConditional::FromConditionals(
     const KeyVector &continuousFrontals, const KeyVector &continuousParents,
     const DiscreteKeys &discreteParents,
     const std::vector<GaussianConditional::shared_ptr> &conditionalsList) {
@@ -86,12 +86,12 @@ bool GaussianMixtureConditional::equals(const HybridFactor &lf,
 void GaussianMixtureConditional::print(const std::string &s,
                                        const KeyFormatter &formatter) const {
   std::cout << s << ": ";
-  if (isContinuous_) std::cout << "Cont. ";
-  if (isDiscrete_) std::cout << "Disc. ";
-  if (isHybrid_) std::cout << "Hybr. ";
+  if (isContinuous()) std::cout << "Cont. ";
+  if (isDiscrete()) std::cout << "Disc. ";
+  if (isHybrid()) std::cout << "Hybr. ";
   BaseConditional::print("", formatter);
   std::cout << "Discrete Keys = ";
-  for (auto &dk : discreteKeys_) {
+  for (auto &dk : discreteKeys()) {
     std::cout << "(" << formatter(dk.first) << ", " << dk.second << "), ";
   }
   std::cout << "\n";

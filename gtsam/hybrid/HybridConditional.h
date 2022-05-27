@@ -54,8 +54,8 @@ class HybridFactorGraph;
  * having diamond inheritances, and neutralized the need to change other
  * components of GTSAM to make hybrid elimination work.
  *
- * A great reference to the type-erasure pattern is Edurado Madrid's CppCon
- * talk.
+ * A great reference to the type-erasure pattern is Eduaado Madrid's CppCon
+ * talk (https://www.youtube.com/watch?v=s082Qmd_nHs).
  */
 class GTSAM_EXPORT HybridConditional
     : public HybridFactor,
@@ -70,7 +70,7 @@ class GTSAM_EXPORT HybridConditional
 
  protected:
   // Type-erased pointer to the inner type
-  boost::shared_ptr<Factor> inner;
+  boost::shared_ptr<Factor> inner_;
 
  public:
   /// @name Standard Constructors
@@ -79,34 +79,76 @@ class GTSAM_EXPORT HybridConditional
   /// Default constructor needed for serialization.
   HybridConditional() = default;
 
+  /**
+   * @brief Construct a new Hybrid Conditional object
+   *
+   * @param continuousKeys Vector of keys for continuous variables.
+   * @param discreteKeys Keys and cardinalities for discrete variables.
+   * @param nFrontals The number of frontal variables in the conditional.
+   */
   HybridConditional(const KeyVector& continuousKeys,
                     const DiscreteKeys& discreteKeys, size_t nFrontals)
       : BaseFactor(continuousKeys, discreteKeys), BaseConditional(nFrontals) {}
 
+  /**
+   * @brief Construct a new Hybrid Conditional object
+   *
+   * @param continuousFrontals Vector of keys for continuous variables.
+   * @param discreteFrontals Keys and cardinalities for discrete variables.
+   * @param continuousParents Vector of keys for parent continuous variables.
+   * @param discreteParents Keys and cardinalities for parent discrete
+   * variables.
+   */
   HybridConditional(const KeyVector& continuousFrontals,
                     const DiscreteKeys& discreteFrontals,
                     const KeyVector& continuousParents,
                     const DiscreteKeys& discreteParents);
 
+  /**
+   * @brief Construct a new Hybrid Conditional object
+   *
+   * @param continuousConditional Conditional used to create the
+   * HybridConditional.
+   */
   HybridConditional(
       boost::shared_ptr<GaussianConditional> continuousConditional);
 
+  /**
+   * @brief Construct a new Hybrid Conditional object
+   *
+   * @param discreteConditional Conditional used to create the
+   * HybridConditional.
+   */
   HybridConditional(boost::shared_ptr<DiscreteConditional> discreteConditional);
 
+  /**
+   * @brief Construct a new Hybrid Conditional object
+   *
+   * @param gaussianMixture Gaussian Mixture Conditional used to create the
+   * HybridConditional.
+   */
   HybridConditional(
       boost::shared_ptr<GaussianMixtureConditional> gaussianMixture);
 
+  /**
+   * @brief Return HybridConditional as a GaussianMixtureConditional
+   *
+   * @return GaussianMixtureConditional::shared_ptr
+   */
   GaussianMixtureConditional::shared_ptr asMixture() {
-    if (!isHybrid_) throw std::invalid_argument("Not a mixture");
-    return boost::static_pointer_cast<GaussianMixtureConditional>(inner);
+    if (!isHybrid()) throw std::invalid_argument("Not a mixture");
+    return boost::static_pointer_cast<GaussianMixtureConditional>(inner_);
   }
 
+  /**
+   * @brief Return conditional as a DiscreteConditional
+   *
+   * @return DiscreteConditional::shared_ptr
+   */
   DiscreteConditional::shared_ptr asDiscreteConditional() {
-    if (!isDiscrete_) throw std::invalid_argument("Not a discrete conditional");
-    return boost::static_pointer_cast<DiscreteConditional>(inner);
+    if (!isDiscrete()) throw std::invalid_argument("Not a discrete conditional");
+    return boost::static_pointer_cast<DiscreteConditional>(inner_);
   }
-
-  boost::shared_ptr<Factor> getInner() { return inner; }
 
   /// @}
   /// @name Testable
@@ -122,11 +164,10 @@ class GTSAM_EXPORT HybridConditional
 
   /// @}
 
-  friend std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>  //
-  EliminateHybrid(const HybridFactorGraph& factors,
-                  const Ordering& frontalKeys);
-};
-// DiscreteConditional
+  /// Get the type-erased pointer to the inner type
+  boost::shared_ptr<Factor> inner() { return inner_; }
+
+};  // DiscreteConditional
 
 // traits
 template <>
