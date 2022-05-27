@@ -43,11 +43,20 @@ class GTSAM_EXPORT HybridISAM : public ISAM<HybridBayesTree> {
 
   /// @}
 
+ private:
+  /// Internal method that performs the ISAM update.
   void updateInternal(
       const HybridFactorGraph& newFactors, HybridBayesTree::Cliques* orphans,
       const HybridBayesTree::Eliminate& function =
           HybridBayesTree::EliminationTraitsType::DefaultEliminate);
 
+ public:
+  /**
+   * @brief Perform update step with new factors.
+   *
+   * @param newFactors Factor graph of new factors to add and eliminate.
+   * @param function Elimination function.
+   */
   void update(const HybridFactorGraph& newFactors,
               const HybridBayesTree::Eliminate& function =
                   HybridBayesTree::EliminationTraitsType::DefaultEliminate);
