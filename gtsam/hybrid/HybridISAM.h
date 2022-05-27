@@ -41,6 +41,8 @@ class GTSAM_EXPORT HybridISAM : public ISAM<HybridBayesTree> {
   /** Copy constructor */
   HybridISAM(const HybridBayesTree& bayesTree);
 
+  /// @}
+
   void updateInternal(
       const HybridFactorGraph& newFactors, HybridBayesTree::Cliques* orphans,
       const HybridBayesTree::Eliminate& function =
@@ -49,7 +51,6 @@ class GTSAM_EXPORT HybridISAM : public ISAM<HybridBayesTree> {
   void update(const HybridFactorGraph& newFactors,
               const HybridBayesTree::Eliminate& function =
                   HybridBayesTree::EliminationTraitsType::DefaultEliminate);
-  /// @}
 };
 
 /// traits
