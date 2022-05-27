@@ -36,6 +36,7 @@ HybridISAM::HybridISAM() {}
 /* ************************************************************************* */
 HybridISAM::HybridISAM(const HybridBayesTree& bayesTree) : Base(bayesTree) {}
 
+/* ************************************************************************* */
 void HybridISAM::updateInternal(const HybridFactorGraph& newFactors,
                                 HybridBayesTree::Cliques* orphans,
                                 const HybridBayesTree::Eliminate& function) {
@@ -79,8 +80,6 @@ void HybridISAM::updateInternal(const HybridFactorGraph& newFactors,
       index, KeyVector(newKeysDiscreteLast.begin(), newKeysDiscreteLast.end()),
       true);
 
-  ordering.print("ORD");
-
   // eliminate all factors (top, added, orphans) into a new Bayes tree
   auto bayesTree = factors.eliminateMultifrontal(ordering, function, index);
 
@@ -90,6 +89,7 @@ void HybridISAM::updateInternal(const HybridFactorGraph& newFactors,
   this->nodes_.insert(bayesTree->nodes().begin(), bayesTree->nodes().end());
 }
 
+/* ************************************************************************* */
 void HybridISAM::update(const HybridFactorGraph& newFactors,
                         const HybridBayesTree::Eliminate& function) {
   Cliques orphans;
