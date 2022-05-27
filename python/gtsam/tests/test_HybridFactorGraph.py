@@ -16,24 +16,25 @@ import unittest
 
 import gtsam
 import numpy as np
-from gtsam.symbol_shorthand import X, C
+from gtsam.symbol_shorthand import C, X
 from gtsam.utils.test_case import GtsamTestCase
 
 
 class TestHybridFactorGraph(GtsamTestCase):
+    """Unit tests for HybridFactorGraph."""
+
     def test_create(self):
+        """Test contruction of hybrid factor graph."""
         noiseModel = gtsam.noiseModel.Unit.Create(3)
         dk = gtsam.DiscreteKeys()
         dk.push_back((C(0), 2))
 
-        # print(dk.at(0))
         jf1 = gtsam.JacobianFactor(X(0), np.eye(3), np.zeros((3, 1)),
                                    noiseModel)
         jf2 = gtsam.JacobianFactor(X(0), np.eye(3), np.ones((3, 1)),
                                    noiseModel)
 
-        gmf = gtsam.GaussianMixtureFactor.FromFactorList([X(0)], dk,
-                                                         [jf1, jf2])
+        gmf = gtsam.GaussianMixtureFactor.FromFactors([X(0)], dk, [jf1, jf2])
 
         hfg = gtsam.HybridFactorGraph()
         hfg.add(jf1)
@@ -41,16 +42,17 @@ class TestHybridFactorGraph(GtsamTestCase):
         hfg.push_back(gmf)
 
         hbn = hfg.eliminateSequential(
-            gtsam.Ordering.ColamdConstrainedLastHybridFactorGraph(
-                hfg, [C(0)]))
+            gtsam.Ordering.ColamdConstrainedLastHybridFactorGraph(hfg, [C(0)]))
 
-        print("hbn = ", hbn)
+        # print("hbn = ", hbn)
+        self.assertEqual(hbn.size(), 2)
 
-        mixture = hbn.at(0).getInner()
-        print(mixture)
+        mixture = hbn.at(0).inner()
+        self.assertIsInstance(mixture, gtsam.GaussianMixtureConditional)
+        self.assertEqual(len(mixture.keys()), 2)
 
-        discrete_conditional = hbn.at(hbn.size()-1).getInner()
-        print(discrete_conditional)
+        discrete_conditional = hbn.at(hbn.size() - 1).inner()
+        self.assertIsInstance(discrete_conditional, gtsam.DiscreteConditional)
 
 
 if __name__ == "__main__":

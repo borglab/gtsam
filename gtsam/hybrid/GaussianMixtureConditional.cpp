@@ -85,12 +85,12 @@ bool GaussianMixtureConditional::equals(const HybridFactor &lf,
 /* *******************************************************************************/
 void GaussianMixtureConditional::print(const std::string &s,
                                        const KeyFormatter &formatter) const {
-  std::cout << s << ": ";
-  if (isContinuous()) std::cout << "Cont. ";
-  if (isDiscrete()) std::cout << "Disc. ";
-  if (isHybrid()) std::cout << "Hybr. ";
+  std::cout << s;
+  if (isContinuous()) std::cout << "Continuous ";
+  if (isDiscrete()) std::cout << "Discrete ";
+  if (isHybrid()) std::cout << "Hybrid ";
   BaseConditional::print("", formatter);
-  std::cout << "Discrete Keys = ";
+  std::cout << "\nDiscrete Keys = ";
   for (auto &dk : discreteKeys()) {
     std::cout << "(" << formatter(dk.first) << ", " << dk.second << "), ";
   }

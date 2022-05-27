@@ -77,9 +77,9 @@ bool HybridFactor::equals(const HybridFactor &lf, double tol) const {
 void HybridFactor::print(const std::string &s,
                          const KeyFormatter &formatter) const {
   std::cout << s;
-  if (isContinuous_) std::cout << "Cont. ";
-  if (isDiscrete_) std::cout << "Disc. ";
-  if (isHybrid_) std::cout << "Hybr. ";
+  if (isContinuous_) std::cout << "Continuous ";
+  if (isDiscrete_) std::cout << "Discrete ";
+  if (isHybrid_) std::cout << "Hybrid ";
   this->printKeys("", formatter);
 }
 
