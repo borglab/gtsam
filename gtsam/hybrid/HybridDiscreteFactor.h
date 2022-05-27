@@ -13,6 +13,7 @@
  *  @file HybridDiscreteFactor.h
  *  @date Mar 11, 2022
  *  @author Fan Jiang
+ *  @author Varun Agrawal
  */
 
 #pragma once
@@ -29,12 +30,16 @@ namespace gtsam {
  * inheritance.
  */
 class HybridDiscreteFactor : public HybridFactor {
+ private:
+  DiscreteFactor::shared_ptr inner_;
+
  public:
   using Base = HybridFactor;
   using This = HybridDiscreteFactor;
   using shared_ptr = boost::shared_ptr<This>;
 
-  DiscreteFactor::shared_ptr inner;
+  /// @name Constructors
+  /// @{
 
   // Implicit conversion from a shared ptr of DF
   HybridDiscreteFactor(DiscreteFactor::shared_ptr other);
@@ -42,11 +47,18 @@ class HybridDiscreteFactor : public HybridFactor {
   // Forwarding constructor from concrete DecisionTreeFactor
   HybridDiscreteFactor(DecisionTreeFactor &&dtf);
 
- public:
+  /// @}
+  /// @name Testable
+  /// @{
   virtual bool equals(const HybridFactor &lf, double tol) const override;
 
   void print(
       const std::string &s = "HybridFactor\n",
       const KeyFormatter &formatter = DefaultKeyFormatter) const override;
+
+  /// @}
+
+  /// Return pointer to the internal discrete factor
+  DiscreteFactor::shared_ptr inner() const { return inner_; }
 };
 }  // namespace gtsam
