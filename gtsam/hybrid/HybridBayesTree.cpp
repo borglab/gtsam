@@ -33,5 +33,4 @@ bool HybridBayesTree::equals(const This& other, double tol) const {
   return Base::equals(other, tol);
 }
 
-/* **************************************************************************/
 }  // namespace gtsam

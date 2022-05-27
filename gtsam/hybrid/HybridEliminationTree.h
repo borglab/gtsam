@@ -28,11 +28,17 @@ namespace gtsam {
  */
 class GTSAM_EXPORT HybridEliminationTree
     : public EliminationTree<HybridBayesNet, HybridFactorGraph> {
+ private:
+  friend class ::EliminationTreeTester;
+
  public:
   typedef EliminationTree<HybridBayesNet, HybridFactorGraph>
       Base;                                    ///< Base class
   typedef HybridEliminationTree This;          ///< This class
   typedef boost::shared_ptr<This> shared_ptr;  ///< Shared pointer to this class
+
+  /// @name Constructors
+  /// @{
 
   /**
    * Build the elimination tree of a factor graph using pre-computed column
@@ -54,11 +60,10 @@ class GTSAM_EXPORT HybridEliminationTree
   HybridEliminationTree(const HybridFactorGraph& factorGraph,
                         const Ordering& order);
 
+  /// @}
+
   /** Test whether the tree is equal to another */
   bool equals(const This& other, double tol = 1e-9) const;
-
- private:
-  friend class ::EliminationTreeTester;
 };
 
 }  // namespace gtsam

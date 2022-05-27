@@ -70,7 +70,13 @@ class GTSAM_EXPORT HybridBayesTree : public BayesTree<HybridBayesTreeClique> {
   /// @}
 };
 
-/* This does special stuff for the hybrid case */
+/**
+ * @brief Class for Hybrid Bayes tree orphan subtrees.
+ *
+ * This does special stuff for the hybrid case
+ *
+ * @tparam CLIQUE
+ */
 template <class CLIQUE>
 class BayesTreeOrphanWrapper<
     CLIQUE, typename std::enable_if<
@@ -82,16 +88,22 @@ class BayesTreeOrphanWrapper<
 
   boost::shared_ptr<CliqueType> clique;
 
+  /**
+   * @brief Construct a new Bayes Tree Orphan Wrapper object.
+   *
+   * @param clique Bayes tree clique.
+   */
   BayesTreeOrphanWrapper(const boost::shared_ptr<CliqueType>& clique)
       : clique(clique) {
     // Store parent keys in our base type factor so that eliminating those
     // parent keys will pull this subtree into the elimination.
     this->keys_.assign(clique->conditional()->beginParents(),
                        clique->conditional()->endParents());
-    this->discreteKeys_.assign(clique->conditional()->discreteKeys_.begin(),
-                               clique->conditional()->discreteKeys_.end());
+    this->discreteKeys_.assign(clique->conditional()->discreteKeys().begin(),
+                               clique->conditional()->discreteKeys().end());
   }
 
+  /// print utility
   void print(
       const std::string& s = "",
       const KeyFormatter& formatter = DefaultKeyFormatter) const override {
