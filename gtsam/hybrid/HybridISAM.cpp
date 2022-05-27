@@ -58,7 +58,7 @@ void HybridISAM::updateInternal(const HybridFactorGraph& newFactors,
 
   KeySet allDiscrete;
   for (auto& factor : factors) {
-    for (auto& k : factor->discreteKeys_) {
+    for (auto& k : factor->discreteKeys()) {
       allDiscrete.insert(k.first);
     }
   }

@@ -150,8 +150,8 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
       std::cout << RESET;
     }
     separatorKeys.insert(factor->begin(), factor->end());
-    if (!factor->isContinuous_) {
-      for (auto &k : factor->discreteKeys_) {
+    if (!factor->isContinuous()) {
+      for (auto &k : factor->discreteKeys()) {
         mapFromKeyToDiscreteKey[k.first] = k;
       }
     }
@@ -223,9 +223,9 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
     for (auto &fp : factors) {
       auto ptr = boost::dynamic_pointer_cast<HybridGaussianFactor>(fp);
       if (ptr) {
-        gfg.push_back(ptr->inner);
+        gfg.push_back(ptr->inner());
       } else {
-        auto p = boost::static_pointer_cast<HybridConditional>(fp)->inner;
+        auto p = boost::static_pointer_cast<HybridConditional>(fp)->inner();
         if (p) {
           gfg.push_back(boost::static_pointer_cast<GaussianConditional>(p));
         } else {
@@ -251,9 +251,9 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
     for (auto &fp : factors) {
       auto ptr = boost::dynamic_pointer_cast<HybridDiscreteFactor>(fp);
       if (ptr) {
-        dfg.push_back(ptr->inner);
+        dfg.push_back(ptr->inner());
       } else {
-        auto p = boost::static_pointer_cast<HybridConditional>(fp)->inner;
+        auto p = boost::static_pointer_cast<HybridConditional>(fp)->inner();
         if (p) {
           dfg.push_back(boost::static_pointer_cast<DiscreteConditional>(p));
         } else {
@@ -288,7 +288,7 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
   std::vector<GaussianFactor::shared_ptr> deferredFactors;
 
   for (auto &f : factors) {
-    if (f->isHybrid_) {
+    if (f->isHybrid()) {
       auto cgmf = boost::dynamic_pointer_cast<GaussianMixtureFactor>(f);
       if (cgmf) {
         sum = cgmf->add(sum);
@@ -299,9 +299,9 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
         sum = gm->asMixture()->add(sum);
       }
 
-    } else if (f->isContinuous_) {
+    } else if (f->isContinuous()) {
       deferredFactors.push_back(
-          boost::dynamic_pointer_cast<HybridGaussianFactor>(f)->inner);
+          boost::dynamic_pointer_cast<HybridGaussianFactor>(f)->inner());
     } else {
       // We need to handle the case where the object is actually an
       // BayesTreeOrphanWrapper!

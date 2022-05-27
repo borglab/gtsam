@@ -35,7 +35,7 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   using sharedConditional = boost::shared_ptr<ConditionalType>;
 
   /** Construct empty bayes net */
-  HybridBayesNet() : Base() {}
+  HybridBayesNet() = default;
 };
 
 }  // namespace gtsam

@@ -63,7 +63,7 @@ struct HybridConstructorTraversalData {
     std::cout << "Getting discrete info: ";
 #endif
     for (HybridFactor::shared_ptr& f : node->factors) {
-      for (auto& k : f->discreteKeys_) {
+      for (auto& k : f->discreteKeys()) {
 #ifdef GTSAM_HYBRID_JUNCTIONTREE_DEBUG
         std::cout << "DK: " << DefaultKeyFormatter(k.first) << "\n";
 #endif
