@@ -79,13 +79,14 @@ TEST(HybridFactorGraph, creation) {
 
   hfg.add(HybridGaussianFactor(JacobianFactor(0, I_3x3, Z_3x1)));
 
-  GaussianMixtureConditional clgc({X(0)}, {X(1)}, DiscreteKeys(DiscreteKey{C(0), 2}),
-                       GaussianMixtureConditional::Conditionals(
-                           C(0),
-                           boost::make_shared<GaussianConditional>(
-                               X(0), Z_3x1, I_3x3, X(1), I_3x3),
-                           boost::make_shared<GaussianConditional>(
-                               X(0), Vector3::Ones(), I_3x3, X(1), I_3x3)));
+  GaussianMixtureConditional clgc(
+      {X(0)}, {X(1)}, DiscreteKeys(DiscreteKey{C(0), 2}),
+      GaussianMixtureConditional::Conditionals(
+          C(0),
+          boost::make_shared<GaussianConditional>(X(0), Z_3x1, I_3x3, X(1),
+                                                  I_3x3),
+          boost::make_shared<GaussianConditional>(X(0), Vector3::Ones(), I_3x3,
+                                                  X(1), I_3x3)));
   GTSAM_PRINT(clgc);
 }
 
@@ -182,7 +183,7 @@ TEST(HybridFactorGraph, eliminateFullMultifrontalSimple) {
   //     boost::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()));
 
   // hfg.add(GaussianMixtureFactor({X(1)}, {c1}, dt));
-  hfg.add(GaussianMixtureFactor::FromFactorList(
+  hfg.add(GaussianMixtureFactor::FromFactors(
       {X(1)}, {{C(1), 2}},
       {boost::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1),
        boost::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones())}));
@@ -234,7 +235,7 @@ TEST(HybridFactorGraph, eliminateFullMultifrontalCLG) {
   */
 }
 
-/**
+/*
  * This test is about how to assemble the Bayes Tree roots after we do partial
  * elimination
  */
@@ -251,7 +252,7 @@ TEST(HybridFactorGraph, eliminateFullMultifrontalTwoClique) {
     //     C(0), boost::make_shared<JacobianFactor>(X(0), I_3x3, Z_3x1),
     //     boost::make_shared<JacobianFactor>(X(0), I_3x3, Vector3::Ones()));
 
-    hfg.add(GaussianMixtureFactor::FromFactorList(
+    hfg.add(GaussianMixtureFactor::FromFactors(
         {X(0)}, {{C(0), 2}},
         {boost::make_shared<JacobianFactor>(X(0), I_3x3, Z_3x1),
          boost::make_shared<JacobianFactor>(X(0), I_3x3, Vector3::Ones())}));

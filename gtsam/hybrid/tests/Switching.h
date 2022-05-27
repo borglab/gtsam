@@ -38,7 +38,7 @@ inline HybridFactorGraph::shared_ptr makeSwitchingChain(
 
   // keyFunc(1) to keyFunc(n+1)
   for (size_t t = 1; t < n; t++) {
-    hfg.add(GaussianMixtureFactor::FromFactorList(
+    hfg.add(GaussianMixtureFactor::FromFactors(
         {keyFunc(t), keyFunc(t + 1)}, {{dKeyFunc(t), 2}},
         {boost::make_shared<JacobianFactor>(keyFunc(t), I_3x3, keyFunc(t + 1),
                                             I_3x3, Z_3x1),
