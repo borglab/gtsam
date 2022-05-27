@@ -23,12 +23,12 @@ namespace gtsam {
 
 HybridGaussianFactor::HybridGaussianFactor(GaussianFactor::shared_ptr other)
     : Base(other->keys()) {
-  inner = other;
+  inner_ = other;
 }
 
 HybridGaussianFactor::HybridGaussianFactor(JacobianFactor &&jf)
     : Base(jf.keys()),
-      inner(boost::make_shared<JacobianFactor>(std::move(jf))) {}
+      inner_(boost::make_shared<JacobianFactor>(std::move(jf))) {}
 
 bool HybridGaussianFactor::equals(const HybridFactor &lf, double tol) const {
   return false;
@@ -36,7 +36,7 @@ bool HybridGaussianFactor::equals(const HybridFactor &lf, double tol) const {
 void HybridGaussianFactor::print(const std::string &s,
                                  const KeyFormatter &formatter) const {
   HybridFactor::print(s, formatter);
-  inner->print("inner: ", formatter);
+  inner_->print("inner: ", formatter);
 };
 
 }  // namespace gtsam
