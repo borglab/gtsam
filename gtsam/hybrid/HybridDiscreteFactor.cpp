@@ -24,25 +24,28 @@
 
 namespace gtsam {
 
+/* ************************************************************************ */
 // TODO(fan): THIS IS VERY VERY DIRTY! We need to get DiscreteFactor right!
 HybridDiscreteFactor::HybridDiscreteFactor(DiscreteFactor::shared_ptr other)
     : Base(boost::dynamic_pointer_cast<DecisionTreeFactor>(other)
-               ->discreteKeys()) {
-  inner = other;
-}
+               ->discreteKeys()),
+      inner_(other) {}
 
+/* ************************************************************************ */
 HybridDiscreteFactor::HybridDiscreteFactor(DecisionTreeFactor &&dtf)
     : Base(dtf.discreteKeys()),
-      inner(boost::make_shared<DecisionTreeFactor>(std::move(dtf))) {}
+      inner_(boost::make_shared<DecisionTreeFactor>(std::move(dtf))) {}
 
+/* ************************************************************************ */
 bool HybridDiscreteFactor::equals(const HybridFactor &lf, double tol) const {
-  return false;
+  return Base::equals(lf, tol);
 }
 
+/* ************************************************************************ */
 void HybridDiscreteFactor::print(const std::string &s,
                                  const KeyFormatter &formatter) const {
   HybridFactor::print(s, formatter);
-  inner->print("inner: ", formatter);
+  inner_->print("inner: ", formatter);
 };
 
 }  // namespace gtsam
