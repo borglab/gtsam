@@ -138,18 +138,8 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
   KeySet continuousFrontals;
   KeySet continuousSeparator;
 
-  if (DEBUG) {
-    std::cout << RED_BOLD << "Begin Eliminate: " << RESET;
-    frontalKeys.print();
-  }
-
   // This initializes separatorKeys and mapFromKeyToDiscreteKey
   for (auto &&factor : factors) {
-    if (DEBUG) {
-      std::cout << ">>> Adding factor: " << GREEN;
-      factor->print();
-      std::cout << RESET;
-    }
     separatorKeys.insert(factor->begin(), factor->end());
     if (!factor->isContinuous()) {
       for (auto &k : factor->discreteKeys()) {
@@ -183,43 +173,10 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
     }
   }
 
-  // Only for printing
-  if (DEBUG) {
-    std::cout << RED_BOLD << "Keys: " << RESET;
-    for (auto &f : frontalKeys) {
-      if (mapFromKeyToDiscreteKey.find(f) != mapFromKeyToDiscreteKey.end()) {
-        auto &key = mapFromKeyToDiscreteKey.at(f);
-        std::cout << boost::format(" (%1%,%2%),") %
-                         DefaultKeyFormatter(key.first) % key.second;
-      } else {
-        std::cout << " " << DefaultKeyFormatter(f) << ",";
-      }
-    }
-
-    if (separatorKeys.size() > 0) {
-      std::cout << " | ";
-    }
-
-    for (auto &f : separatorKeys) {
-      if (mapFromKeyToDiscreteKey.find(f) != mapFromKeyToDiscreteKey.end()) {
-        auto &key = mapFromKeyToDiscreteKey.at(f);
-        std::cout << boost::format(" (%1%,%2%),") %
-                         DefaultKeyFormatter(key.first) % key.second;
-      } else {
-        std::cout << DefaultKeyFormatter(f) << ",";
-      }
-    }
-    std::cout << "\n" << RESET;
-  }
-
   // NOTE: We should really defer the product here because of pruning
 
   // Case 1: we are only dealing with continuous
   if (mapFromKeyToDiscreteKey.empty() && !allContinuousKeys.empty()) {
-    if (DEBUG) {
-      std::cout << RED_BOLD << "CONT. ONLY" << RESET << "\n";
-    }
-
     GaussianFactorGraph gfg;
     for (auto &fp : factors) {
       auto ptr = boost::dynamic_pointer_cast<HybridGaussianFactor>(fp);
@@ -231,7 +188,6 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
           gfg.push_back(boost::static_pointer_cast<GaussianConditional>(p));
         } else {
           // It is an orphan wrapped conditional
-          if (DEBUG) std::cout << "Got an orphan conditional\n";
         }
       }
     }
@@ -244,10 +200,6 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
 
   // Case 2: we are only dealing with discrete
   if (allContinuousKeys.empty()) {
-    if (DEBUG) {
-      std::cout << RED_BOLD << "DISCRETE ONLY" << RESET << "\n";
-    }
-
     DiscreteFactorGraph dfg;
     for (auto &fp : factors) {
       auto ptr = boost::dynamic_pointer_cast<HybridDiscreteFactor>(fp);
@@ -259,7 +211,6 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
           dfg.push_back(boost::static_pointer_cast<DiscreteConditional>(p));
         } else {
           // It is an orphan wrapper
-          if (DEBUG) std::cout << "Got an orphan wrapper conditional\n";
         }
       }
     }
@@ -279,10 +230,6 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
 
   // sum out frontals, this is the factor on the separator
   gttic(sum);
-
-  if (DEBUG) {
-    std::cout << RED_BOLD << "HYBRID ELIM." << RESET << "\n";
-  }
 
   GaussianMixtureFactor::Sum sum;
 
@@ -308,9 +255,7 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
       // BayesTreeOrphanWrapper!
       auto orphan = boost::dynamic_pointer_cast<
           BayesTreeOrphanWrapper<HybridBayesTree::Clique>>(f);
-      if (orphan) {
-        if (DEBUG) std::cout << "Got an orphan wrapper conditional\n";
-      } else {
+      if (!orphan) {
         auto &fr = *f;
         throw std::invalid_argument(
             std::string("factor is discrete in continuous elimination") +
@@ -320,19 +265,7 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
   }
 
   for (auto &f : deferredFactors) {
-    if (DEBUG) {
-      std::cout << GREEN_BOLD << "Adding Gaussian" << RESET << "\n";
-    }
     sum = addGaussian(sum, f);
-  }
-
-  if (DEBUG) {
-    std::cout << GREEN_BOLD << "[GFG Tree]\n" << RESET;
-    sum.print("", DefaultKeyFormatter, [](GaussianFactorGraph gfg) {
-      RedirectCout rd;
-      gfg.print("");
-      return rd.str();
-    });
   }
 
   gttoc(sum);
@@ -369,19 +302,6 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
   // Create the GaussianMixtureConditional from the conditionals
   auto conditional = boost::make_shared<GaussianMixtureConditional>(
       frontalKeys, keysOfSeparator, discreteSeparator, conditionals);
-
-  if (DEBUG) {
-    std::cout << GREEN_BOLD << "[Conditional]\n" << RESET;
-    conditional->print();
-    std::cout << GREEN_BOLD << "[Separator]\n" << RESET;
-    separatorFactors.print("", DefaultKeyFormatter,
-                           [](GaussianFactor::shared_ptr gc) {
-                             RedirectCout rd;
-                             gc->print("");
-                             return rd.str();
-                           });
-    std::cout << RED_BOLD << "[End Eliminate]\n" << RESET;
-  }
 
   // If there are no more continuous parents, then we should create here a
   // DiscreteFactor, with the error for each discrete choice.

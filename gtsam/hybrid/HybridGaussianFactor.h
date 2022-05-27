@@ -43,11 +43,18 @@ class HybridGaussianFactor : public HybridFactor {
   explicit HybridGaussianFactor(JacobianFactor &&jf);
 
  public:
+  /// @name Testable
+  /// @{
+
+  /// Check equality.
   virtual bool equals(const HybridFactor &lf, double tol) const override;
 
+  /// GTSAM print utility.
   void print(
       const std::string &s = "HybridFactor\n",
       const KeyFormatter &formatter = DefaultKeyFormatter) const override;
+
+  /// @}
 
   GaussianFactor::shared_ptr inner() const { return inner_; }
 };
