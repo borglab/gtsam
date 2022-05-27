@@ -81,30 +81,34 @@ class HybridFactorGraph : public FactorGraph<HybridFactor>,
   using Values = gtsam::Values;  ///< backwards compatibility
   using Indices = KeyVector;     ///> map from keys to values
 
- public:
+  /// @name Constructors
+  /// @{
+
   HybridFactorGraph() = default;
 
-  //  /** Construct from container of factors (shared_ptr or plain objects) */
-  //  template <class CONTAINER>
-  //  explicit HybridFactorGraph(const CONTAINER& factors) : Base(factors) {}
-
-  /** Implicit copy/downcast constructor to override explicit template container
+  /**
+   * Implicit copy/downcast constructor to override explicit template container
    * constructor. In BayesTree this is used for:
    * `cachedSeparatorMarginal_.reset(*separatorMarginal)`
    * */
   template <class DERIVEDFACTOR>
   HybridFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph) : Base(graph) {}
 
+  /// @}
+
   using FactorGraph::add;
 
-  /// Add a factor directly using a shared_ptr.
+  /// Add a Jacobian factor to the factor graph.
   void add(JacobianFactor&& factor);
 
+  /// Add a Jacobian factor as a shared ptr.
+  void add(boost::shared_ptr<JacobianFactor> factor);
+
+  /// Add a DecisionTreeFactor to the factor graph.
   void add(DecisionTreeFactor&& factor);
 
+  /// Add a DecisionTreeFactor as a shared ptr.
   void add(boost::shared_ptr<DecisionTreeFactor> factor);
-
-  void add(boost::shared_ptr<JacobianFactor> factor);
 };
 
 }  // namespace gtsam

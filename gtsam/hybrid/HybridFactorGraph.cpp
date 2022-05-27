@@ -63,6 +63,7 @@ static std::string RESET = "\033[0m";
 
 constexpr bool DEBUG = false;
 
+/* ************************************************************************ */
 static GaussianMixtureFactor::Sum &addGaussian(
     GaussianMixtureFactor::Sum &sum, const GaussianFactor::shared_ptr &factor) {
   using Y = GaussianFactorGraph;
@@ -406,20 +407,24 @@ EliminateHybrid(const HybridFactorGraph &factors, const Ordering &frontalKeys) {
   }
 }
 
+/* ************************************************************************ */
 void HybridFactorGraph::add(JacobianFactor &&factor) {
   FactorGraph::add(boost::make_shared<HybridGaussianFactor>(std::move(factor)));
 }
 
+/* ************************************************************************ */
+void HybridFactorGraph::add(JacobianFactor::shared_ptr factor) {
+  FactorGraph::add(boost::make_shared<HybridGaussianFactor>(factor));
+}
+
+/* ************************************************************************ */
 void HybridFactorGraph::add(DecisionTreeFactor &&factor) {
   FactorGraph::add(boost::make_shared<HybridDiscreteFactor>(std::move(factor)));
 }
 
+/* ************************************************************************ */
 void HybridFactorGraph::add(DecisionTreeFactor::shared_ptr factor) {
   FactorGraph::add(boost::make_shared<HybridDiscreteFactor>(factor));
-}
-
-void HybridFactorGraph::add(JacobianFactor::shared_ptr factor) {
-  FactorGraph::add(boost::make_shared<HybridGaussianFactor>(factor));
 }
 
 }  // namespace gtsam
