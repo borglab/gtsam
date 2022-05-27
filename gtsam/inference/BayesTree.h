@@ -281,10 +281,18 @@ namespace gtsam {
 
     boost::shared_ptr<CliqueType> clique;
 
+    /**
+     * @brief Construct a new Bayes Tree Orphan Wrapper object
+     *
+     * This object stores parent keys in our base type factor so that
+     * eliminating those parent keys will pull this subtree into the
+     * elimination.
+     *
+     * @param clique Orphan clique to add for further consideration in
+     * elimination.
+     */
     BayesTreeOrphanWrapper(const boost::shared_ptr<CliqueType>& clique)
         : clique(clique) {
-      // Store parent keys in our base type factor so that eliminating those
-      // parent keys will pull this subtree into the elimination.
       this->keys_.assign(clique->conditional()->beginParents(),
                          clique->conditional()->endParents());
     }
