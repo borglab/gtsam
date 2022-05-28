@@ -20,8 +20,8 @@
 #pragma once
 
 #include <gtsam/base/Testable.h>
+#include <gtsam/hybrid/GaussianHybridFactorGraph.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
-#include <gtsam/hybrid/HybridFactorGraph.h>
 #include <gtsam/inference/ISAM.h>
 
 namespace gtsam {
@@ -46,7 +46,8 @@ class GTSAM_EXPORT HybridISAM : public ISAM<HybridBayesTree> {
  private:
   /// Internal method that performs the ISAM update.
   void updateInternal(
-      const HybridFactorGraph& newFactors, HybridBayesTree::Cliques* orphans,
+      const GaussianHybridFactorGraph& newFactors,
+      HybridBayesTree::Cliques* orphans,
       const HybridBayesTree::Eliminate& function =
           HybridBayesTree::EliminationTraitsType::DefaultEliminate);
 
@@ -57,7 +58,7 @@ class GTSAM_EXPORT HybridISAM : public ISAM<HybridBayesTree> {
    * @param newFactors Factor graph of new factors to add and eliminate.
    * @param function Elimination function.
    */
-  void update(const HybridFactorGraph& newFactors,
+  void update(const GaussianHybridFactorGraph& newFactors,
               const HybridBayesTree::Eliminate& function =
                   HybridBayesTree::EliminationTraitsType::DefaultEliminate);
 };

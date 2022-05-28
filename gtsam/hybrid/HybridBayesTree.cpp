@@ -25,7 +25,8 @@
 namespace gtsam {
 
 // Instantiate base class
-template class BayesTreeCliqueBase<HybridBayesTreeClique, HybridFactorGraph>;
+template class BayesTreeCliqueBase<HybridBayesTreeClique,
+                                   GaussianHybridFactorGraph>;
 template class BayesTree<HybridBayesTreeClique>;
 
 /* ************************************************************************* */

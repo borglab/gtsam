@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file   HybridFactorGraph.h
- * @brief  Hybrid factor graph that uses type erasure
+ * @file   GaussianHybridFactorGraph.h
+ * @brief  Linearized Hybrid factor graph that uses type erasure
  * @author Fan Jiang
  * @date   Mar 11, 2022
  */
@@ -26,7 +26,7 @@
 namespace gtsam {
 
 // Forward declarations
-class HybridFactorGraph;
+class GaussianHybridFactorGraph;
 class HybridConditional;
 class HybridBayesNet;
 class HybridEliminationTree;
@@ -36,17 +36,18 @@ class DecisionTreeFactor;
 
 class JacobianFactor;
 
-/** Main elimination function for HybridFactorGraph */
+/** Main elimination function for GaussianHybridFactorGraph */
 GTSAM_EXPORT
 std::pair<boost::shared_ptr<HybridConditional>, HybridFactor::shared_ptr>
-EliminateHybrid(const HybridFactorGraph& factors, const Ordering& keys);
+EliminateHybrid(const GaussianHybridFactorGraph& factors, const Ordering& keys);
 
 /* ************************************************************************* */
 template <>
-struct EliminationTraits<HybridFactorGraph> {
+struct EliminationTraits<GaussianHybridFactorGraph> {
   typedef HybridFactor FactorType;  ///< Type of factors in factor graph
-  typedef HybridFactorGraph
-      FactorGraphType;  ///< Type of the factor graph (e.g. HybridFactorGraph)
+  typedef GaussianHybridFactorGraph
+      FactorGraphType;  ///< Type of the factor graph (e.g.
+                        ///< GaussianHybridFactorGraph)
   typedef HybridConditional
       ConditionalType;  ///< Type of conditionals from elimination
   typedef HybridBayesNet
@@ -64,16 +65,17 @@ struct EliminationTraits<HybridFactorGraph> {
 };
 
 /**
- * Hybrid Factor Graph
+ * Gaussian Hybrid Factor Graph
  * -----------------------
- * This is the linear version of a hybrid factor graph. Everything inside needs
- * to be hybrid factor or hybrid conditional.
+ * This is the linearized version of a hybrid factor graph.
+ * Everything inside needs to be hybrid factor or hybrid conditional.
  */
-class HybridFactorGraph : public FactorGraph<HybridFactor>,
-                          public EliminateableFactorGraph<HybridFactorGraph> {
+class GaussianHybridFactorGraph
+    : public FactorGraph<HybridFactor>,
+      public EliminateableFactorGraph<GaussianHybridFactorGraph> {
  public:
   using Base = FactorGraph<HybridFactor>;
-  using This = HybridFactorGraph;  ///< this class
+  using This = GaussianHybridFactorGraph;  ///< this class
   using BaseEliminateable =
       EliminateableFactorGraph<This>;          ///< for elimination
   using shared_ptr = boost::shared_ptr<This>;  ///< shared_ptr to This
@@ -84,7 +86,7 @@ class HybridFactorGraph : public FactorGraph<HybridFactor>,
   /// @name Constructors
   /// @{
 
-  HybridFactorGraph() = default;
+  GaussianHybridFactorGraph() = default;
 
   /**
    * Implicit copy/downcast constructor to override explicit template container
@@ -92,7 +94,8 @@ class HybridFactorGraph : public FactorGraph<HybridFactor>,
    * `cachedSeparatorMarginal_.reset(*separatorMarginal)`
    * */
   template <class DERIVEDFACTOR>
-  HybridFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph) : Base(graph) {}
+  GaussianHybridFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph)
+      : Base(graph) {}
 
   /// @}
 

@@ -20,8 +20,8 @@ from gtsam.symbol_shorthand import C, X
 from gtsam.utils.test_case import GtsamTestCase
 
 
-class TestHybridFactorGraph(GtsamTestCase):
-    """Unit tests for HybridFactorGraph."""
+class TestGaussianHybridFactorGraph(GtsamTestCase):
+    """Unit tests for GaussianHybridFactorGraph."""
 
     def test_create(self):
         """Test contruction of hybrid factor graph."""
@@ -36,13 +36,14 @@ class TestHybridFactorGraph(GtsamTestCase):
 
         gmf = gtsam.GaussianMixtureFactor.FromFactors([X(0)], dk, [jf1, jf2])
 
-        hfg = gtsam.HybridFactorGraph()
+        hfg = gtsam.GaussianHybridFactorGraph()
         hfg.add(jf1)
         hfg.add(jf2)
         hfg.push_back(gmf)
 
         hbn = hfg.eliminateSequential(
-            gtsam.Ordering.ColamdConstrainedLastHybridFactorGraph(hfg, [C(0)]))
+            gtsam.Ordering.ColamdConstrainedLastGaussianHybridFactorGraph(
+                hfg, [C(0)]))
 
         # print("hbn = ", hbn)
         self.assertEqual(hbn.size(), 2)

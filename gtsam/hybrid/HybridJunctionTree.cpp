@@ -15,8 +15,8 @@
  * @author Fan Jiang
  */
 
+#include <gtsam/hybrid/GaussianHybridFactorGraph.h>
 #include <gtsam/hybrid/HybridEliminationTree.h>
-#include <gtsam/hybrid/HybridFactorGraph.h>
 #include <gtsam/hybrid/HybridJunctionTree.h>
 #include <gtsam/inference/JunctionTree-inst.h>
 #include <gtsam/inference/Key.h>
@@ -26,13 +26,17 @@
 namespace gtsam {
 
 // Instantiate base classes
-template class EliminatableClusterTree<HybridBayesTree, HybridFactorGraph>;
-template class JunctionTree<HybridBayesTree, HybridFactorGraph>;
+template class EliminatableClusterTree<HybridBayesTree,
+                                       GaussianHybridFactorGraph>;
+template class JunctionTree<HybridBayesTree, GaussianHybridFactorGraph>;
 
 struct HybridConstructorTraversalData {
-  typedef typename JunctionTree<HybridBayesTree, HybridFactorGraph>::Node Node;
-  typedef typename JunctionTree<HybridBayesTree, HybridFactorGraph>::sharedNode
-      sharedNode;
+  typedef
+      typename JunctionTree<HybridBayesTree, GaussianHybridFactorGraph>::Node
+          Node;
+  typedef
+      typename JunctionTree<HybridBayesTree,
+                            GaussianHybridFactorGraph>::sharedNode sharedNode;
 
   HybridConstructorTraversalData* const parentData;
   sharedNode myJTNode;

@@ -18,9 +18,9 @@
 #pragma once
 
 #include <gtsam/discrete/DiscreteConditional.h>
+#include <gtsam/hybrid/GaussianHybridFactorGraph.h>
 #include <gtsam/hybrid/GaussianMixtureConditional.h>
 #include <gtsam/hybrid/HybridFactor.h>
-#include <gtsam/hybrid/HybridFactorGraph.h>
 #include <gtsam/inference/Conditional.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/linear/GaussianConditional.h>
@@ -34,7 +34,7 @@
 
 namespace gtsam {
 
-class HybridFactorGraph;
+class GaussianHybridFactorGraph;
 
 /**
  * Hybrid Conditional Density
@@ -146,7 +146,8 @@ class GTSAM_EXPORT HybridConditional
    * @return DiscreteConditional::shared_ptr
    */
   DiscreteConditional::shared_ptr asDiscreteConditional() {
-    if (!isDiscrete()) throw std::invalid_argument("Not a discrete conditional");
+    if (!isDiscrete())
+      throw std::invalid_argument("Not a discrete conditional");
     return boost::static_pointer_cast<DiscreteConditional>(inner_);
   }
 
