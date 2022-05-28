@@ -26,13 +26,8 @@ HybridNonlinearFactor::HybridNonlinearFactor(NonlinearFactor::shared_ptr other)
     : Base(other->keys()), inner_(other) {}
 
 /* ************************************************************************* */
-HybridNonlinearFactor::HybridNonlinearFactor(NonlinearFactor &&nf)
-    : Base(nf.keys()),
-      inner_(boost::make_shared<NonlinearFactor>(std::move(nf))) {}
-
-/* ************************************************************************* */
 bool HybridNonlinearFactor::equals(const HybridFactor &lf, double tol) const {
-  return Base(lf, tol);
+  return Base::equals(lf, tol);
 }
 
 /* ************************************************************************* */
