@@ -38,9 +38,6 @@ class HybridNonlinearFactor : public HybridFactor {
   // Explicit conversion from a shared ptr of GF
   explicit HybridNonlinearFactor(NonlinearFactor::shared_ptr other);
 
-  // Forwarding constructor from concrete NonlinearFactor
-  explicit HybridNonlinearFactor(NonlinearFactor &&jf);
-
  public:
   /// @name Testable
   /// @{
