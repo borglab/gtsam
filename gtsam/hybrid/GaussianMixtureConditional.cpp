@@ -79,7 +79,8 @@ GaussianMixtureConditional::asGaussianFactorGraphTree() const {
 /* *******************************************************************************/
 bool GaussianMixtureConditional::equals(const HybridFactor &lf,
                                         double tol) const {
-  return BaseFactor::equals(lf, tol);
+  const This *e = dynamic_cast<const This *>(&lf);
+  return e != nullptr && BaseFactor::equals(*e, tol);
 }
 
 /* *******************************************************************************/

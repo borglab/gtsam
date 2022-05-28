@@ -34,7 +34,8 @@ GaussianMixtureFactor::GaussianMixtureFactor(const KeyVector &continuousKeys,
 
 /* *******************************************************************************/
 bool GaussianMixtureFactor::equals(const HybridFactor &lf, double tol) const {
-  return Base::equals(lf, tol);
+  const This *e = dynamic_cast<const This *>(&lf);
+  return e != nullptr && Base::equals(*e, tol);
 }
 
 /* *******************************************************************************/
