@@ -18,8 +18,8 @@
 
 #pragma once
 
+#include <gtsam/hybrid/GaussianHybridFactorGraph.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
-#include <gtsam/hybrid/HybridFactorGraph.h>
 #include <gtsam/inference/BayesTree.h>
 #include <gtsam/inference/BayesTreeCliqueBase.h>
 #include <gtsam/inference/Conditional.h>
@@ -37,10 +37,12 @@ class VectorValues;
  * which is a HybridConditional internally.
  */
 class GTSAM_EXPORT HybridBayesTreeClique
-    : public BayesTreeCliqueBase<HybridBayesTreeClique, HybridFactorGraph> {
+    : public BayesTreeCliqueBase<HybridBayesTreeClique,
+                                 GaussianHybridFactorGraph> {
  public:
   typedef HybridBayesTreeClique This;
-  typedef BayesTreeCliqueBase<HybridBayesTreeClique, HybridFactorGraph> Base;
+  typedef BayesTreeCliqueBase<HybridBayesTreeClique, GaussianHybridFactorGraph>
+      Base;
   typedef boost::shared_ptr<This> shared_ptr;
   typedef boost::weak_ptr<This> weak_ptr;
   HybridBayesTreeClique() {}

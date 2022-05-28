@@ -17,8 +17,8 @@
  * @author Richard Roberts
  */
 
+#include <gtsam/hybrid/GaussianHybridFactorGraph.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
-#include <gtsam/hybrid/HybridFactorGraph.h>
 #include <gtsam/hybrid/HybridISAM.h>
 #include <gtsam/inference/ISAM-inst.h>
 #include <gtsam/inference/Key.h>
@@ -37,7 +37,7 @@ HybridISAM::HybridISAM() {}
 HybridISAM::HybridISAM(const HybridBayesTree& bayesTree) : Base(bayesTree) {}
 
 /* ************************************************************************* */
-void HybridISAM::updateInternal(const HybridFactorGraph& newFactors,
+void HybridISAM::updateInternal(const GaussianHybridFactorGraph& newFactors,
                                 HybridBayesTree::Cliques* orphans,
                                 const HybridBayesTree::Eliminate& function) {
   // Remove the contaminated part of the Bayes tree
@@ -90,7 +90,7 @@ void HybridISAM::updateInternal(const HybridFactorGraph& newFactors,
 }
 
 /* ************************************************************************* */
-void HybridISAM::update(const HybridFactorGraph& newFactors,
+void HybridISAM::update(const GaussianHybridFactorGraph& newFactors,
                         const HybridBayesTree::Eliminate& function) {
   Cliques orphans;
   this->updateInternal(newFactors, &orphans, function);
