@@ -19,6 +19,7 @@
 #pragma once
 
 #include <gtsam/hybrid/HybridFactor.h>
+#include <gtsam/hybrid/HybridFactorGraph.h>
 #include <gtsam/inference/EliminateableFactorGraph.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/Ordering.h>
@@ -71,10 +72,10 @@ struct EliminationTraits<GaussianHybridFactorGraph> {
  * Everything inside needs to be hybrid factor or hybrid conditional.
  */
 class GaussianHybridFactorGraph
-    : public FactorGraph<HybridFactor>,
+    : public HybridFactorGraph,
       public EliminateableFactorGraph<GaussianHybridFactorGraph> {
  public:
-  using Base = FactorGraph<HybridFactor>;
+  using Base = HybridFactorGraph;
   using This = GaussianHybridFactorGraph;  ///< this class
   using BaseEliminateable =
       EliminateableFactorGraph<This>;          ///< for elimination
@@ -99,8 +100,13 @@ class GaussianHybridFactorGraph
 
   /// @}
 
-  using FactorGraph::add;
-  using FactorGraph::push_back;
+  using Base::empty;
+  using Base::reserve;
+  using Base::size;
+  using Base::operator[];
+  using Base::add;
+  using Base::push_back;
+  using Base::resize;
 
   /// Add a Jacobian factor to the factor graph.
   void add(JacobianFactor&& factor);

@@ -76,8 +76,9 @@ class HybridFactorGraph : public FactorGraph<HybridFactor> {
   using Base::empty;
   using Base::reserve;
   using Base::size;
-  using FactorGraph::add;
   using Base::operator[];
+  using Base::add;
+  using Base::push_back;
   using Base::resize;
 
   /**
