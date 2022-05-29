@@ -18,16 +18,16 @@
 
 #pragma once
 
-#include <gtsam/hybrid/GaussianHybridFactorGraph.h>
+#include <gtsam/discrete/DiscreteFactor.h>
+#include <gtsam/hybrid/HybridDiscreteFactor.h>
 #include <gtsam/hybrid/HybridFactor.h>
-#include <gtsam/hybrid/HybridNonlinearFactor.h>
-#include <gtsam/hybrid/MixtureFactor.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/Ordering.h>
-#include <gtsam/nonlinear/NonlinearFactor.h>
 
 #include <boost/format.hpp>
 namespace gtsam {
+
+using SharedFactor = boost::shared_ptr<Factor>;
 
 /**
  * Hybrid Factor Graph
@@ -96,7 +96,7 @@ class HybridFactorGraph : public FactorGraph<HybridFactor> {
    */
   template <typename FACTOR>
   IsHybrid<FACTOR> push_hybrid(const boost::shared_ptr<FACTOR>& hybridFactor) {
-    Base::push_back(boost::make_shared<HybridFactor>(factor));
+    Base::push_back(hybridFactor);
   }
 
   /// delete emplace_shared.
