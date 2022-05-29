@@ -15,7 +15,7 @@
 
 #include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam/hybrid/GaussianMixtureFactor.h>
-#include <gtsam/hybrid/HybridFactor.h>
+#include <gtsam/hybrid/HybridNonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/Symbol.h>
 
@@ -28,21 +28,27 @@
 namespace gtsam {
 
 /**
- * @brief Implementation of a discrete conditional mixture factor. Implements a
- * joint discrete-continuous factor where the discrete variable serves to
- * "select" a mixture component corresponding to a NonlinearFactor type
- * of measurement.
+ * @brief Implementation of a discrete conditional mixture factor.
+ *
+ * Implements a joint discrete-continuous factor where the discrete variable
+ * serves to "select" a mixture component corresponding to a NonlinearFactor
+ * type of measurement.
+ *
+ * This class stores all factors as HybridFactors which can then be typecast to
+ * one of (NonlinearFactor, GaussianFactor) which can then be checked to perform
+ * the correct operation.
  */
-template <class NonlinearFactorType>
-class MixtureFactor : public HybridFactor {
+class MixtureFactor : public HybridNonlinearFactor {
  public:
   using Base = HybridFactor;
   using This = MixtureFactor;
   using shared_ptr = boost::shared_ptr<MixtureFactor>;
-  using sharedFactor = boost::shared_ptr<NonlinearFactorType>;
+  using sharedFactor = boost::shared_ptr<NonlinearFactor>;
 
-  /// typedef for DecisionTree which has Keys as node labels and
-  /// NonlinearFactorType as leaf nodes.
+  /**
+   * @brief typedef for DecisionTree which has Keys as node labels and
+   * NonlinearFactor as leaf nodes.
+   */
   using Factors = DecisionTree<Key, sharedFactor>;
 
  private:
@@ -103,7 +109,7 @@ class MixtureFactor : public HybridFactor {
     const double factorError = factor->error(continuousVals);
     if (normalized_) return factorError;
     return factorError +
-           this->nonlinearFactorLogNormalizingConstant(*factor, continuousVals);
+           this->nonlinearFactorLogNormalizingConstant(factor, continuousVals);
   }
 
   size_t dim() const {
@@ -156,7 +162,7 @@ class MixtureFactor : public HybridFactor {
 
     // Ensure that this MixtureFactor and `f` have the same `factors_`.
     auto compare = [tol](const sharedFactor& a, const sharedFactor& b) {
-      return traits<NonlinearFactorType>::Equals(*a, *b, tol);
+      return traits<NonlinearFactor>::Equals(*a, *b, tol);
     };
     if (!factors_.equals(f.factors_, compare)) return false;
 
@@ -199,19 +205,15 @@ class MixtureFactor : public HybridFactor {
    * constant for the measurement likelihood (since we are minimizing the
    * _negative_ log-likelihood).
    */
-  double nonlinearFactorLogNormalizingConstant(
-      const NonlinearFactorType& factor, const Values& values) const {
+  double nonlinearFactorLogNormalizingConstant(const sharedFactor& factor,
+                                               const Values& values) const {
     // Information matrix (inverse covariance matrix) for the factor.
     Matrix infoMat;
 
-    // NOTE: This is sloppy (and mallocs!), is there a cleaner way?
-    auto factorPtr = boost::make_shared<NonlinearFactorType>(factor);
-
     // If this is a NoiseModelFactor, we'll use its noiseModel to
     // otherwise noiseModelFactor will be nullptr
-    auto noiseModelFactor =
-        boost::dynamic_pointer_cast<NoiseModelFactor>(factorPtr);
-    if (noiseModelFactor) {
+    if (auto noiseModelFactor =
+            boost::dynamic_pointer_cast<NoiseModelFactor>(factor);) {
       // If dynamic cast to NoiseModelFactor succeeded, see if the noise model
       // is Gaussian
       auto noiseModel = noiseModelFactor->noiseModel();
