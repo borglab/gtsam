@@ -27,7 +27,7 @@ namespace gtsam {
  * A HybridGaussianFactor is a layer over GaussianFactor so that we do not have
  * a diamond inheritance.
  */
-class HybridGaussianFactor : public HybridFactor {
+class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
  private:
   GaussianFactor::shared_ptr inner_;
 
@@ -35,6 +35,12 @@ class HybridGaussianFactor : public HybridFactor {
   using Base = HybridFactor;
   using This = HybridGaussianFactor;
   using shared_ptr = boost::shared_ptr<This>;
+
+  HybridGaussianFactor() = default;
+
+  HybridGaussianFactor(const KeyVector &continuousKeys,
+                       const DiscreteKeys &discreteKeys)
+      : Base(continuousKeys, discreteKeys) {}
 
   // Explicit conversion from a shared ptr of GF
   explicit HybridGaussianFactor(GaussianFactor::shared_ptr other);
@@ -51,7 +57,7 @@ class HybridGaussianFactor : public HybridFactor {
 
   /// GTSAM print utility.
   void print(
-      const std::string &s = "HybridFactor\n",
+      const std::string &s = "HybridGaussianFactor\n",
       const KeyFormatter &formatter = DefaultKeyFormatter) const override;
 
   /// @}
