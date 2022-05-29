@@ -18,35 +18,23 @@
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/utilities.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 
+using namespace std;
 using namespace gtsam;
+using noiseModel::Isotropic;
+using symbol_shorthand::L;
+using symbol_shorthand::M;
+using symbol_shorthand::X;
 
 /* ****************************************************************************
  * Test that any linearizedFactorGraph gaussian factors are appended to the
  * existing gaussian factor graph in the hybrid factor graph.
  */
-TEST(HybridFactorGraph, GaussianFactorGraph) {
+TEST(HybridFactorGraph, Constructor) {
   // Initialize the hybrid factor graph
   HybridFactorGraph fg;
-
-  // Add a simple prior factor to the nonlinear factor graph
-  fg.emplace_shared<PriorFactor<double>>(X(0), 0, Isotropic::Sigma(1, 0.1));
-
-  // Add a linear factor to the nonlinear factor graph
-  fg.add(X(0), I_1x1, Vector1(5));
-
-  // Linearization point
-  Values linearizationPoint;
-  linearizationPoint.insert<double>(X(0), 0);
-
-  GaussianHybridFactorGraph ghfg = fg.linearize(linearizationPoint);
-
-  EXPECT_LONGS_EQUAL(ghfg);
-
-  // ghfg.push_back(ghfg.gaussianGraph().begin(), ghfg.gaussianGraph().end());
-
-  // EXPECT_LONGS_EQUAL(2, dcmfg.gaussianGraph().size());
 }
 
 /* ************************************************************************* */
