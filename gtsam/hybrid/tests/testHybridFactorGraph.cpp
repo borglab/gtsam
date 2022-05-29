@@ -13,9 +13,14 @@
  * @date    May 2021
  */
 
+#include <CppUnitLite/Test.h>
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/utilities.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
+#include <gtsam/nonlinear/PriorFactor.h>
+
+using namespace gtsam;
 
 /* ****************************************************************************
  * Test that any linearizedFactorGraph gaussian factors are appended to the
@@ -36,6 +41,8 @@ TEST(HybridFactorGraph, GaussianFactorGraph) {
   linearizationPoint.insert<double>(X(0), 0);
 
   GaussianHybridFactorGraph ghfg = fg.linearize(linearizationPoint);
+
+  EXPECT_LONGS_EQUAL(ghfg);
 
   // ghfg.push_back(ghfg.gaussianGraph().begin(), ghfg.gaussianGraph().end());
 
