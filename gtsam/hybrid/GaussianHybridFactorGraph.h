@@ -100,6 +100,7 @@ class GaussianHybridFactorGraph
   /// @}
 
   using FactorGraph::add;
+  using FactorGraph::push_back;
 
   /// Add a Jacobian factor to the factor graph.
   void add(JacobianFactor&& factor);
