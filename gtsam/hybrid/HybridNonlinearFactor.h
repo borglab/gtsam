@@ -18,6 +18,7 @@
 #pragma once
 
 #include <gtsam/hybrid/HybridFactor.h>
+#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {
@@ -53,5 +54,10 @@ class HybridNonlinearFactor : public HybridFactor {
   /// @}
 
   NonlinearFactor::shared_ptr inner() const { return inner_; }
+
+  /// Linearize to a HybridGaussianFactor at the linearization point `c`.
+  boost::shared_ptr<HybridGaussianFactor> linearize(const Values &c) const {
+    return boost::make_shared<HybridGaussianFactor>(inner_->linearize(c));
+  }
 };
 }  // namespace gtsam
