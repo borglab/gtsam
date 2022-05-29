@@ -20,15 +20,19 @@
 
 #include <gtsam/hybrid/GaussianHybridFactorGraph.h>
 #include <gtsam/hybrid/HybridFactor.h>
+#include <gtsam/hybrid/HybridNonlinearFactor.h>
+#include <gtsam/hybrid/MixtureFactor.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/Ordering.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
 
+#include <boost/format.hpp>
 namespace gtsam {
 
 /**
  * Hybrid Factor Graph
  * -----------------------
- * This is the non-linear version of a hybrid factor graph.
+ * This is the base hybrid factor graph.
  * Everything inside needs to be hybrid factor or hybrid conditional.
  */
 class HybridFactorGraph : public FactorGraph<HybridFactor> {
@@ -40,9 +44,22 @@ class HybridFactorGraph : public FactorGraph<HybridFactor> {
   using Values = gtsam::Values;  ///< backwards compatibility
   using Indices = KeyVector;     ///> map from keys to values
 
+ protected:
+  /// Check if FACTOR type is derived from DiscreteFactor.
+  template <typename FACTOR>
+  using IsDiscrete = typename std::enable_if<
+      std::is_base_of<DiscreteFactor, FACTOR>::value>::type;
+
+  /// Check if FACTOR type is derived from HybridFactor.
+  template <typename FACTOR>
+  using IsHybrid = typename std::enable_if<
+      std::is_base_of<HybridFactor, FACTOR>::value>::type;
+
+ public:
   /// @name Constructors
   /// @{
 
+  /// Default constructor
   HybridFactorGraph() = default;
 
   /**
@@ -61,46 +78,68 @@ class HybridFactorGraph : public FactorGraph<HybridFactor> {
   using Base::size;
   using FactorGraph::add;
   using Base::operator[];
-
-  /// Add a Jacobian factor to the factor graph.
-  void add(JacobianFactor&& factor);
-
-  /// Add a Jacobian factor as a shared ptr.
-  void add(boost::shared_ptr<JacobianFactor> factor);
-
-  /// Add a DecisionTreeFactor to the factor graph.
-  void add(DecisionTreeFactor&& factor);
-
-  /// Add a DecisionTreeFactor as a shared ptr.
-  void add(boost::shared_ptr<DecisionTreeFactor> factor);
+  using Base::resize;
 
   /**
-   * @brief Linearize all the continuous factors in the
-   * NonlinearHybridFactorGraph.
-   *
-   * @param continuousValues: Dictionary of continuous values.
-   * @return GaussianHybridFactorGraph::shared_ptr
+   * Add a discrete factor *pointer* to the internal discrete graph
+   * @param discreteFactor - boost::shared_ptr to the factor to add
    */
-  GaussianHybridFactorGraph::shared_ptr linearize(
-      const Values& continuousValues) const {
-    // create an empty linear FG
-    GaussianHybridFactorGraph::shared_ptr linearFG =
-        boost::make_shared<GaussianHybridFactorGraph>();
+  template <typename FACTOR>
+  IsDiscrete<FACTOR> push_discrete(
+      const boost::shared_ptr<FACTOR>& discreteFactor) {
+    Base::push_back(boost::make_shared<HybridDiscreteFactor>(discreteFactor));
+  }
 
-    linearFG->reserve(size());
+  /**
+   * Add a discrete-continuous (Hybrid) factor *pointer* to the graph
+   * @param hybridFactor - boost::shared_ptr to the factor to add
+   */
+  template <typename FACTOR>
+  IsHybrid<FACTOR> push_hybrid(const boost::shared_ptr<FACTOR>& hybridFactor) {
+    Base::push_back(boost::make_shared<HybridFactor>(factor));
+  }
 
-    // linearize all factors
-    for (const sharedFactor& factor : factors_) {
-      if (factor) {
-        if (auto nf = boost::dynamic_pointer_cast<NonlinearFactor>) {
-          (*linearFG) += factor->linearize(linearizationPoint);
-        } else if (auto hf = boost::dynamic_pointer_cast<HybridFactor>) {
-          if (hf->isContinuous()) {
-          }
-        }
+  /// delete emplace_shared.
+  template <class FACTOR, class... Args>
+  void emplace_shared(Args&&... args) = delete;
 
-      } else
-        (*linearFG) += GaussianFactor::shared_ptr();
+  /// Construct a factor and add (shared pointer to it) to factor graph.
+  template <class FACTOR, class... Args>
+  IsDiscrete<FACTOR> emplace_discrete(Args&&... args) {
+    auto factor = boost::allocate_shared<FACTOR>(
+        Eigen::aligned_allocator<FACTOR>(), std::forward<Args>(args)...);
+    push_discrete(factor);
+  }
+
+  /// Construct a factor and add (shared pointer to it) to factor graph.
+  template <class FACTOR, class... Args>
+  IsHybrid<FACTOR> emplace_hybrid(Args&&... args) {
+    auto factor = boost::allocate_shared<FACTOR>(
+        Eigen::aligned_allocator<FACTOR>(), std::forward<Args>(args)...);
+    push_hybrid(factor);
+  }
+
+  /**
+   * @brief Add a single factor shared pointer to the hybrid factor graph.
+   * Dynamically handles the factor type and assigns it to the correct
+   * underlying container.
+   *
+   * @param sharedFactor The factor to add to this factor graph.
+   */
+  void push_back(const SharedFactor& sharedFactor) {
+    if (auto p = boost::dynamic_pointer_cast<DiscreteFactor>(sharedFactor)) {
+      push_discrete(p);
+    }
+    if (auto p = boost::dynamic_pointer_cast<HybridFactor>(sharedFactor)) {
+      push_hybrid(p);
+    }
+  }
+
+  /** Constructor from iterator over factors (shared_ptr or plain objects) */
+  template <typename ITERATOR>
+  void push_back(ITERATOR firstFactor, ITERATOR lastFactor) {
+    for (auto&& it = firstFactor; it != lastFactor; it++) {
+      push_back(*it);
     }
   }
 };
