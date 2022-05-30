@@ -22,7 +22,8 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-HybridNonlinearFactor::HybridNonlinearFactor(NonlinearFactor::shared_ptr other)
+HybridNonlinearFactor::HybridNonlinearFactor(
+    const NonlinearFactor::shared_ptr &other)
     : Base(other->keys()), inner_(other) {}
 
 /* ************************************************************************* */
