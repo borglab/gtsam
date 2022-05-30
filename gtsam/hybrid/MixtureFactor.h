@@ -38,7 +38,7 @@ namespace gtsam {
  * one of (NonlinearFactor, GaussianFactor) which can then be checked to perform
  * the correct operation.
  */
-class MixtureFactor : public HybridNonlinearFactor {
+class MixtureFactor : public HybridFactor {
  public:
   using Base = HybridFactor;
   using This = MixtureFactor;
@@ -213,7 +213,7 @@ class MixtureFactor : public HybridNonlinearFactor {
     // If this is a NoiseModelFactor, we'll use its noiseModel to
     // otherwise noiseModelFactor will be nullptr
     if (auto noiseModelFactor =
-            boost::dynamic_pointer_cast<NoiseModelFactor>(factor);) {
+            boost::dynamic_pointer_cast<NoiseModelFactor>(factor)) {
       // If dynamic cast to NoiseModelFactor succeeded, see if the noise model
       // is Gaussian
       auto noiseModel = noiseModelFactor->noiseModel();
@@ -228,13 +228,13 @@ class MixtureFactor : public HybridNonlinearFactor {
         // something with a normalized noise model
         // TODO(kevin): does this make sense to do? I think maybe not in
         // general? Should we just yell at the user?
-        auto gaussianFactor = factor.linearize(values);
+        auto gaussianFactor = factor->linearize(values);
         infoMat = gaussianFactor->information();
       }
     }
 
     // Compute the (negative) log of the normalizing constant
-    return -(factor.dim() * log(2.0 * M_PI) / 2.0) -
+    return -(factor->dim() * log(2.0 * M_PI) / 2.0) -
            (log(infoMat.determinant()) / 2.0);
   }
 };

@@ -36,8 +36,8 @@ class HybridNonlinearFactor : public HybridFactor {
   using This = HybridNonlinearFactor;
   using shared_ptr = boost::shared_ptr<This>;
 
-  // Explicit conversion from a shared ptr of GF
-  explicit HybridNonlinearFactor(NonlinearFactor::shared_ptr other);
+  // Explicit conversion from a shared ptr of NonlinearFactor
+  explicit HybridNonlinearFactor(const NonlinearFactor::shared_ptr &other);
 
  public:
   /// @name Testable
