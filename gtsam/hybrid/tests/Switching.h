@@ -29,6 +29,9 @@ using gtsam::symbol_shorthand::C;
 using gtsam::symbol_shorthand::X;
 
 namespace gtsam {
+
+using MotionModel = BetweenFactor<double>;
+
 inline GaussianHybridFactorGraph::shared_ptr makeSwitchingChain(
     size_t n, std::function<Key(int)> keyFunc = X,
     std::function<Key(int)> dKeyFunc = C) {
