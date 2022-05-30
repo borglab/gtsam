@@ -150,13 +150,11 @@ class GTSAM_EXPORT NonlinearHybridFactorGraph : public HybridFactorGraph {
    * @param continuousValues: Dictionary of continuous values.
    * @return GaussianHybridFactorGraph::shared_ptr
    */
-  GaussianHybridFactorGraph::shared_ptr linearize(
-      const Values& continuousValues) const {
+  GaussianHybridFactorGraph linearize(const Values& continuousValues) const {
     // create an empty linear FG
-    GaussianHybridFactorGraph::shared_ptr linearFG =
-        boost::make_shared<GaussianHybridFactorGraph>();
+    GaussianHybridFactorGraph linearFG;
 
-    linearFG->reserve(size());
+    linearFG.reserve(size());
 
     // linearize all hybrid factors
     for (auto&& factor : factors_) {
@@ -168,9 +166,9 @@ class GTSAM_EXPORT NonlinearHybridFactorGraph : public HybridFactorGraph {
         if (factor->isHybrid()) {
           // Check if it is a nonlinear mixture factor
           if (auto nlmf = boost::dynamic_pointer_cast<MixtureFactor>(factor)) {
-            linearFG->push_back(nlmf->linearize(continuousValues));
+            linearFG.push_back(nlmf->linearize(continuousValues));
           } else {
-            linearFG->push_back(factor);
+            linearFG.push_back(factor);
           }
 
           // Now check if the factor is a continuous only factor.
@@ -183,18 +181,18 @@ class GTSAM_EXPORT NonlinearHybridFactorGraph : public HybridFactorGraph {
                   boost::dynamic_pointer_cast<NonlinearFactor>(nlhf->inner())) {
             auto hgf = boost::make_shared<HybridGaussianFactor>(
                 nlf->linearize(continuousValues));
-            linearFG->push_back(hgf);
+            linearFG.push_back(hgf);
           } else {
-            linearFG->push_back(factor);
+            linearFG.push_back(factor);
           }
           // Finally if nothing else, we are discrete-only which doesn't need
           // lineariztion.
         } else {
-          linearFG->push_back(factor);
+          linearFG.push_back(factor);
         }
 
       } else {
-        linearFG->push_back(GaussianFactor::shared_ptr());
+        linearFG.push_back(GaussianFactor::shared_ptr());
       }
     }
     return linearFG;
