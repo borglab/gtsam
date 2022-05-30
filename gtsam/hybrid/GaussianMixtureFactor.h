@@ -40,9 +40,9 @@ using GaussianFactorVector = std::vector<gtsam::GaussianFactor::shared_ptr>;
  * of discrete variables indexes to the continuous gaussian distribution.
  *
  */
-class GaussianMixtureFactor : public HybridGaussianFactor {
+class GaussianMixtureFactor : public HybridFactor {
  public:
-  using Base = HybridGaussianFactor;
+  using Base = HybridFactor;
   using This = GaussianMixtureFactor;
   using shared_ptr = boost::shared_ptr<This>;
 
