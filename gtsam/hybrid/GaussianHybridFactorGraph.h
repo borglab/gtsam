@@ -161,15 +161,6 @@ class GaussianHybridFactorGraph
       Base::push_back(sharedFactor);
     }
   }
-
-  /**
-   * @brief Push back for Gaussian Factor specifically.
-   *
-   * @param sharedFactor Shared ptr to a gaussian factor.
-   */
-  void push_back(const GaussianFactor::shared_ptr& sharedFactor) {
-    push_gaussian(sharedFactor);
-  }
 };
 
 }  // namespace gtsam
