@@ -43,7 +43,7 @@ class GTSAM_EXPORT NonlinearHybridFactorGraph : public HybridFactorGraph {
       std::is_base_of<NonlinearFactor, FACTOR>::value>::type;
 
  public:
-  using Base = FactorGraph<HybridFactor>;
+  using Base = HybridFactorGraph;
   using This = NonlinearHybridFactorGraph;     ///< this class
   using shared_ptr = boost::shared_ptr<This>;  ///< shared_ptr to This
 
@@ -72,7 +72,6 @@ class GTSAM_EXPORT NonlinearHybridFactorGraph : public HybridFactorGraph {
   using Base::size;
   using Base::operator[];
   using Base::add;
-  using Base::push_back;
   using Base::resize;
 
   /**
