@@ -58,7 +58,7 @@ TEST(HybridFactorGraph, GaussianFactorGraph) {
   Values linearizationPoint;
   linearizationPoint.insert<double>(X(0), 0);
 
-  GaussianHybridFactorGraph ghfg = *fg.linearize(linearizationPoint);
+  GaussianHybridFactorGraph ghfg = fg.linearize(linearizationPoint);
 
   // Add a factor to the GaussianFactorGraph
   ghfg.add(JacobianFactor(X(0), I_1x1, Vector1(5)));
@@ -72,121 +72,102 @@ TEST(HybridFactorGraph, GaussianFactorGraph) {
 /// NonlinearHybridFactorGraph.
 TEST(NonlinearHybridFactorGraph, Resize) {
   NonlinearHybridFactorGraph fg;
-  // auto nonlinearFactor = boost::make_shared<BetweenFactor<double>>();
-  // fg.push_back(nonlinearFactor);
+  auto nonlinearFactor = boost::make_shared<BetweenFactor<double>>();
+  fg.push_back(nonlinearFactor);
 
-  // auto discreteFactor = boost::make_shared<DecisionTreeFactor>();
-  // fg.push_back(discreteFactor);
+  auto discreteFactor = boost::make_shared<DecisionTreeFactor>();
+  fg.push_back(discreteFactor);
 
-  // auto dcFactor = boost::make_shared<MixtureFactor<MotionModel>>();
-  // fg.push_back(dcFactor);
-  // EXPECT_LONGS_EQUAL(fg.size(), 3);
+  auto dcFactor = boost::make_shared<MixtureFactor>();
+  fg.push_back(dcFactor);
+
+  EXPECT_LONGS_EQUAL(fg.size(), 3);
 
   fg.resize(0);
   EXPECT_LONGS_EQUAL(fg.size(), 0);
 }
 
-// /* **************************************************************************
-// */
-// /// Test that the resize method works correctly for a
-// /// GaussianHybridFactorGraph.
-// TEST(GaussianHybridFactorGraph, Resize) {
-//   NonlinearHybridFactorGraph nhfg;
-//   auto nonlinearFactor = boost::make_shared<BetweenFactor<double>>(
-//       X(0), X(1), 0.0, Isotropic::Sigma(1, 0.1));
-//   nhfg.push_back(nonlinearFactor);
-//   auto discreteFactor = boost::make_shared<DecisionTreeFactor>();
-//   nhfg.push_back(discreteFactor);
+/* **************************************************************************
+ */
+/// Test that the resize method works correctly for a
+/// GaussianHybridFactorGraph.
+TEST(GaussianHybridFactorGraph, Resize) {
+  NonlinearHybridFactorGraph nhfg;
+  auto nonlinearFactor = boost::make_shared<BetweenFactor<double>>(
+      X(0), X(1), 0.0, Isotropic::Sigma(1, 0.1));
+  nhfg.push_back(nonlinearFactor);
+  auto discreteFactor = boost::make_shared<DecisionTreeFactor>();
+  nhfg.push_back(discreteFactor);
 
-//   KeyVector contKeys = {X(0), X(1)};
-//   auto noise_model = noiseModel::Isotropic::Sigma(1, 1.0);
-//   auto still = boost::make_shared<MotionModel>(X(0), X(1), 0.0, noise_model),
-//        moving = boost::make_shared<MotionModel>(X(0), X(1), 1.0,
-//        noise_model);
-//   std::vector<MotionModel::shared_ptr> components = {still, moving};
-//   auto dcFactor = boost::make_shared<DCMixtureFactor<MotionModel>>(
-//       contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, components);
-//   nhfg.push_back(dcFactor);
+  KeyVector contKeys = {X(0), X(1)};
+  auto noise_model = noiseModel::Isotropic::Sigma(1, 1.0);
+  auto still = boost::make_shared<MotionModel>(X(0), X(1), 0.0, noise_model),
+       moving = boost::make_shared<MotionModel>(X(0), X(1), 1.0, noise_model);
 
-//   Values linearizationPoint;
-//   linearizationPoint.insert<double>(X(0), 0);
-//   linearizationPoint.insert<double>(X(1), 1);
+  // TODO(Varun) This is declared as NonlinearFactor instead of MotionModel, aka
+  // not clear!!
+  std::vector<NonlinearFactor::shared_ptr> components = {still, moving};
+  auto dcFactor = boost::make_shared<MixtureFactor>(
+      contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, components);
+  nhfg.push_back(dcFactor);
 
-//   // Generate `GaussianHybridFactorGraph` by linearizing
-//   GaussianHybridFactorGraph fg = nhfg.linearize(linearizationPoint);
+  Values linearizationPoint;
+  linearizationPoint.insert<double>(X(0), 0);
+  linearizationPoint.insert<double>(X(1), 1);
 
-//   EXPECT_LONGS_EQUAL(fg.dcGraph().size(), 1);
-//   EXPECT_LONGS_EQUAL(fg.discreteGraph().size(), 1);
-//   EXPECT_LONGS_EQUAL(fg.gaussianGraph().size(), 1);
+  // Generate `GaussianHybridFactorGraph` by linearizing
+  GaussianHybridFactorGraph gfg = nhfg.linearize(linearizationPoint);
 
-//   EXPECT_LONGS_EQUAL(fg.size(), 3);
+  EXPECT_LONGS_EQUAL(gfg.size(), 3);
 
-//   fg.resize(0);
-//   EXPECT_LONGS_EQUAL(fg.dcGraph().size(), 0);
-//   EXPECT_LONGS_EQUAL(fg.discreteGraph().size(), 0);
-//   EXPECT_LONGS_EQUAL(fg.gaussianGraph().size(), 0);
+  gfg.resize(0);
+  EXPECT_LONGS_EQUAL(gfg.size(), 0);
+}
 
-//   EXPECT_LONGS_EQUAL(fg.size(), 0);
-// }
+/*
+****************************************************************************
+* Test push_back on HFG makes the correct distinction.
+*/
+TEST(HybridFactorGraph, PushBack) {
+  NonlinearHybridFactorGraph fg;
 
-// /*
-// ****************************************************************************
-//  * Test push_back on HFG makes the correct distinction.
-//  */
-// TEST(HybridFactorGraph, PushBack) {
-//   NonlinearHybridFactorGraph fg;
+  auto nonlinearFactor = boost::make_shared<BetweenFactor<double>>();
+  fg.push_back(nonlinearFactor);
 
-//   auto nonlinearFactor = boost::make_shared<BetweenFactor<double>>();
-//   fg.push_back(nonlinearFactor);
+  EXPECT_LONGS_EQUAL(fg.size(), 1);
 
-//   EXPECT_LONGS_EQUAL(fg.dcGraph().size(), 0);
-//   EXPECT_LONGS_EQUAL(fg.discreteGraph().size(), 0);
-//   EXPECT_LONGS_EQUAL(fg.nonlinearGraph().size(), 1);
+  fg = NonlinearHybridFactorGraph();
 
-//   fg = NonlinearHybridFactorGraph();
+  auto discreteFactor = boost::make_shared<DecisionTreeFactor>();
+  fg.push_back(discreteFactor);
 
-//   auto discreteFactor = boost::make_shared<DecisionTreeFactor>();
-//   fg.push_back(discreteFactor);
+  EXPECT_LONGS_EQUAL(fg.size(), 1);
 
-//   EXPECT_LONGS_EQUAL(fg.dcGraph().size(), 0);
-//   EXPECT_LONGS_EQUAL(fg.discreteGraph().size(), 1);
-//   EXPECT_LONGS_EQUAL(fg.nonlinearGraph().size(), 0);
+  fg = NonlinearHybridFactorGraph();
 
-//   fg = NonlinearHybridFactorGraph();
+  auto dcFactor = boost::make_shared<MixtureFactor>();
+  fg.push_back(dcFactor);
 
-//   auto dcFactor = boost::make_shared<DCMixtureFactor<MotionModel>>();
-//   fg.push_back(dcFactor);
+  EXPECT_LONGS_EQUAL(fg.size(), 1);
 
-//   EXPECT_LONGS_EQUAL(fg.dcGraph().size(), 1);
-//   EXPECT_LONGS_EQUAL(fg.discreteGraph().size(), 0);
-//   EXPECT_LONGS_EQUAL(fg.nonlinearGraph().size(), 0);
+  // Now do the same with GaussianHybridFactorGraph
+  GaussianHybridFactorGraph ghfg;
 
-//   // Now do the same with GaussianHybridFactorGraph
-//   GaussianHybridFactorGraph ghfg;
+  auto gaussianFactor = boost::make_shared<JacobianFactor>();
+  ghfg.push_back(gaussianFactor);
 
-//   auto gaussianFactor = boost::make_shared<JacobianFactor>();
-//   ghfg.push_back(gaussianFactor);
+  EXPECT_LONGS_EQUAL(ghfg.size(), 1);
 
-//   EXPECT_LONGS_EQUAL(ghfg.dcGraph().size(), 0);
-//   EXPECT_LONGS_EQUAL(ghfg.discreteGraph().size(), 0);
-//   EXPECT_LONGS_EQUAL(ghfg.gaussianGraph().size(), 1);
+  ghfg = GaussianHybridFactorGraph();
+  ghfg.push_back(discreteFactor);
 
-//   ghfg = GaussianHybridFactorGraph();
+  EXPECT_LONGS_EQUAL(ghfg.size(), 1);
 
-//   ghfg.push_back(discreteFactor);
+  ghfg = GaussianHybridFactorGraph();
+  ghfg.push_back(dcFactor);
 
-//   EXPECT_LONGS_EQUAL(ghfg.dcGraph().size(), 0);
-//   EXPECT_LONGS_EQUAL(ghfg.discreteGraph().size(), 1);
-//   EXPECT_LONGS_EQUAL(ghfg.gaussianGraph().size(), 0);
-
-//   ghfg = GaussianHybridFactorGraph();
-
-//   ghfg.push_back(dcFactor);
-
-//   EXPECT_LONGS_EQUAL(ghfg.dcGraph().size(), 1);
-//   EXPECT_LONGS_EQUAL(ghfg.discreteGraph().size(), 0);
-//   EXPECT_LONGS_EQUAL(ghfg.gaussianGraph().size(), 0);
-// }
+  EXPECT_LONGS_EQUAL(ghfg.size(), 1);
+}
 
 // /*
 // ****************************************************************************/

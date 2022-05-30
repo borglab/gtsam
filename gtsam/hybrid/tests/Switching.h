@@ -22,6 +22,7 @@
 #include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/slam/BetweenFactor.h>
 
 #pragma once
 
