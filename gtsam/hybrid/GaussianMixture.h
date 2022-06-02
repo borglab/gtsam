@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file   GaussianMixtureConditional.h
+ * @file   GaussianMixture.h
  * @brief  A hybrid conditional in the Conditional Linear Gaussian scheme
  * @author Fan Jiang
  * @author Varun Agrawal
@@ -39,14 +39,14 @@ namespace gtsam {
  * coefficient.
  *
  */
-class GTSAM_EXPORT GaussianMixtureConditional
+class GTSAM_EXPORT GaussianMixture
     : public HybridFactor,
-      public Conditional<HybridFactor, GaussianMixtureConditional> {
+      public Conditional<HybridFactor, GaussianMixture> {
  public:
-  using This = GaussianMixtureConditional;
-  using shared_ptr = boost::shared_ptr<GaussianMixtureConditional>;
+  using This = GaussianMixture;
+  using shared_ptr = boost::shared_ptr<GaussianMixture>;
   using BaseFactor = HybridFactor;
-  using BaseConditional = Conditional<HybridFactor, GaussianMixtureConditional>;
+  using BaseConditional = Conditional<HybridFactor, GaussianMixture>;
 
   /// Alias for DecisionTree of GaussianFactorGraphs
   using Sum = DecisionTree<Key, GaussianFactorGraph>;
@@ -67,10 +67,10 @@ class GTSAM_EXPORT GaussianMixtureConditional
   /// @{
 
   /// Defaut constructor, mainly for serialization.
-  GaussianMixtureConditional() = default;
+  GaussianMixture() = default;
 
   /**
-   * @brief Construct a new GaussianMixtureConditional object.
+   * @brief Construct a new GaussianMixture object.
    *
    * @param continuousFrontals the continuous frontals.
    * @param continuousParents the continuous parents.
@@ -80,7 +80,7 @@ class GTSAM_EXPORT GaussianMixtureConditional
    * cardinality of the DiscreteKeys in discreteParents, since the
    * discreteParents will be used as the labels in the decision tree.
    */
-  GaussianMixtureConditional(const KeyVector &continuousFrontals,
+  GaussianMixture(const KeyVector &continuousFrontals,
                              const KeyVector &continuousParents,
                              const DiscreteKeys &discreteParents,
                              const Conditionals &conditionals);
@@ -107,7 +107,7 @@ class GTSAM_EXPORT GaussianMixtureConditional
 
   /* print utility */
   void print(
-      const std::string &s = "GaussianMixtureConditional\n",
+      const std::string &s = "GaussianMixture\n",
       const KeyFormatter &formatter = DefaultKeyFormatter) const override;
 
   /// @}

@@ -23,7 +23,7 @@
 #include <gtsam/discrete/DiscreteEliminationTree.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/discrete/DiscreteJunctionTree.h>
-#include <gtsam/hybrid/GaussianMixtureConditional.h>
+#include <gtsam/hybrid/GaussianMixture.h>
 #include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/hybrid/HybridDiscreteFactor.h>
@@ -207,8 +207,8 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
 
   const GaussianMixtureFactor::Factors &separatorFactors = pair.second;
 
-  // Create the GaussianMixtureConditional from the conditionals
-  auto conditional = boost::make_shared<GaussianMixtureConditional>(
+  // Create the GaussianMixture from the conditionals
+  auto conditional = boost::make_shared<GaussianMixture>(
       frontalKeys, keysOfSeparator, discreteSeparator, pair.first);
 
   // If there are no more continuous parents, then we should create here a
@@ -262,7 +262,7 @@ EliminateHybrid(const HybridGaussianFactorGraph &factors,
   // Because of all these reasons, we carefully consider how to
   // implement the hybrid factors so that we do not get poor performance.
 
-  // The first thing is how to represent the GaussianMixtureConditional.
+  // The first thing is how to represent the GaussianMixture.
   // A very possible scenario is that the incoming factors will have different
   // levels of discrete keys. For example, imagine we are going to eliminate the
   // fragment: $\phi(x1,c1,c2)$, $\phi(x1,c2,c3)$, which is perfectly valid.

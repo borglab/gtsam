@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file   GaussianMixtureConditional.cpp
+ * @file   GaussianMixture.cpp
  * @brief  A hybrid conditional in the Conditional Linear Gaussian scheme
  * @author Fan Jiang
  * @author Varun Agrawal
@@ -20,41 +20,41 @@
 
 #include <gtsam/base/utilities.h>
 #include <gtsam/discrete/DecisionTree-inl.h>
-#include <gtsam/hybrid/GaussianMixtureConditional.h>
+#include <gtsam/hybrid/GaussianMixture.h>
 #include <gtsam/inference/Conditional-inst.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
 namespace gtsam {
 
-GaussianMixtureConditional::GaussianMixtureConditional(
+GaussianMixture::GaussianMixture(
     const KeyVector &continuousFrontals, const KeyVector &continuousParents,
     const DiscreteKeys &discreteParents,
-    const GaussianMixtureConditional::Conditionals &conditionals)
+    const GaussianMixture::Conditionals &conditionals)
     : BaseFactor(CollectKeys(continuousFrontals, continuousParents),
                  discreteParents),
       BaseConditional(continuousFrontals.size()),
       conditionals_(conditionals) {}
 
 /* *******************************************************************************/
-const GaussianMixtureConditional::Conditionals &
-GaussianMixtureConditional::conditionals() {
+const GaussianMixture::Conditionals &
+GaussianMixture::conditionals() {
   return conditionals_;
 }
 
 /* *******************************************************************************/
-GaussianMixtureConditional GaussianMixtureConditional::FromConditionals(
+GaussianMixture GaussianMixture::FromConditionals(
     const KeyVector &continuousFrontals, const KeyVector &continuousParents,
     const DiscreteKeys &discreteParents,
     const std::vector<GaussianConditional::shared_ptr> &conditionalsList) {
   Conditionals dt(discreteParents, conditionalsList);
 
-  return GaussianMixtureConditional(continuousFrontals, continuousParents,
+  return GaussianMixture(continuousFrontals, continuousParents,
                                     discreteParents, dt);
 }
 
 /* *******************************************************************************/
-GaussianMixtureConditional::Sum GaussianMixtureConditional::add(
-    const GaussianMixtureConditional::Sum &sum) const {
+GaussianMixture::Sum GaussianMixture::add(
+    const GaussianMixture::Sum &sum) const {
   using Y = GaussianFactorGraph;
   auto add = [](const Y &graph1, const Y &graph2) {
     auto result = graph1;
@@ -66,8 +66,8 @@ GaussianMixtureConditional::Sum GaussianMixtureConditional::add(
 }
 
 /* *******************************************************************************/
-GaussianMixtureConditional::Sum
-GaussianMixtureConditional::asGaussianFactorGraphTree() const {
+GaussianMixture::Sum
+GaussianMixture::asGaussianFactorGraphTree() const {
   auto lambda = [](const GaussianFactor::shared_ptr &factor) {
     GaussianFactorGraph result;
     result.push_back(factor);
@@ -77,13 +77,13 @@ GaussianMixtureConditional::asGaussianFactorGraphTree() const {
 }
 
 /* *******************************************************************************/
-bool GaussianMixtureConditional::equals(const HybridFactor &lf,
+bool GaussianMixture::equals(const HybridFactor &lf,
                                         double tol) const {
   return BaseFactor::equals(lf, tol);
 }
 
 /* *******************************************************************************/
-void GaussianMixtureConditional::print(const std::string &s,
+void GaussianMixture::print(const std::string &s,
                                        const KeyFormatter &formatter) const {
   std::cout << s;
   if (isContinuous()) std::cout << "Continuous ";
