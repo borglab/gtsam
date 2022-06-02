@@ -68,13 +68,17 @@ class GTSAM_EXPORT GaussianMixtureConditional
 
   /// Defaut constructor, mainly for serialization.
   GaussianMixtureConditional() = default;
+
   /**
-   * @brief Construct a new GaussianMixtureConditional object
+   * @brief Construct a new GaussianMixtureConditional object.
    *
    * @param continuousFrontals the continuous frontals.
    * @param continuousParents the continuous parents.
    * @param discreteParents the discrete parents. Will be placed last.
-   * @param conditionals a decision tree of GaussianConditionals.
+   * @param conditionals a decision tree of GaussianConditionals. The number of
+   * conditionals should be C^(number of discrete parents), where C is the
+   * cardinality of the DiscreteKeys in discreteParents, since the
+   * discreteParents will be used as the labels in the decision tree.
    */
   GaussianMixtureConditional(const KeyVector &continuousFrontals,
                              const KeyVector &continuousParents,
