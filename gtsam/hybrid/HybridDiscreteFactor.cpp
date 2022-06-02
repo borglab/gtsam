@@ -38,7 +38,9 @@ HybridDiscreteFactor::HybridDiscreteFactor(DecisionTreeFactor &&dtf)
 
 /* ************************************************************************ */
 bool HybridDiscreteFactor::equals(const HybridFactor &lf, double tol) const {
-  return Base::equals(lf, tol);
+  const This *e = dynamic_cast<const This *>(&lf);
+  // TODO(Varun) How to compare inner_ when they are abstract types?
+  return e != nullptr && Base::equals(*e, tol);
 }
 
 /* ************************************************************************ */

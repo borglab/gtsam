@@ -34,6 +34,7 @@ DiscreteKeys CollectDiscreteKeys(const DiscreteKeys &key1,
 
 /**
  * Base class for hybrid probabilistic factors
+ *
  * Examples:
  *  - HybridGaussianFactor
  *  - HybridDiscreteFactor
@@ -64,12 +65,28 @@ class GTSAM_EXPORT HybridFactor : public Factor {
   /** Default constructor creates empty factor */
   HybridFactor() = default;
 
+  /**
+   * @brief Construct hybrid factor from continuous keys.
+   *
+   * @param keys Vector of continuous keys.
+   */
   explicit HybridFactor(const KeyVector &keys);
 
+  /**
+   * @brief Construct hybrid factor from discrete keys.
+   *
+   * @param keys Vector of discrete keys.
+   */
+  explicit HybridFactor(const DiscreteKeys &discreteKeys);
+
+  /**
+   * @brief Construct a new Hybrid Factor object.
+   *
+   * @param continuousKeys Vector of keys for continuous variables.
+   * @param discreteKeys Vector of keys for discrete variables.
+   */
   HybridFactor(const KeyVector &continuousKeys,
                const DiscreteKeys &discreteKeys);
-
-  explicit HybridFactor(const DiscreteKeys &discreteKeys);
 
   /// Virtual destructor
   virtual ~HybridFactor() = default;
