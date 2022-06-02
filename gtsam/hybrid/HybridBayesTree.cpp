@@ -11,7 +11,8 @@
 
 /**
  * @file    HybridBayesTree.cpp
- * @brief   Hybrid Bayes Tree, the result of eliminating a HybridJunctionTree
+ * @brief   Hybrid Bayes Tree, the result of eliminating a
+ * HybridGaussianJunctionTree
  * @date Mar 11, 2022
  * @author  Fan Jiang
  */
@@ -25,7 +26,8 @@
 namespace gtsam {
 
 // Instantiate base class
-template class BayesTreeCliqueBase<HybridBayesTreeClique, HybridFactorGraph>;
+template class BayesTreeCliqueBase<HybridBayesTreeClique,
+                                   HybridGaussianFactorGraph>;
 template class BayesTree<HybridBayesTreeClique>;
 
 /* ************************************************************************* */

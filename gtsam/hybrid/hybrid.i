@@ -38,16 +38,16 @@ class GaussianMixtureFactor : gtsam::HybridFactor {
                  gtsam::DefaultKeyFormatter) const;
 };
 
-#include <gtsam/hybrid/GaussianMixtureConditional.h>
-class GaussianMixtureConditional : gtsam::HybridFactor {
-  static GaussianMixtureConditional FromConditionals(
+#include <gtsam/hybrid/GaussianMixture.h>
+class GaussianMixture : gtsam::HybridFactor {
+  static GaussianMixture FromConditionals(
       const gtsam::KeyVector& continuousFrontals,
       const gtsam::KeyVector& continuousParents,
       const gtsam::DiscreteKeys& discreteParents,
       const std::vector<gtsam::GaussianConditional::shared_ptr>&
           conditionalsList);
 
-  void print(string s = "GaussianMixtureConditional\n",
+  void print(string s = "GaussianMixture\n",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
 };
@@ -98,15 +98,15 @@ class HybridBayesNet {
       const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
 };
 
-#include <gtsam/hybrid/HybridFactorGraph.h>
-class HybridFactorGraph {
-  HybridFactorGraph();
-  HybridFactorGraph(const gtsam::HybridBayesNet& bayesNet);
+#include <gtsam/hybrid/HybridGaussianFactorGraph.h>
+class HybridGaussianFactorGraph {
+  HybridGaussianFactorGraph();
+  HybridGaussianFactorGraph(const gtsam::HybridBayesNet& bayesNet);
 
   // Building the graph
   void push_back(const gtsam::HybridFactor* factor);
   void push_back(const gtsam::HybridConditional* conditional);
-  void push_back(const gtsam::HybridFactorGraph& graph);
+  void push_back(const gtsam::HybridGaussianFactorGraph& graph);
   void push_back(const gtsam::HybridBayesNet& bayesNet);
   void push_back(const gtsam::HybridBayesTree& bayesTree);
   void push_back(const gtsam::GaussianMixtureFactor* gmm);
@@ -120,13 +120,13 @@ class HybridFactorGraph {
   const gtsam::HybridFactor* at(size_t i) const;
 
   void print(string s = "") const;
-  bool equals(const gtsam::HybridFactorGraph& fg, double tol = 1e-9) const;
+  bool equals(const gtsam::HybridGaussianFactorGraph& fg, double tol = 1e-9) const;
 
   gtsam::HybridBayesNet* eliminateSequential();
   gtsam::HybridBayesNet* eliminateSequential(
       gtsam::Ordering::OrderingType type);
   gtsam::HybridBayesNet* eliminateSequential(const gtsam::Ordering& ordering);
-  pair<gtsam::HybridBayesNet*, gtsam::HybridFactorGraph*>
+  pair<gtsam::HybridBayesNet*, gtsam::HybridGaussianFactorGraph*>
   eliminatePartialSequential(const gtsam::Ordering& ordering);
 
   gtsam::HybridBayesTree* eliminateMultifrontal();
@@ -134,7 +134,7 @@ class HybridFactorGraph {
       gtsam::Ordering::OrderingType type);
   gtsam::HybridBayesTree* eliminateMultifrontal(
       const gtsam::Ordering& ordering);
-  pair<gtsam::HybridBayesTree*, gtsam::HybridFactorGraph*>
+  pair<gtsam::HybridBayesTree*, gtsam::HybridGaussianFactorGraph*>
   eliminatePartialMultifrontal(const gtsam::Ordering& ordering);
 
   string dot(

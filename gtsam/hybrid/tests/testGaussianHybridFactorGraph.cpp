@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /*
- *  @file testHybridFactorGraph.cpp
+ *  @file testHybridGaussianFactorGraph.cpp
  *  @date Mar 11, 2022
  *  @author Fan Jiang
  */
@@ -20,16 +20,16 @@
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/discrete/DiscreteValues.h>
-#include <gtsam/hybrid/GaussianMixtureConditional.h>
+#include <gtsam/hybrid/GaussianMixture.h>
 #include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
 #include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/hybrid/HybridDiscreteFactor.h>
 #include <gtsam/hybrid/HybridFactor.h>
-#include <gtsam/hybrid/HybridFactorGraph.h>
 #include <gtsam/hybrid/HybridGaussianFactor.h>
-#include <gtsam/hybrid/HybridISAM.h>
+#include <gtsam/hybrid/HybridGaussianFactorGraph.h>
+#include <gtsam/hybrid/HybridGaussianISAM.h>
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/DotWriter.h>
 #include <gtsam/inference/Key.h>
@@ -57,31 +57,17 @@ using gtsam::symbol_shorthand::D;
 using gtsam::symbol_shorthand::X;
 using gtsam::symbol_shorthand::Y;
 
-#ifdef HYBRID_DEBUG
-#define BOOST_STACKTRACE_GNU_SOURCE_NOT_REQUIRED
-
-#include <signal.h>  // ::signal, ::raise
-
-#include <boost/stacktrace.hpp>
-
-void my_signal_handler(int signum) {
-  ::signal(signum, SIG_DFL);
-  std::cout << boost::stacktrace::stacktrace();
-  ::raise(SIGABRT);
-}
-#endif
-
 /* ************************************************************************* */
-TEST(HybridFactorGraph, creation) {
+TEST(HybridGaussianFactorGraph, creation) {
   HybridConditional test;
 
-  HybridFactorGraph hfg;
+  HybridGaussianFactorGraph hfg;
 
   hfg.add(HybridGaussianFactor(JacobianFactor(0, I_3x3, Z_3x1)));
 
-  GaussianMixtureConditional clgc(
+  GaussianMixture clgc(
       {X(0)}, {X(1)}, DiscreteKeys(DiscreteKey{C(0), 2}),
-      GaussianMixtureConditional::Conditionals(
+      GaussianMixture::Conditionals(
           C(0),
           boost::make_shared<GaussianConditional>(X(0), Z_3x1, I_3x3, X(1),
                                                   I_3x3),
@@ -91,8 +77,8 @@ TEST(HybridFactorGraph, creation) {
 }
 
 /* ************************************************************************* */
-TEST(HybridFactorGraph, eliminate) {
-  HybridFactorGraph hfg;
+TEST(HybridGaussianFactorGraph, eliminate) {
+  HybridGaussianFactorGraph hfg;
 
   hfg.add(HybridGaussianFactor(JacobianFactor(0, I_3x3, Z_3x1)));
 
@@ -102,8 +88,8 @@ TEST(HybridFactorGraph, eliminate) {
 }
 
 /* ************************************************************************* */
-TEST(HybridFactorGraph, eliminateMultifrontal) {
-  HybridFactorGraph hfg;
+TEST(HybridGaussianFactorGraph, eliminateMultifrontal) {
+  HybridGaussianFactorGraph hfg;
 
   DiscreteKey c(C(1), 2);
 
@@ -119,8 +105,8 @@ TEST(HybridFactorGraph, eliminateMultifrontal) {
 }
 
 /* ************************************************************************* */
-TEST(HybridFactorGraph, eliminateFullSequentialEqualChance) {
-  HybridFactorGraph hfg;
+TEST(HybridGaussianFactorGraph, eliminateFullSequentialEqualChance) {
+  HybridGaussianFactorGraph hfg;
 
   DiscreteKey c1(C(1), 2);
 
@@ -143,8 +129,8 @@ TEST(HybridFactorGraph, eliminateFullSequentialEqualChance) {
 }
 
 /* ************************************************************************* */
-TEST(HybridFactorGraph, eliminateFullSequentialSimple) {
-  HybridFactorGraph hfg;
+TEST(HybridGaussianFactorGraph, eliminateFullSequentialSimple) {
+  HybridGaussianFactorGraph hfg;
 
   DiscreteKey c1(C(1), 2);
 
@@ -171,8 +157,8 @@ TEST(HybridFactorGraph, eliminateFullSequentialSimple) {
 }
 
 /* ************************************************************************* */
-TEST(HybridFactorGraph, eliminateFullMultifrontalSimple) {
-  HybridFactorGraph hfg;
+TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalSimple) {
+  HybridGaussianFactorGraph hfg;
 
   DiscreteKey c1(C(1), 2);
 
@@ -204,8 +190,8 @@ TEST(HybridFactorGraph, eliminateFullMultifrontalSimple) {
 }
 
 /* ************************************************************************* */
-TEST(HybridFactorGraph, eliminateFullMultifrontalCLG) {
-  HybridFactorGraph hfg;
+TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalCLG) {
+  HybridGaussianFactorGraph hfg;
 
   DiscreteKey c(C(1), 2);
 
@@ -240,8 +226,8 @@ TEST(HybridFactorGraph, eliminateFullMultifrontalCLG) {
  * This test is about how to assemble the Bayes Tree roots after we do partial
  * elimination
  */
-TEST(HybridFactorGraph, eliminateFullMultifrontalTwoClique) {
-  HybridFactorGraph hfg;
+TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalTwoClique) {
+  HybridGaussianFactorGraph hfg;
 
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
   hfg.add(JacobianFactor(X(1), I_3x3, X(2), -I_3x3, Z_3x1));
@@ -290,7 +276,7 @@ TEST(HybridFactorGraph, eliminateFullMultifrontalTwoClique) {
   GTSAM_PRINT(ordering_full);
 
   HybridBayesTree::shared_ptr hbt;
-  HybridFactorGraph::shared_ptr remaining;
+  HybridGaussianFactorGraph::shared_ptr remaining;
   std::tie(hbt, remaining) = hfg.eliminatePartialMultifrontal(ordering_full);
 
   GTSAM_PRINT(*hbt);
@@ -309,7 +295,7 @@ TEST(HybridFactorGraph, eliminateFullMultifrontalTwoClique) {
 
 /* ************************************************************************* */
 // TODO(fan): make a graph like Varun's paper one
-TEST(HybridFactorGraph, Switching) {
+TEST(HybridGaussianFactorGraph, Switching) {
   auto N = 12;
   auto hfg = makeSwitchingChain(N);
 
@@ -381,7 +367,7 @@ TEST(HybridFactorGraph, Switching) {
   GTSAM_PRINT(ordering_full);
 
   HybridBayesTree::shared_ptr hbt;
-  HybridFactorGraph::shared_ptr remaining;
+  HybridGaussianFactorGraph::shared_ptr remaining;
   std::tie(hbt, remaining) = hfg->eliminatePartialMultifrontal(ordering_full);
 
   // GTSAM_PRINT(*hbt);
@@ -417,7 +403,7 @@ TEST(HybridFactorGraph, Switching) {
 
 /* ************************************************************************* */
 // TODO(fan): make a graph like Varun's paper one
-TEST(HybridFactorGraph, SwitchingISAM) {
+TEST(HybridGaussianFactorGraph, SwitchingISAM) {
   auto N = 11;
   auto hfg = makeSwitchingChain(N);
 
@@ -473,7 +459,7 @@ TEST(HybridFactorGraph, SwitchingISAM) {
   GTSAM_PRINT(ordering_full);
 
   HybridBayesTree::shared_ptr hbt;
-  HybridFactorGraph::shared_ptr remaining;
+  HybridGaussianFactorGraph::shared_ptr remaining;
   std::tie(hbt, remaining) = hfg->eliminatePartialMultifrontal(ordering_full);
 
   // GTSAM_PRINT(*hbt);
@@ -499,10 +485,10 @@ TEST(HybridFactorGraph, SwitchingISAM) {
   }
 
   auto new_fg = makeSwitchingChain(12);
-  auto isam = HybridISAM(*hbt);
+  auto isam = HybridGaussianISAM(*hbt);
 
   {
-    HybridFactorGraph factorGraph;
+    HybridGaussianFactorGraph factorGraph;
     factorGraph.push_back(new_fg->at(new_fg->size() - 2));
     factorGraph.push_back(new_fg->at(new_fg->size() - 1));
     isam.update(factorGraph);
@@ -512,7 +498,7 @@ TEST(HybridFactorGraph, SwitchingISAM) {
 }
 
 /* ************************************************************************* */
-TEST(HybridFactorGraph, SwitchingTwoVar) {
+TEST(HybridGaussianFactorGraph, SwitchingTwoVar) {
   const int N = 7;
   auto hfg = makeSwitchingChain(N, X);
   hfg->push_back(*makeSwitchingChain(N, Y, D));
@@ -582,7 +568,7 @@ TEST(HybridFactorGraph, SwitchingTwoVar) {
   }
   {
     HybridBayesNet::shared_ptr hbn;
-    HybridFactorGraph::shared_ptr remaining;
+    HybridGaussianFactorGraph::shared_ptr remaining;
     std::tie(hbn, remaining) =
         hfg->eliminatePartialSequential(ordering_partial);
 

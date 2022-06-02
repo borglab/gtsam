@@ -10,14 +10,14 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file HybridJunctionTree.cpp
+ * @file HybridGaussianJunctionTree.cpp
  * @date Mar 11, 2022
  * @author Fan Jiang
  */
 
 #include <gtsam/hybrid/HybridEliminationTree.h>
-#include <gtsam/hybrid/HybridFactorGraph.h>
-#include <gtsam/hybrid/HybridJunctionTree.h>
+#include <gtsam/hybrid/HybridGaussianFactorGraph.h>
+#include <gtsam/hybrid/HybridGaussianJunctionTree.h>
 #include <gtsam/inference/JunctionTree-inst.h>
 #include <gtsam/inference/Key.h>
 
@@ -26,16 +26,20 @@
 namespace gtsam {
 
 // Instantiate base classes
-template class EliminatableClusterTree<HybridBayesTree, HybridFactorGraph>;
-template class JunctionTree<HybridBayesTree, HybridFactorGraph>;
+template class EliminatableClusterTree<HybridBayesTree,
+                                       HybridGaussianFactorGraph>;
+template class JunctionTree<HybridBayesTree, HybridGaussianFactorGraph>;
 
 struct HybridConstructorTraversalData {
-  typedef typename JunctionTree<HybridBayesTree, HybridFactorGraph>::Node Node;
-  typedef typename JunctionTree<HybridBayesTree, HybridFactorGraph>::sharedNode
-      sharedNode;
+  typedef
+      typename JunctionTree<HybridBayesTree, HybridGaussianFactorGraph>::Node
+          Node;
+  typedef
+      typename JunctionTree<HybridBayesTree,
+                            HybridGaussianFactorGraph>::sharedNode sharedNode;
 
   HybridConstructorTraversalData* const parentData;
-  sharedNode myJTNode;
+  sharedNode junctionTreeNode;
   FastVector<SymbolicConditional::shared_ptr> childSymbolicConditionals;
   FastVector<SymbolicFactor::shared_ptr> childSymbolicFactors;
   KeySet discreteKeys;
@@ -53,24 +57,24 @@ struct HybridConstructorTraversalData {
     // On the pre-order pass, before children have been visited, we just set up
     // a traversal data structure with its own JT node, and create a child
     // pointer in its parent.
-    HybridConstructorTraversalData myData =
+    HybridConstructorTraversalData data =
         HybridConstructorTraversalData(&parentData);
-    myData.myJTNode = boost::make_shared<Node>(node->key, node->factors);
-    parentData.myJTNode->addChild(myData.myJTNode);
+    data.junctionTreeNode = boost::make_shared<Node>(node->key, node->factors);
+    parentData.junctionTreeNode->addChild(data.junctionTreeNode);
 
     for (HybridFactor::shared_ptr& f : node->factors) {
       for (auto& k : f->discreteKeys()) {
-        myData.discreteKeys.insert(k.first);
+        data.discreteKeys.insert(k.first);
       }
     }
 
-    return myData;
+    return data;
   }
 
   // Post-order visitor function
   static void ConstructorTraversalVisitorPostAlg2(
       const boost::shared_ptr<HybridEliminationTree::Node>& ETreeNode,
-      const HybridConstructorTraversalData& myData) {
+      const HybridConstructorTraversalData& data) {
     // In this post-order visitor, we combine the symbolic elimination results
     // from the elimination tree children and symbolically eliminate the current
     // elimination tree node.  We then check whether each of our elimination
@@ -83,50 +87,50 @@ struct HybridConstructorTraversalData {
     // Do symbolic elimination for this node
     SymbolicFactors symbolicFactors;
     symbolicFactors.reserve(ETreeNode->factors.size() +
-                            myData.childSymbolicFactors.size());
+                            data.childSymbolicFactors.size());
     // Add ETree node factors
     symbolicFactors += ETreeNode->factors;
     // Add symbolic factors passed up from children
-    symbolicFactors += myData.childSymbolicFactors;
+    symbolicFactors += data.childSymbolicFactors;
 
     Ordering keyAsOrdering;
     keyAsOrdering.push_back(ETreeNode->key);
-    SymbolicConditional::shared_ptr myConditional;
-    SymbolicFactor::shared_ptr mySeparatorFactor;
-    boost::tie(myConditional, mySeparatorFactor) =
+    SymbolicConditional::shared_ptr conditional;
+    SymbolicFactor::shared_ptr separatorFactor;
+    boost::tie(conditional, separatorFactor) =
         internal::EliminateSymbolic(symbolicFactors, keyAsOrdering);
 
     // Store symbolic elimination results in the parent
-    myData.parentData->childSymbolicConditionals.push_back(myConditional);
-    myData.parentData->childSymbolicFactors.push_back(mySeparatorFactor);
-    myData.parentData->discreteKeys.merge(myData.discreteKeys);
+    data.parentData->childSymbolicConditionals.push_back(conditional);
+    data.parentData->childSymbolicFactors.push_back(separatorFactor);
+    data.parentData->discreteKeys.merge(data.discreteKeys);
 
-    sharedNode node = myData.myJTNode;
+    sharedNode node = data.junctionTreeNode;
     const FastVector<SymbolicConditional::shared_ptr>& childConditionals =
-        myData.childSymbolicConditionals;
-    node->problemSize_ = (int)(myConditional->size() * symbolicFactors.size());
+        data.childSymbolicConditionals;
+    node->problemSize_ = (int)(conditional->size() * symbolicFactors.size());
 
     // Merge our children if they are in our clique - if our conditional has
     // exactly one fewer parent than our child's conditional.
-    const size_t myNrParents = myConditional->nrParents();
+    const size_t nrParents = conditional->nrParents();
     const size_t nrChildren = node->nrChildren();
     assert(childConditionals.size() == nrChildren);
 
     // decide which children to merge, as index into children
-    std::vector<size_t> nrFrontals = node->nrFrontalsOfChildren();
+    std::vector<size_t> nrChildrenFrontals = node->nrFrontalsOfChildren();
     std::vector<bool> merge(nrChildren, false);
-    size_t myNrFrontals = 1;
+    size_t nrFrontals = 1;
     for (size_t i = 0; i < nrChildren; i++) {
       // Check if we should merge the i^th child
-      if (myNrParents + myNrFrontals == childConditionals[i]->nrParents()) {
+      if (nrParents + nrFrontals == childConditionals[i]->nrParents()) {
         const bool myType =
-            myData.discreteKeys.exists(myConditional->frontals()[0]);
+            data.discreteKeys.exists(conditional->frontals()[0]);
         const bool theirType =
-            myData.discreteKeys.exists(childConditionals[i]->frontals()[0]);
+            data.discreteKeys.exists(childConditionals[i]->frontals()[0]);
 
         if (myType == theirType) {
           // Increment number of frontal variables
-          myNrFrontals += nrFrontals[i];
+          nrFrontals += nrChildrenFrontals[i];
           merge[i] = true;
         }
       }
@@ -138,7 +142,7 @@ struct HybridConstructorTraversalData {
 };
 
 /* ************************************************************************* */
-HybridJunctionTree::HybridJunctionTree(
+HybridGaussianJunctionTree::HybridGaussianJunctionTree(
     const HybridEliminationTree& eliminationTree) {
   gttic(JunctionTree_FromEliminationTree);
   // Here we rely on the BayesNet having been produced by this elimination tree,
@@ -152,7 +156,7 @@ HybridJunctionTree::HybridJunctionTree(
   // as we go.  Gather the created junction tree roots in a dummy Node.
   typedef HybridConstructorTraversalData Data;
   Data rootData(0);
-  rootData.myJTNode =
+  rootData.junctionTreeNode =
       boost::make_shared<typename Base::Node>();  // Make a dummy node to gather
                                                   // the junction tree roots
   treeTraversal::DepthFirstForest(eliminationTree, rootData,
@@ -160,7 +164,7 @@ HybridJunctionTree::HybridJunctionTree(
                                   Data::ConstructorTraversalVisitorPostAlg2);
 
   // Assign roots from the dummy node
-  this->addChildrenAsRoots(rootData.myJTNode);
+  this->addChildrenAsRoots(rootData.junctionTreeNode);
 
   // Transfer remaining factors from elimination tree
   Base::remainingFactors_ = eliminationTree.remainingFactors();
