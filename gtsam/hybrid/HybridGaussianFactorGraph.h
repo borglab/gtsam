@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file   HybridFactorGraph.h
- * @brief  Hybrid factor graph that uses type erasure
+ * @file   HybridGaussianFactorGraph.h
+ * @brief  Linearized Hybrid factor graph that uses type erasure
  * @author Fan Jiang
  * @date   Mar 11, 2022
  */
@@ -26,35 +26,37 @@
 namespace gtsam {
 
 // Forward declarations
-class HybridFactorGraph;
+class HybridGaussianFactorGraph;
 class HybridConditional;
 class HybridBayesNet;
 class HybridEliminationTree;
 class HybridBayesTree;
-class HybridJunctionTree;
+class HybridGaussianJunctionTree;
 class DecisionTreeFactor;
 
 class JacobianFactor;
 
-/** Main elimination function for HybridFactorGraph */
+/** Main elimination function for HybridGaussianFactorGraph */
 GTSAM_EXPORT
 std::pair<boost::shared_ptr<HybridConditional>, HybridFactor::shared_ptr>
-EliminateHybrid(const HybridFactorGraph& factors, const Ordering& keys);
+EliminateHybrid(const HybridGaussianFactorGraph& factors, const Ordering& keys);
 
 /* ************************************************************************* */
 template <>
-struct EliminationTraits<HybridFactorGraph> {
+struct EliminationTraits<HybridGaussianFactorGraph> {
   typedef HybridFactor FactorType;  ///< Type of factors in factor graph
-  typedef HybridFactorGraph
-      FactorGraphType;  ///< Type of the factor graph (e.g. HybridFactorGraph)
+  typedef HybridGaussianFactorGraph
+      FactorGraphType;  ///< Type of the factor graph (e.g.
+                        ///< HybridGaussianFactorGraph)
   typedef HybridConditional
       ConditionalType;  ///< Type of conditionals from elimination
   typedef HybridBayesNet
       BayesNetType;  ///< Type of Bayes net from sequential elimination
   typedef HybridEliminationTree
-      EliminationTreeType;                      ///< Type of elimination tree
-  typedef HybridBayesTree BayesTreeType;        ///< Type of Bayes tree
-  typedef HybridJunctionTree JunctionTreeType;  ///< Type of Junction tree
+      EliminationTreeType;                ///< Type of elimination tree
+  typedef HybridBayesTree BayesTreeType;  ///< Type of Bayes tree
+  typedef HybridGaussianJunctionTree
+      JunctionTreeType;  ///< Type of Junction tree
   /// The default dense elimination function
   static std::pair<boost::shared_ptr<ConditionalType>,
                    boost::shared_ptr<FactorType> >
@@ -64,16 +66,17 @@ struct EliminationTraits<HybridFactorGraph> {
 };
 
 /**
- * Hybrid Factor Graph
+ * Gaussian Hybrid Factor Graph
  * -----------------------
- * This is the linear version of a hybrid factor graph. Everything inside needs
- * to be hybrid factor or hybrid conditional.
+ * This is the linearized version of a hybrid factor graph.
+ * Everything inside needs to be hybrid factor or hybrid conditional.
  */
-class HybridFactorGraph : public FactorGraph<HybridFactor>,
-                          public EliminateableFactorGraph<HybridFactorGraph> {
+class HybridGaussianFactorGraph
+    : public FactorGraph<HybridFactor>,
+      public EliminateableFactorGraph<HybridGaussianFactorGraph> {
  public:
   using Base = FactorGraph<HybridFactor>;
-  using This = HybridFactorGraph;  ///< this class
+  using This = HybridGaussianFactorGraph;  ///< this class
   using BaseEliminateable =
       EliminateableFactorGraph<This>;          ///< for elimination
   using shared_ptr = boost::shared_ptr<This>;  ///< shared_ptr to This
@@ -84,7 +87,7 @@ class HybridFactorGraph : public FactorGraph<HybridFactor>,
   /// @name Constructors
   /// @{
 
-  HybridFactorGraph() = default;
+  HybridGaussianFactorGraph() = default;
 
   /**
    * Implicit copy/downcast constructor to override explicit template container
@@ -92,7 +95,8 @@ class HybridFactorGraph : public FactorGraph<HybridFactor>,
    * `cachedSeparatorMarginal_.reset(*separatorMarginal)`
    * */
   template <class DERIVEDFACTOR>
-  HybridFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph) : Base(graph) {}
+  HybridGaussianFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph)
+      : Base(graph) {}
 
   /// @}
 

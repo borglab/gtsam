@@ -11,7 +11,8 @@
 
 /**
  * @file    HybridBayesTree.h
- * @brief   Hybrid Bayes Tree, the result of eliminating a HybridJunctionTree
+ * @brief   Hybrid Bayes Tree, the result of eliminating a
+ * HybridGaussianJunctionTree
  * @date Mar 11, 2022
  * @author  Fan Jiang
  */
@@ -19,7 +20,7 @@
 #pragma once
 
 #include <gtsam/hybrid/HybridBayesNet.h>
-#include <gtsam/hybrid/HybridFactorGraph.h>
+#include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 #include <gtsam/inference/BayesTree.h>
 #include <gtsam/inference/BayesTreeCliqueBase.h>
 #include <gtsam/inference/Conditional.h>
@@ -37,10 +38,12 @@ class VectorValues;
  * which is a HybridConditional internally.
  */
 class GTSAM_EXPORT HybridBayesTreeClique
-    : public BayesTreeCliqueBase<HybridBayesTreeClique, HybridFactorGraph> {
+    : public BayesTreeCliqueBase<HybridBayesTreeClique,
+                                 HybridGaussianFactorGraph> {
  public:
   typedef HybridBayesTreeClique This;
-  typedef BayesTreeCliqueBase<HybridBayesTreeClique, HybridFactorGraph> Base;
+  typedef BayesTreeCliqueBase<HybridBayesTreeClique, HybridGaussianFactorGraph>
+      Base;
   typedef boost::shared_ptr<This> shared_ptr;
   typedef boost::weak_ptr<This> weak_ptr;
   HybridBayesTreeClique() {}

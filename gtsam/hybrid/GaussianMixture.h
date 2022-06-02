@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file   GaussianMixtureConditional.h
+ * @file   GaussianMixture.h
  * @brief  A hybrid conditional in the Conditional Linear Gaussian scheme
  * @author Fan Jiang
  * @author Varun Agrawal
@@ -27,20 +27,26 @@
 namespace gtsam {
 
 /**
- * @brief A conditional of gaussian mixtures indexed by discrete variables.
+ * @brief A conditional of gaussian mixtures indexed by discrete variables, as
+ * part of a Bayes Network.
  *
  * Represents the conditional density P(X | M, Z) where X is a continuous random
- * variable, M is the discrete variable and Z is the set of measurements.
+ * variable, M is the selection of discrete variables corresponding to a subset
+ * of the Gaussian variables and Z is parent of this node
+ *
+ * The negative log-probability is given by \f$ \sum_{m=1}^M \pi_m \frac{1}{2}
+ * |Rx - (d - Sy - Tz - ...)|^2 \f$, where \f$ \pi_m \f$ is the mixing
+ * coefficient.
  *
  */
-class GaussianMixtureConditional
+class GTSAM_EXPORT GaussianMixture
     : public HybridFactor,
-      public Conditional<HybridFactor, GaussianMixtureConditional> {
+      public Conditional<HybridFactor, GaussianMixture> {
  public:
-  using This = GaussianMixtureConditional;
-  using shared_ptr = boost::shared_ptr<GaussianMixtureConditional>;
+  using This = GaussianMixture;
+  using shared_ptr = boost::shared_ptr<GaussianMixture>;
   using BaseFactor = HybridFactor;
-  using BaseConditional = Conditional<HybridFactor, GaussianMixtureConditional>;
+  using BaseConditional = Conditional<HybridFactor, GaussianMixture>;
 
   /// Alias for DecisionTree of GaussianFactorGraphs
   using Sum = DecisionTree<Key, GaussianFactorGraph>;
@@ -61,16 +67,20 @@ class GaussianMixtureConditional
   /// @{
 
   /// Defaut constructor, mainly for serialization.
-  GaussianMixtureConditional() = default;
+  GaussianMixture() = default;
+
   /**
-   * @brief Construct a new GaussianMixtureConditional object
+   * @brief Construct a new GaussianMixture object.
    *
    * @param continuousFrontals the continuous frontals.
    * @param continuousParents the continuous parents.
    * @param discreteParents the discrete parents. Will be placed last.
-   * @param conditionals a decision tree of GaussianConditionals.
+   * @param conditionals a decision tree of GaussianConditionals. The number of
+   * conditionals should be C^(number of discrete parents), where C is the
+   * cardinality of the DiscreteKeys in discreteParents, since the
+   * discreteParents will be used as the labels in the decision tree.
    */
-  GaussianMixtureConditional(const KeyVector &continuousFrontals,
+  GaussianMixture(const KeyVector &continuousFrontals,
                              const KeyVector &continuousParents,
                              const DiscreteKeys &discreteParents,
                              const Conditionals &conditionals);
@@ -97,7 +107,7 @@ class GaussianMixtureConditional
 
   /* print utility */
   void print(
-      const std::string &s = "GaussianMixtureConditional\n",
+      const std::string &s = "GaussianMixture\n",
       const KeyFormatter &formatter = DefaultKeyFormatter) const override;
 
   /// @}
