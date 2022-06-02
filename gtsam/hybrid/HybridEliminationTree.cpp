@@ -21,17 +21,17 @@
 namespace gtsam {
 
 // Instantiate base class
-template class EliminationTree<HybridBayesNet, GaussianHybridFactorGraph>;
+template class EliminationTree<HybridBayesNet, HybridGaussianFactorGraph>;
 
 /* ************************************************************************* */
 HybridEliminationTree::HybridEliminationTree(
-    const GaussianHybridFactorGraph& factorGraph,
+    const HybridGaussianFactorGraph& factorGraph,
     const VariableIndex& structure, const Ordering& order)
     : Base(factorGraph, structure, order) {}
 
 /* ************************************************************************* */
 HybridEliminationTree::HybridEliminationTree(
-    const GaussianHybridFactorGraph& factorGraph, const Ordering& order)
+    const HybridGaussianFactorGraph& factorGraph, const Ordering& order)
     : Base(factorGraph, order) {}
 
 /* ************************************************************************* */

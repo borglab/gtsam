@@ -18,8 +18,8 @@
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
-#include <gtsam/hybrid/GaussianHybridFactorGraph.h>
 #include <gtsam/hybrid/GaussianMixtureFactor.h>
+#include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/JacobianFactor.h>
 
@@ -29,10 +29,10 @@ using gtsam::symbol_shorthand::C;
 using gtsam::symbol_shorthand::X;
 
 namespace gtsam {
-inline GaussianHybridFactorGraph::shared_ptr makeSwitchingChain(
+inline HybridGaussianFactorGraph::shared_ptr makeSwitchingChain(
     size_t n, std::function<Key(int)> keyFunc = X,
     std::function<Key(int)> dKeyFunc = C) {
-  GaussianHybridFactorGraph hfg;
+  HybridGaussianFactorGraph hfg;
 
   hfg.add(JacobianFactor(keyFunc(1), I_3x3, Z_3x1));
 
@@ -51,7 +51,7 @@ inline GaussianHybridFactorGraph::shared_ptr makeSwitchingChain(
     }
   }
 
-  return boost::make_shared<GaussianHybridFactorGraph>(std::move(hfg));
+  return boost::make_shared<HybridGaussianFactorGraph>(std::move(hfg));
 }
 
 inline std::pair<KeyVector, std::vector<int>> makeBinaryOrdering(
