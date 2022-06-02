@@ -11,7 +11,7 @@
 
 /**
  * @file   GaussianMixtureFactor.h
- * @brief  A factor that is a function of discrete and continuous variables.
+ * @brief  A set of GaussianFactors, indexed by a set of discrete keys.
  * @author Fan Jiang
  * @author Varun Agrawal
  * @author Frank Dellaert
@@ -32,9 +32,10 @@ class GaussianFactorGraph;
 using GaussianFactorVector = std::vector<gtsam::GaussianFactor::shared_ptr>;
 
 /**
- * @brief A linear factor that is a function of both discrete and continuous
- * variables, i.e. P(X, M | Z) where X is the set of continuous variables, M is
- * the set of discrete variables and Z is the measurement set.
+ * @brief Implementation of a discrete conditional mixture factor.
+ * Implements a joint discrete-continuous factor where the discrete variable
+ * serves to "select" a mixture component corresponding to a GaussianFactor type
+ * of measurement.
  *
  * Represents the underlying Gaussian Mixture as a Decision Tree, where the set
  * of discrete variables indexes to the continuous gaussian distribution.
@@ -52,6 +53,7 @@ class GaussianMixtureFactor : public HybridFactor {
   using Factors = DecisionTree<Key, GaussianFactor::shared_ptr>;
 
  private:
+  /// Decision tree of Gaussian factors indexed by discrete keys.
   Factors factors_;
 
   /**
