@@ -49,7 +49,7 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         self.assertEqual(hbn.size(), 2)
 
         mixture = hbn.at(0).inner()
-        self.assertIsInstance(mixture, gtsam.GaussianMixtureConditional)
+        self.assertIsInstance(mixture, gtsam.GaussianMixture)
         self.assertEqual(len(mixture.keys()), 2)
 
         discrete_conditional = hbn.at(hbn.size() - 1).inner()
