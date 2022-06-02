@@ -27,13 +27,19 @@
 namespace gtsam {
 
 /**
- * @brief A conditional of gaussian mixtures indexed by discrete variables.
+ * @brief A conditional of gaussian mixtures indexed by discrete variables, as
+ * part of a Bayes Network.
  *
  * Represents the conditional density P(X | M, Z) where X is a continuous random
- * variable, M is the discrete variable and Z is the set of measurements.
+ * variable, M is the selection of discrete variables corresponding to a subset
+ * of the Gaussian variables and Z is parent of this node
+ *
+ * The negative log-probability is given by \f$ \sum_{m=1}^M \pi_m \frac{1}{2}
+ * |Rx - (d - Sy - Tz - ...)|^2 \f$, where \f$ \pi_m \f$ is the mixing
+ * coefficient.
  *
  */
-class GaussianMixtureConditional
+class GTSAM_EXPORT GaussianMixtureConditional
     : public HybridFactor,
       public Conditional<HybridFactor, GaussianMixtureConditional> {
  public:
