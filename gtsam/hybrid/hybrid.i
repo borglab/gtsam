@@ -38,16 +38,16 @@ class GaussianMixtureFactor : gtsam::HybridFactor {
                  gtsam::DefaultKeyFormatter) const;
 };
 
-#include <gtsam/hybrid/GaussianMixtureConditional.h>
-class GaussianMixtureConditional : gtsam::HybridFactor {
-  static GaussianMixtureConditional FromConditionals(
+#include <gtsam/hybrid/GaussianMixture.h>
+class GaussianMixture : gtsam::HybridFactor {
+  static GaussianMixture FromConditionals(
       const gtsam::KeyVector& continuousFrontals,
       const gtsam::KeyVector& continuousParents,
       const gtsam::DiscreteKeys& discreteParents,
       const std::vector<gtsam::GaussianConditional::shared_ptr>&
           conditionalsList);
 
-  void print(string s = "GaussianMixtureConditional\n",
+  void print(string s = "GaussianMixture\n",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
 };
