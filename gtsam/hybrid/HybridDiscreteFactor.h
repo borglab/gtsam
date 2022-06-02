@@ -29,7 +29,7 @@ namespace gtsam {
  * us to hide the implementation of DiscreteFactor and thus avoid diamond
  * inheritance.
  */
-class HybridDiscreteFactor : public HybridFactor {
+class GTSAM_EXPORT HybridDiscreteFactor : public HybridFactor {
  private:
   DiscreteFactor::shared_ptr inner_;
 
@@ -61,4 +61,9 @@ class HybridDiscreteFactor : public HybridFactor {
   /// Return pointer to the internal discrete factor
   DiscreteFactor::shared_ptr inner() const { return inner_; }
 };
+
+// traits
+template <>
+struct traits<HybridDiscreteFactor> : public Testable<HybridDiscreteFactor> {};
+
 }  // namespace gtsam

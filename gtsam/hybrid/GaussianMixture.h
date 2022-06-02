@@ -81,9 +81,9 @@ class GTSAM_EXPORT GaussianMixture
    * discreteParents will be used as the labels in the decision tree.
    */
   GaussianMixture(const KeyVector &continuousFrontals,
-                             const KeyVector &continuousParents,
-                             const DiscreteKeys &discreteParents,
-                             const Conditionals &conditionals);
+                  const KeyVector &continuousParents,
+                  const DiscreteKeys &discreteParents,
+                  const Conditionals &conditionals);
 
   /**
    * @brief Make a Gaussian Mixture from a list of Gaussian conditionals
@@ -124,5 +124,9 @@ class GTSAM_EXPORT GaussianMixture
    */
   Sum add(const Sum &sum) const;
 };
+
+// traits
+template <>
+struct traits<GaussianMixture> : public Testable<GaussianMixture> {};
 
 }  // namespace gtsam

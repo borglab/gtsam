@@ -41,7 +41,7 @@ using GaussianFactorVector = std::vector<gtsam::GaussianFactor::shared_ptr>;
  * of discrete variables indexes to the continuous gaussian distribution.
  *
  */
-class GaussianMixtureFactor : public HybridFactor {
+class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
  public:
   using Base = HybridFactor;
   using This = GaussianMixtureFactor;
@@ -111,6 +111,11 @@ class GaussianMixtureFactor : public HybridFactor {
    * @return Sum
    */
   Sum add(const Sum &sum) const;
+};
+
+// traits
+template <>
+struct traits<GaussianMixtureFactor> : public Testable<GaussianMixtureFactor> {
 };
 
 }  // namespace gtsam

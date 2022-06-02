@@ -28,7 +28,7 @@ namespace gtsam {
  * a diamond inheritance i.e. an extra factor type that inherits from both
  * HybridFactor and GaussianFactor.
  */
-class HybridGaussianFactor : public HybridFactor {
+class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
  private:
   GaussianFactor::shared_ptr inner_;
 
@@ -59,4 +59,9 @@ class HybridGaussianFactor : public HybridFactor {
 
   GaussianFactor::shared_ptr inner() const { return inner_; }
 };
+
+// traits
+template <>
+struct traits<HybridGaussianFactor> : public Testable<HybridGaussianFactor> {};
+
 }  // namespace gtsam

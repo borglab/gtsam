@@ -71,7 +71,7 @@ struct EliminationTraits<HybridGaussianFactorGraph> {
  * This is the linearized version of a hybrid factor graph.
  * Everything inside needs to be hybrid factor or hybrid conditional.
  */
-class HybridGaussianFactorGraph
+class GTSAM_EXPORT HybridGaussianFactorGraph
     : public FactorGraph<HybridFactor>,
       public EliminateableFactorGraph<HybridGaussianFactorGraph> {
  public:
