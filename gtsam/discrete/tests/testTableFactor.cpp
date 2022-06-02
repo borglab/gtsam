@@ -182,11 +182,50 @@ TEST(TableFactor, sum_max) {
   CHECK(assert_equal(expected, *actual, 1e-5));
 
   TableFactor expected2(v1, "5 6");
-  TableFactor::shared_ptr actual2 = f1.max(1);
-  CHECK(assert_equal(expected2, *actual2));
+  TableFactor actual2 = f1.max(1);
+  CHECK(assert_equal(expected2, actual2));
 
   TableFactor f2(v1 & v0, "1 2  3 4  5 6");
   TableFactor::shared_ptr actual22 = f2.sum(1);
+}
+
+/* ************************************************************************* */
+TEST( DecisionTreeFactor, max_ordering)
+{
+  DiscreteKey v0(0,3), v1(1,2), v2(2, 2);
+  TableFactor f1(v0 & v1 & v2, "1 2 3 10 5 6 7 11 9 4 8 12");
+  Ordering ordering;
+  ordering += Key(1);
+
+  TableFactor actual = f1.max(ordering);
+  TableFactor expected(v0 & v2, "3 10 7 11 9 12");
+  CHECK(assert_equal(expected, actual));
+
+  TableFactor f2(v0 & v1 & v2, "0 0 0 0 0 0 0 15 0 0 0 10");
+  TableFactor actual_zeros = f2.max(ordering);
+  TableFactor expected_zeros(v0 & v2, "0 0 0 15 0 10");
+  CHECK(assert_equal(expected_zeros, actual_zeros));
+}
+
+/* ************************************************************************* */
+TEST( DecisionTreeFactor, max_assignment)
+{
+  DiscreteKey v0(0,3), v1(1,2), v2(2, 2);
+  TableFactor f1(v0 & v1 & v2, "1 2 3 10 5 6 7 11 9 4 8 12");
+  DiscreteValues assignment = f1.maxAssignment();
+  DiscreteValues expected;
+  expected[v0.first] = 2;
+  expected[v1.first] = 1;
+  expected[v2.first] = 1;
+  CHECK(assert_equal(expected, assignment));
+
+  TableFactor f2(v0 & v1 & v2, "0 0 0 0 0 0 0 15 0 0 0 10");
+  DiscreteValues assignment_zeros = f2.maxAssignment();
+  DiscreteValues expected_zeros;
+  expected_zeros[v0.first] = 1;
+  expected_zeros[v1.first] = 1;
+  expected_zeros[v2.first] = 1;
+  CHECK(assert_equal(expected_zeros, assignment_zeros));
 }
 
 /* ************************************************************************* */

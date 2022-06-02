@@ -122,7 +122,10 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   shared_ptr sum(size_t nrFrontals) const;
 
   /// Create new factor by maximizing over all values with the same separator
-  shared_ptr max(size_t nrFrontals) const;
+  TableFactor max(size_t nrFrontals) const;
+
+  /// Create new factor by maximizing over all values with the same separator
+  TableFactor max(const Ordering& frontalKeys) const;
 
   /// @}
   /// @name Advanced Interface
@@ -134,8 +137,14 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   /// Finds value for the key at index
   size_t lazy_cp(Key target_key, size_t index) const;
 
+  /// Find assignments with maximum value
+  DiscreteValues maxAssignment() const;
+
   /// Find index for given assignment of values
   size_t findIndex(const DiscreteValues& assignment) const;
+
+  /// Find indicies for given partial assignment of values
+  TableFactor eliminate(const Key key) const;
 
   /// Create union of keys
   DiscreteKeys unionKeys(const TableFactor& f) const;
