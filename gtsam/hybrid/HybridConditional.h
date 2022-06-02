@@ -18,9 +18,9 @@
 #pragma once
 
 #include <gtsam/discrete/DiscreteConditional.h>
-#include <gtsam/hybrid/GaussianHybridFactorGraph.h>
 #include <gtsam/hybrid/GaussianMixtureConditional.h>
 #include <gtsam/hybrid/HybridFactor.h>
+#include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 #include <gtsam/inference/Conditional.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/linear/GaussianConditional.h>
@@ -34,7 +34,7 @@
 
 namespace gtsam {
 
-class GaussianHybridFactorGraph;
+class HybridGaussianFactorGraph;
 
 /**
  * Hybrid Conditional Density

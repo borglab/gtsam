@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file   GaussianHybridFactorGraph.h
+ * @file   HybridGaussianFactorGraph.h
  * @brief  Linearized Hybrid factor graph that uses type erasure
  * @author Fan Jiang
  * @date   Mar 11, 2022
@@ -26,36 +26,37 @@
 namespace gtsam {
 
 // Forward declarations
-class GaussianHybridFactorGraph;
+class HybridGaussianFactorGraph;
 class HybridConditional;
 class HybridBayesNet;
 class HybridEliminationTree;
 class HybridBayesTree;
-class HybridJunctionTree;
+class HybridGaussianJunctionTree;
 class DecisionTreeFactor;
 
 class JacobianFactor;
 
-/** Main elimination function for GaussianHybridFactorGraph */
+/** Main elimination function for HybridGaussianFactorGraph */
 GTSAM_EXPORT
 std::pair<boost::shared_ptr<HybridConditional>, HybridFactor::shared_ptr>
-EliminateHybrid(const GaussianHybridFactorGraph& factors, const Ordering& keys);
+EliminateHybrid(const HybridGaussianFactorGraph& factors, const Ordering& keys);
 
 /* ************************************************************************* */
 template <>
-struct EliminationTraits<GaussianHybridFactorGraph> {
+struct EliminationTraits<HybridGaussianFactorGraph> {
   typedef HybridFactor FactorType;  ///< Type of factors in factor graph
-  typedef GaussianHybridFactorGraph
+  typedef HybridGaussianFactorGraph
       FactorGraphType;  ///< Type of the factor graph (e.g.
-                        ///< GaussianHybridFactorGraph)
+                        ///< HybridGaussianFactorGraph)
   typedef HybridConditional
       ConditionalType;  ///< Type of conditionals from elimination
   typedef HybridBayesNet
       BayesNetType;  ///< Type of Bayes net from sequential elimination
   typedef HybridEliminationTree
-      EliminationTreeType;                      ///< Type of elimination tree
-  typedef HybridBayesTree BayesTreeType;        ///< Type of Bayes tree
-  typedef HybridJunctionTree JunctionTreeType;  ///< Type of Junction tree
+      EliminationTreeType;                ///< Type of elimination tree
+  typedef HybridBayesTree BayesTreeType;  ///< Type of Bayes tree
+  typedef HybridGaussianJunctionTree
+      JunctionTreeType;  ///< Type of Junction tree
   /// The default dense elimination function
   static std::pair<boost::shared_ptr<ConditionalType>,
                    boost::shared_ptr<FactorType> >
@@ -70,12 +71,12 @@ struct EliminationTraits<GaussianHybridFactorGraph> {
  * This is the linearized version of a hybrid factor graph.
  * Everything inside needs to be hybrid factor or hybrid conditional.
  */
-class GaussianHybridFactorGraph
+class HybridGaussianFactorGraph
     : public FactorGraph<HybridFactor>,
-      public EliminateableFactorGraph<GaussianHybridFactorGraph> {
+      public EliminateableFactorGraph<HybridGaussianFactorGraph> {
  public:
   using Base = FactorGraph<HybridFactor>;
-  using This = GaussianHybridFactorGraph;  ///< this class
+  using This = HybridGaussianFactorGraph;  ///< this class
   using BaseEliminateable =
       EliminateableFactorGraph<This>;          ///< for elimination
   using shared_ptr = boost::shared_ptr<This>;  ///< shared_ptr to This
@@ -86,7 +87,7 @@ class GaussianHybridFactorGraph
   /// @name Constructors
   /// @{
 
-  GaussianHybridFactorGraph() = default;
+  HybridGaussianFactorGraph() = default;
 
   /**
    * Implicit copy/downcast constructor to override explicit template container
@@ -94,7 +95,7 @@ class GaussianHybridFactorGraph
    * `cachedSeparatorMarginal_.reset(*separatorMarginal)`
    * */
   template <class DERIVEDFACTOR>
-  GaussianHybridFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph)
+  HybridGaussianFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph)
       : Base(graph) {}
 
   /// @}
