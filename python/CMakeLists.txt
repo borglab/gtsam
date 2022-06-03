@@ -67,6 +67,7 @@ set(interface_headers
     ${PROJECT_SOURCE_DIR}/gtsam/sfm/sfm.i
     ${PROJECT_SOURCE_DIR}/gtsam/navigation/navigation.i
     ${PROJECT_SOURCE_DIR}/gtsam/basis/basis.i
+    ${PROJECT_SOURCE_DIR}/gtsam/hybrid/hybrid.i
 )
 
 set(GTSAM_PYTHON_TARGET gtsam_py)
