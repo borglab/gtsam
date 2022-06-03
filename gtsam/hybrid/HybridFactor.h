@@ -50,7 +50,10 @@ class GTSAM_EXPORT HybridFactor : public Factor {
   size_t nrContinuous_ = 0;
 
  protected:
+  // Set of DiscreteKeys for this factor.
   DiscreteKeys discreteKeys_;
+  // For bookkeeping
+  KeyVector continuousKeys_;
 
  public:
   // typedefs needed to play nice with gtsam
@@ -117,10 +120,13 @@ class GTSAM_EXPORT HybridFactor : public Factor {
   bool isHybrid() const { return isHybrid_; }
 
   /// Return the number of continuous variables in this factor.
-  size_t nrContinuous() const { return nrContinuous_; }
+  size_t nrContinuous() const { return continuousKeys_.size(); }
 
-  /// Return vector of discrete keys.
-  DiscreteKeys discreteKeys() const { return discreteKeys_; }
+  /// Return the discrete keys for this factor.
+  const DiscreteKeys &discreteKeys() const { return discreteKeys_; }
+
+  /// Return only the continuous keys for this factor.
+  const KeyVector &continuousKeys() const { return continuousKeys_; }
 
   /// @}
 };
