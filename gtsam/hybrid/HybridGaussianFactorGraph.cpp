@@ -183,6 +183,7 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
   KeyVector keysOfEliminated;  // Not the ordering
   KeyVector keysOfSeparator;   // TODO(frank): Is this just (keys - ordering)?
 
+  // This is the elimination method on the leaf nodes
   auto eliminate = [&](const GaussianFactorGraph &graph)
       -> GaussianFactorGraph::EliminationResult {
     if (graph.empty()) {
@@ -200,8 +201,10 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
     return result;
   };
 
+  // Perform elimination!
   DecisionTree<Key, EliminationPair> eliminationResults(sum, eliminate);
 
+  // Separate out decision tree into conditionals and remaining factors.
   auto pair = unzip(eliminationResults);
 
   const GaussianMixtureFactor::Factors &separatorFactors = pair.second;
