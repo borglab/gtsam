@@ -873,7 +873,7 @@ template <CALIBRATION>
 class PinholeCamera {
   // Standard Constructors and Named Constructors
   PinholeCamera();
-  PinholeCamera(const gtsam::PinholeCamera<CALIBRATION> other);
+  PinholeCamera(const This other);
   PinholeCamera(const gtsam::Pose3& pose);
   PinholeCamera(const gtsam::Pose3& pose, const CALIBRATION& K);
   static This Level(const CALIBRATION& K, const gtsam::Pose2& pose,
@@ -942,7 +942,7 @@ template <CALIBRATION>
 class PinholePose {
   // Standard Constructors and Named Constructors
   PinholePose();
-  PinholePose(const gtsam::PinholePose<CALIBRATION> other);
+  PinholePose(const This other);
   PinholePose(const gtsam::Pose3& pose);
   PinholePose(const gtsam::Pose3& pose, const CALIBRATION* K);
   static This Level(const gtsam::Pose2& pose, double height);

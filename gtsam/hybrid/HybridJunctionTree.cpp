@@ -10,14 +10,14 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file HybridGaussianJunctionTree.cpp
+ * @file HybridJunctionTree.cpp
  * @date Mar 11, 2022
  * @author Fan Jiang
  */
 
 #include <gtsam/hybrid/HybridEliminationTree.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
-#include <gtsam/hybrid/HybridGaussianJunctionTree.h>
+#include <gtsam/hybrid/HybridJunctionTree.h>
 #include <gtsam/inference/JunctionTree-inst.h>
 #include <gtsam/inference/Key.h>
 
@@ -142,7 +142,7 @@ struct HybridConstructorTraversalData {
 };
 
 /* ************************************************************************* */
-HybridGaussianJunctionTree::HybridGaussianJunctionTree(
+HybridJunctionTree::HybridJunctionTree(
     const HybridEliminationTree& eliminationTree) {
   gttic(JunctionTree_FromEliminationTree);
   // Here we rely on the BayesNet having been produced by this elimination tree,
