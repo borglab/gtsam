@@ -31,7 +31,7 @@
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
-#include <gtsam/hybrid/HybridGaussianJunctionTree.h>
+#include <gtsam/hybrid/HybridJunctionTree.h>
 #include <gtsam/inference/EliminateableFactorGraph-inst.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/linear/GaussianConditional.h>
