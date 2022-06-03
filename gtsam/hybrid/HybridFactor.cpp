@@ -50,7 +50,7 @@ DiscreteKeys CollectDiscreteKeys(const DiscreteKeys &key1,
 
 /* ************************************************************************ */
 HybridFactor::HybridFactor(const KeyVector &keys)
-    : Base(keys), isContinuous_(true), nrContinuous_(keys.size()) {}
+    : Base(keys), isContinuous_(true), continuousKeys_(keys) {}
 
 /* ************************************************************************ */
 HybridFactor::HybridFactor(const KeyVector &continuousKeys,
@@ -59,8 +59,8 @@ HybridFactor::HybridFactor(const KeyVector &continuousKeys,
       isDiscrete_((continuousKeys.size() == 0) && (discreteKeys.size() != 0)),
       isContinuous_((continuousKeys.size() != 0) && (discreteKeys.size() == 0)),
       isHybrid_((continuousKeys.size() != 0) && (discreteKeys.size() != 0)),
-      nrContinuous_(continuousKeys.size()),
-      discreteKeys_(discreteKeys) {}
+      discreteKeys_(discreteKeys),
+      continuousKeys_(continuousKeys) {}
 
 /* ************************************************************************ */
 HybridFactor::HybridFactor(const DiscreteKeys &discreteKeys)
@@ -73,7 +73,8 @@ bool HybridFactor::equals(const HybridFactor &lf, double tol) const {
   const This *e = dynamic_cast<const This *>(&lf);
   return e != nullptr && Base::equals(*e, tol) &&
          isDiscrete_ == e->isDiscrete_ && isContinuous_ == e->isContinuous_ &&
-         isHybrid_ == e->isHybrid_ && nrContinuous_ == e->nrContinuous_;
+         isHybrid_ == e->isHybrid_ && continuousKeys_ == e->continuousKeys_ &&
+         discreteKeys_ == e->discreteKeys_;
 }
 
 /* ************************************************************************ */
