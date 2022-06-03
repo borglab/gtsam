@@ -33,6 +33,7 @@ namespace gtsam {
   // Forward declarations
   template<class FACTOR> class FactorGraph;
   template<class BAYESTREE, class GRAPH> class EliminatableClusterTree;
+  class HybridBayesTreeClique;
 
   /* ************************************************************************* */
   /** clique statistics */
@@ -272,24 +273,33 @@ namespace gtsam {
   }; // BayesTree
 
   /* ************************************************************************* */
-  template<class CLIQUE>
-  class BayesTreeOrphanWrapper : public CLIQUE::ConditionalType
-  {
-  public:
+  template <class CLIQUE, typename = void>
+  class BayesTreeOrphanWrapper : public CLIQUE::ConditionalType {
+   public:
     typedef CLIQUE CliqueType;
     typedef typename CLIQUE::ConditionalType Base;
 
     boost::shared_ptr<CliqueType> clique;
 
-    BayesTreeOrphanWrapper(const boost::shared_ptr<CliqueType>& clique) :
-      clique(clique)
-    {
-      // Store parent keys in our base type factor so that eliminating those parent keys will pull
-      // this subtree into the elimination.
-      this->keys_.assign(clique->conditional()->beginParents(), clique->conditional()->endParents());
+    /**
+     * @brief Construct a new Bayes Tree Orphan Wrapper object
+     *
+     * This object stores parent keys in our base type factor so that
+     * eliminating those parent keys will pull this subtree into the
+     * elimination.
+     *
+     * @param clique Orphan clique to add for further consideration in
+     * elimination.
+     */
+    BayesTreeOrphanWrapper(const boost::shared_ptr<CliqueType>& clique)
+        : clique(clique) {
+      this->keys_.assign(clique->conditional()->beginParents(),
+                         clique->conditional()->endParents());
     }
 
-    void print(const std::string& s="", const KeyFormatter& formatter = DefaultKeyFormatter) const override {
+    void print(
+        const std::string& s = "",
+        const KeyFormatter& formatter = DefaultKeyFormatter) const override {
       clique->print(s + "stored clique", formatter);
     }
   };
