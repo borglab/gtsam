@@ -292,8 +292,8 @@ pair<Matrix3, Vector3> RQ(const Matrix3& A, OptionalJacobian<3, 9> H) {
     (*H)(1, 8) = yHb22 * cx;
 
     // Next, calculate the derivate of z. We have
-    // c20 = a10 * cy + a11 * sx * sy + a12 * cx * sy
-    // c22 = a11 * cx - a12 * sx
+    // c10 = a10 * cy + a11 * sx * sy + a12 * cx * sy
+    // c11 = a11 * cx - a12 * sx
     const auto c10Hx = (A(1, 1) * cx - A(1, 2) * sx) * sy;
     const auto c10Hy = A(1, 2) * cx * cy + A(1, 1) * cy * sx - A(1, 0) * sy;
     Vector9 c10HA = c10Hx * H->row(0) + c10Hy * H->row(1);

@@ -12,7 +12,7 @@
 /**
  * @file    HybridBayesTree.cpp
  * @brief   Hybrid Bayes Tree, the result of eliminating a
- * HybridGaussianJunctionTree
+ * HybridJunctionTree
  * @date Mar 11, 2022
  * @author  Fan Jiang
  */
