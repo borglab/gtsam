@@ -36,8 +36,7 @@ GaussianMixture::GaussianMixture(
       conditionals_(conditionals) {}
 
 /* *******************************************************************************/
-const GaussianMixture::Conditionals &
-GaussianMixture::conditionals() {
+const GaussianMixture::Conditionals &GaussianMixture::conditionals() {
   return conditionals_;
 }
 
@@ -48,8 +47,8 @@ GaussianMixture GaussianMixture::FromConditionals(
     const std::vector<GaussianConditional::shared_ptr> &conditionalsList) {
   Conditionals dt(discreteParents, conditionalsList);
 
-  return GaussianMixture(continuousFrontals, continuousParents,
-                                    discreteParents, dt);
+  return GaussianMixture(continuousFrontals, continuousParents, discreteParents,
+                         dt);
 }
 
 /* *******************************************************************************/
@@ -66,8 +65,7 @@ GaussianMixture::Sum GaussianMixture::add(
 }
 
 /* *******************************************************************************/
-GaussianMixture::Sum
-GaussianMixture::asGaussianFactorGraphTree() const {
+GaussianMixture::Sum GaussianMixture::asGaussianFactorGraphTree() const {
   auto lambda = [](const GaussianFactor::shared_ptr &factor) {
     GaussianFactorGraph result;
     result.push_back(factor);
@@ -77,15 +75,14 @@ GaussianMixture::asGaussianFactorGraphTree() const {
 }
 
 /* *******************************************************************************/
-bool GaussianMixture::equals(const HybridFactor &lf,
-                                        double tol) const {
+bool GaussianMixture::equals(const HybridFactor &lf, double tol) const {
   const This *e = dynamic_cast<const This *>(&lf);
   return e != nullptr && BaseFactor::equals(*e, tol);
 }
 
 /* *******************************************************************************/
 void GaussianMixture::print(const std::string &s,
-                                       const KeyFormatter &formatter) const {
+                            const KeyFormatter &formatter) const {
   std::cout << s;
   if (isContinuous()) std::cout << "Continuous ";
   if (isDiscrete()) std::cout << "Discrete ";
