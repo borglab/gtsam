@@ -31,7 +31,7 @@ class HybridConditional;
 class HybridBayesNet;
 class HybridEliminationTree;
 class HybridBayesTree;
-class HybridGaussianJunctionTree;
+class HybridJunctionTree;
 class DecisionTreeFactor;
 
 class JacobianFactor;
@@ -55,7 +55,7 @@ struct EliminationTraits<HybridGaussianFactorGraph> {
   typedef HybridEliminationTree
       EliminationTreeType;                ///< Type of elimination tree
   typedef HybridBayesTree BayesTreeType;  ///< Type of Bayes tree
-  typedef HybridGaussianJunctionTree
+  typedef HybridJunctionTree
       JunctionTreeType;  ///< Type of Junction tree
   /// The default dense elimination function
   static std::pair<boost::shared_ptr<ConditionalType>,

@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file HybridGaussianJunctionTree.h
+ * @file HybridJunctionTree.h
  * @date Mar 11, 2022
  * @author Fan Jiang
  */
@@ -48,12 +48,12 @@ class HybridEliminationTree;
  * \addtogroup Multifrontal
  * \nosubgrouping
  */
-class GTSAM_EXPORT HybridGaussianJunctionTree
+class GTSAM_EXPORT HybridJunctionTree
     : public JunctionTree<HybridBayesTree, HybridGaussianFactorGraph> {
  public:
   typedef JunctionTree<HybridBayesTree, HybridGaussianFactorGraph>
       Base;                                    ///< Base class
-  typedef HybridGaussianJunctionTree This;     ///< This class
+  typedef HybridJunctionTree This;     ///< This class
   typedef boost::shared_ptr<This> shared_ptr;  ///< Shared pointer to this class
 
   /**
@@ -65,7 +65,7 @@ class GTSAM_EXPORT HybridGaussianJunctionTree
    * named constructor instead.
    * @return The elimination tree
    */
-  HybridGaussianJunctionTree(const HybridEliminationTree& eliminationTree);
+  HybridJunctionTree(const HybridEliminationTree& eliminationTree);
 };
 
 }  // namespace gtsam
