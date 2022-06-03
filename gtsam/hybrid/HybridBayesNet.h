@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/inference/BayesNet.h>
 
@@ -35,7 +36,10 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   using sharedConditional = boost::shared_ptr<ConditionalType>;
 
   /** Construct empty bayes net */
-  HybridBayesNet() = default;
+  HybridBayesNet() : Base() {}
+
+  HybridBayesNet prune(
+      const DecisionTreeFactor::shared_ptr &discreteFactor) const;
 };
 
 }  // namespace gtsam
