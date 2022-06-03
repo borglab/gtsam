@@ -77,6 +77,51 @@ static GaussianMixtureFactor::Sum &addGaussian(
 }
 
 /* ************************************************************************ */
+GaussianMixtureFactor::Sum sumFrontals(
+    const HybridGaussianFactorGraph &factors) {
+  // sum out frontals, this is the factor on the separator
+  gttic(sum);
+
+  GaussianMixtureFactor::Sum sum;
+  std::vector<GaussianFactor::shared_ptr> deferredFactors;
+
+  for (auto &f : factors) {
+    if (f->isHybrid()) {
+      if (auto cgmf = boost::dynamic_pointer_cast<GaussianMixtureFactor>(f)) {
+        sum = cgmf->add(sum);
+      }
+
+      if (auto gm = boost::dynamic_pointer_cast<HybridConditional>(f)) {
+        sum = gm->asMixture()->add(sum);
+      }
+
+    } else if (f->isContinuous()) {
+      deferredFactors.push_back(
+          boost::dynamic_pointer_cast<HybridGaussianFactor>(f)->inner());
+    } else {
+      // We need to handle the case where the object is actually an
+      // BayesTreeOrphanWrapper!
+      auto orphan = boost::dynamic_pointer_cast<
+          BayesTreeOrphanWrapper<HybridBayesTree::Clique>>(f);
+      if (!orphan) {
+        auto &fr = *f;
+        throw std::invalid_argument(
+            std::string("factor is discrete in continuous elimination") +
+            typeid(fr).name());
+      }
+    }
+  }
+
+  for (auto &f : deferredFactors) {
+    sum = addGaussian(sum, f);
+  }
+
+  gttoc(sum);
+
+  return sum;
+}
+
+/* ************************************************************************ */
 std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>
 continuousElimination(const HybridGaussianFactorGraph &factors,
                       const Ordering &frontalKeys) {
@@ -131,43 +176,7 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
                                  discreteSeparatorSet.end());
 
   // sum out frontals, this is the factor on the separator
-  gttic(sum);
-
-  GaussianMixtureFactor::Sum sum;
-  std::vector<GaussianFactor::shared_ptr> deferredFactors;
-
-  for (auto &f : factors) {
-    if (f->isHybrid()) {
-      if (auto cgmf = boost::dynamic_pointer_cast<GaussianMixtureFactor>(f)) {
-        sum = cgmf->add(sum);
-      }
-
-      if (auto gm = boost::dynamic_pointer_cast<HybridConditional>(f)) {
-        sum = gm->asMixture()->add(sum);
-      }
-
-    } else if (f->isContinuous()) {
-      deferredFactors.push_back(
-          boost::dynamic_pointer_cast<HybridGaussianFactor>(f)->inner());
-    } else {
-      // We need to handle the case where the object is actually an
-      // BayesTreeOrphanWrapper!
-      auto orphan = boost::dynamic_pointer_cast<
-          BayesTreeOrphanWrapper<HybridBayesTree::Clique>>(f);
-      if (!orphan) {
-        auto &fr = *f;
-        throw std::invalid_argument(
-            std::string("factor is discrete in continuous elimination") +
-            typeid(fr).name());
-      }
-    }
-  }
-
-  for (auto &f : deferredFactors) {
-    sum = addGaussian(sum, f);
-  }
-
-  gttoc(sum);
+  GaussianMixtureFactor::Sum sum = sumFrontals(factors);
 
   using EliminationPair = GaussianFactorGraph::EliminationResult;
 
