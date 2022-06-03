@@ -82,23 +82,19 @@ continuousElimination(const HybridGaussianFactorGraph &factors,
                       const Ordering &frontalKeys) {
   GaussianFactorGraph gfg;
   for (auto &fp : factors) {
-    auto ptr = boost::dynamic_pointer_cast<HybridGaussianFactor>(fp);
-    if (ptr) {
+    if (auto ptr = boost::dynamic_pointer_cast<HybridGaussianFactor>(fp)) {
       gfg.push_back(ptr->inner());
+    } else if (auto p =
+                   boost::static_pointer_cast<HybridConditional>(fp)->inner()) {
+      gfg.push_back(boost::static_pointer_cast<GaussianConditional>(p));
     } else {
-      auto p = boost::static_pointer_cast<HybridConditional>(fp)->inner();
-      if (p) {
-        gfg.push_back(boost::static_pointer_cast<GaussianConditional>(p));
-      } else {
-        // It is an orphan wrapped conditional
-      }
+      // It is an orphan wrapped conditional
     }
   }
 
   auto result = EliminatePreferCholesky(gfg, frontalKeys);
-  return std::make_pair(
-      boost::make_shared<HybridConditional>(result.first),
-      boost::make_shared<HybridGaussianFactor>(result.second));
+  return {boost::make_shared<HybridConditional>(result.first),
+          boost::make_shared<HybridGaussianFactor>(result.second)};
 }
 
 /* ************************************************************************ */
@@ -107,24 +103,20 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
                     const Ordering &frontalKeys) {
   DiscreteFactorGraph dfg;
   for (auto &fp : factors) {
-    auto ptr = boost::dynamic_pointer_cast<HybridDiscreteFactor>(fp);
-    if (ptr) {
+    if (auto ptr = boost::dynamic_pointer_cast<HybridDiscreteFactor>(fp)) {
       dfg.push_back(ptr->inner());
+    } else if (auto p =
+                   boost::static_pointer_cast<HybridConditional>(fp)->inner()) {
+      dfg.push_back(boost::static_pointer_cast<DiscreteConditional>(p));
     } else {
-      auto p = boost::static_pointer_cast<HybridConditional>(fp)->inner();
-      if (p) {
-        dfg.push_back(boost::static_pointer_cast<DiscreteConditional>(p));
-      } else {
-        // It is an orphan wrapper
-      }
+      // It is an orphan wrapper
     }
   }
 
   auto result = EliminateDiscrete(dfg, frontalKeys);
 
-  return std::make_pair(
-      boost::make_shared<HybridConditional>(result.first),
-      boost::make_shared<HybridDiscreteFactor>(result.second));
+  return {boost::make_shared<HybridConditional>(result.first),
+          boost::make_shared<HybridDiscreteFactor>(result.second)};
 }
 
 /* ************************************************************************ */
@@ -146,13 +138,11 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
 
   for (auto &f : factors) {
     if (f->isHybrid()) {
-      auto cgmf = boost::dynamic_pointer_cast<GaussianMixtureFactor>(f);
-      if (cgmf) {
+      if (auto cgmf = boost::dynamic_pointer_cast<GaussianMixtureFactor>(f)) {
         sum = cgmf->add(sum);
       }
 
-      auto gm = boost::dynamic_pointer_cast<HybridConditional>(f);
-      if (gm) {
+      if (auto gm = boost::dynamic_pointer_cast<HybridConditional>(f)) {
         sum = gm->asMixture()->add(sum);
       }
 
