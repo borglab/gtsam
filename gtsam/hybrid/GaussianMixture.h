@@ -34,9 +34,10 @@ namespace gtsam {
  * variable, M is the selection of discrete variables corresponding to a subset
  * of the Gaussian variables and Z is parent of this node
  *
- * The negative log-probability is given by \f$ \sum_{m=1}^M \pi_m \frac{1}{2}
- * |Rx - (d - Sy - Tz - ...)|^2 \f$, where \f$ \pi_m \f$ is the mixing
- * coefficient.
+ * The probability P(x|y,z,...) is proportional to
+ * \f$ \sum_i k_i \exp - \frac{1}{2} |R_i x - (d_i - S_i y - T_i z - ...)|^2 \f$
+ * where i indexes the components and k_i is a component-wise normalization
+ * constant.
  *
  */
 class GTSAM_EXPORT GaussianMixture
