@@ -48,6 +48,12 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
     return DiscreteKey(j, cardinalities_.at(j));
   }
 
+  /** Convert table to SparseVector */
+  static Eigen::SparseVector<double> Convert(const std::vector<double>& table);
+
+  /** Convert table to SparseVector */
+  static Eigen::SparseVector<double> Convert(const std::string& table);
+
  public:
   // typedefs needed to play nice with gtsam
   typedef TableFactor This;
@@ -64,15 +70,9 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   TableFactor(const DiscreteKeys& keys,
               const Eigen::SparseVector<double>& table);
 
-  /** Convert table to SparseVector */
-  static Eigen::SparseVector<double> Convert(const std::vector<double>& table);
-
   /** Constructor from doubles */
   TableFactor(const DiscreteKeys& keys, const std::vector<double>& table)
       : TableFactor(keys, Convert(table)) {}
-
-  /** Convert table to SparseVector */
-  static Eigen::SparseVector<double> Convert(const std::string& table);
 
   /** Constructor from string */
   TableFactor(const DiscreteKeys& keys, const std::string& table)
@@ -121,6 +121,9 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   /// Create new factor by summing all values with the same separator values
   shared_ptr sum(size_t nrFrontals) const;
 
+  /// Create new TableFactor where the input key is eliminated
+  TableFactor eliminate(const Key key) const;
+
   /// Create new factor by maximizing over all values with the same separator
   TableFactor max(size_t nrFrontals) const;
 
@@ -142,9 +145,6 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
 
   /// Find index for given assignment of values
   size_t findIndex(const DiscreteValues& assignment) const;
-
-  /// Find indicies for given partial assignment of values
-  TableFactor eliminate(const Key key) const;
 
   /// Create union of keys
   DiscreteKeys unionKeys(const TableFactor& f) const;
@@ -173,9 +173,7 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
    * @return std::string a markdown string.
    */
   std::string markdown(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
-                       const Names& names = {}) const override {
-    return "";
-  }
+                       const Names& names = {}) const override;
 
   /**
    * @brief Render as html table
@@ -185,9 +183,7 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
    * @return std::string a html string.
    */
   std::string html(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
-                   const Names& names = {}) const override {
-    return "";
-  }
+                   const Names& names = {}) const override;
 
   /// @}
 };

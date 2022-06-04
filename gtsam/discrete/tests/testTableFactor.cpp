@@ -20,6 +20,7 @@
 #include <gtsam/discrete/DiscreteDistribution.h>
 #include <gtsam/discrete/Signature.h>
 #include <gtsam/discrete/TableFactor.h>
+#include <gtsam/discrete/DecisionTreeFactor.h>
 
 #include <Eigen/Sparse>
 #include <boost/assign/std/map.hpp>
@@ -243,6 +244,74 @@ TEST(TableFactor, enumerate) {
       expected.emplace_back(values, f(values));
     }
   }
+  EXPECT(actual == expected);
+}
+
+/* ************************************************************************* */
+// Check markdown representation looks as expected.
+TEST(TableFactor, markdown) {
+  DiscreteKey A(12, 3), B(5, 2);
+  TableFactor f(A & B, "1 2  3 4  5 6");
+  string expected =
+      "|A|B|value|\n"
+      "|:-:|:-:|:-:|\n"
+      "|0|0|1|\n"
+      "|0|1|2|\n"
+      "|1|0|3|\n"
+      "|1|1|4|\n"
+      "|2|0|5|\n"
+      "|2|1|6|\n";
+  auto formatter = [](Key key) { return key == 12 ? "A" : "B"; };
+  string actual = f.markdown(formatter);
+  EXPECT(actual == expected);
+}
+
+/* ************************************************************************* */
+// Check markdown representation with a value formatter.
+TEST(TableFactor, markdownWithValueFormatter) {
+  DiscreteKey A(12, 3), B(5, 2);
+  TableFactor f(A & B, "1 2  3 4  5 6");
+  string expected =
+      "|A|B|value|\n"
+      "|:-:|:-:|:-:|\n"
+      "|Zero|-|1|\n"
+      "|Zero|+|2|\n"
+      "|One|-|3|\n"
+      "|One|+|4|\n"
+      "|Two|-|5|\n"
+      "|Two|+|6|\n";
+  auto keyFormatter = [](Key key) { return key == 12 ? "A" : "B"; };
+  TableFactor::Names names{{12, {"Zero", "One", "Two"}},
+                                  {5, {"-", "+"}}};
+  string actual = f.markdown(keyFormatter, names);
+  EXPECT(actual == expected);
+}
+
+/* ************************************************************************* */
+// Check html representation with a value formatter.
+TEST(TableFactor, htmlWithValueFormatter) {
+  DiscreteKey A(12, 3), B(5, 2);
+  TableFactor f(A & B, "1 2  3 4  5 6");
+  string expected =
+      "<div>\n"
+      "<table class='TableFactor'>\n"
+      "  <thead>\n"
+      "    <tr><th>A</th><th>B</th><th>value</th></tr>\n"
+      "  </thead>\n"
+      "  <tbody>\n"
+      "    <tr><th>Zero</th><th>-</th><td>1</td></tr>\n"
+      "    <tr><th>Zero</th><th>+</th><td>2</td></tr>\n"
+      "    <tr><th>One</th><th>-</th><td>3</td></tr>\n"
+      "    <tr><th>One</th><th>+</th><td>4</td></tr>\n"
+      "    <tr><th>Two</th><th>-</th><td>5</td></tr>\n"
+      "    <tr><th>Two</th><th>+</th><td>6</td></tr>\n"
+      "  </tbody>\n"
+      "</table>\n"
+      "</div>";
+  auto keyFormatter = [](Key key) { return key == 12 ? "A" : "B"; };
+  TableFactor::Names names{{12, {"Zero", "One", "Two"}},
+                                  {5, {"-", "+"}}};
+  string actual = f.html(keyFormatter, names);
   EXPECT(actual == expected);
 }
 

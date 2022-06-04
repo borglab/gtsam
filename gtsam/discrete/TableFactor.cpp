@@ -152,41 +152,11 @@ TableFactor::shared_ptr TableFactor::sum(size_t nrFrontals) const {
 }
 
 /* ************************************************************************ */
-TableFactor TableFactor::max(size_t nrFrontals) const {
-  if (nrFrontals > size())
-    throw invalid_argument(
-        (boost::format("TableFactor::max: invalid number of frontal "
-                       "keys %d, nr.keys=%d") %
-         nrFrontals % size())
-            .str());
-  TableFactor result(*this);
-  for (size_t i = 0; i < nrFrontals; i++) {
-    Key j = keys()[i];
-    result = result.eliminate(j);
-  }
-  return result;
-}
-
-/* ************************************************************************ */
-TableFactor TableFactor::max(const Ordering& frontalKeys) const {
-  // Create map to keep track of summed values
-  if (frontalKeys.size() > size())
-    throw invalid_argument(
-        (boost::format("TableFactor::max: invalid number of frontal "
-                       "keys %d, nr.keys=%d") %
-         frontalKeys.size() % size())
-            .str());
-  TableFactor result(*this);
-  for (size_t i = 0; i < frontalKeys.size(); i++) {
-    Key j = frontalKeys[i];
-    result = result.eliminate(j);
-  }
-  return result;
-}
-
-/* ************************************************************************ */
 TableFactor TableFactor::eliminate(const Key key) const {
-  std::map<DiscreteValues, double> assignment_val;
+  // Eliminate the input key from the TableFactor while retaining only the
+  // maximum value of the assignment.
+  // ex) Given assignments (0, 0, 0) = 3, (1, 0, 0) = 10
+  // when first key is eliminated the output should be (0, 0) = 10
   // Collect keys that are not the key to be eliminated
   DiscreteKeys dkeys;
   size_t cardinality = 1;
@@ -217,14 +187,50 @@ TableFactor TableFactor::eliminate(const Key key) const {
 }
 
 /* ************************************************************************ */
+TableFactor TableFactor::max(size_t nrFrontals) const {
+  if (nrFrontals > size())
+    throw invalid_argument(
+        (boost::format("TableFactor::max: invalid number of frontal "
+                       "keys %d, nr.keys=%d") %
+         nrFrontals % size())
+            .str());
+  // Iteratively eliminate nrFrontals number of keys from this TableFactor
+  TableFactor result(*this);
+  for (size_t i = 0; i < nrFrontals; i++) {
+    Key j = keys()[i];
+    result = result.eliminate(j);
+  }
+  return result;
+}
+
+/* ************************************************************************ */
+TableFactor TableFactor::max(const Ordering& frontalKeys) const {
+  // Create map to keep track of summed values
+  if (frontalKeys.size() > size())
+    throw invalid_argument(
+        (boost::format("TableFactor::max: invalid number of frontal "
+                       "keys %d, nr.keys=%d") %
+         frontalKeys.size() % size())
+            .str());
+  // Iteratively eliminate a key according to the ordering (frontalKeys) fron
+  // this TableFactor
+  TableFactor result(*this);
+  for (size_t i = 0; i < frontalKeys.size(); i++) {
+    Key j = frontalKeys[i];
+    result = result.eliminate(j);
+  }
+  return result;
+}
+
+/* ************************************************************************ */
 TableFactor TableFactor::fromDecisionTreeFactor(
     const DecisionTreeFactor& f) const {
-  DiscreteKeys tree_dkeys = f.discreteKeys();
-  std::vector<std::pair<DiscreteValues, double>> enumerated = f.enumerate();
+  auto enumerated = f.enumerate();
   std::vector<double> table;
   for (size_t i = 0; i < enumerated.size(); i++) {
     table.push_back(enumerated[i].second);
   }
+  DiscreteKeys tree_dkeys = f.discreteKeys();
   TableFactor table_f(tree_dkeys, table);
   return table_f;
 }
@@ -254,10 +260,10 @@ size_t TableFactor::findIndex(const DiscreteValues& assignment) const {
 DiscreteValues TableFactor::maxAssignment() const {
   DiscreteValues assignments;
   Eigen::Index nnz = sparse_table_.nonZeros();
-  Eigen::Index rowIdx;
-  Eigen::VectorXd::Map(sparse_table_.valuePtr(), nnz).maxCoeff(&rowIdx);
+  Eigen::Index maxRowIdx;
+  Eigen::VectorXd::Map(sparse_table_.valuePtr(), nnz).maxCoeff(&maxRowIdx);
   for (Key key : keys_) {
-    assignments[key] = lazy_cp(key, sparse_table_.innerIndexPtr()[rowIdx]);
+    assignments[key] = lazy_cp(key, sparse_table_.innerIndexPtr()[maxRowIdx]);
   }
   return assignments;
 }
@@ -282,6 +288,8 @@ DiscreteKeys TableFactor::unionKeys(const TableFactor& f) const {
 /* ************************************************************************ */
 std::vector<DiscreteValues> TableFactor::project(
     const DiscreteValues& assignment_f) const {
+  // project assignment_f onto union of assignments
+  // ex) project (v0, v2) onto the union (v0, v1, v2)
   std::vector<DiscreteValues> projected_assignments;
   for (Eigen::SparseVector<double>::InnerIterator it(sparse_table_); it; ++it) {
     DiscreteValues union_assignments;
@@ -334,6 +342,72 @@ DiscreteKeys TableFactor::discreteKeys() const {
     }
   }
   return result;
+}
+
+// Print out header.
+/* ************************************************************************ */
+string TableFactor::markdown(const KeyFormatter& keyFormatter,
+                             const Names& names) const {
+  stringstream ss;
+
+  // Print out header.
+  ss << "|";
+  for (auto& key : keys()) {
+    ss << keyFormatter(key) << "|";
+  }
+  ss << "value|\n";
+
+  // Print out separator with alignment hints.
+  ss << "|";
+  for (size_t j = 0; j < size(); j++) ss << ":-:|";
+  ss << ":-:|\n";
+
+  // Print out all rows.
+  auto rows = enumerate();
+  for (const auto& kv : rows) {
+    ss << "|";
+    auto assignment = kv.first;
+    for (auto& key : keys()) {
+      size_t index = assignment.at(key);
+      ss << DiscreteValues::Translate(names, key, index) << "|";
+    }
+    ss << kv.second << "|\n";
+  }
+  return ss.str();
+}
+
+/* ************************************************************************ */
+string TableFactor::html(const KeyFormatter& keyFormatter,
+                         const Names& names) const {
+  stringstream ss;
+
+  // Print out preamble.
+  ss << "<div>\n<table class='TableFactor'>\n  <thead>\n";
+
+  // Print out header row.
+  ss << "    <tr>";
+  for (auto& key : keys()) {
+    ss << "<th>" << keyFormatter(key) << "</th>";
+  }
+  ss << "<th>value</th></tr>\n";
+
+  // Finish header and start body.
+  ss << "  </thead>\n  <tbody>\n";
+
+  // Print out all rows.
+  auto rows = enumerate();
+  for (const auto& kv : rows) {
+    ss << "    <tr>";
+    auto assignment = kv.first;
+    for (auto& key : keys()) {
+      size_t index = assignment.at(key);
+      ss << "<th>" << DiscreteValues::Translate(names, key, index) << "</th>";
+    }
+    ss << "<td>" << kv.second << "</td>";  // value
+    ss << "</tr>\n";
+  }
+  ss << "  </tbody>\n</table>\n</div>";
+  return ss.str();
 }
 
 /* ************************************************************************ */
