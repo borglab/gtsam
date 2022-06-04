@@ -72,7 +72,8 @@ bool TableFactor::equals(const DiscreteFactor& other, double tol) const {
     return false;
   } else {
     const auto& f(static_cast<const TableFactor&>(other));
-    return sparse_table_ == f.sparse_table_;
+    return (sparse_table_ - f.sparse_table_).sum() == 0;
+    // return sparse_table_ == f.sparse_table_;
   }
 }
 
