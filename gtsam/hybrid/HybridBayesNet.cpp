@@ -82,14 +82,12 @@ HybridBayesNet HybridBayesNet::prune(
       // reverse keys to get a natural ordering
       std::reverse(discreteKeys.begin(), discreteKeys.end());
 
-      // Convert from boost::iterator_range to std::vector.
-      std::vector<Key> frontals, parents;
-      for (Key key : gaussianMixture->frontals()) {
-        frontals.push_back(key);
-      }
-      for (Key key : gaussianMixture->parents()) {
-        parents.push_back(key);
-      }
+      // Convert from boost::iterator_range to KeyVector
+      // so we can pass it to constructor.
+      KeyVector frontals(gaussianMixture->frontals().begin(),
+                         gaussianMixture->frontals().end()),
+          parents(gaussianMixture->parents().begin(),
+                  gaussianMixture->parents().end());
 
       // Create the new gaussian mixture and add it to the bayes net.
       auto prunedGaussianMixture = boost::make_shared<GaussianMixture>(
