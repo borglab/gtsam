@@ -38,6 +38,9 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   /** Construct empty bayes net */
   HybridBayesNet() = default;
 
+  /// Add HybridConditional to Bayes Net
+  using Base::add;
+
   /// Add a discrete conditional to the Bayes Net.
   void add(const DiscreteKey &key, const std::string &table) {
     push_back(
