@@ -50,7 +50,10 @@ DiscreteKeys CollectDiscreteKeys(const DiscreteKeys &key1,
 
 /* ************************************************************************ */
 HybridFactor::HybridFactor(const KeyVector &keys)
-    : Base(keys), isContinuous_(true), nrContinuous_(keys.size()) {}
+    : Base(keys),
+      isContinuous_(true),
+      nrContinuous_(keys.size()),
+      continuousKeys_(keys) {}
 
 /* ************************************************************************ */
 HybridFactor::HybridFactor(const KeyVector &continuousKeys,
@@ -60,13 +63,15 @@ HybridFactor::HybridFactor(const KeyVector &continuousKeys,
       isContinuous_((continuousKeys.size() != 0) && (discreteKeys.size() == 0)),
       isHybrid_((continuousKeys.size() != 0) && (discreteKeys.size() != 0)),
       nrContinuous_(continuousKeys.size()),
-      discreteKeys_(discreteKeys) {}
+      discreteKeys_(discreteKeys),
+      continuousKeys_(continuousKeys) {}
 
 /* ************************************************************************ */
 HybridFactor::HybridFactor(const DiscreteKeys &discreteKeys)
     : Base(CollectKeys({}, discreteKeys)),
       isDiscrete_(true),
-      discreteKeys_(discreteKeys) {}
+      discreteKeys_(discreteKeys),
+      continuousKeys_({}) {}
 
 /* ************************************************************************ */
 bool HybridFactor::equals(const HybridFactor &lf, double tol) const {
@@ -83,7 +88,17 @@ void HybridFactor::print(const std::string &s,
   if (isContinuous_) std::cout << "Continuous ";
   if (isDiscrete_) std::cout << "Discrete ";
   if (isHybrid_) std::cout << "Hybrid ";
-  this->printKeys("", formatter);
+  for (size_t c=0; c<continuousKeys_.size(); c++) {
+    std::cout << formatter(continuousKeys_.at(c));
+    if (c < continuousKeys_.size() - 1) {
+      std::cout << " ";
+    } else {
+      std::cout << "; ";
+    }
+  }
+  for(auto && discreteKey: discreteKeys_) {
+    std::cout << formatter(discreteKey.first) << " ";
+  }
 }
 
 }  // namespace gtsam
