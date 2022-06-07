@@ -19,7 +19,9 @@
 
 #pragma once
 
+#include <gtsam/discrete/DecisionTree-inl.h>
 #include <gtsam/discrete/DecisionTree.h>
+#include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/inference/Conditional.h>
 #include <gtsam/linear/GaussianConditional.h>
@@ -98,6 +100,16 @@ class GTSAM_EXPORT GaussianMixture
       const KeyVector &continuousFrontals, const KeyVector &continuousParents,
       const DiscreteKeys &discreteParents,
       const std::vector<GaussianConditional::shared_ptr> &conditionals);
+
+  /// @}
+  /// @name Standard API
+  /// @{
+
+  GaussianConditional::shared_ptr operator()(
+      const DiscreteValues &discreteVals) const;
+
+  /// Returns the total number of continuous components
+  size_t nrComponents() const;
 
   /// @}
   /// @name Testable

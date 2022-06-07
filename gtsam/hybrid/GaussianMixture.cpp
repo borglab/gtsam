@@ -19,7 +19,7 @@
  */
 
 #include <gtsam/base/utilities.h>
-#include <gtsam/discrete/DecisionTree-inl.h>
+#include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam/hybrid/GaussianMixture.h>
 #include <gtsam/inference/Conditional-inst.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
@@ -77,8 +77,29 @@ GaussianMixture::asGaussianFactorGraphTree() const {
 }
 
 /* *******************************************************************************/
-bool GaussianMixture::equals(const HybridFactor &lf,
-                                        double tol) const {
+size_t GaussianMixture::nrComponents() const {
+  size_t total = 0;
+  conditionals_.visit([&total](const GaussianFactor::shared_ptr &node) {
+    if (node) total += 1;
+  });
+  return total;
+}
+
+/* *******************************************************************************/
+GaussianConditional::shared_ptr GaussianMixture::operator()(
+    const DiscreteValues &discreteVals) const {
+  auto &ptr = conditionals_(discreteVals);
+  if (!ptr) return nullptr;
+  auto conditional = boost::dynamic_pointer_cast<GaussianConditional>(ptr);
+  if (conditional)
+    return conditional;
+  else
+    throw std::logic_error(
+        "A GaussianMixture unexpectedly contained a non-conditional");
+}
+
+/* *******************************************************************************/
+bool GaussianMixture::equals(const HybridFactor &lf, double tol) const {
   const This *e = dynamic_cast<const This *>(&lf);
   return e != nullptr && BaseFactor::equals(*e, tol);
 }
