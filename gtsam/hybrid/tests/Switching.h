@@ -178,7 +178,7 @@ HybridGaussianFactorGraph::shared_ptr makeSwitchingChain(
  * @param input The original ordering.
  * @return std::pair<KeyVector, std::vector<int>>
  */
-std::pair<KeyVector, std::vector<int>> makeBinaryOrdering(
+inline std::pair<KeyVector, std::vector<int>> makeBinaryOrdering(
     std::vector<Key>& input) {
   KeyVector new_order;
 
