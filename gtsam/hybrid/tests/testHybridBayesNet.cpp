@@ -19,7 +19,8 @@
  */
 
 #include <gtsam/hybrid/HybridBayesNet.h>
-#include <gtsam/hybrid/tests/Switching.h>
+
+#include "Switching.h"
 
 // Include for test suite
 #include <CppUnitLite/TestHarness.h>
