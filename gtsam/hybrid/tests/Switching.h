@@ -147,7 +147,7 @@ struct Switching {
  * @param dKeyFunc The functional to help specify the discrete key.
  * @return HybridGaussianFactorGraph::shared_ptr
  */
-HybridGaussianFactorGraph::shared_ptr makeSwitchingChain(
+inline HybridGaussianFactorGraph::shared_ptr makeSwitchingChain(
     size_t n, std::function<Key(int)> keyFunc = X,
     std::function<Key(int)> dKeyFunc = C) {
   HybridGaussianFactorGraph hfg;
