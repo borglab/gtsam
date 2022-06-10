@@ -228,6 +228,7 @@ double Rot3::yaw(OptionalJacobian<1, 3> H) const {
 }
 
 /* ************************************************************************* */
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
 Vector Rot3::quaternion() const {
   gtsam::Quaternion q = toQuaternion();
   Vector v(4);
@@ -237,6 +238,7 @@ Vector Rot3::quaternion() const {
   v(3) = q.z();
   return v;
 }
+#endif
 
 /* ************************************************************************* */
 pair<Unit3, double> Rot3::axisAngle() const {
