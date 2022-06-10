@@ -19,7 +19,7 @@
  */
 
 #include <gtsam/base/utilities.h>
-#include <gtsam/discrete/DecisionTree-inl.h>
+#include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam/hybrid/GaussianMixture.h>
 #include <gtsam/inference/Conditional-inst.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
@@ -75,6 +75,28 @@ GaussianMixture::Sum GaussianMixture::asGaussianFactorGraphTree() const {
 }
 
 /* *******************************************************************************/
+size_t GaussianMixture::nrComponents() const {
+  size_t total = 0;
+  conditionals_.visit([&total](const GaussianFactor::shared_ptr &node) {
+    if (node) total += 1;
+  });
+  return total;
+}
+
+/* *******************************************************************************/
+GaussianConditional::shared_ptr GaussianMixture::operator()(
+    const DiscreteValues &discreteVals) const {
+  auto &ptr = conditionals_(discreteVals);
+  if (!ptr) return nullptr;
+  auto conditional = boost::dynamic_pointer_cast<GaussianConditional>(ptr);
+  if (conditional)
+    return conditional;
+  else
+    throw std::logic_error(
+        "A GaussianMixture unexpectedly contained a non-conditional");
+}
+
+/* *******************************************************************************/
 bool GaussianMixture::equals(const HybridFactor &lf, double tol) const {
   const This *e = dynamic_cast<const This *>(&lf);
   return e != nullptr && BaseFactor::equals(*e, tol);
@@ -88,7 +110,7 @@ void GaussianMixture::print(const std::string &s,
   if (isDiscrete()) std::cout << "Discrete ";
   if (isHybrid()) std::cout << "Hybrid ";
   BaseConditional::print("", formatter);
-  std::cout << "\nDiscrete Keys = ";
+  std::cout << " Discrete Keys = ";
   for (auto &dk : discreteKeys()) {
     std::cout << "(" << formatter(dk.first) << ", " << dk.second << "), ";
   }
