@@ -173,7 +173,10 @@ inline HybridGaussianFactorGraph::shared_ptr makeSwitchingChain(
 }
 
 /**
- * @brief
+ * @brief Return the ordering as a binary tree such that all parent nodes are
+ * above their children.
+ *
+ * This will result in a nested dissection Bayes tree after elimination.
  *
  * @param input The original ordering.
  * @return std::pair<KeyVector, std::vector<int>>
