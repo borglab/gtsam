@@ -41,7 +41,7 @@ bool HybridGaussianFactor::equals(const HybridFactor &other, double tol) const {
 void HybridGaussianFactor::print(const std::string &s,
                                  const KeyFormatter &formatter) const {
   HybridFactor::print(s, formatter);
-  inner_->print("inner: ", formatter);
+  inner_->print("\n", formatter);
 };
 
 }  // namespace gtsam

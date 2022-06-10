@@ -55,6 +55,9 @@ class GTSAM_EXPORT HybridFactor : public Factor {
   // For bookkeeping
   KeyVector continuousKeys_;
 
+  /// Record continuous keys for book-keeping
+  KeyVector continuousKeys_;
+
  public:
   // typedefs needed to play nice with gtsam
   typedef HybridFactor This;  ///< This class
