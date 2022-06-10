@@ -51,16 +51,19 @@ GaussianMixtureFactor GaussianMixtureFactor::FromFactors(
 void GaussianMixtureFactor::print(const std::string &s,
                                   const KeyFormatter &formatter) const {
   HybridFactor::print(s, formatter);
+  std::cout << "]{\n";
   factors_.print(
-      "mixture = ", [&](Key k) { return formatter(k); },
+      "", [&](Key k) { return formatter(k); },
       [&](const GaussianFactor::shared_ptr &gf) -> std::string {
         RedirectCout rd;
-        if (!gf->empty())
+        std::cout << ":\n";
+        if (gf)
           gf->print("", formatter);
         else
           return {"nullptr"};
         return rd.str();
       });
+  std::cout << "}" << std::endl;
 }
 
 /* *******************************************************************************/

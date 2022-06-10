@@ -39,9 +39,9 @@
 #include <string>
 #include <vector>
 
-using boost::assign::operator+=;
-
 namespace gtsam {
+
+  using boost::assign::operator+=;
 
   /****************************************************************************/
   // Node

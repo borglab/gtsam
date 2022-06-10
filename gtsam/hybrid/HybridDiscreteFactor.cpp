@@ -47,7 +47,7 @@ bool HybridDiscreteFactor::equals(const HybridFactor &lf, double tol) const {
 void HybridDiscreteFactor::print(const std::string &s,
                                  const KeyFormatter &formatter) const {
   HybridFactor::print(s, formatter);
-  inner_->print("inner: ", formatter);
+  inner_->print("\n", formatter);
 };
 
 }  // namespace gtsam
