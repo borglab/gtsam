@@ -273,6 +273,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalTwoClique) {
   // GTSAM_PRINT(*hbt);
   // GTSAM_PRINT(*remaining);
 
+  // hbt->marginalFactor(X(1))->print("HBT: ");
   /*
   (Fan) Explanation: the Junction tree will need to reeliminate to get to the
   marginal on X(1), which is not possible because it involves eliminating

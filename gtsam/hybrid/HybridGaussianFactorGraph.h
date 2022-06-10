@@ -134,8 +134,7 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
   template <typename FACTOR>
   IsGaussian<FACTOR> push_gaussian(
       const boost::shared_ptr<FACTOR>& gaussianFactor) {
-    Base::Base::push_back(
-        boost::make_shared<HybridGaussianFactor>(gaussianFactor));
+    Base::push_back(boost::make_shared<HybridGaussianFactor>(gaussianFactor));
   }
 
   /// Construct a factor and add (shared pointer to it) to factor graph.
