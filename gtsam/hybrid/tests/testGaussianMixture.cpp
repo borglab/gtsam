@@ -35,7 +35,10 @@ using symbol_shorthand::M;
 using symbol_shorthand::X;
 
 /* ************************************************************************* */
-TEST(GaussianConditional, Equals) {
+/* Check construction of GaussianMixture P(x1 | x2, m1) as well as accessing a
+ * specific mode i.e. P(x1 | x2, m1=1).
+ */
+TEST(GaussianMixture, Equals) {
   // create a conditional gaussian node
   Matrix S1(2, 2);
   S1(0, 0) = 1;
