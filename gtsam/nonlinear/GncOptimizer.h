@@ -246,7 +246,9 @@ class GTSAM_EXPORT GncOptimizer {
       prev_cost = cost;
 
       // display info
-      if (params_.verbosity >= GncParameters::Verbosity::VALUES) {
+      if (params_.verbosity >= GncParameters::Verbosity::SUMMARY) {
+        std::cout << "iter: " << iter << std::endl;
+        std::cout << "mu: " << mu << std::endl;
         std::cout << "previous cost: " << prev_cost << std::endl;
         std::cout << "current cost: " << cost << std::endl;
       }
@@ -255,9 +257,7 @@ class GTSAM_EXPORT GncOptimizer {
     if (params_.verbosity >= GncParameters::Verbosity::SUMMARY) {
       std::cout << "final iterations: " << iter << std::endl;
       std::cout << "final mu: " << mu << std::endl;
-      std::cout << "final weights: " << weights_ << std::endl;
-      std::cout << "previous cost: " << prev_cost << std::endl;
-      std::cout << "current cost: " << cost << std::endl;
+      std::cout << "final cost: " << cost << std::endl;
     }
     return result;
   }
