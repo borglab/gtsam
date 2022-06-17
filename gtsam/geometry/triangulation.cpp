@@ -39,6 +39,11 @@ Vector4 triangulateHomogeneousDLT(
     const Point2& p = measurements.at(i);
 
     // build system of equations
+    // [A_1; A_2; A_3] x = [b_1; b_2; b_3]
+    // [b_3 * A_1 - b_1 * A_3] x = 0
+    // [b_3 * A_2 - b_2 * A_3] x = 0
+    // A' x = 0
+    // A' 2x4 = [b_3 * A_1 - b_1 * A_3; b_3 * A_2 - b_2 * A_3]
     A.row(row) = p.x() * projection.row(2) - projection.row(0);
     A.row(row + 1) = p.y() * projection.row(2) - projection.row(1);
   }
@@ -51,6 +56,47 @@ Vector4 triangulateHomogeneousDLT(
     throw(TriangulationUnderconstrainedException());
 
   return v;
+}
+
+Vector3 triangulateLOSTHomogeneous(
+    const std::vector<Pose3>& poses,
+    const std::vector<Point3>& calibrated_measurements) {
+
+  // TODO(akshay-krishnan): make this an argument.
+  const double sigma_x = 1e-3;
+
+  size_t m = calibrated_measurements.size();
+  assert(m == poses.size());
+
+  // Construct the system matrices.
+  Matrix A = Matrix::Zero(m * 2, 3);
+  Matrix b = Matrix::Zero(m * 2, 1);
+
+  for (size_t i = 0; i < m; i++) {
+    const Pose3& wTi = poses[i];
+    // TODO(akshay-krishnan): are there better ways to select j?
+    const int j = (i + 1) % m;
+    const Pose3& wTj = poses[j];
+
+    Point3 d_ij = wTj.translation() -  wTi.translation();
+
+    Point3 w_measurement_i = wTi.rotation().rotate(calibrated_measurements[i]);
+    Point3 w_measurement_j = wTj.rotation().rotate(calibrated_measurements[j]);
+    
+    double numerator =  w_measurement_i.cross(w_measurement_j).norm();
+    double denominator = d_ij.cross(w_measurement_j).norm();
+
+    double q_i = numerator / (sigma_x * denominator);
+    Matrix23 coefficient_mat = q_i * skewSymmetric(calibrated_measurements[i]).topLeftCorner(2, 3) * wTi.rotation().matrix().transpose();
+
+    A.row(2 * i) = coefficient_mat.row(0);
+    A.row(2 * i + 1) = coefficient_mat.row(1);
+    Point2 p = coefficient_mat * wTi.translation();
+    b(2 * i) = p.x();
+    b(2 * i + 1) = p.y();
+  }
+  // Solve Ax = b, using QR decomposition
+  return A.colPivHouseholderQr().solve(b);
 }
 
 Vector4 triangulateHomogeneousDLT(

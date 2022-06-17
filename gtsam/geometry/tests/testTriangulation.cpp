@@ -96,6 +96,24 @@ TEST(triangulation, twoPoses) {
   EXPECT(assert_equal(Point3(4.995, 0.499167, 1.19814), *actual4, 1e-4));
 }
 
+TEST(triangulation, twoCamerasLOST) {
+  std::vector<PinholeCamera<Cal3_S2>> cameras = {camera1, camera2};
+  std::vector<Point2> measurements = {z1, z2};
+
+  // 1. Test simple triangulation, perfect in no noise situation
+  Point3 actual1 =  //
+      triangulateLOSTPoint3<Cal3_S2>(cameras, measurements);
+  EXPECT(assert_equal(landmark, actual1, 1e-12));
+
+  // 3. Add some noise and try again: result should be ~ (4.995,
+  // 0.499167, 1.19814)
+  measurements[0] += Point2(0.1, 0.5);
+  measurements[1] += Point2(-0.2, 0.3);
+  Point3 actual2 =  //
+      triangulateLOSTPoint3<Cal3_S2>(cameras, measurements);
+  EXPECT(assert_equal(Point3(4.995, 0.499167, 1.19814), actual2, 1e-4));
+}
+
 //******************************************************************************
 // Simple test with a well-behaved two camera situation with Cal3DS2 calibration.
 TEST(triangulation, twoPosesCal3DS2) {

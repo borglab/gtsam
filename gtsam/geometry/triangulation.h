@@ -63,6 +63,18 @@ GTSAM_EXPORT Vector4 triangulateHomogeneousDLT(
     const Point2Vector& measurements, double rank_tol = 1e-9);
 
 /**
+ * @brief 
+ * 
+ * @param projection_matrices 
+ * @param measurements 
+ * @param rank_tol 
+ * @return GTSAM_EXPORT 
+ */
+GTSAM_EXPORT Vector3
+triangulateLOSTHomogeneous(const std::vector<Pose3>& poses,
+                           const std::vector<Point3>& calibrated_measurements);
+
+/**
  * Same math as Hartley and Zisserman, 2nd Ed., page 312, but with unit-norm bearing vectors
  * (contrarily to pinhole projection, the z entry is not assumed to be 1 as in Hartley and Zisserman)
  * @param projection_matrices Projection matrices (K*P^-1)
@@ -376,6 +388,39 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
     const Point3& p_local = pose.transformTo(point);
     if (p_local.z() <= 0)
       throw(TriangulationCheiralityException());
+  }
+#endif
+
+  return point;
+}
+
+template <class CALIBRATION>
+Point3 triangulateLOSTPoint3(const std::vector<PinholeCamera<CALIBRATION>>& cameras,
+                             const std::vector<Point2>& measurements) {
+  const size_t num_cameras = cameras.size();
+  assert(measurements.size() == num_cameras);
+
+  if (num_cameras < 2) throw(TriangulationUnderconstrainedException());
+
+  // Convert measurements to image plane coordinates.
+  std::vector<Point3> calibrated_measurements;
+  calibrated_measurements.reserve(measurements.size());
+  for (int i = 0; i < measurements.size(); ++i) {
+    Point2 p = cameras[i].calibration().calibrate(measurements[i]);
+    calibrated_measurements.emplace_back(p.x(), p.y(), 1.0);
+  }
+
+  std::vector<Pose3> poses;
+  poses.reserve(cameras.size());
+  for (const auto& camera : cameras) poses.push_back(camera.pose());
+
+  Point3 point = triangulateLOSTHomogeneous(poses, calibrated_measurements);
+
+#ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
+  // verify that the triangulated point lies in front of all cameras
+  for (const auto& camera : cameras) {
+    const Point3& p_local = camera.pose().transformTo(point);
+    if (p_local.z() <= 0) throw(TriangulationCheiralityException());
   }
 #endif
 
