@@ -156,6 +156,7 @@ Values TranslationRecovery::initializeRandomly(
     insert(edge.key1());
     insert(edge.key2());
   }
+  // There may be nodes in betweenTranslations that do not have a measurement.
   for (auto edge : betweenTranslations) {
     insert(edge.key1());
     insert(edge.key2());
