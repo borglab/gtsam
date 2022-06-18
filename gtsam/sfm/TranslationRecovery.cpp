@@ -119,16 +119,18 @@ void TranslationRecovery::addPrior(
   graph->emplace_shared<PriorFactor<Point3>>(edge->key1(), Point3(0, 0, 0),
                                              priorNoiseModel);
 
-  // Add between factors for optional relative translations.
-  for (auto edge : betweenTranslations) {
-    graph->emplace_shared<BetweenFactor<Point3>>(
-        edge.key1(), edge.key2(), edge.measured(), edge.noiseModel());
-  }
-
   // Add a scale prior only if no other between factors were added.
   if (betweenTranslations.empty()) {
     graph->emplace_shared<PriorFactor<Point3>>(
         edge->key2(), scale * edge->measured().point3(), edge->noiseModel());
+    return;
+  }
+
+  // Add between factors for optional relative translations.
+  for (auto prior_edge : betweenTranslations) {
+    graph->emplace_shared<BetweenFactor<Point3>>(
+        prior_edge.key1(), prior_edge.key2(), prior_edge.measured(),
+        prior_edge.noiseModel());
   }
 }
 
