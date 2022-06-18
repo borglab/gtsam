@@ -143,11 +143,15 @@ class TranslationRecovery {
    *
    * @param relativeTranslations the relative translations, in world coordinate
    * frames, vector of BinaryMeasurements of Unit3, where each key of a
-   * measurement is a point in 3D.
+   * measurement is a point in 3D. If a relative translation magnitude is zero,
+   * it is treated as a hard same-point constraint (the result of all nodes
+   * connected by a zero-magnitude edge will be the same).
    * @param scale scale for first relative translation which fixes gauge.
    * The scale is only used if betweenTranslations is empty.
    * @param betweenTranslations relative translations (with scale) between 2
-   * points in world coordinate frame known a priori.
+   * points in world coordinate frame known a priori. Unlike
+   * relativeTranslations, zero-magnitude betweenTranslations are not treated as
+   * hard constraints.
    * @param initialValues intial values for optimization. Initializes randomly
    * if not provided.
    * @return Values
