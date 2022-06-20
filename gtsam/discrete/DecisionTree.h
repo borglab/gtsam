@@ -220,7 +220,7 @@ namespace gtsam {
     /// @{
 
     /// Make virtual
-    virtual ~DecisionTree() {}
+    virtual ~DecisionTree() = default;
 
     /// Check if tree is empty.
     bool empty() const { return !root_; }
