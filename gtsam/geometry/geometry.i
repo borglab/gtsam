@@ -355,7 +355,7 @@ class Rot3 {
   double yaw() const;
   pair<gtsam::Unit3, double> axisAngle() const;
   gtsam::Quaternion toQuaternion() const;
-  Vector quaternion() const;
+  // Vector quaternion() const; // @deprecated, see https://github.com/borglab/gtsam/pull/1219
   gtsam::Rot3 slerp(double t, const gtsam::Rot3& other) const;
 
   // enabling serialization functionality

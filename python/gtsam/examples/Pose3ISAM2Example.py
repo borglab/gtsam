@@ -34,7 +34,10 @@ def report_on_progress(graph: gtsam.NonlinearFactorGraph, current_estimate: gtsa
 
     # Plot the newly updated iSAM2 inference.
     fig = plt.figure(0)
-    axes = fig.gca(projection='3d')
+    if not fig.axes:
+        axes = fig.add_subplot(projection='3d')
+    else:
+        axes = fig.axes[0]
     plt.cla()
 
     i = 1
