@@ -109,9 +109,46 @@ TEST(triangulation, twoCamerasLOST) {
   // 0.499167, 1.19814)
   measurements[0] += Point2(0.1, 0.5);
   measurements[1] += Point2(-0.2, 0.3);
+  const double measurement_sigma = 1e-3;
   Point3 actual2 =  //
-      triangulateLOSTPoint3<Cal3_S2>(cameras, measurements);
+      triangulateLOSTPoint3<Cal3_S2>(cameras, measurements, measurement_sigma);
   EXPECT(assert_equal(Point3(4.995, 0.499167, 1.19814), actual2, 1e-4));
+}
+
+TEST(triangulation, twoCamerasLOSTvsDLT) {
+  // LOST has been shown to preform better when the point is much closer to one
+  // camera compared to another. This unit test checks this configuration.
+  Cal3_S2 identity_K;
+  Pose3 pose_1;
+  Pose3 pose_2(Rot3(), Point3(5., 0., -5.));
+  PinholeCamera<Cal3_S2> camera_1(pose_1, identity_K);
+  PinholeCamera<Cal3_S2> camera_2(pose_2, identity_K);
+
+  Point3 gt_point(0, 0, 1);
+  Point2 x1 = camera_1.project(gt_point);
+  Point2 x2 = camera_2.project(gt_point);
+
+  Point2 x1_noisy = x1 + Point2(0.00817, 0.00977);
+  Point2 x2_noisy = x2 + Point2(-0.00610, 0.01969);
+
+  const double measurement_sigma = 1e-2;
+  Point3 estimate_lost = triangulateLOSTPoint3<Cal3_S2>(
+      {camera_1, camera_2}, {x1_noisy, x2_noisy}, measurement_sigma);
+
+  // These values are from a MATLAB implementation.
+  EXPECT(assert_equal(Point3(0.007, 0.011, 0.945), estimate_lost, 1e-3));
+  
+  double rank_tol = 1e-9;
+
+  Pose3Vector poses = {pose_1, pose_2};
+  Point2Vector points = {x1_noisy, x2_noisy};
+  boost::shared_ptr<Cal3_S2> cal = boost::make_shared<Cal3_S2>(identity_K);
+  boost::optional<Point3> estimate_dlt =
+      triangulatePoint3<Cal3_S2>(poses, cal, points, rank_tol, false);
+
+  // The LOST estimate should have a smaller error.
+  EXPECT((gt_point - estimate_lost).norm() <=
+         (gt_point - *estimate_dlt).norm());
 }
 
 //******************************************************************************

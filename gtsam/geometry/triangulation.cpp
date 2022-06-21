@@ -60,11 +60,8 @@ Vector4 triangulateHomogeneousDLT(
 
 Vector3 triangulateLOSTHomogeneous(
     const std::vector<Pose3>& poses,
-    const std::vector<Point3>& calibrated_measurements) {
-
-  // TODO(akshay-krishnan): make this an argument.
-  const double sigma_x = 1e-3;
-
+    const std::vector<Point3>& calibrated_measurements, 
+    const double measurement_sigma) {
   size_t m = calibrated_measurements.size();
   assert(m == poses.size());
 
@@ -78,16 +75,18 @@ Vector3 triangulateLOSTHomogeneous(
     const int j = (i + 1) % m;
     const Pose3& wTj = poses[j];
 
-    Point3 d_ij = wTj.translation() -  wTi.translation();
+    Point3 d_ij = wTj.translation() - wTi.translation();
 
     Point3 w_measurement_i = wTi.rotation().rotate(calibrated_measurements[i]);
     Point3 w_measurement_j = wTj.rotation().rotate(calibrated_measurements[j]);
-    
-    double numerator =  w_measurement_i.cross(w_measurement_j).norm();
+
+    double numerator = w_measurement_i.cross(w_measurement_j).norm();
     double denominator = d_ij.cross(w_measurement_j).norm();
 
-    double q_i = numerator / (sigma_x * denominator);
-    Matrix23 coefficient_mat = q_i * skewSymmetric(calibrated_measurements[i]).topLeftCorner(2, 3) * wTi.rotation().matrix().transpose();
+    double q_i = numerator / (measurement_sigma * denominator);
+    Matrix23 coefficient_mat =
+        q_i * skewSymmetric(calibrated_measurements[i]).topLeftCorner(2, 3) *
+        wTi.rotation().matrix().transpose();
 
     A.row(2 * i) = coefficient_mat.row(0);
     A.row(2 * i + 1) = coefficient_mat.row(1);
