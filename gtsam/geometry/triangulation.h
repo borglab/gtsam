@@ -75,6 +75,11 @@ triangulateLOSTHomogeneous(const std::vector<Pose3>& poses,
                            const std::vector<Point3>& calibrated_measurements,
                            const double measurement_sigma);
 
+GTSAM_EXPORT Vector3
+triangulateLOSTHomogeneousLS(const std::vector<Pose3>& poses,
+                           const std::vector<Point3>& calibrated_measurements,
+                           const double measurement_sigma);
+
 /**
  * Same math as Hartley and Zisserman, 2nd Ed., page 312, but with unit-norm bearing vectors
  * (contrarily to pinhole projection, the z entry is not assumed to be 1 as in Hartley and Zisserman)
@@ -397,9 +402,9 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
 
 template <class CALIBRATION>
 Point3 triangulateLOSTPoint3(
-    const std::vector<PinholeCamera<CALIBRATION>>& cameras,
-    const std::vector<Point2>& measurements,
-    const double measurement_sigma = 1e-2) {
+    const CameraSet<PinholeCamera<CALIBRATION>>& cameras,
+    const Point2Vector& measurements,
+    const double measurement_sigma = 1e-2, bool use_dlt = false) {
   const size_t num_cameras = cameras.size();
   assert(measurements.size() == num_cameras);
 
@@ -417,7 +422,11 @@ Point3 triangulateLOSTPoint3(
   poses.reserve(cameras.size());
   for (const auto& camera : cameras) poses.push_back(camera.pose());
 
-  Point3 point = triangulateLOSTHomogeneous(poses, calibrated_measurements, measurement_sigma);
+  Point3 point = use_dlt
+                     ? triangulateLOSTHomogeneous(
+                           poses, calibrated_measurements, measurement_sigma)
+                     : triangulateLOSTHomogeneousLS(
+                           poses, calibrated_measurements, measurement_sigma);
 
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
   // verify that the triangulated point lies in front of all cameras

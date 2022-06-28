@@ -66,6 +66,50 @@ Vector3 triangulateLOSTHomogeneous(
   assert(m == poses.size());
 
   // Construct the system matrices.
+  Matrix A = Matrix::Zero(m * 2, 4);
+
+  for (size_t i = 0; i < m; i++) {
+    const Pose3& wTi = poses[i];
+    // TODO(akshay-krishnan): are there better ways to select j?
+    const int j = (i + 1) % m;
+    const Pose3& wTj = poses[j];
+
+    const Point3 d_ij = wTj.translation() - wTi.translation();
+
+    const Point3 w_measurement_i =
+        wTi.rotation().rotate(calibrated_measurements[i]);
+    const Point3 w_measurement_j =
+        wTj.rotation().rotate(calibrated_measurements[j]);
+
+    const double q_i = w_measurement_i.cross(w_measurement_j).norm() /
+                       (measurement_sigma * d_ij.cross(w_measurement_j).norm());
+    const Matrix23 coefficient_mat =
+        q_i * skewSymmetric(calibrated_measurements[i]).topLeftCorner(2, 3) *
+        wTi.rotation().matrix().transpose();
+
+    A.block<2, 4>(2 * i, 0) << coefficient_mat, -coefficient_mat * wTi.translation();
+  }
+
+  const double rank_tol = 1e-6;
+  int rank;
+  double error;
+  Vector v;
+  boost::tie(rank, error, v) = DLT(A, rank_tol);
+
+  if (rank < 3)
+    throw(TriangulationUnderconstrainedException());
+
+  return Point3(v.head<3>() / v[3]);
+}
+
+Vector3 triangulateLOSTHomogeneousLS(
+    const std::vector<Pose3>& poses,
+    const std::vector<Point3>& calibrated_measurements, 
+    const double measurement_sigma) {
+  size_t m = calibrated_measurements.size();
+  assert(m == poses.size());
+
+  // Construct the system matrices.
   Matrix A = Matrix::Zero(m * 2, 3);
   Matrix b = Matrix::Zero(m * 2, 1);
 
@@ -75,26 +119,20 @@ Vector3 triangulateLOSTHomogeneous(
     const int j = (i + 1) % m;
     const Pose3& wTj = poses[j];
 
-    Point3 d_ij = wTj.translation() - wTi.translation();
+    const Point3 d_ij = wTj.translation() - wTi.translation();
 
-    Point3 w_measurement_i = wTi.rotation().rotate(calibrated_measurements[i]);
-    Point3 w_measurement_j = wTj.rotation().rotate(calibrated_measurements[j]);
+    const Point3 w_measurement_i = wTi.rotation().rotate(calibrated_measurements[i]);
+    const Point3 w_measurement_j = wTj.rotation().rotate(calibrated_measurements[j]);
 
-    double numerator = w_measurement_i.cross(w_measurement_j).norm();
-    double denominator = d_ij.cross(w_measurement_j).norm();
-
-    double q_i = numerator / (measurement_sigma * denominator);
-    Matrix23 coefficient_mat =
+    const double q_i = w_measurement_i.cross(w_measurement_j).norm() /
+                       (measurement_sigma * d_ij.cross(w_measurement_j).norm());
+    const Matrix23 coefficient_mat =
         q_i * skewSymmetric(calibrated_measurements[i]).topLeftCorner(2, 3) *
         wTi.rotation().matrix().transpose();
 
-    A.row(2 * i) = coefficient_mat.row(0);
-    A.row(2 * i + 1) = coefficient_mat.row(1);
-    Point2 p = coefficient_mat * wTi.translation();
-    b(2 * i) = p.x();
-    b(2 * i + 1) = p.y();
+    A.block<2, 3>(2*i, 0) = coefficient_mat;
+    b.block<2, 1>(2*i, 0) = coefficient_mat * wTi.translation();
   }
-  // Solve Ax = b, using QR decomposition
   return A.colPivHouseholderQr().solve(b);
 }
 
