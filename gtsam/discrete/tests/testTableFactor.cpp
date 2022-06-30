@@ -55,22 +55,6 @@ TEST(TableFactor, constructors) {
 }
 
 /* ************************************************************************* */
-TEST(TableFactor, lazy_cartesian_product) {
-  DiscreteKey v0(0, 2), v1(1, 2), v2(2, 2), A(3, 5);
-
-  TableFactor f1(v0 & v1, "1 2 3 4");
-  double actual_v0 = f1.lazy_cp(v0.first, 2);
-  EXPECT_DOUBLES_EQUAL(1, actual_v0, 1e-9);
-
-  double actual_v1 = f1.lazy_cp(v1.first, 2);
-  EXPECT_DOUBLES_EQUAL(0, actual_v1, 1e-9);
-
-  TableFactor f_zeros(A, {0, 0, 0, 0, 1});
-  double actual_zero = f_zeros.lazy_cp(A.first, 3);
-  EXPECT_DOUBLES_EQUAL(3, actual_zero, 1e-9);
-}
-
-/* ************************************************************************* */
 TEST(TableFactor, project) {
   DiscreteKey v0(0, 2), v1(1, 2), v2(2, 2), A(3, 5);
 
@@ -179,15 +163,33 @@ TEST(TableFactor, sum_max) {
   TableFactor f1(v0 & v1, "1 2  3 4  5 6");
 
   TableFactor expected(v1, "9 12");
-  TableFactor::shared_ptr actual = f1.sum(1);
-  CHECK(assert_equal(expected, *actual, 1e-5));
+  TableFactor actual = f1.sum(1);
+  CHECK(assert_equal(expected, actual));
 
   TableFactor expected2(v1, "5 6");
   TableFactor actual2 = f1.max(1);
   CHECK(assert_equal(expected2, actual2));
 
   TableFactor f2(v1 & v0, "1 2  3 4  5 6");
-  TableFactor::shared_ptr actual22 = f2.sum(1);
+  TableFactor actual22 = f2.sum(1);
+}
+
+/* ************************************************************************* */
+TEST( DecisionTreeFactor, sum_ordering)
+{
+  DiscreteKey v0(0,3), v1(1,2), v2(2, 2);
+  TableFactor f1(v0 & v1 & v2, "1 2 3 10 5 6 7 11 9 4 8 12");
+  Ordering ordering;
+  ordering += Key(1);
+
+  TableFactor actual = f1.sum(ordering);
+  TableFactor expected(v0 & v2, "4 12 12 17 17 16");
+  CHECK(assert_equal(expected, actual));
+
+  TableFactor f2(v0 & v1 & v2, "0 0 0 0 0 0 0 15 0 0 0 10");
+  TableFactor actual_zeros = f2.sum(ordering);
+  TableFactor expected_zeros(v0 & v2, "0 0 0 15 0 10");
+  CHECK(assert_equal(expected_zeros, actual_zeros));
 }
 
 /* ************************************************************************* */
@@ -251,16 +253,16 @@ TEST(TableFactor, enumerate) {
 // Check markdown representation looks as expected.
 TEST(TableFactor, markdown) {
   DiscreteKey A(12, 3), B(5, 2);
-  TableFactor f(A & B, "1 2  3 4  5 6");
+  TableFactor f(A & B, "0 0  0 1  0 2");
   string expected =
       "|A|B|value|\n"
       "|:-:|:-:|:-:|\n"
-      "|0|0|1|\n"
-      "|0|1|2|\n"
-      "|1|0|3|\n"
-      "|1|1|4|\n"
-      "|2|0|5|\n"
-      "|2|1|6|\n";
+      "|0|0|0|\n"
+      "|0|1|0|\n"
+      "|1|0|0|\n"
+      "|1|1|1|\n"
+      "|2|0|0|\n"
+      "|2|1|2|\n";
   auto formatter = [](Key key) { return key == 12 ? "A" : "B"; };
   string actual = f.markdown(formatter);
   EXPECT(actual == expected);
@@ -270,16 +272,16 @@ TEST(TableFactor, markdown) {
 // Check markdown representation with a value formatter.
 TEST(TableFactor, markdownWithValueFormatter) {
   DiscreteKey A(12, 3), B(5, 2);
-  TableFactor f(A & B, "1 2  3 4  5 6");
+  TableFactor f(A & B, "0 0  0 1  0 2");
   string expected =
       "|A|B|value|\n"
       "|:-:|:-:|:-:|\n"
-      "|Zero|-|1|\n"
-      "|Zero|+|2|\n"
-      "|One|-|3|\n"
-      "|One|+|4|\n"
-      "|Two|-|5|\n"
-      "|Two|+|6|\n";
+      "|Zero|-|0|\n"
+      "|Zero|+|0|\n"
+      "|One|-|0|\n"
+      "|One|+|1|\n"
+      "|Two|-|0|\n"
+      "|Two|+|2|\n";
   auto keyFormatter = [](Key key) { return key == 12 ? "A" : "B"; };
   TableFactor::Names names{{12, {"Zero", "One", "Two"}},
                                   {5, {"-", "+"}}};

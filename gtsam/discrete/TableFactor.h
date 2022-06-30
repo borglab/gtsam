@@ -37,6 +37,9 @@
 
 namespace gtsam {
 
+/**
+ * A discrete probabilistic factor optimized for sparsity.
+ */
 class GTSAM_EXPORT TableFactor : public DiscreteFactor {
  private:
   Eigen::SparseVector<double> sparse_table_;
@@ -48,42 +51,50 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
     return DiscreteKey(j, cardinalities_.at(j));
   }
 
-  /** Convert table to SparseVector */
+  /// Convert probability table given as doubles to SparseVector.
   static Eigen::SparseVector<double> Convert(const std::vector<double>& table);
 
-  /** Convert table to SparseVector */
+  /// Convert probability table given as string to SparseVector.
   static Eigen::SparseVector<double> Convert(const std::string& table);
+
+  /// Finds value for the key at index
+  // TODO: add some example doxygen block
+  size_t keyValueForIndex(Key target_key, size_t index) const;
+
+  /// Create union of keys
+  DiscreteKeys unionKeys(const TableFactor& f) const;
 
  public:
   // typedefs needed to play nice with gtsam
   typedef TableFactor This;
   typedef DiscreteFactor Base;  ///< Typedef to base class
   typedef boost::shared_ptr<TableFactor> shared_ptr;
+  typedef Eigen::SparseVector<double>::InnerIterator sparse_it;
 
   /// @name Constructors
   /// @{
 
-  /** Default constructo for I/O */
+  /// Default constructo for I/O.
   TableFactor();
 
-  /** Constructor from Eigen::SparseVector */
+  /// Constructor from Eigen::SparseVector.
   TableFactor(const DiscreteKeys& keys,
               const Eigen::SparseVector<double>& table);
 
-  /** Constructor from doubles */
+  /// Constructor from doubles.
   TableFactor(const DiscreteKeys& keys, const std::vector<double>& table)
       : TableFactor(keys, Convert(table)) {}
 
-  /** Constructor from string */
+  /// Constructor from string.
   TableFactor(const DiscreteKeys& keys, const std::string& table)
       : TableFactor(keys, Convert(table)) {}
 
-  /// Single-key specialization
+  /// Constructor for single-key.
   template <class SOURCE>
   TableFactor(const DiscreteKey& key, SOURCE table)
       : TableFactor(DiscreteKeys{key}, table) {}
 
-  /// Single-key specialization, with vector of doubles.
+  /// Constructor for single-key, with vector of doubles.
   TableFactor(const DiscreteKey& key, const std::vector<double>& row)
       : TableFactor(DiscreteKeys{key}, row) {}
 
@@ -110,7 +121,7 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   DecisionTreeFactor operator*(const DecisionTreeFactor& f) const override;
 
   /// Multiply with TableFactor
-  TableFactor operator*(const TableFactor& f) const;
+  TableFactor operator*(const TableFactor& f) const override;
 
   /// Get the cardinality of key j
   size_t cardinality(Key j) const { return cardinalities_.at(j); }
@@ -119,10 +130,10 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   DecisionTreeFactor toDecisionTreeFactor() const override;
 
   /// Create new factor by summing all values with the same separator values
-  shared_ptr sum(size_t nrFrontals) const;
+  TableFactor sum(size_t nrFrontals) const;
 
-  /// Create new TableFactor where the input key is eliminated
-  TableFactor eliminate(const Key key) const;
+  /// Create new factor by summing all values with the same separator values
+  TableFactor sum(const Ordering& frontalKeys) const;
 
   /// Create new factor by maximizing over all values with the same separator
   TableFactor max(size_t nrFrontals) const;
@@ -137,19 +148,22 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   /// Generate TableFactor from DecisionTreeFactor
   TableFactor fromDecisionTreeFactor(const DecisionTreeFactor& f) const;
 
-  /// Finds value for the key at index
-  size_t lazy_cp(Key target_key, size_t index) const;
-
   /// Find assignments with maximum value
   DiscreteValues maxAssignment() const;
 
   /// Find index for given assignment of values
   size_t findIndex(const DiscreteValues& assignment) const;
 
-  /// Create union of keys
-  DiscreteKeys unionKeys(const TableFactor& f) const;
-
-  /// Project assignment that agrees with the given assignment
+  /**
+   * @brief Project assignment onto the union of assignments
+   *
+   * ex) if f1(v0 & v1, "1, 2, 3, 4"), and the given assignment, assignment_f
+   * is (v0 = 0) the result of f1.project(assignment_f) is going to be
+   * vector of DiscreteValues where [(v0 = 0, v1 = 0, (v0 = 0, v1 = 1))]
+   *
+   * @param assignment_f The maximum number of assignments to keep.
+   * @return vector<DiscreteValues>
+   */
   std::vector<DiscreteValues> project(const DiscreteValues& assignment_f) const;
 
   /// Return all the discrete keys associated with this factor.

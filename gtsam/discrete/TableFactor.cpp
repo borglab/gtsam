@@ -23,7 +23,6 @@
 #include <utility>
 
 using namespace std;
-
 namespace gtsam {
 
 /* ************************************************************************ */
@@ -73,7 +72,6 @@ bool TableFactor::equals(const DiscreteFactor& other, double tol) const {
   } else {
     const auto& f(static_cast<const TableFactor&>(other));
     return (sparse_table_ - f.sparse_table_).sum() == 0;
-    // return sparse_table_ == f.sparse_table_;
   }
 }
 
@@ -85,6 +83,7 @@ void TableFactor::print(const string& s, const KeyFormatter& formatter) const {
     cout << boost::format(" (%1%,%2%),") % formatter(key) % cardinality(key);
   cout << " ]" << endl;
 }
+
 /* ************************************************************************ */
 double TableFactor::operator()(const DiscreteValues& values) const {
   // Find index of value in O(N) where N is number of keys
@@ -107,11 +106,10 @@ TableFactor TableFactor::operator*(const TableFactor& f) const {
   new_sparse_table_.reserve(sparse_table_.nonZeros() *
                             (cardinality / sparse_table_.size()));
   TableFactor multiplied_f(keys, new_sparse_table_);
-  for (Eigen::SparseVector<double>::InnerIterator it(f.sparse_table_); it;
-       ++it) {
+  for (sparse_it it(f.sparse_table_); it; ++it) {
     DiscreteValues assignment_f;
     for (Key key : f.keys_) {
-      assignment_f[key] = f.lazy_cp(key, it.index());
+      assignment_f[key] = f.keyValueForIndex(key, it.index());
     }
     std::vector<DiscreteValues> projections = project(assignment_f);
     for (DiscreteValues projection : projections) {
@@ -135,48 +133,104 @@ DecisionTreeFactor TableFactor::toDecisionTreeFactor() const {
 }
 
 /* ************************************************************************ */
-TableFactor::shared_ptr TableFactor::sum(size_t nrFrontals) const {
-  // Create map to keep track of summed values
-  std::map<size_t, double> cs;
-  size_t cardinality = cardinalities_.at(nrFrontals);
-  for (size_t i = 0; i < cardinality; i++) cs[i] = 0;
-  DiscreteKey target_key = discreteKey(nrFrontals);
-  for (Eigen::SparseVector<double>::InnerIterator it(sparse_table_); it; ++it) {
-    cs[lazy_cp(target_key.first, it.index())] += it.value();
-  }
-  std::vector<double> result;
-  for (std::map<size_t, double>::iterator it = cs.begin(); it != cs.end();
-       ++it) {
-    result.push_back(it->second);
-  }
-  return boost::make_shared<TableFactor>(target_key, result);
-}
-
-/* ************************************************************************ */
-TableFactor TableFactor::eliminate(const Key key) const {
-  // Eliminate the input key from the TableFactor while retaining only the
-  // maximum value of the assignment.
-  // ex) Given assignments (0, 0, 0) = 3, (1, 0, 0) = 10
-  // when first key is eliminated the output should be (0, 0) = 10
-  // Collect keys that are not the key to be eliminated
+TableFactor TableFactor::sum(size_t nrFrontals) const {
+  if (nrFrontals > size())
+    throw invalid_argument(
+        (boost::format("TableFactor::max: invalid number of frontal "
+                       "keys %d, nr.keys=%d") %
+         nrFrontals % size())
+            .str());
+  // Find all remaining keys
   DiscreteKeys dkeys;
   size_t cardinality = 1;
-  for (Key k : keys_) {
-    if (k != key) {
-      dkeys.push_back(discreteKey(k));
-      cardinality *= cardinalities_.at(k);
+  for (size_t i = 0; i < keys_.size(); i++) {
+    if (i >= nrFrontals) {
+      dkeys.push_back(discreteKey(keys_[i]));
+      cardinality *= cardinalities_.at(keys_[i]);
     }
   }
-  // Create new TableFactor with remaining keys
+  // Create a new TableFactor with remaining keys
   Eigen::SparseVector<double> new_sparse_table_(cardinality);
   if (sparse_table_.nonZeros() < cardinality)
     new_sparse_table_.reserve(sparse_table_.nonZeros());
   TableFactor eliminated_f(dkeys, new_sparse_table_);
   // Populate the new TableFactor
-  for (Eigen::SparseVector<double>::InnerIterator it(sparse_table_); it; ++it) {
+  for (sparse_it it(sparse_table_); it; ++it) {
     DiscreteValues assignments;
     for (DiscreteKey dkey : dkeys) {
-      assignments[dkey.first] = lazy_cp(dkey.first, it.index());
+      assignments[dkey.first] = keyValueForIndex(dkey.first, it.index());
+    }
+    size_t index = eliminated_f.findIndex(assignments);
+    // store the summed value
+    eliminated_f.sparse_table_.coeffRef(index) += it.value();
+  }
+  return eliminated_f;
+}
+
+/* ************************************************************************ */
+TableFactor TableFactor::sum(const Ordering& frontalKeys) const {
+  if (frontalKeys.size() > size())
+    throw invalid_argument(
+        (boost::format("TableFactor::max: invalid number of frontal "
+                       "keys %d, nr.keys=%d") %
+         frontalKeys.size() % size())
+            .str());
+  // Find all remaining keys
+  DiscreteKeys dkeys;
+  size_t cardinality = 1;
+  for (Key k : keys_) {
+    if (std::find(frontalKeys.begin(), frontalKeys.end(), k) ==
+        frontalKeys.end()) {
+      dkeys.push_back(discreteKey(k));
+      cardinality *= cardinalities_.at(k);
+    }
+  }
+  // Create a new TableFactor with remaining keys
+  Eigen::SparseVector<double> new_sparse_table_(cardinality);
+  if (sparse_table_.nonZeros() < cardinality)
+    new_sparse_table_.reserve(sparse_table_.nonZeros());
+  TableFactor eliminated_f(dkeys, new_sparse_table_);
+  // Populate the new TableFactor
+  for (sparse_it it(sparse_table_); it; ++it) {
+    DiscreteValues assignments;
+    for (DiscreteKey dkey : dkeys) {
+      assignments[dkey.first] = keyValueForIndex(dkey.first, it.index());
+    }
+    size_t index = eliminated_f.findIndex(assignments);
+    // store the summed value
+    eliminated_f.sparse_table_.coeffRef(index) += it.value();
+  }
+  return eliminated_f;
+}
+
+
+/* ************************************************************************ */
+TableFactor TableFactor::max(size_t nrFrontals) const {
+  if (nrFrontals > size())
+    throw invalid_argument(
+        (boost::format("TableFactor::max: invalid number of frontal "
+                       "keys %d, nr.keys=%d") %
+         nrFrontals % size())
+            .str());
+  // Find all remaining keys
+  DiscreteKeys dkeys;
+  size_t cardinality = 1;
+  for (size_t i = 0; i < keys_.size(); i++) {
+    if (i >= nrFrontals) {
+      dkeys.push_back(discreteKey(keys_[i]));
+      cardinality *= cardinalities_.at(keys_[i]);
+    }
+  }
+  // Create a new TableFactor with remaining keys
+  Eigen::SparseVector<double> new_sparse_table_(cardinality);
+  if (sparse_table_.nonZeros() < cardinality)
+    new_sparse_table_.reserve(sparse_table_.nonZeros());
+  TableFactor eliminated_f(dkeys, new_sparse_table_);
+  // Populate the new TableFactor
+  for (sparse_it it(sparse_table_); it; ++it) {
+    DiscreteValues assignments;
+    for (DiscreteKey dkey : dkeys) {
+      assignments[dkey.first] = keyValueForIndex(dkey.first, it.index());
     }
     size_t index = eliminated_f.findIndex(assignments);
     // swap values to store the maximum
@@ -188,39 +242,41 @@ TableFactor TableFactor::eliminate(const Key key) const {
 }
 
 /* ************************************************************************ */
-TableFactor TableFactor::max(size_t nrFrontals) const {
-  if (nrFrontals > size())
-    throw invalid_argument(
-        (boost::format("TableFactor::max: invalid number of frontal "
-                       "keys %d, nr.keys=%d") %
-         nrFrontals % size())
-            .str());
-  // Iteratively eliminate nrFrontals number of keys from this TableFactor
-  TableFactor result(*this);
-  for (size_t i = 0; i < nrFrontals; i++) {
-    Key j = keys()[i];
-    result = result.eliminate(j);
-  }
-  return result;
-}
-
-/* ************************************************************************ */
 TableFactor TableFactor::max(const Ordering& frontalKeys) const {
-  // Create map to keep track of summed values
   if (frontalKeys.size() > size())
     throw invalid_argument(
         (boost::format("TableFactor::max: invalid number of frontal "
                        "keys %d, nr.keys=%d") %
          frontalKeys.size() % size())
             .str());
-  // Iteratively eliminate a key according to the ordering (frontalKeys) fron
-  // this TableFactor
-  TableFactor result(*this);
-  for (size_t i = 0; i < frontalKeys.size(); i++) {
-    Key j = frontalKeys[i];
-    result = result.eliminate(j);
+  // Find all remaining keys
+  DiscreteKeys dkeys;
+  size_t cardinality = 1;
+  for (Key k : keys_) {
+    if (std::find(frontalKeys.begin(), frontalKeys.end(), k) ==
+        frontalKeys.end()) {
+      dkeys.push_back(discreteKey(k));
+      cardinality *= cardinalities_.at(k);
+    }
   }
-  return result;
+  // Create a new TableFactor with remaining keys
+  Eigen::SparseVector<double> new_sparse_table_(cardinality);
+  if (sparse_table_.nonZeros() < cardinality)
+    new_sparse_table_.reserve(sparse_table_.nonZeros());
+  TableFactor eliminated_f(dkeys, new_sparse_table_);
+  // Populate the new TableFactor
+  for (sparse_it it(sparse_table_); it; ++it) {
+    DiscreteValues assignments;
+    for (DiscreteKey dkey : dkeys) {
+      assignments[dkey.first] = keyValueForIndex(dkey.first, it.index());
+    }
+    size_t index = eliminated_f.findIndex(assignments);
+    // swap values to store the maximum
+    if (it.value() > eliminated_f.sparse_table_.coeff(index)) {
+      eliminated_f.sparse_table_.coeffRef(index) = it.value();
+    }
+  }
+  return eliminated_f;
 }
 
 /* ************************************************************************ */
@@ -237,7 +293,8 @@ TableFactor TableFactor::fromDecisionTreeFactor(
 }
 
 /* ************************************************************************ */
-size_t TableFactor::lazy_cp(Key target_key, size_t index) const {
+size_t TableFactor::keyValueForIndex(Key target_key, size_t index) const {
+  // TODO: give a link to lazy cartesian product algorithm
   return (index / denominator_.at(target_key)) % cardinalities_.at(target_key);
 }
 
@@ -264,7 +321,8 @@ DiscreteValues TableFactor::maxAssignment() const {
   Eigen::Index maxRowIdx;
   Eigen::VectorXd::Map(sparse_table_.valuePtr(), nnz).maxCoeff(&maxRowIdx);
   for (Key key : keys_) {
-    assignments[key] = lazy_cp(key, sparse_table_.innerIndexPtr()[maxRowIdx]);
+    assignments[key] =
+        keyValueForIndex(key, sparse_table_.innerIndexPtr()[maxRowIdx]);
   }
   return assignments;
 }
@@ -292,7 +350,7 @@ std::vector<DiscreteValues> TableFactor::project(
   // project assignment_f onto union of assignments
   // ex) project (v0, v2) onto the union (v0, v1, v2)
   std::vector<DiscreteValues> projected_assignments;
-  for (Eigen::SparseVector<double>::InnerIterator it(sparse_table_); it; ++it) {
+  for (sparse_it it(sparse_table_); it; ++it) {
     DiscreteValues union_assignments;
     bool flag = true;
     // check if there is an overlapping key
@@ -301,7 +359,7 @@ std::vector<DiscreteValues> TableFactor::project(
       union_assignments.insert(*a_it);
       // if there is an overlapping key check the assigned value for that key
       if (find(a_it->first) != keys_.end()) {
-        flag = lazy_cp(a_it->first, it.index()) == a_it->second;
+        flag = keyValueForIndex(a_it->first, it.index()) == a_it->second;
       }
     }
     // If there is no overlapping key, or if the overlapped key's assigned
@@ -309,7 +367,7 @@ std::vector<DiscreteValues> TableFactor::project(
     if (flag) {
       for (Key key : keys_) {
         union_assignments.insert(
-            std::pair<Key, size_t>(key, lazy_cp(key, it.index())));
+            std::pair<Key, size_t>(key, keyValueForIndex(key, it.index())));
       }
       projected_assignments.push_back(union_assignments);
     }
