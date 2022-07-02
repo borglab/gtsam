@@ -294,7 +294,7 @@ TableFactor TableFactor::fromDecisionTreeFactor(
 
 /* ************************************************************************ */
 size_t TableFactor::keyValueForIndex(Key target_key, size_t index) const {
-  // TODO: give a link to lazy cartesian product algorithm
+  // http://phrogz.net/lazy-cartesian-product
   return (index / denominator_.at(target_key)) % cardinalities_.at(target_key);
 }
 
