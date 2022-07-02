@@ -223,7 +223,7 @@ class GTSAM_EXPORT GncOptimizer {
     size_t iter;
     for (iter = 0; iter < params_.maxIterations; iter++) {
       if(params_.carryStateAcrossIters){
-        std::cout << "Reusing state as initial guess for next iteration" << std::endl;
+        // std::cout << "Reusing state as initial guess for next iteration" << std::endl;
         state_ = result;
       }
       // display info
