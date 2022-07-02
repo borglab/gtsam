@@ -107,11 +107,10 @@ std::pair<NonlinearFactorGraph, Values> triangulationGraph(
     const std::vector<Pose3>& poses, boost::shared_ptr<CALIBRATION> sharedCal,
     const Point2Vector& measurements, Key landmarkKey,
     const Point3& initialEstimate,
-    const SharedNoiseModel& model = unit2) {
+    const SharedNoiseModel& model = noiseModel::Unit::Create(2)) {
   Values values;
   values.insert(landmarkKey, initialEstimate); // Initial landmark value
   NonlinearFactorGraph graph;
-  static SharedNoiseModel unit2(noiseModel::Unit::Create(2));
   for (size_t i = 0; i < measurements.size(); i++) {
     const Pose3& pose_i = poses[i];
     typedef PinholePose<CALIBRATION> Camera;
