@@ -126,7 +126,7 @@ TableFactor TableFactor::operator*(const TableFactor& f) const {
 DecisionTreeFactor TableFactor::toDecisionTreeFactor() const {
   DiscreteKeys dkeys = discreteKeys();
   std::vector<double> table;
-  for (size_t i = 0; i < sparse_table_.size(); i++) {
+  for (auto i = 0; i < sparse_table_.size(); i++) {
     table.push_back(sparse_table_.coeff(i));
   }
   DecisionTreeFactor f(dkeys, table);
@@ -143,7 +143,7 @@ TableFactor TableFactor::sum(size_t nrFrontals) const {
             .str());
   // Find all remaining keys
   DiscreteKeys dkeys;
-  size_t cardinality = 1;
+  int cardinality = 1;
   for (size_t i = 0; i < keys_.size(); i++) {
     if (i >= nrFrontals) {
       dkeys.push_back(discreteKey(keys_[i]));
@@ -163,7 +163,7 @@ TableFactor TableFactor::sum(const Ordering& frontalKeys) const {
             .str());
   // Find all remaining keys
   DiscreteKeys dkeys;
-  size_t cardinality = 1;
+  int cardinality = 1;
   for (Key k : keys_) {
     if (std::find(frontalKeys.begin(), frontalKeys.end(), k) ==
         frontalKeys.end()) {
@@ -176,7 +176,7 @@ TableFactor TableFactor::sum(const Ordering& frontalKeys) const {
 
 /* ************************************************************************ */
 TableFactor TableFactor::populateSumTable(DiscreteKeys dkeys,
-                                          size_t cardinality) const {
+                                          int cardinality) const {
   // Create a new TableFactor with remaining keys
   Eigen::SparseVector<double> new_sparse_table_(cardinality);
   if (sparse_table_.nonZeros() < cardinality)
@@ -205,7 +205,7 @@ TableFactor TableFactor::max(size_t nrFrontals) const {
             .str());
   // Find all remaining keys
   DiscreteKeys dkeys;
-  size_t cardinality = 1;
+  int cardinality = 1;
   for (size_t i = 0; i < keys_.size(); i++) {
     if (i >= nrFrontals) {
       dkeys.push_back(discreteKey(keys_[i]));
@@ -225,7 +225,7 @@ TableFactor TableFactor::max(const Ordering& frontalKeys) const {
             .str());
   // Find all remaining keys
   DiscreteKeys dkeys;
-  size_t cardinality = 1;
+  int cardinality = 1;
   for (Key k : keys_) {
     if (std::find(frontalKeys.begin(), frontalKeys.end(), k) ==
         frontalKeys.end()) {
@@ -238,7 +238,7 @@ TableFactor TableFactor::max(const Ordering& frontalKeys) const {
 
 /* ************************************************************************ */
 TableFactor TableFactor::populateMaxTable(DiscreteKeys dkeys,
-                                          size_t cardinality) const {
+                                          int cardinality) const {
   // Create a new TableFactor with remaining keys
   Eigen::SparseVector<double> new_sparse_table_(cardinality);
   if (sparse_table_.nonZeros() < cardinality)

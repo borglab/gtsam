@@ -121,7 +121,7 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   DecisionTreeFactor operator*(const DecisionTreeFactor& f) const override;
 
   /// Multiply with TableFactor
-  TableFactor operator*(const TableFactor& f) const override;
+  TableFactor operator*(const TableFactor& f) const;
 
   /// Get the cardinality of key j
   size_t cardinality(Key j) const { return cardinalities_.at(j); }
@@ -143,7 +143,7 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
    * @param cardinality cardinality of all remaining keys multiplied
    * @return TableFactor
    */ 
-  TableFactor populateSumTable(DiscreteKeys dkeys, size_t cardinality) const;
+  TableFactor populateSumTable(DiscreteKeys dkeys, int cardinality) const;
 
   /// Create new factor by maximizing over all values with the same separator
   TableFactor max(size_t nrFrontals) const;
@@ -159,7 +159,7 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
    * @param cardinality cardinality of all remaining keys multiplied
    * @return TableFactor
    */
-  TableFactor populateMaxTable(DiscreteKeys dkeys, size_t cardinality) const;
+  TableFactor populateMaxTable(DiscreteKeys dkeys, int cardinality) const;
 
   /// @}
   /// @name Advanced Interface
