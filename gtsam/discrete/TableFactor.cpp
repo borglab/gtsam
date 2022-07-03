@@ -16,6 +16,7 @@
  * @author Yoonwoo Kim
  */
 
+#include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/TableFactor.h>
 
 #include <boost/format.hpp>
@@ -149,22 +150,7 @@ TableFactor TableFactor::sum(size_t nrFrontals) const {
       cardinality *= cardinalities_.at(keys_[i]);
     }
   }
-  // Create a new TableFactor with remaining keys
-  Eigen::SparseVector<double> new_sparse_table_(cardinality);
-  if (sparse_table_.nonZeros() < cardinality)
-    new_sparse_table_.reserve(sparse_table_.nonZeros());
-  TableFactor eliminated_f(dkeys, new_sparse_table_);
-  // Populate the new TableFactor
-  for (sparse_it it(sparse_table_); it; ++it) {
-    DiscreteValues assignments;
-    for (DiscreteKey dkey : dkeys) {
-      assignments[dkey.first] = keyValueForIndex(dkey.first, it.index());
-    }
-    size_t index = eliminated_f.findIndex(assignments);
-    // store the summed value
-    eliminated_f.sparse_table_.coeffRef(index) += it.value();
-  }
-  return eliminated_f;
+  return populateSumTable(dkeys, cardinality);
 }
 
 /* ************************************************************************ */
@@ -185,6 +171,12 @@ TableFactor TableFactor::sum(const Ordering& frontalKeys) const {
       cardinality *= cardinalities_.at(k);
     }
   }
+  return populateSumTable(dkeys, cardinality);
+}
+
+/* ************************************************************************ */
+TableFactor TableFactor::populateSumTable(DiscreteKeys dkeys,
+                                          size_t cardinality) const {
   // Create a new TableFactor with remaining keys
   Eigen::SparseVector<double> new_sparse_table_(cardinality);
   if (sparse_table_.nonZeros() < cardinality)
@@ -203,7 +195,6 @@ TableFactor TableFactor::sum(const Ordering& frontalKeys) const {
   return eliminated_f;
 }
 
-
 /* ************************************************************************ */
 TableFactor TableFactor::max(size_t nrFrontals) const {
   if (nrFrontals > size())
@@ -221,24 +212,7 @@ TableFactor TableFactor::max(size_t nrFrontals) const {
       cardinality *= cardinalities_.at(keys_[i]);
     }
   }
-  // Create a new TableFactor with remaining keys
-  Eigen::SparseVector<double> new_sparse_table_(cardinality);
-  if (sparse_table_.nonZeros() < cardinality)
-    new_sparse_table_.reserve(sparse_table_.nonZeros());
-  TableFactor eliminated_f(dkeys, new_sparse_table_);
-  // Populate the new TableFactor
-  for (sparse_it it(sparse_table_); it; ++it) {
-    DiscreteValues assignments;
-    for (DiscreteKey dkey : dkeys) {
-      assignments[dkey.first] = keyValueForIndex(dkey.first, it.index());
-    }
-    size_t index = eliminated_f.findIndex(assignments);
-    // swap values to store the maximum
-    if (it.value() > eliminated_f.sparse_table_.coeff(index)) {
-      eliminated_f.sparse_table_.coeffRef(index) = it.value();
-    }
-  }
-  return eliminated_f;
+  return populateMaxTable(dkeys, cardinality);
 }
 
 /* ************************************************************************ */
@@ -259,6 +233,12 @@ TableFactor TableFactor::max(const Ordering& frontalKeys) const {
       cardinality *= cardinalities_.at(k);
     }
   }
+  return populateMaxTable(dkeys, cardinality);
+}
+
+/* ************************************************************************ */
+TableFactor TableFactor::populateMaxTable(DiscreteKeys dkeys,
+                                          size_t cardinality) const {
   // Create a new TableFactor with remaining keys
   Eigen::SparseVector<double> new_sparse_table_(cardinality);
   if (sparse_table_.nonZeros() < cardinality)

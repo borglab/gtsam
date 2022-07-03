@@ -135,11 +135,31 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   /// Create new factor by summing all values with the same separator values
   TableFactor sum(const Ordering& frontalKeys) const;
 
+   /**
+   * @brief Create new sparse vector with remaining keys and populate it with
+   * summed values over all values with the same separator.
+   *
+   * @param dkeys Remaining keys.
+   * @param cardinality cardinality of all remaining keys multiplied
+   * @return TableFactor
+   */ 
+  TableFactor populateSumTable(DiscreteKeys dkeys, size_t cardinality) const;
+
   /// Create new factor by maximizing over all values with the same separator
   TableFactor max(size_t nrFrontals) const;
 
   /// Create new factor by maximizing over all values with the same separator
   TableFactor max(const Ordering& frontalKeys) const;
+
+   /**
+   * @brief Create new sparse vector with remaining keys and populate it with
+   * maximum values over all values with the same separator.
+   *
+   * @param dkeys Remaining keys.
+   * @param cardinality cardinality of all remaining keys multiplied
+   * @return TableFactor
+   */
+  TableFactor populateMaxTable(DiscreteKeys dkeys, size_t cardinality) const;
 
   /// @}
   /// @name Advanced Interface
