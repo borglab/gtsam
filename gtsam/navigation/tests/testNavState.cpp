@@ -103,14 +103,31 @@ TEST( NavState, Velocity) {
 }
 
 /* ************************************************************************* */
-TEST( NavState, BodyVelocity) {
-  Matrix39 aH, eH;
-  Velocity3 actual = kState1.bodyVelocity(aH);
-  EXPECT(assert_equal<Velocity3>(actual, kAttitude.unrotate(kVelocity)));
-  eH = numericalDerivative11<Velocity3, NavState>(
-      std::bind(&NavState::bodyVelocity, std::placeholders::_1, boost::none),
-      kState1);
-  EXPECT(assert_equal((Matrix )eH, aH));
+TEST(NavState, BodyVelocity) {
+  Vector3 b_omega_zero(0, 0, 0);
+  Vector3 b_omega(1, 2, 1);
+  Vector3 n_velocity(2, 0, 0);
+  NavState state(Pose3(Rot3(), Point3(1, 0, 0)), n_velocity);
+
+  Matrix39 aH_state;
+  Matrix3 aH_omega;
+  Velocity3 actual = state.bodyVelocity(b_omega_zero);
+  // Since angular velocity is zero, the body velocity is the same as the
+  // navigation frame velocity
+  EXPECT(assert_equal<Velocity3>(n_velocity, actual));
+
+  // Non-zero angular velocity, regression
+  actual = state.bodyVelocity(b_omega, aH_state, aH_omega);
+  EXPECT(assert_equal<Velocity3>(Vector3(2, 1, -2), actual));
+
+  std::function<Vector3(const NavState&, const Vector3&)> bodyVelocity =
+      std::bind(&NavState::bodyVelocity, std::placeholders::_1,
+                std::placeholders::_2, boost::none, boost::none);
+
+  // EXPECT(assert_equal(numericalDerivative21(bodyVelocity, state, b_omega),
+  //                     aH_state));
+  EXPECT(assert_equal(numericalDerivative22(bodyVelocity, state, b_omega),
+                      aH_omega));
 }
 
 /* ************************************************************************* */

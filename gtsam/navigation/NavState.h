@@ -109,16 +109,16 @@ public:
   }
   /**
    * @brief Return velocity in body frame.
-   *
-   * The computation is based on
-   * http://www.eeci-institute.eu/pdf/M5-textes/M5_slides4.pdf, slide 31
-   *
-   * @param b_omega Optional angular velocity in the body frame.
-   * @param H Optional Jacobian matrix.
-   * @return Velocity3
+   * Follows from eqn 2.57 in Murray, Li & Sastry.
+   * 
+   * @param omega_b The angular velocity in the body frame.
+   * @param H_state Optional jacobian matrix wrpt NavState.
+   * @param H_omega Optional jacobian matrix wrpt omega_b.
+   * @return Velocity3 The linear velocity in the body frame.
    */
-  Velocity3 bodyVelocity(const Vector3& b_omega = Vector3::Zero(),
-                         OptionalJacobian<3, 9> H = boost::none) const;
+  Velocity3 bodyVelocity(const Vector3& omega_b,
+                         OptionalJacobian<3, 9> H_state = boost::none,
+                         OptionalJacobian<3, 3> H_omega = boost::none) const;
 
   /// Return matrix group representation, in MATLAB notation:
   /// nTb = [nRb 0 n_t; 0 nRb n_v; 0 0 1]
@@ -144,16 +144,9 @@ public:
   /// @{
 
   // Tangent space sugar.
-  // TODO(frank): move to private navstate namespace in cpp
-  static Eigen::Block<Vector9, 3, 1> dR(Vector9& v) {
-    return v.segment<3>(0);
-  }
-  static Eigen::Block<Vector9, 3, 1> dP(Vector9& v) {
-    return v.segment<3>(3);
-  }
-  static Eigen::Block<Vector9, 3, 1> dV(Vector9& v) {
-    return v.segment<3>(6);
-  }
+  static Eigen::Block<Vector9, 3, 1> dR(Vector9& v) { return v.segment<3>(0); }
+  static Eigen::Block<Vector9, 3, 1> dP(Vector9& v) { return v.segment<3>(3); }
+  static Eigen::Block<Vector9, 3, 1> dV(Vector9& v) { return v.segment<3>(6); }
   static Eigen::Block<const Vector9, 3, 1> dR(const Vector9& v) {
     return v.segment<3>(0);
   }

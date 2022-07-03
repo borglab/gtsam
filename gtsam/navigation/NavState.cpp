@@ -68,18 +68,31 @@ const Vector3& NavState::velocity(OptionalJacobian<3, 9> H) const {
 }
 
 //------------------------------------------------------------------------------
-Vector3 NavState::bodyVelocity(const Vector3& b_omega,
-                               OptionalJacobian<3, 9> H) const {
-  const Rot3& nRb = R_;
-  // Simplification of the matrix multiplication between adjoint and twist
-  // plus moving terms around.
-  //TODO(Varun) Compute correct jacobians
-  Matrix3 t_cross = skewSymmetric(t_);
-  const Vector3& n_v = v_ - (t_cross * nRb.matrix() * b_omega);
-  Matrix3 D_bv_nRb;
-  Vector3 b_v = nRb.unrotate(n_v, H ? &D_bv_nRb : 0);
-  if (H) *H << D_bv_nRb, Z_3x3, I_3x3;
-  return b_v;
+Vector3 NavState::bodyVelocity(const Vector3& omega_b,
+                               OptionalJacobian<3, 9> H_state,
+                               OptionalJacobian<3, 3> H_omega) const {
+  Matrix3 H_R_R, H_R_omega, H_vel;
+  Matrix6 H_pose, H_Ad_twist;
+
+  // Twist is [omega, velocity]'
+  Vector3 omega_n =
+      R_.rotate(omega_b, H_state ? &H_R_R : 0, H_omega ? &H_R_omega : 0);
+  Vector6 n_twist = (Vector6() << omega_n, v_).finished();
+
+  Pose3 bTn = Pose3(R_, t_).inverse();
+  // Call Adjoint to convert twist from navigation to body frame
+  Vector6 b_twist = bTn.Adjoint(n_twist, H_state ? &H_pose: 0, (H_state || H_omega) ? &H_Ad_twist : 0);
+
+  if (H_state) {
+    //TODO(Varun) Need to fix this
+    H_vel = H_Ad_twist.block<3, 6>(3, 0) * (Matrix63() << Z_3x3, I_3x3).finished();
+    *H_state << -H_pose.block<3, 6>(3, 0), H_vel;
+  }
+  if (H_omega) {
+    *H_omega = H_Ad_twist.block<3, 3>(3, 0) * H_R_omega;
+  }
+
+  return b_twist.tail<3>();
 }
 
 //------------------------------------------------------------------------------
