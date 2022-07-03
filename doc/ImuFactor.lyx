@@ -281,8 +281,8 @@ The noise model associated with this factor is assumed to be zero-mean Gaussian
 \end_inset
 
 .
- This covariance matrix is computed in the preintegrated measurement class,
- of which there are two variants as discussed above.
+ This (discrete-time) covariance matrix is computed in the preintegrated
+ measurement class, of which there are two variants as discussed above.
 \end_layout
 
 \begin_layout Subsubsection*
@@ -307,6 +307,20 @@ CombinedImuFactor is a 6-way factor between the previous pose, velocity
 \begin_layout Enumerate
 CombinedImuFactor2 is a 4-way factor between the previous NavState and IMU
  bias and the current NavState and IMU bias.
+\end_layout
+
+\begin_layout Standard
+Since the Combined IMU Factor has a larger state variable due to the inclusion
+ of IMU biases, the noise model associated with this factor is assumed to
+ be a zero mean Gaussian with a 
+\begin_inset Formula $15\times15$
+\end_inset
+
+ covariance matrix 
+\begin_inset Formula $\Sigma$
+\end_inset
+
+, similarly defined on the tangent space of the NavState manifold.
 \end_layout
 
 \begin_layout Subsubsection*
@@ -564,7 +578,15 @@ acceleration
 \end_inset
 
  in the body frame.
- We know (from Murray84book) that the derivative of 
+ We know (from 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Murray94book"
+literal "false"
+
+\end_inset
+
+) that the derivative of 
 \begin_inset Formula $R$
 \end_inset
 
@@ -1619,6 +1641,42 @@ where
 \end_inset
 
 .
+ Note that 
+\begin_inset Formula $\Sigma_{k},$
+\end_inset
+
+
+\begin_inset Formula $\Sigma_{\eta}^{ad}$
+\end_inset
+
+, and 
+\begin_inset Formula $\Sigma_{\eta}^{gd}$
+\end_inset
+
+ are discrete time covariances with 
+\begin_inset Formula $\Sigma_{\eta}^{ad}$
+\end_inset
+
+, and 
+\begin_inset Formula $\Sigma_{\eta}^{gd}$
+\end_inset
+
+divided by 
+\begin_inset Formula $\Delta_{t}$
+\end_inset
+
+.
+ Please see the section on Covariance Discretization
+\begin_inset CommandInset ref
+LatexCommand vpageref
+reference "subsec:Covariance-Discretization"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
@@ -1645,7 +1703,7 @@ It can be shown that for small
  we have 
 \begin_inset Formula 
 \[
-\deriv{H(\theta_{k})^{-1}\omega_{k}^{b}}{\theta_{k}}\approx-\frac{1}{2}\Skew{\omega_{k}^{b}}\mbox{ and hence }\deriv{\theta_{k+1}}{\theta_{k}}=I_{3\times3}-\frac{\Delta t}{2}\Skew{\omega_{k}^{b}}
+\deriv{H(\theta_{k})^{-1}\omega_{k}^{b}}{\theta_{k}}\approx-\frac{1}{2}\Skew{\omega_{k}^{b}}\mbox{ and hence }\deriv{\theta_{k+1}}{\theta_{k}}=I_{3\times3}-\frac{\Delta_{t}}{2}\Skew{\omega_{k}^{b}}
 \]
 
 \end_inset
@@ -2033,6 +2091,13 @@ which we can break into 3 matrices for clarity, representing the main diagonal
 
 \begin_layout Subsubsection*
 Covariance Discretization
+\begin_inset CommandInset label
+LatexCommand label
+name "subsec:Covariance-Discretization"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
