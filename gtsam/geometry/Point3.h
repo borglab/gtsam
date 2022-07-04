@@ -25,6 +25,7 @@
 #include <gtsam/base/VectorSpace.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/dllexport.h>
+#include <gtsam/base/VectorSerialization.h>
 #include <boost/serialization/nvp.hpp>
 #include <numeric>
 
