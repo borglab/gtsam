@@ -82,7 +82,7 @@
 \begin_body
 
 \begin_layout Title
-The new IMU Factor
+The New IMU Factor
 \end_layout
 
 \begin_layout Author
@@ -227,16 +227,62 @@ preintegrated_
 
 \begin_layout Standard
 The main function of a factor is to calculate an error.
- The easiest case to look at is the NavState variant in ImuFactor2, which
- is given as:
+ This is done exactly the same in both variants: 
 \begin_inset Formula 
 \begin{equation}
-\Delta X_{ij}=X_{j}-\hat{X_{ij}}\label{eq:imu-factor-error}
+e(X_{i},X_{j})=X_{j}\ominus\widehat{X_{j}}\label{eq:imu-factor-error}
 \end{equation}
 
 \end_inset
 
+where the predicted NavState 
+\begin_inset Formula $\widehat{X_{j}}$
+\end_inset
 
+ at time 
+\begin_inset Formula $t_{j}$
+\end_inset
+
+ is a function of the NavState 
+\begin_inset Formula $X_{i}$
+\end_inset
+
+ at time 
+\begin_inset Formula $t_{i}$
+\end_inset
+
+ and the preintegrated measurements 
+\begin_inset Formula $PIM$
+\end_inset
+
+:
+\begin_inset Formula 
+\[
+\widehat{X_{j}}=f(X_{i},PIM)
+\]
+
+\end_inset
+
+The noise model associated with this factor is assumed to be zero-mean Gaussian
+ with a 
+\begin_inset Formula $9\times9$
+\end_inset
+
+ covariance matrix 
+\begin_inset Formula $\Sigma_{ij}$
+\end_inset
+
+, which is defined in the tangent space 
+\begin_inset Formula $T_{X_{j}}\mathcal{N}$
+\end_inset
+
+ of the NavState manifold at the NavState 
+\begin_inset Formula $X_{j}$
+\end_inset
+
+.
+ This (discrete-time) covariance matrix is computed in the preintegrated
+ measurement class, of which there are two variants as discussed above.
 \end_layout
 
 \begin_layout Subsubsection*
@@ -263,6 +309,20 @@ CombinedImuFactor2 is a 4-way factor between the previous NavState and IMU
  bias and the current NavState and IMU bias.
 \end_layout
 
+\begin_layout Standard
+Since the Combined IMU Factor has a larger state variable due to the inclusion
+ of IMU biases, the noise model associated with this factor is assumed to
+ be a zero mean Gaussian with a 
+\begin_inset Formula $15\times15$
+\end_inset
+
+ covariance matrix 
+\begin_inset Formula $\Sigma$
+\end_inset
+
+, similarly defined on the tangent space of the NavState manifold.
+\end_layout
+
 \begin_layout Subsubsection*
 Covariance Matrices
 \end_layout
@@ -283,6 +343,14 @@ Gyroscope Covariance
 \end_layout
 
 \begin_layout Itemize
+Gyroscope Bias Covariance 
+\begin_inset Formula $Q_{\Delta b^{\omega}}$
+\end_inset
+
+ : The covariance associated with the gyroscope bias random walk.
+\end_layout
+
+\begin_layout Itemize
 Accelerometer Covariance 
 \begin_inset Formula $Q_{acc}$
 \end_inset
@@ -296,14 +364,6 @@ Accelerometer Bias Covariance
 \end_inset
 
  : The covariance associated with the accelerometer bias random walk.
-\end_layout
-
-\begin_layout Itemize
-Gyroscope Bias Covariance 
-\begin_inset Formula $Q_{\Delta b^{\omega}}$
-\end_inset
-
- : The covariance associated with the gyroscope bias random walk.
 \end_layout
 
 \begin_layout Itemize
@@ -518,7 +578,15 @@ acceleration
 \end_inset
 
  in the body frame.
- We know (from Murray84book) that the derivative of 
+ We know (from 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Murray94book"
+literal "false"
+
+\end_inset
+
+) that the derivative of 
 \begin_inset Formula $R$
 \end_inset
 
@@ -1469,7 +1537,12 @@ Noise Propagation in IMU Factor
 \end_layout
 
 \begin_layout Standard
-Even when we assume uncorrelated noise on 
+We wish to compute the ImuFactor covariance matrix 
+\begin_inset Formula $\Sigma_{ij}$
+\end_inset
+
+.
+ Even when we assume uncorrelated noise on 
 \begin_inset Formula $\omega^{b}$
 \end_inset
 
@@ -1487,11 +1560,12 @@ Even when we assume uncorrelated noise on
 \end_inset
 
  appear in multiple places.
- To model the noise propagation, let us define 
+ To model the noise propagation, let us define the preintegrated navigation
+ state 
 \begin_inset Formula $\zeta_{k}=[\theta_{k},p_{k},v_{k}]$
 \end_inset
 
- and rewrite Eqns.
+, as a 9D vector on tangent space at and rewrite Eqns.
  (
 \begin_inset CommandInset ref
 LatexCommand ref
@@ -1567,6 +1641,42 @@ where
 \end_inset
 
 .
+ Note that 
+\begin_inset Formula $\Sigma_{k},$
+\end_inset
+
+
+\begin_inset Formula $\Sigma_{\eta}^{ad}$
+\end_inset
+
+, and 
+\begin_inset Formula $\Sigma_{\eta}^{gd}$
+\end_inset
+
+ are discrete time covariances with 
+\begin_inset Formula $\Sigma_{\eta}^{ad}$
+\end_inset
+
+, and 
+\begin_inset Formula $\Sigma_{\eta}^{gd}$
+\end_inset
+
+divided by 
+\begin_inset Formula $\Delta_{t}$
+\end_inset
+
+.
+ Please see the section on Covariance Discretization
+\begin_inset CommandInset ref
+LatexCommand vpageref
+reference "subsec:Covariance-Discretization"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
@@ -1593,7 +1703,7 @@ It can be shown that for small
  we have 
 \begin_inset Formula 
 \[
-\deriv{H(\theta_{k})^{-1}\omega_{k}^{b}}{\theta_{k}}\approx-\frac{1}{2}\Skew{\omega_{k}^{b}}\mbox{ and hence }\deriv{\theta_{k+1}}{\theta_{k}}=I_{3\times3}-\frac{\Delta t}{2}\Skew{\omega_{k}^{b}}
+\deriv{H(\theta_{k})^{-1}\omega_{k}^{b}}{\theta_{k}}\approx-\frac{1}{2}\Skew{\omega_{k}^{b}}\mbox{ and hence }\deriv{\theta_{k+1}}{\theta_{k}}=I_{3\times3}-\frac{\Delta_{t}}{2}\Skew{\omega_{k}^{b}}
 \]
 
 \end_inset
@@ -1981,6 +2091,13 @@ which we can break into 3 matrices for clarity, representing the main diagonal
 
 \begin_layout Subsubsection*
 Covariance Discretization
+\begin_inset CommandInset label
+LatexCommand label
+name "subsec:Covariance-Discretization"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
