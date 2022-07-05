@@ -145,7 +145,8 @@ Eigen::Matrix<double, 15, 15> CombinedScenarioRunner::estimateCovariance(
     auto pim = integrate(T, estimatedBias, true);
     NavState sampled = predict(pim);
     Vector15 xi = Vector15::Zero();
-    xi << sampled.localCoordinates(prediction), estimatedBias_.vector();
+    xi << sampled.localCoordinates(prediction),
+        (estimatedBias_.vector() - estimatedBias.vector());
     samples.col(i) = xi;
     sum += xi;
   }
