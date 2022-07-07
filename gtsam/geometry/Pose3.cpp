@@ -490,7 +490,7 @@ boost::optional<Pose3> align(const Point3Pairs &baPointPairs) {
 #endif
 
 /* ************************************************************************* */
-Pose3 Pose3::interp(double t, const Pose3& other, OptionalJacobian<6, 6> Hx, OptionalJacobian<6, 6> Hy) const {
+Pose3 Pose3::slerp(double t, const Pose3& other, OptionalJacobian<6, 6> Hx, OptionalJacobian<6, 6> Hy) const {
   return interpolate(*this, other, t, Hx, Hy);
 }
 

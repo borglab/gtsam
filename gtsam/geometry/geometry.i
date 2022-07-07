@@ -455,8 +455,8 @@ class Pose3 {
   gtsam::Pose3 between(const gtsam::Pose3& pose,
                        Eigen::Ref<Eigen::MatrixXd> H1,
                        Eigen::Ref<Eigen::MatrixXd> H2) const;
-  gtsam::Pose3 interp(double t, const gtsam::Pose3& pose) const;
-  gtsam::Pose3 interp(double t, const gtsam::Pose3& pose,
+  gtsam::Pose3 slerp(double t, const gtsam::Pose3& pose) const;
+  gtsam::Pose3 slerp(double t, const gtsam::Pose3& pose,
                            Eigen::Ref<Eigen::MatrixXd> Hx,
                            Eigen::Ref<Eigen::MatrixXd> Hy) const;
 
