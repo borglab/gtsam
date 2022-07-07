@@ -130,7 +130,7 @@ class Pose3Upright {
   gtsam::Pose3Upright retract(Vector v) const;
   Vector localCoordinates(const gtsam::Pose3Upright& p2) const;
 
-  static gtsam::Pose3Upright identity();
+  static gtsam::Pose3Upright Identity();
   gtsam::Pose3Upright inverse() const;
   gtsam::Pose3Upright compose(const gtsam::Pose3Upright& p2) const;
   gtsam::Pose3Upright between(const gtsam::Pose3Upright& p2) const;

@@ -71,7 +71,7 @@ public:
   /// @{
 
   /// identity
-  inline static StereoPoint2 identity() {
+  inline static StereoPoint2 Identity() {
     return StereoPoint2();
   }
 
