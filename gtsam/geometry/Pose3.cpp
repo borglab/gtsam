@@ -490,6 +490,11 @@ boost::optional<Pose3> align(const Point3Pairs &baPointPairs) {
 #endif
 
 /* ************************************************************************* */
+Pose3 Pose3::slerp(double t, const Pose3& other, OptionalJacobian<6, 6> Hx, OptionalJacobian<6, 6> Hy) const {
+  return interpolate(*this, other, t, Hx, Hy);
+}
+
+/* ************************************************************************* */
 std::ostream &operator<<(std::ostream &os, const Pose3& pose) {
   // Both Rot3 and Point3 have ostream definitions so we use them.
   os << "R: " << pose.rotation() << "\n";
