@@ -384,7 +384,7 @@ public:
    * @param s a value between 0 and 1.5
    * @param other final point of interpolation geodesic on manifold
    */
-  Pose3 interp(double t, const Pose3& other, OptionalJacobian<6, 6> Hx = boost::none,
+  Pose3 slerp(double t, const Pose3& other, OptionalJacobian<6, 6> Hx = boost::none,
                                              OptionalJacobian<6, 6> Hy = boost::none) const;
 
   /// Output stream operator
