@@ -237,5 +237,4 @@ class TestPose3(GtsamTestCase):
 
 
 if __name__ == "__main__":
-    # unittest.main()
-    TestPose3().test_slerp()
+    unittest.main()
