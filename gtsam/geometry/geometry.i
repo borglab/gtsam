@@ -446,24 +446,43 @@ class Pose3 {
   // Group
   static gtsam::Pose3 identity();
   gtsam::Pose3 inverse() const;
+  gtsam::Pose3 inverse(Eigen::Ref<Eigen::MatrixXd> H) const;
   gtsam::Pose3 compose(const gtsam::Pose3& pose) const;
+  gtsam::Pose3 compose(const gtsam::Pose3& pose,
+                       Eigen::Ref<Eigen::MatrixXd> H1,
+                       Eigen::Ref<Eigen::MatrixXd> H2) const;
   gtsam::Pose3 between(const gtsam::Pose3& pose) const;
+  gtsam::Pose3 between(const gtsam::Pose3& pose,
+                       Eigen::Ref<Eigen::MatrixXd> H1,
+                       Eigen::Ref<Eigen::MatrixXd> H2) const;
+  gtsam::Pose3 slerp(double t, const gtsam::Pose3& pose) const;
+  gtsam::Pose3 slerp(double t, const gtsam::Pose3& pose,
+                           Eigen::Ref<Eigen::MatrixXd> Hx,
+                           Eigen::Ref<Eigen::MatrixXd> Hy) const;
 
   // Operator Overloads
   gtsam::Pose3 operator*(const gtsam::Pose3& pose) const;
 
   // Manifold
   gtsam::Pose3 retract(Vector v) const;
+  gtsam::Pose3 retract(Vector v, Eigen::Ref<Eigen::MatrixXd> Hxi) const;
   Vector localCoordinates(const gtsam::Pose3& pose) const;
+  Vector localCoordinates(const gtsam::Pose3& pose, Eigen::Ref<Eigen::MatrixXd> Hxi) const;
 
   // Lie Group
   static gtsam::Pose3 Expmap(Vector v);
+  static gtsam::Pose3 Expmap(Vector v, Eigen::Ref<Eigen::MatrixXd> Hxi);
   static Vector Logmap(const gtsam::Pose3& pose);
+  static Vector Logmap(const gtsam::Pose3& pose, Eigen::Ref<Eigen::MatrixXd> Hpose);
   gtsam::Pose3 expmap(Vector v);
   Vector logmap(const gtsam::Pose3& pose);
   Matrix AdjointMap() const;
   Vector Adjoint(Vector xi) const;
+  Vector Adjoint(Vector xi, Eigen::Ref<Eigen::MatrixXd> H_this,
+                 Eigen::Ref<Eigen::MatrixXd> H_xib) const;
   Vector AdjointTranspose(Vector xi) const;
+  Vector AdjointTranspose(Vector xi, Eigen::Ref<Eigen::MatrixXd> H_this,
+                          Eigen::Ref<Eigen::MatrixXd> H_x) const;
   static Matrix adjointMap(Vector xi);
   static Vector adjoint(Vector xi, Vector y);
   static Matrix adjointMap_(Vector xi);
@@ -476,7 +495,11 @@ class Pose3 {
 
   // Group Action on Point3
   gtsam::Point3 transformFrom(const gtsam::Point3& point) const;
+  gtsam::Point3 transformFrom(const gtsam::Point3& point, Eigen::Ref<Eigen::MatrixXd> Hself,
+                              Eigen::Ref<Eigen::MatrixXd> Hpoint) const;
   gtsam::Point3 transformTo(const gtsam::Point3& point) const;
+  gtsam::Point3 transformTo(const gtsam::Point3& point, Eigen::Ref<Eigen::MatrixXd> Hself,
+                            Eigen::Ref<Eigen::MatrixXd> Hpoint) const;
 
   // Matrix versions
   Matrix transformFrom(const Matrix& points) const;
@@ -484,15 +507,25 @@ class Pose3 {
 
   // Standard Interface
   gtsam::Rot3 rotation() const;
+  gtsam::Rot3 rotation(Eigen::Ref<Eigen::MatrixXd> Hself) const;
   gtsam::Point3 translation() const;
+  gtsam::Point3 translation(Eigen::Ref<Eigen::MatrixXd> Hself) const;
   double x() const;
   double y() const;
   double z() const;
   Matrix matrix() const;
   gtsam::Pose3 transformPoseFrom(const gtsam::Pose3& pose) const;
+  gtsam::Pose3 transformPoseFrom(const gtsam::Pose3& pose, Eigen::Ref<Eigen::MatrixXd> Hself,
+                                 Eigen::Ref<Eigen::MatrixXd> HaTb) const;
   gtsam::Pose3 transformPoseTo(const gtsam::Pose3& pose) const;
+  gtsam::Pose3 transformPoseTo(const gtsam::Pose3& pose, Eigen::Ref<Eigen::MatrixXd> Hself,
+                               Eigen::Ref<Eigen::MatrixXd> HwTb) const;
   double range(const gtsam::Point3& point);
+  double range(const gtsam::Point3& point, Eigen::Ref<Eigen::MatrixXd> Hself,
+               Eigen::Ref<Eigen::MatrixXd> Hpoint);
   double range(const gtsam::Pose3& pose);
+  double range(const gtsam::Pose3& pose, Eigen::Ref<Eigen::MatrixXd> Hself,
+               Eigen::Ref<Eigen::MatrixXd> Hpose);
 
   // enabling serialization functionality
   void serialize() const;
