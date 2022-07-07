@@ -1279,5 +1279,11 @@ class BearingRange {
 
 typedef gtsam::BearingRange<gtsam::Pose2, gtsam::Point2, gtsam::Rot2, double>
     BearingRange2D;
+typedef gtsam::BearingRange<gtsam::Pose2, gtsam::Pose2, gtsam::Rot2, double>
+    BearingRangePose2;
+typedef gtsam::BearingRange<gtsam::Pose3, gtsam::Point3, gtsam::Unit3, double>
+    BearingRange3D;
+typedef gtsam::BearingRange<gtsam::Pose3, gtsam::Pose3, gtsam::Unit3, double>
+    BearingRangePose3;
 
 }  // namespace gtsam
