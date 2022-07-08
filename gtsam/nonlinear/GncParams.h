@@ -161,7 +161,7 @@ class GTSAM_EXPORT GncParams {
       std::cout << "knownInliers: " << knownInliers[i] << "\n";
     for (size_t i = 0; i < knownOutliers.size(); i++)
       std::cout << "knownOutliers: " << knownOutliers[i] << "\n";
-    baseOptimizerParams.print(str);
+    baseOptimizerParams.print("Base optimizer params: ");
   }
 };
 

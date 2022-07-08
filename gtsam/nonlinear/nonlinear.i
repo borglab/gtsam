@@ -571,7 +571,7 @@ virtual class GncParams {
   void setVerbosityGNC(const This::Verbosity value);
   void setKnownInliers(const std::vector<size_t>& knownIn);
   void setKnownOutliers(const std::vector<size_t>& knownOut);
-  void print(const string& str = "") const;
+  void print(const string& str = "GncParams: ") const;
   
   enum Verbosity {
     SILENT,
