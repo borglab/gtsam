@@ -91,8 +91,19 @@ class TestScenario(GtsamTestCase):
             base_params.setMaxIterations(base_max_iters)
             params = GncLMParams(base_params)
             self.assertEqual(params.baseOptimizerParams.getMaxIterations(), base_max_iters)
+
         # Test printing
-        str(params)
+        params_str = str(params)
+        for s in (
+            "lossType",
+            "maxIterations",
+            "muStep",
+            "relativeCostTol",
+            "weightsTol",
+            "verbosity",
+        ):
+            self.assertTrue(s in params_str)
+
         # Test each parameter
         for loss_type in (GncLossType.TLS, GncLossType.GM):
             params.setLossType(loss_type)  # Default is TLS
@@ -121,6 +132,7 @@ class TestScenario(GtsamTestCase):
             params.setKnownInliers(out)
             self.assertEqual(params.knownInliers, out)
             params.knownInliers = []
+
         # Test optimizer params
         optimizer = GncLMOptimizer(self.fg, self.initial_values, params)
         for ict_factor in (0.9, 1.1):
