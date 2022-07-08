@@ -553,6 +553,16 @@ template<PARAMS>
 virtual class GncParams {
   GncParams(const PARAMS& baseOptimizerParams);
   GncParams();
+  BaseOptimizerParameters baseOptimizerParams;
+  GncLossType lossType;
+  size_t maxIterations;
+  double muStep;
+  double relativeCostTol;
+  double weightsTol;
+  Verbosity verbosity;
+  std::vector<size_t> knownInliers;
+  std::vector<size_t> knownOutliers;
+
   void setLossType(const GncLossType type);
   void setMaxIterations(const size_t maxIter);
   void setMuStep(const double step);
@@ -561,7 +571,7 @@ virtual class GncParams {
   void setVerbosityGNC(const This::Verbosity value);
   void setKnownInliers(const std::vector<size_t>& knownIn);
   void setKnownOutliers(const std::vector<size_t>& knownOut);
-  void print(const string& str) const;
+  void print(const string& str = "") const;
   
   enum Verbosity {
     SILENT,
