@@ -142,15 +142,15 @@ TableFactor TableFactor::sum(size_t nrFrontals) const {
          nrFrontals % size())
             .str());
   // Find all remaining keys
-  DiscreteKeys dkeys;
+  DiscreteKeys remaining_keys;
   int cardinality = 1;
   for (size_t i = 0; i < keys_.size(); i++) {
     if (i >= nrFrontals) {
-      dkeys.push_back(discreteKey(keys_[i]));
+      remaining_keys.push_back(discreteKey(keys_[i]));
       cardinality *= cardinalities_.at(keys_[i]);
     }
   }
-  return populateSumTable(dkeys, cardinality);
+  return populateSumTable(remaining_keys, cardinality);
 }
 
 /* ************************************************************************ */
@@ -162,37 +162,32 @@ TableFactor TableFactor::sum(const Ordering& frontalKeys) const {
          frontalKeys.size() % size())
             .str());
   // Find all remaining keys
-  DiscreteKeys dkeys;
+  DiscreteKeys remaining_keys;
   int cardinality = 1;
   for (Key k : keys_) {
     if (std::find(frontalKeys.begin(), frontalKeys.end(), k) ==
         frontalKeys.end()) {
-      dkeys.push_back(discreteKey(k));
+      remaining_keys.push_back(discreteKey(k));
       cardinality *= cardinalities_.at(k);
     }
   }
-  return populateSumTable(dkeys, cardinality);
+  return populateSumTable(remaining_keys, cardinality);
 }
 
 /* ************************************************************************ */
-TableFactor TableFactor::populateSumTable(DiscreteKeys dkeys,
+TableFactor TableFactor::populateSumTable(DiscreteKeys remaining_keys,
                                           int cardinality) const {
-  // Create a new TableFactor with remaining keys
-  Eigen::SparseVector<double> new_sparse_table_(cardinality);
-  if (sparse_table_.nonZeros() < cardinality)
-    new_sparse_table_.reserve(sparse_table_.nonZeros());
-  TableFactor eliminated_f(dkeys, new_sparse_table_);
-  // Populate the new TableFactor
+  std::vector<double> sum_table(cardinality, 0);
+  // Populate sum_table
   for (sparse_it it(sparse_table_); it; ++it) {
-    DiscreteValues assignments;
-    for (DiscreteKey dkey : dkeys) {
-      assignments[dkey.first] = keyValueForIndex(dkey.first, it.index());
+    size_t index = 0;
+    for (DiscreteKey dkey : remaining_keys) {
+      if (index) index *= dkey.second;
+      index += keyValueForIndex(dkey.first, it.index());
     }
-    size_t index = eliminated_f.findIndex(assignments);
-    // store the summed value
-    eliminated_f.sparse_table_.coeffRef(index) += it.value();
+    sum_table[index] += it.value();
   }
-  return eliminated_f;
+  return TableFactor(remaining_keys, sum_table);
 }
 
 /* ************************************************************************ */
@@ -204,15 +199,15 @@ TableFactor TableFactor::max(size_t nrFrontals) const {
          nrFrontals % size())
             .str());
   // Find all remaining keys
-  DiscreteKeys dkeys;
+  DiscreteKeys remaining_keys;
   int cardinality = 1;
   for (size_t i = 0; i < keys_.size(); i++) {
     if (i >= nrFrontals) {
-      dkeys.push_back(discreteKey(keys_[i]));
+      remaining_keys.push_back(discreteKey(keys_[i]));
       cardinality *= cardinalities_.at(keys_[i]);
     }
   }
-  return populateMaxTable(dkeys, cardinality);
+  return populateMaxTable(remaining_keys, cardinality);
 }
 
 /* ************************************************************************ */
@@ -224,39 +219,32 @@ TableFactor TableFactor::max(const Ordering& frontalKeys) const {
          frontalKeys.size() % size())
             .str());
   // Find all remaining keys
-  DiscreteKeys dkeys;
+  DiscreteKeys remaining_keys;
   int cardinality = 1;
   for (Key k : keys_) {
     if (std::find(frontalKeys.begin(), frontalKeys.end(), k) ==
         frontalKeys.end()) {
-      dkeys.push_back(discreteKey(k));
+      remaining_keys.push_back(discreteKey(k));
       cardinality *= cardinalities_.at(k);
     }
   }
-  return populateMaxTable(dkeys, cardinality);
+  return populateMaxTable(remaining_keys, cardinality);
 }
 
 /* ************************************************************************ */
-TableFactor TableFactor::populateMaxTable(DiscreteKeys dkeys,
+TableFactor TableFactor::populateMaxTable(DiscreteKeys remaining_keys,
                                           int cardinality) const {
-  // Create a new TableFactor with remaining keys
-  Eigen::SparseVector<double> new_sparse_table_(cardinality);
-  if (sparse_table_.nonZeros() < cardinality)
-    new_sparse_table_.reserve(sparse_table_.nonZeros());
-  TableFactor eliminated_f(dkeys, new_sparse_table_);
-  // Populate the new TableFactor
+  std::vector<double> max_table(cardinality, 0);
+  // Populate max_table
   for (sparse_it it(sparse_table_); it; ++it) {
-    DiscreteValues assignments;
-    for (DiscreteKey dkey : dkeys) {
-      assignments[dkey.first] = keyValueForIndex(dkey.first, it.index());
+    size_t index = 0;
+    for (DiscreteKey dkey : remaining_keys) {
+      if (index) index *= dkey.second;
+      index += keyValueForIndex(dkey.first, it.index());
     }
-    size_t index = eliminated_f.findIndex(assignments);
-    // swap values to store the maximum
-    if (it.value() > eliminated_f.sparse_table_.coeff(index)) {
-      eliminated_f.sparse_table_.coeffRef(index) = it.value();
-    }
+    if (max_table[index] < it.value()) max_table[index] = it.value();
   }
-  return eliminated_f;
+  return TableFactor(remaining_keys, max_table);
 }
 
 /* ************************************************************************ */
@@ -286,9 +274,7 @@ size_t TableFactor::findIndex(const DiscreteValues& assignment) const {
   //     index = index * I + i
   size_t index = 0;
   for (auto&& key : keys_) {
-    if (index) {
-      index *= cardinalities_.at(key);
-    }
+    if (index) index *= cardinalities_.at(key);
     index += assignment.at(key);
   }
   return index;
