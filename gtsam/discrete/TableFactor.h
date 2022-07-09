@@ -43,7 +43,13 @@ namespace gtsam {
 class GTSAM_EXPORT TableFactor : public DiscreteFactor {
  private:
   Eigen::SparseVector<double> sparse_table_;
+  /// Cardinalities of the keys
   std::map<Key, size_t> cardinalities_;
+  /** 
+   * lengths of all cardinalities of later keys multiplied together
+   * Example)
+   * denominator_.at(a) = cardinalities.at(b) * cardinalities.at(c)
+   */
   std::map<Key, size_t> denominator_;
 
   DiscreteKey discreteKey(size_t i) const {
