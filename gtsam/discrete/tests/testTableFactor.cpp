@@ -169,9 +169,6 @@ TEST(TableFactor, sum_max) {
   TableFactor expected2(v1, "5 6");
   TableFactor actual2 = f1.max(1);
   CHECK(assert_equal(expected2, actual2));
-
-  TableFactor f2(v1 & v0, "1 2  3 4  5 6");
-  TableFactor actual22 = f2.sum(1);
 }
 
 /* ************************************************************************* */
