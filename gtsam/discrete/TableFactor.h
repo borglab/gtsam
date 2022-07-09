@@ -57,12 +57,45 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   /// Convert probability table given as string to SparseVector.
   static Eigen::SparseVector<double> Convert(const std::string& table);
 
-  /// Finds value for the key at index
-  // TODO: add some example doxygen block
+  /**
+   * @brief Finds nth entry in the cartesian product of arrays in O(1)
+   * Example)
+   *   v0 | v1 | val
+   *    0 |  0 |  10
+   *    0 |  1 |  21
+   *    1 |  0 |  32
+   *    1 |  1 |  43
+   *   keyValueForIndex(v1, 2) = 0
+   * @param target_key nth entry's key to find out its assigned value
+   * @param index nth entry in the sparse vector
+   * @return TableFactor
+   */
   size_t keyValueForIndex(Key target_key, size_t index) const;
 
   /// Create union of keys
   DiscreteKeys unionKeys(const TableFactor& f) const;
+
+  /**
+   * @brief Create new table with remaining keys and populate it with
+   * summed values over all values with the same separator.
+   *
+   * @param remaining_keys Remaining keys.
+   * @param cardinality cardinality of all remaining keys multiplied
+   * @return TableFactor
+   */
+  TableFactor populateSumTable(DiscreteKeys remaining_keys,
+                               int cardinality) const;
+
+  /**
+   * @brief Create new table with remaining keys and populate it with
+   * maximum values over all values with the same separator.
+   *
+   * @param remaining_keys Remaining keys.
+   * @param cardinality cardinality of all remaining keys multiplied
+   * @return TableFactor
+   */
+  TableFactor populateMaxTable(DiscreteKeys remaining_keys,
+                               int cardinality) const;
 
  public:
   // typedefs needed to play nice with gtsam
@@ -135,31 +168,11 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   /// Create new factor by summing all values with the same separator values
   TableFactor sum(const Ordering& frontalKeys) const;
 
-   /**
-   * @brief Create new sparse vector with remaining keys and populate it with
-   * summed values over all values with the same separator.
-   *
-   * @param dkeys Remaining keys.
-   * @param cardinality cardinality of all remaining keys multiplied
-   * @return TableFactor
-   */ 
-  TableFactor populateSumTable(DiscreteKeys dkeys, int cardinality) const;
-
   /// Create new factor by maximizing over all values with the same separator
   TableFactor max(size_t nrFrontals) const;
 
   /// Create new factor by maximizing over all values with the same separator
   TableFactor max(const Ordering& frontalKeys) const;
-
-   /**
-   * @brief Create new sparse vector with remaining keys and populate it with
-   * maximum values over all values with the same separator.
-   *
-   * @param dkeys Remaining keys.
-   * @param cardinality cardinality of all remaining keys multiplied
-   * @return TableFactor
-   */
-  TableFactor populateMaxTable(DiscreteKeys dkeys, int cardinality) const;
 
   /// @}
   /// @name Advanced Interface
