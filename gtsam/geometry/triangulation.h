@@ -63,24 +63,6 @@ GTSAM_EXPORT Vector4 triangulateHomogeneousDLT(
     const Point2Vector& measurements, double rank_tol = 1e-9);
 
 /**
- * @brief 
- * 
- * @param projection_matrices 
- * @param measurements 
- * @param rank_tol 
- * @return GTSAM_EXPORT 
- */
-GTSAM_EXPORT Vector3
-triangulateLOSTHomogeneous(const std::vector<Pose3>& poses,
-                           const std::vector<Point3>& calibrated_measurements,
-                           const double measurement_sigma);
-
-GTSAM_EXPORT Vector3
-triangulateLOSTHomogeneousLS(const std::vector<Pose3>& poses,
-                           const std::vector<Point3>& calibrated_measurements,
-                           const double measurement_sigma);
-
-/**
  * Same math as Hartley and Zisserman, 2nd Ed., page 312, but with unit-norm bearing vectors
  * (contrarily to pinhole projection, the z entry is not assumed to be 1 as in Hartley and Zisserman)
  * @param projection_matrices Projection matrices (K*P^-1)
@@ -111,6 +93,20 @@ GTSAM_EXPORT Point3 triangulateDLT(
     const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>& projection_matrices,
     const std::vector<Unit3>& measurements,
     double rank_tol = 1e-9);
+
+/**
+ * @brief Triangulation using the LOST (Linear Optimal Sine Triangulation)
+ * algorithm proposed in https://arxiv.org/pdf/2205.12197.pdf by Sebastien Henry
+ * and John Christian.
+ * @param poses camera poses in world frame
+ * @param calibratedMeasurements measurements in homogeneous coordinates in each
+ * camera pose
+ * @param measurementNoise isotropic noise model for the measurements
+ * @return triangulated point in world coordinates
+ */
+GTSAM_EXPORT Point3 triangulateLOST(const std::vector<Pose3>& poses,
+                                    const Point3Vector& calibratedMeasurements,
+                                    const SharedIsotropic& measurementNoise);
 
 /**
  * Create a factor graph with projection factors from poses and one calibration
@@ -320,8 +316,8 @@ template <class CAMERA>
 typename CAMERA::MeasurementVector undistortMeasurements(
     const CameraSet<CAMERA>& cameras,
     const typename CAMERA::MeasurementVector& measurements) {
-  const size_t num_meas = cameras.size();
-  assert(num_meas == measurements.size());
+  const size_t num_meas = measurements.size();
+  assert(num_meas == cameras.size());
   typename CAMERA::MeasurementVector undistortedMeasurements(num_meas);
   for (size_t ii = 0; ii < num_meas; ++ii) {
     // Calibrate with cal and uncalibrate with pinhole version of cal so that
@@ -349,6 +345,65 @@ inline SphericalCamera::MeasurementVector undistortMeasurements(
   return measurements;
 }
 
+/** Convert pixel measurements in image to homogeneous measurements in the image
+ * plane using shared camera intrinsics.
+ *
+ * @tparam CALIBRATION Calibration type to use.
+ * @param cal Calibration with which measurements were taken.
+ * @param measurements Vector of measurements to undistort.
+ * @return homogeneous measurements in image plane
+ */
+template <class CALIBRATION>
+inline Point3Vector calibrateMeasurementsShared(
+    const CALIBRATION& cal, const Point2Vector& measurements) {
+  Point3Vector calibratedMeasurements;
+  // Calibrate with cal and uncalibrate with pinhole version of cal so that
+  // measurements are undistorted.
+  std::transform(measurements.begin(), measurements.end(),
+                 std::back_inserter(calibratedMeasurements),
+                 [&cal](const Point2& measurement) {
+                   Point3 p;
+                   p << cal.calibrate(measurement), 1.0;
+                   return p;
+                 });
+  return calibratedMeasurements;
+}
+
+/** Convert pixel measurements in image to homogeneous measurements in the image
+ * plane using camera intrinsics of each measurement.
+ *
+ * @tparam CAMERA Camera type to use.
+ * @param cameras Cameras corresponding to each measurement.
+ * @param measurements Vector of measurements to undistort.
+ * @return homogeneous measurements in image plane
+ */
+template <class CAMERA>
+inline Point3Vector calibrateMeasurements(
+    const CameraSet<CAMERA>& cameras,
+    const typename CAMERA::MeasurementVector& measurements) {
+  const size_t num_meas = measurements.size();
+  assert(num_meas == cameras.size());
+  Point3Vector calibratedMeasurements(num_meas);
+  for (size_t ii = 0; ii < num_meas; ++ii) {
+    calibratedMeasurements[ii]
+        << cameras[ii].calibration().calibrate(measurements[ii]),
+        1.0;
+  }
+  return calibratedMeasurements;
+}
+
+/** Specialize for SphericalCamera to do nothing. */
+template <class CAMERA = SphericalCamera>
+inline Point3Vector calibrateMeasurements(
+    const CameraSet<SphericalCamera>& cameras,
+    const SphericalCamera::MeasurementVector& measurements) {
+  Point3Vector calibratedMeasurements(measurements.size());
+  for (size_t ii = 0; ii < measurements.size(); ++ii) {
+    calibratedMeasurements[ii] << measurements[ii].point3();
+  }
+  return calibratedMeasurements;
+}
+
 /**
  * Function to triangulate 3D landmark point from an arbitrary number
  * of poses (at least 2) using the DLT. The function checks that the
@@ -359,6 +414,7 @@ inline SphericalCamera::MeasurementVector undistortMeasurements(
  * @param measurements A vector of camera measurements
  * @param rank_tol rank tolerance, default 1e-9
  * @param optimize Flag to turn on nonlinear refinement of triangulation
+ * @param use_lost_triangulation whether to use the LOST algorithm instead of DLT
  * @return Returns a Point3
  */
 template<class CALIBRATION>
@@ -366,22 +422,36 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
     boost::shared_ptr<CALIBRATION> sharedCal,
     const Point2Vector& measurements, double rank_tol = 1e-9,
     bool optimize = false,
-    const SharedNoiseModel& model = nullptr) {
+    const SharedNoiseModel& model = nullptr,
+    const bool use_lost_triangulation = true) {
 
   assert(poses.size() == measurements.size());
   if (poses.size() < 2)
     throw(TriangulationUnderconstrainedException());
 
-  // construct projection matrices from poses & calibration
-  auto projection_matrices = projectionMatricesFromPoses(poses, sharedCal);
-
-  // Undistort the measurements, leaving only the pinhole elements in effect.
-  auto undistortedMeasurements =
-      undistortMeasurements<CALIBRATION>(*sharedCal, measurements);
-
   // Triangulate linearly
-  Point3 point =
-      triangulateDLT(projection_matrices, undistortedMeasurements, rank_tol);
+  Point3 point;
+  if(use_lost_triangulation) {
+    // Reduce input noise model to an isotropic noise model using the mean of
+    // the diagonal.
+    const double measurementSigma = model ? model->sigmas().mean() : 1e-4;
+    SharedIsotropic measurementNoise =
+        noiseModel::Isotropic::Sigma(2, measurementSigma);
+    // calibrate the measurements to obtain homogenous coordinates in image plane.
+    auto calibratedMeasurements =
+        calibrateMeasurementsShared<CALIBRATION>(*sharedCal, measurements);
+
+    point = triangulateLOST(poses, calibratedMeasurements, measurementNoise);
+  } else {
+    // construct projection matrices from poses & calibration
+    auto projection_matrices = projectionMatricesFromPoses(poses, sharedCal);
+
+    // Undistort the measurements, leaving only the pinhole elements in effect.
+    auto undistortedMeasurements =
+        undistortMeasurements<CALIBRATION>(*sharedCal, measurements);
+
+    point = triangulateDLT(projection_matrices, undistortedMeasurements, rank_tol);
+  }
 
   // Then refine using non-linear optimization
   if (optimize)
@@ -400,45 +470,6 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
   return point;
 }
 
-template <class CALIBRATION>
-Point3 triangulateLOSTPoint3(
-    const CameraSet<PinholeCamera<CALIBRATION>>& cameras,
-    const Point2Vector& measurements,
-    const double measurement_sigma = 1e-2, bool use_dlt = false) {
-  const size_t num_cameras = cameras.size();
-  assert(measurements.size() == num_cameras);
-
-  if (num_cameras < 2) throw(TriangulationUnderconstrainedException());
-
-  // Convert measurements to image plane coordinates.
-  std::vector<Point3> calibrated_measurements;
-  calibrated_measurements.reserve(measurements.size());
-  for (int i = 0; i < measurements.size(); ++i) {
-    Point2 p = cameras[i].calibration().calibrate(measurements[i]);
-    calibrated_measurements.emplace_back(p.x(), p.y(), 1.0);
-  }
-
-  std::vector<Pose3> poses;
-  poses.reserve(cameras.size());
-  for (const auto& camera : cameras) poses.push_back(camera.pose());
-
-  Point3 point = use_dlt
-                     ? triangulateLOSTHomogeneous(
-                           poses, calibrated_measurements, measurement_sigma)
-                     : triangulateLOSTHomogeneousLS(
-                           poses, calibrated_measurements, measurement_sigma);
-
-#ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
-  // verify that the triangulated point lies in front of all cameras
-  for (const auto& camera : cameras) {
-    const Point3& p_local = camera.pose().transformTo(point);
-    if (p_local.z() <= 0) throw(TriangulationCheiralityException());
-  }
-#endif
-
-  return point;
-}
-
 /**
  * Function to triangulate 3D landmark point from an arbitrary number
  * of poses (at least 2) using the DLT. This function is similar to the one
@@ -449,6 +480,7 @@ Point3 triangulateLOSTPoint3(
  * @param measurements A vector of camera measurements
  * @param rank_tol rank tolerance, default 1e-9
  * @param optimize Flag to turn on nonlinear refinement of triangulation
+ * @param use_lost_triangulation whether to use the LOST algorithm instead of DLT
  * @return Returns a Point3
  */
 template<class CAMERA>
@@ -456,7 +488,8 @@ Point3 triangulatePoint3(
     const CameraSet<CAMERA>& cameras,
     const typename CAMERA::MeasurementVector& measurements, double rank_tol = 1e-9,
     bool optimize = false,
-    const SharedNoiseModel& model = nullptr) {
+    const SharedNoiseModel& model = nullptr, 
+    const bool use_lost_triangulation=false) {
 
   size_t m = cameras.size();
   assert(measurements.size() == m);
@@ -464,19 +497,41 @@ Point3 triangulatePoint3(
   if (m < 2)
     throw(TriangulationUnderconstrainedException());
 
-  // construct projection matrices from poses & calibration
-  auto projection_matrices = projectionMatricesFromCameras(cameras);
+  // Triangulate linearly
+  Point3 point;
+  if(use_lost_triangulation) {
+    // Reduce input noise model to an isotropic noise model using the mean of
+    // the diagonal.
+    const double measurementSigma = model ? model->sigmas().mean() : 1e-4;
+    SharedIsotropic measurementNoise =
+        noiseModel::Isotropic::Sigma(2, measurementSigma);
 
-  // Undistort the measurements, leaving only the pinhole elements in effect.
-  auto undistortedMeasurements =
-      undistortMeasurements<CAMERA>(cameras, measurements);
+    // construct poses from cameras.
+    std::vector<Pose3> poses;
+    poses.reserve(cameras.size());
+    for (const auto& camera : cameras) poses.push_back(camera.pose());
 
-  Point3 point =
-      triangulateDLT(projection_matrices, undistortedMeasurements, rank_tol);
+    // calibrate the measurements to obtain homogenous coordinates in image
+    // plane.
+    auto calibratedMeasurements =
+        calibrateMeasurements<CAMERA>(cameras, measurements);
 
-  // The n refine using non-linear optimization
-  if (optimize)
+    point = triangulateLOST(poses, calibratedMeasurements, measurementNoise);
+  } else {
+    // construct projection matrices from poses & calibration
+    auto projection_matrices = projectionMatricesFromCameras(cameras);
+
+    // Undistort the measurements, leaving only the pinhole elements in effect.
+    auto undistortedMeasurements =
+        undistortMeasurements<CAMERA>(cameras, measurements);
+
+    point = triangulateDLT(projection_matrices, undistortedMeasurements, rank_tol);
+  }
+
+  // Then refine using non-linear optimization
+  if (optimize) {
     point = triangulateNonlinear<CAMERA>(cameras, measurements, point, model);
+  }
 
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
   // verify that the triangulated point lies in front of all cameras
@@ -496,9 +551,10 @@ Point3 triangulatePoint3(
     const CameraSet<PinholeCamera<CALIBRATION> >& cameras,
     const Point2Vector& measurements, double rank_tol = 1e-9,
     bool optimize = false,
-    const SharedNoiseModel& model = nullptr) {
+    const SharedNoiseModel& model = nullptr, 
+    const bool use_lost_triangulation = false) {
   return triangulatePoint3<PinholeCamera<CALIBRATION> > //
-  (cameras, measurements, rank_tol, optimize, model);
+  (cameras, measurements, rank_tol, optimize, model, use_lost_triangulation);
 }
 
 struct GTSAM_EXPORT TriangulationParameters {

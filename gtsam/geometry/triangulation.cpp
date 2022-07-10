@@ -24,9 +24,9 @@
 namespace gtsam {
 
 Vector4 triangulateHomogeneousDLT(
-    const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>& projection_matrices,
+    const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>&
+        projection_matrices,
     const Point2Vector& measurements, double rank_tol) {
-
   // number of cameras
   size_t m = projection_matrices.size();
 
@@ -52,61 +52,75 @@ Vector4 triangulateHomogeneousDLT(
   Vector v;
   boost::tie(rank, error, v) = DLT(A, rank_tol);
 
-  if (rank < 3)
-    throw(TriangulationUnderconstrainedException());
+  if (rank < 3) throw(TriangulationUnderconstrainedException());
 
   return v;
 }
 
-Vector3 triangulateLOSTHomogeneous(
-    const std::vector<Pose3>& poses,
-    const std::vector<Point3>& calibrated_measurements, 
-    const double measurement_sigma) {
-  size_t m = calibrated_measurements.size();
-  assert(m == poses.size());
+Vector4 triangulateHomogeneousDLT(
+    const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>&
+        projection_matrices,
+    const std::vector<Unit3>& measurements, double rank_tol) {
+  // number of cameras
+  size_t m = projection_matrices.size();
 
-  // Construct the system matrices.
+  // Allocate DLT matrix
   Matrix A = Matrix::Zero(m * 2, 4);
 
   for (size_t i = 0; i < m; i++) {
-    const Pose3& wTi = poses[i];
-    // TODO(akshay-krishnan): are there better ways to select j?
-    const int j = (i + 1) % m;
-    const Pose3& wTj = poses[j];
+    size_t row = i * 2;
+    const Matrix34& projection = projection_matrices.at(i);
+    const Point3& p =
+        measurements.at(i)
+            .point3();  // to get access to x,y,z of the bearing vector
 
-    const Point3 d_ij = wTj.translation() - wTi.translation();
-
-    const Point3 w_measurement_i =
-        wTi.rotation().rotate(calibrated_measurements[i]);
-    const Point3 w_measurement_j =
-        wTj.rotation().rotate(calibrated_measurements[j]);
-
-    const double q_i = w_measurement_i.cross(w_measurement_j).norm() /
-                       (measurement_sigma * d_ij.cross(w_measurement_j).norm());
-    const Matrix23 coefficient_mat =
-        q_i * skewSymmetric(calibrated_measurements[i]).topLeftCorner(2, 3) *
-        wTi.rotation().matrix().transpose();
-
-    A.block<2, 4>(2 * i, 0) << coefficient_mat, -coefficient_mat * wTi.translation();
+    // build system of equations
+    A.row(row) = p.x() * projection.row(2) - p.z() * projection.row(0);
+    A.row(row + 1) = p.y() * projection.row(2) - p.z() * projection.row(1);
   }
-
-  const double rank_tol = 1e-6;
   int rank;
   double error;
   Vector v;
   boost::tie(rank, error, v) = DLT(A, rank_tol);
 
-  if (rank < 3)
-    throw(TriangulationUnderconstrainedException());
+  if (rank < 3) throw(TriangulationUnderconstrainedException());
+
+  return v;
+}
+
+Point3 triangulateDLT(const std::vector<Pose3>& poses,
+                      const Point3Vector& homogenousMeasurements,
+                      double rank_tol) {
+  // number of cameras
+  size_t m = poses.size();
+
+  // Allocate DLT matrix
+  Matrix A = Matrix::Zero(m * 2, 4);
+
+  for (size_t i = 0; i < m; i++) {
+    size_t row = i * 2;
+    const Matrix34 projection = poses[i].matrix().block(0, 0, 3, 4);
+    const Point3& p = homogenousMeasurements[i];  // to get access to x,y,z of
+                                                  // the bearing vector
+
+    // build system of equations
+    A.row(row) = p.x() * projection.row(2) - p.z() * projection.row(0);
+    A.row(row + 1) = p.y() * projection.row(2) - p.z() * projection.row(1);
+  }
+  int rank;
+  double error;
+  Vector v;
+  boost::tie(rank, error, v) = DLT(A, rank_tol);
+
+  if (rank < 3) throw(TriangulationUnderconstrainedException());
 
   return Point3(v.head<3>() / v[3]);
 }
 
-Vector3 triangulateLOSTHomogeneousLS(
-    const std::vector<Pose3>& poses,
-    const std::vector<Point3>& calibrated_measurements, 
-    const double measurement_sigma) {
-  size_t m = calibrated_measurements.size();
+Point3 triangulateLOST(const std::vector<Pose3>& poses,
+                       const Point3Vector& calibratedMeasurements,
+                       const SharedIsotropic& measurementNoise) {
+  size_t m = calibratedMeasurements.size();
   assert(m == poses.size());
 
   // Construct the system matrices.
@@ -121,70 +135,43 @@ Vector3 triangulateLOSTHomogeneousLS(
 
     const Point3 d_ij = wTj.translation() - wTi.translation();
 
-    const Point3 w_measurement_i = wTi.rotation().rotate(calibrated_measurements[i]);
-    const Point3 w_measurement_j = wTj.rotation().rotate(calibrated_measurements[j]);
+    const Point3 w_measurement_i =
+        wTi.rotation().rotate(calibratedMeasurements[i]);
+    const Point3 w_measurement_j =
+        wTj.rotation().rotate(calibratedMeasurements[j]);
 
-    const double q_i = w_measurement_i.cross(w_measurement_j).norm() /
-                       (measurement_sigma * d_ij.cross(w_measurement_j).norm());
+    double q_i =
+        w_measurement_i.cross(w_measurement_j).norm() /
+        (measurementNoise->sigma() * d_ij.cross(w_measurement_j).norm());
     const Matrix23 coefficient_mat =
-        q_i * skewSymmetric(calibrated_measurements[i]).topLeftCorner(2, 3) *
+        q_i * skewSymmetric(calibratedMeasurements[i]).topLeftCorner(2, 3) *
         wTi.rotation().matrix().transpose();
 
-    A.block<2, 3>(2*i, 0) = coefficient_mat;
-    b.block<2, 1>(2*i, 0) = coefficient_mat * wTi.translation();
+    A.block<2, 3>(2 * i, 0) << coefficient_mat;
+    b.block<2, 1>(2 * i, 0) << coefficient_mat * wTi.translation();
   }
   return A.colPivHouseholderQr().solve(b);
 }
 
-Vector4 triangulateHomogeneousDLT(
-    const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>& projection_matrices,
-    const std::vector<Unit3>& measurements, double rank_tol) {
-
-  // number of cameras
-  size_t m = projection_matrices.size();
-
-  // Allocate DLT matrix
-  Matrix A = Matrix::Zero(m * 2, 4);
-
-  for (size_t i = 0; i < m; i++) {
-    size_t row = i * 2;
-    const Matrix34& projection = projection_matrices.at(i);
-    const Point3& p = measurements.at(i).point3(); // to get access to x,y,z of the bearing vector
-
-    // build system of equations
-    A.row(row) = p.x() * projection.row(2) - p.z() * projection.row(0);
-    A.row(row + 1) = p.y() * projection.row(2) - p.z() * projection.row(1);
-  }
-  int rank;
-  double error;
-  Vector v;
-  boost::tie(rank, error, v) = DLT(A, rank_tol);
-
-  if (rank < 3)
-    throw(TriangulationUnderconstrainedException());
-
-  return v;
-}
-
 Point3 triangulateDLT(
-    const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>& projection_matrices,
+    const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>&
+        projection_matrices,
     const Point2Vector& measurements, double rank_tol) {
-
-  Vector4 v = triangulateHomogeneousDLT(projection_matrices, measurements,
-                                        rank_tol);
+  Vector4 v =
+      triangulateHomogeneousDLT(projection_matrices, measurements, rank_tol);
   // Create 3D point from homogeneous coordinates
   return Point3(v.head<3>() / v[3]);
 }
 
 Point3 triangulateDLT(
-    const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>& projection_matrices,
+    const std::vector<Matrix34, Eigen::aligned_allocator<Matrix34>>&
+        projection_matrices,
     const std::vector<Unit3>& measurements, double rank_tol) {
-
   // contrary to previous triangulateDLT, this is now taking Unit3 inputs
-  Vector4 v = triangulateHomogeneousDLT(projection_matrices, measurements,
-                                         rank_tol);
-   // Create 3D point from homogeneous coordinates
-   return Point3(v.head<3>() / v[3]);
+  Vector4 v =
+      triangulateHomogeneousDLT(projection_matrices, measurements, rank_tol);
+  // Create 3D point from homogeneous coordinates
+  return Point3(v.head<3>() / v[3]);
 }
 
 ///
@@ -215,4 +202,4 @@ Point3 optimize(const NonlinearFactorGraph& graph, const Values& values,
   return result.at<Point3>(landmarkKey);
 }
 
-}  // \namespace gtsam
+}  // namespace gtsam
