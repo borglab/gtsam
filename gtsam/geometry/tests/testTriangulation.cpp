@@ -96,23 +96,33 @@ TEST(triangulation, twoPoses) {
   EXPECT(assert_equal(Point3(4.995, 0.499167, 1.19814), *actual4, 1e-4));
 }
 
-TEST(triangulation, twoCamerasLOST) {
-  std::vector<PinholeCamera<Cal3_S2>> cameras = {camera1, camera2};
-  std::vector<Point2> measurements = {z1, z2};
+TEST(triangulation, twoCamerasUsingLOST) {
+  CameraSet<PinholeCamera<Cal3_S2>> cameras;
+  cameras.push_back(camera1);
+  cameras.push_back(camera2);
+
+  Point2Vector measurements = {z1, z2};
+  SharedNoiseModel measurementNoise = noiseModel::Isotropic::Sigma(2, 1e-4);
+  double rank_tol = 1e-9;
 
   // 1. Test simple triangulation, perfect in no noise situation
-  Point3 actual1 =  //
-      triangulateLOSTPoint3<Cal3_S2>(cameras, measurements);
-  EXPECT(assert_equal(landmark, actual1, 1e-12));
+  boost::optional<Point3> actual1 =  //
+      triangulatePoint3<PinholeCamera<Cal3_S2>>(
+          cameras, measurements, rank_tol,
+          /*optimize=*/false, measurementNoise,
+          /*use_lost_triangulation=*/true);
+  EXPECT(assert_equal(landmark, *actual1, 1e-12));
 
   // 3. Add some noise and try again: result should be ~ (4.995,
   // 0.499167, 1.19814)
   measurements[0] += Point2(0.1, 0.5);
   measurements[1] += Point2(-0.2, 0.3);
-  const double measurement_sigma = 1e-3;
-  Point3 actual2 =  //
-      triangulateLOSTPoint3<Cal3_S2>(cameras, measurements, measurement_sigma);
-  EXPECT(assert_equal(Point3(4.995, 0.499167, 1.19814), actual2, 1e-4));
+  boost::optional<Point3> actual2 =  //
+      triangulatePoint3<PinholeCamera<Cal3_S2>>(
+          cameras, measurements, rank_tol,
+          /*optimize=*/false, measurementNoise,
+          /*use_lost_triangulation=*/true);
+  EXPECT(assert_equal(Point3(4.995, 0.499167, 1.19814), *actual2, 1e-4));
 }
 
 TEST(triangulation, twoCamerasLOSTvsDLT) {
@@ -121,33 +131,32 @@ TEST(triangulation, twoCamerasLOSTvsDLT) {
   Cal3_S2 identity_K;
   Pose3 pose_1;
   Pose3 pose_2(Rot3(), Point3(5., 0., -5.));
-  PinholeCamera<Cal3_S2> camera_1(pose_1, identity_K);
-  PinholeCamera<Cal3_S2> camera_2(pose_2, identity_K);
+  CameraSet<PinholeCamera<Cal3_S2>> cameras;
+  cameras.emplace_back(pose_1, identity_K);
+  cameras.emplace_back(pose_2, identity_K);
 
   Point3 gt_point(0, 0, 1);
-  Point2 x1 = camera_1.project(gt_point);
-  Point2 x2 = camera_2.project(gt_point);
+  Point2 x1_noisy = cameras[0].project(gt_point) + Point2(0.00817, 0.00977);
+  Point2 x2_noisy = cameras[1].project(gt_point) + Point2(-0.00610, 0.01969);
+  Point2Vector measurements = {x1_noisy, x2_noisy};
 
-  Point2 x1_noisy = x1 + Point2(0.00817, 0.00977);
-  Point2 x2_noisy = x2 + Point2(-0.00610, 0.01969);
+  double rank_tol = 1e-9;
+  SharedNoiseModel measurementNoise = noiseModel::Isotropic::Sigma(2, 1e-2);
 
-  const double measurement_sigma = 1e-2;
-  Point3 estimate_lost = triangulateLOSTPoint3<Cal3_S2>(
-      {camera_1, camera_2}, {x1_noisy, x2_noisy}, measurement_sigma);
+  boost::optional<Point3> estimate_lost =  //
+      triangulatePoint3<PinholeCamera<Cal3_S2>>(
+          cameras, measurements, rank_tol,
+          /*optimize=*/false, measurementNoise,
+          /*use_lost_triangulation=*/true);
 
   // These values are from a MATLAB implementation.
-  EXPECT(assert_equal(Point3(0.007, 0.011, 0.945), estimate_lost, 1e-3));
-  
-  double rank_tol = 1e-9;
+  EXPECT(assert_equal(Point3(0.007, 0.011, 0.945), *estimate_lost, 1e-3));
 
-  Pose3Vector poses = {pose_1, pose_2};
-  Point2Vector points = {x1_noisy, x2_noisy};
-  boost::shared_ptr<Cal3_S2> cal = boost::make_shared<Cal3_S2>(identity_K);
   boost::optional<Point3> estimate_dlt =
-      triangulatePoint3<Cal3_S2>(poses, cal, points, rank_tol, false);
+      triangulatePoint3<Cal3_S2>(cameras, measurements, rank_tol, false);
 
   // The LOST estimate should have a smaller error.
-  EXPECT((gt_point - estimate_lost).norm() <=
+  EXPECT((gt_point - *estimate_lost).norm() <=
          (gt_point - *estimate_dlt).norm());
 }
 
