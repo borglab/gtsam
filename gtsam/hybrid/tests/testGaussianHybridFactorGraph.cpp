@@ -58,26 +58,30 @@ using gtsam::symbol_shorthand::X;
 using gtsam::symbol_shorthand::Y;
 
 /* ************************************************************************* */
-TEST(HybridGaussianFactorGraph, creation) {
-  HybridConditional test;
+TEST(HybridGaussianFactorGraph, Creation) {
+  HybridConditional conditional;
 
   HybridGaussianFactorGraph hfg;
 
-  hfg.add(HybridGaussianFactor(JacobianFactor(0, I_3x3, Z_3x1)));
+  hfg.add(HybridGaussianFactor(JacobianFactor(X(0), I_3x3, Z_3x1)));
 
-  GaussianMixture clgc(
-      {X(0)}, {X(1)}, DiscreteKeys(DiscreteKey{C(0), 2}),
-      GaussianMixture::Conditionals(
-          C(0),
-          boost::make_shared<GaussianConditional>(X(0), Z_3x1, I_3x3, X(1),
-                                                  I_3x3),
-          boost::make_shared<GaussianConditional>(X(0), Vector3::Ones(), I_3x3,
-                                                  X(1), I_3x3)));
-  GTSAM_PRINT(clgc);
+  // Define a gaussian mixture conditional P(x0|x1, c0) and add it to the factor
+  // graph
+  GaussianMixture gm({X(0)}, {X(1)}, DiscreteKeys(DiscreteKey{C(0), 2}),
+                     GaussianMixture::Conditionals(
+                         C(0),
+                         boost::make_shared<GaussianConditional>(
+                             X(0), Z_3x1, I_3x3, X(1), I_3x3),
+                         boost::make_shared<GaussianConditional>(
+                             X(0), Vector3::Ones(), I_3x3, X(1), I_3x3)));
+  hfg.add(gm);
+
+  EXPECT_LONGS_EQUAL(2, hfg.size());
 }
 
 /* ************************************************************************* */
-TEST(HybridGaussianFactorGraph, eliminate) {
+TEST(HybridGaussianFactorGraph, EliminateSequential) {
+  // Test elimination of a single variable.
   HybridGaussianFactorGraph hfg;
 
   hfg.add(HybridGaussianFactor(JacobianFactor(0, I_3x3, Z_3x1)));
@@ -88,11 +92,13 @@ TEST(HybridGaussianFactorGraph, eliminate) {
 }
 
 /* ************************************************************************* */
-TEST(HybridGaussianFactorGraph, eliminateMultifrontal) {
+TEST(HybridGaussianFactorGraph, EliminateMultifrontal) {
+  // Test multifrontal elimination
   HybridGaussianFactorGraph hfg;
 
   DiscreteKey c(C(1), 2);
 
+  // Add priors on x0 and c1
   hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
   hfg.add(HybridDiscreteFactor(DecisionTreeFactor(c, {2, 8})));
 
@@ -110,9 +116,12 @@ TEST(HybridGaussianFactorGraph, eliminateFullSequentialEqualChance) {
 
   DiscreteKey c1(C(1), 2);
 
+  // Add prior on x0
   hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
+  // Add factor between x0 and x1
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
 
+  // Add a gaussian mixture factor ϕ(x1, c1)
   DecisionTree<Key, GaussianFactor::shared_ptr> dt(
       C(1), boost::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1),
       boost::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()));
@@ -123,9 +132,9 @@ TEST(HybridGaussianFactorGraph, eliminateFullSequentialEqualChance) {
       hfg.eliminateSequential(Ordering::ColamdConstrainedLast(hfg, {C(1)}));
 
   auto dc = result->at(2)->asDiscreteConditional();
-  DiscreteValues dv;
-  dv[C(1)] = 0;
-  EXPECT_DOUBLES_EQUAL(0.6225, dc->operator()(dv), 1e-3);
+  DiscreteValues mode;
+  mode[C(1)] = 0;
+  EXPECT_DOUBLES_EQUAL(0.6225, (*dc)(mode), 1e-3);
 }
 
 /* ************************************************************************* */
@@ -134,26 +143,26 @@ TEST(HybridGaussianFactorGraph, eliminateFullSequentialSimple) {
 
   DiscreteKey c1(C(1), 2);
 
+  // Add prior on x0
   hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
+  // Add factor between x0 and x1
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
 
   DecisionTree<Key, GaussianFactor::shared_ptr> dt(
       C(1), boost::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1),
       boost::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()));
-
   hfg.add(GaussianMixtureFactor({X(1)}, {c1}, dt));
-  // hfg.add(GaussianMixtureFactor({X(0)}, {c1}, dt));
+
+  // Discrete probability table for c1
   hfg.add(HybridDiscreteFactor(DecisionTreeFactor(c1, {2, 8})));
+  // Joint discrete probability table for c1, c2
   hfg.add(HybridDiscreteFactor(
       DecisionTreeFactor({{C(1), 2}, {C(2), 2}}, "1 2 3 4")));
-  // hfg.add(HybridDiscreteFactor(DecisionTreeFactor({{C(2), 2}, {C(3), 2}}, "1
-  // 2 3 4"))); hfg.add(HybridDiscreteFactor(DecisionTreeFactor({{C(3), 2},
-  // {C(1), 2}}, "1 2 2 1")));
 
   auto result = hfg.eliminateSequential(
       Ordering::ColamdConstrainedLast(hfg, {C(1), C(2)}));
 
-  GTSAM_PRINT(*result);
+  EXPECT_LONGS_EQUAL(4, result->size());
 }
 
 /* ************************************************************************* */
@@ -165,28 +174,19 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalSimple) {
   hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
 
-  // DecisionTree<Key, GaussianFactor::shared_ptr> dt(
-  //     C(1), boost::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1),
-  //     boost::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()));
-
-  // hfg.add(GaussianMixtureFactor({X(1)}, {c1}, dt));
   hfg.add(GaussianMixtureFactor::FromFactors(
       {X(1)}, {{C(1), 2}},
       {boost::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1),
        boost::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones())}));
 
-  // hfg.add(GaussianMixtureFactor({X(0)}, {c1}, dt));
   hfg.add(DecisionTreeFactor(c1, {2, 8}));
   hfg.add(DecisionTreeFactor({{C(1), 2}, {C(2), 2}}, "1 2 3 4"));
-  // hfg.add(HybridDiscreteFactor(DecisionTreeFactor({{C(2), 2}, {C(3), 2}}, "1
-  // 2 3 4"))); hfg.add(HybridDiscreteFactor(DecisionTreeFactor({{C(3), 2},
-  // {C(1), 2}}, "1 2 2 1")));
 
   auto result = hfg.eliminateMultifrontal(
       Ordering::ColamdConstrainedLast(hfg, {C(1), C(2)}));
 
-  GTSAM_PRINT(*result);
-  GTSAM_PRINT(*result->marginalFactor(C(2)));
+  // GTSAM_PRINT(*result);
+  // GTSAM_PRINT(*result->marginalFactor(C(2)));
 }
 
 /* ************************************************************************* */
@@ -195,30 +195,28 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalCLG) {
 
   DiscreteKey c(C(1), 2);
 
+  // Prior on x0
   hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
+  // Factor between x0-x1
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
 
+  // Decision tree with different modes on x1
   DecisionTree<Key, GaussianFactor::shared_ptr> dt(
       C(1), boost::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1),
       boost::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()));
 
+  // Hybrid factor P(x1|c1)
   hfg.add(GaussianMixtureFactor({X(1)}, {c}, dt));
+  // Prior factor on c1
   hfg.add(HybridDiscreteFactor(DecisionTreeFactor(c, {2, 8})));
-  //  hfg.add(HybridDiscreteFactor(DecisionTreeFactor({{C(1), 2}, {C(2), 2}}, "1
-  //  2 3 4")));
 
+  // Get a constrained ordering keeping c1 last
   auto ordering_full = Ordering::ColamdConstrainedLast(hfg, {C(1)});
 
+  // Returns a Hybrid Bayes Tree with distribution P(x0|x1)P(x1|c1)P(c1)
   HybridBayesTree::shared_ptr hbt = hfg.eliminateMultifrontal(ordering_full);
 
-  GTSAM_PRINT(*hbt);
-  /*
-  Explanation: the Junction tree will need to reeliminate to get to the marginal
-  on X(1), which is not possible because it involves eliminating discrete before
-  continuous. The solution to this, however, is in Murphy02. TLDR is that this
-  is 1. expensive and 2. inexact. neverless it is doable. And I believe that we
-  should do this.
-  */
+  EXPECT_LONGS_EQUAL(3, hbt->size());
 }
 
 /* ************************************************************************* */
@@ -233,10 +231,6 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalTwoClique) {
   hfg.add(JacobianFactor(X(1), I_3x3, X(2), -I_3x3, Z_3x1));
 
   {
-    // DecisionTree<Key, GaussianFactor::shared_ptr> dt(
-    //     C(0), boost::make_shared<JacobianFactor>(X(0), I_3x3, Z_3x1),
-    //     boost::make_shared<JacobianFactor>(X(0), I_3x3, Vector3::Ones()));
-
     hfg.add(GaussianMixtureFactor::FromFactors(
         {X(0)}, {{C(0), 2}},
         {boost::make_shared<JacobianFactor>(X(0), I_3x3, Z_3x1),
@@ -249,7 +243,6 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalTwoClique) {
     hfg.add(GaussianMixtureFactor({X(2)}, {{C(1), 2}}, dt1));
   }
 
-  // hfg.add(HybridDiscreteFactor(DecisionTreeFactor(c, {2, 8})));
   hfg.add(HybridDiscreteFactor(
       DecisionTreeFactor({{C(1), 2}, {C(2), 2}}, "1 2 3 4")));
 
@@ -273,24 +266,35 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalTwoClique) {
   auto ordering_full =
       Ordering::ColamdConstrainedLast(hfg, {C(0), C(1), C(2), C(3)});
 
-  GTSAM_PRINT(ordering_full);
-
   HybridBayesTree::shared_ptr hbt;
   HybridGaussianFactorGraph::shared_ptr remaining;
   std::tie(hbt, remaining) = hfg.eliminatePartialMultifrontal(ordering_full);
 
-  GTSAM_PRINT(*hbt);
+  // GTSAM_PRINT(*hbt);
+  // GTSAM_PRINT(*remaining);
 
-  GTSAM_PRINT(*remaining);
-
-  hbt->dot(std::cout);
+  // hbt->marginalFactor(X(1))->print("HBT: ");
   /*
-  Explanation: the Junction tree will need to reeliminate to get to the marginal
-  on X(1), which is not possible because it involves eliminating discrete before
-  continuous. The solution to this, however, is in Murphy02. TLDR is that this
-  is 1. expensive and 2. inexact. neverless it is doable. And I believe that we
-  should do this.
+  (Fan) Explanation: the Junction tree will need to reeliminate to get to the
+  marginal on X(1), which is not possible because it involves eliminating
+  discrete before continuous. The solution to this, however, is in Murphy02.
+  TLDR is that this is 1. expensive and 2. inexact. nevertheless it is doable.
+  And I believe that we should do this.
   */
+}
+
+void dotPrint(const HybridGaussianFactorGraph::shared_ptr &hfg,
+              const HybridBayesTree::shared_ptr &hbt,
+              const Ordering &ordering) {
+  DotWriter dw;
+  dw.positionHints['c'] = 2;
+  dw.positionHints['x'] = 1;
+  std::cout << hfg->dot(DefaultKeyFormatter, dw);
+  std::cout << "\n";
+  hbt->dot(std::cout);
+
+  std::cout << "\n";
+  std::cout << hfg->eliminateSequential(ordering)->dot(DefaultKeyFormatter, dw);
 }
 
 /* ************************************************************************* */
@@ -326,9 +330,6 @@ TEST(HybridGaussianFactorGraph, Switching) {
     for (auto &l : lvls) {
       l = -l;
     }
-    std::copy(lvls.begin(), lvls.end(),
-              std::ostream_iterator<int>(std::cout, ","));
-    std::cout << "\n";
   }
   {
     std::vector<int> naturalC(N - 1);
@@ -342,63 +343,19 @@ TEST(HybridGaussianFactorGraph, Switching) {
     // std::copy(ordC.begin(), ordC.end(), std::back_inserter(ordering));
     std::tie(ndC, lvls) = makeBinaryOrdering(ordC);
     std::copy(ndC.begin(), ndC.end(), std::back_inserter(ordering));
-    std::copy(lvls.begin(), lvls.end(),
-              std::ostream_iterator<int>(std::cout, ","));
   }
   auto ordering_full = Ordering(ordering);
 
-  // auto ordering_full =
-  //     Ordering();
-
-  // for (int i = 1; i <= 9; i++) {
-  //   ordering_full.push_back(X(i));
-  // }
-
-  // for (int i = 1; i < 9; i++) {
-  //   ordering_full.push_back(C(i));
-  // }
-
-  // auto ordering_full =
-  //     Ordering(KeyVector{X(1), X(4), X(2), X(6), X(9), X(8), X(3), X(7),
-  //     X(5),
-  //                        C(1), C(2), C(3), C(4), C(5), C(6), C(7), C(8)});
-
   // GTSAM_PRINT(*hfg);
-  GTSAM_PRINT(ordering_full);
+  // GTSAM_PRINT(ordering_full);
 
   HybridBayesTree::shared_ptr hbt;
   HybridGaussianFactorGraph::shared_ptr remaining;
   std::tie(hbt, remaining) = hfg->eliminatePartialMultifrontal(ordering_full);
 
   // GTSAM_PRINT(*hbt);
-
   // GTSAM_PRINT(*remaining);
-
-  {
-    DotWriter dw;
-    dw.positionHints['c'] = 2;
-    dw.positionHints['x'] = 1;
-    std::cout << hfg->dot(DefaultKeyFormatter, dw);
-    std::cout << "\n";
-    hbt->dot(std::cout);
-  }
-
-  {
-    DotWriter dw;
-    // dw.positionHints['c'] = 2;
-    // dw.positionHints['x'] = 1;
-    std::cout << "\n";
-    std::cout << hfg->eliminateSequential(ordering_full)
-                     ->dot(DefaultKeyFormatter, dw);
-  }
-  /*
-  Explanation: the Junction tree will need to reeliminate to get to the marginal
-  on X(1), which is not possible because it involves eliminating discrete before
-  continuous. The solution to this, however, is in Murphy02. TLDR is that this
-  is 1. expensive and 2. inexact. neverless it is doable. And I believe that we
-  should do this.
-  */
-  hbt->marginalFactor(C(11))->print("HBT: ");
+  // hbt->marginalFactor(C(11))->print("HBT: ");
 }
 
 /* ************************************************************************* */
@@ -434,9 +391,6 @@ TEST(HybridGaussianFactorGraph, SwitchingISAM) {
     for (auto &l : lvls) {
       l = -l;
     }
-    std::copy(lvls.begin(), lvls.end(),
-              std::ostream_iterator<int>(std::cout, ","));
-    std::cout << "\n";
   }
   {
     std::vector<int> naturalC(N - 1);
@@ -450,39 +404,15 @@ TEST(HybridGaussianFactorGraph, SwitchingISAM) {
     // std::copy(ordC.begin(), ordC.end(), std::back_inserter(ordering));
     std::tie(ndC, lvls) = makeBinaryOrdering(ordC);
     std::copy(ndC.begin(), ndC.end(), std::back_inserter(ordering));
-    std::copy(lvls.begin(), lvls.end(),
-              std::ostream_iterator<int>(std::cout, ","));
   }
   auto ordering_full = Ordering(ordering);
 
   // GTSAM_PRINT(*hfg);
-  GTSAM_PRINT(ordering_full);
+  // GTSAM_PRINT(ordering_full);
 
   HybridBayesTree::shared_ptr hbt;
   HybridGaussianFactorGraph::shared_ptr remaining;
   std::tie(hbt, remaining) = hfg->eliminatePartialMultifrontal(ordering_full);
-
-  // GTSAM_PRINT(*hbt);
-
-  // GTSAM_PRINT(*remaining);
-
-  {
-    DotWriter dw;
-    dw.positionHints['c'] = 2;
-    dw.positionHints['x'] = 1;
-    std::cout << hfg->dot(DefaultKeyFormatter, dw);
-    std::cout << "\n";
-    hbt->dot(std::cout);
-  }
-
-  {
-    DotWriter dw;
-    // dw.positionHints['c'] = 2;
-    // dw.positionHints['x'] = 1;
-    std::cout << "\n";
-    std::cout << hfg->eliminateSequential(ordering_full)
-                     ->dot(DefaultKeyFormatter, dw);
-  }
 
   auto new_fg = makeSwitchingChain(12);
   auto isam = HybridGaussianISAM(*hbt);
@@ -492,13 +422,14 @@ TEST(HybridGaussianFactorGraph, SwitchingISAM) {
     factorGraph.push_back(new_fg->at(new_fg->size() - 2));
     factorGraph.push_back(new_fg->at(new_fg->size() - 1));
     isam.update(factorGraph);
-    std::cout << isam.dot();
-    isam.marginalFactor(C(11))->print();
+    // std::cout << isam.dot();
+    // isam.marginalFactor(C(11))->print();
   }
 }
 
 /* ************************************************************************* */
-TEST(HybridGaussianFactorGraph, SwitchingTwoVar) {
+// TODO(Varun) Actually test something!
+TEST_DISABLED(HybridGaussianFactorGraph, SwitchingTwoVar) {
   const int N = 7;
   auto hfg = makeSwitchingChain(N, X);
   hfg->push_back(*makeSwitchingChain(N, Y, D));
@@ -516,21 +447,6 @@ TEST(HybridGaussianFactorGraph, SwitchingTwoVar) {
     ordX.emplace_back(X(i));
     ordX.emplace_back(Y(i));
   }
-
-  // {
-  //   KeyVector ndX;
-  //   std::vector<int> lvls;
-  //   std::tie(ndX, lvls) = makeBinaryOrdering(naturalX);
-  //   std::copy(ndX.begin(), ndX.end(), std::back_inserter(ordering));
-  //   std::copy(lvls.begin(), lvls.end(),
-  //             std::ostream_iterator<int>(std::cout, ","));
-  //   std::cout << "\n";
-
-  //   for (size_t i = 0; i < N; i++) {
-  //     ordX.emplace_back(X(ndX[i]));
-  //     ordX.emplace_back(Y(ndX[i]));
-  //   }
-  // }
 
   for (size_t i = 1; i <= N - 1; i++) {
     ordX.emplace_back(C(i));

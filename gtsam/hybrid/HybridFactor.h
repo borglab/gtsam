@@ -52,9 +52,6 @@ class GTSAM_EXPORT HybridFactor : public Factor {
  protected:
   // Set of DiscreteKeys for this factor.
   DiscreteKeys discreteKeys_;
-  // For bookkeeping
-  KeyVector continuousKeys_;
-
   /// Record continuous keys for book-keeping
   KeyVector continuousKeys_;
 
