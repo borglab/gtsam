@@ -88,35 +88,6 @@ Vector4 triangulateHomogeneousDLT(
   return v;
 }
 
-Point3 triangulateDLT(const std::vector<Pose3>& poses,
-                      const Point3Vector& homogenousMeasurements,
-                      double rank_tol) {
-  // number of cameras
-  size_t m = poses.size();
-
-  // Allocate DLT matrix
-  Matrix A = Matrix::Zero(m * 2, 4);
-
-  for (size_t i = 0; i < m; i++) {
-    size_t row = i * 2;
-    const Matrix34 projection = poses[i].matrix().block(0, 0, 3, 4);
-    const Point3& p = homogenousMeasurements[i];  // to get access to x,y,z of
-                                                  // the bearing vector
-
-    // build system of equations
-    A.row(row) = p.x() * projection.row(2) - p.z() * projection.row(0);
-    A.row(row + 1) = p.y() * projection.row(2) - p.z() * projection.row(1);
-  }
-  int rank;
-  double error;
-  Vector v;
-  boost::tie(rank, error, v) = DLT(A, rank_tol);
-
-  if (rank < 3) throw(TriangulationUnderconstrainedException());
-
-  return Point3(v.head<3>() / v[3]);
-}
-
 Point3 triangulateLOST(const std::vector<Pose3>& poses,
                        const Point3Vector& calibratedMeasurements,
                        const SharedIsotropic& measurementNoise) {
@@ -140,7 +111,7 @@ Point3 triangulateLOST(const std::vector<Pose3>& poses,
     const Point3 w_measurement_j =
         wTj.rotation().rotate(calibratedMeasurements[j]);
 
-    double q_i =
+    const double q_i =
         w_measurement_i.cross(w_measurement_j).norm() /
         (measurementNoise->sigma() * d_ij.cross(w_measurement_j).norm());
     const Matrix23 coefficient_mat =
@@ -174,7 +145,6 @@ Point3 triangulateDLT(
   return Point3(v.head<3>() / v[3]);
 }
 
-///
 /**
  * Optimize for triangulation
  * @param graph nonlinear factors for projection
