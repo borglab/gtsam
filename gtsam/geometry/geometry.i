@@ -1129,7 +1129,8 @@ gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
 gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3_S2& cameras,
                                 const gtsam::Point2Vector& measurements,
                                 double rank_tol, bool optimize,
-                                const gtsam::SharedNoiseModel& model = nullptr);
+                                const gtsam::SharedNoiseModel& model = nullptr,
+                                const bool useLOST = false);
 gtsam::Point3 triangulateNonlinear(const gtsam::Pose3Vector& poses,
                                    gtsam::Cal3_S2* sharedCal,
                                    const gtsam::Point2Vector& measurements,
@@ -1151,7 +1152,8 @@ gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
 gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3DS2& cameras,
                                 const gtsam::Point2Vector& measurements,
                                 double rank_tol, bool optimize,
-                                const gtsam::SharedNoiseModel& model = nullptr);
+                                const gtsam::SharedNoiseModel& model = nullptr,
+                                const bool useLOST = false);
 gtsam::Point3 triangulateNonlinear(const gtsam::Pose3Vector& poses,
                                    gtsam::Cal3DS2* sharedCal,
                                    const gtsam::Point2Vector& measurements,
@@ -1173,7 +1175,8 @@ gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
 gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3Bundler& cameras,
                                 const gtsam::Point2Vector& measurements,
                                 double rank_tol, bool optimize,
-                                const gtsam::SharedNoiseModel& model = nullptr);
+                                const gtsam::SharedNoiseModel& model = nullptr,
+                                const bool useLOST = false);
 gtsam::Point3 triangulateNonlinear(const gtsam::Pose3Vector& poses,
                                    gtsam::Cal3Bundler* sharedCal,
                                    const gtsam::Point2Vector& measurements,
@@ -1195,7 +1198,8 @@ gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
 gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3Fisheye& cameras,
                                 const gtsam::Point2Vector& measurements,
                                 double rank_tol, bool optimize,
-                                const gtsam::SharedNoiseModel& model = nullptr);
+                                const gtsam::SharedNoiseModel& model = nullptr,
+                                const bool useLOST = false);
 gtsam::Point3 triangulateNonlinear(const gtsam::Pose3Vector& poses,
                                    gtsam::Cal3Fisheye* sharedCal,
                                    const gtsam::Point2Vector& measurements,
@@ -1217,7 +1221,8 @@ gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
 gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3Unified& cameras,
                                 const gtsam::Point2Vector& measurements,
                                 double rank_tol, bool optimize,
-                                const gtsam::SharedNoiseModel& model = nullptr);
+                                const gtsam::SharedNoiseModel& model = nullptr,
+                                const bool useLOST = false);
 gtsam::Point3 triangulateNonlinear(const gtsam::Pose3Vector& poses,
                                    gtsam::Cal3Unified* sharedCal,
                                    const gtsam::Point2Vector& measurements,
