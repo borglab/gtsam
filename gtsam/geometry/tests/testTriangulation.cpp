@@ -15,6 +15,7 @@
  * @date July 30th, 2013
  * @author Chris Beall (cbeall3)
  * @author Luca Carlone
+ * @author Akshay Krishnan
  */
 
 #include <CppUnitLite/TestHarness.h>

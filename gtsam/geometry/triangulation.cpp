@@ -14,6 +14,7 @@
  * @brief Functions for triangulation
  * @date July 31, 2013
  * @author Chris Beall
+ * @author Akshay Krishnan
  */
 
 #include <gtsam/geometry/triangulation.h>
