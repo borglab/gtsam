@@ -129,36 +129,35 @@ TEST(triangulation, twoCamerasUsingLOST) {
 TEST(triangulation, twoCamerasLOSTvsDLT) {
   // LOST has been shown to preform better when the point is much closer to one
   // camera compared to another. This unit test checks this configuration.
-  Cal3_S2 identity_K;
-  Pose3 pose_1;
-  Pose3 pose_2(Rot3(), Point3(5., 0., -5.));
+  const Cal3_S2 identityK;
+  const Pose3 pose1;
+  const Pose3 pose2(Rot3(), Point3(5., 0., -5.));
   CameraSet<PinholeCamera<Cal3_S2>> cameras;
-  cameras.emplace_back(pose_1, identity_K);
-  cameras.emplace_back(pose_2, identity_K);
+  cameras.emplace_back(pose1, identityK);
+  cameras.emplace_back(pose2, identityK);
 
-  Point3 gt_point(0, 0, 1);
-  Point2 x1_noisy = cameras[0].project(gt_point) + Point2(0.00817, 0.00977);
-  Point2 x2_noisy = cameras[1].project(gt_point) + Point2(-0.00610, 0.01969);
+  Point3 landmark(0, 0, 1);
+  Point2 x1_noisy = cameras[0].project(landmark) + Point2(0.00817, 0.00977);
+  Point2 x2_noisy = cameras[1].project(landmark) + Point2(-0.00610, 0.01969);
   Point2Vector measurements = {x1_noisy, x2_noisy};
 
-  double rank_tol = 1e-9;
+  const double rank_tol = 1e-9;
   SharedNoiseModel measurementNoise = noiseModel::Isotropic::Sigma(2, 1e-2);
 
-  boost::optional<Point3> estimate_lost =  //
+  boost::optional<Point3> estimateLOST =  //
       triangulatePoint3<PinholeCamera<Cal3_S2>>(
           cameras, measurements, rank_tol,
           /*optimize=*/false, measurementNoise,
           /*use_lost_triangulation=*/true);
 
   // These values are from a MATLAB implementation.
-  EXPECT(assert_equal(Point3(0.007, 0.011, 0.945), *estimate_lost, 1e-3));
+  EXPECT(assert_equal(Point3(0.007, 0.011, 0.945), *estimateLOST, 1e-3));
 
-  boost::optional<Point3> estimate_dlt =
+  boost::optional<Point3> estimateDLT =
       triangulatePoint3<Cal3_S2>(cameras, measurements, rank_tol, false);
 
   // The LOST estimate should have a smaller error.
-  EXPECT((gt_point - *estimate_lost).norm() <=
-         (gt_point - *estimate_dlt).norm());
+  EXPECT((landmark - *estimateLOST).norm() <= (landmark - *estimateDLT).norm());
 }
 
 //******************************************************************************
