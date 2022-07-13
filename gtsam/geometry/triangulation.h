@@ -15,6 +15,7 @@
  * @date July 31, 2013
  * @author Chris Beall
  * @author Luca Carlone
+ * @author Akshay Krishnan
  */
 
 #pragma once
