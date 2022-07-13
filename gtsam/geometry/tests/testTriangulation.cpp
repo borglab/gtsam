@@ -108,10 +108,10 @@ TEST(triangulation, twoCamerasUsingLOST) {
 
   // 1. Test simple triangulation, perfect in no noise situation
   boost::optional<Point3> actual1 =  //
-      triangulatePoint3<PinholeCamera<Cal3_S2>>(
-          cameras, measurements, rank_tol,
-          /*optimize=*/false, measurementNoise,
-          /*use_lost_triangulation=*/true);
+      triangulatePoint3<PinholeCamera<Cal3_S2>>(cameras, measurements, rank_tol,
+                                                /*optimize=*/false,
+                                                measurementNoise,
+                                                /*useLOST=*/true);
   EXPECT(assert_equal(kLandmark, *actual1, 1e-12));
 
   // 3. Add some noise and try again: result should be ~ (4.995,
@@ -145,10 +145,10 @@ TEST(triangulation, twoCamerasLOSTvsDLT) {
   SharedNoiseModel measurementNoise = noiseModel::Isotropic::Sigma(2, 1e-2);
 
   boost::optional<Point3> estimateLOST =  //
-      triangulatePoint3<PinholeCamera<Cal3_S2>>(
-          cameras, measurements, rank_tol,
-          /*optimize=*/false, measurementNoise,
-          /*use_lost_triangulation=*/true);
+      triangulatePoint3<PinholeCamera<Cal3_S2>>(cameras, measurements, rank_tol,
+                                                /*optimize=*/false,
+                                                measurementNoise,
+                                                /*useLOST=*/true);
 
   // These values are from a MATLAB implementation.
   EXPECT(assert_equal(Point3(0.007, 0.011, 0.945), *estimateLOST, 1e-3));
