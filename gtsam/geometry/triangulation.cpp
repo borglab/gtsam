@@ -107,20 +107,19 @@ Point3 triangulateLOST(const std::vector<Pose3>& poses,
 
     const Point3 d_ij = wTj.translation() - wTi.translation();
 
-    const Point3 w_measurement_i =
-        wTi.rotation().rotate(calibratedMeasurements[i]);
-    const Point3 w_measurement_j =
-        wTj.rotation().rotate(calibratedMeasurements[j]);
+    const Point3 wZi = wTi.rotation().rotate(calibratedMeasurements[i]);
+    const Point3 wZj = wTj.rotation().rotate(calibratedMeasurements[j]);
 
-    const double q_i =
-        w_measurement_i.cross(w_measurement_j).norm() /
-        (measurementNoise->sigma() * d_ij.cross(w_measurement_j).norm());
-    const Matrix23 coefficient_mat =
+    // Note: Setting q_i = 1.0 gives same results as DLT.
+    const double q_i = wZi.cross(wZj).norm() /
+                       (measurementNoise->sigma() * d_ij.cross(wZj).norm());
+
+    const Matrix23 coefficientMat =
         q_i * skewSymmetric(calibratedMeasurements[i]).topLeftCorner(2, 3) *
         wTi.rotation().matrix().transpose();
 
-    A.block<2, 3>(2 * i, 0) << coefficient_mat;
-    b.block<2, 1>(2 * i, 0) << coefficient_mat * wTi.translation();
+    A.block<2, 3>(2 * i, 0) << coefficientMat;
+    b.block<2, 1>(2 * i, 0) << coefficientMat * wTi.translation();
   }
   return A.colPivHouseholderQr().solve(b);
 }

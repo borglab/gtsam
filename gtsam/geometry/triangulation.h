@@ -415,8 +415,7 @@ inline Point3Vector calibrateMeasurements(
  * @param measurements A vector of camera measurements
  * @param rank_tol rank tolerance, default 1e-9
  * @param optimize Flag to turn on nonlinear refinement of triangulation
- * @param use_lost_triangulation whether to use the LOST algorithm instead of
- * DLT
+ * @param useLOST whether to use the LOST algorithm instead of DLT
  * @return Returns a Point3
  */
 template <class CALIBRATION>
@@ -425,13 +424,13 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
                          const Point2Vector& measurements,
                          double rank_tol = 1e-9, bool optimize = false,
                          const SharedNoiseModel& model = nullptr,
-                         const bool use_lost_triangulation = false) {
+                         const bool useLOST = false) {
   assert(poses.size() == measurements.size());
   if (poses.size() < 2) throw(TriangulationUnderconstrainedException());
 
   // Triangulate linearly
   Point3 point;
-  if (use_lost_triangulation) {
+  if (useLOST) {
     // Reduce input noise model to an isotropic noise model using the mean of
     // the diagonal.
     const double measurementSigma = model ? model->sigmas().mean() : 1e-4;
@@ -481,7 +480,7 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
  * @param measurements A vector of camera measurements
  * @param rank_tol rank tolerance, default 1e-9
  * @param optimize Flag to turn on nonlinear refinement of triangulation
- * @param use_lost_triangulation whether to use the LOST algorithm instead of
+ * @param useLOST whether to use the LOST algorithm instead of
  * DLT
  * @return Returns a Point3
  */
@@ -490,7 +489,7 @@ Point3 triangulatePoint3(const CameraSet<CAMERA>& cameras,
                          const typename CAMERA::MeasurementVector& measurements,
                          double rank_tol = 1e-9, bool optimize = false,
                          const SharedNoiseModel& model = nullptr,
-                         const bool use_lost_triangulation = false) {
+                         const bool useLOST = false) {
   size_t m = cameras.size();
   assert(measurements.size() == m);
 
@@ -498,7 +497,7 @@ Point3 triangulatePoint3(const CameraSet<CAMERA>& cameras,
 
   // Triangulate linearly
   Point3 point;
-  if (use_lost_triangulation) {
+  if (useLOST) {
     // Reduce input noise model to an isotropic noise model using the mean of
     // the diagonal.
     const double measurementSigma = model ? model->sigmas().mean() : 1e-4;
@@ -545,15 +544,14 @@ Point3 triangulatePoint3(const CameraSet<CAMERA>& cameras,
 }
 
 /// Pinhole-specific version
-template<class CALIBRATION>
-Point3 triangulatePoint3(
-    const CameraSet<PinholeCamera<CALIBRATION> >& cameras,
-    const Point2Vector& measurements, double rank_tol = 1e-9,
-    bool optimize = false,
-    const SharedNoiseModel& model = nullptr, 
-    const bool use_lost_triangulation = false) {
-  return triangulatePoint3<PinholeCamera<CALIBRATION> > //
-  (cameras, measurements, rank_tol, optimize, model, use_lost_triangulation);
+template <class CALIBRATION>
+Point3 triangulatePoint3(const CameraSet<PinholeCamera<CALIBRATION>>& cameras,
+                         const Point2Vector& measurements,
+                         double rank_tol = 1e-9, bool optimize = false,
+                         const SharedNoiseModel& model = nullptr,
+                         const bool useLOST = false) {
+  return triangulatePoint3<PinholeCamera<CALIBRATION>>  //
+      (cameras, measurements, rank_tol, optimize, model, useLOST);
 }
 
 struct GTSAM_EXPORT TriangulationParameters {
