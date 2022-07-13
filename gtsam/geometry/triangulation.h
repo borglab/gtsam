@@ -317,10 +317,10 @@ template <class CAMERA>
 typename CAMERA::MeasurementVector undistortMeasurements(
     const CameraSet<CAMERA>& cameras,
     const typename CAMERA::MeasurementVector& measurements) {
-  const size_t num_meas = measurements.size();
-  assert(num_meas == cameras.size());
-  typename CAMERA::MeasurementVector undistortedMeasurements(num_meas);
-  for (size_t ii = 0; ii < num_meas; ++ii) {
+  const size_t nrMeasurements = measurements.size();
+  assert(nrMeasurements == cameras.size());
+  typename CAMERA::MeasurementVector undistortedMeasurements(nrMeasurements);
+  for (size_t ii = 0; ii < nrMeasurements; ++ii) {
     // Calibrate with cal and uncalibrate with pinhole version of cal so that
     // measurements are undistorted.
     undistortedMeasurements[ii] =
@@ -382,10 +382,10 @@ template <class CAMERA>
 inline Point3Vector calibrateMeasurements(
     const CameraSet<CAMERA>& cameras,
     const typename CAMERA::MeasurementVector& measurements) {
-  const size_t num_meas = measurements.size();
-  assert(num_meas == cameras.size());
-  Point3Vector calibratedMeasurements(num_meas);
-  for (size_t ii = 0; ii < num_meas; ++ii) {
+  const size_t nrMeasurements = measurements.size();
+  assert(nrMeasurements == cameras.size());
+  Point3Vector calibratedMeasurements(nrMeasurements);
+  for (size_t ii = 0; ii < nrMeasurements; ++ii) {
     calibratedMeasurements[ii]
         << cameras[ii].calibration().calibrate(measurements[ii]),
         1.0;
