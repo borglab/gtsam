@@ -104,8 +104,8 @@ class DsfTrackGenerator
     // set elements from camera index of a detection and the index of that detection in that camera's keypoint list,
     // i.e. (i,k).
     std::vector<SfmTrack2d> generate_tracks_from_pairwise_matches(
-        const MatchIndicesMap matches_dict,
-        const KeypointsList keypoints_list)
+        const MatchIndicesMap& matches_dict,
+        const KeypointsList& keypoints_list)
     {
       std::vector<SfmTrack2d> track_2d_list;
 
