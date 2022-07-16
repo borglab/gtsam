@@ -4,14 +4,6 @@
 
 namespace gtsam {
 
-#include <gtsam/sfm/GtsfmData.h>
-class GtsfmData
-{
-  GtsfmData(const int numberImages);
-  void write_points(std::vector<gtsam::GtsfmImage>& images, const std::string save_dir);
-  void write_images(std::vector<gtsam::GtsfmImage>& images, const std::string save_dir);
-};
-
 #include <gtsam/sfm/DsfTrackGenerator.h>
 
 class MatchIndicesMap {
@@ -42,6 +34,13 @@ class Keypoints
   gtsam::KeypointCoordinates coordinates;
 }; // check if this should be a method
 
+
+class NamedSfmMeasurement
+{
+  size_t i;
+  gtsam::Point2 uv;
+  NamedSfmMeasurement(size_t i, gtsam::Point2 uv);
+};
 
 class SfmTrack2d
 {
