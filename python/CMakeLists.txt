@@ -51,7 +51,9 @@ set(ignore
     gtsam::BinaryMeasurementsUnit3
     gtsam::BinaryMeasurementsRot3
     gtsam::DiscreteKey
-    gtsam::KeyPairDoubleMap)
+    gtsam::KeyPairDoubleMap
+    gtsam::MatchIndicesMap
+    gtsam::KeypointsList)
 
 set(interface_headers
     ${PROJECT_SOURCE_DIR}/gtsam/gtsam.i
@@ -145,8 +147,11 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             gtsam::CameraSetCal3Bundler
             gtsam::CameraSetCal3Unified
             gtsam::CameraSetCal3Fisheye
-            gtsam::KeyPairDoubleMap)
-            
+            gtsam::KeyPairDoubleMap
+            gtsam::MatchIndicesMap
+            gtsam::KeypointsList)
+
+
     pybind_wrap(${GTSAM_PYTHON_UNSTABLE_TARGET} # target
             ${PROJECT_SOURCE_DIR}/gtsam_unstable/gtsam_unstable.i # interface_header
             "gtsam_unstable.cpp" # generated_cpp
