@@ -21,6 +21,7 @@
 #include <Eigen/Core>
 
 #include <gtsam/base/DSFMap.h>
+#include <gtsam/geometry/Point2.h>
 
 #include <algorithm>
 #include <iostream>
@@ -34,8 +35,9 @@ typedef DSFMap<IndexPair> DSFMapIndexPair;
 typedef std::pair<size_t, size_t> ImagePair;
 typedef Eigen::MatrixX2i CorrespondenceIndices; // N x 2 array
 
-
+//struct Keypoints;
 using KeypointCoordinates = Eigen::MatrixX2d;
+
 
 struct Keypoints
 {
@@ -47,6 +49,10 @@ struct Keypoints
   Keypoints(const gtsam::KeypointCoordinates& coordinates): coordinates(coordinates) {}; // boost::none
 };
 
+using KeypointsList = std::vector<Keypoints>;
+using KeypointsVector = std::vector<Keypoints>; // TODO(johnwlambert): prefer KeypointsSet?
+using MatchIndicesMap = std::map<ImagePair, CorrespondenceIndices>;
+
 
 // @param camera index
 // @param 2d measurement
@@ -54,9 +60,9 @@ struct Keypoints
 struct NamedSfmMeasurement
 {
   size_t i;
-  Point2 uv;
+  gtsam::Point2 uv;
 
-  NamedSfmMeasurement(size_t i, Point2 uv) : i(i), uv(uv) {}
+  NamedSfmMeasurement(size_t i, gtsam::Point2 uv) : i(i), uv(uv) {}
 };
 
 
@@ -86,10 +92,6 @@ class SfmTrack2d
     return all_cameras_unique;
   }
 };
-
-using MatchIndicesMap = std::map<ImagePair, CorrespondenceIndices>;
-using KeypointsList = std::vector<Keypoints>;
-using KeypointsVector = std::vector<Keypoints>; // TODO(johnwlambert): prefer KeypointsSet?
 
 
 class DsfTrackGenerator
