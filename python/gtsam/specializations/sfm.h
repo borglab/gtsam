@@ -18,6 +18,12 @@ py::bind_vector<std::vector<gtsam::BinaryMeasurement<gtsam::Unit3> > >(
 py::bind_vector<std::vector<gtsam::BinaryMeasurement<gtsam::Rot3> > >(
     m_, "BinaryMeasurementsRot3");
 py::bind_map<gtsam::KeyPairDoubleMap>(m_, "KeyPairDoubleMap");
+py::bind_map<gtsam::MatchIndicesMap>(m_, "MatchIndicesMap");
+
+py::bind_vector<
+    std::vector<gtsam::Keypoints> >(
+    m_, "KeypointsList");
+
 
 py::bind_vector<
     std::vector<gtsam::SfmTrack> >(

@@ -4,6 +4,53 @@
 
 namespace gtsam {
 
+#include <gtsam/sfm/GtsfmData.h>
+class GtsfmData
+{
+  GtsfmData(const int numberImages);
+  void write_points(std::vector<gtsam::GtsfmImage>& images, const std::string save_dir);
+  void write_images(std::vector<gtsam::GtsfmImage>& images, const std::string save_dir);
+};
+
+#include <gtsam/sfm/DsfTrackGenerator.h>
+
+class MatchIndicesMap {
+  MatchIndicesMap();
+  MatchIndicesMap(const gtsam::MatchIndicesMap& other);
+
+  size_t size() const;
+  bool empty() const;
+  void clear();
+  gtsam::CorrespondenceIndices at(const pair<size_t, size_t>& keypair) const;
+};
+
+
+class KeypointsList {
+  KeypointsList();
+  KeypointsList(const gtsam::KeypointsList& other);
+  void push_back(const gtsam::Keypoints& keypoints);
+  size_t size() const;
+  bool empty() const;
+  void clear();
+  gtsam::Keypoints at(const size_t& index) const;
+};
+
+
+class Keypoints
+{
+  Keypoints(const gtsam::KeypointCoordinates& coordinates);
+  gtsam::KeypointCoordinates coordinates;
+}; // check if this should be a method
+
+
+class DsfTrackGenerator {
+  DsfTrackGenerator();
+  std::vector<SfmTrack2d> generate_tracks_from_pairwise_matches(
+    const gtsam::MatchIndicesMap matches_dict,
+    const gtsam::KeypointsList keypoints_list);
+};
+
+
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/sfm/SfmTrack.h>
