@@ -43,11 +43,19 @@ class Keypoints
 }; // check if this should be a method
 
 
+class SfmTrack2d
+{
+  void addMeasurement(const gtsam::NamedSfmMeasurement &m);
+  std::vector<gtsam::NamedSfmMeasurement> measurements();
+  bool validate_unique_cameras();
+};
+
+
 class DsfTrackGenerator {
   DsfTrackGenerator();
-  std::vector<SfmTrack2d> generate_tracks_from_pairwise_matches(
-    const gtsam::MatchIndicesMap matches_dict,
-    const gtsam::KeypointsList keypoints_list);
+  std::vector<gtsam::SfmTrack2d> generate_tracks_from_pairwise_matches(
+    const gtsam::MatchIndicesMap& matches_dict,
+    const gtsam::KeypointsList& keypoints_list);
 };
 
 
