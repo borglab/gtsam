@@ -25,11 +25,7 @@
 #include <gtsam/3rdparty/CCOLAMD/Include/ccolamd.h>
 
 #ifdef GTSAM_SUPPORT_NESTED_DISSECTION
-#ifdef GTSAM_USE_SYSTEM_METIS
 #include <metis.h>
-#else
-#include <gtsam/3rdparty/metis/include/metis.h>
-#endif
 #endif
 
 using namespace std;
@@ -285,6 +281,17 @@ void Ordering::print(const std::string& str,
   if (!endedOnNewline)
     cout << "\n";
   cout.flush();
+}
+
+/* ************************************************************************* */
+Ordering::This& Ordering::operator+=(KeyVector& keys) {
+  this->insert(this->end(), keys.begin(), keys.end());
+  return *this;
+}
+
+/* ************************************************************************* */
+bool Ordering::contains(const Key& key) const {
+  return std::find(this->begin(), this->end(), key) != this->end();
 }
 
 /* ************************************************************************* */

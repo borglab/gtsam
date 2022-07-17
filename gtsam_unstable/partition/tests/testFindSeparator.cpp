@@ -20,8 +20,6 @@ using namespace std;
 using namespace gtsam;
 using namespace gtsam::partition;
 
-#ifndef GTSAM_USE_SYSTEM_METIS
-
 /* ************************************************************************* */
 // x0 - x1 - x2
 // l3        l4
@@ -228,8 +226,6 @@ TEST ( Partition, findSeparator3_with_reduced_camera )
   LONGS_EQUAL(2, partitionTable[27]);
   LONGS_EQUAL(2, partitionTable[28]);
 }
-
-#endif
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}

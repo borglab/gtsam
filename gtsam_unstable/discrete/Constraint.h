@@ -34,7 +34,7 @@ using Domains = std::map<Key, Domain>;
  * Base class for constraint factors
  * Derived classes include SingleValue, BinaryAllDiff, and AllDiff.
  */
-class GTSAM_EXPORT Constraint : public DiscreteFactor {
+class GTSAM_UNSTABLE_EXPORT Constraint : public DiscreteFactor {
  public:
   typedef boost::shared_ptr<Constraint> shared_ptr;
 

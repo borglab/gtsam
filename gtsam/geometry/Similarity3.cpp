@@ -26,7 +26,7 @@ namespace gtsam {
 
 using std::vector;
 
-namespace {
+namespace internal {
 /// Subtract centroids from point pairs.
 static Point3Pairs subtractCentroids(const Point3Pairs &abPointPairs,
                                     const Point3Pair &centroids) {
@@ -81,10 +81,10 @@ static Similarity3 align(const Point3Pairs &d_abPointPairs, const Rot3 &aRb,
 static Similarity3 alignGivenR(const Point3Pairs &abPointPairs,
                                const Rot3 &aRb) {
   auto centroids = means(abPointPairs);
-  auto d_abPointPairs = subtractCentroids(abPointPairs, centroids);
+  auto d_abPointPairs = internal::subtractCentroids(abPointPairs, centroids);
   return align(d_abPointPairs, aRb, centroids);
 }
-}  // namespace
+}  // namespace internal
 
 Similarity3::Similarity3() :
     t_(0,0,0), s_(1) {
@@ -165,11 +165,11 @@ Similarity3 Similarity3::Align(const Point3Pairs &abPointPairs) {
   if (abPointPairs.size() < 3)
     throw std::runtime_error("input should have at least 3 pairs of points");
   auto centroids = means(abPointPairs);
-  auto d_abPointPairs = subtractCentroids(abPointPairs, centroids);
-  Matrix3 H = calculateH(d_abPointPairs);
+  auto d_abPointPairs = internal::subtractCentroids(abPointPairs, centroids);
+  Matrix3 H = internal::calculateH(d_abPointPairs);
   // ClosestTo finds rotation matrix closest to H in Frobenius sense
   Rot3 aRb = Rot3::ClosestTo(H);
-  return align(d_abPointPairs, aRb, centroids);
+  return internal::align(d_abPointPairs, aRb, centroids);
 }
 
 Similarity3 Similarity3::Align(const vector<Pose3Pair> &abPosePairs) {
@@ -192,7 +192,7 @@ Similarity3 Similarity3::Align(const vector<Pose3Pair> &abPosePairs) {
   }
   const Rot3 aRb_estimate = FindKarcherMean<Rot3>(rotations);
 
-  return alignGivenR(abPointPairs, aRb_estimate);
+  return internal::alignGivenR(abPointPairs, aRb_estimate);
 }
 
 Matrix4 Similarity3::wedge(const Vector7 &xi) {
@@ -283,15 +283,11 @@ std::ostream &operator<<(std::ostream &os, const Similarity3& p) {
   return os;
 }
 
-const Matrix4 Similarity3::matrix() const {
+Matrix4 Similarity3::matrix() const {
   Matrix4 T;
   T.topRows<3>() << R_.matrix(), t_;
   T.bottomRows<1>() << 0, 0, 0, 1.0 / s_;
   return T;
-}
-
-Similarity3::operator Pose3() const {
-  return Pose3(R_, s_ * t_);
 }
 
 } // namespace gtsam

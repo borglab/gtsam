@@ -26,12 +26,11 @@
 
 #include <GeographicLib/LocalCartesian.hpp>
 
-using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 using namespace GeographicLib;
 
-// *************************************************************************
+namespace {
 // Convert from Mag to ENU
 // ENU Origin is where the plane was in hold next to runway
 // const double lat0 = 33.86998, lon0 = -84.30626, h0 = 274;
@@ -51,10 +50,11 @@ Point3 bias(10, -10, 50);
 Point3 scaled = scale * nM;
 Point3 measured = nRb.inverse() * (scale * nM) + bias;
 
-double s(scale * nM.norm());
+double s(scale* nM.norm());
 Unit3 dir(nM);
 
 SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 0.25);
+}  // namespace
 
 using boost::none;
 
@@ -63,7 +63,7 @@ TEST( MagFactor, unrotate ) {
   Matrix H;
   Point3 expected(22735.5, 314.502, 44202.5);
   EXPECT( assert_equal(expected, MagFactor::unrotate(theta,nM,H),1e-1));
-  EXPECT( assert_equal(numericalDerivative11<Point3,Rot2> //
+  EXPECT(assert_equal(numericalDerivative11<Point3, Rot2> //
       (std::bind(&MagFactor::unrotate, std::placeholders::_1, nM, none), theta), H, 1e-6));
 }
 
@@ -74,27 +74,27 @@ TEST( MagFactor, Factors ) {
 
   // MagFactor
   MagFactor f(1, measured, s, dir, bias, model);
-  EXPECT( assert_equal(Z_3x1,f.evaluateError(theta,H1),1e-5));
-  EXPECT( assert_equal((Matrix)numericalDerivative11<Vector,Rot2> //
+  EXPECT(assert_equal(Z_3x1,f.evaluateError(theta,H1),1e-5));
+  EXPECT(assert_equal((Matrix)numericalDerivative11<Vector, Rot2> //
       (std::bind(&MagFactor::evaluateError, &f, std::placeholders::_1, none), theta), H1, 1e-7));
 
-// MagFactor1
+  // MagFactor1
   MagFactor1 f1(1, measured, s, dir, bias, model);
-  EXPECT( assert_equal(Z_3x1,f1.evaluateError(nRb,H1),1e-5));
-  EXPECT( assert_equal(numericalDerivative11<Vector,Rot3> //
+  EXPECT(assert_equal(Z_3x1,f1.evaluateError(nRb,H1),1e-5));
+  EXPECT(assert_equal(numericalDerivative11<Vector, Rot3> //
       (std::bind(&MagFactor1::evaluateError, &f1, std::placeholders::_1, none), nRb), H1, 1e-7));
 
-// MagFactor2
+  // MagFactor2
   MagFactor2 f2(1, 2, measured, nRb, model);
-  EXPECT( assert_equal(Z_3x1,f2.evaluateError(scaled,bias,H1,H2),1e-5));
-  EXPECT( assert_equal(numericalDerivative11<Vector,Point3> //
+  EXPECT(assert_equal(Z_3x1,f2.evaluateError(scaled,bias,H1,H2),1e-5));
+  EXPECT(assert_equal(numericalDerivative11<Vector, Point3> //
       (std::bind(&MagFactor2::evaluateError, &f2, std::placeholders::_1, bias, none, none), scaled),//
       H1, 1e-7));
-  EXPECT( assert_equal(numericalDerivative11<Vector,Point3> //
+  EXPECT(assert_equal(numericalDerivative11<Vector, Point3> //
       (std::bind(&MagFactor2::evaluateError, &f2, scaled, std::placeholders::_1, none, none), bias),//
       H2, 1e-7));
 
-// MagFactor2
+  // MagFactor3
   MagFactor3 f3(1, 2, 3, measured, nRb, model);
   EXPECT(assert_equal(Z_3x1,f3.evaluateError(s,dir,bias,H1,H2,H3),1e-5));
   EXPECT(assert_equal((Matrix)numericalDerivative11<Vector,double> //

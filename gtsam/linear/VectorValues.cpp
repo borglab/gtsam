@@ -33,7 +33,7 @@ namespace gtsam {
   using boost::adaptors::map_values;
   using boost::accumulate;
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   VectorValues::VectorValues(const VectorValues& first, const VectorValues& second)
   {
     // Merge using predicate for comparing first of pair
@@ -44,7 +44,7 @@ namespace gtsam {
       throw invalid_argument("Requested to merge two VectorValues that have one or more variables in common.");
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   VectorValues::VectorValues(const Vector& x, const Dims& dims) {
     using Pair = pair<const Key, size_t>;
     size_t j = 0;
@@ -61,7 +61,7 @@ namespace gtsam {
     }
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   VectorValues::VectorValues(const Vector& x, const Scatter& scatter) {
     size_t j = 0;
     for (const SlotEntry& v : scatter) {
@@ -74,7 +74,7 @@ namespace gtsam {
     }
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   VectorValues VectorValues::Zero(const VectorValues& other)
   {
     VectorValues result;
@@ -87,7 +87,7 @@ namespace gtsam {
     return result;
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   VectorValues::iterator VectorValues::insert(const std::pair<Key, Vector>& key_value) {
     std::pair<iterator, bool> result = values_.insert(key_value);
     if(!result.second)
@@ -97,7 +97,7 @@ namespace gtsam {
     return result.first;
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   void VectorValues::update(const VectorValues& values)
   {
     iterator hint = begin();
@@ -115,7 +115,7 @@ namespace gtsam {
     }
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   void VectorValues::insert(const VectorValues& values)
   {
     size_t originalSize = size();
@@ -124,14 +124,14 @@ namespace gtsam {
       throw invalid_argument("Requested to insert a VectorValues into another VectorValues that already contains one or more of its keys.");
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   void VectorValues::setZero()
   {
     for(Vector& v: values_ | map_values)
       v.setZero();
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   GTSAM_EXPORT ostream& operator<<(ostream& os, const VectorValues& v) {
     // Change print depending on whether we are using TBB
 #ifdef GTSAM_USE_TBB
@@ -150,7 +150,7 @@ namespace gtsam {
     return os;
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   void VectorValues::print(const string& str,
                            const KeyFormatter& formatter) const {
     cout << str << ": " << size() << " elements\n";
@@ -158,7 +158,7 @@ namespace gtsam {
     cout.flush();
 }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   bool VectorValues::equals(const VectorValues& x, double tol) const {
     if(this->size() != x.size())
       return false;
@@ -170,7 +170,7 @@ namespace gtsam {
     return true;
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   Vector VectorValues::vector() const {
     // Count dimensions
     DenseIndex totalDim = 0;
@@ -187,7 +187,7 @@ namespace gtsam {
     return result;
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   Vector VectorValues::vector(const Dims& keys) const
   {
     // Count dimensions
@@ -203,12 +203,12 @@ namespace gtsam {
     return result;
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   void VectorValues::swap(VectorValues& other) {
     this->values_.swap(other.values_);
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   namespace internal
   {
     bool structureCompareOp(const boost::tuple<VectorValues::value_type,
@@ -219,14 +219,14 @@ namespace gtsam {
     }
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   bool VectorValues::hasSameStructure(const VectorValues other) const
   {
     return accumulate(combine(*this, other)
       | transformed(internal::structureCompareOp), true, logical_and<bool>());
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   double VectorValues::dot(const VectorValues& v) const
   {
     if(this->size() != v.size())
@@ -244,12 +244,12 @@ namespace gtsam {
     return result;
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   double VectorValues::norm() const {
     return std::sqrt(this->squaredNorm());
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   double VectorValues::squaredNorm() const {
     double sumSquares = 0.0;
     using boost::adaptors::map_values;
@@ -258,7 +258,7 @@ namespace gtsam {
     return sumSquares;
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   VectorValues VectorValues::operator+(const VectorValues& c) const
   {
     if(this->size() != c.size())
@@ -278,13 +278,13 @@ namespace gtsam {
     return result;
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   VectorValues VectorValues::add(const VectorValues& c) const
   {
     return *this + c;
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   VectorValues& VectorValues::operator+=(const VectorValues& c)
   {
     if(this->size() != c.size())
@@ -301,13 +301,13 @@ namespace gtsam {
     return *this;
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   VectorValues& VectorValues::addInPlace(const VectorValues& c)
   {
     return *this += c;
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   VectorValues& VectorValues::addInPlace_(const VectorValues& c)
   {
     for(const_iterator j2 = c.begin(); j2 != c.end(); ++j2) {
@@ -320,7 +320,7 @@ namespace gtsam {
     return *this;
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   VectorValues VectorValues::operator-(const VectorValues& c) const
   {
     if(this->size() != c.size())
@@ -340,13 +340,13 @@ namespace gtsam {
     return result;
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   VectorValues VectorValues::subtract(const VectorValues& c) const
   {
     return *this - c;
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   VectorValues operator*(const double a, const VectorValues &v)
   {
     VectorValues result;
@@ -359,13 +359,13 @@ namespace gtsam {
     return result;
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   VectorValues VectorValues::scale(const double a) const
   {
     return a * *this;
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   VectorValues& VectorValues::operator*=(double alpha)
   {
     for(Vector& v: *this | map_values)
@@ -373,12 +373,43 @@ namespace gtsam {
     return *this;
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   VectorValues& VectorValues::scaleInPlace(double alpha)
   {
     return *this *= alpha;
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
+  string VectorValues::html(const KeyFormatter& keyFormatter) const {
+    stringstream ss;
+
+    // Print out preamble.
+    ss << "<div>\n<table class='VectorValues'>\n  <thead>\n";
+
+    // Print out header row.
+    ss << "    <tr><th>Variable</th><th>value</th></tr>\n";
+
+    // Finish header and start body.
+    ss << "  </thead>\n  <tbody>\n";
+
+    // Print out all rows.
+#ifdef GTSAM_USE_TBB
+    // TBB uses un-ordered map, so inefficiently order them:
+    std::map<Key, Vector> ordered;
+    for (const auto& kv : *this) ordered.emplace(kv);
+    for (const auto& kv : ordered) {
+#else
+    for (const auto& kv : *this) {
+#endif
+      ss << "    <tr>";
+      ss << "<th>" << keyFormatter(kv.first) << "</th><td>"
+         << kv.second.transpose() << "</td>";
+      ss << "</tr>\n";
+    }
+    ss << "  </tbody>\n</table>\n</div>";
+    return ss.str();
+  }
+
+  /* ************************************************************************ */
 
 } // \namespace gtsam

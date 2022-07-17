@@ -53,8 +53,9 @@ void BayesNet<CONDITIONAL>::dot(std::ostream& os,
     auto frontals = conditional->frontals();
     const Key me = frontals.front();
     auto parents = conditional->parents();
-    for (const Key& p : parents)
-      os << "  var" << keyFormatter(p) << "->var" << keyFormatter(me) << "\n";
+    for (const Key& p : parents) {
+      os << "  var" << p << "->var" << me << "\n";
+    }
   }
 
   os << "}";

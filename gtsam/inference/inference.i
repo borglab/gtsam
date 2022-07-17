@@ -4,6 +4,13 @@
 
 namespace gtsam {
 
+// Headers for overloaded methods below, break hierarchy :-/
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/symbolic/SymbolicFactorGraph.h>
+#include <gtsam/discrete/DiscreteFactorGraph.h>
+#include <gtsam/hybrid/HybridGaussianFactorGraph.h>
+
 #include <gtsam/inference/Key.h>
 
 // Default keyformatter
@@ -98,9 +105,40 @@ class Ordering {
   Ordering();
   Ordering(const gtsam::Ordering& other);
 
-  template <FACTOR_GRAPH = {gtsam::NonlinearFactorGraph,
-                            gtsam::GaussianFactorGraph}>
+  template <
+      FACTOR_GRAPH = {gtsam::NonlinearFactorGraph, gtsam::DiscreteFactorGraph,
+                      gtsam::SymbolicFactorGraph, gtsam::GaussianFactorGraph, gtsam::HybridGaussianFactorGraph}>
   static gtsam::Ordering Colamd(const FACTOR_GRAPH& graph);
+
+  template <
+      FACTOR_GRAPH = {gtsam::NonlinearFactorGraph, gtsam::DiscreteFactorGraph,
+                      gtsam::SymbolicFactorGraph, gtsam::GaussianFactorGraph, gtsam::HybridGaussianFactorGraph}>
+  static gtsam::Ordering ColamdConstrainedLast(
+      const FACTOR_GRAPH& graph, const gtsam::KeyVector& constrainLast,
+      bool forceOrder = false);
+
+  template <
+      FACTOR_GRAPH = {gtsam::NonlinearFactorGraph, gtsam::DiscreteFactorGraph,
+                      gtsam::SymbolicFactorGraph, gtsam::GaussianFactorGraph, gtsam::HybridGaussianFactorGraph}>
+  static gtsam::Ordering ColamdConstrainedFirst(
+      const FACTOR_GRAPH& graph, const gtsam::KeyVector& constrainFirst,
+      bool forceOrder = false);
+
+  template <
+      FACTOR_GRAPH = {gtsam::NonlinearFactorGraph, gtsam::DiscreteFactorGraph,
+                      gtsam::SymbolicFactorGraph, gtsam::GaussianFactorGraph, gtsam::HybridGaussianFactorGraph}>
+  static gtsam::Ordering Natural(const FACTOR_GRAPH& graph);
+
+  template <
+      FACTOR_GRAPH = {gtsam::NonlinearFactorGraph, gtsam::DiscreteFactorGraph,
+                      gtsam::SymbolicFactorGraph, gtsam::GaussianFactorGraph, gtsam::HybridGaussianFactorGraph}>
+  static gtsam::Ordering Metis(const FACTOR_GRAPH& graph);
+
+  template <
+      FACTOR_GRAPH = {gtsam::NonlinearFactorGraph, gtsam::DiscreteFactorGraph,
+                      gtsam::SymbolicFactorGraph, gtsam::GaussianFactorGraph, gtsam::HybridGaussianFactorGraph}>
+  static gtsam::Ordering Create(gtsam::Ordering::OrderingType orderingType,
+                                const FACTOR_GRAPH& graph);
 
   // Testable
   void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
@@ -135,12 +173,6 @@ class DotWriter {
 };
 
 #include <gtsam/inference/VariableIndex.h>
-
-// Headers for overloaded methods below, break hierarchy :-/
-#include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/symbolic/SymbolicFactorGraph.h>
-
 class VariableIndex {
   // Standard Constructors and Named Constructors
   VariableIndex();

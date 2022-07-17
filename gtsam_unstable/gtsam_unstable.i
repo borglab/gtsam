@@ -566,7 +566,13 @@ virtual class FixedLagSmoother {
   gtsam::FixedLagSmootherKeyTimestampMap timestamps() const;
   double smootherLag() const;
 
-  gtsam::FixedLagSmootherResult update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::FixedLagSmootherKeyTimestampMap& timestamps);
+  gtsam::FixedLagSmootherResult update(const gtsam::NonlinearFactorGraph &newFactors,
+                                       const gtsam::Values &newTheta,
+                                       const gtsam::FixedLagSmootherKeyTimestampMap &timestamps);
+  gtsam::FixedLagSmootherResult update(const gtsam::NonlinearFactorGraph &newFactors,
+                                       const gtsam::Values &newTheta,
+                                       const gtsam::FixedLagSmootherKeyTimestampMap &timestamps,
+                                       const gtsam::FactorIndices &factorsToRemove);
   gtsam::Values calculateEstimate() const;
 };
 
@@ -575,6 +581,8 @@ virtual class BatchFixedLagSmoother : gtsam::FixedLagSmoother {
   BatchFixedLagSmoother();
   BatchFixedLagSmoother(double smootherLag);
   BatchFixedLagSmoother(double smootherLag, const gtsam::LevenbergMarquardtParams& params);
+
+  void print(string s = "BatchFixedLagSmoother:\n") const;
 
   gtsam::LevenbergMarquardtParams params() const;
   template <VALUE = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3,
@@ -589,7 +597,12 @@ virtual class IncrementalFixedLagSmoother : gtsam::FixedLagSmoother {
   IncrementalFixedLagSmoother(double smootherLag);
   IncrementalFixedLagSmoother(double smootherLag, const gtsam::ISAM2Params& params);
 
+  void print(string s = "IncrementalFixedLagSmoother:\n") const;
+
   gtsam::ISAM2Params params() const;
+
+  gtsam::NonlinearFactorGraph getFactors() const;
+  gtsam::ISAM2 getISAM2() const;
 };
 
 #include <gtsam_unstable/nonlinear/ConcurrentFilteringAndSmoothing.h>
@@ -783,5 +796,31 @@ virtual class ProjectionFactorPPPC : gtsam::NoiseModelFactor {
 };
 typedef gtsam::ProjectionFactorPPPC<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> ProjectionFactorPPPCCal3_S2;
 typedef gtsam::ProjectionFactorPPPC<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2> ProjectionFactorPPPCCal3DS2;
+
+#include <gtsam_unstable/slam/ProjectionFactorRollingShutter.h>
+virtual class ProjectionFactorRollingShutter : gtsam::NoiseModelFactor {
+  ProjectionFactorRollingShutter(const gtsam::Point2& measured, double alpha, const gtsam::noiseModel::Base* noiseModel,
+      size_t poseKey_a, size_t poseKey_b, size_t pointKey, const gtsam::Cal3_S2* K);
+
+  ProjectionFactorRollingShutter(const gtsam::Point2& measured, double alpha, const gtsam::noiseModel::Base* noiseModel,
+    size_t poseKey_a, size_t poseKey_b, size_t pointKey, const gtsam::Cal3_S2* K, gtsam::Pose3& body_P_sensor);
+
+  ProjectionFactorRollingShutter(const gtsam::Point2& measured, double alpha, const gtsam::noiseModel::Base* noiseModel,
+        size_t poseKey_a, size_t poseKey_b, size_t pointKey, const gtsam::Cal3_S2* K, bool throwCheirality,
+        bool verboseCheirality);
+
+  ProjectionFactorRollingShutter(const gtsam::Point2& measured, double alpha, const gtsam::noiseModel::Base* noiseModel,
+      size_t poseKey_a, size_t poseKey_b, size_t pointKey, const gtsam::Cal3_S2* K, bool throwCheirality,
+      bool verboseCheirality, gtsam::Pose3& body_P_sensor);
+
+  gtsam::Point2 measured() const;
+  double alpha() const;
+  gtsam::Cal3_S2* calibration() const;
+  bool verboseCheirality() const;
+  bool throwCheirality() const;
+
+  // enabling serialization functionality
+  void serialize() const;
+};
 
 } //\namespace gtsam

@@ -121,7 +121,7 @@ public:
 
   /** Optimize the bayes tree */
   VectorValues optimize() const;
-            
+
 protected:
   
   /** Compute the Bayes Tree as a helper function to the constructor */
