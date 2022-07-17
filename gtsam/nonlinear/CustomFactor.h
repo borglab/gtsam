@@ -35,8 +35,7 @@ class CustomFactor;
  * This is safe because this is passing a const pointer, and pybind11 will maintain the `std::vector` memory layout.
  * Thus the pointer will never be invalidated.
  */
-using CustomErrorFunction = std::function<std::pair<Vector, JacobianVector>(
-    const CustomFactor &, const Values &, JacobianVector *)>;
+using CustomErrorFunction = std::function<Vector(const CustomFactor &, const Values &, const JacobianVector *)>;
 
 /**
  * @brief Custom factor that takes a std::function as the error
@@ -78,7 +77,7 @@ public:
     * Calls the errorFunction closure, which is a std::function object
     * One can check if a derivative is needed in the errorFunction by checking the length of Jacobian array
     */
-  Vector unwhitenedError(const Values &x, boost::optional<std::vector<Matrix>&> H = boost::none) const override;
+  Vector unwhitenedError(const Values &x, boost::optional<std::vector<Matrix> &> H = boost::none) const override;
 
   /** print */
   void print(const std::string &s,

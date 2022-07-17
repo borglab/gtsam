@@ -44,20 +44,14 @@ Vector CustomFactor::unwhitenedError(
        *    return error
        * ```
        */
-      std::pair<Vector, JacobianVector> errorAndJacobian =
-          this->error_function_(*this, x, H.get_ptr());
+      return this->error_function_(*this, x, H.get_ptr());
 
-      Vector error = errorAndJacobian.first;
-      (*H) = errorAndJacobian.second;
-
-      return error;
     } else {
       /*
        * In this case, we pass the a `nullptr` to pybind, and it will translate to `None` in Python.
        * Users can check for `None` in their callback to determine if the Jacobian is requested.
        */
-      auto errorAndJacobian = this->error_function_(*this, x, nullptr);
-      return errorAndJacobian.first;
+      return this->error_function_(*this, x, nullptr);
     }
   } else {
     return Vector::Zero(this->dim());
