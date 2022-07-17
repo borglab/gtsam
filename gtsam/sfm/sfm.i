@@ -46,7 +46,7 @@ class SfmTrack2d
 {
   void addMeasurement(const gtsam::NamedSfmMeasurement &m);
   std::vector<gtsam::NamedSfmMeasurement> measurements();
-  bool validate_unique_cameras();
+  bool has_unique_cameras();
 };
 
 
