@@ -32,9 +32,6 @@ class TestDsfTrackGenerator(GtsamTestCase):
         matches_dict[(1, 2)] = np.array([[2, 0], [1, 1]])
 
         tracks = DsfTrackGenerator().generate_tracks_from_pairwise_matches(matches_dict, keypoints_list)
-        import pdb
-
-        pdb.set_trace()
         assert len(tracks) == 3
 
         # Verify track 0.
