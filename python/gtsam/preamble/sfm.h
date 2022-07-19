@@ -11,12 +11,5 @@
  * mutations on Python side will not be reflected on C++.
  */
 
-// Including <stl.h> can cause some serious hard-to-debug bugs!!!
-// #include <pybind11/stl.h>
-#include <pybind11/stl_bind.h>
-
-PYBIND11_MAKE_OPAQUE(
-    std::vector<gtsam::SfmTrack>);
-
-PYBIND11_MAKE_OPAQUE(
-    std::vector<gtsam::SfmCamera>);
+PYBIND11_MAKE_OPAQUE(std::vector<gtsam::SfmTrack>);
+PYBIND11_MAKE_OPAQUE(std::vector<gtsam::SfmCamera>);
