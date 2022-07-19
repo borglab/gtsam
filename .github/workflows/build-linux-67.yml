@@ -1,33 +1,32 @@
-name: Python CI
+name: Linux CI Boost 1.67.0
 
-on: []
+on: [pull_request]
 
 jobs:
   build:
-    name: ${{ matrix.name }} ${{ matrix.build_type }} Python ${{ matrix.python_version }}
+    name: ${{ matrix.name }} ${{ matrix.build_type }}
     runs-on: ${{ matrix.os }}
 
     env:
       CTEST_OUTPUT_ON_FAILURE: ON
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
-      PYTHON_VERSION: ${{ matrix.python_version }}
+      GTSAM_BUILD_UNSTABLE: ${{ matrix.build_unstable }}
+      BOOST_VERSION: 1.67.0
 
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         # Github Actions requires a single row to be added to the build matrix.
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
         name: [
-          ubuntu-18.04-gcc-5,
+          # ubuntu-18.04-gcc-5,
           ubuntu-18.04-gcc-9,
-          ubuntu-18.04-clang-9,
-          macOS-10.15-xcode-11.3.1,
-          ubuntu-18.04-gcc-5-tbb,
+          # ubuntu-18.04-clang-9,
         ]
 
         build_type: [Debug, Release]
-        python_version: [3]
+        build_unstable: [ON]
         include:
           - name: ubuntu-18.04-gcc-5
             os: ubuntu-18.04
@@ -44,31 +43,13 @@ jobs:
             compiler: clang
             version: "9"
 
-          # NOTE temporarily added this as it is a required check.
-          - name: ubuntu-18.04-clang-9
-            os: ubuntu-18.04
-            compiler: clang
-            version: "9"
-            build_type: Debug
-            python_version: "3"
-
-          - name: macOS-10.15-xcode-11.3.1
-            os: macOS-10.15
-            compiler: xcode
-            version: "11.3.1"
-
-          - name: ubuntu-18.04-gcc-5-tbb
-            os: ubuntu-18.04
-            compiler: gcc
-            version: "5"
-            flag: tbb
-
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Install (Linux)
-        if: runner.os == 'Linux'
+
+      - name: Install Dependencies
         run: |
+          # LLVM (clang) 9 is not in Bionic's repositories so we add the official LLVM repository.
           if [ "${{ matrix.compiler }}" = "clang" ] && [ "${{ matrix.version }}" = "9" ]; then
             # (ipv4|ha).pool.sks-keyservers.net is the SKS GPG global keyserver pool
             # ipv4 avoids potential timeouts because of crappy IPv6 infrastructure
@@ -80,9 +61,9 @@ jobs:
             sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
           fi
           sudo apt-get -y update
-          
-          sudo apt-get -y install cmake build-essential pkg-config libpython-dev python-numpy libboost-all-dev
-          
+
+          sudo apt-get -y install cmake build-essential pkg-config libpython-dev python-numpy libicu-dev
+
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
             sudo apt-get install -y g++-${{ matrix.version }} g++-${{ matrix.version }}-multilib
             echo "CC=gcc-${{ matrix.version }}" >> $GITHUB_ENV
@@ -92,31 +73,16 @@ jobs:
             echo "CC=clang-${{ matrix.version }}" >> $GITHUB_ENV
             echo "CXX=clang++-${{ matrix.version }}" >> $GITHUB_ENV
           fi
-      - name: Install (macOS)
-        if: runner.os == 'macOS'
+
+      - name: Install Boost
         run: |
-          brew tap ProfFan/robotics
-          brew install cmake ninja
-          brew install boost
-          if [ "${{ matrix.compiler }}" = "gcc" ]; then
-            brew install gcc@${{ matrix.version }}
-            echo "CC=gcc-${{ matrix.version }}" >> $GITHUB_ENV
-            echo "CXX=g++-${{ matrix.version }}" >> $GITHUB_ENV
-          else
-            sudo xcode-select -switch /Applications/Xcode_${{ matrix.version }}.app
-            echo "CC=clang" >> $GITHUB_ENV
-            echo "CXX=clang++" >> $GITHUB_ENV
-          fi
-      - name: Set GTSAM_WITH_TBB Flag
-        if: matrix.flag == 'tbb'
-        run: |
-          echo "GTSAM_WITH_TBB=ON" >> $GITHUB_ENV
-          echo "GTSAM Uses TBB"
-      - name: Build (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          bash .github/scripts/python.sh
-      - name: Build (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          bash .github/scripts/python.sh
+          bash .github/scripts/boost.sh
+
+      - name: Build
+        run: bash .github/scripts/unix.sh -b
+
+      - name: Setup tmate debug session
+        uses: mxschmitt/action-tmate@v3
+
+      - name: Test
+        run: bash .github/scripts/unix.sh -t

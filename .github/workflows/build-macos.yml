@@ -47,5 +47,11 @@ jobs:
             echo "CC=clang" >> $GITHUB_ENV
             echo "CXX=clang++" >> $GITHUB_ENV
           fi
-      - name: Build and Test
+      - name: Build
+        run: bash .github/scripts/unix.sh -b
+
+      - name: Setup tmate debug session
+        uses: mxschmitt/action-tmate@v3
+
+      - name: Test
         run: bash .github/scripts/unix.sh -t

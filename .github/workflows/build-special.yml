@@ -1,6 +1,6 @@
 name: Special Cases CI
 
-on: [pull_request]
+on: []
 
 jobs:
   build:

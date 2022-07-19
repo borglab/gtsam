@@ -109,6 +109,11 @@ jobs:
           cmake --build build -j 4 --config ${{ matrix.build_type }} --target gtsam_unstable
           cmake --build build -j 4 --config ${{ matrix.build_type }} --target wrap
 
+      - name: Setup tmate debug session
+        uses: mxschmitt/action-tmate@v3
+
+      - name: Test
+        run: |
           # Run GTSAM tests
           cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.base
           cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.basis
@@ -125,4 +130,3 @@ jobs:
 
           # Run GTSAM_UNSTABLE tests
           #cmake --build build -j 4 --config ${{ matrix.build_type }} --target check.base_unstable
-          
