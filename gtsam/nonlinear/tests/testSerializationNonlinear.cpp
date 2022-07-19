@@ -131,7 +131,7 @@ TEST(Serialization, NoiseModelFactor1_backwards_compatibility) {
   std::cout << "checkpoint: __FILE__, __LINE__" << std::endl;
   std::string serialized_str =
       "22 serialization::archive 15 1 0\n"
-      "0 0 0 0 0 0 0 0 0 1 0 12345 0 1 7 21 gtsam_noiseModel_Unit 1 0\n"
+      "0 0 0 0 0 0 0 1 0 12345 0 1 6 21 gtsam_noiseModel_Unit 1 0\n"
       "1 1 0\n"
       "2 1 0\n"
       "3 0 0 0 0 6 0 1 0 0 0 6 1.00000000000000000e+00 1.00000000000000000e+00 "
