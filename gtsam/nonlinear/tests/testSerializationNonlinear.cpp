@@ -88,6 +88,7 @@ static Cal3DS2 cal2(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0);
 static Cal3Bundler cal3(1.0, 2.0, 3.0);
 
 TEST (Serialization, TemplatedValues) {
+  std::cout << "templatedValues open" << std::endl;
   EXPECT(equalsObj(pt3));
   GenericValue<Point3> chv1(pt3);
   EXPECT(equalsObj(chv1));
@@ -105,6 +106,7 @@ TEST (Serialization, TemplatedValues) {
   EXPECT(equalsObj(values));
   EXPECT(equalsXML(values));
   EXPECT(equalsBinary(values));
+  std::cout << "templatedValues close" << std::endl;
 }
 
 /**
@@ -115,14 +117,21 @@ TEST (Serialization, TemplatedValues) {
  *  (2) serialized string depends on boost version
  */
 TEST(Serialization, NoiseModelFactor1_backwards_compatibility) {
+  std::cout << "checkpoint: __FILE__, __LINE__" << std::endl;
   PriorFactor<Pose3> factor(
       12345, Pose3(Rot3::RzRyRx(Vector3(1., 2., 3.)), Point3(4., 5., 6.)),
       noiseModel::Unit::Create(6));
 
+  std::cout << "Serialized: \n"
+            << serializeToString(factor) << "\nend serialization" << std::endl;
+
+  std::cout << "checkpoint: __FILE__, __LINE__" << std::endl;
+
   // String
+  std::cout << "checkpoint: __FILE__, __LINE__" << std::endl;
   std::string serialized_str =
       "22 serialization::archive 15 1 0\n"
-      "0 0 0 0 0 0 0 0 0 1 0 12345 0 1 6 21 gtsam_noiseModel_Unit 1 0\n"
+      "0 0 0 0 0 0 0 0 0 1 0 12345 0 1 7 21 gtsam_noiseModel_Unit 1 0\n"
       "1 1 0\n"
       "2 1 0\n"
       "3 0 0 0 0 6 0 1 0 0 0 6 1.00000000000000000e+00 1.00000000000000000e+00 "
@@ -135,20 +144,39 @@ TEST(Serialization, NoiseModelFactor1_backwards_compatibility) {
       "-5.87266449276209815e-02 -4.26917621276207360e-01 "
       "9.02381585483330806e-01 -9.09297426825681709e-01 "
       "-3.50175488374014632e-01 -2.24845095366152908e-01 0 0 "
-      "4.00000000000000000e+00 5.00000000000000000e+00 6.00000000000000000e+00";
+      "4.00000000000000000e+00 5.00000000000000000e+00 "
+      "6.00000000000000000e+00\n";
+
+  // // serialized_str = serializeToString(factor);
+  // {
+    std::cout << "roundtrip start" << std::endl;
+    PriorFactor<Pose3> factor_deserialized_str_2 = PriorFactor<Pose3>();
+    roundtrip(factor, factor_deserialized_str_2);
+    EXPECT(assert_equal(factor, factor_deserialized_str_2));
+    std::cout << "roundtrip end" << std::endl;
+  // }
+
   PriorFactor<Pose3> factor_deserialized_str = PriorFactor<Pose3>();
+  std::cout << "checkpoint: " << __FILE__ << ", " << __LINE__ << std::endl;
   deserializeFromString(serialized_str, factor_deserialized_str);
+  std::cout << "checkpoint: " << __FILE__ << ", " << __LINE__ << std::endl;
   EXPECT(assert_equal(factor, factor_deserialized_str));
+  std::cout << "checkpoint: " << __FILE__ << ", " << __LINE__ << std::endl;
 
   // XML
+  std::cout << "checkpoint: " << __FILE__ << ", " << __LINE__ << std::endl;
   PriorFactor<Pose3> factor_deserialized_xml = PriorFactor<Pose3>();
+  std::cout << "checkpoint: " << __FILE__ << ", " << __LINE__ << std::endl;
   deserializeFromXMLFile(GTSAM_SOURCE_TREE_DATASET_DIR
                          "/../../gtsam/nonlinear/tests/priorFactor.xml",
                          factor_deserialized_xml);
+  std::cout << "checkpoint: " << __FILE__ << ", " << __LINE__ << std::endl;
   EXPECT(assert_equal(factor, factor_deserialized_xml));
+  std::cout << "checkpoint: " << __FILE__ << ", " << __LINE__ << std::endl;
 }
 
 TEST(Serialization, ISAM2) {
+  std::cout << "ISAM2 open" << std::endl;
 
   gtsam::ISAM2Params parameters;
   gtsam::ISAM2 solver(parameters);
@@ -201,6 +229,7 @@ TEST(Serialization, ISAM2) {
     EXPECT(false);
   }
   EXPECT(assert_equal(p1, p2));
+  std::cout << "ISAM close" << std::endl;
 }
 
 /* ************************************************************************* */
