@@ -503,11 +503,8 @@ class NoiseModelFactor1 : public NoiseModelFactorN<VALUE> {
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
     std::cout << "checkpoint a open " << std::endl;
-    // ar& boost::serialization::make_nvp(
-    //     "NoiseModelFactor", boost::serialization::base_object<Base>(*this));
     ar& boost::serialization::make_nvp(
-        "NoiseModelFactorN",
-        boost::serialization::base_object<NoiseModelFactorN<VALUE>>(*this));
+        "NoiseModelFactor", boost::serialization::base_object<Base>(*this));
     std::cout << "checkpoint a close" << std::endl;
   }
 };  // \class NoiseModelFactor1
