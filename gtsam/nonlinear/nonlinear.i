@@ -99,11 +99,11 @@ class NonlinearFactorGraph {
   string dot(
       const gtsam::Values& values,
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
-      const GraphvizFormatting& writer = GraphvizFormatting());
+      const gtsam::GraphvizFormatting& writer = gtsam::GraphvizFormatting());
   void saveGraph(
       const string& s, const gtsam::Values& values,
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
-      const GraphvizFormatting& writer = GraphvizFormatting()) const;
+      const gtsam::GraphvizFormatting& writer = gtsam::GraphvizFormatting()) const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -133,37 +133,6 @@ virtual class NoiseModelFactor : gtsam::NonlinearFactor {
   gtsam::noiseModel::Base* noiseModel() const;
   Vector unwhitenedError(const gtsam::Values& x) const;
   Vector whitenedError(const gtsam::Values& x) const;
-};
-
-#include <gtsam/nonlinear/CustomFactor.h>
-virtual class CustomFactor : gtsam::NoiseModelFactor {
-  /*
-   * Note CustomFactor will not be wrapped for MATLAB, as there is no supporting
-   * machinery there. This is achieved by adding `gtsam::CustomFactor` to the
-   * ignore list in `matlab/CMakeLists.txt`.
-   */
-  CustomFactor();
-  /*
-   * Example:
-   * ```
-   * def error_func(this: CustomFactor, v: gtsam.Values, H: List[np.ndarray]):
-   *    <calculated error>
-   *    if not H is None:
-   *        <calculate the Jacobian>
-   *        H[0] = J1 # 2-d numpy array for a Jacobian block
-   *        H[1] = J2
-   *        ...
-   *    return error # 1-d numpy array
-   *
-   * cf = CustomFactor(noise_model, keys, error_func)
-   * ```
-   */
-  CustomFactor(const gtsam::SharedNoiseModel& noiseModel,
-               const gtsam::KeyVector& keys,
-               const gtsam::CustomErrorFunction& errorFunction);
-
-  void print(string s = "",
-             gtsam::KeyFormatter keyFormatter = gtsam::DefaultKeyFormatter);
 };
 
 #include <gtsam/nonlinear/Values.h>
@@ -554,7 +523,7 @@ virtual class GncParams {
   GncParams(const PARAMS& baseOptimizerParams);
   GncParams();
   BaseOptimizerParameters baseOptimizerParams;
-  GncLossType lossType;
+  gtsam::GncLossType lossType;
   size_t maxIterations;
   double muStep;
   double relativeCostTol;
@@ -563,12 +532,12 @@ virtual class GncParams {
   std::vector<size_t> knownInliers;
   std::vector<size_t> knownOutliers;
 
-  void setLossType(const GncLossType type);
+  void setLossType(const gtsam::GncLossType type);
   void setMaxIterations(const size_t maxIter);
   void setMuStep(const double step);
   void setRelativeCostTol(double value);
   void setWeightsTol(double value);
-  void setVerbosityGNC(const This::Verbosity value);
+  void setVerbosityGNC(const gtsam::This::Verbosity value);
   void setKnownInliers(const std::vector<size_t>& knownIn);
   void setKnownOutliers(const std::vector<size_t>& knownOut);
   void print(const string& str = "GncParams: ") const;
@@ -900,7 +869,7 @@ template <T = {gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2,
                gtsam::PinholeCamera<gtsam::Cal3Unified>,
                gtsam::imuBias::ConstantBias}>
 virtual class NonlinearEquality2 : gtsam::NoiseModelFactor {
-  NonlinearEquality2(Key key1, Key key2, double mu = 1e4);
+  NonlinearEquality2(gtsam::Key key1, gtsam::Key key2, double mu = 1e4);
   gtsam::Vector evaluateError(const T& x1, const T& x2);
 };
 
