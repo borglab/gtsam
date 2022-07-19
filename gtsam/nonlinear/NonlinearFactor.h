@@ -264,9 +264,13 @@ public:
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+    std::cout << "noise model base open " << std::endl;
     ar & boost::serialization::make_nvp("NonlinearFactor",
          boost::serialization::base_object<Base>(*this));
+    std::cout << "noise model itself begin" << std::endl;
     ar & BOOST_SERIALIZATION_NVP(noiseModel_);
+    std::cout << "noise model itself end" << std::endl;
+    std::cout << "noise model base close " << std::endl;
   }
 
 }; // \class NoiseModelFactor
@@ -462,8 +466,10 @@ class NoiseModelFactorN : public NoiseModelFactor {
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    std::cout << "checkpoint N open" << std::endl;
     ar& boost::serialization::make_nvp(
         "NoiseModelFactor", boost::serialization::base_object<Base>(*this));
+    std::cout << "checkpoint N close" << std::endl;
   }
 };  // \class NoiseModelFactorN
 
@@ -496,8 +502,13 @@ class NoiseModelFactor1 : public NoiseModelFactorN<VALUE> {
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    std::cout << "checkpoint a open " << std::endl;
+    // ar& boost::serialization::make_nvp(
+    //     "NoiseModelFactor", boost::serialization::base_object<Base>(*this));
     ar& boost::serialization::make_nvp(
-        "NoiseModelFactor", boost::serialization::base_object<Base>(*this));
+        "NoiseModelFactorN",
+        boost::serialization::base_object<NoiseModelFactorN<VALUE>>(*this));
+    std::cout << "checkpoint a close" << std::endl;
   }
 };  // \class NoiseModelFactor1
 
