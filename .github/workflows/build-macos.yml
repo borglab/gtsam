@@ -1,6 +1,13 @@
 name: macOS CI
 
-on: [pull_request]
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'     
+        required: false
+        default: false
 
 jobs:
   build:
@@ -22,7 +29,7 @@ jobs:
           macOS-10.15-xcode-11.3.1,
         ]
 
-        build_type: [Debug, Release]
+        build_type: [Release]
         build_unstable: [ON]
         include:
           - name: macOS-10.15-xcode-11.3.1
@@ -49,9 +56,11 @@ jobs:
           fi
       - name: Build
         run: bash .github/scripts/unix.sh -b
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
 
       - name: Setup tmate debug session
         uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
 
       - name: Test
         run: bash .github/scripts/unix.sh -t
