@@ -353,6 +353,10 @@ GTSAM_EXPORT boost::optional<Pose2>
 GTSAM_DEPRECATED align(const Point2Pairs& pairs);
 #endif
 
+// Convenience typedef
+using Pose2Pair = std::pair<Pose2, Pose2>;
+using Pose2Pairs = std::vector<Pose2Pair>;
+
 template <>
 struct traits<Pose2> : public internal::LieGroup<Pose2> {};
 

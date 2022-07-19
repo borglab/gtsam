@@ -45,7 +45,7 @@ namespace gtsam {
     /// @name Standard Constructors
     /// @{
 
-    /** Construct empty factor graph */
+    /** Construct empty bayes net */
     GaussianBayesNet() {}
 
     /** Construct from iterator over conditionals */
