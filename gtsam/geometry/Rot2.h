@@ -14,6 +14,7 @@
  * @brief 2D rotation
  * @date Dec 9, 2009
  * @author Frank Dellaert
+ * @author John Lambert
  */
 
 #pragma once
@@ -208,6 +209,9 @@ namespace gtsam {
 
     /** return 2*2 transpose (inverse) rotation matrix   */
     Matrix2 transpose() const;
+
+    /** Find closest valid rotation matrix, given a 2x2 matrix */
+    static Rot2 ClosestTo(const Matrix2& M);
 
   private:
     /** Serialization function */

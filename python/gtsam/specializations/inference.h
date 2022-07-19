@@ -11,3 +11,4 @@
  * and saves one copy operation.
  */
 
+py::bind_map<std::map<char, double>>(m_, "__MapCharDouble");
