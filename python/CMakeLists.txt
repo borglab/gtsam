@@ -47,7 +47,9 @@ set(ignore
     gtsam::Pose3Vector
     gtsam::Rot3Vector
     gtsam::KeyVector
+    gtsam::BinaryMeasurementsPoint3
     gtsam::BinaryMeasurementsUnit3
+    gtsam::BinaryMeasurementsRot3
     gtsam::DiscreteKey
     gtsam::KeyPairDoubleMap)
 
@@ -65,6 +67,7 @@ set(interface_headers
     ${PROJECT_SOURCE_DIR}/gtsam/sfm/sfm.i
     ${PROJECT_SOURCE_DIR}/gtsam/navigation/navigation.i
     ${PROJECT_SOURCE_DIR}/gtsam/basis/basis.i
+    ${PROJECT_SOURCE_DIR}/gtsam/hybrid/hybrid.i
 )
 
 set(GTSAM_PYTHON_TARGET gtsam_py)
@@ -107,6 +110,14 @@ file(GLOB GTSAM_PYTHON_UTIL_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gtsam/utils/*.py"
 foreach(util_file ${GTSAM_PYTHON_UTIL_FILES})
         configure_file(${util_file} "${GTSAM_MODULE_PATH}/utils/${test_file}" COPYONLY)
 endforeach()
+file(GLOB GTSAM_PYTHON_PREAMBLE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gtsam/preamble/*.h")
+foreach(util_file ${GTSAM_PYTHON_PREAMBLE_FILES})
+        configure_file(${util_file} "${GTSAM_MODULE_PATH}/preamble/${test_file}" COPYONLY)
+endforeach()
+file(GLOB GTSAM_PYTHON_SPECIALIZATION_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gtsam/specializations/*.h")
+foreach(util_file ${GTSAM_PYTHON_SPECIALIZATION_FILES})
+        configure_file(${util_file} "${GTSAM_MODULE_PATH}/specializations/${test_file}" COPYONLY)
+endforeach()
 
 # Common directory for data/datasets stored with the package.
 # This will store the data in the Python site package directly.
@@ -128,7 +139,9 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             gtsam::Pose3Vector
             gtsam::KeyVector
             gtsam::FixedLagSmootherKeyTimestampMapValue
+            gtsam::BinaryMeasurementsPoint3
             gtsam::BinaryMeasurementsUnit3
+            gtsam::BinaryMeasurementsRot3
             gtsam::CameraSetCal3_S2
             gtsam::CameraSetCal3Bundler
             gtsam::CameraSetCal3Unified
@@ -176,7 +189,7 @@ endif()
 # Add custom target so we can install with `make python-install`
 set(GTSAM_PYTHON_INSTALL_TARGET python-install)
 add_custom_target(${GTSAM_PYTHON_INSTALL_TARGET}
-        COMMAND ${PYTHON_EXECUTABLE} -m pip install --user .
+        COMMAND ${PYTHON_EXECUTABLE} -m pip install .
         DEPENDS ${GTSAM_PYTHON_DEPENDENCIES}
         WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY})
 
