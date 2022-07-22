@@ -80,7 +80,7 @@ cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
 
 
 # Set to 2 cores so that Actions does not error out during resource provisioning.
-make -j1 install
+make -j2 install
 
 cd $GITHUB_WORKSPACE/build/python
 $PYTHON -m pip install --user .
