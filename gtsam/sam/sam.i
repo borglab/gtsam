@@ -108,5 +108,11 @@ typedef gtsam::BearingRangeFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2,
 typedef gtsam::BearingRangeFactor<gtsam::Pose2, gtsam::Pose2, gtsam::Rot2,
                                   double>
     BearingRangeFactorPose2;
+typedef gtsam::BearingRangeFactor<gtsam::Pose3, gtsam::Point3, gtsam::Unit3,
+                                  double>
+    BearingRangeFactor3D;
+typedef gtsam::BearingRangeFactor<gtsam::Pose3, gtsam::Pose3, gtsam::Unit3,
+                                  double>
+    BearingRangeFactorPose3;
 
 }  // namespace gtsam

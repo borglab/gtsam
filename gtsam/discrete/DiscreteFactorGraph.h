@@ -209,6 +209,10 @@ class GTSAM_EXPORT DiscreteFactorGraph
   /// @}
 };  // \ DiscreteFactorGraph
 
+std::pair<DiscreteConditional::shared_ptr, DecisionTreeFactor::shared_ptr>  //
+EliminateForMPE(const DiscreteFactorGraph& factors,
+                const Ordering& frontalKeys);
+
 /// traits
 template <>
 struct traits<DiscreteFactorGraph> : public Testable<DiscreteFactorGraph> {};

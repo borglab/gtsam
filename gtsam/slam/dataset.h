@@ -223,6 +223,8 @@ parse3DFactors(const std::string &filename,
                size_t maxIndex = 0);
 
 using BinaryMeasurementsUnit3 = std::vector<BinaryMeasurement<Unit3>>;
+using BinaryMeasurementsPoint3 = std::vector<BinaryMeasurement<Point3>>;
+using BinaryMeasurementsRot3 = std::vector<BinaryMeasurement<Rot3>>;
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
 inline boost::optional<IndexedPose> GTSAM_DEPRECATED

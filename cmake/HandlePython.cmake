@@ -16,6 +16,7 @@ if(GTSAM_BUILD_PYTHON OR GTSAM_INSTALL_MATLAB_TOOLBOX)
 
       set(Python_VERSION_MAJOR ${PYTHON_VERSION_MAJOR})
       set(Python_VERSION_MINOR ${PYTHON_VERSION_MINOR})
+      set(Python_VERSION_PATCH ${PYTHON_VERSION_PATCH})
       set(Python_EXECUTABLE ${PYTHON_EXECUTABLE})
 
     else()
@@ -31,11 +32,12 @@ if(GTSAM_BUILD_PYTHON OR GTSAM_INSTALL_MATLAB_TOOLBOX)
 
       set(Python_VERSION_MAJOR ${Python3_VERSION_MAJOR})
       set(Python_VERSION_MINOR ${Python3_VERSION_MINOR})
+      set(Python_VERSION_PATCH ${Python3_VERSION_PATCH})
 
     endif()
 
     set(GTSAM_PYTHON_VERSION
-        "${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}"
+        "${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}.${Python_VERSION_PATCH}"
         CACHE STRING "The version of Python to build the wrappers against."
               FORCE)
 
