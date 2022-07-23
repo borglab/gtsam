@@ -18,7 +18,7 @@ namespace gtsam {
 
 /**
  * A class for a measurement between a pose and a point.
- * @addtogroup SLAM
+ * @ingroup SLAM
  */
 template<typename POSE = Pose3, typename POINT = Point3>
 class PoseToPointFactor : public NoiseModelFactor2<POSE, POINT> {
