@@ -5,7 +5,7 @@
  * @author Alex Cunningham
  */
 
-#include <gtsam/slam/serialization.h>
+#include <gtsam_unstable/slam/serialization.h>
 #include <gtsam/base/serialization.h>
 
 //#include <gtsam/slam/AntiFactor.h>
