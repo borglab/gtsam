@@ -31,7 +31,6 @@
 namespace gtsam {
 
 typedef DSFMap<IndexPair> DSFMapIndexPair;
-typedef std::pair<size_t, size_t> ImagePair;
 typedef Eigen::MatrixX2i CorrespondenceIndices; // N x 2 array
 
 //struct Keypoints;
@@ -49,7 +48,8 @@ struct Keypoints {
 
 using KeypointsList = std::vector<Keypoints>;
 using KeypointsVector = std::vector<Keypoints>; // TODO(johnwlambert): prefer KeypointsSet?
-using MatchIndicesMap = std::map<ImagePair, CorrespondenceIndices>;
+// Mapping from each image pair to (N,2) array representing indices of matching keypoints.
+using MatchIndicesMap = std::map<IndexPair, CorrespondenceIndices>;
 
 
 // @param camera index
