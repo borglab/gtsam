@@ -17,6 +17,13 @@ class MatchIndicesMap {
 };
 
 
+class Keypoints
+{
+  Keypoints(const gtsam::KeypointCoordinates& coordinates);
+  gtsam::KeypointCoordinates coordinates;
+}; // check if this should be a method
+
+
 class KeypointsList {
   KeypointsList();
   KeypointsList(const gtsam::KeypointsList& other);
@@ -26,13 +33,6 @@ class KeypointsList {
   void clear();
   gtsam::Keypoints at(const size_t& index) const;
 };
-
-
-class Keypoints
-{
-  Keypoints(const gtsam::KeypointCoordinates& coordinates);
-  gtsam::KeypointCoordinates coordinates;
-}; // check if this should be a method
 
 
 class NamedSfmMeasurement
@@ -46,7 +46,7 @@ class SfmTrack2d
 {
   void addMeasurement(const gtsam::NamedSfmMeasurement &m);
   std::vector<gtsam::NamedSfmMeasurement> measurements();
-  bool has_unique_cameras();
+  bool hasUniqueCameras();
 };
 
 
