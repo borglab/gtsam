@@ -16,17 +16,19 @@
  *  @date July 2014
  */
 
-#include <gtsam/base/numericalDerivative.h>
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
-#include <gtsam_unstable/slam/ProjectionFactorPPP.h>
-#include <gtsam/inference/Symbol.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/geometry/Cal3DS2.h>
 #include <gtsam/geometry/Cal3_S2.h>
-#include <gtsam/geometry/Pose3.h>
-#include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Point2.h>
+#include <gtsam/geometry/Point3.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/inference/Symbol.h>
+#include <gtsam_unstable/slam/ProjectionFactorPPP.h>
 
-#include <CppUnitLite/TestHarness.h>
+#include <boost/serialization/export.hpp>
 
 using namespace std::placeholders;
 using namespace std;
@@ -221,6 +223,26 @@ TEST( ProjectionFactorPPP, JacobianWithTransform ) {
   CHECK(assert_equal(H2Expected, H2Actual, 1e-5));
 
 
+}
+
+typedef gtsam::ProjectionFactorPPP<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> gtsamProjectionFactorPPPgtsamPose3gtsamPoint3gtsamCal3_S2;
+BOOST_CLASS_EXPORT(gtsamProjectionFactorPPPgtsamPose3gtsamPoint3gtsamCal3_S2)
+
+TEST(ProjectionFactorPPP, Serialize) {
+  Key poseKey(X(1));
+  Key transformKey(T(1));
+  Key pointKey(L(1));
+
+  Point2 measurement(323.0, 240.0);
+
+  gtsamProjectionFactorPPPgtsamPose3gtsamPoint3gtsamCal3_S2 factor(measurement, model, poseKey, transformKey, pointKey, K);
+
+  // Serialize the factor
+  std::string serialized = serialize(factor);
+
+//  // And de-serialize it
+//  TestProjectionFactor deserializedFactor;
+//  deserializeXML(serialized, deserializedFactor);
 }
 
 /* ************************************************************************* */
