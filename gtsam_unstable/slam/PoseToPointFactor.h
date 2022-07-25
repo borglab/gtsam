@@ -61,6 +61,12 @@ class PoseToPointFactor : public NoiseModelFactor2<POSE, POINT> {
            traits<POINT>::Equals(this->measured_, e->measured_, tol);
   }
 
+  /// @return a deep copy of this factor
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
+    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new This(*this)));
+  }
+
   /** implement functions needed to derive from Factor */
 
   /** vector of errors

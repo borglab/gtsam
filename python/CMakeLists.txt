@@ -69,6 +69,7 @@ set(interface_headers
     ${PROJECT_SOURCE_DIR}/gtsam/sfm/sfm.i
     ${PROJECT_SOURCE_DIR}/gtsam/navigation/navigation.i
     ${PROJECT_SOURCE_DIR}/gtsam/basis/basis.i
+    ${PROJECT_SOURCE_DIR}/gtsam/hybrid/hybrid.i
 )
 
 set(GTSAM_PYTHON_TARGET gtsam_py)
@@ -105,7 +106,8 @@ copy_directory("${CMAKE_CURRENT_SOURCE_DIR}/gtsam"
 # Hack to get python test and util files copied every time they are modified
 file(GLOB GTSAM_PYTHON_TEST_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gtsam/tests/*.py")
 foreach(test_file ${GTSAM_PYTHON_TEST_FILES})
-        configure_file(${test_file} "${GTSAM_MODULE_PATH}/tests/${test_file}" COPYONLY)
+        get_filename_component(test_file_name ${test_file} NAME)
+        configure_file(${test_file} "${GTSAM_MODULE_PATH}/tests/${test_file_name}" COPYONLY)
 endforeach()
 file(GLOB GTSAM_PYTHON_UTIL_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gtsam/utils/*.py")
 foreach(util_file ${GTSAM_PYTHON_UTIL_FILES})
