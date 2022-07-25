@@ -15,10 +15,10 @@
  * @author Christian Potthast, Frank Dellaert
  */
 
-#include <gtsam/linear/linearExceptions.h>
 #include <gtsam/linear/GaussianConditional.h>
-#include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/Sampler.h>
+#include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/linearExceptions.h>
 
 #include <boost/format.hpp>
 #ifdef __GNUC__
