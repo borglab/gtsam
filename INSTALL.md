@@ -50,7 +50,7 @@ will run up to 10x faster in Release mode! See the end of this document for
 additional debugging tips.
 
 3. GTSAM has Doxygen documentation. To generate, run 'make doc' from your
-build directory.
+build directory after setting the `GTSAM_BUILD_DOCS` and `GTSAM_BUILD_[HTML|LATEX]` cmake flags.
 
 4. The instructions below install the library to the default system install path and
 build all components. From a terminal, starting in the root library folder,
