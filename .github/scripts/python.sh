@@ -100,6 +100,7 @@ function test()
 case $1 in
   -d)
     install_dependencies
+    ;;
   -b)
     build
     ;;
