@@ -32,7 +32,7 @@
 namespace gtsam {
 
 /**
- * @addtogroup ISAM2
+ * @ingroup isam2
  * Implementation of the full ISAM2 algorithm for incremental nonlinear
  * optimization.
  *
