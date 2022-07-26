@@ -62,7 +62,7 @@ namespace gtsam {
  * convenience to avoid having lengthy types in the code.  Through timing,
  * we've seen that the fast_pool_allocator can lead to speedups of several
  * percent.
- * @addtogroup base
+ * @ingroup base
  */
 template<typename KEY, typename VALUE>
 class ConcurrentMap : public ConcurrentMapBase<KEY,VALUE> {

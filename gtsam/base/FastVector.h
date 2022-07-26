@@ -27,7 +27,7 @@ namespace gtsam {
 /**
  * FastVector is a type alias to a std::vector with a custom memory allocator.
  * The particular allocator depends on GTSAM's cmake configuration.
- * @addtogroup base
+ * @ingroup base
  */
 template <typename T>
 using FastVector =

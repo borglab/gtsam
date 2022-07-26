@@ -47,7 +47,7 @@ namespace gtsam {
   * matrix view.  firstBlock() determines the block that appears to have index 0 for all operations
   * (except re-setting firstBlock()).
   *
-  * @addtogroup base */
+  * @ingroup base */
   class GTSAM_EXPORT SymmetricBlockMatrix
   {
   public:

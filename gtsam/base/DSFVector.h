@@ -33,7 +33,7 @@ namespace gtsam {
  * A fast implementation of disjoint set forests that uses vector as underly data structure.
  * This is the absolute minimal DSF data structure, and only allows size_t keys
  * Uses rank compression but not union by rank :-(
- * @addtogroup base
+ * @ingroup base
  */
 class GTSAM_EXPORT DSFBase {
 
@@ -59,7 +59,7 @@ public:
 
 /**
  * DSFVector additionally keeps a vector of keys to support more expensive operations
- * @addtogroup base
+ * @ingroup base
  */
 class GTSAM_EXPORT DSFVector: public DSFBase {
 
