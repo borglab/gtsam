@@ -135,14 +135,6 @@ class HybridFactorGraph : public FactorGraph<HybridFactor> {
       push_hybrid(p);
     }
   }
-
-  /** Constructor from iterator over factors (shared_ptr or plain objects) */
-  template <typename ITERATOR>
-  void push_back(ITERATOR firstFactor, ITERATOR lastFactor) {
-    for (auto&& it = firstFactor; it != lastFactor; it++) {
-      push_back(*it);
-    }
-  }
 };
 
 }  // namespace gtsam

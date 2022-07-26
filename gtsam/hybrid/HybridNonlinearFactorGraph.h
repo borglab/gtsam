@@ -109,14 +109,6 @@ class GTSAM_EXPORT HybridNonlinearFactorGraph : public HybridFactorGraph {
     }
   }
 
-  /** Constructor from iterator over factors (shared_ptr or plain objects) */
-  template <typename ITERATOR>
-  void push_back(ITERATOR firstFactor, ITERATOR lastFactor) {
-    for (auto&& it = firstFactor; it != lastFactor; it++) {
-      push_back(*it);
-    }
-  }
-
   // /// Add a nonlinear factor to the factor graph.
   // void add(NonlinearFactor&& factor) {
   //   Base::add(boost::make_shared<HybridNonlinearFactor>(std::move(factor)));
