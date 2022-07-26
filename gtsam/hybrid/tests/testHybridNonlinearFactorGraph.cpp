@@ -7,8 +7,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    testDCFactorGraph.cpp
- * @brief   Unit tests for DCFactorGraph
+ * @file    testHybridNonlinearFactorGraph.cpp
+ * @brief   Unit tests for HybridNonlinearFactorGraph
  * @author  Varun Agrawal
  * @author  Fan Jiang
  * @author  Frank Dellaert
@@ -22,9 +22,8 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/hybrid/HybridEliminationTree.h>
 #include <gtsam/hybrid/HybridFactor.h>
-#include <gtsam/hybrid/HybridISAM.h>
+#include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
 #include <gtsam/hybrid/MixtureFactor.h>
-#include <gtsam/hybrid/NonlinearHybridFactorGraph.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/sam/BearingRangeFactor.h>
@@ -49,7 +48,7 @@ using symbol_shorthand::X;
  * existing gaussian factor graph in the hybrid factor graph.
  */
 TEST(HybridFactorGraph, GaussianFactorGraph) {
-  NonlinearHybridFactorGraph fg;
+  HybridNonlinearFactorGraph fg;
 
   // Add a simple prior factor to the nonlinear factor graph
   fg.emplace_nonlinear<PriorFactor<double>>(X(0), 0, Isotropic::Sigma(1, 0.1));
@@ -58,7 +57,7 @@ TEST(HybridFactorGraph, GaussianFactorGraph) {
   Values linearizationPoint;
   linearizationPoint.insert<double>(X(0), 0);
 
-  GaussianHybridFactorGraph ghfg = fg.linearize(linearizationPoint);
+  HybridGaussianFactorGraph ghfg = fg.linearize(linearizationPoint);
 
   // Add a factor to the GaussianFactorGraph
   ghfg.add(JacobianFactor(X(0), I_1x1, Vector1(5)));
@@ -69,9 +68,9 @@ TEST(HybridFactorGraph, GaussianFactorGraph) {
 /* **************************************************************************
  */
 /// Test that the resize method works correctly for a
-/// NonlinearHybridFactorGraph.
-TEST(NonlinearHybridFactorGraph, Resize) {
-  NonlinearHybridFactorGraph fg;
+/// HybridNonlinearFactorGraph.
+TEST(HybridNonlinearFactorGraph, Resize) {
+  HybridNonlinearFactorGraph fg;
   auto nonlinearFactor = boost::make_shared<BetweenFactor<double>>();
   fg.push_back(nonlinearFactor);
 
@@ -90,9 +89,9 @@ TEST(NonlinearHybridFactorGraph, Resize) {
 /* **************************************************************************
  */
 /// Test that the resize method works correctly for a
-/// GaussianHybridFactorGraph.
-TEST(GaussianHybridFactorGraph, Resize) {
-  NonlinearHybridFactorGraph nhfg;
+/// HybridGaussianFactorGraph.
+TEST(HybridGaussianFactorGraph, Resize) {
+  HybridNonlinearFactorGraph nhfg;
   auto nonlinearFactor = boost::make_shared<BetweenFactor<double>>(
       X(0), X(1), 0.0, Isotropic::Sigma(1, 0.1));
   nhfg.push_back(nonlinearFactor);
@@ -115,8 +114,8 @@ TEST(GaussianHybridFactorGraph, Resize) {
   linearizationPoint.insert<double>(X(0), 0);
   linearizationPoint.insert<double>(X(1), 1);
 
-  // Generate `GaussianHybridFactorGraph` by linearizing
-  GaussianHybridFactorGraph gfg = nhfg.linearize(linearizationPoint);
+  // Generate `HybridGaussianFactorGraph` by linearizing
+  HybridGaussianFactorGraph gfg = nhfg.linearize(linearizationPoint);
 
   EXPECT_LONGS_EQUAL(gfg.size(), 3);
 
@@ -129,41 +128,41 @@ TEST(GaussianHybridFactorGraph, Resize) {
 * Test push_back on HFG makes the correct distinction.
 */
 TEST(HybridFactorGraph, PushBack) {
-  NonlinearHybridFactorGraph fg;
+  HybridNonlinearFactorGraph fg;
 
   auto nonlinearFactor = boost::make_shared<BetweenFactor<double>>();
   fg.push_back(nonlinearFactor);
 
   EXPECT_LONGS_EQUAL(fg.size(), 1);
 
-  fg = NonlinearHybridFactorGraph();
+  fg = HybridNonlinearFactorGraph();
 
   auto discreteFactor = boost::make_shared<DecisionTreeFactor>();
   fg.push_back(discreteFactor);
 
   EXPECT_LONGS_EQUAL(fg.size(), 1);
 
-  fg = NonlinearHybridFactorGraph();
+  fg = HybridNonlinearFactorGraph();
 
   auto dcFactor = boost::make_shared<MixtureFactor>();
   fg.push_back(dcFactor);
 
   EXPECT_LONGS_EQUAL(fg.size(), 1);
 
-  // Now do the same with GaussianHybridFactorGraph
-  GaussianHybridFactorGraph ghfg;
+  // Now do the same with HybridGaussianFactorGraph
+  HybridGaussianFactorGraph ghfg;
 
   auto gaussianFactor = boost::make_shared<JacobianFactor>();
   ghfg.push_back(gaussianFactor);
 
   EXPECT_LONGS_EQUAL(ghfg.size(), 1);
 
-  ghfg = GaussianHybridFactorGraph();
+  ghfg = HybridGaussianFactorGraph();
   ghfg.push_back(discreteFactor);
 
   EXPECT_LONGS_EQUAL(ghfg.size(), 1);
 
-  ghfg = GaussianHybridFactorGraph();
+  ghfg = HybridGaussianFactorGraph();
   ghfg.push_back(dcFactor);
 
   EXPECT_LONGS_EQUAL(ghfg.size(), 1);
@@ -193,7 +192,7 @@ TEST(HybridFactorGraph, PushBack) {
 //   Switching self(3);
 
 //   // Linearize here:
-//   GaussianHybridFactorGraph actualLinearized =
+//   HybridGaussianFactorGraph actualLinearized =
 //       self.nonlinearFactorGraph.linearize(self.linearizationPoint);
 
 //   EXPECT_LONGS_EQUAL(8, actualLinearized.size());
@@ -224,7 +223,7 @@ TEST(HybridFactorGraph, PushBack) {
 //   Switching self(3);
 
 //   // Gather factors on x1, has a simple Gaussian and a mixture factor.
-//   GaussianHybridFactorGraph factors;
+//   HybridGaussianFactorGraph factors;
 //   factors.push_gaussian(self.linearizedFactorGraph.gaussianGraph()[0]);
 //   factors.push_dc(self.linearizedFactorGraph.dcGraph()[0]);
 
@@ -255,7 +254,7 @@ TEST(HybridFactorGraph, PushBack) {
 //   Switching self(3);
 
 //   // Gather factors on x2, will be two mixture factors (with x1 and x3,
-//   resp.). GaussianHybridFactorGraph factors;
+//   resp.). HybridGaussianFactorGraph factors;
 //   factors.push_dc(self.linearizedFactorGraph.dcGraph()[0]);  // involves m1
 //   factors.push_dc(self.linearizedFactorGraph.dcGraph()[1]);  // involves m2
 
@@ -355,7 +354,7 @@ TEST(HybridFactorGraph, PushBack) {
 //   Switching self(K, between_sigma, prior_sigma);
 
 //   // Clear out discrete factors since sum() cannot hanldle those
-//   GaussianHybridFactorGraph linearizedFactorGraph(
+//   HybridGaussianFactorGraph linearizedFactorGraph(
 //       self.linearizedFactorGraph.gaussianGraph(), DiscreteFactorGraph(),
 //       self.linearizedFactorGraph.dcGraph());
 
@@ -400,7 +399,7 @@ TEST(HybridFactorGraph, PushBack) {
 
 //   // Eliminate partially.
 //   HybridBayesNet::shared_ptr hybridBayesNet;
-//   GaussianHybridFactorGraph::shared_ptr remainingFactorGraph;
+//   HybridGaussianFactorGraph::shared_ptr remainingFactorGraph;
 //   std::tie(hybridBayesNet, remainingFactorGraph) =
 //       linearizedFactorGraph.eliminatePartialSequential(ordering);
 
@@ -435,7 +434,7 @@ TEST(HybridFactorGraph, PushBack) {
 
 //   // We first do a partial elimination
 //   HybridBayesNet::shared_ptr hybridBayesNet_partial;
-//   GaussianHybridFactorGraph::shared_ptr remainingFactorGraph_partial;
+//   HybridGaussianFactorGraph::shared_ptr remainingFactorGraph_partial;
 //   DiscreteBayesNet discreteBayesNet;
 
 //   {
@@ -500,7 +499,7 @@ TEST(HybridFactorGraph, PushBack) {
 
 //   // Eliminate partially.
 //   HybridBayesNet::shared_ptr hybridBayesNet;
-//   GaussianHybridFactorGraph::shared_ptr remainingFactorGraph;
+//   HybridGaussianFactorGraph::shared_ptr remainingFactorGraph;
 //   std::tie(hybridBayesNet, remainingFactorGraph) =
 //       linearizedFactorGraph.eliminatePartialSequential(ordering);
 
@@ -678,7 +677,7 @@ TEST(HybridFactorGraph, PushBack) {
 // // issue arises if we eliminate a landmark variable first since it is not
 // // connected to a DCFactor.
 // TEST(HybridFactorGraph, DefaultDecisionTree) {
-//   NonlinearHybridFactorGraph fg;
+//   HybridNonlinearFactorGraph fg;
 
 //   // Add a prior on pose x1 at the origin. A prior factor consists of a mean
 //   and
@@ -732,9 +731,9 @@ TEST(HybridFactorGraph, PushBack) {
 //   ordering += X(0);
 //   ordering += X(1);
 
-//   GaussianHybridFactorGraph linearized = fg.linearize(initialEstimate);
+//   HybridGaussianFactorGraph linearized = fg.linearize(initialEstimate);
 //   gtsam::HybridBayesNet::shared_ptr hybridBayesNet;
-//   gtsam::GaussianHybridFactorGraph::shared_ptr remainingFactorGraph;
+//   gtsam::HybridGaussianFactorGraph::shared_ptr remainingFactorGraph;
 
 //   // This should NOT fail
 //   std::tie(hybridBayesNet, remainingFactorGraph) =

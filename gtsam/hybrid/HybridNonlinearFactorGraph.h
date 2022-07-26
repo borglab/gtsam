@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <gtsam/hybrid/GaussianHybridFactorGraph.h>
+#include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
 #include <gtsam/hybrid/HybridNonlinearFactor.h>
@@ -148,11 +148,11 @@ class GTSAM_EXPORT HybridNonlinearFactorGraph : public HybridFactorGraph {
    * HybridNonlinearFactorGraph.
    *
    * @param continuousValues: Dictionary of continuous values.
-   * @return GaussianHybridFactorGraph::shared_ptr
+   * @return HybridGaussianFactorGraph::shared_ptr
    */
-  GaussianHybridFactorGraph linearize(const Values& continuousValues) const {
+  HybridGaussianFactorGraph linearize(const Values& continuousValues) const {
     // create an empty linear FG
-    GaussianHybridFactorGraph linearFG;
+    HybridGaussianFactorGraph linearFG;
 
     linearFG.reserve(size());
 
