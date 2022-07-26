@@ -59,7 +59,7 @@ PATH=$PATH:$($PYTHON -c "import site; print(site.USER_BASE)")/bin
 
 BUILD_PYBIND="ON"
 
-sudo $PYTHON -m pip install -r $GITHUB_WORKSPACE/python/requirements.txt
+$PYTHON -m pip install -r $GITHUB_WORKSPACE/python/requirements.txt
 
 mkdir $GITHUB_WORKSPACE/build
 cd $GITHUB_WORKSPACE/build
