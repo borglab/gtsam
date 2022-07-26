@@ -35,7 +35,7 @@ namespace gtsam {
  * ambient world coordinate frame:
  *    normalized(Tb - Ta) - w_aZb.point3()
  *
- * @addtogroup SFM
+ * @ingroup sfm
  * 
  * 
  */

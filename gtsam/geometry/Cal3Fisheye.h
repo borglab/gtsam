@@ -30,7 +30,7 @@ namespace gtsam {
 
 /**
  * @brief Calibration of a fisheye camera
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  *
  * Uses same distortionmodel as OpenCV, with

@@ -46,7 +46,7 @@ namespace gtsam {
   i.e w_aZb is the unit translation from a to b expressed in the world
   coordinate frame. The weights for the edges are obtained by projecting the
   unit translations in a projection direction.
-  @addtogroup SFM
+  @ingroup sfm
 */
 class GTSAM_EXPORT MFAS {
  public:

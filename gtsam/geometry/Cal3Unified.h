@@ -18,7 +18,7 @@
  */
 
 /**
- * @addtogroup geometry
+ * @ingroup geometry
  */
 
 #pragma once
@@ -30,7 +30,7 @@ namespace gtsam {
 /**
  * @brief Calibration of a omni-directional camera with mirror + lens radial
  * distortion
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  *
  * Similar to Cal3DS2, does distortion but has additional mirror parameter xi

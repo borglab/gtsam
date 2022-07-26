@@ -53,7 +53,7 @@ namespace gtsam {
  * @brief Rot3 is a 3D rotation represented as a rotation matrix if the
  * preprocessor symbol GTSAM_USE_QUATERNIONS is not defined, or as a quaternion
  * if it is defined.
- * @addtogroup geometry
+ * @ingroup geometry
  */
 class GTSAM_EXPORT Rot3 : public LieGroup<Rot3, 3> {
  private:

@@ -36,7 +36,7 @@ typedef std::pair<size_t, size_t> SiftIndex;
 
 /**
  * @brief An SfmTrack stores SfM measurements grouped in a track
- * @addtogroup sfm
+ * @ingroup sfm
  */
 struct GTSAM_EXPORT SfmTrack {
   Point3 p;       ///< 3D position of the point
