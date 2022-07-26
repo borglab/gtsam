@@ -123,7 +123,7 @@ public:
  * it is received from the IMU) so as to avoid costly integration at time of
  * factor construction.
  *
- * @addtogroup SLAM
+ * @ingroup SLAM
  */
 class GTSAM_EXPORT PreintegratedCombinedMeasurements : public PreintegrationType {
 
@@ -252,7 +252,7 @@ public:
  *    the correlation between the bias uncertainty and the preintegrated
  *    measurements uncertainty.
  *
- * @addtogroup SLAM
+ * @ingroup SLAM
  */
 class GTSAM_EXPORT CombinedImuFactor: public NoiseModelFactor6<Pose3, Vector3, Pose3,
     Vector3, imuBias::ConstantBias, imuBias::ConstantBias> {
