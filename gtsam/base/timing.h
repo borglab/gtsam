@@ -147,7 +147,7 @@ namespace gtsam {
       size_t id_;
       size_t t_;
       size_t tWall_;
-      double t2_ ; ///< cache the \sum t_i^2
+      double t2_ ; ///< cache the \f$ \sum t_i^2 \f$
       size_t tIt_;
       size_t tMax_;
       size_t tMin_;
