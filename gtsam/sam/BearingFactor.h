@@ -30,7 +30,7 @@ struct Bearing;
  * Binary factor for a bearing measurement
  * Works for any two types A1,A2 for which the functor Bearing<A1,A2>() is
  * defined
- * @addtogroup SAM
+ * @ingroup sam
  */
 template <typename A1, typename A2,
           typename T = typename Bearing<A1, A2>::result_type>
