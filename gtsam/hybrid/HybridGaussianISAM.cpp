@@ -10,16 +10,16 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file HybridISAM.h
+ * @file HybridGaussianISAM.h
  * @date March 31, 2022
  * @author Fan Jiang
  * @author Frank Dellaert
  * @author Richard Roberts
  */
 
-#include <gtsam/hybrid/GaussianHybridFactorGraph.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
-#include <gtsam/hybrid/HybridISAM.h>
+#include <gtsam/hybrid/HybridGaussianFactorGraph.h>
+#include <gtsam/hybrid/HybridGaussianISAM.h>
 #include <gtsam/inference/ISAM-inst.h>
 #include <gtsam/inference/Key.h>
 
@@ -31,15 +31,17 @@ namespace gtsam {
 // template class ISAM<HybridBayesTree>;
 
 /* ************************************************************************* */
-HybridISAM::HybridISAM() {}
+HybridGaussianISAM::HybridGaussianISAM() {}
 
 /* ************************************************************************* */
-HybridISAM::HybridISAM(const HybridBayesTree& bayesTree) : Base(bayesTree) {}
+HybridGaussianISAM::HybridGaussianISAM(const HybridBayesTree& bayesTree)
+    : Base(bayesTree) {}
 
 /* ************************************************************************* */
-void HybridISAM::updateInternal(const GaussianHybridFactorGraph& newFactors,
-                                HybridBayesTree::Cliques* orphans,
-                                const HybridBayesTree::Eliminate& function) {
+void HybridGaussianISAM::updateInternal(
+    const HybridGaussianFactorGraph& newFactors,
+    HybridBayesTree::Cliques* orphans,
+    const HybridBayesTree::Eliminate& function) {
   // Remove the contaminated part of the Bayes tree
   BayesNetType bn;
   const KeySet newFactorKeys = newFactors.keys();
@@ -90,8 +92,8 @@ void HybridISAM::updateInternal(const GaussianHybridFactorGraph& newFactors,
 }
 
 /* ************************************************************************* */
-void HybridISAM::update(const GaussianHybridFactorGraph& newFactors,
-                        const HybridBayesTree::Eliminate& function) {
+void HybridGaussianISAM::update(const HybridGaussianFactorGraph& newFactors,
+                                const HybridBayesTree::Eliminate& function) {
   Cliques orphans;
   this->updateInternal(newFactors, &orphans, function);
 }

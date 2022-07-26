@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file   GaussianMixtureConditional.h
+ * @file   GaussianMixture.h
  * @brief  A hybrid conditional in the Conditional Linear Gaussian scheme
  * @author Fan Jiang
  * @author Varun Agrawal
@@ -19,7 +19,9 @@
 
 #pragma once
 
+#include <gtsam/discrete/DecisionTree-inl.h>
 #include <gtsam/discrete/DecisionTree.h>
+#include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/inference/Conditional.h>
 #include <gtsam/linear/GaussianConditional.h>
@@ -27,20 +29,27 @@
 namespace gtsam {
 
 /**
- * @brief A conditional of gaussian mixtures indexed by discrete variables.
+ * @brief A conditional of gaussian mixtures indexed by discrete variables, as
+ * part of a Bayes Network.
  *
  * Represents the conditional density P(X | M, Z) where X is a continuous random
- * variable, M is the discrete variable and Z is the set of measurements.
+ * variable, M is the selection of discrete variables corresponding to a subset
+ * of the Gaussian variables and Z is parent of this node
+ *
+ * The probability P(x|y,z,...) is proportional to
+ * \f$ \sum_i k_i \exp - \frac{1}{2} |R_i x - (d_i - S_i y - T_i z - ...)|^2 \f$
+ * where i indexes the components and k_i is a component-wise normalization
+ * constant.
  *
  */
-class GaussianMixtureConditional
+class GTSAM_EXPORT GaussianMixture
     : public HybridFactor,
-      public Conditional<HybridFactor, GaussianMixtureConditional> {
+      public Conditional<HybridFactor, GaussianMixture> {
  public:
-  using This = GaussianMixtureConditional;
-  using shared_ptr = boost::shared_ptr<GaussianMixtureConditional>;
+  using This = GaussianMixture;
+  using shared_ptr = boost::shared_ptr<GaussianMixture>;
   using BaseFactor = HybridFactor;
-  using BaseConditional = Conditional<HybridFactor, GaussianMixtureConditional>;
+  using BaseConditional = Conditional<HybridFactor, GaussianMixture>;
 
   /// Alias for DecisionTree of GaussianFactorGraphs
   using Sum = DecisionTree<Key, GaussianFactorGraph>;
@@ -61,19 +70,23 @@ class GaussianMixtureConditional
   /// @{
 
   /// Defaut constructor, mainly for serialization.
-  GaussianMixtureConditional() = default;
+  GaussianMixture() = default;
+
   /**
-   * @brief Construct a new GaussianMixtureConditional object
+   * @brief Construct a new GaussianMixture object.
    *
    * @param continuousFrontals the continuous frontals.
    * @param continuousParents the continuous parents.
    * @param discreteParents the discrete parents. Will be placed last.
-   * @param conditionals a decision tree of GaussianConditionals.
+   * @param conditionals a decision tree of GaussianConditionals. The number of
+   * conditionals should be C^(number of discrete parents), where C is the
+   * cardinality of the DiscreteKeys in discreteParents, since the
+   * discreteParents will be used as the labels in the decision tree.
    */
-  GaussianMixtureConditional(const KeyVector &continuousFrontals,
-                             const KeyVector &continuousParents,
-                             const DiscreteKeys &discreteParents,
-                             const Conditionals &conditionals);
+  GaussianMixture(const KeyVector &continuousFrontals,
+                  const KeyVector &continuousParents,
+                  const DiscreteKeys &discreteParents,
+                  const Conditionals &conditionals);
 
   /**
    * @brief Make a Gaussian Mixture from a list of Gaussian conditionals
@@ -89,6 +102,16 @@ class GaussianMixtureConditional
       const std::vector<GaussianConditional::shared_ptr> &conditionals);
 
   /// @}
+  /// @name Standard API
+  /// @{
+
+  GaussianConditional::shared_ptr operator()(
+      const DiscreteValues &discreteVals) const;
+
+  /// Returns the total number of continuous components
+  size_t nrComponents() const;
+
+  /// @}
   /// @name Testable
   /// @{
 
@@ -97,7 +120,7 @@ class GaussianMixtureConditional
 
   /* print utility */
   void print(
-      const std::string &s = "GaussianMixtureConditional\n",
+      const std::string &s = "GaussianMixture\n",
       const KeyFormatter &formatter = DefaultKeyFormatter) const override;
 
   /// @}
@@ -114,5 +137,9 @@ class GaussianMixtureConditional
    */
   Sum add(const Sum &sum) const;
 };
+
+// traits
+template <>
+struct traits<GaussianMixture> : public Testable<GaussianMixture> {};
 
 }  // namespace gtsam

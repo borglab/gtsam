@@ -18,9 +18,9 @@
 #pragma once
 
 #include <gtsam/discrete/DiscreteConditional.h>
-#include <gtsam/hybrid/GaussianHybridFactorGraph.h>
-#include <gtsam/hybrid/GaussianMixtureConditional.h>
+#include <gtsam/hybrid/GaussianMixture.h>
 #include <gtsam/hybrid/HybridFactor.h>
+#include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 #include <gtsam/inference/Conditional.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/linear/GaussianConditional.h>
@@ -34,7 +34,7 @@
 
 namespace gtsam {
 
-class GaussianHybridFactorGraph;
+class HybridGaussianFactorGraph;
 
 /**
  * Hybrid Conditional Density
@@ -42,7 +42,7 @@ class GaussianHybridFactorGraph;
  * As a type-erased variant of:
  * - DiscreteConditional
  * - GaussianConditional
- * - GaussianMixtureConditional
+ * - GaussianMixture
  *
  * The reason why this is important is that `Conditional<T>` is a CRTP class.
  * CRTP is static polymorphism such that all CRTP classes, while bearing the
@@ -128,16 +128,16 @@ class GTSAM_EXPORT HybridConditional
    * HybridConditional.
    */
   HybridConditional(
-      boost::shared_ptr<GaussianMixtureConditional> gaussianMixture);
+      boost::shared_ptr<GaussianMixture> gaussianMixture);
 
   /**
-   * @brief Return HybridConditional as a GaussianMixtureConditional
+   * @brief Return HybridConditional as a GaussianMixture
    *
-   * @return GaussianMixtureConditional::shared_ptr
+   * @return GaussianMixture::shared_ptr
    */
-  GaussianMixtureConditional::shared_ptr asMixture() {
+  GaussianMixture::shared_ptr asMixture() {
     if (!isHybrid()) throw std::invalid_argument("Not a mixture");
-    return boost::static_pointer_cast<GaussianMixtureConditional>(inner_);
+    return boost::static_pointer_cast<GaussianMixture>(inner_);
   }
 
   /**
