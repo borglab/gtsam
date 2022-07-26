@@ -45,7 +45,8 @@ class HybridEliminationTree;
  * EliminationTree, except that in the JunctionTree, at each node multiple
  * variables are eliminated at a time.
  *
- * \addtogroup Multifrontal
+ * \ingroup Multifrontal
+ * \ingroup hybrid
  * \nosubgrouping
  */
 class GTSAM_EXPORT HybridJunctionTree

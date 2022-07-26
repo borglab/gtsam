@@ -56,6 +56,8 @@ class HybridGaussianFactorGraph;
  *
  * A great reference to the type-erasure pattern is Eduaado Madrid's CppCon
  * talk (https://www.youtube.com/watch?v=s082Qmd_nHs).
+ *
+ * @ingroup hybrid
  */
 class GTSAM_EXPORT HybridConditional
     : public HybridFactor,

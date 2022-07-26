@@ -26,6 +26,11 @@
 
 namespace gtsam {
 
+/**
+ * @brief 
+ *
+ * @ingroup hybrid
+ */
 class GTSAM_EXPORT HybridGaussianISAM : public ISAM<HybridBayesTree> {
  public:
   typedef ISAM<HybridBayesTree> Base;
