@@ -1,5 +1,5 @@
 /**
- * @file EliminatableClusterTree-inst.h
+ * @file ClusterTree-inst.h
  * @date Oct 8, 2013
  * @author Kai Ni
  * @author Richard Roberts

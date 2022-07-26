@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    GenericStereoFactor.h
+ * @file    StereoFactor.h
  * @brief   A non-linear factor for stereo measurements
  * @author  Alireza Fathi
  * @author  Chris Beall
