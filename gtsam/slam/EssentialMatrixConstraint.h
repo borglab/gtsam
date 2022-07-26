@@ -25,7 +25,7 @@ namespace gtsam {
 
 /**
  * Binary factor between two Pose3 variables induced by an EssentialMatrix measurement
- * @ingroup SLAM
+ * @ingroup slam
  */
 class GTSAM_EXPORT EssentialMatrixConstraint: public NoiseModelFactor2<Pose3, Pose3> {
 

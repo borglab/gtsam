@@ -27,7 +27,7 @@ namespace gtsam {
 /**
  * Non-linear factor for a constraint derived from a 2D measurement.
  * The calibration and pose are assumed known.
- * @ingroup SLAM
+ * @ingroup slam
  */
 template<class CAMERA>
 class TriangulationFactor: public NoiseModelFactor1<Point3> {

@@ -26,7 +26,7 @@ namespace gtsam {
   /**
    * A class for a measurement predicted by "between(config[key1],config[key2])"
    * @tparam POSE the Pose type
-   * @ingroup SLAM
+   * @ingroup slam
    */
   template<class POSE>
   class PoseBetweenFactor: public NoiseModelFactor2<POSE, POSE> {
