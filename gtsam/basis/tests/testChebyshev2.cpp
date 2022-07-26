@@ -118,7 +118,7 @@ TEST(Chebyshev2, InterpolateVector) {
   EXPECT(assert_equal(expected, fx(X, actualH), 1e-9));
 
   // Check derivative
-  boost::function<Vector2(ParameterMatrix<2>)> f = boost::bind(
+  std::function<Vector2(ParameterMatrix<2>)> f = boost::bind(
       &Chebyshev2::VectorEvaluationFunctor<2>::operator(), fx, _1, boost::none);
   Matrix numericalH =
       numericalDerivative11<Vector2, ParameterMatrix<2>, 2 * N>(f, X);

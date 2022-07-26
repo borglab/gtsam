@@ -17,8 +17,8 @@
 
 #pragma once
 
-#include <gtsam/hybrid/GaussianHybridFactorGraph.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
+#include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 #include <gtsam/inference/JunctionTree.h>
 
 namespace gtsam {
@@ -49,11 +49,11 @@ class HybridEliminationTree;
  * \nosubgrouping
  */
 class GTSAM_EXPORT HybridJunctionTree
-    : public JunctionTree<HybridBayesTree, GaussianHybridFactorGraph> {
+    : public JunctionTree<HybridBayesTree, HybridGaussianFactorGraph> {
  public:
-  typedef JunctionTree<HybridBayesTree, GaussianHybridFactorGraph>
+  typedef JunctionTree<HybridBayesTree, HybridGaussianFactorGraph>
       Base;                                    ///< Base class
-  typedef HybridJunctionTree This;             ///< This class
+  typedef HybridJunctionTree This;     ///< This class
   typedef boost::shared_ptr<This> shared_ptr;  ///< Shared pointer to this class
 
   /**

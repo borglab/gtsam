@@ -54,7 +54,7 @@ HybridConditional::HybridConditional(
 
 /* ************************************************************************ */
 HybridConditional::HybridConditional(
-    boost::shared_ptr<GaussianMixtureConditional> gaussianMixture)
+    boost::shared_ptr<GaussianMixture> gaussianMixture)
     : BaseFactor(KeyVector(gaussianMixture->keys().begin(),
                            gaussianMixture->keys().begin() +
                                gaussianMixture->nrContinuous()),
@@ -101,7 +101,8 @@ void HybridConditional::print(const std::string &s,
 
 /* ************************************************************************ */
 bool HybridConditional::equals(const HybridFactor &other, double tol) const {
-  return BaseFactor::equals(other, tol);
+  const This *e = dynamic_cast<const This *>(&other);
+  return e != nullptr && BaseFactor::equals(*e, tol);
 }
 
 }  // namespace gtsam

@@ -113,6 +113,7 @@ private:
   template<class Archive>
   void load(Archive& ar, const unsigned int /*version*/)
   {
+    this->clear();
     // Load into STL container and then fill our map
     FastVector<std::pair<KEY, VALUE> > map;
     ar & BOOST_SERIALIZATION_NVP(map);

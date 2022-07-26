@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file   GaussianHybridFactorGraph.cpp
+ * @file   HybridGaussianFactorGraph.cpp
  * @brief  Hybrid factor graph that uses type erasure
  * @author Fan Jiang
  * @author Varun Agrawal
@@ -23,14 +23,14 @@
 #include <gtsam/discrete/DiscreteEliminationTree.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/discrete/DiscreteJunctionTree.h>
-#include <gtsam/hybrid/GaussianHybridFactorGraph.h>
-#include <gtsam/hybrid/GaussianMixtureConditional.h>
+#include <gtsam/hybrid/GaussianMixture.h>
 #include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/hybrid/HybridDiscreteFactor.h>
 #include <gtsam/hybrid/HybridEliminationTree.h>
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/hybrid/HybridGaussianFactor.h>
+#include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 #include <gtsam/hybrid/HybridJunctionTree.h>
 #include <gtsam/inference/EliminateableFactorGraph-inst.h>
 #include <gtsam/inference/Key.h>
@@ -53,7 +53,7 @@
 
 namespace gtsam {
 
-template class EliminateableFactorGraph<GaussianHybridFactorGraph>;
+template class EliminateableFactorGraph<HybridGaussianFactorGraph>;
 
 /* ************************************************************************ */
 static GaussianMixtureFactor::Sum &addGaussian(
@@ -77,67 +77,8 @@ static GaussianMixtureFactor::Sum &addGaussian(
 }
 
 /* ************************************************************************ */
-std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>
-continuousElimination(const GaussianHybridFactorGraph &factors,
-                      const Ordering &frontalKeys) {
-  GaussianFactorGraph gfg;
-  for (auto &fp : factors) {
-    auto ptr = boost::dynamic_pointer_cast<HybridGaussianFactor>(fp);
-    if (ptr) {
-      gfg.push_back(ptr->inner());
-    } else {
-      auto p = boost::static_pointer_cast<HybridConditional>(fp)->inner();
-      if (p) {
-        gfg.push_back(boost::static_pointer_cast<GaussianConditional>(p));
-      } else {
-        // It is an orphan wrapped conditional
-      }
-    }
-  }
-
-  auto result = EliminatePreferCholesky(gfg, frontalKeys);
-  return std::make_pair(
-      boost::make_shared<HybridConditional>(result.first),
-      boost::make_shared<HybridGaussianFactor>(result.second));
-}
-
-/* ************************************************************************ */
-std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>
-discreteElimination(const GaussianHybridFactorGraph &factors,
-                    const Ordering &frontalKeys) {
-  DiscreteFactorGraph dfg;
-  for (auto &fp : factors) {
-    auto ptr = boost::dynamic_pointer_cast<HybridDiscreteFactor>(fp);
-    if (ptr) {
-      dfg.push_back(ptr->inner());
-    } else {
-      auto p = boost::static_pointer_cast<HybridConditional>(fp)->inner();
-      if (p) {
-        dfg.push_back(boost::static_pointer_cast<DiscreteConditional>(p));
-      } else {
-        // It is an orphan wrapper
-      }
-    }
-  }
-
-  auto result = EliminateDiscrete(dfg, frontalKeys);
-
-  return std::make_pair(
-      boost::make_shared<HybridConditional>(result.first),
-      boost::make_shared<HybridDiscreteFactor>(result.second));
-}
-
-/* ************************************************************************ */
-std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>
-hybridElimination(const GaussianHybridFactorGraph &factors,
-                  const Ordering &frontalKeys,
-                  const KeySet &continuousSeparator,
-                  const std::set<DiscreteKey> &discreteSeparatorSet) {
-  // NOTE: since we use the special JunctionTree,
-  // only possiblity is continuous conditioned on discrete.
-  DiscreteKeys discreteSeparator(discreteSeparatorSet.begin(),
-                                 discreteSeparatorSet.end());
-
+GaussianMixtureFactor::Sum sumFrontals(
+    const HybridGaussianFactorGraph &factors) {
   // sum out frontals, this is the factor on the separator
   gttic(sum);
 
@@ -146,13 +87,11 @@ hybridElimination(const GaussianHybridFactorGraph &factors,
 
   for (auto &f : factors) {
     if (f->isHybrid()) {
-      auto cgmf = boost::dynamic_pointer_cast<GaussianMixtureFactor>(f);
-      if (cgmf) {
+      if (auto cgmf = boost::dynamic_pointer_cast<GaussianMixtureFactor>(f)) {
         sum = cgmf->add(sum);
       }
 
-      auto gm = boost::dynamic_pointer_cast<HybridConditional>(f);
-      if (gm) {
+      if (auto gm = boost::dynamic_pointer_cast<HybridConditional>(f)) {
         sum = gm->asMixture()->add(sum);
       }
 
@@ -179,11 +118,72 @@ hybridElimination(const GaussianHybridFactorGraph &factors,
 
   gttoc(sum);
 
+  return sum;
+}
+
+/* ************************************************************************ */
+std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>
+continuousElimination(const HybridGaussianFactorGraph &factors,
+                      const Ordering &frontalKeys) {
+  GaussianFactorGraph gfg;
+  for (auto &fp : factors) {
+    if (auto ptr = boost::dynamic_pointer_cast<HybridGaussianFactor>(fp)) {
+      gfg.push_back(ptr->inner());
+    } else if (auto p =
+                   boost::static_pointer_cast<HybridConditional>(fp)->inner()) {
+      gfg.push_back(boost::static_pointer_cast<GaussianConditional>(p));
+    } else {
+      // It is an orphan wrapped conditional
+    }
+  }
+
+  auto result = EliminatePreferCholesky(gfg, frontalKeys);
+  return {boost::make_shared<HybridConditional>(result.first),
+          boost::make_shared<HybridGaussianFactor>(result.second)};
+}
+
+/* ************************************************************************ */
+std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>
+discreteElimination(const HybridGaussianFactorGraph &factors,
+                    const Ordering &frontalKeys) {
+  DiscreteFactorGraph dfg;
+  for (auto &fp : factors) {
+    if (auto ptr = boost::dynamic_pointer_cast<HybridDiscreteFactor>(fp)) {
+      dfg.push_back(ptr->inner());
+    } else if (auto p =
+                   boost::static_pointer_cast<HybridConditional>(fp)->inner()) {
+      dfg.push_back(boost::static_pointer_cast<DiscreteConditional>(p));
+    } else {
+      // It is an orphan wrapper
+    }
+  }
+
+  auto result = EliminateDiscrete(dfg, frontalKeys);
+
+  return {boost::make_shared<HybridConditional>(result.first),
+          boost::make_shared<HybridDiscreteFactor>(result.second)};
+}
+
+/* ************************************************************************ */
+std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>
+hybridElimination(const HybridGaussianFactorGraph &factors,
+                  const Ordering &frontalKeys,
+                  const KeySet &continuousSeparator,
+                  const std::set<DiscreteKey> &discreteSeparatorSet) {
+  // NOTE: since we use the special JunctionTree,
+  // only possiblity is continuous conditioned on discrete.
+  DiscreteKeys discreteSeparator(discreteSeparatorSet.begin(),
+                                 discreteSeparatorSet.end());
+
+  // sum out frontals, this is the factor on the separator
+  GaussianMixtureFactor::Sum sum = sumFrontals(factors);
+
   using EliminationPair = GaussianFactorGraph::EliminationResult;
 
   KeyVector keysOfEliminated;  // Not the ordering
   KeyVector keysOfSeparator;   // TODO(frank): Is this just (keys - ordering)?
 
+  // This is the elimination method on the leaf nodes
   auto eliminate = [&](const GaussianFactorGraph &graph)
       -> GaussianFactorGraph::EliminationResult {
     if (graph.empty()) {
@@ -201,14 +201,16 @@ hybridElimination(const GaussianHybridFactorGraph &factors,
     return result;
   };
 
+  // Perform elimination!
   DecisionTree<Key, EliminationPair> eliminationResults(sum, eliminate);
 
+  // Separate out decision tree into conditionals and remaining factors.
   auto pair = unzip(eliminationResults);
 
   const GaussianMixtureFactor::Factors &separatorFactors = pair.second;
 
-  // Create the GaussianMixtureConditional from the conditionals
-  auto conditional = boost::make_shared<GaussianMixtureConditional>(
+  // Create the GaussianMixture from the conditionals
+  auto conditional = boost::make_shared<GaussianMixture>(
       frontalKeys, keysOfSeparator, discreteSeparator, pair.first);
 
   // If there are no more continuous parents, then we should create here a
@@ -236,7 +238,7 @@ hybridElimination(const GaussianHybridFactorGraph &factors,
 }
 /* ************************************************************************ */
 std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>  //
-EliminateHybrid(const GaussianHybridFactorGraph &factors,
+EliminateHybrid(const HybridGaussianFactorGraph &factors,
                 const Ordering &frontalKeys) {
   // NOTE: Because we are in the Conditional Gaussian regime there are only
   // a few cases:
@@ -262,7 +264,7 @@ EliminateHybrid(const GaussianHybridFactorGraph &factors,
   // Because of all these reasons, we carefully consider how to
   // implement the hybrid factors so that we do not get poor performance.
 
-  // The first thing is how to represent the GaussianMixtureConditional.
+  // The first thing is how to represent the GaussianMixture.
   // A very possible scenario is that the incoming factors will have different
   // levels of discrete keys. For example, imagine we are going to eliminate the
   // fragment: $\phi(x1,c1,c2)$, $\phi(x1,c2,c3)$, which is perfectly valid.
@@ -345,22 +347,22 @@ EliminateHybrid(const GaussianHybridFactorGraph &factors,
 }
 
 /* ************************************************************************ */
-void GaussianHybridFactorGraph::add(JacobianFactor &&factor) {
+void HybridGaussianFactorGraph::add(JacobianFactor &&factor) {
   FactorGraph::add(boost::make_shared<HybridGaussianFactor>(std::move(factor)));
 }
 
 /* ************************************************************************ */
-void GaussianHybridFactorGraph::add(JacobianFactor::shared_ptr factor) {
+void HybridGaussianFactorGraph::add(JacobianFactor::shared_ptr factor) {
   FactorGraph::add(boost::make_shared<HybridGaussianFactor>(factor));
 }
 
 /* ************************************************************************ */
-void GaussianHybridFactorGraph::add(DecisionTreeFactor &&factor) {
+void HybridGaussianFactorGraph::add(DecisionTreeFactor &&factor) {
   FactorGraph::add(boost::make_shared<HybridDiscreteFactor>(std::move(factor)));
 }
 
 /* ************************************************************************ */
-void GaussianHybridFactorGraph::add(DecisionTreeFactor::shared_ptr factor) {
+void HybridGaussianFactorGraph::add(DecisionTreeFactor::shared_ptr factor) {
   FactorGraph::add(boost::make_shared<HybridDiscreteFactor>(factor));
 }
 

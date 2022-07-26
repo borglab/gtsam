@@ -333,7 +333,10 @@ def plot_point3(
 
     """
     fig = plt.figure(fignum)
-    axes = fig.gca(projection='3d')
+    if not fig.axes:
+        axes = fig.add_subplot(projection='3d')
+    else:
+        axes = fig.axes[0]
     plot_point3_on_axes(axes, point, linespec, P)
 
     axes.set_xlabel(axis_labels[0])
@@ -388,7 +391,7 @@ def plot_3d_points(fignum,
 
     fig = plt.figure(fignum)
     fig.suptitle(title)
-    fig.canvas.set_window_title(title.lower())
+    fig.canvas.manager.set_window_title(title.lower())
 
 
 def plot_pose3_on_axes(axes, pose, axis_length=0.1, P=None, scale=1):
@@ -490,7 +493,10 @@ def plot_trajectory(
         axis_labels (iterable[string]): List of axis labels to set.
     """
     fig = plt.figure(fignum)
-    axes = fig.gca(projection='3d')
+    if not fig.axes:
+        axes = fig.add_subplot(projection='3d')
+    else:
+        axes = fig.axes[0]
 
     axes.set_xlabel(axis_labels[0])
     axes.set_ylabel(axis_labels[1])
@@ -522,7 +528,7 @@ def plot_trajectory(
         plot_pose3_on_axes(axes, pose, P=covariance, axis_length=scale)
 
     fig.suptitle(title)
-    fig.canvas.set_window_title(title.lower())
+    fig.canvas.manager.set_window_title(title.lower())
 
 
 def plot_incremental_trajectory(fignum: int,
@@ -545,7 +551,10 @@ def plot_incremental_trajectory(fignum: int,
             Used to create animation effect.
     """
     fig = plt.figure(fignum)
-    axes = fig.gca(projection='3d')
+    if not fig.axes:
+        axes = fig.add_subplot(projection='3d')
+    else:
+        axes = fig.axes[0]
 
     poses = gtsam.utilities.allPose3s(values)
     keys = gtsam.KeyVector(poses.keys())
