@@ -38,7 +38,7 @@ namespace gtsam {
  * define the alpha = (t_p - t_A) / (t_B - t_A), we will use the pose
  * interpolated between A and B by the alpha to project the corresponding
  * landmark to Point2.
- * @ingroup SLAM
+ * @ingroup slam
  */
 
 class GTSAM_UNSTABLE_EXPORT ProjectionFactorRollingShutter
