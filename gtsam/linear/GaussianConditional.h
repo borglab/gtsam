@@ -35,7 +35,7 @@ namespace gtsam {
   * A GaussianConditional functions as the node in a Bayes network.
   * It has a set of parents y,z, etc. and implements a probability density on x.
   * The negative log-probability is given by \f$ \frac{1}{2} |Rx - (d - Sy - Tz - ...)|^2 \f$
-  * @addtogroup linear
+  * @ingroup linear
   */
   class GTSAM_EXPORT GaussianConditional :
     public JacobianFactor,

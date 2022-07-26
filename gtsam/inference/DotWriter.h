@@ -30,7 +30,7 @@ namespace gtsam {
 
 /**
  * @brief DotWriter is a helper class for writing graphviz .dot files.
- * @addtogroup inference
+ * @ingroup inference
  */
 struct GTSAM_EXPORT DotWriter {
   double figureWidthInches;   ///< The figure width on paper in inches

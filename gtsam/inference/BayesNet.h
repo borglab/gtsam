@@ -27,7 +27,7 @@ namespace gtsam {
 
 /**
  * A BayesNet is a tree of conditionals, stored in elimination order.
- * @addtogroup inference
+ * @ingroup inference
  */
 template <class CONDITIONAL>
 class BayesNet : public FactorGraph<CONDITIONAL> {
