@@ -36,6 +36,9 @@ public:
   /// dimension of the variable - used to autodetect sizes
   static const size_t dimension = 6;
 
+  /// @name Standard Constructors
+  /// @{
+
   ConstantBias() :
       biasAcc_(0.0, 0.0, 0.0), biasGyro_(0.0, 0.0, 0.0) {
   }
@@ -47,6 +50,8 @@ public:
   explicit ConstantBias(const Vector6& v) :
       biasAcc_(v.head<3>()), biasGyro_(v.tail<3>()) {
   }
+
+  /// @}
 
   /** return the accelerometer and gyro biases in a single vector */
   Vector6 vector() const {
@@ -83,7 +88,6 @@ public:
     return measurement - biasGyro_;
   }
 
-  /// @}
   /// @name Testable
   /// @{
 

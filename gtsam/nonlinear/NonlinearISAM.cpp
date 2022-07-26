@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file NonlinearISAM-inl.h
+ * @file NonlinearISAM.cpp
  * @date Jan 19, 2010
  * @author Viorela Ila and Richard Roberts
  */

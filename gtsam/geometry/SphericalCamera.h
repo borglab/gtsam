@@ -82,7 +82,6 @@ class GTSAM_EXPORT SphericalCamera {
   EmptyCal::shared_ptr emptyCal_;
 
  public:
-  /// @}
   /// @name Standard Constructors
   /// @{
 

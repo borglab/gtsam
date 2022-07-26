@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file   Pose3AttitudeFactor.h
+ *  @file   AttitudeFactor.h
  *  @author Frank Dellaert
  *  @brief  Header file for Attitude factor
  *  @date   January 28, 2014
