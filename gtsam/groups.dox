@@ -50,4 +50,7 @@
 \defgroup symbolic Symbolic
 @{ @}
 
+\defgroup isam2 ISAM2
+@{ @}
+
 */ 
