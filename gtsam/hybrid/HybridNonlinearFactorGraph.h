@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file   NonlinearHybridFactorGraph.h
+ * @file   HybridNonlinearFactorGraph.h
  * @brief  Nonlinear hybrid factor graph that uses type erasure
  * @author Varun Agrawal
  * @date   May 28, 2022
@@ -35,7 +35,7 @@ namespace gtsam {
  * This is the non-linear version of a hybrid factor graph.
  * Everything inside needs to be hybrid factor or hybrid conditional.
  */
-class GTSAM_EXPORT NonlinearHybridFactorGraph : public HybridFactorGraph {
+class GTSAM_EXPORT HybridNonlinearFactorGraph : public HybridFactorGraph {
  protected:
   /// Check if FACTOR type is derived from NonlinearFactor.
   template <typename FACTOR>
@@ -44,7 +44,7 @@ class GTSAM_EXPORT NonlinearHybridFactorGraph : public HybridFactorGraph {
 
  public:
   using Base = HybridFactorGraph;
-  using This = NonlinearHybridFactorGraph;     ///< this class
+  using This = HybridNonlinearFactorGraph;     ///< this class
   using shared_ptr = boost::shared_ptr<This>;  ///< shared_ptr to This
 
   using Values = gtsam::Values;  ///< backwards compatibility
@@ -53,7 +53,7 @@ class GTSAM_EXPORT NonlinearHybridFactorGraph : public HybridFactorGraph {
   /// @name Constructors
   /// @{
 
-  NonlinearHybridFactorGraph() = default;
+  HybridNonlinearFactorGraph() = default;
 
   /**
    * Implicit copy/downcast constructor to override explicit template container
@@ -61,7 +61,7 @@ class GTSAM_EXPORT NonlinearHybridFactorGraph : public HybridFactorGraph {
    * `cachedSeparatorMarginal_.reset(*separatorMarginal)`
    * */
   template <class DERIVEDFACTOR>
-  NonlinearHybridFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph)
+  HybridNonlinearFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph)
       : Base(graph) {}
 
   /// @}
@@ -131,21 +131,21 @@ class GTSAM_EXPORT NonlinearHybridFactorGraph : public HybridFactorGraph {
    * Simply prints the factor graph.
    */
   void print(
-      const std::string& str = "NonlinearHybridFactorGraph",
+      const std::string& str = "HybridNonlinearFactorGraph",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {}
 
   /**
    * @return true if all internal graphs of `this` are equal to those of
    * `other`
    */
-  bool equals(const NonlinearHybridFactorGraph& other,
+  bool equals(const HybridNonlinearFactorGraph& other,
               double tol = 1e-9) const {
     return false;
   }
 
   /**
    * @brief Linearize all the continuous factors in the
-   * NonlinearHybridFactorGraph.
+   * HybridNonlinearFactorGraph.
    *
    * @param continuousValues: Dictionary of continuous values.
    * @return GaussianHybridFactorGraph::shared_ptr
@@ -200,7 +200,7 @@ class GTSAM_EXPORT NonlinearHybridFactorGraph : public HybridFactorGraph {
 };
 
 template <>
-struct traits<NonlinearHybridFactorGraph>
-    : public Testable<NonlinearHybridFactorGraph> {};
+struct traits<HybridNonlinearFactorGraph>
+    : public Testable<HybridNonlinearFactorGraph> {};
 
 }  // namespace gtsam
