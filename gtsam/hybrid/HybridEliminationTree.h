@@ -25,6 +25,8 @@ namespace gtsam {
 
 /**
  * Elimination Tree type for Hybrid
+ *
+ * @ingroup hybrid
  */
 class GTSAM_EXPORT HybridEliminationTree
     : public EliminationTree<HybridBayesNet, HybridGaussianFactorGraph> {
