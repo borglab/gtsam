@@ -73,11 +73,13 @@ class GTSAM_EXPORT GncParams {
   double weightsTol = 1e-4;  ///< If the weights are within weightsTol from being binary, stop iterating (only for TLS)
   Verbosity verbosity = SILENT;  ///< Verbosity level
 
-  // *NOTE* We use KeyVector for inliers and outliers since it is fast + wrapping
+  //TODO(Varun) replace IndexVector with vector<size_t> once pybind11/stl.h is globally enabled.
+  /// Use IndexVector for inliers and outliers since it is fast + wrapping
+  using IndexVector = FastVector<uint64_t>;
   ///< Slots in the factor graph corresponding to measurements that we know are inliers
-  KeyVector knownInliers = KeyVector();
+  IndexVector knownInliers = IndexVector();
   ///< Slots in the factor graph corresponding to measurements that we know are outliers
-  KeyVector knownOutliers = KeyVector();
+  IndexVector knownOutliers = IndexVector();
 
   /// Set the robust loss function to be used in GNC (chosen among the ones in GncLossType).
   void setLossType(const GncLossType type) {
@@ -118,7 +120,7 @@ class GTSAM_EXPORT GncParams {
    * This functionality is commonly used in SLAM when one may assume the odometry is outlier free, and
    * only apply GNC to prune outliers from the loop closures.
    * */
-  void setKnownInliers(const KeyVector& knownIn) {
+  void setKnownInliers(const IndexVector& knownIn) {
     for (size_t i = 0; i < knownIn.size(); i++){
       knownInliers.push_back(knownIn[i]);
     }
@@ -129,7 +131,7 @@ class GTSAM_EXPORT GncParams {
    * corresponds to the slots in the factor graph. For instance, if you have a nonlinear factor graph nfg,
    * and you provide  knownOut = {0, 2, 15}, GNC will not apply outlier rejection to nfg[0], nfg[2], and nfg[15].
    * */
-  void setKnownOutliers(const KeyVector& knownOut) {
+  void setKnownOutliers(const IndexVector& knownOut) {
     for (size_t i = 0; i < knownOut.size(); i++){
       knownOutliers.push_back(knownOut[i]);
     }
