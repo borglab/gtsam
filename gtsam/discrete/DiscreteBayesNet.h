@@ -33,7 +33,7 @@ namespace gtsam {
 
 /** 
  * A Bayes net made from discrete conditional distributions. 
- * @addtogroup discrete
+ * @ingroup discrete
  */
 class GTSAM_EXPORT DiscreteBayesNet: public BayesNet<DiscreteConditional> {
  public:

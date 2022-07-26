@@ -36,6 +36,7 @@ namespace gtsam {
  * Another good thing is we don't need to have the special DiscreteKey which
  * stores cardinality of a Discrete variable. It should be handled naturally in
  * the new class DiscreteValue, as the variable's type (domain)
+ * @ingroup discrete
  */
 class GTSAM_EXPORT DiscreteValues : public Assignment<Key> {
  public:
