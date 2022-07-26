@@ -86,7 +86,7 @@ namespace gtsam {
     static Rot2 atan2(double y, double x);
 
     /**
-     * Random, generates random angle \in [-p,pi]
+     * Random, generates random angle \f$\in\f$ [-pi,pi]
      * Example:
      *   std::mt19937 engine(42);
      *   Unit3 unit = Unit3::Random(engine);

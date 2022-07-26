@@ -338,7 +338,7 @@ namespace gtsam {
 
     /**
      * Compute the gradient at a key:
-     *      \grad f(x_i) = \sum_j G_ij*x_j - g_i
+     *  \f$ \grad f(x_i) = \sum_j G_ij*x_j - g_i \f$
      */
     Vector gradient(Key key, const VectorValues& x) const override;
 
