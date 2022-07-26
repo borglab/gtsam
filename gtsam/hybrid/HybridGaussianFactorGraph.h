@@ -75,8 +75,14 @@ struct EliminationTraits<HybridGaussianFactorGraph> {
  * Everything inside needs to be hybrid factor or hybrid conditional.
  */
 class GTSAM_EXPORT HybridGaussianFactorGraph
-    : public HybridFactorGraph,,
+    : public HybridFactorGraph,
       public EliminateableFactorGraph<HybridGaussianFactorGraph> {
+ protected:
+  /// Check if FACTOR type is derived from GaussianFactor.
+  template <typename FACTOR>
+  using IsGaussian = typename std::enable_if<
+      std::is_base_of<GaussianFactor, FACTOR>::value>::type;
+
  public:
   using Base = HybridFactorGraph;
   using This = HybridGaussianFactorGraph;  ///< this class
