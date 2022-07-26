@@ -44,7 +44,8 @@ namespace gtsam {
    * The tree structure and elimination method are exactly analogous to the EliminationTree,
    * except that in the JunctionTree, at each node multiple variables are eliminated at a time.
    *
-   * \addtogroup Multifrontal
+   * \ingroup Multifrontal
+   * @ingroup discrete
    * \nosubgrouping
    */
   class GTSAM_EXPORT DiscreteJunctionTree :

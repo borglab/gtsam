@@ -27,6 +27,8 @@ namespace gtsam {
 /**
  * A prior probability on a set of discrete variables.
  * Derives from DiscreteConditional
+ *
+ * @ingroup discrete
  */
 class GTSAM_EXPORT DiscreteDistribution : public DiscreteConditional {
  public:
