@@ -28,7 +28,7 @@ namespace gtsam {
 /**
  * Disjoint set forest using an STL map data structure underneath
  * Uses rank compression and union by rank, iterator version
- * @addtogroup base
+ * @ingroup base
  */
 template <class KEY>
 class DSFMap {

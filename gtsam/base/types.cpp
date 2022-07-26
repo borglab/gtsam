@@ -14,7 +14,7 @@
  * @brief    Functions for handling type information
  * @author   Varun Agrawal
  * @date     May 18, 2020
- * @addtogroup base
+ * @ingroup base
  */
 
 #include <gtsam/base/types.h>

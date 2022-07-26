@@ -33,7 +33,7 @@ namespace gtsam {
  * S = {S_1,S_2,...} of disjoint dynamic sets. Each set is identified by
  * a representative, which is some member of the set.
  *
- * @addtogroup base
+ * @ingroup base
  */
 template<class KEY>
 class DSF: protected BTree<KEY, KEY> {

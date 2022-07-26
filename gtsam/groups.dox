@@ -9,6 +9,9 @@
 \defgroup Sequential Solving by sequential variable elimination (QR and Cholesky)
 @{ @}
 
+\defgroup base Base
+@{ @}
+
 \defgroup basis Basis
 @{ @}
 
