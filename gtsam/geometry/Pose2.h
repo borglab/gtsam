@@ -30,7 +30,7 @@ namespace gtsam {
 
 /**
  * A 2D pose (Point2,Rot2)
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  */
 class Pose2: public LieGroup<Pose2, 3> {

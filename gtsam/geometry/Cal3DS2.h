@@ -29,7 +29,7 @@ namespace gtsam {
  * @brief Calibration of a camera with radial distortion that also supports
  * Lie-group behaviors for optimization.
  * \sa Cal3DS2_Base
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  */
 class GTSAM_EXPORT Cal3DS2 : public Cal3DS2_Base {

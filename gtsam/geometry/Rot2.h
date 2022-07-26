@@ -30,7 +30,7 @@ namespace gtsam {
   /**
    * Rotation matrix
    * NOTE: the angle theta is in radians unless explicitly stated
-   * @addtogroup geometry
+   * @ingroup geometry
    * \nosubgrouping
    */
   class GTSAM_EXPORT Rot2 : public LieGroup<Rot2, 1> {

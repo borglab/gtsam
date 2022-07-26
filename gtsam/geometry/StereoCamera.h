@@ -42,7 +42,7 @@ private:
 
 /**
  * A stereo camera class, parameterize by left camera pose and stereo calibration
- * @addtogroup geometry
+ * @ingroup geometry
  */
 class GTSAM_EXPORT StereoCamera {
 

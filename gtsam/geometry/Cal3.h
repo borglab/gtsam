@@ -16,7 +16,7 @@
  */
 
 /**
- * @addtogroup geometry
+ * @ingroup geometry
  */
 
 #pragma once
@@ -63,7 +63,7 @@ void calibrateJacobians(const Cal& calibration, const Point2& pn,
 
 /**
  * @brief Common base class for all calibration models.
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  */
 class GTSAM_EXPORT Cal3 {

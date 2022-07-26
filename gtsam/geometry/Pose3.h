@@ -31,7 +31,7 @@ class Pose2;
 
 /**
  * A 3D pose (R,t) : (Rot3,Point3)
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  */
 class GTSAM_EXPORT Pose3: public LieGroup<Pose3, 6> {

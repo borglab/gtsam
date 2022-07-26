@@ -27,7 +27,7 @@ namespace gtsam {
 
 /**
  * @brief Calibration of a camera with radial distortion
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  *
  * Uses same distortionmodel as OpenCV, with

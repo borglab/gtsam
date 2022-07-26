@@ -24,7 +24,7 @@ namespace gtsam {
 
 /**
  * @brief The most common 5DOF 3D->2D calibration, stereo version
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  */
 class GTSAM_EXPORT Cal3_S2Stereo : public Cal3_S2 {

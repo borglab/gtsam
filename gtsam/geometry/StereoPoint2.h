@@ -26,7 +26,7 @@ namespace gtsam {
 
 /**
  * A 2D stereo point, v will be same for rectified images
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  */
 class GTSAM_EXPORT StereoPoint2 {
