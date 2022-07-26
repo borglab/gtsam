@@ -72,8 +72,12 @@ class GTSAM_EXPORT GncParams {
   double relativeCostTol = 1e-5;  ///< If relative cost change is below this threshold, stop iterating
   double weightsTol = 1e-4;  ///< If the weights are within weightsTol from being binary, stop iterating (only for TLS)
   Verbosity verbosity = SILENT;  ///< Verbosity level
-  std::vector<size_t> knownInliers = std::vector<size_t>();  ///< Slots in the factor graph corresponding to measurements that we know are inliers
-  std::vector<size_t> knownOutliers = std::vector<size_t>();  ///< Slots in the factor graph corresponding to measurements that we know are outliers
+
+  // *NOTE* We use KeyVector for inliers and outliers since it is fast + wrapping
+  ///< Slots in the factor graph corresponding to measurements that we know are inliers
+  KeyVector knownInliers = KeyVector();
+  ///< Slots in the factor graph corresponding to measurements that we know are outliers
+  KeyVector knownOutliers = KeyVector();
 
   /// Set the robust loss function to be used in GNC (chosen among the ones in GncLossType).
   void setLossType(const GncLossType type) {
@@ -114,7 +118,7 @@ class GTSAM_EXPORT GncParams {
    * This functionality is commonly used in SLAM when one may assume the odometry is outlier free, and
    * only apply GNC to prune outliers from the loop closures.
    * */
-  void setKnownInliers(const std::vector<size_t>& knownIn) {
+  void setKnownInliers(const KeyVector& knownIn) {
     for (size_t i = 0; i < knownIn.size(); i++){
       knownInliers.push_back(knownIn[i]);
     }
@@ -125,7 +129,7 @@ class GTSAM_EXPORT GncParams {
    * corresponds to the slots in the factor graph. For instance, if you have a nonlinear factor graph nfg,
    * and you provide  knownOut = {0, 2, 15}, GNC will not apply outlier rejection to nfg[0], nfg[2], and nfg[15].
    * */
-  void setKnownOutliers(const std::vector<size_t>& knownOut) {
+  void setKnownOutliers(const KeyVector& knownOut) {
     for (size_t i = 0; i < knownOut.size(); i++){
       knownOutliers.push_back(knownOut[i]);
     }
