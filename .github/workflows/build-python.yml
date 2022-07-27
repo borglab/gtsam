@@ -22,12 +22,12 @@ jobs:
           ubuntu-18.04-gcc-5,
           ubuntu-18.04-gcc-9,
           ubuntu-18.04-clang-9,
-          macOS-10.15-xcode-11.3.1,
+          macOS-11-xcode-13.4.1,
           ubuntu-18.04-gcc-5-tbb,
         ]
 
         build_type: [Debug, Release]
-        python_version: [3]
+        python_version: [3.7]
         include:
           - name: ubuntu-18.04-gcc-5
             os: ubuntu-18.04
@@ -44,18 +44,10 @@ jobs:
             compiler: clang
             version: "9"
 
-          # NOTE temporarily added this as it is a required check.
-          - name: ubuntu-18.04-clang-9
-            os: ubuntu-18.04
-            compiler: clang
-            version: "9"
-            build_type: Debug
-            python_version: "3"
-
-          - name: macOS-10.15-xcode-11.3.1
-            os: macOS-10.15
+          - name: macOS-11-xcode-13.4.1
+            os: macOS-11
             compiler: xcode
-            version: "11.3.1"
+            version: "13.4.1"
 
           - name: ubuntu-18.04-gcc-5-tbb
             os: ubuntu-18.04
@@ -65,7 +57,11 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.7'
       - name: Install (Linux)
         if: runner.os == 'Linux'
         run: |
@@ -103,7 +99,7 @@ jobs:
             echo "CC=gcc-${{ matrix.version }}" >> $GITHUB_ENV
             echo "CXX=g++-${{ matrix.version }}" >> $GITHUB_ENV
           else
-            sudo xcode-select -switch /Applications/Xcode_${{ matrix.version }}.app
+            sudo xcode-select -switch /Applications/Xcode.app
             echo "CC=clang" >> $GITHUB_ENV
             echo "CXX=clang++" >> $GITHUB_ENV
           fi
