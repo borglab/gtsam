@@ -27,7 +27,7 @@ jobs:
         ]
 
         build_type: [Debug, Release]
-        python_version: [3.7]
+        python_version: [3]
         include:
           - name: ubuntu-18.04-gcc-5
             os: ubuntu-18.04
@@ -44,6 +44,14 @@ jobs:
             compiler: clang
             version: "9"
 
+          # NOTE temporarily added this as it is a required check.
+          - name: ubuntu-18.04-clang-9
+            os: ubuntu-18.04
+            compiler: clang
+            version: "9"
+            build_type: Debug
+            python_version: "3"
+
           - name: macOS-11-xcode-13.4.1
             os: macOS-11
             compiler: xcode
@@ -58,10 +66,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.7'
       - name: Install (Linux)
         if: runner.os == 'Linux'
         run: |
