@@ -65,10 +65,9 @@ TEST(HybridFactorGraph, GaussianFactorGraph) {
   EXPECT_LONGS_EQUAL(2, ghfg.size());
 }
 
-/* **************************************************************************
+/***************************************************************************
+ * Test that the resize method works correctly for a HybridNonlinearFactorGraph.
  */
-/// Test that the resize method works correctly for a
-/// HybridNonlinearFactorGraph.
 TEST(HybridNonlinearFactorGraph, Resize) {
   HybridNonlinearFactorGraph fg;
   auto nonlinearFactor = boost::make_shared<BetweenFactor<double>>();
@@ -86,10 +85,10 @@ TEST(HybridNonlinearFactorGraph, Resize) {
   EXPECT_LONGS_EQUAL(fg.size(), 0);
 }
 
-/* **************************************************************************
+/***************************************************************************
+ * Test that the resize method works correctly for a
+ * HybridGaussianFactorGraph.
  */
-/// Test that the resize method works correctly for a
-/// HybridGaussianFactorGraph.
 TEST(HybridGaussianFactorGraph, Resize) {
   HybridNonlinearFactorGraph nhfg;
   auto nonlinearFactor = boost::make_shared<BetweenFactor<double>>(
@@ -123,10 +122,9 @@ TEST(HybridGaussianFactorGraph, Resize) {
   EXPECT_LONGS_EQUAL(gfg.size(), 0);
 }
 
-/*
-****************************************************************************
-* Test push_back on HFG makes the correct distinction.
-*/
+/*****************************************************************************
+ * Test push_back on HFG makes the correct distinction.
+ */
 TEST(HybridFactorGraph, PushBack) {
   HybridNonlinearFactorGraph fg;
 
@@ -168,53 +166,44 @@ TEST(HybridFactorGraph, PushBack) {
   EXPECT_LONGS_EQUAL(ghfg.size(), 1);
 }
 
-// /*
-// ****************************************************************************/
-// // Test construction of switching-like hybrid factor graph.
-// TEST(HybridFactorGraph, Switching) {
-//   Switching self(3);
+/****************************************************************************
+ * Test construction of switching-like hybrid factor graph.
+ */
+TEST(HybridFactorGraph, Switching) {
+  Switching self(3);
 
-//   EXPECT_LONGS_EQUAL(8, self.nonlinearFactorGraph.size());
-//   EXPECT_LONGS_EQUAL(4, self.nonlinearFactorGraph.nonlinearGraph().size());
-//   EXPECT_LONGS_EQUAL(2, self.nonlinearFactorGraph.discreteGraph().size());
-//   EXPECT_LONGS_EQUAL(2, self.nonlinearFactorGraph.dcGraph().size());
+  EXPECT_LONGS_EQUAL(8, self.nonlinearFactorGraph.size());
 
-//   EXPECT_LONGS_EQUAL(8, self.linearizedFactorGraph.size());
-//   EXPECT_LONGS_EQUAL(2, self.linearizedFactorGraph.discreteGraph().size());
-//   EXPECT_LONGS_EQUAL(2, self.linearizedFactorGraph.dcGraph().size());
-//   EXPECT_LONGS_EQUAL(4, self.linearizedFactorGraph.gaussianGraph().size());
-// }
+  EXPECT_LONGS_EQUAL(8, self.linearizedFactorGraph.size());
+}
 
-// /*
-// ****************************************************************************/
-// // Test linearization on a switching-like hybrid factor graph.
-// TEST(HybridFactorGraph, Linearization) {
-//   Switching self(3);
+/****************************************************************************
+ * Test linearization on a switching-like hybrid factor graph.
+ */
+TEST(HybridFactorGraph, Linearization) {
+  Switching self(3);
 
-//   // Linearize here:
-//   HybridGaussianFactorGraph actualLinearized =
-//       self.nonlinearFactorGraph.linearize(self.linearizationPoint);
+  // Linearize here:
+  HybridGaussianFactorGraph actualLinearized =
+      self.nonlinearFactorGraph.linearize(self.linearizationPoint);
 
-//   EXPECT_LONGS_EQUAL(8, actualLinearized.size());
-//   EXPECT_LONGS_EQUAL(2, actualLinearized.discreteGraph().size());
-//   EXPECT_LONGS_EQUAL(2, actualLinearized.dcGraph().size());
-//   EXPECT_LONGS_EQUAL(4, actualLinearized.gaussianGraph().size());
-// }
+  EXPECT_LONGS_EQUAL(8, actualLinearized.size());
+}
 
-// /*
-// ****************************************************************************/
-// // Test elimination tree construction
-// TEST(HybridFactorGraph, EliminationTree) {
-//   Switching self(3);
+/****************************************************************************
+ * Test elimination tree construction
+ */
+TEST(HybridFactorGraph, EliminationTree) {
+  Switching self(3);
 
-//   // Create ordering.
-//   Ordering ordering;
-//   for (size_t k = 1; k <= self.K; k++) ordering += X(k);
+  // Create ordering.
+  Ordering ordering;
+  for (size_t k = 1; k <= self.K; k++) ordering += X(k);
 
-//   // Create elimination tree.
-//   HybridEliminationTree etree(self.linearizedFactorGraph, ordering);
-//   EXPECT_LONGS_EQUAL(1, etree.roots().size())
-// }
+  // Create elimination tree.
+  HybridEliminationTree etree(self.linearizedFactorGraph, ordering);
+  EXPECT_LONGS_EQUAL(1, etree.roots().size())
+}
 
 // /*
 // ****************************************************************************/
