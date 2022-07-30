@@ -18,11 +18,18 @@
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
+#include <gtsam/discrete/DiscreteDistribution.h>
 #include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
+#include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
+#include <gtsam/hybrid/MixtureFactor.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/NoiseModel.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
+
+#include <vector>
 
 #pragma once
 
@@ -30,8 +37,6 @@ using gtsam::symbol_shorthand::C;
 using gtsam::symbol_shorthand::X;
 
 namespace gtsam {
-
-using MotionModel = BetweenFactor<double>;
 
 inline HybridGaussianFactorGraph::shared_ptr makeSwitchingChain(
     size_t n, std::function<Key(int)> keyFunc = X,
@@ -86,5 +91,104 @@ inline std::pair<KeyVector, std::vector<int>> makeBinaryOrdering(
   // std::reverse(levels.begin(), levels.end());
   return {new_order, levels};
 }
+
+/* ***************************************************************************
+ */
+using MotionModel = BetweenFactor<double>;
+// using MotionMixture = MixtureFactor<MotionModel>;
+
+// Test fixture with switching network.
+struct Switching {
+  size_t K;
+  DiscreteKeys modes;
+  HybridNonlinearFactorGraph nonlinearFactorGraph;
+  HybridGaussianFactorGraph linearizedFactorGraph;
+  Values linearizationPoint;
+
+  /// Create with given number of time steps.
+  Switching(size_t K, double between_sigma = 1.0, double prior_sigma = 0.1)
+      : K(K) {
+    using symbol_shorthand::M;
+    using symbol_shorthand::X;
+
+    // Create DiscreteKeys for binary K modes, modes[0] will not be used.
+    for (size_t k = 0; k <= K; k++) {
+      modes.emplace_back(M(k), 2);
+    }
+
+    // Create hybrid factor graph.
+    // Add a prior on X(1).
+    auto prior = boost::make_shared<PriorFactor<double>>(
+        X(1), 0, noiseModel::Isotropic::Sigma(1, prior_sigma));
+    nonlinearFactorGraph.push_nonlinear(prior);
+
+    // Add "motion models".
+    for (size_t k = 1; k < K; k++) {
+      KeyVector keys = {X(k), X(k + 1)};
+      auto motion_models = motionModels(k);
+      std::vector<NonlinearFactor::shared_ptr> components;
+      for (auto &&f : motion_models) {
+        components.push_back(boost::dynamic_pointer_cast<NonlinearFactor>(f));
+      }
+      nonlinearFactorGraph.emplace_hybrid<MixtureFactor>(
+          keys, DiscreteKeys{modes[k]}, components);
+    }
+
+    // Add measurement factors
+    auto measurement_noise = noiseModel::Isotropic::Sigma(1, 0.1);
+    for (size_t k = 1; k <= K; k++) {
+      nonlinearFactorGraph.emplace_nonlinear<PriorFactor<double>>(
+          X(k), 1.0 * (k - 1), measurement_noise);
+    }
+
+    // Add "mode chain"
+    addModeChain(&nonlinearFactorGraph);
+
+    // Create the linearization point.
+    for (size_t k = 1; k <= K; k++) {
+      linearizationPoint.insert<double>(X(k), static_cast<double>(k));
+    }
+
+    linearizedFactorGraph = nonlinearFactorGraph.linearize(linearizationPoint);
+  }
+
+  // Create motion models for a given time step
+  static std::vector<MotionModel::shared_ptr> motionModels(size_t k,
+                                                           double sigma = 1.0) {
+    using symbol_shorthand::M;
+    using symbol_shorthand::X;
+
+    auto noise_model = noiseModel::Isotropic::Sigma(1, sigma);
+    auto still =
+             boost::make_shared<MotionModel>(X(k), X(k + 1), 0.0, noise_model),
+         moving =
+             boost::make_shared<MotionModel>(X(k), X(k + 1), 1.0, noise_model);
+    return {still, moving};
+  }
+
+  // Add "mode chain" to HybridNonlinearFactorGraph
+  void addModeChain(HybridNonlinearFactorGraph *fg) {
+    auto prior = boost::make_shared<DiscreteDistribution>(modes[1], "1/1");
+    fg->push_discrete(prior);
+    for (size_t k = 1; k < K - 1; k++) {
+      auto parents = {modes[k]};
+      auto conditional = boost::make_shared<DiscreteConditional>(
+          modes[k + 1], parents, "1/2 3/2");
+      fg->push_discrete(conditional);
+    }
+  }
+
+  // Add "mode chain" to HybridGaussianFactorGraph
+  void addModeChain(HybridGaussianFactorGraph *fg) {
+    auto prior = boost::make_shared<DiscreteDistribution>(modes[1], "1/1");
+    fg->push_discrete(prior);
+    for (size_t k = 1; k < K - 1; k++) {
+      auto parents = {modes[k]};
+      auto conditional = boost::make_shared<DiscreteConditional>(
+          modes[k + 1], parents, "1/2 3/2");
+      fg->push_discrete(conditional);
+    }
+  }
+};
 
 }  // namespace gtsam
