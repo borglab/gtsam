@@ -25,6 +25,8 @@
 #include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
 #include <gtsam/hybrid/MixtureFactor.h>
 #include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/sam/BearingRangeFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
@@ -205,131 +207,126 @@ TEST(HybridFactorGraph, EliminationTree) {
   EXPECT_LONGS_EQUAL(1, etree.roots().size())
 }
 
-// /*
-// ****************************************************************************/
-// // Test elimination function by eliminating x1 in *-x1-*-x2 graph.
-// TEST(DCGaussianElimination, Eliminate_x1) {
-//   Switching self(3);
+/****************************************************************************
+ *Test elimination function by eliminating x1 in *-x1-*-x2 graph.
+ */
+TEST(GaussianElimination, Eliminate_x1) {
+  Switching self(3);
 
-//   // Gather factors on x1, has a simple Gaussian and a mixture factor.
-//   HybridGaussianFactorGraph factors;
-//   factors.push_gaussian(self.linearizedFactorGraph.gaussianGraph()[0]);
-//   factors.push_dc(self.linearizedFactorGraph.dcGraph()[0]);
+  // Gather factors on x1, has a simple Gaussian and a mixture factor.
+  HybridGaussianFactorGraph factors;
+  // Add gaussian prior
+  factors.push_back(self.linearizedFactorGraph[0]);
+  // Add first hybrid factor
+  factors.push_back(self.linearizedFactorGraph[1]);
 
-//   // Check that sum works:
-//   auto sum = factors.sum();
-//   Assignment<Key> mode;
-//   mode[M(1)] = 1;
-//   auto actual = sum(mode);               // Selects one of 2 modes.
-//   EXPECT_LONGS_EQUAL(2, actual.size());  // Prior and motion model.
+  // TODO(Varun) remove this block since sum is no longer exposed.
+  // // Check that sum works:
+  // auto sum = factors.sum();
+  // Assignment<Key> mode;
+  // mode[M(1)] = 1;
+  // auto actual = sum(mode);               // Selects one of 2 modes.
+  // EXPECT_LONGS_EQUAL(2, actual.size());  // Prior and motion model.
 
-//   // Eliminate x1
-//   Ordering ordering;
-//   ordering += X(1);
+  // Eliminate x1
+  Ordering ordering;
+  ordering += X(1);
 
-//   auto result = EliminateHybrid(factors, ordering);
-//   CHECK(result.first);
-//   EXPECT_LONGS_EQUAL(1, result.first->nrFrontals());
-//   CHECK(result.second);
-//   // Has two keys, x2 and m1
-//   EXPECT_LONGS_EQUAL(2, result.second->size());
-// }
+  auto result = EliminateHybrid(factors, ordering);
+  CHECK(result.first);
+  EXPECT_LONGS_EQUAL(1, result.first->nrFrontals());
+  CHECK(result.second);
+  // Has two keys, x2 and m1
+  EXPECT_LONGS_EQUAL(2, result.second->size());
+}
 
-// /*
-// ****************************************************************************/
-// // Test elimination function by eliminating x2 in x1-*-x2-*-x3 chain.
-// //                                                m1/      \m2
-// TEST(DCGaussianElimination, Eliminate_x2) {
-//   Switching self(3);
+/****************************************************************************
+ * Test elimination function by eliminating x2 in x1-*-x2-*-x3 chain.
+ *                                                m1/      \m2
+ */
+TEST(HybridsGaussianElimination, Eliminate_x2) {
+  Switching self(3);
 
-//   // Gather factors on x2, will be two mixture factors (with x1 and x3,
-//   resp.). HybridGaussianFactorGraph factors;
-//   factors.push_dc(self.linearizedFactorGraph.dcGraph()[0]);  // involves m1
-//   factors.push_dc(self.linearizedFactorGraph.dcGraph()[1]);  // involves m2
+  // Gather factors on x2, will be two mixture factors (with x1 and x3, resp.).
+  HybridGaussianFactorGraph factors;
+  factors.push_back(self.linearizedFactorGraph[1]);  // involves m1
+  factors.push_back(self.linearizedFactorGraph[2]);  // involves m2
 
-//   // Check that sum works:
-//   auto sum = factors.sum();
-//   Assignment<Key> mode;
-//   mode[M(1)] = 0;
-//   mode[M(2)] = 1;
-//   auto actual = sum(mode);               // Selects one of 4 mode
-//   combinations. EXPECT_LONGS_EQUAL(2, actual.size());  // 2 motion models.
+  // TODO(Varun) remove this block since sum is no longer exposed.
+  // // Check that sum works:
+  // auto sum = factors.sum();
+  // Assignment<Key> mode;
+  // mode[M(1)] = 0;
+  // mode[M(2)] = 1;
+  // auto actual = sum(mode);               // Selects one of 4 mode
+  // combinations. EXPECT_LONGS_EQUAL(2, actual.size());  // 2 motion models.
 
-//   // Eliminate x2
-//   Ordering ordering;
-//   ordering += X(2);
+  // Eliminate x2
+  Ordering ordering;
+  ordering += X(2);
 
-//   std::pair<AbstractConditional::shared_ptr, boost::shared_ptr<Factor>>
-//   result =
-//       EliminateHybrid(factors, ordering);
-//   CHECK(result.first);
-//   EXPECT_LONGS_EQUAL(1, result.first->nrFrontals());
-//   CHECK(result.second);
-//   // Note: separator keys should include m1, m2.
-//   EXPECT_LONGS_EQUAL(4, result.second->size());
-// }
+  std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr> result =
+      EliminateHybrid(factors, ordering);
+  CHECK(result.first);
+  EXPECT_LONGS_EQUAL(1, result.first->nrFrontals());
+  CHECK(result.second);
+  // Note: separator keys should include m1, m2.
+  EXPECT_LONGS_EQUAL(4, result.second->size());
+}
 
-// /*
-// ****************************************************************************/
-// // Helper method to generate gaussian factor graphs with a specific mode.
-// GaussianFactorGraph::shared_ptr batchGFG(double between,
-//                                          Values linearizationPoint) {
-//   NonlinearFactorGraph graph;
-//   graph.addPrior<double>(X(1), 0, Isotropic::Sigma(1, 0.1));
+/*
+****************************************************************************/
+// Helper method to generate gaussian factor graphs with a specific mode.
+GaussianFactorGraph::shared_ptr batchGFG(double between,
+                                         Values linearizationPoint) {
+  NonlinearFactorGraph graph;
+  graph.addPrior<double>(X(1), 0, Isotropic::Sigma(1, 0.1));
 
-//   auto between_x1_x2 = boost::make_shared<MotionModel>(
-//       X(1), X(2), between, Isotropic::Sigma(1, 1.0));
+  auto between_x1_x2 = boost::make_shared<MotionModel>(
+      X(1), X(2), between, Isotropic::Sigma(1, 1.0));
 
-//   graph.push_back(between_x1_x2);
+  graph.push_back(between_x1_x2);
 
-//   return graph.linearize(linearizationPoint);
-// }
+  return graph.linearize(linearizationPoint);
+}
 
-// /*
-// ****************************************************************************/
-// // Test elimination function by eliminating x1 and x2 in graph.
-// TEST(DCGaussianElimination, EliminateHybrid_2_Variable) {
-//   Switching self(2, 1.0, 0.1);
+/*****************************************************************************/
+// Test elimination function by eliminating x1 and x2 in graph.
+TEST(HybridGaussianElimination, EliminateHybrid_2_Variable) {
+  Switching self(2, 1.0, 0.1);
 
-//   auto factors = self.linearizedFactorGraph;
+  auto factors = self.linearizedFactorGraph;
 
-//   // Check that sum works:
-//   auto sum = factors.sum();
-//   Assignment<Key> mode;
-//   mode[M(1)] = 1;
-//   auto actual = sum(mode);  // Selects one of 2 modes.
-//   EXPECT_LONGS_EQUAL(4,
-//                      actual.size());  // Prior, 1 motion models, 2
-//                      measurements.
+  // Eliminate x1
+  Ordering ordering;
+  ordering += X(1);
+  ordering += X(2);
 
-//   // Eliminate x1
-//   Ordering ordering;
-//   ordering += X(1);
-//   ordering += X(2);
+  HybridConditional::shared_ptr hybridConditionalMixture;
+  HybridFactor::shared_ptr factorOnModes;
 
-//   AbstractConditional::shared_ptr abstractConditionalMixture;
-//   boost::shared_ptr<Factor> factorOnModes;
-//   std::tie(abstractConditionalMixture, factorOnModes) =
-//       EliminateHybrid(factors, ordering);
+  std::tie(hybridConditionalMixture, factorOnModes) =
+      EliminateHybrid(factors, ordering);
 
-//   auto gaussianConditionalMixture =
-//       dynamic_pointer_cast<GaussianMixture>(abstractConditionalMixture);
+  auto gaussianConditionalMixture =
+      dynamic_pointer_cast<GaussianMixture>(hybridConditionalMixture->inner());
 
-//   CHECK(gaussianConditionalMixture);
-//   EXPECT_LONGS_EQUAL(
-//       2,
-//       gaussianConditionalMixture->nrFrontals());  // Frontals = [x1, x2]
-//   EXPECT_LONGS_EQUAL(
-//       1,
-//       gaussianConditionalMixture->nrParents());  // 1 parent, which is the
-//       mode
+  CHECK(gaussianConditionalMixture);
+  // Frontals = [x1, x2]
+  EXPECT_LONGS_EQUAL(2, gaussianConditionalMixture->nrFrontals());
+  // 1 parent, which is the mode
+  EXPECT_LONGS_EQUAL(1, gaussianConditionalMixture->nrParents());
 
-//   auto discreteFactor =
-//   dynamic_pointer_cast<DecisionTreeFactor>(factorOnModes);
-//   CHECK(discreteFactor);
-//   EXPECT_LONGS_EQUAL(1, discreteFactor->discreteKeys().size());
-//   EXPECT(discreteFactor->root_->isLeaf() == false);
-// }
+  // This is now a HybridDiscreteFactor
+  auto hybridDiscreteFactor =
+      dynamic_pointer_cast<HybridDiscreteFactor>(factorOnModes);
+  // Access the type-erased inner object and convert to DecisionTreeFactor
+  auto discreteFactor =
+      dynamic_pointer_cast<DecisionTreeFactor>(hybridDiscreteFactor->inner());
+  CHECK(discreteFactor);
+  EXPECT_LONGS_EQUAL(1, discreteFactor->discreteKeys().size());
+  EXPECT(discreteFactor->root_->isLeaf() == false);
+}
 
 // /*
 // ****************************************************************************/

@@ -98,6 +98,12 @@ GaussianMixtureFactor::Sum sumFrontals(
     } else if (f->isContinuous()) {
       deferredFactors.push_back(
           boost::dynamic_pointer_cast<HybridGaussianFactor>(f)->inner());
+
+    } else if (f->isDiscrete()) {
+      // Don't do anything for discrete-only factors
+      // since we want to eliminate continuous values only.
+      continue;
+
     } else {
       // We need to handle the case where the object is actually an
       // BayesTreeOrphanWrapper!
@@ -106,8 +112,8 @@ GaussianMixtureFactor::Sum sumFrontals(
       if (!orphan) {
         auto &fr = *f;
         throw std::invalid_argument(
-            std::string("factor is discrete in continuous elimination") +
-            typeid(fr).name());
+            std::string("factor is discrete in continuous elimination ") +
+            demangle(typeid(fr).name()));
       }
     }
   }
