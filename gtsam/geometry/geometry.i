@@ -1126,10 +1126,10 @@ class TriangulationResult {
   Status status;
   TriangulationResult(const gtsam::Point3& p);
   const gtsam::Point3& get() const;
-  static TriangulationResult Degenerate();
-  static TriangulationResult Outlier();
-  static TriangulationResult FarPoint();
-  static TriangulationResult BehindCamera();
+  static gtsam::TriangulationResult Degenerate();
+  static gtsam::TriangulationResult Outlier();
+  static gtsam::TriangulationResult FarPoint();
+  static gtsam::TriangulationResult BehindCamera();
   bool valid() const;
   bool degenerate() const;
   bool outlier() const;
