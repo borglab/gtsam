@@ -164,7 +164,7 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
     }
   }
 
-  auto result = EliminateDiscrete(dfg, frontalKeys);
+  auto result = EliminateForMPE(dfg, frontalKeys);
 
   return {boost::make_shared<HybridConditional>(result.first),
           boost::make_shared<HybridDiscreteFactor>(result.second)};
