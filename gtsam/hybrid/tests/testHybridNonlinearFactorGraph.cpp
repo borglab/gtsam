@@ -19,6 +19,7 @@
 #include <gtsam/base/utilities.h>
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/discrete/DiscreteDistribution.h>
+#include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/hybrid/HybridEliminationTree.h>
 #include <gtsam/hybrid/HybridFactor.h>
@@ -274,9 +275,9 @@ TEST(HybridsGaussianElimination, Eliminate_x2) {
   EXPECT_LONGS_EQUAL(4, result.second->size());
 }
 
-/*
-****************************************************************************/
-// Helper method to generate gaussian factor graphs with a specific mode.
+/****************************************************************************
+ * Helper method to generate gaussian factor graphs with a specific mode.
+ */
 GaussianFactorGraph::shared_ptr batchGFG(double between,
                                          Values linearizationPoint) {
   NonlinearFactorGraph graph;
@@ -290,8 +291,9 @@ GaussianFactorGraph::shared_ptr batchGFG(double between,
   return graph.linearize(linearizationPoint);
 }
 
-/*****************************************************************************/
-// Test elimination function by eliminating x1 and x2 in graph.
+/****************************************************************************
+ * Test elimination function by eliminating x1 and x2 in graph.
+ */
 TEST(HybridGaussianElimination, EliminateHybrid_2_Variable) {
   Switching self(2, 1.0, 0.1);
 
@@ -371,287 +373,298 @@ TEST(HybridGaussianElimination, EliminateHybrid_2_Variable) {
 //   EXPECT_DOUBLES_EQUAL(0.6125, actual, 1e-4);
 // }
 
-// /*
-// ****************************************************************************/
-// // Test partial elimination
-// TEST_UNSAFE(HybridFactorGraph, Partial_Elimination) {
-//   Switching self(3);
+/****************************************************************************
+ * Test partial elimination
+ */
+TEST(HybridFactorGraph, Partial_Elimination) {
+  Switching self(3);
 
-//   auto linearizedFactorGraph = self.linearizedFactorGraph;
+  auto linearizedFactorGraph = self.linearizedFactorGraph;
 
-//   // Create ordering.
-//   Ordering ordering;
-//   for (size_t k = 1; k <= self.K; k++) ordering += X(k);
+  // Create ordering.
+  Ordering ordering;
+  for (size_t k = 1; k <= self.K; k++) ordering += X(k);
 
-//   // Eliminate partially.
-//   HybridBayesNet::shared_ptr hybridBayesNet;
-//   HybridGaussianFactorGraph::shared_ptr remainingFactorGraph;
-//   std::tie(hybridBayesNet, remainingFactorGraph) =
-//       linearizedFactorGraph.eliminatePartialSequential(ordering);
+  // Eliminate partially.
+  HybridBayesNet::shared_ptr hybridBayesNet;
+  HybridGaussianFactorGraph::shared_ptr remainingFactorGraph;
+  std::tie(hybridBayesNet, remainingFactorGraph) =
+      linearizedFactorGraph.eliminatePartialSequential(ordering);
 
-//   CHECK(hybridBayesNet);
-//   //  GTSAM_PRINT(*hybridBayesNet);  // HybridBayesNet
-//   EXPECT_LONGS_EQUAL(3, hybridBayesNet->size());
-//   EXPECT(hybridBayesNet->at(0)->frontals() == KeyVector{X(1)});
-//   EXPECT(hybridBayesNet->at(0)->parents() == KeyVector({X(2), M(1)}));
-//   EXPECT(hybridBayesNet->at(1)->frontals() == KeyVector{X(2)});
-//   EXPECT(hybridBayesNet->at(1)->parents() == KeyVector({X(3), M(2), M(1)}));
-//   EXPECT(hybridBayesNet->at(2)->frontals() == KeyVector{X(3)});
-//   EXPECT(hybridBayesNet->at(2)->parents() == KeyVector({M(2), M(1)}));
+  CHECK(hybridBayesNet);
+  //  GTSAM_PRINT(*hybridBayesNet);  // HybridBayesNet
+  EXPECT_LONGS_EQUAL(3, hybridBayesNet->size());
+  EXPECT(hybridBayesNet->at(0)->frontals() == KeyVector{X(1)});
+  EXPECT(hybridBayesNet->at(0)->parents() == KeyVector({X(2), M(1)}));
+  EXPECT(hybridBayesNet->at(1)->frontals() == KeyVector{X(2)});
+  EXPECT(hybridBayesNet->at(1)->parents() == KeyVector({X(3), M(1), M(2)}));
+  EXPECT(hybridBayesNet->at(2)->frontals() == KeyVector{X(3)});
+  EXPECT(hybridBayesNet->at(2)->parents() == KeyVector({M(1), M(2)}));
 
-//   CHECK(remainingFactorGraph);
-//   //  GTSAM_PRINT(*remainingFactorGraph);  // HybridFactorGraph
-//   EXPECT_LONGS_EQUAL(3, remainingFactorGraph->size());
-//   EXPECT(remainingFactorGraph->discreteGraph().at(0)->keys() ==
-//          KeyVector({M(1)}));
-//   EXPECT(remainingFactorGraph->discreteGraph().at(1)->keys() ==
-//          KeyVector({M(2), M(1)}));
-//   EXPECT(remainingFactorGraph->discreteGraph().at(2)->keys() ==
-//          KeyVector({M(2), M(1)}));
-// }
+  CHECK(remainingFactorGraph);
+  //  GTSAM_PRINT(*remainingFactorGraph);  // HybridFactorGraph
+  EXPECT_LONGS_EQUAL(3, remainingFactorGraph->size());
+  EXPECT(remainingFactorGraph->at(0)->keys() == KeyVector({M(1)}));
+  EXPECT(remainingFactorGraph->at(1)->keys() == KeyVector({M(2), M(1)}));
+  EXPECT(remainingFactorGraph->at(2)->keys() == KeyVector({M(1), M(2)}));
+}
 
-// /*
-// ****************************************************************************/
-// // Test full elimination
-// TEST_UNSAFE(HybridFactorGraph, Full_Elimination) {
-//   Switching self(3);
+/****************************************************************************
+ * Test full elimination
+ */
+TEST(HybridFactorGraph, Full_Elimination) {
+  Switching self(3);
 
-//   auto linearizedFactorGraph = self.linearizedFactorGraph;
+  auto linearizedFactorGraph = self.linearizedFactorGraph;
 
-//   // We first do a partial elimination
-//   HybridBayesNet::shared_ptr hybridBayesNet_partial;
-//   HybridGaussianFactorGraph::shared_ptr remainingFactorGraph_partial;
-//   DiscreteBayesNet discreteBayesNet;
+  // We first do a partial elimination
+  HybridBayesNet::shared_ptr hybridBayesNet_partial;
+  HybridGaussianFactorGraph::shared_ptr remainingFactorGraph_partial;
+  DiscreteBayesNet discreteBayesNet;
 
-//   {
-//     // Create ordering.
-//     Ordering ordering;
-//     for (size_t k = 1; k <= self.K; k++) ordering += X(k);
+  {
+    // Create ordering.
+    Ordering ordering;
+    for (size_t k = 1; k <= self.K; k++) ordering += X(k);
 
-//     // Eliminate partially.
-//     std::tie(hybridBayesNet_partial, remainingFactorGraph_partial) =
-//         linearizedFactorGraph.eliminatePartialSequential(ordering);
+    // Eliminate partially.
+    std::tie(hybridBayesNet_partial, remainingFactorGraph_partial) =
+        linearizedFactorGraph.eliminatePartialSequential(ordering);
 
-//     DiscreteFactorGraph dfg;
-//     dfg.push_back(remainingFactorGraph_partial->discreteGraph());
-//     ordering.clear();
-//     for (size_t k = 1; k < self.K; k++) ordering += M(k);
-//     discreteBayesNet = *dfg.eliminateSequential(ordering, EliminateForMPE);
-//   }
+    DiscreteFactorGraph discrete_fg;
+    //TODO(Varun) Make this a function of HybridGaussianFactorGraph?
+    for(HybridFactor::shared_ptr& factor: (*remainingFactorGraph_partial)) {
+      auto df = dynamic_pointer_cast<HybridDiscreteFactor>(factor);
+      discrete_fg.push_back(df->inner());
+    }
+    ordering.clear();
+    for (size_t k = 1; k < self.K; k++) ordering += M(k);
+    discreteBayesNet = *discrete_fg.eliminateSequential(ordering, EliminateForMPE);
+  }
 
-//   // Create ordering.
-//   Ordering ordering;
-//   for (size_t k = 1; k <= self.K; k++) ordering += X(k);
-//   for (size_t k = 1; k < self.K; k++) ordering += M(k);
+  // Create ordering.
+  Ordering ordering;
+  for (size_t k = 1; k <= self.K; k++) ordering += X(k);
+  for (size_t k = 1; k < self.K; k++) ordering += M(k);
 
-//   // Eliminate partially.
-//   HybridBayesNet::shared_ptr hybridBayesNet =
-//       linearizedFactorGraph.eliminateSequential(ordering);
+  // Eliminate partially.
+  HybridBayesNet::shared_ptr hybridBayesNet =
+      linearizedFactorGraph.eliminateSequential(ordering);
 
-//   CHECK(hybridBayesNet);
-//   EXPECT_LONGS_EQUAL(5, hybridBayesNet->size());
-//   // p(x1 | x2, m1)
-//   EXPECT(hybridBayesNet->at(0)->frontals() == KeyVector{X(1)});
-//   EXPECT(hybridBayesNet->at(0)->parents() == KeyVector({X(2), M(1)}));
-//   // p(x2 | x3, m1, m2)
-//   EXPECT(hybridBayesNet->at(1)->frontals() == KeyVector{X(2)});
-//   EXPECT(hybridBayesNet->at(1)->parents() == KeyVector({X(3), M(2), M(1)}));
-//   // p(x3 | m1, m2)
-//   EXPECT(hybridBayesNet->at(2)->frontals() == KeyVector{X(3)});
-//   EXPECT(hybridBayesNet->at(2)->parents() == KeyVector({M(2), M(1)}));
-//   // P(m1 | m2)
-//   EXPECT(hybridBayesNet->at(3)->frontals() == KeyVector{M(1)});
-//   EXPECT(hybridBayesNet->at(3)->parents() == KeyVector({M(2)}));
-//   EXPECT(dynamic_pointer_cast<DiscreteConditional>(hybridBayesNet->at(3))
-//              ->equals(*discreteBayesNet.at(0)));
-//   // P(m2)
-//   EXPECT(hybridBayesNet->at(4)->frontals() == KeyVector{M(2)});
-//   EXPECT_LONGS_EQUAL(0, hybridBayesNet->at(4)->nrParents());
-//   EXPECT(dynamic_pointer_cast<DiscreteConditional>(hybridBayesNet->at(4))
-//              ->equals(*discreteBayesNet.at(1)));
-// }
+  CHECK(hybridBayesNet);
+  EXPECT_LONGS_EQUAL(5, hybridBayesNet->size());
+  // p(x1 | x2, m1)
+  EXPECT(hybridBayesNet->at(0)->frontals() == KeyVector{X(1)});
+  EXPECT(hybridBayesNet->at(0)->parents() == KeyVector({X(2), M(1)}));
+  // p(x2 | x3, m1, m2)
+  EXPECT(hybridBayesNet->at(1)->frontals() == KeyVector{X(2)});
+  EXPECT(hybridBayesNet->at(1)->parents() == KeyVector({X(3), M(1), M(2)}));
+  // p(x3 | m1, m2)
+  EXPECT(hybridBayesNet->at(2)->frontals() == KeyVector{X(3)});
+  EXPECT(hybridBayesNet->at(2)->parents() == KeyVector({M(1), M(2)}));
+  // P(m1 | m2)
+  EXPECT(hybridBayesNet->at(3)->frontals() == KeyVector{M(1)});
+  EXPECT(hybridBayesNet->at(3)->parents() == KeyVector({M(2)}));
+  GTSAM_PRINT(*(hybridBayesNet->at(3)));
+  GTSAM_PRINT(*(discreteBayesNet.at(0)));
+  //TODO(Varun) FIX!!
+  // EXPECT(
+  //     dynamic_pointer_cast<DiscreteConditional>(hybridBayesNet->at(3)->inner())
+  //         ->equals(*discreteBayesNet.at(0)));
+  // // P(m2)
+  // EXPECT(hybridBayesNet->at(4)->frontals() == KeyVector{M(2)});
+  // EXPECT_LONGS_EQUAL(0, hybridBayesNet->at(4)->nrParents());
+  // EXPECT(
+  //     dynamic_pointer_cast<DiscreteConditional>(hybridBayesNet->at(4)->inner())
+  //         ->equals(*discreteBayesNet.at(1)));
+}
 
-// /*
-// ****************************************************************************/
-// // Test printing
-// TEST(HybridFactorGraph, Printing) {
-//   Switching self(3);
+/*
+****************************************************************************/
+// Test printing
+TEST(HybridFactorGraph, Printing) {
+  Switching self(3);
 
-//   auto linearizedFactorGraph = self.linearizedFactorGraph;
+  auto linearizedFactorGraph = self.linearizedFactorGraph;
 
-//   // Create ordering.
-//   Ordering ordering;
-//   for (size_t k = 1; k <= self.K; k++) ordering += X(k);
+  // Create ordering.
+  Ordering ordering;
+  for (size_t k = 1; k <= self.K; k++) ordering += X(k);
 
-//   // Eliminate partially.
-//   HybridBayesNet::shared_ptr hybridBayesNet;
-//   HybridGaussianFactorGraph::shared_ptr remainingFactorGraph;
-//   std::tie(hybridBayesNet, remainingFactorGraph) =
-//       linearizedFactorGraph.eliminatePartialSequential(ordering);
+  // Eliminate partially.
+  HybridBayesNet::shared_ptr hybridBayesNet;
+  HybridGaussianFactorGraph::shared_ptr remainingFactorGraph;
+  std::tie(hybridBayesNet, remainingFactorGraph) =
+      linearizedFactorGraph.eliminatePartialSequential(ordering);
 
-//   string expected_hybridFactorGraph = R"(
-// size: 8
-// DiscreteFactorGraph
-// size: 2
-// factor 0:  P( m1 ):
-//  Leaf  0.5
-// factor 1:  P( m2 | m1 ):
-//  Choice(m2)
-//  0 Choice(m1)
-//  0 0 Leaf 0.33333333
-//  0 1 Leaf  0.6
-//  1 Choice(m1)
-//  1 0 Leaf 0.66666667
-//  1 1 Leaf  0.4
-// DCFactorGraph
-// size: 2
-// factor 0:  [ x1 x2; m1 ]{
-//  Choice(m1)
-//  0 Leaf Jacobian factor on 2 keys:
-//   A[x1] = [
-// 	-1
-// ]
-//   A[x2] = [
-// 	1
-// ]
-//   b = [ -1 ]
-//   No noise model
-//  1 Leaf Jacobian factor on 2 keys:
-//   A[x1] = [
-// 	-1
-// ]
-//   A[x2] = [
-// 	1
-// ]
-//   b = [ -0 ]
-//   No noise model
-// }
-// factor 1:  [ x2 x3; m2 ]{
-//  Choice(m2)
-//  0 Leaf Jacobian factor on 2 keys:
-//   A[x2] = [
-// 	-1
-// ]
-//   A[x3] = [
-// 	1
-// ]
-//   b = [ -1 ]
-//   No noise model
-//  1 Leaf Jacobian factor on 2 keys:
-//   A[x2] = [
-// 	-1
-// ]
-//   A[x3] = [
-// 	1
-// ]
-//   b = [ -0 ]
-//   No noise model
-// }
-// GaussianGraph
-// size: 4
-// factor 0:
-//   A[x1] = [
-// 	10
-// ]
-//   b = [ -10 ]
-//   No noise model
-// factor 1:
-//   A[x1] = [
-// 	10
-// ]
-//   b = [ -10 ]
-//   No noise model
-// factor 2:
-//   A[x2] = [
-// 	10
-// ]
-//   b = [ -10 ]
-//   No noise model
-// factor 3:
-//   A[x3] = [
-// 	10
-// ]
-//   b = [ -10 ]
-//   No noise model
-// )";
-//   EXPECT(assert_print_equal(expected_hybridFactorGraph,
-//   linearizedFactorGraph));
+  string expected_hybridFactorGraph = R"(
+size: 8
+factor 0: Continuous x1; 
 
-//   // Expected output for hybridBayesNet.
-//   string expected_hybridBayesNet = R"(
-// size: 3
-// factor 0:  GaussianMixture [ x1 | x2 m1 ]{
-//  Choice(m1)
-//  0 Leaf Jacobian factor on 2 keys:
-//  p(x1 | x2)
-//   R = [ 14.1774 ]
-//   S[x2] = [ -0.0705346 ]
-//   d = [ -14.0364 ]
-//   No noise model
-//  1 Leaf Jacobian factor on 2 keys:
-//  p(x1 | x2)
-//   R = [ 14.1774 ]
-//   S[x2] = [ -0.0705346 ]
-//   d = [ -14.1069 ]
-//   No noise model
-// }
-// factor 1:  GaussianMixture [ x2 | x3 m2 m1 ]{
-//  Choice(m2)
-//  0 Choice(m1)
-//  0 0 Leaf Jacobian factor on 2 keys:
-//  p(x2 | x3)
-//   R = [ 10.0993 ]
-//   S[x3] = [ -0.0990172 ]
-//   d = [ -9.99975 ]
-//   No noise model
-//  0 1 Leaf Jacobian factor on 2 keys:
-//  p(x2 | x3)
-//   R = [ 10.0993 ]
-//   S[x3] = [ -0.0990172 ]
-//   d = [ -9.90122 ]
-//   No noise model
-//  1 Choice(m1)
-//  1 0 Leaf Jacobian factor on 2 keys:
-//  p(x2 | x3)
-//   R = [ 10.0993 ]
-//   S[x3] = [ -0.0990172 ]
-//   d = [ -10.0988 ]
-//   No noise model
-//  1 1 Leaf Jacobian factor on 2 keys:
-//  p(x2 | x3)
-//   R = [ 10.0993 ]
-//   S[x3] = [ -0.0990172 ]
-//   d = [ -10.0002 ]
-//   No noise model
-// }
-// factor 2:  GaussianMixture [ x3 | m2 m1 ]{
-//  Choice(m2)
-//  0 Choice(m1)
-//  0 0 Leaf Jacobian factor on 1 keys:
-//  p(x3)
-//   R = [ 10.0494 ]
-//   d = [ -10.1489 ]
-//   No noise model
-//  0 1 Leaf Jacobian factor on 1 keys:
-//  p(x3)
-//   R = [ 10.0494 ]
-//   d = [ -10.1479 ]
-//   No noise model
-//  1 Choice(m1)
-//  1 0 Leaf Jacobian factor on 1 keys:
-//  p(x3)
-//   R = [ 10.0494 ]
-//   d = [ -10.0504 ]
-//   No noise model
-//  1 1 Leaf Jacobian factor on 1 keys:
-//  p(x3)
-//   R = [ 10.0494 ]
-//   d = [ -10.0494 ]
-//   No noise model
-// }
-// )";
-//   EXPECT(assert_print_equal(expected_hybridBayesNet, *hybridBayesNet));
-// }
+  A[x1] = [
+	10
+]
+  b = [ -10 ]
+  No noise model
+factor 1: Hybrid x1 x2 m1; m1 ]{
+ Choice(m1) 
+ 0 Leaf :
+  A[x1] = [
+	-1
+]
+  A[x2] = [
+	1
+]
+  b = [ -1 ]
+  No noise model
+
+ 1 Leaf :
+  A[x1] = [
+	-1
+]
+  A[x2] = [
+	1
+]
+  b = [ -0 ]
+  No noise model
+
+}
+factor 2: Hybrid x2 x3 m2; m2 ]{
+ Choice(m2) 
+ 0 Leaf :
+  A[x2] = [
+	-1
+]
+  A[x3] = [
+	1
+]
+  b = [ -1 ]
+  No noise model
+
+ 1 Leaf :
+  A[x2] = [
+	-1
+]
+  A[x3] = [
+	1
+]
+  b = [ -0 ]
+  No noise model
+
+}
+factor 3: Continuous x1; 
+
+  A[x1] = [
+	10
+]
+  b = [ -10 ]
+  No noise model
+factor 4: Continuous x2; 
+
+  A[x2] = [
+	10
+]
+  b = [ -10 ]
+  No noise model
+factor 5: Continuous x3; 
+
+  A[x3] = [
+	10
+]
+  b = [ -10 ]
+  No noise model
+factor 6: Discrete m1 
+ P( m1 ):
+ Leaf  0.5
+
+factor 7: Discrete m2 m1 
+ P( m2 | m1 ):
+ Choice(m2) 
+ 0 Choice(m1) 
+ 0 0 Leaf 0.33333333
+ 0 1 Leaf  0.6
+ 1 Choice(m1) 
+ 1 0 Leaf 0.66666667
+ 1 1 Leaf  0.4
+
+)";
+  EXPECT(assert_print_equal(expected_hybridFactorGraph, linearizedFactorGraph));
+
+  // Expected output for hybridBayesNet.
+  string expected_hybridBayesNet = R"(
+size: 3
+factor 0: Hybrid  P( x1 | x2 m1)
+ Discrete Keys = (m1, 2), 
+ Choice(m1) 
+ 0 Leaf  p(x1 | x2)
+  R = [ 14.1774 ]
+  S[x2] = [ -0.0705346 ]
+  d = [ -14.0364 ]
+  No noise model
+
+ 1 Leaf  p(x1 | x2)
+  R = [ 14.1774 ]
+  S[x2] = [ -0.0705346 ]
+  d = [ -14.1069 ]
+  No noise model
+
+factor 1: Hybrid  P( x2 | x3 m1 m2)
+ Discrete Keys = (m1, 2), (m2, 2), 
+ Choice(m2) 
+ 0 Choice(m1) 
+ 0 0 Leaf  p(x2 | x3)
+  R = [ 10.0993 ]
+  S[x3] = [ -0.0990172 ]
+  d = [ -9.99975 ]
+  No noise model
+
+ 0 1 Leaf  p(x2 | x3)
+  R = [ 10.0993 ]
+  S[x3] = [ -0.0990172 ]
+  d = [ -9.90122 ]
+  No noise model
+
+ 1 Choice(m1) 
+ 1 0 Leaf  p(x2 | x3)
+  R = [ 10.0993 ]
+  S[x3] = [ -0.0990172 ]
+  d = [ -10.0988 ]
+  No noise model
+
+ 1 1 Leaf  p(x2 | x3)
+  R = [ 10.0993 ]
+  S[x3] = [ -0.0990172 ]
+  d = [ -10.0002 ]
+  No noise model
+
+factor 2: Hybrid  P( x3 | m1 m2)
+ Discrete Keys = (m1, 2), (m2, 2), 
+ Choice(m2) 
+ 0 Choice(m1) 
+ 0 0 Leaf  p(x3)
+  R = [ 10.0494 ]
+  d = [ -10.1489 ]
+  No noise model
+
+ 0 1 Leaf  p(x3)
+  R = [ 10.0494 ]
+  d = [ -10.1479 ]
+  No noise model
+
+ 1 Choice(m1) 
+ 1 0 Leaf  p(x3)
+  R = [ 10.0494 ]
+  d = [ -10.0504 ]
+  No noise model
+
+ 1 1 Leaf  p(x3)
+  R = [ 10.0494 ]
+  d = [ -10.0494 ]
+  No noise model
+
+)";
+  EXPECT(assert_print_equal(expected_hybridBayesNet, *hybridBayesNet));
+}
 
 // /* *************************************************************************
 // */
