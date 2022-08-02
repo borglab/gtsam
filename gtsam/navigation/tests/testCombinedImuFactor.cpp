@@ -276,10 +276,11 @@ TEST(CombinedImuFactor, SameCovariance) {
   auto combined_params = PreintegrationCombinedParams::MakeSharedU();
   combined_params->setAccelerometerCovariance(pow(0.01, 2) * I_3x3);
   combined_params->setGyroscopeCovariance(pow(1.75e-4, 2) * I_3x3);
-  combined_params->setIntegrationCovariance(pow(0, 2) * I_3x3);
-  combined_params->setOmegaCoriolis(Vector3::Zero());
   // Set bias integration covariance explicitly to zero
-  combined_params->setBiasAccOmegaInt(Z_6x6);
+  combined_params->setIntegrationCovariance(Z_3x3);
+  combined_params->setOmegaCoriolis(Z_3x1);
+  // Set bias initial covariance explicitly to zero
+  combined_params->setBiasAccOmegaInit(Z_6x6);
 
   // The IMU preintegration object for CombinedImuFactor
   PreintegratedCombinedMeasurements cpim(combined_params, currentBias);

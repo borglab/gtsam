@@ -93,11 +93,11 @@ struct GTSAM_EXPORT PreintegrationCombinedParams : PreintegrationParams {
 
   void setBiasAccCovariance(const Matrix3& cov) { biasAccCovariance=cov; }
   void setBiasOmegaCovariance(const Matrix3& cov) { biasOmegaCovariance=cov; }
-  void setBiasAccOmegaInt(const Matrix6& cov) { biasAccOmegaInit=cov; }
+  void setBiasAccOmegaInit(const Matrix6& cov) { biasAccOmegaInit=cov; }
   
   const Matrix3& getBiasAccCovariance() const { return biasAccCovariance; }
   const Matrix3& getBiasOmegaCovariance() const { return biasOmegaCovariance; }
-  const Matrix6& getBiasAccOmegaInt() const { return biasAccOmegaInit; }
+  const Matrix6& getBiasAccOmegaInit() const { return biasAccOmegaInit; }
   
 private:
 
