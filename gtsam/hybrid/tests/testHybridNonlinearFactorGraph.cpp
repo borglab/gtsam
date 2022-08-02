@@ -465,18 +465,15 @@ TEST(HybridFactorGraph, Full_Elimination) {
   // P(m1 | m2)
   EXPECT(hybridBayesNet->at(3)->frontals() == KeyVector{M(1)});
   EXPECT(hybridBayesNet->at(3)->parents() == KeyVector({M(2)}));
-  GTSAM_PRINT(*(hybridBayesNet->at(3)));
-  GTSAM_PRINT(*(discreteBayesNet.at(0)));
-  //TODO(Varun) FIX!!
-  // EXPECT(
-  //     dynamic_pointer_cast<DiscreteConditional>(hybridBayesNet->at(3)->inner())
-  //         ->equals(*discreteBayesNet.at(0)));
-  // // P(m2)
-  // EXPECT(hybridBayesNet->at(4)->frontals() == KeyVector{M(2)});
-  // EXPECT_LONGS_EQUAL(0, hybridBayesNet->at(4)->nrParents());
-  // EXPECT(
-  //     dynamic_pointer_cast<DiscreteConditional>(hybridBayesNet->at(4)->inner())
-  //         ->equals(*discreteBayesNet.at(1)));
+  EXPECT(
+      dynamic_pointer_cast<DiscreteConditional>(hybridBayesNet->at(3)->inner())
+          ->equals(*discreteBayesNet.at(0)));
+  // P(m2)
+  EXPECT(hybridBayesNet->at(4)->frontals() == KeyVector{M(2)});
+  EXPECT_LONGS_EQUAL(0, hybridBayesNet->at(4)->nrParents());
+  EXPECT(
+      dynamic_pointer_cast<DiscreteConditional>(hybridBayesNet->at(4)->inner())
+          ->equals(*discreteBayesNet.at(1)));
 }
 
 /*
