@@ -11,7 +11,7 @@
 
 /**
  * @file   HybridFactorGraph.h
- * @brief  Nonlinear hybrid factor graph that uses type erasure
+ * @brief  Hybrid factor graph base class that uses type erasure
  * @author Varun Agrawal
  * @date   May 28, 2022
  */

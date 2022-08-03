@@ -56,10 +56,9 @@ struct EliminationTraits<HybridGaussianFactorGraph> {
   typedef HybridBayesNet
       BayesNetType;  ///< Type of Bayes net from sequential elimination
   typedef HybridEliminationTree
-      EliminationTreeType;                ///< Type of elimination tree
-  typedef HybridBayesTree BayesTreeType;  ///< Type of Bayes tree
-  typedef HybridJunctionTree
-      JunctionTreeType;  ///< Type of Junction tree
+      EliminationTreeType;                      ///< Type of elimination tree
+  typedef HybridBayesTree BayesTreeType;        ///< Type of Bayes tree
+  typedef HybridJunctionTree JunctionTreeType;  ///< Type of Junction tree
   /// The default dense elimination function
   static std::pair<boost::shared_ptr<ConditionalType>,
                    boost::shared_ptr<FactorType> >
@@ -136,8 +135,7 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
   template <typename FACTOR>
   IsGaussian<FACTOR> push_gaussian(
       const boost::shared_ptr<FACTOR>& gaussianFactor) {
-    Base::Base::push_back(
-        boost::make_shared<HybridGaussianFactor>(gaussianFactor));
+    Base::push_back(boost::make_shared<HybridGaussianFactor>(gaussianFactor));
   }
 
   /// Construct a factor and add (shared pointer to it) to factor graph.

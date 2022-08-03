@@ -33,11 +33,21 @@
 
 #pragma once
 
-using gtsam::symbol_shorthand::C;
-using gtsam::symbol_shorthand::X;
-
 namespace gtsam {
 
+using symbol_shorthand::C;
+using symbol_shorthand::M;
+using symbol_shorthand::X;
+
+/**
+ * @brief Create a switching system chain. A switching system is a continuous
+ * system which depends on a discrete mode at each time step of the chain.
+ *
+ * @param n The number of chain elements.
+ * @param keyFunc The functional to help specify the continuous key.
+ * @param dKeyFunc The functional to help specify the discrete key.
+ * @return HybridGaussianFactorGraph::shared_ptr
+ */
 inline HybridGaussianFactorGraph::shared_ptr makeSwitchingChain(
     size_t n, std::function<Key(int)> keyFunc = X,
     std::function<Key(int)> dKeyFunc = C) {
@@ -63,9 +73,19 @@ inline HybridGaussianFactorGraph::shared_ptr makeSwitchingChain(
   return boost::make_shared<HybridGaussianFactorGraph>(std::move(hfg));
 }
 
+/**
+ * @brief Return the ordering as a binary tree such that all parent nodes are
+ * above their children.
+ *
+ * This will result in a nested dissection Bayes tree after elimination.
+ *
+ * @param input The original ordering.
+ * @return std::pair<KeyVector, std::vector<int>>
+ */
 inline std::pair<KeyVector, std::vector<int>> makeBinaryOrdering(
     std::vector<Key> &input) {
   KeyVector new_order;
+
   std::vector<int> levels(input.size());
   std::function<void(std::vector<Key>::iterator, std::vector<Key>::iterator,
                      int)>
@@ -88,7 +108,7 @@ inline std::pair<KeyVector, std::vector<int>> makeBinaryOrdering(
 
   bsg(input.begin(), input.end(), 0);
   std::reverse(new_order.begin(), new_order.end());
-  // std::reverse(levels.begin(), levels.end());
+
   return {new_order, levels};
 }
 
