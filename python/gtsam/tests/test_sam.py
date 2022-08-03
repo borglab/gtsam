@@ -50,6 +50,34 @@ class TestSam(GtsamTestCase):
         self.assertEqual(range_measurement, measurement.range())
         self.gtsamAssertEquals(bearing_measurement, measurement.bearing())
 
+    def test_BearingRangeFactor3D(self):
+        """
+        Test that `measured` works as expected for BearingRangeFactor3D.
+        """
+        bearing_measurement = gtsam.Unit3()
+        range_measurement = 10.0
+        factor = gtsam.BearingRangeFactor3D(
+            1, 2, bearing_measurement, range_measurement,
+            gtsam.noiseModel.Isotropic.Sigma(3, 1))
+        measurement = factor.measured()
+
+        self.assertEqual(range_measurement, measurement.range())
+        self.gtsamAssertEquals(bearing_measurement, measurement.bearing())
+
+    def test_BearingRangeFactorPose3(self):
+        """
+        Test that `measured` works as expected for BearingRangeFactorPose3.
+        """
+        range_measurement = 10.0
+        bearing_measurement = gtsam.Unit3()
+        factor = gtsam.BearingRangeFactorPose3(
+            1, 2, bearing_measurement, range_measurement,
+            gtsam.noiseModel.Isotropic.Sigma(3, 1))
+        measurement = factor.measured()
+
+        self.assertEqual(range_measurement, measurement.range())
+        self.gtsamAssertEquals(bearing_measurement, measurement.bearing())
+
 
 if __name__ == "__main__":
     unittest.main()

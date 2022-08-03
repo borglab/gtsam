@@ -137,7 +137,7 @@ class FitBasis {
   static gtsam::GaussianFactorGraph::shared_ptr LinearGraph(
       const std::map<double, double>& sequence,
       const gtsam::noiseModel::Base* model, size_t N);
-  This::Parameters parameters() const;
+  gtsam::This::Parameters parameters() const;
 };
 
 }  // namespace gtsam
