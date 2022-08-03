@@ -18,7 +18,7 @@ namespace gtsam {
 
 /**
  * A class for a measurement between a pose and a point.
- * @addtogroup SLAM
+ * @ingroup SLAM
  */
 template<typename POSE = Pose3, typename POINT = Point3>
 class PoseToPointFactor : public NoiseModelFactor2<POSE, POINT> {
@@ -59,6 +59,12 @@ class PoseToPointFactor : public NoiseModelFactor2<POSE, POINT> {
     const This* e = dynamic_cast<const This*>(&expected);
     return e != nullptr && Base::equals(*e, tol) &&
            traits<POINT>::Equals(this->measured_, e->measured_, tol);
+  }
+
+  /// @return a deep copy of this factor
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
+    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
   /** implement functions needed to derive from Factor */
