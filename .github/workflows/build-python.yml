@@ -117,11 +117,12 @@ jobs:
         uses: pierotofy/set-swap-space@master
         with:
           swap-size-gb: 6
-      - name: Build (Linux)
-        if: runner.os == 'Linux'
+      - name: Install Dependencies
         run: |
-          bash .github/scripts/python.sh
-      - name: Build (macOS)
-        if: runner.os == 'macOS'
+          bash .github/scripts/python.sh -d
+      - name: Build
         run: |
-          bash .github/scripts/python.sh
+          bash .github/scripts/python.sh -b
+      - name: Test
+        run: |
+          bash .github/scripts/python.sh -t
