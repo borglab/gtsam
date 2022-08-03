@@ -125,7 +125,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullSequentialEqualChance) {
   auto dc = result->at(2)->asDiscreteConditional();
   DiscreteValues dv;
   dv[C(1)] = 0;
-  EXPECT_DOUBLES_EQUAL(0.6225, dc->operator()(dv), 1e-3);
+  EXPECT_DOUBLES_EQUAL(1, dc->operator()(dv), 1e-3);
 }
 
 /* ************************************************************************* */
