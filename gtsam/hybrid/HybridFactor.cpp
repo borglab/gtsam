@@ -78,7 +78,8 @@ bool HybridFactor::equals(const HybridFactor &lf, double tol) const {
   const This *e = dynamic_cast<const This *>(&lf);
   return e != nullptr && Base::equals(*e, tol) &&
          isDiscrete_ == e->isDiscrete_ && isContinuous_ == e->isContinuous_ &&
-         isHybrid_ == e->isHybrid_ && nrContinuous_ == e->nrContinuous_;
+         isHybrid_ == e->isHybrid_ && continuousKeys_ == e->continuousKeys_ &&
+         discreteKeys_ == e->discreteKeys_;
 }
 
 /* ************************************************************************ */
