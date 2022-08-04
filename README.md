@@ -64,6 +64,14 @@ GTSAM 4.1 added a new pybind wrapper, and **removed** the deprecated functionali
 
 We provide support for [MATLAB](matlab/README.md) and [Python](python/README.md) wrappers for GTSAM. Please refer to the linked documents for more details.
 
+## Citation
+
+If you are using GTSAM for academic work, please use the citation available from Zenodo below:
+
+[![DOI](https://zenodo.org/badge/86362856.svg)](https://zenodo.org/badge/latestdoi/86362856)
+
+Specific formats are available in the bottom-right corner of the Zenodo page.
+
 ## The Preintegrated IMU Factor
 
 GTSAM includes a state of the art IMU handling scheme based on
