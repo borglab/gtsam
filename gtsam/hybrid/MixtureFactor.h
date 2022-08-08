@@ -131,21 +131,8 @@ class MixtureFactor : public HybridFactor {
       const std::string& s = "MixtureFactor",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     std::cout << (s.empty() ? "" : s + " ");
-    std::cout << "(";
-    auto contKeys = keys();
-    auto dKeys = discreteKeys();
-    for (DiscreteKey key : dKeys) {
-      auto it = std::find(contKeys.begin(), contKeys.end(), key.first);
-      contKeys.erase(it);
-    }
-    for (Key key : contKeys) {
-      std::cout << " " << keyFormatter(key);
-    }
-    std::cout << ";";
-    for (DiscreteKey key : dKeys) {
-      std::cout << " " << keyFormatter(key.first);
-    }
-    std::cout << " ) \n";
+    Base::print("", keyFormatter);
+    std::cout << "\nMixtureFactor\n";
     auto valueFormatter = [](const sharedFactor& v) {
       if (v) {
         return (boost::format("Nonlinear factor on %d keys") % v->size()).str();
@@ -200,8 +187,8 @@ class MixtureFactor : public HybridFactor {
     DecisionTree<Key, GaussianFactor::shared_ptr> linearized_factors(
         factors_, linearizeDT);
 
-    return boost::make_shared<GaussianMixtureFactor>(keys_, discreteKeys_,
-                                                     linearized_factors);
+    return boost::make_shared<GaussianMixtureFactor>(
+        continuousKeys_, discreteKeys_, linearized_factors);
   }
 
   /**
