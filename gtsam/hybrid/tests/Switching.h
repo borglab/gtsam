@@ -156,7 +156,7 @@ struct Switching {
 
     // Add measurement factors
     auto measurement_noise = noiseModel::Isotropic::Sigma(1, 0.1);
-    for (size_t k = 1; k <= K; k++) {
+    for (size_t k = 2; k <= K; k++) {
       nonlinearFactorGraph.emplace_nonlinear<PriorFactor<double>>(
           X(k), 1.0 * (k - 1), measurement_noise);
     }
