@@ -50,7 +50,7 @@ using symbol_shorthand::X;
  */
 inline HybridGaussianFactorGraph::shared_ptr makeSwitchingChain(
     size_t n, std::function<Key(int)> keyFunc = X,
-    std::function<Key(int)> dKeyFunc = C) {
+    std::function<Key(int)> dKeyFunc = M) {
   HybridGaussianFactorGraph hfg;
 
   hfg.add(JacobianFactor(keyFunc(1), I_3x3, Z_3x1));
