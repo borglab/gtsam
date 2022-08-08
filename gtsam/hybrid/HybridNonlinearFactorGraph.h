@@ -18,9 +18,9 @@
 
 #pragma once
 
-#include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
+#include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 #include <gtsam/hybrid/HybridNonlinearFactor.h>
 #include <gtsam/hybrid/MixtureFactor.h>
 #include <gtsam/inference/Ordering.h>
@@ -115,25 +115,15 @@ class GTSAM_EXPORT HybridNonlinearFactorGraph : public HybridFactorGraph {
   // }
 
   /// Add a nonlinear factor as a shared ptr.
-  void add(boost::shared_ptr<NonlinearFactor> factor) {
-    FactorGraph::add(boost::make_shared<HybridNonlinearFactor>(factor));
-  }
+  void add(boost::shared_ptr<NonlinearFactor> factor);
 
-  /**
-   * Simply prints the factor graph.
-   */
+  /// Print the factor graph.
   void print(
-      const std::string& str = "HybridNonlinearFactorGraph",
-      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {}
+      const std::string& s = "HybridNonlinearFactorGraph",
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
 
-  /**
-   * @return true if all internal graphs of `this` are equal to those of
-   * `other`
-   */
-  bool equals(const HybridNonlinearFactorGraph& other,
-              double tol = 1e-9) const {
-    return false;
-  }
+  /// Check if this factor graph is equal to `other`.
+  bool equals(const HybridNonlinearFactorGraph& other, double tol = 1e-9) const;
 
   /**
    * @brief Linearize all the continuous factors in the
@@ -142,53 +132,7 @@ class GTSAM_EXPORT HybridNonlinearFactorGraph : public HybridFactorGraph {
    * @param continuousValues: Dictionary of continuous values.
    * @return HybridGaussianFactorGraph::shared_ptr
    */
-  HybridGaussianFactorGraph linearize(const Values& continuousValues) const {
-    // create an empty linear FG
-    HybridGaussianFactorGraph linearFG;
-
-    linearFG.reserve(size());
-
-    // linearize all hybrid factors
-    for (auto&& factor : factors_) {
-      // First check if it is a valid factor
-      if (factor) {
-        // Check if the factor is a hybrid factor.
-        // It can be either a nonlinear MixtureFactor or a linear
-        // GaussianMixtureFactor.
-        if (factor->isHybrid()) {
-          // Check if it is a nonlinear mixture factor
-          if (auto nlmf = boost::dynamic_pointer_cast<MixtureFactor>(factor)) {
-            linearFG.push_back(nlmf->linearize(continuousValues));
-          } else {
-            linearFG.push_back(factor);
-          }
-
-          // Now check if the factor is a continuous only factor.
-        } else if (factor->isContinuous()) {
-          // In this case, we check if factor->inner() is nonlinear since
-          // HybridFactors wrap over continuous factors.
-          auto nlhf =
-              boost::dynamic_pointer_cast<HybridNonlinearFactor>(factor);
-          if (auto nlf =
-                  boost::dynamic_pointer_cast<NonlinearFactor>(nlhf->inner())) {
-            auto hgf = boost::make_shared<HybridGaussianFactor>(
-                nlf->linearize(continuousValues));
-            linearFG.push_back(hgf);
-          } else {
-            linearFG.push_back(factor);
-          }
-          // Finally if nothing else, we are discrete-only which doesn't need
-          // lineariztion.
-        } else {
-          linearFG.push_back(factor);
-        }
-
-      } else {
-        linearFG.push_back(GaussianFactor::shared_ptr());
-      }
-    }
-    return linearFG;
-  }
+  HybridGaussianFactorGraph linearize(const Values& continuousValues) const;
 };
 
 template <>
