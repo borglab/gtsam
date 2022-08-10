@@ -175,9 +175,8 @@ TEST(HybridFactorGraph, PushBack) {
 TEST(HybridFactorGraph, Switching) {
   Switching self(3);
 
-  EXPECT_LONGS_EQUAL(8, self.nonlinearFactorGraph.size());
-
-  EXPECT_LONGS_EQUAL(8, self.linearizedFactorGraph.size());
+  EXPECT_LONGS_EQUAL(7, self.nonlinearFactorGraph.size());
+  EXPECT_LONGS_EQUAL(7, self.linearizedFactorGraph.size());
 }
 
 /****************************************************************************
@@ -190,7 +189,7 @@ TEST(HybridFactorGraph, Linearization) {
   HybridGaussianFactorGraph actualLinearized =
       self.nonlinearFactorGraph.linearize(self.linearizationPoint);
 
-  EXPECT_LONGS_EQUAL(8, actualLinearized.size());
+  EXPECT_LONGS_EQUAL(7, actualLinearized.size());
 }
 
 /****************************************************************************
@@ -495,15 +494,15 @@ TEST(HybridFactorGraph, Printing) {
       linearizedFactorGraph.eliminatePartialSequential(ordering);
 
   string expected_hybridFactorGraph = R"(
-size: 8
-factor 0: Continuous x1; 
+size: 7
+factor 0: Continuous [x1]
 
   A[x1] = [
 	10
 ]
   b = [ -10 ]
   No noise model
-factor 1: Hybrid x1 x2 m1; m1 ]{
+factor 1: Hybrid [x1 x2; m1]{
  Choice(m1) 
  0 Leaf :
   A[x1] = [
@@ -526,7 +525,7 @@ factor 1: Hybrid x1 x2 m1; m1 ]{
   No noise model
 
 }
-factor 2: Hybrid x2 x3 m2; m2 ]{
+factor 2: Hybrid [x2 x3; m2]{
  Choice(m2) 
  0 Leaf :
   A[x2] = [
@@ -549,32 +548,25 @@ factor 2: Hybrid x2 x3 m2; m2 ]{
   No noise model
 
 }
-factor 3: Continuous x1; 
-
-  A[x1] = [
-	10
-]
-  b = [ -10 ]
-  No noise model
-factor 4: Continuous x2; 
+factor 3: Continuous [x2]
 
   A[x2] = [
 	10
 ]
   b = [ -10 ]
   No noise model
-factor 5: Continuous x3; 
+factor 4: Continuous [x3]
 
   A[x3] = [
 	10
 ]
   b = [ -10 ]
   No noise model
-factor 6: Discrete m1 
+factor 5: Discrete [m1]
  P( m1 ):
  Leaf  0.5
 
-factor 7: Discrete m2 m1 
+factor 6: Discrete [m2 m1]
  P( m2 | m1 ):
  Choice(m2) 
  0 Choice(m1) 
@@ -594,15 +586,15 @@ factor 0: Hybrid  P( x1 | x2 m1)
  Discrete Keys = (m1, 2), 
  Choice(m1) 
  0 Leaf  p(x1 | x2)
-  R = [ 14.1774 ]
-  S[x2] = [ -0.0705346 ]
-  d = [ -14.0364 ]
+  R = [ 10.0499 ]
+  S[x2] = [ -0.0995037 ]
+  d = [ -9.85087 ]
   No noise model
 
  1 Leaf  p(x1 | x2)
-  R = [ 14.1774 ]
-  S[x2] = [ -0.0705346 ]
-  d = [ -14.1069 ]
+  R = [ 10.0499 ]
+  S[x2] = [ -0.0995037 ]
+  d = [ -9.95037 ]
   No noise model
 
 factor 1: Hybrid  P( x2 | x3 m1 m2)
@@ -610,28 +602,28 @@ factor 1: Hybrid  P( x2 | x3 m1 m2)
  Choice(m2) 
  0 Choice(m1) 
  0 0 Leaf  p(x2 | x3)
-  R = [ 10.0993 ]
-  S[x3] = [ -0.0990172 ]
-  d = [ -9.99975 ]
+  R = [ 10.099 ]
+  S[x3] = [ -0.0990196 ]
+  d = [ -9.99901 ]
   No noise model
 
  0 1 Leaf  p(x2 | x3)
-  R = [ 10.0993 ]
-  S[x3] = [ -0.0990172 ]
-  d = [ -9.90122 ]
+  R = [ 10.099 ]
+  S[x3] = [ -0.0990196 ]
+  d = [ -9.90098 ]
   No noise model
 
  1 Choice(m1) 
  1 0 Leaf  p(x2 | x3)
-  R = [ 10.0993 ]
-  S[x3] = [ -0.0990172 ]
-  d = [ -10.0988 ]
+  R = [ 10.099 ]
+  S[x3] = [ -0.0990196 ]
+  d = [ -10.098 ]
   No noise model
 
  1 1 Leaf  p(x2 | x3)
-  R = [ 10.0993 ]
-  S[x3] = [ -0.0990172 ]
-  d = [ -10.0002 ]
+  R = [ 10.099 ]
+  S[x3] = [ -0.0990196 ]
+  d = [ -10 ]
   No noise model
 
 factor 2: Hybrid  P( x3 | m1 m2)

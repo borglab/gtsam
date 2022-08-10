@@ -74,7 +74,7 @@ TEST(GaussianMixtureFactor, Sum) {
   // Check that number of keys is 3
   EXPECT_LONGS_EQUAL(3, mixtureFactorA.keys().size());
 
-  // Check that number of discrete keys is 1 // TODO(Frank): should not exist?
+  // Check that number of discrete keys is 1
   EXPECT_LONGS_EQUAL(1, mixtureFactorA.discreteKeys().size());
 
   // Create sum of two mixture factors: it will be a decision tree now on both
@@ -104,7 +104,7 @@ TEST(GaussianMixtureFactor, Printing) {
   GaussianMixtureFactor mixtureFactor({X(1), X(2)}, {m1}, factors);
 
   std::string expected =
-      R"(Hybrid x1 x2; 1 ]{
+      R"(Hybrid [x1 x2; 1]{
  Choice(1) 
  0 Leaf :
   A[x1] = [
