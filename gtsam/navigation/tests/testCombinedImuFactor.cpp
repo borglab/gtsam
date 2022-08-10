@@ -43,7 +43,7 @@ static boost::shared_ptr<PreintegratedCombinedMeasurements::Params> Params() {
   p->integrationCovariance = 0.0001 * I_3x3;
   p->biasAccCovariance = Z_3x3;
   p->biasOmegaCovariance = Z_3x3;
-  p->biasAccOmegaInt = Z_6x6;
+  p->biasAccOmegaInit = Z_6x6;
   return p;
 }
 }  // namespace testing
