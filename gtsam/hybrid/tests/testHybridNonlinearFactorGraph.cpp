@@ -105,9 +105,7 @@ TEST(HybridGaussianFactorGraph, Resize) {
   auto still = boost::make_shared<MotionModel>(X(0), X(1), 0.0, noise_model),
        moving = boost::make_shared<MotionModel>(X(0), X(1), 1.0, noise_model);
 
-  // TODO(Varun) This is declared as NonlinearFactor instead of MotionModel, aka
-  // not clear!!
-  std::vector<NonlinearFactor::shared_ptr> components = {still, moving};
+  std::vector<MotionModel::shared_ptr> components = {still, moving};
   auto dcFactor = boost::make_shared<MixtureFactor>(
       contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, components);
   nhfg.push_back(dcFactor);
@@ -431,14 +429,15 @@ TEST(HybridFactorGraph, Full_Elimination) {
         linearizedFactorGraph.eliminatePartialSequential(ordering);
 
     DiscreteFactorGraph discrete_fg;
-    //TODO(Varun) Make this a function of HybridGaussianFactorGraph?
-    for(HybridFactor::shared_ptr& factor: (*remainingFactorGraph_partial)) {
+    // TODO(Varun) Make this a function of HybridGaussianFactorGraph?
+    for (HybridFactor::shared_ptr& factor : (*remainingFactorGraph_partial)) {
       auto df = dynamic_pointer_cast<HybridDiscreteFactor>(factor);
       discrete_fg.push_back(df->inner());
     }
     ordering.clear();
     for (size_t k = 1; k < self.K; k++) ordering += M(k);
-    discreteBayesNet = *discrete_fg.eliminateSequential(ordering, EliminateForMPE);
+    discreteBayesNet =
+        *discrete_fg.eliminateSequential(ordering, EliminateForMPE);
   }
 
   // Create ordering.
@@ -678,19 +677,13 @@ TEST(HybridFactorGraph, DefaultDecisionTree) {
   Pose2 odometry(2.0, 0.0, 0.0);
   KeyVector contKeys = {X(0), X(1)};
   auto noise_model = noiseModel::Isotropic::Sigma(3, 1.0);
-  auto still = boost::make_shared<PlanarMotionModel>(X(0), X(1), Pose2(0, 0,
-  0),
+  auto still = boost::make_shared<PlanarMotionModel>(X(0), X(1), Pose2(0, 0, 0),
                                                      noise_model),
        moving = boost::make_shared<PlanarMotionModel>(X(0), X(1), odometry,
                                                       noise_model);
   std::vector<PlanarMotionModel::shared_ptr> motion_models = {still, moving};
-  //TODO(Varun) Make a templated constructor for MixtureFactor which does this?
-  std::vector<NonlinearFactor::shared_ptr> components;
-  for (auto&& f : motion_models) {
-    components.push_back(boost::dynamic_pointer_cast<NonlinearFactor>(f));
-  }
   fg.emplace_hybrid<MixtureFactor>(
-      contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, components);
+      contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, motion_models);
 
   // Add Range-Bearing measurements to from X0 to L0 and X1 to L1.
   // create a noise model for the landmark measurements

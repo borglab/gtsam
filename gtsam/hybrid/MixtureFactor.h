@@ -86,17 +86,26 @@ class MixtureFactor : public HybridFactor {
    * elements based on the number of discrete keys and the cardinality of the
    * keys, so that the decision tree is constructed appropriately.
    *
+   * @tparam FACTOR The type of the factor shared pointers being passed in. Will
+   * be typecast to NonlinearFactor shared pointers.
    * @param keys Vector of keys for continuous factors.
    * @param discreteKeys Vector of discrete keys.
    * @param factors Vector of shared pointers to factors.
    * @param normalized Flag indicating if the factor error is already
    * normalized.
    */
+  template <typename FACTOR>
   MixtureFactor(const KeyVector& keys, const DiscreteKeys& discreteKeys,
-                const std::vector<sharedFactor>& factors,
+                const std::vector<boost::shared_ptr<FACTOR>>& factors,
                 bool normalized = false)
-      : MixtureFactor(keys, discreteKeys, Factors(discreteKeys, factors),
-                      normalized) {}
+      : Base(keys, discreteKeys), normalized_(normalized) {
+    std::vector<NonlinearFactor::shared_ptr> nonlinear_factors;
+    for (auto&& f : factors) {
+      nonlinear_factors.push_back(
+          boost::dynamic_pointer_cast<NonlinearFactor>(f));
+    }
+    factors_ = Factors(discreteKeys, nonlinear_factors);
+  }
 
   ~MixtureFactor() = default;
 
