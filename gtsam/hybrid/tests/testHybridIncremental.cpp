@@ -21,6 +21,7 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/hybrid/HybridGaussianISAM.h>
 #include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/sam/BearingRangeFactor.h>
 
@@ -105,19 +106,21 @@ TEST(HybridGaussianElimination, IncrementalInference) {
   HybridGaussianFactorGraph graph1;
 
   // Create initial factor graph
-  //    *        *      *
-  //    |        |      |
-  // *- X1  -*-  X2 -*- X3
-  //     \*-M1-*/
+  //    *        *        *
+  //    |        |        |
+  // *- X1  -*-  X2  -*-  X3
+  //         |        |
+  //      *-M1 - * - M2
   graph1.push_back(switching.linearizedFactorGraph.at(0));  // P(X1)
   graph1.push_back(switching.linearizedFactorGraph.at(1));  // P(X1, X2 | M1)
-  graph1.push_back(switching.linearizedFactorGraph.at(2));  // P(X2, X3 | M2)
+  graph1.push_back(switching.linearizedFactorGraph.at(3));  // P(X2)
   graph1.push_back(switching.linearizedFactorGraph.at(5));  // P(M1)
 
-  // Create ordering.
-  Ordering ordering;
-  ordering += X(1);
-  ordering += X(2);
+  //TODO(Varun) we cannot enforce ordering
+  // // Create ordering.
+  // Ordering ordering1;
+  // ordering1 += X(1);
+  // ordering1 += X(2);
 
   // Run update step
   isam.update(graph1);
@@ -126,20 +129,22 @@ TEST(HybridGaussianElimination, IncrementalInference) {
   // New factor graph for incremental update.
   HybridGaussianFactorGraph graph2;
 
-  graph1.push_back(switching.linearizedFactorGraph.at(3));  // P(X2)
+  graph2.push_back(switching.linearizedFactorGraph.at(2));  // P(X2, X3 | M2)
   graph2.push_back(switching.linearizedFactorGraph.at(4));  // P(X3)
   graph2.push_back(switching.linearizedFactorGraph.at(6));  // P(M1, M2)
 
-  // Create ordering.
-  Ordering ordering2;
-  ordering2 += X(2);
-  ordering2 += X(3);
+  //TODO(Varun) we cannot enforce ordering
+  // // Create ordering.
+  // Ordering ordering2;
+  // ordering2 += X(2);
+  // ordering2 += X(3);
 
   isam.update(graph2);
+  GTSAM_PRINT(isam);
 
   /********************************************************/
   // Run batch elimination so we can compare results.
-  ordering.clear();
+  Ordering ordering;
   ordering += X(1);
   ordering += X(2);
   ordering += X(3);
@@ -151,37 +156,42 @@ TEST(HybridGaussianElimination, IncrementalInference) {
       switching.linearizedFactorGraph.eliminatePartialSequential(ordering);
 
   // The densities on X(1) should be the same
-  expectedHybridBayesNet->atGaussian(0)->print();
-  auto x1_conditional = isam[X(1)]->conditional();
-  GTSAM_PRINT(*x1_conditional);
-  // EXPECT(assert_equal(*(hybridBayesNet.atGaussian(0)),
-  //                     *(expectedHybridBayesNet->atGaussian(0))));
+  auto x1_conditional =
+      dynamic_pointer_cast<GaussianMixture>(isam[X(1)]->conditional()->inner());
+  EXPECT(
+      assert_equal(*x1_conditional, *(expectedHybridBayesNet->atGaussian(0))));
 
-  //   // The densities on X(2) should be the same
-  //   EXPECT(assert_equal(*(hybridBayesNet2.atGaussian(1)),
-  //                       *(expectedHybridBayesNet->atGaussian(1))));
+  // The densities on X(2) should be the same
+  auto x2_conditional =
+      dynamic_pointer_cast<GaussianMixture>(isam[X(2)]->conditional()->inner());
+  EXPECT(
+      assert_equal(*x2_conditional, *(expectedHybridBayesNet->atGaussian(1))));
 
-  //   // The densities on X(3) should be the same
-  //   EXPECT(assert_equal(*(hybridBayesNet2.atGaussian(2)),
-  //                       *(expectedHybridBayesNet->atGaussian(2))));
+  // // The densities on X(3) should be the same
+  // auto x3_conditional =
+  //     dynamic_pointer_cast<GaussianMixture>(isam[X(3)]->conditional()->inner());
+  // EXPECT(
+  //     assert_equal(*x3_conditional, *(expectedHybridBayesNet->atGaussian(2))));
 
-  //   // we only do the manual continuous elimination for 0,0
-  //   // the other discrete probabilities on M(2) are calculated the same way
-  //   auto m00_prob = [&]() {
-  //     GaussianFactorGraph gf;
-  //     gf.add(switching.linearizedFactorGraph.gaussianGraph().at(3));
+  GTSAM_PRINT(*expectedHybridBayesNet);
 
-  //     DiscreteValues m00;
-  //     m00[M(1)] = 0, m00[M(2)] = 0;
-  //     auto dcMixture =
-  // dynamic_pointer_cast<DCGaussianMixtureFactor>(graph2.dcGraph().at(0));
-  //     gf.add(dcMixture->factors()(m00));
-  //     auto x2_mixed =
-  // boost::dynamic_pointer_cast<GaussianMixture>(hybridBayesNet.at(1));
-  //     gf.add(x2_mixed->factors()(m00));
-  //     auto result_gf = gf.eliminateSequential();
-  //     return gf.probPrime(result_gf->optimize());
-  //   }();
+  // we only do the manual continuous elimination for 0,0
+  // the other discrete probabilities on M(2) are calculated the same way
+  auto m00_prob = [&]() {
+    GaussianFactorGraph gf;
+    // gf.add(switching.linearizedFactorGraph.gaussianGraph().at(3));
+
+    DiscreteValues m00;
+    m00[M(1)] = 0, m00[M(2)] = 0;
+    // auto dcMixture =
+    //     dynamic_pointer_cast<DCGaussianMixtureFactor>(graph2.dcGraph().at(0));
+    // gf.add(dcMixture->factors()(m00));
+    // auto x2_mixed =
+    //     boost::dynamic_pointer_cast<GaussianMixture>(hybridBayesNet.at(1));
+    // gf.add(x2_mixed->factors()(m00));
+    auto result_gf = gf.eliminateSequential();
+    return gf.probPrime(result_gf->optimize());
+  }();
 
   /// Test if the probability values are as expected with regression tests.
 //   DiscreteValues assignment;
