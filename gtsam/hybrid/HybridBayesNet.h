@@ -18,6 +18,7 @@
 #pragma once
 
 #include <gtsam/hybrid/HybridConditional.h>
+#include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/inference/BayesNet.h>
 
 namespace gtsam {
@@ -34,8 +35,14 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   using shared_ptr = boost::shared_ptr<HybridBayesNet>;
   using sharedConditional = boost::shared_ptr<ConditionalType>;
 
-  /** Construct empty bayes net */
+  /// Construct empty bayes net
   HybridBayesNet() = default;
+
+  /// Destructor
+  virtual ~HybridBayesNet() {}
+
+  /// Solve the HybridBayesNet by back-substitution.
+  HybridValues optimize() const;
 };
 
 }  // namespace gtsam
