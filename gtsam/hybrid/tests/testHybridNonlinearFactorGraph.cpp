@@ -69,6 +69,30 @@ TEST(HybridFactorGraph, GaussianFactorGraph) {
 }
 
 /***************************************************************************
+ * Test equality for Hybrid Nonlinear Factor Graph.
+ */
+TEST(HybridNonlinearFactorGraph, Equals) {
+  HybridNonlinearFactorGraph graph1;
+  HybridNonlinearFactorGraph graph2;
+
+  // Test empty factor graphs
+  EXPECT(assert_equal(graph1, graph2));
+
+  auto f0 = boost::make_shared<PriorFactor<Pose2>>(
+      1, Pose2(), noiseModel::Isotropic::Sigma(3, 0.001));
+  graph1.push_back(f0);
+  graph2.push_back(f0);
+
+  auto f1 = boost::make_shared<BetweenFactor<Pose2>>(
+      1, 2, Pose2(), noiseModel::Isotropic::Sigma(3, 0.1));
+  graph1.push_back(f1);
+  graph2.push_back(f1);
+
+  // Test non-empty graphs
+  EXPECT(assert_equal(graph1, graph2));
+}
+
+/***************************************************************************
  * Test that the resize method works correctly for a HybridNonlinearFactorGraph.
  */
 TEST(HybridNonlinearFactorGraph, Resize) {
@@ -682,8 +706,13 @@ TEST(HybridFactorGraph, DefaultDecisionTree) {
        moving = boost::make_shared<PlanarMotionModel>(X(0), X(1), odometry,
                                                       noise_model);
   std::vector<PlanarMotionModel::shared_ptr> motion_models = {still, moving};
+  // TODO(Varun) Make a templated constructor for MixtureFactor which does this?
+  std::vector<NonlinearFactor::shared_ptr> components;
+  for (auto&& f : motion_models) {
+    components.push_back(boost::dynamic_pointer_cast<NonlinearFactor>(f));
+  }
   fg.emplace_hybrid<MixtureFactor>(
-      contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, motion_models);
+      contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, components);
 
   // Add Range-Bearing measurements to from X0 to L0 and X1 to L1.
   // create a noise model for the landmark measurements

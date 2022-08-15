@@ -43,12 +43,6 @@ void HybridNonlinearFactorGraph::print(const std::string& s,
 }
 
 /* ************************************************************************* */
-bool HybridNonlinearFactorGraph::equals(const HybridNonlinearFactorGraph& other,
-                                        double tol) const {
-  return false;
-}
-
-/* ************************************************************************* */
 HybridGaussianFactorGraph HybridNonlinearFactorGraph::linearize(
     const Values& continuousValues) const {
   // create an empty linear FG

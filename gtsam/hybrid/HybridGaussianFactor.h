@@ -39,10 +39,6 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
 
   HybridGaussianFactor() = default;
 
-  HybridGaussianFactor(const KeyVector &continuousKeys,
-                       const DiscreteKeys &discreteKeys)
-      : Base(continuousKeys, discreteKeys) {}
-
   // Explicit conversion from a shared ptr of GF
   explicit HybridGaussianFactor(GaussianFactor::shared_ptr other);
 
