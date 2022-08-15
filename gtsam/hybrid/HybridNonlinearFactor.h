@@ -39,7 +39,6 @@ class HybridNonlinearFactor : public HybridFactor {
   // Explicit conversion from a shared ptr of NonlinearFactor
   explicit HybridNonlinearFactor(const NonlinearFactor::shared_ptr &other);
 
- public:
   /// @name Testable
   /// @{
 

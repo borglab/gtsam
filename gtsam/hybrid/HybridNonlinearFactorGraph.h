@@ -109,11 +109,6 @@ class GTSAM_EXPORT HybridNonlinearFactorGraph : public HybridFactorGraph {
     }
   }
 
-  // /// Add a nonlinear factor to the factor graph.
-  // void add(NonlinearFactor&& factor) {
-  //   Base::add(boost::make_shared<HybridNonlinearFactor>(std::move(factor)));
-  // }
-
   /// Add a nonlinear factor as a shared ptr.
   void add(boost::shared_ptr<NonlinearFactor> factor);
 
@@ -121,9 +116,6 @@ class GTSAM_EXPORT HybridNonlinearFactorGraph : public HybridFactorGraph {
   void print(
       const std::string& s = "HybridNonlinearFactorGraph",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
-
-  /// Check if this factor graph is equal to `other`.
-  bool equals(const HybridNonlinearFactorGraph& other, double tol = 1e-9) const;
 
   /**
    * @brief Linearize all the continuous factors in the
