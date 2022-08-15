@@ -53,8 +53,8 @@ class GTSAM_EXPORT HybridValues {
   void print(const std::string& s = "HybridValues",
              const KeyFormatter& keyFormatter = DefaultKeyFormatter) const{
     std::cout << s << ": \n";
-    discrete.print("  Discrete", keyFormatter);
-    continuous.print("  Continuous", keyFormatter);
+    discrete.print("  Discrete", keyFormatter); // print discrete components
+    continuous.print("  Continuous", keyFormatter); //print continuous components
   };
 
   // equals required by Testable for unit testing
