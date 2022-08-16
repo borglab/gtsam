@@ -17,18 +17,17 @@
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/TestableAssertions.h>
-#include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam/discrete/Assignment.h>
 #include <gtsam/discrete/DiscreteKey.h>
-#include <gtsam/inference/Key.h>
-#include <gtsam/nonlinear/Values.h>
-#include <gtsam/linear/VectorValues.h>
-#include <gtsam/inference/Symbol.h>
+#include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam/hybrid/HybridValues.h>
+#include <gtsam/inference/Key.h>
+#include <gtsam/inference/Symbol.h>
+#include <gtsam/linear/VectorValues.h>
+#include <gtsam/nonlinear/Values.h>
 
 // Include for test suite
 #include <CppUnitLite/TestHarness.h>
-
 
 using namespace std;
 using namespace gtsam;
@@ -47,7 +46,7 @@ TEST(HybridValues, basics) {
   values2.insert(99, Vector2(2, 3));
   EXPECT(assert_equal(values2, values));
 
-  values2.insert(98, Vector2(2,3));
+  values2.insert(98, Vector2(2, 3));
   EXPECT(!assert_equal(values2, values));
 }
 
