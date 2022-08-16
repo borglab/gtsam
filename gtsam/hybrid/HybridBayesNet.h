@@ -64,7 +64,8 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   GaussianBayesNet choose(const DiscreteValues &assignment) const;
 
   /// Solve the HybridBayesNet by back-substitution.
-  /// TODO(Shangjie) do we need to create a HybridGaussianBayesNet class, and put this method there?
+  /// TODO(Shangjie) do we need to create a HybridGaussianBayesNet class, and
+  /// put this method there?
   HybridValues optimize() const;
 };
 

@@ -523,7 +523,6 @@ TEST(HybridGaussianFactorGraph, optimize) {
   HybridValues hv = result->optimize();
 
   EXPECT(assert_equal(hv.atDiscrete(C(1)), int(0)));
-
 }
 /* ************************************************************************* */
 int main() {

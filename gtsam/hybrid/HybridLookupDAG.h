@@ -19,10 +19,10 @@
 
 #include <gtsam/discrete/DiscreteDistribution.h>
 #include <gtsam/discrete/DiscreteLookupDAG.h>
-#include <gtsam/inference/BayesNet.h>
-#include <gtsam/inference/FactorGraph.h>
 #include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/hybrid/HybridValues.h>
+#include <gtsam/inference/BayesNet.h>
+#include <gtsam/inference/FactorGraph.h>
 
 #include <boost/shared_ptr.hpp>
 #include <string>
@@ -34,8 +34,8 @@ namespace gtsam {
 /**
  * @brief HybridLookupTable table for max-product
  *
- * Similar to DiscreteLookupTable, inherits from hybrid conditional for convenience.
- * Is used in the max-product algorithm. 
+ * Similar to DiscreteLookupTable, inherits from hybrid conditional for
+ * convenience. Is used in the max-product algorithm.
  */
 class GTSAM_EXPORT HybridLookupTable : public HybridConditional {
  public:
@@ -58,7 +58,8 @@ class GTSAM_EXPORT HybridLookupTable : public HybridConditional {
   void argmaxInPlace(HybridValues* parentsValues) const;
 };
 
-/** A DAG made from hybrid lookup tables, as defined above. Similar to DiscreteLookupDAG */
+/** A DAG made from hybrid lookup tables, as defined above. Similar to
+ * DiscreteLookupDAG */
 class GTSAM_EXPORT HybridLookupDAG : public BayesNet<HybridLookupTable> {
  public:
   using Base = BayesNet<HybridLookupTable>;
