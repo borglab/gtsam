@@ -393,221 +393,217 @@ TEST(HybridGaussianISAM, NonTrivial) {
   /*************** Run Round 1 ***************/
   HybridNonlinearFactorGraph fg;
 
-  //   // Add a prior on pose x1 at the origin.
-  //   // A prior factor consists of a mean  and
-  //   // a noise model (covariance matrix)
-  //   Pose2 prior(0.0, 0.0, 0.0);  // prior mean is at origin
-  //   auto priorNoise = noiseModel::Diagonal::Sigmas(
-  //       Vector3(0.3, 0.3, 0.1));  // 30cm std on x,y, 0.1 rad on theta
-  //   fg.emplace_nonlinear<PriorFactor<Pose2>>(X(0), prior, priorNoise);
+  // Add a prior on pose x1 at the origin.
+  // A prior factor consists of a mean  and
+  // a noise model (covariance matrix)
+  Pose2 prior(0.0, 0.0, 0.0);  // prior mean is at origin
+  auto priorNoise = noiseModel::Diagonal::Sigmas(
+      Vector3(0.3, 0.3, 0.1));  // 30cm std on x,y, 0.1 rad on theta
+  fg.emplace_nonlinear<PriorFactor<Pose2>>(X(0), prior, priorNoise);
 
-  //   // create a noise model for the landmark measurements
-  //   auto poseNoise = noiseModel::Isotropic::Sigma(3, 0.1);
+  // create a noise model for the landmark measurements
+  auto poseNoise = noiseModel::Isotropic::Sigma(3, 0.1);
 
-  //   // We model a robot's single leg as X - Y - Z - W
-  //   // where X is the base link and W is the foot link.
+  // We model a robot's single leg as X - Y - Z - W
+  // where X is the base link and W is the foot link.
 
-  //   // Add connecting poses similar to PoseFactors in GTD
-  //   fg.emplace_nonlinear<BetweenFactor<Pose2>>(X(0), Y(0), Pose2(0, 1.0, 0),
-  //                                              poseNoise);
-  //   fg.emplace_nonlinear<BetweenFactor<Pose2>>(Y(0), Z(0), Pose2(0, 1.0, 0),
-  //                                              poseNoise);
-  //   fg.emplace_nonlinear<BetweenFactor<Pose2>>(Z(0), W(0), Pose2(0, 1.0, 0),
-  //                                              poseNoise);
+  // Add connecting poses similar to PoseFactors in GTD
+  fg.emplace_nonlinear<BetweenFactor<Pose2>>(X(0), Y(0), Pose2(0, 1.0, 0),
+                                             poseNoise);
+  fg.emplace_nonlinear<BetweenFactor<Pose2>>(Y(0), Z(0), Pose2(0, 1.0, 0),
+                                             poseNoise);
+  fg.emplace_nonlinear<BetweenFactor<Pose2>>(Z(0), W(0), Pose2(0, 1.0, 0),
+                                             poseNoise);
 
-  //   // Create initial estimate
-  //   Values initial;
-  //   initial.insert(X(0), Pose2(0.0, 0.0, 0.0));
-  //   initial.insert(Y(0), Pose2(0.0, 1.0, 0.0));
-  //   initial.insert(Z(0), Pose2(0.0, 2.0, 0.0));
-  //   initial.insert(W(0), Pose2(0.0, 3.0, 0.0));
+  // Create initial estimate
+  Values initial;
+  initial.insert(X(0), Pose2(0.0, 0.0, 0.0));
+  initial.insert(Y(0), Pose2(0.0, 1.0, 0.0));
+  initial.insert(Z(0), Pose2(0.0, 2.0, 0.0));
+  initial.insert(W(0), Pose2(0.0, 3.0, 0.0));
 
-  //   HybridGaussianFactorGraph gfg = fg.linearize(initial);
-  //   fg = HybridNonlinearFactorGraph();
+  HybridGaussianFactorGraph gfg = fg.linearize(initial);
+  fg = HybridNonlinearFactorGraph();
 
-  //   HybridGaussianISAM inc;
+  HybridGaussianISAM inc;
 
-  //   // Regular ordering going up the chain.
-  //   Ordering ordering;
-  //   ordering += W(0);
-  //   ordering += Z(0);
-  //   ordering += Y(0);
-  //   ordering += X(0);
+  // Regular ordering going up the chain.
+  Ordering ordering;
+  ordering += W(0);
+  ordering += Z(0);
+  ordering += Y(0);
+  ordering += X(0);
 
-  //   // Update without pruning
-  //   // The result is a HybridBayesNet with no discrete variables
-  //   // (equivalent to a GaussianBayesNet).
-  //   // Factorization is:
-  //   // `P(X | measurements) = P(W0|Z0) P(Z0|Y0) P(Y0|X0) P(X0)`
-  //   inc.update(gfg, ordering);
+  // Update without pruning
+  // The result is a HybridBayesNet with no discrete variables
+  // (equivalent to a GaussianBayesNet).
+  // Factorization is:
+  // `P(X | measurements) = P(W0|Z0) P(Z0|Y0) P(Y0|X0) P(X0)`
+  // TODO(Varun) ClusterTree-inst.h L202 segfaults with custom ordering.
+  inc.update(gfg);
 
-  //   /*************** Run Round 2 ***************/
-  //   using PlanarMotionModel = BetweenFactor<Pose2>;
+  /*************** Run Round 2 ***************/
+  using PlanarMotionModel = BetweenFactor<Pose2>;
 
-  //   // Add odometry factor with discrete modes.
-  //   Pose2 odometry(1.0, 0.0, 0.0);
-  //   KeyVector contKeys = {W(0), W(1)};
-  //   auto noise_model = noiseModel::Isotropic::Sigma(3, 1.0);
-  //   auto still = boost::make_shared<PlanarMotionModel>(W(0), W(1), Pose2(0,
-  //   0, 0),
-  //                                                      noise_model),
-  //        moving = boost::make_shared<PlanarMotionModel>(W(0), W(1), odometry,
-  //                                                       noise_model);
-  //   std::vector<PlanarMotionModel::shared_ptr> components = {moving, still};
-  //   auto dcFactor = boost::make_shared<DCMixtureFactor<PlanarMotionModel>>(
-  //       contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, components);
-  //   fg.push_back(dcFactor);
+  // Add odometry factor with discrete modes.
+  Pose2 odometry(1.0, 0.0, 0.0);
+  KeyVector contKeys = {W(0), W(1)};
+  auto noise_model = noiseModel::Isotropic::Sigma(3, 1.0);
+  auto still = boost::make_shared<PlanarMotionModel>(W(0), W(1), Pose2(0, 0, 0),
+                                                     noise_model),
+       moving = boost::make_shared<PlanarMotionModel>(W(0), W(1), odometry,
+                                                      noise_model);
+  std::vector<PlanarMotionModel::shared_ptr> components = {moving, still};
+  auto mixtureFactor = boost::make_shared<MixtureFactor>(
+      contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, components);
+  fg.push_back(mixtureFactor);
 
-  //   // Add equivalent of ImuFactor
-  //   fg.emplace_nonlinear<BetweenFactor<Pose2>>(X(0), X(1), Pose2(1.0, 0.0,
-  //   0),
-  //                                              poseNoise);
-  //   // PoseFactors-like at k=1
-  //   fg.emplace_nonlinear<BetweenFactor<Pose2>>(X(1), Y(1), Pose2(0, 1, 0),
-  //                                              poseNoise);
-  //   fg.emplace_nonlinear<BetweenFactor<Pose2>>(Y(1), Z(1), Pose2(0, 1, 0),
-  //                                              poseNoise);
-  //   fg.emplace_nonlinear<BetweenFactor<Pose2>>(Z(1), W(1), Pose2(-1, 1, 0),
-  //                                              poseNoise);
+  // Add equivalent of ImuFactor
+  fg.emplace_nonlinear<BetweenFactor<Pose2>>(X(0), X(1), Pose2(1.0, 0.0, 0),
+                                             poseNoise);
+  // PoseFactors-like at k=1
+  fg.emplace_nonlinear<BetweenFactor<Pose2>>(X(1), Y(1), Pose2(0, 1, 0),
+                                             poseNoise);
+  fg.emplace_nonlinear<BetweenFactor<Pose2>>(Y(1), Z(1), Pose2(0, 1, 0),
+                                             poseNoise);
+  fg.emplace_nonlinear<BetweenFactor<Pose2>>(Z(1), W(1), Pose2(-1, 1, 0),
+                                             poseNoise);
 
-  //   initial.insert(X(1), Pose2(1.0, 0.0, 0.0));
-  //   initial.insert(Y(1), Pose2(1.0, 1.0, 0.0));
-  //   initial.insert(Z(1), Pose2(1.0, 2.0, 0.0));
-  //   // The leg link did not move so we set the expected pose accordingly.
-  //   initial.insert(W(1), Pose2(0.0, 3.0, 0.0));
+  initial.insert(X(1), Pose2(1.0, 0.0, 0.0));
+  initial.insert(Y(1), Pose2(1.0, 1.0, 0.0));
+  initial.insert(Z(1), Pose2(1.0, 2.0, 0.0));
+  // The leg link did not move so we set the expected pose accordingly.
+  initial.insert(W(1), Pose2(0.0, 3.0, 0.0));
 
-  //   // Ordering for k=1.
-  //   // This ordering follows the intuition that we eliminate the previous
-  //   // timestep, and then the current timestep.
-  //   ordering = Ordering();
-  //   ordering += W(0);
-  //   ordering += Z(0);
-  //   ordering += Y(0);
-  //   ordering += X(0);
-  //   ordering += W(1);
-  //   ordering += Z(1);
-  //   ordering += Y(1);
-  //   ordering += X(1);
+  gfg = fg.linearize(initial);
+  fg = HybridNonlinearFactorGraph();
 
-  //   gfg = fg.linearize(initial);
-  //   fg = HybridNonlinearFactorGraph();
+  // Ordering for k=1.
+  // This ordering follows the intuition that we eliminate the previous
+  // timestep, and then the current timestep.
+  ordering = Ordering();
+  ordering += W(0);
+  ordering += Z(0);
+  ordering += Y(0);
+  ordering += X(0);
+  ordering += W(1);
+  ordering += Z(1);
+  ordering += Y(1);
+  ordering += X(1);
 
-  //   // Update without pruning
-  //   // The result is a HybridBayesNet with 1 discrete variable M(1).
-  //   // P(X | measurements) = P(W0|Z0, W1, M1) P(Z0|Y0, W1, M1) P(Y0|X0, W1,
-  //   M1)
-  //   //                       P(X0 | X1, W1, M1) P(W1|Z1, X1, M1) P(Z1|Y1, X1,
-  //   M1)
-  //   //                       P(Y1 | X1, M1)P(X1 | M1)P(M1)
-  //   // The MHS tree is a 2 level tree for time indices (0, 1) with 2 leaves.
-  //   inc.update(gfg, ordering);
+  // Update without pruning
+  // The result is a HybridBayesNet with 1 discrete variable M(1).
+  // P(X | measurements) = P(W0|Z0, W1, M1) P(Z0|Y0, W1, M1) P(Y0|X0, W1, M1)
+  //                       P(X0 | X1, W1, M1) P(W1|Z1, X1, M1) P(Z1|Y1, X1, M1)
+  //                       P(Y1 | X1, M1)P(X1 | M1)P(M1)
+  // The MHS tree is a 1 level tree for time indices (1,) with 2 leaves.
+  // TODO(Varun) ClusterTree-inst.h L202 segfaults with custom ordering.
+  inc.update(gfg);
 
-  //   /*************** Run Round 3 ***************/
-  //   // Add odometry factor with discrete modes.
-  //   contKeys = {W(1), W(2)};
-  //   still = boost::make_shared<PlanarMotionModel>(W(1), W(2), Pose2(0, 0, 0),
-  //                                                 noise_model);
-  //   moving =
-  //       boost::make_shared<PlanarMotionModel>(W(1), W(2), odometry,
-  //       noise_model);
-  //   components = {moving, still};
-  //   dcFactor = boost::make_shared<DCMixtureFactor<PlanarMotionModel>>(
-  //       contKeys, DiscreteKeys{gtsam::DiscreteKey(M(2), 2)}, components);
-  //   fg.push_back(dcFactor);
+  /*************** Run Round 3 ***************/
+  // Add odometry factor with discrete modes.
+  contKeys = {W(1), W(2)};
+  still = boost::make_shared<PlanarMotionModel>(W(1), W(2), Pose2(0, 0, 0),
+                                                noise_model);
+  moving =
+      boost::make_shared<PlanarMotionModel>(W(1), W(2), odometry, noise_model);
+  components = {moving, still};
+  mixtureFactor = boost::make_shared<MixtureFactor>(
+      contKeys, DiscreteKeys{gtsam::DiscreteKey(M(2), 2)}, components);
+  fg.push_back(mixtureFactor);
 
-  //   // Add equivalent of ImuFactor
-  //   fg.emplace_nonlinear<BetweenFactor<Pose2>>(X(1), X(2), Pose2(1.0, 0.0,
-  //   0),
-  //                                              poseNoise);
-  //   // PoseFactors-like at k=1
-  //   fg.emplace_nonlinear<BetweenFactor<Pose2>>(X(2), Y(2), Pose2(0, 1, 0),
-  //                                              poseNoise);
-  //   fg.emplace_nonlinear<BetweenFactor<Pose2>>(Y(2), Z(2), Pose2(0, 1, 0),
-  //                                              poseNoise);
-  //   fg.emplace_nonlinear<BetweenFactor<Pose2>>(Z(2), W(2), Pose2(-2, 1, 0),
-  //                                              poseNoise);
+  // Add equivalent of ImuFactor
+  fg.emplace_nonlinear<BetweenFactor<Pose2>>(X(1), X(2), Pose2(1.0, 0.0, 0),
+                                             poseNoise);
+  // PoseFactors-like at k=1
+  fg.emplace_nonlinear<BetweenFactor<Pose2>>(X(2), Y(2), Pose2(0, 1, 0),
+                                             poseNoise);
+  fg.emplace_nonlinear<BetweenFactor<Pose2>>(Y(2), Z(2), Pose2(0, 1, 0),
+                                             poseNoise);
+  fg.emplace_nonlinear<BetweenFactor<Pose2>>(Z(2), W(2), Pose2(-2, 1, 0),
+                                             poseNoise);
 
-  //   initial.insert(X(2), Pose2(2.0, 0.0, 0.0));
-  //   initial.insert(Y(2), Pose2(2.0, 1.0, 0.0));
-  //   initial.insert(Z(2), Pose2(2.0, 2.0, 0.0));
-  //   initial.insert(W(2), Pose2(0.0, 3.0, 0.0));
+  initial.insert(X(2), Pose2(2.0, 0.0, 0.0));
+  initial.insert(Y(2), Pose2(2.0, 1.0, 0.0));
+  initial.insert(Z(2), Pose2(2.0, 2.0, 0.0));
+  initial.insert(W(2), Pose2(0.0, 3.0, 0.0));
 
-  //   // Ordering at k=2. Same intuition as before.
-  //   ordering = Ordering();
-  //   ordering += W(1);
-  //   ordering += Z(1);
-  //   ordering += Y(1);
-  //   ordering += X(1);
-  //   ordering += W(2);
-  //   ordering += Z(2);
-  //   ordering += Y(2);
-  //   ordering += X(2);
+  // Ordering at k=2. Same intuition as before.
+  ordering = Ordering();
+  ordering += W(1);
+  ordering += Z(1);
+  ordering += Y(1);
+  ordering += X(1);
+  ordering += W(2);
+  ordering += Z(2);
+  ordering += Y(2);
+  ordering += X(2);
 
-  //   gfg = fg.linearize(initial);
-  //   fg = HybridNonlinearFactorGraph();
+  gfg = fg.linearize(initial);
+  fg = HybridNonlinearFactorGraph();
 
-  //   // Now we prune!
-  //   // P(X | measurements) = P(W0|Z0, W1, M1) P(Z0|Y0, W1, M1) P(Y0|X0, W1,
-  //   M1) P(X0 | X1, W1, M1)
-  //   //                       P(W1|W2, Z1, X1, M1, M2) P(Z1| W2, Y1, X1, M1,
-  //   M2) P(Y1 | W2, X1, M1, M2)
-  //   //                       P(X1 | W2, X2, M1, M2) P(W2|Z2, X2, M1, M2)
-  //   P(Z2|Y2, X2, M1, M2)
-  //   //                       P(Y2 | X2, M1, M2)P(X2 | M1, M2) P(M1, M2)
-  //   // The MHS at this point should be a 3 level tree on (0, 1, 2).
-  //   // 0 has 2 choices, 1 has 4 choices and 2 has 4 choices.
-  //   inc.update(gfg, ordering, 2);
+  // Now we prune!
+  // P(X | measurements) = P(W0|Z0, W1, M1) P(Z0|Y0, W1, M1) P(Y0|X0, W1, M1)
+  //                       P(X0 | X1, W1, M1) P(W1|W2, Z1, X1, M1, M2)
+  //                       P(Z1| W2, Y1, X1, M1, M2) P(Y1 | W2, X1, M1, M2)
+  //                       P(X1 | W2, X2, M1, M2) P(W2|Z2, X2, M1, M2)
+  //                       P(Z2|Y2, X2, M1, M2) P(Y2 | X2, M1, M2)
+  //                       P(X2 | M1, M2) P(M1, M2)
+  // The MHS at this point should be a 2 level tree on (1, 2).
+  // 1 has 2 choices, and 2 has 4 choices.
+  inc.update(gfg);
+  inc.prune(M(2), 2);
 
-  //   /*************** Run Round 4 ***************/
-  //   // Add odometry factor with discrete modes.
-  //   contKeys = {W(2), W(3)};
-  //   still = boost::make_shared<PlanarMotionModel>(W(2), W(3), Pose2(0, 0, 0),
-  //                                                 noise_model);
-  //   moving =
-  //       boost::make_shared<PlanarMotionModel>(W(2), W(3), odometry,
-  //       noise_model);
-  //   components = {moving, still};
-  //   dcFactor = boost::make_shared<DCMixtureFactor<PlanarMotionModel>>(
-  //       contKeys, DiscreteKeys{gtsam::DiscreteKey(M(3), 2)}, components);
-  //   fg.push_back(dcFactor);
+  /*************** Run Round 4 ***************/
+  // Add odometry factor with discrete modes.
+  contKeys = {W(2), W(3)};
+  still = boost::make_shared<PlanarMotionModel>(W(2), W(3), Pose2(0, 0, 0),
+                                                noise_model);
+  moving =
+      boost::make_shared<PlanarMotionModel>(W(2), W(3), odometry, noise_model);
+  components = {moving, still};
+  mixtureFactor = boost::make_shared<MixtureFactor>(
+      contKeys, DiscreteKeys{gtsam::DiscreteKey(M(3), 2)}, components);
+  fg.push_back(mixtureFactor);
 
-  //   // Add equivalent of ImuFactor
-  //   fg.emplace_nonlinear<BetweenFactor<Pose2>>(X(2), X(3), Pose2(1.0, 0.0,
-  //   0),
-  //                                              poseNoise);
-  //   // PoseFactors-like at k=3
-  //   fg.emplace_nonlinear<BetweenFactor<Pose2>>(X(3), Y(3), Pose2(0, 1, 0),
-  //                                              poseNoise);
-  //   fg.emplace_nonlinear<BetweenFactor<Pose2>>(Y(3), Z(3), Pose2(0, 1, 0),
-  //                                              poseNoise);
-  //   fg.emplace_nonlinear<BetweenFactor<Pose2>>(Z(3), W(3), Pose2(-3, 1, 0),
-  //                                              poseNoise);
+  // Add equivalent of ImuFactor
+  fg.emplace_nonlinear<BetweenFactor<Pose2>>(X(2), X(3), Pose2(1.0, 0.0, 0),
+                                             poseNoise);
+  // PoseFactors-like at k=3
+  fg.emplace_nonlinear<BetweenFactor<Pose2>>(X(3), Y(3), Pose2(0, 1, 0),
+                                             poseNoise);
+  fg.emplace_nonlinear<BetweenFactor<Pose2>>(Y(3), Z(3), Pose2(0, 1, 0),
+                                             poseNoise);
+  fg.emplace_nonlinear<BetweenFactor<Pose2>>(Z(3), W(3), Pose2(-3, 1, 0),
+                                             poseNoise);
 
-  //   initial.insert(X(3), Pose2(3.0, 0.0, 0.0));
-  //   initial.insert(Y(3), Pose2(3.0, 1.0, 0.0));
-  //   initial.insert(Z(3), Pose2(3.0, 2.0, 0.0));
-  //   initial.insert(W(3), Pose2(0.0, 3.0, 0.0));
+  initial.insert(X(3), Pose2(3.0, 0.0, 0.0));
+  initial.insert(Y(3), Pose2(3.0, 1.0, 0.0));
+  initial.insert(Z(3), Pose2(3.0, 2.0, 0.0));
+  initial.insert(W(3), Pose2(0.0, 3.0, 0.0));
 
-  //   // Ordering at k=3. Same intuition as before.
-  //   ordering = Ordering();
-  //   ordering += W(2);
-  //   ordering += Z(2);
-  //   ordering += Y(2);
-  //   ordering += X(2);
-  //   ordering += W(3);
-  //   ordering += Z(3);
-  //   ordering += Y(3);
-  //   ordering += X(3);
+  gfg = fg.linearize(initial);
+  fg = HybridNonlinearFactorGraph();
 
-  //   gfg = fg.linearize(initial);
-  //   fg = HybridNonlinearFactorGraph();
+  // Ordering at k=3. Same intuition as before.
+  ordering = Ordering();
+  ordering += W(2);
+  ordering += Z(2);
+  ordering += Y(2);
+  ordering += X(2);
+  ordering += W(3);
+  ordering += Z(3);
+  ordering += Y(3);
+  ordering += X(3);
 
-  //   // Keep pruning!
-  //   inc.update(gfg, ordering, 3);
+  // Keep pruning!
+  inc.update(gfg);
+  inc.prune(M(3), 3);
+  inc.print();
 
-  //   // The final discrete graph should not be empty since we have eliminated
-  //   // all continuous variables.
-  //   EXPECT(!inc.remainingDiscreteGraph().empty());
+  // The final discrete graph should not be empty since we have eliminated
+  // all continuous variables.
+  // EXPECT(!inc.remainingDiscreteGraph().empty());
 
   //   // Test if the optimal discrete mode assignment is (1, 1, 1).
   //   DiscreteValues optimal_assignment =
