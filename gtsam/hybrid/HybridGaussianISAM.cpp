@@ -75,8 +75,6 @@ void HybridGaussianISAM::updateInternal(
   std::copy(allDiscrete.begin(), allDiscrete.end(),
             std::back_inserter(newKeysDiscreteLast));
 
-  // KeyVector new
-
   // Get an ordering where the new keys are eliminated last
   const VariableIndex index(factors);
   Ordering elimination_ordering;
