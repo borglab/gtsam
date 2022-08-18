@@ -84,8 +84,5 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         hv = hbn.optimize()
         self.assertEqual(hv.atDiscrete(C(0)), 1)
 
-        self.assertEqual(hv.at(X(0)), np.ones((3, 1)))
-
-
 if __name__ == "__main__":
     unittest.main()
