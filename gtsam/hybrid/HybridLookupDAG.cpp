@@ -55,8 +55,7 @@ void HybridLookupTable::argmaxInPlace(HybridValues* values) const {
   }
 }
 
-// /* **************************************************************************
-// */
+/* ************************************************************************** */
 HybridLookupDAG HybridLookupDAG::FromBayesNet(const HybridBayesNet& bayesNet) {
   HybridLookupDAG dag;
   for (auto&& conditional : bayesNet) {
@@ -66,12 +65,12 @@ HybridLookupDAG HybridLookupDAG::FromBayesNet(const HybridBayesNet& bayesNet) {
   return dag;
 }
 
+/* ************************************************************************** */
 HybridValues HybridLookupDAG::argmax(HybridValues result) const {
   // Argmax each node in turn in topological sort order (parents first).
   for (auto lookupTable : boost::adaptors::reverse(*this))
     lookupTable->argmaxInPlace(&result);
   return result;
 }
-/* ************************************************************************** */
 
 }  // namespace gtsam
