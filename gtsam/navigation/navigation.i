@@ -17,7 +17,7 @@ class ConstantBias {
   bool equals(const gtsam::imuBias::ConstantBias& expected, double tol) const;
 
   // Group
-  static gtsam::imuBias::ConstantBias identity();
+  static gtsam::imuBias::ConstantBias Identity();
 
   // Operator Overloads
   gtsam::imuBias::ConstantBias operator-() const;

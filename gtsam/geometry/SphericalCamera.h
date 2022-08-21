@@ -88,7 +88,7 @@ class GTSAM_EXPORT SphericalCamera {
 
   /// Default constructor
   SphericalCamera()
-      : pose_(Pose3::identity()), emptyCal_(boost::make_shared<EmptyCal>()) {}
+      : pose_(Pose3()), emptyCal_(boost::make_shared<EmptyCal>()) {}
 
   /// Constructor with pose
   explicit SphericalCamera(const Pose3& pose)
@@ -198,9 +198,9 @@ class GTSAM_EXPORT SphericalCamera {
   }
 
   /// for Canonical
-  static SphericalCamera identity() {
+  static SphericalCamera Identity() {
     return SphericalCamera(
-        Pose3::identity());  // assumes that the default constructor is valid
+        Pose3::Identity());  // assumes that the default constructor is valid
   }
 
   /// for Linear Triangulation

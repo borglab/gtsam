@@ -297,7 +297,7 @@ class GTSAM_EXPORT Rot3 : public LieGroup<Rot3, 3> {
     /// @{
 
     /// identity rotation for group operation
-    inline static Rot3 identity() {
+    inline static Rot3 Identity() {
       return Rot3();
     }
 
