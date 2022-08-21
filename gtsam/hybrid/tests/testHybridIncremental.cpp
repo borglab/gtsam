@@ -61,11 +61,6 @@ TEST(HybridGaussianElimination, IncrementalElimination) {
   graph1.push_back(switching.linearizedFactorGraph.at(2));  // P(X2, X3 | M2)
   graph1.push_back(switching.linearizedFactorGraph.at(5));  // P(M1)
 
-  // Create ordering.
-  Ordering ordering;
-  ordering += X(1);
-  ordering += X(2);
-
   // Run update step
   isam.update(graph1);
 
@@ -84,11 +79,6 @@ TEST(HybridGaussianElimination, IncrementalElimination) {
   graph1.push_back(switching.linearizedFactorGraph.at(3));  // P(X2)
   graph2.push_back(switching.linearizedFactorGraph.at(4));  // P(X3)
   graph2.push_back(switching.linearizedFactorGraph.at(6));  // P(M1, M2)
-
-  // Create ordering.
-  Ordering ordering2;
-  ordering2 += X(2);
-  ordering2 += X(3);
 
   isam.update(graph2);
 
@@ -336,12 +326,6 @@ TEST(HybridGaussianElimination, Incremental_approximate) {
     graph1.push_back(switching.linearizedFactorGraph.at(i));
   }
 
-  // Create ordering.
-  Ordering ordering;
-  for (size_t j = 1; j <= 4; j++) {
-    ordering += X(j);
-  }
-
   // Run update with pruning
   size_t maxComponents = 5;
   incrementalHybrid.update(graph1);
@@ -364,10 +348,6 @@ TEST(HybridGaussianElimination, Incremental_approximate) {
   graph2.push_back(switching.linearizedFactorGraph.at(4));
   graph2.push_back(switching.linearizedFactorGraph.at(8));
 
-  Ordering ordering2;
-  ordering2 += X(4);
-  ordering2 += X(5);
-
   // Run update with pruning a second time.
   incrementalHybrid.update(graph2);
   incrementalHybrid.prune(M(4), maxComponents);
@@ -382,14 +362,11 @@ TEST(HybridGaussianElimination, Incremental_approximate) {
 }
 
 /* ************************************************************************/
-// Test for figuring out the optimal ordering to ensure we get
-// a discrete graph after elimination.
+// A GTSAM-only test for running inference on a single-legged robot.
+// The leg links are represented by the chain X-Y-Z-W, where X is the base and
+// W is the foot.
+// We use BetweenFactor<Pose2> as constraints between each of the poses.
 TEST(HybridGaussianISAM, NonTrivial) {
-  // This is a GTSAM-only test for running inference on a single legged robot.
-  // The leg links are represented by the chain X-Y-Z-W, where X is the base and
-  // W is the foot.
-  // We use BetweenFactor<Pose2> as constraints between each of the poses.
-
   /*************** Run Round 1 ***************/
   HybridNonlinearFactorGraph fg;
 
@@ -427,19 +404,11 @@ TEST(HybridGaussianISAM, NonTrivial) {
 
   HybridGaussianISAM inc;
 
-  // Regular ordering going up the chain.
-  Ordering ordering;
-  ordering += W(0);
-  ordering += Z(0);
-  ordering += Y(0);
-  ordering += X(0);
-
   // Update without pruning
   // The result is a HybridBayesNet with no discrete variables
   // (equivalent to a GaussianBayesNet).
   // Factorization is:
   // `P(X | measurements) = P(W0|Z0) P(Z0|Y0) P(Y0|X0) P(X0)`
-  // TODO(Varun) ClusterTree-inst.h L202 segfaults with custom ordering.
   inc.update(gfg);
 
   /*************** Run Round 2 ***************/
@@ -478,26 +447,12 @@ TEST(HybridGaussianISAM, NonTrivial) {
   gfg = fg.linearize(initial);
   fg = HybridNonlinearFactorGraph();
 
-  // Ordering for k=1.
-  // This ordering follows the intuition that we eliminate the previous
-  // timestep, and then the current timestep.
-  ordering = Ordering();
-  ordering += W(0);
-  ordering += Z(0);
-  ordering += Y(0);
-  ordering += X(0);
-  ordering += W(1);
-  ordering += Z(1);
-  ordering += Y(1);
-  ordering += X(1);
-
   // Update without pruning
   // The result is a HybridBayesNet with 1 discrete variable M(1).
   // P(X | measurements) = P(W0|Z0, W1, M1) P(Z0|Y0, W1, M1) P(Y0|X0, W1, M1)
   //                       P(X0 | X1, W1, M1) P(W1|Z1, X1, M1) P(Z1|Y1, X1, M1)
   //                       P(Y1 | X1, M1)P(X1 | M1)P(M1)
   // The MHS tree is a 1 level tree for time indices (1,) with 2 leaves.
-  // TODO(Varun) ClusterTree-inst.h L202 segfaults with custom ordering.
   inc.update(gfg);
 
   /*************** Run Round 3 ***************/
@@ -527,17 +482,6 @@ TEST(HybridGaussianISAM, NonTrivial) {
   initial.insert(Y(2), Pose2(2.0, 1.0, 0.0));
   initial.insert(Z(2), Pose2(2.0, 2.0, 0.0));
   initial.insert(W(2), Pose2(0.0, 3.0, 0.0));
-
-  // Ordering at k=2. Same intuition as before.
-  ordering = Ordering();
-  ordering += W(1);
-  ordering += Z(1);
-  ordering += Y(1);
-  ordering += X(1);
-  ordering += W(2);
-  ordering += Z(2);
-  ordering += Y(2);
-  ordering += X(2);
 
   gfg = fg.linearize(initial);
   fg = HybridNonlinearFactorGraph();
@@ -585,40 +529,31 @@ TEST(HybridGaussianISAM, NonTrivial) {
   gfg = fg.linearize(initial);
   fg = HybridNonlinearFactorGraph();
 
-  // Ordering at k=3. Same intuition as before.
-  ordering = Ordering();
-  ordering += W(2);
-  ordering += Z(2);
-  ordering += Y(2);
-  ordering += X(2);
-  ordering += W(3);
-  ordering += Z(3);
-  ordering += Y(3);
-  ordering += X(3);
-
   // Keep pruning!
   inc.update(gfg);
   inc.prune(M(3), 3);
-  inc.print();
 
   // The final discrete graph should not be empty since we have eliminated
   // all continuous variables.
-  // EXPECT(!inc.remainingDiscreteGraph().empty());
+  auto discreteTree = inc[M(3)]->conditional()->asDiscreteConditional();
+  EXPECT_LONGS_EQUAL(3, discreteTree->size());
 
-  //   // Test if the optimal discrete mode assignment is (1, 1, 1).
-  //   DiscreteValues optimal_assignment =
-  //   inc.remainingDiscreteGraph().optimize(); DiscreteValues
-  //   expected_assignment; expected_assignment[M(1)] = 1;
-  //   expected_assignment[M(2)] = 1;
-  //   expected_assignment[M(3)] = 1;
-  //   EXPECT(assert_equal(expected_assignment, optimal_assignment));
+  // Test if the optimal discrete mode assignment is (1, 1, 1).
+  DiscreteFactorGraph discreteGraph;
+  discreteGraph.push_back(discreteTree);
+  DiscreteValues optimal_assignment = discreteGraph.optimize();
 
-  //   // Test if pruning worked correctly by checking that we only have 3
-  //   leaves in
-  //   // the last node.
-  //   auto lastConditional = boost::dynamic_pointer_cast<GaussianMixture>(
-  //       inc.hybridBayesNet().at(inc.hybridBayesNet().size() - 1));
-  //   EXPECT_LONGS_EQUAL(3, lastConditional->nrComponents());
+  DiscreteValues expected_assignment;
+  expected_assignment[M(1)] = 1;
+  expected_assignment[M(2)] = 1;
+  expected_assignment[M(3)] = 1;
+
+  EXPECT(assert_equal(expected_assignment, optimal_assignment));
+
+  // Test if pruning worked correctly by checking that we only have 3 leaves in
+  // the last node.
+  auto lastConditional = inc[X(3)]->conditional()->asMixture();
+  EXPECT_LONGS_EQUAL(3, lastConditional->nrComponents());
 }
 
 /* ************************************************************************* */
