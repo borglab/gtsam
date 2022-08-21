@@ -105,6 +105,22 @@ void HybridGaussianISAM::update(const HybridGaussianFactorGraph& newFactors,
   this->updateInternal(newFactors, &orphans, ordering, function);
 }
 
+/* ************************************************************************* */
+/**
+ * @brief Check if `b` is a subset of `a`.
+ * Non-const since they need to be sorted.
+ *
+ * @param a KeyVector
+ * @param b KeyVector
+ * @return True if the keys of b is a subset of a, else false.
+ */
+bool IsSubset(KeyVector a, KeyVector b) {
+  std::sort(a.begin(), a.end());
+  std::sort(b.begin(), b.end());
+  return std::includes(a.begin(), a.end(), b.begin(), b.end());
+}
+
+/* ************************************************************************* */
 void HybridGaussianISAM::prune(const Key& root, const size_t maxNrLeaves) {
   auto decisionTree = boost::dynamic_pointer_cast<DecisionTreeFactor>(
       this->clique(root)->conditional()->inner());
@@ -131,7 +147,7 @@ void HybridGaussianISAM::prune(const Key& root, const size_t maxNrLeaves) {
       parents.push_back(parent);
     }
 
-    if (parents == decisionTree->keys()) {
+    if (IsSubset(parents, decisionTree->keys())) {
       auto gaussianMixture = boost::dynamic_pointer_cast<GaussianMixture>(
           clique.second->conditional()->inner());
 
