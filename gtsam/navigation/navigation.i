@@ -165,11 +165,11 @@ virtual class PreintegrationCombinedParams : gtsam::PreintegrationParams {
 
   void setBiasAccCovariance(Matrix cov);
   void setBiasOmegaCovariance(Matrix cov);
-  void setBiasAccOmegaInt(Matrix cov);
+  void setBiasAccOmegaInit(Matrix cov);
   
   Matrix getBiasAccCovariance() const ;
   Matrix getBiasOmegaCovariance() const ;
-  Matrix getBiasAccOmegaInt() const;
+  Matrix getBiasAccOmegaInit() const;
  
 };
 
