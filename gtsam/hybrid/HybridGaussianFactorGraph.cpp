@@ -77,6 +77,19 @@ static GaussianMixtureFactor::Sum &addGaussian(
 }
 
 /* ************************************************************************ */
+/* Function to eliminate variables **under the following assumptions**:
+ * 1. When the ordering is fully continuous, and the graph only contains
+ * continuous and hybrid factors
+ * 2. When the ordering is fully discrete, and the graph only contains discrete
+ * factors
+ *
+ * Any usage outside of this is considered incorrect.
+ *
+ * \warning This function is not meant to be used with arbitrary hybrid factor
+ * graphs. For example, if there exists continuous parents, and one tries to
+ * eliminate a discrete variable (as specified in the ordering), the result will
+ * be INCORRECT and there will be NO error raised.
+ */
 GaussianMixtureFactor::Sum sumFrontals(
     const HybridGaussianFactorGraph &factors) {
   // sum out frontals, this is the factor on the separator
