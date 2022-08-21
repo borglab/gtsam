@@ -89,17 +89,23 @@ void HybridFactor::print(const std::string &s,
   if (isContinuous_) std::cout << "Continuous ";
   if (isDiscrete_) std::cout << "Discrete ";
   if (isHybrid_) std::cout << "Hybrid ";
-  for (size_t c=0; c<continuousKeys_.size(); c++) {
+  std::cout << "[";
+  for (size_t c = 0; c < continuousKeys_.size(); c++) {
     std::cout << formatter(continuousKeys_.at(c));
     if (c < continuousKeys_.size() - 1) {
       std::cout << " ";
     } else {
-      std::cout << "; ";
+      std::cout << (discreteKeys_.size() > 0 ? "; " : "");
     }
   }
-  for(auto && discreteKey: discreteKeys_) {
-    std::cout << formatter(discreteKey.first) << " ";
+  for (size_t d = 0; d < discreteKeys_.size(); d++) {
+    std::cout << formatter(discreteKeys_.at(d).first);
+    if (d < discreteKeys_.size() - 1) {
+      std::cout << " ";
+    }
+    
   }
+  std::cout << "]";
 }
 
 }  // namespace gtsam
