@@ -11,10 +11,13 @@
  * @brief  A bayes net of Gaussian Conditionals indexed by discrete keys.
  * @author Fan Jiang
  * @author Varun Agrawal
+ * @author Shangjie Xue
  * @date   January 2022
  */
 
 #include <gtsam/hybrid/HybridBayesNet.h>
+#include <gtsam/hybrid/HybridValues.h>
+#include <gtsam/hybrid/HybridLookupDAG.h>
 
 namespace gtsam {
 
@@ -38,6 +41,12 @@ GaussianBayesNet HybridBayesNet::choose(
     gbn.push_back(gm(assignment));
   }
   return gbn;
+}
+
+/* *******************************************************************************/
+HybridValues HybridBayesNet::optimize() const {
+  auto dag = HybridLookupDAG::FromBayesNet(*this);
+  return dag.argmax();
 }
 
 }  // namespace gtsam

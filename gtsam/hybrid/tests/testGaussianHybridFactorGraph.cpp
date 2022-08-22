@@ -17,6 +17,7 @@
 
 #include <CppUnitLite/Test.h>
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/TestableAssertions.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/discrete/DiscreteValues.h>
@@ -30,6 +31,7 @@
 #include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 #include <gtsam/hybrid/HybridGaussianISAM.h>
+#include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/DotWriter.h>
 #include <gtsam/inference/Key.h>
@@ -501,6 +503,27 @@ TEST_DISABLED(HybridGaussianFactorGraph, SwitchingTwoVar) {
   }
 }
 
+TEST(HybridGaussianFactorGraph, optimize) {
+  HybridGaussianFactorGraph hfg;
+
+  DiscreteKey c1(C(1), 2);
+
+  hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
+  hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
+
+  DecisionTree<Key, GaussianFactor::shared_ptr> dt(
+      C(1), boost::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1),
+      boost::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()));
+
+  hfg.add(GaussianMixtureFactor({X(1)}, {c1}, dt));
+
+  auto result =
+      hfg.eliminateSequential(Ordering::ColamdConstrainedLast(hfg, {C(1)}));
+
+  HybridValues hv = result->optimize();
+
+  EXPECT(assert_equal(hv.atDiscrete(C(1)), int(0)));
+}
 /* ************************************************************************* */
 int main() {
   TestResult tr;
