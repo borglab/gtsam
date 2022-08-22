@@ -4,6 +4,22 @@
 
 namespace gtsam {
 
+#include <gtsam/hybrid/HybridValues.h>
+class HybridValues {
+  gtsam::DiscreteValues discrete;
+  gtsam::VectorValues continuous;
+  HybridValues();
+  HybridValues(const gtsam::DiscreteValues &dv, const gtsam::VectorValues &cv);
+  void print(string s = "HybridValues",
+             const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
+  bool equals(const gtsam::HybridValues& other, double tol) const;
+  void insert(gtsam::Key j, int value);
+  void insert(gtsam::Key j, const gtsam::Vector& value);
+  size_t& atDiscrete(gtsam::Key j);
+  gtsam::Vector& at(gtsam::Key j);
+};
+
 #include <gtsam/hybrid/HybridFactor.h>
 virtual class HybridFactor {
   void print(string s = "HybridFactor\n",
@@ -84,6 +100,7 @@ class HybridBayesNet {
   size_t size() const;
   gtsam::KeySet keys() const;
   const gtsam::HybridConditional* at(size_t i) const;
+  gtsam::HybridValues optimize() const;
   void print(string s = "HybridBayesNet\n",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;

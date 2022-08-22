@@ -18,6 +18,7 @@
 #pragma once
 
 #include <gtsam/hybrid/HybridConditional.h>
+#include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 
@@ -61,6 +62,11 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    * @return GaussianBayesNet
    */
   GaussianBayesNet choose(const DiscreteValues &assignment) const;
+
+  /// Solve the HybridBayesNet by back-substitution.
+  /// TODO(Shangjie) do we need to create a HybridGaussianBayesNet class, and
+  /// put this method there?
+  HybridValues optimize() const;
 };
 
 }  // namespace gtsam
