@@ -77,19 +77,6 @@ static GaussianMixtureFactor::Sum &addGaussian(
 }
 
 /* ************************************************************************ */
-/* Function to eliminate variables **under the following assumptions**:
- * 1. When the ordering is fully continuous, and the graph only contains
- * continuous and hybrid factors
- * 2. When the ordering is fully discrete, and the graph only contains discrete
- * factors
- *
- * Any usage outside of this is considered incorrect.
- *
- * \warning This function is not meant to be used with arbitrary hybrid factor
- * graphs. For example, if there exists continuous parents, and one tries to
- * eliminate a discrete variable (as specified in the ordering), the result will
- * be INCORRECT and there will be NO error raised.
- */
 GaussianMixtureFactor::Sum sumFrontals(
     const HybridGaussianFactorGraph &factors) {
   // sum out frontals, this is the factor on the separator
@@ -109,15 +96,8 @@ GaussianMixtureFactor::Sum sumFrontals(
       }
 
     } else if (f->isContinuous()) {
-      // Check if f is HybridConditional or HybridGaussianFactor.
-      if (auto hc = boost::dynamic_pointer_cast<HybridConditional>(f)) {
-        auto conditional =
-            boost::dynamic_pointer_cast<GaussianConditional>(hc->inner());
-        deferredFactors.push_back(conditional);
-      } else if (auto gf = boost::dynamic_pointer_cast<HybridGaussianFactor>(f)
-                               ->inner()) {
-        deferredFactors.push_back(gf);
-      }
+      deferredFactors.push_back(
+          boost::dynamic_pointer_cast<HybridGaussianFactor>(f)->inner());
 
     } else if (f->isDiscrete()) {
       // Don't do anything for discrete-only factors
@@ -278,7 +258,20 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
     return {boost::make_shared<HybridConditional>(conditional), factor};
   }
 }
-/* ************************************************************************ */
+/* ************************************************************************
+ * Function to eliminate variables **under the following assumptions**:
+ * 1. When the ordering is fully continuous, and the graph only contains
+ * continuous and hybrid factors
+ * 2. When the ordering is fully discrete, and the graph only contains discrete
+ * factors
+ *
+ * Any usage outside of this is considered incorrect.
+ *
+ * \warning This function is not meant to be used with arbitrary hybrid factor
+ * graphs. For example, if there exists continuous parents, and one tries to
+ * eliminate a discrete variable (as specified in the ordering), the result will
+ * be INCORRECT and there will be NO error raised.
+ */
 std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>  //
 EliminateHybrid(const HybridGaussianFactorGraph &factors,
                 const Ordering &frontalKeys) {
