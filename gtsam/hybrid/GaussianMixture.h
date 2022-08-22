@@ -21,6 +21,7 @@
 
 #include <gtsam/discrete/DecisionTree-inl.h>
 #include <gtsam/discrete/DecisionTree.h>
+#include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/inference/Conditional.h>
@@ -121,7 +122,7 @@ class GTSAM_EXPORT GaussianMixture
   /// Test equality with base HybridFactor
   bool equals(const HybridFactor &lf, double tol = 1e-9) const override;
 
-  /* print utility */
+  /// Print utility
   void print(
       const std::string &s = "GaussianMixture\n",
       const KeyFormatter &formatter = DefaultKeyFormatter) const override;
@@ -130,6 +131,15 @@ class GTSAM_EXPORT GaussianMixture
 
   /// Getter for the underlying Conditionals DecisionTree
   const Conditionals &conditionals();
+
+  /**
+   * @brief Prune the decision tree of Gaussian factors as per the discrete
+   * `decisionTree`.
+   *
+   * @param decisionTree A pruned decision tree of discrete keys where the
+   * leaves are probabilities.
+   */
+  void prune(const DecisionTreeFactor &decisionTree);
 
   /**
    * @brief Merge the Gaussian Factor Graphs in `this` and `sum` while
