@@ -107,8 +107,8 @@ namespace gtsam {
     /// @name Group
     /// @{
 
-    /** identity */
-    inline static Rot2 identity() {  return Rot2(); }
+    /** Identity */
+    inline static Rot2 Identity() {  return Rot2(); }
 
     /** The inverse rotation - negative angle */
     Rot2 inverse() const { return Rot2(c_, -s_);}

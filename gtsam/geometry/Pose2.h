@@ -119,7 +119,7 @@ public:
   /// @{
 
   /// identity for group operation
-  inline static Pose2 identity() { return Pose2(); }
+  inline static Pose2 Identity() { return Pose2(); }
 
   /// inverse
   GTSAM_EXPORT Pose2 inverse() const;

@@ -51,6 +51,7 @@ typedef ManifoldPreintegration PreintegrationType;
  *     TRO, 28(1):61-76, 2012.
  * [3] L. Carlone, S. Williams, R. Roberts, "Preintegrated IMU factor:
  *     Computation of the Jacobian Matrices", Tech. Report, 2013.
+ *     Available in this repo as "PreintegratedIMUJacobians.pdf".
  * [4] C. Forster, L. Carlone, F. Dellaert, D. Scaramuzza, IMU Preintegration on
  *     Manifold for Efficient Visual-Inertial Maximum-a-Posteriori Estimation,
  *     Robotics: Science and Systems (RSS), 2015.
@@ -61,7 +62,7 @@ typedef ManifoldPreintegration PreintegrationType;
 struct GTSAM_EXPORT PreintegrationCombinedParams : PreintegrationParams {
   Matrix3 biasAccCovariance;    ///< continuous-time "Covariance" describing accelerometer bias random walk
   Matrix3 biasOmegaCovariance;  ///< continuous-time "Covariance" describing gyroscope bias random walk
-  Matrix6 biasAccOmegaInt;     ///< covariance of bias used for pre-integration
+  Matrix6 biasAccOmegaInt;     ///< covariance of bias used as initial estimate.
 
   /// Default constructor makes uninitialized params struct.
   /// Used for serialization.
@@ -92,11 +93,11 @@ struct GTSAM_EXPORT PreintegrationCombinedParams : PreintegrationParams {
 
   void setBiasAccCovariance(const Matrix3& cov) { biasAccCovariance=cov; }
   void setBiasOmegaCovariance(const Matrix3& cov) { biasOmegaCovariance=cov; }
-  void setBiasAccOmegaInt(const Matrix6& cov) { biasAccOmegaInt=cov; }
+  void setBiasAccOmegaInit(const Matrix6& cov) { biasAccOmegaInt=cov; }
   
   const Matrix3& getBiasAccCovariance() const { return biasAccCovariance; }
   const Matrix3& getBiasOmegaCovariance() const { return biasOmegaCovariance; }
-  const Matrix6& getBiasAccOmegaInt() const { return biasAccOmegaInt; }
+  const Matrix6& getBiasAccOmegaInit() const { return biasAccOmegaInt; }
   
 private:
 
