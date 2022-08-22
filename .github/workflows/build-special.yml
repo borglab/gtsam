@@ -32,31 +32,31 @@ jobs:
 
         include:
           - name: ubuntu-gcc-deprecated
-            os: ubuntu-18.04
+            os: ubuntu-20.04
             compiler: gcc
             version: "9"
             flag: deprecated
 
           - name: ubuntu-gcc-quaternions
-            os: ubuntu-18.04
+            os: ubuntu-20.04
             compiler: gcc
             version: "9"
             flag: quaternions
 
           - name: ubuntu-gcc-tbb
-            os: ubuntu-18.04
+            os: ubuntu-20.04
             compiler: gcc
             version: "9"
             flag: tbb
 
           - name: ubuntu-cayleymap
-            os: ubuntu-18.04
+            os: ubuntu-20.04
             compiler: gcc
             version: "9"
             flag: cayley
 
           - name: ubuntu-system-libs
-            os: ubuntu-18.04
+            os: ubuntu-20.04
             compiler: gcc
             version: "9"
             flag: system-libs
@@ -74,9 +74,9 @@ jobs:
             gpg -a --export 15CF4D18AF4F7421 | sudo apt-key add -
             sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
           fi
-          sudo apt-get -y update
 
-          sudo apt-get -y install cmake build-essential pkg-config libpython-dev python-numpy libicu-dev
+          sudo apt-get -y update
+          sudo apt-get -y install cmake build-essential pkg-config libpython3-dev python3-numpy libicu-dev
 
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
             sudo apt-get install -y g++-${{ matrix.version }} g++-${{ matrix.version }}-multilib

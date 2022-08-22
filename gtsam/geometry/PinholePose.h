@@ -412,7 +412,7 @@ public:
   }
 
   /// for Canonical
-  static PinholePose identity() {
+  static PinholePose Identity() {
     return PinholePose(); // assumes that the default constructor is valid
   }
 

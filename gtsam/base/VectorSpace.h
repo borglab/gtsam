@@ -169,7 +169,7 @@ struct HasVectorSpacePrereqs {
   Vector v;
 
   BOOST_CONCEPT_USAGE(HasVectorSpacePrereqs) {
-    p = Class::identity();  // identity
+    p = Class::Identity();  // identity
     q = p + p;              // addition
     q = p - p;              // subtraction
     v = p.vector();         // conversion to vector
@@ -192,7 +192,7 @@ struct VectorSpaceTraits: VectorSpaceImpl<Class, Class::dimension> {
   /// @name Group
   /// @{
   typedef additive_group_tag group_flavor;
-  static Class Identity() { return Class::identity();}
+  static Class Identity() { return Class::Identity();}
   /// @}
 
   /// @name Manifold

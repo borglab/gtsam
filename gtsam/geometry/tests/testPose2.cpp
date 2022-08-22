@@ -902,7 +902,7 @@ TEST(Pose2 , TransformCovariance3) {
 
 /* ************************************************************************* */
 TEST(Pose2, Print) {
-  Pose2 pose(Rot2::identity(), Point2(1, 2));
+  Pose2 pose(Rot2::Identity(), Point2(1, 2));
 
   // Generate the expected output
   string s = "Planar Pose";

@@ -213,7 +213,7 @@ public:
   }
 
   /// for Canonical
-  static PinholeCamera identity() {
+  static PinholeCamera Identity() {
     return PinholeCamera(); // assumes that the default constructor is valid
   }
 
