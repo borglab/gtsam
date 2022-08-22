@@ -11,4 +11,7 @@
 
 @}
 
-*/ 
+\defgroup SLAM Useful SLAM components
+@{ @}
+
+*/

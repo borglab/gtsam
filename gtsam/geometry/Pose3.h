@@ -103,7 +103,7 @@ public:
   /// @{
 
   /// identity for group operation
-  static Pose3 identity() {
+  static Pose3 Identity() {
     return Pose3();
   }
 
@@ -378,6 +378,14 @@ public:
   static std::pair<size_t, size_t> rotationInterval() {
     return std::make_pair(0, 2);
   }
+
+    /**
+   * @brief Spherical Linear interpolation between *this and other
+   * @param s a value between 0 and 1.5
+   * @param other final point of interpolation geodesic on manifold
+   */
+  Pose3 slerp(double t, const Pose3& other, OptionalJacobian<6, 6> Hx = boost::none,
+                                             OptionalJacobian<6, 6> Hy = boost::none) const;
 
   /// Output stream operator
   GTSAM_EXPORT

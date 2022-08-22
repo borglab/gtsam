@@ -112,12 +112,15 @@ class TranslationRecovery {
    *
    * @param relativeTranslations unit translation directions between
    * translations to be estimated
+   * @param betweenTranslations relative translations (with scale) between 2
+   * points in world coordinate frame known a priori.
    * @param rng random number generator
    * @param intialValues (optional) initial values from a prior
    * @return Values
    */
   Values initializeRandomly(
       const std::vector<BinaryMeasurement<Unit3>> &relativeTranslations,
+      const std::vector<BinaryMeasurement<Point3>> &betweenTranslations,
       std::mt19937 *rng, const Values &initialValues = Values()) const;
 
   /**
@@ -125,11 +128,14 @@ class TranslationRecovery {
    *
    * @param relativeTranslations unit translation directions between
    * translations to be estimated
+   * @param betweenTranslations relative translations (with scale) between 2
+   * points in world coordinate frame known a priori.
    * @param initialValues (optional) initial values from a prior
    * @return Values
    */
   Values initializeRandomly(
       const std::vector<BinaryMeasurement<Unit3>> &relativeTranslations,
+      const std::vector<BinaryMeasurement<Point3>> &betweenTranslations,
       const Values &initialValues = Values()) const;
 
   /**
@@ -137,11 +143,15 @@ class TranslationRecovery {
    *
    * @param relativeTranslations the relative translations, in world coordinate
    * frames, vector of BinaryMeasurements of Unit3, where each key of a
-   * measurement is a point in 3D.
+   * measurement is a point in 3D. If a relative translation magnitude is zero,
+   * it is treated as a hard same-point constraint (the result of all nodes
+   * connected by a zero-magnitude edge will be the same).
    * @param scale scale for first relative translation which fixes gauge.
    * The scale is only used if betweenTranslations is empty.
    * @param betweenTranslations relative translations (with scale) between 2
-   * points in world coordinate frame known a priori.
+   * points in world coordinate frame known a priori. Unlike
+   * relativeTranslations, zero-magnitude betweenTranslations are not treated as
+   * hard constraints.
    * @param initialValues intial values for optimization. Initializes randomly
    * if not provided.
    * @return Values

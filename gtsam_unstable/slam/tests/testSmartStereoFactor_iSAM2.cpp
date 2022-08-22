@@ -198,10 +198,10 @@ TEST(testISAM2SmartFactor, Stereo_Batch) {
 
     // prior, for the first keyframe:
     if (kf_id == 0) {
-      batch_graph.addPrior(X(kf_id), Pose3::identity(), priorPoseNoise);
+      batch_graph.addPrior(X(kf_id), Pose3::Identity(), priorPoseNoise);
     }
 
-    batch_values.insert(X(kf_id), Pose3::identity());
+    batch_values.insert(X(kf_id), Pose3::Identity());
   }
 
   LevenbergMarquardtParams parameters;
@@ -267,7 +267,7 @@ TEST(testISAM2SmartFactor, Stereo_iSAM2) {
   // Storage of smart factors:
   std::map<lm_id_t, SmartStereoProjectionPoseFactor::shared_ptr> smartFactors;
 
-  Pose3 lastKeyframePose = Pose3::identity();
+  Pose3 lastKeyframePose = Pose3::Identity();
 
   // Run one timestep at once:
   for (const auto &entries : dataset) {
@@ -307,7 +307,7 @@ TEST(testISAM2SmartFactor, Stereo_iSAM2) {
 
     // prior, for the first keyframe:
     if (kf_id == 0) {
-      newFactors.addPrior(X(kf_id), Pose3::identity(), priorPoseNoise);
+      newFactors.addPrior(X(kf_id), Pose3::Identity(), priorPoseNoise);
     }
 
     // 2) Run iSAM2:

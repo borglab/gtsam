@@ -167,8 +167,9 @@ boost::shared_ptr<GaussianFactor> NoiseModelFactor::linearize(
     return GaussianFactor::shared_ptr(
         new JacobianFactor(terms, b,
             boost::static_pointer_cast<Constrained>(noiseModel_)->unit()));
-  else
+  else {
     return GaussianFactor::shared_ptr(new JacobianFactor(terms, b));
+  }
 }
 
 /* ************************************************************************* */
