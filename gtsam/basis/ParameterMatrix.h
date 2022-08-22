@@ -189,9 +189,9 @@ class ParameterMatrix {
    * NOTE: The size at compile time is unknown so this identity is zero
    * length and thus not valid.
    */
-  inline static ParameterMatrix identity() {
+  inline static ParameterMatrix Identity() {
     // throw std::runtime_error(
-    //     "ParameterMatrix::identity(): Don't use this function");
+    //     "ParameterMatrix::Identity(): Don't use this function");
     return ParameterMatrix(0);
   }
 

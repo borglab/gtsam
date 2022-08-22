@@ -15,9 +15,9 @@ const Key x1 = 1, x2 = 2;
 const double dt = 1.0;
 
 PoseRTV origin,
-        pose1(Point3(0.5, 0.0, 0.0), Rot3::identity(), Velocity3(1.0, 0.0, 0.0)),
+        pose1(Point3(0.5, 0.0, 0.0), Rot3(), Velocity3(1.0, 0.0, 0.0)),
         pose1a(Point3(0.5, 0.0, 0.0)),
-        pose2(Point3(1.5, 0.0, 0.0), Rot3::identity(), Velocity3(1.0, 0.0, 0.0));
+        pose2(Point3(1.5, 0.0, 0.0), Rot3(), Velocity3(1.0, 0.0, 0.0));
 
 /* ************************************************************************* */
 TEST( testVelocityConstraint, trapezoidal ) {
