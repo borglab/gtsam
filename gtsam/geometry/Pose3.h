@@ -103,7 +103,7 @@ public:
   /// @{
 
   /// identity for group operation
-  static Pose3 identity() {
+  static Pose3 Identity() {
     return Pose3();
   }
 
