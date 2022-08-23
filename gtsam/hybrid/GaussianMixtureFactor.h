@@ -22,7 +22,7 @@
 
 #include <gtsam/discrete/DecisionTree.h>
 #include <gtsam/discrete/DiscreteKey.h>
-#include <gtsam/hybrid/HybridFactor.h>
+#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/linear/GaussianFactor.h>
 
 namespace gtsam {

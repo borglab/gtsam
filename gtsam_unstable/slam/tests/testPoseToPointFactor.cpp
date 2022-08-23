@@ -16,7 +16,7 @@ using namespace gtsam::noiseModel;
 /* ************************************************************************* */
 // Verify zero error when there is no noise
 TEST(PoseToPointFactor, errorNoiseless_2D) {
-  Pose2 pose = Pose2::identity();
+  Pose2 pose = Pose2::Identity();
   Point2 point(1.0, 2.0);
   Point2 noise(0.0, 0.0);
   Point2 measured = point + noise;
@@ -33,7 +33,7 @@ TEST(PoseToPointFactor, errorNoiseless_2D) {
 /* ************************************************************************* */
 // Verify expected error in test scenario
 TEST(PoseToPointFactor, errorNoise_2D) {
-  Pose2 pose = Pose2::identity();
+  Pose2 pose = Pose2::Identity();
   Point2 point(1.0, 2.0);
   Point2 noise(-1.0, 0.5);
   Point2 measured = point + noise;
@@ -86,7 +86,7 @@ TEST(PoseToPointFactor, jacobian_2D) {
 /* ************************************************************************* */
 // Verify zero error when there is no noise
 TEST(PoseToPointFactor, errorNoiseless_3D) {
-  Pose3 pose = Pose3::identity();
+  Pose3 pose = Pose3::Identity();
   Point3 point(1.0, 2.0, 3.0);
   Point3 noise(0.0, 0.0, 0.0);
   Point3 measured = point + noise;
@@ -103,7 +103,7 @@ TEST(PoseToPointFactor, errorNoiseless_3D) {
 /* ************************************************************************* */
 // Verify expected error in test scenario
 TEST(PoseToPointFactor, errorNoise_3D) {
-  Pose3 pose = Pose3::identity();
+  Pose3 pose = Pose3::Identity();
   Point3 point(1.0, 2.0, 3.0);
   Point3 noise(-1.0, 0.5, 0.3);
   Point3 measured = point + noise;
