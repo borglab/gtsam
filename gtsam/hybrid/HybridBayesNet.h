@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/inference/BayesNet.h>
@@ -38,6 +39,10 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
 
   /** Construct empty bayes net */
   HybridBayesNet() = default;
+
+  /// Prune the Hybrid Bayes Net given the discrete decision tree.
+  HybridBayesNet prune(
+      const DecisionTreeFactor::shared_ptr &discreteFactor) const;
 
   /// Add HybridConditional to Bayes Net
   using Base::add;

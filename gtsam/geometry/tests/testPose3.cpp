@@ -1133,7 +1133,7 @@ Pose3 testing_interpolate(const Pose3& t1, const Pose3& t2, double gamma) { retu
 
 TEST(Pose3, interpolateJacobians) {
   {
-    Pose3 X = Pose3::identity();
+    Pose3 X = Pose3::Identity();
     Pose3 Y(Rot3::Rz(M_PI_2), Point3(1, 0, 0));
     double t = 0.5;
     Pose3 expectedPoseInterp(Rot3::Rz(M_PI_4), Point3(0.5, -0.207107, 0)); // note: different from test above: this is full Pose3 interpolation
@@ -1147,10 +1147,10 @@ TEST(Pose3, interpolateJacobians) {
     EXPECT(assert_equal(expectedJacobianY,actualJacobianY,1e-6));
   }
   {
-    Pose3 X = Pose3::identity();
-    Pose3 Y(Rot3::identity(), Point3(1, 0, 0));
+    Pose3 X = Pose3::Identity();
+    Pose3 Y(Rot3::Identity(), Point3(1, 0, 0));
     double t = 0.3;
-    Pose3 expectedPoseInterp(Rot3::identity(), Point3(0.3, 0, 0));
+    Pose3 expectedPoseInterp(Rot3::Identity(), Point3(0.3, 0, 0));
     Matrix actualJacobianX, actualJacobianY;
     EXPECT(assert_equal(expectedPoseInterp, interpolate(X, Y, t, actualJacobianX, actualJacobianY), 1e-5));
 
@@ -1161,7 +1161,7 @@ TEST(Pose3, interpolateJacobians) {
     EXPECT(assert_equal(expectedJacobianY,actualJacobianY,1e-6));
   }
   {
-    Pose3 X = Pose3::identity();
+    Pose3 X = Pose3::Identity();
     Pose3 Y(Rot3::Rz(M_PI_2), Point3(0, 0, 0));
     double t = 0.5;
     Pose3 expectedPoseInterp(Rot3::Rz(M_PI_4), Point3(0, 0, 0));
@@ -1204,7 +1204,7 @@ TEST(Pose3, Create) {
 
 /* ************************************************************************* */
 TEST(Pose3, Print) {
-  Pose3 pose(Rot3::identity(), Point3(1, 2, 3));
+  Pose3 pose(Rot3::Identity(), Point3(1, 2, 3));
 
   // Generate the expected output
   std::string expected = "R: [\n\t1, 0, 0;\n\t0, 1, 0;\n\t0, 0, 1\n]\nt: 1 2 3\n";

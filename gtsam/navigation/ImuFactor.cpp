@@ -59,7 +59,7 @@ void PreintegratedImuMeasurements::integrateMeasurement(
 
   // Update preintegrated measurements (also get Jacobian)
   Matrix9 A;  // overall Jacobian wrt preintegrated measurements (df/dx)
-  Matrix93 B, C;
+  Matrix93 B, C;  // Jacobian of state wrpt accel bias and omega bias respectively.
   PreintegrationType::update(measuredAcc, measuredOmega, dt, &A, &B, &C);
 
   // first order covariance propagation:
@@ -73,11 +73,13 @@ void PreintegratedImuMeasurements::integrateMeasurement(
   const Matrix3& iCov = p().integrationCovariance;
 
   // (1/dt) allows to pass from continuous time noise to discrete time noise
+  // Update the uncertainty on the state (matrix A in [4]).
   preintMeasCov_ = A * preintMeasCov_ * A.transpose();
+  // These 2 updates account for uncertainty on the IMU measurement (matrix B in [4]).
   preintMeasCov_.noalias() += B * (aCov / dt) * B.transpose();
   preintMeasCov_.noalias() += C * (wCov / dt) * C.transpose();
 
-  // NOTE(frank): (Gi*dt)*(C/dt)*(Gi'*dt), with Gi << Z_3x3, I_3x3, Z_3x3
+  // NOTE(frank): (Gi*dt)*(C/dt)*(Gi'*dt), with Gi << Z_3x3, I_3x3, Z_3x3 (9x3 matrix)
   preintMeasCov_.block<3, 3>(3, 3).noalias() += iCov * dt;
 }
 
