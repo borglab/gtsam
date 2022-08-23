@@ -188,7 +188,22 @@ TEST(HybridFactorGraph, PushBack) {
   ghfg = HybridGaussianFactorGraph();
   ghfg.push_back(dcFactor);
 
+  HybridGaussianFactorGraph hgfg2;
+  hgfg2.push_back(ghfg.begin(), ghfg.end());
+
   EXPECT_LONGS_EQUAL(ghfg.size(), 1);
+
+  HybridNonlinearFactorGraph hnfg;
+  NonlinearFactorGraph factors;
+  auto noise = noiseModel::Isotropic::Sigma(3, 1.0);
+  factors.emplace_shared<PriorFactor<Pose2>>(0, Pose2(0, 0, 0), noise);
+  factors.emplace_shared<PriorFactor<Pose2>>(1, Pose2(1, 0, 0), noise);
+  factors.emplace_shared<PriorFactor<Pose2>>(2, Pose2(2, 0, 0), noise);
+  // TODO(Varun) This does not currently work. It should work once HybridFactor
+  // becomes a base class of NonlinearFactor.
+  // hnfg.push_back(factors.begin(), factors.end());
+
+  // EXPECT_LONGS_EQUAL(3, hnfg.size());
 }
 
 /****************************************************************************
