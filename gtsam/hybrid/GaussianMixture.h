@@ -21,6 +21,7 @@
 
 #include <gtsam/discrete/DecisionTree-inl.h>
 #include <gtsam/discrete/DecisionTree.h>
+#include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/inference/Conditional.h>
@@ -30,11 +31,14 @@ namespace gtsam {
 
 /**
  * @brief A conditional of gaussian mixtures indexed by discrete variables, as
- * part of a Bayes Network.
+ * part of a Bayes Network. This is the result of the elimination of a
+ * continuous variable in a hybrid scheme, such that the remaining variables are
+ * discrete+continuous.
  *
- * Represents the conditional density P(X | M, Z) where X is a continuous random
- * variable, M is the selection of discrete variables corresponding to a subset
- * of the Gaussian variables and Z is parent of this node
+ * Represents the conditional density P(X | M, Z) where X is the set of
+ * continuous random variables, M is the selection of discrete variables
+ * corresponding to a subset of the Gaussian variables and Z is parent of this
+ * node .
  *
  * The probability P(x|y,z,...) is proportional to
  * \f$ \sum_i k_i \exp - \frac{1}{2} |R_i x - (d_i - S_i y - T_i z - ...)|^2 \f$
@@ -118,7 +122,7 @@ class GTSAM_EXPORT GaussianMixture
   /// Test equality with base HybridFactor
   bool equals(const HybridFactor &lf, double tol = 1e-9) const override;
 
-  /* print utility */
+  /// Print utility
   void print(
       const std::string &s = "GaussianMixture\n",
       const KeyFormatter &formatter = DefaultKeyFormatter) const override;
@@ -127,6 +131,15 @@ class GTSAM_EXPORT GaussianMixture
 
   /// Getter for the underlying Conditionals DecisionTree
   const Conditionals &conditionals();
+
+  /**
+   * @brief Prune the decision tree of Gaussian factors as per the discrete
+   * `decisionTree`.
+   *
+   * @param decisionTree A pruned decision tree of discrete keys where the
+   * leaves are probabilities.
+   */
+  void prune(const DecisionTreeFactor &decisionTree);
 
   /**
    * @brief Merge the Gaussian Factor Graphs in `this` and `sum` while

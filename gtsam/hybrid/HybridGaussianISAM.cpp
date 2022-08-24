@@ -41,6 +41,7 @@ HybridGaussianISAM::HybridGaussianISAM(const HybridBayesTree& bayesTree)
 void HybridGaussianISAM::updateInternal(
     const HybridGaussianFactorGraph& newFactors,
     HybridBayesTree::Cliques* orphans,
+    const boost::optional<Ordering>& ordering,
     const HybridBayesTree::Eliminate& function) {
   // Remove the contaminated part of the Bayes tree
   BayesNetType bn;
@@ -74,16 +75,21 @@ void HybridGaussianISAM::updateInternal(
   std::copy(allDiscrete.begin(), allDiscrete.end(),
             std::back_inserter(newKeysDiscreteLast));
 
-  // KeyVector new
-
   // Get an ordering where the new keys are eliminated last
   const VariableIndex index(factors);
-  const Ordering ordering = Ordering::ColamdConstrainedLast(
-      index, KeyVector(newKeysDiscreteLast.begin(), newKeysDiscreteLast.end()),
-      true);
+  Ordering elimination_ordering;
+  if (ordering) {
+    elimination_ordering = *ordering;
+  } else {
+    elimination_ordering = Ordering::ColamdConstrainedLast(
+        index,
+        KeyVector(newKeysDiscreteLast.begin(), newKeysDiscreteLast.end()),
+        true);
+  }
 
   // eliminate all factors (top, added, orphans) into a new Bayes tree
-  auto bayesTree = factors.eliminateMultifrontal(ordering, function, index);
+  HybridBayesTree::shared_ptr bayesTree =
+      factors.eliminateMultifrontal(elimination_ordering, function, index);
 
   // Re-add into Bayes tree data structures
   this->roots_.insert(this->roots_.end(), bayesTree->roots().begin(),
@@ -93,9 +99,61 @@ void HybridGaussianISAM::updateInternal(
 
 /* ************************************************************************* */
 void HybridGaussianISAM::update(const HybridGaussianFactorGraph& newFactors,
+                                const boost::optional<Ordering>& ordering,
                                 const HybridBayesTree::Eliminate& function) {
   Cliques orphans;
-  this->updateInternal(newFactors, &orphans, function);
+  this->updateInternal(newFactors, &orphans, ordering, function);
+}
+
+/* ************************************************************************* */
+/**
+ * @brief Check if `b` is a subset of `a`.
+ * Non-const since they need to be sorted.
+ *
+ * @param a KeyVector
+ * @param b KeyVector
+ * @return True if the keys of b is a subset of a, else false.
+ */
+bool IsSubset(KeyVector a, KeyVector b) {
+  std::sort(a.begin(), a.end());
+  std::sort(b.begin(), b.end());
+  return std::includes(a.begin(), a.end(), b.begin(), b.end());
+}
+
+/* ************************************************************************* */
+void HybridGaussianISAM::prune(const Key& root, const size_t maxNrLeaves) {
+  auto decisionTree = boost::dynamic_pointer_cast<DecisionTreeFactor>(
+      this->clique(root)->conditional()->inner());
+  DecisionTreeFactor prunedDiscreteFactor = decisionTree->prune(maxNrLeaves);
+  decisionTree->root_ = prunedDiscreteFactor.root_;
+
+  std::vector<gtsam::Key> prunedKeys;
+  for (auto&& clique : nodes()) {
+    // The cliques can be repeated for each frontal so we record it in
+    // prunedKeys and check if we have already pruned a particular clique.
+    if (std::find(prunedKeys.begin(), prunedKeys.end(), clique.first) !=
+        prunedKeys.end()) {
+      continue;
+    }
+
+    // Add all the keys of the current clique to be pruned to prunedKeys
+    for (auto&& key : clique.second->conditional()->frontals()) {
+      prunedKeys.push_back(key);
+    }
+
+    // Convert parents() to a KeyVector for comparison
+    KeyVector parents;
+    for (auto&& parent : clique.second->conditional()->parents()) {
+      parents.push_back(parent);
+    }
+
+    if (IsSubset(parents, decisionTree->keys())) {
+      auto gaussianMixture = boost::dynamic_pointer_cast<GaussianMixture>(
+          clique.second->conditional()->inner());
+
+      gaussianMixture->prune(prunedDiscreteFactor);
+    }
+  }
 }
 
 }  // namespace gtsam

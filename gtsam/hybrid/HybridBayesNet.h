@@ -17,8 +17,11 @@
 
 #pragma once
 
+#include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/hybrid/HybridConditional.h>
+#include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/inference/BayesNet.h>
+#include <gtsam/linear/GaussianBayesNet.h>
 
 namespace gtsam {
 
@@ -36,6 +39,39 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
 
   /** Construct empty bayes net */
   HybridBayesNet() = default;
+
+  /// Prune the Hybrid Bayes Net given the discrete decision tree.
+  HybridBayesNet prune(
+      const DecisionTreeFactor::shared_ptr &discreteFactor) const;
+
+  /// Add HybridConditional to Bayes Net
+  using Base::add;
+
+  /// Add a discrete conditional to the Bayes Net.
+  void add(const DiscreteKey &key, const std::string &table) {
+    push_back(
+        HybridConditional(boost::make_shared<DiscreteConditional>(key, table)));
+  }
+
+  /// Get a specific Gaussian mixture by index `i`.
+  GaussianMixture::shared_ptr atGaussian(size_t i) const;
+
+  /// Get a specific discrete conditional by index `i`.
+  DiscreteConditional::shared_ptr atDiscrete(size_t i) const;
+
+  /**
+   * @brief Get the Gaussian Bayes Net which corresponds to a specific discrete
+   * value assignment.
+   *
+   * @param assignment The discrete value assignment for the discrete keys.
+   * @return GaussianBayesNet
+   */
+  GaussianBayesNet choose(const DiscreteValues &assignment) const;
+
+  /// Solve the HybridBayesNet by back-substitution.
+  /// TODO(Shangjie) do we need to create a HybridGaussianBayesNet class, and
+  /// put this method there?
+  HybridValues optimize() const;
 };
 
 }  // namespace gtsam
