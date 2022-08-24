@@ -76,7 +76,10 @@ class GTSAM_EXPORT HybridBayesTree : public BayesTree<HybridBayesTreeClique> {
 /**
  * @brief Class for Hybrid Bayes tree orphan subtrees.
  *
- * This does special stuff for the hybrid case
+ * This object stores parent keys in our base type factor so that
+ * eliminating those parent keys will pull this subtree into the
+ * elimination.
+ * This does special stuff for the hybrid case.
  *
  * @tparam CLIQUE
  */

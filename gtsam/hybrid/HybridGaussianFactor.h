@@ -37,6 +37,8 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
   using This = HybridGaussianFactor;
   using shared_ptr = boost::shared_ptr<This>;
 
+  HybridGaussianFactor() = default;
+
   // Explicit conversion from a shared ptr of GF
   explicit HybridGaussianFactor(GaussianFactor::shared_ptr other);
 
@@ -52,7 +54,7 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
 
   /// GTSAM print utility.
   void print(
-      const std::string &s = "HybridFactor\n",
+      const std::string &s = "HybridGaussianFactor\n",
       const KeyFormatter &formatter = DefaultKeyFormatter) const override;
 
   /// @}
