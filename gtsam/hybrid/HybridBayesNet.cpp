@@ -15,8 +15,9 @@
  * @date   January 2022
  */
 
+#include <gtsam/discrete/DiscreteBayesNet.h>
+#include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
-#include <gtsam/hybrid/HybridLookupDAG.h>
 #include <gtsam/hybrid/HybridValues.h>
 
 namespace gtsam {
@@ -139,8 +140,19 @@ GaussianBayesNet HybridBayesNet::choose(
 
 /* *******************************************************************************/
 HybridValues HybridBayesNet::optimize() const {
-  auto dag = HybridLookupDAG::FromBayesNet(*this);
-  return dag.argmax();
+  // Solve for the MPE
+  DiscreteBayesNet discrete_bn;
+  for (auto &conditional : factors_) {
+    if (conditional->isDiscrete()) {
+      discrete_bn.push_back(conditional->asDiscreteConditional());
+    }
+  }
+
+  DiscreteValues mpe = DiscreteFactorGraph(discrete_bn).optimize();
+
+  // Given the MPE, compute the optimal continuous values.
+  GaussianBayesNet gbn = this->choose(mpe);
+  return HybridValues(mpe, gbn.optimize());
 }
 
 /* *******************************************************************************/
