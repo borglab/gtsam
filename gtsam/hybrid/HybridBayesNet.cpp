@@ -125,8 +125,14 @@ GaussianBayesNet HybridBayesNet::choose(
     const DiscreteValues &assignment) const {
   GaussianBayesNet gbn;
   for (size_t idx = 0; idx < size(); idx++) {
-    GaussianMixture gm = *this->atGaussian(idx);
-    gbn.push_back(gm(assignment));
+    try {
+      GaussianMixture gm = *this->atGaussian(idx);
+      gbn.push_back(gm(assignment));
+
+    } catch (std::exception &exc) {
+      // if factor at `idx` is discrete-only, just continue.
+      continue;
+    }
   }
   return gbn;
 }
