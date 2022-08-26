@@ -19,6 +19,7 @@
  */
 
 #include <gtsam/hybrid/HybridBayesNet.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 #include "Switching.h"
 
@@ -87,7 +88,7 @@ TEST(HybridBayesNet, Choose) {
 
 /* ****************************************************************************/
 // Test bayes net optimize
-TEST(HybridBayesNet, Optimize) {
+TEST(HybridBayesNet, OptimizeAssignment) {
   Switching s(4);
 
   Ordering ordering;
@@ -117,6 +118,42 @@ TEST(HybridBayesNet, Optimize) {
   expected_delta.insert(make_pair(X(4), -Vector1::Ones()));
 
   EXPECT(assert_equal(expected_delta, delta));
+}
+
+/* ****************************************************************************/
+// Test bayes net optimize
+TEST(HybridBayesNet, Optimize) {
+  Switching s(4);
+
+  Ordering ordering;
+  for (auto&& kvp : s.linearizationPoint) {
+    ordering += kvp.key;
+  }
+
+  Ordering hybridOrdering = s.linearizedFactorGraph.getHybridOrdering();
+  HybridBayesNet::shared_ptr hybridBayesNet =
+      s.linearizedFactorGraph.eliminateSequential(hybridOrdering);
+
+  HybridValues delta = hybridBayesNet->optimize();
+
+  delta.print();
+  VectorValues correct;
+  correct.insert(X(1), 0 * Vector1::Ones());
+  correct.insert(X(2), 1 * Vector1::Ones());
+  correct.insert(X(3), 2 * Vector1::Ones());
+  correct.insert(X(4), 3 * Vector1::Ones());
+
+  DiscreteValues assignment111;
+  assignment111[M(1)] = 1;
+  assignment111[M(2)] = 1;
+  assignment111[M(3)] = 1;
+  std::cout << hybridBayesNet->choose(assignment111).error(correct) << std::endl;
+
+  DiscreteValues assignment101;
+  assignment101[M(1)] = 1;
+  assignment101[M(2)] = 0;
+  assignment101[M(3)] = 1;
+  std::cout << hybridBayesNet->choose(assignment101).error(correct) << std::endl;
 }
 
 /* ************************************************************************* */
