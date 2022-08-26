@@ -85,6 +85,40 @@ TEST(HybridBayesNet, Choose) {
                       *gbn.at(3)));
 }
 
+/* ****************************************************************************/
+// Test bayes net optimize
+TEST(HybridBayesNet, Optimize) {
+  Switching s(4);
+
+  Ordering ordering;
+  for (auto&& kvp : s.linearizationPoint) {
+    ordering += kvp.key;
+  }
+
+  HybridBayesNet::shared_ptr hybridBayesNet;
+  HybridGaussianFactorGraph::shared_ptr remainingFactorGraph;
+  std::tie(hybridBayesNet, remainingFactorGraph) =
+      s.linearizedFactorGraph.eliminatePartialSequential(ordering);
+
+  DiscreteValues assignment;
+  assignment[M(1)] = 1;
+  assignment[M(2)] = 1;
+  assignment[M(3)] = 1;
+
+  VectorValues delta = hybridBayesNet->optimize(assignment);
+
+  // The linearization point has the same value as the key index,
+  // e.g. X(1) = 1, X(2) = 2,
+  // but the factors specify X(k) = k-1, so delta should be -1.
+  VectorValues expected_delta;
+  expected_delta.insert(make_pair(X(1), -Vector1::Ones()));
+  expected_delta.insert(make_pair(X(2), -Vector1::Ones()));
+  expected_delta.insert(make_pair(X(3), -Vector1::Ones()));
+  expected_delta.insert(make_pair(X(4), -Vector1::Ones()));
+
+  EXPECT(assert_equal(expected_delta, delta));
+}
+
 /* ************************************************************************* */
 int main() {
   TestResult tr;
