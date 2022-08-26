@@ -79,23 +79,10 @@ TEST(HybridBayesTree, Optimize) {
   std::tie(hybridBayesNet, remainingFactorGraph) =
       s.linearizedFactorGraph.eliminatePartialSequential(ordering);
 
-  hybridBayesNet->print();
   GaussianBayesNet gbn = hybridBayesNet->choose(assignment);
+  VectorValues expected = gbn.optimize();
 
-  // EXPECT_LONGS_EQUAL(4, gbn.size());
-
-  // EXPECT(assert_equal(*(*boost::dynamic_pointer_cast<GaussianMixture>(
-  //                         hybridBayesNet->atGaussian(0)))(assignment),
-  //                     *gbn.at(0)));
-  // EXPECT(assert_equal(*(*boost::dynamic_pointer_cast<GaussianMixture>(
-  //                         hybridBayesNet->atGaussian(1)))(assignment),
-  //                     *gbn.at(1)));
-  // EXPECT(assert_equal(*(*boost::dynamic_pointer_cast<GaussianMixture>(
-  //                         hybridBayesNet->atGaussian(2)))(assignment),
-  //                     *gbn.at(2)));
-  // EXPECT(assert_equal(*(*boost::dynamic_pointer_cast<GaussianMixture>(
-  //                         hybridBayesNet->atGaussian(3)))(assignment),
-  //                     *gbn.at(3)));
+  EXPECT(assert_equal(expected, delta));
 }
 
 /* ************************************************************************* */
