@@ -112,6 +112,9 @@ class GTSAM_EXPORT HybridNonlinearFactorGraph : public HybridFactorGraph {
   /// Add a nonlinear factor as a shared ptr.
   void add(boost::shared_ptr<NonlinearFactor> factor);
 
+  /// Add a discrete factor as a shared ptr.
+  void add(boost::shared_ptr<DiscreteFactor> factor);
+
   /// Print the factor graph.
   void print(
       const std::string& s = "HybridNonlinearFactorGraph",
