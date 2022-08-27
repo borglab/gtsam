@@ -125,11 +125,6 @@ TEST(HybridBayesNet, OptimizeAssignment) {
 TEST(HybridBayesNet, Optimize) {
   Switching s(4);
 
-  Ordering ordering;
-  for (auto&& kvp : s.linearizationPoint) {
-    ordering += kvp.key;
-  }
-
   Ordering hybridOrdering = s.linearizedFactorGraph.getHybridOrdering();
   HybridBayesNet::shared_ptr hybridBayesNet =
       s.linearizedFactorGraph.eliminateSequential(hybridOrdering);
