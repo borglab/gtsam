@@ -27,6 +27,12 @@ void HybridNonlinearFactorGraph::add(
 }
 
 /* ************************************************************************* */
+void HybridNonlinearFactorGraph::add(
+    boost::shared_ptr<DiscreteFactor> factor) {
+  FactorGraph::add(boost::make_shared<HybridDiscreteFactor>(factor));
+}
+
+/* ************************************************************************* */
 void HybridNonlinearFactorGraph::print(const std::string& s,
                                        const KeyFormatter& keyFormatter) const {
   // Base::print(str, keyFormatter);

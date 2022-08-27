@@ -39,7 +39,17 @@ virtual class HybridConditional {
   bool equals(const gtsam::HybridConditional& other, double tol = 1e-9) const;
   size_t nrFrontals() const;
   size_t nrParents() const;
-  Factor* inner();
+  gtsam::Factor* inner();
+};
+
+#include <gtsam/hybrid/HybridDiscreteFactor.h>
+virtual class HybridDiscreteFactor {
+  HybridDiscreteFactor(gtsam::DecisionTreeFactor dtf);
+  void print(string s = "HybridDiscreteFactor\n",
+             const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
+  bool equals(const gtsam::HybridDiscreteFactor& other, double tol = 1e-9) const;
+  gtsam::Factor* inner();
 };
 
 #include <gtsam/hybrid/GaussianMixtureFactor.h>
@@ -132,6 +142,7 @@ class HybridGaussianFactorGraph {
   void add(gtsam::JacobianFactor* factor);
 
   bool empty() const;
+  void remove(size_t i);
   size_t size() const;
   gtsam::KeySet keys() const;
   const gtsam::HybridFactor* at(size_t i) const;
@@ -157,6 +168,52 @@ class HybridGaussianFactorGraph {
   string dot(
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
       const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
+};
+
+#include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
+class HybridNonlinearFactorGraph {
+  HybridNonlinearFactorGraph();
+  HybridNonlinearFactorGraph(const gtsam::HybridNonlinearFactorGraph& graph);
+  void push_back(gtsam::HybridFactor* factor);
+  void push_back(gtsam::NonlinearFactor* factor);
+  void push_back(gtsam::HybridDiscreteFactor* factor);
+  void add(gtsam::NonlinearFactor* factor);
+  void add(gtsam::DiscreteFactor* factor);
+  gtsam::HybridGaussianFactorGraph linearize(const gtsam::Values& continuousValues) const;
+
+  bool empty() const;
+  void remove(size_t i);
+  size_t size() const;
+  gtsam::KeySet keys() const;
+  const gtsam::HybridFactor* at(size_t i) const;
+
+  void print(string s = "HybridNonlinearFactorGraph\n",
+       const gtsam::KeyFormatter& keyFormatter =
+       gtsam::DefaultKeyFormatter) const;
+};
+
+#include <gtsam/hybrid/MixtureFactor.h>
+class MixtureFactor : gtsam::HybridFactor {
+  MixtureFactor(const gtsam::KeyVector& keys, const gtsam::DiscreteKeys& discreteKeys,
+                const gtsam::DecisionTree<gtsam::Key, gtsam::NonlinearFactor*>& factors, bool normalized = false);
+
+  template <FACTOR = {gtsam::NonlinearFactor}>
+  MixtureFactor(const gtsam::KeyVector& keys, const gtsam::DiscreteKeys& discreteKeys,
+                const std::vector<FACTOR*>& factors,
+                bool normalized = false);
+
+  double error(const gtsam::Values& continuousVals,
+               const gtsam::DiscreteValues& discreteVals) const;
+
+  double nonlinearFactorLogNormalizingConstant(const gtsam::NonlinearFactor* factor,
+                                               const gtsam::Values& values) const;
+
+  GaussianMixtureFactor* linearize(
+      const gtsam::Values& continuousVals) const;
+
+  void print(string s = "MixtureFactor\n",
+             const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
 };
 
 }  // namespace gtsam
