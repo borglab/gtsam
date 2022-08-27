@@ -6,8 +6,8 @@ namespace gtsam {
 
 #include <gtsam/hybrid/HybridValues.h>
 class HybridValues {
-  gtsam::DiscreteValues discrete;
-  gtsam::VectorValues continuous;
+  gtsam::DiscreteValues discrete() const;
+  gtsam::VectorValues continuous() const;
   HybridValues();
   HybridValues(const gtsam::DiscreteValues &dv, const gtsam::VectorValues &cv);
   void print(string s = "HybridValues",
