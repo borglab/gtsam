@@ -68,6 +68,13 @@ VectorValues HybridBayesTree::optimize(const DiscreteValues& assignment) const {
       }
     }
   }
+  // If TBB is enabled, the bayes net order gets reversed,
+  // so we pre-reverse it
+#ifdef GTSAM_USE_TBB
+  auto reversed = boost::adaptors::reverse(gbn);
+  gbn = GaussianBayesNet(reversed.begin(), reversed.end());
+#endif
+
   // Return the optimized bayes net.
   return gbn.optimize();
 }
