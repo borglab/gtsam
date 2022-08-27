@@ -51,6 +51,11 @@ TEST(HybridBayesTree, OptimizeAssignment) {
     graph1.push_back(s.linearizedFactorGraph.at(i));
   }
 
+  // Add the discrete factors
+  for (size_t i = 7; i <= 9; i++) {
+    graph1.push_back(s.linearizedFactorGraph.at(i));
+  }
+
   isam.update(graph1);
 
   DiscreteValues assignment;
