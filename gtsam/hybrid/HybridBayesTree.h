@@ -71,6 +71,15 @@ class GTSAM_EXPORT HybridBayesTree : public BayesTree<HybridBayesTreeClique> {
   bool equals(const This& other, double tol = 1e-9) const;
 
   /**
+   * @brief Optimize the hybrid Bayes tree by computing the MPE for the current
+   * set of discrete variables and using it to compute the best continuous
+   * update delta.
+   *
+   * @return HybridValues
+   */
+  HybridValues optimize() const;
+
+  /**
    * @brief Recursively optimize the BayesTree to produce a vector solution.
    *
    * @param assignment The discrete values assignment to select the Gaussian
