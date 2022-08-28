@@ -70,6 +70,14 @@ HybridValues HybridBayesTree::optimize() const {
   DiscreteValues mpe = DiscreteFactorGraph(dbn).optimize();
   // Given the MPE, compute the optimal continuous values.
   GaussianBayesNet gbn = hbn.choose(mpe);
+
+  // If TBB is enabled, the bayes net order gets reversed,
+  // so we pre-reverse it
+#ifdef GTSAM_USE_TBB
+  auto reversed = boost::adaptors::reverse(gbn);
+  gbn = GaussianBayesNet(reversed.begin(), reversed.end());
+#endif
+
   return HybridValues(mpe, gbn.optimize());
 }
 
@@ -104,6 +112,7 @@ VectorValues HybridBayesTree::optimize(const DiscreteValues& assignment) const {
       }
     }
   }
+
   // If TBB is enabled, the bayes net order gets reversed,
   // so we pre-reverse it
 #ifdef GTSAM_USE_TBB
