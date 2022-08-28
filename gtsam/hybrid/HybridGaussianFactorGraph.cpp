@@ -98,6 +98,12 @@ GaussianMixtureFactor::Sum sumFrontals(
     } else if (f->isContinuous()) {
       deferredFactors.push_back(
           boost::dynamic_pointer_cast<HybridGaussianFactor>(f)->inner());
+
+    } else if (f->isDiscrete()) {
+      // Don't do anything for discrete-only factors
+      // since we want to eliminate continuous values only.
+      continue;
+
     } else {
       // We need to handle the case where the object is actually an
       // BayesTreeOrphanWrapper!
@@ -106,8 +112,8 @@ GaussianMixtureFactor::Sum sumFrontals(
       if (!orphan) {
         auto &fr = *f;
         throw std::invalid_argument(
-            std::string("factor is discrete in continuous elimination") +
-            typeid(fr).name());
+            std::string("factor is discrete in continuous elimination ") +
+            demangle(typeid(fr).name()));
       }
     }
   }
@@ -158,7 +164,7 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
     }
   }
 
-  auto result = EliminateDiscrete(dfg, frontalKeys);
+  auto result = EliminateForMPE(dfg, frontalKeys);
 
   return {boost::make_shared<HybridConditional>(result.first),
           boost::make_shared<HybridDiscreteFactor>(result.second)};
@@ -178,6 +184,19 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
   // sum out frontals, this is the factor on the separator
   GaussianMixtureFactor::Sum sum = sumFrontals(factors);
 
+  // If a tree leaf contains nullptr,
+  // convert that leaf to an empty GaussianFactorGraph.
+  // Needed since the DecisionTree will otherwise create
+  // a GFG with a single (null) factor.
+  auto emptyGaussian = [](const GaussianFactorGraph &gfg) {
+    bool hasNull =
+        std::any_of(gfg.begin(), gfg.end(),
+                    [](const GaussianFactor::shared_ptr &ptr) { return !ptr; });
+
+    return hasNull ? GaussianFactorGraph() : gfg;
+  };
+  sum = GaussianMixtureFactor::Sum(sum, emptyGaussian);
+
   using EliminationPair = GaussianFactorGraph::EliminationResult;
 
   KeyVector keysOfEliminated;  // Not the ordering
@@ -189,7 +208,10 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
     if (graph.empty()) {
       return {nullptr, nullptr};
     }
-    auto result = EliminatePreferCholesky(graph, frontalKeys);
+    std::pair<boost::shared_ptr<GaussianConditional>,
+              boost::shared_ptr<GaussianFactor>>
+        result = EliminatePreferCholesky(graph, frontalKeys);
+
     if (keysOfEliminated.empty()) {
       keysOfEliminated =
           result.first->keys();  // Initialize the keysOfEliminated to be the
@@ -229,14 +251,27 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
             boost::make_shared<HybridDiscreteFactor>(discreteFactor)};
 
   } else {
-    // Create a resulting DCGaussianMixture on the separator.
+    // Create a resulting GaussianMixtureFactor on the separator.
     auto factor = boost::make_shared<GaussianMixtureFactor>(
         KeyVector(continuousSeparator.begin(), continuousSeparator.end()),
         discreteSeparator, separatorFactors);
     return {boost::make_shared<HybridConditional>(conditional), factor};
   }
 }
-/* ************************************************************************ */
+/* ************************************************************************
+ * Function to eliminate variables **under the following assumptions**:
+ * 1. When the ordering is fully continuous, and the graph only contains
+ * continuous and hybrid factors
+ * 2. When the ordering is fully discrete, and the graph only contains discrete
+ * factors
+ *
+ * Any usage outside of this is considered incorrect.
+ *
+ * \warning This function is not meant to be used with arbitrary hybrid factor
+ * graphs. For example, if there exists continuous parents, and one tries to
+ * eliminate a discrete variable (as specified in the ordering), the result will
+ * be INCORRECT and there will be NO error raised.
+ */
 std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>  //
 EliminateHybrid(const HybridGaussianFactorGraph &factors,
                 const Ordering &frontalKeys) {
