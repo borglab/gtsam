@@ -131,7 +131,9 @@ GaussianBayesNet HybridBayesNet::choose(
       gbn.push_back(gm(assignment));
 
     } catch (std::exception &exc) {
-      // if factor at `idx` is discrete-only, just continue.
+      // factor at `idx` is discrete-only, so we simply continue.
+      assert(factors_.at(idx)->discreteKeys().size() ==
+             factors_.at(idx)->keys().size());
       continue;
     }
   }
