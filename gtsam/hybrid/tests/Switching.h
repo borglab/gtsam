@@ -145,7 +145,7 @@ struct Switching {
     // Add "motion models".
     for (size_t k = 1; k < K; k++) {
       KeyVector keys = {X(k), X(k + 1)};
-      auto motion_models = motionModels(k);
+      auto motion_models = motionModels(k, between_sigma);
       std::vector<NonlinearFactor::shared_ptr> components;
       for (auto &&f : motion_models) {
         components.push_back(boost::dynamic_pointer_cast<NonlinearFactor>(f));
@@ -155,7 +155,7 @@ struct Switching {
     }
 
     // Add measurement factors
-    auto measurement_noise = noiseModel::Isotropic::Sigma(1, 0.1);
+    auto measurement_noise = noiseModel::Isotropic::Sigma(1, prior_sigma);
     for (size_t k = 2; k <= K; k++) {
       nonlinearFactorGraph.emplace_nonlinear<PriorFactor<double>>(
           X(k), 1.0 * (k - 1), measurement_noise);

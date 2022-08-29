@@ -72,6 +72,15 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   /// TODO(Shangjie) do we need to create a HybridGaussianBayesNet class, and
   /// put this method there?
   HybridValues optimize() const;
+
+  /**
+   * @brief Given the discrete assignment, return the optimized estimate for the
+   * selected Gaussian BayesNet.
+   *
+   * @param assignment An assignment of discrete values.
+   * @return Values
+   */
+  VectorValues optimize(const DiscreteValues &assignment) const;
 };
 
 }  // namespace gtsam

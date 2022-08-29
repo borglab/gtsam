@@ -160,6 +160,15 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
       Base::push_back(sharedFactor);
     }
   }
+
+  /**
+   * @brief 
+   * 
+   * @param orderingType 
+   * @return const Ordering 
+   */
+  const Ordering getHybridOrdering(
+      OptionalOrderingType orderingType = boost::none) const;
 };
 
 }  // namespace gtsam

@@ -69,7 +69,7 @@ class GTSAM_EXPORT HybridConditional
       BaseConditional;  ///< Typedef to our conditional base class
 
  protected:
-  // Type-erased pointer to the inner type
+  /// Type-erased pointer to the inner type
   boost::shared_ptr<Factor> inner_;
 
  public:
@@ -127,8 +127,7 @@ class GTSAM_EXPORT HybridConditional
    * @param gaussianMixture Gaussian Mixture Conditional used to create the
    * HybridConditional.
    */
-  HybridConditional(
-      boost::shared_ptr<GaussianMixture> gaussianMixture);
+  HybridConditional(boost::shared_ptr<GaussianMixture> gaussianMixture);
 
   /**
    * @brief Return HybridConditional as a GaussianMixture
@@ -168,10 +167,10 @@ class GTSAM_EXPORT HybridConditional
   /// Get the type-erased pointer to the inner type
   boost::shared_ptr<Factor> inner() { return inner_; }
 
-};  // DiscreteConditional
+};  // HybridConditional
 
 // traits
 template <>
-struct traits<HybridConditional> : public Testable<DiscreteConditional> {};
+struct traits<HybridConditional> : public Testable<HybridConditional> {};
 
 }  // namespace gtsam

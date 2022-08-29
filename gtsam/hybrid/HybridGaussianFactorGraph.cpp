@@ -135,9 +135,9 @@ continuousElimination(const HybridGaussianFactorGraph &factors,
   for (auto &fp : factors) {
     if (auto ptr = boost::dynamic_pointer_cast<HybridGaussianFactor>(fp)) {
       gfg.push_back(ptr->inner());
-    } else if (auto p =
-                   boost::static_pointer_cast<HybridConditional>(fp)->inner()) {
-      gfg.push_back(boost::static_pointer_cast<GaussianConditional>(p));
+    } else if (auto ptr = boost::static_pointer_cast<HybridConditional>(fp)) {
+      gfg.push_back(
+          boost::static_pointer_cast<GaussianConditional>(ptr->inner()));
     } else {
       // It is an orphan wrapped conditional
     }
@@ -399,6 +399,22 @@ void HybridGaussianFactorGraph::add(DecisionTreeFactor &&factor) {
 /* ************************************************************************ */
 void HybridGaussianFactorGraph::add(DecisionTreeFactor::shared_ptr factor) {
   FactorGraph::add(boost::make_shared<HybridDiscreteFactor>(factor));
+}
+
+/* ************************************************************************ */
+const Ordering HybridGaussianFactorGraph::getHybridOrdering(
+    OptionalOrderingType orderingType) const {
+  KeySet discrete_keys;
+  for (auto &factor : factors_) {
+    for (const DiscreteKey &k : factor->discreteKeys()) {
+      discrete_keys.insert(k.first);
+    }
+  }
+
+  const VariableIndex index(factors_);
+  Ordering ordering = Ordering::ColamdConstrainedLast(
+      index, KeyVector(discrete_keys.begin(), discrete_keys.end()), true);
+  return ordering;
 }
 
 }  // namespace gtsam
