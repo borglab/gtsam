@@ -16,8 +16,8 @@
  */
 
 #include <gtsam/hybrid/HybridBayesNet.h>
-#include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/hybrid/HybridLookupDAG.h>
+#include <gtsam/hybrid/HybridValues.h>
 
 namespace gtsam {
 
@@ -112,13 +112,12 @@ HybridBayesNet HybridBayesNet::prune(
 
 /* ************************************************************************* */
 GaussianMixture::shared_ptr HybridBayesNet::atGaussian(size_t i) const {
-  return boost::dynamic_pointer_cast<GaussianMixture>(factors_.at(i)->inner());
+  return factors_.at(i)->asMixture();
 }
 
 /* ************************************************************************* */
 DiscreteConditional::shared_ptr HybridBayesNet::atDiscrete(size_t i) const {
-  return boost::dynamic_pointer_cast<DiscreteConditional>(
-      factors_.at(i)->inner());
+  return factors_.at(i)->asDiscreteConditional();
 }
 
 /* ************************************************************************* */
@@ -126,8 +125,14 @@ GaussianBayesNet HybridBayesNet::choose(
     const DiscreteValues &assignment) const {
   GaussianBayesNet gbn;
   for (size_t idx = 0; idx < size(); idx++) {
-    GaussianMixture gm = *this->atGaussian(idx);
-    gbn.push_back(gm(assignment));
+    try {
+      GaussianMixture gm = *this->atGaussian(idx);
+      gbn.push_back(gm(assignment));
+
+    } catch (std::exception &exc) {
+      // if factor at `idx` is discrete-only, just continue.
+      continue;
+    }
   }
   return gbn;
 }
@@ -136,6 +141,12 @@ GaussianBayesNet HybridBayesNet::choose(
 HybridValues HybridBayesNet::optimize() const {
   auto dag = HybridLookupDAG::FromBayesNet(*this);
   return dag.argmax();
+}
+
+/* *******************************************************************************/
+VectorValues HybridBayesNet::optimize(const DiscreteValues &assignment) const {
+  GaussianBayesNet gbn = this->choose(assignment);
+  return gbn.optimize();
 }
 
 }  // namespace gtsam

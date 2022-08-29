@@ -70,6 +70,15 @@ class GTSAM_EXPORT HybridBayesTree : public BayesTree<HybridBayesTreeClique> {
   /** Check equality */
   bool equals(const This& other, double tol = 1e-9) const;
 
+  /**
+   * @brief Recursively optimize the BayesTree to produce a vector solution.
+   *
+   * @param assignment The discrete values assignment to select the Gaussian
+   * mixtures.
+   * @return VectorValues
+   */
+  VectorValues optimize(const DiscreteValues& assignment) const;
+
   /// @}
 };
 
