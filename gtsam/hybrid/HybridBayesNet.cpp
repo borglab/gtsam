@@ -112,8 +112,13 @@ HybridBayesNet HybridBayesNet::prune(
 }
 
 /* ************************************************************************* */
-GaussianMixture::shared_ptr HybridBayesNet::atGaussian(size_t i) const {
+GaussianMixture::shared_ptr HybridBayesNet::atMixture(size_t i) const {
   return factors_.at(i)->asMixture();
+}
+
+/* ************************************************************************* */
+GaussianConditional::shared_ptr HybridBayesNet::atGaussian(size_t i) const {
+  return factors_.at(i)->asGaussian();
 }
 
 /* ************************************************************************* */
@@ -126,17 +131,22 @@ GaussianBayesNet HybridBayesNet::choose(
     const DiscreteValues &assignment) const {
   GaussianBayesNet gbn;
   for (size_t idx = 0; idx < size(); idx++) {
-    try {
-      GaussianMixture gm = *this->atGaussian(idx);
+    if (factors_.at(idx)->isHybrid()) {
+      // If factor is hybrid, select based on assignment.
+      GaussianMixture gm = *this->atMixture(idx);
       gbn.push_back(gm(assignment));
 
-    } catch (std::exception &exc) {
-      // factor at `idx` is discrete-only, so we simply continue.
-      assert(factors_.at(idx)->discreteKeys().size() ==
-             factors_.at(idx)->keys().size());
+    } else if (factors_.at(idx)->isContinuous()) {
+      // If continuous only, add gaussian conditional.
+      factors_.at(idx)->print();
+      gbn.push_back((this->atGaussian(idx)));
+
+    } else if (factors_.at(idx)->isDiscrete()) {
+      // If factor at `idx` is discrete-only, we simply continue.
       continue;
     }
   }
+
   return gbn;
 }
 
