@@ -73,16 +73,16 @@ TEST(HybridBayesNet, Choose) {
   EXPECT_LONGS_EQUAL(4, gbn.size());
 
   EXPECT(assert_equal(*(*boost::dynamic_pointer_cast<GaussianMixture>(
-                          hybridBayesNet->atGaussian(0)))(assignment),
+                          hybridBayesNet->atMixture(0)))(assignment),
                       *gbn.at(0)));
   EXPECT(assert_equal(*(*boost::dynamic_pointer_cast<GaussianMixture>(
-                          hybridBayesNet->atGaussian(1)))(assignment),
+                          hybridBayesNet->atMixture(1)))(assignment),
                       *gbn.at(1)));
   EXPECT(assert_equal(*(*boost::dynamic_pointer_cast<GaussianMixture>(
-                          hybridBayesNet->atGaussian(2)))(assignment),
+                          hybridBayesNet->atMixture(2)))(assignment),
                       *gbn.at(2)));
   EXPECT(assert_equal(*(*boost::dynamic_pointer_cast<GaussianMixture>(
-                          hybridBayesNet->atGaussian(3)))(assignment),
+                          hybridBayesNet->atMixture(3)))(assignment),
                       *gbn.at(3)));
 }
 
@@ -125,35 +125,25 @@ TEST(HybridBayesNet, OptimizeAssignment) {
 TEST(HybridBayesNet, Optimize) {
   Switching s(4);
 
-  Ordering ordering;
-  for (auto&& kvp : s.linearizationPoint) {
-    ordering += kvp.key;
-  }
-
   Ordering hybridOrdering = s.linearizedFactorGraph.getHybridOrdering();
   HybridBayesNet::shared_ptr hybridBayesNet =
       s.linearizedFactorGraph.eliminateSequential(hybridOrdering);
 
   HybridValues delta = hybridBayesNet->optimize();
 
-  delta.print();
-  VectorValues correct;
-  correct.insert(X(1), 0 * Vector1::Ones());
-  correct.insert(X(2), 1 * Vector1::Ones());
-  correct.insert(X(3), 2 * Vector1::Ones());
-  correct.insert(X(4), 3 * Vector1::Ones());
+  DiscreteValues expectedAssignment;
+  expectedAssignment[M(1)] = 1;
+  expectedAssignment[M(2)] = 0;
+  expectedAssignment[M(3)] = 1;
+  EXPECT(assert_equal(expectedAssignment, delta.discrete()));
 
-  DiscreteValues assignment111;
-  assignment111[M(1)] = 1;
-  assignment111[M(2)] = 1;
-  assignment111[M(3)] = 1;
-  std::cout << hybridBayesNet->choose(assignment111).error(correct) << std::endl;
+  VectorValues expectedValues;
+  expectedValues.insert(X(1), -0.999904 * Vector1::Ones());
+  expectedValues.insert(X(2), -0.99029 * Vector1::Ones());
+  expectedValues.insert(X(3), -1.00971 * Vector1::Ones());
+  expectedValues.insert(X(4), -1.0001 * Vector1::Ones());
 
-  DiscreteValues assignment101;
-  assignment101[M(1)] = 1;
-  assignment101[M(2)] = 0;
-  assignment101[M(3)] = 1;
-  std::cout << hybridBayesNet->choose(assignment101).error(correct) << std::endl;
+  EXPECT(assert_equal(expectedValues, delta.continuous(), 1e-5));
 }
 
 /* ************************************************************************* */

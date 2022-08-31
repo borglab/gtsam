@@ -54,7 +54,10 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   }
 
   /// Get a specific Gaussian mixture by index `i`.
-  GaussianMixture::shared_ptr atGaussian(size_t i) const;
+  GaussianMixture::shared_ptr atMixture(size_t i) const;
+
+  /// Get a specific Gaussian conditional by index `i`.
+  GaussianConditional::shared_ptr atGaussian(size_t i) const;
 
   /// Get a specific discrete conditional by index `i`.
   DiscreteConditional::shared_ptr atDiscrete(size_t i) const;

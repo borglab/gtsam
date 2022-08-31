@@ -15,8 +15,9 @@
  * @date   January 2022
  */
 
+#include <gtsam/discrete/DiscreteBayesNet.h>
+#include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
-#include <gtsam/hybrid/HybridLookupDAG.h>
 #include <gtsam/hybrid/HybridValues.h>
 
 namespace gtsam {
@@ -111,8 +112,13 @@ HybridBayesNet HybridBayesNet::prune(
 }
 
 /* ************************************************************************* */
-GaussianMixture::shared_ptr HybridBayesNet::atGaussian(size_t i) const {
+GaussianMixture::shared_ptr HybridBayesNet::atMixture(size_t i) const {
   return factors_.at(i)->asMixture();
+}
+
+/* ************************************************************************* */
+GaussianConditional::shared_ptr HybridBayesNet::atGaussian(size_t i) const {
+  return factors_.at(i)->asGaussian();
 }
 
 /* ************************************************************************* */
@@ -125,22 +131,39 @@ GaussianBayesNet HybridBayesNet::choose(
     const DiscreteValues &assignment) const {
   GaussianBayesNet gbn;
   for (size_t idx = 0; idx < size(); idx++) {
-    try {
-      GaussianMixture gm = *this->atGaussian(idx);
+    if (factors_.at(idx)->isHybrid()) {
+      // If factor is hybrid, select based on assignment.
+      GaussianMixture gm = *this->atMixture(idx);
       gbn.push_back(gm(assignment));
 
-    } catch (std::exception &exc) {
-      // if factor at `idx` is discrete-only, just continue.
+    } else if (factors_.at(idx)->isContinuous()) {
+      // If continuous only, add gaussian conditional.
+      gbn.push_back((this->atGaussian(idx)));
+
+    } else if (factors_.at(idx)->isDiscrete()) {
+      // If factor at `idx` is discrete-only, we simply continue.
       continue;
     }
   }
+
   return gbn;
 }
 
 /* *******************************************************************************/
 HybridValues HybridBayesNet::optimize() const {
-  auto dag = HybridLookupDAG::FromBayesNet(*this);
-  return dag.argmax();
+  // Solve for the MPE
+  DiscreteBayesNet discrete_bn;
+  for (auto &conditional : factors_) {
+    if (conditional->isDiscrete()) {
+      discrete_bn.push_back(conditional->asDiscreteConditional());
+    }
+  }
+
+  DiscreteValues mpe = DiscreteFactorGraph(discrete_bn).optimize();
+
+  // Given the MPE, compute the optimal continuous values.
+  GaussianBayesNet gbn = this->choose(mpe);
+  return HybridValues(mpe, gbn.optimize());
 }
 
 /* *******************************************************************************/
