@@ -57,12 +57,14 @@ HybridValues HybridBayesTree::optimize() const {
       added_keys.insert(added_keys.end(), conditional->frontals().begin(),
                         conditional->frontals().end());
 
-      if (conditional->isHybrid()) {
-        // If conditional is hybrid, add it to a Hybrid Bayes net.
-        hbn.push_back(conditional);
-      } else if (conditional->isDiscrete()) {
-        // Else if discrete, we use it to compute the MPE
+      if (conditional->isDiscrete()) {
+        // If discrete, we use it to compute the MPE
         dbn.push_back(conditional->asDiscreteConditional());
+
+      } else {
+        // Else conditional is hybrid or continuous-only,
+        // so we directly add it to the Hybrid Bayes net.
+        hbn.push_back(conditional);
       }
     }
   }
@@ -109,6 +111,10 @@ VectorValues HybridBayesTree::optimize(const DiscreteValues& assignment) const {
             (*gm)(assignment);
 
         gbn.push_back(gaussian_conditional);
+
+      } else if (conditional->isContinuous()) {
+        // If conditional is Gaussian, we simply add it to the Bayes net.
+        gbn.push_back(conditional->asGaussian());
       }
     }
   }
