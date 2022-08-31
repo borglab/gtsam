@@ -99,6 +99,8 @@ class HybridBayesTree {
   bool empty() const;
   const HybridBayesTreeClique* operator[](size_t j) const;
 
+  gtsam::HybridValues optimize() const;
+
   string dot(const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
 };
