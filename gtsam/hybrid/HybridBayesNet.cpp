@@ -138,7 +138,6 @@ GaussianBayesNet HybridBayesNet::choose(
 
     } else if (factors_.at(idx)->isContinuous()) {
       // If continuous only, add gaussian conditional.
-      factors_.at(idx)->print();
       gbn.push_back((this->atGaussian(idx)));
 
     } else if (factors_.at(idx)->isDiscrete()) {
