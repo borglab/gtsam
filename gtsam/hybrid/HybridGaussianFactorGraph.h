@@ -161,14 +161,19 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
     }
   }
 
+  /// Get all the discrete keys in the factor graph.
+  const KeySet getDiscreteKeys() const;
+
+  /// Get all the continuous keys in the factor graph.
+  const KeySet getContinuousKeys() const;
+
   /**
-   * @brief 
-   * 
-   * @param orderingType 
-   * @return const Ordering 
+   * @brief Return a Colamd constrained ordering where the discrete keys are
+   * eliminated after the continuous keys.
+   *
+   * @return const Ordering
    */
-  const Ordering getHybridOrdering(
-      OptionalOrderingType orderingType = boost::none) const;
+  const Ordering getHybridOrdering() const;
 };
 
 }  // namespace gtsam

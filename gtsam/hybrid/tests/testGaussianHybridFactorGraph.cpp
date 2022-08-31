@@ -184,8 +184,8 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalSimple) {
   hfg.add(DecisionTreeFactor(m1, {2, 8}));
   hfg.add(DecisionTreeFactor({{M(1), 2}, {M(2), 2}}, "1 2 3 4"));
 
-  HybridBayesTree::shared_ptr result = hfg.eliminateMultifrontal(
-      Ordering::ColamdConstrainedLast(hfg, {M(1), M(2)}));
+  HybridBayesTree::shared_ptr result =
+      hfg.eliminateMultifrontal(hfg.getHybridOrdering());
 
   // The bayes tree should have 3 cliques
   EXPECT_LONGS_EQUAL(3, result->size());
@@ -215,7 +215,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalCLG) {
   hfg.add(HybridDiscreteFactor(DecisionTreeFactor(m, {2, 8})));
 
   // Get a constrained ordering keeping c1 last
-  auto ordering_full = Ordering::ColamdConstrainedLast(hfg, {M(1)});
+  auto ordering_full = hfg.getHybridOrdering();
 
   // Returns a Hybrid Bayes Tree with distribution P(x0|x1)P(x1|c1)P(c1)
   HybridBayesTree::shared_ptr hbt = hfg.eliminateMultifrontal(ordering_full);
@@ -484,8 +484,7 @@ TEST(HybridGaussianFactorGraph, SwitchingTwoVar) {
   }
   HybridBayesNet::shared_ptr hbn;
   HybridGaussianFactorGraph::shared_ptr remaining;
-  std::tie(hbn, remaining) =
-      hfg->eliminatePartialSequential(ordering_partial);
+  std::tie(hbn, remaining) = hfg->eliminatePartialSequential(ordering_partial);
 
   EXPECT_LONGS_EQUAL(14, hbn->size());
   EXPECT_LONGS_EQUAL(11, remaining->size());
