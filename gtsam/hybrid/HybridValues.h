@@ -31,8 +31,8 @@
 namespace gtsam {
 
 /**
- * HybridValues represents a collection of DiscreteValues and VectorValues.  It
- * is typically used to store the variables of a HybridGaussianFactorGraph.
+ * HybridValues represents a collection of DiscreteValues and VectorValues.
+ * It is typically used to store the variables of a HybridGaussianFactorGraph.
  * Optimizing a HybridGaussianBayesNet returns this class.
  */
 class GTSAM_EXPORT HybridValues {
@@ -47,10 +47,10 @@ class GTSAM_EXPORT HybridValues {
   /// @name Standard Constructors
   /// @{
 
-  // Default constructor creates an empty HybridValues.
+  /// Default constructor creates an empty HybridValues.
   HybridValues() = default;
 
-  // Construct from DiscreteValues and VectorValues.
+  /// Construct from DiscreteValues and VectorValues.
   HybridValues(const DiscreteValues& dv, const VectorValues& cv)
       : discrete_(dv), continuous_(cv){};
 
@@ -58,7 +58,7 @@ class GTSAM_EXPORT HybridValues {
   /// @name Testable
   /// @{
 
-  // print required by Testable for unit testing
+  /// print required by Testable for unit testing
   void print(const std::string& s = "HybridValues",
              const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     std::cout << s << ": \n";
@@ -67,7 +67,7 @@ class GTSAM_EXPORT HybridValues {
                       keyFormatter);  // print continuous components
   };
 
-  // equals required by Testable for unit testing
+  /// equals required by Testable for unit testing
   bool equals(const HybridValues& other, double tol = 1e-9) const {
     return discrete_.equals(other.discrete_, tol) &&
            continuous_.equals(other.continuous_, tol);
@@ -83,13 +83,13 @@ class GTSAM_EXPORT HybridValues {
   /// Return the delta update for the continuous vectors
   VectorValues continuous() const { return continuous_; }
 
-  // Check whether a variable with key \c j exists in DiscreteValue.
+  /// Check whether a variable with key \c j exists in DiscreteValue.
   bool existsDiscrete(Key j) { return (discrete_.find(j) != discrete_.end()); };
 
-  // Check whether a variable with key \c j exists in VectorValue.
+  /// Check whether a variable with key \c j exists in VectorValue.
   bool existsVector(Key j) { return continuous_.exists(j); };
 
-  // Check whether a variable with key \c j exists.
+  /// Check whether a variable with key \c j exists.
   bool exists(Key j) { return existsDiscrete(j) || existsVector(j); };
 
   /** Insert a discrete \c value with key \c j.  Replaces the existing value if
