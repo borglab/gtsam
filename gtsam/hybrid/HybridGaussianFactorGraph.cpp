@@ -402,9 +402,30 @@ void HybridGaussianFactorGraph::add(DecisionTreeFactor::shared_ptr factor) {
 }
 
 /* ************************************************************************ */
-const Ordering HybridGaussianFactorGraph::getHybridOrdering(
-    OptionalOrderingType orderingType) const {
+const KeySet HybridGaussianFactorGraph::getDiscreteKeys() const {
   KeySet discrete_keys;
+  for (auto &factor : factors_) {
+    for (const DiscreteKey &k : factor->discreteKeys()) {
+      discrete_keys.insert(k.first);
+    }
+  }
+  return discrete_keys;
+}
+
+/* ************************************************************************ */
+const KeySet HybridGaussianFactorGraph::getContinuousKeys() const {
+  KeySet keys;
+  for (auto &factor : factors_) {
+    for (const Key &key : factor->continuousKeys()) {
+      keys.insert(key);
+    }
+  }
+  return keys;
+}
+
+/* ************************************************************************ */
+const Ordering HybridGaussianFactorGraph::getHybridOrdering() const {
+  KeySet discrete_keys = getDiscreteKeys();
   for (auto &factor : factors_) {
     for (const DiscreteKey &k : factor->discreteKeys()) {
       discrete_keys.insert(k.first);
