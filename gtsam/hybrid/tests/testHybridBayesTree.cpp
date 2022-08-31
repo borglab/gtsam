@@ -16,6 +16,7 @@
  * @date    August 2022
  */
 
+#include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
 #include <gtsam/hybrid/HybridGaussianISAM.h>
 
@@ -31,8 +32,8 @@ using symbol_shorthand::M;
 using symbol_shorthand::X;
 
 /* ****************************************************************************/
-// Test for optimizing a HybridBayesTree.
-TEST(HybridBayesTree, Optimize) {
+// Test for optimizing a HybridBayesTree with a given assignment.
+TEST(HybridBayesTree, OptimizeAssignment) {
   Switching s(4);
 
   HybridGaussianISAM isam;
@@ -47,6 +48,11 @@ TEST(HybridBayesTree, Optimize) {
   // 3 measurements on X(2), X(3), X(4)
   graph1.push_back(s.linearizedFactorGraph.at(0));
   for (size_t i = 4; i <= 7; i++) {
+    graph1.push_back(s.linearizedFactorGraph.at(i));
+  }
+
+  // Add the discrete factors
+  for (size_t i = 7; i <= 9; i++) {
     graph1.push_back(s.linearizedFactorGraph.at(i));
   }
 
@@ -83,6 +89,58 @@ TEST(HybridBayesTree, Optimize) {
   VectorValues expected = gbn.optimize();
 
   EXPECT(assert_equal(expected, delta));
+}
+
+/* ****************************************************************************/
+// Test for optimizing a HybridBayesTree.
+TEST(HybridBayesTree, Optimize) {
+  Switching s(4);
+
+  HybridGaussianISAM isam;
+  HybridGaussianFactorGraph graph1;
+
+  // Add the 3 hybrid factors, x1-x2, x2-x3, x3-x4
+  for (size_t i = 1; i < 4; i++) {
+    graph1.push_back(s.linearizedFactorGraph.at(i));
+  }
+
+  // Add the Gaussian factors, 1 prior on X(1),
+  // 3 measurements on X(2), X(3), X(4)
+  graph1.push_back(s.linearizedFactorGraph.at(0));
+  for (size_t i = 4; i <= 6; i++) {
+    graph1.push_back(s.linearizedFactorGraph.at(i));
+  }
+
+  // Add the discrete factors
+  for (size_t i = 7; i <= 9; i++) {
+    graph1.push_back(s.linearizedFactorGraph.at(i));
+  }
+
+  isam.update(graph1);
+
+  HybridValues delta = isam.optimize();
+
+  // Create ordering.
+  Ordering ordering;
+  for (size_t k = 1; k <= s.K; k++) ordering += X(k);
+
+  HybridBayesNet::shared_ptr hybridBayesNet;
+  HybridGaussianFactorGraph::shared_ptr remainingFactorGraph;
+  std::tie(hybridBayesNet, remainingFactorGraph) =
+      s.linearizedFactorGraph.eliminatePartialSequential(ordering);
+
+  DiscreteFactorGraph dfg;
+  for (auto&& f : *remainingFactorGraph) {
+    auto factor = dynamic_pointer_cast<HybridDiscreteFactor>(f);
+    dfg.push_back(
+        boost::dynamic_pointer_cast<DecisionTreeFactor>(factor->inner()));
+  }
+
+  DiscreteValues expectedMPE = dfg.optimize();
+  VectorValues expectedValues = hybridBayesNet->optimize(expectedMPE);
+
+  EXPECT(assert_equal(expectedMPE, delta.discrete()));
+  EXPECT(assert_equal(expectedValues, delta.continuous()));
 }
 
 /* ************************************************************************* */

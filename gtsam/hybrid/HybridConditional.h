@@ -140,6 +140,17 @@ class GTSAM_EXPORT HybridConditional
   }
 
   /**
+   * @brief Return HybridConditional as a GaussianConditional
+   *
+   * @return GaussianConditional::shared_ptr
+   */
+  GaussianConditional::shared_ptr asGaussian() {
+    if (!isContinuous())
+      throw std::invalid_argument("Not a continuous conditional");
+    return boost::static_pointer_cast<GaussianConditional>(inner_);
+  }
+
+  /**
    * @brief Return conditional as a DiscreteConditional
    *
    * @return DiscreteConditional::shared_ptr
