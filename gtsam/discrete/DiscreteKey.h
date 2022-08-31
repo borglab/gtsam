@@ -69,6 +69,16 @@ namespace gtsam {
       push_back(key);
       return *this;
     }
+
+    /// Print the keys and cardinalities.
+    void print(const std::string& s = "",
+               const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+      for (auto&& dkey : *this) {
+        std::cout << DefaultKeyFormatter(dkey.first) << " " << dkey.second
+                  << std::endl;
+      }
+    }
+
   }; // DiscreteKeys
 
   /// Create a list from two keys
