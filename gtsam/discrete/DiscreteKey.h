@@ -73,26 +73,10 @@ namespace gtsam {
 
     /// Print the keys and cardinalities.
     void print(const std::string& s = "",
-               const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
-      for (auto&& dkey : *this) {
-        std::cout << DefaultKeyFormatter(dkey.first) << " " << dkey.second
-                  << std::endl;
-      }
-    }
+               const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
-    bool equals(const DiscreteKeys& other, double tol = 0) const {
-      if (this->size() != other.size()) {
-        return false;
-      }
-
-      for (size_t i = 0; i < this->size(); i++) {
-        if (this->at(i).first != other.at(i).first ||
-            this->at(i).second != other.at(i).second) {
-          return false;
-        }
-      }
-      return true;
-    }
+    /// Check equality to another DiscreteKeys object.
+    bool equals(const DiscreteKeys& other, double tol = 0) const;
 
     /** Serialization function */
     friend class boost::serialization::access;
