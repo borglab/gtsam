@@ -18,6 +18,7 @@
  * @date    December 2021
  */
 
+#include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
@@ -28,6 +29,8 @@
 
 using namespace std;
 using namespace gtsam;
+using namespace gtsam::serializationTestHelpers;
+
 using noiseModel::Isotropic;
 using symbol_shorthand::M;
 using symbol_shorthand::X;
@@ -144,6 +147,18 @@ TEST(HybridBayesNet, Optimize) {
   expectedValues.insert(X(4), -1.0001 * Vector1::Ones());
 
   EXPECT(assert_equal(expectedValues, delta.continuous(), 1e-5));
+}
+
+/* ****************************************************************************/
+// Test HybridBayesNet serialization.
+TEST(HybridBayesNet, Serialization) {
+  Switching s(4);
+  Ordering ordering = s.linearizedFactorGraph.getHybridOrdering();
+  HybridBayesNet hbn = *(s.linearizedFactorGraph.eliminateSequential(ordering));
+
+  EXPECT(equalsObj<HybridBayesNet>(hbn));
+  EXPECT(equalsXML<HybridBayesNet>(hbn));
+  EXPECT(equalsBinary<HybridBayesNet>(hbn));
 }
 
 /* ************************************************************************* */
