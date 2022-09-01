@@ -89,7 +89,19 @@ class GTSAM_EXPORT HybridBayesTree : public BayesTree<HybridBayesTreeClique> {
   VectorValues optimize(const DiscreteValues& assignment) const;
 
   /// @}
+
+ private:
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+  }
 };
+
+/// traits
+template <>
+struct traits<HybridBayesTree> : public Testable<HybridBayesTree> {};
 
 /**
  * @brief Class for Hybrid Bayes tree orphan subtrees.

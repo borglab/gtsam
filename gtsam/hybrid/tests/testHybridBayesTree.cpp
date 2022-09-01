@@ -16,6 +16,7 @@
  * @date    August 2022
  */
 
+#include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
 #include <gtsam/hybrid/HybridGaussianISAM.h>
@@ -141,6 +142,20 @@ TEST(HybridBayesTree, Optimize) {
 
   EXPECT(assert_equal(expectedMPE, delta.discrete()));
   EXPECT(assert_equal(expectedValues, delta.continuous()));
+}
+
+/* ****************************************************************************/
+// Test HybridBayesTree serialization.
+TEST(HybridBayesTree, Serialization) {
+  Switching s(4);
+  Ordering ordering = s.linearizedFactorGraph.getHybridOrdering();
+  HybridBayesTree hbt =
+      *(s.linearizedFactorGraph.eliminateMultifrontal(ordering));
+
+  using namespace gtsam::serializationTestHelpers;
+  EXPECT(equalsObj<HybridBayesTree>(hbt));
+  EXPECT(equalsXML<HybridBayesTree>(hbt));
+  EXPECT(equalsBinary<HybridBayesTree>(hbt));
 }
 
 /* ************************************************************************* */
