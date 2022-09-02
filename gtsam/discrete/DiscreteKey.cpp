@@ -48,4 +48,25 @@ namespace gtsam {
     return keys & key2;
   }
 
+  void DiscreteKeys::print(const std::string& s,
+                           const KeyFormatter& keyFormatter) const {
+    for (auto&& dkey : *this) {
+      std::cout << DefaultKeyFormatter(dkey.first) << " " << dkey.second
+                << std::endl;
+    }
+  }
+
+  bool DiscreteKeys::equals(const DiscreteKeys& other, double tol) const {
+    if (this->size() != other.size()) {
+      return false;
+    }
+
+    for (size_t i = 0; i < this->size(); i++) {
+      if (this->at(i).first != other.at(i).first ||
+          this->at(i).second != other.at(i).second) {
+        return false;
+      }
+    }
+    return true;
+  }
 }
