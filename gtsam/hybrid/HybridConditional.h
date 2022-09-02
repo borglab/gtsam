@@ -178,6 +178,15 @@ class GTSAM_EXPORT HybridConditional
   /// Get the type-erased pointer to the inner type
   boost::shared_ptr<Factor> inner() { return inner_; }
 
+ private:
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class Archive>
+  void serialize(Archive& ar, const unsigned int /*version*/) {
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseFactor);
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseConditional);
+  }
+
 };  // HybridConditional
 
 // traits
