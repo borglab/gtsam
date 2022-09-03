@@ -47,9 +47,6 @@ class GTSAM_EXPORT HybridFactor : public Factor {
   bool isContinuous_ = false;
   bool isHybrid_ = false;
 
-  // TODO(Varun) remove
-  size_t nrContinuous_ = 0;
-
  protected:
   // Set of DiscreteKeys for this factor.
   DiscreteKeys discreteKeys_;
