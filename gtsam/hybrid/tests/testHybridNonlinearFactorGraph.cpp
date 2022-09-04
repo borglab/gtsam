@@ -347,6 +347,8 @@ TEST(HybridGaussianElimination, EliminateHybrid_2_Variable) {
   CHECK(discreteFactor);
   EXPECT_LONGS_EQUAL(1, discreteFactor->discreteKeys().size());
   EXPECT(discreteFactor->root_->isLeaf() == false);
+
+  //TODO(Varun) Test emplace_discrete
 }
 
 /****************************************************************************
