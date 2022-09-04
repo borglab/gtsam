@@ -15,7 +15,6 @@
  * @author  Varun Agrawal
  */
 
-#include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
@@ -40,7 +39,6 @@ using symbol_shorthand::M;
 using symbol_shorthand::X;
 
 class Robot {
-  size_t K_;
   DiscreteKeys modes_;
   HybridNonlinearFactorGraph nonlinearFactorGraph_;
   HybridGaussianFactorGraph linearizedFactorGraph_;
@@ -118,12 +116,10 @@ TEST(Estimation, StillRobot) {
   vector<double> measurements = {0, 0};
 
   Robot robot(K, measurements);
-  // robot.print();
 
   HybridValues delta = robot.optimize();
 
   delta.continuous().print("delta update:");
-
   if (delta.discrete()[M(0)] == 0) {
     std::cout << "The robot is stationary!" << std::endl;
   } else {
@@ -132,17 +128,16 @@ TEST(Estimation, StillRobot) {
   EXPECT_LONGS_EQUAL(0, delta.discrete()[M(0)]);
 }
 
+/* ****************************************************************************/
 TEST(Estimation, MovingRobot) {
   size_t K = 2;
   vector<double> measurements = {0, 2};
 
   Robot robot(K, measurements);
-  // robot.print();
 
   HybridValues delta = robot.optimize();
 
   delta.continuous().print("delta update:");
-
   if (delta.discrete()[M(0)] == 0) {
     std::cout << "The robot is stationary!" << std::endl;
   } else {
@@ -153,7 +148,6 @@ TEST(Estimation, MovingRobot) {
 
 /// A robot with a single leg.
 class SingleLeg {
-  size_t K_;
   DiscreteKeys modes_;
   HybridNonlinearFactorGraph nonlinearFactorGraph_;
   HybridGaussianFactorGraph linearizedFactorGraph_;
@@ -165,10 +159,9 @@ class SingleLeg {
    *
    * @param K The number of discrete timesteps
    * @param pims std::vector of preintegrated IMU measurements.
-   * @param contacts std::vector denoting whether the leg was in contact at each
-   * timestep.
+   * @param fk std::vector of forward kinematic measurements for the leg.
    */
-  SingleLeg(size_t K, std::vector<Pose2> pims, std::vector<uint64_t> contacts) {
+  SingleLeg(size_t K, std::vector<Pose2> pims, std::vector<Pose2> fk) {
     // Create DiscreteKeys for binary K modes
     for (size_t k = 0; k < K; k++) {
       modes_.emplace_back(M(k), 2);
@@ -176,10 +169,15 @@ class SingleLeg {
 
     ////// Create hybrid factor graph.
 
+    auto measurement_noise = noiseModel::Isotropic::Sigma(3, 1.0);
+
+    // Add prior on the first pose
+    nonlinearFactorGraph_.emplace_nonlinear<PriorFactor<Pose2>>(
+        X(0), Pose2(0, 2, 0), measurement_noise);
+
     // Add measurement factors.
     // These are the preintegrated IMU measurements of the base.
-    auto measurement_noise = noiseModel::Isotropic::Sigma(3, 1.0);
-    for (size_t k = 0; k < K; k++) {
+    for (size_t k = 0; k < K - 1; k++) {
       nonlinearFactorGraph_.emplace_nonlinear<BetweenFactor<Pose2>>(
           X(k), X(k + 1), pims.at(k), measurement_noise);
     }
@@ -187,35 +185,30 @@ class SingleLeg {
     // Forward kinematics from base X to foot L
     auto fk_noise = noiseModel::Isotropic::Sigma(3, 1.0);
     for (size_t k = 0; k < K; k++) {
-      if (contacts.at(k) == 1) {
-        nonlinearFactorGraph_.emplace_nonlinear<BetweenFactor<Pose2>>(
-            X(k), L(k), Pose2(), fk_noise)
-      } else {
-        nonlinearFactorGraph_.emplace_nonlinear<BetweenFactor<Pose2>>(
-            X(k), L(k), Pose2(), fk_noise)
-      }
+      nonlinearFactorGraph_.emplace_nonlinear<BetweenFactor<Pose2>>(
+          X(k), L(k), fk.at(k), fk_noise);
     }
 
     // 2 noise models where moving has a higher covariance.
-    auto stance_model = noiseModel::Isotropic::Sigma(1, 1e-2);
-    auto swing_model = noiseModel::Isotropic::Sigma(1, 1e2);
+    auto stance_model = noiseModel::Isotropic::Sigma(3, 1e-2);
+    auto swing_model = noiseModel::Isotropic::Sigma(3, 1e2);
 
     // Add "contact models" for the foot.
     // The idea is that the robot's leg has a tight covariance for stance and
     // loose covariance for swing.
-    using ContactFactor = BetweenFactor<double>;
+    using ContactFactor = BetweenFactor<Pose2>;
 
-    for (size_t k = 0; k < K; k++) {
+    for (size_t k = 0; k < K - 1; k++) {
       KeyVector keys = {L(k), L(k + 1)};
       DiscreteKeys dkeys{modes_[k], modes_[k + 1]};
-      auto stance = boost::make_shared<ContactFactor>(keys.at(0), keys.at(1),
-                                                      0.0, stance_model),
-           lift = boost::make_shared<ContactFactor>(keys.at(0), keys.at(1), 0.0,
-                                                    swing_model),
-           land = boost::make_shared<ContactFactor>(keys.at(0), keys.at(1), 0.0,
-                                                    swing_model),
-           swing = boost::make_shared<ContactFactor>(keys.at(0), keys.at(1),
-                                                     0.0, swing_model);
+      auto stance = boost::make_shared<ContactFactor>(
+               keys.at(0), keys.at(1), Pose2(0, 0, 0), stance_model),
+           lift = boost::make_shared<ContactFactor>(
+               keys.at(0), keys.at(1), Pose2(0, 0, 0), swing_model),
+           land = boost::make_shared<ContactFactor>(
+               keys.at(0), keys.at(1), Pose2(0, 0, 0), swing_model),
+           swing = boost::make_shared<ContactFactor>(
+               keys.at(0), keys.at(1), Pose2(0, 0, 0), swing_model);
       // 00 - swing, 01 - land, 10 - toe-off, 11 - stance
       std::vector<boost::shared_ptr<ContactFactor>> components = {swing, land,
                                                                   lift, stance};
@@ -225,7 +218,8 @@ class SingleLeg {
 
     // Create the linearization point.
     for (size_t k = 0; k < K; k++) {
-      linearizationPoint_.insert<double>(X(k), static_cast<double>(k + 1));
+      linearizationPoint_.insert<Pose2>(X(k), Pose2(k, 2, 0));
+      linearizationPoint_.insert<Pose2>(L(k), Pose2(0, 0, 0));
     }
 
     linearizedFactorGraph_ =
@@ -243,11 +237,31 @@ class SingleLeg {
     HybridBayesNet::shared_ptr hybridBayesNet =
         linearizedFactorGraph_.eliminateSequential(hybridOrdering);
 
+    hybridBayesNet->print();
     HybridValues delta = hybridBayesNet->optimize();
     return delta;
   }
+
+  Values linearizationPoint() const { return linearizationPoint_; }
 };
 
+/* ****************************************************************************/
+TEST(Estimation, LeggedRobot) {
+  std::vector<Pose2> pims = {Pose2(1, 0, 0)};
+  // Leg is in stance throughout
+  std::vector<Pose2> fk = {Pose2(0, -2, 0), Pose2(-1, -2, 0)};
+  SingleLeg robot(2, pims, fk);
+
+  std::cout << "\n\n\n" << std::endl;
+  // robot.print();
+  Values initial = robot.linearizationPoint();
+  // initial.print();
+
+  HybridValues delta = robot.optimize();
+  delta.print();
+
+  initial.retract(delta.continuous()).print("\n\n=========");
+}
 /* ************************************************************************* */
 int main() {
   TestResult tr;
