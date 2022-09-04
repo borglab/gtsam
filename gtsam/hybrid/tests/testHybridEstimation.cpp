@@ -16,6 +16,7 @@
  */
 
 #include <gtsam/base/serializationTestHelpers.h>
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
 #include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
@@ -34,6 +35,7 @@ using namespace std;
 using namespace gtsam;
 
 using noiseModel::Isotropic;
+using symbol_shorthand::L;
 using symbol_shorthand::M;
 using symbol_shorthand::X;
 
@@ -158,37 +160,65 @@ class SingleLeg {
   Values linearizationPoint_;
 
  public:
-  SingleLeg(size_t K, std::vector<double> measurements) {
+  /**
+   * @brief Construct a new Single Leg object.
+   *
+   * @param K The number of discrete timesteps
+   * @param pims std::vector of preintegrated IMU measurements.
+   * @param contacts std::vector denoting whether the leg was in contact at each
+   * timestep.
+   */
+  SingleLeg(size_t K, std::vector<Pose2> pims, std::vector<uint64_t> contacts) {
     // Create DiscreteKeys for binary K modes
     for (size_t k = 0; k < K; k++) {
       modes_.emplace_back(M(k), 2);
     }
 
     ////// Create hybrid factor graph.
-    // Add measurement factors
-    auto measurement_noise = noiseModel::Isotropic::Sigma(1, 1.0);
+
+    // Add measurement factors.
+    // These are the preintegrated IMU measurements of the base.
+    auto measurement_noise = noiseModel::Isotropic::Sigma(3, 1.0);
     for (size_t k = 0; k < K; k++) {
-      nonlinearFactorGraph_.emplace_nonlinear<PriorFactor<double>>(
-          X(k), measurements.at(k), measurement_noise);
+      nonlinearFactorGraph_.emplace_nonlinear<BetweenFactor<Pose2>>(
+          X(k), X(k + 1), pims.at(k), measurement_noise);
+    }
+
+    // Forward kinematics from base X to foot L
+    auto fk_noise = noiseModel::Isotropic::Sigma(3, 1.0);
+    for (size_t k = 0; k < K; k++) {
+      if (contacts.at(k) == 1) {
+        nonlinearFactorGraph_.emplace_nonlinear<BetweenFactor<Pose2>>(
+            X(k), L(k), Pose2(), fk_noise)
+      } else {
+        nonlinearFactorGraph_.emplace_nonlinear<BetweenFactor<Pose2>>(
+            X(k), L(k), Pose2(), fk_noise)
+      }
     }
 
     // 2 noise models where moving has a higher covariance.
-    auto still_noise_model = noiseModel::Isotropic::Sigma(1, 1e-2);
-    auto moving_noise_model = noiseModel::Isotropic::Sigma(1, 1e2);
+    auto stance_model = noiseModel::Isotropic::Sigma(1, 1e-2);
+    auto swing_model = noiseModel::Isotropic::Sigma(1, 1e2);
 
-    // Add "motion models".
-    // The idea is that the robot has a higher "freedom" (aka higher covariance)
-    // for movement
-    using MotionModel = BetweenFactor<double>;
+    // Add "contact models" for the foot.
+    // The idea is that the robot's leg has a tight covariance for stance and
+    // loose covariance for swing.
+    using ContactFactor = BetweenFactor<double>;
 
-    for (size_t k = 1; k < K; k++) {
-      KeyVector keys = {X(k - 1), X(k)};
-      DiscreteKeys dkeys{modes_[k - 1]};
-      auto still = boost::make_shared<MotionModel>(X(k - 1), X(k), 0.0,
-                                                   still_noise_model),
-           moving = boost::make_shared<MotionModel>(X(k - 1), X(k), 0.0,
-                                                    moving_noise_model);
-      std::vector<boost::shared_ptr<MotionModel>> components = {still, moving};
+    for (size_t k = 0; k < K; k++) {
+      KeyVector keys = {L(k), L(k + 1)};
+      DiscreteKeys dkeys{modes_[k], modes_[k + 1]};
+      auto stance = boost::make_shared<ContactFactor>(keys.at(0), keys.at(1),
+                                                      0.0, stance_model),
+           lift = boost::make_shared<ContactFactor>(keys.at(0), keys.at(1), 0.0,
+                                                    swing_model),
+           land = boost::make_shared<ContactFactor>(keys.at(0), keys.at(1), 0.0,
+                                                    swing_model),
+           swing = boost::make_shared<ContactFactor>(keys.at(0), keys.at(1),
+                                                     0.0, swing_model);
+      // 00 - swing, 01 - land, 10 - toe-off, 11 - stance
+      std::vector<boost::shared_ptr<ContactFactor>> components = {swing, land,
+                                                                  lift, stance};
       nonlinearFactorGraph_.emplace_hybrid<MixtureFactor>(keys, dkeys,
                                                           components);
     }
