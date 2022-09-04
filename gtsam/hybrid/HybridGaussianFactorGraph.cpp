@@ -55,6 +55,52 @@ namespace gtsam {
 
 template class EliminateableFactorGraph<HybridGaussianFactorGraph>;
 
+std::string GTDKeyFormatter(const Key &key) {
+  constexpr size_t kMax_uchar_ = std::numeric_limits<uint8_t>::max();
+  constexpr size_t key_bits = sizeof(gtsam::Key) * 8;
+  constexpr size_t ch1_bits = sizeof(uint8_t) * 8;
+  constexpr size_t ch2_bits = sizeof(uint8_t) * 8;
+  constexpr size_t link_bits = sizeof(uint8_t) * 8;
+  constexpr size_t joint_bits = sizeof(uint8_t) * 8;
+  constexpr size_t time_bits =
+      key_bits - ch1_bits - ch2_bits - link_bits - joint_bits;
+
+  constexpr gtsam::Key ch1_mask = gtsam::Key(kMax_uchar_)
+                                  << (key_bits - ch1_bits);
+  constexpr gtsam::Key ch2_mask = gtsam::Key(kMax_uchar_)
+                                  << (key_bits - ch1_bits - ch2_bits);
+  constexpr gtsam::Key link_mask = gtsam::Key(kMax_uchar_)
+                                   << (time_bits + joint_bits);
+  constexpr gtsam::Key joint_mask = gtsam::Key(kMax_uchar_) << time_bits;
+  constexpr gtsam::Key time_mask =
+      ~(ch1_mask | ch2_mask | link_mask | joint_mask);
+
+  uint8_t c1_, c2_, link_idx_, joint_idx_;
+  uint64_t t_;
+
+  c1_ = (uint8_t)((key & ch1_mask) >> (key_bits - ch1_bits));
+  c2_ = (uint8_t)((key & ch2_mask) >> (key_bits - ch1_bits - ch2_bits));
+  link_idx_ = (uint8_t)((key & link_mask) >> (time_bits + joint_bits));
+  joint_idx_ = (uint8_t)((key & joint_mask) >> time_bits);
+  t_ = key & time_mask;
+
+  std::string s = "";
+  if (c1_ != 0) {
+    s += c1_;
+  }
+  if (c2_ != 0) {
+    s += c2_;
+  }
+  if (link_idx_ != kMax_uchar_) {
+    s += "[" + std::to_string((int)(link_idx_)) + "]";
+  }
+  if (joint_idx_ != kMax_uchar_) {
+    s += "(" + std::to_string((int)(joint_idx_)) + ")";
+  }
+  s += std::to_string(t_);
+  return s;
+}
+
 /* ************************************************************************ */
 static GaussianMixtureFactor::Sum &addGaussian(
     GaussianMixtureFactor::Sum &sum, const GaussianFactor::shared_ptr &factor) {
@@ -213,10 +259,10 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
         result = EliminatePreferCholesky(graph, frontalKeys);
 
     if (keysOfEliminated.empty()) {
-      keysOfEliminated =
-          result.first->keys();  // Initialize the keysOfEliminated to be the
+      // Initialize the keysOfEliminated to be the keys of the
+      // eliminated GaussianConditional
+      keysOfEliminated = result.first->keys();
     }
-    // keysOfEliminated of the GaussianConditional
     if (keysOfSeparator.empty()) {
       keysOfSeparator = result.second->keys();
     }
@@ -237,13 +283,18 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
 
   // If there are no more continuous parents, then we should create here a
   // DiscreteFactor, with the error for each discrete choice.
+  // frontalKeys.print();
+  // separatorFactors.print("", GTDKeyFormatter, [](const GaussianFactor::shared_ptr &factor) { factor->print(); return "";});
+  // std::cout << "=====================================" << std::endl;
   if (keysOfSeparator.empty()) {
-    VectorValues empty_values;
+    VectorValues empty_values;  //TODO(Varun) Shouldn't this be from the optimized leaf?
     auto factorError = [&](const GaussianFactor::shared_ptr &factor) {
       if (!factor) return 0.0;  // TODO(fan): does this make sense?
       return exp(-factor->error(empty_values));
     };
     DecisionTree<Key, double> fdt(separatorFactors, factorError);
+    std::cout << "\n\nFactor Decision Tree" << std::endl;
+    fdt.print("", GTDKeyFormatter, [](double x) { return std::to_string(x); });
     auto discreteFactor =
         boost::make_shared<DecisionTreeFactor>(discreteSeparator, fdt);
 
