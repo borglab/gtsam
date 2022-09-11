@@ -293,8 +293,6 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
       return exp(-factor->error(empty_values));
     };
     DecisionTree<Key, double> fdt(separatorFactors, factorError);
-    std::cout << "\n\nFactor Decision Tree" << std::endl;
-    fdt.print("", GTDKeyFormatter, [](double x) { return std::to_string(x); });
     auto discreteFactor =
         boost::make_shared<DecisionTreeFactor>(discreteSeparator, fdt);
 
