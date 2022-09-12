@@ -109,6 +109,23 @@ class GTSAM_EXPORT HybridNonlinearFactorGraph : public HybridFactorGraph {
     }
   }
 
+  /**
+   * Push back many factors as shared_ptr's in a container (factors are not
+   * copied)
+   */
+  template <typename CONTAINER>
+  Base::Base::HasDerivedElementType<CONTAINER> push_back(
+      const CONTAINER& container) {
+    Base::push_back(container.begin(), container.end());
+  }
+
+  /// Push back non-pointer objects in a container (factors are copied).
+  template <typename CONTAINER>
+  Base::Base::HasDerivedValueType<CONTAINER> push_back(
+      const CONTAINER& container) {
+    Base::push_back(container.begin(), container.end());
+  }
+
   /// Add a nonlinear factor as a shared ptr.
   void add(boost::shared_ptr<NonlinearFactor> factor);
 
