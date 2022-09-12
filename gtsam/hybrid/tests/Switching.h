@@ -166,7 +166,7 @@ struct Switching {
       linearizationPoint.insert<double>(X(k), static_cast<double>(k));
     }
 
-    linearizedFactorGraph = nonlinearFactorGraph.linearize(linearizationPoint);
+    linearizedFactorGraph = *nonlinearFactorGraph.linearize(linearizationPoint);
   }
 
   // Create motion models for a given time step
