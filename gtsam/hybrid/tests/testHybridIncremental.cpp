@@ -399,7 +399,7 @@ TEST(HybridGaussianISAM, NonTrivial) {
   initial.insert(Z(0), Pose2(0.0, 2.0, 0.0));
   initial.insert(W(0), Pose2(0.0, 3.0, 0.0));
 
-  HybridGaussianFactorGraph gfg = fg.linearize(initial);
+  HybridGaussianFactorGraph gfg = *fg.linearize(initial);
   fg = HybridNonlinearFactorGraph();
 
   HybridGaussianISAM inc;
@@ -444,7 +444,7 @@ TEST(HybridGaussianISAM, NonTrivial) {
   // The leg link did not move so we set the expected pose accordingly.
   initial.insert(W(1), Pose2(0.0, 3.0, 0.0));
 
-  gfg = fg.linearize(initial);
+  gfg = *fg.linearize(initial);
   fg = HybridNonlinearFactorGraph();
 
   // Update without pruning
@@ -483,7 +483,7 @@ TEST(HybridGaussianISAM, NonTrivial) {
   initial.insert(Z(2), Pose2(2.0, 2.0, 0.0));
   initial.insert(W(2), Pose2(0.0, 3.0, 0.0));
 
-  gfg = fg.linearize(initial);
+  gfg = *fg.linearize(initial);
   fg = HybridNonlinearFactorGraph();
 
   // Now we prune!
@@ -526,7 +526,7 @@ TEST(HybridGaussianISAM, NonTrivial) {
   initial.insert(Z(3), Pose2(3.0, 2.0, 0.0));
   initial.insert(W(3), Pose2(0.0, 3.0, 0.0));
 
-  gfg = fg.linearize(initial);
+  gfg = *fg.linearize(initial);
   fg = HybridNonlinearFactorGraph();
 
   // Keep pruning!
