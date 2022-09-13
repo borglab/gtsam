@@ -221,6 +221,6 @@ void PrintForest(const FOREST& forest, std::string str,
   PrintForestVisitorPre visitor(keyFormatter);
   DepthFirstForest(forest, str, visitor);
 }
-}
+}  // namespace treeTraversal
 
-}
+}  // namespace gtsam
