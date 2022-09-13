@@ -52,7 +52,6 @@ DiscreteKeys CollectDiscreteKeys(const DiscreteKeys &key1,
 HybridFactor::HybridFactor(const KeyVector &keys)
     : Base(keys),
       isContinuous_(true),
-      nrContinuous_(keys.size()),
       continuousKeys_(keys) {}
 
 /* ************************************************************************ */
@@ -62,7 +61,6 @@ HybridFactor::HybridFactor(const KeyVector &continuousKeys,
       isDiscrete_((continuousKeys.size() == 0) && (discreteKeys.size() != 0)),
       isContinuous_((continuousKeys.size() != 0) && (discreteKeys.size() == 0)),
       isHybrid_((continuousKeys.size() != 0) && (discreteKeys.size() != 0)),
-      nrContinuous_(continuousKeys.size()),
       discreteKeys_(discreteKeys),
       continuousKeys_(continuousKeys) {}
 

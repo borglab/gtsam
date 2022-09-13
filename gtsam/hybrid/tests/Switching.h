@@ -128,9 +128,6 @@ struct Switching {
   /// Create with given number of time steps.
   Switching(size_t K, double between_sigma = 1.0, double prior_sigma = 0.1)
       : K(K) {
-    using symbol_shorthand::M;
-    using symbol_shorthand::X;
-
     // Create DiscreteKeys for binary K modes, modes[0] will not be used.
     for (size_t k = 0; k <= K; k++) {
       modes.emplace_back(M(k), 2);
@@ -175,9 +172,6 @@ struct Switching {
   // Create motion models for a given time step
   static std::vector<MotionModel::shared_ptr> motionModels(size_t k,
                                                            double sigma = 1.0) {
-    using symbol_shorthand::M;
-    using symbol_shorthand::X;
-
     auto noise_model = noiseModel::Isotropic::Sigma(1, sigma);
     auto still =
              boost::make_shared<MotionModel>(X(k), X(k + 1), 0.0, noise_model),
