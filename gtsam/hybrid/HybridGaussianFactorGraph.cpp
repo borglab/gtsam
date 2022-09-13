@@ -153,12 +153,14 @@ std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>
 discreteElimination(const HybridGaussianFactorGraph &factors,
                     const Ordering &frontalKeys) {
   DiscreteFactorGraph dfg;
-  for (auto &fp : factors) {
-    if (auto ptr = boost::dynamic_pointer_cast<HybridDiscreteFactor>(fp)) {
-      dfg.push_back(ptr->inner());
-    } else if (auto p =
-                   boost::static_pointer_cast<HybridConditional>(fp)->inner()) {
-      dfg.push_back(boost::static_pointer_cast<DiscreteConditional>(p));
+
+  for (auto &factor : factors) {
+    if (auto p = boost::dynamic_pointer_cast<HybridDiscreteFactor>(factor)) {
+      dfg.push_back(p->inner());
+    } else if (auto p = boost::static_pointer_cast<HybridConditional>(factor)) {
+      auto discrete_conditional =
+          boost::static_pointer_cast<DiscreteConditional>(p->inner());
+      dfg.push_back(discrete_conditional);
     } else {
       // It is an orphan wrapper
     }
@@ -244,6 +246,7 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
       return exp(-factor->error(empty_values));
     };
     DecisionTree<Key, double> fdt(separatorFactors, factorError);
+
     auto discreteFactor =
         boost::make_shared<DecisionTreeFactor>(discreteSeparator, fdt);
 

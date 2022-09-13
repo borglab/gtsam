@@ -147,6 +147,32 @@ TEST(HybridGaussianFactorGraph, Resize) {
   EXPECT_LONGS_EQUAL(gfg.size(), 0);
 }
 
+/***************************************************************************
+ * Test that the MixtureFactor reports correctly if the number of continuous
+ * keys provided do not match the keys in the factors.
+ */
+TEST(HybridGaussianFactorGraph, MixtureFactor) {
+  auto nonlinearFactor = boost::make_shared<BetweenFactor<double>>(
+      X(0), X(1), 0.0, Isotropic::Sigma(1, 0.1));
+  auto discreteFactor = boost::make_shared<DecisionTreeFactor>();
+
+  auto noise_model = noiseModel::Isotropic::Sigma(1, 1.0);
+  auto still = boost::make_shared<MotionModel>(X(0), X(1), 0.0, noise_model),
+       moving = boost::make_shared<MotionModel>(X(0), X(1), 1.0, noise_model);
+
+  std::vector<MotionModel::shared_ptr> components = {still, moving};
+
+  // Check for exception when number of continuous keys are under-specified.
+  KeyVector contKeys = {X(0)};
+  THROWS_EXCEPTION(boost::make_shared<MixtureFactor>(
+      contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, components));
+
+  // Check for exception when number of continuous keys are too many.
+  contKeys = {X(0), X(1), X(2)};
+  THROWS_EXCEPTION(boost::make_shared<MixtureFactor>(
+      contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, components));
+}
+
 /*****************************************************************************
  * Test push_back on HFG makes the correct distinction.
  */
@@ -348,7 +374,7 @@ TEST(HybridGaussianElimination, EliminateHybrid_2_Variable) {
   EXPECT_LONGS_EQUAL(1, discreteFactor->discreteKeys().size());
   EXPECT(discreteFactor->root_->isLeaf() == false);
 
-  //TODO(Varun) Test emplace_discrete
+  // TODO(Varun) Test emplace_discrete
 }
 
 /****************************************************************************
