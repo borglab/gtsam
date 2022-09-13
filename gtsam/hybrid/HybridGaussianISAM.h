@@ -65,7 +65,7 @@ class GTSAM_EXPORT HybridGaussianISAM : public ISAM<HybridBayesTree> {
                   HybridBayesTree::EliminationTraitsType::DefaultEliminate);
 
   /**
-   * @brief 
+   * @brief Prune the underlying Bayes tree.
    * 
    * @param root The root key in the discrete conditional decision tree.
    * @param maxNumberLeaves 
