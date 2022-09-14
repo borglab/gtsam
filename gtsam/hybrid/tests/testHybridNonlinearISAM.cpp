@@ -396,7 +396,7 @@ TEST(HybridNonlinearISAM, Incremental_approximate) {
 // The leg links are represented by the chain X-Y-Z-W, where X is the base and
 // W is the foot.
 // We use BetweenFactor<Pose2> as constraints between each of the poses.
-TEST(HybridGaussianISAM, NonTrivial) {
+TEST(HybridNonlinearISAM, NonTrivial) {
   /*************** Run Round 1 ***************/
   HybridNonlinearFactorGraph fg;
   HybridNonlinearISAM inc;
