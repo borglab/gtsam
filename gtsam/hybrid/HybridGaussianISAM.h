@@ -66,11 +66,10 @@ class GTSAM_EXPORT HybridGaussianISAM : public ISAM<HybridBayesTree> {
 
   /**
    * @brief Prune the underlying Bayes tree.
-   * 
-   * @param root The root key in the discrete conditional decision tree.
-   * @param maxNumberLeaves 
+   *
+   * @param maxNumberLeaves The max number of leaf nodes to keep.
    */
-  void prune(const Key& root, const size_t maxNumberLeaves);
+  void prune(const size_t maxNumberLeaves);
 };
 
 /// traits

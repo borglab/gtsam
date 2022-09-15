@@ -89,12 +89,12 @@ struct HybridAssignmentData {
         gaussianbayesTree_(gbt) {}
 
   /**
-   * @brief A function used during tree traversal that operators on each node
+   * @brief A function used during tree traversal that operates on each node
    * before visiting the node's children.
    *
    * @param node The current node being visited.
    * @param parentData The HybridAssignmentData from the parent node.
-   * @return HybridAssignmentData
+   * @return HybridAssignmentData which is passed to the children.
    */
   static HybridAssignmentData AssignmentPreOrderVisitor(
       const HybridBayesTree::sharedNode& node,
