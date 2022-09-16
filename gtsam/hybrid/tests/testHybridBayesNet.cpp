@@ -53,6 +53,21 @@ TEST(HybridBayesNet, Creation) {
 }
 
 /* ****************************************************************************/
+// Test adding a bayes net to another one.
+TEST(HybridBayesNet, Add) {
+  HybridBayesNet bayesNet;
+
+  bayesNet.add(Asia, "99/1");
+
+  DiscreteConditional expected(Asia, "99/1");
+
+  HybridBayesNet other;
+  other.push_back(bayesNet);
+  EXPECT(bayesNet.equals(other));
+}
+
+
+/* ****************************************************************************/
 // Test choosing an assignment of conditionals
 TEST(HybridBayesNet, Choose) {
   Switching s(4);
