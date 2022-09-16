@@ -62,23 +62,29 @@ void HybridGaussianISAM::updateInternal(
   for (const sharedClique& orphan : *orphans)
     factors += boost::make_shared<BayesTreeOrphanWrapper<Node> >(orphan);
 
+  // Get all the discrete keys from the new factors
   KeySet allDiscrete;
-  for (auto& factor : factors) {
+  for (auto& factor : newFactors) {
     for (auto& k : factor->discreteKeys()) {
       allDiscrete.insert(k.first);
     }
   }
+
+  // Create KeyVector with continuous keys followed by discrete keys.
   KeyVector newKeysDiscreteLast;
+  // Insert continuous keys first.
   for (auto& k : newFactorKeys) {
     if (!allDiscrete.exists(k)) {
       newKeysDiscreteLast.push_back(k);
     }
   }
+  // Insert discrete keys at the end
   std::copy(allDiscrete.begin(), allDiscrete.end(),
             std::back_inserter(newKeysDiscreteLast));
 
   // Get an ordering where the new keys are eliminated last
-  const VariableIndex index(factors);
+  const VariableIndex index(newFactors);
+
   Ordering elimination_ordering;
   if (ordering) {
     elimination_ordering = *ordering;
@@ -89,10 +95,14 @@ void HybridGaussianISAM::updateInternal(
         true);
   }
 
+  GTSAM_PRINT(elimination_ordering);
+  std::cout << "\n\n\n\neliminateMultifrontal" << std::endl;
+  GTSAM_PRINT(factors);
   // eliminate all factors (top, added, orphans) into a new Bayes tree
   HybridBayesTree::shared_ptr bayesTree =
       factors.eliminateMultifrontal(elimination_ordering, function, index);
 
+  std::cout << "optionally prune" << std::endl;
   if (maxNrLeaves) {
     bayesTree->prune(*maxNrLeaves);
   }
