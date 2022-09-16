@@ -118,7 +118,9 @@ class GTSAM_EXPORT HybridNonlinearISAM {
 
   /** Add new factors along with their initial linearization points */
   void update(const HybridNonlinearFactorGraph& newFactors,
-              const Values& initialValues);
+              const Values& initialValues,
+              const boost::optional<size_t>& maxNrLeaves = boost::none,
+              const boost::optional<Ordering>& ordering = boost::none);
 
   /** Relinearization and reordering of variables */
   void reorder_relinearize();
