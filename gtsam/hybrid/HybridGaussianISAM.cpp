@@ -42,6 +42,7 @@ HybridGaussianISAM::HybridGaussianISAM(const HybridBayesTree& bayesTree)
 void HybridGaussianISAM::updateInternal(
     const HybridGaussianFactorGraph& newFactors,
     HybridBayesTree::Cliques* orphans,
+    const boost::optional<size_t>& maxNrLeaves,
     const boost::optional<Ordering>& ordering,
     const HybridBayesTree::Eliminate& function) {
   // Remove the contaminated part of the Bayes tree
@@ -92,6 +93,10 @@ void HybridGaussianISAM::updateInternal(
   HybridBayesTree::shared_ptr bayesTree =
       factors.eliminateMultifrontal(elimination_ordering, function, index);
 
+  if (maxNrLeaves) {
+    bayesTree->prune(*maxNrLeaves);
+  }
+
   // Re-add into Bayes tree data structures
   this->roots_.insert(this->roots_.end(), bayesTree->roots().begin(),
                       bayesTree->roots().end());
@@ -100,10 +105,11 @@ void HybridGaussianISAM::updateInternal(
 
 /* ************************************************************************* */
 void HybridGaussianISAM::update(const HybridGaussianFactorGraph& newFactors,
+                                const boost::optional<size_t>& maxNrLeaves,
                                 const boost::optional<Ordering>& ordering,
                                 const HybridBayesTree::Eliminate& function) {
   Cliques orphans;
-  this->updateInternal(newFactors, &orphans, ordering, function);
+  this->updateInternal(newFactors, &orphans, maxNrLeaves, ordering, function);
 }
 
 }  // namespace gtsam
