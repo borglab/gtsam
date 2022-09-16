@@ -33,7 +33,9 @@ void HybridNonlinearISAM::saveGraph(const string& s,
 
 /* ************************************************************************* */
 void HybridNonlinearISAM::update(const HybridNonlinearFactorGraph& newFactors,
-                                 const Values& initialValues) {
+                                 const Values& initialValues,
+                                 const boost::optional<size_t>& maxNrLeaves,
+                                 const boost::optional<Ordering>& ordering) {
   if (newFactors.size() > 0) {
     // Reorder and relinearize every reorderInterval updates
     if (reorderInterval_ > 0 && ++reorderCounter_ >= reorderInterval_) {
@@ -51,7 +53,8 @@ void HybridNonlinearISAM::update(const HybridNonlinearFactorGraph& newFactors,
         newFactors.linearize(linPoint_);
 
     // Update ISAM
-    isam_.update(*linearizedNewFactors, boost::none, eliminationFunction_);
+    isam_.update(*linearizedNewFactors, maxNrLeaves, ordering,
+                 eliminationFunction_);
   }
 }
 
@@ -66,7 +69,7 @@ void HybridNonlinearISAM::reorder_relinearize() {
     // Just recreate the whole BayesTree
     // TODO: allow for constrained ordering here
     // TODO: decouple relinearization and reordering to avoid
-    isam_.update(*factors_.linearize(newLinPoint), boost::none,
+    isam_.update(*factors_.linearize(newLinPoint), boost::none, boost::none,
                  eliminationFunction_);
 
     // Update linearization point
