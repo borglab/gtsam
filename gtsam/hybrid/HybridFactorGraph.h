@@ -137,7 +137,7 @@ class HybridFactorGraph : public FactorGraph<HybridFactor> {
   }
 
   /// Get all the discrete keys in the factor graph.
-  const KeySet allDiscreteKeys() const {
+  const KeySet discreteKeys() const {
     KeySet discrete_keys;
     for (auto& factor : factors_) {
       for (const DiscreteKey& k : factor->discreteKeys()) {
@@ -148,7 +148,7 @@ class HybridFactorGraph : public FactorGraph<HybridFactor> {
   }
 
   /// Get all the continuous keys in the factor graph.
-  const KeySet allContinuousKeys() const {
+  const KeySet continuousKeys() const {
     KeySet keys;
     for (auto& factor : factors_) {
       for (const Key& key : factor->continuousKeys()) {

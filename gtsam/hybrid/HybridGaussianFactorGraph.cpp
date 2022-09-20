@@ -406,7 +406,7 @@ void HybridGaussianFactorGraph::add(DecisionTreeFactor::shared_ptr factor) {
 
 /* ************************************************************************ */
 const Ordering HybridGaussianFactorGraph::getHybridOrdering() const {
-  KeySet discrete_keys = allDiscreteKeys();
+  KeySet discrete_keys = discreteKeys();
   for (auto &factor : factors_) {
     for (const DiscreteKey &k : factor->discreteKeys()) {
       discrete_keys.insert(k.first);

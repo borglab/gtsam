@@ -63,12 +63,7 @@ void HybridGaussianISAM::updateInternal(
     factors += boost::make_shared<BayesTreeOrphanWrapper<Node> >(orphan);
 
   // Get all the discrete keys from the factors
-  KeySet allDiscrete;
-  for (auto& factor : factors) {
-    for (auto& k : factor->discreteKeys()) {
-      allDiscrete.insert(k.first);
-    }
-  }
+  KeySet allDiscrete = factors.discreteKeys();
 
   // Create KeyVector with continuous keys followed by discrete keys.
   KeyVector newKeysDiscreteLast;
