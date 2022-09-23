@@ -1,6 +1,6 @@
 include(CheckCXXCompilerFlag) # for check_cxx_compiler_flag()
 
-# Set cmake policy to recognize the AppleClang compiler
+# Set cmake policy to recognize the Apple Clang compiler
 # independently from the Clang compiler.
 if(POLICY CMP0025)
   cmake_policy(SET CMP0025 NEW)
@@ -87,10 +87,10 @@ if(MSVC)
   list_append_cache(GTSAM_COMPILE_DEFINITIONS_PRIVATE
     WINDOWS_LEAN_AND_MEAN
     NOMINMAX
-	)
+    )
   # Avoid literally hundreds to thousands of warnings:
   list_append_cache(GTSAM_COMPILE_OPTIONS_PUBLIC
-	/wd4267 # warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+    /wd4267 # warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
   )
 
   add_compile_options(/wd4005)
@@ -183,18 +183,33 @@ set(CMAKE_EXE_LINKER_FLAGS_PROFILING ${GTSAM_CMAKE_EXE_LINKER_FLAGS_PROFILING})
 
 # Clang uses a template depth that is less than standard and is too small
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-    # Apple Clang before 5.0 does not support -ftemplate-depth.
-    if(NOT (APPLE AND "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS "5.0"))
-        list_append_cache(GTSAM_COMPILE_OPTIONS_PUBLIC "-ftemplate-depth=1024")
-    endif()
+  # Apple Clang before 5.0 does not support -ftemplate-depth.
+  if(NOT (APPLE AND "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS "5.0"))
+    list_append_cache(GTSAM_COMPILE_OPTIONS_PUBLIC "-ftemplate-depth=1024")
+  endif()
 endif()
 
 if (NOT MSVC)
-  option(GTSAM_BUILD_WITH_MARCH_NATIVE  "Enable/Disable building with all instructions supported by native architecture (binary may not be portable!)" OFF)
-  if(GTSAM_BUILD_WITH_MARCH_NATIVE AND (APPLE AND NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64"))
-    # Add as public flag so all dependant projects also use it, as required
-    # by Eigen to avid crashes due to SIMD vectorization:
-    list_append_cache(GTSAM_COMPILE_OPTIONS_PUBLIC "-march=native")
+  # Add as public flag so all dependant projects also use it, as required
+  # by Eigen to avid crashes due to SIMD vectorization:  option(GTSAM_BUILD_WITH_MARCH_NATIVE  "Enable/Disable building with all instructions supported by native architecture (binary may not be portable!)" OFF)
+  if(APPLE AND (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang") AND ("${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS "15.0"))
+    if(GTSAM_BUILD_WITH_MARCH_NATIVE)
+      if(NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
+        list_append_cache(GTSAM_COMPILE_OPTIONS_PUBLIC "-march=native")
+      else()
+        message(WARNING "The option GTSAM_BUILD_WITH_MARCH_NATIVE is ignored, because native architecture is not supported.")
+      endif()
+    endif()
+  else()
+    include(CheckCXXCompilerFlag)
+    CHECK_CXX_COMPILER_FLAG("-march=native" COMPILER_SUPPORTS_MARCH_NATIVE)
+    if(GTSAM_BUILD_WITH_MARCH_NATIVE)
+      if(COMPILER_SUPPORTS_MARCH_NATIVE)
+      list_append_cache(GTSAM_COMPILE_OPTIONS_PUBLIC "-march=native")
+      else()
+        message(WARNING "The option GTSAM_BUILD_WITH_MARCH_NATIVE is ignored, because native architecture is not supported.")
+      endif()
+    endif()
   endif()
 endif()
 
