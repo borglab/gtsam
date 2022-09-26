@@ -37,3 +37,6 @@ py::bind_vector<
     std::vector<std::pair<size_t, gtsam::Point2>>>(
         m_, "SfmMeasurementVector"
     );
+py::bind_vector<
+    std::vector<gtsam::SfmTrack2d> >(
+    m_, "SfmTrack2dVector");

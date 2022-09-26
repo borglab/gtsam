@@ -49,10 +49,20 @@ class SfmTrack2d
   bool hasUniqueCameras();
 };
 
+class SfmTrack2dVector {
+  SfmTrack2dVector();
+  SfmTrack2dVector(const gtsam::SfmTrack2dVector& other);
+  void push_back(const gtsam::SfmTrack2d& keypoints);
+  size_t size() const;
+  bool empty() const;
+  void clear();
+  gtsam::SfmTrack2d at(const size_t& index) const;
+};
+
 
 class DsfTrackGenerator {
   DsfTrackGenerator();
-  std::vector<gtsam::SfmTrack2d> generate_tracks_from_pairwise_matches(
+  const gtsam::SfmTrack2dVector generate_tracks_from_pairwise_matches(
     const gtsam::MatchIndicesMap& matches_dict,
     const gtsam::KeypointsList& keypoints_list);
 };

@@ -8,7 +8,7 @@ import unittest
 import numpy as np
 
 import gtsam
-from gtsam import DsfTrackGenerator, Keypoints, KeypointsList, MatchIndicesMap
+from gtsam import DsfTrackGenerator, IndexPair, Keypoints, KeypointsList, MatchIndicesMap
 from gtsam.utils.test_case import GtsamTestCase
 
 
@@ -28,8 +28,8 @@ class TestDsfTrackGenerator(GtsamTestCase):
 
         # For each image pair (i1,i2), we provide a (K,2) matrix of corresponding image indices (k1,k2).
         matches_dict = MatchIndicesMap()
-        matches_dict[gtsam.IndexPair(0, 1)] = np.array([[0, 0], [1, 1]])
-        matches_dict[gtsam.IndexPair(1, 2)] = np.array([[2, 0], [1, 1]])
+        matches_dict[IndexPair(0, 1)] = np.array([[0, 0], [1, 1]])
+        matches_dict[IndexPair(1, 2)] = np.array([[2, 0], [1, 1]])
 
         tracks = DsfTrackGenerator().generate_tracks_from_pairwise_matches(matches_dict, keypoints_list)
         assert len(tracks) == 3

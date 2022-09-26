@@ -94,6 +94,10 @@ class SfmTrack2d {
   }
 };
 
+using SfmTrack2dVector = std::vector<gtsam::SfmTrack2d>;
+
+
+
 /**
  * @brief Generates point tracks from connected components in the keypoint matches graph.
  */
