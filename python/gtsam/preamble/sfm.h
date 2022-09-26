@@ -26,7 +26,7 @@ PYBIND11_MAKE_OPAQUE(
     std::vector<gtsam::BinaryMeasurement<gtsam::Rot3>>);
 PYBIND11_MAKE_OPAQUE(
     std::vector<gtsam::Keypoints>);
-PYBIND11_MAKE_OPAQUE(
-    std::vector<gtsam::SfmTrack2d>);
+// PYBIND11_MAKE_OPAQUE(
+//     std::vector<gtsam::SfmTrack2d>);
 
 PYBIND11_MAKE_OPAQUE(gtsam::MatchIndicesMap);
