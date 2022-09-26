@@ -53,7 +53,8 @@ set(ignore
     gtsam::DiscreteKey
     gtsam::KeyPairDoubleMap
     gtsam::MatchIndicesMap
-    gtsam::KeypointsList)
+    gtsam::KeypointsList
+    gtsam::SfmTrack2dVector)
 
 set(interface_headers
     ${PROJECT_SOURCE_DIR}/gtsam/gtsam.i
