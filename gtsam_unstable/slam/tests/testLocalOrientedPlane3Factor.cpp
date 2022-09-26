@@ -44,8 +44,8 @@ TEST(LocalOrientedPlane3Factor, lm_translation_error) {
 
   // Init pose and prior.  Pose Prior is needed since a single plane measurement
   // does not fully constrain the pose
-  Pose3 init_pose = Pose3::identity();
-  Pose3 anchor_pose = Pose3::identity();
+  Pose3 init_pose = Pose3::Identity();
+  Pose3 anchor_pose = Pose3::Identity();
   graph.addPrior(X(0), init_pose, noiseModel::Isotropic::Sigma(6, 0.001));
   graph.addPrior(X(1), anchor_pose, noiseModel::Isotropic::Sigma(6, 0.001));
 
@@ -89,7 +89,7 @@ TEST (LocalOrientedPlane3Factor, lm_rotation_error) {
 
   // Init pose and prior.  Pose Prior is needed since a single plane measurement
   // does not fully constrain the pose
-  Pose3 init_pose = Pose3::identity();
+  Pose3 init_pose = Pose3::Identity();
   graph.addPrior(X(0), init_pose, noiseModel::Isotropic::Sigma(6, 0.001));
 
   // Add two landmark measurements, differing in angle
@@ -180,8 +180,8 @@ TEST(LocalOrientedPlane3Factor, Issue561Simplified) {
   NonlinearFactorGraph graph;
 
   // Setup prior factors
-  Pose3 x0(Rot3::identity(), Vector3(100, 30, 10));  // the "sensor pose"
-  Pose3 x1(Rot3::identity(), Vector3(90, 40,  5) );  // the "anchor pose"
+  Pose3 x0(Rot3::Identity(), Vector3(100, 30, 10));  // the "sensor pose"
+  Pose3 x1(Rot3::Identity(), Vector3(90, 40,  5) );  // the "anchor pose"
 
   auto x0_noise = noiseModel::Isotropic::Sigma(6, 0.01);
   auto x1_noise = noiseModel::Isotropic::Sigma(6, 0.01);
@@ -213,7 +213,7 @@ TEST(LocalOrientedPlane3Factor, Issue561Simplified) {
   // Initial values
   // Just offset the initial pose by 1m. This is what we are trying to optimize.
   Values initialEstimate;
-  Pose3 x0_initial = x0.compose(Pose3(Rot3::identity(), Vector3(1, 0, 0)));
+  Pose3 x0_initial = x0.compose(Pose3(Rot3::Identity(), Vector3(1, 0, 0)));
   initialEstimate.insert(P(1), p1_in_x1);
   initialEstimate.insert(P(2), p2_in_x1);
   initialEstimate.insert(X(0), x0_initial);

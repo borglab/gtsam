@@ -105,7 +105,7 @@ public:
   /// @{
 
   /** identity for group operation */
-  static ConstantBias identity() {
+  static ConstantBias Identity() {
     return ConstantBias();
   }
 
