@@ -22,7 +22,7 @@
 
 #include <gtsam/discrete/DecisionTree.h>
 #include <gtsam/discrete/DiscreteKey.h>
-#include <gtsam/hybrid/HybridFactor.h>
+#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/linear/GaussianFactor.h>
 
 namespace gtsam {
@@ -108,7 +108,7 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
   bool equals(const HybridFactor &lf, double tol = 1e-9) const override;
 
   void print(
-      const std::string &s = "HybridFactor\n",
+      const std::string &s = "GaussianMixtureFactor\n",
       const KeyFormatter &formatter = DefaultKeyFormatter) const override;
   /// @}
 

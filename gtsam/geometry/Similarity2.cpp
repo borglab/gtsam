@@ -134,7 +134,7 @@ void Similarity2::print(const std::string& s) const {
             << std::endl;
 }
 
-Similarity2 Similarity2::identity() { return Similarity2(); }
+Similarity2 Similarity2::Identity() { return Similarity2(); }
 
 Similarity2 Similarity2::operator*(const Similarity2& S) const {
   return Similarity2(R_ * S.R_, ((1.0 / S.s_) * t_) + R_ * S.t_, s_ * S.s_);

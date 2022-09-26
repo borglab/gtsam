@@ -119,11 +119,36 @@ void GaussianMixture::print(const std::string &s,
       "", [&](Key k) { return formatter(k); },
       [&](const GaussianConditional::shared_ptr &gf) -> std::string {
         RedirectCout rd;
-        if (!gf->empty())
+        if (gf && !gf->empty())
           gf->print("", formatter);
         else
           return {"nullptr"};
         return rd.str();
       });
 }
+
+/* *******************************************************************************/
+void GaussianMixture::prune(const DecisionTreeFactor &decisionTree) {
+  // Functional which loops over all assignments and create a set of
+  // GaussianConditionals
+  auto pruner = [&decisionTree](
+                    const Assignment<Key> &choices,
+                    const GaussianConditional::shared_ptr &conditional)
+      -> GaussianConditional::shared_ptr {
+    // typecast so we can use this to get probability value
+    DiscreteValues values(choices);
+
+    if (decisionTree(values) == 0.0) {
+      // empty aka null pointer
+      boost::shared_ptr<GaussianConditional> null;
+      return null;
+    } else {
+      return conditional;
+    }
+  };
+
+  auto pruned_conditionals = conditionals_.apply(pruner);
+  conditionals_.root_ = pruned_conditionals.root_;
+}
+
 }  // namespace gtsam
