@@ -152,7 +152,8 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             gtsam::CameraSetCal3Fisheye
             gtsam::KeyPairDoubleMap
             gtsam::MatchIndicesMap
-            gtsam::KeypointsList)
+            gtsam::KeypointsList
+            gtsam::SfmTrack2dVector)
 
 
     pybind_wrap(${GTSAM_PYTHON_UNSTABLE_TARGET} # target
