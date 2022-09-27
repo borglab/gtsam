@@ -73,10 +73,25 @@ class SfmTrack2d {
   std::vector<NamedSfmMeasurement> measurements_;
 
  public:
+  // Default constructor.
+  SfmTrack2d() = default;
+
+  // Constructor from measurements.
+  SfmTrack2d(std::vector<NamedSfmMeasurement> &measurements) : measurements_(measurements) {}
+
+  // Add a measurement to the track.
   void addMeasurement(const NamedSfmMeasurement &m) {
     measurements_.emplace_back(m);
   }
+
+  /// The measurement at index `idx`
+  NamedSfmMeasurement measurement(size_t idx) const { return measurements_[idx]; }
+
+  // Return all measurements in the track.
   std::vector<NamedSfmMeasurement> measurements() {return measurements_; }
+
+  /// Total number of measurements in this track.
+  size_t numberMeasurements() const { return measurements_.size(); }
 
   // @brief Validates the track by checking that no two measurements are from the same camera.
   //
