@@ -8,7 +8,16 @@ import unittest
 import numpy as np
 
 import gtsam
-from gtsam import DsfTrackGenerator, IndexPair, Keypoints, KeypointsList, MatchIndicesMap
+from gtsam import (
+    DsfTrackGenerator,
+    IndexPair,
+    Keypoints,
+    KeypointsList,
+    MatchIndicesMap,
+    NamedSfmMeasurement,
+    NamedSfmMeasurementVector,
+    SfmTrack2d,
+)
 from gtsam.utils.test_case import GtsamTestCase
 
 
@@ -39,6 +48,7 @@ class TestDsfTrackGenerator(GtsamTestCase):
         assert np.allclose(tracks[0].measurements()[1].uv, np.array([50.0, 60.0]))
         assert tracks[0].measurements()[0].i == 0
         assert tracks[0].measurements()[1].i == 1
+        assert tracks[0].numberMeasurements() == 2
 
         # Verify track 1.
         assert np.allclose(tracks[1].measurements()[0].uv, np.array([30.0, 40.0]))
@@ -47,9 +57,23 @@ class TestDsfTrackGenerator(GtsamTestCase):
         assert tracks[1].measurements()[0].i == 0
         assert tracks[1].measurements()[1].i == 1
         assert tracks[1].measurements()[2].i == 2
+        assert tracks[1].numberMeasurements() == 3
 
         # Verify track 2.
         assert np.allclose(tracks[2].measurements()[0].uv, np.array([90.0, 100.0]))
         assert np.allclose(tracks[2].measurements()[1].uv, np.array([110.0, 120.0]))
         assert tracks[2].measurements()[0].i == 1
         assert tracks[2].measurements()[1].i == 2
+        assert tracks[2].numberMeasurements() == 2
+
+
+class TestSfmTrack2d(GtsamTestCase):
+    """Tests for SfmTrack2d."""
+
+    def test_sfm_track_2d_constructor(self) -> None:
+        """ """
+        measurements = NamedSfmMeasurementVector()
+        measurements.append(NamedSfmMeasurement(i=0, uv=np.array([10.0, 20.0])))
+        track = SfmTrack2d(measurements=measurements)
+        track.measurement(0)
+        track.numberMeasurements() == 1
