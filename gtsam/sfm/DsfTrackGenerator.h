@@ -95,7 +95,7 @@ class SfmTrack2d {
 };
 
 using SfmTrack2dVector = std::vector<gtsam::SfmTrack2d>;
-
+using NamedSfmMeasurementVector = std::vector<NamedSfmMeasurement>;
 
 
 /**

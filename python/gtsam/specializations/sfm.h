@@ -40,3 +40,7 @@ py::bind_vector<
 py::bind_vector<
     std::vector<gtsam::SfmTrack2d> >(
     m_, "SfmTrack2dVector");
+
+py::bind_vector<
+    std::vector<gtsam::NamedSfmMeasurement> >(
+    m_, "NamedSfmMeasurementVector");

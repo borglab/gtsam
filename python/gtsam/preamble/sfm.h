@@ -30,3 +30,6 @@ PYBIND11_MAKE_OPAQUE(
 //     std::vector<gtsam::SfmTrack2d>);
 
 PYBIND11_MAKE_OPAQUE(gtsam::MatchIndicesMap);
+
+PYBIND11_MAKE_OPAQUE(
+    std::vector<gtsam::NamedSfmMeasurement>);

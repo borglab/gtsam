@@ -42,6 +42,16 @@ class NamedSfmMeasurement
   NamedSfmMeasurement(size_t i, gtsam::Point2 uv);
 };
 
+class NamedSfmMeasurementVector {
+  NamedSfmMeasurementVector();
+  NamedSfmMeasurementVector(const gtsam::NamedSfmMeasurementVector& other);
+  void push_back(const gtsam::NamedSfmMeasurement& measurement);
+  size_t size() const;
+  bool empty() const;
+  void clear();
+  gtsam::NamedSfmMeasurement at(const size_t& index) const;
+};
+
 class SfmTrack2d
 {
   void addMeasurement(const gtsam::NamedSfmMeasurement &m);
@@ -52,7 +62,7 @@ class SfmTrack2d
 class SfmTrack2dVector {
   SfmTrack2dVector();
   SfmTrack2dVector(const gtsam::SfmTrack2dVector& other);
-  void push_back(const gtsam::SfmTrack2d& keypoints);
+  void push_back(const gtsam::SfmTrack2d& track);
   size_t size() const;
   bool empty() const;
   void clear();
