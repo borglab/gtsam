@@ -194,6 +194,15 @@ if (NOT MSVC)
   endif()
 endif()
 
+if (NOT MSVC)
+  option(GTSAM_BUILD_WITH_AVX2  "Enable/Disable building with AVX2 (binary may not be portable!)" ON)
+  if(GTSAM_BUILD_WITH_AVX2)
+    # Add as public flag so all dependant projects also use it, as required
+    # by Eigen to avid crashes due to SIMD vectorization:
+    list_append_cache(GTSAM_COMPILE_OPTIONS_PUBLIC "-mavx2")
+  endif()
+endif()
+
 # Set up build type library postfixes
 if(GTSAM_BUILD_TYPE_POSTFIXES)
   foreach(build_type Debug Timing Profiling RelWithDebInfo MinSizeRel)
