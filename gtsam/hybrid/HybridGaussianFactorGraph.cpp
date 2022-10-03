@@ -285,11 +285,8 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
 
   // If there are no more continuous parents, then we should create here a
   // DiscreteFactor, with the error for each discrete choice.
-  // frontalKeys.print();
-  // separatorFactors.print("", GTDKeyFormatter, [](const GaussianFactor::shared_ptr &factor) { factor->print(); return "";});
-  // std::cout << "=====================================" << std::endl;
   if (keysOfSeparator.empty()) {
-    VectorValues empty_values;  //TODO(Varun) Shouldn't this be from the optimized leaf?
+    VectorValues empty_values;
     auto factorError = [&](const GaussianFactor::shared_ptr &factor) {
       if (!factor) return 0.0;  // TODO(fan): does this make sense?
       return exp(-factor->error(empty_values));
