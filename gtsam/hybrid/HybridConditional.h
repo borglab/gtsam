@@ -34,8 +34,6 @@
 
 namespace gtsam {
 
-class HybridGaussianFactorGraph;
-
 /**
  * Hybrid Conditional Density
  *
