@@ -100,11 +100,23 @@ class MixtureFactor : public HybridFactor {
                 bool normalized = false)
       : Base(keys, discreteKeys), normalized_(normalized) {
     std::vector<NonlinearFactor::shared_ptr> nonlinear_factors;
+    KeySet continuous_keys_set(keys.begin(), keys.end());
+    KeySet factor_keys_set;
     for (auto&& f : factors) {
+      // Insert all factor continuous keys in the continuous keys set.
+      std::copy(f->keys().begin(), f->keys().end(),
+                std::inserter(factor_keys_set, factor_keys_set.end()));
+
       nonlinear_factors.push_back(
           boost::dynamic_pointer_cast<NonlinearFactor>(f));
     }
     factors_ = Factors(discreteKeys, nonlinear_factors);
+
+    if (continuous_keys_set != factor_keys_set) {
+      throw std::runtime_error(
+          "The specified continuous keys and the keys in the factors don't "
+          "match!");
+    }
   }
 
   ~MixtureFactor() = default;
