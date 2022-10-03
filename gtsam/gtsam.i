@@ -66,6 +66,27 @@ class KeySet {
   void serialize() const;
 };
 
+// Actually a vector<Key>, needed for Matlab
+class KeyVector {
+  KeyVector();
+  KeyVector(const gtsam::KeyVector& other);
+
+  // Note: no print function
+
+  // common STL methods
+  size_t size() const;
+  bool empty() const;
+  void clear();
+
+  // structure specific methods
+  size_t at(size_t i) const;
+  size_t front() const;
+  size_t back() const;
+  void push_back(size_t key) const;
+
+  void serialize() const;
+};
+
 // Actually a FastMap<Key,int>
 class KeyGroupMap {
   KeyGroupMap();
