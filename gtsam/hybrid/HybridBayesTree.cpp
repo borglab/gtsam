@@ -89,12 +89,12 @@ struct HybridAssignmentData {
         gaussianbayesTree_(gbt) {}
 
   /**
-   * @brief A function used during tree traversal that operators on each node
+   * @brief A function used during tree traversal that operates on each node
    * before visiting the node's children.
    *
    * @param node The current node being visited.
    * @param parentData The HybridAssignmentData from the parent node.
-   * @return HybridAssignmentData
+   * @return HybridAssignmentData which is passed to the children.
    */
   static HybridAssignmentData AssignmentPreOrderVisitor(
       const HybridBayesTree::sharedNode& node,
@@ -142,6 +142,63 @@ VectorValues HybridBayesTree::optimize(const DiscreteValues& assignment) const {
 
   // Return the optimized bayes net result.
   return result;
+}
+
+/* ************************************************************************* */
+void HybridBayesTree::prune(const size_t maxNrLeaves) {
+  auto decisionTree = boost::dynamic_pointer_cast<DecisionTreeFactor>(
+      this->roots_.at(0)->conditional()->inner());
+
+  DecisionTreeFactor prunedDiscreteFactor = decisionTree->prune(maxNrLeaves);
+  decisionTree->root_ = prunedDiscreteFactor.root_;
+
+  /// Helper struct for pruning the hybrid bayes tree.
+  struct HybridPrunerData {
+    /// The discrete decision tree after pruning.
+    DecisionTreeFactor prunedDiscreteFactor;
+    HybridPrunerData(const DecisionTreeFactor& prunedDiscreteFactor,
+                     const HybridBayesTree::sharedNode& parentClique)
+        : prunedDiscreteFactor(prunedDiscreteFactor) {}
+
+    /**
+     * @brief A function used during tree traversal that operates on each node
+     * before visiting the node's children.
+     *
+     * @param node The current node being visited.
+     * @param parentData The data from the parent node.
+     * @return HybridPrunerData which is passed to the children.
+     */
+    static HybridPrunerData AssignmentPreOrderVisitor(
+        const HybridBayesTree::sharedNode& clique,
+        HybridPrunerData& parentData) {
+      // Get the conditional
+      HybridConditional::shared_ptr conditional = clique->conditional();
+
+      // If conditional is hybrid, we prune it.
+      if (conditional->isHybrid()) {
+        auto gaussianMixture = conditional->asMixture();
+
+        // Check if the number of discrete keys match,
+        // else we get an assignment error.
+        // TODO(Varun) Update prune method to handle assignment subset?
+        if (gaussianMixture->discreteKeys() ==
+            parentData.prunedDiscreteFactor.discreteKeys()) {
+          gaussianMixture->prune(parentData.prunedDiscreteFactor);
+        }
+      }
+      return parentData;
+    }
+  };
+
+  HybridPrunerData rootData(prunedDiscreteFactor, 0);
+  {
+    treeTraversal::no_op visitorPost;
+    // Limits OpenMP threads since we're mixing TBB and OpenMP
+    TbbOpenMPMixedScope threadLimiter;
+    treeTraversal::DepthFirstForestParallel(
+        *this, rootData, HybridPrunerData::AssignmentPreOrderVisitor,
+        visitorPost);
+  }
 }
 
 }  // namespace gtsam

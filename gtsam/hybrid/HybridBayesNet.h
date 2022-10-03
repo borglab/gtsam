@@ -73,6 +73,8 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
         HybridConditional(boost::make_shared<DiscreteConditional>(key, table)));
   }
 
+  using Base::push_back;
+
   /// Get a specific Gaussian mixture by index `i`.
   GaussianMixture::shared_ptr atMixture(size_t i) const;
 

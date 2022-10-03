@@ -60,7 +60,7 @@ TEST(HybridFactorGraph, GaussianFactorGraph) {
   Values linearizationPoint;
   linearizationPoint.insert<double>(X(0), 0);
 
-  HybridGaussianFactorGraph ghfg = fg.linearize(linearizationPoint);
+  HybridGaussianFactorGraph ghfg = *fg.linearize(linearizationPoint);
 
   // Add a factor to the GaussianFactorGraph
   ghfg.add(JacobianFactor(X(0), I_1x1, Vector1(5)));
@@ -139,7 +139,7 @@ TEST(HybridGaussianFactorGraph, Resize) {
   linearizationPoint.insert<double>(X(1), 1);
 
   // Generate `HybridGaussianFactorGraph` by linearizing
-  HybridGaussianFactorGraph gfg = nhfg.linearize(linearizationPoint);
+  HybridGaussianFactorGraph gfg = *nhfg.linearize(linearizationPoint);
 
   EXPECT_LONGS_EQUAL(gfg.size(), 3);
 
@@ -250,7 +250,7 @@ TEST(HybridFactorGraph, Linearization) {
 
   // Linearize here:
   HybridGaussianFactorGraph actualLinearized =
-      self.nonlinearFactorGraph.linearize(self.linearizationPoint);
+      *self.nonlinearFactorGraph.linearize(self.linearizationPoint);
 
   EXPECT_LONGS_EQUAL(7, actualLinearized.size());
 }
@@ -718,7 +718,7 @@ TEST(HybridFactorGraph, DefaultDecisionTree) {
   ordering += X(0);
   ordering += X(1);
 
-  HybridGaussianFactorGraph linearized = fg.linearize(initialEstimate);
+  HybridGaussianFactorGraph linearized = *fg.linearize(initialEstimate);
   gtsam::HybridBayesNet::shared_ptr hybridBayesNet;
   gtsam::HybridGaussianFactorGraph::shared_ptr remainingFactorGraph;
 

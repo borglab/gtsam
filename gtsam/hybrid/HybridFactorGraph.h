@@ -135,6 +135,28 @@ class HybridFactorGraph : public FactorGraph<HybridFactor> {
       push_hybrid(p);
     }
   }
+
+  /// Get all the discrete keys in the factor graph.
+  const KeySet discreteKeys() const {
+    KeySet discrete_keys;
+    for (auto& factor : factors_) {
+      for (const DiscreteKey& k : factor->discreteKeys()) {
+        discrete_keys.insert(k.first);
+      }
+    }
+    return discrete_keys;
+  }
+
+  /// Get all the continuous keys in the factor graph.
+  const KeySet continuousKeys() const {
+    KeySet keys;
+    for (auto& factor : factors_) {
+      for (const Key& key : factor->continuousKeys()) {
+        keys.insert(key);
+      }
+    }
+    return keys;
+  }
 };
 
 }  // namespace gtsam
