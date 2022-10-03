@@ -161,12 +161,6 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
     }
   }
 
-  /// Get all the discrete keys in the factor graph.
-  const KeySet getDiscreteKeys() const;
-
-  /// Get all the continuous keys in the factor graph.
-  const KeySet getContinuousKeys() const;
-
   /**
    * @brief Return a Colamd constrained ordering where the discrete keys are
    * eliminated after the continuous keys.

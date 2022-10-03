@@ -62,23 +62,24 @@ void HybridGaussianISAM::updateInternal(
   for (const sharedClique& orphan : *orphans)
     factors += boost::make_shared<BayesTreeOrphanWrapper<Node> >(orphan);
 
-  KeySet allDiscrete;
-  for (auto& factor : factors) {
-    for (auto& k : factor->discreteKeys()) {
-      allDiscrete.insert(k.first);
-    }
-  }
+  // Get all the discrete keys from the factors
+  KeySet allDiscrete = factors.discreteKeys();
+
+  // Create KeyVector with continuous keys followed by discrete keys.
   KeyVector newKeysDiscreteLast;
+  // Insert continuous keys first.
   for (auto& k : newFactorKeys) {
     if (!allDiscrete.exists(k)) {
       newKeysDiscreteLast.push_back(k);
     }
   }
+  // Insert discrete keys at the end
   std::copy(allDiscrete.begin(), allDiscrete.end(),
             std::back_inserter(newKeysDiscreteLast));
 
   // Get an ordering where the new keys are eliminated last
   const VariableIndex index(factors);
+
   Ordering elimination_ordering;
   if (ordering) {
     elimination_ordering = *ordering;
