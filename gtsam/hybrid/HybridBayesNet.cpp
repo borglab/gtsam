@@ -31,8 +31,32 @@ static std::set<DiscreteKey> DiscreteKeysAsSet(const DiscreteKeys &dkeys) {
 }
 
 /* ************************************************************************* */
-HybridBayesNet HybridBayesNet::prune(
-    const DecisionTreeFactor::shared_ptr &discreteFactor) const {
+DecisionTreeFactor::shared_ptr HybridBayesNet::discreteConditionals() const {
+  AlgebraicDecisionTree<Key> decisionTree;
+
+  // The canonical decision tree factor which will get the discrete conditionals
+  // added to it.
+  DecisionTreeFactor dtFactor;
+
+  for (size_t i = 0; i < this->size(); i++) {
+    HybridConditional::shared_ptr conditional = this->at(i);
+    if (conditional->isDiscrete()) {
+      // Convert to a DecisionTreeFactor and add it to the main factor.
+      DecisionTreeFactor f(*conditional->asDiscreteConditional());
+      dtFactor = dtFactor * f;
+    }
+  }
+  return boost::make_shared<DecisionTreeFactor>(dtFactor);
+}
+
+/* ************************************************************************* */
+HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves) const {
+  // Get the decision tree of only the discrete keys
+  auto discreteConditionals = this->discreteConditionals();
+  const DecisionTreeFactor::shared_ptr discreteFactor =
+      boost::make_shared<DecisionTreeFactor>(
+          discreteConditionals->prune(maxNrLeaves));
+
   /* To Prune, we visitWith every leaf in the GaussianMixture.
    * For each leaf, using the assignment we can check the discrete decision tree
    * for 0.0 probability, then just set the leaf to a nullptr.
