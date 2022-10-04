@@ -42,6 +42,16 @@ class GTSAM_EXPORT HybridNonlinearFactorGraph : public HybridFactorGraph {
   using IsNonlinear = typename std::enable_if<
       std::is_base_of<NonlinearFactor, FACTOR>::value>::type;
 
+  /// Check if T has a value_type derived from FactorType.
+  template <typename T>
+  using HasDerivedValueType = typename std::enable_if<
+      std::is_base_of<HybridFactor, typename T::value_type>::value>::type;
+
+  /// Check if T has a pointer type derived from FactorType.
+  template <typename T>
+  using HasDerivedElementType = typename std::enable_if<std::is_base_of<
+      HybridFactor, typename T::value_type::element_type>::value>::type;
+
  public:
   using Base = HybridFactorGraph;
   using This = HybridNonlinearFactorGraph;     ///< this class
@@ -109,6 +119,21 @@ class GTSAM_EXPORT HybridNonlinearFactorGraph : public HybridFactorGraph {
     }
   }
 
+  /**
+   * Push back many factors as shared_ptr's in a container (factors are not
+   * copied)
+   */
+  template <typename CONTAINER>
+  HasDerivedElementType<CONTAINER> push_back(const CONTAINER& container) {
+    Base::push_back(container.begin(), container.end());
+  }
+
+  /// Push back non-pointer objects in a container (factors are copied).
+  template <typename CONTAINER>
+  HasDerivedValueType<CONTAINER> push_back(const CONTAINER& container) {
+    Base::push_back(container.begin(), container.end());
+  }
+
   /// Add a nonlinear factor as a shared ptr.
   void add(boost::shared_ptr<NonlinearFactor> factor);
 
@@ -127,7 +152,8 @@ class GTSAM_EXPORT HybridNonlinearFactorGraph : public HybridFactorGraph {
    * @param continuousValues: Dictionary of continuous values.
    * @return HybridGaussianFactorGraph::shared_ptr
    */
-  HybridGaussianFactorGraph linearize(const Values& continuousValues) const;
+  HybridGaussianFactorGraph::shared_ptr linearize(
+      const Values& continuousValues) const;
 };
 
 template <>

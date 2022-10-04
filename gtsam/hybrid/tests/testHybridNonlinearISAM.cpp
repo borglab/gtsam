@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    testHybridIncremental.cpp
- * @brief   Unit tests for incremental inference
+ * @file    testHybridNonlinearISAM.cpp
+ * @brief   Unit tests for nonlinear incremental inference
  * @author  Fan Jiang, Varun Agrawal, Frank Dellaert
  * @date    Jan 2021
  */
@@ -21,7 +21,7 @@
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/hybrid/HybridConditional.h>
-#include <gtsam/hybrid/HybridGaussianISAM.h>
+#include <gtsam/hybrid/HybridNonlinearISAM.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/PriorFactor.h>
@@ -46,56 +46,65 @@ using symbol_shorthand::Z;
 
 /* ****************************************************************************/
 // Test if we can perform elimination incrementally.
-TEST(HybridGaussianElimination, IncrementalElimination) {
+TEST(HybridNonlinearISAM, IncrementalElimination) {
   Switching switching(3);
-  HybridGaussianISAM isam;
-  HybridGaussianFactorGraph graph1;
+  HybridNonlinearISAM isam;
+  HybridNonlinearFactorGraph graph1;
+  Values initial;
 
   // Create initial factor graph
   //  *        *      *
   //  |        |      |
   //  X1  -*-  X2 -*- X3
   //   \*-M1-*/
-  graph1.push_back(switching.linearizedFactorGraph.at(0));  // P(X1)
-  graph1.push_back(switching.linearizedFactorGraph.at(1));  // P(X1, X2 | M1)
-  graph1.push_back(switching.linearizedFactorGraph.at(2));  // P(X2, X3 | M2)
-  graph1.push_back(switching.linearizedFactorGraph.at(5));  // P(M1)
+  graph1.push_back(switching.nonlinearFactorGraph.at(0));  // P(X1)
+  graph1.push_back(switching.nonlinearFactorGraph.at(1));  // P(X1, X2 | M1)
+  graph1.push_back(switching.nonlinearFactorGraph.at(2));  // P(X2, X3 | M2)
+  graph1.push_back(switching.nonlinearFactorGraph.at(5));  // P(M1)
+
+  initial.insert<double>(X(1), 1);
+  initial.insert<double>(X(2), 2);
+  initial.insert<double>(X(3), 3);
 
   // Run update step
-  isam.update(graph1);
+  isam.update(graph1, initial);
 
   // Check that after update we have 3 hybrid Bayes net nodes:
   // P(X1 | X2, M1) and P(X2, X3 | M1, M2), P(M1, M2)
-  EXPECT_LONGS_EQUAL(3, isam.size());
-  EXPECT(isam[X(1)]->conditional()->frontals() == KeyVector{X(1)});
-  EXPECT(isam[X(1)]->conditional()->parents() == KeyVector({X(2), M(1)}));
-  EXPECT(isam[X(2)]->conditional()->frontals() == KeyVector({X(2), X(3)}));
-  EXPECT(isam[X(2)]->conditional()->parents() == KeyVector({M(1), M(2)}));
+  HybridGaussianISAM bayesTree = isam.bayesTree();
+  EXPECT_LONGS_EQUAL(3, bayesTree.size());
+  EXPECT(bayesTree[X(1)]->conditional()->frontals() == KeyVector{X(1)});
+  EXPECT(bayesTree[X(1)]->conditional()->parents() == KeyVector({X(2), M(1)}));
+  EXPECT(bayesTree[X(2)]->conditional()->frontals() == KeyVector({X(2), X(3)}));
+  EXPECT(bayesTree[X(2)]->conditional()->parents() == KeyVector({M(1), M(2)}));
 
   /********************************************************/
   // New factor graph for incremental update.
-  HybridGaussianFactorGraph graph2;
+  HybridNonlinearFactorGraph graph2;
+  initial = Values();
 
-  graph1.push_back(switching.linearizedFactorGraph.at(3));  // P(X2)
-  graph2.push_back(switching.linearizedFactorGraph.at(4));  // P(X3)
-  graph2.push_back(switching.linearizedFactorGraph.at(6));  // P(M1, M2)
+  graph1.push_back(switching.nonlinearFactorGraph.at(3));  // P(X2)
+  graph2.push_back(switching.nonlinearFactorGraph.at(4));  // P(X3)
+  graph2.push_back(switching.nonlinearFactorGraph.at(6));  // P(M1, M2)
 
-  isam.update(graph2);
+  isam.update(graph2, initial);
 
+  bayesTree = isam.bayesTree();
   // Check that after the second update we have
   // 1 additional hybrid Bayes net node:
   // P(X2, X3 | M1, M2)
-  EXPECT_LONGS_EQUAL(3, isam.size());
-  EXPECT(isam[X(3)]->conditional()->frontals() == KeyVector({X(2), X(3)}));
-  EXPECT(isam[X(3)]->conditional()->parents() == KeyVector({M(1), M(2)}));
+  EXPECT_LONGS_EQUAL(3, bayesTree.size());
+  EXPECT(bayesTree[X(3)]->conditional()->frontals() == KeyVector({X(2), X(3)}));
+  EXPECT(bayesTree[X(3)]->conditional()->parents() == KeyVector({M(1), M(2)}));
 }
 
 /* ****************************************************************************/
 // Test if we can incrementally do the inference
-TEST(HybridGaussianElimination, IncrementalInference) {
+TEST(HybridNonlinearISAM, IncrementalInference) {
   Switching switching(3);
-  HybridGaussianISAM isam;
-  HybridGaussianFactorGraph graph1;
+  HybridNonlinearISAM isam;
+  HybridNonlinearFactorGraph graph1;
+  Values initial;
 
   // Create initial factor graph
   //    *        *        *
@@ -103,27 +112,35 @@ TEST(HybridGaussianElimination, IncrementalInference) {
   //    X1  -*-  X2  -*-  X3
   //         |        |
   //      *-M1 - * - M2
-  graph1.push_back(switching.linearizedFactorGraph.at(0));  // P(X1)
-  graph1.push_back(switching.linearizedFactorGraph.at(1));  // P(X1, X2 | M1)
-  graph1.push_back(switching.linearizedFactorGraph.at(3));  // P(X2)
-  graph1.push_back(switching.linearizedFactorGraph.at(5));  // P(M1)
+  graph1.push_back(switching.nonlinearFactorGraph.at(0));  // P(X1)
+  graph1.push_back(switching.nonlinearFactorGraph.at(1));  // P(X1, X2 | M1)
+  graph1.push_back(switching.nonlinearFactorGraph.at(3));  // P(X2)
+  graph1.push_back(switching.nonlinearFactorGraph.at(5));  // P(M1)
+
+  initial.insert<double>(X(1), 1);
+  initial.insert<double>(X(2), 2);
 
   // Run update step
-  isam.update(graph1);
+  isam.update(graph1, initial);
+  HybridGaussianISAM bayesTree = isam.bayesTree();
 
   auto discreteConditional_m1 =
-      isam[M(1)]->conditional()->asDiscreteConditional();
+      bayesTree[M(1)]->conditional()->asDiscreteConditional();
   EXPECT(discreteConditional_m1->keys() == KeyVector({M(1)}));
 
   /********************************************************/
   // New factor graph for incremental update.
-  HybridGaussianFactorGraph graph2;
+  HybridNonlinearFactorGraph graph2;
+  initial = Values();
 
-  graph2.push_back(switching.linearizedFactorGraph.at(2));  // P(X2, X3 | M2)
-  graph2.push_back(switching.linearizedFactorGraph.at(4));  // P(X3)
-  graph2.push_back(switching.linearizedFactorGraph.at(6));  // P(M1, M2)
+  initial.insert<double>(X(3), 3);
 
-  isam.update(graph2);
+  graph2.push_back(switching.nonlinearFactorGraph.at(2));  // P(X2, X3 | M2)
+  graph2.push_back(switching.nonlinearFactorGraph.at(4));  // P(X3)
+  graph2.push_back(switching.nonlinearFactorGraph.at(6));  // P(M1, M2)
+
+  isam.update(graph2, initial);
+  bayesTree = isam.bayesTree();
 
   /********************************************************/
   // Run batch elimination so we can compare results.
@@ -139,22 +156,22 @@ TEST(HybridGaussianElimination, IncrementalInference) {
       switching.linearizedFactorGraph.eliminatePartialMultifrontal(ordering);
 
   // The densities on X(1) should be the same
-  auto x1_conditional =
-      dynamic_pointer_cast<GaussianMixture>(isam[X(1)]->conditional()->inner());
+  auto x1_conditional = dynamic_pointer_cast<GaussianMixture>(
+      bayesTree[X(1)]->conditional()->inner());
   auto actual_x1_conditional = dynamic_pointer_cast<GaussianMixture>(
       (*expectedHybridBayesTree)[X(1)]->conditional()->inner());
   EXPECT(assert_equal(*x1_conditional, *actual_x1_conditional));
 
   // The densities on X(2) should be the same
-  auto x2_conditional =
-      dynamic_pointer_cast<GaussianMixture>(isam[X(2)]->conditional()->inner());
+  auto x2_conditional = dynamic_pointer_cast<GaussianMixture>(
+      bayesTree[X(2)]->conditional()->inner());
   auto actual_x2_conditional = dynamic_pointer_cast<GaussianMixture>(
       (*expectedHybridBayesTree)[X(2)]->conditional()->inner());
   EXPECT(assert_equal(*x2_conditional, *actual_x2_conditional));
 
   // The densities on X(3) should be the same
-  auto x3_conditional =
-      dynamic_pointer_cast<GaussianMixture>(isam[X(3)]->conditional()->inner());
+  auto x3_conditional = dynamic_pointer_cast<GaussianMixture>(
+      bayesTree[X(3)]->conditional()->inner());
   auto actual_x3_conditional = dynamic_pointer_cast<GaussianMixture>(
       (*expectedHybridBayesTree)[X(2)]->conditional()->inner());
   EXPECT(assert_equal(*x3_conditional, *actual_x3_conditional));
@@ -173,7 +190,8 @@ TEST(HybridGaussianElimination, IncrementalInference) {
       *(*discreteBayesTree)[M(2)]->conditional()->asDiscreteConditional();
   double m00_prob = decisionTree(m00);
 
-  auto discreteConditional = isam[M(2)]->conditional()->asDiscreteConditional();
+  auto discreteConditional =
+      bayesTree[M(2)]->conditional()->asDiscreteConditional();
 
   // Test if the probability values are as expected with regression tests.
   DiscreteValues assignment;
@@ -197,27 +215,29 @@ TEST(HybridGaussianElimination, IncrementalInference) {
   auto expectedConditional = dynamic_pointer_cast<DecisionTreeFactor>(
       (*expectedChordal)[M(2)]->conditional()->inner());
   auto actualConditional = dynamic_pointer_cast<DecisionTreeFactor>(
-      isam[M(2)]->conditional()->inner());
+      bayesTree[M(2)]->conditional()->inner());
   EXPECT(assert_equal(*actualConditional, *expectedConditional, 1e-6));
 }
 
 /* ****************************************************************************/
 // Test if we can approximately do the inference
-TEST(HybridGaussianElimination, Approx_inference) {
+TEST(HybridNonlinearISAM, Approx_inference) {
   Switching switching(4);
-  HybridGaussianISAM incrementalHybrid;
-  HybridGaussianFactorGraph graph1;
+  HybridNonlinearISAM incrementalHybrid;
+  HybridNonlinearFactorGraph graph1;
+  Values initial;
 
   // Add the 3 hybrid factors, x1-x2, x2-x3, x3-x4
   for (size_t i = 1; i < 4; i++) {
-    graph1.push_back(switching.linearizedFactorGraph.at(i));
+    graph1.push_back(switching.nonlinearFactorGraph.at(i));
   }
 
   // Add the Gaussian factors, 1 prior on X(1),
   // 3 measurements on X(2), X(3), X(4)
-  graph1.push_back(switching.linearizedFactorGraph.at(0));
+  graph1.push_back(switching.nonlinearFactorGraph.at(0));
   for (size_t i = 4; i <= 7; i++) {
-    graph1.push_back(switching.linearizedFactorGraph.at(i));
+    graph1.push_back(switching.nonlinearFactorGraph.at(i));
+    initial.insert<double>(X(i - 3), i - 3);
   }
 
   // Create ordering.
@@ -233,9 +253,10 @@ TEST(HybridGaussianElimination, Approx_inference) {
       switching.linearizedFactorGraph.eliminatePartialMultifrontal(ordering);
 
   size_t maxNrLeaves = 5;
-  incrementalHybrid.update(graph1);
+  incrementalHybrid.update(graph1, initial);
+  HybridGaussianISAM bayesTree = incrementalHybrid.bayesTree();
 
-  incrementalHybrid.prune(M(3), maxNrLeaves);
+  bayesTree.prune(M(3), maxNrLeaves);
 
   /*
   unpruned factor is:
@@ -272,7 +293,7 @@ TEST(HybridGaussianElimination, Approx_inference) {
   */
 
   auto discreteConditional_m1 = *dynamic_pointer_cast<DiscreteConditional>(
-      incrementalHybrid[M(1)]->conditional()->inner());
+      bayesTree[M(1)]->conditional()->inner());
   EXPECT(discreteConditional_m1.keys() == KeyVector({M(1), M(2), M(3)}));
 
   // Get the number of elements which are greater than 0.
@@ -287,7 +308,7 @@ TEST(HybridGaussianElimination, Approx_inference) {
   auto &unprunedLastDensity = *dynamic_pointer_cast<GaussianMixture>(
       unprunedHybridBayesTree->clique(X(4))->conditional()->inner());
   auto &lastDensity = *dynamic_pointer_cast<GaussianMixture>(
-      incrementalHybrid[X(4)]->conditional()->inner());
+      bayesTree[X(4)]->conditional()->inner());
 
   std::vector<std::pair<DiscreteValues, double>> assignments =
       discreteConditional_m1.enumerate();
@@ -308,57 +329,66 @@ TEST(HybridGaussianElimination, Approx_inference) {
 
 /* ****************************************************************************/
 // Test approximate inference with an additional pruning step.
-TEST(HybridGaussianElimination, Incremental_approximate) {
+TEST(HybridNonlinearISAM, Incremental_approximate) {
   Switching switching(5);
-  HybridGaussianISAM incrementalHybrid;
-  HybridGaussianFactorGraph graph1;
+  HybridNonlinearISAM incrementalHybrid;
+  HybridNonlinearFactorGraph graph1;
+  Values initial;
 
   /***** Run Round 1 *****/
   // Add the 3 hybrid factors, x1-x2, x2-x3, x3-x4
   for (size_t i = 1; i < 4; i++) {
-    graph1.push_back(switching.linearizedFactorGraph.at(i));
+    graph1.push_back(switching.nonlinearFactorGraph.at(i));
   }
 
   // Add the Gaussian factors, 1 prior on X(1),
   // 3 measurements on X(2), X(3), X(4)
-  graph1.push_back(switching.linearizedFactorGraph.at(0));
+  graph1.push_back(switching.nonlinearFactorGraph.at(0));
+  initial.insert<double>(X(1), 1);
   for (size_t i = 5; i <= 7; i++) {
-    graph1.push_back(switching.linearizedFactorGraph.at(i));
+    graph1.push_back(switching.nonlinearFactorGraph.at(i));
+    initial.insert<double>(X(i - 3), i - 3);
   }
 
   // Run update with pruning
   size_t maxComponents = 5;
-  incrementalHybrid.update(graph1);
-  incrementalHybrid.prune(M(3), maxComponents);
+  incrementalHybrid.update(graph1, initial);
+  HybridGaussianISAM bayesTree = incrementalHybrid.bayesTree();
+
+  bayesTree.prune(M(3), maxComponents);
 
   // Check if we have a bayes tree with 4 hybrid nodes,
   // each with 2, 4, 8, and 5 (pruned) leaves respetively.
-  EXPECT_LONGS_EQUAL(4, incrementalHybrid.size());
+  EXPECT_LONGS_EQUAL(4, bayesTree.size());
   EXPECT_LONGS_EQUAL(
-      2, incrementalHybrid[X(1)]->conditional()->asMixture()->nrComponents());
+      2, bayesTree[X(1)]->conditional()->asMixture()->nrComponents());
   EXPECT_LONGS_EQUAL(
-      4, incrementalHybrid[X(2)]->conditional()->asMixture()->nrComponents());
+      4, bayesTree[X(2)]->conditional()->asMixture()->nrComponents());
   EXPECT_LONGS_EQUAL(
-      5, incrementalHybrid[X(3)]->conditional()->asMixture()->nrComponents());
+      5, bayesTree[X(3)]->conditional()->asMixture()->nrComponents());
   EXPECT_LONGS_EQUAL(
-      5, incrementalHybrid[X(4)]->conditional()->asMixture()->nrComponents());
+      5, bayesTree[X(4)]->conditional()->asMixture()->nrComponents());
 
   /***** Run Round 2 *****/
   HybridGaussianFactorGraph graph2;
-  graph2.push_back(switching.linearizedFactorGraph.at(4));
-  graph2.push_back(switching.linearizedFactorGraph.at(8));
+  graph2.push_back(switching.nonlinearFactorGraph.at(4));  // x4-x5
+  graph2.push_back(switching.nonlinearFactorGraph.at(8));  // x5 measurement
+  initial = Values();
+  initial.insert<double>(X(5), 5);
 
   // Run update with pruning a second time.
-  incrementalHybrid.update(graph2);
-  incrementalHybrid.prune(M(4), maxComponents);
+  incrementalHybrid.update(graph2, initial);
+  bayesTree = incrementalHybrid.bayesTree();
+
+  bayesTree.prune(M(4), maxComponents);
 
   // Check if we have a bayes tree with pruned hybrid nodes,
   // with 5 (pruned) leaves.
-  CHECK_EQUAL(5, incrementalHybrid.size());
+  CHECK_EQUAL(5, bayesTree.size());
   EXPECT_LONGS_EQUAL(
-      5, incrementalHybrid[X(4)]->conditional()->asMixture()->nrComponents());
+      5, bayesTree[X(4)]->conditional()->asMixture()->nrComponents());
   EXPECT_LONGS_EQUAL(
-      5, incrementalHybrid[X(5)]->conditional()->asMixture()->nrComponents());
+      5, bayesTree[X(5)]->conditional()->asMixture()->nrComponents());
 }
 
 /* ************************************************************************/
@@ -366,9 +396,10 @@ TEST(HybridGaussianElimination, Incremental_approximate) {
 // The leg links are represented by the chain X-Y-Z-W, where X is the base and
 // W is the foot.
 // We use BetweenFactor<Pose2> as constraints between each of the poses.
-TEST(HybridGaussianISAM, NonTrivial) {
+TEST(HybridNonlinearISAM, NonTrivial) {
   /*************** Run Round 1 ***************/
   HybridNonlinearFactorGraph fg;
+  HybridNonlinearISAM inc;
 
   // Add a prior on pose x1 at the origin.
   // A prior factor consists of a mean  and
@@ -399,17 +430,7 @@ TEST(HybridGaussianISAM, NonTrivial) {
   initial.insert(Z(0), Pose2(0.0, 2.0, 0.0));
   initial.insert(W(0), Pose2(0.0, 3.0, 0.0));
 
-  HybridGaussianFactorGraph gfg = *fg.linearize(initial);
-  fg = HybridNonlinearFactorGraph();
-
-  HybridGaussianISAM inc;
-
-  // Update without pruning
-  // The result is a HybridBayesNet with no discrete variables
-  // (equivalent to a GaussianBayesNet).
-  // Factorization is:
-  // `P(X | measurements) = P(W0|Z0) P(Z0|Y0) P(Y0|X0) P(X0)`
-  inc.update(gfg);
+  // Don't run update now since we don't have discrete variables involved.
 
   /*************** Run Round 2 ***************/
   using PlanarMotionModel = BetweenFactor<Pose2>;
@@ -444,16 +465,16 @@ TEST(HybridGaussianISAM, NonTrivial) {
   // The leg link did not move so we set the expected pose accordingly.
   initial.insert(W(1), Pose2(0.0, 3.0, 0.0));
 
-  gfg = *fg.linearize(initial);
-  fg = HybridNonlinearFactorGraph();
-
   // Update without pruning
   // The result is a HybridBayesNet with 1 discrete variable M(1).
   // P(X | measurements) = P(W0|Z0, W1, M1) P(Z0|Y0, W1, M1) P(Y0|X0, W1, M1)
   //                       P(X0 | X1, W1, M1) P(W1|Z1, X1, M1) P(Z1|Y1, X1, M1)
   //                       P(Y1 | X1, M1)P(X1 | M1)P(M1)
   // The MHS tree is a 1 level tree for time indices (1,) with 2 leaves.
-  inc.update(gfg);
+  inc.update(fg, initial);
+
+  fg = HybridNonlinearFactorGraph();
+  initial = Values();
 
   /*************** Run Round 3 ***************/
   // Add odometry factor with discrete modes.
@@ -461,7 +482,8 @@ TEST(HybridGaussianISAM, NonTrivial) {
   still = boost::make_shared<PlanarMotionModel>(W(1), W(2), Pose2(0, 0, 0),
                                                 noise_model);
   moving =
-      boost::make_shared<PlanarMotionModel>(W(1), W(2), odometry, noise_model);
+      boost::make_shared<PlanarMotionModel>(W(1), W(2), odometry,
+      noise_model);
   components = {moving, still};
   mixtureFactor = boost::make_shared<MixtureFactor>(
       contKeys, DiscreteKeys{gtsam::DiscreteKey(M(2), 2)}, components);
@@ -483,9 +505,6 @@ TEST(HybridGaussianISAM, NonTrivial) {
   initial.insert(Z(2), Pose2(2.0, 2.0, 0.0));
   initial.insert(W(2), Pose2(0.0, 3.0, 0.0));
 
-  gfg = *fg.linearize(initial);
-  fg = HybridNonlinearFactorGraph();
-
   // Now we prune!
   // P(X | measurements) = P(W0|Z0, W1, M1) P(Z0|Y0, W1, M1) P(Y0|X0, W1, M1)
   //                       P(X0 | X1, W1, M1) P(W1|W2, Z1, X1, M1, M2)
@@ -495,8 +514,11 @@ TEST(HybridGaussianISAM, NonTrivial) {
   //                       P(X2 | M1, M2) P(M1, M2)
   // The MHS at this point should be a 2 level tree on (1, 2).
   // 1 has 2 choices, and 2 has 4 choices.
-  inc.update(gfg);
+  inc.update(fg, initial);
   inc.prune(M(2), 2);
+
+  fg = HybridNonlinearFactorGraph();
+  initial = Values();
 
   /*************** Run Round 4 ***************/
   // Add odometry factor with discrete modes.
@@ -504,7 +526,8 @@ TEST(HybridGaussianISAM, NonTrivial) {
   still = boost::make_shared<PlanarMotionModel>(W(2), W(3), Pose2(0, 0, 0),
                                                 noise_model);
   moving =
-      boost::make_shared<PlanarMotionModel>(W(2), W(3), odometry, noise_model);
+      boost::make_shared<PlanarMotionModel>(W(2), W(3), odometry,
+      noise_model);
   components = {moving, still};
   mixtureFactor = boost::make_shared<MixtureFactor>(
       contKeys, DiscreteKeys{gtsam::DiscreteKey(M(3), 2)}, components);
@@ -526,16 +549,19 @@ TEST(HybridGaussianISAM, NonTrivial) {
   initial.insert(Z(3), Pose2(3.0, 2.0, 0.0));
   initial.insert(W(3), Pose2(0.0, 3.0, 0.0));
 
-  gfg = *fg.linearize(initial);
-  fg = HybridNonlinearFactorGraph();
-
   // Keep pruning!
-  inc.update(gfg);
+  inc.update(fg, initial);
   inc.prune(M(3), 3);
+
+  fg = HybridNonlinearFactorGraph();
+  initial = Values();
+
+  HybridGaussianISAM bayesTree = inc.bayesTree();
 
   // The final discrete graph should not be empty since we have eliminated
   // all continuous variables.
-  auto discreteTree = inc[M(3)]->conditional()->asDiscreteConditional();
+  auto discreteTree =
+  bayesTree[M(3)]->conditional()->asDiscreteConditional();
   EXPECT_LONGS_EQUAL(3, discreteTree->size());
 
   // Test if the optimal discrete mode assignment is (1, 1, 1).
@@ -550,9 +576,9 @@ TEST(HybridGaussianISAM, NonTrivial) {
 
   EXPECT(assert_equal(expected_assignment, optimal_assignment));
 
-  // Test if pruning worked correctly by checking that we only have 3 leaves in
-  // the last node.
-  auto lastConditional = inc[X(3)]->conditional()->asMixture();
+  // Test if pruning worked correctly by checking that
+  // we only have 3 leaves in the last node.
+  auto lastConditional = bayesTree[X(3)]->conditional()->asMixture();
   EXPECT_LONGS_EQUAL(3, lastConditional->nrComponents());
 }
 
