@@ -142,8 +142,12 @@ GaussianMixtureFactor::Sum sumFrontals(
       }
 
     } else if (f->isContinuous()) {
-      deferredFactors.push_back(
-          boost::dynamic_pointer_cast<HybridGaussianFactor>(f)->inner());
+      if (auto gf = boost::dynamic_pointer_cast<HybridGaussianFactor>(f)) {
+        deferredFactors.push_back(gf->inner());
+      }
+      if (auto cg = boost::dynamic_pointer_cast<HybridConditional>(f)) {
+        deferredFactors.push_back(cg->asGaussian());
+      }
 
     } else if (f->isDiscrete()) {
       // Don't do anything for discrete-only factors
