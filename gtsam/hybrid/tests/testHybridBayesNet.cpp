@@ -66,7 +66,6 @@ TEST(HybridBayesNet, Add) {
   EXPECT(bayesNet.equals(other));
 }
 
-
 /* ****************************************************************************/
 // Test choosing an assignment of conditionals
 TEST(HybridBayesNet, Choose) {
@@ -182,6 +181,24 @@ TEST(HybridBayesNet, OptimizeMultifrontal) {
   expectedValues.insert(X(4), -1.0001 * Vector1::Ones());
 
   EXPECT(assert_equal(expectedValues, delta.continuous(), 1e-5));
+}
+
+/* ****************************************************************************/
+// Test bayes net pruning
+TEST(HybridBayesNet, Prune) {
+  Switching s(4);
+
+  Ordering hybridOrdering = s.linearizedFactorGraph.getHybridOrdering();
+  HybridBayesNet::shared_ptr hybridBayesNet =
+      s.linearizedFactorGraph.eliminateSequential(hybridOrdering);
+
+  HybridValues delta = hybridBayesNet->optimize();
+
+  auto prunedBayesNet = hybridBayesNet->prune(2);
+  HybridValues pruned_delta = prunedBayesNet.optimize();
+
+  EXPECT(assert_equal(delta.discrete(), pruned_delta.discrete()));
+  EXPECT(assert_equal(delta.continuous(), pruned_delta.continuous()));
 }
 
 /* ****************************************************************************/
