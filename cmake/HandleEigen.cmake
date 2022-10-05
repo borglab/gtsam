@@ -16,8 +16,14 @@ endif()
 if(GTSAM_USE_SYSTEM_EIGEN)
     find_package(Eigen3 REQUIRED) # need to find again as REQUIRED
 
-    # Use generic Eigen include paths e.g. <Eigen/Core>
-    set(GTSAM_EIGEN_INCLUDE_FOR_INSTALL "${EIGEN3_INCLUDE_DIR}")
+    add_library(Eigen3::Eigen INTERFACE IMPORTED)
+
+    set_target_properties(Eigen3::Eigen PROPERTIES
+            INTERFACE_INCLUDE_DIRECTORIES ${EIGEN3_INCLUDE_DIR}
+            )
+
+    # The actual include directory (for BUILD cmake target interface):
+    set(GTSAM_EIGEN_INCLUDE_FOR_BUILD "${EIGEN3_INCLUDE_DIR}/")
 
     # check if MKL is also enabled - can have one or the other, but not both!
     # Note: Eigen >= v3.2.5 includes our patches
@@ -30,9 +36,6 @@ if(GTSAM_USE_SYSTEM_EIGEN)
     if(EIGEN_USE_MKL_ALL AND (EIGEN3_VERSION VERSION_EQUAL 3.3.4))
         message(FATAL_ERROR "MKL does not work with Eigen 3.3.4 because of a bug in Eigen. See http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1527. Disable GTSAM_USE_SYSTEM_EIGEN to use GTSAM's copy of Eigen, disable GTSAM_WITH_EIGEN_MKL, or upgrade/patch your installation of Eigen.")
     endif()
-
-    # The actual include directory (for BUILD cmake target interface):
-    set(GTSAM_EIGEN_INCLUDE_FOR_BUILD "${EIGEN3_INCLUDE_DIR}")
 else()
     # Use bundled Eigen include path.
     # Clear any variables set by FindEigen3
@@ -46,6 +49,19 @@ else()
 
     # The actual include directory (for BUILD cmake target interface):
     set(GTSAM_EIGEN_INCLUDE_FOR_BUILD "${GTSAM_SOURCE_DIR}/gtsam/3rdparty/Eigen/")
+
+    add_library(gtsam_eigen3 INTERFACE)
+
+    target_include_directories(gtsam_eigen3 INTERFACE
+      $<BUILD_INTERFACE:${GTSAM_EIGEN_INCLUDE_FOR_BUILD}>
+      $<INSTALL_INTERFACE:${GTSAM_EIGEN_INCLUDE_FOR_INSTALL}>
+    )
+    add_library(Eigen3::Eigen ALIAS gtsam_eigen3)
+
+    install(TARGETS gtsam_eigen3 EXPORT GTSAM-exports PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+    list(APPEND GTSAM_EXPORTED_TARGETS gtsam_eigen3)
+    set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
 endif()
 
 # Detect Eigen version:
