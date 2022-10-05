@@ -329,7 +329,7 @@ class Rot3 {
 
   // Operator Overloads
   gtsam::Rot3 operator*(const gtsam::Rot3& p2) const;
-  gtsam::Rot3 operator*(const gtsam::Unit3& p) const;
+  gtsam::Unit3 operator*(const gtsam::Unit3& p) const;
 
   // Manifold
   // gtsam::Rot3 retractCayley(Vector v) const; // TODO, does not exist in both
@@ -341,6 +341,10 @@ class Rot3 {
   gtsam::Point3 rotate(const gtsam::Point3& p) const;
   gtsam::Point3 unrotate(const gtsam::Point3& p) const;
 
+  // Group action on Unit3
+  gtsam::Unit3 rotate(const gtsam::Unit3& p) const;
+  gtsam::Unit3 unrotate(const gtsam::Unit3& p) const;
+  
   // Standard Interface
   static gtsam::Rot3 Expmap(Vector v);
   static Vector Logmap(const gtsam::Rot3& p);
