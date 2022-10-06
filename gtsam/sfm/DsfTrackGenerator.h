@@ -37,17 +37,27 @@ typedef Eigen::MatrixX2i CorrespondenceIndices; // N x 2 array
 using KeypointCoordinates = Eigen::MatrixX2d;
 
 
+// Output of detections in an image.
+// Coordinate system convention:
+// 1. The x coordinate denotes the horizontal direction (+ve direction towards the right).
+// 2. The y coordinate denotes the vertical direction (+ve direction downwards).
+// 3. Origin is at the top left corner of the image.
 struct Keypoints {
+
+  // The (x, y) coordinates of the features, of shape Nx2.
   KeypointCoordinates coordinates;
-  // typedef'd for Eigen::VectorXd
+
+  // Optional scale of the detections, of shape N.
+  // Note: gtsam::Vector is typedef'd for Eigen::VectorXd.
   boost::optional<gtsam::Vector> scales;
+
+  /// Optional confidences/responses for each detection, of shape N.
   boost::optional<gtsam::Vector> responses;
 
   Keypoints(const gtsam::KeypointCoordinates& coordinates): coordinates(coordinates) {}; // boost::none
 };
 
 using KeypointsList = std::vector<Keypoints>;
-using KeypointsVector = std::vector<Keypoints>; // TODO(johnwlambert): prefer KeypointsSet?
 // Mapping from each image pair to (N,2) array representing indices of matching keypoints.
 using MatchIndicesMap = std::map<IndexPair, CorrespondenceIndices>;
 
