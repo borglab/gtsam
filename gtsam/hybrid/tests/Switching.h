@@ -115,7 +115,6 @@ inline std::pair<KeyVector, std::vector<int>> makeBinaryOrdering(
 /* ***************************************************************************
  */
 using MotionModel = BetweenFactor<double>;
-// using MotionMixture = MixtureFactor<MotionModel>;
 
 // Test fixture with switching network.
 struct Switching {
@@ -125,7 +124,13 @@ struct Switching {
   HybridGaussianFactorGraph linearizedFactorGraph;
   Values linearizationPoint;
 
-  /// Create with given number of time steps.
+  /**
+   * @brief Create with given number of time steps.
+   *
+   * @param K The total number of timesteps.
+   * @param between_sigma The stddev between poses.
+   * @param prior_sigma The stddev on priors (also used for measurements).
+   */
   Switching(size_t K, double between_sigma = 1.0, double prior_sigma = 0.1)
       : K(K) {
     // Create DiscreteKeys for binary K modes, modes[0] will not be used.
@@ -166,6 +171,8 @@ struct Switching {
       linearizationPoint.insert<double>(X(k), static_cast<double>(k));
     }
 
+    // The ground truth is robot moving forward
+    // and one less than the linearization point
     linearizedFactorGraph = *nonlinearFactorGraph.linearize(linearizationPoint);
   }
 
