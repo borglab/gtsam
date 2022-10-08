@@ -82,12 +82,9 @@ class GTSAM_EXPORT HybridNonlinearISAM {
   /**
    * @brief Prune the underlying Bayes tree.
    *
-   * @param root The root key in the discrete conditional decision tree.
-   * @param maxNumberLeaves
+   * @param maxNumberLeaves The max number of leaf nodes to keep.
    */
-  void prune(const Key& root, const size_t maxNumberLeaves) {
-    isam_.prune(root, maxNumberLeaves);
-  }
+  void prune(const size_t maxNumberLeaves) { isam_.prune(maxNumberLeaves); }
 
   /** Return the current linearization point */
   const Values& getLinearizationPoint() const { return linPoint_; }
@@ -121,7 +118,9 @@ class GTSAM_EXPORT HybridNonlinearISAM {
 
   /** Add new factors along with their initial linearization points */
   void update(const HybridNonlinearFactorGraph& newFactors,
-              const Values& initialValues);
+              const Values& initialValues,
+              const boost::optional<size_t>& maxNrLeaves = boost::none,
+              const boost::optional<Ordering>& ordering = boost::none);
 
   /** Relinearization and reordering of variables */
   void reorder_relinearize();

@@ -119,11 +119,12 @@ void GaussianMixture::print(const std::string &s,
       "", [&](Key k) { return formatter(k); },
       [&](const GaussianConditional::shared_ptr &gf) -> std::string {
         RedirectCout rd;
-        if (gf && !gf->empty())
+        if (gf && !gf->empty()) {
           gf->print("", formatter);
-        else
-          return {"nullptr"};
-        return rd.str();
+          return rd.str();
+        } else {
+          return "nullptr";
+        }
       });
 }
 

@@ -96,8 +96,12 @@ GaussianMixtureFactor::Sum sumFrontals(
       }
 
     } else if (f->isContinuous()) {
-      deferredFactors.push_back(
-          boost::dynamic_pointer_cast<HybridGaussianFactor>(f)->inner());
+      if (auto gf = boost::dynamic_pointer_cast<HybridGaussianFactor>(f)) {
+        deferredFactors.push_back(gf->inner());
+      }
+      if (auto cg = boost::dynamic_pointer_cast<HybridConditional>(f)) {
+        deferredFactors.push_back(cg->asGaussian());
+      }
 
     } else if (f->isDiscrete()) {
       // Don't do anything for discrete-only factors
@@ -405,30 +409,8 @@ void HybridGaussianFactorGraph::add(DecisionTreeFactor::shared_ptr factor) {
 }
 
 /* ************************************************************************ */
-const KeySet HybridGaussianFactorGraph::getDiscreteKeys() const {
-  KeySet discrete_keys;
-  for (auto &factor : factors_) {
-    for (const DiscreteKey &k : factor->discreteKeys()) {
-      discrete_keys.insert(k.first);
-    }
-  }
-  return discrete_keys;
-}
-
-/* ************************************************************************ */
-const KeySet HybridGaussianFactorGraph::getContinuousKeys() const {
-  KeySet keys;
-  for (auto &factor : factors_) {
-    for (const Key &key : factor->continuousKeys()) {
-      keys.insert(key);
-    }
-  }
-  return keys;
-}
-
-/* ************************************************************************ */
 const Ordering HybridGaussianFactorGraph::getHybridOrdering() const {
-  KeySet discrete_keys = getDiscreteKeys();
+  KeySet discrete_keys = discreteKeys();
   for (auto &factor : factors_) {
     for (const DiscreteKey &k : factor->discreteKeys()) {
       discrete_keys.insert(k.first);
