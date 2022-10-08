@@ -88,7 +88,7 @@ class Robot {
     }
 
     linearizedFactorGraph_ =
-        nonlinearFactorGraph_.linearize(linearizationPoint_);
+        *nonlinearFactorGraph_.linearize(linearizationPoint_);
   }
 
   void print() const {
@@ -225,7 +225,7 @@ class SingleLeg {
     }
 
     linearizedFactorGraph_ =
-        nonlinearFactorGraph_.linearize(linearizationPoint_);
+        *nonlinearFactorGraph_.linearize(linearizationPoint_);
   }
 
   void print() const {
