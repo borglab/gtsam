@@ -88,6 +88,13 @@ class GTSAM_EXPORT HybridBayesTree : public BayesTree<HybridBayesTreeClique> {
    */
   VectorValues optimize(const DiscreteValues& assignment) const;
 
+  /**
+   * @brief Prune the underlying Bayes tree.
+   *
+   * @param maxNumberLeaves The max number of leaf nodes to keep.
+   */
+  void prune(const size_t maxNumberLeaves);
+
   /// @}
 
  private:

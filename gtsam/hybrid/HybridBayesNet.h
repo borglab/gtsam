@@ -73,6 +73,8 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
         HybridConditional(boost::make_shared<DiscreteConditional>(key, table)));
   }
 
+  using Base::push_back;
+
   /// Get a specific Gaussian mixture by index `i`.
   GaussianMixture::shared_ptr atMixture(size_t i) const;
 
@@ -109,9 +111,17 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    */
   VectorValues optimize(const DiscreteValues &assignment) const;
 
-  /// Prune the Hybrid Bayes Net given the discrete decision tree.
-  HybridBayesNet prune(
-      const DecisionTreeFactor::shared_ptr &discreteFactor) const;
+ protected:
+  /**
+   * @brief Get all the discrete conditionals as a decision tree factor.
+   *
+   * @return DecisionTreeFactor::shared_ptr
+   */
+  DecisionTreeFactor::shared_ptr discreteConditionals() const;
+
+ public:
+  /// Prune the Hybrid Bayes Net such that we have at most maxNrLeaves leaves.
+  HybridBayesNet prune(size_t maxNrLeaves) const;
 
   /// @}
 

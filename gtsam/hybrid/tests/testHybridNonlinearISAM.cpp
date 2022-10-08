@@ -256,7 +256,7 @@ TEST(HybridNonlinearISAM, Approx_inference) {
   incrementalHybrid.update(graph1, initial);
   HybridGaussianISAM bayesTree = incrementalHybrid.bayesTree();
 
-  bayesTree.prune(M(3), maxNrLeaves);
+  bayesTree.prune(maxNrLeaves);
 
   /*
   unpruned factor is:
@@ -355,7 +355,7 @@ TEST(HybridNonlinearISAM, Incremental_approximate) {
   incrementalHybrid.update(graph1, initial);
   HybridGaussianISAM bayesTree = incrementalHybrid.bayesTree();
 
-  bayesTree.prune(M(3), maxComponents);
+  bayesTree.prune(maxComponents);
 
   // Check if we have a bayes tree with 4 hybrid nodes,
   // each with 2, 4, 8, and 5 (pruned) leaves respetively.
@@ -380,7 +380,7 @@ TEST(HybridNonlinearISAM, Incremental_approximate) {
   incrementalHybrid.update(graph2, initial);
   bayesTree = incrementalHybrid.bayesTree();
 
-  bayesTree.prune(M(4), maxComponents);
+  bayesTree.prune(maxComponents);
 
   // Check if we have a bayes tree with pruned hybrid nodes,
   // with 5 (pruned) leaves.
@@ -482,8 +482,7 @@ TEST(HybridNonlinearISAM, NonTrivial) {
   still = boost::make_shared<PlanarMotionModel>(W(1), W(2), Pose2(0, 0, 0),
                                                 noise_model);
   moving =
-      boost::make_shared<PlanarMotionModel>(W(1), W(2), odometry,
-      noise_model);
+      boost::make_shared<PlanarMotionModel>(W(1), W(2), odometry, noise_model);
   components = {moving, still};
   mixtureFactor = boost::make_shared<MixtureFactor>(
       contKeys, DiscreteKeys{gtsam::DiscreteKey(M(2), 2)}, components);
@@ -515,7 +514,7 @@ TEST(HybridNonlinearISAM, NonTrivial) {
   // The MHS at this point should be a 2 level tree on (1, 2).
   // 1 has 2 choices, and 2 has 4 choices.
   inc.update(fg, initial);
-  inc.prune(M(2), 2);
+  inc.prune(2);
 
   fg = HybridNonlinearFactorGraph();
   initial = Values();
@@ -526,8 +525,7 @@ TEST(HybridNonlinearISAM, NonTrivial) {
   still = boost::make_shared<PlanarMotionModel>(W(2), W(3), Pose2(0, 0, 0),
                                                 noise_model);
   moving =
-      boost::make_shared<PlanarMotionModel>(W(2), W(3), odometry,
-      noise_model);
+      boost::make_shared<PlanarMotionModel>(W(2), W(3), odometry, noise_model);
   components = {moving, still};
   mixtureFactor = boost::make_shared<MixtureFactor>(
       contKeys, DiscreteKeys{gtsam::DiscreteKey(M(3), 2)}, components);
@@ -551,7 +549,7 @@ TEST(HybridNonlinearISAM, NonTrivial) {
 
   // Keep pruning!
   inc.update(fg, initial);
-  inc.prune(M(3), 3);
+  inc.prune(3);
 
   fg = HybridNonlinearFactorGraph();
   initial = Values();
@@ -560,8 +558,7 @@ TEST(HybridNonlinearISAM, NonTrivial) {
 
   // The final discrete graph should not be empty since we have eliminated
   // all continuous variables.
-  auto discreteTree =
-  bayesTree[M(3)]->conditional()->asDiscreteConditional();
+  auto discreteTree = bayesTree[M(3)]->conditional()->asDiscreteConditional();
   EXPECT_LONGS_EQUAL(3, discreteTree->size());
 
   // Test if the optimal discrete mode assignment is (1, 1, 1).
