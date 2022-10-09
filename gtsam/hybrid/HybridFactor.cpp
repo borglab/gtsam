@@ -50,9 +50,7 @@ DiscreteKeys CollectDiscreteKeys(const DiscreteKeys &key1,
 
 /* ************************************************************************ */
 HybridFactor::HybridFactor(const KeyVector &keys)
-    : Base(keys),
-      isContinuous_(true),
-      continuousKeys_(keys) {}
+    : Base(keys), isContinuous_(true), continuousKeys_(keys) {}
 
 /* ************************************************************************ */
 HybridFactor::HybridFactor(const KeyVector &continuousKeys,
@@ -101,7 +99,6 @@ void HybridFactor::print(const std::string &s,
     if (d < discreteKeys_.size() - 1) {
       std::cout << " ";
     }
-    
   }
   std::cout << "]";
 }
