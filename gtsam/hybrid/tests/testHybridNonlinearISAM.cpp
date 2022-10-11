@@ -363,7 +363,7 @@ TEST(HybridNonlinearISAM, Incremental_approximate) {
   EXPECT_LONGS_EQUAL(
       2, bayesTree[X(1)]->conditional()->asMixture()->nrComponents());
   EXPECT_LONGS_EQUAL(
-      4, bayesTree[X(2)]->conditional()->asMixture()->nrComponents());
+      3, bayesTree[X(2)]->conditional()->asMixture()->nrComponents());
   EXPECT_LONGS_EQUAL(
       5, bayesTree[X(3)]->conditional()->asMixture()->nrComponents());
   EXPECT_LONGS_EQUAL(
