@@ -391,23 +391,6 @@ TEST(HybridNonlinearISAM, Incremental_approximate) {
       5, bayesTree[X(5)]->conditional()->asMixture()->nrComponents());
 }
 
-void printConditionals(const HybridNonlinearISAM &inc, const KeyVector &keys) {
-  HybridGaussianISAM bayesTree = inc.bayesTree();
-  for (auto &&key : keys) {
-    std::cout << DefaultKeyFormatter(key) << std::endl;
-    auto conditional = bayesTree[key]->conditional();
-    conditional->printKeys();
-    if (conditional->isHybrid()) {
-      std::cout << conditional->asMixture()->nrComponents() << std::endl;
-    } else if (conditional->isDiscrete()) {
-      std::cout << conditional->asDiscreteConditional()->nrLeaves()
-                << std::endl;
-    } else {
-      // std::cout << conditional->asGaussian()->nrComponents() << std::endl;
-    }
-  }
-}
-
 /* ************************************************************************/
 // A GTSAM-only test for running inference on a single-legged robot.
 // The leg links are represented by the chain X-Y-Z-W, where X is the base and
