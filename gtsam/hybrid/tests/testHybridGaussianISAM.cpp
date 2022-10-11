@@ -337,7 +337,7 @@ TEST(HybridGaussianElimination, Incremental_approximate) {
   EXPECT_LONGS_EQUAL(
       2, incrementalHybrid[X(1)]->conditional()->asMixture()->nrComponents());
   EXPECT_LONGS_EQUAL(
-      4, incrementalHybrid[X(2)]->conditional()->asMixture()->nrComponents());
+      3, incrementalHybrid[X(2)]->conditional()->asMixture()->nrComponents());
   EXPECT_LONGS_EQUAL(
       5, incrementalHybrid[X(3)]->conditional()->asMixture()->nrComponents());
   EXPECT_LONGS_EQUAL(
