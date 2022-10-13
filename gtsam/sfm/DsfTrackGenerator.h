@@ -143,10 +143,11 @@ class DsfTrackGenerator {
   // @param Length-N list of keypoints, for N images/cameras.
   std::vector<SfmTrack2d> generate_tracks_from_pairwise_matches(
     const MatchIndicesMap& matches_dict,
-    const KeypointsVector& keypoints_list) {
+    const KeypointsVector& keypoints_list,
+    bool verbose = false) {
     std::vector<SfmTrack2d> track_2d_list;
 
-    std::cout << "[SfmTrack2d] Starting Union-Find..." << std::endl;
+    if (verbose) std::cout << "[SfmTrack2d] Starting Union-Find..." << std::endl;
     // Generate the DSF to form tracks.
     DSFMapIndexPair dsf;
 
@@ -167,7 +168,7 @@ class DsfTrackGenerator {
       }
     }
 
-    std::cout << "[SfmTrack2d] Union-Find Complete" << std::endl;
+    if (verbose) std::cout << "[SfmTrack2d] Union-Find Complete" << std::endl;
     const std::map<IndexPair, std::set<IndexPair> > key_sets = dsf.sets();
 
     // Return immediately if no sets were found.
@@ -202,12 +203,14 @@ class DsfTrackGenerator {
       }
     }
 
-    double erroneous_track_pct = static_cast<float>(erroneous_track_count)
-                                 / static_cast<float>(key_sets.size()) * 100;
-    // TODO(johnwlambert): restrict decimal places to 2 decimals.
-    std::cout << "DSF Union-Find: " << erroneous_track_pct;
-    std::cout << "% of tracks discarded from multiple obs. in a single image." << std::endl;
+    if (verbose) {
+      double erroneous_track_pct = static_cast<float>(erroneous_track_count)
+                                   / static_cast<float>(key_sets.size()) * 100;
 
+      // TODO(johnwlambert): restrict decimal places to 2 decimals.
+      std::cout << "DSF Union-Find: " << erroneous_track_pct;
+      std::cout << "% of tracks discarded from multiple obs. in a single image." << std::endl;
+    }
     // TODO(johnwlambert): return the Transitivity failure percentage here.
     return track_2d_list;
   }

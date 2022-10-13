@@ -78,7 +78,8 @@ class DsfTrackGenerator {
   DsfTrackGenerator();
   const gtsam::SfmTrack2dVector generate_tracks_from_pairwise_matches(
     const gtsam::MatchIndicesMap& matches_dict,
-    const gtsam::KeypointsVector& keypoints_list);
+    const gtsam::KeypointsVector& keypoints_list,
+    bool verbose = false);
 };
 
 
