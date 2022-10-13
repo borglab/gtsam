@@ -24,9 +24,9 @@ class Keypoints
 }; // check if this should be a method
 
 
-class KeypointsList {
-  KeypointsList();
-  KeypointsList(const gtsam::KeypointsList& other);
+class KeypointsVector {
+  KeypointsVector();
+  KeypointsVector(const gtsam::KeypointsVector& other);
   void push_back(const gtsam::Keypoints& keypoints);
   size_t size() const;
   bool empty() const;
@@ -78,7 +78,7 @@ class DsfTrackGenerator {
   DsfTrackGenerator();
   const gtsam::SfmTrack2dVector generate_tracks_from_pairwise_matches(
     const gtsam::MatchIndicesMap& matches_dict,
-    const gtsam::KeypointsList& keypoints_list);
+    const gtsam::KeypointsVector& keypoints_list);
 };
 
 

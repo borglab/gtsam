@@ -53,7 +53,7 @@ set(ignore
     gtsam::DiscreteKey
     gtsam::KeyPairDoubleMap
     gtsam::MatchIndicesMap
-    gtsam::KeypointsList
+    gtsam::KeypointsVector
     gtsam::SfmTrack2dVector
     gtsam::NamedSfmMeasurementVector)
 
@@ -154,7 +154,7 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             gtsam::CameraSetCal3Fisheye
             gtsam::KeyPairDoubleMap
             gtsam::MatchIndicesMap
-            gtsam::KeypointsList
+            gtsam::KeypointsVector
             gtsam::SfmTrack2dVector
             gtsam::NamedSfmMeasurementVector)
 

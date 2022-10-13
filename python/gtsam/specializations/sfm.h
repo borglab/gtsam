@@ -22,7 +22,7 @@ py::bind_map<gtsam::MatchIndicesMap>(m_, "MatchIndicesMap");
 
 py::bind_vector<
     std::vector<gtsam::Keypoints> >(
-    m_, "KeypointsList");
+    m_, "KeypointsVector");
 
 
 py::bind_vector<

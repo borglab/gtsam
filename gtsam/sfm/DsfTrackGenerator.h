@@ -57,7 +57,7 @@ struct Keypoints {
   Keypoints(const gtsam::KeypointCoordinates& coordinates): coordinates(coordinates) {}; // boost::none
 };
 
-using KeypointsList = std::vector<Keypoints>;
+using KeypointsVector = std::vector<Keypoints>;
 // Mapping from each image pair to (N,2) array representing indices of matching keypoints.
 using MatchIndicesMap = std::map<IndexPair, CorrespondenceIndices>;
 
@@ -143,7 +143,7 @@ class DsfTrackGenerator {
   // @param Length-N list of keypoints, for N images/cameras.
   std::vector<SfmTrack2d> generate_tracks_from_pairwise_matches(
     const MatchIndicesMap& matches_dict,
-    const KeypointsList& keypoints_list) {
+    const KeypointsVector& keypoints_list) {
     std::vector<SfmTrack2d> track_2d_list;
 
     std::cout << "[SfmTrack2d] Starting Union-Find..." << std::endl;
