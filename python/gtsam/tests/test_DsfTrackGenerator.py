@@ -9,7 +9,7 @@ import numpy as np
 
 import gtsam
 from gtsam import IndexPair, KeypointsVector, MatchIndicesMap, NamedSfmMeasurementVector
-from gtsam.gtsam.gtsfm import (
+from gtsam.gtsfm import (
     DsfTrackGenerator,
     Keypoints,
     NamedSfmMeasurement,
