@@ -74,8 +74,6 @@ namespace gtsam {
   /// The index type for Eigen objects
   typedef ptrdiff_t DenseIndex;
 
-  std::string GTDKeyFormatter(const Key &key);
-
   /* ************************************************************************* */
   /**
    * Helper class that uses templates to select between two types based on
