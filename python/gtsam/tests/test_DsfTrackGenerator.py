@@ -12,7 +12,7 @@ from gtsam import (
     DsfTrackGenerator,
     IndexPair,
     Keypoints,
-    KeypointsList,
+    KeypointsVector,
     MatchIndicesMap,
     NamedSfmMeasurement,
     NamedSfmMeasurementVector,
@@ -30,7 +30,7 @@ class TestDsfTrackGenerator(GtsamTestCase):
         kps_i1 = Keypoints(coordinates=np.array([[50.0, 60], [70, 80], [90, 100]]))
         kps_i2 = Keypoints(coordinates=np.array([[110.0, 120], [130, 140]]))
 
-        keypoints_list = KeypointsList()
+        keypoints_list = KeypointsVector()
         keypoints_list.append(kps_i0)
         keypoints_list.append(kps_i1)
         keypoints_list.append(kps_i2)
