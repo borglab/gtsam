@@ -52,10 +52,10 @@ set(ignore
     gtsam::BinaryMeasurementsRot3
     gtsam::DiscreteKey
     gtsam::KeyPairDoubleMap
-    gtsam::MatchIndicesMap
-    gtsam::KeypointsVector
-    gtsam::SfmTrack2dVector
-    gtsam::NamedSfmMeasurementVector)
+    gtsam::gtsfm::MatchIndicesMap
+    gtsam::gtsfm::KeypointsVector
+    gtsam::gtsfm::SfmTrack2dVector
+    gtsam::gtsfm::NamedSfmMeasurementVector)
 
 set(interface_headers
     ${PROJECT_SOURCE_DIR}/gtsam/gtsam.i
@@ -153,10 +153,10 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             gtsam::CameraSetCal3Unified
             gtsam::CameraSetCal3Fisheye
             gtsam::KeyPairDoubleMap
-            gtsam::MatchIndicesMap
-            gtsam::KeypointsVector
-            gtsam::SfmTrack2dVector
-            gtsam::NamedSfmMeasurementVector)
+            gtsam::gtsfm::MatchIndicesMap
+            gtsam::gtsfm::KeypointsVector
+            gtsam::gtsfm::SfmTrack2dVector
+            gtsam::gtsfm::NamedSfmMeasurementVector)
 
 
     pybind_wrap(${GTSAM_PYTHON_UNSTABLE_TARGET} # target

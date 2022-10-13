@@ -8,14 +8,11 @@ import unittest
 import numpy as np
 
 import gtsam
-from gtsam import (
+from gtsam import IndexPair, KeypointsVector, MatchIndicesMap, NamedSfmMeasurementVector
+from gtsam.gtsam.gtsfm import (
     DsfTrackGenerator,
-    IndexPair,
     Keypoints,
-    KeypointsVector,
-    MatchIndicesMap,
     NamedSfmMeasurement,
-    NamedSfmMeasurementVector,
     SfmTrack2d,
 )
 from gtsam.utils.test_case import GtsamTestCase

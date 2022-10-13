@@ -30,6 +30,8 @@
 
 namespace gtsam {
 
+namespace gtsfm {
+
 typedef DSFMap<IndexPair> DSFMapIndexPair;
 typedef Eigen::MatrixX2i CorrespondenceIndices; // N x 2 array
 
@@ -54,7 +56,7 @@ struct Keypoints {
   /// Optional confidences/responses for each detection, of shape N.
   boost::optional<gtsam::Vector> responses;
 
-  Keypoints(const gtsam::KeypointCoordinates& coordinates): coordinates(coordinates) {}; // boost::none
+  Keypoints(const gtsam::gtsfm::KeypointCoordinates& coordinates): coordinates(coordinates) {}; // boost::none
 };
 
 using KeypointsVector = std::vector<Keypoints>;
@@ -119,7 +121,7 @@ class SfmTrack2d {
   }
 };
 
-using SfmTrack2dVector = std::vector<gtsam::SfmTrack2d>;
+using SfmTrack2dVector = std::vector<gtsam::gtsfm::SfmTrack2d>;
 using NamedSfmMeasurementVector = std::vector<NamedSfmMeasurement>;
 
 
@@ -215,6 +217,8 @@ class DsfTrackGenerator {
     return track_2d_list;
   }
 };
+
+}///\namespace gtsfm
 
 } // namespace gtsam
 
