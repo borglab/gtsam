@@ -122,7 +122,6 @@ void GaussianMixture::print(const std::string &s,
         if (gf && !gf->empty()) {
           gf->print("", formatter);
           return rd.str();
-          // return "Node()";
         } else {
           return "nullptr";
         }
