@@ -59,8 +59,9 @@ void HybridGaussianISAM::updateInternal(
   factors += newFactors;
 
   // Add the orphaned subtrees
-  for (const sharedClique& orphan : *orphans)
-    factors += boost::make_shared<BayesTreeOrphanWrapper<Node> >(orphan);
+  for (const sharedClique& orphan : *orphans) {
+    factors += boost::make_shared<BayesTreeOrphanWrapper<Node>>(orphan);
+  }
 
   // Get all the discrete keys from the factors
   KeySet allDiscrete = factors.discreteKeys();
