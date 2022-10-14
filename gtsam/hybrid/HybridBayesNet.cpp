@@ -45,7 +45,7 @@ DecisionTreeFactor::shared_ptr HybridBayesNet::discreteConditionals() const {
 HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves) const {
   // Get the decision tree of only the discrete keys
   auto discreteConditionals = this->discreteConditionals();
-  const DecisionTreeFactor::shared_ptr discreteFactor =
+  const DecisionTreeFactor::shared_ptr decisionTree =
       boost::make_shared<DecisionTreeFactor>(
           discreteConditionals->prune(maxNrLeaves));
 
@@ -59,7 +59,7 @@ HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves) const {
   HybridBayesNet prunedBayesNetFragment;
 
   // Go through all the conditionals in the
-  // Bayes Net and prune them as per discreteFactor.
+  // Bayes Net and prune them as per decisionTree.
   for (size_t i = 0; i < this->size(); i++) {
     HybridConditional::shared_ptr conditional = this->at(i);
 
@@ -69,7 +69,7 @@ HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves) const {
       // Make a copy of the gaussian mixture and prune it!
       auto prunedGaussianMixture =
           boost::make_shared<GaussianMixture>(*gaussianMixture);
-      prunedGaussianMixture->prune(*discreteFactor);
+      prunedGaussianMixture->prune(*decisionTree);
 
       // Type-erase and add to the pruned Bayes Net fragment.
       prunedBayesNetFragment.push_back(
