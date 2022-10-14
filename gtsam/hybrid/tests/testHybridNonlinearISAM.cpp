@@ -12,7 +12,7 @@
 /**
  * @file    testHybridNonlinearISAM.cpp
  * @brief   Unit tests for nonlinear incremental inference
- * @author  Fan Jiang, Varun Agrawal, Frank Dellaert
+ * @author  Varun Agrawal, Fan Jiang, Frank Dellaert
  * @date    Jan 2021
  */
 
@@ -363,7 +363,7 @@ TEST(HybridNonlinearISAM, Incremental_approximate) {
   EXPECT_LONGS_EQUAL(
       2, bayesTree[X(1)]->conditional()->asMixture()->nrComponents());
   EXPECT_LONGS_EQUAL(
-      4, bayesTree[X(2)]->conditional()->asMixture()->nrComponents());
+      3, bayesTree[X(2)]->conditional()->asMixture()->nrComponents());
   EXPECT_LONGS_EQUAL(
       5, bayesTree[X(3)]->conditional()->asMixture()->nrComponents());
   EXPECT_LONGS_EQUAL(
@@ -432,9 +432,9 @@ TEST(HybridNonlinearISAM, NonTrivial) {
 
   // Don't run update now since we don't have discrete variables involved.
 
-  /*************** Run Round 2 ***************/
   using PlanarMotionModel = BetweenFactor<Pose2>;
 
+  /*************** Run Round 2 ***************/
   // Add odometry factor with discrete modes.
   Pose2 odometry(1.0, 0.0, 0.0);
   KeyVector contKeys = {W(0), W(1)};

@@ -219,10 +219,10 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
         result = EliminatePreferCholesky(graph, frontalKeys);
 
     if (keysOfEliminated.empty()) {
-      keysOfEliminated =
-          result.first->keys();  // Initialize the keysOfEliminated to be the
+      // Initialize the keysOfEliminated to be the keys of the
+      // eliminated GaussianConditional
+      keysOfEliminated = result.first->keys();
     }
-    // keysOfEliminated of the GaussianConditional
     if (keysOfSeparator.empty()) {
       keysOfSeparator = result.second->keys();
     }
