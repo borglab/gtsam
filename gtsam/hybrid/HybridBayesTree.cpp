@@ -149,16 +149,16 @@ void HybridBayesTree::prune(const size_t maxNrLeaves) {
   auto decisionTree = boost::dynamic_pointer_cast<DecisionTreeFactor>(
       this->roots_.at(0)->conditional()->inner());
 
-  DecisionTreeFactor prunedDiscreteFactor = decisionTree->prune(maxNrLeaves);
-  decisionTree->root_ = prunedDiscreteFactor.root_;
+  DecisionTreeFactor prunedDecisionTree = decisionTree->prune(maxNrLeaves);
+  decisionTree->root_ = prunedDecisionTree.root_;
 
   /// Helper struct for pruning the hybrid bayes tree.
   struct HybridPrunerData {
     /// The discrete decision tree after pruning.
-    DecisionTreeFactor prunedDiscreteFactor;
-    HybridPrunerData(const DecisionTreeFactor& prunedDiscreteFactor,
+    DecisionTreeFactor prunedDecisionTree;
+    HybridPrunerData(const DecisionTreeFactor& prunedDecisionTree,
                      const HybridBayesTree::sharedNode& parentClique)
-        : prunedDiscreteFactor(prunedDiscreteFactor) {}
+        : prunedDecisionTree(prunedDecisionTree) {}
 
     /**
      * @brief A function used during tree traversal that operates on each node
@@ -178,19 +178,13 @@ void HybridBayesTree::prune(const size_t maxNrLeaves) {
       if (conditional->isHybrid()) {
         auto gaussianMixture = conditional->asMixture();
 
-        // Check if the number of discrete keys match,
-        // else we get an assignment error.
-        // TODO(Varun) Update prune method to handle assignment subset?
-        if (gaussianMixture->discreteKeys() ==
-            parentData.prunedDiscreteFactor.discreteKeys()) {
-          gaussianMixture->prune(parentData.prunedDiscreteFactor);
-        }
+        gaussianMixture->prune(parentData.prunedDecisionTree);
       }
       return parentData;
     }
   };
 
-  HybridPrunerData rootData(prunedDiscreteFactor, 0);
+  HybridPrunerData rootData(prunedDecisionTree, 0);
   {
     treeTraversal::no_op visitorPost;
     // Limits OpenMP threads since we're mixing TBB and OpenMP
