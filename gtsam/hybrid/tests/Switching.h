@@ -131,17 +131,25 @@ struct Switching {
    * @param between_sigma The stddev between poses.
    * @param prior_sigma The stddev on priors (also used for measurements).
    */
-  Switching(size_t K, double between_sigma = 1.0, double prior_sigma = 0.1)
+  Switching(size_t K, double between_sigma = 1.0, double prior_sigma = 0.1,
+            std::vector<double> measurements = {})
       : K(K) {
     // Create DiscreteKeys for binary K modes, modes[0] will not be used.
     for (size_t k = 0; k <= K; k++) {
       modes.emplace_back(M(k), 2);
     }
 
+    // If measurements are not provided, we just have the robot moving forward.
+    if (measurements.size() == 0) {
+      for (size_t k = 1; k <= K; k++) {
+        measurements.push_back(k - 1);
+      }
+    }
+
     // Create hybrid factor graph.
     // Add a prior on X(1).
     auto prior = boost::make_shared<PriorFactor<double>>(
-        X(1), 0, noiseModel::Isotropic::Sigma(1, prior_sigma));
+        X(1), measurements.at(0), noiseModel::Isotropic::Sigma(1, prior_sigma));
     nonlinearFactorGraph.push_nonlinear(prior);
 
     // Add "motion models".
@@ -160,7 +168,7 @@ struct Switching {
     auto measurement_noise = noiseModel::Isotropic::Sigma(1, prior_sigma);
     for (size_t k = 2; k <= K; k++) {
       nonlinearFactorGraph.emplace_nonlinear<PriorFactor<double>>(
-          X(k), 1.0 * (k - 1), measurement_noise);
+          X(k), measurements.at(k - 1), measurement_noise);
     }
 
     // Add "mode chain"
