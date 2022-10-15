@@ -110,21 +110,21 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
   // and preintegrated measurements
 
   // Single Jacobians to propagate covariance
-  Matrix3 theta_H_biasOmega = C.topRows<3>();
-  Matrix3 pos_H_biasAcc = B.middleRows<3>(3);
-  Matrix3 vel_H_biasAcc = B.bottomRows<3>();
+  Matrix3 theta_H_omega = C.topRows<3>();
+  Matrix3 pos_H_acc = B.middleRows<3>(3);
+  Matrix3 vel_H_acc = B.bottomRows<3>();
 
-  Matrix3 theta_H_biasOmegaInit = -theta_H_biasOmega;
-  Matrix3 pos_H_biasAccInit = -pos_H_biasAcc;
-  Matrix3 vel_H_biasAccInit = -vel_H_biasAcc;
+  Matrix3 theta_H_biasOmegaInit = -theta_H_omega;
+  Matrix3 pos_H_biasAccInit = -pos_H_acc;
+  Matrix3 vel_H_biasAccInit = -vel_H_acc;
 
   // overall Jacobian wrt preintegrated measurements (df/dx)
   Eigen::Matrix<double, 15, 15> F;
   F.setZero();
   F.block<9, 9>(0, 0) = A;
-  F.block<3, 3>(0, 12) = theta_H_biasOmega;
-  F.block<3, 3>(3, 9) = pos_H_biasAcc;
-  F.block<3, 3>(6, 9) = vel_H_biasAcc;
+  F.block<3, 3>(0, 12) = theta_H_omega;
+  F.block<3, 3>(3, 9) = pos_H_acc;
+  F.block<3, 3>(6, 9) = vel_H_acc;
   F.block<6, 6>(9, 9) = I_6x6;
 
   // Update the uncertainty on the state (matrix F in [4]).
@@ -149,17 +149,17 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
 
   // BLOCK DIAGONAL TERMS
   D_R_R(&G_measCov_Gt) =
-      (theta_H_biasOmega * (wCov / dt) * theta_H_biasOmega.transpose())  //
+      (theta_H_omega * (wCov / dt) * theta_H_omega.transpose())  //
       +
       (theta_H_biasOmegaInit * bInitCov22 * theta_H_biasOmegaInit.transpose());
 
   D_t_t(&G_measCov_Gt) =
-      (pos_H_biasAcc * (aCov / dt) * pos_H_biasAcc.transpose())           //
+      (pos_H_acc * (aCov / dt) * pos_H_acc.transpose())           //
       + (pos_H_biasAccInit * bInitCov11 * pos_H_biasAccInit.transpose())  //
       + (dt * iCov);
 
   D_v_v(&G_measCov_Gt) =
-      (vel_H_biasAcc * (aCov / dt) * vel_H_biasAcc.transpose())  //
+      (vel_H_acc * (aCov / dt) * vel_H_acc.transpose())  //
       + (vel_H_biasAccInit * bInitCov11 * vel_H_biasAccInit.transpose());
 
   D_a_a(&G_measCov_Gt) = dt * p().biasAccCovariance;
@@ -173,12 +173,12 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
   D_t_R(&G_measCov_Gt) =
       pos_H_biasAccInit * bInitCov12 * theta_H_biasOmegaInit.transpose();
   D_t_v(&G_measCov_Gt) =
-      (pos_H_biasAcc * (aCov / dt) * vel_H_biasAcc.transpose()) +
+      (pos_H_acc * (aCov / dt) * vel_H_acc.transpose()) +
       (pos_H_biasAccInit * bInitCov11 * vel_H_biasAccInit.transpose());
   D_v_R(&G_measCov_Gt) =
       vel_H_biasAccInit * bInitCov12 * theta_H_biasOmegaInit.transpose();
   D_v_t(&G_measCov_Gt) =
-      (vel_H_biasAcc * (aCov / dt) * pos_H_biasAcc.transpose()) +
+      (vel_H_acc * (aCov / dt) * pos_H_acc.transpose()) +
       (vel_H_biasAccInit * bInitCov11 * pos_H_biasAccInit.transpose());
 
   preintMeasCov_.noalias() += G_measCov_Gt;
