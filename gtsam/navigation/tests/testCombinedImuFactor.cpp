@@ -250,6 +250,7 @@ TEST(CombinedImuFactor, CheckCovariance) {
   EXPECT(assert_equal(expected, actual.preintMeasCov()));
 }
 
+/* ************************************************************************* */
 // Test that the covariance values for the ImuFactor and the CombinedImuFactor
 // (top-left 9x9) are the same
 TEST(CombinedImuFactor, SameCovariance) {
@@ -314,6 +315,38 @@ TEST(CombinedImuFactor, Accelerating) {
   auto estimatedCov = runner.estimateCovariance(T, 100);
   Eigen::Matrix<double, 15, 15> expected = pim.preintMeasCov();
   EXPECT(assert_equal(estimatedCov, expected, 0.1));
+}
+
+/* ************************************************************************* */
+TEST(CombinedImuFactor, ResetIntegration) {
+  const double a = 0.2, v = 50;
+
+  // Set up body pointing towards y axis, and start at 10,20,0 with velocity
+  // going in X The body itself has Z axis pointing down
+  const Rot3 nRb(Point3(0, 1, 0), Point3(1, 0, 0), Point3(0, 0, -1));
+  const Point3 initial_position(10, 20, 0);
+  const Vector3 initial_velocity(v, 0, 0);
+
+  const AcceleratingScenario scenario(nRb, initial_position, initial_velocity,
+                                      Vector3(a, 0, 0));
+
+  const double T = 3.0;  // seconds
+
+  CombinedScenarioRunner runner(scenario, testing::Params(), T / 10);
+
+  PreintegratedCombinedMeasurements pim = runner.integrate(T);
+  // Make copy for testing different conditions
+  PreintegratedCombinedMeasurements pim2 = pim;
+
+  // Test default method
+  pim.resetIntegration();
+  Matrix6 expected = Z_6x6;
+  EXPECT(assert_equal(expected, pim.p().biasAccOmegaInt , 1e-9));
+
+  // Test method where Q_init is provided
+  Matrix6 expected_Q_init = I_6x6 * 0.001;
+  pim2.resetIntegration(expected_Q_init);
+  EXPECT(assert_equal(expected_Q_init, pim.p().biasAccOmegaInt, 1e-9));
 }
 
 /* ************************************************************************* */

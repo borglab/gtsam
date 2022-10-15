@@ -126,6 +126,15 @@ public:
   /// Re-initialize PreintegratedCombinedMeasurements
   void resetIntegration() override;
 
+  /**
+   * @brief Re-initialize PreintegratedCombinedMeasurements with initial bias
+   * covariance estimate.
+   *
+   * @param Q_init The initial bias covariance estimates as 6x6 matrix. If not
+   * provided, it uses the last values from the preintMeasCov.
+   */
+  void resetIntegration(const gtsam::Matrix6& Q_init);
+
   /// const reference to params, shadows definition in base class
   Params& p() const { return *boost::static_pointer_cast<Params>(this->p_); }
   /// @}
