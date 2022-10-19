@@ -190,27 +190,28 @@ if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
 endif()
 
 if (NOT MSVC)
-  # Add as public flag so all dependant projects also use it, as required
-  # by Eigen to avid crashes due to SIMD vectorization:  option(GTSAM_BUILD_WITH_MARCH_NATIVE  "Enable/Disable building with all instructions supported by native architecture (binary may not be portable!)" OFF)
-  if(APPLE AND (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang") AND ("${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS "15.0"))
-    if(GTSAM_BUILD_WITH_MARCH_NATIVE)
+  option(GTSAM_BUILD_WITH_MARCH_NATIVE  "Enable/Disable building with all instructions supported by native architecture (binary may not be portable!)" OFF)
+  if(GTSAM_BUILD_WITH_MARCH_NATIVE)
+    if(APPLE AND (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang") AND ("${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS "15.0"))
       if(NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
+        # Add as public flag so all dependant projects also use it, as required
+        # by Eigen to avoid crashes due to SIMD vectorization:
         list_append_cache(GTSAM_COMPILE_OPTIONS_PUBLIC "-march=native")
       else()
         message(WARNING "The option GTSAM_BUILD_WITH_MARCH_NATIVE is ignored, because native architecture is not supported.")
-      endif()
-    endif()
-  else()
-    include(CheckCXXCompilerFlag)
-    CHECK_CXX_COMPILER_FLAG("-march=native" COMPILER_SUPPORTS_MARCH_NATIVE)
-    if(GTSAM_BUILD_WITH_MARCH_NATIVE)
+      endif() # CMAKE_SYSTEM_PROCESSOR
+    else()
+      include(CheckCXXCompilerFlag)
+      CHECK_CXX_COMPILER_FLAG("-march=native" COMPILER_SUPPORTS_MARCH_NATIVE)
       if(COMPILER_SUPPORTS_MARCH_NATIVE)
-      list_append_cache(GTSAM_COMPILE_OPTIONS_PUBLIC "-march=native")
+        # Add as public flag so all dependant projects also use it, as required
+        # by Eigen to avoid crashes due to SIMD vectorization:
+        list_append_cache(GTSAM_COMPILE_OPTIONS_PUBLIC "-march=native")
       else()
         message(WARNING "The option GTSAM_BUILD_WITH_MARCH_NATIVE is ignored, because native architecture is not supported.")
-      endif()
-    endif()
-  endif()
+      endif() # COMPILER_SUPPORTS_MARCH_NATIVE
+    endif() # APPLE
+  endif() # GTSAM_BUILD_WITH_MARCH_NATIVE
 endif()
 
 # Set up build type library postfixes
