@@ -384,6 +384,7 @@ class Pose2 {
   gtsam::Pose2 inverse() const;
   gtsam::Pose2 compose(const gtsam::Pose2& p2) const;
   gtsam::Pose2 between(const gtsam::Pose2& p2) const;
+  gtsam::Pose2 between(const gtsam::Pose2& p2, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2) const;
 
   // Operator Overloads
   gtsam::Pose2 operator*(const gtsam::Pose2& p2) const;
@@ -391,6 +392,7 @@ class Pose2 {
   // Manifold
   gtsam::Pose2 retract(Vector v) const;
   Vector localCoordinates(const gtsam::Pose2& p) const;
+  Vector localCoordinates(const gtsam::Pose2& p, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2) const;
 
   // Lie Group
   static gtsam::Pose2 Expmap(Vector v);
