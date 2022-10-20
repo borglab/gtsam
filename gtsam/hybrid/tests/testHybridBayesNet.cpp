@@ -202,6 +202,55 @@ TEST(HybridBayesNet, Prune) {
 }
 
 /* ****************************************************************************/
+// Test bayes net updateDiscreteConditionals
+TEST(HybridBayesNet, UpdateDiscreteConditionals) {
+  Switching s(4);
+
+  Ordering hybridOrdering = s.linearizedFactorGraph.getHybridOrdering();
+  HybridBayesNet::shared_ptr hybridBayesNet =
+      s.linearizedFactorGraph.eliminateSequential(hybridOrdering);
+
+  size_t maxNrLeaves = 3;
+  auto discreteConditionals = hybridBayesNet->discreteConditionals();
+  const DecisionTreeFactor::shared_ptr prunedDecisionTree =
+      boost::make_shared<DecisionTreeFactor>(
+          discreteConditionals->prune(maxNrLeaves));
+
+  EXPECT_LONGS_EQUAL(maxNrLeaves + 2 /*2 zero leaves*/,
+                     prunedDecisionTree->nrLeaves());
+
+  auto original_discrete_conditionals =
+      *(hybridBayesNet->at(4)->asDiscreteConditional());
+
+  // Prune!
+  hybridBayesNet->prune(maxNrLeaves);
+
+  // Functor to verify values against the original_discrete_conditionals
+  auto checker = [&](const Assignment<Key>& assignment,
+                     double probability) -> double {
+    // typecast so we can use this to get probability value
+    DiscreteValues choices(assignment);
+    if (prunedDecisionTree->operator()(choices) == 0) {
+      EXPECT_DOUBLES_EQUAL(0.0, probability, 1e-9);
+    } else {
+      EXPECT_DOUBLES_EQUAL(original_discrete_conditionals(choices), probability,
+                           1e-9);
+    }
+    return 0.0;
+  };
+
+  // Get the pruned discrete conditionals as an AlgebraicDecisionTree
+  auto pruned_discrete_conditionals =
+      hybridBayesNet->at(4)->asDiscreteConditional();
+  auto discrete_conditional_tree =
+      boost::dynamic_pointer_cast<DecisionTreeFactor::ADT>(
+          pruned_discrete_conditionals);
+
+  // The checker functor verifies the values for us.
+  discrete_conditional_tree->apply(checker);
+}
+
+/* ****************************************************************************/
 // Test HybridBayesNet serialization.
 TEST(HybridBayesNet, Serialization) {
   Switching s(4);
