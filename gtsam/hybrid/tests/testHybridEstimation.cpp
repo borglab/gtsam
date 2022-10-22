@@ -82,8 +82,6 @@ TEST(HybridNonlinearISAM, Incremental) {
   HybridNonlinearFactorGraph graph;
   Values initial;
 
-  // switching.nonlinearFactorGraph.print();
-  // switching.linearizationPoint.print();
   // Add the X(1) prior
   graph.push_back(switching.nonlinearFactorGraph.at(0));
   initial.insert(X(1), switching.linearizationPoint.at<double>(X(1)));
@@ -92,6 +90,7 @@ TEST(HybridNonlinearISAM, Incremental) {
   HybridGaussianFactorGraph bayesNet;
 
   for (size_t k = 1; k < K; k++) {
+    std::cout << ">>>>>>>>>>>>>>>>>>> k=" << k << std::endl;
     // Motion Model
     graph.push_back(switching.nonlinearFactorGraph.at(k));
     // Measurement
@@ -99,20 +98,28 @@ TEST(HybridNonlinearISAM, Incremental) {
 
     initial.insert(X(k + 1), switching.linearizationPoint.at<double>(X(k + 1)));
 
-    // std::cout << "\n=============  " << k << std::endl;
-    // graph.print();
-
     bayesNet = smoother.hybridBayesNet();
     linearized = *graph.linearize(initial);
     Ordering ordering = getOrdering(bayesNet, linearized);
 
-    ordering.print();
     smoother.update(linearized, ordering, 3);
-    // if (k == 2) exit(0);
-    // smoother.hybridBayesNet().print();
     graph.resize(0);
-    // initial.clear();
   }
+  HybridValues delta = smoother.hybridBayesNet().optimize();
+
+  Values result = initial.retract(delta.continuous());
+
+  DiscreteValues expected_discrete;
+  for (size_t k = 0; k < K - 1; k++) {
+    expected_discrete[M(k + 1)] = discrete_seq[k];
+  }
+  EXPECT(assert_equal(expected_discrete, delta.discrete()));
+
+  Values expected_continuous;
+  for (size_t k = 0; k < K; k++) {
+    expected_continuous.insert(X(k + 1), measurements[k]);
+  }
+  EXPECT(assert_equal(expected_continuous, result));
 }
 
 /* ************************************************************************* */
