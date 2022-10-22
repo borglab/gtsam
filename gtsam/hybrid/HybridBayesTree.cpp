@@ -146,8 +146,8 @@ VectorValues HybridBayesTree::optimize(const DiscreteValues& assignment) const {
 
 /* ************************************************************************* */
 void HybridBayesTree::prune(const size_t maxNrLeaves) {
-  auto decisionTree = boost::dynamic_pointer_cast<DecisionTreeFactor>(
-      this->roots_.at(0)->conditional()->inner());
+  auto decisionTree =
+      this->roots_.at(0)->conditional()->asDiscreteConditional();
 
   DecisionTreeFactor prunedDecisionTree = decisionTree->prune(maxNrLeaves);
   decisionTree->root_ = prunedDecisionTree.root_;
