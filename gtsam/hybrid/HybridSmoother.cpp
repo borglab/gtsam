@@ -47,8 +47,6 @@ void HybridSmoother::update(HybridGaussianFactorGraph graph,
 
   // Add the partial bayes net to the posterior bayes net.
   hybridBayesNet_.push_back<HybridBayesNet>(*bayesNetFragment);
-
-  tictoc_print_();
 }
 
 /* ************************************************************************* */
