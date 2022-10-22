@@ -60,9 +60,9 @@ TEST(HybridBayesTree, OptimizeAssignment) {
   isam.update(graph1);
 
   DiscreteValues assignment;
+  assignment[M(0)] = 1;
   assignment[M(1)] = 1;
   assignment[M(2)] = 1;
-  assignment[M(3)] = 1;
 
   VectorValues delta = isam.optimize(assignment);
 
@@ -70,16 +70,16 @@ TEST(HybridBayesTree, OptimizeAssignment) {
   // e.g. X(1) = 1, X(2) = 2,
   // but the factors specify X(k) = k-1, so delta should be -1.
   VectorValues expected_delta;
+  expected_delta.insert(make_pair(X(0), -Vector1::Ones()));
   expected_delta.insert(make_pair(X(1), -Vector1::Ones()));
   expected_delta.insert(make_pair(X(2), -Vector1::Ones()));
   expected_delta.insert(make_pair(X(3), -Vector1::Ones()));
-  expected_delta.insert(make_pair(X(4), -Vector1::Ones()));
 
   EXPECT(assert_equal(expected_delta, delta));
 
   // Create ordering.
   Ordering ordering;
-  for (size_t k = 1; k <= s.K; k++) ordering += X(k);
+  for (size_t k = 0; k < s.K; k++) ordering += X(k);
 
   HybridBayesNet::shared_ptr hybridBayesNet;
   HybridGaussianFactorGraph::shared_ptr remainingFactorGraph;
@@ -123,7 +123,7 @@ TEST(HybridBayesTree, Optimize) {
 
   // Create ordering.
   Ordering ordering;
-  for (size_t k = 1; k <= s.K; k++) ordering += X(k);
+  for (size_t k = 0; k < s.K; k++) ordering += X(k);
 
   HybridBayesNet::shared_ptr hybridBayesNet;
   HybridGaussianFactorGraph::shared_ptr remainingFactorGraph;

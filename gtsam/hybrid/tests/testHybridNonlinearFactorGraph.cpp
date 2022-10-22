@@ -263,7 +263,7 @@ TEST(HybridFactorGraph, EliminationTree) {
 
   // Create ordering.
   Ordering ordering;
-  for (size_t k = 1; k <= self.K; k++) ordering += X(k);
+  for (size_t k = 0; k < self.K; k++) ordering += X(k);
 
   // Create elimination tree.
   HybridEliminationTree etree(self.linearizedFactorGraph, ordering);
@@ -271,9 +271,9 @@ TEST(HybridFactorGraph, EliminationTree) {
 }
 
 /****************************************************************************
- *Test elimination function by eliminating x1 in *-x1-*-x2 graph.
+ *Test elimination function by eliminating x0 in *-x0-*-x1 graph.
  */
-TEST(GaussianElimination, Eliminate_x1) {
+TEST(GaussianElimination, Eliminate_x0) {
   Switching self(3);
 
   // Gather factors on x1, has a simple Gaussian and a mixture factor.
@@ -283,9 +283,9 @@ TEST(GaussianElimination, Eliminate_x1) {
   // Add first hybrid factor
   factors.push_back(self.linearizedFactorGraph[1]);
 
-  // Eliminate x1
+  // Eliminate x0
   Ordering ordering;
-  ordering += X(1);
+  ordering += X(0);
 
   auto result = EliminateHybrid(factors, ordering);
   CHECK(result.first);
@@ -296,20 +296,20 @@ TEST(GaussianElimination, Eliminate_x1) {
 }
 
 /****************************************************************************
- * Test elimination function by eliminating x2 in x1-*-x2-*-x3 chain.
- *                                                m1/      \m2
+ * Test elimination function by eliminating x1 in x0-*-x1-*-x2 chain.
+ *                                                m0/      \m1
  */
-TEST(HybridsGaussianElimination, Eliminate_x2) {
+TEST(HybridsGaussianElimination, Eliminate_x1) {
   Switching self(3);
 
-  // Gather factors on x2, will be two mixture factors (with x1 and x3, resp.).
+  // Gather factors on x1, will be two mixture factors (with x0 and x2, resp.).
   HybridGaussianFactorGraph factors;
-  factors.push_back(self.linearizedFactorGraph[1]);  // involves m1
-  factors.push_back(self.linearizedFactorGraph[2]);  // involves m2
+  factors.push_back(self.linearizedFactorGraph[1]);  // involves m0
+  factors.push_back(self.linearizedFactorGraph[2]);  // involves m1
 
-  // Eliminate x2
+  // Eliminate x1
   Ordering ordering;
-  ordering += X(2);
+  ordering += X(1);
 
   std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr> result =
       EliminateHybrid(factors, ordering);
@@ -326,28 +326,28 @@ TEST(HybridsGaussianElimination, Eliminate_x2) {
 GaussianFactorGraph::shared_ptr batchGFG(double between,
                                          Values linearizationPoint) {
   NonlinearFactorGraph graph;
-  graph.addPrior<double>(X(1), 0, Isotropic::Sigma(1, 0.1));
+  graph.addPrior<double>(X(0), 0, Isotropic::Sigma(1, 0.1));
 
-  auto between_x1_x2 = boost::make_shared<MotionModel>(
-      X(1), X(2), between, Isotropic::Sigma(1, 1.0));
+  auto between_x0_x1 = boost::make_shared<MotionModel>(
+      X(0), X(1), between, Isotropic::Sigma(1, 1.0));
 
-  graph.push_back(between_x1_x2);
+  graph.push_back(between_x0_x1);
 
   return graph.linearize(linearizationPoint);
 }
 
 /****************************************************************************
- * Test elimination function by eliminating x1 and x2 in graph.
+ * Test elimination function by eliminating x0 and x1 in graph.
  */
 TEST(HybridGaussianElimination, EliminateHybrid_2_Variable) {
   Switching self(2, 1.0, 0.1);
 
   auto factors = self.linearizedFactorGraph;
 
-  // Eliminate x1
+  // Eliminate x0
   Ordering ordering;
+  ordering += X(0);
   ordering += X(1);
-  ordering += X(2);
 
   HybridConditional::shared_ptr hybridConditionalMixture;
   HybridFactor::shared_ptr factorOnModes;
@@ -359,7 +359,7 @@ TEST(HybridGaussianElimination, EliminateHybrid_2_Variable) {
       dynamic_pointer_cast<GaussianMixture>(hybridConditionalMixture->inner());
 
   CHECK(gaussianConditionalMixture);
-  // Frontals = [x1, x2]
+  // Frontals = [x0, x1]
   EXPECT_LONGS_EQUAL(2, gaussianConditionalMixture->nrFrontals());
   // 1 parent, which is the mode
   EXPECT_LONGS_EQUAL(1, gaussianConditionalMixture->nrParents());
@@ -387,7 +387,7 @@ TEST(HybridFactorGraph, Partial_Elimination) {
 
   // Create ordering.
   Ordering ordering;
-  for (size_t k = 1; k <= self.K; k++) ordering += X(k);
+  for (size_t k = 0; k < self.K; k++) ordering += X(k);
 
   // Eliminate partially.
   HybridBayesNet::shared_ptr hybridBayesNet;
@@ -397,18 +397,18 @@ TEST(HybridFactorGraph, Partial_Elimination) {
 
   CHECK(hybridBayesNet);
   EXPECT_LONGS_EQUAL(3, hybridBayesNet->size());
-  EXPECT(hybridBayesNet->at(0)->frontals() == KeyVector{X(1)});
-  EXPECT(hybridBayesNet->at(0)->parents() == KeyVector({X(2), M(1)}));
-  EXPECT(hybridBayesNet->at(1)->frontals() == KeyVector{X(2)});
-  EXPECT(hybridBayesNet->at(1)->parents() == KeyVector({X(3), M(1), M(2)}));
-  EXPECT(hybridBayesNet->at(2)->frontals() == KeyVector{X(3)});
-  EXPECT(hybridBayesNet->at(2)->parents() == KeyVector({M(1), M(2)}));
+  EXPECT(hybridBayesNet->at(0)->frontals() == KeyVector{X(0)});
+  EXPECT(hybridBayesNet->at(0)->parents() == KeyVector({X(1), M(0)}));
+  EXPECT(hybridBayesNet->at(1)->frontals() == KeyVector{X(1)});
+  EXPECT(hybridBayesNet->at(1)->parents() == KeyVector({X(2), M(0), M(1)}));
+  EXPECT(hybridBayesNet->at(2)->frontals() == KeyVector{X(2)});
+  EXPECT(hybridBayesNet->at(2)->parents() == KeyVector({M(0), M(1)}));
 
   CHECK(remainingFactorGraph);
   EXPECT_LONGS_EQUAL(3, remainingFactorGraph->size());
-  EXPECT(remainingFactorGraph->at(0)->keys() == KeyVector({M(1)}));
-  EXPECT(remainingFactorGraph->at(1)->keys() == KeyVector({M(2), M(1)}));
-  EXPECT(remainingFactorGraph->at(2)->keys() == KeyVector({M(1), M(2)}));
+  EXPECT(remainingFactorGraph->at(0)->keys() == KeyVector({M(0)}));
+  EXPECT(remainingFactorGraph->at(1)->keys() == KeyVector({M(1), M(0)}));
+  EXPECT(remainingFactorGraph->at(2)->keys() == KeyVector({M(0), M(1)}));
 }
 
 /****************************************************************************
@@ -427,7 +427,7 @@ TEST(HybridFactorGraph, Full_Elimination) {
   {
     // Create ordering.
     Ordering ordering;
-    for (size_t k = 1; k <= self.K; k++) ordering += X(k);
+    for (size_t k = 0; k < self.K; k++) ordering += X(k);
 
     // Eliminate partially.
     std::tie(hybridBayesNet_partial, remainingFactorGraph_partial) =
@@ -440,15 +440,15 @@ TEST(HybridFactorGraph, Full_Elimination) {
       discrete_fg.push_back(df->inner());
     }
     ordering.clear();
-    for (size_t k = 1; k < self.K; k++) ordering += M(k);
+    for (size_t k = 0; k < self.K - 1; k++) ordering += M(k);
     discreteBayesNet =
         *discrete_fg.eliminateSequential(ordering, EliminateForMPE);
   }
 
   // Create ordering.
   Ordering ordering;
-  for (size_t k = 1; k <= self.K; k++) ordering += X(k);
-  for (size_t k = 1; k < self.K; k++) ordering += M(k);
+  for (size_t k = 0; k < self.K; k++) ordering += X(k);
+  for (size_t k = 0; k < self.K - 1; k++) ordering += M(k);
 
   // Eliminate partially.
   HybridBayesNet::shared_ptr hybridBayesNet =
@@ -456,23 +456,23 @@ TEST(HybridFactorGraph, Full_Elimination) {
 
   CHECK(hybridBayesNet);
   EXPECT_LONGS_EQUAL(5, hybridBayesNet->size());
-  // p(x1 | x2, m1)
-  EXPECT(hybridBayesNet->at(0)->frontals() == KeyVector{X(1)});
-  EXPECT(hybridBayesNet->at(0)->parents() == KeyVector({X(2), M(1)}));
-  // p(x2 | x3, m1, m2)
-  EXPECT(hybridBayesNet->at(1)->frontals() == KeyVector{X(2)});
-  EXPECT(hybridBayesNet->at(1)->parents() == KeyVector({X(3), M(1), M(2)}));
-  // p(x3 | m1, m2)
-  EXPECT(hybridBayesNet->at(2)->frontals() == KeyVector{X(3)});
-  EXPECT(hybridBayesNet->at(2)->parents() == KeyVector({M(1), M(2)}));
-  // P(m1 | m2)
-  EXPECT(hybridBayesNet->at(3)->frontals() == KeyVector{M(1)});
-  EXPECT(hybridBayesNet->at(3)->parents() == KeyVector({M(2)}));
+  // p(x0 | x1, m0)
+  EXPECT(hybridBayesNet->at(0)->frontals() == KeyVector{X(0)});
+  EXPECT(hybridBayesNet->at(0)->parents() == KeyVector({X(1), M(0)}));
+  // p(x1 | x2, m0, m1)
+  EXPECT(hybridBayesNet->at(1)->frontals() == KeyVector{X(1)});
+  EXPECT(hybridBayesNet->at(1)->parents() == KeyVector({X(2), M(0), M(1)}));
+  // p(x2 | m0, m1)
+  EXPECT(hybridBayesNet->at(2)->frontals() == KeyVector{X(2)});
+  EXPECT(hybridBayesNet->at(2)->parents() == KeyVector({M(0), M(1)}));
+  // P(m0 | m1)
+  EXPECT(hybridBayesNet->at(3)->frontals() == KeyVector{M(0)});
+  EXPECT(hybridBayesNet->at(3)->parents() == KeyVector({M(1)}));
   EXPECT(
       dynamic_pointer_cast<DiscreteConditional>(hybridBayesNet->at(3)->inner())
           ->equals(*discreteBayesNet.at(0)));
-  // P(m2)
-  EXPECT(hybridBayesNet->at(4)->frontals() == KeyVector{M(2)});
+  // P(m1)
+  EXPECT(hybridBayesNet->at(4)->frontals() == KeyVector{M(1)});
   EXPECT_LONGS_EQUAL(0, hybridBayesNet->at(4)->nrParents());
   EXPECT(
       dynamic_pointer_cast<DiscreteConditional>(hybridBayesNet->at(4)->inner())
@@ -489,7 +489,7 @@ TEST(HybridFactorGraph, Printing) {
 
   // Create ordering.
   Ordering ordering;
-  for (size_t k = 1; k <= self.K; k++) ordering += X(k);
+  for (size_t k = 0; k < self.K; k++) ordering += X(k);
 
   // Eliminate partially.
   HybridBayesNet::shared_ptr hybridBayesNet;
@@ -499,14 +499,37 @@ TEST(HybridFactorGraph, Printing) {
 
   string expected_hybridFactorGraph = R"(
 size: 7
-factor 0: Continuous [x1]
+factor 0: Continuous [x0]
 
-  A[x1] = [
+  A[x0] = [
 	10
 ]
   b = [ -10 ]
   No noise model
-factor 1: Hybrid [x1 x2; m1]{
+factor 1: Hybrid [x0 x1; m0]{
+ Choice(m0) 
+ 0 Leaf :
+  A[x0] = [
+	-1
+]
+  A[x1] = [
+	1
+]
+  b = [ -1 ]
+  No noise model
+
+ 1 Leaf :
+  A[x0] = [
+	-1
+]
+  A[x1] = [
+	1
+]
+  b = [ -0 ]
+  No noise model
+
+}
+factor 2: Hybrid [x1 x2; m1]{
  Choice(m1) 
  0 Leaf :
   A[x1] = [
@@ -529,54 +552,31 @@ factor 1: Hybrid [x1 x2; m1]{
   No noise model
 
 }
-factor 2: Hybrid [x2 x3; m2]{
- Choice(m2) 
- 0 Leaf :
-  A[x2] = [
-	-1
-]
-  A[x3] = [
-	1
-]
-  b = [ -1 ]
-  No noise model
+factor 3: Continuous [x1]
 
- 1 Leaf :
-  A[x2] = [
-	-1
+  A[x1] = [
+	10
 ]
-  A[x3] = [
-	1
-]
-  b = [ -0 ]
+  b = [ -10 ]
   No noise model
-
-}
-factor 3: Continuous [x2]
+factor 4: Continuous [x2]
 
   A[x2] = [
 	10
 ]
   b = [ -10 ]
   No noise model
-factor 4: Continuous [x3]
-
-  A[x3] = [
-	10
-]
-  b = [ -10 ]
-  No noise model
-factor 5: Discrete [m1]
- P( m1 ):
+factor 5: Discrete [m0]
+ P( m0 ):
  Leaf  0.5
 
-factor 6: Discrete [m2 m1]
- P( m2 | m1 ):
- Choice(m2) 
- 0 Choice(m1) 
+factor 6: Discrete [m1 m0]
+ P( m1 | m0 ):
+ Choice(m1) 
+ 0 Choice(m0) 
  0 0 Leaf 0.33333333
  0 1 Leaf  0.6
- 1 Choice(m1) 
+ 1 Choice(m0) 
  1 0 Leaf 0.66666667
  1 1 Leaf  0.4
 
@@ -586,71 +586,71 @@ factor 6: Discrete [m2 m1]
   // Expected output for hybridBayesNet.
   string expected_hybridBayesNet = R"(
 size: 3
-factor 0: Hybrid  P( x1 | x2 m1)
- Discrete Keys = (m1, 2), 
- Choice(m1) 
- 0 Leaf  p(x1 | x2)
+factor 0: Hybrid  P( x0 | x1 m0)
+ Discrete Keys = (m0, 2), 
+ Choice(m0) 
+ 0 Leaf  p(x0 | x1)
   R = [ 10.0499 ]
-  S[x2] = [ -0.0995037 ]
+  S[x1] = [ -0.0995037 ]
   d = [ -9.85087 ]
   No noise model
 
- 1 Leaf  p(x1 | x2)
+ 1 Leaf  p(x0 | x1)
   R = [ 10.0499 ]
-  S[x2] = [ -0.0995037 ]
+  S[x1] = [ -0.0995037 ]
   d = [ -9.95037 ]
   No noise model
 
-factor 1: Hybrid  P( x2 | x3 m1 m2)
- Discrete Keys = (m1, 2), (m2, 2), 
- Choice(m2) 
- 0 Choice(m1) 
- 0 0 Leaf  p(x2 | x3)
+factor 1: Hybrid  P( x1 | x2 m0 m1)
+ Discrete Keys = (m0, 2), (m1, 2), 
+ Choice(m1) 
+ 0 Choice(m0) 
+ 0 0 Leaf  p(x1 | x2)
   R = [ 10.099 ]
-  S[x3] = [ -0.0990196 ]
+  S[x2] = [ -0.0990196 ]
   d = [ -9.99901 ]
   No noise model
 
- 0 1 Leaf  p(x2 | x3)
+ 0 1 Leaf  p(x1 | x2)
   R = [ 10.099 ]
-  S[x3] = [ -0.0990196 ]
+  S[x2] = [ -0.0990196 ]
   d = [ -9.90098 ]
   No noise model
 
- 1 Choice(m1) 
- 1 0 Leaf  p(x2 | x3)
+ 1 Choice(m0) 
+ 1 0 Leaf  p(x1 | x2)
   R = [ 10.099 ]
-  S[x3] = [ -0.0990196 ]
+  S[x2] = [ -0.0990196 ]
   d = [ -10.098 ]
   No noise model
 
- 1 1 Leaf  p(x2 | x3)
+ 1 1 Leaf  p(x1 | x2)
   R = [ 10.099 ]
-  S[x3] = [ -0.0990196 ]
+  S[x2] = [ -0.0990196 ]
   d = [ -10 ]
   No noise model
 
-factor 2: Hybrid  P( x3 | m1 m2)
- Discrete Keys = (m1, 2), (m2, 2), 
- Choice(m2) 
- 0 Choice(m1) 
- 0 0 Leaf  p(x3)
+factor 2: Hybrid  P( x2 | m0 m1)
+ Discrete Keys = (m0, 2), (m1, 2), 
+ Choice(m1) 
+ 0 Choice(m0) 
+ 0 0 Leaf  p(x2)
   R = [ 10.0494 ]
   d = [ -10.1489 ]
   No noise model
 
- 0 1 Leaf  p(x3)
+ 0 1 Leaf  p(x2)
   R = [ 10.0494 ]
   d = [ -10.1479 ]
   No noise model
 
- 1 Choice(m1) 
- 1 0 Leaf  p(x3)
+ 1 Choice(m0) 
+ 1 0 Leaf  p(x2)
   R = [ 10.0494 ]
   d = [ -10.0504 ]
   No noise model
 
- 1 1 Leaf  p(x3)
+ 1 1 Leaf  p(x2)
   R = [ 10.0494 ]
   d = [ -10.0494 ]
   No noise model
@@ -669,7 +669,7 @@ factor 2: Hybrid  P( x3 | m1 m2)
 TEST(HybridFactorGraph, DefaultDecisionTree) {
   HybridNonlinearFactorGraph fg;
 
-  // Add a prior on pose x1 at the origin.
+  // Add a prior on pose x0 at the origin.
   // A prior factor consists of a mean and a noise model (covariance matrix)
   Pose2 prior(0.0, 0.0, 0.0);  // prior mean is at origin
   auto priorNoise = noiseModel::Diagonal::Sigmas(
