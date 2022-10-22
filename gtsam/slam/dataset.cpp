@@ -853,12 +853,12 @@ template <> struct ParseMeasurement<Pose3> {
       if (sampler)
         T12 = T12.retract(sampler->sample());
 
-      // EDGE_SE3:QUAT stores covariance in t,R order, unlike GTSAM:
+      // EDGE_SE3:QUAT stores information/precision in t,R order, unlike GTSAM:
       Matrix6 mgtsam;
-      mgtsam.block<3, 3>(0, 0) = m.block<3, 3>(3, 3); // cov rotation
-      mgtsam.block<3, 3>(3, 3) = m.block<3, 3>(0, 0); // cov translation
-      mgtsam.block<3, 3>(0, 3) = m.block<3, 3>(0, 3); // off diagonal
-      mgtsam.block<3, 3>(3, 0) = m.block<3, 3>(3, 0); // off diagonal
+      mgtsam.block<3, 3>(0, 0) = m.block<3, 3>(3, 3); // info rotation
+      mgtsam.block<3, 3>(3, 3) = m.block<3, 3>(0, 0); // info translation
+      mgtsam.block<3, 3>(3, 0) = m.block<3, 3>(0, 3); // off diagonal swap
+      mgtsam.block<3, 3>(0, 3) = m.block<3, 3>(3, 0); // off diagonal swap
       SharedNoiseModel model = noiseModel::Gaussian::Information(mgtsam);
 
       return BinaryMeasurement<Pose3>(
