@@ -80,7 +80,7 @@ struct GTSAM_EXPORT SfmTrack2d {
    * @brief Validates the track by checking that no two measurements are from
    * @returns boolean result of the validation.
    */
-  bool hasUniqueCameras() {
+  bool hasUniqueCameras() const {
     std::vector<int> track_cam_indices;
     for (auto& measurement : measurements) {
       track_cam_indices.emplace_back(measurement.first);
