@@ -54,8 +54,7 @@ set(ignore
     gtsam::KeyPairDoubleMap
     gtsam::gtsfm::MatchIndicesMap
     gtsam::gtsfm::KeypointsVector
-    gtsam::gtsfm::SfmTrack2dVector
-    gtsam::gtsfm::NamedSfmMeasurementVector)
+    gtsam::gtsfm::SfmTrack2dVector)
 
 set(interface_headers
     ${PROJECT_SOURCE_DIR}/gtsam/gtsam.i
@@ -155,8 +154,7 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             gtsam::KeyPairDoubleMap
             gtsam::gtsfm::MatchIndicesMap
             gtsam::gtsfm::KeypointsVector
-            gtsam::gtsfm::SfmTrack2dVector
-            gtsam::gtsfm::NamedSfmMeasurementVector)
+            gtsam::gtsfm::SfmTrack2dVector)
 
 
     pybind_wrap(${GTSAM_PYTHON_UNSTABLE_TARGET} # target
