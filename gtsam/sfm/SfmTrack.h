@@ -35,28 +35,26 @@ typedef std::pair<size_t, Point2> SfmMeasurement;
 typedef std::pair<size_t, size_t> SiftIndex;
 
 /**
- * @brief An SfmTrack stores SfM measurements grouped in a track
- * @addtogroup sfm
+ * @brief Track containing 2D measurements associated with a single 3D point.
+ * Note: Equivalent to gtsam.SfmTrack, but without the 3d measurement.
+ * This class holds data temporarily before 3D point is initialized.
  */
-struct GTSAM_EXPORT SfmTrack {
-  Point3 p;       ///< 3D position of the point
-  float r, g, b;  ///< RGB color of the 3D point
-
+struct GTSAM_EXPORT SfmTrack2d {
   /// The 2D image projections (id,(u,v))
   std::vector<SfmMeasurement> measurements;
 
-  /// The feature descriptors
+  /// The feature descriptors (optional)
   std::vector<SiftIndex> siftIndices;
 
   /// @name Constructors
   /// @{
 
-  explicit SfmTrack(float r = 0, float g = 0, float b = 0)
-      : p(0, 0, 0), r(r), g(g), b(b) {}
+  // Default constructor.
+  SfmTrack2d() = default;
 
-  explicit SfmTrack(const gtsam::Point3& pt, float r = 0, float g = 0,
-                    float b = 0)
-      : p(pt), r(r), g(g), b(b) {}
+  // Constructor from measurements.
+  explicit SfmTrack2d(const std::vector<SfmMeasurement>& measurements)
+      : measurements(measurements) {}
 
   /// @}
   /// @name Standard Interface
@@ -77,6 +75,46 @@ struct GTSAM_EXPORT SfmTrack {
 
   /// Get the SIFT feature index corresponding to the measurement at `idx`
   const SiftIndex& siftIndex(size_t idx) const { return siftIndices[idx]; }
+
+  /**
+   * @brief Validates the track by checking that no two measurements are from
+   * @returns boolean result of the validation.
+   */
+  bool hasUniqueCameras() {
+    std::vector<int> track_cam_indices;
+    for (auto& measurement : measurements) {
+      track_cam_indices.emplace_back(measurement.first);
+    }
+    auto i =
+        std::adjacent_find(track_cam_indices.begin(), track_cam_indices.end());
+    bool all_cameras_unique = (i == track_cam_indices.end());
+    return all_cameras_unique;
+  }
+};
+
+using SfmTrack2dVector = std::vector<SfmTrack2d>;
+
+/**
+ * @brief An SfmTrack stores SfM measurements grouped in a track
+ * @addtogroup sfm
+ */
+struct GTSAM_EXPORT SfmTrack : SfmTrack2d {
+  Point3 p;       ///< 3D position of the point
+  float r, g, b;  ///< RGB color of the 3D point
+
+  /// @name Constructors
+  /// @{
+
+  explicit SfmTrack(float r = 0, float g = 0, float b = 0)
+      : p(0, 0, 0), r(r), g(g), b(b) {}
+
+  explicit SfmTrack(const gtsam::Point3& pt, float r = 0, float g = 0,
+                    float b = 0)
+      : p(pt), r(r), g(g), b(b) {}
+
+  /// @}
+  /// @name Standard Interface
+  /// @{
 
   /// Get 3D point
   const Point3& point3() const { return p; }
