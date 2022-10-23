@@ -16,6 +16,8 @@ class SfmTrack2d {
   void addMeasurement(size_t idx, const gtsam::Point2& m);
   gtsam::SfmMeasurement measurement(size_t idx) const;
   bool hasUniqueCameras() const;
+  Eigen::MatrixX2d measurementMatrix() const;
+  Eigen::VectorXi indexVector() const;
 };
 
 virtual class SfmTrack : gtsam::SfmTrack2d {
@@ -331,8 +333,8 @@ class MatchIndicesMap {
 };
 
 class Keypoints {
-  Keypoints(const gtsam::gtsfm::KeypointCoordinates& coordinates);
-  gtsam::gtsfm::KeypointCoordinates coordinates;
+  Keypoints(const Eigen::MatrixX2d& coordinates);
+  Eigen::MatrixX2d coordinates;
 };
 
 class KeypointsVector {
