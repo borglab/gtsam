@@ -33,7 +33,7 @@ class TestDsfTrackGenerator(GtsamTestCase):
         matches_dict[IndexPair(0, 1)] = np.array([[0, 0], [1, 1]])
         matches_dict[IndexPair(1, 2)] = np.array([[2, 0], [1, 1]])
 
-        tracks = DsfTrackGenerator().generate_tracks_from_pairwise_matches(
+        tracks = DsfTrackGenerator().tracksFromPairwiseMatches(
             matches_dict,
             keypoints_list,
             verbose=False,

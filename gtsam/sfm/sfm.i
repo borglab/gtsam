@@ -351,7 +351,7 @@ class KeypointsVector {
 
 class DsfTrackGenerator {
   DsfTrackGenerator();
-  const gtsam::SfmTrack2dVector generate_tracks_from_pairwise_matches(
+  const gtsam::SfmTrack2dVector tracksFromPairwiseMatches(
     const gtsam::gtsfm::MatchIndicesMap& matches_dict,
     const gtsam::gtsfm::KeypointsVector& keypoints_list,
     bool verbose = false);
