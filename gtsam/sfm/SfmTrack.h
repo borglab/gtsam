@@ -22,6 +22,7 @@
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Point3.h>
 
+#include <Eigen/Core>
 #include <string>
 #include <utility>
 #include <vector>
@@ -90,6 +91,30 @@ struct GTSAM_EXPORT SfmTrack2d {
     bool all_cameras_unique = (i == track_cam_indices.end());
     return all_cameras_unique;
   }
+
+  /// @}
+  /// @name Vectorized Interface
+  /// @{
+
+  /// @brief Return the measurements as a 2D matrix
+  Eigen::MatrixX2d measurementMatrix() const {
+    Eigen::MatrixX2d m(numberMeasurements(), 2);
+    for (size_t i = 0; i < numberMeasurements(); i++) {
+      m.row(i) = measurement(i).second;
+    }
+    return m;
+  }
+
+  /// @brief Return the camera indices of the measurements
+  Eigen::VectorXi indexVector() const {
+    Eigen::VectorXi v(numberMeasurements());
+    for (size_t i = 0; i < numberMeasurements(); i++) {
+      v(i) = measurement(i).first;
+    }
+    return v;
+  }
+
+  /// @}
 };
 
 using SfmTrack2dVector = std::vector<SfmTrack2d>;

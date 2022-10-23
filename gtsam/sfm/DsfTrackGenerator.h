@@ -31,8 +31,6 @@ namespace gtsfm {
 
 typedef Eigen::MatrixX2i CorrespondenceIndices;  // N x 2 array
 
-using KeypointCoordinates = Eigen::MatrixX2d;
-
 // Output of detections in an image.
 // Coordinate system convention:
 // 1. The x coordinate denotes the horizontal direction (+ve direction towards
@@ -41,7 +39,7 @@ using KeypointCoordinates = Eigen::MatrixX2d;
 // 3. Origin is at the top left corner of the image.
 struct Keypoints {
   // The (x, y) coordinates of the features, of shape Nx2.
-  KeypointCoordinates coordinates;
+  Eigen::MatrixX2d coordinates;
 
   // Optional scale of the detections, of shape N.
   // Note: gtsam::Vector is typedef'd for Eigen::VectorXd.
@@ -50,7 +48,7 @@ struct Keypoints {
   /// Optional confidences/responses for each detection, of shape N.
   boost::optional<gtsam::Vector> responses;
 
-  Keypoints(const KeypointCoordinates& coordinates)
+  Keypoints(const Eigen::MatrixX2d& coordinates)
       : coordinates(coordinates){};  // boost::none
 };
 
