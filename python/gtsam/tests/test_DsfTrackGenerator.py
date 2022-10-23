@@ -5,10 +5,11 @@ Authors: John Lambert
 
 import unittest
 
+import gtsam
 import numpy as np
 from gtsam import (IndexPair, KeypointsVector, MatchIndicesMap, Point2,
                    SfmMeasurementVector, SfmTrack2d)
-from gtsam.gtsfm import DsfTrackGenerator, Keypoints
+from gtsam.gtsfm import Keypoints
 from gtsam.utils.test_case import GtsamTestCase
 
 
@@ -33,7 +34,7 @@ class TestDsfTrackGenerator(GtsamTestCase):
         matches_dict[IndexPair(0, 1)] = np.array([[0, 0], [1, 1]])
         matches_dict[IndexPair(1, 2)] = np.array([[2, 0], [1, 1]])
 
-        tracks = DsfTrackGenerator().tracksFromPairwiseMatches(
+        tracks = gtsam.gtsfm.tracksFromPairwiseMatches(
             matches_dict,
             keypoints_list,
             verbose=False,

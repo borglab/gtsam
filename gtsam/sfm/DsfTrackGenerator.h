@@ -31,7 +31,6 @@ namespace gtsfm {
 
 typedef Eigen::MatrixX2i CorrespondenceIndices;  // N x 2 array
 
-// struct Keypoints;
 using KeypointCoordinates = Eigen::MatrixX2d;
 
 // Output of detections in an image.
@@ -61,30 +60,20 @@ using KeypointsVector = std::vector<Keypoints>;
 using MatchIndicesMap = std::map<IndexPair, CorrespondenceIndices>;
 
 /**
- * @brief Generates point tracks from connected components in the keypoint
- * matches graph.
+ * @brief Creates a list of tracks from 2d point correspondences.
+ *
+ * Creates a disjoint-set forest (DSF) and 2d tracks from pairwise matches.
+ * We create a singleton for union-find set elements from camera index of a
+ * detection and the index of that detection in that camera's keypoint list,
+ * i.e. (i,k).
+ *
+ * @param Map from (i1,i2) image pair indices to (K,2) matrix, for K
+ *        correspondence indices, from each image.
+ * @param Length-N list of keypoints, for N images/cameras.
  */
-class DsfTrackGenerator {
- public:
-  /** Default constructor. */
-  DsfTrackGenerator() = default;
-
-  /**
-   * @brief Creates a list of tracks from 2d point correspondences.
-   *
-   * Creates a disjoint-set forest (DSF) and 2d tracks from pairwise matches.
-   * We create a singleton for union-find set elements from camera index of a
-   * detection and the index of that detection in that camera's keypoint list,
-   * i.e. (i,k).
-   *
-   * @param Map from (i1,i2) image pair indices to (K,2) matrix, for K
-   *        correspondence indices, from each image.
-   * @param Length-N list of keypoints, for N images/cameras.
-   */
-  static std::vector<SfmTrack2d> tracksFromPairwiseMatches(
-      const MatchIndicesMap& matches, const KeypointsVector& keypoints,
-      bool verbose = false);
-};
+std::vector<SfmTrack2d> tracksFromPairwiseMatches(
+    const MatchIndicesMap& matches, const KeypointsVector& keypoints,
+    bool verbose = false);
 
 }  // namespace gtsfm
 

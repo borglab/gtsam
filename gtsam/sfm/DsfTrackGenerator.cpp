@@ -98,7 +98,7 @@ static std::vector<SfmTrack2d> tracksFromDSF(const DSFMapIndexPair& dsf,
  *        correspondence indices, from each image.
  * @param Length-N list of keypoints, for N images/cameras.
  */
-std::vector<SfmTrack2d> DsfTrackGenerator::tracksFromPairwiseMatches(
+std::vector<SfmTrack2d> tracksFromPairwiseMatches(
     const MatchIndicesMap& matches, const KeypointsVector& keypoints,
     bool verbose) {
   // Generate the DSF to form tracks.
@@ -121,7 +121,7 @@ std::vector<SfmTrack2d> DsfTrackGenerator::tracksFromPairwiseMatches(
     double erroneous_percentage = static_cast<float>(erroneous_track_count) /
                                   static_cast<float>(tracks2d.size()) * 100;
 
-    // TODO(johnwlambert): restrict decimal places to 2 decimals.
+    std::cout << std::fixed << std::setprecision(2);
     std::cout << "DSF Union-Find: " << erroneous_percentage;
     std::cout << "% of tracks discarded from multiple obs. in a single image."
               << std::endl;

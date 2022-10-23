@@ -77,7 +77,7 @@ struct GTSAM_EXPORT SfmTrack2d {
   const SiftIndex& siftIndex(size_t idx) const { return siftIndices[idx]; }
 
   /**
-   * @brief Validates the track by checking that no two measurements are from
+   * @brief Check that no two measurements are from the same camera.
    * @returns boolean result of the validation.
    */
   bool hasUniqueCameras() const {
