@@ -15,12 +15,13 @@
 // #include <pybind11/stl.h>
 #include <pybind11/stl_bind.h>
 
-PYBIND11_MAKE_OPAQUE(
-    std::vector<gtsam::SfmTrack>);
-
-PYBIND11_MAKE_OPAQUE(
-    std::vector<gtsam::SfmCamera>);
+PYBIND11_MAKE_OPAQUE(std::vector<gtsam::SfmMeasurement>);
+PYBIND11_MAKE_OPAQUE(std::vector<gtsam::SfmTrack>);
+PYBIND11_MAKE_OPAQUE(std::vector<gtsam::SfmCamera>);
 PYBIND11_MAKE_OPAQUE(
     std::vector<gtsam::BinaryMeasurement<gtsam::Unit3>>);
 PYBIND11_MAKE_OPAQUE(
     std::vector<gtsam::BinaryMeasurement<gtsam::Rot3>>);
+PYBIND11_MAKE_OPAQUE(
+    std::vector<gtsam::gtsfm::Keypoints>);
+PYBIND11_MAKE_OPAQUE(gtsam::gtsfm::MatchIndicesMap);
