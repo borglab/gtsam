@@ -1,10 +1,6 @@
 ###############################################################################
 # Option for using system Eigen or GTSAM-bundled Eigen
-# Default: Use system's Eigen if found automatically:
-find_package(Eigen3 CONFIG QUIET)
-set(USE_SYSTEM_EIGEN_INITIAL_VALUE ${Eigen3_FOUND})
-option(GTSAM_USE_SYSTEM_EIGEN "Find and use system-installed Eigen. If 'off', use the one bundled with GTSAM" ${USE_SYSTEM_EIGEN_INITIAL_VALUE})
-unset(USE_SYSTEM_EIGEN_INITIAL_VALUE)
+option(GTSAM_USE_SYSTEM_EIGEN "Find and use system-installed Eigen. If 'off', use the one bundled with GTSAM" OFF)
 
 if(NOT GTSAM_USE_SYSTEM_EIGEN)
   # This option only makes sense if using the embedded copy of Eigen, it is
@@ -46,7 +42,7 @@ else()
     set(GTSAM_EIGEN_INCLUDE_FOR_INSTALL "include/gtsam/3rdparty/Eigen/")
 
     # The actual include directory (for BUILD cmake target interface):
-    set(GTSAM_EIGEN_INCLUDE_FOR_BUILD "${GTSAM_SOURCE_DIR}/gtsam/3rdparty/Eigen/")
+    set(GTSAM_EIGEN_INCLUDE_FOR_BUILD "${GTSAM_SOURCE_DIR}/gtsam/3rdparty/Eigen")
 
     add_library(gtsam_eigen3 INTERFACE)
 
@@ -59,7 +55,7 @@ else()
     install(TARGETS gtsam_eigen3 EXPORT GTSAM-exports PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
     list(APPEND GTSAM_EXPORTED_TARGETS gtsam_eigen3)
-    set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
+    set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}")
 endif()
 
 # Detect Eigen version:
