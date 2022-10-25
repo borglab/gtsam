@@ -18,7 +18,10 @@
  * @date    December 2021
  */
 
+#include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
+#include <gtsam/hybrid/HybridBayesTree.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 #include "Switching.h"
 
@@ -27,6 +30,8 @@
 
 using namespace std;
 using namespace gtsam;
+using namespace gtsam::serializationTestHelpers;
+
 using noiseModel::Isotropic;
 using symbol_shorthand::M;
 using symbol_shorthand::X;
@@ -45,6 +50,20 @@ TEST(HybridBayesNet, Creation) {
   CHECK(bayesNet.atDiscrete(0));
   auto& df = *bayesNet.atDiscrete(0);
   EXPECT(df.equals(expected));
+}
+
+/* ****************************************************************************/
+// Test adding a bayes net to another one.
+TEST(HybridBayesNet, Add) {
+  HybridBayesNet bayesNet;
+
+  bayesNet.add(Asia, "99/1");
+
+  DiscreteConditional expected(Asia, "99/1");
+
+  HybridBayesNet other;
+  other.push_back(bayesNet);
+  EXPECT(bayesNet.equals(other));
 }
 
 /* ****************************************************************************/
@@ -72,17 +91,126 @@ TEST(HybridBayesNet, Choose) {
   EXPECT_LONGS_EQUAL(4, gbn.size());
 
   EXPECT(assert_equal(*(*boost::dynamic_pointer_cast<GaussianMixture>(
-                          hybridBayesNet->atGaussian(0)))(assignment),
+                          hybridBayesNet->atMixture(0)))(assignment),
                       *gbn.at(0)));
   EXPECT(assert_equal(*(*boost::dynamic_pointer_cast<GaussianMixture>(
-                          hybridBayesNet->atGaussian(1)))(assignment),
+                          hybridBayesNet->atMixture(1)))(assignment),
                       *gbn.at(1)));
   EXPECT(assert_equal(*(*boost::dynamic_pointer_cast<GaussianMixture>(
-                          hybridBayesNet->atGaussian(2)))(assignment),
+                          hybridBayesNet->atMixture(2)))(assignment),
                       *gbn.at(2)));
   EXPECT(assert_equal(*(*boost::dynamic_pointer_cast<GaussianMixture>(
-                          hybridBayesNet->atGaussian(3)))(assignment),
+                          hybridBayesNet->atMixture(3)))(assignment),
                       *gbn.at(3)));
+}
+
+/* ****************************************************************************/
+// Test bayes net optimize
+TEST(HybridBayesNet, OptimizeAssignment) {
+  Switching s(4);
+
+  Ordering ordering;
+  for (auto&& kvp : s.linearizationPoint) {
+    ordering += kvp.key;
+  }
+
+  HybridBayesNet::shared_ptr hybridBayesNet;
+  HybridGaussianFactorGraph::shared_ptr remainingFactorGraph;
+  std::tie(hybridBayesNet, remainingFactorGraph) =
+      s.linearizedFactorGraph.eliminatePartialSequential(ordering);
+
+  DiscreteValues assignment;
+  assignment[M(1)] = 1;
+  assignment[M(2)] = 1;
+  assignment[M(3)] = 1;
+
+  VectorValues delta = hybridBayesNet->optimize(assignment);
+
+  // The linearization point has the same value as the key index,
+  // e.g. X(1) = 1, X(2) = 2,
+  // but the factors specify X(k) = k-1, so delta should be -1.
+  VectorValues expected_delta;
+  expected_delta.insert(make_pair(X(1), -Vector1::Ones()));
+  expected_delta.insert(make_pair(X(2), -Vector1::Ones()));
+  expected_delta.insert(make_pair(X(3), -Vector1::Ones()));
+  expected_delta.insert(make_pair(X(4), -Vector1::Ones()));
+
+  EXPECT(assert_equal(expected_delta, delta));
+}
+
+/* ****************************************************************************/
+// Test bayes net optimize
+TEST(HybridBayesNet, Optimize) {
+  Switching s(4);
+
+  Ordering hybridOrdering = s.linearizedFactorGraph.getHybridOrdering();
+  HybridBayesNet::shared_ptr hybridBayesNet =
+      s.linearizedFactorGraph.eliminateSequential(hybridOrdering);
+
+  HybridValues delta = hybridBayesNet->optimize();
+
+  DiscreteValues expectedAssignment;
+  expectedAssignment[M(1)] = 1;
+  expectedAssignment[M(2)] = 0;
+  expectedAssignment[M(3)] = 1;
+  EXPECT(assert_equal(expectedAssignment, delta.discrete()));
+
+  VectorValues expectedValues;
+  expectedValues.insert(X(1), -0.999904 * Vector1::Ones());
+  expectedValues.insert(X(2), -0.99029 * Vector1::Ones());
+  expectedValues.insert(X(3), -1.00971 * Vector1::Ones());
+  expectedValues.insert(X(4), -1.0001 * Vector1::Ones());
+
+  EXPECT(assert_equal(expectedValues, delta.continuous(), 1e-5));
+}
+
+/* ****************************************************************************/
+// Test bayes net multifrontal optimize
+TEST(HybridBayesNet, OptimizeMultifrontal) {
+  Switching s(4);
+
+  Ordering hybridOrdering = s.linearizedFactorGraph.getHybridOrdering();
+  HybridBayesTree::shared_ptr hybridBayesTree =
+      s.linearizedFactorGraph.eliminateMultifrontal(hybridOrdering);
+  HybridValues delta = hybridBayesTree->optimize();
+
+  VectorValues expectedValues;
+  expectedValues.insert(X(1), -0.999904 * Vector1::Ones());
+  expectedValues.insert(X(2), -0.99029 * Vector1::Ones());
+  expectedValues.insert(X(3), -1.00971 * Vector1::Ones());
+  expectedValues.insert(X(4), -1.0001 * Vector1::Ones());
+
+  EXPECT(assert_equal(expectedValues, delta.continuous(), 1e-5));
+}
+
+/* ****************************************************************************/
+// Test bayes net pruning
+TEST(HybridBayesNet, Prune) {
+  Switching s(4);
+
+  Ordering hybridOrdering = s.linearizedFactorGraph.getHybridOrdering();
+  HybridBayesNet::shared_ptr hybridBayesNet =
+      s.linearizedFactorGraph.eliminateSequential(hybridOrdering);
+
+  HybridValues delta = hybridBayesNet->optimize();
+
+  auto prunedBayesNet = hybridBayesNet->prune(2);
+  HybridValues pruned_delta = prunedBayesNet.optimize();
+
+  EXPECT(assert_equal(delta.discrete(), pruned_delta.discrete()));
+  EXPECT(assert_equal(delta.continuous(), pruned_delta.continuous()));
+}
+
+/* ****************************************************************************/
+// Test HybridBayesNet serialization.
+TEST(HybridBayesNet, Serialization) {
+  Switching s(4);
+  Ordering ordering = s.linearizedFactorGraph.getHybridOrdering();
+  HybridBayesNet hbn = *(s.linearizedFactorGraph.eliminateSequential(ordering));
+
+  EXPECT(equalsObj<HybridBayesNet>(hbn));
+  EXPECT(equalsXML<HybridBayesNet>(hbn));
+  EXPECT(equalsBinary<HybridBayesNet>(hbn));
 }
 
 /* ************************************************************************* */

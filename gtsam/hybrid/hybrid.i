@@ -6,8 +6,8 @@ namespace gtsam {
 
 #include <gtsam/hybrid/HybridValues.h>
 class HybridValues {
-  gtsam::DiscreteValues discrete;
-  gtsam::VectorValues continuous;
+  gtsam::DiscreteValues discrete() const;
+  gtsam::VectorValues continuous() const;
   HybridValues();
   HybridValues(const gtsam::DiscreteValues &dv, const gtsam::VectorValues &cv);
   void print(string s = "HybridValues",
@@ -98,6 +98,8 @@ class HybridBayesTree {
   size_t size() const;
   bool empty() const;
   const HybridBayesTreeClique* operator[](size_t j) const;
+
+  gtsam::HybridValues optimize() const;
 
   string dot(const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;

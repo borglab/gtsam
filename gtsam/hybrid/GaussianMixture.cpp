@@ -119,33 +119,90 @@ void GaussianMixture::print(const std::string &s,
       "", [&](Key k) { return formatter(k); },
       [&](const GaussianConditional::shared_ptr &gf) -> std::string {
         RedirectCout rd;
-        if (gf && !gf->empty())
+        if (gf && !gf->empty()) {
           gf->print("", formatter);
-        else
-          return {"nullptr"};
-        return rd.str();
+          return rd.str();
+        } else {
+          return "nullptr";
+        }
       });
 }
 
-/* *******************************************************************************/
-void GaussianMixture::prune(const DecisionTreeFactor &decisionTree) {
-  // Functional which loops over all assignments and create a set of
-  // GaussianConditionals
-  auto pruner = [&decisionTree](
+/* ************************************************************************* */
+/// Return the DiscreteKey vector as a set.
+std::set<DiscreteKey> DiscreteKeysAsSet(const DiscreteKeys &dkeys) {
+  std::set<DiscreteKey> s;
+  s.insert(dkeys.begin(), dkeys.end());
+  return s;
+}
+
+/* ************************************************************************* */
+/**
+ * @brief Helper function to get the pruner functional.
+ *
+ * @param decisionTree The probability decision tree of only discrete keys.
+ * @return std::function<GaussianConditional::shared_ptr(
+ * const Assignment<Key> &, const GaussianConditional::shared_ptr &)>
+ */
+std::function<GaussianConditional::shared_ptr(
+    const Assignment<Key> &, const GaussianConditional::shared_ptr &)>
+GaussianMixture::prunerFunc(const DecisionTreeFactor &decisionTree) {
+  // Get the discrete keys as sets for the decision tree
+  // and the gaussian mixture.
+  auto decisionTreeKeySet = DiscreteKeysAsSet(decisionTree.discreteKeys());
+  auto gaussianMixtureKeySet = DiscreteKeysAsSet(this->discreteKeys());
+
+  auto pruner = [decisionTree, decisionTreeKeySet, gaussianMixtureKeySet](
                     const Assignment<Key> &choices,
                     const GaussianConditional::shared_ptr &conditional)
       -> GaussianConditional::shared_ptr {
     // typecast so we can use this to get probability value
     DiscreteValues values(choices);
 
-    if (decisionTree(values) == 0.0) {
-      // empty aka null pointer
-      boost::shared_ptr<GaussianConditional> null;
-      return null;
+    // Case where the gaussian mixture has the same
+    // discrete keys as the decision tree.
+    if (gaussianMixtureKeySet == decisionTreeKeySet) {
+      if (decisionTree(values) == 0.0) {
+        // empty aka null pointer
+        boost::shared_ptr<GaussianConditional> null;
+        return null;
+      } else {
+        return conditional;
+      }
     } else {
-      return conditional;
+      std::vector<DiscreteKey> set_diff;
+      std::set_difference(decisionTreeKeySet.begin(), decisionTreeKeySet.end(),
+                          gaussianMixtureKeySet.begin(),
+                          gaussianMixtureKeySet.end(),
+                          std::back_inserter(set_diff));
+
+      const std::vector<DiscreteValues> assignments =
+          DiscreteValues::CartesianProduct(set_diff);
+      for (const DiscreteValues &assignment : assignments) {
+        DiscreteValues augmented_values(values);
+        augmented_values.insert(assignment.begin(), assignment.end());
+
+        // If any one of the sub-branches are non-zero,
+        // we need this conditional.
+        if (decisionTree(augmented_values) > 0.0) {
+          return conditional;
+        }
+      }
+      // If we are here, it means that all the sub-branches are 0,
+      // so we prune.
+      return nullptr;
     }
   };
+  return pruner;
+}
+
+/* *******************************************************************************/
+void GaussianMixture::prune(const DecisionTreeFactor &decisionTree) {
+  auto decisionTreeKeySet = DiscreteKeysAsSet(decisionTree.discreteKeys());
+  auto gmKeySet = DiscreteKeysAsSet(this->discreteKeys());
+  // Functional which loops over all assignments and create a set of
+  // GaussianConditionals
+  auto pruner = prunerFunc(decisionTree);
 
   auto pruned_conditionals = conditionals_.apply(pruner);
   conditionals_.root_ = pruned_conditionals.root_;

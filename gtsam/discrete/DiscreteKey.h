@@ -21,6 +21,7 @@
 #include <gtsam/global_includes.h>
 #include <gtsam/inference/Key.h>
 
+#include <boost/serialization/vector.hpp>
 #include <map>
 #include <string>
 #include <vector>
@@ -70,8 +71,30 @@ namespace gtsam {
       push_back(key);
       return *this;
     }
+
+    /// Print the keys and cardinalities.
+    void print(const std::string& s = "",
+               const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+
+    /// Check equality to another DiscreteKeys object.
+    bool equals(const DiscreteKeys& other, double tol = 0) const;
+
+    /** Serialization function */
+    friend class boost::serialization::access;
+    template <class ARCHIVE>
+    void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+      ar& boost::serialization::make_nvp(
+          "DiscreteKeys",
+          boost::serialization::base_object<std::vector<DiscreteKey>>(*this));
+    }
+
   }; // DiscreteKeys
 
   /// Create a list from two keys
   GTSAM_EXPORT DiscreteKeys operator&(const DiscreteKey& key1, const DiscreteKey& key2);
-}
+
+  // traits
+  template <>
+  struct traits<DiscreteKeys> : public Testable<DiscreteKeys> {};
+
+  }  // namespace gtsam

@@ -49,8 +49,6 @@ class GTSAM_EXPORT HybridFactor : public Factor {
   bool isContinuous_ = false;
   bool isHybrid_ = false;
 
-  size_t nrContinuous_ = 0;
-
  protected:
   // Set of DiscreteKeys for this factor.
   DiscreteKeys discreteKeys_;
@@ -131,6 +129,19 @@ class GTSAM_EXPORT HybridFactor : public Factor {
   const KeyVector &continuousKeys() const { return continuousKeys_; }
 
   /// @}
+
+ private:
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
+    ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    ar &BOOST_SERIALIZATION_NVP(isDiscrete_);
+    ar &BOOST_SERIALIZATION_NVP(isContinuous_);
+    ar &BOOST_SERIALIZATION_NVP(isHybrid_);
+    ar &BOOST_SERIALIZATION_NVP(discreteKeys_);
+    ar &BOOST_SERIALIZATION_NVP(continuousKeys_);
+  }
 };
 // HybridFactor
 

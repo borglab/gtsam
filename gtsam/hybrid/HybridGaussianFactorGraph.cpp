@@ -96,8 +96,12 @@ GaussianMixtureFactor::Sum sumFrontals(
       }
 
     } else if (f->isContinuous()) {
-      deferredFactors.push_back(
-          boost::dynamic_pointer_cast<HybridGaussianFactor>(f)->inner());
+      if (auto gf = boost::dynamic_pointer_cast<HybridGaussianFactor>(f)) {
+        deferredFactors.push_back(gf->inner());
+      }
+      if (auto cg = boost::dynamic_pointer_cast<HybridConditional>(f)) {
+        deferredFactors.push_back(cg->asGaussian());
+      }
 
     } else if (f->isDiscrete()) {
       // Don't do anything for discrete-only factors
@@ -135,9 +139,9 @@ continuousElimination(const HybridGaussianFactorGraph &factors,
   for (auto &fp : factors) {
     if (auto ptr = boost::dynamic_pointer_cast<HybridGaussianFactor>(fp)) {
       gfg.push_back(ptr->inner());
-    } else if (auto p =
-                   boost::static_pointer_cast<HybridConditional>(fp)->inner()) {
-      gfg.push_back(boost::static_pointer_cast<GaussianConditional>(p));
+    } else if (auto ptr = boost::static_pointer_cast<HybridConditional>(fp)) {
+      gfg.push_back(
+          boost::static_pointer_cast<GaussianConditional>(ptr->inner()));
     } else {
       // It is an orphan wrapped conditional
     }
@@ -153,12 +157,14 @@ std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>
 discreteElimination(const HybridGaussianFactorGraph &factors,
                     const Ordering &frontalKeys) {
   DiscreteFactorGraph dfg;
-  for (auto &fp : factors) {
-    if (auto ptr = boost::dynamic_pointer_cast<HybridDiscreteFactor>(fp)) {
-      dfg.push_back(ptr->inner());
-    } else if (auto p =
-                   boost::static_pointer_cast<HybridConditional>(fp)->inner()) {
-      dfg.push_back(boost::static_pointer_cast<DiscreteConditional>(p));
+
+  for (auto &factor : factors) {
+    if (auto p = boost::dynamic_pointer_cast<HybridDiscreteFactor>(factor)) {
+      dfg.push_back(p->inner());
+    } else if (auto p = boost::static_pointer_cast<HybridConditional>(factor)) {
+      auto discrete_conditional =
+          boost::static_pointer_cast<DiscreteConditional>(p->inner());
+      dfg.push_back(discrete_conditional);
     } else {
       // It is an orphan wrapper
     }
@@ -213,10 +219,10 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
         result = EliminatePreferCholesky(graph, frontalKeys);
 
     if (keysOfEliminated.empty()) {
-      keysOfEliminated =
-          result.first->keys();  // Initialize the keysOfEliminated to be the
+      // Initialize the keysOfEliminated to be the keys of the
+      // eliminated GaussianConditional
+      keysOfEliminated = result.first->keys();
     }
-    // keysOfEliminated of the GaussianConditional
     if (keysOfSeparator.empty()) {
       keysOfSeparator = result.second->keys();
     }
@@ -244,6 +250,7 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
       return exp(-factor->error(empty_values));
     };
     DecisionTree<Key, double> fdt(separatorFactors, factorError);
+
     auto discreteFactor =
         boost::make_shared<DecisionTreeFactor>(discreteSeparator, fdt);
 
@@ -399,6 +406,21 @@ void HybridGaussianFactorGraph::add(DecisionTreeFactor &&factor) {
 /* ************************************************************************ */
 void HybridGaussianFactorGraph::add(DecisionTreeFactor::shared_ptr factor) {
   FactorGraph::add(boost::make_shared<HybridDiscreteFactor>(factor));
+}
+
+/* ************************************************************************ */
+const Ordering HybridGaussianFactorGraph::getHybridOrdering() const {
+  KeySet discrete_keys = discreteKeys();
+  for (auto &factor : factors_) {
+    for (const DiscreteKey &k : factor->discreteKeys()) {
+      discrete_keys.insert(k.first);
+    }
+  }
+
+  const VariableIndex index(factors_);
+  Ordering ordering = Ordering::ColamdConstrainedLast(
+      index, KeyVector(discrete_keys.begin(), discrete_keys.end()), true);
+  return ordering;
 }
 
 }  // namespace gtsam

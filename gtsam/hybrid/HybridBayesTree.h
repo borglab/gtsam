@@ -73,8 +73,45 @@ class GTSAM_EXPORT HybridBayesTree : public BayesTree<HybridBayesTreeClique> {
   /** Check equality */
   bool equals(const This& other, double tol = 1e-9) const;
 
+  /**
+   * @brief Optimize the hybrid Bayes tree by computing the MPE for the current
+   * set of discrete variables and using it to compute the best continuous
+   * update delta.
+   *
+   * @return HybridValues
+   */
+  HybridValues optimize() const;
+
+  /**
+   * @brief Recursively optimize the BayesTree to produce a vector solution.
+   *
+   * @param assignment The discrete values assignment to select the Gaussian
+   * mixtures.
+   * @return VectorValues
+   */
+  VectorValues optimize(const DiscreteValues& assignment) const;
+
+  /**
+   * @brief Prune the underlying Bayes tree.
+   *
+   * @param maxNumberLeaves The max number of leaf nodes to keep.
+   */
+  void prune(const size_t maxNumberLeaves);
+
   /// @}
+
+ private:
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+  }
 };
+
+/// traits
+template <>
+struct traits<HybridBayesTree> : public Testable<HybridBayesTree> {};
 
 /**
  * @brief Class for Hybrid Bayes tree orphan subtrees.

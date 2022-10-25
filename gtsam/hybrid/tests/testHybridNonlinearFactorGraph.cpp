@@ -60,7 +60,7 @@ TEST(HybridFactorGraph, GaussianFactorGraph) {
   Values linearizationPoint;
   linearizationPoint.insert<double>(X(0), 0);
 
-  HybridGaussianFactorGraph ghfg = fg.linearize(linearizationPoint);
+  HybridGaussianFactorGraph ghfg = *fg.linearize(linearizationPoint);
 
   // Add a factor to the GaussianFactorGraph
   ghfg.add(JacobianFactor(X(0), I_1x1, Vector1(5)));
@@ -139,12 +139,38 @@ TEST(HybridGaussianFactorGraph, Resize) {
   linearizationPoint.insert<double>(X(1), 1);
 
   // Generate `HybridGaussianFactorGraph` by linearizing
-  HybridGaussianFactorGraph gfg = nhfg.linearize(linearizationPoint);
+  HybridGaussianFactorGraph gfg = *nhfg.linearize(linearizationPoint);
 
   EXPECT_LONGS_EQUAL(gfg.size(), 3);
 
   gfg.resize(0);
   EXPECT_LONGS_EQUAL(gfg.size(), 0);
+}
+
+/***************************************************************************
+ * Test that the MixtureFactor reports correctly if the number of continuous
+ * keys provided do not match the keys in the factors.
+ */
+TEST(HybridGaussianFactorGraph, MixtureFactor) {
+  auto nonlinearFactor = boost::make_shared<BetweenFactor<double>>(
+      X(0), X(1), 0.0, Isotropic::Sigma(1, 0.1));
+  auto discreteFactor = boost::make_shared<DecisionTreeFactor>();
+
+  auto noise_model = noiseModel::Isotropic::Sigma(1, 1.0);
+  auto still = boost::make_shared<MotionModel>(X(0), X(1), 0.0, noise_model),
+       moving = boost::make_shared<MotionModel>(X(0), X(1), 1.0, noise_model);
+
+  std::vector<MotionModel::shared_ptr> components = {still, moving};
+
+  // Check for exception when number of continuous keys are under-specified.
+  KeyVector contKeys = {X(0)};
+  THROWS_EXCEPTION(boost::make_shared<MixtureFactor>(
+      contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, components));
+
+  // Check for exception when number of continuous keys are too many.
+  contKeys = {X(0), X(1), X(2)};
+  THROWS_EXCEPTION(boost::make_shared<MixtureFactor>(
+      contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, components));
 }
 
 /*****************************************************************************
@@ -224,7 +250,7 @@ TEST(HybridFactorGraph, Linearization) {
 
   // Linearize here:
   HybridGaussianFactorGraph actualLinearized =
-      self.nonlinearFactorGraph.linearize(self.linearizationPoint);
+      *self.nonlinearFactorGraph.linearize(self.linearizationPoint);
 
   EXPECT_LONGS_EQUAL(7, actualLinearized.size());
 }
@@ -257,14 +283,6 @@ TEST(GaussianElimination, Eliminate_x1) {
   // Add first hybrid factor
   factors.push_back(self.linearizedFactorGraph[1]);
 
-  // TODO(Varun) remove this block since sum is no longer exposed.
-  // // Check that sum works:
-  // auto sum = factors.sum();
-  // Assignment<Key> mode;
-  // mode[M(1)] = 1;
-  // auto actual = sum(mode);               // Selects one of 2 modes.
-  // EXPECT_LONGS_EQUAL(2, actual.size());  // Prior and motion model.
-
   // Eliminate x1
   Ordering ordering;
   ordering += X(1);
@@ -288,15 +306,6 @@ TEST(HybridsGaussianElimination, Eliminate_x2) {
   HybridGaussianFactorGraph factors;
   factors.push_back(self.linearizedFactorGraph[1]);  // involves m1
   factors.push_back(self.linearizedFactorGraph[2]);  // involves m2
-
-  // TODO(Varun) remove this block since sum is no longer exposed.
-  // // Check that sum works:
-  // auto sum = factors.sum();
-  // Assignment<Key> mode;
-  // mode[M(1)] = 0;
-  // mode[M(2)] = 1;
-  // auto actual = sum(mode);               // Selects one of 4 mode
-  // combinations. EXPECT_LONGS_EQUAL(2, actual.size());  // 2 motion models.
 
   // Eliminate x2
   Ordering ordering;
@@ -364,50 +373,9 @@ TEST(HybridGaussianElimination, EliminateHybrid_2_Variable) {
   CHECK(discreteFactor);
   EXPECT_LONGS_EQUAL(1, discreteFactor->discreteKeys().size());
   EXPECT(discreteFactor->root_->isLeaf() == false);
+
+  // TODO(Varun) Test emplace_discrete
 }
-
-// /*
-// ****************************************************************************/
-// /// Test the toDecisionTreeFactor method
-// TEST(HybridFactorGraph, ToDecisionTreeFactor) {
-//   size_t K = 3;
-
-//   // Provide tight sigma values so that the errors are visibly different.
-//   double between_sigma = 5e-8, prior_sigma = 1e-7;
-
-//   Switching self(K, between_sigma, prior_sigma);
-
-//   // Clear out discrete factors since sum() cannot hanldle those
-//   HybridGaussianFactorGraph linearizedFactorGraph(
-//       self.linearizedFactorGraph.gaussianGraph(), DiscreteFactorGraph(),
-//       self.linearizedFactorGraph.dcGraph());
-
-//   auto decisionTreeFactor = linearizedFactorGraph.toDecisionTreeFactor();
-
-//   auto allAssignments =
-//       DiscreteValues::CartesianProduct(linearizedFactorGraph.discreteKeys());
-
-//   // Get the error of the discrete assignment m1=0, m2=1.
-//   double actual = (*decisionTreeFactor)(allAssignments[1]);
-
-//   /********************************************/
-//   // Create equivalent factor graph for m1=0, m2=1
-//   GaussianFactorGraph graph = linearizedFactorGraph.gaussianGraph();
-
-//   for (auto &p : linearizedFactorGraph.dcGraph()) {
-//     if (auto mixture =
-//             boost::dynamic_pointer_cast<DCGaussianMixtureFactor>(p)) {
-//       graph.add((*mixture)(allAssignments[1]));
-//     }
-//   }
-
-//   VectorValues values = graph.optimize();
-//   double expected = graph.probPrime(values);
-//   /********************************************/
-//   EXPECT_DOUBLES_EQUAL(expected, actual, 1e-12);
-//   // REGRESSION:
-//   EXPECT_DOUBLES_EQUAL(0.6125, actual, 1e-4);
-// }
 
 /****************************************************************************
  * Test partial elimination
@@ -428,7 +396,6 @@ TEST(HybridFactorGraph, Partial_Elimination) {
       linearizedFactorGraph.eliminatePartialSequential(ordering);
 
   CHECK(hybridBayesNet);
-  //  GTSAM_PRINT(*hybridBayesNet);  // HybridBayesNet
   EXPECT_LONGS_EQUAL(3, hybridBayesNet->size());
   EXPECT(hybridBayesNet->at(0)->frontals() == KeyVector{X(1)});
   EXPECT(hybridBayesNet->at(0)->parents() == KeyVector({X(2), M(1)}));
@@ -438,7 +405,6 @@ TEST(HybridFactorGraph, Partial_Elimination) {
   EXPECT(hybridBayesNet->at(2)->parents() == KeyVector({M(1), M(2)}));
 
   CHECK(remainingFactorGraph);
-  //  GTSAM_PRINT(*remainingFactorGraph);  // HybridFactorGraph
   EXPECT_LONGS_EQUAL(3, remainingFactorGraph->size());
   EXPECT(remainingFactorGraph->at(0)->keys() == KeyVector({M(1)}));
   EXPECT(remainingFactorGraph->at(1)->keys() == KeyVector({M(2), M(1)}));
@@ -721,13 +687,8 @@ TEST(HybridFactorGraph, DefaultDecisionTree) {
        moving = boost::make_shared<PlanarMotionModel>(X(0), X(1), odometry,
                                                       noise_model);
   std::vector<PlanarMotionModel::shared_ptr> motion_models = {still, moving};
-  // TODO(Varun) Make a templated constructor for MixtureFactor which does this?
-  std::vector<NonlinearFactor::shared_ptr> components;
-  for (auto&& f : motion_models) {
-    components.push_back(boost::dynamic_pointer_cast<NonlinearFactor>(f));
-  }
   fg.emplace_hybrid<MixtureFactor>(
-      contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, components);
+      contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, motion_models);
 
   // Add Range-Bearing measurements to from X0 to L0 and X1 to L1.
   // create a noise model for the landmark measurements
@@ -757,7 +718,7 @@ TEST(HybridFactorGraph, DefaultDecisionTree) {
   ordering += X(0);
   ordering += X(1);
 
-  HybridGaussianFactorGraph linearized = fg.linearize(initialEstimate);
+  HybridGaussianFactorGraph linearized = *fg.linearize(initialEstimate);
   gtsam::HybridBayesNet::shared_ptr hybridBayesNet;
   gtsam::HybridGaussianFactorGraph::shared_ptr remainingFactorGraph;
 

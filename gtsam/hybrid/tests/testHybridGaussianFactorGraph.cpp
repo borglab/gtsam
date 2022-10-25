@@ -184,8 +184,8 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalSimple) {
   hfg.add(DecisionTreeFactor(m1, {2, 8}));
   hfg.add(DecisionTreeFactor({{M(1), 2}, {M(2), 2}}, "1 2 3 4"));
 
-  HybridBayesTree::shared_ptr result = hfg.eliminateMultifrontal(
-      Ordering::ColamdConstrainedLast(hfg, {M(1), M(2)}));
+  HybridBayesTree::shared_ptr result =
+      hfg.eliminateMultifrontal(hfg.getHybridOrdering());
 
   // The bayes tree should have 3 cliques
   EXPECT_LONGS_EQUAL(3, result->size());
@@ -215,7 +215,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalCLG) {
   hfg.add(HybridDiscreteFactor(DecisionTreeFactor(m, {2, 8})));
 
   // Get a constrained ordering keeping c1 last
-  auto ordering_full = Ordering::ColamdConstrainedLast(hfg, {M(1)});
+  auto ordering_full = hfg.getHybridOrdering();
 
   // Returns a Hybrid Bayes Tree with distribution P(x0|x1)P(x1|c1)P(c1)
   HybridBayesTree::shared_ptr hbt = hfg.eliminateMultifrontal(ordering_full);
@@ -484,8 +484,7 @@ TEST(HybridGaussianFactorGraph, SwitchingTwoVar) {
   }
   HybridBayesNet::shared_ptr hbn;
   HybridGaussianFactorGraph::shared_ptr remaining;
-  std::tie(hbn, remaining) =
-      hfg->eliminatePartialSequential(ordering_partial);
+  std::tie(hbn, remaining) = hfg->eliminatePartialSequential(ordering_partial);
 
   EXPECT_LONGS_EQUAL(14, hbn->size());
   EXPECT_LONGS_EQUAL(11, remaining->size());
@@ -501,6 +500,7 @@ TEST(HybridGaussianFactorGraph, SwitchingTwoVar) {
   }
 }
 
+/* ************************************************************************* */
 TEST(HybridGaussianFactorGraph, optimize) {
   HybridGaussianFactorGraph hfg;
 
@@ -522,6 +522,46 @@ TEST(HybridGaussianFactorGraph, optimize) {
 
   EXPECT(assert_equal(hv.atDiscrete(C(1)), int(0)));
 }
+
+/* ************************************************************************* */
+// Test adding of gaussian conditional and re-elimination.
+TEST(HybridGaussianFactorGraph, Conditionals) {
+  Switching switching(4);
+  HybridGaussianFactorGraph hfg;
+
+  hfg.push_back(switching.linearizedFactorGraph.at(0));  // P(X1)
+  Ordering ordering;
+  ordering.push_back(X(1));
+  HybridBayesNet::shared_ptr bayes_net = hfg.eliminateSequential(ordering);
+
+  hfg.push_back(switching.linearizedFactorGraph.at(1));  // P(X1, X2 | M1)
+  hfg.push_back(*bayes_net);
+  hfg.push_back(switching.linearizedFactorGraph.at(2));  // P(X2, X3 | M2)
+  hfg.push_back(switching.linearizedFactorGraph.at(5));  // P(M1)
+  ordering.push_back(X(2));
+  ordering.push_back(X(3));
+  ordering.push_back(M(1));
+  ordering.push_back(M(2));
+
+  bayes_net = hfg.eliminateSequential(ordering);
+
+  HybridValues result = bayes_net->optimize();
+
+  Values expected_continuous;
+  expected_continuous.insert<double>(X(1), 0);
+  expected_continuous.insert<double>(X(2), 1);
+  expected_continuous.insert<double>(X(3), 2);
+  expected_continuous.insert<double>(X(4), 4);
+  Values result_continuous =
+      switching.linearizationPoint.retract(result.continuous());
+  EXPECT(assert_equal(expected_continuous, result_continuous));
+
+  DiscreteValues expected_discrete;
+  expected_discrete[M(1)] = 1;
+  expected_discrete[M(2)] = 1;
+  EXPECT(assert_equal(expected_discrete, result.discrete()));
+}
+
 /* ************************************************************************* */
 int main() {
   TestResult tr;
