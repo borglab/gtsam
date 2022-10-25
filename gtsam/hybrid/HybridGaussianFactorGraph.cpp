@@ -214,23 +214,34 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
     if (graph.empty()) {
       return {nullptr, nullptr};
     }
+
+#ifdef HYBRID_TIMING
+    gttic_(hybrid_eliminate);
+#endif
+
     std::pair<boost::shared_ptr<GaussianConditional>,
               boost::shared_ptr<GaussianFactor>>
         result = EliminatePreferCholesky(graph, frontalKeys);
 
-    if (keysOfEliminated.empty()) {
-      // Initialize the keysOfEliminated to be the keys of the
-      // eliminated GaussianConditional
-      keysOfEliminated = result.first->keys();
-    }
-    if (keysOfSeparator.empty()) {
-      keysOfSeparator = result.second->keys();
-    }
+    // Initialize the keysOfEliminated to be the keys of the
+    // eliminated GaussianConditional
+    keysOfEliminated = result.first->keys();
+    keysOfSeparator = result.second->keys();
+
+#ifdef HYBRID_TIMING
+    gttoc_(hybrid_eliminate);
+#endif
+
     return result;
   };
 
   // Perform elimination!
   DecisionTree<Key, EliminationPair> eliminationResults(sum, eliminate);
+
+#ifdef HYBRID_TIMING
+  tictoc_print_();
+  tictoc_reset_();
+#endif
 
   // Separate out decision tree into conditionals and remaining factors.
   auto pair = unzip(eliminationResults);
@@ -244,6 +255,8 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
   // If there are no more continuous parents, then we should create here a
   // DiscreteFactor, with the error for each discrete choice.
   if (keysOfSeparator.empty()) {
+    // TODO(Varun) Use the math from the iMHS_Math-1-indexed document
+    // TODO(Varun) The prob of a leaf should be computed from the full Bayes Net
     VectorValues empty_values;
     auto factorError = [&](const GaussianFactor::shared_ptr &factor) {
       if (!factor) return 0.0;  // TODO(fan): does this make sense?
@@ -383,6 +396,9 @@ EliminateHybrid(const HybridGaussianFactorGraph &factors,
     return discreteElimination(factors, frontalKeys);
   }
 
+#ifdef HYBRID_TIMING
+  tictoc_reset_();
+#endif
   // Case 3: We are now in the hybrid land!
   return hybridElimination(factors, frontalKeys, continuousSeparator,
                            discreteSeparatorSet);
