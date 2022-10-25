@@ -147,7 +147,7 @@ struct Switching {
     }
 
     // Create hybrid factor graph.
-    // Add a prior on X(1).
+    // Add a prior on X(0).
     auto prior = boost::make_shared<PriorFactor<double>>(
         X(0), measurements.at(0), noiseModel::Isotropic::Sigma(1, prior_sigma));
     nonlinearFactorGraph.push_nonlinear(prior);
