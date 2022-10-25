@@ -71,7 +71,7 @@ Ordering getOrdering(HybridGaussianFactorGraph& factors,
 
 /****************************************************************************/
 // Test approximate inference with an additional pruning step.
-TEST(HybridNonlinearISAM, Incremental) {
+TEST(HybridEstimation, Incremental) {
   size_t K = 10;
   std::vector<double> measurements = {0, 1, 2, 2, 2, 2, 3, 4, 5, 6, 6};
   // Ground truth discrete seq
@@ -90,7 +90,6 @@ TEST(HybridNonlinearISAM, Incremental) {
   HybridGaussianFactorGraph bayesNet;
 
   for (size_t k = 1; k < K; k++) {
-    std::cout << ">>>>>>>>>>>>>>>>>>> k=" << k << std::endl;
     // Motion Model
     graph.push_back(switching.nonlinearFactorGraph.at(k));
     // Measurement
@@ -120,6 +119,92 @@ TEST(HybridNonlinearISAM, Incremental) {
     expected_continuous.insert(X(k), measurements[k]);
   }
   EXPECT(assert_equal(expected_continuous, result));
+}
+
+/**
+ * @brief A function to get a specific 1D robot motion problem as a linearized
+ * factor graph. This is the problem P(X|Z, M), i.e. estimating the continuous
+ * positions given the measurements and discrete sequence.
+ *
+ * @param K The number of timesteps.
+ * @param measurements The vector of measurements for each timestep.
+ * @param discrete_seq The discrete sequence governing the motion of the robot.
+ * @param measurement_sigma Noise model sigma for measurements.
+ * @param between_sigma Noise model sigma for the between factor.
+ * @return GaussianFactorGraph::shared_ptr
+ */
+GaussianFactorGraph::shared_ptr specificProblem(
+    size_t K, const std::vector<double>& measurements,
+    const std::vector<size_t>& discrete_seq, double measurement_sigma = 0.1,
+    double between_sigma = 1.0) {
+  NonlinearFactorGraph graph;
+  Values linearizationPoint;
+
+  // Add measurement factors
+  auto measurement_noise = noiseModel::Isotropic::Sigma(1, measurement_sigma);
+  for (size_t k = 0; k < K; k++) {
+    graph.emplace_shared<PriorFactor<double>>(X(k), measurements.at(k),
+                                              measurement_noise);
+    linearizationPoint.insert<double>(X(k), static_cast<double>(k + 1));
+  }
+
+  using MotionModel = BetweenFactor<double>;
+
+  // Add "motion models".
+  auto motion_noise_model = noiseModel::Isotropic::Sigma(1, between_sigma);
+  for (size_t k = 0; k < K - 1; k++) {
+    auto motion_model = boost::make_shared<MotionModel>(
+        X(k), X(k + 1), discrete_seq.at(k), motion_noise_model);
+    graph.push_back(motion_model);
+  }
+  GaussianFactorGraph::shared_ptr linear_graph =
+      graph.linearize(linearizationPoint);
+  return linear_graph;
+}
+
+/**
+ * @brief Get the discrete sequence from the integer `x`.
+ *
+ * @tparam K Template parameter so we can set the correct bitset size.
+ * @param x The integer to convert to a discrete binary sequence.
+ * @return std::vector<size_t>
+ */
+template <size_t K>
+std::vector<size_t> getDiscreteSequence(size_t x) {
+  std::bitset<K - 1> seq = x;
+  std::vector<size_t> discrete_seq(K - 1);
+  for (size_t i = 0; i < K - 1; i++) {
+    // Save to discrete vector in reverse order
+    discrete_seq[K - 2 - i] = seq[i];
+  }
+  return discrete_seq;
+}
+
+TEST(HybridEstimation, Probability) {
+  constexpr size_t K = 4;
+  std::vector<double> measurements = {0, 1, 2, 2};
+
+  // This is the correct sequence
+  // std::vector<size_t> discrete_seq = {1, 1, 0};
+
+  double between_sigma = 1.0, measurement_sigma = 0.1;
+
+  for (size_t i = 0; i < pow(2, K - 1); i++) {
+    std::vector<size_t> discrete_seq = getDiscreteSequence<K>(i);
+
+    GaussianFactorGraph::shared_ptr linear_graph = specificProblem(
+        K, measurements, discrete_seq, measurement_sigma, between_sigma);
+
+    auto bayes_net = linear_graph->eliminateSequential();
+    // graph.print();
+    // bayes_net->print();
+    VectorValues values = bayes_net->optimize();
+    std::cout << i << " : " << linear_graph->probPrime(values) << std::endl;
+  }
+  // std::cout << linear_graph->error(values) << std::endl;
+  // // values.at();
+
+  // // linearizationPoint.retract(values).print();
 }
 
 /* ************************************************************************* */
