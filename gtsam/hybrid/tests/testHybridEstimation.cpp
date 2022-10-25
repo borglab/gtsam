@@ -201,10 +201,14 @@ TEST(HybridEstimation, Probability) {
     VectorValues values = bayes_net->optimize();
     std::cout << i << " : " << linear_graph->probPrime(values) << std::endl;
   }
-  // std::cout << linear_graph->error(values) << std::endl;
-  // // values.at();
 
-  // // linearizationPoint.retract(values).print();
+  Switching switching(K, between_sigma, measurement_sigma, measurements);
+  auto graph = switching.linearizedFactorGraph;
+  Ordering ordering = getOrdering(graph, HybridGaussianFactorGraph());
+  HybridBayesNet::shared_ptr bayesNet = graph.eliminateSequential(ordering);
+  const DecisionTreeFactor::shared_ptr decisionTree =
+      bayesNet->discreteConditionals();
+  decisionTree->print();
 }
 
 /* ************************************************************************* */

@@ -130,6 +130,7 @@ struct Switching {
    * @param K The total number of timesteps.
    * @param between_sigma The stddev between poses.
    * @param prior_sigma The stddev on priors (also used for measurements).
+   * @param measurements Vector of measurements for each timestep.
    */
   Switching(size_t K, double between_sigma = 1.0, double prior_sigma = 0.1,
             std::vector<double> measurements = {})
