@@ -31,60 +31,78 @@
 namespace gtsam {
 
 /**
- * HybridValues represents a collection of DiscreteValues and VectorValues.  It
- * is typically used to store the variables of a HybridGaussianFactorGraph.
+ * HybridValues represents a collection of DiscreteValues and VectorValues.
+ * It is typically used to store the variables of a HybridGaussianFactorGraph.
  * Optimizing a HybridGaussianBayesNet returns this class.
  */
 class GTSAM_EXPORT HybridValues {
- public:
+ private:
   // DiscreteValue stored the discrete components of the HybridValues.
-  DiscreteValues discrete;
+  DiscreteValues discrete_;
 
   // VectorValue stored the continuous components of the HybridValues.
-  VectorValues continuous;
+  VectorValues continuous_;
 
-  // Default constructor creates an empty HybridValues.
-  HybridValues() : discrete(), continuous(){};
+ public:
+  /// @name Standard Constructors
+  /// @{
 
-  // Construct from DiscreteValues and VectorValues.
+  /// Default constructor creates an empty HybridValues.
+  HybridValues() = default;
+
+  /// Construct from DiscreteValues and VectorValues.
   HybridValues(const DiscreteValues& dv, const VectorValues& cv)
-      : discrete(dv), continuous(cv){};
+      : discrete_(dv), continuous_(cv){};
 
-  // print required by Testable for unit testing
+  /// @}
+  /// @name Testable
+  /// @{
+
+  /// print required by Testable for unit testing
   void print(const std::string& s = "HybridValues",
              const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     std::cout << s << ": \n";
-    discrete.print("  Discrete", keyFormatter);  // print discrete components
-    continuous.print("  Continuous",
-                     keyFormatter);  // print continuous components
+    discrete_.print("  Discrete", keyFormatter);  // print discrete components
+    continuous_.print("  Continuous",
+                      keyFormatter);  // print continuous components
   };
 
-  // equals required by Testable for unit testing
+  /// equals required by Testable for unit testing
   bool equals(const HybridValues& other, double tol = 1e-9) const {
-    return discrete.equals(other.discrete, tol) &&
-           continuous.equals(other.continuous, tol);
+    return discrete_.equals(other.discrete_, tol) &&
+           continuous_.equals(other.continuous_, tol);
   }
 
-  // Check whether a variable with key \c j exists in DiscreteValue.
-  bool existsDiscrete(Key j) { return (discrete.find(j) != discrete.end()); };
+  /// @}
+  /// @name Interface
+  /// @{
 
-  // Check whether a variable with key \c j exists in VectorValue.
-  bool existsVector(Key j) { return continuous.exists(j); };
+  /// Return the discrete MPE assignment
+  DiscreteValues discrete() const { return discrete_; }
 
-  // Check whether a variable with key \c j exists.
+  /// Return the delta update for the continuous vectors
+  VectorValues continuous() const { return continuous_; }
+
+  /// Check whether a variable with key \c j exists in DiscreteValue.
+  bool existsDiscrete(Key j) { return (discrete_.find(j) != discrete_.end()); };
+
+  /// Check whether a variable with key \c j exists in VectorValue.
+  bool existsVector(Key j) { return continuous_.exists(j); };
+
+  /// Check whether a variable with key \c j exists.
   bool exists(Key j) { return existsDiscrete(j) || existsVector(j); };
 
   /** Insert a discrete \c value with key \c j.  Replaces the existing value if
    * the key \c j is already used.
    * @param value The vector to be inserted.
    * @param j The index with which the value will be associated. */
-  void insert(Key j, int value) { discrete[j] = value; };
+  void insert(Key j, int value) { discrete_[j] = value; };
 
   /** Insert a vector \c value with key \c j.  Throws an invalid_argument
    * exception if the key \c j is already used.
    * @param value The vector to be inserted.
    * @param j The index with which the value will be associated. */
-  void insert(Key j, const Vector& value) { continuous.insert(j, value); }
+  void insert(Key j, const Vector& value) { continuous_.insert(j, value); }
 
   // TODO(Shangjie)- update() and insert_or_assign() , similar to Values.h
 
@@ -92,13 +110,13 @@ class GTSAM_EXPORT HybridValues {
    * Read/write access to the discrete value with key \c j, throws
    * std::out_of_range if \c j does not exist.
    */
-  size_t& atDiscrete(Key j) { return discrete.at(j); };
+  size_t& atDiscrete(Key j) { return discrete_.at(j); };
 
   /**
    * Read/write access to the vector value with key \c j, throws
    * std::out_of_range if \c j does not exist.
    */
-  Vector& at(Key j) { return continuous.at(j); };
+  Vector& at(Key j) { return continuous_.at(j); };
 
   /// @name Wrapper support
   /// @{
@@ -112,8 +130,8 @@ class GTSAM_EXPORT HybridValues {
   std::string html(
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     std::stringstream ss;
-    ss << this->discrete.html(keyFormatter);
-    ss << this->continuous.html(keyFormatter);
+    ss << this->discrete_.html(keyFormatter);
+    ss << this->continuous_.html(keyFormatter);
     return ss.str();
   };
 

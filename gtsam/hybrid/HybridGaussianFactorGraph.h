@@ -169,6 +169,14 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
       Base::push_back(sharedFactor);
     }
   }
+
+  /**
+   * @brief Return a Colamd constrained ordering where the discrete keys are
+   * eliminated after the continuous keys.
+   *
+   * @return const Ordering
+   */
+  const Ordering getHybridOrdering() const;
 };
 
 }  // namespace gtsam

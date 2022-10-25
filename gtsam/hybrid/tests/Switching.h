@@ -115,7 +115,6 @@ inline std::pair<KeyVector, std::vector<int>> makeBinaryOrdering(
 /* ***************************************************************************
  */
 using MotionModel = BetweenFactor<double>;
-// using MotionMixture = MixtureFactor<MotionModel>;
 
 // Test fixture with switching network.
 struct Switching {
@@ -125,12 +124,15 @@ struct Switching {
   HybridGaussianFactorGraph linearizedFactorGraph;
   Values linearizationPoint;
 
-  /// Create with given number of time steps.
+  /**
+   * @brief Create with given number of time steps.
+   *
+   * @param K The total number of timesteps.
+   * @param between_sigma The stddev between poses.
+   * @param prior_sigma The stddev on priors (also used for measurements).
+   */
   Switching(size_t K, double between_sigma = 1.0, double prior_sigma = 0.1)
       : K(K) {
-    using symbol_shorthand::M;
-    using symbol_shorthand::X;
-
     // Create DiscreteKeys for binary K modes, modes[0] will not be used.
     for (size_t k = 0; k <= K; k++) {
       modes.emplace_back(M(k), 2);
@@ -145,7 +147,7 @@ struct Switching {
     // Add "motion models".
     for (size_t k = 1; k < K; k++) {
       KeyVector keys = {X(k), X(k + 1)};
-      auto motion_models = motionModels(k);
+      auto motion_models = motionModels(k, between_sigma);
       std::vector<NonlinearFactor::shared_ptr> components;
       for (auto &&f : motion_models) {
         components.push_back(boost::dynamic_pointer_cast<NonlinearFactor>(f));
@@ -155,7 +157,7 @@ struct Switching {
     }
 
     // Add measurement factors
-    auto measurement_noise = noiseModel::Isotropic::Sigma(1, 0.1);
+    auto measurement_noise = noiseModel::Isotropic::Sigma(1, prior_sigma);
     for (size_t k = 2; k <= K; k++) {
       nonlinearFactorGraph.emplace_nonlinear<PriorFactor<double>>(
           X(k), 1.0 * (k - 1), measurement_noise);
@@ -169,15 +171,14 @@ struct Switching {
       linearizationPoint.insert<double>(X(k), static_cast<double>(k));
     }
 
-    linearizedFactorGraph = nonlinearFactorGraph.linearize(linearizationPoint);
+    // The ground truth is robot moving forward
+    // and one less than the linearization point
+    linearizedFactorGraph = *nonlinearFactorGraph.linearize(linearizationPoint);
   }
 
   // Create motion models for a given time step
   static std::vector<MotionModel::shared_ptr> motionModels(size_t k,
                                                            double sigma = 1.0) {
-    using symbol_shorthand::M;
-    using symbol_shorthand::X;
-
     auto noise_model = noiseModel::Isotropic::Sigma(1, sigma);
     auto still =
              boost::make_shared<MotionModel>(X(k), X(k + 1), 0.0, noise_model),

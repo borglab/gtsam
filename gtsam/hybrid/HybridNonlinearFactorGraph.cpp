@@ -27,8 +27,7 @@ void HybridNonlinearFactorGraph::add(
 }
 
 /* ************************************************************************* */
-void HybridNonlinearFactorGraph::add(
-    boost::shared_ptr<DiscreteFactor> factor) {
+void HybridNonlinearFactorGraph::add(boost::shared_ptr<DiscreteFactor> factor) {
   FactorGraph::add(boost::make_shared<HybridDiscreteFactor>(factor));
 }
 
@@ -49,12 +48,12 @@ void HybridNonlinearFactorGraph::print(const std::string& s,
 }
 
 /* ************************************************************************* */
-HybridGaussianFactorGraph HybridNonlinearFactorGraph::linearize(
+HybridGaussianFactorGraph::shared_ptr HybridNonlinearFactorGraph::linearize(
     const Values& continuousValues) const {
   // create an empty linear FG
-  HybridGaussianFactorGraph linearFG;
+  auto linearFG = boost::make_shared<HybridGaussianFactorGraph>();
 
-  linearFG.reserve(size());
+  linearFG->reserve(size());
 
   // linearize all hybrid factors
   for (auto&& factor : factors_) {
@@ -66,9 +65,9 @@ HybridGaussianFactorGraph HybridNonlinearFactorGraph::linearize(
       if (factor->isHybrid()) {
         // Check if it is a nonlinear mixture factor
         if (auto nlmf = boost::dynamic_pointer_cast<MixtureFactor>(factor)) {
-          linearFG.push_back(nlmf->linearize(continuousValues));
+          linearFG->push_back(nlmf->linearize(continuousValues));
         } else {
-          linearFG.push_back(factor);
+          linearFG->push_back(factor);
         }
 
         // Now check if the factor is a continuous only factor.
@@ -80,18 +79,18 @@ HybridGaussianFactorGraph HybridNonlinearFactorGraph::linearize(
                 boost::dynamic_pointer_cast<NonlinearFactor>(nlhf->inner())) {
           auto hgf = boost::make_shared<HybridGaussianFactor>(
               nlf->linearize(continuousValues));
-          linearFG.push_back(hgf);
+          linearFG->push_back(hgf);
         } else {
-          linearFG.push_back(factor);
+          linearFG->push_back(factor);
         }
         // Finally if nothing else, we are discrete-only which doesn't need
         // lineariztion.
       } else {
-        linearFG.push_back(factor);
+        linearFG->push_back(factor);
       }
 
     } else {
-      linearFG.push_back(GaussianFactor::shared_ptr());
+      linearFG->push_back(GaussianFactor::shared_ptr());
     }
   }
   return linearFG;

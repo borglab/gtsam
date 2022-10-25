@@ -33,7 +33,6 @@ namespace gtsam {
   // Forward declarations
   template<class FACTOR> class FactorGraph;
   template<class BAYESTREE, class GRAPH> class EliminatableClusterTree;
-  class HybridBayesTreeClique;
 
   /* ************************************************************************* */
   /** clique statistics */

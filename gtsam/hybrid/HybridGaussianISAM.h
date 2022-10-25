@@ -53,6 +53,7 @@ class GTSAM_EXPORT HybridGaussianISAM : public ISAM<HybridBayesTree> {
   void updateInternal(
       const HybridGaussianFactorGraph& newFactors,
       HybridBayesTree::Cliques* orphans,
+      const boost::optional<size_t>& maxNrLeaves = boost::none,
       const boost::optional<Ordering>& ordering = boost::none,
       const HybridBayesTree::Eliminate& function =
           HybridBayesTree::EliminationTraitsType::DefaultEliminate);
@@ -62,20 +63,15 @@ class GTSAM_EXPORT HybridGaussianISAM : public ISAM<HybridBayesTree> {
    * @brief Perform update step with new factors.
    *
    * @param newFactors Factor graph of new factors to add and eliminate.
+   * @param maxNrLeaves The maximum number of leaves to keep after pruning.
+   * @param ordering Custom elimination ordering.
    * @param function Elimination function.
    */
   void update(const HybridGaussianFactorGraph& newFactors,
+              const boost::optional<size_t>& maxNrLeaves = boost::none,
               const boost::optional<Ordering>& ordering = boost::none,
               const HybridBayesTree::Eliminate& function =
                   HybridBayesTree::EliminationTraitsType::DefaultEliminate);
-
-  /**
-   * @brief 
-   * 
-   * @param root The root key in the discrete conditional decision tree.
-   * @param maxNumberLeaves 
-   */
-  void prune(const Key& root, const size_t maxNumberLeaves);
 };
 
 /// traits

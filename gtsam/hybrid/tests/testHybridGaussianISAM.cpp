@@ -235,7 +235,7 @@ TEST(HybridGaussianElimination, Approx_inference) {
   size_t maxNrLeaves = 5;
   incrementalHybrid.update(graph1);
 
-  incrementalHybrid.prune(M(3), maxNrLeaves);
+  incrementalHybrid.prune(maxNrLeaves);
 
   /*
   unpruned factor is:
@@ -329,7 +329,7 @@ TEST(HybridGaussianElimination, Incremental_approximate) {
   // Run update with pruning
   size_t maxComponents = 5;
   incrementalHybrid.update(graph1);
-  incrementalHybrid.prune(M(3), maxComponents);
+  incrementalHybrid.prune(maxComponents);
 
   // Check if we have a bayes tree with 4 hybrid nodes,
   // each with 2, 4, 8, and 5 (pruned) leaves respetively.
@@ -337,7 +337,7 @@ TEST(HybridGaussianElimination, Incremental_approximate) {
   EXPECT_LONGS_EQUAL(
       2, incrementalHybrid[X(1)]->conditional()->asMixture()->nrComponents());
   EXPECT_LONGS_EQUAL(
-      4, incrementalHybrid[X(2)]->conditional()->asMixture()->nrComponents());
+      3, incrementalHybrid[X(2)]->conditional()->asMixture()->nrComponents());
   EXPECT_LONGS_EQUAL(
       5, incrementalHybrid[X(3)]->conditional()->asMixture()->nrComponents());
   EXPECT_LONGS_EQUAL(
@@ -350,7 +350,7 @@ TEST(HybridGaussianElimination, Incremental_approximate) {
 
   // Run update with pruning a second time.
   incrementalHybrid.update(graph2);
-  incrementalHybrid.prune(M(4), maxComponents);
+  incrementalHybrid.prune(maxComponents);
 
   // Check if we have a bayes tree with pruned hybrid nodes,
   // with 5 (pruned) leaves.
@@ -399,7 +399,7 @@ TEST(HybridGaussianISAM, NonTrivial) {
   initial.insert(Z(0), Pose2(0.0, 2.0, 0.0));
   initial.insert(W(0), Pose2(0.0, 3.0, 0.0));
 
-  HybridGaussianFactorGraph gfg = fg.linearize(initial);
+  HybridGaussianFactorGraph gfg = *fg.linearize(initial);
   fg = HybridNonlinearFactorGraph();
 
   HybridGaussianISAM inc;
@@ -444,7 +444,7 @@ TEST(HybridGaussianISAM, NonTrivial) {
   // The leg link did not move so we set the expected pose accordingly.
   initial.insert(W(1), Pose2(0.0, 3.0, 0.0));
 
-  gfg = fg.linearize(initial);
+  gfg = *fg.linearize(initial);
   fg = HybridNonlinearFactorGraph();
 
   // Update without pruning
@@ -483,7 +483,7 @@ TEST(HybridGaussianISAM, NonTrivial) {
   initial.insert(Z(2), Pose2(2.0, 2.0, 0.0));
   initial.insert(W(2), Pose2(0.0, 3.0, 0.0));
 
-  gfg = fg.linearize(initial);
+  gfg = *fg.linearize(initial);
   fg = HybridNonlinearFactorGraph();
 
   // Now we prune!
@@ -496,7 +496,7 @@ TEST(HybridGaussianISAM, NonTrivial) {
   // The MHS at this point should be a 2 level tree on (1, 2).
   // 1 has 2 choices, and 2 has 4 choices.
   inc.update(gfg);
-  inc.prune(M(2), 2);
+  inc.prune(2);
 
   /*************** Run Round 4 ***************/
   // Add odometry factor with discrete modes.
@@ -526,12 +526,12 @@ TEST(HybridGaussianISAM, NonTrivial) {
   initial.insert(Z(3), Pose2(3.0, 2.0, 0.0));
   initial.insert(W(3), Pose2(0.0, 3.0, 0.0));
 
-  gfg = fg.linearize(initial);
+  gfg = *fg.linearize(initial);
   fg = HybridNonlinearFactorGraph();
 
   // Keep pruning!
   inc.update(gfg);
-  inc.prune(M(3), 3);
+  inc.prune(3);
 
   // The final discrete graph should not be empty since we have eliminated
   // all continuous variables.
