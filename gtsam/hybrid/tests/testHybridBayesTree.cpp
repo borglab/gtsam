@@ -105,7 +105,7 @@ TEST(HybridBayesTree, Optimize) {
     graph1.push_back(s.linearizedFactorGraph.at(i));
   }
 
-  // Add the Gaussian factors, 1 prior on X(1),
+  // Add the Gaussian factors, 1 prior on X(0),
   // 3 measurements on X(2), X(3), X(4)
   graph1.push_back(s.linearizedFactorGraph.at(0));
   for (size_t i = 4; i <= 6; i++) {
