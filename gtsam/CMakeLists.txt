@@ -117,12 +117,9 @@ set_target_properties(gtsam PROPERTIES
     VERSION             ${gtsam_version}
     SOVERSION           ${gtsam_soversion})
 
-# Append Eigen include path, set in top-level CMakeLists.txt to either
 # system-eigen, or GTSAM eigen path
-target_include_directories(gtsam PUBLIC
-  $<BUILD_INTERFACE:${GTSAM_EIGEN_INCLUDE_FOR_BUILD}>
-  $<INSTALL_INTERFACE:${GTSAM_EIGEN_INCLUDE_FOR_INSTALL}>
-)
+target_link_libraries(gtsam PUBLIC Eigen3::Eigen)
+
 # MKL include dir:
 if (GTSAM_USE_EIGEN_MKL)
   target_include_directories(gtsam PUBLIC ${MKL_INCLUDE_DIR})
