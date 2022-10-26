@@ -117,6 +117,7 @@ set_target_properties(gtsam PROPERTIES
     VERSION             ${gtsam_version}
     SOVERSION           ${gtsam_soversion})
 
+# Append Eigen include path to either
 # system-eigen, or GTSAM eigen path
 target_link_libraries(gtsam PUBLIC Eigen3::Eigen)
 
