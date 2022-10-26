@@ -39,6 +39,35 @@ HybridGaussianISAM::HybridGaussianISAM(const HybridBayesTree& bayesTree)
     : Base(bayesTree) {}
 
 /* ************************************************************************* */
+Ordering HybridGaussianISAM::GetOrdering(
+    HybridGaussianFactorGraph& factors,
+    const HybridGaussianFactorGraph& newFactors) {
+  // Get all the discrete keys from the factors
+  KeySet allDiscrete = factors.discreteKeys();
+
+  // Create KeyVector with continuous keys followed by discrete keys.
+  KeyVector newKeysDiscreteLast;
+  const KeySet newFactorKeys = newFactors.keys();
+  // Insert continuous keys first.
+  for (auto& k : newFactorKeys) {
+    if (!allDiscrete.exists(k)) {
+      newKeysDiscreteLast.push_back(k);
+    }
+  }
+  // Insert discrete keys at the end
+  std::copy(allDiscrete.begin(), allDiscrete.end(),
+            std::back_inserter(newKeysDiscreteLast));
+
+  const VariableIndex index(factors);
+
+  // Get an ordering where the new keys are eliminated last
+  Ordering ordering = Ordering::ColamdConstrainedLast(
+      index, KeyVector(newKeysDiscreteLast.begin(), newKeysDiscreteLast.end()),
+      true);
+  return ordering;
+}
+
+/* ************************************************************************* */
 void HybridGaussianISAM::updateInternal(
     const HybridGaussianFactorGraph& newFactors,
     HybridBayesTree::Cliques* orphans,
@@ -54,7 +83,7 @@ void HybridGaussianISAM::updateInternal(
   }
 
   // Add the removed top and the new factors
-  FactorGraphType factors;
+  HybridGaussianFactorGraph factors;
   factors += bn;
   factors += newFactors;
 
@@ -63,32 +92,12 @@ void HybridGaussianISAM::updateInternal(
     factors += boost::make_shared<BayesTreeOrphanWrapper<Node>>(orphan);
   }
 
-  // Get all the discrete keys from the factors
-  KeySet allDiscrete = factors.discreteKeys();
-
-  // Create KeyVector with continuous keys followed by discrete keys.
-  KeyVector newKeysDiscreteLast;
-  // Insert continuous keys first.
-  for (auto& k : newFactorKeys) {
-    if (!allDiscrete.exists(k)) {
-      newKeysDiscreteLast.push_back(k);
-    }
-  }
-  // Insert discrete keys at the end
-  std::copy(allDiscrete.begin(), allDiscrete.end(),
-            std::back_inserter(newKeysDiscreteLast));
-
-  // Get an ordering where the new keys are eliminated last
   const VariableIndex index(factors);
-
   Ordering elimination_ordering;
   if (ordering) {
     elimination_ordering = *ordering;
   } else {
-    elimination_ordering = Ordering::ColamdConstrainedLast(
-        index,
-        KeyVector(newKeysDiscreteLast.begin(), newKeysDiscreteLast.end()),
-        true);
+    elimination_ordering = GetOrdering(factors, newFactors);
   }
 
   // eliminate all factors (top, added, orphans) into a new Bayes tree
