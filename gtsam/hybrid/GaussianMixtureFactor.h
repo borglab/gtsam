@@ -24,11 +24,13 @@
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/linear/GaussianFactor.h>
+#include <gtsam/linear/VectorValues.h>
 
 namespace gtsam {
 
 class GaussianFactorGraph;
 
+// Needed for wrapper.
 using GaussianFactorVector = std::vector<gtsam::GaussianFactor::shared_ptr>;
 
 /**
@@ -124,6 +126,22 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
    * @return Sum
    */
   Sum add(const Sum &sum) const;
+
+  /**
+   * @brief Compute error of the GaussianMixtureFactor as a tree.
+   *
+   * @param continuousVals The continuous VectorValues.
+   * @return DecisionTree<Key, double> A decision tree with corresponding keys
+   * as the factor but leaf values as the error.
+   */
+  DecisionTree<Key, double> error(const VectorValues &c) const {
+    // functor to convert from sharedFactor to double error value.
+    auto errorFunc = [c](const GaussianFactor::shared_ptr &factor) {
+      return factor->error(c);
+    };
+    DecisionTree<Key, double> errorTree(factors_, errorFunc);
+    return errorTree;
+  }
 
   /// Add MixtureFactor to a Sum, syntactic sugar.
   friend Sum &operator+=(Sum &sum, const GaussianMixtureFactor &factor) {

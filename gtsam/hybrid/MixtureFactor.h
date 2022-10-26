@@ -122,6 +122,22 @@ class MixtureFactor : public HybridFactor {
   ~MixtureFactor() = default;
 
   /**
+   * @brief Compute error of the MixtureFactor as a tree.
+   *
+   * @param continuousVals The continuous values for which to compute the error.
+   * @return DecisionTree<Key, double> A decision tree with corresponding keys
+   * as the factor but leaf values as the error.
+   */
+  DecisionTree<Key, double> error(const Values& continuousVals) const {
+    // functor to convert from sharedFactor to double error value.
+    auto errorFunc = [continuousVals](const sharedFactor& factor) {
+      return factor->error(continuousVals);
+    };
+    DecisionTree<Key, double> errorTree(factors_, errorFunc);
+    return errorTree;
+  }
+
+  /**
    * @brief Compute error of factor given both continuous and discrete values.
    *
    * @param continuousVals The continuous Values.
