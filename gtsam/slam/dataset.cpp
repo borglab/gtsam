@@ -722,11 +722,12 @@ void writeG2o(const NonlinearFactorGraph &graph, const Values &estimate,
              << p.z() << " " << q.x() << " " << q.y() << " " << q.z() << " "
              << q.w();
 
+      // g2o's EDGE_SE3:QUAT stores information/precision of Pose3 in t,R order, unlike GTSAM:
       Matrix6 InfoG2o = I_6x6;
       InfoG2o.block<3, 3>(0, 0) = Info.block<3, 3>(3, 3); // cov translation
       InfoG2o.block<3, 3>(3, 3) = Info.block<3, 3>(0, 0); // cov rotation
-      InfoG2o.block<3, 3>(0, 3) = Info.block<3, 3>(0, 3); // off diagonal
-      InfoG2o.block<3, 3>(3, 0) = Info.block<3, 3>(3, 0); // off diagonal
+      InfoG2o.block<3, 3>(0, 3) = Info.block<3, 3>(3, 0); // off diagonal R,t -> t,R
+      InfoG2o.block<3, 3>(3, 0) = Info.block<3, 3>(0, 3); // off diagonal t,R -> R,t
 
       for (size_t i = 0; i < 6; i++) {
         for (size_t j = i; j < 6; j++) {
@@ -853,12 +854,12 @@ template <> struct ParseMeasurement<Pose3> {
       if (sampler)
         T12 = T12.retract(sampler->sample());
 
-      // EDGE_SE3:QUAT stores covariance in t,R order, unlike GTSAM:
+      // g2o's EDGE_SE3:QUAT stores information/precision of Pose3 in t,R order, unlike GTSAM:
       Matrix6 mgtsam;
-      mgtsam.block<3, 3>(0, 0) = m.block<3, 3>(3, 3); // cov rotation
-      mgtsam.block<3, 3>(3, 3) = m.block<3, 3>(0, 0); // cov translation
-      mgtsam.block<3, 3>(0, 3) = m.block<3, 3>(0, 3); // off diagonal
-      mgtsam.block<3, 3>(3, 0) = m.block<3, 3>(3, 0); // off diagonal
+      mgtsam.block<3, 3>(0, 0) = m.block<3, 3>(3, 3); // info rotation
+      mgtsam.block<3, 3>(3, 3) = m.block<3, 3>(0, 0); // info translation
+      mgtsam.block<3, 3>(3, 0) = m.block<3, 3>(0, 3); // off diagonal g2o t,R -> GTSAM R,t
+      mgtsam.block<3, 3>(0, 3) = m.block<3, 3>(3, 0); // off diagonal g2o R,t -> GTSAM t,R
       SharedNoiseModel model = noiseModel::Gaussian::Information(mgtsam);
 
       return BinaryMeasurement<Pose3>(
