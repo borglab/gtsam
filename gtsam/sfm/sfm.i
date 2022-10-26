@@ -329,7 +329,7 @@ class MatchIndicesMap {
   size_t size() const;
   bool empty() const;
   void clear();
-  gtsam::gtsfm::CorrespondenceIndices at(const IndexPair& keypair) const;
+  gtsam::gtsfm::CorrespondenceIndices at(const gtsam::IndexPair& keypair) const;
 };
 
 class Keypoints {
