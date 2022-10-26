@@ -31,6 +31,8 @@ class DiscreteConditional;
 /**
  * Base class for discrete probabilistic factors
  * The most general one is the derived DecisionTreeFactor
+ *
+ * @ingroup discrete
  */
 class GTSAM_EXPORT DiscreteFactor: public Factor {
 

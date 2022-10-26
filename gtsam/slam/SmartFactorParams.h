@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file   SmartFactorParams
+ * @file   SmartFactorParams.h
  * @brief  Collect common parameters for SmartProjection and SmartStereoProjection factors
  * @author Luca Carlone
  * @author Zsolt Kira

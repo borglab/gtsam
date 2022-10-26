@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file   Pose3AttitudeFactor.h
+ *  @file   AttitudeFactor.h
  *  @author Frank Dellaert
  *  @brief  Header file for Attitude factor
  *  @date   January 28, 2014
@@ -29,7 +29,7 @@ namespace gtsam {
  * - measurement is direction of gravity in body frame bF
  * - reference is direction of gravity in navigation frame nG
  * This factor will give zero error if nRb * bF == nG
- * @addtogroup Navigation
+ * @ingroup navigation
  */
 class AttitudeFactor {
 
@@ -74,7 +74,7 @@ public:
 
 /**
  * Version of AttitudeFactor for Rot3
- * @addtogroup Navigation
+ * @ingroup navigation
  */
 class GTSAM_EXPORT Rot3AttitudeFactor: public NoiseModelFactor1<Rot3>, public AttitudeFactor {
 
@@ -147,7 +147,7 @@ template<> struct traits<Rot3AttitudeFactor> : public Testable<Rot3AttitudeFacto
 
 /**
  * Version of AttitudeFactor for Pose3
- * @addtogroup Navigation
+ * @ingroup navigation
  */
 class GTSAM_EXPORT Pose3AttitudeFactor: public NoiseModelFactor1<Pose3>,
     public AttitudeFactor {

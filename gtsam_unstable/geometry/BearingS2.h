@@ -22,7 +22,8 @@ protected:
 public:
   static const size_t dimension = 2;
 
-  // constructors
+  /// @name Constructors
+  /// @{
 
   /** Default constructor - straight ahead */
   BearingS2() {}

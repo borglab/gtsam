@@ -32,6 +32,8 @@ namespace gtsam {
  *
  * Example, degree 8 Chebyshev polynomial measured at x=0.5:
  *  EvaluationFactor<Chebyshev2> factor(key, measured, model, 8, 0.5);
+ *
+ * @ingroup basis
  */
 template <class BASIS>
 class EvaluationFactor : public FunctorizedFactor<double, Vector> {
@@ -86,6 +88,8 @@ class EvaluationFactor : public FunctorizedFactor<double, Vector> {
  *
  * @param BASIS: The basis class to use e.g. Chebyshev2
  * @param M: Size of the evaluated state vector.
+ *
+ * @ingroup basis
  */
 template <class BASIS, int M>
 class VectorEvaluationFactor
@@ -149,6 +153,8 @@ class VectorEvaluationFactor
  *  VectorComponentFactor<BASIS, P> controlPrior(key, measured, model,
  *                                               N, i, t, a, b);
  *  where N is the degree and i is the component index.
+ *
+ * @ingroup basis
  */
 template <class BASIS, size_t P>
 class VectorComponentFactor
