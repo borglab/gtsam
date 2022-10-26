@@ -24,7 +24,7 @@
 namespace gtsam {
 /**
  *
- * @ingroup SLAM
+ * @ingroup slam
  *
  * If you are using the factor, please cite:
  * L. Carlone, Z. Kira, C. Beall, V. Indelman, F. Dellaert, Eliminating conditionally
@@ -39,7 +39,7 @@ namespace gtsam {
  * The factor only constrains poses (variable dimension is 6).
  * This factor requires that values contains the involved poses (Pose3).
  * If the calibration should be optimized, as well, use SmartProjectionFactor instead!
- * @ingroup SLAM
+ * @ingroup slam
  */
 template <class CALIBRATION>
 class SmartProjectionPoseFactor

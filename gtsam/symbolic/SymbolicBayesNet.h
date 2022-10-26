@@ -27,7 +27,7 @@ namespace gtsam {
 
   /** 
    * A SymbolicBayesNet is a Bayes Net of purely symbolic conditionals.
-   * @addtogroup symbolic
+   * @ingroup symbolic
    */
   class SymbolicBayesNet : public BayesNet<SymbolicConditional> {
    public:

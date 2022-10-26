@@ -59,7 +59,7 @@ namespace gtsam {
    * @tparam CLIQUE The type of the clique data structure, defaults to BayesTreeClique, normally do not change this
    * as it is only used when developing special versions of BayesTree, e.g. for ISAM2.
    *
-   * \addtogroup Multifrontal
+   * \ingroup Multifrontal
    * \nosubgrouping
    */
   template<class CLIQUE>

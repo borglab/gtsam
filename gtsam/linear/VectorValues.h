@@ -69,7 +69,7 @@ namespace gtsam {
    * which is a view on the underlying data structure.
    *
    * This class is additionally used in gradient descent and dog leg to store the gradient.
-   * @addtogroup linear
+   * @ingroup linear
    */
   class GTSAM_EXPORT VectorValues {
    protected:

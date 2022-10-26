@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    GenericStereoFactor.h
+ * @file    StereoFactor.h
  * @brief   A non-linear factor for stereo measurements
  * @author  Alireza Fathi
  * @author  Chris Beall
@@ -25,7 +25,7 @@ namespace gtsam {
 
 /**
  * A Generic Stereo Factor
- * @ingroup SLAM
+ * @ingroup slam
  */
 template<class POSE, class LANDMARK>
 class GenericStereoFactor: public NoiseModelFactor2<POSE, LANDMARK> {

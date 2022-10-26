@@ -24,6 +24,10 @@
 
 namespace gtsam {
 
+  /**
+   * @brief Elimination tree for discrete factors.
+   * @ingroup discrete
+   */
   class GTSAM_EXPORT DiscreteEliminationTree :
     public EliminationTree<DiscreteBayesNet, DiscreteFactorGraph>
   {

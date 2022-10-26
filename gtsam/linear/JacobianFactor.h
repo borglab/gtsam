@@ -365,7 +365,7 @@ namespace gtsam {
      * @param keys The variables to eliminate in the order as specified here in \c keys
      * @return The conditional and remaining factor
      *
-     * \addtogroup LinearSolving */
+     * \ingroup LinearSolving */
     friend GTSAM_EXPORT std::pair<boost::shared_ptr<GaussianConditional>, shared_ptr>
       EliminateQR(const GaussianFactorGraph& factors, const Ordering& keys);
 

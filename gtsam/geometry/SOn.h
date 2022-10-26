@@ -121,7 +121,8 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   /// currently only defined for SO3.
   static SO ClosestTo(const MatrixNN& M);
 
-  /// Named constructor that finds chordal mean = argmin_R \sum sqr(|R-R_i|_F),
+  /// Named constructor that finds chordal mean
+  /// \f$ mu = argmin_R \sum sqr(|R-R_i|_F) \f$,
   /// currently only defined for SO3.
   static SO ChordalMean(const std::vector<SO>& rotations);
 

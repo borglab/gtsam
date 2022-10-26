@@ -30,7 +30,7 @@ namespace gtsam {
   /**
    * Non-linear factor for a constraint derived from a 2D measurement. This factor
    * estimates the body pose, body-camera transform, 3D landmark, and calibration.
-   * @ingroup SLAM
+   * @ingroup slam
    */
 template <class POSE, class LANDMARK, class CALIBRATION = Cal3_S2>
 class GTSAM_UNSTABLE_EXPORT ProjectionFactorPPPC

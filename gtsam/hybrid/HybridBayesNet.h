@@ -29,6 +29,8 @@ namespace gtsam {
 /**
  * A hybrid Bayes net is a collection of HybridConditionals, which can have
  * discrete conditionals, Gaussian mixtures, or pure Gaussian conditionals.
+ *
+ * @ingroup hybrid
  */
 class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
  public:

@@ -103,6 +103,7 @@ namespace gtsam {
     /// @}
 
     /// @name Testable
+    /// @{
 
     /** Print with optional formatter */
     void print(

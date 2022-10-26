@@ -45,6 +45,7 @@ namespace gtsam {
  * where i indexes the components and k_i is a component-wise normalization
  * constant.
  *
+ * @ingroup hybrid
  */
 class GTSAM_EXPORT GaussianMixture
     : public HybridFactor,
