@@ -7,7 +7,8 @@ import unittest
 
 import gtsam
 import numpy as np
-from gtsam import IndexPair, KeypointsVector, MatchIndicesMap, Point2, SfmMeasurementVector, SfmTrack2d
+from gtsam import (IndexPair, KeypointsVector, MatchIndicesMap, Point2,
+                   SfmMeasurementVector, SfmTrack2d)
 from gtsam.gtsfm import Keypoints
 from gtsam.utils.test_case import GtsamTestCase
 
@@ -84,12 +85,12 @@ class TestSfmTrack2d(GtsamTestCase):
     """Tests for SfmTrack2d."""
 
     def test_sfm_track_2d_constructor(self) -> None:
-        """ """
+        """Test construction of 2D SfM track."""
         measurements = SfmMeasurementVector()
         measurements.append((0, Point2(10, 20)))
         track = SfmTrack2d(measurements=measurements)
         track.measurement(0)
-        track.numberMeasurements() == 1
+        assert track.numberMeasurements() == 1
 
 
 if __name__ == "__main__":
