@@ -483,8 +483,8 @@ class MatlabWrapper(CheckMixin, FormatMixin):
         if len(properties) != 0:
             comment += '%\n' \
                        '%-------Properties-------\n'
-            for property in properties:
-                comment += '%{}\n'.format(property.name)
+            for propty in properties:
+                comment += '%{}\n'.format(propty.name)
 
         if len(methods) != 0:
             comment += '%\n' \
@@ -733,7 +733,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
         class_pointer = "  ptr_{class_name} = 0".format(class_name=class_name)
 
         if len(inst_class.properties) > 0:
-            properties = '\n' + "".join(
+            properties = '\n' + "\n".join(
                 ["  {}".format(p.name) for p in inst_class.properties])
         else:
             properties = ''
@@ -754,35 +754,35 @@ class MatlabWrapper(CheckMixin, FormatMixin):
             inst_class: The instantiated class whose properties we wish to wrap.
         """
         properties = []
-        for property in inst_class.properties:
+        for propty in inst_class.properties:
             # These are the setters and getters in the .m file
-            function_name = namespace_name + inst_class.name + '_get_' + property.name
+            function_name = namespace_name + inst_class.name + '_get_' + propty.name
             getter = """
             function varargout = get.{name}(this)
                 {varargout} = {wrapper}({num}, this);
                 this.{name} = {varargout};
             end
             """.format(
-                name=property.name,
+                name=propty.name,
                 varargout='varargout{1}',
                 wrapper=self._wrapper_name(),
                 num=self._update_wrapper_id(
-                    (namespace_name, inst_class, property.name, property),
+                    (namespace_name, inst_class, propty.name, propty),
                     function_name=function_name))
             properties.append(getter)
 
             # Setter doesn't need varargin since it needs just one input.
-            function_name = namespace_name + inst_class.name + '_set_' + property.name
+            function_name = namespace_name + inst_class.name + '_set_' + propty.name
             setter = """
             function set.{name}(this, value)
                 obj.{name} = value;
                 {wrapper}({num}, this, value);
             end
             """.format(
-                name=property.name,
+                name=propty.name,
                 wrapper=self._wrapper_name(),
                 num=self._update_wrapper_id(
-                    (namespace_name, inst_class, property.name, property),
+                    (namespace_name, inst_class, propty.name, propty),
                     function_name=function_name))
             properties.append(setter)
 
