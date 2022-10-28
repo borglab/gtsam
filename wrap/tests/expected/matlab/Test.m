@@ -7,6 +7,8 @@
 %
 %-------Properties-------
 %model_ptr
+%value
+%name
 %
 %-------Methods-------
 %arg_EigenConstRef(Matrix value) : returns void
@@ -40,6 +42,8 @@ classdef Test < handle
   properties
     ptr_Test = 0
     model_ptr
+    value
+    name
   end
   methods
     function obj = Test(varargin)
@@ -327,6 +331,26 @@ classdef Test < handle
     function set.model_ptr(this, value)
         obj.model_ptr = value;
         class_wrapper(44, this, value);
+    end
+
+    function varargout = get.value(this)
+        varargout{1} = class_wrapper(45, this);
+        this.value = varargout{1};
+    end
+
+    function set.value(this, value)
+        obj.value = value;
+        class_wrapper(46, this, value);
+    end
+
+    function varargout = get.name(this)
+        varargout{1} = class_wrapper(47, this);
+        this.name = varargout{1};
+    end
+
+    function set.name(this, value)
+        obj.name = value;
+        class_wrapper(48, this, value);
     end
   end
 
