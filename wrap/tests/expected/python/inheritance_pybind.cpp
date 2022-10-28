@@ -71,6 +71,8 @@ PYBIND11_MODULE(inheritance_py, m_) {
 
     py::class_<ForwardKinematicsFactor, gtsam::BetweenFactor<gtsam::Pose3>, std::shared_ptr<ForwardKinematicsFactor>>(m_, "ForwardKinematicsFactor");
 
+    py::class_<ParentHasTemplate<double>, MyTemplate<double>, std::shared_ptr<ParentHasTemplate<double>>>(m_, "ParentHasTemplateDouble");
+
 
 #include "python/specializations.h"
 
