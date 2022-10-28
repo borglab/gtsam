@@ -9,7 +9,7 @@ classdef GeneralSFMFactorCal3Bundler < handle
     function obj = GeneralSFMFactorCal3Bundler(varargin)
       if nargin == 2 && isa(varargin{1}, 'uint64') && varargin{1} == uint64(5139824614673773682)
         my_ptr = varargin{2};
-        special_cases_wrapper(7, my_ptr);
+        special_cases_wrapper(9, my_ptr);
       else
         error('Arguments do not match any overload of gtsam.GeneralSFMFactorCal3Bundler constructor');
       end
@@ -17,7 +17,7 @@ classdef GeneralSFMFactorCal3Bundler < handle
     end
 
     function delete(obj)
-      special_cases_wrapper(8, obj.ptr_gtsamGeneralSFMFactorCal3Bundler);
+      special_cases_wrapper(10, obj.ptr_gtsamGeneralSFMFactorCal3Bundler);
     end
 
     function display(obj), obj.print(''); end

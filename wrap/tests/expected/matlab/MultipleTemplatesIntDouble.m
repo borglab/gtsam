@@ -9,7 +9,7 @@ classdef MultipleTemplatesIntDouble < handle
     function obj = MultipleTemplatesIntDouble(varargin)
       if nargin == 2 && isa(varargin{1}, 'uint64') && varargin{1} == uint64(5139824614673773682)
         my_ptr = varargin{2};
-        class_wrapper(53, my_ptr);
+        class_wrapper(55, my_ptr);
       else
         error('Arguments do not match any overload of MultipleTemplatesIntDouble constructor');
       end
@@ -17,7 +17,7 @@ classdef MultipleTemplatesIntDouble < handle
     end
 
     function delete(obj)
-      class_wrapper(54, obj.ptr_MultipleTemplatesIntDouble);
+      class_wrapper(56, obj.ptr_MultipleTemplatesIntDouble);
     end
 
     function display(obj), obj.print(''); end
