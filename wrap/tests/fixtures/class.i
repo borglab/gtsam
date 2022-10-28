@@ -35,6 +35,10 @@ class Test {
   // Test a shared ptr property
   gtsam::noiseModel::Base* model_ptr;
 
+  // Test adding more than 1 property
+  double value;
+  string name;
+
   pair<Vector,Matrix> return_pair (Vector v, Matrix A) const; // intentionally the first method
   pair<Vector,Matrix> return_pair (Vector v) const; // overload
 
