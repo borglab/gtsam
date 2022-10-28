@@ -9,7 +9,7 @@ classdef PinholeCameraCal3Bundler < handle
     function obj = PinholeCameraCal3Bundler(varargin)
       if nargin == 2 && isa(varargin{1}, 'uint64') && varargin{1} == uint64(5139824614673773682)
         my_ptr = varargin{2};
-        special_cases_wrapper(5, my_ptr);
+        special_cases_wrapper(7, my_ptr);
       else
         error('Arguments do not match any overload of gtsam.PinholeCameraCal3Bundler constructor');
       end
@@ -17,7 +17,7 @@ classdef PinholeCameraCal3Bundler < handle
     end
 
     function delete(obj)
-      special_cases_wrapper(6, obj.ptr_gtsamPinholeCameraCal3Bundler);
+      special_cases_wrapper(8, obj.ptr_gtsamPinholeCameraCal3Bundler);
     end
 
     function display(obj), obj.print(''); end
