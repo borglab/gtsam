@@ -528,7 +528,7 @@ virtual class GncParams {
   double muStep;
   double relativeCostTol;
   double weightsTol;
-  This::Verbosity verbosity;
+  gtsam::This::Verbosity verbosity;
   gtsam::KeyVector knownInliers;
   gtsam::KeyVector knownOutliers;
 
