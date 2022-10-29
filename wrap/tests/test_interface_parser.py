@@ -26,6 +26,8 @@ from gtwrap.interface_parser import (ArgumentList, Class, Constructor, Enum,
                                      TypedefTemplateInstantiation, Typename,
                                      Variable)
 
+from gtwrap.template_instantiator.classes import InstantiatedClass
+
 
 class TestInterfaceParser(unittest.TestCase):
     """Test driver for all classes in interface_parser.py."""
@@ -501,6 +503,7 @@ class TestInterfaceParser(unittest.TestCase):
         ret = Class.rule.parseString(
             "class ForwardKinematicsFactor : gtsam::BetweenFactor<gtsam::Pose3> {};"
         )[0]
+        ret = InstantiatedClass(ret, [])  # Needed to correctly parse parent class
         self.assertEqual("ForwardKinematicsFactor", ret.name)
         self.assertEqual("BetweenFactor", ret.parent_class.name)
         self.assertEqual(["gtsam"], ret.parent_class.namespaces)
