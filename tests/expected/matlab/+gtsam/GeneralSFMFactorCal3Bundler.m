@@ -1,9 +1,13 @@
 %class GeneralSFMFactorCal3Bundler, see Doxygen page for details
 %at https://gtsam.org/doxygen/
 %
+%-------Properties-------
+%verbosity
+%
 classdef GeneralSFMFactorCal3Bundler < handle
   properties
     ptr_gtsamGeneralSFMFactorCal3Bundler = 0
+    verbosity
   end
   methods
     function obj = GeneralSFMFactorCal3Bundler(varargin)
@@ -24,6 +28,16 @@ classdef GeneralSFMFactorCal3Bundler < handle
     %DISPLAY Calls print on the object
     function disp(obj), obj.display; end
     %DISP Calls print on the object
+
+    function varargout = get.verbosity(this)
+        varargout{1} = special_cases_wrapper(11, this);
+        this.verbosity = varargout{1};
+    end
+
+    function set.verbosity(this, value)
+        obj.verbosity = value;
+        special_cases_wrapper(12, this, value);
+    end
   end
 
   methods(Static = true)
