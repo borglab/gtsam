@@ -1181,7 +1181,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
     def wrap_collector_function_return_types(self, return_type, func_id):
         """
-        Wrap the return type of the collector function.
+        Wrap the return type of the collector function when a std::pair is returned.
         """
         return_type_text = '  out[' + str(func_id) + '] = '
         pair_value = 'first' if func_id == 0 else 'second'
@@ -1239,10 +1239,10 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
             if ctype.typename.name not in self.ignore_namespace:
                 expanded += textwrap.indent(
-                    'out[0] = wrap_shared_ptr({}, false);'.format(shared_obj),
+                    'out[0] = wrap_shared_ptr({0}, false);'.format(shared_obj),
                     prefix='  ')
         else:
-            expanded += '  out[0] = wrap< {} >({});'.format(
+            expanded += '  out[0] = wrap< {0} >({1});'.format(
                 ctype.typename.name, obj)
 
         return expanded
