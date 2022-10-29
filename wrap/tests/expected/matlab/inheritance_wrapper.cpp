@@ -10,6 +10,7 @@
 typedef MyTemplate<gtsam::Point2> MyTemplatePoint2;
 typedef MyTemplate<gtsam::Matrix> MyTemplateMatrix;
 typedef MyTemplate<A> MyTemplateA;
+typedef ParentHasTemplate<double> ParentHasTemplateDouble;
 
 typedef std::set<boost::shared_ptr<MyBase>*> Collector_MyBase;
 static Collector_MyBase collector_MyBase;
@@ -21,6 +22,8 @@ typedef std::set<boost::shared_ptr<MyTemplateA>*> Collector_MyTemplateA;
 static Collector_MyTemplateA collector_MyTemplateA;
 typedef std::set<boost::shared_ptr<ForwardKinematicsFactor>*> Collector_ForwardKinematicsFactor;
 static Collector_ForwardKinematicsFactor collector_ForwardKinematicsFactor;
+typedef std::set<boost::shared_ptr<ParentHasTemplateDouble>*> Collector_ParentHasTemplateDouble;
+static Collector_ParentHasTemplateDouble collector_ParentHasTemplateDouble;
 
 
 void _deleteAllObjects()
@@ -59,6 +62,12 @@ void _deleteAllObjects()
     collector_ForwardKinematicsFactor.erase(iter++);
     anyDeleted = true;
   } }
+  { for(Collector_ParentHasTemplateDouble::iterator iter = collector_ParentHasTemplateDouble.begin();
+      iter != collector_ParentHasTemplateDouble.end(); ) {
+    delete *iter;
+    collector_ParentHasTemplateDouble.erase(iter++);
+    anyDeleted = true;
+  } }
 
   if(anyDeleted)
     cout <<
@@ -78,6 +87,7 @@ void _inheritance_RTTIRegister() {
     types.insert(std::make_pair(typeid(MyTemplateMatrix).name(), "MyTemplateMatrix"));
     types.insert(std::make_pair(typeid(MyTemplateA).name(), "MyTemplateA"));
     types.insert(std::make_pair(typeid(ForwardKinematicsFactor).name(), "ForwardKinematicsFactor"));
+    types.insert(std::make_pair(typeid(ParentHasTemplateDouble).name(), "ParentHasTemplateDouble"));
 
 
     mxArray *registry = mexGetVariable("global", "gtsamwrap_rttiRegistry");
@@ -657,6 +667,41 @@ void ForwardKinematicsFactor_deconstructor_53(int nargout, mxArray *out[], int n
   delete self;
 }
 
+void ParentHasTemplateDouble_collectorInsertAndMakeBase_54(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  mexAtExit(&_deleteAllObjects);
+  typedef boost::shared_ptr<ParentHasTemplate<double>> Shared;
+
+  Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
+  collector_ParentHasTemplateDouble.insert(self);
+
+  typedef boost::shared_ptr<MyTemplate<double>> SharedBase;
+  out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
+  *reinterpret_cast<SharedBase**>(mxGetData(out[0])) = new SharedBase(*self);
+}
+
+void ParentHasTemplateDouble_upcastFromVoid_55(int nargout, mxArray *out[], int nargin, const mxArray *in[]) {
+  mexAtExit(&_deleteAllObjects);
+  typedef boost::shared_ptr<ParentHasTemplate<double>> Shared;
+  boost::shared_ptr<void> *asVoid = *reinterpret_cast<boost::shared_ptr<void>**> (mxGetData(in[0]));
+  out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
+  Shared *self = new Shared(boost::static_pointer_cast<ParentHasTemplate<double>>(*asVoid));
+  *reinterpret_cast<Shared**>(mxGetData(out[0])) = self;
+}
+
+void ParentHasTemplateDouble_deconstructor_56(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  typedef boost::shared_ptr<ParentHasTemplate<double>> Shared;
+  checkArguments("delete_ParentHasTemplateDouble",nargout,nargin,1);
+  Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
+  Collector_ParentHasTemplateDouble::iterator item;
+  item = collector_ParentHasTemplateDouble.find(self);
+  if(item != collector_ParentHasTemplateDouble.end()) {
+    collector_ParentHasTemplateDouble.erase(item);
+  }
+  delete self;
+}
+
 
 void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
@@ -830,6 +875,15 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
       break;
     case 53:
       ForwardKinematicsFactor_deconstructor_53(nargout, out, nargin-1, in+1);
+      break;
+    case 54:
+      ParentHasTemplateDouble_collectorInsertAndMakeBase_54(nargout, out, nargin-1, in+1);
+      break;
+    case 55:
+      ParentHasTemplateDouble_upcastFromVoid_55(nargout, out, nargin-1, in+1);
+      break;
+    case 56:
+      ParentHasTemplateDouble_deconstructor_56(nargout, out, nargin-1, in+1);
       break;
     }
   } catch(const std::exception& e) {

@@ -6,3 +6,4 @@ function varargout = overloadedGlobalFunction(varargin)
       else
         error('Arguments do not match any overload of function overloadedGlobalFunction');
       end
+end
