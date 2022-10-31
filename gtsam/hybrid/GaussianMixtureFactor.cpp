@@ -95,4 +95,16 @@ GaussianMixtureFactor::Sum GaussianMixtureFactor::asGaussianFactorGraphTree()
   };
   return {factors_, wrap};
 }
+
+/* *******************************************************************************/
+AlgebraicDecisionTree<Key> GaussianMixtureFactor::error(
+    const VectorValues &continuousVals) const {
+  // functor to convert from sharedFactor to double error value.
+  auto errorFunc = [continuousVals](const GaussianFactor::shared_ptr &factor) {
+    return factor->error(continuousVals);
+  };
+  DecisionTree<Key, double> errorTree(factors_, errorFunc);
+  return errorTree;
+}
+
 }  // namespace gtsam
