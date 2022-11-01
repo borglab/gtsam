@@ -182,6 +182,12 @@ TEST(GaussianMixtureFactor, Error) {
   AlgebraicDecisionTree<Key> expected_error(discrete_keys, errors);
 
   EXPECT(assert_equal(expected_error, error_tree));
+
+  // Test for single leaf given discrete assignment P(X|M,Z).
+  DiscreteValues discreteVals;
+  discreteVals[m1.first] = 1;
+  EXPECT_DOUBLES_EQUAL(4.0, mixtureFactor.error(continuousVals, discreteVals),
+                       1e-9);
 }
 
 /* ************************************************************************* */
