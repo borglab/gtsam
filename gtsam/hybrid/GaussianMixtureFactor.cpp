@@ -107,4 +107,12 @@ AlgebraicDecisionTree<Key> GaussianMixtureFactor::error(
   return errorTree;
 }
 
+/* *******************************************************************************/
+double GaussianMixtureFactor::error(
+    const VectorValues &continuousVals,
+    const DiscreteValues &discreteValues) const {
+  auto factor = factors_(discreteValues);
+  return factor->error(continuousVals);
+}
+
 }  // namespace gtsam

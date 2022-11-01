@@ -23,6 +23,7 @@
 #include <gtsam/discrete/AlgebraicDecisionTree.h>
 #include <gtsam/discrete/DecisionTree.h>
 #include <gtsam/discrete/DiscreteKey.h>
+#include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/VectorValues.h>
@@ -136,6 +137,17 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
    * as the factor but leaf values as the error.
    */
   AlgebraicDecisionTree<Key> error(const VectorValues &continuousVals) const;
+
+  /**
+   * @brief Compute the error of this Gaussian Mixture given the continuous
+   * values and a discrete assignment.
+   *
+   * @param continuousVals The continuous values at which to compute the error.
+   * @param discreteValues The discrete assignment for a specific mode sequence.
+   * @return double
+   */
+  double error(const VectorValues &continuousVals,
+               const DiscreteValues &discreteValues) const;
 
   /// Add MixtureFactor to a Sum, syntactic sugar.
   friend Sum &operator+=(Sum &sum, const GaussianMixtureFactor &factor) {
