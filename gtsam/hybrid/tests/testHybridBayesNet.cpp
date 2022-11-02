@@ -82,9 +82,9 @@ TEST(HybridBayesNet, Choose) {
       s.linearizedFactorGraph.eliminatePartialSequential(ordering);
 
   DiscreteValues assignment;
+  assignment[M(0)] = 1;
   assignment[M(1)] = 1;
-  assignment[M(2)] = 1;
-  assignment[M(3)] = 0;
+  assignment[M(2)] = 0;
 
   GaussianBayesNet gbn = hybridBayesNet->choose(assignment);
 
@@ -120,20 +120,20 @@ TEST(HybridBayesNet, OptimizeAssignment) {
       s.linearizedFactorGraph.eliminatePartialSequential(ordering);
 
   DiscreteValues assignment;
+  assignment[M(0)] = 1;
   assignment[M(1)] = 1;
   assignment[M(2)] = 1;
-  assignment[M(3)] = 1;
 
   VectorValues delta = hybridBayesNet->optimize(assignment);
 
   // The linearization point has the same value as the key index,
-  // e.g. X(1) = 1, X(2) = 2,
+  // e.g. X(0) = 1, X(1) = 2,
   // but the factors specify X(k) = k-1, so delta should be -1.
   VectorValues expected_delta;
+  expected_delta.insert(make_pair(X(0), -Vector1::Ones()));
   expected_delta.insert(make_pair(X(1), -Vector1::Ones()));
   expected_delta.insert(make_pair(X(2), -Vector1::Ones()));
   expected_delta.insert(make_pair(X(3), -Vector1::Ones()));
-  expected_delta.insert(make_pair(X(4), -Vector1::Ones()));
 
   EXPECT(assert_equal(expected_delta, delta));
 }
@@ -150,16 +150,16 @@ TEST(HybridBayesNet, Optimize) {
   HybridValues delta = hybridBayesNet->optimize();
 
   DiscreteValues expectedAssignment;
-  expectedAssignment[M(1)] = 1;
-  expectedAssignment[M(2)] = 0;
-  expectedAssignment[M(3)] = 1;
+  expectedAssignment[M(0)] = 1;
+  expectedAssignment[M(1)] = 0;
+  expectedAssignment[M(2)] = 1;
   EXPECT(assert_equal(expectedAssignment, delta.discrete()));
 
   VectorValues expectedValues;
-  expectedValues.insert(X(1), -0.999904 * Vector1::Ones());
-  expectedValues.insert(X(2), -0.99029 * Vector1::Ones());
-  expectedValues.insert(X(3), -1.00971 * Vector1::Ones());
-  expectedValues.insert(X(4), -1.0001 * Vector1::Ones());
+  expectedValues.insert(X(0), -0.999904 * Vector1::Ones());
+  expectedValues.insert(X(1), -0.99029 * Vector1::Ones());
+  expectedValues.insert(X(2), -1.00971 * Vector1::Ones());
+  expectedValues.insert(X(3), -1.0001 * Vector1::Ones());
 
   EXPECT(assert_equal(expectedValues, delta.continuous(), 1e-5));
 }
@@ -175,10 +175,10 @@ TEST(HybridBayesNet, OptimizeMultifrontal) {
   HybridValues delta = hybridBayesTree->optimize();
 
   VectorValues expectedValues;
-  expectedValues.insert(X(1), -0.999904 * Vector1::Ones());
-  expectedValues.insert(X(2), -0.99029 * Vector1::Ones());
-  expectedValues.insert(X(3), -1.00971 * Vector1::Ones());
-  expectedValues.insert(X(4), -1.0001 * Vector1::Ones());
+  expectedValues.insert(X(0), -0.999904 * Vector1::Ones());
+  expectedValues.insert(X(1), -0.99029 * Vector1::Ones());
+  expectedValues.insert(X(2), -1.00971 * Vector1::Ones());
+  expectedValues.insert(X(3), -1.0001 * Vector1::Ones());
 
   EXPECT(assert_equal(expectedValues, delta.continuous(), 1e-5));
 }

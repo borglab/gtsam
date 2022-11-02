@@ -531,34 +531,34 @@ TEST(HybridGaussianFactorGraph, Conditionals) {
 
   hfg.push_back(switching.linearizedFactorGraph.at(0));  // P(X1)
   Ordering ordering;
-  ordering.push_back(X(1));
+  ordering.push_back(X(0));
   HybridBayesNet::shared_ptr bayes_net = hfg.eliminateSequential(ordering);
 
   hfg.push_back(switching.linearizedFactorGraph.at(1));  // P(X1, X2 | M1)
   hfg.push_back(*bayes_net);
   hfg.push_back(switching.linearizedFactorGraph.at(2));  // P(X2, X3 | M2)
   hfg.push_back(switching.linearizedFactorGraph.at(5));  // P(M1)
+  ordering.push_back(X(1));
   ordering.push_back(X(2));
-  ordering.push_back(X(3));
+  ordering.push_back(M(0));
   ordering.push_back(M(1));
-  ordering.push_back(M(2));
 
   bayes_net = hfg.eliminateSequential(ordering);
 
   HybridValues result = bayes_net->optimize();
 
   Values expected_continuous;
-  expected_continuous.insert<double>(X(1), 0);
-  expected_continuous.insert<double>(X(2), 1);
-  expected_continuous.insert<double>(X(3), 2);
-  expected_continuous.insert<double>(X(4), 4);
+  expected_continuous.insert<double>(X(0), 0);
+  expected_continuous.insert<double>(X(1), 1);
+  expected_continuous.insert<double>(X(2), 2);
+  expected_continuous.insert<double>(X(3), 4);
   Values result_continuous =
       switching.linearizationPoint.retract(result.continuous());
   EXPECT(assert_equal(expected_continuous, result_continuous));
 
   DiscreteValues expected_discrete;
+  expected_discrete[M(0)] = 1;
   expected_discrete[M(1)] = 1;
-  expected_discrete[M(2)] = 1;
   EXPECT(assert_equal(expected_discrete, result.discrete()));
 }
 
