@@ -82,9 +82,9 @@ TEST(HybridNonlinearISAM, Incremental) {
   HybridNonlinearFactorGraph graph;
   Values initial;
 
-  // Add the X(1) prior
+  // Add the X(0) prior
   graph.push_back(switching.nonlinearFactorGraph.at(0));
-  initial.insert(X(1), switching.linearizationPoint.at<double>(X(1)));
+  initial.insert(X(0), switching.linearizationPoint.at<double>(X(0)));
 
   HybridGaussianFactorGraph linearized;
   HybridGaussianFactorGraph bayesNet;
@@ -96,7 +96,7 @@ TEST(HybridNonlinearISAM, Incremental) {
     // Measurement
     graph.push_back(switching.nonlinearFactorGraph.at(k + K - 1));
 
-    initial.insert(X(k + 1), switching.linearizationPoint.at<double>(X(k + 1)));
+    initial.insert(X(k), switching.linearizationPoint.at<double>(X(k)));
 
     bayesNet = smoother.hybridBayesNet();
     linearized = *graph.linearize(initial);
@@ -111,13 +111,13 @@ TEST(HybridNonlinearISAM, Incremental) {
 
   DiscreteValues expected_discrete;
   for (size_t k = 0; k < K - 1; k++) {
-    expected_discrete[M(k + 1)] = discrete_seq[k];
+    expected_discrete[M(k)] = discrete_seq[k];
   }
   EXPECT(assert_equal(expected_discrete, delta.discrete()));
 
   Values expected_continuous;
   for (size_t k = 0; k < K; k++) {
-    expected_continuous.insert(X(k + 1), measurements[k]);
+    expected_continuous.insert(X(k), measurements[k]);
   }
   EXPECT(assert_equal(expected_continuous, result));
 }
