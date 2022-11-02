@@ -144,6 +144,26 @@ class GTSAM_EXPORT GaussianMixture
   const Conditionals &conditionals();
 
   /**
+   * @brief Compute error of the GaussianMixture as a tree.
+   *
+   * @param continuousVals The continuous VectorValues.
+   * @return AlgebraicDecisionTree<Key> A decision tree with corresponding keys
+   * as the factor but leaf values as the error.
+   */
+  AlgebraicDecisionTree<Key> error(const VectorValues &continuousVals) const;
+
+  /**
+   * @brief Compute the error of this Gaussian Mixture given the continuous
+   * values and a discrete assignment.
+   *
+   * @param continuousVals The continuous values at which to compute the error.
+   * @param discreteValues The discrete assignment for a specific mode sequence.
+   * @return double
+   */
+  double error(const VectorValues &continuousVals,
+               const DiscreteValues &discreteValues) const;
+
+  /**
    * @brief Prune the decision tree of Gaussian factors as per the discrete
    * `decisionTree`.
    *
