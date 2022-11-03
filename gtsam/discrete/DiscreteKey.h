@@ -31,6 +31,7 @@ namespace gtsam {
   /**
    * Key type for discrete variables.
    * Includes Key and cardinality.
+   * @ingroup discrete
    */
   using DiscreteKey = std::pair<Key,size_t>;
 

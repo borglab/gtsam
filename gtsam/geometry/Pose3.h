@@ -31,7 +31,7 @@ class Pose2;
 
 /**
  * A 3D pose (R,t) : (Rot3,Point3)
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  */
 class GTSAM_EXPORT Pose3: public LieGroup<Pose3, 6> {
@@ -83,7 +83,7 @@ public:
    *  A pose aTb is estimated between pairs (a_point, b_point) such that a_point = aTb * b_point
    *  Note this allows for noise on the points but in that case the mapping will not be exact.
    */
-  static boost::optional<Pose3> Align(const std::vector<Point3Pair>& abPointPairs);
+  static boost::optional<Pose3> Align(const Point3Pairs& abPointPairs);
 
   // Version of Pose3::Align that takes 2 matrices.
   static boost::optional<Pose3> Align(const Matrix& a, const Matrix& b);

@@ -129,7 +129,6 @@ void GaussianMixture::print(const std::string &s,
 }
 
 /* ************************************************************************* */
-/// Return the DiscreteKey vector as a set.
 std::set<DiscreteKey> DiscreteKeysAsSet(const DiscreteKeys &dkeys) {
   std::set<DiscreteKey> s;
   s.insert(dkeys.begin(), dkeys.end());

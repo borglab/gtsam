@@ -74,8 +74,8 @@ class AcceleratedPowerMethod : public PowerMethod<Operator> {
 
   /**
    * Run accelerated power iteration to get ritzVector with beta and previous
-   * two ritzVector x0 and x00, and return y = (A * x0 - \beta * x00) / || A * x0
-   * - \beta * x00 ||
+   * two ritzVector x0 and x00, and return 
+   *   \f$y = (A * x0 - \beta * x00) / || A * x0 - \beta * x00 ||\f$
    */
   Vector acceleratedPowerIteration (const Vector &x1, const Vector &x0,
                         const double beta) const {
@@ -86,8 +86,8 @@ class AcceleratedPowerMethod : public PowerMethod<Operator> {
 
   /**
    * Run accelerated power iteration to get ritzVector with beta and previous
-   * two ritzVector x0 and x00, and return y = (A * x0 - \beta * x00) / || A * x0
-   * - \beta * x00 ||
+   * two ritzVector x0 and x00, and return
+   *  \f$y = (A * x0 - \beta * x00) / || A * x0 - \beta * x00 ||\f$
    */
   Vector acceleratedPowerIteration () const {
     Vector y = acceleratedPowerIteration(this->ritzVector_, previousVector_, beta_);

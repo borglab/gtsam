@@ -54,7 +54,7 @@ namespace gtsam {
 /**
  * Non-linear factor for a constraint derived from a 2D measurement.
  * The calibration is unknown here compared to GenericProjectionFactor
- * @ingroup SLAM
+ * @ingroup slam
  */
 template<class CAMERA, class LANDMARK>
 class GeneralSFMFactor: public NoiseModelFactor2<CAMERA, LANDMARK> {

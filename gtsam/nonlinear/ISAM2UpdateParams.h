@@ -25,7 +25,7 @@
 namespace gtsam {
 
 /**
- * @addtogroup ISAM2
+ * @ingroup isam2
  * This struct is used by ISAM2::update() to pass additional parameters to
  * give the user a fine-grained control on how factors and relinearized, etc.
  */

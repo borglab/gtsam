@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file ParamaterMatrix.h
+ * @file ParameterMatrix.h
  * @brief Define ParameterMatrix class which is used to store values at
  * interpolation points.
  * @author Varun Agrawal, Frank Dellaert

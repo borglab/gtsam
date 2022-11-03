@@ -1123,7 +1123,7 @@ class StereoCamera {
 #include <gtsam/geometry/triangulation.h>
 class TriangulationResult {
   enum Status { VALID, DEGENERATE, BEHIND_CAMERA, OUTLIER, FAR_POINT };
-  Status status;
+  gtsam::TriangulationResult::Status status;
   TriangulationResult(const gtsam::Point3& p);
   const gtsam::Point3& get() const;
   static gtsam::TriangulationResult Degenerate();
@@ -1142,7 +1142,7 @@ class TriangulationParameters {
   bool enableEPI;
   double landmarkDistanceThreshold;
   double dynamicOutlierRejectionThreshold;
-  SharedNoiseModel noiseModel;
+  gtsam::SharedNoiseModel noiseModel;
   TriangulationParameters(const double rankTolerance = 1.0,
                           const bool enableEPI = false,
                           double landmarkDistanceThreshold = -1,
