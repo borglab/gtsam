@@ -134,6 +134,13 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   double error(const VectorValues &continuousValues,
                const DiscreteValues &discreteValues) const;
 
+  /**
+   * @brief Compute conditional error for each discrete assignment,
+   * and return as a tree.
+   *
+   * @param continuousValues Continuous values at which to compute the error.
+   * @return AlgebraicDecisionTree<Key>
+   */
   AlgebraicDecisionTree<Key> error(const VectorValues &continuousValues) const;
 
   /// @}
