@@ -54,40 +54,40 @@ TEST(HybridGaussianElimination, IncrementalElimination) {
   // Create initial factor graph
   //  *        *      *
   //  |        |      |
-  //  X1  -*-  X2 -*- X3
-  //   \*-M1-*/
-  graph1.push_back(switching.linearizedFactorGraph.at(0));  // P(X1)
-  graph1.push_back(switching.linearizedFactorGraph.at(1));  // P(X1, X2 | M1)
-  graph1.push_back(switching.linearizedFactorGraph.at(2));  // P(X2, X3 | M2)
-  graph1.push_back(switching.linearizedFactorGraph.at(5));  // P(M1)
+  //  X0  -*-  X1 -*- X2
+  //   \*-M0-*/
+  graph1.push_back(switching.linearizedFactorGraph.at(0));  // P(X0)
+  graph1.push_back(switching.linearizedFactorGraph.at(1));  // P(X0, X1 | M0)
+  graph1.push_back(switching.linearizedFactorGraph.at(2));  // P(X1, X2 | M1)
+  graph1.push_back(switching.linearizedFactorGraph.at(5));  // P(M0)
 
   // Run update step
   isam.update(graph1);
 
-  // Check that after update we have 3 hybrid Bayes net nodes:
-  // P(X1 | X2, M1) and P(X2, X3 | M1, M2), P(M1, M2)
+  // Check that after update we have 2 hybrid Bayes net nodes:
+  // P(X0 | X1, M0) and P(X1, X2 | M0, M1), P(M0, M1)
   EXPECT_LONGS_EQUAL(3, isam.size());
-  EXPECT(isam[X(1)]->conditional()->frontals() == KeyVector{X(1)});
-  EXPECT(isam[X(1)]->conditional()->parents() == KeyVector({X(2), M(1)}));
-  EXPECT(isam[X(2)]->conditional()->frontals() == KeyVector({X(2), X(3)}));
-  EXPECT(isam[X(2)]->conditional()->parents() == KeyVector({M(1), M(2)}));
+  EXPECT(isam[X(0)]->conditional()->frontals() == KeyVector{X(0)});
+  EXPECT(isam[X(0)]->conditional()->parents() == KeyVector({X(1), M(0)}));
+  EXPECT(isam[X(1)]->conditional()->frontals() == KeyVector({X(1), X(2)}));
+  EXPECT(isam[X(1)]->conditional()->parents() == KeyVector({M(0), M(1)}));
 
   /********************************************************/
   // New factor graph for incremental update.
   HybridGaussianFactorGraph graph2;
 
-  graph1.push_back(switching.linearizedFactorGraph.at(3));  // P(X2)
-  graph2.push_back(switching.linearizedFactorGraph.at(4));  // P(X3)
-  graph2.push_back(switching.linearizedFactorGraph.at(6));  // P(M1, M2)
+  graph1.push_back(switching.linearizedFactorGraph.at(3));  // P(X1)
+  graph2.push_back(switching.linearizedFactorGraph.at(4));  // P(X2)
+  graph2.push_back(switching.linearizedFactorGraph.at(6));  // P(M0, M1)
 
   isam.update(graph2);
 
   // Check that after the second update we have
   // 1 additional hybrid Bayes net node:
-  // P(X2, X3 | M1, M2)
+  // P(X1, X2 | M0, M1)
   EXPECT_LONGS_EQUAL(3, isam.size());
-  EXPECT(isam[X(3)]->conditional()->frontals() == KeyVector({X(2), X(3)}));
-  EXPECT(isam[X(3)]->conditional()->parents() == KeyVector({M(1), M(2)}));
+  EXPECT(isam[X(2)]->conditional()->frontals() == KeyVector({X(1), X(2)}));
+  EXPECT(isam[X(2)]->conditional()->parents() == KeyVector({M(0), M(1)}));
 }
 
 /* ****************************************************************************/
@@ -100,104 +100,104 @@ TEST(HybridGaussianElimination, IncrementalInference) {
   // Create initial factor graph
   //    *        *        *
   //    |        |        |
-  //    X1  -*-  X2  -*-  X3
+  //    X0  -*-  X1  -*-  X2
   //         |        |
-  //      *-M1 - * - M2
-  graph1.push_back(switching.linearizedFactorGraph.at(0));  // P(X1)
-  graph1.push_back(switching.linearizedFactorGraph.at(1));  // P(X1, X2 | M1)
-  graph1.push_back(switching.linearizedFactorGraph.at(3));  // P(X2)
-  graph1.push_back(switching.linearizedFactorGraph.at(5));  // P(M1)
+  //      *-M0 - * - M1
+  graph1.push_back(switching.linearizedFactorGraph.at(0));  // P(X0)
+  graph1.push_back(switching.linearizedFactorGraph.at(1));  // P(X0, X1 | M0)
+  graph1.push_back(switching.linearizedFactorGraph.at(3));  // P(X1)
+  graph1.push_back(switching.linearizedFactorGraph.at(5));  // P(M0)
 
   // Run update step
   isam.update(graph1);
 
-  auto discreteConditional_m1 =
-      isam[M(1)]->conditional()->asDiscreteConditional();
-  EXPECT(discreteConditional_m1->keys() == KeyVector({M(1)}));
+  auto discreteConditional_m0 =
+      isam[M(0)]->conditional()->asDiscreteConditional();
+  EXPECT(discreteConditional_m0->keys() == KeyVector({M(0)}));
 
   /********************************************************/
   // New factor graph for incremental update.
   HybridGaussianFactorGraph graph2;
 
-  graph2.push_back(switching.linearizedFactorGraph.at(2));  // P(X2, X3 | M2)
-  graph2.push_back(switching.linearizedFactorGraph.at(4));  // P(X3)
-  graph2.push_back(switching.linearizedFactorGraph.at(6));  // P(M1, M2)
+  graph2.push_back(switching.linearizedFactorGraph.at(2));  // P(X1, X2 | M1)
+  graph2.push_back(switching.linearizedFactorGraph.at(4));  // P(X2)
+  graph2.push_back(switching.linearizedFactorGraph.at(6));  // P(M0, M1)
 
   isam.update(graph2);
 
   /********************************************************/
   // Run batch elimination so we can compare results.
   Ordering ordering;
+  ordering += X(0);
   ordering += X(1);
   ordering += X(2);
-  ordering += X(3);
 
-  // Now we calculate the actual factors using full elimination
+  // Now we calculate the expected factors using full elimination
   HybridBayesTree::shared_ptr expectedHybridBayesTree;
   HybridGaussianFactorGraph::shared_ptr expectedRemainingGraph;
   std::tie(expectedHybridBayesTree, expectedRemainingGraph) =
       switching.linearizedFactorGraph.eliminatePartialMultifrontal(ordering);
 
+  // The densities on X(0) should be the same
+  auto x0_conditional =
+      dynamic_pointer_cast<GaussianMixture>(isam[X(0)]->conditional()->inner());
+  auto expected_x0_conditional = dynamic_pointer_cast<GaussianMixture>(
+      (*expectedHybridBayesTree)[X(0)]->conditional()->inner());
+  EXPECT(assert_equal(*x0_conditional, *expected_x0_conditional));
+
   // The densities on X(1) should be the same
   auto x1_conditional =
       dynamic_pointer_cast<GaussianMixture>(isam[X(1)]->conditional()->inner());
-  auto actual_x1_conditional = dynamic_pointer_cast<GaussianMixture>(
+  auto expected_x1_conditional = dynamic_pointer_cast<GaussianMixture>(
       (*expectedHybridBayesTree)[X(1)]->conditional()->inner());
-  EXPECT(assert_equal(*x1_conditional, *actual_x1_conditional));
+  EXPECT(assert_equal(*x1_conditional, *expected_x1_conditional));
 
   // The densities on X(2) should be the same
   auto x2_conditional =
       dynamic_pointer_cast<GaussianMixture>(isam[X(2)]->conditional()->inner());
-  auto actual_x2_conditional = dynamic_pointer_cast<GaussianMixture>(
+  auto expected_x2_conditional = dynamic_pointer_cast<GaussianMixture>(
       (*expectedHybridBayesTree)[X(2)]->conditional()->inner());
-  EXPECT(assert_equal(*x2_conditional, *actual_x2_conditional));
-
-  // The densities on X(3) should be the same
-  auto x3_conditional =
-      dynamic_pointer_cast<GaussianMixture>(isam[X(3)]->conditional()->inner());
-  auto actual_x3_conditional = dynamic_pointer_cast<GaussianMixture>(
-      (*expectedHybridBayesTree)[X(2)]->conditional()->inner());
-  EXPECT(assert_equal(*x3_conditional, *actual_x3_conditional));
+  EXPECT(assert_equal(*x2_conditional, *expected_x2_conditional));
 
   // We only perform manual continuous elimination for 0,0.
   // The other discrete probabilities on M(2) are calculated the same way
   Ordering discrete_ordering;
+  discrete_ordering += M(0);
   discrete_ordering += M(1);
-  discrete_ordering += M(2);
   HybridBayesTree::shared_ptr discreteBayesTree =
       expectedRemainingGraph->eliminateMultifrontal(discrete_ordering);
 
   DiscreteValues m00;
-  m00[M(1)] = 0, m00[M(2)] = 0;
+  m00[M(0)] = 0, m00[M(1)] = 0;
   DiscreteConditional decisionTree =
-      *(*discreteBayesTree)[M(2)]->conditional()->asDiscreteConditional();
+      *(*discreteBayesTree)[M(1)]->conditional()->asDiscreteConditional();
   double m00_prob = decisionTree(m00);
 
-  auto discreteConditional = isam[M(2)]->conditional()->asDiscreteConditional();
+  auto discreteConditional = isam[M(1)]->conditional()->asDiscreteConditional();
 
   // Test if the probability values are as expected with regression tests.
   DiscreteValues assignment;
   EXPECT(assert_equal(m00_prob, 0.0619233, 1e-5));
+  assignment[M(0)] = 0;
   assignment[M(1)] = 0;
-  assignment[M(2)] = 0;
   EXPECT(assert_equal(m00_prob, (*discreteConditional)(assignment), 1e-5));
-  assignment[M(1)] = 1;
-  assignment[M(2)] = 0;
-  EXPECT(assert_equal(0.183743, (*discreteConditional)(assignment), 1e-5));
+  assignment[M(0)] = 1;
   assignment[M(1)] = 0;
-  assignment[M(2)] = 1;
-  EXPECT(assert_equal(0.204159, (*discreteConditional)(assignment), 1e-5));
+  EXPECT(assert_equal(0.183743, (*discreteConditional)(assignment), 1e-5));
+  assignment[M(0)] = 0;
   assignment[M(1)] = 1;
-  assignment[M(2)] = 1;
+  EXPECT(assert_equal(0.204159, (*discreteConditional)(assignment), 1e-5));
+  assignment[M(0)] = 1;
+  assignment[M(1)] = 1;
   EXPECT(assert_equal(0.2, (*discreteConditional)(assignment), 1e-5));
 
   // Check if the clique conditional generated from incremental elimination
   // matches that of batch elimination.
   auto expectedChordal = expectedRemainingGraph->eliminateMultifrontal();
   auto expectedConditional = dynamic_pointer_cast<DecisionTreeFactor>(
-      (*expectedChordal)[M(2)]->conditional()->inner());
+      (*expectedChordal)[M(1)]->conditional()->inner());
   auto actualConditional = dynamic_pointer_cast<DecisionTreeFactor>(
-      isam[M(2)]->conditional()->inner());
+      isam[M(1)]->conditional()->inner());
   EXPECT(assert_equal(*actualConditional, *expectedConditional, 1e-6));
 }
 
@@ -208,13 +208,13 @@ TEST(HybridGaussianElimination, Approx_inference) {
   HybridGaussianISAM incrementalHybrid;
   HybridGaussianFactorGraph graph1;
 
-  // Add the 3 hybrid factors, x1-x2, x2-x3, x3-x4
+  // Add the 3 hybrid factors, x0-x1, x1-x2, x2-x3
   for (size_t i = 1; i < 4; i++) {
     graph1.push_back(switching.linearizedFactorGraph.at(i));
   }
 
-  // Add the Gaussian factors, 1 prior on X(1),
-  // 3 measurements on X(2), X(3), X(4)
+  // Add the Gaussian factors, 1 prior on X(0),
+  // 3 measurements on X(1), X(2), X(3)
   graph1.push_back(switching.linearizedFactorGraph.at(0));
   for (size_t i = 4; i <= 7; i++) {
     graph1.push_back(switching.linearizedFactorGraph.at(i));
@@ -222,7 +222,7 @@ TEST(HybridGaussianElimination, Approx_inference) {
 
   // Create ordering.
   Ordering ordering;
-  for (size_t j = 1; j <= 4; j++) {
+  for (size_t j = 0; j < 4; j++) {
     ordering += X(j);
   }
 
@@ -271,26 +271,26 @@ TEST(HybridGaussianElimination, Approx_inference) {
     1 1 1 Leaf  0.5
   */
 
-  auto discreteConditional_m1 = *dynamic_pointer_cast<DiscreteConditional>(
-      incrementalHybrid[M(1)]->conditional()->inner());
-  EXPECT(discreteConditional_m1.keys() == KeyVector({M(1), M(2), M(3)}));
+  auto discreteConditional_m0 = *dynamic_pointer_cast<DiscreteConditional>(
+      incrementalHybrid[M(0)]->conditional()->inner());
+  EXPECT(discreteConditional_m0.keys() == KeyVector({M(0), M(1), M(2)}));
 
   // Get the number of elements which are greater than 0.
   auto count = [](const double &value, int count) {
     return value > 0 ? count + 1 : count;
   };
   // Check that the number of leaves after pruning is 5.
-  EXPECT_LONGS_EQUAL(5, discreteConditional_m1.fold(count, 0));
+  EXPECT_LONGS_EQUAL(5, discreteConditional_m0.fold(count, 0));
 
   // Check that the hybrid nodes of the bayes net match those of the pre-pruning
   // bayes net, at the same positions.
   auto &unprunedLastDensity = *dynamic_pointer_cast<GaussianMixture>(
-      unprunedHybridBayesTree->clique(X(4))->conditional()->inner());
+      unprunedHybridBayesTree->clique(X(3))->conditional()->inner());
   auto &lastDensity = *dynamic_pointer_cast<GaussianMixture>(
-      incrementalHybrid[X(4)]->conditional()->inner());
+      incrementalHybrid[X(3)]->conditional()->inner());
 
   std::vector<std::pair<DiscreteValues, double>> assignments =
-      discreteConditional_m1.enumerate();
+      discreteConditional_m0.enumerate();
   // Loop over all assignments and check the pruned components
   for (auto &&av : assignments) {
     const DiscreteValues &assignment = av.first;
@@ -314,13 +314,13 @@ TEST(HybridGaussianElimination, Incremental_approximate) {
   HybridGaussianFactorGraph graph1;
 
   /***** Run Round 1 *****/
-  // Add the 3 hybrid factors, x1-x2, x2-x3, x3-x4
+  // Add the 3 hybrid factors, x0-x1, x1-x2, x2-x3
   for (size_t i = 1; i < 4; i++) {
     graph1.push_back(switching.linearizedFactorGraph.at(i));
   }
 
-  // Add the Gaussian factors, 1 prior on X(1),
-  // 3 measurements on X(2), X(3), X(4)
+  // Add the Gaussian factors, 1 prior on X(0),
+  // 3 measurements on X(1), X(2), X(3)
   graph1.push_back(switching.linearizedFactorGraph.at(0));
   for (size_t i = 5; i <= 7; i++) {
     graph1.push_back(switching.linearizedFactorGraph.at(i));
@@ -335,13 +335,13 @@ TEST(HybridGaussianElimination, Incremental_approximate) {
   // each with 2, 4, 8, and 5 (pruned) leaves respetively.
   EXPECT_LONGS_EQUAL(4, incrementalHybrid.size());
   EXPECT_LONGS_EQUAL(
-      2, incrementalHybrid[X(1)]->conditional()->asMixture()->nrComponents());
+      2, incrementalHybrid[X(0)]->conditional()->asMixture()->nrComponents());
   EXPECT_LONGS_EQUAL(
-      3, incrementalHybrid[X(2)]->conditional()->asMixture()->nrComponents());
+      3, incrementalHybrid[X(1)]->conditional()->asMixture()->nrComponents());
+  EXPECT_LONGS_EQUAL(
+      5, incrementalHybrid[X(2)]->conditional()->asMixture()->nrComponents());
   EXPECT_LONGS_EQUAL(
       5, incrementalHybrid[X(3)]->conditional()->asMixture()->nrComponents());
-  EXPECT_LONGS_EQUAL(
-      5, incrementalHybrid[X(4)]->conditional()->asMixture()->nrComponents());
 
   /***** Run Round 2 *****/
   HybridGaussianFactorGraph graph2;
@@ -356,9 +356,9 @@ TEST(HybridGaussianElimination, Incremental_approximate) {
   // with 5 (pruned) leaves.
   CHECK_EQUAL(5, incrementalHybrid.size());
   EXPECT_LONGS_EQUAL(
-      5, incrementalHybrid[X(4)]->conditional()->asMixture()->nrComponents());
+      5, incrementalHybrid[X(3)]->conditional()->asMixture()->nrComponents());
   EXPECT_LONGS_EQUAL(
-      5, incrementalHybrid[X(5)]->conditional()->asMixture()->nrComponents());
+      5, incrementalHybrid[X(4)]->conditional()->asMixture()->nrComponents());
 }
 
 /* ************************************************************************/
@@ -370,7 +370,7 @@ TEST(HybridGaussianISAM, NonTrivial) {
   /*************** Run Round 1 ***************/
   HybridNonlinearFactorGraph fg;
 
-  // Add a prior on pose x1 at the origin.
+  // Add a prior on pose x0 at the origin.
   // A prior factor consists of a mean  and
   // a noise model (covariance matrix)
   Pose2 prior(0.0, 0.0, 0.0);  // prior mean is at origin

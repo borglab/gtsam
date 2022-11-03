@@ -32,8 +32,8 @@ class GraphvizFormatting : gtsam::DotWriter {
   GraphvizFormatting();
 
   enum Axis { X, Y, Z, NEGX, NEGY, NEGZ };
-  Axis paperHorizontalAxis;
-  Axis paperVerticalAxis;
+  gtsam::GraphvizFormatting::Axis paperHorizontalAxis;
+  gtsam::GraphvizFormatting::Axis paperVerticalAxis;
 
   double scale;
   bool mergeSimilarFactors;
@@ -522,13 +522,13 @@ template<PARAMS>
 virtual class GncParams {
   GncParams(const PARAMS& baseOptimizerParams);
   GncParams();
-  BaseOptimizerParameters baseOptimizerParams;
+  PARAMS baseOptimizerParams;
   gtsam::GncLossType lossType;
   size_t maxIterations;
   double muStep;
   double relativeCostTol;
   double weightsTol;
-  Verbosity verbosity;
+  gtsam::This::Verbosity verbosity;
   gtsam::KeyVector knownInliers;
   gtsam::KeyVector knownOutliers;
 
@@ -680,7 +680,7 @@ class ISAM2Params {
   bool findUnusedFactorSlots;
 
   enum Factorization { CHOLESKY, QR };
-  Factorization factorization;
+  gtsam::ISAM2Params::Factorization factorization;
 };
 
 class ISAM2Clique {

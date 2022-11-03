@@ -44,6 +44,7 @@ using GaussianFactorVector = std::vector<gtsam::GaussianFactor::shared_ptr>;
  * Represents the underlying Gaussian Mixture as a Decision Tree, where the set
  * of discrete variables indexes to the continuous gaussian distribution.
  *
+ * @ingroup hybrid
  */
 class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
  public:

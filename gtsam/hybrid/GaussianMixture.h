@@ -45,6 +45,7 @@ namespace gtsam {
  * where i indexes the components and k_i is a component-wise normalization
  * constant.
  *
+ * @ingroup hybrid
  */
 class GTSAM_EXPORT GaussianMixture
     : public HybridFactor,
@@ -181,6 +182,9 @@ class GTSAM_EXPORT GaussianMixture
    */
   Sum add(const Sum &sum) const;
 };
+
+/// Return the DiscreteKey vector as a set.
+std::set<DiscreteKey> DiscreteKeysAsSet(const DiscreteKeys &dkeys);
 
 // traits
 template <>

@@ -40,6 +40,8 @@ DiscreteKeys CollectDiscreteKeys(const DiscreteKeys &key1,
  *  - HybridDiscreteFactor
  *  - GaussianMixtureFactor
  *  - GaussianMixture
+ *
+ * @ingroup hybrid
  */
 class GTSAM_EXPORT HybridFactor : public Factor {
  private:

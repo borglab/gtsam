@@ -27,7 +27,6 @@
 namespace gtsam {
 
 using std::vector;
-using Point3Pairs = vector<Point3Pair>;
 
 /** instantiate concept checks */
 GTSAM_CONCEPT_POSE_INST(Pose3)

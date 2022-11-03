@@ -26,6 +26,11 @@
 
 namespace gtsam {
 
+/**
+ * @brief 
+ *
+ * @ingroup hybrid
+ */
 class GTSAM_EXPORT HybridGaussianISAM : public ISAM<HybridBayesTree> {
  public:
   typedef ISAM<HybridBayesTree> Base;
@@ -67,6 +72,17 @@ class GTSAM_EXPORT HybridGaussianISAM : public ISAM<HybridBayesTree> {
               const boost::optional<Ordering>& ordering = boost::none,
               const HybridBayesTree::Eliminate& function =
                   HybridBayesTree::EliminationTraitsType::DefaultEliminate);
+
+  /**
+   * @brief Helper method to get an ordering given the existing factors and any
+   * new factors added.
+   *
+   * @param factors The existing factors in the BayesTree.
+   * @param newFactors New factors added during the update step.
+   * @return Ordering
+   */
+  static Ordering GetOrdering(HybridGaussianFactorGraph& factors,
+                              const HybridGaussianFactorGraph& newFactors);
 };
 
 /// traits

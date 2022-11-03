@@ -30,7 +30,7 @@ namespace gtsam {
  *   NED: North-East-Down navigation frame at some local origin
  *   ECEF: Earth-centered Earth-fixed, origin at Earth's center
  * See Farrell08book or e.g. http://www.dirsig.org/docs/new/coordinates.html
- * @addtogroup Navigation
+ * @ingroup navigation
  */
 class GTSAM_EXPORT GPSFactor: public NoiseModelFactor1<Pose3> {
 
@@ -108,7 +108,7 @@ private:
 
 /**
  * Version of GPSFactor for NavState
- * @addtogroup Navigation
+ * @ingroup navigation
  */
 class GTSAM_EXPORT GPSFactor2: public NoiseModelFactor1<NavState> {
 

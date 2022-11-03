@@ -31,6 +31,7 @@ namespace gtsam {
  * An assignment from labels to value index (size_t).
  * Assigns to each label a value. Implemented as a simple map.
  * A discrete factor takes an Assignment and returns a value.
+ * @ingroup discrete
  */
 template <class L>
 class Assignment : public std::map<L, size_t> {

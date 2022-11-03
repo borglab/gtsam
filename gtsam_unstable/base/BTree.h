@@ -28,7 +28,7 @@ namespace gtsam {
 
   /**
    * @brief Binary tree
-   * @addtogroup base
+   * @ingroup base
    */
   template<class KEY, class VALUE>
   class BTree {

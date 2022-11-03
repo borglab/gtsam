@@ -16,7 +16,7 @@
  */
 
 /**
- * @addtogroup geometry
+ * @ingroup geometry
  */
 
 #pragma once
@@ -28,7 +28,7 @@ namespace gtsam {
 
 /**
  * @brief The most common 5DOF 3D->2D calibration
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  */
 class GTSAM_EXPORT Cal3_S2 : public Cal3 {

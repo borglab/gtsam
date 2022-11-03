@@ -74,7 +74,7 @@ GTSAM_EXPORT Matrix3 topLeft(const SO4 &Q, OptionalJacobian<9, 6> H = boost::non
 
 /**
  * Project to Stiefel manifold of 4*3 orthonormal 3-frames in R^4, i.e., pi(Q)
- * -> S \in St(3,4).
+ * -> \f$ S \in St(3,4) \f$.
  */
 GTSAM_EXPORT Matrix43 stiefel(const SO4 &Q, OptionalJacobian<12, 6> H = boost::none);
 

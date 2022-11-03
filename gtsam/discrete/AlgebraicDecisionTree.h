@@ -31,6 +31,8 @@ namespace gtsam {
    * Algebraic Decision Trees fix the range to double
    * Just has some nice constructors and some syntactic sugar
    * TODO: consider eliminating this class altogether?
+   *
+   * @ingroup discrete
    */
   template <typename L>
   class GTSAM_EXPORT AlgebraicDecisionTree : public DecisionTree<L, double> {
