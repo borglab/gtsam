@@ -195,7 +195,7 @@ TEST(HybridBayesNet, Error) {
   HybridValues delta = hybridBayesNet->optimize();
   auto error_tree = hybridBayesNet->error(delta.continuous());
 
-  std::vector<DiscreteKey> discrete_keys = {{M(1), 2}, {M(2), 2}};
+  std::vector<DiscreteKey> discrete_keys = {{M(0), 2}, {M(1), 2}};
   std::vector<double> leaves = {0.0097568009, 3.3973404e-31, 0.029126214,
                                 0.0097568009};
   AlgebraicDecisionTree<Key> expected_error(discrete_keys, leaves);
@@ -216,8 +216,8 @@ TEST(HybridBayesNet, Error) {
 
   // Verify error computation and check for specific error value
   DiscreteValues discrete_values;
+  discrete_values[M(0)] = 1;
   discrete_values[M(1)] = 1;
-  discrete_values[M(2)] = 1;
 
   double total_error = 0;
   for (size_t idx = 0; idx < hybridBayesNet->size(); idx++) {
