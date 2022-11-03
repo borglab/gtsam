@@ -163,6 +163,9 @@ class GTSAM_EXPORT GaussianMixture
   Sum add(const Sum &sum) const;
 };
 
+/// Return the DiscreteKey vector as a set.
+std::set<DiscreteKey> DiscreteKeysAsSet(const DiscreteKeys &dkeys);
+
 // traits
 template <>
 struct traits<GaussianMixture> : public Testable<GaussianMixture> {};

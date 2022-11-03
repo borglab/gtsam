@@ -113,7 +113,6 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    */
   VectorValues optimize(const DiscreteValues &assignment) const;
 
- protected:
   /**
    * @brief Get all the discrete conditionals as a decision tree factor.
    *
@@ -123,11 +122,19 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
 
  public:
   /// Prune the Hybrid Bayes Net such that we have at most maxNrLeaves leaves.
-  HybridBayesNet prune(size_t maxNrLeaves) const;
+  HybridBayesNet prune(size_t maxNrLeaves);
 
   /// @}
 
  private:
+  /**
+   * @brief Update the discrete conditionals with the pruned versions.
+   *
+   * @param prunedDecisionTree
+   */
+  void updateDiscreteConditionals(
+      const DecisionTreeFactor::shared_ptr &prunedDecisionTree);
+
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
