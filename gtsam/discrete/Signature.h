@@ -48,6 +48,8 @@ namespace gtsam {
    *   (E|T,L) = "F F F 1"
    *   X|E = "95/5 2/98"
    *   (D|E,B) = "9/1 2/8 3/7 1/9"
+   *
+   * @ingroup discrete
    */
   class GTSAM_EXPORT Signature {
 

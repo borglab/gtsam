@@ -27,7 +27,7 @@ namespace gtsam {
 
 /**
  * A pinhole camera class that has a Pose3 and a *fixed* Calibration.
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  */
 template<typename CALIBRATION>
@@ -236,7 +236,7 @@ public:
  * A pinhole camera class that has a Pose3 and a *fixed* Calibration.
  * Instead of using this class, one might consider calibrating the measurements
  * and using CalibratedCamera, which would then be faster.
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  */
 template<typename CALIBRATION>

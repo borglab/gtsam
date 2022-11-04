@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    ISAM-inl.h
+ * @file    ISAM-inst.h
  * @brief   Incremental update functionality (iSAM) for BayesTree.
  * @author  Michael Kaess
  */

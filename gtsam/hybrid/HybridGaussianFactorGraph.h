@@ -39,7 +39,14 @@ class DecisionTreeFactor;
 
 class JacobianFactor;
 
-/** Main elimination function for HybridGaussianFactorGraph */
+/**
+ * @brief Main elimination function for HybridGaussianFactorGraph.
+ * 
+ * @param factors The factor graph to eliminate.
+ * @param keys The elimination ordering.
+ * @return The conditional on the ordering keys and the remaining factors.
+ * @ingroup hybrid
+ */
 GTSAM_EXPORT
 std::pair<boost::shared_ptr<HybridConditional>, HybridFactor::shared_ptr>
 EliminateHybrid(const HybridGaussianFactorGraph& factors, const Ordering& keys);
@@ -68,10 +75,12 @@ struct EliminationTraits<HybridGaussianFactorGraph> {
 };
 
 /**
- * Gaussian Hybrid Factor Graph
+ * Hybrid Gaussian Factor Graph
  * -----------------------
  * This is the linearized version of a hybrid factor graph.
  * Everything inside needs to be hybrid factor or hybrid conditional.
+ *
+ * @ingroup hybrid
  */
 class GTSAM_EXPORT HybridGaussianFactorGraph
     : public HybridFactorGraph,
@@ -120,13 +129,13 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
   void add(JacobianFactor&& factor);
 
   /// Add a Jacobian factor as a shared ptr.
-  void add(boost::shared_ptr<JacobianFactor> factor);
+  void add(JacobianFactor::shared_ptr factor);
 
   /// Add a DecisionTreeFactor to the factor graph.
   void add(DecisionTreeFactor&& factor);
 
   /// Add a DecisionTreeFactor as a shared ptr.
-  void add(boost::shared_ptr<DecisionTreeFactor> factor);
+  void add(DecisionTreeFactor::shared_ptr factor);
 
   /**
    * Add a gaussian factor *pointer* to the internal gaussian factor graph

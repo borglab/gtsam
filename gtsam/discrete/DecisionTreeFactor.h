@@ -36,7 +36,9 @@ namespace gtsam {
   class DiscreteConditional;
 
   /**
-   * A discrete probabilistic factor
+   * A discrete probabilistic factor.
+   *
+   * @ingroup discrete
    */
   class GTSAM_EXPORT DecisionTreeFactor : public DiscreteFactor,
                                           public AlgebraicDecisionTree<Key> {

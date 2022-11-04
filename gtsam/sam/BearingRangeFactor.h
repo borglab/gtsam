@@ -27,7 +27,7 @@ namespace gtsam {
 
 /**
  * Binary factor for a bearing/range measurement
- * @ingroup SLAM
+ * @ingroup sam
  */
 template <typename A1, typename A2,
           typename B = typename Bearing<A1, A2>::result_type,

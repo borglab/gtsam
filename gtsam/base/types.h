@@ -14,7 +14,7 @@
  * @brief    Typedefs for easier changing of types
  * @author   Richard Roberts
  * @date     Aug 21, 2010
- * @addtogroup base
+ * @ingroup base
  */
 
 #pragma once

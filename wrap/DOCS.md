@@ -50,6 +50,32 @@ The python wrapper supports keyword arguments for functions/methods. Hence, the 
     ```
 
     - Class variables are read-write so they can be updated directly in Python.
+    - For the Matlab wrapper, specifying the full property type (including namespaces) is required.
+
+    ```cpp
+    class TriangulationResult {
+      gtsam::SharedNoiseModel noiseModel;
+    };
+    ```
+
+    - If the property is part of an enum within the class, the type should be specified as `gtsam::Class::Enum`. Similarly for templated types where `This` is used, e.g. `gtsam::This::Enum`.
+
+    ```cpp
+    class TriangulationResult {
+      enum Status { VALID, DEGENERATE, BEHIND_CAMERA, OUTLIER, FAR_POINT };
+      gtsam::TriangulationResult::Status status;
+    };
+
+    template<PARAMS>
+    virtual class GncParams {
+      enum Verbosity {
+        SILENT,
+        SUMMARY,
+        VALUES
+      };
+      gtsam::This::Verbosity verbosity;
+    };
+    ```
 
 - Operator Overloading (Python only)
     - You can overload operators just like in C++.

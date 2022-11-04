@@ -28,6 +28,8 @@ namespace gtsam {
  * A HybridDiscreteFactor is a thin container for DiscreteFactor, which allows
  * us to hide the implementation of DiscreteFactor and thus avoid diamond
  * inheritance.
+ *
+ * @ingroup hybrid
  */
 class GTSAM_EXPORT HybridDiscreteFactor : public HybridFactor {
  private:

@@ -34,7 +34,7 @@ namespace gtsam {
   /**
    * A class for a measurement predicted by "between(config[key1],config[key2])"
    * @tparam VALUE the Value type
-   * @ingroup SLAM
+   * @ingroup slam
    */
   template<class VALUE>
   class BetweenFactor: public NoiseModelFactor2<VALUE, VALUE> {
@@ -59,6 +59,9 @@ namespace gtsam {
     // shorthand for a smart pointer to a factor
     typedef typename boost::shared_ptr<BetweenFactor> shared_ptr;
 
+    /// @name Standard Constructors
+    /// @{
+
     /** default constructor - only use for serialization */
     BetweenFactor() {}
 
@@ -68,6 +71,8 @@ namespace gtsam {
       Base(model, key1, key2), measured_(measured) {
     }
 
+    /// @}
+
     ~BetweenFactor() override {}
 
     /// @return a deep copy of this factor
@@ -75,7 +80,6 @@ namespace gtsam {
       return boost::static_pointer_cast<gtsam::NonlinearFactor>(
           gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
-    /// @}
     /// @name Testable
     /// @{
 
