@@ -10,7 +10,7 @@
 * -------------------------------------------------------------------------- */
 
 /**
-* @file    EliminationTree-inl.h
+* @file    EliminationTree-inst.h
 * @author  Frank Dellaert
 * @author  Richard Roberts
 * @date    Oct 13, 2010

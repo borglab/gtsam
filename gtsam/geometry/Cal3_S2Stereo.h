@@ -24,7 +24,7 @@ namespace gtsam {
 
 /**
  * @brief The most common 5DOF 3D->2D calibration, stereo version
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  */
 class GTSAM_EXPORT Cal3_S2Stereo : public Cal3_S2 {
@@ -38,7 +38,7 @@ class GTSAM_EXPORT Cal3_S2Stereo : public Cal3_S2 {
   using shared_ptr = boost::shared_ptr<Cal3_S2Stereo>;
 
   /// @name Standard Constructors
-  /// @
+  /// @{
 
   /// default calibration leaves coordinates unchanged
   Cal3_S2Stereo() = default;
@@ -54,6 +54,8 @@ class GTSAM_EXPORT Cal3_S2Stereo : public Cal3_S2 {
   /// easy constructor; field-of-view in degrees, assumes zero skew
   Cal3_S2Stereo(double fov, int w, int h, double b)
       : Cal3_S2(fov, w, h), b_(b) {}
+
+  /// @}
 
   /**
    * Convert intrinsic coordinates xy to image coordinates uv, fixed derivaitves
@@ -82,7 +84,6 @@ class GTSAM_EXPORT Cal3_S2Stereo : public Cal3_S2 {
    */
   Vector3 calibrate(const Vector3& p) const { return Cal3_S2::calibrate(p); }
 
-  /// @}
   /// @name Testable
   /// @{
 

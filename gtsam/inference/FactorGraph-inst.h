@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file   FactorGraph-inl.h
+ * @file   FactorGraph-inst.h
  * @brief  Factor Graph Base Class
  * @author Carlos Nieto
  * @author Frank Dellaert

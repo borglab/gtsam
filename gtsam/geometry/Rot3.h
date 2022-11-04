@@ -53,7 +53,7 @@ namespace gtsam {
  * @brief Rot3 is a 3D rotation represented as a rotation matrix if the
  * preprocessor symbol GTSAM_USE_QUATERNIONS is not defined, or as a quaternion
  * if it is defined.
- * @addtogroup geometry
+ * @ingroup geometry
  */
 class GTSAM_EXPORT Rot3 : public LieGroup<Rot3, 3> {
  private:
@@ -129,7 +129,7 @@ class GTSAM_EXPORT Rot3 : public LieGroup<Rot3, 3> {
     Rot3(double w, double x, double y, double z) : Rot3(Quaternion(w, x, y, z)) {}
 
     /**
-     * Random, generates a random axis, then random angle \in [-p,pi]
+     * Random, generates a random axis, then random angle \f$\in\f$ [-pi,pi]
      * Example:
      *   std::mt19937 engine(42);
      *   Unit3 unit = Unit3::Random(engine);

@@ -207,4 +207,28 @@ void GaussianMixture::prune(const DecisionTreeFactor &decisionTree) {
   conditionals_.root_ = pruned_conditionals.root_;
 }
 
+/* *******************************************************************************/
+AlgebraicDecisionTree<Key> GaussianMixture::error(
+    const VectorValues &continuousVals) const {
+  // functor to convert from GaussianConditional to double error value.
+  auto errorFunc =
+      [continuousVals](const GaussianConditional::shared_ptr &conditional) {
+        if (conditional) {
+          return conditional->error(continuousVals);
+        } else {
+          // return arbitrarily large error
+          return 1e50;
+        }
+      };
+  DecisionTree<Key, double> errorTree(conditionals_, errorFunc);
+  return errorTree;
+}
+
+/* *******************************************************************************/
+double GaussianMixture::error(const VectorValues &continuousVals,
+                              const DiscreteValues &discreteValues) const {
+  auto conditional = conditionals_(discreteValues);
+  return conditional->error(continuousVals);
+}
+
 }  // namespace gtsam

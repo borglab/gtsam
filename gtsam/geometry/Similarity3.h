@@ -120,7 +120,7 @@ class GTSAM_EXPORT Similarity3 : public LieGroup<Similarity3, 7> {
   /**
    *  Create Similarity3 by aligning at least three point pairs
    */
-  static Similarity3 Align(const std::vector<Point3Pair>& abPointPairs);
+  static Similarity3 Align(const Point3Pairs& abPointPairs);
 
   /**
    * Create the Similarity3 object that aligns at least two pose pairs.
