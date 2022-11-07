@@ -182,6 +182,13 @@ std::vector<size_t> getDiscreteSequence(size_t x) {
   return discrete_seq;
 }
 
+/**
+ * @brief Helper method to get the probPrimeTree
+ * as per the new elimination scheme.
+ *
+ * @param graph The HybridGaussianFactorGraph to eliminate.
+ * @return AlgebraicDecisionTree<Key>
+ */
 AlgebraicDecisionTree<Key> probPrimeTree(
     const HybridGaussianFactorGraph& graph) {
   HybridBayesNet::shared_ptr bayesNet;
@@ -226,6 +233,11 @@ AlgebraicDecisionTree<Key> probPrimeTree(
   return probPrimeTree;
 }
 
+/****************************************************************************/
+/**
+ * Test for correctness of different branches of the P'(Continuous | Discrete).
+ * The values should match those of P'(Continuous) for each discrete mode.
+ */
 TEST(HybridEstimation, Probability) {
   constexpr size_t K = 4;
   std::vector<double> measurements = {0, 1, 2, 2};
