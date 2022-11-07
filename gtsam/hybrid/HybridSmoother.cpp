@@ -32,7 +32,7 @@ void HybridSmoother::update(HybridGaussianFactorGraph graph,
       addConditionals(graph, hybridBayesNet_, ordering);
 
   // Eliminate.
-  auto bayesNetFragment = graph.eliminateSequential(ordering);
+  auto bayesNetFragment = graph.eliminateHybridSequential();
 
   /// Prune
   if (maxNrLeaves) {
