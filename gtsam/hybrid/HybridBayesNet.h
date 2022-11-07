@@ -144,6 +144,17 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    */
   AlgebraicDecisionTree<Key> error(const VectorValues &continuousValues) const;
 
+  /**
+   * @brief Compute unnormalized probability for each discrete assignment,
+   * and return as a tree.
+   *
+   * @param continuousValues Continuous values at which to compute the
+   * probability.
+   * @return AlgebraicDecisionTree<Key>
+   */
+  AlgebraicDecisionTree<Key> probPrime(
+      const VectorValues &continuousValues) const;
+
   /// @}
 
  private:

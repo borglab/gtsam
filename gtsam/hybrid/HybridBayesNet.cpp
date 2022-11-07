@@ -273,4 +273,10 @@ AlgebraicDecisionTree<Key> HybridBayesNet::error(
   return error_tree;
 }
 
+AlgebraicDecisionTree<Key> HybridBayesNet::probPrime(
+    const VectorValues &continuousValues) const {
+  AlgebraicDecisionTree<Key> error_tree = this->error(continuousValues);
+  return error_tree.apply([](double error) { return exp(-error); });
+}
+
 }  // namespace gtsam
