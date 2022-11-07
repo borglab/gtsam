@@ -25,6 +25,7 @@
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/linear/GaussianFactor.h>
+#include <gtsam/linear/VectorValues.h>
 
 namespace gtsam {
 
@@ -190,6 +191,44 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
   AlgebraicDecisionTree<Key> probPrime(
       const VectorValues& continuousValues) const;
 
+  /**
+   * @brief Compute the VectorValues solution for the continuous variables for
+   * each mode.
+   *
+   * @param discrete_keys The discrete keys which form all the modes.
+   * @param continuousBayesNet The Bayes Net representing the continuous
+   * eliminated variables.
+   * @param assignments List of all discrete assignments to create the final
+   * decision tree.
+   * @return DecisionTree<Key, VectorValues::shared_ptr>
+   */
+  DecisionTree<Key, VectorValues::shared_ptr> continuousDelta(
+      const DiscreteKeys& discrete_keys,
+      const boost::shared_ptr<BayesNetType>& continuousBayesNet,
+      const std::vector<DiscreteValues>& assignments) const;
+
+  /**
+   * @brief Compute the unnormalized probabilities of the continuous variables
+   * for each of the modes.
+   *
+   * @param discrete_keys The discrete keys which form all the modes.
+   * @param continuousBayesNet The Bayes Net representing the continuous
+   * eliminated variables.
+   * @param assignments List of all discrete assignments to create the final
+   * decision tree.
+   * @return AlgebraicDecisionTree<Key>
+   */
+  AlgebraicDecisionTree<Key> continuousProbPrimes(
+      const DiscreteKeys& discrete_keys,
+      const boost::shared_ptr<BayesNetType>& continuousBayesNet,
+      const std::vector<DiscreteValues>& assignments) const;
+
+  /**
+   * @brief Custom elimination function which computes the correct
+   * continuous probabilities.
+   *
+   * @return boost::shared_ptr<BayesNetType>
+   */
   boost::shared_ptr<BayesNetType> eliminateHybridSequential() const;
 
   /**
