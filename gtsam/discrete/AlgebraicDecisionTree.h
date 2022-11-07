@@ -71,7 +71,7 @@ namespace gtsam {
       static inline double id(const double& x) { return x; }
     };
 
-    AlgebraicDecisionTree() : Base(1.0) {}
+    AlgebraicDecisionTree(double leaf = 1.0) : Base(leaf) {}
 
     // Explicitly non-explicit constructor
     AlgebraicDecisionTree(const Base& add) : Base(add) {}
