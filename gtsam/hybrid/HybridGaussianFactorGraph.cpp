@@ -439,4 +439,53 @@ const Ordering HybridGaussianFactorGraph::getHybridOrdering() const {
   return ordering;
 }
 
+/* ************************************************************************ */
+AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::error(
+    const VectorValues &continuousValues) const {
+  AlgebraicDecisionTree<Key> error_tree(0.0);
+
+  for (size_t idx = 0; idx < size(); idx++) {
+    AlgebraicDecisionTree<Key> factor_error;
+
+    if (factors_.at(idx)->isHybrid()) {
+      // If factor is hybrid, select based on assignment.
+      GaussianMixtureFactor::shared_ptr gaussianMixture =
+          boost::static_pointer_cast<GaussianMixtureFactor>(factors_.at(idx));
+      factor_error = gaussianMixture->error(continuousValues);
+
+      if (idx == 0) {
+        error_tree = factor_error;
+      } else {
+        error_tree = error_tree + factor_error;
+      }
+
+    } else if (factors_.at(idx)->isContinuous()) {
+      // If continuous only, get the (double) error
+      // and add it to the error_tree
+      auto hybridGaussianFactor =
+          boost::static_pointer_cast<HybridGaussianFactor>(factors_.at(idx));
+      GaussianFactor::shared_ptr gaussian = hybridGaussianFactor->inner();
+
+      double error = gaussian->error(continuousValues);
+      error_tree = error_tree.apply(
+          [error](double leaf_value) { return leaf_value + error; });
+
+    } else if (factors_.at(idx)->isDiscrete()) {
+      // If factor at `idx` is discrete-only, we skip.
+      continue;
+    }
+  }
+
+  return error_tree;
+}
+
+/* ************************************************************************ */
+AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::probPrime(
+    const VectorValues &continuousValues) const {
+  AlgebraicDecisionTree<Key> error_tree = this->error(continuousValues);
+  AlgebraicDecisionTree<Key> prob_tree =
+      error_tree.apply([](double error) { return exp(-error); });
+  return prob_tree;
+}
+
 }  // namespace gtsam
