@@ -229,6 +229,12 @@ HybridValues HybridBayesNet::optimize() const {
 /* ************************************************************************* */
 VectorValues HybridBayesNet::optimize(const DiscreteValues &assignment) const {
   GaussianBayesNet gbn = this->choose(assignment);
+
+  // Check if there exists a nullptr in the GaussianBayesNet
+  // If yes, return an empty VectorValues
+  if (std::find(gbn.begin(), gbn.end(), nullptr) != gbn.end()) {
+    return VectorValues();
+  }
   return gbn.optimize();
 }
 
