@@ -190,6 +190,8 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
   AlgebraicDecisionTree<Key> probPrime(
       const VectorValues& continuousValues) const;
 
+  boost::shared_ptr<BayesNetType> eliminateHybridSequential() const;
+
   /**
    * @brief Return a Colamd constrained ordering where the discrete keys are
    * eliminated after the continuous keys.
