@@ -227,9 +227,13 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
    * @brief Custom elimination function which computes the correct
    * continuous probabilities.
    *
+   * @param continuous Optional ordering for all continuous variables.
+   * @param discrete Optional ordering for all discrete variables.
    * @return boost::shared_ptr<BayesNetType>
    */
-  boost::shared_ptr<BayesNetType> eliminateHybridSequential() const;
+  boost::shared_ptr<BayesNetType> eliminateHybridSequential(
+      const boost::optional<Ordering> continuous,
+      const boost::optional<Ordering> discrete) const;
 
   /**
    * @brief Return a Colamd constrained ordering where the discrete keys are
