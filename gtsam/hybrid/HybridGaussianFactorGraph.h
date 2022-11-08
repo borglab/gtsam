@@ -181,6 +181,19 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
   AlgebraicDecisionTree<Key> error(const VectorValues& continuousValues) const;
 
   /**
+   * @brief Compute error given a continuous vector values
+   * and a discrete assignment.
+   *
+   * @param continuousValues The continuous VectorValues
+   * for computing the error.
+   * @param discreteValues The specific discrete assignment
+   * whose error we wish to compute.
+   * @return double
+   */
+  double error(const VectorValues& continuousValues,
+               const DiscreteValues& discreteValues) const;
+
+  /**
    * @brief Compute unnormalized probability for each discrete assignment,
    * and return as a tree.
    *

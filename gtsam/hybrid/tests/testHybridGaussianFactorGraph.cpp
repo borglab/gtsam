@@ -574,6 +574,31 @@ TEST(HybridGaussianFactorGraph, ErrorAndProbPrime) {
       graph.eliminateSequential(hybridOrdering);
 
   HybridValues delta = hybridBayesNet->optimize();
+  double error = graph.error(delta.continuous(), delta.discrete());
+
+  double expected_error = 0.490243199;
+  // regression
+  EXPECT(assert_equal(expected_error, error, 1e-9));
+
+  double probs = exp(-error);
+  double expected_probs = exp(-expected_error);
+
+  // regression
+  EXPECT(assert_equal(expected_probs, probs, 1e-7));
+}
+
+/* ****************************************************************************/
+// Test hybrid gaussian factor graph error and unnormalized probabilities
+TEST(HybridGaussianFactorGraph, ErrorAndProbPrimeTree) {
+  Switching s(3);
+
+  HybridGaussianFactorGraph graph = s.linearizedFactorGraph;
+
+  Ordering hybridOrdering = graph.getHybridOrdering();
+  HybridBayesNet::shared_ptr hybridBayesNet =
+      graph.eliminateSequential(hybridOrdering);
+
+  HybridValues delta = hybridBayesNet->optimize();
   auto error_tree = graph.error(delta.continuous());
 
   std::vector<DiscreteKey> discrete_keys = {{M(0), 2}, {M(1), 2}};
