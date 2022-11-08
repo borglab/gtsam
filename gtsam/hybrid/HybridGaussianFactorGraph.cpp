@@ -512,6 +512,14 @@ double HybridGaussianFactorGraph::error(
 }
 
 /* ************************************************************************ */
+double HybridGaussianFactorGraph::probPrime(
+    const VectorValues &continuousValues,
+    const DiscreteValues &discreteValues) const {
+  double error = this->error(continuousValues, discreteValues);
+  return std::exp(-error);
+}
+
+/* ************************************************************************ */
 AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::probPrime(
     const VectorValues &continuousValues) const {
   AlgebraicDecisionTree<Key> error_tree = this->error(continuousValues);

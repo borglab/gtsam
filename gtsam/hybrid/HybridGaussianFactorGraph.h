@@ -205,6 +205,18 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
       const VectorValues& continuousValues) const;
 
   /**
+   * @brief Compute the unnormalized posterior probability for a continuous
+   * vector values given a specific assignment.
+   *
+   * @param continuousValues The vector values for which to compute the
+   * posterior probability.
+   * @param discreteValues The specific assignment to use for the computation.
+   * @return double
+   */
+  double probPrime(const VectorValues& continuousValues,
+                   const DiscreteValues& discreteValues) const;
+
+  /**
    * @brief Compute the VectorValues solution for the continuous variables for
    * each mode.
    *
