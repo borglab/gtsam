@@ -484,6 +484,34 @@ AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::error(
 }
 
 /* ************************************************************************ */
+double HybridGaussianFactorGraph::error(
+    const VectorValues &continuousValues,
+    const DiscreteValues &discreteValues) const {
+  double error = 0.0;
+  for (size_t idx = 0; idx < size(); idx++) {
+    auto factor = factors_.at(idx);
+
+    if (factor->isHybrid()) {
+      if (auto c = boost::dynamic_pointer_cast<HybridConditional>(factor)) {
+        error += c->asMixture()->error(continuousValues, discreteValues);
+      }
+      if (auto f = boost::dynamic_pointer_cast<GaussianMixtureFactor>(factor)) {
+        error += f->error(continuousValues, discreteValues);
+      }
+
+    } else if (factor->isContinuous()) {
+      if (auto f = boost::dynamic_pointer_cast<HybridGaussianFactor>(factor)) {
+        error += f->inner()->error(continuousValues);
+      }
+      if (auto cg = boost::dynamic_pointer_cast<HybridConditional>(factor)) {
+        error += cg->asGaussian()->error(continuousValues);
+      }
+    }
+  }
+  return error;
+}
+
+/* ************************************************************************ */
 AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::probPrime(
     const VectorValues &continuousValues) const {
   AlgebraicDecisionTree<Key> error_tree = this->error(continuousValues);
@@ -539,32 +567,11 @@ AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::continuousProbPrimes(
       continue;
     }
 
-    double error = 0.0;
     // Compute the error given the delta and the assignment.
-    for (size_t idx = 0; idx < size(); idx++) {
-      auto factor = factors_.at(idx);
-
-      if (factor->isHybrid()) {
-        if (auto c = boost::dynamic_pointer_cast<HybridConditional>(factor)) {
-          error += c->asMixture()->error(delta, assignment);
-        }
-        if (auto f =
-                boost::dynamic_pointer_cast<GaussianMixtureFactor>(factor)) {
-          error += f->error(delta, assignment);
-        }
-
-      } else if (factor->isContinuous()) {
-        if (auto f =
-                boost::dynamic_pointer_cast<HybridGaussianFactor>(factor)) {
-          error += f->inner()->error(delta);
-        }
-        if (auto cg = boost::dynamic_pointer_cast<HybridConditional>(factor)) {
-          error += cg->asGaussian()->error(delta);
-        }
-      }
-    }
+    double error = this->error(delta, assignment);
     probPrimes.push_back(exp(-error));
   }
+
   AlgebraicDecisionTree<Key> probPrimeTree(discrete_keys, probPrimes);
   return probPrimeTree;
 }
