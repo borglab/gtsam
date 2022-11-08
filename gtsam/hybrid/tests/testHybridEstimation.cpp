@@ -290,7 +290,7 @@ TEST(HybridEstimation, Probability) {
       graph.continuousDelta(discrete_keys, bayesNet, assignments);
 
   AlgebraicDecisionTree<Key> probPrimeTree =
-      graph.continuousProbPrimes(discrete_keys, bayesNet, assignments);
+      graph.continuousProbPrimes(discrete_keys, bayesNet);
 
   EXPECT(assert_equal(expected_probPrimeTree, probPrimeTree));
 
