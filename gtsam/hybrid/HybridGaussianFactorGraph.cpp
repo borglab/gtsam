@@ -512,9 +512,17 @@ HybridGaussianFactorGraph::continuousDelta(
 
 /* ************************************************************************ */
 AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::continuousProbPrimes(
-    const DiscreteKeys &discrete_keys,
-    const boost::shared_ptr<BayesNetType> &continuousBayesNet,
-    const std::vector<DiscreteValues> &assignments) const {
+    const DiscreteKeys &orig_discrete_keys,
+    const boost::shared_ptr<BayesNetType> &continuousBayesNet) const {
+  // Generate all possible assignments.
+  const std::vector<DiscreteValues> assignments =
+      DiscreteValues::CartesianProduct(orig_discrete_keys);
+
+  // Save a copy of the original discrete key ordering
+  DiscreteKeys discrete_keys(orig_discrete_keys);
+  // Reverse discrete keys order for correct tree construction
+  std::reverse(discrete_keys.begin(), discrete_keys.end());
+
   // Create a decision tree of all the different VectorValues
   DecisionTree<Key, VectorValues::shared_ptr> delta_tree =
       this->continuousDelta(discrete_keys, continuousBayesNet, assignments);
@@ -532,7 +540,7 @@ AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::continuousProbPrimes(
     }
 
     double error = 0.0;
-
+    // Compute the error given the delta and the assignment.
     for (size_t idx = 0; idx < size(); idx++) {
       auto factor = factors_.at(idx);
 
@@ -563,15 +571,21 @@ AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::continuousProbPrimes(
 
 /* ************************************************************************ */
 boost::shared_ptr<HybridGaussianFactorGraph::BayesNetType>
-HybridGaussianFactorGraph::eliminateHybridSequential(const boost::optional<Ordering> continuous, const boost::optional<Ordering> discrete) const {
-  Ordering continuous_ordering(this->continuousKeys()),
-      discrete_ordering(this->discreteKeys());
+HybridGaussianFactorGraph::eliminateHybridSequential(
+    const boost::optional<Ordering> continuous,
+    const boost::optional<Ordering> discrete, const Eliminate &function,
+    OptionalVariableIndex variableIndex) const {
+  Ordering continuous_ordering =
+      continuous ? *continuous : Ordering(this->continuousKeys());
+  Ordering discrete_ordering =
+      discrete ? *discrete : Ordering(this->discreteKeys());
 
   // Eliminate continuous
   HybridBayesNet::shared_ptr bayesNet;
   HybridGaussianFactorGraph::shared_ptr discreteGraph;
   std::tie(bayesNet, discreteGraph) =
-      BaseEliminateable::eliminatePartialSequential(continuous_ordering);
+      BaseEliminateable::eliminatePartialSequential(continuous_ordering,
+                                                    function, variableIndex);
 
   // Get the last continuous conditional which will have all the discrete keys
   auto last_conditional = bayesNet->at(bayesNet->size() - 1);
@@ -582,26 +596,54 @@ HybridGaussianFactorGraph::eliminateHybridSequential(const boost::optional<Order
     return bayesNet;
   }
 
-  const std::vector<DiscreteValues> assignments =
-      DiscreteValues::CartesianProduct(discrete_keys);
-
-  // Save a copy of the original discrete key ordering
-  DiscreteKeys orig_discrete_keys(discrete_keys);
-  // Reverse discrete keys order for correct tree construction
-  std::reverse(discrete_keys.begin(), discrete_keys.end());
-
   AlgebraicDecisionTree<Key> probPrimeTree =
-      continuousProbPrimes(discrete_keys, bayesNet, assignments);
+      this->continuousProbPrimes(discrete_keys, bayesNet);
 
-  discreteGraph->add(DecisionTreeFactor(orig_discrete_keys, probPrimeTree));
+  discreteGraph->add(DecisionTreeFactor(discrete_keys, probPrimeTree));
 
   // Perform discrete elimination
   HybridBayesNet::shared_ptr discreteBayesNet =
-      discreteGraph->eliminateSequential(discrete_ordering);
+      discreteGraph->BaseEliminateable::eliminateSequential(
+          discrete_ordering, function, variableIndex);
 
   bayesNet->add(*discreteBayesNet);
 
   return bayesNet;
+}
+
+/* ************************************************************************ */
+boost::shared_ptr<HybridGaussianFactorGraph::BayesNetType>
+HybridGaussianFactorGraph::eliminateSequential(
+    OptionalOrderingType orderingType, const Eliminate &function,
+    OptionalVariableIndex variableIndex) const {
+  return BaseEliminateable::eliminateSequential(orderingType, function,
+                                                variableIndex);
+}
+
+/* ************************************************************************ */
+boost::shared_ptr<HybridGaussianFactorGraph::BayesNetType>
+HybridGaussianFactorGraph::eliminateSequential(
+    const Ordering &ordering, const Eliminate &function,
+    OptionalVariableIndex variableIndex) const {
+  KeySet all_continuous_keys = this->continuousKeys();
+  KeySet all_discrete_keys = this->discreteKeys();
+  Ordering continuous_ordering, discrete_ordering;
+
+  // Segregate the continuous and the discrete keys
+  for (auto &&key : ordering) {
+    if (std::find(all_continuous_keys.begin(), all_continuous_keys.end(),
+                  key) != all_continuous_keys.end()) {
+      continuous_ordering.push_back(key);
+    } else if (std::find(all_discrete_keys.begin(), all_discrete_keys.end(),
+                         key) != all_discrete_keys.end()) {
+      discrete_ordering.push_back(key);
+    } else {
+      throw std::runtime_error("Key in ordering not present in factors.");
+    }
+  }
+
+  return this->eliminateHybridSequential(continuous_ordering,
+                                         discrete_ordering);
 }
 
 }  // namespace gtsam

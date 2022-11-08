@@ -214,14 +214,11 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
    * @param discrete_keys The discrete keys which form all the modes.
    * @param continuousBayesNet The Bayes Net representing the continuous
    * eliminated variables.
-   * @param assignments List of all discrete assignments to create the final
-   * decision tree.
    * @return AlgebraicDecisionTree<Key>
    */
   AlgebraicDecisionTree<Key> continuousProbPrimes(
       const DiscreteKeys& discrete_keys,
-      const boost::shared_ptr<BayesNetType>& continuousBayesNet,
-      const std::vector<DiscreteValues>& assignments) const;
+      const boost::shared_ptr<BayesNetType>& continuousBayesNet) const;
 
   /**
    * @brief Custom elimination function which computes the correct
@@ -232,8 +229,20 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
    * @return boost::shared_ptr<BayesNetType>
    */
   boost::shared_ptr<BayesNetType> eliminateHybridSequential(
-      const boost::optional<Ordering> continuous,
-      const boost::optional<Ordering> discrete) const;
+      const boost::optional<Ordering> continuous = boost::none,
+      const boost::optional<Ordering> discrete = boost::none,
+      const Eliminate& function = EliminationTraitsType::DefaultEliminate,
+      OptionalVariableIndex variableIndex = boost::none) const;
+
+  boost::shared_ptr<BayesNetType> eliminateSequential(
+      OptionalOrderingType orderingType = boost::none,
+      const Eliminate& function = EliminationTraitsType::DefaultEliminate,
+      OptionalVariableIndex variableIndex = boost::none) const;
+
+  boost::shared_ptr<BayesNetType> eliminateSequential(
+      const Ordering& ordering,
+      const Eliminate& function = EliminationTraitsType::DefaultEliminate,
+      OptionalVariableIndex variableIndex = boost::none) const;
 
   /**
    * @brief Return a Colamd constrained ordering where the discrete keys are
