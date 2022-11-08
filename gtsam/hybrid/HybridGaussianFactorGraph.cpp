@@ -563,7 +563,7 @@ AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::continuousProbPrimes(
 
 /* ************************************************************************ */
 boost::shared_ptr<HybridGaussianFactorGraph::BayesNetType>
-HybridGaussianFactorGraph::eliminateHybridSequential() const {
+HybridGaussianFactorGraph::eliminateHybridSequential(const boost::optional<Ordering> continuous, const boost::optional<Ordering> discrete) const {
   Ordering continuous_ordering(this->continuousKeys()),
       discrete_ordering(this->discreteKeys());
 
@@ -576,6 +576,11 @@ HybridGaussianFactorGraph::eliminateHybridSequential() const {
   // Get the last continuous conditional which will have all the discrete keys
   auto last_conditional = bayesNet->at(bayesNet->size() - 1);
   DiscreteKeys discrete_keys = last_conditional->discreteKeys();
+
+  // If not discrete variables, return the eliminated bayes net.
+  if (discrete_keys.size() == 0) {
+    return bayesNet;
+  }
 
   const std::vector<DiscreteValues> assignments =
       DiscreteValues::CartesianProduct(discrete_keys);
