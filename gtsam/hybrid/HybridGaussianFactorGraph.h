@@ -231,6 +231,10 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
       const DiscreteKeys& discrete_keys,
       const boost::shared_ptr<BayesNetType>& continuousBayesNet,
       const std::vector<DiscreteValues>& assignments) const;
+  DecisionTree<Key, VectorValues::shared_ptr> continuousDelta(
+      const DiscreteKeys& discrete_keys,
+      const boost::shared_ptr<BayesTreeType>& continuousBayesTree,
+      const std::vector<DiscreteValues>& assignments) const;
 
   /**
    * @brief Compute the unnormalized probabilities of the continuous variables
@@ -244,6 +248,12 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
   AlgebraicDecisionTree<Key> continuousProbPrimes(
       const DiscreteKeys& discrete_keys,
       const boost::shared_ptr<BayesNetType>& continuousBayesNet) const;
+  AlgebraicDecisionTree<Key> continuousProbPrimes(
+      const DiscreteKeys& discrete_keys,
+      const boost::shared_ptr<BayesTreeType>& continuousBayesTree) const;
+
+  std::pair<Ordering, Ordering> separateContinuousDiscreteOrdering(
+      const Ordering& ordering) const;
 
   /**
    * @brief Custom elimination function which computes the correct
@@ -265,6 +275,22 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
       OptionalVariableIndex variableIndex = boost::none) const;
 
   boost::shared_ptr<BayesNetType> eliminateSequential(
+      const Ordering& ordering,
+      const Eliminate& function = EliminationTraitsType::DefaultEliminate,
+      OptionalVariableIndex variableIndex = boost::none) const;
+
+  boost::shared_ptr<BayesTreeType> eliminateHybridMultifrontal(
+      const boost::optional<Ordering> continuous = boost::none,
+      const boost::optional<Ordering> discrete = boost::none,
+      const Eliminate& function = EliminationTraitsType::DefaultEliminate,
+      OptionalVariableIndex variableIndex = boost::none) const;
+
+  boost::shared_ptr<BayesTreeType> eliminateMultifrontal(
+      OptionalOrderingType orderingType = boost::none,
+      const Eliminate& function = EliminationTraitsType::DefaultEliminate,
+      OptionalVariableIndex variableIndex = boost::none) const;
+
+  boost::shared_ptr<BayesTreeType> eliminateMultifrontal(
       const Ordering& ordering,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
       OptionalVariableIndex variableIndex = boost::none) const;
