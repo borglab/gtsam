@@ -50,9 +50,12 @@ class GTSAM_EXPORT HybridBayesTreeClique
   typedef boost::shared_ptr<This> shared_ptr;
   typedef boost::weak_ptr<This> weak_ptr;
   HybridBayesTreeClique() {}
-  virtual ~HybridBayesTreeClique() {}
   HybridBayesTreeClique(const boost::shared_ptr<HybridConditional>& conditional)
       : Base(conditional) {}
+  ///< Copy constructor
+  HybridBayesTreeClique(const HybridBayesTreeClique& clique) : Base(clique) {}
+
+  virtual ~HybridBayesTreeClique() {}
 };
 
 /* ************************************************************************* */
