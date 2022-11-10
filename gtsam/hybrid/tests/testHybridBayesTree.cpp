@@ -136,6 +136,13 @@ TEST(HybridBayesTree, Optimize) {
     dfg.push_back(
         boost::dynamic_pointer_cast<DecisionTreeFactor>(factor->inner()));
   }
+  
+  // Add the probabilities for each branch
+  DiscreteKeys discrete_keys = {{M(0), 2}, {M(1), 2}, {M(2), 2}};
+  vector<double> probs = {0.012519475, 0.041280228, 0.075018647, 0.081663656,
+                          0.037152205, 0.12248971,  0.07349729,  0.08};
+  AlgebraicDecisionTree<Key> potentials(discrete_keys, probs);
+  dfg.emplace_shared<DecisionTreeFactor>(discrete_keys, probs);
 
   DiscreteValues expectedMPE = dfg.optimize();
   VectorValues expectedValues = hybridBayesNet->optimize(expectedMPE);

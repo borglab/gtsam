@@ -153,7 +153,8 @@ TEST(HybridNonlinearISAM, IncrementalInference) {
   HybridBayesTree::shared_ptr expectedHybridBayesTree;
   HybridGaussianFactorGraph::shared_ptr expectedRemainingGraph;
   std::tie(expectedHybridBayesTree, expectedRemainingGraph) =
-      switching.linearizedFactorGraph.eliminatePartialMultifrontal(ordering);
+      switching.linearizedFactorGraph
+          .BaseEliminateable::eliminatePartialMultifrontal(ordering);
 
   // The densities on X(1) should be the same
   auto x0_conditional = dynamic_pointer_cast<GaussianMixture>(
@@ -182,7 +183,8 @@ TEST(HybridNonlinearISAM, IncrementalInference) {
   discrete_ordering += M(0);
   discrete_ordering += M(1);
   HybridBayesTree::shared_ptr discreteBayesTree =
-      expectedRemainingGraph->eliminateMultifrontal(discrete_ordering);
+      expectedRemainingGraph->BaseEliminateable::eliminateMultifrontal(
+          discrete_ordering);
 
   DiscreteValues m00;
   m00[M(0)] = 0, m00[M(1)] = 0;
@@ -195,10 +197,10 @@ TEST(HybridNonlinearISAM, IncrementalInference) {
 
   // Test if the probability values are as expected with regression tests.
   DiscreteValues assignment;
-  EXPECT(assert_equal(m00_prob, 0.0619233, 1e-5));
+  EXPECT(assert_equal(0.166667, m00_prob, 1e-5));
   assignment[M(0)] = 0;
   assignment[M(1)] = 0;
-  EXPECT(assert_equal(m00_prob, (*discreteConditional)(assignment), 1e-5));
+  EXPECT(assert_equal(0.0619233, (*discreteConditional)(assignment), 1e-5));
   assignment[M(0)] = 1;
   assignment[M(1)] = 0;
   EXPECT(assert_equal(0.183743, (*discreteConditional)(assignment), 1e-5));
@@ -212,10 +214,13 @@ TEST(HybridNonlinearISAM, IncrementalInference) {
   // Check if the clique conditional generated from incremental elimination
   // matches that of batch elimination.
   auto expectedChordal = expectedRemainingGraph->eliminateMultifrontal();
-  auto expectedConditional = dynamic_pointer_cast<DecisionTreeFactor>(
-      (*expectedChordal)[M(1)]->conditional()->inner());
   auto actualConditional = dynamic_pointer_cast<DecisionTreeFactor>(
       bayesTree[M(1)]->conditional()->inner());
+  // Account for the probability terms from evaluating continuous FGs
+  DiscreteKeys discrete_keys = {{M(0), 2}, {M(1), 2}};
+  vector<double> probs = {0.061923317, 0.20415914, 0.18374323, 0.2};
+  auto expectedConditional =
+      boost::make_shared<DecisionTreeFactor>(discrete_keys, probs);
   EXPECT(assert_equal(*actualConditional, *expectedConditional, 1e-6));
 }
 
@@ -250,7 +255,8 @@ TEST(HybridNonlinearISAM, Approx_inference) {
   HybridBayesTree::shared_ptr unprunedHybridBayesTree;
   HybridGaussianFactorGraph::shared_ptr unprunedRemainingGraph;
   std::tie(unprunedHybridBayesTree, unprunedRemainingGraph) =
-      switching.linearizedFactorGraph.eliminatePartialMultifrontal(ordering);
+      switching.linearizedFactorGraph
+          .BaseEliminateable::eliminatePartialMultifrontal(ordering);
 
   size_t maxNrLeaves = 5;
   incrementalHybrid.update(graph1, initial);
