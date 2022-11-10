@@ -73,7 +73,7 @@ public:
   /**
    * @brief Append new keys to the ordering as `ordering += keys`.
    *
-   * @param key
+   * @param keys The key vector to append to this ordering.
    * @return The ordering variable with appended keys.
    */
   This& operator+=(KeyVector& keys);
