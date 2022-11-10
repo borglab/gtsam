@@ -768,10 +768,13 @@ HybridGaussianFactorGraph::eliminateHybridMultifrontal(
 
   auto discrete_clique = (*updatedBayesTree)[discrete_ordering.at(0)];
 
-  // Set the root of the bayes tree as the discrete clique
+  std::set<HybridBayesTreeClique::shared_ptr> clique_set;
   for (auto node : bayesTree->nodes()) {
-    auto clique = node.second;
+    clique_set.insert(node.second);
+  }
 
+  // Set the root of the bayes tree as the discrete clique
+  for (auto clique : clique_set) {
     if (clique->conditional()->parents() ==
         discrete_clique->conditional()->frontals()) {
       updatedBayesTree->addClique(clique, discrete_clique);
