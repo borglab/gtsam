@@ -23,6 +23,7 @@
 #include <gtsam/hybrid/MixtureFactor.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/NoiseModel.h>
@@ -317,6 +318,85 @@ TEST(HybridEstimation, Probability) {
 
   // HybridValues hybrid_values = bayesNet->optimize();
   // hybrid_values.discrete().print();
+}
+
+/****************************************************************************/
+/**
+ * Test for correctness of different branches of the P'(Continuous | Discrete)
+ * in the multi-frontal setting. The values should match those of P'(Continuous)
+ * for each discrete mode.
+ */
+TEST(HybridEstimation, ProbabilityMultifrontal) {
+  constexpr size_t K = 4;
+  std::vector<double> measurements = {0, 1, 2, 2};
+
+  // This is the correct sequence
+  // std::vector<size_t> discrete_seq = {1, 1, 0};
+
+  double between_sigma = 1.0, measurement_sigma = 0.1;
+
+  std::vector<double> expected_errors, expected_prob_primes;
+  for (size_t i = 0; i < pow(2, K - 1); i++) {
+    std::vector<size_t> discrete_seq = getDiscreteSequence<K>(i);
+
+    GaussianFactorGraph::shared_ptr linear_graph = specificProblem(
+        K, measurements, discrete_seq, measurement_sigma, between_sigma);
+
+    auto bayes_tree = linear_graph->eliminateMultifrontal();
+
+    VectorValues values = bayes_tree->optimize();
+
+    std::cout << i << " " << linear_graph->error(values) << std::endl;
+    expected_errors.push_back(linear_graph->error(values));
+    expected_prob_primes.push_back(linear_graph->probPrime(values));
+  }
+
+  Switching switching(K, between_sigma, measurement_sigma, measurements);
+  auto graph = switching.linearizedFactorGraph;
+  Ordering ordering = getOrdering(graph, HybridGaussianFactorGraph());
+
+  AlgebraicDecisionTree<Key> expected_probPrimeTree = probPrimeTree(graph);
+
+  // Eliminate continuous
+  Ordering continuous_ordering(graph.continuousKeys());
+  HybridBayesTree::shared_ptr bayesTree;
+  HybridGaussianFactorGraph::shared_ptr discreteGraph;
+  std::tie(bayesTree, discreteGraph) =
+      graph.eliminatePartialMultifrontal(continuous_ordering);
+
+  // Get the last continuous conditional which will have all the discrete keys
+  Key last_continuous_key =
+      continuous_ordering.at(continuous_ordering.size() - 1);
+  auto last_conditional = (*bayesTree)[last_continuous_key]->conditional();
+  DiscreteKeys discrete_keys = last_conditional->discreteKeys();
+
+  // Create a decision tree of all the different VectorValues
+  AlgebraicDecisionTree<Key> probPrimeTree =
+      graph.continuousProbPrimes(discrete_keys, bayesTree);
+
+  EXPECT(assert_equal(expected_probPrimeTree, probPrimeTree));
+
+  // Test if the probPrimeTree matches the probability of
+  // the individual factor graphs
+  for (size_t i = 0; i < pow(2, K - 1); i++) {
+    std::vector<size_t> discrete_seq = getDiscreteSequence<K>(i);
+    Assignment<Key> discrete_assignment;
+    for (size_t v = 0; v < discrete_seq.size(); v++) {
+      discrete_assignment[M(v)] = discrete_seq[v];
+    }
+    EXPECT_DOUBLES_EQUAL(expected_prob_primes.at(i),
+                         probPrimeTree(discrete_assignment), 1e-8);
+  }
+
+  discreteGraph->add(DecisionTreeFactor(discrete_keys, probPrimeTree));
+
+  // Ordering discrete(graph.discreteKeys());
+  // auto discreteBayesTree = discreteGraph->eliminateMultifrontal(discrete);
+  // // DiscreteBayesTree should have only 1 clique
+  // bayesTree->addClique((*discreteBayesTree)[discrete.at(0)]);
+
+  // // HybridValues hybrid_values = bayesNet->optimize();
+  // // hybrid_values.discrete().print();
 }
 
 /* ************************************************************************* */
