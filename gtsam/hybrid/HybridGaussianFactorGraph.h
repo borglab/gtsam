@@ -220,44 +220,89 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
    * @brief Compute the VectorValues solution for the continuous variables for
    * each mode.
    *
+   * @tparam BAYES Template on the type of Bayes graph, either a bayes net or a
+   * bayes tree.
    * @param discrete_keys The discrete keys which form all the modes.
-   * @param continuousBayesNet The Bayes Net representing the continuous
+   * @param continuousBayesNet The Bayes Net/Tree representing the continuous
    * eliminated variables.
    * @param assignments List of all discrete assignments to create the final
    * decision tree.
    * @return DecisionTree<Key, VectorValues::shared_ptr>
    */
+  template <typename BAYES>
   DecisionTree<Key, VectorValues::shared_ptr> continuousDelta(
       const DiscreteKeys& discrete_keys,
-      const boost::shared_ptr<BayesNetType>& continuousBayesNet,
-      const std::vector<DiscreteValues>& assignments) const;
-  DecisionTree<Key, VectorValues::shared_ptr> continuousDelta(
-      const DiscreteKeys& discrete_keys,
-      const boost::shared_ptr<BayesTreeType>& continuousBayesTree,
-      const std::vector<DiscreteValues>& assignments) const;
+      const boost::shared_ptr<BAYES>& continuousBayesNet,
+      const std::vector<DiscreteValues>& assignments) const {
+    // Create a decision tree of all the different VectorValues
+    std::vector<VectorValues::shared_ptr> vector_values;
+    for (const DiscreteValues& assignment : assignments) {
+      VectorValues values = continuousBayesNet->optimize(assignment);
+      vector_values.push_back(boost::make_shared<VectorValues>(values));
+    }
+    DecisionTree<Key, VectorValues::shared_ptr> delta_tree(discrete_keys,
+                                                           vector_values);
+
+    return delta_tree;
+  }
 
   /**
    * @brief Compute the unnormalized probabilities of the continuous variables
    * for each of the modes.
    *
+   * @tparam BAYES  Template on the type of Bayes graph, either a bayes net or a
+   * bayes tree.
    * @param discrete_keys The discrete keys which form all the modes.
    * @param continuousBayesNet The Bayes Net representing the continuous
    * eliminated variables.
    * @return AlgebraicDecisionTree<Key>
    */
+  template <typename BAYES>
   AlgebraicDecisionTree<Key> continuousProbPrimes(
       const DiscreteKeys& discrete_keys,
-      const boost::shared_ptr<BayesNetType>& continuousBayesNet) const;
-  AlgebraicDecisionTree<Key> continuousProbPrimes(
-      const DiscreteKeys& discrete_keys,
-      const boost::shared_ptr<BayesTreeType>& continuousBayesTree) const;
+      const boost::shared_ptr<BAYES>& continuousBayesNet) const {
+    // Generate all possible assignments.
+    const std::vector<DiscreteValues> assignments =
+        DiscreteValues::CartesianProduct(discrete_keys);
+
+    // Save a copy of the original discrete key ordering
+    DiscreteKeys reversed_discrete_keys(discrete_keys);
+    // Reverse discrete keys order for correct tree construction
+    std::reverse(reversed_discrete_keys.begin(), reversed_discrete_keys.end());
+
+    // Create a decision tree of all the different VectorValues
+    DecisionTree<Key, VectorValues::shared_ptr> delta_tree =
+        this->continuousDelta(reversed_discrete_keys, continuousBayesNet,
+                              assignments);
+
+    // Get the probPrime tree with the correct leaf probabilities
+    std::vector<double> probPrimes;
+    for (const DiscreteValues& assignment : assignments) {
+      VectorValues delta = *delta_tree(assignment);
+
+      // If VectorValues is empty, it means this is a pruned branch.
+      // Set thr probPrime to 0.0.
+      if (delta.size() == 0) {
+        probPrimes.push_back(0.0);
+        continue;
+      }
+
+      // Compute the error given the delta and the assignment.
+      double error = this->error(delta, assignment);
+      probPrimes.push_back(exp(-error));
+    }
+
+    AlgebraicDecisionTree<Key> probPrimeTree(reversed_discrete_keys,
+                                             probPrimes);
+    return probPrimeTree;
+  }
 
   std::pair<Ordering, Ordering> separateContinuousDiscreteOrdering(
       const Ordering& ordering) const;
 
   /**
    * @brief Custom elimination function which computes the correct
-   * continuous probabilities.
+   * continuous probabilities. Returns a bayes net.
    *
    * @param continuous Optional ordering for all continuous variables.
    * @param discrete Optional ordering for all discrete variables.
@@ -269,27 +314,39 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
       OptionalVariableIndex variableIndex = boost::none) const;
 
+  /// Sequential elimination overload for hybrid
   boost::shared_ptr<BayesNetType> eliminateSequential(
       OptionalOrderingType orderingType = boost::none,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
       OptionalVariableIndex variableIndex = boost::none) const;
 
+  /// Sequential elimination overload for hybrid
   boost::shared_ptr<BayesNetType> eliminateSequential(
       const Ordering& ordering,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
       OptionalVariableIndex variableIndex = boost::none) const;
 
+  /**
+   * @brief Custom elimination function which computes the correct
+   * continuous probabilities. Returns a bayes tree.
+   *
+   * @param continuous Optional ordering for all continuous variables.
+   * @param discrete Optional ordering for all discrete variables.
+   * @return boost::shared_ptr<BayesTreeType>
+   */
   boost::shared_ptr<BayesTreeType> eliminateHybridMultifrontal(
       const boost::optional<Ordering> continuous = boost::none,
       const boost::optional<Ordering> discrete = boost::none,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
       OptionalVariableIndex variableIndex = boost::none) const;
 
+  /// Multifrontal elimination overload for hybrid
   boost::shared_ptr<BayesTreeType> eliminateMultifrontal(
       OptionalOrderingType orderingType = boost::none,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
       OptionalVariableIndex variableIndex = boost::none) const;
 
+  /// Multifrontal elimination overload for hybrid
   boost::shared_ptr<BayesTreeType> eliminateMultifrontal(
       const Ordering& ordering,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
