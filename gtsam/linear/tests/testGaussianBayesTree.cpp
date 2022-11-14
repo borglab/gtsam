@@ -322,13 +322,13 @@ TEST(GaussianBayesTree, determinant_and_smallestEigenvalue) {
 }
 
 /* ************************************************************************* */
-/** Test to expose bug in GaussianBayesTree::logDeterminant */
+/// Test to expose bug in GaussianBayesTree::logDeterminant.
 TEST(GaussianBayesTree, LogDeterminant) {
   using symbol_shorthand::L;
   using symbol_shorthand::X;
 
-  // Create a factor graph that will result in a bayes tree with at least 2
-  // nodes
+  // Create a factor graph that will result in
+  // a bayes tree with at least 2 nodes.
   GaussianFactorGraph fg;
   Key x1 = X(1), x2 = X(2), l1 = L(1);
   SharedDiagonal unit2 = noiseModel::Unit::Create(2);
