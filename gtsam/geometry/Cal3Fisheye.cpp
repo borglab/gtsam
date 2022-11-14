@@ -32,18 +32,6 @@ Vector9 Cal3Fisheye::vector() const {
 }
 
 /* ************************************************************************* */
-double Cal3Fisheye::Scaling(double r) {
-  static constexpr double threshold = 1e-8;
-  if (r > threshold || r < -threshold) {
-    return atan(r) / r;
-  } else {
-    // Taylor expansion close to 0
-    double r2 = r * r, r4 = r2 * r2;
-    return 1.0 - r2 / 3 + r4 / 5;
-  }
-}
-
-/* ************************************************************************* */
 Point2 Cal3Fisheye::uncalibrate(const Point2& p, OptionalJacobian<2, 9> H1,
                                 OptionalJacobian<2, 2> H2) const {
   const double xi = p.x(), yi = p.y(), zi = 1;
@@ -53,9 +41,17 @@ Point2 Cal3Fisheye::uncalibrate(const Point2& p, OptionalJacobian<2, 9> H1,
   Vector5 K, T;
   K << 1, k1_, k2_, k3_, k4_;
   T << 1, t2, t4, t6, t8;
-  const double scaling = Scaling(r);
-  const double s = scaling * K.dot(T);
-  const double xd = s * xi, yd = s * yi;
+  T *= t;
+  const double theta_d = K.dot(T);
+  double scaling = 1.0;
+  if (r > 1e-8) {
+    scaling = theta_d / r;
+  } else {
+    // r close to 0, taylor expansion for [theta_d / r], O(r^6)
+    const double r4 = r2 * r2;
+    scaling = 1 - r2 / 3 + r4 / 5 + k1_ * r2 * (1 - r2 + r4 / 3) + k2_ * r4;
+  }
+  const double xd = scaling * xi, yd = scaling * yi;
   Point2 uv(fx_ * xd + s_ * yd + u0_, fy_ * yd + v0_);
 
   Matrix2 DK;
@@ -69,33 +65,37 @@ Point2 Cal3Fisheye::uncalibrate(const Point2& p, OptionalJacobian<2, 9> H1,
 
     // order: k1, k2, k3, k4
     Matrix24 DR2;
-    auto T4 = T.tail<4>().transpose();
-    DR2 << xi * T4, yi * T4;
-    *H1 << DR1, DK * scaling * DR2;
+    if (r > 1e-8) {
+      auto T4 = T.tail<4>().transpose();
+      DR2 << xi * T4 / r, yi * T4 / r;
+    } else {
+      DR2.setZero();
+    }
+    *H1 << DR1, DK * DR2;
   }
 
   // Derivative for points in intrinsic coords (2 by 2)
   if (H2) {
-    if (r2==0) {
+    if (r < 1e-8) {
       *H2 = DK;
     } else {
       const double dtd_dt =
           1 + 3 * k1_ * t2 + 5 * k2_ * t4 + 7 * k3_ * t6 + 9 * k4_ * t8;
-      const double R2 = r2 + zi*zi;
+      const double R2 = r2 + zi * zi;
       const double dt_dr = zi / R2;
       const double rinv = 1 / r;
       const double dr_dxi = xi * rinv;
       const double dr_dyi = yi * rinv;
       const double dtd_dr = dtd_dt * dt_dr;
-  
+
       const double c2 = dr_dxi * dr_dxi;
       const double s2 = dr_dyi * dr_dyi;
       const double cs = dr_dxi * dr_dyi;
 
-      const double dxd_dxi = dtd_dr * c2 + s * (1 - c2);
-      const double dxd_dyi = (dtd_dr - s) * cs;
+      const double dxd_dxi = dtd_dr * c2 + scaling * (1 - c2);
+      const double dxd_dyi = (dtd_dr - scaling) * cs;
       const double dyd_dxi = dxd_dyi;
-      const double dyd_dyi = dtd_dr * s2 + s * (1 - s2);
+      const double dyd_dyi = dtd_dr * s2 + scaling * (1 - s2);
 
       Matrix2 DR;
       DR << dxd_dxi, dxd_dyi, dyd_dxi, dyd_dyi;
@@ -110,21 +110,19 @@ Point2 Cal3Fisheye::uncalibrate(const Point2& p, OptionalJacobian<2, 9> H1,
 /* ************************************************************************* */
 Point2 Cal3Fisheye::calibrate(const Point2& uv, OptionalJacobian<2, 9> Dcal,
                               OptionalJacobian<2, 2> Dp) const {
-  // Apply inverse camera matrix to map the pixel coordinate (u, v) 
+  // Apply inverse camera matrix to map the pixel coordinate (u, v)
   // of the equidistant fisheye image to angular coordinate space (xd, yd)
   // with radius theta given in radians.
   const double u = uv.x(), v = uv.y();
   const double yd = (v - v0_) / fy_;
   const double xd = (u - s_ * yd - u0_) / fx_;
-  const double theta = sqrt(xd * xd + yd * yd);
-  
-  // Provide initial guess for the Gauss-Newton search.
+
+  // Provide initial guess for the Newton search.
   // The angular coordinates given by (xd, yd) are mapped back to
   // the focal plane of the perspective undistorted projection pi.
-  // See Cal3Unified.calibrate() using the same pattern for the 
+  // See Cal3Unified.calibrate() using the same pattern for the
   // undistortion of omnidirectional fisheye projection.
-  const double scale = (theta > 0) ? tan(theta) / theta : 1.0;
-  Point2 pi(scale * xd, scale * yd);
+  Point2 pi(xd, yd);
 
   // Perform newtons method, break when solution converges past tol_,
   // throw exception if max iterations are reached
@@ -177,4 +175,4 @@ bool Cal3Fisheye::equals(const Cal3Fisheye& K, double tol) const {
 
 /* ************************************************************************* */
 
-}  // \ namespace gtsam
+}  // namespace gtsam

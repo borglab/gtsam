@@ -23,7 +23,6 @@
 #include <gtsam/geometry/Point2.h>
 
 #include <boost/shared_ptr.hpp>
-
 #include <string>
 
 namespace gtsam {
@@ -109,9 +108,6 @@ class GTSAM_EXPORT Cal3Fisheye : public Cal3 {
 
   /// Return all parameters as a vector
   Vector9 vector() const;
-
-  /// Helper function that calculates atan(r)/r
-  static double Scaling(double r);
 
   /**
    * @brief convert intrinsic coordinates [x_i; y_i] to (distorted) image
