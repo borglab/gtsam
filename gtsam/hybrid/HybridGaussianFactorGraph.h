@@ -217,8 +217,10 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
                    const DiscreteValues& discreteValues) const;
 
   /**
-   * @brief Compute the VectorValues solution for the continuous variables for
-   * each mode.
+   * @brief Helper method to compute the VectorValues solution for the
+   * continuous variables for each discrete mode.
+   * Used as a helper to compute q(\mu | M, Z) which is used by
+   * both P(X | M, Z) and P(M | Z).
    *
    * @tparam BAYES Template on the type of Bayes graph, either a bayes net or a
    * bayes tree.

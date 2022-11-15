@@ -195,7 +195,7 @@ TEST(HybridNonlinearISAM, IncrementalInference) {
   auto discreteConditional =
       bayesTree[M(1)]->conditional()->asDiscreteConditional();
 
-  // Test if the probability values are as expected with regression tests.
+  // Test the probability values with regression tests.
   DiscreteValues assignment;
   EXPECT(assert_equal(0.166667, m00_prob, 1e-5));
   assignment[M(0)] = 0;

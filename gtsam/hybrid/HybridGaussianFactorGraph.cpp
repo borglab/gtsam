@@ -557,9 +557,9 @@ HybridGaussianFactorGraph::eliminateHybridSequential(
     const boost::optional<Ordering> continuous,
     const boost::optional<Ordering> discrete, const Eliminate &function,
     OptionalVariableIndex variableIndex) const {
-  Ordering continuous_ordering =
+  const Ordering continuous_ordering =
       continuous ? *continuous : Ordering(this->continuousKeys());
-  Ordering discrete_ordering =
+  const Ordering discrete_ordering =
       discrete ? *discrete : Ordering(this->discreteKeys());
 
   // Eliminate continuous
@@ -570,7 +570,8 @@ HybridGaussianFactorGraph::eliminateHybridSequential(
                                                     function, variableIndex);
 
   // Get the last continuous conditional which will have all the discrete keys
-  auto last_conditional = bayesNet->at(bayesNet->size() - 1);
+  HybridConditional::shared_ptr last_conditional =
+      bayesNet->at(bayesNet->size() - 1);
   DiscreteKeys discrete_keys = last_conditional->discreteKeys();
 
   // If not discrete variables, return the eliminated bayes net.
@@ -578,9 +579,11 @@ HybridGaussianFactorGraph::eliminateHybridSequential(
     return bayesNet;
   }
 
-  AlgebraicDecisionTree<Key> probPrimeTree =
+  // DecisionTree for P'(X|M, Z) for all mode sequences M
+  const AlgebraicDecisionTree<Key> probPrimeTree =
       this->continuousProbPrimes(discrete_keys, bayesNet);
 
+  // Add the model selection factor P(M|Z)
   discreteGraph->add(DecisionTreeFactor(discrete_keys, probPrimeTree));
 
   // Perform discrete elimination
@@ -622,9 +625,9 @@ HybridGaussianFactorGraph::eliminateHybridMultifrontal(
     const boost::optional<Ordering> continuous,
     const boost::optional<Ordering> discrete, const Eliminate &function,
     OptionalVariableIndex variableIndex) const {
-  Ordering continuous_ordering =
+  const Ordering continuous_ordering =
       continuous ? *continuous : Ordering(this->continuousKeys());
-  Ordering discrete_ordering =
+  const Ordering discrete_ordering =
       discrete ? *discrete : Ordering(this->discreteKeys());
 
   // Eliminate continuous
@@ -635,9 +638,9 @@ HybridGaussianFactorGraph::eliminateHybridMultifrontal(
                                                       function, variableIndex);
 
   // Get the last continuous conditional which will have all the discrete
-  Key last_continuous_key =
-      continuous_ordering.at(continuous_ordering.size() - 1);
-  auto last_conditional = (*bayesTree)[last_continuous_key]->conditional();
+  const Key last_continuous_key = continuous_ordering.back();
+  HybridConditional::shared_ptr last_conditional =
+      (*bayesTree)[last_continuous_key]->conditional();
   DiscreteKeys discrete_keys = last_conditional->discreteKeys();
 
   // If not discrete variables, return the eliminated bayes net.
@@ -645,16 +648,24 @@ HybridGaussianFactorGraph::eliminateHybridMultifrontal(
     return bayesTree;
   }
 
-  AlgebraicDecisionTree<Key> probPrimeTree =
+  // DecisionTree for P'(X|M, Z) for all mode sequences M
+  const AlgebraicDecisionTree<Key> probPrimeTree =
       this->continuousProbPrimes(discrete_keys, bayesTree);
 
+  // Add the model selection factor P(M|Z)
   discreteGraph->add(DecisionTreeFactor(discrete_keys, probPrimeTree));
 
-  auto updatedBayesTree =
+  // Eliminate discrete variables to get the discrete bayes tree.
+  // This bayes tree will be updated with the
+  // continuous variables as the child nodes.
+  HybridBayesTree::shared_ptr updatedBayesTree =
       discreteGraph->BaseEliminateable::eliminateMultifrontal(discrete_ordering,
                                                               function);
 
-  auto discrete_clique = (*updatedBayesTree)[discrete_ordering.at(0)];
+  // Get the clique with all the discrete keys.
+  // There should only be 1 clique.
+  const HybridBayesTree::sharedClique discrete_clique =
+      (*updatedBayesTree)[discrete_ordering.at(0)];
 
   std::set<HybridBayesTreeClique::shared_ptr> clique_set;
   for (auto node : bayesTree->nodes()) {
