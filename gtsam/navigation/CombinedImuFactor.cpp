@@ -72,18 +72,20 @@ bool PreintegratedCombinedMeasurements::equals(
 
 //------------------------------------------------------------------------------
 void PreintegratedCombinedMeasurements::resetIntegration() {
+  // Base class method to reset the preintegrated measurements
+  PreintegrationType::resetIntegration();
   // Set the initial bias covariance to
   // the estimated covariance from the last step.
   p().biasAccOmegaInt = preintMeasCov_.block<6, 6>(9, 9);
-  PreintegrationType::resetIntegration();
   preintMeasCov_.setZero();
 }
 
 //------------------------------------------------------------------------------
 void PreintegratedCombinedMeasurements::resetIntegration(
     const gtsam::Matrix6& Q_init) {
-  p().biasAccOmegaInt = Q_init;
+  // Base class method to reset the preintegrated measurements
   PreintegrationType::resetIntegration();
+  p().biasAccOmegaInt = Q_init;
   preintMeasCov_.setZero();
 }
 
