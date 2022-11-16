@@ -36,14 +36,17 @@
 
 namespace testing {
 // Create default parameters with Z-down and above noise parameters
-static boost::shared_ptr<PreintegratedCombinedMeasurements::Params> Params() {
+static boost::shared_ptr<PreintegratedCombinedMeasurements::Params> Params(
+    const Matrix3& biasAccCovariance = Matrix3::Zero(),
+    const Matrix3& biasOmegaCovariance = Matrix3::Zero(),
+    const Matrix6& biasAccOmegaInt = Matrix6::Zero()) {
   auto p = PreintegratedCombinedMeasurements::Params::MakeSharedD(kGravity);
   p->gyroscopeCovariance = kGyroSigma * kGyroSigma * I_3x3;
   p->accelerometerCovariance = kAccelSigma * kAccelSigma * I_3x3;
   p->integrationCovariance = 0.0001 * I_3x3;
-  p->biasAccCovariance = Z_3x3;
-  p->biasOmegaCovariance = Z_3x3;
-  p->biasAccOmegaInt = Z_6x6;
+  p->biasAccCovariance = biasAccCovariance;
+  p->biasOmegaCovariance = biasOmegaCovariance;
+  p->biasAccOmegaInt = biasAccOmegaInt;
   return p;
 }
 }  // namespace testing
@@ -332,7 +335,12 @@ TEST(CombinedImuFactor, ResetIntegration) {
 
   const double T = 3.0;  // seconds
 
-  CombinedScenarioRunner runner(scenario, testing::Params(), T / 10);
+  auto preinMeasCov = 0.001 * Eigen::Matrix<double, 15, 15>::Identity();
+  CombinedScenarioRunner runner(
+      scenario,
+      testing::Params(Matrix3::Zero(), Matrix3::Zero(),
+                      0.1 * Matrix6::Identity()),
+      T / 10, imuBias::ConstantBias(), preinMeasCov);
 
   PreintegratedCombinedMeasurements pim = runner.integrate(T);
   // Make copy for testing different conditions
@@ -340,8 +348,8 @@ TEST(CombinedImuFactor, ResetIntegration) {
 
   // Test default method
   pim.resetIntegration();
-  Matrix6 expected = Z_6x6;
-  EXPECT(assert_equal(expected, pim.p().biasAccOmegaInt , 1e-9));
+  Matrix6 expected = 0.001 * I_6x6;
+  EXPECT(assert_equal(expected, pim.p().biasAccOmegaInt, 1e-9));
 
   // Test method where Q_init is provided
   Matrix6 expected_Q_init = I_6x6 * 0.001;
