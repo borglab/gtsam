@@ -108,7 +108,7 @@ Matrix6 ScenarioRunner::estimateNoiseCovariance(size_t N) const {
 PreintegratedCombinedMeasurements CombinedScenarioRunner::integrate(
     double T, const Bias& estimatedBias, bool corrupted) const {
   gttic_(integrate);
-  PreintegratedCombinedMeasurements pim(p_, estimatedBias);
+  PreintegratedCombinedMeasurements pim(p_, estimatedBias, preintMeasCov_);
 
   const double dt = imuSampleTime();
   const size_t nrSteps = T / dt;

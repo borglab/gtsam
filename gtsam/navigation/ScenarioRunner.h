@@ -118,15 +118,19 @@ class GTSAM_EXPORT CombinedScenarioRunner : public ScenarioRunner {
  private:
   const SharedParams p_;
   const Bias estimatedBias_;
+  const Eigen::Matrix<double, 15, 15> preintMeasCov_;
 
  public:
   CombinedScenarioRunner(const Scenario& scenario, const SharedParams& p,
                          double imuSampleTime = 1.0 / 100.0,
-                         const Bias& bias = Bias())
+                         const Bias& bias = Bias(),
+                         const Eigen::Matrix<double, 15, 15>& preintMeasCov =
+                             Eigen::Matrix<double, 15, 15>::Zero())
       : ScenarioRunner(scenario, static_cast<ScenarioRunner::SharedParams>(p),
                        imuSampleTime, bias),
         p_(p),
-        estimatedBias_(bias) {}
+        estimatedBias_(bias),
+        preintMeasCov_(preintMeasCov) {}
 
   /// Integrate measurements for T seconds into a PIM
   PreintegratedCombinedMeasurements integrate(
