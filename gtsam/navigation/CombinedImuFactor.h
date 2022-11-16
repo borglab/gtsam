@@ -95,15 +95,16 @@ public:
 
   /**
    *  Default constructor, initializes the class with no measurements
-   *  @param p       Parameters, typically fixed in a single application
+   *  @param p Parameters, typically fixed in a single application
    *  @param biasHat Current estimate of acceleration and rotation rate biases
+   *  @param preintMeasCov Covariance matrix used in noise model.
    */
   PreintegratedCombinedMeasurements(
       const boost::shared_ptr<Params>& p,
-      const imuBias::ConstantBias& biasHat = imuBias::ConstantBias())
-      : PreintegrationType(p, biasHat) {
-    preintMeasCov_.setZero();
-  }
+      const imuBias::ConstantBias& biasHat = imuBias::ConstantBias(),
+      const Eigen::Matrix<double, 15, 15>& preintMeasCov =
+          Eigen::Matrix<double, 15, 15>::Zero())
+      : PreintegrationType(p, biasHat), preintMeasCov_(preintMeasCov) {}
 
   /**
   *  Construct preintegrated directly from members: base class and preintMeasCov
