@@ -308,7 +308,7 @@ class NoiseModelFactorN : public NoiseModelFactor {
   /// N is the number of variables (N-way factor)
   enum { N = sizeof...(VALUES) };
 
-  /** The type of the i'th template param can be obtained as X<I> */
+  /// The type of the i'th template param can be obtained as X<I>
   template <int I, typename std::enable_if<(I < N), bool>::type = true>
   using X = typename std::tuple_element<I, std::tuple<VALUES...>>::type;
 
@@ -330,9 +330,7 @@ class NoiseModelFactorN : public NoiseModelFactor {
   /// @name Constructors
   /// @{
 
-  /**
-   * Default Constructor for I/O
-   */
+  /// Default Constructor for I/O
   NoiseModelFactorN() {}
 
   /**
@@ -362,7 +360,7 @@ class NoiseModelFactorN : public NoiseModelFactor {
 
   ~NoiseModelFactorN() override {}
 
-  /** Returns a key. Usage: `key<I>()` returns the I'th key. */
+  /// Returns a key. Usage: `key<I>()` returns the I'th key.
   template <int I>
   inline typename std::enable_if<(I < N), Key>::type key() const {
     return keys_[I];
@@ -474,7 +472,7 @@ class NoiseModelFactorN : public NoiseModelFactor {
  * with 1 variable.  To derive from this class, implement evaluateError().
  */
 template <class VALUE>
-class NoiseModelFactor1 : public NoiseModelFactorN<VALUE> {
+class GTSAM_DEPRECATED NoiseModelFactor1 : public NoiseModelFactorN<VALUE> {
  public:
   // aliases for value types pulled from keys
   using X = VALUE;
@@ -508,7 +506,7 @@ class NoiseModelFactor1 : public NoiseModelFactorN<VALUE> {
  * with 2 variables.  To derive from this class, implement evaluateError().
  */
 template <class VALUE1, class VALUE2>
-class NoiseModelFactor2 : public NoiseModelFactorN<VALUE1, VALUE2> {
+class GTSAM_DEPRECATED NoiseModelFactor2 : public NoiseModelFactorN<VALUE1, VALUE2> {
  public:
   // aliases for value types pulled from keys
   using X1 = VALUE1;
@@ -544,7 +542,7 @@ class NoiseModelFactor2 : public NoiseModelFactorN<VALUE1, VALUE2> {
  * with 3 variables.  To derive from this class, implement evaluateError().
  */
 template <class VALUE1, class VALUE2, class VALUE3>
-class NoiseModelFactor3 : public NoiseModelFactorN<VALUE1, VALUE2, VALUE3> {
+class GTSAM_DEPRECATED NoiseModelFactor3 : public NoiseModelFactorN<VALUE1, VALUE2, VALUE3> {
  public:
   // aliases for value types pulled from keys
   using X1 = VALUE1;
@@ -582,7 +580,7 @@ class NoiseModelFactor3 : public NoiseModelFactorN<VALUE1, VALUE2, VALUE3> {
  * with 4 variables.  To derive from this class, implement evaluateError().
  */
 template <class VALUE1, class VALUE2, class VALUE3, class VALUE4>
-class NoiseModelFactor4
+class GTSAM_DEPRECATED NoiseModelFactor4
     : public NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4> {
  public:
   // aliases for value types pulled from keys
@@ -623,7 +621,7 @@ class NoiseModelFactor4
  * with 5 variables.  To derive from this class, implement evaluateError().
  */
 template <class VALUE1, class VALUE2, class VALUE3, class VALUE4, class VALUE5>
-class NoiseModelFactor5
+class GTSAM_DEPRECATED NoiseModelFactor5
     : public NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5> {
  public:
   // aliases for value types pulled from keys
@@ -668,7 +666,7 @@ class NoiseModelFactor5
  */
 template <class VALUE1, class VALUE2, class VALUE3, class VALUE4, class VALUE5,
           class VALUE6>
-class NoiseModelFactor6
+class GTSAM_DEPRECATED NoiseModelFactor6
     : public NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5, VALUE6> {
  public:
   // aliases for value types pulled from keys
