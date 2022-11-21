@@ -37,9 +37,9 @@ void Rot3::print(const std::string& s) const {
 }
 
 /* ************************************************************************* */
-Rot3 Rot3::Random(std::mt19937& rng) {
+Rot3 Rot3::Random(std::mt19937& rng, double max_angle) {
   Unit3 axis = Unit3::Random(rng);
-  uniform_real_distribution<double> randomAngle(-M_PI, M_PI);
+  uniform_real_distribution<double> randomAngle(-max_angle, max_angle);
   double angle = randomAngle(rng);
   return AxisAngle(axis, angle);
 }

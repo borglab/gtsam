@@ -129,12 +129,12 @@ class GTSAM_EXPORT Rot3 : public LieGroup<Rot3, 3> {
     Rot3(double w, double x, double y, double z) : Rot3(Quaternion(w, x, y, z)) {}
 
     /**
-     * Random, generates a random axis, then random angle \f$\in\f$ [-pi,pi]
+     * Random, generates a random axis, then random angle \f$\in\f$ [-max_angle,max_angle]
      * Example:
      *   std::mt19937 engine(42);
      *   Unit3 unit = Unit3::Random(engine);
      */
-    static Rot3 Random(std::mt19937 & rng);
+    static Rot3 Random(std::mt19937 & rng, double max_angle = M_PI);
 
     /** Virtual destructor */
     virtual ~Rot3() {}
