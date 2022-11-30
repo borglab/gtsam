@@ -95,7 +95,7 @@ public:
   /// @{
 
   /// identity for group operation
-  static Pose3Upright identity() { return Pose3Upright(); }
+  static Pose3Upright Identity() { return Pose3Upright(); }
 
   /// inverse transformation with derivatives
   Pose3Upright inverse(boost::optional<Matrix&> H1=boost::none) const;

@@ -60,6 +60,7 @@ GTSAM_MAKE_VECTOR_DEFS(9)
 GTSAM_MAKE_VECTOR_DEFS(10)
 GTSAM_MAKE_VECTOR_DEFS(11)
 GTSAM_MAKE_VECTOR_DEFS(12)
+GTSAM_MAKE_VECTOR_DEFS(15)
 
 typedef Eigen::VectorBlock<Vector> SubVector;
 typedef Eigen::VectorBlock<const Vector> ConstSubVector;

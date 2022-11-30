@@ -53,7 +53,7 @@ namespace gtsam {
  * @brief Rot3 is a 3D rotation represented as a rotation matrix if the
  * preprocessor symbol GTSAM_USE_QUATERNIONS is not defined, or as a quaternion
  * if it is defined.
- * @addtogroup geometry
+ * @ingroup geometry
  */
 class GTSAM_EXPORT Rot3 : public LieGroup<Rot3, 3> {
  private:
@@ -129,7 +129,7 @@ class GTSAM_EXPORT Rot3 : public LieGroup<Rot3, 3> {
     Rot3(double w, double x, double y, double z) : Rot3(Quaternion(w, x, y, z)) {}
 
     /**
-     * Random, generates a random axis, then random angle \in [-p,pi]
+     * Random, generates a random axis, then random angle \f$\in\f$ [-pi,pi]
      * Example:
      *   std::mt19937 engine(42);
      *   Unit3 unit = Unit3::Random(engine);
@@ -297,7 +297,7 @@ class GTSAM_EXPORT Rot3 : public LieGroup<Rot3, 3> {
     /// @{
 
     /// identity rotation for group operation
-    inline static Rot3 identity() {
+    inline static Rot3 Identity() {
       return Rot3();
     }
 
@@ -515,11 +515,16 @@ class GTSAM_EXPORT Rot3 : public LieGroup<Rot3, 3> {
      */
     gtsam::Quaternion toQuaternion() const;
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
     /**
      * Converts to a generic matrix to allow for use with matlab
      * In format: w x y z
+     * @deprecated: use Rot3::toQuaternion() instead.
+     * If still using this API, remind that in the returned Vector `V`,
+     * `V.x()` denotes the actual `qw`, `V.y()` denotes 'qx', `V.z()` denotes `qy`, and `V.w()` denotes 'qz'.
      */
-    Vector quaternion() const;
+    Vector GTSAM_DEPRECATED quaternion() const;
+#endif
 
     /**
      * @brief Spherical Linear intERPolation between *this and other

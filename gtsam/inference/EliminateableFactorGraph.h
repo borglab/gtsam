@@ -204,7 +204,7 @@ namespace gtsam {
       OptionalVariableIndex variableIndex = boost::none) const;
 
     /** Do multifrontal elimination of the given \c variables in an ordering computed by COLAMD to
-     *  produce a Bayes net and a remaining factor graph.  This computes the factorization \f$ p(X)
+     *  produce a Bayes tree and a remaining factor graph.  This computes the factorization \f$ p(X)
      *  = p(A|B) p(B) \f$, where \f$ A = \f$ \c variables, \f$ X \f$ is all the variables in the
      *  factor graph, and \f$ B = X\backslash A \f$. */
     std::pair<boost::shared_ptr<BayesTreeType>, boost::shared_ptr<FactorGraphType> >

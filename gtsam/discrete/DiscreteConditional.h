@@ -32,6 +32,8 @@ namespace gtsam {
 /**
  * Discrete Conditional Density
  * Derives from DecisionTreeFactor
+ *
+ * @ingroup discrete
  */
 class GTSAM_EXPORT DiscreteConditional
     : public DecisionTreeFactor,

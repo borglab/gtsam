@@ -122,7 +122,7 @@ class Class : public Point3 {
   enum {dimension = 3};
   using Point3::Point3;
   const Vector3& vector() const { return *this; }
-  inline static Class identity() { return Class(0,0,0); }
+  inline static Class Identity() { return Class(0,0,0); }
   double norm(OptionalJacobian<1,3> H = boost::none) const {
     return norm3(*this, H);
   }
@@ -285,7 +285,7 @@ TEST(Expression, compose2) {
 // Test compose with one arguments referring to constant rotation.
 TEST(Expression, compose3) {
   // Create expression
-  Rot3_ R1(Rot3::identity()), R2(3);
+  Rot3_ R1(Rot3::Identity()), R2(3);
   Rot3_ R3 = R1 * R2;
 
   // Check keys

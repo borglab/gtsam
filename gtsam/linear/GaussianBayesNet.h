@@ -30,7 +30,7 @@ namespace gtsam {
 
   /** 
    * GaussianBayesNet is a Bayes net made from linear-Gaussian conditionals.
-   * @addtogroup linear
+   * @ingroup linear
    */
   class GTSAM_EXPORT GaussianBayesNet: public BayesNet<GaussianConditional>
   {
@@ -45,7 +45,7 @@ namespace gtsam {
     /// @name Standard Constructors
     /// @{
 
-    /** Construct empty factor graph */
+    /** Construct empty bayes net */
     GaussianBayesNet() {}
 
     /** Construct from iterator over conditionals */

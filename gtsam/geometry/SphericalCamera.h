@@ -34,7 +34,7 @@ namespace gtsam {
  * Empty calibration. Only needed to play well with other cameras
  * (e.g., when templating functions wrt cameras), since other cameras
  * have constuctors in the form ‘camera(pose,calibration)’
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  */
 class GTSAM_EXPORT EmptyCal {
@@ -64,7 +64,7 @@ class GTSAM_EXPORT EmptyCal {
 /**
  * A spherical camera class that has a Pose3 and measures bearing vectors.
  * The camera has an ‘Empty’ calibration and the only 6 dof are the pose
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  */
 class GTSAM_EXPORT SphericalCamera {
@@ -82,13 +82,12 @@ class GTSAM_EXPORT SphericalCamera {
   EmptyCal::shared_ptr emptyCal_;
 
  public:
-  /// @}
   /// @name Standard Constructors
   /// @{
 
   /// Default constructor
   SphericalCamera()
-      : pose_(Pose3::identity()), emptyCal_(boost::make_shared<EmptyCal>()) {}
+      : pose_(Pose3()), emptyCal_(boost::make_shared<EmptyCal>()) {}
 
   /// Constructor with pose
   explicit SphericalCamera(const Pose3& pose)
@@ -198,9 +197,9 @@ class GTSAM_EXPORT SphericalCamera {
   }
 
   /// for Canonical
-  static SphericalCamera identity() {
+  static SphericalCamera Identity() {
     return SphericalCamera(
-        Pose3::identity());  // assumes that the default constructor is valid
+        Pose3::Identity());  // assumes that the default constructor is valid
   }
 
   /// for Linear Triangulation

@@ -28,7 +28,7 @@ namespace gtsam {
   /**
    * Non-linear factor for a constraint derived from a 2D measurement. The calibration is known here.
    * i.e. the main building block for visual SLAM.
-   * @addtogroup SLAM
+   * @ingroup slam
    */
   template<class POSE, class LANDMARK, class CALIBRATION = Cal3_S2>
   class ProjectionFactorPPP: public NoiseModelFactor3<POSE, POSE, LANDMARK> {

@@ -19,8 +19,6 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Point3.h>
 
-#include <boost/function.hpp>
-
 using namespace std::placeholders;
 using namespace gtsam;
 

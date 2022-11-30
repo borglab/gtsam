@@ -323,6 +323,36 @@ TEST(TranslationRecovery, ThreePosesWithOneHardConstraint) {
   EXPECT(assert_equal(Point3(2, 0, 0), result.at<Point3>(1), 1e-4));
   EXPECT(assert_equal(Point3(1, -1, 0), result.at<Point3>(3), 1e-4));
 }
+
+TEST(TranslationRecovery, NodeWithBetweenFactorAndNoMeasurements) {
+  // Checks that valid results are obtained when a between translation edge is
+  // provided with a node that does not have any other relative translations.
+  Values poses;
+  poses.insert<Pose3>(0, Pose3(Rot3(), Point3(0, 0, 0)));
+  poses.insert<Pose3>(1, Pose3(Rot3(), Point3(2, 0, 0)));
+  poses.insert<Pose3>(3, Pose3(Rot3(), Point3(1, -1, 0)));
+  poses.insert<Pose3>(4, Pose3(Rot3(), Point3(1, 2, 1)));
+
+  auto relativeTranslations = TranslationRecovery::SimulateMeasurements(
+      poses, {{0, 1}, {0, 3}, {1, 3}});
+
+  std::vector<BinaryMeasurement<Point3>> betweenTranslations;
+  betweenTranslations.emplace_back(0, 1, Point3(2, 0, 0),
+                                   noiseModel::Constrained::All(3, 1e2));
+  // Node 4 only has this between translation prior, no relative translations.
+  betweenTranslations.emplace_back(0, 4, Point3(1, 2, 1));
+
+  TranslationRecovery algorithm;
+  auto result =
+      algorithm.run(relativeTranslations, /*scale=*/0.0, betweenTranslations);
+
+  // Check result
+  EXPECT(assert_equal(Point3(0, 0, 0), result.at<Point3>(0), 1e-4));
+  EXPECT(assert_equal(Point3(2, 0, 0), result.at<Point3>(1), 1e-4));
+  EXPECT(assert_equal(Point3(1, -1, 0), result.at<Point3>(3), 1e-4));
+  EXPECT(assert_equal(Point3(1, 2, 1), result.at<Point3>(4), 1e-4));
+}
+
 /* ************************************************************************* */
 int main() {
   TestResult tr;

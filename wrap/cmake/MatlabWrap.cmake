@@ -242,6 +242,13 @@ function(wrap_library_internal interfaceHeader moduleName linkLibraries extraInc
   find_package(PythonInterp ${WRAP_PYTHON_VERSION} EXACT)
   find_package(PythonLibs ${WRAP_PYTHON_VERSION} EXACT)
 
+  # Set the path separator for PYTHONPATH
+  if(UNIX)
+    set(GTWRAP_PATH_SEPARATOR ":")
+  else()
+    set(GTWRAP_PATH_SEPARATOR ";")
+  endif()
+
   add_custom_command(
     OUTPUT ${generated_cpp_file}
     DEPENDS ${interfaceHeader} ${module_library_target} ${otherLibraryTargets}

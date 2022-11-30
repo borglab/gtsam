@@ -23,7 +23,7 @@
 namespace gtsam {
 /**
  *
- * @addtogroup SLAM
+ * @ingroup slam
  *
  * If you are using the factor, please cite:
  * L. Carlone, Z. Kira, C. Beall, V. Indelman, F. Dellaert,
@@ -38,7 +38,7 @@ namespace gtsam {
  * calibration or the same calibration can be shared by multiple cameras. This
  * factor requires that values contain the involved poses and extrinsics (both
  * are Pose3 variables).
- * @addtogroup SLAM
+ * @ingroup slam
  */
 class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionFactorPP
     : public SmartStereoProjectionFactor {

@@ -29,7 +29,7 @@ namespace gtsam {
   /**
    * A class for a measurement predicted by "between(config[key1],config[key2])"
    * @tparam VALUE the Value type
-   * @addtogroup SLAM
+   * @ingroup slam
    */
   template<class VALUE>
   class TransformBtwRobotsUnaryFactor: public NonlinearFactor { // TODO why not NoiseModelFactor1 ?

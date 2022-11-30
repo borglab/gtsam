@@ -29,7 +29,7 @@ namespace gtsam {
  * Model with a slowly moving bias to capture differences
  * between the height and the standard atmosphere
  * https://www.grc.nasa.gov/www/k-12/airplane/atmosmet.html
- * @addtogroup Navigation
+ * @ingroup navigation
  */
 class GTSAM_EXPORT BarometricFactor : public NoiseModelFactor2<Pose3, double> {
    private:

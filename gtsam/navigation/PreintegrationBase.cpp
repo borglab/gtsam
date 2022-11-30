@@ -157,9 +157,9 @@ Vector9 PreintegrationBase::computeError(const NavState& state_i,
       state_j.localCoordinates(predictedState_j, H2 ? &D_error_state_j : 0,
                                H1 || H3 ? &D_error_predict : 0);
 
-  if (H1) *H1 << D_error_predict* D_predict_state_i;
+  if (H1) *H1 << D_error_predict * D_predict_state_i;
   if (H2) *H2 << D_error_state_j;
-  if (H3) *H3 << D_error_predict* D_predict_bias_i;
+  if (H3) *H3 << D_error_predict * D_predict_bias_i;
 
   return error;
 }

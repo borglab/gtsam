@@ -40,7 +40,14 @@ class DiscreteEliminationTree;
 class DiscreteBayesTree;
 class DiscreteJunctionTree;
 
-/** Main elimination function for DiscreteFactorGraph */
+/**
+ * @brief Main elimination function for DiscreteFactorGraph.
+ * 
+ * @param factors 
+ * @param keys 
+ * @return GTSAM_EXPORT
+ * @ingroup discrete
+ */
 GTSAM_EXPORT std::pair<boost::shared_ptr<DiscreteConditional>, DecisionTreeFactor::shared_ptr>
 EliminateDiscrete(const DiscreteFactorGraph& factors, const Ordering& keys);
 
@@ -64,6 +71,7 @@ template<> struct EliminationTraits<DiscreteFactorGraph>
 /**
  * A Discrete Factor Graph is a factor graph where all factors are Discrete, i.e.
  *   Factor == DiscreteFactor
+ * @ingroup discrete
  */
 class GTSAM_EXPORT DiscreteFactorGraph
     : public FactorGraph<DiscreteFactor>,
@@ -208,6 +216,10 @@ class GTSAM_EXPORT DiscreteFactorGraph
 
   /// @}
 };  // \ DiscreteFactorGraph
+
+std::pair<DiscreteConditional::shared_ptr, DecisionTreeFactor::shared_ptr>  //
+EliminateForMPE(const DiscreteFactorGraph& factors,
+                const Ordering& frontalKeys);
 
 /// traits
 template <>

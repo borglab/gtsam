@@ -110,8 +110,8 @@ public:
 //*************************************************************************
 /**
  * This class implements the first position-momentum update rule
- *    p_k = -D_1 L_d(q_k,q_{k+1},h) = \frac{1}{h}mr^{2}\left(q_{k+1}-q_{k}\right)+mgrh(1-\alpha)\,\sin\left((1-\alpha)q_{k}+\alpha q_{k+1}\right)
- *    = (1/h)mr^2 (q_{k+1}-q_k) + mgrh(1-alpha) sin ((1-alpha)q_k+\alpha q_{k+1})
+ *  \f$ p_k = -D_1 L_d(q_k,q_{k+1},h) = \frac{1}{h}mr^{2}\left(q_{k+1}-q_{k}\right)+mgrh(1-\alpha)\,\sin\left((1-\alpha)q_{k}+\alpha q_{k+1}\right) \f$
+ *  \f$ = (1/h)mr^2 (q_{k+1}-q_k) + mgrh(1-alpha) sin ((1-alpha)q_k+\alpha q_{k+1}) \f$
  */
 class PendulumFactorPk: public NoiseModelFactor3<double, double, double> {
 public:
@@ -166,8 +166,8 @@ public:
 //*************************************************************************
 /**
  * This class implements the second position-momentum update rule
- *    p_k1 = D_2 L_d(q_k,q_{k+1},h) = \frac{1}{h}mr^{2}\left(q_{k+1}-q_{k}\right)-mgrh\alpha\sin\left((1-\alpha)q_{k}+\alpha q_{k+1}\right)
- *    = (1/h)mr^2 (q_{k+1}-q_k) - mgrh alpha sin ((1-alpha)q_k+\alpha q_{k+1})
+ *  \f$ p_k1 = D_2 L_d(q_k,q_{k+1},h) = \frac{1}{h}mr^{2}\left(q_{k+1}-q_{k}\right)-mgrh\alpha\sin\left((1-\alpha)q_{k}+\alpha q_{k+1}\right) \f$
+ *  \f$ = (1/h)mr^2 (q_{k+1}-q_k) - mgrh alpha sin ((1-alpha)q_k+\alpha q_{k+1}) \f$
  */
 class PendulumFactorPk1: public NoiseModelFactor3<double, double, double> {
 public:

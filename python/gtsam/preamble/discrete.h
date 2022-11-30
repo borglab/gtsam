@@ -13,4 +13,3 @@
 
 #include <pybind11/stl.h>
 
-PYBIND11_MAKE_OPAQUE(gtsam::DiscreteKeys);

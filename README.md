@@ -64,6 +64,29 @@ GTSAM 4.1 added a new pybind wrapper, and **removed** the deprecated functionali
 
 We provide support for [MATLAB](matlab/README.md) and [Python](python/README.md) wrappers for GTSAM. Please refer to the linked documents for more details.
 
+## Citation
+
+If you are using GTSAM for academic work, please use the following citation:
+
+```
+@software{gtsam,
+  author       = {Frank Dellaert and Richard Roberts and Varun Agrawal and Alex Cunningham and Chris Beall and Duy-Nguyen Ta and Fan Jiang and lucacarlone and nikai and Jose Luis Blanco-Claraco and Stephen Williams and ydjian and John Lambert and Andy Melim and Zhaoyang Lv and Akshay Krishnan and Jing Dong and Gerry Chen and Krunal Chande and balderdash-devil and DiffDecisionTrees and Sungtae An and mpaluri and Ellon Paiva Mendes and Mike Bosse and Akash Patel and Ayush Baid and Paul Furgale and matthewbroadwaynavenio and roderick-koehle},
+  title        = {borglab/gtsam},
+  month        = may,
+  year         = 2022,
+  publisher    = {Zenodo},
+  version      = {4.2a7},
+  doi          = {10.5281/zenodo.5794541},
+  url          = {https://doi.org/10.5281/zenodo.5794541}
+}
+```
+
+You can also get the latest citation available from Zenodo below:
+
+[![DOI](https://zenodo.org/badge/86362856.svg)](https://doi.org/10.5281/zenodo.5794541)
+
+Specific formats are available in the bottom-right corner of the Zenodo page.
+
 ## The Preintegrated IMU Factor
 
 GTSAM includes a state of the art IMU handling scheme based on
@@ -73,7 +96,7 @@ GTSAM includes a state of the art IMU handling scheme based on
 Our implementation improves on this using integration on the manifold, as detailed in
 
 - Luca Carlone, Zsolt Kira, Chris Beall, Vadim Indelman, and Frank Dellaert, _"Eliminating conditionally independent sets in factor graphs: a unifying perspective based on smart factors"_, Int. Conf. on Robotics and Automation (ICRA), 2014. [[link]](https://ieeexplore.ieee.org/abstract/document/6907483)
-- Christian Forster, Luca Carlone, Frank Dellaert, and Davide Scaramuzza, "IMU Preintegration on Manifold for Efficient Visual-Inertial Maximum-a-Posteriori Estimation", Robotics: Science and Systems (RSS), 2015. [[link]](http://www.roboticsproceedings.org/rss11/p06.pdf)
+- Christian Forster, Luca Carlone, Frank Dellaert, and Davide Scaramuzza, _"IMU Preintegration on Manifold for Efficient Visual-Inertial Maximum-a-Posteriori Estimation"_, Robotics: Science and Systems (RSS), 2015. [[link]](http://www.roboticsproceedings.org/rss11/p06.pdf)
 
 If you are using the factor in academic work, please cite the publications above.
 

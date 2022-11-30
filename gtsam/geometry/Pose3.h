@@ -31,7 +31,7 @@ class Pose2;
 
 /**
  * A 3D pose (R,t) : (Rot3,Point3)
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  */
 class GTSAM_EXPORT Pose3: public LieGroup<Pose3, 6> {
@@ -83,7 +83,7 @@ public:
    *  A pose aTb is estimated between pairs (a_point, b_point) such that a_point = aTb * b_point
    *  Note this allows for noise on the points but in that case the mapping will not be exact.
    */
-  static boost::optional<Pose3> Align(const std::vector<Point3Pair>& abPointPairs);
+  static boost::optional<Pose3> Align(const Point3Pairs& abPointPairs);
 
   // Version of Pose3::Align that takes 2 matrices.
   static boost::optional<Pose3> Align(const Matrix& a, const Matrix& b);
@@ -103,7 +103,7 @@ public:
   /// @{
 
   /// identity for group operation
-  static Pose3 identity() {
+  static Pose3 Identity() {
     return Pose3();
   }
 
@@ -378,6 +378,14 @@ public:
   static std::pair<size_t, size_t> rotationInterval() {
     return std::make_pair(0, 2);
   }
+
+    /**
+   * @brief Spherical Linear interpolation between *this and other
+   * @param s a value between 0 and 1.5
+   * @param other final point of interpolation geodesic on manifold
+   */
+  Pose3 slerp(double t, const Pose3& other, OptionalJacobian<6, 6> Hx = boost::none,
+                                             OptionalJacobian<6, 6> Hy = boost::none) const;
 
   /// Output stream operator
   GTSAM_EXPORT

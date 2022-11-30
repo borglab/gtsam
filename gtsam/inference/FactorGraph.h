@@ -116,7 +116,7 @@ class FactorGraph {
   using HasDerivedValueType = typename std::enable_if<
       std::is_base_of<FactorType, typename T::value_type>::value>::type;
 
-  /// Check if T has a value_type derived from FactorType.
+  /// Check if T has a pointer type derived from FactorType.
   template <typename T>
   using HasDerivedElementType = typename std::enable_if<std::is_base_of<
       FactorType, typename T::value_type::element_type>::value>::type;
@@ -361,7 +361,7 @@ class FactorGraph {
    * less than the original, factors at the end will be removed.  If the new
    * size is larger than the original, null factors will be appended.
    */
-  void resize(size_t size) { factors_.resize(size); }
+  virtual void resize(size_t size) { factors_.resize(size); }
 
   /** delete factor without re-arranging indexes by inserting a nullptr pointer
    */

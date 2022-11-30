@@ -121,7 +121,8 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   /// currently only defined for SO3.
   static SO ClosestTo(const MatrixNN& M);
 
-  /// Named constructor that finds chordal mean = argmin_R \sum sqr(|R-R_i|_F),
+  /// Named constructor that finds chordal mean
+  /// \f$ mu = argmin_R \sum sqr(|R-R_i|_F) \f$,
   /// currently only defined for SO3.
   static SO ChordalMean(const std::vector<SO>& rotations);
 
@@ -178,13 +179,13 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
 
   /// SO<N> identity for N >= 2
   template <int N_ = N, typename = IsFixed<N_>>
-  static SO identity() {
+  static SO Identity() {
     return SO();
   }
 
   /// SO<N> identity for N == Eigen::Dynamic
   template <int N_ = N, typename = IsDynamic<N_>>
-  static SO identity(size_t n = 0) {
+  static SO Identity(size_t n = 0) {
     return SO(n);
   }
 

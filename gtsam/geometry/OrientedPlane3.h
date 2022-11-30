@@ -133,8 +133,6 @@ public:
   inline double distance() const {
     return d_;
   }
-
-  /// @}
 };
 
 template<> struct traits<OrientedPlane3> : public internal::Manifold<

@@ -33,7 +33,7 @@ namespace gtsam {
    * Non-linear factor for a constraint derived from a 2D measurement. 
    * The calibration is known here.
    * The main building block for visual SLAM.
-   * @addtogroup SLAM
+   * @ingroup slam
    */
   template <class POSE = Pose3, class LANDMARK = Point3,
             class CALIBRATION = Cal3_S2>

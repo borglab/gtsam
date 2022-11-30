@@ -284,6 +284,17 @@ void Ordering::print(const std::string& str,
 }
 
 /* ************************************************************************* */
+Ordering::This& Ordering::operator+=(KeyVector& keys) {
+  this->insert(this->end(), keys.begin(), keys.end());
+  return *this;
+}
+
+/* ************************************************************************* */
+bool Ordering::contains(const Key& key) const {
+  return std::find(this->begin(), this->end(), key) != this->end();
+}
+
+/* ************************************************************************* */
 bool Ordering::equals(const Ordering& other, double tol) const {
   return (*this) == other;
 }

@@ -22,7 +22,7 @@
 #include <gtsam/base/types.h>
 #include <gtsam/discrete/Assignment.h>
 
-#include <boost/function.hpp>
+#include <boost/shared_ptr.hpp>
 #include <functional>
 #include <iostream>
 #include <map>
@@ -38,6 +38,8 @@ namespace gtsam {
    * Decision Tree
    * L = label for variables
    * Y = function range (any algebra), e.g., bool, int, double
+   *
+   * @ingroup discrete
    */
   template<typename L, typename Y>
   class DecisionTree {
@@ -220,7 +222,7 @@ namespace gtsam {
     /// @{
 
     /// Make virtual
-    virtual ~DecisionTree() {}
+    virtual ~DecisionTree() = default;
 
     /// Check if tree is empty.
     bool empty() const { return !root_; }

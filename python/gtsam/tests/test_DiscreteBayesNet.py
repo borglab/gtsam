@@ -139,7 +139,7 @@ class TestDiscreteBayesNet(GtsamTestCase):
         # Make sure we can *update* position hints
         writer = gtsam.DotWriter()
         ph: dict = writer.positionHints
-        ph.update({'a': 2})  # hint at symbol position
+        ph['a'] = 2 # hint at symbol position
         writer.positionHints = ph
 
         # Check the output of dot

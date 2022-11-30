@@ -27,7 +27,6 @@
 namespace gtsam {
 
 using std::vector;
-using Point3Pairs = vector<Point3Pair>;
 
 /** instantiate concept checks */
 GTSAM_CONCEPT_POSE_INST(Pose3)
@@ -488,6 +487,11 @@ boost::optional<Pose3> align(const Point3Pairs &baPointPairs) {
   return Pose3::Align(abPointPairs);
 }
 #endif
+
+/* ************************************************************************* */
+Pose3 Pose3::slerp(double t, const Pose3& other, OptionalJacobian<6, 6> Hx, OptionalJacobian<6, 6> Hy) const {
+  return interpolate(*this, other, t, Hx, Hy);
+}
 
 /* ************************************************************************* */
 std::ostream &operator<<(std::ostream &os, const Pose3& pose) {

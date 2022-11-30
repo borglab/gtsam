@@ -38,7 +38,7 @@ public:
   /// Default constructor yields identity
   Cyclic():i_(0) {
   }
-  static Cyclic identity() { return Cyclic();}
+  static Cyclic Identity() { return Cyclic();}
 
   /// Cast to size_t
   operator size_t() const {

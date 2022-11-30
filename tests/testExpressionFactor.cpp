@@ -382,7 +382,7 @@ TEST(ExpressionFactor, compose2) {
 TEST(ExpressionFactor, compose3) {
 
   // Create expression
-  Rot3_ R1(Rot3::identity()), R2(3);
+  Rot3_ R1(Rot3::Identity()), R2(3);
   Rot3_ R3 = R1 * R2;
 
   // Create factor

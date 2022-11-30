@@ -119,21 +119,24 @@ void TranslationRecovery::addPrior(
   graph->emplace_shared<PriorFactor<Point3>>(edge->key1(), Point3(0, 0, 0),
                                              priorNoiseModel);
 
-  // Add between factors for optional relative translations.
-  for (auto edge : betweenTranslations) {
-    graph->emplace_shared<BetweenFactor<Point3>>(
-        edge.key1(), edge.key2(), edge.measured(), edge.noiseModel());
-  }
-
   // Add a scale prior only if no other between factors were added.
   if (betweenTranslations.empty()) {
     graph->emplace_shared<PriorFactor<Point3>>(
         edge->key2(), scale * edge->measured().point3(), edge->noiseModel());
+    return;
+  }
+
+  // Add between factors for optional relative translations.
+  for (auto prior_edge : betweenTranslations) {
+    graph->emplace_shared<BetweenFactor<Point3>>(
+        prior_edge.key1(), prior_edge.key2(), prior_edge.measured(),
+        prior_edge.noiseModel());
   }
 }
 
 Values TranslationRecovery::initializeRandomly(
     const std::vector<BinaryMeasurement<Unit3>> &relativeTranslations,
+    const std::vector<BinaryMeasurement<Point3>> &betweenTranslations,
     std::mt19937 *rng, const Values &initialValues) const {
   uniform_real_distribution<double> randomVal(-1, 1);
   // Create a lambda expression that checks whether value exists and randomly
@@ -155,14 +158,20 @@ Values TranslationRecovery::initializeRandomly(
     insert(edge.key1());
     insert(edge.key2());
   }
+  // There may be nodes in betweenTranslations that do not have a measurement.
+  for (auto edge : betweenTranslations) {
+    insert(edge.key1());
+    insert(edge.key2());
+  }
   return initial;
 }
 
 Values TranslationRecovery::initializeRandomly(
     const std::vector<BinaryMeasurement<Unit3>> &relativeTranslations,
+    const std::vector<BinaryMeasurement<Point3>> &betweenTranslations,
     const Values &initialValues) const {
-  return initializeRandomly(relativeTranslations, &kRandomNumberGenerator,
-                            initialValues);
+  return initializeRandomly(relativeTranslations, betweenTranslations,
+                            &kRandomNumberGenerator, initialValues);
 }
 
 Values TranslationRecovery::run(
@@ -187,8 +196,8 @@ Values TranslationRecovery::run(
            &graph);
 
   // Uses initial values from params if provided.
-  Values initial =
-      initializeRandomly(nonzeroRelativeTranslations, initialValues);
+  Values initial = initializeRandomly(
+      nonzeroRelativeTranslations, nonzeroBetweenTranslations, initialValues);
 
   // If there are no valid edges, but zero-distance edges exist, initialize one
   // of the nodes in a connected component of zero-distance edges.

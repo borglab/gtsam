@@ -697,6 +697,12 @@ namespace gtsam {
         return robust_->loss(std::sqrt(squared_distance));
       }
 
+      // NOTE: This is special because in whiten the base version will do the reweighting
+      // which is incorrect!
+      double squaredMahalanobisDistance(const Vector& v) const override {
+        return noise_->squaredMahalanobisDistance(v);
+      }
+
       // These are really robust iterated re-weighting support functions
       virtual void WhitenSystem(Vector& b) const;
       void WhitenSystem(std::vector<Matrix>& A, Vector& b) const override;

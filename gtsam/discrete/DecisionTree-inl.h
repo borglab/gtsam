@@ -39,9 +39,9 @@
 #include <string>
 #include <vector>
 
-using boost::assign::operator+=;
-
 namespace gtsam {
+
+  using boost::assign::operator+=;
 
   /****************************************************************************/
   // Node
@@ -291,10 +291,7 @@ namespace gtsam {
         }
 
         os << "\"" << this->id() << "\" -> \"" << branch->id() << "\"";
-        if (B == 2) {
-          if (i == 0) os << " [style=dashed]";
-          if (i > 1) os << " [style=bold]";
-        }
+        if (B == 2 && i == 0) os << " [style=dashed]";
         os << std::endl;
         branch->dot(os, labelFormatter, valueFormatter, showZero);
       }

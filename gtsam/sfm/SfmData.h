@@ -34,7 +34,7 @@ typedef PinholeCamera<Cal3Bundler> SfmCamera;
 
 /**
  * @brief SfmData stores a bunch of SfmTracks
- * @addtogroup sfm
+ * @ingroup sfm
  */
 struct GTSAM_EXPORT SfmData {
   std::vector<SfmCamera> cameras;  ///< Set of cameras

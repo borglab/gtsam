@@ -30,7 +30,7 @@ namespace gtsam {
 
 /**
  * A 2D pose (Point2,Rot2)
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  */
 class Pose2: public LieGroup<Pose2, 3> {
@@ -119,7 +119,7 @@ public:
   /// @{
 
   /// identity for group operation
-  inline static Pose2 identity() { return Pose2(); }
+  inline static Pose2 Identity() { return Pose2(); }
 
   /// inverse
   GTSAM_EXPORT Pose2 inverse() const;

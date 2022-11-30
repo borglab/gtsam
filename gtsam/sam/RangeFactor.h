@@ -29,7 +29,7 @@ struct Range;
 /**
  * Binary factor for a range measurement
  * Works for any two types A1,A2 for which the functor Range<A1,A2>() is defined
- * @addtogroup SAM
+ * @ingroup sam
  */
 template <typename A1, typename A2 = A1, typename T = double>
 class RangeFactor : public ExpressionFactorN<T, A1, A2> {
@@ -96,7 +96,7 @@ struct traits<RangeFactor<A1, A2, T> >
 
 /**
  * Binary factor for a range measurement, with a transform applied
- * @addtogroup SAM
+ * @ingroup sam
  */
 template <typename A1, typename A2 = A1,
           typename T = typename Range<A1, A2>::result_type>
