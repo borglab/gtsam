@@ -27,12 +27,20 @@ template class EliminationTree<HybridBayesNet, HybridGaussianFactorGraph>;
 HybridEliminationTree::HybridEliminationTree(
     const HybridGaussianFactorGraph& factorGraph,
     const VariableIndex& structure, const Ordering& order)
-    : Base(factorGraph, structure, order) {}
+    : Base(factorGraph, structure, order),
+      graph_(factorGraph),
+      variable_index_(structure) {
+  // Segregate the continuous and the discrete keys
+  std::tie(continuous_ordering_, discrete_ordering_) =
+      graph_.separateContinuousDiscreteOrdering(order);
+}
 
 /* ************************************************************************* */
 HybridEliminationTree::HybridEliminationTree(
     const HybridGaussianFactorGraph& factorGraph, const Ordering& order)
-    : Base(factorGraph, order) {}
+    : Base(factorGraph, order),
+      graph_(factorGraph),
+      variable_index_(VariableIndex(factorGraph)) {}
 
 /* ************************************************************************* */
 bool HybridEliminationTree::equals(const This& other, double tol) const {
