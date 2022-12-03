@@ -257,7 +257,6 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
   // If there are no more continuous parents, then we should create here a
   // DiscreteFactor, with the error for each discrete choice.
   if (keysOfSeparator.empty()) {
-    // TODO(Varun) Use the math from the iMHS_Math-1-indexed document
     VectorValues empty_values;
     auto factorProb = [&](const GaussianFactor::shared_ptr &factor) {
       if (!factor) {
@@ -574,7 +573,7 @@ HybridGaussianFactorGraph::eliminateHybridSequential(
       bayesNet->at(bayesNet->size() - 1);
   DiscreteKeys discrete_keys = last_conditional->discreteKeys();
 
-  // If not discrete variables, return the eliminated bayes net.
+  // If no discrete variables, return the eliminated bayes net.
   if (discrete_keys.size() == 0) {
     return bayesNet;
   }

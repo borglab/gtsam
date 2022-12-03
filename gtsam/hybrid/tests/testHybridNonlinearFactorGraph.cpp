@@ -386,11 +386,11 @@ TEST(HybridFactorGraph, Partial_Elimination) {
 
   auto linearizedFactorGraph = self.linearizedFactorGraph;
 
-  // Create ordering.
+  // Create ordering of only continuous variables.
   Ordering ordering;
   for (size_t k = 0; k < self.K; k++) ordering += X(k);
 
-  // Eliminate partially.
+  // Eliminate partially i.e. only continuous part.
   HybridBayesNet::shared_ptr hybridBayesNet;
   HybridGaussianFactorGraph::shared_ptr remainingFactorGraph;
   std::tie(hybridBayesNet, remainingFactorGraph) =
