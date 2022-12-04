@@ -252,11 +252,11 @@ HybridJunctionTree::eliminateDiscrete(
 
 /* ************************************************************************* */
 boost::shared_ptr<HybridGaussianFactorGraph> HybridJunctionTree::addProbPrimes(
-    const HybridGaussianFactorGraph& graph,
     const HybridBayesTree::shared_ptr& continuousBayesTree,
-    const HybridGaussianFactorGraph::shared_ptr& discreteGraph,
-    const Ordering& continuous_ordering,
-    const Ordering& discrete_ordering) const {
+    const HybridGaussianFactorGraph::shared_ptr& discreteGraph) const {
+  Ordering continuous_ordering = etree_.continuousOrdering();
+  Ordering discrete_ordering = etree_.discreteOrdering();
+
   // If we have eliminated continuous variables
   // and have discrete variables to eliminate,
   // then compute P(X | M, Z)
@@ -271,6 +271,8 @@ boost::shared_ptr<HybridGaussianFactorGraph> HybridJunctionTree::addProbPrimes(
     // Remove duplicates and convert back to DiscreteKeys
     std::set<DiscreteKey> dkeys_set(discrete_keys.begin(), discrete_keys.end());
     discrete_keys = DiscreteKeys(dkeys_set.begin(), dkeys_set.end());
+
+    FactorGraphType graph = etree_.graph();
 
     // DecisionTree for P'(X|M, Z) for all mode sequences M
     const AlgebraicDecisionTree<Key> probPrimeTree =
@@ -298,8 +300,7 @@ HybridJunctionTree::eliminate(const Eliminate& function) const {
       this->eliminateContinuous(function, graph, continuous_ordering);
 
   FactorGraphType::shared_ptr updatedDiscreteGraph =
-      this->addProbPrimes(graph, continuousBayesTree, discreteGraph,
-                          continuous_ordering, discrete_ordering);
+      this->addProbPrimes(continuousBayesTree, discreteGraph);
 
   // Eliminate discrete variables to get the discrete bayes tree.
   return this->eliminateDiscrete(function, continuousBayesTree,

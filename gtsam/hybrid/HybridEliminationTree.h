@@ -73,6 +73,7 @@ class GTSAM_EXPORT HybridEliminationTree
   /** Test whether the tree is equal to another */
   bool equals(const This& other, double tol = 1e-9) const;
 
+ protected:
   /**
    * @brief Helper method to eliminate continuous variables.
    *
@@ -86,6 +87,22 @@ class GTSAM_EXPORT HybridEliminationTree
   std::pair<boost::shared_ptr<HybridBayesNet>,
             boost::shared_ptr<HybridGaussianFactorGraph>>
   eliminateContinuous(Eliminate function) const;
+
+  /**
+   * @brief Compute the unnormalized probability P'(X | M, Z)
+   * for the factor graph in each leaf of the discrete tree.
+   * The discrete decision tree formed as a result is added to the
+   * `discreteGraph` for discrete elimination.
+   *
+   * @param continuousBayesNet The bayes nets corresponding to
+   * the eliminated continuous variables.
+   * @param discreteGraph Factor graph consisting of factors
+   * on discrete variables only.
+   * @return boost::shared_ptr<HybridGaussianFactorGraph>
+   */
+  boost::shared_ptr<HybridGaussianFactorGraph> addProbPrimes(
+      const HybridBayesNet::shared_ptr& continuousBayesNet,
+      const HybridGaussianFactorGraph::shared_ptr& discreteGraph) const;
 
   /**
    * @brief Helper method to eliminate the discrete variables after the
@@ -105,6 +122,7 @@ class GTSAM_EXPORT HybridEliminationTree
       Eliminate function,
       const HybridGaussianFactorGraph::shared_ptr& discreteGraph) const;
 
+ public:
   /**
    * @brief Override the EliminationTree eliminate method
    * so we can perform hybrid elimination correctly.
