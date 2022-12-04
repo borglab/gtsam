@@ -182,8 +182,9 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalSimple) {
        boost::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones())}));
 
   hfg.add(DecisionTreeFactor(m1, {2, 8}));
-  //TODO(Varun) Adding extra discrete variable not connected to continuous variable throws segfault
-  // hfg.add(DecisionTreeFactor({{M(1), 2}, {M(2), 2}}, "1 2 3 4"));
+  // TODO(Varun) Adding extra discrete variable not connected to continuous
+  // variable throws segfault
+  //  hfg.add(DecisionTreeFactor({{M(1), 2}, {M(2), 2}}, "1 2 3 4"));
 
   HybridBayesTree::shared_ptr result =
       hfg.eliminateMultifrontal(hfg.getHybridOrdering());
@@ -276,7 +277,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalTwoClique) {
   std::tie(hbt, remaining) = hfg.eliminatePartialMultifrontal(ordering_full);
 
   // 9 cliques in the bayes tree and 0 remaining variables to eliminate.
-  EXPECT_LONGS_EQUAL(9, hbt->size());
+  EXPECT_LONGS_EQUAL(7, hbt->size());
   EXPECT_LONGS_EQUAL(0, remaining->size());
 
   /*

@@ -51,10 +51,15 @@ class HybridEliminationTree;
  */
 class GTSAM_EXPORT HybridJunctionTree
     : public JunctionTree<HybridBayesTree, HybridGaussianFactorGraph> {
+  /// Record the elimination tree for use in hybrid elimination.
+  HybridEliminationTree etree_;
+  /// Store the provided variable index.
+  VariableIndex variable_index_;
+
  public:
   typedef JunctionTree<HybridBayesTree, HybridGaussianFactorGraph>
       Base;                                    ///< Base class
-  typedef HybridJunctionTree This;     ///< This class
+  typedef HybridJunctionTree This;             ///< This class
   typedef boost::shared_ptr<This> shared_ptr;  ///< Shared pointer to this class
 
   /**
@@ -67,6 +72,66 @@ class GTSAM_EXPORT HybridJunctionTree
    * @return The elimination tree
    */
   HybridJunctionTree(const HybridEliminationTree& eliminationTree);
+
+  /**
+   * @brief 
+   * 
+   * @param function 
+   * @param graph 
+   * @param continuous_ordering 
+   * @return std::pair<boost::shared_ptr<HybridBayesTree>,
+   * boost::shared_ptr<HybridGaussianFactorGraph>> 
+   */
+  std::pair<boost::shared_ptr<HybridBayesTree>,
+            boost::shared_ptr<HybridGaussianFactorGraph>>
+  eliminateContinuous(const Eliminate& function,
+                      const HybridGaussianFactorGraph& graph,
+                      const Ordering& continuous_ordering) const;
+
+  /**
+   * @brief 
+   * 
+   * @param function 
+   * @param continuousBayesTree 
+   * @param discreteGraph 
+   * @param discrete_ordering 
+   * @return std::pair<boost::shared_ptr<HybridBayesTree>,
+   * boost::shared_ptr<HybridGaussianFactorGraph>> 
+   */
+  std::pair<boost::shared_ptr<HybridBayesTree>,
+            boost::shared_ptr<HybridGaussianFactorGraph>>
+  eliminateDiscrete(const Eliminate& function,
+                    const HybridBayesTree::shared_ptr& continuousBayesTree,
+                    const HybridGaussianFactorGraph::shared_ptr& discreteGraph,
+                    const Ordering& discrete_ordering) const;
+
+  /**
+   * @brief 
+   * 
+   * @param graph 
+   * @param continuousBayesTree 
+   * @param discreteGraph 
+   * @param continuous_ordering 
+   * @param discrete_ordering 
+   * @return boost::shared_ptr<HybridGaussianFactorGraph> 
+   */
+  boost::shared_ptr<HybridGaussianFactorGraph> addProbPrimes(
+      const HybridGaussianFactorGraph& graph,
+      const HybridBayesTree::shared_ptr& continuousBayesTree,
+      const HybridGaussianFactorGraph::shared_ptr& discreteGraph,
+      const Ordering& continuous_ordering,
+      const Ordering& discrete_ordering) const;
+
+  /**
+   * @brief 
+   * 
+   * @param function 
+   * @return std::pair<boost::shared_ptr<HybridBayesTree>,
+   * boost::shared_ptr<HybridGaussianFactorGraph>> 
+   */
+  std::pair<boost::shared_ptr<HybridBayesTree>,
+            boost::shared_ptr<HybridGaussianFactorGraph>>
+  eliminate(const Eliminate& function) const;
 };
 
 }  // namespace gtsam

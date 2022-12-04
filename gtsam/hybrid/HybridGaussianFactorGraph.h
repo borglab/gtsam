@@ -302,31 +302,7 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
   std::pair<Ordering, Ordering> separateContinuousDiscreteOrdering(
       const Ordering& ordering) const;
 
-  /**
-   * @brief Custom elimination function which computes the correct
-   * continuous probabilities. Returns a bayes tree.
-   *
-   * @param continuous Optional ordering for all continuous variables.
-   * @param discrete Optional ordering for all discrete variables.
-   * @return boost::shared_ptr<BayesTreeType>
-   */
-  boost::shared_ptr<BayesTreeType> eliminateHybridMultifrontal(
-      const boost::optional<Ordering> continuous = boost::none,
-      const boost::optional<Ordering> discrete = boost::none,
-      const Eliminate& function = EliminationTraitsType::DefaultEliminate,
-      OptionalVariableIndex variableIndex = boost::none) const;
-
-  /// Multifrontal elimination overload for hybrid
-  boost::shared_ptr<BayesTreeType> eliminateMultifrontal(
-      OptionalOrderingType orderingType = boost::none,
-      const Eliminate& function = EliminationTraitsType::DefaultEliminate,
-      OptionalVariableIndex variableIndex = boost::none) const;
-
-  /// Multifrontal elimination overload for hybrid
-  boost::shared_ptr<BayesTreeType> eliminateMultifrontal(
-      const Ordering& ordering,
-      const Eliminate& function = EliminationTraitsType::DefaultEliminate,
-      OptionalVariableIndex variableIndex = boost::none) const;
+  
 
   /**
    * @brief Return a Colamd constrained ordering where the discrete keys are
