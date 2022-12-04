@@ -24,7 +24,22 @@
 namespace gtsam {
 
 /**
- * Elimination Tree type for Hybrid
+ * Elimination Tree type for Hybrid Factor Graphs.
+ *
+ * The elimination tree helps in elimination by specifying the parents to which
+ * the "combined factor" after elimination should be assigned to.
+ *
+ * In the case of hybrid elimination, we use the elimination tree to store the
+ * intermediate results.
+ * Concretely, we wish to estimate the unnormalized probability P'(X | M, Z) for
+ * each mode assignment M.
+ * P'(X | M, Z) can be computed by estimating X* which maximizes the continuous
+ * factor graph given the discrete modes, and then computing the unnormalized
+ * probability as P(X=X* | M, Z).
+ *
+ * This is done by eliminating the (continuous) factor graph present at each
+ * leaf of the discrete tree formed for the discrete sequence and using the
+ * inferred X* to compute the `probPrime`.
  *
  * @ingroup hybrid
  */
