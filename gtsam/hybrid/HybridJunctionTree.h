@@ -73,14 +73,15 @@ class GTSAM_EXPORT HybridJunctionTree
    */
   HybridJunctionTree(const HybridEliminationTree& eliminationTree);
 
+ protected:
   /**
-   * @brief 
-   * 
-   * @param function 
-   * @param graph 
-   * @param continuous_ordering 
+   * @brief Eliminate all the continuous variables from the factor graph.
+   *
+   * @param function The hybrid elimination function.
+   * @param graph The factor graph to eliminate.
+   * @param continuous_ordering The ordering of continuous variables.
    * @return std::pair<boost::shared_ptr<HybridBayesTree>,
-   * boost::shared_ptr<HybridGaussianFactorGraph>> 
+   * boost::shared_ptr<HybridGaussianFactorGraph>>
    */
   std::pair<boost::shared_ptr<HybridBayesTree>,
             boost::shared_ptr<HybridGaussianFactorGraph>>
@@ -89,14 +90,17 @@ class GTSAM_EXPORT HybridJunctionTree
                       const Ordering& continuous_ordering) const;
 
   /**
-   * @brief 
-   * 
-   * @param function 
-   * @param continuousBayesTree 
-   * @param discreteGraph 
-   * @param discrete_ordering 
+   * @brief Eliminate all the discrete variables in the hybrid factor graph.
+   *
+   * @param function The hybrid elimination function.
+   * @param continuousBayesTree The bayes tree corresponding to
+   * the eliminated continuous variables.
+   * @param discreteGraph Factor graph of factors containing
+   * only discrete variables.
+   * @param discrete_ordering The elimination ordering for
+   * the discrete variables.
    * @return std::pair<boost::shared_ptr<HybridBayesTree>,
-   * boost::shared_ptr<HybridGaussianFactorGraph>> 
+   * boost::shared_ptr<HybridGaussianFactorGraph>>
    */
   std::pair<boost::shared_ptr<HybridBayesTree>,
             boost::shared_ptr<HybridGaussianFactorGraph>>
@@ -106,28 +110,29 @@ class GTSAM_EXPORT HybridJunctionTree
                     const Ordering& discrete_ordering) const;
 
   /**
-   * @brief 
-   * 
-   * @param graph 
-   * @param continuousBayesTree 
-   * @param discreteGraph 
-   * @param continuous_ordering 
-   * @param discrete_ordering 
-   * @return boost::shared_ptr<HybridGaussianFactorGraph> 
+   * @brief Compute the unnormalized probability P'(X | M, Z)
+   * for the factor graph in each leaf of the discrete tree.
+   * The discrete decision tree formed as a result is added to the
+   * `discreteGraph` for discrete elimination.
+   *
+   * @param continuousBayesTree The bayes tree corresponding to
+   * the eliminated continuous variables.
+   * @param discreteGraph Factor graph consisting of factors
+   * on discrete variables only.
+   * @return boost::shared_ptr<HybridGaussianFactorGraph>
    */
   boost::shared_ptr<HybridGaussianFactorGraph> addProbPrimes(
-      const HybridGaussianFactorGraph& graph,
       const HybridBayesTree::shared_ptr& continuousBayesTree,
-      const HybridGaussianFactorGraph::shared_ptr& discreteGraph,
-      const Ordering& continuous_ordering,
-      const Ordering& discrete_ordering) const;
+      const HybridGaussianFactorGraph::shared_ptr& discreteGraph) const;
 
+ public:
   /**
-   * @brief 
-   * 
-   * @param function 
+   * @brief Override the eliminate method so we can
+   * perform hybrid elimination correctly.
+   *
+   * @param function The hybrid elimination function.
    * @return std::pair<boost::shared_ptr<HybridBayesTree>,
-   * boost::shared_ptr<HybridGaussianFactorGraph>> 
+   * boost::shared_ptr<HybridGaussianFactorGraph>>
    */
   std::pair<boost::shared_ptr<HybridBayesTree>,
             boost::shared_ptr<HybridGaussianFactorGraph>>
