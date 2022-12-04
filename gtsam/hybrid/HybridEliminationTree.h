@@ -173,6 +173,13 @@ class GTSAM_EXPORT HybridEliminationTree
 
     return std::make_pair(bayesNet, finalGraph);
   }
+
+  Ordering continuousOrdering() const { return continuous_ordering_; }
+  Ordering discreteOrdering() const { return discrete_ordering_; }
+
+  /// Store the provided variable index.
+  VariableIndex variableIndex() const { return variable_index_; }
+  HybridGaussianFactorGraph graph() const { return graph_; }
 };
 
 }  // namespace gtsam
