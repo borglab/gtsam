@@ -70,6 +70,28 @@ Ordering getOrdering(HybridGaussianFactorGraph& factors,
   return ordering;
 }
 
+TEST(HybridEstimation, Full) {
+  size_t K = 3;
+  std::vector<double> measurements = {0, 1, 2};
+  // Ground truth discrete seq
+  std::vector<size_t> discrete_seq = {1, 1, 0};
+  // Switching example of robot moving in 1D
+  // with given measurements and equal mode priors.
+  Switching switching(K, 1.0, 0.1, measurements, "1/1 1/1");
+  HybridGaussianFactorGraph graph = switching.linearizedFactorGraph;
+
+  Ordering hybridOrdering;
+  hybridOrdering += X(0);
+  hybridOrdering += X(1);
+  hybridOrdering += X(2);
+  hybridOrdering += M(0);
+  hybridOrdering += M(1);
+  HybridBayesNet::shared_ptr bayesNet =
+      graph.eliminateSequential(hybridOrdering);
+
+  EXPECT_LONGS_EQUAL(5, bayesNet->size());
+}
+
 /****************************************************************************/
 // Test approximate inference with an additional pruning step.
 TEST(HybridEstimation, Incremental) {
@@ -311,8 +333,7 @@ TEST(HybridEstimation, Probability) {
   discreteGraph->add(DecisionTreeFactor(discrete_keys, probPrimeTree));
 
   Ordering discrete(graph.discreteKeys());
-  auto discreteBayesNet =
-      discreteGraph->BaseEliminateable::eliminateSequential(discrete);
+  auto discreteBayesNet = discreteGraph->eliminateSequential();
   bayesNet->add(*discreteBayesNet);
 
   HybridValues hybrid_values = bayesNet->optimize();
