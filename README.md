@@ -1,4 +1,4 @@
-# Georgia Tech Smoothing and Mapping Library
+# README - Georgia Tech Smoothing and Mapping Library
 
 **Important Note**
 
