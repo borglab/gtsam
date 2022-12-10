@@ -105,7 +105,7 @@ bool GaussianMixture::equals(const HybridFactor &lf, double tol) const {
 /* *******************************************************************************/
 void GaussianMixture::print(const std::string &s,
                             const KeyFormatter &formatter) const {
-  std::cout << s;
+  std::cout << (s.empty() ? "" : s + "\n");
   if (isContinuous()) std::cout << "Continuous ";
   if (isDiscrete()) std::cout << "Discrete ";
   if (isHybrid()) std::cout << "Hybrid ";

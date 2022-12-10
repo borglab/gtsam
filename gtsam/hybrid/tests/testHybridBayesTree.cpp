@@ -33,6 +33,25 @@ using symbol_shorthand::M;
 using symbol_shorthand::X;
 
 /* ****************************************************************************/
+// Test multifrontal optimize
+TEST(HybridBayesTree, OptimizeMultifrontal) {
+  Switching s(4);
+
+  Ordering hybridOrdering = s.linearizedFactorGraph.getHybridOrdering();
+  HybridBayesTree::shared_ptr hybridBayesTree =
+      s.linearizedFactorGraph.eliminateMultifrontal(hybridOrdering);
+  HybridValues delta = hybridBayesTree->optimize();
+
+  VectorValues expectedValues;
+  expectedValues.insert(X(0), -0.999904 * Vector1::Ones());
+  expectedValues.insert(X(1), -0.99029 * Vector1::Ones());
+  expectedValues.insert(X(2), -1.00971 * Vector1::Ones());
+  expectedValues.insert(X(3), -1.0001 * Vector1::Ones());
+
+  EXPECT(assert_equal(expectedValues, delta.continuous(), 1e-5));
+}
+
+/* ****************************************************************************/
 // Test for optimizing a HybridBayesTree with a given assignment.
 TEST(HybridBayesTree, OptimizeAssignment) {
   Switching s(4);

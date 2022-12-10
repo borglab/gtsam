@@ -257,13 +257,14 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
   // If there are no more continuous parents, then we should create here a
   // DiscreteFactor, with the error for each discrete choice.
   if (keysOfSeparator.empty()) {
-    // TODO(Varun) Use the math from the iMHS_Math-1-indexed document
     VectorValues empty_values;
     auto factorProb = [&](const GaussianFactor::shared_ptr &factor) {
       if (!factor) {
         return 0.0;  // If nullptr, return 0.0 probability
       } else {
-        return 1.0;
+        double error =
+            0.5 * std::abs(factor->augmentedInformation().determinant());
+        return std::exp(-error);
       }
     };
     DecisionTree<Key, double> fdt(separatorFactors, factorProb);
@@ -549,168 +550,6 @@ HybridGaussianFactorGraph::separateContinuousDiscreteOrdering(
   }
 
   return std::make_pair(continuous_ordering, discrete_ordering);
-}
-
-/* ************************************************************************ */
-boost::shared_ptr<HybridGaussianFactorGraph::BayesNetType>
-HybridGaussianFactorGraph::eliminateHybridSequential(
-    const boost::optional<Ordering> continuous,
-    const boost::optional<Ordering> discrete, const Eliminate &function,
-    OptionalVariableIndex variableIndex) const {
-  const Ordering continuous_ordering =
-      continuous ? *continuous : Ordering(this->continuousKeys());
-  const Ordering discrete_ordering =
-      discrete ? *discrete : Ordering(this->discreteKeys());
-
-  // Eliminate continuous
-  HybridBayesNet::shared_ptr bayesNet;
-  HybridGaussianFactorGraph::shared_ptr discreteGraph;
-  std::tie(bayesNet, discreteGraph) =
-      BaseEliminateable::eliminatePartialSequential(continuous_ordering,
-                                                    function, variableIndex);
-
-  // Get the last continuous conditional which will have all the discrete keys
-  HybridConditional::shared_ptr last_conditional =
-      bayesNet->at(bayesNet->size() - 1);
-  DiscreteKeys discrete_keys = last_conditional->discreteKeys();
-
-  // If not discrete variables, return the eliminated bayes net.
-  if (discrete_keys.size() == 0) {
-    return bayesNet;
-  }
-
-  // DecisionTree for P'(X|M, Z) for all mode sequences M
-  const AlgebraicDecisionTree<Key> probPrimeTree =
-      this->continuousProbPrimes(discrete_keys, bayesNet);
-
-  // Add the model selection factor P(M|Z)
-  discreteGraph->add(DecisionTreeFactor(discrete_keys, probPrimeTree));
-
-  // Perform discrete elimination
-  HybridBayesNet::shared_ptr discreteBayesNet =
-      discreteGraph->BaseEliminateable::eliminateSequential(
-          discrete_ordering, function, variableIndex);
-
-  bayesNet->add(*discreteBayesNet);
-
-  return bayesNet;
-}
-
-/* ************************************************************************ */
-boost::shared_ptr<HybridGaussianFactorGraph::BayesNetType>
-HybridGaussianFactorGraph::eliminateSequential(
-    OptionalOrderingType orderingType, const Eliminate &function,
-    OptionalVariableIndex variableIndex) const {
-  return BaseEliminateable::eliminateSequential(orderingType, function,
-                                                variableIndex);
-}
-
-/* ************************************************************************ */
-boost::shared_ptr<HybridGaussianFactorGraph::BayesNetType>
-HybridGaussianFactorGraph::eliminateSequential(
-    const Ordering &ordering, const Eliminate &function,
-    OptionalVariableIndex variableIndex) const {
-  // Segregate the continuous and the discrete keys
-  Ordering continuous_ordering, discrete_ordering;
-  std::tie(continuous_ordering, discrete_ordering) =
-      this->separateContinuousDiscreteOrdering(ordering);
-
-  return this->eliminateHybridSequential(continuous_ordering, discrete_ordering,
-                                         function, variableIndex);
-}
-
-/* ************************************************************************ */
-boost::shared_ptr<HybridGaussianFactorGraph::BayesTreeType>
-HybridGaussianFactorGraph::eliminateHybridMultifrontal(
-    const boost::optional<Ordering> continuous,
-    const boost::optional<Ordering> discrete, const Eliminate &function,
-    OptionalVariableIndex variableIndex) const {
-  const Ordering continuous_ordering =
-      continuous ? *continuous : Ordering(this->continuousKeys());
-  const Ordering discrete_ordering =
-      discrete ? *discrete : Ordering(this->discreteKeys());
-
-  // Eliminate continuous
-  HybridBayesTree::shared_ptr bayesTree;
-  HybridGaussianFactorGraph::shared_ptr discreteGraph;
-  std::tie(bayesTree, discreteGraph) =
-      BaseEliminateable::eliminatePartialMultifrontal(continuous_ordering,
-                                                      function, variableIndex);
-
-  // Get the last continuous conditional which will have all the discrete
-  const Key last_continuous_key = continuous_ordering.back();
-  HybridConditional::shared_ptr last_conditional =
-      (*bayesTree)[last_continuous_key]->conditional();
-  DiscreteKeys discrete_keys = last_conditional->discreteKeys();
-
-  // If not discrete variables, return the eliminated bayes net.
-  if (discrete_keys.size() == 0) {
-    return bayesTree;
-  }
-
-  // DecisionTree for P'(X|M, Z) for all mode sequences M
-  const AlgebraicDecisionTree<Key> probPrimeTree =
-      this->continuousProbPrimes(discrete_keys, bayesTree);
-
-  // Add the model selection factor P(M|Z)
-  discreteGraph->add(DecisionTreeFactor(discrete_keys, probPrimeTree));
-
-  // Eliminate discrete variables to get the discrete bayes tree.
-  // This bayes tree will be updated with the
-  // continuous variables as the child nodes.
-  HybridBayesTree::shared_ptr updatedBayesTree =
-      discreteGraph->BaseEliminateable::eliminateMultifrontal(discrete_ordering,
-                                                              function);
-
-  // Get the clique with all the discrete keys.
-  // There should only be 1 clique.
-  const HybridBayesTree::sharedClique discrete_clique =
-      (*updatedBayesTree)[discrete_ordering.at(0)];
-
-  std::set<HybridBayesTreeClique::shared_ptr> clique_set;
-  for (auto node : bayesTree->nodes()) {
-    clique_set.insert(node.second);
-  }
-
-  // Set the root of the bayes tree as the discrete clique
-  for (auto clique : clique_set) {
-    if (clique->conditional()->parents() ==
-        discrete_clique->conditional()->frontals()) {
-      updatedBayesTree->addClique(clique, discrete_clique);
-
-    } else {
-      // Remove the clique from the children of the parents since it will get
-      // added again in addClique.
-      auto clique_it = std::find(clique->parent()->children.begin(),
-                                 clique->parent()->children.end(), clique);
-      clique->parent()->children.erase(clique_it);
-      updatedBayesTree->addClique(clique, clique->parent());
-    }
-  }
-  return updatedBayesTree;
-}
-
-/* ************************************************************************ */
-boost::shared_ptr<HybridGaussianFactorGraph::BayesTreeType>
-HybridGaussianFactorGraph::eliminateMultifrontal(
-    OptionalOrderingType orderingType, const Eliminate &function,
-    OptionalVariableIndex variableIndex) const {
-  return BaseEliminateable::eliminateMultifrontal(orderingType, function,
-                                                  variableIndex);
-}
-
-/* ************************************************************************ */
-boost::shared_ptr<HybridGaussianFactorGraph::BayesTreeType>
-HybridGaussianFactorGraph::eliminateMultifrontal(
-    const Ordering &ordering, const Eliminate &function,
-    OptionalVariableIndex variableIndex) const {
-  // Segregate the continuous and the discrete keys
-  Ordering continuous_ordering, discrete_ordering;
-  std::tie(continuous_ordering, discrete_ordering) =
-      this->separateContinuousDiscreteOrdering(ordering);
-
-  return this->eliminateHybridMultifrontal(
-      continuous_ordering, discrete_ordering, function, variableIndex);
 }
 
 }  // namespace gtsam
