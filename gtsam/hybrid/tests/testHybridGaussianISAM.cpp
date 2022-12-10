@@ -178,7 +178,7 @@ TEST(HybridGaussianElimination, IncrementalInference) {
 
   // Test the probability values with regression tests.
   DiscreteValues assignment;
-  EXPECT(assert_equal(0.166667, m00_prob, 1e-5));
+  EXPECT(assert_equal(0.0619233, m00_prob, 1e-5));
   assignment[M(0)] = 0;
   assignment[M(1)] = 0;
   EXPECT(assert_equal(0.0619233, (*discreteConditional)(assignment), 1e-5));

@@ -277,7 +277,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalTwoClique) {
   std::tie(hbt, remaining) = hfg.eliminatePartialMultifrontal(ordering_full);
 
   // 9 cliques in the bayes tree and 0 remaining variables to eliminate.
-  EXPECT_LONGS_EQUAL(7, hbt->size());
+  EXPECT_LONGS_EQUAL(9, hbt->size());
   EXPECT_LONGS_EQUAL(0, remaining->size());
 
   /*
