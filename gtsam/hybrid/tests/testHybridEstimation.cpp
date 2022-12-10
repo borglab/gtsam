@@ -15,6 +15,7 @@
  * @author  Varun Agrawal
  */
 
+#include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
@@ -68,6 +69,28 @@ Ordering getOrdering(HybridGaussianFactorGraph& factors,
       index, KeyVector(newKeysDiscreteLast.begin(), newKeysDiscreteLast.end()),
       true);
   return ordering;
+}
+
+TEST(HybridEstimation, Full) {
+  size_t K = 3;
+  std::vector<double> measurements = {0, 1, 2};
+  // Ground truth discrete seq
+  std::vector<size_t> discrete_seq = {1, 1, 0};
+  // Switching example of robot moving in 1D
+  // with given measurements and equal mode priors.
+  Switching switching(K, 1.0, 0.1, measurements, "1/1 1/1");
+  HybridGaussianFactorGraph graph = switching.linearizedFactorGraph;
+
+  Ordering hybridOrdering;
+  hybridOrdering += X(0);
+  hybridOrdering += X(1);
+  hybridOrdering += X(2);
+  hybridOrdering += M(0);
+  hybridOrdering += M(1);
+  HybridBayesNet::shared_ptr bayesNet =
+      graph.eliminateSequential(hybridOrdering);
+
+  EXPECT_LONGS_EQUAL(5, bayesNet->size());
 }
 
 /****************************************************************************/
@@ -258,8 +281,10 @@ TEST(HybridEstimation, Probability) {
 
     VectorValues values = bayes_net->optimize();
 
-    expected_errors.push_back(linear_graph->error(values));
-    expected_prob_primes.push_back(linear_graph->probPrime(values));
+    double error = linear_graph->error(values);
+    expected_errors.push_back(error);
+    double prob_prime = linear_graph->probPrime(values);
+    expected_prob_primes.push_back(prob_prime);
   }
 
   // Switching example of robot moving in 1D with given measurements and equal
@@ -269,51 +294,20 @@ TEST(HybridEstimation, Probability) {
   auto graph = switching.linearizedFactorGraph;
   Ordering ordering = getOrdering(graph, HybridGaussianFactorGraph());
 
-  AlgebraicDecisionTree<Key> expected_probPrimeTree = probPrimeTree(graph);
-
-  // Eliminate continuous
-  Ordering continuous_ordering(graph.continuousKeys());
-  HybridBayesNet::shared_ptr bayesNet;
-  HybridGaussianFactorGraph::shared_ptr discreteGraph;
-  std::tie(bayesNet, discreteGraph) =
-      graph.eliminatePartialSequential(continuous_ordering);
-
-  // Get the last continuous conditional which will have all the discrete keys
-  auto last_conditional = bayesNet->at(bayesNet->size() - 1);
-  DiscreteKeys discrete_keys = last_conditional->discreteKeys();
-
-  const std::vector<DiscreteValues> assignments =
-      DiscreteValues::CartesianProduct(discrete_keys);
-
-  // Reverse discrete keys order for correct tree construction
-  std::reverse(discrete_keys.begin(), discrete_keys.end());
-
-  // Create a decision tree of all the different VectorValues
-  DecisionTree<Key, VectorValues::shared_ptr> delta_tree =
-      graph.continuousDelta(discrete_keys, bayesNet, assignments);
-
-  AlgebraicDecisionTree<Key> probPrimeTree =
-      graph.continuousProbPrimes(discrete_keys, bayesNet);
-
-  EXPECT(assert_equal(expected_probPrimeTree, probPrimeTree));
+  HybridBayesNet::shared_ptr bayesNet = graph.eliminateSequential(ordering);
+  auto discreteConditional = bayesNet->atDiscrete(bayesNet->size() - 3);
 
   // Test if the probPrimeTree matches the probability of
   // the individual factor graphs
   for (size_t i = 0; i < pow(2, K - 1); i++) {
-    Assignment<Key> discrete_assignment;
+    DiscreteValues discrete_assignment;
     for (size_t v = 0; v < discrete_seq_map[i].size(); v++) {
       discrete_assignment[M(v)] = discrete_seq_map[i][v];
     }
-    EXPECT_DOUBLES_EQUAL(expected_prob_primes.at(i),
-                         probPrimeTree(discrete_assignment), 1e-8);
+    double discrete_transition_prob = 0.25;
+    EXPECT_DOUBLES_EQUAL(expected_prob_primes.at(i) * discrete_transition_prob,
+                         (*discreteConditional)(discrete_assignment), 1e-8);
   }
-
-  discreteGraph->add(DecisionTreeFactor(discrete_keys, probPrimeTree));
-
-  Ordering discrete(graph.discreteKeys());
-  auto discreteBayesNet =
-      discreteGraph->BaseEliminateable::eliminateSequential(discrete);
-  bayesNet->add(*discreteBayesNet);
 
   HybridValues hybrid_values = bayesNet->optimize();
 
