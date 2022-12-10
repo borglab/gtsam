@@ -172,13 +172,8 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
     }
   }
 
-  // std::cout << "Eliminate For MPE" << std::endl;
   auto result = EliminateForMPE(dfg, frontalKeys);
-  // std::cout << "discrete elimination done!" << std::endl;
-  // dfg.print();
-  // std::cout << "\n\n\n" << std::endl;
-  // result.first->print();
-  // result.second->print();
+
   return {boost::make_shared<HybridConditional>(result.first),
           boost::make_shared<HybridDiscreteFactor>(result.second)};
 }
