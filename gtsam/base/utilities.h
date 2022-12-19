@@ -31,6 +31,7 @@ private:
 // boost::index_sequence was introduced in 1.66, so we'll manually define an
 // implementation if user has 1.65.  boost::index_sequence is used to get array
 // indices that align with a parameter pack.
+#include <boost/version.hpp>
 #if BOOST_VERSION >= 106600
 #include <boost/mp11/integer_sequence.hpp>
 #else
