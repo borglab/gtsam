@@ -382,9 +382,8 @@ class TestFactor4 : public NoiseModelFactor4<double, double, double, double> {
       "This type wrong");
 
  public:
-  static constexpr auto X_ = symbol_shorthand::X;  // collision with X<1>
   typedef NoiseModelFactor4<double, double, double, double> Base;
-  TestFactor4() : Base(noiseModel::Diagonal::Sigmas((Vector(1) << 2.0).finished()), X_(1), X_(2), X_(3), X_(4)) {}
+  TestFactor4() : Base(noiseModel::Diagonal::Sigmas((Vector(1) << 2.0).finished()), X(1), X(2), X(3), X(4)) {}
 
   Vector
     evaluateError(const double& x1, const double& x2, const double& x3, const double& x4,
@@ -447,9 +446,8 @@ TEST(NonlinearFactor, NoiseModelFactor4) {
 /* ************************************************************************* */
 class TestFactor5 : public NoiseModelFactor5<double, double, double, double, double> {
 public:
-  static constexpr auto X_ = symbol_shorthand::X;  // collision with X<1>
   typedef NoiseModelFactor5<double, double, double, double, double> Base;
-  TestFactor5() : Base(noiseModel::Diagonal::Sigmas((Vector(1) << 2.0).finished()), X_(1), X_(2), X_(3), X_(4), X_(5)) {}
+  TestFactor5() : Base(noiseModel::Diagonal::Sigmas((Vector(1) << 2.0).finished()), X(1), X(2), X(3), X(4), X(5)) {}
 
   Vector
     evaluateError(const X1& x1, const X2& x2, const X3& x3, const X4& x4, const X5& x5,
@@ -497,9 +495,8 @@ TEST(NonlinearFactor, NoiseModelFactor5) {
 /* ************************************************************************* */
 class TestFactor6 : public NoiseModelFactor6<double, double, double, double, double, double> {
 public:
-  static constexpr auto X_ = symbol_shorthand::X;  // collision with X<1>
   typedef NoiseModelFactor6<double, double, double, double, double, double> Base;
-  TestFactor6() : Base(noiseModel::Diagonal::Sigmas((Vector(1) << 2.0).finished()), X_(1), X_(2), X_(3), X_(4), X_(5), X_(6)) {}
+  TestFactor6() : Base(noiseModel::Diagonal::Sigmas((Vector(1) << 2.0).finished()), X(1), X(2), X(3), X(4), X(5), X(6)) {}
 
   Vector
     evaluateError(const X1& x1, const X2& x2, const X3& x3, const X4& x4, const X5& x5, const X6& x6,
@@ -554,9 +551,8 @@ TEST(NonlinearFactor, NoiseModelFactor6) {
 /* ************************************************************************* */
 class TestFactorN : public NoiseModelFactorN<double, double, double, double> {
 public:
-  static constexpr auto X_ = symbol_shorthand::X;  // collision with X<1>
   typedef NoiseModelFactorN<double, double, double, double> Base;
-  TestFactorN() : Base(noiseModel::Diagonal::Sigmas((Vector(1) << 2.0).finished()), X_(1), X_(2), X_(3), X_(4)) {}
+  TestFactorN() : Base(noiseModel::Diagonal::Sigmas((Vector(1) << 2.0).finished()), X(1), X(2), X(3), X(4)) {}
 
   Vector
     evaluateError(const double& x1, const double& x2, const double& x3, const double& x4,
