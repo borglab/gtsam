@@ -310,7 +310,8 @@ class NoiseModelFactorN : public NoiseModelFactor {
 
   /// The type of the i'th template param can be obtained as ValueType<I>
   template <int I, typename std::enable_if<(I < N), bool>::type = true>
-  using ValueType = typename std::tuple_element<I, std::tuple<ValueTypes...>>::type;
+  using ValueType =
+      typename std::tuple_element<I, std::tuple<ValueTypes...>>::type;
 
  protected:
   using Base = NoiseModelFactor;
@@ -319,12 +320,12 @@ class NoiseModelFactorN : public NoiseModelFactor {
   /* Like std::void_t, except produces `boost::optional<Matrix&>` instead. Used
    * to expand fixed-type parameter-packs with same length as ValueTypes */
   template <typename T>
-  using optional_matrix_type = boost::optional<Matrix&>;
+  using OptionalMatrix = boost::optional<Matrix&>;
 
   /* Like std::void_t, except produces `Key` instead. Used to expand fixed-type
    * parameter-packs with same length as ValueTypes */
   template <typename T>
-  using key_type = Key;
+  using KeyType = Key;
 
  public:
   /// @name Constructors
@@ -341,16 +342,17 @@ class NoiseModelFactorN : public NoiseModelFactor {
    * arguments.
    */
   NoiseModelFactorN(const SharedNoiseModel& noiseModel,
-                    key_type<ValueTypes>... keys)
+                    KeyType<ValueTypes>... keys)
       : Base(noiseModel, std::array<Key, N>{keys...}) {}
 
   /**
-   * Constructor.  Only enabled for n-ary factors where n > 1.
+   * Constructor.
+   * Example usage: NoiseModelFactorN(noise, {key1, key2, ..., keyN})
+   * Example usage: NoiseModelFactorN(noise, keys); where keys is a vector<Key>
    * @param noiseModel Shared pointer to noise model.
    * @param keys A container of keys for the variables in this factor.
    */
-  template <typename CONTAINER,  // use "dummy" parameter T to delay deduction
-            size_t T = N, typename std::enable_if<(T > 1), bool>::type = true>
+  template <typename CONTAINER = std::initializer_list<Key>>
   NoiseModelFactorN(const SharedNoiseModel& noiseModel, CONTAINER keys)
       : Base(noiseModel, keys) {
     assert(keys.size() == N);
@@ -379,7 +381,8 @@ class NoiseModelFactorN : public NoiseModelFactor {
   Vector unwhitenedError(
       const Values& x,
       boost::optional<std::vector<Matrix>&> H = boost::none) const override {
-    return unwhitenedError(boost::mp11::index_sequence_for<ValueTypes...>{}, x, H);
+    return unwhitenedError(boost::mp11::index_sequence_for<ValueTypes...>{}, x,
+                           H);
   }
 
   /// @}
@@ -407,7 +410,7 @@ class NoiseModelFactorN : public NoiseModelFactor {
    * @param[out] H The Jacobian with respect to each variable (optional).
    */
   virtual Vector evaluateError(const ValueTypes&... x,
-                               optional_matrix_type<ValueTypes>... H) const = 0;
+                               OptionalMatrix<ValueTypes>... H) const = 0;
 
   /// @}
   /// @name Convenience method overloads
@@ -420,7 +423,7 @@ class NoiseModelFactorN : public NoiseModelFactor {
    * e.g. `Vector error = factor.evaluateError(x1, x2, x3);`
    */
   inline Vector evaluateError(const ValueTypes&... x) const {
-    return evaluateError(x..., optional_matrix_type<ValueTypes>()...);
+    return evaluateError(x..., OptionalMatrix<ValueTypes>()...);
   }
 
   /** Some optional jacobians omitted function overload */
@@ -506,7 +509,8 @@ class GTSAM_DEPRECATED NoiseModelFactor1 : public NoiseModelFactorN<VALUE> {
  * with 2 variables.  To derive from this class, implement evaluateError().
  */
 template <class VALUE1, class VALUE2>
-class GTSAM_DEPRECATED NoiseModelFactor2 : public NoiseModelFactorN<VALUE1, VALUE2> {
+class GTSAM_DEPRECATED NoiseModelFactor2
+    : public NoiseModelFactorN<VALUE1, VALUE2> {
  public:
   // aliases for value types pulled from keys
   using X1 = VALUE1;
@@ -542,7 +546,8 @@ class GTSAM_DEPRECATED NoiseModelFactor2 : public NoiseModelFactorN<VALUE1, VALU
  * with 3 variables.  To derive from this class, implement evaluateError().
  */
 template <class VALUE1, class VALUE2, class VALUE3>
-class GTSAM_DEPRECATED NoiseModelFactor3 : public NoiseModelFactorN<VALUE1, VALUE2, VALUE3> {
+class GTSAM_DEPRECATED NoiseModelFactor3
+    : public NoiseModelFactorN<VALUE1, VALUE2, VALUE3> {
  public:
   // aliases for value types pulled from keys
   using X1 = VALUE1;
