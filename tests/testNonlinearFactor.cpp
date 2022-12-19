@@ -441,6 +441,20 @@ TEST(NonlinearFactor, NoiseModelFactor4) {
   EXPECT(assert_equal(tf.key4(), X(4)));
   std::vector<Matrix> H = {Matrix(), Matrix(), Matrix(), Matrix()};
   EXPECT(assert_equal(Vector1(10.0), tf.unwhitenedError(tv, H)));
+
+  // And test "forward compatibility" using `key<N>` and `ValueType<N>` too
+  static_assert(std::is_same<TestFactor4::ValueType<0>, double>::value,
+                "ValueType<0> type incorrect");
+  static_assert(std::is_same<TestFactor4::ValueType<1>, double>::value,
+                "ValueType<1> type incorrect");
+  static_assert(std::is_same<TestFactor4::ValueType<2>, double>::value,
+                "ValueType<2> type incorrect");
+  static_assert(std::is_same<TestFactor4::ValueType<3>, double>::value,
+                "ValueType<3> type incorrect");
+  EXPECT(assert_equal(tf.key<0>(), X(1)));
+  EXPECT(assert_equal(tf.key<1>(), X(2)));
+  EXPECT(assert_equal(tf.key<2>(), X(3)));
+  EXPECT(assert_equal(tf.key<3>(), X(4)));
 }
 
 /* ************************************************************************* */
@@ -615,6 +629,20 @@ TEST(NonlinearFactor, NoiseModelFactorN) {
   EXPECT(assert_equal(H2_expected, H2));
   EXPECT(assert_equal(H3_expected, H3));
   EXPECT(assert_equal(H4_expected, H4));
+
+  // Test using `key<N>` and `ValueType<N>`
+  static_assert(std::is_same<TestFactorN::ValueType<0>, double>::value,
+                "ValueType<0> type incorrect");
+  static_assert(std::is_same<TestFactorN::ValueType<1>, double>::value,
+                "ValueType<1> type incorrect");
+  static_assert(std::is_same<TestFactorN::ValueType<2>, double>::value,
+                "ValueType<2> type incorrect");
+  static_assert(std::is_same<TestFactorN::ValueType<3>, double>::value,
+                "ValueType<3> type incorrect");
+  EXPECT(assert_equal(tf.key<0>(), X(1)));
+  EXPECT(assert_equal(tf.key<1>(), X(2)));
+  EXPECT(assert_equal(tf.key<2>(), X(3)));
+  EXPECT(assert_equal(tf.key<3>(), X(4)));
 }
 
 /* ************************************************************************* */
