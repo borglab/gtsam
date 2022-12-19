@@ -338,6 +338,7 @@ class TestFactor1 : public NoiseModelFactor1<double> {
  public:
   typedef NoiseModelFactor1<double> Base;
   TestFactor1() : Base(noiseModel::Diagonal::Sigmas(Vector1(2.0)), L(1)) {}
+  using Base::NoiseModelFactor1;  // inherit constructors
 
   Vector evaluateError(const double& x1, boost::optional<Matrix&> H1 =
                                              boost::none) const override {
@@ -371,6 +372,10 @@ TEST(NonlinearFactor, NoiseModelFactor1) {
   EXPECT(assert_equal(tf.key(), L(1)));
   std::vector<Matrix> H = {Matrix()};
   EXPECT(assert_equal(Vector1(1.0), tf.unwhitenedError(tv, H)));
+
+  // Test constructors
+  TestFactor1 tf2(noiseModel::Unit::Create(1), L(1));
+  TestFactor1 tf3(noiseModel::Unit::Create(1), {L(1)});
 }
 
 /* ************************************************************************* */
@@ -384,6 +389,7 @@ class TestFactor4 : public NoiseModelFactor4<double, double, double, double> {
  public:
   typedef NoiseModelFactor4<double, double, double, double> Base;
   TestFactor4() : Base(noiseModel::Diagonal::Sigmas((Vector(1) << 2.0).finished()), X(1), X(2), X(3), X(4)) {}
+  using Base::NoiseModelFactor4;  // inherit constructors
 
   Vector
     evaluateError(const double& x1, const double& x2, const double& x3, const double& x4,
@@ -455,6 +461,14 @@ TEST(NonlinearFactor, NoiseModelFactor4) {
   EXPECT(assert_equal(tf.key<1>(), X(2)));
   EXPECT(assert_equal(tf.key<2>(), X(3)));
   EXPECT(assert_equal(tf.key<3>(), X(4)));
+
+  // Test constructors
+  TestFactor4 tf2(noiseModel::Unit::Create(1), L(1), L(2), L(3), L(4));
+  TestFactor4 tf3(noiseModel::Unit::Create(1), {L(1), L(2), L(3), L(4)});
+  TestFactor4 tf4(noiseModel::Unit::Create(1),
+                  std::array<Key, 4>{L(1), L(2), L(3), L(4)});
+  std::vector<Key> keys = {L(1), L(2), L(3), L(4)};
+  TestFactor4 tf5(noiseModel::Unit::Create(1), keys);
 }
 
 /* ************************************************************************* */
