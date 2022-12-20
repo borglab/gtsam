@@ -376,6 +376,7 @@ TEST(NonlinearFactor, NoiseModelFactor1) {
   // Test constructors
   TestFactor1 tf2(noiseModel::Unit::Create(1), L(1));
   TestFactor1 tf3(noiseModel::Unit::Create(1), {L(1)});
+  TestFactor1 tf4(noiseModel::Unit::Create(1), gtsam::Symbol('L', 1));
 }
 
 /* ************************************************************************* */
