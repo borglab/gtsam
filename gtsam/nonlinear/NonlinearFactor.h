@@ -352,7 +352,12 @@ class NoiseModelFactorN : public NoiseModelFactor {
    * @param noiseModel Shared pointer to noise model.
    * @param keys A container of keys for the variables in this factor.
    */
-  template <typename CONTAINER = std::initializer_list<Key>>
+  template <typename CONTAINER = std::initializer_list<Key>,
+            // check that CONTAINER is a container of Keys:
+            typename T = typename std::decay<
+                decltype(*std::declval<CONTAINER>().begin())>::type,
+            typename std::enable_if<std::is_convertible<T, Key>::value,
+                                    bool>::type = true>
   NoiseModelFactorN(const SharedNoiseModel& noiseModel, CONTAINER keys)
       : Base(noiseModel, keys) {
     assert(keys.size() == N);
