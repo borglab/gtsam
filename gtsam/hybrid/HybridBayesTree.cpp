@@ -14,7 +14,7 @@
  * @brief   Hybrid Bayes Tree, the result of eliminating a
  * HybridJunctionTree
  * @date Mar 11, 2022
- * @author  Fan Jiang
+ * @author  Fan Jiang, Varun Agrawal
  */
 
 #include <gtsam/base/treeTraversal-inst.h>
@@ -166,8 +166,6 @@ void HybridBayesTree::prune(const size_t maxNrLeaves) {
 
   DecisionTreeFactor prunedDecisionTree = decisionTree->prune(maxNrLeaves);
   decisionTree->root_ = prunedDecisionTree.root_;
-  // this->print();
-  // decisionTree->print("", DefaultKeyFormatter);
 
   /// Helper struct for pruning the hybrid bayes tree.
   struct HybridPrunerData {
