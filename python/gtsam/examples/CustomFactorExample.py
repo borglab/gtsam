@@ -60,10 +60,10 @@ def error_odom(measurement: np.ndarray, this: gtsam.CustomFactor,
     key1 = this.keys()[0]
     key2 = this.keys()[1]
     pos1, pos2 = values.atVector(key1), values.atVector(key2)
-    error = measurement - (pos1 - pos2)
+    error = (pos2 - pos1) - measurement
     if jacobians is not None:
-        jacobians[0] = I
-        jacobians[1] = -I
+        jacobians[0] = -I
+        jacobians[1] = I
 
     return error
 
