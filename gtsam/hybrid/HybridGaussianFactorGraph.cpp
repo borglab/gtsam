@@ -92,7 +92,6 @@ GaussianMixtureFactor::Sum sumFrontals(
       if (auto cgmf = boost::dynamic_pointer_cast<GaussianMixtureFactor>(f)) {
         sum = cgmf->add(sum);
       }
-
       if (auto gm = boost::dynamic_pointer_cast<HybridConditional>(f)) {
         sum = gm->asMixture()->add(sum);
       }
@@ -189,7 +188,7 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
   DiscreteKeys discreteSeparator(discreteSeparatorSet.begin(),
                                  discreteSeparatorSet.end());
 
-  // sum out frontals, this is the factor on the separator
+  // sum out frontals, this is the factor 𝜏 on the separator
   GaussianMixtureFactor::Sum sum = sumFrontals(factors);
 
   // If a tree leaf contains nullptr,
