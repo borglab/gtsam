@@ -48,6 +48,11 @@ inline Line3_ transformTo(const Pose3_ &wTc, const Line3_ &wL) {
   return Line3_(f, wTc, wL);
 }
 
+inline Point3_ normalize(const Point3_& a){
+  Point3 (*f)(const Point3 &, OptionalJacobian<3, 3>) = &normalize;
+  return Point3_(f, a);
+}
+
 inline Point3_ cross(const Point3_& a, const Point3_& b) {
   Point3 (*f)(const Point3 &, const Point3 &,
              OptionalJacobian<3, 3>, OptionalJacobian<3, 3>) = &cross;
