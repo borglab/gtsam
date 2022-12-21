@@ -267,7 +267,6 @@ int main(int argc, char* argv[]) {
 
       if (use_isam) {
         isam2->update(*graph, initial_values);
-        isam2->update();
         result = isam2->calculateEstimate();
 
         // reset the graph
