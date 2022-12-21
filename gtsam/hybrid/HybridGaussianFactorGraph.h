@@ -12,7 +12,7 @@
 /**
  * @file   HybridGaussianFactorGraph.h
  * @brief  Linearized Hybrid factor graph that uses type erasure
- * @author Fan Jiang
+ * @author Fan Jiang, Varun Agrawal
  * @date   Mar 11, 2022
  */
 
@@ -270,10 +270,9 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
     const std::vector<DiscreteValues> assignments =
         DiscreteValues::CartesianProduct(discrete_keys);
 
-    // Save a copy of the original discrete key ordering
-    DiscreteKeys reversed_discrete_keys(discrete_keys);
-    // Reverse discrete keys order for correct tree construction
-    std::reverse(reversed_discrete_keys.begin(), reversed_discrete_keys.end());
+    // Get reversed discrete key ordering for correct tree construction
+    DiscreteKeys reversed_discrete_keys(discrete_keys.rbegin(),
+                                        discrete_keys.rend());
 
     // Create a decision tree of all the different VectorValues
     DecisionTree<Key, VectorValues::shared_ptr> delta_tree =
@@ -286,7 +285,7 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
       VectorValues delta = *delta_tree(assignment);
 
       // If VectorValues is empty, it means this is a pruned branch.
-      // Set thr probPrime to 0.0.
+      // Set the probPrime to 0.0.
       if (delta.size() == 0) {
         probPrimes.push_back(0.0);
         continue;
