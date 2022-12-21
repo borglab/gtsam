@@ -24,6 +24,7 @@
 #include <gtsam/inference/BayesTree.h>
 #include <gtsam/inference/BayesTreeCliqueBase.h>
 #include <gtsam/inference/Conditional.h>
+#include <gtsam/linear/GaussianBayesTree.h>
 
 #include <string>
 
@@ -75,6 +76,15 @@ class GTSAM_EXPORT HybridBayesTree : public BayesTree<HybridBayesTreeClique> {
 
   /** Check equality */
   bool equals(const This& other, double tol = 1e-9) const;
+
+  /**
+   * @brief Get the Gaussian Bayes Tree which corresponds to a specific discrete
+   * value assignment.
+   *
+   * @param assignment The discrete value assignment for the discrete keys.
+   * @return GaussianBayesTree
+   */
+  GaussianBayesTree choose(const DiscreteValues& assignment) const;
 
   /**
    * @brief Optimize the hybrid Bayes tree by computing the MPE for the current

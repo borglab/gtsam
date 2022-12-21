@@ -170,6 +170,57 @@ TEST(HybridBayesTree, Optimize) {
 }
 
 /* ****************************************************************************/
+// Test for choosing a GaussianBayesTree from a HybridBayesTree.
+TEST(HybridBayesTree, Choose) {
+  Switching s(4);
+
+  HybridGaussianISAM isam;
+  HybridGaussianFactorGraph graph1;
+
+  // Add the 3 hybrid factors, x1-x2, x2-x3, x3-x4
+  for (size_t i = 1; i < 4; i++) {
+    graph1.push_back(s.linearizedFactorGraph.at(i));
+  }
+
+  // Add the Gaussian factors, 1 prior on X(0),
+  // 3 measurements on X(2), X(3), X(4)
+  graph1.push_back(s.linearizedFactorGraph.at(0));
+  for (size_t i = 4; i <= 6; i++) {
+    graph1.push_back(s.linearizedFactorGraph.at(i));
+  }
+
+  // Add the discrete factors
+  for (size_t i = 7; i <= 9; i++) {
+    graph1.push_back(s.linearizedFactorGraph.at(i));
+  }
+
+  isam.update(graph1);
+
+  DiscreteValues assignment;
+  assignment[M(0)] = 1;
+  assignment[M(1)] = 1;
+  assignment[M(2)] = 1;
+
+  GaussianBayesTree gbt = isam.choose(assignment);
+
+  Ordering ordering;
+  ordering += X(0);
+  ordering += X(1);
+  ordering += X(2);
+  ordering += X(3);
+  ordering += M(0);
+  ordering += M(1);
+  ordering += M(2);
+  
+  //TODO(Varun) get segfault if ordering not provided
+  auto bayesTree = s.linearizedFactorGraph.eliminateMultifrontal(ordering);
+  
+  auto expected_gbt = bayesTree->choose(assignment);
+
+  EXPECT(assert_equal(expected_gbt, gbt));
+}
+
+/* ****************************************************************************/
 // Test HybridBayesTree serialization.
 TEST(HybridBayesTree, Serialization) {
   Switching s(4);
