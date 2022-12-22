@@ -308,26 +308,58 @@ class NoiseModelFactorN : public NoiseModelFactor {
   /// N is the number of variables (N-way factor)
   enum { N = sizeof...(ValueTypes) };
 
-  /// The type of the i'th template param can be obtained as ValueType<I>
-  template <int I, typename std::enable_if<(I < N), bool>::type = true>
-  using ValueType =
-      typename std::tuple_element<I, std::tuple<ValueTypes...>>::type;
-
  protected:
   using Base = NoiseModelFactor;
   using This = NoiseModelFactorN<ValueTypes...>;
 
-  /* Like std::void_t, except produces `boost::optional<Matrix&>` instead. Used
-   * to expand fixed-type parameter-packs with same length as ValueTypes */
+  /// @name SFINAE aliases
+  /// @{
+
+  template <typename From, typename To>
+  using IsConvertible =
+      typename std::enable_if<std::is_convertible<From, To>::value, void>::type;
+
+  template <int I>
+  using IndexIsValid = typename std::enable_if<(I >= 1) && (I <= N),
+                                               void>::type;  // 1-indexed!
+
+  template <typename Container>
+  using ContainerElementType =
+      typename std::decay<decltype(*std::declval<Container>().begin())>::type;
+  template <typename Container>
+  using IsContainerOfKeys = IsConvertible<ContainerElementType<Container>, Key>;
+
+  /// @}
+
+  /* Like std::void_t, except produces `boost::optional<Matrix&>` instead of
+   * `void`. Used to expand fixed-type parameter-packs with same length as
+   * ValueTypes. */
   template <typename T>
   using OptionalMatrix = boost::optional<Matrix&>;
 
-  /* Like std::void_t, except produces `Key` instead. Used to expand fixed-type
-   * parameter-packs with same length as ValueTypes */
+  /* Like std::void_t, except produces `Key` instead of `void`. Used to expand
+   * fixed-type parameter-packs with same length as ValueTypes. */
   template <typename T>
   using KeyType = Key;
 
  public:
+  /**
+   * The type of the I'th template param can be obtained as ValueType<I>.
+   * I is 1-indexed for backwards compatibility/consistency!  So for example,
+   * ```
+   * using Factor = NoiseModelFactorN<Pose3, Point3>;
+   * Factor::ValueType<1>  // Pose3
+   * Factor::ValueType<2>  // Point3
+   * // Factor::ValueType<0> // ERROR!  Will not compile.
+   * // Factor::ValueType<3> // ERROR!  Will not compile.
+   * ```
+   */
+  template <int I, typename = IndexIsValid<I>>
+  using ValueType =
+      typename std::tuple_element<I - 1, std::tuple<ValueTypes...>>::type;
+
+ public:
+
   /// @name Constructors
   /// @{
 
@@ -353,11 +385,7 @@ class NoiseModelFactorN : public NoiseModelFactor {
    * @param keys A container of keys for the variables in this factor.
    */
   template <typename CONTAINER = std::initializer_list<Key>,
-            // check that CONTAINER is a container of Keys:
-            typename T = typename std::decay<
-                decltype(*std::declval<CONTAINER>().begin())>::type,
-            typename std::enable_if<std::is_convertible<T, Key>::value,
-                                    bool>::type = true>
+            typename = IsContainerOfKeys<CONTAINER>>
   NoiseModelFactorN(const SharedNoiseModel& noiseModel, CONTAINER keys)
       : Base(noiseModel, keys) {
     assert(keys.size() == N);
@@ -367,10 +395,19 @@ class NoiseModelFactorN : public NoiseModelFactor {
 
   ~NoiseModelFactorN() override {}
 
-  /// Returns a key. Usage: `key<I>()` returns the I'th key.
-  template <int I>
-  inline typename std::enable_if<(I < N), Key>::type key() const {
-    return keys_[I];
+  /** Returns a key. Usage: `key<I>()` returns the I'th key.
+   * I is 1-indexed for backwards compatibility/consistency!  So for example,
+   * ```
+   * NoiseModelFactorN<Pose3, Point3> factor(noise, key1, key2);
+   * key<1>()  // = key1
+   * key<2>()  // = key2
+   * // key<0>()  // ERROR!  Will not compile
+   * // key<3>()  // ERROR!  Will not compile
+   * ```
+   */
+  template <int I, typename = IndexIsValid<I>>
+  inline Key key() const {
+    return keys_[I - 1];
   }
 
   /// @name NoiseModelFactor methods
@@ -433,9 +470,7 @@ class NoiseModelFactorN : public NoiseModelFactor {
 
   /** Some optional jacobians omitted function overload */
   template <typename... OptionalJacArgs,
-            typename std::enable_if<(sizeof...(OptionalJacArgs) > 0) &&
-                                        (sizeof...(OptionalJacArgs) < N),
-                                    bool>::type = true>
+            typename = IndexIsValid<sizeof...(OptionalJacArgs) + 1>>
   inline Vector evaluateError(const ValueTypes&... x,
                               OptionalJacArgs&&... H) const {
     return evaluateError(x..., std::forward<OptionalJacArgs>(H)...,
@@ -448,16 +483,17 @@ class NoiseModelFactorN : public NoiseModelFactor {
   /** Pack expansion with index_sequence template pattern, used to index into
    * `keys_` and `H`
    */
-  template <std::size_t... Inds>
+  template <std::size_t... Indices>
   inline Vector unwhitenedError(
-      boost::mp11::index_sequence<Inds...>,  //
+      boost::mp11::index_sequence<Indices...>,  //
       const Values& x,
       boost::optional<std::vector<Matrix>&> H = boost::none) const {
     if (this->active(x)) {
       if (H) {
-        return evaluateError(x.at<ValueTypes>(keys_[Inds])..., (*H)[Inds]...);
+        return evaluateError(x.at<ValueTypes>(keys_[Indices])...,
+                             (*H)[Indices]...);
       } else {
-        return evaluateError(x.at<ValueTypes>(keys_[Inds])...);
+        return evaluateError(x.at<ValueTypes>(keys_[Indices])...);
       }
     } else {
       return Vector::Zero(this->dim());
