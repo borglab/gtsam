@@ -26,7 +26,7 @@
 namespace gtsam {
 /**
  *
- * @addtogroup SLAM
+ * @ingroup slam
  *
  * If you are using the factor, please cite:
  * L. Carlone, Z. Kira, C. Beall, V. Indelman, F. Dellaert,
@@ -41,7 +41,7 @@ namespace gtsam {
  * has its own calibration.
  * The factor only constrains poses (variable dimension is 6).
  * This factor requires that values contains the involved poses (Pose3).
- * @addtogroup SLAM
+ * @ingroup slam
  */
 class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionPoseFactor
     : public SmartStereoProjectionFactor {

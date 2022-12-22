@@ -32,7 +32,7 @@
 namespace gtsam {
 
 /**
- * @addtogroup ISAM2
+ * @ingroup isam2
  * This struct is returned from ISAM2::update() and contains information about
  * the update that is useful for determining whether the solution is
  * converging, and about how much work was required for the update.  See member

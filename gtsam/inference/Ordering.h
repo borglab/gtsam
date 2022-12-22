@@ -89,7 +89,8 @@ public:
    */
   FastMap<Key, size_t> invert() const;
 
-  /// @name Fill-reducing Orderings @{
+  /// @name Fill-reducing Orderings
+  /// @{
 
   /// Compute a fill-reducing ordering using COLAMD from a factor graph (see details for note on
   /// performance). This internally builds a VariableIndex so if you already have a VariableIndex,
@@ -215,7 +216,8 @@ public:
 
   /// @}
 
-  /// @name Named Constructors @{
+  /// @name Named Constructors
+  /// @{
 
   template<class FACTOR_GRAPH>
   static Ordering Create(OrderingType orderingType,
@@ -241,7 +243,8 @@ public:
 
   /// @}
 
-  /// @name Testable @{
+  /// @name Testable
+  /// @{
 
   GTSAM_EXPORT
   void print(const std::string& str = "", const KeyFormatter& keyFormatter =

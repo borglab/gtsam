@@ -38,6 +38,8 @@ namespace gtsam {
    * Decision Tree
    * L = label for variables
    * Y = function range (any algebra), e.g., bool, int, double
+   *
+   * @ingroup discrete
    */
   template<typename L, typename Y>
   class DecisionTree {

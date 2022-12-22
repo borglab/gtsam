@@ -10,7 +10,7 @@ endif()
 set (GTSAM_VERSION_MAJOR 4)
 set (GTSAM_VERSION_MINOR 2)
 set (GTSAM_VERSION_PATCH 0)
-set (GTSAM_PRERELEASE_VERSION "a7")
+set (GTSAM_PRERELEASE_VERSION "a8")
 math (EXPR GTSAM_VERSION_NUMERIC "10000 * ${GTSAM_VERSION_MAJOR} + 100 * ${GTSAM_VERSION_MINOR} + ${GTSAM_VERSION_PATCH}")
 
 if (${GTSAM_VERSION_PATCH} EQUAL 0)
@@ -101,8 +101,6 @@ if(GTSAM_BUILD_PYTHON OR GTSAM_INSTALL_MATLAB_TOOLBOX)
     # Copy matlab.h to the correct folder.
     configure_file(${PROJECT_SOURCE_DIR}/wrap/matlab.h
                ${PROJECT_BINARY_DIR}/wrap/matlab.h COPYONLY)
-    # Add the include directories so that matlab.h can be found
-    include_directories("${PROJECT_BINARY_DIR}" "${GTSAM_EIGEN_INCLUDE_FOR_BUILD}")
 
     add_subdirectory(wrap)
     list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/wrap/cmake")

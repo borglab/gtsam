@@ -40,7 +40,7 @@ public:
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new Reconstruction(*this))); }
 
-  /** \f$ log((g_k\exp(h\xi_k))^{-1}g_{k+1}) = 0, with optional derivatives */
+  /** \f$ log((g_k\exp(h\xi_k))^{-1}g_{k+1}) = 0 \f$, with optional derivatives */
   Vector evaluateError(const Pose3& gk1, const Pose3& gk, const Vector6& xik,
       boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none,
@@ -195,5 +195,4 @@ public:
 
 };
 
-
-} /* namespace gtsam */
+}  // namespace gtsam

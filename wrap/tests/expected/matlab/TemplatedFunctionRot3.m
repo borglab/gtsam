@@ -4,3 +4,4 @@ function varargout = TemplatedFunctionRot3(varargin)
       else
         error('Arguments do not match any overload of function TemplatedFunctionRot3');
       end
+end

@@ -217,7 +217,7 @@ TEST(OrientedPlane3Factor, Issue561Simplified) {
 
   // Setup prior factors
   // Note: If x0 is too far away from the origin (e.g. x=100) this test can fail.
-  Pose3 x0(Rot3::identity(), Vector3(10, -1, 1));
+  Pose3 x0(Rot3::Identity(), Vector3(10, -1, 1));
   auto x0_noise = noiseModel::Isotropic::Sigma(6, 0.01);
   graph.addPrior<Pose3>(X(0), x0, x0_noise);
 
@@ -241,7 +241,7 @@ TEST(OrientedPlane3Factor, Issue561Simplified) {
   // Initial values
   // Just offset the initial pose by 1m. This is what we are trying to optimize.
   Values initialEstimate;
-  Pose3 x0_initial = x0.compose(Pose3(Rot3::identity(), Vector3(1,0,0)));
+  Pose3 x0_initial = x0.compose(Pose3(Rot3::Identity(), Vector3(1,0,0)));
   initialEstimate.insert(P(1), p1);
   initialEstimate.insert(P(2), p2);
   initialEstimate.insert(X(0), x0_initial);

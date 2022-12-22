@@ -38,7 +38,7 @@ GTSAM_EXPORT Line3 transformTo(const Pose3 &wTc, const Line3 &wL,
 
 /**
  * A 3D line (R,a,b) : (Rot3,Scalar,Scalar)
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  */
 class GTSAM_EXPORT Line3 {

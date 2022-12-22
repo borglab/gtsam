@@ -33,8 +33,6 @@ static const Point2 P(0.2, 0.7);
 static const Rot2 R = Rot2::fromAngle(0.3);
 static const double s = 4;
 
-const double degree = M_PI / 180;
-
 //******************************************************************************
 TEST(Similarity2, Concepts) {
   BOOST_CONCEPT_ASSERT((IsGroup<Similarity2>));

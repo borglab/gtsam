@@ -5,6 +5,12 @@ namespace gtsam {
 
 \mainpage GTSAM
 
+\subpage GTSAM
+
+\subpage GTSAM_UNSTABLE
+
+\page GTSAM
+
 \section new_factor_variable_types Creating new factor and variable types
 
 GTSAM comes with a set of variable and factor types typically used in SFM and

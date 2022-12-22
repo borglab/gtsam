@@ -30,7 +30,7 @@ namespace gtsam {
   /**
    * Rotation matrix
    * NOTE: the angle theta is in radians unless explicitly stated
-   * @addtogroup geometry
+   * @ingroup geometry
    * \nosubgrouping
    */
   class GTSAM_EXPORT Rot2 : public LieGroup<Rot2, 1> {
@@ -86,7 +86,7 @@ namespace gtsam {
     static Rot2 atan2(double y, double x);
 
     /**
-     * Random, generates random angle \in [-p,pi]
+     * Random, generates random angle \f$\in\f$ [-pi,pi]
      * Example:
      *   std::mt19937 engine(42);
      *   Unit3 unit = Unit3::Random(engine);
@@ -107,8 +107,8 @@ namespace gtsam {
     /// @name Group
     /// @{
 
-    /** identity */
-    inline static Rot2 identity() {  return Rot2(); }
+    /** Identity */
+    inline static Rot2 Identity() {  return Rot2(); }
 
     /** The inverse rotation - negative angle */
     Rot2 inverse() const { return Rot2(c_, -s_);}

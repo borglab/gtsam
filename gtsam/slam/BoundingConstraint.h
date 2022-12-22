@@ -27,7 +27,7 @@ namespace gtsam {
  * greater/less than a fixed threshold.  The function
  * will need to have its value function implemented to return
  * a scalar for comparison.
- * @addtogroup SLAM
+ * @ingroup slam
  */
 template<class VALUE>
 struct BoundingConstraint1: public NoiseModelFactor1<VALUE> {

@@ -299,7 +299,7 @@ class Class:
             # If the base class is a TemplatedType,
             # we want the instantiated Typename
             if isinstance(parent_class, TemplatedType):
-                parent_class = parent_class.typename  # type: ignore
+                pass  # Note: this must get handled in InstantiatedClass
 
             self.parent_class = parent_class
         else:

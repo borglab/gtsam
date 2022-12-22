@@ -73,6 +73,7 @@ set(interface_files
     ${GTSAM_SOURCE_DIR}/gtsam/geometry/geometry.i
     ${GTSAM_SOURCE_DIR}/gtsam/linear/linear.i
     ${GTSAM_SOURCE_DIR}/gtsam/nonlinear/nonlinear.i
+    ${GTSAM_SOURCE_DIR}/gtsam/nonlinear/custom.i
     ${GTSAM_SOURCE_DIR}/gtsam/symbolic/symbolic.i
     ${GTSAM_SOURCE_DIR}/gtsam/sam/sam.i
     ${GTSAM_SOURCE_DIR}/gtsam/slam/slam.i
@@ -98,7 +99,6 @@ endif(GTSAM_UNSTABLE_INSTALL_MATLAB_TOOLBOX)
 
 # Record the root dir for gtsam - needed during external builds, e.g., ROS
 set(GTSAM_SOURCE_ROOT_DIR ${GTSAM_SOURCE_DIR})
-message(STATUS "GTSAM_SOURCE_ROOT_DIR: [${GTSAM_SOURCE_ROOT_DIR}]")
 
 # Tests message(STATUS "Installing Matlab Toolbox")
 install_matlab_scripts("${GTSAM_SOURCE_ROOT_DIR}/matlab/" "*.m;*.fig")

@@ -14,9 +14,10 @@
  * @date March 31, 2022
  * @author Fan Jiang
  * @author Frank Dellaert
- * @author Richard Roberts
+ * @author Varun Agrawal
  */
 
+#include <gtsam/base/treeTraversal-inst.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 #include <gtsam/hybrid/HybridGaussianISAM.h>
@@ -38,9 +39,40 @@ HybridGaussianISAM::HybridGaussianISAM(const HybridBayesTree& bayesTree)
     : Base(bayesTree) {}
 
 /* ************************************************************************* */
+Ordering HybridGaussianISAM::GetOrdering(
+    HybridGaussianFactorGraph& factors,
+    const HybridGaussianFactorGraph& newFactors) {
+  // Get all the discrete keys from the factors
+  KeySet allDiscrete = factors.discreteKeys();
+
+  // Create KeyVector with continuous keys followed by discrete keys.
+  KeyVector newKeysDiscreteLast;
+  const KeySet newFactorKeys = newFactors.keys();
+  // Insert continuous keys first.
+  for (auto& k : newFactorKeys) {
+    if (!allDiscrete.exists(k)) {
+      newKeysDiscreteLast.push_back(k);
+    }
+  }
+  // Insert discrete keys at the end
+  std::copy(allDiscrete.begin(), allDiscrete.end(),
+            std::back_inserter(newKeysDiscreteLast));
+
+  const VariableIndex index(factors);
+
+  // Get an ordering where the new keys are eliminated last
+  Ordering ordering = Ordering::ColamdConstrainedLast(
+      index, KeyVector(newKeysDiscreteLast.begin(), newKeysDiscreteLast.end()),
+      true);
+  return ordering;
+}
+
+/* ************************************************************************* */
 void HybridGaussianISAM::updateInternal(
     const HybridGaussianFactorGraph& newFactors,
     HybridBayesTree::Cliques* orphans,
+    const boost::optional<size_t>& maxNrLeaves,
+    const boost::optional<Ordering>& ordering,
     const HybridBayesTree::Eliminate& function) {
   // Remove the contaminated part of the Bayes tree
   BayesNetType bn;
@@ -51,39 +83,30 @@ void HybridGaussianISAM::updateInternal(
   }
 
   // Add the removed top and the new factors
-  FactorGraphType factors;
+  HybridGaussianFactorGraph factors;
   factors += bn;
   factors += newFactors;
 
   // Add the orphaned subtrees
-  for (const sharedClique& orphan : *orphans)
-    factors += boost::make_shared<BayesTreeOrphanWrapper<Node> >(orphan);
-
-  KeySet allDiscrete;
-  for (auto& factor : factors) {
-    for (auto& k : factor->discreteKeys()) {
-      allDiscrete.insert(k.first);
-    }
+  for (const sharedClique& orphan : *orphans) {
+    factors += boost::make_shared<BayesTreeOrphanWrapper<Node>>(orphan);
   }
-  KeyVector newKeysDiscreteLast;
-  for (auto& k : newFactorKeys) {
-    if (!allDiscrete.exists(k)) {
-      newKeysDiscreteLast.push_back(k);
-    }
-  }
-  std::copy(allDiscrete.begin(), allDiscrete.end(),
-            std::back_inserter(newKeysDiscreteLast));
 
-  // KeyVector new
-
-  // Get an ordering where the new keys are eliminated last
   const VariableIndex index(factors);
-  const Ordering ordering = Ordering::ColamdConstrainedLast(
-      index, KeyVector(newKeysDiscreteLast.begin(), newKeysDiscreteLast.end()),
-      true);
+  Ordering elimination_ordering;
+  if (ordering) {
+    elimination_ordering = *ordering;
+  } else {
+    elimination_ordering = GetOrdering(factors, newFactors);
+  }
 
   // eliminate all factors (top, added, orphans) into a new Bayes tree
-  auto bayesTree = factors.eliminateMultifrontal(ordering, function, index);
+  HybridBayesTree::shared_ptr bayesTree =
+      factors.eliminateMultifrontal(elimination_ordering, function, index);
+
+  if (maxNrLeaves) {
+    bayesTree->prune(*maxNrLeaves);
+  }
 
   // Re-add into Bayes tree data structures
   this->roots_.insert(this->roots_.end(), bayesTree->roots().begin(),
@@ -93,9 +116,11 @@ void HybridGaussianISAM::updateInternal(
 
 /* ************************************************************************* */
 void HybridGaussianISAM::update(const HybridGaussianFactorGraph& newFactors,
+                                const boost::optional<size_t>& maxNrLeaves,
+                                const boost::optional<Ordering>& ordering,
                                 const HybridBayesTree::Eliminate& function) {
   Cliques orphans;
-  this->updateInternal(newFactors, &orphans, function);
+  this->updateInternal(newFactors, &orphans, maxNrLeaves, ordering, function);
 }
 
 }  // namespace gtsam
