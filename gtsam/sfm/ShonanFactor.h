@@ -33,7 +33,7 @@ namespace gtsam {
  * the SO(p) matrices down to a Stiefel manifold of p*d matrices.
  */
 template <size_t d>
-class GTSAM_EXPORT ShonanFactor : public NoiseModelFactor2<SOn, SOn> {
+class GTSAM_EXPORT ShonanFactor : public NoiseModelFactorN<SOn, SOn> {
   Matrix M_;                    ///< measured rotation between R1 and R2
   size_t p_, pp_;               ///< dimensionality constants
   boost::shared_ptr<Matrix> G_; ///< matrix of vectorized generators
@@ -66,7 +66,7 @@ public:
               double tol = 1e-9) const override;
 
   /// @}
-  /// @name NoiseModelFactor2 methods
+  /// @name NoiseModelFactorN methods
   /// @{
 
   /// Error is Frobenius norm between Q1*P*R12 and Q2*P, where P=[I_3x3;0]
