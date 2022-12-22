@@ -92,7 +92,6 @@ TEST(HybridEstimation, Full) {
   HybridBayesNet::shared_ptr bayesNet =
       graph.eliminateSequential(hybridOrdering);
 
-  bayesNet->print();
   EXPECT_LONGS_EQUAL(2 * K - 1, bayesNet->size());
 
   HybridValues delta = bayesNet->optimize();
@@ -315,10 +314,23 @@ TEST(HybridEstimation, Probability) {
   Switching switching(K, between_sigma, measurement_sigma, measurements,
                       "1/1 1/1");
   auto graph = switching.linearizedFactorGraph;
-  Ordering ordering = getOrdering(graph, HybridGaussianFactorGraph());
 
-  HybridBayesNet::shared_ptr bayesNet = graph.eliminateSequential(ordering);
-  auto discreteConditional = bayesNet->atDiscrete(bayesNet->size() - 3);
+  // Continuous elimination
+  Ordering continuous_ordering(graph.continuousKeys());
+  HybridBayesNet::shared_ptr bayesNet;
+  HybridGaussianFactorGraph::shared_ptr discreteGraph;
+  std::tie(bayesNet, discreteGraph) =
+      graph.eliminatePartialSequential(continuous_ordering);
+
+  // Discrete elimination
+  Ordering discrete_ordering(graph.discreteKeys());
+  auto discreteBayesNet = discreteGraph->eliminateSequential(discrete_ordering);
+
+  // Add the discrete conditionals to make it a full bayes net.
+  for (auto discrete_conditional : *discreteBayesNet) {
+    bayesNet->add(discrete_conditional);
+  }
+  auto discreteConditional = discreteBayesNet->atDiscrete(0);
 
   // Test if the probPrimeTree matches the probability of
   // the individual factor graphs
@@ -413,11 +425,8 @@ TEST(HybridEstimation, ProbabilityMultifrontal) {
                          probPrimeTree(discrete_assignment), 1e-8);
   }
 
-  discreteGraph->add(DecisionTreeFactor(discrete_keys, probPrimeTree));
-
   Ordering discrete(graph.discreteKeys());
-  auto discreteBayesTree =
-      discreteGraph->BaseEliminateable::eliminateMultifrontal(discrete);
+  auto discreteBayesTree = discreteGraph->eliminateMultifrontal(discrete);
 
   EXPECT_LONGS_EQUAL(1, discreteBayesTree->size());
   // DiscreteBayesTree should have only 1 clique
