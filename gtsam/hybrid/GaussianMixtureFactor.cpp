@@ -112,6 +112,7 @@ AlgebraicDecisionTree<Key> GaussianMixtureFactor::error(
 double GaussianMixtureFactor::error(
     const VectorValues &continuousValues,
     const DiscreteValues &discreteValues) const {
+  // Directly index to get the conditional, no need to build the whole tree.
   auto factor = factors_(discreteValues);
   return factor->error(continuousValues);
 }

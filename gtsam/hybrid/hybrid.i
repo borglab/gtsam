@@ -196,8 +196,10 @@ class HybridNonlinearFactorGraph {
 
 #include <gtsam/hybrid/MixtureFactor.h>
 class MixtureFactor : gtsam::HybridFactor {
-  MixtureFactor(const gtsam::KeyVector& keys, const gtsam::DiscreteKeys& discreteKeys,
-                const gtsam::DecisionTree<gtsam::Key, gtsam::NonlinearFactor*>& factors, bool normalized = false);
+  MixtureFactor(
+      const gtsam::KeyVector& keys, const gtsam::DiscreteKeys& discreteKeys,
+      const gtsam::DecisionTree<gtsam::Key, gtsam::NonlinearFactor*>& factors,
+      bool normalized = false);
 
   template <FACTOR = {gtsam::NonlinearFactor}>
   MixtureFactor(const gtsam::KeyVector& keys, const gtsam::DiscreteKeys& discreteKeys,
