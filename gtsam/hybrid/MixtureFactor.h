@@ -128,14 +128,15 @@ class MixtureFactor : public HybridFactor {
   /**
    * @brief Compute error of the MixtureFactor as a tree.
    *
-   * @param continuousVals The continuous values for which to compute the error.
-   * @return AlgebraicDecisionTree<Key> A decision tree with corresponding keys
-   * as the factor but leaf values as the error.
+   * @param continuousValues The continuous values for which to compute the
+   * error.
+   * @return AlgebraicDecisionTree<Key> A decision tree with the same keys
+   * as the factor, and leaf values as the error.
    */
-  AlgebraicDecisionTree<Key> error(const Values& continuousVals) const {
+  AlgebraicDecisionTree<Key> error(const Values& continuousValues) const {
     // functor to convert from sharedFactor to double error value.
-    auto errorFunc = [continuousVals](const sharedFactor& factor) {
-      return factor->error(continuousVals);
+    auto errorFunc = [continuousValues](const sharedFactor& factor) {
+      return factor->error(continuousValues);
     };
     DecisionTree<Key, double> errorTree(factors_, errorFunc);
     return errorTree;
@@ -144,19 +145,19 @@ class MixtureFactor : public HybridFactor {
   /**
    * @brief Compute error of factor given both continuous and discrete values.
    *
-   * @param continuousVals The continuous Values.
-   * @param discreteVals The discrete Values.
+   * @param continuousValues The continuous Values.
+   * @param discreteValues The discrete Values.
    * @return double The error of this factor.
    */
-  double error(const Values& continuousVals,
-               const DiscreteValues& discreteVals) const {
-    // Retrieve the factor corresponding to the assignment in discreteVals.
-    auto factor = factors_(discreteVals);
+  double error(const Values& continuousValues,
+               const DiscreteValues& discreteValues) const {
+    // Retrieve the factor corresponding to the assignment in discreteValues.
+    auto factor = factors_(discreteValues);
     // Compute the error for the selected factor
-    const double factorError = factor->error(continuousVals);
+    const double factorError = factor->error(continuousValues);
     if (normalized_) return factorError;
-    return factorError +
-           this->nonlinearFactorLogNormalizingConstant(factor, continuousVals);
+    return factorError + this->nonlinearFactorLogNormalizingConstant(
+                             factor, continuousValues);
   }
 
   size_t dim() const {
@@ -212,17 +213,18 @@ class MixtureFactor : public HybridFactor {
   /// Linearize specific nonlinear factors based on the assignment in
   /// discreteValues.
   GaussianFactor::shared_ptr linearize(
-      const Values& continuousVals, const DiscreteValues& discreteVals) const {
-    auto factor = factors_(discreteVals);
-    return factor->linearize(continuousVals);
+      const Values& continuousValues,
+      const DiscreteValues& discreteValues) const {
+    auto factor = factors_(discreteValues);
+    return factor->linearize(continuousValues);
   }
 
   /// Linearize all the continuous factors to get a GaussianMixtureFactor.
   boost::shared_ptr<GaussianMixtureFactor> linearize(
-      const Values& continuousVals) const {
+      const Values& continuousValues) const {
     // functional to linearize each factor in the decision tree
-    auto linearizeDT = [continuousVals](const sharedFactor& factor) {
-      return factor->linearize(continuousVals);
+    auto linearizeDT = [continuousValues](const sharedFactor& factor) {
+      return factor->linearize(continuousValues);
     };
 
     DecisionTree<Key, GaussianFactor::shared_ptr> linearized_factors(

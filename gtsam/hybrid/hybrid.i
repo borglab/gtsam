@@ -204,14 +204,14 @@ class MixtureFactor : gtsam::HybridFactor {
                 const std::vector<FACTOR*>& factors,
                 bool normalized = false);
 
-  double error(const gtsam::Values& continuousVals,
-               const gtsam::DiscreteValues& discreteVals) const;
+  double error(const gtsam::Values& continuousValues,
+               const gtsam::DiscreteValues& discreteValues) const;
 
   double nonlinearFactorLogNormalizingConstant(const gtsam::NonlinearFactor* factor,
                                                const gtsam::Values& values) const;
 
   GaussianMixtureFactor* linearize(
-      const gtsam::Values& continuousVals) const;
+      const gtsam::Values& continuousValues) const;
 
   void print(string s = "MixtureFactor\n",
              const gtsam::KeyFormatter& keyFormatter =
