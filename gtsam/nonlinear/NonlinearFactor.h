@@ -277,25 +277,48 @@ public:
  * A convenient base class for creating your own NoiseModelFactor
  * with n variables.  To derive from this class, implement evaluateError().
  *
- * For example, a 2-way factor could be implemented like so:
+ * For example, a 2-way factor that computes the difference in x-translation
+ * between a Pose3 and Point3 could be implemented like so:
  *
  * ~~~~~~~~~~~~~~~~~~~~{.cpp}
- * class MyFactor : public NoiseModelFactorN<double, double> {
+ * class MyFactor : public NoiseModelFactorN<Pose3, Point3> {
  *  public:
- *   using Base = NoiseModelFactorN<double, double>;
+ *   using Base = NoiseModelFactorN<Pose3, Point3>;
  *
- *   MyFactor(Key key1, Key key2, const SharedNoiseModel& noiseModel)
- *       : Base(noiseModel, key1, key2) {}
+ *   MyFactor(Key pose_key, Key point_key, const SharedNoiseModel& noiseModel)
+ *       : Base(noiseModel, pose_key, point_key) {}
  *
  *   Vector evaluateError(
- *       const double& x1, const double& x2,
- *       boost::optional<Matrix&> H1 = boost::none,
- *       boost::optional<Matrix&> H2 = boost::none) const override {
- *     if (H1) *H1 = (Matrix(1, 1) << 1.0).finished();
- *     if (H2) *H2 = (Matrix(1, 1) << 2.0).finished();
- *     return (Vector(1) << x1 + 2 * x2).finished();
+ *       const Pose3& T, const Point3& p,
+ *       boost::optional<Matrix&> H_T = boost::none,
+ *       boost::optional<Matrix&> H_p = boost::none) const override {
+ *     Matrix36 t_H_T;  // partial derivative of translation w.r.t. pose T
+ *
+ *     // Only compute t_H_T if needed:
+ *     Point3 t = T.translation(H_T ? &t_H_T : 0);
+ *     double a = t(0); // a_H_t = [1, 0, 0]
+ *     double b = p(0); // b_H_p = [1, 0, 0]
+ *     double error = a - b; // H_a = 1, H_b = -1
+ *
+ *     // H_T = H_a * a_H_t * t_H_T = the first row of t_H_T
+ *     if (H_T) *H_T = (Matrix(1, 6) << t_H_T.row(0)).finished();
+ *     // H_p = H_b * b_H_p = -1 * [1, 0, 0]
+ *     if (H_p) *H_p = (Matrix(1, 3) << -1., 0., 0.).finished();
+ *
+ *     return Vector1(error);
  *   }
  * };
+ * 
+ * // Unit Test
+ * TEST(NonlinearFactor, MyFactor) {
+ *   MyFactor f(X(1), X(2), noiseModel::Unit::Create(1));
+ *   EXPECT_DOUBLES_EQUAL(-8., f.evaluateError(Pose3(), Point3(8., 7., 6.))(0),
+ *                        1e-9);
+ *   Values values;
+ *   values.insert(X(1), Pose3(Rot3::RzRyRx(0.1, 0.2, 0.3), Point3(1, 2, 3)));
+ *   values.insert(X(2), Point3(1, 2, 3));
+ *   EXPECT_CORRECT_FACTOR_JACOBIANS(f, values, 1e-5, 1e-5);
+ * }
  * ~~~~~~~~~~~~~~~~~~~~
  *
  * These factors are templated on a values structure type. The values structures
@@ -379,8 +402,8 @@ class NoiseModelFactorN : public NoiseModelFactor {
 
   /**
    * Constructor.
-   * Example usage: NoiseModelFactorN(noise, {key1, key2, ..., keyN})
-   * Example usage: NoiseModelFactorN(noise, keys); where keys is a vector<Key>
+   * Example usage: `NoiseModelFactorN(noise, {key1, key2, ..., keyN})`
+   * Example usage: `NoiseModelFactorN(noise, keys)` where keys is a vector<Key>
    * @param noiseModel Shared pointer to noise model.
    * @param keys A container of keys for the variables in this factor.
    */
@@ -388,7 +411,10 @@ class NoiseModelFactorN : public NoiseModelFactor {
             typename = IsContainerOfKeys<CONTAINER>>
   NoiseModelFactorN(const SharedNoiseModel& noiseModel, CONTAINER keys)
       : Base(noiseModel, keys) {
-    assert(keys.size() == N);
+    if (keys.size() != N) {
+      throw std::invalid_argument(
+          "NoiseModelFactorN: wrong number of keys given");
+    }
   }
 
   /// @}
@@ -413,12 +439,21 @@ class NoiseModelFactorN : public NoiseModelFactor {
   /// @name NoiseModelFactor methods
   /// @{
 
-  /** Calls the n-key specific version of evaluateError, which is pure virtual
-   * so must be implemented in the derived class.
+  /** This implements the `unwhitenedError` virtual function by calling the
+   * n-key specific version of evaluateError, which is pure virtual so must be
+   * implemented in the derived class.
+   *
+   * Example usage:
+   * ```
+   *  gtsam::Values values;
+   *  values.insert(...) // populate values
+   *  std::vector<Matrix> Hs(2); // this will be an optional output argument
+   *  const Vector error = factor.unwhitenedError(values, Hs);
+   * ```
    * @param[in] x A Values object containing the values of all the variables
    * used in this factor
    * @param[out] H A vector of (dynamic) matrices whose size should be equal to
-   * n.  The jacobians w.r.t. each variable will be output in this parameter.
+   * n.  The Jacobians w.r.t. each variable will be output in this parameter.
    */
   Vector unwhitenedError(
       const Values& x,
@@ -430,20 +465,22 @@ class NoiseModelFactorN : public NoiseModelFactor {
   /// @}
   /// @name Virtual methods
   /// @{
+
   /**
-   *  Override this method to finish implementing an n-way factor.
+   * Override `evaluateError` to finish implementing an n-way factor.
    *
-   *  Both the `x` and `H` arguments are written here as parameter packs, but
+   * Both the `x` and `H` arguments are written here as parameter packs, but
    * when overriding this method, you probably want to explicitly write them
-   * out.  For example, for a 2-way factor with variable types Pose3 and double:
+   * out.  For example, for a 2-way factor with variable types Pose3 and Point3,
+   * you should implement:
    * ```
-   * Vector evaluateError(const Pose3& x1, const double& x2,
-   *                      boost::optional<Matrix&> H1 = boost::none,
-   *                      boost::optional<Matrix&> H2 = boost::none) const
-   * override {...}
+   * Vector evaluateError(
+   *     const Pose3& x1, const Point3& x2,
+   *     boost::optional<Matrix&> H1 = boost::none,
+   *     boost::optional<Matrix&> H2 = boost::none) const override { ... }
    * ```
    *
-   *  If any of the optional Matrix reference arguments are specified, it should
+   * If any of the optional Matrix reference arguments are specified, it should
    * compute both the function evaluation and its derivative(s) in the requested
    * variables.
    *
@@ -458,17 +495,20 @@ class NoiseModelFactorN : public NoiseModelFactor {
   /// @name Convenience method overloads
   /// @{
 
-  /** No-jacobians requested function overload (since parameter packs can't have
-   * default args).  This specializes the version below to avoid recursive calls
-   * since this is commonly used.
+  /** No-Jacobians requested function overload.
+   * This specializes the version below to avoid recursive calls since this is
+   * commonly used.
    *
-   * e.g. `Vector error = factor.evaluateError(x1, x2, x3);`
+   * e.g. `const Vector error = factor.evaluateError(pose, point);`
    */
   inline Vector evaluateError(const ValueTypes&... x) const {
     return evaluateError(x..., OptionalMatrix<ValueTypes>()...);
   }
 
-  /** Some optional jacobians omitted function overload */
+  /** Some (but not all) optional Jacobians are omitted (function overload)
+   *
+   * e.g. `const Vector error = factor.evaluateError(pose, point, Hpose);`
+   */
   template <typename... OptionalJacArgs,
             typename = IndexIsValid<sizeof...(OptionalJacArgs) + 1>>
   inline Vector evaluateError(const ValueTypes&... x,
@@ -481,7 +521,10 @@ class NoiseModelFactorN : public NoiseModelFactor {
 
  private:
   /** Pack expansion with index_sequence template pattern, used to index into
-   * `keys_` and `H`
+   * `keys_` and `H`.
+   *
+   * Example: For `NoiseModelFactorN<Pose3, Point3>`, the call would look like:
+   *    `const Vector error = unwhitenedError(0, 1, values, H);`
    */
   template <std::size_t... Indices>
   inline Vector unwhitenedError(
@@ -510,8 +553,8 @@ class NoiseModelFactorN : public NoiseModelFactor {
 };  // \class NoiseModelFactorN
 
 /* ************************************************************************* */
-/** @deprecated: use NoiseModelFactorN, replacing .key() with .key<0> and X1
- * with ValueType<0>.
+/** @deprecated: use NoiseModelFactorN, replacing .key() with .key<1> and X1
+ * with ValueType<1>.
  * A convenient base class for creating your own NoiseModelFactor
  * with 1 variable.  To derive from this class, implement evaluateError().
  */
@@ -544,8 +587,8 @@ class GTSAM_DEPRECATED NoiseModelFactor1 : public NoiseModelFactorN<VALUE> {
 };  // \class NoiseModelFactor1
 
 /* ************************************************************************* */
-/** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<0> and X1
- * with ValueType<0>.
+/** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1> and X1
+ * with ValueType<1>.
  * A convenient base class for creating your own NoiseModelFactor
  * with 2 variables.  To derive from this class, implement evaluateError().
  */
@@ -581,8 +624,8 @@ class GTSAM_DEPRECATED NoiseModelFactor2
 };  // \class NoiseModelFactor2
 
 /* ************************************************************************* */
-/** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<0> and X1
- * with ValueType<0>.
+/** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1> and X1
+ * with ValueType<1>.
  * A convenient base class for creating your own NoiseModelFactor
  * with 3 variables.  To derive from this class, implement evaluateError().
  */
@@ -620,8 +663,8 @@ class GTSAM_DEPRECATED NoiseModelFactor3
 };  // \class NoiseModelFactor3
 
 /* ************************************************************************* */
-/** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<0> and X1
- * with ValueType<0>.
+/** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1> and X1
+ * with ValueType<1>.
  * A convenient base class for creating your own NoiseModelFactor
  * with 4 variables.  To derive from this class, implement evaluateError().
  */
@@ -661,8 +704,8 @@ class GTSAM_DEPRECATED NoiseModelFactor4
 };  // \class NoiseModelFactor4
 
 /* ************************************************************************* */
-/** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<0> and X1
- * with ValueType<0>.
+/** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1> and X1
+ * with ValueType<1>.
  * A convenient base class for creating your own NoiseModelFactor
  * with 5 variables.  To derive from this class, implement evaluateError().
  */
@@ -705,8 +748,8 @@ class GTSAM_DEPRECATED NoiseModelFactor5
 };  // \class NoiseModelFactor5
 
 /* ************************************************************************* */
-/** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<0> and X1
- * with ValueType<0>.
+/** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1> and X1
+ * with ValueType<1>.
  * A convenient base class for creating your own NoiseModelFactor
  * with 6 variables.  To derive from this class, implement evaluateError().
  */
