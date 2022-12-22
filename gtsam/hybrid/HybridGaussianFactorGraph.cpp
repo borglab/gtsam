@@ -261,6 +261,7 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
       if (!factor) {
         return 0.0;  // If nullptr, return 0.0 probability
       } else {
+        // This is the probability q(μ) at the MLE point.
         double error =
             0.5 * std::abs(factor->augmentedInformation().determinant());
         return std::exp(-error);
