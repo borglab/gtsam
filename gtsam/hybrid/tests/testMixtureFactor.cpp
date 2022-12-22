@@ -41,7 +41,8 @@ TEST(MixtureFactor, Constructor) {
   CHECK(it == factor.end());
 }
 
-
+/* ************************************************************************* */
+// Test .print() output.
 TEST(MixtureFactor, Printing) {
   DiscreteKey m1(1, 2);
   double between0 = 0.0;

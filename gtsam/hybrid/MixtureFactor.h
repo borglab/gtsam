@@ -23,6 +23,7 @@
 #include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/hybrid/HybridNonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Symbol.h>
 
 #include <algorithm>
@@ -86,11 +87,11 @@ class MixtureFactor : public HybridFactor {
    * elements based on the number of discrete keys and the cardinality of the
    * keys, so that the decision tree is constructed appropriately.
    *
-   * @tparam FACTOR The type of the factor shared pointers being passed in. Will
-   * be typecast to NonlinearFactor shared pointers.
+   * @tparam FACTOR The type of the factor shared pointers being passed in.
+   * Will be typecast to NonlinearFactor shared pointers.
    * @param keys Vector of keys for continuous factors.
    * @param discreteKeys Vector of discrete keys.
-   * @param factors Vector of shared pointers to factors.
+   * @param factors Vector of nonlinear factors.
    * @param normalized Flag indicating if the factor error is already
    * normalized.
    */

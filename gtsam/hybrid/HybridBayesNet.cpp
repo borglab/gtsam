@@ -244,13 +244,16 @@ AlgebraicDecisionTree<Key> HybridBayesNet::error(
     const VectorValues &continuousValues) const {
   AlgebraicDecisionTree<Key> error_tree;
 
+  // Iterate over each factor.
   for (size_t idx = 0; idx < size(); idx++) {
     AlgebraicDecisionTree<Key> conditional_error;
+
     if (factors_.at(idx)->isHybrid()) {
-      // If factor is hybrid, select based on assignment.
+      // If factor is hybrid, select based on assignment and compute error.
       GaussianMixture::shared_ptr gm = this->atMixture(idx);
       conditional_error = gm->error(continuousValues);
 
+      // Assign for the first index, add error for subsequent ones.
       if (idx == 0) {
         error_tree = conditional_error;
       } else {
@@ -261,6 +264,7 @@ AlgebraicDecisionTree<Key> HybridBayesNet::error(
       // If continuous only, get the (double) error
       // and add it to the error_tree
       double error = this->atGaussian(idx)->error(continuousValues);
+      // Add the computed error to every leaf of the error tree.
       error_tree = error_tree.apply(
           [error](double leaf_value) { return leaf_value + error; });
 
@@ -273,6 +277,7 @@ AlgebraicDecisionTree<Key> HybridBayesNet::error(
   return error_tree;
 }
 
+/* ************************************************************************* */
 AlgebraicDecisionTree<Key> HybridBayesNet::probPrime(
     const VectorValues &continuousValues) const {
   AlgebraicDecisionTree<Key> error_tree = this->error(continuousValues);
