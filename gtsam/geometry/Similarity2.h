@@ -83,7 +83,7 @@ class GTSAM_EXPORT Similarity2 : public LieGroup<Similarity2, 4> {
   /// @{
 
   /// Return an identity transform
-  static Similarity2 identity();
+  static Similarity2 Identity();
 
   /// Composition
   Similarity2 operator*(const Similarity2& S) const;
@@ -132,7 +132,7 @@ class GTSAM_EXPORT Similarity2 : public LieGroup<Similarity2, 4> {
    * using the algorithm described here:
    * http://www5.informatik.uni-erlangen.de/Forschung/Publikationen/2005/Zinsser05-PSR.pdf
    */
-  static Similarity2 Align(const std::vector<Pose2Pair>& abPosePairs);
+  static Similarity2 Align(const Pose2Pairs& abPosePairs);
 
   /// @}
   /// @name Lie Group

@@ -382,7 +382,7 @@ TEST(ExpressionFactor, compose2) {
 TEST(ExpressionFactor, compose3) {
 
   // Create expression
-  Rot3_ R1(Rot3::identity()), R2(3);
+  Rot3_ R1(Rot3::Identity()), R2(3);
   Rot3_ R3 = R1 * R2;
 
   // Create factor
@@ -731,6 +731,19 @@ TEST(ExpressionFactor, variadicTemplate) {
   EXPECT_CORRECT_FACTOR_JACOBIANS(f, values, 1e-8, 1e-5);
 }
 
+TEST(ExpressionFactor, normalize) {
+  auto model = noiseModel::Isotropic::Sigma(3, 1);
+
+  // Create expression
+  const auto x = Vector3_(1);
+  Vector3_ f_expr = normalize(x);
+
+  // Check derivatives
+  Values values;
+  values.insert(1, Vector3(1, 2, 3));
+  ExpressionFactor<Vector3> factor(model, Vector3(1.0/sqrt(14), 2.0/sqrt(14), 3.0/sqrt(14)), f_expr);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-5, 1e-5);
+}
 
 TEST(ExpressionFactor, crossProduct) {
   auto model = noiseModel::Isotropic::Sigma(3, 1);

@@ -181,8 +181,8 @@ TEST_UNSAFE( SmartStereoProjectionFactorPP, noiseless_error_identityExtrinsics )
   Values values;
   values.insert(x1, w_Pose_cam1);
   values.insert(x2, w_Pose_cam2);
-  values.insert(body_P_cam1_key, Pose3::identity());
-  values.insert(body_P_cam2_key, Pose3::identity());
+  values.insert(body_P_cam1_key, Pose3::Identity());
+  values.insert(body_P_cam2_key, Pose3::Identity());
 
   SmartStereoProjectionFactorPP factor1(model);
   factor1.add(cam1_uv, x1, body_P_cam1_key, K2);
@@ -426,7 +426,7 @@ TEST( SmartStereoProjectionFactorPP, 3poses_optimization_multipleExtrinsics ) {
   // Values
   Pose3 body_Pose_cam1 = Pose3(Rot3::Ypr(-M_PI, 1., 0.1),Point3(0, 1, 0));
   Pose3 body_Pose_cam2 = Pose3(Rot3::Ypr(-M_PI / 4, 0.1, 1.0),Point3(1, 1, 1));
-  Pose3 body_Pose_cam3 = Pose3::identity();
+  Pose3 body_Pose_cam3 = Pose3::Identity();
   Pose3 w_Pose_body1 = w_Pose_cam1.compose(body_Pose_cam1.inverse());
   Pose3 w_Pose_body2 = w_Pose_cam2.compose(body_Pose_cam2.inverse());
   Pose3 w_Pose_body3 = w_Pose_cam3.compose(body_Pose_cam3.inverse());
@@ -1147,7 +1147,7 @@ TEST( SmartStereoProjectionFactorPP, landmarkDistance ) {
   graph.push_back(smartFactor3);
   graph.addPrior(x1, pose1, noisePrior);
   graph.addPrior(x2, pose2, noisePrior);
-  graph.addPrior(body_P_cam_key, Pose3::identity(), noisePrior);
+  graph.addPrior(body_P_cam_key, Pose3::Identity(), noisePrior);
 
   //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
@@ -1156,7 +1156,7 @@ TEST( SmartStereoProjectionFactorPP, landmarkDistance ) {
   values.insert(x1, pose1);
   values.insert(x2, pose2);
   values.insert(x3, pose3 * noise_pose);
-  values.insert(body_P_cam_key, Pose3::identity());
+  values.insert(body_P_cam_key, Pose3::Identity());
 
   // All smart factors are disabled and pose should remain where it is
   Values result;
@@ -1245,7 +1245,7 @@ TEST( SmartStereoProjectionFactorPP, dynamicOutlierRejection ) {
   values.insert(x1, pose1);
   values.insert(x2, pose2);
   values.insert(x3, pose3);
-  values.insert(body_P_cam_key, Pose3::identity());
+  values.insert(body_P_cam_key, Pose3::Identity());
 
   EXPECT_DOUBLES_EQUAL(0, smartFactor1->error(values), 1e-9);
   EXPECT_DOUBLES_EQUAL(0, smartFactor2->error(values), 1e-9);
@@ -1267,7 +1267,7 @@ TEST( SmartStereoProjectionFactorPP, dynamicOutlierRejection ) {
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
   result = optimizer.optimize();
-  EXPECT(assert_equal(Pose3::identity(), result.at<Pose3>(body_P_cam_key)));
+  EXPECT(assert_equal(Pose3::Identity(), result.at<Pose3>(body_P_cam_key)));
 }
 
 /* ************************************************************************* */

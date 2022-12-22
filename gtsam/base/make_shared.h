@@ -26,7 +26,7 @@
 #include <type_traits>
 
 namespace gtsam {
-  /// An shorthand alias for accessing the ::type inside std::enable_if that can be used in a template directly
+  /// An shorthand alias for accessing the \::type inside std::enable_if that can be used in a template directly
   template<bool B, class T = void>
   using enable_if_t = typename std::enable_if<B, T>::type;
 }

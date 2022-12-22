@@ -23,7 +23,7 @@ namespace gtsam {
 
   /**
    * A class for a soft prior on any Value type
-   * @addtogroup SLAM
+   * @ingroup slam
    */
   template<class POSE>
   class PosePriorFactor: public NoiseModelFactor1<POSE> {

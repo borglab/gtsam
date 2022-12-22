@@ -173,7 +173,7 @@ TEST(PartialPriorFactor, Constructors3) {
 /* ************************************************************************* */
 TEST(PartialPriorFactor, JacobianAtIdentity3) {
   Key poseKey(1);
-  Pose3 measurement = Pose3::identity();
+  Pose3 measurement = Pose3::Identity();
   SharedNoiseModel model = NM::Isotropic::Sigma(1, 0.25);
 
   TestPartialPriorFactor3 factor(poseKey, kIndexTy, measurement.translation().y(), model);

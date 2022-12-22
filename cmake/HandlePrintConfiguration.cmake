@@ -33,6 +33,7 @@ print_build_options_for_target(gtsam)
 
 print_config("Use System Eigen" "${GTSAM_USE_SYSTEM_EIGEN} (Using version: ${GTSAM_EIGEN_VERSION})")
 print_config("Use System Metis" "${GTSAM_USE_SYSTEM_METIS}")
+print_config("Using Boost version" "${Boost_VERSION}")
 
 if(GTSAM_USE_TBB)
     print_config("Use Intel TBB" "Yes (Version: ${TBB_VERSION})")

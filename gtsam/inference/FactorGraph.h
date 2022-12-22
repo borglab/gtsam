@@ -116,7 +116,7 @@ class FactorGraph {
   using HasDerivedValueType = typename std::enable_if<
       std::is_base_of<FactorType, typename T::value_type>::value>::type;
 
-  /// Check if T has a value_type derived from FactorType.
+  /// Check if T has a pointer type derived from FactorType.
   template <typename T>
   using HasDerivedElementType = typename std::enable_if<std::is_base_of<
       FactorType, typename T::value_type::element_type>::value>::type;

@@ -16,7 +16,7 @@ class Point2 {
   bool equals(const gtsam::Point2& point, double tol) const;
 
   // Group
-  static gtsam::Point2 identity();
+  static gtsam::Point2 Identity();
 
   // Standard Interface
   double x() const;
@@ -73,7 +73,7 @@ class StereoPoint2 {
   bool equals(const gtsam::StereoPoint2& point, double tol) const;
 
   // Group
-  static gtsam::StereoPoint2 identity();
+  static gtsam::StereoPoint2 Identity();
   gtsam::StereoPoint2 inverse() const;
   gtsam::StereoPoint2 compose(const gtsam::StereoPoint2& p2) const;
   gtsam::StereoPoint2 between(const gtsam::StereoPoint2& p2) const;
@@ -115,7 +115,7 @@ class Point3 {
   bool equals(const gtsam::Point3& p, double tol) const;
 
   // Group
-  static gtsam::Point3 identity();
+  static gtsam::Point3 Identity();
 
   // Standard Interface
   Vector vector() const;
@@ -149,7 +149,7 @@ class Rot2 {
   bool equals(const gtsam::Rot2& rot, double tol) const;
 
   // Group
-  static gtsam::Rot2 identity();
+  static gtsam::Rot2 Identity();
   gtsam::Rot2 inverse();
   gtsam::Rot2 compose(const gtsam::Rot2& p2) const;
   gtsam::Rot2 between(const gtsam::Rot2& p2) const;
@@ -198,7 +198,7 @@ class SO3 {
   bool equals(const gtsam::SO3& other, double tol) const;
 
   // Group
-  static gtsam::SO3 identity();
+  static gtsam::SO3 Identity();
   gtsam::SO3 inverse() const;
   gtsam::SO3 between(const gtsam::SO3& R) const;
   gtsam::SO3 compose(const gtsam::SO3& R) const;
@@ -228,7 +228,7 @@ class SO4 {
   bool equals(const gtsam::SO4& other, double tol) const;
 
   // Group
-  static gtsam::SO4 identity();
+  static gtsam::SO4 Identity();
   gtsam::SO4 inverse() const;
   gtsam::SO4 between(const gtsam::SO4& Q) const;
   gtsam::SO4 compose(const gtsam::SO4& Q) const;
@@ -258,7 +258,7 @@ class SOn {
   bool equals(const gtsam::SOn& other, double tol) const;
 
   // Group
-  static gtsam::SOn identity();
+  static gtsam::SOn Identity();
   gtsam::SOn inverse() const;
   gtsam::SOn between(const gtsam::SOn& Q) const;
   gtsam::SOn compose(const gtsam::SOn& Q) const;
@@ -322,7 +322,7 @@ class Rot3 {
   bool equals(const gtsam::Rot3& rot, double tol) const;
 
   // Group
-  static gtsam::Rot3 identity();
+  static gtsam::Rot3 Identity();
   gtsam::Rot3 inverse() const;
   gtsam::Rot3 compose(const gtsam::Rot3& p2) const;
   gtsam::Rot3 between(const gtsam::Rot3& p2) const;
@@ -380,7 +380,7 @@ class Pose2 {
   bool equals(const gtsam::Pose2& pose, double tol) const;
 
   // Group
-  static gtsam::Pose2 identity();
+  static gtsam::Pose2 Identity();
   gtsam::Pose2 inverse() const;
   gtsam::Pose2 compose(const gtsam::Pose2& p2) const;
   gtsam::Pose2 between(const gtsam::Pose2& p2) const;
@@ -444,7 +444,7 @@ class Pose3 {
   bool equals(const gtsam::Pose3& pose, double tol) const;
 
   // Group
-  static gtsam::Pose3 identity();
+  static gtsam::Pose3 Identity();
   gtsam::Pose3 inverse() const;
   gtsam::Pose3 inverse(Eigen::Ref<Eigen::MatrixXd> H) const;
   gtsam::Pose3 compose(const gtsam::Pose3& pose) const;
@@ -1123,13 +1123,13 @@ class StereoCamera {
 #include <gtsam/geometry/triangulation.h>
 class TriangulationResult {
   enum Status { VALID, DEGENERATE, BEHIND_CAMERA, OUTLIER, FAR_POINT };
-  Status status;
+  gtsam::TriangulationResult::Status status;
   TriangulationResult(const gtsam::Point3& p);
   const gtsam::Point3& get() const;
-  static TriangulationResult Degenerate();
-  static TriangulationResult Outlier();
-  static TriangulationResult FarPoint();
-  static TriangulationResult BehindCamera();
+  static gtsam::TriangulationResult Degenerate();
+  static gtsam::TriangulationResult Outlier();
+  static gtsam::TriangulationResult FarPoint();
+  static gtsam::TriangulationResult BehindCamera();
   bool valid() const;
   bool degenerate() const;
   bool outlier() const;
@@ -1142,7 +1142,7 @@ class TriangulationParameters {
   bool enableEPI;
   double landmarkDistanceThreshold;
   double dynamicOutlierRejectionThreshold;
-  SharedNoiseModel noiseModel;
+  gtsam::SharedNoiseModel noiseModel;
   TriangulationParameters(const double rankTolerance = 1.0,
                           const bool enableEPI = false,
                           double landmarkDistanceThreshold = -1,

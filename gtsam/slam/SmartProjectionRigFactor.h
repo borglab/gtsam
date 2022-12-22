@@ -29,7 +29,7 @@
 namespace gtsam {
 /**
  *
- * @addtogroup SLAM
+ * @ingroup slam
  *
  * If you are using the factor, please cite:
  * L. Carlone, Z. Kira, C. Beall, V. Indelman, F. Dellaert, Eliminating
@@ -46,7 +46,7 @@ namespace gtsam {
  * calibration (i.e., are from the same camera), use SmartProjectionPoseFactor
  * instead! If the calibration should be optimized, as well, use
  * SmartProjectionFactor instead!
- * @addtogroup SLAM
+ * @ingroup slam
  */
 template <class CAMERA>
 class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {

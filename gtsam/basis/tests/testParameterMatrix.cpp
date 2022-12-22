@@ -133,7 +133,7 @@ TEST(ParameterMatrix, VectorSpace) {
   // vector
   EXPECT(assert_equal(Vector::Ones(M * N), params.vector()));
   // identity
-  EXPECT(assert_equal(ParameterMatrix<M>::identity(),
+  EXPECT(assert_equal(ParameterMatrix<M>::Identity(),
                       ParameterMatrix<M>(Matrix::Zero(M, 0))));
 }
 

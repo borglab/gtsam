@@ -84,7 +84,7 @@ class GTSAM_EXPORT Similarity3 : public LieGroup<Similarity3, 7> {
   /// @{
 
   /// Return an identity transform
-  static Similarity3 identity();
+  static Similarity3 Identity();
 
   /// Composition
   Similarity3 operator*(const Similarity3& S) const;
@@ -120,7 +120,7 @@ class GTSAM_EXPORT Similarity3 : public LieGroup<Similarity3, 7> {
   /**
    *  Create Similarity3 by aligning at least three point pairs
    */
-  static Similarity3 Align(const std::vector<Point3Pair>& abPointPairs);
+  static Similarity3 Align(const Point3Pairs& abPointPairs);
 
   /**
    * Create the Similarity3 object that aligns at least two pose pairs.

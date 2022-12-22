@@ -24,7 +24,7 @@ namespace gtsam {
 
 /**
  * Smart factor for range SLAM
- * @addtogroup SLAM
+ * @ingroup slam
  */
 class SmartRangeFactor: public NoiseModelFactor {
  protected:

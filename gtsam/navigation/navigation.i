@@ -17,7 +17,7 @@ class ConstantBias {
   bool equals(const gtsam::imuBias::ConstantBias& expected, double tol) const;
 
   // Group
-  static gtsam::imuBias::ConstantBias identity();
+  static gtsam::imuBias::ConstantBias Identity();
 
   // Operator Overloads
   gtsam::imuBias::ConstantBias operator-() const;
@@ -165,11 +165,11 @@ virtual class PreintegrationCombinedParams : gtsam::PreintegrationParams {
 
   void setBiasAccCovariance(Matrix cov);
   void setBiasOmegaCovariance(Matrix cov);
-  void setBiasAccOmegaInt(Matrix cov);
+  void setBiasAccOmegaInit(Matrix cov);
   
   Matrix getBiasAccCovariance() const ;
   Matrix getBiasOmegaCovariance() const ;
-  Matrix getBiasAccOmegaInt() const;
+  Matrix getBiasAccOmegaInit() const;
  
 };
 

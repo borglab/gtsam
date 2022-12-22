@@ -55,7 +55,8 @@ class InstantiatedGlobalFunction(parser.GlobalFunction):
         """Generate the C++ code for wrapping."""
         if self.original.template:
             instantiated_names = [
-                inst.instantiated_name() for inst in self.instantiations
+                "::".join(inst.namespaces + [inst.instantiated_name()])
+                for inst in self.instantiations
             ]
             ret = "{}<{}>".format(self.original.name,
                                   ",".join(instantiated_names))

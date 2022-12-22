@@ -15,8 +15,7 @@ from __future__ import print_function
 import unittest
 from typing import Tuple
 
-import gtsam
-from gtsam import IndexPair
+from gtsam import DSFMapIndexPair, IndexPair, IndexPairSetAsArray
 from gtsam.utils.test_case import GtsamTestCase
 
 
@@ -29,10 +28,10 @@ class TestDSFMap(GtsamTestCase):
         def key(index_pair) -> Tuple[int, int]:
             return index_pair.i(), index_pair.j()
 
-        dsf = gtsam.DSFMapIndexPair()
-        pair1 = gtsam.IndexPair(1, 18)
+        dsf = DSFMapIndexPair()
+        pair1 = IndexPair(1, 18)
         self.assertEqual(key(dsf.find(pair1)), key(pair1))
-        pair2 = gtsam.IndexPair(2, 2)
+        pair2 = IndexPair(2, 2)
 
         # testing the merge feature of dsf
         dsf.merge(pair1, pair2)
@@ -45,7 +44,7 @@ class TestDSFMap(GtsamTestCase):
         k'th detected keypoint in image i. For the data below, merging such
         measurements into feature tracks across frames should create 2 distinct sets.
         """
-        dsf = gtsam.DSFMapIndexPair()
+        dsf = DSFMapIndexPair()
         dsf.merge(IndexPair(0, 1), IndexPair(1, 2))
         dsf.merge(IndexPair(0, 1), IndexPair(3, 4))
         dsf.merge(IndexPair(4, 5), IndexPair(6, 8))
@@ -56,7 +55,7 @@ class TestDSFMap(GtsamTestCase):
         for i in sets:
             set_keys = []
             s = sets[i]
-            for val in gtsam.IndexPairSetAsArray(s):
+            for val in IndexPairSetAsArray(s):
                 set_keys.append((val.i(), val.j()))
             merged_sets.add(tuple(set_keys))
 

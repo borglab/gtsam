@@ -27,7 +27,7 @@
 namespace gtsam {
 
 /**
- * @addtogroup ISAM2
+ * @ingroup isam2
  * Parameters for ISAM2 using Gauss-Newton optimization.  Either this class or
  * ISAM2DoglegParams should be specified as the optimizationParams in
  * ISAM2Params, which should in turn be passed to ISAM2(const ISAM2Params&).
@@ -59,7 +59,7 @@ struct GTSAM_EXPORT ISAM2GaussNewtonParams {
 };
 
 /**
- * @addtogroup ISAM2
+ * @ingroup isam2
  * Parameters for ISAM2 using Dogleg optimization.  Either this class or
  * ISAM2GaussNewtonParams should be specified as the optimizationParams in
  * ISAM2Params, which should in turn be passed to ISAM2(const ISAM2Params&).
@@ -126,7 +126,7 @@ struct GTSAM_EXPORT ISAM2DoglegParams {
 };
 
 /**
- * @addtogroup ISAM2
+ * @ingroup isam2
  * Parameters for the ISAM2 algorithm.  Default parameter values are listed
  * below.
  */

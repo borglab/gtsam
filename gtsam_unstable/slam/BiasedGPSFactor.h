@@ -25,7 +25,7 @@ namespace gtsam {
   /**
    * A class to model GPS measurements, including a bias term which models
    * common-mode errors and that can be partially corrected if other sensors are used
-   * @addtogroup SLAM
+   * @ingroup slam
    */
   class BiasedGPSFactor: public NoiseModelFactor2<Pose3, Point3> {
 

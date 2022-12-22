@@ -25,7 +25,7 @@
 namespace gtsam {
 /**
  *
- * @addtogroup SLAM
+ * @ingroup slam
  *
  * If you are using the factor, please cite:
  * L. Carlone, Z. Kira, C. Beall, V. Indelman, F. Dellaert,
@@ -39,7 +39,7 @@ namespace gtsam {
  * shutter model of the camera with given readout time. The factor requires that
  * values contain (for each pixel observation) two consecutive camera poses from
  * which the pixel observation pose can be interpolated.
- * @addtogroup SLAM
+ * @ingroup slam
  */
 template <class CAMERA>
 class GTSAM_UNSTABLE_EXPORT SmartProjectionPoseFactorRollingShutter

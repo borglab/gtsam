@@ -122,7 +122,7 @@ void Similarity3::print(const std::string& s) const {
   std::cout << "t: " << translation().transpose() << " s: " << scale() << std::endl;
 }
 
-Similarity3 Similarity3::identity() {
+Similarity3 Similarity3::Identity() {
   return Similarity3();
 }
 Similarity3 Similarity3::operator*(const Similarity3& S) const {

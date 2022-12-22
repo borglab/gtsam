@@ -7,6 +7,8 @@
  * ** THIS FILE IS AUTO-GENERATED, DO NOT MODIFY! **
  */
 
+#define PYBIND11_DETAILED_ERROR_MESSAGES
+
 // Include relevant boost libraries required by GTSAM
 {include_boost}
 

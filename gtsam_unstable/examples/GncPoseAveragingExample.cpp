@@ -53,7 +53,7 @@ int main(int argc, char** argv){
   normal_distribution<double> normalInliers(0.0, 0.05);
 
   Values initial;
-  initial.insert(0, Pose3::identity()); // identity pose as initialization
+  initial.insert(0, Pose3()); // identity pose as initialization
 
   // create ground truth pose
   Vector6 poseGtVector;

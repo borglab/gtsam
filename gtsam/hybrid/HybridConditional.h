@@ -34,8 +34,6 @@
 
 namespace gtsam {
 
-class HybridGaussianFactorGraph;
-
 /**
  * Hybrid Conditional Density
  *
@@ -56,6 +54,8 @@ class HybridGaussianFactorGraph;
  *
  * A great reference to the type-erasure pattern is Eduaado Madrid's CppCon
  * talk (https://www.youtube.com/watch?v=s082Qmd_nHs).
+ *
+ * @ingroup hybrid
  */
 class GTSAM_EXPORT HybridConditional
     : public HybridFactor,
@@ -69,7 +69,7 @@ class GTSAM_EXPORT HybridConditional
       BaseConditional;  ///< Typedef to our conditional base class
 
  protected:
-  // Type-erased pointer to the inner type
+  /// Type-erased pointer to the inner type
   boost::shared_ptr<Factor> inner_;
 
  public:
@@ -127,8 +127,7 @@ class GTSAM_EXPORT HybridConditional
    * @param gaussianMixture Gaussian Mixture Conditional used to create the
    * HybridConditional.
    */
-  HybridConditional(
-      boost::shared_ptr<GaussianMixture> gaussianMixture);
+  HybridConditional(boost::shared_ptr<GaussianMixture> gaussianMixture);
 
   /**
    * @brief Return HybridConditional as a GaussianMixture
@@ -138,6 +137,17 @@ class GTSAM_EXPORT HybridConditional
   GaussianMixture::shared_ptr asMixture() {
     if (!isHybrid()) throw std::invalid_argument("Not a mixture");
     return boost::static_pointer_cast<GaussianMixture>(inner_);
+  }
+
+  /**
+   * @brief Return HybridConditional as a GaussianConditional
+   *
+   * @return GaussianConditional::shared_ptr
+   */
+  GaussianConditional::shared_ptr asGaussian() {
+    if (!isContinuous())
+      throw std::invalid_argument("Not a continuous conditional");
+    return boost::static_pointer_cast<GaussianConditional>(inner_);
   }
 
   /**
@@ -168,10 +178,19 @@ class GTSAM_EXPORT HybridConditional
   /// Get the type-erased pointer to the inner type
   boost::shared_ptr<Factor> inner() { return inner_; }
 
-};  // DiscreteConditional
+ private:
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class Archive>
+  void serialize(Archive& ar, const unsigned int /*version*/) {
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseFactor);
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseConditional);
+  }
+
+};  // HybridConditional
 
 // traits
 template <>
-struct traits<HybridConditional> : public Testable<DiscreteConditional> {};
+struct traits<HybridConditional> : public Testable<HybridConditional> {};
 
 }  // namespace gtsam

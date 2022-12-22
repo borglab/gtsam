@@ -26,7 +26,7 @@ namespace gtsam {
 
 /**
  * @brief Calibration used by Bundler
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  */
 class GTSAM_EXPORT Cal3Bundler : public Cal3 {

@@ -32,6 +32,7 @@ class DiscreteBayesNet;
 
 /**
  * @brief DiscreteLookupTable table for max-product
+ * @ingroup discrete
  *
  * Inherits from discrete conditional for convenience, but is not normalized.
  * Is used in the max-product algorithm.
