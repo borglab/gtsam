@@ -581,6 +581,8 @@ TEST(NonlinearFactor, NoiseModelFactor6) {
 class TestFactorN : public NoiseModelFactorN<double, double, double, double> {
 public:
   typedef NoiseModelFactorN<double, double, double, double> Base;
+  using Type1 = ValueType<1>;  // Test that we can use the ValueType<> template
+
   TestFactorN() : Base(noiseModel::Diagonal::Sigmas((Vector(1) << 2.0).finished()), X(1), X(2), X(3), X(4)) {}
 
   Vector
@@ -595,6 +597,8 @@ public:
     if (H4) *H4 = (Matrix(1, 1) << 4.0).finished();
     return (Vector(1) << x1 + x2 + x3 + x4).finished();
   }
+
+  Key key1() const { return key<1>(); }  // Test that we can use key<> template
 };
 
 /* ************************************ */

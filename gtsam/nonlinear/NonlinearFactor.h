@@ -561,8 +561,13 @@ class NoiseModelFactorN : public NoiseModelFactor {
 template <class VALUE>
 class GTSAM_DEPRECATED NoiseModelFactor1 : public NoiseModelFactorN<VALUE> {
  public:
-  // aliases for value types pulled from keys, for backwards compatibility
-  using X = VALUE;
+  /** Aliases for value types pulled from keys, for backwards compatibility.
+   * Note: in your code you can probably just do:
+   *  `using X = ValueType<1>;`
+   * but this class is uglier due to dependent types.
+   * See e.g. testNonlinearFactor.cpp:TestFactorN.
+   */
+  using X = typename NoiseModelFactor1::template ValueType<1>;
 
  protected:
   using Base = NoiseModelFactor;  // grandparent, for backwards compatibility
@@ -573,8 +578,10 @@ class GTSAM_DEPRECATED NoiseModelFactor1 : public NoiseModelFactorN<VALUE> {
   using NoiseModelFactorN<VALUE>::NoiseModelFactorN;
   ~NoiseModelFactor1() override {}
 
-  /** method to retrieve key */
-  inline Key key() const { return this->keys_[0]; }
+  /** Method to retrieve key.
+   * Similar to `ValueType`, you can probably do `return key<1>();`
+   */
+  inline Key key() const { return NoiseModelFactorN<VALUE>::template key<1>(); }
 
  private:
   /** Serialization function */
@@ -596,9 +603,14 @@ template <class VALUE1, class VALUE2>
 class GTSAM_DEPRECATED NoiseModelFactor2
     : public NoiseModelFactorN<VALUE1, VALUE2> {
  public:
-  // aliases for value types pulled from keys
-  using X1 = VALUE1;
-  using X2 = VALUE2;
+  /** Aliases for value types pulled from keys.
+   * Note: in your code you can probably just do: 
+   *  `using X1 = ValueType<1>;`
+   * but this class is uglier due to dependent types.
+   * See e.g. testNonlinearFactor.cpp:TestFactorN.
+   */
+  using X1 = typename NoiseModelFactor2::template ValueType<1>;
+  using X2 = typename NoiseModelFactor2::template ValueType<2>;
 
  protected:
   using Base = NoiseModelFactor;
@@ -609,9 +621,11 @@ class GTSAM_DEPRECATED NoiseModelFactor2
   using NoiseModelFactorN<VALUE1, VALUE2>::NoiseModelFactorN;
   ~NoiseModelFactor2() override {}
 
-  /** methods to retrieve both keys */
-  inline Key key1() const { return this->keys_[0]; }
-  inline Key key2() const { return this->keys_[1]; }
+  /** Methods to retrieve keys.
+   * Similar to `ValueType`, you can probably do `return key<#>();`
+   */
+  inline Key key1() const { return this->template key<1>(); }
+  inline Key key2() const { return this->template key<2>(); }
 
  private:
   /** Serialization function */
@@ -633,10 +647,15 @@ template <class VALUE1, class VALUE2, class VALUE3>
 class GTSAM_DEPRECATED NoiseModelFactor3
     : public NoiseModelFactorN<VALUE1, VALUE2, VALUE3> {
  public:
-  // aliases for value types pulled from keys
-  using X1 = VALUE1;
-  using X2 = VALUE2;
-  using X3 = VALUE3;
+  /** Aliases for value types pulled from keys.
+   * Note: in your code you can probably just do: 
+   *  `using X1 = ValueType<1>;`
+   * but this class is uglier due to dependent types.
+   * See e.g. testNonlinearFactor.cpp:TestFactorN.
+   */
+  using X1 = typename NoiseModelFactor3::template ValueType<1>;
+  using X2 = typename NoiseModelFactor3::template ValueType<2>;
+  using X3 = typename NoiseModelFactor3::template ValueType<3>;
 
  protected:
   using Base = NoiseModelFactor;
@@ -647,10 +666,12 @@ class GTSAM_DEPRECATED NoiseModelFactor3
   using NoiseModelFactorN<VALUE1, VALUE2, VALUE3>::NoiseModelFactorN;
   ~NoiseModelFactor3() override {}
 
-  /** methods to retrieve keys */
-  inline Key key1() const { return this->keys_[0]; }
-  inline Key key2() const { return this->keys_[1]; }
-  inline Key key3() const { return this->keys_[2]; }
+  /** Methods to retrieve keys.
+   * Similar to `ValueType`, you can probably do `return key<#>();`
+   */
+  inline Key key1() const { return this->template key<1>(); }
+  inline Key key2() const { return this->template key<2>(); }
+  inline Key key3() const { return this->template key<3>(); }
 
  private:
   /** Serialization function */
@@ -672,11 +693,16 @@ template <class VALUE1, class VALUE2, class VALUE3, class VALUE4>
 class GTSAM_DEPRECATED NoiseModelFactor4
     : public NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4> {
  public:
-  // aliases for value types pulled from keys
-  using X1 = VALUE1;
-  using X2 = VALUE2;
-  using X3 = VALUE3;
-  using X4 = VALUE4;
+  /** Aliases for value types pulled from keys.
+   * Note: in your code you can probably just do: 
+   *  `using X1 = ValueType<1>;`
+   * but this class is uglier due to dependent types.
+   * See e.g. testNonlinearFactor.cpp:TestFactorN.
+   */
+  using X1 = typename NoiseModelFactor4::template ValueType<1>;
+  using X2 = typename NoiseModelFactor4::template ValueType<2>;
+  using X3 = typename NoiseModelFactor4::template ValueType<3>;
+  using X4 = typename NoiseModelFactor4::template ValueType<4>;
 
  protected:
   using Base = NoiseModelFactor;
@@ -687,11 +713,13 @@ class GTSAM_DEPRECATED NoiseModelFactor4
   using NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4>::NoiseModelFactorN;
   ~NoiseModelFactor4() override {}
 
-  /** methods to retrieve keys */
-  inline Key key1() const { return this->keys_[0]; }
-  inline Key key2() const { return this->keys_[1]; }
-  inline Key key3() const { return this->keys_[2]; }
-  inline Key key4() const { return this->keys_[3]; }
+  /** Methods to retrieve keys.
+   * Similar to `ValueType`, you can probably do `return key<#>();`
+   */
+  inline Key key1() const { return this->template key<1>(); }
+  inline Key key2() const { return this->template key<2>(); }
+  inline Key key3() const { return this->template key<3>(); }
+  inline Key key4() const { return this->template key<4>(); }
 
  private:
   /** Serialization function */
@@ -713,12 +741,17 @@ template <class VALUE1, class VALUE2, class VALUE3, class VALUE4, class VALUE5>
 class GTSAM_DEPRECATED NoiseModelFactor5
     : public NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5> {
  public:
-  // aliases for value types pulled from keys
-  using X1 = VALUE1;
-  using X2 = VALUE2;
-  using X3 = VALUE3;
-  using X4 = VALUE4;
-  using X5 = VALUE5;
+  /** Aliases for value types pulled from keys.
+   * Note: in your code you can probably just do: 
+   *  `using X1 = ValueType<1>;`
+   * but this class is uglier due to dependent types.
+   * See e.g. testNonlinearFactor.cpp:TestFactorN.
+   */
+  using X1 = typename NoiseModelFactor5::template ValueType<1>;
+  using X2 = typename NoiseModelFactor5::template ValueType<2>;
+  using X3 = typename NoiseModelFactor5::template ValueType<3>;
+  using X4 = typename NoiseModelFactor5::template ValueType<4>;
+  using X5 = typename NoiseModelFactor5::template ValueType<5>;
 
  protected:
   using Base = NoiseModelFactor;
@@ -730,12 +763,14 @@ class GTSAM_DEPRECATED NoiseModelFactor5
                           VALUE5>::NoiseModelFactorN;
   ~NoiseModelFactor5() override {}
 
-  /** methods to retrieve keys */
-  inline Key key1() const { return this->keys_[0]; }
-  inline Key key2() const { return this->keys_[1]; }
-  inline Key key3() const { return this->keys_[2]; }
-  inline Key key4() const { return this->keys_[3]; }
-  inline Key key5() const { return this->keys_[4]; }
+  /** Methods to retrieve keys.
+   * Similar to `ValueType`, you can probably do `return key<#>();`
+   */
+  inline Key key1() const { return this->template key<1>(); }
+  inline Key key2() const { return this->template key<2>(); }
+  inline Key key3() const { return this->template key<3>(); }
+  inline Key key4() const { return this->template key<4>(); }
+  inline Key key5() const { return this->template key<5>(); }
 
  private:
   /** Serialization function */
@@ -758,13 +793,18 @@ template <class VALUE1, class VALUE2, class VALUE3, class VALUE4, class VALUE5,
 class GTSAM_DEPRECATED NoiseModelFactor6
     : public NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5, VALUE6> {
  public:
-  // aliases for value types pulled from keys
-  using X1 = VALUE1;
-  using X2 = VALUE2;
-  using X3 = VALUE3;
-  using X4 = VALUE4;
-  using X5 = VALUE5;
-  using X6 = VALUE6;
+  /** Aliases for value types pulled from keys.
+   * Note: in your code you can probably just do: 
+   *  `using X1 = ValueType<1>;`
+   * but this class is uglier due to dependent types.
+   * See e.g. testNonlinearFactor.cpp:TestFactorN.
+   */
+  using X1 = typename NoiseModelFactor6::template ValueType<1>;
+  using X2 = typename NoiseModelFactor6::template ValueType<2>;
+  using X3 = typename NoiseModelFactor6::template ValueType<3>;
+  using X4 = typename NoiseModelFactor6::template ValueType<4>;
+  using X5 = typename NoiseModelFactor6::template ValueType<5>;
+  using X6 = typename NoiseModelFactor6::template ValueType<6>;
 
  protected:
   using Base = NoiseModelFactor;
@@ -777,13 +817,15 @@ class GTSAM_DEPRECATED NoiseModelFactor6
                           VALUE6>::NoiseModelFactorN;
   ~NoiseModelFactor6() override {}
 
-  /** methods to retrieve keys */
-  inline Key key1() const { return this->keys_[0]; }
-  inline Key key2() const { return this->keys_[1]; }
-  inline Key key3() const { return this->keys_[2]; }
-  inline Key key4() const { return this->keys_[3]; }
-  inline Key key5() const { return this->keys_[4]; }
-  inline Key key6() const { return this->keys_[5]; }
+  /** Methods to retrieve keys.
+   * Similar to `ValueType`, you can probably do `return key<#>();`
+   */
+  inline Key key1() const { return this->template key<1>(); }
+  inline Key key2() const { return this->template key<2>(); }
+  inline Key key3() const { return this->template key<3>(); }
+  inline Key key4() const { return this->template key<4>(); }
+  inline Key key5() const { return this->template key<5>(); }
+  inline Key key6() const { return this->template key<6>(); }
 
  private:
   /** Serialization function */
