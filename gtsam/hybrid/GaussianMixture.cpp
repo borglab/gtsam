@@ -85,8 +85,8 @@ size_t GaussianMixture::nrComponents() const {
 
 /* *******************************************************************************/
 GaussianConditional::shared_ptr GaussianMixture::operator()(
-    const DiscreteValues &discreteVals) const {
-  auto &ptr = conditionals_(discreteVals);
+    const DiscreteValues &discreteValues) const {
+  auto &ptr = conditionals_(discreteValues);
   if (!ptr) return nullptr;
   auto conditional = boost::dynamic_pointer_cast<GaussianConditional>(ptr);
   if (conditional)
@@ -209,12 +209,12 @@ void GaussianMixture::prune(const DecisionTreeFactor &decisionTree) {
 
 /* *******************************************************************************/
 AlgebraicDecisionTree<Key> GaussianMixture::error(
-    const VectorValues &continuousVals) const {
+    const VectorValues &continuousValues) const {
   // functor to convert from GaussianConditional to double error value.
   auto errorFunc =
-      [continuousVals](const GaussianConditional::shared_ptr &conditional) {
+      [continuousValues](const GaussianConditional::shared_ptr &conditional) {
         if (conditional) {
-          return conditional->error(continuousVals);
+          return conditional->error(continuousValues);
         } else {
           // return arbitrarily large error
           return 1e50;
@@ -225,10 +225,10 @@ AlgebraicDecisionTree<Key> GaussianMixture::error(
 }
 
 /* *******************************************************************************/
-double GaussianMixture::error(const VectorValues &continuousVals,
+double GaussianMixture::error(const VectorValues &continuousValues,
                               const DiscreteValues &discreteValues) const {
   auto conditional = conditionals_(discreteValues);
-  return conditional->error(continuousVals);
+  return conditional->error(continuousValues);
 }
 
 }  // namespace gtsam
