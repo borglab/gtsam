@@ -252,8 +252,8 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
   }
 
   /**
-   * @brief Compute the unnormalized probabilities of the continuous variables
-   * for each of the modes.
+   * @brief Compute the unnormalized probabilities P(X | M, Z)
+   * of the continuous variables for each of the mode sequences.
    *
    * @tparam BAYES  Template on the type of Bayes graph, either a bayes net or a
    * bayes tree.
@@ -303,8 +303,6 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
 
   std::pair<Ordering, Ordering> separateContinuousDiscreteOrdering(
       const Ordering& ordering) const;
-
-  
 
   /**
    * @brief Return a Colamd constrained ordering where the discrete keys are
