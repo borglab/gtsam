@@ -30,8 +30,8 @@ using symbol_shorthand::X;
  * Unary factor on the unknown pose, resulting from meauring the projection of
  * a known 3D point in the image
  */
-class ResectioningFactor: public NoiseModelFactor1<Pose3> {
-  typedef NoiseModelFactor1<Pose3> Base;
+class ResectioningFactor: public NoiseModelFactorN<Pose3> {
+  typedef NoiseModelFactorN<Pose3> Base;
 
   Cal3_S2::shared_ptr K_; ///< camera's intrinsic parameters
   Point3 P_;              ///< 3D point on the calibration rig

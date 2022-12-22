@@ -31,9 +31,9 @@ namespace gtsam {
  * https://www.grc.nasa.gov/www/k-12/airplane/atmosmet.html
  * @ingroup navigation
  */
-class GTSAM_EXPORT BarometricFactor : public NoiseModelFactor2<Pose3, double> {
+class GTSAM_EXPORT BarometricFactor : public NoiseModelFactorN<Pose3, double> {
    private:
-    typedef NoiseModelFactor2<Pose3, double> Base;
+    typedef NoiseModelFactorN<Pose3, double> Base;
 
     double nT_;  ///< Height Measurement based on a standard atmosphere
 
@@ -99,6 +99,7 @@ class GTSAM_EXPORT BarometricFactor : public NoiseModelFactor2<Pose3, double> {
     friend class boost::serialization::access;
     template <class ARCHIVE>
     void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+        // NoiseModelFactor1 instead of NoiseModelFactorN for backward compatibility
         ar& boost::serialization::make_nvp(
             "NoiseModelFactor1",
             boost::serialization::base_object<Base>(*this));

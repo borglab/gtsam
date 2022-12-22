@@ -14,6 +14,7 @@
  * @brief   Non-linear factor base classes
  * @author  Frank Dellaert
  * @author  Richard Roberts
+ * @author  Gerry Chen
  */
 
 // \callgraph
@@ -431,8 +432,9 @@ class NoiseModelFactorN : public NoiseModelFactor {
    * // key<3>()  // ERROR!  Will not compile
    * ```
    */
-  template <int I, typename = IndexIsValid<I>>
+  template <int I = 1>
   inline Key key() const {
+    static_assert(I <= N, "Index out of bounds");
     return keys_[I - 1];
   }
 
@@ -492,6 +494,7 @@ class NoiseModelFactorN : public NoiseModelFactor {
                                OptionalMatrix<ValueTypes>... H) const = 0;
 
   /// @}
+
   /// @name Convenience method overloads
   /// @{
 
@@ -550,11 +553,43 @@ class NoiseModelFactorN : public NoiseModelFactor {
     ar& boost::serialization::make_nvp(
         "NoiseModelFactor", boost::serialization::base_object<Base>(*this));
   }
+
+ public:
+  /// @name Deprecated methods
+  /// @{
+
+  template <int I = N, typename = typename std::enable_if<(I > 1), void>::type>
+  inline Key GTSAM_DEPRECATED key1() const {
+    return key<1>();
+  }
+  template <int I = 2, typename = IndexIsValid<I>>
+  inline Key GTSAM_DEPRECATED key2() const {
+    return key<2>();
+  }
+  template <int I = 3, typename = IndexIsValid<I>>
+  inline Key GTSAM_DEPRECATED key3() const {
+    return key<3>();
+  }
+  template <int I = 4, typename = IndexIsValid<I>>
+  inline Key GTSAM_DEPRECATED key4() const {
+    return key<4>();
+  }
+  template <int I = 5, typename = IndexIsValid<I>>
+  inline Key GTSAM_DEPRECATED key5() const {
+    return key<5>();
+  }
+  template <int I = 6, typename = IndexIsValid<I>>
+  inline Key GTSAM_DEPRECATED key6() const {
+    return key<6>();
+  }
+
+  /// @}
+
 };  // \class NoiseModelFactorN
 
 /* ************************************************************************* */
 /** @deprecated: use NoiseModelFactorN, replacing .key() with .key<1> and X1
- * with ValueType<1>.
+ * with ValueType<1>.  If your class is templated, use `this->template key<1>()`
  * A convenient base class for creating your own NoiseModelFactor
  * with 1 variable.  To derive from this class, implement evaluateError().
  */
@@ -595,7 +630,7 @@ class GTSAM_DEPRECATED NoiseModelFactor1 : public NoiseModelFactorN<VALUE> {
 
 /* ************************************************************************* */
 /** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1> and X1
- * with ValueType<1>.
+ * with ValueType<1>.  If your class is templated, use `this->template key<1>()`
  * A convenient base class for creating your own NoiseModelFactor
  * with 2 variables.  To derive from this class, implement evaluateError().
  */
@@ -639,7 +674,7 @@ class GTSAM_DEPRECATED NoiseModelFactor2
 
 /* ************************************************************************* */
 /** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1> and X1
- * with ValueType<1>.
+ * with ValueType<1>.  If your class is templated, use `this->template key<1>()`
  * A convenient base class for creating your own NoiseModelFactor
  * with 3 variables.  To derive from this class, implement evaluateError().
  */
@@ -685,7 +720,7 @@ class GTSAM_DEPRECATED NoiseModelFactor3
 
 /* ************************************************************************* */
 /** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1> and X1
- * with ValueType<1>.
+ * with ValueType<1>.  If your class is templated, use `this->template key<1>()`
  * A convenient base class for creating your own NoiseModelFactor
  * with 4 variables.  To derive from this class, implement evaluateError().
  */
@@ -733,7 +768,7 @@ class GTSAM_DEPRECATED NoiseModelFactor4
 
 /* ************************************************************************* */
 /** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1> and X1
- * with ValueType<1>.
+ * with ValueType<1>.  If your class is templated, use `this->template key<1>()`
  * A convenient base class for creating your own NoiseModelFactor
  * with 5 variables.  To derive from this class, implement evaluateError().
  */
@@ -784,7 +819,7 @@ class GTSAM_DEPRECATED NoiseModelFactor5
 
 /* ************************************************************************* */
 /** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1> and X1
- * with ValueType<1>.
+ * with ValueType<1>.  If your class is templated, use `this->template key<1>()`
  * A convenient base class for creating your own NoiseModelFactor
  * with 6 variables.  To derive from this class, implement evaluateError().
  */

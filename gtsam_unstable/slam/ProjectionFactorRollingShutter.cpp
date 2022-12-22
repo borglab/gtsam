@@ -54,9 +54,9 @@ Vector ProjectionFactorRollingShutter::evaluateError(
     if (H3) *H3 = Matrix::Zero(2, 3);
     if (verboseCheirality_)
       std::cout << e.what() << ": Landmark "
-                << DefaultKeyFormatter(this->key2()) << " moved behind camera "
-                << DefaultKeyFormatter(this->key1()) << std::endl;
-    if (throwCheirality_) throw CheiralityException(this->key2());
+                << DefaultKeyFormatter(this->key<2>()) << " moved behind camera "
+                << DefaultKeyFormatter(this->key<1>()) << std::endl;
+    if (throwCheirality_) throw CheiralityException(this->key<2>());
   }
   return Vector2::Constant(2.0 * K_->fx());
 }
