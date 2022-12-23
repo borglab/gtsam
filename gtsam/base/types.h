@@ -46,18 +46,49 @@
 #include <omp.h>
 #endif
 
+/* Define macros for ignoring compiler warnings.
+ * Usage Example:
+ * ```
+ *  CLANG_DIAGNOSTIC_PUSH_IGNORE("-Wdeprecated-declarations")
+ *  GCC_DIAGNOSTIC_PUSH_IGNORE("-Wdeprecated-declarations")
+ *  MSVC_DIAGNOSTIC_PUSH_IGNORE(4996)
+ *  // ... code you want to suppress deprecation warnings for ...
+ *  DIAGNOSTIC_POP()
+ * ```
+ */
+#define DO_PRAGMA(x) _Pragma (#x)
 #ifdef __clang__
 #  define CLANG_DIAGNOSTIC_PUSH_IGNORE(diag) \
   _Pragma("clang diagnostic push") \
-  _Pragma("clang diagnostic ignored \"" diag "\"")
+  DO_PRAGMA(clang diagnostic ignored diag)
 #else
 #  define CLANG_DIAGNOSTIC_PUSH_IGNORE(diag)
 #endif
 
-#ifdef __clang__
-#  define CLANG_DIAGNOSTIC_POP() _Pragma("clang diagnostic pop")
+#ifdef __GNUC__
+#  define GCC_DIAGNOSTIC_PUSH_IGNORE(diag) \
+  _Pragma("GCC diagnostic push") \
+  DO_PRAGMA(GCC diagnostic ignored diag)
 #else
-#  define CLANG_DIAGNOSTIC_POP()
+#  define GCC_DIAGNOSTIC_PUSH_IGNORE(diag)
+#endif
+
+#ifdef _MSC_VER
+#  define MSVC_DIAGNOSTIC_PUSH_IGNORE(code) \
+  _Pragma("warning ( push )") \
+  DO_PRAGMA(warning ( disable : code ))
+#else
+#  define MSVC_DIAGNOSTIC_PUSH_IGNORE(code)
+#endif
+
+#if defined(__clang__)
+#  define DIAGNOSTIC_POP() _Pragma("clang diagnostic pop")
+#elif defined(__GNUC__)
+#  define DIAGNOSTIC_POP() _Pragma("GCC diagnostic pop")
+#elif defined(_MSC_VER)
+#  define DIAGNOSTIC_POP() _Pragma("warning ( pop )")
+#else
+#  define DIAGNOSTIC_POP()
 #endif
 
 namespace gtsam {
