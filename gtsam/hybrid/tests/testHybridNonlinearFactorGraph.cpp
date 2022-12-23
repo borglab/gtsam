@@ -372,8 +372,7 @@ TEST(HybridGaussianElimination, EliminateHybrid_2_Variable) {
       dynamic_pointer_cast<DecisionTreeFactor>(hybridDiscreteFactor->inner());
   CHECK(discreteFactor);
   EXPECT_LONGS_EQUAL(1, discreteFactor->discreteKeys().size());
-  // All leaves should be probability 1 since this is not P*(X|M,Z)
-  EXPECT(discreteFactor->root_->isLeaf());
+  EXPECT(discreteFactor->root_->isLeaf() == false);
 
   // TODO(Varun) Test emplace_discrete
 }
@@ -386,11 +385,11 @@ TEST(HybridFactorGraph, Partial_Elimination) {
 
   auto linearizedFactorGraph = self.linearizedFactorGraph;
 
-  // Create ordering.
+  // Create ordering of only continuous variables.
   Ordering ordering;
   for (size_t k = 0; k < self.K; k++) ordering += X(k);
 
-  // Eliminate partially.
+  // Eliminate partially i.e. only continuous part.
   HybridBayesNet::shared_ptr hybridBayesNet;
   HybridGaussianFactorGraph::shared_ptr remainingFactorGraph;
   std::tie(hybridBayesNet, remainingFactorGraph) =
@@ -440,14 +439,6 @@ TEST(HybridFactorGraph, Full_Elimination) {
       auto df = dynamic_pointer_cast<HybridDiscreteFactor>(factor);
       discrete_fg.push_back(df->inner());
     }
-
-    // Get the probabilit P*(X | M, Z)
-    DiscreteKeys discrete_keys =
-        remainingFactorGraph_partial->at(2)->discreteKeys();
-    AlgebraicDecisionTree<Key> probPrimeTree =
-        linearizedFactorGraph.continuousProbPrimes(discrete_keys,
-                                                   hybridBayesNet_partial);
-    discrete_fg.add(DecisionTreeFactor(discrete_keys, probPrimeTree));
 
     ordering.clear();
     for (size_t k = 0; k < self.K - 1; k++) ordering += M(k);
