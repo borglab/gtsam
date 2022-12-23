@@ -101,7 +101,8 @@ namespace gtsam {
      *   std::mt19937_64 rng(42);
      *   auto sample = gbn.sample(&rng);
      */
-    VectorValues sample(std::mt19937_64* rng) const;
+    VectorValues sample(std::mt19937_64* rng,
+                        const SharedDiagonal& model = nullptr) const;
 
     /**
      * Sample from an incomplete BayesNet, given missing variables
@@ -110,13 +111,15 @@ namespace gtsam {
      *   VectorValues given = ...;
      *   auto sample = gbn.sample(given, &rng);
      */
-    VectorValues sample(VectorValues given, std::mt19937_64* rng) const;
+    VectorValues sample(VectorValues given, std::mt19937_64* rng,
+                        const SharedDiagonal& model = nullptr) const;
 
     /// Sample using ancestral sampling, use default rng
-    VectorValues sample() const;
+    VectorValues sample(const SharedDiagonal& model = nullptr) const;
 
     /// Sample from an incomplete BayesNet, use default rng
-    VectorValues sample(VectorValues given) const;
+    VectorValues sample(VectorValues given,
+                        const SharedDiagonal& model = nullptr) const;
 
     /**
      * Return ordering corresponding to a topological sort.

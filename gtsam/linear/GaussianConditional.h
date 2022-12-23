@@ -188,7 +188,8 @@ namespace gtsam {
      *   std::mt19937_64 rng(42);
      *   auto sample = gbn.sample(&rng);
      */
-    VectorValues sample(std::mt19937_64* rng) const;
+    VectorValues sample(std::mt19937_64* rng,
+                        const SharedDiagonal& model = nullptr) const;
 
     /**
      * Sample from conditional, given missing variables
@@ -198,13 +199,15 @@ namespace gtsam {
      *   auto sample = gbn.sample(given, &rng);
      */
     VectorValues sample(const VectorValues& parentsValues,
-                        std::mt19937_64* rng) const;
+                        std::mt19937_64* rng,
+                        const SharedDiagonal& model = nullptr) const;
 
     /// Sample, use default rng
-    VectorValues sample() const;
+    VectorValues sample(const SharedDiagonal& model = nullptr) const;
 
     /// Sample with given values, use default rng
-    VectorValues sample(const VectorValues& parentsValues) const;
+    VectorValues sample(const VectorValues& parentsValues,
+                        const SharedDiagonal& model = nullptr) const;
 
     /// @}
 
