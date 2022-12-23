@@ -20,6 +20,9 @@
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridValues.h>
 
+// In Wrappers we have no access to this so have a default ready
+static std::mt19937_64 kRandomNumberGenerator(42);
+
 namespace gtsam {
 
 /* ************************************************************************* */
@@ -230,6 +233,43 @@ HybridValues HybridBayesNet::optimize() const {
 VectorValues HybridBayesNet::optimize(const DiscreteValues &assignment) const {
   GaussianBayesNet gbn = this->choose(assignment);
   return gbn.optimize();
+}
+
+/* ************************************************************************* */
+HybridValues HybridBayesNet::sample(VectorValues given, std::mt19937_64 *rng,
+                                    SharedDiagonal model) const {
+  DiscreteBayesNet dbn;
+  for (size_t idx = 0; idx < size(); idx++) {
+    if (factors_.at(idx)->isDiscrete()) {
+      // If factor at `idx` is discrete-only, we add to the discrete bayes net.
+      dbn.push_back(this->atDiscrete(idx));
+    }
+  }
+  // Sample a discrete assignment.
+  DiscreteValues assignment = dbn.sample();
+  // Select the continuous bayes net corresponding to the assignment.
+  GaussianBayesNet gbn = this->choose(assignment);
+  // Sample from the gaussian bayes net.
+  VectorValues sample = gbn.sample(given, rng, model);
+  return HybridValues(assignment, sample);
+}
+
+/* ************************************************************************* */
+HybridValues HybridBayesNet::sample(std::mt19937_64 *rng,
+                                    SharedDiagonal model) const {
+  VectorValues given;
+  return sample(given, rng, model);
+}
+
+/* ************************************************************************* */
+HybridValues HybridBayesNet::sample(VectorValues given,
+                                    SharedDiagonal model) const {
+  return sample(given, &kRandomNumberGenerator, model);
+}
+
+/* ************************************************************************* */
+HybridValues HybridBayesNet::sample(SharedDiagonal model) const {
+  return sample(&kRandomNumberGenerator, model);
 }
 
 /* ************************************************************************* */

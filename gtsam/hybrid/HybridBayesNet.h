@@ -120,7 +120,53 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    */
   DecisionTreeFactor::shared_ptr discreteConditionals() const;
 
- public:
+  /**
+   * @brief Sample from an incomplete BayesNet, given missing variables.
+   *
+   * Example:
+   *   std::mt19937_64 rng(42);
+   *   VectorValues given = ...;
+   *   auto sample = bn.sample(given, &rng);
+   *
+   * @param given Values of missing variables.
+   * @param rng The pseudo-random number generator.
+   * @param model Optional diagonal noise model to use in sampling.
+   * @return HybridValues
+   */
+  HybridValues sample(VectorValues given, std::mt19937_64 *rng,
+                      SharedDiagonal model = nullptr) const;
+
+  /**
+   * @brief Sample using ancestral sampling.
+   *
+   * Example:
+   *   std::mt19937_64 rng(42);
+   *   auto sample = bn.sample(&rng);
+   *
+   * @param rng The pseudo-random number generator.
+   * @param model Optional diagonal noise model to use in sampling.
+   * @return HybridValues
+   */
+  HybridValues sample(std::mt19937_64 *rng,
+                      SharedDiagonal model = nullptr) const;
+
+  /**
+   * @brief Sample from an incomplete BayesNet, use default rng.
+   *
+   * @param given Values of missing variables.
+   * @param model Optional diagonal noise model to use in sampling.
+   * @return HybridValues
+   */
+  HybridValues sample(VectorValues given, SharedDiagonal model = nullptr) const;
+
+  /**
+   * @brief Sample using ancestral sampling, use default rng.
+   *
+   * @param model Optional diagonal noise model to use in sampling.
+   * @return HybridValues
+   */
+  HybridValues sample(SharedDiagonal model = nullptr) const;
+
   /// Prune the Hybrid Bayes Net such that we have at most maxNrLeaves leaves.
   HybridBayesNet prune(size_t maxNrLeaves);
 
