@@ -228,7 +228,7 @@ void InitializePose3::createSymbolicGraph(
       Rot3 Rij = pose3Between->measured().rotation();
       factorId2RotMap->emplace(factorId, Rij);
 
-      Key key1 = pose3Between->key1();
+      Key key1 = pose3Between->key<1>();
       if (adjEdgesMap->find(key1) != adjEdgesMap->end()) {  // key is already in
         adjEdgesMap->at(key1).push_back(factorId);
       } else {
@@ -236,7 +236,7 @@ void InitializePose3::createSymbolicGraph(
         edge_id.push_back(factorId);
         adjEdgesMap->emplace(key1, edge_id);
       }
-      Key key2 = pose3Between->key2();
+      Key key2 = pose3Between->key<2>();
       if (adjEdgesMap->find(key2) != adjEdgesMap->end()) {  // key is already in
         adjEdgesMap->at(key2).push_back(factorId);
       } else {

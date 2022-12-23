@@ -329,12 +329,12 @@ inline Matrix H(const Point2& v) {
       0.0, cos(v.y())).finished();
 }
 
-struct UnaryFactor: public gtsam::NoiseModelFactor1<Point2> {
+struct UnaryFactor: public gtsam::NoiseModelFactorN<Point2> {
 
   Point2 z_;
 
   UnaryFactor(const Point2& z, const SharedNoiseModel& model, Key key) :
-    gtsam::NoiseModelFactor1<Point2>(model, key), z_(z) {
+    gtsam::NoiseModelFactorN<Point2>(model, key), z_(z) {
   }
 
   Vector evaluateError(const Point2& x, boost::optional<Matrix&> A = boost::none) const override {
