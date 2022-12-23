@@ -124,6 +124,39 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   /// Prune the Hybrid Bayes Net such that we have at most maxNrLeaves leaves.
   HybridBayesNet prune(size_t maxNrLeaves);
 
+  /**
+   * @brief 0.5 * sum of squared Mahalanobis distances
+   * for a specific discrete assignment.
+   *
+   * @param continuousValues Continuous values at which to compute the error.
+   * @param discreteValues Discrete assignment for a specific mode sequence.
+   * @return double
+   */
+  double error(const VectorValues &continuousValues,
+               const DiscreteValues &discreteValues) const;
+
+  /**
+   * @brief Compute conditional error for each discrete assignment,
+   * and return as a tree.
+   *
+   * @param continuousValues Continuous values at which to compute the error.
+   * @return AlgebraicDecisionTree<Key>
+   */
+  AlgebraicDecisionTree<Key> error(const VectorValues &continuousValues) const;
+
+  /**
+   * @brief Compute unnormalized probability q(μ|M),
+   * for each discrete assignment, and return as a tree.
+   * q(μ|M) is the unnormalized probability at the MLE point μ,
+   * conditioned on the discrete variables.
+   *
+   * @param continuousValues Continuous values at which to compute the
+   * probability.
+   * @return AlgebraicDecisionTree<Key>
+   */
+  AlgebraicDecisionTree<Key> probPrime(
+      const VectorValues &continuousValues) const;
+
   /// @}
 
  private:

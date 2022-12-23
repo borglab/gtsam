@@ -85,8 +85,8 @@ size_t GaussianMixture::nrComponents() const {
 
 /* *******************************************************************************/
 GaussianConditional::shared_ptr GaussianMixture::operator()(
-    const DiscreteValues &discreteVals) const {
-  auto &ptr = conditionals_(discreteVals);
+    const DiscreteValues &discreteValues) const {
+  auto &ptr = conditionals_(discreteValues);
   if (!ptr) return nullptr;
   auto conditional = boost::dynamic_pointer_cast<GaussianConditional>(ptr);
   if (conditional)
@@ -205,6 +205,32 @@ void GaussianMixture::prune(const DecisionTreeFactor &decisionTree) {
 
   auto pruned_conditionals = conditionals_.apply(pruner);
   conditionals_.root_ = pruned_conditionals.root_;
+}
+
+/* *******************************************************************************/
+AlgebraicDecisionTree<Key> GaussianMixture::error(
+    const VectorValues &continuousValues) const {
+  // functor to calculate to double error value from GaussianConditional.
+  auto errorFunc =
+      [continuousValues](const GaussianConditional::shared_ptr &conditional) {
+        if (conditional) {
+          return conditional->error(continuousValues);
+        } else {
+          // Return arbitrarily large error if conditional is null
+          // Conditional is null if it is pruned out.
+          return 1e50;
+        }
+      };
+  DecisionTree<Key, double> errorTree(conditionals_, errorFunc);
+  return errorTree;
+}
+
+/* *******************************************************************************/
+double GaussianMixture::error(const VectorValues &continuousValues,
+                              const DiscreteValues &discreteValues) const {
+  // Directly index to get the conditional, no need to build the whole tree.
+  auto conditional = conditionals_(discreteValues);
+  return conditional->error(continuousValues);
 }
 
 }  // namespace gtsam

@@ -41,7 +41,7 @@ class JacobianFactor;
 
 /**
  * @brief Main elimination function for HybridGaussianFactorGraph.
- * 
+ *
  * @param factors The factor graph to eliminate.
  * @param keys The elimination ordering.
  * @return The conditional on the ordering keys and the remaining factors.
@@ -99,11 +99,12 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
   using shared_ptr = boost::shared_ptr<This>;  ///< shared_ptr to This
 
   using Values = gtsam::Values;  ///< backwards compatibility
-  using Indices = KeyVector;     ///> map from keys to values
+  using Indices = KeyVector;     ///< map from keys to values
 
   /// @name Constructors
   /// @{
 
+  /// @brief Default constructor.
   HybridGaussianFactorGraph() = default;
 
   /**
@@ -169,6 +170,28 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
       Base::push_back(sharedFactor);
     }
   }
+
+  /**
+   * @brief Compute error for each discrete assignment,
+   * and return as a tree.
+   *
+   * Error \f$ e = \Vert x - \mu \Vert_{\Sigma} \f$.
+   *
+   * @param continuousValues Continuous values at which to compute the error.
+   * @return AlgebraicDecisionTree<Key>
+   */
+  AlgebraicDecisionTree<Key> error(const VectorValues& continuousValues) const;
+
+  /**
+   * @brief Compute unnormalized probability \f$ P(X | M, Z) \f$
+   * for each discrete assignment, and return as a tree.
+   *
+   * @param continuousValues Continuous values at which to compute the
+   * probability.
+   * @return AlgebraicDecisionTree<Key>
+   */
+  AlgebraicDecisionTree<Key> probPrime(
+      const VectorValues& continuousValues) const;
 
   /**
    * @brief Return a Colamd constrained ordering where the discrete keys are
