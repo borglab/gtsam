@@ -155,6 +155,20 @@ namespace gtsam {
     }
   }
 
+/* ************************************************************************* */
+double GaussianConditional::logDeterminant() const {
+  double logDet;
+  if (this->get_model()) {
+    Vector diag = this->R().diagonal();
+    this->get_model()->whitenInPlace(diag);
+    logDet = diag.unaryExpr([](double x) { return log(x); }).sum();
+  } else {
+    logDet =
+        this->R().diagonal().unaryExpr([](double x) { return log(x); }).sum();
+  }
+  return logDet;
+}
+
   /* ************************************************************************* */
   VectorValues GaussianConditional::solve(const VectorValues& x) const {
     // Concatenate all vector values that correspond to parent variables
