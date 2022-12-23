@@ -184,6 +184,60 @@ TEST(HybridBayesNet, OptimizeMultifrontal) {
 }
 
 /* ****************************************************************************/
+// Test bayes net error
+TEST(HybridBayesNet, Error) {
+  Switching s(3);
+
+  Ordering hybridOrdering = s.linearizedFactorGraph.getHybridOrdering();
+  HybridBayesNet::shared_ptr hybridBayesNet =
+      s.linearizedFactorGraph.eliminateSequential(hybridOrdering);
+
+  HybridValues delta = hybridBayesNet->optimize();
+  auto error_tree = hybridBayesNet->error(delta.continuous());
+
+  std::vector<DiscreteKey> discrete_keys = {{M(0), 2}, {M(1), 2}};
+  std::vector<double> leaves = {0.0097568009, 3.3973404e-31, 0.029126214,
+                                0.0097568009};
+  AlgebraicDecisionTree<Key> expected_error(discrete_keys, leaves);
+
+  // regression
+  EXPECT(assert_equal(expected_error, error_tree, 1e-9));
+
+  // Error on pruned bayes net
+  auto prunedBayesNet = hybridBayesNet->prune(2);
+  auto pruned_error_tree = prunedBayesNet.error(delta.continuous());
+
+  std::vector<double> pruned_leaves = {2e50, 3.3973404e-31, 2e50, 0.0097568009};
+  AlgebraicDecisionTree<Key> expected_pruned_error(discrete_keys,
+                                                   pruned_leaves);
+
+  // regression
+  EXPECT(assert_equal(expected_pruned_error, pruned_error_tree, 1e-9));
+
+  // Verify error computation and check for specific error value
+  DiscreteValues discrete_values;
+  boost::assign::insert(discrete_values)(M(0), 1)(M(1), 1);
+
+  double total_error = 0;
+  for (size_t idx = 0; idx < hybridBayesNet->size(); idx++) {
+    if (hybridBayesNet->at(idx)->isHybrid()) {
+      double error = hybridBayesNet->atMixture(idx)->error(delta.continuous(),
+                                                           discrete_values);
+      total_error += error;
+    } else if (hybridBayesNet->at(idx)->isContinuous()) {
+      double error = hybridBayesNet->atGaussian(idx)->error(delta.continuous());
+      total_error += error;
+    }
+  }
+
+  EXPECT_DOUBLES_EQUAL(
+      total_error, hybridBayesNet->error(delta.continuous(), discrete_values),
+      1e-9);
+  EXPECT_DOUBLES_EQUAL(total_error, error_tree(discrete_values), 1e-9);
+  EXPECT_DOUBLES_EQUAL(total_error, pruned_error_tree(discrete_values), 1e-9);
+}
+
+/* ****************************************************************************/
 // Test bayes net pruning
 TEST(HybridBayesNet, Prune) {
   Switching s(4);

@@ -20,15 +20,19 @@
 
 #pragma once
 
+#include <gtsam/discrete/AlgebraicDecisionTree.h>
 #include <gtsam/discrete/DecisionTree.h>
 #include <gtsam/discrete/DiscreteKey.h>
+#include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/linear/GaussianFactor.h>
+#include <gtsam/linear/VectorValues.h>
 
 namespace gtsam {
 
 class GaussianFactorGraph;
 
+// Needed for wrapper.
 using GaussianFactorVector = std::vector<gtsam::GaussianFactor::shared_ptr>;
 
 /**
@@ -125,6 +129,26 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
    * @return Sum
    */
   Sum add(const Sum &sum) const;
+
+  /**
+   * @brief Compute error of the GaussianMixtureFactor as a tree.
+   *
+   * @param continuousValues The continuous VectorValues.
+   * @return AlgebraicDecisionTree<Key> A decision tree with the same keys
+   * as the factors involved, and leaf values as the error.
+   */
+  AlgebraicDecisionTree<Key> error(const VectorValues &continuousValues) const;
+
+  /**
+   * @brief Compute the error of this Gaussian Mixture given the continuous
+   * values and a discrete assignment.
+   *
+   * @param continuousValues Continuous values at which to compute the error.
+   * @param discreteValues The discrete assignment for a specific mode sequence.
+   * @return double
+   */
+  double error(const VectorValues &continuousValues,
+               const DiscreteValues &discreteValues) const;
 
   /// Add MixtureFactor to a Sum, syntactic sugar.
   friend Sum &operator+=(Sum &sum, const GaussianMixtureFactor &factor) {

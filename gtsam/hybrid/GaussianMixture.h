@@ -122,7 +122,7 @@ class GTSAM_EXPORT GaussianMixture
   /// @{
 
   GaussianConditional::shared_ptr operator()(
-      const DiscreteValues &discreteVals) const;
+      const DiscreteValues &discreteValues) const;
 
   /// Returns the total number of continuous components
   size_t nrComponents() const;
@@ -143,6 +143,26 @@ class GTSAM_EXPORT GaussianMixture
 
   /// Getter for the underlying Conditionals DecisionTree
   const Conditionals &conditionals();
+
+  /**
+   * @brief Compute error of the GaussianMixture as a tree.
+   *
+   * @param continuousValues The continuous VectorValues.
+   * @return AlgebraicDecisionTree<Key> A decision tree with the same keys
+   * as the conditionals, and leaf values as the error.
+   */
+  AlgebraicDecisionTree<Key> error(const VectorValues &continuousValues) const;
+
+  /**
+   * @brief Compute the error of this Gaussian Mixture given the continuous
+   * values and a discrete assignment.
+   *
+   * @param continuousValues Continuous values at which to compute the error.
+   * @param discreteValues The discrete assignment for a specific mode sequence.
+   * @return double
+   */
+  double error(const VectorValues &continuousValues,
+               const DiscreteValues &discreteValues) const;
 
   /**
    * @brief Prune the decision tree of Gaussian factors as per the discrete

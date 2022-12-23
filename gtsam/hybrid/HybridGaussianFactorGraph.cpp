@@ -423,4 +423,58 @@ const Ordering HybridGaussianFactorGraph::getHybridOrdering() const {
   return ordering;
 }
 
+/* ************************************************************************ */
+AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::error(
+    const VectorValues &continuousValues) const {
+  AlgebraicDecisionTree<Key> error_tree(0.0);
+
+  // Iterate over each factor.
+  for (size_t idx = 0; idx < size(); idx++) {
+    AlgebraicDecisionTree<Key> factor_error;
+
+    if (factors_.at(idx)->isHybrid()) {
+      // If factor is hybrid, select based on assignment.
+      GaussianMixtureFactor::shared_ptr gaussianMixture =
+          boost::static_pointer_cast<GaussianMixtureFactor>(factors_.at(idx));
+      // Compute factor error.
+      factor_error = gaussianMixture->error(continuousValues);
+
+      // If first factor, assign error, else add it.
+      if (idx == 0) {
+        error_tree = factor_error;
+      } else {
+        error_tree = error_tree + factor_error;
+      }
+
+    } else if (factors_.at(idx)->isContinuous()) {
+      // If continuous only, get the (double) error
+      // and add it to the error_tree
+      auto hybridGaussianFactor =
+          boost::static_pointer_cast<HybridGaussianFactor>(factors_.at(idx));
+      GaussianFactor::shared_ptr gaussian = hybridGaussianFactor->inner();
+
+      // Compute the error of the gaussian factor.
+      double error = gaussian->error(continuousValues);
+      // Add the gaussian factor error to every leaf of the error tree.
+      error_tree = error_tree.apply(
+          [error](double leaf_value) { return leaf_value + error; });
+
+    } else if (factors_.at(idx)->isDiscrete()) {
+      // If factor at `idx` is discrete-only, we skip.
+      continue;
+    }
+  }
+
+  return error_tree;
+}
+
+/* ************************************************************************ */
+AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::probPrime(
+    const VectorValues &continuousValues) const {
+  AlgebraicDecisionTree<Key> error_tree = this->error(continuousValues);
+  AlgebraicDecisionTree<Key> prob_tree =
+      error_tree.apply([](double error) { return exp(-error); });
+  return prob_tree;
+}
+
 }  // namespace gtsam
