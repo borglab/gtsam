@@ -27,12 +27,12 @@ namespace gtsam {
    * common-mode errors and that can be partially corrected if other sensors are used
    * @ingroup slam
    */
-  class BiasedGPSFactor: public NoiseModelFactor2<Pose3, Point3> {
+  class BiasedGPSFactor: public NoiseModelFactorN<Pose3, Point3> {
 
   private:
 
     typedef BiasedGPSFactor This;
-    typedef NoiseModelFactor2<Pose3, Point3> Base;
+    typedef NoiseModelFactorN<Pose3, Point3> Base;
 
     Point3 measured_; /** The measurement */
 
@@ -57,8 +57,8 @@ namespace gtsam {
     /** print */
     void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
       std::cout << s << "BiasedGPSFactor("
-          << keyFormatter(this->key1()) << ","
-          << keyFormatter(this->key2()) << ")\n"
+          << keyFormatter(this->key<1>()) << ","
+          << keyFormatter(this->key<2>()) << ")\n"
           << "  measured: " << measured_.transpose() << std::endl;
       this->noiseModel_->print("  noise model: ");
     }
@@ -96,6 +96,7 @@ namespace gtsam {
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+      // NoiseModelFactor2 instead of NoiseModelFactorN for backward compatibility
       ar & boost::serialization::make_nvp("NoiseModelFactor2",
           boost::serialization::base_object<Base>(*this));
       ar & BOOST_SERIALIZATION_NVP(measured_);

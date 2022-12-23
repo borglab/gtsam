@@ -62,10 +62,10 @@ using namespace gtsam;
 //
 // The factor will be a unary factor, affect only a single system variable. It will
 // also use a standard Gaussian noise model. Hence, we will derive our new factor from
-// the NoiseModelFactor1.
+// the NoiseModelFactorN.
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
-class UnaryFactor: public NoiseModelFactor1<Pose2> {
+class UnaryFactor: public NoiseModelFactorN<Pose2> {
   // The factor will hold a measurement consisting of an (X,Y) location
   // We could this with a Point2 but here we just use two doubles
   double mx_, my_;
@@ -76,11 +76,11 @@ class UnaryFactor: public NoiseModelFactor1<Pose2> {
 
   // The constructor requires the variable key, the (X, Y) measurement value, and the noise model
   UnaryFactor(Key j, double x, double y, const SharedNoiseModel& model):
-    NoiseModelFactor1<Pose2>(model, j), mx_(x), my_(y) {}
+    NoiseModelFactorN<Pose2>(model, j), mx_(x), my_(y) {}
 
   ~UnaryFactor() override {}
 
-  // Using the NoiseModelFactor1 base class there are two functions that must be overridden.
+  // Using the NoiseModelFactorN base class there are two functions that must be overridden.
   // The first is the 'evaluateError' function. This function implements the desired measurement
   // function, returning a vector of errors when evaluated at the provided variable value. It
   // must also calculate the Jacobians for this measurement function, if requested.
