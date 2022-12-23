@@ -134,6 +134,28 @@ namespace gtsam {
     const constBVector d() const { return BaseFactor::getb(); }
 
     /**
+     * @brief Compute the log determinant of the Gaussian conditional.
+     * The determinant is computed using the R matrix, which is upper
+     * triangular.
+     * For numerical stability, the determinant is computed in log
+     * form, so it is a summation rather than a multiplication.
+     *
+     * @return double
+     */
+    double logDeterminant() const;
+
+    /**
+     * @brief Compute the determinant of the conditional from the
+     * upper-triangular R matrix.
+     *
+     * The determinant is computed in log form (hence summation) for numerical
+     * stability and then exponentiated.
+     *
+     * @return double
+     */
+    double determinant() const { return exp(this->logDeterminant()); }
+
+    /**
     * Solves a conditional Gaussian and writes the solution into the entries of
     * \c x for each frontal variable of the conditional.  The parents are
     * assumed to have already been solved in and their values are read from \c x.
