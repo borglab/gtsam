@@ -192,23 +192,31 @@ endif()
 if (NOT MSVC)
   option(GTSAM_BUILD_WITH_MARCH_NATIVE  "Enable/Disable building with all instructions supported by native architecture (binary may not be portable!)" OFF)
   if(GTSAM_BUILD_WITH_MARCH_NATIVE)
-    if(APPLE AND (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang") AND ("${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS "15.0"))
-      if(NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
-        # Add as public flag so all dependant projects also use it, as required
+    # Check if Apple OS and compiler is [Apple]Clang
+    if(APPLE AND (${CMAKE_CXX_COMPILER_ID} MATCHES "^(Apple)?Clang$"))
+      # Check Clang version since march=native is only supported for version 15.0+.
+      if("${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS "15.0")
+        if(NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
+          # Add as public flag so all dependent projects also use it, as required
+          # by Eigen to avoid crashes due to SIMD vectorization:
+          list_append_cache(GTSAM_COMPILE_OPTIONS_PUBLIC "-march=native")
+        else()
+          message(WARNING "Option GTSAM_BUILD_WITH_MARCH_NATIVE ignored, because native architecture is not supported for Apple silicon and AppleClang version < 15.0.")
+        endif() # CMAKE_SYSTEM_PROCESSOR
+      else()
+        # Add as public flag so all dependent projects also use it, as required
         # by Eigen to avoid crashes due to SIMD vectorization:
         list_append_cache(GTSAM_COMPILE_OPTIONS_PUBLIC "-march=native")
-      else()
-        message(WARNING "The option GTSAM_BUILD_WITH_MARCH_NATIVE is ignored, because native architecture is not supported.")
-      endif() # CMAKE_SYSTEM_PROCESSOR
+      endif() # CMAKE_CXX_COMPILER_VERSION
     else()
       include(CheckCXXCompilerFlag)
       CHECK_CXX_COMPILER_FLAG("-march=native" COMPILER_SUPPORTS_MARCH_NATIVE)
       if(COMPILER_SUPPORTS_MARCH_NATIVE)
-        # Add as public flag so all dependant projects also use it, as required
+        # Add as public flag so all dependent projects also use it, as required
         # by Eigen to avoid crashes due to SIMD vectorization:
         list_append_cache(GTSAM_COMPILE_OPTIONS_PUBLIC "-march=native")
       else()
-        message(WARNING "The option GTSAM_BUILD_WITH_MARCH_NATIVE is ignored, because native architecture is not supported.")
+        message(WARNING "Option GTSAM_BUILD_WITH_MARCH_NATIVE ignored, because native architecture is not supported.")
       endif() # COMPILER_SUPPORTS_MARCH_NATIVE
     endif() # APPLE
   endif() # GTSAM_BUILD_WITH_MARCH_NATIVE
