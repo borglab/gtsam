@@ -329,7 +329,6 @@ class Rot3 {
 
   // Operator Overloads
   gtsam::Rot3 operator*(const gtsam::Rot3& p2) const;
-  gtsam::Unit3 operator*(const gtsam::Unit3& p) const;
 
   // Manifold
   // gtsam::Rot3 retractCayley(Vector v) const; // TODO, does not exist in both
