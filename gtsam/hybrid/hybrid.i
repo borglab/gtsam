@@ -196,22 +196,24 @@ class HybridNonlinearFactorGraph {
 
 #include <gtsam/hybrid/MixtureFactor.h>
 class MixtureFactor : gtsam::HybridFactor {
-  MixtureFactor(const gtsam::KeyVector& keys, const gtsam::DiscreteKeys& discreteKeys,
-                const gtsam::DecisionTree<gtsam::Key, gtsam::NonlinearFactor*>& factors, bool normalized = false);
+  MixtureFactor(
+      const gtsam::KeyVector& keys, const gtsam::DiscreteKeys& discreteKeys,
+      const gtsam::DecisionTree<gtsam::Key, gtsam::NonlinearFactor*>& factors,
+      bool normalized = false);
 
   template <FACTOR = {gtsam::NonlinearFactor}>
   MixtureFactor(const gtsam::KeyVector& keys, const gtsam::DiscreteKeys& discreteKeys,
                 const std::vector<FACTOR*>& factors,
                 bool normalized = false);
 
-  double error(const gtsam::Values& continuousVals,
-               const gtsam::DiscreteValues& discreteVals) const;
+  double error(const gtsam::Values& continuousValues,
+               const gtsam::DiscreteValues& discreteValues) const;
 
   double nonlinearFactorLogNormalizingConstant(const gtsam::NonlinearFactor* factor,
                                                const gtsam::Values& values) const;
 
   GaussianMixtureFactor* linearize(
-      const gtsam::Values& continuousVals) const;
+      const gtsam::Values& continuousValues) const;
 
   void print(string s = "MixtureFactor\n",
              const gtsam::KeyFormatter& keyFormatter =

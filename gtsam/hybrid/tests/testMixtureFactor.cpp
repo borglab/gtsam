@@ -41,7 +41,8 @@ TEST(MixtureFactor, Constructor) {
   CHECK(it == factor.end());
 }
 
-
+/* ************************************************************************* */
+// Test .print() output.
 TEST(MixtureFactor, Printing) {
   DiscreteKey m1(1, 2);
   double between0 = 0.0;
@@ -87,11 +88,11 @@ TEST(MixtureFactor, Error) {
 
   MixtureFactor mixtureFactor({X(1), X(2)}, {m1}, factors);
 
-  Values continuousVals;
-  continuousVals.insert<double>(X(1), 0);
-  continuousVals.insert<double>(X(2), 1);
+  Values continuousValues;
+  continuousValues.insert<double>(X(1), 0);
+  continuousValues.insert<double>(X(2), 1);
 
-  AlgebraicDecisionTree<Key> error_tree = mixtureFactor.error(continuousVals);
+  AlgebraicDecisionTree<Key> error_tree = mixtureFactor.error(continuousValues);
 
   std::vector<DiscreteKey> discrete_keys = {m1};
   std::vector<double> errors = {0.5, 0};

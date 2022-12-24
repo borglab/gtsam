@@ -155,6 +155,20 @@ namespace gtsam {
     }
   }
 
+/* ************************************************************************* */
+double GaussianConditional::logDeterminant() const {
+  double logDet;
+  if (this->get_model()) {
+    Vector diag = this->R().diagonal();
+    this->get_model()->whitenInPlace(diag);
+    logDet = diag.unaryExpr([](double x) { return log(x); }).sum();
+  } else {
+    logDet =
+        this->R().diagonal().unaryExpr([](double x) { return log(x); }).sum();
+  }
+  return logDet;
+}
+
   /* ************************************************************************* */
   VectorValues GaussianConditional::solve(const VectorValues& x) const {
     // Concatenate all vector values that correspond to parent variables
@@ -285,14 +299,12 @@ namespace gtsam {
           "GaussianConditional::sample can only be called on single variable "
           "conditionals");
     }
-    if (!model_) {
-      throw std::invalid_argument(
-          "GaussianConditional::sample can only be called if a diagonal noise "
-          "model was specified at construction.");
-    }
+
     VectorValues solution = solve(parentsValues);
     Key key = firstFrontalKey();
-    const Vector& sigmas = model_->sigmas();
+    // The vector of sigma values for sampling.
+    // If no model, initialize sigmas to 1, else to model sigmas
+    const Vector& sigmas = (!model_) ? Vector::Ones(rows()) : model_->sigmas();
     solution[key] += Sampler::sampleDiagonal(sigmas, rng);
     return solution;
   }
