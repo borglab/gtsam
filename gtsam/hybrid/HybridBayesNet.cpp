@@ -236,8 +236,7 @@ VectorValues HybridBayesNet::optimize(const DiscreteValues &assignment) const {
 }
 
 /* ************************************************************************* */
-HybridValues HybridBayesNet::sample(VectorValues given, std::mt19937_64 *rng,
-                                    SharedDiagonal model) const {
+HybridValues HybridBayesNet::sample(VectorValues given, std::mt19937_64 *rng) const {
   DiscreteBayesNet dbn;
   for (size_t idx = 0; idx < size(); idx++) {
     if (factors_.at(idx)->isDiscrete()) {
@@ -250,26 +249,24 @@ HybridValues HybridBayesNet::sample(VectorValues given, std::mt19937_64 *rng,
   // Select the continuous bayes net corresponding to the assignment.
   GaussianBayesNet gbn = this->choose(assignment);
   // Sample from the gaussian bayes net.
-  VectorValues sample = gbn.sample(given, rng, model);
+  VectorValues sample = gbn.sample(given, rng);
   return HybridValues(assignment, sample);
 }
 
 /* ************************************************************************* */
-HybridValues HybridBayesNet::sample(std::mt19937_64 *rng,
-                                    SharedDiagonal model) const {
+HybridValues HybridBayesNet::sample(std::mt19937_64 *rng) const {
   VectorValues given;
-  return sample(given, rng, model);
+  return sample(given, rng);
 }
 
 /* ************************************************************************* */
-HybridValues HybridBayesNet::sample(VectorValues given,
-                                    SharedDiagonal model) const {
-  return sample(given, &kRandomNumberGenerator, model);
+HybridValues HybridBayesNet::sample(VectorValues given) const {
+  return sample(given, &kRandomNumberGenerator);
 }
 
 /* ************************************************************************* */
-HybridValues HybridBayesNet::sample(SharedDiagonal model) const {
-  return sample(&kRandomNumberGenerator, model);
+HybridValues HybridBayesNet::sample() const {
+  return sample(&kRandomNumberGenerator);
 }
 
 /* ************************************************************************* */
