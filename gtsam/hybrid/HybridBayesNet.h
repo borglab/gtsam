@@ -130,11 +130,9 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    *
    * @param given Values of missing variables.
    * @param rng The pseudo-random number generator.
-   * @param model Optional diagonal noise model to use in sampling.
    * @return HybridValues
    */
-  HybridValues sample(VectorValues given, std::mt19937_64 *rng,
-                      SharedDiagonal model = nullptr) const;
+  HybridValues sample(VectorValues given, std::mt19937_64 *rng) const;
 
   /**
    * @brief Sample using ancestral sampling.
@@ -144,28 +142,24 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    *   auto sample = bn.sample(&rng);
    *
    * @param rng The pseudo-random number generator.
-   * @param model Optional diagonal noise model to use in sampling.
    * @return HybridValues
    */
-  HybridValues sample(std::mt19937_64 *rng,
-                      SharedDiagonal model = nullptr) const;
+  HybridValues sample(std::mt19937_64 *rng) const;
 
   /**
    * @brief Sample from an incomplete BayesNet, use default rng.
    *
    * @param given Values of missing variables.
-   * @param model Optional diagonal noise model to use in sampling.
    * @return HybridValues
    */
-  HybridValues sample(VectorValues given, SharedDiagonal model = nullptr) const;
+  HybridValues sample(VectorValues given) const;
 
   /**
    * @brief Sample using ancestral sampling, use default rng.
    *
-   * @param model Optional diagonal noise model to use in sampling.
    * @return HybridValues
    */
-  HybridValues sample(SharedDiagonal model = nullptr) const;
+  HybridValues sample() const;
 
   /// Prune the Hybrid Bayes Net such that we have at most maxNrLeaves leaves.
   HybridBayesNet prune(size_t maxNrLeaves);
