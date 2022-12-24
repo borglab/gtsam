@@ -144,7 +144,7 @@ public:
       std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->template key<2>()) <<
           " moved behind camera " << DefaultKeyFormatter(this->template key<1>()) << std::endl;
       if (throwCheirality_)
-        throw StereoCheiralityException(this->key2());
+        throw StereoCheiralityException(this->template key<2>());
     }
     return Vector3::Constant(2.0 * K_->fx());
   }
