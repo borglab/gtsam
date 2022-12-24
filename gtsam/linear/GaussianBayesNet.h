@@ -110,13 +110,13 @@ namespace gtsam {
      *   VectorValues given = ...;
      *   auto sample = gbn.sample(given, &rng);
      */
-    VectorValues sample(VectorValues given, std::mt19937_64* rng) const;
+    VectorValues sample(const VectorValues& given, std::mt19937_64* rng) const;
 
     /// Sample using ancestral sampling, use default rng
     VectorValues sample() const;
 
     /// Sample from an incomplete BayesNet, use default rng
-    VectorValues sample(VectorValues given) const;
+    VectorValues sample(const VectorValues& given) const;
 
     /**
      * Return ordering corresponding to a topological sort.

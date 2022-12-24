@@ -64,8 +64,9 @@ namespace gtsam {
     return sample(result, rng);
   }
 
-  VectorValues GaussianBayesNet::sample(VectorValues result,
+  VectorValues GaussianBayesNet::sample(const VectorValues& given,
                                         std::mt19937_64* rng) const {
+    VectorValues result(given);
     // sample each node in reverse topological sort order (parents first)
     for (auto cg : boost::adaptors::reverse(*this)) {
       const VectorValues sampled = cg->sample(result, rng);
@@ -79,7 +80,7 @@ namespace gtsam {
     return sample(&kRandomNumberGenerator);
   }
 
-  VectorValues GaussianBayesNet::sample(VectorValues given) const {
+  VectorValues GaussianBayesNet::sample(const VectorValues& given) const {
     return sample(given, &kRandomNumberGenerator);
   }
 
