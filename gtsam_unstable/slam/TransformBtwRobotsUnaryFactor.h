@@ -32,7 +32,7 @@ namespace gtsam {
    * @ingroup slam
    */
   template<class VALUE>
-  class TransformBtwRobotsUnaryFactor: public NonlinearFactor { // TODO why not NoiseModelFactor1 ?
+  class TransformBtwRobotsUnaryFactor: public NonlinearFactor { // TODO why not NoiseModelFactorN ?
 
   public:
 

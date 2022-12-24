@@ -133,21 +133,21 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
   /**
    * @brief Compute error of the GaussianMixtureFactor as a tree.
    *
-   * @param continuousVals The continuous VectorValues.
-   * @return AlgebraicDecisionTree<Key> A decision tree with corresponding keys
-   * as the factor but leaf values as the error.
+   * @param continuousValues The continuous VectorValues.
+   * @return AlgebraicDecisionTree<Key> A decision tree with the same keys
+   * as the factors involved, and leaf values as the error.
    */
-  AlgebraicDecisionTree<Key> error(const VectorValues &continuousVals) const;
+  AlgebraicDecisionTree<Key> error(const VectorValues &continuousValues) const;
 
   /**
    * @brief Compute the error of this Gaussian Mixture given the continuous
    * values and a discrete assignment.
    *
-   * @param continuousVals The continuous values at which to compute the error.
+   * @param continuousValues Continuous values at which to compute the error.
    * @param discreteValues The discrete assignment for a specific mode sequence.
    * @return double
    */
-  double error(const VectorValues &continuousVals,
+  double error(const VectorValues &continuousValues,
                const DiscreteValues &discreteValues) const;
 
   /// Add MixtureFactor to a Sum, syntactic sugar.

@@ -50,15 +50,7 @@ namespace gtsam {
       const GaussianBayesTreeClique::shared_ptr& clique,
       LogDeterminantData& parentSum) {
     auto cg = clique->conditional();
-    double logDet;
-    if (cg->get_model()) {
-      Vector diag = cg->R().diagonal();
-      cg->get_model()->whitenInPlace(diag);
-      logDet = diag.unaryExpr([](double x) { return log(x); }).sum();
-    } else {
-      logDet =
-          cg->R().diagonal().unaryExpr([](double x) { return log(x); }).sum();
-    }
+    double logDet = cg->logDeterminant();
     // Add the current clique's log-determinant to the overall sum
     (*parentSum.logDet) += logDet;
     return parentSum;

@@ -217,14 +217,7 @@ namespace gtsam {
   double GaussianBayesNet::logDeterminant() const {
     double logDet = 0.0;
     for (const sharedConditional& cg : *this) {
-      if (cg->get_model()) {
-        Vector diag = cg->R().diagonal();
-        cg->get_model()->whitenInPlace(diag);
-        logDet += diag.unaryExpr([](double x) { return log(x); }).sum();
-      } else {
-        logDet +=
-            cg->R().diagonal().unaryExpr([](double x) { return log(x); }).sum();
-      }
+      logDet += cg->logDeterminant();
     }
     return logDet;
   }

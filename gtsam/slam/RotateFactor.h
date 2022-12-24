@@ -20,11 +20,11 @@ namespace gtsam {
  * with z and p measured and predicted angular velocities, and hence
  *   p = iRc * z
  */
-class RotateFactor: public NoiseModelFactor1<Rot3> {
+class RotateFactor: public NoiseModelFactorN<Rot3> {
 
   Point3 p_, z_; ///< Predicted and measured directions, p = iRc * z
 
-  typedef NoiseModelFactor1<Rot3> Base;
+  typedef NoiseModelFactorN<Rot3> Base;
   typedef RotateFactor This;
 
 public:
@@ -64,11 +64,11 @@ public:
  * Factor on unknown rotation iRc that relates two directions c
  * Directions provide less constraints than a full rotation
  */
-class RotateDirectionsFactor: public NoiseModelFactor1<Rot3> {
+class RotateDirectionsFactor: public NoiseModelFactorN<Rot3> {
 
   Unit3 i_p_, c_z_; ///< Predicted and measured directions, i_p = iRc * c_z
 
-  typedef NoiseModelFactor1<Rot3> Base;
+  typedef NoiseModelFactorN<Rot3> Base;
   typedef RotateDirectionsFactor This;
 
 public:

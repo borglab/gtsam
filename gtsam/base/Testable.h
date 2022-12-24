@@ -23,7 +23,7 @@
  *     void print(const std::string& name) const = 0;
  *
  * equality up to tolerance
- * tricky to implement, see NoiseModelFactor1 for an example
+ * tricky to implement, see PriorFactor for an example
  * equals is not supposed to print out *anything*, just return true|false
  *     bool equals(const Derived& expected, double tol) const = 0;
  *

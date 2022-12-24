@@ -71,11 +71,11 @@ int main(const int argc, const char *argv[]) {
       if (pose3Between){
         Key key1, key2;
         if(add){
-          key1 = pose3Between->key1() + firstKey;
-          key2 = pose3Between->key2() + firstKey;
+          key1 = pose3Between->key<1>() + firstKey;
+          key2 = pose3Between->key<2>() + firstKey;
         }else{
-          key1 = pose3Between->key1() - firstKey;
-          key2 = pose3Between->key2() - firstKey;
+          key1 = pose3Between->key<1>() - firstKey;
+          key2 = pose3Between->key<2>() - firstKey;
         }
         NonlinearFactor::shared_ptr simpleFactor(
             new BetweenFactor<Pose3>(key1, key2, pose3Between->measured(), pose3Between->noiseModel()));
