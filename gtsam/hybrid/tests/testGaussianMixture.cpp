@@ -104,7 +104,7 @@ TEST(GaussianMixture, Error) {
                                                               X(2), S2, model);
 
   // Create decision tree
-  DiscreteKey m1(1, 2);
+  DiscreteKey m1(M(1), 2);
   GaussianMixture::Conditionals conditionals(
       {m1},
       vector<GaussianConditional::shared_ptr>{conditional0, conditional1});
@@ -115,12 +115,19 @@ TEST(GaussianMixture, Error) {
   values.insert(X(2), Vector2::Zero());
   auto error_tree = mixture.error(values);
 
+  // regression
   std::vector<DiscreteKey> discrete_keys = {m1};
   std::vector<double> leaves = {0.5, 4.3252595};
   AlgebraicDecisionTree<Key> expected_error(discrete_keys, leaves);
 
-  // regression
   EXPECT(assert_equal(expected_error, error_tree, 1e-6));
+
+  // Regression for non-tree version.
+  DiscreteValues assignment;
+  assignment[M(1)] = 0;
+  EXPECT_DOUBLES_EQUAL(0.5, mixture.error(values, assignment), 1e-8);
+  assignment[M(1)] = 1;
+  EXPECT_DOUBLES_EQUAL(4.3252595155709335, mixture.error(values, assignment), 1e-8);
 }
 
 /* ************************************************************************* */

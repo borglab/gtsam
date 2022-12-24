@@ -24,7 +24,7 @@ namespace gtsam {
  * Ternary factor representing a visual measurement that includes inverse depth
  */
 template<class POSE, class LANDMARK, class INVDEPTH>
-class InvDepthFactor3: public NoiseModelFactor3<POSE, LANDMARK, INVDEPTH> {
+class InvDepthFactor3: public NoiseModelFactorN<POSE, LANDMARK, INVDEPTH> {
 protected:
 
   // Keep a copy of measurement and calibration for I/O
@@ -34,7 +34,7 @@ protected:
 public:
 
   /// shorthand for base class type
-  typedef NoiseModelFactor3<POSE, LANDMARK, INVDEPTH> Base;
+  typedef NoiseModelFactorN<POSE, LANDMARK, INVDEPTH> Base;
 
   /// shorthand for this class
   typedef InvDepthFactor3<POSE, LANDMARK, INVDEPTH> This;
@@ -93,8 +93,8 @@ public:
       if (H1) *H1 = Matrix::Zero(2,6);
       if (H2) *H2 = Matrix::Zero(2,5);
       if (H3) *H3 = Matrix::Zero(2,1);
-      std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2()) <<
-          " moved behind camera " << DefaultKeyFormatter(this->key1()) << std::endl;
+      std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->template key<2>()) <<
+          " moved behind camera " << DefaultKeyFormatter(this->template key<1>()) << std::endl;
       return Vector::Ones(2) * 2.0 * K_->fx();
     }
     return (Vector(1) << 0.0).finished();

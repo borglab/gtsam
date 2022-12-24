@@ -37,7 +37,7 @@ namespace gtsam {
    */
   template <class POSE = Pose3, class LANDMARK = Point3,
             class CALIBRATION = Cal3_S2>
-  class GenericProjectionFactor: public NoiseModelFactor2<POSE, LANDMARK> {
+  class GenericProjectionFactor: public NoiseModelFactorN<POSE, LANDMARK> {
   protected:
 
     // Keep a copy of measurement and calibration for I/O
@@ -52,7 +52,7 @@ namespace gtsam {
   public:
 
     /// shorthand for base class type
-    typedef NoiseModelFactor2<POSE, LANDMARK> Base;
+    typedef NoiseModelFactorN<POSE, LANDMARK> Base;
 
     /// shorthand for this class
     typedef GenericProjectionFactor<POSE, LANDMARK, CALIBRATION> This;
@@ -154,10 +154,10 @@ namespace gtsam {
         if (H1) *H1 = Matrix::Zero(2,6);
         if (H2) *H2 = Matrix::Zero(2,3);
         if (verboseCheirality_)
-          std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2()) <<
-              " moved behind camera " << DefaultKeyFormatter(this->key1()) << std::endl;
+          std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->template key<2>()) <<
+              " moved behind camera " << DefaultKeyFormatter(this->template key<1>()) << std::endl;
         if (throwCheirality_)
-          throw CheiralityException(this->key2());
+          throw CheiralityException(this->template key<2>());
       }
       return Vector2::Constant(2.0 * K_->fx());
     }

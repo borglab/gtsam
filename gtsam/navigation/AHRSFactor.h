@@ -128,10 +128,10 @@ private:
   }
 };
 
-class GTSAM_EXPORT AHRSFactor: public NoiseModelFactor3<Rot3, Rot3, Vector3> {
+class GTSAM_EXPORT AHRSFactor: public NoiseModelFactorN<Rot3, Rot3, Vector3> {
 
   typedef AHRSFactor This;
-  typedef NoiseModelFactor3<Rot3, Rot3, Vector3> Base;
+  typedef NoiseModelFactorN<Rot3, Rot3, Vector3> Base;
 
   PreintegratedAhrsMeasurements _PIM_;
 
@@ -212,6 +212,7 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+    // NoiseModelFactor3 instead of NoiseModelFactorN for backward compatibility
     ar
         & boost::serialization::make_nvp("NoiseModelFactor3",
             boost::serialization::base_object<Base>(*this));

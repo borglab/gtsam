@@ -15,8 +15,8 @@ namespace gtsam {
 void OrientedPlane3Factor::print(const string& s,
     const KeyFormatter& keyFormatter) const {
   cout << s << (s == "" ? "" : "\n");
-  cout << "OrientedPlane3Factor Factor (" << keyFormatter(key1()) << ", "
-       << keyFormatter(key2()) << ")\n";
+  cout << "OrientedPlane3Factor Factor (" << keyFormatter(key<1>()) << ", "
+       << keyFormatter(key<2>()) << ")\n";
   measured_p_.print("Measured Plane");
   this->noiseModel_->print("  noise model: ");
 }

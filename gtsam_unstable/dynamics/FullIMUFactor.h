@@ -22,9 +22,9 @@ namespace gtsam {
  * assumed to be PoseRTV
  */
 template<class POSE>
-class FullIMUFactor : public NoiseModelFactor2<POSE, POSE> {
+class FullIMUFactor : public NoiseModelFactorN<POSE, POSE> {
 public:
-  typedef NoiseModelFactor2<POSE, POSE> Base;
+  typedef NoiseModelFactorN<POSE, POSE> Base;
   typedef FullIMUFactor<POSE> This;
 
 protected:
