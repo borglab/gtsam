@@ -8,7 +8,7 @@
 
 /**
  * @file    HybridBayesNet.h
- * @brief   A bayes net of Gaussian Conditionals indexed by discrete keys.
+ * @brief   A Bayes net of Gaussian Conditionals indexed by discrete keys.
  * @author  Varun Agrawal
  * @author  Fan Jiang
  * @author  Frank Dellaert
@@ -43,7 +43,7 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   /// @name Standard Constructors
   /// @{
 
-  /** Construct empty bayes net */
+  /** Construct empty Bayes net */
   HybridBayesNet() = default;
 
   /// @}
@@ -132,7 +132,7 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    * @param rng The pseudo-random number generator.
    * @return HybridValues
    */
-  HybridValues sample(VectorValues given, std::mt19937_64 *rng) const;
+  HybridValues sample(HybridValues& given, std::mt19937_64 *rng) const;
 
   /**
    * @brief Sample using ancestral sampling.
@@ -152,7 +152,7 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    * @param given Values of missing variables.
    * @return HybridValues
    */
-  HybridValues sample(VectorValues given) const;
+  HybridValues sample(HybridValues& given) const;
 
   /**
    * @brief Sample using ancestral sampling, use default rng.
