@@ -80,13 +80,13 @@ namespace simulated2DOriented {
 
   /// Unary factor encoding a soft prior on a vector
   template<class VALUE = Pose2>
-  struct GenericPosePrior: public NoiseModelFactor1<VALUE> {
+  struct GenericPosePrior: public NoiseModelFactorN<VALUE> {
 
     Pose2 measured_; ///< measurement
 
     /// Create generic pose prior
     GenericPosePrior(const Pose2& measured, const SharedNoiseModel& model, Key key) :
-      NoiseModelFactor1<VALUE>(model, key), measured_(measured) {
+      NoiseModelFactorN<VALUE>(model, key), measured_(measured) {
     }
 
     /// Evaluate error and optionally derivative
@@ -101,7 +101,7 @@ namespace simulated2DOriented {
    * Binary factor simulating "odometry" between two Vectors
    */
   template<class VALUE = Pose2>
-  struct GenericOdometry: public NoiseModelFactor2<VALUE, VALUE> {
+  struct GenericOdometry: public NoiseModelFactorN<VALUE, VALUE> {
     Pose2 measured_;   ///< Between measurement for odometry factor
 
     typedef GenericOdometry<VALUE> This;
@@ -111,7 +111,7 @@ namespace simulated2DOriented {
      */
     GenericOdometry(const Pose2& measured, const SharedNoiseModel& model,
         Key i1, Key i2) :
-          NoiseModelFactor2<VALUE, VALUE>(model, i1, i2), measured_(measured) {
+          NoiseModelFactorN<VALUE, VALUE>(model, i1, i2), measured_(measured) {
     }
 
     ~GenericOdometry() override {}

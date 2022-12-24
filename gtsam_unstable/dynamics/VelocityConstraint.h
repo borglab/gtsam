@@ -32,9 +32,9 @@ typedef enum {
  * NOTE: this approximation is insufficient for large timesteps, but is accurate
  * if timesteps are small.
  */
-class VelocityConstraint : public gtsam::NoiseModelFactor2<PoseRTV,PoseRTV> {
+class VelocityConstraint : public gtsam::NoiseModelFactorN<PoseRTV,PoseRTV> {
 public:
-  typedef gtsam::NoiseModelFactor2<PoseRTV,PoseRTV> Base;
+  typedef gtsam::NoiseModelFactorN<PoseRTV,PoseRTV> Base;
 
 protected:
 

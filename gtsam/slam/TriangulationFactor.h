@@ -30,7 +30,7 @@ namespace gtsam {
  * @ingroup slam
  */
 template<class CAMERA>
-class TriangulationFactor: public NoiseModelFactor1<Point3> {
+class TriangulationFactor: public NoiseModelFactorN<Point3> {
 
 public:
 
@@ -40,7 +40,7 @@ public:
 protected:
 
   /// shorthand for base class type
-  using Base = NoiseModelFactor1<Point3>;
+  using Base = NoiseModelFactorN<Point3>;
 
   /// shorthand for this class
   using This = TriangulationFactor<CAMERA>;

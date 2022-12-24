@@ -26,8 +26,8 @@ namespace gtsam {
 void BarometricFactor::print(const string& s,
                              const KeyFormatter& keyFormatter) const {
     cout << (s.empty() ? "" : s + " ") << "Barometric Factor on "
-         << keyFormatter(key1()) << "Barometric Bias on "
-         << keyFormatter(key2()) << "\n";
+         << keyFormatter(key<1>()) << "Barometric Bias on "
+         << keyFormatter(key<2>()) << "\n";
 
     cout << "  Baro measurement: " << nT_ << "\n";
     noiseModel_->print("  noise model: ");

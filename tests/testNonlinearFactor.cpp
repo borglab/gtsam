@@ -330,6 +330,13 @@ TEST( NonlinearFactor, cloneWithNewNoiseModel )
 }
 
 /* ************************************************************************* */
+// Suppress deprecation warnings while we are testing backwards compatibility
+#define IGNORE_DEPRECATED_PUSH                              \
+  CLANG_DIAGNOSTIC_PUSH_IGNORE("-Wdeprecated-declarations") \
+  GCC_DIAGNOSTIC_PUSH_IGNORE("-Wdeprecated-declarations")   \
+  MSVC_DIAGNOSTIC_PUSH_IGNORE(4996)
+/* ************************************************************************* */
+IGNORE_DEPRECATED_PUSH
 class TestFactor1 : public NoiseModelFactor1<double> {
   static_assert(std::is_same<Base, NoiseModelFactor>::value, "Base type wrong");
   static_assert(std::is_same<This, NoiseModelFactor1<double>>::value,
@@ -351,6 +358,7 @@ class TestFactor1 : public NoiseModelFactor1<double> {
         gtsam::NonlinearFactor::shared_ptr(new TestFactor1(*this)));
   }
 };
+DIAGNOSTIC_POP()
 
 /* ************************************ */
 TEST(NonlinearFactor, NoiseModelFactor1) {
@@ -380,6 +388,7 @@ TEST(NonlinearFactor, NoiseModelFactor1) {
 }
 
 /* ************************************************************************* */
+IGNORE_DEPRECATED_PUSH
 class TestFactor4 : public NoiseModelFactor4<double, double, double, double> {
   static_assert(std::is_same<Base, NoiseModelFactor>::value, "Base type wrong");
   static_assert(
@@ -411,6 +420,7 @@ class TestFactor4 : public NoiseModelFactor4<double, double, double, double> {
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new TestFactor4(*this))); }
 };
+DIAGNOSTIC_POP()
 
 /* ************************************ */
 TEST(NonlinearFactor, NoiseModelFactor4) {
@@ -434,6 +444,7 @@ TEST(NonlinearFactor, NoiseModelFactor4) {
   EXPECT(assert_equal((Vector)(Vector(1) << 0.5 * -30.).finished(), jf.getb()));
 
   // Test all functions/types for backwards compatibility
+  IGNORE_DEPRECATED_PUSH
   static_assert(std::is_same<TestFactor4::X1, double>::value,
                 "X1 type incorrect");
   static_assert(std::is_same<TestFactor4::X2, double>::value,
@@ -452,6 +463,7 @@ TEST(NonlinearFactor, NoiseModelFactor4) {
   EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 2.).finished(), H.at(1)));
   EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 3.).finished(), H.at(2)));
   EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 4.).finished(), H.at(3)));
+  DIAGNOSTIC_POP()
 
   // And test "forward compatibility" using `key<N>` and `ValueType<N>` too
   static_assert(std::is_same<TestFactor4::ValueType<1>, double>::value,
@@ -477,6 +489,7 @@ TEST(NonlinearFactor, NoiseModelFactor4) {
 }
 
 /* ************************************************************************* */
+IGNORE_DEPRECATED_PUSH
 class TestFactor5 : public NoiseModelFactor5<double, double, double, double, double> {
 public:
   typedef NoiseModelFactor5<double, double, double, double, double> Base;
@@ -500,6 +513,7 @@ public:
         .finished();
   }
 };
+DIAGNOSTIC_POP()
 
 /* ************************************ */
 TEST(NonlinearFactor, NoiseModelFactor5) {
@@ -527,6 +541,7 @@ TEST(NonlinearFactor, NoiseModelFactor5) {
 }
 
 /* ************************************************************************* */
+IGNORE_DEPRECATED_PUSH
 class TestFactor6 : public NoiseModelFactor6<double, double, double, double, double, double> {
 public:
   typedef NoiseModelFactor6<double, double, double, double, double, double> Base;
@@ -554,6 +569,7 @@ public:
   }
 
 };
+DIAGNOSTIC_POP()
 
 /* ************************************ */
 TEST(NonlinearFactor, NoiseModelFactor6) {
@@ -655,6 +671,13 @@ TEST(NonlinearFactor, NoiseModelFactorN) {
   EXPECT(assert_equal(H2_expected, H2));
   EXPECT(assert_equal(H3_expected, H3));
   EXPECT(assert_equal(H4_expected, H4));
+
+  // Test all functions/types for backwards compatibility
+  IGNORE_DEPRECATED_PUSH
+  static_assert(std::is_same<TestFactor4::X1, double>::value,
+                "X1 type incorrect");
+  EXPECT(assert_equal(tf.key3(), X(3)));
+  DIAGNOSTIC_POP()
 
   // Test using `key<N>` and `ValueType<N>`
   static_assert(std::is_same<TestFactorN::ValueType<1>, double>::value,
