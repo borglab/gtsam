@@ -236,7 +236,7 @@ VectorValues HybridBayesNet::optimize(const DiscreteValues &assignment) const {
 }
 
 /* ************************************************************************* */
-HybridValues HybridBayesNet::sample(HybridValues &given,
+HybridValues HybridBayesNet::sample(const HybridValues &given,
                                     std::mt19937_64 *rng) const {
   DiscreteBayesNet dbn;
   for (auto &&conditional : *this) {
@@ -261,7 +261,7 @@ HybridValues HybridBayesNet::sample(std::mt19937_64 *rng) const {
 }
 
 /* ************************************************************************* */
-HybridValues HybridBayesNet::sample(HybridValues &given) const {
+HybridValues HybridBayesNet::sample(const HybridValues &given) const {
   return sample(given, &kRandomNumberGenerator);
 }
 

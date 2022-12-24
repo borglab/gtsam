@@ -132,7 +132,7 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    * @param rng The pseudo-random number generator.
    * @return HybridValues
    */
-  HybridValues sample(HybridValues& given, std::mt19937_64 *rng) const;
+  HybridValues sample(const HybridValues &given, std::mt19937_64 *rng) const;
 
   /**
    * @brief Sample using ancestral sampling.
@@ -152,7 +152,7 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    * @param given Values of missing variables.
    * @return HybridValues
    */
-  HybridValues sample(HybridValues& given) const;
+  HybridValues sample(const HybridValues &given) const;
 
   /**
    * @brief Sample using ancestral sampling, use default rng.
