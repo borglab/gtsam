@@ -8,7 +8,7 @@
 
 /**
  * @file    HybridBayesNet.h
- * @brief   A bayes net of Gaussian Conditionals indexed by discrete keys.
+ * @brief   A Bayes net of Gaussian Conditionals indexed by discrete keys.
  * @author  Varun Agrawal
  * @author  Fan Jiang
  * @author  Frank Dellaert
@@ -43,7 +43,7 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   /// @name Standard Constructors
   /// @{
 
-  /** Construct empty bayes net */
+  /** Construct empty Bayes net */
   HybridBayesNet() = default;
 
   /// @}
@@ -120,7 +120,47 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    */
   DecisionTreeFactor::shared_ptr discreteConditionals() const;
 
- public:
+  /**
+   * @brief Sample from an incomplete BayesNet, given missing variables.
+   *
+   * Example:
+   *   std::mt19937_64 rng(42);
+   *   VectorValues given = ...;
+   *   auto sample = bn.sample(given, &rng);
+   *
+   * @param given Values of missing variables.
+   * @param rng The pseudo-random number generator.
+   * @return HybridValues
+   */
+  HybridValues sample(const HybridValues &given, std::mt19937_64 *rng) const;
+
+  /**
+   * @brief Sample using ancestral sampling.
+   *
+   * Example:
+   *   std::mt19937_64 rng(42);
+   *   auto sample = bn.sample(&rng);
+   *
+   * @param rng The pseudo-random number generator.
+   * @return HybridValues
+   */
+  HybridValues sample(std::mt19937_64 *rng) const;
+
+  /**
+   * @brief Sample from an incomplete BayesNet, use default rng.
+   *
+   * @param given Values of missing variables.
+   * @return HybridValues
+   */
+  HybridValues sample(const HybridValues &given) const;
+
+  /**
+   * @brief Sample using ancestral sampling, use default rng.
+   *
+   * @return HybridValues
+   */
+  HybridValues sample() const;
+
   /// Prune the Hybrid Bayes Net such that we have at most maxNrLeaves leaves.
   HybridBayesNet prune(size_t maxNrLeaves);
 
@@ -145,8 +185,10 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   AlgebraicDecisionTree<Key> error(const VectorValues &continuousValues) const;
 
   /**
-   * @brief Compute unnormalized probability for each discrete assignment,
-   * and return as a tree.
+   * @brief Compute unnormalized probability q(μ|M),
+   * for each discrete assignment, and return as a tree.
+   * q(μ|M) is the unnormalized probability at the MLE point μ,
+   * conditioned on the discrete variables.
    *
    * @param continuousValues Continuous values at which to compute the
    * probability.

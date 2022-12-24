@@ -39,9 +39,9 @@ namespace gtsam {
  * 
  * 
  */
-class TranslationFactor : public NoiseModelFactor2<Point3, Point3> {
+class TranslationFactor : public NoiseModelFactorN<Point3, Point3> {
  private:
-  typedef NoiseModelFactor2<Point3, Point3> Base;
+  typedef NoiseModelFactorN<Point3, Point3> Base;
   Point3 measured_w_aZb_;
 
  public:

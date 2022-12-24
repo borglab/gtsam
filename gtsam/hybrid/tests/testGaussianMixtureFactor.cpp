@@ -170,24 +170,25 @@ TEST(GaussianMixtureFactor, Error) {
 
   GaussianMixtureFactor mixtureFactor({X(1), X(2)}, {m1}, factors);
 
-  VectorValues continuousVals;
-  continuousVals.insert(X(1), Vector2(0, 0));
-  continuousVals.insert(X(2), Vector2(1, 1));
+  VectorValues continuousValues;
+  continuousValues.insert(X(1), Vector2(0, 0));
+  continuousValues.insert(X(2), Vector2(1, 1));
 
   // error should return a tree of errors, with nodes for each discrete value.
-  AlgebraicDecisionTree<Key> error_tree = mixtureFactor.error(continuousVals);
+  AlgebraicDecisionTree<Key> error_tree = mixtureFactor.error(continuousValues);
 
   std::vector<DiscreteKey> discrete_keys = {m1};
+  // Error values for regression test
   std::vector<double> errors = {1, 4};
   AlgebraicDecisionTree<Key> expected_error(discrete_keys, errors);
 
   EXPECT(assert_equal(expected_error, error_tree));
 
   // Test for single leaf given discrete assignment P(X|M,Z).
-  DiscreteValues discreteVals;
-  discreteVals[m1.first] = 1;
-  EXPECT_DOUBLES_EQUAL(4.0, mixtureFactor.error(continuousVals, discreteVals),
-                       1e-9);
+  DiscreteValues discreteValues;
+  discreteValues[m1.first] = 1;
+  EXPECT_DOUBLES_EQUAL(
+      4.0, mixtureFactor.error(continuousValues, discreteValues), 1e-9);
 }
 
 /* ************************************************************************* */

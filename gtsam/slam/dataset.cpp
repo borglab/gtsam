@@ -535,7 +535,7 @@ GraphAndValues load2D(const string &filename, SharedNoiseModel model,
       graph->push_back(*f);
 
       // Insert vertices if pure odometry file
-      Key key1 = (*f)->key1(), key2 = (*f)->key2();
+      Key key1 = (*f)->key<1>(), key2 = (*f)->key<2>();
       if (!initial->exists(key1))
         initial->insert(key1, Pose2());
       if (!initial->exists(key2))
@@ -603,7 +603,7 @@ void save2D(const NonlinearFactorGraph &graph, const Values &config,
       continue;
 
     const Pose2 pose = factor->measured().inverse();
-    stream << "EDGE2 " << factor->key2() << " " << factor->key1() << " "
+    stream << "EDGE2 " << factor->key<2>() << " " << factor->key<1>() << " "
            << pose.x() << " " << pose.y() << " " << pose.theta() << " "
            << RR(0, 0) << " " << RR(0, 1) << " " << RR(1, 1) << " " << RR(2, 2)
            << " " << RR(0, 2) << " " << RR(1, 2) << endl;
@@ -691,8 +691,8 @@ void writeG2o(const NonlinearFactorGraph &graph, const Values &estimate,
       }
       Matrix3 Info = gaussianModel->R().transpose() * gaussianModel->R();
       Pose2 pose = factor->measured(); //.inverse();
-      stream << "EDGE_SE2 " << index(factor->key1()) << " "
-             << index(factor->key2()) << " " << pose.x() << " " << pose.y()
+      stream << "EDGE_SE2 " << index(factor->key<1>()) << " "
+             << index(factor->key<2>()) << " " << pose.x() << " " << pose.y()
              << " " << pose.theta();
       for (size_t i = 0; i < 3; i++) {
         for (size_t j = i; j < 3; j++) {
@@ -717,8 +717,8 @@ void writeG2o(const NonlinearFactorGraph &graph, const Values &estimate,
       const Pose3 pose3D = factor3D->measured();
       const Point3 p = pose3D.translation();
       const auto q = pose3D.rotation().toQuaternion();
-      stream << "EDGE_SE3:QUAT " << index(factor3D->key1()) << " "
-             << index(factor3D->key2()) << " " << p.x() << " " << p.y() << " "
+      stream << "EDGE_SE3:QUAT " << index(factor3D->key<1>()) << " "
+             << index(factor3D->key<2>()) << " " << p.x() << " " << p.y() << " "
              << p.z() << " " << q.x() << " " << q.y() << " " << q.z() << " "
              << q.w();
 

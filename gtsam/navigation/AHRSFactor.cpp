@@ -105,8 +105,8 @@ gtsam::NonlinearFactor::shared_ptr AHRSFactor::clone() const {
 //------------------------------------------------------------------------------
 void AHRSFactor::print(const string& s,
     const KeyFormatter& keyFormatter) const {
-  cout << s << "AHRSFactor(" << keyFormatter(this->key1()) << ","
-      << keyFormatter(this->key2()) << "," << keyFormatter(this->key3()) << ",";
+  cout << s << "AHRSFactor(" << keyFormatter(this->key<1>()) << ","
+      << keyFormatter(this->key<2>()) << "," << keyFormatter(this->key<3>()) << ",";
   _PIM_.print("  preintegrated measurements:");
   noiseModel_->print("  noise model: ");
 }
