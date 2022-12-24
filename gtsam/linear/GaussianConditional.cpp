@@ -279,38 +279,30 @@ namespace gtsam {
 
   /* ************************************************************************ */
   VectorValues GaussianConditional::sample(const VectorValues& parentsValues,
-                                           std::mt19937_64* rng,
-                                           const SharedDiagonal& model) const {
+                                           std::mt19937_64* rng) const {
     if (nrFrontals() != 1) {
       throw std::invalid_argument(
           "GaussianConditional::sample can only be called on single variable "
           "conditionals");
     }
-
-    VectorValues solution = solve(parentsValues);
-    Key key = firstFrontalKey();
-
-    Vector sigmas;
-    if (model_) {
-      sigmas = model_->sigmas();
-    } else if (model) {
-      sigmas = model->sigmas();
-    } else {
+    if (!model_) {
       throw std::invalid_argument(
           "GaussianConditional::sample can only be called if a diagonal noise "
           "model was specified at construction.");
     }
+    VectorValues solution = solve(parentsValues);
+    Key key = firstFrontalKey();
+    const Vector& sigmas = model_->sigmas();
     solution[key] += Sampler::sampleDiagonal(sigmas, rng);
     return solution;
   }
 
-  VectorValues GaussianConditional::sample(std::mt19937_64* rng,
-                                           const SharedDiagonal& model) const {
+  VectorValues GaussianConditional::sample(std::mt19937_64* rng) const {
     if (nrParents() != 0)
       throw std::invalid_argument(
           "sample() can only be invoked on no-parent prior");
     VectorValues values;
-    return sample(values, rng, model);
+    return sample(values);
   }
 
   /* ************************************************************************ */
