@@ -24,7 +24,7 @@ namespace gtsam {
 /**
  * Binary factor representing the first visual measurement using an inverse-depth parameterization
  */
-class InvDepthFactorVariant3a: public NoiseModelFactor2<Pose3, Vector3> {
+class InvDepthFactorVariant3a: public NoiseModelFactorN<Pose3, Vector3> {
 protected:
 
   // Keep a copy of measurement and calibration for I/O
@@ -34,7 +34,7 @@ protected:
 public:
 
   /// shorthand for base class type
-  typedef NoiseModelFactor2<Pose3, Vector3> Base;
+  typedef NoiseModelFactorN<Pose3, Vector3> Base;
 
   /// shorthand for this class
   typedef InvDepthFactorVariant3a This;
@@ -96,8 +96,8 @@ public:
       return camera.project(world_P_landmark) - measured_;
     } catch( CheiralityException& e) {
       std::cout << e.what()
-          << ": Inverse Depth Landmark [" << DefaultKeyFormatter(this->key1()) << "," << DefaultKeyFormatter(this->key2()) << "]"
-          << " moved behind camera [" << DefaultKeyFormatter(this->key1()) << "]"
+          << ": Inverse Depth Landmark [" << DefaultKeyFormatter(this->key<1>()) << "," << DefaultKeyFormatter(this->key<2>()) << "]"
+          << " moved behind camera [" << DefaultKeyFormatter(this->key<1>()) << "]"
           << std::endl;
       return Vector::Ones(2) * 2.0 * K_->fx();
     }
@@ -150,7 +150,7 @@ private:
 /**
  * Ternary factor representing a visual measurement using an inverse-depth parameterization
  */
-class InvDepthFactorVariant3b: public NoiseModelFactor3<Pose3, Pose3, Vector3> {
+class InvDepthFactorVariant3b: public NoiseModelFactorN<Pose3, Pose3, Vector3> {
 protected:
 
   // Keep a copy of measurement and calibration for I/O
@@ -160,7 +160,7 @@ protected:
 public:
 
   /// shorthand for base class type
-  typedef NoiseModelFactor3<Pose3, Pose3, Vector3> Base;
+  typedef NoiseModelFactorN<Pose3, Pose3, Vector3> Base;
 
   /// shorthand for this class
   typedef InvDepthFactorVariant3b This;
@@ -222,8 +222,8 @@ public:
       return camera.project(world_P_landmark) - measured_;
     } catch( CheiralityException& e) {
       std::cout << e.what()
-          << ": Inverse Depth Landmark [" << DefaultKeyFormatter(this->key1()) << "," << DefaultKeyFormatter(this->key3()) << "]"
-          << " moved behind camera " << DefaultKeyFormatter(this->key2())
+          << ": Inverse Depth Landmark [" << DefaultKeyFormatter(this->key<1>()) << "," << DefaultKeyFormatter(this->key<3>()) << "]"
+          << " moved behind camera " << DefaultKeyFormatter(this->key<2>())
           << std::endl;
       return Vector::Ones(2) * 2.0 * K_->fx();
     }

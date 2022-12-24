@@ -14,6 +14,7 @@
  * @brief   Non-linear factor base classes
  * @author  Frank Dellaert
  * @author  Richard Roberts
+ * @author  Gerry Chen
  */
 
 // \callgraph
@@ -431,8 +432,9 @@ class NoiseModelFactorN : public NoiseModelFactor {
    * // key<3>()  // ERROR!  Will not compile
    * ```
    */
-  template <int I, typename = IndexIsValid<I>>
+  template <int I = 1>
   inline Key key() const {
+    static_assert(I <= N, "Index out of bounds");
     return keys_[I - 1];
   }
 
@@ -492,6 +494,7 @@ class NoiseModelFactorN : public NoiseModelFactor {
                                OptionalMatrix<ValueTypes>... H) const = 0;
 
   /// @}
+
   /// @name Convenience method overloads
   /// @{
 
@@ -550,11 +553,54 @@ class NoiseModelFactorN : public NoiseModelFactor {
     ar& boost::serialization::make_nvp(
         "NoiseModelFactor", boost::serialization::base_object<Base>(*this));
   }
+
+ public:
+  /// @name Deprecated methods.  Use `key<1>()`, `key<2>()`, ... instead of old
+  /// `key1()`, `key2()`, ...
+  /// If your class is templated AND you are trying to call `key<1>` inside your
+  /// class, due to dependent types you need to do `this->template key<1>()`.
+  /// @{
+
+  inline Key GTSAM_DEPRECATED key1() const {
+    return key<1>();
+  }
+  template <int I = 2>
+  inline Key GTSAM_DEPRECATED key2() const {
+    static_assert(I <= N, "Index out of bounds");
+    return key<2>();
+  }
+  template <int I = 3>
+  inline Key GTSAM_DEPRECATED key3() const {
+    static_assert(I <= N, "Index out of bounds");
+    return key<3>();
+  }
+  template <int I = 4>
+  inline Key GTSAM_DEPRECATED key4() const {
+    static_assert(I <= N, "Index out of bounds");
+    return key<4>();
+  }
+  template <int I = 5>
+  inline Key GTSAM_DEPRECATED key5() const {
+    static_assert(I <= N, "Index out of bounds");
+    return key<5>();
+  }
+  template <int I = 6>
+  inline Key GTSAM_DEPRECATED key6() const {
+    static_assert(I <= N, "Index out of bounds");
+    return key<6>();
+  }
+
+  /// @}
+
 };  // \class NoiseModelFactorN
 
 /* ************************************************************************* */
-/** @deprecated: use NoiseModelFactorN, replacing .key() with .key<1> and X1
+/** @deprecated: use NoiseModelFactorN, replacing .key() with .key<1>() and X1
  * with ValueType<1>.
+ * If your class is templated AND you are trying to call `.key<1>()` or
+ * `ValueType<1>` inside your class, due to dependent types you need to do
+ * `this->template key<1>()` or `This::template ValueType<1>`.
+ * ~~~
  * A convenient base class for creating your own NoiseModelFactor
  * with 1 variable.  To derive from this class, implement evaluateError().
  */
@@ -578,11 +624,6 @@ class GTSAM_DEPRECATED NoiseModelFactor1 : public NoiseModelFactorN<VALUE> {
   using NoiseModelFactorN<VALUE>::NoiseModelFactorN;
   ~NoiseModelFactor1() override {}
 
-  /** Method to retrieve key.
-   * Similar to `ValueType`, you can probably do `return key<1>();`
-   */
-  inline Key key() const { return NoiseModelFactorN<VALUE>::template key<1>(); }
-
  private:
   /** Serialization function */
   friend class boost::serialization::access;
@@ -594,8 +635,12 @@ class GTSAM_DEPRECATED NoiseModelFactor1 : public NoiseModelFactorN<VALUE> {
 };  // \class NoiseModelFactor1
 
 /* ************************************************************************* */
-/** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1> and X1
+/** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1>() and X1
  * with ValueType<1>.
+ * If your class is templated AND you are trying to call `.key<1>()` or
+ * `ValueType<1>` inside your class, due to dependent types you need to do
+ * `this->template key<1>()` or `This::template ValueType<1>`.
+ * ~~~
  * A convenient base class for creating your own NoiseModelFactor
  * with 2 variables.  To derive from this class, implement evaluateError().
  */
@@ -621,12 +666,6 @@ class GTSAM_DEPRECATED NoiseModelFactor2
   using NoiseModelFactorN<VALUE1, VALUE2>::NoiseModelFactorN;
   ~NoiseModelFactor2() override {}
 
-  /** Methods to retrieve keys.
-   * Similar to `ValueType`, you can probably do `return key<#>();`
-   */
-  inline Key key1() const { return this->template key<1>(); }
-  inline Key key2() const { return this->template key<2>(); }
-
  private:
   /** Serialization function */
   friend class boost::serialization::access;
@@ -638,8 +677,12 @@ class GTSAM_DEPRECATED NoiseModelFactor2
 };  // \class NoiseModelFactor2
 
 /* ************************************************************************* */
-/** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1> and X1
+/** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1>() and X1
  * with ValueType<1>.
+ * If your class is templated AND you are trying to call `.key<1>()` or
+ * `ValueType<1>` inside your class, due to dependent types you need to do
+ * `this->template key<1>()` or `This::template ValueType<1>`.
+ * ~~~
  * A convenient base class for creating your own NoiseModelFactor
  * with 3 variables.  To derive from this class, implement evaluateError().
  */
@@ -666,13 +709,6 @@ class GTSAM_DEPRECATED NoiseModelFactor3
   using NoiseModelFactorN<VALUE1, VALUE2, VALUE3>::NoiseModelFactorN;
   ~NoiseModelFactor3() override {}
 
-  /** Methods to retrieve keys.
-   * Similar to `ValueType`, you can probably do `return key<#>();`
-   */
-  inline Key key1() const { return this->template key<1>(); }
-  inline Key key2() const { return this->template key<2>(); }
-  inline Key key3() const { return this->template key<3>(); }
-
  private:
   /** Serialization function */
   friend class boost::serialization::access;
@@ -684,8 +720,12 @@ class GTSAM_DEPRECATED NoiseModelFactor3
 };  // \class NoiseModelFactor3
 
 /* ************************************************************************* */
-/** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1> and X1
+/** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1>() and X1
  * with ValueType<1>.
+ * If your class is templated AND you are trying to call `.key<1>()` or
+ * `ValueType<1>` inside your class, due to dependent types you need to do
+ * `this->template key<1>()` or `This::template ValueType<1>`.
+ * ~~~
  * A convenient base class for creating your own NoiseModelFactor
  * with 4 variables.  To derive from this class, implement evaluateError().
  */
@@ -713,14 +753,6 @@ class GTSAM_DEPRECATED NoiseModelFactor4
   using NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4>::NoiseModelFactorN;
   ~NoiseModelFactor4() override {}
 
-  /** Methods to retrieve keys.
-   * Similar to `ValueType`, you can probably do `return key<#>();`
-   */
-  inline Key key1() const { return this->template key<1>(); }
-  inline Key key2() const { return this->template key<2>(); }
-  inline Key key3() const { return this->template key<3>(); }
-  inline Key key4() const { return this->template key<4>(); }
-
  private:
   /** Serialization function */
   friend class boost::serialization::access;
@@ -732,8 +764,12 @@ class GTSAM_DEPRECATED NoiseModelFactor4
 };  // \class NoiseModelFactor4
 
 /* ************************************************************************* */
-/** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1> and X1
+/** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1>() and X1
  * with ValueType<1>.
+ * If your class is templated AND you are trying to call `.key<1>()` or
+ * `ValueType<1>` inside your class, due to dependent types you need to do
+ * `this->template key<1>()` or `This::template ValueType<1>`.
+ * ~~~
  * A convenient base class for creating your own NoiseModelFactor
  * with 5 variables.  To derive from this class, implement evaluateError().
  */
@@ -763,15 +799,6 @@ class GTSAM_DEPRECATED NoiseModelFactor5
                           VALUE5>::NoiseModelFactorN;
   ~NoiseModelFactor5() override {}
 
-  /** Methods to retrieve keys.
-   * Similar to `ValueType`, you can probably do `return key<#>();`
-   */
-  inline Key key1() const { return this->template key<1>(); }
-  inline Key key2() const { return this->template key<2>(); }
-  inline Key key3() const { return this->template key<3>(); }
-  inline Key key4() const { return this->template key<4>(); }
-  inline Key key5() const { return this->template key<5>(); }
-
  private:
   /** Serialization function */
   friend class boost::serialization::access;
@@ -783,8 +810,12 @@ class GTSAM_DEPRECATED NoiseModelFactor5
 };  // \class NoiseModelFactor5
 
 /* ************************************************************************* */
-/** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1> and X1
+/** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1>() and X1
  * with ValueType<1>.
+ * If your class is templated AND you are trying to call `.key<1>()` or
+ * `ValueType<1>` inside your class, due to dependent types you need to do
+ * `this->template key<1>()` or `This::template ValueType<1>`.
+ * ~~~
  * A convenient base class for creating your own NoiseModelFactor
  * with 6 variables.  To derive from this class, implement evaluateError().
  */
@@ -816,16 +847,6 @@ class GTSAM_DEPRECATED NoiseModelFactor6
   using NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5,
                           VALUE6>::NoiseModelFactorN;
   ~NoiseModelFactor6() override {}
-
-  /** Methods to retrieve keys.
-   * Similar to `ValueType`, you can probably do `return key<#>();`
-   */
-  inline Key key1() const { return this->template key<1>(); }
-  inline Key key2() const { return this->template key<2>(); }
-  inline Key key3() const { return this->template key<3>(); }
-  inline Key key4() const { return this->template key<4>(); }
-  inline Key key5() const { return this->template key<5>(); }
-  inline Key key6() const { return this->template key<6>(); }
 
  private:
   /** Serialization function */

@@ -77,12 +77,12 @@ namespace gtsam {
  *            vehicle
  */
 template<class POSE, class VELOCITY, class IMUBIAS>
-class InertialNavFactor_GlobalVelocity : public NoiseModelFactor5<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> {
+class InertialNavFactor_GlobalVelocity : public NoiseModelFactorN<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> {
 
 private:
 
   typedef InertialNavFactor_GlobalVelocity<POSE, VELOCITY, IMUBIAS> This;
-  typedef NoiseModelFactor5<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> Base;
+  typedef NoiseModelFactorN<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> Base;
 
   Vector measurement_acc_;
   Vector measurement_gyro_;
@@ -117,11 +117,11 @@ public:
   /** print */
   void print(const std::string& s = "InertialNavFactor_GlobalVelocity", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     std::cout << s << "("
-        << keyFormatter(this->key1()) << ","
-        << keyFormatter(this->key2()) << ","
-        << keyFormatter(this->key3()) << ","
-        << keyFormatter(this->key4()) << ","
-        << keyFormatter(this->key5()) << "\n";
+        << keyFormatter(this->template key<1>()) << ","
+        << keyFormatter(this->template key<2>()) << ","
+        << keyFormatter(this->template key<3>()) << ","
+        << keyFormatter(this->template key<4>()) << ","
+        << keyFormatter(this->template key<5>()) << "\n";
     std::cout << "acc measurement: " << this->measurement_acc_.transpose() << std::endl;
     std::cout << "gyro measurement: " << this->measurement_gyro_.transpose() << std::endl;
     std::cout << "dt: " << this->dt_ << std::endl;

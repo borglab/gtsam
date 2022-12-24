@@ -25,10 +25,10 @@ namespace gtsam {
  * expressed in the sensor frame.
  */
 template <class POSE>
-class MagPoseFactor: public NoiseModelFactor1<POSE> {
+class MagPoseFactor: public NoiseModelFactorN<POSE> {
  private:
   using This = MagPoseFactor<POSE>;
-  using Base = NoiseModelFactor1<POSE>;
+  using Base = NoiseModelFactorN<POSE>;
   using Point = typename POSE::Translation; ///< Could be a Vector2 or Vector3 depending on POSE.
   using Rot = typename POSE::Rotation;
 
@@ -129,6 +129,7 @@ class MagPoseFactor: public NoiseModelFactor1<POSE> {
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+    // NoiseModelFactor1 instead of NoiseModelFactorN for backward compatibility
     ar & boost::serialization::make_nvp("NoiseModelFactor1",
          boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(measured_);

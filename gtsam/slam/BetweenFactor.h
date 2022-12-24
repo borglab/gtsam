@@ -37,7 +37,7 @@ namespace gtsam {
    * @ingroup slam
    */
   template<class VALUE>
-  class BetweenFactor: public NoiseModelFactor2<VALUE, VALUE> {
+  class BetweenFactor: public NoiseModelFactorN<VALUE, VALUE> {
 
     // Check that VALUE type is a testable Lie group
     BOOST_CONCEPT_ASSERT((IsTestable<VALUE>));
@@ -50,7 +50,7 @@ namespace gtsam {
   private:
 
     typedef BetweenFactor<VALUE> This;
-    typedef NoiseModelFactor2<VALUE, VALUE> Base;
+    typedef NoiseModelFactorN<VALUE, VALUE> Base;
 
     VALUE measured_; /** The measurement */
 
@@ -88,8 +88,8 @@ namespace gtsam {
         const std::string& s = "",
         const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
       std::cout << s << "BetweenFactor("
-          << keyFormatter(this->key1()) << ","
-          << keyFormatter(this->key2()) << ")\n";
+          << keyFormatter(this->template key<1>()) << ","
+          << keyFormatter(this->template key<2>()) << ")\n";
       traits<T>::Print(measured_, "  measured: ");
       this->noiseModel_->print("  noise model: ");
     }
@@ -101,7 +101,7 @@ namespace gtsam {
     }
 
     /// @}
-    /// @name NoiseModelFactor2 methods 
+    /// @name NoiseModelFactorN methods 
     /// @{
 
     /// evaluate error, returns vector of errors size of tangent space
@@ -136,6 +136,7 @@ namespace gtsam {
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+      // NoiseModelFactor2 instead of NoiseModelFactorN for backward compatibility
       ar & boost::serialization::make_nvp("NoiseModelFactor2",
           boost::serialization::base_object<Base>(*this));
       ar & BOOST_SERIALIZATION_NVP(measured_);

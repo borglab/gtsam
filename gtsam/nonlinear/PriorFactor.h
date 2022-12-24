@@ -27,14 +27,14 @@ namespace gtsam {
    * @ingroup nonlinear
    */
   template<class VALUE>
-  class PriorFactor: public NoiseModelFactor1<VALUE> {
+  class PriorFactor: public NoiseModelFactorN<VALUE> {
 
   public:
     typedef VALUE T;
 
   private:
 
-    typedef NoiseModelFactor1<VALUE> Base;
+    typedef NoiseModelFactorN<VALUE> Base;
 
     VALUE prior_; /** The measurement */
 
@@ -105,6 +105,7 @@ namespace gtsam {
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+      // NoiseModelFactor1 instead of NoiseModelFactorN for backward compatibility
       ar & boost::serialization::make_nvp("NoiseModelFactor1",
           boost::serialization::base_object<Base>(*this));
       ar & BOOST_SERIALIZATION_NVP(prior_);

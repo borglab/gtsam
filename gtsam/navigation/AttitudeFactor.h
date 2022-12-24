@@ -76,9 +76,9 @@ public:
  * Version of AttitudeFactor for Rot3
  * @ingroup navigation
  */
-class GTSAM_EXPORT Rot3AttitudeFactor: public NoiseModelFactor1<Rot3>, public AttitudeFactor {
+class GTSAM_EXPORT Rot3AttitudeFactor: public NoiseModelFactorN<Rot3>, public AttitudeFactor {
 
-  typedef NoiseModelFactor1<Rot3> Base;
+  typedef NoiseModelFactorN<Rot3> Base;
 
 public:
 
@@ -132,6 +132,7 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+    // NoiseModelFactor1 instead of NoiseModelFactorN for backward compatibility
     ar & boost::serialization::make_nvp("NoiseModelFactor1",
         boost::serialization::base_object<Base>(*this));
     ar & boost::serialization::make_nvp("AttitudeFactor",
@@ -149,10 +150,10 @@ template<> struct traits<Rot3AttitudeFactor> : public Testable<Rot3AttitudeFacto
  * Version of AttitudeFactor for Pose3
  * @ingroup navigation
  */
-class GTSAM_EXPORT Pose3AttitudeFactor: public NoiseModelFactor1<Pose3>,
+class GTSAM_EXPORT Pose3AttitudeFactor: public NoiseModelFactorN<Pose3>,
     public AttitudeFactor {
 
-  typedef NoiseModelFactor1<Pose3> Base;
+  typedef NoiseModelFactorN<Pose3> Base;
 
 public:
 
@@ -212,6 +213,7 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+    // NoiseModelFactor1 instead of NoiseModelFactorN for backward compatibility
     ar & boost::serialization::make_nvp("NoiseModelFactor1",
         boost::serialization::base_object<Base>(*this));
     ar & boost::serialization::make_nvp("AttitudeFactor",

@@ -27,8 +27,8 @@ namespace gtsam {
 /* ************************************************************************* */
 void EssentialMatrixConstraint::print(const std::string& s,
     const KeyFormatter& keyFormatter) const {
-  std::cout << s << "EssentialMatrixConstraint(" << keyFormatter(this->key1())
-      << "," << keyFormatter(this->key2()) << ")\n";
+  std::cout << s << "EssentialMatrixConstraint(" << keyFormatter(this->key<1>())
+      << "," << keyFormatter(this->key<2>()) << ")\n";
   measuredE_.print("  measured: ");
   this->noiseModel_->print("  noise model: ");
 }
