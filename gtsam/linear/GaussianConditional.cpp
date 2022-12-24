@@ -299,14 +299,12 @@ double GaussianConditional::logDeterminant() const {
           "GaussianConditional::sample can only be called on single variable "
           "conditionals");
     }
-    if (!model_) {
-      throw std::invalid_argument(
-          "GaussianConditional::sample can only be called if a diagonal noise "
-          "model was specified at construction.");
-    }
+
     VectorValues solution = solve(parentsValues);
     Key key = firstFrontalKey();
-    const Vector& sigmas = model_->sigmas();
+    // The vector of sigma values for sampling.
+    // If no model, initialize sigmas to 1, else to model sigmas
+    const Vector& sigmas = (!model_) ? Vector::Ones(rows()) : model_->sigmas();
     solution[key] += Sampler::sampleDiagonal(sigmas, rng);
     return solution;
   }
