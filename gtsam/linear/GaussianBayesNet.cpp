@@ -59,30 +59,27 @@ namespace gtsam {
   }
 
   /* ************************************************************************ */
-  VectorValues GaussianBayesNet::sample(std::mt19937_64* rng,
-                                        const SharedDiagonal& model) const {
+  VectorValues GaussianBayesNet::sample(std::mt19937_64* rng) const {
     VectorValues result;  // no missing variables -> create an empty vector
-    return sample(result, rng, model);
+    return sample(result, rng);
   }
 
   VectorValues GaussianBayesNet::sample(VectorValues result,
-                                        std::mt19937_64* rng,
-                                        const SharedDiagonal& model) const {
+                                        std::mt19937_64* rng) const {
     // sample each node in reverse topological sort order (parents first)
     for (auto cg : boost::adaptors::reverse(*this)) {
-      const VectorValues sampled = cg->sample(result, rng, model);
+      const VectorValues sampled = cg->sample(result, rng);
       result.insert(sampled);
     }
     return result;
   }
 
   /* ************************************************************************ */
-  VectorValues GaussianBayesNet::sample(const SharedDiagonal& model) const {
+  VectorValues GaussianBayesNet::sample() const {
     return sample(&kRandomNumberGenerator);
   }
 
-  VectorValues GaussianBayesNet::sample(VectorValues given,
-                                        const SharedDiagonal& model) const {
+  VectorValues GaussianBayesNet::sample(VectorValues given) const {
     return sample(given, &kRandomNumberGenerator);
   }
 
