@@ -469,25 +469,20 @@ TEST(HybridEstimation, CorrectnessViaSampling) {
 
   // Set up sampling
   std::random_device rd;
-  std::mt19937_64 gen(rd());
-  // Discrete distribution with 50/50 weightage on both discrete variables.
-  std::discrete_distribution<> ddist({50, 50});
+  std::mt19937_64 gen(11);
 
   // 3. Do sampling
   std::vector<double> ratios;
   int num_samples = 1000;
 
   for (size_t i = 0; i < num_samples; i++) {
-    // Sample a discrete value
-    DiscreteValues assignment;
-    assignment[M(0)] = ddist(gen);
-
-    // Using the discrete sample, get the corresponding bayes net.
-    GaussianBayesNet gbn = bn->choose(assignment);
     // Sample from the bayes net
-    VectorValues sample = gbn.sample(&gen, noise_model);
+    HybridValues sample = bn->sample(&gen);
+
     // Compute the ratio in log form and canonical form
-    double log_ratio = bn->error(sample, assignment) - fg->error(sample, assignment);
+    DiscreteValues assignment = sample.discrete();
+    double log_ratio = bn->error(sample.continuous(), assignment) -
+                       fg->error(sample.continuous(), assignment);
     double ratio = exp(-log_ratio);
 
     // Store the ratio for post-processing
