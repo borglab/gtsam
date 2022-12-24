@@ -299,14 +299,22 @@ double GaussianConditional::logDeterminant() const {
           "GaussianConditional::sample can only be called on single variable "
           "conditionals");
     }
+
+    // Noise model to sample from.
+    noiseModel::Diagonal::shared_ptr _model;
     if (!model_) {
-      throw std::invalid_argument(
-          "GaussianConditional::sample can only be called if a diagonal noise "
-          "model was specified at construction.");
+      // Initialize model_ to Unit noiseModel if not initialized.
+      // Unit noise model specifies sigmas as 1, since
+      // the noise information should already be in information matrix A.
+      // Dim should be number of rows since
+      // noise model dimension should match (Ax - b)
+      _model = noiseModel::Unit::Create(rows());
+    } else {
+      _model = model_;
     }
     VectorValues solution = solve(parentsValues);
     Key key = firstFrontalKey();
-    const Vector& sigmas = model_->sigmas();
+    const Vector& sigmas = _model->sigmas();
     solution[key] += Sampler::sampleDiagonal(sigmas, rng);
     return solution;
   }
