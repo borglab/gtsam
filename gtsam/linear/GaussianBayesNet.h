@@ -101,8 +101,7 @@ namespace gtsam {
      *   std::mt19937_64 rng(42);
      *   auto sample = gbn.sample(&rng);
      */
-    VectorValues sample(std::mt19937_64* rng,
-                        const SharedDiagonal& model = nullptr) const;
+    VectorValues sample(std::mt19937_64* rng) const;
 
     /**
      * Sample from an incomplete BayesNet, given missing variables
@@ -111,8 +110,7 @@ namespace gtsam {
      *   VectorValues given = ...;
      *   auto sample = gbn.sample(given, &rng);
      */
-    VectorValues sample(VectorValues given, std::mt19937_64* rng,
-                        const SharedDiagonal& model = nullptr) const;
+    VectorValues sample(VectorValues given, std::mt19937_64* rng) const;
 
     /// Sample using ancestral sampling, use default rng
     VectorValues sample() const;
