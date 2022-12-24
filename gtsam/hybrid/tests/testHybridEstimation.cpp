@@ -436,8 +436,8 @@ TEST(HybridEstimation, ProbabilityMultifrontal) {
 /**
  * Test for correctness via sampling.
  *
- * Given the conditional P(x0, m0, x1| z0, z1)
- * with meaasurements z0, z1, we:
+ * Compute the conditional P(x0, m0, x1| z0, z1)
+ * with measurements z0, z1. To do so, we:
  * 1. Start with the corresponding Factor Graph `FG`.
  * 2. Eliminate the factor graph into a Bayes Net `BN`.
  * 3. Sample from the Bayes Net.
@@ -446,15 +446,20 @@ TEST(HybridEstimation, ProbabilityMultifrontal) {
 TEST(HybridEstimation, CorrectnessViaSampling) {
   HybridNonlinearFactorGraph nfg;
 
-  auto noise_model = noiseModel::Diagonal::Sigmas(Vector1(1.0));
-  auto zero_motion =
+  // First we create a hybrid nonlinear factor graph
+  // which represents f(x0, x1, m0; z0, z1).
+  // We linearize and eliminate this to get
+  // the required Factor Graph FG and Bayes Net BN.
+  const auto noise_model = noiseModel::Isotropic::Sigma(1, 1.0);
+  const auto zero_motion =
       boost::make_shared<BetweenFactor<double>>(X(0), X(1), 0, noise_model);
-  auto one_motion =
+  const auto one_motion =
       boost::make_shared<BetweenFactor<double>>(X(0), X(1), 1, noise_model);
-  std::vector<NonlinearFactor::shared_ptr> factors = {zero_motion, one_motion};
+
   nfg.emplace_nonlinear<PriorFactor<double>>(X(0), 0.0, noise_model);
   nfg.emplace_hybrid<MixtureFactor>(
-      KeyVector{X(0), X(1)}, DiscreteKeys{DiscreteKey(M(0), 2)}, factors);
+      KeyVector{X(0), X(1)}, DiscreteKeys{DiscreteKey(M(0), 2)},
+      std::vector<NonlinearFactor::shared_ptr>{zero_motion, one_motion});
 
   Values initial;
   double z0 = 0.0, z1 = 1.0;
@@ -463,13 +468,13 @@ TEST(HybridEstimation, CorrectnessViaSampling) {
 
   // 1. Create the factor graph from the nonlinear factor graph.
   HybridGaussianFactorGraph::shared_ptr fg = nfg.linearize(initial);
+
   // 2. Eliminate into BN
-  Ordering ordering = fg->getHybridOrdering();
+  const Ordering ordering = fg->getHybridOrdering();
   HybridBayesNet::shared_ptr bn = fg->eliminateSequential(ordering);
 
   // Set up sampling
-  std::random_device rd;
-  std::mt19937_64 gen(11);
+  std::mt19937_64 rng(11);
 
   // 3. Do sampling
   std::vector<double> ratios;
@@ -477,10 +482,10 @@ TEST(HybridEstimation, CorrectnessViaSampling) {
 
   for (size_t i = 0; i < num_samples; i++) {
     // Sample from the bayes net
-    HybridValues sample = bn->sample(&gen);
+    const HybridValues sample = bn->sample(&rng);
 
     // Compute the ratio in log form and canonical form
-    DiscreteValues assignment = sample.discrete();
+    const DiscreteValues assignment = sample.discrete();
     double log_ratio = bn->error(sample.continuous(), assignment) -
                        fg->error(sample.continuous(), assignment);
     double ratio = exp(-log_ratio);
@@ -490,6 +495,9 @@ TEST(HybridEstimation, CorrectnessViaSampling) {
   }
 
   // 4. Check that all samples == 1.0 (constant)
+  // The error evaluated by the factor graph and the bayes net should be the
+  // same since the FG represents the unnormalized joint distribution and the BN
+  // is the unnormalized conditional, hence giving the ratio value as 1.
   double ratio_sum = std::accumulate(ratios.begin(), ratios.end(),
                                      decltype(ratios)::value_type(0));
   EXPECT_DOUBLES_EQUAL(1.0, ratio_sum / num_samples, 1e-9);
