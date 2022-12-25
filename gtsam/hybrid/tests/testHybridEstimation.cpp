@@ -432,6 +432,83 @@ TEST(HybridEstimation, ProbabilityMultifrontal) {
   EXPECT(assert_equal(discrete_seq, hybrid_values.discrete()));
 }
 
+/****************************************************************************/
+/**
+ * Test for correctness via sampling.
+ *
+ * Compute the conditional P(x0, m0, x1| z0, z1)
+ * with measurements z0, z1. To do so, we:
+ * 1. Start with the corresponding Factor Graph `FG`.
+ * 2. Eliminate the factor graph into a Bayes Net `BN`.
+ * 3. Sample from the Bayes Net.
+ * 4. Check that the ratio `BN(x)/FG(x) = constant` for all samples `x`.
+ */
+TEST(HybridEstimation, CorrectnessViaSampling) {
+  HybridNonlinearFactorGraph nfg;
+
+  // First we create a hybrid nonlinear factor graph
+  // which represents f(x0, x1, m0; z0, z1).
+  // We linearize and eliminate this to get
+  // the required Factor Graph FG and Bayes Net BN.
+  const auto noise_model = noiseModel::Isotropic::Sigma(1, 1.0);
+  const auto zero_motion =
+      boost::make_shared<BetweenFactor<double>>(X(0), X(1), 0, noise_model);
+  const auto one_motion =
+      boost::make_shared<BetweenFactor<double>>(X(0), X(1), 1, noise_model);
+
+  nfg.emplace_nonlinear<PriorFactor<double>>(X(0), 0.0, noise_model);
+  nfg.emplace_hybrid<MixtureFactor>(
+      KeyVector{X(0), X(1)}, DiscreteKeys{DiscreteKey(M(0), 2)},
+      std::vector<NonlinearFactor::shared_ptr>{zero_motion, one_motion});
+
+  Values initial;
+  double z0 = 0.0, z1 = 1.0;
+  initial.insert<double>(X(0), z0);
+  initial.insert<double>(X(1), z1);
+
+  // 1. Create the factor graph from the nonlinear factor graph.
+  HybridGaussianFactorGraph::shared_ptr fg = nfg.linearize(initial);
+
+  // 2. Eliminate into BN
+  const Ordering ordering = fg->getHybridOrdering();
+  HybridBayesNet::shared_ptr bn = fg->eliminateSequential(ordering);
+
+  // Set up sampling
+  std::mt19937_64 rng(11);
+
+  // 3. Do sampling
+  int num_samples = 10;
+
+  // Functor to compute the ratio between the
+  // Bayes net and the factor graph.
+  auto compute_ratio =
+      [](const HybridBayesNet::shared_ptr& bayesNet,
+         const HybridGaussianFactorGraph::shared_ptr& factorGraph,
+         const HybridValues& sample) -> double {
+    const DiscreteValues assignment = sample.discrete();
+    // Compute in log form for numerical stability
+    double log_ratio = bayesNet->error(sample.continuous(), assignment) -
+                       factorGraph->error(sample.continuous(), assignment);
+    double ratio = exp(-log_ratio);
+    return ratio;
+  };
+
+  // The error evaluated by the factor graph and the Bayes net should differ by
+  // the normalizing term computed via the Bayes net determinant.
+  const HybridValues sample = bn->sample(&rng);
+  double ratio = compute_ratio(bn, fg, sample);
+  // regression
+  EXPECT_DOUBLES_EQUAL(1.0, ratio, 1e-9);
+
+  // 4. Check that all samples == constant
+  for (size_t i = 0; i < num_samples; i++) {
+    // Sample from the bayes net
+    const HybridValues sample = bn->sample(&rng);
+
+    EXPECT_DOUBLES_EQUAL(ratio, compute_ratio(bn, fg, sample), 1e-9);
+  }
+}
+
 /* ************************************************************************* */
 int main() {
   TestResult tr;
