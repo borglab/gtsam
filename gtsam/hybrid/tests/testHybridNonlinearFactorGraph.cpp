@@ -587,7 +587,7 @@ factor 6: Discrete [m1 m0]
   // Expected output for hybridBayesNet.
   string expected_hybridBayesNet = R"(
 size: 3
-factor 0: Hybrid  P( x0 | x1 m0)
+conditional 0: Hybrid  P( x0 | x1 m0)
  Discrete Keys = (m0, 2), 
  Choice(m0) 
  0 Leaf  p(x0 | x1)
@@ -602,7 +602,7 @@ factor 0: Hybrid  P( x0 | x1 m0)
   d = [ -9.95037 ]
   No noise model
 
-factor 1: Hybrid  P( x1 | x2 m0 m1)
+conditional 1: Hybrid  P( x1 | x2 m0 m1)
  Discrete Keys = (m0, 2), (m1, 2), 
  Choice(m1) 
  0 Choice(m0) 
@@ -631,7 +631,7 @@ factor 1: Hybrid  P( x1 | x2 m0 m1)
   d = [ -10 ]
   No noise model
 
-factor 2: Hybrid  P( x2 | m0 m1)
+conditional 2: Hybrid  P( x2 | m0 m1)
  Discrete Keys = (m0, 2), (m1, 2), 
  Choice(m1) 
  0 Choice(m0) 
