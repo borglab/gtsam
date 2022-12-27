@@ -594,6 +594,51 @@ class NoiseModelFactorN : public NoiseModelFactor {
 
 };  // \class NoiseModelFactorN
 
+/* ***************************************************************************
+ * THE REMAINDER OF THIS FILE IS JUST FOR DEPRECATED BACKWARD COMPATIBILITY  *
+ * DEFINITIONS.  DO NOT USE THESE FOR NEW CODE                               *
+/* ************************************************************************* */
+
+/** Convenience macros to add deprecated typedefs `X1`, `X2`, ..., `X6`.
+ * This was only used to maintain backwards compatibility of existing factors!
+ * Do NOT use for new factors!
+ * When transitioning from NoiseModelFactor1 to NoiseModelFactorN, this macro
+ * was used to add deprecated typedefs for the old NoiseModelFactor1.
+ * Usage example:
+ * ```
+ * class MyFactor : public NoiseModelFactorN<Pose3, Point3> {
+ *  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(MyFactor, 2);
+ *  // class implementation ...
+ * };
+ * 
+ * // MyFactor::X1 == Pose3
+ * // MyFactor::X2 == Point3
+ * ```
+ */
+#define ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS1(CLASS) \
+  using X GTSAM_DEPRECATED = typename CLASS::template ValueType<1>;
+#define ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS1_(CLASS) \
+  using X1 GTSAM_DEPRECATED = typename CLASS::template ValueType<1>;
+#define ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS2(CLASS) \
+  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS1_(CLASS)      \
+  using X2 GTSAM_DEPRECATED = typename CLASS::template ValueType<2>;
+#define ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS3(CLASS) \
+  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS2(CLASS)       \
+  using X3 GTSAM_DEPRECATED = typename CLASS::template ValueType<3>;
+#define ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS4(CLASS) \
+  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS3(CLASS)       \
+  using X4 GTSAM_DEPRECATED = typename CLASS::template ValueType<4>;
+#define ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS5(CLASS) \
+  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS4(CLASS)       \
+  using X5 GTSAM_DEPRECATED = typename CLASS::template ValueType<5>;
+#define ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS6(CLASS) \
+  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS5(CLASS)       \
+  using X6 GTSAM_DEPRECATED = typename CLASS::template ValueType<6>;
+#define ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(CLASS, N) \
+ public:                                                       \
+  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS##N(CLASS);      \
+ private:
+
 /* ************************************************************************* */
 /** @deprecated: use NoiseModelFactorN, replacing .key() with .key<1>() and X1
  * with ValueType<1>.

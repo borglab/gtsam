@@ -43,6 +43,7 @@ namespace gtsam {
  */
 template<class VALUE>
 class NonlinearEquality: public NoiseModelFactorN<VALUE> {
+  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(NonlinearEquality, 1);
 
 public:
   typedef VALUE T;
@@ -293,6 +294,8 @@ struct traits<NonlinearEquality1<VALUE> >
  */
 template <class T>
 class NonlinearEquality2 : public NoiseModelFactorN<T, T> {
+  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(NonlinearEquality2, 2);
+
  protected:
   using Base = NoiseModelFactorN<T, T>;
   using This = NonlinearEquality2<T>;

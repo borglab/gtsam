@@ -26,6 +26,8 @@ namespace gtsam {
  * TODO: enable use of a Pose3 for the target as well
  */
 class GTSAM_UNSTABLE_EXPORT RelativeElevationFactor: public NoiseModelFactorN<Pose3, Point3> {
+  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(RelativeElevationFactor, 2);
+
 private:
 
   double measured_; /** measurement */

@@ -76,7 +76,8 @@ public:
  * Version of AttitudeFactor for Rot3
  * @ingroup navigation
  */
-class GTSAM_EXPORT Rot3AttitudeFactor: public NoiseModelFactorN<Rot3>, public AttitudeFactor {
+class GTSAM_EXPORT Rot3AttitudeFactor : public NoiseModelFactorN<Rot3>, public AttitudeFactor {
+  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(Rot3AttitudeFactor, 1);
 
   typedef NoiseModelFactorN<Rot3> Base;
 
@@ -152,6 +153,7 @@ template<> struct traits<Rot3AttitudeFactor> : public Testable<Rot3AttitudeFacto
  */
 class GTSAM_EXPORT Pose3AttitudeFactor: public NoiseModelFactorN<Pose3>,
     public AttitudeFactor {
+  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(Pose3AttitudeFactor, 1);
 
   typedef NoiseModelFactorN<Pose3> Base;
 

@@ -27,6 +27,8 @@ namespace gtsam {
  * The only measurement is dt, the time delta between the states.
  */
 class ConstantVelocityFactor : public NoiseModelFactorN<NavState, NavState> {
+  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(ConstantVelocityFactor, 2);
+
     double dt_;
 
    public:

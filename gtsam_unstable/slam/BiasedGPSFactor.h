@@ -28,6 +28,7 @@ namespace gtsam {
    * @ingroup slam
    */
   class BiasedGPSFactor: public NoiseModelFactorN<Pose3, Point3> {
+    ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(BiasedGPSFactor, 2);
 
   private:
 

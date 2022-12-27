@@ -34,6 +34,8 @@ namespace gtsam {
  */
 template <size_t d>
 class GTSAM_EXPORT ShonanFactor : public NoiseModelFactorN<SOn, SOn> {
+  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(ShonanFactor, 2);
+
   Matrix M_;                    ///< measured rotation between R1 and R2
   size_t p_, pp_;               ///< dimensionality constants
   boost::shared_ptr<Matrix> G_; ///< matrix of vectorized generators

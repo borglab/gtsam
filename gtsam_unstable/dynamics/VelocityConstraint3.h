@@ -11,6 +11,8 @@
 namespace gtsam {
 
 class VelocityConstraint3 : public NoiseModelFactorN<double, double, double> {
+  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(VelocityConstraint3, 3);
+
 public:
 
 protected:

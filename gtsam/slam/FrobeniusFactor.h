@@ -49,6 +49,8 @@ ConvertNoiseModel(const SharedNoiseModel &model, size_t n,
  */
 template <class Rot>
 class FrobeniusPrior : public NoiseModelFactorN<Rot> {
+  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(FrobeniusPrior, 1);
+
   enum { Dim = Rot::VectorN2::RowsAtCompileTime };
   using MatrixNN = typename Rot::MatrixNN;
   Eigen::Matrix<double, Dim, 1> vecM_;  ///< vectorized matrix to approximate
@@ -76,6 +78,8 @@ class FrobeniusPrior : public NoiseModelFactorN<Rot> {
  */
 template <class Rot>
 class FrobeniusFactor : public NoiseModelFactorN<Rot, Rot> {
+  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(FrobeniusFactor, 2);
+
   enum { Dim = Rot::VectorN2::RowsAtCompileTime };
 
  public:
@@ -102,6 +106,8 @@ class FrobeniusFactor : public NoiseModelFactorN<Rot, Rot> {
  */
 template <class Rot>
 class FrobeniusBetweenFactor : public NoiseModelFactorN<Rot, Rot> {
+  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(FrobeniusBetweenFactor, 2);
+
   Rot R12_;  ///< measured rotation between R1 and R2
   Eigen::Matrix<double, Rot::dimension, Rot::dimension>
       R2hat_H_R1_;  ///< fixed derivative of R2hat wrpt R1

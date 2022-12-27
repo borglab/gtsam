@@ -170,6 +170,8 @@ public:
  */
 class GTSAM_EXPORT ImuFactor: public NoiseModelFactorN<Pose3, Vector3, Pose3, Vector3,
     imuBias::ConstantBias> {
+  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(ImuFactor, 5);
+
 private:
 
   typedef ImuFactor This;
@@ -261,6 +263,8 @@ public:
  * @ingroup navigation
  */
 class GTSAM_EXPORT ImuFactor2 : public NoiseModelFactorN<NavState, NavState, imuBias::ConstantBias> {
+  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(ImuFactor2, 3);
+
 private:
 
   typedef ImuFactor2 This;

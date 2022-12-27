@@ -40,6 +40,8 @@ namespace gtsam {
  * 
  */
 class TranslationFactor : public NoiseModelFactorN<Point3, Point3> {
+  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(TranslationFactor, 2);
+
  private:
   typedef NoiseModelFactorN<Point3, Point3> Base;
   Point3 measured_w_aZb_;

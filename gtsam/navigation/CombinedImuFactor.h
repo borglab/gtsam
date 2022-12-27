@@ -257,7 +257,7 @@ public:
  */
 class GTSAM_EXPORT CombinedImuFactor: public NoiseModelFactorN<Pose3, Vector3, Pose3,
     Vector3, imuBias::ConstantBias, imuBias::ConstantBias> {
-public:
+  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(CombinedImuFactor, 6);
 
 private:
 

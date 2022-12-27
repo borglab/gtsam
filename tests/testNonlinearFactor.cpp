@@ -380,6 +380,10 @@ TEST(NonlinearFactor, NoiseModelFactor1) {
   EXPECT(assert_equal(tf.key(), L(1)));
   std::vector<Matrix> H = {Matrix()};
   EXPECT(assert_equal(Vector1(1.0), tf.unwhitenedError(tv, H)));
+  IGNORE_DEPRECATED_PUSH
+  static_assert(std::is_same<PriorFactor<double>::X, double>::value,
+                "PriorFactor backwards compatibility type incorrect");
+  DIAGNOSTIC_POP()
 
   // Test constructors
   TestFactor1 tf2(noiseModel::Unit::Create(1), L(1));

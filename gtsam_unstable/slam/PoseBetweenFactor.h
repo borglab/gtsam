@@ -30,6 +30,7 @@ namespace gtsam {
    */
   template<class POSE>
   class PoseBetweenFactor: public NoiseModelFactorN<POSE, POSE> {
+    ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(PoseBetweenFactor, 2);
 
   private:
 

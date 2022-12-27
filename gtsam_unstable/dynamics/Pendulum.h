@@ -21,6 +21,8 @@ namespace gtsam {
  *    - For sympletic Euler method: q_{k+1} = q_k + h*v_{k+1}
  */
 class PendulumFactor1: public NoiseModelFactorN<double, double, double> {
+  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(PendulumFactor1, 3);
+
 public:
 
 protected:
@@ -67,6 +69,8 @@ public:
  *    - For sympletic Euler method: v_{k+1} = v_k - h*g/L*sin(q_k)
  */
 class PendulumFactor2: public NoiseModelFactorN<double, double, double> {
+  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(PendulumFactor2, 3);
+
 public:
 
 protected:
@@ -114,6 +118,8 @@ public:
  *  \f$ = (1/h)mr^2 (q_{k+1}-q_k) + mgrh(1-alpha) sin ((1-alpha)q_k+\alpha q_{k+1}) \f$
  */
 class PendulumFactorPk: public NoiseModelFactorN<double, double, double> {
+  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(PendulumFactorPk, 3);
+
 public:
 
 protected:
@@ -170,6 +176,8 @@ public:
  *  \f$ = (1/h)mr^2 (q_{k+1}-q_k) - mgrh alpha sin ((1-alpha)q_k+\alpha q_{k+1}) \f$
  */
 class PendulumFactorPk1: public NoiseModelFactorN<double, double, double> {
+  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(PendulumFactorPk1, 3);
+
 public:
 
 protected:

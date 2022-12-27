@@ -29,6 +29,8 @@ namespace gtsam {
  */
 template<class POSE, class LANDMARK>
 class GenericStereoFactor: public NoiseModelFactorN<POSE, LANDMARK> {
+  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(GenericStereoFactor, 2);
+
 private:
 
   // Keep a copy of measurement and calibration for I/O

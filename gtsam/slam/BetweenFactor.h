@@ -38,6 +38,7 @@ namespace gtsam {
    */
   template<class VALUE>
   class BetweenFactor: public NoiseModelFactorN<VALUE, VALUE> {
+    ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(BetweenFactor, 2);
 
     // Check that VALUE type is a testable Lie group
     BOOST_CONCEPT_ASSERT((IsTestable<VALUE>));

@@ -26,6 +26,8 @@ namespace gtsam {
  * Binary factor representing a visual measurement using an inverse-depth parameterization
  */
 class InvDepthFactorVariant2: public NoiseModelFactorN<Pose3, Vector3> {
+  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(InvDepthFactorVariant2, 2);
+
 protected:
 
   // Keep a copy of measurement and calibration for I/O

@@ -32,6 +32,8 @@ namespace gtsam {
  * @ingroup navigation
  */
 class GTSAM_EXPORT BarometricFactor : public NoiseModelFactorN<Pose3, double> {
+  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(BarometricFactor, 2);
+
    private:
     typedef NoiseModelFactorN<Pose3, double> Base;
 

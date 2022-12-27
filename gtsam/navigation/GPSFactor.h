@@ -33,6 +33,7 @@ namespace gtsam {
  * @ingroup navigation
  */
 class GTSAM_EXPORT GPSFactor: public NoiseModelFactorN<Pose3> {
+  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(GPSFactor, 1);
 
 private:
 
@@ -112,6 +113,7 @@ private:
  * @ingroup navigation
  */
 class GTSAM_EXPORT GPSFactor2: public NoiseModelFactorN<NavState> {
+  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(GPSFactor2, 1);
 
 private:
 
