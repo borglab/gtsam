@@ -578,7 +578,7 @@ TEST(HybridGaussianFactorGraph, ErrorAndProbPrime) {
   HybridValues delta = hybridBayesNet->optimize();
   double error = graph.error(delta.continuous(), delta.discrete());
 
-  double expected_error = 0.490243199;
+  double expected_error = 3.20475e-30;
   // regression
   EXPECT(assert_equal(expected_error, error, 1e-9));
 
@@ -604,15 +604,14 @@ TEST(HybridGaussianFactorGraph, ErrorAndProbPrimeTree) {
   auto error_tree = graph.error(delta.continuous());
 
   std::vector<DiscreteKey> discrete_keys = {{M(0), 2}, {M(1), 2}};
-  std::vector<double> leaves = {0.9998558, 0.4902432, 0.5193694, 0.0097568};
+  std::vector<double> leaves = {1.0, 0.5, 0.5, 3.2047474e-30};
   AlgebraicDecisionTree<Key> expected_error(discrete_keys, leaves);
 
   // regression
   EXPECT(assert_equal(expected_error, error_tree, 1e-7));
 
   auto probs = graph.probPrime(delta.continuous());
-  std::vector<double> prob_leaves = {0.36793249, 0.61247742, 0.59489556,
-                                     0.99029064};
+  std::vector<double> prob_leaves = {0.36787944, 0.60653066, 0.60653066, 1.0};
   AlgebraicDecisionTree<Key> expected_probs(discrete_keys, prob_leaves);
 
   // regression

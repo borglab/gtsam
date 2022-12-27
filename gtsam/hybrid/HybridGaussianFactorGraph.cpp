@@ -229,6 +229,25 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
     keysOfEliminated = result.first->keys();
     keysOfSeparator = result.second->keys();
 
+    // Cast back from GaussianFactor to derived HessianFactor
+    auto hessian = boost::dynamic_pointer_cast<HessianFactor>(result.second);
+
+    // Multiply by normalizing factor to get sum product
+    Matrix sum_product =
+        hessian->augmentedInformation() * sqrt(result.first->determinant());
+
+    // Create dimensions vector
+    SymmetricBlockMatrix info = hessian->info();
+    std::vector<size_t> dimensions;
+    for (size_t block_idx = 0; block_idx < keysOfSeparator.size();
+         block_idx++) {
+      dimensions.push_back(info.offset(block_idx) - info.offset(block_idx - 1));
+    }
+
+    // Create new Hessian factor
+    result.second = boost::make_shared<HessianFactor>(
+        keysOfSeparator, SymmetricBlockMatrix(dimensions, sum_product, true));
+
 #ifdef HYBRID_TIMING
     gttoc_(hybrid_eliminate);
 #endif
@@ -256,7 +275,6 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
   // If there are no more continuous parents, then we should create here a
   // DiscreteFactor, with the error for each discrete choice.
   if (keysOfSeparator.empty()) {
-    VectorValues empty_values;
     auto factorProb = [&](const GaussianFactor::shared_ptr &factor) {
       if (!factor) {
         return 0.0;  // If nullptr, return 0.0 probability

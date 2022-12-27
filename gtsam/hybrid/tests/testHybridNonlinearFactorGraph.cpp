@@ -607,28 +607,28 @@ factor 1: Hybrid  P( x1 | x2 m0 m1)
  Choice(m1) 
  0 Choice(m0) 
  0 0 Leaf  p(x1 | x2)
-  R = [ 10.099 ]
-  S[x2] = [ -0.0990196 ]
-  d = [ -9.99901 ]
+  R = [ 10.2048 ]
+  S[x2] = [ -0.0979927 ]
+  d = [ -10.3164 ]
   No noise model
 
  0 1 Leaf  p(x1 | x2)
-  R = [ 10.099 ]
-  S[x2] = [ -0.0990196 ]
-  d = [ -9.90098 ]
+  R = [ 10.2048 ]
+  S[x2] = [ -0.0979927 ]
+  d = [ -10.0089 ]
   No noise model
 
  1 Choice(m0) 
  1 0 Leaf  p(x1 | x2)
-  R = [ 10.099 ]
-  S[x2] = [ -0.0990196 ]
-  d = [ -10.098 ]
+  R = [ 10.2048 ]
+  S[x2] = [ -0.0979927 ]
+  d = [ -10.4144 ]
   No noise model
 
  1 1 Leaf  p(x1 | x2)
-  R = [ 10.099 ]
-  S[x2] = [ -0.0990196 ]
-  d = [ -10 ]
+  R = [ 10.2048 ]
+  S[x2] = [ -0.0979927 ]
+  d = [ -10.1068 ]
   No noise model
 
 factor 2: Hybrid  P( x2 | m0 m1)
@@ -636,24 +636,24 @@ factor 2: Hybrid  P( x2 | m0 m1)
  Choice(m1) 
  0 Choice(m0) 
  0 0 Leaf  p(x2)
-  R = [ 10.0494 ]
-  d = [ -10.1489 ]
+  R = [ 10.157 ]
+  d = [ -10.4779 ]
   No noise model
 
  0 1 Leaf  p(x2)
-  R = [ 10.0494 ]
-  d = [ -10.1479 ]
+  R = [ 10.157 ]
+  d = [ -10.4685 ]
   No noise model
 
  1 Choice(m0) 
  1 0 Leaf  p(x2)
-  R = [ 10.0494 ]
-  d = [ -10.0504 ]
+  R = [ 10.157 ]
+  d = [ -10.1664 ]
   No noise model
 
  1 1 Leaf  p(x2)
-  R = [ 10.0494 ]
-  d = [ -10.0494 ]
+  R = [ 10.157 ]
+  d = [ -10.157 ]
   No noise model
 
 )";

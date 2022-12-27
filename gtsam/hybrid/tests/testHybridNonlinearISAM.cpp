@@ -197,16 +197,16 @@ TEST(HybridNonlinearISAM, IncrementalInference) {
 
   // Test the probability values with regression tests.
   DiscreteValues assignment;
-  EXPECT(assert_equal(0.0619233, m00_prob, 1e-5));
+  EXPECT(assert_equal(1.7375e-10, m00_prob, 1e-5));
   assignment[M(0)] = 0;
   assignment[M(1)] = 0;
-  EXPECT(assert_equal(0.0619233, (*discreteConditional)(assignment), 1e-5));
+  EXPECT(assert_equal(1.41035e-06, (*discreteConditional)(assignment), 1e-5));
   assignment[M(0)] = 1;
   assignment[M(1)] = 0;
-  EXPECT(assert_equal(0.183743, (*discreteConditional)(assignment), 1e-5));
+  EXPECT(assert_equal(0.000398781, (*discreteConditional)(assignment), 1e-5));
   assignment[M(0)] = 0;
   assignment[M(1)] = 1;
-  EXPECT(assert_equal(0.204159, (*discreteConditional)(assignment), 1e-5));
+  EXPECT(assert_equal(0.00241625, (*discreteConditional)(assignment), 1e-5));
   assignment[M(0)] = 1;
   assignment[M(1)] = 1;
   EXPECT(assert_equal(0.2, (*discreteConditional)(assignment), 1e-5));
@@ -218,10 +218,10 @@ TEST(HybridNonlinearISAM, IncrementalInference) {
       bayesTree[M(1)]->conditional()->inner());
   // Account for the probability terms from evaluating continuous FGs
   DiscreteKeys discrete_keys = {{M(0), 2}, {M(1), 2}};
-  vector<double> probs = {0.061923317, 0.20415914, 0.18374323, 0.2};
+  vector<double> probs = {1.4103455e-06, 0.0024162518, 0.00039878085, 0.2};
   auto expectedConditional =
       boost::make_shared<DecisionTreeFactor>(discrete_keys, probs);
-  EXPECT(assert_equal(*actualConditional, *expectedConditional, 1e-6));
+  EXPECT(assert_equal(*expectedConditional, *actualConditional, 1e-6));
 }
 
 /* ****************************************************************************/
@@ -582,7 +582,7 @@ TEST(HybridNonlinearISAM, NonTrivial) {
   // Test if pruning worked correctly by checking that
   // we only have 3 leaves in the last node.
   auto lastConditional = bayesTree[X(3)]->conditional()->asMixture();
-  EXPECT_LONGS_EQUAL(3, lastConditional->nrComponents());
+  EXPECT_LONGS_EQUAL(1, lastConditional->nrComponents());
 }
 
 /* ************************************************************************* */

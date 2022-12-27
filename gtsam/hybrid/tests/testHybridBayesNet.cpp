@@ -151,15 +151,15 @@ TEST(HybridBayesNet, Optimize) {
 
   DiscreteValues expectedAssignment;
   expectedAssignment[M(0)] = 1;
-  expectedAssignment[M(1)] = 0;
+  expectedAssignment[M(1)] = 1;
   expectedAssignment[M(2)] = 1;
   EXPECT(assert_equal(expectedAssignment, delta.discrete()));
 
   VectorValues expectedValues;
-  expectedValues.insert(X(0), -0.999904 * Vector1::Ones());
-  expectedValues.insert(X(1), -0.99029 * Vector1::Ones());
-  expectedValues.insert(X(2), -1.00971 * Vector1::Ones());
-  expectedValues.insert(X(3), -1.0001 * Vector1::Ones());
+  expectedValues.insert(X(0), -Vector1::Ones());
+  expectedValues.insert(X(1), -Vector1::Ones());
+  expectedValues.insert(X(2), -Vector1::Ones());
+  expectedValues.insert(X(3), -Vector1::Ones());
 
   EXPECT(assert_equal(expectedValues, delta.continuous(), 1e-5));
 }
@@ -177,8 +177,8 @@ TEST(HybridBayesNet, Error) {
   auto error_tree = hybridBayesNet->error(delta.continuous());
 
   std::vector<DiscreteKey> discrete_keys = {{M(0), 2}, {M(1), 2}};
-  std::vector<double> leaves = {0.0097568009, 3.3973404e-31, 0.029126214,
-                                0.0097568009};
+  std::vector<double> leaves = {0.0099009901, 0.051300147, 0.051300147,
+                                3.7286004e-31};
   AlgebraicDecisionTree<Key> expected_error(discrete_keys, leaves);
 
   // regression
@@ -188,7 +188,7 @@ TEST(HybridBayesNet, Error) {
   auto prunedBayesNet = hybridBayesNet->prune(2);
   auto pruned_error_tree = prunedBayesNet.error(delta.continuous());
 
-  std::vector<double> pruned_leaves = {2e50, 3.3973404e-31, 2e50, 0.0097568009};
+  std::vector<double> pruned_leaves = {2e50, 0.051300147, 2e50, 3.7286004e-31};
   AlgebraicDecisionTree<Key> expected_pruned_error(discrete_keys,
                                                    pruned_leaves);
 
