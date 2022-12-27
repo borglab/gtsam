@@ -309,8 +309,6 @@ namespace gtsam {
      */
     VerticalBlockMatrix split(DenseIndex nFrontals);
 
-  protected:
-
     /// Number of offsets in the full matrix.
     DenseIndex nOffsets() const {
       return variableColOffsets_.size();
@@ -328,6 +326,8 @@ namespace gtsam {
       assert(actual_index < nOffsets());
       return variableColOffsets_[actual_index];
     }
+
+    protected:
 
     /// Get an arbitrary block from the matrix. Indices are in block units.
     constBlock block_(DenseIndex iBlock, DenseIndex jBlock,
