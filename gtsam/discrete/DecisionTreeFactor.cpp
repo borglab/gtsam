@@ -309,12 +309,10 @@ namespace gtsam {
     double threshold = probabilities[N - 1];
 
     // Now threshold the decision tree
-    size_t total = 0;
-    auto thresholdFunc = [threshold, &total, N](const double& value) {
-      if (value < threshold || total >= N) {
+    auto thresholdFunc = [threshold](const double& value) {
+      if (value < threshold) {
         return 0.0;
       } else {
-        total += 1;
         return value;
       }
     };
