@@ -291,24 +291,6 @@ TEST(HybridEstimation, Probability) {
   std::vector<double> measurements = {0, 1, 2, 2};
   double between_sigma = 1.0, measurement_sigma = 0.1;
 
-  std::vector<double> expected_errors, expected_prob_primes;
-  std::map<size_t, std::vector<size_t>> discrete_seq_map;
-  for (size_t i = 0; i < pow(2, K - 1); i++) {
-    discrete_seq_map[i] = getDiscreteSequence<K>(i);
-
-    GaussianFactorGraph::shared_ptr linear_graph = specificModesFactorGraph(
-        K, measurements, discrete_seq_map[i], measurement_sigma, between_sigma);
-
-    auto bayes_net = linear_graph->eliminateSequential();
-
-    VectorValues values = bayes_net->optimize();
-
-    double error = linear_graph->error(values);
-    expected_errors.push_back(error);
-    double prob_prime = linear_graph->probPrime(values);
-    expected_prob_primes.push_back(prob_prime);
-  }
-
   // Switching example of robot moving in 1D with
   // given measurements and equal mode priors.
   Switching switching(K, between_sigma, measurement_sigma, measurements,
@@ -331,18 +313,6 @@ TEST(HybridEstimation, Probability) {
     bayesNet->add(discrete_conditional);
   }
   auto discreteConditional = discreteBayesNet->atDiscrete(0);
-
-  // Test if the probPrimeTree matches the probability of
-  // the individual factor graphs
-  for (size_t i = 0; i < pow(2, K - 1); i++) {
-    DiscreteValues discrete_assignment;
-    for (size_t v = 0; v < discrete_seq_map[i].size(); v++) {
-      discrete_assignment[M(v)] = discrete_seq_map[i][v];
-    }
-    double discrete_transition_prob = 0.25;
-    EXPECT_DOUBLES_EQUAL(expected_prob_primes.at(i) * discrete_transition_prob,
-                         (*discreteConditional)(discrete_assignment), 1e-8);
-  }
 
   HybridValues hybrid_values = bayesNet->optimize();
 
@@ -367,24 +337,6 @@ TEST(HybridEstimation, ProbabilityMultifrontal) {
 
   double between_sigma = 1.0, measurement_sigma = 0.1;
 
-  // For each discrete mode sequence, create the individual factor graphs and
-  // optimize each.
-  std::vector<double> expected_errors, expected_prob_primes;
-  std::map<size_t, std::vector<size_t>> discrete_seq_map;
-  for (size_t i = 0; i < pow(2, K - 1); i++) {
-    discrete_seq_map[i] = getDiscreteSequence<K>(i);
-
-    GaussianFactorGraph::shared_ptr linear_graph = specificModesFactorGraph(
-        K, measurements, discrete_seq_map[i], measurement_sigma, between_sigma);
-
-    auto bayes_tree = linear_graph->eliminateMultifrontal();
-
-    VectorValues values = bayes_tree->optimize();
-
-    expected_errors.push_back(linear_graph->error(values));
-    expected_prob_primes.push_back(linear_graph->probPrime(values));
-  }
-
   // Switching example of robot moving in 1D with given measurements and equal
   // mode priors.
   Switching switching(K, between_sigma, measurement_sigma, measurements,
@@ -407,23 +359,6 @@ TEST(HybridEstimation, ProbabilityMultifrontal) {
       continuous_ordering.at(continuous_ordering.size() - 1);
   auto last_conditional = (*bayesTree)[last_continuous_key]->conditional();
   DiscreteKeys discrete_keys = last_conditional->discreteKeys();
-
-  // Create a decision tree of all the different VectorValues
-  AlgebraicDecisionTree<Key> probPrimeTree =
-      graph.continuousProbPrimes(discrete_keys, bayesTree);
-
-  EXPECT(assert_equal(expected_probPrimeTree, probPrimeTree));
-
-  // Test if the probPrimeTree matches the probability of
-  // the individual factor graphs
-  for (size_t i = 0; i < pow(2, K - 1); i++) {
-    Assignment<Key> discrete_assignment;
-    for (size_t v = 0; v < discrete_seq_map[i].size(); v++) {
-      discrete_assignment[M(v)] = discrete_seq_map[i][v];
-    }
-    EXPECT_DOUBLES_EQUAL(expected_prob_primes.at(i),
-                         probPrimeTree(discrete_assignment), 1e-8);
-  }
 
   Ordering discrete(graph.discreteKeys());
   auto discreteBayesTree = discreteGraph->eliminateMultifrontal(discrete);
