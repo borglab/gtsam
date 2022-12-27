@@ -31,7 +31,14 @@ namespace gtsam {
 template <class CONDITIONAL>
 void BayesNet<CONDITIONAL>::print(const std::string& s,
                                   const KeyFormatter& formatter) const {
-  Base::print(s, formatter);
+  std::cout << (s.empty() ? "" : s + " ") << std::endl;
+  std::cout << "size: " << this->size() << std::endl;
+  for (size_t i = 0; i < this->size(); i++) {
+    const auto& conditional = this->at(i);
+    std::stringstream ss;
+    ss << "conditional " << i << ": ";
+    if (conditional) conditional->print(ss.str(), formatter);
+  }
 }
 
 /* ************************************************************************* */
