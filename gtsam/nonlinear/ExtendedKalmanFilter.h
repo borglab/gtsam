@@ -53,8 +53,8 @@ class ExtendedKalmanFilter {
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
   //@deprecated: any NoiseModelFactor will do, as long as they have the right keys
-  typedef NoiseModelFactorN<VALUE, VALUE> MotionFactor;
-  typedef NoiseModelFactorN<VALUE> MeasurementFactor;
+  typedef NoiseModelFactor2<VALUE, VALUE> MotionFactor;
+  typedef NoiseModelFactor1<VALUE> MeasurementFactor;
 #endif
 
  protected:
