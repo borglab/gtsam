@@ -594,10 +594,10 @@ class NoiseModelFactorN : public NoiseModelFactor {
 
 };  // \class NoiseModelFactorN
 
-/* ***************************************************************************
- * THE REMAINDER OF THIS FILE IS JUST FOR DEPRECATED BACKWARD COMPATIBILITY  *
- * DEFINITIONS.  DO NOT USE THESE FOR NEW CODE                               *
-/* ************************************************************************* */
+/******************************************************************************
+ * THE REMAINDER OF THIS FILE IS JUST FOR DEPRECATED BACKWARD COMPATIBILITY   *
+ * DEFINITIONS.  DO NOT USE THESE FOR NEW CODE                                *
+ ******************************************************************************/
 
 /** Convenience macros to add deprecated typedefs `X1`, `X2`, ..., `X6`.
  * This was only used to maintain backwards compatibility of existing factors!
@@ -649,6 +649,9 @@ class NoiseModelFactorN : public NoiseModelFactor {
  * A convenient base class for creating your own NoiseModelFactor
  * with 1 variable.  To derive from this class, implement evaluateError().
  */
+CLANG_DIAGNOSTIC_PUSH_IGNORE("-Wdeprecated-declarations")  // Silence warnings
+GCC_DIAGNOSTIC_PUSH_IGNORE("-Wdeprecated-declarations")    // while we define
+MSVC_DIAGNOSTIC_PUSH_IGNORE(4996)                          // deprecated classes
 template <class VALUE>
 class GTSAM_DEPRECATED NoiseModelFactor1 : public NoiseModelFactorN<VALUE> {
  public:
@@ -902,5 +905,6 @@ class GTSAM_DEPRECATED NoiseModelFactor6
         "NoiseModelFactor", boost::serialization::base_object<Base>(*this));
   }
 };  // \class NoiseModelFactor6
+DIAGNOSTIC_POP() // Finish silencing warnings
 
 } // \namespace gtsam
