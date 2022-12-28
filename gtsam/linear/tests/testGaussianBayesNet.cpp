@@ -172,14 +172,18 @@ TEST( GaussianBayesNet, optimize3 )
 }
 
 /* ************************************************************************* */
-TEST(GaussianBayesNet, sample) {
-  GaussianBayesNet gbn;
-  Matrix A1 = (Matrix(2, 2) << 1., 2., 3., 4.).finished();
-  const Vector2 mean(20, 40), b(10, 10);
-  const double sigma = 0.01;
+namespace sampling {
+static Matrix A1 = (Matrix(2, 2) << 1., 2., 3., 4.).finished();
+static const Vector2 mean(20, 40), b(10, 10);
+static const double sigma = 0.01;
+static const GaussianBayesNet gbn =
+    list_of(GaussianConditional::FromMeanAndStddev(X(0), A1, X(1), b, sigma))(
+        GaussianDensity::FromMeanAndStddev(X(1), mean, sigma));
+}  // namespace sampling
 
-  gbn.add(GaussianConditional::FromMeanAndStddev(X(0), A1, X(1), b, sigma));
-  gbn.add(GaussianDensity::FromMeanAndStddev(X(1), mean, sigma));
+/* ************************************************************************* */
+TEST(GaussianBayesNet, sample) {
+  using namespace sampling;
 
   auto actual = gbn.sample();
   EXPECT_LONGS_EQUAL(2, actual.size());
@@ -193,6 +197,23 @@ TEST(GaussianBayesNet, sample) {
   // regression is not repeatable across platforms/versions :-(
   // EXPECT(assert_equal(Vector2(20.0129382, 40.0039798), actual[X(1)], 1e-5));
   // EXPECT(assert_equal(Vector2(110.032083, 230.039811), actual[X(0)], 1e-5));
+}
+
+/* ************************************************************************* */
+// Do Monte Carlo integration of square deviation, should be equal to 9.0.
+TEST(GaussianBayesNet, MonteCarloIntegration) {
+  GaussianBayesNet gbn;
+  gbn.push_back(noisyBayesNet.at(1));
+
+  double sum = 0.0;
+  constexpr size_t N = 500;
+  // loop for N samples:
+  for (size_t i = 0; i < N; i++) {
+    const auto X_i = gbn.sample();
+    sum += pow(X_i[_y_].x() - 5.0, 2.0);
+  }
+  // Expected is variance = 3*3
+  EXPECT_DOUBLES_EQUAL(9.0, sum / N, 0.1);
 }
 
 /* ************************************************************************* */
