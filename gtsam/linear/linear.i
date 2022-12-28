@@ -490,6 +490,8 @@ virtual class GaussianConditional : gtsam::JacobianFactor {
   bool equals(const gtsam::GaussianConditional& cg, double tol) const;
   
   // Standard Interface
+  double evaluate(const gtsam::VectorValues& x) const;
+  double logDensity(const gtsam::VectorValues& x) const;
   gtsam::Key firstFrontalKey() const;
   gtsam::VectorValues solve(const gtsam::VectorValues& parents) const;
   gtsam::JacobianFactor* likelihood(
@@ -543,17 +545,20 @@ virtual class GaussianBayesNet {
   bool equals(const gtsam::GaussianBayesNet& other, double tol) const;
   size_t size() const;
 
-  // Standard interface
   void push_back(gtsam::GaussianConditional* conditional);
   void push_back(const gtsam::GaussianBayesNet& bayesNet);
   gtsam::GaussianConditional* front() const;
   gtsam::GaussianConditional* back() const;
 
+  // Standard interface
+  double evaluate(const gtsam::VectorValues& x) const;
+  double logDensity(const gtsam::VectorValues& x) const;
+
   gtsam::VectorValues optimize() const;
-  gtsam::VectorValues optimize(gtsam::VectorValues given) const;
+  gtsam::VectorValues optimize(const gtsam::VectorValues& given) const;
   gtsam::VectorValues optimizeGradientSearch() const;
   
-  gtsam::VectorValues sample(gtsam::VectorValues given) const;
+  gtsam::VectorValues sample(const gtsam::VectorValues& given) const;
   gtsam::VectorValues sample() const;
   gtsam::VectorValues backSubstitute(const gtsam::VectorValues& gx) const;
   gtsam::VectorValues backSubstituteTranspose(const gtsam::VectorValues& gx) const;
