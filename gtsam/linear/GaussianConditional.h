@@ -121,6 +121,20 @@ namespace gtsam {
     /// @name Standard Interface
     /// @{
 
+    /**
+     * Calculate log-density for given values `x`:
+     *   -0.5*(error + n*log(2*pi) + log det(Sigma))
+     * where x is the vector of values, and Sigma is the covariance matrix.
+     */
+    double logDensity(const VectorValues& x) const;
+
+    /**
+     * Calculate probability density for given values `x`:
+     *   exp(-0.5*error(x)) / sqrt((2*pi)^n*det(Sigma))
+     * where x is the vector of values, and Sigma is the covariance matrix.
+     */
+    double evaluate(const VectorValues& x) const;
+
     /** Return a view of the upper-triangular R block of the conditional */
     constABlock R() const { return Ab_.range(0, nrFrontals()); }
 
@@ -134,9 +148,7 @@ namespace gtsam {
     const constBVector d() const { return BaseFactor::getb(); }
 
     /**
-     * @brief Compute the log determinant of the Gaussian conditional.
-     * The determinant is computed using the R matrix, which is upper
-     * triangular.
+     * @brief Compute the log determinant of the R matrix.
      * For numerical stability, the determinant is computed in log
      * form, so it is a summation rather than a multiplication.
      *
@@ -145,8 +157,7 @@ namespace gtsam {
     double logDeterminant() const;
 
     /**
-     * @brief Compute the determinant of the conditional from the
-     * upper-triangular R matrix.
+     * @brief Compute the determinant of the R matrix.
      *
      * The determinant is computed in log form (hence summation) for numerical
      * stability and then exponentiated.

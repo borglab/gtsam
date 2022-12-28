@@ -68,39 +68,6 @@ TEST( GaussianBayesNet, Matrix )
 }
 
 /* ************************************************************************* */
-/**
- * Calculate log-density for given values `x`:
- *   -0.5*(error + n*log(2*pi) + log det(Sigma))
- * where x is the vector of values, and Sigma is the covariance matrix.
- */
-double logDensity(const GaussianConditional::shared_ptr& gc,
-                  const VectorValues& x) {
-  constexpr double log2pi = 1.8378770664093454835606594728112;
-  size_t n = gc->d().size();
-  // log det(Sigma)) = - 2 * gc->logDeterminant()
-  double sum = gc->error(x) + n * log2pi - 2 * gc->logDeterminant();
-  return -0.5 * sum;
-}
-
-/**
- * Calculate probability density for given values `x`:
- *   exp(-0.5*error(x)) / sqrt((2*pi)^n*det(Sigma))
- * where x is the vector of values, and Sigma is the covariance matrix.
- */
-double evaluate(const GaussianConditional::shared_ptr& gc,
-                const VectorValues& x) {
-  return exp(logDensity(gc, x));
-}
-
-/** Calculate probability for given values `x` */
-double evaluate(const GaussianBayesNet& gbn, const VectorValues& x) {
-  double density = 1.0;
-  for (const auto& conditional : gbn) {
-    if (conditional) density *= evaluate(conditional, x);
-  }
-  return density;
-}
-
 // Check that the evaluate function matches direct calculation with R.
 TEST(GaussianBayesNet, Evaluate1) {
   // Let's evaluate at the mean
@@ -115,7 +82,7 @@ TEST(GaussianBayesNet, Evaluate1) {
   // the normalization constant 1.0/sqrt((2*pi*Sigma).det()).
   // The covariance matrix inv(Sigma) = R'*R, so the determinant is
   const double expected = sqrt((invSigma / (2 * M_PI)).determinant());
-  const double actual = evaluate(smallBayesNet, mean);
+  const double actual = smallBayesNet.evaluate(mean);
   EXPECT_DOUBLES_EQUAL(expected, actual, 1e-9);
 }
 
@@ -126,7 +93,7 @@ TEST(GaussianBayesNet, Evaluate2) {
   const Matrix R = noisyBayesNet.matrix().first;
   const Matrix invSigma = R.transpose() * R;
   const double expected = sqrt((invSigma / (2 * M_PI)).determinant());
-  const double actual = evaluate(noisyBayesNet, mean);
+  const double actual = noisyBayesNet.evaluate(mean);
   EXPECT_DOUBLES_EQUAL(expected, actual, 1e-9);
 }
 
