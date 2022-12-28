@@ -205,7 +205,7 @@ TEST(HybridBayesNet, Optimize) {
 }
 
 /* ****************************************************************************/
-// Test bayes net error
+// Test Bayes net error
 TEST(HybridBayesNet, Error) {
   Switching s(3);
 
