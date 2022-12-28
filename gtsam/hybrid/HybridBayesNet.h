@@ -69,10 +69,25 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   /// Add HybridConditional to Bayes Net
   using Base::add;
 
+  /// Add a Gaussian Mixture to the Bayes Net.
+  template <typename... T>
+  void addMixture(T &&...args) {
+    push_back(HybridConditional(
+        boost::make_shared<GaussianMixture>(std::forward<T>(args)...)));
+  }
+
+  /// Add a Gaussian conditional to the Bayes Net.
+  template <typename... T>
+  void addGaussian(T &&...args) {
+    push_back(HybridConditional(
+        boost::make_shared<GaussianConditional>(std::forward<T>(args)...)));
+  }
+
   /// Add a discrete conditional to the Bayes Net.
-  void add(const DiscreteKey &key, const std::string &table) {
-    push_back(
-        HybridConditional(boost::make_shared<DiscreteConditional>(key, table)));
+  template <typename... T>
+  void addDiscrete(T &&...args) {
+    push_back(HybridConditional(
+        boost::make_shared<DiscreteConditional>(std::forward<T>(args)...)));
   }
 
   using Base::push_back;
