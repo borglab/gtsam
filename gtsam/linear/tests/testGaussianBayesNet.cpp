@@ -206,14 +206,14 @@ TEST(GaussianBayesNet, MonteCarloIntegration) {
   gbn.push_back(noisyBayesNet.at(1));
 
   double sum = 0.0;
-  constexpr size_t N = 500;
+  constexpr size_t N = 1000;
   // loop for N samples:
   for (size_t i = 0; i < N; i++) {
     const auto X_i = gbn.sample();
     sum += pow(X_i[_y_].x() - 5.0, 2.0);
   }
   // Expected is variance = 3*3
-  EXPECT_DOUBLES_EQUAL(9.0, sum / N, 0.1);
+  EXPECT_DOUBLES_EQUAL(9.0, sum / N, 0.5); // Pretty high.
 }
 
 /* ************************************************************************* */
