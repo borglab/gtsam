@@ -72,50 +72,43 @@ TEST(HybridBayesNet, evaluatePureDiscrete) {
 }
 
 /* ****************************************************************************/
-// Test evaluate for a hybrid Bayes net P(X1|Asia) P(Asia).
+// Test evaluate for a hybrid Bayes net P(X0|X1) P(X1|Asia) P(Asia).
 TEST(HybridBayesNet, evaluateHybrid) {
-  HybridBayesNet bayesNet;
+  const auto continuousConditional = GaussianConditional::FromMeanAndStddev(
+      X(0), 2 * I_1x1, X(1), Vector1(-4.0), 5.0);
 
-  SharedDiagonal model = noiseModel::Diagonal::Sigmas(Vector2(1.0, 0.34));
+  const SharedDiagonal model0 = noiseModel::Diagonal::Sigmas(Vector1(2.0)),
+                       model1 = noiseModel::Diagonal::Sigmas(Vector1(3.0));
 
-  const Vector2 d0(1, 2);
-  Matrix22 R0 = Matrix22::Ones();
-  const auto conditional0 =
-      boost::make_shared<GaussianConditional>(X(1), d0, R0, model);
-
-  const Vector2 d1(2, 1);
-  Matrix22 R1 = Matrix22::Ones();
-  const auto conditional1 =
-      boost::make_shared<GaussianConditional>(X(1), d1, R1, model);
+  const auto conditional0 = boost::make_shared<GaussianConditional>(
+                 X(1), Vector1::Constant(5), I_1x1, model0),
+             conditional1 = boost::make_shared<GaussianConditional>(
+                 X(1), Vector1::Constant(2), I_1x1, model1);
 
   // TODO(dellaert): creating and adding mixture is clumsy.
-  std::vector<GaussianConditional::shared_ptr> conditionals{conditional0,
-                                                            conditional1};
-  const auto mixture =
-      GaussianMixture::FromConditionals({X(1)}, {}, {Asia}, conditionals);  
+  const auto mixture = GaussianMixture::FromConditionals(
+      {X(1)}, {}, {Asia}, {conditional0, conditional1});
+
+  // Create hybrid Bayes net.
+  HybridBayesNet bayesNet;
+  bayesNet.push_back(HybridConditional(
+      boost::make_shared<GaussianConditional>(continuousConditional)));
   bayesNet.push_back(
       HybridConditional(boost::make_shared<GaussianMixture>(mixture)));
-
-  // Add component probabilities.
   bayesNet.add(Asia, "99/1");
 
   // Create values at which to evaluate.
   HybridValues values;
   values.insert(asiaKey, 0);
-  values.insert(X(1), Vector2(1, 2));
+  values.insert(X(0), Vector1(-6));
+  values.insert(X(1), Vector1(1));
 
-  // TODO(dellaert): we need real probabilities!
   const double conditionalProbability =
-      conditional0->error(values.continuous());
-  EXPECT_DOUBLES_EQUAL(conditionalProbability * 0.99, bayesNet.evaluate(values), 1e-9);
+      continuousConditional.evaluate(values.continuous());
+  const double mixtureProbability = conditional0->evaluate(values.continuous());
+  EXPECT_DOUBLES_EQUAL(conditionalProbability * mixtureProbability * 0.99,
+                       bayesNet.evaluate(values), 1e-9);
 }
-
-  // const Vector2 d1(2, 1);
-  // Matrix22 R1 = Matrix22::Ones();
-  // Matrix22 S1 = Matrix22::Identity() * 2;
-  // const auto conditional1 =
-  //     boost::make_shared<GaussianConditional>(X(1), d1, R1, X(2), S1, model);
-
 
 /* ****************************************************************************/
 // Test choosing an assignment of conditionals

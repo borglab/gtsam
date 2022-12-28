@@ -95,10 +95,10 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    */
   GaussianBayesNet choose(const DiscreteValues &assignment) const;
 
-  //** evaluate for given HybridValues */
+  /// Evaluate hybrid probability density for given HybridValues.
   double evaluate(const HybridValues &values) const;
 
-  //** (Preferred) sugar for the above for given DiscreteValues */
+  /// Evaluate hybrid probability density for given HybridValues, sugar.
   double operator()(const HybridValues &values) const {
     return evaluate(values);
   }
