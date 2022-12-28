@@ -317,8 +317,7 @@ TEST(HybridBayesNet, UpdateDiscreteConditionals) {
   EXPECT_LONGS_EQUAL(maxNrLeaves + 2 /*2 zero leaves*/,
                      prunedDecisionTree->nrLeaves());
 
-  auto original_discrete_conditionals =
-      *(hybridBayesNet->at(4)->asDiscreteConditional());
+  auto original_discrete_conditionals = *(hybridBayesNet->at(4)->asDiscrete());
 
   // Prune!
   hybridBayesNet->prune(maxNrLeaves);
@@ -338,8 +337,7 @@ TEST(HybridBayesNet, UpdateDiscreteConditionals) {
   };
 
   // Get the pruned discrete conditionals as an AlgebraicDecisionTree
-  auto pruned_discrete_conditionals =
-      hybridBayesNet->at(4)->asDiscreteConditional();
+  auto pruned_discrete_conditionals = hybridBayesNet->at(4)->asDiscrete();
   auto discrete_conditional_tree =
       boost::dynamic_pointer_cast<DecisionTreeFactor::ADT>(
           pruned_discrete_conditionals);

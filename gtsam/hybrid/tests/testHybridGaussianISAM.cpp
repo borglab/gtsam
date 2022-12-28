@@ -111,8 +111,7 @@ TEST(HybridGaussianElimination, IncrementalInference) {
   // Run update step
   isam.update(graph1);
 
-  auto discreteConditional_m0 =
-      isam[M(0)]->conditional()->asDiscreteConditional();
+  auto discreteConditional_m0 = isam[M(0)]->conditional()->asDiscrete();
   EXPECT(discreteConditional_m0->keys() == KeyVector({M(0)}));
 
   /********************************************************/
@@ -170,10 +169,10 @@ TEST(HybridGaussianElimination, IncrementalInference) {
   DiscreteValues m00;
   m00[M(0)] = 0, m00[M(1)] = 0;
   DiscreteConditional decisionTree =
-      *(*discreteBayesTree)[M(1)]->conditional()->asDiscreteConditional();
+      *(*discreteBayesTree)[M(1)]->conditional()->asDiscrete();
   double m00_prob = decisionTree(m00);
 
-  auto discreteConditional = isam[M(1)]->conditional()->asDiscreteConditional();
+  auto discreteConditional = isam[M(1)]->conditional()->asDiscrete();
 
   // Test if the probability values are as expected with regression tests.
   DiscreteValues assignment;
@@ -535,7 +534,7 @@ TEST(HybridGaussianISAM, NonTrivial) {
 
   // The final discrete graph should not be empty since we have eliminated
   // all continuous variables.
-  auto discreteTree = inc[M(3)]->conditional()->asDiscreteConditional();
+  auto discreteTree = inc[M(3)]->conditional()->asDiscrete();
   EXPECT_LONGS_EQUAL(3, discreteTree->size());
 
   // Test if the optimal discrete mode assignment is (1, 1, 1).
