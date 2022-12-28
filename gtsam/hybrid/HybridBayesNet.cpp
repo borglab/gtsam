@@ -150,9 +150,7 @@ HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves) {
 
   // Go through all the conditionals in the
   // Bayes Net and prune them as per decisionTree.
-  for (size_t i = 0; i < this->size(); i++) {
-    HybridConditional::shared_ptr conditional = this->at(i);
-
+  for (auto &&conditional : *this) {
     if (conditional->isHybrid()) {
       GaussianMixture::shared_ptr gaussianMixture = conditional->asMixture();
 
@@ -225,14 +223,48 @@ HybridValues HybridBayesNet::optimize() const {
   DiscreteValues mpe = DiscreteFactorGraph(discrete_bn).optimize();
 
   // Given the MPE, compute the optimal continuous values.
-  GaussianBayesNet gbn = this->choose(mpe);
+  GaussianBayesNet gbn = choose(mpe);
   return HybridValues(mpe, gbn.optimize());
 }
 
 /* ************************************************************************* */
 VectorValues HybridBayesNet::optimize(const DiscreteValues &assignment) const {
-  GaussianBayesNet gbn = this->choose(assignment);
+  GaussianBayesNet gbn = choose(assignment);
   return gbn.optimize();
+}
+
+/* ************************************************************************* */
+double HybridBayesNet::evaluate(const HybridValues &values) const {
+  const DiscreteValues& discreteValues = values.discrete();
+  const VectorValues& continuosValues = values.continuous();
+
+  double probability = 1.0;
+
+  // Iterate over each conditional.
+  for (auto &&conditional : *this) {
+    if (conditional->isHybrid()) {
+      // If conditional is hybrid, select based on assignment and compute error.
+      // GaussianMixture::shared_ptr gm = conditional->asMixture();
+      // AlgebraicDecisionTree<Key> conditional_error =
+      //     gm->error(continuousValues);
+
+      // error_tree = error_tree + conditional_error;
+
+    } else if (conditional->isContinuous()) {
+      // If continuous only, get the (double) error
+      // and add it to the error_tree
+      // double error = conditional->asGaussian()->error(continuousValues);
+      // // Add the computed error to every leaf of the error tree.
+      // error_tree = error_tree.apply(
+      //     [error](double leaf_value) { return leaf_value + error; });
+    } else if (conditional->isDiscrete()) {
+      // Conditional is discrete-only, we skip.
+      probability *=
+          conditional->asDiscreteConditional()->operator()(discreteValues);
+    }
+  }
+
+  return probability;
 }
 
 /* ************************************************************************* */
@@ -273,7 +305,7 @@ HybridValues HybridBayesNet::sample() const {
 /* ************************************************************************* */
 double HybridBayesNet::error(const VectorValues &continuousValues,
                              const DiscreteValues &discreteValues) const {
-  GaussianBayesNet gbn = this->choose(discreteValues);
+  GaussianBayesNet gbn = choose(discreteValues);
   return gbn.error(continuousValues);
 }
 
