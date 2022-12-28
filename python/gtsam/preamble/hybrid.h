@@ -19,3 +19,4 @@ PYBIND11_MAKE_OPAQUE(std::vector<gtsam::Key>);
 #endif
 
 PYBIND11_MAKE_OPAQUE(std::vector<gtsam::GaussianFactor::shared_ptr>);
+PYBIND11_MAKE_OPAQUE(std::vector<gtsam::GaussianConditional::shared_ptr>);
