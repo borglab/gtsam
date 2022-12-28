@@ -87,7 +87,6 @@ class HybridBayesTreeClique {
   // double evaluate(const gtsam::HybridValues& values) const;
 };
 
-#include <gtsam/hybrid/HybridBayesTree.h>
 class HybridBayesTree {
   HybridBayesTree();
   void print(string s = "HybridBayesTree\n",
@@ -105,14 +104,29 @@ class HybridBayesTree {
                  gtsam::DefaultKeyFormatter) const;
 };
 
+#include <gtsam/hybrid/HybridBayesTree.h>
 class HybridBayesNet {
   HybridBayesNet();
   void add(const gtsam::HybridConditional& s);
+  void addMixture(const gtsam::GaussianMixture& s);
+  void addGaussian(const gtsam::GaussianConditional& s);
+  void addDiscrete(const gtsam::DiscreteConditional& s);
+  void addDiscrete(const gtsam::DiscreteKey& key, string spec);
+  void addDiscrete(const gtsam::DiscreteKey& key,
+                   const gtsam::DiscreteKeys& parents, string spec);
+  void addDiscrete(const gtsam::DiscreteKey& key,
+                   const std::vector<gtsam::DiscreteKey>& parents, string spec);
+
   bool empty() const;
   size_t size() const;
   gtsam::KeySet keys() const;
   const gtsam::HybridConditional* at(size_t i) const;
+  
+  double evaluate(const gtsam::HybridValues& x) const;
   gtsam::HybridValues optimize() const;
+  gtsam::HybridValues sample(const gtsam::HybridValues &given) const;
+  gtsam::HybridValues sample() const;
+
   void print(string s = "HybridBayesNet\n",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
