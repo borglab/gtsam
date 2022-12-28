@@ -130,13 +130,15 @@ TEST( GaussianConditional, equals )
   EXPECT( expected.equals(actual) );
 }
 
+/* ************************************************************************* */
 namespace density {
 static const Key key = 77;
+static constexpr double sigma = 3.0;
 static const auto unitPrior =
                       GaussianConditional(key, Vector1::Constant(5), I_1x1),
-                  widerPrior =
-                      GaussianConditional(key, Vector1::Constant(5), I_1x1,
-                                          noiseModel::Isotropic::Sigma(1, 3.0));
+                  widerPrior = GaussianConditional(
+                      key, Vector1::Constant(5), I_1x1,
+                      noiseModel::Isotropic::Sigma(1, sigma));
 }  // namespace density
 
 /* ************************************************************************* */
@@ -155,8 +157,23 @@ TEST(GaussianConditional, Evaluate1) {
   const double expected = sqrt((invSigma / (2 * M_PI)).determinant());
   const double actual = density::unitPrior.evaluate(mean);
   EXPECT_DOUBLES_EQUAL(expected, actual, 1e-9);
+
+  using density::key;
+  using density::sigma;
+
+  // Let's numerically integrate and see that we integrate to 1.0.
+  double integral = 0.0;
+  // Loop from -5*sigma to 5*sigma in 0.1*sigma steps:
+  for (double x = -5.0 * sigma; x <= 5.0 * sigma; x += 0.1 * sigma) {
+    VectorValues xValues;
+    xValues.insert(key, mean.at(key) + Vector1(x));
+    const double density = density::unitPrior.evaluate(xValues);
+    integral += 0.1 * sigma * density;
+  }
+  EXPECT_DOUBLES_EQUAL(1.0, integral, 1e-9);
 }
 
+/* ************************************************************************* */
 // Check the evaluate with non-unit noise.
 TEST(GaussianConditional, Evaluate2) {
   // See comments in test above.
@@ -166,6 +183,20 @@ TEST(GaussianConditional, Evaluate2) {
   const double expected = sqrt((invSigma / (2 * M_PI)).determinant());
   const double actual = density::widerPrior.evaluate(mean);
   EXPECT_DOUBLES_EQUAL(expected, actual, 1e-9);
+
+  using density::key;
+  using density::sigma;
+
+  // Let's numerically integrate and see that we integrate to 1.0.
+  double integral = 0.0;
+  // Loop from -5*sigma to 5*sigma in 0.1*sigma steps:
+  for (double x = -5.0 * sigma; x <= 5.0 * sigma; x += 0.1 * sigma) {
+    VectorValues xValues;
+    xValues.insert(key, mean.at(key) + Vector1(x));
+    const double density = density::widerPrior.evaluate(xValues);
+    integral += 0.1 * sigma * density;
+  }
+  EXPECT_DOUBLES_EQUAL(1.0, integral, 1e-5);
 }
 
 /* ************************************************************************* */

@@ -122,18 +122,24 @@ namespace gtsam {
     /// @{
 
     /**
+     * Calculate probability density for given values `x`:
+     *   exp(-error(x)) / sqrt((2*pi)^n*det(Sigma))
+     * where x is the vector of values, and Sigma is the covariance matrix.
+     * Note that error(x)=0.5*e'*e includes the 0.5 factor already.
+     */
+    double evaluate(const VectorValues& x) const;
+
+    /// Evaluate probability density, sugar.
+    double operator()(const VectorValues& x) const {
+      return evaluate(x);
+    }
+
+    /**
      * Calculate log-density for given values `x`:
-     *   -0.5*(error + n*log(2*pi) + log det(Sigma))
+     *  -error(x) - 0.5 * n*log(2*pi) - 0.5 * log det(Sigma)
      * where x is the vector of values, and Sigma is the covariance matrix.
      */
     double logDensity(const VectorValues& x) const;
-
-    /**
-     * Calculate probability density for given values `x`:
-     *   exp(-0.5*error(x)) / sqrt((2*pi)^n*det(Sigma))
-     * where x is the vector of values, and Sigma is the covariance matrix.
-     */
-    double evaluate(const VectorValues& x) const;
 
     /** Return a view of the upper-triangular R block of the conditional */
     constABlock R() const { return Ab_.range(0, nrFrontals()); }
@@ -148,23 +154,30 @@ namespace gtsam {
     const constBVector d() const { return BaseFactor::getb(); }
 
     /**
-     * @brief Compute the log determinant of the R matrix.
-     * For numerical stability, the determinant is computed in log
-     * form, so it is a summation rather than a multiplication.
-     *
-     * @return double
-     */
-    double logDeterminant() const;
-
-    /**
      * @brief Compute the determinant of the R matrix.
      *
-     * The determinant is computed in log form (hence summation) for numerical
-     * stability and then exponentiated.
+     * The determinant is computed in log form using logDeterminant for
+     * numerical stability and then exponentiated.
+     * 
+     * Note, the covariance matrix \f$ \Sigma = (R^T R)^{-1} \f$, and hence
+     * \f$ \det(\Sigma) = 1 / \det(R^T R) = 1 / determinant()^ 2 \f$.
      *
      * @return double
      */
     double determinant() const { return exp(this->logDeterminant()); }
+
+    /**
+     * @brief Compute the log determinant of the R matrix.
+     * 
+     * For numerical stability, the determinant is computed in log
+     * form, so it is a summation rather than a multiplication.
+     *
+     * Note, the covariance matrix \f$ \Sigma = (R^T R)^{-1} \f$, and hence
+     * \f$ \log \det(\Sigma) = - \log \det(R^T R) = - 2 logDeterminant() \f$.
+     *
+     * @return double
+     */
+    double logDeterminant() const;
 
     /**
     * Solves a conditional Gaussian and writes the solution into the entries of
