@@ -130,6 +130,44 @@ TEST( GaussianConditional, equals )
   EXPECT( expected.equals(actual) );
 }
 
+namespace density {
+static const Key key = 77;
+static const auto unitPrior =
+                      GaussianConditional(key, Vector1::Constant(5), I_1x1),
+                  widerPrior =
+                      GaussianConditional(key, Vector1::Constant(5), I_1x1,
+                                          noiseModel::Isotropic::Sigma(1, 3.0));
+}  // namespace density
+
+/* ************************************************************************* */
+// Check that the evaluate function matches direct calculation with R.
+TEST(GaussianConditional, Evaluate1) {
+  // Let's evaluate at the mean
+  const VectorValues mean = density::unitPrior.solve(VectorValues());
+
+  // We get the Hessian matrix, which has noise model applied!
+  const Matrix invSigma = density::unitPrior.information();
+
+  // A Gaussian density ~ exp (-0.5*(Rx-d)'*(Rx-d))
+  // which at the mean is 1.0! So, the only thing we need to calculate is
+  // the normalization constant 1.0/sqrt((2*pi*Sigma).det()).
+  // The covariance matrix inv(Sigma) = R'*R, so the determinant is
+  const double expected = sqrt((invSigma / (2 * M_PI)).determinant());
+  const double actual = density::unitPrior.evaluate(mean);
+  EXPECT_DOUBLES_EQUAL(expected, actual, 1e-9);
+}
+
+// Check the evaluate with non-unit noise.
+TEST(GaussianConditional, Evaluate2) {
+  // See comments in test above.
+  const VectorValues mean = density::widerPrior.solve(VectorValues());
+  const Matrix R = density::widerPrior.R();
+  const Matrix invSigma = density::widerPrior.information();
+  const double expected = sqrt((invSigma / (2 * M_PI)).determinant());
+  const double actual = density::widerPrior.evaluate(mean);
+  EXPECT_DOUBLES_EQUAL(expected, actual, 1e-9);
+}
+
 /* ************************************************************************* */
 TEST( GaussianConditional, solve )
 {
