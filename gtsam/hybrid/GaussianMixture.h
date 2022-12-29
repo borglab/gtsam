@@ -29,6 +29,8 @@
 
 namespace gtsam {
 
+class GaussianMixtureFactor;
+
 /**
  * @brief A conditional of gaussian mixtures indexed by discrete variables, as
  * part of a Bayes Network. This is the result of the elimination of a
@@ -118,16 +120,6 @@ class GTSAM_EXPORT GaussianMixture
       const std::vector<GaussianConditional::shared_ptr> &conditionals);
 
   /// @}
-  /// @name Standard API
-  /// @{
-
-  GaussianConditional::shared_ptr operator()(
-      const DiscreteValues &discreteValues) const;
-
-  /// Returns the total number of continuous components
-  size_t nrComponents() const;
-
-  /// @}
   /// @name Testable
   /// @{
 
@@ -140,6 +132,22 @@ class GTSAM_EXPORT GaussianMixture
       const KeyFormatter &formatter = DefaultKeyFormatter) const override;
 
   /// @}
+  /// @name Standard API
+  /// @{
+
+  GaussianConditional::shared_ptr operator()(
+      const DiscreteValues &discreteValues) const;
+
+  /// Returns the total number of continuous components
+  size_t nrComponents() const;
+
+  /// Returns the continuous keys among the parents.
+  KeyVector continuousParents() const;
+
+  // Create a likelihood factor for a Gaussian mixture, return a Mixture factor
+  // on the parents.
+  boost::shared_ptr<GaussianMixtureFactor> likelihood(
+      const VectorValues &frontals) const;
 
   /// Getter for the underlying Conditionals DecisionTree
   const Conditionals &conditionals() const;
@@ -181,6 +189,7 @@ class GTSAM_EXPORT GaussianMixture
    * @return Sum
    */
   Sum add(const Sum &sum) const;
+  /// @}
 };
 
 /// Return the DiscreteKey vector as a set.

@@ -154,53 +154,16 @@ static GaussianMixture createSimpleGaussianMixture() {
 }
 
 /* ************************************************************************* */
-std::set<DiscreteKey> DiscreteKeysAsSet(const DiscreteKeys& dkeys) {
-  std::set<DiscreteKey> s;
-  s.insert(dkeys.begin(), dkeys.end());
-  return s;
-}
-
-// Get only the continuous parent keys as a KeyVector:
-KeyVector continuousParents(const GaussianMixture& gm) {
-  // Get all parent keys:
-  const auto range = gm.parents();
-  KeyVector continuousParentKeys(range.begin(), range.end());
-  // Loop over all discrete keys:
-  for (const auto& discreteKey : gm.discreteKeys()) {
-    const Key key = discreteKey.first;
-    // remove that key from continuousParentKeys:
-    continuousParentKeys.erase(std::remove(continuousParentKeys.begin(),
-                                           continuousParentKeys.end(), key),
-                               continuousParentKeys.end());
-  }
-  return continuousParentKeys;
-}
-
 // Create a test for continuousParents.
 TEST(GaussianMixture, ContinuousParents) {
   const GaussianMixture gm = createSimpleGaussianMixture();
-  const KeyVector continuousParentKeys = continuousParents(gm);
+  const KeyVector continuousParentKeys = gm.continuousParents();
   // Check that the continuous parent keys are correct:
   EXPECT(continuousParentKeys.size() == 1);
   EXPECT(continuousParentKeys[0] == X(0));
 }
 
 /* ************************************************************************* */
-// Create a likelihood factor for a Gaussian mixture, return a Mixture factor.
-GaussianMixtureFactor::shared_ptr likelihood(const GaussianMixture& gm,
-                                             const VectorValues& frontals) {
-  // TODO(dellaert): check that values has all frontals
-  const DiscreteKeys discreteParentKeys = gm.discreteKeys();
-  const KeyVector continuousParentKeys = continuousParents(gm);
-  const GaussianMixtureFactor::Factors likelihoods(
-      gm.conditionals(),
-      [&](const GaussianConditional::shared_ptr& conditional) {
-        return conditional->likelihood(frontals);
-      });
-  return boost::make_shared<GaussianMixtureFactor>(
-      continuousParentKeys, discreteParentKeys, likelihoods);
-}
-
 /// Check that likelihood returns a mixture factor on the parents.
 TEST(GaussianMixture, Likelihood) {
   const GaussianMixture gm = createSimpleGaussianMixture();
@@ -208,7 +171,7 @@ TEST(GaussianMixture, Likelihood) {
   // Call the likelihood function:
   VectorValues measurements;
   measurements.insert(Z(0), Vector1(0));
-  const auto factor = likelihood(gm, measurements);
+  const auto factor = gm.likelihood(measurements);
 
   // Check that the factor is a mixture factor on the parents.
   // Loop over all discrete assignments over the discrete parents:
