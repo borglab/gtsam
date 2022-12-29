@@ -11,6 +11,7 @@ Author: Fan Jiang
 # pylint: disable=invalid-name, no-name-in-module, no-member
 
 import unittest
+import math
 
 import numpy as np
 from gtsam.symbol_shorthand import C, M, X, Z
@@ -110,7 +111,9 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
             conditional1 = GaussianConditional.FromMeanAndStddev(
                 Z(i), I, X(0), [0], sigma=3
             )
-            bayesNet.emplaceMixture([Z(i)], [X(0)], keys, [conditional0, conditional1])
+            bayesNet.emplaceMixture(
+                [Z(i)], [X(0)], keys, [conditional0, conditional1]
+            )
 
         # Create prior on X(0).
         prior_on_x0 = GaussianConditional.FromMeanAndStddev(X(0), [5.0], 5.0)
@@ -136,7 +139,7 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         fg.push_back(factor)
         fg.push_back(bayesNet.atGaussian(1))
         fg.push_back(bayesNet.atDiscrete(2))
-        
+
         self.assertEqual(fg.size(), 3)
 
     def test_tiny2(self):
@@ -156,8 +159,18 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
             fg.push_back(factor)
         fg.push_back(bayesNet.atGaussian(2))
         fg.push_back(bayesNet.atDiscrete(3))
-        
+
         self.assertEqual(fg.size(), 4)
+        # Calculate ratio  between Bayes net probability and the factor graph:
+        continuousValues = gtsam.VectorValues()
+        continuousValues.insert(X(0), sample.at(X(0)))
+        discreteValues = sample.discrete()
+        expected_ratio = bayesNet.evaluate(sample) / fg.probPrime(
+            continuousValues, discreteValues
+        )
+        print(expected_ratio)
+
+        # TODO(dellaert): Change the mode to 0 and calculate the ratio again.
 
 
 if __name__ == "__main__":

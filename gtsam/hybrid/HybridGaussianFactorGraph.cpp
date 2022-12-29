@@ -469,11 +469,50 @@ AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::error(
 }
 
 /* ************************************************************************ */
+double HybridGaussianFactorGraph::error(
+    const VectorValues &continuousValues,
+    const DiscreteValues &discreteValues) const {
+  double error = 0.0;
+  for (size_t idx = 0; idx < size(); idx++) {
+    auto factor = factors_.at(idx);
+
+    if (factor->isHybrid()) {
+      if (auto c = boost::dynamic_pointer_cast<HybridConditional>(factor)) {
+        error += c->asMixture()->error(continuousValues, discreteValues);
+      }
+      if (auto f = boost::dynamic_pointer_cast<GaussianMixtureFactor>(factor)) {
+        error += f->error(continuousValues, discreteValues);
+      }
+
+    } else if (factor->isContinuous()) {
+      if (auto f = boost::dynamic_pointer_cast<HybridGaussianFactor>(factor)) {
+        error += f->inner()->error(continuousValues);
+      }
+      if (auto cg = boost::dynamic_pointer_cast<HybridConditional>(factor)) {
+        error += cg->asGaussian()->error(continuousValues);
+      }
+    }
+  }
+  return error;
+}
+
+/* ************************************************************************ */
+double HybridGaussianFactorGraph::probPrime(
+    const VectorValues &continuousValues,
+    const DiscreteValues &discreteValues) const {
+  double error = this->error(continuousValues, discreteValues);
+  // NOTE: The 0.5 term is handled by each factor
+  return std::exp(-error);
+}
+
+/* ************************************************************************ */
 AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::probPrime(
     const VectorValues &continuousValues) const {
   AlgebraicDecisionTree<Key> error_tree = this->error(continuousValues);
-  AlgebraicDecisionTree<Key> prob_tree =
-      error_tree.apply([](double error) { return exp(-error); });
+  AlgebraicDecisionTree<Key> prob_tree = error_tree.apply([](double error) {
+    // NOTE: The 0.5 term is handled by each factor
+    return exp(-error);
+  });
   return prob_tree;
 }
 
