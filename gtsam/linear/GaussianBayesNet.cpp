@@ -46,7 +46,8 @@ namespace gtsam {
     return optimize(solution);
   }
 
-  VectorValues GaussianBayesNet::optimize(VectorValues solution) const {
+  VectorValues GaussianBayesNet::optimize(const VectorValues& given) const {
+    VectorValues solution = given;
     // (R*x)./sigmas = y by solving x=inv(R)*(y.*sigmas)
     // solve each node in reverse topological sort order (parents first)
     for (auto cg : boost::adaptors::reverse(*this)) {

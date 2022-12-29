@@ -113,7 +113,7 @@ namespace gtsam {
     VectorValues optimize() const;
 
     /// Version of optimize for incomplete BayesNet, given missing variables
-    VectorValues optimize(const VectorValues given) const;
+    VectorValues optimize(const VectorValues& given) const;
 
     /**
      * Sample using ancestral sampling
