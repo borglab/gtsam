@@ -54,7 +54,7 @@ virtual class HybridDiscreteFactor {
 
 #include <gtsam/hybrid/GaussianMixtureFactor.h>
 class GaussianMixtureFactor : gtsam::HybridFactor {
-  static GaussianMixtureFactor FromFactors(
+  GaussianMixtureFactor(
       const gtsam::KeyVector& continuousKeys,
       const gtsam::DiscreteKeys& discreteKeys,
       const std::vector<gtsam::GaussianFactor::shared_ptr>& factorsList);

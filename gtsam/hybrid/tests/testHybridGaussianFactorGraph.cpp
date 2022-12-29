@@ -176,7 +176,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalSimple) {
   hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
 
-  hfg.add(GaussianMixtureFactor::FromFactors(
+  hfg.add(GaussianMixtureFactor(
       {X(1)}, {{M(1), 2}},
       {boost::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1),
        boost::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones())}));
@@ -235,7 +235,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalTwoClique) {
   hfg.add(JacobianFactor(X(1), I_3x3, X(2), -I_3x3, Z_3x1));
 
   {
-    hfg.add(GaussianMixtureFactor::FromFactors(
+    hfg.add(GaussianMixtureFactor(
         {X(0)}, {{M(0), 2}},
         {boost::make_shared<JacobianFactor>(X(0), I_3x3, Z_3x1),
          boost::make_shared<JacobianFactor>(X(0), I_3x3, Vector3::Ones())}));
