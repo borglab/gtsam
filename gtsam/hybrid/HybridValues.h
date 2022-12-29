@@ -78,10 +78,10 @@ class GTSAM_EXPORT HybridValues {
   /// @{
 
   /// Return the discrete MPE assignment
-  DiscreteValues discrete() const { return discrete_; }
+  const DiscreteValues& discrete() const { return discrete_; }
 
   /// Return the delta update for the continuous vectors
-  VectorValues continuous() const { return continuous_; }
+  const VectorValues& continuous() const { return continuous_; }
 
   /// Check whether a variable with key \c j exists in DiscreteValue.
   bool existsDiscrete(Key j) { return (discrete_.find(j) != discrete_.end()); };

@@ -88,6 +88,26 @@ namespace gtsam {
     /// @name Standard Interface
     /// @{
 
+    /**
+     * Calculate probability density for given values `x`:
+     *   exp(-error(x)) / sqrt((2*pi)^n*det(Sigma))
+     * where x is the vector of values, and Sigma is the covariance matrix.
+     * Note that error(x)=0.5*e'*e includes the 0.5 factor already.
+     */
+    double evaluate(const VectorValues& x) const;
+
+    /// Evaluate probability density, sugar.
+    double operator()(const VectorValues& x) const {
+      return evaluate(x);
+    }
+
+    /**
+     * Calculate log-density for given values `x`:
+     *  -error(x) - 0.5 * n*log(2*pi) - 0.5 * log det(Sigma)
+     * where x is the vector of values, and Sigma is the covariance matrix.
+     */
+    double logDensity(const VectorValues& x) const;
+
     /// Solve the GaussianBayesNet, i.e. return \f$ x = R^{-1}*d \f$, by
     /// back-substitution
     VectorValues optimize() const;

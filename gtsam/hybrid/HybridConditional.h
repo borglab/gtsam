@@ -131,34 +131,29 @@ class GTSAM_EXPORT HybridConditional
 
   /**
    * @brief Return HybridConditional as a GaussianMixture
-   *
-   * @return GaussianMixture::shared_ptr
+   * @return nullptr if not a mixture
+   * @return GaussianMixture::shared_ptr otherwise
    */
   GaussianMixture::shared_ptr asMixture() {
-    if (!isHybrid()) throw std::invalid_argument("Not a mixture");
-    return boost::static_pointer_cast<GaussianMixture>(inner_);
+    return boost::dynamic_pointer_cast<GaussianMixture>(inner_);
   }
 
   /**
    * @brief Return HybridConditional as a GaussianConditional
-   *
-   * @return GaussianConditional::shared_ptr
+   * @return nullptr if not a GaussianConditional
+   * @return GaussianConditional::shared_ptr otherwise
    */
   GaussianConditional::shared_ptr asGaussian() {
-    if (!isContinuous())
-      throw std::invalid_argument("Not a continuous conditional");
-    return boost::static_pointer_cast<GaussianConditional>(inner_);
+    return boost::dynamic_pointer_cast<GaussianConditional>(inner_);
   }
 
   /**
    * @brief Return conditional as a DiscreteConditional
-   *
+   * @return nullptr if not a DiscreteConditional
    * @return DiscreteConditional::shared_ptr
    */
-  DiscreteConditional::shared_ptr asDiscreteConditional() {
-    if (!isDiscrete())
-      throw std::invalid_argument("Not a discrete conditional");
-    return boost::static_pointer_cast<DiscreteConditional>(inner_);
+  DiscreteConditional::shared_ptr asDiscrete() {
+    return boost::dynamic_pointer_cast<DiscreteConditional>(inner_);
   }
 
   /// @}

@@ -169,6 +169,21 @@ double GaussianConditional::logDeterminant() const {
   return logDet;
 }
 
+/* ************************************************************************* */
+//  density = exp(-error(x)) / sqrt((2*pi)^n*det(Sigma))
+//  log = -error(x) - 0.5 * n*log(2*pi) - 0.5 * log det(Sigma)
+double GaussianConditional::logDensity(const VectorValues& x) const {
+  constexpr double log2pi = 1.8378770664093454835606594728112;
+  size_t n = d().size();
+  // log det(Sigma)) = - 2.0 * logDeterminant()
+  return - error(x) - 0.5 * n * log2pi + logDeterminant();
+}
+
+/* ************************************************************************* */
+double GaussianConditional::evaluate(const VectorValues& x) const {
+  return exp(logDensity(x));
+}
+
   /* ************************************************************************* */
   VectorValues GaussianConditional::solve(const VectorValues& x) const {
     // Concatenate all vector values that correspond to parent variables

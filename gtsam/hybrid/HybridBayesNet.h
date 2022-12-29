@@ -95,6 +95,14 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    */
   GaussianBayesNet choose(const DiscreteValues &assignment) const;
 
+  /// Evaluate hybrid probability density for given HybridValues.
+  double evaluate(const HybridValues &values) const;
+
+  /// Evaluate hybrid probability density for given HybridValues, sugar.
+  double operator()(const HybridValues &values) const {
+    return evaluate(values);
+  }
+
   /**
    * @brief Solve the HybridBayesNet by first computing the MPE of all the
    * discrete variables and then optimizing the continuous variables based on

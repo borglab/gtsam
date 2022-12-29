@@ -36,34 +36,78 @@ using noiseModel::Isotropic;
 using symbol_shorthand::M;
 using symbol_shorthand::X;
 
-static const DiscreteKey Asia(0, 2);
+static const Key asiaKey = 0;
+static const DiscreteKey Asia(asiaKey, 2);
 
 /* ****************************************************************************/
-// Test creation
+// Test creation of a pure discrete Bayes net.
 TEST(HybridBayesNet, Creation) {
   HybridBayesNet bayesNet;
-
   bayesNet.add(Asia, "99/1");
 
   DiscreteConditional expected(Asia, "99/1");
-
   CHECK(bayesNet.atDiscrete(0));
-  auto& df = *bayesNet.atDiscrete(0);
-  EXPECT(df.equals(expected));
+  EXPECT(assert_equal(expected, *bayesNet.atDiscrete(0)));
 }
 
 /* ****************************************************************************/
-// Test adding a bayes net to another one.
+// Test adding a Bayes net to another one.
 TEST(HybridBayesNet, Add) {
   HybridBayesNet bayesNet;
-
   bayesNet.add(Asia, "99/1");
-
-  DiscreteConditional expected(Asia, "99/1");
 
   HybridBayesNet other;
   other.push_back(bayesNet);
   EXPECT(bayesNet.equals(other));
+}
+
+/* ****************************************************************************/
+// Test evaluate for a pure discrete Bayes net P(Asia).
+TEST(HybridBayesNet, evaluatePureDiscrete) {
+  HybridBayesNet bayesNet;
+  bayesNet.add(Asia, "99/1");
+  HybridValues values;
+  values.insert(asiaKey, 0);
+  EXPECT_DOUBLES_EQUAL(0.99, bayesNet.evaluate(values), 1e-9);
+}
+
+/* ****************************************************************************/
+// Test evaluate for a hybrid Bayes net P(X0|X1) P(X1|Asia) P(Asia).
+TEST(HybridBayesNet, evaluateHybrid) {
+  const auto continuousConditional = GaussianConditional::FromMeanAndStddev(
+      X(0), 2 * I_1x1, X(1), Vector1(-4.0), 5.0);
+
+  const SharedDiagonal model0 = noiseModel::Diagonal::Sigmas(Vector1(2.0)),
+                       model1 = noiseModel::Diagonal::Sigmas(Vector1(3.0));
+
+  const auto conditional0 = boost::make_shared<GaussianConditional>(
+                 X(1), Vector1::Constant(5), I_1x1, model0),
+             conditional1 = boost::make_shared<GaussianConditional>(
+                 X(1), Vector1::Constant(2), I_1x1, model1);
+
+  // TODO(dellaert): creating and adding mixture is clumsy.
+  const auto mixture = GaussianMixture::FromConditionals(
+      {X(1)}, {}, {Asia}, {conditional0, conditional1});
+
+  // Create hybrid Bayes net.
+  HybridBayesNet bayesNet;
+  bayesNet.push_back(HybridConditional(
+      boost::make_shared<GaussianConditional>(continuousConditional)));
+  bayesNet.push_back(
+      HybridConditional(boost::make_shared<GaussianMixture>(mixture)));
+  bayesNet.add(Asia, "99/1");
+
+  // Create values at which to evaluate.
+  HybridValues values;
+  values.insert(asiaKey, 0);
+  values.insert(X(0), Vector1(-6));
+  values.insert(X(1), Vector1(1));
+
+  const double conditionalProbability =
+      continuousConditional.evaluate(values.continuous());
+  const double mixtureProbability = conditional0->evaluate(values.continuous());
+  EXPECT_DOUBLES_EQUAL(conditionalProbability * mixtureProbability * 0.99,
+                       bayesNet.evaluate(values), 1e-9);
 }
 
 /* ****************************************************************************/
@@ -105,7 +149,7 @@ TEST(HybridBayesNet, Choose) {
 }
 
 /* ****************************************************************************/
-// Test bayes net optimize
+// Test Bayes net optimize
 TEST(HybridBayesNet, OptimizeAssignment) {
   Switching s(4);
 
@@ -139,7 +183,7 @@ TEST(HybridBayesNet, OptimizeAssignment) {
 }
 
 /* ****************************************************************************/
-// Test bayes net optimize
+// Test Bayes net optimize
 TEST(HybridBayesNet, Optimize) {
   Switching s(4);
 
@@ -203,7 +247,7 @@ TEST(HybridBayesNet, Error) {
   // regression
   EXPECT(assert_equal(expected_error, error_tree, 1e-9));
 
-  // Error on pruned bayes net
+  // Error on pruned Bayes net
   auto prunedBayesNet = hybridBayesNet->prune(2);
   auto pruned_error_tree = prunedBayesNet.error(delta.continuous());
 
@@ -238,7 +282,7 @@ TEST(HybridBayesNet, Error) {
 }
 
 /* ****************************************************************************/
-// Test bayes net pruning
+// Test Bayes net pruning
 TEST(HybridBayesNet, Prune) {
   Switching s(4);
 
@@ -256,7 +300,7 @@ TEST(HybridBayesNet, Prune) {
 }
 
 /* ****************************************************************************/
-// Test bayes net updateDiscreteConditionals
+// Test Bayes net updateDiscreteConditionals
 TEST(HybridBayesNet, UpdateDiscreteConditionals) {
   Switching s(4);
 
@@ -273,8 +317,7 @@ TEST(HybridBayesNet, UpdateDiscreteConditionals) {
   EXPECT_LONGS_EQUAL(maxNrLeaves + 2 /*2 zero leaves*/,
                      prunedDecisionTree->nrLeaves());
 
-  auto original_discrete_conditionals =
-      *(hybridBayesNet->at(4)->asDiscreteConditional());
+  auto original_discrete_conditionals = *(hybridBayesNet->at(4)->asDiscrete());
 
   // Prune!
   hybridBayesNet->prune(maxNrLeaves);
@@ -294,8 +337,7 @@ TEST(HybridBayesNet, UpdateDiscreteConditionals) {
   };
 
   // Get the pruned discrete conditionals as an AlgebraicDecisionTree
-  auto pruned_discrete_conditionals =
-      hybridBayesNet->at(4)->asDiscreteConditional();
+  auto pruned_discrete_conditionals = hybridBayesNet->at(4)->asDiscrete();
   auto discrete_conditional_tree =
       boost::dynamic_pointer_cast<DecisionTreeFactor::ADT>(
           pruned_discrete_conditionals);
@@ -358,7 +400,7 @@ TEST(HybridBayesNet, Sampling) {
     // Sample
     HybridValues sample = bn->sample(&gen);
 
-    discrete_samples.push_back(sample.discrete()[M(0)]);
+    discrete_samples.push_back(sample.discrete().at(M(0)));
 
     if (i == 0) {
       average_continuous.insert(sample.continuous());
