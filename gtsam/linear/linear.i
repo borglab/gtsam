@@ -471,6 +471,10 @@ virtual class GaussianConditional : gtsam::JacobianFactor {
 
   // Named constructors
   static gtsam::GaussianConditional FromMeanAndStddev(gtsam::Key key, 
+                                                      const Vector& mu,
+                                                      double sigma);
+
+  static gtsam::GaussianConditional FromMeanAndStddev(gtsam::Key key, 
                                                       const Matrix& A,
                                                       gtsam::Key parent,
                                                       const Vector& b,
