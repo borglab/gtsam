@@ -148,9 +148,7 @@ static GaussianMixture createSimpleGaussianMixture() {
       GaussianConditional::FromMeanAndStddev(Z(0), I, X(0), Vector1(0), 0.5));
   const auto conditional1 = boost::make_shared<GaussianConditional>(
       GaussianConditional::FromMeanAndStddev(Z(0), I, X(0), Vector1(0), 3));
-  const auto gm = GaussianMixture::FromConditionals(
-      {Z(0)}, {X(0)}, {mode}, {conditional0, conditional1});
-  return gm;
+  return GaussianMixture({Z(0)}, {X(0)}, {mode}, {conditional0, conditional1});
 }
 
 /* ************************************************************************* */

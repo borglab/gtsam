@@ -88,8 +88,8 @@ TEST(HybridBayesNet, evaluateHybrid) {
   // Create hybrid Bayes net.
   HybridBayesNet bayesNet;
   bayesNet.emplaceGaussian(continuousConditional);
-  bayesNet.emplaceMixture(GaussianMixture::FromConditionals(
-      {X(1)}, {}, {Asia}, {conditional0, conditional1}));
+  GaussianMixture gm({X(1)}, {}, {Asia}, {conditional0, conditional1});
+  bayesNet.emplaceMixture(gm);  // copy :-(
   bayesNet.emplaceDiscrete(Asia, "99/1");
 
   // Create values at which to evaluate.

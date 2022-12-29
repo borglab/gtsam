@@ -114,7 +114,7 @@ class GTSAM_EXPORT GaussianMixture
    * @param discreteParents Discrete parents variables
    * @param conditionals List of conditionals
    */
-  static This FromConditionals(
+  GaussianMixture(
       const KeyVector &continuousFrontals, const KeyVector &continuousParents,
       const DiscreteKeys &discreteParents,
       const std::vector<GaussianConditional::shared_ptr> &conditionals);

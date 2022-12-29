@@ -42,15 +42,12 @@ const GaussianMixture::Conditionals &GaussianMixture::conditionals() const {
 }
 
 /* *******************************************************************************/
-GaussianMixture GaussianMixture::FromConditionals(
+GaussianMixture::GaussianMixture(
     const KeyVector &continuousFrontals, const KeyVector &continuousParents,
     const DiscreteKeys &discreteParents,
-    const std::vector<GaussianConditional::shared_ptr> &conditionalsList) {
-  Conditionals dt(discreteParents, conditionalsList);
-
-  return GaussianMixture(continuousFrontals, continuousParents, discreteParents,
-                         dt);
-}
+    const std::vector<GaussianConditional::shared_ptr> &conditionalsList)
+    : GaussianMixture(continuousFrontals, continuousParents, discreteParents,
+                      Conditionals(discreteParents, conditionalsList)) {}
 
 /* *******************************************************************************/
 GaussianMixture::Sum GaussianMixture::add(

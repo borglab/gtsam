@@ -66,12 +66,13 @@ class GaussianMixtureFactor : gtsam::HybridFactor {
 
 #include <gtsam/hybrid/GaussianMixture.h>
 class GaussianMixture : gtsam::HybridFactor {
-  static GaussianMixture FromConditionals(
-      const gtsam::KeyVector& continuousFrontals,
-      const gtsam::KeyVector& continuousParents,
-      const gtsam::DiscreteKeys& discreteParents,
-      const std::vector<gtsam::GaussianConditional::shared_ptr>&
-          conditionalsList);
+  GaussianMixture(const gtsam::KeyVector& continuousFrontals,
+                  const gtsam::KeyVector& continuousParents,
+                  const gtsam::DiscreteKeys& discreteParents,
+                  const std::vector<gtsam::GaussianConditional::shared_ptr>&
+                      conditionalsList);
+
+  gtsam::GaussianMixtureFactor* likelihood(const gtsam::VectorValues &frontals) const;
 
   void print(string s = "GaussianMixture\n",
              const gtsam::KeyFormatter& keyFormatter =
@@ -104,7 +105,7 @@ class HybridBayesTree {
                  gtsam::DefaultKeyFormatter) const;
 };
 
-#include <gtsam/hybrid/HybridBayesTree.h>
+#include <gtsam/hybrid/HybridBayesNet.h>
 class HybridBayesNet {
   HybridBayesNet();
   void add(const gtsam::HybridConditional& s);
@@ -113,6 +114,11 @@ class HybridBayesNet {
   void addDiscrete(const gtsam::DiscreteConditional* s);
 
   void emplaceMixture(const gtsam::GaussianMixture& s);
+  void emplaceMixture(const gtsam::KeyVector& continuousFrontals,
+                      const gtsam::KeyVector& continuousParents,
+                      const gtsam::DiscreteKeys& discreteParents,
+                      const std::vector<gtsam::GaussianConditional::shared_ptr>&
+                          conditionalsList);
   void emplaceGaussian(const gtsam::GaussianConditional& s);
   void emplaceDiscrete(const gtsam::DiscreteConditional& s);
   void emplaceDiscrete(const gtsam::DiscreteKey& key, string spec);
@@ -162,9 +168,8 @@ class HybridGaussianFactorGraph {
   void push_back(const gtsam::HybridBayesNet& bayesNet);
   void push_back(const gtsam::HybridBayesTree& bayesTree);
   void push_back(const gtsam::GaussianMixtureFactor* gmm);
-
-  void add(gtsam::DecisionTreeFactor* factor);
-  void add(gtsam::JacobianFactor* factor);
+  void push_back(gtsam::DecisionTreeFactor* factor);
+  void push_back(gtsam::JacobianFactor* factor);
 
   bool empty() const;
   void remove(size_t i);
