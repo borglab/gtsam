@@ -36,7 +36,6 @@ class HybridEliminationTree;
 class HybridBayesTree;
 class HybridJunctionTree;
 class DecisionTreeFactor;
-
 class JacobianFactor;
 
 /**
@@ -130,7 +129,7 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
   void add(JacobianFactor&& factor);
 
   /// Add a Jacobian factor as a shared ptr.
-  void add(JacobianFactor::shared_ptr factor);
+  void add(boost::shared_ptr<JacobianFactor>& factor);
 
   /// Add a DecisionTreeFactor to the factor graph.
   void add(DecisionTreeFactor&& factor);

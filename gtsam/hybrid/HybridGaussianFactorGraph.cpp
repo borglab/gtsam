@@ -394,7 +394,7 @@ void HybridGaussianFactorGraph::add(JacobianFactor &&factor) {
 }
 
 /* ************************************************************************ */
-void HybridGaussianFactorGraph::add(JacobianFactor::shared_ptr factor) {
+void HybridGaussianFactorGraph::add(boost::shared_ptr<JacobianFactor> &factor) {
   FactorGraph::add(boost::make_shared<HybridGaussianFactor>(factor));
 }
 
