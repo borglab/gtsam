@@ -48,7 +48,7 @@ class TestHybridBayesNet(GtsamTestCase):
         # Create hybrid Bayes net.
         bayesNet = HybridBayesNet()
         bayesNet.addGaussian(gc)
-        # bayesNet.addMixture(gm)
+        bayesNet.addMixture(gm)
         bayesNet.addDiscrete(Asia, "99/1")
 
         # Create values at which to evaluate.
@@ -59,10 +59,10 @@ class TestHybridBayesNet(GtsamTestCase):
 
         conditionalProbability = gc.evaluate(values.continuous())
         mixtureProbability = conditional0.evaluate(values.continuous())
-        assert self.assertAlmostEqual(conditionalProbability *
-                                      mixtureProbability * 0.99,
-                                      bayesNet.evaluate(values),
-                                      places=5)
+        self.assertAlmostEqual(conditionalProbability * mixtureProbability *
+                               0.99,
+                               bayesNet.evaluate(values),
+                               places=5)
 
 
 if __name__ == "__main__":
