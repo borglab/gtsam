@@ -36,7 +36,7 @@ GaussianMixture::GaussianMixture(
       conditionals_(conditionals) {}
 
 /* *******************************************************************************/
-const GaussianMixture::Conditionals &GaussianMixture::conditionals() {
+const GaussianMixture::Conditionals &GaussianMixture::conditionals() const {
   return conditionals_;
 }
 

@@ -142,7 +142,7 @@ class GTSAM_EXPORT GaussianMixture
   /// @}
 
   /// Getter for the underlying Conditionals DecisionTree
-  const Conditionals &conditionals();
+  const Conditionals &conditionals() const;
 
   /**
    * @brief Compute error of the GaussianMixture as a tree.
