@@ -20,6 +20,8 @@
 
 #include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam/hybrid/GaussianMixture.h>
+#include <gtsam/hybrid/GaussianMixtureFactor.h>
+#include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianConditional.h>
 
@@ -33,6 +35,7 @@ using namespace gtsam;
 using noiseModel::Isotropic;
 using symbol_shorthand::M;
 using symbol_shorthand::X;
+using symbol_shorthand::Z;
 
 /* ************************************************************************* */
 /* Check construction of GaussianMixture P(x1 | x2, m1) as well as accessing a
@@ -127,7 +130,43 @@ TEST(GaussianMixture, Error) {
   assignment[M(1)] = 0;
   EXPECT_DOUBLES_EQUAL(0.5, mixture.error(values, assignment), 1e-8);
   assignment[M(1)] = 1;
-  EXPECT_DOUBLES_EQUAL(4.3252595155709335, mixture.error(values, assignment), 1e-8);
+  EXPECT_DOUBLES_EQUAL(4.3252595155709335, mixture.error(values, assignment),
+                       1e-8);
+}
+
+/* ************************************************************************* */
+// Create a likelihood factor for a Gaussian mixture, return a Mixture factor on
+// the parents.
+GaussianMixtureFactor::shared_ptr likelihood(const HybridValues& values) {
+  GaussianMixtureFactor::shared_ptr factor;
+  return factor;
+}
+
+/// Check that likelihood returns a mixture factor on the parents.
+TEST(GaussianMixture, Likelihood) {
+  // Create mode key: 0 is low-noise, 1 is high-noise.
+  Key modeKey = M(0);
+  DiscreteKey mode(modeKey, 2);
+
+  // Create Gaussian mixture Z(0) = X(0) + noise.
+  // TODO(dellaert): making copies below is not ideal !
+  Matrix1 I = Matrix1::Identity();
+  const auto conditional0 = boost::make_shared<GaussianConditional>(
+      GaussianConditional::FromMeanAndStddev(Z(0), I, X(0), Vector1(0), 0.5));
+  const auto conditional1 = boost::make_shared<GaussianConditional>(
+      GaussianConditional::FromMeanAndStddev(Z(0), I, X(0), Vector1(0), 3));
+  const auto gm = GaussianMixture::FromConditionals(
+      {Z(0)}, {X(0)}, {mode}, {conditional0, conditional1});
+
+  // Call the likelihood function:
+  VectorValues measurements;
+  measurements.insert(Z(0), Vector1(0));
+  HybridValues values(DiscreteValues(), measurements);
+  const auto factor = likelihood(values);
+
+  // Check that the factor is a mixture factor on the parents.
+  const GaussianMixtureFactor expected = GaussianMixtureFactor();
+  EXPECT(assert_equal(*factor, expected));
 }
 
 /* ************************************************************************* */
