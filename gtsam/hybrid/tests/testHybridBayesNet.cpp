@@ -43,7 +43,7 @@ static const DiscreteKey Asia(asiaKey, 2);
 // Test creation of a pure discrete Bayes net.
 TEST(HybridBayesNet, Creation) {
   HybridBayesNet bayesNet;
-  bayesNet.add(Asia, "99/1");
+  bayesNet.addDiscrete(Asia, "99/1");
 
   DiscreteConditional expected(Asia, "99/1");
   CHECK(bayesNet.atDiscrete(0));
@@ -54,7 +54,7 @@ TEST(HybridBayesNet, Creation) {
 // Test adding a Bayes net to another one.
 TEST(HybridBayesNet, Add) {
   HybridBayesNet bayesNet;
-  bayesNet.add(Asia, "99/1");
+  bayesNet.addDiscrete(Asia, "99/1");
 
   HybridBayesNet other;
   other.push_back(bayesNet);
@@ -65,7 +65,7 @@ TEST(HybridBayesNet, Add) {
 // Test evaluate for a pure discrete Bayes net P(Asia).
 TEST(HybridBayesNet, evaluatePureDiscrete) {
   HybridBayesNet bayesNet;
-  bayesNet.add(Asia, "99/1");
+  bayesNet.addDiscrete(Asia, "99/1");
   HybridValues values;
   values.insert(asiaKey, 0);
   EXPECT_DOUBLES_EQUAL(0.99, bayesNet.evaluate(values), 1e-9);
@@ -85,17 +85,12 @@ TEST(HybridBayesNet, evaluateHybrid) {
              conditional1 = boost::make_shared<GaussianConditional>(
                  X(1), Vector1::Constant(2), I_1x1, model1);
 
-  // TODO(dellaert): creating and adding mixture is clumsy.
-  const auto mixture = GaussianMixture::FromConditionals(
-      {X(1)}, {}, {Asia}, {conditional0, conditional1});
-
   // Create hybrid Bayes net.
   HybridBayesNet bayesNet;
-  bayesNet.push_back(HybridConditional(
-      boost::make_shared<GaussianConditional>(continuousConditional)));
-  bayesNet.push_back(
-      HybridConditional(boost::make_shared<GaussianMixture>(mixture)));
-  bayesNet.add(Asia, "99/1");
+  bayesNet.addGaussian(continuousConditional);
+  bayesNet.addMixture(GaussianMixture::FromConditionals(
+      {X(1)}, {}, {Asia}, {conditional0, conditional1}));
+  bayesNet.addDiscrete(Asia, "99/1");
 
   // Create values at which to evaluate.
   HybridValues values;
