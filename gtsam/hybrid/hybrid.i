@@ -180,6 +180,12 @@ class HybridGaussianFactorGraph {
   void print(string s = "") const;
   bool equals(const gtsam::HybridGaussianFactorGraph& fg, double tol = 1e-9) const;
 
+  // evaluation
+  double error(const gtsam::VectorValues& continuousValues,
+               const gtsam::DiscreteValues& discreteValues) const;
+  double probPrime(const gtsam::VectorValues& continuousValues,
+                   const gtsam::DiscreteValues& discreteValues) const;
+
   gtsam::HybridBayesNet* eliminateSequential();
   gtsam::HybridBayesNet* eliminateSequential(
       gtsam::Ordering::OrderingType type);
