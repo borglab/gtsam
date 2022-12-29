@@ -16,6 +16,7 @@ class HybridValues {
   bool equals(const gtsam::HybridValues& other, double tol) const;
   void insert(gtsam::Key j, int value);
   void insert(gtsam::Key j, const gtsam::Vector& value);
+  void update(const gtsam::VectorValues& values);
   size_t& atDiscrete(gtsam::Key j);
   gtsam::Vector& at(gtsam::Key j);
 };
