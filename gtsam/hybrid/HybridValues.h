@@ -96,7 +96,7 @@ class GTSAM_EXPORT HybridValues {
    * the key \c j is already used.
    * @param value The vector to be inserted.
    * @param j The index with which the value will be associated. */
-  void insert(Key j, int value) { discrete_[j] = value; };
+  void insert(Key j, size_t value) { discrete_[j] = value; };
 
   /** Insert a vector \c value with key \c j.  Throws an invalid_argument
    * exception if the key \c j is already used.
