@@ -42,14 +42,13 @@ class TestHybridBayesNet(GtsamTestCase):
         conditional1 = GaussianConditional(X(1), [2], I_1x1, model1)
         dkeys = DiscreteKeys()
         dkeys.push_back(Asia)
-        gm = GaussianMixture.FromConditionals([X(1)], [], dkeys,
-                                              [conditional0, conditional1])  #
+        gm = GaussianMixture([X(1)], [], dkeys, [conditional0, conditional1]) 
 
         # Create hybrid Bayes net.
         bayesNet = HybridBayesNet()
         bayesNet.addGaussian(gc)
         bayesNet.addMixture(gm)
-        bayesNet.addDiscrete(Asia, "99/1")
+        bayesNet.emplaceDiscrete(Asia, "99/1")
 
         # Create values at which to evaluate.
         values = HybridValues()
