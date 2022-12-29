@@ -36,7 +36,7 @@ DecisionTreeFactor::shared_ptr HybridBayesNet::discreteConditionals() const {
   for (auto &&conditional : *this) {
     if (conditional->isDiscrete()) {
       // Convert to a DecisionTreeFactor and add it to the main factor.
-      DecisionTreeFactor f(*conditional->asDiscreteConditional());
+      DecisionTreeFactor f(*conditional->asDiscrete());
       dtFactor = dtFactor * f;
     }
   }
@@ -108,7 +108,7 @@ void HybridBayesNet::updateDiscreteConditionals(
     HybridConditional::shared_ptr conditional = this->at(i);
     if (conditional->isDiscrete()) {
       // std::cout << demangle(typeid(conditional).name()) << std::endl;
-      auto discrete = conditional->asDiscreteConditional();
+      auto discrete = conditional->asDiscrete();
       KeyVector frontals(discrete->frontals().begin(),
                          discrete->frontals().end());
 
@@ -150,16 +150,11 @@ HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves) {
 
   // Go through all the conditionals in the
   // Bayes Net and prune them as per decisionTree.
-  for (size_t i = 0; i < this->size(); i++) {
-    HybridConditional::shared_ptr conditional = this->at(i);
-
-    if (conditional->isHybrid()) {
-      GaussianMixture::shared_ptr gaussianMixture = conditional->asMixture();
-
+  for (auto &&conditional : *this) {
+    if (auto gm = conditional->asMixture()) {
       // Make a copy of the Gaussian mixture and prune it!
-      auto prunedGaussianMixture =
-          boost::make_shared<GaussianMixture>(*gaussianMixture);
-      prunedGaussianMixture->prune(*decisionTree);
+      auto prunedGaussianMixture = boost::make_shared<GaussianMixture>(*gm);
+      prunedGaussianMixture->prune(*decisionTree);  // imperative :-(
 
       // Type-erase and add to the pruned Bayes Net fragment.
       prunedBayesNetFragment.push_back(
@@ -186,7 +181,7 @@ GaussianConditional::shared_ptr HybridBayesNet::atGaussian(size_t i) const {
 
 /* ************************************************************************* */
 DiscreteConditional::shared_ptr HybridBayesNet::atDiscrete(size_t i) const {
-  return at(i)->asDiscreteConditional();
+  return at(i)->asDiscrete();
 }
 
 /* ************************************************************************* */
@@ -194,16 +189,13 @@ GaussianBayesNet HybridBayesNet::choose(
     const DiscreteValues &assignment) const {
   GaussianBayesNet gbn;
   for (auto &&conditional : *this) {
-    if (conditional->isHybrid()) {
+    if (auto gm = conditional->asMixture()) {
       // If conditional is hybrid, select based on assignment.
-      GaussianMixture gm = *conditional->asMixture();
-      gbn.push_back(gm(assignment));
-
-    } else if (conditional->isContinuous()) {
+      gbn.push_back((*gm)(assignment));
+    } else if (auto gc = conditional->asGaussian()) {
       // If continuous only, add Gaussian conditional.
-      gbn.push_back((conditional->asGaussian()));
-
-    } else if (conditional->isDiscrete()) {
+      gbn.push_back(gc);
+    } else if (auto dc = conditional->asDiscrete()) {
       // If conditional is discrete-only, we simply continue.
       continue;
     }
@@ -218,21 +210,45 @@ HybridValues HybridBayesNet::optimize() const {
   DiscreteBayesNet discrete_bn;
   for (auto &&conditional : *this) {
     if (conditional->isDiscrete()) {
-      discrete_bn.push_back(conditional->asDiscreteConditional());
+      discrete_bn.push_back(conditional->asDiscrete());
     }
   }
 
   DiscreteValues mpe = DiscreteFactorGraph(discrete_bn).optimize();
 
   // Given the MPE, compute the optimal continuous values.
-  GaussianBayesNet gbn = this->choose(mpe);
+  GaussianBayesNet gbn = choose(mpe);
   return HybridValues(mpe, gbn.optimize());
 }
 
 /* ************************************************************************* */
 VectorValues HybridBayesNet::optimize(const DiscreteValues &assignment) const {
-  GaussianBayesNet gbn = this->choose(assignment);
+  GaussianBayesNet gbn = choose(assignment);
   return gbn.optimize();
+}
+
+/* ************************************************************************* */
+double HybridBayesNet::evaluate(const HybridValues &values) const {
+  const DiscreteValues &discreteValues = values.discrete();
+  const VectorValues &continuousValues = values.continuous();
+
+  double logDensity = 0.0, probability = 1.0;
+
+  // Iterate over each conditional.
+  for (auto &&conditional : *this) {
+    if (auto gm = conditional->asMixture()) {
+      const auto component = (*gm)(discreteValues);
+      logDensity += component->logDensity(continuousValues);
+    } else if (auto gc = conditional->asGaussian()) {
+      // If continuous only, evaluate the probability and multiply.
+      logDensity += gc->logDensity(continuousValues);
+    } else if (auto dc = conditional->asDiscrete()) {
+      // Conditional is discrete-only, so return its probability.
+      probability *= dc->operator()(discreteValues);
+    }
+  }
+
+  return probability * exp(logDensity);
 }
 
 /* ************************************************************************* */
@@ -242,7 +258,7 @@ HybridValues HybridBayesNet::sample(const HybridValues &given,
   for (auto &&conditional : *this) {
     if (conditional->isDiscrete()) {
       // If conditional is discrete-only, we add to the discrete Bayes net.
-      dbn.push_back(conditional->asDiscreteConditional());
+      dbn.push_back(conditional->asDiscrete());
     }
   }
   // Sample a discrete assignment.
@@ -273,7 +289,7 @@ HybridValues HybridBayesNet::sample() const {
 /* ************************************************************************* */
 double HybridBayesNet::error(const VectorValues &continuousValues,
                              const DiscreteValues &discreteValues) const {
-  GaussianBayesNet gbn = this->choose(discreteValues);
+  GaussianBayesNet gbn = choose(discreteValues);
   return gbn.error(continuousValues);
 }
 
@@ -284,23 +300,20 @@ AlgebraicDecisionTree<Key> HybridBayesNet::error(
 
   // Iterate over each conditional.
   for (auto &&conditional : *this) {
-    if (conditional->isHybrid()) {
+    if (auto gm = conditional->asMixture()) {
       // If conditional is hybrid, select based on assignment and compute error.
-      GaussianMixture::shared_ptr gm = conditional->asMixture();
       AlgebraicDecisionTree<Key> conditional_error =
           gm->error(continuousValues);
 
       error_tree = error_tree + conditional_error;
-
-    } else if (conditional->isContinuous()) {
+    } else if (auto gc = conditional->asGaussian()) {
       // If continuous only, get the (double) error
       // and add it to the error_tree
-      double error = conditional->asGaussian()->error(continuousValues);
+      double error = gc->error(continuousValues);
       // Add the computed error to every leaf of the error tree.
       error_tree = error_tree.apply(
           [error](double leaf_value) { return leaf_value + error; });
-
-    } else if (conditional->isDiscrete()) {
+    } else if (auto dc = conditional->asDiscrete()) {
       // Conditional is discrete-only, we skip.
       continue;
     }
