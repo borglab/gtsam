@@ -579,13 +579,10 @@ TEST(HybridGaussianFactorGraph, ErrorAndProbPrime) {
   const double error = graph.error(delta);
 
   // regression
-  EXPECT(assert_equal(0.490243199, error, 1e-9));
+  EXPECT(assert_equal(1.58886, error, 1e-5));
 
-  double probs = exp(-error);
-  double expected_probs = graph.probPrime(delta);
-
-  // regression
-  EXPECT(assert_equal(expected_probs, probs, 1e-7));
+  // Real test:
+  EXPECT(assert_equal(graph.probPrime(delta), exp(-error), 1e-7));
 }
 
 /* ****************************************************************************/
