@@ -138,8 +138,6 @@ void HybridBayesNet::updateDiscreteConditionals(
     HybridConditional::shared_ptr conditional = this->at(i);
     if (conditional->isDiscrete()) {
       auto discrete = conditional->asDiscrete();
-      KeyVector frontals(discrete->frontals().begin(),
-                         discrete->frontals().end());
 
       // Apply prunerFunc to the underlying AlgebraicDecisionTree
       auto discreteTree =
