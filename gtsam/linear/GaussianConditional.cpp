@@ -64,12 +64,23 @@ namespace gtsam {
         BaseConditional(1) {}
 
   /* ************************************************************************ */
+  GaussianConditional GaussianConditional::FromMeanAndStddev(Key key,
+                                                             const Vector& mu,
+                                                             double sigma) {
+    // |Rx - d| = |x-(Ay + b)|/sigma
+    const Matrix R = Matrix::Identity(mu.size(), mu.size());
+    const Vector& d = mu;
+    return GaussianConditional(key, d, R,
+                               noiseModel::Isotropic::Sigma(mu.size(), sigma));
+  }
+
+  /* ************************************************************************ */
   GaussianConditional GaussianConditional::FromMeanAndStddev(
       Key key, const Matrix& A, Key parent, const Vector& b, double sigma) {
     // |Rx + Sy - d| = |x-(Ay + b)|/sigma
     const Matrix R = Matrix::Identity(b.size(), b.size());
     const Matrix S = -A;
-    const Vector d = b;
+    const Vector& d = b;
     return GaussianConditional(key, d, R, parent, S,
                                noiseModel::Isotropic::Sigma(b.size(), sigma));
   }
@@ -82,7 +93,7 @@ namespace gtsam {
     const Matrix R = Matrix::Identity(b.size(), b.size());
     const Matrix S = -A1;
     const Matrix T = -A2;
-    const Vector d = b;
+    const Vector& d = b;
     return GaussianConditional(key, d, R, parent1, S, parent2, T,
                                noiseModel::Isotropic::Sigma(b.size(), sigma));
   }
@@ -167,6 +178,21 @@ double GaussianConditional::logDeterminant() const {
         this->R().diagonal().unaryExpr([](double x) { return log(x); }).sum();
   }
   return logDet;
+}
+
+/* ************************************************************************* */
+//  density = exp(-error(x)) / sqrt((2*pi)^n*det(Sigma))
+//  log = -error(x) - 0.5 * n*log(2*pi) - 0.5 * log det(Sigma)
+double GaussianConditional::logDensity(const VectorValues& x) const {
+  constexpr double log2pi = 1.8378770664093454835606594728112;
+  size_t n = d().size();
+  // log det(Sigma)) = - 2.0 * logDeterminant()
+  return - error(x) - 0.5 * n * log2pi + logDeterminant();
+}
+
+/* ************************************************************************* */
+double GaussianConditional::evaluate(const VectorValues& x) const {
+  return exp(logDensity(x));
 }
 
   /* ************************************************************************* */

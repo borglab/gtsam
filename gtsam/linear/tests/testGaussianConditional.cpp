@@ -131,6 +131,75 @@ TEST( GaussianConditional, equals )
 }
 
 /* ************************************************************************* */
+namespace density {
+static const Key key = 77;
+static constexpr double sigma = 3.0;
+static const auto unitPrior =
+                      GaussianConditional(key, Vector1::Constant(5), I_1x1),
+                  widerPrior = GaussianConditional(
+                      key, Vector1::Constant(5), I_1x1,
+                      noiseModel::Isotropic::Sigma(1, sigma));
+}  // namespace density
+
+/* ************************************************************************* */
+// Check that the evaluate function matches direct calculation with R.
+TEST(GaussianConditional, Evaluate1) {
+  // Let's evaluate at the mean
+  const VectorValues mean = density::unitPrior.solve(VectorValues());
+
+  // We get the Hessian matrix, which has noise model applied!
+  const Matrix invSigma = density::unitPrior.information();
+
+  // A Gaussian density ~ exp (-0.5*(Rx-d)'*(Rx-d))
+  // which at the mean is 1.0! So, the only thing we need to calculate is
+  // the normalization constant 1.0/sqrt((2*pi*Sigma).det()).
+  // The covariance matrix inv(Sigma) = R'*R, so the determinant is
+  const double expected = sqrt((invSigma / (2 * M_PI)).determinant());
+  const double actual = density::unitPrior.evaluate(mean);
+  EXPECT_DOUBLES_EQUAL(expected, actual, 1e-9);
+
+  using density::key;
+  using density::sigma;
+
+  // Let's numerically integrate and see that we integrate to 1.0.
+  double integral = 0.0;
+  // Loop from -5*sigma to 5*sigma in 0.1*sigma steps:
+  for (double x = -5.0 * sigma; x <= 5.0 * sigma; x += 0.1 * sigma) {
+    VectorValues xValues;
+    xValues.insert(key, mean.at(key) + Vector1(x));
+    const double density = density::unitPrior.evaluate(xValues);
+    integral += 0.1 * sigma * density;
+  }
+  EXPECT_DOUBLES_EQUAL(1.0, integral, 1e-9);
+}
+
+/* ************************************************************************* */
+// Check the evaluate with non-unit noise.
+TEST(GaussianConditional, Evaluate2) {
+  // See comments in test above.
+  const VectorValues mean = density::widerPrior.solve(VectorValues());
+  const Matrix R = density::widerPrior.R();
+  const Matrix invSigma = density::widerPrior.information();
+  const double expected = sqrt((invSigma / (2 * M_PI)).determinant());
+  const double actual = density::widerPrior.evaluate(mean);
+  EXPECT_DOUBLES_EQUAL(expected, actual, 1e-9);
+
+  using density::key;
+  using density::sigma;
+
+  // Let's numerically integrate and see that we integrate to 1.0.
+  double integral = 0.0;
+  // Loop from -5*sigma to 5*sigma in 0.1*sigma steps:
+  for (double x = -5.0 * sigma; x <= 5.0 * sigma; x += 0.1 * sigma) {
+    VectorValues xValues;
+    xValues.insert(key, mean.at(key) + Vector1(x));
+    const double density = density::widerPrior.evaluate(xValues);
+    integral += 0.1 * sigma * density;
+  }
+  EXPECT_DOUBLES_EQUAL(1.0, integral, 1e-5);
+}
+
+/* ************************************************************************* */
 TEST( GaussianConditional, solve )
 {
   //expected solution

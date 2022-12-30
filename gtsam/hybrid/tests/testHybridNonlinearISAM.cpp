@@ -124,8 +124,7 @@ TEST(HybridNonlinearISAM, IncrementalInference) {
   isam.update(graph1, initial);
   HybridGaussianISAM bayesTree = isam.bayesTree();
 
-  auto discreteConditional_m0 =
-      bayesTree[M(0)]->conditional()->asDiscreteConditional();
+  auto discreteConditional_m0 = bayesTree[M(0)]->conditional()->asDiscrete();
   EXPECT(discreteConditional_m0->keys() == KeyVector({M(0)}));
 
   /********************************************************/
@@ -189,11 +188,11 @@ TEST(HybridNonlinearISAM, IncrementalInference) {
   DiscreteValues m00;
   m00[M(0)] = 0, m00[M(1)] = 0;
   DiscreteConditional decisionTree =
-      *(*discreteBayesTree)[M(1)]->conditional()->asDiscreteConditional();
+      *(*discreteBayesTree)[M(1)]->conditional()->asDiscrete();
   double m00_prob = decisionTree(m00);
 
   auto discreteConditional =
-      bayesTree[M(1)]->conditional()->asDiscreteConditional();
+      bayesTree[M(1)]->conditional()->asDiscrete();
 
   // Test the probability values with regression tests.
   DiscreteValues assignment;
@@ -564,7 +563,7 @@ TEST(HybridNonlinearISAM, NonTrivial) {
 
   // The final discrete graph should not be empty since we have eliminated
   // all continuous variables.
-  auto discreteTree = bayesTree[M(3)]->conditional()->asDiscreteConditional();
+  auto discreteTree = bayesTree[M(3)]->conditional()->asDiscrete();
   EXPECT_LONGS_EQUAL(3, discreteTree->size());
 
   // Test if the optimal discrete mode assignment is (1, 1, 1).

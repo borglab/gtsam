@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * GTSAM Copyright 2010-2022, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -65,6 +65,36 @@ TEST( GaussianBayesNet, Matrix )
 
   EXPECT(assert_equal(R,R1));
   EXPECT(assert_equal(d,d1));
+}
+
+/* ************************************************************************* */
+// Check that the evaluate function matches direct calculation with R.
+TEST(GaussianBayesNet, Evaluate1) {
+  // Let's evaluate at the mean
+  const VectorValues mean = smallBayesNet.optimize();
+
+  // We get the matrix, which has noise model applied!
+  const Matrix R = smallBayesNet.matrix().first;
+  const Matrix invSigma = R.transpose() * R;
+
+  // The Bayes net is a Gaussian density ~ exp (-0.5*(Rx-d)'*(Rx-d))
+  // which at the mean is 1.0! So, the only thing we need to calculate is
+  // the normalization constant 1.0/sqrt((2*pi*Sigma).det()).
+  // The covariance matrix inv(Sigma) = R'*R, so the determinant is
+  const double expected = sqrt((invSigma / (2 * M_PI)).determinant());
+  const double actual = smallBayesNet.evaluate(mean);
+  EXPECT_DOUBLES_EQUAL(expected, actual, 1e-9);
+}
+
+// Check the evaluate with non-unit noise.
+TEST(GaussianBayesNet, Evaluate2) {
+  // See comments in test above.
+  const VectorValues mean = noisyBayesNet.optimize();
+  const Matrix R = noisyBayesNet.matrix().first;
+  const Matrix invSigma = R.transpose() * R;
+  const double expected = sqrt((invSigma / (2 * M_PI)).determinant());
+  const double actual = noisyBayesNet.evaluate(mean);
+  EXPECT_DOUBLES_EQUAL(expected, actual, 1e-9);
 }
 
 /* ************************************************************************* */
@@ -142,14 +172,18 @@ TEST( GaussianBayesNet, optimize3 )
 }
 
 /* ************************************************************************* */
-TEST(GaussianBayesNet, sample) {
-  GaussianBayesNet gbn;
-  Matrix A1 = (Matrix(2, 2) << 1., 2., 3., 4.).finished();
-  const Vector2 mean(20, 40), b(10, 10);
-  const double sigma = 0.01;
+namespace sampling {
+static Matrix A1 = (Matrix(2, 2) << 1., 2., 3., 4.).finished();
+static const Vector2 mean(20, 40), b(10, 10);
+static const double sigma = 0.01;
+static const GaussianBayesNet gbn =
+    list_of(GaussianConditional::FromMeanAndStddev(X(0), A1, X(1), b, sigma))(
+        GaussianDensity::FromMeanAndStddev(X(1), mean, sigma));
+}  // namespace sampling
 
-  gbn.add(GaussianConditional::FromMeanAndStddev(X(0), A1, X(1), b, sigma));
-  gbn.add(GaussianDensity::FromMeanAndStddev(X(1), mean, sigma));
+/* ************************************************************************* */
+TEST(GaussianBayesNet, sample) {
+  using namespace sampling;
 
   auto actual = gbn.sample();
   EXPECT_LONGS_EQUAL(2, actual.size());
@@ -163,6 +197,23 @@ TEST(GaussianBayesNet, sample) {
   // regression is not repeatable across platforms/versions :-(
   // EXPECT(assert_equal(Vector2(20.0129382, 40.0039798), actual[X(1)], 1e-5));
   // EXPECT(assert_equal(Vector2(110.032083, 230.039811), actual[X(0)], 1e-5));
+}
+
+/* ************************************************************************* */
+// Do Monte Carlo integration of square deviation, should be equal to 9.0.
+TEST(GaussianBayesNet, MonteCarloIntegration) {
+  GaussianBayesNet gbn;
+  gbn.push_back(noisyBayesNet.at(1));
+
+  double sum = 0.0;
+  constexpr size_t N = 1000;
+  // loop for N samples:
+  for (size_t i = 0; i < N; i++) {
+    const auto X_i = gbn.sample();
+    sum += pow(X_i[_y_].x() - 5.0, 2.0);
+  }
+  // Expected is variance = 3*3
+  EXPECT_DOUBLES_EQUAL(9.0, sum / N, 0.5); // Pretty high.
 }
 
 /* ************************************************************************* */

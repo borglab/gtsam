@@ -29,8 +29,7 @@ def smallBayesNet():
     """Create a small Bayes Net for testing"""
     bayesNet = GaussianBayesNet()
     I_1x1 = np.eye(1, dtype=float)
-    bayesNet.push_back(GaussianConditional(
-        _x_, [9.0], I_1x1, _y_, I_1x1))
+    bayesNet.push_back(GaussianConditional(_x_, [9.0], I_1x1, _y_, I_1x1))
     bayesNet.push_back(GaussianConditional(_y_, [5.0], I_1x1))
     return bayesNet
 
@@ -41,13 +40,21 @@ class TestGaussianBayesNet(GtsamTestCase):
     def test_matrix(self):
         """Test matrix method"""
         R, d = smallBayesNet().matrix()  # get matrix and RHS
-        R1 = np.array([
-            [1.0, 1.0],
-            [0.0, 1.0]])
+        R1 = np.array([[1.0, 1.0], [0.0, 1.0]])
         d1 = np.array([9.0, 5.0])
         np.testing.assert_equal(R, R1)
         np.testing.assert_equal(d, d1)
 
+    def test_sample(self):
+        """Test sample method"""
+        bayesNet = smallBayesNet()
+        sample = bayesNet.sample()
+        self.assertIsInstance(sample, gtsam.VectorValues)
 
-if __name__ == '__main__':
+        # standard deviation is 1.0 for both, so we set tolerance to 3*sigma
+        mean = bayesNet.optimize()
+        self.gtsamAssertEquals(sample, mean, tol=3.0)
+
+
+if __name__ == "__main__":
     unittest.main()
