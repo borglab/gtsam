@@ -204,16 +204,17 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
   };
   sum = GaussianMixtureFactor::Sum(sum, emptyGaussian);
 
-  using EliminationPair = GaussianFactorGraph::EliminationResult;
+  using EliminationPair =
+      std::pair<boost::shared_ptr<GaussianConditional>,
+                std::pair<boost::shared_ptr<GaussianFactor>, double>>;
 
   KeyVector keysOfEliminated;  // Not the ordering
   KeyVector keysOfSeparator;   // TODO(frank): Is this just (keys - ordering)?
 
   // This is the elimination method on the leaf nodes
-  auto eliminate = [&](const GaussianFactorGraph &graph)
-      -> GaussianFactorGraph::EliminationResult {
+  auto eliminate = [&](const GaussianFactorGraph &graph) -> EliminationPair {
     if (graph.empty()) {
-      return {nullptr, nullptr};
+      return {nullptr, std::make_pair(nullptr, 0.0)};
     }
 
 #ifdef HYBRID_TIMING
@@ -222,17 +223,21 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
 
     std::pair<boost::shared_ptr<GaussianConditional>,
               boost::shared_ptr<GaussianFactor>>
-        result = EliminatePreferCholesky(graph, frontalKeys);
+        conditional_factor = EliminatePreferCholesky(graph, frontalKeys);
 
     // Initialize the keysOfEliminated to be the keys of the
     // eliminated GaussianConditional
-    keysOfEliminated = result.first->keys();
-    keysOfSeparator = result.second->keys();
+    keysOfEliminated = conditional_factor.first->keys();
+    keysOfSeparator = conditional_factor.second->keys();
 
 #ifdef HYBRID_TIMING
     gttoc_(hybrid_eliminate);
 #endif
 
+    std::pair<boost::shared_ptr<GaussianConditional>,
+              std::pair<boost::shared_ptr<GaussianFactor>, double>>
+        result = std::make_pair(conditional_factor.first,
+                                std::make_pair(conditional_factor.second, 0.0));
     return result;
   };
 
@@ -257,16 +262,20 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
   // DiscreteFactor, with the error for each discrete choice.
   if (keysOfSeparator.empty()) {
     VectorValues empty_values;
-    auto factorProb = [&](const GaussianFactor::shared_ptr &factor) {
-      if (!factor) {
-        return 0.0;  // If nullptr, return 0.0 probability
-      } else {
-        // This is the probability q(μ) at the MLE point.
-        double error =
-            0.5 * std::abs(factor->augmentedInformation().determinant());
-        return std::exp(-error);
-      }
-    };
+    auto factorProb =
+        [&](const GaussianMixtureFactor::FactorAndLogZ &factor_z) {
+          if (!factor_z.first) {
+            return 0.0;  // If nullptr, return 0.0 probability
+          } else {
+            GaussianFactor::shared_ptr factor = factor_z.first;
+            double log_z = factor_z.second;
+            // This is the probability q(μ) at the MLE point.
+            double error =
+                0.5 * std::abs(factor->augmentedInformation().determinant()) +
+                log_z;
+            return std::exp(-error);
+          }
+        };
     DecisionTree<Key, double> fdt(separatorFactors, factorProb);
 
     auto discreteFactor =
