@@ -54,8 +54,11 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
 
   using Sum = DecisionTree<Key, GaussianFactorGraph>;
 
-  /// typedef for Decision Tree of Gaussian Factors
-  using Factors = DecisionTree<Key, GaussianFactor::shared_ptr>;
+  /// typedef of pair of Gaussian factor and log of normalizing constant.
+  using FactorAndLogZ = std::pair<GaussianFactor::shared_ptr, double>;
+  /// typedef for Decision Tree of Gaussian Factors and log-constant.
+  using Factors = DecisionTree<Key, FactorAndLogZ>;
+  using Mixture = DecisionTree<Key, GaussianFactor::shared_ptr>;
 
  private:
   /// Decision tree of Gaussian factors indexed by discrete keys.
@@ -87,7 +90,12 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
    */
   GaussianMixtureFactor(const KeyVector &continuousKeys,
                         const DiscreteKeys &discreteKeys,
-                        const Factors &factors);
+                        const Mixture &factors);
+
+  GaussianMixtureFactor(const KeyVector &continuousKeys,
+                        const DiscreteKeys &discreteKeys,
+                        const Factors &factors_and_z)
+      : Base(continuousKeys, discreteKeys), factors_(factors_and_z) {}
 
   /**
    * @brief Construct a new GaussianMixtureFactor object using a vector of
@@ -101,7 +109,7 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
                         const DiscreteKeys &discreteKeys,
                         const std::vector<GaussianFactor::shared_ptr> &factors)
       : GaussianMixtureFactor(continuousKeys, discreteKeys,
-                              Factors(discreteKeys, factors)) {}
+                              Mixture(discreteKeys, factors)) {}
 
   /// @}
   /// @name Testable
@@ -115,7 +123,7 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
   /// @}
 
   /// Getter for the underlying Gaussian Factor Decision Tree.
-  const Factors &factors();
+  const Mixture factors();
 
   /**
    * @brief Combine the Gaussian Factor Graphs in `sum` and `this` while
