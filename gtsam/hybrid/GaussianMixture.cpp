@@ -21,6 +21,7 @@
 #include <gtsam/base/utilities.h>
 #include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam/hybrid/GaussianMixture.h>
+#include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/inference/Conditional-inst.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
@@ -36,20 +37,17 @@ GaussianMixture::GaussianMixture(
       conditionals_(conditionals) {}
 
 /* *******************************************************************************/
-const GaussianMixture::Conditionals &GaussianMixture::conditionals() {
+const GaussianMixture::Conditionals &GaussianMixture::conditionals() const {
   return conditionals_;
 }
 
 /* *******************************************************************************/
-GaussianMixture GaussianMixture::FromConditionals(
+GaussianMixture::GaussianMixture(
     const KeyVector &continuousFrontals, const KeyVector &continuousParents,
     const DiscreteKeys &discreteParents,
-    const std::vector<GaussianConditional::shared_ptr> &conditionalsList) {
-  Conditionals dt(discreteParents, conditionalsList);
-
-  return GaussianMixture(continuousFrontals, continuousParents, discreteParents,
-                         dt);
-}
+    const std::vector<GaussianConditional::shared_ptr> &conditionalsList)
+    : GaussianMixture(continuousFrontals, continuousParents, discreteParents,
+                      Conditionals(discreteParents, conditionalsList)) {}
 
 /* *******************************************************************************/
 GaussianMixture::Sum GaussianMixture::add(
@@ -126,6 +124,36 @@ void GaussianMixture::print(const std::string &s,
           return "nullptr";
         }
       });
+}
+
+/* ************************************************************************* */
+KeyVector GaussianMixture::continuousParents() const {
+  // Get all parent keys:
+  const auto range = parents();
+  KeyVector continuousParentKeys(range.begin(), range.end());
+  // Loop over all discrete keys:
+  for (const auto &discreteKey : discreteKeys()) {
+    const Key key = discreteKey.first;
+    // remove that key from continuousParentKeys:
+    continuousParentKeys.erase(std::remove(continuousParentKeys.begin(),
+                                           continuousParentKeys.end(), key),
+                               continuousParentKeys.end());
+  }
+  return continuousParentKeys;
+}
+
+/* ************************************************************************* */
+boost::shared_ptr<GaussianMixtureFactor> GaussianMixture::likelihood(
+    const VectorValues &frontals) const {
+  // TODO(dellaert): check that values has all frontals
+  const DiscreteKeys discreteParentKeys = discreteKeys();
+  const KeyVector continuousParentKeys = continuousParents();
+  const GaussianMixtureFactor::Factors likelihoods(
+      conditionals(), [&](const GaussianConditional::shared_ptr &conditional) {
+        return conditional->likelihood(frontals);
+      });
+  return boost::make_shared<GaussianMixtureFactor>(
+      continuousParentKeys, discreteParentKeys, likelihoods);
 }
 
 /* ************************************************************************* */

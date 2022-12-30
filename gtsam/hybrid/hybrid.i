@@ -55,7 +55,7 @@ virtual class HybridDiscreteFactor {
 
 #include <gtsam/hybrid/GaussianMixtureFactor.h>
 class GaussianMixtureFactor : gtsam::HybridFactor {
-  static GaussianMixtureFactor FromFactors(
+  GaussianMixtureFactor(
       const gtsam::KeyVector& continuousKeys,
       const gtsam::DiscreteKeys& discreteKeys,
       const std::vector<gtsam::GaussianFactor::shared_ptr>& factorsList);
@@ -67,12 +67,13 @@ class GaussianMixtureFactor : gtsam::HybridFactor {
 
 #include <gtsam/hybrid/GaussianMixture.h>
 class GaussianMixture : gtsam::HybridFactor {
-  static GaussianMixture FromConditionals(
-      const gtsam::KeyVector& continuousFrontals,
-      const gtsam::KeyVector& continuousParents,
-      const gtsam::DiscreteKeys& discreteParents,
-      const std::vector<gtsam::GaussianConditional::shared_ptr>&
-          conditionalsList);
+  GaussianMixture(const gtsam::KeyVector& continuousFrontals,
+                  const gtsam::KeyVector& continuousParents,
+                  const gtsam::DiscreteKeys& discreteParents,
+                  const std::vector<gtsam::GaussianConditional::shared_ptr>&
+                      conditionalsList);
+
+  gtsam::GaussianMixtureFactor* likelihood(const gtsam::VectorValues &frontals) const;
 
   void print(string s = "GaussianMixture\n",
              const gtsam::KeyFormatter& keyFormatter =
@@ -105,18 +106,32 @@ class HybridBayesTree {
                  gtsam::DefaultKeyFormatter) const;
 };
 
-#include <gtsam/hybrid/HybridBayesTree.h>
+#include <gtsam/hybrid/HybridBayesNet.h>
 class HybridBayesNet {
   HybridBayesNet();
   void add(const gtsam::HybridConditional& s);
-  void addMixture(const gtsam::GaussianMixture& s);
-  void addGaussian(const gtsam::GaussianConditional& s);
-  void addDiscrete(const gtsam::DiscreteConditional& s);
-  void addDiscrete(const gtsam::DiscreteKey& key, string spec);
-  void addDiscrete(const gtsam::DiscreteKey& key,
-                   const gtsam::DiscreteKeys& parents, string spec);
-  void addDiscrete(const gtsam::DiscreteKey& key,
-                   const std::vector<gtsam::DiscreteKey>& parents, string spec);
+  void addMixture(const gtsam::GaussianMixture* s);
+  void addGaussian(const gtsam::GaussianConditional* s);
+  void addDiscrete(const gtsam::DiscreteConditional* s);
+
+  void emplaceMixture(const gtsam::GaussianMixture& s);
+  void emplaceMixture(const gtsam::KeyVector& continuousFrontals,
+                      const gtsam::KeyVector& continuousParents,
+                      const gtsam::DiscreteKeys& discreteParents,
+                      const std::vector<gtsam::GaussianConditional::shared_ptr>&
+                          conditionalsList);
+  void emplaceGaussian(const gtsam::GaussianConditional& s);
+  void emplaceDiscrete(const gtsam::DiscreteConditional& s);
+  void emplaceDiscrete(const gtsam::DiscreteKey& key, string spec);
+  void emplaceDiscrete(const gtsam::DiscreteKey& key,
+                       const gtsam::DiscreteKeys& parents, string spec);
+  void emplaceDiscrete(const gtsam::DiscreteKey& key,
+                       const std::vector<gtsam::DiscreteKey>& parents,
+                       string spec);
+
+  gtsam::GaussianMixture* atMixture(size_t i) const;
+  gtsam::GaussianConditional* atGaussian(size_t i) const;
+  gtsam::DiscreteConditional* atDiscrete(size_t i) const;
 
   bool empty() const;
   size_t size() const;
@@ -154,9 +169,8 @@ class HybridGaussianFactorGraph {
   void push_back(const gtsam::HybridBayesNet& bayesNet);
   void push_back(const gtsam::HybridBayesTree& bayesTree);
   void push_back(const gtsam::GaussianMixtureFactor* gmm);
-
-  void add(gtsam::DecisionTreeFactor* factor);
-  void add(gtsam::JacobianFactor* factor);
+  void push_back(gtsam::DecisionTreeFactor* factor);
+  void push_back(gtsam::JacobianFactor* factor);
 
   bool empty() const;
   void remove(size_t i);
@@ -166,6 +180,12 @@ class HybridGaussianFactorGraph {
 
   void print(string s = "") const;
   bool equals(const gtsam::HybridGaussianFactorGraph& fg, double tol = 1e-9) const;
+
+  // evaluation
+  double error(const gtsam::VectorValues& continuousValues,
+               const gtsam::DiscreteValues& discreteValues) const;
+  double probPrime(const gtsam::VectorValues& continuousValues,
+                   const gtsam::DiscreteValues& discreteValues) const;
 
   gtsam::HybridBayesNet* eliminateSequential();
   gtsam::HybridBayesNet* eliminateSequential(

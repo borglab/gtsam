@@ -84,12 +84,17 @@ namespace gtsam {
       const KEYS& keys, size_t nrFrontals, const VerticalBlockMatrix& augmentedMatrix,
       const SharedDiagonal& sigmas = SharedDiagonal());
 
-    /// Construct from mean A1 p1 + b and standard deviation.
+    /// Construct from mean `mu` and standard deviation `sigma`.
+    static GaussianConditional FromMeanAndStddev(Key key, const Vector& mu,
+                                                 double sigma);
+
+    /// Construct from conditional mean `A1 p1 + b` and standard deviation.
     static GaussianConditional FromMeanAndStddev(Key key, const Matrix& A,
                                                  Key parent, const Vector& b,
                                                  double sigma);
 
-    /// Construct from mean A1 p1 + A2 p2 + b and standard deviation.
+    /// Construct from conditional mean `A1 p1 + A2 p2 + b` and standard
+    /// deviation `sigma`.
     static GaussianConditional FromMeanAndStddev(Key key,  //
                                                  const Matrix& A1, Key parent1,
                                                  const Matrix& A2, Key parent2,
