@@ -23,17 +23,15 @@
 #include <gtsam/discrete/AlgebraicDecisionTree.h>
 #include <gtsam/discrete/DecisionTree.h>
 #include <gtsam/discrete/DiscreteKey.h>
-#include <gtsam/discrete/DiscreteValues.h>
-#include <gtsam/hybrid/HybridGaussianFactor.h>
+#include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/linear/GaussianFactor.h>
-#include <gtsam/linear/VectorValues.h>
 
 namespace gtsam {
 
 class GaussianFactorGraph;
-
-// Needed for wrapper.
-using GaussianFactorVector = std::vector<gtsam::GaussianFactor::shared_ptr>;
+class HybridValues;
+class DiscreteValues;
+class VectorValues;
 
 /**
  * @brief Implementation of a discrete conditional mixture factor.
@@ -53,12 +51,27 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
   using shared_ptr = boost::shared_ptr<This>;
 
   using Sum = DecisionTree<Key, GaussianFactorGraph>;
+  using sharedFactor = boost::shared_ptr<GaussianFactor>;
 
-  /// typedef of pair of Gaussian factor and log of normalizing constant.
-  using FactorAndLogZ = std::pair<GaussianFactor::shared_ptr, double>;
-  /// typedef for Decision Tree of Gaussian Factors and log-constant.
-  using Factors = DecisionTree<Key, FactorAndLogZ>;
-  using Mixture = DecisionTree<Key, GaussianFactor::shared_ptr>;
+  /// Gaussian factor and log of normalizing constant.
+  struct FactorAndConstant {
+    sharedFactor factor;
+    double constant;
+
+    // Return error with constant added.
+    double error(const VectorValues &values) const {
+      return factor->error(values) + constant;
+    }
+
+    // Check pointer equality.
+    bool operator==(const FactorAndConstant &other) const {
+      return factor == other.factor && constant == other.constant;
+    }
+  };
+
+  /// typedef for Decision Tree of Gaussian factors and log-constant.
+  using Factors = DecisionTree<Key, FactorAndConstant>;
+  using Mixture = DecisionTree<Key, sharedFactor>;
 
  private:
   /// Decision tree of Gaussian factors indexed by discrete keys.
@@ -85,7 +98,7 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
    * @param continuousKeys A vector of keys representing continuous variables.
    * @param discreteKeys A vector of keys representing discrete variables and
    * their cardinalities.
-   * @param factors The decision tree of Gaussian Factors stored as the mixture
+   * @param factors The decision tree of Gaussian factors stored as the mixture
    * density.
    */
   GaussianMixtureFactor(const KeyVector &continuousKeys,
@@ -107,7 +120,7 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
    */
   GaussianMixtureFactor(const KeyVector &continuousKeys,
                         const DiscreteKeys &discreteKeys,
-                        const std::vector<GaussianFactor::shared_ptr> &factors)
+                        const std::vector<sharedFactor> &factors)
       : GaussianMixtureFactor(continuousKeys, discreteKeys,
                               Mixture(discreteKeys, factors)) {}
 
@@ -121,9 +134,11 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
       const std::string &s = "GaussianMixtureFactor\n",
       const KeyFormatter &formatter = DefaultKeyFormatter) const override;
   /// @}
+  /// @name Standard API
+  /// @{
 
   /// Getter for the underlying Gaussian Factor Decision Tree.
-  const Mixture factors();
+  const Mixture factors() const;
 
   /**
    * @brief Combine the Gaussian Factor Graphs in `sum` and `this` while
@@ -145,21 +160,17 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
   AlgebraicDecisionTree<Key> error(const VectorValues &continuousValues) const;
 
   /**
-   * @brief Compute the error of this Gaussian Mixture given the continuous
-   * values and a discrete assignment.
-   *
-   * @param continuousValues Continuous values at which to compute the error.
-   * @param discreteValues The discrete assignment for a specific mode sequence.
+   * @brief Compute the log-likelihood, including the log-normalizing constant.
    * @return double
    */
-  double error(const VectorValues &continuousValues,
-               const DiscreteValues &discreteValues) const;
+  double error(const HybridValues &values) const;
 
   /// Add MixtureFactor to a Sum, syntactic sugar.
   friend Sum &operator+=(Sum &sum, const GaussianMixtureFactor &factor) {
     sum = factor.add(sum);
     return sum;
   }
+  /// @}
 };
 
 // traits

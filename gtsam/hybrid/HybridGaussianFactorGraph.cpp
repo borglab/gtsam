@@ -263,16 +263,15 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
   if (keysOfSeparator.empty()) {
     VectorValues empty_values;
     auto factorProb =
-        [&](const GaussianMixtureFactor::FactorAndLogZ &factor_z) {
-          if (!factor_z.first) {
+        [&](const GaussianMixtureFactor::FactorAndConstant &factor_z) {
+          GaussianFactor::shared_ptr factor = factor_z.factor;
+          if (!factor) {
             return 0.0;  // If nullptr, return 0.0 probability
           } else {
-            GaussianFactor::shared_ptr factor = factor_z.first;
-            double log_z = factor_z.second;
             // This is the probability q(μ) at the MLE point.
             double error =
                 0.5 * std::abs(factor->augmentedInformation().determinant()) +
-                log_z;
+                factor_z.constant;
             return std::exp(-error);
           }
         };
