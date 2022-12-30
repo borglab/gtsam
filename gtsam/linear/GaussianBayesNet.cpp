@@ -46,7 +46,8 @@ namespace gtsam {
     return optimize(solution);
   }
 
-  VectorValues GaussianBayesNet::optimize(VectorValues solution) const {
+  VectorValues GaussianBayesNet::optimize(const VectorValues& given) const {
+    VectorValues solution = given;
     // (R*x)./sigmas = y by solving x=inv(R)*(y.*sigmas)
     // solve each node in reverse topological sort order (parents first)
     for (auto cg : boost::adaptors::reverse(*this)) {
@@ -221,6 +222,20 @@ namespace gtsam {
       logDet += cg->logDeterminant();
     }
     return logDet;
+  }
+
+  /* ************************************************************************* */
+  double GaussianBayesNet::logDensity(const VectorValues& x) const {
+    double sum = 0.0;
+    for (const auto& conditional : *this) {
+      if (conditional) sum += conditional->logDensity(x);
+    }
+    return sum;
+  }
+
+  /* ************************************************************************* */
+  double GaussianBayesNet::evaluate(const VectorValues& x) const {
+    return exp(logDensity(x));
   }
 
   /* ************************************************************************* */
