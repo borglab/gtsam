@@ -282,8 +282,7 @@ AlgebraicDecisionTree<Key> getProbPrimeTree(
 
 /****************************************************************************/
 /**
- * Test for correctness of different branches of the P'(Continuous |
- Discrete).
+ * Test for correctness of different branches of the P'(Continuous | Discrete).
  * The values should match those of P'(Continuous) for each discrete mode.
  */
 TEST(HybridEstimation, Probability) {
