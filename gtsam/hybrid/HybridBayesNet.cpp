@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------
- * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * GTSAM Copyright 2010-2022, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -12,6 +12,7 @@
  * @author Fan Jiang
  * @author Varun Agrawal
  * @author Shangjie Xue
+ * @author Frank Dellaert
  * @date   January 2022
  */
 
@@ -321,10 +322,9 @@ HybridValues HybridBayesNet::sample() const {
 }
 
 /* ************************************************************************* */
-double HybridBayesNet::error(const VectorValues &continuousValues,
-                             const DiscreteValues &discreteValues) const {
-  GaussianBayesNet gbn = choose(discreteValues);
-  return gbn.error(continuousValues);
+double HybridBayesNet::error(const HybridValues &values) const {
+  GaussianBayesNet gbn = choose(values.discrete());
+  return gbn.error(values.continuous());
 }
 
 /* ************************************************************************* */
