@@ -135,6 +135,14 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
 
         self.assertEqual(fg.size(), 3)
 
+    @staticmethod
+    def calculate_ratio(bayesNet, fg, sample):
+        """Calculate ratio  between Bayes net probability and the factor graph."""
+        continuous = gtsam.VectorValues()
+        continuous.insert(X(0), sample.at(X(0)))
+        return bayesNet.evaluate(sample) / fg.probPrime(
+            continuous, sample.discrete())
+
     def test_ratio(self):
         """
         Given a tiny two variable hybrid model, with 2 measurements,
@@ -161,18 +169,26 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         fg.push_back(bayesNet.atGaussian(2))
         fg.push_back(bayesNet.atDiscrete(3))
 
+        # print(fg)
         self.assertEqual(fg.size(), 4)
 
         # Calculate ratio between Bayes net probability and the factor graph:
-        continuousValues = gtsam.VectorValues()
-        continuousValues.insert(X(0), sample.at(X(0)))
-        discreteValues = sample.discrete()
-        expected_ratio = bayesNet.evaluate(sample) / fg.probPrime(
-            continuousValues, discreteValues)
-        #TODO(Varun) This should be 1. Adding the normalizing factor should fix fg.probPrime
-        print(expected_ratio)
+        expected_ratio = self.calculate_ratio(bayesNet, fg, sample)
+        # print(f"expected_ratio: {expected_ratio}\n")
 
-        # TODO(dellaert): Change the mode to 0 and calculate the ratio again.
+        # Create measurements from the sample.
+        measurements = gtsam.VectorValues()
+        for i in range(2):
+            measurements.insert(Z(i), sample.at(Z(i)))
+
+        # Check with a number of other samples.
+        for i in range(10):
+            other = bayesNet.sample()
+            other.update(measurements)
+            # print(other)
+            # ratio = self.calculate_ratio(bayesNet, fg, other)
+            # print(f"Ratio: {ratio}\n")
+            # self.assertAlmostEqual(ratio, expected_ratio)
 
 
 if __name__ == "__main__":
