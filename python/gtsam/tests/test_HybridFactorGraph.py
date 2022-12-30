@@ -11,30 +11,20 @@ Author: Fan Jiang
 # pylint: disable=invalid-name, no-name-in-module, no-member
 
 import unittest
-import math
 
 import numpy as np
 from gtsam.symbol_shorthand import C, M, X, Z
 from gtsam.utils.test_case import GtsamTestCase
 
 import gtsam
-from gtsam import (
-    DecisionTreeFactor,
-    DiscreteConditional,
-    DiscreteKeys,
-    GaussianConditional,
-    GaussianMixture,
-    GaussianMixtureFactor,
-    HybridGaussianFactorGraph,
-    JacobianFactor,
-    Ordering,
-    noiseModel,
-)
+from gtsam import (DiscreteConditional, DiscreteKeys, GaussianConditional,
+                   GaussianMixture, GaussianMixtureFactor,
+                   HybridGaussianFactorGraph, JacobianFactor, Ordering,
+                   noiseModel)
 
 
 class TestHybridGaussianFactorGraph(GtsamTestCase):
     """Unit tests for HybridGaussianFactorGraph."""
-
     def test_create(self):
         """Test construction of hybrid factor graph."""
         model = noiseModel.Unit.Create(3)
@@ -52,8 +42,8 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         hfg.push_back(gmf)
 
         hbn = hfg.eliminateSequential(
-            Ordering.ColamdConstrainedLastHybridGaussianFactorGraph(hfg, [C(0)])
-        )
+            Ordering.ColamdConstrainedLastHybridGaussianFactorGraph(
+                hfg, [C(0)]))
 
         self.assertEqual(hbn.size(), 2)
 
@@ -84,8 +74,8 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         hfg.push_back(dtf)
 
         hbn = hfg.eliminateSequential(
-            Ordering.ColamdConstrainedLastHybridGaussianFactorGraph(hfg, [C(0)])
-        )
+            Ordering.ColamdConstrainedLastHybridGaussianFactorGraph(
+                hfg, [C(0)]))
 
         hv = hbn.optimize()
         self.assertEqual(hv.atDiscrete(C(0)), 1)
@@ -105,15 +95,16 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         keys = DiscreteKeys()
         keys.push_back(mode)
         for i in range(num_measurements):
-            conditional0 = GaussianConditional.FromMeanAndStddev(
-                Z(i), I, X(0), [0], sigma=0.5
-            )
-            conditional1 = GaussianConditional.FromMeanAndStddev(
-                Z(i), I, X(0), [0], sigma=3
-            )
-            bayesNet.emplaceMixture(
-                [Z(i)], [X(0)], keys, [conditional0, conditional1]
-            )
+            conditional0 = GaussianConditional.FromMeanAndStddev(Z(i),
+                                                                 I,
+                                                                 X(0), [0],
+                                                                 sigma=0.5)
+            conditional1 = GaussianConditional.FromMeanAndStddev(Z(i),
+                                                                 I,
+                                                                 X(0), [0],
+                                                                 sigma=3)
+            bayesNet.emplaceMixture([Z(i)], [X(0)], keys,
+                                    [conditional0, conditional1])
 
         # Create prior on X(0).
         prior_on_x0 = GaussianConditional.FromMeanAndStddev(X(0), [5.0], 5.0)
@@ -148,8 +139,7 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         continuous = gtsam.VectorValues()
         continuous.insert(X(0), sample.at(X(0)))
         return bayesNet.evaluate(sample) / fg.probPrime(
-            continuous, sample.discrete()
-        )
+            continuous, sample.discrete())
 
     def test_tiny2(self):
         """Test a tiny two variable hybrid model, with 2 measurements."""
@@ -186,7 +176,7 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
             other = bayesNet.sample()
             other.update(measurements)
             # print(other)
-            ratio = self.calculate_ratio(bayesNet, fg, other)
+            # ratio = self.calculate_ratio(bayesNet, fg, other)
             # print(f"Ratio: {ratio}\n")
             # self.assertAlmostEqual(ratio, expected_ratio)
 
