@@ -30,6 +30,7 @@
 namespace gtsam {
 
 class GaussianMixtureFactor;
+class HybridValues;
 
 /**
  * @brief A conditional of gaussian mixtures indexed by discrete variables, as
@@ -87,7 +88,7 @@ class GTSAM_EXPORT GaussianMixture
   /// @name Constructors
   /// @{
 
-  /// Defaut constructor, mainly for serialization.
+  /// Default constructor, mainly for serialization.
   GaussianMixture() = default;
 
   /**
@@ -135,6 +136,7 @@ class GTSAM_EXPORT GaussianMixture
   /// @name Standard API
   /// @{
 
+  /// @brief Return the conditional Gaussian for the given discrete assignment.
   GaussianConditional::shared_ptr operator()(
       const DiscreteValues &discreteValues) const;
 
@@ -165,12 +167,10 @@ class GTSAM_EXPORT GaussianMixture
    * @brief Compute the error of this Gaussian Mixture given the continuous
    * values and a discrete assignment.
    *
-   * @param continuousValues Continuous values at which to compute the error.
-   * @param discreteValues The discrete assignment for a specific mode sequence.
+   * @param values Continuous values and discrete assignment.
    * @return double
    */
-  double error(const VectorValues &continuousValues,
-               const DiscreteValues &discreteValues) const;
+  double error(const HybridValues &values) const;
 
   /**
    * @brief Prune the decision tree of Gaussian factors as per the discrete
@@ -193,7 +193,7 @@ class GTSAM_EXPORT GaussianMixture
 };
 
 /// Return the DiscreteKey vector as a set.
-std::set<DiscreteKey> DiscreteKeysAsSet(const DiscreteKeys &dkeys);
+std::set<DiscreteKey> DiscreteKeysAsSet(const DiscreteKeys &discreteKeys);
 
 // traits
 template <>

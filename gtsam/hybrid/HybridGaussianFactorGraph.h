@@ -186,14 +186,9 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
    * @brief Compute error given a continuous vector values
    * and a discrete assignment.
    *
-   * @param continuousValues The continuous VectorValues
-   * for computing the error.
-   * @param discreteValues The specific discrete assignment
-   * whose error we wish to compute.
    * @return double
    */
-  double error(const VectorValues& continuousValues,
-               const DiscreteValues& discreteValues) const;
+  double error(const HybridValues& values) const;
 
   /**
    * @brief Compute unnormalized probability \f$ P(X | M, Z) \f$
@@ -210,13 +205,9 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
    * @brief Compute the unnormalized posterior probability for a continuous
    * vector values given a specific assignment.
    *
-   * @param continuousValues The vector values for which to compute the
-   * posterior probability.
-   * @param discreteValues The specific assignment to use for the computation.
    * @return double
    */
-  double probPrime(const VectorValues& continuousValues,
-                   const DiscreteValues& discreteValues) const;
+  double probPrime(const HybridValues& values) const;
 
   /**
    * @brief Return a Colamd constrained ordering where the discrete keys are

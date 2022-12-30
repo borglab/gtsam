@@ -55,13 +55,14 @@
 
 namespace gtsam {
 
+/// Specialize EliminateableFactorGraph for HybridGaussianFactorGraph:
 template class EliminateableFactorGraph<HybridGaussianFactorGraph>;
 
 /* ************************************************************************ */
 static GaussianMixtureFactor::Sum &addGaussian(
     GaussianMixtureFactor::Sum &sum, const GaussianFactor::shared_ptr &factor) {
   using Y = GaussianFactorGraph;
-  // If the decision tree is not intiialized, then intialize it.
+  // If the decision tree is not initialized, then initialize it.
   if (sum.empty()) {
     GaussianFactorGraph result;
     result.push_back(factor);
@@ -89,8 +90,9 @@ GaussianMixtureFactor::Sum sumFrontals(
 
   for (auto &f : factors) {
     if (f->isHybrid()) {
-      if (auto cgmf = boost::dynamic_pointer_cast<GaussianMixtureFactor>(f)) {
-        sum = cgmf->add(sum);
+      // TODO(dellaert): just use a virtual method defined in HybridFactor.
+      if (auto gm = boost::dynamic_pointer_cast<GaussianMixtureFactor>(f)) {
+        sum = gm->add(sum);
       }
       if (auto gm = boost::dynamic_pointer_cast<HybridConditional>(f)) {
         sum = gm->asMixture()->add(sum);
@@ -184,7 +186,7 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
                   const KeySet &continuousSeparator,
                   const std::set<DiscreteKey> &discreteSeparatorSet) {
   // NOTE: since we use the special JunctionTree,
-  // only possiblity is continuous conditioned on discrete.
+  // only possibility is continuous conditioned on discrete.
   DiscreteKeys discreteSeparator(discreteSeparatorSet.begin(),
                                  discreteSeparatorSet.end());
 
@@ -251,8 +253,7 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
 
   // Separate out decision tree into conditionals and remaining factors.
   auto pair = unzip(eliminationResults);
-
-  const GaussianMixtureFactor::Factors &separatorFactors = pair.second;
+  const auto &separatorFactors = pair.second;
 
   // Create the GaussianMixture from the conditionals
   auto conditional = boost::make_shared<GaussianMixture>(
@@ -460,6 +461,7 @@ AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::error(
 
   // Iterate over each factor.
   for (size_t idx = 0; idx < size(); idx++) {
+    // TODO(dellaert): just use a virtual method defined in HybridFactor.
     AlgebraicDecisionTree<Key> factor_error;
 
     if (factors_.at(idx)->isHybrid()) {
@@ -499,27 +501,26 @@ AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::error(
 }
 
 /* ************************************************************************ */
-double HybridGaussianFactorGraph::error(
-    const VectorValues &continuousValues,
-    const DiscreteValues &discreteValues) const {
+double HybridGaussianFactorGraph::error(const HybridValues &values) const {
   double error = 0.0;
   for (size_t idx = 0; idx < size(); idx++) {
+    // TODO(dellaert): just use a virtual method defined in HybridFactor.
     auto factor = factors_.at(idx);
 
     if (factor->isHybrid()) {
       if (auto c = boost::dynamic_pointer_cast<HybridConditional>(factor)) {
-        error += c->asMixture()->error(continuousValues, discreteValues);
+        error += c->asMixture()->error(values);
       }
       if (auto f = boost::dynamic_pointer_cast<GaussianMixtureFactor>(factor)) {
-        error += f->error(continuousValues, discreteValues);
+        error += f->error(values);
       }
 
     } else if (factor->isContinuous()) {
       if (auto f = boost::dynamic_pointer_cast<HybridGaussianFactor>(factor)) {
-        error += f->inner()->error(continuousValues);
+        error += f->inner()->error(values.continuous());
       }
       if (auto cg = boost::dynamic_pointer_cast<HybridConditional>(factor)) {
-        error += cg->asGaussian()->error(continuousValues);
+        error += cg->asGaussian()->error(values.continuous());
       }
     }
   }
@@ -527,10 +528,8 @@ double HybridGaussianFactorGraph::error(
 }
 
 /* ************************************************************************ */
-double HybridGaussianFactorGraph::probPrime(
-    const VectorValues &continuousValues,
-    const DiscreteValues &discreteValues) const {
-  double error = this->error(continuousValues, discreteValues);
+double HybridGaussianFactorGraph::probPrime(const HybridValues &values) const {
+  double error = this->error(values);
   // NOTE: The 0.5 term is handled by each factor
   return std::exp(-error);
 }

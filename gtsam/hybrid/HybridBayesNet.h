@@ -206,12 +206,10 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    * @brief 0.5 * sum of squared Mahalanobis distances
    * for a specific discrete assignment.
    *
-   * @param continuousValues Continuous values at which to compute the error.
-   * @param discreteValues Discrete assignment for a specific mode sequence.
+   * @param values Continuous values and discrete assignment.
    * @return double
    */
-  double error(const VectorValues &continuousValues,
-               const DiscreteValues &discreteValues) const;
+  double error(const HybridValues &values) const;
 
   /**
    * @brief Compute conditional error for each discrete assignment,
