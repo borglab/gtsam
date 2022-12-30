@@ -249,7 +249,7 @@ HybridValues HybridBayesNet::optimize() const {
   DiscreteValues mpe = DiscreteFactorGraph(discrete_bn).optimize();
 
   // Given the MPE, compute the optimal continuous values.
-  return HybridValues(optimize(mpe)), mpe);
+  return HybridValues(optimize(mpe), mpe);
 }
 
 /* ************************************************************************* */

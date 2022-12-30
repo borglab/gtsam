@@ -540,27 +540,4 @@ AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::probPrime(
   return prob_tree;
 }
 
-/* ************************************************************************ */
-std::pair<Ordering, Ordering>
-HybridGaussianFactorGraph::separateContinuousDiscreteOrdering(
-    const Ordering &ordering) const {
-  KeySet all_continuous_keys = this->continuousKeys();
-  KeySet all_discrete_keys = this->discreteKeys();
-  Ordering continuous_ordering, discrete_ordering;
-
-  for (auto &&key : ordering) {
-    if (std::find(all_continuous_keys.begin(), all_continuous_keys.end(),
-                  key) != all_continuous_keys.end()) {
-      continuous_ordering.push_back(key);
-    } else if (std::find(all_discrete_keys.begin(), all_discrete_keys.end(),
-                         key) != all_discrete_keys.end()) {
-      discrete_ordering.push_back(key);
-    } else {
-      throw std::runtime_error("Key in ordering not present in factors.");
-    }
-  }
-
-  return std::make_pair(continuous_ordering, discrete_ordering);
-}
-
 }  // namespace gtsam
