@@ -125,7 +125,8 @@ AlgebraicDecisionTree<Key> GaussianMixtureFactor::error(
 /* *******************************************************************************/
 double GaussianMixtureFactor::error(const HybridValues &values) const {
   const FactorAndConstant factor_z = factors_(values.discrete());
-  return factor_z.factor->error(values.continuous()) + factor_z.constant;
+  return factor_z.error(values.continuous());
 }
+/* *******************************************************************************/
 
 }  // namespace gtsam

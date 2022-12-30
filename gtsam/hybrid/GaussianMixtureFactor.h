@@ -58,9 +58,11 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
     sharedFactor factor;
     double constant;
 
-    // Return error with constant added.
+    // Return error with constant correction.
     double error(const VectorValues &values) const {
-      return factor->error(values) + constant;
+      // Note minus sign: constant is log of normalization constant for probabilities.
+      // Errors is the negative log-likelihood, hence we subtract the constant here.
+      return factor->error(values) - constant;
     }
 
     // Check pointer equality.
