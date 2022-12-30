@@ -273,7 +273,7 @@ AlgebraicDecisionTree<Key> getProbPrimeTree(
       continue;
     }
 
-    double error = graph.error(delta, assignment);
+    double error = graph.error({delta, assignment});
     probPrimes.push_back(exp(-error));
   }
   AlgebraicDecisionTree<Key> probPrimeTree(discrete_keys, probPrimes);
@@ -487,8 +487,8 @@ TEST(HybridEstimation, CorrectnessViaSampling) {
          const HybridValues& sample) -> double {
     const DiscreteValues assignment = sample.discrete();
     // Compute in log form for numerical stability
-    double log_ratio = bayesNet->error(sample.continuous(), assignment) -
-                       factorGraph->error(sample.continuous(), assignment);
+    double log_ratio = bayesNet->error({sample.continuous(), assignment}) -
+                       factorGraph->error({sample.continuous(), assignment});
     double ratio = exp(-log_ratio);
     return ratio;
   };

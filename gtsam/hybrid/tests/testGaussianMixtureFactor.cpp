@@ -22,6 +22,7 @@
 #include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam/hybrid/GaussianMixture.h>
 #include <gtsam/hybrid/GaussianMixtureFactor.h>
+#include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
@@ -188,7 +189,8 @@ TEST(GaussianMixtureFactor, Error) {
   DiscreteValues discreteValues;
   discreteValues[m1.first] = 1;
   EXPECT_DOUBLES_EQUAL(
-      4.0, mixtureFactor.error({continuousValues, discreteValues}), 1e-9);
+      4.0, mixtureFactor.error({continuousValues, discreteValues}),
+      1e-9);
 }
 
 /* ************************************************************************* */
