@@ -58,7 +58,7 @@ HybridValues HybridBayesTree::optimize() const {
   }
 
   VectorValues values = optimize(mpe);
-  return HybridValues(mpe, values);
+  return HybridValues(values, mpe);
 }
 
 /* ************************************************************************* */

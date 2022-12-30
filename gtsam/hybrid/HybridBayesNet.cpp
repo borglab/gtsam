@@ -218,7 +218,7 @@ HybridValues HybridBayesNet::optimize() const {
 
   // Given the MPE, compute the optimal continuous values.
   GaussianBayesNet gbn = choose(mpe);
-  return HybridValues(mpe, gbn.optimize());
+  return HybridValues(gbn.optimize(), mpe);
 }
 
 /* ************************************************************************* */
@@ -267,7 +267,7 @@ HybridValues HybridBayesNet::sample(const HybridValues &given,
   GaussianBayesNet gbn = choose(assignment);
   // Sample from the Gaussian Bayes net.
   VectorValues sample = gbn.sample(given.continuous(), rng);
-  return {assignment, sample};
+  return {sample, assignment};
 }
 
 /* ************************************************************************* */

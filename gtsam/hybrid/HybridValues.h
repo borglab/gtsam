@@ -37,11 +37,11 @@ namespace gtsam {
  */
 class GTSAM_EXPORT HybridValues {
  private:
-  // DiscreteValue stored the discrete components of the HybridValues.
-  DiscreteValues discrete_;
-
   // VectorValue stored the continuous components of the HybridValues.
   VectorValues continuous_;
+
+  // DiscreteValue stored the discrete components of the HybridValues.
+  DiscreteValues discrete_;
 
  public:
   /// @name Standard Constructors
@@ -51,8 +51,8 @@ class GTSAM_EXPORT HybridValues {
   HybridValues() = default;
 
   /// Construct from DiscreteValues and VectorValues.
-  HybridValues(const DiscreteValues& dv, const VectorValues& cv)
-      : discrete_(dv), continuous_(cv){};
+  HybridValues(const VectorValues& cv, const DiscreteValues& dv)
+      : continuous_(cv), discrete_(dv){};
 
   /// @}
   /// @name Testable
@@ -62,15 +62,15 @@ class GTSAM_EXPORT HybridValues {
   void print(const std::string& s = "HybridValues",
              const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     std::cout << s << ": \n";
-    discrete_.print("  Discrete", keyFormatter);  // print discrete components
     continuous_.print("  Continuous",
-                      keyFormatter);  // print continuous components
+                      keyFormatter);              // print continuous components
+    discrete_.print("  Discrete", keyFormatter);  // print discrete components
   };
 
   /// equals required by Testable for unit testing
   bool equals(const HybridValues& other, double tol = 1e-9) const {
-    return discrete_.equals(other.discrete_, tol) &&
-           continuous_.equals(other.continuous_, tol);
+    return continuous_.equals(other.continuous_, tol) &&
+           discrete_.equals(other.discrete_, tol);
   }
 
   /// @}
@@ -96,7 +96,7 @@ class GTSAM_EXPORT HybridValues {
    * the key \c j is already used.
    * @param value The vector to be inserted.
    * @param j The index with which the value will be associated. */
-  void insert(Key j, int value) { discrete_[j] = value; };
+  void insert(Key j, size_t value) { discrete_[j] = value; };
 
   /** Insert a vector \c value with key \c j.  Throws an invalid_argument
    * exception if the key \c j is already used.
@@ -130,8 +130,8 @@ class GTSAM_EXPORT HybridValues {
   std::string html(
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     std::stringstream ss;
-    ss << this->discrete_.html(keyFormatter);
     ss << this->continuous_.html(keyFormatter);
+    ss << this->discrete_.html(keyFormatter);
     return ss.str();
   };
 
