@@ -188,14 +188,14 @@ TEST(HybridBayesNet, Optimize) {
 
   HybridValues delta = hybridBayesNet->optimize();
 
-  //TODO(Varun) The expectedAssignment should be 111, not 101
+  // TODO(Varun) The expectedAssignment should be 111, not 101
   DiscreteValues expectedAssignment;
   expectedAssignment[M(0)] = 1;
   expectedAssignment[M(1)] = 0;
   expectedAssignment[M(2)] = 1;
   EXPECT(assert_equal(expectedAssignment, delta.discrete()));
 
-  //TODO(Varun) This should be all -Vector1::Ones()
+  // TODO(Varun) This should be all -Vector1::Ones()
   VectorValues expectedValues;
   expectedValues.insert(X(0), -0.999904 * Vector1::Ones());
   expectedValues.insert(X(1), -0.99029 * Vector1::Ones());
@@ -243,8 +243,8 @@ TEST(HybridBayesNet, Error) {
   double total_error = 0;
   for (size_t idx = 0; idx < hybridBayesNet->size(); idx++) {
     if (hybridBayesNet->at(idx)->isHybrid()) {
-      double error = hybridBayesNet->atMixture(idx)->error(delta.continuous(),
-                                                           discrete_values);
+      double error = hybridBayesNet->atMixture(idx)->error(
+          {delta.continuous(), discrete_values});
       total_error += error;
     } else if (hybridBayesNet->at(idx)->isContinuous()) {
       double error = hybridBayesNet->atGaussian(idx)->error(delta.continuous());
@@ -253,7 +253,7 @@ TEST(HybridBayesNet, Error) {
   }
 
   EXPECT_DOUBLES_EQUAL(
-      total_error, hybridBayesNet->error(delta.continuous(), discrete_values),
+      total_error, hybridBayesNet->error({delta.continuous(), discrete_values}),
       1e-9);
   EXPECT_DOUBLES_EQUAL(total_error, error_tree(discrete_values), 1e-9);
   EXPECT_DOUBLES_EQUAL(total_error, pruned_error_tree(discrete_values), 1e-9);
