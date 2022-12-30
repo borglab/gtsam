@@ -261,6 +261,7 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
       if (!factor) {
         return 0.0;  // If nullptr, return 0.0 probability
       } else {
+        // This is the probability q(μ) at the MLE point.
         double error =
             0.5 * std::abs(factor->augmentedInformation().determinant());
         return std::exp(-error);
@@ -396,18 +397,16 @@ EliminateHybrid(const HybridGaussianFactorGraph &factors,
   if (discrete_only) {
     // Case 1: we are only dealing with discrete
     return discreteElimination(factors, frontalKeys);
-  } else {
+  } else if (mapFromKeyToDiscreteKey.empty()) {
     // Case 2: we are only dealing with continuous
-    if (mapFromKeyToDiscreteKey.empty()) {
-      return continuousElimination(factors, frontalKeys);
-    } else {
-      // Case 3: We are now in the hybrid land!
+    return continuousElimination(factors, frontalKeys);
+  } else {
+    // Case 3: We are now in the hybrid land!
 #ifdef HYBRID_TIMING
-      tictoc_reset_();
+    tictoc_reset_();
 #endif
-      return hybridElimination(factors, frontalKeys, continuousSeparator,
-                               discreteSeparatorSet);
-    }
+    return hybridElimination(factors, frontalKeys, continuousSeparator,
+                             discreteSeparatorSet);
   }
 }
 

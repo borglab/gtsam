@@ -72,25 +72,44 @@ Ordering getOrdering(HybridGaussianFactorGraph& factors,
 }
 
 TEST(HybridEstimation, Full) {
-  size_t K = 3;
-  std::vector<double> measurements = {0, 1, 2};
+  size_t K = 6;
+  std::vector<double> measurements = {0, 1, 2, 2, 2, 3};
   // Ground truth discrete seq
-  std::vector<size_t> discrete_seq = {1, 1, 0};
+  std::vector<size_t> discrete_seq = {1, 1, 0, 0, 1};
   // Switching example of robot moving in 1D
   // with given measurements and equal mode priors.
   Switching switching(K, 1.0, 0.1, measurements, "1/1 1/1");
   HybridGaussianFactorGraph graph = switching.linearizedFactorGraph;
 
   Ordering hybridOrdering;
-  hybridOrdering += X(0);
-  hybridOrdering += X(1);
-  hybridOrdering += X(2);
-  hybridOrdering += M(0);
-  hybridOrdering += M(1);
+  for (size_t k = 0; k < K; k++) {
+    hybridOrdering += X(k);
+  }
+  for (size_t k = 0; k < K - 1; k++) {
+    hybridOrdering += M(k);
+  }
+
   HybridBayesNet::shared_ptr bayesNet =
       graph.eliminateSequential(hybridOrdering);
 
-  EXPECT_LONGS_EQUAL(5, bayesNet->size());
+  EXPECT_LONGS_EQUAL(2 * K - 1, bayesNet->size());
+
+  HybridValues delta = bayesNet->optimize();
+
+  Values initial = switching.linearizationPoint;
+  Values result = initial.retract(delta.continuous());
+
+  DiscreteValues expected_discrete;
+  for (size_t k = 0; k < K - 1; k++) {
+    expected_discrete[M(k)] = discrete_seq[k];
+  }
+  EXPECT(assert_equal(expected_discrete, delta.discrete()));
+
+  Values expected_continuous;
+  for (size_t k = 0; k < K; k++) {
+    expected_continuous.insert(X(k), measurements[k]);
+  }
+  EXPECT(assert_equal(expected_continuous, result));
 }
 
 /****************************************************************************/
@@ -102,8 +121,8 @@ TEST(HybridEstimation, Incremental) {
   // Ground truth discrete seq
   std::vector<size_t> discrete_seq = {1, 1, 0, 0, 0, 1, 1, 1, 1, 0,
                                       1, 1, 1, 0, 0, 1, 1, 0, 0, 0};
-  // Switching example of robot moving in 1D with given measurements and equal
-  // mode priors.
+  // Switching example of robot moving in 1D
+  // with given measurements and equal mode priors.
   Switching switching(K, 1.0, 0.1, measurements, "1/1 1/1");
   HybridSmoother smoother;
   HybridNonlinearFactorGraph graph;
@@ -209,13 +228,16 @@ std::vector<size_t> getDiscreteSequence(size_t x) {
 }
 
 /**
- * @brief Helper method to get the tree of unnormalized probabilities
- * as per the new elimination scheme.
+ * @brief Helper method to get the tree of
+ * unnormalized probabilities as per the elimination scheme.
+ *
+ * Used as a helper to compute q(\mu | M, Z) which is used by
+ * both P(X | M, Z) and P(M | Z).
  *
  * @param graph The HybridGaussianFactorGraph to eliminate.
  * @return AlgebraicDecisionTree<Key>
  */
-AlgebraicDecisionTree<Key> probPrimeTree(
+AlgebraicDecisionTree<Key> getProbPrimeTree(
     const HybridGaussianFactorGraph& graph) {
   HybridBayesNet::shared_ptr bayesNet;
   HybridGaussianFactorGraph::shared_ptr remainingGraph;
@@ -239,20 +261,19 @@ AlgebraicDecisionTree<Key> probPrimeTree(
   DecisionTree<Key, VectorValues::shared_ptr> delta_tree(discrete_keys,
                                                          vector_values);
 
+  // Get the probPrime tree with the correct leaf probabilities
   std::vector<double> probPrimes;
   for (const DiscreteValues& assignment : assignments) {
-    double error = 0.0;
     VectorValues delta = *delta_tree(assignment);
-    for (auto factor : graph) {
-      if (factor->isHybrid()) {
-        auto f = boost::static_pointer_cast<GaussianMixtureFactor>(factor);
-        error += f->error(delta, assignment);
 
-      } else if (factor->isContinuous()) {
-        auto f = boost::static_pointer_cast<HybridGaussianFactor>(factor);
-        error += f->inner()->error(delta);
-      }
+    // If VectorValues is empty, it means this is a pruned branch.
+    // Set the probPrime to 0.0.
+    if (delta.size() == 0) {
+      probPrimes.push_back(0.0);
+      continue;
     }
+
+    double error = graph.error(delta, assignment);
     probPrimes.push_back(exp(-error));
   }
   AlgebraicDecisionTree<Key> probPrimeTree(discrete_keys, probPrimes);
@@ -274,10 +295,23 @@ TEST(HybridEstimation, Probability) {
   Switching switching(K, between_sigma, measurement_sigma, measurements,
                       "1/1 1/1");
   auto graph = switching.linearizedFactorGraph;
-  Ordering ordering = getOrdering(graph, HybridGaussianFactorGraph());
 
-  HybridBayesNet::shared_ptr bayesNet = graph.eliminateSequential(ordering);
-  auto discreteConditional = bayesNet->atDiscrete(bayesNet->size() - 3);
+  // Continuous elimination
+  Ordering continuous_ordering(graph.continuousKeys());
+  HybridBayesNet::shared_ptr bayesNet;
+  HybridGaussianFactorGraph::shared_ptr discreteGraph;
+  std::tie(bayesNet, discreteGraph) =
+      graph.eliminatePartialSequential(continuous_ordering);
+
+  // Discrete elimination
+  Ordering discrete_ordering(graph.discreteKeys());
+  auto discreteBayesNet = discreteGraph->eliminateSequential(discrete_ordering);
+
+  // Add the discrete conditionals to make it a full bayes net.
+  for (auto discrete_conditional : *discreteBayesNet) {
+    bayesNet->add(discrete_conditional);
+  }
+  auto discreteConditional = discreteBayesNet->atDiscrete(0);
 
   HybridValues hybrid_values = bayesNet->optimize();
 
@@ -310,7 +344,7 @@ TEST(HybridEstimation, ProbabilityMultifrontal) {
   Ordering ordering = getOrdering(graph, HybridGaussianFactorGraph());
 
   // Get the tree of unnormalized probabilities for each mode sequence.
-  AlgebraicDecisionTree<Key> expected_probPrimeTree = probPrimeTree(graph);
+  AlgebraicDecisionTree<Key> expected_probPrimeTree = getProbPrimeTree(graph);
 
   // Eliminate continuous
   Ordering continuous_ordering(graph.continuousKeys());
@@ -326,8 +360,7 @@ TEST(HybridEstimation, ProbabilityMultifrontal) {
   DiscreteKeys discrete_keys = last_conditional->discreteKeys();
 
   Ordering discrete(graph.discreteKeys());
-  auto discreteBayesTree =
-      discreteGraph->BaseEliminateable::eliminateMultifrontal(discrete);
+  auto discreteBayesTree = discreteGraph->eliminateMultifrontal(discrete);
 
   EXPECT_LONGS_EQUAL(1, discreteBayesTree->size());
   // DiscreteBayesTree should have only 1 clique
@@ -345,8 +378,8 @@ TEST(HybridEstimation, ProbabilityMultifrontal) {
       discreteBayesTree->addClique(clique, discrete_clique);
 
     } else {
-      // Remove the clique from the children of the parents since it will get
-      // added again in addClique.
+      // Remove the clique from the children of the parents since
+      // it will get added again in addClique.
       auto clique_it = std::find(clique->parent()->children.begin(),
                                  clique->parent()->children.end(), clique);
       clique->parent()->children.erase(clique_it);
@@ -392,7 +425,7 @@ static HybridNonlinearFactorGraph createHybridNonlinearFactorGraph() {
 }
 
 /*********************************************************************************
-  // Create a hybrid nonlinear factor graph f(x0, x1, m0; z0, z1)
+  // Create a hybrid linear factor graph f(x0, x1, m0; z0, z1)
  ********************************************************************************/
 static HybridGaussianFactorGraph::shared_ptr createHybridGaussianFactorGraph() {
   HybridNonlinearFactorGraph nfg = createHybridNonlinearFactorGraph();

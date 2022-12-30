@@ -81,14 +81,16 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         self.assertEqual(hv.atDiscrete(C(0)), 1)
 
     @staticmethod
-    def tiny(num_measurements: int = 1):
-        """Create a tiny two variable hybrid model."""
+    def tiny(num_measurements: int = 1) -> gtsam.HybridBayesNet:
+        """
+        Create a tiny two variable hybrid model which represents
+        the generative probability P(z, x, n) = P(z | x, n)P(x)P(n).
+        """
         # Create hybrid Bayes net.
         bayesNet = gtsam.HybridBayesNet()
 
         # Create mode key: 0 is low-noise, 1 is high-noise.
-        modeKey = M(0)
-        mode = (modeKey, 2)
+        mode = (M(0), 2)
 
         # Create Gaussian mixture Z(0) = X(0) + noise for each measurement.
         I = np.eye(1)
@@ -141,14 +143,22 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         return bayesNet.evaluate(sample) / fg.probPrime(
             continuous, sample.discrete())
 
-    def test_tiny2(self):
-        """Test a tiny two variable hybrid model, with 2 measurements."""
-        # Create the Bayes net and sample from it.
+    def test_ratio(self):
+        """
+        Given a tiny two variable hybrid model, with 2 measurements,
+        test the ratio of the bayes net model representing P(z, x, n)=P(z|x, n)P(x)P(n)
+        and the factor graph P(x, n | z)=P(x | n, z)P(n|z),
+        both of which represent the same posterior.
+        """
+        # Create the Bayes net representing the generative model P(z, x, n)=P(z|x, n)P(x)P(n)
         bayesNet = self.tiny(num_measurements=2)
-        sample = bayesNet.sample()
+        # Sample from the Bayes net.
+        sample: gtsam.HybridValues = bayesNet.sample()
         # print(sample)
 
         # Create a factor graph from the Bayes net with sampled measurements.
+        # The factor graph is `P(x)P(n) ϕ(x, n; z1) ϕ(x, n; z2)`
+        # and thus represents the same joint probability as the Bayes net.
         fg = HybridGaussianFactorGraph()
         for i in range(2):
             conditional = bayesNet.atMixture(i)
