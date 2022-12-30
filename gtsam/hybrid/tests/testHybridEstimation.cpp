@@ -425,7 +425,7 @@ static HybridNonlinearFactorGraph createHybridNonlinearFactorGraph() {
 }
 
 /*********************************************************************************
-  // Create a hybrid nonlinear factor graph f(x0, x1, m0; z0, z1)
+  // Create a hybrid linear factor graph f(x0, x1, m0; z0, z1)
  ********************************************************************************/
 static HybridGaussianFactorGraph::shared_ptr createHybridGaussianFactorGraph() {
   HybridNonlinearFactorGraph nfg = createHybridNonlinearFactorGraph();

@@ -128,7 +128,6 @@ std::function<double(const Assignment<Key> &, double)> prunerFunc(
 }
 
 /* ************************************************************************* */
-// TODO(dellaert): what is this non-const method used for? Abolish it?
 void HybridBayesNet::updateDiscreteConditionals(
     const DecisionTreeFactor::shared_ptr &prunedDecisionTree) {
   KeyVector prunedTreeKeys = prunedDecisionTree->keys();

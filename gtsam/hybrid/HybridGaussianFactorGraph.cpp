@@ -397,18 +397,16 @@ EliminateHybrid(const HybridGaussianFactorGraph &factors,
   if (discrete_only) {
     // Case 1: we are only dealing with discrete
     return discreteElimination(factors, frontalKeys);
-  } else {
+  } else if (mapFromKeyToDiscreteKey.empty()) {
     // Case 2: we are only dealing with continuous
-    if (mapFromKeyToDiscreteKey.empty()) {
-      return continuousElimination(factors, frontalKeys);
-    } else {
-      // Case 3: We are now in the hybrid land!
+    return continuousElimination(factors, frontalKeys);
+  } else {
+    // Case 3: We are now in the hybrid land!
 #ifdef HYBRID_TIMING
-      tictoc_reset_();
+    tictoc_reset_();
 #endif
-      return hybridElimination(factors, frontalKeys, continuousSeparator,
-                               discreteSeparatorSet);
-    }
+    return hybridElimination(factors, frontalKeys, continuousSeparator,
+                             discreteSeparatorSet);
   }
 }
 
