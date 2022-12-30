@@ -19,9 +19,12 @@
 
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/linear/GaussianFactor.h>
-#include <gtsam/linear/JacobianFactor.h>
 
 namespace gtsam {
+
+// Forward declarations
+class JacobianFactor;
+class HessianFactor;
 
 /**
  * A HybridGaussianFactor is a layer over GaussianFactor so that we do not have
@@ -41,11 +44,40 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
 
   HybridGaussianFactor() = default;
 
-  // Explicit conversion from a shared ptr of GF
-  explicit HybridGaussianFactor(GaussianFactor::shared_ptr other);
+  /**
+   * Constructor from shared_ptr of GaussianFactor.
+   * Example:
+   *  boost::shared_ptr<GaussianFactor> ptr =
+   * boost::make_shared<JacobianFactor>(...);
+   *
+   */
+  explicit HybridGaussianFactor(const boost::shared_ptr<GaussianFactor> &ptr);
 
-  // Forwarding constructor from concrete JacobianFactor
+  /**
+   * Forwarding constructor from shared_ptr of GaussianFactor.
+   * Examples:
+   *   HybridGaussianFactor factor = boost::make_shared<JacobianFactor>(...);
+   *   HybridGaussianFactor factor(boost::make_shared<JacobianFactor>(...));
+   */
+  explicit HybridGaussianFactor(boost::shared_ptr<GaussianFactor> &&ptr);
+
+  /**
+   * Forwarding constructor from rvalue reference of JacobianFactor.
+   *
+   * Examples:
+   *   HybridGaussianFactor factor = JacobianFactor(...);
+   *   HybridGaussianFactor factor(JacobianFactor(...));
+   */
   explicit HybridGaussianFactor(JacobianFactor &&jf);
+
+  /**
+   * Forwarding constructor from rvalue reference of JacobianFactor.
+   *
+   * Examples:
+   *   HybridGaussianFactor factor = HessianFactor(...);
+   *   HybridGaussianFactor factor(HessianFactor(...));
+   */
+  explicit HybridGaussianFactor(HessianFactor &&hf);
 
  public:
   /// @name Testable
