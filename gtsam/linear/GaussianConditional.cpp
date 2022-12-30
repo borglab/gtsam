@@ -168,26 +168,30 @@ namespace gtsam {
 
 /* ************************************************************************* */
 double GaussianConditional::logDeterminant() const {
-  double logDet;
-  if (this->get_model()) {
-    Vector diag = this->R().diagonal();
-    this->get_model()->whitenInPlace(diag);
-    logDet = diag.unaryExpr([](double x) { return log(x); }).sum();
+  if (get_model()) {
+    Vector diag = R().diagonal();
+    get_model()->whitenInPlace(diag);
+    return diag.unaryExpr([](double x) { return log(x); }).sum();
   } else {
-    logDet =
-        this->R().diagonal().unaryExpr([](double x) { return log(x); }).sum();
+    return R().diagonal().unaryExpr([](double x) { return log(x); }).sum();
   }
-  return logDet;
 }
 
 /* ************************************************************************* */
-//  density = exp(-error(x)) / sqrt((2*pi)^n*det(Sigma))
-//  log = -error(x) - 0.5 * n*log(2*pi) - 0.5 * log det(Sigma)
-double GaussianConditional::logDensity(const VectorValues& x) const {
+//  normalization constant = 1.0 / sqrt((2*pi)^n*det(Sigma))
+//  log = - 0.5 * n*log(2*pi) - 0.5 * log det(Sigma)
+double GaussianConditional::logNormalizationConstant() const {
   constexpr double log2pi = 1.8378770664093454835606594728112;
   size_t n = d().size();
   // log det(Sigma)) = - 2.0 * logDeterminant()
-  return - error(x) - 0.5 * n * log2pi + logDeterminant();
+  return - 0.5 * n * log2pi + logDeterminant();
+}
+
+/* ************************************************************************* */
+//  density = k exp(-error(x))
+//  log = log(k) -error(x) - 0.5 * n*log(2*pi)
+double GaussianConditional::logDensity(const VectorValues& x) const {
+  return logNormalizationConstant() - error(x);
 }
 
 /* ************************************************************************* */
