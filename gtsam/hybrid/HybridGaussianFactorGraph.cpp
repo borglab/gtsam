@@ -51,6 +51,8 @@
 #include <utility>
 #include <vector>
 
+// #define HYBRID_TIMING
+
 namespace gtsam {
 
 template class EliminateableFactorGraph<HybridGaussianFactorGraph>;
@@ -90,7 +92,6 @@ GaussianMixtureFactor::Sum sumFrontals(
       if (auto cgmf = boost::dynamic_pointer_cast<GaussianMixtureFactor>(f)) {
         sum = cgmf->add(sum);
       }
-
       if (auto gm = boost::dynamic_pointer_cast<HybridConditional>(f)) {
         sum = gm->asMixture()->add(sum);
       }
@@ -187,7 +188,7 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
   DiscreteKeys discreteSeparator(discreteSeparatorSet.begin(),
                                  discreteSeparatorSet.end());
 
-  // sum out frontals, this is the factor on the separator
+  // sum out frontals, this is the factor 𝜏 on the separator
   GaussianMixtureFactor::Sum sum = sumFrontals(factors);
 
   // If a tree leaf contains nullptr,
@@ -214,23 +215,34 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
     if (graph.empty()) {
       return {nullptr, nullptr};
     }
+
+#ifdef HYBRID_TIMING
+    gttic_(hybrid_eliminate);
+#endif
+
     std::pair<boost::shared_ptr<GaussianConditional>,
               boost::shared_ptr<GaussianFactor>>
         result = EliminatePreferCholesky(graph, frontalKeys);
 
-    if (keysOfEliminated.empty()) {
-      // Initialize the keysOfEliminated to be the keys of the
-      // eliminated GaussianConditional
-      keysOfEliminated = result.first->keys();
-    }
-    if (keysOfSeparator.empty()) {
-      keysOfSeparator = result.second->keys();
-    }
+    // Initialize the keysOfEliminated to be the keys of the
+    // eliminated GaussianConditional
+    keysOfEliminated = result.first->keys();
+    keysOfSeparator = result.second->keys();
+
+#ifdef HYBRID_TIMING
+    gttoc_(hybrid_eliminate);
+#endif
+
     return result;
   };
 
   // Perform elimination!
   DecisionTree<Key, EliminationPair> eliminationResults(sum, eliminate);
+
+#ifdef HYBRID_TIMING
+  tictoc_print_();
+  tictoc_reset_();
+#endif
 
   // Separate out decision tree into conditionals and remaining factors.
   auto pair = unzip(eliminationResults);
@@ -245,11 +257,16 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
   // DiscreteFactor, with the error for each discrete choice.
   if (keysOfSeparator.empty()) {
     VectorValues empty_values;
-    auto factorError = [&](const GaussianFactor::shared_ptr &factor) {
-      if (!factor) return 0.0;  // TODO(fan): does this make sense?
-      return exp(-factor->error(empty_values));
+    auto factorProb = [&](const GaussianFactor::shared_ptr &factor) {
+      if (!factor) {
+        return 0.0;  // If nullptr, return 0.0 probability
+      } else {
+        double error =
+            0.5 * std::abs(factor->augmentedInformation().determinant());
+        return std::exp(-error);
+      }
     };
-    DecisionTree<Key, double> fdt(separatorFactors, factorError);
+    DecisionTree<Key, double> fdt(separatorFactors, factorProb);
 
     auto discreteFactor =
         boost::make_shared<DecisionTreeFactor>(discreteSeparator, fdt);
@@ -327,18 +344,20 @@ EliminateHybrid(const HybridGaussianFactorGraph &factors,
   // However this is also the case with iSAM2, so no pressure :)
 
   // PREPROCESS: Identify the nature of the current elimination
-  std::unordered_map<Key, DiscreteKey> mapFromKeyToDiscreteKey;
-  std::set<DiscreteKey> discreteSeparatorSet;
-  std::set<DiscreteKey> discreteFrontals;
 
+  // First, identify the separator keys, i.e. all keys that are not frontal.
   KeySet separatorKeys;
-  KeySet allContinuousKeys;
-  KeySet continuousFrontals;
-  KeySet continuousSeparator;
-
-  // This initializes separatorKeys and mapFromKeyToDiscreteKey
   for (auto &&factor : factors) {
     separatorKeys.insert(factor->begin(), factor->end());
+  }
+  // remove frontals from separator
+  for (auto &k : frontalKeys) {
+    separatorKeys.erase(k);
+  }
+
+  // Build a map from keys to DiscreteKeys
+  std::unordered_map<Key, DiscreteKey> mapFromKeyToDiscreteKey;
+  for (auto &&factor : factors) {
     if (!factor->isContinuous()) {
       for (auto &k : factor->discreteKeys()) {
         mapFromKeyToDiscreteKey[k.first] = k;
@@ -346,46 +365,50 @@ EliminateHybrid(const HybridGaussianFactorGraph &factors,
     }
   }
 
-  // remove frontals from separator
-  for (auto &k : frontalKeys) {
-    separatorKeys.erase(k);
-  }
-
-  // Fill in discrete frontals and continuous frontals for the end result
+  // Fill in discrete frontals and continuous frontals.
+  std::set<DiscreteKey> discreteFrontals;
+  KeySet continuousFrontals;
   for (auto &k : frontalKeys) {
     if (mapFromKeyToDiscreteKey.find(k) != mapFromKeyToDiscreteKey.end()) {
       discreteFrontals.insert(mapFromKeyToDiscreteKey.at(k));
     } else {
       continuousFrontals.insert(k);
-      allContinuousKeys.insert(k);
     }
   }
 
-  // Fill in discrete frontals and continuous frontals for the end result
+  // Fill in discrete discrete separator keys and continuous separator keys.
+  std::set<DiscreteKey> discreteSeparatorSet;
+  KeySet continuousSeparator;
   for (auto &k : separatorKeys) {
     if (mapFromKeyToDiscreteKey.find(k) != mapFromKeyToDiscreteKey.end()) {
       discreteSeparatorSet.insert(mapFromKeyToDiscreteKey.at(k));
     } else {
       continuousSeparator.insert(k);
-      allContinuousKeys.insert(k);
     }
   }
 
+  // Check if we have any continuous keys:
+  const bool discrete_only =
+      continuousFrontals.empty() && continuousSeparator.empty();
+
   // NOTE: We should really defer the product here because of pruning
 
-  // Case 1: we are only dealing with continuous
-  if (mapFromKeyToDiscreteKey.empty() && !allContinuousKeys.empty()) {
-    return continuousElimination(factors, frontalKeys);
-  }
-
-  // Case 2: we are only dealing with discrete
-  if (allContinuousKeys.empty()) {
+  if (discrete_only) {
+    // Case 1: we are only dealing with discrete
     return discreteElimination(factors, frontalKeys);
+  } else {
+    // Case 2: we are only dealing with continuous
+    if (mapFromKeyToDiscreteKey.empty()) {
+      return continuousElimination(factors, frontalKeys);
+    } else {
+      // Case 3: We are now in the hybrid land!
+#ifdef HYBRID_TIMING
+      tictoc_reset_();
+#endif
+      return hybridElimination(factors, frontalKeys, continuousSeparator,
+                               discreteSeparatorSet);
+    }
   }
-
-  // Case 3: We are now in the hybrid land!
-  return hybridElimination(factors, frontalKeys, continuousSeparator,
-                           discreteSeparatorSet);
 }
 
 /* ************************************************************************ */

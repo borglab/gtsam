@@ -99,6 +99,7 @@ std::function<double(const Assignment<Key> &, double)> prunerFunc(
 }
 
 /* ************************************************************************* */
+// TODO(dellaert): what is this non-const method used for? Abolish it?
 void HybridBayesNet::updateDiscreteConditionals(
     const DecisionTreeFactor::shared_ptr &prunedDecisionTree) {
   KeyVector prunedTreeKeys = prunedDecisionTree->keys();
@@ -107,7 +108,6 @@ void HybridBayesNet::updateDiscreteConditionals(
   for (size_t i = 0; i < this->size(); i++) {
     HybridConditional::shared_ptr conditional = this->at(i);
     if (conditional->isDiscrete()) {
-      // std::cout << demangle(typeid(conditional).name()) << std::endl;
       auto discrete = conditional->asDiscrete();
       KeyVector frontals(discrete->frontals().begin(),
                          discrete->frontals().end());
@@ -217,13 +217,18 @@ HybridValues HybridBayesNet::optimize() const {
   DiscreteValues mpe = DiscreteFactorGraph(discrete_bn).optimize();
 
   // Given the MPE, compute the optimal continuous values.
-  GaussianBayesNet gbn = choose(mpe);
-  return HybridValues(gbn.optimize(), mpe);
+  return HybridValues(optimize(mpe), mpe);
 }
 
 /* ************************************************************************* */
 VectorValues HybridBayesNet::optimize(const DiscreteValues &assignment) const {
   GaussianBayesNet gbn = choose(assignment);
+
+  // Check if there exists a nullptr in the GaussianBayesNet
+  // If yes, return an empty VectorValues
+  if (std::find(gbn.begin(), gbn.end(), nullptr) != gbn.end()) {
+    return VectorValues();
+  }
   return gbn.optimize();
 }
 

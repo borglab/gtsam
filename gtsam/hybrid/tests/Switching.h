@@ -130,9 +130,11 @@ struct Switching {
    * @param K The total number of timesteps.
    * @param between_sigma The stddev between poses.
    * @param prior_sigma The stddev on priors (also used for measurements).
+   * @param measurements Vector of measurements for each timestep.
    */
   Switching(size_t K, double between_sigma = 1.0, double prior_sigma = 0.1,
-            std::vector<double> measurements = {})
+            std::vector<double> measurements = {},
+            std::string discrete_transition_prob = "1/2 3/2")
       : K(K) {
     // Create DiscreteKeys for binary K modes.
     for (size_t k = 0; k < K; k++) {
@@ -147,7 +149,7 @@ struct Switching {
     }
 
     // Create hybrid factor graph.
-    // Add a prior on X(1).
+    // Add a prior on X(0).
     auto prior = boost::make_shared<PriorFactor<double>>(
         X(0), measurements.at(0), noiseModel::Isotropic::Sigma(1, prior_sigma));
     nonlinearFactorGraph.push_nonlinear(prior);
@@ -172,7 +174,7 @@ struct Switching {
     }
 
     // Add "mode chain"
-    addModeChain(&nonlinearFactorGraph);
+    addModeChain(&nonlinearFactorGraph, discrete_transition_prob);
 
     // Create the linearization point.
     for (size_t k = 0; k < K; k++) {
@@ -201,13 +203,14 @@ struct Switching {
    *
    * @param fg The nonlinear factor graph to which the mode chain is added.
    */
-  void addModeChain(HybridNonlinearFactorGraph *fg) {
+  void addModeChain(HybridNonlinearFactorGraph *fg,
+                    std::string discrete_transition_prob = "1/2 3/2") {
     auto prior = boost::make_shared<DiscreteDistribution>(modes[0], "1/1");
     fg->push_discrete(prior);
     for (size_t k = 0; k < K - 2; k++) {
       auto parents = {modes[k]};
       auto conditional = boost::make_shared<DiscreteConditional>(
-          modes[k + 1], parents, "1/2 3/2");
+          modes[k + 1], parents, discrete_transition_prob);
       fg->push_discrete(conditional);
     }
   }
@@ -218,13 +221,14 @@ struct Switching {
    *
    * @param fg The gaussian factor graph to which the mode chain is added.
    */
-  void addModeChain(HybridGaussianFactorGraph *fg) {
+  void addModeChain(HybridGaussianFactorGraph *fg,
+                    std::string discrete_transition_prob = "1/2 3/2") {
     auto prior = boost::make_shared<DiscreteDistribution>(modes[0], "1/1");
     fg->push_discrete(prior);
     for (size_t k = 0; k < K - 2; k++) {
       auto parents = {modes[k]};
       auto conditional = boost::make_shared<DiscreteConditional>(
-          modes[k + 1], parents, "1/2 3/2");
+          modes[k + 1], parents, discrete_transition_prob);
       fg->push_discrete(conditional);
     }
   }

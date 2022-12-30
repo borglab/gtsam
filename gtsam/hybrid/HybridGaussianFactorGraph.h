@@ -25,6 +25,7 @@
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/linear/GaussianFactor.h>
+#include <gtsam/linear/VectorValues.h>
 
 namespace gtsam {
 

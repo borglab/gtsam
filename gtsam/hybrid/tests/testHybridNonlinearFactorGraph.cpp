@@ -385,11 +385,11 @@ TEST(HybridFactorGraph, Partial_Elimination) {
 
   auto linearizedFactorGraph = self.linearizedFactorGraph;
 
-  // Create ordering.
+  // Create ordering of only continuous variables.
   Ordering ordering;
   for (size_t k = 0; k < self.K; k++) ordering += X(k);
 
-  // Eliminate partially.
+  // Eliminate partially i.e. only continuous part.
   HybridBayesNet::shared_ptr hybridBayesNet;
   HybridGaussianFactorGraph::shared_ptr remainingFactorGraph;
   std::tie(hybridBayesNet, remainingFactorGraph) =
@@ -439,6 +439,7 @@ TEST(HybridFactorGraph, Full_Elimination) {
       auto df = dynamic_pointer_cast<HybridDiscreteFactor>(factor);
       discrete_fg.push_back(df->inner());
     }
+
     ordering.clear();
     for (size_t k = 0; k < self.K - 1; k++) ordering += M(k);
     discreteBayesNet =
@@ -586,7 +587,7 @@ factor 6: Discrete [m1 m0]
   // Expected output for hybridBayesNet.
   string expected_hybridBayesNet = R"(
 size: 3
-factor 0: Hybrid  P( x0 | x1 m0)
+conditional 0: Hybrid  P( x0 | x1 m0)
  Discrete Keys = (m0, 2), 
  Choice(m0) 
  0 Leaf  p(x0 | x1)
@@ -601,7 +602,7 @@ factor 0: Hybrid  P( x0 | x1 m0)
   d = [ -9.95037 ]
   No noise model
 
-factor 1: Hybrid  P( x1 | x2 m0 m1)
+conditional 1: Hybrid  P( x1 | x2 m0 m1)
  Discrete Keys = (m0, 2), (m1, 2), 
  Choice(m1) 
  0 Choice(m0) 
@@ -630,7 +631,7 @@ factor 1: Hybrid  P( x1 | x2 m0 m1)
   d = [ -10 ]
   No noise model
 
-factor 2: Hybrid  P( x2 | m0 m1)
+conditional 2: Hybrid  P( x2 | m0 m1)
  Discrete Keys = (m0, 2), (m1, 2), 
  Choice(m1) 
  0 Choice(m0) 
