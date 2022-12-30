@@ -179,7 +179,8 @@ TEST(GaussianMixture, Likelihood) {
   const GaussianMixtureFactor::Factors factors(
       gm.conditionals(),
       [measurements](const GaussianConditional::shared_ptr& conditional) {
-        return conditional->likelihood(measurements);
+        return std::make_pair(conditional->likelihood(measurements),
+                              0.5 * conditional->logDeterminant());
       });
   const GaussianMixtureFactor expected({X(0)}, {mode}, factors);
   EXPECT(assert_equal(*factor, expected));
