@@ -22,6 +22,8 @@
 #include <gtsam/discrete/DecisionTree-inl.h>
 #include <gtsam/discrete/DecisionTree.h>
 #include <gtsam/hybrid/GaussianMixtureFactor.h>
+#include <gtsam/hybrid/HybridValues.h>
+#include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
 namespace gtsam {
@@ -32,7 +34,7 @@ GaussianMixtureFactor::GaussianMixtureFactor(const KeyVector &continuousKeys,
                                              const Mixture &factors)
     : Base(continuousKeys, discreteKeys),
       factors_(factors, [](const GaussianFactor::shared_ptr &gf) {
-        return std::make_pair(gf, 0.0);
+        return FactorAndConstant{gf, 0.0};
       }) {}
 
 /* *******************************************************************************/
@@ -46,11 +48,11 @@ bool GaussianMixtureFactor::equals(const HybridFactor &lf, double tol) const {
 
   // Check the base and the factors:
   return Base::equals(*e, tol) &&
-         factors_.equals(e->factors_,
-                         [tol](const GaussianMixtureFactor::FactorAndLogZ &f1,
-                               const GaussianMixtureFactor::FactorAndLogZ &f2) {
-                           return f1.first->equals(*(f2.first), tol);
-                         });
+         factors_.equals(e->factors_, [tol](const FactorAndConstant &f1,
+                                            const FactorAndConstant &f2) {
+           return f1.factor->equals(*(f2.factor), tol) &&
+                  std::abs(f1.constant - f2.constant) < tol;
+         });
 }
 
 /* *******************************************************************************/
@@ -63,8 +65,8 @@ void GaussianMixtureFactor::print(const std::string &s,
   } else {
     factors_.print(
         "", [&](Key k) { return formatter(k); },
-        [&](const GaussianMixtureFactor::FactorAndLogZ &gf_z) -> std::string {
-          auto gf = gf_z.first;
+        [&](const FactorAndConstant &gf_z) -> std::string {
+          auto gf = gf_z.factor;
           RedirectCout rd;
           std::cout << ":\n";
           if (gf && !gf->empty()) {
@@ -79,10 +81,10 @@ void GaussianMixtureFactor::print(const std::string &s,
 }
 
 /* *******************************************************************************/
-const GaussianMixtureFactor::Mixture GaussianMixtureFactor::factors() {
-  // Unzip to tree of Gaussian factors and tree of log-constants,
-  // and return the first tree.
-  return unzip(factors_).first;
+const GaussianMixtureFactor::Mixture GaussianMixtureFactor::factors() const {
+  return Mixture(factors_, [](const FactorAndConstant &factor_z) {
+    return factor_z.factor;
+  });
 }
 
 /* *******************************************************************************/
@@ -101,9 +103,9 @@ GaussianMixtureFactor::Sum GaussianMixtureFactor::add(
 /* *******************************************************************************/
 GaussianMixtureFactor::Sum GaussianMixtureFactor::asGaussianFactorGraphTree()
     const {
-  auto wrap = [](const GaussianMixtureFactor::FactorAndLogZ &factor_z) {
+  auto wrap = [](const FactorAndConstant &factor_z) {
     GaussianFactorGraph result;
-    result.push_back(factor_z.first);
+    result.push_back(factor_z.factor);
     return result;
   };
   return {factors_, wrap};
@@ -113,26 +115,17 @@ GaussianMixtureFactor::Sum GaussianMixtureFactor::asGaussianFactorGraphTree()
 AlgebraicDecisionTree<Key> GaussianMixtureFactor::error(
     const VectorValues &continuousValues) const {
   // functor to convert from sharedFactor to double error value.
-  auto errorFunc =
-      [continuousValues](const GaussianMixtureFactor::FactorAndLogZ &factor_z) {
-        GaussianFactor::shared_ptr factor;
-        double log_z;
-        std::tie(factor, log_z) = factor_z;
-        return factor->error(continuousValues) + log_z;
-      };
+  auto errorFunc = [continuousValues](const FactorAndConstant &factor_z) {
+    return factor_z.error(continuousValues);
+  };
   DecisionTree<Key, double> errorTree(factors_, errorFunc);
   return errorTree;
 }
 
 /* *******************************************************************************/
-double GaussianMixtureFactor::error(
-    const VectorValues &continuousValues,
-    const DiscreteValues &discreteValues) const {
-  // Directly index to get the conditional, no need to build the whole tree.
-  GaussianFactor::shared_ptr factor;
-  double log_z;
-  std::tie(factor, log_z) = factors_(discreteValues);
-  return factor->error(continuousValues) + log_z;
+double GaussianMixtureFactor::error(const HybridValues &values) const {
+  const FactorAndConstant factor_z = factors_(values.discrete());
+  return factor_z.factor->error(values.continuous()) + factor_z.constant;
 }
 
 }  // namespace gtsam

@@ -149,9 +149,10 @@ boost::shared_ptr<GaussianMixtureFactor> GaussianMixture::likelihood(
   const DiscreteKeys discreteParentKeys = discreteKeys();
   const KeyVector continuousParentKeys = continuousParents();
   const GaussianMixtureFactor::Factors likelihoods(
-      conditionals(), [&](const GaussianConditional::shared_ptr &conditional) {
-        return std::make_pair(conditional->likelihood(frontals),
-                              0.5 * conditional->logDeterminant());
+      conditionals_, [&](const GaussianConditional::shared_ptr &conditional) {
+        return GaussianMixtureFactor::FactorAndConstant{
+            conditional->likelihood(frontals),
+            0.5 * conditional->logDeterminant()};
       });
   return boost::make_shared<GaussianMixtureFactor>(
       continuousParentKeys, discreteParentKeys, likelihoods);
