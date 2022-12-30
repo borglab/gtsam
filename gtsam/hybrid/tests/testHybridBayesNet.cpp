@@ -188,12 +188,14 @@ TEST(HybridBayesNet, Optimize) {
 
   HybridValues delta = hybridBayesNet->optimize();
 
+  //TODO(Varun) The expectedAssignment should be 111, not 101
   DiscreteValues expectedAssignment;
   expectedAssignment[M(0)] = 1;
   expectedAssignment[M(1)] = 0;
   expectedAssignment[M(2)] = 1;
   EXPECT(assert_equal(expectedAssignment, delta.discrete()));
 
+  //TODO(Varun) This should be all -Vector1::Ones()
   VectorValues expectedValues;
   expectedValues.insert(X(0), -0.999904 * Vector1::Ones());
   expectedValues.insert(X(1), -0.99029 * Vector1::Ones());

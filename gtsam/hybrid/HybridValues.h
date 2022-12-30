@@ -104,7 +104,7 @@ class GTSAM_EXPORT HybridValues {
    * @param j The index with which the value will be associated. */
   void insert(Key j, const Vector& value) { continuous_.insert(j, value); }
 
-  // TODO(Shangjie)- update() and insert_or_assign() , similar to Values.h
+  // TODO(Shangjie)- insert_or_assign() , similar to Values.h
 
   /**
    * Read/write access to the discrete value with key \c j, throws

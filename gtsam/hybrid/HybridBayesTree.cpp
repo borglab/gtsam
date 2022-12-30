@@ -138,7 +138,8 @@ struct HybridAssignmentData {
 
 /* *************************************************************************
  */
-VectorValues HybridBayesTree::optimize(const DiscreteValues& assignment) const {
+GaussianBayesTree HybridBayesTree::choose(
+    const DiscreteValues& assignment) const {
   GaussianBayesTree gbt;
   HybridAssignmentData rootData(assignment, 0, &gbt);
   {
@@ -151,6 +152,17 @@ VectorValues HybridBayesTree::optimize(const DiscreteValues& assignment) const {
   }
 
   if (!rootData.isValid()) {
+    return GaussianBayesTree();
+  }
+  return gbt;
+}
+
+/* *************************************************************************
+ */
+VectorValues HybridBayesTree::optimize(const DiscreteValues& assignment) const {
+  GaussianBayesTree gbt = this->choose(assignment);
+  // If empty GaussianBayesTree, means a clique is pruned hence invalid
+  if (gbt.size() == 0) {
     return VectorValues();
   }
   VectorValues result = gbt.optimize();

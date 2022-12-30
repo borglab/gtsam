@@ -12,7 +12,7 @@
 /**
  * @file   HybridGaussianFactorGraph.h
  * @brief  Linearized Hybrid factor graph that uses type erasure
- * @author Fan Jiang
+ * @author Fan Jiang, Varun Agrawal
  * @date   Mar 11, 2022
  */
 
