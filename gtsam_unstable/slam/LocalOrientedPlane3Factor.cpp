@@ -15,8 +15,8 @@ namespace gtsam {
 void LocalOrientedPlane3Factor::print(const string& s,
     const KeyFormatter& keyFormatter) const {
   cout << s << (s == "" ? "" : "\n");
-  cout << "LocalOrientedPlane3Factor Factor (" << keyFormatter(key1()) << ", "
-       << keyFormatter(key2()) << ", " << keyFormatter(key3()) << ")\n";
+  cout << "LocalOrientedPlane3Factor Factor (" << keyFormatter(key<1>()) << ", "
+       << keyFormatter(key<2>()) << ", " << keyFormatter(key<3>()) << ")\n";
   measured_p_.print("Measured Plane");
   this->noiseModel_->print("  noise model: ");
 }

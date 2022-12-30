@@ -464,8 +464,65 @@ TEST(HybridEstimation, ProbabilityMultifrontal) {
   EXPECT(assert_equal(discrete_seq, hybrid_values.discrete()));
 }
 
-/****************************************************************************/
-/**
+/*********************************************************************************
+  // Create a hybrid nonlinear factor graph f(x0, x1, m0; z0, z1)
+ ********************************************************************************/
+static HybridNonlinearFactorGraph createHybridNonlinearFactorGraph() {
+  HybridNonlinearFactorGraph nfg;
+
+  constexpr double sigma = 0.5;  // measurement noise
+  const auto noise_model = noiseModel::Isotropic::Sigma(1, sigma);
+
+  // Add "measurement" factors:
+  nfg.emplace_nonlinear<PriorFactor<double>>(X(0), 0.0, noise_model);
+  nfg.emplace_nonlinear<PriorFactor<double>>(X(1), 1.0, noise_model);
+
+  // Add mixture factor:
+  DiscreteKey m(M(0), 2);
+  const auto zero_motion =
+      boost::make_shared<BetweenFactor<double>>(X(0), X(1), 0, noise_model);
+  const auto one_motion =
+      boost::make_shared<BetweenFactor<double>>(X(0), X(1), 1, noise_model);
+  nfg.emplace_hybrid<MixtureFactor>(
+      KeyVector{X(0), X(1)}, DiscreteKeys{m},
+      std::vector<NonlinearFactor::shared_ptr>{zero_motion, one_motion});
+
+  return nfg;
+}
+
+/*********************************************************************************
+  // Create a hybrid nonlinear factor graph f(x0, x1, m0; z0, z1)
+ ********************************************************************************/
+static HybridGaussianFactorGraph::shared_ptr createHybridGaussianFactorGraph() {
+  HybridNonlinearFactorGraph nfg = createHybridNonlinearFactorGraph();
+
+  Values initial;
+  double z0 = 0.0, z1 = 1.0;
+  initial.insert<double>(X(0), z0);
+  initial.insert<double>(X(1), z1);
+  return nfg.linearize(initial);
+}
+
+/*********************************************************************************
+ * Do hybrid elimination and do regression test on discrete conditional.
+ ********************************************************************************/
+TEST(HybridEstimation, eliminateSequentialRegression) {
+  // 1. Create the factor graph from the nonlinear factor graph.
+  HybridGaussianFactorGraph::shared_ptr fg = createHybridGaussianFactorGraph();
+
+  // 2. Eliminate into BN
+  const Ordering ordering = fg->getHybridOrdering();
+  HybridBayesNet::shared_ptr bn = fg->eliminateSequential(ordering);
+  // GTSAM_PRINT(*bn);
+
+  // TODO(dellaert): dc should be discrete conditional on m0, but it is an unnormalized factor?
+  // DiscreteKey m(M(0), 2);
+  // DiscreteConditional expected(m % "0.51341712/1");
+  // auto dc = bn->back()->asDiscreteConditional();
+  // EXPECT(assert_equal(expected, *dc, 1e-9));
+}
+
+/*********************************************************************************
  * Test for correctness via sampling.
  *
  * Compute the conditional P(x0, m0, x1| z0, z1)
@@ -474,32 +531,10 @@ TEST(HybridEstimation, ProbabilityMultifrontal) {
  * 2. Eliminate the factor graph into a Bayes Net `BN`.
  * 3. Sample from the Bayes Net.
  * 4. Check that the ratio `BN(x)/FG(x) = constant` for all samples `x`.
- */
+ ********************************************************************************/
 TEST(HybridEstimation, CorrectnessViaSampling) {
-  HybridNonlinearFactorGraph nfg;
-
-  // First we create a hybrid nonlinear factor graph
-  // which represents f(x0, x1, m0; z0, z1).
-  // We linearize and eliminate this to get
-  // the required Factor Graph FG and Bayes Net BN.
-  const auto noise_model = noiseModel::Isotropic::Sigma(1, 1.0);
-  const auto zero_motion =
-      boost::make_shared<BetweenFactor<double>>(X(0), X(1), 0, noise_model);
-  const auto one_motion =
-      boost::make_shared<BetweenFactor<double>>(X(0), X(1), 1, noise_model);
-
-  nfg.emplace_nonlinear<PriorFactor<double>>(X(0), 0.0, noise_model);
-  nfg.emplace_hybrid<MixtureFactor>(
-      KeyVector{X(0), X(1)}, DiscreteKeys{DiscreteKey(M(0), 2)},
-      std::vector<NonlinearFactor::shared_ptr>{zero_motion, one_motion});
-
-  Values initial;
-  double z0 = 0.0, z1 = 1.0;
-  initial.insert<double>(X(0), z0);
-  initial.insert<double>(X(1), z1);
-
   // 1. Create the factor graph from the nonlinear factor graph.
-  HybridGaussianFactorGraph::shared_ptr fg = nfg.linearize(initial);
+  HybridGaussianFactorGraph::shared_ptr fg = createHybridGaussianFactorGraph();
 
   // 2. Eliminate into BN
   const Ordering ordering = fg->getHybridOrdering();

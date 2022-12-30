@@ -69,10 +69,40 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   /// Add HybridConditional to Bayes Net
   using Base::add;
 
+  /// Add a Gaussian Mixture to the Bayes Net.
+  void addMixture(const GaussianMixture::shared_ptr &ptr) {
+    push_back(HybridConditional(ptr));
+  }
+
+  /// Add a Gaussian conditional to the Bayes Net.
+  void addGaussian(const GaussianConditional::shared_ptr &ptr) {
+    push_back(HybridConditional(ptr));
+  }
+
   /// Add a discrete conditional to the Bayes Net.
-  void add(const DiscreteKey &key, const std::string &table) {
-    push_back(
-        HybridConditional(boost::make_shared<DiscreteConditional>(key, table)));
+  void addDiscrete(const DiscreteConditional::shared_ptr &ptr) {
+    push_back(HybridConditional(ptr));
+  }
+
+  /// Add a Gaussian Mixture to the Bayes Net.
+  template <typename... T>
+  void emplaceMixture(T &&...args) {
+    push_back(HybridConditional(
+        boost::make_shared<GaussianMixture>(std::forward<T>(args)...)));
+  }
+
+  /// Add a Gaussian conditional to the Bayes Net.
+  template <typename... T>
+  void emplaceGaussian(T &&...args) {
+    push_back(HybridConditional(
+        boost::make_shared<GaussianConditional>(std::forward<T>(args)...)));
+  }
+
+  /// Add a discrete conditional to the Bayes Net.
+  template <typename... T>
+  void emplaceDiscrete(T &&...args) {
+    push_back(HybridConditional(
+        boost::make_shared<DiscreteConditional>(std::forward<T>(args)...)));
   }
 
   using Base::push_back;
@@ -94,6 +124,14 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    * @return GaussianBayesNet
    */
   GaussianBayesNet choose(const DiscreteValues &assignment) const;
+
+  /// Evaluate hybrid probability density for given HybridValues.
+  double evaluate(const HybridValues &values) const;
+
+  /// Evaluate hybrid probability density for given HybridValues, sugar.
+  double operator()(const HybridValues &values) const {
+    return evaluate(values);
+  }
 
   /**
    * @brief Solve the HybridBayesNet by first computing the MPE of all the
