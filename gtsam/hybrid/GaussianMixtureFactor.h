@@ -93,18 +93,15 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
    * @brief Construct a new GaussianMixtureFactor object using a vector of
    * GaussianFactor shared pointers.
    *
-   * @param keys Vector of keys for continuous factors.
+   * @param continuousKeys Vector of keys for continuous factors.
    * @param discreteKeys Vector of discrete keys.
    * @param factors Vector of gaussian factor shared pointers.
    */
-  GaussianMixtureFactor(const KeyVector &keys, const DiscreteKeys &discreteKeys,
+  GaussianMixtureFactor(const KeyVector &continuousKeys,
+                        const DiscreteKeys &discreteKeys,
                         const std::vector<GaussianFactor::shared_ptr> &factors)
-      : GaussianMixtureFactor(keys, discreteKeys,
+      : GaussianMixtureFactor(continuousKeys, discreteKeys,
                               Factors(discreteKeys, factors)) {}
-
-  static This FromFactors(
-      const KeyVector &continuousKeys, const DiscreteKeys &discreteKeys,
-      const std::vector<GaussianFactor::shared_ptr> &factors);
 
   /// @}
   /// @name Testable
