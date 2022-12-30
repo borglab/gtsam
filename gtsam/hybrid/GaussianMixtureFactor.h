@@ -165,7 +165,7 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
    * @brief Compute the log-likelihood, including the log-normalizing constant.
    * @return double
    */
-  double error(const HybridValues &values) const;
+  double error(const HybridValues &values) const override;
 
   /// Add MixtureFactor to a Sum, syntactic sugar.
   friend Sum &operator+=(Sum &sum, const GaussianMixtureFactor &factor) {

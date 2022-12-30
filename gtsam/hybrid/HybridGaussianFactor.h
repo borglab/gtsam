@@ -25,6 +25,7 @@ namespace gtsam {
 // Forward declarations
 class JacobianFactor;
 class HessianFactor;
+class HybridValues;
 
 /**
  * A HybridGaussianFactor is a layer over GaussianFactor so that we do not have
@@ -92,8 +93,15 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
       const KeyFormatter &formatter = DefaultKeyFormatter) const override;
 
   /// @}
+  /// @name Standard Interface
+  /// @{
 
+  /// Return pointer to the internal discrete factor
   GaussianFactor::shared_ptr inner() const { return inner_; }
+
+  /// Return the error of the underlying Discrete Factor.
+  double error(const HybridValues &values) const override;
+  /// @}
 };
 
 // traits

@@ -26,6 +26,8 @@
 #include <string>
 namespace gtsam {
 
+class HybridValues;
+
 KeyVector CollectKeys(const KeyVector &continuousKeys,
                       const DiscreteKeys &discreteKeys);
 KeyVector CollectKeys(const KeyVector &keys1, const KeyVector &keys2);
@@ -109,6 +111,15 @@ class GTSAM_EXPORT HybridFactor : public Factor {
   /// @}
   /// @name Standard Interface
   /// @{
+
+  /**
+   * @brief Compute the error of this Gaussian Mixture given the continuous
+   * values and a discrete assignment.
+   *
+   * @param values Continuous values and discrete assignment.
+   * @return double
+   */
+  virtual double error(const HybridValues &values) const = 0;
 
   /// True if this is a factor of discrete variables only.
   bool isDiscrete() const { return isDiscrete_; }
