@@ -118,6 +118,12 @@ class GTSAM_EXPORT HybridValues {
    */
   Vector& at(Key j) { return continuous_.at(j); };
 
+  /** For all key/value pairs in \c values, replace values with corresponding keys in this class
+  *   with those in \c values.  Throws std::out_of_range if any keys in \c values are not present
+  *   in this class. */
+  void update(const VectorValues& values) { continuous_.update(values); }
+
+  /// @}
   /// @name Wrapper support
   /// @{
 
