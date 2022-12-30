@@ -108,7 +108,6 @@ void HybridBayesNet::updateDiscreteConditionals(
   for (size_t i = 0; i < this->size(); i++) {
     HybridConditional::shared_ptr conditional = this->at(i);
     if (conditional->isDiscrete()) {
-      // std::cout << demangle(typeid(conditional).name()) << std::endl;
       auto discrete = conditional->asDiscrete();
       KeyVector frontals(discrete->frontals().begin(),
                          discrete->frontals().end());
@@ -218,8 +217,7 @@ HybridValues HybridBayesNet::optimize() const {
   DiscreteValues mpe = DiscreteFactorGraph(discrete_bn).optimize();
 
   // Given the MPE, compute the optimal continuous values.
-  GaussianBayesNet gbn = choose(mpe);
-  return HybridValues(gbn.optimize(), mpe);
+  return HybridValues(optimize(mpe), mpe);
 }
 
 /* ************************************************************************* */
