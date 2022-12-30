@@ -206,9 +206,8 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
   };
   sum = GaussianMixtureFactor::Sum(sum, emptyGaussian);
 
-  using EliminationPair =
-      std::pair<boost::shared_ptr<GaussianConditional>,
-                std::pair<boost::shared_ptr<GaussianFactor>, double>>;
+  using EliminationPair = std::pair<boost::shared_ptr<GaussianConditional>,
+                                    GaussianMixtureFactor::FactorAndConstant>;
 
   KeyVector keysOfEliminated;  // Not the ordering
   KeyVector keysOfSeparator;   // TODO(frank): Is this just (keys - ordering)?
@@ -216,7 +215,7 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
   // This is the elimination method on the leaf nodes
   auto eliminate = [&](const GaussianFactorGraph &graph) -> EliminationPair {
     if (graph.empty()) {
-      return {nullptr, std::make_pair(nullptr, 0.0)};
+      return {nullptr, {nullptr, 0.0}};
     }
 
 #ifdef HYBRID_TIMING
@@ -236,11 +235,7 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
     gttoc_(hybrid_eliminate);
 #endif
 
-    std::pair<boost::shared_ptr<GaussianConditional>,
-              std::pair<boost::shared_ptr<GaussianFactor>, double>>
-        result = std::make_pair(conditional_factor.first,
-                                std::make_pair(conditional_factor.second, 0.0));
-    return result;
+    return {conditional_factor.first, {conditional_factor.second, 0.0}};
   };
 
   // Perform elimination!

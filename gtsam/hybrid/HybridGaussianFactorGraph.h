@@ -12,7 +12,7 @@
 /**
  * @file   HybridGaussianFactorGraph.h
  * @brief  Linearized Hybrid factor graph that uses type erasure
- * @author Fan Jiang, Varun Agrawal
+ * @author Fan Jiang, Varun Agrawal, Frank Dellaert
  * @date   Mar 11, 2022
  */
 
@@ -38,6 +38,7 @@ class HybridBayesTree;
 class HybridJunctionTree;
 class DecisionTreeFactor;
 class JacobianFactor;
+class HybridValues;
 
 /**
  * @brief Main elimination function for HybridGaussianFactorGraph.

@@ -188,7 +188,7 @@ TEST(GaussianMixtureFactor, Error) {
   DiscreteValues discreteValues;
   discreteValues[m1.first] = 1;
   EXPECT_DOUBLES_EQUAL(
-      4.0, mixtureFactor.error(continuousValues, discreteValues), 1e-9);
+      4.0, mixtureFactor.error({continuousValues, discreteValues}), 1e-9);
 }
 
 /* ************************************************************************* */

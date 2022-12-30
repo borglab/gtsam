@@ -128,9 +128,9 @@ TEST(GaussianMixture, Error) {
   // Regression for non-tree version.
   DiscreteValues assignment;
   assignment[M(1)] = 0;
-  EXPECT_DOUBLES_EQUAL(0.5, mixture.error(values, assignment), 1e-8);
+  EXPECT_DOUBLES_EQUAL(0.5, mixture.error({values, assignment}), 1e-8);
   assignment[M(1)] = 1;
-  EXPECT_DOUBLES_EQUAL(4.3252595155709335, mixture.error(values, assignment),
+  EXPECT_DOUBLES_EQUAL(4.3252595155709335, mixture.error({values, assignment}),
                        1e-8);
 }
 
