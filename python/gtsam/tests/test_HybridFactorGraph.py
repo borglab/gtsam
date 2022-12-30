@@ -114,7 +114,7 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         bayesNet.addGaussian(prior_on_x0)
 
         # Add prior on mode.
-        bayesNet.emplaceDiscrete(mode, "1/1")
+        bayesNet.emplaceDiscrete(mode, "6/4")
 
         return bayesNet
 
@@ -216,10 +216,10 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         for i in range(10):
             other = bayesNet.sample()
             other.update(measurements)
-            # print(other)
             ratio = self.calculate_ratio(bayesNet, fg, other)
             # print(f"Ratio: {ratio}\n")
-            # self.assertAlmostEqual(ratio, expected_ratio)
+            if (ratio > 0):
+                self.assertAlmostEqual(ratio, expected_ratio)
 
 
 if __name__ == "__main__":
