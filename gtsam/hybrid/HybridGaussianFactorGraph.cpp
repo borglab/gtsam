@@ -498,26 +498,8 @@ AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::error(
 /* ************************************************************************ */
 double HybridGaussianFactorGraph::error(const HybridValues &values) const {
   double error = 0.0;
-  for (size_t idx = 0; idx < size(); idx++) {
-    // TODO(dellaert): just use a virtual method defined in HybridFactor.
-    auto factor = factors_.at(idx);
-
-    if (factor->isHybrid()) {
-      if (auto c = boost::dynamic_pointer_cast<HybridConditional>(factor)) {
-        error += c->asMixture()->error(values);
-      }
-      if (auto f = boost::dynamic_pointer_cast<GaussianMixtureFactor>(factor)) {
-        error += f->error(values);
-      }
-
-    } else if (factor->isContinuous()) {
-      if (auto f = boost::dynamic_pointer_cast<HybridGaussianFactor>(factor)) {
-        error += f->inner()->error(values.continuous());
-      }
-      if (auto cg = boost::dynamic_pointer_cast<HybridConditional>(factor)) {
-        error += cg->asGaussian()->error(values.continuous());
-      }
-    }
+  for (auto &factor : factors_) {
+    error += factor->error(values);
   }
   return error;
 }

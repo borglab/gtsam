@@ -17,6 +17,7 @@
  */
 
 #include <gtsam/hybrid/HybridDiscreteFactor.h>
+#include <gtsam/hybrid/HybridValues.h>
 
 #include <boost/make_shared.hpp>
 
@@ -49,5 +50,11 @@ void HybridDiscreteFactor::print(const std::string &s,
   HybridFactor::print(s, formatter);
   inner_->print("\n", formatter);
 };
+
+/* ************************************************************************ */
+double HybridDiscreteFactor::error(const HybridValues &values) const {
+  return -log((*inner_)(values.discrete()));
+}
+/* ************************************************************************ */
 
 }  // namespace gtsam

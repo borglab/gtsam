@@ -52,7 +52,7 @@ namespace gtsam {
  * having diamond inheritances, and neutralized the need to change other
  * components of GTSAM to make hybrid elimination work.
  *
- * A great reference to the type-erasure pattern is Eduaado Madrid's CppCon
+ * A great reference to the type-erasure pattern is Eduardo Madrid's CppCon
  * talk (https://www.youtube.com/watch?v=s082Qmd_nHs).
  *
  * @ingroup hybrid
@@ -129,33 +129,6 @@ class GTSAM_EXPORT HybridConditional
    */
   HybridConditional(boost::shared_ptr<GaussianMixture> gaussianMixture);
 
-  /**
-   * @brief Return HybridConditional as a GaussianMixture
-   * @return nullptr if not a mixture
-   * @return GaussianMixture::shared_ptr otherwise
-   */
-  GaussianMixture::shared_ptr asMixture() {
-    return boost::dynamic_pointer_cast<GaussianMixture>(inner_);
-  }
-
-  /**
-   * @brief Return HybridConditional as a GaussianConditional
-   * @return nullptr if not a GaussianConditional
-   * @return GaussianConditional::shared_ptr otherwise
-   */
-  GaussianConditional::shared_ptr asGaussian() {
-    return boost::dynamic_pointer_cast<GaussianConditional>(inner_);
-  }
-
-  /**
-   * @brief Return conditional as a DiscreteConditional
-   * @return nullptr if not a DiscreteConditional
-   * @return DiscreteConditional::shared_ptr
-   */
-  DiscreteConditional::shared_ptr asDiscrete() {
-    return boost::dynamic_pointer_cast<DiscreteConditional>(inner_);
-  }
-
   /// @}
   /// @name Testable
   /// @{
@@ -169,9 +142,51 @@ class GTSAM_EXPORT HybridConditional
   bool equals(const HybridFactor& other, double tol = 1e-9) const override;
 
   /// @}
+  /// @name Standard Interface
+  /// @{
+
+  /**
+   * @brief Return HybridConditional as a GaussianMixture
+   * @return nullptr if not a mixture
+   * @return GaussianMixture::shared_ptr otherwise
+   */
+  GaussianMixture::shared_ptr asMixture() const {
+    return boost::dynamic_pointer_cast<GaussianMixture>(inner_);
+  }
+
+  /**
+   * @brief Return HybridConditional as a GaussianConditional
+   * @return nullptr if not a GaussianConditional
+   * @return GaussianConditional::shared_ptr otherwise
+   */
+  GaussianConditional::shared_ptr asGaussian() const {
+    return boost::dynamic_pointer_cast<GaussianConditional>(inner_);
+  }
+
+  /**
+   * @brief Return conditional as a DiscreteConditional
+   * @return nullptr if not a DiscreteConditional
+   * @return DiscreteConditional::shared_ptr
+   */
+  DiscreteConditional::shared_ptr asDiscrete() const {
+    return boost::dynamic_pointer_cast<DiscreteConditional>(inner_);
+  }
 
   /// Get the type-erased pointer to the inner type
   boost::shared_ptr<Factor> inner() { return inner_; }
+
+  /// Return the error of the underlying conditional.
+  /// Currently only implemented for Gaussian mixture.
+  double error(const HybridValues& values) const override {
+    if (auto gm = asMixture()) {
+      return gm->error(values);
+    } else {
+      throw std::runtime_error(
+          "HybridConditional::error: only implemented for Gaussian mixture");
+    }
+  }
+
+  /// @}
 
  private:
   /** Serialization function */

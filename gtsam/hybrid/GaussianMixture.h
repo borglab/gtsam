@@ -170,7 +170,7 @@ class GTSAM_EXPORT GaussianMixture
    * @param values Continuous values and discrete assignment.
    * @return double
    */
-  double error(const HybridValues &values) const;
+  double error(const HybridValues &values) const override;
 
   /**
    * @brief Prune the decision tree of Gaussian factors as per the discrete
