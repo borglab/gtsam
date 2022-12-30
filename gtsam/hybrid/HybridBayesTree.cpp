@@ -49,7 +49,7 @@ HybridValues HybridBayesTree::optimize() const {
 
   // The root should be discrete only, we compute the MPE
   if (root_conditional->isDiscrete()) {
-    dbn.push_back(root_conditional->asDiscreteConditional());
+    dbn.push_back(root_conditional->asDiscrete());
     mpe = DiscreteFactorGraph(dbn).optimize();
   } else {
     throw std::runtime_error(
@@ -58,7 +58,7 @@ HybridValues HybridBayesTree::optimize() const {
   }
 
   VectorValues values = optimize(mpe);
-  return HybridValues(mpe, values);
+  return HybridValues(values, mpe);
 }
 
 /* ************************************************************************* */
@@ -174,7 +174,7 @@ VectorValues HybridBayesTree::optimize(const DiscreteValues& assignment) const {
 /* ************************************************************************* */
 void HybridBayesTree::prune(const size_t maxNrLeaves) {
   auto decisionTree =
-      this->roots_.at(0)->conditional()->asDiscreteConditional();
+      this->roots_.at(0)->conditional()->asDiscrete();
 
   DecisionTreeFactor prunedDecisionTree = decisionTree->prune(maxNrLeaves);
   decisionTree->root_ = prunedDecisionTree.root_;

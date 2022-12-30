@@ -35,16 +35,19 @@ GaussianMixtureFactor::GaussianMixtureFactor(const KeyVector &continuousKeys,
 /* *******************************************************************************/
 bool GaussianMixtureFactor::equals(const HybridFactor &lf, double tol) const {
   const This *e = dynamic_cast<const This *>(&lf);
-  return e != nullptr && Base::equals(*e, tol);
-}
+  if (e == nullptr) return false;
 
-/* *******************************************************************************/
-GaussianMixtureFactor GaussianMixtureFactor::FromFactors(
-    const KeyVector &continuousKeys, const DiscreteKeys &discreteKeys,
-    const std::vector<GaussianFactor::shared_ptr> &factors) {
-  Factors dt(discreteKeys, factors);
+  // This will return false if either factors_ is empty or e->factors_ is empty,
+  // but not if both are empty or both are not empty:
+  if (factors_.empty() ^ e->factors_.empty()) return false;
 
-  return GaussianMixtureFactor(continuousKeys, discreteKeys, dt);
+  // Check the base and the factors:
+  return Base::equals(*e, tol) &&
+         factors_.equals(e->factors_,
+                         [tol](const GaussianFactor::shared_ptr &f1,
+                               const GaussianFactor::shared_ptr &f2) {
+                           return f1->equals(*f2, tol);
+                         });
 }
 
 /* *******************************************************************************/
@@ -52,18 +55,22 @@ void GaussianMixtureFactor::print(const std::string &s,
                                   const KeyFormatter &formatter) const {
   HybridFactor::print(s, formatter);
   std::cout << "{\n";
-  factors_.print(
-      "", [&](Key k) { return formatter(k); },
-      [&](const GaussianFactor::shared_ptr &gf) -> std::string {
-        RedirectCout rd;
-        std::cout << ":\n";
-        if (gf && !gf->empty()) {
-          gf->print("", formatter);
-          return rd.str();
-        } else {
-          return "nullptr";
-        }
-      });
+  if (factors_.empty()) {
+    std::cout << "  empty" << std::endl;
+  } else {
+    factors_.print(
+        "", [&](Key k) { return formatter(k); },
+        [&](const GaussianFactor::shared_ptr &gf) -> std::string {
+          RedirectCout rd;
+          std::cout << ":\n";
+          if (gf && !gf->empty()) {
+            gf->print("", formatter);
+            return rd.str();
+          } else {
+            return "nullptr";
+          }
+        });
+  }
   std::cout << "}" << std::endl;
 }
 
