@@ -16,19 +16,29 @@
  */
 
 #include <gtsam/hybrid/HybridGaussianFactor.h>
+#include <gtsam/linear/HessianFactor.h>
+#include <gtsam/linear/JacobianFactor.h>
 
 #include <boost/make_shared.hpp>
 
 namespace gtsam {
 
 /* ************************************************************************* */
-HybridGaussianFactor::HybridGaussianFactor(GaussianFactor::shared_ptr other)
-    : Base(other->keys()), inner_(other) {}
+HybridGaussianFactor::HybridGaussianFactor(
+    const boost::shared_ptr<GaussianFactor> &ptr)
+    : Base(ptr->keys()), inner_(ptr) {}
 
-/* ************************************************************************* */
+HybridGaussianFactor::HybridGaussianFactor(
+    boost::shared_ptr<GaussianFactor> &&ptr)
+    : Base(ptr->keys()), inner_(std::move(ptr)) {}
+
 HybridGaussianFactor::HybridGaussianFactor(JacobianFactor &&jf)
     : Base(jf.keys()),
       inner_(boost::make_shared<JacobianFactor>(std::move(jf))) {}
+
+HybridGaussianFactor::HybridGaussianFactor(HessianFactor &&hf)
+    : Base(hf.keys()),
+      inner_(boost::make_shared<HessianFactor>(std::move(hf))) {}
 
 /* ************************************************************************* */
 bool HybridGaussianFactor::equals(const HybridFactor &other, double tol) const {
