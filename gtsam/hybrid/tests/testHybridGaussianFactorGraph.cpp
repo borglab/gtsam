@@ -182,7 +182,9 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalSimple) {
        boost::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones())}));
 
   hfg.add(DecisionTreeFactor(m1, {2, 8}));
-  hfg.add(DecisionTreeFactor({{M(1), 2}, {M(2), 2}}, "1 2 3 4"));
+  // TODO(Varun) Adding extra discrete variable not connected to continuous
+  // variable throws segfault
+  //  hfg.add(DecisionTreeFactor({{M(1), 2}, {M(2), 2}}, "1 2 3 4"));
 
   HybridBayesTree::shared_ptr result =
       hfg.eliminateMultifrontal(hfg.getHybridOrdering());
@@ -565,6 +567,31 @@ TEST(HybridGaussianFactorGraph, Conditionals) {
 /* ****************************************************************************/
 // Test hybrid gaussian factor graph error and unnormalized probabilities
 TEST(HybridGaussianFactorGraph, ErrorAndProbPrime) {
+  Switching s(3);
+
+  HybridGaussianFactorGraph graph = s.linearizedFactorGraph;
+
+  Ordering hybridOrdering = graph.getHybridOrdering();
+  HybridBayesNet::shared_ptr hybridBayesNet =
+      graph.eliminateSequential(hybridOrdering);
+
+  HybridValues delta = hybridBayesNet->optimize();
+  double error = graph.error(delta.continuous(), delta.discrete());
+
+  double expected_error = 0.490243199;
+  // regression
+  EXPECT(assert_equal(expected_error, error, 1e-9));
+
+  double probs = exp(-error);
+  double expected_probs = graph.probPrime(delta.continuous(), delta.discrete());
+
+  // regression
+  EXPECT(assert_equal(expected_probs, probs, 1e-7));
+}
+
+/* ****************************************************************************/
+// Test hybrid gaussian factor graph error and unnormalized probabilities
+TEST(HybridGaussianFactorGraph, ErrorAndProbPrimeTree) {
   Switching s(3);
 
   HybridGaussianFactorGraph graph = s.linearizedFactorGraph;

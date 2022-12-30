@@ -24,7 +24,7 @@
 namespace gtsam {
 
 /**
- * Elimination Tree type for Hybrid
+ * Elimination Tree type for Hybrid Factor Graphs.
  *
  * @ingroup hybrid
  */
