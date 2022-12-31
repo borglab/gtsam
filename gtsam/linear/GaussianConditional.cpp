@@ -67,7 +67,7 @@ namespace gtsam {
   GaussianConditional GaussianConditional::FromMeanAndStddev(Key key,
                                                              const Vector& mu,
                                                              double sigma) {
-    // |Rx - d| = |x-(Ay + b)|/sigma
+    // |Rx - d| = |x - mu|/sigma
     const Matrix R = Matrix::Identity(mu.size(), mu.size());
     const Vector& d = mu;
     return GaussianConditional(key, d, R,
@@ -189,7 +189,7 @@ double GaussianConditional::logNormalizationConstant() const {
 
 /* ************************************************************************* */
 //  density = k exp(-error(x))
-//  log = log(k) -error(x) - 0.5 * n*log(2*pi)
+//  log = log(k) -error(x)
 double GaussianConditional::logDensity(const VectorValues& x) const {
   return logNormalizationConstant() - error(x);
 }
