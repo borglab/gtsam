@@ -236,6 +236,7 @@ class VectorValues {
   bool equals(const gtsam::VectorValues& expected, double tol) const;
   void insert(size_t j, Vector value);
   Vector vector() const;
+  Vector vector(const gtsam::KeyVector& keys) const;
   Vector at(size_t j) const;
   void update(const gtsam::VectorValues& values);
 
@@ -401,6 +402,7 @@ class GaussianFactorGraph {
 
   // Optimizing and linear algebra
   gtsam::VectorValues optimize() const;
+  gtsam::VectorValues optimizeDensely() const;
   gtsam::VectorValues optimize(const gtsam::Ordering& ordering) const;
   gtsam::VectorValues optimizeGradientSearch() const;
   gtsam::VectorValues gradient(const gtsam::VectorValues& x0) const;
