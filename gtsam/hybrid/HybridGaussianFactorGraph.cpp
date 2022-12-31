@@ -81,7 +81,7 @@ static GaussianMixtureFactor::Sum &addGaussian(
 }
 
 /* ************************************************************************ */
-GaussianMixtureFactor::Sum sumFrontals(
+static GaussianMixtureFactor::Sum sumFrontals(
     const HybridGaussianFactorGraph &factors) {
   // sum out frontals, this is the factor on the separator
   gttic(sum);
@@ -136,7 +136,7 @@ GaussianMixtureFactor::Sum sumFrontals(
 }
 
 /* ************************************************************************ */
-std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>
+static std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>
 continuousElimination(const HybridGaussianFactorGraph &factors,
                       const Ordering &frontalKeys) {
   GaussianFactorGraph gfg;
@@ -157,7 +157,7 @@ continuousElimination(const HybridGaussianFactorGraph &factors,
 }
 
 /* ************************************************************************ */
-std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>
+static std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>
 discreteElimination(const HybridGaussianFactorGraph &factors,
                     const Ordering &frontalKeys) {
   DiscreteFactorGraph dfg;
@@ -182,7 +182,7 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
 }
 
 /* ************************************************************************ */
-std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>
+static std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>
 hybridElimination(const HybridGaussianFactorGraph &factors,
                   const Ordering &frontalKeys,
                   const KeySet &continuousSeparator,
@@ -302,6 +302,7 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
     return {boost::make_shared<HybridConditional>(conditional), factor};
   }
 }
+
 /* ************************************************************************
  * Function to eliminate variables **under the following assumptions**:
  * 1. When the ordering is fully continuous, and the graph only contains
