@@ -173,7 +173,7 @@ class GTSAM_EXPORT HybridConditional
   }
 
   /// Get the type-erased pointer to the inner type
-  boost::shared_ptr<Factor> inner() { return inner_; }
+  boost::shared_ptr<Factor> inner() const { return inner_; }
 
   /// Return the error of the underlying conditional.
   /// Currently only implemented for Gaussian mixture.
