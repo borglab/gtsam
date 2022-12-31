@@ -236,7 +236,7 @@ namespace gtsam {
     /**
      * @brief Visit all leaves in depth-first fashion.
      *
-     * @param f (side-effect) Function taking a value.
+     * @param f (side-effect) Function taking the value of the leaf node.
      *
      * @note Due to pruning, the number of leaves may not be the same as the
      * number of assignments. E.g. if we have a tree on 2 binary variables with
@@ -245,7 +245,7 @@ namespace gtsam {
      * Example:
      *   int sum = 0;
      *   auto visitor = [&](int y) { sum += y; };
-     *   tree.visitWith(visitor);
+     *   tree.visit(visitor);
      */
     template <typename Func>
     void visit(Func f) const;
@@ -261,8 +261,8 @@ namespace gtsam {
      *
      * Example:
      *   int sum = 0;
-     *   auto visitor = [&](int y) { sum += y; };
-     *   tree.visitWith(visitor);
+     *   auto visitor = [&](const Leaf& leaf) { sum += leaf.constant(); };
+     *   tree.visitLeaf(visitor);
      */
     template <typename Func>
     void visitLeaf(Func f) const;
