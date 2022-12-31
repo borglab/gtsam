@@ -23,6 +23,7 @@
 #include <gtsam/hybrid/HybridBayesTree.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
+#include "TinyHybridExample.h"
 #include "Switching.h"
 
 // Include for test suite
@@ -63,12 +64,19 @@ TEST(HybridBayesNet, Add) {
 
 /* ****************************************************************************/
 // Test evaluate for a pure discrete Bayes net P(Asia).
-TEST(HybridBayesNet, evaluatePureDiscrete) {
+TEST(HybridBayesNet, EvaluatePureDiscrete) {
   HybridBayesNet bayesNet;
   bayesNet.emplaceDiscrete(Asia, "99/1");
   HybridValues values;
   values.insert(asiaKey, 0);
   EXPECT_DOUBLES_EQUAL(0.99, bayesNet.evaluate(values), 1e-9);
+}
+
+/* ****************************************************************************/
+// Test creation of a tiny hybrid Bayes net.
+TEST(HybridBayesNet, Tiny) {
+  auto bayesNet = tiny::createHybridBayesNet();
+  EXPECT_LONGS_EQUAL(3, bayesNet.size());
 }
 
 /* ****************************************************************************/
