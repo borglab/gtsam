@@ -17,6 +17,7 @@
  */
 
 #include <gtsam/hybrid/HybridBayesNet.h>
+#include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 #include <gtsam/inference/Symbol.h>
 #pragma once
 
@@ -57,6 +58,27 @@ static HybridBayesNet createHybridBayesNet(int num_measurements = 1) {
   bayesNet.emplaceDiscrete(mode, "4/6");
 
   return bayesNet;
+}
+
+static HybridGaussianFactorGraph convertBayesNet(const HybridBayesNet& bayesNet,
+                                                 const HybridValues& sample) {
+  HybridGaussianFactorGraph fg;
+  int num_measurements = bayesNet.size() - 2;
+  for (int i = 0; i < num_measurements; i++) {
+    auto conditional = bayesNet.atMixture(i);
+    auto factor = conditional->likelihood(sample.continuousSubset({Z(i)}));
+    fg.push_back(factor);
+  }
+  fg.push_back(bayesNet.atGaussian(num_measurements));
+  fg.push_back(bayesNet.atDiscrete(num_measurements + 1));
+  return fg;
+}
+
+static HybridGaussianFactorGraph createHybridGaussianFactorGraph(
+    int num_measurements = 1) {
+  auto bayesNet = createHybridBayesNet(num_measurements);
+  auto sample = bayesNet.sample();
+  return convertBayesNet(bayesNet, sample);
 }
 
 }  // namespace tiny
