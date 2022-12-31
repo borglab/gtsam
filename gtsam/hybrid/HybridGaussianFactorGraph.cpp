@@ -81,15 +81,14 @@ static GaussianMixtureFactor::Sum &addGaussian(
 }
 
 /* ************************************************************************ */
-static GaussianMixtureFactor::Sum sumFrontals(
-    const HybridGaussianFactorGraph &factors) {
+GaussianMixtureFactor::Sum HybridGaussianFactorGraph::SumFrontals() const {
   // sum out frontals, this is the factor on the separator
   gttic(sum);
 
   GaussianMixtureFactor::Sum sum;
   std::vector<GaussianFactor::shared_ptr> deferredFactors;
 
-  for (auto &f : factors) {
+  for (auto &f : factors_) {
     if (f->isHybrid()) {
       // TODO(dellaert): just use a virtual method defined in HybridFactor.
       if (auto gm = boost::dynamic_pointer_cast<GaussianMixtureFactor>(f)) {
@@ -194,7 +193,7 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
 
   // Collect all the frontal factors to create Gaussian factor graphs
   // indexed on the discrete keys.
-  GaussianMixtureFactor::Sum sum = sumFrontals(factors);
+  GaussianMixtureFactor::Sum sum = factors.SumFrontals();
 
   // If a tree leaf contains nullptr,
   // convert that leaf to an empty GaussianFactorGraph.
