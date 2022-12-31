@@ -17,10 +17,7 @@
  * @date    Feb 14, 2011
  */
 
-#include <boost/assign/std/map.hpp>
-#include <boost/assign/std/vector.hpp>
 #include <boost/make_shared.hpp>
-using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
