@@ -15,9 +15,18 @@ class HybridValues {
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::HybridValues& other, double tol) const;
+  
   void insert(gtsam::Key j, int value);
   void insert(gtsam::Key j, const gtsam::Vector& value);
+  
+  void insert(const gtsam::VectorValues& values);
+  void insert(const gtsam::DiscreteValues& values);
+  void insert(const gtsam::HybridValues& values);
+  
   void update(const gtsam::VectorValues& values);
+  void update(const gtsam::DiscreteValues& values);
+  void update(const gtsam::HybridValues& values);
+  
   size_t& atDiscrete(gtsam::Key j);
   gtsam::Vector& at(gtsam::Key j);
 };

@@ -112,7 +112,7 @@ std::function<double(const Assignment<Key> &, double)> prunerFunc(
           DiscreteValues::CartesianProduct(set_diff);
       for (const DiscreteValues &assignment : assignments) {
         DiscreteValues augmented_values(values);
-        augmented_values.insert(assignment.begin(), assignment.end());
+        augmented_values.insert(assignment);
 
         // If any one of the sub-branches are non-zero,
         // we need this probability.

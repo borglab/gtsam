@@ -21,12 +21,10 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/discrete/Signature.h>
 
-#include <boost/assign/std/vector.hpp>
 #include <vector>
 
 using namespace std;
 using namespace gtsam;
-using namespace boost::assign;
 
 DiscreteKey X(0, 2), Y(1, 3), Z(2, 2);
 
@@ -57,12 +55,8 @@ TEST(testSignature, simple_conditional) {
 
 /* ************************************************************************* */
 TEST(testSignature, simple_conditional_nonparser) {
-  Signature::Table table;
-  Signature::Row row1, row2, row3;
-  row1 += 1.0, 1.0;
-  row2 += 2.0, 3.0;
-  row3 += 1.0, 4.0;
-  table += row1, row2, row3;
+  Signature::Row row1{1, 1}, row2{2, 3}, row3{1, 4};
+  Signature::Table table{row1, row2, row3};
 
   Signature sig(X | Y = table);
   CHECK(sig.key() == X);

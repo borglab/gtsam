@@ -12,14 +12,11 @@
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
 
-#include <boost/assign/std/vector.hpp>
-#include <boost/assign/std/map.hpp>
 #include <boost/optional.hpp>
 #include <boost/format.hpp>
 
 #include <algorithm>
 
-using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 

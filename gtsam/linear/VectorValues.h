@@ -88,10 +88,15 @@ namespace gtsam {
     /// @name Standard Constructors
     /// @{
 
-    /**
-     * Default constructor creates an empty VectorValues.
-     */
+    /// Default constructor creates an empty VectorValues.
     VectorValues() {}
+
+    /// Construct from initializer list.
+    VectorValues(std::initializer_list<std::pair<Key, Vector>> init) {
+      for (const auto& p : init) {
+        values_.insert(p);  // Insert key-value pair into map
+      }
+    }
 
     /** Merge two VectorValues into one, this is more efficient than inserting
      * elements one by one. */
@@ -167,7 +172,7 @@ namespace gtsam {
     /** For all key/value pairs in \c values, replace values with corresponding keys in this class
     *   with those in \c values.  Throws std::out_of_range if any keys in \c values are not present
     *   in this class. */
-    void update(const VectorValues& values);
+    VectorValues& update(const VectorValues& values);
 
     /** Insert a vector \c value with key \c j.  Throws an invalid_argument exception if the key \c
      *  j is already used.
@@ -198,7 +203,7 @@ namespace gtsam {
 
     /** Insert all values from \c values.  Throws an invalid_argument exception if any keys to be
      *  inserted are already used. */
-    void insert(const VectorValues& values);
+    VectorValues& insert(const VectorValues& values);
 
     /** insert that mimics the STL map insert - if the value already exists, the map is not modified
      *  and an iterator to the existing value is returned, along with 'false'.  If the value did not
