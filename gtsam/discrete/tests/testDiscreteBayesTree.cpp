@@ -21,9 +21,6 @@
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/inference/BayesNet.h>
 
-#include <boost/assign/std/vector.hpp>
-using namespace boost::assign;
-
 #include <CppUnitLite/TestHarness.h>
 
 #include <iostream>

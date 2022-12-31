@@ -51,6 +51,13 @@ class Assignment : public std::map<L, size_t> {
  public:
   using std::map<L, size_t>::operator=;
 
+  // Define the implicit default constructor.
+  Assignment() = default;
+
+  // Construct from initializer list.
+  Assignment(std::initializer_list<std::pair<const L, size_t>> init)
+      : std::map<L, size_t>{init} {}
+
   void print(const std::string& s = "Assignment: ",
              const std::function<std::string(L)>& labelFormatter =
                  &DefaultFormatter) const {

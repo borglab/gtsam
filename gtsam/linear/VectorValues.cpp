@@ -98,30 +98,34 @@ namespace gtsam {
   }
 
   /* ************************************************************************ */
-  void VectorValues::update(const VectorValues& values)
-  {
+  VectorValues& VectorValues::update(const VectorValues& values) {
     iterator hint = begin();
-    for(const KeyValuePair& key_value: values)
-    {
-      // Use this trick to find the value using a hint, since we are inserting from another sorted map
+    for (const KeyValuePair& key_value : values) {
+      // Use this trick to find the value using a hint, since we are inserting
+      // from another sorted map
       size_t oldSize = values_.size();
       hint = values_.insert(hint, key_value);
-      if(values_.size() > oldSize) {
+      if (values_.size() > oldSize) {
         values_.unsafe_erase(hint);
-        throw out_of_range("Requested to update a VectorValues with another VectorValues that contains keys not present in the first.");
+        throw out_of_range(
+            "Requested to update a VectorValues with another VectorValues that "
+            "contains keys not present in the first.");
       } else {
         hint->second = key_value.second;
       }
     }
+    return *this;
   }
 
   /* ************************************************************************ */
-  void VectorValues::insert(const VectorValues& values)
-  {
+  VectorValues& VectorValues::insert(const VectorValues& values) {
     size_t originalSize = size();
     values_.insert(values.begin(), values.end());
-    if(size() != originalSize + values.size())
-      throw invalid_argument("Requested to insert a VectorValues into another VectorValues that already contains one or more of its keys.");
+    if (size() != originalSize + values.size())
+      throw invalid_argument(
+          "Requested to insert a VectorValues into another VectorValues that "
+          "already contains one or more of its keys.");
+    return *this;
   }
 
   /* ************************************************************************ */

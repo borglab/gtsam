@@ -26,11 +26,6 @@
 #include <CppUnitLite/TestHarness.h>
 
 
-#include <boost/assign/list_inserter.hpp>
-#include <boost/assign/std/map.hpp>
-
-using namespace boost::assign;
-
 #include <iostream>
 #include <string>
 #include <vector>
@@ -115,11 +110,11 @@ TEST(DiscreteBayesNet, Asia) {
   EXPECT(assert_equal(expected2, *chordal->back()));
 
   // now sample from it
-  DiscreteValues expectedSample;
+  DiscreteValues expectedSample{{Asia.first, 1},       {Dyspnea.first, 1},
+                                {XRay.first, 1},       {Tuberculosis.first, 0},
+                                {Smoking.first, 1},    {Either.first, 1},
+                                {LungCancer.first, 1}, {Bronchitis.first, 0}};
   SETDEBUG("DiscreteConditional::sample", false);
-  insert(expectedSample)(Asia.first, 1)(Dyspnea.first, 1)(XRay.first, 1)(
-      Tuberculosis.first, 0)(Smoking.first, 1)(Either.first, 1)(
-      LungCancer.first, 1)(Bronchitis.first, 0);
   auto actualSample = chordal2->sample();
   EXPECT(assert_equal(expectedSample, actualSample));
 }
