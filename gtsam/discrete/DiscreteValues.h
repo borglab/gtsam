@@ -64,6 +64,11 @@ class GTSAM_EXPORT DiscreteValues : public Assignment<Key> {
   /// @name Standard Interface
   /// @{
 
+  // insert in base class;
+  std::pair<iterator, bool> insert( const value_type& value ){
+    return Base::insert(value);
+  }
+
   /** Insert all values from \c values.  Throws an invalid_argument exception if
    * any keys to be inserted are already used. */
   DiscreteValues& insert(const DiscreteValues& values);
