@@ -96,7 +96,7 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
   /// @name Standard Interface
   /// @{
 
-  /// Return pointer to the internal discrete factor
+  /// Return pointer to the internal Gaussian factor.
   GaussianFactor::shared_ptr inner() const { return inner_; }
 
   /// Return the error of the underlying Discrete Factor.
