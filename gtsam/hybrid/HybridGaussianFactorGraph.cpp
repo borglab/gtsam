@@ -235,7 +235,7 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
     gttoc_(hybrid_eliminate);
 #endif
 
-    //TODO(Varun) The normalizing constant has to be computed correctly
+    // TODO(Varun) The normalizing constant has to be computed correctly
     return {conditional_factor.first, {conditional_factor.second, 0.0}};
   };
 
@@ -461,15 +461,8 @@ AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::error(
       // If factor is hybrid, select based on assignment.
       GaussianMixtureFactor::shared_ptr gaussianMixture =
           boost::static_pointer_cast<GaussianMixtureFactor>(factors_.at(idx));
-      // Compute factor error.
-      factor_error = gaussianMixture->error(continuousValues);
-
-      // If first factor, assign error, else add it.
-      if (idx == 0) {
-        error_tree = factor_error;
-      } else {
-        error_tree = error_tree + factor_error;
-      }
+      // Compute factor error and add it.
+      error_tree = error_tree + gaussianMixture->error(continuousValues);
 
     } else if (factors_.at(idx)->isContinuous()) {
       // If continuous only, get the (double) error
