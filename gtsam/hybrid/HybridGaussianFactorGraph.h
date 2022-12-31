@@ -21,6 +21,7 @@
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
 #include <gtsam/hybrid/HybridGaussianFactor.h>
+#include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/inference/EliminateableFactorGraph.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/Ordering.h>
@@ -118,14 +119,12 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
       : Base(graph) {}
 
   /// @}
+  /// @name Adding factors.
+  /// @{
 
-  using Base::empty;
   using Base::reserve;
-  using Base::size;
-  using Base::operator[];
   using Base::add;
   using Base::push_back;
-  using Base::resize;
 
   /// Add a Jacobian factor to the factor graph.
   void add(JacobianFactor&& factor);
@@ -172,6 +171,25 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
     }
   }
 
+  /// @}
+  /// @name Testable
+  /// @{
+
+  // TODO(dellaert):  customize print and equals.
+  // void print(const std::string& s = "HybridGaussianFactorGraph",
+  //            const KeyFormatter& keyFormatter = DefaultKeyFormatter) const
+  //     override;
+  // bool equals(const This& fg, double tol = 1e-9) const override;
+
+  /// @}
+  /// @name Standard Interface
+  /// @{
+
+  using Base::empty;
+  using Base::size;
+  using Base::operator[];
+  using Base::resize;
+
   /**
    * @brief Compute error for each discrete assignment,
    * and return as a tree.
@@ -217,6 +235,12 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
    * @return const Ordering
    */
   const Ordering getHybridOrdering() const;
+
+  /// Compute a DecisionTree<Key, GaussianFactorGraph> with the marginal for
+  /// each discrete assignment.
+  GaussianMixtureFactor::Sum SumFrontals() const;
+
+  /// @}
 };
 
 }  // namespace gtsam
