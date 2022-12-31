@@ -40,7 +40,6 @@
 #include <gtsam/linear/JacobianFactor.h>
 
 #include <algorithm>
-#include <boost/assign/std/map.hpp>
 #include <cstddef>
 #include <functional>
 #include <iostream>
@@ -48,8 +47,6 @@
 #include <vector>
 
 #include "Switching.h"
-
-using namespace boost::assign;
 
 using namespace std;
 using namespace gtsam;

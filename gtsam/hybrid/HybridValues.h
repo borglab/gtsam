@@ -104,6 +104,28 @@ class GTSAM_EXPORT HybridValues {
    * @param j The index with which the value will be associated. */
   void insert(Key j, const Vector& value) { continuous_.insert(j, value); }
 
+  /** Insert all continuous values from \c values.  Throws an invalid_argument
+   * exception if any keys to be inserted are already used. */
+  HybridValues& insert(const VectorValues& values) {
+    continuous_.insert(values);
+    return *this;
+  }
+
+  /** Insert all discrete values from \c values.  Throws an invalid_argument
+   * exception if any keys to be inserted are already used. */
+  HybridValues& insert(const DiscreteValues& values) {
+    discrete_.insert(values);
+    return *this;
+  }
+
+  /** Insert all values from \c values.  Throws an invalid_argument exception if
+   * any keys to be inserted are already used. */
+  HybridValues& insert(const HybridValues& values) {
+    continuous_.insert(values.continuous());
+    discrete_.insert(values.discrete());
+    return *this;
+  }
+
   // TODO(Shangjie)- insert_or_assign() , similar to Values.h
 
   /**
@@ -118,10 +140,33 @@ class GTSAM_EXPORT HybridValues {
    */
   Vector& at(Key j) { return continuous_.at(j); };
 
-  /** For all key/value pairs in \c values, replace values with corresponding keys in this class
-  *   with those in \c values.  Throws std::out_of_range if any keys in \c values are not present
-  *   in this class. */
-  void update(const VectorValues& values) { continuous_.update(values); }
+  /** For all key/value pairs in \c values, replace continuous values with
+   * corresponding keys in this object with those in \c values.  Throws
+   * std::out_of_range if any keys in \c values are not present in this object.
+   */
+  HybridValues& update(const VectorValues& values) {
+    continuous_.update(values);
+    return *this;
+  }
+
+  /** For all key/value pairs in \c values, replace discrete values with
+   * corresponding keys in this object with those in \c values.  Throws
+   * std::out_of_range if any keys in \c values are not present in this object.
+   */
+  HybridValues& update(const DiscreteValues& values) {
+    discrete_.update(values);
+    return *this;
+  }
+
+  /** For all key/value pairs in \c values, replace all values with
+   * corresponding keys in this object with those in \c values.  Throws
+   * std::out_of_range if any keys in \c values are not present in this object.
+   */
+  HybridValues& update(const HybridValues& values) {
+    continuous_.update(values.continuous());
+    discrete_.update(values.discrete());
+    return *this;
+  }
 
   /// @}
   /// @name Wrapper support

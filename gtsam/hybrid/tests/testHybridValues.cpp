@@ -32,22 +32,45 @@
 using namespace std;
 using namespace gtsam;
 
-TEST(HybridValues, basics) {
+static const HybridValues kExample{{{99, Vector2(2, 3)}}, {{100, 3}}};
+
+/* ************************************************************************* */
+TEST(HybridValues, Basics) {
   HybridValues values;
   values.insert(99, Vector2(2, 3));
   values.insert(100, 3);
+  EXPECT(assert_equal(kExample, values));
   EXPECT(assert_equal(values.at(99), Vector2(2, 3)));
   EXPECT(assert_equal(values.atDiscrete(100), int(3)));
-
-  values.print();
 
   HybridValues values2;
   values2.insert(100, 3);
   values2.insert(99, Vector2(2, 3));
-  EXPECT(assert_equal(values2, values));
+  EXPECT(assert_equal(kExample, values2));
+}
 
-  values2.insert(98, Vector2(2, 3));
-  EXPECT(!assert_equal(values2, values));
+/* ************************************************************************* */
+// Check insert
+TEST(HybridValues, Insert) {
+  HybridValues actual;
+  EXPECT(assert_equal({{}, {{100, 3}}},  //
+                      actual.insert(DiscreteValues{{100, 3}})));
+  EXPECT(assert_equal(kExample,  //
+                      actual.insert(VectorValues{{99, Vector2(2, 3)}})));
+  HybridValues actual2;
+  EXPECT(assert_equal(kExample, actual2.insert(kExample)));
+}
+
+/* ************************************************************************* */
+// Check update.
+TEST(HybridValues, Update) {
+  HybridValues actual(kExample);
+  EXPECT(assert_equal({{{99, Vector2(2, 3)}}, {{100, 2}}},
+                      actual.update(DiscreteValues{{100, 2}})));
+  EXPECT(assert_equal({{{99, Vector1(4)}}, {{100, 2}}},
+                      actual.update(VectorValues{{99, Vector1(4)}})));
+  HybridValues actual2(kExample);
+  EXPECT(assert_equal(kExample, actual2.update(kExample)));
 }
 
 /* ************************************************************************* */

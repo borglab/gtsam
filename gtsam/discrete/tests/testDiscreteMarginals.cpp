@@ -19,9 +19,6 @@
 
 #include <gtsam/discrete/DiscreteMarginals.h>
 
-#include <boost/assign/std/vector.hpp>
-using namespace boost::assign;
-
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;

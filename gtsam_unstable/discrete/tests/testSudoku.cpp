@@ -9,8 +9,6 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam_unstable/discrete/CSP.h>
 
-#include <boost/assign/std/map.hpp>
-using boost::assign::insert;
 #include <stdarg.h>
 
 #include <iostream>
@@ -128,11 +126,14 @@ TEST(Sudoku, small) {
   // optimize and check
   auto solution = csp.optimize();
   DiscreteValues expected;
-  insert(expected)(csp.key(0, 0), 0)(csp.key(0, 1), 1)(csp.key(0, 2), 2)(
-      csp.key(0, 3), 3)(csp.key(1, 0), 2)(csp.key(1, 1), 3)(csp.key(1, 2), 0)(
-      csp.key(1, 3), 1)(csp.key(2, 0), 3)(csp.key(2, 1), 2)(csp.key(2, 2), 1)(
-      csp.key(2, 3), 0)(csp.key(3, 0), 1)(csp.key(3, 1), 0)(csp.key(3, 2), 3)(
-      csp.key(3, 3), 2);
+  expected = {{csp.key(0, 0), 0}, {csp.key(0, 1), 1},
+              {csp.key(0, 2), 2}, {csp.key(0, 3), 3},  //
+              {csp.key(1, 0), 2}, {csp.key(1, 1), 3},
+              {csp.key(1, 2), 0}, {csp.key(1, 3), 1},  //
+              {csp.key(2, 0), 3}, {csp.key(2, 1), 2},
+              {csp.key(2, 2), 1}, {csp.key(2, 3), 0},  //
+              {csp.key(3, 0), 1}, {csp.key(3, 1), 0},
+              {csp.key(3, 2), 3}, {csp.key(3, 3), 2}};
   EXPECT(assert_equal(expected, solution));
   // csp.printAssignment(solution);
 
