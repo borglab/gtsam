@@ -25,10 +25,7 @@
 #include <gtsam/discrete/DecisionTree-inl.h>  // for convert only
 #define DISABLE_TIMING
 
-#include <boost/assign/std/map.hpp>
-#include <boost/assign/std/vector.hpp>
 #include <boost/tokenizer.hpp>
-using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/timing.h>

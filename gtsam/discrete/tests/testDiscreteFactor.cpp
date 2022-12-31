@@ -21,9 +21,6 @@
 #include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/discrete/DiscreteFactor.h>
 
-#include <boost/assign/std/map.hpp>
-using namespace boost::assign;
-
 using namespace std;
 using namespace gtsam;
 using namespace gtsam::serializationTestHelpers;
