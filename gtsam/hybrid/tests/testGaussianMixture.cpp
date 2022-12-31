@@ -128,9 +128,9 @@ TEST(GaussianMixture, Error) {
   // Regression for non-tree version.
   DiscreteValues assignment;
   assignment[M(1)] = 0;
-  EXPECT_DOUBLES_EQUAL(0.5, mixture.error(values, assignment), 1e-8);
+  EXPECT_DOUBLES_EQUAL(0.5, mixture.error({values, assignment}), 1e-8);
   assignment[M(1)] = 1;
-  EXPECT_DOUBLES_EQUAL(4.3252595155709335, mixture.error(values, assignment),
+  EXPECT_DOUBLES_EQUAL(4.3252595155709335, mixture.error({values, assignment}),
                        1e-8);
 }
 
@@ -179,7 +179,9 @@ TEST(GaussianMixture, Likelihood) {
   const GaussianMixtureFactor::Factors factors(
       gm.conditionals(),
       [measurements](const GaussianConditional::shared_ptr& conditional) {
-        return conditional->likelihood(measurements);
+        return GaussianMixtureFactor::FactorAndConstant{
+            conditional->likelihood(measurements),
+            conditional->logNormalizationConstant()};
       });
   const GaussianMixtureFactor expected({X(0)}, {mode}, factors);
   EXPECT(assert_equal(*factor, expected));

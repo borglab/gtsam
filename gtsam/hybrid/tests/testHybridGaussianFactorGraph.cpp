@@ -575,18 +575,14 @@ TEST(HybridGaussianFactorGraph, ErrorAndProbPrime) {
   HybridBayesNet::shared_ptr hybridBayesNet =
       graph.eliminateSequential(hybridOrdering);
 
-  HybridValues delta = hybridBayesNet->optimize();
-  double error = graph.error(delta.continuous(), delta.discrete());
-
-  double expected_error = 0.490243199;
-  // regression
-  EXPECT(assert_equal(expected_error, error, 1e-9));
-
-  double probs = exp(-error);
-  double expected_probs = graph.probPrime(delta.continuous(), delta.discrete());
+  const HybridValues delta = hybridBayesNet->optimize();
+  const double error = graph.error(delta);
 
   // regression
-  EXPECT(assert_equal(expected_probs, probs, 1e-7));
+  EXPECT(assert_equal(1.58886, error, 1e-5));
+
+  // Real test:
+  EXPECT(assert_equal(graph.probPrime(delta), exp(-error), 1e-7));
 }
 
 /* ****************************************************************************/

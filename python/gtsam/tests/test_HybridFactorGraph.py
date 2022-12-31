@@ -6,7 +6,7 @@ All Rights Reserved
 See LICENSE for the license information
 
 Unit tests for Hybrid Factor Graphs.
-Author: Fan Jiang
+Author: Fan Jiang, Varun Agrawal, Frank Dellaert
 """
 # pylint: disable=invalid-name, no-name-in-module, no-member
 
@@ -18,13 +18,14 @@ from gtsam.utils.test_case import GtsamTestCase
 
 import gtsam
 from gtsam import (DiscreteConditional, DiscreteKeys, GaussianConditional,
-                   GaussianMixture, GaussianMixtureFactor,
+                   GaussianMixture, GaussianMixtureFactor, HybridBayesNet, HybridValues,
                    HybridGaussianFactorGraph, JacobianFactor, Ordering,
                    noiseModel)
 
 
 class TestHybridGaussianFactorGraph(GtsamTestCase):
     """Unit tests for HybridGaussianFactorGraph."""
+
     def test_create(self):
         """Test construction of hybrid factor graph."""
         model = noiseModel.Unit.Create(3)
@@ -81,13 +82,13 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         self.assertEqual(hv.atDiscrete(C(0)), 1)
 
     @staticmethod
-    def tiny(num_measurements: int = 1) -> gtsam.HybridBayesNet:
+    def tiny(num_measurements: int = 1) -> HybridBayesNet:
         """
         Create a tiny two variable hybrid model which represents
         the generative probability P(z, x, n) = P(z | x, n)P(x)P(n).
         """
         # Create hybrid Bayes net.
-        bayesNet = gtsam.HybridBayesNet()
+        bayesNet = HybridBayesNet()
 
         # Create mode key: 0 is low-noise, 1 is high-noise.
         mode = (M(0), 2)
@@ -113,9 +114,50 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         bayesNet.addGaussian(prior_on_x0)
 
         # Add prior on mode.
-        bayesNet.emplaceDiscrete(mode, "1/1")
+        bayesNet.emplaceDiscrete(mode, "4/6")
 
         return bayesNet
+
+    @staticmethod
+    def factor_graph_from_bayes_net(bayesNet: HybridBayesNet, sample: HybridValues):
+        """Create a factor graph from the Bayes net with sampled measurements.
+            The factor graph is `P(x)P(n) ϕ(x, n; z0) ϕ(x, n; z1) ...`
+            and thus represents the same joint probability as the Bayes net.
+        """
+        fg = HybridGaussianFactorGraph()
+        num_measurements = bayesNet.size() - 2
+        for i in range(num_measurements):
+            conditional = bayesNet.atMixture(i)
+            measurement = gtsam.VectorValues()
+            measurement.insert(Z(i), sample.at(Z(i)))
+            factor = conditional.likelihood(measurement)
+            fg.push_back(factor)
+        fg.push_back(bayesNet.atGaussian(num_measurements))
+        fg.push_back(bayesNet.atDiscrete(num_measurements+1))
+        return fg
+
+    @classmethod
+    def estimate_marginals(cls, bayesNet: HybridBayesNet, sample: HybridValues, N=10000):
+        """Do importance sampling to get an estimate of the discrete marginal P(mode)."""
+        # Use prior on x0, mode as proposal density.
+        prior = cls.tiny(num_measurements=0)  # just P(x0)P(mode)
+
+        # Allocate space for marginals.
+        marginals = np.zeros((2,))
+
+        # Do importance sampling.
+        num_measurements = bayesNet.size() - 2
+        for s in range(N):
+            proposed = prior.sample()
+            for i in range(num_measurements):
+                z_i = sample.at(Z(i))
+                proposed.insert(Z(i), z_i)
+            weight = bayesNet.evaluate(proposed) / prior.evaluate(proposed)
+            marginals[proposed.atDiscrete(M(0))] += weight
+
+        # print marginals:
+        marginals /= marginals.sum()
+        return marginals
 
     def test_tiny(self):
         """Test a tiny two variable hybrid model."""
@@ -123,25 +165,25 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         sample = bayesNet.sample()
         # print(sample)
 
-        # Create a factor graph from the Bayes net with sampled measurements.
-        fg = HybridGaussianFactorGraph()
-        conditional = bayesNet.atMixture(0)
-        measurement = gtsam.VectorValues()
-        measurement.insert(Z(0), sample.at(Z(0)))
-        factor = conditional.likelihood(measurement)
-        fg.push_back(factor)
-        fg.push_back(bayesNet.atGaussian(1))
-        fg.push_back(bayesNet.atDiscrete(2))
+        # Estimate marginals using importance sampling.
+        marginals = self.estimate_marginals(bayesNet, sample)
+        # print(f"True mode: {sample.atDiscrete(M(0))}")
+        # print(f"P(mode=0; z0) = {marginals[0]}")
+        # print(f"P(mode=1; z0) = {marginals[1]}")
 
+        # Check that the estimate is close to the true value.
+        self.assertAlmostEqual(marginals[0], 0.4, delta=0.1)
+        self.assertAlmostEqual(marginals[1], 0.6, delta=0.1)
+
+        fg = self.factor_graph_from_bayes_net(bayesNet, sample)
         self.assertEqual(fg.size(), 3)
 
     @staticmethod
-    def calculate_ratio(bayesNet, fg, sample):
+    def calculate_ratio(bayesNet: HybridBayesNet,
+                        fg: HybridGaussianFactorGraph,
+                        sample: HybridValues):
         """Calculate ratio  between Bayes net probability and the factor graph."""
-        continuous = gtsam.VectorValues()
-        continuous.insert(X(0), sample.at(X(0)))
-        return bayesNet.evaluate(sample) / fg.probPrime(
-            continuous, sample.discrete())
+        return bayesNet.evaluate(sample) / fg.probPrime(sample) if fg.probPrime(sample) > 0 else 0
 
     def test_ratio(self):
         """
@@ -153,23 +195,22 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         # Create the Bayes net representing the generative model P(z, x, n)=P(z|x, n)P(x)P(n)
         bayesNet = self.tiny(num_measurements=2)
         # Sample from the Bayes net.
-        sample: gtsam.HybridValues = bayesNet.sample()
+        sample: HybridValues = bayesNet.sample()
         # print(sample)
 
-        # Create a factor graph from the Bayes net with sampled measurements.
-        # The factor graph is `P(x)P(n) ϕ(x, n; z1) ϕ(x, n; z2)`
-        # and thus represents the same joint probability as the Bayes net.
-        fg = HybridGaussianFactorGraph()
-        for i in range(2):
-            conditional = bayesNet.atMixture(i)
-            measurement = gtsam.VectorValues()
-            measurement.insert(Z(i), sample.at(Z(i)))
-            factor = conditional.likelihood(measurement)
-            fg.push_back(factor)
-        fg.push_back(bayesNet.atGaussian(2))
-        fg.push_back(bayesNet.atDiscrete(3))
+        # Estimate marginals using importance sampling.
+        marginals = self.estimate_marginals(bayesNet, sample)
+        # print(f"True mode: {sample.atDiscrete(M(0))}")
+        # print(f"P(mode=0; z0, z1) = {marginals[0]}")
+        # print(f"P(mode=1; z0, z1) = {marginals[1]}")
 
-        # print(fg)
+        # Check marginals based on sampled mode.
+        if sample.atDiscrete(M(0)) == 0:
+            self.assertGreater(marginals[0], marginals[1])
+        else:
+            self.assertGreater(marginals[1], marginals[0])
+
+        fg = self.factor_graph_from_bayes_net(bayesNet, sample)
         self.assertEqual(fg.size(), 4)
 
         # Calculate ratio between Bayes net probability and the factor graph:
@@ -185,10 +226,10 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         for i in range(10):
             other = bayesNet.sample()
             other.update(measurements)
-            # print(other)
-            # ratio = self.calculate_ratio(bayesNet, fg, other)
+            ratio = self.calculate_ratio(bayesNet, fg, other)
             # print(f"Ratio: {ratio}\n")
-            # self.assertAlmostEqual(ratio, expected_ratio)
+            if (ratio > 0):
+                self.assertAlmostEqual(ratio, expected_ratio)
 
 
 if __name__ == "__main__":
