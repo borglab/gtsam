@@ -99,7 +99,7 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
   /// Return pointer to the internal Gaussian factor.
   GaussianFactor::shared_ptr inner() const { return inner_; }
 
-  /// Return the error of the underlying Discrete Factor.
+  /// Return the error of the underlying Gaussian factor.
   double error(const HybridValues &values) const override;
   /// @}
 };
