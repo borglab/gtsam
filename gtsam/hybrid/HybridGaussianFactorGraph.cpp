@@ -174,7 +174,8 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
     }
   }
 
-  auto result = EliminateForMPE(dfg, frontalKeys);
+  // TODO(dellaert): This does sum-product. For max-product, use EliminateForMPE
+  auto result = EliminateDiscrete(dfg, frontalKeys);
 
   return {boost::make_shared<HybridConditional>(result.first),
           boost::make_shared<HybridDiscreteFactor>(result.second)};
