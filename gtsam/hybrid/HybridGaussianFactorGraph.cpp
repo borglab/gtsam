@@ -235,6 +235,7 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
     gttoc_(hybrid_eliminate);
 #endif
 
+    //TODO(Varun) The normalizing constant has to be computed correctly
     return {conditional_factor.first, {conditional_factor.second, 0.0}};
   };
 
@@ -257,7 +258,6 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
   // If there are no more continuous parents, then we should create here a
   // DiscreteFactor, with the error for each discrete choice.
   if (keysOfSeparator.empty()) {
-    VectorValues empty_values;
     auto factorProb =
         [&](const GaussianMixtureFactor::FactorAndConstant &factor_z) {
           GaussianFactor::shared_ptr factor = factor_z.factor;
@@ -265,9 +265,7 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
             return 0.0;  // If nullptr, return 0.0 probability
           } else {
             // This is the probability q(μ) at the MLE point.
-            double error =
-                0.5 * std::abs(factor->augmentedInformation().determinant()) +
-                factor_z.constant;
+            double error = factor_z.error(VectorValues());
             return std::exp(-error);
           }
         };
