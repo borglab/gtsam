@@ -183,10 +183,8 @@ class HybridGaussianFactorGraph {
   bool equals(const gtsam::HybridGaussianFactorGraph& fg, double tol = 1e-9) const;
 
   // evaluation
-  double error(const gtsam::VectorValues& continuousValues,
-               const gtsam::DiscreteValues& discreteValues) const;
-  double probPrime(const gtsam::VectorValues& continuousValues,
-                   const gtsam::DiscreteValues& discreteValues) const;
+  double error(const gtsam::HybridValues& values) const;
+  double probPrime(const gtsam::HybridValues& values) const;
 
   gtsam::HybridBayesNet* eliminateSequential();
   gtsam::HybridBayesNet* eliminateSequential(

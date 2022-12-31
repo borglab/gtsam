@@ -24,10 +24,12 @@
 
 namespace gtsam {
 
+class HybridValues;
+
 /**
- * A HybridDiscreteFactor is a thin container for DiscreteFactor, which allows
- * us to hide the implementation of DiscreteFactor and thus avoid diamond
- * inheritance.
+ * A HybridDiscreteFactor is a thin container for DiscreteFactor, which
+ * allows us to hide the implementation of DiscreteFactor and thus avoid
+ * diamond inheritance.
  *
  * @ingroup hybrid
  */
@@ -59,9 +61,15 @@ class GTSAM_EXPORT HybridDiscreteFactor : public HybridFactor {
       const KeyFormatter &formatter = DefaultKeyFormatter) const override;
 
   /// @}
+  /// @name Standard Interface
+  /// @{
 
   /// Return pointer to the internal discrete factor
   DiscreteFactor::shared_ptr inner() const { return inner_; }
+
+  /// Return the error of the underlying Discrete Factor.
+  double error(const HybridValues &values) const override;
+  /// @}
 };
 
 // traits

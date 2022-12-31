@@ -22,6 +22,7 @@
 #include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam/hybrid/GaussianMixture.h>
 #include <gtsam/hybrid/GaussianMixtureFactor.h>
+#include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/inference/Conditional-inst.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
@@ -149,17 +150,19 @@ boost::shared_ptr<GaussianMixtureFactor> GaussianMixture::likelihood(
   const DiscreteKeys discreteParentKeys = discreteKeys();
   const KeyVector continuousParentKeys = continuousParents();
   const GaussianMixtureFactor::Factors likelihoods(
-      conditionals(), [&](const GaussianConditional::shared_ptr &conditional) {
-        return conditional->likelihood(frontals);
+      conditionals_, [&](const GaussianConditional::shared_ptr &conditional) {
+        return GaussianMixtureFactor::FactorAndConstant{
+            conditional->likelihood(frontals),
+            conditional->logNormalizationConstant()};
       });
   return boost::make_shared<GaussianMixtureFactor>(
       continuousParentKeys, discreteParentKeys, likelihoods);
 }
 
 /* ************************************************************************* */
-std::set<DiscreteKey> DiscreteKeysAsSet(const DiscreteKeys &dkeys) {
+std::set<DiscreteKey> DiscreteKeysAsSet(const DiscreteKeys &discreteKeys) {
   std::set<DiscreteKey> s;
-  s.insert(dkeys.begin(), dkeys.end());
+  s.insert(discreteKeys.begin(), discreteKeys.end());
   return s;
 }
 
@@ -184,7 +187,7 @@ GaussianMixture::prunerFunc(const DecisionTreeFactor &decisionTree) {
                     const GaussianConditional::shared_ptr &conditional)
       -> GaussianConditional::shared_ptr {
     // typecast so we can use this to get probability value
-    DiscreteValues values(choices);
+    const DiscreteValues values(choices);
 
     // Case where the gaussian mixture has the same
     // discrete keys as the decision tree.
@@ -254,11 +257,10 @@ AlgebraicDecisionTree<Key> GaussianMixture::error(
 }
 
 /* *******************************************************************************/
-double GaussianMixture::error(const VectorValues &continuousValues,
-                              const DiscreteValues &discreteValues) const {
+double GaussianMixture::error(const HybridValues &values) const {
   // Directly index to get the conditional, no need to build the whole tree.
-  auto conditional = conditionals_(discreteValues);
-  return conditional->error(continuousValues);
+  auto conditional = conditionals_(values.discrete());
+  return conditional->error(values.continuous());
 }
 
 }  // namespace gtsam

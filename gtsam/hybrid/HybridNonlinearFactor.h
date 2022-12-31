@@ -51,12 +51,22 @@ class HybridNonlinearFactor : public HybridFactor {
       const KeyFormatter &formatter = DefaultKeyFormatter) const override;
 
   /// @}
+  /// @name Standard Interface
+  /// @{
 
   NonlinearFactor::shared_ptr inner() const { return inner_; }
+
+  /// Error for HybridValues is not provided for nonlinear factor.
+  double error(const HybridValues &values) const override {
+    throw std::runtime_error(
+        "HybridNonlinearFactor::error(HybridValues) not implemented.");
+  }
 
   /// Linearize to a HybridGaussianFactor at the linearization point `c`.
   boost::shared_ptr<HybridGaussianFactor> linearize(const Values &c) const {
     return boost::make_shared<HybridGaussianFactor>(inner_->linearize(c));
   }
+
+  /// @}
 };
 }  // namespace gtsam

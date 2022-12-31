@@ -161,6 +161,12 @@ class MixtureFactor : public HybridFactor {
                              factor, continuousValues);
   }
 
+  /// Error for HybridValues is not provided for nonlinear hybrid factor.
+  double error(const HybridValues &values) const override {
+    throw std::runtime_error(
+        "MixtureFactor::error(HybridValues) not implemented.");
+  }
+
   size_t dim() const {
     // TODO(Varun)
     throw std::runtime_error("MixtureFactor::dim not implemented.");

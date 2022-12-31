@@ -169,7 +169,7 @@ namespace gtsam {
      *
      * @return double
      */
-    double determinant() const { return exp(this->logDeterminant()); }
+    inline double determinant() const { return exp(logDeterminant()); }
 
     /**
      * @brief Compute the log determinant of the R matrix.
@@ -183,6 +183,19 @@ namespace gtsam {
      * @return double
      */
     double logDeterminant() const;
+
+    /**
+     * normalization constant = 1.0 / sqrt((2*pi)^n*det(Sigma))
+     * log = - 0.5 * n*log(2*pi) - 0.5 * log det(Sigma)
+     */
+    double logNormalizationConstant() const;
+
+    /**
+     * normalization constant = 1.0 / sqrt((2*pi)^n*det(Sigma))
+     */
+    inline double normalizationConstant() const {
+      return exp(logNormalizationConstant());
+    }
 
     /**
     * Solves a conditional Gaussian and writes the solution into the entries of

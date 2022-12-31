@@ -16,6 +16,7 @@
  */
 
 #include <gtsam/hybrid/HybridGaussianFactor.h>
+#include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
 
@@ -53,5 +54,11 @@ void HybridGaussianFactor::print(const std::string &s,
   HybridFactor::print(s, formatter);
   inner_->print("\n", formatter);
 };
+
+/* ************************************************************************ */
+double HybridGaussianFactor::error(const HybridValues &values) const {
+  return inner_->error(values.continuous());
+}
+/* ************************************************************************ */
 
 }  // namespace gtsam
