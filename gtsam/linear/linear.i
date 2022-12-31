@@ -237,6 +237,7 @@ class VectorValues {
   void insert(size_t j, Vector value);
   Vector vector() const;
   Vector at(size_t j) const;
+  void insert(const gtsam::VectorValues& values);
   void update(const gtsam::VectorValues& values);
 
   //Advanced Interface
