@@ -47,6 +47,7 @@
 #include <vector>
 
 #include "Switching.h"
+#include "TinyHybridExample.h"
 
 using namespace std;
 using namespace gtsam;
@@ -133,8 +134,8 @@ TEST(HybridGaussianFactorGraph, eliminateFullSequentialEqualChance) {
   auto dc = result->at(2)->asDiscrete();
   DiscreteValues dv;
   dv[M(1)] = 0;
-  // regression
-  EXPECT_DOUBLES_EQUAL(8.5730017810851127, dc->operator()(dv), 1e-3);
+  // Regression test
+  EXPECT_DOUBLES_EQUAL(0.62245933120185448, dc->operator()(dv), 1e-3);
 }
 
 /* ************************************************************************* */
@@ -612,6 +613,20 @@ TEST(HybridGaussianFactorGraph, ErrorAndProbPrimeTree) {
   // regression
   EXPECT(assert_equal(expected_probs, probs, 1e-7));
 }
+
+/* ****************************************************************************/
+// Test creation of a tiny hybrid Bayes net.
+TEST(HybridBayesNet, Tiny) {
+  auto fg = tiny::createHybridGaussianFactorGraph();
+  EXPECT_LONGS_EQUAL(3, fg.size());
+}
+
+/* ****************************************************************************/
+// // Test summing frontals
+// TEST(HybridGaussianFactorGraph, SumFrontals) {
+//   HybridGaussianFactorGraph fg;
+//   fg.
+// }
 
 /* ************************************************************************* */
 int main() {
