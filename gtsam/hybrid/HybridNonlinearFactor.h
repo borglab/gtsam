@@ -54,6 +54,7 @@ class HybridNonlinearFactor : public HybridFactor {
   /// @name Standard Interface
   /// @{
 
+  /// Return pointer to the internal nonlinear factor.
   NonlinearFactor::shared_ptr inner() const { return inner_; }
 
   /// Error for HybridValues is not provided for nonlinear factor.
