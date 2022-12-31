@@ -74,6 +74,22 @@ TEST(VectorValues, basics)
 }
 
 /* ************************************************************************* */
+
+static const VectorValues kExample = {{99, Vector2(2, 3)}};
+
+// Check insert
+TEST(VectorValues, Insert) {
+  VectorValues actual;
+  EXPECT(assert_equal(kExample, actual.insert(kExample)));
+}
+
+// Check update.
+TEST(VectorValues, Update) {
+  VectorValues actual(kExample);
+  EXPECT(assert_equal(kExample, actual.update(kExample)));
+}
+
+/* ************************************************************************* */
 TEST(VectorValues, combine)
 {
   VectorValues expected;

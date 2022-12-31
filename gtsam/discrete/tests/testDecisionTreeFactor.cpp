@@ -23,9 +23,6 @@
 #include <gtsam/discrete/DiscreteDistribution.h>
 #include <gtsam/discrete/Signature.h>
 
-#include <boost/assign/std/map.hpp>
-using namespace boost::assign;
-
 using namespace std;
 using namespace gtsam;
 

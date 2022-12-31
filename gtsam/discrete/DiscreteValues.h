@@ -27,21 +27,16 @@
 
 namespace gtsam {
 
-/** A map from keys to values
- * TODO(dellaert): Do we need this? Should we just use gtsam::DiscreteValues?
- * We just need another special DiscreteValue to represent labels,
- * However, all other Lie's operators are undefined in this class.
- * The good thing is we can have a Hybrid graph of discrete/continuous variables
- * together..
- * Another good thing is we don't need to have the special DiscreteKey which
- * stores cardinality of a Discrete variable. It should be handled naturally in
- * the new class DiscreteValue, as the variable's type (domain)
+/**
+ * A map from keys to values
  * @ingroup discrete
  */
 class GTSAM_EXPORT DiscreteValues : public Assignment<Key> {
  public:
   using Base = Assignment<Key>;  // base class
 
+  /// @name Standard Constructors
+  /// @{
   using Assignment::Assignment;  // all constructors
 
   // Define the implicit default constructor.
@@ -50,14 +45,49 @@ class GTSAM_EXPORT DiscreteValues : public Assignment<Key> {
   // Construct from assignment.
   explicit DiscreteValues(const Base& a) : Base(a) {}
 
+  // Construct from initializer list.
+  DiscreteValues(std::initializer_list<std::pair<const Key, size_t>> init)
+      : Assignment<Key>{init} {}
+
+  /// @}
+  /// @name Testable
+  /// @{
+
+  /// print required by Testable.
   void print(const std::string& s = "",
              const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
+  /// equals required by Testable for unit testing.
+  bool equals(const DiscreteValues& x, double tol = 1e-9) const;
+
+  /// @}
+  /// @name Standard Interface
+  /// @{
+
+  // insert in base class;
+  std::pair<iterator, bool> insert( const value_type& value ){
+    return Base::insert(value);
+  }
+
+  /** Insert all values from \c values.  Throws an invalid_argument exception if
+   * any keys to be inserted are already used. */
+  DiscreteValues& insert(const DiscreteValues& values);
+
+  /** For all key/value pairs in \c values, replace values with corresponding
+   * keys in this object with those in \c values.  Throws std::out_of_range if
+   * any keys in \c values are not present in this object. */
+  DiscreteValues& update(const DiscreteValues& values);
+
+  /**
+   * @brief Return a vector of DiscreteValues, one for each possible
+   * combination of values.
+   */
   static std::vector<DiscreteValues> CartesianProduct(
       const DiscreteKeys& keys) {
     return Base::CartesianProduct<DiscreteValues>(keys);
   }
 
+  /// @}
   /// @name Wrapper support
   /// @{
 
