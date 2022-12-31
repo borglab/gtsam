@@ -237,8 +237,7 @@ TEST(HybridBayesNet, Error) {
   EXPECT(assert_equal(expected_pruned_error, pruned_error_tree, 1e-9));
 
   // Verify error computation and check for specific error value
-  DiscreteValues discrete_values;
-  boost::assign::insert(discrete_values)(M(0), 1)(M(1), 1);
+  DiscreteValues discrete_values {{M(0), 1}, {M(1), 1}};
 
   double total_error = 0;
   for (size_t idx = 0; idx < hybridBayesNet->size(); idx++) {
