@@ -81,7 +81,7 @@ HybridGaussianFactorGraph createHybridGaussianFactorGraph(
     // Create a deterministic set of measurements:
     HybridValues values{{}, {{M(0), 0}}};
     for (int i = 0; i < num_measurements; i++) {
-      values.insert(Z(i), Vector1(4.0 + 1.0 * i));
+      values.insert(Z(i), Vector1(5.0 + 1.0 * i));
     }
     return convertBayesNet(bayesNet, values);
   } else {
