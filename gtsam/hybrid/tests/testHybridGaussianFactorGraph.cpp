@@ -638,9 +638,9 @@ TEST(HybridGaussianFactorGraph, SumFrontals) {
   GaussianMixture::Sum expected{
       M(0),
       {GaussianFactorGraph(std::vector<GF>{mixture->factor(d0), prior}),
-       -0.225791 /* regression */},
+       mixture->constant(d0)},
       {GaussianFactorGraph(std::vector<GF>{mixture->factor(d1), prior}),
-       -2.01755 /* regression */}};
+       mixture->constant(d1)}};
 
   EXPECT(assert_equal(expected(d0), sum(d0), 1e-5));
   EXPECT(assert_equal(expected(d1), sum(d1), 1e-5));
