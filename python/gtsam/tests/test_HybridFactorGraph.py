@@ -205,9 +205,9 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
 
         # Estimate marginals using importance sampling.
         marginals = self.estimate_marginals(bayesNet, sample)
-        # print(f"True mode: {sample.atDiscrete(M(0))}")
-        # print(f"P(mode=0; z0, z1) = {marginals[0]}")
-        # print(f"P(mode=1; z0, z1) = {marginals[1]}")
+        print(f"True mode: {sample.atDiscrete(M(0))}")
+        print(f"P(mode=0; z0, z1) = {marginals[0]}")
+        print(f"P(mode=1; z0, z1) = {marginals[1]}")
 
         # Check marginals based on sampled mode.
         if sample.atDiscrete(M(0)) == 0:
@@ -251,8 +251,8 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
             other.insert(measurements)
             ratio = self.calculate_ratio(posterior, fg, other)
             print(f"Ratio: {ratio}\n")
-            # if (ratio > 0):
-            #     self.assertAlmostEqual(ratio, expected_ratio)
+            if (ratio > 0):
+                self.assertAlmostEqual(ratio, expected_ratio)
 
 if __name__ == "__main__":
     unittest.main()
