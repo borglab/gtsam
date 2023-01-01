@@ -653,12 +653,11 @@ TEST(HybridGaussianFactorGraph, SumFrontals) {
 
   // Create Gaussian mixture on X(0).
   using tiny::mode;
+  // regression, but mean checked to be 5.0 in both cases:
   const auto conditional0 = boost::make_shared<GaussianConditional>(
-      X(0), Vector1(12.7279),
-      I_1x1 * 2.82843);  // regression, but mean checked to be 4.5
-  const auto conditional1 = boost::make_shared<GaussianConditional>(
-      X(0), Vector1(10.0831),
-      I_1x1 * 2.02759);  // regression, but mean 4.97297is close to prior.
+                 X(0), Vector1(14.1421), I_1x1 * 2.82843),
+             conditional1 = boost::make_shared<GaussianConditional>(
+                 X(0), Vector1(10.1379), I_1x1 * 2.02759);
   GaussianMixture gm({X(0)}, {}, {mode}, {conditional0, conditional1});
   bayesNet.emplaceMixture(gm);  // copy :-(
 
