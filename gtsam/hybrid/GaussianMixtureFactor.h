@@ -62,6 +62,7 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
       // Note: constant is log of normalization constant for probabilities.
       // Errors is the negative log-likelihood,
       // hence we subtract the constant here.
+      if (!factor) return 0.0;  // If nullptr, return 0.0 error
       return factor->error(values) - constant;
     }
 
