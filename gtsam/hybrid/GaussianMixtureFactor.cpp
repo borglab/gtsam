@@ -81,11 +81,23 @@ void GaussianMixtureFactor::print(const std::string &s,
 }
 
 /* *******************************************************************************/
-const GaussianMixtureFactor::Mixture GaussianMixtureFactor::factors() const {
-  return Mixture(factors_, [](const FactorAndConstant &factor_z) {
-    return factor_z.factor;
-  });
+GaussianFactor::shared_ptr GaussianMixtureFactor::factor(
+    const DiscreteValues &assignment) const {
+  return factors_(assignment).factor;
 }
+
+/* *******************************************************************************/
+double GaussianMixtureFactor::constant(const DiscreteValues &assignment) const {
+  return factors_(assignment).constant;
+}
+
+/* *******************************************************************************/
+// NOTE(dellaert): this was not used and is expensive.
+// const GaussianMixtureFactor::Mixture GaussianMixtureFactor::factors() const {
+//   return Mixture(factors_, [](const FactorAndConstant &factor_z) {
+//     return factor_z.factor;
+//   });
+// }
 
 /* *******************************************************************************/
 GaussianMixtureFactor::Sum GaussianMixtureFactor::add(
