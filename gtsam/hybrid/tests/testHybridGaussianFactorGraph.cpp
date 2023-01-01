@@ -617,7 +617,10 @@ TEST(HybridGaussianFactorGraph, ErrorAndProbPrimeTree) {
 /* ****************************************************************************/
 // SumFrontals just assembles Gaussian factor graphs for each assignment.
 TEST(HybridGaussianFactorGraph, SumFrontals) {
-  auto fg = tiny::createHybridGaussianFactorGraph();
+  const int num_measurements = 1;
+  const bool deterministic = true;
+  auto fg =
+      tiny::createHybridGaussianFactorGraph(num_measurements, deterministic);
   EXPECT_LONGS_EQUAL(3, fg.size());
 
   auto sum = fg.SumFrontals();
@@ -635,15 +638,39 @@ TEST(HybridGaussianFactorGraph, SumFrontals) {
 
   // Expected decision tree with two factor graphs:
   // f(x0;mode=0)P(x0) and f(x0;mode=1)P(x0)
-  GaussianMixture::Sum expected{
+  GaussianMixture::Sum expectedSum{
       M(0),
       {GaussianFactorGraph(std::vector<GF>{mixture->factor(d0), prior}),
        mixture->constant(d0)},
       {GaussianFactorGraph(std::vector<GF>{mixture->factor(d1), prior}),
        mixture->constant(d1)}};
 
-  EXPECT(assert_equal(expected(d0), sum(d0), 1e-5));
-  EXPECT(assert_equal(expected(d1), sum(d1), 1e-5));
+  EXPECT(assert_equal(expectedSum(d0), sum(d0), 1e-5));
+  EXPECT(assert_equal(expectedSum(d1), sum(d1), 1e-5));
+
+  // Create expected Bayes Net:
+  HybridBayesNet bayesNet;
+
+  // Create Gaussian mixture on X(0).
+  using tiny::mode;
+  const auto conditional0 = boost::make_shared<GaussianConditional>(
+      X(0), Vector1(12.7279),
+      I_1x1 * 2.82843);  // regression, but mean checked to be 4.5
+  const auto conditional1 = boost::make_shared<GaussianConditional>(
+      X(0), Vector1(10.0831),
+      I_1x1 * 2.02759);  // regression, but mean 4.97297is close to prior.
+  GaussianMixture gm({X(0)}, {}, {mode}, {conditional0, conditional1});
+  bayesNet.emplaceMixture(gm);  // copy :-(
+
+  // Add prior on mode.
+  bayesNet.emplaceDiscrete(mode, "4/6");
+
+  // Test elimination
+  Ordering ordering;
+  ordering.push_back(X(0));
+  ordering.push_back(M(0));
+  const auto posterior = fg.eliminateSequential(ordering);
+  EXPECT(assert_equal(bayesNet, *posterior, 1e-4));
 }
 
 /* ************************************************************************* */
