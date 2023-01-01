@@ -65,7 +65,7 @@ static GaussianMixtureFactor::Sum &addGaussian(
   if (sum.empty()) {
     GaussianFactorGraph result;
     result.push_back(factor);
-    sum = GaussianMixtureFactor::Sum(
+    return GaussianMixtureFactor::Sum(
         GaussianMixtureFactor::GraphAndConstant(result, 0.0));
 
   } else {
@@ -75,12 +75,19 @@ static GaussianMixtureFactor::Sum &addGaussian(
       result.push_back(factor);
       return GaussianMixtureFactor::GraphAndConstant(result, graph_z.constant);
     };
-    sum = sum.apply(add);
+    return sum.apply(add);
   }
-  return sum;
 }
 
 /* ************************************************************************ */
+// TODO(dellaert): At the time I though "Sum" was a good name, but coming back
+// to it after a while I think "SumFrontals" is better.it's a terrible name.
+// Also, the implementation is inconsistent. I think we should just have a
+// virtual method in HybridFactor that adds to the "Sum" object, like
+// addGaussian. Finally, we need to document why deferredFactors need to be
+// added last, which I would undo if possible.
+// Implementation-wise, it's probably more efficient to first collect the
+// discrete keys, and then loop over all assignments to populate a vector.
 GaussianMixtureFactor::Sum HybridGaussianFactorGraph::SumFrontals() const {
   // sum out frontals, this is the factor on the separator
   gttic(sum);
@@ -89,8 +96,8 @@ GaussianMixtureFactor::Sum HybridGaussianFactorGraph::SumFrontals() const {
   std::vector<GaussianFactor::shared_ptr> deferredFactors;
 
   for (auto &f : factors_) {
+    // TODO(dellaert): just use a virtual method defined in HybridFactor.
     if (f->isHybrid()) {
-      // TODO(dellaert): just use a virtual method defined in HybridFactor.
       if (auto gm = boost::dynamic_pointer_cast<GaussianMixtureFactor>(f)) {
         sum = gm->add(sum);
       }
