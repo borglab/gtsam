@@ -18,10 +18,10 @@
 
 #pragma once
 
+#include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
 #include <gtsam/hybrid/HybridGaussianFactor.h>
-#include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/inference/EliminateableFactorGraph.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/Ordering.h>
@@ -122,9 +122,9 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
   /// @name Adding factors.
   /// @{
 
-  using Base::reserve;
   using Base::add;
   using Base::push_back;
+  using Base::reserve;
 
   /// Add a Jacobian factor to the factor graph.
   void add(JacobianFactor&& factor);
@@ -236,8 +236,15 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
    */
   const Ordering getHybridOrdering() const;
 
-  /// Compute a DecisionTree<Key, GaussianFactorGraph> with the marginal for
-  /// each discrete assignment.
+  /**
+   * @brief Create a decision tree of factor graphs out of this hybrid factor
+   * graph.
+   *
+   * For example, if there are two mixture factors, one with a discrete key A
+   * and one with a discrete key B, then the decision tree will have two levels,
+   * one for A and one for B. The leaves of the tree will be the Gaussian
+   * factors that have only continuous keys.
+   */
   GaussianMixtureFactor::Sum SumFrontals() const;
 
   /// @}
