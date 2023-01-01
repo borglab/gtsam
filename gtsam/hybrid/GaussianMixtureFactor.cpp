@@ -90,11 +90,11 @@ const GaussianMixtureFactor::Mixture GaussianMixtureFactor::factors() const {
 /* *******************************************************************************/
 GaussianMixtureFactor::Sum GaussianMixtureFactor::add(
     const GaussianMixtureFactor::Sum &sum) const {
-  using Y = GaussianFactorGraph;
+  using Y = GaussianMixtureFactor::GraphAndConstant;
   auto add = [](const Y &graph1, const Y &graph2) {
-    auto result = graph1;
-    result.push_back(graph2);
-    return result;
+    auto result = graph1.graph;
+    result.push_back(graph2.graph);
+    return Y(result, graph1.constant + graph2.constant);
   };
   const Sum tree = asGaussianFactorGraphTree();
   return sum.empty() ? tree : sum.apply(tree, add);
@@ -106,7 +106,7 @@ GaussianMixtureFactor::Sum GaussianMixtureFactor::asGaussianFactorGraphTree()
   auto wrap = [](const FactorAndConstant &factor_z) {
     GaussianFactorGraph result;
     result.push_back(factor_z.factor);
-    return result;
+    return GaussianMixtureFactor::GraphAndConstant(result, factor_z.constant);
   };
   return {factors_, wrap};
 }

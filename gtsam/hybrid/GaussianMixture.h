@@ -23,13 +23,13 @@
 #include <gtsam/discrete/DecisionTree.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteKey.h>
+#include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/inference/Conditional.h>
 #include <gtsam/linear/GaussianConditional.h>
 
 namespace gtsam {
 
-class GaussianMixtureFactor;
 class HybridValues;
 
 /**
@@ -60,7 +60,7 @@ class GTSAM_EXPORT GaussianMixture
   using BaseConditional = Conditional<HybridFactor, GaussianMixture>;
 
   /// Alias for DecisionTree of GaussianFactorGraphs
-  using Sum = DecisionTree<Key, GaussianFactorGraph>;
+  using Sum = DecisionTree<Key, GaussianMixtureFactor::GraphAndConstant>;
 
   /// typedef for Decision Tree of Gaussian Conditionals
   using Conditionals = DecisionTree<Key, GaussianConditional::shared_ptr>;
