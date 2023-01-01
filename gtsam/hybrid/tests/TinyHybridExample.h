@@ -28,6 +28,9 @@ using symbol_shorthand::M;
 using symbol_shorthand::X;
 using symbol_shorthand::Z;
 
+// Create mode key: 0 is low-noise, 1 is high-noise.
+const DiscreteKey mode{M(0), 2};
+
 /**
  * Create a tiny two variable hybrid model which represents
  * the generative probability P(z, x, n) = P(z | x, n)P(x)P(n).
@@ -35,9 +38,6 @@ using symbol_shorthand::Z;
 static HybridBayesNet createHybridBayesNet(int num_measurements = 1) {
   // Create hybrid Bayes net.
   HybridBayesNet bayesNet;
-
-  // Create mode key: 0 is low-noise, 1 is high-noise.
-  const DiscreteKey mode{M(0), 2};
 
   // Create Gaussian mixture Z(0) = X(0) + noise for each measurement.
   for (int i = 0; i < num_measurements; i++) {
