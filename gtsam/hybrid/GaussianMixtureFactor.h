@@ -83,6 +83,19 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
     bool operator==(const GraphAndConstant &other) const {
       return graph == other.graph && constant == other.constant;
     }
+
+    // Implement GTSAM-style print:
+    void print(const std::string &s = "Graph: ",
+               const KeyFormatter &formatter = DefaultKeyFormatter) const {
+      graph.print(s, formatter);
+      std::cout << "Constant: " << constant << std::endl;
+    }
+
+    // Implement GTSAM-style equals:
+    bool equals(const GraphAndConstant &other, double tol = 1e-9) const {
+      return graph.equals(other.graph, tol) &&
+             fabs(constant - other.constant) < tol;
+    }
   };
 
   using Sum = DecisionTree<Key, GraphAndConstant>;
@@ -199,5 +212,9 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
 template <>
 struct traits<GaussianMixtureFactor> : public Testable<GaussianMixtureFactor> {
 };
+
+template <>
+struct traits<GaussianMixtureFactor::GraphAndConstant>
+    : public Testable<GaussianMixtureFactor::GraphAndConstant> {};
 
 }  // namespace gtsam
