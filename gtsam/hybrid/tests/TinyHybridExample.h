@@ -39,7 +39,7 @@ HybridBayesNet createHybridBayesNet(int num_measurements = 1) {
   // Create hybrid Bayes net.
   HybridBayesNet bayesNet;
 
-  // Create Gaussian mixture Z(0) = X(0) + noise for each measurement.
+  // Create Gaussian mixture z_i = x0 + noise for each measurement.
   for (int i = 0; i < num_measurements; i++) {
     const auto conditional0 = boost::make_shared<GaussianConditional>(
         GaussianConditional::FromMeanAndStddev(Z(i), I_1x1, X(0), Z_1x1, 0.5));
@@ -51,7 +51,7 @@ HybridBayesNet createHybridBayesNet(int num_measurements = 1) {
 
   // Create prior on X(0).
   const auto prior_on_x0 =
-      GaussianConditional::FromMeanAndStddev(X(0), Vector1(5.0), 5.0);
+      GaussianConditional::FromMeanAndStddev(X(0), Vector1(5.0), 0.5);
   bayesNet.emplaceGaussian(prior_on_x0);  // copy :-(
 
   // Add prior on mode.
@@ -61,12 +61,12 @@ HybridBayesNet createHybridBayesNet(int num_measurements = 1) {
 }
 
 HybridGaussianFactorGraph convertBayesNet(const HybridBayesNet& bayesNet,
-                                          const HybridValues& sample) {
+                                          const HybridValues& values) {
   HybridGaussianFactorGraph fg;
   int num_measurements = bayesNet.size() - 2;
   for (int i = 0; i < num_measurements; i++) {
     auto conditional = bayesNet.atMixture(i);
-    auto factor = conditional->likelihood(sample.continuousSubset({Z(i)}));
+    auto factor = conditional->likelihood(values.continuousSubset({Z(i)}));
     fg.push_back(factor);
   }
   fg.push_back(bayesNet.atGaussian(num_measurements));
@@ -75,10 +75,19 @@ HybridGaussianFactorGraph convertBayesNet(const HybridBayesNet& bayesNet,
 }
 
 HybridGaussianFactorGraph createHybridGaussianFactorGraph(
-    int num_measurements = 1) {
+    int num_measurements = 1, bool deterministic = false) {
   auto bayesNet = createHybridBayesNet(num_measurements);
-  auto sample = bayesNet.sample();
-  return convertBayesNet(bayesNet, sample);
+  if (deterministic) {
+    // Create a deterministic set of measurements:
+    HybridValues values{{}, {{M(0), 0}}};
+    for (int i = 0; i < num_measurements; i++) {
+      values.insert(Z(i), Vector1(4.0 + 1.0 * i));
+    }
+    return convertBayesNet(bayesNet, values);
+  } else {
+    // Create a random set of measurements:
+    return convertBayesNet(bayesNet, bayesNet.sample());
+  }
 }
 
 }  // namespace tiny
