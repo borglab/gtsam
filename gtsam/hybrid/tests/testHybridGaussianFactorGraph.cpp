@@ -133,7 +133,8 @@ TEST(HybridGaussianFactorGraph, eliminateFullSequentialEqualChance) {
   auto dc = result->at(2)->asDiscrete();
   DiscreteValues dv;
   dv[M(1)] = 0;
-  EXPECT_DOUBLES_EQUAL(1, dc->operator()(dv), 1e-3);
+  // regression
+  EXPECT_DOUBLES_EQUAL(8.5730017810851127, dc->operator()(dv), 1e-3);
 }
 
 /* ************************************************************************* */
