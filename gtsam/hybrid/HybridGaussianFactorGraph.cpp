@@ -59,8 +59,9 @@ namespace gtsam {
 template class EliminateableFactorGraph<HybridGaussianFactorGraph>;
 
 /* ************************************************************************ */
-static GaussianMixtureFactor::Sum &addGaussian(
-    GaussianMixtureFactor::Sum &sum, const GaussianFactor::shared_ptr &factor) {
+static GaussianMixtureFactor::Sum addGaussian(
+    const GaussianMixtureFactor::Sum &sum,
+    const GaussianFactor::shared_ptr &factor) {
   // If the decision tree is not initialized, then initialize it.
   if (sum.empty()) {
     GaussianFactorGraph result;
