@@ -151,12 +151,16 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
   void print(
       const std::string &s = "GaussianMixtureFactor\n",
       const KeyFormatter &formatter = DefaultKeyFormatter) const override;
+
   /// @}
   /// @name Standard API
   /// @{
 
-  /// Getter for the underlying Gaussian Factor Decision Tree.
-  const Mixture factors() const;
+  /// Get factor at a given discrete assignment.
+  sharedFactor factor(const DiscreteValues &assignment) const;
+
+  /// Get constant at a given discrete assignment.
+  double constant(const DiscreteValues &assignment) const;
 
   /**
    * @brief Combine the Gaussian Factor Graphs in `sum` and `this` while
