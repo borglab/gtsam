@@ -27,6 +27,17 @@ static std::mt19937_64 kRandomNumberGenerator(42);
 namespace gtsam {
 
 /* ************************************************************************* */
+void HybridBayesNet::print(const std::string &s,
+                           const KeyFormatter &formatter) const {
+  Base::print(s, formatter);
+}
+
+/* ************************************************************************* */
+bool HybridBayesNet::equals(const This &bn, double tol) const {
+  return Base::equals(bn, tol);
+}
+
+/* ************************************************************************* */
 DecisionTreeFactor::shared_ptr HybridBayesNet::discreteConditionals() const {
   AlgebraicDecisionTree<Key> decisionTree;
 

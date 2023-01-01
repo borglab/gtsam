@@ -102,7 +102,20 @@ void HybridConditional::print(const std::string &s,
 /* ************************************************************************ */
 bool HybridConditional::equals(const HybridFactor &other, double tol) const {
   const This *e = dynamic_cast<const This *>(&other);
-  return e != nullptr && BaseFactor::equals(*e, tol);
+  if (e == nullptr) return false;
+  if (auto gm = asMixture()) {
+    auto other = e->asMixture();
+    return other != nullptr && gm->equals(*other, tol);
+  }
+  if (auto gm = asGaussian()) {
+    auto other = e->asGaussian();
+    return other != nullptr && gm->equals(*other, tol);
+  }
+  if (auto gm = asDiscrete()) {
+    auto other = e->asDiscrete();
+    return other != nullptr && gm->equals(*other, tol);
+  }
+  return inner_->equals(*(e->inner_), tol);
 }
 
 }  // namespace gtsam

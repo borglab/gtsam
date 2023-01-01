@@ -103,7 +103,19 @@ GaussianConditional::shared_ptr GaussianMixture::operator()(
 /* *******************************************************************************/
 bool GaussianMixture::equals(const HybridFactor &lf, double tol) const {
   const This *e = dynamic_cast<const This *>(&lf);
-  return e != nullptr && BaseFactor::equals(*e, tol);
+  if (e == nullptr) return false;
+
+  // This will return false if either conditionals_ is empty or e->conditionals_
+  // is empty, but not if both are empty or both are not empty:
+  if (conditionals_.empty() ^ e->conditionals_.empty()) return false;
+std::cout << "checking" << std::endl;
+  // Check the base and the factors:
+  return BaseFactor::equals(*e, tol) &&
+         conditionals_.equals(e->conditionals_,
+                              [tol](const GaussianConditional::shared_ptr &f1,
+                                    const GaussianConditional::shared_ptr &f2) {
+                                return f1->equals(*(f2), tol);
+                              });
 }
 
 /* *******************************************************************************/
