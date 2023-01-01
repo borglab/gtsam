@@ -500,7 +500,7 @@ TEST(HybridEstimation, CorrectnessViaSampling) {
   const HybridValues sample = bn->sample(&rng);
   double expected_ratio = compute_ratio(sample);
   // regression
-  // EXPECT_DOUBLES_EQUAL(1.9477340410546764, ratio, 1e-9);
+  EXPECT_DOUBLES_EQUAL(1.9477340410546764, expected_ratio, 1e-9);
 
   // 3. Do sampling
   constexpr int num_samples = 10;
