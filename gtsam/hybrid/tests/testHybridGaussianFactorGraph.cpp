@@ -615,18 +615,32 @@ TEST(HybridGaussianFactorGraph, ErrorAndProbPrimeTree) {
 }
 
 /* ****************************************************************************/
-// Test creation of a tiny hybrid Bayes net.
-TEST(HybridBayesNet, Tiny) {
+// SumFrontals just assembles Gaussian factor graphs for each assignment.
+TEST(HybridGaussianFactorGraph, SumFrontals) {
   auto fg = tiny::createHybridGaussianFactorGraph();
   EXPECT_LONGS_EQUAL(3, fg.size());
-}
 
-/* ****************************************************************************/
-// // Test summing frontals
-// TEST(HybridGaussianFactorGraph, SumFrontals) {
-//   HybridGaussianFactorGraph fg;
-//   fg.
-// }
+  auto sum = fg.SumFrontals();
+
+  // Get mixture factor:
+  auto mixture = boost::dynamic_pointer_cast<GaussianMixtureFactor>(fg.at(0));
+  using GF = GaussianFactor::shared_ptr;
+
+  // Get prior factor:
+  const GF prior =
+      boost::dynamic_pointer_cast<HybridGaussianFactor>(fg.at(1))->inner();
+
+  // Create DiscreteValues for both 0 and 1:
+  DiscreteValues d0{{M(0), 0}}, d1{{M(0), 1}};
+
+  // Expected decision tree with two factor graphs:
+  // f(x0;mode=0)P(x0) and f(x0;mode=1)P(x0)
+  GaussianMixture::Sum expected{
+      M(0), GaussianFactorGraph(std::vector<GF>{mixture->factor(d0), prior}),
+      GaussianFactorGraph(std::vector<GF>{mixture->factor(d1), prior})};
+
+  EXPECT(assert_equal(expected(d0), sum(d0)));
+}
 
 /* ************************************************************************* */
 int main() {
