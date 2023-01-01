@@ -180,7 +180,7 @@ TEST(HybridBayesNet, OptimizeAssignment) {
 /* ****************************************************************************/
 // Test Bayes net optimize
 TEST(HybridBayesNet, Optimize) {
-  Switching s(4);
+  Switching s(4, 1.0, 0.1, {0, 1, 2, 3}, "1/1 1/1");
 
   Ordering hybridOrdering = s.linearizedFactorGraph.getHybridOrdering();
   HybridBayesNet::shared_ptr hybridBayesNet =
@@ -188,19 +188,18 @@ TEST(HybridBayesNet, Optimize) {
 
   HybridValues delta = hybridBayesNet->optimize();
 
-  // TODO(Varun) The expectedAssignment should be 111, not 101
+  // NOTE: The true assignment is 111, but the discrete priors cause 101
   DiscreteValues expectedAssignment;
   expectedAssignment[M(0)] = 1;
-  expectedAssignment[M(1)] = 0;
+  expectedAssignment[M(1)] = 1;
   expectedAssignment[M(2)] = 1;
   EXPECT(assert_equal(expectedAssignment, delta.discrete()));
 
-  // TODO(Varun) This should be all -Vector1::Ones()
   VectorValues expectedValues;
-  expectedValues.insert(X(0), -0.999904 * Vector1::Ones());
-  expectedValues.insert(X(1), -0.99029 * Vector1::Ones());
-  expectedValues.insert(X(2), -1.00971 * Vector1::Ones());
-  expectedValues.insert(X(3), -1.0001 * Vector1::Ones());
+  expectedValues.insert(X(0), -Vector1::Ones());
+  expectedValues.insert(X(1), -Vector1::Ones());
+  expectedValues.insert(X(2), -Vector1::Ones());
+  expectedValues.insert(X(3), -Vector1::Ones());
 
   EXPECT(assert_equal(expectedValues, delta.continuous(), 1e-5));
 }

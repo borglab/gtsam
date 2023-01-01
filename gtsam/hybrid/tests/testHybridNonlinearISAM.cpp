@@ -191,24 +191,23 @@ TEST(HybridNonlinearISAM, IncrementalInference) {
       *(*discreteBayesTree)[M(1)]->conditional()->asDiscrete();
   double m00_prob = decisionTree(m00);
 
-  auto discreteConditional =
-      bayesTree[M(1)]->conditional()->asDiscrete();
+  auto discreteConditional = bayesTree[M(1)]->conditional()->asDiscrete();
 
   // Test the probability values with regression tests.
   DiscreteValues assignment;
-  EXPECT(assert_equal(0.0619233, m00_prob, 1e-5));
+  EXPECT(assert_equal(0.000956191, m00_prob, 1e-5));
   assignment[M(0)] = 0;
   assignment[M(1)] = 0;
-  EXPECT(assert_equal(0.0619233, (*discreteConditional)(assignment), 1e-5));
+  EXPECT(assert_equal(0.000956191, (*discreteConditional)(assignment), 1e-5));
   assignment[M(0)] = 1;
   assignment[M(1)] = 0;
-  EXPECT(assert_equal(0.183743, (*discreteConditional)(assignment), 1e-5));
+  EXPECT(assert_equal(0.00283728, (*discreteConditional)(assignment), 1e-5));
   assignment[M(0)] = 0;
   assignment[M(1)] = 1;
-  EXPECT(assert_equal(0.204159, (*discreteConditional)(assignment), 1e-5));
+  EXPECT(assert_equal(0.00315253, (*discreteConditional)(assignment), 1e-5));
   assignment[M(0)] = 1;
   assignment[M(1)] = 1;
-  EXPECT(assert_equal(0.2, (*discreteConditional)(assignment), 1e-5));
+  EXPECT(assert_equal(0.00308831, (*discreteConditional)(assignment), 1e-5));
 
   // Check if the clique conditional generated from incremental elimination
   // matches that of batch elimination.
@@ -217,10 +216,10 @@ TEST(HybridNonlinearISAM, IncrementalInference) {
       bayesTree[M(1)]->conditional()->inner());
   // Account for the probability terms from evaluating continuous FGs
   DiscreteKeys discrete_keys = {{M(0), 2}, {M(1), 2}};
-  vector<double> probs = {0.061923317, 0.20415914, 0.18374323, 0.2};
+  vector<double> probs = {0.00095619114, 0.0031525308, 0.0028372777, 0.0030883072};
   auto expectedConditional =
       boost::make_shared<DecisionTreeFactor>(discrete_keys, probs);
-  EXPECT(assert_equal(*actualConditional, *expectedConditional, 1e-6));
+  EXPECT(assert_equal(*expectedConditional, *actualConditional, 1e-6));
 }
 
 /* ****************************************************************************/
