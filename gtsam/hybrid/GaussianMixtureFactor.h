@@ -25,10 +25,10 @@
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/linear/GaussianFactor.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 
 namespace gtsam {
 
-class GaussianFactorGraph;
 class HybridValues;
 class DiscreteValues;
 class VectorValues;
@@ -50,7 +50,6 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
   using This = GaussianMixtureFactor;
   using shared_ptr = boost::shared_ptr<This>;
 
-  using Sum = DecisionTree<Key, GaussianFactorGraph>;
   using sharedFactor = boost::shared_ptr<GaussianFactor>;
 
   /// Gaussian factor and log of normalizing constant.
@@ -60,8 +59,9 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
 
     // Return error with constant correction.
     double error(const VectorValues &values) const {
-      // Note minus sign: constant is log of normalization constant for probabilities.
-      // Errors is the negative log-likelihood, hence we subtract the constant here.
+      // Note: constant is log of normalization constant for probabilities.
+      // Errors is the negative log-likelihood,
+      // hence we subtract the constant here.
       return factor->error(values) - constant;
     }
 
@@ -70,6 +70,22 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
       return factor == other.factor && constant == other.constant;
     }
   };
+
+  /// Gaussian factor graph and log of normalizing constant.
+  struct GraphAndConstant {
+    GaussianFactorGraph graph;
+    double constant;
+
+    GraphAndConstant(const GaussianFactorGraph &graph, double constant)
+        : graph(graph), constant(constant) {}
+
+    // Check pointer equality.
+    bool operator==(const GraphAndConstant &other) const {
+      return graph == other.graph && constant == other.constant;
+    }
+  };
+
+  using Sum = DecisionTree<Key, GraphAndConstant>;
 
   /// typedef for Decision Tree of Gaussian factors and log-constant.
   using Factors = DecisionTree<Key, FactorAndConstant>;

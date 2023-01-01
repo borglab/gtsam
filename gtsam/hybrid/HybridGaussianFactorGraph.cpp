@@ -61,18 +61,19 @@ template class EliminateableFactorGraph<HybridGaussianFactorGraph>;
 /* ************************************************************************ */
 static GaussianMixtureFactor::Sum &addGaussian(
     GaussianMixtureFactor::Sum &sum, const GaussianFactor::shared_ptr &factor) {
-  using Y = GaussianFactorGraph;
   // If the decision tree is not initialized, then initialize it.
   if (sum.empty()) {
     GaussianFactorGraph result;
     result.push_back(factor);
-    sum = GaussianMixtureFactor::Sum(result);
+    sum = GaussianMixtureFactor::Sum(
+        GaussianMixtureFactor::GraphAndConstant(result, 0.0));
 
   } else {
-    auto add = [&factor](const Y &graph) {
-      auto result = graph;
+    auto add = [&factor](
+                   const GaussianMixtureFactor::GraphAndConstant &graph_z) {
+      auto result = graph_z.graph;
       result.push_back(factor);
-      return result;
+      return GaussianMixtureFactor::GraphAndConstant(result, graph_z.constant);
     };
     sum = sum.apply(add);
   }
@@ -190,31 +191,36 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
   DiscreteKeys discreteSeparator(discreteSeparatorSet.begin(),
                                  discreteSeparatorSet.end());
 
-  // sum out frontals, this is the factor 𝜏 on the separator
+  // Collect all the frontal factors to create Gaussian factor graphs
+  // indexed on the discrete keys.
   GaussianMixtureFactor::Sum sum = sumFrontals(factors);
 
   // If a tree leaf contains nullptr,
   // convert that leaf to an empty GaussianFactorGraph.
   // Needed since the DecisionTree will otherwise create
   // a GFG with a single (null) factor.
-  auto emptyGaussian = [](const GaussianFactorGraph &gfg) {
-    bool hasNull =
-        std::any_of(gfg.begin(), gfg.end(),
-                    [](const GaussianFactor::shared_ptr &ptr) { return !ptr; });
+  auto emptyGaussian =
+      [](const GaussianMixtureFactor::GraphAndConstant &graph_z) {
+        bool hasNull = std::any_of(
+            graph_z.graph.begin(), graph_z.graph.end(),
+            [](const GaussianFactor::shared_ptr &ptr) { return !ptr; });
 
-    return hasNull ? GaussianFactorGraph() : gfg;
-  };
+        return hasNull ? GaussianMixtureFactor::GraphAndConstant(
+                             GaussianFactorGraph(), 0.0)
+                       : graph_z;
+      };
   sum = GaussianMixtureFactor::Sum(sum, emptyGaussian);
 
   using EliminationPair = std::pair<boost::shared_ptr<GaussianConditional>,
                                     GaussianMixtureFactor::FactorAndConstant>;
 
   KeyVector keysOfEliminated;  // Not the ordering
-  KeyVector keysOfSeparator;   // TODO(frank): Is this just (keys - ordering)?
+  KeyVector keysOfSeparator;
 
   // This is the elimination method on the leaf nodes
-  auto eliminate = [&](const GaussianFactorGraph &graph) -> EliminationPair {
-    if (graph.empty()) {
+  auto eliminate = [&](const GaussianMixtureFactor::GraphAndConstant &graph_z)
+      -> EliminationPair {
+    if (graph_z.graph.empty()) {
       return {nullptr, {nullptr, 0.0}};
     }
 
@@ -224,7 +230,8 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
 
     std::pair<boost::shared_ptr<GaussianConditional>,
               boost::shared_ptr<GaussianFactor>>
-        conditional_factor = EliminatePreferCholesky(graph, frontalKeys);
+        conditional_factor =
+            EliminatePreferCholesky(graph_z.graph, frontalKeys);
 
     // Initialize the keysOfEliminated to be the keys of the
     // eliminated GaussianConditional
@@ -235,8 +242,10 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
     gttoc_(hybrid_eliminate);
 #endif
 
-    // TODO(Varun) The normalizing constant has to be computed correctly
-    return {conditional_factor.first, {conditional_factor.second, 0.0}};
+    GaussianConditional::shared_ptr conditional = conditional_factor.first;
+    // Get the log of the log normalization constant inverse.
+    double logZ = -conditional->logNormalizationConstant() + graph_z.constant;
+    return {conditional, {conditional_factor.second, logZ}};
   };
 
   // Perform elimination!
@@ -270,6 +279,13 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
           }
         };
     DecisionTree<Key, double> fdt(separatorFactors, factorProb);
+    // Normalize the values of decision tree to be valid probabilities
+    double sum = 0.0;
+    auto visitor = [&](double y) { sum += y; };
+    fdt.visit(visitor);
+    // fdt = DecisionTree<Key, double>(fdt,
+    //                                 [sum](const double &x) { return x / sum;
+    //                                 });
 
     auto discreteFactor =
         boost::make_shared<DecisionTreeFactor>(discreteSeparator, fdt);

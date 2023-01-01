@@ -53,11 +53,11 @@ GaussianMixture::GaussianMixture(
 /* *******************************************************************************/
 GaussianMixture::Sum GaussianMixture::add(
     const GaussianMixture::Sum &sum) const {
-  using Y = GaussianFactorGraph;
+  using Y = GaussianMixtureFactor::GraphAndConstant;
   auto add = [](const Y &graph1, const Y &graph2) {
-    auto result = graph1;
-    result.push_back(graph2);
-    return result;
+    auto result = graph1.graph;
+    result.push_back(graph2.graph);
+    return Y(result, graph1.constant + graph2.constant);
   };
   const Sum tree = asGaussianFactorGraphTree();
   return sum.empty() ? tree : sum.apply(tree, add);
@@ -65,10 +65,15 @@ GaussianMixture::Sum GaussianMixture::add(
 
 /* *******************************************************************************/
 GaussianMixture::Sum GaussianMixture::asGaussianFactorGraphTree() const {
-  auto lambda = [](const GaussianFactor::shared_ptr &factor) {
+  auto lambda = [](const GaussianConditional::shared_ptr &conditional) {
     GaussianFactorGraph result;
-    result.push_back(factor);
-    return result;
+    result.push_back(conditional);
+    if (conditional) {
+      return GaussianMixtureFactor::GraphAndConstant(
+          result, conditional->logNormalizationConstant());
+    } else {
+      return GaussianMixtureFactor::GraphAndConstant(result, 0.0);
+    }
   };
   return {conditionals_, lambda};
 }
