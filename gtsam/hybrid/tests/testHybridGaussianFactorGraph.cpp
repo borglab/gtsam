@@ -636,10 +636,14 @@ TEST(HybridGaussianFactorGraph, SumFrontals) {
   // Expected decision tree with two factor graphs:
   // f(x0;mode=0)P(x0) and f(x0;mode=1)P(x0)
   GaussianMixture::Sum expected{
-      M(0), GaussianFactorGraph(std::vector<GF>{mixture->factor(d0), prior}),
-      GaussianFactorGraph(std::vector<GF>{mixture->factor(d1), prior})};
+      M(0),
+      {GaussianFactorGraph(std::vector<GF>{mixture->factor(d0), prior}),
+       -0.225791 /* regression */},
+      {GaussianFactorGraph(std::vector<GF>{mixture->factor(d1), prior}),
+       -2.01755 /* regression */}};
 
-  EXPECT(assert_equal(expected(d0), sum(d0)));
+  EXPECT(assert_equal(expected(d0), sum(d0), 1e-5));
+  EXPECT(assert_equal(expected(d1), sum(d1), 1e-5));
 }
 
 /* ************************************************************************* */

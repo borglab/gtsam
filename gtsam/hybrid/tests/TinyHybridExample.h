@@ -35,7 +35,7 @@ const DiscreteKey mode{M(0), 2};
  * Create a tiny two variable hybrid model which represents
  * the generative probability P(z, x, n) = P(z | x, n)P(x)P(n).
  */
-static HybridBayesNet createHybridBayesNet(int num_measurements = 1) {
+HybridBayesNet createHybridBayesNet(int num_measurements = 1) {
   // Create hybrid Bayes net.
   HybridBayesNet bayesNet;
 
@@ -60,8 +60,8 @@ static HybridBayesNet createHybridBayesNet(int num_measurements = 1) {
   return bayesNet;
 }
 
-static HybridGaussianFactorGraph convertBayesNet(const HybridBayesNet& bayesNet,
-                                                 const HybridValues& sample) {
+HybridGaussianFactorGraph convertBayesNet(const HybridBayesNet& bayesNet,
+                                          const HybridValues& sample) {
   HybridGaussianFactorGraph fg;
   int num_measurements = bayesNet.size() - 2;
   for (int i = 0; i < num_measurements; i++) {
@@ -74,7 +74,7 @@ static HybridGaussianFactorGraph convertBayesNet(const HybridBayesNet& bayesNet,
   return fg;
 }
 
-static HybridGaussianFactorGraph createHybridGaussianFactorGraph(
+HybridGaussianFactorGraph createHybridGaussianFactorGraph(
     int num_measurements = 1) {
   auto bayesNet = createHybridBayesNet(num_measurements);
   auto sample = bayesNet.sample();
