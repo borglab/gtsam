@@ -658,7 +658,7 @@ TEST(HybridGaussianFactorGraph, EliminateTiny1) {
       tiny::createHybridGaussianFactorGraph(num_measurements, deterministic);
 
   // Create expected Bayes Net:
-  HybridBayesNet bayesNet;
+  HybridBayesNet expectedBayesNet;
 
   // Create Gaussian mixture on X(0).
   using tiny::mode;
@@ -668,17 +668,17 @@ TEST(HybridGaussianFactorGraph, EliminateTiny1) {
              conditional1 = boost::make_shared<GaussianConditional>(
                  X(0), Vector1(10.1379), I_1x1 * 2.02759);
   GaussianMixture gm({X(0)}, {}, {mode}, {conditional0, conditional1});
-  bayesNet.emplaceMixture(gm);  // copy :-(
+  expectedBayesNet.emplaceMixture(gm);  // copy :-(
 
   // Add prior on mode.
-  bayesNet.emplaceDiscrete(mode, "4/6");
+  expectedBayesNet.emplaceDiscrete(mode, "74/26");
 
   // Test elimination
   Ordering ordering;
   ordering.push_back(X(0));
   ordering.push_back(M(0));
   const auto posterior = fg.eliminateSequential(ordering);
-  EXPECT(assert_equal(bayesNet, *posterior, 1e-4));
+  EXPECT(assert_equal(expectedBayesNet, *posterior, 1e-4));
 }
 
 /* ****************************************************************************/
@@ -690,7 +690,7 @@ TEST(HybridGaussianFactorGraph, EliminateTiny2) {
       tiny::createHybridGaussianFactorGraph(num_measurements, deterministic);
 
   // Create expected Bayes Net:
-  HybridBayesNet bayesNet;
+  HybridBayesNet expectedBayesNet;
 
   // Create Gaussian mixture on X(0).
   using tiny::mode;
@@ -700,17 +700,17 @@ TEST(HybridGaussianFactorGraph, EliminateTiny2) {
              conditional1 = boost::make_shared<GaussianConditional>(
                  X(0), Vector1(10.3281), I_1x1 * 2.0548);
   GaussianMixture gm({X(0)}, {}, {mode}, {conditional0, conditional1});
-  bayesNet.emplaceMixture(gm);  // copy :-(
+  expectedBayesNet.emplaceMixture(gm);  // copy :-(
 
   // Add prior on mode.
-  bayesNet.emplaceDiscrete(mode, "4/6");
+  expectedBayesNet.emplaceDiscrete(mode, "4/6");
 
   // Test elimination
   Ordering ordering;
   ordering.push_back(X(0));
   ordering.push_back(M(0));
   const auto posterior = fg.eliminateSequential(ordering);
-  EXPECT(assert_equal(bayesNet, *posterior, 1e-4));
+  EXPECT(assert_equal(expectedBayesNet, *posterior, 1e-4));
 }
 
 /* ************************************************************************* */
