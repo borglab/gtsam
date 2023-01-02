@@ -61,12 +61,12 @@ HybridBayesNet createHybridBayesNet(int num_measurements = 1) {
 }
 
 HybridGaussianFactorGraph convertBayesNet(const HybridBayesNet& bayesNet,
-                                          const HybridValues& values) {
+                                          const VectorValues& measurements) {
   HybridGaussianFactorGraph fg;
   int num_measurements = bayesNet.size() - 2;
   for (int i = 0; i < num_measurements; i++) {
     auto conditional = bayesNet.atMixture(i);
-    auto factor = conditional->likelihood(values.continuousSubset({Z(i)}));
+    auto factor = conditional->likelihood({{Z(i), measurements.at(Z(i))}});
     fg.push_back(factor);
   }
   fg.push_back(bayesNet.atGaussian(num_measurements));
@@ -79,14 +79,14 @@ HybridGaussianFactorGraph createHybridGaussianFactorGraph(
   auto bayesNet = createHybridBayesNet(num_measurements);
   if (deterministic) {
     // Create a deterministic set of measurements:
-    HybridValues values{{}, {{M(0), 0}}};
+    VectorValues measurements;
     for (int i = 0; i < num_measurements; i++) {
-      values.insert(Z(i), Vector1(5.0 + 0.1 * i));
+      measurements.insert(Z(i), Vector1(5.0 + 0.1 * i));
     }
-    return convertBayesNet(bayesNet, values);
+    return convertBayesNet(bayesNet, measurements);
   } else {
     // Create a random set of measurements:
-    return convertBayesNet(bayesNet, bayesNet.sample());
+    return convertBayesNet(bayesNet, bayesNet.sample().continuous());
   }
 }
 
