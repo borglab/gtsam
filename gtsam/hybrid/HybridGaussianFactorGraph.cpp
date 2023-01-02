@@ -285,6 +285,10 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
     double sum = 0.0;
     auto visitor = [&](double y) { sum += y; };
     fdt.visit(visitor);
+    // Check if sum is 0, and update accordingly.
+    if (sum == 0) {
+      sum = 1.0;
+    }
     // fdt = DecisionTree<Key, double>(fdt,
     //                                 [sum](const double &x) { return x / sum;
     //                                 });
