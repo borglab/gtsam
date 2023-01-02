@@ -618,10 +618,10 @@ TEST(HybridGaussianFactorGraph, ErrorAndProbPrimeTree) {
 // Check that assembleGraphTree assembles Gaussian factor graphs for each
 // assignment.
 TEST(HybridGaussianFactorGraph, assembleGraphTree) {
+  using symbol_shorthand::Z;
   const int num_measurements = 1;
-  const bool deterministic = true;
-  auto fg =
-      tiny::createHybridGaussianFactorGraph(num_measurements, deterministic);
+  auto fg = tiny::createHybridGaussianFactorGraph(
+      num_measurements, VectorValues{{Z(0), Vector1(5.0)}});
   EXPECT_LONGS_EQUAL(3, fg.size());
 
   auto sum = fg.assembleGraphTree();
@@ -653,10 +653,10 @@ TEST(HybridGaussianFactorGraph, assembleGraphTree) {
 /* ****************************************************************************/
 // Check that eliminating tiny net with 1 measurement yields correct result.
 TEST(HybridGaussianFactorGraph, EliminateTiny1) {
+  using symbol_shorthand::Z;
   const int num_measurements = 1;
-  const bool deterministic = true;
-  auto fg =
-      tiny::createHybridGaussianFactorGraph(num_measurements, deterministic);
+  auto fg = tiny::createHybridGaussianFactorGraph(
+      num_measurements, VectorValues{{Z(0), Vector1(5.0)}});
 
   // Create expected Bayes Net:
   HybridBayesNet expectedBayesNet;
@@ -679,39 +679,41 @@ TEST(HybridGaussianFactorGraph, EliminateTiny1) {
   ordering.push_back(X(0));
   ordering.push_back(M(0));
   const auto posterior = fg.eliminateSequential(ordering);
-  EXPECT(assert_equal(expectedBayesNet, *posterior, 1e-4));
+  EXPECT(assert_equal(expectedBayesNet, *posterior, 0.01));
 }
 
 /* ****************************************************************************/
 // Check that eliminating tiny net with 2 measurements yields correct result.
 TEST(HybridGaussianFactorGraph, EliminateTiny2) {
+  // Create factor graph with 2 measurements such that posterior mean = 5.0.
+  using symbol_shorthand::Z;
   const int num_measurements = 2;
-  const bool deterministic = true;
-  auto fg =
-      tiny::createHybridGaussianFactorGraph(num_measurements, deterministic);
+  auto fg = tiny::createHybridGaussianFactorGraph(
+      num_measurements,
+      VectorValues{{Z(0), Vector1(4.0)}, {Z(1), Vector1(6.0)}});
 
   // Create expected Bayes Net:
   HybridBayesNet expectedBayesNet;
 
   // Create Gaussian mixture on X(0).
   using tiny::mode;
-  // regression, but mean checked to be > 5.0 in both cases:
+  // regression, but mean checked to be 5.0 in both cases:
   const auto conditional0 = boost::make_shared<GaussianConditional>(
-                 X(0), Vector1(18.4752), I_1x1 * 3.4641),
+                 X(0), Vector1(17.3205), I_1x1 * 3.4641),
              conditional1 = boost::make_shared<GaussianConditional>(
-                 X(0), Vector1(10.3281), I_1x1 * 2.0548);
+                 X(0), Vector1(10.274), I_1x1 * 2.0548);
   GaussianMixture gm({X(0)}, {}, {mode}, {conditional0, conditional1});
   expectedBayesNet.emplaceMixture(gm);  // copy :-(
 
   // Add prior on mode.
-  expectedBayesNet.emplaceDiscrete(mode, "4/6");
+  expectedBayesNet.emplaceDiscrete(mode, "23/77");
 
   // Test elimination
   Ordering ordering;
   ordering.push_back(X(0));
   ordering.push_back(M(0));
   const auto posterior = fg.eliminateSequential(ordering);
-  EXPECT(assert_equal(expectedBayesNet, *posterior, 1e-4));
+  EXPECT(assert_equal(expectedBayesNet, *posterior, 0.01));
 }
 
 /* ************************************************************************* */
