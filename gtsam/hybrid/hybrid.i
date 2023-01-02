@@ -40,6 +40,15 @@ virtual class HybridFactor {
   bool empty() const;
   size_t size() const;
   gtsam::KeyVector keys() const;
+
+  // Standard interface:
+  double error(const gtsam::HybridValues &values) const;
+  bool isDiscrete() const;
+  bool isContinuous() const;
+  bool isHybrid() const;
+  size_t nrContinuous() const;
+  gtsam::DiscreteKeys discreteKeys() const;
+  gtsam::KeyVector continuousKeys() const;
 };
 
 #include <gtsam/hybrid/HybridConditional.h>
@@ -50,7 +59,13 @@ virtual class HybridConditional {
   bool equals(const gtsam::HybridConditional& other, double tol = 1e-9) const;
   size_t nrFrontals() const;
   size_t nrParents() const;
+
+  // Standard interface:
+  gtsam::GaussianMixture* asMixture() const;
+  gtsam::GaussianConditional* asGaussian() const;
+  gtsam::DiscreteConditional* asDiscrete() const;
   gtsam::Factor* inner();
+  double error(const gtsam::HybridValues& values) const;
 };
 
 #include <gtsam/hybrid/HybridDiscreteFactor.h>
@@ -61,6 +76,7 @@ virtual class HybridDiscreteFactor {
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::HybridDiscreteFactor& other, double tol = 1e-9) const;
   gtsam::Factor* inner();
+  double error(const gtsam::HybridValues &values) const;
 };
 
 #include <gtsam/hybrid/GaussianMixtureFactor.h>
