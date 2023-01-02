@@ -59,51 +59,44 @@ namespace gtsam {
 template class EliminateableFactorGraph<HybridGaussianFactorGraph>;
 
 /* ************************************************************************ */
-static GaussianMixtureFactor::Sum addGaussian(
-    const GaussianMixtureFactor::Sum &sum,
+static GaussianFactorGraphTree addGaussian(
+    const GaussianFactorGraphTree &sum,
     const GaussianFactor::shared_ptr &factor) {
   // If the decision tree is not initialized, then initialize it.
   if (sum.empty()) {
     GaussianFactorGraph result;
     result.push_back(factor);
-    return GaussianMixtureFactor::Sum(
-        GaussianMixtureFactor::GraphAndConstant(result, 0.0));
+    return GaussianFactorGraphTree(GraphAndConstant(result, 0.0));
 
   } else {
-    auto add = [&factor](
-                   const GaussianMixtureFactor::GraphAndConstant &graph_z) {
+    auto add = [&factor](const GraphAndConstant &graph_z) {
       auto result = graph_z.graph;
       result.push_back(factor);
-      return GaussianMixtureFactor::GraphAndConstant(result, graph_z.constant);
+      return GraphAndConstant(result, graph_z.constant);
     };
     return sum.apply(add);
   }
 }
 
 /* ************************************************************************ */
-// TODO(dellaert): At the time I though "Sum" was a good name, but coming back
-// to it after a while I think "SumFrontals" is better.it's a terrible name.
-// Also, the implementation is inconsistent. I think we should just have a
-// virtual method in HybridFactor that adds to the "Sum" object, like
-// addGaussian. Finally, we need to document why deferredFactors need to be
-// added last, which I would undo if possible.
-// Implementation-wise, it's probably more efficient to first collect the
-// discrete keys, and then loop over all assignments to populate a vector.
-GaussianMixtureFactor::Sum HybridGaussianFactorGraph::SumFrontals() const {
-  // sum out frontals, this is the factor on the separator
-  gttic(sum);
+// TODO(dellaert): We need to document why deferredFactors need to be
+// added last, which I would undo if possible. Implementation-wise, it's
+// probably more efficient to first collect the discrete keys, and then loop
+// over all assignments to populate a vector.
+GaussianFactorGraphTree HybridGaussianFactorGraph::assembleGraphTree() const {
+  gttic(assembleGraphTree);
 
-  GaussianMixtureFactor::Sum sum;
+  GaussianFactorGraphTree result;
   std::vector<GaussianFactor::shared_ptr> deferredFactors;
 
   for (auto &f : factors_) {
     // TODO(dellaert): just use a virtual method defined in HybridFactor.
     if (f->isHybrid()) {
       if (auto gm = boost::dynamic_pointer_cast<GaussianMixtureFactor>(f)) {
-        sum = gm->add(sum);
+        result = gm->add(result);
       }
       if (auto gm = boost::dynamic_pointer_cast<HybridConditional>(f)) {
-        sum = gm->asMixture()->add(sum);
+        result = gm->asMixture()->add(result);
       }
 
     } else if (f->isContinuous()) {
@@ -134,12 +127,12 @@ GaussianMixtureFactor::Sum HybridGaussianFactorGraph::SumFrontals() const {
   }
 
   for (auto &f : deferredFactors) {
-    sum = addGaussian(sum, f);
+    result = addGaussian(result, f);
   }
 
-  gttoc(sum);
+  gttoc(assembleGraphTree);
 
-  return sum;
+  return result;
 }
 
 /* ************************************************************************ */
@@ -192,18 +185,14 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
 // If any GaussianFactorGraph in the decision tree contains a nullptr, convert
 // that leaf to an empty GaussianFactorGraph. Needed since the DecisionTree will
 // otherwise create a GFG with a single (null) factor.
-GaussianMixtureFactor::Sum removeEmpty(const GaussianMixtureFactor::Sum &sum) {
-  auto emptyGaussian = [](const GaussianMixtureFactor::GraphAndConstant
-                              &graph_z) {
+GaussianFactorGraphTree removeEmpty(const GaussianFactorGraphTree &sum) {
+  auto emptyGaussian = [](const GraphAndConstant &graph_z) {
     bool hasNull =
         std::any_of(graph_z.graph.begin(), graph_z.graph.end(),
                     [](const GaussianFactor::shared_ptr &ptr) { return !ptr; });
-    return hasNull
-               ? GaussianMixtureFactor::GraphAndConstant{GaussianFactorGraph(),
-                                                         0.0}
-               : graph_z;
+    return hasNull ? GraphAndConstant{GaussianFactorGraph(), 0.0} : graph_z;
   };
-  return GaussianMixtureFactor::Sum(sum, emptyGaussian);
+  return GaussianFactorGraphTree(sum, emptyGaussian);
 }
 /* ************************************************************************ */
 static std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>
@@ -218,17 +207,16 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
 
   // Collect all the factors to create a set of Gaussian factor graphs in a
   // decision tree indexed by all discrete keys involved.
-  GaussianMixtureFactor::Sum sum = factors.SumFrontals();
+  GaussianFactorGraphTree sum = factors.assembleGraphTree();
 
-  // TODO(dellaert): does SumFrontals not guarantee we do not need this?
+  // TODO(dellaert): does assembleGraphTree not guarantee we do not need this?
   sum = removeEmpty(sum);
 
   using EliminationPair = std::pair<boost::shared_ptr<GaussianConditional>,
                                     GaussianMixtureFactor::FactorAndConstant>;
 
   // This is the elimination method on the leaf nodes
-  auto eliminate = [&](const GaussianMixtureFactor::GraphAndConstant &graph_z)
-      -> EliminationPair {
+  auto eliminate = [&](const GraphAndConstant &graph_z) -> EliminationPair {
     if (graph_z.graph.empty()) {
       return {nullptr, {nullptr, 0.0}};
     }
@@ -247,7 +235,15 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
 #endif
 
     // Get the log of the log normalization constant inverse.
-    double logZ = graph_z.constant - conditional->logNormalizationConstant();
+    double logZ = -conditional->logNormalizationConstant();
+
+    // IF this is the last continuous variable to eliminated, we need to
+    // calculate the error here: the value of all factors at the mean, see
+    // ml_map_rao.pdf.
+    if (continuousSeparator.empty()) {
+      const auto posterior_mean = conditional->solve(VectorValues());
+      logZ += graph_z.graph.error(posterior_mean);
+    }
     return {conditional, {newFactor, logZ}};
   };
 

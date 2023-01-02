@@ -245,7 +245,7 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
    * one for A and one for B. The leaves of the tree will be the Gaussian
    * factors that have only continuous keys.
    */
-  GaussianMixtureFactor::Sum SumFrontals() const;
+  GaussianFactorGraphTree assembleGraphTree() const;
 
   /// @}
 };

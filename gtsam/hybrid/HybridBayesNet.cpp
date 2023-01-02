@@ -279,18 +279,31 @@ double HybridBayesNet::evaluate(const HybridValues &values) const {
   const VectorValues &continuousValues = values.continuous();
 
   double logDensity = 0.0, probability = 1.0;
+  bool debug = false;
 
   // Iterate over each conditional.
   for (auto &&conditional : *this) {
+    // TODO: should be delegated to derived classes.
     if (auto gm = conditional->asMixture()) {
       const auto component = (*gm)(discreteValues);
       logDensity += component->logDensity(continuousValues);
+      if (debug) {
+        GTSAM_PRINT(continuousValues);
+        std::cout << "component->logDensity(continuousValues) = "
+                  << component->logDensity(continuousValues) << std::endl;
+      }
     } else if (auto gc = conditional->asGaussian()) {
       // If continuous only, evaluate the probability and multiply.
       logDensity += gc->logDensity(continuousValues);
+      if (debug)
+        std::cout << "gc->logDensity(continuousValues) = "
+                  << gc->logDensity(continuousValues) << std::endl;
     } else if (auto dc = conditional->asDiscrete()) {
       // Conditional is discrete-only, so return its probability.
       probability *= dc->operator()(discreteValues);
+      if (debug)
+        std::cout << "dc->operator()(discreteValues) = "
+                  << dc->operator()(discreteValues) << std::endl;
     }
   }
 

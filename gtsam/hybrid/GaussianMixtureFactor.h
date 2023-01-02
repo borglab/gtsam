@@ -72,35 +72,6 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
     }
   };
 
-  /// Gaussian factor graph and log of normalizing constant.
-  struct GraphAndConstant {
-    GaussianFactorGraph graph;
-    double constant;
-
-    GraphAndConstant(const GaussianFactorGraph &graph, double constant)
-        : graph(graph), constant(constant) {}
-
-    // Check pointer equality.
-    bool operator==(const GraphAndConstant &other) const {
-      return graph == other.graph && constant == other.constant;
-    }
-
-    // Implement GTSAM-style print:
-    void print(const std::string &s = "Graph: ",
-               const KeyFormatter &formatter = DefaultKeyFormatter) const {
-      graph.print(s, formatter);
-      std::cout << "Constant: " << constant << std::endl;
-    }
-
-    // Implement GTSAM-style equals:
-    bool equals(const GraphAndConstant &other, double tol = 1e-9) const {
-      return graph.equals(other.graph, tol) &&
-             fabs(constant - other.constant) < tol;
-    }
-  };
-
-  using Sum = DecisionTree<Key, GraphAndConstant>;
-
   /// typedef for Decision Tree of Gaussian factors and log-constant.
   using Factors = DecisionTree<Key, FactorAndConstant>;
   using Mixture = DecisionTree<Key, sharedFactor>;
@@ -113,9 +84,9 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
    * @brief Helper function to return factors and functional to create a
    * DecisionTree of Gaussian Factor Graphs.
    *
-   * @return Sum (DecisionTree<Key, GaussianFactorGraph>)
+   * @return GaussianFactorGraphTree
    */
-  Sum asGaussianFactorGraphTree() const;
+  GaussianFactorGraphTree asGaussianFactorGraphTree() const;
 
  public:
   /// @name Constructors
@@ -184,7 +155,7 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
    * variables.
    * @return Sum
    */
-  Sum add(const Sum &sum) const;
+  GaussianFactorGraphTree add(const GaussianFactorGraphTree &sum) const;
 
   /**
    * @brief Compute error of the GaussianMixtureFactor as a tree.
@@ -202,7 +173,8 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
   double error(const HybridValues &values) const override;
 
   /// Add MixtureFactor to a Sum, syntactic sugar.
-  friend Sum &operator+=(Sum &sum, const GaussianMixtureFactor &factor) {
+  friend GaussianFactorGraphTree &operator+=(
+      GaussianFactorGraphTree &sum, const GaussianMixtureFactor &factor) {
     sum = factor.add(sum);
     return sum;
   }
@@ -215,7 +187,6 @@ struct traits<GaussianMixtureFactor> : public Testable<GaussianMixtureFactor> {
 };
 
 template <>
-struct traits<GaussianMixtureFactor::GraphAndConstant>
-    : public Testable<GaussianMixtureFactor::GraphAndConstant> {};
+struct traits<GraphAndConstant> : public Testable<GraphAndConstant> {};
 
 }  // namespace gtsam
