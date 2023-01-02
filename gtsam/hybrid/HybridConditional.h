@@ -176,15 +176,7 @@ class GTSAM_EXPORT HybridConditional
   boost::shared_ptr<Factor> inner() const { return inner_; }
 
   /// Return the error of the underlying conditional.
-  /// Currently only implemented for Gaussian mixture.
-  double error(const HybridValues& values) const override {
-    if (auto gm = asMixture()) {
-      return gm->error(values);
-    } else {
-      throw std::runtime_error(
-          "HybridConditional::error: only implemented for Gaussian mixture");
-    }
-  }
+  double error(const HybridValues& values) const override;
 
   /// @}
 
