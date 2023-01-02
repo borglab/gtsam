@@ -485,14 +485,14 @@ TEST(HybridEstimation, CorrectnessViaSampling) {
 
   // 2. Eliminate into BN
   const Ordering ordering = fg->getHybridOrdering();
-  HybridBayesNet::shared_ptr bn = fg->eliminateSequential(ordering);
+  const HybridBayesNet::shared_ptr bn = fg->eliminateSequential(ordering);
 
   // Set up sampling
   std::mt19937_64 rng(11);
 
   // Compute the log-ratio between the Bayes net and the factor graph.
   auto compute_ratio = [&](const HybridValues& sample) -> double {
-    return bn->error(sample) - fg->error(sample);
+    return bn->evaluate(sample) / fg->probPrime(sample);
   };
 
   // The error evaluated by the factor graph and the Bayes net should differ by
@@ -500,7 +500,7 @@ TEST(HybridEstimation, CorrectnessViaSampling) {
   const HybridValues sample = bn->sample(&rng);
   double expected_ratio = compute_ratio(sample);
   // regression
-  EXPECT_DOUBLES_EQUAL(1.9477340410546764, expected_ratio, 1e-9);
+  EXPECT_DOUBLES_EQUAL(0.728588, expected_ratio, 1e-6);
 
   // 3. Do sampling
   constexpr int num_samples = 10;
@@ -509,9 +509,7 @@ TEST(HybridEstimation, CorrectnessViaSampling) {
     const HybridValues sample = bn->sample(&rng);
 
     // 4. Check that the ratio is constant.
-    // TODO(Varun) The ratio changes based on the mode
-    // std::cout << compute_ratio(sample) << std::endl;
-    // EXPECT_DOUBLES_EQUAL(expected_ratio, compute_ratio(sample), 1e-9);
+    EXPECT_DOUBLES_EQUAL(expected_ratio, compute_ratio(sample), 1e-6);
   }
 }
 
