@@ -615,7 +615,7 @@ TEST(HybridGaussianFactorGraph, ErrorAndProbPrimeTree) {
 }
 
 /* ****************************************************************************/
-// SumFrontals just assembles Gaussian factor graphs for each assignment.
+// Check that SumFrontals assembles Gaussian factor graphs for each assignment.
 TEST(HybridGaussianFactorGraph, SumFrontals) {
   const int num_measurements = 1;
   const bool deterministic = true;
@@ -647,6 +647,15 @@ TEST(HybridGaussianFactorGraph, SumFrontals) {
 
   EXPECT(assert_equal(expectedSum(d0), sum(d0), 1e-5));
   EXPECT(assert_equal(expectedSum(d1), sum(d1), 1e-5));
+}
+
+/* ****************************************************************************/
+// Check that eliminating tiny net with 1 measurement yields correct result.
+TEST(HybridGaussianFactorGraph, EliminateTiny1) {
+  const int num_measurements = 1;
+  const bool deterministic = true;
+  auto fg =
+      tiny::createHybridGaussianFactorGraph(num_measurements, deterministic);
 
   // Create expected Bayes Net:
   HybridBayesNet bayesNet;
@@ -658,6 +667,38 @@ TEST(HybridGaussianFactorGraph, SumFrontals) {
                  X(0), Vector1(14.1421), I_1x1 * 2.82843),
              conditional1 = boost::make_shared<GaussianConditional>(
                  X(0), Vector1(10.1379), I_1x1 * 2.02759);
+  GaussianMixture gm({X(0)}, {}, {mode}, {conditional0, conditional1});
+  bayesNet.emplaceMixture(gm);  // copy :-(
+
+  // Add prior on mode.
+  bayesNet.emplaceDiscrete(mode, "4/6");
+
+  // Test elimination
+  Ordering ordering;
+  ordering.push_back(X(0));
+  ordering.push_back(M(0));
+  const auto posterior = fg.eliminateSequential(ordering);
+  EXPECT(assert_equal(bayesNet, *posterior, 1e-4));
+}
+
+/* ****************************************************************************/
+// Check that eliminating tiny net with 2 measurements yields correct result.
+TEST(HybridGaussianFactorGraph, EliminateTiny2) {
+  const int num_measurements = 2;
+  const bool deterministic = true;
+  auto fg =
+      tiny::createHybridGaussianFactorGraph(num_measurements, deterministic);
+
+  // Create expected Bayes Net:
+  HybridBayesNet bayesNet;
+
+  // Create Gaussian mixture on X(0).
+  using tiny::mode;
+  // regression, but mean checked to be > 5.0 in both cases:
+  const auto conditional0 = boost::make_shared<GaussianConditional>(
+                 X(0), Vector1(18.4752), I_1x1 * 3.4641),
+             conditional1 = boost::make_shared<GaussianConditional>(
+                 X(0), Vector1(10.3281), I_1x1 * 2.0548);
   GaussianMixture gm({X(0)}, {}, {mode}, {conditional0, conditional1});
   bayesNet.emplaceMixture(gm);  // copy :-(
 
