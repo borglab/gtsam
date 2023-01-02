@@ -110,7 +110,7 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
                                     [conditional0, conditional1])
 
         # Create prior on X(0).
-        prior_on_x0 = GaussianConditional.FromMeanAndStddev(X(0), [5.0], 5.0)
+        prior_on_x0 = GaussianConditional.FromMeanAndStddev(X(0), [5.0], 0.5)
         bayesNet.addGaussian(prior_on_x0)
 
         # Add prior on mode.
@@ -203,8 +203,14 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         sample: HybridValues = bayesNet.sample()
         # print(sample)
 
+        # Deterministic measurements:
+        deterministic = gtsam.VectorValues()
+        deterministic.insert(Z(0), [5.0])
+        deterministic.insert(Z(1), [5.1])
+        sample.update(deterministic)
+
         # Estimate marginals using importance sampling.
-        marginals = self.estimate_marginals(bayesNet, sample)
+        marginals = self.estimate_marginals(bayesNet, sample, N=10000)
         print(f"True mode: {sample.atDiscrete(M(0))}")
         print(f"P(mode=0; z0, z1) = {marginals[0]}")
         print(f"P(mode=1; z0, z1) = {marginals[1]}")
@@ -220,10 +226,19 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
 
         # Create measurements from the sample.
         measurements = self.measurements(sample, [0, 1])
+        print(measurements)
 
         # Calculate ratio between Bayes net probability and the factor graph:
         expected_ratio = self.calculate_ratio(bayesNet, fg, sample)
         # print(f"expected_ratio: {expected_ratio}\n")
+
+        # Print conditional and factor values side by side:
+        print("\nConditional and factor values:")
+        for i in range(4):
+            print(f"Conditional {i}:")
+            print(bayesNet.at(i).error(sample))
+            print(f"Factor {i}:")
+            print(fg.at(i).error(sample))
 
         # Check with a number of other samples.
         for i in range(10):
