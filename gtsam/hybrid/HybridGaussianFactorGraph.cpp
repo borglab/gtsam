@@ -238,13 +238,14 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
     keysOfEliminated = conditional_factor.first->keys();
     keysOfSeparator = conditional_factor.second->keys();
 
+    GaussianConditional::shared_ptr conditional = conditional_factor.first;
+    // Get the log of the log normalization constant inverse.
+    double logZ = -conditional->logNormalizationConstant() + graph_z.constant;
+
 #ifdef HYBRID_TIMING
     gttoc_(hybrid_eliminate);
 #endif
 
-    GaussianConditional::shared_ptr conditional = conditional_factor.first;
-    // Get the log of the log normalization constant inverse.
-    double logZ = -conditional->logNormalizationConstant() + graph_z.constant;
     return {conditional, {conditional_factor.second, logZ}};
   };
 
