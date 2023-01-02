@@ -271,11 +271,11 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
         [&](const GaussianMixtureFactor::FactorAndConstant &factor_z) {
           // This is the probability q(μ) at the MLE point.
           // factor_z.factor is a factor without keys, just containing the residual.
-          // return exp(-factor_z.error(VectorValues()));
+          return exp(-factor_z.error(VectorValues()));
           // TODO(dellaert): this is not correct, since VectorValues() is not
           // the MLE point. But it does not matter, as at the MLE point the
           // error will be zero, hence:
-          return exp(factor_z.constant);
+          // return exp(factor_z.constant);
         };
     const DecisionTree<Key, double> fdt(newFactors, factorProb);
     const auto discreteFactor =
