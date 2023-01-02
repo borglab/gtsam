@@ -357,9 +357,8 @@ TEST(HybridNonlinearISAM, Incremental_approximate) {
   // Run update with pruning
   size_t maxComponents = 5;
   incrementalHybrid.update(graph1, initial);
+  incrementalHybrid.prune(maxComponents);
   HybridGaussianISAM bayesTree = incrementalHybrid.bayesTree();
-
-  bayesTree.prune(maxComponents);
 
   // Check if we have a bayes tree with 4 hybrid nodes,
   // each with 2, 4, 8, and 5 (pruned) leaves respetively.
@@ -382,9 +381,8 @@ TEST(HybridNonlinearISAM, Incremental_approximate) {
 
   // Run update with pruning a second time.
   incrementalHybrid.update(graph2, initial);
+  incrementalHybrid.prune(maxComponents);
   bayesTree = incrementalHybrid.bayesTree();
-
-  bayesTree.prune(maxComponents);
 
   // Check if we have a bayes tree with pruned hybrid nodes,
   // with 5 (pruned) leaves.
