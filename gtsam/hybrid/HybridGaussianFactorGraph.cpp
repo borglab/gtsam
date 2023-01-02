@@ -209,7 +209,7 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
   // decision tree indexed by all discrete keys involved.
   GaussianFactorGraphTree sum = factors.assembleGraphTree();
 
-  // TODO(dellaert): does assembleGraphTree not guarantee we do not need this?
+  // TODO(dellaert): does assembleGraphTree not guarantee this?
   sum = removeEmpty(sum);
 
   using EliminationPair = std::pair<boost::shared_ptr<GaussianConditional>,
@@ -234,16 +234,16 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
     gttoc_(hybrid_eliminate);
 #endif
 
+    const double logZ = graph_z.constant - conditional->logNormalizationConstant();
     // Get the log of the log normalization constant inverse.
-    double logZ = -conditional->logNormalizationConstant();
-
-    // IF this is the last continuous variable to eliminated, we need to
-    // calculate the error here: the value of all factors at the mean, see
-    // ml_map_rao.pdf.
-    if (continuousSeparator.empty()) {
-      const auto posterior_mean = conditional->solve(VectorValues());
-      logZ += graph_z.graph.error(posterior_mean);
-    }
+    // double logZ = -conditional->logNormalizationConstant();
+    // // IF this is the last continuous variable to eliminated, we need to
+    // // calculate the error here: the value of all factors at the mean, see
+    // // ml_map_rao.pdf.
+    // if (continuousSeparator.empty()) {
+    //   const auto posterior_mean = conditional->solve(VectorValues());
+    //   logZ += graph_z.graph.error(posterior_mean);
+    // }
     return {conditional, {newFactor, logZ}};
   };
 
@@ -270,11 +270,12 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
     auto factorProb =
         [&](const GaussianMixtureFactor::FactorAndConstant &factor_z) {
           // This is the probability q(μ) at the MLE point.
+          // factor_z.factor is a factor without keys, just containing the residual.
           // return exp(-factor_z.error(VectorValues()));
           // TODO(dellaert): this is not correct, since VectorValues() is not
           // the MLE point. But it does not matter, as at the MLE point the
           // error will be zero, hence:
-          return exp(-factor_z.constant);
+          return exp(factor_z.constant);
         };
     const DecisionTree<Key, double> fdt(newFactors, factorProb);
     const auto discreteFactor =
