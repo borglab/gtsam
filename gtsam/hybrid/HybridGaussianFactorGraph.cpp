@@ -218,7 +218,8 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
   KeyVector keysOfSeparator;
 
   // This is the elimination method on the leaf nodes
-  auto eliminate = [&](const GaussianMixtureFactor::GraphAndConstant &graph_z)
+  auto eliminateFunc =
+      [&](const GaussianMixtureFactor::GraphAndConstant &graph_z)
       -> EliminationPair {
     if (graph_z.graph.empty()) {
       return {nullptr, {nullptr, 0.0}};
@@ -250,7 +251,7 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
   };
 
   // Perform elimination!
-  DecisionTree<Key, EliminationPair> eliminationResults(sum, eliminate);
+  DecisionTree<Key, EliminationPair> eliminationResults(sum, eliminateFunc);
 
 #ifdef HYBRID_TIMING
   tictoc_print_();
