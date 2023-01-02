@@ -638,22 +638,30 @@ conditional 2: Hybrid  P( x2 | m0 m1)
  0 0 Leaf  p(x2)
   R = [ 10.0494 ]
   d = [ -10.1489 ]
+  mean: 1 elements
+  x2: -1.0099
   No noise model
 
  0 1 Leaf  p(x2)
   R = [ 10.0494 ]
   d = [ -10.1479 ]
+  mean: 1 elements
+  x2: -1.0098
   No noise model
 
  1 Choice(m0) 
  1 0 Leaf  p(x2)
   R = [ 10.0494 ]
   d = [ -10.0504 ]
+  mean: 1 elements
+  x2: -1.0001
   No noise model
 
  1 1 Leaf  p(x2)
   R = [ 10.0494 ]
   d = [ -10.0494 ]
+  mean: 1 elements
+  x2: -1
   No noise model
 
 )";
