@@ -21,12 +21,44 @@
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/inference/Factor.h>
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/discrete/DecisionTree.h>
 
 #include <cstddef>
 #include <string>
 namespace gtsam {
 
 class HybridValues;
+
+/// Gaussian factor graph and log of normalizing constant.
+struct GraphAndConstant {
+  GaussianFactorGraph graph;
+  double constant;
+
+  GraphAndConstant(const GaussianFactorGraph &graph, double constant)
+      : graph(graph), constant(constant) {}
+
+  // Check pointer equality.
+  bool operator==(const GraphAndConstant &other) const {
+    return graph == other.graph && constant == other.constant;
+  }
+
+  // Implement GTSAM-style print:
+  void print(const std::string &s = "Graph: ",
+             const KeyFormatter &formatter = DefaultKeyFormatter) const {
+    graph.print(s, formatter);
+    std::cout << "Constant: " << constant << std::endl;
+  }
+
+  // Implement GTSAM-style equals:
+  bool equals(const GraphAndConstant &other, double tol = 1e-9) const {
+    return graph.equals(other.graph, tol) &&
+           fabs(constant - other.constant) < tol;
+  }
+};
+
+/// Alias for DecisionTree of GaussianFactorGraphs
+using GaussianFactorGraphTree = DecisionTree<Key, GraphAndConstant>;
 
 KeyVector CollectKeys(const KeyVector &continuousKeys,
                       const DiscreteKeys &discreteKeys);

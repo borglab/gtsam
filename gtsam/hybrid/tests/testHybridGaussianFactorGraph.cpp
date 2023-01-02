@@ -615,15 +615,16 @@ TEST(HybridGaussianFactorGraph, ErrorAndProbPrimeTree) {
 }
 
 /* ****************************************************************************/
-// Check that SumFrontals assembles Gaussian factor graphs for each assignment.
-TEST(HybridGaussianFactorGraph, SumFrontals) {
+// Check that assembleGraphTree assembles Gaussian factor graphs for each
+// assignment.
+TEST(HybridGaussianFactorGraph, assembleGraphTree) {
   const int num_measurements = 1;
   const bool deterministic = true;
   auto fg =
       tiny::createHybridGaussianFactorGraph(num_measurements, deterministic);
   EXPECT_LONGS_EQUAL(3, fg.size());
 
-  auto sum = fg.SumFrontals();
+  auto sum = fg.assembleGraphTree();
 
   // Get mixture factor:
   auto mixture = boost::dynamic_pointer_cast<GaussianMixtureFactor>(fg.at(0));
@@ -638,7 +639,7 @@ TEST(HybridGaussianFactorGraph, SumFrontals) {
 
   // Expected decision tree with two factor graphs:
   // f(x0;mode=0)P(x0) and f(x0;mode=1)P(x0)
-  GaussianMixture::Sum expectedSum{
+  GaussianFactorGraphTree expectedSum{
       M(0),
       {GaussianFactorGraph(std::vector<GF>{mixture->factor(d0), prior}),
        mixture->constant(d0)},
