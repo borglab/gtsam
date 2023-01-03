@@ -116,7 +116,6 @@ bool HybridConditional::equals(const HybridFactor &other, double tol) const {
     auto other = e->asDiscrete();
     return other != nullptr && dc->equals(*other, tol);
   }
-  return inner_->equals(*(e->inner_), tol);
 
   return inner_ ? (e->inner_ ? inner_->equals(*(e->inner_), tol) : false)
                 : !(e->inner_);

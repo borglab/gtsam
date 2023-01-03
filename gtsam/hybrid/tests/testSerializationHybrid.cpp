@@ -19,6 +19,7 @@
 #include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/hybrid/GaussianMixture.h>
 #include <gtsam/hybrid/GaussianMixtureFactor.h>
+#include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/hybrid/HybridDiscreteFactor.h>
 #include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/inference/Symbol.h>
@@ -103,6 +104,20 @@ TEST(HybridSerialization, GaussianMixtureFactor) {
   EXPECT(equalsObj<GaussianMixtureFactor>(factor));
   EXPECT(equalsXML<GaussianMixtureFactor>(factor));
   EXPECT(equalsBinary<GaussianMixtureFactor>(factor));
+}
+
+/* ****************************************************************************/
+// Test HybridConditional serialization.
+TEST(HybridSerialization, HybridConditional) {
+  const DiscreteKey mode(M(0), 2);
+  Matrix1 I = Matrix1::Identity();
+  const auto conditional = boost::make_shared<GaussianConditional>(
+      GaussianConditional::FromMeanAndStddev(Z(0), I, X(0), Vector1(0), 0.5));
+  const HybridConditional hc(conditional);
+
+  EXPECT(equalsObj<HybridConditional>(hc));
+  EXPECT(equalsXML<HybridConditional>(hc));
+  EXPECT(equalsBinary<HybridConditional>(hc));
 }
 
 /* ****************************************************************************/
