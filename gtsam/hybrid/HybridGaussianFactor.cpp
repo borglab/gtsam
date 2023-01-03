@@ -44,15 +44,21 @@ HybridGaussianFactor::HybridGaussianFactor(HessianFactor &&hf)
 /* ************************************************************************* */
 bool HybridGaussianFactor::equals(const HybridFactor &other, double tol) const {
   const This *e = dynamic_cast<const This *>(&other);
-  // TODO(Varun) How to compare inner_ when they are abstract types?
-  return e != nullptr && Base::equals(*e, tol);
+  if (e == nullptr) return false;
+  if (!Base::equals(*e, tol)) return false;
+  return inner_ ? (e->inner_ ? inner_->equals(*(e->inner_), tol) : false)
+                : !(e->inner_);
 }
 
 /* ************************************************************************* */
 void HybridGaussianFactor::print(const std::string &s,
                                  const KeyFormatter &formatter) const {
   HybridFactor::print(s, formatter);
-  inner_->print("\n", formatter);
+  if (inner_) {
+    inner_->print("\n", formatter);
+  } else {
+    std::cout << "\nGaussian: nullptr" << std::endl;
+  }
 };
 
 /* ************************************************************************ */
