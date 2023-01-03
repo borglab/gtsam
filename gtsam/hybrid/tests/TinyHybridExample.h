@@ -33,17 +33,21 @@ const DiscreteKey mode{M(0), 2};
 /**
  * Create a tiny two variable hybrid model which represents
  * the generative probability P(z,x,mode) = P(z|x,mode)P(x)P(mode).
+ * numMeasurements is the number of measurements of the continuous variable x0.
+ * If manyModes is true, then we introduce one mode per measurement.
  */
-inline HybridBayesNet createHybridBayesNet(int num_measurements = 1) {
+inline HybridBayesNet createHybridBayesNet(int numMeasurements = 1,
+                                    bool manyModes = false) {
   HybridBayesNet bayesNet;
 
   // Create Gaussian mixture z_i = x0 + noise for each measurement.
-  for (int i = 0; i < num_measurements; i++) {
+  for (int i = 0; i < numMeasurements; i++) {
     const auto conditional0 = boost::make_shared<GaussianConditional>(
         GaussianConditional::FromMeanAndStddev(Z(i), I_1x1, X(0), Z_1x1, 0.5));
     const auto conditional1 = boost::make_shared<GaussianConditional>(
         GaussianConditional::FromMeanAndStddev(Z(i), I_1x1, X(0), Z_1x1, 3));
-    GaussianMixture gm({Z(i)}, {X(0)}, {mode}, {conditional0, conditional1});
+    const auto mode_i = manyModes ? DiscreteKey{M(i), 2} : mode;
+    GaussianMixture gm({Z(i)}, {X(0)}, {mode_i}, {conditional0, conditional1});
     bayesNet.emplaceMixture(gm);  // copy :-(
   }
 
@@ -53,8 +57,10 @@ inline HybridBayesNet createHybridBayesNet(int num_measurements = 1) {
   bayesNet.emplaceGaussian(prior_on_x0);  // copy :-(
 
   // Add prior on mode.
-  bayesNet.emplaceDiscrete(mode, "4/6");
-
+  const size_t nrModes = manyModes ? numMeasurements : 1;
+  for (int i = 0; i < nrModes; i++) {
+    bayesNet.emplaceDiscrete(DiscreteKey{M(i), 2}, "4/6");
+  }
   return bayesNet;
 }
 
@@ -64,14 +70,21 @@ inline HybridBayesNet createHybridBayesNet(int num_measurements = 1) {
 inline HybridGaussianFactorGraph convertBayesNet(
     const HybridBayesNet& bayesNet, const VectorValues& measurements) {
   HybridGaussianFactorGraph fg;
-  int num_measurements = bayesNet.size() - 2;
-  for (int i = 0; i < num_measurements; i++) {
-    auto conditional = bayesNet.atMixture(i);
-    auto factor = conditional->likelihood({{Z(i), measurements.at(Z(i))}});
-    fg.push_back(factor);
+  // For all nodes in the Bayes net, if its frontal variable is in measurements,
+  // replace it by a likelihood factor:
+  for (const HybridConditional::shared_ptr& conditional : bayesNet) {
+    if (measurements.exists(conditional->firstFrontalKey())) {
+      if (auto gc = conditional->asGaussian())
+        fg.push_back(gc->likelihood(measurements));
+      else if (auto gm = conditional->asMixture())
+        fg.push_back(gm->likelihood(measurements));
+      else {
+        throw std::runtime_error("Unknown conditional type");
+      }
+    } else {
+      fg.push_back(conditional);
+    }
   }
-  fg.push_back(bayesNet.atGaussian(num_measurements));
-  fg.push_back(bayesNet.atDiscrete(num_measurements + 1));
   return fg;
 }
 
@@ -79,15 +92,18 @@ inline HybridGaussianFactorGraph convertBayesNet(
  * Create a tiny two variable hybrid factor graph which represents a discrete
  * mode and a continuous variable x0, given a number of measurements of the
  * continuous variable x0. If no measurements are given, they are sampled from
- * the generative Bayes net model HybridBayesNet::Example(num_measurements)
+ * the generative Bayes net model HybridBayesNet::Example(numMeasurements)
  */
 inline HybridGaussianFactorGraph createHybridGaussianFactorGraph(
-    int num_measurements = 1,
-    boost::optional<VectorValues> measurements = boost::none) {
-  auto bayesNet = createHybridBayesNet(num_measurements);
+    int numMeasurements = 1,
+    boost::optional<VectorValues> measurements = boost::none,
+    bool manyModes = false) {
+  auto bayesNet = createHybridBayesNet(numMeasurements, manyModes);
   if (measurements) {
+    // Use the measurements to create a hybrid factor graph.
     return convertBayesNet(bayesNet, *measurements);
   } else {
+    // Sample from the generative model to create a hybrid factor graph.
     return convertBayesNet(bayesNet, bayesNet.sample().continuous());
   }
 }
