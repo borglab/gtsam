@@ -18,7 +18,6 @@
  * @date    December 2021
  */
 
-#include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -31,7 +30,6 @@
 
 using namespace std;
 using namespace gtsam;
-using namespace gtsam::serializationTestHelpers;
 
 using noiseModel::Isotropic;
 using symbol_shorthand::M;
@@ -328,20 +326,6 @@ TEST(HybridBayesNet, UpdateDiscreteConditionals) {
 
   // The checker functor verifies the values for us.
   discrete_conditional_tree->apply(checker);
-}
-
-/* ****************************************************************************/
-// Test HybridBayesNet serialization.
-TEST(HybridBayesNet, Serialization) {
-  Switching s(4);
-  Ordering ordering = s.linearizedFactorGraph.getHybridOrdering();
-  HybridBayesNet hbn = *(s.linearizedFactorGraph.eliminateSequential(ordering));
-
-  // TODO(Varun) Serialization of inner factor doesn't work. Requires
-  // serialization support for all hybrid factors.
-  //  EXPECT(equalsObj<HybridBayesNet>(hbn));
-  //  EXPECT(equalsXML<HybridBayesNet>(hbn));
-  //  EXPECT(equalsBinary<HybridBayesNet>(hbn));
 }
 
 /* ****************************************************************************/
