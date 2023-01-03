@@ -192,4 +192,7 @@ class GTSAM_EXPORT HybridFactor : public Factor {
 template <>
 struct traits<HybridFactor> : public Testable<HybridFactor> {};
 
+template <>
+struct traits<GraphAndConstant> : public Testable<GraphAndConstant> {};
+
 }  // namespace gtsam

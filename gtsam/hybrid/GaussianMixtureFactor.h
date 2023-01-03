@@ -186,7 +186,4 @@ template <>
 struct traits<GaussianMixtureFactor> : public Testable<GaussianMixtureFactor> {
 };
 
-template <>
-struct traits<GraphAndConstant> : public Testable<GraphAndConstant> {};
-
 }  // namespace gtsam

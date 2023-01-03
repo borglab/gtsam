@@ -92,14 +92,6 @@ double GaussianMixtureFactor::constant(const DiscreteValues &assignment) const {
 }
 
 /* *******************************************************************************/
-// NOTE(dellaert): this was not used and is expensive.
-// const GaussianMixtureFactor::Mixture GaussianMixtureFactor::factors() const {
-//   return Mixture(factors_, [](const FactorAndConstant &factor_z) {
-//     return factor_z.factor;
-//   });
-// }
-
-/* *******************************************************************************/
 GaussianFactorGraphTree GaussianMixtureFactor::add(
     const GaussianFactorGraphTree &sum) const {
   using Y = GraphAndConstant;
