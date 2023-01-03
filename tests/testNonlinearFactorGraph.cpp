@@ -25,6 +25,7 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/symbolic/SymbolicFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/sam/RangeFactor.h>
@@ -386,6 +387,83 @@ TEST(NonlinearFactorGraph, dot_extra) {
   stringstream ss;
   fg.dot(ss, c);
   EXPECT(ss.str() == expected);
+}
+
+/* ************************************************************************* */
+template <class VALUE>
+class MyPrior : public gtsam::NoiseModelFactorN<VALUE> {
+ private:
+  VALUE prior_;
+
+ public:
+  MyPrior(gtsam::Key key, const VALUE &prior,
+          const gtsam::SharedNoiseModel &model)
+      : gtsam::NoiseModelFactorN<VALUE>(model, key), prior_(prior) {}
+
+  gtsam::Vector evaluateError(
+      const VALUE &val,
+      boost::optional<gtsam::Matrix &> H = boost::none) const override {
+    if (H)
+      (*H) = gtsam::Matrix::Identity(gtsam::traits<VALUE>::GetDimension(val),
+                                     gtsam::traits<VALUE>::GetDimension(val));
+    // manifold equivalent of z-x -> Local(x,z)
+    return -gtsam::traits<VALUE>::Local(val, prior_);
+  }
+
+  virtual gtsam::NonlinearFactor::shared_ptr clone() const override {
+    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new MyPrior<VALUE>(*this)));
+  }
+};
+
+template <class VALUE>
+class MyPriorPrint : public gtsam::NoiseModelFactorN<VALUE> {
+ private:
+  VALUE prior_;
+
+ public:
+  MyPriorPrint(gtsam::Key key, const VALUE &prior,
+               const gtsam::SharedNoiseModel &model)
+      : gtsam::NoiseModelFactorN<VALUE>(model, key), prior_(prior) {}
+
+  gtsam::Vector evaluateError(
+      const VALUE &val,
+      boost::optional<gtsam::Matrix &> H = boost::none) const override {
+    if (H)
+      (*H) = gtsam::Matrix::Identity(gtsam::traits<VALUE>::GetDimension(val),
+                                     gtsam::traits<VALUE>::GetDimension(val));
+    // manifold equivalent of z-x -> Local(x,z)
+    auto error = -gtsam::traits<VALUE>::Local(val, prior_);
+    val.print();
+    prior_.print();
+    return error;
+  }
+
+  virtual gtsam::NonlinearFactor::shared_ptr clone() const override {
+    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new MyPriorPrint<VALUE>(*this)));
+  }
+};
+
+TEST(NonlinearFactorGraph, NoPrintSideEffects) {
+  NonlinearFactorGraph fg;
+  Values vals;
+  const auto model = noiseModel::Unit::Create(3);
+  fg.emplace_shared<MyPrior<Pose2>>(0, Pose2(0, 0, 0), model);
+  vals.insert(0, Pose2(1, 1, 1));
+
+  NonlinearFactorGraph fg_print;
+  Values vals_print;
+  fg_print.emplace_shared<MyPriorPrint<Pose2>>(0, Pose2(0, 0, 0), model);
+  vals_print.insert(0, Pose2(1, 1, 1));
+
+  std::cout << "Without Prints:" << std::endl;
+  GaussNewtonOptimizer optimizer(fg, vals);
+  optimizer.optimize().print();
+
+  std::cout << "With Prints:" << std::endl;
+  GaussNewtonOptimizer optimizer_print(fg_print, vals_print);
+  optimizer_print.optimize().print();
 }
 
 /* ************************************************************************* */
