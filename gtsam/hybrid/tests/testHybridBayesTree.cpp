@@ -220,22 +220,6 @@ TEST(HybridBayesTree, Choose) {
   EXPECT(assert_equal(expected_gbt, gbt));
 }
 
-/* ****************************************************************************/
-// Test HybridBayesTree serialization.
-TEST(HybridBayesTree, Serialization) {
-  Switching s(4);
-  Ordering ordering = s.linearizedFactorGraph.getHybridOrdering();
-  HybridBayesTree hbt =
-      *(s.linearizedFactorGraph.eliminateMultifrontal(ordering));
-
-  using namespace gtsam::serializationTestHelpers;
-  // TODO(Varun) Serialization of inner factor doesn't work. Requires
-  // serialization support for all hybrid factors.
-  // EXPECT(equalsObj<HybridBayesTree>(hbt));
-  // EXPECT(equalsXML<HybridBayesTree>(hbt));
-  // EXPECT(equalsBinary<HybridBayesTree>(hbt));
-}
-
 /* ************************************************************************* */
 int main() {
   TestResult tr;
