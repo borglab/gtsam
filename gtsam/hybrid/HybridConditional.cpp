@@ -118,21 +118,8 @@ bool HybridConditional::equals(const HybridFactor &other, double tol) const {
   }
   return inner_->equals(*(e->inner_), tol);
 
-  if (inner_) {
-    if (e->inner_) {
-      // Both the inner_ factors are not null
-      return inner_->equals(*(e->inner_), tol);
-    } else {
-      return false;
-    }
-  } else {
-    if (e->inner_) {
-      return false;
-    } else {
-      // Both inner_ are null
-      return true;
-    }
-  }
+  return inner_ ? (e->inner_ ? inner_->equals(*(e->inner_), tol) : false)
+                : !(e->inner_);
 }
 
 /* ************************************************************************ */
