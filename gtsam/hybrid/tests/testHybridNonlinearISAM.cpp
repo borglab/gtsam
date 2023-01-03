@@ -195,19 +195,19 @@ TEST(HybridNonlinearISAM, IncrementalInference) {
 
   // Test the probability values with regression tests.
   DiscreteValues assignment;
-  EXPECT(assert_equal(0.000956191, m00_prob, 1e-5));
+  EXPECT(assert_equal(0.0952922, m00_prob, 1e-5));
   assignment[M(0)] = 0;
   assignment[M(1)] = 0;
-  EXPECT(assert_equal(0.000956191, (*discreteConditional)(assignment), 1e-5));
+  EXPECT(assert_equal(0.0952922, (*discreteConditional)(assignment), 1e-5));
   assignment[M(0)] = 1;
   assignment[M(1)] = 0;
-  EXPECT(assert_equal(0.00283728, (*discreteConditional)(assignment), 1e-5));
+  EXPECT(assert_equal(0.282758, (*discreteConditional)(assignment), 1e-5));
   assignment[M(0)] = 0;
   assignment[M(1)] = 1;
-  EXPECT(assert_equal(0.00315253, (*discreteConditional)(assignment), 1e-5));
+  EXPECT(assert_equal(0.314175, (*discreteConditional)(assignment), 1e-5));
   assignment[M(0)] = 1;
   assignment[M(1)] = 1;
-  EXPECT(assert_equal(0.00308831, (*discreteConditional)(assignment), 1e-5));
+  EXPECT(assert_equal(0.307775, (*discreteConditional)(assignment), 1e-5));
 
   // Check if the clique conditional generated from incremental elimination
   // matches that of batch elimination.
@@ -216,7 +216,7 @@ TEST(HybridNonlinearISAM, IncrementalInference) {
       bayesTree[M(1)]->conditional()->inner());
   // Account for the probability terms from evaluating continuous FGs
   DiscreteKeys discrete_keys = {{M(0), 2}, {M(1), 2}};
-  vector<double> probs = {0.00095619114, 0.0031525308, 0.0028372777, 0.0030883072};
+  vector<double> probs = {0.095292197, 0.31417524, 0.28275772, 0.30777485};
   auto expectedConditional =
       boost::make_shared<DecisionTreeFactor>(discrete_keys, probs);
   EXPECT(assert_equal(*expectedConditional, *actualConditional, 1e-6));

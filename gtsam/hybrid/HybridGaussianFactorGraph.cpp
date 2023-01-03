@@ -174,7 +174,7 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
     }
   }
 
-  // TODO(dellaert): This does sum-product. For max-product, use EliminateForMPE
+  // NOTE: This does sum-product. For max-product, use EliminateForMPE.
   auto result = EliminateDiscrete(dfg, frontalKeys);
 
   return {boost::make_shared<HybridConditional>(result.first),
@@ -194,6 +194,7 @@ GaussianFactorGraphTree removeEmpty(const GaussianFactorGraphTree &sum) {
   };
   return GaussianFactorGraphTree(sum, emptyGaussian);
 }
+
 /* ************************************************************************ */
 static std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>
 hybridElimination(const HybridGaussianFactorGraph &factors,
@@ -209,7 +210,9 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
   // decision tree indexed by all discrete keys involved.
   GaussianFactorGraphTree sum = factors.assembleGraphTree();
 
-  // TODO(dellaert): does assembleGraphTree not guarantee this?
+  // Convert factor graphs with a nullptr to an empty factor graph.
+  // This is done after assembly since it is non-trivial to keep track of which
+  // FG has a nullptr as we're looping over the factors.
   sum = removeEmpty(sum);
 
   using EliminationPair = std::pair<boost::shared_ptr<GaussianConditional>,
@@ -230,7 +233,8 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
     boost::tie(conditional, newFactor) =
         EliminatePreferCholesky(graph_z.graph, frontalKeys);
 
-    // Get the log of the log normalization constant inverse.
+    // Get the log of the log normalization constant inverse and
+    // add it to the previous constant.
     const double logZ =
         graph_z.constant - conditional->logNormalizationConstant();
     // Get the log of the log normalization constant inverse.
@@ -273,13 +277,9 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
     auto factorProb =
         [&](const GaussianMixtureFactor::FactorAndConstant &factor_z) {
           // This is the probability q(μ) at the MLE point.
-          // factor_z.factor is a factor without keys, just containing the
-          // residual.
+          // factor_z.factor is a factor without keys,
+          // just containing the residual.
           return exp(-factor_z.error(VectorValues()));
-          // TODO(dellaert): this is not correct, since VectorValues() is not
-          // the MLE point. But it does not matter, as at the MLE point the
-          // error will be zero, hence:
-          // return exp(factor_z.constant);
         };
 
     const DecisionTree<Key, double> fdt(newFactors, factorProb);
@@ -301,8 +301,6 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
             boost::make_shared<HybridDiscreteFactor>(discreteFactor)};
   } else {
     // Create a resulting GaussianMixtureFactor on the separator.
-    // TODO(dellaert): Keys can be computed from the factors, so we should not
-    // need to pass them in.
     return {boost::make_shared<HybridConditional>(gaussianMixture),
             boost::make_shared<GaussianMixtureFactor>(
                 continuousSeparator, discreteSeparator, newFactors)};

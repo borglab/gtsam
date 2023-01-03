@@ -507,6 +507,8 @@ TEST(GaussianConditional, Print) {
     "  R = [ 1 0 ]\n"
     "      [ 0 1 ]\n"
     "  d = [ 20 40 ]\n"
+    "  mean: 1 elements\n"
+    "  x0: 20 40\n"
     "isotropic dim=2 sigma=3\n";
   EXPECT(assert_print_equal(expected, conditional, "GaussianConditional"));
 

@@ -34,7 +34,7 @@ const DiscreteKey mode{M(0), 2};
  * Create a tiny two variable hybrid model which represents
  * the generative probability P(z,x,mode) = P(z|x,mode)P(x)P(mode).
  */
-HybridBayesNet createHybridBayesNet(int num_measurements = 1) {
+inline HybridBayesNet createHybridBayesNet(int num_measurements = 1) {
   HybridBayesNet bayesNet;
 
   // Create Gaussian mixture z_i = x0 + noise for each measurement.
@@ -61,8 +61,8 @@ HybridBayesNet createHybridBayesNet(int num_measurements = 1) {
 /**
  * Convert a hybrid Bayes net to a hybrid Gaussian factor graph.
  */
-HybridGaussianFactorGraph convertBayesNet(const HybridBayesNet& bayesNet,
-                                          const VectorValues& measurements) {
+inline HybridGaussianFactorGraph convertBayesNet(
+    const HybridBayesNet& bayesNet, const VectorValues& measurements) {
   HybridGaussianFactorGraph fg;
   int num_measurements = bayesNet.size() - 2;
   for (int i = 0; i < num_measurements; i++) {
@@ -81,7 +81,7 @@ HybridGaussianFactorGraph convertBayesNet(const HybridBayesNet& bayesNet,
  * continuous variable x0. If no measurements are given, they are sampled from
  * the generative Bayes net model HybridBayesNet::Example(num_measurements)
  */
-HybridGaussianFactorGraph createHybridGaussianFactorGraph(
+inline HybridGaussianFactorGraph createHybridGaussianFactorGraph(
     int num_measurements = 1,
     boost::optional<VectorValues> measurements = boost::none) {
   auto bayesNet = createHybridBayesNet(num_measurements);

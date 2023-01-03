@@ -443,7 +443,7 @@ TEST(HybridFactorGraph, Full_Elimination) {
     ordering.clear();
     for (size_t k = 0; k < self.K - 1; k++) ordering += M(k);
     discreteBayesNet =
-        *discrete_fg.eliminateSequential(ordering, EliminateForMPE);
+        *discrete_fg.eliminateSequential(ordering, EliminateDiscrete);
   }
 
   // Create ordering.
