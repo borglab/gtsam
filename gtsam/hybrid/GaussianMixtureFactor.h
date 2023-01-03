@@ -70,6 +70,15 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
     bool operator==(const FactorAndConstant &other) const {
       return factor == other.factor && constant == other.constant;
     }
+
+   private:
+    /** Serialization function */
+    friend class boost::serialization::access;
+    template <class ARCHIVE>
+    void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
+      ar &BOOST_SERIALIZATION_NVP(factor);
+      ar &BOOST_SERIALIZATION_NVP(constant);
+    }
   };
 
   /// typedef for Decision Tree of Gaussian factors and log-constant.
@@ -179,6 +188,15 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
     return sum;
   }
   /// @}
+
+ private:
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
+    ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    ar &BOOST_SERIALIZATION_NVP(factors_);
+  }
 };
 
 // traits
