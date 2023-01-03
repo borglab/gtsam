@@ -45,6 +45,9 @@ class GTSAM_EXPORT HybridDiscreteFactor : public HybridFactor {
   /// @name Constructors
   /// @{
 
+  /// Default constructor - for serialization.
+  HybridDiscreteFactor() = default;
+
   // Implicit conversion from a shared ptr of DF
   HybridDiscreteFactor(DiscreteFactor::shared_ptr other);
 
@@ -70,6 +73,15 @@ class GTSAM_EXPORT HybridDiscreteFactor : public HybridFactor {
   /// Return the error of the underlying Discrete Factor.
   double error(const HybridValues &values) const override;
   /// @}
+
+ private:
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
+    ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    ar &BOOST_SERIALIZATION_NVP(inner_);
+  }
 };
 
 // traits
