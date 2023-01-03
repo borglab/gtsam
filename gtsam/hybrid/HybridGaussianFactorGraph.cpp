@@ -216,7 +216,7 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
                                     GaussianMixtureFactor::FactorAndConstant>;
 
   // This is the elimination method on the leaf nodes
-  auto eliminate = [&](const GraphAndConstant &graph_z) -> EliminationPair {
+  auto eliminateFunc = [&](const GraphAndConstant &graph_z) -> EliminationPair {
     if (graph_z.graph.empty()) {
       return {nullptr, {nullptr, 0.0}};
     }
@@ -230,11 +230,9 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
     boost::tie(conditional, newFactor) =
         EliminatePreferCholesky(graph_z.graph, frontalKeys);
 
-#ifdef HYBRID_TIMING
-    gttoc_(hybrid_eliminate);
-#endif
-
-    const double logZ = graph_z.constant - conditional->logNormalizationConstant();
+    // Get the log of the log normalization constant inverse.
+    const double logZ =
+        graph_z.constant - conditional->logNormalizationConstant();
     // Get the log of the log normalization constant inverse.
     // double logZ = -conditional->logNormalizationConstant();
     // // IF this is the last continuous variable to eliminated, we need to
@@ -244,11 +242,16 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
     //   const auto posterior_mean = conditional->solve(VectorValues());
     //   logZ += graph_z.graph.error(posterior_mean);
     // }
+
+#ifdef HYBRID_TIMING
+    gttoc_(hybrid_eliminate);
+#endif
+
     return {conditional, {newFactor, logZ}};
   };
 
   // Perform elimination!
-  DecisionTree<Key, EliminationPair> eliminationResults(sum, eliminate);
+  DecisionTree<Key, EliminationPair> eliminationResults(sum, eliminateFunc);
 
 #ifdef HYBRID_TIMING
   tictoc_print_();
@@ -270,14 +273,27 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
     auto factorProb =
         [&](const GaussianMixtureFactor::FactorAndConstant &factor_z) {
           // This is the probability q(μ) at the MLE point.
-          // factor_z.factor is a factor without keys, just containing the residual.
+          // factor_z.factor is a factor without keys, just containing the
+          // residual.
           return exp(-factor_z.error(VectorValues()));
           // TODO(dellaert): this is not correct, since VectorValues() is not
           // the MLE point. But it does not matter, as at the MLE point the
           // error will be zero, hence:
           // return exp(factor_z.constant);
         };
+
     const DecisionTree<Key, double> fdt(newFactors, factorProb);
+    // // Normalize the values of decision tree to be valid probabilities
+    // double sum = 0.0;
+    // auto visitor = [&](double y) { sum += y; };
+    // fdt.visit(visitor);
+    // // Check if sum is 0, and update accordingly.
+    // if (sum == 0) {
+    //   sum = 1.0;
+    // }
+    // fdt = DecisionTree<Key, double>(fdt,
+    //                                 [sum](const double &x) { return x / sum;
+    //                                 });
     const auto discreteFactor =
         boost::make_shared<DecisionTreeFactor>(discreteSeparator, fdt);
 

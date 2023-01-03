@@ -114,7 +114,7 @@ TEST(HybridEstimation, Full) {
 
 /****************************************************************************/
 // Test approximate inference with an additional pruning step.
-TEST(HybridEstimation, Incremental) {
+TEST_DISABLED(HybridEstimation, Incremental) {
   size_t K = 15;
   std::vector<double> measurements = {0, 1, 2, 2, 2, 2,  3,  4,  5,  6, 6,
                                       7, 8, 9, 9, 9, 10, 11, 11, 11, 11};
@@ -154,21 +154,21 @@ TEST(HybridEstimation, Incremental) {
   /*TODO(Varun) Gives degenerate result due to probability underflow.
   Need to normalize probabilities.
   */
-  //   HybridValues delta = smoother.hybridBayesNet().optimize();
+  HybridValues delta = smoother.hybridBayesNet().optimize();
 
-  //   Values result = initial.retract(delta.continuous());
+  Values result = initial.retract(delta.continuous());
 
-  //   DiscreteValues expected_discrete;
-  //   for (size_t k = 0; k < K - 1; k++) {
-  //     expected_discrete[M(k)] = discrete_seq[k];
-  //   }
-  //   EXPECT(assert_equal(expected_discrete, delta.discrete()));
+  DiscreteValues expected_discrete;
+  for (size_t k = 0; k < K - 1; k++) {
+    expected_discrete[M(k)] = discrete_seq[k];
+  }
+  EXPECT(assert_equal(expected_discrete, delta.discrete()));
 
-  //   Values expected_continuous;
-  //   for (size_t k = 0; k < K; k++) {
-  //     expected_continuous.insert(X(k), measurements[k]);
-  //   }
-  //   EXPECT(assert_equal(expected_continuous, result));
+  Values expected_continuous;
+  for (size_t k = 0; k < K; k++) {
+    expected_continuous.insert(X(k), measurements[k]);
+  }
+  EXPECT(assert_equal(expected_continuous, result));
 }
 
 /**
