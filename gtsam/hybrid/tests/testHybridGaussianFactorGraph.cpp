@@ -619,44 +619,51 @@ TEST(HybridGaussianFactorGraph, ErrorAndProbPrimeTree) {
 // assignment.
 TEST(HybridGaussianFactorGraph, assembleGraphTree) {
   using symbol_shorthand::Z;
-  const int num_measurements = 1;
+  const int numMeasurements = 1;
   auto fg = tiny::createHybridGaussianFactorGraph(
-      num_measurements, VectorValues{{Z(0), Vector1(5.0)}});
+      numMeasurements, VectorValues{{Z(0), Vector1(5.0)}});
   EXPECT_LONGS_EQUAL(3, fg.size());
 
-  auto sum = fg.assembleGraphTree();
+  // Assemble graph tree:
+  auto actual = fg.assembleGraphTree();
+
+  // Create expected decision tree with two factor graphs:
 
   // Get mixture factor:
   auto mixture = boost::dynamic_pointer_cast<GaussianMixtureFactor>(fg.at(0));
-  using GF = GaussianFactor::shared_ptr;
+  CHECK(mixture);
 
   // Get prior factor:
-  const GF prior =
-      boost::dynamic_pointer_cast<HybridGaussianFactor>(fg.at(1))->inner();
+  const auto gf = boost::dynamic_pointer_cast<HybridConditional>(fg.at(1));
+  CHECK(gf);
+  using GF = GaussianFactor::shared_ptr;
+  const GF prior = gf->asGaussian();
+  CHECK(prior);
 
   // Create DiscreteValues for both 0 and 1:
   DiscreteValues d0{{M(0), 0}}, d1{{M(0), 1}};
 
   // Expected decision tree with two factor graphs:
   // f(x0;mode=0)P(x0) and f(x0;mode=1)P(x0)
-  GaussianFactorGraphTree expectedSum{
+  GaussianFactorGraphTree expected{
       M(0),
       {GaussianFactorGraph(std::vector<GF>{mixture->factor(d0), prior}),
        mixture->constant(d0)},
       {GaussianFactorGraph(std::vector<GF>{mixture->factor(d1), prior}),
        mixture->constant(d1)}};
 
-  EXPECT(assert_equal(expectedSum(d0), sum(d0), 1e-5));
-  EXPECT(assert_equal(expectedSum(d1), sum(d1), 1e-5));
+  EXPECT(assert_equal(expected(d0), actual(d0), 1e-5));
+  EXPECT(assert_equal(expected(d1), actual(d1), 1e-5));
 }
 
 /* ****************************************************************************/
 // Check that eliminating tiny net with 1 measurement yields correct result.
 TEST(HybridGaussianFactorGraph, EliminateTiny1) {
   using symbol_shorthand::Z;
-  const int num_measurements = 1;
+  const int numMeasurements = 1;
   auto fg = tiny::createHybridGaussianFactorGraph(
-      num_measurements, VectorValues{{Z(0), Vector1(5.0)}});
+      numMeasurements, VectorValues{{Z(0), Vector1(5.0)}});
+  EXPECT_LONGS_EQUAL(3, fg.size());
 
   // Create expected Bayes Net:
   HybridBayesNet expectedBayesNet;
@@ -687,10 +694,11 @@ TEST(HybridGaussianFactorGraph, EliminateTiny1) {
 TEST(HybridGaussianFactorGraph, EliminateTiny2) {
   // Create factor graph with 2 measurements such that posterior mean = 5.0.
   using symbol_shorthand::Z;
-  const int num_measurements = 2;
+  const int numMeasurements = 2;
   auto fg = tiny::createHybridGaussianFactorGraph(
-      num_measurements,
+      numMeasurements,
       VectorValues{{Z(0), Vector1(4.0)}, {Z(1), Vector1(6.0)}});
+  EXPECT_LONGS_EQUAL(4, fg.size());
 
   // Create expected Bayes Net:
   HybridBayesNet expectedBayesNet;
@@ -714,6 +722,55 @@ TEST(HybridGaussianFactorGraph, EliminateTiny2) {
   ordering.push_back(M(0));
   const auto posterior = fg.eliminateSequential(ordering);
   EXPECT(assert_equal(expectedBayesNet, *posterior, 0.01));
+}
+
+/* ****************************************************************************/
+// Test eliminating tiny net with 1 mode per measurement.
+TEST(HybridGaussianFactorGraph, EliminateTiny22) {
+  // Create factor graph with 2 measurements such that posterior mean = 5.0.
+  using symbol_shorthand::Z;
+  const int numMeasurements = 2;
+  const bool manyModes = true;
+
+  // Create Bayes net and convert to factor graph.
+  auto bn = tiny::createHybridBayesNet(numMeasurements, manyModes);
+  const VectorValues measurements{{Z(0), Vector1(4.0)}, {Z(1), Vector1(6.0)}};
+  auto fg = tiny::convertBayesNet(bn, measurements);
+  EXPECT_LONGS_EQUAL(5, fg.size());
+
+  // Test elimination
+  Ordering ordering;
+  ordering.push_back(X(0));
+  ordering.push_back(M(0));
+  ordering.push_back(M(1));
+  const auto posterior = fg.eliminateSequential(ordering);
+
+  // Compute the log-ratio between the Bayes net and the factor graph.
+  auto compute_ratio = [&](HybridValues *sample) -> double {
+    // update sample with given measurements:
+    sample->update(measurements);
+    return bn.evaluate(*sample) / posterior->evaluate(*sample);
+  };
+
+  // Set up sampling
+  std::mt19937_64 rng(42);
+
+  // The error evaluated by the factor graph and the Bayes net should differ by
+  // the normalizing term computed via the Bayes net determinant.
+  HybridValues sample = bn.sample(&rng);
+  double expected_ratio = compute_ratio(&sample);
+  // regression
+  EXPECT_DOUBLES_EQUAL(0.018253037966018862, expected_ratio, 1e-6);
+
+  // 3. Do sampling
+  constexpr int num_samples = 100;
+  for (size_t i = 0; i < num_samples; i++) {
+    // Sample from the bayes net
+    HybridValues sample = bn.sample(&rng);
+
+    // Check that the ratio is constant.
+    EXPECT_DOUBLES_EQUAL(expected_ratio, compute_ratio(&sample), 1e-6);
+  }
 }
 
 /* ************************************************************************* */
