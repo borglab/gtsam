@@ -25,7 +25,6 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/symbolic/SymbolicFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/sam/RangeFactor.h>
