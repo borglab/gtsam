@@ -15,6 +15,8 @@
  * @author  Asa Hammond
  */
 
+#pragma once
+
 #include <gtsam/navigation/NavState.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
@@ -24,15 +26,15 @@ namespace gtsam {
  * Binary factor for applying a constant velocity model to a moving body represented as a NavState.
  * The only measurement is dt, the time delta between the states.
  */
-class ConstantVelocityFactor : public NoiseModelFactor2<NavState, NavState> {
+class ConstantVelocityFactor : public NoiseModelFactorN<NavState, NavState> {
     double dt_;
 
    public:
-    using Base = NoiseModelFactor2<NavState, NavState>;
+    using Base = NoiseModelFactorN<NavState, NavState>;
 
    public:
     ConstantVelocityFactor(Key i, Key j, double dt, const SharedNoiseModel &model)
-        : NoiseModelFactor2<NavState, NavState>(model, i, j), dt_(dt) {}
+        : NoiseModelFactorN<NavState, NavState>(model, i, j), dt_(dt) {}
     ~ConstantVelocityFactor() override{};
 
     /**

@@ -329,12 +329,12 @@ inline Matrix H(const Point2& v) {
       0.0, cos(v.y())).finished();
 }
 
-struct UnaryFactor: public gtsam::NoiseModelFactor1<Point2> {
+struct UnaryFactor: public gtsam::NoiseModelFactorN<Point2> {
 
   Point2 z_;
 
   UnaryFactor(const Point2& z, const SharedNoiseModel& model, Key key) :
-    gtsam::NoiseModelFactor1<Point2>(model, key), z_(z) {
+    gtsam::NoiseModelFactorN<Point2>(model, key), z_(z) {
   }
 
   Vector evaluateError(const Point2& x, boost::optional<Matrix&> A = boost::none) const override {
@@ -679,26 +679,25 @@ inline Ordering planarOrdering(size_t N) {
 }
 
 /* ************************************************************************* */
-inline std::pair<GaussianFactorGraph::shared_ptr, GaussianFactorGraph::shared_ptr > splitOffPlanarTree(size_t N,
-    const GaussianFactorGraph& original) {
-  auto T = boost::make_shared<GaussianFactorGraph>(), C= boost::make_shared<GaussianFactorGraph>();
+inline std::pair<GaussianFactorGraph, GaussianFactorGraph> splitOffPlanarTree(
+    size_t N, const GaussianFactorGraph& original) {
+  GaussianFactorGraph T, C;
 
   // Add the x11 constraint to the tree
-  T->push_back(original[0]);
+  T.push_back(original[0]);
 
   // Add all horizontal constraints to the tree
   size_t i = 1;
   for (size_t x = 1; x < N; x++)
-    for (size_t y = 1; y <= N; y++, i++)
-      T->push_back(original[i]);
+    for (size_t y = 1; y <= N; y++, i++) T.push_back(original[i]);
 
   // Add first vertical column of constraints to T, others to C
   for (size_t x = 1; x <= N; x++)
     for (size_t y = 1; y < N; y++, i++)
       if (x == 1)
-        T->push_back(original[i]);
+        T.push_back(original[i]);
       else
-        C->push_back(original[i]);
+        C.push_back(original[i]);
 
   return std::make_pair(T, C);
 }

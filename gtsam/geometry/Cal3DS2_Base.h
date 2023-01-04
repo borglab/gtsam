@@ -21,12 +21,13 @@
 
 #include <gtsam/geometry/Cal3.h>
 #include <gtsam/geometry/Point2.h>
+#include <boost/shared_ptr.hpp>
 
 namespace gtsam {
 
 /**
  * @brief Calibration of a camera with radial distortion
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  *
  * Uses same distortionmodel as OpenCV, with
@@ -46,6 +47,9 @@ class GTSAM_EXPORT Cal3DS2_Base : public Cal3 {
 
  public:
   enum { dimension = 9 };
+
+  ///< shared pointer to stereo calibration object
+  using shared_ptr = boost::shared_ptr<Cal3DS2_Base>;
 
   /// @name Standard Constructors
   /// @{

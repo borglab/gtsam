@@ -5,11 +5,18 @@
 # All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE file.
 
+# include_guard(global) (pre-CMake 3.10)
+if(TARGET pybind11::python_headers)
+  return()
+endif()
+
 # Built-in in CMake 3.5+
 include(CMakeParseArguments)
 
 if(pybind11_FIND_QUIETLY)
   set(_pybind11_quiet QUIET)
+else()
+  set(_pybind11_quiet "")
 endif()
 
 # If this is the first run, PYTHON_VERSION can stand in for PYBIND11_PYTHON_VERSION
@@ -22,54 +29,53 @@ if(NOT DEFINED PYBIND11_PYTHON_VERSION AND DEFINED PYTHON_VERSION)
       CACHE STRING "Python version to use for compiling modules")
   unset(PYTHON_VERSION)
   unset(PYTHON_VERSION CACHE)
-else()
-  # If this is set as a normal variable, promote it, otherwise, make an empty cache variable.
+elseif(DEFINED PYBIND11_PYTHON_VERSION)
+  # If this is set as a normal variable, promote it
   set(PYBIND11_PYTHON_VERSION
       "${PYBIND11_PYTHON_VERSION}"
+      CACHE STRING "Python version to use for compiling modules")
+else()
+  # Make an empty cache variable.
+  set(PYBIND11_PYTHON_VERSION
+      ""
       CACHE STRING "Python version to use for compiling modules")
 endif()
 
 # A user can set versions manually too
 set(Python_ADDITIONAL_VERSIONS
-    "3.9;3.8;3.7;3.6;3.5;3.4"
+    "3.11;3.10;3.9;3.8;3.7;3.6"
     CACHE INTERNAL "")
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
 find_package(PythonLibsNew ${PYBIND11_PYTHON_VERSION} MODULE REQUIRED ${_pybind11_quiet})
 list(REMOVE_AT CMAKE_MODULE_PATH -1)
 
+# Makes a normal variable a cached variable
+macro(_PYBIND11_PROMOTE_TO_CACHE NAME)
+  set(_tmp_ptc "${${NAME}}")
+  # CMake 3.21 complains if a cached variable is shadowed by a normal one
+  unset(${NAME})
+  set(${NAME}
+      "${_tmp_ptc}"
+      CACHE INTERNAL "")
+endmacro()
+
 # Cache variables so pybind11_add_module can be used in parent projects
-set(PYTHON_INCLUDE_DIRS
-    ${PYTHON_INCLUDE_DIRS}
-    CACHE INTERNAL "")
-set(PYTHON_LIBRARIES
-    ${PYTHON_LIBRARIES}
-    CACHE INTERNAL "")
-set(PYTHON_MODULE_PREFIX
-    ${PYTHON_MODULE_PREFIX}
-    CACHE INTERNAL "")
-set(PYTHON_MODULE_EXTENSION
-    ${PYTHON_MODULE_EXTENSION}
-    CACHE INTERNAL "")
-set(PYTHON_VERSION_MAJOR
-    ${PYTHON_VERSION_MAJOR}
-    CACHE INTERNAL "")
-set(PYTHON_VERSION_MINOR
-    ${PYTHON_VERSION_MINOR}
-    CACHE INTERNAL "")
-set(PYTHON_VERSION
-    ${PYTHON_VERSION}
-    CACHE INTERNAL "")
-set(PYTHON_IS_DEBUG
-    "${PYTHON_IS_DEBUG}"
-    CACHE INTERNAL "")
+_pybind11_promote_to_cache(PYTHON_INCLUDE_DIRS)
+_pybind11_promote_to_cache(PYTHON_LIBRARIES)
+_pybind11_promote_to_cache(PYTHON_MODULE_PREFIX)
+_pybind11_promote_to_cache(PYTHON_MODULE_EXTENSION)
+_pybind11_promote_to_cache(PYTHON_VERSION_MAJOR)
+_pybind11_promote_to_cache(PYTHON_VERSION_MINOR)
+_pybind11_promote_to_cache(PYTHON_VERSION)
+_pybind11_promote_to_cache(PYTHON_IS_DEBUG)
 
 if(PYBIND11_MASTER_PROJECT)
   if(PYTHON_MODULE_EXTENSION MATCHES "pypy")
     if(NOT DEFINED PYPY_VERSION)
       execute_process(
         COMMAND ${PYTHON_EXECUTABLE} -c
-                [=[import sys; print(".".join(map(str, sys.pypy_version_info[:3])))]=]
+                [=[import sys; sys.stdout.write(".".join(map(str, sys.pypy_version_info[:3])))]=]
         OUTPUT_VARIABLE pypy_version)
       set(PYPY_VERSION
           ${pypy_version}
@@ -81,11 +87,23 @@ if(PYBIND11_MASTER_PROJECT)
   endif()
 endif()
 
-# Only add Python for build - must be added during the import for config since it has to be re-discovered.
+# Only add Python for build - must be added during the import for config since
+# it has to be re-discovered.
+#
+# This needs to be an target to it is included after the local pybind11
+# directory, just in case there are multiple versions of pybind11, we want the
+# one we expect.
+add_library(pybind11::python_headers INTERFACE IMPORTED)
+set_property(TARGET pybind11::python_headers PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+                                                      "$<BUILD_INTERFACE:${PYTHON_INCLUDE_DIRS}>")
 set_property(
   TARGET pybind11::pybind11
   APPEND
-  PROPERTY INTERFACE_INCLUDE_DIRECTORIES $<BUILD_INTERFACE:${PYTHON_INCLUDE_DIRS}>)
+  PROPERTY INTERFACE_LINK_LIBRARIES pybind11::python_headers)
+
+set(pybind11_INCLUDE_DIRS
+    "${pybind11_INCLUDE_DIR}" "${PYTHON_INCLUDE_DIRS}"
+    CACHE INTERNAL "Directories where pybind11 and possibly Python headers are located")
 
 # Python debug libraries expose slightly different objects before 3.8
 # https://docs.python.org/3.6/c-api/intro.html#debugging-builds
@@ -97,24 +115,32 @@ if(PYTHON_IS_DEBUG)
     PROPERTY INTERFACE_COMPILE_DEFINITIONS Py_DEBUG)
 endif()
 
-set_property(
-  TARGET pybind11::module
-  APPEND
-  PROPERTY
-    INTERFACE_LINK_LIBRARIES pybind11::python_link_helper
-    "$<$<OR:$<PLATFORM_ID:Windows>,$<PLATFORM_ID:Cygwin>>:$<BUILD_INTERFACE:${PYTHON_LIBRARIES}>>")
-
-if(PYTHON_VERSION VERSION_LESS 3)
+if(CMAKE_VERSION VERSION_LESS 3.11)
   set_property(
-    TARGET pybind11::pybind11
+    TARGET pybind11::module
     APPEND
-    PROPERTY INTERFACE_LINK_LIBRARIES pybind11::python2_no_register)
-endif()
+    PROPERTY
+      INTERFACE_LINK_LIBRARIES
+      pybind11::python_link_helper
+      "$<$<OR:$<PLATFORM_ID:Windows>,$<PLATFORM_ID:Cygwin>>:$<BUILD_INTERFACE:${PYTHON_LIBRARIES}>>"
+  )
 
-set_property(
-  TARGET pybind11::embed
-  APPEND
-  PROPERTY INTERFACE_LINK_LIBRARIES pybind11::pybind11 $<BUILD_INTERFACE:${PYTHON_LIBRARIES}>)
+  set_property(
+    TARGET pybind11::embed
+    APPEND
+    PROPERTY INTERFACE_LINK_LIBRARIES pybind11::pybind11 $<BUILD_INTERFACE:${PYTHON_LIBRARIES}>)
+else()
+  target_link_libraries(
+    pybind11::module
+    INTERFACE
+      pybind11::python_link_helper
+      "$<$<OR:$<PLATFORM_ID:Windows>,$<PLATFORM_ID:Cygwin>>:$<BUILD_INTERFACE:${PYTHON_LIBRARIES}>>"
+  )
+
+  target_link_libraries(pybind11::embed INTERFACE pybind11::pybind11
+                                                  $<BUILD_INTERFACE:${PYTHON_LIBRARIES}>)
+
+endif()
 
 function(pybind11_extension name)
   # The prefix and extension are provided by FindPythonLibsNew.cmake
@@ -162,8 +188,13 @@ function(pybind11_add_module target_name)
   # py::module_local).  We force it on everything inside the `pybind11`
   # namespace; also turning it on for a pybind module compilation here avoids
   # potential warnings or issues from having mixed hidden/non-hidden types.
-  set_target_properties(${target_name} PROPERTIES CXX_VISIBILITY_PRESET "hidden"
-                                                  CUDA_VISIBILITY_PRESET "hidden")
+  if(NOT DEFINED CMAKE_CXX_VISIBILITY_PRESET)
+    set_target_properties(${target_name} PROPERTIES CXX_VISIBILITY_PRESET "hidden")
+  endif()
+
+  if(NOT DEFINED CMAKE_CUDA_VISIBILITY_PRESET)
+    set_target_properties(${target_name} PROPERTIES CUDA_VISIBILITY_PRESET "hidden")
+  endif()
 
   if(ARG_NO_EXTRAS)
     return()
@@ -189,3 +220,8 @@ function(pybind11_add_module target_name)
     target_link_libraries(${target_name} PRIVATE pybind11::opt_size)
   endif()
 endfunction()
+
+# Provide general way to call common Python commands in "common" file.
+set(_Python
+    PYTHON
+    CACHE INTERNAL "" FORCE)

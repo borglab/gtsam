@@ -30,7 +30,7 @@ namespace gtsam {
 
 /**
  * A 2D pose (Point2,Rot2)
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  */
 class Pose2: public LieGroup<Pose2, 3> {
@@ -92,6 +92,18 @@ public:
     *this = Expmap(v);
   }
 
+  /**
+   *  Create Pose2 by aligning two point pairs
+   *  A pose aTb is estimated between pairs (a_point, b_point) such that 
+   *    a_point = aTb * b_point
+   *  Note this allows for noise on the points but in that case the mapping 
+   *  will not be exact.
+   */
+  static boost::optional<Pose2> Align(const Point2Pairs& abPointPairs);
+
+  // Version of Pose2::Align that takes 2 matrices.
+  static boost::optional<Pose2> Align(const Matrix& a, const Matrix& b);
+
   /// @}
   /// @name Testable
   /// @{
@@ -107,7 +119,7 @@ public:
   /// @{
 
   /// identity for group operation
-  inline static Pose2 identity() { return Pose2(); }
+  inline static Pose2 Identity() { return Pose2(); }
 
   /// inverse
   GTSAM_EXPORT Pose2 inverse() const;
@@ -199,13 +211,29 @@ public:
       OptionalJacobian<2, 3> Dpose = boost::none,
       OptionalJacobian<2, 2> Dpoint = boost::none) const;
 
+  /**
+   * @brief transform many points in world coordinates and transform to Pose.
+   * @param points 2*N matrix in world coordinates
+   * @return points in Pose coordinates, as 2*N Matrix
+   */
+  Matrix transformTo(const Matrix& points) const;
+
   /** Return point coordinates in global frame */
   GTSAM_EXPORT Point2 transformFrom(const Point2& point,
       OptionalJacobian<2, 3> Dpose = boost::none,
       OptionalJacobian<2, 2> Dpoint = boost::none) const;
 
+  /**
+   * @brief transform many points in Pose coordinates and transform to world.
+   * @param points 2*N matrix in Pose coordinates
+   * @return points in world coordinates, as 2*N Matrix
+   */
+  Matrix transformFrom(const Matrix& points) const;
+
   /** syntactic sugar for transformFrom */
-  inline Point2 operator*(const Point2& point) const { return transformFrom(point);}
+  inline Point2 operator*(const Point2& point) const { 
+    return transformFrom(point);
+  }
 
   /// @}
   /// @name Standard Interface
@@ -315,12 +343,19 @@ inline Matrix wedge<Pose2>(const Vector& xi) {
   return Matrix(Pose2::wedge(xi(0),xi(1),xi(2))).eval();
 }
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
 /**
+ * @deprecated Use static constructor (with reversed pairs!)
  * Calculate pose between a vector of 2D point correspondences (p,q)
  * where q = Pose2::transformFrom(p) = t + R*p
  */
-typedef std::pair<Point2,Point2> Point2Pair;
-GTSAM_EXPORT boost::optional<Pose2> align(const std::vector<Point2Pair>& pairs);
+GTSAM_EXPORT boost::optional<Pose2> 
+GTSAM_DEPRECATED align(const Point2Pairs& pairs);
+#endif
+
+// Convenience typedef
+using Pose2Pair = std::pair<Pose2, Pose2>;
+using Pose2Pairs = std::vector<Pose2Pair>;
 
 template <>
 struct traits<Pose2> : public internal::LieGroup<Pose2> {};

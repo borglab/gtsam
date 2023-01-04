@@ -5,43 +5,18 @@
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/serialization/export.hpp>
 
-#include <folder/path/to/Test.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Point3.h>
 
-typedef Fun<double> FunDouble;
-typedef PrimitiveRef<double> PrimitiveRefDouble;
-typedef MyVector<3> MyVector3;
-typedef MyVector<12> MyVector12;
-typedef MultipleTemplates<int, double> MultipleTemplatesIntDouble;
-typedef MultipleTemplates<int, float> MultipleTemplatesIntFloat;
-typedef MyFactor<gtsam::Pose2, gtsam::Matrix> MyFactorPosePoint2;
 
 BOOST_CLASS_EXPORT_GUID(gtsam::Point2, "gtsamPoint2");
 BOOST_CLASS_EXPORT_GUID(gtsam::Point3, "gtsamPoint3");
 
-typedef std::set<boost::shared_ptr<FunRange>*> Collector_FunRange;
-static Collector_FunRange collector_FunRange;
-typedef std::set<boost::shared_ptr<FunDouble>*> Collector_FunDouble;
-static Collector_FunDouble collector_FunDouble;
-typedef std::set<boost::shared_ptr<Test>*> Collector_Test;
-static Collector_Test collector_Test;
-typedef std::set<boost::shared_ptr<PrimitiveRefDouble>*> Collector_PrimitiveRefDouble;
-static Collector_PrimitiveRefDouble collector_PrimitiveRefDouble;
-typedef std::set<boost::shared_ptr<MyVector3>*> Collector_MyVector3;
-static Collector_MyVector3 collector_MyVector3;
-typedef std::set<boost::shared_ptr<MyVector12>*> Collector_MyVector12;
-static Collector_MyVector12 collector_MyVector12;
-typedef std::set<boost::shared_ptr<MultipleTemplatesIntDouble>*> Collector_MultipleTemplatesIntDouble;
-static Collector_MultipleTemplatesIntDouble collector_MultipleTemplatesIntDouble;
-typedef std::set<boost::shared_ptr<MultipleTemplatesIntFloat>*> Collector_MultipleTemplatesIntFloat;
-static Collector_MultipleTemplatesIntFloat collector_MultipleTemplatesIntFloat;
-typedef std::set<boost::shared_ptr<MyFactorPosePoint2>*> Collector_MyFactorPosePoint2;
-static Collector_MyFactorPosePoint2 collector_MyFactorPosePoint2;
 typedef std::set<boost::shared_ptr<gtsam::Point2>*> Collector_gtsamPoint2;
 static Collector_gtsamPoint2 collector_gtsamPoint2;
 typedef std::set<boost::shared_ptr<gtsam::Point3>*> Collector_gtsamPoint3;
 static Collector_gtsamPoint3 collector_gtsamPoint3;
+
 
 void _deleteAllObjects()
 {
@@ -49,60 +24,6 @@ void _deleteAllObjects()
   std::streambuf *outbuf = std::cout.rdbuf(&mout);
 
   bool anyDeleted = false;
-  { for(Collector_FunRange::iterator iter = collector_FunRange.begin();
-      iter != collector_FunRange.end(); ) {
-    delete *iter;
-    collector_FunRange.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_FunDouble::iterator iter = collector_FunDouble.begin();
-      iter != collector_FunDouble.end(); ) {
-    delete *iter;
-    collector_FunDouble.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_Test::iterator iter = collector_Test.begin();
-      iter != collector_Test.end(); ) {
-    delete *iter;
-    collector_Test.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_PrimitiveRefDouble::iterator iter = collector_PrimitiveRefDouble.begin();
-      iter != collector_PrimitiveRefDouble.end(); ) {
-    delete *iter;
-    collector_PrimitiveRefDouble.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_MyVector3::iterator iter = collector_MyVector3.begin();
-      iter != collector_MyVector3.end(); ) {
-    delete *iter;
-    collector_MyVector3.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_MyVector12::iterator iter = collector_MyVector12.begin();
-      iter != collector_MyVector12.end(); ) {
-    delete *iter;
-    collector_MyVector12.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_MultipleTemplatesIntDouble::iterator iter = collector_MultipleTemplatesIntDouble.begin();
-      iter != collector_MultipleTemplatesIntDouble.end(); ) {
-    delete *iter;
-    collector_MultipleTemplatesIntDouble.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_MultipleTemplatesIntFloat::iterator iter = collector_MultipleTemplatesIntFloat.begin();
-      iter != collector_MultipleTemplatesIntFloat.end(); ) {
-    delete *iter;
-    collector_MultipleTemplatesIntFloat.erase(iter++);
-    anyDeleted = true;
-  } }
-  { for(Collector_MyFactorPosePoint2::iterator iter = collector_MyFactorPosePoint2.begin();
-      iter != collector_MyFactorPosePoint2.end(); ) {
-    delete *iter;
-    collector_MyFactorPosePoint2.erase(iter++);
-    anyDeleted = true;
-  } }
   { for(Collector_gtsamPoint2::iterator iter = collector_gtsamPoint2.begin();
       iter != collector_gtsamPoint2.end(); ) {
     delete *iter;
@@ -115,6 +36,7 @@ void _deleteAllObjects()
     collector_gtsamPoint3.erase(iter++);
     anyDeleted = true;
   } }
+
   if(anyDeleted)
     cout <<
       "WARNING:  Wrap modules with variables in the workspace have been reloaded due to\n"
@@ -128,24 +50,29 @@ void _geometry_RTTIRegister() {
   if(!alreadyCreated) {
     std::map<std::string, std::string> types;
 
+
+
     mxArray *registry = mexGetVariable("global", "gtsamwrap_rttiRegistry");
     if(!registry)
       registry = mxCreateStructMatrix(1, 1, 0, NULL);
     typedef std::pair<std::string, std::string> StringPair;
     for(const StringPair& rtti_matlab: types) {
       int fieldId = mxAddField(registry, rtti_matlab.first.c_str());
-      if(fieldId < 0)
+      if(fieldId < 0) {
         mexErrMsgTxt("gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly");
+      }
       mxArray *matlabName = mxCreateString(rtti_matlab.second.c_str());
       mxSetFieldByNumber(registry, 0, fieldId, matlabName);
     }
-    if(mexPutVariable("global", "gtsamwrap_rttiRegistry", registry) != 0)
+    if(mexPutVariable("global", "gtsamwrap_rttiRegistry", registry) != 0) {
       mexErrMsgTxt("gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly");
+    }
     mxDestroyArray(registry);
-    
+
     mxArray *newAlreadyCreated = mxCreateNumericMatrix(0, 0, mxINT8_CLASS, mxREAL);
-    if(mexPutVariable("global", "gtsam_geometry_rttiRegistry_created", newAlreadyCreated) != 0)
+    if(mexPutVariable("global", "gtsam_geometry_rttiRegistry_created", newAlreadyCreated) != 0) {
       mexErrMsgTxt("gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly");
+    }
     mxDestroyArray(newAlreadyCreated);
   }
 }
@@ -191,9 +118,9 @@ void gtsamPoint2_deconstructor_3(int nargout, mxArray *out[], int nargin, const 
   Collector_gtsamPoint2::iterator item;
   item = collector_gtsamPoint2.find(self);
   if(item != collector_gtsamPoint2.end()) {
-    delete self;
     collector_gtsamPoint2.erase(item);
   }
+  delete self;
 }
 
 void gtsamPoint2_argChar_4(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -224,7 +151,7 @@ void gtsamPoint2_argChar_7(int nargout, mxArray *out[], int nargin, const mxArra
 {
   checkArguments("argChar",nargout,nargin-1,1);
   auto obj = unwrap_shared_ptr<gtsam::Point2>(in[0], "ptr_gtsamPoint2");
-  boost::shared_ptr<char> a = unwrap_shared_ptr< char >(in[1], "ptr_char");
+  char* a = unwrap_ptr< char >(in[1], "ptr_char");
   obj->argChar(a);
 }
 
@@ -248,7 +175,7 @@ void gtsamPoint2_argChar_10(int nargout, mxArray *out[], int nargin, const mxArr
 {
   checkArguments("argChar",nargout,nargin-1,1);
   auto obj = unwrap_shared_ptr<gtsam::Point2>(in[0], "ptr_gtsamPoint2");
-  boost::shared_ptr<char> a = unwrap_shared_ptr< char >(in[1], "ptr_char");
+  char* a = unwrap_ptr< char >(in[1], "ptr_char");
   obj->argChar(a);
 }
 
@@ -335,9 +262,9 @@ void gtsamPoint3_deconstructor_20(int nargout, mxArray *out[], int nargin, const
   Collector_gtsamPoint3::iterator item;
   item = collector_gtsamPoint3.find(self);
   if(item != collector_gtsamPoint3.end()) {
-    delete self;
     collector_gtsamPoint3.erase(item);
   }
+  delete self;
 }
 
 void gtsamPoint3_norm_21(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -359,14 +286,14 @@ void gtsamPoint3_string_serialize_22(int nargout, mxArray *out[], int nargin, co
 }
 void gtsamPoint3_StaticFunctionRet_23(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  checkArguments("gtsamPoint3.StaticFunctionRet",nargout,nargin,1);
+  checkArguments("gtsam::Point3.StaticFunctionRet",nargout,nargin,1);
   double z = unwrap< double >(in[0]);
   out[0] = wrap< Point3 >(gtsam::Point3::StaticFunctionRet(z));
 }
 
 void gtsamPoint3_staticFunction_24(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  checkArguments("gtsamPoint3.staticFunction",nargout,nargin,0);
+  checkArguments("gtsam::Point3.staticFunction",nargout,nargin,0);
   out[0] = wrap< double >(gtsam::Point3::staticFunction());
 }
 

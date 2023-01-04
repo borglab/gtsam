@@ -48,16 +48,18 @@ ConvertNoiseModel(const SharedNoiseModel &model, size_t n,
  * element of SO(3) or SO(4).
  */
 template <class Rot>
-class GTSAM_EXPORT FrobeniusPrior : public NoiseModelFactor1<Rot> {
+class FrobeniusPrior : public NoiseModelFactorN<Rot> {
   enum { Dim = Rot::VectorN2::RowsAtCompileTime };
   using MatrixNN = typename Rot::MatrixNN;
   Eigen::Matrix<double, Dim, 1> vecM_;  ///< vectorized matrix to approximate
 
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   /// Constructor
   FrobeniusPrior(Key j, const MatrixNN& M,
                  const SharedNoiseModel& model = nullptr)
-      : NoiseModelFactor1<Rot>(ConvertNoiseModel(model, Dim), j) {
+      : NoiseModelFactorN<Rot>(ConvertNoiseModel(model, Dim), j) {
     vecM_ << Eigen::Map<const Matrix>(M.data(), Dim, 1);
   }
 
@@ -73,13 +75,13 @@ class GTSAM_EXPORT FrobeniusPrior : public NoiseModelFactor1<Rot> {
  * The template argument can be any fixed-size SO<N>.
  */
 template <class Rot>
-class GTSAM_EXPORT FrobeniusFactor : public NoiseModelFactor2<Rot, Rot> {
+class FrobeniusFactor : public NoiseModelFactorN<Rot, Rot> {
   enum { Dim = Rot::VectorN2::RowsAtCompileTime };
 
  public:
   /// Constructor
   FrobeniusFactor(Key j1, Key j2, const SharedNoiseModel& model = nullptr)
-      : NoiseModelFactor2<Rot, Rot>(ConvertNoiseModel(model, Dim), j1,
+      : NoiseModelFactorN<Rot, Rot>(ConvertNoiseModel(model, Dim), j1,
                                     j2) {}
 
   /// Error is just Frobenius norm between rotation matrices.
@@ -99,20 +101,22 @@ class GTSAM_EXPORT FrobeniusFactor : public NoiseModelFactor2<Rot, Rot> {
  * and in fact only SO3 and SO4 really work, as we need SO<N>::AdjointMap.
  */
 template <class Rot>
-class GTSAM_EXPORT FrobeniusBetweenFactor : public NoiseModelFactor2<Rot, Rot> {
+class FrobeniusBetweenFactor : public NoiseModelFactorN<Rot, Rot> {
   Rot R12_;  ///< measured rotation between R1 and R2
   Eigen::Matrix<double, Rot::dimension, Rot::dimension>
       R2hat_H_R1_;  ///< fixed derivative of R2hat wrpt R1
   enum { Dim = Rot::VectorN2::RowsAtCompileTime };
 
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   /// @name Constructor
   /// @{
 
   /// Construct from two keys and measured rotation
   FrobeniusBetweenFactor(Key j1, Key j2, const Rot& R12,
                          const SharedNoiseModel& model = nullptr)
-      : NoiseModelFactor2<Rot, Rot>(
+      : NoiseModelFactorN<Rot, Rot>(
             ConvertNoiseModel(model, Dim), j1, j2),
         R12_(R12),
         R2hat_H_R1_(R12.inverse().AdjointMap()) {}
@@ -126,8 +130,8 @@ class GTSAM_EXPORT FrobeniusBetweenFactor : public NoiseModelFactor2<Rot, Rot> {
   print(const std::string &s,
         const KeyFormatter &keyFormatter = DefaultKeyFormatter) const override {
     std::cout << s << "FrobeniusBetweenFactor<" << demangle(typeid(Rot).name())
-              << ">(" << keyFormatter(this->key1()) << ","
-              << keyFormatter(this->key2()) << ")\n";
+              << ">(" << keyFormatter(this->template key<1>()) << ","
+              << keyFormatter(this->template key<2>()) << ")\n";
     traits<Rot>::Print(R12_, "  R12: ");
     this->noiseModel_->print("  noise model: ");
   }
@@ -136,12 +140,12 @@ class GTSAM_EXPORT FrobeniusBetweenFactor : public NoiseModelFactor2<Rot, Rot> {
   bool equals(const NonlinearFactor &expected,
               double tol = 1e-9) const override {
     auto e = dynamic_cast<const FrobeniusBetweenFactor *>(&expected);
-    return e != nullptr && NoiseModelFactor2<Rot, Rot>::equals(*e, tol) &&
+    return e != nullptr && NoiseModelFactorN<Rot, Rot>::equals(*e, tol) &&
            traits<Rot>::Equals(this->R12_, e->R12_, tol);
   }
 
   /// @}
-  /// @name NoiseModelFactor2 methods 
+  /// @name NoiseModelFactorN methods 
   /// @{
 
   /// Error is Frobenius norm between R1*R12 and R2.

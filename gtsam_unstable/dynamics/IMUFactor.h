@@ -10,6 +10,8 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam_unstable/dynamics/PoseRTV.h>
 
+#include <boost/bind/bind.hpp>
+
 namespace gtsam {
 
 /**
@@ -18,9 +20,9 @@ namespace gtsam {
  * assumed to be PoseRTV
  */
 template<class POSE>
-class IMUFactor : public NoiseModelFactor2<POSE, POSE> {
+class IMUFactor : public NoiseModelFactorN<POSE, POSE> {
 public:
-  typedef NoiseModelFactor2<POSE, POSE> Base;
+  typedef NoiseModelFactorN<POSE, POSE> Base;
   typedef IMUFactor<POSE> This;
 
 protected:
@@ -79,9 +81,9 @@ public:
       boost::optional<Matrix&> H2 = boost::none) const override {
     const Vector6 meas = z();
     if (H1) *H1 = numericalDerivative21<Vector6, PoseRTV, PoseRTV>(
-        boost::bind(This::predict_proxy, _1, _2, dt_, meas), x1, x2, 1e-5);
+        std::bind(This::predict_proxy, std::placeholders::_1, std::placeholders::_2, dt_, meas), x1, x2, 1e-5);
     if (H2) *H2 = numericalDerivative22<Vector6, PoseRTV, PoseRTV>(
-        boost::bind(This::predict_proxy, _1, _2, dt_, meas), x1, x2, 1e-5);
+        std::bind(This::predict_proxy, std::placeholders::_1, std::placeholders::_2, dt_, meas), x1, x2, 1e-5);
     return predict_proxy(x1, x2, dt_, meas);
   }
 

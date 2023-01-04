@@ -15,9 +15,13 @@
  * @author Frank Dellaert
  **/
 
+#pragma once
+
 #include <gtsam/base/Group.h>
 #include <gtsam/base/Testable.h>
-#include <iostream> // for cout :-(
+
+#include <cassert>
+#include <iostream>  // for cout :-(
 
 namespace gtsam {
 
@@ -34,7 +38,7 @@ public:
   /// Default constructor yields identity
   Cyclic():i_(0) {
   }
-  static Cyclic identity() { return Cyclic();}
+  static Cyclic Identity() { return Cyclic();}
 
   /// Cast to size_t
   operator size_t() const {

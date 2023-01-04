@@ -16,6 +16,8 @@
  * @author Richard Roberts
  */
 
+#pragma once
+
 #include <gtsam/symbolic/SymbolicFactorGraph.h>
 #include <gtsam/symbolic/SymbolicBayesTree.h>
 #include <gtsam/inference/JunctionTree.h>
@@ -42,7 +44,7 @@ namespace gtsam {
    * The tree structure and elimination method are exactly analagous to the EliminationTree,
    * except that in the JunctionTree, at each node multiple variables are eliminated at a time.
    *
-   * \addtogroup Multifrontal
+   * \ingroup Multifrontal
    * \nosubgrouping
    */
   class GTSAM_EXPORT SymbolicJunctionTree :

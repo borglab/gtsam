@@ -123,7 +123,7 @@ def estimate_poses(i_iZj_list: gtsam.BinaryMeasurementsUnit3,
     w_iZj_inliers = filter_outliers(w_iZj_list)
 
     # Run the optimizer to obtain translations for normalized directions.
-    wtc_values = gtsam.TranslationRecovery(w_iZj_inliers).run()
+    wtc_values = gtsam.TranslationRecovery().run(w_iZj_inliers)
 
     wTc_values = gtsam.Values()
     for key in wRc_values.keys():

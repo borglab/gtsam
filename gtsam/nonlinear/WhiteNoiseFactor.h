@@ -17,6 +17,8 @@
  * @date   September 2011
  */
 
+#pragma once
+
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <cmath>

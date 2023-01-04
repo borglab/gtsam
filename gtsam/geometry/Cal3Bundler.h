@@ -26,7 +26,7 @@ namespace gtsam {
 
 /**
  * @brief Calibration used by Bundler
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  */
 class GTSAM_EXPORT Cal3Bundler : public Cal3 {
@@ -40,6 +40,9 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
 
  public:
   enum { dimension = 3 };
+
+  ///< shared pointer to stereo calibration object
+  using shared_ptr = boost::shared_ptr<Cal3Bundler>;
 
   /// @name Standard Constructors
   /// @{
@@ -97,12 +100,12 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
 
   Vector3 vector() const;
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
   /// get parameter u0
-  inline double u0() const { return u0_; }
+  inline double GTSAM_DEPRECATED u0() const { return u0_; }
 
   /// get parameter v0
-  inline double v0() const { return v0_; }
+  inline double GTSAM_DEPRECATED v0() const { return v0_; }
 #endif
 
   /**

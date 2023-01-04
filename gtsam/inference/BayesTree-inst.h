@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    BayesTree-inl.h
+ * @file    BayesTree-inst.h
  * @brief   Bayes Tree is a tree of cliques of a Bayes Chain
  * @author  Frank Dellaert
  * @author  Michael Kaess
@@ -63,20 +63,40 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  template<class CLIQUE>
-  void BayesTree<CLIQUE>::saveGraph(const std::string &s, const KeyFormatter& keyFormatter) const {
-    if (roots_.empty()) throw std::invalid_argument("the root of Bayes tree has not been initialized!");
-    std::ofstream of(s.c_str());
-    of<< "digraph G{\n";
-    for(const sharedClique& root: roots_)
-      saveGraph(of, root, keyFormatter);
-    of<<"}";
+  template <class CLIQUE>
+  void BayesTree<CLIQUE>::dot(std::ostream& os,
+                              const KeyFormatter& keyFormatter) const {
+    if (roots_.empty())
+      throw std::invalid_argument(
+          "the root of Bayes tree has not been initialized!");
+    os << "digraph G{\n";
+    for (const sharedClique& root : roots_) dot(os, root, keyFormatter);
+    os << "}";
+    std::flush(os);
+  }
+
+  /* ************************************************************************* */
+  template <class CLIQUE>
+  std::string BayesTree<CLIQUE>::dot(const KeyFormatter& keyFormatter) const {
+    std::stringstream ss;
+    dot(ss, keyFormatter);
+    return ss.str();
+  }
+
+  /* ************************************************************************* */
+  template <class CLIQUE>
+  void BayesTree<CLIQUE>::saveGraph(const std::string& filename,
+                                    const KeyFormatter& keyFormatter) const {
+    std::ofstream of(filename.c_str());
+    dot(of, keyFormatter);
     of.close();
   }
 
   /* ************************************************************************* */
-  template<class CLIQUE>
-  void BayesTree<CLIQUE>::saveGraph(std::ostream &s, sharedClique clique, const KeyFormatter& indexFormatter, int parentnum) const {
+  template <class CLIQUE>
+  void BayesTree<CLIQUE>::dot(std::ostream& s, sharedClique clique,
+                              const KeyFormatter& keyFormatter,
+                              int parentnum) const {
     static int num = 0;
     bool first = true;
     std::stringstream out;
@@ -84,10 +104,10 @@ namespace gtsam {
     std::string parent = out.str();
     parent += "[label=\"";
 
-    for (Key index : clique->conditional_->frontals()) {
-      if (!first) parent += ",";
+    for (Key key : clique->conditional_->frontals()) {
+      if (!first) parent += ", ";
       first = false;
-      parent += indexFormatter(index);
+      parent += keyFormatter(key);
     }
 
     if (clique->parent()) {
@@ -96,10 +116,10 @@ namespace gtsam {
     }
 
     first = true;
-    for (Key sep : clique->conditional_->parents()) {
-      if (!first) parent += ",";
+    for (Key parentKey : clique->conditional_->parents()) {
+      if (!first) parent += ", ";
       first = false;
-      parent += indexFormatter(sep);
+      parent += keyFormatter(parentKey);
     }
     parent += "\"];\n";
     s << parent;
@@ -107,7 +127,7 @@ namespace gtsam {
 
     for (sharedClique c : clique->children) {
       num++;
-      saveGraph(s, c, indexFormatter, parentnum);
+      dot(s, c, keyFormatter, parentnum);
     }
   }
 

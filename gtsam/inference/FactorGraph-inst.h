@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file   FactorGraph-inl.h
+ * @file   FactorGraph-inst.h
  * @brief  Factor Graph Base Class
  * @author Carlos Nieto
  * @author Frank Dellaert
@@ -23,11 +23,10 @@
 
 #include <gtsam/inference/FactorGraph.h>
 
-#include <boost/bind.hpp>
-
 #include <stdio.h>
 #include <algorithm>
 #include <iostream>  // for cout :-(
+#include <fstream>
 #include <sstream>
 #include <string>
 
@@ -125,6 +124,52 @@ FactorIndices FactorGraph<FACTOR>::add_factors(const CONTAINER& factors,
     push_back(factors);
   }
   return newFactorIndices;
+}
+
+/* ************************************************************************* */
+template <class FACTOR>
+void FactorGraph<FACTOR>::dot(std::ostream& os,
+                              const KeyFormatter& keyFormatter,
+                              const DotWriter& writer) const {
+  writer.graphPreamble(&os);
+
+  // Create nodes for each variable in the graph
+  for (Key key : keys()) {
+    auto position = writer.variablePos(key);
+    writer.drawVariable(key, keyFormatter, position, &os);
+  }
+  os << "\n";
+
+  // Create factors and variable connections
+  for (size_t i = 0; i < size(); ++i) {
+    const auto& factor = at(i);
+    if (factor) {
+      const KeyVector& factorKeys = factor->keys();
+      writer.processFactor(i, factorKeys, keyFormatter, boost::none, &os);
+    }
+  }
+
+  os << "}\n";
+  std::flush(os);
+}
+
+/* ************************************************************************* */
+template <class FACTOR>
+std::string FactorGraph<FACTOR>::dot(const KeyFormatter& keyFormatter,
+                                     const DotWriter& writer) const {
+  std::stringstream ss;
+  dot(ss, keyFormatter, writer);
+  return ss.str();
+}
+
+/* ************************************************************************* */
+template <class FACTOR>
+void FactorGraph<FACTOR>::saveGraph(const std::string& filename,
+                                    const KeyFormatter& keyFormatter,
+                                    const DotWriter& writer) const {
+  std::ofstream of(filename.c_str());
+  dot(of, keyFormatter, writer);
+  of.close();
 }
 
 }  // namespace gtsam

@@ -12,9 +12,10 @@ Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellae
 
 # pylint: disable=unnecessary-lambda, expression-not-assigned
 
-from typing import Iterable, List, Union
+from typing import List, Sequence, Union
 
-from pyparsing import Forward, Optional, Or, ParseResults, delimitedList
+from pyparsing import (Forward, Optional, Or, ParseResults,  # type: ignore
+                       delimitedList)
 
 from .tokens import (BASIS_TYPES, CONST, IDENT, LOPBRACK, RAW_POINTER, REF,
                      ROPBRACK, SHARED_POINTER)
@@ -48,12 +49,16 @@ class Typename:
 
     def __init__(self,
                  t: ParseResults,
-                 instantiations: Union[tuple, list, str, ParseResults] = ()):
+                 instantiations: Sequence[ParseResults] = ()):
         self.name = t[-1]  # the name is the last element in this list
         self.namespaces = t[:-1]
 
+        # If the first namespace is empty string, just get rid of it.
+        if self.namespaces and self.namespaces[0] == '':
+            self.namespaces.pop(0)
+
         if instantiations:
-            if isinstance(instantiations, Iterable):
+            if isinstance(instantiations, Sequence):
                 self.instantiations = instantiations  # type: ignore
             else:
                 self.instantiations = instantiations.asList()
@@ -91,8 +96,8 @@ class Typename:
         else:
             cpp_name = self.name
         return '{}{}{}'.format(
-            "::".join(self.namespaces[idx:]),
-            "::" if self.namespaces[idx:] else "",
+            "::".join(self.namespaces),
+            "::" if self.namespaces else "",
             cpp_name,
         )
 
@@ -157,6 +162,8 @@ class Type:
     """
     Parsed datatype, can be either a fundamental type or a custom datatype.
     E.g. void, double, size_t, Matrix.
+    Think of this as a high-level type which encodes the typename and other 
+    characteristics of the type.
 
     The type can optionally be a raw pointer, shared pointer or reference.
     Can also be optionally qualified with a `const`, e.g. `const int`.
@@ -239,6 +246,9 @@ class Type:
              or self.typename.name in ["Matrix", "Vector"]) else "",
             typename=typename))
 
+    def get_typename(self):
+        """Convenience method to get the typename of this type."""
+        return self.typename.name
 
 class TemplatedType:
     """

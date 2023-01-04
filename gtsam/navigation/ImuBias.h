@@ -36,6 +36,9 @@ public:
   /// dimension of the variable - used to autodetect sizes
   static const size_t dimension = 6;
 
+  /// @name Standard Constructors
+  /// @{
+
   ConstantBias() :
       biasAcc_(0.0, 0.0, 0.0), biasGyro_(0.0, 0.0, 0.0) {
   }
@@ -47,6 +50,8 @@ public:
   explicit ConstantBias(const Vector6& v) :
       biasAcc_(v.head<3>()), biasGyro_(v.tail<3>()) {
   }
+
+  /// @}
 
   /** return the accelerometer and gyro biases in a single vector */
   Vector6 vector() const {
@@ -83,7 +88,6 @@ public:
     return measurement - biasGyro_;
   }
 
-  /// @}
   /// @name Testable
   /// @{
 
@@ -105,7 +109,7 @@ public:
   /// @{
 
   /** identity for group operation */
-  static ConstantBias identity() {
+  static ConstantBias Identity() {
     return ConstantBias();
   }
 
@@ -131,30 +135,30 @@ public:
 
   /// @}
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
   /// @name Deprecated
   /// @{
-  ConstantBias inverse() {
-    return -(*this);
-  }
-  ConstantBias compose(const ConstantBias& q) {
+  ConstantBias GTSAM_DEPRECATED inverse() { return -(*this); }
+  ConstantBias GTSAM_DEPRECATED compose(const ConstantBias& q) {
     return (*this) + q;
   }
-  ConstantBias between(const ConstantBias& q) {
+  ConstantBias GTSAM_DEPRECATED between(const ConstantBias& q) {
     return q - (*this);
   }
-  Vector6 localCoordinates(const ConstantBias& q) {
-    return between(q).vector();
+  Vector6 GTSAM_DEPRECATED localCoordinates(const ConstantBias& q) {
+    return (q - (*this)).vector();
   }
-  ConstantBias retract(const Vector6& v) {
-    return compose(ConstantBias(v));
+  ConstantBias GTSAM_DEPRECATED retract(const Vector6& v) {
+    return (*this) + ConstantBias(v);
   }
-  static Vector6 Logmap(const ConstantBias& p) {
+  static Vector6 GTSAM_DEPRECATED Logmap(const ConstantBias& p) {
     return p.vector();
   }
-  static ConstantBias Expmap(const Vector6& v) {
+  static ConstantBias GTSAM_DEPRECATED Expmap(const Vector6& v) {
     return ConstantBias(v);
   }
   /// @}
+#endif
 
 private:
 

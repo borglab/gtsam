@@ -1,5 +1,5 @@
 /**
- * @file EliminatableClusterTree-inst.h
+ * @file ClusterTree-inst.h
  * @date Oct 8, 2013
  * @author Kai Ni
  * @author Richard Roberts
@@ -14,6 +14,10 @@
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/base/timing.h>
 #include <gtsam/base/treeTraversal-inst.h>
+
+#ifdef GTSAM_USE_TBB
+#include <mutex>
+#endif
 
 namespace gtsam {
 
@@ -120,12 +124,25 @@ struct EliminationData {
   size_t myIndexInParent;
   FastVector<sharedFactor> childFactors;
   boost::shared_ptr<BTNode> bayesTreeNode;
+#ifdef GTSAM_USE_TBB
+  boost::shared_ptr<std::mutex> writeLock;
+#endif
 
   EliminationData(EliminationData* _parentData, size_t nChildren) :
-      parentData(_parentData), bayesTreeNode(boost::make_shared<BTNode>()) {
+      parentData(_parentData), bayesTreeNode(boost::make_shared<BTNode>())
+#ifdef GTSAM_USE_TBB
+      , writeLock(boost::make_shared<std::mutex>())
+#endif
+    {
     if (parentData) {
+#ifdef GTSAM_USE_TBB
+      parentData->writeLock->lock();
+#endif
       myIndexInParent = parentData->childFactors.size();
       parentData->childFactors.push_back(sharedFactor());
+#ifdef GTSAM_USE_TBB
+      parentData->writeLock->unlock();
+#endif
     } else {
       myIndexInParent = 0;
     }
@@ -196,8 +213,15 @@ struct EliminationData {
         nodesIndex_.insert(std::make_pair(j, myData.bayesTreeNode));
 
       // Store remaining factor in parent's gathered factors
-      if (!eliminationResult.second->empty())
+      if (!eliminationResult.second->empty()) {
+#ifdef GTSAM_USE_TBB
+        myData.parentData->writeLock->lock();
+#endif
         myData.parentData->childFactors[myData.myIndexInParent] = eliminationResult.second;
+#ifdef GTSAM_USE_TBB
+        myData.parentData->writeLock->unlock();
+#endif
+      }
     }
   };
 };

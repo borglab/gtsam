@@ -22,17 +22,14 @@
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/base/TestableAssertions.h>
 
 #include <CppUnitLite/TestHarness.h>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 
+using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
-
-// Create a noise model for the pixel error
-static SharedNoiseModel model(noiseModel::Unit::Create(1));
 
 typedef RangeFactor<Pose2, Point2> RangeFactor2D;
 typedef RangeFactor<Pose3, Point3> RangeFactor3D;
@@ -40,59 +37,39 @@ typedef RangeFactorWithTransform<Pose2, Point2> RangeFactorWithTransform2D;
 typedef RangeFactorWithTransform<Pose3, Point3> RangeFactorWithTransform3D;
 
 // Keys are deliberately *not* in sorted order to test that case.
+namespace {
+// Create a noise model for the pixel error
+static SharedNoiseModel model(noiseModel::Unit::Create(1));
+
 constexpr Key poseKey(2);
 constexpr Key pointKey(1);
 constexpr double measurement(10.0);
 
-/* ************************************************************************* */
 Vector factorError2D(const Pose2& pose, const Point2& point,
-    const RangeFactor2D& factor) {
+                     const RangeFactor2D& factor) {
   return factor.evaluateError(pose, point);
 }
 
-/* ************************************************************************* */
 Vector factorError3D(const Pose3& pose, const Point3& point,
-    const RangeFactor3D& factor) {
+                     const RangeFactor3D& factor) {
   return factor.evaluateError(pose, point);
 }
 
-/* ************************************************************************* */
 Vector factorErrorWithTransform2D(const Pose2& pose, const Point2& point,
-    const RangeFactorWithTransform2D& factor) {
+                                  const RangeFactorWithTransform2D& factor) {
   return factor.evaluateError(pose, point);
 }
 
-/* ************************************************************************* */
 Vector factorErrorWithTransform3D(const Pose3& pose, const Point3& point,
-    const RangeFactorWithTransform3D& factor) {
+                                  const RangeFactorWithTransform3D& factor) {
   return factor.evaluateError(pose, point);
 }
+}  // namespace
 
 /* ************************************************************************* */
 TEST( RangeFactor, Constructor) {
   RangeFactor2D factor2D(poseKey, pointKey, measurement, model);
   RangeFactor3D factor3D(poseKey, pointKey, measurement, model);
-}
-
-/* ************************************************************************* */
-// Export Noisemodels
-// See http://www.boost.org/doc/libs/1_32_0/libs/serialization/doc/special.html
-BOOST_CLASS_EXPORT(gtsam::noiseModel::Unit);
-
-/* ************************************************************************* */
-TEST(RangeFactor, Serialization2D) {
-  RangeFactor2D factor2D(poseKey, pointKey, measurement, model);
-  EXPECT(serializationTestHelpers::equalsObj(factor2D));
-  EXPECT(serializationTestHelpers::equalsXML(factor2D));
-  EXPECT(serializationTestHelpers::equalsBinary(factor2D));
-}
-
-/* ************************************************************************* */
-TEST(RangeFactor, Serialization3D) {
-  RangeFactor3D factor3D(poseKey, pointKey, measurement, model);
-  EXPECT(serializationTestHelpers::equalsObj(factor3D));
-  EXPECT(serializationTestHelpers::equalsXML(factor3D));
-  EXPECT(serializationTestHelpers::equalsBinary(factor3D));
 }
 
 /* ************************************************************************* */
@@ -141,28 +118,6 @@ TEST( RangeFactor, EqualsWithTransform ) {
       body_P_sensor_3D);
   CHECK(assert_equal(factor3D_1, factor3D_2));
 }
-/* ************************************************************************* */
-TEST( RangeFactor, EqualsAfterDeserializing) {
-  // Check that the same results are obtained after deserializing:
-  Pose3 body_P_sensor_3D(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2),
-      Point3(0.25, -0.10, 1.0));
-
-  RangeFactorWithTransform3D factor3D_1(poseKey, pointKey, measurement, model,
-      body_P_sensor_3D), factor3D_2;
-
-  // check with Equal() trait:
-  gtsam::serializationTestHelpers::roundtripXML(factor3D_1, factor3D_2);
-  CHECK(assert_equal(factor3D_1, factor3D_2));
-
-  const Pose3 pose(Rot3::RzRyRx(0.2, -0.3, 1.75), Point3(1.0, 2.0, -3.0));
-  const Point3 point(-2.0, 11.0, 1.0);
-  const Values values = {{poseKey, genericValue(pose)}, {pointKey, genericValue(point)}};
-  
-  const Vector error_1 = factor3D_1.unwhitenedError(values);
-  const Vector error_2 = factor3D_2.unwhitenedError(values);
-  CHECK(assert_equal(error_1, error_2));
-}
-
 /* ************************************************************************* */
 TEST( RangeFactor, Error2D ) {
   // Create a factor
@@ -264,9 +219,9 @@ TEST( RangeFactor, Jacobian2D ) {
   // Use numerical derivatives to calculate the Jacobians
   Matrix H1Expected, H2Expected;
   H1Expected = numericalDerivative11<Vector, Pose2>(
-      boost::bind(&factorError2D, _1, point, factor), pose);
+      std::bind(&factorError2D, std::placeholders::_1, point, factor), pose);
   H2Expected = numericalDerivative11<Vector, Point2>(
-      boost::bind(&factorError2D, pose, _1, factor), point);
+      std::bind(&factorError2D, pose, std::placeholders::_1, factor), point);
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(H1Expected, H1Actual, 1e-9));
@@ -295,9 +250,9 @@ TEST( RangeFactor, Jacobian2DWithTransform ) {
   // Use numerical derivatives to calculate the Jacobians
   Matrix H1Expected, H2Expected;
   H1Expected = numericalDerivative11<Vector, Pose2>(
-      boost::bind(&factorErrorWithTransform2D, _1, point, factor), pose);
+      std::bind(&factorErrorWithTransform2D, std::placeholders::_1, point, factor), pose);
   H2Expected = numericalDerivative11<Vector, Point2>(
-      boost::bind(&factorErrorWithTransform2D, pose, _1, factor), point);
+      std::bind(&factorErrorWithTransform2D, pose, std::placeholders::_1, factor), point);
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(H1Expected, H1Actual, 1e-9));
@@ -322,9 +277,9 @@ TEST( RangeFactor, Jacobian3D ) {
   // Use numerical derivatives to calculate the Jacobians
   Matrix H1Expected, H2Expected;
   H1Expected = numericalDerivative11<Vector, Pose3>(
-      boost::bind(&factorError3D, _1, point, factor), pose);
+      std::bind(&factorError3D, std::placeholders::_1, point, factor), pose);
   H2Expected = numericalDerivative11<Vector, Point3>(
-      boost::bind(&factorError3D, pose, _1, factor), point);
+      std::bind(&factorError3D, pose, std::placeholders::_1, factor), point);
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(H1Expected, H1Actual, 1e-9));
@@ -354,9 +309,9 @@ TEST( RangeFactor, Jacobian3DWithTransform ) {
   // Use numerical derivatives to calculate the Jacobians
   Matrix H1Expected, H2Expected;
   H1Expected = numericalDerivative11<Vector, Pose3>(
-      boost::bind(&factorErrorWithTransform3D, _1, point, factor), pose);
+      std::bind(&factorErrorWithTransform3D, std::placeholders::_1, point, factor), pose);
   H2Expected = numericalDerivative11<Vector, Point3>(
-      boost::bind(&factorErrorWithTransform3D, pose, _1, factor), point);
+      std::bind(&factorErrorWithTransform3D, pose, std::placeholders::_1, factor), point);
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(H1Expected, H1Actual, 1e-9));
@@ -410,7 +365,7 @@ TEST( RangeFactor, Camera) {
 /* ************************************************************************* */
 // Do a test with non GTSAM types
 
-namespace gtsam{
+namespace gtsam {
 template <>
 struct Range<Vector4, Vector4> {
   typedef double result_type;
@@ -420,7 +375,7 @@ struct Range<Vector4, Vector4> {
     // derivatives not implemented
   }
 };
-}
+}  // namespace gtsam
 
 TEST(RangeFactor, NonGTSAM) {
   // Create a factor

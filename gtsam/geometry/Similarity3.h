@@ -18,13 +18,12 @@
 
 #pragma once
 
-#include <gtsam/geometry/Rot3.h>
-#include <gtsam/geometry/Point3.h>
-#include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Manifold.h>
 #include <gtsam/dllexport.h>
-
+#include <gtsam/geometry/Point3.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/Rot3.h>
 
 namespace gtsam {
 
@@ -34,108 +33,106 @@ class Pose3;
 /**
  * 3D similarity transform
  */
-class Similarity3: public LieGroup<Similarity3, 7> {
-
+class GTSAM_EXPORT Similarity3 : public LieGroup<Similarity3, 7> {
   /// @name Pose Concept
   /// @{
   typedef Rot3 Rotation;
   typedef Point3 Translation;
   /// @}
 
-private:
+ private:
   Rot3 R_;
   Point3 t_;
   double s_;
 
-public:
-
+ public:
   /// @name Constructors
   /// @{
 
   /// Default constructor
-  GTSAM_EXPORT Similarity3();
+  Similarity3();
 
   /// Construct pure scaling
-  GTSAM_EXPORT Similarity3(double s);
+  Similarity3(double s);
 
   /// Construct from GTSAM types
-  GTSAM_EXPORT Similarity3(const Rot3& R, const Point3& t, double s);
+  Similarity3(const Rot3& R, const Point3& t, double s);
 
   /// Construct from Eigen types
-  GTSAM_EXPORT Similarity3(const Matrix3& R, const Vector3& t, double s);
+  Similarity3(const Matrix3& R, const Vector3& t, double s);
 
   /// Construct from matrix [R t; 0 s^-1]
-  GTSAM_EXPORT Similarity3(const Matrix4& T);
+  Similarity3(const Matrix4& T);
 
   /// @}
   /// @name Testable
   /// @{
 
   /// Compare with tolerance
-  GTSAM_EXPORT bool equals(const Similarity3& sim, double tol) const;
+  bool equals(const Similarity3& sim, double tol) const;
 
   /// Exact equality
-  GTSAM_EXPORT bool operator==(const Similarity3& other) const;
+  bool operator==(const Similarity3& other) const;
 
   /// Print with optional string
-  GTSAM_EXPORT void print(const std::string& s) const;
+  void print(const std::string& s) const;
 
-  GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const Similarity3& p);
+  friend std::ostream& operator<<(std::ostream& os, const Similarity3& p);
 
   /// @}
   /// @name Group
   /// @{
 
   /// Return an identity transform
-  GTSAM_EXPORT static Similarity3 identity();
+  static Similarity3 Identity();
 
   /// Composition
-  GTSAM_EXPORT Similarity3 operator*(const Similarity3& S) const;
+  Similarity3 operator*(const Similarity3& S) const;
 
   /// Return the inverse
-  GTSAM_EXPORT Similarity3 inverse() const;
+  Similarity3 inverse() const;
 
   /// @}
   /// @name Group action on Point3
   /// @{
 
   /// Action on a point p is s*(R*p+t)
-  GTSAM_EXPORT Point3 transformFrom(const Point3& p, //
-      OptionalJacobian<3, 7> H1 = boost::none, //
-      OptionalJacobian<3, 3> H2 = boost::none) const;
+  Point3 transformFrom(const Point3& p,                          //
+                       OptionalJacobian<3, 7> H1 = boost::none,  //
+                       OptionalJacobian<3, 3> H2 = boost::none) const;
 
-  /** 
+  /**
    * Action on a pose T.
-   * |Rs  ts|   |R t|   |Rs*R Rs*t+ts| 
+   * |Rs  ts|   |R t|   |Rs*R Rs*t+ts|
    * |0  1/s| * |0 1| = | 0      1/s |, the result is still a Sim3 object.
    * To retrieve a Pose3, we normalized the scale value into 1.
    * |Rs*R Rs*t+ts|   |Rs*R s(Rs*t+ts)|
    * | 0      1/s | = |  0       1    |
-   * 
-   * This group action satisfies the compatibility condition. 
+   *
+   * This group action satisfies the compatibility condition.
    * For more details, refer to: https://en.wikipedia.org/wiki/Group_action
    */
-  GTSAM_EXPORT Pose3 transformFrom(const Pose3& T) const;
+  Pose3 transformFrom(const Pose3& T) const;
 
   /** syntactic sugar for transformFrom */
-  GTSAM_EXPORT Point3 operator*(const Point3& p) const;
+  Point3 operator*(const Point3& p) const;
 
   /**
    *  Create Similarity3 by aligning at least three point pairs
    */
-  GTSAM_EXPORT static Similarity3 Align(const std::vector<Point3Pair>& abPointPairs);
-  
+  static Similarity3 Align(const Point3Pairs& abPointPairs);
+
   /**
    * Create the Similarity3 object that aligns at least two pose pairs.
    * Each pair is of the form (aTi, bTi).
    * Given a list of pairs in frame a, and a list of pairs in frame b, Align()
    * will compute the best-fit Similarity3 aSb transformation to align them.
    * First, the rotation aRb will be computed as the average (Karcher mean) of
-   * many estimates aRb (from each pair). Afterwards, the scale factor will be computed
-   * using the algorithm described here:
+   * many estimates aRb (from each pair). Afterwards, the scale factor will be
+   * computed using the algorithm described here:
    * http://www5.informatik.uni-erlangen.de/Forschung/Publikationen/2005/Zinsser05-PSR.pdf
    */
-  GTSAM_EXPORT static Similarity3 Align(const std::vector<Pose3Pair>& abPosePairs);
+  static Similarity3 Align(const std::vector<Pose3Pair>& abPosePairs);
 
   /// @}
   /// @name Lie Group
@@ -144,20 +141,22 @@ public:
   /** Log map at the identity
    * \f$ [R_x,R_y,R_z, t_x, t_y, t_z, \lambda] \f$
    */
-  GTSAM_EXPORT static Vector7 Logmap(const Similarity3& s, //
-      OptionalJacobian<7, 7> Hm = boost::none);
+  static Vector7 Logmap(const Similarity3& s,  //
+                        OptionalJacobian<7, 7> Hm = boost::none);
 
   /** Exponential map at the identity
    */
-  GTSAM_EXPORT static Similarity3 Expmap(const Vector7& v, //
-      OptionalJacobian<7, 7> Hm = boost::none);
+  static Similarity3 Expmap(const Vector7& v,  //
+                            OptionalJacobian<7, 7> Hm = boost::none);
 
   /// Chart at the origin
   struct ChartAtOrigin {
-    static Similarity3 Retract(const Vector7& v, ChartJacobian H = boost::none) {
+    static Similarity3 Retract(const Vector7& v,
+                               ChartJacobian H = boost::none) {
       return Similarity3::Expmap(v, H);
     }
-    static Vector7 Local(const Similarity3& other, ChartJacobian H = boost::none) {
+    static Vector7 Local(const Similarity3& other,
+                         ChartJacobian H = boost::none) {
       return Similarity3::Logmap(other, H);
     }
   };
@@ -170,67 +169,53 @@ public:
    * @return 4*4 element of Lie algebra that can be exponentiated
    * TODO(frank): rename to Hat, make part of traits
    */
-  GTSAM_EXPORT static Matrix4 wedge(const Vector7& xi);
+  static Matrix4 wedge(const Vector7& xi);
 
   /// Project from one tangent space to another
-  GTSAM_EXPORT  Matrix7 AdjointMap() const;
+  Matrix7 AdjointMap() const;
 
   /// @}
   /// @name Standard interface
   /// @{
 
   /// Calculate 4*4 matrix group equivalent
-  GTSAM_EXPORT const Matrix4 matrix() const;
+  Matrix4 matrix() const;
 
   /// Return a GTSAM rotation
-  const Rot3& rotation() const {
-    return R_;
-  }
+  Rot3 rotation() const { return R_; }
 
   /// Return a GTSAM translation
-  const Point3& translation() const {
-    return t_;
-  }
+  Point3 translation() const { return t_; }
 
   /// Return the scale
-  double scale() const {
-    return s_;
-  }
-
-  /// Convert to a rigid body pose (R, s*t)
-  /// TODO(frank): why is this here? Red flag! Definitely don't have it as a cast.
-  GTSAM_EXPORT operator Pose3() const;
+  double scale() const { return s_; }
 
   /// Dimensionality of tangent space = 7 DOF - used to autodetect sizes
-  inline static size_t Dim() {
-    return 7;
-  }
+  inline static size_t Dim() { return 7; }
 
   /// Dimensionality of tangent space = 7 DOF
-  inline size_t dim() const {
-    return 7;
-  }
+  inline size_t dim() const { return 7; }
 
   /// @}
   /// @name Helper functions
   /// @{
 
-private:
+ private:
   /// Calculate expmap and logmap coefficients.
   static Matrix3 GetV(Vector3 w, double lambda);
 
   /// @}
 };
 
-template<>
+template <>
 inline Matrix wedge<Similarity3>(const Vector& xi) {
   return Similarity3::wedge(xi);
 }
 
-template<>
+template <>
 struct traits<Similarity3> : public internal::LieGroup<Similarity3> {};
 
-template<>
+template <>
 struct traits<const Similarity3> : public internal::LieGroup<Similarity3> {};
 
-} // namespace gtsam
+}  // namespace gtsam

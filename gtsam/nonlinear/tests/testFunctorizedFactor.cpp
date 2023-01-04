@@ -17,12 +17,14 @@
  * @brief unit tests for FunctorizedFactor class
  */
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/nonlinear/FunctorizedFactor.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/factorTesting.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/TestableAssertions.h>
-#include <gtsam/inference/Symbol.h>
-#include <gtsam/nonlinear/FunctorizedFactor.h>
-#include <gtsam/nonlinear/factorTesting.h>
+
+#include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;
@@ -60,7 +62,7 @@ class ProjectionFunctor {
     if (H1) {
       H1->resize(x.size(), A.size());
       *H1 << I_3x3, I_3x3, I_3x3;
-    } 
+    }
     if (H2) *H2 = A;
     return A * x;
   }
@@ -255,12 +257,13 @@ TEST(FunctorizedFactor, Lambda2) {
     if (H1) {
       H1->resize(x.size(), A.size());
       *H1 << I_3x3, I_3x3, I_3x3;
-    } 
+    }
     if (H2) *H2 = A;
     return A * x;
   };
   // FunctorizedFactor<Matrix> factor(key, measurement, model, lambda);
-  auto factor = MakeFunctorizedFactor2<Matrix, Vector>(keyA, keyx, measurement, model2, lambda);
+  auto factor = MakeFunctorizedFactor2<Matrix, Vector>(keyA, keyx, measurement,
+                                                       model2, lambda);
 
   Vector error = factor.evaluateError(A, x);
 

@@ -33,7 +33,7 @@ namespace gtsam {
  * S = {S_1,S_2,...} of disjoint dynamic sets. Each set is identified by
  * a representative, which is some member of the set.
  *
- * @addtogroup base
+ * @ingroup base
  */
 template<class KEY>
 class DSF: protected BTree<KEY, KEY> {
@@ -122,7 +122,7 @@ public:
   }
 
   // maps f over all keys, must be invertible
-  DSF map(boost::function<KEY(const KEY&)> func) const {
+  DSF map(std::function<KEY(const KEY&)> func) const {
     DSF t;
     for(const KeyLabel& pair: (Tree)*this)
       t = t.add(func(pair.first), func(pair.second));

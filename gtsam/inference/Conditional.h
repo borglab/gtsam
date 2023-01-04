@@ -25,15 +25,12 @@
 namespace gtsam {
 
   /**
-   * TODO: Update comments. The following comments are out of date!!!
-   *
-   * Base class for conditional densities, templated on KEY type.  This class
-   * provides storage for the keys involved in a conditional, and iterators and
+   * Base class for conditional densities.  This class iterators and
    * access to the frontal and separator keys.
    *
    * Derived classes *must* redefine the Factor and shared_ptr typedefs to refer
    * to the associated factor type and shared_ptr type of the derived class.  See
-   * IndexConditional and GaussianConditional for examples.
+   * SymbolicConditional and GaussianConditional for examples.
    * \nosubgrouping
    */
   template<class FACTOR, class DERIVEDCONDITIONAL>

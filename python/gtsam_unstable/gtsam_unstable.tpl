@@ -16,7 +16,7 @@
 #include <pybind11/functional.h>
 #include <pybind11/iostream.h>
 #include "gtsam/base/serialization.h"
-#include "gtsam/nonlinear/utilities.h"  // for RedirectCout.
+#include "gtsam/base/utilities.h"  // for RedirectCout.
 
 // These are the included headers listed in `gtsam_unstable.i`
 {includes}
@@ -40,7 +40,7 @@ PYBIND11_MODULE({module_name}, m_) {{
 
 {wrapped_namespace}
 
-#include "python/gtsam_unstable/specializations.h"
+#include "python/gtsam_unstable/specializations/gtsam_unstable.h"
 
 }}
 

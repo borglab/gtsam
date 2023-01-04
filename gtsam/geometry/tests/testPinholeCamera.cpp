@@ -27,6 +27,7 @@
 #include <cmath>
 #include <iostream>
 
+using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 
@@ -64,8 +65,9 @@ TEST(PinholeCamera, Create) {
   EXPECT(assert_equal(camera, Camera::Create(pose,K, actualH1, actualH2)));
 
   // Check derivative
-  boost::function<Camera(Pose3,Cal3_S2)> f = //
-      boost::bind(Camera::Create,_1,_2,boost::none,boost::none);
+  std::function<Camera(Pose3, Cal3_S2)> f =  //
+      std::bind(Camera::Create, std::placeholders::_1, std::placeholders::_2,
+                boost::none, boost::none);
   Matrix numericalH1 = numericalDerivative21<Camera,Pose3,Cal3_S2>(f,pose,K);
   EXPECT(assert_equal(numericalH1, actualH1, 1e-9));
   Matrix numericalH2 = numericalDerivative22<Camera,Pose3,Cal3_S2>(f,pose,K);
@@ -79,8 +81,8 @@ TEST(PinholeCamera, Pose) {
   EXPECT(assert_equal(pose, camera.getPose(actualH)));
 
   // Check derivative
-  boost::function<Pose3(Camera)> f = //
-      boost::bind(&Camera::getPose,_1,boost::none);
+  std::function<Pose3(Camera)> f =  //
+      std::bind(&Camera::getPose, std::placeholders::_1, boost::none);
   Matrix numericalH = numericalDerivative11<Pose3,Camera>(f,camera);
   EXPECT(assert_equal(numericalH, actualH, 1e-9));
 }

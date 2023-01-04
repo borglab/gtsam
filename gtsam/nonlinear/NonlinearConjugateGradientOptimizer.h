@@ -149,7 +149,7 @@ boost::tuple<V, int> nonlinearConjugateGradient(const S &system,
     const V &initial, const NonlinearOptimizerParams &params,
     const bool singleIteration, const bool gradientDescent = false) {
 
-  // GTSAM_CONCEPT_MANIFOLD_TYPE(V);
+  // GTSAM_CONCEPT_MANIFOLD_TYPE(V)
 
   size_t iteration = 0;
 

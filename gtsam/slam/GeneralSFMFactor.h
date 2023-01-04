@@ -54,13 +54,13 @@ namespace gtsam {
 /**
  * Non-linear factor for a constraint derived from a 2D measurement.
  * The calibration is unknown here compared to GenericProjectionFactor
- * @addtogroup SLAM
+ * @ingroup slam
  */
 template<class CAMERA, class LANDMARK>
-class GeneralSFMFactor: public NoiseModelFactor2<CAMERA, LANDMARK> {
+class GeneralSFMFactor: public NoiseModelFactorN<CAMERA, LANDMARK> {
 
-  GTSAM_CONCEPT_MANIFOLD_TYPE(CAMERA);
-  GTSAM_CONCEPT_MANIFOLD_TYPE(LANDMARK);
+  GTSAM_CONCEPT_MANIFOLD_TYPE(CAMERA)
+  GTSAM_CONCEPT_MANIFOLD_TYPE(LANDMARK)
 
   static const int DimC = FixedDimension<CAMERA>::value;
   static const int DimL = FixedDimension<LANDMARK>::value;
@@ -74,7 +74,7 @@ protected:
 public:
 
   typedef GeneralSFMFactor<CAMERA, LANDMARK> This;///< typedef for this object
-  typedef NoiseModelFactor2<CAMERA, LANDMARK> Base;///< typedef for the base class
+  typedef NoiseModelFactorN<CAMERA, LANDMARK> Base;///< typedef for the base class
 
   // shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<This> shared_ptr;
@@ -140,7 +140,7 @@ public:
     // Only linearize if the factor is active
     if (!this->active(values)) return boost::shared_ptr<JacobianFactor>();
 
-    const Key key1 = this->key1(), key2 = this->key2();
+    const Key key1 = this->template key<1>(), key2 = this->template key<2>();
     JacobianC H1;
     JacobianL H2;
     Vector2 b;
@@ -184,6 +184,7 @@ private:
   friend class boost::serialization::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int /*version*/) {
+    // NoiseModelFactor2 instead of NoiseModelFactorN for backward compatibility
     ar & boost::serialization::make_nvp("NoiseModelFactor2",
         boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(measured_);
@@ -200,9 +201,9 @@ struct traits<GeneralSFMFactor<CAMERA, LANDMARK> > : Testable<
  * Compared to GeneralSFMFactor, it is a ternary-factor because the calibration is isolated from camera..
  */
 template<class CALIBRATION>
-class GeneralSFMFactor2: public NoiseModelFactor3<Pose3, Point3, CALIBRATION> {
+class GeneralSFMFactor2: public NoiseModelFactorN<Pose3, Point3, CALIBRATION> {
 
-  GTSAM_CONCEPT_MANIFOLD_TYPE(CALIBRATION);
+  GTSAM_CONCEPT_MANIFOLD_TYPE(CALIBRATION)
   static const int DimK = FixedDimension<CALIBRATION>::value;
 
 protected:
@@ -213,7 +214,7 @@ public:
 
   typedef GeneralSFMFactor2<CALIBRATION> This;
   typedef PinholeCamera<CALIBRATION> Camera;///< typedef for camera type
-  typedef NoiseModelFactor3<Pose3, Point3, CALIBRATION> Base;///< typedef for the base class
+  typedef NoiseModelFactorN<Pose3, Point3, CALIBRATION> Base;///< typedef for the base class
 
   // shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<This> shared_ptr;
@@ -269,8 +270,8 @@ public:
       if (H1) *H1 = Matrix::Zero(2, 6);
       if (H2) *H2 = Matrix::Zero(2, 3);
       if (H3) *H3 = Matrix::Zero(2, DimK);
-      std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2())
-      << " behind Camera " << DefaultKeyFormatter(this->key1()) << std::endl;
+      std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->template key<2>())
+      << " behind Camera " << DefaultKeyFormatter(this->template key<1>()) << std::endl;
     }
     return Z_2x1;
   }
@@ -285,6 +286,7 @@ private:
   friend class boost::serialization::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int /*version*/) {
+    // NoiseModelFactor3 instead of NoiseModelFactorN for backward compatibility
     ar & boost::serialization::make_nvp("NoiseModelFactor3",
         boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(measured_);

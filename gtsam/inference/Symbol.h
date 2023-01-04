@@ -18,11 +18,12 @@
 
 #pragma once
 
-#include <gtsam/inference/Key.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/inference/Key.h>
+
 #include <boost/serialization/nvp.hpp>
-#include <boost/function.hpp>
 #include <cstdint>
+#include <functional>
 
 namespace gtsam {
 
@@ -114,7 +115,7 @@ public:
    * Values::filter() function to retrieve all key-value pairs with the
    * requested character.
    */
-  static boost::function<bool(Key)> ChrTest(unsigned char c);
+  static std::function<bool(Key)> ChrTest(unsigned char c);
 
   /// Output stream operator that can be used with key_formatter (see Key.h).
   GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &, const Symbol &);

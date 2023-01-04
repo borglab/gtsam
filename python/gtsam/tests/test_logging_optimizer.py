@@ -18,7 +18,7 @@ import numpy as np
 from gtsam import Rot3
 from gtsam.utils.test_case import GtsamTestCase
 
-from gtsam.utils.logging_optimizer import gtsam_optimize
+from gtsam.utils.logging_optimizer import gtsam_optimize, optimize_using
 
 KEY = 0
 MODEL = gtsam.noiseModel.Unit.Create(3)
@@ -34,19 +34,20 @@ class TestOptimizeComet(GtsamTestCase):
         rotations = {R, R.inverse()}  # mean is the identity
         self.expected = Rot3()
 
-        graph = gtsam.NonlinearFactorGraph()
-        for R in rotations:
-            graph.add(gtsam.PriorFactorRot3(KEY, R, MODEL))
-        initial = gtsam.Values()
-        initial.insert(KEY, R)
-        self.params = gtsam.GaussNewtonParams()
-        self.optimizer = gtsam.GaussNewtonOptimizer(
-            graph, initial, self.params)
+        def check(actual):
+            # Check that optimizing yields the identity
+            self.gtsamAssertEquals(actual.atRot3(KEY), self.expected, tol=1e-6)
+            # Check that logging output prints out 3 lines (exact intermediate values differ by OS)
+            self.assertEqual(self.capturedOutput.getvalue().count('\n'), 3)
+            # reset stdout catcher
+            self.capturedOutput.truncate(0)
+        self.check = check
 
-        self.lmparams = gtsam.LevenbergMarquardtParams()
-        self.lmoptimizer = gtsam.LevenbergMarquardtOptimizer(
-            graph, initial, self.lmparams
-        )
+        self.graph = gtsam.NonlinearFactorGraph()
+        for R in rotations:
+            self.graph.add(gtsam.PriorFactorRot3(KEY, R, MODEL))
+        self.initial = gtsam.Values()
+        self.initial.insert(KEY, R)
 
         # setup output capture
         self.capturedOutput = StringIO()
@@ -63,22 +64,29 @@ class TestOptimizeComet(GtsamTestCase):
         def hook(_, error):
             print(error)
 
-        # Only thing we require from optimizer is an iterate method
-        gtsam_optimize(self.optimizer, self.params, hook)
-
-        # Check that optimizing yields the identity.
-        actual = self.optimizer.values()
-        self.gtsamAssertEquals(actual.atRot3(KEY), self.expected, tol=1e-6)
+        # Wrapper function sets the hook and calls optimizer.optimize() for us.
+        params = gtsam.GaussNewtonParams()
+        actual = optimize_using(gtsam.GaussNewtonOptimizer, hook, self.graph, self.initial)
+        self.check(actual)
+        actual = optimize_using(gtsam.GaussNewtonOptimizer, hook, self.graph, self.initial, params)
+        self.check(actual)
+        actual = gtsam_optimize(gtsam.GaussNewtonOptimizer(self.graph, self.initial, params),
+                                params, hook)
+        self.check(actual)
 
     def test_lm_simple_printing(self):
         """Make sure we are properly terminating LM"""
         def hook(_, error):
             print(error)
 
-        gtsam_optimize(self.lmoptimizer, self.lmparams, hook)
-
-        actual = self.lmoptimizer.values()
-        self.gtsamAssertEquals(actual.atRot3(KEY), self.expected, tol=1e-6)
+        params = gtsam.LevenbergMarquardtParams()
+        actual = optimize_using(gtsam.LevenbergMarquardtOptimizer, hook, self.graph, self.initial)
+        self.check(actual)
+        actual = optimize_using(gtsam.LevenbergMarquardtOptimizer, hook, self.graph, self.initial,
+                                params)
+        self.check(actual)
+        actual = gtsam_optimize(gtsam.LevenbergMarquardtOptimizer(self.graph, self.initial, params),
+                                params, hook)
 
     @unittest.skip("Not a test we want run every time, as needs comet.ml account")
     def test_comet(self):

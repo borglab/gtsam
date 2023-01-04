@@ -15,20 +15,21 @@
  * @author Kai Ni
  */
 
-#include <iostream>
 #include <CppUnitLite/TestHarness.h>
-
-#include <boost/assign/list_of.hpp>
-#include <boost/assign/std/list.hpp> // for operator +=
-#include <boost/assign/std/set.hpp> // for operator +=
-using namespace boost::assign;
-
 #include <gtsam/base/debug.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam/linear/GaussianJunctionTree.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/linear/GaussianJunctionTree.h>
 
+#include <boost/assign/list_of.hpp>
+#include <boost/assign/std/list.hpp>  // for operator +=
+#include <boost/assign/std/set.hpp>   // for operator +=
+#include <iostream>
+
+using namespace boost::assign;
+using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 
@@ -258,11 +259,11 @@ TEST(GaussianBayesTree, ComputeSteepestDescentPointBT) {
 
   // Compute the Hessian numerically
   Matrix hessian = numericalHessian<Vector10>(
-      boost::bind(&computeError, bt, _1), Vector10::Zero());
+      std::bind(&computeError, bt, std::placeholders::_1), Vector10::Zero());
 
   // Compute the gradient numerically
   Vector gradient = numericalGradient<Vector10>(
-      boost::bind(&computeError, bt, _1), Vector10::Zero());
+      std::bind(&computeError, bt, std::placeholders::_1), Vector10::Zero());
 
   // Compute the gradient using dense matrices
   Matrix augmentedHessian = GaussianFactorGraph(bt).augmentedHessian();
@@ -318,6 +319,35 @@ TEST(GaussianBayesTree, determinant_and_smallestEigenvalue) {
   double expectedDeterminant = sqrt(H.determinant()); // determinant computed from full matrix
   double actualDeterminant = bt->determinant();
   EXPECT_DOUBLES_EQUAL(expectedDeterminant,actualDeterminant,expectedDeterminant*1e-6);// relative tolerance
+}
+
+/* ************************************************************************* */
+/// Test to expose bug in GaussianBayesTree::logDeterminant.
+TEST(GaussianBayesTree, LogDeterminant) {
+  using symbol_shorthand::L;
+  using symbol_shorthand::X;
+
+  // Create a factor graph that will result in
+  // a bayes tree with at least 2 nodes.
+  GaussianFactorGraph fg;
+  Key x1 = X(1), x2 = X(2), l1 = L(1);
+  SharedDiagonal unit2 = noiseModel::Unit::Create(2);
+  fg += JacobianFactor(x1, 10 * I_2x2, -1.0 * Vector2::Ones(), unit2);
+  fg += JacobianFactor(x2, 10 * I_2x2, x1, -10 * I_2x2, Vector2(2.0, -1.0),
+                       unit2);
+  fg += JacobianFactor(l1, 5 * I_2x2, x1, -5 * I_2x2, Vector2(0.0, 1.0), unit2);
+  fg +=
+      JacobianFactor(x2, -5 * I_2x2, l1, 5 * I_2x2, Vector2(-1.0, 1.5), unit2);
+  fg += JacobianFactor(x3, 10 * I_2x2, x2, -10 * I_2x2, Vector2(2.0, -1.0),
+                       unit2);
+  fg += JacobianFactor(x3, 10 * I_2x2, -1.0 * Vector2::Ones(), unit2);
+
+  // create corresponding Bayes net and Bayes tree:
+  boost::shared_ptr<gtsam::GaussianBayesNet> bn = fg.eliminateSequential();
+  boost::shared_ptr<gtsam::GaussianBayesTree> bt = fg.eliminateMultifrontal();
+
+  // Test logDeterminant
+  EXPECT_DOUBLES_EQUAL(bn->logDeterminant(), bt->logDeterminant(), 1e-9);
 }
 
 /* ************************************************************************* */

@@ -15,6 +15,7 @@
  * @brief   testNonlinearFactorGraph
  * @author  Carlos Nieto
  * @author  Christian Potthast
+ * @author  Frank Dellaert
  */
 
 #include <gtsam/base/Testable.h>
@@ -104,6 +105,24 @@ TEST( NonlinearFactorGraph, probPrime )
   double actual = fg.probPrime(cfg);
   double expected = 1.0;
   DOUBLES_EQUAL(expected,actual,0);
+}
+
+/* ************************************************************************* */
+TEST(NonlinearFactorGraph, ProbPrime2) {
+  NonlinearFactorGraph fg;
+  fg.emplace_shared<PriorFactor<double>>(1, 0.0,
+                                         noiseModel::Isotropic::Sigma(1, 1.0));
+
+  Values values;
+  values.insert(1, 1.0);
+
+  // The prior factor squared error is: 0.5.
+  EXPECT_DOUBLES_EQUAL(0.5, fg.error(values), 1e-12);
+
+  // The probability value is: exp^(-factor_error) / sqrt(2 * PI)
+  // Ignore the denominator and we get: exp^(-factor_error) = exp^(-0.5)
+  double expected = exp(-0.5);
+  EXPECT_DOUBLES_EQUAL(expected, fg.probPrime(values), 1e-12);
 }
 
 /* ************************************************************************* */
@@ -285,6 +304,7 @@ TEST(testNonlinearFactorGraph, addPrior) {
   EXPECT(0 != graph.error(values));
 }
 
+/* ************************************************************************* */
 TEST(NonlinearFactorGraph, printErrors)
 {
   const NonlinearFactorGraph fg = createNonlinearFactorGraph();
@@ -307,6 +327,65 @@ TEST(NonlinearFactorGraph, printErrors)
   fg.printErrors(c,"Test graph: ", gtsam::DefaultKeyFormatter,testFilter);
 
   for (bool visit : visited) EXPECT(visit==true);
+}
+
+/* ************************************************************************* */
+TEST(NonlinearFactorGraph, dot) {
+  string expected =
+      "graph {\n"
+      "  size=\"5,5\";\n"
+      "\n"
+      "  var7782220156096217089[label=\"l1\"];\n"
+      "  var8646911284551352321[label=\"x1\"];\n"
+      "  var8646911284551352322[label=\"x2\"];\n"
+      "\n"
+      "  factor0[label=\"\", shape=point];\n"
+      "  var8646911284551352321--factor0;\n"
+      "  factor1[label=\"\", shape=point];\n"
+      "  var8646911284551352321--factor1;\n"
+      "  var8646911284551352322--factor1;\n"
+      "  factor2[label=\"\", shape=point];\n"
+      "  var8646911284551352321--factor2;\n"
+      "  var7782220156096217089--factor2;\n"
+      "  factor3[label=\"\", shape=point];\n"
+      "  var8646911284551352322--factor3;\n"
+      "  var7782220156096217089--factor3;\n"
+      "}\n";
+
+  const NonlinearFactorGraph fg = createNonlinearFactorGraph();
+  string actual = fg.dot();
+  EXPECT(actual == expected);
+}
+
+/* ************************************************************************* */
+TEST(NonlinearFactorGraph, dot_extra) {
+  string expected =
+      "graph {\n"
+      "  size=\"5,5\";\n"
+      "\n"
+      "  var7782220156096217089[label=\"l1\", pos=\"0,0!\"];\n"
+      "  var8646911284551352321[label=\"x1\", pos=\"1,0!\"];\n"
+      "  var8646911284551352322[label=\"x2\", pos=\"1,1.5!\"];\n"
+      "\n"
+      "  factor0[label=\"\", shape=point];\n"
+      "  var8646911284551352321--factor0;\n"
+      "  factor1[label=\"\", shape=point];\n"
+      "  var8646911284551352321--factor1;\n"
+      "  var8646911284551352322--factor1;\n"
+      "  factor2[label=\"\", shape=point];\n"
+      "  var8646911284551352321--factor2;\n"
+      "  var7782220156096217089--factor2;\n"
+      "  factor3[label=\"\", shape=point];\n"
+      "  var8646911284551352322--factor3;\n"
+      "  var7782220156096217089--factor3;\n"
+      "}\n";
+
+  const NonlinearFactorGraph fg = createNonlinearFactorGraph();
+  const Values c = createValues();
+
+  stringstream ss;
+  fg.dot(ss, c);
+  EXPECT(ss.str() == expected);
 }
 
 /* ************************************************************************* */

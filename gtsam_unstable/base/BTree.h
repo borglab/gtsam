@@ -17,16 +17,18 @@
  * @date Feb 3, 2010
  */
 
+#pragma once
+
 #include <stack>
 #include <sstream>
 #include <boost/shared_ptr.hpp>
-#include <boost/function.hpp>
+#include <functional>
 
 namespace gtsam {
 
   /**
    * @brief Binary tree
-   * @addtogroup base
+   * @ingroup base
    */
   template<class KEY, class VALUE>
   class BTree {
@@ -260,7 +262,7 @@ namespace gtsam {
     }
 
     /** iterate over tree */
-    void iter(boost::function<void(const KEY&, const VALUE&)> f) const {
+    void iter(std::function<void(const KEY&, const VALUE&)> f) const {
       if (!root_) return;
       left().iter(f);
       f(key(), value());
@@ -269,7 +271,7 @@ namespace gtsam {
 
     /** map key-values in tree over function f that computes a new value */
     template<class TO>
-    BTree<KEY, TO> map(boost::function<TO(const KEY&, const VALUE&)> f) const {
+    BTree<KEY, TO> map(std::function<TO(const KEY&, const VALUE&)> f) const {
       if (empty()) return BTree<KEY, TO> ();
       std::pair<KEY, TO> xd(key(), f(key(), value()));
       return BTree<KEY, TO> (left().map(f), xd, right().map(f));
@@ -282,7 +284,7 @@ namespace gtsam {
      * The associated values are passed to [f] in reverse sort order
      */
     template<class ACC>
-    ACC fold(boost::function<ACC(const KEY&, const VALUE&, const ACC&)> f,
+    ACC fold(std::function<ACC(const KEY&, const VALUE&, const ACC&)> f,
         const ACC& a) const {
       if (!root_) return a;
       ACC ar = right().fold(f, a); // fold over right subtree

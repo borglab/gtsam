@@ -90,7 +90,11 @@ class GTSAM_EXPORT PreintegratedAhrsMeasurements : public PreintegratedRotation 
 
   /**
    * Add a single Gyroscope measurement to the preintegration.
-   * @param measureOmedga Measured angular velocity (in body frame)
+   * Measurements are taken to be in the sensor
+   * frame and conversion to the body frame is handled by `body_P_sensor` in
+   * `PreintegratedRotationParams` (if provided).
+   *
+   * @param measuredOmega Measured angular velocity (as given by the sensor)
    * @param deltaT Time step
    */
   void integrateMeasurement(const Vector3& measuredOmega, double deltaT);
@@ -104,11 +108,10 @@ class GTSAM_EXPORT PreintegratedAhrsMeasurements : public PreintegratedRotation 
   static Vector DeltaAngles(const Vector& msr_gyro_t, const double msr_dt,
       const Vector3& delta_angles);
 
-  /// @deprecated constructor
+  /// @deprecated constructor, but used in tests.
   PreintegratedAhrsMeasurements(const Vector3& biasHat,
                                 const Matrix3& measuredOmegaCovariance)
-      : PreintegratedRotation(boost::make_shared<Params>()),
-        biasHat_(biasHat) {
+      : PreintegratedRotation(boost::make_shared<Params>()), biasHat_(biasHat) {
     p_->gyroscopeCovariance = measuredOmegaCovariance;
     resetIntegration();
   }
@@ -125,10 +128,10 @@ private:
   }
 };
 
-class GTSAM_EXPORT AHRSFactor: public NoiseModelFactor3<Rot3, Rot3, Vector3> {
+class GTSAM_EXPORT AHRSFactor: public NoiseModelFactorN<Rot3, Rot3, Vector3> {
 
   typedef AHRSFactor This;
-  typedef NoiseModelFactor3<Rot3, Rot3, Vector3> Base;
+  typedef NoiseModelFactorN<Rot3, Rot3, Vector3> Base;
 
   PreintegratedAhrsMeasurements _PIM_;
 
@@ -182,24 +185,26 @@ public:
 
   /// predicted states from IMU
   /// TODO(frank): relationship with PIM predict ??
-  static Rot3 Predict(
-      const Rot3& rot_i, const Vector3& bias,
-      const PreintegratedAhrsMeasurements preintegratedMeasurements);
+  static Rot3 Predict(const Rot3& rot_i, const Vector3& bias,
+                      const PreintegratedAhrsMeasurements& pim);
 
+  /// @deprecated constructor, but used in tests.
+  AHRSFactor(Key rot_i, Key rot_j, Key bias,
+             const PreintegratedAhrsMeasurements& pim,
+             const Vector3& omegaCoriolis,
+             const boost::optional<Pose3>& body_P_sensor = boost::none);
+
+  /// @deprecated static function, but used in tests.
+  static Rot3 predict(
+      const Rot3& rot_i, const Vector3& bias,
+      const PreintegratedAhrsMeasurements& pim, const Vector3& omegaCoriolis,
+      const boost::optional<Pose3>& body_P_sensor = boost::none);
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
   /// @deprecated name
   typedef PreintegratedAhrsMeasurements PreintegratedMeasurements;
 
-  /// @deprecated constructor
-  AHRSFactor(Key rot_i, Key rot_j, Key bias,
-      const PreintegratedMeasurements& preintegratedMeasurements,
-      const Vector3& omegaCoriolis,
-      const boost::optional<Pose3>& body_P_sensor = boost::none);
-
-  /// @deprecated static function
-  static Rot3 predict(const Rot3& rot_i, const Vector3& bias,
-      const PreintegratedMeasurements preintegratedMeasurements,
-      const Vector3& omegaCoriolis,
-      const boost::optional<Pose3>& body_P_sensor = boost::none);
+#endif
 
 private:
 
@@ -207,6 +212,7 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+    // NoiseModelFactor3 instead of NoiseModelFactorN for backward compatibility
     ar
         & boost::serialization::make_nvp("NoiseModelFactor3",
             boost::serialization::base_object<Base>(*this));

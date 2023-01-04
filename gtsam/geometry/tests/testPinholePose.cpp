@@ -65,8 +65,8 @@ TEST(PinholeCamera, Pose) {
   EXPECT(assert_equal(pose, camera.getPose(actualH)));
 
   // Check derivative
-  boost::function<Pose3(Camera)> f = //
-      boost::bind(&Camera::getPose,_1,boost::none);
+  std::function<Pose3(Camera)> f = //
+      std::bind(&Camera::getPose,_1,boost::none);
   Matrix numericalH = numericalDerivative11<Pose3,Camera>(f,camera);
   EXPECT(assert_equal(numericalH, actualH, 1e-9));
 }

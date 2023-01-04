@@ -50,6 +50,32 @@ The python wrapper supports keyword arguments for functions/methods. Hence, the 
     ```
 
     - Class variables are read-write so they can be updated directly in Python.
+    - For the Matlab wrapper, specifying the full property type (including namespaces) is required.
+
+    ```cpp
+    class TriangulationResult {
+      gtsam::SharedNoiseModel noiseModel;
+    };
+    ```
+
+    - If the property is part of an enum within the class, the type should be specified as `gtsam::Class::Enum`. Similarly for templated types where `This` is used, e.g. `gtsam::This::Enum`.
+
+    ```cpp
+    class TriangulationResult {
+      enum Status { VALID, DEGENERATE, BEHIND_CAMERA, OUTLIER, FAR_POINT };
+      gtsam::TriangulationResult::Status status;
+    };
+
+    template<PARAMS>
+    virtual class GncParams {
+      enum Verbosity {
+        SILENT,
+        SUMMARY,
+        VALUES
+      };
+      gtsam::This::Verbosity verbosity;
+    };
+    ```
 
 - Operator Overloading (Python only)
     - You can overload operators just like in C++.
@@ -100,7 +126,8 @@ The python wrapper supports keyword arguments for functions/methods. Hence, the 
         ```
 
 - Using classes defined in other modules
-    - If you are using a class `OtherClass` not wrapped in an interface file, add `class OtherClass;` as a forward declaration to avoid a dependency error. `OtherClass` should be in the same project.
+    - If you are using a class `OtherClass` not wrapped in an interface file, add `class OtherClass;` as a forward declaration to avoid a dependency error.
+    - `OtherClass` may not be in the same project. If this is the case, include the header for the appropriate project `#include <other_project/OtherClass.h>`.
 
 - Virtual inheritance
     - Specify fully-qualified base classes, i.e. `virtual class Derived : ns::Base {` where `ns` is the namespace.
@@ -132,9 +159,10 @@ The python wrapper supports keyword arguments for functions/methods. Hence, the 
       template<T, U> class Class2 { ... };
       typedef Class2<Type1, Type2> MyInstantiatedClass;
       ```
-    - Templates can also be defined for methods, properties and static methods.
+    - Templates can also be defined for constructors, methods, properties and static methods.
     - In the class definition, appearances of the template argument(s) will be replaced with their
       instantiated types, e.g. `void setValue(const T& value);`.
+    - Values scoped within templates are supported. E.g. one can use the form `T::Value` where T is a template, as an argument to a method.
     - To refer to the instantiation of the template class itself, use `This`, i.e. `static This Create();`.
     - To create new instantiations in other modules, you must copy-and-paste the whole class definition
       into the new module, but use only your new instantiation types.
@@ -191,12 +219,14 @@ The python wrapper supports keyword arguments for functions/methods. Hence, the 
 
    - **DO NOT** re-define an overriden function already declared in the external (forward-declared) base class. This will cause an ambiguity problem in the Pybind header file.
 
+- Splitting wrapper over multiple files
+    - The Pybind11 wrapper supports splitting the wrapping code over multiple files.
+    - To be able to use classes from another module, simply import the C++ header file in that wrapper file.
+    - Unfortunately, this means that aliases can no longer be used.
+    - Similarly, there can be multiple `preamble.h` and `specializations.h` files. Each of these should match the module file name.
 
 ### TODO
-- Default values for arguments.
-    - WORKAROUND: make multiple versions of the same function for different configurations of default arguments.
 - Handle `gtsam::Rot3M` conversions to quaternions.
 - Parse return of const ref arguments.
 - Parse `std::string` variants and convert directly to special string.
-- Add enum support.
 - Add generalized serialization support via `boost.serialization` with hooks to MATLAB save/load.

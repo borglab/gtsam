@@ -35,8 +35,8 @@ using namespace gtsam::symbol_shorthand;
 
 typedef Pose2 Pose;
 
-typedef NoiseModelFactor1<Pose> NM1;
-typedef NoiseModelFactor2<Pose,Pose> NM2;
+typedef NoiseModelFactorN<Pose> NM1;
+typedef NoiseModelFactorN<Pose,Pose> NM2;
 typedef BearingRangeFactor<Pose,Point2> BR;
 
 //GTSAM_VALUE_EXPORT(Value);
@@ -72,7 +72,7 @@ int main(int argc, char *argv[]) {
   cout << "Loading data..." << endl;
 
   gttic_(Find_datafile);
-  //string datasetFile = findExampleDataFile("w10000-odom");
+  //string datasetFile = findExampleDataFile("w10000");
   string datasetFile = findExampleDataFile("victoria_park");
   std::pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> data =
     load2D(datasetFile);
@@ -107,18 +107,18 @@ int main(int argc, char *argv[]) {
         boost::dynamic_pointer_cast<BetweenFactor<Pose> >(measurementf))
       {
         // Stop collecting measurements that are for future steps
-        if(measurement->key1() > step || measurement->key2() > step)
+        if(measurement->key<1>() > step || measurement->key<2>() > step)
           break;
 
         // Require that one of the nodes is the current one
-        if(measurement->key1() != step && measurement->key2() != step)
+        if(measurement->key<1>() != step && measurement->key<2>() != step)
           throw runtime_error("Problem in data file, out-of-sequence measurements");
 
         // Add a new factor
         newFactors.push_back(measurement);
 
         // Initialize the new variable
-        if(measurement->key1() == step && measurement->key2() == step-1) {
+        if(measurement->key<1>() == step && measurement->key<2>() == step-1) {
           if(step == 1)
             newVariables.insert(step, measurement->measured().inverse());
           else {
@@ -126,7 +126,7 @@ int main(int argc, char *argv[]) {
             newVariables.insert(step, prevPose * measurement->measured().inverse());
           }
           //        cout << "Initializing " << step << endl;
-        } else if(measurement->key2() == step && measurement->key1() == step-1) {
+        } else if(measurement->key<2>() == step && measurement->key<1>() == step-1) {
           if(step == 1)
             newVariables.insert(step, measurement->measured());
           else {

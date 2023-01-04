@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    matlab.h
+ * @file    utilities.h
  * @brief   Contains *generic* global functions designed particularly for the matlab interface
  * @author  Stephen Williams
  */
@@ -20,6 +20,7 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/slam/ProjectionFactor.h>
 #include <gtsam/linear/Sampler.h>
+#include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/Values.h>
@@ -89,21 +90,41 @@ KeySet createKeySet(std::string s, const Vector& I) {
 
 /// Extract all Point2 values into a single matrix [x y]
 Matrix extractPoint2(const Values& values) {
+  Values::ConstFiltered<gtsam::Point2> points = values.filter<gtsam::Point2>();
+  // Point2 is aliased as a gtsam::Vector in the wrapper
+  Values::ConstFiltered<gtsam::Vector> points2 = values.filter<gtsam::Vector>();
+
+  Matrix result(points.size() + points2.size(), 2);
+
   size_t j = 0;
-  Values::ConstFiltered<Point2> points = values.filter<Point2>();
-  Matrix result(points.size(), 2);
-  for(const auto& key_value: points)
+  for (const auto& key_value : points) {
     result.row(j++) = key_value.value;
+  }
+  for (const auto& key_value : points2) {
+    if (key_value.value.rows() == 2) {
+      result.row(j++) = key_value.value;
+    }
+  }
   return result;
 }
 
 /// Extract all Point3 values into a single matrix [x y z]
 Matrix extractPoint3(const Values& values) {
-  Values::ConstFiltered<Point3> points = values.filter<Point3>();
-  Matrix result(points.size(), 3);
+  Values::ConstFiltered<gtsam::Point3> points = values.filter<gtsam::Point3>();
+  // Point3 is aliased as a gtsam::Vector in the wrapper
+  Values::ConstFiltered<gtsam::Vector> points2 = values.filter<gtsam::Vector>();
+
+  Matrix result(points.size() + points2.size(), 3);
+
   size_t j = 0;
-  for(const auto& key_value: points)
+  for (const auto& key_value : points) {
     result.row(j++) = key_value.value;
+  }
+  for (const auto& key_value : points2) {
+    if (key_value.value.rows() == 3) {
+      result.row(j++) = key_value.value;
+    }
+  }
   return result;
 }
 
@@ -142,13 +163,48 @@ Matrix extractPose3(const Values& values) {
   return result;
 }
 
+/// Extract all Vector values with a given symbol character into an mxn matrix,
+/// where m is the number of symbols that match the character and n is the
+/// dimension of the variables.  If not all variables have dimension n, then a
+/// runtime error will be thrown.  The order of returned values are sorted by
+/// the symbol.
+/// For example, calling extractVector(values, 'x'), where values contains 200
+/// variables x1, x2, ..., x200 of type Vector each 5-dimensional, will return a
+/// 200x5 matrix with row i containing xi.
+Matrix extractVectors(const Values& values, char c) {
+  Values::ConstFiltered<Vector> vectors =
+      values.filter<Vector>(Symbol::ChrTest(c));
+  if (vectors.size() == 0) {
+    return Matrix();
+  }
+  auto dim = vectors.begin()->value.size();
+  Matrix result(vectors.size(), dim);
+  Eigen::Index rowi = 0;
+  for (const auto& kv : vectors) {
+    if (kv.value.size() != dim) {
+      throw std::runtime_error(
+          "Tried to extract different-sized vectors into a single matrix");
+    }
+    result.row(rowi) = kv.value;
+    ++rowi;
+  }
+  return result;
+}
+
 /// Perturb all Point2 values using normally distributed noise
 void perturbPoint2(Values& values, double sigma, int32_t seed = 42u) {
-  noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(2,
-      sigma);
+  noiseModel::Isotropic::shared_ptr model =
+      noiseModel::Isotropic::Sigma(2, sigma);
   Sampler sampler(model, seed);
-  for(const auto& key_value: values.filter<Point2>()) {
-    values.update<Point2>(key_value.key, key_value.value + Point2(sampler.sample()));
+  for (const auto& key_value : values.filter<Point2>()) {
+    values.update<Point2>(key_value.key,
+                          key_value.value + Point2(sampler.sample()));
+  }
+  for (const auto& key_value : values.filter<gtsam::Vector>()) {
+    if (key_value.value.rows() == 2) {
+      values.update<gtsam::Vector>(key_value.key,
+                                   key_value.value + Point2(sampler.sample()));
+    }
   }
 }
 
@@ -165,19 +221,34 @@ void perturbPose2(Values& values, double sigmaT, double sigmaR, int32_t seed =
 
 /// Perturb all Point3 values using normally distributed noise
 void perturbPoint3(Values& values, double sigma, int32_t seed = 42u) {
-  noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(3,
-      sigma);
+  noiseModel::Isotropic::shared_ptr model =
+      noiseModel::Isotropic::Sigma(3, sigma);
   Sampler sampler(model, seed);
-  for(const auto& key_value: values.filter<Point3>()) {
-    values.update<Point3>(key_value.key, key_value.value + Point3(sampler.sample()));
+  for (const auto& key_value : values.filter<Point3>()) {
+    values.update<Point3>(key_value.key,
+                          key_value.value + Point3(sampler.sample()));
+  }
+  for (const auto& key_value : values.filter<gtsam::Vector>()) {
+    if (key_value.value.rows() == 3) {
+      values.update<gtsam::Vector>(key_value.key,
+                                   key_value.value + Point3(sampler.sample()));
+    }
   }
 }
 
-/// Insert a number of initial point values by backprojecting
+/**
+ * @brief Insert a number of initial point values by backprojecting
+ * 
+ * @param values The values dict to insert the backprojections to.
+ * @param camera The camera model.
+ * @param J Vector of key indices.
+ * @param Z 2*J matrix of pixel values.
+ * @param depth Initial depth value.
+ */
 void insertBackprojections(Values& values, const PinholeCamera<Cal3_S2>& camera,
     const Vector& J, const Matrix& Z, double depth) {
   if (Z.rows() != 2)
-    throw std::invalid_argument("insertBackProjections: Z must be 2*K");
+    throw std::invalid_argument("insertBackProjections: Z must be 2*J");
   if (Z.cols() != J.size())
     throw std::invalid_argument(
         "insertBackProjections: J and Z must have same number of entries");
@@ -188,7 +259,17 @@ void insertBackprojections(Values& values, const PinholeCamera<Cal3_S2>& camera,
   }
 }
 
-/// Insert multiple projection factors for a single pose key
+/**
+ * @brief Insert multiple projection factors for a single pose key
+ * 
+ * @param graph The nonlinear factor graph to add the factors to.
+ * @param i Camera key.
+ * @param J Vector of key indices.
+ * @param Z 2*J matrix of pixel values.
+ * @param model Factor noise model.
+ * @param K Calibration matrix.
+ * @param body_P_sensor Pose of the camera sensor in the body frame.
+ */
 void insertProjectionFactors(NonlinearFactorGraph& graph, Key i,
     const Vector& J, const Matrix& Z, const SharedNoiseModel& model,
     const Cal3_S2::shared_ptr K, const Pose3& body_P_sensor = Pose3()) {
@@ -259,31 +340,6 @@ Values localToWorld(const Values& local, const Pose2& base,
 }
 
 } // namespace utilities
-
-/**
- * For Python __str__().
- * Redirect std cout to a string stream so we can return a string representation
- * of an object when it prints to cout.
- * https://stackoverflow.com/questions/5419356/redirect-stdout-stderr-to-a-string
- */
-struct RedirectCout {
-  /// constructor -- redirect stdout buffer to a stringstream buffer
-  RedirectCout() : ssBuffer_(), coutBuffer_(std::cout.rdbuf(ssBuffer_.rdbuf())) {}
-
-  /// return the string
-  std::string str() const {
-    return ssBuffer_.str();
-  }
-
-  /// destructor -- redirect stdout buffer to its original buffer
-  ~RedirectCout() {
-    std::cout.rdbuf(coutBuffer_);
-  }
-
-private:
-  std::stringstream ssBuffer_;
-  std::streambuf* coutBuffer_;
-};
 
 }
 

@@ -1,7 +1,4 @@
-# -*- coding: utf-8 -*-
 import pytest
-
-import env  # noqa: F401
 
 from pybind11_tests import stl_binders as m
 
@@ -45,7 +42,7 @@ def test_vector_int():
 
     # test error handling, and that the vector is unchanged
     with pytest.raises(RuntimeError):
-        v_int2.extend([8, 'a'])
+        v_int2.extend([8, "a"])
 
     assert v_int2 == m.VectorInt([0, 99, 2, 3, 4, 5, 6, 7])
 
@@ -75,18 +72,13 @@ def test_vector_buffer():
     assert v[1] == 2
     v[2] = 5
     mv = memoryview(v)  # We expose the buffer interface
-    if not env.PY2:
-        assert mv[2] == 5
-        mv[2] = 6
-    else:
-        assert mv[2] == '\x05'
-        mv[2] = '\x06'
+    assert mv[2] == 5
+    mv[2] = 6
     assert v[2] == 6
 
-    if not env.PY2:
-        mv = memoryview(b)
-        v = m.VectorUChar(mv[::2])
-        assert v[1] == 3
+    mv = memoryview(b)
+    v = m.VectorUChar(mv[::2])
+    assert v[1] == 3
 
     with pytest.raises(RuntimeError) as excinfo:
         m.create_undeclstruct()  # Undeclared struct contents, no buffer interface
@@ -114,11 +106,17 @@ def test_vector_buffer_numpy():
     v = m.get_vectorstruct()
     assert v[0].x == 5
     ma = np.asarray(v)
-    ma[1]['x'] = 99
+    ma[1]["x"] = 99
     assert v[1].x == 99
 
-    v = m.VectorStruct(np.zeros(3, dtype=np.dtype([('w', 'bool'), ('x', 'I'),
-                                                   ('y', 'float64'), ('z', 'bool')], align=True)))
+    v = m.VectorStruct(
+        np.zeros(
+            3,
+            dtype=np.dtype(
+                [("w", "bool"), ("x", "I"), ("y", "float64"), ("z", "bool")], align=True
+            ),
+        )
+    )
     assert len(v) == 3
 
     b = np.array([1, 2, 3, 4], dtype=np.uint8)
@@ -151,31 +149,59 @@ def test_vector_custom():
 
 def test_map_string_double():
     mm = m.MapStringDouble()
-    mm['a'] = 1
-    mm['b'] = 2.5
+    mm["a"] = 1
+    mm["b"] = 2.5
 
-    assert list(mm) == ['a', 'b']
-    assert list(mm.items()) == [('a', 1), ('b', 2.5)]
+    assert list(mm) == ["a", "b"]
     assert str(mm) == "MapStringDouble{a: 1, b: 2.5}"
+    assert "b" in mm
+    assert "c" not in mm
+    assert 123 not in mm
+
+    # Check that keys, values, items are views, not merely iterable
+    keys = mm.keys()
+    values = mm.values()
+    items = mm.items()
+    assert list(keys) == ["a", "b"]
+    assert len(keys) == 2
+    assert "a" in keys
+    assert "c" not in keys
+    assert 123 not in keys
+    assert list(items) == [("a", 1), ("b", 2.5)]
+    assert len(items) == 2
+    assert ("b", 2.5) in items
+    assert "hello" not in items
+    assert ("b", 2.5, None) not in items
+    assert list(values) == [1, 2.5]
+    assert len(values) == 2
+    assert 1 in values
+    assert 2 not in values
+    # Check that views update when the map is updated
+    mm["c"] = -1
+    assert list(keys) == ["a", "b", "c"]
+    assert list(values) == [1, 2.5, -1]
+    assert list(items) == [("a", 1), ("b", 2.5), ("c", -1)]
 
     um = m.UnorderedMapStringDouble()
-    um['ua'] = 1.1
-    um['ub'] = 2.6
+    um["ua"] = 1.1
+    um["ub"] = 2.6
 
-    assert sorted(list(um)) == ['ua', 'ub']
-    assert sorted(list(um.items())) == [('ua', 1.1), ('ub', 2.6)]
+    assert sorted(list(um)) == ["ua", "ub"]
+    assert list(um.keys()) == list(um)
+    assert sorted(list(um.items())) == [("ua", 1.1), ("ub", 2.6)]
+    assert list(zip(um.keys(), um.values())) == list(um.items())
     assert "UnorderedMapStringDouble" in str(um)
 
 
 def test_map_string_double_const():
     mc = m.MapStringDoubleConst()
-    mc['a'] = 10
-    mc['b'] = 20.5
+    mc["a"] = 10
+    mc["b"] = 20.5
     assert str(mc) == "MapStringDoubleConst{a: 10, b: 20.5}"
 
     umc = m.UnorderedMapStringDoubleConst()
-    umc['a'] = 11
-    umc['b'] = 21.5
+    umc["a"] = 11
+    umc["b"] = 21.5
 
     str(umc)
 
@@ -196,7 +222,7 @@ def test_noncopyable_containers():
 
     i = 1
     for j in dnc:
-        assert(j.value == i)
+        assert j.value == i
         i += 1
 
     # std::map
@@ -265,21 +291,21 @@ def test_noncopyable_containers():
 
 def test_map_delitem():
     mm = m.MapStringDouble()
-    mm['a'] = 1
-    mm['b'] = 2.5
+    mm["a"] = 1
+    mm["b"] = 2.5
 
-    assert list(mm) == ['a', 'b']
-    assert list(mm.items()) == [('a', 1), ('b', 2.5)]
-    del mm['a']
-    assert list(mm) == ['b']
-    assert list(mm.items()) == [('b', 2.5)]
+    assert list(mm) == ["a", "b"]
+    assert list(mm.items()) == [("a", 1), ("b", 2.5)]
+    del mm["a"]
+    assert list(mm) == ["b"]
+    assert list(mm.items()) == [("b", 2.5)]
 
     um = m.UnorderedMapStringDouble()
-    um['ua'] = 1.1
-    um['ub'] = 2.6
+    um["ua"] = 1.1
+    um["ub"] = 2.6
 
-    assert sorted(list(um)) == ['ua', 'ub']
-    assert sorted(list(um.items())) == [('ua', 1.1), ('ub', 2.6)]
-    del um['ua']
-    assert sorted(list(um)) == ['ub']
-    assert sorted(list(um.items())) == [('ub', 2.6)]
+    assert sorted(list(um)) == ["ua", "ub"]
+    assert sorted(list(um.items())) == [("ua", 1.1), ("ub", 2.6)]
+    del um["ua"]
+    assert sorted(list(um)) == ["ub"]
+    assert sorted(list(um.items())) == [("ub", 2.6)]

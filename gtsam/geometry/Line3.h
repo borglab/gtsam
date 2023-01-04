@@ -21,12 +21,27 @@
 
 namespace gtsam {
 
+class Line3;
+
+/**
+ * Transform a line from world to camera frame
+ * @param wTc - Pose3 of camera in world frame
+ * @param wL - Line3 in world frame
+ * @param Dpose - OptionalJacobian of transformed line with respect to p
+ * @param Dline -  OptionalJacobian of transformed line with respect to l
+ * @return Transformed line in camera frame
+ */
+GTSAM_EXPORT Line3 transformTo(const Pose3 &wTc, const Line3 &wL,
+                  OptionalJacobian<4, 6> Dpose = boost::none,
+                  OptionalJacobian<4, 4> Dline = boost::none);
+
+
 /**
  * A 3D line (R,a,b) : (Rot3,Scalar,Scalar)
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  */
-class Line3 {
+class GTSAM_EXPORT Line3 {
  private:
   Rot3 R_;    // Rotation of line about x and y in world frame
   double a_, b_;  // Intersection of line with the world x-y plane rotated by R_
@@ -135,18 +150,6 @@ class Line3 {
                            OptionalJacobian<4, 6> Dpose,
                            OptionalJacobian<4, 4> Dline);
 };
-
-/**
- * Transform a line from world to camera frame
- * @param wTc - Pose3 of camera in world frame
- * @param wL - Line3 in world frame
- * @param Dpose - OptionalJacobian of transformed line with respect to p
- * @param Dline -  OptionalJacobian of transformed line with respect to l
- * @return Transformed line in camera frame
- */
-Line3 transformTo(const Pose3 &wTc, const Line3 &wL,
-                  OptionalJacobian<4, 6> Dpose = boost::none,
-                  OptionalJacobian<4, 4> Dline = boost::none);
 
 template<>
 struct traits<Line3> : public internal::Manifold<Line3> {};

@@ -17,12 +17,14 @@
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/base/numericalDerivative.h>
 
+#include <boost/bind/bind.hpp>
+
 namespace gtsam {
 
 /**
  * Binary factor representing a visual measurement using an inverse-depth parameterization
  */
-class InvDepthFactorVariant1: public NoiseModelFactor2<Pose3, Vector6> {
+class InvDepthFactorVariant1: public NoiseModelFactorN<Pose3, Vector6> {
 protected:
 
   // Keep a copy of measurement and calibration for I/O
@@ -32,7 +34,7 @@ protected:
 public:
 
   /// shorthand for base class type
-  typedef NoiseModelFactor2<Pose3, Vector6> Base;
+  typedef NoiseModelFactorN<Pose3, Vector6> Base;
 
   /// shorthand for this class
   typedef InvDepthFactorVariant1 This;
@@ -91,8 +93,8 @@ public:
       return camera.project(world_P_landmark) - measured_;
     } catch( CheiralityException& e) {
       std::cout << e.what()
-          << ": Inverse Depth Landmark [" << DefaultKeyFormatter(this->key2()) << "]"
-          << " moved behind camera [" << DefaultKeyFormatter(this->key1()) <<"]"
+          << ": Inverse Depth Landmark [" << DefaultKeyFormatter(this->key<2>()) << "]"
+          << " moved behind camera [" << DefaultKeyFormatter(this->key<1>()) <<"]"
           << std::endl;
       return Vector::Ones(2) * 2.0 * K_->fx();
     }
@@ -106,13 +108,14 @@ public:
 
     if (H1) {
       (*H1) = numericalDerivative11<Vector, Pose3>(
-          boost::bind(&InvDepthFactorVariant1::inverseDepthError, this, _1,
-              landmark), pose);
+          std::bind(&InvDepthFactorVariant1::inverseDepthError, this,
+                      std::placeholders::_1, landmark),
+          pose);
     }
     if (H2) {
       (*H2) = numericalDerivative11<Vector, Vector6>(
-          boost::bind(&InvDepthFactorVariant1::inverseDepthError, this, pose,
-              _1), landmark);
+          std::bind(&InvDepthFactorVariant1::inverseDepthError, this, pose,
+              std::placeholders::_1), landmark);
     }
 
     return inverseDepthError(pose, landmark);

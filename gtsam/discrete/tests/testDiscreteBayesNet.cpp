@@ -26,11 +26,6 @@
 #include <CppUnitLite/TestHarness.h>
 
 
-#include <boost/assign/list_inserter.hpp>
-#include <boost/assign/std/map.hpp>
-
-using namespace boost::assign;
-
 #include <iostream>
 #include <string>
 #include <vector>
@@ -38,21 +33,26 @@ using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 
+static const DiscreteKey Asia(0, 2), Smoking(4, 2), Tuberculosis(3, 2),
+    LungCancer(6, 2), Bronchitis(7, 2), Either(5, 2), XRay(2, 2), Dyspnea(1, 2);
+
+using ADT = AlgebraicDecisionTree<Key>;
+
 /* ************************************************************************* */
 TEST(DiscreteBayesNet, bayesNet) {
   DiscreteBayesNet bayesNet;
   DiscreteKey Parent(0, 2), Child(1, 2);
 
   auto prior = boost::make_shared<DiscreteConditional>(Parent % "6/4");
-  CHECK(assert_equal(Potentials::ADT({Parent}, "0.6 0.4"),
-                     (Potentials::ADT)*prior));
+  CHECK(assert_equal(ADT({Parent}, "0.6 0.4"),
+                     (ADT)*prior));
   bayesNet.push_back(prior);
 
   auto conditional =
       boost::make_shared<DiscreteConditional>(Child | Parent = "7/3 8/2");
   EXPECT_LONGS_EQUAL(1, *(conditional->beginFrontals()));
-  Potentials::ADT expected(Child & Parent, "0.7 0.8 0.3 0.2");
-  CHECK(assert_equal(expected, (Potentials::ADT)*conditional));
+  ADT expected(Child & Parent, "0.7 0.8 0.3 0.2");
+  CHECK(assert_equal(expected, (ADT)*conditional));
   bayesNet.push_back(conditional);
 
   DiscreteFactorGraph fg(bayesNet);
@@ -71,11 +71,9 @@ TEST(DiscreteBayesNet, bayesNet) {
 /* ************************************************************************* */
 TEST(DiscreteBayesNet, Asia) {
   DiscreteBayesNet asia;
-  DiscreteKey Asia(0, 2), Smoking(4, 2), Tuberculosis(3, 2), LungCancer(6, 2),
-      Bronchitis(7, 2), Either(5, 2), XRay(2, 2), Dyspnea(1, 2);
 
-  asia.add(Asia % "99/1");
-  asia.add(Smoking % "50/50");
+  asia.add(Asia, "99/1");
+  asia.add(Smoking % "50/50");  // Signature version
 
   asia.add(Tuberculosis | Asia = "99/1 95/5");
   asia.add(LungCancer | Smoking = "99/1 90/10");
@@ -103,39 +101,26 @@ TEST(DiscreteBayesNet, Asia) {
   DiscreteConditional expected2(Bronchitis % "11/9");
   EXPECT(assert_equal(expected2, *chordal->back()));
 
-  // solve
-  DiscreteFactor::sharedValues actualMPE = chordal->optimize();
-  DiscreteFactor::Values expectedMPE;
-  insert(expectedMPE)(Asia.first, 0)(Dyspnea.first, 0)(XRay.first, 0)(
-      Tuberculosis.first, 0)(Smoking.first, 0)(Either.first, 0)(
-      LungCancer.first, 0)(Bronchitis.first, 0);
-  EXPECT(assert_equal(expectedMPE, *actualMPE));
-
   // add evidence, we were in Asia and we have dyspnea
   fg.add(Asia, "0 1");
   fg.add(Dyspnea, "0 1");
 
   // solve again, now with evidence
   DiscreteBayesNet::shared_ptr chordal2 = fg.eliminateSequential(ordering);
-  DiscreteFactor::sharedValues actualMPE2 = chordal2->optimize();
-  DiscreteFactor::Values expectedMPE2;
-  insert(expectedMPE2)(Asia.first, 1)(Dyspnea.first, 1)(XRay.first, 0)(
-      Tuberculosis.first, 0)(Smoking.first, 1)(Either.first, 0)(
-      LungCancer.first, 0)(Bronchitis.first, 1);
-  EXPECT(assert_equal(expectedMPE2, *actualMPE2));
+  EXPECT(assert_equal(expected2, *chordal->back()));
 
   // now sample from it
-  DiscreteFactor::Values expectedSample;
+  DiscreteValues expectedSample{{Asia.first, 1},       {Dyspnea.first, 1},
+                                {XRay.first, 1},       {Tuberculosis.first, 0},
+                                {Smoking.first, 1},    {Either.first, 1},
+                                {LungCancer.first, 1}, {Bronchitis.first, 0}};
   SETDEBUG("DiscreteConditional::sample", false);
-  insert(expectedSample)(Asia.first, 1)(Dyspnea.first, 1)(XRay.first, 1)(
-      Tuberculosis.first, 0)(Smoking.first, 1)(Either.first, 1)(
-      LungCancer.first, 1)(Bronchitis.first, 0);
-  DiscreteFactor::sharedValues actualSample = chordal2->sample();
-  EXPECT(assert_equal(expectedSample, *actualSample));
+  auto actualSample = chordal2->sample();
+  EXPECT(assert_equal(expectedSample, actualSample));
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(DiscreteBayesNet, Sugar) {
+TEST(DiscreteBayesNet, Sugar) {
   DiscreteKey T(0, 2), L(1, 2), E(2, 2), C(8, 3), S(7, 2);
 
   DiscreteBayesNet bn;
@@ -147,6 +132,60 @@ TEST_UNSAFE(DiscreteBayesNet, Sugar) {
   // try multivalued
   bn.add(C % "1/1/2");
   bn.add(C | S = "1/1/2 5/2/3");
+}
+
+/* ************************************************************************* */
+TEST(DiscreteBayesNet, Dot) {
+  DiscreteBayesNet fragment;
+  fragment.add(Asia % "99/1");
+  fragment.add(Smoking % "50/50");
+
+  fragment.add(Tuberculosis | Asia = "99/1 95/5");
+  fragment.add(LungCancer | Smoking = "99/1 90/10");
+  fragment.add((Either | Tuberculosis, LungCancer) = "F T T T");
+
+  string actual = fragment.dot();
+  EXPECT(actual ==
+         "digraph {\n"
+         "  size=\"5,5\";\n"
+         "\n"
+         "  var0[label=\"0\"];\n"
+         "  var3[label=\"3\"];\n"
+         "  var4[label=\"4\"];\n"
+         "  var5[label=\"5\"];\n"
+         "  var6[label=\"6\"];\n"
+         "\n"
+         "  var3->var5\n"
+         "  var6->var5\n"
+         "  var4->var6\n"
+         "  var0->var3\n"
+         "}");
+}
+
+/* ************************************************************************* */
+// Check markdown representation looks as expected.
+TEST(DiscreteBayesNet, markdown) {
+  DiscreteBayesNet fragment;
+  fragment.add(Asia % "99/1");
+  fragment.add(Smoking | Asia = "8/2 7/3");
+
+  string expected =
+      "`DiscreteBayesNet` of size 2\n"
+      "\n"
+      " *P(Asia):*\n\n"
+      "|Asia|value|\n"
+      "|:-:|:-:|\n"
+      "|0|0.99|\n"
+      "|1|0.01|\n"
+      "\n"
+      " *P(Smoking|Asia):*\n\n"
+      "|*Asia*|0|1|\n"
+      "|:-:|:-:|:-:|\n"
+      "|0|0.8|0.2|\n"
+      "|1|0.7|0.3|\n\n";
+  auto formatter = [](Key key) { return key == 0 ? "Asia" : "Smoking"; };
+  string actual = fragment.markdown(formatter);
+  EXPECT(actual == expected);
 }
 
 /* ************************************************************************* */

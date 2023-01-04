@@ -26,7 +26,7 @@ namespace gtsam {
    * A class for downdating an existing factor from a graph. The AntiFactor returns the same
    * linearized Hessian matrices of the original factor, but with the opposite sign. This effectively
    * cancels out any affects of the original factor during optimization."
-   * @addtogroup SLAM
+   * @ingroup slam
    */
   class AntiFactor: public NonlinearFactor {
 

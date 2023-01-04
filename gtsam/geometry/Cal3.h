@@ -16,7 +16,7 @@
  */
 
 /**
- * @addtogroup geometry
+ * @ingroup geometry
  */
 
 #pragma once
@@ -63,7 +63,7 @@ void calibrateJacobians(const Cal& calibration, const Point2& pn,
 
 /**
  * @brief Common base class for all calibration models.
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  */
 class GTSAM_EXPORT Cal3 {
@@ -170,9 +170,9 @@ class GTSAM_EXPORT Cal3 {
     return K;
   }
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
   /** @deprecated The following function has been deprecated, use K above */
-  Matrix3 matrix() const { return K(); }
+  Matrix3 GTSAM_DEPRECATED matrix() const { return K(); }
 #endif
 
   /// Return inverted calibration matrix inv(K)

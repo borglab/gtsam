@@ -18,7 +18,7 @@
  */
 
 /**
- * @addtogroup geometry
+ * @ingroup geometry
  */
 
 #pragma once
@@ -30,7 +30,7 @@ namespace gtsam {
 /**
  * @brief Calibration of a omni-directional camera with mirror + lens radial
  * distortion
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  *
  * Similar to Cal3DS2, does distortion but has additional mirror parameter xi
@@ -51,6 +51,9 @@ class GTSAM_EXPORT Cal3Unified : public Cal3DS2_Base {
 
  public:
   enum { dimension = 10 };
+
+  ///< shared pointer to stereo calibration object
+  using shared_ptr = boost::shared_ptr<Cal3Unified>;
 
   /// @name Standard Constructors
   /// @{

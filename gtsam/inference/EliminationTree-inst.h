@@ -10,7 +10,7 @@
 * -------------------------------------------------------------------------- */
 
 /**
-* @file    EliminationTree-inl.h
+* @file    EliminationTree-inst.h
 * @author  Frank Dellaert
 * @author  Richard Roberts
 * @date    Oct 13, 2010
@@ -18,7 +18,6 @@
 #pragma once
 
 #include <boost/make_shared.hpp>
-#include <boost/bind.hpp>
 #include <stack>
 
 #include <gtsam/base/timing.h>

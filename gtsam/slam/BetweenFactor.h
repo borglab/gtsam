@@ -34,10 +34,10 @@ namespace gtsam {
   /**
    * A class for a measurement predicted by "between(config[key1],config[key2])"
    * @tparam VALUE the Value type
-   * @addtogroup SLAM
+   * @ingroup slam
    */
   template<class VALUE>
-  class BetweenFactor: public NoiseModelFactor2<VALUE, VALUE> {
+  class BetweenFactor: public NoiseModelFactorN<VALUE, VALUE> {
 
     // Check that VALUE type is a testable Lie group
     BOOST_CONCEPT_ASSERT((IsTestable<VALUE>));
@@ -50,7 +50,7 @@ namespace gtsam {
   private:
 
     typedef BetweenFactor<VALUE> This;
-    typedef NoiseModelFactor2<VALUE, VALUE> Base;
+    typedef NoiseModelFactorN<VALUE, VALUE> Base;
 
     VALUE measured_; /** The measurement */
 
@@ -58,6 +58,9 @@ namespace gtsam {
 
     // shorthand for a smart pointer to a factor
     typedef typename boost::shared_ptr<BetweenFactor> shared_ptr;
+
+    /// @name Standard Constructors
+    /// @{
 
     /** default constructor - only use for serialization */
     BetweenFactor() {}
@@ -68,6 +71,8 @@ namespace gtsam {
       Base(model, key1, key2), measured_(measured) {
     }
 
+    /// @}
+
     ~BetweenFactor() override {}
 
     /// @return a deep copy of this factor
@@ -75,15 +80,16 @@ namespace gtsam {
       return boost::static_pointer_cast<gtsam::NonlinearFactor>(
           gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
-    /// @}
     /// @name Testable
     /// @{
 
     /// print with optional string
-    void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
+    void print(
+        const std::string& s = "",
+        const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
       std::cout << s << "BetweenFactor("
-          << keyFormatter(this->key1()) << ","
-          << keyFormatter(this->key2()) << ")\n";
+          << keyFormatter(this->template key<1>()) << ","
+          << keyFormatter(this->template key<2>()) << ")\n";
       traits<T>::Print(measured_, "  measured: ");
       this->noiseModel_->print("  noise model: ");
     }
@@ -95,7 +101,7 @@ namespace gtsam {
     }
 
     /// @}
-    /// @name NoiseModelFactor2 methods 
+    /// @name NoiseModelFactorN methods 
     /// @{
 
     /// evaluate error, returns vector of errors size of tangent space
@@ -103,7 +109,7 @@ namespace gtsam {
       boost::none, boost::optional<Matrix&> H2 = boost::none) const override {
       T hx = traits<T>::Between(p1, p2, H1, H2); // h(x)
       // manifold equivalent of h(x)-z -> log(z,h(x))
-#ifdef SLOW_BUT_CORRECT_BETWEENFACTOR
+#ifdef GTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR
       typename traits<T>::ChartJacobian::Jacobian Hlocal;
       Vector rval = traits<T>::Local(measured_, hx, boost::none, (H1 || H2) ? &Hlocal : 0);
       if (H1) *H1 = Hlocal * (*H1);
@@ -130,6 +136,7 @@ namespace gtsam {
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+      // NoiseModelFactor2 instead of NoiseModelFactorN for backward compatibility
       ar & boost::serialization::make_nvp("NoiseModelFactor2",
           boost::serialization::base_object<Base>(*this));
       ar & BOOST_SERIALIZATION_NVP(measured_);

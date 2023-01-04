@@ -32,6 +32,8 @@ endif()
 print_build_options_for_target(gtsam)
 
 print_config("Use System Eigen" "${GTSAM_USE_SYSTEM_EIGEN} (Using version: ${GTSAM_EIGEN_VERSION})")
+print_config("Use System Metis" "${GTSAM_USE_SYSTEM_METIS}")
+print_config("Using Boost version" "${Boost_VERSION}")
 
 if(GTSAM_USE_TBB)
     print_config("Use Intel TBB" "Yes (Version: ${TBB_VERSION})")
@@ -85,7 +87,7 @@ print_enabled_config(${GTSAM_USE_QUATERNIONS}             "Quaternions as defaul
 print_enabled_config(${GTSAM_ENABLE_CONSISTENCY_CHECKS}   "Runtime consistency checking    ")
 print_enabled_config(${GTSAM_ROT3_EXPMAP}                 "Rot3 retract is full ExpMap     ")
 print_enabled_config(${GTSAM_POSE3_EXPMAP}                "Pose3 retract is full ExpMap    ")
-print_enabled_config(${GTSAM_ALLOW_DEPRECATED_SINCE_V41}  "Allow features deprecated in GTSAM 4.1")
+print_enabled_config(${GTSAM_ALLOW_DEPRECATED_SINCE_V42}  "Allow features deprecated in GTSAM 4.1")
 print_enabled_config(${GTSAM_SUPPORT_NESTED_DISSECTION}   "Metis-based Nested Dissection   ")
 print_enabled_config(${GTSAM_TANGENT_PREINTEGRATION}      "Use tangent-space preintegration")
 

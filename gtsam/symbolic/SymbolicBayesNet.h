@@ -19,19 +19,19 @@
 #pragma once
 
 #include <gtsam/symbolic/SymbolicConditional.h>
+#include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/base/types.h>
 
 namespace gtsam {
 
-  /** Symbolic Bayes Net
-   *  \nosubgrouping
+  /** 
+   * A SymbolicBayesNet is a Bayes Net of purely symbolic conditionals.
+   * @ingroup symbolic
    */
-  class SymbolicBayesNet : public FactorGraph<SymbolicConditional> {
-
-  public:
-
-    typedef FactorGraph<SymbolicConditional> Base;
+  class SymbolicBayesNet : public BayesNet<SymbolicConditional> {
+   public:
+    typedef BayesNet<SymbolicConditional> Base;
     typedef SymbolicBayesNet This;
     typedef SymbolicConditional ConditionalType;
     typedef boost::shared_ptr<This> shared_ptr;
@@ -44,16 +44,21 @@ namespace gtsam {
     SymbolicBayesNet() {}
 
     /** Construct from iterator over conditionals */
-    template<typename ITERATOR>
-    SymbolicBayesNet(ITERATOR firstConditional, ITERATOR lastConditional) : Base(firstConditional, lastConditional) {}
+    template <typename ITERATOR>
+    SymbolicBayesNet(ITERATOR firstConditional, ITERATOR lastConditional)
+        : Base(firstConditional, lastConditional) {}
 
     /** Construct from container of factors (shared_ptr or plain objects) */
-    template<class CONTAINER>
-    explicit SymbolicBayesNet(const CONTAINER& conditionals) : Base(conditionals) {}
+    template <class CONTAINER>
+    explicit SymbolicBayesNet(const CONTAINER& conditionals) {
+      push_back(conditionals);
+    }
 
-    /** Implicit copy/downcast constructor to override explicit template container constructor */
-    template<class DERIVEDCONDITIONAL>
-    SymbolicBayesNet(const FactorGraph<DERIVEDCONDITIONAL>& graph) : Base(graph) {}
+    /** Implicit copy/downcast constructor to override explicit template
+     * container constructor */
+    template <class DERIVEDCONDITIONAL>
+    explicit SymbolicBayesNet(const FactorGraph<DERIVEDCONDITIONAL>& graph)
+        : Base(graph) {}
 
     /// Destructor
     virtual ~SymbolicBayesNet() {}
@@ -72,13 +77,6 @@ namespace gtsam {
         const KeyFormatter& formatter = DefaultKeyFormatter) const override {
       Base::print(s, formatter);
     }
-
-    /// @}
-
-    /// @name Standard Interface
-    /// @{
-
-    GTSAM_EXPORT void saveGraph(const std::string &s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
     /// @}
 

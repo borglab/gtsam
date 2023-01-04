@@ -25,14 +25,14 @@ namespace gtsam {
 
 /**
  * Binary factor between two Pose3 variables induced by an EssentialMatrix measurement
- * @addtogroup SLAM
+ * @ingroup slam
  */
-class GTSAM_EXPORT EssentialMatrixConstraint: public NoiseModelFactor2<Pose3, Pose3> {
+class GTSAM_EXPORT EssentialMatrixConstraint: public NoiseModelFactorN<Pose3, Pose3> {
 
 private:
 
   typedef EssentialMatrixConstraint This;
-  typedef NoiseModelFactor2<Pose3, Pose3> Base;
+  typedef NoiseModelFactorN<Pose3, Pose3> Base;
 
   EssentialMatrix measuredE_; /** The measurement is an essential matrix */
 
@@ -93,6 +93,7 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+    // NoiseModelFactor2 instead of NoiseModelFactorN for backward compatibility
     ar
         & boost::serialization::make_nvp("NoiseModelFactor2",
             boost::serialization::base_object<Base>(*this));

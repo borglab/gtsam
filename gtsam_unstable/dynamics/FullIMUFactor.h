@@ -10,6 +10,8 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam_unstable/dynamics/PoseRTV.h>
 
+#include <boost/bind/bind.hpp>
+
 namespace gtsam {
 
 /**
@@ -20,9 +22,9 @@ namespace gtsam {
  * assumed to be PoseRTV
  */
 template<class POSE>
-class FullIMUFactor : public NoiseModelFactor2<POSE, POSE> {
+class FullIMUFactor : public NoiseModelFactorN<POSE, POSE> {
 public:
-  typedef NoiseModelFactor2<POSE, POSE> Base;
+  typedef NoiseModelFactorN<POSE, POSE> Base;
   typedef FullIMUFactor<POSE> This;
 
 protected:
@@ -89,9 +91,9 @@ public:
     z.segment(3, 3).operator=(gyro_); // Strange syntax to work around ambiguous operator error with clang
     z.tail(3).operator=(x2.t()); // Strange syntax to work around ambiguous operator error with clang
     if (H1) *H1 = numericalDerivative21<Vector9, PoseRTV, PoseRTV>(
-        boost::bind(This::predict_proxy, _1, _2, dt_), x1, x2, 1e-5);
+        std::bind(This::predict_proxy, std::placeholders::_1, std::placeholders::_2, dt_), x1, x2, 1e-5);
     if (H2) *H2 = numericalDerivative22<Vector9, PoseRTV, PoseRTV>(
-        boost::bind(This::predict_proxy, _1, _2, dt_), x1, x2, 1e-5);
+        std::bind(This::predict_proxy, std::placeholders::_1, std::placeholders::_2, dt_), x1, x2, 1e-5);
     return z - predict_proxy(x1, x2, dt_);
   }
 

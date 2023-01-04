@@ -19,8 +19,8 @@
 #include <gtsam/base/numericalDerivative.h>
 
 #include <CppUnitLite/TestHarness.h>
-#include <boost/bind.hpp>
 
+using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 
@@ -47,20 +47,19 @@ TEST(ImuBias, Constructor) {
 }
 
 /* ************************************************************************* */
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
 TEST(ImuBias, inverse) {
   Bias biasActual = bias1.inverse();
   Bias biasExpected = Bias(-biasAcc1, -biasGyro1);
   EXPECT(assert_equal(biasExpected, biasActual));
 }
 
-/* ************************************************************************* */
 TEST(ImuBias, compose) {
   Bias biasActual = bias2.compose(bias1);
   Bias biasExpected = Bias(biasAcc1 + biasAcc2, biasGyro1 + biasGyro2);
   EXPECT(assert_equal(biasExpected, biasActual));
 }
 
-/* ************************************************************************* */
 TEST(ImuBias, between) {
   // p.between(q) == q - p
   Bias biasActual = bias2.between(bias1);
@@ -68,7 +67,6 @@ TEST(ImuBias, between) {
   EXPECT(assert_equal(biasExpected, biasActual));
 }
 
-/* ************************************************************************* */
 TEST(ImuBias, localCoordinates) {
   Vector deltaActual = Vector(bias2.localCoordinates(bias1));
   Vector deltaExpected =
@@ -76,7 +74,6 @@ TEST(ImuBias, localCoordinates) {
   EXPECT(assert_equal(deltaExpected, deltaActual));
 }
 
-/* ************************************************************************* */
 TEST(ImuBias, retract) {
   Vector6 delta;
   delta << 0.1, 0.2, -0.3, 0.1, -0.1, 0.2;
@@ -86,14 +83,12 @@ TEST(ImuBias, retract) {
   EXPECT(assert_equal(biasExpected, biasActual));
 }
 
-/* ************************************************************************* */
 TEST(ImuBias, Logmap) {
   Vector deltaActual = bias2.Logmap(bias1);
   Vector deltaExpected = bias1.vector();
   EXPECT(assert_equal(deltaExpected, deltaActual));
 }
 
-/* ************************************************************************* */
 TEST(ImuBias, Expmap) {
   Vector6 delta;
   delta << 0.1, 0.2, -0.3, 0.1, -0.1, 0.2;
@@ -101,6 +96,7 @@ TEST(ImuBias, Expmap) {
   Bias biasExpected = Bias(delta);
   EXPECT(assert_equal(biasExpected, biasActual));
 }
+#endif
 
 /* ************************************************************************* */
 TEST(ImuBias, operatorSub) {
@@ -127,8 +123,9 @@ TEST(ImuBias, operatorSubB) {
 TEST(ImuBias, Correct1) {
   Matrix aH1, aH2;
   const Vector3 measurement(1, 2, 3);
-  boost::function<Vector3(const Bias&, const Vector3&)> f = boost::bind(
-      &Bias::correctAccelerometer, _1, _2, boost::none, boost::none);
+  std::function<Vector3(const Bias&, const Vector3&)> f =
+      std::bind(&Bias::correctAccelerometer, std::placeholders::_1,
+                std::placeholders::_2, boost::none, boost::none);
   bias1.correctAccelerometer(measurement, aH1, aH2);
   EXPECT(assert_equal(numericalDerivative21(f, bias1, measurement), aH1));
   EXPECT(assert_equal(numericalDerivative22(f, bias1, measurement), aH2));
@@ -138,8 +135,9 @@ TEST(ImuBias, Correct1) {
 TEST(ImuBias, Correct2) {
   Matrix aH1, aH2;
   const Vector3 measurement(1, 2, 3);
-  boost::function<Vector3(const Bias&, const Vector3&)> f =
-      boost::bind(&Bias::correctGyroscope, _1, _2, boost::none, boost::none);
+  std::function<Vector3(const Bias&, const Vector3&)> f =
+      std::bind(&Bias::correctGyroscope, std::placeholders::_1,
+                std::placeholders::_2, boost::none, boost::none);
   bias1.correctGyroscope(measurement, aH1, aH2);
   EXPECT(assert_equal(numericalDerivative21(f, bias1, measurement), aH1));
   EXPECT(assert_equal(numericalDerivative22(f, bias1, measurement), aH2));

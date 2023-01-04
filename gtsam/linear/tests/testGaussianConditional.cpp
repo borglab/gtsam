@@ -20,9 +20,10 @@
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/VerticalBlockMatrix.h>
-#include <gtsam/inference/Key.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/linear/GaussianDensity.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 
 #include <boost/assign/std/list.hpp>
@@ -38,6 +39,8 @@
 using namespace gtsam;
 using namespace std;
 using namespace boost::assign;
+using symbol_shorthand::X;
+using symbol_shorthand::Y;
 
 static const double tol = 1e-5;
 
@@ -125,6 +128,75 @@ TEST( GaussianConditional, equals )
     actual(1, d, R, 2, A1, 10, A2, model);
 
   EXPECT( expected.equals(actual) );
+}
+
+/* ************************************************************************* */
+namespace density {
+static const Key key = 77;
+static constexpr double sigma = 3.0;
+static const auto unitPrior =
+                      GaussianConditional(key, Vector1::Constant(5), I_1x1),
+                  widerPrior = GaussianConditional(
+                      key, Vector1::Constant(5), I_1x1,
+                      noiseModel::Isotropic::Sigma(1, sigma));
+}  // namespace density
+
+/* ************************************************************************* */
+// Check that the evaluate function matches direct calculation with R.
+TEST(GaussianConditional, Evaluate1) {
+  // Let's evaluate at the mean
+  const VectorValues mean = density::unitPrior.solve(VectorValues());
+
+  // We get the Hessian matrix, which has noise model applied!
+  const Matrix invSigma = density::unitPrior.information();
+
+  // A Gaussian density ~ exp (-0.5*(Rx-d)'*(Rx-d))
+  // which at the mean is 1.0! So, the only thing we need to calculate is
+  // the normalization constant 1.0/sqrt((2*pi*Sigma).det()).
+  // The covariance matrix inv(Sigma) = R'*R, so the determinant is
+  const double expected = sqrt((invSigma / (2 * M_PI)).determinant());
+  const double actual = density::unitPrior.evaluate(mean);
+  EXPECT_DOUBLES_EQUAL(expected, actual, 1e-9);
+
+  using density::key;
+  using density::sigma;
+
+  // Let's numerically integrate and see that we integrate to 1.0.
+  double integral = 0.0;
+  // Loop from -5*sigma to 5*sigma in 0.1*sigma steps:
+  for (double x = -5.0 * sigma; x <= 5.0 * sigma; x += 0.1 * sigma) {
+    VectorValues xValues;
+    xValues.insert(key, mean.at(key) + Vector1(x));
+    const double density = density::unitPrior.evaluate(xValues);
+    integral += 0.1 * sigma * density;
+  }
+  EXPECT_DOUBLES_EQUAL(1.0, integral, 1e-9);
+}
+
+/* ************************************************************************* */
+// Check the evaluate with non-unit noise.
+TEST(GaussianConditional, Evaluate2) {
+  // See comments in test above.
+  const VectorValues mean = density::widerPrior.solve(VectorValues());
+  const Matrix R = density::widerPrior.R();
+  const Matrix invSigma = density::widerPrior.information();
+  const double expected = sqrt((invSigma / (2 * M_PI)).determinant());
+  const double actual = density::widerPrior.evaluate(mean);
+  EXPECT_DOUBLES_EQUAL(expected, actual, 1e-9);
+
+  using density::key;
+  using density::sigma;
+
+  // Let's numerically integrate and see that we integrate to 1.0.
+  double integral = 0.0;
+  // Loop from -5*sigma to 5*sigma in 0.1*sigma steps:
+  for (double x = -5.0 * sigma; x <= 5.0 * sigma; x += 0.1 * sigma) {
+    VectorValues xValues;
+    xValues.insert(key, mean.at(key) + Vector1(x));
+    const double density = density::widerPrior.evaluate(xValues);
+    integral += 0.1 * sigma * density;
+  }
+  EXPECT_DOUBLES_EQUAL(1.0, integral, 1e-5);
 }
 
 /* ************************************************************************* */
@@ -316,5 +388,136 @@ TEST( GaussianConditional, isGaussianFactor ) {
 }
 
 /* ************************************************************************* */
-int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
+// Test FromMeanAndStddev named constructors
+TEST(GaussianConditional, FromMeanAndStddev) {
+  Matrix A1 = (Matrix(2, 2) << 1., 2., 3., 4.).finished();
+  Matrix A2 = (Matrix(2, 2) << 5., 6., 7., 8.).finished();
+  const Vector2 b(20, 40), x0(1, 2), x1(3, 4), x2(5, 6);
+  const double sigma = 3;
+
+  VectorValues values = map_list_of(X(0), x0)(X(1), x1)(X(2), x2);
+
+  auto conditional1 =
+      GaussianConditional::FromMeanAndStddev(X(0), A1, X(1), b, sigma);
+  Vector2 e1 = (x0 - (A1 * x1 + b)) / sigma;
+  double expected1 = 0.5 * e1.dot(e1);
+  EXPECT_DOUBLES_EQUAL(expected1, conditional1.error(values), 1e-9);
+
+  auto conditional2 = GaussianConditional::FromMeanAndStddev(X(0), A1, X(1), A2,
+                                                             X(2), b, sigma);
+  Vector2 e2 = (x0 - (A1 * x1 + A2 * x2 + b)) / sigma;
+  double expected2 = 0.5 * e2.dot(e2);
+  EXPECT_DOUBLES_EQUAL(expected2, conditional2.error(values), 1e-9);
+}
+
+/* ************************************************************************* */
+// Test likelihood method (conversion to JacobianFactor)
+TEST(GaussianConditional, likelihood) {
+  Matrix A1 = (Matrix(2, 2) << 1., 2., 3., 4.).finished();
+  const Vector2 b(20, 40), x0(1, 2);
+  const double sigma = 0.01;
+
+  // |x0 - A1 x1 - b|^2
+  auto conditional =
+      GaussianConditional::FromMeanAndStddev(X(0), A1, X(1), b, sigma);
+
+  VectorValues frontalValues;
+  frontalValues.insert(X(0), x0);
+  auto actual1 = conditional.likelihood(frontalValues);
+  CHECK(actual1);
+
+  // |(-A1) x1 - (b - x0)|^2
+  JacobianFactor expected(X(1), -A1, b - x0,
+                          noiseModel::Isotropic::Sigma(2, sigma));
+  EXPECT(assert_equal(expected, *actual1, tol));
+
+  // Check single vector version
+  auto actual2 = conditional.likelihood(x0);
+  CHECK(actual2);
+  EXPECT(assert_equal(expected, *actual2, tol));
+}
+
+/* ************************************************************************* */
+// Test sampling
+TEST(GaussianConditional, sample) {
+  Matrix A1 = (Matrix(2, 2) << 1., 2., 3., 4.).finished();
+  const Vector2 b(20, 40), x1(3, 4);
+  const double sigma = 0.01;
+
+  auto density = GaussianDensity::FromMeanAndStddev(X(0), b, sigma);
+  auto actual1 = density.sample();
+  EXPECT_LONGS_EQUAL(1, actual1.size());
+  EXPECT(assert_equal(b, actual1[X(0)], 50 * sigma));
+
+  VectorValues given;
+  given.insert(X(1), x1);
+
+  auto conditional =
+      GaussianConditional::FromMeanAndStddev(X(0), A1, X(1), b, sigma);
+  auto actual2 = conditional.sample(given);
+  EXPECT_LONGS_EQUAL(1, actual2.size());
+  EXPECT(assert_equal(A1 * x1 + b, actual2[X(0)], 50 * sigma));
+
+  // Use a specific random generator
+  std::mt19937_64 rng(4242);
+  auto actual3 = conditional.sample(given, &rng);
+  EXPECT_LONGS_EQUAL(1, actual2.size());
+  // regression is not repeatable across platforms/versions :-(
+  // EXPECT(assert_equal(Vector2(31.0111856, 64.9850775), actual2[X(0)], 1e-5));
+}
+
+/* ************************************************************************* */
+TEST(GaussianConditional, Print) {
+  Matrix A1 = (Matrix(2, 2) << 1., 2., 3., 4.).finished();
+  Matrix A2 = (Matrix(2, 2) << 5., 6., 7., 8.).finished();
+  const Vector2 b(20, 40);
+  const double sigma = 3;
+
+  GaussianConditional conditional(X(0), b, Matrix2::Identity(),
+                                  noiseModel::Isotropic::Sigma(2, sigma));
+
+  // Test printing for no parents.
+  std::string expected =
+    "GaussianConditional p(x0)\n"
+    "  R = [ 1 0 ]\n"
+    "      [ 0 1 ]\n"
+    "  d = [ 20 40 ]\n"
+    "isotropic dim=2 sigma=3\n";
+  EXPECT(assert_print_equal(expected, conditional, "GaussianConditional"));
+
+  auto conditional1 =
+      GaussianConditional::FromMeanAndStddev(X(0), A1, X(1), b, sigma);
+
+  // Test printing for single parent.
+  std::string expected1 =
+    "GaussianConditional p(x0 | x1)\n"
+    "  R = [ 1 0 ]\n"
+    "      [ 0 1 ]\n"
+    "  S[x1] = [ -1 -2 ]\n"
+    "          [ -3 -4 ]\n"
+    "  d = [ 20 40 ]\n"
+    "isotropic dim=2 sigma=3\n";
+  EXPECT(assert_print_equal(expected1, conditional1, "GaussianConditional"));
+
+  // Test printing for multiple parents.
+  auto conditional2 = GaussianConditional::FromMeanAndStddev(X(0), A1, Y(0), A2,
+                                                             Y(1), b, sigma);
+  std::string expected2 =
+    "GaussianConditional p(x0 | y0 y1)\n"
+    "  R = [ 1 0 ]\n"
+    "      [ 0 1 ]\n"
+    "  S[y0] = [ -1 -2 ]\n"
+    "          [ -3 -4 ]\n"
+    "  S[y1] = [ -5 -6 ]\n"
+    "          [ -7 -8 ]\n"
+    "  d = [ 20 40 ]\n"
+    "isotropic dim=2 sigma=3\n";
+  EXPECT(assert_print_equal(expected2, conditional2, "GaussianConditional"));
+}
+
+/* ************************************************************************* */
+int main() {
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
+}
 /* ************************************************************************* */

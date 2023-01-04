@@ -19,9 +19,6 @@
 
 #include <gtsam/discrete/DiscreteMarginals.h>
 
-#include <boost/assign/std/vector.hpp>
-using namespace boost::assign;
-
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
@@ -47,7 +44,7 @@ TEST_UNSAFE( DiscreteMarginals, UGM_small ) {
 
   DiscreteMarginals marginals(graph);
   DiscreteFactor::shared_ptr actualC = marginals(Cathy.first);
-  DiscreteFactor::Values values;
+  DiscreteValues values;
 
   values[Cathy.first] = 0;
   EXPECT_DOUBLES_EQUAL( 0.359631, (*actualC)(values), 1e-6);
@@ -94,7 +91,7 @@ TEST_UNSAFE( DiscreteMarginals, UGM_chain ) {
 
   DiscreteMarginals marginals(graph);
   DiscreteFactor::shared_ptr actualC = marginals(key[2].first);
-  DiscreteFactor::Values values;
+  DiscreteValues values;
 
   values[key[2].first] = 0;
   EXPECT_DOUBLES_EQUAL( 0.03426, (*actualC)(values), 1e-4);
@@ -164,11 +161,11 @@ TEST_UNSAFE(DiscreteMarginals, truss2) {
   graph.add(key[2] & key[3] & key[4], "1 2 3 4 5 6 7 8");
 
   // Calculate the marginals by brute force
-  vector<DiscreteFactor::Values> allPosbValues =
-      cartesianProduct(key[0] & key[1] & key[2] & key[3] & key[4]);
+  auto allPosbValues = DiscreteValues::CartesianProduct(
+      key[0] & key[1] & key[2] & key[3] & key[4]);
   Vector T = Z_5x1, F = Z_5x1;
   for (size_t i = 0; i < allPosbValues.size(); ++i) {
-    DiscreteFactor::Values x = allPosbValues[i];
+    DiscreteValues x = allPosbValues[i];
     double px = graph(x);
     for (size_t j = 0; j < 5; j++)
       if (x[j])

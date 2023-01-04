@@ -14,11 +14,12 @@
  * @brief  Unit tests for Point3 class
  */
 
-#include <gtsam/geometry/Point3.h>
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/geometry/Point3.h>
 
+using namespace std::placeholders;
 using namespace gtsam;
 
 GTSAM_CONCEPT_TESTABLE_INST(Point3)
@@ -98,7 +99,7 @@ TEST( Point3, dot) {
 
   // Use numerical derivatives to calculate the expected Jacobians
   Matrix H1, H2;
-  boost::function<double(const Point3&, const Point3&)> f =
+  std::function<double(const Point3&, const Point3&)> f =
       [](const Point3& p, const Point3& q) { return gtsam::dot(p, q); };
   {
     gtsam::dot(p, q, H1, H2);
@@ -120,8 +121,9 @@ TEST( Point3, dot) {
 /* ************************************************************************* */
 TEST(Point3, cross) {
   Matrix aH1, aH2;
-  boost::function<Point3(const Point3&, const Point3&)> f =
-      boost::bind(&gtsam::cross, _1, _2, boost::none, boost::none);
+  std::function<Point3(const Point3&, const Point3&)> f =
+      std::bind(&gtsam::cross, std::placeholders::_1, std::placeholders::_2,
+                boost::none, boost::none);
   const Point3 omega(0, 1, 0), theta(4, 6, 8);
   cross(omega, theta, aH1, aH2);
   EXPECT(assert_equal(numericalDerivative21(f, omega, theta), aH1));
@@ -139,8 +141,9 @@ TEST( Point3, cross2) {
 
   // Use numerical derivatives to calculate the expected Jacobians
   Matrix H1, H2;
-  boost::function<Point3(const Point3&, const Point3&)> f = boost::bind(&gtsam::cross, _1, _2,  //
-                                                                      boost::none, boost::none);
+  std::function<Point3(const Point3&, const Point3&)> f =
+      std::bind(&gtsam::cross, std::placeholders::_1, std::placeholders::_2,  //
+                boost::none, boost::none);
   {
     gtsam::cross(p, q, H1, H2);
     EXPECT(assert_equal(numericalDerivative21<Point3,Point3>(f, p, q), H1, 1e-9));
@@ -160,7 +163,7 @@ TEST (Point3, normalize) {
   Point3 expected(point / sqrt(14.0));
   EXPECT(assert_equal(expected, normalize(point, actualH), 1e-8));
   Matrix expectedH = numericalDerivative11<Point3, Point3>(
-      boost::bind(gtsam::normalize, _1, boost::none), point);
+      std::bind(gtsam::normalize, std::placeholders::_1, boost::none), point);
   EXPECT(assert_equal(expectedH, actualH, 1e-8));
 }
 

@@ -27,7 +27,7 @@ namespace gtsam {
 
 /**
  * A pinhole camera class that has a Pose3 and a *fixed* Calibration.
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  */
 template<typename CALIBRATION>
@@ -35,7 +35,7 @@ class PinholeBaseK: public PinholeBase {
 
 private:
 
-  GTSAM_CONCEPT_MANIFOLD_TYPE(CALIBRATION);
+  GTSAM_CONCEPT_MANIFOLD_TYPE(CALIBRATION)
 
   // Get dimensions of calibration type at compile time
   static const int DimK = FixedDimension<CALIBRATION>::value;
@@ -121,6 +121,13 @@ public:
     return _project(pw, Dpose, Dpoint, Dcal);
   }
 
+  /// project a 3D point from world coordinates into the image
+  Point2 reprojectionError(const Point3& pw, const Point2& measured, OptionalJacobian<2, 6> Dpose = boost::none,
+      OptionalJacobian<2, 3> Dpoint = boost::none,
+      OptionalJacobian<2, DimK> Dcal = boost::none) const {
+    return Point2(_project(pw, Dpose, Dpoint, Dcal) - measured);
+  }
+
   /// project a point at infinity from world coordinates into the image
   Point2 project(const Unit3& pw, OptionalJacobian<2, 6> Dpose = boost::none,
       OptionalJacobian<2, 2> Dpoint = boost::none,
@@ -158,7 +165,6 @@ public:
 
     return result;
   }
-
 
   /// backproject a 2-dimensional point to a 3-dimensional point at infinity
   Unit3 backprojectPointAtInfinity(const Point2& p) const {
@@ -230,7 +236,7 @@ public:
  * A pinhole camera class that has a Pose3 and a *fixed* Calibration.
  * Instead of using this class, one might consider calibrating the measurements
  * and using CalibratedCamera, which would then be faster.
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  */
 template<typename CALIBRATION>
@@ -406,10 +412,20 @@ public:
   }
 
   /// for Canonical
-  static PinholePose identity() {
+  static PinholePose Identity() {
     return PinholePose(); // assumes that the default constructor is valid
   }
 
+  /// for Linear Triangulation
+  Matrix34 cameraProjectionMatrix() const {
+    Matrix34 P = Matrix34(PinholeBase::pose().inverse().matrix().block(0, 0, 3, 4));
+    return K_->K() * P;
+  }
+
+  /// for Nonlinear Triangulation
+  Vector defaultErrorWhenTriangulatingBehindCamera() const {
+    return Eigen::Matrix<double,traits<Point2>::dimension,1>::Constant(2.0 * K_->fx());;
+  }
   /// @}
 
 private:

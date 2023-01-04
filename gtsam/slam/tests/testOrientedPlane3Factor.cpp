@@ -27,9 +27,9 @@
 
 #include <boost/assign/std/vector.hpp>
 #include <boost/assign/std.hpp>
-#include <boost/bind.hpp>
 
 using namespace boost::assign;
+using namespace std::placeholders;
 using namespace gtsam;
 using namespace std;
 
@@ -144,8 +144,9 @@ TEST( OrientedPlane3Factor, Derivatives ) {
   OrientedPlane3Factor factor(p.planeCoefficients(), noise, poseKey, planeKey);
 
   // Calculate numerical derivatives
-  boost::function<Vector(const Pose3&, const OrientedPlane3&)> f = boost::bind(
-      &OrientedPlane3Factor::evaluateError, factor, _1, _2, boost::none, boost::none);
+  std::function<Vector(const Pose3 &, const OrientedPlane3 &)> f = std::bind(
+      &OrientedPlane3Factor::evaluateError, factor, std::placeholders::_1,
+      std::placeholders::_2, boost::none, boost::none);
   Matrix numericalH1 = numericalDerivative21<Vector, Pose3, OrientedPlane3>(f, poseLin, pLin);
   Matrix numericalH2 = numericalDerivative22<Vector, Pose3, OrientedPlane3>(f, poseLin, pLin);
 
@@ -183,15 +184,15 @@ TEST( OrientedPlane3DirectionPrior, Constructor ) {
 
   // Calculate numerical derivatives
   Matrix expectedH1 = numericalDerivative11<Vector, OrientedPlane3>(
-      boost::bind(&OrientedPlane3DirectionPrior::evaluateError, &factor, _1,
+      std::bind(&OrientedPlane3DirectionPrior::evaluateError, &factor, std::placeholders::_1,
           boost::none), T1);
 
   Matrix expectedH2 = numericalDerivative11<Vector, OrientedPlane3>(
-      boost::bind(&OrientedPlane3DirectionPrior::evaluateError, &factor, _1,
+      std::bind(&OrientedPlane3DirectionPrior::evaluateError, &factor, std::placeholders::_1,
           boost::none), T2);
 
   Matrix expectedH3 = numericalDerivative11<Vector, OrientedPlane3>(
-      boost::bind(&OrientedPlane3DirectionPrior::evaluateError, &factor, _1,
+      std::bind(&OrientedPlane3DirectionPrior::evaluateError, &factor, std::placeholders::_1,
           boost::none), T3);
 
   // Use the factor to calculate the derivative
@@ -216,7 +217,7 @@ TEST(OrientedPlane3Factor, Issue561Simplified) {
 
   // Setup prior factors
   // Note: If x0 is too far away from the origin (e.g. x=100) this test can fail.
-  Pose3 x0(Rot3::identity(), Vector3(10, -1, 1));
+  Pose3 x0(Rot3::Identity(), Vector3(10, -1, 1));
   auto x0_noise = noiseModel::Isotropic::Sigma(6, 0.01);
   graph.addPrior<Pose3>(X(0), x0, x0_noise);
 
@@ -240,7 +241,7 @@ TEST(OrientedPlane3Factor, Issue561Simplified) {
   // Initial values
   // Just offset the initial pose by 1m. This is what we are trying to optimize.
   Values initialEstimate;
-  Pose3 x0_initial = x0.compose(Pose3(Rot3::identity(), Vector3(1,0,0)));
+  Pose3 x0_initial = x0.compose(Pose3(Rot3::Identity(), Vector3(1,0,0)));
   initialEstimate.insert(P(1), p1);
   initialEstimate.insert(P(2), p2);
   initialEstimate.insert(X(0), x0_initial);

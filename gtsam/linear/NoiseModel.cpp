@@ -134,7 +134,7 @@ Gaussian::shared_ptr Gaussian::Covariance(const Matrix& covariance,
 
 /* ************************************************************************* */
 void Gaussian::print(const string& name) const {
-  gtsam::print(thisR(), name + "Gaussian");
+  gtsam::print(thisR(), name + "Gaussian ");
 }
 
 /* ************************************************************************* */
@@ -285,7 +285,7 @@ Diagonal::shared_ptr Diagonal::Sigmas(const Vector& sigmas, bool smart) {
 
 /* ************************************************************************* */
 void Diagonal::print(const string& name) const {
-  gtsam::print(sigmas_, name + "diagonal sigmas");
+  gtsam::print(sigmas_, name + "diagonal sigmas ");
 }
 
 /* ************************************************************************* */
@@ -355,8 +355,8 @@ bool Constrained::constrained(size_t i) const {
 
 /* ************************************************************************* */
 void Constrained::print(const std::string& name) const {
-  gtsam::print(sigmas_, name + "constrained sigmas");
-  gtsam::print(mu_, name + "constrained mu");
+  gtsam::print(sigmas_, name + "constrained sigmas ");
+  gtsam::print(mu_, name + "constrained mu ");
 }
 
 /* ************************************************************************* */

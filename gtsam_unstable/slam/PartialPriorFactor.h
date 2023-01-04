@@ -35,7 +35,7 @@ namespace gtsam {
    * @tparam VALUE is the type of variable the prior effects
    */
   template<class VALUE>
-  class PartialPriorFactor: public NoiseModelFactor1<VALUE> {
+  class PartialPriorFactor: public NoiseModelFactorN<VALUE> {
 
   public:
     typedef VALUE T;
@@ -44,7 +44,7 @@ namespace gtsam {
     // Concept checks on the variable type - currently requires Lie
     GTSAM_CONCEPT_LIE_TYPE(VALUE)
 
-    typedef NoiseModelFactor1<VALUE> Base;
+    typedef NoiseModelFactorN<VALUE> Base;
     typedef PartialPriorFactor<VALUE> This;
 
     Vector prior_;                 ///< Measurement on tangent space parameters, in compressed form.
@@ -141,6 +141,7 @@ namespace gtsam {
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+      // NoiseModelFactor1 instead of NoiseModelFactorN for backward compatibility
       ar & boost::serialization::make_nvp("NoiseModelFactor1",
           boost::serialization::base_object<Base>(*this));
       ar & BOOST_SERIALIZATION_NVP(prior_);

@@ -5,8 +5,6 @@
  * @author Alex Cunningham
  */
 
-#include <gtsam/base/deprecated/LieMatrix_Deprecated.h>
-#include <gtsam/base/deprecated/LieVector_Deprecated.h>
 #include <gtsam/slam/serialization.h>
 #include <gtsam/base/serialization.h>
 
@@ -31,8 +29,6 @@
 using namespace gtsam;
 
 // Creating as many permutations of factors as possible
-typedef PriorFactor<LieVector>            PriorFactorLieVector;
-typedef PriorFactor<LieMatrix>            PriorFactorLieMatrix;
 typedef PriorFactor<Point2>               PriorFactorPoint2;
 typedef PriorFactor<StereoPoint2>         PriorFactorStereoPoint2;
 typedef PriorFactor<Point3>               PriorFactorPoint3;
@@ -46,8 +42,6 @@ typedef PriorFactor<CalibratedCamera>     PriorFactorCalibratedCamera;
 typedef PriorFactor<PinholeCameraCal3_S2> PriorFactorPinholeCameraCal3_S2;
 typedef PriorFactor<StereoCamera>         PriorFactorStereoCamera;
 
-typedef BetweenFactor<LieVector>       BetweenFactorLieVector;
-typedef BetweenFactor<LieMatrix>       BetweenFactorLieMatrix;
 typedef BetweenFactor<Point2>          BetweenFactorPoint2;
 typedef BetweenFactor<Point3>          BetweenFactorPoint3;
 typedef BetweenFactor<Rot2>            BetweenFactorRot2;
@@ -55,8 +49,6 @@ typedef BetweenFactor<Rot3>            BetweenFactorRot3;
 typedef BetweenFactor<Pose2>           BetweenFactorPose2;
 typedef BetweenFactor<Pose3>           BetweenFactorPose3;
 
-typedef NonlinearEquality<LieVector>              NonlinearEqualityLieVector;
-typedef NonlinearEquality<LieMatrix>              NonlinearEqualityLieMatrix;
 typedef NonlinearEquality<Point2>                 NonlinearEqualityPoint2;
 typedef NonlinearEquality<StereoPoint2>           NonlinearEqualityStereoPoint2;
 typedef NonlinearEquality<Point3>                 NonlinearEqualityPoint3;
@@ -112,8 +104,6 @@ BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal");
 
 /* Create GUIDs for geometry */
 /* ************************************************************************* */
-GTSAM_VALUE_EXPORT(gtsam::LieVector);
-GTSAM_VALUE_EXPORT(gtsam::LieMatrix);
 GTSAM_VALUE_EXPORT(gtsam::Point2);
 GTSAM_VALUE_EXPORT(gtsam::StereoPoint2);
 GTSAM_VALUE_EXPORT(gtsam::Point3);
@@ -133,8 +123,6 @@ GTSAM_VALUE_EXPORT(gtsam::StereoCamera);
 BOOST_CLASS_EXPORT_GUID(gtsam::JacobianFactor, "gtsam::JacobianFactor");
 BOOST_CLASS_EXPORT_GUID(gtsam::HessianFactor , "gtsam::HessianFactor");
 
-BOOST_CLASS_EXPORT_GUID(PriorFactorLieVector, "gtsam::PriorFactorLieVector");
-BOOST_CLASS_EXPORT_GUID(PriorFactorLieMatrix, "gtsam::PriorFactorLieMatrix");
 BOOST_CLASS_EXPORT_GUID(PriorFactorPoint2, "gtsam::PriorFactorPoint2");
 BOOST_CLASS_EXPORT_GUID(PriorFactorStereoPoint2, "gtsam::PriorFactorStereoPoint2");
 BOOST_CLASS_EXPORT_GUID(PriorFactorPoint3, "gtsam::PriorFactorPoint3");
@@ -147,8 +135,6 @@ BOOST_CLASS_EXPORT_GUID(PriorFactorCal3DS2, "gtsam::PriorFactorCal3DS2");
 BOOST_CLASS_EXPORT_GUID(PriorFactorCalibratedCamera, "gtsam::PriorFactorCalibratedCamera");
 BOOST_CLASS_EXPORT_GUID(PriorFactorStereoCamera, "gtsam::PriorFactorStereoCamera");
 
-BOOST_CLASS_EXPORT_GUID(BetweenFactorLieVector, "gtsam::BetweenFactorLieVector");
-BOOST_CLASS_EXPORT_GUID(BetweenFactorLieMatrix, "gtsam::BetweenFactorLieMatrix");
 BOOST_CLASS_EXPORT_GUID(BetweenFactorPoint2, "gtsam::BetweenFactorPoint2");
 BOOST_CLASS_EXPORT_GUID(BetweenFactorPoint3, "gtsam::BetweenFactorPoint3");
 BOOST_CLASS_EXPORT_GUID(BetweenFactorRot2, "gtsam::BetweenFactorRot2");
@@ -156,8 +142,6 @@ BOOST_CLASS_EXPORT_GUID(BetweenFactorRot3, "gtsam::BetweenFactorRot3");
 BOOST_CLASS_EXPORT_GUID(BetweenFactorPose2, "gtsam::BetweenFactorPose2");
 BOOST_CLASS_EXPORT_GUID(BetweenFactorPose3, "gtsam::BetweenFactorPose3");
 
-BOOST_CLASS_EXPORT_GUID(NonlinearEqualityLieVector, "gtsam::NonlinearEqualityLieVector");
-BOOST_CLASS_EXPORT_GUID(NonlinearEqualityLieMatrix, "gtsam::NonlinearEqualityLieMatrix");
 BOOST_CLASS_EXPORT_GUID(NonlinearEqualityPoint2, "gtsam::NonlinearEqualityPoint2");
 BOOST_CLASS_EXPORT_GUID(NonlinearEqualityStereoPoint2, "gtsam::NonlinearEqualityStereoPoint2");
 BOOST_CLASS_EXPORT_GUID(NonlinearEqualityPoint3, "gtsam::NonlinearEqualityPoint3");
@@ -189,7 +173,7 @@ BOOST_CLASS_EXPORT_GUID(GeneralSFMFactor2Cal3_S2, "gtsam::GeneralSFMFactor2Cal3_
 
 BOOST_CLASS_EXPORT_GUID(GenericStereoFactor3D, "gtsam::GenericStereoFactor3D");
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V41
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
 
 typedef PriorFactor<SimpleCamera>               PriorFactorSimpleCamera;
 typedef NonlinearEquality<SimpleCamera>         NonlinearEqualitySimpleCamera;
