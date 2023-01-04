@@ -26,7 +26,6 @@
 namespace gtsam {
 
 /* ************************************************************************ */
-// TODO(fan): THIS IS VERY VERY DIRTY! We need to get DiscreteFactor right!
 HybridDiscreteFactor::HybridDiscreteFactor(DiscreteFactor::shared_ptr other)
     : Base(boost::dynamic_pointer_cast<DecisionTreeFactor>(other)
                ->discreteKeys()),
