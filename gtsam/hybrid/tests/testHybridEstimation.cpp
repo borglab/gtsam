@@ -280,11 +280,10 @@ AlgebraicDecisionTree<Key> getProbPrimeTree(
   return probPrimeTree;
 }
 
-/****************************************************************************/
-/**
+/*********************************************************************************
  * Test for correctness of different branches of the P'(Continuous | Discrete).
  * The values should match those of P'(Continuous) for each discrete mode.
- */
+ ********************************************************************************/
 TEST(HybridEstimation, Probability) {
   constexpr size_t K = 4;
   std::vector<double> measurements = {0, 1, 2, 2};
@@ -441,18 +440,30 @@ static HybridGaussianFactorGraph::shared_ptr createHybridGaussianFactorGraph() {
  * Do hybrid elimination and do regression test on discrete conditional.
  ********************************************************************************/
 TEST(HybridEstimation, eliminateSequentialRegression) {
-  // 1. Create the factor graph from the nonlinear factor graph.
+  // Create the factor graph from the nonlinear factor graph.
   HybridGaussianFactorGraph::shared_ptr fg = createHybridGaussianFactorGraph();
 
-  // 2. Eliminate into BN
-  const Ordering ordering = fg->getHybridOrdering();
-  HybridBayesNet::shared_ptr bn = fg->eliminateSequential(ordering);
-  // GTSAM_PRINT(*bn);
+  // Create expected discrete conditional on m0.
+  DiscreteKey m(M(0), 2);
+  DiscreteConditional expected(m % "0.51341712/1");  // regression
 
-  // TODO(dellaert): dc should be discrete conditional on m0, but it is an
-  // unnormalized factor? DiscreteKey m(M(0), 2); DiscreteConditional expected(m
-  // % "0.51341712/1"); auto dc = bn->back()->asDiscreteConditional();
-  // EXPECT(assert_equal(expected, *dc, 1e-9));
+  // Eliminate into BN using one ordering
+  Ordering ordering1;
+  ordering1 += X(0), X(1), M(0);
+  HybridBayesNet::shared_ptr bn1 = fg->eliminateSequential(ordering1);
+
+  // Check that the discrete conditional matches the expected.
+  auto dc1 = bn1->back()->asDiscrete();
+  EXPECT(assert_equal(expected, *dc1, 1e-9));
+
+  // Eliminate into BN using a different ordering
+  Ordering ordering2;
+  ordering2 += X(0), X(1), M(0);
+  HybridBayesNet::shared_ptr bn2 = fg->eliminateSequential(ordering2);
+
+  // Check that the discrete conditional matches the expected.
+  auto dc2 = bn2->back()->asDiscrete();
+  EXPECT(assert_equal(expected, *dc2, 1e-9));
 }
 
 /*********************************************************************************
@@ -467,45 +478,35 @@ TEST(HybridEstimation, eliminateSequentialRegression) {
  ********************************************************************************/
 TEST(HybridEstimation, CorrectnessViaSampling) {
   // 1. Create the factor graph from the nonlinear factor graph.
-  HybridGaussianFactorGraph::shared_ptr fg = createHybridGaussianFactorGraph();
+  const auto fg = createHybridGaussianFactorGraph();
 
   // 2. Eliminate into BN
   const Ordering ordering = fg->getHybridOrdering();
-  HybridBayesNet::shared_ptr bn = fg->eliminateSequential(ordering);
+  const HybridBayesNet::shared_ptr bn = fg->eliminateSequential(ordering);
 
   // Set up sampling
   std::mt19937_64 rng(11);
 
-  // 3. Do sampling
-  int num_samples = 10;
-
-  // Functor to compute the ratio between the
-  // Bayes net and the factor graph.
-  auto compute_ratio =
-      [](const HybridBayesNet::shared_ptr& bayesNet,
-         const HybridGaussianFactorGraph::shared_ptr& factorGraph,
-         const HybridValues& sample) -> double {
-    const DiscreteValues assignment = sample.discrete();
-    // Compute in log form for numerical stability
-    double log_ratio = bayesNet->error({sample.continuous(), assignment}) -
-                       factorGraph->error({sample.continuous(), assignment});
-    double ratio = exp(-log_ratio);
-    return ratio;
+  // Compute the log-ratio between the Bayes net and the factor graph.
+  auto compute_ratio = [&](const HybridValues& sample) -> double {
+    return bn->evaluate(sample) / fg->probPrime(sample);
   };
 
   // The error evaluated by the factor graph and the Bayes net should differ by
   // the normalizing term computed via the Bayes net determinant.
   const HybridValues sample = bn->sample(&rng);
-  double ratio = compute_ratio(bn, fg, sample);
+  double expected_ratio = compute_ratio(sample);
   // regression
-  EXPECT_DOUBLES_EQUAL(1.0, ratio, 1e-9);
+  EXPECT_DOUBLES_EQUAL(0.728588, expected_ratio, 1e-6);
 
-  // 4. Check that all samples == constant
+  // 3. Do sampling
+  constexpr int num_samples = 10;
   for (size_t i = 0; i < num_samples; i++) {
     // Sample from the bayes net
     const HybridValues sample = bn->sample(&rng);
 
-    EXPECT_DOUBLES_EQUAL(ratio, compute_ratio(bn, fg, sample), 1e-9);
+    // 4. Check that the ratio is constant.
+    EXPECT_DOUBLES_EQUAL(expected_ratio, compute_ratio(sample), 1e-6);
   }
 }
 

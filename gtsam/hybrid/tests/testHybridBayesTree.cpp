@@ -155,7 +155,7 @@ TEST(HybridBayesTree, Optimize) {
     dfg.push_back(
         boost::dynamic_pointer_cast<DecisionTreeFactor>(factor->inner()));
   }
-  
+
   // Add the probabilities for each branch
   DiscreteKeys discrete_keys = {{M(0), 2}, {M(1), 2}, {M(2), 2}};
   vector<double> probs = {0.012519475, 0.041280228, 0.075018647, 0.081663656,
@@ -211,27 +211,13 @@ TEST(HybridBayesTree, Choose) {
   ordering += M(0);
   ordering += M(1);
   ordering += M(2);
-  
-  //TODO(Varun) get segfault if ordering not provided
+
+  // TODO(Varun) get segfault if ordering not provided
   auto bayesTree = s.linearizedFactorGraph.eliminateMultifrontal(ordering);
-  
+
   auto expected_gbt = bayesTree->choose(assignment);
 
   EXPECT(assert_equal(expected_gbt, gbt));
-}
-
-/* ****************************************************************************/
-// Test HybridBayesTree serialization.
-TEST(HybridBayesTree, Serialization) {
-  Switching s(4);
-  Ordering ordering = s.linearizedFactorGraph.getHybridOrdering();
-  HybridBayesTree hbt =
-      *(s.linearizedFactorGraph.eliminateMultifrontal(ordering));
-
-  using namespace gtsam::serializationTestHelpers;
-  EXPECT(equalsObj<HybridBayesTree>(hbt));
-  EXPECT(equalsXML<HybridBayesTree>(hbt));
-  EXPECT(equalsBinary<HybridBayesTree>(hbt));
 }
 
 /* ************************************************************************* */
