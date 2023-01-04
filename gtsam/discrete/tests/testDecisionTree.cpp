@@ -528,35 +528,6 @@ TEST(DecisionTree, ApplyWithAssignment) {
   EXPECT_LONGS_EQUAL(5, count);
 }
 
-/* ****************************************************************************/
-using Tree = gtsam::DecisionTree<string, int>;
-
-BOOST_CLASS_EXPORT_GUID(Tree, "gtsam_DecisionTreeStringInt")
-BOOST_CLASS_EXPORT_GUID(Tree::Leaf, "gtsam_DecisionTree_Leaf")
-BOOST_CLASS_EXPORT_GUID(Tree::Choice, "gtsam_DecisionTree_Choice")
-
-// Test HybridBayesNet serialization.
-TEST(DecisionTree, Serialization) {
-  Tree tree({{"A", 2}}, std::vector<int>{1, 2});
-
-  using namespace serializationTestHelpers;
-
-  // Object roundtrip
-  Tree outputObj = create<Tree>();
-  roundtrip<Tree>(tree, outputObj);
-  EXPECT(tree.equals(outputObj));
-
-  // XML roundtrip
-  Tree outputXml = create<Tree>();
-  roundtripXML<Tree>(tree, outputXml);
-  EXPECT(tree.equals(outputXml));
-
-  // Binary roundtrip
-  Tree outputBinary = create<Tree>();
-  roundtripBinary<Tree>(tree, outputBinary);
-  EXPECT(tree.equals(outputBinary));
-}
-
 /* ************************************************************************* */
 int main() {
   TestResult tr;

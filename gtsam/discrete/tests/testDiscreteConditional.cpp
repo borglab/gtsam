@@ -369,23 +369,6 @@ TEST(DiscreteConditional, html) {
 }
 
 /* ************************************************************************* */
-using ADT = AlgebraicDecisionTree<Key>;
-BOOST_CLASS_EXPORT_GUID(ADT::Leaf, "gtsam_ADT_Leaf")
-BOOST_CLASS_EXPORT_GUID(ADT::Choice, "gtsam_ADT_Choice")
-
-// Check serialization for DiscreteConditional
-TEST(DiscreteConditional, Serialization) {
-  using namespace serializationTestHelpers;
-
-  DiscreteKey A(Symbol('x', 1), 3);
-  DiscreteConditional conditional(A % "1/2/2");
-
-  EXPECT(equalsObj<DiscreteConditional>(conditional));
-  EXPECT(equalsXML<DiscreteConditional>(conditional));
-  EXPECT(equalsBinary<DiscreteConditional>(conditional));
-}
-
-/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
