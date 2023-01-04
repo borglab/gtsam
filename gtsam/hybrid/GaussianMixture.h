@@ -197,6 +197,16 @@ class GTSAM_EXPORT GaussianMixture
    */
   GaussianFactorGraphTree add(const GaussianFactorGraphTree &sum) const;
   /// @}
+
+ private:
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class Archive>
+  void serialize(Archive &ar, const unsigned int /*version*/) {
+    ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseFactor);
+    ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseConditional);
+    ar &BOOST_SERIALIZATION_NVP(conditionals_);
+  }
 };
 
 /// Return the DiscreteKey vector as a set.

@@ -64,6 +64,9 @@ namespace gtsam {
      */
     size_t nrAssignments_;
 
+    /// Default constructor for serialization.
+    Leaf() {}
+
     /// Constructor from constant
     Leaf(const Y& constant, size_t nrAssignments = 1)
         : constant_(constant), nrAssignments_(nrAssignments) {}
@@ -154,6 +157,18 @@ namespace gtsam {
     }
 
     bool isLeaf() const override { return true; }
+
+   private:
+    using Base = DecisionTree<L, Y>::Node;
+
+    /** Serialization function */
+    friend class boost::serialization::access;
+    template <class ARCHIVE>
+    void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+      ar& BOOST_SERIALIZATION_NVP(constant_);
+      ar& BOOST_SERIALIZATION_NVP(nrAssignments_);
+    }
   };  // Leaf
 
   /****************************************************************************/
@@ -177,6 +192,9 @@ namespace gtsam {
     using ChoicePtr = boost::shared_ptr<const Choice>;
 
    public:
+    /// Default constructor for serialization.
+    Choice() {}
+
     ~Choice() override {
 #ifdef DT_DEBUG_MEMORY
       std::std::cout << Node::nrNodes << " destructing (Choice) " << this->id()
@@ -427,6 +445,19 @@ namespace gtsam {
       for (auto&& branch : branches_)
         r->push_back(branch->choose(label, index));
       return Unique(r);
+    }
+
+   private:
+    using Base = DecisionTree<L, Y>::Node;
+
+    /** Serialization function */
+    friend class boost::serialization::access;
+    template <class ARCHIVE>
+    void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+      ar& BOOST_SERIALIZATION_NVP(label_);
+      ar& BOOST_SERIALIZATION_NVP(branches_);
+      ar& BOOST_SERIALIZATION_NVP(allSame_);
     }
   };  // Choice
 
