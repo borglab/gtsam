@@ -168,6 +168,15 @@ class GTSAM_EXPORT HybridValues {
     return *this;
   }
 
+  /// Extract continuous values with given keys.
+  VectorValues continuousSubset(const KeyVector& keys) const {
+    VectorValues measurements;
+    for (const auto& key : keys) {
+      measurements.insert(key, continuous_.at(key));
+    }
+    return measurements;
+  }
+
   /// @}
   /// @name Wrapper support
   /// @{

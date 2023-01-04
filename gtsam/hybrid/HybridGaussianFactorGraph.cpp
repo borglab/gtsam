@@ -59,44 +59,44 @@ namespace gtsam {
 template class EliminateableFactorGraph<HybridGaussianFactorGraph>;
 
 /* ************************************************************************ */
-static GaussianMixtureFactor::Sum &addGaussian(
-    GaussianMixtureFactor::Sum &sum, const GaussianFactor::shared_ptr &factor) {
+static GaussianFactorGraphTree addGaussian(
+    const GaussianFactorGraphTree &sum,
+    const GaussianFactor::shared_ptr &factor) {
   // If the decision tree is not initialized, then initialize it.
   if (sum.empty()) {
     GaussianFactorGraph result;
     result.push_back(factor);
-    sum = GaussianMixtureFactor::Sum(
-        GaussianMixtureFactor::GraphAndConstant(result, 0.0));
+    return GaussianFactorGraphTree(GraphAndConstant(result, 0.0));
 
   } else {
-    auto add = [&factor](
-                   const GaussianMixtureFactor::GraphAndConstant &graph_z) {
+    auto add = [&factor](const GraphAndConstant &graph_z) {
       auto result = graph_z.graph;
       result.push_back(factor);
-      return GaussianMixtureFactor::GraphAndConstant(result, graph_z.constant);
+      return GraphAndConstant(result, graph_z.constant);
     };
-    sum = sum.apply(add);
+    return sum.apply(add);
   }
-  return sum;
 }
 
 /* ************************************************************************ */
-GaussianMixtureFactor::Sum sumFrontals(
-    const HybridGaussianFactorGraph &factors) {
-  // sum out frontals, this is the factor on the separator
-  gttic(sum);
+// TODO(dellaert): We need to document why deferredFactors need to be
+// added last, which I would undo if possible. Implementation-wise, it's
+// probably more efficient to first collect the discrete keys, and then loop
+// over all assignments to populate a vector.
+GaussianFactorGraphTree HybridGaussianFactorGraph::assembleGraphTree() const {
+  gttic(assembleGraphTree);
 
-  GaussianMixtureFactor::Sum sum;
+  GaussianFactorGraphTree result;
   std::vector<GaussianFactor::shared_ptr> deferredFactors;
 
-  for (auto &f : factors) {
+  for (auto &f : factors_) {
+    // TODO(dellaert): just use a virtual method defined in HybridFactor.
     if (f->isHybrid()) {
-      // TODO(dellaert): just use a virtual method defined in HybridFactor.
       if (auto gm = boost::dynamic_pointer_cast<GaussianMixtureFactor>(f)) {
-        sum = gm->add(sum);
+        result = gm->add(result);
       }
       if (auto gm = boost::dynamic_pointer_cast<HybridConditional>(f)) {
-        sum = gm->asMixture()->add(sum);
+        result = gm->asMixture()->add(result);
       }
 
     } else if (f->isContinuous()) {
@@ -127,16 +127,16 @@ GaussianMixtureFactor::Sum sumFrontals(
   }
 
   for (auto &f : deferredFactors) {
-    sum = addGaussian(sum, f);
+    result = addGaussian(result, f);
   }
 
-  gttoc(sum);
+  gttoc(assembleGraphTree);
 
-  return sum;
+  return result;
 }
 
 /* ************************************************************************ */
-std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>
+static std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>
 continuousElimination(const HybridGaussianFactorGraph &factors,
                       const Ordering &frontalKeys) {
   GaussianFactorGraph gfg;
@@ -157,7 +157,7 @@ continuousElimination(const HybridGaussianFactorGraph &factors,
 }
 
 /* ************************************************************************ */
-std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>
+static std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>
 discreteElimination(const HybridGaussianFactorGraph &factors,
                     const Ordering &frontalKeys) {
   DiscreteFactorGraph dfg;
@@ -174,53 +174,52 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
     }
   }
 
-  auto result = EliminateForMPE(dfg, frontalKeys);
+  // NOTE: This does sum-product. For max-product, use EliminateForMPE.
+  auto result = EliminateDiscrete(dfg, frontalKeys);
 
   return {boost::make_shared<HybridConditional>(result.first),
           boost::make_shared<HybridDiscreteFactor>(result.second)};
 }
 
 /* ************************************************************************ */
-std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>
+// If any GaussianFactorGraph in the decision tree contains a nullptr, convert
+// that leaf to an empty GaussianFactorGraph. Needed since the DecisionTree will
+// otherwise create a GFG with a single (null) factor.
+GaussianFactorGraphTree removeEmpty(const GaussianFactorGraphTree &sum) {
+  auto emptyGaussian = [](const GraphAndConstant &graph_z) {
+    bool hasNull =
+        std::any_of(graph_z.graph.begin(), graph_z.graph.end(),
+                    [](const GaussianFactor::shared_ptr &ptr) { return !ptr; });
+    return hasNull ? GraphAndConstant{GaussianFactorGraph(), 0.0} : graph_z;
+  };
+  return GaussianFactorGraphTree(sum, emptyGaussian);
+}
+
+/* ************************************************************************ */
+static std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>
 hybridElimination(const HybridGaussianFactorGraph &factors,
                   const Ordering &frontalKeys,
-                  const KeySet &continuousSeparator,
+                  const KeyVector &continuousSeparator,
                   const std::set<DiscreteKey> &discreteSeparatorSet) {
   // NOTE: since we use the special JunctionTree,
   // only possibility is continuous conditioned on discrete.
   DiscreteKeys discreteSeparator(discreteSeparatorSet.begin(),
                                  discreteSeparatorSet.end());
 
-  // Collect all the frontal factors to create Gaussian factor graphs
-  // indexed on the discrete keys.
-  GaussianMixtureFactor::Sum sum = sumFrontals(factors);
+  // Collect all the factors to create a set of Gaussian factor graphs in a
+  // decision tree indexed by all discrete keys involved.
+  GaussianFactorGraphTree sum = factors.assembleGraphTree();
 
-  // If a tree leaf contains nullptr,
-  // convert that leaf to an empty GaussianFactorGraph.
-  // Needed since the DecisionTree will otherwise create
-  // a GFG with a single (null) factor.
-  auto emptyGaussian =
-      [](const GaussianMixtureFactor::GraphAndConstant &graph_z) {
-        bool hasNull = std::any_of(
-            graph_z.graph.begin(), graph_z.graph.end(),
-            [](const GaussianFactor::shared_ptr &ptr) { return !ptr; });
-
-        return hasNull ? GaussianMixtureFactor::GraphAndConstant(
-                             GaussianFactorGraph(), 0.0)
-                       : graph_z;
-      };
-  sum = GaussianMixtureFactor::Sum(sum, emptyGaussian);
+  // Convert factor graphs with a nullptr to an empty factor graph.
+  // This is done after assembly since it is non-trivial to keep track of which
+  // FG has a nullptr as we're looping over the factors.
+  sum = removeEmpty(sum);
 
   using EliminationPair = std::pair<boost::shared_ptr<GaussianConditional>,
                                     GaussianMixtureFactor::FactorAndConstant>;
 
-  KeyVector keysOfEliminated;  // Not the ordering
-  KeyVector keysOfSeparator;
-
   // This is the elimination method on the leaf nodes
-  auto eliminateFunc =
-      [&](const GaussianMixtureFactor::GraphAndConstant &graph_z)
-      -> EliminationPair {
+  auto eliminateFunc = [&](const GraphAndConstant &graph_z) -> EliminationPair {
     if (graph_z.graph.empty()) {
       return {nullptr, {nullptr, 0.0}};
     }
@@ -229,25 +228,30 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
     gttic_(hybrid_eliminate);
 #endif
 
-    std::pair<boost::shared_ptr<GaussianConditional>,
-              boost::shared_ptr<GaussianFactor>>
-        conditional_factor =
-            EliminatePreferCholesky(graph_z.graph, frontalKeys);
+    boost::shared_ptr<GaussianConditional> conditional;
+    boost::shared_ptr<GaussianFactor> newFactor;
+    boost::tie(conditional, newFactor) =
+        EliminatePreferCholesky(graph_z.graph, frontalKeys);
 
-    // Initialize the keysOfEliminated to be the keys of the
-    // eliminated GaussianConditional
-    keysOfEliminated = conditional_factor.first->keys();
-    keysOfSeparator = conditional_factor.second->keys();
-
-    GaussianConditional::shared_ptr conditional = conditional_factor.first;
+    // Get the log of the log normalization constant inverse and
+    // add it to the previous constant.
+    const double logZ =
+        graph_z.constant - conditional->logNormalizationConstant();
     // Get the log of the log normalization constant inverse.
-    double logZ = -conditional->logNormalizationConstant() + graph_z.constant;
+    // double logZ = -conditional->logNormalizationConstant();
+    // // IF this is the last continuous variable to eliminated, we need to
+    // // calculate the error here: the value of all factors at the mean, see
+    // // ml_map_rao.pdf.
+    // if (continuousSeparator.empty()) {
+    //   const auto posterior_mean = conditional->solve(VectorValues());
+    //   logZ += graph_z.graph.error(posterior_mean);
+    // }
 
 #ifdef HYBRID_TIMING
     gttoc_(hybrid_eliminate);
 #endif
 
-    return {conditional, {conditional_factor.second, logZ}};
+    return {conditional, {newFactor, logZ}};
   };
 
   // Perform elimination!
@@ -259,54 +263,50 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
 #endif
 
   // Separate out decision tree into conditionals and remaining factors.
-  auto pair = unzip(eliminationResults);
-  const auto &separatorFactors = pair.second;
+  GaussianMixture::Conditionals conditionals;
+  GaussianMixtureFactor::Factors newFactors;
+  std::tie(conditionals, newFactors) = unzip(eliminationResults);
 
   // Create the GaussianMixture from the conditionals
-  auto conditional = boost::make_shared<GaussianMixture>(
-      frontalKeys, keysOfSeparator, discreteSeparator, pair.first);
+  auto gaussianMixture = boost::make_shared<GaussianMixture>(
+      frontalKeys, continuousSeparator, discreteSeparator, conditionals);
 
-  // If there are no more continuous parents, then we should create here a
-  // DiscreteFactor, with the error for each discrete choice.
-  if (keysOfSeparator.empty()) {
+  // If there are no more continuous parents, then we should create a
+  // DiscreteFactor here, with the error for each discrete choice.
+  if (continuousSeparator.empty()) {
     auto factorProb =
         [&](const GaussianMixtureFactor::FactorAndConstant &factor_z) {
-          GaussianFactor::shared_ptr factor = factor_z.factor;
-          if (!factor) {
-            return 0.0;  // If nullptr, return 0.0 probability
-          } else {
-            // This is the probability q(μ) at the MLE point.
-            double error = factor_z.error(VectorValues());
-            return std::exp(-error);
-          }
+          // This is the probability q(μ) at the MLE point.
+          // factor_z.factor is a factor without keys,
+          // just containing the residual.
+          return exp(-factor_z.error(VectorValues()));
         };
-    DecisionTree<Key, double> fdt(separatorFactors, factorProb);
-    // Normalize the values of decision tree to be valid probabilities
-    double sum = 0.0;
-    auto visitor = [&](double y) { sum += y; };
-    fdt.visit(visitor);
-    // Check if sum is 0, and update accordingly.
-    if (sum == 0) {
-      sum = 1.0;
-    }
+
+    const DecisionTree<Key, double> fdt(newFactors, factorProb);
+    // // Normalize the values of decision tree to be valid probabilities
+    // double sum = 0.0;
+    // auto visitor = [&](double y) { sum += y; };
+    // fdt.visit(visitor);
+    // // Check if sum is 0, and update accordingly.
+    // if (sum == 0) {
+    //   sum = 1.0;
+    // }
     // fdt = DecisionTree<Key, double>(fdt,
     //                                 [sum](const double &x) { return x / sum;
     //                                 });
-
-    auto discreteFactor =
+    const auto discreteFactor =
         boost::make_shared<DecisionTreeFactor>(discreteSeparator, fdt);
 
-    return {boost::make_shared<HybridConditional>(conditional),
+    return {boost::make_shared<HybridConditional>(gaussianMixture),
             boost::make_shared<HybridDiscreteFactor>(discreteFactor)};
-
   } else {
     // Create a resulting GaussianMixtureFactor on the separator.
-    auto factor = boost::make_shared<GaussianMixtureFactor>(
-        KeyVector(continuousSeparator.begin(), continuousSeparator.end()),
-        discreteSeparator, separatorFactors);
-    return {boost::make_shared<HybridConditional>(conditional), factor};
+    return {boost::make_shared<HybridConditional>(gaussianMixture),
+            boost::make_shared<GaussianMixtureFactor>(
+                continuousSeparator, discreteSeparator, newFactors)};
   }
 }
+
 /* ************************************************************************
  * Function to eliminate variables **under the following assumptions**:
  * 1. When the ordering is fully continuous, and the graph only contains
@@ -403,12 +403,12 @@ EliminateHybrid(const HybridGaussianFactorGraph &factors,
 
   // Fill in discrete discrete separator keys and continuous separator keys.
   std::set<DiscreteKey> discreteSeparatorSet;
-  KeySet continuousSeparator;
+  KeyVector continuousSeparator;
   for (auto &k : separatorKeys) {
     if (mapFromKeyToDiscreteKey.find(k) != mapFromKeyToDiscreteKey.end()) {
       discreteSeparatorSet.insert(mapFromKeyToDiscreteKey.at(k));
     } else {
-      continuousSeparator.insert(k);
+      continuousSeparator.push_back(k);
     }
   }
 

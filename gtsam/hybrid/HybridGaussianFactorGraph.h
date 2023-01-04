@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
 #include <gtsam/hybrid/HybridGaussianFactor.h>
@@ -118,14 +119,12 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
       : Base(graph) {}
 
   /// @}
+  /// @name Adding factors.
+  /// @{
 
-  using Base::empty;
-  using Base::reserve;
-  using Base::size;
-  using Base::operator[];
   using Base::add;
   using Base::push_back;
-  using Base::resize;
+  using Base::reserve;
 
   /// Add a Jacobian factor to the factor graph.
   void add(JacobianFactor&& factor);
@@ -172,6 +171,25 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
     }
   }
 
+  /// @}
+  /// @name Testable
+  /// @{
+
+  // TODO(dellaert):  customize print and equals.
+  // void print(const std::string& s = "HybridGaussianFactorGraph",
+  //            const KeyFormatter& keyFormatter = DefaultKeyFormatter) const
+  //     override;
+  // bool equals(const This& fg, double tol = 1e-9) const override;
+
+  /// @}
+  /// @name Standard Interface
+  /// @{
+
+  using Base::empty;
+  using Base::size;
+  using Base::operator[];
+  using Base::resize;
+
   /**
    * @brief Compute error for each discrete assignment,
    * and return as a tree.
@@ -217,6 +235,19 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
    * @return const Ordering
    */
   const Ordering getHybridOrdering() const;
+
+  /**
+   * @brief Create a decision tree of factor graphs out of this hybrid factor
+   * graph.
+   *
+   * For example, if there are two mixture factors, one with a discrete key A
+   * and one with a discrete key B, then the decision tree will have two levels,
+   * one for A and one for B. The leaves of the tree will be the Gaussian
+   * factors that have only continuous keys.
+   */
+  GaussianFactorGraphTree assembleGraphTree() const;
+
+  /// @}
 };
 
 }  // namespace gtsam

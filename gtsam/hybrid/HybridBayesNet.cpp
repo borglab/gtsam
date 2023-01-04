@@ -27,6 +27,17 @@ static std::mt19937_64 kRandomNumberGenerator(42);
 namespace gtsam {
 
 /* ************************************************************************* */
+void HybridBayesNet::print(const std::string &s,
+                           const KeyFormatter &formatter) const {
+  Base::print(s, formatter);
+}
+
+/* ************************************************************************* */
+bool HybridBayesNet::equals(const This &bn, double tol) const {
+  return Base::equals(bn, tol);
+}
+
+/* ************************************************************************* */
 DecisionTreeFactor::shared_ptr HybridBayesNet::discreteConditionals() const {
   AlgebraicDecisionTree<Key> decisionTree;
 
@@ -271,12 +282,15 @@ double HybridBayesNet::evaluate(const HybridValues &values) const {
 
   // Iterate over each conditional.
   for (auto &&conditional : *this) {
+    // TODO: should be delegated to derived classes.
     if (auto gm = conditional->asMixture()) {
       const auto component = (*gm)(discreteValues);
       logDensity += component->logDensity(continuousValues);
+
     } else if (auto gc = conditional->asGaussian()) {
       // If continuous only, evaluate the probability and multiply.
       logDensity += gc->logDensity(continuousValues);
+
     } else if (auto dc = conditional->asDiscrete()) {
       // Conditional is discrete-only, so return its probability.
       probability *= dc->operator()(discreteValues);

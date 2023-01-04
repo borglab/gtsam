@@ -62,6 +62,7 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
       // Note: constant is log of normalization constant for probabilities.
       // Errors is the negative log-likelihood,
       // hence we subtract the constant here.
+      if (!factor) return 0.0;  // If nullptr, return 0.0 error
       return factor->error(values) - constant;
     }
 
@@ -70,22 +71,6 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
       return factor == other.factor && constant == other.constant;
     }
   };
-
-  /// Gaussian factor graph and log of normalizing constant.
-  struct GraphAndConstant {
-    GaussianFactorGraph graph;
-    double constant;
-
-    GraphAndConstant(const GaussianFactorGraph &graph, double constant)
-        : graph(graph), constant(constant) {}
-
-    // Check pointer equality.
-    bool operator==(const GraphAndConstant &other) const {
-      return graph == other.graph && constant == other.constant;
-    }
-  };
-
-  using Sum = DecisionTree<Key, GraphAndConstant>;
 
   /// typedef for Decision Tree of Gaussian factors and log-constant.
   using Factors = DecisionTree<Key, FactorAndConstant>;
@@ -99,9 +84,9 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
    * @brief Helper function to return factors and functional to create a
    * DecisionTree of Gaussian Factor Graphs.
    *
-   * @return Sum (DecisionTree<Key, GaussianFactorGraph>)
+   * @return GaussianFactorGraphTree
    */
-  Sum asGaussianFactorGraphTree() const;
+  GaussianFactorGraphTree asGaussianFactorGraphTree() const;
 
  public:
   /// @name Constructors
@@ -151,12 +136,16 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
   void print(
       const std::string &s = "GaussianMixtureFactor\n",
       const KeyFormatter &formatter = DefaultKeyFormatter) const override;
+
   /// @}
   /// @name Standard API
   /// @{
 
-  /// Getter for the underlying Gaussian Factor Decision Tree.
-  const Mixture factors() const;
+  /// Get factor at a given discrete assignment.
+  sharedFactor factor(const DiscreteValues &assignment) const;
+
+  /// Get constant at a given discrete assignment.
+  double constant(const DiscreteValues &assignment) const;
 
   /**
    * @brief Combine the Gaussian Factor Graphs in `sum` and `this` while
@@ -166,7 +155,7 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
    * variables.
    * @return Sum
    */
-  Sum add(const Sum &sum) const;
+  GaussianFactorGraphTree add(const GaussianFactorGraphTree &sum) const;
 
   /**
    * @brief Compute error of the GaussianMixtureFactor as a tree.
@@ -184,7 +173,8 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
   double error(const HybridValues &values) const override;
 
   /// Add MixtureFactor to a Sum, syntactic sugar.
-  friend Sum &operator+=(Sum &sum, const GaussianMixtureFactor &factor) {
+  friend GaussianFactorGraphTree &operator+=(
+      GaussianFactorGraphTree &sum, const GaussianMixtureFactor &factor) {
     sum = factor.add(sum);
     return sum;
   }

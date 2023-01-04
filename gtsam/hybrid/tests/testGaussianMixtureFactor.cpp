@@ -80,7 +80,7 @@ TEST(GaussianMixtureFactor, Sum) {
 
   // Create sum of two mixture factors: it will be a decision tree now on both
   // discrete variables m1 and m2:
-  GaussianMixtureFactor::Sum sum;
+  GaussianFactorGraphTree sum;
   sum += mixtureFactorA;
   sum += mixtureFactorB;
 

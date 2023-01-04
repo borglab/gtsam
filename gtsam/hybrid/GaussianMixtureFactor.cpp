@@ -81,32 +81,36 @@ void GaussianMixtureFactor::print(const std::string &s,
 }
 
 /* *******************************************************************************/
-const GaussianMixtureFactor::Mixture GaussianMixtureFactor::factors() const {
-  return Mixture(factors_, [](const FactorAndConstant &factor_z) {
-    return factor_z.factor;
-  });
+GaussianFactor::shared_ptr GaussianMixtureFactor::factor(
+    const DiscreteValues &assignment) const {
+  return factors_(assignment).factor;
 }
 
 /* *******************************************************************************/
-GaussianMixtureFactor::Sum GaussianMixtureFactor::add(
-    const GaussianMixtureFactor::Sum &sum) const {
-  using Y = GaussianMixtureFactor::GraphAndConstant;
+double GaussianMixtureFactor::constant(const DiscreteValues &assignment) const {
+  return factors_(assignment).constant;
+}
+
+/* *******************************************************************************/
+GaussianFactorGraphTree GaussianMixtureFactor::add(
+    const GaussianFactorGraphTree &sum) const {
+  using Y = GraphAndConstant;
   auto add = [](const Y &graph1, const Y &graph2) {
     auto result = graph1.graph;
     result.push_back(graph2.graph);
     return Y(result, graph1.constant + graph2.constant);
   };
-  const Sum tree = asGaussianFactorGraphTree();
+  const auto tree = asGaussianFactorGraphTree();
   return sum.empty() ? tree : sum.apply(tree, add);
 }
 
 /* *******************************************************************************/
-GaussianMixtureFactor::Sum GaussianMixtureFactor::asGaussianFactorGraphTree()
+GaussianFactorGraphTree GaussianMixtureFactor::asGaussianFactorGraphTree()
     const {
   auto wrap = [](const FactorAndConstant &factor_z) {
     GaussianFactorGraph result;
     result.push_back(factor_z.factor);
-    return GaussianMixtureFactor::GraphAndConstant(result, factor_z.constant);
+    return GraphAndConstant(result, factor_z.constant);
   };
   return {factors_, wrap};
 }

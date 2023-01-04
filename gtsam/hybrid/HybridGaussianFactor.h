@@ -48,9 +48,8 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
   /**
    * Constructor from shared_ptr of GaussianFactor.
    * Example:
-   *  boost::shared_ptr<GaussianFactor> ptr =
-   * boost::make_shared<JacobianFactor>(...);
-   *
+   *  auto ptr = boost::make_shared<JacobianFactor>(...);
+   *  HybridGaussianFactor factor(ptr);
    */
   explicit HybridGaussianFactor(const boost::shared_ptr<GaussianFactor> &ptr);
 

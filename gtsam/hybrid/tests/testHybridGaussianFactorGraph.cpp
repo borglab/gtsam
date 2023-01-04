@@ -47,6 +47,7 @@
 #include <vector>
 
 #include "Switching.h"
+#include "TinyHybridExample.h"
 
 using namespace std;
 using namespace gtsam;
@@ -133,8 +134,8 @@ TEST(HybridGaussianFactorGraph, eliminateFullSequentialEqualChance) {
   auto dc = result->at(2)->asDiscrete();
   DiscreteValues dv;
   dv[M(1)] = 0;
-  // regression
-  EXPECT_DOUBLES_EQUAL(8.5730017810851127, dc->operator()(dv), 1e-3);
+  // Regression test
+  EXPECT_DOUBLES_EQUAL(0.62245933120185448, dc->operator()(dv), 1e-3);
 }
 
 /* ************************************************************************* */
@@ -611,6 +612,108 @@ TEST(HybridGaussianFactorGraph, ErrorAndProbPrimeTree) {
 
   // regression
   EXPECT(assert_equal(expected_probs, probs, 1e-7));
+}
+
+/* ****************************************************************************/
+// Check that assembleGraphTree assembles Gaussian factor graphs for each
+// assignment.
+TEST(HybridGaussianFactorGraph, assembleGraphTree) {
+  using symbol_shorthand::Z;
+  const int num_measurements = 1;
+  auto fg = tiny::createHybridGaussianFactorGraph(
+      num_measurements, VectorValues{{Z(0), Vector1(5.0)}});
+  EXPECT_LONGS_EQUAL(3, fg.size());
+
+  auto sum = fg.assembleGraphTree();
+
+  // Get mixture factor:
+  auto mixture = boost::dynamic_pointer_cast<GaussianMixtureFactor>(fg.at(0));
+  using GF = GaussianFactor::shared_ptr;
+
+  // Get prior factor:
+  const GF prior =
+      boost::dynamic_pointer_cast<HybridGaussianFactor>(fg.at(1))->inner();
+
+  // Create DiscreteValues for both 0 and 1:
+  DiscreteValues d0{{M(0), 0}}, d1{{M(0), 1}};
+
+  // Expected decision tree with two factor graphs:
+  // f(x0;mode=0)P(x0) and f(x0;mode=1)P(x0)
+  GaussianFactorGraphTree expectedSum{
+      M(0),
+      {GaussianFactorGraph(std::vector<GF>{mixture->factor(d0), prior}),
+       mixture->constant(d0)},
+      {GaussianFactorGraph(std::vector<GF>{mixture->factor(d1), prior}),
+       mixture->constant(d1)}};
+
+  EXPECT(assert_equal(expectedSum(d0), sum(d0), 1e-5));
+  EXPECT(assert_equal(expectedSum(d1), sum(d1), 1e-5));
+}
+
+/* ****************************************************************************/
+// Check that eliminating tiny net with 1 measurement yields correct result.
+TEST(HybridGaussianFactorGraph, EliminateTiny1) {
+  using symbol_shorthand::Z;
+  const int num_measurements = 1;
+  auto fg = tiny::createHybridGaussianFactorGraph(
+      num_measurements, VectorValues{{Z(0), Vector1(5.0)}});
+
+  // Create expected Bayes Net:
+  HybridBayesNet expectedBayesNet;
+
+  // Create Gaussian mixture on X(0).
+  using tiny::mode;
+  // regression, but mean checked to be 5.0 in both cases:
+  const auto conditional0 = boost::make_shared<GaussianConditional>(
+                 X(0), Vector1(14.1421), I_1x1 * 2.82843),
+             conditional1 = boost::make_shared<GaussianConditional>(
+                 X(0), Vector1(10.1379), I_1x1 * 2.02759);
+  GaussianMixture gm({X(0)}, {}, {mode}, {conditional0, conditional1});
+  expectedBayesNet.emplaceMixture(gm);  // copy :-(
+
+  // Add prior on mode.
+  expectedBayesNet.emplaceDiscrete(mode, "74/26");
+
+  // Test elimination
+  Ordering ordering;
+  ordering.push_back(X(0));
+  ordering.push_back(M(0));
+  const auto posterior = fg.eliminateSequential(ordering);
+  EXPECT(assert_equal(expectedBayesNet, *posterior, 0.01));
+}
+
+/* ****************************************************************************/
+// Check that eliminating tiny net with 2 measurements yields correct result.
+TEST(HybridGaussianFactorGraph, EliminateTiny2) {
+  // Create factor graph with 2 measurements such that posterior mean = 5.0.
+  using symbol_shorthand::Z;
+  const int num_measurements = 2;
+  auto fg = tiny::createHybridGaussianFactorGraph(
+      num_measurements,
+      VectorValues{{Z(0), Vector1(4.0)}, {Z(1), Vector1(6.0)}});
+
+  // Create expected Bayes Net:
+  HybridBayesNet expectedBayesNet;
+
+  // Create Gaussian mixture on X(0).
+  using tiny::mode;
+  // regression, but mean checked to be 5.0 in both cases:
+  const auto conditional0 = boost::make_shared<GaussianConditional>(
+                 X(0), Vector1(17.3205), I_1x1 * 3.4641),
+             conditional1 = boost::make_shared<GaussianConditional>(
+                 X(0), Vector1(10.274), I_1x1 * 2.0548);
+  GaussianMixture gm({X(0)}, {}, {mode}, {conditional0, conditional1});
+  expectedBayesNet.emplaceMixture(gm);  // copy :-(
+
+  // Add prior on mode.
+  expectedBayesNet.emplaceDiscrete(mode, "23/77");
+
+  // Test elimination
+  Ordering ordering;
+  ordering.push_back(X(0));
+  ordering.push_back(M(0));
+  const auto posterior = fg.eliminateSequential(ordering);
+  EXPECT(assert_equal(expectedBayesNet, *posterior, 0.01));
 }
 
 /* ************************************************************************* */
