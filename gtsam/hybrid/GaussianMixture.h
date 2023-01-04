@@ -23,13 +23,13 @@
 #include <gtsam/discrete/DecisionTree.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteKey.h>
+#include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/inference/Conditional.h>
 #include <gtsam/linear/GaussianConditional.h>
 
 namespace gtsam {
 
-class GaussianMixtureFactor;
 class HybridValues;
 
 /**
@@ -59,9 +59,6 @@ class GTSAM_EXPORT GaussianMixture
   using BaseFactor = HybridFactor;
   using BaseConditional = Conditional<HybridFactor, GaussianMixture>;
 
-  /// Alias for DecisionTree of GaussianFactorGraphs
-  using Sum = DecisionTree<Key, GaussianFactorGraph>;
-
   /// typedef for Decision Tree of Gaussian Conditionals
   using Conditionals = DecisionTree<Key, GaussianConditional::shared_ptr>;
 
@@ -71,7 +68,7 @@ class GTSAM_EXPORT GaussianMixture
   /**
    * @brief Convert a DecisionTree of factors into a DT of Gaussian FGs.
    */
-  Sum asGaussianFactorGraphTree() const;
+  GaussianFactorGraphTree asGaussianFactorGraphTree() const;
 
   /**
    * @brief Helper function to get the pruner functor.
@@ -172,6 +169,16 @@ class GTSAM_EXPORT GaussianMixture
    */
   double error(const HybridValues &values) const override;
 
+  //   /// Calculate probability density for given values `x`.
+  //   double evaluate(const HybridValues &values) const;
+
+  //   /// Evaluate probability density, sugar.
+  //   double operator()(const HybridValues &values) const { return
+  //   evaluate(values); }
+
+  //   /// Calculate log-density for given values `x`.
+  //   double logDensity(const HybridValues &values) const;
+
   /**
    * @brief Prune the decision tree of Gaussian factors as per the discrete
    * `decisionTree`.
@@ -186,10 +193,20 @@ class GTSAM_EXPORT GaussianMixture
    * maintaining the decision tree structure.
    *
    * @param sum Decision Tree of Gaussian Factor Graphs
-   * @return Sum
+   * @return GaussianFactorGraphTree
    */
-  Sum add(const Sum &sum) const;
+  GaussianFactorGraphTree add(const GaussianFactorGraphTree &sum) const;
   /// @}
+
+ private:
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class Archive>
+  void serialize(Archive &ar, const unsigned int /*version*/) {
+    ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseFactor);
+    ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseConditional);
+    ar &BOOST_SERIALIZATION_NVP(conditionals_);
+  }
 };
 
 /// Return the DiscreteKey vector as a set.

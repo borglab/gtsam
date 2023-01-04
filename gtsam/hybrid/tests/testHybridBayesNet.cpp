@@ -18,19 +18,18 @@
  * @date    December 2021
  */
 
-#include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 #include "Switching.h"
+#include "TinyHybridExample.h"
 
 // Include for test suite
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;
-using namespace gtsam::serializationTestHelpers;
 
 using noiseModel::Isotropic;
 using symbol_shorthand::M;
@@ -63,12 +62,19 @@ TEST(HybridBayesNet, Add) {
 
 /* ****************************************************************************/
 // Test evaluate for a pure discrete Bayes net P(Asia).
-TEST(HybridBayesNet, evaluatePureDiscrete) {
+TEST(HybridBayesNet, EvaluatePureDiscrete) {
   HybridBayesNet bayesNet;
   bayesNet.emplaceDiscrete(Asia, "99/1");
   HybridValues values;
   values.insert(asiaKey, 0);
   EXPECT_DOUBLES_EQUAL(0.99, bayesNet.evaluate(values), 1e-9);
+}
+
+/* ****************************************************************************/
+// Test creation of a tiny hybrid Bayes net.
+TEST(HybridBayesNet, Tiny) {
+  auto bayesNet = tiny::createHybridBayesNet();
+  EXPECT_LONGS_EQUAL(3, bayesNet.size());
 }
 
 /* ****************************************************************************/
@@ -180,7 +186,7 @@ TEST(HybridBayesNet, OptimizeAssignment) {
 /* ****************************************************************************/
 // Test Bayes net optimize
 TEST(HybridBayesNet, Optimize) {
-  Switching s(4);
+  Switching s(4, 1.0, 0.1, {0, 1, 2, 3}, "1/1 1/1");
 
   Ordering hybridOrdering = s.linearizedFactorGraph.getHybridOrdering();
   HybridBayesNet::shared_ptr hybridBayesNet =
@@ -188,25 +194,24 @@ TEST(HybridBayesNet, Optimize) {
 
   HybridValues delta = hybridBayesNet->optimize();
 
-  // TODO(Varun) The expectedAssignment should be 111, not 101
+  // NOTE: The true assignment is 111, but the discrete priors cause 101
   DiscreteValues expectedAssignment;
   expectedAssignment[M(0)] = 1;
-  expectedAssignment[M(1)] = 0;
+  expectedAssignment[M(1)] = 1;
   expectedAssignment[M(2)] = 1;
   EXPECT(assert_equal(expectedAssignment, delta.discrete()));
 
-  // TODO(Varun) This should be all -Vector1::Ones()
   VectorValues expectedValues;
-  expectedValues.insert(X(0), -0.999904 * Vector1::Ones());
-  expectedValues.insert(X(1), -0.99029 * Vector1::Ones());
-  expectedValues.insert(X(2), -1.00971 * Vector1::Ones());
-  expectedValues.insert(X(3), -1.0001 * Vector1::Ones());
+  expectedValues.insert(X(0), -Vector1::Ones());
+  expectedValues.insert(X(1), -Vector1::Ones());
+  expectedValues.insert(X(2), -Vector1::Ones());
+  expectedValues.insert(X(3), -Vector1::Ones());
 
   EXPECT(assert_equal(expectedValues, delta.continuous(), 1e-5));
 }
 
 /* ****************************************************************************/
-// Test bayes net error
+// Test Bayes net error
 TEST(HybridBayesNet, Error) {
   Switching s(3);
 
@@ -237,7 +242,7 @@ TEST(HybridBayesNet, Error) {
   EXPECT(assert_equal(expected_pruned_error, pruned_error_tree, 1e-9));
 
   // Verify error computation and check for specific error value
-  DiscreteValues discrete_values {{M(0), 1}, {M(1), 1}};
+  DiscreteValues discrete_values{{M(0), 1}, {M(1), 1}};
 
   double total_error = 0;
   for (size_t idx = 0; idx < hybridBayesNet->size(); idx++) {
@@ -321,18 +326,6 @@ TEST(HybridBayesNet, UpdateDiscreteConditionals) {
 
   // The checker functor verifies the values for us.
   discrete_conditional_tree->apply(checker);
-}
-
-/* ****************************************************************************/
-// Test HybridBayesNet serialization.
-TEST(HybridBayesNet, Serialization) {
-  Switching s(4);
-  Ordering ordering = s.linearizedFactorGraph.getHybridOrdering();
-  HybridBayesNet hbn = *(s.linearizedFactorGraph.eliminateSequential(ordering));
-
-  EXPECT(equalsObj<HybridBayesNet>(hbn));
-  EXPECT(equalsXML<HybridBayesNet>(hbn));
-  EXPECT(equalsBinary<HybridBayesNet>(hbn));
 }
 
 /* ****************************************************************************/

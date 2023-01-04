@@ -176,15 +176,7 @@ class GTSAM_EXPORT HybridConditional
   boost::shared_ptr<Factor> inner() const { return inner_; }
 
   /// Return the error of the underlying conditional.
-  /// Currently only implemented for Gaussian mixture.
-  double error(const HybridValues& values) const override {
-    if (auto gm = asMixture()) {
-      return gm->error(values);
-    } else {
-      throw std::runtime_error(
-          "HybridConditional::error: only implemented for Gaussian mixture");
-    }
-  }
+  double error(const HybridValues& values) const override;
 
   /// @}
 
@@ -195,6 +187,20 @@ class GTSAM_EXPORT HybridConditional
   void serialize(Archive& ar, const unsigned int /*version*/) {
     ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseFactor);
     ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseConditional);
+    ar& BOOST_SERIALIZATION_NVP(inner_);
+
+    // register the various casts based on the type of inner_
+    // https://www.boost.org/doc/libs/1_80_0/libs/serialization/doc/serialization.html#runtimecasting
+    if (isDiscrete()) {
+      boost::serialization::void_cast_register<DiscreteConditional, Factor>(
+          static_cast<DiscreteConditional*>(NULL), static_cast<Factor*>(NULL));
+    } else if (isContinuous()) {
+      boost::serialization::void_cast_register<GaussianConditional, Factor>(
+          static_cast<GaussianConditional*>(NULL), static_cast<Factor*>(NULL));
+    } else {
+      boost::serialization::void_cast_register<GaussianMixture, Factor>(
+          static_cast<GaussianMixture*>(NULL), static_cast<Factor*>(NULL));
+    }
   }
 
 };  // HybridConditional

@@ -156,9 +156,9 @@ namespace gtsam {
   std::vector<std::pair<DiscreteValues, double>> DecisionTreeFactor::enumerate()
       const {
     // Get all possible assignments
-    std::vector<std::pair<Key, size_t>> pairs = discreteKeys();
+    DiscreteKeys pairs = discreteKeys();
     // Reverse to make cartesian product output a more natural ordering.
-    std::vector<std::pair<Key, size_t>> rpairs(pairs.rbegin(), pairs.rend());
+    DiscreteKeys rpairs(pairs.rbegin(), pairs.rend());
     const auto assignments = DiscreteValues::CartesianProduct(rpairs);
 
     // Construct unordered_map with values

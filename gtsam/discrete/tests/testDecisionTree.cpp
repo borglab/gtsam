@@ -20,12 +20,11 @@
 // #define DT_DEBUG_MEMORY
 // #define GTSAM_DT_NO_PRUNING
 #define DISABLE_DOT
-#include <gtsam/discrete/DecisionTree-inl.h>
-
-#include <gtsam/base/Testable.h>
-#include <gtsam/discrete/Signature.h>
-
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/serializationTestHelpers.h>
+#include <gtsam/discrete/DecisionTree-inl.h>
+#include <gtsam/discrete/Signature.h>
 
 using namespace std;
 using namespace gtsam;

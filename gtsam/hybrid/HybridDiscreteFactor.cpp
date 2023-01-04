@@ -26,7 +26,6 @@
 namespace gtsam {
 
 /* ************************************************************************ */
-// TODO(fan): THIS IS VERY VERY DIRTY! We need to get DiscreteFactor right!
 HybridDiscreteFactor::HybridDiscreteFactor(DiscreteFactor::shared_ptr other)
     : Base(boost::dynamic_pointer_cast<DecisionTreeFactor>(other)
                ->discreteKeys()),
@@ -40,8 +39,10 @@ HybridDiscreteFactor::HybridDiscreteFactor(DecisionTreeFactor &&dtf)
 /* ************************************************************************ */
 bool HybridDiscreteFactor::equals(const HybridFactor &lf, double tol) const {
   const This *e = dynamic_cast<const This *>(&lf);
-  // TODO(Varun) How to compare inner_ when they are abstract types?
-  return e != nullptr && Base::equals(*e, tol);
+  if (e == nullptr) return false;
+  if (!Base::equals(*e, tol)) return false;
+  return inner_ ? (e->inner_ ? inner_->equals(*(e->inner_), tol) : false)
+                : !(e->inner_);
 }
 
 /* ************************************************************************ */

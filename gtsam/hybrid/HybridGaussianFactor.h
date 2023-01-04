@@ -43,14 +43,17 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
   using This = HybridGaussianFactor;
   using shared_ptr = boost::shared_ptr<This>;
 
+  /// @name Constructors
+  /// @{
+
+  /// Default constructor - for serialization.
   HybridGaussianFactor() = default;
 
   /**
    * Constructor from shared_ptr of GaussianFactor.
    * Example:
-   *  boost::shared_ptr<GaussianFactor> ptr =
-   * boost::make_shared<JacobianFactor>(...);
-   *
+   *  auto ptr = boost::make_shared<JacobianFactor>(...);
+   *  HybridGaussianFactor factor(ptr);
    */
   explicit HybridGaussianFactor(const boost::shared_ptr<GaussianFactor> &ptr);
 
@@ -80,7 +83,7 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
    */
   explicit HybridGaussianFactor(HessianFactor &&hf);
 
- public:
+  /// @}
   /// @name Testable
   /// @{
 
@@ -99,9 +102,18 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
   /// Return pointer to the internal Gaussian factor.
   GaussianFactor::shared_ptr inner() const { return inner_; }
 
-  /// Return the error of the underlying Discrete Factor.
+  /// Return the error of the underlying Gaussian factor.
   double error(const HybridValues &values) const override;
   /// @}
+
+ private:
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
+    ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    ar &BOOST_SERIALIZATION_NVP(inner_);
+  }
 };
 
 // traits

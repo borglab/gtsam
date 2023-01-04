@@ -162,14 +162,20 @@ class MixtureFactor : public HybridFactor {
   }
 
   /// Error for HybridValues is not provided for nonlinear hybrid factor.
-  double error(const HybridValues &values) const override {
+  double error(const HybridValues& values) const override {
     throw std::runtime_error(
         "MixtureFactor::error(HybridValues) not implemented.");
   }
 
+  /**
+   * @brief Get the dimension of the factor (number of rows on linearization).
+   * Returns the dimension of the first component factor.
+   * @return size_t
+   */
   size_t dim() const {
-    // TODO(Varun)
-    throw std::runtime_error("MixtureFactor::dim not implemented.");
+    const auto assignments = DiscreteValues::CartesianProduct(discreteKeys_);
+    auto factor = factors_(assignments.at(0));
+    return factor->dim();
   }
 
   /// Testable

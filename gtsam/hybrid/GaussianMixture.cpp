@@ -51,24 +51,28 @@ GaussianMixture::GaussianMixture(
                       Conditionals(discreteParents, conditionalsList)) {}
 
 /* *******************************************************************************/
-GaussianMixture::Sum GaussianMixture::add(
-    const GaussianMixture::Sum &sum) const {
-  using Y = GaussianFactorGraph;
+GaussianFactorGraphTree GaussianMixture::add(
+    const GaussianFactorGraphTree &sum) const {
+  using Y = GraphAndConstant;
   auto add = [](const Y &graph1, const Y &graph2) {
-    auto result = graph1;
-    result.push_back(graph2);
-    return result;
+    auto result = graph1.graph;
+    result.push_back(graph2.graph);
+    return Y(result, graph1.constant + graph2.constant);
   };
-  const Sum tree = asGaussianFactorGraphTree();
+  const auto tree = asGaussianFactorGraphTree();
   return sum.empty() ? tree : sum.apply(tree, add);
 }
 
 /* *******************************************************************************/
-GaussianMixture::Sum GaussianMixture::asGaussianFactorGraphTree() const {
-  auto lambda = [](const GaussianFactor::shared_ptr &factor) {
+GaussianFactorGraphTree GaussianMixture::asGaussianFactorGraphTree() const {
+  auto lambda = [](const GaussianConditional::shared_ptr &conditional) {
     GaussianFactorGraph result;
-    result.push_back(factor);
-    return result;
+    result.push_back(conditional);
+    if (conditional) {
+      return GraphAndConstant(result, conditional->logNormalizationConstant());
+    } else {
+      return GraphAndConstant(result, 0.0);
+    }
   };
   return {conditionals_, lambda};
 }
@@ -98,7 +102,19 @@ GaussianConditional::shared_ptr GaussianMixture::operator()(
 /* *******************************************************************************/
 bool GaussianMixture::equals(const HybridFactor &lf, double tol) const {
   const This *e = dynamic_cast<const This *>(&lf);
-  return e != nullptr && BaseFactor::equals(*e, tol);
+  if (e == nullptr) return false;
+
+  // This will return false if either conditionals_ is empty or e->conditionals_
+  // is empty, but not if both are empty or both are not empty:
+  if (conditionals_.empty() ^ e->conditionals_.empty()) return false;
+
+  // Check the base and the factors:
+  return BaseFactor::equals(*e, tol) &&
+         conditionals_.equals(e->conditionals_,
+                              [tol](const GaussianConditional::shared_ptr &f1,
+                                    const GaussianConditional::shared_ptr &f2) {
+                                return f1->equals(*(f2), tol);
+                              });
 }
 
 /* *******************************************************************************/
@@ -146,7 +162,13 @@ KeyVector GaussianMixture::continuousParents() const {
 /* ************************************************************************* */
 boost::shared_ptr<GaussianMixtureFactor> GaussianMixture::likelihood(
     const VectorValues &frontals) const {
-  // TODO(dellaert): check that values has all frontals
+  // Check that values has all frontals
+  for (auto &&kv : frontals) {
+    if (frontals.find(kv.first) == frontals.end()) {
+      throw std::runtime_error("GaussianMixture: frontals missing factor key.");
+    }
+  }
+
   const DiscreteKeys discreteParentKeys = discreteKeys();
   const KeyVector continuousParentKeys = continuousParents();
   const GaussianMixtureFactor::Factors likelihoods(

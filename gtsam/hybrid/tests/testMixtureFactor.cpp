@@ -70,8 +70,7 @@ MixtureFactor
 }
 
 /* ************************************************************************* */
-// Test the error of the MixtureFactor
-TEST(MixtureFactor, Error) {
+static MixtureFactor getMixtureFactor() {
   DiscreteKey m1(1, 2);
 
   double between0 = 0.0;
@@ -86,7 +85,13 @@ TEST(MixtureFactor, Error) {
       boost::make_shared<BetweenFactor<double>>(X(1), X(2), between1, model);
   std::vector<NonlinearFactor::shared_ptr> factors{f0, f1};
 
-  MixtureFactor mixtureFactor({X(1), X(2)}, {m1}, factors);
+  return MixtureFactor({X(1), X(2)}, {m1}, factors);
+}
+
+/* ************************************************************************* */
+// Test the error of the MixtureFactor
+TEST(MixtureFactor, Error) {
+  auto mixtureFactor = getMixtureFactor();
 
   Values continuousValues;
   continuousValues.insert<double>(X(1), 0);
@@ -94,11 +99,19 @@ TEST(MixtureFactor, Error) {
 
   AlgebraicDecisionTree<Key> error_tree = mixtureFactor.error(continuousValues);
 
+  DiscreteKey m1(1, 2);
   std::vector<DiscreteKey> discrete_keys = {m1};
   std::vector<double> errors = {0.5, 0};
   AlgebraicDecisionTree<Key> expected_error(discrete_keys, errors);
 
   EXPECT(assert_equal(expected_error, error_tree));
+}
+
+/* ************************************************************************* */
+// Test dim of the MixtureFactor
+TEST(MixtureFactor, Dim) {
+  auto mixtureFactor = getMixtureFactor();
+  EXPECT_LONGS_EQUAL(1, mixtureFactor.dim());
 }
 
 /* ************************************************************************* */

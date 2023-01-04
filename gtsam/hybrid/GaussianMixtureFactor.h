@@ -25,10 +25,10 @@
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/linear/GaussianFactor.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 
 namespace gtsam {
 
-class GaussianFactorGraph;
 class HybridValues;
 class DiscreteValues;
 class VectorValues;
@@ -50,7 +50,6 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
   using This = GaussianMixtureFactor;
   using shared_ptr = boost::shared_ptr<This>;
 
-  using Sum = DecisionTree<Key, GaussianFactorGraph>;
   using sharedFactor = boost::shared_ptr<GaussianFactor>;
 
   /// Gaussian factor and log of normalizing constant.
@@ -60,14 +59,25 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
 
     // Return error with constant correction.
     double error(const VectorValues &values) const {
-      // Note minus sign: constant is log of normalization constant for probabilities.
-      // Errors is the negative log-likelihood, hence we subtract the constant here.
+      // Note: constant is log of normalization constant for probabilities.
+      // Errors is the negative log-likelihood,
+      // hence we subtract the constant here.
+      if (!factor) return 0.0;  // If nullptr, return 0.0 error
       return factor->error(values) - constant;
     }
 
     // Check pointer equality.
     bool operator==(const FactorAndConstant &other) const {
       return factor == other.factor && constant == other.constant;
+    }
+
+   private:
+    /** Serialization function */
+    friend class boost::serialization::access;
+    template <class ARCHIVE>
+    void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
+      ar &BOOST_SERIALIZATION_NVP(factor);
+      ar &BOOST_SERIALIZATION_NVP(constant);
     }
   };
 
@@ -83,9 +93,9 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
    * @brief Helper function to return factors and functional to create a
    * DecisionTree of Gaussian Factor Graphs.
    *
-   * @return Sum (DecisionTree<Key, GaussianFactorGraph>)
+   * @return GaussianFactorGraphTree
    */
-  Sum asGaussianFactorGraphTree() const;
+  GaussianFactorGraphTree asGaussianFactorGraphTree() const;
 
  public:
   /// @name Constructors
@@ -135,12 +145,16 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
   void print(
       const std::string &s = "GaussianMixtureFactor\n",
       const KeyFormatter &formatter = DefaultKeyFormatter) const override;
+
   /// @}
   /// @name Standard API
   /// @{
 
-  /// Getter for the underlying Gaussian Factor Decision Tree.
-  const Mixture factors() const;
+  /// Get factor at a given discrete assignment.
+  sharedFactor factor(const DiscreteValues &assignment) const;
+
+  /// Get constant at a given discrete assignment.
+  double constant(const DiscreteValues &assignment) const;
 
   /**
    * @brief Combine the Gaussian Factor Graphs in `sum` and `this` while
@@ -150,7 +164,7 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
    * variables.
    * @return Sum
    */
-  Sum add(const Sum &sum) const;
+  GaussianFactorGraphTree add(const GaussianFactorGraphTree &sum) const;
 
   /**
    * @brief Compute error of the GaussianMixtureFactor as a tree.
@@ -168,11 +182,21 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
   double error(const HybridValues &values) const override;
 
   /// Add MixtureFactor to a Sum, syntactic sugar.
-  friend Sum &operator+=(Sum &sum, const GaussianMixtureFactor &factor) {
+  friend GaussianFactorGraphTree &operator+=(
+      GaussianFactorGraphTree &sum, const GaussianMixtureFactor &factor) {
     sum = factor.add(sum);
     return sum;
   }
   /// @}
+
+ private:
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
+    ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    ar &BOOST_SERIALIZATION_NVP(factors_);
+  }
 };
 
 // traits
