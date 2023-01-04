@@ -69,8 +69,7 @@ GaussianFactorGraphTree GaussianMixture::asGaussianFactorGraphTree() const {
     GaussianFactorGraph result;
     result.push_back(conditional);
     if (conditional) {
-      return GraphAndConstant(
-          result, conditional->logNormalizationConstant());
+      return GraphAndConstant(result, conditional->logNormalizationConstant());
     } else {
       return GraphAndConstant(result, 0.0);
     }
@@ -163,7 +162,13 @@ KeyVector GaussianMixture::continuousParents() const {
 /* ************************************************************************* */
 boost::shared_ptr<GaussianMixtureFactor> GaussianMixture::likelihood(
     const VectorValues &frontals) const {
-  // TODO(dellaert): check that values has all frontals
+  // Check that values has all frontals
+  for (auto &&kv : frontals) {
+    if (frontals.find(kv.first) == frontals.end()) {
+      throw std::runtime_error("GaussianMixture: frontals missing factor key.");
+    }
+  }
+
   const DiscreteKeys discreteParentKeys = discreteKeys();
   const KeyVector continuousParentKeys = continuousParents();
   const GaussianMixtureFactor::Factors likelihoods(
