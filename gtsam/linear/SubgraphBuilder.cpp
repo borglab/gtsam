@@ -337,7 +337,6 @@ vector<size_t> SubgraphBuilder::kruskal(const GaussianFactorGraph &gfg,
   DSFVector dsf(n);
 
   size_t count = 0;
-  double sum = 0.0;
   for (const size_t index : sortedIndices) {
     const GaussianFactor &gf = *gfg[index];
     const auto keys = gf.keys();
@@ -347,7 +346,6 @@ vector<size_t> SubgraphBuilder::kruskal(const GaussianFactorGraph &gfg,
     if (dsf.find(u) != dsf.find(v)) {
       dsf.merge(u, v);
       treeIndices.push_back(index);
-      sum += weights[index];
       if (++count == n - 1) break;
     }
   }
@@ -446,30 +444,29 @@ SubgraphBuilder::Weights SubgraphBuilder::weights(
 }
 
 /*****************************************************************************/
-GaussianFactorGraph::shared_ptr buildFactorSubgraph(
-    const GaussianFactorGraph &gfg, const Subgraph &subgraph,
-    const bool clone) {
-  auto subgraphFactors = boost::make_shared<GaussianFactorGraph>();
-  subgraphFactors->reserve(subgraph.size());
+GaussianFactorGraph buildFactorSubgraph(const GaussianFactorGraph &gfg,
+                                        const Subgraph &subgraph,
+                                        const bool clone) {
+  GaussianFactorGraph subgraphFactors;
+  subgraphFactors.reserve(subgraph.size());
   for (const auto &e : subgraph) {
     const auto factor = gfg[e.index];
-    subgraphFactors->push_back(clone ? factor->clone() : factor);
+    subgraphFactors.push_back(clone ? factor->clone() : factor);
   }
   return subgraphFactors;
 }
 
 /**************************************************************************************************/
-std::pair<GaussianFactorGraph::shared_ptr, GaussianFactorGraph::shared_ptr>  //
-splitFactorGraph(const GaussianFactorGraph &factorGraph,
-                 const Subgraph &subgraph) {
+std::pair<GaussianFactorGraph, GaussianFactorGraph> splitFactorGraph(
+    const GaussianFactorGraph &factorGraph, const Subgraph &subgraph) {
   // Get the subgraph by calling cheaper method
   auto subgraphFactors = buildFactorSubgraph(factorGraph, subgraph, false);
 
   // Now, copy all factors then set subGraph factors to zero
-  auto remaining = boost::make_shared<GaussianFactorGraph>(factorGraph);
+  GaussianFactorGraph remaining = factorGraph;
 
   for (const auto &e : subgraph) {
-    remaining->remove(e.index);
+    remaining.remove(e.index);
   }
 
   return std::make_pair(subgraphFactors, remaining);

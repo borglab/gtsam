@@ -70,10 +70,27 @@ public:
         boost::assign_detail::call_push_back<This>(*this))(key);
   }
 
-  /// Invert (not reverse) the ordering - returns a map from key to order position
+  /**
+   * @brief Append new keys to the ordering as `ordering += keys`.
+   *
+   * @param keys The key vector to append to this ordering.
+   * @return The ordering variable with appended keys.
+   */
+  This& operator+=(KeyVector& keys);
+
+  /// Check if key exists in ordering.
+  bool contains(const Key& key) const;
+
+  /**
+   * @brief Invert (not reverse) the ordering - returns a map from key to order
+   * position.
+   *
+   * @return FastMap<Key, size_t>
+   */
   FastMap<Key, size_t> invert() const;
 
-  /// @name Fill-reducing Orderings @{
+  /// @name Fill-reducing Orderings
+  /// @{
 
   /// Compute a fill-reducing ordering using COLAMD from a factor graph (see details for note on
   /// performance). This internally builds a VariableIndex so if you already have a VariableIndex,
@@ -199,7 +216,8 @@ public:
 
   /// @}
 
-  /// @name Named Constructors @{
+  /// @name Named Constructors
+  /// @{
 
   template<class FACTOR_GRAPH>
   static Ordering Create(OrderingType orderingType,
@@ -225,7 +243,8 @@ public:
 
   /// @}
 
-  /// @name Testable @{
+  /// @name Testable
+  /// @{
 
   GTSAM_EXPORT
   void print(const std::string& str = "", const KeyFormatter& keyFormatter =

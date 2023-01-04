@@ -48,6 +48,23 @@ inline Line3_ transformTo(const Pose3_ &wTc, const Line3_ &wL) {
   return Line3_(f, wTc, wL);
 }
 
+inline Point3_ normalize(const Point3_& a){
+  Point3 (*f)(const Point3 &, OptionalJacobian<3, 3>) = &normalize;
+  return Point3_(f, a);
+}
+
+inline Point3_ cross(const Point3_& a, const Point3_& b) {
+  Point3 (*f)(const Point3 &, const Point3 &,
+             OptionalJacobian<3, 3>, OptionalJacobian<3, 3>) = &cross;
+  return Point3_(f, a, b);
+}
+
+inline Double_ dot(const Point3_& a, const Point3_& b) {
+  double (*f)(const Point3 &, const Point3 &,
+             OptionalJacobian<1, 3>, OptionalJacobian<1, 3>) = &dot;
+  return Double_(f, a, b);
+}
+
 namespace internal {
 // define getter that returns value rather than reference
 inline Rot3 rotation(const Pose3& pose, OptionalJacobian<3, 6> H) {
@@ -124,6 +141,23 @@ inline Point2_ project3(const Pose3_& x, const Expression<POINT>& p,
 template <class CALIBRATION>
 Point2_ uncalibrate(const Expression<CALIBRATION>& K, const Point2_& xy_hat) {
   return Point2_(K, &CALIBRATION::uncalibrate, xy_hat);
+}
+
+
+/// logmap
+// TODO(dellaert): Should work but fails because of a type deduction conflict.
+// template <typename T>
+// gtsam::Expression<typename gtsam::traits<T>::TangentVector> logmap(
+//     const gtsam::Expression<T> &x1, const gtsam::Expression<T> &x2) {
+//   return gtsam::Expression<typename gtsam::traits<T>::TangentVector>(
+//       x1, &T::logmap, x2);
+// }
+
+template <typename T>
+gtsam::Expression<typename gtsam::traits<T>::TangentVector> logmap(
+    const gtsam::Expression<T> &x1, const gtsam::Expression<T> &x2) {
+  return Expression<typename gtsam::traits<T>::TangentVector>(
+      gtsam::traits<T>::Logmap, between(x1, x2));
 }
 
 }  // \namespace gtsam

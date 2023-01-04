@@ -58,7 +58,7 @@ if(NOT DEFINED GTWRAP_INCLUDE_NAME)
 endif()
 
 configure_file(${PROJECT_SOURCE_DIR}/templates/matlab_wrapper.tpl.in
-               ${PROJECT_SOURCE_DIR}/gtwrap/matlab_wrapper.tpl)
+               ${PROJECT_SOURCE_DIR}/gtwrap/matlab_wrapper/matlab_wrapper.tpl)
 
 # Install the gtwrap python package as a directory so it can be found  by CMake
 # for wrapping.

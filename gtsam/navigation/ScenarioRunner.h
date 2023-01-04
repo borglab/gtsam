@@ -16,9 +16,10 @@
  */
 
 #pragma once
+#include <gtsam/linear/Sampler.h>
+#include <gtsam/navigation/CombinedImuFactor.h>
 #include <gtsam/navigation/ImuFactor.h>
 #include <gtsam/navigation/Scenario.h>
-#include <gtsam/linear/Sampler.h>
 
 namespace gtsam {
 
@@ -66,10 +67,10 @@ class GTSAM_EXPORT ScenarioRunner {
   // also, uses g=10 for easy debugging
   const Vector3& gravity_n() const { return p_->n_gravity; }
 
+  const Scenario& scenario() const { return scenario_; }
+
   // A gyro simply measures angular velocity in body frame
-  Vector3 actualAngularVelocity(double t) const {
-    return scenario_.omega_b(t);
-  }
+  Vector3 actualAngularVelocity(double t) const { return scenario_.omega_b(t); }
 
   // An accelerometer measures acceleration in body, but not gravity
   Vector3 actualSpecificForce(double t) const {
@@ -104,6 +105,41 @@ class GTSAM_EXPORT ScenarioRunner {
 
   /// Estimate covariance of sampled noise for sanity-check
   Matrix6 estimateNoiseCovariance(size_t N = 1000) const;
+};
+
+/*
+ *  Simple class to test navigation scenarios with CombinedImuMeasurements.
+ *  Takes a trajectory scenario as input, and can generate IMU measurements
+ */
+class GTSAM_EXPORT CombinedScenarioRunner : public ScenarioRunner {
+ public:
+  typedef boost::shared_ptr<PreintegrationCombinedParams> SharedParams;
+
+ private:
+  const SharedParams p_;
+  const Bias estimatedBias_;
+
+ public:
+  CombinedScenarioRunner(const Scenario& scenario, const SharedParams& p,
+                         double imuSampleTime = 1.0 / 100.0,
+                         const Bias& bias = Bias())
+      : ScenarioRunner(scenario, static_cast<ScenarioRunner::SharedParams>(p),
+                       imuSampleTime, bias),
+        p_(p),
+        estimatedBias_(bias) {}
+
+  /// Integrate measurements for T seconds into a PIM
+  PreintegratedCombinedMeasurements integrate(
+      double T, const Bias& estimatedBias = Bias(),
+      bool corrupted = false) const;
+
+  /// Predict predict given a PIM
+  NavState predict(const PreintegratedCombinedMeasurements& pim,
+                   const Bias& estimatedBias = Bias()) const;
+
+  /// Compute a Monte Carlo estimate of the predict covariance using N samples
+  Eigen::Matrix<double, 15, 15> estimateCovariance(
+      double T, size_t N = 1000, const Bias& estimatedBias = Bias()) const;
 };
 
 }  // namespace gtsam

@@ -426,11 +426,34 @@ TEST(GaussianFactorGraph, hessianDiagonal) {
   EXPECT(assert_equal(expected, actual));
 }
 
+/* ************************************************************************* */
 TEST(GaussianFactorGraph, DenseSolve) {
   GaussianFactorGraph fg = createSimpleGaussianFactorGraph();
   VectorValues expected = fg.optimize();
   VectorValues actual = fg.optimizeDensely();
   EXPECT(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+TEST(GaussianFactorGraph, ProbPrime) {
+  GaussianFactorGraph gfg;
+  gfg.emplace_shared<JacobianFactor>(1, I_1x1, Z_1x1,
+                                     noiseModel::Isotropic::Sigma(1, 1.0));
+
+  VectorValues values;
+  values.insert(1, I_1x1);
+
+  // We are testing the normal distribution PDF where info matrix Σ = 1,
+  // mean mu = 0  and x = 1.
+  // Therefore factor squared error: y = 0.5 * (Σ*x - mu)^2 =
+  // 0.5 * (1.0 - 0)^2 = 0.5
+  // NOTE the 0.5 constant is a part of the factor error.
+  EXPECT_DOUBLES_EQUAL(0.5, gfg.error(values), 1e-12);
+
+  // The gaussian PDF value is: exp^(-0.5 * (Σ*x - mu)^2) / sqrt(2 * PI)
+  // Ignore the denominator and we get: exp^(-0.5 * (1.0)^2) = exp^(-0.5)
+  double expected = exp(-0.5);
+  EXPECT_DOUBLES_EQUAL(expected, gfg.probPrime(values), 1e-12);
 }
 
 /* ************************************************************************* */

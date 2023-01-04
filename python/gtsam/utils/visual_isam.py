@@ -17,7 +17,7 @@ def initialize(data, truth, options):
     # Initialize iSAM
     params = gtsam.ISAM2Params()
     if options.alwaysRelinearize:
-        params.setRelinearizeSkip(1)
+        params.relinearizeSkip = 1
     isam = gtsam.ISAM2(params=params)
 
     # Add constraints/priors

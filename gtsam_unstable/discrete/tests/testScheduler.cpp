@@ -5,24 +5,19 @@
  */
 
 //#define ENABLE_TIMING
-#include <gtsam_unstable/discrete/Scheduler.h>
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/timing.h>
+#include <gtsam_unstable/discrete/Scheduler.h>
 
-#include <CppUnitLite/TestHarness.h>
-
-#include <boost/assign/std/vector.hpp>
-#include <boost/assign/std/map.hpp>
 #include <boost/optional.hpp>
 
-using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
 // Create the expected graph of constraints
 DiscreteFactorGraph createExpected() {
-
   // Start building
   size_t nrFaculty = 4, nrTimeSlots = 3;
 
@@ -47,27 +42,27 @@ DiscreteFactorGraph createExpected() {
   string available = "1 1 1 0   1 1 1 1   0 1 1 1";
 
   // Akansel
-  expected.add(A1, faculty_in_A); // Area 1
-  expected.add(A1, "1 1 1 0"); // Advisor
+  expected.add(A1, faculty_in_A);  // Area 1
+  expected.add(A1, "1 1 1 0");     // Advisor
   expected.add(A & A1, available);
-  expected.add(A2, faculty_in_M); // Area 2
-  expected.add(A2, "1 1 1 0"); // Advisor
+  expected.add(A2, faculty_in_M);  // Area 2
+  expected.add(A2, "1 1 1 0");     // Advisor
   expected.add(A & A2, available);
-  expected.add(A3, faculty_in_P); // Area 3
-  expected.add(A3, "1 1 1 0"); // Advisor
+  expected.add(A3, faculty_in_P);  // Area 3
+  expected.add(A3, "1 1 1 0");     // Advisor
   expected.add(A & A3, available);
   // Mutual exclusion for faculty
   expected.addAllDiff(A1 & A2 & A3);
 
   // Jake
-  expected.add(J1, faculty_in_H); // Area 1
-  expected.add(J1, "1 0 1 1"); // Advisor
+  expected.add(J1, faculty_in_H);  // Area 1
+  expected.add(J1, "1 0 1 1");     // Advisor
   expected.add(J & J1, available);
-  expected.add(J2, faculty_in_C); // Area 2
-  expected.add(J2, "1 0 1 1"); // Advisor
+  expected.add(J2, faculty_in_C);  // Area 2
+  expected.add(J2, "1 0 1 1");     // Advisor
   expected.add(J & J2, available);
-  expected.add(J3, faculty_in_A); // Area 3
-  expected.add(J3, "1 0 1 1"); // Advisor
+  expected.add(J3, faculty_in_A);  // Area 3
+  expected.add(J3, "1 0 1 1");     // Advisor
   expected.add(J & J3, available);
   // Mutual exclusion for faculty
   expected.addAllDiff(J1 & J2 & J3);
@@ -79,8 +74,7 @@ DiscreteFactorGraph createExpected() {
 }
 
 /* ************************************************************************* */
-TEST( schedulingExample, test)
-{
+TEST(schedulingExample, test) {
   Scheduler s(2);
 
   // add faculty
@@ -121,33 +115,32 @@ TEST( schedulingExample, test)
 
   // Do brute force product and output that to file
   DecisionTreeFactor product = s.product();
-  //product.dot("scheduling", false);
+  // product.dot("scheduling", false);
 
   // Do exact inference
   gttic(small);
-  DiscreteFactor::sharedValues MPE = s.optimalAssignment();
+  auto MPE = s.optimize();
   gttoc(small);
 
   // print MPE, commented out as unit tests don't print
-//  s.printAssignment(MPE);
+  //  s.printAssignment(MPE);
 
   // Commented out as does not work yet
   // s.runArcConsistency(8,10,true);
 
   // find the assignment of students to slots with most possible committees
   // Commented out as not implemented yet
-//  sharedValues bestSchedule = s.bestSchedule();
-//  GTSAM_PRINT(*bestSchedule);
+  //  auto bestSchedule = s.bestSchedule();
+  //  GTSAM_PRINT(bestSchedule);
 
   //  find the corresponding most desirable committee assignment
   // Commented out as not implemented yet
-//  sharedValues bestAssignment = s.bestAssignment(bestSchedule);
-//  GTSAM_PRINT(*bestAssignment);
+  //  auto bestAssignment = s.bestAssignment(bestSchedule);
+  //  GTSAM_PRINT(bestAssignment);
 }
 
 /* ************************************************************************* */
-TEST( schedulingExample, smallFromFile)
-{
+TEST(schedulingExample, smallFromFile) {
   string path(TOPSRCDIR "/gtsam_unstable/discrete/examples/");
   Scheduler s(2, path + "small.csv");
 
@@ -179,4 +172,3 @@ int main() {
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-

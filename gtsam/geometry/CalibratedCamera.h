@@ -46,7 +46,7 @@ private:
 
 /**
  * A pinhole camera class that has a Pose3, functions as base class for all pinhole cameras
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  */
 class GTSAM_EXPORT PinholeBase {
@@ -241,7 +241,7 @@ private:
  * A Calibrated camera class [R|-R't], calibration K=I.
  * If calibration is known, it is more computationally efficient
  * to calibrate the measurements rather than try to predict in pixels.
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  */
 class GTSAM_EXPORT CalibratedCamera: public PinholeBase {

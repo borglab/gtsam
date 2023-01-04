@@ -22,6 +22,8 @@
  * Passing function argument allows to specificy an initial position, a pose increment and step count.
  */
 
+#pragma once
+
 // As this is a full 3D problem, we will use Pose3 variables to represent the camera
 // positions and Point3 variables (x, y, z) to represent the landmark coordinates.
 // Camera observations of landmarks (i.e. pixel coordinates) will be stored as Point2 (x, y).

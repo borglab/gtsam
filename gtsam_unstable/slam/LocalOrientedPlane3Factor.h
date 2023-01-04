@@ -9,6 +9,8 @@
 
 #include <gtsam/geometry/OrientedPlane3.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam_unstable/dllexport.h>
+
 #include <string>
 
 namespace gtsam {
@@ -32,16 +34,16 @@ namespace gtsam {
  * a local linearisation point for the plane. The plane is representated and
  * optimized in x1 frame in the optimization.
  */
-class LocalOrientedPlane3Factor: public NoiseModelFactor3<Pose3, Pose3,
-                                                          OrientedPlane3> {
-protected:
+class GTSAM_UNSTABLE_EXPORT LocalOrientedPlane3Factor
+    : public NoiseModelFactorN<Pose3, Pose3, OrientedPlane3> {
+ protected:
   OrientedPlane3 measured_p_;
-  typedef NoiseModelFactor3<Pose3, Pose3, OrientedPlane3> Base;
+  typedef NoiseModelFactorN<Pose3, Pose3, OrientedPlane3> Base;
 public:
   /// Constructor
   LocalOrientedPlane3Factor() {}
 
-  virtual ~LocalOrientedPlane3Factor() {}
+  ~LocalOrientedPlane3Factor() override {}
 
   /** Constructor with measured plane (a,b,c,d) coefficients
    * @param z measured plane (a,b,c,d) coefficients as 4D vector
@@ -54,12 +56,12 @@ public:
    * Note: The anchorPoseKey can simply be chosen as the first pose a plane
    * is observed.  
    */
-  LocalOrientedPlane3Factor(const Vector4& z, const SharedGaussian& noiseModel,
+  LocalOrientedPlane3Factor(const Vector4& z, const SharedNoiseModel& noiseModel,
                             Key poseKey, Key anchorPoseKey, Key landmarkKey)
       : Base(noiseModel, poseKey, anchorPoseKey, landmarkKey), measured_p_(z) {}
 
   LocalOrientedPlane3Factor(const OrientedPlane3& z,
-                            const SharedGaussian& noiseModel,
+                            const SharedNoiseModel& noiseModel,
                             Key poseKey, Key anchorPoseKey, Key landmarkKey)
     : Base(noiseModel, poseKey, anchorPoseKey, landmarkKey), measured_p_(z) {}
 

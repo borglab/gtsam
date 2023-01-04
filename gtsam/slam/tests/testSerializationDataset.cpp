@@ -16,6 +16,7 @@
  * @date Jan 1, 2021
  */
 
+#include <gtsam/sfm/SfmData.h>
 #include <gtsam/slam/dataset.h>
 
 #include <gtsam/base/serializationTestHelpers.h>
@@ -29,8 +30,7 @@ using namespace gtsam::serializationTestHelpers;
 TEST(dataSet, sfmDataSerialization) {
   // Test the serialization of SfmData
   const string filename = findExampleDataFile("dubrovnik-3-7-pre");
-  SfmData mydata;
-  CHECK(readBAL(filename, mydata));
+  SfmData mydata = SfmData::FromBalFile(filename);
 
   // round-trip equality check on serialization and subsequent deserialization
   EXPECT(equalsObj(mydata));
@@ -42,8 +42,7 @@ TEST(dataSet, sfmDataSerialization) {
 TEST(dataSet, sfmTrackSerialization) {
   // Test the serialization of SfmTrack
   const string filename = findExampleDataFile("dubrovnik-3-7-pre");
-  SfmData mydata;
-  CHECK(readBAL(filename, mydata));
+  SfmData mydata = SfmData::FromBalFile(filename);
 
   SfmTrack track = mydata.track(0);
 

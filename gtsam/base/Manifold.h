@@ -178,4 +178,4 @@ struct FixedDimension {
 // * the gtsam namespace to be more easily enforced as testable
 // */
 #define GTSAM_CONCEPT_MANIFOLD_INST(T) template class gtsam::IsManifold<T>;
-#define GTSAM_CONCEPT_MANIFOLD_TYPE(T) typedef gtsam::IsManifold<T> _gtsam_IsManifold_##T;
+#define GTSAM_CONCEPT_MANIFOLD_TYPE(T) using _gtsam_IsManifold_##T = gtsam::IsManifold<T>;

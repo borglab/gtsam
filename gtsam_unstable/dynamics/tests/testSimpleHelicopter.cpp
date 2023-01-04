@@ -9,6 +9,7 @@
 #include <gtsam_unstable/dynamics/SimpleHelicopter.h>
 
 /* ************************************************************************* */
+using namespace std::placeholders;
 using namespace gtsam;
 using namespace gtsam::symbol_shorthand;
 
@@ -56,19 +57,28 @@ TEST( Reconstruction, evaluateError) {
       assert_equal(Z_6x1, constraint.evaluateError(g2, g1, V1_g1, H1, H2, H3), tol));
 
   Matrix numericalH1 = numericalDerivative31(
-      boost::function<Vector(const Pose3&, const Pose3&, const Vector6&)>(
-          boost::bind(&Reconstruction::evaluateError, constraint, _1, _2, _3,
-              boost::none, boost::none, boost::none)), g2, g1, V1_g1, 1e-5);
+      std::function<Vector(const Pose3&, const Pose3&, const Vector6&)>(
+          std::bind(&Reconstruction::evaluateError, constraint,
+                    std::placeholders::_1, std::placeholders::_2,
+                    std::placeholders::_3, boost::none, boost::none,
+                    boost::none)),
+      g2, g1, V1_g1, 1e-5);
 
   Matrix numericalH2 = numericalDerivative32(
-      boost::function<Vector(const Pose3&, const Pose3&, const Vector6&)>(
-          boost::bind(&Reconstruction::evaluateError, constraint, _1, _2, _3,
-              boost::none, boost::none, boost::none)), g2, g1, V1_g1, 1e-5);
+      std::function<Vector(const Pose3&, const Pose3&, const Vector6&)>(
+          std::bind(&Reconstruction::evaluateError, constraint,
+                    std::placeholders::_1, std::placeholders::_2,
+                    std::placeholders::_3, boost::none, boost::none,
+                    boost::none)),
+      g2, g1, V1_g1, 1e-5);
 
   Matrix numericalH3 = numericalDerivative33(
-      boost::function<Vector(const Pose3&, const Pose3&, const Vector6&)>(
-          boost::bind(&Reconstruction::evaluateError, constraint, _1, _2, _3,
-              boost::none, boost::none, boost::none)), g2, g1, V1_g1, 1e-5);
+      std::function<Vector(const Pose3&, const Pose3&, const Vector6&)>(
+          std::bind(&Reconstruction::evaluateError, constraint,
+                    std::placeholders::_1, std::placeholders::_2,
+                    std::placeholders::_3, boost::none, boost::none,
+                    boost::none)),
+      g2, g1, V1_g1, 1e-5);
 
   EXPECT(assert_equal(numericalH1,H1,1e-5));
   EXPECT(assert_equal(numericalH2,H2,1e-5));
@@ -109,22 +119,22 @@ TEST( DiscreteEulerPoincareHelicopter, evaluateError) {
   EXPECT(assert_equal(Z_6x1, constraint.evaluateError(expectedv2, V1_g1, g2, H1, H2, H3), 1e0));
 
   Matrix numericalH1 = numericalDerivative31(
-      boost::function<Vector(const Vector6&, const Vector6&, const Pose3&)>(
-          boost::bind(&DiscreteEulerPoincareHelicopter::evaluateError, constraint, _1, _2, _3, boost::none, boost::none, boost::none)
+      std::function<Vector(const Vector6&, const Vector6&, const Pose3&)>(
+          std::bind(&DiscreteEulerPoincareHelicopter::evaluateError, constraint, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, boost::none, boost::none, boost::none)
           ),
           expectedv2, V1_g1, g2, 1e-5
       );
 
   Matrix numericalH2 = numericalDerivative32(
-      boost::function<Vector(const Vector6&, const Vector6&, const Pose3&)>(
-          boost::bind(&DiscreteEulerPoincareHelicopter::evaluateError, constraint, _1, _2, _3, boost::none, boost::none, boost::none)
+      std::function<Vector(const Vector6&, const Vector6&, const Pose3&)>(
+          std::bind(&DiscreteEulerPoincareHelicopter::evaluateError, constraint, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, boost::none, boost::none, boost::none)
           ),
           expectedv2, V1_g1, g2, 1e-5
       );
 
   Matrix numericalH3 = numericalDerivative33(
-      boost::function<Vector(const Vector6&, const Vector6&, const Pose3&)>(
-          boost::bind(&DiscreteEulerPoincareHelicopter::evaluateError, constraint, _1, _2, _3, boost::none, boost::none, boost::none)
+      std::function<Vector(const Vector6&, const Vector6&, const Pose3&)>(
+          std::bind(&DiscreteEulerPoincareHelicopter::evaluateError, constraint, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, boost::none, boost::none, boost::none)
           ),
           expectedv2, V1_g1, g2, 1e-5
       );

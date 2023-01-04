@@ -117,9 +117,6 @@ namespace gtsam {
     /** Clone a factor (make a deep copy) */
     virtual GaussianFactor::shared_ptr clone() const = 0;
 
-    /** Test whether the factor is empty */
-    virtual bool empty() const = 0;
-
     /**
      * Construct the corresponding anti-factor to negate information
      * stored stored in this factor.

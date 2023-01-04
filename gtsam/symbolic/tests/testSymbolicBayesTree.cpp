@@ -731,10 +731,12 @@ TEST(SymbolicBayesTree, COLAMDvsMETIS) {
   {
     Ordering ordering = Ordering::Create(Ordering::METIS, sfg);
 // Linux and Mac split differently when using mettis
-#if !defined(__APPLE__)
-    EXPECT(assert_equal(Ordering(list_of(3)(2)(5)(0)(4)(1)), ordering));
-#else
+#if defined(__APPLE__)
     EXPECT(assert_equal(Ordering(list_of(5)(4)(2)(1)(0)(3)), ordering));
+#elif defined(_WIN32)
+    EXPECT(assert_equal(Ordering(list_of(4)(3)(1)(0)(5)(2)), ordering));
+#else
+    EXPECT(assert_equal(Ordering(list_of(3)(2)(5)(0)(4)(1)), ordering));
 #endif
 
     //  - P( 1 0 3)
@@ -742,20 +744,27 @@ TEST(SymbolicBayesTree, COLAMDvsMETIS) {
     //  | | - P( 5 | 0 4)
     //  | - P( 2 | 1 3)
     SymbolicBayesTree expected;
-#if !defined(__APPLE__)
-    expected.insertRoot(
-        MakeClique(list_of(2)(4)(1), 3,
-            list_of(
-                MakeClique(list_of(0)(1)(4), 1,
-                    list_of(MakeClique(list_of(5)(0)(4), 1))))(
-                MakeClique(list_of(3)(2)(4), 1))));
-#else
+#if defined(__APPLE__)
     expected.insertRoot(
             MakeClique(list_of(1)(0)(3), 3,
                 list_of(
                     MakeClique(list_of(4)(0)(3), 1,
                         list_of(MakeClique(list_of(5)(0)(4), 1))))(
                     MakeClique(list_of(2)(1)(3), 1))));
+#elif defined(_WIN32)
+    expected.insertRoot(
+            MakeClique(list_of(3)(5)(2), 3,
+                list_of(
+                    MakeClique(list_of(4)(3)(5), 1,
+                        list_of(MakeClique(list_of(0)(2)(5), 1))))(
+                    MakeClique(list_of(1)(0)(2), 1))));
+#else
+    expected.insertRoot(
+        MakeClique(list_of(2)(4)(1), 3,
+            list_of(
+                MakeClique(list_of(0)(1)(4), 1,
+                    list_of(MakeClique(list_of(5)(0)(4), 1))))(
+                MakeClique(list_of(3)(2)(4), 1))));
 #endif
     SymbolicBayesTree actual = *sfg.eliminateMultifrontal(ordering);
     EXPECT(assert_equal(expected, actual));

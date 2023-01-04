@@ -440,7 +440,7 @@ template<typename _MatrixType, unsigned int _Mode> class TriangularViewImpl<_Mat
     EIGEN_DEVICE_FUNC
     void lazyAssign(const TriangularBase<OtherDerived>& other);
 
-    /** \deprecated */
+    /** @deprecated */
     template<typename OtherDerived>
     EIGEN_DEVICE_FUNC
     void lazyAssign(const MatrixBase<OtherDerived>& other);
@@ -523,7 +523,7 @@ template<typename _MatrixType, unsigned int _Mode> class TriangularViewImpl<_Mat
       call_assignment(derived(), other.const_cast_derived(), internal::swap_assign_op<Scalar>());
     }
 
-    /** \deprecated
+    /** @deprecated
       * Shortcut for \code (*this).swap(other.triangularView<(*this)::Mode>()) \endcode */
     template<typename OtherDerived>
     EIGEN_DEVICE_FUNC

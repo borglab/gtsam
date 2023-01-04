@@ -144,9 +144,6 @@ namespace gtsam {
     /// @name Standard Interface
     /// @{
 
-    /** Whether the factor is empty (involves zero variables). */
-    bool empty() const { return keys_.empty(); }
-
     /** Eliminate the variables in \c keys, in the order specified in \c keys, returning a
      *  conditional and marginal. */
     std::pair<boost::shared_ptr<SymbolicConditional>, boost::shared_ptr<SymbolicFactor> >

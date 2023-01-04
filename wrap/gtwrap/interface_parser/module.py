@@ -12,7 +12,8 @@ Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellae
 
 # pylint: disable=unnecessary-lambda, unused-import, expression-not-assigned, no-else-return, protected-access, too-few-public-methods, too-many-arguments
 
-from pyparsing import ParseResults, ZeroOrMore, cppStyleComment, stringEnd
+from pyparsing import (ParseResults, ZeroOrMore,  # type: ignore
+                       cppStyleComment, stringEnd)
 
 from .classes import Class
 from .declaration import ForwardDeclaration, Include

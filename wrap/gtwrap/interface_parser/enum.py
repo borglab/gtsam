@@ -10,7 +10,7 @@ Parser class and rules for parsing C++ enums.
 Author: Varun Agrawal
 """
 
-from pyparsing import delimitedList
+from pyparsing import delimitedList  # type: ignore
 
 from .tokens import ENUM, IDENT, LBRACE, RBRACE, SEMI_COLON
 from .type import Typename

@@ -17,6 +17,7 @@
  * @author Frank Dellaert
  * @author Mike Bosse
  * @author Duy Nguyen Ta
+ * @author Yotam Stern
  */
 
 
@@ -176,7 +177,7 @@ struct LieGroupTraits: GetDimensionImpl<Class, Class::dimension> {
   /// @name Group
   /// @{
   typedef multiplicative_group_tag group_flavor;
-  static Class Identity() { return Class::identity();}
+  static Class Identity() { return Class::Identity();}
   /// @}
 
   /// @name Manifold
@@ -319,12 +320,28 @@ T expm(const Vector& x, int K=7) {
 }
 
 /**
- * Linear interpolation between X and Y by coefficient t in [0, 1].
+ * Linear interpolation between X and Y by coefficient t. Typically t \in [0,1],
+ * but can also be used to extrapolate before pose X or after pose Y.
  */
 template <typename T>
-T interpolate(const T& X, const T& Y, double t) {
-  assert(t >= 0 && t <= 1);
-  return traits<T>::Compose(X, traits<T>::Expmap(t * traits<T>::Logmap(traits<T>::Between(X, Y))));
+T interpolate(const T& X, const T& Y, double t,
+              typename MakeOptionalJacobian<T, T>::type Hx = boost::none,
+              typename MakeOptionalJacobian<T, T>::type Hy = boost::none) {
+  if (Hx || Hy) {
+    typename MakeJacobian<T, T>::type between_H_x, log_H, exp_H, compose_H_x;
+    const T between =
+        traits<T>::Between(X, Y, between_H_x);  // between_H_y = identity
+    typename traits<T>::TangentVector delta = traits<T>::Logmap(between, log_H);
+    const T Delta = traits<T>::Expmap(t * delta, exp_H);
+    const T result = traits<T>::Compose(
+        X, Delta, compose_H_x);  // compose_H_xinv_y = identity
+
+    if (Hx) *Hx = compose_H_x + t * exp_H * log_H * between_H_x;
+    if (Hy) *Hy = t * exp_H * log_H;
+    return result;
+  }
+  return traits<T>::Compose(
+      X, traits<T>::Expmap(t * traits<T>::Logmap(traits<T>::Between(X, Y))));
 }
 
 /**
@@ -353,4 +370,4 @@ public:
  * the gtsam namespace to be more easily enforced as testable
  */
 #define GTSAM_CONCEPT_LIE_INST(T) template class gtsam::IsLieGroup<T>;
-#define GTSAM_CONCEPT_LIE_TYPE(T) typedef gtsam::IsLieGroup<T> _gtsam_IsLieGroup_##T;
+#define GTSAM_CONCEPT_LIE_TYPE(T) using _gtsam_IsLieGroup_##T = gtsam::IsLieGroup<T>;

@@ -36,17 +36,17 @@ namespace gtsam {
       // no Ordering is provided.  When removing optional from VariableIndex, create VariableIndex
       // before creating ordering.
       VariableIndex computedVariableIndex(asDerived());
-      return eliminateSequential(function, computedVariableIndex, orderingType);
+      return eliminateSequential(orderingType, function, computedVariableIndex);
     }
     else {
       // Compute an ordering and call this function again.  We are guaranteed to have a 
       // VariableIndex already here because we computed one if needed in the previous 'if' block.
       if (orderingType == Ordering::METIS) {
         Ordering computedOrdering = Ordering::Metis(asDerived());
-        return eliminateSequential(computedOrdering, function, variableIndex, orderingType);
+        return eliminateSequential(computedOrdering, function, variableIndex);
       } else {
         Ordering computedOrdering = Ordering::Colamd(*variableIndex);
-        return eliminateSequential(computedOrdering, function, variableIndex, orderingType);
+        return eliminateSequential(computedOrdering, function, variableIndex);
       }
     }
   }
@@ -78,29 +78,31 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  template<class FACTORGRAPH>
-  boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesTreeType>
-    EliminateableFactorGraph<FACTORGRAPH>::eliminateMultifrontal(
-    OptionalOrderingType orderingType, const Eliminate& function,
-    OptionalVariableIndex variableIndex) const
-  {
-    if(!variableIndex) {
-      // If no VariableIndex provided, compute one and call this function again IMPORTANT: we check
-      // for no variable index first so that it's always computed if we need to call COLAMD because
-      // no Ordering is provided.  When removing optional from VariableIndex, create VariableIndex
-      // before creating ordering.
+  template <class FACTORGRAPH>
+  boost::shared_ptr<
+      typename EliminateableFactorGraph<FACTORGRAPH>::BayesTreeType>
+  EliminateableFactorGraph<FACTORGRAPH>::eliminateMultifrontal(
+      OptionalOrderingType orderingType, const Eliminate& function,
+      OptionalVariableIndex variableIndex) const {
+    if (!variableIndex) {
+      // If no VariableIndex provided, compute one and call this function again
+      // IMPORTANT: we check for no variable index first so that it's always
+      // computed if we need to call COLAMD because no Ordering is provided.
+      // When removing optional from VariableIndex, create VariableIndex before
+      // creating ordering.
       VariableIndex computedVariableIndex(asDerived());
-      return eliminateMultifrontal(function, computedVariableIndex, orderingType);
-    }
-    else {
-      // Compute an ordering and call this function again.  We are guaranteed to have a
-      // VariableIndex already here because we computed one if needed in the previous 'if' block.
+      return eliminateMultifrontal(orderingType, function,
+                                   computedVariableIndex);
+    } else {
+      // Compute an ordering and call this function again.  We are guaranteed to
+      // have a VariableIndex already here because we computed one if needed in
+      // the previous 'if' block.
       if (orderingType == Ordering::METIS) {
         Ordering computedOrdering = Ordering::Metis(asDerived());
-        return eliminateMultifrontal(computedOrdering, function, variableIndex, orderingType);
+        return eliminateMultifrontal(computedOrdering, function, variableIndex);
       } else {
         Ordering computedOrdering = Ordering::Colamd(*variableIndex);
-        return eliminateMultifrontal(computedOrdering, function, variableIndex, orderingType);
+        return eliminateMultifrontal(computedOrdering, function, variableIndex);
       }
     }
   }
@@ -273,7 +275,7 @@ namespace gtsam {
       else
       {
         // No ordering was provided for the unmarginalized variables, so order them with COLAMD.
-        return factorGraph->eliminateSequential(function);
+        return factorGraph->eliminateSequential(Ordering::COLAMD, function);
       }
     }
   }
@@ -340,7 +342,7 @@ namespace gtsam {
       else
       {
         // No ordering was provided for the unmarginalized variables, so order them with COLAMD.
-        return factorGraph->eliminateMultifrontal(function);
+        return factorGraph->eliminateMultifrontal(Ordering::COLAMD, function);
       }
     }
   }

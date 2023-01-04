@@ -29,10 +29,8 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/archive/xml_iarchive.hpp>
 #include <boost/assign/std/list.hpp>
 #include <boost/range/adaptor/reversed.hpp>
-#include <boost/serialization/export.hpp>
 #include <boost/tuple/tuple.hpp>
 using namespace boost::assign;
 
@@ -77,8 +75,8 @@ TEST(SubgraphPreconditioner, planarGraph) {
   DOUBLES_EQUAL(0, error(A, xtrue), 1e-9);  // check zero error for xtrue
 
   // Check that xtrue is optimal
-  GaussianBayesNet::shared_ptr R1 = A.eliminateSequential();
-  VectorValues actual = R1->optimize();
+  GaussianBayesNet R1 = *A.eliminateSequential();
+  VectorValues actual = R1.optimize();
   EXPECT(assert_equal(xtrue, actual));
 }
 
@@ -90,14 +88,14 @@ TEST(SubgraphPreconditioner, splitOffPlanarTree) {
   boost::tie(A, xtrue) = planarGraph(3);
 
   // Get the spanning tree and constraints, and check their sizes
-  GaussianFactorGraph::shared_ptr T, C;
+  GaussianFactorGraph T, C;
   boost::tie(T, C) = splitOffPlanarTree(3, A);
-  LONGS_EQUAL(9, T->size());
-  LONGS_EQUAL(4, C->size());
+  LONGS_EQUAL(9, T.size());
+  LONGS_EQUAL(4, C.size());
 
   // Check that the tree can be solved to give the ground xtrue
-  GaussianBayesNet::shared_ptr R1 = T->eliminateSequential();
-  VectorValues xbar = R1->optimize();
+  GaussianBayesNet R1 = *T.eliminateSequential();
+  VectorValues xbar = R1.optimize();
   EXPECT(assert_equal(xtrue, xbar));
 }
 
@@ -110,31 +108,29 @@ TEST(SubgraphPreconditioner, system) {
   boost::tie(Ab, xtrue) = planarGraph(N);  // A*x-b
 
   // Get the spanning tree and remaining graph
-  GaussianFactorGraph::shared_ptr Ab1, Ab2;  // A1*x-b1 and A2*x-b2
+  GaussianFactorGraph Ab1, Ab2;  // A1*x-b1 and A2*x-b2
   boost::tie(Ab1, Ab2) = splitOffPlanarTree(N, Ab);
 
   // Eliminate the spanning tree to build a prior
   const Ordering ord = planarOrdering(N);
-  auto Rc1 = Ab1->eliminateSequential(ord);  // R1*x-c1
-  VectorValues xbar = Rc1->optimize();       // xbar = inv(R1)*c1
+  auto Rc1 = *Ab1.eliminateSequential(ord);  // R1*x-c1
+  VectorValues xbar = Rc1.optimize();       // xbar = inv(R1)*c1
 
   // Create Subgraph-preconditioned system
-  VectorValues::shared_ptr xbarShared(
-      new VectorValues(xbar));  // TODO: horrible
-  const SubgraphPreconditioner system(Ab2, Rc1, xbarShared);
+  const SubgraphPreconditioner system(Ab2, Rc1, xbar);
 
   // Get corresponding matrices for tests. Add dummy factors to Ab2 to make
   // sure it works with the ordering.
-  Ordering ordering = Rc1->ordering();  // not ord in general!
-  Ab2->add(key(1, 1), Z_2x2, Z_2x1);
-  Ab2->add(key(1, 2), Z_2x2, Z_2x1);
-  Ab2->add(key(1, 3), Z_2x2, Z_2x1);
+  Ordering ordering = Rc1.ordering();  // not ord in general!
+  Ab2.add(key(1, 1), Z_2x2, Z_2x1);
+  Ab2.add(key(1, 2), Z_2x2, Z_2x1);
+  Ab2.add(key(1, 3), Z_2x2, Z_2x1);
   Matrix A, A1, A2;
   Vector b, b1, b2;
   std::tie(A, b) = Ab.jacobian(ordering);
-  std::tie(A1, b1) = Ab1->jacobian(ordering);
-  std::tie(A2, b2) = Ab2->jacobian(ordering);
-  Matrix R1 = Rc1->matrix(ordering).first;
+  std::tie(A1, b1) = Ab1.jacobian(ordering);
+  std::tie(A2, b2) = Ab2.jacobian(ordering);
+  Matrix R1 = Rc1.matrix(ordering).first;
   Matrix Abar(13 * 2, 9 * 2);
   Abar.topRows(9 * 2) = Matrix::Identity(9 * 2, 9 * 2);
   Abar.bottomRows(8) = A2.topRows(8) * R1.inverse();
@@ -151,7 +147,7 @@ TEST(SubgraphPreconditioner, system) {
   y1[key(3, 3)] = Vector2(1.0, -1.0);
 
   // Check backSubstituteTranspose works with R1
-  VectorValues actual = Rc1->backSubstituteTranspose(y1);
+  VectorValues actual = Rc1.backSubstituteTranspose(y1);
   Vector expected = R1.transpose().inverse() * vec(y1);
   EXPECT(assert_equal(expected, vec(actual)));
 
@@ -200,75 +196,6 @@ TEST(SubgraphPreconditioner, system) {
 }
 
 /* ************************************************************************* */
-BOOST_CLASS_EXPORT_GUID(gtsam::JacobianFactor, "JacobianFactor");
-
-// Read from XML file
-static GaussianFactorGraph read(const string& name) {
-  auto inputFile = findExampleDataFile(name);
-  ifstream is(inputFile);
-  if (!is.is_open()) throw runtime_error("Cannot find file " + inputFile);
-  boost::archive::xml_iarchive in_archive(is);
-  GaussianFactorGraph Ab;
-  in_archive >> boost::serialization::make_nvp("graph", Ab);
-  return Ab;
-}
-
-TEST(SubgraphSolver, Solves) {
-  // Create preconditioner
-  SubgraphPreconditioner system;
-
-  // We test on three different graphs
-  const auto Ab1 = planarGraph(3).first;
-  const auto Ab2 = read("toy3D");
-  const auto Ab3 = read("randomGrid3D");
-
-  // For all graphs, test solve and solveTranspose
-  for (const auto& Ab : {Ab1, Ab2, Ab3}) {
-    // Call build, a non-const method needed to make solve work :-(
-    KeyInfo keyInfo(Ab);
-    std::map<Key, Vector> lambda;
-    system.build(Ab, keyInfo, lambda);
-
-    // Create a perturbed (non-zero) RHS
-    const auto xbar = system.Rc1()->optimize();  // merely for use in zero below
-    auto values_y = VectorValues::Zero(xbar);
-    auto it = values_y.begin();
-    it->second.setConstant(100);
-    ++it;
-    it->second.setConstant(-100);
-
-    // Solve the VectorValues way
-    auto values_x = system.Rc1()->backSubstitute(values_y);
-
-    // Solve the matrix way, this really just checks BN::backSubstitute
-    // This only works with Rc1 ordering, not with keyInfo !
-    // TODO(frank): why does this not work with an arbitrary ordering?
-    const auto ord = system.Rc1()->ordering();
-    const Matrix R1 = system.Rc1()->matrix(ord).first;
-    auto ord_y = values_y.vector(ord);
-    auto vector_x = R1.inverse() * ord_y;
-    EXPECT(assert_equal(vector_x, values_x.vector(ord)));
-
-    // Test that 'solve' does implement x = R^{-1} y
-    // We do this by asserting it gives same answer as backSubstitute
-    // Only works with keyInfo ordering:
-    const auto ordering = keyInfo.ordering();
-    auto vector_y = values_y.vector(ordering);
-    const size_t N = R1.cols();
-    Vector solve_x = Vector::Zero(N);
-    system.solve(vector_y, solve_x);
-    EXPECT(assert_equal(values_x.vector(ordering), solve_x));
-
-    // Test that transposeSolve does implement x = R^{-T} y
-    // We do this by asserting it gives same answer as backSubstituteTranspose
-    auto values_x2 = system.Rc1()->backSubstituteTranspose(values_y);
-    Vector solveT_x = Vector::Zero(N);
-    system.transposeSolve(vector_y, solveT_x);
-    EXPECT(assert_equal(values_x2.vector(ordering), solveT_x));
-  }
-}
-
-/* ************************************************************************* */
 TEST(SubgraphPreconditioner, conjugateGradients) {
   // Build a planar graph
   GaussianFactorGraph Ab;
@@ -277,18 +204,15 @@ TEST(SubgraphPreconditioner, conjugateGradients) {
   boost::tie(Ab, xtrue) = planarGraph(N);  // A*x-b
 
   // Get the spanning tree
-  GaussianFactorGraph::shared_ptr Ab1, Ab2;  // A1*x-b1 and A2*x-b2
+  GaussianFactorGraph Ab1, Ab2;  // A1*x-b1 and A2*x-b2
   boost::tie(Ab1, Ab2) = splitOffPlanarTree(N, Ab);
 
   // Eliminate the spanning tree to build a prior
-  SubgraphPreconditioner::sharedBayesNet Rc1 =
-      Ab1->eliminateSequential();       // R1*x-c1
-  VectorValues xbar = Rc1->optimize();  // xbar = inv(R1)*c1
+  GaussianBayesNet Rc1 = *Ab1.eliminateSequential();  // R1*x-c1
+  VectorValues xbar = Rc1.optimize();  // xbar = inv(R1)*c1
 
   // Create Subgraph-preconditioned system
-  VectorValues::shared_ptr xbarShared(
-      new VectorValues(xbar));  // TODO: horrible
-  SubgraphPreconditioner system(Ab2, Rc1, xbarShared);
+  SubgraphPreconditioner system(Ab2, Rc1, xbar);
 
   // Create zero config y0 and perturbed config y1
   VectorValues y0 = VectorValues::Zero(xbar);

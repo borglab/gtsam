@@ -16,23 +16,22 @@
  * @author Zhaoyang Lv
  */
 
-#include <gtsam/geometry/Similarity3.h>
-#include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/ExpressionFactorGraph.h>
-#include <gtsam/nonlinear/Values.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/geometry/Pose3.h>
-#include <gtsam/inference/Symbol.h>
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/testLie.h>
-#include <gtsam/base/Testable.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/Similarity3.h>
+#include <gtsam/inference/Symbol.h>
+#include <gtsam/nonlinear/ExpressionFactorGraph.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/Values.h>
+#include <gtsam/slam/BetweenFactor.h>
 
-#include <CppUnitLite/TestHarness.h>
+#include <functional>
 
-#include <boost/function.hpp>
-#include <boost/bind.hpp>
-
+using namespace std::placeholders;
 using namespace gtsam;
 using namespace std;
 using symbol_shorthand::X;
@@ -204,11 +203,11 @@ TEST(Similarity3, ExpLogMap) {
 
   Vector7 zeros;
   zeros << 0, 0, 0, 0, 0, 0, 0;
-  Vector7 logIdentity = Similarity3::Logmap(Similarity3::identity());
+  Vector7 logIdentity = Similarity3::Logmap(Similarity3::Identity());
   EXPECT(assert_equal(zeros, logIdentity));
 
   Similarity3 expZero = Similarity3::Expmap(zeros);
-  Similarity3 ident = Similarity3::identity();
+  Similarity3 ident = Similarity3::Identity();
   EXPECT(assert_equal(expZero, ident));
 
   // Compare to matrix exponential, using expm in Lie.h
@@ -242,8 +241,9 @@ TEST(Similarity3, GroupAction) {
   EXPECT(assert_equal(Point3(2, 6, 6), Td.transformFrom(pa)));
 
   // Test derivative
-  boost::function<Point3(Similarity3, Point3)> f = boost::bind(
-      &Similarity3::transformFrom, _1, _2, boost::none, boost::none);
+  // Use lambda to resolve overloaded method
+  std::function<Point3(const Similarity3&, const Point3&)>
+      f = [](const Similarity3& S, const Point3& p){ return S.transformFrom(p); };
 
   Point3 q(1, 2, 3);
   for (const auto& T : { T1, T2, T3, T4, T5, T6 }) {
@@ -391,7 +391,7 @@ TEST(Similarity3, Optimization) {
   NonlinearFactorGraph graph;
   graph.addPrior(key, prior, model);
 
-  // Create initial estimate with identity transform
+  // Create initial estimate with Identity transform
   Values initial;
   initial.insert<Similarity3>(key, Similarity3());
 
@@ -458,18 +458,18 @@ TEST(Similarity3, Optimization2) {
   Values result;
   result = LevenbergMarquardtOptimizer(graph, initial).optimize();
   //result.print("Optimized Estimate\n");
-  Pose3 p1, p2, p3, p4, p5;
-  p1 = Pose3(result.at<Similarity3>(X(1)));
-  p2 = Pose3(result.at<Similarity3>(X(2)));
-  p3 = Pose3(result.at<Similarity3>(X(3)));
-  p4 = Pose3(result.at<Similarity3>(X(4)));
-  p5 = Pose3(result.at<Similarity3>(X(5)));
+  Similarity3 p1, p2, p3, p4, p5;
+  p1 = result.at<Similarity3>(X(1));
+  p2 = result.at<Similarity3>(X(2));
+  p3 = result.at<Similarity3>(X(3));
+  p4 = result.at<Similarity3>(X(4));
+  p5 = result.at<Similarity3>(X(5));
 
-  //p1.print("Pose1");
-  //p2.print("Pose2");
-  //p3.print("Pose3");
-  //p4.print("Pose4");
-  //p5.print("Pose5");
+  //p1.print("Similarity1");
+  //p2.print("Similarity2");
+  //p3.print("Similarity3");
+  //p4.print("Similarity4");
+  //p5.print("Similarity5");
 
   Similarity3 expected(0.7);
   EXPECT(assert_equal(expected, result.at<Similarity3>(X(5)), 0.4));

@@ -21,6 +21,7 @@
 #include <gtsam/global_includes.h>
 #include <gtsam/inference/Key.h>
 
+#include <boost/serialization/vector.hpp>
 #include <map>
 #include <string>
 #include <vector>
@@ -28,21 +29,27 @@
 namespace gtsam {
 
   /**
-   * Key type for discrete conditionals
-   * Includes name and cardinality
+   * Key type for discrete variables.
+   * Includes Key and cardinality.
+   * @ingroup discrete
    */
-  typedef std::pair<Key,size_t> DiscreteKey;
+  using DiscreteKey = std::pair<Key,size_t>;
 
   /// DiscreteKeys is a set of keys that can be assembled using the & operator
-  struct DiscreteKeys: public std::vector<DiscreteKey> {
+  struct GTSAM_EXPORT DiscreteKeys: public std::vector<DiscreteKey> {
 
-    /// Default constructor
-    DiscreteKeys() {
-    }
+    // Forward all constructors.
+    using std::vector<DiscreteKey>::vector;
+
+    /// Constructor for serialization
+    DiscreteKeys() : std::vector<DiscreteKey>::vector() {}
 
     /// Construct from a key
-    DiscreteKeys(const DiscreteKey& key) {
-      push_back(key);
+    explicit DiscreteKeys(const DiscreteKey& key) { push_back(key); }
+
+    /// Construct from cardinalities.
+    explicit DiscreteKeys(std::map<Key, size_t> cardinalities) {
+      for (auto&& kv : cardinalities) emplace_back(kv);
     }
 
     /// Construct from a vector of keys
@@ -51,21 +58,43 @@ namespace gtsam {
     }
 
     /// Construct from cardinalities with default names
-    GTSAM_EXPORT DiscreteKeys(const std::vector<int>& cs);
+    DiscreteKeys(const std::vector<int>& cs);
 
     /// Return a vector of indices
-    GTSAM_EXPORT KeyVector indices() const;
+    KeyVector indices() const;
 
     /// Return a map from index to cardinality
-    GTSAM_EXPORT std::map<Key,size_t> cardinalities() const;
+    std::map<Key,size_t> cardinalities() const;
 
     /// Add a key (non-const!)
     DiscreteKeys& operator&(const DiscreteKey& key) {
       push_back(key);
       return *this;
     }
+
+    /// Print the keys and cardinalities.
+    void print(const std::string& s = "",
+               const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+
+    /// Check equality to another DiscreteKeys object.
+    bool equals(const DiscreteKeys& other, double tol = 0) const;
+
+    /** Serialization function */
+    friend class boost::serialization::access;
+    template <class ARCHIVE>
+    void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+      ar& boost::serialization::make_nvp(
+          "DiscreteKeys",
+          boost::serialization::base_object<std::vector<DiscreteKey>>(*this));
+    }
+
   }; // DiscreteKeys
 
   /// Create a list from two keys
   GTSAM_EXPORT DiscreteKeys operator&(const DiscreteKey& key1, const DiscreteKey& key2);
-}
+
+  // traits
+  template <>
+  struct traits<DiscreteKeys> : public Testable<DiscreteKeys> {};
+
+  }  // namespace gtsam

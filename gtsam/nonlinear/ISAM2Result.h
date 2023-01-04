@@ -32,7 +32,7 @@
 namespace gtsam {
 
 /**
- * @addtogroup ISAM2
+ * @ingroup isam2
  * This struct is returned from ISAM2::update() and contains information about
  * the update that is useful for determining whether the solution is
  * converging, and about how much work was required for the update.  See member
@@ -175,6 +175,7 @@ struct ISAM2Result {
   /** Getters and Setters */
   size_t getVariablesRelinearized() const { return variablesRelinearized; }
   size_t getVariablesReeliminated() const { return variablesReeliminated; }
+  FactorIndices getNewFactorsIndices() const { return newFactorsIndices; }
   size_t getCliques() const { return cliques; }
   double getErrorBefore() const { return errorBefore ? *errorBefore : std::nan(""); }
   double getErrorAfter() const { return errorAfter ? *errorAfter : std::nan(""); }

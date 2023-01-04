@@ -24,20 +24,12 @@
 
 #pragma once
 
+#include <gtsam/base/FastDefaultAllocator.h>
 #include <gtsam/base/GenericValue.h>
 #include <gtsam/base/VectorSpace.h>
 #include <gtsam/inference/Key.h>
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/iterator/filter_iterator.hpp>
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-variable"
-#pragma GCC diagnostic ignored "-Wunused-local-typedefs"
-#endif
-#include <boost/bind.hpp>
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
 #include <boost/ptr_container/serialize_ptr_map.hpp>
 #include <boost/shared_ptr.hpp>
 
@@ -71,17 +63,18 @@ namespace gtsam {
   class GTSAM_EXPORT Values {
 
   private:
-
     // Internally we store a boost ptr_map, with a ValueCloneAllocator (defined
-    // below) to clone and deallocate the Value objects, and a boost
-    // fast_pool_allocator to allocate map nodes.  In this way, all memory is
-    // allocated in a boost memory pool.
+    // below) to clone and deallocate the Value objects, and our compile-flag-
+    // dependent FastDefaultAllocator to allocate map nodes.  In this way, the
+    // user defines the allocation details (i.e. optimize for memory pool/arenas
+    // concurrency).
+    typedef internal::FastDefaultAllocator<typename std::pair<const Key, void*>>::type KeyValuePtrPairAllocator;
     typedef boost::ptr_map<
         Key,
         Value,
         std::less<Key>,
         ValueCloneAllocator,
-        boost::fast_pool_allocator<std::pair<const Key, void*> > > KeyValueMap;
+        KeyValuePtrPairAllocator > KeyValueMap;
 
     // The member to store the values, see just above
     KeyValueMap values_;
@@ -117,19 +110,19 @@ namespace gtsam {
 
     /// Mutable forward iterator, with value type KeyValuePair
     typedef boost::transform_iterator<
-        boost::function1<KeyValuePair, const KeyValuePtrPair&>, KeyValueMap::iterator> iterator;
+        std::function<KeyValuePair(const KeyValuePtrPair&)>, KeyValueMap::iterator> iterator;
 
     /// Const forward iterator, with value type ConstKeyValuePair
     typedef boost::transform_iterator<
-        boost::function1<ConstKeyValuePair, const ConstKeyValuePtrPair&>, KeyValueMap::const_iterator> const_iterator;
+        std::function<ConstKeyValuePair(const ConstKeyValuePtrPair&)>, KeyValueMap::const_iterator> const_iterator;
 
     /// Mutable reverse iterator, with value type KeyValuePair
     typedef boost::transform_iterator<
-        boost::function1<KeyValuePair, const KeyValuePtrPair&>, KeyValueMap::reverse_iterator> reverse_iterator;
+        std::function<KeyValuePair(const KeyValuePtrPair&)>, KeyValueMap::reverse_iterator> reverse_iterator;
 
     /// Const reverse iterator, with value type ConstKeyValuePair
     typedef boost::transform_iterator<
-        boost::function1<ConstKeyValuePair, const ConstKeyValuePtrPair&>, KeyValueMap::const_reverse_iterator> const_reverse_iterator;
+        std::function<ConstKeyValuePair(const ConstKeyValuePtrPair&)>, KeyValueMap::const_reverse_iterator> const_reverse_iterator;
 
     typedef KeyValuePair value_type;
 
@@ -292,6 +285,19 @@ namespace gtsam {
     /** update the current available values without adding new ones */
     void update(const Values& values);
 
+    /// If key j exists, update value, else perform an insert.
+    void insert_or_assign(Key j, const Value& val);
+
+    /**
+     * Update a set of variables.
+     * If any variable key doe not exist, then perform an insert.
+     */
+    void insert_or_assign(const Values& values);
+
+    /// Templated version to insert_or_assign a variable with the given j.
+    template <typename ValueType>
+    void insert_or_assign(Key j, const ValueType& val);
+
     /** Remove a variable from the config, throws KeyDoesNotExist<J> if j is not present */
     void erase(Key j);
 
@@ -330,7 +336,7 @@ namespace gtsam {
      * the original Values class.
      */
     Filtered<Value>
-    filter(const boost::function<bool(Key)>& filterFcn);
+    filter(const std::function<bool(Key)>& filterFcn);
 
     /**
      * Return a filtered view of this Values class, without copying any data.
@@ -353,7 +359,7 @@ namespace gtsam {
      */
     template<class ValueType>
     Filtered<ValueType>
-    filter(const boost::function<bool(Key)>& filterFcn = &_truePredicate<Key>);
+    filter(const std::function<bool(Key)>& filterFcn = &_truePredicate<Key>);
 
     /**
      * Return a filtered view of this Values class, without copying any data.
@@ -369,7 +375,7 @@ namespace gtsam {
      * the original Values class.
      */
     ConstFiltered<Value>
-    filter(const boost::function<bool(Key)>& filterFcn) const;
+    filter(const std::function<bool(Key)>& filterFcn) const;
 
     /**
      * Return a filtered view of this Values class, without copying any data.
@@ -391,7 +397,7 @@ namespace gtsam {
      */
     template<class ValueType>
     ConstFiltered<ValueType>
-    filter(const boost::function<bool(Key)>& filterFcn = &_truePredicate<Key>) const;
+    filter(const std::function<bool(Key)>& filterFcn = &_truePredicate<Key>) const;
 
     // Count values of given type \c ValueType
     template<class ValueType>
@@ -408,7 +414,7 @@ namespace gtsam {
     // Filters based on ValueType (if not Value) and also based on the user-
     // supplied \c filter function.
     template<class ValueType>
-    static bool filterHelper(const boost::function<bool(Key)> filter, const ConstKeyValuePair& key_value) {
+    static bool filterHelper(const std::function<bool(Key)> filter, const ConstKeyValuePair& key_value) {
       BOOST_STATIC_ASSERT((!boost::is_same<ValueType, Value>::value));
       // Filter and check the type
       return filter(key_value.key) && (dynamic_cast<const GenericValue<ValueType>*>(&key_value.value));

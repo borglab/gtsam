@@ -7,13 +7,19 @@ class FunRange {
 
 template<M={double}>
 class Fun {
+
   static This staticMethodWithThis();
+
+  template<T={int}>
+  static double templatedStaticMethod(const T& m);
 
   template<T={string}>
   This templatedMethod(double d, T t);
 
   template<T={string}, U={size_t}>
   This multiTemplatedMethod(double d, T t, U u);
+
+  std::map<M, This::M> sets();
 };
 
 
@@ -28,6 +34,10 @@ class Test {
 
   // Test a shared ptr property
   gtsam::noiseModel::Base* model_ptr;
+
+  // Test adding more than 1 property
+  double value;
+  string name;
 
   pair<Vector,Matrix> return_pair (Vector v, Matrix A) const; // intentionally the first method
   pair<Vector,Matrix> return_pair (Vector v) const; // overload
@@ -61,12 +71,19 @@ class Test {
   pair<Test ,Test*> create_MixedPtrs () const;
   pair<Test*,Test*> return_ptrs (Test* p1, Test* p2) const;
 
+  // This should be callable as .print() in python
   void print() const;
+  // Since this is a reserved keyword, it should be updated to `lambda_`
+  void lambda() const;
 
   void set_container(std::vector<testing::Test> container);
   void set_container(std::vector<testing::Test*> container);
   void set_container(std::vector<testing::Test&> container);
   std::vector<testing::Test*> get_container() const;
+
+  // special ipython method
+  string markdown(const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
 
   // comments at the end!
 
@@ -106,3 +123,23 @@ class MyVector {
 // Class with multiple instantiated templates
 template<T = {int}, U = {double, float}>
 class MultipleTemplates {};
+
+// Test for default args in constructor
+class ForwardKinematics {
+  ForwardKinematics(const gtdynamics::Robot& robot,
+                    const string& start_link_name, const string& end_link_name,
+                    const gtsam::Values& joint_angles,
+                    const gtsam::Pose3& l2Tp = gtsam::Pose3());
+};
+
+// Test for templated constructor
+class TemplatedConstructor {
+  TemplatedConstructor();
+
+  template<T={string, int, double}>
+  TemplatedConstructor(const T& arg);
+};
+
+
+class SuperCoolFactor;
+typedef SuperCoolFactor<gtsam::Pose3> SuperCoolFactorPose3;

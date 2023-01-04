@@ -10,9 +10,9 @@ Parser classes and rules for parsing C++ functions.
 Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellaert
 """
 
-from typing import Iterable, List, Union
+from typing import Any, Iterable, List, Union
 
-from pyparsing import Optional, ParseResults, delimitedList
+from pyparsing import Optional, ParseResults, delimitedList  # type: ignore
 
 from .template import Template
 from .tokens import (COMMA, DEFAULT_ARG, EQUAL, IDENT, LOPBRACK, LPAREN, PAIR,
@@ -29,32 +29,24 @@ class Argument:
     void sayHello(/*`s` is the method argument with type `const string&`*/ const string& s);
     ```
     """
-    rule = ((Type.rule ^ TemplatedType.rule)("ctype") + IDENT("name") + \
-            Optional(EQUAL + (DEFAULT_ARG ^ Type.rule ^ TemplatedType.rule) + \
-                Optional(LPAREN + RPAREN)  # Needed to parse the parens for default constructors
-                )("default")
-            ).setParseAction(lambda t: Argument(t.ctype, t.name, t.default))
+    rule = ((Type.rule ^ TemplatedType.rule)("ctype")  #
+            + IDENT("name")  #
+            + Optional(EQUAL + DEFAULT_ARG)("default")
+            ).setParseAction(lambda t: Argument(
+                t.ctype,  #
+                t.name,  #
+                t.default[0] if isinstance(t.default, ParseResults) else None))
 
     def __init__(self,
                  ctype: Union[Type, TemplatedType],
                  name: str,
                  default: ParseResults = None):
         if isinstance(ctype, Iterable):
-            self.ctype = ctype[0]
+            self.ctype = ctype[0]  # type: ignore
         else:
             self.ctype = ctype
         self.name = name
-        # If the length is 1, it's a regular type,
-        if len(default) == 1:
-            default = default[0]
-        # This means a tuple has been passed so we convert accordingly
-        elif len(default) > 1:
-            default = tuple(default.asList())
-        else:
-            # set to None explicitly so we can support empty strings
-            default = None
         self.default = default
-
         self.parent: Union[ArgumentList, None] = None
 
     def __repr__(self) -> str:
@@ -78,7 +70,7 @@ class ArgumentList:
             arg.parent = self
         # The parent object which contains the argument list
         # E.g. Method, StaticMethod, Template, Constructor, GlobalFunction
-        self.parent = None
+        self.parent: Any = None
 
     @staticmethod
     def from_parse_result(parse_result: ParseResults):
@@ -89,14 +81,18 @@ class ArgumentList:
             return ArgumentList([])
 
     def __repr__(self) -> str:
-        return self.args_list.__repr__()
+        return repr(tuple(self.args_list))
 
     def __len__(self) -> int:
         return len(self.args_list)
 
-    def args_names(self) -> List[str]:
+    def names(self) -> List[str]:
         """Return a list of the names of all the arguments."""
         return [arg.name for arg in self.args_list]
+
+    def list(self) -> List[Argument]:
+        """Return a list of the names of all the arguments."""
+        return self.args_list
 
     def to_cpp(self, use_boost: bool) -> List[str]:
         """Generate the C++ code for wrapping."""
@@ -127,7 +123,7 @@ class ReturnType:
         self.type2 = type2
         # The parent object which contains the return type
         # E.g. Method, StaticMethod, Template, Constructor, GlobalFunction
-        self.parent = None
+        self.parent: Any = None
 
     def is_void(self) -> bool:
         """
@@ -173,7 +169,7 @@ class GlobalFunction:
                  return_type: ReturnType,
                  args_list: ArgumentList,
                  template: Template,
-                 parent: str = ''):
+                 parent: Any = ''):
         self.name = name
         self.return_type = return_type
         self.args = args_list

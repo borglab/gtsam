@@ -31,11 +31,11 @@ In the root library folder execute:
 
 ```sh
 #!bash
-$ mkdir build
-$ cd build
-$ cmake ..
-$ make check (optional, runs unit tests)
-$ make install
+mkdir build
+cd build
+cmake ..
+make check (optional, runs unit tests)
+make install
 ```
 
 Prerequisites:
@@ -68,7 +68,7 @@ We provide support for [MATLAB](matlab/README.md) and [Python](python/README.md)
 
 If you are using GTSAM for academic work, please use the following citation:
 
-```
+```bibtex
 @software{gtsam,
   author       = {Frank Dellaert and Richard Roberts and Varun Agrawal and Alex Cunningham and Chris Beall and Duy-Nguyen Ta and Fan Jiang and lucacarlone and nikai and Jose Luis Blanco-Claraco and Stephen Williams and ydjian and John Lambert and Andy Melim and Zhaoyang Lv and Akshay Krishnan and Jing Dong and Gerry Chen and Krunal Chande and balderdash-devil and DiffDecisionTrees and Sungtae An and mpaluri and Ellon Paiva Mendes and Mike Bosse and Akash Patel and Ayush Baid and Paul Furgale and matthewbroadwaynavenio and roderick-koehle},
   title        = {borglab/gtsam},

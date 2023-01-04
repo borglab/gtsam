@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * GTSAM Copyright 2010-2022, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -16,23 +16,28 @@
  */
 
 #include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianDensity.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
+#include <gtsam/inference/Symbol.h>
 
 #include <CppUnitLite/TestHarness.h>
 #include <boost/tuple/tuple.hpp>
 #include <boost/assign/list_of.hpp>
 #include <boost/assign/std/list.hpp> // for operator +=
-using namespace boost::assign;
+#include <boost/bind/bind.hpp>
 
 // STL/C++
 #include <iostream>
 #include <sstream>
 
+using namespace boost::assign;
+using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
+using symbol_shorthand::X;
 
 static const Key _x_ = 11, _y_ = 22, _z_ = 33;
 
@@ -60,6 +65,36 @@ TEST( GaussianBayesNet, Matrix )
 
   EXPECT(assert_equal(R,R1));
   EXPECT(assert_equal(d,d1));
+}
+
+/* ************************************************************************* */
+// Check that the evaluate function matches direct calculation with R.
+TEST(GaussianBayesNet, Evaluate1) {
+  // Let's evaluate at the mean
+  const VectorValues mean = smallBayesNet.optimize();
+
+  // We get the matrix, which has noise model applied!
+  const Matrix R = smallBayesNet.matrix().first;
+  const Matrix invSigma = R.transpose() * R;
+
+  // The Bayes net is a Gaussian density ~ exp (-0.5*(Rx-d)'*(Rx-d))
+  // which at the mean is 1.0! So, the only thing we need to calculate is
+  // the normalization constant 1.0/sqrt((2*pi*Sigma).det()).
+  // The covariance matrix inv(Sigma) = R'*R, so the determinant is
+  const double expected = sqrt((invSigma / (2 * M_PI)).determinant());
+  const double actual = smallBayesNet.evaluate(mean);
+  EXPECT_DOUBLES_EQUAL(expected, actual, 1e-9);
+}
+
+// Check the evaluate with non-unit noise.
+TEST(GaussianBayesNet, Evaluate2) {
+  // See comments in test above.
+  const VectorValues mean = noisyBayesNet.optimize();
+  const Matrix R = noisyBayesNet.matrix().first;
+  const Matrix invSigma = R.transpose() * R;
+  const double expected = sqrt((invSigma / (2 * M_PI)).determinant());
+  const double actual = noisyBayesNet.evaluate(mean);
+  EXPECT_DOUBLES_EQUAL(expected, actual, 1e-9);
 }
 
 /* ************************************************************************* */
@@ -134,6 +169,51 @@ TEST( GaussianBayesNet, optimize3 )
     (_y_, Vector1::Constant(5));
   VectorValues actual = smallBayesNet.backSubstitute(gx);
   EXPECT(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+namespace sampling {
+static Matrix A1 = (Matrix(2, 2) << 1., 2., 3., 4.).finished();
+static const Vector2 mean(20, 40), b(10, 10);
+static const double sigma = 0.01;
+static const GaussianBayesNet gbn =
+    list_of(GaussianConditional::FromMeanAndStddev(X(0), A1, X(1), b, sigma))(
+        GaussianDensity::FromMeanAndStddev(X(1), mean, sigma));
+}  // namespace sampling
+
+/* ************************************************************************* */
+TEST(GaussianBayesNet, sample) {
+  using namespace sampling;
+
+  auto actual = gbn.sample();
+  EXPECT_LONGS_EQUAL(2, actual.size());
+  EXPECT(assert_equal(mean, actual[X(1)], 50 * sigma));
+  EXPECT(assert_equal(A1 * mean + b, actual[X(0)], 50 * sigma));
+
+  // Use a specific random generator
+  std::mt19937_64 rng(4242);
+  auto actual3 = gbn.sample(&rng);
+  EXPECT_LONGS_EQUAL(2, actual.size());
+  // regression is not repeatable across platforms/versions :-(
+  // EXPECT(assert_equal(Vector2(20.0129382, 40.0039798), actual[X(1)], 1e-5));
+  // EXPECT(assert_equal(Vector2(110.032083, 230.039811), actual[X(0)], 1e-5));
+}
+
+/* ************************************************************************* */
+// Do Monte Carlo integration of square deviation, should be equal to 9.0.
+TEST(GaussianBayesNet, MonteCarloIntegration) {
+  GaussianBayesNet gbn;
+  gbn.push_back(noisyBayesNet.at(1));
+
+  double sum = 0.0;
+  constexpr size_t N = 1000;
+  // loop for N samples:
+  for (size_t i = 0; i < N; i++) {
+    const auto X_i = gbn.sample();
+    sum += pow(X_i[_y_].x() - 5.0, 2.0);
+  }
+  // Expected is variance = 3*3
+  EXPECT_DOUBLES_EQUAL(9.0, sum / N, 0.5); // Pretty high.
 }
 
 /* ************************************************************************* */
@@ -268,11 +348,11 @@ TEST(GaussianBayesNet, ComputeSteepestDescentPoint) {
 
   // Compute the Hessian numerically
   Matrix hessian = numericalHessian<Vector10>(
-      boost::bind(&computeError, gbn, _1), Vector10::Zero());
+      std::bind(&computeError, gbn, std::placeholders::_1), Vector10::Zero());
 
   // Compute the gradient numerically
   Vector gradient = numericalGradient<Vector10>(
-      boost::bind(&computeError, gbn, _1), Vector10::Zero());
+      std::bind(&computeError, gbn, std::placeholders::_1), Vector10::Zero());
 
   // Compute the gradient using dense matrices
   Matrix augmentedHessian = GaussianFactorGraph(gbn).augmentedHessian();
@@ -299,5 +379,31 @@ TEST(GaussianBayesNet, ComputeSteepestDescentPoint) {
 }
 
 /* ************************************************************************* */
-int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
+TEST(GaussianBayesNet, Dot) {
+  GaussianBayesNet fragment;
+  DotWriter writer;
+  writer.variablePositions.emplace(_x_, Vector2(10, 20));
+  writer.variablePositions.emplace(_y_, Vector2(50, 20));
+  
+  auto position = writer.variablePos(_x_);
+  CHECK(position);
+  EXPECT(assert_equal(Vector2(10, 20), *position, 1e-5));
+
+  string actual = noisyBayesNet.dot(DefaultKeyFormatter, writer);
+  EXPECT(actual ==
+    "digraph {\n"
+    "  size=\"5,5\";\n"
+    "\n"
+    "  var11[label=\"11\", pos=\"10,20!\"];\n"
+    "  var22[label=\"22\", pos=\"50,20!\"];\n"
+    "\n"
+    "  var22->var11\n"
+    "}");
+}
+
+/* ************************************************************************* */
+int main() {
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
+}
 /* ************************************************************************* */

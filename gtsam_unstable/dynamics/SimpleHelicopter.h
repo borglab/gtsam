@@ -24,10 +24,10 @@ namespace gtsam {
  * Note: this factor is necessary if one needs to smooth the entire graph. It's not needed
  *  in sequential update method.
  */
-class Reconstruction : public NoiseModelFactor3<Pose3, Pose3, Vector6>  {
+class Reconstruction : public NoiseModelFactorN<Pose3, Pose3, Vector6>  {
 
   double h_;  // time step
-  typedef NoiseModelFactor3<Pose3, Pose3, Vector6> Base;
+  typedef NoiseModelFactorN<Pose3, Pose3, Vector6> Base;
 public:
   Reconstruction(Key gKey1, Key gKey, Key xiKey, double h, double mu = 1000.0) :
     Base(noiseModel::Constrained::All(6, std::abs(mu)), gKey1, gKey,
@@ -40,7 +40,7 @@ public:
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new Reconstruction(*this))); }
 
-  /** \f$ log((g_k\exp(h\xi_k))^{-1}g_{k+1}) = 0, with optional derivatives */
+  /** \f$ log((g_k\exp(h\xi_k))^{-1}g_{k+1}) = 0 \f$, with optional derivatives */
   Vector evaluateError(const Pose3& gk1, const Pose3& gk, const Vector6& xik,
       boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none,
@@ -73,7 +73,7 @@ public:
 /**
  * Implement the Discrete Euler-Poincare' equation:
  */
-class DiscreteEulerPoincareHelicopter : public NoiseModelFactor3<Vector6, Vector6, Pose3>  {
+class DiscreteEulerPoincareHelicopter : public NoiseModelFactorN<Vector6, Vector6, Pose3>  {
 
   double h_;  /// time step
   Matrix Inertia_;  /// Inertia tensors Inertia = [ J 0; 0 M ]
@@ -86,7 +86,7 @@ class DiscreteEulerPoincareHelicopter : public NoiseModelFactor3<Vector6, Vector
   // This might be needed in control or system identification problems.
   // We treat them as constant here, since the control inputs are to specify.
 
-  typedef NoiseModelFactor3<Vector6, Vector6, Pose3> Base;
+  typedef NoiseModelFactorN<Vector6, Vector6, Pose3> Base;
 
 public:
   DiscreteEulerPoincareHelicopter(Key xiKey1, Key xiKey_1, Key gKey,
@@ -166,24 +166,24 @@ public:
       boost::optional<Matrix&> H3 = boost::none) const {
     if (H1) {
       (*H1) = numericalDerivative31(
-          boost::function<Vector(const Vector6&, const Vector6&, const Pose3&)>(
-              boost::bind(&DiscreteEulerPoincareHelicopter::computeError, *this, _1, _2, _3)
+          std::function<Vector(const Vector6&, const Vector6&, const Pose3&)>(
+              std::bind(&DiscreteEulerPoincareHelicopter::computeError, *this, _1, _2, _3)
           ),
           xik, xik_1, gk, 1e-5
       );
     }
     if (H2) {
       (*H2) = numericalDerivative32(
-          boost::function<Vector(const Vector6&, const Vector6&, const Pose3&)>(
-              boost::bind(&DiscreteEulerPoincareHelicopter::computeError, *this, _1, _2, _3)
+          std::function<Vector(const Vector6&, const Vector6&, const Pose3&)>(
+              std::bind(&DiscreteEulerPoincareHelicopter::computeError, *this, _1, _2, _3)
           ),
           xik, xik_1, gk, 1e-5
       );
     }
     if (H3) {
       (*H3) = numericalDerivative33(
-          boost::function<Vector(const Vector6&, const Vector6&, const Pose3&)>(
-              boost::bind(&DiscreteEulerPoincareHelicopter::computeError, *this, _1, _2, _3)
+          std::function<Vector(const Vector6&, const Vector6&, const Pose3&)>(
+              std::bind(&DiscreteEulerPoincareHelicopter::computeError, *this, _1, _2, _3)
           ),
           xik, xik_1, gk, 1e-5
       );
@@ -195,5 +195,4 @@ public:
 
 };
 
-
-} /* namespace gtsam */
+}  // namespace gtsam

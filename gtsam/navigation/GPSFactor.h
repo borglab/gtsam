@@ -30,13 +30,13 @@ namespace gtsam {
  *   NED: North-East-Down navigation frame at some local origin
  *   ECEF: Earth-centered Earth-fixed, origin at Earth's center
  * See Farrell08book or e.g. http://www.dirsig.org/docs/new/coordinates.html
- * @addtogroup Navigation
+ * @ingroup navigation
  */
-class GTSAM_EXPORT GPSFactor: public NoiseModelFactor1<Pose3> {
+class GTSAM_EXPORT GPSFactor: public NoiseModelFactorN<Pose3> {
 
 private:
 
-  typedef NoiseModelFactor1<Pose3> Base;
+  typedef NoiseModelFactorN<Pose3> Base;
 
   Point3 nT_; ///< Position measurement in cartesian coordinates
 
@@ -99,6 +99,7 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+    // NoiseModelFactor1 instead of NoiseModelFactorN for backward compatibility
     ar
         & boost::serialization::make_nvp("NoiseModelFactor1",
             boost::serialization::base_object<Base>(*this));
@@ -108,13 +109,13 @@ private:
 
 /**
  * Version of GPSFactor for NavState
- * @addtogroup Navigation
+ * @ingroup navigation
  */
-class GTSAM_EXPORT GPSFactor2: public NoiseModelFactor1<NavState> {
+class GTSAM_EXPORT GPSFactor2: public NoiseModelFactorN<NavState> {
 
 private:
 
-  typedef NoiseModelFactor1<NavState> Base;
+  typedef NoiseModelFactorN<NavState> Base;
 
   Point3 nT_; ///< Position measurement in cartesian coordinates
 
@@ -163,6 +164,7 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+    // NoiseModelFactor1 instead of NoiseModelFactorN for backward compatibility
     ar
         & boost::serialization::make_nvp("NoiseModelFactor1",
             boost::serialization::base_object<Base>(*this));

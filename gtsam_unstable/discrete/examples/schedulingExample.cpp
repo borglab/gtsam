@@ -12,14 +12,11 @@
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
 
-#include <boost/assign/std/vector.hpp>
-#include <boost/assign/std/map.hpp>
 #include <boost/optional.hpp>
 #include <boost/format.hpp>
 
 #include <algorithm>
 
-using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 
@@ -115,14 +112,14 @@ void runLargeExample() {
   // Do brute force product and output that to file
   if (scheduler.nrStudents() == 1) { // otherwise too slow
     DecisionTreeFactor product = scheduler.product();
-    product.dot("scheduling-large", false);
+    product.dot("scheduling-large", DefaultKeyFormatter, false);
   }
 
   // Do exact inference
   //  SETDEBUG("timing-verbose", true);
   SETDEBUG("DiscreteConditional::DiscreteConditional", true);
   gttic(large);
-  DiscreteFactor::sharedValues MPE = scheduler.optimalAssignment();
+  auto MPE = scheduler.optimize();
   gttoc(large);
   tictoc_finishedIteration();
   tictoc_print();
@@ -165,11 +162,11 @@ void solveStaged(size_t addMutex = 2) {
       root->print(""/*scheduler.studentName(s)*/);
 
     // solve root node only
-    Scheduler::Values values;
-    size_t bestSlot = root->solve(values);
+    size_t bestSlot = root->argmax();
 
     // get corresponding count
     DiscreteKey dkey = scheduler.studentKey(6 - s);
+    DiscreteValues values;
     values[dkey.first] = bestSlot;
     size_t count = (*root)(values);
 
@@ -225,7 +222,7 @@ void sampleSolutions() {
   // now, sample schedules
   for (size_t n = 0; n < 500; n++) {
     vector<size_t> stats(19, 0);
-    vector<Scheduler::sharedValues> samples;
+    vector<DiscreteValues> samples;
     for (size_t i = 0; i < 7; i++) {
       samples.push_back(samplers[i]->sample());
       schedulers[i].accumulateStats(samples[i], stats);
@@ -319,11 +316,11 @@ void accomodateStudent() {
   //  GTSAM_PRINT(*chordal);
 
   // solve root node only
-  Scheduler::Values values;
-  size_t bestSlot = root->solve(values);
+  size_t bestSlot = root->argmax();
 
   // get corresponding count
   DiscreteKey dkey = scheduler.studentKey(0);
+  DiscreteValues values;
   values[dkey.first] = bestSlot;
   size_t count = (*root)(values);
   cout << boost::format("%s = %d (%d), count = %d") % scheduler.studentName(0)
@@ -331,7 +328,7 @@ void accomodateStudent() {
 
   // sample schedules
   for (size_t n = 0; n < 10; n++) {
-    Scheduler::sharedValues sample0 = chordal->sample();
+    auto sample0 = chordal->sample();
     scheduler.printAssignment(sample0);
   }
 }

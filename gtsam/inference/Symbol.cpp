@@ -18,8 +18,8 @@
 
 #include <gtsam/inference/Symbol.h>
 
+#include <boost/bind/bind.hpp>
 #include <boost/format.hpp>
-#include <boost/bind.hpp>
 
 #include <limits.h>
 #include <list>
@@ -62,8 +62,11 @@ Symbol::operator std::string() const {
 
 static Symbol make(gtsam::Key key) { return Symbol(key);}
 
-boost::function<bool(Key)> Symbol::ChrTest(unsigned char c) {
-  return bind(&Symbol::chr, bind(make, _1)) == c;
+std::function<bool(Key)> Symbol::ChrTest(unsigned char c) {
+  auto equals = [](unsigned char s, unsigned char c) { return s == c; };
+  return std::bind(
+      equals, std::bind(&Symbol::chr, std::bind(make, std::placeholders::_1)),
+      c);
 }
 
 GTSAM_EXPORT std::ostream &operator<<(std::ostream &os, const Symbol &symbol) {

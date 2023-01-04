@@ -23,6 +23,7 @@
 #include <boost/assign/std/vector.hpp>
 
 using namespace boost::assign;
+using namespace std::placeholders;
 using namespace gtsam;
 using namespace std;
 using boost::none;
@@ -136,8 +137,9 @@ TEST(OrientedPlane3, errorVector) {
                       Vector2(actual[0], actual[1])));
   EXPECT(assert_equal(plane1.distance() - plane2.distance(), actual[2]));
 
-  boost::function<Vector3(const OrientedPlane3&, const OrientedPlane3&)> f =
-      boost::bind(&OrientedPlane3::errorVector, _1, _2, boost::none, boost::none);
+  std::function<Vector3(const OrientedPlane3&, const OrientedPlane3&)> f =
+      std::bind(&OrientedPlane3::errorVector, std::placeholders::_1,
+                std::placeholders::_2, boost::none, boost::none);
   expectedH1 = numericalDerivative21(f, plane1, plane2);
   expectedH2 = numericalDerivative22(f, plane1, plane2);
   EXPECT(assert_equal(expectedH1, actualH1, 1e-5));
@@ -148,8 +150,8 @@ TEST(OrientedPlane3, errorVector) {
 TEST(OrientedPlane3, jacobian_retract) {
   OrientedPlane3 plane(-1, 0.1, 0.2, 5);
   Matrix33 H_actual;
-  boost::function<OrientedPlane3(const Vector3&)> f =
-      boost::bind(&OrientedPlane3::retract, plane, _1, boost::none);
+  std::function<OrientedPlane3(const Vector3&)> f = std::bind(
+      &OrientedPlane3::retract, plane, std::placeholders::_1, boost::none);
   {
       Vector3 v(-0.1, 0.2, 0.3);
       plane.retract(v, H_actual);

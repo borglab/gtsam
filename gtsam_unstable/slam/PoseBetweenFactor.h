@@ -26,15 +26,15 @@ namespace gtsam {
   /**
    * A class for a measurement predicted by "between(config[key1],config[key2])"
    * @tparam POSE the Pose type
-   * @addtogroup SLAM
+   * @ingroup slam
    */
   template<class POSE>
-  class PoseBetweenFactor: public NoiseModelFactor2<POSE, POSE> {
+  class PoseBetweenFactor: public NoiseModelFactorN<POSE, POSE> {
 
   private:
 
     typedef PoseBetweenFactor<POSE> This;
-    typedef NoiseModelFactor2<POSE, POSE> Base;
+    typedef NoiseModelFactorN<POSE, POSE> Base;
 
     POSE measured_; /** The measurement */
     boost::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame
@@ -68,8 +68,8 @@ namespace gtsam {
     /** print */
     void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
       std::cout << s << "BetweenFactor("
-          << keyFormatter(this->key1()) << ","
-          << keyFormatter(this->key2()) << ")\n";
+          << keyFormatter(this->template key<1>()) << ","
+          << keyFormatter(this->template key<2>()) << ")\n";
       measured_.print("  measured: ");
       if(this->body_P_sensor_)
         this->body_P_sensor_->print("  sensor pose in body frame: ");

@@ -11,7 +11,7 @@
 
 /**
  * @file   SmartStereoProjectionFactor.h
- * @brief  Smart stereo factor on StereoCameras (pose + calibration)
+ * @brief  Smart stereo factor on StereoCameras (pose)
  * @author Luca Carlone
  * @author Zsolt Kira
  * @author Frank Dellaert
@@ -20,18 +20,18 @@
 
 #pragma once
 
-#include <gtsam/slam/SmartFactorBase.h>
-#include <gtsam/slam/SmartFactorParams.h>
-
-#include <gtsam/geometry/triangulation.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/StereoCamera.h>
-#include <gtsam/slam/StereoFactor.h>
+#include <gtsam/geometry/triangulation.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/slam/SmartFactorBase.h>
+#include <gtsam/slam/SmartFactorParams.h>
+#include <gtsam/slam/StereoFactor.h>
 #include <gtsam/slam/dataset.h>
+#include <gtsam_unstable/dllexport.h>
 
-#include <boost/optional.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/optional.hpp>
 #include <vector>
 
 namespace gtsam {
@@ -49,8 +49,9 @@ typedef SmartProjectionParams SmartStereoProjectionParams;
  * If you'd like to store poses in values instead of cameras, use
  * SmartStereoProjectionPoseFactor instead
 */
-class SmartStereoProjectionFactor: public SmartFactorBase<StereoCamera> {
-private:
+class SmartStereoProjectionFactor
+    : public SmartFactorBase<StereoCamera> {
+ private:
 
   typedef SmartFactorBase<StereoCamera> Base;
 
@@ -447,23 +448,23 @@ public:
   }
 
   /**
-   * This corrects the Jacobians and error vector for the case in which the right pixel in the monocular camera is missing (nan)
+   * This corrects the Jacobians and error vector for the case in which the
+   * right 2D measurement in the monocular camera is missing (nan).
    */
-  void correctForMissingMeasurements(const Cameras& cameras, Vector& ue,
-                                     boost::optional<typename Cameras::FBlocks&> Fs = boost::none,
-                                     boost::optional<Matrix&> E = boost::none) const override
-  {
+  void correctForMissingMeasurements(
+      const Cameras& cameras, Vector& ue,
+      boost::optional<typename Cameras::FBlocks&> Fs = boost::none,
+      boost::optional<Matrix&> E = boost::none) const override {
     // when using stereo cameras, some of the measurements might be missing:
-    for(size_t i=0; i < cameras.size(); i++){
+    for (size_t i = 0; i < cameras.size(); i++) {
       const StereoPoint2& z = measured_.at(i);
-      if(std::isnan(z.uR())) // if the right pixel is invalid
+      if (std::isnan(z.uR()))  // if the right 2D measurement is invalid
       {
-        if(Fs){ // delete influence of right point on jacobian Fs
+        if (Fs) {  // delete influence of right point on jacobian Fs
           MatrixZD& Fi = Fs->at(i);
-          for(size_t ii=0; ii<Dim; ii++)
-            Fi(1,ii) = 0.0;
+          for (size_t ii = 0; ii < Dim; ii++) Fi(1, ii) = 0.0;
         }
-        if(E) // delete influence of right point on jacobian E
+        if (E)  // delete influence of right point on jacobian E
           E->row(ZDim * i + 1) = Matrix::Zero(1, E->cols());
 
         // set the corresponding entry of vector ue to zero
