@@ -7,8 +7,10 @@ if(NOT DEFINED CMAKE_MACOSX_RPATH)
 endif()
 
 option(GTSAM_NO_BOOST_CPP17 "Require and use boost" ON)
+add_definitions(-Wno-deprecated-declarations)
 
 if (GTSAM_NO_BOOST_CPP17)
+  add_definitions(-DNO_BOOST_CPP17)
   set(CMAKE_CXX_STANDARD 17)
 endif()
 
@@ -57,9 +59,8 @@ endif()
 include(cmake/HandleGeneralOptions.cmake)   # CMake build options
 
 # Libraries:
-if (GTSAM_NO_BOOST_CPP17)
+if (NOT GTSAM_NO_BOOST_CPP17)
   include(cmake/HandleBoost.cmake)            # Boost
-  add_definitions(-DNO_BOOST_CPP17)
 endif()
   
 include(cmake/HandleCCache.cmake)           # ccache

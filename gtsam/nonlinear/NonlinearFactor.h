@@ -33,7 +33,28 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-
+/*
+ * Some typedef based aliases to compile these interfaces without boost if
+ * the NO_BOOST_C17 flag is enabled
+ */
+#ifdef NO_BOOST_CPP17
+// These typedefs and aliases will help with making the evaluateError interface
+// independent of boost
+#define OptionalNone nullptr
+template <typename T = void>
+using OptionalMatrixT = Matrix*;
+using OptionalMatrix = Matrix*;
+// These typedefs and aliases will help with making the unwhitenedError interface
+// independent of boost
+using OptionalMatrixVec = std::vector<Matrix>*;
+#else
+// creating a none value to use when declaring our interfaces
+#define OptionalNone boost::none
+template <typename T = void>
+using OptionalMatrixT = boost::optional<Matrix&>;
+using OptionalMatrix = boost::optional<Matrix&>;
+using OptionalMatrixVec = boost::optional<std::vector<Matrix>&>;
+#endif
 /**
  * Nonlinear factor base class
  *
@@ -206,7 +227,6 @@ protected:
   NoiseModelFactor(const SharedNoiseModel& noiseModel) : noiseModel_(noiseModel) {}
 
 public:
-
   /** Print */
   void print(const std::string& s = "",
     const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
@@ -230,8 +250,7 @@ public:
    * If the optional arguments is specified, it should compute
    * both the function evaluation and its derivative(s) in H.
    */
-  virtual Vector unwhitenedError(const Values& x,
-      boost::optional<std::vector<Matrix>&> H = boost::none) const = 0;
+  virtual Vector unwhitenedError(const Values& x, OptionalMatrixVec H = OptionalNone) const = 0;
 
   /**
    * Vector of errors, whitened
@@ -402,7 +421,7 @@ class NoiseModelFactorN
   /// N is the number of variables (N-way factor)
   enum { N = sizeof...(ValueTypes) };
 
- protected:
+protected:
   using Base = NoiseModelFactor;
   using This = NoiseModelFactorN<ValueTypes...>;
 
@@ -428,8 +447,6 @@ class NoiseModelFactorN
   /* Like std::void_t, except produces `boost::optional<Matrix&>` instead of
    * `void`. Used to expand fixed-type parameter-packs with same length as
    * ValueTypes. */
-  template <typename T>
-  using OptionalMatrix = boost::optional<Matrix&>;
 
   /* Like std::void_t, except produces `Key` instead of `void`. Used to expand
    * fixed-type parameter-packs with same length as ValueTypes. */
@@ -541,7 +558,7 @@ class NoiseModelFactorN
    */
   Vector unwhitenedError(
       const Values& x,
-      boost::optional<std::vector<Matrix>&> H = boost::none) const override {
+      OptionalMatrixVec H = OptionalNone) const override {
     return unwhitenedError(boost::mp11::index_sequence_for<ValueTypes...>{}, x,
                            H);
   }
@@ -573,7 +590,7 @@ class NoiseModelFactorN
    * @param[out] H The Jacobian with respect to each variable (optional).
    */
   virtual Vector evaluateError(const ValueTypes&... x,
-                               OptionalMatrix<ValueTypes>... H) const = 0;
+                               OptionalMatrixT<ValueTypes>... H) const = 0;
 
   /// @}
 
@@ -587,7 +604,7 @@ class NoiseModelFactorN
    * e.g. `const Vector error = factor.evaluateError(pose, point);`
    */
   inline Vector evaluateError(const ValueTypes&... x) const {
-    return evaluateError(x..., OptionalMatrix<ValueTypes>()...);
+    return evaluateError(x..., OptionalMatrixT<ValueTypes>()...);
   }
 
   /** Some (but not all) optional Jacobians are omitted (function overload)
@@ -599,7 +616,7 @@ class NoiseModelFactorN
   inline Vector evaluateError(const ValueTypes&... x,
                               OptionalJacArgs&&... H) const {
     return evaluateError(x..., std::forward<OptionalJacArgs>(H)...,
-                         boost::none);
+                         OptionalNone);
   }
 
   /// @}
@@ -615,7 +632,7 @@ class NoiseModelFactorN
   inline Vector unwhitenedError(
       boost::mp11::index_sequence<Indices...>,  //
       const Values& x,
-      boost::optional<std::vector<Matrix>&> H = boost::none) const {
+      OptionalMatrixVec H = OptionalNone) const {
     if (this->active(x)) {
       if (H) {
         return evaluateError(x.at<ValueTypes>(keys_[Indices])...,
