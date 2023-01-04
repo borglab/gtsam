@@ -9,9 +9,9 @@ endif()
 option(GTSAM_NO_BOOST_CPP17 "Require and use boost" ON)
 add_definitions(-Wno-deprecated-declarations)
 
+  set(CMAKE_CXX_STANDARD 17)
 if (GTSAM_NO_BOOST_CPP17)
   add_definitions(-DNO_BOOST_CPP17)
-  set(CMAKE_CXX_STANDARD 17)
 endif()
 
 # Set the version number for the library

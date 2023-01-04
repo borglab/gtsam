@@ -251,7 +251,12 @@ public:
    * both the function evaluation and its derivative(s) in H.
    */
   virtual Vector unwhitenedError(const Values& x, OptionalMatrixVec H = OptionalNone) const = 0;
-
+#ifdef NO_BOOST_C17
+  // support taking in the actual vector instead of the pointer as well
+  Vector unwhitenedError(const Values& x, std::vector<Matrix>& H) {
+	  return unwhitenedError(x, &H);
+  }
+#endif
   /**
    * Vector of errors, whitened
    * This is the raw error, i.e., i.e. \f$ (h(x)-z)/\sigma \f$ in case of a Gaussian
@@ -611,12 +616,16 @@ protected:
    *
    * e.g. `const Vector error = factor.evaluateError(pose, point, Hpose);`
    */
-  template <typename... OptionalJacArgs,
-            typename = IndexIsValid<sizeof...(OptionalJacArgs) + 1>>
-  inline Vector evaluateError(const ValueTypes&... x,
-                              OptionalJacArgs&&... H) const {
-    return evaluateError(x..., std::forward<OptionalJacArgs>(H)...,
-                         OptionalNone);
+  template <typename... OptionalJacArgs, typename = IndexIsValid<sizeof...(OptionalJacArgs) + 1>>
+  inline Vector evaluateError(const ValueTypes&... x, OptionalJacArgs&&... H) const {
+	constexpr bool are_all_opt_mat = (... && std::is_same<OptionalMatrix, std::decay_t<OptionalJacArgs>>::value);
+	constexpr bool are_all_mat = (... && std::is_same<Matrix, std::decay_t<OptionalJacArgs>>::value);
+	static_assert((are_all_mat == false && are_all_opt_mat == false), "ERRORRR");
+    if constexpr ((... && std::is_same<OptionalMatrix, std::decay_t<OptionalJacArgs>>::value)) {
+      return evaluateError(x..., std::forward<OptionalJacArgs>(H)..., OptionalNone);
+    } else if constexpr ((... && std::is_same<Matrix, std::decay_t<OptionalJacArgs>>::value)) {
+      return evaluateError(x..., std::forward<OptionalJacArgs>(H)..., OptionalNone);
+    }
   }
 
   /// @}
