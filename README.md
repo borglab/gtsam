@@ -70,22 +70,37 @@ If you are using GTSAM for academic work, please use the following citation:
 
 ```bibtex
 @software{gtsam,
-  author       = {Frank Dellaert and Richard Roberts and Varun Agrawal and Alex Cunningham and Chris Beall and Duy-Nguyen Ta and Fan Jiang and lucacarlone and nikai and Jose Luis Blanco-Claraco and Stephen Williams and ydjian and John Lambert and Andy Melim and Zhaoyang Lv and Akshay Krishnan and Jing Dong and Gerry Chen and Krunal Chande and balderdash-devil and DiffDecisionTrees and Sungtae An and mpaluri and Ellon Paiva Mendes and Mike Bosse and Akash Patel and Ayush Baid and Paul Furgale and matthewbroadwaynavenio and roderick-koehle},
+  author       = {Frank Dellaert and GTSAM Contributors},
   title        = {borglab/gtsam},
-  month        = may,
+  month        = May,
   year         = 2022,
-  publisher    = {Zenodo},
-  version      = {4.2a7},
+  publisher    = {Georgia Tech Borg Lab},
+  version      = {4.2a8},
   doi          = {10.5281/zenodo.5794541},
-  url          = {https://doi.org/10.5281/zenodo.5794541}
+  url          = {https://github.com/borglab/gtsam)}}
 }
 ```
 
-You can also get the latest citation available from Zenodo below:
+To cite the `Factor Graphs for Robot Perception` book, please use:
+```bibtex
+@book{factor_graphs_for_robot_perception,
+    author={Frank Dellaert and Michael Kaess},
+    year={2017},
+    title={Factor Graphs for Robot Perception},
+    publisher={Foundations and Trends in Robotics, Vol. 6},
+    url={http://www.cs.cmu.edu/~kaess/pub/Dellaert17fnt.pdf}
+}
+```
 
-[![DOI](https://zenodo.org/badge/86362856.svg)](https://doi.org/10.5281/zenodo.5794541)
+If you are using the IMU preintegration scheme, please cite:
+```bibtex
+@book{imu_preintegration,
+    author={Christian Forster and Luca Carlone and Frank Dellaert and Davide Scaramuzza},
+    title={IMU preintegration on Manifold for Efficient Visual-Inertial Maximum-a-Posteriori Estimation},
+    year={2015}
+}
+```
 
-Specific formats are available in the bottom-right corner of the Zenodo page.
 
 ## The Preintegrated IMU Factor
 
