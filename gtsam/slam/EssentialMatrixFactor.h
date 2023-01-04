@@ -32,7 +32,6 @@ namespace gtsam {
  * Factor that evaluates epipolar error p'Ep for given essential matrix
  */
 class EssentialMatrixFactor : public NoiseModelFactorN<EssentialMatrix> {
-  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(EssentialMatrixFactor, 1);
 
   Vector3 vA_, vB_;  ///< Homogeneous versions, in ideal coordinates
 
@@ -109,7 +108,6 @@ class EssentialMatrixFactor : public NoiseModelFactorN<EssentialMatrix> {
  */
 class EssentialMatrixFactor2
     : public NoiseModelFactorN<EssentialMatrix, double> {
-  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(EssentialMatrixFactor2, 2);
 
   Point3 dP1_;  ///< 3D point corresponding to measurement in image 1
   Point2 pn_;   ///< Measurement in image 2, in ideal coordinates
@@ -326,7 +324,6 @@ class EssentialMatrixFactor3 : public EssentialMatrixFactor2 {
 template <class CALIBRATION>
 class EssentialMatrixFactor4
     : public NoiseModelFactorN<EssentialMatrix, CALIBRATION> {
-  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(EssentialMatrixFactor4, 2);
 
  private:
   Point2 pA_, pB_;  ///< points in pixel coordinates

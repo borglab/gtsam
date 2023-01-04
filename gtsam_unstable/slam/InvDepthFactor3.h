@@ -25,7 +25,6 @@ namespace gtsam {
  */
 template<class POSE, class LANDMARK, class INVDEPTH>
 class InvDepthFactor3: public NoiseModelFactorN<POSE, LANDMARK, INVDEPTH> {
-  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(InvDepthFactor3, 3);
 
 protected:
 

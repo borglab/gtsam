@@ -25,7 +25,6 @@ namespace gtsam {
  *  in sequential update method.
  */
 class Reconstruction : public NoiseModelFactorN<Pose3, Pose3, Vector6>  {
-  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(Reconstruction, 3);
 
   double h_;  // time step
   typedef NoiseModelFactorN<Pose3, Pose3, Vector6> Base;
@@ -75,7 +74,6 @@ public:
  * Implement the Discrete Euler-Poincare' equation:
  */
 class DiscreteEulerPoincareHelicopter : public NoiseModelFactorN<Vector6, Vector6, Pose3>  {
-  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(DiscreteEulerPoincareHelicopter, 3);
 
   double h_;  /// time step
   Matrix Inertia_;  /// Inertia tensors Inertia = [ J 0; 0 M ]

@@ -28,7 +28,6 @@ namespace gtsam {
  * @ingroup slam
  */
 class GTSAM_EXPORT EssentialMatrixConstraint: public NoiseModelFactorN<Pose3, Pose3> {
-  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(EssentialMatrixConstraint, 2);
 
 private:
 

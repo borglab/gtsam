@@ -38,7 +38,6 @@ namespace gtsam {
   template <class POSE = Pose3, class LANDMARK = Point3,
             class CALIBRATION = Cal3_S2>
   class GenericProjectionFactor: public NoiseModelFactorN<POSE, LANDMARK> {
-    ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(GenericProjectionFactor, 2);
 
   protected:
 

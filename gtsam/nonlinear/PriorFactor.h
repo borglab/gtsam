@@ -28,7 +28,6 @@ namespace gtsam {
    */
   template<class VALUE>
   class PriorFactor: public NoiseModelFactorN<VALUE> {
-    ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(PriorFactor, 1);
 
   public:
     typedef VALUE T;

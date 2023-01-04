@@ -21,7 +21,6 @@ namespace gtsam {
  */
 template<class POSE>
 class IMUFactor : public NoiseModelFactorN<POSE, POSE> {
-  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(IMUFactor, 2);
 
 public:
   typedef NoiseModelFactorN<POSE, POSE> Base;

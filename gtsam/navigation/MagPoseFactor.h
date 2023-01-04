@@ -26,7 +26,6 @@ namespace gtsam {
  */
 template <class POSE>
 class MagPoseFactor: public NoiseModelFactorN<POSE> {
-  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(MagPoseFactor, 1);
 
  private:
   using This = MagPoseFactor<POSE>;

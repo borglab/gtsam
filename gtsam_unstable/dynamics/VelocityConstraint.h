@@ -33,7 +33,6 @@ typedef enum {
  * if timesteps are small.
  */
 class VelocityConstraint : public gtsam::NoiseModelFactorN<PoseRTV,PoseRTV> {
-  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(VelocityConstraint, 2);
 
 public:
   typedef gtsam::NoiseModelFactorN<PoseRTV,PoseRTV> Base;

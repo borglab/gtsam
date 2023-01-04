@@ -88,7 +88,6 @@ namespace gtsam {
 
 template<class POSE, class VELOCITY>
 class EquivInertialNavFactor_GlobalVel_NoBias : public NoiseModelFactorN<POSE, VELOCITY, POSE, VELOCITY> {
-  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(EquivInertialNavFactor_GlobalVel_NoBias, 4);
 
 private:
 

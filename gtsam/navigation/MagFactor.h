@@ -31,7 +31,6 @@ namespace gtsam {
  * Rotation is around negative Z axis, i.e. positive is yaw to right!
  */
 class MagFactor: public NoiseModelFactorN<Rot2> {
-  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(MagFactor, 1);
 
   const Point3 measured_; ///< The measured magnetometer values
   const Point3 nM_; ///< Local magnetic field (mag output units)
@@ -89,7 +88,6 @@ public:
  * and assumes scale, direction, and the bias are given
  */
 class MagFactor1: public NoiseModelFactorN<Rot3> {
-  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(MagFactor1, 1);
 
   const Point3 measured_; ///< The measured magnetometer values
   const Point3 nM_; ///< Local magnetic field (mag output units)
@@ -128,7 +126,6 @@ public:
  * and optimizes for both nM and the bias, where nM is in units defined by magnetometer
  */
 class MagFactor2: public NoiseModelFactorN<Point3, Point3> {
-  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(MagFactor2, 2);
 
   const Point3 measured_; ///< The measured magnetometer values
   const Rot3 bRn_; ///< The assumed known rotation from nav to body
@@ -170,7 +167,6 @@ public:
  * and optimizes for both scale, direction, and the bias.
  */
 class MagFactor3: public NoiseModelFactorN<double, Unit3, Point3> {
-  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(MagFactor3, 3);
 
   const Point3 measured_; ///< The measured magnetometer values
   const Rot3 bRn_; ///< The assumed known rotation from nav to body

@@ -43,7 +43,6 @@ namespace gtsam {
 
 class GTSAM_UNSTABLE_EXPORT ProjectionFactorRollingShutter
     : public NoiseModelFactorN<Pose3, Pose3, Point3> {
-  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(ProjectionFactorRollingShutter,
                                                3);
 
  protected:

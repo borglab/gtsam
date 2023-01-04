@@ -43,7 +43,6 @@ namespace gtsam {
  */
 template<class VALUE>
 class GaussMarkov1stOrderFactor: public NoiseModelFactorN<VALUE, VALUE> {
-  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(GaussMarkov1stOrderFactor, 2);
 
 private:
 

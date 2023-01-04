@@ -55,7 +55,6 @@ P transform_point(
  */
 template<class POINT, class TRANSFORM>
 class ReferenceFrameFactor : public NoiseModelFactorN<POINT, TRANSFORM, POINT> {
-  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(ReferenceFrameFactor, 3);
 
 protected:
   /** default constructor for serialization only */

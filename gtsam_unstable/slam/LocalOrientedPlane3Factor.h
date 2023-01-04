@@ -36,7 +36,6 @@ namespace gtsam {
  */
 class GTSAM_UNSTABLE_EXPORT LocalOrientedPlane3Factor
     : public NoiseModelFactorN<Pose3, Pose3, OrientedPlane3> {
-  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(LocalOrientedPlane3Factor, 3);
 
  protected:
   OrientedPlane3 measured_p_;

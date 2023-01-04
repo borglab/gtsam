@@ -57,7 +57,6 @@ namespace gtsam {
  */
 template <typename R, typename T>
 class FunctorizedFactor : public NoiseModelFactorN<T> {
-  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(FunctorizedFactor, 1);
 
  private:
   using Base = NoiseModelFactorN<T>;
@@ -159,7 +158,6 @@ FunctorizedFactor<R, T> MakeFunctorizedFactor(Key key, const R &z,
  */
 template <typename R, typename T1, typename T2>
 class FunctorizedFactor2 : public NoiseModelFactorN<T1, T2> {
-  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(FunctorizedFactor2, 2);
 
  private:
   using Base = NoiseModelFactorN<T1, T2>;

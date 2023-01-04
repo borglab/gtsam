@@ -22,7 +22,6 @@ namespace gtsam {
  */
 template<typename POSE = Pose3, typename POINT = Point3>
 class PoseToPointFactor : public NoiseModelFactorN<POSE, POINT> {
-  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(PoseToPointFactor, 2);
 
  private:
   typedef PoseToPointFactor This;

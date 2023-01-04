@@ -17,7 +17,6 @@ namespace gtsam {
 
 template<class POSE>
 class PoseRotationPrior : public NoiseModelFactorN<POSE> {
-  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(PoseRotationPrior, 1);
 
 public:
 

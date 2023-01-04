@@ -58,7 +58,6 @@ namespace gtsam {
  */
 template<class CAMERA, class LANDMARK>
 class GeneralSFMFactor: public NoiseModelFactorN<CAMERA, LANDMARK> {
-  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(GeneralSFMFactor, 2);
 
   GTSAM_CONCEPT_MANIFOLD_TYPE(CAMERA)
   GTSAM_CONCEPT_MANIFOLD_TYPE(LANDMARK)
@@ -203,7 +202,6 @@ struct traits<GeneralSFMFactor<CAMERA, LANDMARK> > : Testable<
  */
 template<class CALIBRATION>
 class GeneralSFMFactor2: public NoiseModelFactorN<Pose3, Point3, CALIBRATION> {
-  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(GeneralSFMFactor2, 3);
 
   GTSAM_CONCEPT_MANIFOLD_TYPE(CALIBRATION)
   static const int DimK = FixedDimension<CALIBRATION>::value;

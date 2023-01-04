@@ -23,7 +23,6 @@ namespace gtsam {
  */
 template<class POSE>
 class FullIMUFactor : public NoiseModelFactorN<POSE, POSE> {
-  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(FullIMUFactor, 2);
 
 public:
   typedef NoiseModelFactorN<POSE, POSE> Base;

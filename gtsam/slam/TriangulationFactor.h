@@ -31,7 +31,6 @@ namespace gtsam {
  */
 template<class CAMERA>
 class TriangulationFactor: public NoiseModelFactorN<Point3> {
-  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(TriangulationFactor, 1);
 
 public:
 
