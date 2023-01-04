@@ -50,18 +50,14 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   /// @name Testable
   /// @{
 
-  /** Check equality */
-  bool equals(const This &bn, double tol = 1e-9) const {
-    return Base::equals(bn, tol);
-  }
-
-  /// print graph
+  /// GTSAM-style printing
   void print(
       const std::string &s = "",
-      const KeyFormatter &formatter = DefaultKeyFormatter) const override {
-    Base::print(s, formatter);
-  }
+      const KeyFormatter &formatter = DefaultKeyFormatter) const override;
 
+  /// GTSAM-style equals
+  bool equals(const This& fg, double tol = 1e-9) const;
+  
   /// @}
   /// @name Standard Interface
   /// @{
