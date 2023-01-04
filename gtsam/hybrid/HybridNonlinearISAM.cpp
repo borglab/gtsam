@@ -99,9 +99,11 @@ void HybridNonlinearISAM::print(const string& s,
                                 const KeyFormatter& keyFormatter) const {
   cout << s << "ReorderInterval: " << reorderInterval_
        << " Current Count: " << reorderCounter_ << endl;
-  isam_.print("HybridGaussianISAM:\n", keyFormatter);
+  std::cout << "HybridGaussianISAM:" << std::endl;
+  isam_.print("", keyFormatter);
   linPoint_.print("Linearization Point:\n", keyFormatter);
-  factors_.print("Nonlinear Graph:\n", keyFormatter);
+  std::cout << "Nonlinear Graph:" << std::endl;
+  factors_.print("", keyFormatter);
 }
 
 /* ************************************************************************* */

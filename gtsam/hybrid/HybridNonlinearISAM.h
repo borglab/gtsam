@@ -90,7 +90,7 @@ class GTSAM_EXPORT HybridNonlinearISAM {
   const Values& getLinearizationPoint() const { return linPoint_; }
 
   /** Return the current discrete assignment */
-  const DiscreteValues& getAssignment() const { return assignment_; }
+  const DiscreteValues& assignment() const { return assignment_; }
 
   /** get underlying nonlinear graph */
   const HybridNonlinearFactorGraph& getFactorsUnsafe() const {
