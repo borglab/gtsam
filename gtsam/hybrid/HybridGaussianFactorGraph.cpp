@@ -60,10 +60,10 @@ template class EliminateableFactorGraph<HybridGaussianFactorGraph>;
 
 /* ************************************************************************ */
 static GaussianFactorGraphTree addGaussian(
-    const GaussianFactorGraphTree &sum,
+    const GaussianFactorGraphTree &gfgTree,
     const GaussianFactor::shared_ptr &factor) {
   // If the decision tree is not initialized, then initialize it.
-  if (sum.empty()) {
+  if (gfgTree.empty()) {
     GaussianFactorGraph result;
     result.push_back(factor);
     return GaussianFactorGraphTree(GraphAndConstant(result, 0.0));
@@ -74,20 +74,18 @@ static GaussianFactorGraphTree addGaussian(
       result.push_back(factor);
       return GraphAndConstant(result, graph_z.constant);
     };
-    return sum.apply(add);
+    return gfgTree.apply(add);
   }
 }
 
 /* ************************************************************************ */
-// TODO(dellaert): We need to document why deferredFactors need to be
-// added last, which I would undo if possible. Implementation-wise, it's
-// probably more efficient to first collect the discrete keys, and then loop
-// over all assignments to populate a vector.
+// TODO(dellaert): Implementation-wise, it's probably more efficient to first
+// collect the discrete keys, and then loop over all assignments to populate a
+// vector.
 GaussianFactorGraphTree HybridGaussianFactorGraph::assembleGraphTree() const {
   gttic(assembleGraphTree);
 
   GaussianFactorGraphTree result;
-  std::vector<GaussianFactor::shared_ptr> deferredFactors;
 
   for (auto &f : factors_) {
     // TODO(dellaert): just use a virtual method defined in HybridFactor.
@@ -101,10 +99,10 @@ GaussianFactorGraphTree HybridGaussianFactorGraph::assembleGraphTree() const {
 
     } else if (f->isContinuous()) {
       if (auto gf = boost::dynamic_pointer_cast<HybridGaussianFactor>(f)) {
-        deferredFactors.push_back(gf->inner());
+        result = addGaussian(result, gf->inner());
       }
       if (auto cg = boost::dynamic_pointer_cast<HybridConditional>(f)) {
-        deferredFactors.push_back(cg->asGaussian());
+        result = addGaussian(result, cg->asGaussian());
       }
 
     } else if (f->isDiscrete()) {
@@ -124,10 +122,6 @@ GaussianFactorGraphTree HybridGaussianFactorGraph::assembleGraphTree() const {
             demangle(typeid(fr).name()));
       }
     }
-  }
-
-  for (auto &f : deferredFactors) {
-    result = addGaussian(result, f);
   }
 
   gttoc(assembleGraphTree);
