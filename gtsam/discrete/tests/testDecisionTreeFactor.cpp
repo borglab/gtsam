@@ -222,30 +222,6 @@ TEST(DecisionTreeFactor, htmlWithValueFormatter) {
 }
 
 /* ************************************************************************* */
-BOOST_CLASS_EXPORT_GUID(DecisionTreeFactor, "gtsam_DecisionTreeFactor");
-using ADT = AlgebraicDecisionTree<Key>;
-BOOST_CLASS_EXPORT_GUID(ADT, "gtsam_AlgebraicDecisionTree");
-BOOST_CLASS_EXPORT_GUID(ADT::Leaf, "gtsam_DecisionTree_Leaf")
-BOOST_CLASS_EXPORT_GUID(ADT::Choice, "gtsam_DecisionTree_Choice")
-
-// Check serialization for AlgebraicDecisionTree and the DecisionTreeFactor
-TEST(DecisionTreeFactor, Serialization) {
-  using namespace serializationTestHelpers;
-
-  DiscreteKey A(1, 2), B(2, 2), C(3, 2);
-
-  DecisionTreeFactor::ADT tree(A & B & C, "1 5 3 7 2 6 4 8");
-  EXPECT(equalsObj<ADT>(tree));
-  EXPECT(equalsXML<DecisionTreeFactor::ADT>(tree));
-  EXPECT(equalsBinary<DecisionTreeFactor::ADT>(tree));
-
-  DecisionTreeFactor f(A & B & C, "1 5 3 7 2 6 4 8");
-  EXPECT(equalsObj<DecisionTreeFactor>(f));
-  EXPECT(equalsXML<DecisionTreeFactor>(f));
-  EXPECT(equalsBinary<DecisionTreeFactor>(f));
-}
-
-/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
