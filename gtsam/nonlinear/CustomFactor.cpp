@@ -22,7 +22,7 @@ namespace gtsam {
 /*
  * Calculates the unwhitened error by invoking the callback functor (i.e. from Python).
  */
-Vector CustomFactor::unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H) const {
+Vector CustomFactor::unwhitenedError(const Values& x, OptionalMatrixVecType H) const {
   if(this->active(x)) {
 
     if(H) {

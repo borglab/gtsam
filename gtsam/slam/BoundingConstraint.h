@@ -64,8 +64,8 @@ struct BoundingConstraint1: public NoiseModelFactorN<VALUE> {
     return (isGreaterThan_) ? x <= threshold_ : x >= threshold_;
   }
 
-  Vector evaluateError(const X& x, boost::optional<Matrix&> H =
-      boost::none) const override {
+  Vector evaluateError(const X& x, OptionalMatrixType H =
+      OptionalNone) const override {
     Matrix D;
     double error = value(x, D) - threshold_;
     if (H) {
@@ -134,8 +134,8 @@ struct BoundingConstraint2: public NoiseModelFactorN<VALUE1, VALUE2> {
   }
 
   Vector evaluateError(const X1& x1, const X2& x2,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const override {
+      OptionalMatrixType H1 = OptionalNone,
+      OptionalMatrixType H2 = OptionalNone) const override {
     Matrix D1, D2;
     double error = value(x1, x2, D1, D2) - threshold_;
     if (H1) {

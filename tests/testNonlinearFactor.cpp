@@ -340,8 +340,7 @@ class TestFactor1 : public NoiseModelFactor1<double> {
   TestFactor1() : Base(noiseModel::Diagonal::Sigmas(Vector1(2.0)), L(1)) {}
   using Base::NoiseModelFactor1;  // inherit constructors
 
-  Vector evaluateError(const double& x1, boost::optional<Matrix&> H1 =
-                                             boost::none) const override {
+  Vector evaluateError(const double& x1, OptionalMatrixType H1 = OptionalNone) const override {
     if (H1) *H1 = (Matrix(1, 1) << 1.0).finished();
     return (Vector(1) << x1).finished();
   }
@@ -394,10 +393,10 @@ class TestFactor4 : public NoiseModelFactor4<double, double, double, double> {
 
   Vector
     evaluateError(const double& x1, const double& x2, const double& x3, const double& x4,
-        boost::optional<Matrix&> H1 = boost::none,
-        boost::optional<Matrix&> H2 = boost::none,
-        boost::optional<Matrix&> H3 = boost::none,
-        boost::optional<Matrix&> H4 = boost::none) const override {
+        OptionalMatrixType H1 = OptionalNone,
+        OptionalMatrixType H2 = OptionalNone,
+        OptionalMatrixType H3 = OptionalNone,
+        OptionalMatrixType H4 = OptionalNone) const override {
     if(H1) {
       *H1 = (Matrix(1, 1) << 1.0).finished();
       *H2 = (Matrix(1, 1) << 2.0).finished();
@@ -484,11 +483,11 @@ public:
 
   Vector
     evaluateError(const X1& x1, const X2& x2, const X3& x3, const X4& x4, const X5& x5,
-        boost::optional<Matrix&> H1 = boost::none,
-        boost::optional<Matrix&> H2 = boost::none,
-        boost::optional<Matrix&> H3 = boost::none,
-        boost::optional<Matrix&> H4 = boost::none,
-        boost::optional<Matrix&> H5 = boost::none) const override {
+        OptionalMatrixType H1 = OptionalNone,
+        OptionalMatrixType H2 = OptionalNone,
+        OptionalMatrixType H3 = OptionalNone,
+        OptionalMatrixType H4 = OptionalNone,
+        OptionalMatrixType H5 = OptionalNone) const override {
     if(H1) {
       *H1 = (Matrix(1, 1) << 1.0).finished();
       *H2 = (Matrix(1, 1) << 2.0).finished();
@@ -534,12 +533,12 @@ public:
 
   Vector
     evaluateError(const X1& x1, const X2& x2, const X3& x3, const X4& x4, const X5& x5, const X6& x6,
-        boost::optional<Matrix&> H1 = boost::none,
-        boost::optional<Matrix&> H2 = boost::none,
-        boost::optional<Matrix&> H3 = boost::none,
-        boost::optional<Matrix&> H4 = boost::none,
-        boost::optional<Matrix&> H5 = boost::none,
-        boost::optional<Matrix&> H6 = boost::none) const override {
+        OptionalMatrixType H1 = OptionalNone,
+        OptionalMatrixType H2 = OptionalNone,
+        OptionalMatrixType H3 = OptionalNone,
+        OptionalMatrixType H4 = OptionalNone,
+        OptionalMatrixType H5 = OptionalNone,
+        OptionalMatrixType H6 = OptionalNone) const override {
     if(H1) {
       *H1 = (Matrix(1, 1) << 1.0).finished();
       *H2 = (Matrix(1, 1) << 2.0).finished();
@@ -594,10 +593,10 @@ public:
 
   Vector
     evaluateError(const double& x1, const double& x2, const double& x3, const double& x4,
-        boost::optional<Matrix&> H1 = boost::none,
-        boost::optional<Matrix&> H2 = boost::none,
-        boost::optional<Matrix&> H3 = boost::none,
-        boost::optional<Matrix&> H4 = boost::none) const override {
+        OptionalMatrixType H1 = OptionalNone,
+        OptionalMatrixType H2 = OptionalNone,
+        OptionalMatrixType H3 = OptionalNone,
+        OptionalMatrixType H4 = OptionalNone) const override {
     if (H1) *H1 = (Matrix(1, 1) << 1.0).finished();
     if (H2) *H2 = (Matrix(1, 1) << 2.0).finished();
     if (H3) *H3 = (Matrix(1, 1) << 3.0).finished();

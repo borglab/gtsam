@@ -119,8 +119,8 @@ bool AHRSFactor::equals(const NonlinearFactor& other, double tol) const {
 
 //------------------------------------------------------------------------------
 Vector AHRSFactor::evaluateError(const Rot3& Ri, const Rot3& Rj,
-    const Vector3& bias, boost::optional<Matrix&> H1,
-    boost::optional<Matrix&> H2, boost::optional<Matrix&> H3) const {
+    const Vector3& bias, OptionalMatrixType H1,
+    OptionalMatrixType H2, OptionalMatrixType H3) const {
 
   // Do bias correction, if (H3) will contain 3*3 derivative used below
   const Vector3 biascorrectedOmega = _PIM_.predict(bias, H3);

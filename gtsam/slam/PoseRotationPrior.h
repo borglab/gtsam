@@ -75,7 +75,7 @@ public:
   }
 
   /** h(x)-z */
-  Vector evaluateError(const Pose& pose, boost::optional<Matrix&> H = boost::none) const override {
+  Vector evaluateError(const Pose& pose, OptionalMatrixType H = OptionalNone) const override {
     const Rotation& newR = pose.rotation();
     if (H) {
       *H = Matrix::Zero(rDim, xDim);

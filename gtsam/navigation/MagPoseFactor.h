@@ -108,11 +108,11 @@ class MagPoseFactor: public NoiseModelFactorN<POSE> {
    * Return the factor's error h(x) - z, and the optional Jacobian. Note that
    * the measurement error is expressed in the body frame.
    */
-  Vector evaluateError(const POSE& nPb, boost::optional<Matrix&> H = boost::none) const override {
+  Vector evaluateError(const POSE& nPb, OptionalMatrixType H = OptionalNone) const override {
     // Predict the measured magnetic field h(x) in the *body* frame.
     // If body_P_sensor was given, bias_ will have been rotated into the body frame.
     Matrix H_rot = Matrix::Zero(MeasDim, RotDim);
-    const Point hx = nPb.rotation().unrotate(nM_, H_rot, boost::none) + bias_;
+    const Point hx = nPb.rotation().unrotate(nM_, H_rot, OptionalNone) + bias_;
 
     if (H) {
       // Fill in the relevant part of the Jacobian (just rotation columns).

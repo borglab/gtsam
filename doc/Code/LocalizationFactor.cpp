@@ -6,7 +6,7 @@ public:
     NoiseModelFactor1<Pose2>(model, j), mx_(x), my_(y) {}
 
   Vector evaluateError(const Pose2& q, 
-      boost::optional<Matrix&> H = boost::none) const override {
+      OptionalMatrixType H = OptionalNone) const override {
     const Rot2& R = q.rotation();
     if (H) (*H) = (gtsam::Matrix(2, 3) <<
             R.c(), -R.s(), 0.0,

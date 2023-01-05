@@ -97,7 +97,7 @@ protected:
    * both the function evaluation and its derivative(s) in H.
    */
   Vector unwhitenedError(const Values& x,
-    boost::optional<std::vector<Matrix>&> H = boost::none) const override {
+    OptionalMatrixVecType H = OptionalNone) const override {
     if (H) {
       const T value = expression_.valueAndDerivatives(x, keys_, dims_, *H);
       // NOTE(hayk): Doing the reverse, AKA Local(measured_, value) is not correct here
@@ -312,8 +312,8 @@ public:
 
   /// Backwards compatible evaluateError, to make existing tests compile
   Vector evaluateError(const A1 &a1, const A2 &a2,
-                       boost::optional<Matrix &> H1 = boost::none,
-                       boost::optional<Matrix &> H2 = boost::none) const {
+                       OptionalMatrixType H1 = OptionalNone,
+                       OptionalMatrixType H2 = OptionalNone) const {
     Values values;
     values.insert(this->keys_[0], a1);
     values.insert(this->keys_[1], a2);

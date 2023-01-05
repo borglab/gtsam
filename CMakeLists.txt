@@ -98,7 +98,7 @@ add_subdirectory(timing)
 
 # Build gtsam_unstable
 if (GTSAM_BUILD_UNSTABLE)
-    add_subdirectory(gtsam_unstable)
+	# add_subdirectory(gtsam_unstable)
 endif()
 
 # This is the new wrapper

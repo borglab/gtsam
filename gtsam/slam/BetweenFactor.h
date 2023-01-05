@@ -105,13 +105,13 @@ namespace gtsam {
     /// @{
 
     /// evaluate error, returns vector of errors size of tangent space
-    Vector evaluateError(const T& p1, const T& p2, boost::optional<Matrix&> H1 =
-      boost::none, boost::optional<Matrix&> H2 = boost::none) const override {
+    Vector evaluateError(const T& p1, const T& p2, OptionalMatrixType H1 =
+      OptionalNone, OptionalMatrixType H2 = OptionalNone) const override {
       T hx = traits<T>::Between(p1, p2, H1, H2); // h(x)
       // manifold equivalent of h(x)-z -> log(z,h(x))
 #ifdef GTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR
       typename traits<T>::ChartJacobian::Jacobian Hlocal;
-      Vector rval = traits<T>::Local(measured_, hx, boost::none, (H1 || H2) ? &Hlocal : 0);
+      Vector rval = traits<T>::Local(measured_, hx, OptionalNone, (H1 || H2) ? &Hlocal : 0);
       if (H1) *H1 = Hlocal * (*H1);
       if (H2) *H2 = Hlocal * (*H2);
       return rval;

@@ -84,7 +84,7 @@ class UnaryFactor: public NoiseModelFactorN<Pose2> {
   // The first is the 'evaluateError' function. This function implements the desired measurement
   // function, returning a vector of errors when evaluated at the provided variable value. It
   // must also calculate the Jacobians for this measurement function, if requested.
-  Vector evaluateError(const Pose2& q, boost::optional<Matrix&> H = boost::none) const override {
+  Vector evaluateError(const Pose2& q, OptionalMatrixType H = OptionalNone) const override {
     // The measurement function for a GPS-like measurement h(q) which predicts the measurement (m) is h(q) = q, q = [qx qy qtheta]
     // The error is then simply calculated as E(q) = h(q) - m:
     // error_x = q.x - mx

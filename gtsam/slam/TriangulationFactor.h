@@ -119,10 +119,10 @@ public:
   }
 
   /// Evaluate error h(x)-z and optionally derivatives
-  Vector evaluateError(const Point3& point, boost::optional<Matrix&> H2 =
-      boost::none) const override {
+  Vector evaluateError(const Point3& point, OptionalMatrixType H2 =
+      OptionalNone) const override {
     try {
-      return traits<Measurement>::Local(measured_, camera_.project2(point, boost::none, H2));
+      return traits<Measurement>::Local(measured_, camera_.project2(point, OptionalNone, H2));
     } catch (CheiralityException& e) {
       if (H2)
         *H2 = Matrix::Zero(traits<Measurement>::dimension, 3);

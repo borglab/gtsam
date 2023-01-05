@@ -89,8 +89,8 @@ struct PointPrior3D: public NoiseModelFactorN<Point3> {
    * @param H is an optional Jacobian matrix (Dimension: 3x3)
    * @return Vector error between prior value and x (Dimension: 3)
    */
-  Vector evaluateError(const Point3& x, boost::optional<Matrix&> H =
-      boost::none) const override {
+  Vector evaluateError(const Point3& x, OptionalMatrixType H =
+      OptionalNone) const override {
     return prior(x, H) - measured_;
   }
 };
@@ -121,7 +121,7 @@ struct Simulated3DMeasurement: public NoiseModelFactorN<Point3, Point3> {
    * @return vector error between measurement and prediction (Dimension: 3)
    */
   Vector evaluateError(const Point3& x1, const Point3& x2,
-      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const override {
+      OptionalMatrixType H1 = OptionalNone, OptionalMatrixType H2 = OptionalNone) const override {
     return mea(x1, x2, H1, H2) - measured_;
   }
 };

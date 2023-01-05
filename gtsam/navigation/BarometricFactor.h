@@ -78,8 +78,8 @@ class GTSAM_EXPORT BarometricFactor : public NoiseModelFactorN<Pose3, double> {
     /// vector of errors
     Vector evaluateError(
         const Pose3& p, const double& b,
-        boost::optional<Matrix&> H = boost::none,
-        boost::optional<Matrix&> H2 = boost::none) const override;
+        OptionalMatrixType H = OptionalNone,
+        OptionalMatrixType H2 = OptionalNone) const override;
 
     inline const double& measurementIn() const { return nT_; }
 

@@ -90,8 +90,8 @@ namespace simulated2DOriented {
     }
 
     /// Evaluate error and optionally derivative
-    Vector evaluateError(const Pose2& x, boost::optional<Matrix&> H =
-        boost::none) const {
+    Vector evaluateError(const Pose2& x, OptionalMatrixType H =
+        OptionalNone) const {
       return measured_.localCoordinates(prior(x, H));
     }
 
@@ -118,8 +118,8 @@ namespace simulated2DOriented {
 
     /// Evaluate error and optionally derivative
     Vector evaluateError(const VALUE& x1, const VALUE& x2,
-        boost::optional<Matrix&> H1 = boost::none,
-        boost::optional<Matrix&> H2 = boost::none) const override {
+        OptionalMatrixType H1 = OptionalNone,
+        OptionalMatrixType H2 = OptionalNone) const override {
       return measured_.localCoordinates(odo(x1, x2, H1, H2));
     }
 

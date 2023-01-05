@@ -47,7 +47,7 @@ using OptionalMatrixTypeT = Matrix*;
 using OptionalMatrixType = Matrix*;
 // These typedefs and aliases will help with making the unwhitenedError interface
 // independent of boost
-using OptionalMatrixVec = std::vector<Matrix>*;
+using OptionalMatrixVecType = std::vector<Matrix>*;
 #else
 // creating a none value to use when declaring our interfaces
 using OptionalNoneType = boost::none_t;
@@ -55,7 +55,7 @@ using OptionalNoneType = boost::none_t;
 template <typename T = void>
 using OptionalMatrixTypeT = boost::optional<Matrix&>;
 using OptionalMatrixType = boost::optional<Matrix&>;
-using OptionalMatrixVec = boost::optional<std::vector<Matrix>&>;
+using OptionalMatrixVecType = boost::optional<std::vector<Matrix>&>;
 #endif
 /**
  * Nonlinear factor base class
@@ -252,7 +252,7 @@ public:
    * If the optional arguments is specified, it should compute
    * both the function evaluation and its derivative(s) in H.
    */
-  virtual Vector unwhitenedError(const Values& x, OptionalMatrixVec H = OptionalNone) const = 0;
+  virtual Vector unwhitenedError(const Values& x, OptionalMatrixVecType H = OptionalNone) const = 0;
 #ifdef NO_BOOST_C17
   // support taking in the actual vector instead of the pointer as well
   Vector unwhitenedError(const Values& x, std::vector<Matrix>& H) {
@@ -565,7 +565,7 @@ protected:
    */
   Vector unwhitenedError(
       const Values& x,
-      OptionalMatrixVec H = OptionalNone) const override {
+      OptionalMatrixVecType H = OptionalNone) const override {
     return unwhitenedError(boost::mp11::index_sequence_for<ValueTypes...>{}, x,
                            H);
   }
@@ -659,7 +659,7 @@ protected:
   inline Vector unwhitenedError(
       boost::mp11::index_sequence<Indices...>,  //
       const Values& x,
-      OptionalMatrixVec H = OptionalNone) const {
+      OptionalMatrixVecType H = OptionalNone) const {
     if (this->active(x)) {
       if (H) {
         return evaluateError(x.at<ValueTypes>(keys_[Indices])...,

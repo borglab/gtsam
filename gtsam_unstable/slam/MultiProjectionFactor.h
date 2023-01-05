@@ -129,7 +129,7 @@ namespace gtsam {
     }
 
     /// Evaluate error h(x)-z and optionally derivatives
-    Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const override {
+    Vector unwhitenedError(const Values& x, OptionalMatrixVecType H = OptionalNone) const override {
 
       Vector a;
       return a;

@@ -65,8 +65,8 @@ class TranslationFactor : public NoiseModelFactorN<Point3, Point3> {
    */
   Vector evaluateError(
       const Point3& Ta, const Point3& Tb,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const override {
+      OptionalMatrixType H1 = OptionalNone,
+      OptionalMatrixType H2 = OptionalNone) const override {
     const Point3 dir = Tb - Ta;
     Matrix33 H_predicted_dir;
     const Point3 predicted = normalize(dir, H1 || H2 ? &H_predicted_dir : nullptr);

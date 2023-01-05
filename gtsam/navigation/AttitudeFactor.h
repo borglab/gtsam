@@ -122,7 +122,7 @@ public:
 
   /** vector of errors */
   Vector evaluateError(const Rot3& nRb, //
-      boost::optional<Matrix&> H = boost::none) const override {
+      OptionalMatrixType H = OptionalNone) const override {
     return attitudeError(nRb, H);
   }
 
@@ -197,7 +197,7 @@ public:
 
   /** vector of errors */
   Vector evaluateError(const Pose3& nTb, //
-      boost::optional<Matrix&> H = boost::none) const override {
+      OptionalMatrixType H = OptionalNone) const override {
     Vector e = attitudeError(nTb.rotation(), H);
     if (H) {
       Matrix H23 = *H;

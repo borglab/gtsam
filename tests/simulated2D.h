@@ -139,7 +139,7 @@ namespace simulated2D {
     }
 
     /// Return error and optional derivative
-    Vector evaluateError(const Pose& x, boost::optional<Matrix&> H = boost::none) const override {
+    Vector evaluateError(const Pose& x, OptionalMatrixType H = OptionalNone) const override {
       return (prior(x, H) - measured_);
     }
 
@@ -184,8 +184,8 @@ namespace simulated2D {
 
     /// Evaluate error and optionally return derivatives
     Vector evaluateError(const Pose& x1, const Pose& x2,
-        boost::optional<Matrix&> H1 = boost::none,
-        boost::optional<Matrix&> H2 = boost::none) const override {
+        OptionalMatrixType H1 = OptionalNone,
+        OptionalMatrixType H2 = OptionalNone) const override {
       return (odo(x1, x2, H1, H2) - measured_);
     }
 
@@ -231,8 +231,8 @@ namespace simulated2D {
 
     /// Evaluate error and optionally return derivatives
     Vector evaluateError(const Pose& x1, const Landmark& x2,
-        boost::optional<Matrix&> H1 = boost::none,
-        boost::optional<Matrix&> H2 = boost::none) const override {
+        OptionalMatrixType H1 = OptionalNone,
+        OptionalMatrixType H2 = OptionalNone) const override {
       return (mea(x1, x2, H1, H2) - measured_);
     }
 

@@ -60,8 +60,8 @@ class RangeFactor : public ExpressionFactorN<T, A1, A2> {
   }
   
   Vector evaluateError(const A1& a1, const A2& a2,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const
+      OptionalMatrixType H1 = OptionalNone,
+      OptionalMatrixType H2 = OptionalNone) const
   {
     std::vector<Matrix> Hs(2);
     const auto &keys = Factor::keys();
@@ -137,8 +137,8 @@ class RangeFactorWithTransform : public ExpressionFactorN<T, A1, A2> {
   }
 
   Vector evaluateError(const A1& a1, const A2& a2,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const
+      OptionalMatrixType H1 = OptionalNone,
+      OptionalMatrixType H2 = OptionalNone) const
   {
     std::vector<Matrix> Hs(2);
     const auto &keys = Factor::keys();

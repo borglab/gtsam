@@ -213,8 +213,8 @@ public:
 
   /** vector of errors */
   Vector evaluateError(const Point2& p1, const Point2& p2,
-      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
-          boost::none) const override {
+      OptionalMatrixType H1 = OptionalNone, OptionalMatrixType H2 =
+          OptionalNone) const override {
 
     // error = p2 - f(p1)
     // H1 = d error / d p1 = -d f/ d p1 = -F
@@ -339,7 +339,7 @@ public:
   }
 
   /** vector of errors */
-  Vector evaluateError(const Point2& p, boost::optional<Matrix&> H1 = boost::none) const override {
+  Vector evaluateError(const Point2& p, OptionalMatrixType H1 = OptionalNone) const override {
     // error = z - h(p)
     // H = d error / d p = -d h/ d p = -H
     Vector z_hat = h(p);

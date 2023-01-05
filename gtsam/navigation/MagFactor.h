@@ -75,7 +75,7 @@ public:
    * @brief vector of errors
    */
   Vector evaluateError(const Rot2& nRb,
-      boost::optional<Matrix&> H = boost::none) const override {
+      OptionalMatrixType H = OptionalNone) const override {
     // measured bM = nRb� * nM + b
     Point3 hx = unrotate(nRb, nM_, H) + bias_;
     return (hx - measured_);
@@ -113,7 +113,7 @@ public:
    * @brief vector of errors
    */
   Vector evaluateError(const Rot3& nRb,
-      boost::optional<Matrix&> H = boost::none) const override {
+      OptionalMatrixType H = OptionalNone) const override {
     // measured bM = nRb� * nM + b
     Point3 hx = nRb.unrotate(nM_, H, boost::none) + bias_;
     return (hx - measured_);
@@ -151,10 +151,10 @@ public:
    * @param bias (unknown) 3D bias
    */
   Vector evaluateError(const Point3& nM, const Point3& bias,
-      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
-          boost::none) const override {
+      OptionalMatrixType H1 = OptionalNone, OptionalMatrixType H2 =
+          OptionalNone) const override {
     // measured bM = nRb� * nM + b, where b is unknown bias
-    Point3 hx = bRn_.rotate(nM, boost::none, H1) + bias;
+    Point3 hx = bRn_.rotate(nM, OptionalNone, H1) + bias;
     if (H2)
       *H2 = I_3x3;
     return (hx - measured_);
@@ -192,11 +192,11 @@ public:
    * @param bias (unknown) 3D bias
    */
   Vector evaluateError(const double& scale, const Unit3& direction,
-      const Point3& bias, boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none, boost::optional<Matrix&> H3 =
-          boost::none) const override {
+      const Point3& bias, OptionalMatrixType H1 = OptionalNone,
+      OptionalMatrixType H2 = OptionalNone, OptionalMatrixType H3 =
+          OptionalNone) const override {
     // measured bM = nRb� * nM + b, where b is unknown bias
-    Unit3 rotated = bRn_.rotate(direction, boost::none, H2);
+    Unit3 rotated = bRn_.rotate(direction, OptionalNone, H2);
     Point3 hx = scale * rotated.point3() + bias;
     if (H1)
       *H1 = rotated.point3();

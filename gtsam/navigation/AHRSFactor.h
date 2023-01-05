@@ -179,9 +179,9 @@ public:
 
   /// vector of errors
   Vector evaluateError(const Rot3& rot_i, const Rot3& rot_j,
-      const Vector3& bias, boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none, boost::optional<Matrix&> H3 =
-          boost::none) const override;
+      const Vector3& bias, OptionalMatrixType H1 = OptionalNone,
+      OptionalMatrixType H2 = OptionalNone, OptionalMatrixType H3 =
+          OptionalNone) const override;
 
   /// predicted states from IMU
   /// TODO(frank): relationship with PIM predict ??

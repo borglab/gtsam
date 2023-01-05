@@ -324,10 +324,12 @@ public:
   Vector evaluateError(const Pose3& pose_i, const Vector3& vel_i,
       const Pose3& pose_j, const Vector3& vel_j,
       const imuBias::ConstantBias& bias_i, const imuBias::ConstantBias& bias_j,
-      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
-          boost::none, boost::optional<Matrix&> H3 = boost::none,
-      boost::optional<Matrix&> H4 = boost::none, boost::optional<Matrix&> H5 =
-          boost::none, boost::optional<Matrix&> H6 = boost::none) const override;
+      OptionalMatrixType H1 = OptionalNone, 
+      OptionalMatrixType H2 = OptionalNone, 
+      OptionalMatrixType H3 = OptionalNone,
+      OptionalMatrixType H4 = OptionalNone, 
+      OptionalMatrixType H5 = OptionalNone, 
+      OptionalMatrixType H6 = OptionalNone) const override;
 
  private:
   /** Serialization function */
