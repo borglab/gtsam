@@ -735,7 +735,7 @@ TEST(HybridGaussianFactorGraph, EliminateTiny22) {
   // Create Bayes net and convert to factor graph.
   auto bn = tiny::createHybridBayesNet(numMeasurements, manyModes);
   const VectorValues measurements{{Z(0), Vector1(4.0)}, {Z(1), Vector1(6.0)}};
-  auto fg = tiny::convertBayesNet(bn, measurements);
+  auto fg = bn.toFactorGraph(measurements);
   EXPECT_LONGS_EQUAL(5, fg.size());
 
   // Test elimination

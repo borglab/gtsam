@@ -229,6 +229,12 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   AlgebraicDecisionTree<Key> probPrime(
       const VectorValues &continuousValues) const;
 
+  /**
+   * Convert a hybrid Bayes net to a hybrid Gaussian factor graph by converting
+   * all conditionals with instantiated measurements into likelihood factors.
+   */
+  HybridGaussianFactorGraph toFactorGraph(
+      const VectorValues &measurements) const;
   /// @}
 
  private:
