@@ -40,10 +40,11 @@ namespace gtsam {
 #ifdef NO_BOOST_CPP17
 // These typedefs and aliases will help with making the evaluateError interface
 // independent of boost
-using OptionalNone = nullptr;
+using OptionalNoneType = std::nullptr_t;
+#define OptionalNone = nullptr
 template <typename T = void>
-using OptionalMatrixT = Matrix*;
-using OptionalMatrix = Matrix*;
+using OptionalMatrixTypeT = Matrix*;
+using OptionalMatrixType = Matrix*;
 // These typedefs and aliases will help with making the unwhitenedError interface
 // independent of boost
 using OptionalMatrixVec = std::vector<Matrix>*;
@@ -52,8 +53,8 @@ using OptionalMatrixVec = std::vector<Matrix>*;
 using OptionalNoneType = boost::none_t;
 #define OptionalNone boost::none
 template <typename T = void>
-using OptionalMatrixT = boost::optional<Matrix&>;
-using OptionalMatrix = boost::optional<Matrix&>;
+using OptionalMatrixTypeT = boost::optional<Matrix&>;
+using OptionalMatrixType = boost::optional<Matrix&>;
 using OptionalMatrixVec = boost::optional<std::vector<Matrix>&>;
 #endif
 /**
@@ -596,7 +597,7 @@ protected:
    * @param[out] H The Jacobian with respect to each variable (optional).
    */
   virtual Vector evaluateError(const ValueTypes&... x,
-                               OptionalMatrixT<ValueTypes>... H) const = 0;
+                               OptionalMatrixTypeT<ValueTypes>... H) const = 0;
 
   /// @}
 
@@ -610,7 +611,7 @@ protected:
    * e.g. `const Vector error = factor.evaluateError(pose, point);`
    */
   inline Vector evaluateError(const ValueTypes&... x) const {
-    return evaluateError(x..., OptionalMatrixT<ValueTypes>()...);
+    return evaluateError(x..., OptionalMatrixTypeT<ValueTypes>()...);
   }
 
   /** Some (but not all) optional Jacobians are omitted (function overload)
@@ -619,11 +620,30 @@ protected:
    */
   template <typename... OptionalJacArgs, typename = IndexIsValid<sizeof...(OptionalJacArgs) + 1>>
   inline Vector evaluateError(const ValueTypes&... x, OptionalJacArgs&&... H) const {
-    constexpr bool are_all_mat = (... && (std::is_same<Matrix, std::decay_t<OptionalJacArgs>>::value ||
-                                          std::is_same<OptionalMatrix, std::decay_t<OptionalJacArgs>>::value ||
+#ifdef NO_BOOST_CPP17
+	// A check to ensure all arguments passed are all either matrices or are all pointers to matrices
+    constexpr bool are_all_mat = (... && (std::is_same<Matrix, std::decay_t<OptionalJacArgs>>::value));
+    constexpr bool are_all_ptrs = (... && (std::is_same<OptionalMatrixType, std::decay_t<OptionalJacArgs>>::value ||
+                                           std::is_same<OptionalNoneType, std::decay_t<OptionalJacArgs>>::value));
+    static_assert((are_all_mat || are_all_ptrs),
+                  "Arguments that are passed to the evaluateError function can only be of following the types: Matrix, "
+                  "or Matrix*");
+	// if they pass all matrices then we want to pass their pointers instead
+	if constexpr (are_all_mat) {
+		return evaluateError(x..., (&OptionalJacArgs)...);
+	} else {
+    return evaluateError(x..., std::forward<OptionalJacArgs>(H)..., static_cast<OptionalMatrixType>(OptionalNone));
+	}
+#else
+	// A check to ensure all arguments passed are all either matrices or are optionals of matrix references
+    constexpr bool are_all_mat = (... && (std::is_same<Matrix&, OptionalJacArgs>::value ||
+                                          std::is_same<OptionalMatrixType, std::decay_t<OptionalJacArgs>>::value ||
                                           std::is_same<OptionalNoneType, std::decay_t<OptionalJacArgs>>::value));
-    static_assert(are_all_mat, "ERRORRR");
-    return evaluateError(x..., std::forward<OptionalJacArgs>(H)..., boost::none);
+    static_assert(are_all_mat,
+                  "Arguments that are passed to the evaluateError function can only be of following the types: Matrix&, "
+                  "boost::optional<Matrix&>, or boost::none_t");
+    return evaluateError(x..., std::forward<OptionalJacArgs>(H)..., OptionalNone);
+#endif
   }
 
   /// @}

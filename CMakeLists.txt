@@ -59,9 +59,9 @@ endif()
 include(cmake/HandleGeneralOptions.cmake)   # CMake build options
 
 # Libraries:
-if (NOT GTSAM_NO_BOOST_CPP17)
+# if (NOT GTSAM_NO_BOOST_CPP17)
   include(cmake/HandleBoost.cmake)            # Boost
-endif()
+# endif()
   
 include(cmake/HandleCCache.cmake)           # ccache
 include(cmake/HandleCPack.cmake)            # CPack
