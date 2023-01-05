@@ -101,7 +101,7 @@ class FunctorizedFactor : public NoiseModelFactorN<T> {
       const KeyFormatter &keyFormatter = DefaultKeyFormatter) const override {
     Base::print(s, keyFormatter);
     std::cout << s << (s != "" ? " " : "") << "FunctorizedFactor("
-              << keyFormatter(this->template key<1>()) << ")" << std::endl;
+              << keyFormatter(this->key1()) << ")" << std::endl;
     traits<R>::Print(measured_, "  measurement: ");
     std::cout << "  noise model sigmas: " << noiseModel_->sigmas().transpose()
               << std::endl;
@@ -208,8 +208,8 @@ class FunctorizedFactor2 : public NoiseModelFactorN<T1, T2> {
       const KeyFormatter &keyFormatter = DefaultKeyFormatter) const override {
     Base::print(s, keyFormatter);
     std::cout << s << (s != "" ? " " : "") << "FunctorizedFactor2("
-              << keyFormatter(this->template key<1>()) << ", "
-              << keyFormatter(this->template key<2>()) << ")" << std::endl;
+              << keyFormatter(this->key1()) << ", "
+              << keyFormatter(this->key2()) << ")" << std::endl;
     traits<R>::Print(measured_, "  measurement: ");
     std::cout << "  noise model sigmas: " << noiseModel_->sigmas().transpose()
               << std::endl;

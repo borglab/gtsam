@@ -88,8 +88,8 @@ namespace gtsam {
         const std::string& s = "",
         const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
       std::cout << s << "BetweenFactor("
-          << keyFormatter(this->template key<1>()) << ","
-          << keyFormatter(this->template key<2>()) << ")\n";
+          << keyFormatter(this->key1()) << ","
+          << keyFormatter(this->key2()) << ")\n";
       traits<T>::Print(measured_, "  measured: ");
       this->noiseModel_->print("  noise model: ");
     }
