@@ -100,6 +100,12 @@ namespace gtsam {
                                                  const Matrix& A2, Key parent2,
                                                  const Vector& b, double sigma);
 
+    /// Create shared pointer by forwarding arguments to fromMeanAndStddev.
+    template<typename... Args>
+    static shared_ptr sharedMeanAndStddev(Args&&... args) {
+      return boost::make_shared<This>(FromMeanAndStddev(std::forward<Args>(args)...));
+    }
+
     /** Combine several GaussianConditional into a single dense GC.  The conditionals enumerated by
     *   \c first and \c last must be in increasing order, meaning that the parents of any
     *   conditional may not include a conditional coming before it.
