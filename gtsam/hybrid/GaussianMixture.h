@@ -116,6 +116,19 @@ class GTSAM_EXPORT GaussianMixture
                   DiscreteKeys &&discreteParents,
                   std::vector<GaussianConditional::shared_ptr> &&conditionals);
 
+  /**
+   * @brief Make a Gaussian Mixture from a list of Gaussian conditionals
+   *
+   * @param continuousFrontals The continuous frontal variables
+   * @param continuousParents The continuous parent variables
+   * @param discreteParents Discrete parents variables
+   * @param conditionals List of conditionals
+   */
+  GaussianMixture(
+      const KeyVector &continuousFrontals, const KeyVector &continuousParents,
+      const DiscreteKeys &discreteParents,
+      const std::vector<GaussianConditional::shared_ptr> &conditionals);
+
   /// @}
   /// @name Testable
   /// @{
