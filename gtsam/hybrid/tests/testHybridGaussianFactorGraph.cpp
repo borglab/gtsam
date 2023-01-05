@@ -764,13 +764,10 @@ TEST(HybridGaussianFactorGraph, EliminateTiny22) {
   // regression
   EXPECT_DOUBLES_EQUAL(0.018253037966018862, expected_ratio, 1e-6);
 
-  // 3. Do sampling
+  // Test ratios for a number of independent samples:
   constexpr int num_samples = 100;
   for (size_t i = 0; i < num_samples; i++) {
-    // Sample from the bayes net
     HybridValues sample = bn.sample(&rng);
-
-    // Check that the ratio is constant.
     EXPECT_DOUBLES_EQUAL(expected_ratio, compute_ratio(&sample), 1e-6);
   }
 }
@@ -822,7 +819,7 @@ TEST(HybridGaussianFactorGraph, EliminateSwitchingNetwork) {
   // Create measurements consistent with moving right every time:
   const VectorValues measurements{
       {Z(0), Vector1(0.0)}, {Z(1), Vector1(1.0)}, {Z(2), Vector1(2.0)}};
-  const auto fg = bn.toFactorGraph(measurements);
+  const HybridGaussianFactorGraph fg = bn.toFactorGraph(measurements);
 
   // Create ordering that eliminates in time order, then discrete modes:
   Ordering ordering;
@@ -835,11 +832,11 @@ TEST(HybridGaussianFactorGraph, EliminateSwitchingNetwork) {
   ordering.push_back(M(1));
   ordering.push_back(M(2));
 
-  // Test elimination result has correct size:
-  const auto posterior = fg.eliminateSequential(ordering);
+  // Do elimination:
+  const HybridBayesNet::shared_ptr posterior = fg.eliminateSequential(ordering);
   // GTSAM_PRINT(*posterior);
 
-  // Test elimination result has correct size:
+  // Test resulting posterior Bayes net has correct size:
   EXPECT_LONGS_EQUAL(8, posterior->size());
 
   // TODO(dellaert): below is copy/pasta from above, refactor
@@ -861,13 +858,10 @@ TEST(HybridGaussianFactorGraph, EliminateSwitchingNetwork) {
   // regression
   EXPECT_DOUBLES_EQUAL(0.0094526745785019472, expected_ratio, 1e-6);
 
-  // 3. Do sampling
+  // Test ratios for a number of independent samples:
   constexpr int num_samples = 100;
   for (size_t i = 0; i < num_samples; i++) {
-    // Sample from the bayes net
     HybridValues sample = bn.sample(&rng);
-
-    // Check that the ratio is constant.
     EXPECT_DOUBLES_EQUAL(expected_ratio, compute_ratio(&sample), 1e-6);
   }
 }
