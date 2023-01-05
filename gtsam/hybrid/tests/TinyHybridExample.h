@@ -33,15 +33,15 @@ const DiscreteKey mode{M(0), 2};
 /**
  * Create a tiny two variable hybrid model which represents
  * the generative probability P(z,x,mode) = P(z|x,mode)P(x)P(mode).
- * numMeasurements is the number of measurements of the continuous variable x0.
+ * num_measurements is the number of measurements of the continuous variable x0.
  * If manyModes is true, then we introduce one mode per measurement.
  */
-inline HybridBayesNet createHybridBayesNet(int numMeasurements = 1,
+inline HybridBayesNet createHybridBayesNet(int num_measurements = 1,
                                            bool manyModes = false) {
   HybridBayesNet bayesNet;
 
   // Create Gaussian mixture z_i = x0 + noise for each measurement.
-  for (int i = 0; i < numMeasurements; i++) {
+  for (int i = 0; i < num_measurements; i++) {
     const auto mode_i = manyModes ? DiscreteKey{M(i), 2} : mode;
     GaussianMixture gm({Z(i)}, {X(0)}, {mode_i},
                        {GaussianConditional::sharedMeanAndStddev(
@@ -56,7 +56,7 @@ inline HybridBayesNet createHybridBayesNet(int numMeasurements = 1,
       GaussianConditional::sharedMeanAndStddev(X(0), Vector1(5.0), 0.5));
 
   // Add prior on mode.
-  const size_t nrModes = manyModes ? numMeasurements : 1;
+  const size_t nrModes = manyModes ? num_measurements : 1;
   for (int i = 0; i < nrModes; i++) {
     bayesNet.emplaceDiscrete(DiscreteKey{M(i), 2}, "4/6");
   }
@@ -67,13 +67,13 @@ inline HybridBayesNet createHybridBayesNet(int numMeasurements = 1,
  * Create a tiny two variable hybrid factor graph which represents a discrete
  * mode and a continuous variable x0, given a number of measurements of the
  * continuous variable x0. If no measurements are given, they are sampled from
- * the generative Bayes net model HybridBayesNet::Example(numMeasurements)
+ * the generative Bayes net model HybridBayesNet::Example(num_measurements)
  */
 inline HybridGaussianFactorGraph createHybridGaussianFactorGraph(
-    int numMeasurements = 1,
+    int num_measurements = 1,
     boost::optional<VectorValues> measurements = boost::none,
     bool manyModes = false) {
-  auto bayesNet = createHybridBayesNet(numMeasurements, manyModes);
+  auto bayesNet = createHybridBayesNet(num_measurements, manyModes);
   if (measurements) {
     // Use the measurements to create a hybrid factor graph.
     return bayesNet.toFactorGraph(*measurements);
