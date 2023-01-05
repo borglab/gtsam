@@ -42,19 +42,18 @@ inline HybridBayesNet createHybridBayesNet(int numMeasurements = 1,
 
   // Create Gaussian mixture z_i = x0 + noise for each measurement.
   for (int i = 0; i < numMeasurements; i++) {
-    const auto conditional0 = boost::make_shared<GaussianConditional>(
-        GaussianConditional::FromMeanAndStddev(Z(i), I_1x1, X(0), Z_1x1, 0.5));
-    const auto conditional1 = boost::make_shared<GaussianConditional>(
-        GaussianConditional::FromMeanAndStddev(Z(i), I_1x1, X(0), Z_1x1, 3));
     const auto mode_i = manyModes ? DiscreteKey{M(i), 2} : mode;
-    GaussianMixture gm({Z(i)}, {X(0)}, {mode_i}, {conditional0, conditional1});
+    GaussianMixture gm({Z(i)}, {X(0)}, {mode_i},
+                       {GaussianConditional::sharedMeanAndStddev(
+                            Z(i), I_1x1, X(0), Z_1x1, 0.5),
+                        GaussianConditional::sharedMeanAndStddev(
+                            Z(i), I_1x1, X(0), Z_1x1, 3)});
     bayesNet.emplaceMixture(gm);  // copy :-(
   }
 
   // Create prior on X(0).
-  const auto prior_on_x0 =
-      GaussianConditional::FromMeanAndStddev(X(0), Vector1(5.0), 0.5);
-  bayesNet.emplaceGaussian(prior_on_x0);  // copy :-(
+  bayesNet.addGaussian(
+      GaussianConditional::sharedMeanAndStddev(X(0), Vector1(5.0), 0.5));
 
   // Add prior on mode.
   const size_t nrModes = manyModes ? numMeasurements : 1;
