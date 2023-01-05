@@ -621,9 +621,9 @@ TEST(HybridGaussianFactorGraph, ErrorAndProbPrimeTree) {
 // assignment.
 TEST(HybridGaussianFactorGraph, assembleGraphTree) {
   using symbol_shorthand::Z;
-  const int numMeasurements = 1;
+  const int num_measurements = 1;
   auto fg = tiny::createHybridGaussianFactorGraph(
-      numMeasurements, VectorValues{{Z(0), Vector1(5.0)}});
+      num_measurements, VectorValues{{Z(0), Vector1(5.0)}});
   EXPECT_LONGS_EQUAL(3, fg.size());
 
   // Assemble graph tree:
@@ -662,9 +662,9 @@ TEST(HybridGaussianFactorGraph, assembleGraphTree) {
 // Check that eliminating tiny net with 1 measurement yields correct result.
 TEST(HybridGaussianFactorGraph, EliminateTiny1) {
   using symbol_shorthand::Z;
-  const int numMeasurements = 1;
+  const int num_measurements = 1;
   auto fg = tiny::createHybridGaussianFactorGraph(
-      numMeasurements, VectorValues{{Z(0), Vector1(5.0)}});
+      num_measurements, VectorValues{{Z(0), Vector1(5.0)}});
   EXPECT_LONGS_EQUAL(3, fg.size());
 
   // Create expected Bayes Net:
@@ -696,9 +696,9 @@ TEST(HybridGaussianFactorGraph, EliminateTiny1) {
 TEST(HybridGaussianFactorGraph, EliminateTiny2) {
   // Create factor graph with 2 measurements such that posterior mean = 5.0.
   using symbol_shorthand::Z;
-  const int numMeasurements = 2;
+  const int num_measurements = 2;
   auto fg = tiny::createHybridGaussianFactorGraph(
-      numMeasurements,
+      num_measurements,
       VectorValues{{Z(0), Vector1(4.0)}, {Z(1), Vector1(6.0)}});
   EXPECT_LONGS_EQUAL(4, fg.size());
 
@@ -731,11 +731,11 @@ TEST(HybridGaussianFactorGraph, EliminateTiny2) {
 TEST(HybridGaussianFactorGraph, EliminateTiny22) {
   // Create factor graph with 2 measurements such that posterior mean = 5.0.
   using symbol_shorthand::Z;
-  const int numMeasurements = 2;
+  const int num_measurements = 2;
   const bool manyModes = true;
 
   // Create Bayes net and convert to factor graph.
-  auto bn = tiny::createHybridBayesNet(numMeasurements, manyModes);
+  auto bn = tiny::createHybridBayesNet(num_measurements, manyModes);
   const VectorValues measurements{{Z(0), Vector1(4.0)}, {Z(1), Vector1(6.0)}};
   auto fg = bn.toFactorGraph(measurements);
   EXPECT_LONGS_EQUAL(5, fg.size());
