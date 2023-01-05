@@ -135,29 +135,9 @@ class HybridBayesTree {
 #include <gtsam/hybrid/HybridBayesNet.h>
 class HybridBayesNet {
   HybridBayesNet();
-  void add(const gtsam::HybridConditional& s);
-  void addMixture(const gtsam::GaussianMixture* s);
-  void addGaussian(const gtsam::GaussianConditional* s);
-  void addDiscrete(const gtsam::DiscreteConditional* s);
-
-  void emplaceMixture(const gtsam::GaussianMixture& s);
-  void emplaceMixture(const gtsam::KeyVector& continuousFrontals,
-                      const gtsam::KeyVector& continuousParents,
-                      const gtsam::DiscreteKeys& discreteParents,
-                      const std::vector<gtsam::GaussianConditional::shared_ptr>&
-                          conditionalsList);
-  void emplaceGaussian(const gtsam::GaussianConditional& s);
-  void emplaceDiscrete(const gtsam::DiscreteConditional& s);
-  void emplaceDiscrete(const gtsam::DiscreteKey& key, string spec);
-  void emplaceDiscrete(const gtsam::DiscreteKey& key,
-                       const gtsam::DiscreteKeys& parents, string spec);
-  void emplaceDiscrete(const gtsam::DiscreteKey& key,
-                       const std::vector<gtsam::DiscreteKey>& parents,
-                       string spec);
-
-  gtsam::GaussianMixture* atMixture(size_t i) const;
-  gtsam::GaussianConditional* atGaussian(size_t i) const;
-  gtsam::DiscreteConditional* atDiscrete(size_t i) const;
+  void push_back(const gtsam::GaussianMixture* s);
+  void push_back(const gtsam::GaussianConditional* s);
+  void push_back(const gtsam::DiscreteConditional* s);
 
   bool empty() const;
   size_t size() const;
