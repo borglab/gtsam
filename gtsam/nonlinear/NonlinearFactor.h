@@ -40,7 +40,7 @@ namespace gtsam {
 #ifdef NO_BOOST_CPP17
 // These typedefs and aliases will help with making the evaluateError interface
 // independent of boost
-#define OptionalNone nullptr
+using OptionalNone = nullptr;
 template <typename T = void>
 using OptionalMatrixT = Matrix*;
 using OptionalMatrix = Matrix*;
@@ -49,6 +49,7 @@ using OptionalMatrix = Matrix*;
 using OptionalMatrixVec = std::vector<Matrix>*;
 #else
 // creating a none value to use when declaring our interfaces
+using OptionalNoneType = boost::none_t;
 #define OptionalNone boost::none
 template <typename T = void>
 using OptionalMatrixT = boost::optional<Matrix&>;
@@ -618,16 +619,11 @@ protected:
    */
   template <typename... OptionalJacArgs, typename = IndexIsValid<sizeof...(OptionalJacArgs) + 1>>
   inline Vector evaluateError(const ValueTypes&... x, OptionalJacArgs&&... H) const {
-	/* constexpr bool are_all_opt_mat = (... && std::is_same<OptionalMatrix, std::decay_t<OptionalJacArgs>>::value); */
-        constexpr bool are_all_mat =
-            (... && (std::is_same<Matrix, std::decay_t<OptionalJacArgs>>::value ||
-                     std::is_same<boost::none_t, std::decay_t<OptionalJacArgs>>::value));
-        static_assert(are_all_mat, "ERRORRR");
-        /* if constexpr ((... && std::is_same<OptionalMatrix, std::decay_t<OptionalJacArgs>>::value)) { */
-        /* return evaluateError(x..., std::forward<OptionalJacArgs>(H)..., boost::none); */
-        /* } else if constexpr ((... && std::is_same<Matrix, std::decay_t<OptionalJacArgs>>::value)) { */
-        return evaluateError(x..., std::forward<OptionalJacArgs>(H)..., boost::none);
-        /* } */
+    constexpr bool are_all_mat = (... && (std::is_same<Matrix, std::decay_t<OptionalJacArgs>>::value ||
+                                          std::is_same<OptionalMatrix, std::decay_t<OptionalJacArgs>>::value ||
+                                          std::is_same<OptionalNoneType, std::decay_t<OptionalJacArgs>>::value));
+    static_assert(are_all_mat, "ERRORRR");
+    return evaluateError(x..., std::forward<OptionalJacArgs>(H)..., boost::none);
   }
 
   /// @}
