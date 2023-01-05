@@ -54,8 +54,10 @@ using namespace gtsam;
 
 using gtsam::symbol_shorthand::D;
 using gtsam::symbol_shorthand::M;
+using gtsam::symbol_shorthand::N;
 using gtsam::symbol_shorthand::X;
 using gtsam::symbol_shorthand::Y;
+using gtsam::symbol_shorthand::Z;
 
 /* ************************************************************************* */
 TEST(HybridGaussianFactorGraph, Creation) {
@@ -761,6 +763,103 @@ TEST(HybridGaussianFactorGraph, EliminateTiny22) {
   double expected_ratio = compute_ratio(&sample);
   // regression
   EXPECT_DOUBLES_EQUAL(0.018253037966018862, expected_ratio, 1e-6);
+
+  // 3. Do sampling
+  constexpr int num_samples = 100;
+  for (size_t i = 0; i < num_samples; i++) {
+    // Sample from the bayes net
+    HybridValues sample = bn.sample(&rng);
+
+    // Check that the ratio is constant.
+    EXPECT_DOUBLES_EQUAL(expected_ratio, compute_ratio(&sample), 1e-6);
+  }
+}
+
+/* ****************************************************************************/
+// Test elimination of a switching network with one mode per measurement.
+TEST(HybridGaussianFactorGraph, EliminateSwitchingNetwork) {
+  // Create a switching network with one mode per measurement.
+  HybridBayesNet bn;
+
+  // NOTE: we add reverse topological so we can sample from the Bayes net.:
+
+  // Add measurements:
+  for (size_t t : {0, 1, 2}) {
+    // Create Gaussian mixture on Z(t) conditioned on X(t) and mode N(t):
+    const auto noise_mode_t = DiscreteKey{N(t), 2};
+    GaussianMixture gm({Z(t)}, {X(t)}, {noise_mode_t},
+                       {GaussianConditional::sharedMeanAndStddev(
+                            Z(t), I_1x1, X(t), Z_1x1, 0.5),
+                        GaussianConditional::sharedMeanAndStddev(
+                            Z(t), I_1x1, X(t), Z_1x1, 3.0)});
+    bn.emplaceMixture(gm);  // copy :-(
+
+    // Create prior on discrete mode M(t):
+    bn.emplaceDiscrete(noise_mode_t, "20/80");
+  }
+
+  // Add motion models:
+  for (size_t t : {2, 1}) {
+    // Create Gaussian mixture on X(t) conditioned on X(t-1) and mode M(t-1):
+    const auto motion_model_t = DiscreteKey{M(t), 2};
+    GaussianMixture gm({X(t)}, {X(t - 1)}, {motion_model_t},
+                       {GaussianConditional::sharedMeanAndStddev(
+                            X(t), I_1x1, X(t - 1), Z_1x1, 0.2),
+                        GaussianConditional::sharedMeanAndStddev(
+                            X(t), I_1x1, X(t - 1), I_1x1, 0.2)});
+    bn.emplaceMixture(gm);  // copy :-(
+
+    // Create prior on motion model M(t):
+    bn.emplaceDiscrete(motion_model_t, "40/60");
+  }
+
+  // Create Gaussian prior on continuous X(0) using sharedMeanAndStddev:
+  bn.addGaussian(GaussianConditional::sharedMeanAndStddev(X(0), Z_1x1, 0.1));
+
+  // Make sure we an sample from the Bayes net:
+  EXPECT_LONGS_EQUAL(6, bn.sample().continuous().size());
+
+  // Create measurements consistent with moving right every time:
+  const VectorValues measurements{
+      {Z(0), Vector1(0.0)}, {Z(1), Vector1(1.0)}, {Z(2), Vector1(2.0)}};
+  const auto fg = bn.toFactorGraph(measurements);
+
+  // Create ordering that eliminates in time order, then discrete modes:
+  Ordering ordering;
+  ordering.push_back(X(2));
+  ordering.push_back(X(1));
+  ordering.push_back(X(0));
+  ordering.push_back(N(0));
+  ordering.push_back(N(1));
+  ordering.push_back(N(2));
+  ordering.push_back(M(1));
+  ordering.push_back(M(2));
+
+  // Test elimination result has correct size:
+  const auto posterior = fg.eliminateSequential(ordering);
+  // GTSAM_PRINT(*posterior);
+
+  // Test elimination result has correct size:
+  EXPECT_LONGS_EQUAL(8, posterior->size());
+
+  // TODO(dellaert): below is copy/pasta from above, refactor
+
+  // Compute the log-ratio between the Bayes net and the factor graph.
+  auto compute_ratio = [&](HybridValues *sample) -> double {
+    // update sample with given measurements:
+    sample->update(measurements);
+    return bn.evaluate(*sample) / posterior->evaluate(*sample);
+  };
+
+  // Set up sampling
+  std::mt19937_64 rng(42);
+
+  // The error evaluated by the factor graph and the Bayes net should differ by
+  // the normalizing term computed via the Bayes net determinant.
+  HybridValues sample = bn.sample(&rng);
+  double expected_ratio = compute_ratio(&sample);
+  // regression
+  EXPECT_DOUBLES_EQUAL(0.0094526745785019472, expected_ratio, 1e-6);
 
   // 3. Do sampling
   constexpr int num_samples = 100;
