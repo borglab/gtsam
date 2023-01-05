@@ -44,7 +44,6 @@ namespace gtsam {
 class GTSAM_UNSTABLE_EXPORT ProjectionFactorRollingShutter
     : public NoiseModelFactorN<Pose3, Pose3, Point3>,
       public DeprecatedFactorAliases<Pose3, Pose3, Point3> {
-                                               3);
 
  protected:
   // Keep a copy of measurement and calibration for I/O
