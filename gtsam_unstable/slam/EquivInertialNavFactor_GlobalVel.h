@@ -136,11 +136,11 @@ public:
   /** print */
   void print(const std::string& s = "EquivInertialNavFactor_GlobalVel", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     std::cout << s << "("
-        << keyFormatter(this->template key<1>()) << ","
-        << keyFormatter(this->template key<2>()) << ","
-        << keyFormatter(this->template key<3>()) << ","
-        << keyFormatter(this->template key<4>()) << ","
-        << keyFormatter(this->template key<5>()) << "\n";
+        << keyFormatter(key1()) << ","
+        << keyFormatter(key2()) << ","
+        << keyFormatter(key3()) << ","
+        << keyFormatter(key4()) << ","
+        << keyFormatter(key5()) << "\n";
     std::cout << "delta_pos_in_t0: " << this->delta_pos_in_t0_.transpose() << std::endl;
     std::cout << "delta_vel_in_t0: " << this->delta_vel_in_t0_.transpose() << std::endl;
     std::cout << "delta_angles: " << this->delta_angles_ << std::endl;
