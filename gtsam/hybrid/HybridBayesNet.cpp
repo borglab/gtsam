@@ -197,8 +197,7 @@ HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves) {
       prunedGaussianMixture->prune(*decisionTree);  // imperative :-(
 
       // Type-erase and add to the pruned Bayes Net fragment.
-      prunedBayesNetFragment.push_back(
-          boost::make_shared<HybridConditional>(prunedGaussianMixture));
+      prunedBayesNetFragment.push_back(prunedGaussianMixture);
 
     } else {
       // Add the non-GaussianMixture conditional
@@ -207,21 +206,6 @@ HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves) {
   }
 
   return prunedBayesNetFragment;
-}
-
-/* ************************************************************************* */
-GaussianMixture::shared_ptr HybridBayesNet::atMixture(size_t i) const {
-  return at(i)->asMixture();
-}
-
-/* ************************************************************************* */
-GaussianConditional::shared_ptr HybridBayesNet::atGaussian(size_t i) const {
-  return at(i)->asGaussian();
-}
-
-/* ************************************************************************* */
-DiscreteConditional::shared_ptr HybridBayesNet::atDiscrete(size_t i) const {
-  return at(i)->asDiscrete();
 }
 
 /* ************************************************************************* */
