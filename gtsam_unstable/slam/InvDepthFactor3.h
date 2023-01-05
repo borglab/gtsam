@@ -93,8 +93,8 @@ public:
       if (H1) *H1 = Matrix::Zero(2,6);
       if (H2) *H2 = Matrix::Zero(2,5);
       if (H3) *H3 = Matrix::Zero(2,1);
-      std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->template key<2>()) <<
-          " moved behind camera " << DefaultKeyFormatter(this->template key<1>()) << std::endl;
+      std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2()) <<
+          " moved behind camera " << DefaultKeyFormatter(this->key1()) << std::endl;
       return Vector::Ones(2) * 2.0 * K_->fx();
     }
     return (Vector(1) << 0.0).finished();

@@ -200,8 +200,8 @@ boost::shared_ptr<Values> composePoses(const G& graph, const PredecessorMap<KEY>
     boost::shared_ptr<Factor> factor = boost::dynamic_pointer_cast<Factor>(nl_factor);
     if (!factor) continue;
 
-    KEY key1 = factor->template key<1>();
-    KEY key2 = factor->template key<2>();
+    KEY key1 = factor->key1();
+    KEY key2 = factor->key2();
 
     PoseVertex v1 = key2vertex.find(key1)->second;
     PoseVertex v2 = key2vertex.find(key2)->second;
@@ -270,8 +270,8 @@ void split(const G& g, const PredecessorMap<KEY>& tree, G& Ab1, G& Ab2) {
         FACTOR2>(factor);
     if (!factor2) continue;
 
-    KEY key1 = factor2->template key<1>();
-    KEY key2 = factor2->template key<2>();
+    KEY key1 = factor2->key1();
+    KEY key2 = factor2->key2();
     // if the tree contains the key
     if ((tree.find(key1) != tree.end() &&
        tree.find(key1)->second.compare(key2) == 0) ||
