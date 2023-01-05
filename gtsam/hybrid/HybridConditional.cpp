@@ -39,7 +39,7 @@ HybridConditional::HybridConditional(const KeyVector &continuousFrontals,
 
 /* ************************************************************************ */
 HybridConditional::HybridConditional(
-    boost::shared_ptr<GaussianConditional> continuousConditional)
+    const boost::shared_ptr<GaussianConditional> &continuousConditional)
     : HybridConditional(continuousConditional->keys(), {},
                         continuousConditional->nrFrontals()) {
   inner_ = continuousConditional;
@@ -47,7 +47,7 @@ HybridConditional::HybridConditional(
 
 /* ************************************************************************ */
 HybridConditional::HybridConditional(
-    boost::shared_ptr<DiscreteConditional> discreteConditional)
+    const boost::shared_ptr<DiscreteConditional> &discreteConditional)
     : HybridConditional({}, discreteConditional->discreteKeys(),
                         discreteConditional->nrFrontals()) {
   inner_ = discreteConditional;
@@ -55,7 +55,7 @@ HybridConditional::HybridConditional(
 
 /* ************************************************************************ */
 HybridConditional::HybridConditional(
-    boost::shared_ptr<GaussianMixture> gaussianMixture)
+    const boost::shared_ptr<GaussianMixture> &gaussianMixture)
     : BaseFactor(KeyVector(gaussianMixture->keys().begin(),
                            gaussianMixture->keys().begin() +
                                gaussianMixture->nrContinuous()),
