@@ -677,11 +677,11 @@ TEST(HybridGaussianFactorGraph, EliminateTiny1) {
                  X(0), Vector1(14.1421), I_1x1 * 2.82843),
              conditional1 = boost::make_shared<GaussianConditional>(
                  X(0), Vector1(10.1379), I_1x1 * 2.02759);
-  GaussianMixture gm({X(0)}, {}, {mode}, {conditional0, conditional1});
-  expectedBayesNet.emplaceMixture(gm);  // copy :-(
+  expectedBayesNet.emplace_back(
+      new GaussianMixture({X(0)}, {}, {mode}, {conditional0, conditional1}));
 
   // Add prior on mode.
-  expectedBayesNet.emplaceDiscrete(mode, "74/26");
+  expectedBayesNet.emplace_back(new DiscreteConditional(mode, "74/26"));
 
   // Test elimination
   Ordering ordering;
@@ -712,11 +712,11 @@ TEST(HybridGaussianFactorGraph, EliminateTiny2) {
                  X(0), Vector1(17.3205), I_1x1 * 3.4641),
              conditional1 = boost::make_shared<GaussianConditional>(
                  X(0), Vector1(10.274), I_1x1 * 2.0548);
-  GaussianMixture gm({X(0)}, {}, {mode}, {conditional0, conditional1});
-  expectedBayesNet.emplaceMixture(gm);  // copy :-(
+  expectedBayesNet.emplace_back(
+      new GaussianMixture({X(0)}, {}, {mode}, {conditional0, conditional1}));
 
   // Add prior on mode.
-  expectedBayesNet.emplaceDiscrete(mode, "23/77");
+  expectedBayesNet.emplace_back(new DiscreteConditional(mode, "23/77"));
 
   // Test elimination
   Ordering ordering;
@@ -784,34 +784,34 @@ TEST(HybridGaussianFactorGraph, EliminateSwitchingNetwork) {
   for (size_t t : {0, 1, 2}) {
     // Create Gaussian mixture on Z(t) conditioned on X(t) and mode N(t):
     const auto noise_mode_t = DiscreteKey{N(t), 2};
-    GaussianMixture gm({Z(t)}, {X(t)}, {noise_mode_t},
-                       {GaussianConditional::sharedMeanAndStddev(
-                            Z(t), I_1x1, X(t), Z_1x1, 0.5),
-                        GaussianConditional::sharedMeanAndStddev(
-                            Z(t), I_1x1, X(t), Z_1x1, 3.0)});
-    bn.emplaceMixture(gm);  // copy :-(
+    bn.emplace_back(
+        new GaussianMixture({Z(t)}, {X(t)}, {noise_mode_t},
+                            {GaussianConditional::sharedMeanAndStddev(
+                                 Z(t), I_1x1, X(t), Z_1x1, 0.5),
+                             GaussianConditional::sharedMeanAndStddev(
+                                 Z(t), I_1x1, X(t), Z_1x1, 3.0)}));
 
     // Create prior on discrete mode M(t):
-    bn.emplaceDiscrete(noise_mode_t, "20/80");
+    bn.emplace_back(new DiscreteConditional(noise_mode_t, "20/80"));
   }
 
   // Add motion models:
   for (size_t t : {2, 1}) {
     // Create Gaussian mixture on X(t) conditioned on X(t-1) and mode M(t-1):
     const auto motion_model_t = DiscreteKey{M(t), 2};
-    GaussianMixture gm({X(t)}, {X(t - 1)}, {motion_model_t},
-                       {GaussianConditional::sharedMeanAndStddev(
-                            X(t), I_1x1, X(t - 1), Z_1x1, 0.2),
-                        GaussianConditional::sharedMeanAndStddev(
-                            X(t), I_1x1, X(t - 1), I_1x1, 0.2)});
-    bn.emplaceMixture(gm);  // copy :-(
+    bn.emplace_back(
+        new GaussianMixture({X(t)}, {X(t - 1)}, {motion_model_t},
+                            {GaussianConditional::sharedMeanAndStddev(
+                                 X(t), I_1x1, X(t - 1), Z_1x1, 0.2),
+                             GaussianConditional::sharedMeanAndStddev(
+                                 X(t), I_1x1, X(t - 1), I_1x1, 0.2)}));
 
     // Create prior on motion model M(t):
-    bn.emplaceDiscrete(motion_model_t, "40/60");
+    bn.emplace_back(new DiscreteConditional(motion_model_t, "40/60"));
   }
 
   // Create Gaussian prior on continuous X(0) using sharedMeanAndStddev:
-  bn.addGaussian(GaussianConditional::sharedMeanAndStddev(X(0), Z_1x1, 0.1));
+  bn.push_back(GaussianConditional::sharedMeanAndStddev(X(0), Z_1x1, 0.1));
 
   // Make sure we an sample from the Bayes net:
   EXPECT_LONGS_EQUAL(6, bn.sample().continuous().size());

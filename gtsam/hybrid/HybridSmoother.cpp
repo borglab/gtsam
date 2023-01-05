@@ -46,7 +46,7 @@ void HybridSmoother::update(HybridGaussianFactorGraph graph,
   }
 
   // Add the partial bayes net to the posterior bayes net.
-  hybridBayesNet_.push_back<HybridBayesNet>(*bayesNetFragment);
+  hybridBayesNet_.add(*bayesNetFragment);
 }
 
 /* ************************************************************************* */
@@ -100,7 +100,7 @@ HybridSmoother::addConditionals(const HybridGaussianFactorGraph &originalGraph,
 /* ************************************************************************* */
 GaussianMixture::shared_ptr HybridSmoother::gaussianMixture(
     size_t index) const {
-  return hybridBayesNet_.atMixture(index);
+  return hybridBayesNet_.at(index)->asMixture();
 }
 
 /* ************************************************************************* */
