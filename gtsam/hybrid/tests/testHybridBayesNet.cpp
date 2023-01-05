@@ -136,17 +136,13 @@ TEST(HybridBayesNet, Choose) {
 
   EXPECT_LONGS_EQUAL(4, gbn.size());
 
-  EXPECT(assert_equal(*(*boost::dynamic_pointer_cast<GaussianMixture>(
-                          hybridBayesNet->at(0)->asMixture()))(assignment),
+  EXPECT(assert_equal(*(*hybridBayesNet->at(0)->asMixture())(assignment),
                       *gbn.at(0)));
-  EXPECT(assert_equal(*(*boost::dynamic_pointer_cast<GaussianMixture>(
-                          hybridBayesNet->at(1)->asMixture()))(assignment),
+  EXPECT(assert_equal(*(*hybridBayesNet->at(1)->asMixture())(assignment),
                       *gbn.at(1)));
-  EXPECT(assert_equal(*(*boost::dynamic_pointer_cast<GaussianMixture>(
-                          hybridBayesNet->at(2)->asMixture()))(assignment),
+  EXPECT(assert_equal(*(*hybridBayesNet->at(2)->asMixture())(assignment),
                       *gbn.at(2)));
-  EXPECT(assert_equal(*(*boost::dynamic_pointer_cast<GaussianMixture>(
-                          hybridBayesNet->at(3)->asMixture()))(assignment),
+  EXPECT(assert_equal(*(*hybridBayesNet->at(3)->asMixture())(assignment),
                       *gbn.at(3)));
 }
 
