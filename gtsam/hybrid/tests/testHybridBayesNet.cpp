@@ -42,21 +42,21 @@ static const DiscreteKey Asia(asiaKey, 2);
 // Test creation of a pure discrete Bayes net.
 TEST(HybridBayesNet, Creation) {
   HybridBayesNet bayesNet;
-  bayesNet.emplaceDiscrete(Asia, "99/1");
+  bayesNet.emplace_back(new DiscreteConditional(Asia, "99/1"));
 
   DiscreteConditional expected(Asia, "99/1");
-  CHECK(bayesNet.atDiscrete(0));
-  EXPECT(assert_equal(expected, *bayesNet.atDiscrete(0)));
+  CHECK(bayesNet.at(0)->asDiscrete());
+  EXPECT(assert_equal(expected, *bayesNet.at(0)->asDiscrete()));
 }
 
 /* ****************************************************************************/
 // Test adding a Bayes net to another one.
 TEST(HybridBayesNet, Add) {
   HybridBayesNet bayesNet;
-  bayesNet.emplaceDiscrete(Asia, "99/1");
+  bayesNet.emplace_back(new DiscreteConditional(Asia, "99/1"));
 
   HybridBayesNet other;
-  other.push_back(bayesNet);
+  other.add(bayesNet);
   EXPECT(bayesNet.equals(other));
 }
 
@@ -64,7 +64,7 @@ TEST(HybridBayesNet, Add) {
 // Test evaluate for a pure discrete Bayes net P(Asia).
 TEST(HybridBayesNet, EvaluatePureDiscrete) {
   HybridBayesNet bayesNet;
-  bayesNet.emplaceDiscrete(Asia, "99/1");
+  bayesNet.emplace_back(new DiscreteConditional(Asia, "99/1"));
   HybridValues values;
   values.insert(asiaKey, 0);
   EXPECT_DOUBLES_EQUAL(0.99, bayesNet.evaluate(values), 1e-9);
@@ -80,7 +80,7 @@ TEST(HybridBayesNet, Tiny) {
 /* ****************************************************************************/
 // Test evaluate for a hybrid Bayes net P(X0|X1) P(X1|Asia) P(Asia).
 TEST(HybridBayesNet, evaluateHybrid) {
-  const auto continuousConditional = GaussianConditional::FromMeanAndStddev(
+  const auto continuousConditional = GaussianConditional::sharedMeanAndStddev(
       X(0), 2 * I_1x1, X(1), Vector1(-4.0), 5.0);
 
   const SharedDiagonal model0 = noiseModel::Diagonal::Sigmas(Vector1(2.0)),
@@ -93,10 +93,11 @@ TEST(HybridBayesNet, evaluateHybrid) {
 
   // Create hybrid Bayes net.
   HybridBayesNet bayesNet;
-  bayesNet.emplaceGaussian(continuousConditional);
-  GaussianMixture gm({X(1)}, {}, {Asia}, {conditional0, conditional1});
-  bayesNet.emplaceMixture(gm);  // copy :-(
-  bayesNet.emplaceDiscrete(Asia, "99/1");
+  bayesNet.push_back(GaussianConditional::sharedMeanAndStddev(
+      X(0), 2 * I_1x1, X(1), Vector1(-4.0), 5.0));
+  bayesNet.emplace_back(
+      new GaussianMixture({X(1)}, {}, {Asia}, {conditional0, conditional1}));
+  bayesNet.emplace_back(new DiscreteConditional(Asia, "99/1"));
 
   // Create values at which to evaluate.
   HybridValues values;
@@ -105,7 +106,7 @@ TEST(HybridBayesNet, evaluateHybrid) {
   values.insert(X(1), Vector1(1));
 
   const double conditionalProbability =
-      continuousConditional.evaluate(values.continuous());
+      continuousConditional->evaluate(values.continuous());
   const double mixtureProbability = conditional0->evaluate(values.continuous());
   EXPECT_DOUBLES_EQUAL(conditionalProbability * mixtureProbability * 0.99,
                        bayesNet.evaluate(values), 1e-9);
@@ -136,16 +137,16 @@ TEST(HybridBayesNet, Choose) {
   EXPECT_LONGS_EQUAL(4, gbn.size());
 
   EXPECT(assert_equal(*(*boost::dynamic_pointer_cast<GaussianMixture>(
-                          hybridBayesNet->atMixture(0)))(assignment),
+                          hybridBayesNet->at(0)->asMixture()))(assignment),
                       *gbn.at(0)));
   EXPECT(assert_equal(*(*boost::dynamic_pointer_cast<GaussianMixture>(
-                          hybridBayesNet->atMixture(1)))(assignment),
+                          hybridBayesNet->at(1)->asMixture()))(assignment),
                       *gbn.at(1)));
   EXPECT(assert_equal(*(*boost::dynamic_pointer_cast<GaussianMixture>(
-                          hybridBayesNet->atMixture(2)))(assignment),
+                          hybridBayesNet->at(2)->asMixture()))(assignment),
                       *gbn.at(2)));
   EXPECT(assert_equal(*(*boost::dynamic_pointer_cast<GaussianMixture>(
-                          hybridBayesNet->atMixture(3)))(assignment),
+                          hybridBayesNet->at(3)->asMixture()))(assignment),
                       *gbn.at(3)));
 }
 
@@ -247,11 +248,12 @@ TEST(HybridBayesNet, Error) {
   double total_error = 0;
   for (size_t idx = 0; idx < hybridBayesNet->size(); idx++) {
     if (hybridBayesNet->at(idx)->isHybrid()) {
-      double error = hybridBayesNet->atMixture(idx)->error(
+      double error = hybridBayesNet->at(idx)->asMixture()->error(
           {delta.continuous(), discrete_values});
       total_error += error;
     } else if (hybridBayesNet->at(idx)->isContinuous()) {
-      double error = hybridBayesNet->atGaussian(idx)->error(delta.continuous());
+      double error =
+          hybridBayesNet->at(idx)->asGaussian()->error(delta.continuous());
       total_error += error;
     }
   }
