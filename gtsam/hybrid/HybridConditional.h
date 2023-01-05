@@ -178,6 +178,16 @@ class GTSAM_EXPORT HybridConditional
   /// Return the error of the underlying conditional.
   double error(const HybridValues& values) const override;
 
+  /// Check if VectorValues `measurements` contains all frontal keys.
+  bool frontalsIn(const VectorValues& measurements) const {
+    for (Key key : frontals()) {
+      if (!measurements.exists(key)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   /// @}
 
  private:

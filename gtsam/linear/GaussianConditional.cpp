@@ -263,7 +263,7 @@ double GaussianConditional::evaluate(const VectorValues& x) const {
     Vector frontalVec = gy.vector(KeyVector(beginFrontals(), endFrontals()));
     frontalVec = R().transpose().triangularView<Eigen::Lower>().solve(frontalVec);
 
-    // Check for indeterminant solution
+    // Check for indeterminate solution
     if (frontalVec.hasNaN()) throw IndeterminantLinearSystemException(this->keys().front());
 
     for (const_iterator it = beginParents(); it!= endParents(); it++)

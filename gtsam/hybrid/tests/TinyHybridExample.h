@@ -37,7 +37,7 @@ const DiscreteKey mode{M(0), 2};
  * If manyModes is true, then we introduce one mode per measurement.
  */
 inline HybridBayesNet createHybridBayesNet(int numMeasurements = 1,
-                                    bool manyModes = false) {
+                                           bool manyModes = false) {
   HybridBayesNet bayesNet;
 
   // Create Gaussian mixture z_i = x0 + noise for each measurement.
@@ -65,30 +65,6 @@ inline HybridBayesNet createHybridBayesNet(int numMeasurements = 1,
 }
 
 /**
- * Convert a hybrid Bayes net to a hybrid Gaussian factor graph.
- */
-inline HybridGaussianFactorGraph convertBayesNet(
-    const HybridBayesNet& bayesNet, const VectorValues& measurements) {
-  HybridGaussianFactorGraph fg;
-  // For all nodes in the Bayes net, if its frontal variable is in measurements,
-  // replace it by a likelihood factor:
-  for (const HybridConditional::shared_ptr& conditional : bayesNet) {
-    if (measurements.exists(conditional->firstFrontalKey())) {
-      if (auto gc = conditional->asGaussian())
-        fg.push_back(gc->likelihood(measurements));
-      else if (auto gm = conditional->asMixture())
-        fg.push_back(gm->likelihood(measurements));
-      else {
-        throw std::runtime_error("Unknown conditional type");
-      }
-    } else {
-      fg.push_back(conditional);
-    }
-  }
-  return fg;
-}
-
-/**
  * Create a tiny two variable hybrid factor graph which represents a discrete
  * mode and a continuous variable x0, given a number of measurements of the
  * continuous variable x0. If no measurements are given, they are sampled from
@@ -101,10 +77,10 @@ inline HybridGaussianFactorGraph createHybridGaussianFactorGraph(
   auto bayesNet = createHybridBayesNet(numMeasurements, manyModes);
   if (measurements) {
     // Use the measurements to create a hybrid factor graph.
-    return convertBayesNet(bayesNet, *measurements);
+    return bayesNet.toFactorGraph(*measurements);
   } else {
     // Sample from the generative model to create a hybrid factor graph.
-    return convertBayesNet(bayesNet, bayesNet.sample().continuous());
+    return bayesNet.toFactorGraph(bayesNet.sample().continuous());
   }
 }
 
