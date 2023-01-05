@@ -29,7 +29,8 @@ namespace gtsam {
    * @ingroup slam
    */
   template<class POSE>
-  class PoseBetweenFactor: public NoiseModelFactorN<POSE, POSE> {
+  class PoseBetweenFactor: public NoiseModelFactorN<POSE, POSE>,
+                           public DeprecatedFactorAliases<POSE, POSE> {
 
   private:
 

@@ -20,7 +20,8 @@ namespace gtsam {
  *    - For implicit Euler method:  q_{k+1} = q_k + h*v_{k+1}
  *    - For sympletic Euler method: q_{k+1} = q_k + h*v_{k+1}
  */
-class PendulumFactor1: public NoiseModelFactorN<double, double, double> {
+class PendulumFactor1: public NoiseModelFactorN<double, double, double>,
+                       public DeprecatedFactorAliases<double, double, double> {
 
 public:
 
@@ -67,7 +68,8 @@ public:
  *    - For implicit Euler method:  v_{k+1} = v_k - h*g/L*sin(q_{k+1})
  *    - For sympletic Euler method: v_{k+1} = v_k - h*g/L*sin(q_k)
  */
-class PendulumFactor2: public NoiseModelFactorN<double, double, double> {
+class PendulumFactor2: public NoiseModelFactorN<double, double, double>,
+                       public DeprecatedFactorAliases<double, double, double> {
 
 public:
 
@@ -115,7 +117,8 @@ public:
  *  \f$ p_k = -D_1 L_d(q_k,q_{k+1},h) = \frac{1}{h}mr^{2}\left(q_{k+1}-q_{k}\right)+mgrh(1-\alpha)\,\sin\left((1-\alpha)q_{k}+\alpha q_{k+1}\right) \f$
  *  \f$ = (1/h)mr^2 (q_{k+1}-q_k) + mgrh(1-alpha) sin ((1-alpha)q_k+\alpha q_{k+1}) \f$
  */
-class PendulumFactorPk: public NoiseModelFactorN<double, double, double> {
+class PendulumFactorPk: public NoiseModelFactorN<double, double, double>,
+                        public DeprecatedFactorAliases<double, double, double> {
 
 public:
 
@@ -172,7 +175,8 @@ public:
  *  \f$ p_k1 = D_2 L_d(q_k,q_{k+1},h) = \frac{1}{h}mr^{2}\left(q_{k+1}-q_{k}\right)-mgrh\alpha\sin\left((1-\alpha)q_{k}+\alpha q_{k+1}\right) \f$
  *  \f$ = (1/h)mr^2 (q_{k+1}-q_k) - mgrh alpha sin ((1-alpha)q_k+\alpha q_{k+1}) \f$
  */
-class PendulumFactorPk1: public NoiseModelFactorN<double, double, double> {
+class PendulumFactorPk1: public NoiseModelFactorN<double, double, double>,
+                         public DeprecatedFactorAliases<double, double, double> {
 
 public:
 

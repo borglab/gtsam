@@ -128,8 +128,9 @@ private:
   }
 };
 
-class GTSAM_EXPORT AHRSFactor : public NoiseModelFactorN<Rot3, Rot3, Vector3> {
-
+class GTSAM_EXPORT AHRSFactor
+    : public NoiseModelFactorN<Rot3, Rot3, Vector3>,
+      public DeprecatedFactorAliases<Rot3, Rot3, Vector3> {
   typedef AHRSFactor This;
   typedef NoiseModelFactorN<Rot3, Rot3, Vector3> Base;
 

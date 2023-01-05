@@ -30,7 +30,8 @@ namespace gtsam {
  * @ingroup slam
  */
 template<class VALUE>
-struct BoundingConstraint1: public NoiseModelFactorN<VALUE> {
+struct BoundingConstraint1: public NoiseModelFactorN<VALUE>,
+                            public DeprecatedFactorAliases<VALUE> {
   typedef VALUE X;
   typedef NoiseModelFactorN<VALUE> Base;
   typedef boost::shared_ptr<BoundingConstraint1<VALUE> > shared_ptr;
@@ -98,7 +99,8 @@ private:
  * to implement for specific systems
  */
 template<class VALUE1, class VALUE2>
-struct BoundingConstraint2: public NoiseModelFactorN<VALUE1, VALUE2> {
+struct BoundingConstraint2: public NoiseModelFactorN<VALUE1, VALUE2>,
+                            public DeprecatedFactorAliases<VALUE1, VALUE2> {
   typedef VALUE1 X1;
   typedef VALUE2 X2;
 

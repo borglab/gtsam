@@ -18,7 +18,8 @@ namespace gtsam {
  * A prior on the translation part of a pose
  */
 template<class POSE>
-class PoseTranslationPrior : public NoiseModelFactorN<POSE> {
+class PoseTranslationPrior : public NoiseModelFactorN<POSE>,
+                             public DeprecatedFactorAliases<POSE> {
 
 public:
   typedef PoseTranslationPrior<POSE> This;

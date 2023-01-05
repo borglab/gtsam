@@ -26,7 +26,8 @@ namespace gtsam {
 /**
  * DeltaFactor: relative 2D measurement between Pose2 and Point2
  */
-class DeltaFactor: public NoiseModelFactorN<Pose2, Point2> {
+class DeltaFactor: public NoiseModelFactorN<Pose2, Point2>,
+                   public DeprecatedFactorAliases<Pose2, Point2> {
 
 public:
   typedef DeltaFactor This;
@@ -55,7 +56,8 @@ public:
 /**
  * DeltaFactorBase: relative 2D measurement between Pose2 and Point2, with Basenodes
  */
-class DeltaFactorBase: public NoiseModelFactorN<Pose2, Pose2, Pose2, Point2> {
+class DeltaFactorBase: public NoiseModelFactorN<Pose2, Pose2, Pose2, Point2>,
+                       public DeprecatedFactorAliases<Pose2, Pose2, Pose2, Point2> {
 
 public:
   typedef DeltaFactorBase This;
@@ -110,7 +112,8 @@ public:
 /**
  * OdometryFactorBase: Pose2 odometry, with Basenodes
  */
-class OdometryFactorBase: public NoiseModelFactorN<Pose2, Pose2, Pose2, Pose2> {
+class OdometryFactorBase: public NoiseModelFactorN<Pose2, Pose2, Pose2, Pose2>,
+                          public DeprecatedFactorAliases<Pose2, Pose2, Pose2, Pose2> {
 
 public:
   typedef OdometryFactorBase This;

@@ -255,10 +255,12 @@ public:
  *
  * @ingroup navigation
  */
-class GTSAM_EXPORT CombinedImuFactor: public NoiseModelFactorN<Pose3, Vector3, Pose3,
-    Vector3, imuBias::ConstantBias, imuBias::ConstantBias> {
-
-private:
+class GTSAM_EXPORT CombinedImuFactor
+    : public NoiseModelFactorN<Pose3, Vector3, Pose3, Vector3,
+                               imuBias::ConstantBias, imuBias::ConstantBias>,
+      public DeprecatedFactorAliases<Pose3, Vector3, Pose3, Vector3,
+                                imuBias::ConstantBias, imuBias::ConstantBias> {
+ private:
 
   typedef CombinedImuFactor This;
   typedef NoiseModelFactorN<Pose3, Vector3, Pose3, Vector3,

@@ -34,7 +34,8 @@ namespace gtsam {
    */
 template <class POSE, class LANDMARK, class CALIBRATION = Cal3_S2>
 class GTSAM_UNSTABLE_EXPORT ProjectionFactorPPPC
-    : public NoiseModelFactorN<POSE, POSE, LANDMARK, CALIBRATION> {
+    : public NoiseModelFactorN<POSE, POSE, LANDMARK, CALIBRATION>,
+      public DeprecatedFactorAliases<POSE, POSE, LANDMARK, CALIBRATION> {
 
  protected:
   Point2 measured_;  ///< 2D measurement

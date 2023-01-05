@@ -54,7 +54,8 @@ P transform_point(
  * specific classes of landmarks
  */
 template<class POINT, class TRANSFORM>
-class ReferenceFrameFactor : public NoiseModelFactorN<POINT, TRANSFORM, POINT> {
+class ReferenceFrameFactor : public NoiseModelFactorN<POINT, TRANSFORM, POINT>,
+                             public DeprecatedFactorAliases<POINT, TRANSFORM, POINT> {
 
 protected:
   /** default constructor for serialization only */

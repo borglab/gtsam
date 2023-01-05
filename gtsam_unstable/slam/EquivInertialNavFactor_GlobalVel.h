@@ -88,7 +88,8 @@ namespace gtsam {
  */
 
 template<class POSE, class VELOCITY, class IMUBIAS>
-class EquivInertialNavFactor_GlobalVel : public NoiseModelFactorN<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> {
+class EquivInertialNavFactor_GlobalVel : public NoiseModelFactorN<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY>,
+                                         public DeprecatedFactorAliases<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> {
 
 private:
 

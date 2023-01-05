@@ -16,7 +16,8 @@
 namespace gtsam {
 
 template<class POSE>
-class PoseRotationPrior : public NoiseModelFactorN<POSE> {
+class PoseRotationPrior : public NoiseModelFactorN<POSE>,
+                          public DeprecatedFactorAliases<POSE> {
 
 public:
 

@@ -15,7 +15,8 @@ namespace gtsam {
 /**
  * Factor to measure a planar landmark from a given pose
  */
-class GTSAM_EXPORT OrientedPlane3Factor: public NoiseModelFactorN<Pose3, OrientedPlane3> {
+class GTSAM_EXPORT OrientedPlane3Factor: public NoiseModelFactorN<Pose3, OrientedPlane3>,
+                                         public DeprecatedFactorAliases<Pose3, OrientedPlane3> {
 
  protected:
   OrientedPlane3 measured_p_;
@@ -50,7 +51,8 @@ class GTSAM_EXPORT OrientedPlane3Factor: public NoiseModelFactorN<Pose3, Oriente
 };
 
 // TODO: Convert this factor to dimension two, three dimensions is redundant for direction prior
-class GTSAM_EXPORT OrientedPlane3DirectionPrior : public NoiseModelFactorN<OrientedPlane3> {
+class GTSAM_EXPORT OrientedPlane3DirectionPrior : public NoiseModelFactorN<OrientedPlane3>,
+                                                  public DeprecatedFactorAliases<OrientedPlane3> {
 
  protected:
   OrientedPlane3 measured_p_;  /// measured plane parameters

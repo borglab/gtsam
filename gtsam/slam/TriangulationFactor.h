@@ -30,7 +30,8 @@ namespace gtsam {
  * @ingroup slam
  */
 template<class CAMERA>
-class TriangulationFactor: public NoiseModelFactorN<Point3> {
+class TriangulationFactor: public NoiseModelFactorN<Point3>,
+                           public DeprecatedFactorAliases<Point3> {
 
 public:
 

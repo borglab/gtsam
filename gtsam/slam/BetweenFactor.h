@@ -37,7 +37,8 @@ namespace gtsam {
    * @ingroup slam
    */
   template<class VALUE>
-  class BetweenFactor: public NoiseModelFactorN<VALUE, VALUE> {
+  class BetweenFactor: public NoiseModelFactorN<VALUE, VALUE>,
+                       public DeprecatedFactorAliases<VALUE, VALUE> {
 
     // Check that VALUE type is a testable Lie group
     BOOST_CONCEPT_ASSERT((IsTestable<VALUE>));

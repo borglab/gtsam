@@ -27,7 +27,8 @@ namespace gtsam {
    * @ingroup nonlinear
    */
   template<class VALUE>
-  class PriorFactor: public NoiseModelFactorN<VALUE> {
+  class PriorFactor: public NoiseModelFactorN<VALUE>,
+                     public DeprecatedFactorAliases<VALUE> {
 
   public:
     typedef VALUE T;

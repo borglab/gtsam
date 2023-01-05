@@ -39,7 +39,8 @@ namespace gtsam {
  * 
  * 
  */
-class TranslationFactor : public NoiseModelFactorN<Point3, Point3> {
+class TranslationFactor : public NoiseModelFactorN<Point3, Point3>,
+                          public DeprecatedFactorAliases<Point3, Point3> {
 
  private:
   typedef NoiseModelFactorN<Point3, Point3> Base;

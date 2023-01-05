@@ -56,7 +56,8 @@ namespace gtsam {
  *     MultiplyFunctor(multiplier));
  */
 template <typename R, typename T>
-class FunctorizedFactor : public NoiseModelFactorN<T> {
+class FunctorizedFactor : public NoiseModelFactorN<T>,
+                          public DeprecatedFactorAliases<T> {
 
  private:
   using Base = NoiseModelFactorN<T>;
@@ -157,7 +158,8 @@ FunctorizedFactor<R, T> MakeFunctorizedFactor(Key key, const R &z,
  * @param T2: The second argument type for the functor.
  */
 template <typename R, typename T1, typename T2>
-class FunctorizedFactor2 : public NoiseModelFactorN<T1, T2> {
+class FunctorizedFactor2 : public NoiseModelFactorN<T1, T2>,
+                           public DeprecatedFactorAliases<T1, T2> {
 
  private:
   using Base = NoiseModelFactorN<T1, T2>;

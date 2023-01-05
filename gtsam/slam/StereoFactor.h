@@ -28,7 +28,8 @@ namespace gtsam {
  * @ingroup slam
  */
 template<class POSE, class LANDMARK>
-class GenericStereoFactor: public NoiseModelFactorN<POSE, LANDMARK> {
+class GenericStereoFactor: public NoiseModelFactorN<POSE, LANDMARK>,
+                           public DeprecatedFactorAliases<POSE, LANDMARK> {
 
 private:
 

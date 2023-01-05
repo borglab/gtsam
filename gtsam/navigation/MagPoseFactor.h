@@ -25,7 +25,8 @@ namespace gtsam {
  * expressed in the sensor frame.
  */
 template <class POSE>
-class MagPoseFactor: public NoiseModelFactorN<POSE> {
+class MagPoseFactor: public NoiseModelFactorN<POSE>,
+                     public DeprecatedFactorAliases<POSE> {
 
  private:
   using This = MagPoseFactor<POSE>;

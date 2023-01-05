@@ -27,7 +27,8 @@ namespace gtsam {
    * common-mode errors and that can be partially corrected if other sensors are used
    * @ingroup slam
    */
-  class BiasedGPSFactor: public NoiseModelFactorN<Pose3, Point3> {
+  class BiasedGPSFactor: public NoiseModelFactorN<Pose3, Point3>,
+                         public DeprecatedFactorAliases<Pose3, Point3> {
 
   private:
 

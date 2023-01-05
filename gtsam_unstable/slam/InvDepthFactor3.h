@@ -24,7 +24,8 @@ namespace gtsam {
  * Ternary factor representing a visual measurement that includes inverse depth
  */
 template<class POSE, class LANDMARK, class INVDEPTH>
-class InvDepthFactor3: public NoiseModelFactorN<POSE, LANDMARK, INVDEPTH> {
+class InvDepthFactor3: public NoiseModelFactorN<POSE, LANDMARK, INVDEPTH>,
+                       public DeprecatedFactorAliases<POSE, LANDMARK, INVDEPTH> {
 
 protected:
 

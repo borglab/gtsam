@@ -35,7 +35,8 @@ namespace gtsam {
  * optimized in x1 frame in the optimization.
  */
 class GTSAM_UNSTABLE_EXPORT LocalOrientedPlane3Factor
-    : public NoiseModelFactorN<Pose3, Pose3, OrientedPlane3> {
+    : public NoiseModelFactorN<Pose3, Pose3, OrientedPlane3>,
+      public DeprecatedFactorAliases<Pose3, Pose3, OrientedPlane3> {
 
  protected:
   OrientedPlane3 measured_p_;

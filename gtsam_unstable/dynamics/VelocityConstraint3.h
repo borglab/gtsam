@@ -10,7 +10,8 @@
 
 namespace gtsam {
 
-class VelocityConstraint3 : public NoiseModelFactorN<double, double, double> {
+class VelocityConstraint3 : public NoiseModelFactorN<double, double, double>,
+                            public DeprecatedFactorAliases<double, double, double> {
 
 public:
 

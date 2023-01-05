@@ -42,7 +42,8 @@ namespace gtsam {
  * T is the measurement type, by default the same
  */
 template<class VALUE>
-class GaussMarkov1stOrderFactor: public NoiseModelFactorN<VALUE, VALUE> {
+class GaussMarkov1stOrderFactor: public NoiseModelFactorN<VALUE, VALUE>,
+                                 public DeprecatedFactorAliases<VALUE, VALUE> {
 
 private:
 

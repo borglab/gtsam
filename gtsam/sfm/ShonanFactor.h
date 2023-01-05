@@ -33,7 +33,8 @@ namespace gtsam {
  * the SO(p) matrices down to a Stiefel manifold of p*d matrices.
  */
 template <size_t d>
-class GTSAM_EXPORT ShonanFactor : public NoiseModelFactorN<SOn, SOn> {
+class GTSAM_EXPORT ShonanFactor : public NoiseModelFactorN<SOn, SOn>,
+                                  public DeprecatedFactorAliases<SOn, SOn> {
 
   Matrix M_;                    ///< measured rotation between R1 and R2
   size_t p_, pp_;               ///< dimensionality constants

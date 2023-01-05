@@ -24,7 +24,8 @@ namespace gtsam {
  * Note: this factor is necessary if one needs to smooth the entire graph. It's not needed
  *  in sequential update method.
  */
-class Reconstruction : public NoiseModelFactorN<Pose3, Pose3, Vector6>  {
+class Reconstruction : public NoiseModelFactorN<Pose3, Pose3, Vector6>,
+                       public DeprecatedFactorAliases<Pose3, Pose3, Vector6>  {
 
   double h_;  // time step
   typedef NoiseModelFactorN<Pose3, Pose3, Vector6> Base;
@@ -73,7 +74,8 @@ public:
 /**
  * Implement the Discrete Euler-Poincare' equation:
  */
-class DiscreteEulerPoincareHelicopter : public NoiseModelFactorN<Vector6, Vector6, Pose3>  {
+class DiscreteEulerPoincareHelicopter : public NoiseModelFactorN<Vector6, Vector6, Pose3>,
+                                        public DeprecatedFactorAliases<Vector6, Vector6, Pose3>  {
 
   double h_;  /// time step
   Matrix Inertia_;  /// Inertia tensors Inertia = [ J 0; 0 M ]

@@ -57,7 +57,8 @@ namespace gtsam {
  * @ingroup slam
  */
 template<class CAMERA, class LANDMARK>
-class GeneralSFMFactor: public NoiseModelFactorN<CAMERA, LANDMARK> {
+class GeneralSFMFactor: public NoiseModelFactorN<CAMERA, LANDMARK>,
+                        public DeprecatedFactorAliases<CAMERA, LANDMARK> {
 
   GTSAM_CONCEPT_MANIFOLD_TYPE(CAMERA)
   GTSAM_CONCEPT_MANIFOLD_TYPE(LANDMARK)
@@ -201,7 +202,8 @@ struct traits<GeneralSFMFactor<CAMERA, LANDMARK> > : Testable<
  * Compared to GeneralSFMFactor, it is a ternary-factor because the calibration is isolated from camera..
  */
 template<class CALIBRATION>
-class GeneralSFMFactor2: public NoiseModelFactorN<Pose3, Point3, CALIBRATION> {
+class GeneralSFMFactor2: public NoiseModelFactorN<Pose3, Point3, CALIBRATION>,
+                         public DeprecatedFactorAliases<Pose3, Point3, CALIBRATION> {
 
   GTSAM_CONCEPT_MANIFOLD_TYPE(CALIBRATION)
   static const int DimK = FixedDimension<CALIBRATION>::value;

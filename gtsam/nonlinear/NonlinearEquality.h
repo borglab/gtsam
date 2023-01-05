@@ -42,7 +42,8 @@ namespace gtsam {
  * \nosubgrouping
  */
 template<class VALUE>
-class NonlinearEquality: public NoiseModelFactorN<VALUE> {
+class NonlinearEquality: public NoiseModelFactorN<VALUE>,
+                         public DeprecatedFactorAliases<VALUE> {
 
 public:
   typedef VALUE T;
@@ -204,7 +205,8 @@ struct traits<NonlinearEquality<VALUE>> : Testable<NonlinearEquality<VALUE>> {};
  * Simple unary equality constraint - fixes a value for a variable
  */
 template<class VALUE>
-class NonlinearEquality1: public NoiseModelFactorN<VALUE> {
+class NonlinearEquality1: public NoiseModelFactorN<VALUE>,
+                          public DeprecatedFactorAliases<VALUE> {
 
 public:
   typedef VALUE X;
@@ -292,7 +294,8 @@ struct traits<NonlinearEquality1<VALUE> >
  * be the same.
  */
 template <class T>
-class NonlinearEquality2 : public NoiseModelFactorN<T, T> {
+class NonlinearEquality2 : public NoiseModelFactorN<T, T>,
+                           public DeprecatedFactorAliases<T, T> {
 
  protected:
   using Base = NoiseModelFactorN<T, T>;

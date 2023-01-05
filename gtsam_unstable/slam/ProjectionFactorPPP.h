@@ -31,7 +31,8 @@ namespace gtsam {
    * @ingroup slam
    */
   template<class POSE, class LANDMARK, class CALIBRATION = Cal3_S2>
-  class ProjectionFactorPPP: public NoiseModelFactorN<POSE, POSE, LANDMARK> {
+  class ProjectionFactorPPP: public NoiseModelFactorN<POSE, POSE, LANDMARK>,
+                             public DeprecatedFactorAliases<POSE, POSE, LANDMARK> {
 
   protected:
 

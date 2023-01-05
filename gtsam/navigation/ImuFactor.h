@@ -169,6 +169,8 @@ public:
  * @ingroup navigation
  */
 class GTSAM_EXPORT ImuFactor: public NoiseModelFactorN<Pose3, Vector3, Pose3, Vector3,
+    imuBias::ConstantBias>,
+                              public DeprecatedFactorAliases<Pose3, Vector3, Pose3, Vector3,
     imuBias::ConstantBias> {
 
 private:
@@ -261,7 +263,8 @@ public:
  * ImuFactor2 is a ternary factor that uses NavStates rather than Pose/Velocity.
  * @ingroup navigation
  */
-class GTSAM_EXPORT ImuFactor2 : public NoiseModelFactorN<NavState, NavState, imuBias::ConstantBias> {
+class GTSAM_EXPORT ImuFactor2 : public NoiseModelFactorN<NavState, NavState, imuBias::ConstantBias>,
+                                public DeprecatedFactorAliases<NavState, NavState, imuBias::ConstantBias> {
 
 private:
 

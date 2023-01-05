@@ -21,7 +21,8 @@ namespace gtsam {
  * @ingroup slam
  */
 template<typename POSE = Pose3, typename POINT = Point3>
-class PoseToPointFactor : public NoiseModelFactorN<POSE, POINT> {
+class PoseToPointFactor : public NoiseModelFactorN<POSE, POINT>,
+                          public DeprecatedFactorAliases<POSE, POINT> {
 
  private:
   typedef PoseToPointFactor This;

@@ -26,7 +26,8 @@ namespace gtsam {
  * Binary factor for applying a constant velocity model to a moving body represented as a NavState.
  * The only measurement is dt, the time delta between the states.
  */
-class ConstantVelocityFactor : public NoiseModelFactorN<NavState, NavState> {
+class ConstantVelocityFactor : public NoiseModelFactorN<NavState, NavState>,
+                               public DeprecatedFactorAliases<NavState, NavState> {
 
     double dt_;
 

@@ -599,15 +599,15 @@ class NoiseModelFactorN : public NoiseModelFactor {
  * DEFINITIONS.  DO NOT USE THESE FOR NEW CODE                                *
  ******************************************************************************/
 
-/** Convenience macros to add deprecated typedefs `X1`, `X2`, ..., `X6`.
+/** Convenience base class to add deprecated typedefs `X1`, `X2`, ..., `X6`.
  * This was only used to maintain backwards compatibility of existing factors!
  * Do NOT use for new factors!
- * When transitioning from NoiseModelFactor1 to NoiseModelFactorN, this macro
+ * When transitioning from NoiseModelFactor1 to NoiseModelFactorN, this struct
  * was used to add deprecated typedefs for the old NoiseModelFactor1.
  * Usage example:
  * ```
- * class MyFactor : public NoiseModelFactorN<Pose3, Point3> {
- *  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(MyFactor, 2);
+ * class MyFactor : public NoiseModelFactorN<Pose3, Point3>,
+ *                  public DeprecatedFactorAliases<Pose3, Point3> {
  *  // class implementation ...
  * };
  * 
@@ -615,29 +615,48 @@ class NoiseModelFactorN : public NoiseModelFactor {
  * // MyFactor::X2 == Point3
  * ```
  */
-#define ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS1(CLASS) \
-  typedef GTSAM_DEPRECATED typename CLASS::template ValueType<1> X;
-#define ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS1_(CLASS) \
-  typedef GTSAM_DEPRECATED typename CLASS::template ValueType<1> X1;
-#define ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS2(CLASS) \
-  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS1_(CLASS)      \
-  typedef GTSAM_DEPRECATED typename CLASS::template ValueType<2> X2;
-#define ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS3(CLASS) \
-  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS2(CLASS)       \
-  typedef GTSAM_DEPRECATED typename CLASS::template ValueType<3> X3;
-#define ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS4(CLASS) \
-  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS3(CLASS)       \
-  typedef GTSAM_DEPRECATED typename CLASS::template ValueType<4> X4;
-#define ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS5(CLASS) \
-  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS4(CLASS)       \
-  typedef GTSAM_DEPRECATED typename CLASS::template ValueType<5> X5;
-#define ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS6(CLASS) \
-  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS5(CLASS)       \
-  typedef GTSAM_DEPRECATED typename CLASS::template ValueType<6> X6;
-#define ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS(CLASS, N) \
- public:                                                       \
-  ADD_NOISE_MODEL_FACTOR_N_DEPRECATED_TYPEDEFS##N(CLASS);      \
- private:
+template <typename, typename...>
+struct DeprecatedFactorAliases {};
+template <typename T1>
+struct DeprecatedFactorAliases<T1> {
+  typedef GTSAM_DEPRECATED T1 X;
+};
+template <typename T1, typename T2>
+struct DeprecatedFactorAliases<T1, T2> {
+  typedef GTSAM_DEPRECATED T1 X1;
+  typedef GTSAM_DEPRECATED T2 X2;
+};
+template <typename T1, typename T2, typename T3>
+struct DeprecatedFactorAliases<T1, T2, T3> {
+  typedef GTSAM_DEPRECATED T1 X1;
+  typedef GTSAM_DEPRECATED T2 X2;
+  typedef GTSAM_DEPRECATED T3 X3;
+};
+template <typename T1, typename T2, typename T3, typename T4>
+struct DeprecatedFactorAliases<T1, T2, T3, T4> {
+  typedef GTSAM_DEPRECATED T1 X1;
+  typedef GTSAM_DEPRECATED T2 X2;
+  typedef GTSAM_DEPRECATED T3 X3;
+  typedef GTSAM_DEPRECATED T4 X4;
+};
+template <typename T1, typename T2, typename T3, typename T4, typename T5>
+struct DeprecatedFactorAliases<T1, T2, T3, T4, T5> {
+  typedef GTSAM_DEPRECATED T1 X1;
+  typedef GTSAM_DEPRECATED T2 X2;
+  typedef GTSAM_DEPRECATED T3 X3;
+  typedef GTSAM_DEPRECATED T4 X4;
+  typedef GTSAM_DEPRECATED T5 X5;
+};
+template <typename T1, typename T2, typename T3, typename T4, typename T5,
+          typename T6>
+struct DeprecatedFactorAliases<T1, T2, T3, T4, T5, T6> {
+  typedef GTSAM_DEPRECATED T1 X1;
+  typedef GTSAM_DEPRECATED T2 X2;
+  typedef GTSAM_DEPRECATED T3 X3;
+  typedef GTSAM_DEPRECATED T4 X4;
+  typedef GTSAM_DEPRECATED T5 X5;
+  typedef GTSAM_DEPRECATED T6 X6;
+};
 
 /* ************************************************************************* */
 /** @deprecated: use NoiseModelFactorN, replacing .key() with .key<1>() and X1
@@ -653,16 +672,9 @@ CLANG_DIAGNOSTIC_PUSH_IGNORE("-Wdeprecated-declarations")  // Silence warnings
 GCC_DIAGNOSTIC_PUSH_IGNORE("-Wdeprecated-declarations")    // while we define
 MSVC_DIAGNOSTIC_PUSH_IGNORE(4996)                          // deprecated classes
 template <class VALUE>
-class GTSAM_DEPRECATED NoiseModelFactor1 : public NoiseModelFactorN<VALUE> {
- public:
-  /** Aliases for value types pulled from keys, for backwards compatibility.
-   * Note: in your code you can probably just do:
-   *  `using X = ValueType<1>;`
-   * but this class is uglier due to dependent types.
-   * See e.g. testNonlinearFactor.cpp:TestFactorN.
-   */
-  using X = typename NoiseModelFactor1::template ValueType<1>;
-
+class GTSAM_DEPRECATED NoiseModelFactor1
+    : public NoiseModelFactorN<VALUE>,
+      public DeprecatedFactorAliases<VALUE> {
  protected:
   using Base = NoiseModelFactor;  // grandparent, for backwards compatibility
   using This = NoiseModelFactor1<VALUE>;
@@ -694,17 +706,8 @@ class GTSAM_DEPRECATED NoiseModelFactor1 : public NoiseModelFactorN<VALUE> {
  */
 template <class VALUE1, class VALUE2>
 class GTSAM_DEPRECATED NoiseModelFactor2
-    : public NoiseModelFactorN<VALUE1, VALUE2> {
- public:
-  /** Aliases for value types pulled from keys.
-   * Note: in your code you can probably just do: 
-   *  `using X1 = ValueType<1>;`
-   * but this class is uglier due to dependent types.
-   * See e.g. testNonlinearFactor.cpp:TestFactorN.
-   */
-  using X1 = typename NoiseModelFactor2::template ValueType<1>;
-  using X2 = typename NoiseModelFactor2::template ValueType<2>;
-
+    : public NoiseModelFactorN<VALUE1, VALUE2>,
+      public DeprecatedFactorAliases<VALUE1, VALUE2> {
  protected:
   using Base = NoiseModelFactor;
   using This = NoiseModelFactor2<VALUE1, VALUE2>;
@@ -736,18 +739,8 @@ class GTSAM_DEPRECATED NoiseModelFactor2
  */
 template <class VALUE1, class VALUE2, class VALUE3>
 class GTSAM_DEPRECATED NoiseModelFactor3
-    : public NoiseModelFactorN<VALUE1, VALUE2, VALUE3> {
- public:
-  /** Aliases for value types pulled from keys.
-   * Note: in your code you can probably just do: 
-   *  `using X1 = ValueType<1>;`
-   * but this class is uglier due to dependent types.
-   * See e.g. testNonlinearFactor.cpp:TestFactorN.
-   */
-  using X1 = typename NoiseModelFactor3::template ValueType<1>;
-  using X2 = typename NoiseModelFactor3::template ValueType<2>;
-  using X3 = typename NoiseModelFactor3::template ValueType<3>;
-
+    : public NoiseModelFactorN<VALUE1, VALUE2, VALUE3>,
+      public DeprecatedFactorAliases<VALUE1, VALUE2, VALUE3> {
  protected:
   using Base = NoiseModelFactor;
   using This = NoiseModelFactor3<VALUE1, VALUE2, VALUE3>;
@@ -779,19 +772,8 @@ class GTSAM_DEPRECATED NoiseModelFactor3
  */
 template <class VALUE1, class VALUE2, class VALUE3, class VALUE4>
 class GTSAM_DEPRECATED NoiseModelFactor4
-    : public NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4> {
- public:
-  /** Aliases for value types pulled from keys.
-   * Note: in your code you can probably just do: 
-   *  `using X1 = ValueType<1>;`
-   * but this class is uglier due to dependent types.
-   * See e.g. testNonlinearFactor.cpp:TestFactorN.
-   */
-  using X1 = typename NoiseModelFactor4::template ValueType<1>;
-  using X2 = typename NoiseModelFactor4::template ValueType<2>;
-  using X3 = typename NoiseModelFactor4::template ValueType<3>;
-  using X4 = typename NoiseModelFactor4::template ValueType<4>;
-
+    : public NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4>,
+      public DeprecatedFactorAliases<VALUE1, VALUE2, VALUE3, VALUE4> {
  protected:
   using Base = NoiseModelFactor;
   using This = NoiseModelFactor4<VALUE1, VALUE2, VALUE3, VALUE4>;
@@ -823,20 +805,8 @@ class GTSAM_DEPRECATED NoiseModelFactor4
  */
 template <class VALUE1, class VALUE2, class VALUE3, class VALUE4, class VALUE5>
 class GTSAM_DEPRECATED NoiseModelFactor5
-    : public NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5> {
- public:
-  /** Aliases for value types pulled from keys.
-   * Note: in your code you can probably just do: 
-   *  `using X1 = ValueType<1>;`
-   * but this class is uglier due to dependent types.
-   * See e.g. testNonlinearFactor.cpp:TestFactorN.
-   */
-  using X1 = typename NoiseModelFactor5::template ValueType<1>;
-  using X2 = typename NoiseModelFactor5::template ValueType<2>;
-  using X3 = typename NoiseModelFactor5::template ValueType<3>;
-  using X4 = typename NoiseModelFactor5::template ValueType<4>;
-  using X5 = typename NoiseModelFactor5::template ValueType<5>;
-
+    : public NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5>,
+      public DeprecatedFactorAliases<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5> {
  protected:
   using Base = NoiseModelFactor;
   using This = NoiseModelFactor5<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5>;
@@ -870,21 +840,9 @@ class GTSAM_DEPRECATED NoiseModelFactor5
 template <class VALUE1, class VALUE2, class VALUE3, class VALUE4, class VALUE5,
           class VALUE6>
 class GTSAM_DEPRECATED NoiseModelFactor6
-    : public NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5, VALUE6> {
- public:
-  /** Aliases for value types pulled from keys.
-   * Note: in your code you can probably just do: 
-   *  `using X1 = ValueType<1>;`
-   * but this class is uglier due to dependent types.
-   * See e.g. testNonlinearFactor.cpp:TestFactorN.
-   */
-  using X1 = typename NoiseModelFactor6::template ValueType<1>;
-  using X2 = typename NoiseModelFactor6::template ValueType<2>;
-  using X3 = typename NoiseModelFactor6::template ValueType<3>;
-  using X4 = typename NoiseModelFactor6::template ValueType<4>;
-  using X5 = typename NoiseModelFactor6::template ValueType<5>;
-  using X6 = typename NoiseModelFactor6::template ValueType<6>;
-
+    : public NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5, VALUE6>,
+      public DeprecatedFactorAliases<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5,
+                                     VALUE6> {
  protected:
   using Base = NoiseModelFactor;
   using This =
@@ -905,6 +863,7 @@ class GTSAM_DEPRECATED NoiseModelFactor6
         "NoiseModelFactor", boost::serialization::base_object<Base>(*this));
   }
 };  // \class NoiseModelFactor6
-DIAGNOSTIC_POP() // Finish silencing warnings
+
+DIAGNOSTIC_POP()  // Finish silencing warnings
 
 } // \namespace gtsam

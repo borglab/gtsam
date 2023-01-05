@@ -24,7 +24,8 @@ namespace gtsam {
 /**
  * Binary factor representing the first visual measurement using an inverse-depth parameterization
  */
-class InvDepthFactorVariant3a: public NoiseModelFactorN<Pose3, Vector3> {
+class InvDepthFactorVariant3a: public NoiseModelFactorN<Pose3, Vector3>,
+                               public DeprecatedFactorAliases<Pose3, Vector3> {
 
 protected:
 
@@ -151,7 +152,8 @@ private:
 /**
  * Ternary factor representing a visual measurement using an inverse-depth parameterization
  */
-class InvDepthFactorVariant3b: public NoiseModelFactorN<Pose3, Pose3, Vector3> {
+class InvDepthFactorVariant3b: public NoiseModelFactorN<Pose3, Pose3, Vector3>,
+                               public DeprecatedFactorAliases<Pose3, Pose3, Vector3> {
 
 protected:
 

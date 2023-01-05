@@ -25,7 +25,8 @@ namespace gtsam {
  *
  * TODO: enable use of a Pose3 for the target as well
  */
-class GTSAM_UNSTABLE_EXPORT RelativeElevationFactor: public NoiseModelFactorN<Pose3, Point3> {
+class GTSAM_UNSTABLE_EXPORT RelativeElevationFactor: public NoiseModelFactorN<Pose3, Point3>,
+                                                     public DeprecatedFactorAliases<Pose3, Point3> {
 
 private:
 

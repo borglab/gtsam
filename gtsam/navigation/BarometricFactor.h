@@ -31,7 +31,9 @@ namespace gtsam {
  * https://www.grc.nasa.gov/www/k-12/airplane/atmosmet.html
  * @ingroup navigation
  */
-class GTSAM_EXPORT BarometricFactor : public NoiseModelFactorN<Pose3, double> {
+class GTSAM_EXPORT BarometricFactor
+    : public NoiseModelFactorN<Pose3, double>,
+      public DeprecatedFactorAliases<Pose3, double> {
 
    private:
     typedef NoiseModelFactorN<Pose3, double> Base;

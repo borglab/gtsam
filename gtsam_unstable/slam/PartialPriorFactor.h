@@ -35,7 +35,8 @@ namespace gtsam {
    * @tparam VALUE is the type of variable the prior effects
    */
   template<class VALUE>
-  class PartialPriorFactor: public NoiseModelFactorN<VALUE> {
+  class PartialPriorFactor: public NoiseModelFactorN<VALUE>,
+                            public DeprecatedFactorAliases<VALUE> {
 
   public:
     typedef VALUE T;

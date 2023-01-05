@@ -48,7 +48,8 @@ ConvertNoiseModel(const SharedNoiseModel &model, size_t n,
  * element of SO(3) or SO(4).
  */
 template <class Rot>
-class FrobeniusPrior : public NoiseModelFactorN<Rot> {
+class FrobeniusPrior : public NoiseModelFactorN<Rot>,
+                       public DeprecatedFactorAliases<Rot> {
 
   enum { Dim = Rot::VectorN2::RowsAtCompileTime };
   using MatrixNN = typename Rot::MatrixNN;
@@ -76,7 +77,8 @@ class FrobeniusPrior : public NoiseModelFactorN<Rot> {
  * The template argument can be any fixed-size SO<N>.
  */
 template <class Rot>
-class FrobeniusFactor : public NoiseModelFactorN<Rot, Rot> {
+class FrobeniusFactor : public NoiseModelFactorN<Rot, Rot>,
+                        public DeprecatedFactorAliases<Rot, Rot> {
 
   enum { Dim = Rot::VectorN2::RowsAtCompileTime };
 
@@ -103,7 +105,8 @@ class FrobeniusFactor : public NoiseModelFactorN<Rot, Rot> {
  * and in fact only SO3 and SO4 really work, as we need SO<N>::AdjointMap.
  */
 template <class Rot>
-class FrobeniusBetweenFactor : public NoiseModelFactorN<Rot, Rot> {
+class FrobeniusBetweenFactor : public NoiseModelFactorN<Rot, Rot>,
+                               public DeprecatedFactorAliases<Rot, Rot> {
 
   Rot R12_;  ///< measured rotation between R1 and R2
   Eigen::Matrix<double, Rot::dimension, Rot::dimension>

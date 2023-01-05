@@ -31,7 +31,8 @@ namespace gtsam {
 /**
  * Factor that evaluates epipolar error p'Ep for given essential matrix
  */
-class EssentialMatrixFactor : public NoiseModelFactorN<EssentialMatrix> {
+class EssentialMatrixFactor : public NoiseModelFactorN<EssentialMatrix>,
+                              public DeprecatedFactorAliases<EssentialMatrix> {
 
   Vector3 vA_, vB_;  ///< Homogeneous versions, in ideal coordinates
 
@@ -107,7 +108,8 @@ class EssentialMatrixFactor : public NoiseModelFactorN<EssentialMatrix> {
  * in image 2 is perfect, and returns re-projection error in image 1
  */
 class EssentialMatrixFactor2
-    : public NoiseModelFactorN<EssentialMatrix, double> {
+    : public NoiseModelFactorN<EssentialMatrix, double>,
+      public DeprecatedFactorAliases<EssentialMatrix, double> {
 
   Point3 dP1_;  ///< 3D point corresponding to measurement in image 1
   Point2 pn_;   ///< Measurement in image 2, in ideal coordinates
@@ -323,7 +325,8 @@ class EssentialMatrixFactor3 : public EssentialMatrixFactor2 {
  */
 template <class CALIBRATION>
 class EssentialMatrixFactor4
-    : public NoiseModelFactorN<EssentialMatrix, CALIBRATION> {
+    : public NoiseModelFactorN<EssentialMatrix, CALIBRATION>,
+      public DeprecatedFactorAliases<EssentialMatrix, CALIBRATION> {
 
  private:
   Point2 pA_, pB_;  ///< points in pixel coordinates

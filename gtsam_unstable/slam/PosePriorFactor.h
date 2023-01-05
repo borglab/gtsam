@@ -26,7 +26,8 @@ namespace gtsam {
    * @ingroup slam
    */
   template<class POSE>
-  class PosePriorFactor: public NoiseModelFactorN<POSE> {
+  class PosePriorFactor: public NoiseModelFactorN<POSE>,
+                         public DeprecatedFactorAliases<POSE> {
 
   private:
 
