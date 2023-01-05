@@ -73,8 +73,8 @@ public:
   /** print */
   void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     std::cout << s << "GaussMarkov1stOrderFactor("
-        << keyFormatter(this->template key<1>()) << ","
-        << keyFormatter(this->template key<2>()) << ")\n";
+        << keyFormatter(this->key1()) << ","
+        << keyFormatter(this->key2()) << ")\n";
     this->noiseModel_->print("  noise model");
   }
 

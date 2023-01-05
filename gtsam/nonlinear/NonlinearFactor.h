@@ -272,6 +272,64 @@ public:
 
 }; // \class NoiseModelFactor
 
+/* ************************************************************************* */
+namespace detail {
+/** Convenience base class to add aliases `X1`, `X2`, ..., `X6` -> ValueType<N>.
+ * Usage example:
+ * ```
+ * class MyFactor : public NoiseModelFactorN<Pose3, Point3>,
+ *                  public NoiseModelFactorAliases<Pose3, Point3> {
+ *  // class implementation ...
+ * };
+ *
+ * // MyFactor::X1 == Pose3
+ * // MyFactor::X2 == Point3
+ * ```
+ */
+template <typename, typename...>
+struct NoiseModelFactorAliases {};
+template <typename T1>
+struct NoiseModelFactorAliases<T1> {
+  using X = T1;
+  using X1 = T1;
+};
+template <typename T1, typename T2>
+struct NoiseModelFactorAliases<T1, T2> {
+  using X1 = T1;
+  using X2 = T2;
+};
+template <typename T1, typename T2, typename T3>
+struct NoiseModelFactorAliases<T1, T2, T3> {
+  using X1 = T1;
+  using X2 = T2;
+  using X3 = T3;
+};
+template <typename T1, typename T2, typename T3, typename T4>
+struct NoiseModelFactorAliases<T1, T2, T3, T4> {
+  using X1 = T1;
+  using X2 = T2;
+  using X3 = T3;
+  using X4 = T4;
+};
+template <typename T1, typename T2, typename T3, typename T4, typename T5>
+struct NoiseModelFactorAliases<T1, T2, T3, T4, T5> {
+  using X1 = T1;
+  using X2 = T2;
+  using X3 = T3;
+  using X4 = T4;
+  using X5 = T5;
+};
+template <typename T1, typename T2, typename T3, typename T4, typename T5,
+          typename T6, typename... TExtra>
+struct NoiseModelFactorAliases<T1, T2, T3, T4, T5, T6, TExtra...> {
+  using X1 = T1;
+  using X2 = T2;
+  using X3 = T3;
+  using X4 = T4;
+  using X5 = T5;
+  using X6 = T6;
+};
+}  // namespace detail
 
 /* ************************************************************************* */
 /**
@@ -327,7 +385,9 @@ public:
  * objects in non-linear manifolds (Lie groups).
  */
 template <class... ValueTypes>
-class NoiseModelFactorN : public NoiseModelFactor {
+class NoiseModelFactorN
+    : public NoiseModelFactor,
+      public detail::NoiseModelFactorAliases<ValueTypes...> {
  public:
   /// N is the number of variables (N-way factor)
   enum { N = sizeof...(ValueTypes) };
@@ -377,6 +437,14 @@ class NoiseModelFactorN : public NoiseModelFactor {
    * // Factor::ValueType<0> // ERROR!  Will not compile.
    * // Factor::ValueType<3> // ERROR!  Will not compile.
    * ```
+   *
+   * You can also use the shortcuts `X1`, ..., `X6` which are the same as
+   * `ValueType<1>`, ..., `ValueType<6>` respectively (see
+   * detail::NoiseModelFactorAliases).
+   *
+   * Note that, if your class is templated AND you want to use `ValueType<1>`
+   * inside your class, due to dependent types you need the `template` keyword:
+   * `typename MyFactor<T>::template ValueType<1>`.
    */
   template <int I, typename = IndexIsValid<I>>
   using ValueType =
@@ -431,6 +499,10 @@ class NoiseModelFactorN : public NoiseModelFactor {
    * // key<0>()  // ERROR!  Will not compile
    * // key<3>()  // ERROR!  Will not compile
    * ```
+   * 
+   * Note that, if your class is templated AND you are trying to call `key<1>`
+   * inside your class, due to dependent types you need the `template` keyword:
+   * `this->key1()`.
    */
   template <int I = 1>
   inline Key key() const {
@@ -555,37 +627,34 @@ class NoiseModelFactorN : public NoiseModelFactor {
   }
 
  public:
-  /// @name Deprecated methods.  Use `key<1>()`, `key<2>()`, ... instead of old
-  /// `key1()`, `key2()`, ...
-  /// If your class is templated AND you are trying to call `key<1>` inside your
-  /// class, due to dependent types you need to do `this->template key<1>()`.
+  /// @name Shortcut functions `key1()` -> `key<1>()`
   /// @{
 
-  inline Key GTSAM_DEPRECATED key1() const {
+  inline Key key1() const {
     return key<1>();
   }
   template <int I = 2>
-  inline Key GTSAM_DEPRECATED key2() const {
+  inline Key key2() const {
     static_assert(I <= N, "Index out of bounds");
     return key<2>();
   }
   template <int I = 3>
-  inline Key GTSAM_DEPRECATED key3() const {
+  inline Key key3() const {
     static_assert(I <= N, "Index out of bounds");
     return key<3>();
   }
   template <int I = 4>
-  inline Key GTSAM_DEPRECATED key4() const {
+  inline Key key4() const {
     static_assert(I <= N, "Index out of bounds");
     return key<4>();
   }
   template <int I = 5>
-  inline Key GTSAM_DEPRECATED key5() const {
+  inline Key key5() const {
     static_assert(I <= N, "Index out of bounds");
     return key<5>();
   }
   template <int I = 6>
-  inline Key GTSAM_DEPRECATED key6() const {
+  inline Key key6() const {
     static_assert(I <= N, "Index out of bounds");
     return key<6>();
   }
@@ -594,268 +663,11 @@ class NoiseModelFactorN : public NoiseModelFactor {
 
 };  // \class NoiseModelFactorN
 
-/* ************************************************************************* */
-/** @deprecated: use NoiseModelFactorN, replacing .key() with .key<1>() and X1
- * with ValueType<1>.
- * If your class is templated AND you are trying to call `.key<1>()` or
- * `ValueType<1>` inside your class, due to dependent types you need to do
- * `this->template key<1>()` or `This::template ValueType<1>`.
- * ~~~
- * A convenient base class for creating your own NoiseModelFactor
- * with 1 variable.  To derive from this class, implement evaluateError().
- */
-template <class VALUE>
-class GTSAM_DEPRECATED NoiseModelFactor1 : public NoiseModelFactorN<VALUE> {
- public:
-  /** Aliases for value types pulled from keys, for backwards compatibility.
-   * Note: in your code you can probably just do:
-   *  `using X = ValueType<1>;`
-   * but this class is uglier due to dependent types.
-   * See e.g. testNonlinearFactor.cpp:TestFactorN.
-   */
-  using X = typename NoiseModelFactor1::template ValueType<1>;
+#define NoiseModelFactor1 NoiseModelFactorN
+#define NoiseModelFactor2 NoiseModelFactorN
+#define NoiseModelFactor3 NoiseModelFactorN
+#define NoiseModelFactor4 NoiseModelFactorN
+#define NoiseModelFactor5 NoiseModelFactorN
+#define NoiseModelFactor6 NoiseModelFactorN
 
- protected:
-  using Base = NoiseModelFactor;  // grandparent, for backwards compatibility
-  using This = NoiseModelFactor1<VALUE>;
-
- public:
-  // inherit NoiseModelFactorN's constructors
-  using NoiseModelFactorN<VALUE>::NoiseModelFactorN;
-  ~NoiseModelFactor1() override {}
-
- private:
-  /** Serialization function */
-  friend class boost::serialization::access;
-  template <class ARCHIVE>
-  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& boost::serialization::make_nvp(
-        "NoiseModelFactor", boost::serialization::base_object<Base>(*this));
-  }
-};  // \class NoiseModelFactor1
-
-/* ************************************************************************* */
-/** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1>() and X1
- * with ValueType<1>.
- * If your class is templated AND you are trying to call `.key<1>()` or
- * `ValueType<1>` inside your class, due to dependent types you need to do
- * `this->template key<1>()` or `This::template ValueType<1>`.
- * ~~~
- * A convenient base class for creating your own NoiseModelFactor
- * with 2 variables.  To derive from this class, implement evaluateError().
- */
-template <class VALUE1, class VALUE2>
-class GTSAM_DEPRECATED NoiseModelFactor2
-    : public NoiseModelFactorN<VALUE1, VALUE2> {
- public:
-  /** Aliases for value types pulled from keys.
-   * Note: in your code you can probably just do: 
-   *  `using X1 = ValueType<1>;`
-   * but this class is uglier due to dependent types.
-   * See e.g. testNonlinearFactor.cpp:TestFactorN.
-   */
-  using X1 = typename NoiseModelFactor2::template ValueType<1>;
-  using X2 = typename NoiseModelFactor2::template ValueType<2>;
-
- protected:
-  using Base = NoiseModelFactor;
-  using This = NoiseModelFactor2<VALUE1, VALUE2>;
-
- public:
-  // inherit NoiseModelFactorN's constructors
-  using NoiseModelFactorN<VALUE1, VALUE2>::NoiseModelFactorN;
-  ~NoiseModelFactor2() override {}
-
- private:
-  /** Serialization function */
-  friend class boost::serialization::access;
-  template <class ARCHIVE>
-  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& boost::serialization::make_nvp(
-        "NoiseModelFactor", boost::serialization::base_object<Base>(*this));
-  }
-};  // \class NoiseModelFactor2
-
-/* ************************************************************************* */
-/** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1>() and X1
- * with ValueType<1>.
- * If your class is templated AND you are trying to call `.key<1>()` or
- * `ValueType<1>` inside your class, due to dependent types you need to do
- * `this->template key<1>()` or `This::template ValueType<1>`.
- * ~~~
- * A convenient base class for creating your own NoiseModelFactor
- * with 3 variables.  To derive from this class, implement evaluateError().
- */
-template <class VALUE1, class VALUE2, class VALUE3>
-class GTSAM_DEPRECATED NoiseModelFactor3
-    : public NoiseModelFactorN<VALUE1, VALUE2, VALUE3> {
- public:
-  /** Aliases for value types pulled from keys.
-   * Note: in your code you can probably just do: 
-   *  `using X1 = ValueType<1>;`
-   * but this class is uglier due to dependent types.
-   * See e.g. testNonlinearFactor.cpp:TestFactorN.
-   */
-  using X1 = typename NoiseModelFactor3::template ValueType<1>;
-  using X2 = typename NoiseModelFactor3::template ValueType<2>;
-  using X3 = typename NoiseModelFactor3::template ValueType<3>;
-
- protected:
-  using Base = NoiseModelFactor;
-  using This = NoiseModelFactor3<VALUE1, VALUE2, VALUE3>;
-
- public:
-  // inherit NoiseModelFactorN's constructors
-  using NoiseModelFactorN<VALUE1, VALUE2, VALUE3>::NoiseModelFactorN;
-  ~NoiseModelFactor3() override {}
-
- private:
-  /** Serialization function */
-  friend class boost::serialization::access;
-  template <class ARCHIVE>
-  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& boost::serialization::make_nvp(
-        "NoiseModelFactor", boost::serialization::base_object<Base>(*this));
-  }
-};  // \class NoiseModelFactor3
-
-/* ************************************************************************* */
-/** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1>() and X1
- * with ValueType<1>.
- * If your class is templated AND you are trying to call `.key<1>()` or
- * `ValueType<1>` inside your class, due to dependent types you need to do
- * `this->template key<1>()` or `This::template ValueType<1>`.
- * ~~~
- * A convenient base class for creating your own NoiseModelFactor
- * with 4 variables.  To derive from this class, implement evaluateError().
- */
-template <class VALUE1, class VALUE2, class VALUE3, class VALUE4>
-class GTSAM_DEPRECATED NoiseModelFactor4
-    : public NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4> {
- public:
-  /** Aliases for value types pulled from keys.
-   * Note: in your code you can probably just do: 
-   *  `using X1 = ValueType<1>;`
-   * but this class is uglier due to dependent types.
-   * See e.g. testNonlinearFactor.cpp:TestFactorN.
-   */
-  using X1 = typename NoiseModelFactor4::template ValueType<1>;
-  using X2 = typename NoiseModelFactor4::template ValueType<2>;
-  using X3 = typename NoiseModelFactor4::template ValueType<3>;
-  using X4 = typename NoiseModelFactor4::template ValueType<4>;
-
- protected:
-  using Base = NoiseModelFactor;
-  using This = NoiseModelFactor4<VALUE1, VALUE2, VALUE3, VALUE4>;
-
- public:
-  // inherit NoiseModelFactorN's constructors
-  using NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4>::NoiseModelFactorN;
-  ~NoiseModelFactor4() override {}
-
- private:
-  /** Serialization function */
-  friend class boost::serialization::access;
-  template <class ARCHIVE>
-  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& boost::serialization::make_nvp(
-        "NoiseModelFactor", boost::serialization::base_object<Base>(*this));
-  }
-};  // \class NoiseModelFactor4
-
-/* ************************************************************************* */
-/** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1>() and X1
- * with ValueType<1>.
- * If your class is templated AND you are trying to call `.key<1>()` or
- * `ValueType<1>` inside your class, due to dependent types you need to do
- * `this->template key<1>()` or `This::template ValueType<1>`.
- * ~~~
- * A convenient base class for creating your own NoiseModelFactor
- * with 5 variables.  To derive from this class, implement evaluateError().
- */
-template <class VALUE1, class VALUE2, class VALUE3, class VALUE4, class VALUE5>
-class GTSAM_DEPRECATED NoiseModelFactor5
-    : public NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5> {
- public:
-  /** Aliases for value types pulled from keys.
-   * Note: in your code you can probably just do: 
-   *  `using X1 = ValueType<1>;`
-   * but this class is uglier due to dependent types.
-   * See e.g. testNonlinearFactor.cpp:TestFactorN.
-   */
-  using X1 = typename NoiseModelFactor5::template ValueType<1>;
-  using X2 = typename NoiseModelFactor5::template ValueType<2>;
-  using X3 = typename NoiseModelFactor5::template ValueType<3>;
-  using X4 = typename NoiseModelFactor5::template ValueType<4>;
-  using X5 = typename NoiseModelFactor5::template ValueType<5>;
-
- protected:
-  using Base = NoiseModelFactor;
-  using This = NoiseModelFactor5<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5>;
-
- public:
-  // inherit NoiseModelFactorN's constructors
-  using NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4,
-                          VALUE5>::NoiseModelFactorN;
-  ~NoiseModelFactor5() override {}
-
- private:
-  /** Serialization function */
-  friend class boost::serialization::access;
-  template <class ARCHIVE>
-  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& boost::serialization::make_nvp(
-        "NoiseModelFactor", boost::serialization::base_object<Base>(*this));
-  }
-};  // \class NoiseModelFactor5
-
-/* ************************************************************************* */
-/** @deprecated: use NoiseModelFactorN, replacing .key1() with .key<1>() and X1
- * with ValueType<1>.
- * If your class is templated AND you are trying to call `.key<1>()` or
- * `ValueType<1>` inside your class, due to dependent types you need to do
- * `this->template key<1>()` or `This::template ValueType<1>`.
- * ~~~
- * A convenient base class for creating your own NoiseModelFactor
- * with 6 variables.  To derive from this class, implement evaluateError().
- */
-template <class VALUE1, class VALUE2, class VALUE3, class VALUE4, class VALUE5,
-          class VALUE6>
-class GTSAM_DEPRECATED NoiseModelFactor6
-    : public NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5, VALUE6> {
- public:
-  /** Aliases for value types pulled from keys.
-   * Note: in your code you can probably just do: 
-   *  `using X1 = ValueType<1>;`
-   * but this class is uglier due to dependent types.
-   * See e.g. testNonlinearFactor.cpp:TestFactorN.
-   */
-  using X1 = typename NoiseModelFactor6::template ValueType<1>;
-  using X2 = typename NoiseModelFactor6::template ValueType<2>;
-  using X3 = typename NoiseModelFactor6::template ValueType<3>;
-  using X4 = typename NoiseModelFactor6::template ValueType<4>;
-  using X5 = typename NoiseModelFactor6::template ValueType<5>;
-  using X6 = typename NoiseModelFactor6::template ValueType<6>;
-
- protected:
-  using Base = NoiseModelFactor;
-  using This =
-      NoiseModelFactor6<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5, VALUE6>;
-
- public:
-  // inherit NoiseModelFactorN's constructors
-  using NoiseModelFactorN<VALUE1, VALUE2, VALUE3, VALUE4, VALUE5,
-                          VALUE6>::NoiseModelFactorN;
-  ~NoiseModelFactor6() override {}
-
- private:
-  /** Serialization function */
-  friend class boost::serialization::access;
-  template <class ARCHIVE>
-  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& boost::serialization::make_nvp(
-        "NoiseModelFactor", boost::serialization::base_object<Base>(*this));
-  }
-};  // \class NoiseModelFactor6
-
-} // \namespace gtsam
+}  // namespace gtsam
