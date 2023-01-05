@@ -502,7 +502,7 @@ class NoiseModelFactorN
    * 
    * Note that, if your class is templated AND you are trying to call `key<1>`
    * inside your class, due to dependent types you need the `template` keyword:
-   * `this->template key<1>()`.
+   * `this->key1()`.
    */
   template <int I = 1>
   inline Key key() const {

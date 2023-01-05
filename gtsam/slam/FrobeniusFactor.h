@@ -130,8 +130,8 @@ class FrobeniusBetweenFactor : public NoiseModelFactorN<Rot, Rot> {
   print(const std::string &s,
         const KeyFormatter &keyFormatter = DefaultKeyFormatter) const override {
     std::cout << s << "FrobeniusBetweenFactor<" << demangle(typeid(Rot).name())
-              << ">(" << keyFormatter(this->template key<1>()) << ","
-              << keyFormatter(this->template key<2>()) << ")\n";
+              << ">(" << keyFormatter(this->key1()) << ","
+              << keyFormatter(this->key2()) << ")\n";
     traits<Rot>::Print(R12_, "  R12: ");
     this->noiseModel_->print("  noise model: ");
   }
