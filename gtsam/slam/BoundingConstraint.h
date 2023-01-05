@@ -129,7 +129,7 @@ struct BoundingConstraint2: public NoiseModelFactorN<VALUE1, VALUE2> {
   /** active when constraint *NOT* met */
   bool active(const Values& c) const override {
     // note: still active at equality to avoid zigzagging
-    double x = value(c.at<X1>(this->template key<1>()), c.at<X2>(this->template key<2>()));
+    double x = value(c.at<X1>(key1()), c.at<X2>(key2()));
     return (isGreaterThan_) ? x <= threshold_ : x >= threshold_;
   }
 

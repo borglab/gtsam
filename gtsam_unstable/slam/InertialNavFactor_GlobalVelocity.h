@@ -117,11 +117,11 @@ public:
   /** print */
   void print(const std::string& s = "InertialNavFactor_GlobalVelocity", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     std::cout << s << "("
-        << keyFormatter(this->template key<1>()) << ","
-        << keyFormatter(this->template key<2>()) << ","
-        << keyFormatter(this->template key<3>()) << ","
-        << keyFormatter(this->template key<4>()) << ","
-        << keyFormatter(this->template key<5>()) << "\n";
+        << keyFormatter(key1()) << ","
+        << keyFormatter(key2()) << ","
+        << keyFormatter(key3()) << ","
+        << keyFormatter(key4()) << ","
+        << keyFormatter(key5()) << "\n";
     std::cout << "acc measurement: " << this->measurement_acc_.transpose() << std::endl;
     std::cout << "gyro measurement: " << this->measurement_gyro_.transpose() << std::endl;
     std::cout << "dt: " << this->dt_ << std::endl;
