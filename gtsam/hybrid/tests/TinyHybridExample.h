@@ -33,46 +33,34 @@ const DiscreteKey mode{M(0), 2};
 /**
  * Create a tiny two variable hybrid model which represents
  * the generative probability P(z,x,mode) = P(z|x,mode)P(x)P(mode).
+ * num_measurements is the number of measurements of the continuous variable x0.
+ * If manyModes is true, then we introduce one mode per measurement.
  */
-inline HybridBayesNet createHybridBayesNet(int num_measurements = 1) {
+inline HybridBayesNet createHybridBayesNet(int num_measurements = 1,
+                                           bool manyModes = false) {
   HybridBayesNet bayesNet;
 
   // Create Gaussian mixture z_i = x0 + noise for each measurement.
   for (int i = 0; i < num_measurements; i++) {
-    const auto conditional0 = boost::make_shared<GaussianConditional>(
-        GaussianConditional::FromMeanAndStddev(Z(i), I_1x1, X(0), Z_1x1, 0.5));
-    const auto conditional1 = boost::make_shared<GaussianConditional>(
-        GaussianConditional::FromMeanAndStddev(Z(i), I_1x1, X(0), Z_1x1, 3));
-    GaussianMixture gm({Z(i)}, {X(0)}, {mode}, {conditional0, conditional1});
+    const auto mode_i = manyModes ? DiscreteKey{M(i), 2} : mode;
+    GaussianMixture gm({Z(i)}, {X(0)}, {mode_i},
+                       {GaussianConditional::sharedMeanAndStddev(
+                            Z(i), I_1x1, X(0), Z_1x1, 0.5),
+                        GaussianConditional::sharedMeanAndStddev(
+                            Z(i), I_1x1, X(0), Z_1x1, 3)});
     bayesNet.emplaceMixture(gm);  // copy :-(
   }
 
   // Create prior on X(0).
-  const auto prior_on_x0 =
-      GaussianConditional::FromMeanAndStddev(X(0), Vector1(5.0), 0.5);
-  bayesNet.emplaceGaussian(prior_on_x0);  // copy :-(
+  bayesNet.addGaussian(
+      GaussianConditional::sharedMeanAndStddev(X(0), Vector1(5.0), 0.5));
 
   // Add prior on mode.
-  bayesNet.emplaceDiscrete(mode, "4/6");
-
-  return bayesNet;
-}
-
-/**
- * Convert a hybrid Bayes net to a hybrid Gaussian factor graph.
- */
-inline HybridGaussianFactorGraph convertBayesNet(
-    const HybridBayesNet& bayesNet, const VectorValues& measurements) {
-  HybridGaussianFactorGraph fg;
-  int num_measurements = bayesNet.size() - 2;
-  for (int i = 0; i < num_measurements; i++) {
-    auto conditional = bayesNet.atMixture(i);
-    auto factor = conditional->likelihood({{Z(i), measurements.at(Z(i))}});
-    fg.push_back(factor);
+  const size_t nrModes = manyModes ? num_measurements : 1;
+  for (int i = 0; i < nrModes; i++) {
+    bayesNet.emplaceDiscrete(DiscreteKey{M(i), 2}, "4/6");
   }
-  fg.push_back(bayesNet.atGaussian(num_measurements));
-  fg.push_back(bayesNet.atDiscrete(num_measurements + 1));
-  return fg;
+  return bayesNet;
 }
 
 /**
@@ -83,12 +71,15 @@ inline HybridGaussianFactorGraph convertBayesNet(
  */
 inline HybridGaussianFactorGraph createHybridGaussianFactorGraph(
     int num_measurements = 1,
-    boost::optional<VectorValues> measurements = boost::none) {
-  auto bayesNet = createHybridBayesNet(num_measurements);
+    boost::optional<VectorValues> measurements = boost::none,
+    bool manyModes = false) {
+  auto bayesNet = createHybridBayesNet(num_measurements, manyModes);
   if (measurements) {
-    return convertBayesNet(bayesNet, *measurements);
+    // Use the measurements to create a hybrid factor graph.
+    return bayesNet.toFactorGraph(*measurements);
   } else {
-    return convertBayesNet(bayesNet, bayesNet.sample().continuous());
+    // Sample from the generative model to create a hybrid factor graph.
+    return bayesNet.toFactorGraph(bayesNet.sample().continuous());
   }
 }
 

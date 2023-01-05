@@ -377,4 +377,27 @@ AlgebraicDecisionTree<Key> HybridBayesNet::probPrime(
   return error_tree.apply([](double error) { return exp(-error); });
 }
 
+/* ************************************************************************* */
+HybridGaussianFactorGraph HybridBayesNet::toFactorGraph(
+    const VectorValues &measurements) const {
+  HybridGaussianFactorGraph fg;
+
+  // For all nodes in the Bayes net, if its frontal variable is in measurements,
+  // replace it by a likelihood factor:
+  for (auto &&conditional : *this) {
+    if (conditional->frontalsIn(measurements)) {
+      if (auto gc = conditional->asGaussian())
+        fg.push_back(gc->likelihood(measurements));
+      else if (auto gm = conditional->asMixture())
+        fg.push_back(gm->likelihood(measurements));
+      else {
+        throw std::runtime_error("Unknown conditional type");
+      }
+    } else {
+      fg.push_back(conditional);
+    }
+  }
+  return fg;
+}
+
 }  // namespace gtsam
