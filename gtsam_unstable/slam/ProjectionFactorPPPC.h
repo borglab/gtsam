@@ -130,8 +130,8 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorPPPC
         if (H3) *H3 = Matrix::Zero(2,3);
         if (H4) *H4 = Matrix::Zero(2,CALIBRATION::Dim());
         if (verboseCheirality_)
-          std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(key2()) <<
-              " moved behind camera " << DefaultKeyFormatter(key1()) << std::endl;
+          std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->template key<2>()) <<
+              " moved behind camera " << DefaultKeyFormatter(this->template key<1>()) << std::endl;
         if (throwCheirality_)
           throw e;
       }

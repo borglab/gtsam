@@ -140,7 +140,7 @@ public:
     // Only linearize if the factor is active
     if (!this->active(values)) return boost::shared_ptr<JacobianFactor>();
 
-    const Key key1 = key1(), key2 = key2();
+    const Key key1 = this->template key<1>(), key2 = this->template key<2>();
     JacobianC H1;
     JacobianL H2;
     Vector2 b;
@@ -270,8 +270,8 @@ public:
       if (H1) *H1 = Matrix::Zero(2, 6);
       if (H2) *H2 = Matrix::Zero(2, 3);
       if (H3) *H3 = Matrix::Zero(2, DimK);
-      std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(key2())
-      << " behind Camera " << DefaultKeyFormatter(key1()) << std::endl;
+      std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->template key<2>())
+      << " behind Camera " << DefaultKeyFormatter(this->template key<1>()) << std::endl;
     }
     return Z_2x1;
   }
