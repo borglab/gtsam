@@ -107,16 +107,16 @@ public:
   void print(const std::string& s="",
       const gtsam::KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     std::cout << s << ": ReferenceFrameFactor("
-        << "Global: " << keyFormatter(key1()) << ","
-        << " Transform: " << keyFormatter(key2()) << ","
-        << " Local: " << keyFormatter(key3()) << ")\n";
+        << "Global: " << keyFormatter(this->template key<1>()) << ","
+        << " Transform: " << keyFormatter(this->template key<2>()) << ","
+        << " Local: " << keyFormatter(this->template key<3>()) << ")\n";
     this->noiseModel_->print("  noise model");
   }
 
   // access - convenience functions
-  Key global_key() const { return key1(); }
-  Key transform_key() const { return key2(); }
-  Key local_key() const { return key3(); }
+  Key global_key() const { return this->template key<1>(); }
+  Key transform_key() const { return this->template key<2>(); }
+  Key local_key() const { return this->template key<3>(); }
 
 private:
   /** Serialization function */

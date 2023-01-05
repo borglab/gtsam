@@ -68,8 +68,8 @@ namespace gtsam {
     /** print */
     void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
       std::cout << s << "BetweenFactor("
-          << keyFormatter(key1()) << ","
-          << keyFormatter(key2()) << ")\n";
+          << keyFormatter(this->template key<1>()) << ","
+          << keyFormatter(this->template key<2>()) << ")\n";
       measured_.print("  measured: ");
       if(this->body_P_sensor_)
         this->body_P_sensor_->print("  sensor pose in body frame: ");

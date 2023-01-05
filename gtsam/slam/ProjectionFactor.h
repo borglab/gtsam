@@ -154,10 +154,10 @@ namespace gtsam {
         if (H1) *H1 = Matrix::Zero(2,6);
         if (H2) *H2 = Matrix::Zero(2,3);
         if (verboseCheirality_)
-          std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(key2()) <<
-              " moved behind camera " << DefaultKeyFormatter(key1()) << std::endl;
+          std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->template key<2>()) <<
+              " moved behind camera " << DefaultKeyFormatter(this->template key<1>()) << std::endl;
         if (throwCheirality_)
-          throw CheiralityException(key2());
+          throw CheiralityException(this->template key<2>());
       }
       return Vector2::Constant(2.0 * K_->fx());
     }
