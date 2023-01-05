@@ -108,16 +108,16 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
                                                                  I_1x1,
                                                                  X(0), [0],
                                                                  sigma=3)
-            bayesNet.emplaceMixture([Z(i)], [X(0)], keys,
-                                    [conditional0, conditional1])
+            bayesNet.push_back(GaussianMixture([Z(i)], [X(0)], keys,
+                                               [conditional0, conditional1]))
 
         # Create prior on X(0).
         prior_on_x0 = GaussianConditional.FromMeanAndStddev(
             X(0), [prior_mean], prior_sigma)
-        bayesNet.addGaussian(prior_on_x0)
+        bayesNet.push_back(prior_on_x0)
 
         # Add prior on mode.
-        bayesNet.emplaceDiscrete(mode, "4/6")
+        bayesNet.push_back(DiscreteConditional(mode, "4/6"))
 
         return bayesNet
 
@@ -163,11 +163,11 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         fg = HybridGaussianFactorGraph()
         num_measurements = bayesNet.size() - 2
         for i in range(num_measurements):
-            conditional = bayesNet.atMixture(i)
+            conditional = bayesNet.at(i).asMixture()
             factor = conditional.likelihood(cls.measurements(sample, [i]))
             fg.push_back(factor)
-        fg.push_back(bayesNet.atGaussian(num_measurements))
-        fg.push_back(bayesNet.atDiscrete(num_measurements+1))
+        fg.push_back(bayesNet.at(num_measurements).asGaussian())
+        fg.push_back(bayesNet.at(num_measurements+1).asDiscrete())
         return fg
 
     @classmethod

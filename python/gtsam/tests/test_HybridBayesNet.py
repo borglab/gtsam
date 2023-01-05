@@ -16,13 +16,13 @@ import numpy as np
 from gtsam.symbol_shorthand import A, X
 from gtsam.utils.test_case import GtsamTestCase
 
-import gtsam
-from gtsam import (DiscreteKeys, GaussianConditional, GaussianMixture,
+from gtsam import (DiscreteKeys, GaussianMixture, DiscreteConditional, GaussianConditional, GaussianMixture,
                    HybridBayesNet, HybridValues, noiseModel)
 
 
 class TestHybridBayesNet(GtsamTestCase):
     """Unit tests for HybridValues."""
+
     def test_evaluate(self):
         """Test evaluate for a hybrid Bayes net P(X0|X1) P(X1|Asia) P(Asia)."""
         asiaKey = A(0)
@@ -40,15 +40,15 @@ class TestHybridBayesNet(GtsamTestCase):
         # Create the conditionals
         conditional0 = GaussianConditional(X(1), [5], I_1x1, model0)
         conditional1 = GaussianConditional(X(1), [2], I_1x1, model1)
-        dkeys = DiscreteKeys()
-        dkeys.push_back(Asia)
-        gm = GaussianMixture([X(1)], [], dkeys, [conditional0, conditional1]) 
+        discrete_keys = DiscreteKeys()
+        discrete_keys.push_back(Asia)
 
         # Create hybrid Bayes net.
         bayesNet = HybridBayesNet()
-        bayesNet.addGaussian(gc)
-        bayesNet.addMixture(gm)
-        bayesNet.emplaceDiscrete(Asia, "99/1")
+        bayesNet.push_back(gc)
+        bayesNet.push_back(GaussianMixture(
+            [X(1)], [], discrete_keys, [conditional0, conditional1]))
+        bayesNet.push_back(DiscreteConditional(Asia, "99/1"))
 
         # Create values at which to evaluate.
         values = HybridValues()
