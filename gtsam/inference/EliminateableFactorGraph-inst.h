@@ -43,18 +43,15 @@ namespace gtsam {
       // VariableIndex already here because we computed one if needed in the previous 'if' block.
       if (orderingType == Ordering::METIS) {
         Ordering computedOrdering = Ordering::Metis(asDerived());
-        return eliminateSequential(computedOrdering, function, variableIndex);
       } else if (orderingType == Ordering::COLAMD) {
         Ordering computedOrdering = Ordering::Colamd(*variableIndex);
-        return eliminateSequential(computedOrdering, function, variableIndex);
       } else if (orderingType == Ordering::NATURAL) {
         Ordering computedOrdering = Ordering::Natural(asDerived());
-        return eliminateSequential(computedOrdering, function, variableIndex);
       } else {
         Ordering computedOrdering = EliminationTraitsType::DefaultOrderingFunc(
             asDerived(), variableIndex);
-        return eliminateSequential(computedOrdering, function, variableIndex);
       }
+      return eliminateSequential(computedOrdering, function, variableIndex);
     }
   }
 
@@ -106,18 +103,15 @@ namespace gtsam {
       // the previous 'if' block.
       if (orderingType == Ordering::METIS) {
         Ordering computedOrdering = Ordering::Metis(asDerived());
-        return eliminateMultifrontal(computedOrdering, function, variableIndex);
       } else if (orderingType == Ordering::COLAMD) {
         Ordering computedOrdering = Ordering::Colamd(*variableIndex);
-        return eliminateMultifrontal(computedOrdering, function, variableIndex);
       } else if (orderingType == Ordering::NATURAL) {
         Ordering computedOrdering = Ordering::Natural(asDerived());
-        return eliminateMultifrontal(computedOrdering, function, variableIndex);
       } else {
         Ordering computedOrdering = EliminationTraitsType::DefaultOrderingFunc(
             asDerived(), variableIndex);
-        return eliminateMultifrontal(computedOrdering, function, variableIndex);
       }
+      return eliminateMultifrontal(computedOrdering, function, variableIndex);
     }
   }
 
