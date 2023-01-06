@@ -202,7 +202,9 @@ TEST(HybridBayesTree, Choose) {
 
   GaussianBayesTree gbt = isam.choose(assignment);
 
-  auto bayesTree = s.linearizedFactorGraph.eliminateMultifrontal();
+  // Specify ordering so it matches that of HybridGaussianISAM.
+  Ordering ordering(KeyVector{X(0), X(1), X(2), X(3), M(0), M(1), M(2)});
+  auto bayesTree = s.linearizedFactorGraph.eliminateMultifrontal(ordering);
 
   auto expected_gbt = bayesTree->choose(assignment);
 
