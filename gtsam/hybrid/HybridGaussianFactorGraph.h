@@ -53,6 +53,15 @@ GTSAM_EXPORT
 std::pair<boost::shared_ptr<HybridConditional>, HybridFactor::shared_ptr>
 EliminateHybrid(const HybridGaussianFactorGraph& factors, const Ordering& keys);
 
+/**
+ * @brief Return a Colamd constrained ordering where the discrete keys are
+ * eliminated after the continuous keys.
+ *
+ * @return const Ordering
+ */
+GTSAM_EXPORT const Ordering
+HybridOrdering(const HybridGaussianFactorGraph& graph);
+
 /* ************************************************************************* */
 template <>
 struct EliminationTraits<HybridGaussianFactorGraph> {
@@ -73,6 +82,12 @@ struct EliminationTraits<HybridGaussianFactorGraph> {
                    boost::shared_ptr<FactorType> >
   DefaultEliminate(const FactorGraphType& factors, const Ordering& keys) {
     return EliminateHybrid(factors, keys);
+  }
+  /// The default ordering generation function
+  static Ordering DefaultOrderingFunc(
+      const FactorGraphType& graph,
+      boost::optional<const VariableIndex&> variableIndex) {
+    return HybridOrdering(graph);
   }
 };
 
@@ -227,14 +242,6 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
    * @return double
    */
   double probPrime(const HybridValues& values) const;
-
-  /**
-   * @brief Return a Colamd constrained ordering where the discrete keys are
-   * eliminated after the continuous keys.
-   *
-   * @return const Ordering
-   */
-  const Ordering getHybridOrdering() const;
 
   /**
    * @brief Create a decision tree of factor graphs out of this hybrid factor
