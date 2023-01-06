@@ -111,7 +111,7 @@ class GTSAM_EXPORT HybridConditional
    * HybridConditional.
    */
   HybridConditional(
-      boost::shared_ptr<GaussianConditional> continuousConditional);
+      const boost::shared_ptr<GaussianConditional>& continuousConditional);
 
   /**
    * @brief Construct a new Hybrid Conditional object
@@ -119,7 +119,8 @@ class GTSAM_EXPORT HybridConditional
    * @param discreteConditional Conditional used to create the
    * HybridConditional.
    */
-  HybridConditional(boost::shared_ptr<DiscreteConditional> discreteConditional);
+  HybridConditional(
+      const boost::shared_ptr<DiscreteConditional>& discreteConditional);
 
   /**
    * @brief Construct a new Hybrid Conditional object
@@ -127,7 +128,7 @@ class GTSAM_EXPORT HybridConditional
    * @param gaussianMixture Gaussian Mixture Conditional used to create the
    * HybridConditional.
    */
-  HybridConditional(boost::shared_ptr<GaussianMixture> gaussianMixture);
+  HybridConditional(const boost::shared_ptr<GaussianMixture>& gaussianMixture);
 
   /// @}
   /// @name Testable

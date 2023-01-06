@@ -63,54 +63,25 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   /// @{
 
   /// Add HybridConditional to Bayes Net
-  using Base::add;
+  using Base::emplace_shared;
 
-  /// Add a Gaussian Mixture to the Bayes Net.
-  void addMixture(const GaussianMixture::shared_ptr &ptr) {
-    push_back(HybridConditional(ptr));
+  /// Add a conditional directly using a pointer.
+  template <class Conditional>
+  void emplace_back(Conditional *conditional) {
+    factors_.push_back(boost::make_shared<HybridConditional>(
+        boost::shared_ptr<Conditional>(conditional)));
   }
 
-  /// Add a Gaussian conditional to the Bayes Net.
-  void addGaussian(const GaussianConditional::shared_ptr &ptr) {
-    push_back(HybridConditional(ptr));
+  /// Add a conditional directly using a shared_ptr.
+  void push_back(boost::shared_ptr<HybridConditional> conditional) {
+    factors_.push_back(conditional);
   }
 
-  /// Add a discrete conditional to the Bayes Net.
-  void addDiscrete(const DiscreteConditional::shared_ptr &ptr) {
-    push_back(HybridConditional(ptr));
+  /// Add a conditional directly using implicit conversion.
+  void push_back(HybridConditional &&conditional) {
+    factors_.push_back(
+        boost::make_shared<HybridConditional>(std::move(conditional)));
   }
-
-  /// Add a Gaussian Mixture to the Bayes Net.
-  template <typename... T>
-  void emplaceMixture(T &&...args) {
-    push_back(HybridConditional(
-        boost::make_shared<GaussianMixture>(std::forward<T>(args)...)));
-  }
-
-  /// Add a Gaussian conditional to the Bayes Net.
-  template <typename... T>
-  void emplaceGaussian(T &&...args) {
-    push_back(HybridConditional(
-        boost::make_shared<GaussianConditional>(std::forward<T>(args)...)));
-  }
-
-  /// Add a discrete conditional to the Bayes Net.
-  template <typename... T>
-  void emplaceDiscrete(T &&...args) {
-    push_back(HybridConditional(
-        boost::make_shared<DiscreteConditional>(std::forward<T>(args)...)));
-  }
-
-  using Base::push_back;
-
-  /// Get a specific Gaussian mixture by index `i`.
-  GaussianMixture::shared_ptr atMixture(size_t i) const;
-
-  /// Get a specific Gaussian conditional by index `i`.
-  GaussianConditional::shared_ptr atGaussian(size_t i) const;
-
-  /// Get a specific discrete conditional by index `i`.
-  DiscreteConditional::shared_ptr atDiscrete(size_t i) const;
 
   /**
    * @brief Get the Gaussian Bayes Net which corresponds to a specific discrete
