@@ -25,7 +25,6 @@ from gtsam import (DiscreteConditional, DiscreteKeys, GaussianConditional,
 
 class TestHybridGaussianFactorGraph(GtsamTestCase):
     """Unit tests for HybridGaussianFactorGraph."""
-
     def test_create(self):
         """Test construction of hybrid factor graph."""
         model = noiseModel.Unit.Create(3)
@@ -42,9 +41,7 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         hfg.push_back(jf2)
         hfg.push_back(gmf)
 
-        hbn = hfg.eliminateSequential(
-            Ordering.ColamdConstrainedLastHybridGaussianFactorGraph(
-                hfg, [C(0)]))
+        hbn = hfg.eliminateSequential()
 
         self.assertEqual(hbn.size(), 2)
 
@@ -74,15 +71,14 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         dtf = gtsam.DecisionTreeFactor([(C(0), 2)], "0 1")
         hfg.push_back(dtf)
 
-        hbn = hfg.eliminateSequential(
-            Ordering.ColamdConstrainedLastHybridGaussianFactorGraph(
-                hfg, [C(0)]))
+        hbn = hfg.eliminateSequential()
 
         hv = hbn.optimize()
         self.assertEqual(hv.atDiscrete(C(0)), 1)
 
     @staticmethod
-    def tiny(num_measurements: int = 1, prior_mean: float = 5.0,
+    def tiny(num_measurements: int = 1,
+             prior_mean: float = 5.0,
              prior_sigma: float = 0.5) -> HybridBayesNet:
         """
         Create a tiny two variable hybrid model which represents
@@ -129,20 +125,23 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         bayesNet2 = self.tiny(prior_sigma=5.0, num_measurements=1)
         # bn1: # 1/sqrt(2*pi*0.5^2)
         # bn2: # 1/sqrt(2*pi*5.0^2)
-        expected_ratio = np.sqrt(2*np.pi*5.0**2)/np.sqrt(2*np.pi*0.5**2)
+        expected_ratio = np.sqrt(2 * np.pi * 5.0**2) / np.sqrt(
+            2 * np.pi * 0.5**2)
         mean0 = HybridValues()
         mean0.insert(X(0), [5.0])
         mean0.insert(Z(0), [5.0])
         mean0.insert(M(0), 0)
         self.assertAlmostEqual(bayesNet1.evaluate(mean0) /
-                               bayesNet2.evaluate(mean0), expected_ratio,
+                               bayesNet2.evaluate(mean0),
+                               expected_ratio,
                                delta=1e-9)
         mean1 = HybridValues()
         mean1.insert(X(0), [5.0])
         mean1.insert(Z(0), [5.0])
         mean1.insert(M(0), 1)
         self.assertAlmostEqual(bayesNet1.evaluate(mean1) /
-                               bayesNet2.evaluate(mean1), expected_ratio,
+                               bayesNet2.evaluate(mean1),
+                               expected_ratio,
                                delta=1e-9)
 
     @staticmethod
@@ -171,11 +170,13 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         return fg
 
     @classmethod
-    def estimate_marginals(cls, target, proposal_density: HybridBayesNet,
+    def estimate_marginals(cls,
+                           target,
+                           proposal_density: HybridBayesNet,
                            N=10000):
         """Do importance sampling to estimate discrete marginal P(mode)."""
         # Allocate space for marginals on mode.
-        marginals = np.zeros((2,))
+        marginals = np.zeros((2, ))
 
         # Do importance sampling.
         for s in range(N):
@@ -210,14 +211,15 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
             return bayesNet.evaluate(x)
 
         # Create proposal density on (x0, mode), making sure it has same mean:
-        posterior_information = 1/(prior_sigma**2) + 1/(0.5**2)
+        posterior_information = 1 / (prior_sigma**2) + 1 / (0.5**2)
         posterior_sigma = posterior_information**(-0.5)
-        proposal_density = self.tiny(
-            num_measurements=0, prior_mean=5.0, prior_sigma=posterior_sigma)
+        proposal_density = self.tiny(num_measurements=0,
+                                     prior_mean=5.0,
+                                     prior_sigma=posterior_sigma)
 
         # Estimate marginals using importance sampling.
-        marginals = self.estimate_marginals(
-            target=unnormalized_posterior, proposal_density=proposal_density)
+        marginals = self.estimate_marginals(target=unnormalized_posterior,
+                                            proposal_density=proposal_density)
         # print(f"True mode: {values.atDiscrete(M(0))}")
         # print(f"P(mode=0; Z) = {marginals[0]}")
         # print(f"P(mode=1; Z) = {marginals[1]}")
@@ -230,10 +232,7 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         self.assertEqual(fg.size(), 3)
 
         # Test elimination.
-        ordering = gtsam.Ordering()
-        ordering.push_back(X(0))
-        ordering.push_back(M(0))
-        posterior = fg.eliminateSequential(ordering)
+        posterior = fg.eliminateSequential()
 
         def true_posterior(x):
             """Posterior from elimination."""
@@ -241,8 +240,8 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
             return posterior.evaluate(x)
 
         # Estimate marginals using importance sampling.
-        marginals = self.estimate_marginals(
-            target=true_posterior, proposal_density=proposal_density)
+        marginals = self.estimate_marginals(target=true_posterior,
+                                            proposal_density=proposal_density)
         # print(f"True mode: {values.atDiscrete(M(0))}")
         # print(f"P(mode=0; z0) = {marginals[0]}")
         # print(f"P(mode=1; z0) = {marginals[1]}")
@@ -253,8 +252,7 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
 
     @staticmethod
     def calculate_ratio(bayesNet: HybridBayesNet,
-                        fg: HybridGaussianFactorGraph,
-                        sample: HybridValues):
+                        fg: HybridGaussianFactorGraph, sample: HybridValues):
         """Calculate ratio between Bayes net and factor graph."""
         return bayesNet.evaluate(sample) / fg.probPrime(sample) if \
             fg.probPrime(sample) > 0 else 0
@@ -285,14 +283,15 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
             return bayesNet.evaluate(x)
 
         # Create proposal density on (x0, mode), making sure it has same mean:
-        posterior_information = 1/(prior_sigma**2) + 2.0/(3.0**2)
+        posterior_information = 1 / (prior_sigma**2) + 2.0 / (3.0**2)
         posterior_sigma = posterior_information**(-0.5)
-        proposal_density = self.tiny(
-            num_measurements=0, prior_mean=5.0, prior_sigma=posterior_sigma)
+        proposal_density = self.tiny(num_measurements=0,
+                                     prior_mean=5.0,
+                                     prior_sigma=posterior_sigma)
 
         # Estimate marginals using importance sampling.
-        marginals = self.estimate_marginals(
-            target=unnormalized_posterior, proposal_density=proposal_density)
+        marginals = self.estimate_marginals(target=unnormalized_posterior,
+                                            proposal_density=proposal_density)
         # print(f"True mode: {values.atDiscrete(M(0))}")
         # print(f"P(mode=0; Z) = {marginals[0]}")
         # print(f"P(mode=1; Z) = {marginals[1]}")
@@ -319,10 +318,7 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
                 self.assertAlmostEqual(ratio, expected_ratio)
 
         # Test elimination.
-        ordering = gtsam.Ordering()
-        ordering.push_back(X(0))
-        ordering.push_back(M(0))
-        posterior = fg.eliminateSequential(ordering)
+        posterior = fg.eliminateSequential()
 
         # Calculate ratio between Bayes net probability and the factor graph:
         expected_ratio = self.calculate_ratio(posterior, fg, values)
