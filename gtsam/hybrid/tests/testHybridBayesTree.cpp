@@ -37,9 +37,8 @@ using symbol_shorthand::X;
 TEST(HybridBayesTree, OptimizeMultifrontal) {
   Switching s(4);
 
-  Ordering hybridOrdering = s.linearizedFactorGraph.getHybridOrdering();
   HybridBayesTree::shared_ptr hybridBayesTree =
-      s.linearizedFactorGraph.eliminateMultifrontal(hybridOrdering);
+      s.linearizedFactorGraph.eliminateMultifrontal();
   HybridValues delta = hybridBayesTree->optimize();
 
   VectorValues expectedValues;
@@ -203,17 +202,7 @@ TEST(HybridBayesTree, Choose) {
 
   GaussianBayesTree gbt = isam.choose(assignment);
 
-  Ordering ordering;
-  ordering += X(0);
-  ordering += X(1);
-  ordering += X(2);
-  ordering += X(3);
-  ordering += M(0);
-  ordering += M(1);
-  ordering += M(2);
-
-  // TODO(Varun) get segfault if ordering not provided
-  auto bayesTree = s.linearizedFactorGraph.eliminateMultifrontal(ordering);
+  auto bayesTree = s.linearizedFactorGraph.eliminateMultifrontal();
 
   auto expected_gbt = bayesTree->choose(assignment);
 
