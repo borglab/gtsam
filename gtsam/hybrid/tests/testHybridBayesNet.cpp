@@ -93,8 +93,7 @@ TEST(HybridBayesNet, evaluateHybrid) {
 
   // Create hybrid Bayes net.
   HybridBayesNet bayesNet;
-  bayesNet.push_back(GaussianConditional::sharedMeanAndStddev(
-      X(0), 2 * I_1x1, X(1), Vector1(-4.0), 5.0));
+  bayesNet.push_back(continuousConditional);
   bayesNet.emplace_back(
       new GaussianMixture({X(1)}, {}, {Asia}, {conditional0, conditional1}));
   bayesNet.emplace_back(new DiscreteConditional(Asia, "99/1"));

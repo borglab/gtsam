@@ -51,33 +51,51 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   /// @{
 
   /// GTSAM-style printing
-  void print(
-      const std::string &s = "",
-      const KeyFormatter &formatter = DefaultKeyFormatter) const override;
+  void print(const std::string &s = "", const KeyFormatter &formatter =
+                                            DefaultKeyFormatter) const override;
 
   /// GTSAM-style equals
-  bool equals(const This& fg, double tol = 1e-9) const;
-  
+  bool equals(const This &fg, double tol = 1e-9) const;
+
   /// @}
   /// @name Standard Interface
   /// @{
 
-  /// Add HybridConditional to Bayes Net
-  using Base::emplace_shared;
+  /**
+   * @brief Add a hybrid conditional using a shared_ptr.
+   *
+   * This is the "native" push back, as this class stores hybrid conditionals.
+   */
+  void push_back(boost::shared_ptr<HybridConditional> conditional) {
+    factors_.push_back(conditional);
+  }
 
-  /// Add a conditional directly using a pointer.
+  /**
+   * Preferred: add a conditional directly using a pointer.
+   *
+   * Examples:
+   *   hbn.emplace_back(new GaussianMixture(...)));
+   *   hbn.emplace_back(new GaussianConditional(...)));
+   *   hbn.emplace_back(new DiscreteConditional(...)));
+   */
   template <class Conditional>
   void emplace_back(Conditional *conditional) {
     factors_.push_back(boost::make_shared<HybridConditional>(
         boost::shared_ptr<Conditional>(conditional)));
   }
 
-  /// Add a conditional directly using a shared_ptr.
-  void push_back(boost::shared_ptr<HybridConditional> conditional) {
-    factors_.push_back(conditional);
-  }
-
-  /// Add a conditional directly using implicit conversion.
+  /**
+   * Add a conditional using a shared_ptr, using implicit conversion to
+   * a HybridConditional.
+   *
+   * This is useful when you create a conditional shared pointer as you need it
+   * somewhere else.
+   *
+   * Example:
+   *   auto shared_ptr_to_a_conditional =
+   *     boost::make_shared<GaussianMixture>(...);
+   *  hbn.push_back(shared_ptr_to_a_conditional);
+   */
   void push_back(HybridConditional &&conditional) {
     factors_.push_back(
         boost::make_shared<HybridConditional>(std::move(conditional)));
@@ -214,8 +232,7 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    *
    * @param prunedDecisionTree
    */
-  void updateDiscreteConditionals(
-      const DecisionTreeFactor::shared_ptr &prunedDecisionTree);
+  void updateDiscreteConditionals(const DecisionTreeFactor &prunedDecisionTree);
 
   /** Serialization function */
   friend class boost::serialization::access;
