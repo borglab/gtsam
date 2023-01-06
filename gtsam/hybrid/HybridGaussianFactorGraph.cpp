@@ -59,6 +59,21 @@ namespace gtsam {
 template class EliminateableFactorGraph<HybridGaussianFactorGraph>;
 
 /* ************************************************************************ */
+const Ordering HybridOrdering(const HybridGaussianFactorGraph &graph) {
+  KeySet discrete_keys = graph.discreteKeys();
+  for (auto &factor : graph) {
+    for (const DiscreteKey &k : factor->discreteKeys()) {
+      discrete_keys.insert(k.first);
+    }
+  }
+
+  const VariableIndex index(graph);
+  Ordering ordering = Ordering::ColamdConstrainedLast(
+      index, KeyVector(discrete_keys.begin(), discrete_keys.end()), true);
+  return ordering;
+}
+
+/* ************************************************************************ */
 static GaussianFactorGraphTree addGaussian(
     const GaussianFactorGraphTree &gfgTree,
     const GaussianFactor::shared_ptr &factor) {
@@ -446,21 +461,6 @@ void HybridGaussianFactorGraph::add(DecisionTreeFactor &&factor) {
 /* ************************************************************************ */
 void HybridGaussianFactorGraph::add(DecisionTreeFactor::shared_ptr factor) {
   FactorGraph::add(boost::make_shared<HybridDiscreteFactor>(factor));
-}
-
-/* ************************************************************************ */
-const Ordering HybridGaussianFactorGraph::getHybridOrdering() const {
-  KeySet discrete_keys = discreteKeys();
-  for (auto &factor : factors_) {
-    for (const DiscreteKey &k : factor->discreteKeys()) {
-      discrete_keys.insert(k.first);
-    }
-  }
-
-  const VariableIndex index(factors_);
-  Ordering ordering = Ordering::ColamdConstrainedLast(
-      index, KeyVector(discrete_keys.begin(), discrete_keys.end()), true);
-  return ordering;
 }
 
 /* ************************************************************************ */
