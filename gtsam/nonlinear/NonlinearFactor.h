@@ -41,13 +41,17 @@ namespace gtsam {
 // These typedefs and aliases will help with making the evaluateError interface
 // independent of boost
 using OptionalNoneType = std::nullptr_t;
-#define OptionalNone = nullptr
+// TODO: Change this to OptionalMatrixNone
+#define OptionalNone static_cast<Matrix*>(nullptr)
 template <typename T = void>
 using OptionalMatrixTypeT = Matrix*;
+template <typename T = void>
+using MatrixTypeT = Matrix;
 using OptionalMatrixType = Matrix*;
 // These typedefs and aliases will help with making the unwhitenedError interface
 // independent of boost
 using OptionalMatrixVecType = std::vector<Matrix>*;
+#define OptionalMatrixVecNone static_cast<std::vector<Matrix>*>(nullptr)
 #else
 // creating a none value to use when declaring our interfaces
 using OptionalNoneType = boost::none_t;
@@ -56,6 +60,7 @@ template <typename T = void>
 using OptionalMatrixTypeT = boost::optional<Matrix&>;
 using OptionalMatrixType = boost::optional<Matrix&>;
 using OptionalMatrixVecType = boost::optional<std::vector<Matrix>&>;
+#define OptionalMatrixVecNone boost::none
 #endif
 /**
  * Nonlinear factor base class
@@ -252,10 +257,10 @@ public:
    * If the optional arguments is specified, it should compute
    * both the function evaluation and its derivative(s) in H.
    */
-  virtual Vector unwhitenedError(const Values& x, OptionalMatrixVecType H = OptionalNone) const = 0;
-#ifdef NO_BOOST_C17
+  virtual Vector unwhitenedError(const Values& x, OptionalMatrixVecType H = OptionalMatrixVecNone) const = 0;
+#ifdef NO_BOOST_CPP17
   // support taking in the actual vector instead of the pointer as well
-  Vector unwhitenedError(const Values& x, std::vector<Matrix>& H) {
+  Vector unwhitenedError(const Values& x, std::vector<Matrix>& H) const {
 	  return unwhitenedError(x, &H);
   }
 #endif
@@ -565,7 +570,7 @@ protected:
    */
   Vector unwhitenedError(
       const Values& x,
-      OptionalMatrixVecType H = OptionalNone) const override {
+      OptionalMatrixVecType H = OptionalMatrixVecNone) const override {
     return unwhitenedError(boost::mp11::index_sequence_for<ValueTypes...>{}, x,
                            H);
   }
@@ -599,8 +604,15 @@ protected:
   virtual Vector evaluateError(const ValueTypes&... x,
                                OptionalMatrixTypeT<ValueTypes>... H) const = 0;
 
-  /// @}
+#ifdef NO_BOOST_CPP17
+  // if someone uses the evaluateError function by supplying all the optional
+  // arguments then redirect the call to the one which takes pointers
+  Vector evaluateError(const ValueTypes&... x, MatrixTypeT<ValueTypes>&... H) const {
+	  return evaluateError(x..., (&H)...);
+  }
+#endif
 
+  /// @}
   /// @name Convenience method overloads
   /// @{
 
@@ -630,7 +642,7 @@ protected:
                   "or Matrix*");
 	// if they pass all matrices then we want to pass their pointers instead
 	if constexpr (are_all_mat) {
-		return evaluateError(x..., (&OptionalJacArgs)...);
+		return evaluateError(x..., (&H)...);
 	} else {
     return evaluateError(x..., std::forward<OptionalJacArgs>(H)..., static_cast<OptionalMatrixType>(OptionalNone));
 	}
@@ -659,7 +671,7 @@ protected:
   inline Vector unwhitenedError(
       boost::mp11::index_sequence<Indices...>,  //
       const Values& x,
-      OptionalMatrixVecType H = OptionalNone) const {
+      OptionalMatrixVecType H = OptionalMatrixVecNone) const {
     if (this->active(x)) {
       if (H) {
         return evaluateError(x.at<ValueTypes>(keys_[Indices])...,

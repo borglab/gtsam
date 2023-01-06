@@ -152,7 +152,7 @@ public:
 
   /// vector of errors
   Vector evaluateError(const NavState& p,
-      boost::optional<Matrix&> H = boost::none) const override;
+      OptionalMatrixType H = OptionalNone) const override;
 
   inline const Point3 & measurementIn() const {
     return nT_;
