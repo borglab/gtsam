@@ -62,6 +62,7 @@ protected:
 public:
   typedef NoiseModelFactorN<POINT, TRANSFORM, POINT> Base;
   typedef ReferenceFrameFactor<POINT, TRANSFORM> This;
+  using Base::evaluateError;
 
   typedef POINT Point;
   typedef TRANSFORM Transform;
@@ -95,9 +96,8 @@ public:
 
   /** Combined cost and derivative function using boost::optional */
   Vector evaluateError(const Point& global, const Transform& trans, const Point& local,
-        OptionalMatrixType Dforeign = OptionalNone,
-        OptionalMatrixType Dtrans = OptionalNone,
-        OptionalMatrixType Dlocal = OptionalNone) const override {
+        OptionalMatrixType Dforeign, OptionalMatrixType Dtrans,
+        OptionalMatrixType Dlocal) const override {
     Point newlocal = transform_point<Transform,Point>(trans, global, Dtrans, Dforeign);
     if (Dlocal) {
       *Dlocal = -1* Matrix::Identity(traits<Point>::dimension, traits<Point>::dimension);

@@ -45,6 +45,7 @@ class TranslationFactor : public NoiseModelFactorN<Point3, Point3> {
   Point3 measured_w_aZb_;
 
  public:
+  using NoiseModelFactor2<Point3, Point3>::evaluateError;
   /// default constructor
   TranslationFactor() {}
 
@@ -65,8 +66,8 @@ class TranslationFactor : public NoiseModelFactorN<Point3, Point3> {
    */
   Vector evaluateError(
       const Point3& Ta, const Point3& Tb,
-      OptionalMatrixType H1 = OptionalNone,
-      OptionalMatrixType H2 = OptionalNone) const override {
+      OptionalMatrixType H1,
+      OptionalMatrixType H2) const override {
     const Point3 dir = Tb - Ta;
     Matrix33 H_predicted_dir;
     const Point3 predicted = normalize(dir, H1 || H2 ? &H_predicted_dir : nullptr);

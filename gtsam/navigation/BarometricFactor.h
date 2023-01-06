@@ -38,6 +38,7 @@ class GTSAM_EXPORT BarometricFactor : public NoiseModelFactorN<Pose3, double> {
     double nT_;  ///< Height Measurement based on a standard atmosphere
 
    public:
+    using Base::evaluateError;
     /// shorthand for a smart pointer to a factor
     typedef boost::shared_ptr<BarometricFactor> shared_ptr;
 
@@ -76,10 +77,8 @@ class GTSAM_EXPORT BarometricFactor : public NoiseModelFactorN<Pose3, double> {
                 double tol = 1e-9) const override;
 
     /// vector of errors
-    Vector evaluateError(
-        const Pose3& p, const double& b,
-        OptionalMatrixType H = OptionalNone,
-        OptionalMatrixType H2 = OptionalNone) const override;
+    Vector evaluateError(const Pose3& p, const double& b, 
+            OptionalMatrixType H, OptionalMatrixType H2) const override;
 
     inline const double& measurementIn() const { return nT_; }
 

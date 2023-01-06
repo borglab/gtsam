@@ -54,6 +54,7 @@ class FrobeniusPrior : public NoiseModelFactorN<Rot> {
   Eigen::Matrix<double, Dim, 1> vecM_;  ///< vectorized matrix to approximate
 
  public:
+  using NoiseModelFactor1<Rot>::evaluateError;
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   /// Constructor
@@ -64,8 +65,7 @@ class FrobeniusPrior : public NoiseModelFactorN<Rot> {
   }
 
   /// Error is just Frobenius norm between Rot element and vectorized matrix M.
-  Vector evaluateError(const Rot& R,
-                       OptionalMatrixType H = OptionalNone) const override {
+  Vector evaluateError(const Rot& R, OptionalMatrixType H) const override {
     return R.vec(H) - vecM_;  // Jacobian is computed only when needed.
   }
 };
@@ -108,6 +108,7 @@ class FrobeniusBetweenFactor : public NoiseModelFactorN<Rot, Rot> {
   enum { Dim = Rot::VectorN2::RowsAtCompileTime };
 
  public:
+  using NoiseModelFactor2<Rot, Rot>::evaluateError;
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   /// @name Constructor

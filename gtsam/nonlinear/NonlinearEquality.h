@@ -46,6 +46,7 @@ class NonlinearEquality: public NoiseModelFactorN<VALUE> {
 
 public:
   typedef VALUE T;
+  using NoiseModelFactor1<VALUE>::evaluateError;
 
 private:
 

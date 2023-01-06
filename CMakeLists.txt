@@ -8,6 +8,7 @@ endif()
 
 option(GTSAM_NO_BOOST_CPP17 "Require and use boost" ON)
 add_definitions(-Wno-deprecated-declarations)
+add_definitions(-ftemplate-backtrace-limit=0)
 
   set(CMAKE_CXX_STANDARD 17)
 if (GTSAM_NO_BOOST_CPP17)

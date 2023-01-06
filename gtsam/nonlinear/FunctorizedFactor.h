@@ -87,8 +87,7 @@ class FunctorizedFactor : public NoiseModelFactorN<T> {
         NonlinearFactor::shared_ptr(new FunctorizedFactor<R, T>(*this)));
   }
 
-  Vector evaluateError(const T &params, OptionalMatrixType H =
-                                            OptionalNone) const override {
+  Vector evaluateError(const T &params, OptionalMatrixType H) const override {
     R x = func_(params, H);
     Vector error = traits<R>::Local(measured_, x);
     return error;
@@ -193,8 +192,7 @@ class FunctorizedFactor2 : public NoiseModelFactorN<T1, T2> {
 
   Vector evaluateError(
       const T1 &params1, const T2 &params2,
-      OptionalMatrixType H1 = OptionalNone,
-      OptionalMatrixType H2 = OptionalNone) const override {
+      OptionalMatrixType H1, OptionalMatrixType H2) const override {
     R x = func_(params1, params2, H1, H2);
     Vector error = traits<R>::Local(measured_, x);
     return error;

@@ -179,6 +179,7 @@ private:
   PreintegratedImuMeasurements _PIM_;
 
 public:
+  using Base::evaluateError;
 
   /** Shorthand for a smart pointer to a factor */
 #if !defined(_MSC_VER) && __GNUC__ == 4 && __GNUC_MINOR__ > 5

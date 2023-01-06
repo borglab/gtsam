@@ -38,6 +38,7 @@ class EssentialMatrixFactor : public NoiseModelFactorN<EssentialMatrix> {
   typedef EssentialMatrixFactor This;
 
  public:
+  using Base::evaluateError;
   /**
    *  Constructor
    *  @param key Essential Matrix variable key
@@ -90,8 +91,7 @@ class EssentialMatrixFactor : public NoiseModelFactorN<EssentialMatrix> {
 
   /// vector of errors returns 1D vector
   Vector evaluateError(
-      const EssentialMatrix& E,
-      OptionalMatrixType H = OptionalNone) const override {
+      const EssentialMatrix& E, OptionalMatrixType H) const override {
     Vector error(1);
     error << E.error(vA_, vB_, H);
     return error;
@@ -115,6 +115,7 @@ class EssentialMatrixFactor2
   typedef EssentialMatrixFactor2 This;
 
  public:
+  using Base::evaluateError;
   /**
    *  Constructor
    *  @param key1 Essential Matrix variable key
@@ -173,8 +174,7 @@ class EssentialMatrixFactor2
    */
   Vector evaluateError(
       const EssentialMatrix& E, const double& d,
-      OptionalMatrixType DE = OptionalNone,
-      OptionalMatrixType Dd = OptionalNone) const override {
+      OptionalMatrixType DE, OptionalMatrixType Dd) const override {
     // We have point x,y in image 1
     // Given a depth Z, the corresponding 3D point P1 = Z*(x,y,1) = (x,y,1)/d
     // We then convert to second camera by P2 = 1R2'*(P1-1T2)
@@ -235,6 +235,7 @@ class EssentialMatrixFactor3 : public EssentialMatrixFactor2 {
   Rot3 cRb_;  ///< Rotation from body to camera frame
 
  public:
+  using Base::evaluateError;
   /**
    *  Constructor
    *  @param key1 Essential Matrix variable key
@@ -284,8 +285,7 @@ class EssentialMatrixFactor3 : public EssentialMatrixFactor2 {
    */
   Vector evaluateError(
       const EssentialMatrix& E, const double& d,
-      OptionalMatrixType DE = OptionalNone,
-      OptionalMatrixType Dd = OptionalNone) const override {
+      OptionalMatrixType DE, OptionalMatrixType Dd) const override {
     if (!DE) {
       // Convert E from body to camera frame
       EssentialMatrix cameraE = cRb_ * E;
@@ -332,6 +332,7 @@ class EssentialMatrixFactor4
   typedef Eigen::Matrix<double, 2, DimK> JacobianCalibration;
 
  public:
+  using Base::evaluateError;
   /**
    *  Constructor
    *  @param keyE Essential Matrix (from camera B to A) variable key
@@ -372,8 +373,7 @@ class EssentialMatrixFactor4
    */
   Vector evaluateError(
       const EssentialMatrix& E, const CALIBRATION& K,
-      OptionalMatrixType H1 = OptionalNone,
-      OptionalMatrixType H2 = OptionalNone) const override {
+      OptionalMatrixType H1, OptionalMatrixType H2) const override {
     // converting from pixel coordinates to normalized coordinates cA and cB
     JacobianCalibration cA_H_K;  // dcA/dK
     JacobianCalibration cB_H_K;  // dcB/dK

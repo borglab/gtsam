@@ -42,6 +42,7 @@ class GTSAM_EXPORT ShonanFactor : public NoiseModelFactorN<SOn, SOn> {
   using Rot = typename std::conditional<d == 2, Rot2, Rot3>::type;
 
 public:
+  using NoiseModelFactor2<SOn, SOn>::evaluateError;
   /// @name Constructor
   /// @{
 
@@ -71,10 +72,7 @@ public:
 
   /// Error is Frobenius norm between Q1*P*R12 and Q2*P, where P=[I_3x3;0]
   /// projects down from SO(p) to the Stiefel manifold of px3 matrices.
-  Vector
-  evaluateError(const SOn &Q1, const SOn &Q2,
-                OptionalMatrixType H1 = OptionalNone,
-                OptionalMatrixType H2 = OptionalNone) const override;
+  Vector evaluateError(const SOn& Q1, const SOn& Q2, OptionalMatrixType H1, OptionalMatrixType H2) const override;
   /// @}
 
 private:
