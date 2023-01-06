@@ -44,11 +44,19 @@ const GaussianMixture::Conditionals &GaussianMixture::conditionals() const {
 
 /* *******************************************************************************/
 GaussianMixture::GaussianMixture(
+    KeyVector &&continuousFrontals, KeyVector &&continuousParents,
+    DiscreteKeys &&discreteParents,
+    std::vector<GaussianConditional::shared_ptr> &&conditionals)
+    : GaussianMixture(continuousFrontals, continuousParents, discreteParents,
+                      Conditionals(discreteParents, conditionals)) {}
+
+/* *******************************************************************************/
+GaussianMixture::GaussianMixture(
     const KeyVector &continuousFrontals, const KeyVector &continuousParents,
     const DiscreteKeys &discreteParents,
-    const std::vector<GaussianConditional::shared_ptr> &conditionalsList)
+    const std::vector<GaussianConditional::shared_ptr> &conditionals)
     : GaussianMixture(continuousFrontals, continuousParents, discreteParents,
-                      Conditionals(discreteParents, conditionalsList)) {}
+                      Conditionals(discreteParents, conditionals)) {}
 
 /* *******************************************************************************/
 GaussianFactorGraphTree GaussianMixture::add(

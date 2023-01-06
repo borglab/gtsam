@@ -677,11 +677,11 @@ TEST(HybridGaussianFactorGraph, EliminateTiny1) {
                  X(0), Vector1(14.1421), I_1x1 * 2.82843),
              conditional1 = boost::make_shared<GaussianConditional>(
                  X(0), Vector1(10.1379), I_1x1 * 2.02759);
-  GaussianMixture gm({X(0)}, {}, {mode}, {conditional0, conditional1});
-  expectedBayesNet.emplaceMixture(gm);  // copy :-(
+  expectedBayesNet.emplace_back(
+      new GaussianMixture({X(0)}, {}, {mode}, {conditional0, conditional1}));
 
   // Add prior on mode.
-  expectedBayesNet.emplaceDiscrete(mode, "74/26");
+  expectedBayesNet.emplace_back(new DiscreteConditional(mode, "74/26"));
 
   // Test elimination
   Ordering ordering;
@@ -712,11 +712,11 @@ TEST(HybridGaussianFactorGraph, EliminateTiny2) {
                  X(0), Vector1(17.3205), I_1x1 * 3.4641),
              conditional1 = boost::make_shared<GaussianConditional>(
                  X(0), Vector1(10.274), I_1x1 * 2.0548);
-  GaussianMixture gm({X(0)}, {}, {mode}, {conditional0, conditional1});
-  expectedBayesNet.emplaceMixture(gm);  // copy :-(
+  expectedBayesNet.emplace_back(
+      new GaussianMixture({X(0)}, {}, {mode}, {conditional0, conditional1}));
 
   // Add prior on mode.
-  expectedBayesNet.emplaceDiscrete(mode, "23/77");
+  expectedBayesNet.emplace_back(new DiscreteConditional(mode, "23/77"));
 
   // Test elimination
   Ordering ordering;
@@ -764,13 +764,10 @@ TEST(HybridGaussianFactorGraph, EliminateTiny22) {
   // regression
   EXPECT_DOUBLES_EQUAL(0.018253037966018862, expected_ratio, 1e-6);
 
-  // 3. Do sampling
+  // Test ratios for a number of independent samples:
   constexpr int num_samples = 100;
   for (size_t i = 0; i < num_samples; i++) {
-    // Sample from the bayes net
     HybridValues sample = bn.sample(&rng);
-
-    // Check that the ratio is constant.
     EXPECT_DOUBLES_EQUAL(expected_ratio, compute_ratio(&sample), 1e-6);
   }
 }
@@ -787,34 +784,34 @@ TEST(HybridGaussianFactorGraph, EliminateSwitchingNetwork) {
   for (size_t t : {0, 1, 2}) {
     // Create Gaussian mixture on Z(t) conditioned on X(t) and mode N(t):
     const auto noise_mode_t = DiscreteKey{N(t), 2};
-    GaussianMixture gm({Z(t)}, {X(t)}, {noise_mode_t},
-                       {GaussianConditional::sharedMeanAndStddev(
-                            Z(t), I_1x1, X(t), Z_1x1, 0.5),
-                        GaussianConditional::sharedMeanAndStddev(
-                            Z(t), I_1x1, X(t), Z_1x1, 3.0)});
-    bn.emplaceMixture(gm);  // copy :-(
+    bn.emplace_back(
+        new GaussianMixture({Z(t)}, {X(t)}, {noise_mode_t},
+                            {GaussianConditional::sharedMeanAndStddev(
+                                 Z(t), I_1x1, X(t), Z_1x1, 0.5),
+                             GaussianConditional::sharedMeanAndStddev(
+                                 Z(t), I_1x1, X(t), Z_1x1, 3.0)}));
 
     // Create prior on discrete mode M(t):
-    bn.emplaceDiscrete(noise_mode_t, "20/80");
+    bn.emplace_back(new DiscreteConditional(noise_mode_t, "20/80"));
   }
 
   // Add motion models:
   for (size_t t : {2, 1}) {
     // Create Gaussian mixture on X(t) conditioned on X(t-1) and mode M(t-1):
     const auto motion_model_t = DiscreteKey{M(t), 2};
-    GaussianMixture gm({X(t)}, {X(t - 1)}, {motion_model_t},
-                       {GaussianConditional::sharedMeanAndStddev(
-                            X(t), I_1x1, X(t - 1), Z_1x1, 0.2),
-                        GaussianConditional::sharedMeanAndStddev(
-                            X(t), I_1x1, X(t - 1), I_1x1, 0.2)});
-    bn.emplaceMixture(gm);  // copy :-(
+    bn.emplace_back(
+        new GaussianMixture({X(t)}, {X(t - 1)}, {motion_model_t},
+                            {GaussianConditional::sharedMeanAndStddev(
+                                 X(t), I_1x1, X(t - 1), Z_1x1, 0.2),
+                             GaussianConditional::sharedMeanAndStddev(
+                                 X(t), I_1x1, X(t - 1), I_1x1, 0.2)}));
 
     // Create prior on motion model M(t):
-    bn.emplaceDiscrete(motion_model_t, "40/60");
+    bn.emplace_back(new DiscreteConditional(motion_model_t, "40/60"));
   }
 
   // Create Gaussian prior on continuous X(0) using sharedMeanAndStddev:
-  bn.addGaussian(GaussianConditional::sharedMeanAndStddev(X(0), Z_1x1, 0.1));
+  bn.push_back(GaussianConditional::sharedMeanAndStddev(X(0), Z_1x1, 0.1));
 
   // Make sure we an sample from the Bayes net:
   EXPECT_LONGS_EQUAL(6, bn.sample().continuous().size());
@@ -822,7 +819,7 @@ TEST(HybridGaussianFactorGraph, EliminateSwitchingNetwork) {
   // Create measurements consistent with moving right every time:
   const VectorValues measurements{
       {Z(0), Vector1(0.0)}, {Z(1), Vector1(1.0)}, {Z(2), Vector1(2.0)}};
-  const auto fg = bn.toFactorGraph(measurements);
+  const HybridGaussianFactorGraph fg = bn.toFactorGraph(measurements);
 
   // Create ordering that eliminates in time order, then discrete modes:
   Ordering ordering;
@@ -835,11 +832,11 @@ TEST(HybridGaussianFactorGraph, EliminateSwitchingNetwork) {
   ordering.push_back(M(1));
   ordering.push_back(M(2));
 
-  // Test elimination result has correct size:
-  const auto posterior = fg.eliminateSequential(ordering);
+  // Do elimination:
+  const HybridBayesNet::shared_ptr posterior = fg.eliminateSequential(ordering);
   // GTSAM_PRINT(*posterior);
 
-  // Test elimination result has correct size:
+  // Test resulting posterior Bayes net has correct size:
   EXPECT_LONGS_EQUAL(8, posterior->size());
 
   // TODO(dellaert): below is copy/pasta from above, refactor
@@ -861,13 +858,10 @@ TEST(HybridGaussianFactorGraph, EliminateSwitchingNetwork) {
   // regression
   EXPECT_DOUBLES_EQUAL(0.0094526745785019472, expected_ratio, 1e-6);
 
-  // 3. Do sampling
+  // Test ratios for a number of independent samples:
   constexpr int num_samples = 100;
   for (size_t i = 0; i < num_samples; i++) {
-    // Sample from the bayes net
     HybridValues sample = bn.sample(&rng);
-
-    // Check that the ratio is constant.
     EXPECT_DOUBLES_EQUAL(expected_ratio, compute_ratio(&sample), 1e-6);
   }
 }

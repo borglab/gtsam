@@ -43,22 +43,22 @@ inline HybridBayesNet createHybridBayesNet(int num_measurements = 1,
   // Create Gaussian mixture z_i = x0 + noise for each measurement.
   for (int i = 0; i < num_measurements; i++) {
     const auto mode_i = manyModes ? DiscreteKey{M(i), 2} : mode;
-    GaussianMixture gm({Z(i)}, {X(0)}, {mode_i},
-                       {GaussianConditional::sharedMeanAndStddev(
-                            Z(i), I_1x1, X(0), Z_1x1, 0.5),
-                        GaussianConditional::sharedMeanAndStddev(
-                            Z(i), I_1x1, X(0), Z_1x1, 3)});
-    bayesNet.emplaceMixture(gm);  // copy :-(
+    bayesNet.emplace_back(
+        new GaussianMixture({Z(i)}, {X(0)}, {mode_i},
+                            {GaussianConditional::sharedMeanAndStddev(
+                                 Z(i), I_1x1, X(0), Z_1x1, 0.5),
+                             GaussianConditional::sharedMeanAndStddev(
+                                 Z(i), I_1x1, X(0), Z_1x1, 3)}));
   }
 
   // Create prior on X(0).
-  bayesNet.addGaussian(
+  bayesNet.push_back(
       GaussianConditional::sharedMeanAndStddev(X(0), Vector1(5.0), 0.5));
 
   // Add prior on mode.
   const size_t nrModes = manyModes ? num_measurements : 1;
   for (int i = 0; i < nrModes; i++) {
-    bayesNet.emplaceDiscrete(DiscreteKey{M(i), 2}, "4/6");
+    bayesNet.emplace_back(new DiscreteConditional({M(i), 2}, "4/6"));
   }
   return bayesNet;
 }
