@@ -26,10 +26,6 @@
 #include <gtsam/base/debug.h>
 #include <gtsam/base/VerticalBlockMatrix.h>
 
-#include <boost/assign/list_of.hpp>
-#include <boost/assign/std/list.hpp>  // for operator +=
-using namespace boost::assign;
-
 #include <gtsam/base/TestableAssertions.h>
 #include <CppUnitLite/TestHarness.h>
 
