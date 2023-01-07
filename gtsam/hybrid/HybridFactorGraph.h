@@ -19,14 +19,16 @@
 
 #pragma once
 
-#include <gtsam/discrete/DiscreteFactor.h>
-#include <gtsam/hybrid/HybridDiscreteFactor.h>
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/inference/FactorGraph.h>
-#include <gtsam/inference/Ordering.h>
 
 #include <boost/format.hpp>
+#include <unordered_map>
+
 namespace gtsam {
+
+class DiscreteFactor;
+class Ordering;
 
 using SharedFactor = boost::shared_ptr<Factor>;
 
@@ -81,16 +83,6 @@ class HybridFactorGraph : public FactorGraph<Factor> {
   using Base::resize;
 
   /**
-   * Add a discrete factor *pointer* to the internal discrete graph
-   * @param discreteFactor - boost::shared_ptr to the factor to add
-   */
-  template <typename FACTOR>
-  IsDiscrete<FACTOR> push_discrete(
-      const boost::shared_ptr<FACTOR>& discreteFactor) {
-    Base::push_back(boost::make_shared<HybridDiscreteFactor>(discreteFactor));
-  }
-
-  /**
    * Add a discrete-continuous (Hybrid) factor *pointer* to the graph
    * @param hybridFactor - boost::shared_ptr to the factor to add
    */
@@ -99,12 +91,10 @@ class HybridFactorGraph : public FactorGraph<Factor> {
     Base::push_back(hybridFactor);
   }
 
-  /// Construct a factor and add (shared pointer to it) to factor graph.
+  /// Construct a discrete factor and add shared pointer to the factor graph.
   template <class FACTOR, class... Args>
   IsDiscrete<FACTOR> emplace_discrete(Args&&... args) {
-    auto factor = boost::allocate_shared<FACTOR>(
-        Eigen::aligned_allocator<FACTOR>(), std::forward<Args>(args)...);
-    push_discrete(factor);
+    emplace_shared<FACTOR>(std::forward<Args>(args)...);
   }
 
   /// Construct a factor and add (shared pointer to it) to factor graph.
@@ -116,30 +106,16 @@ class HybridFactorGraph : public FactorGraph<Factor> {
   }
 
   /// Get all the discrete keys in the factor graph.
-  const KeySet discreteKeys() const {
-    KeySet discrete_keys;
-    for (auto& factor : factors_) {
-      if (auto p = boost::dynamic_pointer_cast<HybridFactor>(factor)) {
-        for (const DiscreteKey& k : p->discreteKeys()) {
-          discrete_keys.insert(k.first);
-        }
-      }
-    }
-    return discrete_keys;
-  }
+  DiscreteKeys discreteKeys() const;
+
+  /// Get all the discrete keys in the factor graph, as a set.
+  KeySet discreteKeySet() const;
+
+  /// Get a map from Key to corresponding DiscreteKey.
+  std::unordered_map<Key, DiscreteKey> discreteKeyMap() const;
 
   /// Get all the continuous keys in the factor graph.
-  const KeySet continuousKeys() const {
-    KeySet keys;
-    for (auto& factor : factors_) {
-      if (auto p = boost::dynamic_pointer_cast<HybridFactor>(factor)) {
-        for (const Key& key : p->continuousKeys()) {
-          keys.insert(key);
-        }
-      }
-    }
-    return keys;
-  }
+  const KeySet continuousKeySet() const;
 };
 
 }  // namespace gtsam
