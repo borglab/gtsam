@@ -36,7 +36,6 @@
 #include <cmath>
 #include <random>
 
-using namespace boost::assign;
 using namespace std::placeholders;
 using namespace gtsam;
 using namespace std;
@@ -51,9 +50,8 @@ Point3 point3_(const Unit3& p) {
 }
 
 TEST(Unit3, point3) {
-  vector<Point3> ps;
-  ps += Point3(1, 0, 0), Point3(0, 1, 0), Point3(0, 0, 1), Point3(1, 1, 0)
-      / sqrt(2.0);
+  const vector<Point3> ps{Point3(1, 0, 0), Point3(0, 1, 0), Point3(0, 0, 1),
+                          Point3(1, 1, 0) / sqrt(2.0)};
   Matrix actualH, expectedH;
   for(Point3 p: ps) {
     Unit3 s(p);

@@ -183,8 +183,7 @@ TEST_UNSAFE(DiscreteMarginals, truss2) {
     F[j] /= sum;
 
     // Marginals
-    vector<double> table;
-    table += F[j], T[j];
+    const vector<double> table{F[j], T[j]};
     DecisionTreeFactor expectedM(key[j], table);
     DiscreteFactor::shared_ptr actualM = marginals(j);
     EXPECT(assert_equal(

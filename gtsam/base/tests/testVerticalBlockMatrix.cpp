@@ -18,14 +18,14 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/VerticalBlockMatrix.h>
-#include <boost/assign/list_of.hpp>
 
-using namespace std;
+#include<list>
+#include<vector>
+
 using namespace gtsam;
-using boost::assign::list_of;
 
-list<size_t> L = list_of(3)(2)(1);
-vector<size_t> dimensions(L.begin(),L.end());
+const std::list<size_t> L{3, 2, 1};
+const std::vector<size_t> dimensions(L.begin(), L.end());
 
 //*****************************************************************************
 TEST(VerticalBlockMatrix, Constructor1) {

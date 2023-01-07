@@ -16,17 +16,14 @@
  * @brief unit tests for DSFMap
  */
 
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/DSFMap.h>
 
-#include <boost/assign/std/list.hpp>
-#include <boost/assign/std/set.hpp>
-using namespace boost::assign;
-
-#include <CppUnitLite/TestHarness.h>
-
 #include <iostream>
+#include <list>
+#include <map>
+#include <set>
 
-using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
@@ -65,9 +62,8 @@ TEST(DSFMap, merge3) {
 TEST(DSFMap, mergePairwiseMatches) {
 
   // Create some "matches"
-  typedef pair<size_t,size_t> Match;
-  list<Match> matches;
-  matches += Match(1,2), Match(2,3), Match(4,5), Match(4,6);
+  typedef std::pair<size_t, size_t> Match;
+  const std::list<Match> matches{{1, 2}, {2, 3}, {4, 5}, {4, 6}};
 
   // Merge matches
   DSFMap<size_t> dsf;
@@ -86,18 +82,17 @@ TEST(DSFMap, mergePairwiseMatches) {
 TEST(DSFMap, mergePairwiseMatches2) {
 
   // Create some measurements with image index and feature index
-  typedef pair<size_t,size_t> Measurement;
+  typedef std::pair<size_t,size_t> Measurement;
   Measurement m11(1,1),m12(1,2),m14(1,4); // in image 1
   Measurement m22(2,2),m23(2,3),m25(2,5),m26(2,6); // in image 2
 
   // Add them all
-  list<Measurement> measurements;
-  measurements += m11,m12,m14, m22,m23,m25,m26;
+  const std::list<Measurement> measurements{m11, m12, m14, m22, m23, m25, m26};
 
   // Create some "matches"
-  typedef pair<Measurement,Measurement> Match;
-  list<Match> matches;
-  matches += Match(m11,m22), Match(m12,m23), Match(m14,m25), Match(m14,m26);
+  typedef std::pair<Measurement, Measurement> Match;
+  const std::list<Match> matches{
+      {m11, m22}, {m12, m23}, {m14, m25}, {m14, m26}};
 
   // Merge matches
   DSFMap<Measurement> dsf;
@@ -114,26 +109,16 @@ TEST(DSFMap, mergePairwiseMatches2) {
 /* ************************************************************************* */
 TEST(DSFMap, sets){
   // Create some "matches"
-  typedef pair<size_t,size_t> Match;
-  list<Match> matches;
-  matches += Match(1,2), Match(2,3), Match(4,5), Match(4,6);
+  typedef const std::pair<size_t,size_t> Match;
+  const std::list<Match> matches{{1, 2}, {2, 3}, {4, 5}, {4, 6}};
 
   // Merge matches
   DSFMap<size_t> dsf;
   for(const Match& m: matches)
     dsf.merge(m.first,m.second);
 
-  map<size_t, set<size_t> > sets = dsf.sets();
-  set<size_t> s1, s2;
-  s1 += 1,2,3;
-  s2 += 4,5,6;
-
-  /*for(key_pair st: sets){
-    cout << "Set " << st.first << " :{";
-    for(const size_t s: st.second)
-      cout << s << ", ";
-    cout << "}" << endl;
-  }*/
+  std::map<size_t, std::set<size_t> > sets = dsf.sets();
+  const std::set<size_t> s1{1, 2, 3}, s2{4, 5, 6};
 
   EXPECT(s1 == sets[1]);
   EXPECT(s2 == sets[4]);
