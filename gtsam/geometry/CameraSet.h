@@ -35,56 +35,56 @@ template<class CAMERA>
 class CameraSet : public std::vector<CAMERA, Eigen::aligned_allocator<CAMERA> > {
 
 protected:
+ using Base = std::vector<CAMERA, typename Eigen::aligned_allocator<CAMERA>>;
 
-  /**
-   * 2D measurement and noise model for each of the m views
-   * The order is kept the same as the keys that we use to create the factor.
-   */
-  typedef typename CAMERA::Measurement Z;
-  typedef typename CAMERA::MeasurementVector ZVector;
+ /**
+  * 2D measurement and noise model for each of the m views
+  * The order is kept the same as the keys that we use to create the factor.
+  */
+ typedef typename CAMERA::Measurement Z;
+ typedef typename CAMERA::MeasurementVector ZVector;
 
-  static const int D = traits<CAMERA>::dimension; ///< Camera dimension
-  static const int ZDim = traits<Z>::dimension; ///< Measurement dimension
+ static const int D = traits<CAMERA>::dimension;  ///< Camera dimension
+ static const int ZDim = traits<Z>::dimension;    ///< Measurement dimension
 
-  /// Make a vector of re-projection errors
-  static Vector ErrorVector(const ZVector& predicted,
-      const ZVector& measured) {
+ /// Make a vector of re-projection errors
+ static Vector ErrorVector(const ZVector& predicted, const ZVector& measured) {
+   // Check size
+   size_t m = predicted.size();
+   if (measured.size() != m)
+     throw std::runtime_error("CameraSet::errors: size mismatch");
 
-    // Check size
-    size_t m = predicted.size();
-    if (measured.size() != m)
-      throw std::runtime_error("CameraSet::errors: size mismatch");
-
-    // Project and fill error vector
-    Vector b(ZDim * m);
-    for (size_t i = 0, row = 0; i < m; i++, row += ZDim) {
-      Vector bi = traits<Z>::Local(measured[i], predicted[i]);
-      if(ZDim==3 && std::isnan(bi(1))){ // if it is a stereo point and the right pixel is missing (nan)
-        bi(1) = 0;
-      }
-      b.segment<ZDim>(row) = bi;
-    }
-    return b;
+   // Project and fill error vector
+   Vector b(ZDim * m);
+   for (size_t i = 0, row = 0; i < m; i++, row += ZDim) {
+     Vector bi = traits<Z>::Local(measured[i], predicted[i]);
+     if (ZDim == 3 && std::isnan(bi(1))) {  // if it is a stereo point and the
+                                            // right pixel is missing (nan)
+       bi(1) = 0;
+     }
+     b.segment<ZDim>(row) = bi;
+   }
+   return b;
   }
 
 public:
+    using Base::Base;  // Inherit the vector constructors
 
-  /// Destructor
-  virtual ~CameraSet() = default;
+    /// Destructor
+    virtual ~CameraSet() = default;
 
-  /// Definitions for blocks of F
-  using MatrixZD = Eigen::Matrix<double, ZDim, D>;
-  using FBlocks = std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD>>;
+    /// Definitions for blocks of F
+    using MatrixZD = Eigen::Matrix<double, ZDim, D>;
+    using FBlocks = std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD>>;
 
-  /**
-   * print
-   * @param s optional string naming the factor
-   * @param keyFormatter optional formatter useful for printing Symbols
-   */
-  virtual void print(const std::string& s = "") const {
-    std::cout << s << "CameraSet, cameras = \n";
-    for (size_t k = 0; k < this->size(); ++k)
-      this->at(k).print(s);
+    /**
+     * print
+     * @param s optional string naming the factor
+     * @param keyFormatter optional formatter useful for printing Symbols
+     */
+    virtual void print(const std::string& s = "") const {
+      std::cout << s << "CameraSet, cameras = \n";
+      for (size_t k = 0; k < this->size(); ++k) this->at(k).print(s);
   }
 
   /// equals
