@@ -563,12 +563,10 @@ factor 4: Continuous [x2]
 ]
   b = [ -10 ]
   No noise model
-factor 5: Discrete [m0]
- P( m0 ):
+factor 5:  P( m0 ):
  Leaf  0.5
 
-factor 6: Discrete [m1 m0]
- P( m1 | m0 ):
+factor 6:  P( m1 | m0 ):
  Choice(m1) 
  0 Choice(m0) 
  0 0 Leaf 0.33333333
