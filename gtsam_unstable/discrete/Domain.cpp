@@ -37,8 +37,7 @@ double Domain::operator()(const DiscreteValues& values) const {
 
 /* ************************************************************************* */
 DecisionTreeFactor Domain::toDecisionTreeFactor() const {
-  DiscreteKeys keys;
-  keys += DiscreteKey(key(), cardinality_);
+  const DiscreteKeys keys{DiscreteKey(key(), cardinality_)};
   vector<double> table;
   for (size_t i1 = 0; i1 < cardinality_; ++i1) table.push_back(contains(i1));
   DecisionTreeFactor converted(keys, table);

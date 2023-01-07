@@ -22,14 +22,10 @@
 #include <gtsam/discrete/DecisionTree.h>
 
 #include <algorithm>
-#include <boost/assign/std/vector.hpp>
 #include <boost/format.hpp>
 #include <boost/make_shared.hpp>
-#include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
-#include <boost/tuple/tuple.hpp>
-#include <boost/type_traits/has_dereference.hpp>
-#include <boost/unordered_set.hpp>
+
 #include <cmath>
 #include <fstream>
 #include <list>
@@ -40,8 +36,6 @@
 #include <vector>
 
 namespace gtsam {
-
-  using boost::assign::operator+=;
 
   /****************************************************************************/
   // Node
@@ -535,8 +529,7 @@ namespace gtsam {
   template<typename L, typename Y>
   DecisionTree<L, Y>::DecisionTree(const L& label,
       const DecisionTree& f0, const DecisionTree& f1)  {
-    std::vector<DecisionTree> functions;
-    functions += f0, f1;
+    const std::vector<DecisionTree> functions{f0, f1};
     root_ = compose(functions.begin(), functions.end(), label);
   }
 
