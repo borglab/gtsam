@@ -50,47 +50,42 @@ void HybridNonlinearFactorGraph::print(const std::string& s,
 /* ************************************************************************* */
 HybridGaussianFactorGraph::shared_ptr HybridNonlinearFactorGraph::linearize(
     const Values& continuousValues) const {
+  using boost::dynamic_pointer_cast;
+
   // create an empty linear FG
   auto linearFG = boost::make_shared<HybridGaussianFactorGraph>();
 
   linearFG->reserve(size());
 
   // linearize all hybrid factors
-  for (auto&& factor : factors_) {
+  for (auto& f : factors_) {
     // First check if it is a valid factor
-    if (factor) {
-      // Check if the factor is a hybrid factor.
-      // It can be either a nonlinear MixtureFactor or a linear
-      // GaussianMixtureFactor.
-      if (factor->isHybrid()) {
-        // Check if it is a nonlinear mixture factor
-        if (auto nlmf = boost::dynamic_pointer_cast<MixtureFactor>(factor)) {
-          linearFG->push_back(nlmf->linearize(continuousValues));
-        } else {
-          linearFG->push_back(factor);
-        }
-
-        // Now check if the factor is a continuous only factor.
-      } else if (factor->isContinuous()) {
-        // In this case, we check if factor->inner() is nonlinear since
-        // HybridFactors wrap over continuous factors.
-        auto nlhf = boost::dynamic_pointer_cast<HybridNonlinearFactor>(factor);
-        if (auto nlf =
-                boost::dynamic_pointer_cast<NonlinearFactor>(nlhf->inner())) {
-          auto hgf = boost::make_shared<HybridGaussianFactor>(
-              nlf->linearize(continuousValues));
-          linearFG->push_back(hgf);
-        } else {
-          linearFG->push_back(factor);
-        }
-        // Finally if nothing else, we are discrete-only which doesn't need
-        // lineariztion.
-      } else {
-        linearFG->push_back(factor);
-      }
-
-    } else {
+    if (!f) {
+      // TODO(dellaert): why?
       linearFG->push_back(GaussianFactor::shared_ptr());
+      continue;
+    }
+    // Check if it is a nonlinear mixture factor
+    if (auto nlmf = dynamic_pointer_cast<MixtureFactor>(f)) {
+      const GaussianMixtureFactor::shared_ptr& gmf =
+          nlmf->linearize(continuousValues);
+      linearFG->push_back(gmf);
+    } else if (auto nlhf = dynamic_pointer_cast<HybridNonlinearFactor>(f)) {
+      // Nonlinear wrapper case:
+      const GaussianFactor::shared_ptr& gf =
+          nlhf->inner()->linearize(continuousValues);
+      const auto hgf = boost::make_shared<HybridGaussianFactor>(gf);
+      linearFG->push_back(hgf);
+    } else if (dynamic_pointer_cast<DiscreteFactor>(f) ||
+               dynamic_pointer_cast<HybridDiscreteFactor>(f)) {
+      // If discrete-only: doesn't need linearization.
+      linearFG->push_back(f);
+    } else {
+      auto& fr = *f;
+      throw std::invalid_argument(
+          std::string("HybridNonlinearFactorGraph::linearize: factor type "
+                      "not handled: ") +
+          demangle(typeid(fr).name()));
     }
   }
   return linearFG;
