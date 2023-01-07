@@ -435,7 +435,7 @@ TEST(HybridFactorGraph, Full_Elimination) {
 
     DiscreteFactorGraph discrete_fg;
     // TODO(Varun) Make this a function of HybridGaussianFactorGraph?
-    for (HybridFactor::shared_ptr& factor : (*remainingFactorGraph_partial)) {
+    for (auto& factor : (*remainingFactorGraph_partial)) {
       auto df = dynamic_pointer_cast<HybridDiscreteFactor>(factor);
       discrete_fg.push_back(df->inner());
     }

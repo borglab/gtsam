@@ -11,8 +11,9 @@
 
 /**
  * @file   HybridFactorGraph.h
- * @brief  Hybrid factor graph base class that uses type erasure
+ * @brief  Factor graph with utilities for hybrid factors.
  * @author Varun Agrawal
+ * @author Frank Dellaert
  * @date   May 28, 2022
  */
 
@@ -31,13 +32,11 @@ using SharedFactor = boost::shared_ptr<Factor>;
 
 /**
  * Hybrid Factor Graph
- * -----------------------
- * This is the base hybrid factor graph.
- * Everything inside needs to be hybrid factor or hybrid conditional.
+ * Factor graph with utilities for hybrid factors.
  */
-class HybridFactorGraph : public FactorGraph<HybridFactor> {
+class HybridFactorGraph : public FactorGraph<Factor> {
  public:
-  using Base = FactorGraph<HybridFactor>;
+  using Base = FactorGraph<Factor>;
   using This = HybridFactorGraph;              ///< this class
   using shared_ptr = boost::shared_ptr<This>;  ///< shared_ptr to This
 
@@ -140,8 +139,10 @@ class HybridFactorGraph : public FactorGraph<HybridFactor> {
   const KeySet discreteKeys() const {
     KeySet discrete_keys;
     for (auto& factor : factors_) {
-      for (const DiscreteKey& k : factor->discreteKeys()) {
-        discrete_keys.insert(k.first);
+      if (auto p = boost::dynamic_pointer_cast<HybridFactor>(factor)) {
+        for (const DiscreteKey& k : p->discreteKeys()) {
+          discrete_keys.insert(k.first);
+        }
       }
     }
     return discrete_keys;
@@ -151,8 +152,10 @@ class HybridFactorGraph : public FactorGraph<HybridFactor> {
   const KeySet continuousKeys() const {
     KeySet keys;
     for (auto& factor : factors_) {
-      for (const Key& key : factor->continuousKeys()) {
-        keys.insert(key);
+      if (auto p = boost::dynamic_pointer_cast<HybridFactor>(factor)) {
+        for (const Key& key : p->continuousKeys()) {
+          keys.insert(key);
+        }
       }
     }
     return keys;

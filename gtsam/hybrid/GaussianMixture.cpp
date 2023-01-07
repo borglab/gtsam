@@ -59,6 +59,8 @@ GaussianMixture::GaussianMixture(
                       Conditionals(discreteParents, conditionals)) {}
 
 /* *******************************************************************************/
+// TODO(dellaert): This is copy/paste: GaussianMixture should be derived from
+// GaussianMixtureFactor, no?
 GaussianFactorGraphTree GaussianMixture::add(
     const GaussianFactorGraphTree &sum) const {
   using Y = GraphAndConstant;
