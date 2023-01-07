@@ -16,7 +16,11 @@
  * @date   May 28, 2022
  */
 
+#include <gtsam/discrete/DecisionTreeFactor.h>
+#include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 #include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
+#include <gtsam/hybrid/MixtureFactor.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {
 
@@ -63,8 +67,7 @@ HybridGaussianFactorGraph::shared_ptr HybridNonlinearFactorGraph::linearize(
       const GaussianFactor::shared_ptr& gf = nlf->linearize(continuousValues);
       const auto hgf = boost::make_shared<HybridGaussianFactor>(gf);
       linearFG->push_back(hgf);
-    } else if (dynamic_pointer_cast<DiscreteFactor>(f) ||
-               dynamic_pointer_cast<HybridDiscreteFactor>(f)) {
+    } else if (dynamic_pointer_cast<DecisionTreeFactor>(f)) {
       // If discrete-only: doesn't need linearization.
       linearFG->push_back(f);
     } else {

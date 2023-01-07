@@ -206,13 +206,11 @@ struct Switching {
    */
   void addModeChain(HybridNonlinearFactorGraph *fg,
                     std::string discrete_transition_prob = "1/2 3/2") {
-    auto prior = boost::make_shared<DiscreteDistribution>(modes[0], "1/1");
-    fg->push_discrete(prior);
+    fg->emplace_shared<DiscreteDistribution>(modes[0], "1/1");
     for (size_t k = 0; k < K - 2; k++) {
       auto parents = {modes[k]};
-      auto conditional = boost::make_shared<DiscreteConditional>(
-          modes[k + 1], parents, discrete_transition_prob);
-      fg->push_discrete(conditional);
+      fg->emplace_shared<DiscreteConditional>(modes[k + 1], parents,
+                                              discrete_transition_prob);
     }
   }
 
@@ -224,13 +222,11 @@ struct Switching {
    */
   void addModeChain(HybridGaussianFactorGraph *fg,
                     std::string discrete_transition_prob = "1/2 3/2") {
-    auto prior = boost::make_shared<DiscreteDistribution>(modes[0], "1/1");
-    fg->push_discrete(prior);
+    fg->emplace_shared<DiscreteDistribution>(modes[0], "1/1");
     for (size_t k = 0; k < K - 2; k++) {
       auto parents = {modes[k]};
-      auto conditional = boost::make_shared<DiscreteConditional>(
-          modes[k + 1], parents, discrete_transition_prob);
-      fg->push_discrete(conditional);
+      fg->emplace_shared<DiscreteConditional>(modes[k + 1], parents,
+                                              discrete_transition_prob);
     }
   }
 };
