@@ -496,8 +496,7 @@ TEST(HybridFactorGraph, Printing) {
 
   string expected_hybridFactorGraph = R"(
 size: 7
-factor 0: Continuous [x0]
-
+factor 0: 
   A[x0] = [
 	10
 ]
@@ -549,15 +548,13 @@ factor 2: Hybrid [x1 x2; m1]{
   No noise model
 
 }
-factor 3: Continuous [x1]
-
+factor 3: 
   A[x1] = [
 	10
 ]
   b = [ -10 ]
   No noise model
-factor 4: Continuous [x2]
-
+factor 4: 
   A[x2] = [
 	10
 ]

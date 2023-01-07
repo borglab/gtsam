@@ -21,7 +21,6 @@
 #include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
-#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/inference/EliminateableFactorGraph.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/Ordering.h>
@@ -118,59 +117,6 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
       : Base(graph) {}
 
   /// @}
-  /// @name Adding factors.
-  /// @{
-
-  using Base::add;
-  using Base::push_back;
-  using Base::reserve;
-
-  /// Add a Jacobian factor to the factor graph.
-  void add(JacobianFactor&& factor);
-
-  /// Add a Jacobian factor as a shared ptr.
-  void add(const boost::shared_ptr<JacobianFactor>& factor);
-
-  /// Add a DecisionTreeFactor to the factor graph.
-  void add(DecisionTreeFactor&& factor);
-
-  /// Add a DecisionTreeFactor as a shared ptr.
-  void add(const boost::shared_ptr<DecisionTreeFactor>& factor);
-
-  /**
-   * Add a gaussian factor *pointer* to the internal gaussian factor graph
-   * @param gaussianFactor - boost::shared_ptr to the factor to add
-   */
-  template <typename FACTOR>
-  IsGaussian<FACTOR> push_gaussian(
-      const boost::shared_ptr<FACTOR>& gaussianFactor) {
-    Base::push_back(boost::make_shared<HybridGaussianFactor>(gaussianFactor));
-  }
-
-  /// Construct a factor and add (shared pointer to it) to factor graph.
-  template <class FACTOR, class... Args>
-  IsGaussian<FACTOR> emplace_gaussian(Args&&... args) {
-    auto factor = boost::allocate_shared<FACTOR>(
-        Eigen::aligned_allocator<FACTOR>(), std::forward<Args>(args)...);
-    push_gaussian(factor);
-  }
-
-  /**
-   * @brief Add a single factor shared pointer to the hybrid factor graph.
-   * Dynamically handles the factor type and assigns it to the correct
-   * underlying container.
-   *
-   * @param sharedFactor The factor to add to this factor graph.
-   */
-  void push_back(const SharedFactor& sharedFactor) {
-    if (auto p = boost::dynamic_pointer_cast<GaussianFactor>(sharedFactor)) {
-      push_gaussian(p);
-    } else {
-      Base::push_back(sharedFactor);
-    }
-  }
-
-  /// @}
   /// @name Testable
   /// @{
 
@@ -183,11 +129,6 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
   /// @}
   /// @name Standard Interface
   /// @{
-
-  using Base::empty;
-  using Base::size;
-  using Base::operator[];
-  using Base::resize;
 
   /**
    * @brief Compute error for each discrete assignment,
