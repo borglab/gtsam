@@ -144,7 +144,7 @@ namespace simulated2D {
 
     /// Return error and optional derivative
     Vector evaluateError(const Pose& x, OptionalMatrixType H) const override {
-      return (prior(x, H) - measured_);
+      return (simulated2D::prior(x, H) - measured_);
     }
 
     ~GenericPrior() override {}

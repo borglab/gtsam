@@ -92,7 +92,7 @@ struct PointPrior3D: public NoiseModelFactor1<Point3> {
    * @return Vector error between prior value and x (Dimension: 3)
    */
   Vector evaluateError(const Point3& x, OptionalMatrixType H) const override {
-    return prior(x, H) - measured_;
+    return simulated3D::prior(x, H) - measured_;
   }
 };
 
