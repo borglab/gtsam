@@ -65,8 +65,7 @@ HybridGaussianFactorGraph::shared_ptr HybridNonlinearFactorGraph::linearize(
       linearFG->push_back(gmf);
     } else if (auto nlf = dynamic_pointer_cast<NonlinearFactor>(f)) {
       const GaussianFactor::shared_ptr& gf = nlf->linearize(continuousValues);
-      const auto hgf = boost::make_shared<HybridGaussianFactor>(gf);
-      linearFG->push_back(hgf);
+      linearFG->push_back(gf);
     } else if (dynamic_pointer_cast<DecisionTreeFactor>(f)) {
       // If discrete-only: doesn't need linearization.
       linearFG->push_back(f);

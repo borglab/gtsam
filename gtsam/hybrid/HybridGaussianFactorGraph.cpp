@@ -28,7 +28,6 @@
 #include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/hybrid/HybridEliminationTree.h>
 #include <gtsam/hybrid/HybridFactor.h>
-#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 #include <gtsam/hybrid/HybridJunctionTree.h>
 #include <gtsam/inference/EliminateableFactorGraph-inst.h>
@@ -112,8 +111,6 @@ GaussianFactorGraphTree HybridGaussianFactorGraph::assembleGraphTree() const {
         // TODO(dellaert): in C++20, we can use std::visit.
         continue;
       }
-    } else if (auto gf = dynamic_pointer_cast<HybridGaussianFactor>(f)) {
-      result = addGaussian(result, gf->inner());
     } else if (dynamic_pointer_cast<DecisionTreeFactor>(f)) {
       // Don't do anything for discrete-only factors
       // since we want to eliminate continuous values only.
@@ -136,8 +133,8 @@ continuousElimination(const HybridGaussianFactorGraph &factors,
                       const Ordering &frontalKeys) {
   GaussianFactorGraph gfg;
   for (auto &f : factors) {
-    if (auto hgf = dynamic_pointer_cast<HybridGaussianFactor>(f)) {
-      gfg.push_back(hgf->inner());
+    if (auto gf = dynamic_pointer_cast<GaussianFactor>(f)) {
+      gfg.push_back(gf);
     } else if (auto orphan = dynamic_pointer_cast<OrphanWrapper>(f)) {
       // Ignore orphaned clique.
       // TODO(dellaert): is this correct? If so explain here.
@@ -151,8 +148,7 @@ continuousElimination(const HybridGaussianFactorGraph &factors,
   }
 
   auto result = EliminatePreferCholesky(gfg, frontalKeys);
-  return {boost::make_shared<HybridConditional>(result.first),
-          boost::make_shared<HybridGaussianFactor>(result.second)};
+  return {boost::make_shared<HybridConditional>(result.first), result.second};
 }
 
 /* ************************************************************************ */
@@ -429,28 +425,6 @@ EliminateHybrid(const HybridGaussianFactorGraph &factors,
 }
 
 /* ************************************************************************ */
-void HybridGaussianFactorGraph::add(JacobianFactor &&factor) {
-  FactorGraph::add(boost::make_shared<HybridGaussianFactor>(std::move(factor)));
-}
-
-/* ************************************************************************ */
-void HybridGaussianFactorGraph::add(
-    const boost::shared_ptr<JacobianFactor> &factor) {
-  FactorGraph::add(boost::make_shared<HybridGaussianFactor>(factor));
-}
-
-/* ************************************************************************ */
-void HybridGaussianFactorGraph::add(DecisionTreeFactor &&factor) {
-  FactorGraph::add(std::move(factor));
-}
-
-/* ************************************************************************ */
-void HybridGaussianFactorGraph::add(
-    const DecisionTreeFactor::shared_ptr &factor) {
-  FactorGraph::add(factor);
-}
-
-/* ************************************************************************ */
 const Ordering HybridGaussianFactorGraph::getHybridOrdering() const {
   const KeySet discrete_keys = discreteKeySet();
   const VariableIndex index(factors_);
@@ -472,19 +446,13 @@ AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::error(
     if (auto gaussianMixture = dynamic_pointer_cast<GaussianMixtureFactor>(f)) {
       // Compute factor error and add it.
       error_tree = error_tree + gaussianMixture->error(continuousValues);
-
-    } else if (auto hybridGaussianFactor =
-                   dynamic_pointer_cast<HybridGaussianFactor>(f)) {
+    } else if (auto gaussian = dynamic_pointer_cast<GaussianFactor>(f)) {
       // If continuous only, get the (double) error
       // and add it to the error_tree
-      GaussianFactor::shared_ptr gaussian = hybridGaussianFactor->inner();
-
-      // Compute the error of the gaussian factor.
       double error = gaussian->error(continuousValues);
       // Add the gaussian factor error to every leaf of the error tree.
       error_tree = error_tree.apply(
           [error](double leaf_value) { return leaf_value + error; });
-
     } else if (dynamic_pointer_cast<DecisionTreeFactor>(f)) {
       // If factor at `idx` is discrete-only, we skip.
       continue;

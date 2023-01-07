@@ -27,7 +27,6 @@
 #include <gtsam/hybrid/HybridBayesTree.h>
 #include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/hybrid/HybridFactor.h>
-#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 #include <gtsam/hybrid/HybridGaussianISAM.h>
 #include <gtsam/hybrid/HybridValues.h>
@@ -64,7 +63,7 @@ TEST(HybridGaussianFactorGraph, Creation) {
 
   HybridGaussianFactorGraph hfg;
 
-  hfg.add(HybridGaussianFactor(JacobianFactor(X(0), I_3x3, Z_3x1)));
+  hfg.emplace_shared<JacobianFactor>(X(0), I_3x3, Z_3x1);
 
   // Define a gaussian mixture conditional P(x0|x1, c0) and add it to the factor
   // graph
@@ -85,7 +84,7 @@ TEST(HybridGaussianFactorGraph, EliminateSequential) {
   // Test elimination of a single variable.
   HybridGaussianFactorGraph hfg;
 
-  hfg.add(HybridGaussianFactor(JacobianFactor(0, I_3x3, Z_3x1)));
+  hfg.emplace_shared<JacobianFactor>(0, I_3x3, Z_3x1);
 
   auto result = hfg.eliminatePartialSequential(KeyVector{0});
 
