@@ -26,7 +26,6 @@
 #include <gtsam/hybrid/GaussianMixture.h>
 #include <gtsam/hybrid/GaussianMixtureFactor.h>
 #include <gtsam/hybrid/HybridConditional.h>
-#include <gtsam/hybrid/HybridDiscreteFactor.h>
 #include <gtsam/hybrid/HybridEliminationTree.h>
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/hybrid/HybridGaussianFactor.h>
@@ -47,7 +46,6 @@
 #include <iterator>
 #include <memory>
 #include <stdexcept>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -59,6 +57,15 @@ namespace gtsam {
 template class EliminateableFactorGraph<HybridGaussianFactorGraph>;
 
 /* ************************************************************************ */
+// Throw a runtime exception for method specified in string s, and factor f:
+static void throwRuntimeError(const std::string &s,
+                              const boost::shared_ptr<Factor> &f) {
+  auto &fr = *f;
+  throw std::runtime_error(s + " not implemented for factor type " +
+                           demangle(typeid(fr).name()) + ".");
+}
+
+/* ************************************************************************ */
 static GaussianFactorGraphTree addGaussian(
     const GaussianFactorGraphTree &gfgTree,
     const GaussianFactor::shared_ptr &factor) {
@@ -67,7 +74,6 @@ static GaussianFactorGraphTree addGaussian(
     GaussianFactorGraph result;
     result.push_back(factor);
     return GaussianFactorGraphTree(GraphAndConstant(result, 0.0));
-
   } else {
     auto add = [&factor](const GraphAndConstant &graph_z) {
       auto result = graph_z.graph;
@@ -103,8 +109,7 @@ GaussianFactorGraphTree HybridGaussianFactorGraph::assembleGraphTree() const {
       }
     } else if (auto gf = dynamic_pointer_cast<HybridGaussianFactor>(f)) {
       result = addGaussian(result, gf->inner());
-    } else if (dynamic_pointer_cast<DiscreteFactor>(f) ||
-               dynamic_pointer_cast<HybridDiscreteFactor>(f)) {
+    } else if (dynamic_pointer_cast<DecisionTreeFactor>(f)) {
       // Don't do anything for discrete-only factors
       // since we want to eliminate continuous values only.
       continue;
@@ -116,10 +121,7 @@ GaussianFactorGraphTree HybridGaussianFactorGraph::assembleGraphTree() const {
           "gtsam::assembleGraphTree: BayesTreeOrphanWrapper is not implemented "
           "yet.");
     } else {
-      auto &fr = *f;
-      throw std::invalid_argument(
-          std::string("gtsam::assembleGraphTree: factor type not handled: ") +
-          demangle(typeid(fr).name()));
+      throwRuntimeError("gtsam::assembleGraphTree", f);
     }
   }
 
@@ -129,16 +131,18 @@ GaussianFactorGraphTree HybridGaussianFactorGraph::assembleGraphTree() const {
 }
 
 /* ************************************************************************ */
-static std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>
+static std::pair<HybridConditional::shared_ptr, boost::shared_ptr<Factor>>
 continuousElimination(const HybridGaussianFactorGraph &factors,
                       const Ordering &frontalKeys) {
+  using boost::dynamic_pointer_cast;
   GaussianFactorGraph gfg;
   for (auto &fp : factors) {
-    if (auto ptr = boost::dynamic_pointer_cast<HybridGaussianFactor>(fp)) {
-      gfg.push_back(ptr->inner());
-    } else if (auto ptr = boost::static_pointer_cast<HybridConditional>(fp)) {
-      gfg.push_back(
-          boost::static_pointer_cast<GaussianConditional>(ptr->inner()));
+    if (auto hgf = dynamic_pointer_cast<HybridGaussianFactor>(fp)) {
+      gfg.push_back(hgf->inner());
+    } else if (auto hc = dynamic_pointer_cast<HybridConditional>(fp)) {
+      auto gc = hc->asGaussian();
+      assert(gc);
+      gfg.push_back(gc);
     } else {
       // It is an orphan wrapped conditional
     }
@@ -150,18 +154,17 @@ continuousElimination(const HybridGaussianFactorGraph &factors,
 }
 
 /* ************************************************************************ */
-static std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>
+static std::pair<HybridConditional::shared_ptr, boost::shared_ptr<Factor>>
 discreteElimination(const HybridGaussianFactorGraph &factors,
                     const Ordering &frontalKeys) {
   DiscreteFactorGraph dfg;
 
   for (auto &factor : factors) {
-    if (auto p = boost::dynamic_pointer_cast<HybridDiscreteFactor>(factor)) {
-      dfg.push_back(p->inner());
-    } else if (auto p = boost::static_pointer_cast<HybridConditional>(factor)) {
-      auto discrete_conditional =
-          boost::static_pointer_cast<DiscreteConditional>(p->inner());
-      dfg.push_back(discrete_conditional);
+    if (auto dtf = boost::dynamic_pointer_cast<DecisionTreeFactor>(factor)) {
+      dfg.push_back(dtf);
+    } else if (auto hc =
+                   boost::static_pointer_cast<HybridConditional>(factor)) {
+      dfg.push_back(hc->asDiscrete());
     } else {
       // It is an orphan wrapper
     }
@@ -170,8 +173,7 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
   // NOTE: This does sum-product. For max-product, use EliminateForMPE.
   auto result = EliminateDiscrete(dfg, frontalKeys);
 
-  return {boost::make_shared<HybridConditional>(result.first),
-          boost::make_shared<HybridDiscreteFactor>(result.second)};
+  return {boost::make_shared<HybridConditional>(result.first), result.second};
 }
 
 /* ************************************************************************ */
@@ -189,7 +191,7 @@ GaussianFactorGraphTree removeEmpty(const GaussianFactorGraphTree &sum) {
 }
 
 /* ************************************************************************ */
-static std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>
+static std::pair<HybridConditional::shared_ptr, boost::shared_ptr<Factor>>
 hybridElimination(const HybridGaussianFactorGraph &factors,
                   const Ordering &frontalKeys,
                   const KeyVector &continuousSeparator,
@@ -291,7 +293,7 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
         boost::make_shared<DecisionTreeFactor>(discreteSeparator, fdt);
 
     return {boost::make_shared<HybridConditional>(gaussianMixture),
-            boost::make_shared<HybridDiscreteFactor>(discreteFactor)};
+            discreteFactor};
   } else {
     // Create a resulting GaussianMixtureFactor on the separator.
     return {boost::make_shared<HybridConditional>(gaussianMixture),
@@ -314,7 +316,7 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
  * eliminate a discrete variable (as specified in the ordering), the result will
  * be INCORRECT and there will be NO error raised.
  */
-std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr>  //
+std::pair<HybridConditional::shared_ptr, boost::shared_ptr<Factor>>  //
 EliminateHybrid(const HybridGaussianFactorGraph &factors,
                 const Ordering &frontalKeys) {
   // NOTE: Because we are in the Conditional Gaussian regime there are only
@@ -374,14 +376,7 @@ EliminateHybrid(const HybridGaussianFactorGraph &factors,
   }
 
   // Build a map from keys to DiscreteKeys
-  std::unordered_map<Key, DiscreteKey> mapFromKeyToDiscreteKey;
-  for (auto &&factor : factors) {
-    if (auto p = boost::dynamic_pointer_cast<HybridFactor>(factor)) {
-      for (auto &k : p->discreteKeys()) {
-        mapFromKeyToDiscreteKey[k.first] = k;
-      }
-    }
-  }
+  auto mapFromKeyToDiscreteKey = factors.discreteKeyMap();
 
   // Fill in discrete frontals and continuous frontals.
   std::set<DiscreteKey> discreteFrontals;
@@ -433,23 +428,25 @@ void HybridGaussianFactorGraph::add(JacobianFactor &&factor) {
 }
 
 /* ************************************************************************ */
-void HybridGaussianFactorGraph::add(boost::shared_ptr<JacobianFactor> &factor) {
+void HybridGaussianFactorGraph::add(
+    const boost::shared_ptr<JacobianFactor> &factor) {
   FactorGraph::add(boost::make_shared<HybridGaussianFactor>(factor));
 }
 
 /* ************************************************************************ */
 void HybridGaussianFactorGraph::add(DecisionTreeFactor &&factor) {
-  FactorGraph::add(boost::make_shared<HybridDiscreteFactor>(std::move(factor)));
+  FactorGraph::add(std::move(factor));
 }
 
 /* ************************************************************************ */
-void HybridGaussianFactorGraph::add(DecisionTreeFactor::shared_ptr factor) {
-  FactorGraph::add(boost::make_shared<HybridDiscreteFactor>(factor));
+void HybridGaussianFactorGraph::add(
+    const DecisionTreeFactor::shared_ptr &factor) {
+  FactorGraph::add(factor);
 }
 
 /* ************************************************************************ */
 const Ordering HybridGaussianFactorGraph::getHybridOrdering() const {
-  KeySet discrete_keys = discreteKeys();
+  const KeySet discrete_keys = discreteKeySet();
   const VariableIndex index(factors_);
   Ordering ordering = Ordering::ColamdConstrainedLast(
       index, KeyVector(discrete_keys.begin(), discrete_keys.end()), true);
@@ -484,16 +481,11 @@ AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::error(
       error_tree = error_tree.apply(
           [error](double leaf_value) { return leaf_value + error; });
 
-    } else if (dynamic_pointer_cast<DiscreteFactor>(f) ||
-               dynamic_pointer_cast<HybridDiscreteFactor>(f)) {
+    } else if (dynamic_pointer_cast<DecisionTreeFactor>(f)) {
       // If factor at `idx` is discrete-only, we skip.
       continue;
     } else {
-      auto &fr = *f;
-      throw std::invalid_argument(
-          std::string(
-              "HybridGaussianFactorGraph::error: factor type not handled: ") +
-          demangle(typeid(fr).name()));
+      throwRuntimeError("HybridGaussianFactorGraph::error", f);
     }
   }
 
@@ -503,9 +495,14 @@ AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::error(
 /* ************************************************************************ */
 double HybridGaussianFactorGraph::error(const HybridValues &values) const {
   double error = 0.0;
-  for (auto &factor : factors_) {
-    if (auto p = boost::dynamic_pointer_cast<HybridFactor>(factor)) {
-      error += p->error(values);
+  for (auto &f : factors_) {
+    if (auto hf = boost::dynamic_pointer_cast<HybridFactor>(f)) {
+      // TODO(dellaert): needs to change when we discard other wrappers.
+      error += hf->error(values);
+    } else if (auto dtf = boost::dynamic_pointer_cast<DecisionTreeFactor>(f)) {
+      error -= log((*dtf)(values.discrete()));
+    } else {
+      throwRuntimeError("HybridGaussianFactorGraph::error", f);
     }
   }
   return error;

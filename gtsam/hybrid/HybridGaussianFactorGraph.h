@@ -50,13 +50,13 @@ class HybridValues;
  * @ingroup hybrid
  */
 GTSAM_EXPORT
-std::pair<boost::shared_ptr<HybridConditional>, HybridFactor::shared_ptr>
+std::pair<boost::shared_ptr<HybridConditional>, boost::shared_ptr<Factor>>
 EliminateHybrid(const HybridGaussianFactorGraph& factors, const Ordering& keys);
 
 /* ************************************************************************* */
 template <>
 struct EliminationTraits<HybridGaussianFactorGraph> {
-  typedef HybridFactor FactorType;  ///< Type of factors in factor graph
+  typedef Factor FactorType;  ///< Type of factors in factor graph
   typedef HybridGaussianFactorGraph
       FactorGraphType;  ///< Type of the factor graph (e.g.
                         ///< HybridGaussianFactorGraph)
@@ -70,7 +70,7 @@ struct EliminationTraits<HybridGaussianFactorGraph> {
   typedef HybridJunctionTree JunctionTreeType;  ///< Type of Junction tree
   /// The default dense elimination function
   static std::pair<boost::shared_ptr<ConditionalType>,
-                   boost::shared_ptr<FactorType> >
+                   boost::shared_ptr<FactorType>>
   DefaultEliminate(const FactorGraphType& factors, const Ordering& keys) {
     return EliminateHybrid(factors, keys);
   }
@@ -80,7 +80,6 @@ struct EliminationTraits<HybridGaussianFactorGraph> {
  * Hybrid Gaussian Factor Graph
  * -----------------------
  * This is the linearized version of a hybrid factor graph.
- * Everything inside needs to be hybrid factor or hybrid conditional.
  *
  * @ingroup hybrid
  */
@@ -130,13 +129,13 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
   void add(JacobianFactor&& factor);
 
   /// Add a Jacobian factor as a shared ptr.
-  void add(boost::shared_ptr<JacobianFactor>& factor);
+  void add(const boost::shared_ptr<JacobianFactor>& factor);
 
   /// Add a DecisionTreeFactor to the factor graph.
   void add(DecisionTreeFactor&& factor);
 
   /// Add a DecisionTreeFactor as a shared ptr.
-  void add(DecisionTreeFactor::shared_ptr factor);
+  void add(const boost::shared_ptr<DecisionTreeFactor>& factor);
 
   /**
    * Add a gaussian factor *pointer* to the internal gaussian factor graph

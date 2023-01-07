@@ -18,15 +18,11 @@
 
 #pragma once
 
-#include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
-#include <gtsam/hybrid/HybridGaussianFactorGraph.h>
-#include <gtsam/hybrid/MixtureFactor.h>
-#include <gtsam/inference/Ordering.h>
-#include <gtsam/nonlinear/NonlinearFactor.h>
 
-#include <boost/format.hpp>
 namespace gtsam {
+
+class HybridGaussianFactorGraph;
 
 /**
  * Nonlinear Hybrid Factor Graph

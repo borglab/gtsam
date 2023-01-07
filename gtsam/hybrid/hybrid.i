@@ -68,17 +68,6 @@ virtual class HybridConditional {
   double error(const gtsam::HybridValues& values) const;
 };
 
-#include <gtsam/hybrid/HybridDiscreteFactor.h>
-virtual class HybridDiscreteFactor {
-  HybridDiscreteFactor(gtsam::DecisionTreeFactor dtf);
-  void print(string s = "HybridDiscreteFactor\n",
-             const gtsam::KeyFormatter& keyFormatter =
-                 gtsam::DefaultKeyFormatter) const;
-  bool equals(const gtsam::HybridDiscreteFactor& other, double tol = 1e-9) const;
-  gtsam::Factor* inner();
-  double error(const gtsam::HybridValues &values) const;
-};
-
 #include <gtsam/hybrid/GaussianMixtureFactor.h>
 class GaussianMixtureFactor : gtsam::HybridFactor {
   GaussianMixtureFactor(
@@ -217,9 +206,7 @@ class HybridNonlinearFactorGraph {
   HybridNonlinearFactorGraph(const gtsam::HybridNonlinearFactorGraph& graph);
   void push_back(gtsam::HybridFactor* factor);
   void push_back(gtsam::NonlinearFactor* factor);
-  void push_back(gtsam::HybridDiscreteFactor* factor);
-  void add(gtsam::NonlinearFactor* factor);
-  void add(gtsam::DiscreteFactor* factor);
+  void push_back(gtsam::DiscreteFactor* factor);
   gtsam::HybridGaussianFactorGraph linearize(const gtsam::Values& continuousValues) const;
 
   bool empty() const;
