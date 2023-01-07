@@ -151,9 +151,9 @@ TEST(HybridBayesTree, Optimize) {
 
   DiscreteFactorGraph dfg;
   for (auto&& f : *remainingFactorGraph) {
-    auto factor = dynamic_pointer_cast<HybridDiscreteFactor>(f);
-    dfg.push_back(
-        boost::dynamic_pointer_cast<DecisionTreeFactor>(factor->inner()));
+    auto discreteFactor = dynamic_pointer_cast<DecisionTreeFactor>(f);
+    assert(discreteFactor);
+    dfg.push_back(discreteFactor);
   }
 
   // Add the probabilities for each branch

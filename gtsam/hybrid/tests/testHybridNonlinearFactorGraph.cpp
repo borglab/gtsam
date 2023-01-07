@@ -311,8 +311,7 @@ TEST(HybridsGaussianElimination, Eliminate_x1) {
   Ordering ordering;
   ordering += X(1);
 
-  std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr> result =
-      EliminateHybrid(factors, ordering);
+  auto result = EliminateHybrid(factors, ordering);
   CHECK(result.first);
   EXPECT_LONGS_EQUAL(1, result.first->nrFrontals());
   CHECK(result.second);
@@ -350,7 +349,7 @@ TEST(HybridGaussianElimination, EliminateHybrid_2_Variable) {
   ordering += X(1);
 
   HybridConditional::shared_ptr hybridConditionalMixture;
-  HybridFactor::shared_ptr factorOnModes;
+  boost::shared_ptr<Factor> factorOnModes;
 
   std::tie(hybridConditionalMixture, factorOnModes) =
       EliminateHybrid(factors, ordering);
@@ -364,12 +363,8 @@ TEST(HybridGaussianElimination, EliminateHybrid_2_Variable) {
   // 1 parent, which is the mode
   EXPECT_LONGS_EQUAL(1, gaussianConditionalMixture->nrParents());
 
-  // This is now a HybridDiscreteFactor
-  auto hybridDiscreteFactor =
-      dynamic_pointer_cast<HybridDiscreteFactor>(factorOnModes);
-  // Access the type-erased inner object and convert to DecisionTreeFactor
-  auto discreteFactor =
-      dynamic_pointer_cast<DecisionTreeFactor>(hybridDiscreteFactor->inner());
+  // This is now a discreteFactor
+  auto discreteFactor = dynamic_pointer_cast<DecisionTreeFactor>(factorOnModes);
   CHECK(discreteFactor);
   EXPECT_LONGS_EQUAL(1, discreteFactor->discreteKeys().size());
   EXPECT(discreteFactor->root_->isLeaf() == false);
@@ -436,8 +431,9 @@ TEST(HybridFactorGraph, Full_Elimination) {
     DiscreteFactorGraph discrete_fg;
     // TODO(Varun) Make this a function of HybridGaussianFactorGraph?
     for (auto& factor : (*remainingFactorGraph_partial)) {
-      auto df = dynamic_pointer_cast<HybridDiscreteFactor>(factor);
-      discrete_fg.push_back(df->inner());
+      auto df = dynamic_pointer_cast<DecisionTreeFactor>(factor);
+      assert(df);
+      discrete_fg.push_back(df);
     }
 
     ordering.clear();
