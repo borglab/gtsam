@@ -54,7 +54,7 @@ TEST(HybridFactorGraph, GaussianFactorGraph) {
   HybridNonlinearFactorGraph fg;
 
   // Add a simple prior factor to the nonlinear factor graph
-  fg.emplace_nonlinear<PriorFactor<double>>(X(0), 0, Isotropic::Sigma(1, 0.1));
+  fg.emplace_shared<PriorFactor<double>>(X(0), 0, Isotropic::Sigma(1, 0.1));
 
   // Linearization point
   Values linearizationPoint;
@@ -683,7 +683,7 @@ TEST(HybridFactorGraph, DefaultDecisionTree) {
   Pose2 prior(0.0, 0.0, 0.0);  // prior mean is at origin
   auto priorNoise = noiseModel::Diagonal::Sigmas(
       Vector3(0.3, 0.3, 0.1));  // 30cm std on x,y, 0.1 rad on theta
-  fg.emplace_nonlinear<PriorFactor<Pose2>>(X(0), prior, priorNoise);
+  fg.emplace_shared<PriorFactor<Pose2>>(X(0), prior, priorNoise);
 
   using PlanarMotionModel = BetweenFactor<Pose2>;
 
@@ -708,9 +708,9 @@ TEST(HybridFactorGraph, DefaultDecisionTree) {
   double range11 = std::sqrt(4.0 + 4.0), range22 = 2.0;
 
   // Add Bearing-Range factors
-  fg.emplace_nonlinear<BearingRangeFactor<Pose2, Point2>>(
+  fg.emplace_shared<BearingRangeFactor<Pose2, Point2>>(
       X(0), L(0), bearing11, range11, measurementNoise);
-  fg.emplace_nonlinear<BearingRangeFactor<Pose2, Point2>>(
+  fg.emplace_shared<BearingRangeFactor<Pose2, Point2>>(
       X(1), L(1), bearing22, range22, measurementNoise);
 
   // Create (deliberately inaccurate) initial estimate

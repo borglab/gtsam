@@ -21,17 +21,6 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-void HybridNonlinearFactorGraph::add(
-    boost::shared_ptr<NonlinearFactor> factor) {
-  FactorGraph::add(boost::make_shared<HybridNonlinearFactor>(factor));
-}
-
-/* ************************************************************************* */
-void HybridNonlinearFactorGraph::add(boost::shared_ptr<DiscreteFactor> factor) {
-  FactorGraph::add(boost::make_shared<HybridDiscreteFactor>(factor));
-}
-
-/* ************************************************************************* */
 void HybridNonlinearFactorGraph::print(const std::string& s,
                                        const KeyFormatter& keyFormatter) const {
   // Base::print(str, keyFormatter);
@@ -66,14 +55,12 @@ HybridGaussianFactorGraph::shared_ptr HybridNonlinearFactorGraph::linearize(
       continue;
     }
     // Check if it is a nonlinear mixture factor
-    if (auto nlmf = dynamic_pointer_cast<MixtureFactor>(f)) {
+    if (auto mf = dynamic_pointer_cast<MixtureFactor>(f)) {
       const GaussianMixtureFactor::shared_ptr& gmf =
-          nlmf->linearize(continuousValues);
+          mf->linearize(continuousValues);
       linearFG->push_back(gmf);
-    } else if (auto nlhf = dynamic_pointer_cast<HybridNonlinearFactor>(f)) {
-      // Nonlinear wrapper case:
-      const GaussianFactor::shared_ptr& gf =
-          nlhf->inner()->linearize(continuousValues);
+    } else if (auto nlf = dynamic_pointer_cast<NonlinearFactor>(f)) {
+      const GaussianFactor::shared_ptr& gf = nlf->linearize(continuousValues);
       const auto hgf = boost::make_shared<HybridGaussianFactor>(gf);
       linearFG->push_back(hgf);
     } else if (dynamic_pointer_cast<DiscreteFactor>(f) ||

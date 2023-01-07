@@ -380,7 +380,7 @@ TEST(HybridGaussianISAM, NonTrivial) {
   Pose2 prior(0.0, 0.0, 0.0);  // prior mean is at origin
   auto priorNoise = noiseModel::Diagonal::Sigmas(
       Vector3(0.3, 0.3, 0.1));  // 30cm std on x,y, 0.1 rad on theta
-  fg.emplace_nonlinear<PriorFactor<Pose2>>(X(0), prior, priorNoise);
+  fg.emplace_shared<PriorFactor<Pose2>>(X(0), prior, priorNoise);
 
   // create a noise model for the landmark measurements
   auto poseNoise = noiseModel::Isotropic::Sigma(3, 0.1);
@@ -389,11 +389,11 @@ TEST(HybridGaussianISAM, NonTrivial) {
   // where X is the base link and W is the foot link.
 
   // Add connecting poses similar to PoseFactors in GTD
-  fg.emplace_nonlinear<BetweenFactor<Pose2>>(X(0), Y(0), Pose2(0, 1.0, 0),
+  fg.emplace_shared<BetweenFactor<Pose2>>(X(0), Y(0), Pose2(0, 1.0, 0),
                                              poseNoise);
-  fg.emplace_nonlinear<BetweenFactor<Pose2>>(Y(0), Z(0), Pose2(0, 1.0, 0),
+  fg.emplace_shared<BetweenFactor<Pose2>>(Y(0), Z(0), Pose2(0, 1.0, 0),
                                              poseNoise);
-  fg.emplace_nonlinear<BetweenFactor<Pose2>>(Z(0), W(0), Pose2(0, 1.0, 0),
+  fg.emplace_shared<BetweenFactor<Pose2>>(Z(0), W(0), Pose2(0, 1.0, 0),
                                              poseNoise);
 
   // Create initial estimate
@@ -432,14 +432,14 @@ TEST(HybridGaussianISAM, NonTrivial) {
   fg.push_back(mixtureFactor);
 
   // Add equivalent of ImuFactor
-  fg.emplace_nonlinear<BetweenFactor<Pose2>>(X(0), X(1), Pose2(1.0, 0.0, 0),
+  fg.emplace_shared<BetweenFactor<Pose2>>(X(0), X(1), Pose2(1.0, 0.0, 0),
                                              poseNoise);
   // PoseFactors-like at k=1
-  fg.emplace_nonlinear<BetweenFactor<Pose2>>(X(1), Y(1), Pose2(0, 1, 0),
+  fg.emplace_shared<BetweenFactor<Pose2>>(X(1), Y(1), Pose2(0, 1, 0),
                                              poseNoise);
-  fg.emplace_nonlinear<BetweenFactor<Pose2>>(Y(1), Z(1), Pose2(0, 1, 0),
+  fg.emplace_shared<BetweenFactor<Pose2>>(Y(1), Z(1), Pose2(0, 1, 0),
                                              poseNoise);
-  fg.emplace_nonlinear<BetweenFactor<Pose2>>(Z(1), W(1), Pose2(-1, 1, 0),
+  fg.emplace_shared<BetweenFactor<Pose2>>(Z(1), W(1), Pose2(-1, 1, 0),
                                              poseNoise);
 
   initial.insert(X(1), Pose2(1.0, 0.0, 0.0));
@@ -472,14 +472,14 @@ TEST(HybridGaussianISAM, NonTrivial) {
   fg.push_back(mixtureFactor);
 
   // Add equivalent of ImuFactor
-  fg.emplace_nonlinear<BetweenFactor<Pose2>>(X(1), X(2), Pose2(1.0, 0.0, 0),
+  fg.emplace_shared<BetweenFactor<Pose2>>(X(1), X(2), Pose2(1.0, 0.0, 0),
                                              poseNoise);
   // PoseFactors-like at k=1
-  fg.emplace_nonlinear<BetweenFactor<Pose2>>(X(2), Y(2), Pose2(0, 1, 0),
+  fg.emplace_shared<BetweenFactor<Pose2>>(X(2), Y(2), Pose2(0, 1, 0),
                                              poseNoise);
-  fg.emplace_nonlinear<BetweenFactor<Pose2>>(Y(2), Z(2), Pose2(0, 1, 0),
+  fg.emplace_shared<BetweenFactor<Pose2>>(Y(2), Z(2), Pose2(0, 1, 0),
                                              poseNoise);
-  fg.emplace_nonlinear<BetweenFactor<Pose2>>(Z(2), W(2), Pose2(-2, 1, 0),
+  fg.emplace_shared<BetweenFactor<Pose2>>(Z(2), W(2), Pose2(-2, 1, 0),
                                              poseNoise);
 
   initial.insert(X(2), Pose2(2.0, 0.0, 0.0));
@@ -515,14 +515,14 @@ TEST(HybridGaussianISAM, NonTrivial) {
   fg.push_back(mixtureFactor);
 
   // Add equivalent of ImuFactor
-  fg.emplace_nonlinear<BetweenFactor<Pose2>>(X(2), X(3), Pose2(1.0, 0.0, 0),
+  fg.emplace_shared<BetweenFactor<Pose2>>(X(2), X(3), Pose2(1.0, 0.0, 0),
                                              poseNoise);
   // PoseFactors-like at k=3
-  fg.emplace_nonlinear<BetweenFactor<Pose2>>(X(3), Y(3), Pose2(0, 1, 0),
+  fg.emplace_shared<BetweenFactor<Pose2>>(X(3), Y(3), Pose2(0, 1, 0),
                                              poseNoise);
-  fg.emplace_nonlinear<BetweenFactor<Pose2>>(Y(3), Z(3), Pose2(0, 1, 0),
+  fg.emplace_shared<BetweenFactor<Pose2>>(Y(3), Z(3), Pose2(0, 1, 0),
                                              poseNoise);
-  fg.emplace_nonlinear<BetweenFactor<Pose2>>(Z(3), W(3), Pose2(-3, 1, 0),
+  fg.emplace_shared<BetweenFactor<Pose2>>(Z(3), W(3), Pose2(-3, 1, 0),
                                              poseNoise);
 
   initial.insert(X(3), Pose2(3.0, 0.0, 0.0));
