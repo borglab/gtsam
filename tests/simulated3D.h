@@ -23,6 +23,7 @@
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include "gtsam/base/OptionalJacobian.h"
 
 // \namespace
 
@@ -38,7 +39,7 @@ namespace simulated3D {
 /**
  * Prior on a single pose
  */
-Point3 prior(const Point3& x, boost::optional<Matrix&> H = boost::none) {
+Point3 prior(const Point3& x, OptionalJacobian<3,3> H = OptionalNone) {
   if (H) *H = I_3x3;
   return x;
 }
@@ -47,8 +48,8 @@ Point3 prior(const Point3& x, boost::optional<Matrix&> H = boost::none) {
  * odometry between two poses
  */
 Point3 odo(const Point3& x1, const Point3& x2,
-    boost::optional<Matrix&> H1 = boost::none,
-    boost::optional<Matrix&> H2 = boost::none) {
+    OptionalJacobian<3,3> H1 = OptionalNone,
+    OptionalJacobian<3,3> H2 = OptionalNone) {
   if (H1) *H1 = -1 * I_3x3;
   if (H2) *H2 = I_3x3;
   return x2 - x1;
@@ -58,8 +59,8 @@ Point3 odo(const Point3& x1, const Point3& x2,
  *  measurement between landmark and pose
  */
 Point3 mea(const Point3& x, const Point3& l,
-    boost::optional<Matrix&> H1 = boost::none,
-    boost::optional<Matrix&> H2 = boost::none) {
+    OptionalJacobian<3,3> H1 = OptionalNone,
+    OptionalJacobian<3,3> H2 = OptionalNone) {
   if (H1) *H1 = -1 * I_3x3;
   if (H2) *H2 = I_3x3;
   return l - x;
@@ -68,7 +69,8 @@ Point3 mea(const Point3& x, const Point3& l,
 /**
  * A prior factor on a single linear robot pose
  */
-struct PointPrior3D: public NoiseModelFactorN<Point3> {
+struct PointPrior3D: public NoiseModelFactor1<Point3> {
+  using NoiseModelFactor1<Point3>::evaluateError;
 
   Point3 measured_; ///< The prior pose value for the variable attached to this factor
 
@@ -89,8 +91,7 @@ struct PointPrior3D: public NoiseModelFactorN<Point3> {
    * @param H is an optional Jacobian matrix (Dimension: 3x3)
    * @return Vector error between prior value and x (Dimension: 3)
    */
-  Vector evaluateError(const Point3& x, OptionalMatrixType H =
-      OptionalNone) const override {
+  Vector evaluateError(const Point3& x, OptionalMatrixType H) const override {
     return prior(x, H) - measured_;
   }
 };
@@ -98,7 +99,12 @@ struct PointPrior3D: public NoiseModelFactorN<Point3> {
 /**
  * Models a linear 3D measurement between 3D points
  */
+<<<<<<< HEAD
 struct Simulated3DMeasurement: public NoiseModelFactorN<Point3, Point3> {
+=======
+struct Simulated3DMeasurement: public NoiseModelFactor2<Point3, Point3> {
+  using NoiseModelFactor2<Point3, Point3>::evaluateError;
+>>>>>>> 7b3c40e92 (everything compiles but tests fail in no boost mode)
 
   Point3 measured_; ///< Linear displacement between a pose and landmark
 
@@ -121,7 +127,7 @@ struct Simulated3DMeasurement: public NoiseModelFactorN<Point3, Point3> {
    * @return vector error between measurement and prediction (Dimension: 3)
    */
   Vector evaluateError(const Point3& x1, const Point3& x2,
-      OptionalMatrixType H1 = OptionalNone, OptionalMatrixType H2 = OptionalNone) const override {
+      OptionalMatrixType H1, OptionalMatrixType H2) const override {
     return mea(x1, x2, H1, H2) - measured_;
   }
 };

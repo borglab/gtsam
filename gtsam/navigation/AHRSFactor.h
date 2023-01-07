@@ -140,6 +140,7 @@ class GTSAM_EXPORT AHRSFactor: public NoiseModelFactorN<Rot3, Rot3, Vector3> {
 
 public:
 
+  using Base::evaluateError;
   /** Shorthand for a smart pointer to a factor */
 #if !defined(_MSC_VER) && __GNUC__ == 4 && __GNUC_MINOR__ > 5
   typedef typename boost::shared_ptr<AHRSFactor> shared_ptr;
@@ -179,9 +180,8 @@ public:
 
   /// vector of errors
   Vector evaluateError(const Rot3& rot_i, const Rot3& rot_j,
-      const Vector3& bias, OptionalMatrixType H1 = OptionalNone,
-      OptionalMatrixType H2 = OptionalNone, OptionalMatrixType H3 =
-          OptionalNone) const override;
+      const Vector3& bias, OptionalMatrixType H1,
+      OptionalMatrixType H2, OptionalMatrixType H3) const override;
 
   /// predicted states from IMU
   /// TODO(frank): relationship with PIM predict ??

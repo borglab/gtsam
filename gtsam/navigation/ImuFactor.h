@@ -229,10 +229,8 @@ public:
   /// vector of errors
   Vector evaluateError(const Pose3& pose_i, const Vector3& vel_i,
       const Pose3& pose_j, const Vector3& vel_j,
-      const imuBias::ConstantBias& bias_i, OptionalMatrixType H1 =
-          OptionalNone, OptionalMatrixType H2 = OptionalNone,
-      OptionalMatrixType H3 = OptionalNone, OptionalMatrixType H4 =
-          OptionalNone, OptionalMatrixType H5 = OptionalNone) const override;
+      const imuBias::ConstantBias& bias_i, OptionalMatrixType H1, OptionalMatrixType H2,
+      OptionalMatrixType H3, OptionalMatrixType H4, OptionalMatrixType H5) const override;
 
 #ifdef GTSAM_TANGENT_PREINTEGRATION
   /// Merge two pre-integrated measurement classes
@@ -308,9 +306,8 @@ public:
   /// vector of errors
   Vector evaluateError(const NavState& state_i, const NavState& state_j,
                        const imuBias::ConstantBias& bias_i,  //
-                       OptionalMatrixType H1 = OptionalNone,
-                       OptionalMatrixType H2 = OptionalNone,
-                       OptionalMatrixType H3 = OptionalNone) const override;
+                       OptionalMatrixType H1, OptionalMatrixType H2,
+                       OptionalMatrixType H3) const override;
 
 private:
 

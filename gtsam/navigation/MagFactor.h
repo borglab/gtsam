@@ -37,6 +37,7 @@ class MagFactor: public NoiseModelFactorN<Rot2> {
   const Point3 bias_; ///< bias
 
 public:
+  using NoiseModelFactor1<Rot2>::evaluateError;
 
   /**
    * Constructor of factor that estimates nav to body rotation bRn
@@ -74,8 +75,7 @@ public:
   /**
    * @brief vector of errors
    */
-  Vector evaluateError(const Rot2& nRb,
-      OptionalMatrixType H = OptionalNone) const override {
+  Vector evaluateError(const Rot2& nRb, OptionalMatrixType H) const override {
     // measured bM = nRb� * nM + b
     Point3 hx = unrotate(nRb, nM_, H) + bias_;
     return (hx - measured_);
@@ -94,6 +94,7 @@ class MagFactor1: public NoiseModelFactorN<Rot3> {
   const Point3 bias_; ///< bias
 
 public:
+  using NoiseModelFactor1<Rot3>::evaluateError;
 
   /** Constructor */
   MagFactor1(Key key, const Point3& measured, double scale,
@@ -112,8 +113,7 @@ public:
   /**
    * @brief vector of errors
    */
-  Vector evaluateError(const Rot3& nRb,
-      OptionalMatrixType H = OptionalNone) const override {
+  Vector evaluateError(const Rot3& nRb, OptionalMatrixType H) const override {
     // measured bM = nRb� * nM + b
     Point3 hx = nRb.unrotate(nM_, H, boost::none) + bias_;
     return (hx - measured_);
@@ -131,6 +131,7 @@ class MagFactor2: public NoiseModelFactorN<Point3, Point3> {
   const Rot3 bRn_; ///< The assumed known rotation from nav to body
 
 public:
+  using NoiseModelFactor2<Point3, Point3>::evaluateError;
 
   /** Constructor */
   MagFactor2(Key key1, Key key2, const Point3& measured, const Rot3& nRb,
@@ -151,8 +152,7 @@ public:
    * @param bias (unknown) 3D bias
    */
   Vector evaluateError(const Point3& nM, const Point3& bias,
-      OptionalMatrixType H1 = OptionalNone, OptionalMatrixType H2 =
-          OptionalNone) const override {
+      OptionalMatrixType H1, OptionalMatrixType H2) const override {
     // measured bM = nRb� * nM + b, where b is unknown bias
     Point3 hx = bRn_.rotate(nM, OptionalNone, H1) + bias;
     if (H2)
@@ -172,6 +172,7 @@ class MagFactor3: public NoiseModelFactorN<double, Unit3, Point3> {
   const Rot3 bRn_; ///< The assumed known rotation from nav to body
 
 public:
+  using NoiseModelFactor3<double, Unit3, Point3>::evaluateError;
 
   /** Constructor */
   MagFactor3(Key key1, Key key2, Key key3, const Point3& measured,
@@ -192,9 +193,8 @@ public:
    * @param bias (unknown) 3D bias
    */
   Vector evaluateError(const double& scale, const Unit3& direction,
-      const Point3& bias, OptionalMatrixType H1 = OptionalNone,
-      OptionalMatrixType H2 = OptionalNone, OptionalMatrixType H3 =
-          OptionalNone) const override {
+      const Point3& bias, OptionalMatrixType H1,
+      OptionalMatrixType H2, OptionalMatrixType H3) const override {
     // measured bM = nRb� * nM + b, where b is unknown bias
     Unit3 rotated = bRn_.rotate(direction, OptionalNone, H2);
     Point3 hx = scale * rotated.point3() + bias;

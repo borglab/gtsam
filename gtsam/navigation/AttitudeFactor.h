@@ -122,8 +122,7 @@ public:
   bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
 
   /** vector of errors */
-  Vector evaluateError(const Rot3& nRb, //
-      OptionalMatrixType H = OptionalNone) const override {
+  Vector evaluateError(const Rot3& nRb, OptionalMatrixType H) const override {
     return attitudeError(nRb, H);
   }
 
@@ -198,8 +197,7 @@ public:
   bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
 
   /** vector of errors */
-  Vector evaluateError(const Pose3& nTb, //
-      OptionalMatrixType H = OptionalNone) const override {
+  Vector evaluateError(const Pose3& nTb, OptionalMatrixType H) const override {
     Vector e = attitudeError(nTb.rotation(), H);
     if (H) {
       Matrix H23 = *H;

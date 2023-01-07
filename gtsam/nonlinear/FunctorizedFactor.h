@@ -65,6 +65,7 @@ class FunctorizedFactor : public NoiseModelFactorN<T> {
   std::function<R(T, OptionalMatrixType)> func_;  ///< functor instance
 
  public:
+  using Base::evaluateError;
   /** default constructor - only use for serialization */
   FunctorizedFactor() {}
 
@@ -165,6 +166,7 @@ class FunctorizedFactor2 : public NoiseModelFactorN<T1, T2> {
   FunctionType func_;  ///< functor instance
 
  public:
+  using Base::evaluateError;
   /** default constructor - only use for serialization */
   FunctorizedFactor2() {}
 

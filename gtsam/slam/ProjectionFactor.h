@@ -60,6 +60,8 @@ namespace gtsam {
     /// shorthand for a smart pointer to a factor
     typedef boost::shared_ptr<This> shared_ptr;
 
+	using Base::evaluateError;
+
     /// Default constructor
     GenericProjectionFactor() :
         measured_(0, 0), throwCheirality_(false), verboseCheirality_(false) {
@@ -133,7 +135,7 @@ namespace gtsam {
 
     /// Evaluate error h(x)-z and optionally derivatives
     Vector evaluateError(const Pose3& pose, const Point3& point,
-        OptionalMatrixType H1 = OptionalNone, OptionalMatrixType H2 = OptionalNone) const override {
+        OptionalMatrixType H1, OptionalMatrixType H2) const override {
       try {
         if(body_P_sensor_) {
           if(H1) {

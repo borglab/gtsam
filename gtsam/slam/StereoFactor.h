@@ -48,6 +48,9 @@ public:
   typedef boost::shared_ptr<GenericStereoFactor> shared_ptr;  ///< typedef for shared pointer to this object
   typedef POSE CamPose;                                       ///< typedef for Pose Lie Value type
 
+  using Base::evaluateError;
+	
+
   /**
    * Default constructor
    */
@@ -120,7 +123,7 @@ public:
 
   /** h(x)-z */
   Vector evaluateError(const Pose3& pose, const Point3& point,
-      OptionalMatrixType H1 = OptionalNone, OptionalMatrixType H2 = OptionalNone) const override {
+      OptionalMatrixType H1, OptionalMatrixType H2) const override {
     try {
       if(body_P_sensor_) {
         if(H1) {

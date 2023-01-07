@@ -21,6 +21,7 @@ class GTSAM_EXPORT OrientedPlane3Factor: public NoiseModelFactorN<Pose3, Oriente
   typedef NoiseModelFactorN<Pose3, OrientedPlane3> Base;
 
  public:
+  using NoiseModelFactor2<Pose3, OrientedPlane3>::evaluateError;
   /// Constructor
   OrientedPlane3Factor() {
   }
@@ -44,8 +45,7 @@ class GTSAM_EXPORT OrientedPlane3Factor: public NoiseModelFactorN<Pose3, Oriente
   /// evaluateError
   Vector evaluateError(
       const Pose3& pose, const OrientedPlane3& plane,
-      OptionalMatrixType H1 = OptionalNone,
-      OptionalMatrixType H2 = OptionalNone) const override;
+      OptionalMatrixType H1, OptionalMatrixType H2) const override;
 };
 
 // TODO: Convert this factor to dimension two, three dimensions is redundant for direction prior
@@ -55,6 +55,7 @@ class GTSAM_EXPORT OrientedPlane3DirectionPrior : public NoiseModelFactorN<Orien
   typedef NoiseModelFactorN<OrientedPlane3> Base;
 
  public:
+  using Base::evaluateError;
   typedef OrientedPlane3DirectionPrior This;
   /// Constructor
   OrientedPlane3DirectionPrior() {
@@ -72,8 +73,7 @@ class GTSAM_EXPORT OrientedPlane3DirectionPrior : public NoiseModelFactorN<Orien
   /// equals
   bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
 
-  Vector evaluateError(const OrientedPlane3& plane,
-      OptionalMatrixType H = OptionalNone) const override;
+  Vector evaluateError(const OrientedPlane3& plane, OptionalMatrixType H) const override;
 };
 
 } // gtsam

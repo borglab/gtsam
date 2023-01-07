@@ -55,6 +55,7 @@ namespace gtsam {
     VALUE measured_; /** The measurement */
 
   public:
+	using Base::evaluateError;
 
     // shorthand for a smart pointer to a factor
     typedef typename boost::shared_ptr<BetweenFactor> shared_ptr;
@@ -105,8 +106,8 @@ namespace gtsam {
     /// @{
 
     /// evaluate error, returns vector of errors size of tangent space
-    Vector evaluateError(const T& p1, const T& p2, OptionalMatrixType H1 =
-      OptionalNone, OptionalMatrixType H2 = OptionalNone) const override {
+    Vector evaluateError(const T& p1, const T& p2,
+			OptionalMatrixType H1, OptionalMatrixType H2) const override {
       T hx = traits<T>::Between(p1, p2, H1, H2); // h(x)
       // manifold equivalent of h(x)-z -> log(z,h(x))
 #ifdef GTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR

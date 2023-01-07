@@ -35,6 +35,8 @@ struct BoundingConstraint1: public NoiseModelFactorN<VALUE> {
   typedef NoiseModelFactorN<VALUE> Base;
   typedef boost::shared_ptr<BoundingConstraint1<VALUE> > shared_ptr;
 
+  using Base::evaluateError;
+
   double threshold_;
   bool isGreaterThan_; /// flag for greater/less than
 
@@ -64,8 +66,7 @@ struct BoundingConstraint1: public NoiseModelFactorN<VALUE> {
     return (isGreaterThan_) ? x <= threshold_ : x >= threshold_;
   }
 
-  Vector evaluateError(const X& x, OptionalMatrixType H =
-      OptionalNone) const override {
+  Vector evaluateError(const X& x, OptionalMatrixType H) const override {
     Matrix D;
     double error = value(x, D) - threshold_;
     if (H) {
@@ -105,6 +106,8 @@ struct BoundingConstraint2: public NoiseModelFactorN<VALUE1, VALUE2> {
   typedef NoiseModelFactorN<VALUE1, VALUE2> Base;
   typedef boost::shared_ptr<BoundingConstraint2<VALUE1, VALUE2> > shared_ptr;
 
+  using Base::evaluateError;
+
   double threshold_;
   bool isGreaterThan_; /// flag for greater/less than
 
@@ -134,8 +137,7 @@ struct BoundingConstraint2: public NoiseModelFactorN<VALUE1, VALUE2> {
   }
 
   Vector evaluateError(const X1& x1, const X2& x2,
-      OptionalMatrixType H1 = OptionalNone,
-      OptionalMatrixType H2 = OptionalNone) const override {
+      OptionalMatrixType H1, OptionalMatrixType H2) const override {
     Matrix D1, D2;
     double error = value(x1, x2, D1, D2) - threshold_;
     if (H1) {

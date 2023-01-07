@@ -59,7 +59,7 @@ TEST( triangulation, TriangulationFactor ) {
   factor.evaluateError(landmark, HActual);
 
   Matrix HExpected = numericalDerivative11<Vector,Point3>(
-      std::bind(&Factor::evaluateError, &factor, std::placeholders::_1, boost::none), landmark);
+		  [&factor](const Point3& l) { return factor.evaluateError(l);}, landmark);
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(HExpected, HActual, 1e-3));
@@ -82,8 +82,8 @@ TEST( triangulation, TriangulationFactorStereo ) {
   Matrix HActual;
   factor.evaluateError(landmark, HActual);
 
-  Matrix HExpected = numericalDerivative11<Vector,Point3>(
-      std::bind(&Factor::evaluateError, &factor, std::placeholders::_1, boost::none), landmark);
+  Matrix HExpected = numericalDerivative11<Vector, Point3>(
+		  [&factor](const Point3& l) { return factor.evaluateError(l);}, landmark);
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(HExpected, HActual, 1e-3));

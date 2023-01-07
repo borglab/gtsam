@@ -29,8 +29,8 @@ namespace gtsam {
 template<class T, class P>
 P transform_point(
     const T& trans, const P& global,
-    boost::optional<Matrix&> Dtrans,
-    boost::optional<Matrix&> Dglobal) {
+    OptionalMatrixType Dtrans,
+    OptionalMatrixType Dglobal) {
   return trans.transformFrom(global, Dtrans, Dglobal);
 }
 

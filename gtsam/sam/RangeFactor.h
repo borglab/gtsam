@@ -32,12 +32,13 @@ struct Range;
  * @ingroup sam
  */
 template <typename A1, typename A2 = A1, typename T = double>
-class RangeFactor : public ExpressionFactorN<T, A1, A2> {
+class RangeFactor : public ExpressionFactorN<T, A1, A2> , public EvaluateErrorInterface<A1, A2>{
  private:
   typedef RangeFactor<A1, A2> This;
   typedef ExpressionFactorN<T, A1, A2> Base;
 
  public:
+  using EvaluateErrorInterface<A1,A2>::evaluateError;
   /// default constructor
   RangeFactor() {}
 
@@ -58,16 +59,12 @@ class RangeFactor : public ExpressionFactorN<T, A1, A2> {
     Expression<A2> a2_(keys[1]);
     return Expression<T>(Range<A1, A2>(), a1_, a2_);
   }
-  
-  Vector evaluateError(const A1& a1, const A2& a2,
-      OptionalMatrixType H1 = OptionalNone,
-      OptionalMatrixType H2 = OptionalNone) const
-  {
+
+  virtual Vector evaluateError(const A1& a1, const A2& a2, OptionalMatrixType H1,
+                               OptionalMatrixType H2) const override {
     std::vector<Matrix> Hs(2);
-    const auto &keys = Factor::keys();
-    const Vector error = Base::unwhitenedError(
-      {{keys[0], genericValue(a1)}, {keys[1], genericValue(a2)}}, 
-      Hs);
+    const auto& keys = Factor::keys();
+    const Vector error = Base::unwhitenedError({{keys[0], genericValue(a1)}, {keys[1], genericValue(a2)}}, Hs);
     if (H1) *H1 = Hs[0];
     if (H2) *H2 = Hs[1];
     return error;
@@ -100,7 +97,7 @@ struct traits<RangeFactor<A1, A2, T> >
  */
 template <typename A1, typename A2 = A1,
           typename T = typename Range<A1, A2>::result_type>
-class RangeFactorWithTransform : public ExpressionFactorN<T, A1, A2> {
+class RangeFactorWithTransform : public ExpressionFactorN<T, A1, A2> , public EvaluateErrorInterface<A1, A2>{
  private:
   typedef RangeFactorWithTransform<A1, A2> This;
   typedef ExpressionFactorN<T, A1, A2> Base;
@@ -108,6 +105,7 @@ class RangeFactorWithTransform : public ExpressionFactorN<T, A1, A2> {
   A1 body_T_sensor_;  ///< The pose of the sensor in the body frame
 
  public:
+  using EvaluateErrorInterface<A1, A2>::evaluateError;
   //// Default constructor
   RangeFactorWithTransform() {}
 
@@ -136,9 +134,8 @@ class RangeFactorWithTransform : public ExpressionFactorN<T, A1, A2> {
     return Expression<T>(Range<A1, A2>(), nav_T_sensor_, a2_);
   }
 
-  Vector evaluateError(const A1& a1, const A2& a2,
-      OptionalMatrixType H1 = OptionalNone,
-      OptionalMatrixType H2 = OptionalNone) const
+  virtual Vector evaluateError(const A1& a1, const A2& a2,
+      OptionalMatrixType H1, OptionalMatrixType H2) const override
   {
     std::vector<Matrix> Hs(2);
     const auto &keys = Factor::keys();

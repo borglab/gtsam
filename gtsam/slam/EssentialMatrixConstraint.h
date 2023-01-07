@@ -37,6 +37,7 @@ private:
   EssentialMatrix measuredE_; /** The measurement is an essential matrix */
 
 public:
+  using Base::evaluateError;
 
   // shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<EssentialMatrixConstraint> shared_ptr;
@@ -79,8 +80,7 @@ public:
 
   /** vector of errors */
   Vector evaluateError(const Pose3& p1, const Pose3& p2,
-      OptionalMatrixType Hp1 = OptionalNone, //
-      OptionalMatrixType Hp2 = OptionalNone) const override;
+      OptionalMatrixType Hp1, OptionalMatrixType Hp2) const override;
 
   /** return the measured */
   const EssentialMatrix& measured() const {

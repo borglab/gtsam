@@ -268,6 +268,7 @@ private:
   PreintegratedCombinedMeasurements _PIM_;
 
 public:
+  using Base::evaluateError;
 
   /** Shorthand for a smart pointer to a factor */
 #if !defined(_MSC_VER) && __GNUC__ == 4 && __GNUC_MINOR__ > 5
@@ -324,12 +325,9 @@ public:
   Vector evaluateError(const Pose3& pose_i, const Vector3& vel_i,
       const Pose3& pose_j, const Vector3& vel_j,
       const imuBias::ConstantBias& bias_i, const imuBias::ConstantBias& bias_j,
-      OptionalMatrixType H1 = OptionalNone, 
-      OptionalMatrixType H2 = OptionalNone, 
-      OptionalMatrixType H3 = OptionalNone,
-      OptionalMatrixType H4 = OptionalNone, 
-      OptionalMatrixType H5 = OptionalNone, 
-      OptionalMatrixType H6 = OptionalNone) const override;
+      OptionalMatrixType H1, OptionalMatrixType H2, 
+      OptionalMatrixType H3, OptionalMatrixType H4, 
+      OptionalMatrixType H5, OptionalMatrixType H6) const override;
 
  private:
   /** Serialization function */

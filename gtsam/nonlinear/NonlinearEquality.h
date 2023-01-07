@@ -139,8 +139,7 @@ public:
   }
 
   /// Error function
-  Vector evaluateError(const T& xj,
-      OptionalMatrixType H = OptionalNone) const override {
+  Vector evaluateError(const T& xj, OptionalMatrixType H) const override {
     const size_t nj = traits<T>::GetDimension(feasible_);
     if (allow_error_) {
       if (H)
@@ -209,6 +208,7 @@ class NonlinearEquality1: public NoiseModelFactorN<VALUE> {
 
 public:
   typedef VALUE X;
+  using NoiseModelFactor1<VALUE>::evaluateError;
 
 protected:
   typedef NoiseModelFactorN<VALUE> Base;
@@ -249,8 +249,7 @@ public:
   }
 
   /// g(x) with optional derivative
-  Vector evaluateError(const X& x1,
-      OptionalMatrixType H = OptionalNone) const override {
+  Vector evaluateError(const X& x1, OptionalMatrixType H) const override {
     if (H)
       (*H) = Matrix::Identity(traits<X>::GetDimension(x1),traits<X>::GetDimension(x1));
     // manifold equivalent of h(x)-z -> log(z,h(x))
@@ -305,6 +304,7 @@ class NonlinearEquality2 : public NoiseModelFactorN<T, T> {
 
  public:
   typedef boost::shared_ptr<NonlinearEquality2<T>> shared_ptr;
+  using Base::evaluateError;
 
   /**
    * Constructor
@@ -325,8 +325,7 @@ class NonlinearEquality2 : public NoiseModelFactorN<T, T> {
 
   /// g(x) with optional derivative2
   Vector evaluateError(
-      const T& x1, const T& x2, OptionalMatrixType H1 = OptionalNone,
-      OptionalMatrixType H2 = OptionalNone) const override {
+      const T& x1, const T& x2, OptionalMatrixType H1, OptionalMatrixType H2) const override {
     static const size_t p = traits<T>::dimension;
     if (H1) *H1 = -Matrix::Identity(p, p);
     if (H2) *H2 = Matrix::Identity(p, p);

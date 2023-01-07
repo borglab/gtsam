@@ -49,6 +49,8 @@ class MagPoseFactor: public NoiseModelFactorN<POSE> {
   GTSAM_CONCEPT_POSE_TYPE(POSE)
 
  public:
+  using Base::evaluateError;
+
   ~MagPoseFactor() override {}
 
   /// Default constructor - only use for serialization.
@@ -108,7 +110,7 @@ class MagPoseFactor: public NoiseModelFactorN<POSE> {
    * Return the factor's error h(x) - z, and the optional Jacobian. Note that
    * the measurement error is expressed in the body frame.
    */
-  Vector evaluateError(const POSE& nPb, OptionalMatrixType H = OptionalNone) const override {
+  Vector evaluateError(const POSE& nPb, OptionalMatrixType H) const override {
     // Predict the measured magnetic field h(x) in the *body* frame.
     // If body_P_sensor was given, bias_ will have been rotated into the body frame.
     Matrix H_rot = Matrix::Zero(MeasDim, RotDim);

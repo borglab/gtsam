@@ -61,6 +61,7 @@ public:
 
   /// shorthand for a smart pointer to a factor
   using shared_ptr = boost::shared_ptr<This>;
+  using NoiseModelFactor1<Point3>::evaluateError;
 
   /// Default constructor
   TriangulationFactor() :
@@ -119,8 +120,7 @@ public:
   }
 
   /// Evaluate error h(x)-z and optionally derivatives
-  Vector evaluateError(const Point3& point, OptionalMatrixType H2 =
-      OptionalNone) const override {
+  Vector evaluateError(const Point3& point, OptionalMatrixType H2) const override {
     try {
       return traits<Measurement>::Local(measured_, camera_.project2(point, OptionalNone, H2));
     } catch (CheiralityException& e) {

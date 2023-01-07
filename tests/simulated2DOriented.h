@@ -22,6 +22,7 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include "gtsam/base/OptionalJacobian.h"
 
 // \namespace
 namespace simulated2DOriented {
@@ -62,7 +63,7 @@ namespace simulated2DOriented {
   }
 
   /// Prior on a single pose, optional derivative version
-  Pose2 prior(const Pose2& x, boost::optional<Matrix&> H = boost::none) {
+  Pose2 prior(const Pose2& x, OptionalJacobian<3,3> H = OptionalNone) {
     if (H) *H = I_3x3;
     return x;
   }
@@ -73,8 +74,8 @@ namespace simulated2DOriented {
   }
 
   /// odometry between two poses, optional derivative version
-  Pose2 odo(const Pose2& x1, const Pose2& x2, boost::optional<Matrix&> H1 =
-      boost::none, boost::optional<Matrix&> H2 = boost::none) {
+  Pose2 odo(const Pose2& x1, const Pose2& x2, OptionalJacobian<3,3> H1 =
+      OptionalNone, OptionalJacobian<3,3> H2 = OptionalNone) {
     return x1.between(x2, H1, H2);
   }
 
@@ -105,6 +106,7 @@ namespace simulated2DOriented {
     Pose2 measured_;   ///< Between measurement for odometry factor
 
     typedef GenericOdometry<VALUE> This;
+	using NoiseModelFactor2<VALUE, VALUE>::evaluateError;
 
     /**
      * Creates an odometry factor between two poses
@@ -118,8 +120,7 @@ namespace simulated2DOriented {
 
     /// Evaluate error and optionally derivative
     Vector evaluateError(const VALUE& x1, const VALUE& x2,
-        OptionalMatrixType H1 = OptionalNone,
-        OptionalMatrixType H2 = OptionalNone) const override {
+        OptionalMatrixType H1, OptionalMatrixType H2) const override {
       return measured_.localCoordinates(odo(x1, x2, H1, H2));
     }
 

@@ -329,13 +329,14 @@ inline Matrix H(const Point2& v) {
 
 struct UnaryFactor: public gtsam::NoiseModelFactorN<Point2> {
 
+  using gtsam::NoiseModelFactor1<Point2>::evaluateError;
   Point2 z_;
 
   UnaryFactor(const Point2& z, const SharedNoiseModel& model, Key key) :
     gtsam::NoiseModelFactorN<Point2>(model, key), z_(z) {
   }
 
-  Vector evaluateError(const Point2& x, OptionalMatrixType A = OptionalNone) const override {
+  Vector evaluateError(const Point2& x, OptionalMatrixType A) const override {
     if (A) *A = H(x);
     return (h(x) - z_);
   }

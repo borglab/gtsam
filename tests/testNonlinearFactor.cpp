@@ -337,10 +337,11 @@ class TestFactor1 : public NoiseModelFactor1<double> {
 
  public:
   typedef NoiseModelFactor1<double> Base;
+  using Base::evaluateError;
   TestFactor1() : Base(noiseModel::Diagonal::Sigmas(Vector1(2.0)), L(1)) {}
   using Base::NoiseModelFactor1;  // inherit constructors
 
-  Vector evaluateError(const double& x1, OptionalMatrixType H1 = OptionalNone) const override {
+  Vector evaluateError(const double& x1, OptionalMatrixType H1) const override {
     if (H1) *H1 = (Matrix(1, 1) << 1.0).finished();
     return (Vector(1) << x1).finished();
   }
@@ -388,15 +389,14 @@ class TestFactor4 : public NoiseModelFactor4<double, double, double, double> {
 
  public:
   typedef NoiseModelFactor4<double, double, double, double> Base;
+  using Base::evaluateError;
   TestFactor4() : Base(noiseModel::Diagonal::Sigmas((Vector(1) << 2.0).finished()), X(1), X(2), X(3), X(4)) {}
   using Base::NoiseModelFactor4;  // inherit constructors
 
   Vector
     evaluateError(const double& x1, const double& x2, const double& x3, const double& x4,
-        OptionalMatrixType H1 = OptionalNone,
-        OptionalMatrixType H2 = OptionalNone,
-        OptionalMatrixType H3 = OptionalNone,
-        OptionalMatrixType H4 = OptionalNone) const override {
+        OptionalMatrixType H1, OptionalMatrixType H2,
+        OptionalMatrixType H3, OptionalMatrixType H4) const override {
     if(H1) {
       *H1 = (Matrix(1, 1) << 1.0).finished();
       *H2 = (Matrix(1, 1) << 2.0).finished();
@@ -479,15 +479,13 @@ TEST(NonlinearFactor, NoiseModelFactor4) {
 class TestFactor5 : public NoiseModelFactor5<double, double, double, double, double> {
 public:
   typedef NoiseModelFactor5<double, double, double, double, double> Base;
+  using Base::evaluateError;
   TestFactor5() : Base(noiseModel::Diagonal::Sigmas((Vector(1) << 2.0).finished()), X(1), X(2), X(3), X(4), X(5)) {}
 
   Vector
     evaluateError(const X1& x1, const X2& x2, const X3& x3, const X4& x4, const X5& x5,
-        OptionalMatrixType H1 = OptionalNone,
-        OptionalMatrixType H2 = OptionalNone,
-        OptionalMatrixType H3 = OptionalNone,
-        OptionalMatrixType H4 = OptionalNone,
-        OptionalMatrixType H5 = OptionalNone) const override {
+        OptionalMatrixType H1, OptionalMatrixType H2, OptionalMatrixType H3, 
+		OptionalMatrixType H4, OptionalMatrixType H5) const override {
     if(H1) {
       *H1 = (Matrix(1, 1) << 1.0).finished();
       *H2 = (Matrix(1, 1) << 2.0).finished();
@@ -529,16 +527,13 @@ TEST(NonlinearFactor, NoiseModelFactor5) {
 class TestFactor6 : public NoiseModelFactor6<double, double, double, double, double, double> {
 public:
   typedef NoiseModelFactor6<double, double, double, double, double, double> Base;
+  using Base::evaluateError;
   TestFactor6() : Base(noiseModel::Diagonal::Sigmas((Vector(1) << 2.0).finished()), X(1), X(2), X(3), X(4), X(5), X(6)) {}
 
   Vector
     evaluateError(const X1& x1, const X2& x2, const X3& x3, const X4& x4, const X5& x5, const X6& x6,
-        OptionalMatrixType H1 = OptionalNone,
-        OptionalMatrixType H2 = OptionalNone,
-        OptionalMatrixType H3 = OptionalNone,
-        OptionalMatrixType H4 = OptionalNone,
-        OptionalMatrixType H5 = OptionalNone,
-        OptionalMatrixType H6 = OptionalNone) const override {
+        OptionalMatrixType H1, OptionalMatrixType H2, OptionalMatrixType H3, OptionalMatrixType H4, 
+		OptionalMatrixType H5, OptionalMatrixType H6) const override {
     if(H1) {
       *H1 = (Matrix(1, 1) << 1.0).finished();
       *H2 = (Matrix(1, 1) << 2.0).finished();
@@ -587,16 +582,15 @@ TEST(NonlinearFactor, NoiseModelFactor6) {
 class TestFactorN : public NoiseModelFactorN<double, double, double, double> {
 public:
   typedef NoiseModelFactorN<double, double, double, double> Base;
+  using Base::evaluateError;
   using Type1 = ValueType<1>;  // Test that we can use the ValueType<> template
 
   TestFactorN() : Base(noiseModel::Diagonal::Sigmas((Vector(1) << 2.0).finished()), X(1), X(2), X(3), X(4)) {}
 
   Vector
     evaluateError(const double& x1, const double& x2, const double& x3, const double& x4,
-        OptionalMatrixType H1 = OptionalNone,
-        OptionalMatrixType H2 = OptionalNone,
-        OptionalMatrixType H3 = OptionalNone,
-        OptionalMatrixType H4 = OptionalNone) const override {
+        OptionalMatrixType H1, OptionalMatrixType H2,
+        OptionalMatrixType H3, OptionalMatrixType H4) const override {
     if (H1) *H1 = (Matrix(1, 1) << 1.0).finished();
     if (H2) *H2 = (Matrix(1, 1) << 2.0).finished();
     if (H3) *H3 = (Matrix(1, 1) << 3.0).finished();
