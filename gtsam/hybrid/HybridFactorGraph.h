@@ -45,17 +45,6 @@ class HybridFactorGraph : public FactorGraph<Factor> {
   using Values = gtsam::Values;  ///< backwards compatibility
   using Indices = KeyVector;     ///> map from keys to values
 
- protected:
-  /// Check if FACTOR type is derived from DiscreteFactor.
-  template <typename FACTOR>
-  using IsDiscrete = typename std::enable_if<
-      std::is_base_of<DiscreteFactor, FACTOR>::value>::type;
-
-  /// Check if FACTOR type is derived from HybridFactor.
-  template <typename FACTOR>
-  using IsHybrid = typename std::enable_if<
-      std::is_base_of<HybridFactor, FACTOR>::value>::type;
-
  public:
   /// @name Constructors
   /// @{
@@ -72,38 +61,8 @@ class HybridFactorGraph : public FactorGraph<Factor> {
   HybridFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph) : Base(graph) {}
 
   /// @}
-
-  // Allow use of selected FactorGraph methods:
-  using Base::empty;
-  using Base::reserve;
-  using Base::size;
-  using Base::operator[];
-  using Base::add;
-  using Base::push_back;
-  using Base::resize;
-
-  /**
-   * Add a discrete-continuous (Hybrid) factor *pointer* to the graph
-   * @param hybridFactor - boost::shared_ptr to the factor to add
-   */
-  template <typename FACTOR>
-  IsHybrid<FACTOR> push_hybrid(const boost::shared_ptr<FACTOR>& hybridFactor) {
-    Base::push_back(hybridFactor);
-  }
-
-  /// Construct a discrete factor and add shared pointer to the factor graph.
-  template <class FACTOR, class... Args>
-  IsDiscrete<FACTOR> emplace_discrete(Args&&... args) {
-    emplace_shared<FACTOR>(std::forward<Args>(args)...);
-  }
-
-  /// Construct a factor and add (shared pointer to it) to factor graph.
-  template <class FACTOR, class... Args>
-  IsHybrid<FACTOR> emplace_hybrid(Args&&... args) {
-    auto factor = boost::allocate_shared<FACTOR>(
-        Eigen::aligned_allocator<FACTOR>(), std::forward<Args>(args)...);
-    push_hybrid(factor);
-  }
+  /// @name Extra methods to inspect discrete/continuous keys.
+  /// @{
 
   /// Get all the discrete keys in the factor graph.
   DiscreteKeys discreteKeys() const;
@@ -116,6 +75,8 @@ class HybridFactorGraph : public FactorGraph<Factor> {
 
   /// Get all the continuous keys in the factor graph.
   const KeySet continuousKeySet() const;
+
+  /// @}
 };
 
 }  // namespace gtsam

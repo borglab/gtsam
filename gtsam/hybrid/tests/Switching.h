@@ -163,7 +163,7 @@ struct Switching {
       for (auto &&f : motion_models) {
         components.push_back(boost::dynamic_pointer_cast<NonlinearFactor>(f));
       }
-      nonlinearFactorGraph.emplace_hybrid<MixtureFactor>(
+      nonlinearFactorGraph.emplace_shared<MixtureFactor>(
           keys, DiscreteKeys{modes[k]}, components);
     }
 

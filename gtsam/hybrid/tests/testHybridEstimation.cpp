@@ -416,7 +416,7 @@ static HybridNonlinearFactorGraph createHybridNonlinearFactorGraph() {
       boost::make_shared<BetweenFactor<double>>(X(0), X(1), 0, noise_model);
   const auto one_motion =
       boost::make_shared<BetweenFactor<double>>(X(0), X(1), 1, noise_model);
-  nfg.emplace_hybrid<MixtureFactor>(
+  nfg.emplace_shared<MixtureFactor>(
       KeyVector{X(0), X(1)}, DiscreteKeys{m},
       std::vector<NonlinearFactor::shared_ptr>{zero_motion, one_motion});
 

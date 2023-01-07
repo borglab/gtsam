@@ -368,8 +368,6 @@ TEST(HybridGaussianElimination, EliminateHybrid_2_Variable) {
   CHECK(discreteFactor);
   EXPECT_LONGS_EQUAL(1, discreteFactor->discreteKeys().size());
   EXPECT(discreteFactor->root_->isLeaf() == false);
-
-  // TODO(Varun) Test emplace_discrete
 }
 
 /****************************************************************************
@@ -687,7 +685,7 @@ TEST(HybridFactorGraph, DefaultDecisionTree) {
        moving = boost::make_shared<PlanarMotionModel>(X(0), X(1), odometry,
                                                       noise_model);
   std::vector<PlanarMotionModel::shared_ptr> motion_models = {still, moving};
-  fg.emplace_hybrid<MixtureFactor>(
+  fg.emplace_shared<MixtureFactor>(
       contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, motion_models);
 
   // Add Range-Bearing measurements to from X0 to L0 and X1 to L1.
