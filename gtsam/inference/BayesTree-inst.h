@@ -26,10 +26,7 @@
 #include <gtsam/base/timing.h>
 
 #include <boost/optional.hpp>
-#include <boost/assign/list_of.hpp>
 #include <fstream>
-
-using boost::assign::cref_list_of;
 
 namespace gtsam {
 
@@ -281,8 +278,8 @@ namespace gtsam {
     FactorGraphType cliqueMarginal = clique->marginal2(function);
 
     // Now, marginalize out everything that is not variable j
-    BayesNetType marginalBN = *cliqueMarginal.marginalMultifrontalBayesNet(
-      Ordering(cref_list_of<1,Key>(j)), function);
+    BayesNetType marginalBN =
+        *cliqueMarginal.marginalMultifrontalBayesNet(Ordering{j}, function);
 
     // The Bayes net should contain only one conditional for variable j, so return it
     return marginalBN.front();
@@ -403,7 +400,7 @@ namespace gtsam {
     }
 
     // now, marginalize out everything that is not variable j1 or j2
-    return p_BC1C2.marginalMultifrontalBayesNet(Ordering(cref_list_of<2,Key>(j1)(j2)), function);
+    return p_BC1C2.marginalMultifrontalBayesNet(Ordering{j1, j2}, function);
   }
 
   /* ************************************************************************* */
