@@ -336,7 +336,7 @@ TEST(HybridBayesNet, Sampling) {
   auto one_motion =
       boost::make_shared<BetweenFactor<double>>(X(0), X(1), 1, noise_model);
   std::vector<NonlinearFactor::shared_ptr> factors = {zero_motion, one_motion};
-  nfg.emplace_nonlinear<PriorFactor<double>>(X(0), 0.0, noise_model);
+  nfg.emplace_shared<PriorFactor<double>>(X(0), 0.0, noise_model);
   nfg.emplace_hybrid<MixtureFactor>(
       KeyVector{X(0), X(1)}, DiscreteKeys{DiscreteKey(M(0), 2)}, factors);
 

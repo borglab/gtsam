@@ -99,10 +99,6 @@ class HybridFactorGraph : public FactorGraph<Factor> {
     Base::push_back(hybridFactor);
   }
 
-  /// delete emplace_shared.
-  template <class FACTOR, class... Args>
-  void emplace_shared(Args&&... args) = delete;
-
   /// Construct a factor and add (shared pointer to it) to factor graph.
   template <class FACTOR, class... Args>
   IsDiscrete<FACTOR> emplace_discrete(Args&&... args) {
@@ -117,22 +113,6 @@ class HybridFactorGraph : public FactorGraph<Factor> {
     auto factor = boost::allocate_shared<FACTOR>(
         Eigen::aligned_allocator<FACTOR>(), std::forward<Args>(args)...);
     push_hybrid(factor);
-  }
-
-  /**
-   * @brief Add a single factor shared pointer to the hybrid factor graph.
-   * Dynamically handles the factor type and assigns it to the correct
-   * underlying container.
-   *
-   * @param sharedFactor The factor to add to this factor graph.
-   */
-  void push_back(const SharedFactor& sharedFactor) {
-    if (auto p = boost::dynamic_pointer_cast<DiscreteFactor>(sharedFactor)) {
-      push_discrete(p);
-    }
-    if (auto p = boost::dynamic_pointer_cast<HybridFactor>(sharedFactor)) {
-      push_hybrid(p);
-    }
   }
 
   /// Get all the discrete keys in the factor graph.

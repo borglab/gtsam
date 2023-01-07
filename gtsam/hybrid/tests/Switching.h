@@ -136,6 +136,8 @@ struct Switching {
             std::vector<double> measurements = {},
             std::string discrete_transition_prob = "1/2 3/2")
       : K(K) {
+    using noiseModel::Isotropic;
+
     // Create DiscreteKeys for binary K modes.
     for (size_t k = 0; k < K; k++) {
       modes.emplace_back(M(k), 2);
@@ -150,9 +152,8 @@ struct Switching {
 
     // Create hybrid factor graph.
     // Add a prior on X(0).
-    auto prior = boost::make_shared<PriorFactor<double>>(
-        X(0), measurements.at(0), noiseModel::Isotropic::Sigma(1, prior_sigma));
-    nonlinearFactorGraph.push_nonlinear(prior);
+    nonlinearFactorGraph.emplace_shared<PriorFactor<double>>(
+        X(0), measurements.at(0), Isotropic::Sigma(1, prior_sigma));
 
     // Add "motion models".
     for (size_t k = 0; k < K - 1; k++) {
@@ -167,9 +168,9 @@ struct Switching {
     }
 
     // Add measurement factors
-    auto measurement_noise = noiseModel::Isotropic::Sigma(1, prior_sigma);
+    auto measurement_noise = Isotropic::Sigma(1, prior_sigma);
     for (size_t k = 1; k < K; k++) {
-      nonlinearFactorGraph.emplace_nonlinear<PriorFactor<double>>(
+      nonlinearFactorGraph.emplace_shared<PriorFactor<double>>(
           X(k), measurements.at(k), measurement_noise);
     }
 

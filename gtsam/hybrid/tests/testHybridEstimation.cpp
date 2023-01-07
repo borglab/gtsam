@@ -407,8 +407,8 @@ static HybridNonlinearFactorGraph createHybridNonlinearFactorGraph() {
   const auto noise_model = noiseModel::Isotropic::Sigma(1, sigma);
 
   // Add "measurement" factors:
-  nfg.emplace_nonlinear<PriorFactor<double>>(X(0), 0.0, noise_model);
-  nfg.emplace_nonlinear<PriorFactor<double>>(X(1), 1.0, noise_model);
+  nfg.emplace_shared<PriorFactor<double>>(X(0), 0.0, noise_model);
+  nfg.emplace_shared<PriorFactor<double>>(X(1), 1.0, noise_model);
 
   // Add mixture factor:
   DiscreteKey m(M(0), 2);
