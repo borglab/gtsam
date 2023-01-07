@@ -34,22 +34,17 @@ typedef FastVector<FactorIndex> FactorIndices;
 typedef FastSet<FactorIndex> FactorIndexSet;
 
   /**
-   * This is the base class for all factor types.  It is templated on a KEY type,
-   * which will be the type used to label variables.  Key types currently in use
-   * in gtsam are Index with symbolic (IndexFactor, SymbolicFactorGraph) and
-   * Gaussian factors (GaussianFactor, JacobianFactor, HessianFactor, GaussianFactorGraph),
-   * and Key with nonlinear factors (NonlinearFactor, NonlinearFactorGraph).
-   * though currently only IndexFactor and IndexConditional derive from this
-   * class, using Index keys.  This class does not store any data other than its
-   * keys.  Derived classes store data such as matrices and probability tables.
+   * This is the base class for all factor types.  This class does not store any
+   * data other than its keys.  Derived classes store data such as matrices and
+   * probability tables.
    *
-   * Note that derived classes *must* redefine the ConditionalType and shared_ptr
-   * typedefs to refer to the associated conditional and shared_ptr types of the
-   * derived class.  See IndexFactor, JacobianFactor, etc. for examples.
+   * Note that derived classes *must* redefine the `This` and `shared_ptr`
+   * typedefs. See JacobianFactor, etc. for examples.
    *
-   * This class is \b not virtual for performance reasons - derived symbolic classes,
-   * IndexFactor and IndexConditional, need to be created and destroyed quickly
-   * during symbolic elimination.  GaussianFactor and NonlinearFactor are virtual.
+   * This class is \b not virtual for performance reasons - the derived class
+   * SymbolicFactor needs to be created and destroyed quickly during symbolic
+   * elimination.  GaussianFactor and NonlinearFactor are virtual. 
+   * 
    * \nosubgrouping
    */
   class GTSAM_EXPORT Factor
