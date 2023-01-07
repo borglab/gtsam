@@ -341,8 +341,7 @@ TEST(HybridBayesNet, Sampling) {
       KeyVector{X(0), X(1)}, DiscreteKeys{DiscreteKey(M(0), 2)}, factors);
 
   DiscreteKey mode(M(0), 2);
-  auto discrete_prior = boost::make_shared<DiscreteDistribution>(mode, "1/1");
-  nfg.push_discrete(discrete_prior);
+  nfg.emplace_shared<DiscreteDistribution>(mode, "1/1");
 
   Values initial;
   double z0 = 0.0, z1 = 1.0;

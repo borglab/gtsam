@@ -23,7 +23,6 @@
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
 #include <gtsam/hybrid/HybridConditional.h>
-#include <gtsam/hybrid/HybridDiscreteFactor.h>
 #include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianConditional.h>
@@ -81,18 +80,6 @@ TEST(HybridSerialization, HybridGaussianFactor) {
   EXPECT(equalsObj<HybridGaussianFactor>(factor));
   EXPECT(equalsXML<HybridGaussianFactor>(factor));
   EXPECT(equalsBinary<HybridGaussianFactor>(factor));
-}
-
-/* ****************************************************************************/
-// Test HybridDiscreteFactor serialization.
-TEST(HybridSerialization, HybridDiscreteFactor) {
-  DiscreteKeys discreteKeys{{M(0), 2}};
-  const HybridDiscreteFactor factor(
-      DecisionTreeFactor(discreteKeys, std::vector<double>{0.4, 0.6}));
-
-  EXPECT(equalsObj<HybridDiscreteFactor>(factor));
-  EXPECT(equalsXML<HybridDiscreteFactor>(factor));
-  EXPECT(equalsBinary<HybridDiscreteFactor>(factor));
 }
 
 /* ****************************************************************************/
