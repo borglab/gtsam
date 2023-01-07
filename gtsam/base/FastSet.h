@@ -56,15 +56,7 @@ public:
   typedef std::set<VALUE, std::less<VALUE>,
   typename internal::FastDefaultAllocator<VALUE>::type> Base;
 
-  /** Default constructor */
-  FastSet() {
-  }
-
-  /** Constructor from a range, passes through to base class */
-  template<typename INPUTITERATOR>
-  explicit FastSet(INPUTITERATOR first, INPUTITERATOR last) :
-  Base(first, last) {
-  }
+  using Base::Base;  // Inherit the set constructors
 
   /** Constructor from a iterable container, passes through to base class */
   template<typename INPUTCONTAINER>
