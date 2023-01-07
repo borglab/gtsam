@@ -29,11 +29,8 @@
 #include <gtsam/base/utilities.h>  // boost::index_sequence
 
 #include <boost/serialization/base_object.hpp>
-#include <boost/assign/list_of.hpp>
 
 namespace gtsam {
-
-using boost::assign::cref_list_of;
 
 /* ************************************************************************* */
 

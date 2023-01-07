@@ -59,7 +59,7 @@ public:
    */
   ShonanGaugeFactor(Key key, size_t p, size_t d = 3,
                     boost::optional<double> gamma = boost::none)
-      : NonlinearFactor(boost::assign::cref_list_of<1>(key)) {
+      : NonlinearFactor(KeyVector{key}) {
     if (p < d) {
       throw std::invalid_argument("ShonanGaugeFactor must have p>=d.");
     }

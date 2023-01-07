@@ -32,7 +32,6 @@
 #include <boost/format.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/tuple/tuple.hpp>
-#include <boost/assign/list_of.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/adaptor/map.hpp>
 #include <boost/range/algorithm/copy.hpp>
@@ -41,13 +40,15 @@
 #include <limits>
 
 using namespace std;
-using namespace boost::assign;
 namespace br {
 using namespace boost::range;
 using namespace boost::adaptors;
 }
 
 namespace gtsam {
+
+// Typedefs used in constructors below.
+using Dims = std::vector<Eigen::Index>;
 
 /* ************************************************************************* */
 void HessianFactor::Allocate(const Scatter& scatter) {
@@ -74,14 +75,14 @@ HessianFactor::HessianFactor(const Scatter& scatter) {
 
 /* ************************************************************************* */
 HessianFactor::HessianFactor() :
-    info_(cref_list_of<1>(1)) {
+    info_(Dims{1}) {
   assert(info_.rows() == 1);
   constantTerm() = 0.0;
 }
 
 /* ************************************************************************* */
-HessianFactor::HessianFactor(Key j, const Matrix& G, const Vector& g, double f) :
-    GaussianFactor(cref_list_of<1>(j)), info_(cref_list_of<2>(G.cols())(1)) {
+HessianFactor::HessianFactor(Key j, const Matrix& G, const Vector& g, double f)
+    : GaussianFactor(KeyVector{j}), info_(Dims{G.cols(), 1}) {
   if (G.rows() != G.cols() || G.rows() != g.size())
     throw invalid_argument(
         "Attempting to construct HessianFactor with inconsistent matrix and/or vector dimensions");
@@ -93,8 +94,8 @@ HessianFactor::HessianFactor(Key j, const Matrix& G, const Vector& g, double f) 
 /* ************************************************************************* */
 // error is 0.5*(x-mu)'*inv(Sigma)*(x-mu) = 0.5*(x'*G*x - 2*x'*G*mu + mu'*G*mu)
 // where G = inv(Sigma), g = G*mu, f = mu'*G*mu = mu'*g
-HessianFactor::HessianFactor(Key j, const Vector& mu, const Matrix& Sigma) :
-    GaussianFactor(cref_list_of<1>(j)), info_(cref_list_of<2>(Sigma.cols())(1)) {
+HessianFactor::HessianFactor(Key j, const Vector& mu, const Matrix& Sigma)
+    : GaussianFactor(KeyVector{j}), info_(Dims{Sigma.cols(), 1}) {
   if (Sigma.rows() != Sigma.cols() || Sigma.rows() != mu.size())
     throw invalid_argument(
         "Attempting to construct HessianFactor with inconsistent matrix and/or vector dimensions");
@@ -107,8 +108,8 @@ HessianFactor::HessianFactor(Key j, const Vector& mu, const Matrix& Sigma) :
 HessianFactor::HessianFactor(Key j1, Key j2, const Matrix& G11,
     const Matrix& G12, const Vector& g1, const Matrix& G22, const Vector& g2,
     double f) :
-    GaussianFactor(cref_list_of<2>(j1)(j2)), info_(
-        cref_list_of<3>(G11.cols())(G22.cols())(1)) {
+    GaussianFactor(KeyVector{j1,j2}), info_(
+        Dims{G11.cols(),G22.cols(),1}) {
   info_.setDiagonalBlock(0, G11);
   info_.setOffDiagonalBlock(0, 1, G12);
   info_.setDiagonalBlock(1, G22);
@@ -121,8 +122,8 @@ HessianFactor::HessianFactor(Key j1, Key j2, Key j3, const Matrix& G11,
     const Matrix& G12, const Matrix& G13, const Vector& g1, const Matrix& G22,
     const Matrix& G23, const Vector& g2, const Matrix& G33, const Vector& g3,
     double f) :
-    GaussianFactor(cref_list_of<3>(j1)(j2)(j3)), info_(
-        cref_list_of<4>(G11.cols())(G22.cols())(G33.cols())(1)) {
+    GaussianFactor(KeyVector{j1,j2,j3}), info_(
+        Dims{G11.cols(),G22.cols(),G33.cols(),1}) {
   if (G11.rows() != G11.cols() || G11.rows() != G12.rows()
       || G11.rows() != G13.rows() || G11.rows() != g1.size()
       || G22.cols() != G12.cols() || G33.cols() != G13.cols()
