@@ -23,12 +23,10 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Rot2.h>
 
-#include <boost/assign/std/vector.hpp>  // for operator +=
 #include <boost/optional.hpp>
 #include <cmath>
 #include <iostream>
 
-using namespace boost::assign;
 using namespace gtsam;
 using namespace std;
 
@@ -749,11 +747,10 @@ namespace align_3 {
 TEST(Pose2, align_3) {
   using namespace align_3;
 
-  Point2Pairs ab_pairs;
   Point2Pair ab1(make_pair(a1, b1));
   Point2Pair ab2(make_pair(a2, b2));
   Point2Pair ab3(make_pair(a3, b3));
-  ab_pairs += ab1, ab2, ab3;
+  const Point2Pairs ab_pairs{ab1, ab2, ab3};
 
   boost::optional<Pose2> aTb = Pose2::Align(ab_pairs);
   EXPECT(assert_equal(expected, *aTb));
@@ -778,9 +775,7 @@ namespace {
 TEST(Pose2, align_4) {
   using namespace align_3;
 
-  Point2Vector as, bs;
-  as += a1, a2, a3;
-  bs += b3, b1, b2;  // note in 3,1,2 order !
+  Point2Vector as{a1, a2, a3}, bs{b3, b1, b2};  // note in 3,1,2 order !
 
   Triangle t1; t1.i_=0; t1.j_=1; t1.k_=2;
   Triangle t2; t2.i_=1; t2.j_=2; t2.k_=0;
