@@ -26,11 +26,8 @@
 #include <gtsam/linear/GaussianDensity.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 
-#include <boost/assign/std/list.hpp>
 #include <boost/assign/std/vector.hpp>
-#include <boost/assign/list_inserter.hpp>
 #include <boost/make_shared.hpp>
-#include <boost/assign/list_of.hpp>
 
 #include <iostream>
 #include <sstream>
@@ -38,7 +35,6 @@
 
 using namespace gtsam;
 using namespace std;
-using namespace boost::assign;
 using symbol_shorthand::X;
 using symbol_shorthand::Y;
 
@@ -64,11 +60,7 @@ TEST(GaussianConditional, constructor)
   Vector d = Vector2(1.0, 2.0);
   SharedDiagonal s = noiseModel::Diagonal::Sigmas(Vector2(3.0, 4.0));
 
-  vector<pair<Key, Matrix> > terms = pair_list_of
-      (1, R)
-      (3, S1)
-      (5, S2)
-      (7, S3);
+  vector<pair<Key, Matrix> > terms = {{1, R}, {3, S1}, {5, S2}, {7, S3}};
 
   GaussianConditional actual(terms, 1, d, s);
 
@@ -223,14 +215,10 @@ TEST( GaussianConditional, solve )
   Vector sx1(2); sx1 << 1.0, 1.0;
   Vector sl1(2); sl1 << 1.0, 1.0;
 
-  VectorValues expected = map_list_of
-    (1, expectedX)
-    (2, sx1)
-    (10, sl1);
+  VectorValues expected = {{1, expectedX} {2, sx1} {10, sl1}};
 
-  VectorValues solution = map_list_of
-    (2, sx1) // parents
-    (10, sl1);
+  VectorValues solution = {{2, sx1},  // parents
+                           {10, sl1}};
   solution.insert(cg.solve(solution));
 
   EXPECT(assert_equal(expected, solution, tol));
@@ -254,12 +242,10 @@ TEST( GaussianConditional, solve_simple )
   Vector sx1 = Vector2(9.0, 10.0);
 
   // elimination order: 1, 2
-  VectorValues actual = map_list_of
-    (2, sx1); // parent
+  VectorValues actual = {{2, sx1}};  // parent
 
-  VectorValues expected = map_list_of<Key, Vector>
-    (2, sx1)
-    (1, (Vector(4) << -3.1,-3.4,-11.9,-13.2).finished());
+  VectorValues expected = {
+      {2, sx1}, {1, (Vector(4) << -3.1, -3.4, -11.9, -13.2).finished()}};
 
   // verify indices/size
   EXPECT_LONGS_EQUAL(2, (long)cg.size());
@@ -290,13 +276,10 @@ TEST( GaussianConditional, solve_multifrontal )
   Vector sl1 = Vector2(9.0, 10.0);
 
   // elimination order; _x_, _x1_, _l1_
-  VectorValues actual = map_list_of
-    (10, sl1); // parent
+  VectorValues actual = {{10, sl1}};  // parent
 
-  VectorValues expected = map_list_of<Key, Vector>
-    (1, Vector2(-3.1,-3.4))
-    (2, Vector2(-11.9,-13.2))
-    (10, sl1);
+  VectorValues expected = {
+      {1, Vector2(-3.1, -3.4)}, {2, Vector2(-11.9, -13.2)}, {10, sl1}};
 
   // verify indices/size
   EXPECT_LONGS_EQUAL(3, (long)cg.size());
@@ -330,13 +313,10 @@ TEST( GaussianConditional, solveTranspose ) {
   // 2 = 1    2
   // 5   1 1  3
 
-  VectorValues
-    x = map_list_of<Key, Vector>
-      (1, (Vector(1) << 2.).finished())
-      (2, (Vector(1) << 5.).finished()),
-    y = map_list_of<Key, Vector>
-      (1, (Vector(1) << 2.).finished())
-      (2, (Vector(1) << 3.).finished());
+  VectorValues x = {{1, (Vector(1) << 2.).finished()},
+                    {2, (Vector(1) << 5.).finished()}},
+               y = {{1, (Vector(1) << 2.).finished()},
+                    {2, (Vector(1) << 3.).finished()}};
 
   // test functional version
   VectorValues actual = cbn.backSubstituteTranspose(x);
@@ -395,7 +375,7 @@ TEST(GaussianConditional, FromMeanAndStddev) {
   const Vector2 b(20, 40), x0(1, 2), x1(3, 4), x2(5, 6);
   const double sigma = 3;
 
-  VectorValues values = map_list_of(X(0), x0)(X(1), x1)(X(2), x2);
+  VectorValues values = {{X(0), x0}, {X(1), x1}, {X(2), x2};
 
   auto conditional1 =
       GaussianConditional::FromMeanAndStddev(X(0), A1, X(1), b, sigma);
