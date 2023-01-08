@@ -18,13 +18,11 @@
 #include <gtsam/global_includes.h>
 #include <gtsam/base/Matrix.h>
 
-#include <boost/assign/list_of.hpp>
 #include <map>
 #include <iostream>
 
 using namespace std;
 using namespace gtsam;
-using boost::assign::list_of;
 
 #ifdef GTSAM_USE_TBB
 

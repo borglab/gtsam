@@ -16,14 +16,12 @@
  */
 
 #include <time.h>
-#include <boost/assign/std/list.hpp> // for operator += in Ordering
 #include <CppUnitLite/TestHarness.h>
 #include <tests/smallExample.h>
 
 using namespace std;
 using namespace gtsam;
 using namespace example;
-using namespace boost::assign;
 
 /* ************************************************************************* */
 // Create a Kalman smoother for t=1:T and optimize

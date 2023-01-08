@@ -22,8 +22,6 @@
 #include <gtsam/linear/GaussianISAM.h>
 #include <gtsam/inference/Ordering.h>
 
-#include <boost/assign/std/list.hpp> // for operator +=
-using namespace boost::assign;
 #include <boost/range/adaptor/map.hpp>
 namespace br { using namespace boost::adaptors; using namespace boost::range; }
 
