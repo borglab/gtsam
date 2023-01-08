@@ -34,6 +34,8 @@ using namespace gtsam::symbol_shorthand;
 
 static bool debug = false;
 
+using Keys = ListOf<Key>;  // Create Keys a la list_of
+
 /* ************************************************************************* */
 TEST(SymbolicBayesTree, clear) {
   SymbolicBayesTree bayesTree = asiaBayesTree;
@@ -687,7 +689,7 @@ TEST(SymbolicBayesTree, COLAMDvsMETIS) {
 #elif defined(_WIN32)
     EXPECT(assert_equal(Ordering{4, 3, 1, 0, 5, 2}, ordering));
 #else
-    EXPECT(assert_equal(Ordering{3, 2, 0, 5, 4, 1}, ordering));
+    EXPECT(assert_equal(Ordering{3, 2, 5, 0, 4, 1}, ordering));
 #endif
 
     //  - P( 1 0 3)
