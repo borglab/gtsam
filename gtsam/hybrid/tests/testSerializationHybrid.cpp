@@ -150,8 +150,7 @@ TEST(HybridSerialization, GaussianMixture) {
 // Test HybridBayesNet serialization.
 TEST(HybridSerialization, HybridBayesNet) {
   Switching s(2);
-  Ordering ordering = s.linearizedFactorGraph.getHybridOrdering();
-  HybridBayesNet hbn = *(s.linearizedFactorGraph.eliminateSequential(ordering));
+  HybridBayesNet hbn = *(s.linearizedFactorGraph.eliminateSequential());
 
   EXPECT(equalsObj<HybridBayesNet>(hbn));
   EXPECT(equalsXML<HybridBayesNet>(hbn));
@@ -162,9 +161,7 @@ TEST(HybridSerialization, HybridBayesNet) {
 // Test HybridBayesTree serialization.
 TEST(HybridSerialization, HybridBayesTree) {
   Switching s(2);
-  Ordering ordering = s.linearizedFactorGraph.getHybridOrdering();
-  HybridBayesTree hbt =
-      *(s.linearizedFactorGraph.eliminateMultifrontal(ordering));
+  HybridBayesTree hbt = *(s.linearizedFactorGraph.eliminateMultifrontal());
 
   EXPECT(equalsObj<HybridBayesTree>(hbt));
   EXPECT(equalsXML<HybridBayesTree>(hbt));
