@@ -31,8 +31,8 @@ using namespace noiseModel;
 
 static const double kSigma = 2, kInverseSigma = 1.0 / kSigma,
                     kVariance = kSigma * kSigma, prc = 1.0 / kVariance;
-static const Matrix R = Matrix3::Identity() * kInverseSigma;
-static const Matrix kCovariance = Matrix3::Identity() * kVariance;
+static const Matrix R = I_3x3 * kInverseSigma;
+static const Matrix kCovariance = I_3x3 * kVariance;
 static const Vector3 kSigmas(kSigma, kSigma, kSigma);
 
 /* ************************************************************************* */
@@ -720,7 +720,7 @@ TEST(NoiseModel, NonDiagonalGaussian)
   const Matrix3 info = R.transpose() * R;
   const Matrix3 cov = info.inverse();
   const Vector3 e(1, 1, 1), white = R * e;
-  Matrix I = Matrix3::Identity();
+  Matrix I = I_3x3;
 
 
   {

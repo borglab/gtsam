@@ -27,8 +27,6 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include <boost/shared_ptr.hpp>
-#include <boost/assign/std/list.hpp> // for operator +=
-using namespace boost::assign;
 
 #include <iostream>
 
@@ -47,8 +45,7 @@ TEST ( Ordering, predecessorMap2Keys ) {
   p_map.insert(4,3);
   p_map.insert(5,1);
 
-  list<Key> expected;
-  expected += 4,5,3,2,1;
+  list<Key> expected{4, 5, 3, 2, 1};
 
   list<Key> actual = predecessorMap2Keys<Key>(p_map);
   LONGS_EQUAL((long)expected.size(), (long)actual.size());
