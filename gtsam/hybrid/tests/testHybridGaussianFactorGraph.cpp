@@ -127,9 +127,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullSequentialEqualChance) {
       boost::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()));
   hfg.add(GaussianMixtureFactor({X(1)}, {m1}, dt));
 
-  // Do elimination.
-  Ordering ordering = Ordering::ColamdConstrainedLast(hfg, {M(1)});
-  auto result = hfg.eliminateSequential(ordering);
+  auto result = hfg.eliminateSequential();
 
   auto dc = result->at(2)->asDiscrete();
   CHECK(dc);
@@ -160,8 +158,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullSequentialSimple) {
   // Joint discrete probability table for c1, c2
   hfg.add(DecisionTreeFactor({{M(1), 2}, {M(2), 2}}, "1 2 3 4"));
 
-  HybridBayesNet::shared_ptr result = hfg.eliminateSequential(
-      Ordering::ColamdConstrainedLast(hfg, {M(1), M(2)}));
+  HybridBayesNet::shared_ptr result = hfg.eliminateSequential();
 
   // There are 4 variables (2 continuous + 2 discrete) in the bayes net.
   EXPECT_LONGS_EQUAL(4, result->size());
@@ -186,8 +183,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalSimple) {
   // variable throws segfault
   //  hfg.add(DecisionTreeFactor({{M(1), 2}, {M(2), 2}}, "1 2 3 4"));
 
-  HybridBayesTree::shared_ptr result =
-      hfg.eliminateMultifrontal(hfg.getHybridOrdering());
+  HybridBayesTree::shared_ptr result = hfg.eliminateMultifrontal();
 
   // The bayes tree should have 3 cliques
   EXPECT_LONGS_EQUAL(3, result->size());
@@ -217,7 +213,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalCLG) {
   hfg.add(DecisionTreeFactor(m, {2, 8}));
 
   // Get a constrained ordering keeping c1 last
-  auto ordering_full = hfg.getHybridOrdering();
+  auto ordering_full = HybridOrdering(hfg);
 
   // Returns a Hybrid Bayes Tree with distribution P(x0|x1)P(x1|c1)P(c1)
   HybridBayesTree::shared_ptr hbt = hfg.eliminateMultifrontal(ordering_full);
@@ -516,8 +512,7 @@ TEST(HybridGaussianFactorGraph, optimize) {
 
   hfg.add(GaussianMixtureFactor({X(1)}, {c1}, dt));
 
-  auto result =
-      hfg.eliminateSequential(Ordering::ColamdConstrainedLast(hfg, {C(1)}));
+  auto result = hfg.eliminateSequential();
 
   HybridValues hv = result->optimize();
 
@@ -570,9 +565,7 @@ TEST(HybridGaussianFactorGraph, ErrorAndProbPrime) {
 
   HybridGaussianFactorGraph graph = s.linearizedFactorGraph;
 
-  Ordering hybridOrdering = graph.getHybridOrdering();
-  HybridBayesNet::shared_ptr hybridBayesNet =
-      graph.eliminateSequential(hybridOrdering);
+  HybridBayesNet::shared_ptr hybridBayesNet = graph.eliminateSequential();
 
   const HybridValues delta = hybridBayesNet->optimize();
   const double error = graph.error(delta);
@@ -591,9 +584,7 @@ TEST(HybridGaussianFactorGraph, ErrorAndProbPrimeTree) {
 
   HybridGaussianFactorGraph graph = s.linearizedFactorGraph;
 
-  Ordering hybridOrdering = graph.getHybridOrdering();
-  HybridBayesNet::shared_ptr hybridBayesNet =
-      graph.eliminateSequential(hybridOrdering);
+  HybridBayesNet::shared_ptr hybridBayesNet = graph.eliminateSequential();
 
   HybridValues delta = hybridBayesNet->optimize();
   auto error_tree = graph.error(delta.continuous());
@@ -682,10 +673,7 @@ TEST(HybridGaussianFactorGraph, EliminateTiny1) {
   expectedBayesNet.emplace_back(new DiscreteConditional(mode, "74/26"));
 
   // Test elimination
-  Ordering ordering;
-  ordering.push_back(X(0));
-  ordering.push_back(M(0));
-  const auto posterior = fg.eliminateSequential(ordering);
+  const auto posterior = fg.eliminateSequential();
   EXPECT(assert_equal(expectedBayesNet, *posterior, 0.01));
 }
 
@@ -717,10 +705,7 @@ TEST(HybridGaussianFactorGraph, EliminateTiny2) {
   expectedBayesNet.emplace_back(new DiscreteConditional(mode, "23/77"));
 
   // Test elimination
-  Ordering ordering;
-  ordering.push_back(X(0));
-  ordering.push_back(M(0));
-  const auto posterior = fg.eliminateSequential(ordering);
+  const auto posterior = fg.eliminateSequential();
   EXPECT(assert_equal(expectedBayesNet, *posterior, 0.01));
 }
 
@@ -739,11 +724,7 @@ TEST(HybridGaussianFactorGraph, EliminateTiny22) {
   EXPECT_LONGS_EQUAL(5, fg.size());
 
   // Test elimination
-  Ordering ordering;
-  ordering.push_back(X(0));
-  ordering.push_back(M(0));
-  ordering.push_back(M(1));
-  const auto posterior = fg.eliminateSequential(ordering);
+  const auto posterior = fg.eliminateSequential();
 
   // Compute the log-ratio between the Bayes net and the factor graph.
   auto compute_ratio = [&](HybridValues *sample) -> double {

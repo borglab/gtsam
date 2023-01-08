@@ -90,7 +90,7 @@ TEST(HybridEstimation, Full) {
   }
 
   HybridBayesNet::shared_ptr bayesNet =
-      graph.eliminateSequential(hybridOrdering);
+      graph.eliminateSequential();
 
   EXPECT_LONGS_EQUAL(2 * K - 1, bayesNet->size());
 
@@ -481,8 +481,7 @@ TEST(HybridEstimation, CorrectnessViaSampling) {
   const auto fg = createHybridGaussianFactorGraph();
 
   // 2. Eliminate into BN
-  const Ordering ordering = fg->getHybridOrdering();
-  const HybridBayesNet::shared_ptr bn = fg->eliminateSequential(ordering);
+  const HybridBayesNet::shared_ptr bn = fg->eliminateSequential();
 
   // Set up sampling
   std::mt19937_64 rng(11);
