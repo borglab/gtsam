@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * GTSAM Copyright 2010-2023, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /*
- * @file symbolicExampleGraphs.cpp
+ * @file symbolicExampleGraphs.h
  * @date sept 15, 2012
  * @author  Frank Dellaert
  * @author  Michael Kaess
@@ -29,6 +29,25 @@
 
 namespace gtsam {
   namespace {
+
+    // A small helper class to replace Boost's `list_of` function.
+    template <typename T>
+    class ListOf {
+    public:
+      ListOf(const T& c) { result.push_back(c); }
+
+      ListOf& operator()(const T& c) {
+        result.push_back(c);
+        return *this;
+      }
+
+      operator std::vector<T>() { return result; }
+
+    private:
+      std::vector<T> result;
+    };
+
+    using MakeKeys = ListOf<Key>;
 
     const SymbolicFactorGraph simpleTestGraph1 {
       boost::make_shared<SymbolicFactor>(0,1),
@@ -100,23 +119,33 @@ namespace gtsam {
       boost::make_shared<SymbolicConditional>(_L_, _B_),
       boost::make_shared<SymbolicConditional>(_B_)};
 
+    using sharedClique = SymbolicBayesTreeClique::shared_ptr;
+    using Children = ListOf<sharedClique>;
+
+    inline sharedClique LeafClique(const KeyVector& keys,
+                                   DenseIndex nrFrontals) {
+      return boost::make_shared<SymbolicBayesTreeClique>(
+          boost::make_shared<SymbolicConditional>(
+              SymbolicConditional::FromKeys(keys, nrFrontals)));
+    }
+
+    inline sharedClique NodeClique(const KeyVector& keys, DenseIndex nrFrontals,
+                                   const std::vector<sharedClique>& children) {
+      sharedClique clique = LeafClique(keys, nrFrontals);
+      clique->children.assign(children.begin(), children.end());
+      for (auto&& child : children) child->parent_ = clique;
+      return clique;
+    }
+
     SymbolicBayesTree __asiaBayesTree() {
       SymbolicBayesTree result;
-      result.insertRoot(boost::make_shared<SymbolicBayesTreeClique>(
-        boost::make_shared<SymbolicConditional>(
-        SymbolicConditional::FromKeys(KeyVector{_E_, _L_, _B_}, 3))));
-      result.addClique(boost::make_shared<SymbolicBayesTreeClique>(
-        boost::make_shared<SymbolicConditional>(
-        SymbolicConditional::FromKeys(KeyVector{_S_, _B_, _L_}, 1))),
-        result.roots().front());
-      result.addClique(boost::make_shared<SymbolicBayesTreeClique>(
-        boost::make_shared<SymbolicConditional>(
-        SymbolicConditional::FromKeys(KeyVector{_T_, _E_, _L_}, 1))),
-        result.roots().front());
-      result.addClique(boost::make_shared<SymbolicBayesTreeClique>(
-        boost::make_shared<SymbolicConditional>(
-        SymbolicConditional::FromKeys(KeyVector{_X_, _E_}, 1))),
-        result.roots().front());
+      result.insertRoot(LeafClique(KeyVector{_E_, _L_, _B_}, 3));
+      result.addClique(LeafClique(KeyVector{_S_, _B_, _L_}, 1),
+                       result.roots().front());
+      result.addClique(LeafClique(KeyVector{_T_, _E_, _L_}, 1),
+                       result.roots().front());
+      result.addClique(LeafClique(KeyVector{_X_, _E_}, 1),
+                       result.roots().front());
       return result;
     }
 

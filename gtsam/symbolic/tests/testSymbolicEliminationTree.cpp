@@ -73,43 +73,22 @@ class EliminationTreeTester {
   }
 };
 
-template <typename FACTORS>
-static sharedNode MakeNode(Key key, const FACTORS& factors) {
-  sharedNode node = boost::make_shared<SymbolicEliminationTree::Node>();
+static sharedNode Leaf(Key key, const SymbolicFactorGraph& factors) {
+  sharedNode node(new SymbolicEliminationTree::Node());
   node->key = key;
-  SymbolicFactorGraph factorsAsGraph = factors;
-  node->factors.assign(factorsAsGraph.begin(), factorsAsGraph.end());
+  node->factors = factors;
   return node;
 }
 
-template <typename FACTORS>
-static sharedNode MakeNode(Key key, const FACTORS& factors,
-                           const std::vector<sharedNode>& children) {
-  sharedNode node = boost::make_shared<SymbolicEliminationTree::Node>();
-  node->key = key;
-  SymbolicFactorGraph factorsAsGraph = factors;
-  node->factors.assign(factorsAsGraph.begin(), factorsAsGraph.end());
+static sharedNode Node(Key key, const SymbolicFactorGraph& factors,
+                       const std::vector<sharedNode>& children) {
+  sharedNode node = Leaf(key, factors);
   node->children.assign(children.begin(), children.end());
   return node;
 }
 
-template <typename Class>
-class ListOf {
- public:
-  ListOf(Class&& c) { result.push_back(c); }
-
-  ListOf& operator()(Class&& c) {
-    result.push_back(c);
-    return *this;
-  }
-
-  operator std::vector<Class>() { return result; }
-
- private:
-  std::vector<Class> result;
-};
-
-using Nodes = ListOf<sharedNode>;
+// Use list_of replacement defined in symbolicExampleGraphs.h
+using ChildNodes = ListOf<sharedNode>;
 
 /* ************************************************************************* */
 TEST(EliminationTree, Create) {
@@ -143,28 +122,26 @@ TEST(EliminationTree, Create2) {
   graph += SymbolicFactor(X(4), L(3));
   graph += SymbolicFactor(X(5), L(3));
 
-  SymbolicEliminationTree expected =
-      EliminationTreeTester::MakeTree(Nodes(MakeNode(
-          X(3), SymbolicFactorGraph(),
-          Nodes(MakeNode(
-              X(2), SymbolicFactorGraph(SymbolicFactor(X(2), X(3))),
-              Nodes(MakeNode(
-                  L(1), SymbolicFactorGraph(SymbolicFactor(X(2), L(1))),
-                  Nodes(MakeNode(
-                      X(1), SymbolicFactorGraph(SymbolicFactor(X(1), L(1)))(
-                                SymbolicFactor(X(1), X(2)))))))))(
-              MakeNode(
-                  X(4), SymbolicFactorGraph(SymbolicFactor(X(3), X(4))),
-                  Nodes(MakeNode(
-                      L(2), SymbolicFactorGraph(SymbolicFactor(X(4), L(2))),
-                      Nodes(MakeNode(
-                          X(5),
-                          SymbolicFactorGraph(SymbolicFactor(X(4), X(5)))(
-                              SymbolicFactor(L(2), X(5))),
-                          Nodes(MakeNode(
-                              L(3),
-                              SymbolicFactorGraph(SymbolicFactor(X(4), L(3)))(
-                                  SymbolicFactor(X(5), L(3))))))))))))));
+  SymbolicEliminationTree expected = EliminationTreeTester::MakeTree(ChildNodes(
+      Node(X(3), SymbolicFactorGraph(),
+           ChildNodes(Node(
+               X(2), SymbolicFactorGraph(SymbolicFactor(X(2), X(3))),
+               ChildNodes(Node(
+                   L(1), SymbolicFactorGraph(SymbolicFactor(X(2), L(1))),
+                   ChildNodes(Leaf(
+                       X(1), SymbolicFactorGraph(SymbolicFactor(X(1), L(1)))(
+                                 SymbolicFactor(X(1), X(2)))))))))(
+               Node(X(4), SymbolicFactorGraph(SymbolicFactor(X(3), X(4))),
+                    ChildNodes(Node(
+                        L(2), SymbolicFactorGraph(SymbolicFactor(X(4), L(2))),
+                        ChildNodes(Node(
+                            X(5),
+                            SymbolicFactorGraph(SymbolicFactor(X(4), X(5)))(
+                                SymbolicFactor(L(2), X(5))),
+                            ChildNodes(Leaf(
+                                L(3),
+                                SymbolicFactorGraph(SymbolicFactor(X(4), L(3)))(
+                                    SymbolicFactor(X(5), L(3))))))))))))));
 
   const Ordering order{X(1), L(3), L(1), X(5), X(2), L(2), X(4), X(3)};
   SymbolicEliminationTree actual(graph, order);
