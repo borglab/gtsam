@@ -21,7 +21,6 @@
 #include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam_unstable/dllexport.h>
 
-#include <boost/assign.hpp>
 #include <boost/format.hpp>
 #include <map>
 

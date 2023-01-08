@@ -32,10 +32,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/assign/std/list.hpp>
-#include <boost/assign/std/set.hpp>
-using namespace boost::assign;
-
 /*STL/C++*/
 #include <iostream>
 

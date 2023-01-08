@@ -7,10 +7,6 @@
 
 #include <gtsam_unstable/slam/DummyFactor.h>
 
-#include <boost/assign/list_of.hpp>
-
-using namespace boost::assign;
-
 namespace gtsam {
 
 /* ************************************************************************* */
