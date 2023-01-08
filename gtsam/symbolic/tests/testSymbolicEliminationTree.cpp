@@ -76,7 +76,7 @@ class EliminationTreeTester {
 static sharedNode Leaf(Key key, const SymbolicFactorGraph& factors) {
   sharedNode node(new SymbolicEliminationTree::Node());
   node->key = key;
-  node->factors = factors;
+  node->factors.assign(factors.begin(), factors.end());
   return node;
 }
 
@@ -111,37 +111,54 @@ TEST(EliminationTree, Create2) {
   //                          \  |
   //                            l3
   SymbolicFactorGraph graph;
-  graph += SymbolicFactor(X(1), L(1));
-  graph += SymbolicFactor(X(1), X(2));
-  graph += SymbolicFactor(X(2), L(1));
-  graph += SymbolicFactor(X(2), X(3));
-  graph += SymbolicFactor(X(3), X(4));
-  graph += SymbolicFactor(X(4), L(2));
-  graph += SymbolicFactor(X(4), X(5));
-  graph += SymbolicFactor(L(2), X(5));
-  graph += SymbolicFactor(X(4), L(3));
-  graph += SymbolicFactor(X(5), L(3));
+  auto binary = [](Key j1, Key j2) -> SymbolicFactor {
+    return SymbolicFactor(j1, j2);
+  };
+  graph += binary(X(1), L(1));
+  graph += binary(X(1), X(2));
+  graph += binary(X(2), L(1));
+  graph += binary(X(2), X(3));
+  graph += binary(X(3), X(4));
+  graph += binary(X(4), L(2));
+  graph += binary(X(4), X(5));
+  graph += binary(L(2), X(5));
+  graph += binary(X(4), L(3));
+  graph += binary(X(5), L(3));
 
-  SymbolicEliminationTree expected = EliminationTreeTester::MakeTree(ChildNodes(
-      Node(X(3), SymbolicFactorGraph(),
-           ChildNodes(Node(
-               X(2), SymbolicFactorGraph(SymbolicFactor(X(2), X(3))),
-               ChildNodes(Node(
-                   L(1), SymbolicFactorGraph(SymbolicFactor(X(2), L(1))),
-                   ChildNodes(Leaf(
-                       X(1), SymbolicFactorGraph(SymbolicFactor(X(1), L(1)))(
-                                 SymbolicFactor(X(1), X(2)))))))))(
-               Node(X(4), SymbolicFactorGraph(SymbolicFactor(X(3), X(4))),
-                    ChildNodes(Node(
-                        L(2), SymbolicFactorGraph(SymbolicFactor(X(4), L(2))),
-                        ChildNodes(Node(
-                            X(5),
-                            SymbolicFactorGraph(SymbolicFactor(X(4), X(5)))(
-                                SymbolicFactor(L(2), X(5))),
-                            ChildNodes(Leaf(
-                                L(3),
-                                SymbolicFactorGraph(SymbolicFactor(X(4), L(3)))(
-                                    SymbolicFactor(X(5), L(3))))))))))))));
+  SymbolicEliminationTree expected = EliminationTreeTester::MakeTree(  //
+      ChildNodes(                                                      //
+          Node(X(3), SymbolicFactorGraph(),
+               ChildNodes(  //
+                   Node(X(2), SymbolicFactorGraph(binary(X(2), X(3))),
+                        ChildNodes(  //
+                            Node(L(1), SymbolicFactorGraph(binary(X(2), L(1))),
+                                 ChildNodes(  //
+                                     Leaf(X(1), SymbolicFactorGraph(
+                                                    binary(X(1), L(1)))(
+                                                    binary(X(1), X(2)))))))))(
+                   Node(X(4), SymbolicFactorGraph(binary(X(3), X(4))),
+                        ChildNodes(  //
+                            Node(L(2), SymbolicFactorGraph(binary(X(4), L(2))),
+                                 ChildNodes(  //
+                                     Node(X(5),
+                                          SymbolicFactorGraph(binary(
+                                              X(4), X(5)))(binary(L(2), X(5))),
+                                          ChildNodes(  //
+                                              Leaf(L(3),
+                                                   SymbolicFactorGraph(
+                                                       binary(X(4), L(3)))(
+                                                       binary(X(5), L(3)))  //
+                                                   )                        //
+                                              )                             //
+                                          )                                 //
+                                     )                                      //
+                                 )                                          //
+                            )                                               //
+                        )                                                   //
+                   )                                                        //
+               )                                                            //
+          )                                                                 //
+  );
 
   const Ordering order{X(1), L(3), L(1), X(5), X(2), L(2), X(4), X(3)};
   SymbolicEliminationTree actual(graph, order);
