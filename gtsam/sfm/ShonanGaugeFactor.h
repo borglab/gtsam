@@ -22,8 +22,6 @@
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
-#include <boost/assign/list_of.hpp>
-
 namespace gtsam {
 /**
  * The ShonanGaugeFactor creates a constraint on a single SO(n) to avoid moving

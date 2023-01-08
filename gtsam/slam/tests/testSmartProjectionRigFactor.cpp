@@ -25,13 +25,11 @@
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/slam/PoseTranslationPrior.h>
 
-#include <boost/assign/std/map.hpp>
 #include <iostream>
 
 #include "smartFactorScenarios.h"
 #define DISABLE_TIMING
 
-using namespace boost::assign;
 using namespace std::placeholders;
 
 static const double rankTol = 1.0;

@@ -25,7 +25,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/assign/std/map.hpp>
 #include <iostream>
 
 namespace {

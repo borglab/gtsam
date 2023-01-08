@@ -23,10 +23,7 @@
 #include <gtsam/slam/SmartProjectionFactor.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <CppUnitLite/TestHarness.h>
-#include <boost/assign/std/map.hpp>
 #include <iostream>
-
-using namespace boost::assign;
 
 namespace {
 static const bool isDebugTest = false;

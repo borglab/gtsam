@@ -31,8 +31,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/assign/std/vector.hpp>
-
 #include <cmath>
 #include <random>
 
