@@ -15,10 +15,7 @@
 #include <gtsam/nonlinear/LinearContainerFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 
-#include <boost/assign/std/vector.hpp>
-
 using namespace std;
-using namespace boost::assign;
 using namespace gtsam;
 
 const gtsam::noiseModel::Diagonal::shared_ptr diag_model2 = noiseModel::Diagonal::Sigmas(Vector2(1.0, 1.0));

@@ -28,10 +28,8 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/base/Testable.h>
 
-#include <boost/assign/std/vector.hpp>
 #include <boost/shared_ptr.hpp>
 #include <CppUnitLite/TestHarness.h>
-using namespace boost::assign;
 
 #include <iostream>
 #include <vector>

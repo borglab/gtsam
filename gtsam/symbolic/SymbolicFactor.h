@@ -22,7 +22,6 @@
 #include <gtsam/base/Testable.h>
 
 #include <boost/shared_ptr.hpp>
-#include <boost/assign/list_of.hpp>
 #include <boost/make_shared.hpp>
 
 #include <utility>

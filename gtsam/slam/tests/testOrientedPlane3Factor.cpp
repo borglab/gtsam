@@ -25,10 +25,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/assign/std/vector.hpp>
-#include <boost/assign/std.hpp>
-
-using namespace boost::assign;
 using namespace std::placeholders;
 using namespace gtsam;
 using namespace std;

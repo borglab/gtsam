@@ -29,7 +29,6 @@
 
 using namespace std;
 using namespace gtsam;
-using namespace boost::assign;
 
 static Symbol x0('x', 0), x1('x', 1), x2('x', 2), x3('x', 3);
 static SharedNoiseModel model(noiseModel::Isotropic::Sigma(6, 0.1));

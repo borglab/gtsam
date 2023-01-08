@@ -27,14 +27,11 @@
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/base/timing.h>
 
-#include <boost/assign/list_of.hpp>
-#include <boost/assign/std/vector.hpp>
 #include <boost/range/iterator_range.hpp>
 #include <boost/range/adaptor/map.hpp>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
-using namespace boost::assign;
 using namespace gtsam;
 
 // F
