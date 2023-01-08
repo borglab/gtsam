@@ -109,7 +109,7 @@ TEST(DSFMap, mergePairwiseMatches2) {
 /* ************************************************************************* */
 TEST(DSFMap, sets){
   // Create some "matches"
-  typedef const std::pair<size_t,size_t> Match;
+  using Match = std::pair<size_t,size_t>;
   const std::list<Match> matches{{1, 2}, {2, 3}, {4, 5}, {4, 6}};
 
   // Merge matches
