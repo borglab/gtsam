@@ -46,7 +46,7 @@ Ordering getOrdering(HybridGaussianFactorGraph& factors,
                      const HybridGaussianFactorGraph& newFactors) {
   factors += newFactors;
   // Get all the discrete keys from the factors
-  KeySet allDiscrete = factors.discreteKeys();
+  KeySet allDiscrete = factors.discreteKeySet();
 
   // Create KeyVector with continuous keys followed by discrete keys.
   KeyVector newKeysDiscreteLast;
@@ -90,7 +90,7 @@ TEST(HybridEstimation, Full) {
   }
 
   HybridBayesNet::shared_ptr bayesNet =
-      graph.eliminateSequential(hybridOrdering);
+      graph.eliminateSequential();
 
   EXPECT_LONGS_EQUAL(2 * K - 1, bayesNet->size());
 
@@ -241,7 +241,7 @@ AlgebraicDecisionTree<Key> getProbPrimeTree(
     const HybridGaussianFactorGraph& graph) {
   HybridBayesNet::shared_ptr bayesNet;
   HybridGaussianFactorGraph::shared_ptr remainingGraph;
-  Ordering continuous(graph.continuousKeys());
+  Ordering continuous(graph.continuousKeySet());
   std::tie(bayesNet, remainingGraph) =
       graph.eliminatePartialSequential(continuous);
 
@@ -296,14 +296,14 @@ TEST(HybridEstimation, Probability) {
   auto graph = switching.linearizedFactorGraph;
 
   // Continuous elimination
-  Ordering continuous_ordering(graph.continuousKeys());
+  Ordering continuous_ordering(graph.continuousKeySet());
   HybridBayesNet::shared_ptr bayesNet;
   HybridGaussianFactorGraph::shared_ptr discreteGraph;
   std::tie(bayesNet, discreteGraph) =
       graph.eliminatePartialSequential(continuous_ordering);
 
   // Discrete elimination
-  Ordering discrete_ordering(graph.discreteKeys());
+  Ordering discrete_ordering(graph.discreteKeySet());
   auto discreteBayesNet = discreteGraph->eliminateSequential(discrete_ordering);
 
   // Add the discrete conditionals to make it a full bayes net.
@@ -346,7 +346,7 @@ TEST(HybridEstimation, ProbabilityMultifrontal) {
   AlgebraicDecisionTree<Key> expected_probPrimeTree = getProbPrimeTree(graph);
 
   // Eliminate continuous
-  Ordering continuous_ordering(graph.continuousKeys());
+  Ordering continuous_ordering(graph.continuousKeySet());
   HybridBayesTree::shared_ptr bayesTree;
   HybridGaussianFactorGraph::shared_ptr discreteGraph;
   std::tie(bayesTree, discreteGraph) =
@@ -358,7 +358,7 @@ TEST(HybridEstimation, ProbabilityMultifrontal) {
   auto last_conditional = (*bayesTree)[last_continuous_key]->conditional();
   DiscreteKeys discrete_keys = last_conditional->discreteKeys();
 
-  Ordering discrete(graph.discreteKeys());
+  Ordering discrete(graph.discreteKeySet());
   auto discreteBayesTree = discreteGraph->eliminateMultifrontal(discrete);
 
   EXPECT_LONGS_EQUAL(1, discreteBayesTree->size());
@@ -407,8 +407,8 @@ static HybridNonlinearFactorGraph createHybridNonlinearFactorGraph() {
   const auto noise_model = noiseModel::Isotropic::Sigma(1, sigma);
 
   // Add "measurement" factors:
-  nfg.emplace_nonlinear<PriorFactor<double>>(X(0), 0.0, noise_model);
-  nfg.emplace_nonlinear<PriorFactor<double>>(X(1), 1.0, noise_model);
+  nfg.emplace_shared<PriorFactor<double>>(X(0), 0.0, noise_model);
+  nfg.emplace_shared<PriorFactor<double>>(X(1), 1.0, noise_model);
 
   // Add mixture factor:
   DiscreteKey m(M(0), 2);
@@ -416,7 +416,7 @@ static HybridNonlinearFactorGraph createHybridNonlinearFactorGraph() {
       boost::make_shared<BetweenFactor<double>>(X(0), X(1), 0, noise_model);
   const auto one_motion =
       boost::make_shared<BetweenFactor<double>>(X(0), X(1), 1, noise_model);
-  nfg.emplace_hybrid<MixtureFactor>(
+  nfg.emplace_shared<MixtureFactor>(
       KeyVector{X(0), X(1)}, DiscreteKeys{m},
       std::vector<NonlinearFactor::shared_ptr>{zero_motion, one_motion});
 
@@ -481,8 +481,7 @@ TEST(HybridEstimation, CorrectnessViaSampling) {
   const auto fg = createHybridGaussianFactorGraph();
 
   // 2. Eliminate into BN
-  const Ordering ordering = fg->getHybridOrdering();
-  const HybridBayesNet::shared_ptr bn = fg->eliminateSequential(ordering);
+  const HybridBayesNet::shared_ptr bn = fg->eliminateSequential();
 
   // Set up sampling
   std::mt19937_64 rng(11);

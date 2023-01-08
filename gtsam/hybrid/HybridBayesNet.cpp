@@ -141,8 +141,8 @@ std::function<double(const Assignment<Key> &, double)> prunerFunc(
 
 /* ************************************************************************* */
 void HybridBayesNet::updateDiscreteConditionals(
-    const DecisionTreeFactor::shared_ptr &prunedDecisionTree) {
-  KeyVector prunedTreeKeys = prunedDecisionTree->keys();
+    const DecisionTreeFactor &prunedDecisionTree) {
+  KeyVector prunedTreeKeys = prunedDecisionTree.keys();
 
   // Loop with index since we need it later.
   for (size_t i = 0; i < this->size(); i++) {
@@ -154,7 +154,7 @@ void HybridBayesNet::updateDiscreteConditionals(
       auto discreteTree =
           boost::dynamic_pointer_cast<DecisionTreeFactor::ADT>(discrete);
       DecisionTreeFactor::ADT prunedDiscreteTree =
-          discreteTree->apply(prunerFunc(*prunedDecisionTree, *conditional));
+          discreteTree->apply(prunerFunc(prunedDecisionTree, *conditional));
 
       // Create the new (hybrid) conditional
       KeyVector frontals(discrete->frontals().begin(),
@@ -173,9 +173,7 @@ void HybridBayesNet::updateDiscreteConditionals(
 HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves) {
   // Get the decision tree of only the discrete keys
   auto discreteConditionals = this->discreteConditionals();
-  const DecisionTreeFactor::shared_ptr decisionTree =
-      boost::make_shared<DecisionTreeFactor>(
-          discreteConditionals->prune(maxNrLeaves));
+  const auto decisionTree = discreteConditionals->prune(maxNrLeaves);
 
   this->updateDiscreteConditionals(decisionTree);
 
@@ -194,7 +192,7 @@ HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves) {
     if (auto gm = conditional->asMixture()) {
       // Make a copy of the Gaussian mixture and prune it!
       auto prunedGaussianMixture = boost::make_shared<GaussianMixture>(*gm);
-      prunedGaussianMixture->prune(*decisionTree);  // imperative :-(
+      prunedGaussianMixture->prune(decisionTree);  // imperative :-(
 
       // Type-erase and add to the pruned Bayes Net fragment.
       prunedBayesNetFragment.push_back(prunedGaussianMixture);
