@@ -70,17 +70,10 @@ static void throwRuntimeError(const std::string &s,
 
 /* ************************************************************************ */
 const Ordering HybridOrdering(const HybridGaussianFactorGraph &graph) {
-  KeySet discrete_keys = graph.discreteKeys();
-  for (auto &factor : graph) {
-    for (const DiscreteKey &k : factor->discreteKeys()) {
-      discrete_keys.insert(k.first);
-    }
-  }
-
+  KeySet discrete_keys = graph.discreteKeySet();
   const VariableIndex index(graph);
-  Ordering ordering = Ordering::ColamdConstrainedLast(
+  return Ordering::ColamdConstrainedLast(
       index, KeyVector(discrete_keys.begin(), discrete_keys.end()), true);
-  return ordering;
 }
 
 /* ************************************************************************ */
