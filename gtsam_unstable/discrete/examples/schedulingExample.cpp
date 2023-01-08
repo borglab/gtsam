@@ -214,8 +214,7 @@ void sampleSolutions() {
   vector<DiscreteBayesNet::shared_ptr> samplers(7);
 
   // Given the time-slots, we can create 7 independent samplers
-  vector<size_t> slots;
-  slots += 16, 17, 11, 2, 0, 5, 9; // given slots
+  vector<size_t> slots{16, 17, 11, 2, 0, 5, 9}; // given slots
   for (size_t i = 0; i < 7; i++)
     samplers[i] = createSampler(i, slots[i], schedulers);
 
@@ -296,8 +295,7 @@ void accomodateStudent() {
   scheduler.print("scheduler");
 
   // rule out all occupied slots
-  vector<size_t> slots;
-  slots += 16, 17, 11, 2, 0, 5, 9, 14;
+  vector<size_t> slots{16, 17, 11, 2, 0, 5, 9, 14};
   vector<double> slotsAvailable(scheduler.nrTimeSlots(), 1.0);
   for(size_t s: slots)
   slotsAvailable[s] = 0;

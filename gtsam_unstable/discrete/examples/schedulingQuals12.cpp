@@ -223,8 +223,7 @@ void sampleSolutions() {
   vector<DiscreteBayesNet::shared_ptr> samplers(NRSTUDENTS);
 
   // Given the time-slots, we can create NRSTUDENTS independent samplers
-  vector<size_t> slots;
-  slots += 3, 20, 2, 6, 5, 11, 1, 4; // given slots
+  vector<size_t> slots{3, 20, 2, 6, 5, 11, 1, 4}; // given slots
   for (size_t i = 0; i < NRSTUDENTS; i++)
     samplers[i] = createSampler(i, slots[i], schedulers);
 

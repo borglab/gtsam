@@ -155,7 +155,7 @@ TEST( InitializePose3, orientationsGradientSymbolicGraph ) {
 /* *************************************************************************** */
 TEST( InitializePose3, singleGradient ) {
   Rot3 R1 = Rot3();
-  Matrix M = Matrix3::Zero();
+  Matrix M = Z_3x3;
   M(0,1) = -1; M(1,0) = 1; M(2,2) = 1;
   Rot3 R2 = Rot3(M);
   double a = 6.010534238540223;

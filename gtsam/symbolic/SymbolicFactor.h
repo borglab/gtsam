@@ -124,15 +124,15 @@ namespace gtsam {
       return result;
     }
 
-    /** Constructor from a collection of keys - compatible with boost::assign::list_of and
-     *  boost::assign::cref_list_of */
+    /** Constructor from a collection of keys - compatible with boost assign::list_of and
+     *  boost assign::cref_list_of */
     template<class CONTAINER>
     static SymbolicFactor FromKeys(const CONTAINER& keys) {
       return SymbolicFactor(Base::FromKeys(keys));
     }
 
-    /** Constructor from a collection of keys - compatible with boost::assign::list_of and
-     *  boost::assign::cref_list_of */
+    /** Constructor from a collection of keys - compatible with boost assign::list_of and
+     *  boost assign::cref_list_of */
     template<class CONTAINER>
     static SymbolicFactor::shared_ptr FromKeysShared(const CONTAINER& keys) {
       return FromIteratorsShared(keys.begin(), keys.end());
