@@ -61,9 +61,15 @@ struct HybridConstructorTraversalData {
     parentData.junctionTreeNode->addChild(data.junctionTreeNode);
 
     // Add all the discrete keys in the hybrid factors to the current data
-    for (HybridFactor::shared_ptr& f : node->factors) {
-      for (auto& k : f->discreteKeys()) {
-        data.discreteKeys.insert(k.first);
+    for (const auto& f : node->factors) {
+      if (auto hf = boost::dynamic_pointer_cast<HybridFactor>(f)) {
+        for (auto& k : hf->discreteKeys()) {
+          data.discreteKeys.insert(k.first);
+        }
+      } else if (auto hf = boost::dynamic_pointer_cast<DecisionTreeFactor>(f)) {
+        for (auto& k : hf->discreteKeys()) {
+          data.discreteKeys.insert(k.first);
+        }
       }
     }
 
