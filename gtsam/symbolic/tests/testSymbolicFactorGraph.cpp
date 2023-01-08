@@ -15,33 +15,29 @@
  *  @author Christian Potthast
  **/
 
-#include <gtsam/symbolic/SymbolicFactorGraph.h>
-
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/symbolic/SymbolicBayesNet.h>
 #include <gtsam/symbolic/SymbolicBayesTree.h>
 #include <gtsam/symbolic/SymbolicConditional.h>
+#include <gtsam/symbolic/SymbolicFactorGraph.h>
 #include <gtsam/symbolic/tests/symbolicExampleGraphs.h>
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/assign/list_of.hpp>
-using namespace boost::assign;
-
 using namespace std;
 using namespace gtsam;
-using namespace boost::assign;
 
 /* ************************************************************************* */
 TEST(SymbolicFactorGraph, keys1) {
-  KeySet expected {0, 1, 2, 3, 4};
+  KeySet expected{0, 1, 2, 3, 4};
   KeySet actual = simpleTestGraph1.keys();
   EXPECT(expected == actual);
 }
 
 /* ************************************************************************* */
 TEST(SymbolicFactorGraph, keys2) {
-  KeySet expected {0, 1, 2, 3, 4, 5};
+  KeySet expected{0, 1, 2, 3, 4, 5};
   KeySet actual = simpleTestGraph2.keys();
   EXPECT(expected == actual);
 }
@@ -61,12 +57,12 @@ TEST(SymbolicFactorGraph, eliminateFullSequential) {
 /* ************************************************************************* */
 TEST(SymbolicFactorGraph, eliminatePartialSequential) {
   // Eliminate 0 and 1
-  const Ordering order {0, 1};
+  const Ordering order{0, 1};
 
-  const SymbolicBayesNet expectedBayesNet =
-      list_of(SymbolicConditional(0, 1, 2))(SymbolicConditional(1, 2, 3, 4));
+  const auto expectedBayesNet = SymbolicBayesNet(SymbolicConditional(0, 1, 2))(
+      SymbolicConditional(1, 2, 3, 4));
 
-  const SymbolicFactorGraph expectedSfg = list_of(SymbolicFactor(2, 3))(
+  const auto expectedSfg = SymbolicFactorGraph(SymbolicFactor(2, 3))(
       SymbolicFactor(4, 5))(SymbolicFactor(2, 3, 4));
 
   SymbolicBayesNet::shared_ptr actualBayesNet;
@@ -106,9 +102,9 @@ TEST(SymbolicFactorGraph, eliminatePartialMultifrontal) {
   expectedBayesTree.insertRoot(
       boost::make_shared<SymbolicBayesTreeClique>(root));
 
-  SymbolicFactorGraph expectedFactorGraph =
-      list_of(SymbolicFactor(0, 1))(SymbolicFactor(0, 2))(SymbolicFactor(1, 3))(
-          SymbolicFactor(2, 3))(SymbolicFactor(1));
+  const auto expectedFactorGraph =
+      SymbolicFactorGraph(SymbolicFactor(0, 1))(SymbolicFactor(0, 2))(
+          SymbolicFactor(1, 3))(SymbolicFactor(2, 3))(SymbolicFactor(1));
 
   SymbolicBayesTree::shared_ptr actualBayesTree;
   SymbolicFactorGraph::shared_ptr actualFactorGraph;
@@ -137,12 +133,12 @@ TEST(SymbolicFactorGraph, eliminatePartialMultifrontal) {
 
 /* ************************************************************************* */
 TEST(SymbolicFactorGraph, marginalMultifrontalBayesNet) {
-  SymbolicBayesNet expectedBayesNet =
-      list_of(SymbolicConditional(0, 1, 2))(SymbolicConditional(1, 2, 3))(
-          SymbolicConditional(2, 3))(SymbolicConditional(3));
+  auto expectedBayesNet =
+      SymbolicBayesNet(SymbolicConditional(0, 1, 2))(SymbolicConditional(
+          1, 2, 3))(SymbolicConditional(2, 3))(SymbolicConditional(3));
 
-  SymbolicBayesNet actual1 = *simpleTestGraph2.marginalMultifrontalBayesNet(
-      Ordering{0, 1, 2, 3});
+  SymbolicBayesNet actual1 =
+      *simpleTestGraph2.marginalMultifrontalBayesNet(Ordering{0, 1, 2, 3});
   EXPECT(assert_equal(expectedBayesNet, actual1));
 }
 
@@ -192,7 +188,7 @@ TEST(SymbolicFactorGraph, marginals) {
 
   {
     // jointBayesNet
-    Ordering ord {0, 4, 3};
+    Ordering ord{0, 4, 3};
     auto actual = fg.eliminatePartialSequential(ord);
     SymbolicBayesNet expectedBN;
     expectedBN.emplace_shared<SymbolicConditional>(0, 1, 2);
@@ -203,7 +199,7 @@ TEST(SymbolicFactorGraph, marginals) {
 
   {
     // jointBayesNet
-    Ordering ord {0, 2, 3};
+    Ordering ord{0, 2, 3};
     auto actual = fg.eliminatePartialSequential(ord);
     SymbolicBayesNet expectedBN;
     expectedBN.emplace_shared<SymbolicConditional>(0, 1, 2);
@@ -302,7 +298,7 @@ TEST(SymbolicFactorGraph, add_factors) {
   expected.push_factor(1);
   expected.push_factor(11);
   expected.push_factor(2);
-  const FactorIndices expectedIndices {1, 3};
+  const FactorIndices expectedIndices{1, 3};
   const FactorIndices actualIndices = fg1.add_factors(fg2, true);
 
   EXPECT(assert_equal(expected, fg1));
@@ -310,7 +306,7 @@ TEST(SymbolicFactorGraph, add_factors) {
 
   expected.push_factor(1);
   expected.push_factor(2);
-  const FactorIndices expectedIndices2 {4, 5};
+  const FactorIndices expectedIndices2{4, 5};
   const FactorIndices actualIndices2 = fg1.add_factors(fg2, false);
 
   EXPECT(assert_equal(expected, fg1));

@@ -26,7 +26,6 @@
 
 using namespace std;
 using namespace gtsam;
-using namespace boost::assign;
 
 /* ************************************************************************* */
 #ifdef TRACK_ELIMINATE
