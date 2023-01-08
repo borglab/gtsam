@@ -31,29 +31,31 @@ namespace gtsam {
   class VectorValues;
 
   /** vector of errors */
-  class Errors : public FastList<Vector> {
+  class GTSAM_EXPORT Errors : public FastList<Vector> {
+
+    using Base = FastList<Vector>;
 
   public:
 
-    GTSAM_EXPORT Errors() ;
+    using Base::Base; // inherit constructors
 
     /** break V into pieces according to its start indices */
-    GTSAM_EXPORT Errors(const VectorValues&V);
+    Errors(const VectorValues&V);
 
     /** print */
-    GTSAM_EXPORT void print(const std::string& s = "Errors") const;
+    void print(const std::string& s = "Errors") const;
 
     /** equals, for unit testing */
-    GTSAM_EXPORT bool equals(const Errors& expected, double tol=1e-9) const;
+    bool equals(const Errors& expected, double tol=1e-9) const;
 
     /** Addition */
-    GTSAM_EXPORT Errors operator+(const Errors& b) const;
+    Errors operator+(const Errors& b) const;
 
     /** subtraction */
-    GTSAM_EXPORT Errors operator-(const Errors& b) const;
+    Errors operator-(const Errors& b) const;
 
     /** negation */
-    GTSAM_EXPORT Errors operator-() const ;
+    Errors operator-() const ;
 
   }; // Errors
 

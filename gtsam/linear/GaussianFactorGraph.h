@@ -74,8 +74,13 @@ namespace gtsam {
     typedef EliminateableFactorGraph<This> BaseEliminateable; ///< Typedef to base elimination class
     typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
 
+    /// @name Constructors
+    /// @{
+    
     /** Default constructor */
     GaussianFactorGraph() {}
+
+    using Base::Base; // Inherit constructors
 
     /** Construct from iterator over factors */
     template<typename ITERATOR>
@@ -92,6 +97,7 @@ namespace gtsam {
     /** Virtual destructor */
     virtual ~GaussianFactorGraph() {}
 
+    /// @}
     /// @name Testable
     /// @{
 

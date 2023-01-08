@@ -44,6 +44,8 @@ static Matrix R = (Matrix(2, 2) <<
     -12.1244,  -5.1962,
           0.,   4.6904).finished();
 
+using Dims = std::vector<Eigen::Index>;
+
 /* ************************************************************************* */
 TEST(GaussianConditional, constructor)
 {
@@ -215,7 +217,7 @@ TEST( GaussianConditional, solve )
   Vector sx1(2); sx1 << 1.0, 1.0;
   Vector sl1(2); sl1 << 1.0, 1.0;
 
-  VectorValues expected = {{1, expectedX} {2, sx1} {10, sl1}};
+  VectorValues expected = {{1, expectedX}, {2, sx1}, {10, sl1}};
 
   VectorValues solution = {{2, sx1},  // parents
                            {10, sl1}};
@@ -228,7 +230,7 @@ TEST( GaussianConditional, solve )
 TEST( GaussianConditional, solve_simple )
 {
   // 2 variables, frontal has dim=4
-  VerticalBlockMatrix blockMatrix(list_of(4)(2)(1), 4);
+  VerticalBlockMatrix blockMatrix(Dims{4, 2, 1}, 4);
   blockMatrix.matrix() <<
       1.0, 0.0, 2.0, 0.0, 3.0, 0.0, 0.1,
       0.0, 1.0, 0.0, 2.0, 0.0, 3.0, 0.2,
@@ -236,7 +238,7 @@ TEST( GaussianConditional, solve_simple )
       0.0, 0.0, 0.0, 3.0, 0.0, 4.0, 0.4;
 
   // solve system as a non-multifrontal version first
-  GaussianConditional cg(list_of(1)(2), 1, blockMatrix);
+  GaussianConditional cg(KeyVector{1,2}, 1, blockMatrix);
 
   // partial solution
   Vector sx1 = Vector2(9.0, 10.0);
@@ -260,7 +262,7 @@ TEST( GaussianConditional, solve_simple )
 TEST( GaussianConditional, solve_multifrontal )
 {
   // create full system, 3 variables, 2 frontals, all 2 dim
-  VerticalBlockMatrix blockMatrix(list_of(2)(2)(2)(1), 4);
+  VerticalBlockMatrix blockMatrix(Dims{2, 2, 2, 1}, 4);
   blockMatrix.matrix() <<
       1.0, 0.0, 2.0, 0.0, 3.0, 0.0, 0.1,
       0.0, 1.0, 0.0, 2.0, 0.0, 3.0, 0.2,
@@ -268,7 +270,7 @@ TEST( GaussianConditional, solve_multifrontal )
       0.0, 0.0, 0.0, 3.0, 0.0, 4.0, 0.4;
 
   // 3 variables, all dim=2
-  GaussianConditional cg(list_of(1)(2)(10), 2, blockMatrix);
+  GaussianConditional cg(KeyVector{1, 2, 10}, 2, blockMatrix);
 
   EXPECT(assert_equal(Vector(blockMatrix.full().rightCols(1)), cg.d()));
 
@@ -305,9 +307,9 @@ TEST( GaussianConditional, solveTranspose ) {
   d2(0) = 5;
 
   // define nodes and specify in reverse topological sort (i.e. parents last)
-  GaussianBayesNet cbn = list_of
-    (GaussianConditional(1, d1, R11, 2, S12))
-    (GaussianConditional(1, d2, R22));
+  GaussianBayesNet cbn;
+  cbn.emplace_shared<GaussianConditional>(1, d1, R11, 2, S12);
+  cbn.emplace_shared<GaussianConditional>(1, d2, R22);
 
   // x=R'*y, y=inv(R')*x
   // 2 = 1    2
@@ -375,7 +377,7 @@ TEST(GaussianConditional, FromMeanAndStddev) {
   const Vector2 b(20, 40), x0(1, 2), x1(3, 4), x2(5, 6);
   const double sigma = 3;
 
-  VectorValues values = {{X(0), x0}, {X(1), x1}, {X(2), x2};
+  VectorValues values{{X(0), x0}, {X(1), x1}, {X(2), x2}};
 
   auto conditional1 =
       GaussianConditional::FromMeanAndStddev(X(0), A1, X(1), b, sigma);

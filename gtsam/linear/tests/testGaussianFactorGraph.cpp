@@ -208,8 +208,9 @@ TEST(GaussianFactorGraph, gradient) {
   // 2*f(x) = 100*(x1+c[X(1)])^2 + 100*(x2-x1-[0.2;-0.1])^2 + 25*(l1-x1-[0.0;0.2])^2 +
   // 25*(l1-x2-[-0.2;0.3])^2
   // worked out: df/dx1 = 100*[0.1;0.1] + 100*[0.2;-0.1]) + 25*[0.0;0.2] = [10+20;10-10+5] = [30;5]
-  VectorValues expected = map_list_of<Key, Vector>(1, Vector2(5.0, -12.5))(2, Vector2(30.0, 5.0))(
-      0, Vector2(-25.0, 17.5));
+  VectorValues expected{{1, Vector2(5.0, -12.5)},
+                        {2, Vector2(30.0, 5.0)},
+                        {0, Vector2(-25.0, 17.5)}};
 
   // Check the gradient at delta=0
   VectorValues zero = VectorValues::Zero(expected);
@@ -221,14 +222,14 @@ TEST(GaussianFactorGraph, gradient) {
   VectorValues solution = fg.optimize();
   VectorValues actual2 = fg.gradient(solution);
   EXPECT(assert_equal(VectorValues::Zero(solution), actual2));
-}
+  }
 
 /* ************************************************************************* */
 TEST(GaussianFactorGraph, transposeMultiplication) {
   GaussianFactorGraph A = createSimpleGaussianFactorGraph();
 
-  Errors e;
-  e += Vector2(0.0, 0.0), Vector2(15.0, 0.0), Vector2(0.0, -5.0), Vector2(-7.5, -5.0);
+  Errors e = std::list<Vector>{Vector2(0.0, 0.0), Vector2(15.0, 0.0),
+                               Vector2(0.0, -5.0), Vector2(-7.5, -5.0)};
 
   VectorValues expected;
   expected.insert(1, Vector2(-37.5, -50.0));
@@ -284,7 +285,7 @@ TEST(GaussianFactorGraph, matrices2) {
 TEST(GaussianFactorGraph, multiplyHessianAdd) {
   GaussianFactorGraph gfg = createSimpleGaussianFactorGraph();
 
-  VectorValues x = map_list_of<Key, Vector>(0, Vector2(1, 2))(1, Vector2(3, 4))(2, Vector2(5, 6));
+  const VectorValues x{{0, Vector2(1, 2)}, {1, Vector2(3, 4)}, {2, Vector2(5, 6)}};
 
   VectorValues expected;
   expected.insert(0, Vector2(-450, -450));
@@ -303,8 +304,8 @@ TEST(GaussianFactorGraph, multiplyHessianAdd) {
 /* ************************************************************************* */
 static GaussianFactorGraph createGaussianFactorGraphWithHessianFactor() {
   GaussianFactorGraph gfg = createSimpleGaussianFactorGraph();
-  gfg += HessianFactor(1, 2, 100*I_2x2, Z_2x2,   Vector2(0.0, 1.0),
-                                           400*I_2x2, Vector2(1.0, 1.0), 3.0);
+  gfg.emplace_shared<HessianFactor>(1, 2, 100 * I_2x2, Z_2x2, Vector2(0.0, 1.0),
+                                    400 * I_2x2, Vector2(1.0, 1.0), 3.0);
   return gfg;
 }
 
@@ -322,8 +323,7 @@ TEST(GaussianFactorGraph, multiplyHessianAdd2) {
   Y << -450, -450, 300, 400, 2950, 3450;
   EXPECT(assert_equal(Y, AtA * X));
 
-  VectorValues x = map_list_of<Key, Vector>(0, Vector2(1, 2))(1, Vector2(3, 4))(2, Vector2(5, 6));
-
+  const VectorValues x {{0, Vector2(1, 2)}, {1, Vector2(3, 4)}, {2, Vector2(5, 6)}};
   VectorValues expected;
   expected.insert(0, Vector2(-450, -450));
   expected.insert(1, Vector2(300, 400));
@@ -367,10 +367,10 @@ TEST(GaussianFactorGraph, gradientAtZero) {
 /* ************************************************************************* */
 TEST(GaussianFactorGraph, clone) {
   // 2 variables, frontal has dim=4
-  VerticalBlockMatrix blockMatrix(list_of(4)(2)(1), 4);
+  VerticalBlockMatrix blockMatrix(KeyVector{4, 2, 1}, 4);
   blockMatrix.matrix() << 1.0, 0.0, 2.0, 0.0, 3.0, 0.0, 0.1, 0.0, 1.0, 0.0, 2.0, 0.0, 3.0, 0.2, 0.0,
       0.0, 3.0, 0.0, 4.0, 0.0, 0.3, 0.0, 0.0, 0.0, 3.0, 0.0, 4.0, 0.4;
-  GaussianConditional cg(list_of(1)(2), 1, blockMatrix);
+  GaussianConditional cg(KeyVector{1, 2}, 1, blockMatrix);
 
   GaussianFactorGraph init_graph = createGaussianFactorGraphWithHessianFactor();
   init_graph.push_back(GaussianFactor::shared_ptr());  /// Add null factor
