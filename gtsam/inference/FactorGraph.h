@@ -154,10 +154,24 @@ class FactorGraph {
   /// @}
 
  public:
+  /// @name Constructors
+  /// @{
+
   /// Default destructor
-  // Public and virtual so boost serialization can call it.
+  /// Public and virtual so boost serialization can call it.
   virtual ~FactorGraph() = default;
 
+  /**
+   * Constructor that takes an initializer list of shared pointers.
+   *  FactorGraph fg = {make_shared<MyFactor>(), ...};
+   */
+  template <class DERIVEDFACTOR, typename = IsDerived<DERIVEDFACTOR>>
+  FactorGraph(
+      std::initializer_list<boost::shared_ptr<DERIVEDFACTOR>> sharedFactors) {
+    for (auto&& f : sharedFactors) factors_.push_back(f);
+  }
+
+  /// @}
   /// @name Adding Single Factors
   /// @{
 

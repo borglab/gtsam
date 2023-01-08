@@ -22,15 +22,12 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/assign/std/vector.hpp>
-
 #include <iostream>
 #include <limits>
 
 using namespace std;
 using namespace gtsam;
 using namespace noiseModel;
-using namespace boost::assign;
 
 static const double kSigma = 2, kInverseSigma = 1.0 / kSigma,
                     kVariance = kSigma * kSigma, prc = 1.0 / kVariance;

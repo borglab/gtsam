@@ -26,9 +26,6 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-Errors::Errors(){}
-
-/* ************************************************************************* */
 Errors::Errors(const VectorValues& V) {
   for(const Vector& e: V | boost::adaptors::map_values) {
     push_back(e);

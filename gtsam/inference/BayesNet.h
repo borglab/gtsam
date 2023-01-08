@@ -39,7 +39,7 @@ class BayesNet : public FactorGraph<CONDITIONAL> {
       sharedConditional;  ///< A shared pointer to a conditional
 
  protected:
-  /// @name Standard Constructors
+  /// @name Protected Constructors
   /// @{
 
   /** Default constructor as an empty BayesNet */
