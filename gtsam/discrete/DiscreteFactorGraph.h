@@ -62,9 +62,17 @@ template<> struct EliminationTraits<DiscreteFactorGraph>
   typedef DiscreteBayesTree BayesTreeType;             ///< Type of Bayes tree
   typedef DiscreteJunctionTree JunctionTreeType;       ///< Type of Junction tree
   /// The default dense elimination function
-  static std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> >
+  static std::pair<boost::shared_ptr<ConditionalType>,
+                   boost::shared_ptr<FactorType> >
   DefaultEliminate(const FactorGraphType& factors, const Ordering& keys) {
-    return EliminateDiscrete(factors, keys); }
+    return EliminateDiscrete(factors, keys);
+  }
+  /// The default ordering generation function
+  static Ordering DefaultOrderingFunc(
+      const FactorGraphType& graph,
+      boost::optional<const VariableIndex&> variableIndex) {
+    return Ordering::Colamd(*variableIndex);
+  }
 };
 
 /* ************************************************************************* */

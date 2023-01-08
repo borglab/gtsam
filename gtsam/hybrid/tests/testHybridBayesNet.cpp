@@ -184,9 +184,8 @@ TEST(HybridBayesNet, OptimizeAssignment) {
 TEST(HybridBayesNet, Optimize) {
   Switching s(4, 1.0, 0.1, {0, 1, 2, 3}, "1/1 1/1");
 
-  Ordering hybridOrdering = s.linearizedFactorGraph.getHybridOrdering();
   HybridBayesNet::shared_ptr hybridBayesNet =
-      s.linearizedFactorGraph.eliminateSequential(hybridOrdering);
+      s.linearizedFactorGraph.eliminateSequential();
 
   HybridValues delta = hybridBayesNet->optimize();
 
@@ -211,9 +210,8 @@ TEST(HybridBayesNet, Optimize) {
 TEST(HybridBayesNet, Error) {
   Switching s(3);
 
-  Ordering hybridOrdering = s.linearizedFactorGraph.getHybridOrdering();
   HybridBayesNet::shared_ptr hybridBayesNet =
-      s.linearizedFactorGraph.eliminateSequential(hybridOrdering);
+      s.linearizedFactorGraph.eliminateSequential();
 
   HybridValues delta = hybridBayesNet->optimize();
   auto error_tree = hybridBayesNet->error(delta.continuous());
@@ -265,9 +263,8 @@ TEST(HybridBayesNet, Error) {
 TEST(HybridBayesNet, Prune) {
   Switching s(4);
 
-  Ordering hybridOrdering = s.linearizedFactorGraph.getHybridOrdering();
   HybridBayesNet::shared_ptr hybridBayesNet =
-      s.linearizedFactorGraph.eliminateSequential(hybridOrdering);
+      s.linearizedFactorGraph.eliminateSequential();
 
   HybridValues delta = hybridBayesNet->optimize();
 
@@ -283,9 +280,8 @@ TEST(HybridBayesNet, Prune) {
 TEST(HybridBayesNet, UpdateDiscreteConditionals) {
   Switching s(4);
 
-  Ordering hybridOrdering = s.linearizedFactorGraph.getHybridOrdering();
   HybridBayesNet::shared_ptr hybridBayesNet =
-      s.linearizedFactorGraph.eliminateSequential(hybridOrdering);
+      s.linearizedFactorGraph.eliminateSequential();
 
   size_t maxNrLeaves = 3;
   auto discreteConditionals = hybridBayesNet->discreteConditionals();
@@ -351,8 +347,7 @@ TEST(HybridBayesNet, Sampling) {
   // Create the factor graph from the nonlinear factor graph.
   HybridGaussianFactorGraph::shared_ptr fg = nfg.linearize(initial);
   // Eliminate into BN
-  Ordering ordering = fg->getHybridOrdering();
-  HybridBayesNet::shared_ptr bn = fg->eliminateSequential(ordering);
+  HybridBayesNet::shared_ptr bn = fg->eliminateSequential();
 
   // Set up sampling
   std::mt19937_64 gen(11);

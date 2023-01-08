@@ -69,6 +69,21 @@ static void throwRuntimeError(const std::string &s,
 }
 
 /* ************************************************************************ */
+const Ordering HybridOrdering(const HybridGaussianFactorGraph &graph) {
+  KeySet discrete_keys = graph.discreteKeys();
+  for (auto &factor : graph) {
+    for (const DiscreteKey &k : factor->discreteKeys()) {
+      discrete_keys.insert(k.first);
+    }
+  }
+
+  const VariableIndex index(graph);
+  Ordering ordering = Ordering::ColamdConstrainedLast(
+      index, KeyVector(discrete_keys.begin(), discrete_keys.end()), true);
+  return ordering;
+}
+
+/* ************************************************************************ */
 static GaussianFactorGraphTree addGaussian(
     const GaussianFactorGraphTree &gfgTree,
     const GaussianFactor::shared_ptr &factor) {
@@ -422,15 +437,6 @@ EliminateHybrid(const HybridGaussianFactorGraph &factors,
     return hybridElimination(factors, frontalKeys, continuousSeparator,
                              discreteSeparatorSet);
   }
-}
-
-/* ************************************************************************ */
-const Ordering HybridGaussianFactorGraph::getHybridOrdering() const {
-  const KeySet discrete_keys = discreteKeySet();
-  const VariableIndex index(factors_);
-  Ordering ordering = Ordering::ColamdConstrainedLast(
-      index, KeyVector(discrete_keys.begin(), discrete_keys.end()), true);
-  return ordering;
 }
 
 /* ************************************************************************ */
