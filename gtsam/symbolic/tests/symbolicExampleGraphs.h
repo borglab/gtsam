@@ -47,8 +47,6 @@ namespace gtsam {
       std::vector<T> result;
     };
 
-    using Keys = ListOf<Key>;
-
     const SymbolicFactorGraph simpleTestGraph1 {
       boost::make_shared<SymbolicFactor>(0,1),
       boost::make_shared<SymbolicFactor>(0,2),
