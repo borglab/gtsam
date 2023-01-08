@@ -70,6 +70,22 @@ namespace gtsam {
       for (auto&& f : sharedFactors) factors_.push_back(f);
     }
 
+    /// Construct from a single conditional
+    SymbolicBayesNet(SymbolicConditional&& c) {
+      push_back(boost::make_shared<SymbolicConditional>(c));
+    }
+
+    /**
+     * @brief Add a single conditional and return a reference.
+     * This allows for chaining, e.g.,
+     *   SymbolicBayesNet bn = 
+     *     SymbolicBayesNet(SymbolicConditional(...))(SymbolicConditional(...));
+     */
+    SymbolicBayesNet& operator()(SymbolicConditional&& c) {
+      push_back(boost::make_shared<SymbolicConditional>(c));
+      return *this;
+    }
+
     /// Destructor
     virtual ~SymbolicBayesNet() {}
 

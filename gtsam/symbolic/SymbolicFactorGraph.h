@@ -90,6 +90,22 @@ namespace gtsam {
         for (auto&& f : sharedFactors) factors_.push_back(f);
     }
 
+    /// Construct from a single factor
+    SymbolicFactorGraph(SymbolicFactor&& c) {
+        push_back(boost::make_shared<SymbolicFactor>(c));
+    }
+
+    /**
+     * @brief Add a single factor and return a reference.
+     * This allows for chaining, e.g.,
+     *   SymbolicFactorGraph bn =
+     *     SymbolicFactorGraph(SymbolicFactor(...))(SymbolicFactor(...));
+     */
+    SymbolicFactorGraph& operator()(SymbolicFactor&& c) {
+        push_back(boost::make_shared<SymbolicFactor>(c));
+        return *this;
+    }
+
     /// Destructor
     virtual ~SymbolicFactorGraph() {}
 
