@@ -58,6 +58,8 @@ public:
 
   using Base::Base;  // Inherit the set constructors
 
+  FastSet() = default; ///< Default constructor
+
   /** Constructor from a iterable container, passes through to base class */
   template<typename INPUTCONTAINER>
   explicit FastSet(const INPUTCONTAINER& container) :
