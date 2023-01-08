@@ -34,48 +34,6 @@ using namespace gtsam::symbol_shorthand;
 
 static bool debug = false;
 
-using sharedClique = SymbolicBayesTreeClique::shared_ptr;
-
-template <typename T>
-class ListOf {
- public:
-  ListOf(const T& c) { result.push_back(c); }
-
-  ListOf& operator()(const T& c) {
-    result.push_back(c);
-    return *this;
-  }
-
-  operator std::vector<T>() { return result; }
-
- private:
-  std::vector<T> result;
-};
-
-using MakeKeys = ListOf<Key>;
-using MakeCliques = ListOf<sharedClique>;
-
-namespace {
-/* ************************************************************************* */
-// Helper functions for below
-sharedClique MakeClique(const KeyVector& keys, DenseIndex nrFrontals) {
-  return boost::make_shared<SymbolicBayesTreeClique>(
-      boost::make_shared<SymbolicConditional>(
-          SymbolicConditional::FromKeys(keys, nrFrontals)));
-}
-
-sharedClique MakeClique(const KeyVector& keys, DenseIndex nrFrontals,
-                        const std::vector<sharedClique>& children) {
-  sharedClique clique = boost::make_shared<SymbolicBayesTreeClique>(
-      boost::make_shared<SymbolicConditional>(
-          SymbolicConditional::FromKeys(keys, nrFrontals)));
-  clique->children.assign(children.begin(), children.end());
-  for (auto&& child : children) child->parent_ = clique;
-  return clique;
-}
-
-}  // namespace
-
 /* ************************************************************************* */
 TEST(SymbolicBayesTree, clear) {
   SymbolicBayesTree bayesTree = asiaBayesTree;
@@ -107,14 +65,14 @@ TEST(SymbolicBayesTree, clique_structure) {
   graph.emplace_shared<SymbolicFactor>(X(5), L(3));
 
   SymbolicBayesTree expected;
-  expected.insertRoot(MakeClique(
+  expected.insertRoot(NodeClique(
       MakeKeys(X(2))(X(3)), 2,
-      MakeCliques(MakeClique(
+      Children(NodeClique(
           MakeKeys(X(4))(X(3)), 1,
-          MakeCliques(MakeClique(
+          Children(NodeClique(
               MakeKeys(X(5))(L(2))(X(4)), 2,
-              MakeCliques(MakeClique(MakeKeys(L(3))(X(4))(X(5)), 1))))))(
-          MakeClique(MakeKeys(X(1))(L(1))(X(2)), 2))));
+              Children(LeafClique(MakeKeys(L(3))(X(4))(X(5)), 1))))))(
+          LeafClique(MakeKeys(X(1))(L(1))(X(2)), 2))));
 
   Ordering order{X(1), L(3), L(1), X(5), X(2), L(2), X(4), X(3)};
 
@@ -135,12 +93,12 @@ TEST(BayesTree, removePath) {
             _F_ = F(0);
 
   SymbolicBayesTree bayesTreeOrig;
-  bayesTreeOrig.insertRoot(MakeClique(
+  bayesTreeOrig.insertRoot(NodeClique(
       MakeKeys(_A_)(_B_), 2,
-      MakeCliques(MakeClique(MakeKeys(_C_)(_A_), 1,
-                             MakeCliques(MakeClique(MakeKeys(_D_)(_C_), 1))))(
-          MakeClique(MakeKeys(_E_)(_B_), 1,
-                     MakeCliques(MakeClique(MakeKeys(_F_)(_E_), 1))))));
+      Children(NodeClique(MakeKeys(_C_)(_A_), 1,
+                          Children(LeafClique(MakeKeys(_D_)(_C_), 1))))(
+          NodeClique(MakeKeys(_E_)(_B_), 1,
+                     Children(LeafClique(MakeKeys(_F_)(_E_), 1))))));
 
   SymbolicBayesTree bayesTree = bayesTreeOrig;
 
@@ -519,8 +477,8 @@ TEST(SymbolicBayesTree, thinTree) {
 /* ************************************************************************* */
 TEST(SymbolicBayesTree, forest_joint) {
   // Create forest
-  sharedClique root1 = MakeClique(MakeKeys(1), 1);
-  sharedClique root2 = MakeClique(MakeKeys(2), 1);
+  sharedClique root1 = LeafClique(MakeKeys(1), 1);
+  sharedClique root2 = LeafClique(MakeKeys(2), 1);
   SymbolicBayesTree bayesTree;
   bayesTree.insertRoot(root1);
   bayesTree.insertRoot(root2);
@@ -605,24 +563,24 @@ TEST(SymbolicBayesTree, linear_smoother_shortcuts) {
 TEST(SymbolicBayesTree, complicatedMarginal) {
   // Create the conditionals to go in the BayesTree
   sharedClique cur;
-  sharedClique root = MakeClique(MakeKeys(11)(12), 2);
+  sharedClique root = LeafClique(MakeKeys(11)(12), 2);
   cur = root;
 
-  root->children.push_back(MakeClique(MakeKeys(9)(10)(11)(12), 2));
+  root->children.push_back(LeafClique(MakeKeys(9)(10)(11)(12), 2));
   root->children.back()->parent_ = root;
 
-  root->children.push_back(MakeClique(MakeKeys(7)(8)(11), 2));
+  root->children.push_back(LeafClique(MakeKeys(7)(8)(11), 2));
   root->children.back()->parent_ = root;
   cur = root->children.back();
 
-  cur->children.push_back(MakeClique(MakeKeys(5)(6)(7)(8), 2));
+  cur->children.push_back(LeafClique(MakeKeys(5)(6)(7)(8), 2));
   cur->children.back()->parent_ = cur;
   cur = cur->children.back();
 
-  cur->children.push_back(MakeClique(MakeKeys(3)(4)(6), 2));
+  cur->children.push_back(LeafClique(MakeKeys(3)(4)(6), 2));
   cur->children.back()->parent_ = cur;
 
-  cur->children.push_back(MakeClique(MakeKeys(1)(2)(5), 2));
+  cur->children.push_back(LeafClique(MakeKeys(1)(2)(5), 2));
   cur->children.back()->parent_ = cur;
 
   // Create Bayes Tree
@@ -707,12 +665,12 @@ TEST(SymbolicBayesTree, COLAMDvsMETIS) {
     //  | | | - P( 0 | 1 5)
     SymbolicBayesTree expected;
     expected.insertRoot(
-        MakeClique(MakeKeys(4)(2)(3), 3,
-                   MakeCliques(MakeClique(
+        NodeClique(MakeKeys(4)(2)(3), 3,
+                   Children(NodeClique(
                        MakeKeys(1)(2)(4), 1,
-                       MakeCliques(MakeClique(
+                       Children(NodeClique(
                            MakeKeys(5)(1)(4), 1,
-                           MakeCliques(MakeClique(MakeKeys(0)(1)(5), 1))))))));
+                           Children(LeafClique(MakeKeys(0)(1)(5), 1))))))));
 
     SymbolicBayesTree actual = *sfg.eliminateMultifrontal(ordering);
     EXPECT(assert_equal(expected, actual));
@@ -737,23 +695,23 @@ TEST(SymbolicBayesTree, COLAMDvsMETIS) {
     //  | - P( 2 | 1 3)
     SymbolicBayesTree expected;
 #if defined(__APPLE__)
-    expected.insertRoot(MakeClique(
+    expected.insertRoot(NodeClique(
         MakeKeys(1)(0)(3), 3,
-        MakeCliques(MakeClique(MakeKeys(4)(0)(3), 1,
-                               MakeCliques(MakeClique(MakeKeys(5)(0)(4), 1))))(
-            MakeClique(MakeKeys(2)(1)(3), 1))));
+        Children(NodeClique(MakeKeys(4)(0)(3), 1,
+                            Children(LeafClique(MakeKeys(5)(0)(4), 1))))(
+            LeafClique(MakeKeys(2)(1)(3), 1))));
 #elif defined(_WIN32)
-    expected.insertRoot(MakeClique(
+    expected.insertRoot(NodeClique(
         MakeKeys(3)(5)(2), 3,
-        MakeCliques(MakeClique(MakeKeys(4)(3)(5), 1,
-                               MakeCliques(MakeClique(MakeKeys(0)(2)(5), 1))))(
-            MakeClique(MakeKeys(1)(0)(2), 1))));
+        Children(NodeClique(MakeKeys(4)(3)(5), 1,
+                            Children(LeafClique(MakeKeys(0)(2)(5), 1))))(
+            LeafClique(MakeKeys(1)(0)(2), 1))));
 #else
-    expected.insertRoot(MakeClique(
+    expected.insertRoot(NodeClique(
         MakeKeys(2)(4)(1), 3,
-        MakeCliques(MakeClique(MakeKeys(0)(1)(4), 1,
-                               MakeCliques(MakeClique(MakeKeys(5)(0)(4), 1))))(
-            MakeClique(MakeKeys(3)(2)(4), 1))));
+        Children(NodeClique(MakeKeys(0)(1)(4), 1,
+                            Children(LeafClique(MakeKeys(5)(0)(4), 1))))(
+            LeafClique(MakeKeys(3)(2)(4), 1))));
 #endif
     SymbolicBayesTree actual = *sfg.eliminateMultifrontal(ordering);
     EXPECT(assert_equal(expected, actual));
