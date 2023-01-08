@@ -37,9 +37,8 @@ using symbol_shorthand::X;
 TEST(HybridBayesTree, OptimizeMultifrontal) {
   Switching s(4);
 
-  Ordering hybridOrdering = s.linearizedFactorGraph.getHybridOrdering();
   HybridBayesTree::shared_ptr hybridBayesTree =
-      s.linearizedFactorGraph.eliminateMultifrontal(hybridOrdering);
+      s.linearizedFactorGraph.eliminateMultifrontal();
   HybridValues delta = hybridBayesTree->optimize();
 
   VectorValues expectedValues;
@@ -151,9 +150,9 @@ TEST(HybridBayesTree, Optimize) {
 
   DiscreteFactorGraph dfg;
   for (auto&& f : *remainingFactorGraph) {
-    auto factor = dynamic_pointer_cast<HybridDiscreteFactor>(f);
-    dfg.push_back(
-        boost::dynamic_pointer_cast<DecisionTreeFactor>(factor->inner()));
+    auto discreteFactor = dynamic_pointer_cast<DecisionTreeFactor>(f);
+    assert(discreteFactor);
+    dfg.push_back(discreteFactor);
   }
 
   // Add the probabilities for each branch
@@ -203,16 +202,8 @@ TEST(HybridBayesTree, Choose) {
 
   GaussianBayesTree gbt = isam.choose(assignment);
 
-  Ordering ordering;
-  ordering += X(0);
-  ordering += X(1);
-  ordering += X(2);
-  ordering += X(3);
-  ordering += M(0);
-  ordering += M(1);
-  ordering += M(2);
-
-  // TODO(Varun) get segfault if ordering not provided
+  // Specify ordering so it matches that of HybridGaussianISAM.
+  Ordering ordering(KeyVector{X(0), X(1), X(2), X(3), M(0), M(1), M(2)});
   auto bayesTree = s.linearizedFactorGraph.eliminateMultifrontal(ordering);
 
   auto expected_gbt = bayesTree->choose(assignment);

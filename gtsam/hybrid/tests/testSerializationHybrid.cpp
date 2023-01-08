@@ -23,8 +23,6 @@
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
 #include <gtsam/hybrid/HybridConditional.h>
-#include <gtsam/hybrid/HybridDiscreteFactor.h>
-#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianConditional.h>
 
@@ -72,28 +70,6 @@ BOOST_CLASS_EXPORT_GUID(GaussianMixture::Conditionals::Choice,
 BOOST_CLASS_EXPORT_GUID(noiseModel::Isotropic, "gtsam_noiseModel_Isotropic");
 
 BOOST_CLASS_EXPORT_GUID(HybridBayesNet, "gtsam_HybridBayesNet");
-
-/* ****************************************************************************/
-// Test HybridGaussianFactor serialization.
-TEST(HybridSerialization, HybridGaussianFactor) {
-  const HybridGaussianFactor factor(JacobianFactor(X(0), I_3x3, Z_3x1));
-
-  EXPECT(equalsObj<HybridGaussianFactor>(factor));
-  EXPECT(equalsXML<HybridGaussianFactor>(factor));
-  EXPECT(equalsBinary<HybridGaussianFactor>(factor));
-}
-
-/* ****************************************************************************/
-// Test HybridDiscreteFactor serialization.
-TEST(HybridSerialization, HybridDiscreteFactor) {
-  DiscreteKeys discreteKeys{{M(0), 2}};
-  const HybridDiscreteFactor factor(
-      DecisionTreeFactor(discreteKeys, std::vector<double>{0.4, 0.6}));
-
-  EXPECT(equalsObj<HybridDiscreteFactor>(factor));
-  EXPECT(equalsXML<HybridDiscreteFactor>(factor));
-  EXPECT(equalsBinary<HybridDiscreteFactor>(factor));
-}
 
 /* ****************************************************************************/
 // Test GaussianMixtureFactor serialization.
@@ -150,8 +126,7 @@ TEST(HybridSerialization, GaussianMixture) {
 // Test HybridBayesNet serialization.
 TEST(HybridSerialization, HybridBayesNet) {
   Switching s(2);
-  Ordering ordering = s.linearizedFactorGraph.getHybridOrdering();
-  HybridBayesNet hbn = *(s.linearizedFactorGraph.eliminateSequential(ordering));
+  HybridBayesNet hbn = *(s.linearizedFactorGraph.eliminateSequential());
 
   EXPECT(equalsObj<HybridBayesNet>(hbn));
   EXPECT(equalsXML<HybridBayesNet>(hbn));
@@ -162,9 +137,7 @@ TEST(HybridSerialization, HybridBayesNet) {
 // Test HybridBayesTree serialization.
 TEST(HybridSerialization, HybridBayesTree) {
   Switching s(2);
-  Ordering ordering = s.linearizedFactorGraph.getHybridOrdering();
-  HybridBayesTree hbt =
-      *(s.linearizedFactorGraph.eliminateMultifrontal(ordering));
+  HybridBayesTree hbt = *(s.linearizedFactorGraph.eliminateMultifrontal());
 
   EXPECT(equalsObj<HybridBayesTree>(hbt));
   EXPECT(equalsXML<HybridBayesTree>(hbt));

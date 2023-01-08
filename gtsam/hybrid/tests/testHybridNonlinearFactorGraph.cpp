@@ -54,7 +54,7 @@ TEST(HybridFactorGraph, GaussianFactorGraph) {
   HybridNonlinearFactorGraph fg;
 
   // Add a simple prior factor to the nonlinear factor graph
-  fg.emplace_nonlinear<PriorFactor<double>>(X(0), 0, Isotropic::Sigma(1, 0.1));
+  fg.emplace_shared<PriorFactor<double>>(X(0), 0, Isotropic::Sigma(1, 0.1));
 
   // Linearization point
   Values linearizationPoint;
@@ -311,8 +311,7 @@ TEST(HybridsGaussianElimination, Eliminate_x1) {
   Ordering ordering;
   ordering += X(1);
 
-  std::pair<HybridConditional::shared_ptr, HybridFactor::shared_ptr> result =
-      EliminateHybrid(factors, ordering);
+  auto result = EliminateHybrid(factors, ordering);
   CHECK(result.first);
   EXPECT_LONGS_EQUAL(1, result.first->nrFrontals());
   CHECK(result.second);
@@ -350,7 +349,7 @@ TEST(HybridGaussianElimination, EliminateHybrid_2_Variable) {
   ordering += X(1);
 
   HybridConditional::shared_ptr hybridConditionalMixture;
-  HybridFactor::shared_ptr factorOnModes;
+  boost::shared_ptr<Factor> factorOnModes;
 
   std::tie(hybridConditionalMixture, factorOnModes) =
       EliminateHybrid(factors, ordering);
@@ -364,17 +363,11 @@ TEST(HybridGaussianElimination, EliminateHybrid_2_Variable) {
   // 1 parent, which is the mode
   EXPECT_LONGS_EQUAL(1, gaussianConditionalMixture->nrParents());
 
-  // This is now a HybridDiscreteFactor
-  auto hybridDiscreteFactor =
-      dynamic_pointer_cast<HybridDiscreteFactor>(factorOnModes);
-  // Access the type-erased inner object and convert to DecisionTreeFactor
-  auto discreteFactor =
-      dynamic_pointer_cast<DecisionTreeFactor>(hybridDiscreteFactor->inner());
+  // This is now a discreteFactor
+  auto discreteFactor = dynamic_pointer_cast<DecisionTreeFactor>(factorOnModes);
   CHECK(discreteFactor);
   EXPECT_LONGS_EQUAL(1, discreteFactor->discreteKeys().size());
   EXPECT(discreteFactor->root_->isLeaf() == false);
-
-  // TODO(Varun) Test emplace_discrete
 }
 
 /****************************************************************************
@@ -435,9 +428,10 @@ TEST(HybridFactorGraph, Full_Elimination) {
 
     DiscreteFactorGraph discrete_fg;
     // TODO(Varun) Make this a function of HybridGaussianFactorGraph?
-    for (HybridFactor::shared_ptr& factor : (*remainingFactorGraph_partial)) {
-      auto df = dynamic_pointer_cast<HybridDiscreteFactor>(factor);
-      discrete_fg.push_back(df->inner());
+    for (auto& factor : (*remainingFactorGraph_partial)) {
+      auto df = dynamic_pointer_cast<DecisionTreeFactor>(factor);
+      assert(df);
+      discrete_fg.push_back(df);
     }
 
     ordering.clear();
@@ -500,8 +494,7 @@ TEST(HybridFactorGraph, Printing) {
 
   string expected_hybridFactorGraph = R"(
 size: 7
-factor 0: Continuous [x0]
-
+factor 0: 
   A[x0] = [
 	10
 ]
@@ -553,26 +546,22 @@ factor 2: Hybrid [x1 x2; m1]{
   No noise model
 
 }
-factor 3: Continuous [x1]
-
+factor 3: 
   A[x1] = [
 	10
 ]
   b = [ -10 ]
   No noise model
-factor 4: Continuous [x2]
-
+factor 4: 
   A[x2] = [
 	10
 ]
   b = [ -10 ]
   No noise model
-factor 5: Discrete [m0]
- P( m0 ):
+factor 5:  P( m0 ):
  Leaf  0.5
 
-factor 6: Discrete [m1 m0]
- P( m1 | m0 ):
+factor 6:  P( m1 | m0 ):
  Choice(m1) 
  0 Choice(m0) 
  0 0 Leaf 0.33333333
@@ -683,7 +672,7 @@ TEST(HybridFactorGraph, DefaultDecisionTree) {
   Pose2 prior(0.0, 0.0, 0.0);  // prior mean is at origin
   auto priorNoise = noiseModel::Diagonal::Sigmas(
       Vector3(0.3, 0.3, 0.1));  // 30cm std on x,y, 0.1 rad on theta
-  fg.emplace_nonlinear<PriorFactor<Pose2>>(X(0), prior, priorNoise);
+  fg.emplace_shared<PriorFactor<Pose2>>(X(0), prior, priorNoise);
 
   using PlanarMotionModel = BetweenFactor<Pose2>;
 
@@ -696,7 +685,7 @@ TEST(HybridFactorGraph, DefaultDecisionTree) {
        moving = boost::make_shared<PlanarMotionModel>(X(0), X(1), odometry,
                                                       noise_model);
   std::vector<PlanarMotionModel::shared_ptr> motion_models = {still, moving};
-  fg.emplace_hybrid<MixtureFactor>(
+  fg.emplace_shared<MixtureFactor>(
       contKeys, DiscreteKeys{gtsam::DiscreteKey(M(1), 2)}, motion_models);
 
   // Add Range-Bearing measurements to from X0 to L0 and X1 to L1.
@@ -708,9 +697,9 @@ TEST(HybridFactorGraph, DefaultDecisionTree) {
   double range11 = std::sqrt(4.0 + 4.0), range22 = 2.0;
 
   // Add Bearing-Range factors
-  fg.emplace_nonlinear<BearingRangeFactor<Pose2, Point2>>(
+  fg.emplace_shared<BearingRangeFactor<Pose2, Point2>>(
       X(0), L(0), bearing11, range11, measurementNoise);
-  fg.emplace_nonlinear<BearingRangeFactor<Pose2, Point2>>(
+  fg.emplace_shared<BearingRangeFactor<Pose2, Point2>>(
       X(1), L(1), bearing22, range22, measurementNoise);
 
   // Create (deliberately inaccurate) initial estimate

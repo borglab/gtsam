@@ -54,6 +54,12 @@ namespace gtsam {
     static std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> >
       DefaultEliminate(const FactorGraphType& factors, const Ordering& keys) {
         return EliminatePreferCholesky(factors, keys); }
+    /// The default ordering generation function
+    static Ordering DefaultOrderingFunc(
+        const FactorGraphType& graph,
+        boost::optional<const VariableIndex&> variableIndex) {
+      return Ordering::Colamd(*variableIndex);
+    }
   };
 
   /* ************************************************************************* */

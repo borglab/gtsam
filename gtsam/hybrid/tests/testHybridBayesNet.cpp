@@ -93,8 +93,7 @@ TEST(HybridBayesNet, evaluateHybrid) {
 
   // Create hybrid Bayes net.
   HybridBayesNet bayesNet;
-  bayesNet.push_back(GaussianConditional::sharedMeanAndStddev(
-      X(0), 2 * I_1x1, X(1), Vector1(-4.0), 5.0));
+  bayesNet.push_back(continuousConditional);
   bayesNet.emplace_back(
       new GaussianMixture({X(1)}, {}, {Asia}, {conditional0, conditional1}));
   bayesNet.emplace_back(new DiscreteConditional(Asia, "99/1"));
@@ -185,9 +184,8 @@ TEST(HybridBayesNet, OptimizeAssignment) {
 TEST(HybridBayesNet, Optimize) {
   Switching s(4, 1.0, 0.1, {0, 1, 2, 3}, "1/1 1/1");
 
-  Ordering hybridOrdering = s.linearizedFactorGraph.getHybridOrdering();
   HybridBayesNet::shared_ptr hybridBayesNet =
-      s.linearizedFactorGraph.eliminateSequential(hybridOrdering);
+      s.linearizedFactorGraph.eliminateSequential();
 
   HybridValues delta = hybridBayesNet->optimize();
 
@@ -212,9 +210,8 @@ TEST(HybridBayesNet, Optimize) {
 TEST(HybridBayesNet, Error) {
   Switching s(3);
 
-  Ordering hybridOrdering = s.linearizedFactorGraph.getHybridOrdering();
   HybridBayesNet::shared_ptr hybridBayesNet =
-      s.linearizedFactorGraph.eliminateSequential(hybridOrdering);
+      s.linearizedFactorGraph.eliminateSequential();
 
   HybridValues delta = hybridBayesNet->optimize();
   auto error_tree = hybridBayesNet->error(delta.continuous());
@@ -266,9 +263,8 @@ TEST(HybridBayesNet, Error) {
 TEST(HybridBayesNet, Prune) {
   Switching s(4);
 
-  Ordering hybridOrdering = s.linearizedFactorGraph.getHybridOrdering();
   HybridBayesNet::shared_ptr hybridBayesNet =
-      s.linearizedFactorGraph.eliminateSequential(hybridOrdering);
+      s.linearizedFactorGraph.eliminateSequential();
 
   HybridValues delta = hybridBayesNet->optimize();
 
@@ -284,9 +280,8 @@ TEST(HybridBayesNet, Prune) {
 TEST(HybridBayesNet, UpdateDiscreteConditionals) {
   Switching s(4);
 
-  Ordering hybridOrdering = s.linearizedFactorGraph.getHybridOrdering();
   HybridBayesNet::shared_ptr hybridBayesNet =
-      s.linearizedFactorGraph.eliminateSequential(hybridOrdering);
+      s.linearizedFactorGraph.eliminateSequential();
 
   size_t maxNrLeaves = 3;
   auto discreteConditionals = hybridBayesNet->discreteConditionals();
@@ -337,13 +332,12 @@ TEST(HybridBayesNet, Sampling) {
   auto one_motion =
       boost::make_shared<BetweenFactor<double>>(X(0), X(1), 1, noise_model);
   std::vector<NonlinearFactor::shared_ptr> factors = {zero_motion, one_motion};
-  nfg.emplace_nonlinear<PriorFactor<double>>(X(0), 0.0, noise_model);
-  nfg.emplace_hybrid<MixtureFactor>(
+  nfg.emplace_shared<PriorFactor<double>>(X(0), 0.0, noise_model);
+  nfg.emplace_shared<MixtureFactor>(
       KeyVector{X(0), X(1)}, DiscreteKeys{DiscreteKey(M(0), 2)}, factors);
 
   DiscreteKey mode(M(0), 2);
-  auto discrete_prior = boost::make_shared<DiscreteDistribution>(mode, "1/1");
-  nfg.push_discrete(discrete_prior);
+  nfg.emplace_shared<DiscreteDistribution>(mode, "1/1");
 
   Values initial;
   double z0 = 0.0, z1 = 1.0;
@@ -353,8 +347,7 @@ TEST(HybridBayesNet, Sampling) {
   // Create the factor graph from the nonlinear factor graph.
   HybridGaussianFactorGraph::shared_ptr fg = nfg.linearize(initial);
   // Eliminate into BN
-  Ordering ordering = fg->getHybridOrdering();
-  HybridBayesNet::shared_ptr bn = fg->eliminateSequential(ordering);
+  HybridBayesNet::shared_ptr bn = fg->eliminateSequential();
 
   // Set up sampling
   std::mt19937_64 gen(11);

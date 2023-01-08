@@ -132,18 +132,15 @@ struct traits<HybridBayesTree> : public Testable<HybridBayesTree> {};
  * This object stores parent keys in our base type factor so that
  * eliminating those parent keys will pull this subtree into the
  * elimination.
- * This does special stuff for the hybrid case.
  *
- * @tparam CLIQUE
+ * This is a template instantiation for hybrid Bayes tree cliques, storing both
+ * the regular keys *and* discrete keys in the HybridConditional.
  */
-template <class CLIQUE>
-class BayesTreeOrphanWrapper<
-    CLIQUE, typename std::enable_if<
-                boost::is_same<CLIQUE, HybridBayesTreeClique>::value> >
-    : public CLIQUE::ConditionalType {
+template <>
+class BayesTreeOrphanWrapper<HybridBayesTreeClique> : public HybridConditional {
  public:
-  typedef CLIQUE CliqueType;
-  typedef typename CLIQUE::ConditionalType Base;
+  typedef HybridBayesTreeClique CliqueType;
+  typedef HybridConditional Base;
 
   boost::shared_ptr<CliqueType> clique;
 
