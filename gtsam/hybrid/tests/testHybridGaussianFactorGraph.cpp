@@ -26,9 +26,7 @@
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
 #include <gtsam/hybrid/HybridConditional.h>
-#include <gtsam/hybrid/HybridDiscreteFactor.h>
 #include <gtsam/hybrid/HybridFactor.h>
-#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 #include <gtsam/hybrid/HybridGaussianISAM.h>
 #include <gtsam/hybrid/HybridValues.h>
@@ -65,7 +63,7 @@ TEST(HybridGaussianFactorGraph, Creation) {
 
   HybridGaussianFactorGraph hfg;
 
-  hfg.add(HybridGaussianFactor(JacobianFactor(X(0), I_3x3, Z_3x1)));
+  hfg.emplace_shared<JacobianFactor>(X(0), I_3x3, Z_3x1);
 
   // Define a gaussian mixture conditional P(x0|x1, c0) and add it to the factor
   // graph
@@ -86,7 +84,7 @@ TEST(HybridGaussianFactorGraph, EliminateSequential) {
   // Test elimination of a single variable.
   HybridGaussianFactorGraph hfg;
 
-  hfg.add(HybridGaussianFactor(JacobianFactor(0, I_3x3, Z_3x1)));
+  hfg.emplace_shared<JacobianFactor>(0, I_3x3, Z_3x1);
 
   auto result = hfg.eliminatePartialSequential(KeyVector{0});
 
@@ -102,7 +100,7 @@ TEST(HybridGaussianFactorGraph, EliminateMultifrontal) {
 
   // Add priors on x0 and c1
   hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
-  hfg.add(HybridDiscreteFactor(DecisionTreeFactor(m, {2, 8})));
+  hfg.add(DecisionTreeFactor(m, {2, 8}));
 
   Ordering ordering;
   ordering.push_back(X(0));
@@ -116,23 +114,23 @@ TEST(HybridGaussianFactorGraph, EliminateMultifrontal) {
 TEST(HybridGaussianFactorGraph, eliminateFullSequentialEqualChance) {
   HybridGaussianFactorGraph hfg;
 
-  DiscreteKey m1(M(1), 2);
-
   // Add prior on x0
   hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
+
   // Add factor between x0 and x1
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
 
   // Add a gaussian mixture factor ϕ(x1, c1)
+  DiscreteKey m1(M(1), 2);
   DecisionTree<Key, GaussianFactor::shared_ptr> dt(
       M(1), boost::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1),
       boost::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones()));
-
   hfg.add(GaussianMixtureFactor({X(1)}, {m1}, dt));
 
   auto result = hfg.eliminateSequential();
 
   auto dc = result->at(2)->asDiscrete();
+  CHECK(dc);
   DiscreteValues dv;
   dv[M(1)] = 0;
   // Regression test
@@ -212,7 +210,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalCLG) {
   // Hybrid factor P(x1|c1)
   hfg.add(GaussianMixtureFactor({X(1)}, {m}, dt));
   // Prior factor on c1
-  hfg.add(HybridDiscreteFactor(DecisionTreeFactor(m, {2, 8})));
+  hfg.add(DecisionTreeFactor(m, {2, 8}));
 
   // Get a constrained ordering keeping c1 last
   auto ordering_full = HybridOrdering(hfg);
@@ -247,8 +245,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalTwoClique) {
     hfg.add(GaussianMixtureFactor({X(2)}, {{M(1), 2}}, dt1));
   }
 
-  hfg.add(HybridDiscreteFactor(
-      DecisionTreeFactor({{M(1), 2}, {M(2), 2}}, "1 2 3 4")));
+  hfg.add(DecisionTreeFactor({{M(1), 2}, {M(2), 2}}, "1 2 3 4"));
 
   hfg.add(JacobianFactor(X(3), I_3x3, X(4), -I_3x3, Z_3x1));
   hfg.add(JacobianFactor(X(4), I_3x3, X(5), -I_3x3, Z_3x1));

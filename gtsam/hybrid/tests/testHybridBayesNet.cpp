@@ -93,8 +93,7 @@ TEST(HybridBayesNet, evaluateHybrid) {
 
   // Create hybrid Bayes net.
   HybridBayesNet bayesNet;
-  bayesNet.push_back(GaussianConditional::sharedMeanAndStddev(
-      X(0), 2 * I_1x1, X(1), Vector1(-4.0), 5.0));
+  bayesNet.push_back(continuousConditional);
   bayesNet.emplace_back(
       new GaussianMixture({X(1)}, {}, {Asia}, {conditional0, conditional1}));
   bayesNet.emplace_back(new DiscreteConditional(Asia, "99/1"));
@@ -333,13 +332,12 @@ TEST(HybridBayesNet, Sampling) {
   auto one_motion =
       boost::make_shared<BetweenFactor<double>>(X(0), X(1), 1, noise_model);
   std::vector<NonlinearFactor::shared_ptr> factors = {zero_motion, one_motion};
-  nfg.emplace_nonlinear<PriorFactor<double>>(X(0), 0.0, noise_model);
-  nfg.emplace_hybrid<MixtureFactor>(
+  nfg.emplace_shared<PriorFactor<double>>(X(0), 0.0, noise_model);
+  nfg.emplace_shared<MixtureFactor>(
       KeyVector{X(0), X(1)}, DiscreteKeys{DiscreteKey(M(0), 2)}, factors);
 
   DiscreteKey mode(M(0), 2);
-  auto discrete_prior = boost::make_shared<DiscreteDistribution>(mode, "1/1");
-  nfg.push_discrete(discrete_prior);
+  nfg.emplace_shared<DiscreteDistribution>(mode, "1/1");
 
   Values initial;
   double z0 = 0.0, z1 = 1.0;

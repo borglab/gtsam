@@ -21,7 +21,6 @@
 
 #include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam/hybrid/GaussianMixtureFactor.h>
-#include <gtsam/hybrid/HybridNonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Symbol.h>

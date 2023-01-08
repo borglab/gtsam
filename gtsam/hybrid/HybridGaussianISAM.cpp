@@ -43,7 +43,7 @@ Ordering HybridGaussianISAM::GetOrdering(
     HybridGaussianFactorGraph& factors,
     const HybridGaussianFactorGraph& newFactors) {
   // Get all the discrete keys from the factors
-  KeySet allDiscrete = factors.discreteKeys();
+  const KeySet allDiscrete = factors.discreteKeySet();
 
   // Create KeyVector with continuous keys followed by discrete keys.
   KeyVector newKeysDiscreteLast;
