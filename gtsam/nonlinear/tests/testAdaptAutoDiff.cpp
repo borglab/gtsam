@@ -250,8 +250,7 @@ TEST(AdaptAutoDiff, SnavelyExpression) {
     internal::upAligned(RecordSize) + P.traceSize() + X.traceSize(),
     expression.traceSize());
 
-  set<Key> expected = list_of(1)(2);
-
+  const set<Key> expected{1, 2};
   EXPECT(expected == expression.keys());
 }
 

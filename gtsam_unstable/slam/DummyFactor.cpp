@@ -15,7 +15,7 @@ namespace gtsam {
 
 /* ************************************************************************* */
 DummyFactor::DummyFactor(const Key& key1, size_t dim1, const Key& key2, size_t dim2)
-: NonlinearFactor(cref_list_of<2>(key1)(key2))
+: NonlinearFactor(KeyVector{key1, key2})
 {
   dims_.push_back(dim1);
   dims_.push_back(dim2);

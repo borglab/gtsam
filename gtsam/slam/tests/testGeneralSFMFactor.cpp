@@ -454,8 +454,8 @@ TEST(GeneralSFMFactor, BinaryJacobianFactor) {
     using namespace noiseModel;
     Rot2 R = Rot2::fromAngle(0.3);
     Matrix2 cov = R.matrix() * R.matrix().transpose();
-    models += SharedNoiseModel(), Unit::Create(2), //
-    Isotropic::Sigma(2, 0.5), Constrained::All(2), Gaussian::Covariance(cov);
+    models = {SharedNoiseModel(), Unit::Create(2), Isotropic::Sigma(2, 0.5),
+              Constrained::All(2), Gaussian::Covariance(cov)};
   }
 
   // Now loop over all these noise models

@@ -220,9 +220,8 @@ TEST(Values, retract_full)
   config0.insert(key1, Vector3(1.0, 2.0, 3.0));
   config0.insert(key2, Vector3(5.0, 6.0, 7.0));
 
-  VectorValues delta = pair_list_of<Key, Vector>
-    (key1, Vector3(1.0, 1.1, 1.2))
-    (key2, Vector3(1.3, 1.4, 1.5));
+  VectorValues delta {{key1, Vector3(1.0, 1.1, 1.2)},
+                      {key2, Vector3(1.3, 1.4, 1.5)}};
 
   Values expected;
   expected.insert(key1, Vector3(2.0, 3.1, 4.2));
@@ -239,8 +238,7 @@ TEST(Values, retract_partial)
   config0.insert(key1, Vector3(1.0, 2.0, 3.0));
   config0.insert(key2, Vector3(5.0, 6.0, 7.0));
 
-  VectorValues delta = pair_list_of<Key, Vector>
-    (key2, Vector3(1.3, 1.4, 1.5));
+  VectorValues delta {{key2, Vector3(1.3, 1.4, 1.5)}};
 
   Values expected;
   expected.insert(key1, Vector3(1.0, 2.0, 3.0));
@@ -275,9 +273,8 @@ TEST(Values, localCoordinates)
   valuesA.insert(key1, Vector3(1.0, 2.0, 3.0));
   valuesA.insert(key2, Vector3(5.0, 6.0, 7.0));
 
-  VectorValues expDelta = pair_list_of<Key, Vector>
-    (key1, Vector3(0.1, 0.2, 0.3))
-    (key2, Vector3(0.4, 0.5, 0.6));
+  VectorValues expDelta{{key1, Vector3(0.1, 0.2, 0.3)},
+                        {key2, Vector3(0.4, 0.5, 0.6)}};
 
   Values valuesB = valuesA.retract(expDelta);
 

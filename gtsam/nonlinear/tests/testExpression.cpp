@@ -86,7 +86,7 @@ Vector f3(const Point3& p, OptionalJacobian<Eigen::Dynamic, 3> H) {
   return p;
 }
 Point3_ pointExpression(1);
-set<Key> expected = list_of(1);
+const set<Key> expected{1};
 }  // namespace unary
 
 // Create a unary expression that takes another expression as a single argument.
@@ -186,14 +186,14 @@ TEST(Expression, BinaryToDouble) {
 /* ************************************************************************* */
 // Check keys of an expression created from class method.
 TEST(Expression, BinaryKeys) {
-  set<Key> expected = list_of(1)(2);
+  const set<Key> expected{1, 2};
   EXPECT(expected == binary::p_cam.keys());
 }
 
 /* ************************************************************************* */
 // Check dimensions by calling `dims` method.
 TEST(Expression, BinaryDimensions) {
-  map<Key, int> actual, expected = map_list_of<Key, int>(1, 6)(2, 3);
+  map<Key, int> actual, expected{{1, 6}, {2, 3}};
   binary::p_cam.dims(actual);
   EXPECT(actual == expected);
 }
@@ -223,14 +223,14 @@ Expression<Point2> uv_hat(uncalibrate<Cal3_S2>, K, projection);
 /* ************************************************************************* */
 // keys
 TEST(Expression, TreeKeys) {
-  set<Key> expected = list_of(1)(2)(3);
+  const set<Key> expected{1, 2, 3};
   EXPECT(expected == tree::uv_hat.keys());
 }
 
 /* ************************************************************************* */
 // dimensions
 TEST(Expression, TreeDimensions) {
-  map<Key, int> actual, expected = map_list_of<Key, int>(1, 6)(2, 3)(3, 5);
+  map<Key, int> actual, expected{{1, 6}, {2, 3}, {3, 5}};
   tree::uv_hat.dims(actual);
   EXPECT(actual == expected);
 }
@@ -261,7 +261,7 @@ TEST(Expression, compose1) {
   Rot3_ R3 = R1 * R2;
 
   // Check keys
-  set<Key> expected = list_of(1)(2);
+  const set<Key> expected{1, 2};
   EXPECT(expected == R3.keys());
 }
 
@@ -273,7 +273,7 @@ TEST(Expression, compose2) {
   Rot3_ R3 = R1 * R2;
 
   // Check keys
-  set<Key> expected = list_of(1);
+  const set<Key> expected{1};
   EXPECT(expected == R3.keys());
 }
 
@@ -285,7 +285,7 @@ TEST(Expression, compose3) {
   Rot3_ R3 = R1 * R2;
 
   // Check keys
-  set<Key> expected = list_of(3);
+  const set<Key> expected{3};
   EXPECT(expected == R3.keys());
 }
 
@@ -298,7 +298,7 @@ TEST(Expression, compose4) {
   Double_ R3 = R1 * R2;
 
   // Check keys
-  set<Key> expected = list_of(1);
+  const set<Key> expected{1};
   EXPECT(expected == R3.keys());
 }
 
@@ -322,7 +322,7 @@ TEST(Expression, ternary) {
   Rot3_ ABC(composeThree, A, B, C);
 
   // Check keys
-  set<Key> expected = list_of(1)(2)(3);
+  const set<Key> expected {1, 2, 3};
   EXPECT(expected == ABC.keys());
 }
 
@@ -332,10 +332,10 @@ TEST(Expression, ScalarMultiply) {
   const Key key(67);
   const Point3_ expr = 23 * Point3_(key);
 
-  set<Key> expected_keys = list_of(key);
+  const set<Key> expected_keys{key};
   EXPECT(expected_keys == expr.keys());
 
-  map<Key, int> actual_dims, expected_dims = map_list_of<Key, int>(key, 3);
+  map<Key, int> actual_dims, expected_dims {{key, 3}};
   expr.dims(actual_dims);
   EXPECT(actual_dims == expected_dims);
 
@@ -363,10 +363,10 @@ TEST(Expression, BinarySum) {
   const Key key(67);
   const Point3_ sum_ = Point3_(key) + Point3_(Point3(1, 1, 1));
 
-  set<Key> expected_keys = list_of(key);
+  const set<Key> expected_keys{key};
   EXPECT(expected_keys == sum_.keys());
 
-  map<Key, int> actual_dims, expected_dims = map_list_of<Key, int>(key, 3);
+  map<Key, int> actual_dims, expected_dims {{key, 3}};
   sum_.dims(actual_dims);
   EXPECT(actual_dims == expected_dims);
 
@@ -458,7 +458,7 @@ TEST(Expression, UnaryOfSum) {
   const Point3_ sum_ = Point3_(key1) + Point3_(key2);
   const Double_ norm_(&gtsam::norm3, sum_);
 
-  map<Key, int> actual_dims, expected_dims = map_list_of<Key, int>(key1, 3)(key2, 3);
+  map<Key, int> actual_dims, expected_dims = {{key1, 3}, {key2, 3}};
   norm_.dims(actual_dims);
   EXPECT(actual_dims == expected_dims);
 
@@ -481,7 +481,7 @@ TEST(Expression, WeightedSum) {
   const Key key1(42), key2(67);
   const Point3_ weighted_sum_ = 17 * Point3_(key1) + 23 * Point3_(key2);
 
-  map<Key, int> actual_dims, expected_dims = map_list_of<Key, int>(key1, 3)(key2, 3);
+  map<Key, int> actual_dims, expected_dims {{key1, 3}, {key2, 3}};
   weighted_sum_.dims(actual_dims);
   EXPECT(actual_dims == expected_dims);
 
