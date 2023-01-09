@@ -282,9 +282,12 @@ FixedLagSmoother::Result BatchFixedLagSmoother::optimize() {
           // Reject this change
           if (lambda >= lambdaUpperBound) {
             // The maximum lambda has been used. Print a warning and end the search.
-            cout
+            if(parameters_.verbosity >= NonlinearOptimizerParams::TERMINATION
+               || parameters_.verbosityLM == LevenbergMarquardtParams::SUMMARY) {
+              cout
                 << "Warning:  Levenberg-Marquardt giving up because cannot decrease error with maximum lambda"
                 << endl;
+            }
             break;
           } else {
             // Increase lambda and continue searching
