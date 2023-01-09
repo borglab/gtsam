@@ -257,29 +257,7 @@ VectorValues HybridBayesNet::optimize(const DiscreteValues &assignment) const {
 
 /* ************************************************************************* */
 double HybridBayesNet::evaluate(const HybridValues &values) const {
-  const DiscreteValues &discreteValues = values.discrete();
-  const VectorValues &continuousValues = values.continuous();
-
-  double error = 0.0, probability = 1.0;
-
-  // Iterate over each conditional.
-  for (auto &&conditional : *this) {
-    // TODO: should be delegated to derived classes.
-    if (auto gm = conditional->asMixture()) {
-      const auto component = (*gm)(discreteValues);
-      error += component->error(continuousValues);
-
-    } else if (auto gc = conditional->asGaussian()) {
-      // If continuous only, evaluate the probability and multiply.
-      error += gc->error(continuousValues);
-
-    } else if (auto dc = conditional->asDiscrete()) {
-      // Conditional is discrete-only, so return its probability.
-      probability *= dc->operator()(discreteValues);
-    }
-  }
-
-  return probability * exp(-error);
+  return exp(-error(values));
 }
 
 /* ************************************************************************* */
@@ -318,12 +296,6 @@ HybridValues HybridBayesNet::sample() const {
 }
 
 /* ************************************************************************* */
-double HybridBayesNet::error(const HybridValues &values) const {
-  GaussianBayesNet gbn = choose(values.discrete());
-  return gbn.error(values.continuous());
-}
-
-/* ************************************************************************* */
 AlgebraicDecisionTree<Key> HybridBayesNet::error(
     const VectorValues &continuousValues) const {
   AlgebraicDecisionTree<Key> error_tree(0.0);
@@ -332,19 +304,15 @@ AlgebraicDecisionTree<Key> HybridBayesNet::error(
   for (auto &&conditional : *this) {
     if (auto gm = conditional->asMixture()) {
       // If conditional is hybrid, select based on assignment and compute error.
-      AlgebraicDecisionTree<Key> conditional_error =
-          gm->error(continuousValues);
-
-      error_tree = error_tree + conditional_error;
+      error_tree = error_tree + gm->error(continuousValues);
     } else if (auto gc = conditional->asGaussian()) {
-      // If continuous only, get the (double) error
-      // and add it to the error_tree
+      // If continuous, get the (double) error and add it to the error_tree
       double error = gc->error(continuousValues);
       // Add the computed error to every leaf of the error tree.
       error_tree = error_tree.apply(
           [error](double leaf_value) { return leaf_value + error; });
     } else if (auto dc = conditional->asDiscrete()) {
-      // Conditional is discrete-only, we skip.
+      // TODO(dellaert): if discrete, we need to add error in the right branch?
       continue;
     }
   }

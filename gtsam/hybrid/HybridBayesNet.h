@@ -187,14 +187,7 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   /// Prune the Hybrid Bayes Net such that we have at most maxNrLeaves leaves.
   HybridBayesNet prune(size_t maxNrLeaves);
 
-  /**
-   * @brief 0.5 * sum of squared Mahalanobis distances
-   * for a specific discrete assignment.
-   *
-   * @param values Continuous values and discrete assignment.
-   * @return double
-   */
-  double error(const HybridValues &values) const;
+  using Base::error; // Expose error(const HybridValues&) method..
 
   /**
    * @brief Compute conditional error for each discrete assignment,

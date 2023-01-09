@@ -212,6 +212,7 @@ TEST(HybridBayesNet, Error) {
 
   HybridBayesNet::shared_ptr hybridBayesNet =
       s.linearizedFactorGraph.eliminateSequential();
+  EXPECT_LONGS_EQUAL(5, hybridBayesNet->size());
 
   HybridValues delta = hybridBayesNet->optimize();
   auto error_tree = hybridBayesNet->error(delta.continuous());
@@ -235,26 +236,21 @@ TEST(HybridBayesNet, Error) {
   EXPECT(assert_equal(expected_pruned_error, pruned_error_tree, 1e-6));
 
   // Verify error computation and check for specific error value
-  DiscreteValues discrete_values{{M(0), 1}, {M(1), 1}};
+  const DiscreteValues discrete_values{{M(0), 1}, {M(1), 1}};
+  const HybridValues hybridValues{delta.continuous(), discrete_values};
+  double error = 0;
+  error += hybridBayesNet->at(0)->asMixture()->error(hybridValues);
+  error += hybridBayesNet->at(1)->asMixture()->error(hybridValues);
+  error += hybridBayesNet->at(2)->asMixture()->error(hybridValues);
 
-  double total_error = 0;
-  for (size_t idx = 0; idx < hybridBayesNet->size(); idx++) {
-    if (hybridBayesNet->at(idx)->isHybrid()) {
-      double error = hybridBayesNet->at(idx)->asMixture()->error(
-          {delta.continuous(), discrete_values});
-      total_error += error;
-    } else if (hybridBayesNet->at(idx)->isContinuous()) {
-      double error =
-          hybridBayesNet->at(idx)->asGaussian()->error(delta.continuous());
-      total_error += error;
-    }
-  }
+  // TODO(dellaert): the discrete errors are not added in error tree!
+  EXPECT_DOUBLES_EQUAL(error, error_tree(discrete_values), 1e-9);
+  EXPECT_DOUBLES_EQUAL(error, pruned_error_tree(discrete_values), 1e-9);
 
-  EXPECT_DOUBLES_EQUAL(
-      total_error, hybridBayesNet->error({delta.continuous(), discrete_values}),
-      1e-9);
-  EXPECT_DOUBLES_EQUAL(total_error, error_tree(discrete_values), 1e-9);
-  EXPECT_DOUBLES_EQUAL(total_error, pruned_error_tree(discrete_values), 1e-9);
+  error += hybridBayesNet->at(3)->asDiscrete()->error(discrete_values);
+  error += hybridBayesNet->at(4)->asDiscrete()->error(discrete_values);
+  EXPECT_DOUBLES_EQUAL(error, hybridBayesNet->error(hybridValues), 1e-9);
+
 }
 
 /* ****************************************************************************/
