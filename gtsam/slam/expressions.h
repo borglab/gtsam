@@ -12,6 +12,7 @@
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/Line3.h>
+#include <gtsam/geometry/OrientedPlane3.h>
 #include <gtsam/geometry/PinholeCamera.h>
 
 namespace gtsam {
@@ -26,6 +27,11 @@ inline Point2_ transformTo(const Pose2_& x, const Point2_& p) {
   return Point2_(x, &Pose2::transformTo, p);
 }
 
+inline Double_ range(const Point2_& p, const Point2_& q)
+{
+  return Double_(Range<Point2, Point2>(), p, q);
+}
+
 // 3D Geometry
 
 typedef Expression<Point3> Point3_;
@@ -33,6 +39,7 @@ typedef Expression<Unit3> Unit3_;
 typedef Expression<Rot3> Rot3_;
 typedef Expression<Pose3> Pose3_;
 typedef Expression<Line3> Line3_;
+typedef Expression<OrientedPlane3> OrientedPlane3_;
 
 inline Point3_ transformTo(const Pose3_& x, const Point3_& p) {
   return Point3_(x, &Pose3::transformTo, p);
@@ -46,6 +53,10 @@ inline Line3_ transformTo(const Pose3_ &wTc, const Line3_ &wL) {
   Line3 (*f)(const Pose3 &, const Line3 &,
              OptionalJacobian<4, 6>, OptionalJacobian<4, 4>) = &transformTo;
   return Line3_(f, wTc, wL);
+}
+
+inline Pose3_ transformPoseTo(const Pose3_& p, const Pose3_& q) {
+  return Pose3_(p, &Pose3::transformPoseTo, q);
 }
 
 inline Point3_ normalize(const Point3_& a){
@@ -70,14 +81,26 @@ namespace internal {
 inline Rot3 rotation(const Pose3& pose, OptionalJacobian<3, 6> H) {
   return pose.rotation(H);
 }
+
+inline Point3 translation(const Pose3& pose, OptionalJacobian<3, 6> H) {
+  return pose.translation(H);
+}
 }  // namespace internal
 
 inline Rot3_ rotation(const Pose3_& pose) {
   return Rot3_(internal::rotation, pose);
 }
 
+inline Point3_ translation(const Pose3_& pose) {
+  return Point3_(internal::translation, pose);
+}
+
 inline Point3_ rotate(const Rot3_& x, const Point3_& p) {
   return Point3_(x, &Rot3::rotate, p);
+}
+
+inline Point3_ point3(const Unit3_& v) {
+  return Point3_(&Unit3::point3, v);
 }
 
 inline Unit3_ rotate(const Rot3_& x, const Unit3_& p) {
@@ -90,6 +113,14 @@ inline Point3_ unrotate(const Rot3_& x, const Point3_& p) {
 
 inline Unit3_ unrotate(const Rot3_& x, const Unit3_& p) {
   return Unit3_(x, &Rot3::unrotate, p);
+}
+
+inline Double_ distance(const OrientedPlane3_& p) {
+  return Double_(&OrientedPlane3::distance, p);
+}
+
+inline Unit3_ normal(const OrientedPlane3_& p) {
+  return Unit3_(&OrientedPlane3::normal, p);
 }
 
 // Projection
@@ -141,6 +172,11 @@ inline Point2_ project3(const Pose3_& x, const Expression<POINT>& p,
 template <class CALIBRATION>
 Point2_ uncalibrate(const Expression<CALIBRATION>& K, const Point2_& xy_hat) {
   return Point2_(K, &CALIBRATION::uncalibrate, xy_hat);
+}
+
+template <class CALIBRATION>
+inline Pose3_ getPose(const Expression<PinholeCamera<CALIBRATION> > & cam) {
+  return Pose3_(&PinholeCamera<CALIBRATION>::getPose, cam);
 }
 
 
