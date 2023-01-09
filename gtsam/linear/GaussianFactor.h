@@ -31,6 +31,9 @@ namespace gtsam {
   class Scatter;
   class SymmetricBlockMatrix;
 
+  // Forward declaration of function to extract VectorValues from HybridValues.
+  const VectorValues& GetVectorValues(const HybridValues& c);
+
   /**
    * An abstract virtual base class for JacobianFactor and HessianFactor. A GaussianFactor has a
    * quadratic error function. GaussianFactor is non-mutable (all methods const!). The factor value
@@ -63,8 +66,24 @@ namespace gtsam {
     /** Equals for testable */
     virtual bool equals(const GaussianFactor& lf, double tol = 1e-9) const = 0;
 
-    /** Print for testable */
-    virtual double error(const VectorValues& c) const = 0; /**  0.5*(A*x-b)'*D*(A*x-b) */
+    /**
+     * In Gaussian factors, the error function returns either the negative log-likelihood, e.g.,
+     *   0.5*(A*x-b)'*D*(A*x-b) 
+     * for a \class JacobianFactor, or the negative log-density, e.g.,
+     *   0.5*(A*x-b)'*D*(A*x-b) - log(k)
+     * for a \class GaussianConditional, where k is the normalization constant.
+     */
+    virtual double error(const VectorValues& c) const {
+      throw std::runtime_error("GaussianFactor::error::error is not implemented");
+    }
+
+    /**
+     * The factor::error simply extracts the \class VectorValues from the
+     * \class HybridValues and calculates the error.
+     */
+    double error(const HybridValues& c) const override {
+      return GaussianFactor::error(GetVectorValues(c));
+    }
 
     /** Return the dimension of the variable pointed to by the given key iterator */
     virtual DenseIndex getDim(const_iterator variable) const = 0;

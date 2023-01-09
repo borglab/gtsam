@@ -260,18 +260,18 @@ double HybridBayesNet::evaluate(const HybridValues &values) const {
   const DiscreteValues &discreteValues = values.discrete();
   const VectorValues &continuousValues = values.continuous();
 
-  double logDensity = 0.0, probability = 1.0;
+  double error = 0.0, probability = 1.0;
 
   // Iterate over each conditional.
   for (auto &&conditional : *this) {
     // TODO: should be delegated to derived classes.
     if (auto gm = conditional->asMixture()) {
       const auto component = (*gm)(discreteValues);
-      logDensity += component->logDensity(continuousValues);
+      error += component->error(continuousValues);
 
     } else if (auto gc = conditional->asGaussian()) {
       // If continuous only, evaluate the probability and multiply.
-      logDensity += gc->logDensity(continuousValues);
+      error += gc->error(continuousValues);
 
     } else if (auto dc = conditional->asDiscrete()) {
       // Conditional is discrete-only, so return its probability.
@@ -279,7 +279,7 @@ double HybridBayesNet::evaluate(const HybridValues &values) const {
     }
   }
 
-  return probability * exp(logDensity);
+  return probability * exp(-error);
 }
 
 /* ************************************************************************* */

@@ -188,9 +188,6 @@ class GTSAM_EXPORT GaussianMixture
   //   double operator()(const HybridValues &values) const { return
   //   evaluate(values); }
 
-  //   /// Calculate log-density for given values `x`.
-  //   double logDensity(const HybridValues &values) const;
-
   /**
    * @brief Prune the decision tree of Gaussian factors as per the discrete
    * `decisionTree`.

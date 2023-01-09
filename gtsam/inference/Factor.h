@@ -29,12 +29,16 @@
 #include <gtsam/inference/Key.h>
 
 namespace gtsam {
-/// Define collection types:
-typedef FastVector<FactorIndex> FactorIndices;
-typedef FastSet<FactorIndex> FactorIndexSet;
+
+  /// Define collection types:
+  typedef FastVector<FactorIndex> FactorIndices;
+  typedef FastSet<FactorIndex> FactorIndexSet;
+
+  class HybridValues; // forward declaration of a Value type for error.
 
   /**
-   * This is the base class for all factor types.  This class does not store any
+   * This is the base class for all factor types, as well as conditionals, 
+   * which are implemented as specialized factors.  This class does not store any
    * data other than its keys.  Derived classes store data such as matrices and
    * probability tables.
    *
@@ -61,9 +65,8 @@ typedef FastSet<FactorIndex> FactorIndexSet;
    *   \class SymbolicFactor and \class SymbolicConditional. They do not override the
    *  `error` method, and are used only for symbolic elimination etc.
    *
-   * This class is \b not virtual for performance reasons - the derived class
-   * SymbolicFactor needs to be created and destroyed quickly during symbolic
-   * elimination.  GaussianFactor and NonlinearFactor are virtual. 
+   * Note that derived classes must also redefine the `This` and `shared_ptr`
+   * typedefs. See JacobianFactor, etc. for examples.
    * 
    * \nosubgrouping
    */
@@ -148,6 +151,15 @@ typedef FastSet<FactorIndex> FactorIndexSet;
    /** Iterator at end of involved variable keys */
    const_iterator end() const { return keys_.end(); }
 
+  /**
+   * All factor types need to implement an error function.
+   * In factor graphs, this is the negative log-likelihood.
+   * In Bayes nets, it is the negative log density, i.e., properly normalized.
+   */
+  virtual double error(const HybridValues& c) const {
+    throw std::runtime_error("Factor::error is not implemented");
+  }
+
    /**
     * @return the number of variables involved in this factor
     */
@@ -172,7 +184,6 @@ typedef FastSet<FactorIndex> FactorIndexSet;
     bool equals(const This& other, double tol = 1e-9) const;
 
     /// @}
-
     /// @name Advanced Interface
     /// @{
 
@@ -185,7 +196,13 @@ typedef FastSet<FactorIndex> FactorIndexSet;
     /** Iterator at end of involved variable keys */
     iterator end() { return keys_.end(); }
 
+    /// @}
+
   private:
+
+    /// @name Serialization
+    /// @{
+
     /** Serialization function */
     friend class boost::serialization::access;
     template<class Archive>
@@ -197,4 +214,4 @@ typedef FastSet<FactorIndex> FactorIndexSet;
 
   };
 
-}
+} // \namespace gtsam

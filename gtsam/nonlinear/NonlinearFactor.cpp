@@ -16,11 +16,17 @@
  * @author  Richard Roberts
  */
 
+#include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <boost/make_shared.hpp>
 #include <boost/format.hpp>
 
 namespace gtsam {
+
+/* ************************************************************************* */
+const Values& GetValues(const HybridValues& c) {
+  return c.nonlinear();
+}
 
 /* ************************************************************************* */
 void NonlinearFactor::print(const std::string& s,

@@ -18,16 +18,22 @@
 
 // \callgraph
 
+#include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/VectorValues.h>
 
 namespace gtsam {
 
 /* ************************************************************************* */
-  VectorValues GaussianFactor::hessianDiagonal() const {
-    VectorValues d;
-    hessianDiagonalAdd(d);
-    return d;
-  }
-
+const VectorValues& GetVectorValues(const HybridValues& c) {
+  return c.continuous();
 }
+
+/* ************************************************************************* */
+VectorValues GaussianFactor::hessianDiagonal() const {
+  VectorValues d;
+  hessianDiagonalAdd(d);
+  return d;
+}
+
+}  // namespace gtsam

@@ -193,14 +193,14 @@ double GaussianConditional::logNormalizationConstant() const {
 
 /* ************************************************************************* */
 //  density = k exp(-error(x))
-//  log = log(k) -error(x)
-double GaussianConditional::logDensity(const VectorValues& x) const {
-  return logNormalizationConstant() - error(x);
+//  -log(density) = error(x) - log(k)
+double GaussianConditional::error(const VectorValues& x) const {
+  return JacobianFactor::error(x) - logNormalizationConstant();
 }
 
 /* ************************************************************************* */
 double GaussianConditional::evaluate(const VectorValues& x) const {
-  return exp(logDensity(x));
+  return exp(-error(x));
 }
 
   /* ************************************************************************* */
