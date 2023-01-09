@@ -34,7 +34,7 @@ using namespace gtsam::symbol_shorthand;
 
 static bool debug = false;
 
-using Keys = ListOf<Key>;  // Create Keys a la list_of
+using Keys = ChainedVector<Key>;  // Create Keys a la list_of
 
 /* ************************************************************************* */
 TEST(SymbolicBayesTree, clear) {
