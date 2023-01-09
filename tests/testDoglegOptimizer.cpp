@@ -126,17 +126,22 @@ TEST(DoglegOptimizer, Iterate) {
 
   double Delta = 1.0;
   for(size_t it=0; it<10; ++it) {
-    GaussianBayesNet gbn = *fg.linearize(config)->eliminateSequential();
+    auto linearized = fg.linearize(config);
+    
     // Iterate assumes that linear error = nonlinear error at the linearization point, and this should be true
     double nonlinearError = fg.error(config);
-    double linearError = GaussianFactorGraph(gbn).error(config.zeroVectors());
+    double linearError = linearized->error(config.zeroVectors());
     DOUBLES_EQUAL(nonlinearError, linearError, 1e-5);
-//    cout << "it " << it << ", Delta = " << Delta << ", error = " << fg->error(*config) << endl;
-    VectorValues dx_u = gbn.optimizeGradientSearch();
-    VectorValues dx_n = gbn.optimize();
-    DoglegOptimizerImpl::IterationResult result = DoglegOptimizerImpl::Iterate(Delta, DoglegOptimizerImpl::SEARCH_EACH_ITERATION, dx_u, dx_n, gbn, fg, config, fg.error(config));
+    
+    auto gbn = linearized->eliminateSequential();
+    VectorValues dx_u = gbn->optimizeGradientSearch();
+    VectorValues dx_n = gbn->optimize();
+    DoglegOptimizerImpl::IterationResult result = DoglegOptimizerImpl::Iterate(
+        Delta, DoglegOptimizerImpl::SEARCH_EACH_ITERATION, dx_u, dx_n, *gbn, fg,
+        config, fg.error(config));
     Delta = result.delta;
     EXPECT(result.f_error < fg.error(config)); // Check that error decreases
+    
     Values newConfig(config.retract(result.dx_d));
     config = newConfig;
     DOUBLES_EQUAL(fg.error(config), result.f_error, 1e-5); // Check that error is correctly filled in
