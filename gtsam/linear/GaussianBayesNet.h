@@ -98,10 +98,16 @@ namespace gtsam {
     /// @{
 
     /**
-     * Calculate probability density for given values `x`:
-     *   exp(-error(x)) / sqrt((2*pi)^n*det(Sigma))
+     * The error is the negative log-density for given values `x`:
+     *  neg_log_likelihood(x) + 0.5 * n*log(2*pi) + 0.5 * log det(Sigma)
      * where x is the vector of values, and Sigma is the covariance matrix.
-     * Note that error(x)=0.5*e'*e includes the 0.5 factor already.
+     */
+    double error(const VectorValues& x) const;
+
+    /**
+     * Calculate probability density for given values `x`:
+     *   exp(-error) == exp(-neg_log_likelihood(x)) / sqrt((2*pi)^n*det(Sigma))
+     * where x is the vector of values, and Sigma is the covariance matrix.
      */
     double evaluate(const VectorValues& x) const;
 
@@ -109,13 +115,6 @@ namespace gtsam {
     double operator()(const VectorValues& x) const {
       return evaluate(x);
     }
-
-    /**
-     * Calculate log-density for given values `x`:
-     *  -error(x) - 0.5 * n*log(2*pi) - 0.5 * log det(Sigma)
-     * where x is the vector of values, and Sigma is the covariance matrix.
-     */
-    double logDensity(const VectorValues& x) const;
 
     /// Solve the GaussianBayesNet, i.e. return \f$ x = R^{-1}*d \f$, by
     /// back-substitution
@@ -215,9 +214,6 @@ namespace gtsam {
      * @param [output] g A VectorValues to store the gradient, which must be preallocated, see
      *        allocateVectorValues */
     VectorValues gradientAtZero() const;
-
-    /** 0.5 * sum of squared Mahalanobis distances. */
-    double error(const VectorValues& x) const;
 
     /**
      * Computes the determinant of a GassianBayesNet. A GaussianBayesNet is an upper triangular

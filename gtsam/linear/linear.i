@@ -498,7 +498,7 @@ virtual class GaussianConditional : gtsam::JacobianFactor {
   
   // Standard Interface
   double evaluate(const gtsam::VectorValues& x) const;
-  double logDensity(const gtsam::VectorValues& x) const;
+  double error(const gtsam::VectorValues& x) const;
   gtsam::Key firstFrontalKey() const;
   gtsam::VectorValues solve(const gtsam::VectorValues& parents) const;
   gtsam::JacobianFactor* likelihood(
@@ -559,7 +559,7 @@ virtual class GaussianBayesNet {
 
   // Standard interface
   double evaluate(const gtsam::VectorValues& x) const;
-  double logDensity(const gtsam::VectorValues& x) const;
+  double error(const gtsam::VectorValues& x) const;
 
   gtsam::VectorValues optimize() const;
   gtsam::VectorValues optimize(const gtsam::VectorValues& given) const;

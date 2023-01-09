@@ -108,6 +108,11 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  double GaussianBayesNet::evaluate(const VectorValues& x) const {
+    return exp(-error(x));
+  }
+
+  /* ************************************************************************* */
   VectorValues GaussianBayesNet::backSubstitute(const VectorValues& rhs) const
   {
     VectorValues result;
@@ -222,20 +227,6 @@ namespace gtsam {
       logDet += cg->logDeterminant();
     }
     return logDet;
-  }
-
-  /* ************************************************************************* */
-  double GaussianBayesNet::logDensity(const VectorValues& x) const {
-    double sum = 0.0;
-    for (const auto& conditional : *this) {
-      if (conditional) sum += conditional->logDensity(x);
-    }
-    return sum;
-  }
-
-  /* ************************************************************************* */
-  double GaussianBayesNet::evaluate(const VectorValues& x) const {
-    return exp(logDensity(x));
   }
 
   /* ************************************************************************* */
