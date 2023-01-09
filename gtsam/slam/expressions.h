@@ -27,8 +27,7 @@ inline Point2_ transformTo(const Pose2_& x, const Point2_& p) {
   return Point2_(x, &Pose2::transformTo, p);
 }
 
-inline Double_ range(const Point2_& p, const Point2_& q)
-{
+inline Double_ range(const Point2_& p, const Point2_& q) {
   return Double_(Range<Point2, Point2>(), p, q);
 }
 
