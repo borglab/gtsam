@@ -38,8 +38,28 @@ typedef FastSet<FactorIndex> FactorIndexSet;
    * data other than its keys.  Derived classes store data such as matrices and
    * probability tables.
    *
-   * Note that derived classes *must* redefine the `This` and `shared_ptr`
-   * typedefs. See JacobianFactor, etc. for examples.
+   * The `error` method is used to evaluate the factor, and is the only method
+   * that is required to be implemented in derived classes, although it has a 
+   * default implementation that throws an exception. The meaning of the error
+   * is slightly different for factors and conditionals: in the former it is the
+   * negative log-likelihood, and in the latter it is the negative log of the 
+   * properly normalized conditional distribution or density.
+   * 
+   * There are five broad classes of factors that derive from Factor:
+   *
+   * - \b Nonlinear factors, such as \class NonlinearFactor and \class NoiseModelFactor, which
+   *   represent a nonlinear likelihood function over a set of variables.
+   * - \b Gaussian factors, such as \class JacobianFactor and \class HessianFactor, which
+   *   represent a Gaussian likelihood over a set of variables.
+   *   A \class GaussianConditional, which represent a Gaussian density over a set of
+   *   variables conditioned on another set of variables.
+   * - \b Discrete factors, such as \class DiscreteFactor and \class DiscreteConditional, which
+   *   represent a discrete distribution over a set of variables.
+   * - \b Hybrid factors, such as \class HybridFactor, which represent a mixture of
+   *   Gaussian and discrete distributions over a set of variables.
+   * - \b Symbolic factors, used to represent a graph structure, such as
+   *   \class SymbolicFactor and \class SymbolicConditional. They do not override the
+   *  `error` method, and are used only for symbolic elimination etc.
    *
    * This class is \b not virtual for performance reasons - the derived class
    * SymbolicFactor needs to be created and destroyed quickly during symbolic
