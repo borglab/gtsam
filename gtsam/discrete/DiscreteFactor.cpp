@@ -29,18 +29,13 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-const DiscreteValues& GetDiscreteValues(const HybridValues& c) {
-  return c.discrete();
-}
-
-/* ************************************************************************* */
 double DiscreteFactor::error(const DiscreteValues& values) const {
   return -std::log((*this)(values));
 }
 
 /* ************************************************************************* */
 double DiscreteFactor::error(const HybridValues& c) const {
-  return DiscreteFactor::error(GetDiscreteValues(c));
+  return this->error(c.discrete());
 }
 
 /* ************************************************************************* */

@@ -24,8 +24,13 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-const Values& GetValues(const HybridValues& c) {
-  return c.nonlinear();
+double NonlinearFactor::error(const Values& c) const {
+  throw std::runtime_error("NonlinearFactor::error is not implemented");
+}
+
+/* ************************************************************************* */
+double NonlinearFactor::error(const HybridValues& c) const {
+  return this->error(c.nonlinear());
 }
 
 /* ************************************************************************* */

@@ -29,9 +29,6 @@ class DecisionTreeFactor;
 class DiscreteConditional;
 class HybridValues;
 
-// Forward declaration of function to extract Values from HybridValues.
-const DiscreteValues& GetDiscreteValues(const HybridValues& c);
-
 /**
  * Base class for discrete probabilistic factors
  * The most general one is the derived DecisionTreeFactor

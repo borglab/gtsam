@@ -34,9 +34,6 @@ namespace gtsam {
 
 /* ************************************************************************* */
 
-// Forward declaration of function to extract Values from HybridValues.
-const Values& GetValues(const HybridValues& c);
-
 /**
  * Nonlinear factor base class
  *
@@ -97,17 +94,13 @@ public:
    * and calculates the error by asking the user to implement the method
    * \code double evaluateError(const Values& c) const \endcode.
    */
-  virtual double error(const Values& c) const {
-    throw std::runtime_error("NonlinearFactor::error is not implemented");
-  }
+  virtual double error(const Values& c) const;
 
   /**
    * The Factor::error simply extracts the \class Values from the
    * \class HybridValues and calculates the error.
    */
-  double error(const HybridValues& c) const override {
-    return NonlinearFactor::error(GetValues(c));
-  }
+  double error(const HybridValues& c) const override;
 
   /** get the dimension of the factor (number of rows on linearization) */
   virtual size_t dim() const = 0;
