@@ -39,6 +39,9 @@ namespace gtsam {
 
     using Base::Base; // inherit constructors
 
+    /** Default constructor */
+    Errors() = default;
+
     /** break V into pieces according to its start indices */
     Errors(const VectorValues&V);
 
