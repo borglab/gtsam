@@ -106,8 +106,7 @@ TEST(BayesTree, removePath) {
   SymbolicFactorGraph expected;
   expected.emplace_shared<SymbolicFactor>(_A_, _B_);
   expected.emplace_shared<SymbolicFactor>(_C_, _A_);
-  SymbolicBayesTree::Cliques expectedOrphans =
-      std::list<sharedClique>{bayesTree[_D_], bayesTree[_E_]};
+  SymbolicBayesTree::Cliques expectedOrphans{bayesTree[_D_], bayesTree[_E_]};
 
   SymbolicBayesNet bn;
   SymbolicBayesTree::Cliques orphans;
@@ -123,8 +122,7 @@ TEST(BayesTree, removePath) {
   SymbolicFactorGraph expected2;
   expected2.emplace_shared<SymbolicFactor>(_A_, _B_);
   expected2.emplace_shared<SymbolicFactor>(_E_, _B_);
-  SymbolicBayesTree::Cliques expectedOrphans2 =
-      std::list<sharedClique>{bayesTree[_F_], bayesTree[_C_]};
+  SymbolicBayesTree::Cliques expectedOrphans2{bayesTree[_F_], bayesTree[_C_]};
 
   SymbolicBayesNet bn2;
   SymbolicBayesTree::Cliques orphans2;
@@ -149,8 +147,8 @@ TEST(BayesTree, removePath2) {
   SymbolicFactorGraph expected;
   expected.emplace_shared<SymbolicFactor>(_E_, _L_, _B_);
   CHECK(assert_equal(expected, factors));
-  SymbolicBayesTree::Cliques expectedOrphans =
-      std::list<sharedClique>{bayesTree[_S_], bayesTree[_T_], bayesTree[_X_]};
+  SymbolicBayesTree::Cliques expectedOrphans{bayesTree[_S_], bayesTree[_T_],
+                                             bayesTree[_X_]};
   CHECK(assert_container_equal(expectedOrphans | indirected,
                                orphans | indirected));
 }
@@ -170,8 +168,7 @@ TEST(BayesTree, removePath3) {
   expected.emplace_shared<SymbolicFactor>(_E_, _L_, _B_);
   expected.emplace_shared<SymbolicFactor>(_T_, _E_, _L_);
   CHECK(assert_equal(expected, factors));
-  SymbolicBayesTree::Cliques expectedOrphans =
-      std::list<sharedClique>{bayesTree[_S_], bayesTree[_X_]};
+  SymbolicBayesTree::Cliques expectedOrphans{bayesTree[_S_], bayesTree[_X_]};
   CHECK(assert_container_equal(expectedOrphans | indirected,
                                orphans | indirected));
 }
@@ -253,8 +250,7 @@ TEST(BayesTree, removeTop) {
   expected += SymbolicConditional::FromKeys<KeyVector>(Keys(_S_)(_B_)(_L_), 1);
   CHECK(assert_equal(expected, bn));
 
-  SymbolicBayesTree::Cliques expectedOrphans =
-      std::list<sharedClique>{bayesTree[_T_], bayesTree[_X_]};
+  SymbolicBayesTree::Cliques expectedOrphans{bayesTree[_T_], bayesTree[_X_]};
   CHECK(assert_container_equal(expectedOrphans | indirected,
                                orphans | indirected));
 
@@ -291,8 +287,7 @@ TEST(BayesTree, removeTop2) {
       SymbolicConditional::FromKeys<KeyVector>(Keys(_T_)(_E_)(_L_), 1));
   CHECK(assert_equal(expected, bn));
 
-  SymbolicBayesTree::Cliques expectedOrphans =
-      std::list<sharedClique>{bayesTree[_S_], bayesTree[_X_]};
+  SymbolicBayesTree::Cliques expectedOrphans{bayesTree[_S_], bayesTree[_X_]};
   CHECK(assert_container_equal(expectedOrphans | indirected,
                                orphans | indirected));
 }
