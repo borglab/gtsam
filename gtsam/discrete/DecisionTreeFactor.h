@@ -97,7 +97,7 @@ namespace gtsam {
     /// @name Standard Interface
     /// @{
 
-    /// Value is just look up in AlgebraicDecisonTree
+    /// Value is just look up in AlgebraicDecisionTree.
     double operator()(const DiscreteValues& values) const override {
       return ADT::operator()(values);
     }
