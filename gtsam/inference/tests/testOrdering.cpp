@@ -44,7 +44,7 @@ TEST(Ordering, constrained_ordering) {
   // unconstrained version
   {
   Ordering actual = Ordering::Colamd(symbolicGraph);
-  Ordering expected = Ordering({0, 1, 2, 3, 4, 5});
+  Ordering expected{0, 1, 2, 3, 4, 5};
   EXPECT(assert_equal(expected, actual));
   }
 
@@ -102,7 +102,7 @@ TEST(Ordering, grouped_constrained_ordering) {
   constraints[5] = 2;
 
   Ordering actual = Ordering::ColamdConstrained(symbolicGraph, constraints);
-  Ordering expected = {0, 1, 3, 2, 4, 5};
+  Ordering expected{0, 1, 3, 2, 4, 5};
   EXPECT(assert_equal(expected, actual));
 }
 

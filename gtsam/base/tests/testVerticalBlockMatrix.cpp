@@ -24,8 +24,7 @@
 
 using namespace gtsam;
 
-const std::list<size_t> L{3, 2, 1};
-const std::vector<size_t> dimensions(L.begin(), L.end());
+const std::vector<size_t> dimensions{3, 2, 1};
 
 //*****************************************************************************
 TEST(VerticalBlockMatrix, Constructor1) {

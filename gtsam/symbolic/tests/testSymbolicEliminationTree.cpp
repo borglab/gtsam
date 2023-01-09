@@ -96,8 +96,7 @@ TEST(EliminationTree, Create) {
       EliminationTreeTester::buildHardcodedTree(simpleTestGraph1);
 
   // Build from factor graph
-  Ordering order;
-  order += 0, 1, 2, 3, 4;
+  const Ordering order{0, 1, 2, 3, 4};
   SymbolicEliminationTree actual(simpleTestGraph1, order);
 
   CHECK(assert_equal(expected, actual));

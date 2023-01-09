@@ -222,7 +222,7 @@ TEST(GaussianFactorGraph, gradient) {
   VectorValues solution = fg.optimize();
   VectorValues actual2 = fg.gradient(solution);
   EXPECT(assert_equal(VectorValues::Zero(solution), actual2));
-  }
+}
 
 /* ************************************************************************* */
 TEST(GaussianFactorGraph, transposeMultiplication) {
