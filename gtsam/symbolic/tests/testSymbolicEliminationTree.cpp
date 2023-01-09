@@ -88,7 +88,7 @@ static sharedNode Node(Key key, const SymbolicFactorGraph& factors,
 }
 
 // Use list_of replacement defined in symbolicExampleGraphs.h
-using ChildNodes = ListOf<sharedNode>;
+using ChildNodes = ChainedVector<sharedNode>;
 
 /* ************************************************************************* */
 TEST(EliminationTree, Create) {

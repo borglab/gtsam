@@ -32,11 +32,11 @@ namespace gtsam {
 
     // A small helper class to replace Boost's `list_of` function.
     template <typename T>
-    class ListOf {
+    class ChainedVector {
     public:
-      ListOf(const T& c) { result.push_back(c); }
+      ChainedVector(const T& c) { result.push_back(c); }
 
-      ListOf& operator()(const T& c) {
+      ChainedVector& operator()(const T& c) {
         result.push_back(c);
         return *this;
       }
@@ -118,7 +118,7 @@ namespace gtsam {
       boost::make_shared<SymbolicConditional>(_B_)};
 
     using sharedClique = SymbolicBayesTreeClique::shared_ptr;
-    using Children = ListOf<sharedClique>;
+    using Children = ChainedVector<sharedClique>;
 
     inline sharedClique LeafClique(const std::vector<Key>& keys,
                                    DenseIndex nrFrontals) {
