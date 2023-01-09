@@ -78,7 +78,7 @@ namespace gtsam {
     }
 
     /**
-     * The factor::error simply extracts the \class VectorValues from the
+     * The Factor::error simply extracts the \class VectorValues from the
      * \class HybridValues and calculates the error.
      */
     double error(const HybridValues& c) const override {
