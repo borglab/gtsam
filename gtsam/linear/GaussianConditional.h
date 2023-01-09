@@ -145,6 +145,8 @@ namespace gtsam {
       return exp(logNormalizationConstant());
     }
 
+    using Base::error; // Expose error(const HybridValues&) method..
+
     /**
      * Calculate error(x) == -log(evaluate()) for given values `x`:
      *  - GaussianFactor::error(x) - 0.5 * n*log(2*pi) - 0.5 * log det(Sigma)
