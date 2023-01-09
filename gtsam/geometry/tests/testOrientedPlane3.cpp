@@ -34,34 +34,19 @@ GTSAM_CONCEPT_MANIFOLD_INST(OrientedPlane3)
 //*******************************************************************************
 TEST(OrientedPlane3, getMethods) {
   Vector4 c;
-  Matrix23 H_normal, expected_H_normal;
-  Matrix13 H_distance, expected_H_distance;
-
   c << -1, 0, 0, 5;
-  expected_H_normal   <<  1,0,0,
-                          0,1,0;
-  expected_H_distance <<  0,0,1;
-
   OrientedPlane3 plane1(c);
   OrientedPlane3 plane2(c[0], c[1], c[2], c[3]);
-
   Vector4 coefficient1 = plane1.planeCoefficients();
-  double distance1 = plane1.distance(H_distance);
-  Unit3 normal1 = plane1.normal(H_normal);
-  EXPECT(assert_equal(expected_H_normal, H_normal, 1e-5));
-  EXPECT(assert_equal(expected_H_distance, H_distance, 1e-5));
+  double distance1 = plane1.distance();
   EXPECT(assert_equal(coefficient1, c, 1e-8));
-  EXPECT(assert_equal(Unit3(-1,0,0).unitVector(), normal1.unitVector()));
+  EXPECT(assert_equal(Unit3(-1,0,0).unitVector(), plane1.normal().unitVector()));
   EXPECT_DOUBLES_EQUAL(distance1, 5, 1e-8);
-
   Vector4 coefficient2 = plane2.planeCoefficients();
-  double distance2 = plane2.distance(H_distance);
-  Unit3 normal2 = plane2.normal(H_normal);
+  double distance2 = plane2.distance();
   EXPECT(assert_equal(coefficient2, c, 1e-8));
-  EXPECT(assert_equal(expected_H_normal, H_normal, 1e-5));
-  EXPECT(assert_equal(expected_H_distance, H_distance, 1e-5));
   EXPECT_DOUBLES_EQUAL(distance2, 5, 1e-8);
-  EXPECT(assert_equal(Unit3(-1,0,0).unitVector(), normal2.unitVector()));
+  EXPECT(assert_equal(Unit3(-1,0,0).unitVector(), plane2.normal().unitVector()));
 }
 
 
@@ -179,6 +164,23 @@ TEST(OrientedPlane3, jacobian_retract) {
       Matrix H_expected_numerical = numericalDerivative11(f, v);
       EXPECT(assert_equal(H_expected_numerical, H_actual, 1e-5));
   }
+}
+
+//*******************************************************************************
+TEST(OrientedPlane3, getMethodJacobians) {
+  OrientedPlane3 plane(-1, 0.1, 0.2, 5);
+  Matrix33 H_retract, H_getters;
+  Matrix23 H_normal;
+  Matrix13 H_distance;
+
+  // The getter's jacobians lie exactly on the tangent space
+  // so they should exactly equal the retract jacobian for the zero vector.
+  Vector3 v(0, 0, 0);
+  plane.retract(v, H_retract);
+  plane.normal(H_normal);
+  plane.distance(H_distance);
+  H_getters << H_normal, H_distance;
+  EXPECT(assert_equal(H_retract, H_getters, 1e-5));
 }
 
 /* ************************************************************************* */
