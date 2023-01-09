@@ -52,7 +52,7 @@ TEST(GaussianDensity, FromMeanAndStddev) {
 
   auto density = GaussianDensity::FromMeanAndStddev(X(0), b, sigma);
   Vector2 e = (x0 - b) / sigma;
-  double expected = 0.5 * e.dot(e);
+  double expected = 0.5 * e.dot(e) - density.logNormalizationConstant();
   EXPECT_DOUBLES_EQUAL(expected, density.error(values), 1e-9);
 }
 
