@@ -138,13 +138,10 @@ namespace gtsam {
 
     SymbolicBayesTree __asiaBayesTree() {
       SymbolicBayesTree result;
-      result.insertRoot(LeafClique(KeyVector{_E_, _L_, _B_}, 3));
-      result.addClique(LeafClique(KeyVector{_S_, _B_, _L_}, 1),
-                       result.roots().front());
-      result.addClique(LeafClique(KeyVector{_T_, _E_, _L_}, 1),
-                       result.roots().front());
-      result.addClique(LeafClique(KeyVector{_X_, _E_}, 1),
-                       result.roots().front());
+      result.insertRoot(LeafClique({_E_, _L_, _B_}, 3));
+      result.addClique(LeafClique({_S_, _B_, _L_}, 1), result.roots().front());
+      result.addClique(LeafClique({_T_, _E_, _L_}, 1), result.roots().front());
+      result.addClique(LeafClique({_X_, _E_}, 1), result.roots().front());
       return result;
     }
 
