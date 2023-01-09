@@ -23,6 +23,7 @@ protected:
 
 public:
 
+  using Base::evaluateError;
   typedef boost::shared_ptr<VelocityConstraint3 > shared_ptr;
 
   ///TODO: comment
@@ -37,9 +38,8 @@ public:
 
   /** x1 + v*dt - x2 = 0, with optional derivatives */
   Vector evaluateError(const double& x1, const double& x2, const double& v,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none,
-      boost::optional<Matrix&> H3 = boost::none) const override {
+      OptionalMatrixType H1, OptionalMatrixType H2,
+      OptionalMatrixType H3) const override {
     const size_t p = 1;
     if (H1) *H1 = Matrix::Identity(p,p);
     if (H2) *H2 = -Matrix::Identity(p,p);

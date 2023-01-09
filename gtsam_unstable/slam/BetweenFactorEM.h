@@ -145,7 +145,7 @@ public:
 
   /* ************************************************************************* */
   Vector whitenedError(const Values& x,
-      boost::optional<std::vector<Matrix>&> H = boost::none) const {
+      OptionalMatrixVecType H = OptionalMatrixVecNone) const {
 
     bool debug = true;
 
@@ -227,6 +227,12 @@ public:
 
     return err_wh_eq;
   }
+
+#ifdef NO_BOOST_CPP17
+  Vector whitenedError(const Values& x, std::vector<Matrix>& H) const {
+	  return whitenedError(x, &H);
+  }
+#endif
 
   /* ************************************************************************* */
   Vector calcIndicatorProb(const Values& x) const {

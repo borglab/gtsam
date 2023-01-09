@@ -43,6 +43,7 @@ namespace gtsam {
     GTSAM_CONCEPT_TESTABLE_TYPE(POSE)
     GTSAM_CONCEPT_POSE_TYPE(POSE)
   public:
+    using Base::evaluateError;
 
     // shorthand for a smart pointer to a factor
     typedef typename boost::shared_ptr<PoseBetweenFactor> shared_ptr;
@@ -89,8 +90,7 @@ namespace gtsam {
 
     /** vector of errors */
     Vector evaluateError(const POSE& p1, const POSE& p2,
-        boost::optional<Matrix&> H1 = boost::none,
-        boost::optional<Matrix&> H2 = boost::none) const override {
+        OptionalMatrixType H1, OptionalMatrixType H2) const override {
       if(body_P_sensor_) {
         POSE hx;
         if(H1 || H2) {

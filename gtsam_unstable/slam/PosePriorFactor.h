@@ -40,6 +40,7 @@ namespace gtsam {
     GTSAM_CONCEPT_TESTABLE_TYPE(POSE)
     GTSAM_CONCEPT_POSE_TYPE(POSE)
   public:
+    using Base::evaluateError;
 
     /// shorthand for a smart pointer to a factor
     typedef typename boost::shared_ptr<PosePriorFactor<POSE> > shared_ptr;
@@ -83,7 +84,7 @@ namespace gtsam {
     /** implement functions needed to derive from Factor */
 
     /** vector of errors */
-    Vector evaluateError(const POSE& p, boost::optional<Matrix&> H = boost::none) const override {
+    Vector evaluateError(const POSE& p, OptionalMatrixType H) const override {
       if(body_P_sensor_) {
         // manifold equivalent of h(x)-z -> log(z,h(x))
         return prior_.localCoordinates(p.compose(*body_P_sensor_, H));

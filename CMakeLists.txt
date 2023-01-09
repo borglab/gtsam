@@ -10,7 +10,7 @@ option(GTSAM_NO_BOOST_CPP17 "Require and use boost" ON)
 add_definitions(-Wno-deprecated-declarations)
 add_definitions(-ftemplate-backtrace-limit=0)
 
-  set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 17)
 if (GTSAM_NO_BOOST_CPP17)
   add_definitions(-DNO_BOOST_CPP17)
 endif()
@@ -99,7 +99,7 @@ add_subdirectory(timing)
 
 # Build gtsam_unstable
 if (GTSAM_BUILD_UNSTABLE)
-	# add_subdirectory(gtsam_unstable)
+	add_subdirectory(gtsam_unstable)
 endif()
 
 # This is the new wrapper

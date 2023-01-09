@@ -61,6 +61,7 @@ namespace gtsam {
       : Base(model, key) {}
 
   public:
+    using Base::evaluateError;
 
     ~PartialPriorFactor() override {}
 
@@ -106,7 +107,7 @@ namespace gtsam {
     /** implement functions needed to derive from Factor */
 
     /** Returns a vector of errors for the measured tangent parameters.  */
-    Vector evaluateError(const T& p, boost::optional<Matrix&> H = boost::none) const override {
+    Vector evaluateError(const T& p, OptionalMatrixType H) const override {
       Eigen::Matrix<double, T::dimension, T::dimension> H_local;
 
       // If the Rot3 Cayley map is used, Rot3::LocalCoordinates will throw a runtime error

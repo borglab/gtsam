@@ -179,8 +179,7 @@ namespace gtsam {
 
 
     /* ************************************************************************* */
-    Vector whitenedError(const Values& x,
-        boost::optional<std::vector<Matrix>&> H = boost::none) const {
+    Vector whitenedError(const Values& x, OptionalMatrixVecType H = OptionalMatrixVecNone) const {
 
       bool debug = true;
 
@@ -244,6 +243,13 @@ namespace gtsam {
 
       return err_wh_eq;
     }
+    
+    /* ************************************************************************* */
+#ifdef NO_BOOST_CPP17
+	Vector whitenedError(const Values& x, std::vector<Matrix>& H) const {
+	  return whitenedError(x, &H);
+	}
+#endif
 
     /* ************************************************************************* */
     Vector calcIndicatorProb(const Values& x) const {

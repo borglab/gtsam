@@ -45,7 +45,8 @@ namespace gtsam {
   public:
 
     /// shorthand for base class type
-    typedef NoiseModelFactorN<POSE, POSE, LANDMARK> Base;
+    typedef NoiseModelFactor3<POSE, POSE, LANDMARK> Base;
+    using Base::evaluateError;
 
     /// shorthand for this class
     typedef ProjectionFactorPPP<POSE, LANDMARK, CALIBRATION> This;
@@ -122,9 +123,7 @@ namespace gtsam {
 
     /// Evaluate error h(x)-z and optionally derivatives
     Vector evaluateError(const Pose3& pose, const Pose3& transform, const Point3& point,
-        boost::optional<Matrix&> H1 = boost::none,
-        boost::optional<Matrix&> H2 = boost::none,
-        boost::optional<Matrix&> H3 = boost::none) const override {
+        OptionalMatrixType H1, OptionalMatrixType H2, OptionalMatrixType H3) const override {
       try {
           if(H1 || H2 || H3) {
             Matrix H0, H02;

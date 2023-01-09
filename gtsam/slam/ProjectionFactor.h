@@ -52,15 +52,14 @@ namespace gtsam {
   public:
 
     /// shorthand for base class type
-    typedef NoiseModelFactorN<POSE, LANDMARK> Base;
+    typedef NoiseModelFactor2<POSE, LANDMARK> Base;
+    using Base::evaluateError;
 
     /// shorthand for this class
     typedef GenericProjectionFactor<POSE, LANDMARK, CALIBRATION> This;
 
     /// shorthand for a smart pointer to a factor
     typedef boost::shared_ptr<This> shared_ptr;
-
-	using Base::evaluateError;
 
     /// Default constructor
     GenericProjectionFactor() :

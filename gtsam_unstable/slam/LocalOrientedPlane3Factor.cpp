@@ -24,8 +24,8 @@ void LocalOrientedPlane3Factor::print(const string& s,
 //***************************************************************************
 Vector LocalOrientedPlane3Factor::evaluateError(const Pose3& wTwi,
     const Pose3& wTwa, const OrientedPlane3& a_plane,
-    boost::optional<Matrix&> H1, boost::optional<Matrix&> H2,
-    boost::optional<Matrix&> H3) const {
+    OptionalMatrixType H1, OptionalMatrixType H2,
+    OptionalMatrixType H3) const {
 
   Matrix66 aTai_H_wTwa, aTai_H_wTwi;
   Matrix36 predicted_H_aTai;

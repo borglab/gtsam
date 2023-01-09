@@ -66,18 +66,13 @@ TEST(BiasedGPSFactor, jacobian) {
   Matrix actualH1, actualH2;
   factor.evaluateError(pose,bias, actualH1, actualH2);
 
-  Matrix numericalH1 = numericalDerivative21(
-      std::function<Vector(const Pose3&, const Point3&)>(std::bind(
-          &BiasedGPSFactor::evaluateError, factor, std::placeholders::_1,
-          std::placeholders::_2, boost::none, boost::none)),
-      pose, bias, 1e-5);
+  std::function<Vector(const Pose3&, const Point3&)> f = [&factor](const Pose3& pose, const Point3& bias) {
+    return factor.evaluateError(pose, bias);
+  };
+  Matrix numericalH1 = numericalDerivative21(f, pose, bias, 1e-5);
   EXPECT(assert_equal(numericalH1,actualH1, 1E-5));
 
-  Matrix numericalH2 = numericalDerivative22(
-      std::function<Vector(const Pose3&, const Point3&)>(std::bind(
-          &BiasedGPSFactor::evaluateError, factor, std::placeholders::_1,
-          std::placeholders::_2, boost::none, boost::none)),
-      pose, bias, 1e-5);
+  Matrix numericalH2 = numericalDerivative22(f, pose, bias, 1e-5);
   EXPECT(assert_equal(numericalH2,actualH2, 1E-5));
 }
 

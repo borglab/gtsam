@@ -42,6 +42,7 @@ class SmartRangeFactor: public NoiseModelFactor {
   double variance_;  ///< variance on noise
 
  public:
+  using NoiseModelFactor::unwhitenedError;
   /** Default constructor: don't use directly */
   SmartRangeFactor() {
   }
@@ -143,8 +144,7 @@ class SmartRangeFactor: public NoiseModelFactor {
   /**
    * Error function *without* the NoiseModel, \f$ z-h(x) \f$.
    */
-  Vector unwhitenedError(const Values& x,
-      boost::optional<std::vector<Matrix>&> H = boost::none) const override {
+  Vector unwhitenedError(const Values& x, OptionalMatrixVecType H = OptionalMatrixVecNone) const override {
     size_t n = size();
     if (n < 3) {
       if (H) {

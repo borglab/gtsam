@@ -95,6 +95,7 @@ private:
   boost::optional<POSE> body_P_sensor_; // The pose of the sensor in the body frame
 
 public:
+  using Base::evaluateError;
 
   // shorthand for a smart pointer to a factor
   typedef typename boost::shared_ptr<InertialNavFactor_GlobalVelocity> shared_ptr;
@@ -226,11 +227,8 @@ public:
 
   /** implement functions needed to derive from Factor */
   Vector evaluateError(const POSE& Pose1, const VELOCITY& Vel1, const IMUBIAS& Bias1, const POSE& Pose2, const VELOCITY& Vel2,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none,
-      boost::optional<Matrix&> H3 = boost::none,
-      boost::optional<Matrix&> H4 = boost::none,
-      boost::optional<Matrix&> H5 = boost::none) const override {
+      OptionalMatrixType H1, OptionalMatrixType H2, OptionalMatrixType H3, OptionalMatrixType H4,
+      OptionalMatrixType H5) const override {
 
     // TODO: Write analytical derivative calculations
     // Jacobian w.r.t. Pose1

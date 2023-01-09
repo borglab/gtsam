@@ -34,6 +34,7 @@ private:
   typedef NoiseModelFactorN<Pose3, Point3> Base;
 
 public:
+  using Base::evaluateError;
 
   RelativeElevationFactor() : measured_(0.0) {} /* Default constructor */
 
@@ -49,7 +50,7 @@ public:
 
   /** h(x)-z */
   Vector evaluateError(const Pose3& pose, const Point3& point,
-      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const override;
+      OptionalMatrixType H1, OptionalMatrixType H2) const override;
 
   /** return the measured */
   inline double measured() const { return measured_; }
