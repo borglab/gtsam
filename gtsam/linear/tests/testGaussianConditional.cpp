@@ -381,13 +381,13 @@ TEST(GaussianConditional, FromMeanAndStddev) {
   auto conditional1 =
       GaussianConditional::FromMeanAndStddev(X(0), A1, X(1), b, sigma);
   Vector2 e1 = (x0 - (A1 * x1 + b)) / sigma;
-  double expected1 = 0.5 * e1.dot(e1);
+  double expected1 = 0.5 * e1.dot(e1) - conditional1.logNormalizationConstant();
   EXPECT_DOUBLES_EQUAL(expected1, conditional1.error(values), 1e-9);
 
   auto conditional2 = GaussianConditional::FromMeanAndStddev(X(0), A1, X(1), A2,
                                                              X(2), b, sigma);
   Vector2 e2 = (x0 - (A1 * x1 + A2 * x2 + b)) / sigma;
-  double expected2 = 0.5 * e2.dot(e2);
+  double expected2 = 0.5 * e2.dot(e2) - conditional2.logNormalizationConstant();
   EXPECT_DOUBLES_EQUAL(expected2, conditional2.error(values), 1e-9);
 }
 
@@ -448,20 +448,23 @@ TEST(GaussianConditional, sample) {
 }
 
 /* ************************************************************************* */
-TEST(GaussianConditional, LogNormalizationConstant) {
+TEST(GaussianConditional, Error) {
   // Create univariate standard gaussian conditional
-  auto std_gaussian =
+  auto stdGaussian =
       GaussianConditional::FromMeanAndStddev(X(0), Vector1::Zero(), 1.0);
   VectorValues values;
   values.insert(X(0), Vector1::Zero());
-  double logDensity = std_gaussian.logDensity(values);
+  double error = stdGaussian.error(values);
 
   // Regression.
   // These values were computed by hand for a univariate standard gaussian.
-  EXPECT_DOUBLES_EQUAL(-0.9189385332046727, logDensity, 1e-9);
-  EXPECT_DOUBLES_EQUAL(0.3989422804014327, exp(logDensity), 1e-9);
+  EXPECT_DOUBLES_EQUAL(0.9189385332046727, error, 1e-9);
+  EXPECT_DOUBLES_EQUAL(0.3989422804014327, exp(-error), 1e-9);
+}
 
-  // Similar test for multivariate gaussian but with sigma 2.0
+/* ************************************************************************* */
+// Similar test for multivariate gaussian but with sigma 2.0
+TEST(GaussianConditional, LogNormalizationConstant) {
   double sigma = 2.0;
   auto conditional = GaussianConditional::FromMeanAndStddev(X(0), Vector3::Zero(), sigma);
   VectorValues x;
@@ -469,7 +472,8 @@ TEST(GaussianConditional, LogNormalizationConstant) {
   Matrix3 Sigma = I_3x3 * sigma * sigma;
   double expectedLogNormalizingConstant = log(1 / sqrt((2 * M_PI * Sigma).determinant()));
 
-  EXPECT_DOUBLES_EQUAL(expectedLogNormalizingConstant, conditional.logNormalizationConstant(), 1e-9);
+  EXPECT_DOUBLES_EQUAL(expectedLogNormalizingConstant,
+                       conditional.logNormalizationConstant(), 1e-9);
 }
 
 /* ************************************************************************* */
