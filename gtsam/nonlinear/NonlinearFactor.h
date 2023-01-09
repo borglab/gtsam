@@ -98,11 +98,11 @@ public:
    * \code double evaluateError(const Values& c) const \endcode.
    */
   virtual double error(const Values& c) const {
-    throw std::runtime_error("NonlinearFactor::error::error is not implemented");
+    throw std::runtime_error("NonlinearFactor::error is not implemented");
   }
 
   /**
-   * The factor::error simply extracts the \class Values from the
+   * The Factor::error simply extracts the \class Values from the
    * \class HybridValues and calculates the error.
    */
   double error(const HybridValues& c) const override {
