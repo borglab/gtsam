@@ -120,14 +120,15 @@ namespace gtsam {
     using sharedClique = SymbolicBayesTreeClique::shared_ptr;
     using Children = ListOf<sharedClique>;
 
-    inline sharedClique LeafClique(const KeyVector& keys,
+    inline sharedClique LeafClique(const std::vector<Key>& keys,
                                    DenseIndex nrFrontals) {
       return boost::make_shared<SymbolicBayesTreeClique>(
           boost::make_shared<SymbolicConditional>(
               SymbolicConditional::FromKeys(keys, nrFrontals)));
     }
 
-    inline sharedClique NodeClique(const KeyVector& keys, DenseIndex nrFrontals,
+    inline sharedClique NodeClique(const std::vector<Key>& keys,
+                                   DenseIndex nrFrontals,
                                    const std::vector<sharedClique>& children) {
       sharedClique clique = LeafClique(keys, nrFrontals);
       clique->children.assign(children.begin(), children.end());
