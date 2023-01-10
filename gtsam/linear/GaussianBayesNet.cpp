@@ -122,7 +122,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   double GaussianBayesNet::evaluate(const VectorValues& x) const {
-    return exp(-logProbability(x));
+    return exp(logProbability(x));
   }
 
   /* ************************************************************************* */
