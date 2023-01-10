@@ -17,10 +17,10 @@
 
 #pragma once
 
-#include <gtsam/symbolic/SymbolicFactor.h>
-#include <gtsam/inference/Conditional.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/types.h>
+#include <gtsam/inference/Conditional-inst.h>
+#include <gtsam/symbolic/SymbolicFactor.h>
 
 namespace gtsam {
 
@@ -114,12 +114,12 @@ namespace gtsam {
     /// @name HybridValues methods.
     /// @{
 
-    /**
-     * logProbability throws exception, symbolic.
-     */
+    /// logProbability throws exception, symbolic.
     double logProbability(const HybridValues& x) const override;
 
-    using Conditional::evaluate; // Expose evaluate(const HybridValues&) method..
+    /// evaluate throws exception, symbolic.
+    double evaluate(const HybridValues& x) const override;
+
     using Conditional::operator(); // Expose evaluate(const HybridValues&) method..
     using SymbolicFactor::error; // Expose error(const HybridValues&) method..
 
