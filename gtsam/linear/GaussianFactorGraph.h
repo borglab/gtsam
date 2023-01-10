@@ -167,20 +167,10 @@ namespace gtsam {
     std::map<Key, size_t> getKeyDimMap() const;
 
     /** unnormalized error */
-    double error(const VectorValues& x) const {
-      double total_error = 0.;
-      for(const sharedFactor& factor: *this){
-        if(factor)
-          total_error += factor->error(x);
-      }
-      return total_error;
-    }
+    double error(const VectorValues& x) const;
 
     /** Unnormalized probability. O(n) */
-    double probPrime(const VectorValues& c) const {
-      // NOTE the 0.5 constant is handled by the factor error.
-      return exp(-error(c));
-    }
+    double probPrime(const VectorValues& c) const;
 
     /**
      * Clone() performs a deep-copy of the graph, including all of the factors.

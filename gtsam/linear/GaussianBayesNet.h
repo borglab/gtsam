@@ -97,17 +97,16 @@ namespace gtsam {
     /// @name Standard Interface
     /// @{
 
-    /**
-     * The error is the negative log-density for given values `x`:
-     *  neg_log_likelihood(x) + 0.5 * n*log(2*pi) + 0.5 * log det(Sigma)
-     * where x is the vector of values, and Sigma is the covariance matrix.
-     */
+    /// Sum error over all variables.
     double error(const VectorValues& x) const;
+
+    /// Sum logProbability over all variables.
+    double logProbability(const VectorValues& x) const;
 
     /**
      * Calculate probability density for given values `x`:
-     *   exp(-error) == exp(-neg_log_likelihood(x)) / sqrt((2*pi)^n*det(Sigma))
-     * where x is the vector of values, and Sigma is the covariance matrix.
+     *   exp(logProbability)
+     * where x is the vector of values.
      */
     double evaluate(const VectorValues& x) const;
 
@@ -245,6 +244,14 @@ namespace gtsam {
      * gz'*R'=gx', gy = gz.*sigmas
      */
     VectorValues backSubstituteTranspose(const VectorValues& gx) const;
+
+    /// @}
+    /// @name HybridValues methods.
+    /// @{
+
+    using Base::evaluate; // Expose evaluate(const HybridValues&) method..
+    using Base::logProbability; // Expose logProbability(const HybridValues&) method..
+    using Base::error; // Expose error(const HybridValues&) method..
 
     /// @}
 
