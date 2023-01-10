@@ -68,6 +68,22 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  double GaussianFactorGraph::error(const VectorValues& x) const {
+    double total_error = 0.;
+    for(const sharedFactor& factor: *this){
+      if(factor)
+        total_error += factor->error(x);
+    }
+    return total_error;
+  }
+
+  /* ************************************************************************* */
+  double GaussianFactorGraph::probPrime(const VectorValues& c) const {
+    // NOTE the 0.5 constant is handled by the factor error.
+    return exp(-error(c));
+  }
+
+  /* ************************************************************************* */
   GaussianFactorGraph::shared_ptr GaussianFactorGraph::cloneToPtr() const {
     gtsam::GaussianFactorGraph::shared_ptr result(new GaussianFactorGraph());
     *result = *this;

@@ -381,14 +381,20 @@ TEST(GaussianConditional, FromMeanAndStddev) {
   auto conditional1 =
       GaussianConditional::FromMeanAndStddev(X(0), A1, X(1), b, sigma);
   Vector2 e1 = (x0 - (A1 * x1 + b)) / sigma;
-  double expected1 = 0.5 * e1.dot(e1) - conditional1.logNormalizationConstant();
+  double expected1 = 0.5 * e1.dot(e1);
   EXPECT_DOUBLES_EQUAL(expected1, conditional1.error(values), 1e-9);
+
+  double expected2 = conditional1.logNormalizationConstant() - 0.5 * e1.dot(e1);
+  EXPECT_DOUBLES_EQUAL(expected2, conditional1.logProbability(values), 1e-9);
 
   auto conditional2 = GaussianConditional::FromMeanAndStddev(X(0), A1, X(1), A2,
                                                              X(2), b, sigma);
   Vector2 e2 = (x0 - (A1 * x1 + A2 * x2 + b)) / sigma;
-  double expected2 = 0.5 * e2.dot(e2) - conditional2.logNormalizationConstant();
-  EXPECT_DOUBLES_EQUAL(expected2, conditional2.error(values), 1e-9);
+  double expected3 = 0.5 * e2.dot(e2);
+  EXPECT_DOUBLES_EQUAL(expected3, conditional2.error(values), 1e-9);
+
+  double expected4 = conditional2.logNormalizationConstant() - 0.5 * e2.dot(e2);
+  EXPECT_DOUBLES_EQUAL(expected4, conditional2.logProbability(values), 1e-9);
 }
 
 /* ************************************************************************* */
@@ -454,12 +460,13 @@ TEST(GaussianConditional, Error) {
       GaussianConditional::FromMeanAndStddev(X(0), Vector1::Zero(), 1.0);
   VectorValues values;
   values.insert(X(0), Vector1::Zero());
-  double error = stdGaussian.error(values);
+  double logProbability = stdGaussian.logProbability(values);
 
   // Regression.
   // These values were computed by hand for a univariate standard gaussian.
-  EXPECT_DOUBLES_EQUAL(0.9189385332046727, error, 1e-9);
-  EXPECT_DOUBLES_EQUAL(0.3989422804014327, exp(-error), 1e-9);
+  EXPECT_DOUBLES_EQUAL(-0.9189385332046727, logProbability, 1e-9);
+  EXPECT_DOUBLES_EQUAL(0.3989422804014327, exp(logProbability), 1e-9);
+  EXPECT_DOUBLES_EQUAL(stdGaussian(values), exp(logProbability), 1e-9);
 }
 
 /* ************************************************************************* */

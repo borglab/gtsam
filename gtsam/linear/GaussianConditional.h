@@ -145,19 +145,18 @@ namespace gtsam {
       return exp(logNormalizationConstant());
     }
 
-    using Base::error; // Expose error(const HybridValues&) method..
-
     /**
-     * Calculate error(x) == -log(evaluate()) for given values `x`:
-     *  - GaussianFactor::error(x) - 0.5 * n*log(2*pi) - 0.5 * log det(Sigma)
+     * Calculate log-probability log(evaluate(x)) for given values `x`:
+     *  -error(x) - 0.5 * n*log(2*pi) - 0.5 * log det(Sigma)
      * where x is the vector of values, and Sigma is the covariance matrix.
-     * Note that GaussianFactor:: error(x)=0.5*e'*e includes the 0.5 factor already.
+     * This differs from error as it is log, not negative log, and it
+     * includes the normalization constant.
      */
-    double error(const VectorValues& x) const override;
+    double logProbability(const VectorValues& x) const;
 
     /**
      * Calculate probability density for given values `x`:
-     *   exp(-error(x)) == exp(-GaussianFactor::error(x)) / sqrt((2*pi)^n*det(Sigma))
+     *   exp(logProbability(x)) == exp(-GaussianFactor::error(x)) / sqrt((2*pi)^n*det(Sigma))
      * where x is the vector of values, and Sigma is the covariance matrix.
      */
     double evaluate(const VectorValues& x) const;
@@ -261,6 +260,21 @@ namespace gtsam {
     double logDeterminant() const;
 
     /// @}
+    /// @name HybridValues methods.
+    /// @{
+
+    /**
+     * Calculate log-probability log(evaluate(x)) for HybridValues `x`.
+     * Simply dispatches to VectorValues version.
+     */
+    double logProbability(const HybridValues& x) const override;
+
+    using Conditional::evaluate; // Expose evaluate(const HybridValues&) method..
+    using Conditional::operator(); // Expose evaluate(const HybridValues&) method..
+    using Base::error; // Expose error(const HybridValues&) method..
+
+    /// @}
+
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
     /// @name Deprecated
