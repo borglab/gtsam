@@ -54,7 +54,10 @@ class FrobeniusPrior : public NoiseModelFactorN<Rot> {
   Eigen::Matrix<double, Dim, 1> vecM_;  ///< vectorized matrix to approximate
 
  public:
+
+  // Provide access to the Matrix& version of evaluateError:
   using NoiseModelFactor1<Rot>::evaluateError;
+
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   /// Constructor
@@ -79,6 +82,8 @@ class FrobeniusFactor : public NoiseModelFactorN<Rot, Rot> {
   enum { Dim = Rot::VectorN2::RowsAtCompileTime };
 
  public:
+
+  // Provide access to the Matrix& version of evaluateError:
   using NoiseModelFactor2<Rot, Rot>::evaluateError;
   /// Constructor
   FrobeniusFactor(Key j1, Key j2, const SharedNoiseModel& model = nullptr)

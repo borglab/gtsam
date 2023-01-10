@@ -247,8 +247,12 @@ public:
   virtual Vector unwhitenedError(const Values& x, OptionalMatrixVecType H = OptionalMatrixVecNone) const = 0;
 
   // support taking in the actual vector instead of the pointer as well
+  // to get access to this version of the function from derived classes
+  // one will need to use the "using" keyword and specify that like this:
+  // public:
+  //   using NoiseModelFactor::unwhitenedError;
   Vector unwhitenedError(const Values& x, std::vector<Matrix>& H) const {
-	  return unwhitenedError(x, &H);
+    return unwhitenedError(x, &H);
   }
 
   /**
@@ -593,10 +597,14 @@ protected:
   virtual Vector evaluateError(const ValueTypes&... x,
                                OptionalMatrixTypeT<ValueTypes>... H) const = 0;
 
-  // if someone uses the evaluateError function by supplying all the optional
+  // If someone uses the evaluateError function by supplying all the optional
   // arguments then redirect the call to the one which takes pointers
+  // to get access to this version of the function from derived classes
+  // one will need to use the "using" keyword and specify that like this:
+  // public:
+  //   using NoiseModelFactorN<list the value types here>::evaluateError;
   Vector evaluateError(const ValueTypes&... x, MatrixTypeT<ValueTypes>&... H) const {
-	  return evaluateError(x..., (&H)...);
+    return evaluateError(x..., (&H)...);
   }
 
   /// @}
@@ -619,19 +627,23 @@ protected:
    */
   template <typename... OptionalJacArgs, typename = IndexIsValid<sizeof...(OptionalJacArgs) + 1>>
   inline Vector evaluateError(const ValueTypes&... x, OptionalJacArgs&&... H) const {
-	// A check to ensure all arguments passed are all either matrices or are all pointers to matrices
+    // A check to ensure all arguments passed are either matrices or are all pointers to matrices
     constexpr bool are_all_mat = (... && (std::is_same<Matrix, std::decay_t<OptionalJacArgs>>::value));
+    // The pointers can either be of std::nonetype_t or of Matrix* type
     constexpr bool are_all_ptrs = (... && (std::is_same<OptionalMatrixType, std::decay_t<OptionalJacArgs>>::value ||
                                            std::is_same<OptionalNoneType, std::decay_t<OptionalJacArgs>>::value));
     static_assert((are_all_mat || are_all_ptrs),
                   "Arguments that are passed to the evaluateError function can only be of following the types: Matrix, "
                   "or Matrix*");
-	// if they pass all matrices then we want to pass their pointers instead
-	if constexpr (are_all_mat) {
-		return evaluateError(x..., (&H)...);
-	} else {
-    return evaluateError(x..., std::forward<OptionalJacArgs>(H)..., static_cast<OptionalMatrixType>(OptionalNone));
-	}
+    // if they pass all matrices then we want to pass their pointers instead
+    if constexpr (are_all_mat) {
+      return evaluateError(x..., (&H)...);
+    } else {
+      // If they are pointer version, ensure to cast them all to be Matrix* types
+      // This will ensure any arguments inferred as std::nonetype_t are cast to (Matrix*) nullptr
+      // This guides the compiler to the correct overload which is the one that takes pointers
+      return evaluateError(x..., std::forward<OptionalJacArgs>(H)..., static_cast<OptionalMatrixType>(OptionalNone));
+    }
   }
 
   /// @}

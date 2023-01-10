@@ -92,12 +92,12 @@ public:
   }
 
   /// Constructor that will resize a dynamic matrix (unless already correct)
-  OptionalJacobian(Eigen::MatrixXd* dynamic) :
-      map_(nullptr) {
-	if (dynamic) {
-      dynamic->resize(Rows, Cols); // no malloc if correct size
+  OptionalJacobian(Eigen::MatrixXd* dynamic)
+      : map_(nullptr) {
+    if (dynamic) {
+      dynamic->resize(Rows, Cols);  // no malloc if correct size
       usurp(dynamic->data());
-	}
+    }
   }
 
   /**

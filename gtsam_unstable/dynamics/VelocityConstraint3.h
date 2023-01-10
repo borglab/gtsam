@@ -23,6 +23,7 @@ protected:
 
 public:
 
+  // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
   typedef boost::shared_ptr<VelocityConstraint3 > shared_ptr;
 

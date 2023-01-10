@@ -6,9 +6,6 @@ if(NOT DEFINED CMAKE_MACOSX_RPATH)
   set(CMAKE_MACOSX_RPATH 0)
 endif()
 
-add_definitions(-Wno-deprecated-declarations)
-add_definitions(-ftemplate-backtrace-limit=0)
-
 set(CMAKE_CXX_STANDARD 17)
 
 # Set the version number for the library

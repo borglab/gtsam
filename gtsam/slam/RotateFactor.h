@@ -28,6 +28,8 @@ class RotateFactor: public NoiseModelFactorN<Rot3> {
   typedef RotateFactor This;
 
 public:
+
+  // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
   /// Constructor

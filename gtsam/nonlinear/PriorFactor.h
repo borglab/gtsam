@@ -31,7 +31,8 @@ namespace gtsam {
 
   public:
     typedef VALUE T;
-	using NoiseModelFactor1<VALUE>::evaluateError;
+    // Provide access to the Matrix& version of evaluateError:
+	  using NoiseModelFactor1<VALUE>::evaluateError;
 
   private:
 

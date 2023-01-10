@@ -245,9 +245,9 @@ namespace gtsam {
     }
     
     /* ************************************************************************* */
-	Vector whitenedError(const Values& x, std::vector<Matrix>& H) const {
-	  return whitenedError(x, &H);
-	}
+    Vector whitenedError(const Values& x, std::vector<Matrix>& H) const {
+      return whitenedError(x, &H);
+    }
 
     /* ************************************************************************* */
     Vector calcIndicatorProb(const Values& x) const {

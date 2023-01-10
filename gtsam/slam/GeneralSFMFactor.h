@@ -76,6 +76,9 @@ public:
   typedef GeneralSFMFactor<CAMERA, LANDMARK> This;///< typedef for this object
   typedef NoiseModelFactorN<CAMERA, LANDMARK> Base;///< typedef for the base class
 
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;//
+
   // shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<This> shared_ptr;
 
@@ -123,7 +126,7 @@ public:
 
   /** h(x)-z */
   Vector evaluateError(const CAMERA& camera, const LANDMARK& point,
-      OptionalMatrixType H1=OptionalNone, OptionalMatrixType H2=OptionalNone) const override {
+      OptionalMatrixType H1, OptionalMatrixType H2) const override {
     try {
       return camera.project2(point,H1,H2) - measured_;
     }
@@ -258,10 +261,7 @@ public:
 
   /** h(x)-z */
   Vector evaluateError(const Pose3& pose3, const Point3& point, const CALIBRATION &calib,
-      OptionalMatrixType H1=OptionalNone,
-      OptionalMatrixType H2=OptionalNone,
-      OptionalMatrixType H3=OptionalNone) const override
-  {
+      OptionalMatrixType H1, OptionalMatrixType H2, OptionalMatrixType H3) const override {
     try {
       Camera camera(pose3,calib);
       return camera.project(point, H1, H2, H3) - measured_;

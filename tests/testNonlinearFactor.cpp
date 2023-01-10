@@ -389,6 +389,7 @@ class TestFactor4 : public NoiseModelFactor4<double, double, double, double> {
 
  public:
   typedef NoiseModelFactor4<double, double, double, double> Base;
+  // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
   TestFactor4() : Base(noiseModel::Diagonal::Sigmas((Vector(1) << 2.0).finished()), X(1), X(2), X(3), X(4)) {}
   using Base::NoiseModelFactor4;  // inherit constructors
@@ -479,6 +480,7 @@ TEST(NonlinearFactor, NoiseModelFactor4) {
 class TestFactor5 : public NoiseModelFactor5<double, double, double, double, double> {
 public:
   typedef NoiseModelFactor5<double, double, double, double, double> Base;
+  // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
   TestFactor5() : Base(noiseModel::Diagonal::Sigmas((Vector(1) << 2.0).finished()), X(1), X(2), X(3), X(4), X(5)) {}
 
@@ -527,6 +529,7 @@ TEST(NonlinearFactor, NoiseModelFactor5) {
 class TestFactor6 : public NoiseModelFactor6<double, double, double, double, double, double> {
 public:
   typedef NoiseModelFactor6<double, double, double, double, double, double> Base;
+  // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
   TestFactor6() : Base(noiseModel::Diagonal::Sigmas((Vector(1) << 2.0).finished()), X(1), X(2), X(3), X(4), X(5), X(6)) {}
 
@@ -582,6 +585,7 @@ TEST(NonlinearFactor, NoiseModelFactor6) {
 class TestFactorN : public NoiseModelFactorN<double, double, double, double> {
 public:
   typedef NoiseModelFactorN<double, double, double, double> Base;
+  // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
   using Type1 = ValueType<1>;  // Test that we can use the ValueType<> template
 

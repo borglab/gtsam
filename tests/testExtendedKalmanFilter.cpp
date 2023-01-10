@@ -101,6 +101,7 @@ protected:
   Matrix Q_invsqrt_;
 
 public:
+  // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
   NonlinearMotionModel(){}
@@ -246,6 +247,7 @@ protected:
   Matrix R_invsqrt_; /** The inv sqrt of the measurement error covariance */
 
 public:
+  // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
   NonlinearMeasurementModel(){}
 

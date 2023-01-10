@@ -65,7 +65,7 @@ struct BearingFactor : public ExpressionFactorN<T, A1, A2> {
     OptionalMatrixType H1 = OptionalNone, OptionalMatrixType H2 = OptionalNone) const {
     std::vector<Matrix> Hs(2);
     const auto &keys = Factor::keys();
-    const Vector error = this->unwhitenedError(
+    const Vector error = unwhitenedError(
       {{keys[0], genericValue(a1)}, {keys[1], genericValue(a2)}}, 
       Hs);
     if (H1) *H1 = Hs[0];

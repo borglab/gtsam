@@ -32,6 +32,8 @@ protected:
   double h_;  // time step
 
 public:
+
+  // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
   typedef boost::shared_ptr<PendulumFactor1> shared_ptr;
@@ -81,6 +83,7 @@ protected:
 
 public:
 
+  // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
   typedef boost::shared_ptr<PendulumFactor2 > shared_ptr;
@@ -131,6 +134,7 @@ protected:
 
 public:
 
+  // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
   typedef boost::shared_ptr<PendulumFactorPk > shared_ptr;
@@ -187,6 +191,7 @@ protected:
   double alpha_; //! in [0,1], define the mid-point between [q_k,q_{k+1}] for approximation. The sympletic rule above can be obtained as a special case when alpha = 0.
 
 public:
+  // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
   typedef boost::shared_ptr<PendulumFactorPk1 > shared_ptr;

@@ -35,6 +35,7 @@ typedef enum {
 class VelocityConstraint : public gtsam::NoiseModelFactorN<PoseRTV,PoseRTV> {
 public:
   typedef gtsam::NoiseModelFactor2<PoseRTV,PoseRTV> Base;
+  // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
 protected:

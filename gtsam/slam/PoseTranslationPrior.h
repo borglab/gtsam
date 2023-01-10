@@ -26,6 +26,8 @@ public:
   typedef typename POSE::Translation Translation;
   typedef typename POSE::Rotation Rotation;
   
+
+  // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
   GTSAM_CONCEPT_POSE_TYPE(Pose)

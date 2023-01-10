@@ -40,6 +40,7 @@ class GTSAM_UNSTABLE_EXPORT LocalOrientedPlane3Factor
   OrientedPlane3 measured_p_;
   typedef NoiseModelFactorN<Pose3, Pose3, OrientedPlane3> Base;
 public:
+  // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
   /// Constructor
   LocalOrientedPlane3Factor() {}

@@ -35,6 +35,7 @@ struct BoundingConstraint1: public NoiseModelFactorN<VALUE> {
   typedef NoiseModelFactorN<VALUE> Base;
   typedef boost::shared_ptr<BoundingConstraint1<VALUE> > shared_ptr;
 
+  // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
   double threshold_;
@@ -106,6 +107,7 @@ struct BoundingConstraint2: public NoiseModelFactorN<VALUE1, VALUE2> {
   typedef NoiseModelFactorN<VALUE1, VALUE2> Base;
   typedef boost::shared_ptr<BoundingConstraint2<VALUE1, VALUE2> > shared_ptr;
 
+  // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
   double threshold_;

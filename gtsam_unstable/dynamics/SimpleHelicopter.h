@@ -29,7 +29,9 @@ class Reconstruction : public NoiseModelFactorN<Pose3, Pose3, Vector6>  {
   double h_;  // time step
   typedef NoiseModelFactorN<Pose3, Pose3, Vector6> Base;
 public:
+  // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
+
   Reconstruction(Key gKey1, Key gKey, Key xiKey, double h, double mu = 1000.0) :
     Base(noiseModel::Constrained::All(6, std::abs(mu)), gKey1, gKey,
         xiKey), h_(h) {
@@ -89,6 +91,7 @@ class DiscreteEulerPoincareHelicopter : public NoiseModelFactorN<Vector6, Vector
   typedef NoiseModelFactorN<Vector6, Vector6, Pose3> Base;
 
 public:
+  // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
   DiscreteEulerPoincareHelicopter(Key xiKey1, Key xiKey_1, Key gKey,

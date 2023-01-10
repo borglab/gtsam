@@ -55,6 +55,7 @@ protected:
 
 
  public:
+  // Provide access to the Matrix& version of unwhitenedError:
   using NoiseModelFactor::unwhitenedError;
   typedef boost::shared_ptr<ExpressionFactor<T> > shared_ptr;
 
@@ -244,6 +245,8 @@ class ExpressionFactorN : public ExpressionFactor<T> {
 public:
   static const std::size_t NARY_EXPRESSION_SIZE = sizeof...(Args);
   using ArrayNKeys = std::array<Key, NARY_EXPRESSION_SIZE>;
+    
+  // Provide access to the Matrix& version of unwhitenedError:
   using ExpressionFactor<T>::unwhitenedError;
 
   /// Destructor

@@ -37,7 +37,8 @@ namespace gtsam {
     Point3 measured_; /** The measurement */
 
   public:
-	using Base::evaluateError;
+    // Provide access to the Matrix& version of evaluateError:
+    using Base::evaluateError;
 
     // shorthand for a smart pointer to a factor
     typedef boost::shared_ptr<BiasedGPSFactor> shared_ptr;

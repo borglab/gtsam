@@ -37,6 +37,7 @@ private:
   Point2 measured_; ///< the measurement
 
 public:
+  // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
   /// Constructor
@@ -66,6 +67,7 @@ private:
   Point2 measured_; ///< the measurement
 
 public:
+  // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
   /// Constructor
   DeltaFactorBase(Key b1, Key i, Key b2, Key j, const Point2& measured,
@@ -119,6 +121,7 @@ private:
   Pose2 measured_; ///< the measurement
 
 public:
+  // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
   /// Constructor

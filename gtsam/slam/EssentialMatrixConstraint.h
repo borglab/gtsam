@@ -37,6 +37,7 @@ private:
   EssentialMatrix measuredE_; /** The measurement is an essential matrix */
 
 public:
+  // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
   // shorthand for a smart pointer to a factor

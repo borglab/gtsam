@@ -34,6 +34,7 @@ private:
   typedef NoiseModelFactorN<Pose3, Point3> Base;
 
 public:
+  // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
   RelativeElevationFactor() : measured_(0.0) {} /* Default constructor */

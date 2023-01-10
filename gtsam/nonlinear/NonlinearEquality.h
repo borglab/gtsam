@@ -46,6 +46,7 @@ class NonlinearEquality: public NoiseModelFactorN<VALUE> {
 
 public:
   typedef VALUE T;
+  // Provide access to the Matrix& version of evaluateError:
   using NoiseModelFactor1<VALUE>::evaluateError;
 
 private:

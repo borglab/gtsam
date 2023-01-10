@@ -61,6 +61,7 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorRollingShutter
  public:
   /// shorthand for base class type
   typedef NoiseModelFactor3<Pose3, Pose3, Point3> Base;
+  // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
   /// shorthand for this class

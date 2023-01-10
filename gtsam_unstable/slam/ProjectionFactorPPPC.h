@@ -45,6 +45,7 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorPPPC
  public:
   /// shorthand for base class type
   typedef NoiseModelFactor4<POSE, POSE, LANDMARK, CALIBRATION> Base;
+  // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
   /// shorthand for this class

@@ -55,7 +55,8 @@ namespace gtsam {
     VALUE measured_; /** The measurement */
 
   public:
-	using Base::evaluateError;
+    // Provide access to the Matrix& version of evaluateError:
+    using Base::evaluateError;
 
     // shorthand for a smart pointer to a factor
     typedef typename boost::shared_ptr<BetweenFactor> shared_ptr;

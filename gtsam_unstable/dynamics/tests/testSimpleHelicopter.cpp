@@ -58,10 +58,11 @@ TEST( Reconstruction, evaluateError) {
   EXPECT(
       assert_equal(Z_6x1, constraint.evaluateError(g2, g1, V1_g1, H1, H2, H3), tol));
 
-  std::function<Vector(const Pose3&, const Pose3&, const Vector6&)> f = [&constraint](const Pose3& a1, const Pose3& a2,
-                                                                                      const Vector6& a3) {
+  std::function<Vector(const Pose3&, const Pose3&, const Vector6&)> f = 
+    [&constraint](const Pose3& a1, const Pose3& a2, const Vector6& a3) {
     return constraint.evaluateError(a1, a2, a3);
   };
+
   Matrix numericalH1 = numericalDerivative31(f, g2, g1, V1_g1, 1e-5);
 
   Matrix numericalH2 = numericalDerivative32(f, g2, g1, V1_g1, 1e-5);

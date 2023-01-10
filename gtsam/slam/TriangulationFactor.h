@@ -61,6 +61,8 @@ public:
 
   /// shorthand for a smart pointer to a factor
   using shared_ptr = boost::shared_ptr<This>;
+
+  // Provide access to the Matrix& version of evaluateError:
   using NoiseModelFactor1<Point3>::evaluateError;
 
   /// Default constructor

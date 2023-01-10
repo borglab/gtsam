@@ -62,6 +62,8 @@ protected:
 public:
   typedef NoiseModelFactorN<POINT, TRANSFORM, POINT> Base;
   typedef ReferenceFrameFactor<POINT, TRANSFORM> This;
+
+  // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
   typedef POINT Point;

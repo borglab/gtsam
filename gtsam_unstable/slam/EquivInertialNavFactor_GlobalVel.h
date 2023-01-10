@@ -111,6 +111,7 @@ private:
 
 public:
 	
+  // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
   // shorthand for a smart pointer to a factor
