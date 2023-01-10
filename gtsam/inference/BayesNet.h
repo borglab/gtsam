@@ -39,7 +39,7 @@ class BayesNet : public FactorGraph<CONDITIONAL> {
       sharedConditional;  ///< A shared pointer to a conditional
 
  protected:
-  /// @name Standard Constructors
+  /// @name Protected Constructors
   /// @{
 
   /** Default constructor as an empty BayesNet */
@@ -49,6 +49,12 @@ class BayesNet : public FactorGraph<CONDITIONAL> {
   template <typename ITERATOR>
   BayesNet(ITERATOR firstConditional, ITERATOR lastConditional)
       : Base(firstConditional, lastConditional) {}
+
+  /**
+   * Constructor that takes an initializer list of shared pointers.
+   *  BayesNet<SymbolicConditional> bn = {make_shared<SymbolicConditional>(), ...};
+   */
+  BayesNet(std::initializer_list<sharedConditional> conditionals): Base(conditionals) {}
 
   /// @}
 

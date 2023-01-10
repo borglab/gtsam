@@ -53,12 +53,8 @@ TEST(DiscreteConditional, constructors) {
 TEST(DiscreteConditional, constructors_alt_interface) {
   DiscreteKey X(0, 2), Y(2, 3), Z(1, 2);  // watch ordering !
 
-  Signature::Table table;
-  Signature::Row r1, r2, r3;
-  r1 += 1.0, 1.0;
-  r2 += 2.0, 3.0;
-  r3 += 1.0, 4.0;
-  table += r1, r2, r3;
+  const Signature::Row r1{1, 1}, r2{2, 3}, r3{1, 4};
+  const Signature::Table table{r1, r2, r3};
   DiscreteConditional actual1(X, {Y}, table);
 
   DecisionTreeFactor f1(X & Y, "0.5 0.4 0.2 0.5 0.6 0.8");

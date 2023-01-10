@@ -20,10 +20,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/assign/std/list.hpp>
-#include <boost/assign/std/set.hpp>
-using namespace boost::assign;
-
 #include <iostream>
 
 using namespace std;
@@ -88,7 +84,7 @@ TEST(DSF, makePair) {
 /* ************************************************************************* */
 TEST(DSF, makeList) {
   DSFInt dsf;
-  list<int> keys; keys += 5, 6, 7;
+  list<int> keys{5, 6, 7};
   dsf = dsf.makeList(keys);
   EXPECT(dsf.findSet(5) == dsf.findSet(7));
 }
@@ -112,7 +108,7 @@ TEST(DSF, sets) {
   map<int, set<int> > sets = dsf.sets();
   LONGS_EQUAL(1, sets.size());
 
-  set<int> expected; expected += 5, 6;
+  set<int> expected{5, 6};
   EXPECT(expected == sets[dsf.findSet(5)]);
 }
 
@@ -127,7 +123,7 @@ TEST(DSF, sets2) {
   map<int, set<int> > sets = dsf.sets();
   LONGS_EQUAL(1, sets.size());
 
-  set<int> expected; expected += 5, 6, 7;
+  set<int> expected{5, 6, 7};
   EXPECT(expected == sets[dsf.findSet(5)]);
 }
 
@@ -141,7 +137,7 @@ TEST(DSF, sets3) {
   map<int, set<int> > sets = dsf.sets();
   LONGS_EQUAL(2, sets.size());
 
-  set<int> expected; expected += 5, 6;
+  set<int> expected{5, 6};
   EXPECT(expected == sets[dsf.findSet(5)]);
 }
 
@@ -152,11 +148,11 @@ TEST(DSF, partition) {
   dsf = dsf.makeSet(6);
   dsf = dsf.makeUnion(5,6);
 
-  list<int> keys; keys += 5;
+  list<int> keys{5};
   map<int, set<int> > partitions = dsf.partition(keys);
   LONGS_EQUAL(1, partitions.size());
 
-  set<int> expected; expected += 5;
+  set<int> expected{5};
   EXPECT(expected == partitions[dsf.findSet(5)]);
 }
 
@@ -168,11 +164,11 @@ TEST(DSF, partition2) {
   dsf = dsf.makeSet(7);
   dsf = dsf.makeUnion(5,6);
 
-  list<int> keys; keys += 7;
+  list<int> keys{7};
   map<int, set<int> > partitions = dsf.partition(keys);
   LONGS_EQUAL(1, partitions.size());
 
-  set<int> expected; expected += 7;
+  set<int> expected{7};
   EXPECT(expected == partitions[dsf.findSet(7)]);
 }
 
@@ -184,11 +180,11 @@ TEST(DSF, partition3) {
   dsf = dsf.makeSet(7);
   dsf = dsf.makeUnion(5,6);
 
-  list<int> keys; keys += 5, 7;
+  list<int> keys{5, 7};
   map<int, set<int> > partitions = dsf.partition(keys);
   LONGS_EQUAL(2, partitions.size());
 
-  set<int> expected; expected += 5;
+  set<int> expected{5};
   EXPECT(expected == partitions[dsf.findSet(5)]);
 }
 
@@ -202,7 +198,7 @@ TEST(DSF, set) {
   set<int> set = dsf.set(5);
   LONGS_EQUAL(2, set.size());
 
-  std::set<int> expected; expected += 5, 6;
+  std::set<int> expected{5, 6};
   EXPECT(expected == set);
 }
 
@@ -217,7 +213,7 @@ TEST(DSF, set2) {
   set<int> set = dsf.set(5);
   LONGS_EQUAL(3, set.size());
 
-  std::set<int> expected; expected += 5, 6, 7;
+  std::set<int> expected{5, 6, 7};
   EXPECT(expected == set);
 }
 
@@ -261,7 +257,7 @@ TEST(DSF, flatten) {
 /* ************************************************************************* */
 TEST(DSF, flatten2) {
   static string x1("x1"), x2("x2"), x3("x3"), x4("x4");
-  list<string> keys; keys += x1,x2,x3,x4;
+  list<string> keys{x1, x2, x3, x4};
   DSF<string> dsf(keys);
   dsf = dsf.makeUnion(x1,x2);
   dsf = dsf.makeUnion(x3,x4);
@@ -285,13 +281,12 @@ TEST(DSF, mergePairwiseMatches) {
   Measurement m22(2,2),m23(2,3),m25(2,5),m26(2,6); // in image 2
 
   // Add them all
-  list<Measurement> measurements;
-  measurements += m11,m12,m14, m22,m23,m25,m26;
+  list<Measurement> measurements{m11, m12, m14, m22, m23, m25, m26};
 
   // Create some "matches"
   typedef pair<Measurement,Measurement> Match;
-  list<Match> matches;
-  matches += Match(m11,m22), Match(m12,m23), Match(m14,m25), Match(m14,m26);
+  list<Match> matches{Match(m11, m22), Match(m12, m23), Match(m14, m25),
+                      Match(m14, m26)};
 
   // Merge matches
   DSF<Measurement> dsf(measurements);
@@ -310,15 +305,15 @@ TEST(DSF, mergePairwiseMatches) {
   // Check that we have three connected components
   EXPECT_LONGS_EQUAL(3, dsf.numSets());
 
-  set<Measurement> expected1; expected1 += m11,m22;
+  set<Measurement> expected1{m11,m22};
   set<Measurement> actual1 = dsf.set(m11);
   EXPECT(expected1 == actual1);
 
-  set<Measurement> expected2; expected2 += m12,m23;
+  set<Measurement> expected2{m12,m23};
   set<Measurement> actual2 = dsf.set(m12);
   EXPECT(expected2 == actual2);
 
-  set<Measurement> expected3; expected3 += m14,m25,m26;
+  set<Measurement> expected3{m14,m25,m26};
   set<Measurement> actual3 = dsf.set(m14);
   EXPECT(expected3 == actual3);
 }

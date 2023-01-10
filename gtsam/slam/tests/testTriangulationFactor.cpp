@@ -25,13 +25,10 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/assign.hpp>
-#include <boost/assign/std/vector.hpp>
 #include <boost/bind/bind.hpp>
 
 using namespace std;
 using namespace gtsam;
-using namespace boost::assign;
 using namespace std::placeholders;
 
 // Some common constants

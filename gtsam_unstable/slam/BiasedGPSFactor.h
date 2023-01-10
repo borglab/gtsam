@@ -78,9 +78,9 @@ namespace gtsam {
 
       if (H1 || H2){
         H1->resize(3,6); // jacobian wrt pose
-        (*H1) << Matrix3::Zero(),  pose.rotation().matrix();
+        (*H1) << Z_3x3,  pose.rotation().matrix();
         H2->resize(3,3); // jacobian wrt bias
-        (*H2) << Matrix3::Identity();
+        (*H2) << I_3x3;
       }
       return pose.translation() + bias - measured_;
     }

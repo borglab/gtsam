@@ -24,12 +24,10 @@
 #include <gtsam/slam/PoseTranslationPrior.h>
 #include <gtsam/slam/ProjectionFactor.h>
 #include <gtsam/slam/StereoFactor.h>
-#include <boost/assign/std/vector.hpp>
 #include <CppUnitLite/TestHarness.h>
 #include <iostream>
 
 using namespace std;
-using namespace boost::assign;
 using namespace gtsam;
 
 namespace {
@@ -220,9 +218,7 @@ TEST( SmartProjectionPoseFactor, noiselessWithMissingMeasurements ) {
    double actualError2 = factor1.totalReprojectionError(cameras);
    EXPECT_DOUBLES_EQUAL(expectedError, actualError2, 1e-7);
 
-   CameraSet<StereoCamera> cams;
-   cams += level_camera;
-   cams += level_camera_right;
+   CameraSet<StereoCamera> cams{level_camera, level_camera_right};
    TriangulationResult result = factor1.triangulateSafe(cams);
    CHECK(result);
    EXPECT(assert_equal(landmark, *result, 1e-7));

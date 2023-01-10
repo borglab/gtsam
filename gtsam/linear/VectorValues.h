@@ -92,11 +92,8 @@ namespace gtsam {
     VectorValues() {}
 
     /// Construct from initializer list.
-    VectorValues(std::initializer_list<std::pair<Key, Vector>> init) {
-      for (const auto& p : init) {
-        values_.insert(p);  // Insert key-value pair into map
-      }
-    }
+    VectorValues(std::initializer_list<std::pair<Key, Vector>> init)
+        : values_(init.begin(), init.end()) {}
 
     /** Merge two VectorValues into one, this is more efficient than inserting
      * elements one by one. */

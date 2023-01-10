@@ -14,12 +14,9 @@
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/PinholePose.h>
 
-#include <boost/assign/list_of.hpp>
-#include <boost/assign/std/vector.hpp>
 #include <fstream>
 
 using namespace std;
-using namespace boost::assign;
 using namespace gtsam;
 
 #define SLOW

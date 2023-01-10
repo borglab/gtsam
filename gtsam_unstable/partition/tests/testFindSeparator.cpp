@@ -6,10 +6,6 @@
  *  Description: unit tests for FindSeparator
  */
 
-#include <boost/assign/std/list.hpp> // for operator +=
-#include <boost/assign/std/set.hpp> // for operator +=
-#include <boost/assign/std/vector.hpp> // for operator +=
-using namespace boost::assign;
 #include <boost/make_shared.hpp>
 #include <CppUnitLite/TestHarness.h>
 
@@ -30,16 +26,16 @@ TEST ( Partition, separatorPartitionByMetis )
   graph.push_back(boost::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 4, NODE_LANDMARK_2D));
   graph.push_back(boost::make_shared<GenericFactor2D>(0, NODE_POSE_2D, 1, NODE_POSE_2D));
   graph.push_back(boost::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 2, NODE_POSE_2D));
-  std::vector<size_t> keys; keys += 0, 1, 2, 3, 4;
+  std::vector<size_t> keys{0, 1, 2, 3, 4};
 
   WorkSpace workspace(5);
   boost::optional<MetisResult> actual = separatorPartitionByMetis<GenericGraph2D>(graph, keys,
    workspace, true);
 
   CHECK(actual.is_initialized());
-  vector<size_t> A_expected; A_expected += 0, 3; // frontal
-  vector<size_t> B_expected; B_expected += 2, 4; // frontal
-  vector<size_t> C_expected; C_expected += 1;    // separator
+  vector<size_t> A_expected{0, 3}; // frontal
+  vector<size_t> B_expected{2, 4}; // frontal
+  vector<size_t> C_expected{1};    // separator
   CHECK(A_expected == actual->A);
   CHECK(B_expected == actual->B);
   CHECK(C_expected == actual->C);
@@ -55,16 +51,16 @@ TEST ( Partition, separatorPartitionByMetis2 )
   graph.push_back(boost::make_shared<GenericFactor2D>(3, NODE_POSE_2D, 6, NODE_LANDMARK_2D));
   graph.push_back(boost::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 2, NODE_POSE_2D));
   graph.push_back(boost::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 3, NODE_POSE_2D));
-  std::vector<size_t> keys; keys += 1, 2, 3, 5, 6;
+  std::vector<size_t> keys{1, 2, 3, 5, 6};
 
   WorkSpace workspace(8);
   boost::optional<MetisResult> actual = separatorPartitionByMetis<GenericGraph2D>(graph, keys,
    workspace, true);
 
   CHECK(actual.is_initialized());
-  vector<size_t> A_expected; A_expected += 1, 5; // frontal
-  vector<size_t> B_expected; B_expected += 3, 6; // frontal
-  vector<size_t> C_expected; C_expected += 2;    // separator
+  vector<size_t> A_expected{1, 5}; // frontal
+  vector<size_t> B_expected{3, 6}; // frontal
+  vector<size_t> C_expected{2};    // separator
   CHECK(A_expected == actual->A);
   CHECK(B_expected == actual->B);
   CHECK(C_expected == actual->C);
@@ -78,15 +74,15 @@ TEST ( Partition, edgePartitionByMetis )
   graph.push_back(boost::make_shared<GenericFactor3D>(0, 1, 0, NODE_POSE_3D, NODE_POSE_3D));
   graph.push_back(boost::make_shared<GenericFactor3D>(1, 2, 1, NODE_POSE_3D, NODE_POSE_3D));
   graph.push_back(boost::make_shared<GenericFactor3D>(2, 3, 2, NODE_POSE_3D, NODE_POSE_3D));
-  std::vector<size_t> keys; keys += 0, 1, 2, 3;
+  std::vector<size_t> keys{0, 1, 2, 3};
 
   WorkSpace workspace(6);
   boost::optional<MetisResult> actual = edgePartitionByMetis<GenericGraph3D>(graph, keys,
    workspace, true);
 
   CHECK(actual.is_initialized());
-  vector<size_t> A_expected; A_expected += 0, 1; // frontal
-  vector<size_t> B_expected; B_expected += 2, 3; // frontal
+  vector<size_t> A_expected{0, 1}; // frontal
+  vector<size_t> B_expected{2, 3}; // frontal
   vector<size_t> C_expected;    // separator
 //  for(const size_t a: actual->A)
 //    cout << a << " ";
@@ -109,14 +105,14 @@ TEST ( Partition, edgePartitionByMetis2 )
   graph.push_back(boost::make_shared<GenericFactor3D>(1, 2, 1, NODE_POSE_3D, NODE_POSE_3D, 1));
   graph.push_back(boost::make_shared<GenericFactor3D>(2, 3, 2, NODE_POSE_3D, NODE_POSE_3D, 20));
   graph.push_back(boost::make_shared<GenericFactor3D>(3, 4, 3, NODE_POSE_3D, NODE_POSE_3D, 1));
-  std::vector<size_t> keys; keys += 0, 1, 2, 3, 4;
+  std::vector<size_t> keys{0, 1, 2, 3, 4};
 
   WorkSpace workspace(6);
   boost::optional<MetisResult> actual = edgePartitionByMetis<GenericGraph3D>(graph, keys,
    workspace, true);
   CHECK(actual.is_initialized());
-  vector<size_t> A_expected; A_expected += 0, 1; // frontal
-  vector<size_t> B_expected; B_expected += 2, 3, 4; // frontal
+  vector<size_t> A_expected{0, 1}; // frontal
+  vector<size_t> B_expected{2, 3, 4}; // frontal
   vector<size_t> C_expected;    // separator
   CHECK(A_expected == actual->A);
   CHECK(B_expected == actual->B);
@@ -133,7 +129,7 @@ TEST ( Partition, findSeparator )
   graph.push_back(boost::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 4, NODE_LANDMARK_2D));
   graph.push_back(boost::make_shared<GenericFactor2D>(0, NODE_POSE_2D, 1, NODE_POSE_2D));
   graph.push_back(boost::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 2, NODE_POSE_2D));
-  std::vector<size_t> keys; keys += 0, 1, 2, 3, 4;
+  std::vector<size_t> keys{0, 1, 2, 3, 4};
 
   WorkSpace workspace(5);
   int minNodesPerMap = -1;
@@ -159,7 +155,7 @@ TEST ( Partition, findSeparator2 )
   graph.push_back(boost::make_shared<GenericFactor2D>(3, NODE_POSE_2D, 6, NODE_LANDMARK_2D));
   graph.push_back(boost::make_shared<GenericFactor2D>(1, NODE_POSE_2D, 2, NODE_POSE_2D));
   graph.push_back(boost::make_shared<GenericFactor2D>(2, NODE_POSE_2D, 3, NODE_POSE_2D));
-  std::vector<size_t> keys; keys += 1, 2, 3, 5, 6;
+  std::vector<size_t> keys{1, 2, 3, 5, 6};
 
   WorkSpace workspace(8);
   int minNodesPerMap = -1;

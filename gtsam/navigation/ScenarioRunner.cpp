@@ -18,11 +18,9 @@
 #include <gtsam/base/timing.h>
 #include <gtsam/navigation/ScenarioRunner.h>
 
-#include <boost/assign.hpp>
 #include <cmath>
 
 using namespace std;
-using namespace boost::assign;
 
 namespace gtsam {
 

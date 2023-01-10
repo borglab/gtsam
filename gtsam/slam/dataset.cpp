@@ -41,7 +41,6 @@
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/types.h>
 
-#include <boost/assign/list_inserter.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/optional.hpp>

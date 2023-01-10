@@ -21,14 +21,11 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/assign/std/vector.hpp>
-#include <boost/assign/list_of.hpp>
 #include <boost/range/adaptor/map.hpp>
 
 #include <sstream>
 
 using namespace std;
-using namespace boost::assign;
 using boost::adaptors::map_keys;
 using namespace gtsam;
 

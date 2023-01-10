@@ -29,7 +29,6 @@
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/base/numericalDerivative.h>
 
-#include <boost/assign/list_of.hpp> // for 'list_of()'
 #include <functional>
 #include <boost/iterator/counting_iterator.hpp>
 

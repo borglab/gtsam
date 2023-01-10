@@ -22,7 +22,6 @@
 #include <gtsam/base/DSFMap.h>
 
 #include <boost/format.hpp>
-#include <boost/assign/std/vector.hpp>
 
 #include <fstream>
 #include <iostream>
@@ -32,7 +31,6 @@
 
 using namespace std;
 using namespace gtsam;
-using namespace boost::assign;
 using boost::format;
 
 int main(int argc, char* argv[]) {
