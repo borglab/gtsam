@@ -166,10 +166,8 @@ class FactorGraph {
    *  FactorGraph fg = {make_shared<MyFactor>(), ...};
    */
   template <class DERIVEDFACTOR, typename = IsDerived<DERIVEDFACTOR>>
-  FactorGraph(
-      std::initializer_list<boost::shared_ptr<DERIVEDFACTOR>> sharedFactors) {
-    for (auto&& f : sharedFactors) factors_.push_back(f);
-  }
+  FactorGraph(std::initializer_list<boost::shared_ptr<DERIVEDFACTOR>> sharedFactors)
+      : factors_(sharedFactors) {}
 
   /// @}
   /// @name Adding Single Factors

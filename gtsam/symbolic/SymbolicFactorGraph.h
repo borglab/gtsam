@@ -91,10 +91,9 @@ namespace gtsam {
      * Constructor that takes an initializer list of shared pointers.
      *  FactorGraph fg = {make_shared<MyFactor>(), ...};
      */
-    SymbolicFactorGraph(std::initializer_list<boost::shared_ptr<SymbolicFactor>>
-                            sharedFactors) {
-        for (auto&& f : sharedFactors) factors_.push_back(f);
-    }
+    SymbolicFactorGraph(
+        std::initializer_list<boost::shared_ptr<SymbolicFactor>> sharedFactors)
+        : Base(sharedFactors) {}
 
     /// Construct from a single factor
     SymbolicFactorGraph(SymbolicFactor&& c) {
