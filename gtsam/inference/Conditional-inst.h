@@ -54,6 +54,6 @@ double Conditional<FACTOR, DERIVEDCONDITIONAL>::logProbability(
 template <class FACTOR, class DERIVEDCONDITIONAL>
 double Conditional<FACTOR, DERIVEDCONDITIONAL>::evaluate(
     const HybridValues& c) const {
-  return exp(static_cast<const DERIVEDCONDITIONAL*>(this)->logProbability(c));
+  throw std::runtime_error("Conditional::evaluate is not implemented");
 }
 }  // namespace gtsam
