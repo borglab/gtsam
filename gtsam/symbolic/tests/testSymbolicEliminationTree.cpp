@@ -73,6 +73,7 @@ class EliminationTreeTester {
   }
 };
 
+// Create a leaf node.
 static sharedNode Leaf(Key key, const SymbolicFactorGraph& factors) {
   sharedNode node(new SymbolicEliminationTree::Node());
   node->key = key;
@@ -80,15 +81,16 @@ static sharedNode Leaf(Key key, const SymbolicFactorGraph& factors) {
   return node;
 }
 
+// Use list_of replacement defined in symbolicExampleGraphs.h
+using ChildNodes = ChainedVector<sharedNode>;
+
+// Create a node with children.
 static sharedNode Node(Key key, const SymbolicFactorGraph& factors,
-                       const std::vector<sharedNode>& children) {
+                       const ChildNodes::Result& children) {
   sharedNode node = Leaf(key, factors);
   node->children.assign(children.begin(), children.end());
   return node;
 }
-
-// Use list_of replacement defined in symbolicExampleGraphs.h
-using ChildNodes = ChainedVector<sharedNode>;
 
 /* ************************************************************************* */
 TEST(EliminationTree, Create) {
