@@ -57,7 +57,7 @@ inline HybridBayesNet createHybridBayesNet(int num_measurements = 1,
 
   // Add prior on mode.
   const size_t nrModes = manyModes ? num_measurements : 1;
-  for (int i = 0; i < nrModes; i++) {
+  for (const size_t i = 0; i < nrModes; i++) {
     bayesNet.emplace_back(new DiscreteConditional({M(i), 2}, "4/6"));
   }
   return bayesNet;
