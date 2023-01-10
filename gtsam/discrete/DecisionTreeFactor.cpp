@@ -18,6 +18,7 @@
  */
 
 #include <gtsam/base/FastSet.h>
+#include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteConditional.h>
 
@@ -54,6 +55,16 @@ namespace gtsam {
       const auto& f(static_cast<const DecisionTreeFactor&>(other));
       return ADT::equals(f, tol);
     }
+  }
+
+  /* ************************************************************************ */
+  double DecisionTreeFactor::error(const DiscreteValues& values) const {
+    return -std::log(evaluate(values));
+  }
+  
+  /* ************************************************************************ */
+  double DecisionTreeFactor::error(const HybridValues& values) const {
+    return error(values.discrete());
   }
 
   /* ************************************************************************ */
