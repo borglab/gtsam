@@ -36,12 +36,12 @@ const DiscreteKey mode{M(0), 2};
  * num_measurements is the number of measurements of the continuous variable x0.
  * If manyModes is true, then we introduce one mode per measurement.
  */
-inline HybridBayesNet createHybridBayesNet(int num_measurements = 1,
+inline HybridBayesNet createHybridBayesNet(size_t num_measurements = 1,
                                            bool manyModes = false) {
   HybridBayesNet bayesNet;
 
   // Create Gaussian mixture z_i = x0 + noise for each measurement.
-  for (int i = 0; i < num_measurements; i++) {
+  for (size_t i = 0; i < num_measurements; i++) {
     const auto mode_i = manyModes ? DiscreteKey{M(i), 2} : mode;
     bayesNet.emplace_back(
         new GaussianMixture({Z(i)}, {X(0)}, {mode_i},
@@ -57,7 +57,7 @@ inline HybridBayesNet createHybridBayesNet(int num_measurements = 1,
 
   // Add prior on mode.
   const size_t nrModes = manyModes ? num_measurements : 1;
-  for (const size_t i = 0; i < nrModes; i++) {
+  for (size_t i = 0; i < nrModes; i++) {
     bayesNet.emplace_back(new DiscreteConditional({M(i), 2}, "4/6"));
   }
   return bayesNet;
@@ -70,7 +70,7 @@ inline HybridBayesNet createHybridBayesNet(int num_measurements = 1,
  * the generative Bayes net model HybridBayesNet::Example(num_measurements)
  */
 inline HybridGaussianFactorGraph createHybridGaussianFactorGraph(
-    int num_measurements = 1,
+    size_t num_measurements = 1,
     boost::optional<VectorValues> measurements = boost::none,
     bool manyModes = false) {
   auto bayesNet = createHybridBayesNet(num_measurements, manyModes);
