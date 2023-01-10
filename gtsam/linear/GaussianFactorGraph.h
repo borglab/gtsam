@@ -86,7 +86,13 @@ namespace gtsam {
     /** Default constructor */
     GaussianFactorGraph() {}
 
-    using Base::Base; // Inherit constructors
+    /**
+     * Construct from an initializer lists of GaussianFactor shared pointers.
+     * Example:
+     *   GaussianFactorGraph graph = { factor1, factor2, factor3 };
+     */
+    GaussianFactorGraph(std::initializer_list<sharedFactor> factors) : Base(factors) {}
+    
 
     /** Construct from iterator over factors */
     template<typename ITERATOR>
