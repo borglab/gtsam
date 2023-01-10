@@ -110,7 +110,7 @@ VectorValues SubgraphPreconditioner::x(const VectorValues& y) const {
 
 /* ************************************************************************* */
 double SubgraphPreconditioner::error(const VectorValues& y) const {
-  Errors e(y);
+  Errors e = createErrors(y);
   VectorValues x = this->x(y);
   Errors e2 = Ab2_.gaussianErrors(x);
   return 0.5 * (dot(e, e) + dot(e2,e2));
@@ -129,7 +129,7 @@ VectorValues SubgraphPreconditioner::gradient(const VectorValues &y) const {
 /* ************************************************************************* */
 // Apply operator A, A*y = [I;A2*inv(R1)]*y = [y; A2*inv(R1)*y]
 Errors SubgraphPreconditioner::operator*(const VectorValues &y) const {
-  Errors e(y);
+  Errors e = createErrors(y);
   VectorValues x = Rc1_.backSubstitute(y); /* x=inv(R1)*y */
   Errors e2 = Ab2_ * x;                      /* A2*x */
   e.splice(e.end(), e2);
