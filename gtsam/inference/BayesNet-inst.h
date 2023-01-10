@@ -89,5 +89,21 @@ void BayesNet<CONDITIONAL>::saveGraph(const std::string& filename,
 }
 
 /* ************************************************************************* */
+template <class CONDITIONAL>
+double BayesNet<CONDITIONAL>::logProbability(const HybridValues& x) const {
+  double sum = 0.;
+  for (const auto& gc : *this) {
+    if (gc) sum += gc->logProbability(x);
+  }
+  return sum;
+}
+
+/* ************************************************************************* */
+template <class CONDITIONAL>
+double BayesNet<CONDITIONAL>::evaluate(const HybridValues& x) const {
+  return exp(-logProbability(x));
+}
+
+/* ************************************************************************* */
 
 }  // namespace gtsam

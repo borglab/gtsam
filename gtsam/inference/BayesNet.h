@@ -25,6 +25,8 @@
 
 namespace gtsam {
 
+class HybridValues;
+
 /**
  * A BayesNet is a tree of conditionals, stored in elimination order.
  * @ingroup inference
@@ -68,7 +70,6 @@ class BayesNet : public FactorGraph<CONDITIONAL> {
       const KeyFormatter& formatter = DefaultKeyFormatter) const override;
 
   /// @}
-
   /// @name Graph Display
   /// @{
 
@@ -85,6 +86,13 @@ class BayesNet : public FactorGraph<CONDITIONAL> {
   void saveGraph(const std::string& filename,
                  const KeyFormatter& keyFormatter = DefaultKeyFormatter,
                  const DotWriter& writer = DotWriter()) const;
+
+  /// @}
+  /// @name HybridValues methods
+  /// @{
+
+  double logProbability(const HybridValues& x) const;
+  double evaluate(const HybridValues& c) const;
 
   /// @}
 };

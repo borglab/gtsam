@@ -43,4 +43,10 @@ namespace gtsam {
     return keys_ == other.keys_;
   }
 
+  /* ************************************************************************* */
+  double Factor::error(const HybridValues& c) const {
+    throw std::runtime_error("Factor::error is not implemented");
+  }
+
+
 }

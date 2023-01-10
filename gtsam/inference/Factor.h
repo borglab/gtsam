@@ -44,10 +44,7 @@ namespace gtsam {
    *
    * The `error` method is used to evaluate the factor, and is the only method
    * that is required to be implemented in derived classes, although it has a 
-   * default implementation that throws an exception. The meaning of the error
-   * is slightly different for factors and conditionals: in the former it is the
-   * negative log-likelihood, and in the latter it is the negative log of the 
-   * properly normalized conditional distribution or density.
+   * default implementation that throws an exception.
    * 
    * There are five broad classes of factors that derive from Factor:
    *
@@ -55,15 +52,12 @@ namespace gtsam {
    *   represent a nonlinear likelihood function over a set of variables.
    * - \b Gaussian factors, such as \class JacobianFactor and \class HessianFactor, which
    *   represent a Gaussian likelihood over a set of variables.
-   *   A \class GaussianConditional, which represent a Gaussian density over a set of
-   *   variables conditioned on another set of variables.
-   * - \b Discrete factors, such as \class DiscreteFactor and \class DiscreteConditional, which
+   * - \b Discrete factors, such as \class DiscreteFactor and \class DecisionTreeFactor, which
    *   represent a discrete distribution over a set of variables.
    * - \b Hybrid factors, such as \class HybridFactor, which represent a mixture of
    *   Gaussian and discrete distributions over a set of variables.
    * - \b Symbolic factors, used to represent a graph structure, such as
-   *   \class SymbolicFactor and \class SymbolicConditional. They do not override the
-   *  `error` method, and are used only for symbolic elimination etc.
+   *   \class SymbolicFactor, only used for symbolic elimination etc.
    *
    * Note that derived classes must also redefine the `This` and `shared_ptr`
    * typedefs. See JacobianFactor, etc. for examples.
@@ -154,11 +148,8 @@ namespace gtsam {
   /**
    * All factor types need to implement an error function.
    * In factor graphs, this is the negative log-likelihood.
-   * In Bayes nets, it is the negative log density, i.e., properly normalized.
    */
-  virtual double error(const HybridValues& c) const {
-    throw std::runtime_error("Factor::error is not implemented");
-  }
+  virtual double error(const HybridValues& c) const;
 
    /**
     * @return the number of variables involved in this factor
