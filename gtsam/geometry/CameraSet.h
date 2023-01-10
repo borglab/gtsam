@@ -18,12 +18,13 @@
 
 #pragma once
 
-#include <gtsam/geometry/Point3.h>
-#include <gtsam/geometry/CalibratedCamera.h>  // for Cheirality exception
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/SymmetricBlockMatrix.h>
 #include <gtsam/base/FastMap.h>
+#include <gtsam/base/SymmetricBlockMatrix.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/geometry/CalibratedCamera.h>  // for Cheirality exception
+#include <gtsam/geometry/Point3.h>
 #include <gtsam/inference/Key.h>
+
 #include <vector>
 
 namespace gtsam {
@@ -31,10 +32,10 @@ namespace gtsam {
 /**
  * @brief A set of cameras, all with their own calibration
  */
-template<class CAMERA>
-class CameraSet : public std::vector<CAMERA, Eigen::aligned_allocator<CAMERA> > {
-
-protected:
+template <class CAMERA>
+class CameraSet : public std::vector<CAMERA, Eigen::aligned_allocator<CAMERA>> {
+ protected:
+  using Base = std::vector<CAMERA, typename Eigen::aligned_allocator<CAMERA>>;
 
   /**
    * 2D measurement and noise model for each of the m views
@@ -43,13 +44,11 @@ protected:
   typedef typename CAMERA::Measurement Z;
   typedef typename CAMERA::MeasurementVector ZVector;
 
-  static const int D = traits<CAMERA>::dimension; ///< Camera dimension
-  static const int ZDim = traits<Z>::dimension; ///< Measurement dimension
+  static const int D = traits<CAMERA>::dimension;  ///< Camera dimension
+  static const int ZDim = traits<Z>::dimension;    ///< Measurement dimension
 
   /// Make a vector of re-projection errors
-  static Vector ErrorVector(const ZVector& predicted,
-      const ZVector& measured) {
-
+  static Vector ErrorVector(const ZVector& predicted, const ZVector& measured) {
     // Check size
     size_t m = predicted.size();
     if (measured.size() != m)
@@ -59,7 +58,8 @@ protected:
     Vector b(ZDim * m);
     for (size_t i = 0, row = 0; i < m; i++, row += ZDim) {
       Vector bi = traits<Z>::Local(measured[i], predicted[i]);
-      if(ZDim==3 && std::isnan(bi(1))){ // if it is a stereo point and the right pixel is missing (nan)
+      if (ZDim == 3 && std::isnan(bi(1))) {  // if it is a stereo point and the
+                                             // right pixel is missing (nan)
         bi(1) = 0;
       }
       b.segment<ZDim>(row) = bi;
@@ -67,7 +67,8 @@ protected:
     return b;
   }
 
-public:
+ public:
+  using Base::Base;  // Inherit the vector constructors
 
   /// Destructor
   virtual ~CameraSet() = default;
@@ -83,18 +84,15 @@ public:
    */
   virtual void print(const std::string& s = "") const {
     std::cout << s << "CameraSet, cameras = \n";
-    for (size_t k = 0; k < this->size(); ++k)
-      this->at(k).print(s);
+    for (size_t k = 0; k < this->size(); ++k) this->at(k).print(s);
   }
 
   /// equals
   bool equals(const CameraSet& p, double tol = 1e-9) const {
-    if (this->size() != p.size())
-      return false;
+    if (this->size() != p.size()) return false;
     bool camerasAreEqual = true;
     for (size_t i = 0; i < this->size(); i++) {
-      if (this->at(i).equals(p.at(i), tol) == false)
-        camerasAreEqual = false;
+      if (this->at(i).equals(p.at(i), tol) == false) camerasAreEqual = false;
       break;
     }
     return camerasAreEqual;
@@ -106,11 +104,10 @@ public:
    * matrix this function returns the diagonal blocks.
    * throws CheiralityException
    */
-  template<class POINT>
-  ZVector project2(const POINT& point, //
-      boost::optional<FBlocks&> Fs = boost::none, //
-      boost::optional<Matrix&> E = boost::none) const {
-
+  template <class POINT>
+  ZVector project2(const POINT& point,                          //
+                   boost::optional<FBlocks&> Fs = boost::none,  //
+                   boost::optional<Matrix&> E = boost::none) const {
     static const int N = FixedDimension<POINT>::value;
 
     // Allocate result
@@ -135,19 +132,19 @@ public:
   }
 
   /// Calculate vector [project2(point)-z] of re-projection errors
-  template<class POINT>
+  template <class POINT>
   Vector reprojectionError(const POINT& point, const ZVector& measured,
-      boost::optional<FBlocks&> Fs = boost::none, //
-      boost::optional<Matrix&> E = boost::none) const {
+                           boost::optional<FBlocks&> Fs = boost::none,  //
+                           boost::optional<Matrix&> E = boost::none) const {
     return ErrorVector(project2(point, Fs, E), measured);
   }
 
   /**
-     * Do Schur complement, given Jacobian as Fs,E,P, return SymmetricBlockMatrix
-     * G = F' * F - F' * E * P * E' * F
-     * g = F' * (b - E * P * E' * b)
-     * Fixed size version
-    */
+   * Do Schur complement, given Jacobian as Fs,E,P, return SymmetricBlockMatrix
+   * G = F' * F - F' * E * P * E' * F
+   * g = F' * (b - E * P * E' * b)
+   * Fixed size version
+   */
   template <int N,
             int ND>  // N = 2 or 3 (point dimension), ND is the camera dimension
   static SymmetricBlockMatrix SchurComplement(
@@ -158,38 +155,47 @@ public:
     // a single point is observed in m cameras
     size_t m = Fs.size();
 
-    // Create a SymmetricBlockMatrix (augmented hessian, with extra row/column with info vector)
+    // Create a SymmetricBlockMatrix (augmented hessian, with extra row/column
+    // with info vector)
     size_t M1 = ND * m + 1;
-    std::vector<DenseIndex> dims(m + 1); // this also includes the b term
+    std::vector<DenseIndex> dims(m + 1);  // this also includes the b term
     std::fill(dims.begin(), dims.end() - 1, ND);
     dims.back() = 1;
     SymmetricBlockMatrix augmentedHessian(dims, Matrix::Zero(M1, M1));
 
     // Blockwise Schur complement
-    for (size_t i = 0; i < m; i++) { // for each camera
+    for (size_t i = 0; i < m; i++) {  // for each camera
 
       const Eigen::Matrix<double, ZDim, ND>& Fi = Fs[i];
       const auto FiT = Fi.transpose();
-      const Eigen::Matrix<double, ZDim, N> Ei_P = //
+      const Eigen::Matrix<double, ZDim, N> Ei_P =  //
           E.block(ZDim * i, 0, ZDim, N) * P;
 
       // D = (Dx2) * ZDim
-      augmentedHessian.setOffDiagonalBlock(i, m, FiT * b.segment<ZDim>(ZDim * i) // F' * b
-      - FiT * (Ei_P * (E.transpose() * b))); // D = (DxZDim) * (ZDimx3) * (N*ZDimm) * (ZDimm x 1)
+      augmentedHessian.setOffDiagonalBlock(
+          i, m,
+          FiT * b.segment<ZDim>(ZDim * i)  // F' * b
+              -
+              FiT *
+                  (Ei_P *
+                   (E.transpose() *
+                    b)));  // D = (DxZDim) * (ZDimx3) * (N*ZDimm) * (ZDimm x 1)
 
       // (DxD) = (DxZDim) * ( (ZDimxD) - (ZDimx3) * (3xZDim) * (ZDimxD) )
-      augmentedHessian.setDiagonalBlock(i, FiT
-          * (Fi - Ei_P * E.block(ZDim * i, 0, ZDim, N).transpose() * Fi));
+      augmentedHessian.setDiagonalBlock(
+          i,
+          FiT * (Fi - Ei_P * E.block(ZDim * i, 0, ZDim, N).transpose() * Fi));
 
       // upper triangular part of the hessian
-      for (size_t j = i + 1; j < m; j++) { // for each camera
+      for (size_t j = i + 1; j < m; j++) {  // for each camera
         const Eigen::Matrix<double, ZDim, ND>& Fj = Fs[j];
 
         // (DxD) = (Dx2) * ( (2x2) * (2xD) )
-        augmentedHessian.setOffDiagonalBlock(i, j, -FiT
-            * (Ei_P * E.block(ZDim * j, 0, ZDim, N).transpose() * Fj));
+        augmentedHessian.setOffDiagonalBlock(
+            i, j,
+            -FiT * (Ei_P * E.block(ZDim * j, 0, ZDim, N).transpose() * Fj));
       }
-    } // end of for over cameras
+    }  // end of for over cameras
 
     augmentedHessian.diagonalBlock(m)(0, 0) += b.squaredNorm();
     return augmentedHessian;
@@ -297,20 +303,21 @@ public:
    * g = F' * (b - E * P * E' * b)
    * Fixed size version
    */
-  template<int N> // N = 2 or 3
-  static SymmetricBlockMatrix SchurComplement(const FBlocks& Fs,
-      const Matrix& E, const Eigen::Matrix<double, N, N>& P, const Vector& b) {
-    return SchurComplement<N,D>(Fs, E, P, b);
+  template <int N>  // N = 2 or 3
+  static SymmetricBlockMatrix SchurComplement(
+      const FBlocks& Fs, const Matrix& E, const Eigen::Matrix<double, N, N>& P,
+      const Vector& b) {
+    return SchurComplement<N, D>(Fs, E, P, b);
   }
 
   /// Computes Point Covariance P, with lambda parameter
-  template<int N> // N = 2 or 3 (point dimension)
+  template <int N>  // N = 2 or 3 (point dimension)
   static void ComputePointCovariance(Eigen::Matrix<double, N, N>& P,
-      const Matrix& E, double lambda, bool diagonalDamping = false) {
-
+                                     const Matrix& E, double lambda,
+                                     bool diagonalDamping = false) {
     Matrix EtE = E.transpose() * E;
 
-    if (diagonalDamping) { // diagonal of the hessian
+    if (diagonalDamping) {  // diagonal of the hessian
       EtE.diagonal() += lambda * EtE.diagonal();
     } else {
       DenseIndex n = E.cols();
@@ -322,7 +329,7 @@ public:
 
   /// Computes Point Covariance P, with lambda parameter, dynamic version
   static Matrix PointCov(const Matrix& E, const double lambda = 0.0,
-      bool diagonalDamping = false) {
+                         bool diagonalDamping = false) {
     if (E.cols() == 2) {
       Matrix2 P2;
       ComputePointCovariance<2>(P2, E, lambda, diagonalDamping);
@@ -339,8 +346,9 @@ public:
    * Dynamic version
    */
   static SymmetricBlockMatrix SchurComplement(const FBlocks& Fblocks,
-      const Matrix& E, const Vector& b, const double lambda = 0.0,
-      bool diagonalDamping = false) {
+                                              const Matrix& E, const Vector& b,
+                                              const double lambda = 0.0,
+                                              bool diagonalDamping = false) {
     if (E.cols() == 2) {
       Matrix2 P;
       ComputePointCovariance<2>(P, E, lambda, diagonalDamping);
@@ -353,17 +361,17 @@ public:
   }
 
   /**
-   * Applies Schur complement (exploiting block structure) to get a smart factor on cameras,
-   * and adds the contribution of the smart factor to a pre-allocated augmented Hessian.
+   * Applies Schur complement (exploiting block structure) to get a smart factor
+   * on cameras, and adds the contribution of the smart factor to a
+   * pre-allocated augmented Hessian.
    */
-  template<int N> // N = 2 or 3 (point dimension)
-  static void UpdateSchurComplement(const FBlocks& Fs, const Matrix& E,
-      const Eigen::Matrix<double, N, N>& P, const Vector& b,
-      const KeyVector& allKeys, const KeyVector& keys,
-      /*output ->*/SymmetricBlockMatrix& augmentedHessian) {
-
-    assert(keys.size()==Fs.size());
-    assert(keys.size()<=allKeys.size());
+  template <int N>  // N = 2 or 3 (point dimension)
+  static void UpdateSchurComplement(
+      const FBlocks& Fs, const Matrix& E, const Eigen::Matrix<double, N, N>& P,
+      const Vector& b, const KeyVector& allKeys, const KeyVector& keys,
+      /*output ->*/ SymmetricBlockMatrix& augmentedHessian) {
+    assert(keys.size() == Fs.size());
+    assert(keys.size() <= allKeys.size());
 
     FastMap<Key, size_t> KeySlotMap;
     for (size_t slot = 0; slot < allKeys.size(); slot++)
@@ -374,39 +382,49 @@ public:
     // g = F' * (b - E * P * E' * b)
 
     // a single point is observed in m cameras
-    size_t m = Fs.size(); // cameras observing current point
-    size_t M = (augmentedHessian.rows() - 1) / D; // all cameras in the group
-    assert(allKeys.size()==M);
+    size_t m = Fs.size();  // cameras observing current point
+    size_t M = (augmentedHessian.rows() - 1) / D;  // all cameras in the group
+    assert(allKeys.size() == M);
 
     // Blockwise Schur complement
-    for (size_t i = 0; i < m; i++) { // for each camera in the current factor
+    for (size_t i = 0; i < m; i++) {  // for each camera in the current factor
 
       const MatrixZD& Fi = Fs[i];
       const auto FiT = Fi.transpose();
-      const Eigen::Matrix<double, 2, N> Ei_P = E.template block<ZDim, N>(
-          ZDim * i, 0) * P;
+      const Eigen::Matrix<double, 2, N> Ei_P =
+          E.template block<ZDim, N>(ZDim * i, 0) * P;
 
       // D = (DxZDim) * (ZDim)
       // allKeys are the list of all camera keys in the group, e.g, (1,3,4,5,7)
-      // we should map those to a slot in the local (grouped) hessian (0,1,2,3,4)
-      // Key cameraKey_i = this->keys_[i];
+      // we should map those to a slot in the local (grouped) hessian
+      // (0,1,2,3,4) Key cameraKey_i = this->keys_[i];
       DenseIndex aug_i = KeySlotMap.at(keys[i]);
 
       // information vector - store previous vector
       // vectorBlock = augmentedHessian(aug_i, aug_m).knownOffDiagonal();
       // add contribution of current factor
-      augmentedHessian.updateOffDiagonalBlock(aug_i, M,
-          FiT * b.segment<ZDim>(ZDim * i)      // F' * b
-        - FiT * (Ei_P * (E.transpose() * b))); // D = (DxZDim) * (ZDimx3) * (N*ZDimm) * (ZDimm x 1)
+      augmentedHessian.updateOffDiagonalBlock(
+          aug_i, M,
+          FiT * b.segment<ZDim>(ZDim * i)  // F' * b
+              -
+              FiT *
+                  (Ei_P *
+                   (E.transpose() *
+                    b)));  // D = (DxZDim) * (ZDimx3) * (N*ZDimm) * (ZDimm x 1)
 
       // (DxD) += (DxZDim) * ( (ZDimxD) - (ZDimx3) * (3xZDim) * (ZDimxD) )
       // add contribution of current factor
-      // TODO(gareth): Eigen doesn't let us pass the expression. Call eval() for now...
-      augmentedHessian.updateDiagonalBlock(aug_i,
-         ((FiT * (Fi - Ei_P * E.template block<ZDim, N>(ZDim * i, 0).transpose() * Fi))).eval());
+      // TODO(gareth): Eigen doesn't let us pass the expression. Call eval() for
+      // now...
+      augmentedHessian.updateDiagonalBlock(
+          aug_i,
+          ((FiT *
+            (Fi -
+             Ei_P * E.template block<ZDim, N>(ZDim * i, 0).transpose() * Fi)))
+              .eval());
 
       // upper triangular part of the hessian
-      for (size_t j = i + 1; j < m; j++) { // for each camera
+      for (size_t j = i + 1; j < m; j++) {  // for each camera
         const MatrixZD& Fj = Fs[j];
 
         DenseIndex aug_j = KeySlotMap.at(keys[j]);
@@ -415,39 +433,38 @@ public:
         // off diagonal block - store previous block
         // matrixBlock = augmentedHessian(aug_i, aug_j).knownOffDiagonal();
         // add contribution of current factor
-        augmentedHessian.updateOffDiagonalBlock(aug_i, aug_j,
-                -FiT * (Ei_P * E.template block<ZDim, N>(ZDim * j, 0).transpose() * Fj));
+        augmentedHessian.updateOffDiagonalBlock(
+            aug_i, aug_j,
+            -FiT * (Ei_P * E.template block<ZDim, N>(ZDim * j, 0).transpose() *
+                    Fj));
       }
-    } // end of for over cameras
+    }  // end of for over cameras
 
     augmentedHessian.diagonalBlock(M)(0, 0) += b.squaredNorm();
   }
 
-private:
-
+ private:
   /// Serialization function
   friend class boost::serialization::access;
-  template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & (*this);
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    ar&(*this);
   }
 
-public:
+ public:
   GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-template<class CAMERA>
+template <class CAMERA>
 const int CameraSet<CAMERA>::D;
 
-template<class CAMERA>
+template <class CAMERA>
 const int CameraSet<CAMERA>::ZDim;
 
-template<class CAMERA>
-struct traits<CameraSet<CAMERA> > : public Testable<CameraSet<CAMERA> > {
-};
+template <class CAMERA>
+struct traits<CameraSet<CAMERA>> : public Testable<CameraSet<CAMERA>> {};
 
-template<class CAMERA>
-struct traits<const CameraSet<CAMERA> > : public Testable<CameraSet<CAMERA> > {
-};
+template <class CAMERA>
+struct traits<const CameraSet<CAMERA>> : public Testable<CameraSet<CAMERA>> {};
 
-} // \ namespace gtsam
+}  // namespace gtsam

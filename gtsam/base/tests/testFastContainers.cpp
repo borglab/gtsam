@@ -11,12 +11,8 @@
 #include <gtsam/base/FastSet.h>
 #include <gtsam/base/FastVector.h>
 
-#include <boost/assign/std/vector.hpp>
-#include <boost/assign/std/set.hpp>
-
 #include <CppUnitLite/TestHarness.h>
 
-using namespace boost::assign;
 using namespace gtsam;
 
 /* ************************************************************************* */
@@ -25,7 +21,7 @@ TEST( testFastContainers, KeySet ) {
   KeyVector init_vector {2, 3, 4, 5};
 
   KeySet actSet(init_vector);
-  KeySet expSet; expSet += 2, 3, 4, 5;
+  KeySet expSet{2, 3, 4, 5};
   EXPECT(actSet == expSet);
 }
 

@@ -65,8 +65,17 @@ namespace gtsam {
     explicit GaussianBayesNet(const FactorGraph<DERIVEDCONDITIONAL>& graph)
         : Base(graph) {}
 
+    /**
+     * Constructor that takes an initializer list of shared pointers.
+     *  BayesNet bn = {make_shared<Conditional>(), ...};
+     */
+    template <class DERIVEDCONDITIONAL>
+    GaussianBayesNet(
+        std::initializer_list<boost::shared_ptr<DERIVEDCONDITIONAL> > conditionals)
+        : Base(conditionals) {}
+
     /// Destructor
-    virtual ~GaussianBayesNet() {}
+    virtual ~GaussianBayesNet() = default;
 
     /// @}
 

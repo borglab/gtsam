@@ -399,13 +399,9 @@ TEST(ADT, factor_graph) {
 /* ************************************************************************* */
 // test equality
 TEST(ADT, equality_noparser) {
-  DiscreteKey A(0, 2), B(1, 2);
-  Signature::Table tableA, tableB;
-  Signature::Row rA, rB;
-  rA += 80, 20;
-  rB += 60, 40;
-  tableA += rA;
-  tableB += rB;
+  const DiscreteKey A(0, 2), B(1, 2);
+  const Signature::Row rA{80, 20}, rB{60, 40};
+  const Signature::Table tableA{rA}, tableB{rB};
 
   // Check straight equality
   ADT pA1 = create(A % tableA);
@@ -520,9 +516,9 @@ TEST(ADT, elimination) {
 
     // normalize
     ADT actual = f1 / actualSum;
-    vector<double> cpt;
-    cpt += 1.0 / 3, 2.0 / 3, 3.0 / 7, 4.0 / 7, 5.0 / 11, 6.0 / 11,  //
-        1.0 / 9, 8.0 / 9, 3.0 / 6, 3.0 / 6, 5.0 / 10, 5.0 / 10;
+    const vector<double> cpt{
+        1.0 / 3, 2.0 / 3, 3.0 / 7, 4.0 / 7, 5.0 / 11, 6.0 / 11,  //
+        1.0 / 9, 8.0 / 9, 3.0 / 6, 3.0 / 6, 5.0 / 10, 5.0 / 10};
     ADT expected(A & B & C, cpt);
     CHECK(assert_equal(expected, actual));
   }
@@ -535,9 +531,9 @@ TEST(ADT, elimination) {
 
     // normalize
     ADT actual = f1 / actualSum;
-    vector<double> cpt;
-    cpt += 1.0 / 21, 2.0 / 21, 3.0 / 21, 4.0 / 21, 5.0 / 21, 6.0 / 21,  //
-        1.0 / 25, 8.0 / 25, 3.0 / 25, 3.0 / 25, 5.0 / 25, 5.0 / 25;
+    const vector<double> cpt{
+        1.0 / 21, 2.0 / 21, 3.0 / 21, 4.0 / 21, 5.0 / 21, 6.0 / 21,  //
+        1.0 / 25, 8.0 / 25, 3.0 / 25, 3.0 / 25, 5.0 / 25, 5.0 / 25};
     ADT expected(A & B & C, cpt);
     CHECK(assert_equal(expected, actual));
   }

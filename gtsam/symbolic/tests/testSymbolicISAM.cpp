@@ -20,9 +20,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/assign/std/list.hpp> // for operator +=
-using namespace boost::assign;
-
 using namespace std;
 using namespace gtsam;
 
@@ -86,7 +83,7 @@ TEST( SymbolicISAM, iSAM )
   fullGraph += SymbolicFactor(_B_, _S_);
 
   // This ordering is chosen to match the one chosen by COLAMD during the ISAM update
-  Ordering ordering(list_of(_X_)(_B_)(_S_)(_E_)(_L_)(_T_));
+  Ordering ordering {_X_, _B_, _S_, _E_, _L_, _T_};
   SymbolicBayesTree expected = *fullGraph.eliminateMultifrontal(ordering);
 
   // Add factor on B and S

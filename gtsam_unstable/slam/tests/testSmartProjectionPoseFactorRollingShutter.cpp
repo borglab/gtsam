@@ -25,14 +25,12 @@
 #include <gtsam_unstable/slam/ProjectionFactorRollingShutter.h>
 #include <gtsam_unstable/slam/SmartProjectionPoseFactorRollingShutter.h>
 
-#include <boost/assign/std/map.hpp>
 #include <iostream>
 
 #include "gtsam/slam/tests/smartFactorScenarios.h"
 #define DISABLE_TIMING
 
 using namespace gtsam;
-using namespace boost::assign;
 using namespace std::placeholders;
 
 static const double rankTol = 1.0;

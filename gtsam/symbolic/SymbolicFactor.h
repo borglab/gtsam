@@ -22,7 +22,6 @@
 #include <gtsam/base/Testable.h>
 
 #include <boost/shared_ptr.hpp>
-#include <boost/assign/list_of.hpp>
 #include <boost/make_shared.hpp>
 
 #include <utility>
@@ -55,27 +54,27 @@ namespace gtsam {
 
     /** Construct unary factor */
     explicit SymbolicFactor(Key j) :
-      Base(boost::assign::cref_list_of<1>(j)) {}
+      Base(KeyVector{j}) {}
 
     /** Construct binary factor */
     SymbolicFactor(Key j1, Key j2) :
-      Base(boost::assign::cref_list_of<2>(j1)(j2)) {}
+      Base(KeyVector{j1, j2}) {}
 
     /** Construct ternary factor */
     SymbolicFactor(Key j1, Key j2, Key j3) :
-      Base(boost::assign::cref_list_of<3>(j1)(j2)(j3)) {}
+      Base(KeyVector{j1, j2, j3}) {}
 
     /** Construct 4-way factor */
     SymbolicFactor(Key j1, Key j2, Key j3, Key j4) :
-      Base(boost::assign::cref_list_of<4>(j1)(j2)(j3)(j4)) {}
+      Base(KeyVector{j1, j2, j3, j4}) {}
 
     /** Construct 5-way factor */
     SymbolicFactor(Key j1, Key j2, Key j3, Key j4, Key j5) :
-      Base(boost::assign::cref_list_of<5>(j1)(j2)(j3)(j4)(j5)) {}
+      Base(KeyVector{j1, j2, j3, j4, j5}) {}
 
     /** Construct 6-way factor */
     SymbolicFactor(Key j1, Key j2, Key j3, Key j4, Key j5, Key j6) :
-      Base(boost::assign::cref_list_of<6>(j1)(j2)(j3)(j4)(j5)(j6)) {}
+      Base(KeyVector{j1, j2, j3, j4, j5, j6}) {}
 
     /** Create symbolic version of any factor */
     explicit SymbolicFactor(const Factor& factor) : Base(factor.keys()) {}
@@ -125,15 +124,15 @@ namespace gtsam {
       return result;
     }
 
-    /** Constructor from a collection of keys - compatible with boost::assign::list_of and
-     *  boost::assign::cref_list_of */
+    /** Constructor from a collection of keys - compatible with boost assign::list_of and
+     *  boost assign::cref_list_of */
     template<class CONTAINER>
     static SymbolicFactor FromKeys(const CONTAINER& keys) {
       return SymbolicFactor(Base::FromKeys(keys));
     }
 
-    /** Constructor from a collection of keys - compatible with boost::assign::list_of and
-     *  boost::assign::cref_list_of */
+    /** Constructor from a collection of keys - compatible with boost assign::list_of and
+     *  boost assign::cref_list_of */
     template<class CONTAINER>
     static SymbolicFactor::shared_ptr FromKeysShared(const CONTAINER& keys) {
       return FromIteratorsShared(keys.begin(), keys.end());

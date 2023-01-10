@@ -42,16 +42,10 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/shared_ptr.hpp>
-#include <boost/tuple/tuple.hpp>
-#include <boost/assign/std/vector.hpp>
-
 #include <cmath>
 #include <list>
 #include <utility>
 #include <vector>
-
-using namespace boost::assign;
 
 #include <iostream>
 
@@ -79,8 +73,7 @@ TEST( GaussianJunctionTreeB, constructor2 ) {
   // linearize
   GaussianFactorGraph::shared_ptr fg = nlfg.linearize(values);
 
-  Ordering ordering;
-  ordering += X(1), X(3), X(5), X(7), X(2), X(6), X(4);
+  const Ordering ordering {X(1), X(3), X(5), X(7), X(2), X(6), X(4)};
 
   // create an ordering
   GaussianEliminationTree etree(*fg, ordering);

@@ -26,7 +26,6 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <boost/assign/list_of.hpp>
 
 namespace gtsam {
 namespace example {
@@ -223,10 +222,9 @@ inline Values createValues() {
 /* ************************************************************************* */
 inline VectorValues createVectorValues() {
   using namespace impl;
-  VectorValues c = boost::assign::pair_list_of<Key, Vector>
-    (_l1_, Vector2(0.0, -1.0))
-    (_x1_, Vector2(0.0, 0.0))
-    (_x2_, Vector2(1.5, 0.0));
+  VectorValues c {{_l1_, Vector2(0.0, -1.0)},
+                  {_x1_, Vector2(0.0, 0.0)},
+                  {_x2_, Vector2(1.5, 0.0)}};
   return c;
 }
 
@@ -547,9 +545,7 @@ inline GaussianFactorGraph createSingleConstraintGraph() {
 /* ************************************************************************* */
 inline VectorValues createSingleConstraintValues() {
   using namespace impl;
-  VectorValues config = boost::assign::pair_list_of<Key, Vector>
-    (_x_, Vector2(1.0, -1.0))
-    (_y_, Vector2(0.2, 0.1));
+  VectorValues config{{_x_, Vector2(1.0, -1.0)}, {_y_, Vector2(0.2, 0.1)}};
   return config;
 }
 
@@ -611,10 +607,9 @@ inline GaussianFactorGraph createMultiConstraintGraph() {
 /* ************************************************************************* */
 inline VectorValues createMultiConstraintValues() {
   using namespace impl;
-  VectorValues config = boost::assign::pair_list_of<Key, Vector>
-    (_x_, Vector2(-2.0, 2.0))
-    (_y_, Vector2(-0.1, 0.4))
-    (_z_, Vector2(-4.0, 5.0));
+  VectorValues config{{_x_, Vector2(-2.0, 2.0)},
+                      {_y_, Vector2(-0.1, 0.4)},
+                      {_z_, Vector2(-4.0, 5.0)}};
   return config;
 }
 

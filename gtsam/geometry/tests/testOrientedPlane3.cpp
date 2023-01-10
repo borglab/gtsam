@@ -20,12 +20,9 @@
 #include <gtsam/geometry/OrientedPlane3.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
-#include <boost/assign/std/vector.hpp>
 
-using namespace boost::assign;
 using namespace std::placeholders;
 using namespace gtsam;
-using namespace std;
 using boost::none;
 
 GTSAM_CONCEPT_TESTABLE_INST(OrientedPlane3)
