@@ -30,6 +30,7 @@ namespace gtsam {
 
   // Forward declarations
   class SymbolicConditional;
+  class HybridValues;
   class Ordering;
 
   /** SymbolicFactor represents a symbolic factor that specifies graph topology but is not
@@ -46,7 +47,7 @@ namespace gtsam {
     /** Overriding the shared_ptr typedef */
     typedef boost::shared_ptr<This> shared_ptr;
 
-    /// @name Standard Interface
+    /// @name Standard Constructors
     /// @{
 
     /** Default constructor for I/O */
@@ -106,10 +107,9 @@ namespace gtsam {
     }
 
     /// @}
-
     /// @name Advanced Constructors
     /// @{
-  public:
+  
     /** Constructor from a collection of keys */
     template<typename KEYITERATOR>
     static SymbolicFactor FromIterators(KEYITERATOR beginKey, KEYITERATOR endKey) {
@@ -142,6 +142,9 @@ namespace gtsam {
 
     /// @name Standard Interface
     /// @{
+
+    /// The `error` method throws an exception.
+    double error(const HybridValues& c) const override;
 
     /** Eliminate the variables in \c keys, in the order specified in \c keys, returning a
      *  conditional and marginal. */
