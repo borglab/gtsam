@@ -228,8 +228,8 @@ TEST(GaussianFactorGraph, gradient) {
 TEST(GaussianFactorGraph, transposeMultiplication) {
   GaussianFactorGraph A = createSimpleGaussianFactorGraph();
 
-  Errors e = std::list<Vector>{Vector2(0.0, 0.0), Vector2(15.0, 0.0),
-                               Vector2(0.0, -5.0), Vector2(-7.5, -5.0)};
+  Errors e = {Vector2(0.0, 0.0), Vector2(15.0, 0.0), Vector2(0.0, -5.0),
+              Vector2(-7.5, -5.0)};
 
   VectorValues expected;
   expected.insert(1, Vector2(-37.5, -50.0));
