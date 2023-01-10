@@ -625,17 +625,6 @@ virtual class GaussianBayesTree {
   gtsam::GaussianBayesNet* jointBayesNet(size_t key1, size_t key2) const;
 };
 
-#include <gtsam/linear/Errors.h>
-class Errors {
-    //Constructors
-    Errors();
-    Errors(const gtsam::VectorValues& V);
-
-    //Testable
-    void print(string s = "Errors");
-    bool equals(const gtsam::Errors& expected, double tol) const;
-};
-
 #include <gtsam/linear/GaussianISAM.h>
 class GaussianISAM {
   //Constructor
