@@ -62,10 +62,10 @@ namespace gtsam {
 
     /**
      * Constructor that takes an initializer list of shared pointers.
-     *  FactorGraph fg = {make_shared<MyFactor>(), ...};
+     *  SymbolicBayesNet bn = {make_shared<SymbolicConditional>(), ...};
      */
-    SymbolicBayesNet(std::initializer_list<boost::shared_ptr<SymbolicConditional>> sharedFactors)
-        : Base() {}
+    SymbolicBayesNet(std::initializer_list<boost::shared_ptr<SymbolicConditional>> conditionals)
+        : Base(conditionals) {}
 
     /// Construct from a single conditional
     SymbolicBayesNet(SymbolicConditional&& c) {

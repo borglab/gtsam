@@ -71,10 +71,8 @@ namespace gtsam {
      */
     template <class DERIVEDCONDITIONAL>
     GaussianBayesNet(
-        std::initializer_list<boost::shared_ptr<DERIVEDCONDITIONAL> >
-            sharedConditionals) {
-      for (auto&& gc : sharedConditionals) push_back(gc);
-    }
+        std::initializer_list<boost::shared_ptr<DERIVEDCONDITIONAL> > conditionals)
+        : Base(conditionals) {}
 
     /// Destructor
     virtual ~GaussianBayesNet() = default;
