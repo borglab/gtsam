@@ -684,7 +684,7 @@ TEST(ISAM2, marginalizeLeaves1) {
 
   isam.update(factors, values, FactorIndices(), constrainedKeys);
 
-  std::list<Key> leafKeys {0};
+  FastList<Key> leafKeys {0};
   EXPECT(checkMarginalizeLeaves(isam, leafKeys));
 }
 
@@ -714,7 +714,7 @@ TEST(ISAM2, marginalizeLeaves2) {
 
   isam.update(factors, values, FactorIndices(), constrainedKeys);
 
-  std::list<Key> leafKeys {0};
+  FastList<Key> leafKeys {0};
   EXPECT(checkMarginalizeLeaves(isam, leafKeys));
 }
 
@@ -753,7 +753,7 @@ TEST(ISAM2, marginalizeLeaves3) {
 
   isam.update(factors, values, FactorIndices(), constrainedKeys);
 
-  std::list<Key> leafKeys {0};
+  FastList<Key> leafKeys {0};
   EXPECT(checkMarginalizeLeaves(isam, leafKeys));
 }
 
@@ -778,7 +778,7 @@ TEST(ISAM2, marginalizeLeaves4) {
 
   isam.update(factors, values, FactorIndices(), constrainedKeys);
 
-  std::list<Key> leafKeys {1};
+  FastList<Key> leafKeys {1};
   EXPECT(checkMarginalizeLeaves(isam, leafKeys));
 }
 
@@ -789,7 +789,7 @@ TEST(ISAM2, marginalizeLeaves5)
   ISAM2 isam = createSlamlikeISAM2();
 
   // Marginalize
-  std::list<Key> marginalizeKeys {0};
+  FastList<Key> marginalizeKeys {0};
   EXPECT(checkMarginalizeLeaves(isam, marginalizeKeys));
 }
 
