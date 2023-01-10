@@ -33,7 +33,7 @@ template <typename A1, typename A2,
           typename B = typename Bearing<A1, A2>::result_type,
           typename R = typename Range<A1, A2>::result_type>
 class BearingRangeFactor
-    : public ExpressionFactorN<BearingRange<A1, A2>, A1, A2>, public EvaluateErrorInterface<A1, A2>{
+    : public ExpressionFactorN<BearingRange<A1, A2>, A1, A2> {
  private:
   typedef BearingRange<A1, A2> T;
   typedef ExpressionFactorN<T, A1, A2> Base;
@@ -41,7 +41,6 @@ class BearingRangeFactor
 
  public:
   typedef boost::shared_ptr<This> shared_ptr;
-  using EvaluateErrorInterface<A1, A2>::evaluateError;
 
   /// Default constructor
   BearingRangeFactor() {}
@@ -74,9 +73,8 @@ class BearingRangeFactor
                          Expression<A2>(keys[1]));
   }
 
-  virtual Vector evaluateError(const A1& a1, const A2& a2,
-      OptionalMatrixType H1, OptionalMatrixType H2) const override
-  {
+  Vector evaluateError(const A1& a1, const A2& a2,
+      OptionalMatrixType H1 = OptionalNone, OptionalMatrixType H2 = OptionalNone) const {
     std::vector<Matrix> Hs(2);
     const auto &keys = Factor::keys();
     const Vector error = this->unwhitenedError(

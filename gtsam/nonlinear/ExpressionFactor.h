@@ -28,97 +28,6 @@
 
 namespace gtsam {
 
-template <typename... ValueTypes>
-class EvaluateErrorInterface {
-public:
-  enum { N = sizeof...(ValueTypes) };
-
-private:
-  template <int I>
-  using IndexIsValid = typename std::enable_if<(I >= 1) && (I <= N),
-                                               void>::type;  // 1-indexed!
-
-public:
-  /**
-   * Override `evaluateError` to finish implementing an n-way factor.
-   *
-   * Both the `x` and `H` arguments are written here as parameter packs, but
-   * when overriding this method, you probably want to explicitly write them
-   * out.  For example, for a 2-way factor with variable types Pose3 and Point3,
-   * you should implement:
-   * ```
-   * Vector evaluateError(
-   *     const Pose3& x1, const Point3& x2,
-   *     boost::optional<Matrix&> H1 = boost::none,
-   *     boost::optional<Matrix&> H2 = boost::none) const override { ... }
-   * ```
-   *
-   * If any of the optional Matrix reference arguments are specified, it should
-   * compute both the function evaluation and its derivative(s) in the requested
-   * variables.
-   *
-   * @param x The values of the variables to evaluate the error for.  Passed in
-   * as separate arguments.
-   * @param[out] H The Jacobian with respect to each variable (optional).
-   */
-  virtual Vector evaluateError(const ValueTypes&... x, OptionalMatrixTypeT<ValueTypes>... H) const = 0;
-
-#ifdef NO_BOOST_CPP17
-  // if someone uses the evaluateError function by supplying all the optional
-  // arguments then redirect the call to the one which takes pointers
-  Vector evaluateError(const ValueTypes&... x, MatrixTypeT<ValueTypes>&... H) const {
-    return evaluateError(x..., (&H)...);
-  }
-#endif
-
-  /// @}
-  /// @name Convenience method overloads
-  /// @{
-
-  /** No-Jacobians requested function overload.
-   * This specializes the version below to avoid recursive calls since this is
-   * commonly used.
-   *
-   * e.g. `const Vector error = factor.evaluateError(pose, point);`
-   */
-  inline Vector evaluateError(const ValueTypes&... x) const {
-    return evaluateError(x..., OptionalMatrixTypeT<ValueTypes>()...);
-  }
-
-  /** Some (but not all) optional Jacobians are omitted (function overload)
-   *
-   * e.g. `const Vector error = factor.evaluateError(pose, point, Hpose);`
-   */
-  template <typename... OptionalJacArgs, typename = IndexIsValid<sizeof...(OptionalJacArgs) + 1>>
-  inline Vector evaluateError(const ValueTypes&... x, OptionalJacArgs&&... H) const {
-#ifdef NO_BOOST_CPP17
-    // A check to ensure all arguments passed are all either matrices or are all pointers to matrices
-    constexpr bool are_all_mat = (... && (std::is_same<Matrix, std::decay_t<OptionalJacArgs>>::value));
-    constexpr bool are_all_ptrs = (... && (std::is_same<OptionalMatrixType, std::decay_t<OptionalJacArgs>>::value ||
-                                           std::is_same<OptionalNoneType, std::decay_t<OptionalJacArgs>>::value));
-    static_assert((are_all_mat || are_all_ptrs),
-                  "Arguments that are passed to the evaluateError function can only be of following the types: Matrix, "
-                  "or Matrix*");
-    // if they pass all matrices then we want to pass their pointers instead
-    if constexpr (are_all_mat) {
-      return evaluateError(x..., (&H)...);
-    } else {
-      return evaluateError(x..., std::forward<OptionalJacArgs>(H)..., static_cast<OptionalMatrixType>(OptionalNone));
-    }
-#else
-    // A check to ensure all arguments passed are all either matrices or are optionals of matrix references
-    constexpr bool are_all_mat = (... && (std::is_same<Matrix&, OptionalJacArgs>::value ||
-                                          std::is_same<OptionalMatrixType, std::decay_t<OptionalJacArgs>>::value ||
-                                          std::is_same<OptionalNoneType, std::decay_t<OptionalJacArgs>>::value));
-    static_assert(
-        are_all_mat,
-        "Arguments that are passed to the evaluateError function can only be of following the types: Matrix&, "
-        "boost::optional<Matrix&>, or boost::none_t");
-    return evaluateError(x..., std::forward<OptionalJacArgs>(H)..., OptionalNone);
-#endif
-  }
-};
-
 /**
  * Factor that supports arbitrary expressions via AD.
  *
@@ -398,14 +307,14 @@ struct traits<ExpressionFactorN<T, Args...>>
  * @deprecated Prefer the more general ExpressionFactorN<>.
  */
 template <typename T, typename A1, typename A2>
-class GTSAM_DEPRECATED ExpressionFactor2 : public ExpressionFactorN<T, A1, A2>, public EvaluateErrorInterface<A1, A2> {
+class GTSAM_DEPRECATED ExpressionFactor2 : public ExpressionFactorN<T, A1, A2> {
 public:
   /// Destructor
   ~ExpressionFactor2() override {}
 
   /// Backwards compatible evaluateError, to make existing tests compile
-  virtual Vector evaluateError(const A1& a1, const A2& a2, OptionalMatrixType H1,
-                               OptionalMatrixType H2) const override {
+  Vector evaluateError(const A1& a1, const A2& a2, OptionalMatrixType H1 = OptionalNone,
+                               OptionalMatrixType H2 = OptionalNone) const {
     Values values;
     values.insert(this->keys_[0], a1);
     values.insert(this->keys_[1], a2);
@@ -415,6 +324,7 @@ public:
     if (H2) (*H2) = H[1];
     return error;
   }
+
 
   /// Recreate expression from given keys_ and measured_, used in load
   /// Needed to deserialize a derived factor

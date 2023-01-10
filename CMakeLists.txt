@@ -6,14 +6,10 @@ if(NOT DEFINED CMAKE_MACOSX_RPATH)
   set(CMAKE_MACOSX_RPATH 0)
 endif()
 
-option(GTSAM_NO_BOOST_CPP17 "Require and use boost" ON)
 add_definitions(-Wno-deprecated-declarations)
 add_definitions(-ftemplate-backtrace-limit=0)
 
 set(CMAKE_CXX_STANDARD 17)
-if (GTSAM_NO_BOOST_CPP17)
-  add_definitions(-DNO_BOOST_CPP17)
-endif()
 
 # Set the version number for the library
 set (GTSAM_VERSION_MAJOR 4)
@@ -60,10 +56,7 @@ endif()
 include(cmake/HandleGeneralOptions.cmake)   # CMake build options
 
 # Libraries:
-# if (NOT GTSAM_NO_BOOST_CPP17)
-  include(cmake/HandleBoost.cmake)            # Boost
-# endif()
-  
+include(cmake/HandleBoost.cmake)            # Boost
 include(cmake/HandleCCache.cmake)           # ccache
 include(cmake/HandleCPack.cmake)            # CPack
 include(cmake/HandleEigen.cmake)            # Eigen3

@@ -34,10 +34,9 @@ struct Bearing;
  */
 template <typename A1, typename A2,
           typename T = typename Bearing<A1, A2>::result_type>
-struct BearingFactor : public ExpressionFactorN<T, A1, A2>, public EvaluateErrorInterface<A1, A2>{
+struct BearingFactor : public ExpressionFactorN<T, A1, A2> {
   typedef ExpressionFactorN<T, A1, A2> Base;
 
-  using EvaluateErrorInterface<A1,A2>::evaluateError;
   /// default constructor
   BearingFactor() {}
 
@@ -62,9 +61,8 @@ struct BearingFactor : public ExpressionFactorN<T, A1, A2>, public EvaluateError
     Base::print(s, kf);
   }
   
-  virtual Vector evaluateError(const A1& a1, const A2& a2,
-    OptionalMatrixType H1, OptionalMatrixType H2) const override
-  {
+  Vector evaluateError(const A1& a1, const A2& a2,
+    OptionalMatrixType H1 = OptionalNone, OptionalMatrixType H2 = OptionalNone) const {
     std::vector<Matrix> Hs(2);
     const auto &keys = Factor::keys();
     const Vector error = this->unwhitenedError(

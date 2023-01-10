@@ -99,12 +99,8 @@ struct PointPrior3D: public NoiseModelFactor1<Point3> {
 /**
  * Models a linear 3D measurement between 3D points
  */
-<<<<<<< HEAD
 struct Simulated3DMeasurement: public NoiseModelFactorN<Point3, Point3> {
-=======
-struct Simulated3DMeasurement: public NoiseModelFactor2<Point3, Point3> {
   using NoiseModelFactor2<Point3, Point3>::evaluateError;
->>>>>>> 7b3c40e92 (everything compiles but tests fail in no boost mode)
 
   Point3 measured_; ///< Linear displacement between a pose and landmark
 

@@ -186,11 +186,9 @@ namespace gtsam {
     }
 
     /* ************************************************************************* */
-#ifdef NO_BOOST_CPP17
     gtsam::Vector whitenedError(const gtsam::Values& x, std::vector<Matrix>& H) const {
 	  return whitenedError(x, &H);
     }
-#endif
 
 
     /* ************************************************************************* */

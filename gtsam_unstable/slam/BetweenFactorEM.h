@@ -228,11 +228,9 @@ public:
     return err_wh_eq;
   }
 
-#ifdef NO_BOOST_CPP17
   Vector whitenedError(const Values& x, std::vector<Matrix>& H) const {
 	  return whitenedError(x, &H);
   }
-#endif
 
   /* ************************************************************************* */
   Vector calcIndicatorProb(const Values& x) const {

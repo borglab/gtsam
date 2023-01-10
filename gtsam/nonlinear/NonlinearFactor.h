@@ -33,11 +33,7 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-/*
- * Some typedef based aliases to compile these interfaces without boost if
- * the NO_BOOST_C17 flag is enabled
- */
-#ifdef NO_BOOST_CPP17
+
 // These typedefs and aliases will help with making the evaluateError interface
 // independent of boost
 using OptionalNoneType = std::nullptr_t;
@@ -52,16 +48,7 @@ using OptionalMatrixType = Matrix*;
 // independent of boost
 using OptionalMatrixVecType = std::vector<Matrix>*;
 #define OptionalMatrixVecNone static_cast<std::vector<Matrix>*>(nullptr)
-#else
-// creating a none value to use when declaring our interfaces
-using OptionalNoneType = boost::none_t;
-#define OptionalNone boost::none
-template <typename T = void>
-using OptionalMatrixTypeT = boost::optional<Matrix&>;
-using OptionalMatrixType = boost::optional<Matrix&>;
-using OptionalMatrixVecType = boost::optional<std::vector<Matrix>&>;
-#define OptionalMatrixVecNone boost::none
-#endif
+
 /**
  * Nonlinear factor base class
  *
@@ -258,12 +245,12 @@ public:
    * both the function evaluation and its derivative(s) in H.
    */
   virtual Vector unwhitenedError(const Values& x, OptionalMatrixVecType H = OptionalMatrixVecNone) const = 0;
-#ifdef NO_BOOST_CPP17
+
   // support taking in the actual vector instead of the pointer as well
   Vector unwhitenedError(const Values& x, std::vector<Matrix>& H) const {
 	  return unwhitenedError(x, &H);
   }
-#endif
+
   /**
    * Vector of errors, whitened
    * This is the raw error, i.e., i.e. \f$ (h(x)-z)/\sigma \f$ in case of a Gaussian
@@ -606,13 +593,11 @@ protected:
   virtual Vector evaluateError(const ValueTypes&... x,
                                OptionalMatrixTypeT<ValueTypes>... H) const = 0;
 
-#ifdef NO_BOOST_CPP17
   // if someone uses the evaluateError function by supplying all the optional
   // arguments then redirect the call to the one which takes pointers
   Vector evaluateError(const ValueTypes&... x, MatrixTypeT<ValueTypes>&... H) const {
 	  return evaluateError(x..., (&H)...);
   }
-#endif
 
   /// @}
   /// @name Convenience method overloads
@@ -634,7 +619,6 @@ protected:
    */
   template <typename... OptionalJacArgs, typename = IndexIsValid<sizeof...(OptionalJacArgs) + 1>>
   inline Vector evaluateError(const ValueTypes&... x, OptionalJacArgs&&... H) const {
-#ifdef NO_BOOST_CPP17
 	// A check to ensure all arguments passed are all either matrices or are all pointers to matrices
     constexpr bool are_all_mat = (... && (std::is_same<Matrix, std::decay_t<OptionalJacArgs>>::value));
     constexpr bool are_all_ptrs = (... && (std::is_same<OptionalMatrixType, std::decay_t<OptionalJacArgs>>::value ||
@@ -648,16 +632,6 @@ protected:
 	} else {
     return evaluateError(x..., std::forward<OptionalJacArgs>(H)..., static_cast<OptionalMatrixType>(OptionalNone));
 	}
-#else
-	// A check to ensure all arguments passed are all either matrices or are optionals of matrix references
-    constexpr bool are_all_mat = (... && (std::is_same<Matrix&, OptionalJacArgs>::value ||
-                                          std::is_same<OptionalMatrixType, std::decay_t<OptionalJacArgs>>::value ||
-                                          std::is_same<OptionalNoneType, std::decay_t<OptionalJacArgs>>::value));
-    static_assert(are_all_mat,
-                  "Arguments that are passed to the evaluateError function can only be of following the types: Matrix&, "
-                  "boost::optional<Matrix&>, or boost::none_t");
-    return evaluateError(x..., std::forward<OptionalJacArgs>(H)..., OptionalNone);
-#endif
   }
 
   /// @}
