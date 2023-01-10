@@ -33,4 +33,10 @@ bool SymbolicConditional::equals(const This& c, double tol) const {
   return BaseFactor::equals(c) && BaseConditional::equals(c);
 }
 
+/* ************************************************************************* */
+double SymbolicConditional::logProbability(const HybridValues& c) const {
+  throw std::runtime_error("SymbolicConditional::logProbability is not implemented");
+}
+
+
 }  // namespace gtsam
