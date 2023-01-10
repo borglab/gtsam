@@ -62,7 +62,7 @@ public:
   }
 
   static Point3 unrotate(const Rot2& R, const Point3& p,
-      boost::optional<Matrix&> HR = boost::none) {
+      OptionalMatrixType HR = OptionalNone) {
     Point3 q = Rot3::Yaw(R.theta()).unrotate(p, HR, boost::none);
     if (HR) {
       // assign to temporary first to avoid error in Win-Debug mode
@@ -115,7 +115,7 @@ public:
    */
   Vector evaluateError(const Rot3& nRb, OptionalMatrixType H) const override {
     // measured bM = nRb� * nM + b
-    Point3 hx = nRb.unrotate(nM_, H, boost::none) + bias_;
+    Point3 hx = nRb.unrotate(nM_, H, OptionalNone) + bias_;
     return (hx - measured_);
   }
 };

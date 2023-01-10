@@ -381,8 +381,8 @@ struct NoiseModelFactorAliases<T1, T2, T3, T4, T5, T6, TExtra...> {
  *
  *   Vector evaluateError(
  *       const Pose3& T, const Point3& p,
- *       boost::optional<Matrix&> H_T = boost::none,
- *       boost::optional<Matrix&> H_p = boost::none) const override {
+ *       OptionalMatrixType H_T = OptionalNone,
+ *       OptionalMatrixType H_p = OptionalNone) const override {
  *     Matrix36 t_H_T;  // partial derivative of translation w.r.t. pose T
  *
  *     // Only compute t_H_T if needed:
@@ -449,7 +449,7 @@ protected:
 
   /// @}
 
-  /* Like std::void_t, except produces `boost::optional<Matrix&>` instead of
+  /* Like std::void_t, except produces `OptionalMatrixType` instead of
    * `void`. Used to expand fixed-type parameter-packs with same length as
    * ValueTypes. */
 
@@ -582,8 +582,8 @@ protected:
    * ```
    * Vector evaluateError(
    *     const Pose3& x1, const Point3& x2,
-   *     boost::optional<Matrix&> H1 = boost::none,
-   *     boost::optional<Matrix&> H2 = boost::none) const override { ... }
+   *     OptionalMatrixType H1 = OptionalNone,
+   *     OptionalMatrixType H2 = OptionalNone) const override { ... }
    * ```
    *
    * If any of the optional Matrix reference arguments are specified, it should
