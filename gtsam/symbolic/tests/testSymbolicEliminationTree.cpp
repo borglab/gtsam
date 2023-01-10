@@ -31,6 +31,9 @@ using namespace gtsam::symbol_shorthand;
 using namespace std;
 using sharedNode = SymbolicEliminationTree::sharedNode;
 
+// Use list_of replacement defined in symbolicExampleGraphs.h
+using ChildNodes = ChainedVector<sharedNode>;
+
 class EliminationTreeTester {
  public:
   // build hardcoded tree
@@ -65,8 +68,7 @@ class EliminationTreeTester {
     return tree;
   }
 
-  static SymbolicEliminationTree MakeTree(
-      const std::vector<sharedNode>& roots) {
+  static SymbolicEliminationTree MakeTree(const ChildNodes::Result& roots) {
     SymbolicEliminationTree et;
     et.roots_.assign(roots.begin(), roots.end());
     return et;
@@ -80,9 +82,6 @@ static sharedNode Leaf(Key key, const SymbolicFactorGraph& factors) {
   node->factors.assign(factors.begin(), factors.end());
   return node;
 }
-
-// Use list_of replacement defined in symbolicExampleGraphs.h
-using ChildNodes = ChainedVector<sharedNode>;
 
 // Create a node with children.
 static sharedNode Node(Key key, const SymbolicFactorGraph& factors,
