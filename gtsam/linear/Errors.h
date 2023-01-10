@@ -20,64 +20,54 @@
 #pragma once
 
 #include <gtsam/base/FastList.h>
-#include <gtsam/base/Vector.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/Vector.h>
 
 #include <string>
 
 namespace gtsam {
 
-  // Forward declarations
-  class VectorValues;
+// Forward declarations
+class VectorValues;
 
-  /** vector of errors */
-  class GTSAM_EXPORT Errors : public FastList<Vector> {
+/// Errors is a vector of errors.
+using Errors = FastList<Vector>;
 
-    using Base = FastList<Vector>;
+/// Break V into pieces according to its start indices.
+GTSAM_EXPORT Errors createErrors(const VectorValues& V);
 
-  public:
+/// Print an Errors instance.
+GTSAM_EXPORT void print(const Errors& e, const std::string& s = "Errors");
 
-    using Base::Base; // inherit constructors
+// Check equality for unit testing.
+GTSAM_EXPORT bool equality(const Errors& actual, const Errors& expected,
+                           double tol = 1e-9);
 
-    /** Default constructor */
-    Errors() = default;
+/// Addition.
+GTSAM_EXPORT Errors operator+(const Errors& a, const Errors& b);
 
-    /** break V into pieces according to its start indices */
-    Errors(const VectorValues&V);
+/// Subtraction.
+GTSAM_EXPORT Errors operator-(const Errors& a, const Errors& b);
 
-    /** print */
-    void print(const std::string& s = "Errors") const;
+/// Negation.
+GTSAM_EXPORT Errors operator-(const Errors& a);
 
-    /** equals, for unit testing */
-    bool equals(const Errors& expected, double tol=1e-9) const;
+/// Dot product.
+GTSAM_EXPORT double dot(const Errors& a, const Errors& b);
 
-    /** Addition */
-    Errors operator+(const Errors& b) const;
+/// BLAS level 2 style AXPY, `y := alpha*x + y`
+GTSAM_EXPORT void axpy(double alpha, const Errors& x, Errors& y);
 
-    /** subtraction */
-    Errors operator-(const Errors& b) const;
+/// traits
+template <>
+struct traits<Errors> {
+  static void Print(const Errors& e, const std::string& str = "") {
+    print(e, str);
+  }
+  static bool Equals(const Errors& actual, const Errors& expected,
+                     double tol = 1e-8) {
+    return equality(actual, expected, tol);
+  }
+};
 
-    /** negation */
-    Errors operator-() const ;
-
-  }; // Errors
-
-  /**
-  * dot product
-  */
-  GTSAM_EXPORT double dot(const Errors& a, const Errors& b);
-
-  /**
-  * BLAS level 2 style
-  */
-  GTSAM_EXPORT void axpy(double alpha, const Errors& x, Errors& y);
-
-  /** print with optional string */
-  GTSAM_EXPORT void print(const Errors& a, const std::string& s = "Error");
-
-  /// traits
-  template<>
-  struct traits<Errors> : public Testable<Errors> {
-  };
-
-} //\ namespace gtsam
+}  // namespace gtsam
