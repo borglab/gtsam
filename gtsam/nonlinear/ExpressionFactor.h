@@ -343,7 +343,8 @@ protected:
   ExpressionFactor2() {}
 
   /// Constructor takes care of keys, but still need to call initialize
-  ExpressionFactor2(Key key1, Key key2, const SharedNoiseModel& noiseModel, const T& measurement)
+  ExpressionFactor2(Key key1, Key key2, const SharedNoiseModel& noiseModel,
+                    const T &measurement)
       : ExpressionFactorN<T, A1, A2>({key1, key2}, noiseModel, measurement) {}
 };
 // ExpressionFactor2

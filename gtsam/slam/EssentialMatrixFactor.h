@@ -41,6 +41,7 @@ class EssentialMatrixFactor : public NoiseModelFactorN<EssentialMatrix> {
 
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
+
   /**
    *  Constructor
    *  @param key Essential Matrix variable key
@@ -119,6 +120,7 @@ class EssentialMatrixFactor2
  public:
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
+
   /**
    *  Constructor
    *  @param key1 Essential Matrix variable key
@@ -240,6 +242,7 @@ class EssentialMatrixFactor3 : public EssentialMatrixFactor2 {
  public:
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
+
   /**
    *  Constructor
    *  @param key1 Essential Matrix variable key
@@ -342,6 +345,7 @@ class EssentialMatrixFactor4
  public:
    // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
+
   /**
    *  Constructor
    *  @param keyE Essential Matrix (from camera B to A) variable key

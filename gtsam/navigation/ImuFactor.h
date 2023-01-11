@@ -270,6 +270,9 @@ private:
 
 public:
 
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
   /** Default constructor - only use for serialization */
   ImuFactor2() {}
 

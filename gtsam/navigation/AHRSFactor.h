@@ -142,6 +142,7 @@ public:
 
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
+
   /** Shorthand for a smart pointer to a factor */
 #if !defined(_MSC_VER) && __GNUC__ == 4 && __GNUC_MINOR__ > 5
   typedef typename boost::shared_ptr<AHRSFactor> shared_ptr;

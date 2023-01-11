@@ -85,6 +85,7 @@ class FrobeniusFactor : public NoiseModelFactorN<Rot, Rot> {
 
   // Provide access to the Matrix& version of evaluateError:
   using NoiseModelFactor2<Rot, Rot>::evaluateError;
+
   /// Constructor
   FrobeniusFactor(Key j1, Key j2, const SharedNoiseModel& model = nullptr)
       : NoiseModelFactorN<Rot, Rot>(ConvertNoiseModel(model, Dim), j1,
@@ -113,7 +114,9 @@ class FrobeniusBetweenFactor : public NoiseModelFactorN<Rot, Rot> {
   enum { Dim = Rot::VectorN2::RowsAtCompileTime };
 
  public:
+  // Provide access to the Matrix& version of evaluateError:
   using NoiseModelFactor2<Rot, Rot>::evaluateError;
+
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   /// @name Constructor

@@ -32,7 +32,8 @@ namespace gtsam {
   public:
     typedef VALUE T;
     // Provide access to the Matrix& version of evaluateError:
-	  using NoiseModelFactor1<VALUE>::evaluateError;
+    using NoiseModelFactor1<VALUE>::evaluateError;
+
 
   private:
 
@@ -113,10 +114,10 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(prior_);
     }
 
-	// Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
-	enum { NeedsToAlign = (sizeof(T) % 16) == 0 };
+  // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
+  enum { NeedsToAlign = (sizeof(T) % 16) == 0 };
   public:
-	GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
   };
 
   /// traits

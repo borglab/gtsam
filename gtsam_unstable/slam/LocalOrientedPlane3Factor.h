@@ -42,6 +42,7 @@ class GTSAM_UNSTABLE_EXPORT LocalOrientedPlane3Factor
 public:
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
+
   /// Constructor
   LocalOrientedPlane3Factor() {}
 

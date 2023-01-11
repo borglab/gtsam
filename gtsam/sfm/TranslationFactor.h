@@ -45,7 +45,9 @@ class TranslationFactor : public NoiseModelFactorN<Point3, Point3> {
   Point3 measured_w_aZb_;
 
  public:
+  // Provide access to the Matrix& version of evaluateError:
   using NoiseModelFactor2<Point3, Point3>::evaluateError;
+
   /// default constructor
   TranslationFactor() {}
 

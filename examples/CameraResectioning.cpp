@@ -46,8 +46,7 @@ public:
   }
 
   /// evaluate the error
-  Vector evaluateError(const Pose3& pose, OptionalMatrixType H =
-      OptionalNone) const override {
+  Vector evaluateError(const Pose3& pose, OptionalMatrixType H) const override {
     PinholeCamera<Cal3_S2> camera(pose, *K_);
     return camera.project(P_, H, OptionalNone, OptionalNone) - p_;
   }

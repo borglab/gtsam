@@ -31,6 +31,7 @@ class PoseToPointFactor : public NoiseModelFactorN<POSE, POINT> {
  public:
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
+
   // shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<PoseToPointFactor> shared_ptr;
 

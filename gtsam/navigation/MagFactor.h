@@ -37,6 +37,7 @@ class MagFactor: public NoiseModelFactorN<Rot2> {
   const Point3 bias_; ///< bias
 
 public:
+  // Provide access to Matrix& version of evaluateError:
   using NoiseModelFactor1<Rot2>::evaluateError;
 
   /**
@@ -94,7 +95,9 @@ class MagFactor1: public NoiseModelFactorN<Rot3> {
   const Point3 bias_; ///< bias
 
 public:
+  // Provide access to Matrix& version of evaluateError:
   using NoiseModelFactor1<Rot3>::evaluateError;
+
 
   /** Constructor */
   MagFactor1(Key key, const Point3& measured, double scale,
@@ -131,7 +134,9 @@ class MagFactor2: public NoiseModelFactorN<Point3, Point3> {
   const Rot3 bRn_; ///< The assumed known rotation from nav to body
 
 public:
+  // Provide access to Matrix& version of evaluateError:
   using NoiseModelFactor2<Point3, Point3>::evaluateError;
+
 
   /** Constructor */
   MagFactor2(Key key1, Key key2, const Point3& measured, const Rot3& nRb,
@@ -172,7 +177,9 @@ class MagFactor3: public NoiseModelFactorN<double, Unit3, Point3> {
   const Rot3 bRn_; ///< The assumed known rotation from nav to body
 
 public:
+  // Provide access to Matrix& version of evaluateError:
   using NoiseModelFactor3<double, Unit3, Point3>::evaluateError;
+
 
   /** Constructor */
   MagFactor3(Key key1, Key key2, Key key3, const Point3& measured,

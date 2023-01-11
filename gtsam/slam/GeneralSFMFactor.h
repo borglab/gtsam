@@ -77,7 +77,7 @@ public:
   typedef NoiseModelFactorN<CAMERA, LANDMARK> Base;///< typedef for the base class
 
   // Provide access to the Matrix& version of evaluateError:
-  using Base::evaluateError;//
+  using Base::evaluateError;
 
   // shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<This> shared_ptr;

@@ -42,7 +42,9 @@ class GTSAM_EXPORT ShonanFactor : public NoiseModelFactorN<SOn, SOn> {
   using Rot = typename std::conditional<d == 2, Rot2, Rot3>::type;
 
 public:
+  // Provide access to the Matrix& version of evaluateError:
   using NoiseModelFactor2<SOn, SOn>::evaluateError;
+
   /// @name Constructor
   /// @{
 

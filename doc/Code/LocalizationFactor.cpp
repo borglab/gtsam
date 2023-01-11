@@ -3,6 +3,7 @@ class UnaryFactor: public NoiseModelFactor1<Pose2> {
   
 public:
   using gtsam::NoiseModelFactor1<Pose2>::evaluateError;
+
   UnaryFactor(Key j, double x, double y, const SharedNoiseModel& model):
     NoiseModelFactor1<Pose2>(model, j), mx_(x), my_(y) {}
 

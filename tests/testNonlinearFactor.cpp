@@ -337,8 +337,11 @@ class TestFactor1 : public NoiseModelFactor1<double> {
 
  public:
   typedef NoiseModelFactor1<double> Base;
+  // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
+
   TestFactor1() : Base(noiseModel::Diagonal::Sigmas(Vector1(2.0)), L(1)) {}
+  // Provide access to the Matrix& version of evaluateError:
   using Base::NoiseModelFactor1;  // inherit constructors
 
   Vector evaluateError(const double& x1, OptionalMatrixType H1) const override {
@@ -391,7 +394,9 @@ class TestFactor4 : public NoiseModelFactor4<double, double, double, double> {
   typedef NoiseModelFactor4<double, double, double, double> Base;
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
+
   TestFactor4() : Base(noiseModel::Diagonal::Sigmas((Vector(1) << 2.0).finished()), X(1), X(2), X(3), X(4)) {}
+  // Provide access to the Matrix& version of evaluateError:
   using Base::NoiseModelFactor4;  // inherit constructors
 
   Vector
@@ -482,6 +487,7 @@ public:
   typedef NoiseModelFactor5<double, double, double, double, double> Base;
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
+
   TestFactor5() : Base(noiseModel::Diagonal::Sigmas((Vector(1) << 2.0).finished()), X(1), X(2), X(3), X(4), X(5)) {}
 
   Vector
@@ -531,6 +537,7 @@ public:
   typedef NoiseModelFactor6<double, double, double, double, double, double> Base;
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
+
   TestFactor6() : Base(noiseModel::Diagonal::Sigmas((Vector(1) << 2.0).finished()), X(1), X(2), X(3), X(4), X(5), X(6)) {}
 
   Vector
@@ -587,6 +594,7 @@ public:
   typedef NoiseModelFactorN<double, double, double, double> Base;
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
+
   using Type1 = ValueType<1>;  // Test that we can use the ValueType<> template
 
   TestFactorN() : Base(noiseModel::Diagonal::Sigmas((Vector(1) << 2.0).finished()), X(1), X(2), X(3), X(4)) {}

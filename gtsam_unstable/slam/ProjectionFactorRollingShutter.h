@@ -64,6 +64,7 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorRollingShutter
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
+
   /// shorthand for this class
   typedef ProjectionFactorRollingShutter This;
 

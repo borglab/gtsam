@@ -71,7 +71,9 @@ class UnaryFactor: public NoiseModelFactorN<Pose2> {
   double mx_, my_;
 
  public:
+  // Provide access to Matrix& version of evaluateError:
   using NoiseModelFactor1<Pose2>::evaluateError;
+
   /// shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<UnaryFactor> shared_ptr;
 

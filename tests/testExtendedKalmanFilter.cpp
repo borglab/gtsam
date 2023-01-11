@@ -249,6 +249,7 @@ protected:
 public:
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
+
   NonlinearMeasurementModel(){}
 
   NonlinearMeasurementModel(const Symbol& TestKey, Vector z) :

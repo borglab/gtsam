@@ -86,7 +86,7 @@ Pose3Upright Pose3Upright::inverse(OptionalJacobian<4, 4> H1) const {
     return Pose3Upright(T_.inverse(), -z_);
   }
   OptionalJacobian<3, 3>::Jacobian H3x3;
-  // TODO: Could not use reference to a view into H1 and reuse memory
+  // TODO(kartikarcot): Could not use reference to a view into H1 and reuse memory
   // Eigen::Ref<Eigen::Matrix<double, 3, 3>> H3x3 = H1->topLeftCorner(3,3);
   Pose3Upright result(T_.inverse(H3x3), -z_);
   Matrix H1_ = -I_4x4;
@@ -102,7 +102,7 @@ Pose3Upright Pose3Upright::compose(const Pose3Upright& p2,
   if (!H1 && !H2)
     return Pose3Upright(T_.compose(p2.T_), z_ + p2.z_);
 
-  // TODO: Could not use reference to a view into H1 and reuse memory
+  // TODO(kartikarcot): Could not use reference to a view into H1 and reuse memory
   OptionalJacobian<3, 3>::Jacobian H3x3;
   Pose3Upright result(T_.compose(p2.T_, H3x3), z_ + p2.z_);
   if (H1) {
@@ -121,7 +121,7 @@ Pose3Upright Pose3Upright::between(const Pose3Upright& p2,
   if (!H1 && !H2)
     return Pose3Upright(T_.between(p2.T_), p2.z_ - z_);
 
-  // TODO: Could not use reference to a view into H1 and H2 to reuse memory
+  // TODO(kartikarcot): Could not use reference to a view into H1 and H2 to reuse memory
   OptionalJacobian<3, 3>::Jacobian H3x3_1, H3x3_2;
   Pose3Upright result(T_.between(p2.T_, H3x3_1, H3x3_2), p2.z_ - z_);
   if (H1) {

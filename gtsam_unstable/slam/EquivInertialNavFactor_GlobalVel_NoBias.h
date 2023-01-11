@@ -112,6 +112,7 @@ public:
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
+
   // shorthand for a smart pointer to a factor
   typedef typename boost::shared_ptr<EquivInertialNavFactor_GlobalVel_NoBias> shared_ptr;
 

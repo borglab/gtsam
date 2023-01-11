@@ -329,7 +329,9 @@ inline Matrix H(const Point2& v) {
 
 struct UnaryFactor: public gtsam::NoiseModelFactorN<Point2> {
 
+  // Provide access to the Matrix& version of evaluateError:
   using gtsam::NoiseModelFactor1<Point2>::evaluateError;
+
   Point2 z_;
 
   UnaryFactor(const Point2& z, const SharedNoiseModel& model, Key key) :
