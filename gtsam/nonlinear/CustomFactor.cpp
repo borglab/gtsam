@@ -43,7 +43,7 @@ Vector CustomFactor::unwhitenedError(const Values& x, OptionalMatrixVecType H) c
        *    return error
        * ```
        */
-      return this->error_function_(*this, x, &(*H));
+      return this->error_function_(*this, x, H);
     } else {
       /*
        * In this case, we pass the a `nullptr` to pybind, and it will translate to `None` in Python.

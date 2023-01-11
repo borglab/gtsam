@@ -35,7 +35,7 @@ namespace gtsam {
 
 /* ************************************************************************* */
 
-/* These typedefs and aliases will help with making the evaluateError interface
+/** These typedefs and aliases will help with making the evaluateError interface
 * independent of boost
 * TODO(kartikarcot): Change this to OptionalMatrixNone
 * This typedef is used to indicate that the Jacobian is not required
@@ -45,13 +45,13 @@ namespace gtsam {
 */
 #define OptionalNone static_cast<Matrix*>(nullptr)
 
-/* This typedef will be used everywhere boost::optional<Matrix&> reference was used
+/** This typedef will be used everywhere boost::optional<Matrix&> reference was used
  * previously. This is used to indicate that the Jacobian is optional. In the future
  * we will change this to OptionalJacobian
  */
 using OptionalMatrixType = Matrix*;
 
-/* The OptionalMatrixVecType is a pointer to a vector of matrices. It will
+/** The OptionalMatrixVecType is a pointer to a vector of matrices. It will
  * be used in situations where a vector of matrices is optional, like in 
  * unwhitenedError. */
 using OptionalMatrixVecType = std::vector<Matrix>*;
@@ -253,11 +253,11 @@ public:
    */
   virtual Vector unwhitenedError(const Values& x, OptionalMatrixVecType H = nullptr) const = 0;
 
-  // support taking in the actual vector instead of the pointer as well
-  // to get access to this version of the function from derived classes
-  // one will need to use the "using" keyword and specify that like this:
-  // public:
-  //   using NoiseModelFactor::unwhitenedError;
+  /** support taking in the actual vector instead of the pointer as well
+  * to get access to this version of the function from derived classes
+  * one will need to use the "using" keyword and specify that like this:
+  * public:
+  *   using NoiseModelFactor::unwhitenedError; */
   Vector unwhitenedError(const Values& x, std::vector<Matrix>& H) const {
     return unwhitenedError(x, &H);
   }
@@ -652,7 +652,7 @@ protected:
     static_assert((are_all_mat || are_all_ptrs),
                   "Arguments that are passed to the evaluateError function can only be of following the types: Matrix, "
                   "or Matrix*");
-    // if they pass all matrices then we want to pass their pointers instead
+    // If they pass all matrices then we want to pass their pointers instead
     if constexpr (are_all_mat) {
       return evaluateError(x..., (&H)...);
     } else {

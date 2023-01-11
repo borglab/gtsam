@@ -102,8 +102,8 @@ TEST( Pose3AttitudeFactor, Constructor ) {
 
   Matrix actualH1;
 
-  std::function<Vector(const Pose3&)> err_fn = [&factor](const Pose3& p){
-	return factor.evaluateError(p, OptionalNone);
+  auto err_fn = [&factor](const Pose3& p){
+    return factor.evaluateError(p, OptionalNone);
   };
   // Calculate numerical derivatives
   Matrix expectedH = numericalDerivative11<Vector,Pose3>(err_fn, T);
