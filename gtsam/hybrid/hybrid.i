@@ -61,6 +61,9 @@ virtual class HybridConditional {
   size_t nrParents() const;
 
   // Standard interface:
+  double logProbability(const gtsam::HybridValues& values) const;
+  double evaluate(const gtsam::HybridValues& values) const;
+  double operator()(const gtsam::HybridValues& values) const;
   gtsam::GaussianMixture* asMixture() const;
   gtsam::GaussianConditional* asGaussian() const;
   gtsam::DiscreteConditional* asDiscrete() const;
@@ -133,7 +136,10 @@ class HybridBayesNet {
   gtsam::KeySet keys() const;
   const gtsam::HybridConditional* at(size_t i) const;
   
-  double evaluate(const gtsam::HybridValues& x) const;
+  // Standard interface:
+  double logProbability(const gtsam::HybridValues& values) const;
+  double evaluate(const gtsam::HybridValues& values) const;
+
   gtsam::HybridValues optimize() const;
   gtsam::HybridValues sample(const gtsam::HybridValues &given) const;
   gtsam::HybridValues sample() const;
