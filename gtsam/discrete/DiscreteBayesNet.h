@@ -103,6 +103,9 @@ class GTSAM_EXPORT DiscreteBayesNet: public BayesNet<DiscreteConditional> {
       return evaluate(values);
     }
 
+    //** log(evaluate(values)) for given DiscreteValues */
+    double logProbability(const DiscreteValues & values) const;
+
     /**
      * @brief do ancestral sampling
      *
@@ -136,7 +139,15 @@ class GTSAM_EXPORT DiscreteBayesNet: public BayesNet<DiscreteConditional> {
     std::string html(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
                      const DiscreteFactor::Names& names = {}) const;
 
-    ///@}
+    /// @}
+    /// @name HybridValues methods.
+    /// @{
+
+    using Base::error;     // Expose error(const HybridValues&) method..
+    using Base::evaluate;  // Expose evaluate(const HybridValues&) method..
+    using Base::logProbability;  // Expose logProbability(const HybridValues&)
+
+    /// @}
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
     /// @name Deprecated functionality
