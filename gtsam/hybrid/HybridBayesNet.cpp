@@ -256,11 +256,6 @@ VectorValues HybridBayesNet::optimize(const DiscreteValues &assignment) const {
 }
 
 /* ************************************************************************* */
-double HybridBayesNet::evaluate(const HybridValues &values) const {
-  return exp(-error(values));
-}
-
-/* ************************************************************************* */
 HybridValues HybridBayesNet::sample(const HybridValues &given,
                                     std::mt19937_64 *rng) const {
   DiscreteBayesNet dbn;
@@ -296,23 +291,28 @@ HybridValues HybridBayesNet::sample() const {
 }
 
 /* ************************************************************************* */
-AlgebraicDecisionTree<Key> HybridBayesNet::error(
+AlgebraicDecisionTree<Key> HybridBayesNet::logProbability(
     const VectorValues &continuousValues) const {
   AlgebraicDecisionTree<Key> error_tree(0.0);
 
   // Iterate over each conditional.
   for (auto &&conditional : *this) {
     if (auto gm = conditional->asMixture()) {
-      // If conditional is hybrid, select based on assignment and compute error.
-      error_tree = error_tree + gm->error(continuousValues);
+      // If conditional is hybrid, select based on assignment and compute
+      // logProbability.
+      error_tree = error_tree + gm->logProbability(continuousValues);
     } else if (auto gc = conditional->asGaussian()) {
-      // If continuous, get the (double) error and add it to the error_tree
-      double error = gc->error(continuousValues);
-      // Add the computed error to every leaf of the error tree.
-      error_tree = error_tree.apply(
-          [error](double leaf_value) { return leaf_value + error; });
+      // If continuous, get the (double) logProbability and add it to the
+      // error_tree
+      double logProbability = gc->logProbability(continuousValues);
+      // Add the computed logProbability to every leaf of the logProbability
+      // tree.
+      error_tree = error_tree.apply([logProbability](double leaf_value) {
+        return leaf_value + logProbability;
+      });
     } else if (auto dc = conditional->asDiscrete()) {
-      // TODO(dellaert): if discrete, we need to add error in the right branch?
+      // TODO(dellaert): if discrete, we need to add logProbability in the right
+      // branch?
       continue;
     }
   }
@@ -321,10 +321,15 @@ AlgebraicDecisionTree<Key> HybridBayesNet::error(
 }
 
 /* ************************************************************************* */
-AlgebraicDecisionTree<Key> HybridBayesNet::probPrime(
+AlgebraicDecisionTree<Key> HybridBayesNet::evaluate(
     const VectorValues &continuousValues) const {
-  AlgebraicDecisionTree<Key> error_tree = this->error(continuousValues);
-  return error_tree.apply([](double error) { return exp(-error); });
+  AlgebraicDecisionTree<Key> tree = this->logProbability(continuousValues);
+  return tree.apply([](double log) { return exp(log); });
+}
+
+/* ************************************************************************* */
+double HybridBayesNet::evaluate(const HybridValues &values) const {
+  return exp(logProbability(values));
 }
 
 /* ************************************************************************* */
