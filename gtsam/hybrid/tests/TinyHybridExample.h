@@ -71,7 +71,7 @@ inline HybridBayesNet createHybridBayesNet(size_t num_measurements = 1,
  */
 inline HybridGaussianFactorGraph createHybridGaussianFactorGraph(
     size_t num_measurements = 1,
-    boost::optional<VectorValues> measurements = boost::none,
+    std::optional<VectorValues> measurements = {},
     bool manyModes = false) {
   auto bayesNet = createHybridBayesNet(num_measurements, manyModes);
   if (measurements) {

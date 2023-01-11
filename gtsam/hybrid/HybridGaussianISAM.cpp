@@ -71,8 +71,8 @@ Ordering HybridGaussianISAM::GetOrdering(
 void HybridGaussianISAM::updateInternal(
     const HybridGaussianFactorGraph& newFactors,
     HybridBayesTree::Cliques* orphans,
-    const boost::optional<size_t>& maxNrLeaves,
-    const boost::optional<Ordering>& ordering,
+    const std::optional<size_t>& maxNrLeaves,
+    const std::optional<Ordering>& ordering,
     const HybridBayesTree::Eliminate& function) {
   // Remove the contaminated part of the Bayes tree
   BayesNetType bn;
@@ -116,8 +116,8 @@ void HybridGaussianISAM::updateInternal(
 
 /* ************************************************************************* */
 void HybridGaussianISAM::update(const HybridGaussianFactorGraph& newFactors,
-                                const boost::optional<size_t>& maxNrLeaves,
-                                const boost::optional<Ordering>& ordering,
+                                const std::optional<size_t>& maxNrLeaves,
+                                const std::optional<Ordering>& ordering,
                                 const HybridBayesTree::Eliminate& function) {
   Cliques orphans;
   this->updateInternal(newFactors, &orphans, maxNrLeaves, ordering, function);

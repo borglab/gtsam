@@ -26,7 +26,7 @@ namespace gtsam {
 /* ************************************************************************* */
 void HybridSmoother::update(HybridGaussianFactorGraph graph,
                             const Ordering &ordering,
-                            boost::optional<size_t> maxNrLeaves) {
+                            std::optional<size_t> maxNrLeaves) {
   // Add the necessary conditionals from the previous timestep(s).
   std::tie(graph, hybridBayesNet_) =
       addConditionals(graph, hybridBayesNet_, ordering);

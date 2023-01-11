@@ -19,6 +19,7 @@
 
 #include <gtsam/hybrid/HybridGaussianISAM.h>
 #include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
+#include <optional>
 
 namespace gtsam {
 /**
@@ -119,8 +120,8 @@ class GTSAM_EXPORT HybridNonlinearISAM {
   /** Add new factors along with their initial linearization points */
   void update(const HybridNonlinearFactorGraph& newFactors,
               const Values& initialValues,
-              const boost::optional<size_t>& maxNrLeaves = boost::none,
-              const boost::optional<Ordering>& ordering = boost::none);
+              const std::optional<size_t>& maxNrLeaves = {},
+              const std::optional<Ordering>& ordering = {});
 
   /** Relinearization and reordering of variables */
   void reorder_relinearize();

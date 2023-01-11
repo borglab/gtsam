@@ -27,6 +27,8 @@
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/VectorValues.h>
 
+#include <optional>
+
 namespace gtsam {
 
 // Forward declarations
