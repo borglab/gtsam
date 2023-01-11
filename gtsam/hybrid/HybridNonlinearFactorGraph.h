@@ -19,10 +19,9 @@
 #pragma once
 
 #include <gtsam/hybrid/HybridFactorGraph.h>
+#include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 
 namespace gtsam {
-
-class HybridGaussianFactorGraph;
 
 /**
  * Nonlinear Hybrid Factor Graph
