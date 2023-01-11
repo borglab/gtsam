@@ -64,10 +64,10 @@ TEST(HybridBayesNet, Add) {
 // Test evaluate for a pure discrete Bayes net P(Asia).
 TEST(HybridBayesNet, EvaluatePureDiscrete) {
   HybridBayesNet bayesNet;
-  bayesNet.emplace_back(new DiscreteConditional(Asia, "99/1"));
+  bayesNet.emplace_back(new DiscreteConditional(Asia, "4/6"));
   HybridValues values;
   values.insert(asiaKey, 0);
-  EXPECT_DOUBLES_EQUAL(0.99, bayesNet.evaluate(values), 1e-9);
+  EXPECT_DOUBLES_EQUAL(0.4, bayesNet.evaluate(values), 1e-9);
 }
 
 /* ****************************************************************************/
@@ -207,7 +207,7 @@ TEST(HybridBayesNet, Optimize) {
 
 /* ****************************************************************************/
 // Test Bayes net error
-TEST(HybridBayesNet, Error) {
+TEST(HybridBayesNet, logProbability) {
   Switching s(3);
 
   HybridBayesNet::shared_ptr hybridBayesNet =
@@ -215,42 +215,49 @@ TEST(HybridBayesNet, Error) {
   EXPECT_LONGS_EQUAL(5, hybridBayesNet->size());
 
   HybridValues delta = hybridBayesNet->optimize();
-  auto error_tree = hybridBayesNet->error(delta.continuous());
+  auto error_tree = hybridBayesNet->logProbability(delta.continuous());
 
   std::vector<DiscreteKey> discrete_keys = {{M(0), 2}, {M(1), 2}};
-  std::vector<double> leaves = {-4.1609374, -4.1706942, -4.141568, -4.1609374};
+  std::vector<double> leaves = {4.1609374, 4.1706942, 4.141568, 4.1609374};
   AlgebraicDecisionTree<Key> expected_error(discrete_keys, leaves);
 
   // regression
   EXPECT(assert_equal(expected_error, error_tree, 1e-6));
 
-  // Error on pruned Bayes net
+  // logProbability on pruned Bayes net
   auto prunedBayesNet = hybridBayesNet->prune(2);
-  auto pruned_error_tree = prunedBayesNet.error(delta.continuous());
+  auto pruned_error_tree = prunedBayesNet.logProbability(delta.continuous());
 
-  std::vector<double> pruned_leaves = {2e50, -4.1706942, 2e50, -4.1609374};
+  std::vector<double> pruned_leaves = {2e50, 4.1706942, 2e50, 4.1609374};
   AlgebraicDecisionTree<Key> expected_pruned_error(discrete_keys,
                                                    pruned_leaves);
 
   // regression
   EXPECT(assert_equal(expected_pruned_error, pruned_error_tree, 1e-6));
 
-  // Verify error computation and check for specific error value
+  // Verify logProbability computation and check for specific logProbability
+  // value
   const DiscreteValues discrete_values{{M(0), 1}, {M(1), 1}};
   const HybridValues hybridValues{delta.continuous(), discrete_values};
-  double error = 0;
-  error += hybridBayesNet->at(0)->asMixture()->error(hybridValues);
-  error += hybridBayesNet->at(1)->asMixture()->error(hybridValues);
-  error += hybridBayesNet->at(2)->asMixture()->error(hybridValues);
+  double logProbability = 0;
+  logProbability +=
+      hybridBayesNet->at(0)->asMixture()->logProbability(hybridValues);
+  logProbability +=
+      hybridBayesNet->at(1)->asMixture()->logProbability(hybridValues);
+  logProbability +=
+      hybridBayesNet->at(2)->asMixture()->logProbability(hybridValues);
 
-  // TODO(dellaert): the discrete errors are not added in error tree!
-  EXPECT_DOUBLES_EQUAL(error, error_tree(discrete_values), 1e-9);
-  EXPECT_DOUBLES_EQUAL(error, pruned_error_tree(discrete_values), 1e-9);
+  // TODO(dellaert): the discrete errors are not added in logProbability tree!
+  EXPECT_DOUBLES_EQUAL(logProbability, error_tree(discrete_values), 1e-9);
+  EXPECT_DOUBLES_EQUAL(logProbability, pruned_error_tree(discrete_values),
+                       1e-9);
 
-  error += hybridBayesNet->at(3)->asDiscrete()->error(discrete_values);
-  error += hybridBayesNet->at(4)->asDiscrete()->error(discrete_values);
-  EXPECT_DOUBLES_EQUAL(error, hybridBayesNet->error(hybridValues), 1e-9);
-
+  logProbability +=
+      hybridBayesNet->at(3)->asDiscrete()->logProbability(discrete_values);
+  logProbability +=
+      hybridBayesNet->at(4)->asDiscrete()->logProbability(discrete_values);
+  EXPECT_DOUBLES_EQUAL(logProbability,
+                       hybridBayesNet->logProbability(hybridValues), 1e-9);
 }
 
 /* ****************************************************************************/

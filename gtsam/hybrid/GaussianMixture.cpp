@@ -271,15 +271,16 @@ void GaussianMixture::prune(const DecisionTreeFactor &decisionTree) {
 }
 
 /* *******************************************************************************/
-AlgebraicDecisionTree<Key> GaussianMixture::error(
+AlgebraicDecisionTree<Key> GaussianMixture::logProbability(
     const VectorValues &continuousValues) const {
-  // functor to calculate to double error value from GaussianConditional.
+  // functor to calculate to double logProbability value from
+  // GaussianConditional.
   auto errorFunc =
       [continuousValues](const GaussianConditional::shared_ptr &conditional) {
         if (conditional) {
-          return conditional->error(continuousValues);
+          return conditional->logProbability(continuousValues);
         } else {
-          // Return arbitrarily large error if conditional is null
+          // Return arbitrarily large logProbability if conditional is null
           // Conditional is null if it is pruned out.
           return 1e50;
         }
@@ -289,10 +290,10 @@ AlgebraicDecisionTree<Key> GaussianMixture::error(
 }
 
 /* *******************************************************************************/
-double GaussianMixture::error(const HybridValues &values) const {
+double GaussianMixture::logProbability(const HybridValues &values) const {
   // Directly index to get the conditional, no need to build the whole tree.
   auto conditional = conditionals_(values.discrete());
-  return conditional->error(values.continuous());
+  return conditional->logProbability(values.continuous());
 }
 
 }  // namespace gtsam

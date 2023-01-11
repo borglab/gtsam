@@ -187,8 +187,6 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   /// Prune the Hybrid Bayes Net such that we have at most maxNrLeaves leaves.
   HybridBayesNet prune(size_t maxNrLeaves);
 
-  using Base::error; // Expose error(const HybridValues&) method..
-
   /**
    * @brief Compute conditional error for each discrete assignment,
    * and return as a tree.
@@ -196,7 +194,10 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    * @param continuousValues Continuous values at which to compute the error.
    * @return AlgebraicDecisionTree<Key>
    */
-  AlgebraicDecisionTree<Key> error(const VectorValues &continuousValues) const;
+  AlgebraicDecisionTree<Key> logProbability(
+      const VectorValues &continuousValues) const;
+
+  using BayesNet::logProbability;  // expose HybridValues version
 
   /**
    * @brief Compute unnormalized probability q(μ|M),
@@ -208,7 +209,7 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    * probability.
    * @return AlgebraicDecisionTree<Key>
    */
-  AlgebraicDecisionTree<Key> probPrime(
+  AlgebraicDecisionTree<Key> evaluate(
       const VectorValues &continuousValues) const;
 
   /**

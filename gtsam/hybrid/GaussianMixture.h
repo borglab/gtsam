@@ -164,22 +164,23 @@ class GTSAM_EXPORT GaussianMixture
   const Conditionals &conditionals() const;
 
   /**
-   * @brief Compute error of the GaussianMixture as a tree.
+   * @brief Compute logProbability of the GaussianMixture as a tree.
    *
    * @param continuousValues The continuous VectorValues.
    * @return AlgebraicDecisionTree<Key> A decision tree with the same keys
-   * as the conditionals, and leaf values as the error.
+   * as the conditionals, and leaf values as the logProbability.
    */
-  AlgebraicDecisionTree<Key> error(const VectorValues &continuousValues) const;
+  AlgebraicDecisionTree<Key> logProbability(
+      const VectorValues &continuousValues) const;
 
   /**
-   * @brief Compute the error of this Gaussian Mixture given the continuous
-   * values and a discrete assignment.
+   * @brief Compute the logProbability of this Gaussian Mixture given the
+   * continuous values and a discrete assignment.
    *
    * @param values Continuous values and discrete assignment.
    * @return double
    */
-  double error(const HybridValues &values) const override;
+  double logProbability(const HybridValues &values) const override;
 
   //   /// Calculate probability density for given values `x`.
   //   double evaluate(const HybridValues &values) const;

@@ -122,18 +122,18 @@ bool HybridConditional::equals(const HybridFactor &other, double tol) const {
 }
 
 /* ************************************************************************ */
-double HybridConditional::error(const HybridValues &values) const {
-  if (auto gm = asMixture()) {
-    return gm->error(values);
-  }
+double HybridConditional::logProbability(const HybridValues &values) const {
   if (auto gc = asGaussian()) {
-    return gc->error(values.continuous());
+    return gc->logProbability(values.continuous());
+  }
+  if (auto gm = asMixture()) {
+    return gm->logProbability(values);
   }
   if (auto dc = asDiscrete()) {
-    return -log((*dc)(values.discrete()));
+    return dc->logProbability(values.discrete());
   }
   throw std::runtime_error(
-      "HybridConditional::error: conditional type not handled");
+      "HybridConditional::logProbability: conditional type not handled");
 }
 
 }  // namespace gtsam
