@@ -25,7 +25,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-
 #include <iostream>
 #include <string>
 #include <vector>
@@ -100,6 +99,11 @@ TEST(DiscreteBayesNet, Asia) {
   DiscreteBayesNet::shared_ptr chordal = fg.eliminateSequential(ordering);
   DiscreteConditional expected2(Bronchitis % "11/9");
   EXPECT(assert_equal(expected2, *chordal->back()));
+
+  // Check evaluate and logProbability
+  auto result = chordal->optimize();
+  EXPECT_DOUBLES_EQUAL(asia.logProbability(result),
+                       std::log(asia.evaluate(result)), 1e-9);
 
   // add evidence, we were in Asia and we have dyspnea
   fg.add(Asia, "0 1");
