@@ -29,25 +29,32 @@
 #include <gtsam/base/utilities.h>  // boost::index_sequence
 
 #include <boost/serialization/base_object.hpp>
+#include <cstddef>
 
 namespace gtsam {
 
 /* ************************************************************************* */
 
-// These typedefs and aliases will help with making the evaluateError interface
-// independent of boost
-using OptionalNoneType = std::nullptr_t;
-// TODO: Change this to OptionalMatrixNone
+/* These typedefs and aliases will help with making the evaluateError interface
+* independent of boost
+* TODO(kartikarcot): Change this to OptionalMatrixNone
+* This typedef is used to indicate that the Jacobian is not required
+* and the default value used for optional matrix pointer arguments in evaluateError.
+* Had to use the static_cast of a nullptr, because the compiler is not able to
+* deduce the type of the nullptr when expanding the evaluateError templates.
+*/
 #define OptionalNone static_cast<Matrix*>(nullptr)
-template <typename T = void>
-using OptionalMatrixTypeT = Matrix*;
-template <typename T = void>
-using MatrixTypeT = Matrix;
+
+/* This typedef will be used everywhere boost::optional<Matrix&> reference was used
+ * previously. This is used to indicate that the Jacobian is optional. In the future
+ * we will change this to OptionalJacobian
+ */
 using OptionalMatrixType = Matrix*;
-// These typedefs and aliases will help with making the unwhitenedError interface
-// independent of boost
+
+/* The OptionalMatrixVecType is a pointer to a vector of matrices. It will
+ * be used in situations where a vector of matrices is optional, like in 
+ * unwhitenedError. */
 using OptionalMatrixVecType = std::vector<Matrix>*;
-#define OptionalMatrixVecNone static_cast<std::vector<Matrix>*>(nullptr)
 
 /**
  * Nonlinear factor base class
@@ -244,7 +251,7 @@ public:
    * If the optional arguments is specified, it should compute
    * both the function evaluation and its derivative(s) in H.
    */
-  virtual Vector unwhitenedError(const Values& x, OptionalMatrixVecType H = OptionalMatrixVecNone) const = 0;
+  virtual Vector unwhitenedError(const Values& x, OptionalMatrixVecType H = nullptr) const = 0;
 
   // support taking in the actual vector instead of the pointer as well
   // to get access to this version of the function from derived classes
@@ -452,13 +459,22 @@ protected:
   /* Like std::void_t, except produces `OptionalMatrixType` instead of
    * `void`. Used to expand fixed-type parameter-packs with same length as
    * ValueTypes. */
+  template <typename T = void>
+  using OptionalMatrixTypeT = Matrix*;
 
   /* Like std::void_t, except produces `Key` instead of `void`. Used to expand
    * fixed-type parameter-packs with same length as ValueTypes. */
   template <typename T>
   using KeyType = Key;
 
- public:
+  /* Like std::void_t, except produces `Matrix` instead of
+   * `void`. Used to expand fixed-type parameter-packs with same length as
+   * ValueTypes. This helps in creating an evaluateError overload that accepts
+   * Matrices instead of pointers to matrices */
+  template <typename T = void>
+  using MatrixTypeT = Matrix;
+
+  public:
   /**
    * The type of the I'th template param can be obtained as ValueType<I>.
    * I is 1-indexed for backwards compatibility/consistency!  So for example,
@@ -563,7 +579,7 @@ protected:
    */
   Vector unwhitenedError(
       const Values& x,
-      OptionalMatrixVecType H = OptionalMatrixVecNone) const override {
+      OptionalMatrixVecType H = nullptr) const override {
     return unwhitenedError(boost::mp11::index_sequence_for<ValueTypes...>{}, x,
                            H);
   }
@@ -603,6 +619,7 @@ protected:
   // one will need to use the "using" keyword and specify that like this:
   // public:
   //   using NoiseModelFactorN<list the value types here>::evaluateError;
+
   Vector evaluateError(const ValueTypes&... x, MatrixTypeT<ValueTypes>&... H) const {
     return evaluateError(x..., (&H)...);
   }
@@ -631,7 +648,7 @@ protected:
     constexpr bool are_all_mat = (... && (std::is_same<Matrix, std::decay_t<OptionalJacArgs>>::value));
     // The pointers can either be of std::nonetype_t or of Matrix* type
     constexpr bool are_all_ptrs = (... && (std::is_same<OptionalMatrixType, std::decay_t<OptionalJacArgs>>::value ||
-                                           std::is_same<OptionalNoneType, std::decay_t<OptionalJacArgs>>::value));
+                                           std::is_same<std::nullptr_t, std::decay_t<OptionalJacArgs>>::value));
     static_assert((are_all_mat || are_all_ptrs),
                   "Arguments that are passed to the evaluateError function can only be of following the types: Matrix, "
                   "or Matrix*");
@@ -659,7 +676,7 @@ protected:
   inline Vector unwhitenedError(
       boost::mp11::index_sequence<Indices...>,  //
       const Values& x,
-      OptionalMatrixVecType H = OptionalMatrixVecNone) const {
+      OptionalMatrixVecType H = nullptr) const {
     if (this->active(x)) {
       if (H) {
         return evaluateError(x.at<ValueTypes>(keys_[Indices])...,

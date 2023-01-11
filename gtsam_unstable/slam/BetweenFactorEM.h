@@ -145,7 +145,7 @@ public:
 
   /* ************************************************************************* */
   Vector whitenedError(const Values& x,
-      OptionalMatrixVecType H = OptionalMatrixVecNone) const {
+      OptionalMatrixVecType H = nullptr) const {
 
     bool debug = true;
 

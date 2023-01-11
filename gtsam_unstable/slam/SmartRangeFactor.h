@@ -146,7 +146,7 @@ class SmartRangeFactor: public NoiseModelFactor {
   /**
    * Error function *without* the NoiseModel, \f$ z-h(x) \f$.
    */
-  Vector unwhitenedError(const Values& x, OptionalMatrixVecType H = OptionalMatrixVecNone) const override {
+  Vector unwhitenedError(const Values& x, OptionalMatrixVecType H = nullptr) const override {
     size_t n = size();
     if (n < 3) {
       if (H) {

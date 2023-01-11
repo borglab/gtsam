@@ -156,7 +156,7 @@ namespace gtsam {
 
 
     /* ************************************************************************* */
-    gtsam::Vector whitenedError(const gtsam::Values& x, OptionalMatrixVecType H = OptionalMatrixVecNone) const {
+    gtsam::Vector whitenedError(const gtsam::Values& x, OptionalMatrixVecType H = nullptr) const {
 
       T orgA_T_currA = valA_.at<T>(keyA_);
       T orgB_T_currB = valB_.at<T>(keyB_);

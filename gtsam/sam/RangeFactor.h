@@ -63,7 +63,9 @@ class RangeFactor : public ExpressionFactorN<T, A1, A2> {
                                OptionalMatrixType H2 = OptionalNone) const {
     std::vector<Matrix> Hs(2);
     const auto& keys = Factor::keys();
-    const Vector error = Base::unwhitenedError({{keys[0], genericValue(a1)}, {keys[1], genericValue(a2)}}, Hs);
+    const Vector error = Base::unwhitenedError(
+        {{keys[0], genericValue(a1)}, {keys[1], genericValue(a2)}},
+        Hs);
     if (H1) *H1 = Hs[0];
     if (H2) *H2 = Hs[1];
     return error;

@@ -99,7 +99,7 @@ protected:
    * both the function evaluation and its derivative(s) in H.
    */
   Vector unwhitenedError(const Values& x,
-    OptionalMatrixVecType H = OptionalMatrixVecNone) const override {
+    OptionalMatrixVecType H = nullptr) const override {
     if (H) {
       const T value = expression_.valueAndDerivatives(x, keys_, dims_, *H);
       // NOTE(hayk): Doing the reverse, AKA Local(measured_, value) is not correct here

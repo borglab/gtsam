@@ -179,7 +179,7 @@ namespace gtsam {
 
 
     /* ************************************************************************* */
-    Vector whitenedError(const Values& x, OptionalMatrixVecType H = OptionalMatrixVecNone) const {
+    Vector whitenedError(const Values& x, OptionalMatrixVecType H = nullptr) const {
 
       bool debug = true;
 
