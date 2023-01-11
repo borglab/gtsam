@@ -82,6 +82,7 @@ class GTSAM_EXPORT Rot3AttitudeFactor: public NoiseModelFactorN<Rot3>, public At
 
 public:
 
+  // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
   /// shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<Rot3AttitudeFactor> shared_ptr;
@@ -156,6 +157,7 @@ class GTSAM_EXPORT Pose3AttitudeFactor: public NoiseModelFactorN<Pose3>,
   typedef NoiseModelFactorN<Pose3> Base;
 
 public:
+  // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
   /// shorthand for a smart pointer to a factor

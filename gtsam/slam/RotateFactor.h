@@ -74,6 +74,7 @@ class RotateDirectionsFactor: public NoiseModelFactorN<Rot3> {
   typedef RotateDirectionsFactor This;
 
 public:
+  // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
   /// Constructor

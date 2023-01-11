@@ -38,6 +38,7 @@ class GTSAM_EXPORT BarometricFactor : public NoiseModelFactorN<Pose3, double> {
     double nT_;  ///< Height Measurement based on a standard atmosphere
 
    public:
+    // Provide access to the Matrix& version of evaluateError:
     using Base::evaluateError;
     /// shorthand for a smart pointer to a factor
     typedef boost::shared_ptr<BarometricFactor> shared_ptr;

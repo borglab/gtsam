@@ -133,6 +133,7 @@ namespace simulated2D {
     typedef boost::shared_ptr<GenericPrior<VALUE> > shared_ptr;
     typedef VALUE Pose; ///< shortcut to Pose type
 	
+    // Provide access to the Matrix& version of evaluateError:
     using Base::evaluateError;
 
     Pose measured_; ///< prior mean
@@ -179,6 +180,7 @@ namespace simulated2D {
     typedef boost::shared_ptr<GenericOdometry<VALUE> > shared_ptr;
     typedef VALUE Pose; ///< shortcut to Pose type
 
+    // Provide access to the Matrix& version of evaluateError:
     using Base::evaluateError;
 
     Pose measured_; ///< odometry measurement
@@ -227,6 +229,7 @@ namespace simulated2D {
     typedef POSE Pose; ///< shortcut to Pose type
     typedef LANDMARK Landmark; ///< shortcut to Landmark type
 
+    // Provide access to the Matrix& version of evaluateError:
     using Base::evaluateError;
 
     Landmark measured_; ///< Measurement

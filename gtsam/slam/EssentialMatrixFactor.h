@@ -117,6 +117,7 @@ class EssentialMatrixFactor2
   typedef EssentialMatrixFactor2 This;
 
  public:
+  // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
   /**
    *  Constructor

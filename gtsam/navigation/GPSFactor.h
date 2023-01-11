@@ -42,6 +42,7 @@ private:
 
 public:
 
+  // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
   /// shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<GPSFactor> shared_ptr;
@@ -120,6 +121,7 @@ private:
   Point3 nT_; ///< Position measurement in cartesian coordinates
 
 public:
+  // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
   /// shorthand for a smart pointer to a factor
