@@ -122,6 +122,7 @@ private:
   Point3 nT_; ///< Position measurement in cartesian coordinates
 
 public:
+
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 

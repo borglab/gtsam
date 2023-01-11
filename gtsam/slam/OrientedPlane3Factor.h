@@ -21,6 +21,7 @@ class GTSAM_EXPORT OrientedPlane3Factor: public NoiseModelFactorN<Pose3, Oriente
   typedef NoiseModelFactorN<Pose3, OrientedPlane3> Base;
 
  public:
+
   // Provide access to the Matrix& version of evaluateError:
   using NoiseModelFactor2<Pose3, OrientedPlane3>::evaluateError;
 

@@ -268,6 +268,7 @@ private:
   PreintegratedCombinedMeasurements _PIM_;
 
 public:
+
   // Provide access to Matrix& version of evaluateError:
   using Base::evaluateError;
 

@@ -35,6 +35,7 @@ public:
 
   /// shorthand for base class type
   typedef NoiseModelFactor2<Pose3, Vector3> Base;
+
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 

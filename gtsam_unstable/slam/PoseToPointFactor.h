@@ -29,6 +29,7 @@ class PoseToPointFactor : public NoiseModelFactorN<POSE, POINT> {
   POINT measured_; /** the point measurement in local coordinates */
 
  public:
+
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 

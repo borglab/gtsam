@@ -95,6 +95,7 @@ private:
   boost::optional<POSE> body_P_sensor_; // The pose of the sensor in the body frame
 
 public:
+
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 

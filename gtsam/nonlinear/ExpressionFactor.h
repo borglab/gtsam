@@ -55,6 +55,7 @@ protected:
 
 
  public:
+
   // Provide access to the Matrix& version of unwhitenedError:
   using NoiseModelFactor::unwhitenedError;
   typedef boost::shared_ptr<ExpressionFactor<T> > shared_ptr;

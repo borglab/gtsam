@@ -337,10 +337,12 @@ class TestFactor1 : public NoiseModelFactor1<double> {
 
  public:
   typedef NoiseModelFactor1<double> Base;
+
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
   TestFactor1() : Base(noiseModel::Diagonal::Sigmas(Vector1(2.0)), L(1)) {}
+
   // Provide access to the Matrix& version of evaluateError:
   using Base::NoiseModelFactor1;  // inherit constructors
 
@@ -392,10 +394,12 @@ class TestFactor4 : public NoiseModelFactor4<double, double, double, double> {
 
  public:
   typedef NoiseModelFactor4<double, double, double, double> Base;
+
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
   TestFactor4() : Base(noiseModel::Diagonal::Sigmas((Vector(1) << 2.0).finished()), X(1), X(2), X(3), X(4)) {}
+
   // Provide access to the Matrix& version of evaluateError:
   using Base::NoiseModelFactor4;  // inherit constructors
 
@@ -485,6 +489,7 @@ TEST(NonlinearFactor, NoiseModelFactor4) {
 class TestFactor5 : public NoiseModelFactor5<double, double, double, double, double> {
 public:
   typedef NoiseModelFactor5<double, double, double, double, double> Base;
+
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
@@ -535,6 +540,7 @@ TEST(NonlinearFactor, NoiseModelFactor5) {
 class TestFactor6 : public NoiseModelFactor6<double, double, double, double, double, double> {
 public:
   typedef NoiseModelFactor6<double, double, double, double, double, double> Base;
+
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
@@ -592,6 +598,7 @@ TEST(NonlinearFactor, NoiseModelFactor6) {
 class TestFactorN : public NoiseModelFactorN<double, double, double, double> {
 public:
   typedef NoiseModelFactorN<double, double, double, double> Base;
+
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 

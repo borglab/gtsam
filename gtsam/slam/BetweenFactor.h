@@ -55,6 +55,7 @@ namespace gtsam {
     VALUE measured_; /** The measurement */
 
   public:
+
     // Provide access to the Matrix& version of evaluateError:
     using Base::evaluateError;
 

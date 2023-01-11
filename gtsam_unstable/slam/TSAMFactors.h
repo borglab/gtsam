@@ -37,6 +37,7 @@ private:
   Point2 measured_; ///< the measurement
 
 public:
+
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
@@ -67,6 +68,7 @@ private:
   Point2 measured_; ///< the measurement
 
 public:
+
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
@@ -122,6 +124,7 @@ private:
   Pose2 measured_; ///< the measurement
 
 public:
+
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 

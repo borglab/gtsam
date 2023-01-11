@@ -49,6 +49,7 @@ class MagPoseFactor: public NoiseModelFactorN<POSE> {
   GTSAM_CONCEPT_POSE_TYPE(POSE)
 
  public:
+
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 

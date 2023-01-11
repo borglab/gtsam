@@ -179,6 +179,7 @@ private:
   PreintegratedImuMeasurements _PIM_;
 
 public:
+
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 

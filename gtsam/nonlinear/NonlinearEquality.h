@@ -46,6 +46,7 @@ class NonlinearEquality: public NoiseModelFactorN<VALUE> {
 
 public:
   typedef VALUE T;
+
   // Provide access to the Matrix& version of evaluateError:
   using NoiseModelFactor1<VALUE>::evaluateError;
 
@@ -307,6 +308,7 @@ class NonlinearEquality2 : public NoiseModelFactorN<T, T> {
 
  public:
   typedef boost::shared_ptr<NonlinearEquality2<T>> shared_ptr;
+
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 

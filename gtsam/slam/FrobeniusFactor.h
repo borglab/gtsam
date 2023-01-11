@@ -114,6 +114,7 @@ class FrobeniusBetweenFactor : public NoiseModelFactorN<Rot, Rot> {
   enum { Dim = Rot::VectorN2::RowsAtCompileTime };
 
  public:
+
   // Provide access to the Matrix& version of evaluateError:
   using NoiseModelFactor2<Rot, Rot>::evaluateError;
 

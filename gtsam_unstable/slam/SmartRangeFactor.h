@@ -42,6 +42,7 @@ class SmartRangeFactor: public NoiseModelFactor {
   double variance_;  ///< variance on noise
 
  public:
+
   // Provide access to the Matrix& version of unwhitenedError
   using NoiseModelFactor::unwhitenedError;
 

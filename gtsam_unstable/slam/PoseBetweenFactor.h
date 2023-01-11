@@ -43,6 +43,7 @@ namespace gtsam {
     GTSAM_CONCEPT_TESTABLE_TYPE(POSE)
     GTSAM_CONCEPT_POSE_TYPE(POSE)
   public:
+
     // Provide access to the Matrix& version of evaluateError:
     using Base::evaluateError;
 

@@ -29,6 +29,7 @@ class Reconstruction : public NoiseModelFactorN<Pose3, Pose3, Vector6>  {
   double h_;  // time step
   typedef NoiseModelFactorN<Pose3, Pose3, Vector6> Base;
 public:
+
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
@@ -91,6 +92,7 @@ class DiscreteEulerPoincareHelicopter : public NoiseModelFactorN<Vector6, Vector
   typedef NoiseModelFactorN<Vector6, Vector6, Pose3> Base;
 
 public:
+
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 

@@ -118,6 +118,7 @@ class EssentialMatrixFactor2
   typedef EssentialMatrixFactor2 This;
 
  public:
+
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
@@ -240,6 +241,7 @@ class EssentialMatrixFactor3 : public EssentialMatrixFactor2 {
   Rot3 cRb_;  ///< Rotation from body to camera frame
 
  public:
+
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
@@ -343,6 +345,7 @@ class EssentialMatrixFactor4
   typedef Eigen::Matrix<double, 2, DimK> JacobianCalibration;
 
  public:
+
    // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 

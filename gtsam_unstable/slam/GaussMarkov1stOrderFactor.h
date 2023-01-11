@@ -53,6 +53,7 @@ private:
   Vector tau_;
 
 public:
+
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 

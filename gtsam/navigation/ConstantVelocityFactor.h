@@ -31,6 +31,7 @@ class ConstantVelocityFactor : public NoiseModelFactorN<NavState, NavState> {
 
    public:
     using Base = NoiseModelFactor2<NavState, NavState>;
+
     // Provide access to the Matrix& version of evaluateError:
     using Base::evaluateError;
 

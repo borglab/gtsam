@@ -108,7 +108,7 @@ namespace simulated2DOriented {
     typedef GenericOdometry<VALUE> This;
 
     // Provide access to the Matrix& version of evaluateError:
-	  using NoiseModelFactor2<VALUE, VALUE>::evaluateError;
+    using NoiseModelFactor2<VALUE, VALUE>::evaluateError;
 
     /**
      * Creates an odometry factor between two poses

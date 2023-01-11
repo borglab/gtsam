@@ -158,6 +158,7 @@ class GTSAM_EXPORT Pose3AttitudeFactor: public NoiseModelFactorN<Pose3>,
   typedef NoiseModelFactorN<Pose3> Base;
 
 public:
+
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
