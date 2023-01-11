@@ -131,17 +131,17 @@ int main(int argc, char* argv[]) {
         AddNoiseToMeasurements(measurements, measurementSigma);
 
     auto lostStart = std::chrono::high_resolution_clock::now();
-    boost::optional<Point3> estimateLOST = triangulatePoint3<Cal3_S2>(
+    auto estimateLOST = triangulatePoint3<Cal3_S2>(
         cameras, noisyMeasurements, rank_tol, false, measurementNoise, true);
     durationLOST += std::chrono::high_resolution_clock::now() - lostStart;
 
     auto dltStart = std::chrono::high_resolution_clock::now();
-    boost::optional<Point3> estimateDLT = triangulatePoint3<Cal3_S2>(
+    auto estimateDLT = triangulatePoint3<Cal3_S2>(
         cameras, noisyMeasurements, rank_tol, false, measurementNoise, false);
     durationDLT += std::chrono::high_resolution_clock::now() - dltStart;
 
     auto dltOptStart = std::chrono::high_resolution_clock::now();
-    boost::optional<Point3> estimateDLTOpt = triangulatePoint3<Cal3_S2>(
+    auto estimateDLTOpt = triangulatePoint3<Cal3_S2>(
         cameras, noisyMeasurements, rank_tol, true, measurementNoise, false);
     durationDLTOpt += std::chrono::high_resolution_clock::now() - dltOptStart;
 
