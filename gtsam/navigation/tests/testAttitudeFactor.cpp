@@ -49,8 +49,8 @@ TEST( Rot3AttitudeFactor, Constructor ) {
   Rot3 nRb;
   EXPECT(assert_equal((Vector) Z_2x1,factor.evaluateError(nRb),1e-5));
 
-  std::function<Vector(const Rot3&)> err_fn = [&factor](const Rot3& r){
-	return factor.evaluateError(r, OptionalNone);
+  auto err_fn = [&factor](const Rot3& r){
+    return factor.evaluateError(r, OptionalNone);
   };
   // Calculate numerical derivatives
   Matrix expectedH = numericalDerivative11<Vector, Rot3>(err_fn, nRb);

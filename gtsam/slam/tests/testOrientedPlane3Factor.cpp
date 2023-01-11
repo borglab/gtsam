@@ -140,7 +140,7 @@ TEST( OrientedPlane3Factor, Derivatives ) {
   OrientedPlane3Factor factor(p.planeCoefficients(), noise, poseKey, planeKey);
 
   // Calculate numerical derivatives
-  std::function<Vector(const Pose3&, const OrientedPlane3&)> f = [&factor](const Pose3& p, const OrientedPlane3& o) {
+  auto f = [&factor](const Pose3& p, const OrientedPlane3& o) {
     return factor.evaluateError(p, o);
   };
   Matrix numericalH1 = numericalDerivative21<Vector, Pose3, OrientedPlane3>(f, poseLin, pLin);
