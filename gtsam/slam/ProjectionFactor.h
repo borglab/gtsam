@@ -52,7 +52,7 @@ namespace gtsam {
   public:
 
     /// shorthand for base class type
-    typedef NoiseModelFactor2<POSE, LANDMARK> Base;
+    typedef NoiseModelFactorN<POSE, LANDMARK> Base;
 
     // Provide access to the Matrix& version of evaluateError:
     using Base::evaluateError;

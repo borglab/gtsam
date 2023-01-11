@@ -186,6 +186,9 @@ namespace gtsam {
     }
 
     /* ************************************************************************* */
+    /** A function overload to accept a vector<matrix> instead of a pointer to
+     * the said type.
+     */
     gtsam::Vector whitenedError(const gtsam::Values& x, std::vector<Matrix>& H) const {
 	  return whitenedError(x, &H);
     }

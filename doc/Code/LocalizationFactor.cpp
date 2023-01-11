@@ -2,6 +2,8 @@ class UnaryFactor: public NoiseModelFactor1<Pose2> {
   double mx_, my_; ///< X and Y measurements
   
 public:
+
+  // Provide access to the Matrix& version of evaluateError:
   using gtsam::NoiseModelFactor1<Pose2>::evaluateError;
 
   UnaryFactor(Key j, double x, double y, const SharedNoiseModel& model):

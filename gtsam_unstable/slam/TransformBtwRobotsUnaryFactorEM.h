@@ -179,6 +179,9 @@ namespace gtsam {
 
 
     /* ************************************************************************* */
+    /** A function overload to accept a vector<matrix> instead of a pointer to
+     * the said type.
+     */
     Vector whitenedError(const Values& x, OptionalMatrixVecType H = nullptr) const {
 
       bool debug = true;

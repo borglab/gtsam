@@ -53,7 +53,6 @@ class MagPoseFactor: public NoiseModelFactorN<POSE> {
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
-
   ~MagPoseFactor() override {}
 
   /// Default constructor - only use for serialization.

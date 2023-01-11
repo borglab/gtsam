@@ -39,7 +39,6 @@ public:
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
-
   /// shorthand for this class
   typedef InvDepthFactor3<POSE, LANDMARK, INVDEPTH> This;
 

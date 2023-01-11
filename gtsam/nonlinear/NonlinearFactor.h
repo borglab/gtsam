@@ -36,13 +36,13 @@ namespace gtsam {
 /* ************************************************************************* */
 
 /** These typedefs and aliases will help with making the evaluateError interface
-* independent of boost
-* TODO(kartikarcot): Change this to OptionalMatrixNone
-* This typedef is used to indicate that the Jacobian is not required
-* and the default value used for optional matrix pointer arguments in evaluateError.
-* Had to use the static_cast of a nullptr, because the compiler is not able to
-* deduce the type of the nullptr when expanding the evaluateError templates.
-*/
+ * independent of boost
+ * TODO(kartikarcot): Change this to OptionalMatrixNone
+ * This typedef is used to indicate that the Jacobian is not required
+ * and the default value used for optional matrix pointer arguments in evaluateError.
+ * Had to use the static_cast of a nullptr, because the compiler is not able to
+ * deduce the type of the nullptr when expanding the evaluateError templates.
+ */
 #define OptionalNone static_cast<Matrix*>(nullptr)
 
 /** This typedef will be used everywhere boost::optional<Matrix&> reference was used
@@ -53,7 +53,8 @@ using OptionalMatrixType = Matrix*;
 
 /** The OptionalMatrixVecType is a pointer to a vector of matrices. It will
  * be used in situations where a vector of matrices is optional, like in 
- * unwhitenedError. */
+ * unwhitenedError.
+ */
 using OptionalMatrixVecType = std::vector<Matrix>*;
 
 /**
@@ -254,10 +255,11 @@ public:
   virtual Vector unwhitenedError(const Values& x, OptionalMatrixVecType H = nullptr) const = 0;
 
   /** support taking in the actual vector instead of the pointer as well
-  * to get access to this version of the function from derived classes
-  * one will need to use the "using" keyword and specify that like this:
-  * public:
-  *   using NoiseModelFactor::unwhitenedError; */
+   * to get access to this version of the function from derived classes
+   * one will need to use the "using" keyword and specify that like this:
+   * public:
+   *   using NoiseModelFactor::unwhitenedError;
+   */
   Vector unwhitenedError(const Values& x, std::vector<Matrix>& H) const {
     return unwhitenedError(x, &H);
   }
@@ -613,12 +615,13 @@ protected:
   virtual Vector evaluateError(const ValueTypes&... x,
                                OptionalMatrixTypeT<ValueTypes>... H) const = 0;
 
-  // If someone uses the evaluateError function by supplying all the optional
-  // arguments then redirect the call to the one which takes pointers
-  // to get access to this version of the function from derived classes
-  // one will need to use the "using" keyword and specify that like this:
-  // public:
-  //   using NoiseModelFactorN<list the value types here>::evaluateError;
+  /** If all the optional arguments are matrices then redirect the call to 
+   * the one which takes pointers.
+   * To get access to this version of the function from derived classes
+   * one will need to use the "using" keyword and specify that like this:
+   * public:
+   *   using NoiseModelFactorN<list the value types here>::evaluateError;
+   */
 
   Vector evaluateError(const ValueTypes&... x, MatrixTypeT<ValueTypes>&... H) const {
     return evaluateError(x..., (&H)...);
