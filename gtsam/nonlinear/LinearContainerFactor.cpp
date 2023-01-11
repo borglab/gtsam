@@ -21,13 +21,13 @@ void LinearContainerFactor::initializeLinearizationPoint(const Values& lineariza
       linearizationPoint_->insert(key, linearizationPoint.at(key));
     }
   } else {
-    linearizationPoint_ = boost::none;
+    linearizationPoint_ = {};
   }
 }
 
 /* ************************************************************************* */
 LinearContainerFactor::LinearContainerFactor(const GaussianFactor::shared_ptr& factor,
-    const boost::optional<Values>& linearizationPoint)
+    const std::optional<Values>& linearizationPoint)
 : NonlinearFactor(factor->keys()), factor_(factor), linearizationPoint_(linearizationPoint) {
 }
 
