@@ -18,7 +18,10 @@
 #pragma once
 
 #include <gtsam/base/VectorSpace.h>
+#include <gtsam/base/std_optional_serialization.h>
 #include <boost/serialization/nvp.hpp>
+
+#include <optional>
 
 namespace gtsam {
 
@@ -62,7 +65,7 @@ inline Point2 operator*(double s, const Point2& p) {
  * @param tol: absolute tolerance below which we consider touching circles
  * @return optional Point2 with f and h, boost::none if no solution.
  */
-GTSAM_EXPORT boost::optional<Point2> circleCircleIntersection(double R_d, double r_d, double tol = 1e-9);
+GTSAM_EXPORT std::optional<Point2> circleCircleIntersection(double R_d, double r_d, double tol = 1e-9);
 
 /*
  * @brief Circle-circle intersection, from the normalized radii solution.
@@ -70,7 +73,7 @@ GTSAM_EXPORT boost::optional<Point2> circleCircleIntersection(double R_d, double
  * @param c2 center of second circle
  * @return list of solutions (0,1, or 2). Identical circles will return empty list, as well.
  */
-GTSAM_EXPORT std::list<Point2> circleCircleIntersection(Point2 c1, Point2 c2, boost::optional<Point2> fh);
+GTSAM_EXPORT std::list<Point2> circleCircleIntersection(Point2 c1, Point2 c2, std::optional<Point2> fh);
   
 /// Calculate the two means of a set of Point2 pairs
 GTSAM_EXPORT Point2Pair means(const std::vector<Point2Pair> &abPointPairs);

@@ -1,6 +1,7 @@
 // A hack to serialize std::optional<T> to boost::archive
 // Don't know if it will work. Trying to follow this:
 // PR: https://github.com/boostorg/serialization/pull/148/files#
+#pragma once
 #include <optional>
 #include <boost/config.hpp>
 

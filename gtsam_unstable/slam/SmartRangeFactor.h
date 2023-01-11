@@ -19,6 +19,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <optional>
 
 namespace gtsam {
 
@@ -105,7 +106,7 @@ class SmartRangeFactor: public NoiseModelFactor {
     }
 
     Circle2 circle1 = circles.front();
-    boost::optional<Point2> best_fh;
+    std::optional<Point2> best_fh;
     auto bestCircle2 = boost::make_optional(false, circle1);  // fixes issue #38
 
     // loop over all circles
@@ -115,7 +116,7 @@ class SmartRangeFactor: public NoiseModelFactor {
       if (d < 1e-9)
         continue;  // skip circles that are in the same location
       // Find f and h, the intersection points in normalized circles
-      boost::optional<Point2> fh = circleCircleIntersection(
+      std::optional<Point2> fh = circleCircleIntersection(
           circle1.radius / d, it.radius / d);
       // Check if this pair is better by checking h = fh->y()
       // if h is large, the intersections are well defined.
