@@ -43,7 +43,7 @@
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
-#include <boost/optional.hpp>
+#include <optional>
 
 #include <cmath>
 #include <fstream>
@@ -113,7 +113,7 @@ string createRewrittenFileName(const string &name) {
 // Type for parser functions used in parseLines below.
 template <typename T>
 using Parser =
-    std::function<boost::optional<T>(istream &is, const string &tag)>;
+    std::function<std::optional<T>(istream &is, const string &tag)>;
 
 // Parse a file by calling the parse(is, tag) function for every line.
 // The result of calling the function is ignored, so typically parse function
@@ -141,7 +141,7 @@ map<size_t, T> parseToMap(const string &filename, Parser<pair<size_t, T>> parse,
       if (!maxIndex || t->first <= maxIndex)
         result.emplace(*t);
     }
-    return boost::none;
+    return std::nullopt;
   };
   parseLines(filename, emplace);
   return result;
@@ -155,14 +155,14 @@ static vector<T> parseToVector(const string &filename, Parser<T> parse) {
   Parser<T> add = [&result, parse](istream &is, const string &tag) {
     if (auto t = parse(is, tag))
       result.push_back(*t);
-    return boost::none;
+    return std::nullopt;
   };
   parseLines(filename, add);
   return result;
 }
 
 /* ************************************************************************* */
-boost::optional<IndexedPose> parseVertexPose(istream &is, const string &tag) {
+std::optional<IndexedPose> parseVertexPose(istream &is, const string &tag) {
   if ((tag == "VERTEX2") || (tag == "VERTEX_SE2") || (tag == "VERTEX")) {
     size_t id;
     double x, y, yaw;
@@ -171,7 +171,7 @@ boost::optional<IndexedPose> parseVertexPose(istream &is, const string &tag) {
     }
     return IndexedPose(id, Pose2(x, y, yaw));
   } else {
-    return boost::none;
+    return std::nullopt;
   }
 }
 
@@ -182,7 +182,7 @@ GTSAM_EXPORT std::map<size_t, Pose2> parseVariables<Pose2>(
 }
 
 /* ************************************************************************* */
-boost::optional<IndexedLandmark> parseVertexLandmark(istream &is,
+std::optional<IndexedLandmark> parseVertexLandmark(istream &is,
                                                      const string &tag) {
   if (tag == "VERTEX_XY") {
     size_t id;
@@ -193,7 +193,7 @@ boost::optional<IndexedLandmark> parseVertexLandmark(istream &is,
     }
     return IndexedLandmark(id, Point2(x, y));
   } else {
-    return boost::none;
+    return std::nullopt;
   }
 }
 
@@ -288,7 +288,7 @@ static SharedNoiseModel createNoiseModel(
 }
 
 /* ************************************************************************* */
-boost::optional<IndexedEdge> parseEdge(istream &is, const string &tag) {
+std::optional<IndexedEdge> parseEdge(istream &is, const string &tag) {
   if ((tag == "EDGE2") || (tag == "EDGE") || (tag == "EDGE_SE2") ||
       (tag == "ODOMETRY")) {
 
@@ -299,7 +299,7 @@ boost::optional<IndexedEdge> parseEdge(istream &is, const string &tag) {
     }
     return IndexedEdge({id1, id2}, Pose2(x, y, yaw));
   } else {
-    return boost::none;
+    return std::nullopt;
   }
 }
 
@@ -315,13 +315,13 @@ template <typename T> struct ParseFactor : ParseMeasurement<T> {
       : ParseMeasurement<T>(parent) {}
 
   // We parse a measurement then convert
-  typename boost::optional<typename BetweenFactor<T>::shared_ptr>
+  typename std::optional<typename BetweenFactor<T>::shared_ptr>
   operator()(istream &is, const string &tag) {
     if (auto m = ParseMeasurement<T>::operator()(is, tag))
       return boost::make_shared<BetweenFactor<T>>(
           m->key1(), m->key2(), m->measured(), m->noiseModel());
     else
-      return boost::none;
+      return std::nullopt;
   }
 };
 
@@ -341,11 +341,11 @@ template <> struct ParseMeasurement<Pose2> {
   SharedNoiseModel model;
 
   // The actual parser
-  boost::optional<BinaryMeasurement<Pose2>> operator()(istream &is,
+  std::optional<BinaryMeasurement<Pose2>> operator()(istream &is,
                                                        const string &tag) {
     auto edge = parseEdge(is, tag);
     if (!edge)
-      return boost::none;
+      return std::nullopt;
 
     // parse noise model
     Vector6 v;
@@ -355,7 +355,7 @@ template <> struct ParseMeasurement<Pose2> {
     size_t id1, id2;
     tie(id1, id2) = edge->first;
     if (maxIndex && (id1 > maxIndex || id2 > maxIndex))
-      return boost::none;
+      return std::nullopt;
 
     // Get pose and optionally add noise
     Pose2 &pose = edge->second;
@@ -446,10 +446,10 @@ template <> struct ParseMeasurement<BearingRange2D> {
   size_t maxIndex;
 
   // The actual parser
-  boost::optional<BinaryMeasurement<BearingRange2D>>
+  std::optional<BinaryMeasurement<BearingRange2D>>
   operator()(istream &is, const string &tag) {
     if (tag != "BR" && tag != "LANDMARK")
-      return boost::none;
+      return std::nullopt;
 
     size_t id1, id2;
     is >> id1 >> id2;
@@ -485,7 +485,7 @@ template <> struct ParseMeasurement<BearingRange2D> {
 
     // optional filter
     if (maxIndex && id1 > maxIndex)
-      return boost::none;
+      return std::nullopt;
 
     // Create noise model
     auto measurementNoise = noiseModel::Diagonal::Sigmas(
@@ -759,7 +759,7 @@ istream &operator>>(istream &is, Rot3 &R) {
 }
 
 /* ************************************************************************* */
-boost::optional<pair<size_t, Pose3>> parseVertexPose3(istream &is,
+std::optional<pair<size_t, Pose3>> parseVertexPose3(istream &is,
                                                       const string &tag) {
   if (tag == "VERTEX3") {
     size_t id;
@@ -774,7 +774,7 @@ boost::optional<pair<size_t, Pose3>> parseVertexPose3(istream &is,
     is >> id >> x >> y >> z >> q;
     return make_pair(id, Pose3(q, {x, y, z}));
   } else
-    return boost::none;
+    return std::nullopt;
 }
 
 template <>
@@ -784,7 +784,7 @@ GTSAM_EXPORT std::map<size_t, Pose3> parseVariables<Pose3>(
 }
 
 /* ************************************************************************* */
-boost::optional<pair<size_t, Point3>> parseVertexPoint3(istream &is,
+std::optional<pair<size_t, Point3>> parseVertexPoint3(istream &is,
                                                         const string &tag) {
   if (tag == "VERTEX_TRACKXYZ") {
     size_t id;
@@ -792,7 +792,7 @@ boost::optional<pair<size_t, Point3>> parseVertexPoint3(istream &is,
     is >> id >> x >> y >> z;
     return make_pair(id, Point3(x, y, z));
   } else
-    return boost::none;
+    return std::nullopt;
 }
 
 template <>
@@ -820,16 +820,16 @@ template <> struct ParseMeasurement<Pose3> {
   size_t maxIndex;
 
   // The actual parser
-  boost::optional<BinaryMeasurement<Pose3>> operator()(istream &is,
+  std::optional<BinaryMeasurement<Pose3>> operator()(istream &is,
                                                        const string &tag) {
     if (tag != "EDGE3" && tag != "EDGE_SE3:QUAT")
-      return boost::none;
+      return std::nullopt;
 
     // parse ids and optionally filter
     size_t id1, id2;
     is >> id1 >> id2;
     if (maxIndex && (id1 > maxIndex || id2 > maxIndex))
-      return boost::none;
+      return std::nullopt;
 
     Matrix6 m;
     if (tag == "EDGE3") {
@@ -864,7 +864,7 @@ template <> struct ParseMeasurement<Pose3> {
       return BinaryMeasurement<Pose3>(
           id1, id2, T12, noiseModel::Gaussian::Information(mgtsam));
     } else
-      return boost::none;
+      return std::nullopt;
   }
 };
 

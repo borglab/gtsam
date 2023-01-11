@@ -26,7 +26,7 @@ namespace gtsam {
 SmartStereoProjectionPoseFactor::SmartStereoProjectionPoseFactor(
     const SharedNoiseModel& sharedNoiseModel,
     const SmartStereoProjectionParams& params,
-    const boost::optional<Pose3>& body_P_sensor)
+    const std::optional<Pose3>& body_P_sensor)
     : Base(sharedNoiseModel, params, body_P_sensor) {}
 
 void SmartStereoProjectionPoseFactor::add(

@@ -22,6 +22,7 @@
 
 #include <map>
 #include <vector>
+#include <optional>
 
 namespace gtsam {
 /**
@@ -60,7 +61,7 @@ public:
    */
   template <typename CONTAINER>
   KarcherMeanFactor(const CONTAINER &keys, int d = D,
-                    boost::optional<double> beta = boost::none);
+                    std::optional<double> beta = {});
 
   /// Destructor
   ~KarcherMeanFactor() override {}

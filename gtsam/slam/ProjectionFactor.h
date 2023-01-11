@@ -25,7 +25,7 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Cal3_S2.h>
-#include <boost/optional.hpp>
+#include <optional>
 
 namespace gtsam {
 
@@ -43,7 +43,7 @@ namespace gtsam {
     // Keep a copy of measurement and calibration for I/O
     Point2 measured_;                    ///< 2D measurement
     boost::shared_ptr<CALIBRATION> K_;  ///< shared pointer to calibration object
-    boost::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame
+    std::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame
 
     // verbosity handling for Cheirality Exceptions
     bool throwCheirality_; ///< If true, rethrows Cheirality exceptions (default: false)
@@ -80,7 +80,7 @@ namespace gtsam {
      */
     GenericProjectionFactor(const Point2& measured, const SharedNoiseModel& model,
         Key poseKey, Key pointKey, const boost::shared_ptr<CALIBRATION>& K,
-        boost::optional<POSE> body_P_sensor = boost::none) :
+        std::optional<POSE> body_P_sensor = {}) :
           Base(model, poseKey, pointKey), measured_(measured), K_(K), body_P_sensor_(body_P_sensor),
           throwCheirality_(false), verboseCheirality_(false) {}
 
@@ -99,7 +99,7 @@ namespace gtsam {
     GenericProjectionFactor(const Point2& measured, const SharedNoiseModel& model,
         Key poseKey, Key pointKey, const boost::shared_ptr<CALIBRATION>& K,
         bool throwCheirality, bool verboseCheirality,
-        boost::optional<POSE> body_P_sensor = boost::none) :
+        std::optional<POSE> body_P_sensor = {}) :
           Base(model, poseKey, pointKey), measured_(measured), K_(K), body_P_sensor_(body_P_sensor),
           throwCheirality_(throwCheirality), verboseCheirality_(verboseCheirality) {}
 
@@ -176,7 +176,7 @@ namespace gtsam {
     }
 
     /** return the (optional) sensor pose with respect to the vehicle frame */
-    const boost::optional<POSE>& body_P_sensor() const {
+    const std::optional<POSE>& body_P_sensor() const {
       return body_P_sensor_;
     }
 

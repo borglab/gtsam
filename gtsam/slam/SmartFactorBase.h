@@ -30,6 +30,7 @@
 #include <gtsam/geometry/CameraSet.h>
 
 #include <boost/optional.hpp>
+#include <optional>
 #include <boost/serialization/optional.hpp>
 #include <boost/make_shared.hpp>
 #include <vector>
@@ -78,7 +79,7 @@ protected:
    */
   ZVector measured_;
 
-  boost::optional<Pose3>
+  std::optional<Pose3>
       body_P_sensor_;  ///< Pose of the camera in the body frame
 
   // Cache for Fblocks, to avoid a malloc ever time we re-linearize
@@ -98,7 +99,7 @@ protected:
 
   /// Construct with given noise model and optional arguments.
   SmartFactorBase(const SharedNoiseModel& sharedNoiseModel,
-                  boost::optional<Pose3> body_P_sensor = boost::none,
+                  std::optional<Pose3> body_P_sensor = {},
                   size_t expectedNumberCameras = 10)
       : body_P_sensor_(body_P_sensor), Fs(expectedNumberCameras) {
 
