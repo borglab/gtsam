@@ -23,7 +23,7 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Rot2.h>
 
-#include <boost/optional.hpp>
+#include <optional>
 #include <cmath>
 #include <iostream>
 
@@ -718,7 +718,7 @@ TEST(Pose2, align_1) {
   Pose2 expected(Rot2::fromAngle(0), Point2(10, 10));
   Point2Pairs ab_pairs {{Point2(10, 10), Point2(0, 0)},
                         {Point2(30, 20), Point2(20, 10)}};
-  boost::optional<Pose2> aTb = Pose2::Align(ab_pairs);
+  std::optional<Pose2> aTb = Pose2::Align(ab_pairs);
   EXPECT(assert_equal(expected, *aTb));
 }
 
@@ -731,7 +731,7 @@ TEST(Pose2, align_2) {
   Point2Pairs ab_pairs {{expected.transformFrom(b1), b1},
                         {expected.transformFrom(b2), b2}};
 
-  boost::optional<Pose2> aTb = Pose2::Align(ab_pairs);
+  std::optional<Pose2> aTb = Pose2::Align(ab_pairs);
   EXPECT(assert_equal(expected, *aTb));
 }
 
@@ -752,7 +752,7 @@ TEST(Pose2, align_3) {
   Point2Pair ab3(make_pair(a3, b3));
   const Point2Pairs ab_pairs{ab1, ab2, ab3};
 
-  boost::optional<Pose2> aTb = Pose2::Align(ab_pairs);
+  std::optional<Pose2> aTb = Pose2::Align(ab_pairs);
   EXPECT(assert_equal(expected, *aTb));
 }
 
@@ -762,7 +762,7 @@ namespace {
   /* ************************************************************************* */
   struct Triangle { size_t i_, j_, k_;};
 
-  boost::optional<Pose2> align2(const Point2Vector& as, const Point2Vector& bs,
+  std::optional<Pose2> align2(const Point2Vector& as, const Point2Vector& bs,
     const pair<Triangle, Triangle>& trianglePair) {
       const Triangle& t1 = trianglePair.first, t2 = trianglePair.second;
       Point2Pairs ab_pairs = {{as[t1.i_], bs[t2.i_]},
@@ -780,7 +780,7 @@ TEST(Pose2, align_4) {
   Triangle t1; t1.i_=0; t1.j_=1; t1.k_=2;
   Triangle t2; t2.i_=1; t2.j_=2; t2.k_=0;
 
-  boost::optional<Pose2> actual = align2(as, bs, {t1, t2});
+  std::optional<Pose2> actual = align2(as, bs, {t1, t2});
   EXPECT(assert_equal(expected, *actual));
 }
 
