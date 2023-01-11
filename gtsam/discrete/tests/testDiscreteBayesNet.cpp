@@ -101,7 +101,7 @@ TEST(DiscreteBayesNet, Asia) {
   EXPECT(assert_equal(expected2, *chordal->back()));
 
   // Check evaluate and logProbability
-  auto result = chordal->optimize();
+  auto result = fg.optimize();
   EXPECT_DOUBLES_EQUAL(asia.logProbability(result),
                        std::log(asia.evaluate(result)), 1e-9);
 
