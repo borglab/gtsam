@@ -109,7 +109,7 @@ public:
    * and additionally, variables that were already in the system must not be included here.
    */
   Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(), const Values& newTheta = Values(),
-      const boost::optional<FactorIndices>& removeFactorIndices = boost::none);
+      const std::optional<FactorIndices>& removeFactorIndices = {});
 
   /**
    * Perform any required operations before the synchronization process starts.

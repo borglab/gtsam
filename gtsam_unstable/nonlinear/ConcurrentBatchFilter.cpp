@@ -119,7 +119,7 @@ bool ConcurrentBatchFilter::equals(const ConcurrentFilter& rhs, double tol) cons
 
 /* ************************************************************************* */
 ConcurrentBatchFilter::Result ConcurrentBatchFilter::update(const NonlinearFactorGraph& newFactors, const Values& newTheta,
-    const boost::optional<FastList<Key> >& keysToMove, const boost::optional< std::vector<size_t> >& removeFactorIndices) {
+    const std::optional<FastList<Key> >& keysToMove, const std::optional< std::vector<size_t> >& removeFactorIndices) {
 
   gttic(update);
 
@@ -358,7 +358,7 @@ void ConcurrentBatchFilter::removeFactors(const std::vector<size_t>& slots) {
 }
 
 /* ************************************************************************* */
-void ConcurrentBatchFilter::reorder(const boost::optional<FastList<Key> >& keysToMove) {
+void ConcurrentBatchFilter::reorder(const std::optional<FastList<Key> >& keysToMove) {
 
   // COLAMD groups will be used to place marginalize keys in Group 0, and everything else in Group 1
   if(keysToMove && keysToMove->size() > 0) {
