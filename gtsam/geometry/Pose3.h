@@ -75,18 +75,18 @@ public:
 
   /// Named constructor with derivatives
   static Pose3 Create(const Rot3& R, const Point3& t,
-                      OptionalJacobian<6, 3> HR = boost::none,
-                      OptionalJacobian<6, 3> Ht = boost::none);
+                      OptionalJacobian<6, 3> HR = {},
+                      OptionalJacobian<6, 3> Ht = {});
 
   /**
    *  Create Pose3 by aligning two point pairs
    *  A pose aTb is estimated between pairs (a_point, b_point) such that a_point = aTb * b_point
    *  Note this allows for noise on the points but in that case the mapping will not be exact.
    */
-  static boost::optional<Pose3> Align(const Point3Pairs& abPointPairs);
+  static std::optional<Pose3> Align(const Point3Pairs& abPointPairs);
 
   // Version of Pose3::Align that takes 2 matrices.
-  static boost::optional<Pose3> Align(const Matrix& a, const Matrix& b);
+  static std::optional<Pose3> Align(const Matrix& a, const Matrix& b);
 
   /// @}
   /// @name Testable
@@ -139,10 +139,10 @@ public:
   /// @{
 
   /// Exponential map at identity - create a rotation from canonical coordinates \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$
-  static Pose3 Expmap(const Vector6& xi, OptionalJacobian<6, 6> Hxi = boost::none);
+  static Pose3 Expmap(const Vector6& xi, OptionalJacobian<6, 6> Hxi = {});
 
   /// Log map at identity - return the canonical coordinates \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$ of this rotation
-  static Vector6 Logmap(const Pose3& pose, OptionalJacobian<6, 6> Hpose = boost::none);
+  static Vector6 Logmap(const Pose3& pose, OptionalJacobian<6, 6> Hpose = {});
 
   /**
    * Calculate Adjoint map, transforming a twist in this pose's (i.e, body) frame to the world spatial frame
@@ -157,13 +157,13 @@ public:
    * Note that H_xib = AdjointMap()
    */
   Vector6 Adjoint(const Vector6& xi_b,
-                  OptionalJacobian<6, 6> H_this = boost::none,
-                  OptionalJacobian<6, 6> H_xib = boost::none) const;
+                  OptionalJacobian<6, 6> H_this = {},
+                  OptionalJacobian<6, 6> H_xib = {}) const;
   
   /// The dual version of Adjoint
   Vector6 AdjointTranspose(const Vector6& x,
-                           OptionalJacobian<6, 6> H_this = boost::none,
-                           OptionalJacobian<6, 6> H_x = boost::none) const;
+                           OptionalJacobian<6, 6> H_this = {},
+                           OptionalJacobian<6, 6> H_x = {}) const;
 
   /**
    * Compute the [ad(w,v)] operator as defined in [Kobilarov09siggraph], pg 11
@@ -186,8 +186,8 @@ public:
    * Action of the adjointMap on a Lie-algebra vector y, with optional derivatives
    */
   static Vector6 adjoint(const Vector6& xi, const Vector6& y,
-                         OptionalJacobian<6, 6> Hxi = boost::none,
-                         OptionalJacobian<6, 6> H_y = boost::none);
+                         OptionalJacobian<6, 6> Hxi = {},
+                         OptionalJacobian<6, 6> H_y = {});
 
   // temporary fix for wrappers until case issue is resolved
   static Matrix6 adjointMap_(const Vector6 &xi) { return adjointMap(xi);}
@@ -197,8 +197,8 @@ public:
    * The dual version of adjoint action, acting on the dual space of the Lie-algebra vector space.
    */
   static Vector6 adjointTranspose(const Vector6& xi, const Vector6& y,
-                                  OptionalJacobian<6, 6> Hxi = boost::none,
-                                  OptionalJacobian<6, 6> H_y = boost::none);
+                                  OptionalJacobian<6, 6> Hxi = {},
+                                  OptionalJacobian<6, 6> H_y = {});
 
   /// Derivative of Expmap
   static Matrix6 ExpmapDerivative(const Vector6& xi);
@@ -208,8 +208,8 @@ public:
 
   // Chart at origin, depends on compile-time flag GTSAM_POSE3_EXPMAP
   struct ChartAtOrigin {
-    static Pose3 Retract(const Vector6& xi, ChartJacobian Hxi = boost::none);
-    static Vector6 Local(const Pose3& pose, ChartJacobian Hpose = boost::none);
+    static Pose3 Retract(const Vector6& xi, ChartJacobian Hxi = {});
+    static Vector6 Local(const Pose3& pose, ChartJacobian Hpose = {});
   };
 
   /**
@@ -250,7 +250,7 @@ public:
    * @return point in world coordinates
    */
   Point3 transformFrom(const Point3& point, OptionalJacobian<3, 6> Hself =
-      boost::none, OptionalJacobian<3, 3> Hpoint = boost::none) const;
+      {}, OptionalJacobian<3, 3> Hpoint = {}) const;
 
   /**
    * @brief transform many points in Pose coordinates and transform to world.
@@ -272,7 +272,7 @@ public:
    * @return point in Pose coordinates
    */
   Point3 transformTo(const Point3& point, OptionalJacobian<3, 6> Hself =
-      boost::none, OptionalJacobian<3, 3> Hpoint = boost::none) const;
+      {}, OptionalJacobian<3, 3> Hpoint = {}) const;
 
   /**
    * @brief transform many points in world coordinates and transform to Pose.
@@ -286,10 +286,10 @@ public:
   /// @{
 
   /// get rotation
-  const Rot3& rotation(OptionalJacobian<3, 6> Hself = boost::none) const;
+  const Rot3& rotation(OptionalJacobian<3, 6> Hself = {}) const;
 
   /// get translation
-  const Point3& translation(OptionalJacobian<3, 6> Hself = boost::none) const;
+  const Point3& translation(OptionalJacobian<3, 6> Hself = {}) const;
 
   /// get x
   double x() const {
@@ -314,39 +314,39 @@ public:
     * and transforms it to world coordinates wTb = wTa * aTb.
     * This is identical to compose.
     */
-  Pose3 transformPoseFrom(const Pose3& aTb, OptionalJacobian<6, 6> Hself = boost::none,
-                                            OptionalJacobian<6, 6> HaTb = boost::none) const;
+  Pose3 transformPoseFrom(const Pose3& aTb, OptionalJacobian<6, 6> Hself = {},
+                                            OptionalJacobian<6, 6> HaTb = {}) const;
 
   /** 
    *  Assuming self == wTa, takes a pose wTb in world coordinates 
    * and transforms it to local coordinates aTb = inv(wTa) * wTb 
    */
-  Pose3 transformPoseTo(const Pose3& wTb, OptionalJacobian<6, 6> Hself = boost::none,
-                                          OptionalJacobian<6, 6> HwTb = boost::none) const;
+  Pose3 transformPoseTo(const Pose3& wTb, OptionalJacobian<6, 6> Hself = {},
+                                          OptionalJacobian<6, 6> HwTb = {}) const;
 
   /**
    * Calculate range to a landmark
    * @param point 3D location of landmark
    * @return range (double)
    */
-  double range(const Point3& point, OptionalJacobian<1, 6> Hself = boost::none,
-      OptionalJacobian<1, 3> Hpoint = boost::none) const;
+  double range(const Point3& point, OptionalJacobian<1, 6> Hself = {},
+      OptionalJacobian<1, 3> Hpoint = {}) const;
 
   /**
    * Calculate range to another pose
    * @param pose Other SO(3) pose
    * @return range (double)
    */
-  double range(const Pose3& pose, OptionalJacobian<1, 6> Hself = boost::none,
-      OptionalJacobian<1, 6> Hpose = boost::none) const;
+  double range(const Pose3& pose, OptionalJacobian<1, 6> Hself = {},
+      OptionalJacobian<1, 6> Hpose = {}) const;
 
   /**
    * Calculate bearing to a landmark
    * @param point 3D location of landmark
    * @return bearing (Unit3)
    */
-  Unit3 bearing(const Point3& point, OptionalJacobian<2, 6> Hself = boost::none,
-      OptionalJacobian<2, 3> Hpoint = boost::none) const;
+  Unit3 bearing(const Point3& point, OptionalJacobian<2, 6> Hself = {},
+      OptionalJacobian<2, 3> Hpoint = {}) const;
 
   /**
    * Calculate bearing to another pose
@@ -354,8 +354,8 @@ public:
    * information is ignored.
    * @return bearing (Unit3)
    */
-  Unit3 bearing(const Pose3& pose, OptionalJacobian<2, 6> Hself = boost::none,
-      OptionalJacobian<2, 6> Hpose = boost::none) const;
+  Unit3 bearing(const Pose3& pose, OptionalJacobian<2, 6> Hself = {},
+      OptionalJacobian<2, 6> Hpose = {}) const;
 
   /// @}
   /// @name Advanced Interface
@@ -384,8 +384,8 @@ public:
    * @param s a value between 0 and 1.5
    * @param other final point of interpolation geodesic on manifold
    */
-  Pose3 slerp(double t, const Pose3& other, OptionalJacobian<6, 6> Hx = boost::none,
-                                             OptionalJacobian<6, 6> Hy = boost::none) const;
+  Pose3 slerp(double t, const Pose3& other, OptionalJacobian<6, 6> Hx = {},
+                                             OptionalJacobian<6, 6> Hy = {}) const;
 
   /// Output stream operator
   GTSAM_EXPORT

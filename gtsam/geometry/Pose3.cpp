@@ -439,14 +439,14 @@ Unit3 Pose3::bearing(const Pose3& pose, OptionalJacobian<2, 6> Hself,
     Hpose->setZero();
     return bearing(pose.translation(), Hself, Hpose.cols<3>(3));
   }
-  return bearing(pose.translation(), Hself, boost::none);
+  return bearing(pose.translation(), Hself, {});
 }
 
 /* ************************************************************************* */
-boost::optional<Pose3> Pose3::Align(const Point3Pairs &abPointPairs) {
+std::optional<Pose3> Pose3::Align(const Point3Pairs &abPointPairs) {
   const size_t n = abPointPairs.size();
   if (n < 3) {
-    return boost::none;  // we need at least three pairs
+    return {};  // we need at least three pairs
   }
 
   // calculate centroids
@@ -466,7 +466,7 @@ boost::optional<Pose3> Pose3::Align(const Point3Pairs &abPointPairs) {
   return Pose3(aRb, aTb);
 }
 
-boost::optional<Pose3> Pose3::Align(const Matrix& a, const Matrix& b) {
+std::optional<Pose3> Pose3::Align(const Matrix& a, const Matrix& b) {
   if (a.rows() != 3 || b.rows() != 3 || a.cols() != b.cols()) {
     throw std::invalid_argument(
       "Pose3:Align expects 3*N matrices of equal shape.");
@@ -479,7 +479,7 @@ boost::optional<Pose3> Pose3::Align(const Matrix& a, const Matrix& b) {
 }
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-boost::optional<Pose3> align(const Point3Pairs &baPointPairs) {
+std::optional<Pose3> align(const Point3Pairs &baPointPairs) {
   Point3Pairs abPointPairs;
   for (const Point3Pair &baPair : baPointPairs) {
     abPointPairs.emplace_back(baPair.second, baPair.first);
