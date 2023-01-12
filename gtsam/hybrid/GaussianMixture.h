@@ -174,8 +174,17 @@ class GTSAM_EXPORT GaussianMixture
       const VectorValues &continuousValues) const;
 
   /**
-   * @brief Compute the logProbability of this Gaussian Mixture given the
-   * continuous values and a discrete assignment.
+   * @brief Compute the error of this Gaussian Mixture.
+   * 
+   * log(probability(x)) = K - error(x)
+   *
+   * @param values Continuous values and discrete assignment.
+   * @return double
+   */
+  double error(const HybridValues &values) const override;
+
+  /**
+   * @brief Compute the logProbability of this Gaussian Mixture.
    *
    * @param values Continuous values and discrete assignment.
    * @return double

@@ -290,6 +290,13 @@ AlgebraicDecisionTree<Key> GaussianMixture::logProbability(
 }
 
 /* *******************************************************************************/
+double GaussianMixture::error(const HybridValues &values) const {
+  // Directly index to get the conditional, no need to build the whole tree.
+  auto conditional = conditionals_(values.discrete());
+  return conditional->error(values.continuous());
+}
+
+/* *******************************************************************************/
 double GaussianMixture::logProbability(const HybridValues &values) const {
   // Directly index to get the conditional, no need to build the whole tree.
   auto conditional = conditionals_(values.discrete());

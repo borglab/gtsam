@@ -264,7 +264,7 @@ namespace gtsam {
 
     using Conditional::evaluate; // Expose evaluate(const HybridValues&) method..
     using Conditional::operator(); // Expose evaluate(const HybridValues&) method..
-    using Base::error; // Expose error(const HybridValues&) method..
+    using JacobianFactor::error; // Expose error(const HybridValues&) method..
 
     /// @}
 
