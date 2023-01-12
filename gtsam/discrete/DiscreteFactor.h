@@ -27,6 +27,7 @@ namespace gtsam {
 
 class DecisionTreeFactor;
 class DiscreteConditional;
+class HybridValues;
 
 /**
  * Base class for discrete probabilistic factors
@@ -82,6 +83,15 @@ public:
 
   /// Find value for given assignment of values to variables
   virtual double operator()(const DiscreteValues&) const = 0;
+
+  /// Error is just -log(value)
+  double error(const DiscreteValues& values) const;
+
+  /**
+   * The Factor::error simply extracts the \class DiscreteValues from the
+   * \class HybridValues and calculates the error.
+   */
+  double error(const HybridValues& c) const override;
 
   /// Multiply in a DecisionTreeFactor and return the result as DecisionTreeFactor
   virtual DecisionTreeFactor operator*(const DecisionTreeFactor&) const = 0;

@@ -64,10 +64,10 @@ TEST(HybridBayesNet, Add) {
 // Test evaluate for a pure discrete Bayes net P(Asia).
 TEST(HybridBayesNet, EvaluatePureDiscrete) {
   HybridBayesNet bayesNet;
-  bayesNet.emplace_back(new DiscreteConditional(Asia, "99/1"));
+  bayesNet.emplace_back(new DiscreteConditional(Asia, "4/6"));
   HybridValues values;
   values.insert(asiaKey, 0);
-  EXPECT_DOUBLES_EQUAL(0.99, bayesNet.evaluate(values), 1e-9);
+  EXPECT_DOUBLES_EQUAL(0.4, bayesNet.evaluate(values), 1e-9);
 }
 
 /* ****************************************************************************/
@@ -207,55 +207,57 @@ TEST(HybridBayesNet, Optimize) {
 
 /* ****************************************************************************/
 // Test Bayes net error
-TEST(HybridBayesNet, Error) {
+TEST(HybridBayesNet, logProbability) {
   Switching s(3);
 
   HybridBayesNet::shared_ptr hybridBayesNet =
       s.linearizedFactorGraph.eliminateSequential();
+  EXPECT_LONGS_EQUAL(5, hybridBayesNet->size());
 
   HybridValues delta = hybridBayesNet->optimize();
-  auto error_tree = hybridBayesNet->error(delta.continuous());
+  auto error_tree = hybridBayesNet->logProbability(delta.continuous());
 
   std::vector<DiscreteKey> discrete_keys = {{M(0), 2}, {M(1), 2}};
-  std::vector<double> leaves = {0.0097568009, 3.3973404e-31, 0.029126214,
-                                0.0097568009};
+  std::vector<double> leaves = {4.1609374, 4.1706942, 4.141568, 4.1609374};
   AlgebraicDecisionTree<Key> expected_error(discrete_keys, leaves);
 
   // regression
-  EXPECT(assert_equal(expected_error, error_tree, 1e-9));
+  EXPECT(assert_equal(expected_error, error_tree, 1e-6));
 
-  // Error on pruned Bayes net
+  // logProbability on pruned Bayes net
   auto prunedBayesNet = hybridBayesNet->prune(2);
-  auto pruned_error_tree = prunedBayesNet.error(delta.continuous());
+  auto pruned_error_tree = prunedBayesNet.logProbability(delta.continuous());
 
-  std::vector<double> pruned_leaves = {2e50, 3.3973404e-31, 2e50, 0.0097568009};
+  std::vector<double> pruned_leaves = {2e50, 4.1706942, 2e50, 4.1609374};
   AlgebraicDecisionTree<Key> expected_pruned_error(discrete_keys,
                                                    pruned_leaves);
 
   // regression
-  EXPECT(assert_equal(expected_pruned_error, pruned_error_tree, 1e-9));
+  EXPECT(assert_equal(expected_pruned_error, pruned_error_tree, 1e-6));
 
-  // Verify error computation and check for specific error value
-  DiscreteValues discrete_values{{M(0), 1}, {M(1), 1}};
+  // Verify logProbability computation and check for specific logProbability
+  // value
+  const DiscreteValues discrete_values{{M(0), 1}, {M(1), 1}};
+  const HybridValues hybridValues{delta.continuous(), discrete_values};
+  double logProbability = 0;
+  logProbability +=
+      hybridBayesNet->at(0)->asMixture()->logProbability(hybridValues);
+  logProbability +=
+      hybridBayesNet->at(1)->asMixture()->logProbability(hybridValues);
+  logProbability +=
+      hybridBayesNet->at(2)->asMixture()->logProbability(hybridValues);
 
-  double total_error = 0;
-  for (size_t idx = 0; idx < hybridBayesNet->size(); idx++) {
-    if (hybridBayesNet->at(idx)->isHybrid()) {
-      double error = hybridBayesNet->at(idx)->asMixture()->error(
-          {delta.continuous(), discrete_values});
-      total_error += error;
-    } else if (hybridBayesNet->at(idx)->isContinuous()) {
-      double error =
-          hybridBayesNet->at(idx)->asGaussian()->error(delta.continuous());
-      total_error += error;
-    }
-  }
+  // TODO(dellaert): the discrete errors are not added in logProbability tree!
+  EXPECT_DOUBLES_EQUAL(logProbability, error_tree(discrete_values), 1e-9);
+  EXPECT_DOUBLES_EQUAL(logProbability, pruned_error_tree(discrete_values),
+                       1e-9);
 
-  EXPECT_DOUBLES_EQUAL(
-      total_error, hybridBayesNet->error({delta.continuous(), discrete_values}),
-      1e-9);
-  EXPECT_DOUBLES_EQUAL(total_error, error_tree(discrete_values), 1e-9);
-  EXPECT_DOUBLES_EQUAL(total_error, pruned_error_tree(discrete_values), 1e-9);
+  logProbability +=
+      hybridBayesNet->at(3)->asDiscrete()->logProbability(discrete_values);
+  logProbability +=
+      hybridBayesNet->at(4)->asDiscrete()->logProbability(discrete_values);
+  EXPECT_DOUBLES_EQUAL(logProbability,
+                       hybridBayesNet->logProbability(hybridValues), 1e-9);
 }
 
 /* ****************************************************************************/

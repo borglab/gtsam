@@ -464,24 +464,6 @@ AlgebraicDecisionTree<Key> HybridGaussianFactorGraph::error(
 }
 
 /* ************************************************************************ */
-double HybridGaussianFactorGraph::error(const HybridValues &values) const {
-  double error = 0.0;
-  for (auto &f : factors_) {
-    if (auto hf = dynamic_pointer_cast<GaussianFactor>(f)) {
-      error += hf->error(values.continuous());
-    } else if (auto hf = dynamic_pointer_cast<HybridFactor>(f)) {
-      // TODO(dellaert): needs to change when we discard other wrappers.
-      error += hf->error(values);
-    } else if (auto dtf = dynamic_pointer_cast<DecisionTreeFactor>(f)) {
-      error -= log((*dtf)(values.discrete()));
-    } else {
-      throwRuntimeError("HybridGaussianFactorGraph::error(HV)", f);
-    }
-  }
-  return error;
-}
-
-/* ************************************************************************ */
 double HybridGaussianFactorGraph::probPrime(const HybridValues &values) const {
   double error = this->error(values);
   // NOTE: The 0.5 term is handled by each factor

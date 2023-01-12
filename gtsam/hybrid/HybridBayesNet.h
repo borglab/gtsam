@@ -188,22 +188,16 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
   HybridBayesNet prune(size_t maxNrLeaves);
 
   /**
-   * @brief 0.5 * sum of squared Mahalanobis distances
-   * for a specific discrete assignment.
-   *
-   * @param values Continuous values and discrete assignment.
-   * @return double
-   */
-  double error(const HybridValues &values) const;
-
-  /**
    * @brief Compute conditional error for each discrete assignment,
    * and return as a tree.
    *
    * @param continuousValues Continuous values at which to compute the error.
    * @return AlgebraicDecisionTree<Key>
    */
-  AlgebraicDecisionTree<Key> error(const VectorValues &continuousValues) const;
+  AlgebraicDecisionTree<Key> logProbability(
+      const VectorValues &continuousValues) const;
+
+  using BayesNet::logProbability;  // expose HybridValues version
 
   /**
    * @brief Compute unnormalized probability q(μ|M),
@@ -215,7 +209,7 @@ class GTSAM_EXPORT HybridBayesNet : public BayesNet<HybridConditional> {
    * probability.
    * @return AlgebraicDecisionTree<Key>
    */
-  AlgebraicDecisionTree<Key> probPrime(
+  AlgebraicDecisionTree<Key> evaluate(
       const VectorValues &continuousValues) const;
 
   /**

@@ -17,10 +17,10 @@
 
 #pragma once
 
-#include <gtsam/symbolic/SymbolicFactor.h>
-#include <gtsam/inference/Conditional.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/types.h>
+#include <gtsam/inference/Conditional-inst.h>
+#include <gtsam/symbolic/SymbolicFactor.h>
 
 namespace gtsam {
 
@@ -95,13 +95,10 @@ namespace gtsam {
       return FromIteratorsShared(keys.begin(), keys.end(), nrFrontals);
     }
 
-    ~SymbolicConditional() override {}
-
     /// Copy this object as its actual derived type.
     SymbolicFactor::shared_ptr clone() const { return boost::make_shared<This>(*this); }
 
     /// @}
-
     /// @name Testable
     /// @{
 
@@ -112,6 +109,19 @@ namespace gtsam {
 
     /** Check equality */
     bool equals(const This& c, double tol = 1e-9) const;
+
+    /// @}
+    /// @name HybridValues methods.
+    /// @{
+
+    /// logProbability throws exception, symbolic.
+    double logProbability(const HybridValues& x) const override;
+
+    /// evaluate throws exception, symbolic.
+    double evaluate(const HybridValues& x) const override;
+
+    using Conditional::operator(); // Expose evaluate(const HybridValues&) method..
+    using SymbolicFactor::error; // Expose error(const HybridValues&) method..
 
     /// @}
 

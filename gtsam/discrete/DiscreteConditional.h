@@ -18,9 +18,9 @@
 
 #pragma once
 
+#include <gtsam/inference/Conditional-inst.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/Signature.h>
-#include <gtsam/inference/Conditional.h>
 
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
@@ -147,6 +147,11 @@ class GTSAM_EXPORT DiscreteConditional
   /// @name Standard Interface
   /// @{
 
+  /// Log-probability is just -error(x).
+  double logProbability(const DiscreteValues& x) const  {
+    return -error(x);
+  }
+
   /// print index signature only
   void printSignature(
       const std::string& s = "Discrete Conditional: ",
@@ -224,6 +229,21 @@ class GTSAM_EXPORT DiscreteConditional
   /// Render as html table.
   std::string html(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
                    const Names& names = {}) const override;
+
+
+  /// @}
+  /// @name HybridValues methods.
+  /// @{
+
+  /**
+   * Calculate log-probability log(evaluate(x)) for HybridValues `x`.
+   * This is actually just -error(x).
+   */
+  double logProbability(const HybridValues& x) const override {
+    return -error(x);
+  }
+
+  using DecisionTreeFactor::evaluate;
 
   /// @}
 

@@ -65,7 +65,7 @@ class HybridFactorGraph : public FactorGraph<Factor> {
   /// @{
 
   /// Get all the discrete keys in the factor graph.
-  DiscreteKeys discreteKeys() const;
+  std::set<DiscreteKey> discreteKeys() const;
 
   /// Get all the discrete keys in the factor graph, as a set.
   KeySet discreteKeySet() const;

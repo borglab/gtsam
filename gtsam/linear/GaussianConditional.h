@@ -133,64 +133,6 @@ namespace gtsam {
     /// @{
 
     /**
-     * Calculate probability density for given values `x`:
-     *   exp(-error(x)) / sqrt((2*pi)^n*det(Sigma))
-     * where x is the vector of values, and Sigma is the covariance matrix.
-     * Note that error(x)=0.5*e'*e includes the 0.5 factor already.
-     */
-    double evaluate(const VectorValues& x) const;
-
-    /// Evaluate probability density, sugar.
-    double operator()(const VectorValues& x) const {
-      return evaluate(x);
-    }
-
-    /**
-     * Calculate log-density for given values `x`:
-     *  -error(x) - 0.5 * n*log(2*pi) - 0.5 * log det(Sigma)
-     * where x is the vector of values, and Sigma is the covariance matrix.
-     */
-    double logDensity(const VectorValues& x) const;
-
-    /** Return a view of the upper-triangular R block of the conditional */
-    constABlock R() const { return Ab_.range(0, nrFrontals()); }
-
-    /** Get a view of the parent blocks. */
-    constABlock S() const { return Ab_.range(nrFrontals(), size()); }
-
-    /** Get a view of the S matrix for the variable pointed to by the given key iterator */
-    constABlock S(const_iterator it) const { return BaseFactor::getA(it); }
-
-    /** Get a view of the r.h.s. vector d */
-    const constBVector d() const { return BaseFactor::getb(); }
-
-    /**
-     * @brief Compute the determinant of the R matrix.
-     *
-     * The determinant is computed in log form using logDeterminant for
-     * numerical stability and then exponentiated.
-     * 
-     * Note, the covariance matrix \f$ \Sigma = (R^T R)^{-1} \f$, and hence
-     * \f$ \det(\Sigma) = 1 / \det(R^T R) = 1 / determinant()^ 2 \f$.
-     *
-     * @return double
-     */
-    inline double determinant() const { return exp(logDeterminant()); }
-
-    /**
-     * @brief Compute the log determinant of the R matrix.
-     * 
-     * For numerical stability, the determinant is computed in log
-     * form, so it is a summation rather than a multiplication.
-     *
-     * Note, the covariance matrix \f$ \Sigma = (R^T R)^{-1} \f$, and hence
-     * \f$ \log \det(\Sigma) = - \log \det(R^T R) = - 2 logDeterminant() \f$.
-     *
-     * @return double
-     */
-    double logDeterminant() const;
-
-    /**
      * normalization constant = 1.0 / sqrt((2*pi)^n*det(Sigma))
      * log = - 0.5 * n*log(2*pi) - 0.5 * log det(Sigma)
      */
@@ -201,6 +143,27 @@ namespace gtsam {
      */
     inline double normalizationConstant() const {
       return exp(logNormalizationConstant());
+    }
+
+    /**
+     * Calculate log-probability log(evaluate(x)) for given values `x`:
+     *  -error(x) - 0.5 * n*log(2*pi) - 0.5 * log det(Sigma)
+     * where x is the vector of values, and Sigma is the covariance matrix.
+     * This differs from error as it is log, not negative log, and it
+     * includes the normalization constant.
+     */
+    double logProbability(const VectorValues& x) const;
+
+    /**
+     * Calculate probability density for given values `x`:
+     *   exp(logProbability(x)) == exp(-GaussianFactor::error(x)) / sqrt((2*pi)^n*det(Sigma))
+     * where x is the vector of values, and Sigma is the covariance matrix.
+     */
+    double evaluate(const VectorValues& x) const;
+
+    /// Evaluate probability density, sugar.
+    double operator()(const VectorValues& x) const {
+      return evaluate(x);
     }
 
     /**
@@ -255,6 +218,63 @@ namespace gtsam {
     VectorValues sample(const VectorValues& parentsValues) const;
 
     /// @}
+    /// @name Linear algebra.
+    /// @{
+
+    /** Return a view of the upper-triangular R block of the conditional */
+    constABlock R() const { return Ab_.range(0, nrFrontals()); }
+
+    /** Get a view of the parent blocks. */
+    constABlock S() const { return Ab_.range(nrFrontals(), size()); }
+
+    /** Get a view of the S matrix for the variable pointed to by the given key iterator */
+    constABlock S(const_iterator it) const { return BaseFactor::getA(it); }
+
+    /** Get a view of the r.h.s. vector d */
+    const constBVector d() const { return BaseFactor::getb(); }
+
+    /**
+     * @brief Compute the determinant of the R matrix.
+     *
+     * The determinant is computed in log form using logDeterminant for
+     * numerical stability and then exponentiated.
+     * 
+     * Note, the covariance matrix \f$ \Sigma = (R^T R)^{-1} \f$, and hence
+     * \f$ \det(\Sigma) = 1 / \det(R^T R) = 1 / determinant()^ 2 \f$.
+     *
+     * @return double
+     */
+    inline double determinant() const { return exp(logDeterminant()); }
+
+    /**
+     * @brief Compute the log determinant of the R matrix.
+     * 
+     * For numerical stability, the determinant is computed in log
+     * form, so it is a summation rather than a multiplication.
+     *
+     * Note, the covariance matrix \f$ \Sigma = (R^T R)^{-1} \f$, and hence
+     * \f$ \log \det(\Sigma) = - \log \det(R^T R) = - 2 logDeterminant() \f$.
+     *
+     * @return double
+     */
+    double logDeterminant() const;
+
+    /// @}
+    /// @name HybridValues methods.
+    /// @{
+
+    /**
+     * Calculate log-probability log(evaluate(x)) for HybridValues `x`.
+     * Simply dispatches to VectorValues version.
+     */
+    double logProbability(const HybridValues& x) const override;
+
+    using Conditional::evaluate; // Expose evaluate(const HybridValues&) method..
+    using Conditional::operator(); // Expose evaluate(const HybridValues&) method..
+    using Base::error; // Expose error(const HybridValues&) method..
+
+    /// @}
+
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
     /// @name Deprecated

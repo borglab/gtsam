@@ -145,6 +145,8 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
   /// @name Standard Interface
   /// @{
 
+  using Base::error; // Expose error(const HybridValues&) method..
+
   /**
    * @brief Compute error for each discrete assignment,
    * and return as a tree.
@@ -155,14 +157,6 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
    * @return AlgebraicDecisionTree<Key>
    */
   AlgebraicDecisionTree<Key> error(const VectorValues& continuousValues) const;
-
-  /**
-   * @brief Compute error given a continuous vector values
-   * and a discrete assignment.
-   *
-   * @return double
-   */
-  double error(const HybridValues& values) const;
 
   /**
    * @brief Compute unnormalized probability \f$ P(X | M, Z) \f$

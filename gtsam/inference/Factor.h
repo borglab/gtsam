@@ -29,21 +29,38 @@
 #include <gtsam/inference/Key.h>
 
 namespace gtsam {
-/// Define collection types:
-typedef FastVector<FactorIndex> FactorIndices;
-typedef FastSet<FactorIndex> FactorIndexSet;
+
+  /// Define collection types:
+  typedef FastVector<FactorIndex> FactorIndices;
+  typedef FastSet<FactorIndex> FactorIndexSet;
+
+  class HybridValues; // forward declaration of a Value type for error.
 
   /**
-   * This is the base class for all factor types.  This class does not store any
+   * This is the base class for all factor types, as well as conditionals, 
+   * which are implemented as specialized factors.  This class does not store any
    * data other than its keys.  Derived classes store data such as matrices and
    * probability tables.
    *
-   * Note that derived classes *must* redefine the `This` and `shared_ptr`
-   * typedefs. See JacobianFactor, etc. for examples.
+   * The `error` method is used to evaluate the factor, and is the only method
+   * that is required to be implemented in derived classes, although it has a 
+   * default implementation that throws an exception.
+   * 
+   * There are five broad classes of factors that derive from Factor:
    *
-   * This class is \b not virtual for performance reasons - the derived class
-   * SymbolicFactor needs to be created and destroyed quickly during symbolic
-   * elimination.  GaussianFactor and NonlinearFactor are virtual. 
+   * - \b Nonlinear factors, such as \class NonlinearFactor and \class NoiseModelFactor, which
+   *   represent a nonlinear likelihood function over a set of variables.
+   * - \b Gaussian factors, such as \class JacobianFactor and \class HessianFactor, which
+   *   represent a Gaussian likelihood over a set of variables.
+   * - \b Discrete factors, such as \class DiscreteFactor and \class DecisionTreeFactor, which
+   *   represent a discrete distribution over a set of variables.
+   * - \b Hybrid factors, such as \class HybridFactor, which represent a mixture of
+   *   Gaussian and discrete distributions over a set of variables.
+   * - \b Symbolic factors, used to represent a graph structure, such as
+   *   \class SymbolicFactor, only used for symbolic elimination etc.
+   *
+   * Note that derived classes must also redefine the `This` and `shared_ptr`
+   * typedefs. See JacobianFactor, etc. for examples.
    * 
    * \nosubgrouping
    */
@@ -128,6 +145,12 @@ typedef FastSet<FactorIndex> FactorIndexSet;
    /** Iterator at end of involved variable keys */
    const_iterator end() const { return keys_.end(); }
 
+  /**
+   * All factor types need to implement an error function.
+   * In factor graphs, this is the negative log-likelihood.
+   */
+  virtual double error(const HybridValues& c) const;
+
    /**
     * @return the number of variables involved in this factor
     */
@@ -152,7 +175,6 @@ typedef FastSet<FactorIndex> FactorIndexSet;
     bool equals(const This& other, double tol = 1e-9) const;
 
     /// @}
-
     /// @name Advanced Interface
     /// @{
 
@@ -165,7 +187,13 @@ typedef FastSet<FactorIndex> FactorIndexSet;
     /** Iterator at end of involved variable keys */
     iterator end() { return keys_.end(); }
 
+    /// @}
+
   private:
+
+    /// @name Serialization
+    /// @{
+
     /** Serialization function */
     friend class boost::serialization::access;
     template<class Archive>
@@ -177,4 +205,4 @@ typedef FastSet<FactorIndex> FactorIndexSet;
 
   };
 
-}
+} // \namespace gtsam

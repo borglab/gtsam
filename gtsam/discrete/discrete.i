@@ -95,6 +95,9 @@ virtual class DiscreteConditional : gtsam::DecisionTreeFactor {
   DiscreteConditional(const gtsam::DecisionTreeFactor& joint,
                       const gtsam::DecisionTreeFactor& marginal,
                       const gtsam::Ordering& orderedKeys);
+  double logProbability(const gtsam::DiscreteValues& values) const;
+  double evaluate(const gtsam::DiscreteValues& values) const;
+  double operator()(const gtsam::DiscreteValues& values) const;
   gtsam::DiscreteConditional operator*(
       const gtsam::DiscreteConditional& other) const;
   gtsam::DiscreteConditional marginal(gtsam::Key key) const;
@@ -157,7 +160,12 @@ class DiscreteBayesNet {
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::DiscreteBayesNet& other, double tol = 1e-9) const;
+
+  // Standard interface.
+  double logProbability(const gtsam::DiscreteValues& values) const;
+  double evaluate(const gtsam::DiscreteValues& values) const;
   double operator()(const gtsam::DiscreteValues& values) const;
+
   gtsam::DiscreteValues sample() const;
   gtsam::DiscreteValues sample(gtsam::DiscreteValues given) const;
 

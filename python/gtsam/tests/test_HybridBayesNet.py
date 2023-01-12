@@ -10,14 +10,15 @@ Author: Frank Dellaert
 """
 # pylint: disable=invalid-name, no-name-in-module, no-member
 
+import math
 import unittest
 
 import numpy as np
 from gtsam.symbol_shorthand import A, X
 from gtsam.utils.test_case import GtsamTestCase
 
-from gtsam import (DiscreteKeys, GaussianMixture, DiscreteConditional, GaussianConditional, GaussianMixture,
-                   HybridBayesNet, HybridValues, noiseModel)
+from gtsam import (DiscreteConditional, DiscreteKeys, GaussianConditional,
+                   GaussianMixture, HybridBayesNet, HybridValues, noiseModel)
 
 
 class TestHybridBayesNet(GtsamTestCase):
@@ -30,8 +31,8 @@ class TestHybridBayesNet(GtsamTestCase):
 
         # Create the continuous conditional
         I_1x1 = np.eye(1)
-        gc = GaussianConditional.FromMeanAndStddev(X(0), 2 * I_1x1, X(1), [-4],
-                                                   5.0)
+        conditional = GaussianConditional.FromMeanAndStddev(X(0), 2 * I_1x1, X(1), [-4],
+                                                            5.0)
 
         # Create the noise models
         model0 = noiseModel.Diagonal.Sigmas([2.0])
@@ -45,7 +46,7 @@ class TestHybridBayesNet(GtsamTestCase):
 
         # Create hybrid Bayes net.
         bayesNet = HybridBayesNet()
-        bayesNet.push_back(gc)
+        bayesNet.push_back(conditional)
         bayesNet.push_back(GaussianMixture(
             [X(1)], [], discrete_keys, [conditional0, conditional1]))
         bayesNet.push_back(DiscreteConditional(Asia, "99/1"))
@@ -56,12 +57,16 @@ class TestHybridBayesNet(GtsamTestCase):
         values.insert(X(0), [-6])
         values.insert(X(1), [1])
 
-        conditionalProbability = gc.evaluate(values.continuous())
+        conditionalProbability = conditional.evaluate(values.continuous())
         mixtureProbability = conditional0.evaluate(values.continuous())
         self.assertAlmostEqual(conditionalProbability * mixtureProbability *
                                0.99,
                                bayesNet.evaluate(values),
                                places=5)
+
+        # Check logProbability
+        self.assertAlmostEqual(bayesNet.logProbability(values),
+                               math.log(bayesNet.evaluate(values)))
 
 
 if __name__ == "__main__":

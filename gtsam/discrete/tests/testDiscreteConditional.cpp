@@ -88,6 +88,29 @@ TEST(DiscreteConditional, constructors3) {
   EXPECT(assert_equal(expected, static_cast<DecisionTreeFactor>(actual)));
 }
 
+/* ****************************************************************************/
+// Test evaluate for a discrete Prior P(Asia).
+TEST(DiscreteConditional, PriorProbability) {
+  constexpr Key asiaKey = 0;
+  const DiscreteKey Asia(asiaKey, 2);
+  DiscreteConditional dc(Asia, "4/6");
+  DiscreteValues values{{asiaKey, 0}};
+  EXPECT_DOUBLES_EQUAL(0.4, dc.evaluate(values), 1e-9);
+}
+
+/* ************************************************************************* */
+// Check that error, logProbability, evaluate all work as expected.
+TEST(DiscreteConditional, probability) {
+  DiscreteKey C(2, 2), D(4, 2), E(3, 2);
+  DiscreteConditional C_given_DE((C | D, E) = "4/1 1/1 1/1 1/4");
+
+  DiscreteValues given {{C.first, 1}, {D.first, 0}, {E.first, 0}};
+  EXPECT_DOUBLES_EQUAL(0.2, C_given_DE.evaluate(given), 1e-9);
+  EXPECT_DOUBLES_EQUAL(0.2, C_given_DE(given), 1e-9);
+  EXPECT_DOUBLES_EQUAL(log(0.2), C_given_DE.logProbability(given), 1e-9);
+  EXPECT_DOUBLES_EQUAL(-log(0.2), C_given_DE.error(given), 1e-9);
+}
+
 /* ************************************************************************* */
 // Check calculation of joint P(A,B)
 TEST(DiscreteConditional, Multiply) {

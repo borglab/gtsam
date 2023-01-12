@@ -10,14 +10,13 @@ Author: Frank Dellaert
 """
 # pylint: disable=invalid-name, no-name-in-module, no-member
 
-from __future__ import print_function
-
 import unittest
 
-import gtsam
 import numpy as np
-from gtsam import GaussianBayesNet, GaussianConditional
 from gtsam.utils.test_case import GtsamTestCase
+
+import gtsam
+from gtsam import GaussianBayesNet, GaussianConditional
 
 # some keys
 _x_ = 11
@@ -44,6 +43,18 @@ class TestGaussianBayesNet(GtsamTestCase):
         d1 = np.array([9.0, 5.0])
         np.testing.assert_equal(R, R1)
         np.testing.assert_equal(d, d1)
+
+    def test_evaluate(self):
+        """Test evaluate method"""
+        bayesNet = smallBayesNet()
+        values = gtsam.VectorValues()
+        values.insert(_x_, np.array([9.0]))
+        values.insert(_y_, np.array([5.0]))
+        for i in [0, 1]:
+            self.assertAlmostEqual(bayesNet.at(i).logProbability(values),
+                                   np.log(bayesNet.at(i).evaluate(values)))
+        self.assertAlmostEqual(bayesNet.logProbability(values),
+                               np.log(bayesNet.evaluate(values)))
 
     def test_sample(self):
         """Test sample method"""

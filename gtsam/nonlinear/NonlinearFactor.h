@@ -74,6 +74,7 @@ public:
 
   /** Check if two factors are equal */
   virtual bool equals(const NonlinearFactor& f, double tol = 1e-9) const;
+
   /// @}
   /// @name Standard Interface
   /// @{
@@ -81,13 +82,25 @@ public:
   /** Destructor */
   virtual ~NonlinearFactor() {}
 
+  /**
+   * In nonlinear factors, the error function returns the negative log-likelihood
+   * as a non-linear function of the values in a \class Values object.
+   * 
+   * The idea is that Gaussian factors have a quadratic error function that locally 
+   * approximates the negative log-likelihood, and are obtained by \b linearizing
+   * the nonlinear error function at a given linearization.
+   * 
+   * The derived class, \class NoiseModelFactor, adds a noise model to the factor,
+   * and calculates the error by asking the user to implement the method
+   * \code double evaluateError(const Values& c) const \endcode.
+   */
+  virtual double error(const Values& c) const;
 
   /**
-   * Calculate the error of the factor
-   * This is typically equal to log-likelihood, e.g. \f$ 0.5(h(x)-z)^2/sigma^2 \f$ in case of Gaussian.
-   * You can override this for systems with unusual noise models.
+   * The Factor::error simply extracts the \class Values from the
+   * \class HybridValues and calculates the error.
    */
-  virtual double error(const Values& c) const = 0;
+  double error(const HybridValues& c) const override;
 
   /** get the dimension of the factor (number of rows on linearization) */
   virtual size_t dim() const = 0;

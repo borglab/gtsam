@@ -104,7 +104,25 @@ namespace gtsam {
 
   /* ************************************************************************* */
   double GaussianBayesNet::error(const VectorValues& x) const {
-    return GaussianFactorGraph(*this).error(x);
+    double sum = 0.;
+    for (const auto& gc : *this) {
+      if (gc) sum += gc->error(x);
+    }
+    return sum;
+  }
+
+  /* ************************************************************************* */
+  double GaussianBayesNet::logProbability(const VectorValues& x) const {
+    double sum = 0.;
+    for (const auto& gc : *this) {
+      if (gc) sum += gc->logProbability(x);
+    }
+    return sum;
+  }
+
+  /* ************************************************************************* */
+  double GaussianBayesNet::evaluate(const VectorValues& x) const {
+    return exp(logProbability(x));
   }
 
   /* ************************************************************************* */
@@ -222,20 +240,6 @@ namespace gtsam {
       logDet += cg->logDeterminant();
     }
     return logDet;
-  }
-
-  /* ************************************************************************* */
-  double GaussianBayesNet::logDensity(const VectorValues& x) const {
-    double sum = 0.0;
-    for (const auto& conditional : *this) {
-      if (conditional) sum += conditional->logDensity(x);
-    }
-    return sum;
-  }
-
-  /* ************************************************************************* */
-  double GaussianBayesNet::evaluate(const VectorValues& x) const {
-    return exp(logDensity(x));
   }
 
   /* ************************************************************************* */
