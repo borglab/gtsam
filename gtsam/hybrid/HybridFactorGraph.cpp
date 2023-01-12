@@ -25,7 +25,7 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-std::set<DiscreteKey> HybridFactorGraph::discreteKeys() const {
+DiscreteKeys HybridFactorGraph::discreteKeys() const {
   std::set<DiscreteKey> keys;
   for (auto& factor : factors_) {
     if (auto p = boost::dynamic_pointer_cast<DecisionTreeFactor>(factor)) {
@@ -39,7 +39,7 @@ std::set<DiscreteKey> HybridFactorGraph::discreteKeys() const {
       }
     }
   }
-  return keys;
+  return DiscreteKeys(keys.begin(), keys.end());
 }
 
 /* ************************************************************************* */
