@@ -55,11 +55,17 @@ class GTSAM_EXPORT HybridNonlinearFactorGraph : public HybridFactorGraph {
       : Base(graph) {}
 
   /// @}
+  /// @name Constructors
+  /// @{
 
   /// Print the factor graph.
   void print(
       const std::string& s = "HybridNonlinearFactorGraph",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
+
+  /// @}
+  /// @name Standard Interface
+  /// @{
 
   /**
    * @brief Linearize all the continuous factors in the
@@ -70,6 +76,7 @@ class GTSAM_EXPORT HybridNonlinearFactorGraph : public HybridFactorGraph {
    */
   HybridGaussianFactorGraph::shared_ptr linearize(
       const Values& continuousValues) const;
+  /// @}
 };
 
 template <>

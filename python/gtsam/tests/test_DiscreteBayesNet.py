@@ -11,13 +11,15 @@ Author: Frank Dellaert
 
 # pylint: disable=no-name-in-module, invalid-name
 
+import math
 import textwrap
 import unittest
+
+from gtsam.utils.test_case import GtsamTestCase
 
 import gtsam
 from gtsam import (DiscreteBayesNet, DiscreteConditional, DiscreteDistribution,
                    DiscreteFactorGraph, DiscreteKeys, DiscreteValues, Ordering)
-from gtsam.utils.test_case import GtsamTestCase
 
 # Some keys:
 Asia = (0, 2)
@@ -111,7 +113,7 @@ class TestDiscreteBayesNet(GtsamTestCase):
         self.assertEqual(len(actualSample), 8)
 
     def test_fragment(self):
-        """Test sampling and optimizing for Asia fragment."""
+        """Test evaluate/sampling/optimizing for Asia fragment."""
 
         # Create a reverse-topologically sorted fragment:
         fragment = DiscreteBayesNet()
@@ -125,8 +127,14 @@ class TestDiscreteBayesNet(GtsamTestCase):
             given[key[0]] = 0
 
         # Now sample from fragment:
-        actual = fragment.sample(given)
-        self.assertEqual(len(actual), 5)
+        values = fragment.sample(given)
+        self.assertEqual(len(values), 5)
+
+        for i in [0, 1, 2]:
+            self.assertAlmostEqual(fragment.at(i).logProbability(values),
+                                   math.log(fragment.at(i).evaluate(values)))
+        self.assertAlmostEqual(fragment.logProbability(values),
+                               math.log(fragment.evaluate(values)))
 
     def test_dot(self):
         """Check that dot works with position hints."""
@@ -139,7 +147,7 @@ class TestDiscreteBayesNet(GtsamTestCase):
         # Make sure we can *update* position hints
         writer = gtsam.DotWriter()
         ph: dict = writer.positionHints
-        ph['a'] = 2 # hint at symbol position
+        ph['a'] = 2  # hint at symbol position
         writer.positionHints = ph
 
         # Check the output of dot

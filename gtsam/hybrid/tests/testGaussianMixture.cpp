@@ -116,11 +116,12 @@ TEST(GaussianMixture, Error) {
   VectorValues values;
   values.insert(X(1), Vector2::Ones());
   values.insert(X(2), Vector2::Zero());
-  auto error_tree = mixture.error(values);
+  auto error_tree = mixture.logProbability(values);
 
-  // regression
+  // Check result.
   std::vector<DiscreteKey> discrete_keys = {m1};
-  std::vector<double> leaves = {0.5, 4.3252595};
+  std::vector<double> leaves = {conditional0->logProbability(values),
+                                conditional1->logProbability(values)};
   AlgebraicDecisionTree<Key> expected_error(discrete_keys, leaves);
 
   EXPECT(assert_equal(expected_error, error_tree, 1e-6));
@@ -128,10 +129,11 @@ TEST(GaussianMixture, Error) {
   // Regression for non-tree version.
   DiscreteValues assignment;
   assignment[M(1)] = 0;
-  EXPECT_DOUBLES_EQUAL(0.5, mixture.error({values, assignment}), 1e-8);
+  EXPECT_DOUBLES_EQUAL(conditional0->logProbability(values),
+                       mixture.logProbability({values, assignment}), 1e-8);
   assignment[M(1)] = 1;
-  EXPECT_DOUBLES_EQUAL(4.3252595155709335, mixture.error({values, assignment}),
-                       1e-8);
+  EXPECT_DOUBLES_EQUAL(conditional1->logProbability(values),
+                       mixture.logProbability({values, assignment}), 1e-8);
 }
 
 /* ************************************************************************* */

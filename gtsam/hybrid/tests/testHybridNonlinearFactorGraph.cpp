@@ -60,12 +60,14 @@ TEST(HybridFactorGraph, GaussianFactorGraph) {
   Values linearizationPoint;
   linearizationPoint.insert<double>(X(0), 0);
 
+  // Linearize the factor graph.
   HybridGaussianFactorGraph ghfg = *fg.linearize(linearizationPoint);
+  EXPECT_LONGS_EQUAL(1, ghfg.size());
 
-  // Add a factor to the GaussianFactorGraph
-  ghfg.add(JacobianFactor(X(0), I_1x1, Vector1(5)));
-
-  EXPECT_LONGS_EQUAL(2, ghfg.size());
+  // Check that the error is the same for the nonlinear values.
+  const VectorValues zero{{X(0), Vector1(0)}};
+  const HybridValues hybridValues{zero, {}, linearizationPoint};
+  EXPECT_DOUBLES_EQUAL(fg.error(hybridValues), ghfg.error(hybridValues), 1e-9);
 }
 
 /***************************************************************************

@@ -34,6 +34,15 @@ bool DiscreteBayesNet::equals(const This& bn, double tol) const {
 }
 
 /* ************************************************************************* */
+double DiscreteBayesNet::logProbability(const DiscreteValues& values) const {
+  // evaluate all conditionals and add
+  double result = 0.0;
+  for (const DiscreteConditional::shared_ptr& conditional : *this)
+    result += conditional->logProbability(values);
+  return result;
+}
+
+/* ************************************************************************* */
 double DiscreteBayesNet::evaluate(const DiscreteValues& values) const {
   // evaluate all conditionals and multiply
   double result = 1.0;

@@ -47,6 +47,8 @@ typedef FastVector<FactorIndex> FactorIndices;
 template <class CLIQUE>
 class BayesTree;
 
+class HybridValues;
+
 /** Helper */
 template <class C>
 class CRefCallPushBack {
@@ -358,6 +360,9 @@ class FactorGraph {
 
   /** Get the last factor */
   sharedFactor back() const { return factors_.back(); }
+
+  /** Add error for all factors. */
+  double error(const HybridValues &values) const;
 
   /// @}
   /// @name Modifying Factor Graphs (imperative, discouraged)

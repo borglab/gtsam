@@ -223,6 +223,12 @@ class GTSAM_EXPORT DiscreteFactorGraph
                    const DiscreteFactor::Names& names = {}) const;
 
   /// @}
+  /// @name HybridValues methods.
+  /// @{
+
+  using Base::error;  // Expose error(const HybridValues&) method..
+
+  /// @}
 };  // \ DiscreteFactorGraph
 
 std::pair<DiscreteConditional::shared_ptr, DecisionTreeFactor::shared_ptr>  //

@@ -48,6 +48,9 @@ TEST( DecisionTreeFactor, constructors)
   EXPECT_DOUBLES_EQUAL(8, f1(values), 1e-9);
   EXPECT_DOUBLES_EQUAL(7, f2(values), 1e-9);
   EXPECT_DOUBLES_EQUAL(75, f3(values), 1e-9);
+
+  // Assert that error = -log(value)
+  EXPECT_DOUBLES_EQUAL(-log(f1(values)), f1.error(values), 1e-9);
 }
 
 /* ************************************************************************* */
