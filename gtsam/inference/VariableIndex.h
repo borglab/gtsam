@@ -28,6 +28,7 @@
 
 #include <cassert>
 #include <stdexcept>
+#include <optional>
 
 namespace gtsam {
 

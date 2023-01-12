@@ -155,7 +155,7 @@ class GTSAM_EXPORT DiscreteFactorGraph
    * @return DiscreteBayesNet encoding posterior P(X|Z)
    */
   DiscreteBayesNet sumProduct(
-      OptionalOrderingType orderingType = boost::none) const;
+      OptionalOrderingType orderingType = {}) const;
 
   /**
    * @brief Implement the sum-product algorithm
@@ -172,7 +172,7 @@ class GTSAM_EXPORT DiscreteFactorGraph
    * @return DiscreteLookupDAG DAG with lookup tables
    */
   DiscreteLookupDAG maxProduct(
-      OptionalOrderingType orderingType = boost::none) const;
+      OptionalOrderingType orderingType = {}) const;
 
   /**
    * @brief Implement the max-product algorithm
@@ -189,7 +189,7 @@ class GTSAM_EXPORT DiscreteFactorGraph
    * @return DiscreteValues : MPE
    */
   DiscreteValues optimize(
-      OptionalOrderingType orderingType = boost::none) const;
+      OptionalOrderingType orderingType = {}) const;
 
   /**
    * @brief Find the maximum probable explanation (MPE) by doing max-product.

@@ -178,7 +178,7 @@ namespace gtsam {
                            this->conditional()->endParents());
         auto separatorMarginal =
             p_Cp.marginalMultifrontalBayesNet(Ordering(indicesS), function);
-        cachedSeparatorMarginal_.reset(*separatorMarginal);
+        cachedSeparatorMarginal_ = *separatorMarginal;
       }
     }
 
@@ -217,7 +217,7 @@ namespace gtsam {
       }
 
       //Delete CachedShortcut for this clique
-      cachedSeparatorMarginal_ = boost::none;
+      cachedSeparatorMarginal_ = {};
     }
 
   }
