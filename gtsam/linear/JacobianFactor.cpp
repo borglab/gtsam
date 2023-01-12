@@ -264,7 +264,7 @@ void JacobianFactor::JacobianFactorHelper(const GaussianFactorGraph& graph,
   // Copy the RHS vectors and sigmas
   gttic(copy_vectors);
   bool anyConstrained = false;
-  boost::optional<Vector> sigmas;
+  std::optional<Vector> sigmas;
   // Loop over source jacobians
   DenseIndex nextRow = 0;
   for (size_t factorI = 0; factorI < jacobians.size(); ++factorI) {

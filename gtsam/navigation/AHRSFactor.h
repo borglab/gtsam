@@ -24,6 +24,8 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/Pose3.h>
 
+#include <optional>
+
 namespace gtsam {
 
 /**
@@ -194,13 +196,13 @@ public:
   AHRSFactor(Key rot_i, Key rot_j, Key bias,
              const PreintegratedAhrsMeasurements& pim,
              const Vector3& omegaCoriolis,
-             const boost::optional<Pose3>& body_P_sensor = boost::none);
+             const std::optional<Pose3>& body_P_sensor = {});
 
   /// @deprecated static function, but used in tests.
   static Rot3 predict(
       const Rot3& rot_i, const Vector3& bias,
       const PreintegratedAhrsMeasurements& pim, const Vector3& omegaCoriolis,
-      const boost::optional<Pose3>& body_P_sensor = boost::none);
+      const std::optional<Pose3>& body_P_sensor = {});
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
   /// @deprecated name

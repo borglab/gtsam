@@ -110,8 +110,8 @@ int main(int argc, char* argv[]) {
   for (size_t j = 0; j < points.size(); ++j) {
     auto smart = boost::dynamic_pointer_cast<SmartFactor>(graph[j]);
     if (smart) {
-      boost::optional<Point3> point = smart->point(result);
-      if (point)  // ignore if boost::optional return nullptr
+      std::optional<Point3> point = smart->point(result);
+      if (point)  // ignore if std::optional return nullptr
         landmark_result.insert(j, *point);
     }
   }

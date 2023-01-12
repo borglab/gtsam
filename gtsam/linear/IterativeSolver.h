@@ -23,11 +23,11 @@
 
 #include <boost/tuple/tuple.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/optional.hpp>
 
 #include <iosfwd>
 #include <string>
 #include <map>
+#include <optional>
 
 namespace gtsam {
 

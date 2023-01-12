@@ -114,10 +114,10 @@ int main(int argc, char* argv[]) {
     // The graph stores Factor shared_ptrs, so we cast back to a SmartFactor first
     SmartFactor::shared_ptr smart = boost::dynamic_pointer_cast<SmartFactor>(graph[j]);
     if (smart) {
-      // The output of point() is in boost::optional<Point3>, as sometimes
+      // The output of point() is in std::optional<Point3>, as sometimes
       // the triangulation operation inside smart factor will encounter degeneracy.
       auto point = smart->point(result);
-      if (point) // ignore if boost::optional return nullptr
+      if (point) // ignore if std::optional return nullptr
         landmark_result.insert(j, *point);
     }
   }

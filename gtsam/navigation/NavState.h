@@ -79,9 +79,9 @@ public:
   /// @name Component Access
   /// @{
 
-  const Rot3& attitude(OptionalJacobian<3, 9> H = boost::none) const;
-  const Point3& position(OptionalJacobian<3, 9> H = boost::none) const;
-  const Velocity3& velocity(OptionalJacobian<3, 9> H = boost::none) const;
+  const Rot3& attitude(OptionalJacobian<3, 9> H = {}) const;
+  const Point3& position(OptionalJacobian<3, 9> H = {}) const;
+  const Velocity3& velocity(OptionalJacobian<3, 9> H = {}) const;
 
   const Pose3 pose() const {
     return Pose3(attitude(), position());
@@ -108,7 +108,7 @@ public:
     return v_;
   }
   // Return velocity in body frame
-  Velocity3 bodyVelocity(OptionalJacobian<3, 9> H = boost::none) const;
+  Velocity3 bodyVelocity(OptionalJacobian<3, 9> H = {}) const;
 
   /// Return matrix group representation, in MATLAB notation:
   /// nTb = [nRb 0 n_t; 0 nRb n_v; 0 0 1]
@@ -156,13 +156,13 @@ public:
 
   /// retract with optional derivatives
   NavState retract(const Vector9& v, //
-      OptionalJacobian<9, 9> H1 = boost::none, OptionalJacobian<9, 9> H2 =
-          boost::none) const;
+      OptionalJacobian<9, 9> H1 = {}, OptionalJacobian<9, 9> H2 =
+          {}) const;
 
   /// localCoordinates with optional derivatives
   Vector9 localCoordinates(const NavState& g, //
-      OptionalJacobian<9, 9> H1 = boost::none, OptionalJacobian<9, 9> H2 =
-          boost::none) const;
+      OptionalJacobian<9, 9> H1 = {}, OptionalJacobian<9, 9> H2 =
+          {}) const;
 
   /// @}
   /// @name Dynamics
@@ -176,14 +176,14 @@ public:
 
   /// Compute tangent space contribution due to Coriolis forces
   Vector9 coriolis(double dt, const Vector3& omega, bool secondOrder = false,
-      OptionalJacobian<9, 9> H = boost::none) const;
+      OptionalJacobian<9, 9> H = {}) const;
 
   /// Correct preintegrated tangent vector with our velocity and rotated gravity,
   /// taking into account Coriolis forces if omegaCoriolis is given.
   Vector9 correctPIM(const Vector9& pim, double dt, const Vector3& n_gravity,
-      const boost::optional<Vector3>& omegaCoriolis, bool use2ndOrderCoriolis =
-          false, OptionalJacobian<9, 9> H1 = boost::none,
-      OptionalJacobian<9, 9> H2 = boost::none) const;
+      const std::optional<Vector3>& omegaCoriolis, bool use2ndOrderCoriolis =
+          false, OptionalJacobian<9, 9> H1 = {},
+      OptionalJacobian<9, 9> H2 = {}) const;
 
   /// @}
 

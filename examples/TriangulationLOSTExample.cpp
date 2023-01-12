@@ -29,6 +29,7 @@
 #include <chrono>
 #include <iostream>
 #include <random>
+#include <optional>
 
 using namespace std;
 using namespace gtsam;
@@ -145,9 +146,9 @@ int main(int argc, char* argv[]) {
         cameras, noisyMeasurements, rank_tol, true, measurementNoise, false);
     durationDLTOpt += std::chrono::high_resolution_clock::now() - dltOptStart;
 
-    errorsLOST.row(i) = *estimateLOST - landmark;
-    errorsDLT.row(i) = *estimateDLT - landmark;
-    errorsDLTOpt.row(i) = *estimateDLTOpt - landmark;
+    errorsLOST.row(i) = estimateLOST - landmark;
+    errorsDLT.row(i) = estimateDLT - landmark;
+    errorsDLTOpt.row(i) = estimateDLTOpt - landmark;
   }
   PrintCovarianceStats(errorsLOST, "LOST");
   PrintCovarianceStats(errorsDLT, "DLT");
