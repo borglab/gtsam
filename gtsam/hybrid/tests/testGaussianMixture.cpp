@@ -106,12 +106,15 @@ TEST(GaussianMixture, Error) {
        conditional1 = boost::make_shared<GaussianConditional>(X(1), d2, R2,
                                                               X(2), S2, model);
 
-  // Create decision tree
+  // Create Gaussian Mixture.
   DiscreteKey m1(M(1), 2);
   GaussianMixture::Conditionals conditionals(
       {m1},
       vector<GaussianConditional::shared_ptr>{conditional0, conditional1});
   GaussianMixture mixture({X(1)}, {X(2)}, {m1}, conditionals);
+
+  // Check that normalizationConstants returns nullptr, as all constants equal.
+  CHECK(!mixture.normalizationConstants());
 
   VectorValues values;
   values.insert(X(1), Vector2::Ones());
@@ -164,6 +167,19 @@ TEST(GaussianMixture, ContinuousParents) {
 }
 
 /* ************************************************************************* */
+/// Check we can create a DecisionTreeFactor with all normalization constants.
+TEST(GaussianMixture, NormalizationConstants) {
+  const GaussianMixture gm = createSimpleGaussianMixture();
+
+  const auto factor = gm.normalizationConstants();
+
+  // Test with 1D Gaussian normalization constants for sigma 0.5 and 3:
+  auto c = [](double sigma) { return 1.0 / (sqrt(2 * M_PI) * sigma); };
+  const DecisionTreeFactor expected({M(0), 2}, {c(0.5), c(3)});
+  EXPECT(assert_equal(expected, *factor));
+}
+
+/* ************************************************************************* */
 /// Check that likelihood returns a mixture factor on the parents.
 TEST(GaussianMixture, Likelihood) {
   const GaussianMixture gm = createSimpleGaussianMixture();
@@ -186,7 +202,7 @@ TEST(GaussianMixture, Likelihood) {
             conditional->logNormalizationConstant()};
       });
   const GaussianMixtureFactor expected({X(0)}, {mode}, factors);
-  EXPECT(assert_equal(*factor, expected));
+  EXPECT(assert_equal(expected, *factor));
 }
 
 /* ************************************************************************* */

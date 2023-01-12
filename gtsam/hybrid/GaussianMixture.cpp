@@ -170,13 +170,33 @@ KeyVector GaussianMixture::continuousParents() const {
 }
 
 /* ************************************************************************* */
-boost::shared_ptr<GaussianMixtureFactor> GaussianMixture::likelihood(
-    const VectorValues &frontals) const {
-  // Check that values has all frontals
-  for (auto &&kv : frontals) {
-    if (frontals.find(kv.first) == frontals.end()) {
-      throw std::runtime_error("GaussianMixture: frontals missing factor key.");
+boost::shared_ptr<DecisionTreeFactor> GaussianMixture::normalizationConstants()
+    const {
+  DecisionTree<Key, double> constants(
+      conditionals_, [&](const GaussianConditional::shared_ptr &conditional) {
+        return conditional->normalizationConstant();
+      });
+  // If all constants the same, return nullptr:
+  if (constants.nrLeaves() == 1) return nullptr;
+  return boost::make_shared<DecisionTreeFactor>(discreteKeys(), constants);
+}
+
+/* ************************************************************************* */
+bool GaussianMixture::allFrontalsGiven(const VectorValues &given) const {
+  for (auto &&kv : given) {
+    if (given.find(kv.first) == given.end()) {
+      return false;
     }
+  }
+  return true;
+}
+
+/* ************************************************************************* */
+boost::shared_ptr<GaussianMixtureFactor> GaussianMixture::likelihood(
+    const VectorValues &given) const {
+  if (!allFrontalsGiven(given)) {
+    throw std::runtime_error(
+        "GaussianMixture::likelihood: given values are missing some frontals.");
   }
 
   const DiscreteKeys discreteParentKeys = discreteKeys();
@@ -184,7 +204,7 @@ boost::shared_ptr<GaussianMixtureFactor> GaussianMixture::likelihood(
   const GaussianMixtureFactor::Factors likelihoods(
       conditionals_, [&](const GaussianConditional::shared_ptr &conditional) {
         return GaussianMixtureFactor::FactorAndConstant{
-            conditional->likelihood(frontals),
+            conditional->likelihood(given),
             conditional->logNormalizationConstant()};
       });
   return boost::make_shared<GaussianMixtureFactor>(
@@ -285,8 +305,7 @@ AlgebraicDecisionTree<Key> GaussianMixture::logProbability(
           return 1e50;
         }
       };
-  DecisionTree<Key, double> errorTree(conditionals_, errorFunc);
-  return errorTree;
+  return DecisionTree<Key, double>(conditionals_, errorFunc);
 }
 
 /* *******************************************************************************/
