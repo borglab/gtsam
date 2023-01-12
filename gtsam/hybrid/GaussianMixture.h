@@ -155,10 +155,16 @@ class GTSAM_EXPORT GaussianMixture
   /// Returns the continuous keys among the parents.
   KeyVector continuousParents() const;
 
-  // Create a likelihood factor for a Gaussian mixture, return a Mixture factor
-  // on the parents.
+  /// Return a discrete factor with possibly varying normalization constants.
+  /// If there is no variation, return nullptr.
+  boost::shared_ptr<DecisionTreeFactor> normalizationConstants() const;
+
+  /**
+   * Create a likelihood factor for a Gaussian mixture, return a Mixture factor
+   * on the parents.
+   */
   boost::shared_ptr<GaussianMixtureFactor> likelihood(
-      const VectorValues &frontals) const;
+      const VectorValues &given) const;
 
   /// Getter for the underlying Conditionals DecisionTree
   const Conditionals &conditionals() const;
@@ -233,6 +239,9 @@ class GTSAM_EXPORT GaussianMixture
   /// @}
 
  private:
+  /// Check whether `given` has values for all frontal keys.
+  bool allFrontalsGiven(const VectorValues &given) const;
+
   /** Serialization function */
   friend class boost::serialization::access;
   template <class Archive>
