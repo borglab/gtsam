@@ -54,9 +54,11 @@ class BayesNet : public FactorGraph<CONDITIONAL> {
 
   /**
    * Constructor that takes an initializer list of shared pointers.
-   *  BayesNet<SymbolicConditional> bn = {make_shared<SymbolicConditional>(), ...};
+   *  BayesNet<SymbolicConditional> bn = {make_shared<SymbolicConditional>(),
+   * ...};
    */
-  BayesNet(std::initializer_list<sharedConditional> conditionals): Base(conditionals) {}
+  BayesNet(std::initializer_list<sharedConditional> conditionals)
+      : Base(conditionals) {}
 
   /// @}
 
@@ -91,7 +93,10 @@ class BayesNet : public FactorGraph<CONDITIONAL> {
   /// @name HybridValues methods
   /// @{
 
+  // Expose HybridValues version of logProbability.
   double logProbability(const HybridValues& x) const;
+
+  // Expose HybridValues version of evaluate.
   double evaluate(const HybridValues& c) const;
 
   /// @}

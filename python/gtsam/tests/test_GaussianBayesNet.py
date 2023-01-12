@@ -10,9 +10,6 @@ Author: Frank Dellaert
 """
 # pylint: disable=invalid-name, no-name-in-module, no-member
 
-from __future__ import print_function
-
-import math
 import unittest
 
 import numpy as np
@@ -55,9 +52,9 @@ class TestGaussianBayesNet(GtsamTestCase):
         values.insert(_y_, np.array([5.0]))
         for i in [0, 1]:
             self.assertAlmostEqual(bayesNet.at(i).logProbability(values),
-                                   math.log(bayesNet.at(i).evaluate(values)))
+                                   np.log(bayesNet.at(i).evaluate(values)))
         self.assertAlmostEqual(bayesNet.logProbability(values),
-                               math.log(bayesNet.evaluate(values)))
+                               np.log(bayesNet.evaluate(values)))
 
     def test_sample(self):
         """Test sample method"""

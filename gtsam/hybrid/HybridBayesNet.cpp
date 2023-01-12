@@ -293,21 +293,21 @@ HybridValues HybridBayesNet::sample() const {
 /* ************************************************************************* */
 AlgebraicDecisionTree<Key> HybridBayesNet::logProbability(
     const VectorValues &continuousValues) const {
-  AlgebraicDecisionTree<Key> error_tree(0.0);
+  AlgebraicDecisionTree<Key> result(0.0);
 
   // Iterate over each conditional.
   for (auto &&conditional : *this) {
     if (auto gm = conditional->asMixture()) {
       // If conditional is hybrid, select based on assignment and compute
       // logProbability.
-      error_tree = error_tree + gm->logProbability(continuousValues);
+      result = result + gm->logProbability(continuousValues);
     } else if (auto gc = conditional->asGaussian()) {
       // If continuous, get the (double) logProbability and add it to the
-      // error_tree
+      // result
       double logProbability = gc->logProbability(continuousValues);
       // Add the computed logProbability to every leaf of the logProbability
       // tree.
-      error_tree = error_tree.apply([logProbability](double leaf_value) {
+      result = result.apply([logProbability](double leaf_value) {
         return leaf_value + logProbability;
       });
     } else if (auto dc = conditional->asDiscrete()) {
@@ -317,7 +317,7 @@ AlgebraicDecisionTree<Key> HybridBayesNet::logProbability(
     }
   }
 
-  return error_tree;
+  return result;
 }
 
 /* ************************************************************************* */
