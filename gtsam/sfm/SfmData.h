@@ -102,14 +102,14 @@ struct GTSAM_EXPORT SfmData {
    * Note: pose keys are simply integer indices, points use Symbol('p', j).
    *
    * @param model a noise model for projection errors
-   * @param fixedCamera which camera to fix, if any (use boost::none if none)
-   * @param fixedPoint which point to fix, if any (use boost::none if none)
+   * @param fixedCamera which camera to fix, if any (use std::nullopt if none)
+   * @param fixedPoint which point to fix, if any (use std::nullopt if none)
    * @return NonlinearFactorGraph
    */
   NonlinearFactorGraph sfmFactorGraph(
       const SharedNoiseModel& model = noiseModel::Isotropic::Sigma(2, 1.0),
-      boost::optional<size_t> fixedCamera = 0,
-      boost::optional<size_t> fixedPoint = 0) const;
+      std::optional<size_t> fixedCamera = 0,
+      std::optional<size_t> fixedPoint = 0) const;
 
   /// @}
   /// @name Testable
