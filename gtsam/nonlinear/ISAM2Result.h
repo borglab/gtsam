@@ -51,7 +51,7 @@ struct ISAM2Result {
    * ISAM2Params::evaluateNonlinearError is set to \c true, because there is
    * some cost to this computation.
    */
-  boost::optional<double> errorBefore;
+  std::optional<double> errorBefore;
 
   /** The nonlinear error of all of the factors computed after the current
    * update, meaning that variables above the relinearization threshold
@@ -63,7 +63,7 @@ struct ISAM2Result {
    * ISAM2Params::evaluateNonlinearError is set to \c true, because there is
    * some cost to this computation.
    */
-  boost::optional<double> errorAfter;
+  std::optional<double> errorAfter;
 
   /** The number of variables that were relinearized because their linear
    * deltas exceeded the reslinearization threshold
@@ -155,14 +155,20 @@ struct ISAM2Result {
 
   /** Detailed results, if enabled by ISAM2Params::enableDetailedResults.  See
    * Detail for information about the results data stored here. */
-  boost::optional<DetailedResults> detail;
+  std::optional<DetailedResults> detail;
 
   explicit ISAM2Result(bool enableDetailedResults = false) {
-    if (enableDetailedResults) detail.reset(DetailedResults());
+    if (enableDetailedResults) detail = DetailedResults();
   }
 
   /// Return pointer to detail, 0 if no detail requested
-  DetailedResults* details() { return detail.get_ptr(); }
+  DetailedResults* details() {
+    if (detail.has_value()) {
+      return &(*detail);
+    } else {
+      return nullptr;
+    }
+  }
 
   /// Print results
   void print(const std::string str = "") const {

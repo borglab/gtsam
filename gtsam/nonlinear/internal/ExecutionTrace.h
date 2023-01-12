@@ -26,6 +26,7 @@
 
 #include <Eigen/Core>
 #include <iostream>
+#include <optional>
 
 namespace gtsam {
 namespace internal {
@@ -132,12 +133,12 @@ class ExecutionTrace {
 
   /// Return record pointer, quite unsafe, used only for testing
   template<class Record>
-  boost::optional<Record*> record() {
+  std::optional<Record*> record() {
     if (kind != Function)
-      return boost::none;
+      return {};
     else {
       Record* p = dynamic_cast<Record*>(content.ptr);
-      return p ? boost::optional<Record*>(p) : boost::none;
+      return p ? std::optional<Record*>(p) : std::nullopt;
     }
   }
 

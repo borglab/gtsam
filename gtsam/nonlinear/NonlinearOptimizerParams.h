@@ -104,7 +104,7 @@ public:
   };
 
   LinearSolverType linearSolverType = MULTIFRONTAL_CHOLESKY; ///< The type of linear solver to use in the nonlinear optimizer
-  boost::optional<Ordering> ordering; ///< The optional variable elimination ordering, or empty to use COLAMD (default: empty)
+  std::optional<Ordering> ordering; ///< The optional variable elimination ordering, or empty to use COLAMD (default: empty)
   IterativeOptimizationParameters::shared_ptr iterativeParams; ///< The container for iterativeOptimization parameters. used in CG Solvers.
 
   NonlinearOptimizerParams() = default;

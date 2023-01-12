@@ -43,7 +43,7 @@ bool ConcurrentIncrementalFilter::equals(const ConcurrentFilter& rhs, double tol
 
 /* ************************************************************************* */
 ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const NonlinearFactorGraph& newFactors, const Values& newTheta,
-    const boost::optional<FastList<Key> >& keysToMove, const boost::optional< FactorIndices >& removeFactorIndices) {
+    const std::optional<FastList<Key> >& keysToMove, const std::optional< FactorIndices >& removeFactorIndices) {
 
   gttic(update);
 
@@ -63,7 +63,7 @@ ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const No
   }
 
   // Generate ordering constraints that force the 'keys to move' to the end
-  boost::optional<FastMap<Key,int> > orderingConstraints = boost::none;
+  std::optional<FastMap<Key,int> > orderingConstraints = {};
   if(keysToMove && keysToMove->size() > 0) {
     orderingConstraints = FastMap<Key,int>();
     int group = 1;
@@ -86,10 +86,10 @@ ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const No
 
   // Create the set of linear keys that iSAM2 should hold constant
   // iSAM2 takes care of this for us; no need to specify additional noRelin keys
-  boost::optional<FastList<Key> > noRelinKeys = boost::none;
+  std::optional<FastList<Key> > noRelinKeys = {};
 
   // Mark additional keys between the 'keys to move' and the leaves
-  boost::optional<FastList<Key> > additionalKeys = boost::none;
+  std::optional<FastList<Key> > additionalKeys = {};
   if(keysToMove && keysToMove->size() > 0) {
     std::set<Key> markedKeys;
     for(Key key: *keysToMove) {
@@ -211,7 +211,7 @@ void ConcurrentIncrementalFilter::synchronize(const NonlinearFactorGraph& smooth
 
   // Remove the old factors on the separator and insert the new ones
   FactorIndices removeFactors(currentSmootherSummarizationSlots_.begin(), currentSmootherSummarizationSlots_.end());
-  ISAM2Result result = isam2_.update(currentSmootherSummarization, Values(), removeFactors, boost::none, noRelinKeys, boost::none, false);
+  ISAM2Result result = isam2_.update(currentSmootherSummarization, Values(), removeFactors, {}, noRelinKeys, {}, false);
   currentSmootherSummarizationSlots_ = result.newFactorsIndices;
 
   // Set the previous smoother summarization to the current smoother summarization and clear the smoother shortcut
