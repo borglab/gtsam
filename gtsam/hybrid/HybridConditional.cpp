@@ -122,6 +122,21 @@ bool HybridConditional::equals(const HybridFactor &other, double tol) const {
 }
 
 /* ************************************************************************ */
+double HybridConditional::error(const HybridValues &values) const {
+  if (auto gc = asGaussian()) {
+    return gc->error(values.continuous());
+  }
+  if (auto gm = asMixture()) {
+    return gm->error(values);
+  }
+  if (auto dc = asDiscrete()) {
+    return dc->error(values.discrete());
+  }
+  throw std::runtime_error(
+      "HybridConditional::error: conditional type not handled");
+}
+
+/* ************************************************************************ */
 double HybridConditional::logProbability(const HybridValues &values) const {
   if (auto gc = asGaussian()) {
     return gc->logProbability(values.continuous());

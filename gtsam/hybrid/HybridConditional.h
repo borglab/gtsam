@@ -176,6 +176,9 @@ class GTSAM_EXPORT HybridConditional
   /// Get the type-erased pointer to the inner type
   boost::shared_ptr<Factor> inner() const { return inner_; }
 
+  /// Return the error of the underlying conditional.
+  double error(const HybridValues& values) const override;
+
   /// Return the logProbability of the underlying conditional.
   double logProbability(const HybridValues& values) const override;
 

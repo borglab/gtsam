@@ -198,7 +198,12 @@ namespace gtsam {
 
     Vector unweighted_error(const VectorValues& c) const; /** (A*x-b) */
     Vector error_vector(const VectorValues& c) const; /** (A*x-b)/sigma */
-    double error(const VectorValues& c) const override; /**  0.5*(A*x-b)'*D*(A*x-b) */
+
+    /// HybridValues simply extracts the \class VectorValues and calls error.
+    using GaussianFactor::error;
+
+    //// 0.5*(A*x-b)'*D*(A*x-b).
+    double error(const VectorValues& c) const override; 
 
     /** Return the augmented information matrix represented by this GaussianFactor.
      * The augmented information matrix contains the information matrix with an

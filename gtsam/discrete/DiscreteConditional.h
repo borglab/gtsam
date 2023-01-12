@@ -243,7 +243,8 @@ class GTSAM_EXPORT DiscreteConditional
     return -error(x);
   }
 
-  using DecisionTreeFactor::evaluate;
+  using DecisionTreeFactor::error;     ///< HybridValues version
+  using DecisionTreeFactor::evaluate;  ///< HybridValues version
 
   /// @}
 
