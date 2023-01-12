@@ -204,8 +204,7 @@ boost::shared_ptr<GaussianMixtureFactor> GaussianMixture::likelihood(
   const GaussianMixtureFactor::Factors likelihoods(
       conditionals_, [&](const GaussianConditional::shared_ptr &conditional) {
         return GaussianMixtureFactor::FactorAndConstant{
-            conditional->likelihood(given),
-            conditional->logNormalizationConstant()};
+            conditional->likelihood(given), 0.0};
       });
   return boost::make_shared<GaussianMixtureFactor>(
       continuousParentKeys, discreteParentKeys, likelihoods);
