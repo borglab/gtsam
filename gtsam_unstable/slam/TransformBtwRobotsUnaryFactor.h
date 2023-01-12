@@ -165,8 +165,8 @@ namespace gtsam {
       T currA_T_currB_pred;
       if (H) {
         Matrix H_compose, H_between1;
-        T orgA_T_currB = orgA_T_orgB.compose(orgB_T_currB, H_compose, boost::none);
-        currA_T_currB_pred = orgA_T_currA.between(orgA_T_currB, boost::none, H_between1);
+        T orgA_T_currB = orgA_T_orgB.compose(orgB_T_currB, H_compose, {});
+        currA_T_currB_pred = orgA_T_currA.between(orgA_T_currB, {}, H_between1);
         (*H)[0] = H_compose * H_between1;
       }
       else {

@@ -49,7 +49,7 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorRollingShutter
   double alpha_;     ///< interpolation parameter in [0,1] corresponding to the
                      ///< point2 measurement
   boost::shared_ptr<Cal3_S2> K_;  ///< shared pointer to calibration object
-  boost::optional<Pose3>
+  std::optional<Pose3>
       body_P_sensor_;  ///< The pose of the sensor in the body frame
 
   // verbosity handling for Cheirality Exceptions
@@ -96,7 +96,7 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorRollingShutter
       const Point2& measured, double alpha, const SharedNoiseModel& model,
       Key poseKey_a, Key poseKey_b, Key pointKey,
       const boost::shared_ptr<Cal3_S2>& K,
-      boost::optional<Pose3> body_P_sensor = boost::none)
+      std::optional<Pose3> body_P_sensor = {})
       : Base(model, poseKey_a, poseKey_b, pointKey),
         measured_(measured),
         alpha_(alpha),
@@ -127,7 +127,7 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorRollingShutter
       Key poseKey_a, Key poseKey_b, Key pointKey,
       const boost::shared_ptr<Cal3_S2>& K, bool throwCheirality,
       bool verboseCheirality,
-      boost::optional<Pose3> body_P_sensor = boost::none)
+      std::optional<Pose3> body_P_sensor = {})
       : Base(model, poseKey_a, poseKey_b, pointKey),
         measured_(measured),
         alpha_(alpha),

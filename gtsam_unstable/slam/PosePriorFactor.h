@@ -34,7 +34,7 @@ namespace gtsam {
     typedef NoiseModelFactorN<POSE> Base;
 
     POSE prior_; /** The measurement */
-    boost::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame
+    std::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame
 
     /** concept check by type */
     GTSAM_CONCEPT_TESTABLE_TYPE(POSE)
@@ -54,7 +54,7 @@ namespace gtsam {
 
     /** Constructor */
     PosePriorFactor(Key key, const POSE& prior, const SharedNoiseModel& model,
-        boost::optional<POSE> body_P_sensor = boost::none) :
+        std::optional<POSE> body_P_sensor = {}) :
       Base(model, key), prior_(prior), body_P_sensor_(body_P_sensor) {
     }
 

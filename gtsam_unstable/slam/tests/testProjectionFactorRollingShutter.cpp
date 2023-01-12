@@ -342,24 +342,24 @@ TEST(ProjectionFactorRollingShutter, cheirality) {
         std::function<Vector(const Pose3&, const Pose3&, const Point3&)>(
             std::bind(&ProjectionFactorRollingShutter::evaluateError, &factor,
                       std::placeholders::_1, std::placeholders::_2,
-                      std::placeholders::_3, boost::none, boost::none,
-                      boost::none)),
+                      std::placeholders::_3, {}, {},
+                      {})),
         pose1, pose2, point);
 
     Matrix H2Expected = numericalDerivative32<Vector, Pose3, Pose3, Point3>(
         std::function<Vector(const Pose3&, const Pose3&, const Point3&)>(
             std::bind(&ProjectionFactorRollingShutter::evaluateError, &factor,
                       std::placeholders::_1, std::placeholders::_2,
-                      std::placeholders::_3, boost::none, boost::none,
-                      boost::none)),
+                      std::placeholders::_3, {}, {},
+                      {})),
         pose1, pose2, point);
 
     Matrix H3Expected = numericalDerivative33<Vector, Pose3, Pose3, Point3>(
         std::function<Vector(const Pose3&, const Pose3&, const Point3&)>(
             std::bind(&ProjectionFactorRollingShutter::evaluateError, &factor,
                       std::placeholders::_1, std::placeholders::_2,
-                      std::placeholders::_3, boost::none, boost::none,
-                      boost::none)),
+                      std::placeholders::_3, {}, {},
+                      {})),
         pose1, pose2, point);
 
     CHECK(assert_equal(H1Expected, H1Actual, 1e-5));
