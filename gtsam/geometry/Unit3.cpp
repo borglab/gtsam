@@ -109,8 +109,8 @@ const Matrix32& Unit3::basis(OptionalJacobian<6, 2> H) const {
       jacobian.block<3, 2>(3, 0) = H_b2_n * H_n_p + H_b2_b1 * H_b1_p;
 
       // Cache the result and jacobian
-      H_B_.reset(jacobian);
-      B_.reset(B);
+      H_B_ = (jacobian);
+      B_ = (B);
     }
 
     // Return cached jacobian, possibly computed just above
@@ -126,7 +126,7 @@ const Matrix32& Unit3::basis(OptionalJacobian<6, 2> H) const {
     const Point3 B1 = gtsam::cross(n, axis);
     B.col(0) = normalize(B1);
     B.col(1) = gtsam::cross(n, B.col(0));
-    B_.reset(B);
+    B_ = (B);
   }
 
   return *B_;
