@@ -341,11 +341,13 @@ HybridGaussianFactorGraph HybridBayesNet::toFactorGraph(
   // replace it by a likelihood factor:
   for (auto &&conditional : *this) {
     if (conditional->frontalsIn(measurements)) {
-      if (auto gc = conditional->asGaussian())
+      if (auto gc = conditional->asGaussian()) {
         fg.push_back(gc->likelihood(measurements));
-      else if (auto gm = conditional->asMixture())
+      } else if (auto gm = conditional->asMixture()) {
         fg.push_back(gm->likelihood(measurements));
-      else {
+        const auto constantsFactor = gm->normalizationConstants();
+        if (constantsFactor) fg.push_back(constantsFactor);
+      } else {
         throw std::runtime_error("Unknown conditional type");
       }
     } else {

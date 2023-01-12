@@ -613,7 +613,7 @@ TEST(HybridGaussianFactorGraph, assembleGraphTree) {
   const int num_measurements = 1;
   auto fg = tiny::createHybridGaussianFactorGraph(
       num_measurements, VectorValues{{Z(0), Vector1(5.0)}});
-  EXPECT_LONGS_EQUAL(3, fg.size());
+  EXPECT_LONGS_EQUAL(4, fg.size());
 
   // Assemble graph tree:
   auto actual = fg.assembleGraphTree();
@@ -625,7 +625,7 @@ TEST(HybridGaussianFactorGraph, assembleGraphTree) {
   CHECK(mixture);
 
   // Get prior factor:
-  const auto gf = boost::dynamic_pointer_cast<HybridConditional>(fg.at(1));
+  const auto gf = boost::dynamic_pointer_cast<HybridConditional>(fg.at(2));
   CHECK(gf);
   using GF = GaussianFactor::shared_ptr;
   const GF prior = gf->asGaussian();
@@ -654,7 +654,7 @@ TEST(HybridGaussianFactorGraph, EliminateTiny1) {
   const int num_measurements = 1;
   auto fg = tiny::createHybridGaussianFactorGraph(
       num_measurements, VectorValues{{Z(0), Vector1(5.0)}});
-  EXPECT_LONGS_EQUAL(3, fg.size());
+  EXPECT_LONGS_EQUAL(4, fg.size());
 
   // Create expected Bayes Net:
   HybridBayesNet expectedBayesNet;
@@ -686,7 +686,7 @@ TEST(HybridGaussianFactorGraph, EliminateTiny2) {
   auto fg = tiny::createHybridGaussianFactorGraph(
       num_measurements,
       VectorValues{{Z(0), Vector1(4.0)}, {Z(1), Vector1(6.0)}});
-  EXPECT_LONGS_EQUAL(4, fg.size());
+  EXPECT_LONGS_EQUAL(6, fg.size());
 
   // Create expected Bayes Net:
   HybridBayesNet expectedBayesNet;
@@ -721,7 +721,7 @@ TEST(HybridGaussianFactorGraph, EliminateTiny22) {
   auto bn = tiny::createHybridBayesNet(num_measurements, manyModes);
   const VectorValues measurements{{Z(0), Vector1(4.0)}, {Z(1), Vector1(6.0)}};
   auto fg = bn.toFactorGraph(measurements);
-  EXPECT_LONGS_EQUAL(5, fg.size());
+  EXPECT_LONGS_EQUAL(7, fg.size());
 
   // Test elimination
   const auto posterior = fg.eliminateSequential();
