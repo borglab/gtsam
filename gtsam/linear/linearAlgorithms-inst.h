@@ -21,8 +21,9 @@
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/base/treeTraversal-inst.h>
 
-#include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
+
+#include <optional>
 
 namespace gtsam
 {
@@ -32,7 +33,7 @@ namespace gtsam
     {
       /* ************************************************************************* */
       struct OptimizeData {
-        boost::optional<OptimizeData&> parentData;
+        OptimizeData* parentData = nullptr;
         FastMap<Key, VectorValues::const_iterator> cliqueResults;
         //VectorValues ancestorResults;
         //VectorValues results;
@@ -55,7 +56,7 @@ namespace gtsam
           OptimizeData& parentData)
         {
           OptimizeData myData;
-          myData.parentData = parentData;
+          myData.parentData = &parentData;
           // Take any ancestor results we'll need
           for(Key parent: clique->conditional_->parents())
             myData.cliqueResults.emplace(parent, myData.parentData->cliqueResults.at(parent));
