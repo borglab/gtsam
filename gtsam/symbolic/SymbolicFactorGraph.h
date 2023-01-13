@@ -49,8 +49,8 @@ namespace gtsam {
     /// The default ordering generation function
     static Ordering DefaultOrderingFunc(
         const FactorGraphType& graph,
-        boost::optional<const VariableIndex&> variableIndex) {
-      return Ordering::Colamd(*variableIndex);
+        const VariableIndex& variableIndex) {
+      return Ordering::Colamd(variableIndex);
     }
   };
 

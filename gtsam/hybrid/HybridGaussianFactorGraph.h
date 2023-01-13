@@ -87,7 +87,7 @@ struct EliminationTraits<HybridGaussianFactorGraph> {
   /// The default ordering generation function
   static Ordering DefaultOrderingFunc(
       const FactorGraphType& graph,
-      boost::optional<const VariableIndex&> variableIndex) {
+      const VariableIndex&) {
     return HybridOrdering(graph);
   }
 };

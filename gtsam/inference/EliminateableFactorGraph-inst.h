@@ -36,7 +36,7 @@ namespace gtsam {
       // no Ordering is provided.  When removing optional from VariableIndex, create VariableIndex
       // before creating ordering.
       VariableIndex computedVariableIndex(asDerived());
-      return eliminateSequential(orderingType, function, computedVariableIndex);
+      return eliminateSequential(orderingType, function, &computedVariableIndex);
     }
     else {
       // Compute an ordering and call this function again.  We are guaranteed to have a 
@@ -52,7 +52,7 @@ namespace gtsam {
         return eliminateSequential(computedOrdering, function, variableIndex);
       } else {
         Ordering computedOrdering = EliminationTraitsType::DefaultOrderingFunc(
-            asDerived(), variableIndex);
+            asDerived(), *variableIndex);
         return eliminateSequential(computedOrdering, function, variableIndex);
       }
     }
@@ -68,7 +68,7 @@ namespace gtsam {
     if(!variableIndex) {
       // If no VariableIndex provided, compute one and call this function again
       VariableIndex computedVariableIndex(asDerived());
-      return eliminateSequential(ordering, function, computedVariableIndex);
+      return eliminateSequential(ordering, function, &computedVariableIndex);
     } else {
       gttic(eliminateSequential);
       // Do elimination
@@ -99,7 +99,7 @@ namespace gtsam {
       // creating ordering.
       VariableIndex computedVariableIndex(asDerived());
       return eliminateMultifrontal(orderingType, function,
-                                   computedVariableIndex);
+                                   &computedVariableIndex);
     } else {
       // Compute an ordering and call this function again.  We are guaranteed to
       // have a VariableIndex already here because we computed one if needed in
@@ -115,7 +115,7 @@ namespace gtsam {
         return eliminateMultifrontal(computedOrdering, function, variableIndex);
       } else {
         Ordering computedOrdering = EliminationTraitsType::DefaultOrderingFunc(
-            asDerived(), variableIndex);
+            asDerived(), *variableIndex);
         return eliminateMultifrontal(computedOrdering, function, variableIndex);
       }
     }
@@ -131,7 +131,7 @@ namespace gtsam {
     if(!variableIndex) {
       // If no VariableIndex provided, compute one and call this function again
       VariableIndex computedVariableIndex(asDerived());
-      return eliminateMultifrontal(ordering, function, computedVariableIndex);
+      return eliminateMultifrontal(ordering, function, &computedVariableIndex);
     } else {
       gttic(eliminateMultifrontal);
       // Do elimination with given ordering
@@ -162,7 +162,7 @@ namespace gtsam {
     } else {
       // If no variable index is provided, compute one and call this function again
       VariableIndex computedVariableIndex(asDerived());
-      return eliminatePartialSequential(ordering, function, computedVariableIndex);
+      return eliminatePartialSequential(ordering, function, &computedVariableIndex);
     }
   }
 
@@ -183,7 +183,7 @@ namespace gtsam {
     } else {
       // If no variable index is provided, compute one and call this function again
       VariableIndex computedVariableIndex(asDerived());
-      return eliminatePartialSequential(variables, function, computedVariableIndex);
+      return eliminatePartialSequential(variables, function, &computedVariableIndex);
     }
   }
 
@@ -202,7 +202,7 @@ namespace gtsam {
     } else {
       // If no variable index is provided, compute one and call this function again
       VariableIndex computedVariableIndex(asDerived());
-      return eliminatePartialMultifrontal(ordering, function, computedVariableIndex);
+      return eliminatePartialMultifrontal(ordering, function, &computedVariableIndex);
     }
   }
 
@@ -223,7 +223,7 @@ namespace gtsam {
     } else {
       // If no variable index is provided, compute one and call this function again
       VariableIndex computedVariableIndex(asDerived());
-      return eliminatePartialMultifrontal(variables, function, computedVariableIndex);
+      return eliminatePartialMultifrontal(variables, function, &computedVariableIndex);
     }
   }
 
@@ -237,7 +237,7 @@ namespace gtsam {
     if(!variableIndex) {
       // If no variable index is provided, compute one and call this function again
       VariableIndex index(asDerived());
-      return marginalMultifrontalBayesNet(variables, function, index);
+      return marginalMultifrontalBayesNet(variables, function, &index);
     } else {
       // No ordering was provided for the marginalized variables, so order them using constrained
       // COLAMD.
@@ -255,7 +255,7 @@ namespace gtsam {
       Ordering marginalVarsOrdering(totalOrdering.end() - nVars, totalOrdering.end());
 
       // Call this function again with the computed orderings
-      return marginalMultifrontalBayesNet(marginalVarsOrdering, marginalizationOrdering, function, *variableIndex);
+      return marginalMultifrontalBayesNet(marginalVarsOrdering, marginalizationOrdering, function, variableIndex);
     }
   }
 
@@ -270,7 +270,7 @@ namespace gtsam {
     if(!variableIndex) {
       // If no variable index is provided, compute one and call this function again
       VariableIndex index(asDerived());
-      return marginalMultifrontalBayesNet(variables, marginalizedVariableOrdering, function, index);
+      return marginalMultifrontalBayesNet(variables, marginalizedVariableOrdering, function, &index);
     } else {
       gttic(marginalMultifrontalBayesNet);
       // An ordering was provided for the marginalized variables, so we can first eliminate them
@@ -278,7 +278,7 @@ namespace gtsam {
       boost::shared_ptr<BayesTreeType> bayesTree;
       boost::shared_ptr<FactorGraphType> factorGraph;
       boost::tie(bayesTree,factorGraph) =
-        eliminatePartialMultifrontal(marginalizedVariableOrdering, function, *variableIndex);
+        eliminatePartialMultifrontal(marginalizedVariableOrdering, function, variableIndex);
 
       if(const Ordering* varsAsOrdering = boost::get<const Ordering&>(&variables))
       {
@@ -304,7 +304,7 @@ namespace gtsam {
     if(!variableIndex) {
       // If no variable index is provided, compute one and call this function again
       VariableIndex computedVariableIndex(asDerived());
-      return marginalMultifrontalBayesTree(variables, function, computedVariableIndex);
+      return marginalMultifrontalBayesTree(variables, function, &computedVariableIndex);
     } else {
       // No ordering was provided for the marginalized variables, so order them using constrained
       // COLAMD.
@@ -322,7 +322,7 @@ namespace gtsam {
       Ordering marginalVarsOrdering(totalOrdering.end() - nVars, totalOrdering.end());
 
       // Call this function again with the computed orderings
-      return marginalMultifrontalBayesTree(marginalVarsOrdering, marginalizationOrdering, function, *variableIndex);
+      return marginalMultifrontalBayesTree(marginalVarsOrdering, marginalizationOrdering, function, variableIndex);
     }
   }
 
@@ -337,7 +337,7 @@ namespace gtsam {
     if(!variableIndex) {
       // If no variable index is provided, compute one and call this function again
       VariableIndex computedVariableIndex(asDerived());
-      return marginalMultifrontalBayesTree(variables, marginalizedVariableOrdering, function, computedVariableIndex);
+      return marginalMultifrontalBayesTree(variables, marginalizedVariableOrdering, function, &computedVariableIndex);
     } else {
       gttic(marginalMultifrontalBayesTree);
       // An ordering was provided for the marginalized variables, so we can first eliminate them
@@ -345,7 +345,7 @@ namespace gtsam {
       boost::shared_ptr<BayesTreeType> bayesTree;
       boost::shared_ptr<FactorGraphType> factorGraph;
       boost::tie(bayesTree,factorGraph) =
-        eliminatePartialMultifrontal(marginalizedVariableOrdering, function, *variableIndex);
+        eliminatePartialMultifrontal(marginalizedVariableOrdering, function, variableIndex);
 
       if(const Ordering* varsAsOrdering = boost::get<const Ordering&>(&variables))
       {
@@ -377,13 +377,13 @@ namespace gtsam {
       Ordering marginalizationOrdering(totalOrdering.begin(), totalOrdering.end() - variables.size());
 
       // Eliminate and return the remaining factor graph
-      return eliminatePartialMultifrontal(marginalizationOrdering, function, *variableIndex).second;
+      return eliminatePartialMultifrontal(marginalizationOrdering, function, variableIndex).second;
     }
     else
     {
       // If no variable index is provided, compute one and call this function again
       VariableIndex computedVariableIndex(asDerived());
-      return marginal(variables, function, computedVariableIndex);
+      return marginal(variables, function, &computedVariableIndex);
     }
   }
 

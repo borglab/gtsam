@@ -49,7 +49,7 @@ void ISAM<BAYESTREE>::updateInternal(const FactorGraphType& newFactors,
       KeyVector(newFactorKeys.begin(), newFactorKeys.end()));
 
   // eliminate all factors (top, added, orphans) into a new Bayes tree
-  auto bayesTree = factors.eliminateMultifrontal(ordering, function, index);
+  auto bayesTree = factors.eliminateMultifrontal(ordering, function, &index);
 
   // Re-add into Bayes tree data structures
   this->roots_.insert(this->roots_.end(), bayesTree->roots().begin(),
