@@ -311,9 +311,11 @@ AlgebraicDecisionTree<Key> HybridBayesNet::logProbability(
         return leaf_value + logProbability;
       });
     } else if (auto dc = conditional->asDiscrete()) {
-      // TODO(dellaert): if discrete, we need to add logProbability in the right
-      // branch?
-      continue;
+      // If discrete, add the discrete logProbability in the right branch
+      result = result.apply(
+          [dc](const Assignment<Key> &assignment, double leaf_value) {
+            return leaf_value + dc->logProbability(DiscreteValues(assignment));
+          });
     }
   }
 
