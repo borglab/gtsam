@@ -25,6 +25,7 @@
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/GaussianDensity.h>
 #include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/hybrid/HybridValues.h>
 
 #include <boost/make_shared.hpp>
 
@@ -135,18 +136,20 @@ static const auto unitPrior =
 }  // namespace density
 
 /* ************************************************************************* */
-bool checkInvariants(const GaussianConditional* self,
-                     const HybridValues& values) {
-  const double probability = self->evaluate(values);
+template <class VALUES>
+bool checkInvariants(const GaussianConditional& conditional,
+                     const VALUES& values) {
+  const double probability = conditional.evaluate(values);
   if (probability < 0.0 || probability > 1.0)
     return false;  // probability is not in [0,1]
-  const double logProb = self->logProbability(values);
+  const double logProb = conditional.logProbability(values);
   if (std::abs(probability - std::exp(logProb)) > 1e-9)
     return false;  // logProb is not consistent with probability
   const double expected =
-      self->logNormalizationConstant() - self->error(values);
+      conditional.logNormalizationConstant() - conditional.error(values);
   if (std::abs(logProb - expected) > 1e-9)
     return false;  // logProb is not consistent with error
+  return true;
 }
 
 /* ************************************************************************* */
@@ -169,6 +172,12 @@ TEST(GaussianConditional, Evaluate1) {
   using density::key;
   using density::sigma;
 
+  // Check Invariants at the mean and a different value
+  for (auto vv : {mean, VectorValues{{key, Vector1(4)}}}) {
+    EXPECT(checkInvariants(density::unitPrior, vv));
+    EXPECT(checkInvariants(density::unitPrior, HybridValues{vv, {}, {}}));
+  }
+
   // Let's numerically integrate and see that we integrate to 1.0.
   double integral = 0.0;
   // Loop from -5*sigma to 5*sigma in 0.1*sigma steps:
@@ -179,7 +188,6 @@ TEST(GaussianConditional, Evaluate1) {
     integral += 0.1 * sigma * density;
   }
   EXPECT_DOUBLES_EQUAL(1.0, integral, 1e-9);
-  EXPECT(checkInvariants(&density::unitPrior, mean));
 }
 
 /* ************************************************************************* */
@@ -195,6 +203,12 @@ TEST(GaussianConditional, Evaluate2) {
 
   using density::key;
   using density::sigma;
+
+  // Check Invariants at the mean and a different value
+  for (auto vv : {mean, VectorValues{{key, Vector1(4)}}}) {
+    EXPECT(checkInvariants(density::widerPrior, vv));
+    EXPECT(checkInvariants(density::widerPrior, HybridValues{vv, {}, {}}));
+  }
 
   // Let's numerically integrate and see that we integrate to 1.0.
   double integral = 0.0;
@@ -400,17 +414,17 @@ TEST(GaussianConditional, FromMeanAndStddev) {
   double expected1 = 0.5 * e1.dot(e1);
   EXPECT_DOUBLES_EQUAL(expected1, conditional1.error(values), 1e-9);
 
-  double expected2 = conditional1.logNormalizationConstant() - 0.5 * e1.dot(e1);
-  EXPECT_DOUBLES_EQUAL(expected2, conditional1.logProbability(values), 1e-9);
-
   auto conditional2 = GaussianConditional::FromMeanAndStddev(X(0), A1, X(1), A2,
                                                              X(2), b, sigma);
   Vector2 e2 = (x0 - (A1 * x1 + A2 * x2 + b)) / sigma;
-  double expected3 = 0.5 * e2.dot(e2);
-  EXPECT_DOUBLES_EQUAL(expected3, conditional2.error(values), 1e-9);
+  double expected2 = 0.5 * e2.dot(e2);
+  EXPECT_DOUBLES_EQUAL(expected2, conditional2.error(values), 1e-9);
 
-  double expected4 = conditional2.logNormalizationConstant() - 0.5 * e2.dot(e2);
-  EXPECT_DOUBLES_EQUAL(expected4, conditional2.logProbability(values), 1e-9);
+  // Check Invariants for both conditionals
+  for (auto conditional : {conditional1, conditional2}) {
+    EXPECT(checkInvariants(conditional, values));
+    EXPECT(checkInvariants(conditional, HybridValues{values, {}, {}}));
+  }
 }
 
 /* ************************************************************************* */
