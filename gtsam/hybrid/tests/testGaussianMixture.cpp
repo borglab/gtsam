@@ -197,8 +197,7 @@ TEST(GaussianMixture, Likelihood) {
   const GaussianMixtureFactor::Factors factors(
       gm.conditionals(),
       [measurements](const GaussianConditional::shared_ptr& conditional) {
-        return GaussianMixtureFactor::FactorAndConstant{
-            conditional->likelihood(measurements), 0.0};
+        return conditional->likelihood(measurements);
       });
   const GaussianMixtureFactor expected({X(0)}, {mode}, factors);
   EXPECT(assert_equal(expected, *factor));

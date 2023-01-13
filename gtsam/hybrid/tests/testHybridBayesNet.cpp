@@ -34,6 +34,7 @@ using namespace gtsam;
 using noiseModel::Isotropic;
 using symbol_shorthand::M;
 using symbol_shorthand::X;
+using symbol_shorthand::Z;
 
 static const Key asiaKey = 0;
 static const DiscreteKey Asia(asiaKey, 2);
@@ -73,8 +74,12 @@ TEST(HybridBayesNet, EvaluatePureDiscrete) {
 /* ****************************************************************************/
 // Test creation of a tiny hybrid Bayes net.
 TEST(HybridBayesNet, Tiny) {
-  auto bayesNet = tiny::createHybridBayesNet();
-  EXPECT_LONGS_EQUAL(3, bayesNet.size());
+  auto bn = tiny::createHybridBayesNet();
+  EXPECT_LONGS_EQUAL(3, bn.size());
+
+  const VectorValues measurements{{Z(0), Vector1(5.0)}};
+  auto fg = bn.toFactorGraph(measurements);
+  EXPECT_LONGS_EQUAL(4, fg.size());
 }
 
 /* ****************************************************************************/
