@@ -141,6 +141,9 @@ class HybridBayesNet {
   double logProbability(const gtsam::HybridValues& values) const;
   double evaluate(const gtsam::HybridValues& values) const;
 
+  gtsam::HybridGaussianFactorGraph toFactorGraph(
+      const gtsam::VectorValues& measurements) const;
+
   gtsam::HybridValues optimize() const;
   gtsam::HybridValues sample(const gtsam::HybridValues &given) const;
   gtsam::HybridValues sample() const;
