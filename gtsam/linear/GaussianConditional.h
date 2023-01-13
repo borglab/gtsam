@@ -262,7 +262,12 @@ namespace gtsam {
      */
     double logProbability(const HybridValues& x) const override;
 
-    using Conditional::evaluate; // Expose evaluate(const HybridValues&) method..
+    /**
+     * Calculate probability for HybridValues `x`.
+     * Simply dispatches to VectorValues version.
+     */
+    double evaluate(const HybridValues& x) const override;
+
     using Conditional::operator(); // Expose evaluate(const HybridValues&) method..
     using JacobianFactor::error; // Expose error(const HybridValues&) method..
 
