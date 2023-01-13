@@ -652,11 +652,33 @@ TEST(HybridGaussianFactorGraph, assembleGraphTree) {
 // Check that the factor graph unnormalized probability is proportional to the
 // Bayes net probability for the given measurements.
 bool ratioTest(const HybridBayesNet &bn, const VectorValues &measurements,
-               const HybridGaussianFactorGraph &fg, size_t num_samples = 10) {
+               const HybridGaussianFactorGraph &fg, size_t num_samples = 100) {
   auto compute_ratio = [&](HybridValues *sample) -> double {
     sample->update(measurements);  // update sample with given measurements:
     return bn.evaluate(*sample) / fg.probPrime(*sample);
     // return bn.evaluate(*sample) / posterior->evaluate(*sample);
+  };
+
+  HybridValues sample = bn.sample(&kRng);
+  double expected_ratio = compute_ratio(&sample);
+
+  // Test ratios for a number of independent samples:
+  for (size_t i = 0; i < num_samples; i++) {
+    HybridValues sample = bn.sample(&kRng);
+    if (std::abs(expected_ratio - compute_ratio(&sample)) > 1e-6) return false;
+  }
+  return true;
+}
+
+/* ****************************************************************************/
+// Check that the factor graph unnormalized probability is proportional to the
+// Bayes net probability for the given measurements.
+bool ratioTest(const HybridBayesNet &bn, const VectorValues &measurements,
+               const HybridBayesNet &posterior, size_t num_samples = 100) {
+  auto compute_ratio = [&](HybridValues *sample) -> double {
+    sample->update(measurements);  // update sample with given measurements:
+    // return bn.evaluate(*sample) / fg.probPrime(*sample);
+    return bn.evaluate(*sample) / posterior.evaluate(*sample);
   };
 
   HybridValues sample = bn.sample(&kRng);
@@ -678,6 +700,7 @@ TEST(HybridGaussianFactorGraph, EliminateTiny1) {
   const VectorValues measurements{{Z(0), Vector1(5.0)}};
   auto bn = tiny::createHybridBayesNet(num_measurements);
   auto fg = bn.toFactorGraph(measurements);
+  GTSAM_PRINT(bn);
   EXPECT_LONGS_EQUAL(4, fg.size());
 
   EXPECT(ratioTest(bn, measurements, fg));
@@ -701,6 +724,7 @@ TEST(HybridGaussianFactorGraph, EliminateTiny1) {
   // Test elimination
   const auto posterior = fg.eliminateSequential();
   EXPECT(assert_equal(expectedBayesNet, *posterior, 0.01));
+  GTSAM_PRINT(*posterior);
 
   EXPECT(ratioTest(bn, measurements, *posterior));
 }

@@ -271,19 +271,15 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
   // If there are no more continuous parents, then we should create a
   // DiscreteFactor here, with the error for each discrete choice.
   if (continuousSeparator.empty()) {
-    auto factorProb = [&](const EliminationPair &conditionalAndFactor) {
-      // This is the probability q(μ) at the MLE point.
-      // conditionalAndFactor.second is a factor without keys, just containing the residual.
+    auto probPrime = [&](const GaussianMixtureFactor::sharedFactor &factor) {
+      // This is the unnormalized probability q(μ) at the mean.
+      // The factor has no keys, just contains the residual.
       static const VectorValues kEmpty;
-      // return exp(-conditionalAndFactor.first->logNormalizationConstant());
-      // return exp(-conditionalAndFactor.first->logNormalizationConstant() - conditionalAndFactor.second->error(kEmpty));
-      return exp( - conditionalAndFactor.second->error(kEmpty));
-      // return 1.0;
+      return factor? exp(-factor->error(kEmpty)) : 1.0;
     };
 
-    const DecisionTree<Key, double> fdt(eliminationResults, factorProb);
-    const auto discreteFactor =
-        boost::make_shared<DecisionTreeFactor>(discreteSeparator, fdt);
+    const auto discreteFactor = boost::make_shared<DecisionTreeFactor>(
+        discreteSeparator, DecisionTree<Key, double>(newFactors, probPrime));
 
     return {boost::make_shared<HybridConditional>(gaussianMixture),
             discreteFactor};
