@@ -348,7 +348,7 @@ TEST(CombinedImuFactor, ResetIntegration) {
 
   // Test default method
   pim.resetIntegration();
-  Matrix6 expected = 0.001 * I_6x6;
+  Matrix6 expected = 0.1 * I_6x6;
   EXPECT(assert_equal(expected, pim.p().biasAccOmegaInt, 1e-9));
 
   // Test method where Q_init is provided
