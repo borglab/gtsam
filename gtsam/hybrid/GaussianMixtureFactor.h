@@ -39,7 +39,7 @@ class VectorValues;
  * serves to "select" a mixture component corresponding to a GaussianFactor type
  * of measurement.
  *
- * Represents the underlying Gaussian Mixture as a Decision Tree, where the set
+ * Represents the underlying Gaussian mixture as a Decision Tree, where the set
  * of discrete variables indexes to the continuous gaussian distribution.
  *
  * @ingroup hybrid
@@ -52,38 +52,8 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
 
   using sharedFactor = boost::shared_ptr<GaussianFactor>;
 
-  /// Gaussian factor and log of normalizing constant.
-  struct FactorAndConstant {
-    sharedFactor factor;
-    double constant;
-
-    // Return error with constant correction.
-    double error(const VectorValues &values) const {
-      // Note: constant is log of normalization constant for probabilities.
-      // Errors is the negative log-likelihood,
-      // hence we subtract the constant here.
-      if (!factor) return 0.0;  // If nullptr, return 0.0 error
-      return factor->error(values) - constant;
-    }
-
-    // Check pointer equality.
-    bool operator==(const FactorAndConstant &other) const {
-      return factor == other.factor && constant == other.constant;
-    }
-
-   private:
-    /** Serialization function */
-    friend class boost::serialization::access;
-    template <class ARCHIVE>
-    void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
-      ar &BOOST_SERIALIZATION_NVP(factor);
-      ar &BOOST_SERIALIZATION_NVP(constant);
-    }
-  };
-
   /// typedef for Decision Tree of Gaussian factors and log-constant.
-  using Factors = DecisionTree<Key, FactorAndConstant>;
-  using Mixture = DecisionTree<Key, sharedFactor>;
+  using Factors = DecisionTree<Key, sharedFactor>;
 
  private:
   /// Decision tree of Gaussian factors indexed by discrete keys.
@@ -105,7 +75,7 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
   GaussianMixtureFactor() = default;
 
   /**
-   * @brief Construct a new Gaussian Mixture Factor object.
+   * @brief Construct a new Gaussian mixture factor.
    *
    * @param continuousKeys A vector of keys representing continuous variables.
    * @param discreteKeys A vector of keys representing discrete variables and
@@ -115,12 +85,7 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
    */
   GaussianMixtureFactor(const KeyVector &continuousKeys,
                         const DiscreteKeys &discreteKeys,
-                        const Mixture &factors);
-
-  GaussianMixtureFactor(const KeyVector &continuousKeys,
-                        const DiscreteKeys &discreteKeys,
-                        const Factors &factors_and_z)
-      : Base(continuousKeys, discreteKeys), factors_(factors_and_z) {}
+                        const Factors &factors);
 
   /**
    * @brief Construct a new GaussianMixtureFactor object using a vector of
@@ -134,7 +99,7 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
                         const DiscreteKeys &discreteKeys,
                         const std::vector<sharedFactor> &factors)
       : GaussianMixtureFactor(continuousKeys, discreteKeys,
-                              Mixture(discreteKeys, factors)) {}
+                              Factors(discreteKeys, factors)) {}
 
   /// @}
   /// @name Testable
@@ -151,10 +116,7 @@ class GTSAM_EXPORT GaussianMixtureFactor : public HybridFactor {
   /// @{
 
   /// Get factor at a given discrete assignment.
-  sharedFactor factor(const DiscreteValues &assignment) const;
-
-  /// Get constant at a given discrete assignment.
-  double constant(const DiscreteValues &assignment) const;
+  sharedFactor operator()(const DiscreteValues &assignment) const;
 
   /**
    * @brief Combine the Gaussian Factor Graphs in `sum` and `this` while
