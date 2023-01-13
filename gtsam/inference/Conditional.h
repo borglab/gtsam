@@ -145,7 +145,7 @@ namespace gtsam {
      * By default, log normalization constant = 0.0.
      * Override if this depends on the parameters.
      */
-    virtual double logNormalizationConstant() const;
+    virtual double logNormalizationConstant() const { return 0.0; }
 
     /** Non-virtual, exponentiate logNormalizationConstant. */
     double normalizationConstant() const;
@@ -180,9 +180,6 @@ namespace gtsam {
 
     /** Mutable iterator pointing past the last parent key. */
     typename FACTOR::iterator endParents() { return asFactor().end(); }
-
-    /** Check that the invariants hold for derived class at a given point. */
-    bool checkInvariants(const HybridValues& values) const;
 
     /// @}
 

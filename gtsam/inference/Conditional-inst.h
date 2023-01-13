@@ -63,20 +63,4 @@ double Conditional<FACTOR, DERIVEDCONDITIONAL>::normalizationConstant() const {
   return std::exp(logNormalizationConstant());
 }
 
-/* ************************************************************************* */
-template <class FACTOR, class DERIVEDCONDITIONAL>
-bool Conditional<FACTOR, DERIVEDCONDITIONAL>::checkInvariants(
-    const HybridValues& values) const {
-  const double probability = evaluate(values);
-  if (probability < 0.0 || probability > 1.0)
-    return false;  // probability is not in [0,1]
-  const double logProb = logProbability(values);
-  if (std::abs(probability - std::exp(logProb)) > 1e-9)
-    return false;  // logProb is not consistent with probability
-  const double expected =
-      this->logNormalizationConstant() - this->error(values);
-  if (std::abs(logProb - expected) > 1e-9)
-    return false;  // logProb is not consistent with error
-}
-
 }  // namespace gtsam
