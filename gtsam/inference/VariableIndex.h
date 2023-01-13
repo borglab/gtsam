@@ -126,7 +126,16 @@ class GTSAM_EXPORT VariableIndex {
    * solving problems incrementally.
    */
   template<class FG>
-  void augment(const FG& factors, boost::optional<const FactorIndices&> newFactorIndices = boost::none);
+  void augment(const FG& factors, const FactorIndices* newFactorIndices = nullptr);
+
+  /**
+   * An overload of augment() that takes a single factor. and l-value
+   * reference to FactorIndeces.
+   */
+  template<class FG>
+  void augment(const FG& factor, const FactorIndices& newFactorIndices) {
+    augment(factor, &newFactorIndices);
+  }
 
   /**
    * Augment the variable index after an existing factor now affects to more
