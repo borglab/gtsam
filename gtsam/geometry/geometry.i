@@ -376,8 +376,8 @@ class Pose2 {
   Pose2(const gtsam::Rot2& r, const gtsam::Point2& t);
   Pose2(Vector v);
 
-  static boost::optional<gtsam::Pose2> Align(const gtsam::Point2Pairs& abPointPairs);
-  static boost::optional<gtsam::Pose2> Align(const gtsam::Matrix& a, const gtsam::Matrix& b);
+  static std::optional<gtsam::Pose2> Align(const gtsam::Point2Pairs& abPointPairs);
+  static std::optional<gtsam::Pose2> Align(const gtsam::Matrix& a, const gtsam::Matrix& b);
 
   // Testable
   void print(string s = "") const;
@@ -440,8 +440,8 @@ class Pose3 {
   Pose3(const gtsam::Pose2& pose2);
   Pose3(Matrix mat);
 
-  static boost::optional<gtsam::Pose3> Align(const gtsam::Point3Pairs& abPointPairs);
-  static boost::optional<gtsam::Pose3> Align(const gtsam::Matrix& a, const gtsam::Matrix& b);
+  static std::optional<gtsam::Pose3> Align(const gtsam::Point3Pairs& abPointPairs);
+  static std::optional<gtsam::Pose3> Align(const gtsam::Matrix& a, const gtsam::Matrix& b);
 
   // Testable
   void print(string s = "") const;

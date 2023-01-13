@@ -75,8 +75,8 @@ virtual class PreintegratedRotationParams {
 
   Matrix getGyroscopeCovariance() const;
 
-  boost::optional<Vector> getOmegaCoriolis() const;
-  boost::optional<gtsam::Pose3> getBodyPSensor() const;
+  std::optional<Vector> getOmegaCoriolis() const;
+  std::optional<gtsam::Pose3> getBodyPSensor() const;
 };
 
 #include <gtsam/navigation/PreintegrationParams.h>

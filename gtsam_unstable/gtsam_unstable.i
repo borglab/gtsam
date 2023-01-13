@@ -179,7 +179,7 @@ class SimWall2D {
   gtsam::Point2 midpoint() const;
 
   bool intersects(const gtsam::SimWall2D& wall) const;
-  //   bool intersects(const gtsam::SimWall2D& wall, boost::optional<gtsam::Point2&> pt={}) const;
+  //   bool intersects(const gtsam::SimWall2D& wall, gtsam::Point2* pt = nullptr) const;
 
   gtsam::Point2 norm() const;
   gtsam::Rot2 reflection(const gtsam::Point2& init, const gtsam::Point2& intersection) const;
