@@ -135,6 +135,21 @@ static const auto unitPrior =
 }  // namespace density
 
 /* ************************************************************************* */
+bool checkInvariants(const GaussianConditional* self,
+                     const HybridValues& values) {
+  const double probability = self->evaluate(values);
+  if (probability < 0.0 || probability > 1.0)
+    return false;  // probability is not in [0,1]
+  const double logProb = self->logProbability(values);
+  if (std::abs(probability - std::exp(logProb)) > 1e-9)
+    return false;  // logProb is not consistent with probability
+  const double expected =
+      self->logNormalizationConstant() - self->error(values);
+  if (std::abs(logProb - expected) > 1e-9)
+    return false;  // logProb is not consistent with error
+}
+
+/* ************************************************************************* */
 // Check that the evaluate function matches direct calculation with R.
 TEST(GaussianConditional, Evaluate1) {
   // Let's evaluate at the mean
@@ -164,6 +179,7 @@ TEST(GaussianConditional, Evaluate1) {
     integral += 0.1 * sigma * density;
   }
   EXPECT_DOUBLES_EQUAL(1.0, integral, 1e-9);
+  EXPECT(checkInvariants(&density::unitPrior, mean));
 }
 
 /* ************************************************************************* */
