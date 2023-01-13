@@ -340,7 +340,7 @@ public:
   bool triangulateAndComputeE(Matrix& E, const Cameras& cameras) const {
     bool nonDegenerate = triangulateForLinearize(cameras);
     if (nonDegenerate)
-      cameras.project2(*result_, boost::none, E);
+      cameras.project2(*result_, nullptr, &E);
     return nonDegenerate;
   }
 
@@ -453,8 +453,8 @@ public:
    */
   void correctForMissingMeasurements(
       const Cameras& cameras, Vector& ue,
-      boost::optional<typename Cameras::FBlocks&> Fs = boost::none,
-      boost::optional<Matrix&> E = boost::none) const override {
+      typename Cameras::FBlocks* Fs = nullptr,
+      Matrix* E = nullptr) const override {
     // when using stereo cameras, some of the measurements might be missing:
     for (size_t i = 0; i < cameras.size(); i++) {
       const StereoPoint2& z = measured_.at(i);

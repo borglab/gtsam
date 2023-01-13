@@ -337,8 +337,9 @@ protected:
    */
   bool triangulateAndComputeE(Matrix& E, const Cameras& cameras) const {
     bool nonDegenerate = triangulateForLinearize(cameras);
-    if (nonDegenerate)
-      cameras.project2(*result_, boost::none, E);
+    if (nonDegenerate) {
+      cameras.project2(*result_, nullptr, &E);
+    }
     return nonDegenerate;
   }
 

@@ -198,8 +198,20 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
    */
   void marginalizeLeaves(
       const FastList<Key>& leafKeys,
-      boost::optional<FactorIndices&> marginalFactorsIndices = boost::none,
-      boost::optional<FactorIndices&> deletedFactorsIndices = boost::none);
+      FactorIndices* marginalFactorsIndices = nullptr,
+      FactorIndices* deletedFactorsIndices = nullptr);
+
+  /** An overload of marginalizeLeaves that takes references
+   * to vectors instead of pointers to vectors and passes
+   * it to the pointer version of the function.
+   */
+  template <class... OptArgs>
+      void marginalizeLeaves(const FastList<Key>& leafKeys,
+                             OptArgs&&... optArgs) {
+          // dereference the optional arguments and pass
+          // it to the pointer version
+          marginalizeLeaves(leafKeys, (&optArgs)...);
+      }
 
   /// Access the current linearization point
   const Values& getLinearizationPoint() const { return theta_; }

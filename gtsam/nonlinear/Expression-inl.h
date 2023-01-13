@@ -138,8 +138,7 @@ void Expression<T>::print(const std::string& s) const {
 
 template<typename T>
 T Expression<T>::value(const Values& values,
-    boost::optional<std::vector<Matrix>&> H) const {
-
+    std::vector<Matrix>* H) const {
   if (H) {
     // Call private version that returns derivatives in H
     KeyVector keys;

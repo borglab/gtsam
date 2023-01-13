@@ -106,8 +106,8 @@ class CameraSet : public std::vector<CAMERA, Eigen::aligned_allocator<CAMERA>> {
    */
   template <class POINT>
   ZVector project2(const POINT& point,                          //
-                   boost::optional<FBlocks&> Fs = boost::none,  //
-                   boost::optional<Matrix&> E = boost::none) const {
+                   FBlocks* Fs = nullptr,  //
+                   Matrix* E = nullptr) const {
     static const int N = FixedDimension<POINT>::value;
 
     // Allocate result
@@ -131,12 +131,33 @@ class CameraSet : public std::vector<CAMERA, Eigen::aligned_allocator<CAMERA>> {
     return z;
   }
 
+  /** An overload o the project2 function to accept
+   * full matrices and vectors and pass it to the pointer
+   * version of the function
+   */
+  template <class POINT, class... OptArgs>
+  ZVector project2(const POINT& point, OptArgs&... args) const {
+    // pass it to the pointer version of the function
+    return project2(point, (&args)...);
+  }
+
   /// Calculate vector [project2(point)-z] of re-projection errors
   template <class POINT>
   Vector reprojectionError(const POINT& point, const ZVector& measured,
-                           boost::optional<FBlocks&> Fs = boost::none,  //
-                           boost::optional<Matrix&> E = boost::none) const {
+                           FBlocks* Fs = nullptr,  //
+                           Matrix* E = nullptr) const {
     return ErrorVector(project2(point, Fs, E), measured);
+  }
+
+  /** An overload o the reprojectionError function to accept
+   * full matrices and vectors and pass it to the pointer
+   * version of the function
+   */
+  template <class POINT, class... OptArgs>
+  Vector reprojectionError(const POINT& point, const ZVector& measured,
+                           OptArgs&... args) const {
+    // pass it to the pointer version of the function
+    return reprojectionError(point, measured, (&args)...);
   }
 
   /**

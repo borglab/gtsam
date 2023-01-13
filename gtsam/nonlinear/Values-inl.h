@@ -373,7 +373,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<typename ValueType>
-  boost::optional<const ValueType&> Values::exists(Key j) const {
+  const ValueType * Values::exists(Key j) const {
     // Find the item
     KeyValueMap::const_iterator item = values_.find(j);
 
@@ -381,14 +381,14 @@ namespace gtsam {
       // dynamic cast the type and throw exception if incorrect
       auto ptr = dynamic_cast<const GenericValue<ValueType>*>(item->second);
       if (ptr) {
-        return ptr->value();
+        return &ptr->value();
       } else {
         // NOTE(abe): clang warns about potential side effects if done in typeid
         const Value* value = item->second;
         throw ValuesIncorrectType(j, typeid(*value), typeid(ValueType));
       }
      } else {
-      return boost::none;
+      return nullptr;
     }
   }
 

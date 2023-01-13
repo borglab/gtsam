@@ -478,8 +478,8 @@ ISAM2Result ISAM2::update(const NonlinearFactorGraph& newFactors,
 /* ************************************************************************* */
 void ISAM2::marginalizeLeaves(
     const FastList<Key>& leafKeysList,
-    boost::optional<FactorIndices&> marginalFactorsIndices,
-    boost::optional<FactorIndices&> deletedFactorsIndices) {
+    FactorIndices* marginalFactorsIndices,
+    FactorIndices* deletedFactorsIndices) {
   // Convert to ordered set
   KeySet leafKeys(leafKeysList.begin(), leafKeysList.end());
 
