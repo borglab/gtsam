@@ -74,9 +74,6 @@ bool PreintegratedCombinedMeasurements::equals(
 void PreintegratedCombinedMeasurements::resetIntegration() {
   // Base class method to reset the preintegrated measurements
   PreintegrationType::resetIntegration();
-  // Set the initial bias covariance to
-  // the estimated covariance from the last step.
-  p().biasAccOmegaInt = preintMeasCov_.block<6, 6>(9, 9);
   preintMeasCov_.setZero();
 }
 
