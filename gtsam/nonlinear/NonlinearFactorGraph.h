@@ -21,6 +21,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/GraphvizFormatting.h>
@@ -268,11 +269,11 @@ namespace gtsam {
     /// @{
     /** @deprecated */
     boost::shared_ptr<HessianFactor> GTSAM_DEPRECATED linearizeToHessianFactor(
-        const Values& values, boost::none_t, const Dampen& dampen = nullptr) const
+        const Values& values, std::nullptr_t, const Dampen& dampen = nullptr) const
       {return linearizeToHessianFactor(values, dampen);}
 
     /** @deprecated */
-    Values GTSAM_DEPRECATED updateCholesky(const Values& values, boost::none_t,
+    Values GTSAM_DEPRECATED updateCholesky(const Values& values, std::nullptr_t,
                           const Dampen& dampen = nullptr) const
       {return updateCholesky(values, dampen);}
 

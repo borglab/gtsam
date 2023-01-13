@@ -241,7 +241,7 @@ struct apply_compose {
   typedef T result_type;
   static const int Dim = traits<T>::dimension;
   T operator()(const T& x, const T& y, OptionalJacobian<Dim, Dim> H1 =
-      boost::none, OptionalJacobian<Dim, Dim> H2 = boost::none) const {
+      {}, OptionalJacobian<Dim, Dim> H2 = {}) const {
     return x.compose(y, H1, H2);
   }
 };
@@ -249,8 +249,8 @@ struct apply_compose {
 template <>
 struct apply_compose<double> {
   double operator()(const double& x, const double& y,
-                    OptionalJacobian<1, 1> H1 = boost::none,
-                    OptionalJacobian<1, 1> H2 = boost::none) const {
+                    OptionalJacobian<1, 1> H1 = {},
+                    OptionalJacobian<1, 1> H2 = {}) const {
     if (H1) H1->setConstant(y);
     if (H2) H2->setConstant(x);
     return x * y;

@@ -113,7 +113,7 @@ Vector9 ManifoldPreintegration::biasCorrectedDelta(
   const imuBias::ConstantBias biasIncr = bias_i - biasHat_;
   Matrix3 D_correctedRij_bias;
   const Vector3 biasInducedOmega = delRdelBiasOmega_ * biasIncr.gyroscope();
-  const Rot3 correctedRij = deltaRij().expmap(biasInducedOmega, boost::none,
+  const Rot3 correctedRij = deltaRij().expmap(biasInducedOmega, {},
       H ? &D_correctedRij_bias : 0);
   if (H)
     D_correctedRij_bias *= delRdelBiasOmega_;

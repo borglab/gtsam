@@ -255,7 +255,7 @@ public:
 
   /// Return value
   T value(const Values& values) const override {
-    return function_(expression1_->value(values), boost::none);
+    return function_(expression1_->value(values), {});
   }
 
   /// Return keys that play in this expression
@@ -365,9 +365,9 @@ public:
 
   /// Return value
   T value(const Values& values) const override {
-    using boost::none;
+    using std::nullopt;
     return function_(expression1_->value(values), expression2_->value(values),
-        none, none);
+        {}, {});
   }
 
   /// Return keys that play in this expression
@@ -473,9 +473,9 @@ public:
 
   /// Return value
   T value(const Values& values) const override {
-    using boost::none;
+    using std::nullopt;
     return function_(expression1_->value(values), expression2_->value(values),
-        expression3_->value(values), none, none, none);
+        expression3_->value(values), {}, {}, {});
   }
 
   /// Return keys that play in this expression

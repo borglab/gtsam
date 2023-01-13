@@ -121,8 +121,8 @@ class GTSAM_EXPORT Cal3Fisheye : public Cal3 {
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates (xi, yi)
    * @return point in (distorted) image coordinates
    */
-  Point2 uncalibrate(const Point2& p, OptionalJacobian<2, 9> Dcal = boost::none,
-                     OptionalJacobian<2, 2> Dp = boost::none) const;
+  Point2 uncalibrate(const Point2& p, OptionalJacobian<2, 9> Dcal = {},
+                     OptionalJacobian<2, 2> Dp = {}) const;
 
   /**
    * Convert (distorted) image coordinates [u;v] to intrinsic coordinates [x_i,
@@ -132,8 +132,8 @@ class GTSAM_EXPORT Cal3Fisheye : public Cal3 {
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates (xi, yi)
    * @return point in intrinsic coordinates
    */
-  Point2 calibrate(const Point2& p, OptionalJacobian<2, 9> Dcal = boost::none,
-                   OptionalJacobian<2, 2> Dp = boost::none) const;
+  Point2 calibrate(const Point2& p, OptionalJacobian<2, 9> Dcal = {},
+                   OptionalJacobian<2, 2> Dp = {}) const;
 
   /// @}
   /// @name Testable

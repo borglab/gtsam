@@ -459,8 +459,8 @@ struct MultiplyWithInverse {
 
   /// A.inverse() * b, with optional derivatives
   VectorN operator()(const MatrixN& A, const VectorN& b,
-                     OptionalJacobian<N, N* N> H1 = boost::none,
-                     OptionalJacobian<N, N> H2 = boost::none) const {
+                     OptionalJacobian<N, N* N> H1 = {},
+                     OptionalJacobian<N, N> H2 = {}) const {
     const MatrixN invA = A.inverse();
     const VectorN c = invA * b;
     // The derivative in A is just -[c[0]*invA c[1]*invA ... c[N-1]*invA]
@@ -495,16 +495,16 @@ struct MultiplyWithInverseFunction {
 
   /// f(a).inverse() * b, with optional derivatives
   VectorN operator()(const T& a, const VectorN& b,
-                     OptionalJacobian<N, M> H1 = boost::none,
-                     OptionalJacobian<N, N> H2 = boost::none) const {
+                     OptionalJacobian<N, M> H1 = {},
+                     OptionalJacobian<N, N> H2 = {}) const {
     MatrixN A;
-    phi_(a, b, boost::none, A);  // get A = f(a) by calling f once
+    phi_(a, b, {}, A);  // get A = f(a) by calling f once
     const MatrixN invA = A.inverse();
     const VectorN c = invA * b;
 
     if (H1) {
       Eigen::Matrix<double, N, M> H;
-      phi_(a, c, H, boost::none);  // get derivative H of forward mapping
+      phi_(a, c, H, {});  // get derivative H of forward mapping
       *H1 = -invA* H;
     }
     if (H2) *H2 = invA;

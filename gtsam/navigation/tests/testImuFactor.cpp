@@ -149,7 +149,7 @@ TEST(ImuFactor, PreintegratedMeasurements) {
   std::function<Vector9(const NavState&, const NavState&, const Bias&)> f =
       std::bind(&PreintegrationBase::computeError, actual,
                   std::placeholders::_1, std::placeholders::_2, std::placeholders::_3,
-                  boost::none, boost::none, boost::none);
+                  nullptr, nullptr, nullptr);
   EXPECT(assert_equal(numericalDerivative31(f, x1, x2, bias), aH1, 1e-9));
   EXPECT(assert_equal(numericalDerivative32(f, x1, x2, bias), aH2, 1e-9));
   EXPECT(assert_equal(numericalDerivative33(f, x1, x2, bias), aH3, 1e-9));
@@ -205,7 +205,7 @@ TEST(ImuFactor, PreintegrationBaseMethods) {
   pim.biasCorrectedDelta(kZeroBias, actualH);
   Matrix expectedH = numericalDerivative11<Vector9, Bias>(
       std::bind(&PreintegrationBase::biasCorrectedDelta, pim,
-          std::placeholders::_1, boost::none), kZeroBias);
+          std::placeholders::_1, nullptr), kZeroBias);
   EXPECT(assert_equal(expectedH, actualH));
 
   Matrix9 aH1;
@@ -213,11 +213,11 @@ TEST(ImuFactor, PreintegrationBaseMethods) {
   NavState predictedState = pim.predict(state1, kZeroBias, aH1, aH2);
   Matrix eH1 = numericalDerivative11<NavState, NavState>(
       std::bind(&PreintegrationBase::predict, pim, std::placeholders::_1,
-          kZeroBias, boost::none, boost::none), state1);
+          kZeroBias, nullptr, nullptr), state1);
   EXPECT(assert_equal(eH1, aH1));
   Matrix eH2 = numericalDerivative11<NavState, Bias>(
       std::bind(&PreintegrationBase::predict, pim, state1,
-          std::placeholders::_1, boost::none, boost::none), kZeroBias);
+          std::placeholders::_1, nullptr, nullptr), kZeroBias);
   EXPECT(assert_equal(eH2, aH2));
 }
 
@@ -334,7 +334,7 @@ TEST(ImuFactor, ErrorAndJacobianWithBiases) {
   pim.biasCorrectedDelta(bias, actualH);
   Matrix expectedH = numericalDerivative11<Vector9, Bias>(
       std::bind(&PreintegrationBase::biasCorrectedDelta, pim,
-          std::placeholders::_1, boost::none), bias);
+          std::placeholders::_1, nullptr), bias);
   EXPECT(assert_equal(expectedH, actualH));
 
   // Create factor
@@ -520,7 +520,7 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
   // Check updatedDeltaXij derivatives
   Matrix3 D_correctedAcc_measuredOmega = Z_3x3;
   pim.correctMeasurementsBySensorPose(measuredAcc, measuredOmega,
-      boost::none, D_correctedAcc_measuredOmega, boost::none);
+      nullptr, D_correctedAcc_measuredOmega, nullptr);
   Matrix3 expectedD = numericalDerivative11<Vector3, Vector3>(
       std::bind(correctedAcc, pim, measuredAcc, std::placeholders::_1),
       measuredOmega, 1e-6);
@@ -531,19 +531,19 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
 // TODO(frank): revive derivative tests
 //  Matrix93 G1, G2;
 //  Vector9 preint =
-//      pim.updatedDeltaXij(measuredAcc, measuredOmega, dt, boost::none, G1, G2);
+//      pim.updatedDeltaXij(measuredAcc, measuredOmega, dt, {}, G1, G2);
 //
 //  Matrix93 expectedG1 = numericalDerivative21<NavState, Vector3, Vector3>(
 //      std::bind(&PreintegratedImuMeasurements::updatedDeltaXij, pim,
 //          std::placeholders::_1, std::placeholders::_2,
-//          dt, boost::none, boost::none, boost::none), measuredAcc,
+//          dt, {}, {}, {}), measuredAcc,
 //      measuredOmega, 1e-6);
 //  EXPECT(assert_equal(expectedG1, G1, 1e-5));
 //
 //  Matrix93 expectedG2 = numericalDerivative22<NavState, Vector3, Vector3>(
 //      std::bind(&PreintegratedImuMeasurements::updatedDeltaXij, pim,
 //          std::placeholders::_1, std::placeholders::_2,
-//          dt, boost::none, boost::none, boost::none), measuredAcc,
+//          dt, {}, {}, {}), measuredAcc,
 //      measuredOmega, 1e-6);
 //  EXPECT(assert_equal(expectedG2, G2, 1e-5));
 
@@ -658,7 +658,7 @@ TEST(ImuFactor, PredictArbitrary) {
   p->integrationCovariance = Z_3x3; // MonteCarlo does not sample integration noise
   PreintegratedImuMeasurements pim(p, biasHat);
   Bias bias(Vector3(0, 0, 0), Vector3(0, 0, 0));
-//  EXPECT(MonteCarlo(pim, NavState(x1, v1), bias, 0.1, boost::none, measuredAcc, measuredOmega,
+//  EXPECT(MonteCarlo(pim, NavState(x1, v1), bias, 0.1, {}, measuredAcc, measuredOmega,
 //                    Vector3::Constant(accNoiseVar), Vector3::Constant(omegaNoiseVar), 100000));
 
   double dt = 0.001;

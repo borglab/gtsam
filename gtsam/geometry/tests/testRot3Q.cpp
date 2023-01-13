@@ -30,7 +30,7 @@ using namespace gtsam;
 
 //******************************************************************************
 TEST(Rot3Q , Compare) {
-  using boost::none;
+  using {};
 
   // We set up expected values with quaternions
   typedef Quaternion Q;

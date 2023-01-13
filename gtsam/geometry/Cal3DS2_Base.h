@@ -122,12 +122,12 @@ class GTSAM_EXPORT Cal3DS2_Base : public Cal3 {
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
    * @return point in (distorted) image coordinates
    */
-  Point2 uncalibrate(const Point2& p, OptionalJacobian<2, 9> Dcal = boost::none,
-                     OptionalJacobian<2, 2> Dp = boost::none) const;
+  Point2 uncalibrate(const Point2& p, OptionalJacobian<2, 9> Dcal = {},
+                     OptionalJacobian<2, 2> Dp = {}) const;
 
   /// Convert (distorted) image coordinates uv to intrinsic coordinates xy
-  Point2 calibrate(const Point2& p, OptionalJacobian<2, 9> Dcal = boost::none,
-                   OptionalJacobian<2, 2> Dp = boost::none) const;
+  Point2 calibrate(const Point2& p, OptionalJacobian<2, 9> Dcal = {},
+                   OptionalJacobian<2, 2> Dp = {}) const;
 
   /// Derivative of uncalibrate wrpt intrinsic coordinates
   Matrix2 D2d_intrinsic(const Point2& p) const;

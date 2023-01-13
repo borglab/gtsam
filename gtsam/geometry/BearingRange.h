@@ -77,8 +77,8 @@ public:
   /// Prediction function that stacks measurements
   static BearingRange Measure(
     const A1& a1, const A2& a2,
-    OptionalJacobian<dimension, traits<A1>::dimension> H1 = boost::none,
-    OptionalJacobian<dimension, traits<A2>::dimension> H2 = boost::none) {
+    OptionalJacobian<dimension, traits<A1>::dimension> H1 = {},
+    OptionalJacobian<dimension, traits<A2>::dimension> H2 = {}) {
     typename MakeJacobian<B, A1>::type HB1;
     typename MakeJacobian<B, A2>::type HB2;
     typename MakeJacobian<R, A1>::type HR1;
@@ -181,8 +181,8 @@ struct HasBearing {
   typedef RT result_type;
   RT operator()(
       const A1& a1, const A2& a2,
-      OptionalJacobian<traits<RT>::dimension, traits<A1>::dimension> H1=boost::none,
-      OptionalJacobian<traits<RT>::dimension, traits<A2>::dimension> H2=boost::none) {
+      OptionalJacobian<traits<RT>::dimension, traits<A1>::dimension> H1={},
+      OptionalJacobian<traits<RT>::dimension, traits<A2>::dimension> H2={}) {
     return a1.bearing(a2, H1, H2);
   }
 };
@@ -195,8 +195,8 @@ struct HasRange {
   typedef RT result_type;
   RT operator()(
       const A1& a1, const A2& a2,
-      OptionalJacobian<traits<RT>::dimension, traits<A1>::dimension> H1=boost::none,
-      OptionalJacobian<traits<RT>::dimension, traits<A2>::dimension> H2=boost::none) {
+      OptionalJacobian<traits<RT>::dimension, traits<A1>::dimension> H1={},
+      OptionalJacobian<traits<RT>::dimension, traits<A2>::dimension> H2={}) {
     return a1.range(a2, H1, H2);
   }
 };

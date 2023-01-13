@@ -42,7 +42,7 @@ namespace gtsam {
  *    public:
  *     MultiplyFunctor(double m) : m_(m) {}
  *     Matrix operator()(const Matrix &X,
- *              OptionalJacobian<-1, -1> H = boost::none) const {
+ *              OptionalJacobian<-1, -1> H = {}) const {
  *       if (H)
  *         *H = m_ * Matrix::Identity(X.rows()*X.cols(), X.rows()*X.cols());
  *       return m_ * X;

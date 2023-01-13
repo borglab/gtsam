@@ -103,7 +103,7 @@ class GTSAM_EXPORT PreintegratedAhrsMeasurements : public PreintegratedRotation 
 
   /// Predict bias-corrected incremental rotation
   /// TODO: The matrix Hbias is the derivative of predict? Unit-test?
-  Vector3 predict(const Vector3& bias, OptionalJacobian<3,3> H = boost::none) const;
+  Vector3 predict(const Vector3& bias, OptionalJacobian<3,3> H = {}) const;
 
   // This function is only used for test purposes
   // (compare numerical derivatives wrt analytic ones)

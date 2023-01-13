@@ -119,7 +119,7 @@ class Class : public Point3 {
   using Point3::Point3;
   const Vector3& vector() const { return *this; }
   inline static Class Identity() { return Class(0,0,0); }
-  double norm(OptionalJacobian<1,3> H = boost::none) const {
+  double norm(OptionalJacobian<1,3> H = {}) const {
     return norm3(*this, H);
   }
   bool equals(const Class &q, double tol) const {

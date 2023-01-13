@@ -54,7 +54,7 @@ public:
 
   /** vector of errors */
   Vector attitudeError(const Rot3& p,
-      OptionalJacobian<2,3> H = boost::none) const;
+      OptionalJacobian<2,3> H = {}) const;
 
   const Unit3& nZ() const {
     return nZ_;

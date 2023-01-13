@@ -80,7 +80,7 @@ namespace gtsam {
      * @return 2D rotation \f$ \in SO(2) \f$
      */
     static Rot2 relativeBearing(const Point2& d, OptionalJacobian<1,2> H =
-        boost::none);
+        {});
 
     /** Named constructor that behaves as atan2, i.e., y,x order (!) and normalizes */
     static Rot2 atan2(double y, double x);
@@ -123,10 +123,10 @@ namespace gtsam {
     /// @{
 
     /// Exponential map at identity - create a rotation from canonical coordinates
-    static Rot2 Expmap(const Vector1& v, ChartJacobian H = boost::none);
+    static Rot2 Expmap(const Vector1& v, ChartJacobian H = {});
 
     /// Log map at identity - return the canonical coordinates of this rotation
-    static Vector1 Logmap(const Rot2& r, ChartJacobian H = boost::none);
+    static Vector1 Logmap(const Rot2& r, ChartJacobian H = {});
 
     /** Calculate Adjoint map */
     Matrix1 AdjointMap() const { return I_1x1; }
@@ -143,10 +143,10 @@ namespace gtsam {
 
     // Chart at origin simply uses exponential map and its inverse
     struct ChartAtOrigin {
-      static Rot2 Retract(const Vector1& v, ChartJacobian H = boost::none) {
+      static Rot2 Retract(const Vector1& v, ChartJacobian H = {}) {
         return Expmap(v, H);
       }
-      static Vector1 Local(const Rot2& r, ChartJacobian H = boost::none) {
+      static Vector1 Local(const Rot2& r, ChartJacobian H = {}) {
         return Logmap(r, H);
       }
     };
@@ -160,8 +160,8 @@ namespace gtsam {
     /**
      * rotate point from rotated coordinate frame to world \f$ p^w = R_c^w p^c \f$
      */
-    Point2 rotate(const Point2& p, OptionalJacobian<2, 1> H1 = boost::none,
-        OptionalJacobian<2, 2> H2 = boost::none) const;
+    Point2 rotate(const Point2& p, OptionalJacobian<2, 1> H1 = {},
+        OptionalJacobian<2, 2> H2 = {}) const;
 
     /** syntactic sugar for rotate */
     inline Point2 operator*(const Point2& p) const {
@@ -171,8 +171,8 @@ namespace gtsam {
     /**
      * rotate point from world to rotated frame \f$ p^c = (R_c^w)^T p^w \f$
      */
-    Point2 unrotate(const Point2& p, OptionalJacobian<2, 1> H1 = boost::none,
-        OptionalJacobian<2, 2> H2 = boost::none) const;
+    Point2 unrotate(const Point2& p, OptionalJacobian<2, 1> H1 = {},
+        OptionalJacobian<2, 2> H2 = {}) const;
 
     /// @}
     /// @name Standard Interface

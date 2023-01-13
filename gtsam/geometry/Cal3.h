@@ -45,8 +45,8 @@ namespace gtsam {
  */
 template <typename Cal, size_t Dim>
 void calibrateJacobians(const Cal& calibration, const Point2& pn,
-                        OptionalJacobian<2, Dim> Dcal = boost::none,
-                        OptionalJacobian<2, 2> Dp = boost::none) {
+                        OptionalJacobian<2, Dim> Dcal = {},
+                        OptionalJacobian<2, 2> Dp = {}) {
   if (Dcal || Dp) {
     Eigen::Matrix<double, 2, Dim> H_uncal_K;
     Matrix22 H_uncal_pn, H_uncal_pn_inv;

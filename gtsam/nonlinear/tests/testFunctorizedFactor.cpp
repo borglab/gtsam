@@ -47,7 +47,7 @@ class MultiplyFunctor {
   MultiplyFunctor(double m) : m_(m) {}
 
   Matrix operator()(const Matrix &X,
-                    OptionalJacobian<-1, -1> H = boost::none) const {
+                    OptionalJacobian<-1, -1> H = {}) const {
     if (H) *H = m_ * Matrix::Identity(X.rows() * X.cols(), X.rows() * X.cols());
     return m_ * X;
   }
@@ -57,8 +57,8 @@ class MultiplyFunctor {
 class ProjectionFunctor {
  public:
   Vector operator()(const Matrix &A, const Vector &x,
-                    OptionalJacobian<-1, -1> H1 = boost::none,
-                    OptionalJacobian<-1, -1> H2 = boost::none) const {
+                    OptionalJacobian<-1, -1> H1 = {},
+                    OptionalJacobian<-1, -1> H2 = {}) const {
     if (H1) {
       H1->resize(x.size(), A.size());
       *H1 << I_3x3, I_3x3, I_3x3;
@@ -178,7 +178,7 @@ TEST(FunctorizedFactor, Lambda) {
   Matrix measurement = multiplier * Matrix::Identity(3, 3);
 
   auto lambda = [multiplier](const Matrix &X,
-                             OptionalJacobian<-1, -1> H = boost::none) {
+                             OptionalJacobian<-1, -1> H = {}) {
     if (H)
       *H = multiplier *
            Matrix::Identity(X.rows() * X.cols(), X.rows() * X.cols());
@@ -251,8 +251,8 @@ TEST(FunctorizedFactor, Lambda2) {
   Matrix measurement = A * x;
 
   auto lambda = [](const Matrix &A, const Vector &x,
-                   OptionalJacobian<-1, -1> H1 = boost::none,
-                   OptionalJacobian<-1, -1> H2 = boost::none) {
+                   OptionalJacobian<-1, -1> H1 = {},
+                   OptionalJacobian<-1, -1> H2 = {}) {
     if (H1) {
       H1->resize(x.size(), A.size());
       *H1 << I_3x3, I_3x3, I_3x3;

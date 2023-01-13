@@ -19,6 +19,7 @@
 #pragma once
 
 #include <boost/shared_ptr.hpp>
+#include <cstddef>
 #include <functional>
 #include <optional>
 #include <boost/variant.hpp>
@@ -326,7 +327,7 @@ namespace gtsam {
     /** @deprecated */
     boost::shared_ptr<BayesNetType> GTSAM_DEPRECATED marginalMultifrontalBayesNet(
       boost::variant<const Ordering&, const KeyVector&> variables,
-      boost::none_t,
+      std::nullptr_t,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
       OptionalVariableIndex variableIndex = {}) const {
           return marginalMultifrontalBayesNet(variables, function, variableIndex);
@@ -335,7 +336,7 @@ namespace gtsam {
     /** @deprecated */
     boost::shared_ptr<BayesTreeType> GTSAM_DEPRECATED marginalMultifrontalBayesTree(
       boost::variant<const Ordering&, const KeyVector&> variables,
-      boost::none_t,
+      std::nullptr_t,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
       OptionalVariableIndex variableIndex = {}) const {
           return marginalMultifrontalBayesTree(variables, function, variableIndex);

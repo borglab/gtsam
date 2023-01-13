@@ -103,7 +103,7 @@ public:
   /// summarizing the preintegrated IMU measurements so far
   /// NOTE(frank): implementation is different in two versions
   Vector9 biasCorrectedDelta(const imuBias::ConstantBias& bias_i,
-      OptionalJacobian<9, 6> H = boost::none) const override;
+      OptionalJacobian<9, 6> H = {}) const override;
 
   /** Dummy clone for MATLAB */
   virtual boost::shared_ptr<ManifoldPreintegration> clone() const {

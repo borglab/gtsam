@@ -242,12 +242,12 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
      * Retract uses Cayley map. See note about xi element order in Hat.
      * Deafault implementation has no Jacobian implemented
      */
-    static SO Retract(const TangentVector& xi, ChartJacobian H = boost::none);
+    static SO Retract(const TangentVector& xi, ChartJacobian H = {});
 
     /**
      * Inverse of Retract. See note about xi element order in Hat.
      */
-    static TangentVector Local(const SO& R, ChartJacobian H = boost::none);
+    static TangentVector Local(const SO& R, ChartJacobian H = {});
   };
 
   // Return dynamic identity DxD Jacobian for given SO(n)
@@ -267,7 +267,7 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   /**
    * Exponential map at identity - create a rotation from canonical coordinates
    */
-  static SO Expmap(const TangentVector& omega, ChartJacobian H = boost::none);
+  static SO Expmap(const TangentVector& omega, ChartJacobian H = {});
 
   /// Derivative of Expmap, currently only defined for SO3
   static MatrixDD ExpmapDerivative(const TangentVector& omega);
@@ -275,7 +275,7 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   /**
    * Log map at identity - returns the canonical coordinates of this rotation
    */
-  static TangentVector Logmap(const SO& R, ChartJacobian H = boost::none);
+  static TangentVector Logmap(const SO& R, ChartJacobian H = {});
 
   /// Derivative of Logmap, currently only defined for SO3
   static MatrixDD LogmapDerivative(const TangentVector& omega);
@@ -293,7 +293,7 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
    * X and fixed-size Jacobian if dimension is known at compile time.
    * */
   VectorN2 vec(OptionalJacobian<internal::NSquaredSO(N), dimension> H =
-                   boost::none) const;
+                   {}) const;
 
   /// Calculate N^2 x dim matrix of vectorized Lie algebra generators for SO(N)
   template <int N_ = N, typename = IsFixed<N_>>

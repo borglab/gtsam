@@ -143,7 +143,7 @@ public:
    * @param H2 derivative with respect to point
    */
   StereoPoint2 project2(const Point3& point, OptionalJacobian<3, 6> H1 =
-      boost::none, OptionalJacobian<3, 3> H2 = boost::none) const;
+      {}, OptionalJacobian<3, 3> H2 = {}) const;
 
   /// back-project a measurement
   Point3 backproject(const StereoPoint2& z) const;
@@ -153,8 +153,8 @@ public:
    * @param H2 derivative with respect to point
    */
   Point3 backproject2(const StereoPoint2& z,
-                      OptionalJacobian<3, 6> H1 = boost::none,
-                      OptionalJacobian<3, 3> H2 = boost::none) const;
+                      OptionalJacobian<3, 6> H1 = {},
+                      OptionalJacobian<3, 3> H2 = {}) const;
 
   /// @}
   /// @name Deprecated
@@ -167,8 +167,8 @@ public:
    * @param H3 IGNORED (for calibration)
    */
   StereoPoint2 project(const Point3& point, OptionalJacobian<3, 6> H1,
-      OptionalJacobian<3, 3> H2 = boost::none, OptionalJacobian<3, 0> H3 =
-          boost::none) const;
+      OptionalJacobian<3, 3> H2 = {}, OptionalJacobian<3, 0> H3 =
+          {}) const;
 
   /// for Nonlinear Triangulation
   Vector defaultErrorWhenTriangulatingBehindCamera() const {

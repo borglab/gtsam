@@ -47,8 +47,8 @@ class AdaptAutoDiff {
 
  public:
   VectorT operator()(const Vector1& v1, const Vector2& v2,
-                     OptionalJacobian<M, N1> H1 = boost::none,
-                     OptionalJacobian<M, N2> H2 = boost::none) {
+                     OptionalJacobian<M, N1> H1 = {},
+                     OptionalJacobian<M, N2> H2 = {}) {
     using ceres::internal::AutoDiff;
 
     bool success;

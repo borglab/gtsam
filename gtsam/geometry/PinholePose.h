@@ -115,32 +115,32 @@ public:
   }
 
   /// project a 3D point from world coordinates into the image
-  Point2 project(const Point3& pw, OptionalJacobian<2, 6> Dpose = boost::none,
-      OptionalJacobian<2, 3> Dpoint = boost::none,
-      OptionalJacobian<2, DimK> Dcal = boost::none) const {
+  Point2 project(const Point3& pw, OptionalJacobian<2, 6> Dpose = {},
+      OptionalJacobian<2, 3> Dpoint = {},
+      OptionalJacobian<2, DimK> Dcal = {}) const {
     return _project(pw, Dpose, Dpoint, Dcal);
   }
 
   /// project a 3D point from world coordinates into the image
-  Point2 reprojectionError(const Point3& pw, const Point2& measured, OptionalJacobian<2, 6> Dpose = boost::none,
-      OptionalJacobian<2, 3> Dpoint = boost::none,
-      OptionalJacobian<2, DimK> Dcal = boost::none) const {
+  Point2 reprojectionError(const Point3& pw, const Point2& measured, OptionalJacobian<2, 6> Dpose = {},
+      OptionalJacobian<2, 3> Dpoint = {},
+      OptionalJacobian<2, DimK> Dcal = {}) const {
     return Point2(_project(pw, Dpose, Dpoint, Dcal) - measured);
   }
 
   /// project a point at infinity from world coordinates into the image
-  Point2 project(const Unit3& pw, OptionalJacobian<2, 6> Dpose = boost::none,
-      OptionalJacobian<2, 2> Dpoint = boost::none,
-      OptionalJacobian<2, DimK> Dcal = boost::none) const {
+  Point2 project(const Unit3& pw, OptionalJacobian<2, 6> Dpose = {},
+      OptionalJacobian<2, 2> Dpoint = {},
+      OptionalJacobian<2, DimK> Dcal = {}) const {
     return _project(pw, Dpose, Dpoint, Dcal);
   }
 
   /// backproject a 2-dimensional point to a 3-dimensional point at given depth
   Point3 backproject(const Point2& p, double depth,
-                     OptionalJacobian<3, 6> Dresult_dpose = boost::none,
-                     OptionalJacobian<3, 2> Dresult_dp = boost::none,
-                     OptionalJacobian<3, 1> Dresult_ddepth = boost::none,
-                     OptionalJacobian<3, DimK> Dresult_dcal = boost::none) const {
+                     OptionalJacobian<3, 6> Dresult_dpose = {},
+                     OptionalJacobian<3, 2> Dresult_dp = {},
+                     OptionalJacobian<3, 1> Dresult_ddepth = {},
+                     OptionalJacobian<3, DimK> Dresult_dcal = {}) const {
     typedef Eigen::Matrix<double, 2, DimK> Matrix2K;
     Matrix2K Dpn_dcal;
     Matrix22 Dpn_dp;
@@ -179,8 +179,8 @@ public:
    * @return range (double)
    */
   double range(const Point3& point,
-      OptionalJacobian<1, 6> Dcamera = boost::none,
-      OptionalJacobian<1, 3> Dpoint = boost::none) const {
+      OptionalJacobian<1, 6> Dcamera = {},
+      OptionalJacobian<1, 3> Dpoint = {}) const {
     return pose().range(point, Dcamera, Dpoint);
   }
 
@@ -189,8 +189,8 @@ public:
    * @param pose Other SO(3) pose
    * @return range (double)
    */
-  double range(const Pose3& pose, OptionalJacobian<1, 6> Dcamera = boost::none,
-      OptionalJacobian<1, 6> Dpose = boost::none) const {
+  double range(const Pose3& pose, OptionalJacobian<1, 6> Dcamera = {},
+      OptionalJacobian<1, 6> Dpose = {}) const {
     return this->pose().range(pose, Dcamera, Dpose);
   }
 
@@ -200,7 +200,7 @@ public:
    * @return range (double)
    */
   double range(const CalibratedCamera& camera, OptionalJacobian<1, 6> Dcamera =
-      boost::none, OptionalJacobian<1, 6> Dother = boost::none) const {
+      {}, OptionalJacobian<1, 6> Dother = {}) const {
     return pose().range(camera.pose(), Dcamera, Dother);
   }
 
@@ -211,8 +211,8 @@ public:
    */
   template<class CalibrationB>
   double range(const PinholeBaseK<CalibrationB>& camera,
-      OptionalJacobian<1, 6> Dcamera = boost::none,
-      OptionalJacobian<1, 6> Dother = boost::none) const {
+      OptionalJacobian<1, 6> Dcamera = {},
+      OptionalJacobian<1, 6> Dother = {}) const {
     return pose().range(camera.pose(), Dcamera, Dother);
   }
 
@@ -376,14 +376,14 @@ public:
    *  @param Dpose is the Jacobian w.r.t. the whole camera (really only the pose)
    *  @param Dpoint is the Jacobian w.r.t. point3
    */
-  Point2 project2(const Point3& pw, OptionalJacobian<2, 6> Dpose = boost::none,
-      OptionalJacobian<2, 3> Dpoint = boost::none) const {
+  Point2 project2(const Point3& pw, OptionalJacobian<2, 6> Dpose = {},
+      OptionalJacobian<2, 3> Dpoint = {}) const {
     return Base::project(pw, Dpose, Dpoint);
   }
 
   /// project2 version for point at infinity
-  Point2 project2(const Unit3& pw, OptionalJacobian<2, 6> Dpose = boost::none,
-      OptionalJacobian<2, 2> Dpoint = boost::none) const {
+  Point2 project2(const Unit3& pw, OptionalJacobian<2, 6> Dpose = {},
+      OptionalJacobian<2, 2> Dpoint = {}) const {
     return Base::project(pw, Dpose, Dpoint);
   }
 

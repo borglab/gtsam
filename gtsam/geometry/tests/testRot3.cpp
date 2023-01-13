@@ -360,7 +360,7 @@ TEST( Rot3, rotate_derivatives)
 {
   Matrix actualDrotate1a, actualDrotate1b, actualDrotate2;
   R.rotate(P, actualDrotate1a, actualDrotate2);
-  R.inverse().rotate(P, actualDrotate1b, boost::none);
+  R.inverse().rotate(P, actualDrotate1b, {});
   Matrix numerical1 = numericalDerivative21(testing::rotate<Rot3,Point3>, R, P);
   Matrix numerical2 = numericalDerivative21(testing::rotate<Rot3,Point3>, R.inverse(), P);
   Matrix numerical3 = numericalDerivative22(testing::rotate<Rot3,Point3>, R, P);

@@ -91,9 +91,9 @@ public:
   static Vector9 UpdatePreintegrated(const Vector3& a_body,
                                      const Vector3& w_body, const double dt,
                                      const Vector9& preintegrated,
-                                     OptionalJacobian<9, 9> A = boost::none,
-                                     OptionalJacobian<9, 3> B = boost::none,
-                                     OptionalJacobian<9, 3> C = boost::none);
+                                     OptionalJacobian<9, 9> A = {},
+                                     OptionalJacobian<9, 3> B = {},
+                                     OptionalJacobian<9, 3> C = {});
 
   /// Update preintegrated measurements and get derivatives
   /// It takes measured quantities in the j frame
@@ -106,13 +106,13 @@ public:
   /// summarizing the preintegrated IMU measurements so far
   /// NOTE(frank): implementation is different in two versions
   Vector9 biasCorrectedDelta(const imuBias::ConstantBias& bias_i,
-      OptionalJacobian<9, 6> H = boost::none) const override;
+      OptionalJacobian<9, 6> H = {}) const override;
 
   // Compose the two pre-integrated 9D-vectors zeta01 and zeta02, with derivatives
   static Vector9 Compose(const Vector9& zeta01, const Vector9& zeta12,
                          double deltaT12,
-                         OptionalJacobian<9, 9> H1 = boost::none,
-                         OptionalJacobian<9, 9> H2 = boost::none);
+                         OptionalJacobian<9, 9> H1 = {},
+                         OptionalJacobian<9, 9> H2 = {});
 
   /// Merge in a different set of measurements and update bias derivatives accordingly
   /// The derivatives apply to the preintegrated Vector9

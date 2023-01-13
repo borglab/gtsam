@@ -123,7 +123,7 @@ static Point2 project2(const Pose3& pose, const Point3& point) {
 TEST( SimpleCamera, Dproject_point_pose)
 {
   Matrix Dpose, Dpoint;
-  Point2 result = camera.project(point1, Dpose, Dpoint, boost::none);
+  Point2 result = camera.project(point1, Dpose, Dpoint, {});
   Matrix numerical_pose  = numericalDerivative21(project2, pose1, point1);
   Matrix numerical_point = numericalDerivative22(project2, pose1, point1);
   CHECK(assert_equal(result, Point2(-100,  100) ));

@@ -50,11 +50,11 @@ template<class V>
 bool assert_equal(const std::optional<V>& expected,
                   const std::optional<V>& actual, double tol = 1e-9) {
   if (!expected && actual) {
-    std::cout << "expected is boost::none, while actual is not" << std::endl;
+    std::cout << "expected is {}, while actual is not" << std::endl;
     return false;
   }
   if (expected && !actual) {
-    std::cout << "actual is boost::none, while expected is not" << std::endl;
+    std::cout << "actual is {}, while expected is not" << std::endl;
     return false;
   }
   if (!expected && !actual)
@@ -65,7 +65,7 @@ bool assert_equal(const std::optional<V>& expected,
 template<class V>
 bool assert_equal(const V& expected, const std::optional<V>& actual, double tol = 1e-9) {
   if (!actual) {
-    std::cout << "actual is boost::none" << std::endl;
+    std::cout << "actual is {}" << std::endl;
     return false;
   }
   return assert_equal(expected, *actual, tol);

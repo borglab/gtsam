@@ -70,13 +70,13 @@ Vector6 SO4::ChartAtOrigin::Local(const SO4 &Q, ChartJacobian H);
 /**
  * Project to top-left 3*3 matrix. Note this is *not* in general \in SO(3).
  */
-GTSAM_EXPORT Matrix3 topLeft(const SO4 &Q, OptionalJacobian<9, 6> H = boost::none);
+GTSAM_EXPORT Matrix3 topLeft(const SO4 &Q, OptionalJacobian<9, 6> H = {});
 
 /**
  * Project to Stiefel manifold of 4*3 orthonormal 3-frames in R^4, i.e., pi(Q)
  * -> \f$ S \in St(3,4) \f$.
  */
-GTSAM_EXPORT Matrix43 stiefel(const SO4 &Q, OptionalJacobian<12, 6> H = boost::none);
+GTSAM_EXPORT Matrix43 stiefel(const SO4 &Q, OptionalJacobian<12, 6> H = {});
 
 /** Serialization function */
 template <class Archive>
