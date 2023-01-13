@@ -181,6 +181,10 @@ namespace gtsam {
     /** Mutable iterator pointing past the last parent key. */
     typename FACTOR::iterator endParents() { return asFactor().end(); }
 
+    template <class VALUES>
+    static bool CheckInvariants(const DERIVEDCONDITIONAL& conditional,
+                                const VALUES& values);
+
     /// @}
 
   private:
