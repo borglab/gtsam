@@ -61,6 +61,7 @@ virtual class HybridConditional {
   size_t nrParents() const;
 
   // Standard interface:
+  double logNormalizationConstant() const;
   double logProbability(const gtsam::HybridValues& values) const;
   double evaluate(const gtsam::HybridValues& values) const;
   double operator()(const gtsam::HybridValues& values) const;

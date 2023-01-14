@@ -456,6 +456,7 @@ class GaussianFactorGraph {
 };
 
 #include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/hybrid/HybridValues.h>
 virtual class GaussianConditional : gtsam::JacobianFactor {
   // Constructors
   GaussianConditional(size_t key, Vector d, Matrix R,
@@ -497,6 +498,7 @@ virtual class GaussianConditional : gtsam::JacobianFactor {
   bool equals(const gtsam::GaussianConditional& cg, double tol) const;
   
   // Standard Interface
+  double logNormalizationConstant() const;
   double logProbability(const gtsam::VectorValues& x) const;
   double evaluate(const gtsam::VectorValues& x) const;
   double error(const gtsam::VectorValues& x) const;
@@ -518,6 +520,11 @@ virtual class GaussianConditional : gtsam::JacobianFactor {
 
   // enabling serialization functionality
   void serialize() const;
+
+  // Expose HybridValues versions
+  double logProbability(const gtsam::HybridValues& x) const;
+  double evaluate(const gtsam::HybridValues& x) const;
+  double error(const gtsam::HybridValues& x) const;
 };
 
 #include <gtsam/linear/GaussianDensity.h>
