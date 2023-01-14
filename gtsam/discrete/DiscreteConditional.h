@@ -160,9 +160,12 @@ class GTSAM_EXPORT DiscreteConditional
   }
 
   /// Evaluate, just look up in AlgebraicDecisonTree
-  double operator()(const DiscreteValues& values) const override {
+  double evaluate(const DiscreteValues& values) const {
     return ADT::operator()(values);
   }
+
+  using DecisionTreeFactor::error;       ///< DiscreteValues version
+  using DecisionTreeFactor::operator();  ///< DiscreteValues version
 
   /**
    * @brief restrict to given *parent* values.
@@ -236,15 +239,20 @@ class GTSAM_EXPORT DiscreteConditional
   /// @{
 
   /**
+   * Calculate probability for HybridValues `x`.
+   * Dispatches to DiscreteValues version.
+   */
+  double evaluate(const HybridValues& x) const override;
+
+  using BaseConditional::operator();  ///< HybridValues version
+
+  /**
    * Calculate log-probability log(evaluate(x)) for HybridValues `x`.
    * This is actually just -error(x).
    */
   double logProbability(const HybridValues& x) const override {
     return -error(x);
   }
-
-  using DecisionTreeFactor::error;     ///< HybridValues version
-  using DecisionTreeFactor::evaluate;  ///< HybridValues version
 
   /// @}
 
