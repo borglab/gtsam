@@ -175,7 +175,7 @@ class GTSAM_EXPORT GaussianMixture
 
   /**
    * @brief Compute the error of this Gaussian Mixture.
-   * 
+   *
    * log(probability(x)) = K - error(x)
    *
    * @param values Continuous values and discrete assignment.
@@ -191,12 +191,13 @@ class GTSAM_EXPORT GaussianMixture
    */
   double logProbability(const HybridValues &values) const override;
 
-  //   /// Calculate probability density for given values `x`.
-  //   double evaluate(const HybridValues &values) const;
+  /// Calculate probability density for given `values`.
+  double evaluate(const HybridValues &values) const override;
 
-  //   /// Evaluate probability density, sugar.
-  //   double operator()(const HybridValues &values) const { return
-  //   evaluate(values); }
+  /// Evaluate probability density, sugar.
+  double operator()(const HybridValues &values) const {
+    return evaluate(values);
+  }
 
   /**
    * @brief Prune the decision tree of Gaussian factors as per the discrete

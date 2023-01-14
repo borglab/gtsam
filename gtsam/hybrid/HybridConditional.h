@@ -179,8 +179,18 @@ class GTSAM_EXPORT HybridConditional
   /// Return the error of the underlying conditional.
   double error(const HybridValues& values) const override;
 
-  /// Return the logProbability of the underlying conditional.
+  /// Return the log-probability (or density) of the underlying conditional.
   double logProbability(const HybridValues& values) const override;
+
+  /**
+   * Return the log normalization constant.
+   * Note this is 0.0 for discrete and hybrid conditionals, but depends
+   * on the continuous parameters for Gaussian conditionals.
+   */ 
+  double logNormalizationConstant() const override;
+
+  /// Return the probability (or density) of the underlying conditional.
+  double evaluate(const HybridValues& values) const override;
 
   /// Check if VectorValues `measurements` contains all frontal keys.
   bool frontalsIn(const VectorValues& measurements) const {
