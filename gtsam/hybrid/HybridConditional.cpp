@@ -151,4 +151,24 @@ double HybridConditional::logProbability(const HybridValues &values) const {
       "HybridConditional::logProbability: conditional type not handled");
 }
 
+/* ************************************************************************ */
+double HybridConditional::logNormalizationConstant() const {
+  if (auto gc = asGaussian()) {
+    return gc->logNormalizationConstant();
+  }
+  if (auto gm = asMixture()) {
+    return gm->logNormalizationConstant(); // 0.0!
+  }
+  if (auto dc = asDiscrete()) {
+    return dc->logNormalizationConstant(); // 0.0!
+  }
+  throw std::runtime_error(
+      "HybridConditional::logProbability: conditional type not handled");
+}
+
+/* ************************************************************************ */
+double HybridConditional::evaluate(const HybridValues &values) const {
+  return std::exp(logProbability(values));
+}
+
 }  // namespace gtsam
