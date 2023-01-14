@@ -19,6 +19,9 @@ class HybridValues {
   void insert(gtsam::Key j, int value);
   void insert(gtsam::Key j, const gtsam::Vector& value);
   
+  void insert_or_assign(gtsam::Key j, const gtsam::Vector& value);
+  void insert_or_assign(gtsam::Key j, size_t value);
+
   void insert(const gtsam::VectorValues& values);
   void insert(const gtsam::DiscreteValues& values);
   void insert(const gtsam::HybridValues& values);

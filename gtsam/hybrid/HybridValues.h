@@ -122,6 +122,16 @@ class GTSAM_EXPORT HybridValues {
    * @param j The index with which the value will be associated. */
   void insert(Key j, size_t value) { discrete_[j] = value; };
 
+  /// insert_or_assign() , similar to Values.h
+  void insert_or_assign(Key j, const Vector& value) {
+    continuous_.insert_or_assign(j, value);
+  }
+
+  /// insert_or_assign() , similar to Values.h
+  void insert_or_assign(Key j, size_t value) {
+    discrete_[j] = value;
+  }
+
   /** Insert all continuous values from \c values.  Throws an invalid_argument
    * exception if any keys to be inserted are already used. */
   HybridValues& insert(const VectorValues& values) {
@@ -151,8 +161,6 @@ class GTSAM_EXPORT HybridValues {
     nonlinear_.insert(values.nonlinear());
     return *this;
   }
-
-  // TODO(Shangjie)- insert_or_assign() , similar to Values.h
 
   /**
    * Read/write access to the vector value with key \c j, throws
