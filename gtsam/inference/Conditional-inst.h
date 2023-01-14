@@ -68,12 +68,13 @@ template <class FACTOR, class DERIVEDCONDITIONAL>
 template <class VALUES>
 bool Conditional<FACTOR, DERIVEDCONDITIONAL>::CheckInvariants(
     const DERIVEDCONDITIONAL& conditional, const VALUES& values) {
-  const double probability = conditional.evaluate(values);
-  if (probability < 0.0 || probability > 1.0)
-    return false;  // probability is not in [0,1]
+  const double prob_or_density = conditional.evaluate(values);
+  if (prob_or_density < 0.0) return false;  // prob_or_density is negative.
+  if (std::abs(prob_or_density - conditional(values)) > 1e-9)
+    return false;  // operator and evaluate differ
   const double logProb = conditional.logProbability(values);
-  if (std::abs(probability - std::exp(logProb)) > 1e-9)
-    return false;  // logProb is not consistent with probability
+  if (std::abs(prob_or_density - std::exp(logProb)) > 1e-9)
+    return false;  // logProb is not consistent with prob_or_density
   const double expected =
       conditional.logNormalizationConstant() - conditional.error(values);
   if (std::abs(logProb - expected) > 1e-9)
