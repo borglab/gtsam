@@ -40,31 +40,39 @@ TEST(HybridConditional, Invariants) {
   const HybridValues values{c, d};
 
   // Check invariants for p(z|x,m)
-  auto hc1 = bn.at(0);
-  CHECK(hc1->isHybrid());
-  GTSAM_PRINT(*hc1);
+  auto hc0 = bn.at(0);
+  CHECK(hc0->isHybrid());
 
   // Check invariants as a GaussianMixture.
-  const auto mixture = hc1->asMixture();
-  double probability = mixture->evaluate(values);
-  CHECK(probability >= 0.0);
-  EXPECT_DOUBLES_EQUAL(probability, (*mixture)(values), 1e-9);
-  double logProb = mixture->logProbability(values);
-  EXPECT_DOUBLES_EQUAL(probability, std::exp(logProb), 1e-9);
-  double expected =
-      mixture->logNormalizationConstant() - mixture->error(values);
-  EXPECT_DOUBLES_EQUAL(logProb, expected, 1e-9);
+  const auto mixture = hc0->asMixture();
   EXPECT(GaussianMixture::CheckInvariants(*mixture, values));
 
   // Check invariants as a HybridConditional.
-  probability = hc1->evaluate(values);
-  CHECK(probability >= 0.0);
-  EXPECT_DOUBLES_EQUAL(probability, (*hc1)(values), 1e-9);
-  logProb = hc1->logProbability(values);
-  EXPECT_DOUBLES_EQUAL(probability, std::exp(logProb), 1e-9);
-  expected = hc1->logNormalizationConstant() - hc1->error(values);
-  EXPECT_DOUBLES_EQUAL(logProb, expected, 1e-9);
+  EXPECT(HybridConditional::CheckInvariants(*hc0, values));
+
+  // Check invariants for p(x)
+  auto hc1 = bn.at(1);
+  CHECK(hc1->isContinuous());
+
+  // Check invariants as a GaussianConditional.
+  const auto gaussian = hc1->asGaussian();
+  EXPECT(GaussianConditional::CheckInvariants(*gaussian, c));
+  EXPECT(GaussianConditional::CheckInvariants(*gaussian, values));
+
+  // Check invariants as a HybridConditional.
   EXPECT(HybridConditional::CheckInvariants(*hc1, values));
+
+  // Check invariants for p(m)
+  auto hc2 = bn.at(2);
+  CHECK(hc2->isDiscrete());
+
+  // Check invariants as a DiscreteConditional.
+  const auto discrete = hc2->asDiscrete();
+  EXPECT(DiscreteConditional::CheckInvariants(*discrete, d));
+  EXPECT(DiscreteConditional::CheckInvariants(*discrete, values));
+
+  // Check invariants as a HybridConditional.
+  EXPECT(HybridConditional::CheckInvariants(*hc2, values));
 }
 
 /* ************************************************************************* */
