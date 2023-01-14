@@ -96,6 +96,7 @@ TEST(DiscreteConditional, PriorProbability) {
   DiscreteConditional dc(Asia, "4/6");
   DiscreteValues values{{asiaKey, 0}};
   EXPECT_DOUBLES_EQUAL(0.4, dc.evaluate(values), 1e-9);
+  EXPECT(DiscreteConditional::CheckInvariants(dc, values));
 }
 
 /* ************************************************************************* */
@@ -109,6 +110,7 @@ TEST(DiscreteConditional, probability) {
   EXPECT_DOUBLES_EQUAL(0.2, C_given_DE(given), 1e-9);
   EXPECT_DOUBLES_EQUAL(log(0.2), C_given_DE.logProbability(given), 1e-9);
   EXPECT_DOUBLES_EQUAL(-log(0.2), C_given_DE.error(given), 1e-9);
+  EXPECT(DiscreteConditional::CheckInvariants(C_given_DE, given));
 }
 
 /* ************************************************************************* */
