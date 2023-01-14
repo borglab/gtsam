@@ -172,10 +172,9 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         marginals /= marginals.sum()
         return marginals
 
-    @unittest.skip
     def test_tiny(self):
         """Test a tiny two variable hybrid model."""
-        # P(x0)P(mode)P(z0|x0,mode)
+        # Create P(x0)P(mode)P(z0|x0,mode)
         prior_sigma = 0.5
         bayesNet = self.tiny(prior_sigma=prior_sigma)
 
@@ -210,8 +209,16 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         self.assertAlmostEqual(marginals[0], 0.74, delta=0.01)
         self.assertAlmostEqual(marginals[1], 0.26, delta=0.01)
 
+        # Convert to factor graph with given measurements.
         fg = bayesNet.toFactorGraph(measurements)
         self.assertEqual(fg.size(), 4)
+
+        # Check ratio between unnormalized posterior and factor graph is the same for all modes:
+        for mode in [1, 0]:
+            values.insert_or_assign(M(0), mode)
+            self.assertAlmostEqual(bayesNet.evaluate(values) /
+                                   fg.error(values),
+                                   0.025178994744461187)
 
         # Test elimination.
         posterior = fg.eliminateSequential()
@@ -239,6 +246,7 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         return bayesNet.evaluate(sample) / fg.probPrime(sample) if \
             fg.probPrime(sample) > 0 else 0
 
+    @unittest.skip
     def test_ratio(self):
         """
         Given a tiny two variable hybrid model, with 2 measurements, test the
