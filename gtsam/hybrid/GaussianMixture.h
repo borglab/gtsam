@@ -174,20 +174,44 @@ class GTSAM_EXPORT GaussianMixture
       const VectorValues &continuousValues) const;
 
   /**
-   * @brief Compute the logProbability of this Gaussian Mixture given the
-   * continuous values and a discrete assignment.
+   * @brief Compute the error of this Gaussian Mixture.
+   *
+   * This requires some care, as different mixture components may have
+   * different normalization constants. Let's consider p(x|y,m), where m is
+   * discrete. We need the error to satisfy the invariant:
+   *
+   *    error(x;y,m) = K - log(probability(x;y,m))
+   *
+   * For all x,y,m. But note that K, for the GaussianMixture, cannot depend on
+   * any arguments. Hence, we delegate to the underlying Gaussian
+   * conditionals, indexed by m, which do satisfy:
+   * 
+   *    log(probability_m(x;y)) = K_m - error_m(x;y)
+   * 
+   * We resolve by having K == 0.0 and
+   * 
+   *    error(x;y,m) = error_m(x;y) - K_m
+   *
+   * @param values Continuous values and discrete assignment.
+   * @return double
+   */
+  double error(const HybridValues &values) const override;
+
+  /**
+   * @brief Compute the logProbability of this Gaussian Mixture.
    *
    * @param values Continuous values and discrete assignment.
    * @return double
    */
   double logProbability(const HybridValues &values) const override;
 
-  //   /// Calculate probability density for given values `x`.
-  //   double evaluate(const HybridValues &values) const;
+  /// Calculate probability density for given `values`.
+  double evaluate(const HybridValues &values) const override;
 
-  //   /// Evaluate probability density, sugar.
-  //   double operator()(const HybridValues &values) const { return
-  //   evaluate(values); }
+  /// Evaluate probability density, sugar.
+  double operator()(const HybridValues &values) const {
+    return evaluate(values);
+  }
 
   /**
    * @brief Prune the decision tree of Gaussian factors as per the discrete

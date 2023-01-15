@@ -56,4 +56,30 @@ double Conditional<FACTOR, DERIVEDCONDITIONAL>::evaluate(
     const HybridValues& c) const {
   throw std::runtime_error("Conditional::evaluate is not implemented");
 }
+
+/* ************************************************************************* */
+template <class FACTOR, class DERIVEDCONDITIONAL>
+double Conditional<FACTOR, DERIVEDCONDITIONAL>::normalizationConstant() const {
+  return std::exp(logNormalizationConstant());
+}
+
+/* ************************************************************************* */
+template <class FACTOR, class DERIVEDCONDITIONAL>
+template <class VALUES>
+bool Conditional<FACTOR, DERIVEDCONDITIONAL>::CheckInvariants(
+    const DERIVEDCONDITIONAL& conditional, const VALUES& values) {
+  const double prob_or_density = conditional.evaluate(values);
+  if (prob_or_density < 0.0) return false;  // prob_or_density is negative.
+  if (std::abs(prob_or_density - conditional(values)) > 1e-9)
+    return false;  // operator and evaluate differ
+  const double logProb = conditional.logProbability(values);
+  if (std::abs(prob_or_density - std::exp(logProb)) > 1e-9)
+    return false;  // logProb is not consistent with prob_or_density
+  const double expected =
+      conditional.logNormalizationConstant() - conditional.error(values);
+  if (std::abs(logProb - expected) > 1e-9)
+    return false;  // logProb is not consistent with error
+  return true;
+}
+
 }  // namespace gtsam

@@ -196,6 +196,9 @@ namespace gtsam {
     /** Compare to another factor for testing (implementing Testable) */
     bool equals(const GaussianFactor& lf, double tol = 1e-9) const override;
 
+    /// HybridValues simply extracts the \class VectorValues and calls error.
+    using GaussianFactor::error;
+
     /** 
      * Evaluate the factor error f(x). 
      * returns 0.5*[x -1]'*H*[x -1] (also see constructor documentation)

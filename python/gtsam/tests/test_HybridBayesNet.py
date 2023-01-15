@@ -17,8 +17,8 @@ import numpy as np
 from gtsam.symbol_shorthand import A, X
 from gtsam.utils.test_case import GtsamTestCase
 
-from gtsam import (DiscreteConditional, DiscreteKeys, GaussianConditional,
-                   GaussianMixture, HybridBayesNet, HybridValues, noiseModel)
+from gtsam import (DiscreteConditional, DiscreteKeys, DiscreteValues, GaussianConditional,
+                   GaussianMixture, HybridBayesNet, HybridValues, noiseModel, VectorValues)
 
 
 class TestHybridBayesNet(GtsamTestCase):
@@ -53,9 +53,13 @@ class TestHybridBayesNet(GtsamTestCase):
 
         # Create values at which to evaluate.
         values = HybridValues()
-        values.insert(asiaKey, 0)
-        values.insert(X(0), [-6])
-        values.insert(X(1), [1])
+        continuous = VectorValues()
+        continuous.insert(X(0), [-6])
+        continuous.insert(X(1), [1])
+        values.insert(continuous)
+        discrete = DiscreteValues()
+        discrete[asiaKey] = 0
+        values.insert(discrete)
 
         conditionalProbability = conditional.evaluate(values.continuous())
         mixtureProbability = conditional0.evaluate(values.continuous())
@@ -67,6 +71,26 @@ class TestHybridBayesNet(GtsamTestCase):
         # Check logProbability
         self.assertAlmostEqual(bayesNet.logProbability(values),
                                math.log(bayesNet.evaluate(values)))
+
+        # Check invariance for all conditionals:
+        self.check_invariance(bayesNet.at(0).asGaussian(), continuous)
+        self.check_invariance(bayesNet.at(0).asGaussian(), values)
+        self.check_invariance(bayesNet.at(0), values)
+        
+        self.check_invariance(bayesNet.at(1), values)
+
+        self.check_invariance(bayesNet.at(2).asDiscrete(), discrete)
+        self.check_invariance(bayesNet.at(2).asDiscrete(), values)
+        self.check_invariance(bayesNet.at(2), values)
+
+    def check_invariance(self, conditional, values):
+        """Check invariance for given conditional."""
+        probability = conditional.evaluate(values)
+        self.assertTrue(probability >= 0.0)
+        logProb = conditional.logProbability(values)
+        self.assertAlmostEqual(probability, np.exp(logProb))
+        expected = conditional.logNormalizationConstant() - conditional.error(values)
+        self.assertAlmostEqual(logProb, expected)
 
 
 if __name__ == "__main__":

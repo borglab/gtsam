@@ -141,6 +141,15 @@ namespace gtsam {
       return evaluate(x);
     }
 
+    /**
+     * By default, log normalization constant = 0.0.
+     * Override if this depends on the parameters.
+     */
+    virtual double logNormalizationConstant() const { return 0.0; }
+
+    /** Non-virtual, exponentiate logNormalizationConstant. */
+    double normalizationConstant() const;
+
     /// @}
     /// @name Advanced Interface
     /// @{
@@ -172,7 +181,17 @@ namespace gtsam {
     /** Mutable iterator pointing past the last parent key. */
     typename FACTOR::iterator endParents() { return asFactor().end(); }
 
+    template <class VALUES>
+    static bool CheckInvariants(const DERIVEDCONDITIONAL& conditional,
+                                const VALUES& values);
+
+    /// @}
+
   private:
+
+    /// @name Serialization
+    /// @{
+
     // Cast to factor type (non-const) (casts down to derived conditional type, then up to factor type)
     FACTOR& asFactor() { return static_cast<FACTOR&>(static_cast<DERIVEDCONDITIONAL&>(*this)); }
 
