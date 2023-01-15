@@ -188,8 +188,9 @@ class GTSAM_EXPORT GaussianMixture
    *
    *    error(x;y,m) = K - log(probability(x;y,m))
    *
-   * For all x,y,m. But note that K, for the GaussianMixture, cannot depend on
-   * any arguments. Hence, we delegate to the underlying Gaussian
+   * For all x,y,m. But note that K, the (log) normalization constant defined
+   * in Conditional.h, should not depend on x, y, or m, only on the parameters
+   * of the density. Hence, we delegate to the underlying Gaussian
    * conditionals, indexed by m, which do satisfy:
    * 
    *    log(probability_m(x;y)) = K_m - error_m(x;y)
