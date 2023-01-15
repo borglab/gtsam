@@ -124,7 +124,7 @@ namespace gtsam {
     cout << formatMatrixIndented("  d = ", getb(), true) << "\n";
     if (nrParents() == 0) {
       const auto mean = solve({});  // solve for mean.
-      mean.print("  mean");
+      mean.print("  mean", formatter);
     }
     if (model_)
       model_->print("  Noise model: ");
