@@ -205,9 +205,14 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  double GaussianConditional::evaluate(const VectorValues& c) const {
-    return exp(logProbability(c));
+  double GaussianConditional::evaluate(const VectorValues& x) const {
+    return exp(logProbability(x));
   }
+
+  double GaussianConditional::evaluate(const HybridValues& x) const {
+    return evaluate(x.continuous());
+  }
+
   /* ************************************************************************* */
   VectorValues GaussianConditional::solve(const VectorValues& x) const {
     // Concatenate all vector values that correspond to parent variables

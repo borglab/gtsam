@@ -20,7 +20,7 @@
 #include <gtsam/base/debug.h>
 #include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/discrete/Signature.h>
-#include <gtsam/inference/Conditional-inst.h>
+#include <gtsam/hybrid/HybridValues.h>
 
 #include <algorithm>
 #include <boost/make_shared.hpp>
@@ -510,6 +510,10 @@ string DiscreteConditional::html(const KeyFormatter& keyFormatter,
   return ss.str();
 }
 
+/* ************************************************************************* */
+double DiscreteConditional::evaluate(const HybridValues& x) const{
+  return this->evaluate(x.discrete());
+}
 /* ************************************************************************* */
 
 }  // namespace gtsam

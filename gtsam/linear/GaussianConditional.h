@@ -34,7 +34,7 @@ namespace gtsam {
   /**
   * A GaussianConditional functions as the node in a Bayes network.
   * It has a set of parents y,z, etc. and implements a probability density on x.
-  * The negative log-probability is given by \f$ \frac{1}{2} |Rx - (d - Sy - Tz - ...)|^2 \f$
+  * The negative log-density is given by \f$ \frac{1}{2} |Rx - (d - Sy - Tz - ...)|^2 \f$
   * @ingroup linear
   */
   class GTSAM_EXPORT GaussianConditional :
@@ -136,14 +136,7 @@ namespace gtsam {
      * normalization constant = 1.0 / sqrt((2*pi)^n*det(Sigma))
      * log = - 0.5 * n*log(2*pi) - 0.5 * log det(Sigma)
      */
-    double logNormalizationConstant() const;
-
-    /**
-     * normalization constant = 1.0 / sqrt((2*pi)^n*det(Sigma))
-     */
-    inline double normalizationConstant() const {
-      return exp(logNormalizationConstant());
-    }
+    double logNormalizationConstant() const override;
 
     /**
      * Calculate log-probability log(evaluate(x)) for given values `x`:
@@ -269,9 +262,14 @@ namespace gtsam {
      */
     double logProbability(const HybridValues& x) const override;
 
-    using Conditional::evaluate; // Expose evaluate(const HybridValues&) method..
+    /**
+     * Calculate probability for HybridValues `x`.
+     * Simply dispatches to VectorValues version.
+     */
+    double evaluate(const HybridValues& x) const override;
+
     using Conditional::operator(); // Expose evaluate(const HybridValues&) method..
-    using Base::error; // Expose error(const HybridValues&) method..
+    using JacobianFactor::error; // Expose error(const HybridValues&) method..
 
     /// @}
 

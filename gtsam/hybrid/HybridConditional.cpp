@@ -122,6 +122,21 @@ bool HybridConditional::equals(const HybridFactor &other, double tol) const {
 }
 
 /* ************************************************************************ */
+double HybridConditional::error(const HybridValues &values) const {
+  if (auto gc = asGaussian()) {
+    return gc->error(values.continuous());
+  }
+  if (auto gm = asMixture()) {
+    return gm->error(values);
+  }
+  if (auto dc = asDiscrete()) {
+    return dc->error(values.discrete());
+  }
+  throw std::runtime_error(
+      "HybridConditional::error: conditional type not handled");
+}
+
+/* ************************************************************************ */
 double HybridConditional::logProbability(const HybridValues &values) const {
   if (auto gc = asGaussian()) {
     return gc->logProbability(values.continuous());
@@ -134,6 +149,26 @@ double HybridConditional::logProbability(const HybridValues &values) const {
   }
   throw std::runtime_error(
       "HybridConditional::logProbability: conditional type not handled");
+}
+
+/* ************************************************************************ */
+double HybridConditional::logNormalizationConstant() const {
+  if (auto gc = asGaussian()) {
+    return gc->logNormalizationConstant();
+  }
+  if (auto gm = asMixture()) {
+    return gm->logNormalizationConstant(); // 0.0!
+  }
+  if (auto dc = asDiscrete()) {
+    return dc->logNormalizationConstant(); // 0.0!
+  }
+  throw std::runtime_error(
+      "HybridConditional::logProbability: conditional type not handled");
+}
+
+/* ************************************************************************ */
+double HybridConditional::evaluate(const HybridValues &values) const {
+  return std::exp(logProbability(values));
 }
 
 }  // namespace gtsam
