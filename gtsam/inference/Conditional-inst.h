@@ -59,6 +59,14 @@ double Conditional<FACTOR, DERIVEDCONDITIONAL>::evaluate(
 
 /* ************************************************************************* */
 template <class FACTOR, class DERIVEDCONDITIONAL>
+double Conditional<FACTOR, DERIVEDCONDITIONAL>::logNormalizationConstant()
+    const {
+  throw std::runtime_error(
+      "Conditional::logNormalizationConstant is not implemented");
+}
+
+/* ************************************************************************* */
+template <class FACTOR, class DERIVEDCONDITIONAL>
 double Conditional<FACTOR, DERIVEDCONDITIONAL>::normalizationConstant() const {
   return std::exp(logNormalizationConstant());
 }
@@ -75,8 +83,13 @@ bool Conditional<FACTOR, DERIVEDCONDITIONAL>::CheckInvariants(
   const double logProb = conditional.logProbability(values);
   if (std::abs(prob_or_density - std::exp(logProb)) > 1e-9)
     return false;  // logProb is not consistent with prob_or_density
-  const double expected =
-      conditional.logNormalizationConstant() - conditional.error(values);
+  if (std::abs(conditional.logNormalizationConstant() -
+               std::log(conditional.normalizationConstant())) > 1e-9)
+    return false;  // log normalization constant is not consistent with
+                   // normalization constant
+  const double error = conditional.error(values);
+  if (error < 0.0) return false;  // prob_or_density is negative.
+  const double expected = conditional.logNormalizationConstant() - error;
   if (std::abs(logProb - expected) > 1e-9)
     return false;  // logProb is not consistent with error
   return true;

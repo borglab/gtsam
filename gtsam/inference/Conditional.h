@@ -144,10 +144,10 @@ namespace gtsam {
     }
 
     /**
-     * By default, log normalization constant = 0.0.
-     * Override if this depends on the parameters.
+     * All conditional types need to implement a log normalization constant to
+     * make it such that error>=0.
      */
-    virtual double logNormalizationConstant() const { return 0.0; }
+    virtual double logNormalizationConstant() const;
 
     /** Non-virtual, exponentiate logNormalizationConstant. */
     double normalizationConstant() const;
@@ -189,6 +189,8 @@ namespace gtsam {
      *  - evaluate >= 0.0
      *  - evaluate(x) == conditional(x)
      *  - exp(logProbability(x)) == evaluate(x)
+     *  - logNormalizationConstant() = log(normalizationConstant())
+     *  - error >= 0.0
      *  - logProbability(x) == logNormalizationConstant() - error(x)
      *
      * @param conditional The conditional to test, as a reference to the derived type.
