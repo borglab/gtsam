@@ -35,7 +35,16 @@ GaussianMixture::GaussianMixture(
     : BaseFactor(CollectKeys(continuousFrontals, continuousParents),
                  discreteParents),
       BaseConditional(continuousFrontals.size()),
-      conditionals_(conditionals) {}
+      conditionals_(conditionals) {
+  // Calculate logConstant_ as the maximum of the log constants of the
+  // conditionals, by visiting the decision tree:
+  logConstant_ = -std::numeric_limits<double>::infinity();
+  conditionals_.visit(
+      [this](const GaussianConditional::shared_ptr &conditional) {
+        this->logConstant_ = std::max(this->logConstant_,
+                                      conditional->logNormalizationConstant());
+      });
+}
 
 /* *******************************************************************************/
 const GaussianMixture::Conditionals &GaussianMixture::conditionals() const {
@@ -203,8 +212,7 @@ boost::shared_ptr<GaussianMixtureFactor> GaussianMixture::likelihood(
   const KeyVector continuousParentKeys = continuousParents();
   const GaussianMixtureFactor::Factors likelihoods(
       conditionals_, [&](const GaussianConditional::shared_ptr &conditional) {
-        return GaussianMixtureFactor::sharedFactor{
-            conditional->likelihood(given)};
+        return conditional->likelihood(given);
       });
   return boost::make_shared<GaussianMixtureFactor>(
       continuousParentKeys, discreteParentKeys, likelihoods);
@@ -308,10 +316,22 @@ AlgebraicDecisionTree<Key> GaussianMixture::logProbability(
 }
 
 /* *******************************************************************************/
+AlgebraicDecisionTree<Key> GaussianMixture::error(
+    const VectorValues &continuousValues) const {
+  auto errorFunc = [&](const GaussianConditional::shared_ptr &conditional) {
+    return logConstant_ + conditional->error(continuousValues) -
+           conditional->logNormalizationConstant();
+  };
+  DecisionTree<Key, double> errorTree(conditionals_, errorFunc);
+  return errorTree;
+}
+
+/* *******************************************************************************/
 double GaussianMixture::error(const HybridValues &values) const {
   // Directly index to get the conditional, no need to build the whole tree.
   auto conditional = conditionals_(values.discrete());
-  return conditional->error(values.continuous()) - conditional->logNormalizationConstant();
+  return logConstant_ + conditional->error(values.continuous()) -
+         conditional->logNormalizationConstant();
 }
 
 /* *******************************************************************************/
