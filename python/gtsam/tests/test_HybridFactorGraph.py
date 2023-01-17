@@ -211,14 +211,15 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
 
         # Convert to factor graph with given measurements.
         fg = bayesNet.toFactorGraph(measurements)
-        self.assertEqual(fg.size(), 4)
+        self.assertEqual(fg.size(), 3)
 
         # Check ratio between unnormalized posterior and factor graph is the same for all modes:
         for mode in [1, 0]:
             values.insert_or_assign(M(0), mode)
             self.assertAlmostEqual(bayesNet.evaluate(values) /
-                                   fg.error(values),
-                                   0.025178994744461187)
+                                   np.exp(-fg.error(values)),
+                                   0.6366197723675815)
+            self.assertAlmostEqual(bayesNet.error(values), fg.error(values))
 
         # Test elimination.
         posterior = fg.eliminateSequential()
@@ -292,7 +293,7 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
 
         # Convert to factor graph using measurements.
         fg = bayesNet.toFactorGraph(measurements)
-        self.assertEqual(fg.size(), 6)
+        self.assertEqual(fg.size(), 4)
 
         # Calculate ratio between Bayes net probability and the factor graph:
         expected_ratio = self.calculate_ratio(bayesNet, fg, values)
