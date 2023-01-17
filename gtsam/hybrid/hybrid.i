@@ -143,6 +143,7 @@ class HybridBayesNet {
   // Standard interface:
   double logProbability(const gtsam::HybridValues& values) const;
   double evaluate(const gtsam::HybridValues& values) const;
+  double error(const gtsam::HybridValues& values) const;
 
   gtsam::HybridGaussianFactorGraph toFactorGraph(
       const gtsam::VectorValues& measurements) const;
