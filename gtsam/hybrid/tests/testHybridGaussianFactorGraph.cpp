@@ -57,6 +57,9 @@ using gtsam::symbol_shorthand::X;
 using gtsam::symbol_shorthand::Y;
 using gtsam::symbol_shorthand::Z;
 
+// Set up sampling
+std::mt19937_64 kRng(42);
+
 /* ************************************************************************* */
 TEST(HybridGaussianFactorGraph, Creation) {
   HybridConditional conditional;
@@ -637,14 +640,55 @@ TEST(HybridGaussianFactorGraph, assembleGraphTree) {
   // Expected decision tree with two factor graphs:
   // f(x0;mode=0)P(x0) and f(x0;mode=1)P(x0)
   GaussianFactorGraphTree expected{
-      M(0),
-      {GaussianFactorGraph(std::vector<GF>{mixture->factor(d0), prior}),
-       mixture->constant(d0)},
-      {GaussianFactorGraph(std::vector<GF>{mixture->factor(d1), prior}),
-       mixture->constant(d1)}};
+      M(0), GaussianFactorGraph(std::vector<GF>{(*mixture)(d0), prior}),
+      GaussianFactorGraph(std::vector<GF>{(*mixture)(d1), prior})};
 
   EXPECT(assert_equal(expected(d0), actual(d0), 1e-5));
   EXPECT(assert_equal(expected(d1), actual(d1), 1e-5));
+}
+
+/* ****************************************************************************/
+// Check that the factor graph unnormalized probability is proportional to the
+// Bayes net probability for the given measurements.
+bool ratioTest(const HybridBayesNet &bn, const VectorValues &measurements,
+               const HybridGaussianFactorGraph &fg, size_t num_samples = 100) {
+  auto compute_ratio = [&](HybridValues *sample) -> double {
+    sample->update(measurements);  // update sample with given measurements:
+    return bn.evaluate(*sample) / fg.probPrime(*sample);
+  };
+
+  HybridValues sample = bn.sample(&kRng);
+  double expected_ratio = compute_ratio(&sample);
+
+  // Test ratios for a number of independent samples:
+  for (size_t i = 0; i < num_samples; i++) {
+    HybridValues sample = bn.sample(&kRng);
+    if (std::abs(expected_ratio - compute_ratio(&sample)) > 1e-6) return false;
+  }
+  return true;
+}
+
+/* ****************************************************************************/
+// Check that the factor graph unnormalized probability is proportional to the
+// Bayes net probability for the given measurements.
+bool ratioTest(const HybridBayesNet &bn, const VectorValues &measurements,
+               const HybridBayesNet &posterior, size_t num_samples = 100) {
+  auto compute_ratio = [&](HybridValues *sample) -> double {
+    sample->update(measurements);  // update sample with given measurements:
+    return bn.evaluate(*sample) / posterior.evaluate(*sample);
+  };
+
+  HybridValues sample = bn.sample(&kRng);
+  double expected_ratio = compute_ratio(&sample);
+
+  // Test ratios for a number of independent samples:
+  for (size_t i = 0; i < num_samples; i++) {
+    HybridValues sample = bn.sample(&kRng);
+    // GTSAM_PRINT(sample);
+    // std::cout << "ratio: " << compute_ratio(&sample) << std::endl;
+    if (std::abs(expected_ratio - compute_ratio(&sample)) > 1e-6) return false;
+  }
+  return true;
 }
 
 /* ****************************************************************************/
@@ -652,9 +696,12 @@ TEST(HybridGaussianFactorGraph, assembleGraphTree) {
 TEST(HybridGaussianFactorGraph, EliminateTiny1) {
   using symbol_shorthand::Z;
   const int num_measurements = 1;
-  auto fg = tiny::createHybridGaussianFactorGraph(
-      num_measurements, VectorValues{{Z(0), Vector1(5.0)}});
+  const VectorValues measurements{{Z(0), Vector1(5.0)}};
+  auto bn = tiny::createHybridBayesNet(num_measurements);
+  auto fg = bn.toFactorGraph(measurements);
   EXPECT_LONGS_EQUAL(3, fg.size());
+
+  EXPECT(ratioTest(bn, measurements, fg));
 
   // Create expected Bayes Net:
   HybridBayesNet expectedBayesNet;
@@ -675,6 +722,8 @@ TEST(HybridGaussianFactorGraph, EliminateTiny1) {
   // Test elimination
   const auto posterior = fg.eliminateSequential();
   EXPECT(assert_equal(expectedBayesNet, *posterior, 0.01));
+
+  EXPECT(ratioTest(bn, measurements, *posterior));
 }
 
 /* ****************************************************************************/
@@ -683,9 +732,9 @@ TEST(HybridGaussianFactorGraph, EliminateTiny2) {
   // Create factor graph with 2 measurements such that posterior mean = 5.0.
   using symbol_shorthand::Z;
   const int num_measurements = 2;
-  auto fg = tiny::createHybridGaussianFactorGraph(
-      num_measurements,
-      VectorValues{{Z(0), Vector1(4.0)}, {Z(1), Vector1(6.0)}});
+  const VectorValues measurements{{Z(0), Vector1(4.0)}, {Z(1), Vector1(6.0)}};
+  auto bn = tiny::createHybridBayesNet(num_measurements);
+  auto fg = bn.toFactorGraph(measurements);
   EXPECT_LONGS_EQUAL(4, fg.size());
 
   // Create expected Bayes Net:
@@ -707,6 +756,8 @@ TEST(HybridGaussianFactorGraph, EliminateTiny2) {
   // Test elimination
   const auto posterior = fg.eliminateSequential();
   EXPECT(assert_equal(expectedBayesNet, *posterior, 0.01));
+
+  EXPECT(ratioTest(bn, measurements, *posterior));
 }
 
 /* ****************************************************************************/
@@ -723,32 +774,12 @@ TEST(HybridGaussianFactorGraph, EliminateTiny22) {
   auto fg = bn.toFactorGraph(measurements);
   EXPECT_LONGS_EQUAL(5, fg.size());
 
+  EXPECT(ratioTest(bn, measurements, fg));
+
   // Test elimination
   const auto posterior = fg.eliminateSequential();
 
-  // Compute the log-ratio between the Bayes net and the factor graph.
-  auto compute_ratio = [&](HybridValues *sample) -> double {
-    // update sample with given measurements:
-    sample->update(measurements);
-    return bn.evaluate(*sample) / posterior->evaluate(*sample);
-  };
-
-  // Set up sampling
-  std::mt19937_64 rng(42);
-
-  // The error evaluated by the factor graph and the Bayes net should differ by
-  // the normalizing term computed via the Bayes net determinant.
-  HybridValues sample = bn.sample(&rng);
-  double expected_ratio = compute_ratio(&sample);
-  // regression
-  EXPECT_DOUBLES_EQUAL(0.018253037966018862, expected_ratio, 1e-6);
-
-  // Test ratios for a number of independent samples:
-  constexpr int num_samples = 100;
-  for (size_t i = 0; i < num_samples; i++) {
-    HybridValues sample = bn.sample(&rng);
-    EXPECT_DOUBLES_EQUAL(expected_ratio, compute_ratio(&sample), 1e-6);
-  }
+  EXPECT(ratioTest(bn, measurements, *posterior));
 }
 
 /* ****************************************************************************/
@@ -770,7 +801,7 @@ TEST(HybridGaussianFactorGraph, EliminateSwitchingNetwork) {
                              GaussianConditional::sharedMeanAndStddev(
                                  Z(t), I_1x1, X(t), Z_1x1, 3.0)}));
 
-    // Create prior on discrete mode M(t):
+    // Create prior on discrete mode N(t):
     bn.emplace_back(new DiscreteConditional(noise_mode_t, "20/80"));
   }
 
@@ -800,49 +831,38 @@ TEST(HybridGaussianFactorGraph, EliminateSwitchingNetwork) {
       {Z(0), Vector1(0.0)}, {Z(1), Vector1(1.0)}, {Z(2), Vector1(2.0)}};
   const HybridGaussianFactorGraph fg = bn.toFactorGraph(measurements);
 
+  // Factor graph is:
+  //      D     D
+  //      |     |
+  //      m1    m2
+  //      |     | 
+  // C-x0-HC-x1-HC-x2
+  //   |     |     |
+  //   HF    HF    HF
+  //   |     |     |
+  //   n0    n1    n2 
+  //   |     |     |
+  //   D     D     D
+  EXPECT_LONGS_EQUAL(11, fg.size());
+  EXPECT(ratioTest(bn, measurements, fg));
+
+  // Do elimination of X(2) only:
+  auto result = fg.eliminatePartialSequential(Ordering{X(2)});
+  auto fg1 = *result.second;
+  fg1.push_back(*result.first);
+  EXPECT(ratioTest(bn, measurements, fg1));
+
   // Create ordering that eliminates in time order, then discrete modes:
-  Ordering ordering;
-  ordering.push_back(X(2));
-  ordering.push_back(X(1));
-  ordering.push_back(X(0));
-  ordering.push_back(N(0));
-  ordering.push_back(N(1));
-  ordering.push_back(N(2));
-  ordering.push_back(M(1));
-  ordering.push_back(M(2));
+  Ordering ordering {X(2), X(1), X(0), N(0), N(1), N(2), M(1), M(2)};
 
   // Do elimination:
   const HybridBayesNet::shared_ptr posterior = fg.eliminateSequential(ordering);
-  // GTSAM_PRINT(*posterior);
 
   // Test resulting posterior Bayes net has correct size:
   EXPECT_LONGS_EQUAL(8, posterior->size());
 
-  // TODO(dellaert): below is copy/pasta from above, refactor
-
-  // Compute the log-ratio between the Bayes net and the factor graph.
-  auto compute_ratio = [&](HybridValues *sample) -> double {
-    // update sample with given measurements:
-    sample->update(measurements);
-    return bn.evaluate(*sample) / posterior->evaluate(*sample);
-  };
-
-  // Set up sampling
-  std::mt19937_64 rng(42);
-
-  // The error evaluated by the factor graph and the Bayes net should differ by
-  // the normalizing term computed via the Bayes net determinant.
-  HybridValues sample = bn.sample(&rng);
-  double expected_ratio = compute_ratio(&sample);
-  // regression
-  EXPECT_DOUBLES_EQUAL(0.0094526745785019472, expected_ratio, 1e-6);
-
-  // Test ratios for a number of independent samples:
-  constexpr int num_samples = 100;
-  for (size_t i = 0; i < num_samples; i++) {
-    HybridValues sample = bn.sample(&rng);
-    EXPECT_DOUBLES_EQUAL(expected_ratio, compute_ratio(&sample), 1e-6);
-  }
+  // TODO(dellaert): this test fails - no idea why.
+  EXPECT(ratioTest(bn, measurements, *posterior));
 }
 
 /* ************************************************************************* */

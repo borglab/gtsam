@@ -214,6 +214,14 @@ namespace gtsam {
 #endif
     }
 
+    /// insert_or_assign that mimics the STL map insert_or_assign - if the value already exists, the
+    /// map is updated, otherwise a new value is inserted at j.
+    void insert_or_assign(Key j, const Vector& value) {
+      if (!tryInsert(j, value).second) {
+        (*this)[j] = value;
+      }
+    }
+
     /** Erase the vector with the given key, or throw std::out_of_range if it does not exist */
     void erase(Key var) {
       if (values_.unsafe_erase(var) == 0)

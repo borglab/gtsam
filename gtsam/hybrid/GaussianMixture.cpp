@@ -35,7 +35,18 @@ GaussianMixture::GaussianMixture(
     : BaseFactor(CollectKeys(continuousFrontals, continuousParents),
                  discreteParents),
       BaseConditional(continuousFrontals.size()),
-      conditionals_(conditionals) {}
+      conditionals_(conditionals) {
+  // Calculate logConstant_ as the maximum of the log constants of the
+  // conditionals, by visiting the decision tree:
+  logConstant_ = -std::numeric_limits<double>::infinity();
+  conditionals_.visit(
+      [this](const GaussianConditional::shared_ptr &conditional) {
+        if (conditional) {
+          this->logConstant_ = std::max(
+              this->logConstant_, conditional->logNormalizationConstant());
+        }
+      });
+}
 
 /* *******************************************************************************/
 const GaussianMixture::Conditionals &GaussianMixture::conditionals() const {
@@ -63,11 +74,11 @@ GaussianMixture::GaussianMixture(
 // GaussianMixtureFactor, no?
 GaussianFactorGraphTree GaussianMixture::add(
     const GaussianFactorGraphTree &sum) const {
-  using Y = GraphAndConstant;
+  using Y = GaussianFactorGraph;
   auto add = [](const Y &graph1, const Y &graph2) {
-    auto result = graph1.graph;
-    result.push_back(graph2.graph);
-    return Y(result, graph1.constant + graph2.constant);
+    auto result = graph1;
+    result.push_back(graph2);
+    return result;
   };
   const auto tree = asGaussianFactorGraphTree();
   return sum.empty() ? tree : sum.apply(tree, add);
@@ -75,16 +86,10 @@ GaussianFactorGraphTree GaussianMixture::add(
 
 /* *******************************************************************************/
 GaussianFactorGraphTree GaussianMixture::asGaussianFactorGraphTree() const {
-  auto lambda = [](const GaussianConditional::shared_ptr &conditional) {
-    GaussianFactorGraph result;
-    result.push_back(conditional);
-    if (conditional) {
-      return GraphAndConstant(result, conditional->logNormalizationConstant());
-    } else {
-      return GraphAndConstant(result, 0.0);
-    }
+  auto wrap = [](const GaussianConditional::shared_ptr &gc) {
+    return GaussianFactorGraph{gc};
   };
-  return {conditionals_, lambda};
+  return {conditionals_, wrap};
 }
 
 /* *******************************************************************************/
@@ -170,22 +175,43 @@ KeyVector GaussianMixture::continuousParents() const {
 }
 
 /* ************************************************************************* */
-boost::shared_ptr<GaussianMixtureFactor> GaussianMixture::likelihood(
-    const VectorValues &frontals) const {
-  // Check that values has all frontals
-  for (auto &&kv : frontals) {
-    if (frontals.find(kv.first) == frontals.end()) {
-      throw std::runtime_error("GaussianMixture: frontals missing factor key.");
+bool GaussianMixture::allFrontalsGiven(const VectorValues &given) const {
+  for (auto &&kv : given) {
+    if (given.find(kv.first) == given.end()) {
+      return false;
     }
+  }
+  return true;
+}
+
+/* ************************************************************************* */
+boost::shared_ptr<GaussianMixtureFactor> GaussianMixture::likelihood(
+    const VectorValues &given) const {
+  if (!allFrontalsGiven(given)) {
+    throw std::runtime_error(
+        "GaussianMixture::likelihood: given values are missing some frontals.");
   }
 
   const DiscreteKeys discreteParentKeys = discreteKeys();
   const KeyVector continuousParentKeys = continuousParents();
   const GaussianMixtureFactor::Factors likelihoods(
       conditionals_, [&](const GaussianConditional::shared_ptr &conditional) {
-        return GaussianMixtureFactor::FactorAndConstant{
-            conditional->likelihood(frontals),
-            conditional->logNormalizationConstant()};
+        const auto likelihood_m = conditional->likelihood(given);
+        const double Cgm_Kgcm =
+            logConstant_ - conditional->logNormalizationConstant();
+        if (Cgm_Kgcm == 0.0) {
+          return likelihood_m;
+        } else {
+          // Add a constant factor to the likelihood in case the noise models
+          // are not all equal.
+          GaussianFactorGraph gfg;
+          gfg.push_back(likelihood_m);
+          Vector c(1);
+          c << std::sqrt(2.0 * Cgm_Kgcm);
+          auto constantFactor = boost::make_shared<JacobianFactor>(c);
+          gfg.push_back(constantFactor);
+          return boost::make_shared<JacobianFactor>(gfg);
+        }
       });
   return boost::make_shared<GaussianMixtureFactor>(
       continuousParentKeys, discreteParentKeys, likelihoods);
@@ -285,6 +311,16 @@ AlgebraicDecisionTree<Key> GaussianMixture::logProbability(
           return 1e50;
         }
       };
+  return DecisionTree<Key, double>(conditionals_, errorFunc);
+}
+
+/* *******************************************************************************/
+AlgebraicDecisionTree<Key> GaussianMixture::error(
+    const VectorValues &continuousValues) const {
+  auto errorFunc = [&](const GaussianConditional::shared_ptr &conditional) {
+    return conditional->error(continuousValues) +  //
+           logConstant_ - conditional->logNormalizationConstant();
+  };
   DecisionTree<Key, double> errorTree(conditionals_, errorFunc);
   return errorTree;
 }
@@ -293,7 +329,8 @@ AlgebraicDecisionTree<Key> GaussianMixture::logProbability(
 double GaussianMixture::error(const HybridValues &values) const {
   // Directly index to get the conditional, no need to build the whole tree.
   auto conditional = conditionals_(values.discrete());
-  return conditional->error(values.continuous()) - conditional->logNormalizationConstant();
+  return conditional->error(values.continuous()) +  //
+         logConstant_ - conditional->logNormalizationConstant();
 }
 
 /* *******************************************************************************/

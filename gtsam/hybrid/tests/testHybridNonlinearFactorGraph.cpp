@@ -502,7 +502,8 @@ factor 0:
 ]
   b = [ -10 ]
   No noise model
-factor 1: Hybrid [x0 x1; m0]{
+factor 1: 
+Hybrid [x0 x1; m0]{
  Choice(m0) 
  0 Leaf :
   A[x0] = [
@@ -525,7 +526,8 @@ factor 1: Hybrid [x0 x1; m0]{
   No noise model
 
 }
-factor 2: Hybrid [x1 x2; m1]{
+factor 2: 
+Hybrid [x1 x2; m1]{
  Choice(m1) 
  0 Leaf :
   A[x1] = [

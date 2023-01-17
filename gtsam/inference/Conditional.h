@@ -38,7 +38,9 @@ namespace gtsam {
    *   probability(x) = k exp(-error(x))
    * where k is a normalization constant making \int probability(x) == 1.0, and
    *   logProbability(x) = K - error(x)
-   * i.e., K = log(K).
+   * i.e., K = log(K). The normalization constant K is assumed to *not* depend
+   * on any argument, only (possibly) on the conditional parameters.
+   * This class provides a default logNormalizationConstant() == 0.0.
    * 
    * There are four broad classes of conditionals that derive from Conditional:
    *
@@ -142,10 +144,10 @@ namespace gtsam {
     }
 
     /**
-     * By default, log normalization constant = 0.0.
-     * Override if this depends on the parameters.
+     * All conditional types need to implement a log normalization constant to
+     * make it such that error>=0.
      */
-    virtual double logNormalizationConstant() const { return 0.0; }
+    virtual double logNormalizationConstant() const;
 
     /** Non-virtual, exponentiate logNormalizationConstant. */
     double normalizationConstant() const;
@@ -181,9 +183,22 @@ namespace gtsam {
     /** Mutable iterator pointing past the last parent key. */
     typename FACTOR::iterator endParents() { return asFactor().end(); }
 
+    /**
+     * Check invariants of this conditional, given the values `x`.
+     * It tests:
+     *  - evaluate >= 0.0
+     *  - evaluate(x) == conditional(x)
+     *  - exp(logProbability(x)) == evaluate(x)
+     *  - logNormalizationConstant() = log(normalizationConstant())
+     *  - error >= 0.0
+     *  - logProbability(x) == logNormalizationConstant() - error(x)
+     *
+     * @param conditional The conditional to test, as a reference to the derived type.
+     * @tparam VALUES HybridValues, or a more narrow type like DiscreteValues.
+    */
     template <class VALUES>
     static bool CheckInvariants(const DERIVEDCONDITIONAL& conditional,
-                                const VALUES& values);
+                                const VALUES& x);
 
     /// @}
 

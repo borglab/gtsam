@@ -254,6 +254,13 @@ class GTSAM_EXPORT DiscreteConditional
     return -error(x);
   }
 
+  /**
+   * logNormalizationConstant K is just zero, such that
+   * logProbability(x) = log(evaluate(x)) = - error(x)
+   * and hence error(x) = - log(evaluate(x)) > 0 for all x.
+   */
+  double logNormalizationConstant() const override { return 0.0; }
+
   /// @}
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42

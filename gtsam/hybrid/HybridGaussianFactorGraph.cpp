@@ -82,14 +82,13 @@ static GaussianFactorGraphTree addGaussian(
     const GaussianFactor::shared_ptr &factor) {
   // If the decision tree is not initialized, then initialize it.
   if (gfgTree.empty()) {
-    GaussianFactorGraph result;
-    result.push_back(factor);
-    return GaussianFactorGraphTree(GraphAndConstant(result, 0.0));
+    GaussianFactorGraph result{factor};
+    return GaussianFactorGraphTree(result);
   } else {
-    auto add = [&factor](const GraphAndConstant &graph_z) {
-      auto result = graph_z.graph;
+    auto add = [&factor](const GaussianFactorGraph &graph) {
+      auto result = graph;
       result.push_back(factor);
-      return GraphAndConstant(result, graph_z.constant);
+      return result;
     };
     return gfgTree.apply(add);
   }
@@ -190,12 +189,13 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
 // If any GaussianFactorGraph in the decision tree contains a nullptr, convert
 // that leaf to an empty GaussianFactorGraph. Needed since the DecisionTree will
 // otherwise create a GFG with a single (null) factor.
+// TODO(dellaert): still a mystery to me why this is needed.
 GaussianFactorGraphTree removeEmpty(const GaussianFactorGraphTree &sum) {
-  auto emptyGaussian = [](const GraphAndConstant &graph_z) {
+  auto emptyGaussian = [](const GaussianFactorGraph &graph) {
     bool hasNull =
-        std::any_of(graph_z.graph.begin(), graph_z.graph.end(),
+        std::any_of(graph.begin(), graph.end(),
                     [](const GaussianFactor::shared_ptr &ptr) { return !ptr; });
-    return hasNull ? GraphAndConstant{GaussianFactorGraph(), 0.0} : graph_z;
+    return hasNull ? GaussianFactorGraph() : graph;
   };
   return GaussianFactorGraphTree(sum, emptyGaussian);
 }
@@ -213,54 +213,37 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
 
   // Collect all the factors to create a set of Gaussian factor graphs in a
   // decision tree indexed by all discrete keys involved.
-  GaussianFactorGraphTree sum = factors.assembleGraphTree();
+  GaussianFactorGraphTree factorGraphTree = factors.assembleGraphTree();
 
   // Convert factor graphs with a nullptr to an empty factor graph.
   // This is done after assembly since it is non-trivial to keep track of which
   // FG has a nullptr as we're looping over the factors.
-  sum = removeEmpty(sum);
+  factorGraphTree = removeEmpty(factorGraphTree);
 
-  using EliminationPair = std::pair<boost::shared_ptr<GaussianConditional>,
-                                    GaussianMixtureFactor::FactorAndConstant>;
+  using Result = std::pair<boost::shared_ptr<GaussianConditional>,
+                           GaussianMixtureFactor::sharedFactor>;
 
   // This is the elimination method on the leaf nodes
-  auto eliminateFunc = [&](const GraphAndConstant &graph_z) -> EliminationPair {
-    if (graph_z.graph.empty()) {
-      return {nullptr, {nullptr, 0.0}};
+  auto eliminate = [&](const GaussianFactorGraph &graph) -> Result {
+    if (graph.empty()) {
+      return {nullptr, nullptr};
     }
 
 #ifdef HYBRID_TIMING
     gttic_(hybrid_eliminate);
 #endif
 
-    boost::shared_ptr<GaussianConditional> conditional;
-    boost::shared_ptr<GaussianFactor> newFactor;
-    boost::tie(conditional, newFactor) =
-        EliminatePreferCholesky(graph_z.graph, frontalKeys);
-
-    // Get the log of the log normalization constant inverse and
-    // add it to the previous constant.
-    const double logZ =
-        graph_z.constant - conditional->logNormalizationConstant();
-    // Get the log of the log normalization constant inverse.
-    // double logZ = -conditional->logNormalizationConstant();
-    // // IF this is the last continuous variable to eliminated, we need to
-    // // calculate the error here: the value of all factors at the mean, see
-    // // ml_map_rao.pdf.
-    // if (continuousSeparator.empty()) {
-    //   const auto posterior_mean = conditional->solve(VectorValues());
-    //   logZ += graph_z.graph.error(posterior_mean);
-    // }
+    auto result = EliminatePreferCholesky(graph, frontalKeys);
 
 #ifdef HYBRID_TIMING
     gttoc_(hybrid_eliminate);
 #endif
 
-    return {conditional, {newFactor, logZ}};
+    return result;
   };
 
   // Perform elimination!
-  DecisionTree<Key, EliminationPair> eliminationResults(sum, eliminateFunc);
+  DecisionTree<Key, Result> eliminationResults(factorGraphTree, eliminate);
 
 #ifdef HYBRID_TIMING
   tictoc_print_();
@@ -276,39 +259,46 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
   auto gaussianMixture = boost::make_shared<GaussianMixture>(
       frontalKeys, continuousSeparator, discreteSeparator, conditionals);
 
-  // If there are no more continuous parents, then we should create a
-  // DiscreteFactor here, with the error for each discrete choice.
   if (continuousSeparator.empty()) {
-    auto factorProb =
-        [&](const GaussianMixtureFactor::FactorAndConstant &factor_z) {
-          // This is the probability q(μ) at the MLE point.
-          // factor_z.factor is a factor without keys,
-          // just containing the residual.
-          return exp(-factor_z.error(VectorValues()));
-        };
+    // If there are no more continuous parents, then we create a
+    // DiscreteFactor here, with the error for each discrete choice.
 
-    const DecisionTree<Key, double> fdt(newFactors, factorProb);
-    // // Normalize the values of decision tree to be valid probabilities
-    // double sum = 0.0;
-    // auto visitor = [&](double y) { sum += y; };
-    // fdt.visit(visitor);
-    // // Check if sum is 0, and update accordingly.
-    // if (sum == 0) {
-    //   sum = 1.0;
-    // }
-    // fdt = DecisionTree<Key, double>(fdt,
-    //                                 [sum](const double &x) { return x / sum;
-    //                                 });
-    const auto discreteFactor =
-        boost::make_shared<DecisionTreeFactor>(discreteSeparator, fdt);
+    // Integrate the probability mass in the last continuous conditional using
+    // the unnormalized probability q(μ;m) = exp(-error(μ;m)) at the mean.
+    //   discrete_probability = exp(-error(μ;m)) * sqrt(det(2π Σ_m))
+    auto probability = [&](const Result &pair) -> double {
+      static const VectorValues kEmpty;
+      // If the factor is not null, it has no keys, just contains the residual.
+      const auto &factor = pair.second;
+      if (!factor) return 1.0;  // TODO(dellaert): not loving this.
+      return exp(-factor->error(kEmpty)) / pair.first->normalizationConstant();
+    };
 
+    DecisionTree<Key, double> probabilities(eliminationResults, probability);
     return {boost::make_shared<HybridConditional>(gaussianMixture),
-            discreteFactor};
+            boost::make_shared<DecisionTreeFactor>(discreteSeparator,
+                                                   probabilities)};
   } else {
-    // Create a resulting GaussianMixtureFactor on the separator.
+    // Otherwise, we create a resulting GaussianMixtureFactor on the separator,
+    // taking care to correct for conditional constant.
+
+    // Correct for the normalization constant used up by the conditional
+    auto correct = [&](const Result &pair) -> GaussianFactor::shared_ptr {
+      const auto &factor = pair.second;
+      if (!factor) return factor;  // TODO(dellaert): not loving this.
+      auto hf = boost::dynamic_pointer_cast<HessianFactor>(factor);
+      if (!hf) throw std::runtime_error("Expected HessianFactor!");
+      hf->constantTerm() += 2.0 * pair.first->logNormalizationConstant();
+      return hf;
+    };
+
+    GaussianMixtureFactor::Factors correctedFactors(eliminationResults,
+                                                    correct);
+    const auto mixtureFactor = boost::make_shared<GaussianMixtureFactor>(
+        continuousSeparator, discreteSeparator, newFactors);
+
     return {boost::make_shared<HybridConditional>(gaussianMixture),
-            boost::make_shared<GaussianMixtureFactor>(
-                continuousSeparator, discreteSeparator, newFactors)};
+            mixtureFactor};
   }
 }
 
@@ -374,6 +364,11 @@ EliminateHybrid(const HybridGaussianFactorGraph &factors,
   // However this is also the case with iSAM2, so no pressure :)
 
   // PREPROCESS: Identify the nature of the current elimination
+
+  // TODO(dellaert): just check the factors:
+  // 1. if all factors are discrete, then we can do discrete elimination:
+  // 2. if all factors are continuous, then we can do continuous elimination:
+  // 3. if not, we do hybrid elimination:
 
   // First, identify the separator keys, i.e. all keys that are not frontal.
   KeySet separatorKeys;
