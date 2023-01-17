@@ -212,7 +212,22 @@ boost::shared_ptr<GaussianMixtureFactor> GaussianMixture::likelihood(
   const KeyVector continuousParentKeys = continuousParents();
   const GaussianMixtureFactor::Factors likelihoods(
       conditionals_, [&](const GaussianConditional::shared_ptr &conditional) {
-        return conditional->likelihood(given);
+        const auto likelihood_m = conditional->likelihood(given);
+        const double Cgm_Kgcm =
+            logConstant_ - conditional->logNormalizationConstant();
+        if (Cgm_Kgcm == 0.0) {
+          return likelihood_m;
+        } else {
+          // Add a constant factor to the likelihood in case the noise models
+          // are not all equal.
+          GaussianFactorGraph gfg;
+          gfg.push_back(likelihood_m);
+          Vector c(1);
+          c << std::sqrt(2.0 * Cgm_Kgcm);
+          auto constantFactor = boost::make_shared<JacobianFactor>(c);
+          gfg.push_back(constantFactor);
+          return boost::make_shared<JacobianFactor>(gfg);
+        }
       });
   return boost::make_shared<GaussianMixtureFactor>(
       continuousParentKeys, discreteParentKeys, likelihoods);
@@ -319,8 +334,8 @@ AlgebraicDecisionTree<Key> GaussianMixture::logProbability(
 AlgebraicDecisionTree<Key> GaussianMixture::error(
     const VectorValues &continuousValues) const {
   auto errorFunc = [&](const GaussianConditional::shared_ptr &conditional) {
-    return logConstant_ + conditional->error(continuousValues) -
-           conditional->logNormalizationConstant();
+    return conditional->error(continuousValues) +  //
+           logConstant_ - conditional->logNormalizationConstant();
   };
   DecisionTree<Key, double> errorTree(conditionals_, errorFunc);
   return errorTree;
@@ -330,8 +345,8 @@ AlgebraicDecisionTree<Key> GaussianMixture::error(
 double GaussianMixture::error(const HybridValues &values) const {
   // Directly index to get the conditional, no need to build the whole tree.
   auto conditional = conditionals_(values.discrete());
-  return logConstant_ + conditional->error(values.continuous()) -
-         conditional->logNormalizationConstant();
+  return conditional->error(values.continuous()) +  //
+         logConstant_ - conditional->logNormalizationConstant();
 }
 
 /* *******************************************************************************/
