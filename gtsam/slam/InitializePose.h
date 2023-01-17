@@ -40,11 +40,11 @@ static NonlinearFactorGraph buildPoseGraph(const NonlinearFactorGraph& graph) {
   for (const auto& factor : graph) {
     // recast to a between on Pose
     if (auto between =
-            boost::dynamic_pointer_cast<BetweenFactor<Pose> >(factor))
+            std::dynamic_pointer_cast<BetweenFactor<Pose> >(factor))
       poseGraph.add(between);
 
     // recast PriorFactor<Pose> to BetweenFactor<Pose>
-    if (auto prior = boost::dynamic_pointer_cast<PriorFactor<Pose> >(factor))
+    if (auto prior = std::dynamic_pointer_cast<PriorFactor<Pose> >(factor))
       poseGraph.emplace_shared<BetweenFactor<Pose> >(
           kAnchorKey, prior->keys()[0], prior->prior(), prior->noiseModel());
   }

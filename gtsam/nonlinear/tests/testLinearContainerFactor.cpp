@@ -345,7 +345,7 @@ TEST(TestLinearContainerFactor, Rekey) {
 
   // Cast back to LCF ptr
   LinearContainerFactor::shared_ptr lcf_factor_rekey_ptr =
-      boost::static_pointer_cast<LinearContainerFactor>(lcf_factor_rekeyed);
+      std::static_pointer_cast<LinearContainerFactor>(lcf_factor_rekeyed);
   CHECK(lcf_factor_rekey_ptr);
 
   // For extra fun lets try linearizing this LCF
@@ -383,7 +383,7 @@ TEST(TestLinearContainerFactor, Rekey2) {
 
   // Cast back to LCF ptr
   LinearContainerFactor::shared_ptr lcf_factor_rekey_ptr =
-      boost::static_pointer_cast<LinearContainerFactor>(
+      std::static_pointer_cast<LinearContainerFactor>(
           lcf_factor.rekey(key_map));
   CHECK(lcf_factor_rekey_ptr);
 }

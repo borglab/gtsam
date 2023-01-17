@@ -63,7 +63,7 @@ public:
    * By default, throws exception if subclass does not implement the function.
    */
   NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<NonlinearFactor>(
+    return std::static_pointer_cast<NonlinearFactor>(
         NonlinearFactor::shared_ptr(new DummyFactor(*this)));
   }
 

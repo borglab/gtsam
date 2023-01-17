@@ -120,7 +120,7 @@ ImuFactor::ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
 
 //------------------------------------------------------------------------------
 NonlinearFactor::shared_ptr ImuFactor::clone() const {
-  return boost::static_pointer_cast<NonlinearFactor>(
+  return std::static_pointer_cast<NonlinearFactor>(
       NonlinearFactor::shared_ptr(new This(*this)));
 }
 
@@ -215,7 +215,7 @@ ImuFactor2::ImuFactor2(Key state_i, Key state_j, Key bias,
 
 //------------------------------------------------------------------------------
 NonlinearFactor::shared_ptr ImuFactor2::clone() const {
-  return boost::static_pointer_cast<NonlinearFactor>(
+  return std::static_pointer_cast<NonlinearFactor>(
       NonlinearFactor::shared_ptr(new This(*this)));
 }
 

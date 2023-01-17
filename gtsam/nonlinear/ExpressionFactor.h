@@ -120,7 +120,7 @@ protected:
     // In case noise model is constrained, we need to provide a noise model
     SharedDiagonal noiseModel;
     if (noiseModel_ && noiseModel_->isConstrained()) {
-      noiseModel = boost::static_pointer_cast<noiseModel::Constrained>(
+      noiseModel = std::static_pointer_cast<noiseModel::Constrained>(
           noiseModel_)->unit();
     }
 
@@ -152,7 +152,7 @@ protected:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 

@@ -133,12 +133,12 @@ TEST_UNSAFE( DiscreteMarginals, truss ) {
   // test 0
   DecisionTreeFactor expectedM0(key[0],"0.666667 0.333333");
   DiscreteFactor::shared_ptr actualM0 = marginals(0);
-  EXPECT(assert_equal(expectedM0, *boost::dynamic_pointer_cast<DecisionTreeFactor>(actualM0),1e-5));
+  EXPECT(assert_equal(expectedM0, *std::dynamic_pointer_cast<DecisionTreeFactor>(actualM0),1e-5));
 
   // test 1
   DecisionTreeFactor expectedM1(key[1],"0.333333 0.666667");
   DiscreteFactor::shared_ptr actualM1 = marginals(1);
-  EXPECT(assert_equal(expectedM1, *boost::dynamic_pointer_cast<DecisionTreeFactor>(actualM1),1e-5));
+  EXPECT(assert_equal(expectedM1, *std::dynamic_pointer_cast<DecisionTreeFactor>(actualM1),1e-5));
 }
 
 /* ************************************************************************* */
@@ -187,7 +187,7 @@ TEST_UNSAFE(DiscreteMarginals, truss2) {
     DecisionTreeFactor expectedM(key[j], table);
     DiscreteFactor::shared_ptr actualM = marginals(j);
     EXPECT(assert_equal(
-        expectedM, *boost::dynamic_pointer_cast<DecisionTreeFactor>(actualM)));
+        expectedM, *std::dynamic_pointer_cast<DecisionTreeFactor>(actualM)));
   }
 }
 

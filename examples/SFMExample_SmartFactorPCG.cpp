@@ -108,7 +108,7 @@ int main(int argc, char* argv[]) {
   result.print("Final results:\n");
   Values landmark_result;
   for (size_t j = 0; j < points.size(); ++j) {
-    auto smart = boost::dynamic_pointer_cast<SmartFactor>(graph[j]);
+    auto smart = std::dynamic_pointer_cast<SmartFactor>(graph[j]);
     if (smart) {
       std::optional<Point3> point = smart->point(result);
       if (point)  // ignore if std::optional return nullptr

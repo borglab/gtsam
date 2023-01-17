@@ -337,13 +337,13 @@ double ShonanAveraging<d>::cost(const Values &values) const {
 template <typename T, size_t d>
 static double Kappa(const BinaryMeasurement<T> &measurement,
                     const ShonanAveragingParameters<d> &parameters) {
-  const auto &isotropic = boost::dynamic_pointer_cast<noiseModel::Isotropic>(
+  const auto &isotropic = std::dynamic_pointer_cast<noiseModel::Isotropic>(
       measurement.noiseModel());
   double sigma;
   if (isotropic) {
     sigma = isotropic->sigma();
   } else {
-    const auto &robust = boost::dynamic_pointer_cast<noiseModel::Robust>(
+    const auto &robust = std::dynamic_pointer_cast<noiseModel::Robust>(
         measurement.noiseModel());
     // Check if noise model is robust
     if (robust) {
@@ -949,7 +949,7 @@ ShonanAveraging2::ShonanAveraging2(string g2oFile, const Parameters &parameters)
 static BinaryMeasurement<Rot2> convertPose2ToBinaryMeasurementRot2(
     const BetweenFactor<Pose2>::shared_ptr &f) {
   auto gaussian =
-      boost::dynamic_pointer_cast<noiseModel::Gaussian>(f->noiseModel());
+      std::dynamic_pointer_cast<noiseModel::Gaussian>(f->noiseModel());
   if (!gaussian)
     throw std::invalid_argument(
         "parseMeasurements<Rot2> can only convert Pose2 measurements "
@@ -997,7 +997,7 @@ ShonanAveraging3::ShonanAveraging3(string g2oFile, const Parameters &parameters)
 static BinaryMeasurement<Rot3> convert(
     const BetweenFactor<Pose3>::shared_ptr &f) {
   auto gaussian =
-      boost::dynamic_pointer_cast<noiseModel::Gaussian>(f->noiseModel());
+      std::dynamic_pointer_cast<noiseModel::Gaussian>(f->noiseModel());
   if (!gaussian)
     throw std::invalid_argument(
         "parseMeasurements<Rot3> can only convert Pose3 measurements "

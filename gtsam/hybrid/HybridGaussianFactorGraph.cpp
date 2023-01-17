@@ -57,7 +57,7 @@ template class EliminateableFactorGraph<HybridGaussianFactorGraph>;
 
 using OrphanWrapper = BayesTreeOrphanWrapper<HybridBayesTree::Clique>;
 
-using boost::dynamic_pointer_cast;
+using std::dynamic_pointer_cast;
 
 /* ************************************************************************ */
 // Throw a runtime exception for method specified in string s, and factor f:

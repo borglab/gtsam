@@ -108,7 +108,7 @@ class MixtureFactor : public HybridFactor {
       std::copy(f->keys().begin(), f->keys().end(),
                 std::inserter(factor_keys_set, factor_keys_set.end()));
 
-      if (auto nf = boost::dynamic_pointer_cast<NonlinearFactor>(f)) {
+      if (auto nf = std::dynamic_pointer_cast<NonlinearFactor>(f)) {
         nonlinear_factors.push_back(nf);
       } else {
         throw std::runtime_error(
@@ -266,13 +266,13 @@ class MixtureFactor : public HybridFactor {
     // If this is a NoiseModelFactor, we'll use its noiseModel to
     // otherwise noiseModelFactor will be nullptr
     if (auto noiseModelFactor =
-            boost::dynamic_pointer_cast<NoiseModelFactor>(factor)) {
+            std::dynamic_pointer_cast<NoiseModelFactor>(factor)) {
       // If dynamic cast to NoiseModelFactor succeeded, see if the noise model
       // is Gaussian
       auto noiseModel = noiseModelFactor->noiseModel();
 
       auto gaussianNoiseModel =
-          boost::dynamic_pointer_cast<noiseModel::Gaussian>(noiseModel);
+          std::dynamic_pointer_cast<noiseModel::Gaussian>(noiseModel);
       if (gaussianNoiseModel) {
         // If the noise model is Gaussian, retrieve the information matrix
         infoMat = gaussianNoiseModel->information();

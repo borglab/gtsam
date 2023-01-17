@@ -108,7 +108,7 @@ void getSymbolicGraph(
       Key key2 = factor->keys()[1];
       // recast to a between
       std::shared_ptr<BetweenFactor<Pose2> > pose2Between =
-          boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor);
+          std::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor);
       if (!pose2Between)
         continue;
       // get the orientation - measured().theta();
@@ -140,7 +140,7 @@ static void getDeltaThetaAndNoise(NonlinearFactor::shared_ptr factor,
 
   // Get the relative rotation measurement from the between factor
   std::shared_ptr<BetweenFactor<Pose2> > pose2Between =
-      boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor);
+      std::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor);
   if (!pose2Between)
     throw invalid_argument(
         "buildLinearOrientationGraph: invalid between factor!");
@@ -149,7 +149,7 @@ static void getDeltaThetaAndNoise(NonlinearFactor::shared_ptr factor,
   // Retrieve the noise model for the relative rotation
   SharedNoiseModel model = pose2Between->noiseModel();
   std::shared_ptr<noiseModel::Diagonal> diagonalModel =
-      boost::dynamic_pointer_cast<noiseModel::Diagonal>(model);
+      std::dynamic_pointer_cast<noiseModel::Diagonal>(model);
   if (!diagonalModel)
     throw invalid_argument("buildLinearOrientationGraph: invalid noise model "
         "(current version assumes diagonal noise model)!");
@@ -278,7 +278,7 @@ Values computePoses(const NonlinearFactorGraph& pose2graph,
   for(const std::shared_ptr<NonlinearFactor>& factor: pose2graph) {
 
     std::shared_ptr<BetweenFactor<Pose2> > pose2Between =
-        boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor);
+        std::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor);
 
     if (pose2Between) {
       Key key1 = pose2Between->keys()[0];
@@ -304,7 +304,7 @@ Values computePoses(const NonlinearFactorGraph& pose2graph,
       J1(1, 2) = -c1 * dx + s1 * dy;
       // Retrieve the noise model for the relative rotation
       std::shared_ptr<noiseModel::Diagonal> diagonalModel =
-          boost::dynamic_pointer_cast<noiseModel::Diagonal>(
+          std::dynamic_pointer_cast<noiseModel::Diagonal>(
               pose2Between->noiseModel());
 
       linearPose2graph.add(key1, J1, key2, I3, b, diagonalModel);

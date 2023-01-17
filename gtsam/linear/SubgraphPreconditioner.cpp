@@ -82,7 +82,7 @@ static GaussianFactorGraph convertToJacobianFactors(
   GaussianFactorGraph result;
   for (const auto &factor : gfg) 
     if (factor) {
-      auto jf = boost::dynamic_pointer_cast<JacobianFactor>(factor);
+      auto jf = std::dynamic_pointer_cast<JacobianFactor>(factor);
       if (!jf) {
         jf = std::make_shared<JacobianFactor>(*factor);
       }

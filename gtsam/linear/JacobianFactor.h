@@ -187,7 +187,7 @@ namespace gtsam {
 
     /** Clone this JacobianFactor */
     GaussianFactor::shared_ptr clone() const override {
-      return boost::static_pointer_cast<GaussianFactor>(
+      return std::static_pointer_cast<GaussianFactor>(
           std::make_shared<JacobianFactor>(*this));
     }
 

@@ -67,7 +67,7 @@ int main(const int argc, const char *argv[]) {
     NonlinearFactorGraph simpleGraph;
     for(const std::shared_ptr<NonlinearFactor>& factor: *graph) {
       std::shared_ptr<BetweenFactor<Pose3> > pose3Between =
-          boost::dynamic_pointer_cast<BetweenFactor<Pose3> >(factor);
+          std::dynamic_pointer_cast<BetweenFactor<Pose3> >(factor);
       if (pose3Between){
         Key key1, key2;
         if(add){

@@ -28,12 +28,12 @@ namespace gtsam {
 std::set<DiscreteKey> HybridFactorGraph::discreteKeys() const {
   std::set<DiscreteKey> keys;
   for (auto& factor : factors_) {
-    if (auto p = boost::dynamic_pointer_cast<DecisionTreeFactor>(factor)) {
+    if (auto p = std::dynamic_pointer_cast<DecisionTreeFactor>(factor)) {
       for (const DiscreteKey& key : p->discreteKeys()) {
         keys.insert(key);
       }
     }
-    if (auto p = boost::dynamic_pointer_cast<HybridFactor>(factor)) {
+    if (auto p = std::dynamic_pointer_cast<HybridFactor>(factor)) {
       for (const DiscreteKey& key : p->discreteKeys()) {
         keys.insert(key);
       }
@@ -65,7 +65,7 @@ std::unordered_map<Key, DiscreteKey> HybridFactorGraph::discreteKeyMap() const {
 const KeySet HybridFactorGraph::continuousKeySet() const {
   KeySet keys;
   for (auto& factor : factors_) {
-    if (auto p = boost::dynamic_pointer_cast<HybridFactor>(factor)) {
+    if (auto p = std::dynamic_pointer_cast<HybridFactor>(factor)) {
       for (const Key& key : p->continuousKeys()) {
         keys.insert(key);
       }

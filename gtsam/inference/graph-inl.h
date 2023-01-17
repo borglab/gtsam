@@ -80,7 +80,7 @@ SDGraph<KEY> toBoostGraph(const G& graph) {
       continue;
 
     // Cast the factor to the user-specified factor type F
-    std::shared_ptr<F> factor = boost::dynamic_pointer_cast<F>(*itFactor);
+    std::shared_ptr<F> factor = std::dynamic_pointer_cast<F>(*itFactor);
     // Ignore factors that are not of type F
     if (!factor) continue;
 
@@ -197,7 +197,7 @@ std::shared_ptr<Values> composePoses(const G& graph, const PredecessorMap<KEY>& 
       throw std::invalid_argument("composePoses: only support factors with at most two keys");
 
     // e.g. in pose2graph, nonlinear factor needs to be converted to pose2factor
-    std::shared_ptr<Factor> factor = boost::dynamic_pointer_cast<Factor>(nl_factor);
+    std::shared_ptr<Factor> factor = std::dynamic_pointer_cast<Factor>(nl_factor);
     if (!factor) continue;
 
     KEY key1 = factor->key1();
@@ -266,7 +266,7 @@ void split(const G& g, const PredecessorMap<KEY>& tree, G& Ab1, G& Ab2) {
       continue;
     }
 
-    std::shared_ptr<FACTOR2> factor2 = boost::dynamic_pointer_cast<
+    std::shared_ptr<FACTOR2> factor2 = std::dynamic_pointer_cast<
         FACTOR2>(factor);
     if (!factor2) continue;
 

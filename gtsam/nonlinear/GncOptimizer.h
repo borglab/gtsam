@@ -65,9 +65,9 @@ class GncOptimizer {
     nfg_.resize(graph.size());
     for (size_t i = 0; i < graph.size(); i++) {
       if (graph[i]) {
-        NoiseModelFactor::shared_ptr factor = boost::dynamic_pointer_cast<
+        NoiseModelFactor::shared_ptr factor = std::dynamic_pointer_cast<
             NoiseModelFactor>(graph[i]);
-        auto robust = boost::dynamic_pointer_cast<
+        auto robust = std::dynamic_pointer_cast<
             noiseModel::Robust>(factor->noiseModel());
         // if the factor has a robust loss, we remove the robust loss
         nfg_[i] = robust ? factor-> cloneWithNewNoiseModel(robust->noise()) : factor;
@@ -401,10 +401,10 @@ class GncOptimizer {
     newGraph.resize(nfg_.size());
     for (size_t i = 0; i < nfg_.size(); i++) {
       if (nfg_[i]) {
-        auto factor = boost::dynamic_pointer_cast<
+        auto factor = std::dynamic_pointer_cast<
             NoiseModelFactor>(nfg_[i]);
         auto noiseModel =
-            boost::dynamic_pointer_cast<noiseModel::Gaussian>(
+            std::dynamic_pointer_cast<noiseModel::Gaussian>(
                 factor->noiseModel());
         if (noiseModel) {
           Matrix newInfo = weights[i] * noiseModel->information();

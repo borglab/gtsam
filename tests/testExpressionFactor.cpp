@@ -128,7 +128,7 @@ TEST(ExpressionFactor, Unary) {
   EXPECT_LONGS_EQUAL(2, f.dim());
   std::shared_ptr<GaussianFactor> gf = f.linearize(values);
   std::shared_ptr<JacobianFactor> jf = //
-      boost::dynamic_pointer_cast<JacobianFactor>(gf);
+      std::dynamic_pointer_cast<JacobianFactor>(gf);
   EXPECT(assert_equal(expected, *jf, 1e-9));
 }
 
@@ -342,7 +342,7 @@ TEST(ExpressionFactor, Compose1) {
   JacobianFactor expected(1, I_3x3, 2, I_3x3, Z_3x1);
   std::shared_ptr<GaussianFactor> gf = f.linearize(values);
   std::shared_ptr<JacobianFactor> jf = //
-      boost::dynamic_pointer_cast<JacobianFactor>(gf);
+      std::dynamic_pointer_cast<JacobianFactor>(gf);
   EXPECT(assert_equal(expected, *jf,1e-9));
 }
 
@@ -371,7 +371,7 @@ TEST(ExpressionFactor, compose2) {
   JacobianFactor expected(1, 2 * I_3x3, Z_3x1);
   std::shared_ptr<GaussianFactor> gf = f.linearize(values);
   std::shared_ptr<JacobianFactor> jf = //
-      boost::dynamic_pointer_cast<JacobianFactor>(gf);
+      std::dynamic_pointer_cast<JacobianFactor>(gf);
   EXPECT(assert_equal(expected, *jf,1e-9));
 }
 
@@ -400,7 +400,7 @@ TEST(ExpressionFactor, compose3) {
   JacobianFactor expected(3, I_3x3, Z_3x1);
   std::shared_ptr<GaussianFactor> gf = f.linearize(values);
   std::shared_ptr<JacobianFactor> jf = //
-      boost::dynamic_pointer_cast<JacobianFactor>(gf);
+      std::dynamic_pointer_cast<JacobianFactor>(gf);
   EXPECT(assert_equal(expected, *jf,1e-9));
 }
 
@@ -445,7 +445,7 @@ TEST(ExpressionFactor, composeTernary) {
   JacobianFactor expected(1, I_3x3, 2, I_3x3, 3, I_3x3, Z_3x1);
   std::shared_ptr<GaussianFactor> gf = f.linearize(values);
   std::shared_ptr<JacobianFactor> jf = //
-      boost::dynamic_pointer_cast<JacobianFactor>(gf);
+      std::dynamic_pointer_cast<JacobianFactor>(gf);
   EXPECT(assert_equal(expected, *jf,1e-9));
 }
 
@@ -659,7 +659,7 @@ public:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 

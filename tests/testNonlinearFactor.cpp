@@ -90,7 +90,7 @@ TEST( NonlinearFactor, NonlinearFactor )
 
   // calculate the error_vector from the factor "f1"
   // error_vector = [0.1 0.1]
-  Vector actual_e = boost::dynamic_pointer_cast<NoiseModelFactor>(factor)->unwhitenedError(cfg);
+  Vector actual_e = std::dynamic_pointer_cast<NoiseModelFactor>(factor)->unwhitenedError(cfg);
   CHECK(assert_equal(0.1*Vector::Ones(2),actual_e));
 
   // error = 0.5 * [1 1] * [1;1] = 1
@@ -323,7 +323,7 @@ TEST( NonlinearFactor, cloneWithNewNoiseModel )
   // create actual
   NonlinearFactorGraph actual;
   SharedNoiseModel noise2 = noiseModel::Isotropic::Sigma(2,sigma2);
-  actual.push_back( boost::dynamic_pointer_cast<NoiseModelFactor>(nfg[0])->cloneWithNewNoiseModel(noise2) );
+  actual.push_back( std::dynamic_pointer_cast<NoiseModelFactor>(nfg[0])->cloneWithNewNoiseModel(noise2) );
 
   // check it's all good
   CHECK(assert_equal(expected, actual));
@@ -352,7 +352,7 @@ class TestFactor1 : public NoiseModelFactor1<double> {
   }
 
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new TestFactor1(*this)));
   }
 };
@@ -365,7 +365,7 @@ TEST(NonlinearFactor, NoiseModelFactor1) {
   EXPECT(assert_equal((Vector(1) << 1.0).finished(), tf.unwhitenedError(tv)));
   DOUBLES_EQUAL(0.25 / 2.0, tf.error(tv), 1e-9);
   JacobianFactor jf(
-      *boost::dynamic_pointer_cast<JacobianFactor>(tf.linearize(tv)));
+      *std::dynamic_pointer_cast<JacobianFactor>(tf.linearize(tv)));
   LONGS_EQUAL((long)L(1), (long)jf.keys()[0]);
   EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 0.5).finished(),
                       jf.getA(jf.begin())));
@@ -417,7 +417,7 @@ class TestFactor4 : public NoiseModelFactor4<double, double, double, double> {
   }
 
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new TestFactor4(*this))); }
 };
 
@@ -431,7 +431,7 @@ TEST(NonlinearFactor, NoiseModelFactor4) {
   tv.insert(X(4), double((4.0)));
   EXPECT(assert_equal((Vector(1) << 30.0).finished(), tf.unwhitenedError(tv)));
   DOUBLES_EQUAL(0.5 * 30.0 * 30.0 / 4.0, tf.error(tv), 1e-9);
-  JacobianFactor jf(*boost::dynamic_pointer_cast<JacobianFactor>(tf.linearize(tv)));
+  JacobianFactor jf(*std::dynamic_pointer_cast<JacobianFactor>(tf.linearize(tv)));
   LONGS_EQUAL((long)X(1), (long)jf.keys()[0]);
   LONGS_EQUAL((long)X(2), (long)jf.keys()[1]);
   LONGS_EQUAL((long)X(3), (long)jf.keys()[2]);
@@ -522,7 +522,7 @@ TEST(NonlinearFactor, NoiseModelFactor5) {
   tv.insert(X(5), double((5.0)));
   EXPECT(assert_equal((Vector(1) << 55.0).finished(), tf.unwhitenedError(tv)));
   DOUBLES_EQUAL(0.5 * 55.0 * 55.0 / 4.0, tf.error(tv), 1e-9);
-  JacobianFactor jf(*boost::dynamic_pointer_cast<JacobianFactor>(tf.linearize(tv)));
+  JacobianFactor jf(*std::dynamic_pointer_cast<JacobianFactor>(tf.linearize(tv)));
   LONGS_EQUAL((long)X(1), (long)jf.keys()[0]);
   LONGS_EQUAL((long)X(2), (long)jf.keys()[1]);
   LONGS_EQUAL((long)X(3), (long)jf.keys()[2]);
@@ -577,7 +577,7 @@ TEST(NonlinearFactor, NoiseModelFactor6) {
   tv.insert(X(6), double((6.0)));
   EXPECT(assert_equal((Vector(1) << 91.0).finished(), tf.unwhitenedError(tv)));
   DOUBLES_EQUAL(0.5 * 91.0 * 91.0 / 4.0, tf.error(tv), 1e-9);
-  JacobianFactor jf(*boost::dynamic_pointer_cast<JacobianFactor>(tf.linearize(tv)));
+  JacobianFactor jf(*std::dynamic_pointer_cast<JacobianFactor>(tf.linearize(tv)));
   LONGS_EQUAL((long)X(1), (long)jf.keys()[0]);
   LONGS_EQUAL((long)X(2), (long)jf.keys()[1]);
   LONGS_EQUAL((long)X(3), (long)jf.keys()[2]);
@@ -630,7 +630,7 @@ TEST(NonlinearFactor, NoiseModelFactorN) {
   tv.insert(X(4), double((4.0)));
   EXPECT(assert_equal((Vector(1) << 30.0).finished(), tf.unwhitenedError(tv)));
   DOUBLES_EQUAL(0.5 * 30.0 * 30.0 / 4.0, tf.error(tv), 1e-9);
-  JacobianFactor jf(*boost::dynamic_pointer_cast<JacobianFactor>(tf.linearize(tv)));
+  JacobianFactor jf(*std::dynamic_pointer_cast<JacobianFactor>(tf.linearize(tv)));
   LONGS_EQUAL((long)X(1), (long)jf.keys()[0]);
   LONGS_EQUAL((long)X(2), (long)jf.keys()[1]);
   LONGS_EQUAL((long)X(3), (long)jf.keys()[2]);

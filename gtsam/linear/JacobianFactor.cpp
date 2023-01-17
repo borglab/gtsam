@@ -200,7 +200,7 @@ FastVector<JacobianFactor::shared_ptr> _convertOrCastToJacobians(
   jacobians.reserve(factors.size());
   for(const GaussianFactor::shared_ptr& factor: factors) {
     if (factor) {
-      if (JacobianFactor::shared_ptr jf = boost::dynamic_pointer_cast<
+      if (JacobianFactor::shared_ptr jf = std::dynamic_pointer_cast<
           JacobianFactor>(factor))
         jacobians.push_back(jf);
       else

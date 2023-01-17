@@ -102,7 +102,7 @@ public:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));}
 
   /**
@@ -170,7 +170,7 @@ public:
     // Create new (unit) noiseModel, preserving constraints if applicable
     SharedDiagonal model;
     if (noiseModel && noiseModel->isConstrained()) {
-      model = boost::static_pointer_cast<noiseModel::Constrained>(noiseModel)->unit();
+      model = std::static_pointer_cast<noiseModel::Constrained>(noiseModel)->unit();
     }
 
     return std::make_shared<BinaryJacobianFactor<2, DimC, DimL> >(key1, H1, key2, H2, b, model);
@@ -237,7 +237,7 @@ public:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));}
 
   /**

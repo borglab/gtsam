@@ -207,10 +207,10 @@ namespace gtsam {
         for(auto branch: f->branches()) {
           assert(branch->isLeaf());
           nrAssignments +=
-              boost::dynamic_pointer_cast<const Leaf>(branch)->nrAssignments();
+              std::dynamic_pointer_cast<const Leaf>(branch)->nrAssignments();
         }
         NodePtr newLeaf(
-            new Leaf(boost::dynamic_pointer_cast<const Leaf>(f0)->constant(),
+            new Leaf(std::dynamic_pointer_cast<const Leaf>(f0)->constant(),
                      nrAssignments));
         return newLeaf;
       } else
@@ -569,7 +569,7 @@ namespace gtsam {
       if (it->root_->isLeaf())
         continue;
       std::shared_ptr<const Choice> c =
-          boost::dynamic_pointer_cast<const Choice>(it->root_);
+          std::dynamic_pointer_cast<const Choice>(it->root_);
       if (!highestLabel || c->label() > *highestLabel) {
         highestLabel = c->label();
         nrChoices = c->nrChoices();
@@ -678,13 +678,13 @@ namespace gtsam {
     // functions.
     // If leaf, apply unary conversion "op" and create a unique leaf.
     using MXLeaf = typename DecisionTree<M, X>::Leaf;
-    if (auto leaf = boost::dynamic_pointer_cast<const MXLeaf>(f)) {
+    if (auto leaf = std::dynamic_pointer_cast<const MXLeaf>(f)) {
       return NodePtr(new Leaf(Y_of_X(leaf->constant()), leaf->nrAssignments()));
     }
 
     // Check if Choice
     using MXChoice = typename DecisionTree<M, X>::Choice;
-    auto choice = boost::dynamic_pointer_cast<const MXChoice>(f);
+    auto choice = std::dynamic_pointer_cast<const MXChoice>(f);
     if (!choice) throw std::invalid_argument(
         "DecisionTree::convertFrom: Invalid NodePtr");
 
@@ -720,11 +720,11 @@ namespace gtsam {
     /// Do a depth-first visit on the tree rooted at node.
     void operator()(const typename DecisionTree<L, Y>::NodePtr& node) const {
       using Leaf = typename DecisionTree<L, Y>::Leaf;
-      if (auto leaf = boost::dynamic_pointer_cast<const Leaf>(node))
+      if (auto leaf = std::dynamic_pointer_cast<const Leaf>(node))
         return f(leaf->constant());
 
       using Choice = typename DecisionTree<L, Y>::Choice;
-      auto choice = boost::dynamic_pointer_cast<const Choice>(node);
+      auto choice = std::dynamic_pointer_cast<const Choice>(node);
       if (!choice)
         throw std::invalid_argument("DecisionTree::Visit: Invalid NodePtr");
       for (auto&& branch : choice->branches()) (*this)(branch);  // recurse!
@@ -757,11 +757,11 @@ namespace gtsam {
     /// Do a depth-first visit on the tree rooted at node.
     void operator()(const typename DecisionTree<L, Y>::NodePtr& node) const {
       using Leaf = typename DecisionTree<L, Y>::Leaf;
-      if (auto leaf = boost::dynamic_pointer_cast<const Leaf>(node))
+      if (auto leaf = std::dynamic_pointer_cast<const Leaf>(node))
         return f(*leaf);
 
       using Choice = typename DecisionTree<L, Y>::Choice;
-      auto choice = boost::dynamic_pointer_cast<const Choice>(node);
+      auto choice = std::dynamic_pointer_cast<const Choice>(node);
       if (!choice)
         throw std::invalid_argument("DecisionTree::VisitLeaf: Invalid NodePtr");
       for (auto&& branch : choice->branches()) (*this)(branch);  // recurse!
@@ -792,11 +792,11 @@ namespace gtsam {
     /// Do a depth-first visit on the tree rooted at node.
     void operator()(const typename DecisionTree<L, Y>::NodePtr& node) {
       using Leaf = typename DecisionTree<L, Y>::Leaf;
-      if (auto leaf = boost::dynamic_pointer_cast<const Leaf>(node))
+      if (auto leaf = std::dynamic_pointer_cast<const Leaf>(node))
         return f(assignment, leaf->constant());
 
       using Choice = typename DecisionTree<L, Y>::Choice;
-      auto choice = boost::dynamic_pointer_cast<const Choice>(node);
+      auto choice = std::dynamic_pointer_cast<const Choice>(node);
       if (!choice)
         throw std::invalid_argument("DecisionTree::VisitWith: Invalid NodePtr");
       for (size_t i = 0; i < choice->nrChoices(); i++) {

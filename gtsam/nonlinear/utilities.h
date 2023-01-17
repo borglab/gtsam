@@ -296,14 +296,14 @@ Matrix reprojectionErrors(const NonlinearFactorGraph& graph,
   // first count
   size_t K = 0, k = 0;
   for(const NonlinearFactor::shared_ptr& f: graph)
-    if (boost::dynamic_pointer_cast<const GenericProjectionFactor<Pose3, Point3> >(
+    if (std::dynamic_pointer_cast<const GenericProjectionFactor<Pose3, Point3> >(
         f))
       ++K;
   // now fill
   Matrix errors(2, K);
   for(const NonlinearFactor::shared_ptr& f: graph) {
     std::shared_ptr<const GenericProjectionFactor<Pose3, Point3> > p =
-        boost::dynamic_pointer_cast<const GenericProjectionFactor<Pose3, Point3> >(
+        std::dynamic_pointer_cast<const GenericProjectionFactor<Pose3, Point3> >(
             f);
     if (p)
       errors.col(k++) = p->unwhitenedError(values);

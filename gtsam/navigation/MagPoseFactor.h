@@ -86,7 +86,7 @@ class MagPoseFactor: public NoiseModelFactorN<POSE> {
 
   /// @return a deep copy of this factor.
   NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<NonlinearFactor>(
+    return std::static_pointer_cast<NonlinearFactor>(
         NonlinearFactor::shared_ptr(new This(*this)));
   }
 

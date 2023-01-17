@@ -127,7 +127,7 @@ private:
     /* In practice, square root of the information matrix is represented, so that:
      *  R_d (approx)= R / sqrt(delta_t)
      * */
-    noiseModel::Gaussian::shared_ptr gaussian_model = boost::dynamic_pointer_cast<noiseModel::Gaussian>(model);
+    noiseModel::Gaussian::shared_ptr gaussian_model = std::dynamic_pointer_cast<noiseModel::Gaussian>(model);
     SharedGaussian model_d(noiseModel::Gaussian::SqrtInformation(gaussian_model->R()/sqrt(delta_t)));
     return model_d;
   }

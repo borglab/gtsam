@@ -373,7 +373,7 @@ template <> struct ParseMeasurement<Pose2> {
 /* ************************************************************************* */
 // Create a sampler to corrupt a measurement
 std::shared_ptr<Sampler> createSampler(const SharedNoiseModel &model) {
-  auto noise = boost::dynamic_pointer_cast<noiseModel::Diagonal>(model);
+  auto noise = std::dynamic_pointer_cast<noiseModel::Diagonal>(model);
   if (!noise)
     throw invalid_argument("gtsam::load: invalid noise model for adding noise"
                            "(current version assumes diagonal noise model)!");
@@ -400,7 +400,7 @@ parseMeasurements(const std::string &filename,
 // Extract Rot2 measurement from Pose2 measurement
 static BinaryMeasurement<Rot2> convert(const BinaryMeasurement<Pose2> &p) {
   auto gaussian =
-      boost::dynamic_pointer_cast<noiseModel::Gaussian>(p.noiseModel());
+      std::dynamic_pointer_cast<noiseModel::Gaussian>(p.noiseModel());
   if (!gaussian)
     throw std::invalid_argument(
         "parseMeasurements<Rot2> can only convert Pose2 measurements "
@@ -597,7 +597,7 @@ void save2D(const NonlinearFactorGraph &graph, const Values &config,
   Matrix3 R = model->R();
   Matrix3 RR = R.transpose() * R;
   for (auto f : graph) {
-    auto factor = boost::dynamic_pointer_cast<BetweenFactor<Pose2>>(f);
+    auto factor = std::dynamic_pointer_cast<BetweenFactor<Pose2>>(f);
     if (!factor)
       continue;
 
@@ -679,11 +679,11 @@ void writeG2o(const NonlinearFactorGraph &graph, const Values &estimate,
 
   // save edges (2D or 3D)
   for (const auto &factor_ : graph) {
-    auto factor = boost::dynamic_pointer_cast<BetweenFactor<Pose2>>(factor_);
+    auto factor = std::dynamic_pointer_cast<BetweenFactor<Pose2>>(factor_);
     if (factor) {
       SharedNoiseModel model = factor->noiseModel();
       auto gaussianModel =
-          boost::dynamic_pointer_cast<noiseModel::Gaussian>(model);
+          std::dynamic_pointer_cast<noiseModel::Gaussian>(model);
       if (!gaussianModel) {
         model->print("model\n");
         throw invalid_argument("writeG2o: invalid noise model!");
@@ -701,13 +701,13 @@ void writeG2o(const NonlinearFactorGraph &graph, const Values &estimate,
       stream << endl;
     }
 
-    auto factor3D = boost::dynamic_pointer_cast<BetweenFactor<Pose3>>(factor_);
+    auto factor3D = std::dynamic_pointer_cast<BetweenFactor<Pose3>>(factor_);
 
     if (factor3D) {
       SharedNoiseModel model = factor3D->noiseModel();
 
       std::shared_ptr<noiseModel::Gaussian> gaussianModel =
-          boost::dynamic_pointer_cast<noiseModel::Gaussian>(model);
+          std::dynamic_pointer_cast<noiseModel::Gaussian>(model);
       if (!gaussianModel) {
         model->print("model\n");
         throw invalid_argument("writeG2o: invalid noise model!");
@@ -887,7 +887,7 @@ parseMeasurements(const std::string &filename,
 // Extract Rot3 measurement from Pose3 measurement
 static BinaryMeasurement<Rot3> convert(const BinaryMeasurement<Pose3> &p) {
   auto gaussian =
-      boost::dynamic_pointer_cast<noiseModel::Gaussian>(p.noiseModel());
+      std::dynamic_pointer_cast<noiseModel::Gaussian>(p.noiseModel());
   if (!gaussian)
     throw std::invalid_argument(
         "parseMeasurements<Rot3> can only convert Pose3 measurements "

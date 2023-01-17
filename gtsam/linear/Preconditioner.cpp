@@ -185,7 +185,7 @@ void BlockJacobiPreconditioner::clean() {
 /***************************************************************************************/
 std::shared_ptr<Preconditioner> createPreconditioner(
     const std::shared_ptr<PreconditionerParameters> params) {
-  using boost::dynamic_pointer_cast;
+  using std::dynamic_pointer_cast;
   if (dynamic_pointer_cast<DummyPreconditionerParameters>(params)) {
     return std::make_shared<DummyPreconditioner>();
   } else if (dynamic_pointer_cast<BlockJacobiPreconditionerParameters>(

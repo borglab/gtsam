@@ -106,7 +106,7 @@ GaussianConditional::shared_ptr GaussianMixture::operator()(
     const DiscreteValues &discreteValues) const {
   auto &ptr = conditionals_(discreteValues);
   if (!ptr) return nullptr;
-  auto conditional = boost::dynamic_pointer_cast<GaussianConditional>(ptr);
+  auto conditional = std::dynamic_pointer_cast<GaussianConditional>(ptr);
   if (conditional)
     return conditional;
   else

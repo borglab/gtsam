@@ -87,7 +87,7 @@ TEST(NonlinearClusterTree, Clusters) {
   Ordering ordering;
   ordering.push_back(x1);
   auto expected = gfg->eliminatePartialSequential(ordering);
-  auto expectedFactor = boost::dynamic_pointer_cast<HessianFactor>(expected.second->at(0));
+  auto expectedFactor = std::dynamic_pointer_cast<HessianFactor>(expected.second->at(0));
   if (!expectedFactor)
     throw std::runtime_error("Expected HessianFactor");
 

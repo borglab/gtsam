@@ -129,7 +129,7 @@ void MyBase_upcastFromVoid_1(int nargout, mxArray *out[], int nargin, const mxAr
   typedef std::shared_ptr<MyBase> Shared;
   std::shared_ptr<void> *asVoid = *reinterpret_cast<std::shared_ptr<void>**> (mxGetData(in[0]));
   out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
-  Shared *self = new Shared(boost::static_pointer_cast<MyBase>(*asVoid));
+  Shared *self = new Shared(std::static_pointer_cast<MyBase>(*asVoid));
   *reinterpret_cast<Shared**>(mxGetData(out[0])) = self;
 }
 
@@ -164,7 +164,7 @@ void MyTemplatePoint2_upcastFromVoid_4(int nargout, mxArray *out[], int nargin, 
   typedef std::shared_ptr<MyTemplate<gtsam::Point2>> Shared;
   std::shared_ptr<void> *asVoid = *reinterpret_cast<std::shared_ptr<void>**> (mxGetData(in[0]));
   out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
-  Shared *self = new Shared(boost::static_pointer_cast<MyTemplate<gtsam::Point2>>(*asVoid));
+  Shared *self = new Shared(std::static_pointer_cast<MyTemplate<gtsam::Point2>>(*asVoid));
   *reinterpret_cast<Shared**>(mxGetData(out[0])) = self;
 }
 
@@ -332,7 +332,7 @@ void MyTemplateMatrix_upcastFromVoid_20(int nargout, mxArray *out[], int nargin,
   typedef std::shared_ptr<MyTemplate<gtsam::Matrix>> Shared;
   std::shared_ptr<void> *asVoid = *reinterpret_cast<std::shared_ptr<void>**> (mxGetData(in[0]));
   out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
-  Shared *self = new Shared(boost::static_pointer_cast<MyTemplate<gtsam::Matrix>>(*asVoid));
+  Shared *self = new Shared(std::static_pointer_cast<MyTemplate<gtsam::Matrix>>(*asVoid));
   *reinterpret_cast<Shared**>(mxGetData(out[0])) = self;
 }
 
@@ -500,7 +500,7 @@ void MyTemplateA_upcastFromVoid_36(int nargout, mxArray *out[], int nargin, cons
   typedef std::shared_ptr<MyTemplate<A>> Shared;
   std::shared_ptr<void> *asVoid = *reinterpret_cast<std::shared_ptr<void>**> (mxGetData(in[0]));
   out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
-  Shared *self = new Shared(boost::static_pointer_cast<MyTemplate<A>>(*asVoid));
+  Shared *self = new Shared(std::static_pointer_cast<MyTemplate<A>>(*asVoid));
   *reinterpret_cast<Shared**>(mxGetData(out[0])) = self;
 }
 
@@ -650,7 +650,7 @@ void ForwardKinematicsFactor_upcastFromVoid_52(int nargout, mxArray *out[], int 
   typedef std::shared_ptr<ForwardKinematicsFactor> Shared;
   std::shared_ptr<void> *asVoid = *reinterpret_cast<std::shared_ptr<void>**> (mxGetData(in[0]));
   out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
-  Shared *self = new Shared(boost::static_pointer_cast<ForwardKinematicsFactor>(*asVoid));
+  Shared *self = new Shared(std::static_pointer_cast<ForwardKinematicsFactor>(*asVoid));
   *reinterpret_cast<Shared**>(mxGetData(out[0])) = self;
 }
 
@@ -685,7 +685,7 @@ void ParentHasTemplateDouble_upcastFromVoid_55(int nargout, mxArray *out[], int 
   typedef std::shared_ptr<ParentHasTemplate<double>> Shared;
   std::shared_ptr<void> *asVoid = *reinterpret_cast<std::shared_ptr<void>**> (mxGetData(in[0]));
   out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
-  Shared *self = new Shared(boost::static_pointer_cast<ParentHasTemplate<double>>(*asVoid));
+  Shared *self = new Shared(std::static_pointer_cast<ParentHasTemplate<double>>(*asVoid));
   *reinterpret_cast<Shared**>(mxGetData(out[0])) = self;
 }
 

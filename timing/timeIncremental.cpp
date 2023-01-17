@@ -104,7 +104,7 @@ int main(int argc, char *argv[]) {
       NonlinearFactor::shared_ptr measurementf = measurements[nextMeasurement];
 
       if(BetweenFactor<Pose>::shared_ptr measurement =
-        boost::dynamic_pointer_cast<BetweenFactor<Pose> >(measurementf))
+        std::dynamic_pointer_cast<BetweenFactor<Pose> >(measurementf))
       {
         // Stop collecting measurements that are for future steps
         if(measurement->key<1>() > step || measurement->key<2>() > step)
@@ -137,7 +137,7 @@ int main(int argc, char *argv[]) {
         }
       }
       else if(BearingRangeFactor<Pose, Point2>::shared_ptr measurement =
-        boost::dynamic_pointer_cast<BearingRangeFactor<Pose, Point2> >(measurementf))
+        std::dynamic_pointer_cast<BearingRangeFactor<Pose, Point2> >(measurementf))
       {
         Key poseKey = measurement->keys()[0], lmKey = measurement->keys()[1];
 

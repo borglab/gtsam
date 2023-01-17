@@ -54,7 +54,7 @@ namespace gtsam {
   DiscreteKeys DiscreteFactorGraph::discreteKeys() const {
     DiscreteKeys result;
     for (auto&& factor : *this) {
-      if (auto p = boost::dynamic_pointer_cast<DecisionTreeFactor>(factor)) {
+      if (auto p = std::dynamic_pointer_cast<DecisionTreeFactor>(factor)) {
         DiscreteKeys factor_keys = p->discreteKeys();
         result.insert(result.end(), factor_keys.begin(), factor_keys.end());
       }
@@ -141,7 +141,7 @@ namespace gtsam {
     gttoc(lookup);
 
     return std::make_pair(
-        boost::dynamic_pointer_cast<DiscreteConditional>(lookup), max);
+        std::dynamic_pointer_cast<DiscreteConditional>(lookup), max);
   }
 
   /* ************************************************************************ */

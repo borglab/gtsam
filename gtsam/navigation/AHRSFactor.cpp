@@ -98,7 +98,7 @@ AHRSFactor::AHRSFactor(
 
 gtsam::NonlinearFactor::shared_ptr AHRSFactor::clone() const {
 //------------------------------------------------------------------------------
-  return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+  return std::static_pointer_cast<gtsam::NonlinearFactor>(
       gtsam::NonlinearFactor::shared_ptr(new This(*this)));
 }
 

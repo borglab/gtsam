@@ -77,7 +77,7 @@ class GTSAM_EXPORT PreintegratedAhrsMeasurements : public PreintegratedRotation 
       biasHat_(bias_hat),
       preintMeasCov_(preint_meas_cov) {}
 
-  Params& p() const { return *boost::static_pointer_cast<Params>(p_);}
+  Params& p() const { return *std::static_pointer_cast<Params>(p_);}
   const Vector3& biasHat() const { return biasHat_; }
   const Matrix3& preintMeasCov() const { return preintMeasCov_; }
 

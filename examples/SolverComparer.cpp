@@ -259,7 +259,7 @@ void runIncremental()
   while(nextMeasurement < datasetMeasurements.size())
   {
     if(BetweenFactor<Pose>::shared_ptr factor =
-      boost::dynamic_pointer_cast<BetweenFactor<Pose> >(datasetMeasurements[nextMeasurement]))
+      std::dynamic_pointer_cast<BetweenFactor<Pose> >(datasetMeasurements[nextMeasurement]))
     {
       Key key1 = factor->key<1>(), key2 = factor->key<2>();
       if(((int)key1 >= firstStep && key1 < key2) || ((int)key2 >= firstStep && key2 < key1)) {
@@ -310,7 +310,7 @@ void runIncremental()
       NonlinearFactor::shared_ptr measurementf = datasetMeasurements[nextMeasurement];
 
       if(BetweenFactor<Pose>::shared_ptr factor =
-        boost::dynamic_pointer_cast<BetweenFactor<Pose> >(measurementf))
+        std::dynamic_pointer_cast<BetweenFactor<Pose> >(measurementf))
       {
         // Stop collecting measurements that are for future steps
         if(factor->key<1>() > step || factor->key<2>() > step)
@@ -346,7 +346,7 @@ void runIncremental()
         }
       }
       else if(BearingRangeFactor<Pose, Point2>::shared_ptr factor =
-        boost::dynamic_pointer_cast<BearingRangeFactor<Pose, Point2> >(measurementf))
+        std::dynamic_pointer_cast<BearingRangeFactor<Pose, Point2> >(measurementf))
       {
         Key poseKey = factor->keys()[0], lmKey = factor->keys()[1];
 

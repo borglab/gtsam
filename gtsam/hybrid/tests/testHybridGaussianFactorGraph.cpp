@@ -624,11 +624,11 @@ TEST(HybridGaussianFactorGraph, assembleGraphTree) {
   // Create expected decision tree with two factor graphs:
 
   // Get mixture factor:
-  auto mixture = boost::dynamic_pointer_cast<GaussianMixtureFactor>(fg.at(0));
+  auto mixture = std::dynamic_pointer_cast<GaussianMixtureFactor>(fg.at(0));
   CHECK(mixture);
 
   // Get prior factor:
-  const auto gf = boost::dynamic_pointer_cast<HybridConditional>(fg.at(1));
+  const auto gf = std::dynamic_pointer_cast<HybridConditional>(fg.at(1));
   CHECK(gf);
   using GF = GaussianFactor::shared_ptr;
   const GF prior = gf->asGaussian();

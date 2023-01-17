@@ -105,7 +105,7 @@ class UnaryFactor: public NoiseModelFactorN<Pose2> {
   // circumstances, the following code that employs the default copy constructor should
   // work fine.
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new UnaryFactor(*this))); }
 
   // Additionally, we encourage you the use of unit testing your custom factors,

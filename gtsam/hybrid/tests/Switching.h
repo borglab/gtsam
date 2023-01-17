@@ -161,7 +161,7 @@ struct Switching {
       auto motion_models = motionModels(k, between_sigma);
       std::vector<NonlinearFactor::shared_ptr> components;
       for (auto &&f : motion_models) {
-        components.push_back(boost::dynamic_pointer_cast<NonlinearFactor>(f));
+        components.push_back(std::dynamic_pointer_cast<NonlinearFactor>(f));
       }
       nonlinearFactorGraph.emplace_shared<MixtureFactor>(
           keys, DiscreteKeys{modes[k]}, components);

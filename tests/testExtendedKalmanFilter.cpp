@@ -201,7 +201,7 @@ public:
     Matrix A1, A2;
     Vector b = -evaluateError(x1, x2, A1, A2);
     SharedDiagonal constrained =
-        boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
+        std::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
     if (constrained.get() != nullptr) {
       return JacobianFactor::shared_ptr(new JacobianFactor(key<1>(), A1, key<2>(),
           A2, b, constrained));
@@ -334,7 +334,7 @@ public:
     Matrix A1;
     Vector b = -evaluateError(x1, A1);
     SharedDiagonal constrained =
-        boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
+        std::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
     if (constrained.get() != nullptr) {
       return JacobianFactor::shared_ptr(new JacobianFactor(key(), A1, b, constrained));
     }

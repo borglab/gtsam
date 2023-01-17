@@ -438,11 +438,11 @@ TEST(JacobianFactor, eliminate)
 
   JacobianFactor combinedFactor(0, A0, 1, A1, b, noiseModel::Diagonal::Sigmas(sigmas, true));
   GaussianFactorGraph::EliminationResult expected = combinedFactor.eliminate(Ordering{0});
-  JacobianFactor::shared_ptr expectedJacobian = boost::dynamic_pointer_cast<
+  JacobianFactor::shared_ptr expectedJacobian = std::dynamic_pointer_cast<
     JacobianFactor>(expected.second);
 
   GaussianFactorGraph::EliminationResult actual = EliminateQR(gfg, Ordering{0});
-  JacobianFactor::shared_ptr actualJacobian = boost::dynamic_pointer_cast<
+  JacobianFactor::shared_ptr actualJacobian = std::dynamic_pointer_cast<
     JacobianFactor>(actual.second);
 
   EXPECT(assert_equal(*expected.first, *actual.first));

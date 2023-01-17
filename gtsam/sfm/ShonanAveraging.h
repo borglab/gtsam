@@ -184,7 +184,7 @@ class GTSAM_EXPORT ShonanAveraging {
     for (auto &measurement : measurements) {
       auto model = measurement.noiseModel();
       const auto &robust =
-          boost::dynamic_pointer_cast<noiseModel::Robust>(model);
+          std::dynamic_pointer_cast<noiseModel::Robust>(model);
 
       SharedNoiseModel robust_model;
       // Check if the noise model is already robust

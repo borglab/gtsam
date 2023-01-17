@@ -386,7 +386,7 @@ TEST(GaussianFactorGraph, clone) {
 
   // Apply an in-place change to init_graph and compare
   JacobianFactor::shared_ptr jacFactor0 =
-      boost::dynamic_pointer_cast<JacobianFactor>(init_graph.at(0));
+      std::dynamic_pointer_cast<JacobianFactor>(init_graph.at(0));
   CHECK(jacFactor0);
   jacFactor0->getA(jacFactor0->begin()) *= 7.;
   EXPECT(assert_inequal(init_graph, exp_graph));

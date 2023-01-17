@@ -117,10 +117,10 @@ GaussianFactor::shared_ptr LinearContainerFactor::linearize(const Values& c) con
 
   // Apply changes due to relinearization
   if (isJacobian()) {
-    JacobianFactor::shared_ptr jacFactor = boost::dynamic_pointer_cast<JacobianFactor>(linFactor);
+    JacobianFactor::shared_ptr jacFactor = std::dynamic_pointer_cast<JacobianFactor>(linFactor);
     jacFactor->getb() = -jacFactor->unweighted_error(delta);
   } else {
-    HessianFactor::shared_ptr hesFactor = boost::dynamic_pointer_cast<HessianFactor>(linFactor);
+    HessianFactor::shared_ptr hesFactor = std::dynamic_pointer_cast<HessianFactor>(linFactor);
 
     const auto view = hesFactor->informationView();
     Vector deltaVector = delta.vector(keys());
@@ -144,12 +144,12 @@ bool LinearContainerFactor::isHessian() const {
 
 /* ************************************************************************* */
 JacobianFactor::shared_ptr LinearContainerFactor::toJacobian() const {
-  return boost::dynamic_pointer_cast<JacobianFactor>(factor_);
+  return std::dynamic_pointer_cast<JacobianFactor>(factor_);
 }
 
 /* ************************************************************************* */
 HessianFactor::shared_ptr LinearContainerFactor::toHessian() const {
-  return boost::dynamic_pointer_cast<HessianFactor>(factor_);
+  return std::dynamic_pointer_cast<HessianFactor>(factor_);
 }
 
 /* ************************************************************************* */
@@ -170,7 +170,7 @@ NonlinearFactor::shared_ptr LinearContainerFactor::rekey(
   auto rekeyed_base_factor = Base::rekey(rekey_mapping);
   // Update the keys to the properties as well
   // Downncast so we have access to members
-  auto new_factor = boost::static_pointer_cast<LinearContainerFactor>(rekeyed_base_factor);
+  auto new_factor = std::static_pointer_cast<LinearContainerFactor>(rekeyed_base_factor);
   // Create a new Values to assign later
   Values newLinearizationPoint;
   for (size_t i = 0; i < factor_->size(); ++i) {
@@ -183,7 +183,7 @@ NonlinearFactor::shared_ptr LinearContainerFactor::rekey(
   new_factor->linearizationPoint_ = newLinearizationPoint;
 
   // upcast back and return
-  return boost::static_pointer_cast<NonlinearFactor>(new_factor);
+  return std::static_pointer_cast<NonlinearFactor>(new_factor);
 }
 
 /* ************************************************************************* */
@@ -192,7 +192,7 @@ NonlinearFactor::shared_ptr LinearContainerFactor::rekey(
   auto rekeyed_base_factor = Base::rekey(new_keys);
   // Update the keys to the properties as well
   // Downncast so we have access to members
-  auto new_factor = boost::static_pointer_cast<LinearContainerFactor>(rekeyed_base_factor);
+  auto new_factor = std::static_pointer_cast<LinearContainerFactor>(rekeyed_base_factor);
   new_factor->factor_->keys() = new_factor->keys();
   // Create a new Values to assign later
   Values newLinearizationPoint;
@@ -203,7 +203,7 @@ NonlinearFactor::shared_ptr LinearContainerFactor::rekey(
   new_factor->linearizationPoint_ = newLinearizationPoint;
 
   // upcast back and return
-  return boost::static_pointer_cast<NonlinearFactor>(new_factor);
+  return std::static_pointer_cast<NonlinearFactor>(new_factor);
 }
 
 /* ************************************************************************* */

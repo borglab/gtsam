@@ -185,7 +185,7 @@ public:
   void resetIntegration() override;
 
   /// const reference to params, shadows definition in base class
-  Params& p() const { return *boost::static_pointer_cast<Params>(this->p_); }
+  Params& p() const { return *std::static_pointer_cast<Params>(this->p_); }
   /// @}
 
   /// @name Access instance variables

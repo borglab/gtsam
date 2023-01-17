@@ -196,7 +196,7 @@ CombinedImuFactor::CombinedImuFactor(Key pose_i, Key vel_i, Key pose_j,
 
 //------------------------------------------------------------------------------
 gtsam::NonlinearFactor::shared_ptr CombinedImuFactor::clone() const {
-  return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+  return std::static_pointer_cast<gtsam::NonlinearFactor>(
       gtsam::NonlinearFactor::shared_ptr(new This(*this)));
 }
 

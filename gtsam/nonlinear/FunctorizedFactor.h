@@ -87,7 +87,7 @@ class FunctorizedFactor : public NoiseModelFactorN<T> {
 
   /// @return a deep copy of this factor
   NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<NonlinearFactor>(
+    return std::static_pointer_cast<NonlinearFactor>(
         NonlinearFactor::shared_ptr(new FunctorizedFactor<R, T>(*this)));
   }
 
@@ -194,7 +194,7 @@ class FunctorizedFactor2 : public NoiseModelFactorN<T1, T2> {
 
   /// @return a deep copy of this factor
   NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<NonlinearFactor>(
+    return std::static_pointer_cast<NonlinearFactor>(
         NonlinearFactor::shared_ptr(new FunctorizedFactor2<R, T1, T2>(*this)));
   }
 

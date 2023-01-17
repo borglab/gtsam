@@ -323,7 +323,7 @@ TEST(HybridBayesNet, UpdateDiscreteConditionals) {
   // Get the pruned discrete conditionals as an AlgebraicDecisionTree
   auto pruned_discrete_conditionals = posterior->at(4)->asDiscrete();
   auto discrete_conditional_tree =
-      boost::dynamic_pointer_cast<DecisionTreeFactor::ADT>(
+      std::dynamic_pointer_cast<DecisionTreeFactor::ADT>(
           pruned_discrete_conditionals);
 
   // The checker functor verifies the values for us.

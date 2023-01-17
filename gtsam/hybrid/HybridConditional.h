@@ -152,7 +152,7 @@ class GTSAM_EXPORT HybridConditional
    * @return GaussianMixture::shared_ptr otherwise
    */
   GaussianMixture::shared_ptr asMixture() const {
-    return boost::dynamic_pointer_cast<GaussianMixture>(inner_);
+    return std::dynamic_pointer_cast<GaussianMixture>(inner_);
   }
 
   /**
@@ -161,7 +161,7 @@ class GTSAM_EXPORT HybridConditional
    * @return GaussianConditional::shared_ptr otherwise
    */
   GaussianConditional::shared_ptr asGaussian() const {
-    return boost::dynamic_pointer_cast<GaussianConditional>(inner_);
+    return std::dynamic_pointer_cast<GaussianConditional>(inner_);
   }
 
   /**
@@ -170,7 +170,7 @@ class GTSAM_EXPORT HybridConditional
    * @return DiscreteConditional::shared_ptr
    */
   DiscreteConditional::shared_ptr asDiscrete() const {
-    return boost::dynamic_pointer_cast<DiscreteConditional>(inner_);
+    return std::dynamic_pointer_cast<DiscreteConditional>(inner_);
   }
 
   /// Get the type-erased pointer to the inner type

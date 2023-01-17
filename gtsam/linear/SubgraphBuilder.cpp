@@ -413,19 +413,19 @@ SubgraphBuilder::Weights SubgraphBuilder::weights(
         break;
       case SubgraphBuilderParameters::RHS_2NORM: {
         if (JacobianFactor::shared_ptr jf =
-                boost::dynamic_pointer_cast<JacobianFactor>(gf)) {
+                std::dynamic_pointer_cast<JacobianFactor>(gf)) {
           weight.push_back(jf->getb().norm());
         } else if (HessianFactor::shared_ptr hf =
-                       boost::dynamic_pointer_cast<HessianFactor>(gf)) {
+                       std::dynamic_pointer_cast<HessianFactor>(gf)) {
           weight.push_back(hf->linearTerm().norm());
         }
       } break;
       case SubgraphBuilderParameters::LHS_FNORM: {
         if (JacobianFactor::shared_ptr jf =
-                boost::dynamic_pointer_cast<JacobianFactor>(gf)) {
+                std::dynamic_pointer_cast<JacobianFactor>(gf)) {
           weight.push_back(std::sqrt(jf->getA().squaredNorm()));
         } else if (HessianFactor::shared_ptr hf =
-                       boost::dynamic_pointer_cast<HessianFactor>(gf)) {
+                       std::dynamic_pointer_cast<HessianFactor>(gf)) {
           weight.push_back(std::sqrt(hf->information().squaredNorm()));
         }
       } break;

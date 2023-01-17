@@ -105,7 +105,7 @@ protected:
     if (!sharedNoiseModel)
       throw std::runtime_error("SmartFactorBase: sharedNoiseModel is required");
 
-    SharedIsotropic sharedIsotropic = boost::dynamic_pointer_cast<
+    SharedIsotropic sharedIsotropic = std::dynamic_pointer_cast<
         noiseModel::Isotropic>(sharedNoiseModel);
 
     if (!sharedIsotropic)
