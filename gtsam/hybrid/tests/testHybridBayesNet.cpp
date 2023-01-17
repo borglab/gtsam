@@ -77,9 +77,17 @@ TEST(HybridBayesNet, Tiny) {
   auto bn = tiny::createHybridBayesNet();
   EXPECT_LONGS_EQUAL(3, bn.size());
 
-  const VectorValues measurements{{Z(0), Vector1(5.0)}};
-  auto fg = bn.toFactorGraph(measurements);
-  EXPECT_LONGS_EQUAL(4, fg.size());
+  const VectorValues vv{{Z(0), Vector1(5.0)}, {X(0), Vector1(5.0)}};
+  auto fg = bn.toFactorGraph(vv);
+  EXPECT_LONGS_EQUAL(3, fg.size());
+
+  // Check that the ratio of probPrime to evaluate is the same for all modes.
+  std::vector<double> ratio(2);
+  for (size_t mode : {0, 1}) {
+    const HybridValues hv{vv, {{M(0), mode}}};
+    ratio[mode] = std::exp(-fg.error(hv)) / bn.evaluate(hv);
+  }
+  EXPECT_DOUBLES_EQUAL(ratio[0], ratio[1], 1e-8);
 }
 
 /* ****************************************************************************/
