@@ -76,13 +76,16 @@ std::function<double(const Assignment<Key> &, double)> prunerFunc(
   auto pruner = [prunedDecisionTree, decisionTreeKeySet, conditionalKeySet](
                     const Assignment<Key> &choices,
                     double probability) -> double {
+    // This corresponds to 0 probability
+    double pruned_prob = 0.0;
+
     // typecast so we can use this to get probability value
     DiscreteValues values(choices);
     // Case where the Gaussian mixture has the same
     // discrete keys as the decision tree.
     if (conditionalKeySet == decisionTreeKeySet) {
       if (prunedDecisionTree(values) == 0) {
-        return 0.0;
+        return pruned_prob;
       } else {
         return probability;
       }
@@ -133,7 +136,7 @@ std::function<double(const Assignment<Key> &, double)> prunerFunc(
       }
       // If we are here, it means that all the sub-branches are 0,
       // so we prune.
-      return 0.0;
+      return pruned_prob;
     }
   };
   return pruner;
