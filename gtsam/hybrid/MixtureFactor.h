@@ -21,6 +21,7 @@
 
 #include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam/hybrid/GaussianMixtureFactor.h>
+#include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Symbol.h>
@@ -160,10 +161,14 @@ class MixtureFactor : public HybridFactor {
                              factor, continuousValues);
   }
 
-  /// Error for HybridValues is not provided for nonlinear hybrid factor.
+  /**
+   * @brief Compute error of factor given hybrid values.
+   *
+   * @param values The continuous Values and the discrete assignment.
+   * @return double The error of this factor.
+   */
   double error(const HybridValues& values) const override {
-    throw std::runtime_error(
-        "MixtureFactor::error(HybridValues) not implemented.");
+    return error(values.nonlinear(), values.discrete());
   }
 
   /**
