@@ -45,9 +45,10 @@ std::set<DiscreteKey> HybridFactorGraph::discreteKeys() const {
 /* ************************************************************************* */
 KeySet HybridFactorGraph::discreteKeySet() const {
   KeySet keys;
-  for (const DiscreteKey& k : discreteKeys()) {
-    keys.insert(k.first);
-  }
+  std::set<DiscreteKey> key_set = discreteKeys();
+  std::transform(key_set.begin(), key_set.end(),
+                 std::inserter(keys, keys.begin()),
+                 [](const DiscreteKey& k) { return k.first; });
   return keys;
 }
 
