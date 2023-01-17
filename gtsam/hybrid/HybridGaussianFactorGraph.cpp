@@ -268,7 +268,8 @@ hybridElimination(const HybridGaussianFactorGraph &factors,
   // DiscreteFactor here, with the error for each discrete choice.
   if (continuousSeparator.empty()) {
     auto probPrime = [&](const EliminationPair &pair) {
-      // This is the unnormalized probability q(μ) at the mean.
+      // This is the unnormalized probability q(μ;m) at the mean.
+      //   q(μ;m) = exp(-error(μ;m)) * sqrt(det(2π Σ_m))
       // The factor has no keys, just contains the residual.
       static const VectorValues kEmpty;
       return pair.second ? exp(-pair.second->error(kEmpty)) /
