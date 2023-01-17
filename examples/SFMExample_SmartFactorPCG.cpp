@@ -93,9 +93,9 @@ int main(int argc, char* argv[]) {
   parameters.relativeErrorTol = 1e-10;
   parameters.maxIterations = 500;
   PCGSolverParameters::shared_ptr pcg =
-      boost::make_shared<PCGSolverParameters>();
+      std::make_shared<PCGSolverParameters>();
   pcg->preconditioner_ =
-      boost::make_shared<BlockJacobiPreconditionerParameters>();
+      std::make_shared<BlockJacobiPreconditionerParameters>();
   // Following is crucial:
   pcg->setEpsilon_abs(1e-10);
   pcg->setEpsilon_rel(1e-10);

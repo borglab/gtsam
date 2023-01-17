@@ -69,7 +69,7 @@ class EssentialMatrixFactor : public NoiseModelFactorN<EssentialMatrix> {
   template <class CALIBRATION>
   EssentialMatrixFactor(Key key, const Point2& pA, const Point2& pB,
                         const SharedNoiseModel& model,
-                        boost::shared_ptr<CALIBRATION> K)
+                        std::shared_ptr<CALIBRATION> K)
       : Base(model, key) {
     assert(K);
     vA_ = EssentialMatrix::Homogeneous(K->calibrate(pA));
@@ -150,7 +150,7 @@ class EssentialMatrixFactor2
   template <class CALIBRATION>
   EssentialMatrixFactor2(Key key1, Key key2, const Point2& pA, const Point2& pB,
                          const SharedNoiseModel& model,
-                         boost::shared_ptr<CALIBRATION> K)
+                         std::shared_ptr<CALIBRATION> K)
       : Base(model, key1, key2),
         dP1_(EssentialMatrix::Homogeneous(K->calibrate(pA))),
         pn_(K->calibrate(pB)) {
@@ -270,7 +270,7 @@ class EssentialMatrixFactor3 : public EssentialMatrixFactor2 {
   template <class CALIBRATION>
   EssentialMatrixFactor3(Key key1, Key key2, const Point2& pA, const Point2& pB,
                          const Rot3& cRb, const SharedNoiseModel& model,
-                         boost::shared_ptr<CALIBRATION> K)
+                         std::shared_ptr<CALIBRATION> K)
       : EssentialMatrixFactor2(key1, key2, pA, pB, model, K), cRb_(cRb) {}
 
   /// @return a deep copy of this factor

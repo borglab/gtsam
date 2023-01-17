@@ -21,7 +21,7 @@
 #pragma once
 
 #include <gtsam/geometry/Cal3DS2_Base.h>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 namespace gtsam {
 
@@ -39,7 +39,7 @@ class GTSAM_EXPORT Cal3DS2 : public Cal3DS2_Base {
   enum { dimension = 9 };
 
   ///< shared pointer to stereo calibration object
-  using shared_ptr = boost::shared_ptr<Cal3DS2>;
+  using shared_ptr = std::shared_ptr<Cal3DS2>;
 
   /// @name Standard Constructors
   /// @{
@@ -94,8 +94,8 @@ class GTSAM_EXPORT Cal3DS2 : public Cal3DS2_Base {
   /// @{
 
   /// @return a deep copy of this object
-  boost::shared_ptr<Base> clone() const override {
-    return boost::shared_ptr<Base>(new Cal3DS2(*this));
+  std::shared_ptr<Base> clone() const override {
+    return std::shared_ptr<Base>(new Cal3DS2(*this));
   }
 
   /// @}

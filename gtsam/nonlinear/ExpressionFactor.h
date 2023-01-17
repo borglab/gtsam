@@ -58,7 +58,7 @@ protected:
 
   // Provide access to the Matrix& version of unwhitenedError:
   using NoiseModelFactor::unwhitenedError;
-  typedef boost::shared_ptr<ExpressionFactor<T> > shared_ptr;
+  typedef std::shared_ptr<ExpressionFactor<T> > shared_ptr;
 
   /**
    * Constructor: creates a factor from a measurement and measurement function
@@ -112,10 +112,10 @@ protected:
     }
   }
 
-  boost::shared_ptr<GaussianFactor> linearize(const Values& x) const override {
+  std::shared_ptr<GaussianFactor> linearize(const Values& x) const override {
     // Only linearize if the factor is active
     if (!active(x))
-      return boost::shared_ptr<JacobianFactor>();
+      return std::shared_ptr<JacobianFactor>();
 
     // In case noise model is constrained, we need to provide a noise model
     SharedDiagonal noiseModel;
@@ -125,7 +125,7 @@ protected:
     }
 
     // Create a writeable JacobianFactor in advance
-    boost::shared_ptr<JacobianFactor> factor(
+    std::shared_ptr<JacobianFactor> factor(
         new JacobianFactor(keys_, dims_, Dim, noiseModel));
 
     // Wrap keys and VerticalBlockMatrix into structure passed to expression_

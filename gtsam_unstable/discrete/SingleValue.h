@@ -25,7 +25,7 @@ class GTSAM_UNSTABLE_EXPORT SingleValue : public Constraint {
   }
 
  public:
-  typedef boost::shared_ptr<SingleValue> shared_ptr;
+  typedef std::shared_ptr<SingleValue> shared_ptr;
 
   /// Construct from key, cardinality, and given value.
   SingleValue(Key key, size_t n, size_t value)

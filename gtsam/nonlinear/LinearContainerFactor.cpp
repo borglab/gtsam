@@ -213,7 +213,7 @@ NonlinearFactorGraph LinearContainerFactor::ConvertLinearGraph(
   result.reserve(linear_graph.size());
   for (const auto& f : linear_graph)
     if (f)
-      result += boost::make_shared<LinearContainerFactor>(f, linearizationPoint);
+      result += std::make_shared<LinearContainerFactor>(f, linearizationPoint);
   return result;
 }
 

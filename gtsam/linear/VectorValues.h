@@ -24,7 +24,7 @@
 #include <gtsam/base/FastVector.h>
 #include <gtsam/global_includes.h>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 
 #include <map>
@@ -80,7 +80,7 @@ namespace gtsam {
    public:
     typedef Values::iterator iterator;              ///< Iterator over vector values
     typedef Values::const_iterator const_iterator;  ///< Const iterator over vector values
-    typedef boost::shared_ptr<This> shared_ptr;     ///< shared_ptr to this class
+    typedef std::shared_ptr<This> shared_ptr;     ///< shared_ptr to this class
     typedef Values::value_type value_type;          ///< Typedef to pair<Key, Vector>
     typedef value_type KeyValuePair;                ///< Typedef to pair<Key, Vector>
     typedef std::map<Key, size_t> Dims;             ///< Keyed vector dimensions

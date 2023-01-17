@@ -10,7 +10,7 @@ class WrapperTemplate:
         """)
 
     typdef_collectors = textwrap.dedent('''\
-                typedef std::set<boost::shared_ptr<{class_name_sep}>*> Collector_{class_name};
+                typedef std::set<std::shared_ptr<{class_name_sep}>*> Collector_{class_name};
                 static Collector_{class_name} collector_{class_name};
             ''')
 
@@ -77,8 +77,8 @@ class WrapperTemplate:
     collector_function_upcast_from_void = textwrap.dedent('''\
             void {class_name}_upcastFromVoid_{id}(int nargout, mxArray *out[], int nargin, const mxArray *in[]) {{
               mexAtExit(&_deleteAllObjects);
-              typedef boost::shared_ptr<{cpp_name}> Shared;
-              boost::shared_ptr<void> *asVoid = *reinterpret_cast<boost::shared_ptr<void>**> (mxGetData(in[0]));
+              typedef std::shared_ptr<{cpp_name}> Shared;
+              std::shared_ptr<void> *asVoid = *reinterpret_cast<std::shared_ptr<void>**> (mxGetData(in[0]));
               out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
               Shared *self = new Shared(boost::static_pointer_cast<{cpp_name}>(*asVoid));
               *reinterpret_cast<Shared**>(mxGetData(out[0])) = self;
@@ -102,7 +102,7 @@ class WrapperTemplate:
         ''')
 
     collector_function_serialize = textwrap.indent(textwrap.dedent("""\
-            typedef boost::shared_ptr<{full_name}> Shared;
+            typedef std::shared_ptr<{full_name}> Shared;
             checkArguments("string_serialize",nargout,nargin-1,0);
             Shared obj = unwrap_shared_ptr<{full_name}>(in[0], "ptr_{namespace}{class_name}");
             ostringstream out_archive_stream;
@@ -113,7 +113,7 @@ class WrapperTemplate:
                                                    prefix='  ')
 
     collector_function_deserialize = textwrap.indent(textwrap.dedent("""\
-            typedef boost::shared_ptr<{full_name}> Shared;
+            typedef std::shared_ptr<{full_name}> Shared;
             checkArguments("{namespace}{class_name}.string_deserialize",nargout,nargin,1);
             string serialized = unwrap< string >(in[0]);
             istringstream in_archive_stream(serialized);
@@ -143,7 +143,7 @@ class WrapperTemplate:
 
     collector_function_shared_return = textwrap.indent(textwrap.dedent('''\
             {{
-            boost::shared_ptr<{name}> shared({shared_obj});
+            std::shared_ptr<{name}> shared({shared_obj});
             out[{id}] = wrap_shared_ptr(shared,"{name}");
             }}{new_line}'''),
                                                        prefix='  ')

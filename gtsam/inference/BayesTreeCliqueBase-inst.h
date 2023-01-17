@@ -129,7 +129,7 @@ namespace gtsam {
       KeyVector keep = shortcut_indices(B, p_Cp_B);
 
       // Marginalize out everything except S union B
-      boost::shared_ptr<FactorGraphType> p_S_B = p_Cp_B.marginal(keep, function);
+      std::shared_ptr<FactorGraphType> p_S_B = p_Cp_B.marginal(keep, function);
       return *p_S_B->eliminatePartialSequential(S_setminus_B, function).first;
     }
     else
@@ -198,7 +198,7 @@ namespace gtsam {
     // initialize with separator marginal P(S)
     FactorGraphType p_C = this->separatorMarginal(function);
     // add the conditional P(F|S)
-    p_C += boost::shared_ptr<FactorType>(this->conditional_);
+    p_C += std::shared_ptr<FactorType>(this->conditional_);
     return p_C;
   }
 

@@ -225,7 +225,7 @@ class Type:
         Treat Matrix and Vector as "const Matrix&" and "const Vector&" resp.
 
         Args:
-            use_boost: Flag indicating whether to use boost::shared_ptr or std::shared_ptr.
+            use_boost: Flag indicating whether to use std::shared_ptr or std::shared_ptr.
         """
         shared_ptr_ns = "boost" if use_boost else "std"
 
@@ -300,7 +300,7 @@ class TemplatedType:
         Generate the C++ code for wrapping.
 
         Args:
-            use_boost: Flag indicating whether to use boost::shared_ptr or std::shared_ptr.
+            use_boost: Flag indicating whether to use std::shared_ptr or std::shared_ptr.
         """
         # Use Type.to_cpp to do the heavy lifting for the template parameters.
         template_args = ", ".join(

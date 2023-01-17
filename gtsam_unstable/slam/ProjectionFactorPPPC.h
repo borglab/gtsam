@@ -52,7 +52,7 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorPPPC
   typedef ProjectionFactorPPPC<POSE, LANDMARK, CALIBRATION> This;
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
   /// Default constructor
   ProjectionFactorPPPC() :

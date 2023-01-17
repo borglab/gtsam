@@ -80,8 +80,8 @@ TEST(HybridSerialization, GaussianMixtureFactor) {
   auto A = Matrix::Zero(2, 1);
   auto b0 = Matrix::Zero(2, 1);
   auto b1 = Matrix::Ones(2, 1);
-  auto f0 = boost::make_shared<JacobianFactor>(X(0), A, b0);
-  auto f1 = boost::make_shared<JacobianFactor>(X(0), A, b1);
+  auto f0 = std::make_shared<JacobianFactor>(X(0), A, b0);
+  auto f1 = std::make_shared<JacobianFactor>(X(0), A, b1);
   std::vector<GaussianFactor::shared_ptr> factors{f0, f1};
 
   const GaussianMixtureFactor factor(continuousKeys, discreteKeys, factors);
@@ -96,7 +96,7 @@ TEST(HybridSerialization, GaussianMixtureFactor) {
 TEST(HybridSerialization, HybridConditional) {
   const DiscreteKey mode(M(0), 2);
   Matrix1 I = Matrix1::Identity();
-  const auto conditional = boost::make_shared<GaussianConditional>(
+  const auto conditional = std::make_shared<GaussianConditional>(
       GaussianConditional::FromMeanAndStddev(Z(0), I, X(0), Vector1(0), 0.5));
   const HybridConditional hc(conditional);
 
@@ -110,9 +110,9 @@ TEST(HybridSerialization, HybridConditional) {
 TEST(HybridSerialization, GaussianMixture) {
   const DiscreteKey mode(M(0), 2);
   Matrix1 I = Matrix1::Identity();
-  const auto conditional0 = boost::make_shared<GaussianConditional>(
+  const auto conditional0 = std::make_shared<GaussianConditional>(
       GaussianConditional::FromMeanAndStddev(Z(0), I, X(0), Vector1(0), 0.5));
-  const auto conditional1 = boost::make_shared<GaussianConditional>(
+  const auto conditional1 = std::make_shared<GaussianConditional>(
       GaussianConditional::FromMeanAndStddev(Z(0), I, X(0), Vector1(0), 3));
   const GaussianMixture gm({Z(0)}, {X(0)}, {mode},
                            {conditional0, conditional1});

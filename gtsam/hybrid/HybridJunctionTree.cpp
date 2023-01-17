@@ -50,14 +50,14 @@ struct HybridConstructorTraversalData {
 
   // Pre-order visitor function
   static HybridConstructorTraversalData ConstructorTraversalVisitorPre(
-      const boost::shared_ptr<HybridEliminationTree::Node>& node,
+      const std::shared_ptr<HybridEliminationTree::Node>& node,
       HybridConstructorTraversalData& parentData) {
     // On the pre-order pass, before children have been visited, we just set up
     // a traversal data structure with its own JT node, and create a child
     // pointer in its parent.
     HybridConstructorTraversalData data =
         HybridConstructorTraversalData(&parentData);
-    data.junctionTreeNode = boost::make_shared<Node>(node->key, node->factors);
+    data.junctionTreeNode = std::make_shared<Node>(node->key, node->factors);
     parentData.junctionTreeNode->addChild(data.junctionTreeNode);
 
     // Add all the discrete keys in the hybrid factors to the current data
@@ -78,7 +78,7 @@ struct HybridConstructorTraversalData {
 
   // Post-order visitor function
   static void ConstructorTraversalVisitorPost(
-      const boost::shared_ptr<HybridEliminationTree::Node>& node,
+      const std::shared_ptr<HybridEliminationTree::Node>& node,
       const HybridConstructorTraversalData& data) {
     // In this post-order visitor, we combine the symbolic elimination results
     // from the elimination tree children and symbolically eliminate the current
@@ -162,7 +162,7 @@ HybridJunctionTree::HybridJunctionTree(
   typedef HybridConstructorTraversalData Data;
   Data rootData(0);
   rootData.junctionTreeNode =
-      boost::make_shared<typename Base::Node>();  // Make a dummy node to gather
+      std::make_shared<typename Base::Node>();  // Make a dummy node to gather
                                                   // the junction tree roots
   treeTraversal::DepthFirstForest(eliminationTree, rootData,
                                   Data::ConstructorTraversalVisitorPre,

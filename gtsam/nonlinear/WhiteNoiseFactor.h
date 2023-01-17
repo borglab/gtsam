@@ -155,7 +155,7 @@ namespace gtsam {
     /// @{
 
     /// linearize returns a Hessianfactor that is an approximation of error(p)
-    boost::shared_ptr<GaussianFactor> linearize(const Values& x) const override {
+    std::shared_ptr<GaussianFactor> linearize(const Values& x) const override {
       double u = x.at<double>(meanKey_);
       double p = x.at<double>(precisionKey_);
       Key j1 = meanKey_;

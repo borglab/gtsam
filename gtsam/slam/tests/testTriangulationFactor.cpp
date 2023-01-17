@@ -32,8 +32,8 @@ using namespace gtsam;
 using namespace std::placeholders;
 
 // Some common constants
-static const boost::shared_ptr<Cal3_S2> sharedCal = //
-    boost::make_shared<Cal3_S2>(1500, 1200, 0, 640, 480);
+static const std::shared_ptr<Cal3_S2> sharedCal = //
+    std::make_shared<Cal3_S2>(1500, 1200, 0, 640, 480);
 
 // Looking along X-axis, 1 meter above ground plane (x-y)
 static const Rot3 upright = Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2);

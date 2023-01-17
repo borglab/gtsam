@@ -149,12 +149,12 @@ double NoiseModelFactor::error(const Values& c) const {
 }
 
 /* ************************************************************************* */
-boost::shared_ptr<GaussianFactor> NoiseModelFactor::linearize(
+std::shared_ptr<GaussianFactor> NoiseModelFactor::linearize(
     const Values& x) const {
 
   // Only linearize if the factor is active
   if (!active(x))
-    return boost::shared_ptr<JacobianFactor>();
+    return std::shared_ptr<JacobianFactor>();
 
   // Call evaluate error to get Jacobians and RHS vector b
   std::vector<Matrix> A(size());

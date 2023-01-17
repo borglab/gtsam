@@ -285,7 +285,7 @@ void insertProjectionFactors(NonlinearFactorGraph& graph, Key i,
         "addMeasurements: J and Z must have same number of entries");
   for (int k = 0; k < Z.cols(); k++) {
     graph.push_back(
-        boost::make_shared<GenericProjectionFactor<Pose3, Point3> >(
+        std::make_shared<GenericProjectionFactor<Pose3, Point3> >(
             Point2(Z(0, k), Z(1, k)), model, i, Key(J(k)), K, body_P_sensor));
   }
 }
@@ -302,7 +302,7 @@ Matrix reprojectionErrors(const NonlinearFactorGraph& graph,
   // now fill
   Matrix errors(2, K);
   for(const NonlinearFactor::shared_ptr& f: graph) {
-    boost::shared_ptr<const GenericProjectionFactor<Pose3, Point3> > p =
+    std::shared_ptr<const GenericProjectionFactor<Pose3, Point3> > p =
         boost::dynamic_pointer_cast<const GenericProjectionFactor<Pose3, Point3> >(
             f);
     if (p)

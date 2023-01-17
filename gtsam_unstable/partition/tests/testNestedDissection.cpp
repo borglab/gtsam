@@ -210,17 +210,17 @@ TEST ( NestedDissection, manual_cuts )
   Ordering ordering; ordering += x0, x1, x2, l1, l2, l3, l4, l5, l6;
 
   // define cuts
-  boost::shared_ptr<Cuts> cuts(new Cuts());
+  std::shared_ptr<Cuts> cuts(new Cuts());
   cuts->partitionTable = PartitionTable(9, -1); PartitionTable* p = &cuts->partitionTable;
   //x0        x1         x2         l1         l2         l3         l4         l5         l6
   (*p)[0]=1; (*p)[1]=0; (*p)[2]=2; (*p)[3]=1; (*p)[4]=0; (*p)[5]=2; (*p)[6]=1; (*p)[7]=0; (*p)[8]=2;
 
-  cuts->children.push_back(boost::shared_ptr<Cuts>(new Cuts()));
+  cuts->children.push_back(std::shared_ptr<Cuts>(new Cuts()));
   cuts->children[0]->partitionTable = PartitionTable(9, -1); p = &cuts->children[0]->partitionTable;
   //x0        x1          x2          l1         l2          l3          l4         l5          l6
   (*p)[0]=0; (*p)[1]=-1; (*p)[2]=-1; (*p)[3]=1; (*p)[4]=-1; (*p)[5]=-1; (*p)[6]=2; (*p)[7]=-1; (*p)[8]=-1;
 
-  cuts->children.push_back(boost::shared_ptr<Cuts>(new Cuts()));
+  cuts->children.push_back(std::shared_ptr<Cuts>(new Cuts()));
   cuts->children[1]->partitionTable = PartitionTable(9, -1); p = &cuts->children[1]->partitionTable;
   //x0         x1          x2         l1          l2          l3         l4          l5          l6
   (*p)[0]=-1; (*p)[1]=-1; (*p)[2]=0; (*p)[3]=-1; (*p)[4]=-1; (*p)[5]=1; (*p)[6]=-1; (*p)[7]=-1; (*p)[8]=2;

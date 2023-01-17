@@ -114,8 +114,8 @@ public:
     /**
      * Clone this value (normal clone on the heap, delete with 'delete' operator)
      */
-    boost::shared_ptr<Value> clone() const override {
-		return boost::allocate_shared<GenericValue>(Eigen::aligned_allocator<GenericValue>(), *this);
+    std::shared_ptr<Value> clone() const override {
+		return std::allocate_shared<GenericValue>(Eigen::aligned_allocator<GenericValue>(), *this);
     }
 
     /// Generic Value interface version of retract

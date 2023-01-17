@@ -48,7 +48,7 @@ namespace gtsam {
   public:
 
     /// shorthand for a smart pointer to a factor
-    typedef typename boost::shared_ptr<PriorFactor<VALUE> > shared_ptr;
+    typedef typename std::shared_ptr<PriorFactor<VALUE> > shared_ptr;
 
     /// Typedef to this class
     typedef PriorFactor<VALUE> This;

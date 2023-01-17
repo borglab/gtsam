@@ -20,7 +20,7 @@
 
 #include <gtsam/inference/FactorGraph.h>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <string>
 
 namespace gtsam {
@@ -37,7 +37,7 @@ class BayesNet : public FactorGraph<CONDITIONAL> {
   typedef FactorGraph<CONDITIONAL> Base;
 
  public:
-  typedef typename boost::shared_ptr<CONDITIONAL>
+  typedef typename std::shared_ptr<CONDITIONAL>
       sharedConditional;  ///< A shared pointer to a conditional
 
  protected:

@@ -339,7 +339,7 @@ class GTSAM_EXPORT ShonanAveraging {
    * @param initial initial SO(p) values
    * @return lm optimizer
    */
-  boost::shared_ptr<LevenbergMarquardtOptimizer> createOptimizerAt(
+  std::shared_ptr<LevenbergMarquardtOptimizer> createOptimizerAt(
       size_t p, const Values &initial) const;
 
   /**

@@ -42,7 +42,7 @@ namespace gtsam {
  */
 class GTSAM_EXPORT VariableIndex {
  public:
-  typedef boost::shared_ptr<VariableIndex> shared_ptr;
+  typedef std::shared_ptr<VariableIndex> shared_ptr;
   typedef FactorIndices::iterator Factor_iterator;
   typedef FactorIndices::const_iterator Factor_const_iterator;
 

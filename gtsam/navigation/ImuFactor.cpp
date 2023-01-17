@@ -195,7 +195,7 @@ ImuFactor::shared_ptr ImuFactor::Merge(const shared_ptr& f01,
   // return new factor
   auto pim02 =
   Merge(f01->preintegratedMeasurements(), f12->preintegratedMeasurements());
-  return boost::make_shared<ImuFactor>(f01->key<1>(),  // P0
+  return std::make_shared<ImuFactor>(f01->key<1>(),  // P0
       f01->key<2>(),  // V0
       f12->key<3>(),  // P2
       f12->key<4>(),  // V2

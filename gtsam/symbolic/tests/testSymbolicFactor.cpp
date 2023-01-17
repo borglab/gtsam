@@ -68,9 +68,9 @@ TEST(SymbolicFactor, Constructors)
 TEST(SymbolicFactor, EliminateSymbolic)
 {
   const SymbolicFactorGraph factors = {
-      boost::make_shared<SymbolicFactor>(2, 4, 6),
-      boost::make_shared<SymbolicFactor>(1, 2, 5),
-      boost::make_shared<SymbolicFactor>(0, 3)};
+      std::make_shared<SymbolicFactor>(2, 4, 6),
+      std::make_shared<SymbolicFactor>(1, 2, 5),
+      std::make_shared<SymbolicFactor>(0, 3)};
 
   const SymbolicFactor expectedFactor(4,5,6);
   const SymbolicConditional expectedConditional =

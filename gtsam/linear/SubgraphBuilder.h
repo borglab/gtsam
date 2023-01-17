@@ -23,7 +23,7 @@
 
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/nvp.hpp>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include <vector>
 
@@ -94,7 +94,7 @@ class GTSAM_EXPORT Subgraph {
 
 /****************************************************************************/
 struct GTSAM_EXPORT SubgraphBuilderParameters {
-  typedef boost::shared_ptr<SubgraphBuilderParameters> shared_ptr;
+  typedef std::shared_ptr<SubgraphBuilderParameters> shared_ptr;
 
   enum Skeleton {
     /* augmented tree */

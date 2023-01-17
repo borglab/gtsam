@@ -86,7 +86,7 @@ public:
   using Base::evaluateError;
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<Rot3AttitudeFactor> shared_ptr;
+  typedef std::shared_ptr<Rot3AttitudeFactor> shared_ptr;
 
   /// Typedef to this class
   typedef Rot3AttitudeFactor This;
@@ -163,7 +163,7 @@ public:
   using Base::evaluateError;
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<Pose3AttitudeFactor> shared_ptr;
+  typedef std::shared_ptr<Pose3AttitudeFactor> shared_ptr;
 
   /// Typedef to this class
   typedef Pose3AttitudeFactor This;

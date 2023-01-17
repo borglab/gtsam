@@ -36,7 +36,7 @@ template <size_t d>
 class GTSAM_EXPORT ShonanFactor : public NoiseModelFactorN<SOn, SOn> {
   Matrix M_;                    ///< measured rotation between R1 and R2
   size_t p_, pp_;               ///< dimensionality constants
-  boost::shared_ptr<Matrix> G_; ///< matrix of vectorized generators
+  std::shared_ptr<Matrix> G_; ///< matrix of vectorized generators
 
   // Select Rot2 or Rot3 interface based template parameter d
   using Rot = typename std::conditional<d == 2, Rot2, Rot3>::type;
@@ -51,10 +51,10 @@ public:
 
   /// Constructor. Note we convert to d*p-dimensional noise model.
   /// To save memory and mallocs, pass in the vectorized Lie algebra generators:
-  ///    G = boost::make_shared<Matrix>(SOn::VectorizedGenerators(p));
+  ///    G = std::make_shared<Matrix>(SOn::VectorizedGenerators(p));
   ShonanFactor(Key j1, Key j2, const Rot &R12, size_t p,
                const SharedNoiseModel &model = nullptr,
-               const boost::shared_ptr<Matrix> &G = nullptr);
+               const std::shared_ptr<Matrix> &G = nullptr);
 
   /// @}
   /// @name Testable

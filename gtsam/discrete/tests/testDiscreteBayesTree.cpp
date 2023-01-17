@@ -34,7 +34,7 @@ static constexpr bool debug = false;
 struct TestFixture {
   vector<DiscreteKey> keys;
   DiscreteBayesNet bayesNet;
-  boost::shared_ptr<DiscreteBayesTree> bayesTree;
+  std::shared_ptr<DiscreteBayesTree> bayesTree;
 
   /**
    * Create a thin-tree Bayesnet, a la Jean-Guillaume Durand (former student),

@@ -61,7 +61,7 @@ namespace gtsam {
   public:
 
     // shorthand for a smart pointer to a factor
-    typedef typename boost::shared_ptr<TransformBtwRobotsUnaryFactor> shared_ptr;
+    typedef typename std::shared_ptr<TransformBtwRobotsUnaryFactor> shared_ptr;
 
     /** default constructor - only use for serialization */
     TransformBtwRobotsUnaryFactor() {}
@@ -81,7 +81,7 @@ namespace gtsam {
 
 
     /** Clone */
-    gtsam::NonlinearFactor::shared_ptr clone() const override { return boost::make_shared<This>(*this); }
+    gtsam::NonlinearFactor::shared_ptr clone() const override { return std::make_shared<This>(*this); }
 
 
     /** implement functions needed for Testable */
@@ -139,10 +139,10 @@ namespace gtsam {
      * Hence \f$ b = z - h(x) = - \mathtt{error\_vector}(x) \f$
      */
     /* This version of linearize recalculates the noise model each time */
-    boost::shared_ptr<gtsam::GaussianFactor> linearize(const gtsam::Values& x) const override {
+    std::shared_ptr<gtsam::GaussianFactor> linearize(const gtsam::Values& x) const override {
       // Only linearize if the factor is active
       if (!this->active(x))
-        return boost::shared_ptr<gtsam::JacobianFactor>();
+        return std::shared_ptr<gtsam::JacobianFactor>();
 
       //std::cout<<"About to linearize"<<std::endl;
       gtsam::Matrix A1;

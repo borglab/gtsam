@@ -119,11 +119,11 @@ TEST_UNSAFE( DiscreteMarginals, truss ) {
 //  bayesTree->print("Bayes Tree");
   typedef DiscreteBayesTreeClique Clique;
 
-  Clique expected0(boost::make_shared<DiscreteConditional>((key[0] | key[2], key[4]) = "2/1 2/1 2/1 2/1"));
+  Clique expected0(std::make_shared<DiscreteConditional>((key[0] | key[2], key[4]) = "2/1 2/1 2/1 2/1"));
   Clique::shared_ptr actual0 = (*bayesTree)[0];
 //  EXPECT(assert_equal(expected0, *actual0)); // TODO, correct but fails
 
-  Clique expected1(boost::make_shared<DiscreteConditional>((key[1] | key[3], key[4]) = "1/2 1/2 1/2 1/2"));
+  Clique expected1(std::make_shared<DiscreteConditional>((key[1] | key[3], key[4]) = "1/2 1/2 1/2 1/2"));
   Clique::shared_ptr actual1 = (*bayesTree)[1];
 //  EXPECT(assert_equal(expected1, *actual1)); // TODO, correct but fails
 

@@ -59,9 +59,9 @@ inline HybridGaussianFactorGraph::shared_ptr makeSwitchingChain(
   for (size_t t = 1; t < n; t++) {
     hfg.add(GaussianMixtureFactor(
         {keyFunc(t), keyFunc(t + 1)}, {{dKeyFunc(t), 2}},
-        {boost::make_shared<JacobianFactor>(keyFunc(t), I_3x3, keyFunc(t + 1),
+        {std::make_shared<JacobianFactor>(keyFunc(t), I_3x3, keyFunc(t + 1),
                                             I_3x3, Z_3x1),
-         boost::make_shared<JacobianFactor>(keyFunc(t), I_3x3, keyFunc(t + 1),
+         std::make_shared<JacobianFactor>(keyFunc(t), I_3x3, keyFunc(t + 1),
                                             I_3x3, Vector3::Ones())}));
 
     if (t > 1) {
@@ -70,7 +70,7 @@ inline HybridGaussianFactorGraph::shared_ptr makeSwitchingChain(
     }
   }
 
-  return boost::make_shared<HybridGaussianFactorGraph>(std::move(hfg));
+  return std::make_shared<HybridGaussianFactorGraph>(std::move(hfg));
 }
 
 /**
@@ -192,9 +192,9 @@ struct Switching {
                                                            double sigma = 1.0) {
     auto noise_model = noiseModel::Isotropic::Sigma(1, sigma);
     auto still =
-             boost::make_shared<MotionModel>(X(k), X(k + 1), 0.0, noise_model),
+             std::make_shared<MotionModel>(X(k), X(k + 1), 0.0, noise_model),
          moving =
-             boost::make_shared<MotionModel>(X(k), X(k + 1), 1.0, noise_model);
+             std::make_shared<MotionModel>(X(k), X(k + 1), 1.0, noise_model);
     return {still, moving};
   }
 

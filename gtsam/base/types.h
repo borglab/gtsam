@@ -279,7 +279,7 @@ namespace gtsam {
   /**
    * A SFINAE trait to mark classes that need special alignment.
    *
-   * This is required to make boost::make_shared and etc respect alignment, which is essential for the Python
+   * This is required to make std::make_shared and etc respect alignment, which is essential for the Python
    * wrappers to work properly.
    *
    * Explanation

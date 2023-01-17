@@ -67,19 +67,19 @@ ShonanAveragingParameters<d>::ShonanAveragingParameters(
   builderParameters.augmentationWeight = SubgraphBuilderParameters::SKELETON;
   builderParameters.augmentationFactor = 0.0;
 
-  auto pcg = boost::make_shared<PCGSolverParameters>();
+  auto pcg = std::make_shared<PCGSolverParameters>();
 
   // Choose optimization method
   if (method == "SUBGRAPH") {
     lm.iterativeParams =
-        boost::make_shared<SubgraphSolverParameters>(builderParameters);
+        std::make_shared<SubgraphSolverParameters>(builderParameters);
   } else if (method == "SGPC") {
     pcg->preconditioner_ =
-        boost::make_shared<SubgraphPreconditionerParameters>(builderParameters);
+        std::make_shared<SubgraphPreconditionerParameters>(builderParameters);
     lm.iterativeParams = pcg;
   } else if (method == "JACOBI") {
     pcg->preconditioner_ =
-        boost::make_shared<BlockJacobiPreconditionerParameters>();
+        std::make_shared<BlockJacobiPreconditionerParameters>();
     lm.iterativeParams = pcg;
   } else if (method == "QR") {
     lm.setLinearSolverType("MULTIFRONTAL_QR");
@@ -142,7 +142,7 @@ ShonanAveraging<d>::ShonanAveraging(const Measurements &measurements,
 template <size_t d>
 NonlinearFactorGraph ShonanAveraging<d>::buildGraphAt(size_t p) const {
   NonlinearFactorGraph graph;
-  auto G = boost::make_shared<Matrix>(SO<-1>::VectorizedGenerators(p));
+  auto G = std::make_shared<Matrix>(SO<-1>::VectorizedGenerators(p));
 
   for (const auto &measurement : measurements_) {
     const auto &keys = measurement.keys();
@@ -172,7 +172,7 @@ double ShonanAveraging<d>::costAt(size_t p, const Values &values) const {
 
 /* ************************************************************************* */
 template <size_t d>
-boost::shared_ptr<LevenbergMarquardtOptimizer>
+std::shared_ptr<LevenbergMarquardtOptimizer>
 ShonanAveraging<d>::createOptimizerAt(size_t p, const Values &initial) const {
   // Build graph
   NonlinearFactorGraph graph = buildGraphAt(p);
@@ -188,7 +188,7 @@ ShonanAveraging<d>::createOptimizerAt(size_t p, const Values &initial) const {
                                            model);
   }
   // Optimize
-  return boost::make_shared<LevenbergMarquardtOptimizer>(graph, initial,
+  return std::make_shared<LevenbergMarquardtOptimizer>(graph, initial,
                                                          parameters_.lm);
 }
 

@@ -39,7 +39,7 @@ template <class T> class BinaryMeasurement : public Factor {
 
 public:
   // shorthand for a smart pointer to a measurement
-  using shared_ptr = typename boost::shared_ptr<BinaryMeasurement>;
+  using shared_ptr = typename std::shared_ptr<BinaryMeasurement>;
 
 private:
   T measured_;                  ///< The measurement

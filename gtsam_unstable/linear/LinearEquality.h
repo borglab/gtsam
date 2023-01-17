@@ -30,7 +30,7 @@ class LinearEquality: public JacobianFactor {
 public:
   typedef LinearEquality This; ///< Typedef to this class
   typedef JacobianFactor Base; ///< Typedef to base class
-  typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
+  typedef std::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
 
 private:
   Key dualKey_;
@@ -102,7 +102,7 @@ public:
   /** Clone this LinearEquality */
   GaussianFactor::shared_ptr clone() const override {
     return boost::static_pointer_cast < GaussianFactor
-        > (boost::make_shared < LinearEquality > (*this));
+        > (std::make_shared < LinearEquality > (*this));
   }
 
   /// dual key

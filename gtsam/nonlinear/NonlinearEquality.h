@@ -229,7 +229,7 @@ protected:
 
 public:
 
-  typedef boost::shared_ptr<NonlinearEquality1<VALUE> > shared_ptr;
+  typedef std::shared_ptr<NonlinearEquality1<VALUE> > shared_ptr;
 
   /**
    * Constructor
@@ -307,7 +307,7 @@ class NonlinearEquality2 : public NoiseModelFactorN<T, T> {
   NonlinearEquality2() {}
 
  public:
-  typedef boost::shared_ptr<NonlinearEquality2<T>> shared_ptr;
+  typedef std::shared_ptr<NonlinearEquality2<T>> shared_ptr;
 
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;

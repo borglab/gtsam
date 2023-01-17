@@ -52,9 +52,9 @@ TEST(MixtureFactor, Printing) {
   auto model = noiseModel::Diagonal::Sigmas(sigmas, false);
 
   auto f0 =
-      boost::make_shared<BetweenFactor<double>>(X(1), X(2), between0, model);
+      std::make_shared<BetweenFactor<double>>(X(1), X(2), between0, model);
   auto f1 =
-      boost::make_shared<BetweenFactor<double>>(X(1), X(2), between1, model);
+      std::make_shared<BetweenFactor<double>>(X(1), X(2), between1, model);
   std::vector<NonlinearFactor::shared_ptr> factors{f0, f1};
 
   MixtureFactor mixtureFactor({X(1), X(2)}, {m1}, factors);
@@ -80,9 +80,9 @@ static MixtureFactor getMixtureFactor() {
   auto model = noiseModel::Diagonal::Sigmas(sigmas, false);
 
   auto f0 =
-      boost::make_shared<BetweenFactor<double>>(X(1), X(2), between0, model);
+      std::make_shared<BetweenFactor<double>>(X(1), X(2), between0, model);
   auto f1 =
-      boost::make_shared<BetweenFactor<double>>(X(1), X(2), between1, model);
+      std::make_shared<BetweenFactor<double>>(X(1), X(2), between1, model);
   std::vector<NonlinearFactor::shared_ptr> factors{f0, f1};
 
   return MixtureFactor({X(1), X(2)}, {m1}, factors);

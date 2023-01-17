@@ -67,9 +67,9 @@ TEST(NonlinearClusterTree, Clusters) {
   // NOTE(frank): Order matters here as factors are removed!
   VariableIndex variableIndex(graph);
   typedef NonlinearClusterTree::NonlinearCluster Cluster;
-  auto marginalCluster = boost::shared_ptr<Cluster>(new Cluster(variableIndex, {x1}, &graph));
-  auto landmarkCluster = boost::shared_ptr<Cluster>(new Cluster(variableIndex, {l1, l2}, &graph));
-  auto rootCluster = boost::shared_ptr<Cluster>(new Cluster(variableIndex, {x2, x3}, &graph));
+  auto marginalCluster = std::shared_ptr<Cluster>(new Cluster(variableIndex, {x1}, &graph));
+  auto landmarkCluster = std::shared_ptr<Cluster>(new Cluster(variableIndex, {l1, l2}, &graph));
+  auto rootCluster = std::shared_ptr<Cluster>(new Cluster(variableIndex, {x2, x3}, &graph));
 
   EXPECT_LONGS_EQUAL(3, marginalCluster->nrFactors());
   EXPECT_LONGS_EQUAL(2, landmarkCluster->nrFactors());
@@ -106,9 +106,9 @@ static NonlinearClusterTree Construct() {
   NonlinearFactorGraph graph = planarSLAMGraph();
   VariableIndex variableIndex(graph);
   typedef NonlinearClusterTree::NonlinearCluster Cluster;
-  auto marginalCluster = boost::shared_ptr<Cluster>(new Cluster(variableIndex, {x1}, &graph));
-  auto landmarkCluster = boost::shared_ptr<Cluster>(new Cluster(variableIndex, {l1, l2}, &graph));
-  auto rootCluster = boost::shared_ptr<Cluster>(new Cluster(variableIndex, {x2, x3}, &graph));
+  auto marginalCluster = std::shared_ptr<Cluster>(new Cluster(variableIndex, {x1}, &graph));
+  auto landmarkCluster = std::shared_ptr<Cluster>(new Cluster(variableIndex, {l1, l2}, &graph));
+  auto rootCluster = std::shared_ptr<Cluster>(new Cluster(variableIndex, {x2, x3}, &graph));
 
   // Build the tree
   NonlinearClusterTree clusterTree;

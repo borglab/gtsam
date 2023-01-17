@@ -76,7 +76,7 @@ class UnaryFactor: public NoiseModelFactorN<Pose2> {
   using NoiseModelFactor1<Pose2>::evaluateError;
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<UnaryFactor> shared_ptr;
+  typedef std::shared_ptr<UnaryFactor> shared_ptr;
 
   // The constructor requires the variable key, the (X, Y) measurement value, and the noise model
   UnaryFactor(Key j, double x, double y, const SharedNoiseModel& model):

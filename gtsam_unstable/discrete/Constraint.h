@@ -35,7 +35,7 @@ using Domains = std::map<Key, Domain>;
  */
 class GTSAM_UNSTABLE_EXPORT Constraint : public DiscreteFactor {
  public:
-  typedef boost::shared_ptr<Constraint> shared_ptr;
+  typedef std::shared_ptr<Constraint> shared_ptr;
 
  protected:
   /// Construct unary constraint factor.

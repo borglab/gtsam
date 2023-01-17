@@ -45,7 +45,7 @@ namespace gtsam {
    * variant that handles constraints (zero sigmas). Computation happens in noiseModel::Gaussian::QR
    * Returns a conditional on those keys, and a new factor on the separator.
    */
-  GTSAM_EXPORT std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<JacobianFactor> >
+  GTSAM_EXPORT std::pair<std::shared_ptr<GaussianConditional>, std::shared_ptr<JacobianFactor> >
     EliminateQR(const GaussianFactorGraph& factors, const Ordering& keys);
 
   /**
@@ -93,7 +93,7 @@ namespace gtsam {
 
     typedef JacobianFactor This; ///< Typedef to this class
     typedef GaussianFactor Base; ///< Typedef to base class
-    typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
+    typedef std::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
 
     typedef VerticalBlockMatrix::Block ABlock;
     typedef VerticalBlockMatrix::constBlock constABlock;
@@ -188,7 +188,7 @@ namespace gtsam {
     /** Clone this JacobianFactor */
     GaussianFactor::shared_ptr clone() const override {
       return boost::static_pointer_cast<GaussianFactor>(
-          boost::make_shared<JacobianFactor>(*this));
+          std::make_shared<JacobianFactor>(*this));
     }
 
     // Implementing Testable interface
@@ -354,7 +354,7 @@ namespace gtsam {
     JacobianFactor whiten() const;
 
     /** Eliminate the requested variables. */
-    std::pair<boost::shared_ptr<GaussianConditional>, shared_ptr>
+    std::pair<std::shared_ptr<GaussianConditional>, shared_ptr>
       eliminate(const Ordering& keys);
 
     /** set noiseModel correctly */
@@ -371,7 +371,7 @@ namespace gtsam {
      * @return The conditional and remaining factor
      *
      * \ingroup LinearSolving */
-    friend GTSAM_EXPORT std::pair<boost::shared_ptr<GaussianConditional>, shared_ptr>
+    friend GTSAM_EXPORT std::pair<std::shared_ptr<GaussianConditional>, shared_ptr>
       EliminateQR(const GaussianFactorGraph& factors, const Ordering& keys);
 
     /**
@@ -381,7 +381,7 @@ namespace gtsam {
      * NOTE: looks at dimension of noise model to determine how many rows to keep.
      * @param nrFrontals number of keys to eliminate
      */
-    boost::shared_ptr<GaussianConditional> splitConditional(size_t nrFrontals);
+    std::shared_ptr<GaussianConditional> splitConditional(size_t nrFrontals);
 
   protected:
 

@@ -26,7 +26,7 @@
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/dllexport.h>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include <map>
 
@@ -38,7 +38,7 @@ namespace gtsam {
   class VectorValues;
 
   struct GTSAM_EXPORT SubgraphPreconditionerParameters : public PreconditionerParameters {
-    typedef boost::shared_ptr<SubgraphPreconditionerParameters> shared_ptr;
+    typedef std::shared_ptr<SubgraphPreconditionerParameters> shared_ptr;
     SubgraphPreconditionerParameters(const SubgraphBuilderParameters &p = SubgraphBuilderParameters())
       : builderParams(p) {}
     SubgraphBuilderParameters builderParams;
@@ -54,7 +54,7 @@ namespace gtsam {
   class GTSAM_EXPORT SubgraphPreconditioner : public Preconditioner {
 
   public:
-    typedef boost::shared_ptr<SubgraphPreconditioner> shared_ptr;
+    typedef std::shared_ptr<SubgraphPreconditioner> shared_ptr;
 
   private:
     GaussianFactorGraph Ab2_;

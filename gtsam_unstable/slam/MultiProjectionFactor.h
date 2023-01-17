@@ -37,7 +37,7 @@ namespace gtsam {
 
     // Keep a copy of measurement and calibration for I/O
     Vector measured_;                    ///< 2D measurement for each of the n views
-    boost::shared_ptr<CALIBRATION> K_;  ///< shared pointer to calibration object
+    std::shared_ptr<CALIBRATION> K_;  ///< shared pointer to calibration object
     std::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame
 
 
@@ -54,7 +54,7 @@ namespace gtsam {
     typedef MultiProjectionFactor<POSE, LANDMARK, CALIBRATION> This;
 
     /// shorthand for a smart pointer to a factor
-    typedef boost::shared_ptr<This> shared_ptr;
+    typedef std::shared_ptr<This> shared_ptr;
 
     /// Default constructor
     MultiProjectionFactor() : throwCheirality_(false), verboseCheirality_(false) {}
@@ -70,7 +70,7 @@ namespace gtsam {
      * @param body_P_sensor is the transform from body to sensor frame (default identity)
      */
     MultiProjectionFactor(const Vector& measured, const SharedNoiseModel& model,
-        KeySet poseKeys, Key pointKey, const boost::shared_ptr<CALIBRATION>& K,
+        KeySet poseKeys, Key pointKey, const std::shared_ptr<CALIBRATION>& K,
         std::optional<POSE> body_P_sensor = {}) :
           Base(model), measured_(measured), K_(K), body_P_sensor_(body_P_sensor),
           throwCheirality_(false), verboseCheirality_(false) {
@@ -91,7 +91,7 @@ namespace gtsam {
      * @param body_P_sensor is the transform from body to sensor frame  (default identity)
      */
     MultiProjectionFactor(const Vector& measured, const SharedNoiseModel& model,
-        KeySet poseKeys, Key pointKey, const boost::shared_ptr<CALIBRATION>& K,
+        KeySet poseKeys, Key pointKey, const std::shared_ptr<CALIBRATION>& K,
         bool throwCheirality, bool verboseCheirality,
         std::optional<POSE> body_P_sensor = {}) :
           Base(model), measured_(measured), K_(K), body_P_sensor_(body_P_sensor),
@@ -201,7 +201,7 @@ namespace gtsam {
     }
 
     /** return the calibration object */
-    inline const boost::shared_ptr<CALIBRATION> calibration() const {
+    inline const std::shared_ptr<CALIBRATION> calibration() const {
       return K_;
     }
 

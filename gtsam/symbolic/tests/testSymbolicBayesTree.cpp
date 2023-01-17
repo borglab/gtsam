@@ -235,7 +235,7 @@ TEST(BayesTree, removeTop) {
   SymbolicBayesTree bayesTree = asiaBayesTree;
 
   // create a new factor to be inserted
-  // boost::shared_ptr<IndexFactor> newFactor(new IndexFactor(_S_,_B_));
+  // std::shared_ptr<IndexFactor> newFactor(new IndexFactor(_S_,_B_));
 
   // Remove the contaminated part of the Bayes tree
   SymbolicBayesNet bn;
@@ -253,7 +253,7 @@ TEST(BayesTree, removeTop) {
                                orphans | indirected));
 
   // Try removeTop again with a factor that should not change a thing
-  // boost::shared_ptr<IndexFactor> newFactor2(new IndexFactor(_B_));
+  // std::shared_ptr<IndexFactor> newFactor2(new IndexFactor(_B_));
   SymbolicBayesNet bn2;
   SymbolicBayesTree::Cliques orphans2;
   bayesTree.removeTop(Keys(_B_), &bn2, &orphans2);

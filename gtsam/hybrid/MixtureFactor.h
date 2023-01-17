@@ -49,8 +49,8 @@ class MixtureFactor : public HybridFactor {
  public:
   using Base = HybridFactor;
   using This = MixtureFactor;
-  using shared_ptr = boost::shared_ptr<MixtureFactor>;
-  using sharedFactor = boost::shared_ptr<NonlinearFactor>;
+  using shared_ptr = std::shared_ptr<MixtureFactor>;
+  using sharedFactor = std::shared_ptr<NonlinearFactor>;
 
   /**
    * @brief typedef for DecisionTree which has Keys as node labels and
@@ -97,7 +97,7 @@ class MixtureFactor : public HybridFactor {
    */
   template <typename FACTOR>
   MixtureFactor(const KeyVector& keys, const DiscreteKeys& discreteKeys,
-                const std::vector<boost::shared_ptr<FACTOR>>& factors,
+                const std::vector<std::shared_ptr<FACTOR>>& factors,
                 bool normalized = false)
       : Base(keys, discreteKeys), normalized_(normalized) {
     std::vector<NonlinearFactor::shared_ptr> nonlinear_factors;
@@ -237,7 +237,7 @@ class MixtureFactor : public HybridFactor {
   }
 
   /// Linearize all the continuous factors to get a GaussianMixtureFactor.
-  boost::shared_ptr<GaussianMixtureFactor> linearize(
+  std::shared_ptr<GaussianMixtureFactor> linearize(
       const Values& continuousValues) const {
     // functional to linearize each factor in the decision tree
     auto linearizeDT = [continuousValues](const sharedFactor& factor) {
@@ -247,7 +247,7 @@ class MixtureFactor : public HybridFactor {
     DecisionTree<Key, GaussianFactor::shared_ptr> linearized_factors(
         factors_, linearizeDT);
 
-    return boost::make_shared<GaussianMixtureFactor>(
+    return std::make_shared<GaussianMixtureFactor>(
         continuousKeys_, discreteKeys_, linearized_factors);
   }
 

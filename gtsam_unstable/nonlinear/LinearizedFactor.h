@@ -35,7 +35,7 @@ public:
   typedef LinearizedGaussianFactor This;
 
   /** shared pointer for convenience */
-  typedef boost::shared_ptr<LinearizedGaussianFactor> shared_ptr;
+  typedef std::shared_ptr<LinearizedGaussianFactor> shared_ptr;
 
 protected:
 
@@ -82,7 +82,7 @@ public:
   typedef LinearizedJacobianFactor This;
 
   /** shared pointer for convenience */
-  typedef boost::shared_ptr<LinearizedJacobianFactor> shared_ptr;
+  typedef std::shared_ptr<LinearizedJacobianFactor> shared_ptr;
 
   typedef VerticalBlockMatrix::Block ABlock;
   typedef VerticalBlockMatrix::constBlock constABlock;
@@ -140,7 +140,7 @@ public:
    * Reimplemented from NoiseModelFactor to directly copy out the
    * matrices and only update the RHS b with an updated residual
    */
-  boost::shared_ptr<GaussianFactor> linearize(const Values& c) const override;
+  std::shared_ptr<GaussianFactor> linearize(const Values& c) const override;
 
   /** (A*x-b) */
   Vector error_vector(const Values& c) const;
@@ -173,7 +173,7 @@ public:
   typedef LinearizedHessianFactor This;
 
   /** shared pointer for convenience */
-  typedef boost::shared_ptr<LinearizedHessianFactor> shared_ptr;
+  typedef std::shared_ptr<LinearizedHessianFactor> shared_ptr;
 
   /** hessian block data types */
   typedef SymmetricBlockMatrix::Block Block; ///< A block from the Hessian matrix
@@ -271,7 +271,7 @@ public:
    * Reimplemented from NoiseModelFactor to directly copy out the
    * matrices and only update the RHS b with an updated residual
    */
-  boost::shared_ptr<GaussianFactor> linearize(const Values& c) const override;
+  std::shared_ptr<GaussianFactor> linearize(const Values& c) const override;
 
 private:
   /** Serialization function */

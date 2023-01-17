@@ -58,7 +58,7 @@ public:
   using Base::evaluateError;
 
   // shorthand for a smart pointer to a factor
-  typedef typename boost::shared_ptr<GaussMarkov1stOrderFactor> shared_ptr;
+  typedef typename std::shared_ptr<GaussMarkov1stOrderFactor> shared_ptr;
 
   /** default constructor - only use for serialization */
   GaussMarkov1stOrderFactor() {}

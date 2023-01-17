@@ -200,7 +200,7 @@ GaussianFactorGraph::shared_ptr specificModesFactorGraph(
   // Add "motion models".
   auto motion_noise_model = noiseModel::Isotropic::Sigma(1, between_sigma);
   for (size_t k = 0; k < K - 1; k++) {
-    auto motion_model = boost::make_shared<MotionModel>(
+    auto motion_model = std::make_shared<MotionModel>(
         X(k), X(k + 1), discrete_seq.at(k), motion_noise_model);
     graph.push_back(motion_model);
   }
@@ -256,7 +256,7 @@ AlgebraicDecisionTree<Key> getProbPrimeTree(
   vector<VectorValues::shared_ptr> vector_values;
   for (const DiscreteValues& assignment : assignments) {
     VectorValues values = bayesNet->optimize(assignment);
-    vector_values.push_back(boost::make_shared<VectorValues>(values));
+    vector_values.push_back(std::make_shared<VectorValues>(values));
   }
   DecisionTree<Key, VectorValues::shared_ptr> delta_tree(discrete_keys,
                                                          vector_values);
@@ -413,9 +413,9 @@ static HybridNonlinearFactorGraph createHybridNonlinearFactorGraph() {
   // Add mixture factor:
   DiscreteKey m(M(0), 2);
   const auto zero_motion =
-      boost::make_shared<BetweenFactor<double>>(X(0), X(1), 0, noise_model);
+      std::make_shared<BetweenFactor<double>>(X(0), X(1), 0, noise_model);
   const auto one_motion =
-      boost::make_shared<BetweenFactor<double>>(X(0), X(1), 1, noise_model);
+      std::make_shared<BetweenFactor<double>>(X(0), X(1), 1, noise_model);
   nfg.emplace_shared<MixtureFactor>(
       KeyVector{X(0), X(1)}, DiscreteKeys{m},
       std::vector<NonlinearFactor::shared_ptr>{zero_motion, one_motion});

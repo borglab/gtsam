@@ -99,7 +99,7 @@ public:
   using Base::evaluateError;
 
   // shorthand for a smart pointer to a factor
-  typedef typename boost::shared_ptr<InertialNavFactor_GlobalVelocity> shared_ptr;
+  typedef typename std::shared_ptr<InertialNavFactor_GlobalVelocity> shared_ptr;
 
   /** default constructor - only use for serialization */
   InertialNavFactor_GlobalVelocity() {}

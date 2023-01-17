@@ -42,7 +42,7 @@ public:
   using Base::evaluateError;
 
   // shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<EssentialMatrixConstraint> shared_ptr;
+  typedef std::shared_ptr<EssentialMatrixConstraint> shared_ptr;
 
   /** default constructor - only use for serialization */
   EssentialMatrixConstraint() {

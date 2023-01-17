@@ -96,7 +96,7 @@ Constraint::shared_ptr AllDiff::partiallyApply(const DiscreteValues& values) con
     if (values.find(k) == values.end()) {
       newKeys.push_back(DiscreteKey(k, cardinalities_.at(k)));
     }
-  return boost::make_shared<AllDiff>(newKeys);
+  return std::make_shared<AllDiff>(newKeys);
 }
 
 /* ************************************************************************* */

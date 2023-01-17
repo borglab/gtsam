@@ -80,16 +80,16 @@ TEST(ExpressionCustomChart, projection) {
 
   ExpressionFactor<Eigen::Vector3d> f(noiseModel::Unit::Create(pval.size()), pval, point);
 
-  boost::shared_ptr<GaussianFactor> gfstandard = f.linearize(standard);
-  boost::shared_ptr<JacobianFactor> jfstandard = //
+  std::shared_ptr<GaussianFactor> gfstandard = f.linearize(standard);
+  std::shared_ptr<JacobianFactor> jfstandard = //
       boost::dynamic_pointer_cast<JacobianFactor>(gfstandard);
 
   typedef std::pair<Eigen::MatrixXd, Eigen::VectorXd> Jacobian;
   Jacobian Jstandard = jfstandard->jacobianUnweighted();
   EXPECT(assert_equal(Eigen::Matrix3d::Identity(), Jstandard.first, 1e-10));
 
-  boost::shared_ptr<GaussianFactor> gfcustom = f.linearize(custom);
-  boost::shared_ptr<JacobianFactor> jfcustom = //
+  std::shared_ptr<GaussianFactor> gfcustom = f.linearize(custom);
+  std::shared_ptr<JacobianFactor> jfcustom = //
       boost::dynamic_pointer_cast<JacobianFactor>(gfcustom);
 
   Eigen::MatrixXd expectedJacobian = Eigen::MatrixXd::Zero(3,2);

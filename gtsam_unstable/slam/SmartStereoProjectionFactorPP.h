@@ -44,7 +44,7 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionFactorPP
     : public SmartStereoProjectionFactor {
  protected:
   /// shared pointer to calibration object (one for each camera)
-  std::vector<boost::shared_ptr<Cal3_S2Stereo>> K_all_;
+  std::vector<std::shared_ptr<Cal3_S2Stereo>> K_all_;
 
   /// The keys corresponding to the pose of the body (with respect to an external world frame) for each view
   KeyVector world_P_body_keys_;
@@ -62,7 +62,7 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionFactorPP
   typedef SmartStereoProjectionFactorPP This;
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
   static const int DimBlock = 12;  ///< Camera dimension: 6 for body pose, 6 for extrinsic pose
   static const int DimPose = 6;  ///< Pose3 dimension
@@ -92,7 +92,7 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionFactorPP
    */
   void add(const StereoPoint2& measured, const Key& world_P_body_key,
            const Key& body_P_cam_key,
-           const boost::shared_ptr<Cal3_S2Stereo>& K);
+           const std::shared_ptr<Cal3_S2Stereo>& K);
 
   /**
    *  Variant of the previous one in which we include a set of measurements
@@ -105,7 +105,7 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionFactorPP
    */
   void add(const std::vector<StereoPoint2>& measurements,
            const KeyVector& w_P_body_keys, const KeyVector& body_P_cam_keys,
-           const std::vector<boost::shared_ptr<Cal3_S2Stereo>>& Ks);
+           const std::vector<std::shared_ptr<Cal3_S2Stereo>>& Ks);
 
   /**
    * Variant of the previous one in which we include a set of measurements with
@@ -119,7 +119,7 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionFactorPP
    */
   void add(const std::vector<StereoPoint2>& measurements,
            const KeyVector& w_P_body_keys, const KeyVector& body_P_cam_keys,
-           const boost::shared_ptr<Cal3_S2Stereo>& K);
+           const std::shared_ptr<Cal3_S2Stereo>& K);
 
   /**
    * print
@@ -143,7 +143,7 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionFactorPP
   double error(const Values& values) const override;
 
   /** return the calibration object */
-  inline std::vector<boost::shared_ptr<Cal3_S2Stereo>> calibration() const {
+  inline std::vector<std::shared_ptr<Cal3_S2Stereo>> calibration() const {
     return K_all_;
   }
 
@@ -204,7 +204,7 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionFactorPP
   }
 
   /// linearize and return a Hessianfactor that is an approximation of error(p)
-  boost::shared_ptr<RegularHessianFactor<DimPose> > createHessianFactor(
+  std::shared_ptr<RegularHessianFactor<DimPose> > createHessianFactor(
       const Values& values, const double lambda = 0.0, bool diagonalDamping =
           false) const {
 
@@ -230,7 +230,7 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionFactorPP
         m = Matrix::Zero(DimPose, DimPose);
       for (Vector& v : gs)
         v = Vector::Zero(DimPose);
-      return boost::make_shared < RegularHessianFactor<DimPose>
+      return std::make_shared < RegularHessianFactor<DimPose>
           > (keys_, Gs, gs, 0.0);
     }
 
@@ -260,7 +260,7 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionFactorPP
         Cameras::SchurComplementAndRearrangeBlocks<3,DimBlock,DimPose>(Fs,E,P,b,
                   nonuniqueKeys, keys_);
 
-    return boost::make_shared < RegularHessianFactor<DimPose>
+    return std::make_shared < RegularHessianFactor<DimPose>
         > (keys_, augmentedHessianUniqueKeys);
   }
 
@@ -269,7 +269,7 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionFactorPP
    * @param values Values structure which must contain camera poses and extrinsic pose for this factor
    * @return a Gaussian factor
    */
-  boost::shared_ptr<GaussianFactor> linearizeDamped(
+  std::shared_ptr<GaussianFactor> linearizeDamped(
       const Values& values, const double lambda = 0.0) const {
     // depending on flag set on construction we may linearize to different linear factors
     switch (params_.linearizationMode) {
@@ -282,7 +282,7 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionFactorPP
   }
 
   /// linearize
-  boost::shared_ptr<GaussianFactor> linearize(const Values& values) const
+  std::shared_ptr<GaussianFactor> linearize(const Values& values) const
       override {
     return linearizeDamped(values);
   }

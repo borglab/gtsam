@@ -50,7 +50,7 @@ void HybridNonlinearISAM::update(const HybridNonlinearFactorGraph& newFactors,
     // TODO: optimize for whole config?
     linPoint_.insert(initialValues);
 
-    boost::shared_ptr<HybridGaussianFactorGraph> linearizedNewFactors =
+    std::shared_ptr<HybridGaussianFactorGraph> linearizedNewFactors =
         newFactors.linearize(linPoint_);
 
     // Update ISAM

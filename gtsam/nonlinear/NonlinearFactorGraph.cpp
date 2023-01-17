@@ -194,7 +194,7 @@ Ordering NonlinearFactorGraph::orderingCOLAMDConstrained(const FastMap<Key, int>
 SymbolicFactorGraph::shared_ptr NonlinearFactorGraph::symbolic() const
 {
   // Generate the symbolic factor graph
-  SymbolicFactorGraph::shared_ptr symbolic = boost::make_shared<SymbolicFactorGraph>();
+  SymbolicFactorGraph::shared_ptr symbolic = std::make_shared<SymbolicFactorGraph>();
   symbolic->reserve(size());
 
   for (const sharedFactor& factor: factors_) {
@@ -241,7 +241,7 @@ GaussianFactorGraph::shared_ptr NonlinearFactorGraph::linearize(const Values& li
   gttic(NonlinearFactorGraph_linearize);
 
   // create an empty linear FG
-  GaussianFactorGraph::shared_ptr linearFG = boost::make_shared<GaussianFactorGraph>();
+  GaussianFactorGraph::shared_ptr linearFG = std::make_shared<GaussianFactorGraph>();
 
 #ifdef GTSAM_USE_TBB
 

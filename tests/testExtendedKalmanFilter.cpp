@@ -193,7 +193,7 @@ public:
    * Ax-b \approx h(x1+dx1,x2+dx2)-z = h(x1,x2) + A2*dx1 + A2*dx2 - z
    * Hence b = z - h(x1,x2) = - error_vector(x)
    */
-  boost::shared_ptr<GaussianFactor> linearize(const Values& c) const override {
+  std::shared_ptr<GaussianFactor> linearize(const Values& c) const override {
     using X1 = ValueType<1>;
     using X2 = ValueType<2>;
     const X1& x1 = c.at<X1>(key<1>());
@@ -328,7 +328,7 @@ public:
    * Ax-b \approx h(x1+dx1)-z = h(x1) + A1*dx1 - z
    * Hence b = z - h(x1) = - error_vector(x)
    */
-  boost::shared_ptr<GaussianFactor> linearize(const Values& c) const override {
+  std::shared_ptr<GaussianFactor> linearize(const Values& c) const override {
     using X = ValueType<1>;
     const X& x1 = c.at<X>(key());
     Matrix A1;

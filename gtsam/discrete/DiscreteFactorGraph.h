@@ -48,7 +48,7 @@ class DiscreteJunctionTree;
  * @return GTSAM_EXPORT
  * @ingroup discrete
  */
-GTSAM_EXPORT std::pair<boost::shared_ptr<DiscreteConditional>, DecisionTreeFactor::shared_ptr>
+GTSAM_EXPORT std::pair<std::shared_ptr<DiscreteConditional>, DecisionTreeFactor::shared_ptr>
 EliminateDiscrete(const DiscreteFactorGraph& factors, const Ordering& keys);
 
 /* ************************************************************************* */
@@ -62,8 +62,8 @@ template<> struct EliminationTraits<DiscreteFactorGraph>
   typedef DiscreteBayesTree BayesTreeType;             ///< Type of Bayes tree
   typedef DiscreteJunctionTree JunctionTreeType;       ///< Type of Junction tree
   /// The default dense elimination function
-  static std::pair<boost::shared_ptr<ConditionalType>,
-                   boost::shared_ptr<FactorType> >
+  static std::pair<std::shared_ptr<ConditionalType>,
+                   std::shared_ptr<FactorType> >
   DefaultEliminate(const FactorGraphType& factors, const Ordering& keys) {
     return EliminateDiscrete(factors, keys);
   }
@@ -89,7 +89,7 @@ class GTSAM_EXPORT DiscreteFactorGraph
   using Base = FactorGraph<DiscreteFactor>;  ///< base factor graph type
   using BaseEliminateable =
       EliminateableFactorGraph<This>;          ///< for elimination
-  using shared_ptr = boost::shared_ptr<This>;  ///< shared_ptr to This
+  using shared_ptr = std::shared_ptr<This>;  ///< shared_ptr to This
 
   using Values = DiscreteValues;  ///< backwards compatibility
 

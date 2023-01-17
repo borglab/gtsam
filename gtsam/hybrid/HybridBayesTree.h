@@ -48,10 +48,10 @@ class GTSAM_EXPORT HybridBayesTreeClique
   typedef HybridBayesTreeClique This;
   typedef BayesTreeCliqueBase<HybridBayesTreeClique, HybridGaussianFactorGraph>
       Base;
-  typedef boost::shared_ptr<This> shared_ptr;
-  typedef boost::weak_ptr<This> weak_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
+  typedef std::weak_ptr<This> weak_ptr;
   HybridBayesTreeClique() {}
-  HybridBayesTreeClique(const boost::shared_ptr<HybridConditional>& conditional)
+  HybridBayesTreeClique(const std::shared_ptr<HybridConditional>& conditional)
       : Base(conditional) {}
   ///< Copy constructor
   HybridBayesTreeClique(const HybridBayesTreeClique& clique) : Base(clique) {}
@@ -67,7 +67,7 @@ class GTSAM_EXPORT HybridBayesTree : public BayesTree<HybridBayesTreeClique> {
 
  public:
   typedef HybridBayesTree This;
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
   /// @name Standard interface
   /// @{
@@ -142,14 +142,14 @@ class BayesTreeOrphanWrapper<HybridBayesTreeClique> : public HybridConditional {
   typedef HybridBayesTreeClique CliqueType;
   typedef HybridConditional Base;
 
-  boost::shared_ptr<CliqueType> clique;
+  std::shared_ptr<CliqueType> clique;
 
   /**
    * @brief Construct a new Bayes Tree Orphan Wrapper object.
    *
    * @param clique Bayes tree clique.
    */
-  BayesTreeOrphanWrapper(const boost::shared_ptr<CliqueType>& clique)
+  BayesTreeOrphanWrapper(const std::shared_ptr<CliqueType>& clique)
       : clique(clique) {
     // Store parent keys in our base type factor so that eliminating those
     // parent keys will pull this subtree into the elimination.

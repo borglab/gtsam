@@ -107,7 +107,7 @@ namespace gtsam {
 
     typedef GaussianFactor Base; ///< Typedef to base class
     typedef HessianFactor This; ///< Typedef to this class
-    typedef boost::shared_ptr<This> shared_ptr; ///< A shared_ptr to this class
+    typedef std::shared_ptr<This> shared_ptr; ///< A shared_ptr to this class
     typedef SymmetricBlockMatrix::Block Block; ///< A block from the Hessian matrix
     typedef SymmetricBlockMatrix::constBlock constBlock; ///< A block from the Hessian matrix (const version)
 
@@ -187,7 +187,7 @@ namespace gtsam {
 
     /** Clone this HessianFactor */
     GaussianFactor::shared_ptr clone() const override {
-      return boost::make_shared<HessianFactor>(*this); }
+      return std::make_shared<HessianFactor>(*this); }
 
     /** Print the factor for debugging and testing (implementing Testable) */
     void print(const std::string& s = "",
@@ -349,7 +349,7 @@ namespace gtsam {
      *  In-place elimination that returns a conditional on (ordered) keys specified, and leaves
      *  this factor to be on the remaining keys (separator) only. Does dense partial Cholesky.
      */
-    boost::shared_ptr<GaussianConditional> eliminateCholesky(const Ordering& keys);
+    std::shared_ptr<GaussianConditional> eliminateCholesky(const Ordering& keys);
 
       /// Solve the system A'*A delta = A'*b in-place, return delta as VectorValues
     VectorValues solve();
@@ -389,7 +389,7 @@ namespace gtsam {
 *   @return The conditional and remaining factor
 *
 *   \ingroup LinearSolving */
-GTSAM_EXPORT std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<HessianFactor> >
+GTSAM_EXPORT std::pair<std::shared_ptr<GaussianConditional>, std::shared_ptr<HessianFactor> >
   EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys);
 
 /**
@@ -407,7 +407,7 @@ GTSAM_EXPORT std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr
 *   @return The conditional and remaining factor
 *
 *   \ingroup LinearSolving */
-GTSAM_EXPORT std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<GaussianFactor> >
+GTSAM_EXPORT std::pair<std::shared_ptr<GaussianConditional>, std::shared_ptr<GaussianFactor> >
   EliminatePreferCholesky(const GaussianFactorGraph& factors, const Ordering& keys);
 
 /// traits

@@ -46,7 +46,7 @@ public:
   using Base::evaluateError;
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<GPSFactor> shared_ptr;
+  typedef std::shared_ptr<GPSFactor> shared_ptr;
 
   /// Typedef to this class
   typedef GPSFactor This;
@@ -127,7 +127,7 @@ public:
   using Base::evaluateError;
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<GPSFactor2> shared_ptr;
+  typedef std::shared_ptr<GPSFactor2> shared_ptr;
 
   /// Typedef to this class
   typedef GPSFactor2 This;

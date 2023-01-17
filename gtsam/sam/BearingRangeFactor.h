@@ -40,7 +40,7 @@ class BearingRangeFactor
   typedef BearingRangeFactor<A1, A2> This;
 
  public:
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
   /// Default constructor
   BearingRangeFactor() {}

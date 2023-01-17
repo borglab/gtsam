@@ -41,7 +41,7 @@ using namespace example;
 using symbol_shorthand::X;
 using symbol_shorthand::L;
 
-typedef boost::shared_ptr<NonlinearFactor > shared_nlf;
+typedef std::shared_ptr<NonlinearFactor > shared_nlf;
 
 /* ************************************************************************* */
 TEST( NonlinearFactor, equals )

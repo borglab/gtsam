@@ -45,7 +45,7 @@ namespace gtsam {
     using Base::evaluateError;
 
     /// shorthand for a smart pointer to a factor
-    typedef typename boost::shared_ptr<PosePriorFactor<POSE> > shared_ptr;
+    typedef typename std::shared_ptr<PosePriorFactor<POSE> > shared_ptr;
 
     /** default constructor - only use for serialization */
     PosePriorFactor() {}

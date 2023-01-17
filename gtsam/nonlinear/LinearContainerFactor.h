@@ -41,7 +41,7 @@ protected:
 
 public:
 
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
   /** Default constructor - necessary for serialization */
   LinearContainerFactor() {}
@@ -147,10 +147,10 @@ public:
   bool isHessian() const;
 
   /** Casts to JacobianFactor */
-  boost::shared_ptr<JacobianFactor> toJacobian() const;
+  std::shared_ptr<JacobianFactor> toJacobian() const;
 
   /** Casts to HessianFactor */
-  boost::shared_ptr<HessianFactor> toHessian() const;
+  std::shared_ptr<HessianFactor> toHessian() const;
 
   /**
    * Utility function for converting linear graphs to nonlinear graphs

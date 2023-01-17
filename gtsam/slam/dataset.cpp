@@ -318,7 +318,7 @@ template <typename T> struct ParseFactor : ParseMeasurement<T> {
   typename std::optional<typename BetweenFactor<T>::shared_ptr>
   operator()(istream &is, const string &tag) {
     if (auto m = ParseMeasurement<T>::operator()(is, tag))
-      return boost::make_shared<BetweenFactor<T>>(
+      return std::make_shared<BetweenFactor<T>>(
           m->key1(), m->key2(), m->measured(), m->noiseModel());
     else
       return std::nullopt;
@@ -329,7 +329,7 @@ template <typename T> struct ParseFactor : ParseMeasurement<T> {
 // Pose2 measurement parser
 template <> struct ParseMeasurement<Pose2> {
   // The arguments
-  boost::shared_ptr<Sampler> sampler;
+  std::shared_ptr<Sampler> sampler;
   size_t maxIndex;
 
   // For noise model creation
@@ -372,12 +372,12 @@ template <> struct ParseMeasurement<Pose2> {
 
 /* ************************************************************************* */
 // Create a sampler to corrupt a measurement
-boost::shared_ptr<Sampler> createSampler(const SharedNoiseModel &model) {
+std::shared_ptr<Sampler> createSampler(const SharedNoiseModel &model) {
   auto noise = boost::dynamic_pointer_cast<noiseModel::Diagonal>(model);
   if (!noise)
     throw invalid_argument("gtsam::load: invalid noise model for adding noise"
                            "(current version assumes diagonal noise model)!");
-  return boost::shared_ptr<Sampler>(new Sampler(noise));
+  return std::shared_ptr<Sampler>(new Sampler(noise));
 }
 
 /* ************************************************************************* */
@@ -503,7 +503,7 @@ GraphAndValues load2D(const string &filename, SharedNoiseModel model,
                       KernelFunctionType kernelFunctionType) {
 
   // Single pass for poses and landmarks.
-  auto initial = boost::make_shared<Values>();
+  auto initial = std::make_shared<Values>();
   Parser<int> insert = [maxIndex, &initial](istream &is, const string &tag) {
     if (auto indexedPose = parseVertexPose(is, tag)) {
       if (!maxIndex || indexedPose->first <= maxIndex)
@@ -517,7 +517,7 @@ GraphAndValues load2D(const string &filename, SharedNoiseModel model,
   parseLines(filename, insert);
 
   // Single pass for Pose2 and bearing-range factors.
-  auto graph = boost::make_shared<NonlinearFactorGraph>();
+  auto graph = std::make_shared<NonlinearFactorGraph>();
 
   // Instantiate factor parser
   ParseFactor<Pose2> parseBetweenFactor(
@@ -706,7 +706,7 @@ void writeG2o(const NonlinearFactorGraph &graph, const Values &estimate,
     if (factor3D) {
       SharedNoiseModel model = factor3D->noiseModel();
 
-      boost::shared_ptr<noiseModel::Gaussian> gaussianModel =
+      std::shared_ptr<noiseModel::Gaussian> gaussianModel =
           boost::dynamic_pointer_cast<noiseModel::Gaussian>(model);
       if (!gaussianModel) {
         model->print("model\n");
@@ -816,7 +816,7 @@ istream &operator>>(istream &is, Matrix6 &m) {
 // Pose3 measurement parser
 template <> struct ParseMeasurement<Pose3> {
   // The arguments
-  boost::shared_ptr<Sampler> sampler;
+  std::shared_ptr<Sampler> sampler;
   size_t maxIndex;
 
   // The actual parser
@@ -926,8 +926,8 @@ parseFactors<Pose3>(const std::string &filename,
 
 /* ************************************************************************* */
 GraphAndValues load3D(const string &filename) {
-  auto graph = boost::make_shared<NonlinearFactorGraph>();
-  auto initial = boost::make_shared<Values>();
+  auto graph = std::make_shared<NonlinearFactorGraph>();
+  auto initial = std::make_shared<Values>();
 
   // Instantiate factor parser. maxIndex is always zero for load3D.
   ParseFactor<Pose3> parseFactor({nullptr, 0});

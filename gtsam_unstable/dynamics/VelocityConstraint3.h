@@ -26,7 +26,7 @@ public:
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
-  typedef boost::shared_ptr<VelocityConstraint3 > shared_ptr;
+  typedef std::shared_ptr<VelocityConstraint3 > shared_ptr;
 
   ///TODO: comment
   VelocityConstraint3(Key key1, Key key2, Key velKey, double dt, double mu = 1000.0)

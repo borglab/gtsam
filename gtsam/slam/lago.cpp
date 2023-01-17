@@ -102,12 +102,12 @@ void getSymbolicGraph(
   // Get keys for which you want the orientation
   size_t id = 0;
   // Loop over the factors
-  for(const boost::shared_ptr<NonlinearFactor>& factor: g) {
+  for(const std::shared_ptr<NonlinearFactor>& factor: g) {
     if (factor->keys().size() == 2) {
       Key key1 = factor->keys()[0];
       Key key2 = factor->keys()[1];
       // recast to a between
-      boost::shared_ptr<BetweenFactor<Pose2> > pose2Between =
+      std::shared_ptr<BetweenFactor<Pose2> > pose2Between =
           boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor);
       if (!pose2Between)
         continue;
@@ -139,7 +139,7 @@ static void getDeltaThetaAndNoise(NonlinearFactor::shared_ptr factor,
     Vector& deltaTheta, noiseModel::Diagonal::shared_ptr& model_deltaTheta) {
 
   // Get the relative rotation measurement from the between factor
-  boost::shared_ptr<BetweenFactor<Pose2> > pose2Between =
+  std::shared_ptr<BetweenFactor<Pose2> > pose2Between =
       boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor);
   if (!pose2Between)
     throw invalid_argument(
@@ -148,7 +148,7 @@ static void getDeltaThetaAndNoise(NonlinearFactor::shared_ptr factor,
 
   // Retrieve the noise model for the relative rotation
   SharedNoiseModel model = pose2Between->noiseModel();
-  boost::shared_ptr<noiseModel::Diagonal> diagonalModel =
+  std::shared_ptr<noiseModel::Diagonal> diagonalModel =
       boost::dynamic_pointer_cast<noiseModel::Diagonal>(model);
   if (!diagonalModel)
     throw invalid_argument("buildLinearOrientationGraph: invalid noise model "
@@ -202,7 +202,7 @@ static PredecessorMap<Key> findOdometricPath(
   Key minKey = initialize::kAnchorKey; // this initialization does not matter
   bool minUnassigned = true;
 
-  for(const boost::shared_ptr<NonlinearFactor>& factor: pose2Graph) {
+  for(const std::shared_ptr<NonlinearFactor>& factor: pose2Graph) {
 
     Key key1 = std::min(factor->keys()[0], factor->keys()[1]);
     Key key2 = std::max(factor->keys()[0], factor->keys()[1]);
@@ -275,9 +275,9 @@ Values computePoses(const NonlinearFactorGraph& pose2graph,
   GaussianFactorGraph linearPose2graph;
 
   // We include the linear version of each between factor
-  for(const boost::shared_ptr<NonlinearFactor>& factor: pose2graph) {
+  for(const std::shared_ptr<NonlinearFactor>& factor: pose2graph) {
 
-    boost::shared_ptr<BetweenFactor<Pose2> > pose2Between =
+    std::shared_ptr<BetweenFactor<Pose2> > pose2Between =
         boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor);
 
     if (pose2Between) {
@@ -303,7 +303,7 @@ Values computePoses(const NonlinearFactorGraph& pose2graph,
       J1(0, 2) = s1 * dx + c1 * dy;
       J1(1, 2) = -c1 * dx + s1 * dy;
       // Retrieve the noise model for the relative rotation
-      boost::shared_ptr<noiseModel::Diagonal> diagonalModel =
+      std::shared_ptr<noiseModel::Diagonal> diagonalModel =
           boost::dynamic_pointer_cast<noiseModel::Diagonal>(
               pose2Between->noiseModel());
 

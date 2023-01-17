@@ -91,7 +91,7 @@ public:
    *  @param p       Parameters, typically fixed in a single application
    *  @param biasHat Current estimate of acceleration and rotation rate biases
    */
-  PreintegratedImuMeasurements(const boost::shared_ptr<PreintegrationParams>& p,
+  PreintegratedImuMeasurements(const std::shared_ptr<PreintegrationParams>& p,
       const imuBias::ConstantBias& biasHat = imuBias::ConstantBias()) :
       PreintegrationType(p, biasHat) {
     preintMeasCov_.setZero();
@@ -185,9 +185,9 @@ public:
 
   /** Shorthand for a smart pointer to a factor */
 #if !defined(_MSC_VER) && __GNUC__ == 4 && __GNUC_MINOR__ > 5
-  typedef typename boost::shared_ptr<ImuFactor> shared_ptr;
+  typedef typename std::shared_ptr<ImuFactor> shared_ptr;
 #else
-  typedef boost::shared_ptr<ImuFactor> shared_ptr;
+  typedef std::shared_ptr<ImuFactor> shared_ptr;
 #endif
 
   /** Default constructor - only use for serialization */

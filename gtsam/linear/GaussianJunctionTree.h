@@ -40,7 +40,7 @@ namespace gtsam {
   public:
     typedef JunctionTree<GaussianBayesTree, GaussianFactorGraph> Base; ///< Base class
     typedef GaussianJunctionTree This; ///< This class
-    typedef boost::shared_ptr<This> shared_ptr; ///< Shared pointer to this class
+    typedef std::shared_ptr<This> shared_ptr; ///< Shared pointer to this class
 
     /**
     * Build the elimination tree of a factor graph using pre-computed column structure.

@@ -47,7 +47,7 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorRollingShutter
   Point2 measured_;  ///< 2D measurement
   double alpha_;     ///< interpolation parameter in [0,1] corresponding to the
                      ///< point2 measurement
-  boost::shared_ptr<Cal3_S2> K_;  ///< shared pointer to calibration object
+  std::shared_ptr<Cal3_S2> K_;  ///< shared pointer to calibration object
   std::optional<Pose3>
       body_P_sensor_;  ///< The pose of the sensor in the body frame
 
@@ -69,7 +69,7 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorRollingShutter
   typedef ProjectionFactorRollingShutter This;
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
   /// Default constructor
   ProjectionFactorRollingShutter()
@@ -94,7 +94,7 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorRollingShutter
   ProjectionFactorRollingShutter(
       const Point2& measured, double alpha, const SharedNoiseModel& model,
       Key poseKey_a, Key poseKey_b, Key pointKey,
-      const boost::shared_ptr<Cal3_S2>& K,
+      const std::shared_ptr<Cal3_S2>& K,
       std::optional<Pose3> body_P_sensor = {})
       : Base(model, poseKey_a, poseKey_b, pointKey),
         measured_(measured),
@@ -124,7 +124,7 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorRollingShutter
   ProjectionFactorRollingShutter(
       const Point2& measured, double alpha, const SharedNoiseModel& model,
       Key poseKey_a, Key poseKey_b, Key pointKey,
-      const boost::shared_ptr<Cal3_S2>& K, bool throwCheirality,
+      const std::shared_ptr<Cal3_S2>& K, bool throwCheirality,
       bool verboseCheirality,
       std::optional<Pose3> body_P_sensor = {})
       : Base(model, poseKey_a, poseKey_b, pointKey),
@@ -182,7 +182,7 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorRollingShutter
   const Point2& measured() const { return measured_; }
 
   /** return the calibration object */
-  inline const boost::shared_ptr<Cal3_S2> calibration() const { return K_; }
+  inline const std::shared_ptr<Cal3_S2> calibration() const { return K_; }
 
   /** returns the rolling shutter interp param*/
   inline double alpha() const { return alpha_; }

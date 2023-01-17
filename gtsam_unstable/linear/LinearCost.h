@@ -32,7 +32,7 @@ class LinearCost: public JacobianFactor {
 public:
   typedef LinearCost This; ///< Typedef to this class
   typedef JacobianFactor Base; ///< Typedef to base class
-  typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
+  typedef std::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
 
 public:
   /** default constructor for I/O */
@@ -101,7 +101,7 @@ public:
   /** Clone this LinearCost */
   GaussianFactor::shared_ptr clone() const override {
     return boost::static_pointer_cast < GaussianFactor
-        > (boost::make_shared < LinearCost > (*this));
+        > (std::make_shared < LinearCost > (*this));
   }
 
   /** Special error_vector for constraints (A*x-b) */

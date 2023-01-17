@@ -36,7 +36,7 @@ class NonlinearClusterTree : public ClusterTree<NonlinearFactorGraph> {
       return factors.linearize(values);
     }
 
-    static NonlinearCluster* DownCast(const boost::shared_ptr<Cluster>& cluster) {
+    static NonlinearCluster* DownCast(const std::shared_ptr<Cluster>& cluster) {
       auto nonlinearCluster = boost::dynamic_pointer_cast<NonlinearCluster>(cluster);
       if (!nonlinearCluster)
         throw std::runtime_error("Expected NonlinearCluster");

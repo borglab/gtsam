@@ -21,13 +21,13 @@
 
 #include <vector>
 #include <list>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <boost/make_shared.hpp>
 
 using namespace gtsam;
 
 struct TestNode {
-  typedef boost::shared_ptr<TestNode> shared_ptr;
+  typedef std::shared_ptr<TestNode> shared_ptr;
   int data;
   std::vector<shared_ptr> children;
   TestNode() : data(-1) {}
@@ -48,11 +48,11 @@ TestForest makeTestForest() {
   //     |
   //     4
   TestForest forest;
-  forest.roots_.push_back(boost::make_shared<TestNode>(0));
-  forest.roots_.push_back(boost::make_shared<TestNode>(1));
-  forest.roots_[0]->children.push_back(boost::make_shared<TestNode>(2));
-  forest.roots_[0]->children.push_back(boost::make_shared<TestNode>(3));
-  forest.roots_[0]->children[1]->children.push_back(boost::make_shared<TestNode>(4));
+  forest.roots_.push_back(std::make_shared<TestNode>(0));
+  forest.roots_.push_back(std::make_shared<TestNode>(1));
+  forest.roots_[0]->children.push_back(std::make_shared<TestNode>(2));
+  forest.roots_[0]->children.push_back(std::make_shared<TestNode>(3));
+  forest.roots_[0]->children[1]->children.push_back(std::make_shared<TestNode>(4));
   return forest;
 }
 

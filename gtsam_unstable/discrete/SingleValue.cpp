@@ -60,7 +60,7 @@ Constraint::shared_ptr SingleValue::partiallyApply(const DiscreteValues& values)
   DiscreteValues::const_iterator it = values.find(keys_[0]);
   if (it != values.end() && it->second != value_)
     throw runtime_error("SingleValue::partiallyApply: unsatisfiable");
-  return boost::make_shared<SingleValue>(keys_[0], cardinality_, value_);
+  return std::make_shared<SingleValue>(keys_[0], cardinality_, value_);
 }
 
 /* ************************************************************************* */
@@ -69,7 +69,7 @@ Constraint::shared_ptr SingleValue::partiallyApply(
   const Domain& Dk = domains.at(keys_[0]);
   if (Dk.isSingleton() && !Dk.contains(value_))
     throw runtime_error("SingleValue::partiallyApply: unsatisfiable");
-  return boost::make_shared<SingleValue>(discreteKey(), value_);
+  return std::make_shared<SingleValue>(discreteKey(), value_);
 }
 
 /* ************************************************************************* */

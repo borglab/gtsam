@@ -136,7 +136,7 @@ namespace gtsam {
     // Make lookup with product
     gttic(lookup);
     size_t nrFrontals = frontalKeys.size();
-    auto lookup = boost::make_shared<DiscreteLookupTable>(nrFrontals,
+    auto lookup = std::make_shared<DiscreteLookupTable>(nrFrontals,
                                                           orderedKeys, product);
     gttoc(lookup);
 
@@ -220,7 +220,7 @@ namespace gtsam {
     // now divide product/sum to get conditional
     gttic(divide);
     auto conditional =
-        boost::make_shared<DiscreteConditional>(product, *sum, orderedKeys);
+        std::make_shared<DiscreteConditional>(product, *sum, orderedKeys);
     gttoc(divide);
 
     return std::make_pair(conditional, sum);

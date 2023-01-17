@@ -280,7 +280,7 @@ TEST (testSerializationSLAM, factors) {
   Cal3_S2Stereo cal3_s2stereo(1.0, 2.0, 3.0, 4.0, 5.0, 1.0);
   CalibratedCamera calibratedCamera(pose3);
   PinholeCamera<Cal3_S2> simpleCamera(pose3, cal3_s2);
-  StereoCamera stereoCamera(pose3, boost::make_shared<Cal3_S2Stereo>(cal3_s2stereo));
+  StereoCamera stereoCamera(pose3, std::make_shared<Cal3_S2Stereo>(cal3_s2stereo));
 
 
   Symbol  a01('a',1),  a02('a',2),  a03('a',3),  a04('a',4),  a05('a',5),
@@ -364,14 +364,14 @@ TEST (testSerializationSLAM, factors) {
 
   BearingRangeFactor2D bearingRangeFactor2D(a08, a03, rot2, 2.0, model2);
 
-  GenericProjectionFactorCal3_S2 genericProjectionFactorCal3_S2(point2, model2, a09, a05, boost::make_shared<Cal3_S2>(cal3_s2));
-  GenericProjectionFactorCal3DS2 genericProjectionFactorCal3DS2(point2, model2, a09, a05, boost::make_shared<Cal3DS2>(cal3ds2));
+  GenericProjectionFactorCal3_S2 genericProjectionFactorCal3_S2(point2, model2, a09, a05, std::make_shared<Cal3_S2>(cal3_s2));
+  GenericProjectionFactorCal3DS2 genericProjectionFactorCal3DS2(point2, model2, a09, a05, std::make_shared<Cal3DS2>(cal3ds2));
 
   GeneralSFMFactorCal3_S2 generalSFMFactorCal3_S2(point2, model2, a13, a05);
 
   GeneralSFMFactor2Cal3_S2 generalSFMFactor2Cal3_S2(point2, model2, a09, a05, a10);
 
-  GenericStereoFactor3D genericStereoFactor3D(stereoPoint2, model3, a09, a05, boost::make_shared<Cal3_S2Stereo>(cal3_s2stereo));
+  GenericStereoFactor3D genericStereoFactor3D(stereoPoint2, model3, a09, a05, std::make_shared<Cal3_S2Stereo>(cal3_s2stereo));
 
 
   NonlinearFactorGraph graph;

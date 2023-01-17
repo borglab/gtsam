@@ -34,7 +34,7 @@ class PoseToPointFactor : public NoiseModelFactorN<POSE, POINT> {
   using Base::evaluateError;
 
   // shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<PoseToPointFactor> shared_ptr;
+  typedef std::shared_ptr<PoseToPointFactor> shared_ptr;
 
   /** default constructor - only use for serialization */
   PoseToPointFactor() {}

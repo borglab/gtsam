@@ -48,7 +48,7 @@ class ExtendedKalmanFilter {
   BOOST_CONCEPT_ASSERT((IsManifold<VALUE>));
 
  public:
-  typedef boost::shared_ptr<ExtendedKalmanFilter<VALUE> > shared_ptr;
+  typedef std::shared_ptr<ExtendedKalmanFilter<VALUE> > shared_ptr;
   typedef VALUE T;
 
  protected:

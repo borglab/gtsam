@@ -79,7 +79,7 @@ double chi2_red(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& c
   // the factor graph already includes a factor for the prior/equality constraint.
   //  double dof = graph.size() - config.size();
   int graph_dim = 0;
-  for(const boost::shared_ptr<gtsam::NonlinearFactor>& nlf: graph) {
+  for(const std::shared_ptr<gtsam::NonlinearFactor>& nlf: graph) {
     graph_dim += (int)nlf->dim();
   }
   double dof = double(graph_dim) - double(config.dim()); // kaess: changed to dim

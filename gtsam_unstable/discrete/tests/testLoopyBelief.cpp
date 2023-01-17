@@ -114,12 +114,12 @@ class LoopyBelief {
           beliefAtKey =
               boost::dynamic_pointer_cast<DecisionTreeFactor>(message);
         else
-          beliefAtKey = boost::make_shared<DecisionTreeFactor>(
+          beliefAtKey = std::make_shared<DecisionTreeFactor>(
               (*beliefAtKey) *
               (*boost::dynamic_pointer_cast<DecisionTreeFactor>(message)));
       }
       if (starGraphs_.at(key).unary)
-        beliefAtKey = boost::make_shared<DecisionTreeFactor>(
+        beliefAtKey = std::make_shared<DecisionTreeFactor>(
             (*beliefAtKey) * (*starGraphs_.at(key).unary));
       if (debug) beliefAtKey->print("New belief at key: ");
       // normalize belief
@@ -135,7 +135,7 @@ class LoopyBelief {
       DecisionTreeFactor sumFactor(allDiscreteKeys.at(key), sumFactorTable);
       if (debug) sumFactor.print("denomFactor: ");
       beliefAtKey =
-          boost::make_shared<DecisionTreeFactor>((*beliefAtKey) / sumFactor);
+          std::make_shared<DecisionTreeFactor>((*beliefAtKey) / sumFactor);
       if (debug) beliefAtKey->print("New belief at key normalized: ");
       beliefs->push_back(beliefAtKey);
       allMessages[key] = messages;
@@ -157,7 +157,7 @@ class LoopyBelief {
             starGraphs_.at(neighbor).correctedBeliefIndices.at(key);
         starGraphs_.at(neighbor).star->replace(
             beliefIndex,
-            boost::make_shared<DecisionTreeFactor>(correctedBelief));
+            std::make_shared<DecisionTreeFactor>(correctedBelief));
       }
     }
 
@@ -190,7 +190,7 @@ class LoopyBelief {
             prodOfUnaries = boost::dynamic_pointer_cast<DecisionTreeFactor>(
                 graph.at(factorIndex));
           else
-            prodOfUnaries = boost::make_shared<DecisionTreeFactor>(
+            prodOfUnaries = std::make_shared<DecisionTreeFactor>(
                 *prodOfUnaries *
                 (*boost::dynamic_pointer_cast<DecisionTreeFactor>(
                     graph.at(factorIndex))));

@@ -52,7 +52,7 @@ DecisionTreeFactor::shared_ptr HybridBayesNet::discreteConditionals() const {
       dtFactor = dtFactor * f;
     }
   }
-  return boost::make_shared<DecisionTreeFactor>(dtFactor);
+  return std::make_shared<DecisionTreeFactor>(dtFactor);
 }
 
 /* ************************************************************************* */
@@ -162,9 +162,9 @@ void HybridBayesNet::updateDiscreteConditionals(
       // Create the new (hybrid) conditional
       KeyVector frontals(discrete->frontals().begin(),
                          discrete->frontals().end());
-      auto prunedDiscrete = boost::make_shared<DiscreteLookupTable>(
+      auto prunedDiscrete = std::make_shared<DiscreteLookupTable>(
           frontals.size(), conditional->discreteKeys(), prunedDiscreteTree);
-      conditional = boost::make_shared<HybridConditional>(prunedDiscrete);
+      conditional = std::make_shared<HybridConditional>(prunedDiscrete);
 
       // Add it back to the BayesNet
       this->at(i) = conditional;
@@ -194,7 +194,7 @@ HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves) {
   for (auto &&conditional : *this) {
     if (auto gm = conditional->asMixture()) {
       // Make a copy of the Gaussian mixture and prune it!
-      auto prunedGaussianMixture = boost::make_shared<GaussianMixture>(*gm);
+      auto prunedGaussianMixture = std::make_shared<GaussianMixture>(*gm);
       prunedGaussianMixture->prune(decisionTree);  // imperative :-(
 
       // Type-erase and add to the pruned Bayes Net fragment.

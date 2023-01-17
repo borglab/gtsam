@@ -35,7 +35,7 @@ class GTSAM_EXPORT HybridNonlinearFactorGraph : public HybridFactorGraph {
  public:
   using Base = HybridFactorGraph;
   using This = HybridNonlinearFactorGraph;     ///< this class
-  using shared_ptr = boost::shared_ptr<This>;  ///< shared_ptr to This
+  using shared_ptr = std::shared_ptr<This>;  ///< shared_ptr to This
 
   using Values = gtsam::Values;  ///< backwards compatibility
   using Indices = KeyVector;     ///> map from keys to values

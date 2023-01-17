@@ -23,7 +23,7 @@
 #include <gtsam/discrete/Signature.h>
 
 #include <boost/make_shared.hpp>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -41,7 +41,7 @@ class GTSAM_EXPORT DiscreteConditional
  public:
   // typedefs needed to play nice with gtsam
   typedef DiscreteConditional This;            ///< Typedef to this class
-  typedef boost::shared_ptr<This> shared_ptr;  ///< shared_ptr to this class
+  typedef std::shared_ptr<This> shared_ptr;  ///< shared_ptr to this class
   typedef DecisionTreeFactor BaseFactor;  ///< Typedef to our factor base class
   typedef Conditional<BaseFactor, This>
       BaseConditional;  ///< Typedef to our conditional base class

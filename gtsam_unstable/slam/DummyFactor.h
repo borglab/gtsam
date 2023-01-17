@@ -54,7 +54,7 @@ public:
   size_t dim() const override { return rowDim_; }
 
   /** linearize to a GaussianFactor */
-  boost::shared_ptr<GaussianFactor> linearize(const Values& c) const override;
+  std::shared_ptr<GaussianFactor> linearize(const Values& c) const override;
 
   /**
    * Creates a shared_ptr clone of the factor - needs to be specialized to allow

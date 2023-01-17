@@ -37,7 +37,7 @@ class GTSAM_EXPORT HybridGaussianISAM : public ISAM<HybridBayesTree> {
  public:
   typedef ISAM<HybridBayesTree> Base;
   typedef HybridGaussianISAM This;
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
   /// @name Standard Constructors
   /// @{
