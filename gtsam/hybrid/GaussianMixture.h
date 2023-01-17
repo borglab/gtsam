@@ -160,10 +160,6 @@ class GTSAM_EXPORT GaussianMixture
   /// log-normalization constants.
   double logNormalizationConstant() const override { return logConstant_; }
 
-  /// Return a discrete factor with possibly varying normalization constants.
-  /// If there is no variation, return nullptr.
-  boost::shared_ptr<DecisionTreeFactor> normalizationConstants() const;
-
   /**
    * Create a likelihood factor for a Gaussian mixture, return a Mixture factor
    * on the parents.
