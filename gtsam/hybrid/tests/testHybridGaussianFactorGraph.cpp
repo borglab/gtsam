@@ -830,18 +830,30 @@ TEST(HybridGaussianFactorGraph, EliminateSwitchingNetwork) {
   const VectorValues measurements{
       {Z(0), Vector1(0.0)}, {Z(1), Vector1(1.0)}, {Z(2), Vector1(2.0)}};
   const HybridGaussianFactorGraph fg = bn.toFactorGraph(measurements);
+
+  // Factor graph is:
+  //      D     D
+  //      |     |
+  //      m1    m2
+  //      |     | 
+  // C-x0-HC-x1-HC-x2
+  //   |     |     |
+  //   HF    HF    HF
+  //   |     |     |
+  //   n0    n1    n2 
+  //   |     |     |
+  //   D     D     D
+  EXPECT_LONGS_EQUAL(11, fg.size());
   EXPECT(ratioTest(bn, measurements, fg));
 
+  // Do elimination of X(2) only:
+  auto result = fg.eliminatePartialSequential(Ordering{X(2)});
+  auto fg1 = *result.second;
+  fg1.push_back(*result.first);
+  EXPECT(ratioTest(bn, measurements, fg1));
+
   // Create ordering that eliminates in time order, then discrete modes:
-  Ordering ordering;
-  ordering.push_back(X(2));
-  ordering.push_back(X(1));
-  ordering.push_back(X(0));
-  ordering.push_back(N(0));
-  ordering.push_back(N(1));
-  ordering.push_back(N(2));
-  ordering.push_back(M(1));
-  ordering.push_back(M(2));
+  Ordering ordering {X(2), X(1), X(0), N(0), N(1), N(2), M(1), M(2)};
 
   // Do elimination:
   const HybridBayesNet::shared_ptr posterior = fg.eliminateSequential(ordering);
@@ -850,7 +862,7 @@ TEST(HybridGaussianFactorGraph, EliminateSwitchingNetwork) {
   EXPECT_LONGS_EQUAL(8, posterior->size());
 
   // TODO(dellaert): this test fails - no idea why.
-  // EXPECT(ratioTest(bn, measurements, *posterior));
+  EXPECT(ratioTest(bn, measurements, *posterior));
 }
 
 /* ************************************************************************* */
