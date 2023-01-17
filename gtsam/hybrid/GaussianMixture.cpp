@@ -175,18 +175,6 @@ KeyVector GaussianMixture::continuousParents() const {
 }
 
 /* ************************************************************************* */
-boost::shared_ptr<DecisionTreeFactor> GaussianMixture::normalizationConstants()
-    const {
-  DecisionTree<Key, double> constants(
-      conditionals_, [&](const GaussianConditional::shared_ptr &conditional) {
-        return conditional->normalizationConstant();
-      });
-  // If all constants the same, return nullptr:
-  if (constants.nrLeaves() == 1) return nullptr;
-  return boost::make_shared<DecisionTreeFactor>(discreteKeys(), constants);
-}
-
-/* ************************************************************************* */
 bool GaussianMixture::allFrontalsGiven(const VectorValues &given) const {
   for (auto &&kv : given) {
     if (given.find(kv.first) == given.end()) {

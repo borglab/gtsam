@@ -61,9 +61,6 @@ const GaussianMixture mixture({Z(0)}, {X(0)}, {mode}, conditionals);
 TEST(GaussianMixture, Invariants) {
   using namespace equal_constants;
 
-  // Check that normalizationConstants returns nullptr, as all constants equal.
-  CHECK(!mixture.normalizationConstants());
-
   // Check that the mixture normalization constant is the max of all constants
   // which are all equal, in this case, hence:
   const double K = mixture.logNormalizationConstant();
@@ -168,19 +165,6 @@ TEST(GaussianMixture, ContinuousParents) {
   // Check that the continuous parent keys are correct:
   EXPECT(continuousParentKeys.size() == 1);
   EXPECT(continuousParentKeys[0] == X(0));
-}
-
-/* ************************************************************************* */
-/// Check we can create a DecisionTreeFactor with all normalization constants.
-TEST(GaussianMixture, NormalizationConstants) {
-  using namespace mode_dependent_constants;
-
-  const auto factor = mixture.normalizationConstants();
-
-  // Test with 1D Gaussian normalization constants for sigma 0.5 and 3:
-  auto c = [](double sigma) { return 1.0 / (sqrt(2 * M_PI) * sigma); };
-  const DecisionTreeFactor expected({M(0), 2}, {c(0.5), c(3)});
-  EXPECT(assert_equal(expected, *factor));
 }
 
 /* ************************************************************************* */
