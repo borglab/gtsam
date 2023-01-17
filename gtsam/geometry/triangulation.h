@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include "gtsam/geometry/Point3.h"
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/Cal3Fisheye.h>
 #include <gtsam/geometry/Cal3Unified.h>
@@ -32,6 +33,8 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/slam/TriangulationFactor.h>
+
+#include <optional>
 
 namespace gtsam {
 
@@ -656,6 +659,10 @@ class TriangulationResult : public std::optional<Point3> {
   bool outlier() const { return status == OUTLIER; }
   bool farPoint() const { return status == FAR_POINT; }
   bool behindCamera() const { return status == BEHIND_CAMERA; }
+  const gtsam::Point3& get() const {
+    if (!has_value()) throw std::runtime_error("TriangulationResult has no value");
+    return value();
+  }
   // stream to output
   friend std::ostream& operator<<(std::ostream& os,
                                   const TriangulationResult& result) {
